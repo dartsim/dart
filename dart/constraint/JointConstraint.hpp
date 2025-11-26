@@ -145,7 +145,7 @@ private:
   /// Life time of constraint of each DOF.
   Eigen::Matrix<std::size_t, 6, 1> mLifeTime;
 
-  /// Whether any of the joint contraint is active of each joint.
+  /// Whether any of the joint constraint is active of each joint.
   Eigen::Matrix<bool, 6, 1> mActive;
 
   /// The desired delta velocity to satisfy the joint limit constraint.
@@ -172,7 +172,7 @@ private:
 
   /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
   /// default is 1e-5
-  /// \sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
+  /// @sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
   static double mConstraintForceMixing;
 };
 

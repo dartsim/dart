@@ -34,7 +34,6 @@ import random
 from typing import List, Optional, Tuple
 
 import dartpy as dart
-import dartpy.collision as dart_collision
 import numpy as np
 
 default_shape_density = 1000.0  # kg/m^3
@@ -93,7 +92,7 @@ def setup_ring(ring: dart.dynamics.Skeleton):
         dof.setPosition(dof.getRestPosition())
 
 
-class CollisionsEventHandler(dart.gui.osg.GUIEventHandler):
+class CollisionsEventHandler(dart.gui.GUIEventHandler):
     def __init__(
         self,
         world: dart.simulation.World,
@@ -116,11 +115,11 @@ class CollisionsEventHandler(dart.gui.osg.GUIEventHandler):
         self.spawn_index = 0
 
     def handle(self, ea, _aa):
-        if ea.getEventType() != dart.gui.osg.GUIEventAdapter.KEYDOWN:
+        if ea.getEventType() != dart.gui.GUIEventAdapter.KEYDOWN:
             return False
 
         key = ea.getKey()
-        gea = dart.gui.osg.GUIEventAdapter
+        gea = dart.gui.GUIEventAdapter
 
         if key == gea.KEY_1:
             return self.add_object(self.blueprint_ball.clone("ball_clone"))
@@ -217,7 +216,7 @@ class CollisionsEventHandler(dart.gui.osg.GUIEventHandler):
         self.world.removeSkeleton(skel)
 
 
-class CustomWorldNode(dart.gui.osg.RealTimeWorldNode):
+class CustomWorldNode(dart.gui.RealTimeWorldNode):
     def __init__(self, world):
         super().__init__(world)
 
@@ -382,7 +381,7 @@ def main():
 
     node = CustomWorldNode(world)
 
-    viewer = dart.gui.osg.Viewer()
+    viewer = dart.gui.Viewer()
     viewer.addWorldNode(node)
     viewer.addEventHandler(handler)
 
@@ -399,8 +398,8 @@ def main():
     )
     print(viewer.getInstructions())
 
-    grid = dart.gui.osg.GridVisual()
-    grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.XZ)
+    grid = dart.gui.GridVisual()
+    grid.setPlaneType(dart.gui.GridVisual.PlaneType.XZ)
     grid.setOffset([0.0, -default_wall_thickness / 2.0, 0.0])
     viewer.addAttachment(grid)
 

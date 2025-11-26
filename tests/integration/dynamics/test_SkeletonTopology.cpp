@@ -180,7 +180,7 @@ TEST(Issue1445, Collision)
   for (std::size_t i = 0; i < numSteps; ++i)
     world->step();
 
-  // Expect both bodies to be falling after the BodyNode ofthe the ground is
+  // Expect both bodies to be falling after the BodyNode of the the ground is
   // removed
   EXPECT_LE(model1Body->getLinearVelocity().z(), -1e-2);
   EXPECT_LE(model2Body->getLinearVelocity().z(), -1e-2);

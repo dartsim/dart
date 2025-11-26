@@ -48,10 +48,10 @@ namespace constraint {
 class DynamicJointConstraint : public ConstraintBase
 {
 public:
-  /// Contructor
+  /// Constructor
   explicit DynamicJointConstraint(dynamics::BodyNode* body);
 
-  /// Contructor
+  /// Constructor
   DynamicJointConstraint(dynamics::BodyNode* body1, dynamics::BodyNode* body2);
 
   /// Destructor
@@ -110,7 +110,7 @@ protected:
 
   /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
   /// default is 1e-5
-  /// \sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
+  /// @sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
   static double mConstraintForceMixing;
 };
 

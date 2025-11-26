@@ -34,7 +34,7 @@
 
 #include <dart/config.hpp>
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
 #include <dart/utils/urdf/All.hpp>
@@ -251,9 +251,9 @@ public:
     double z = p.z();
 
     for (std::size_t i = 0; i < 8; ++i) {
-      const int flipEP = alterantives(i, 0);
-      const int incWY = alterantives(i, 1);
-      const int flipShoulder = alterantives(i, 2);
+      const int flipEP = alternatives(i, 0);
+      const int incWY = alternatives(i, 1);
+      const int flipShoulder = alternatives(i, 2);
 
       Eigen::Vector6d testQ;
       bool isValid = startValid;
@@ -269,7 +269,7 @@ public:
       double c3 = cos(theta3);
       double s3 = sin(theta3);
 
-      double numer = -y;
+      double number = -y;
       double denom = (-L4 * c3 - L3 * s3 + L4);
 
       double s2, theta2;
@@ -280,7 +280,7 @@ public:
         theta2 = incWY ? prevWY : pi - prevWY;
         s2 = sin(theta2);
       } else {
-        s2 = numer / denom;
+        s2 = number / denom;
         clamp_sincos(s2, isValid);
         theta2 = incWY ? pi - asin(s2) : asin(s2);
       }
@@ -414,7 +414,7 @@ protected:
 
     mWristEnd = dofs[5]->getChildBodyNode();
 
-    alterantives << 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, -1, 1, 1, -1, 1, 0, -1,
+    alternatives << 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, -1, 1, 1, -1, 1, 0, -1,
         0, 1, -1, 0, 0;
 
     for (std::size_t i = 0; i < 6; ++i) {
@@ -432,7 +432,7 @@ protected:
   mutable Eigen::Isometry3d mNodeOffsetTfInv;
   mutable double L3, L4, L5;
 
-  mutable Eigen::Matrix<int, 8, 3> alterantives;
+  mutable Eigen::Matrix<int, 8, 3> alternatives;
 
   mutable std::vector<std::size_t> mDofs;
 
@@ -684,7 +684,7 @@ protected:
   mutable WeakBodyNodePtr mBaseLink;
 };
 
-class TeleoperationWorld : public dart::gui::osg::WorldNode
+class TeleoperationWorld : public dart::gui::WorldNode
 {
 public:
   enum MoveEnum_t
@@ -702,7 +702,7 @@ public:
   };
 
   TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot)
-    : dart::gui::osg::WorldNode(_world),
+    : dart::gui::WorldNode(_world),
       mHubo(_robot),
       iter(0),
       l_foot(_robot->getEndEffector("l_foot")),
@@ -819,7 +819,7 @@ class InputHandler : public ::osgGA::GUIEventHandler
 {
 public:
   InputHandler(
-      dart::gui::osg::Viewer* viewer,
+      dart::gui::Viewer* viewer,
       TeleoperationWorld* teleop,
       const SkeletonPtr& hubo,
       const WorldPtr& world)
@@ -1062,7 +1062,7 @@ public:
   }
 
 protected:
-  dart::gui::osg::Viewer* mViewer;
+  dart::gui::Viewer* mViewer;
 
   TeleoperationWorld* mTeleop;
 
@@ -1114,9 +1114,9 @@ SkeletonPtr createGround()
 
 SkeletonPtr createHubo()
 {
-  dart::utils::DartLoader loader;
-  loader.addPackageDirectory("drchubo", dart::config::dataPath("urdf/drchubo"));
-  SkeletonPtr hubo = loader.parseSkeleton(
+  dart::utils::UrdfParser parser;
+  parser.addPackageDirectory("drchubo", dart::config::dataPath("urdf/drchubo"));
+  SkeletonPtr hubo = parser.parseSkeleton(
       dart::config::dataPath("urdf/drchubo/drchubo.urdf"));
 
   for (std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i) {
@@ -1178,8 +1178,8 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       = hubo->getBodyNode("Body_LWR")->createEndEffector("l_hand");
   l_hand->setDefaultRelativeTransform(tf_hand, true);
 
-  dart::gui::osg::InteractiveFramePtr lh_target(
-      new dart::gui::osg::InteractiveFrame(Frame::World(), "lh_target"));
+  dart::gui::InteractiveFramePtr lh_target(
+      new dart::gui::InteractiveFrame(Frame::World(), "lh_target"));
 
   l_hand->getIK(true)->setTarget(lh_target);
   l_hand->getIK()->useWholeBody();
@@ -1203,8 +1203,8 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       = hubo->getBodyNode("Body_RWR")->createEndEffector("r_hand");
   r_hand->setDefaultRelativeTransform(tf_hand, true);
 
-  dart::gui::osg::InteractiveFramePtr rh_target(
-      new dart::gui::osg::InteractiveFrame(Frame::World(), "rh_target"));
+  dart::gui::InteractiveFramePtr rh_target(
+      new dart::gui::InteractiveFrame(Frame::World(), "rh_target"));
 
   r_hand->getIK(true)->setTarget(rh_target);
   r_hand->getIK()->useWholeBody();
@@ -1244,8 +1244,8 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       = hubo->getBodyNode("Body_LAR")->createEndEffector("l_foot");
   l_foot->setDefaultRelativeTransform(tf_foot, true);
 
-  dart::gui::osg::InteractiveFramePtr lf_target(
-      new dart::gui::osg::InteractiveFrame(Frame::World(), "lf_target"));
+  dart::gui::InteractiveFramePtr lf_target(
+      new dart::gui::InteractiveFrame(Frame::World(), "lf_target"));
 
   l_foot->getIK(true)->setTarget(lf_target);
 
@@ -1265,8 +1265,8 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       = hubo->getBodyNode("Body_RAR")->createEndEffector("r_foot");
   r_foot->setDefaultRelativeTransform(tf_foot, true);
 
-  dart::gui::osg::InteractiveFramePtr rf_target(
-      new dart::gui::osg::InteractiveFrame(Frame::World(), "rf_target"));
+  dart::gui::InteractiveFramePtr rf_target(
+      new dart::gui::InteractiveFrame(Frame::World(), "rf_target"));
 
   r_foot->getIK(true)->setTarget(rf_target);
 
@@ -1296,8 +1296,8 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       = hubo->getBodyNode("Body_LWP")->createEndEffector("l_peg");
   l_peg->setDefaultRelativeTransform(tf_peg, true);
 
-  dart::gui::osg::InteractiveFramePtr lp_target(
-      new dart::gui::osg::InteractiveFrame(Frame::World(), "lp_target"));
+  dart::gui::InteractiveFramePtr lp_target(
+      new dart::gui::InteractiveFrame(Frame::World(), "lp_target"));
 
   l_peg->getIK(true)->setTarget(lp_target);
 
@@ -1313,8 +1313,8 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       = hubo->getBodyNode("Body_RWP")->createEndEffector("r_peg");
   r_peg->setDefaultRelativeTransform(tf_peg, true);
 
-  dart::gui::osg::InteractiveFramePtr rp_target(
-      new dart::gui::osg::InteractiveFrame(Frame::World(), "rp_target"));
+  dart::gui::InteractiveFramePtr rp_target(
+      new dart::gui::InteractiveFrame(Frame::World(), "rp_target"));
 
   r_peg->getIK(true)->setTarget(rp_target);
 
@@ -1334,7 +1334,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   r_foot->getIK()->getTarget()->setTransform(r_foot->getTransform());
 }
 
-void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& hubo)
+void enableDragAndDrops(dart::gui::Viewer& viewer, const SkeletonPtr& hubo)
 {
   // Turn on drag-and-drop for the whole Skeleton
   for (std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i)
@@ -1347,7 +1347,7 @@ void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& hubo)
 
     // Check whether the target is an interactive frame, and add it if it is
     if (const auto& frame
-        = std::dynamic_pointer_cast<dart::gui::osg::InteractiveFrame>(
+        = std::dynamic_pointer_cast<dart::gui::InteractiveFrame>(
             ee->getIK()->getTarget()))
       viewer.enableDragAndDrop(frame.get());
   }
@@ -1415,7 +1415,7 @@ int main()
 
   ::osg::ref_ptr<TeleoperationWorld> node = new TeleoperationWorld(world, hubo);
 
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.allowSimulation(false);
   viewer.addWorldNode(node);
 
@@ -1425,7 +1425,7 @@ int main()
 
   double display_elevation = 0.05;
   viewer.addAttachment(
-      new dart::gui::osg::SupportPolygonVisual(hubo, display_elevation));
+      new dart::gui::SupportPolygonVisual(hubo, display_elevation));
 
   std::cout << viewer.getInstructions() << std::endl;
 

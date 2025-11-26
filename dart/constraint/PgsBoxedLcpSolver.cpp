@@ -33,8 +33,8 @@
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 
 #include "dart/math/Constants.hpp"
-#include "dart/math/lcp/Dantzig/Matrix.hpp"
-#include "dart/math/lcp/Dantzig/Misc.hpp"
+#include "dart/math/lcp/dantzig/Matrix.hpp"
+#include "dart/math/lcp/dantzig/Misc.hpp"
 
 #include <Eigen/Dense>
 
@@ -228,7 +228,6 @@ bool PgsBoxedLcpSolver::solve(
   return possibleToTerminate;
 }
 
-#if DART_BUILD_MODE_DEBUG
 //==============================================================================
 bool PgsBoxedLcpSolver::canSolve(int n, const double* A)
 {
@@ -247,7 +246,6 @@ bool PgsBoxedLcpSolver::canSolve(int n, const double* A)
 
   return true;
 }
-#endif
 
 //==============================================================================
 void PgsBoxedLcpSolver::setOption(const PgsBoxedLcpSolver::Option& option)

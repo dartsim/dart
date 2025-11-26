@@ -182,7 +182,7 @@ JAVADOC_AUTOBRIEF      = YES
 # If the QT_AUTOBRIEF tag is set to YES then doxygen will interpret the first
 # line (until the first dot) of a Qt-style comment as the brief description. If
 # set to NO, the Qt-style will behave just like regular Qt-style comments (thus
-# requiring an explicit \brief command for a brief description.)
+# requiring an explicit @brief command for a brief description.)
 # The default value is: NO.
 
 QT_AUTOBRIEF           = NO
@@ -223,18 +223,12 @@ TAB_SIZE               = 4
 # name=value
 # For example adding
 # "sideeffect=@par Side Effects:\n"
-# will allow you to put the command \sideeffect (or @sideeffect) in the
+# will allow you to put the command @sideeffect (or @sideeffect) in the
 # documentation, which will result in a user-defined paragraph with heading
 # "Side Effects:". You can put \n's in the value part of an alias to insert
 # newlines.
 
 ALIASES                =
-
-# This tag can be used to specify a number of word-keyword mappings (TCL only).
-# A mapping has the form "name=value". For example adding "class=itcl::class"
-# will allow you to use the command class in the itcl::class meaning.
-
-TCL_SUBST              =
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C sources
 # only. Doxygen will then generate output that is more tailored for C. For
@@ -345,7 +339,7 @@ DISTRIBUTE_GROUP_DOC   = NO
 
 # If one adds a struct or class to a group and this option is enabled, then also
 # any nested class or struct is added to the same group. By default this option
-# is disabled and one has to add nested compounds explicitly via \ingroup.
+# is disabled and one has to add nested compounds explicitly via @ingroup.
 # The default value is: NO.
 
 GROUP_NESTED_COMPOUNDS = NO
@@ -354,13 +348,13 @@ GROUP_NESTED_COMPOUNDS = NO
 # (for instance a group of public functions) to be put as a subgroup of that
 # type (e.g. under the Public Functions section). Set it to NO to prevent
 # subgrouping. Alternatively, this can be done per class using the
-# \nosubgrouping command.
+# @nosubgrouping command.
 # The default value is: YES.
 
 SUBGROUPING            = YES
 
 # When the INLINE_GROUPED_CLASSES tag is set to YES, classes, structs and unions
-# are shown inside the group in which they are included (e.g. using \ingroup)
+# are shown inside the group in which they are included (e.g. using @ingroup)
 # instead of on a separate page (for HTML and Man pages) or section (for LaTeX
 # and RTF).
 #
@@ -492,7 +486,7 @@ HIDE_FRIEND_COMPOUNDS  = NO
 HIDE_IN_BODY_DOCS      = NO
 
 # The INTERNAL_DOCS tag determines if documentation that is typed after a
-# \internal command is included. If the tag is set to NO then the documentation
+# @internal command is included. If the tag is set to NO then the documentation
 # will be excluded. Set it to YES to include the internal documentation.
 # The default value is: NO.
 
@@ -601,33 +595,33 @@ SORT_BY_SCOPE_NAME     = NO
 STRICT_PROTO_MATCHING  = NO
 
 # The GENERATE_TODOLIST tag can be used to enable (YES) or disable (NO) the todo
-# list. This list is created by putting \todo commands in the documentation.
+# list. This list is created by putting @todo commands in the documentation.
 # The default value is: YES.
 
 GENERATE_TODOLIST      = NO
 
 # The GENERATE_TESTLIST tag can be used to enable (YES) or disable (NO) the test
-# list. This list is created by putting \test commands in the documentation.
+# list. This list is created by putting @test commands in the documentation.
 # The default value is: YES.
 
 GENERATE_TESTLIST      = YES
 
 # The GENERATE_BUGLIST tag can be used to enable (YES) or disable (NO) the bug
-# list. This list is created by putting \bug commands in the documentation.
+# list. This list is created by putting @bug commands in the documentation.
 # The default value is: YES.
 
 GENERATE_BUGLIST       = YES
 
 # The GENERATE_DEPRECATEDLIST tag can be used to enable (YES) or disable (NO)
-# the deprecated list. This list is created by putting \deprecated commands in
+# the deprecated list. This list is created by putting @deprecated commands in
 # the documentation.
 # The default value is: YES.
 
 GENERATE_DEPRECATEDLIST= YES
 
 # The ENABLED_SECTIONS tag can be used to enable conditional documentation
-# sections, marked by \if <section_label> ... \endif and \cond <section_label>
-# ... \endcond blocks.
+# sections, marked by @if <section_label> ... @endif and @cond <section_label>
+# ... @endcond blocks.
 
 ENABLED_SECTIONS       =
 
@@ -636,7 +630,7 @@ ENABLED_SECTIONS       =
 # documentation. If the initializer consists of more lines than specified here
 # it will be hidden. Use a value of 0 to hide initializers completely. The
 # appearance of the value of individual variables and macros / defines can be
-# controlled using \showinitializer or \hideinitializer command in the
+# controlled using @showinitializer or @hideinitializer command in the
 # documentation regardless of this setting.
 # Minimum value: 0, maximum value: 10000, default value: 30.
 
@@ -692,7 +686,7 @@ LAYOUT_FILE            =
 # to be installed. See also http://en.wikipedia.org/wiki/BibTeX for more info.
 # For LaTeX the style of the bibliography can be controlled using
 # LATEX_BIB_STYLE. To use this feature you need bibtex and perl available in the
-# search path. See also \cite for info how to create references.
+# search path. See also @cite for info how to create references.
 
 CITE_BIB_FILES         =
 
@@ -714,7 +708,10 @@ QUIET                  = NO
 # Tip: Turn warnings on while writing the documentation.
 # The default value is: YES.
 
-WARNINGS               = YES
+WARNINGS               = NO
+
+# Capture any Doxygen diagnostics in a log file to keep sphinx output clean.
+WARN_LOGFILE           = @DOXYGEN_WARN_LOGFILE@
 
 # If the WARN_IF_UNDOCUMENTED tag is set to YES then doxygen will generate
 # warnings for undocumented members. If EXTRACT_ALL is set to YES then this flag
@@ -758,8 +755,6 @@ WARN_FORMAT            = "$file:$line: $text"
 # The WARN_LOGFILE tag can be used to specify a file to which warning and error
 # messages should be written. If left blank the output is written to standard
 # error (stderr).
-
-WARN_LOGFILE           =
 
 #---------------------------------------------------------------------------
 # Configuration options related to the input files
@@ -842,7 +837,7 @@ EXCLUDE_PATTERNS       =
 EXCLUDE_SYMBOLS        =
 
 # The EXAMPLE_PATH tag can be used to specify one or more files or directories
-# that contain example code fragments that are included (see the \include
+# that contain example code fragments that are included (see the @include
 # command).
 
 EXAMPLE_PATH           =
@@ -855,7 +850,7 @@ EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 
 # If the EXAMPLE_RECURSIVE tag is set to YES then subdirectories will be
-# searched for input files to be used with the \include or \dontinclude commands
+# searched for input files to be used with the @include or @dontinclude commands
 # irrespective of the value of the RECURSIVE tag.
 # The default value is: NO.
 
@@ -863,7 +858,7 @@ EXAMPLE_RECURSIVE      = NO
 
 # The IMAGE_PATH tag can be used to specify one or more files or directories
 # that contain images that are to be included in the documentation (see the
-# \image command).
+# @image command).
 
 IMAGE_PATH             = ./
 
@@ -1004,29 +999,10 @@ USE_HTAGS              = NO
 # If the VERBATIM_HEADERS tag is set the YES then doxygen will generate a
 # verbatim copy of the header file for each class for which an include is
 # specified. Set to NO to disable this.
-# See also: Section \class.
+# See also: Section @class.
 # The default value is: YES.
 
 VERBATIM_HEADERS       = YES
-
-# If the CLANG_ASSISTED_PARSING tag is set to YES then doxygen will use the
-# clang parser (see: http://clang.llvm.org/) for more accurate parsing at the
-# cost of reduced performance. This can be particularly helpful with template
-# rich C++ code for which doxygen's built-in parser lacks the necessary type
-# information.
-# Note: The availability of this option depends on whether or not doxygen was
-# generated with the -Duse-libclang=ON option for CMake.
-# The default value is: NO.
-
-CLANG_ASSISTED_PARSING = NO
-
-# If clang assisted parsing is enabled you can provide the compiler with command
-# line options that you would normally use when invoking the compiler. Note that
-# the include paths will already be set by doxygen for the files and directories
-# specified with INPUT and INCLUDE_PATH.
-# This tag requires that the tag CLANG_ASSISTED_PARSING is set to YES.
-
-CLANG_OPTIONS          =
 
 #---------------------------------------------------------------------------
 # Configuration options related to the alphabetical class index
@@ -1038,13 +1014,6 @@ CLANG_OPTIONS          =
 # The default value is: YES.
 
 ALPHABETICAL_INDEX     = NO
-
-# The COLS_IN_ALPHA_INDEX tag can be used to specify the number of columns in
-# which the alphabetical index list will be split.
-# Minimum value: 1, maximum value: 20, default value: 5.
-# This tag requires that the tag ALPHABETICAL_INDEX is set to YES.
-
-COLS_IN_ALPHA_INDEX    = 5
 
 # In case all classes in a project start with a common prefix, all classes will
 # be put under the same header in the alphabetical index. The IGNORE_PREFIX tag
@@ -1173,14 +1142,7 @@ HTML_COLORSTYLE_SAT    = 100
 
 HTML_COLORSTYLE_GAMMA  = 80
 
-# If the HTML_TIMESTAMP tag is set to YES then the footer of each generated HTML
-# page will contain the date and time when the page was generated. Setting this
-# to YES can help to show when doxygen was last run and thus if the
-# documentation is up to date.
-# The default value is: NO.
-# This tag requires that the tag GENERATE_HTML is set to YES.
-
-HTML_TIMESTAMP         = YES
+# Deprecated HTML_TIMESTAMP removed to avoid warnings on newer Doxygen.
 
 # If the HTML_DYNAMIC_SECTIONS tag is set to YES then the generated HTML
 # documentation will contain sections that can be hidden and shown after the
@@ -1461,7 +1423,6 @@ FORMULA_FONTSIZE       = 10
 # The default value is: YES.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-FORMULA_TRANSPARENT    = YES
 
 # Enable the USE_MATHJAX option to render LaTeX formulas using MathJax (see
 # http://www.mathjax.org) which uses client side Javascript for the rendering
@@ -1648,7 +1609,7 @@ COMPACT_LATEX          = NO
 # The default value is: a4.
 # This tag requires that the tag GENERATE_LATEX is set to YES.
 
-PAPER_TYPE             = a4wide
+PAPER_TYPE             = a4
 
 # The EXTRA_PACKAGES tag can be used to specify one or more LaTeX package names
 # that should be included in the LaTeX output. The package can be specified just
@@ -1749,11 +1710,10 @@ LATEX_HIDE_INDICES     = NO
 # The default value is: NO.
 # This tag requires that the tag GENERATE_LATEX is set to YES.
 
-LATEX_SOURCE_CODE      = NO
 
 # The LATEX_BIB_STYLE tag can be used to specify the style to use for the
 # bibliography, e.g. plainnat, or ieeetr. See
-# http://en.wikipedia.org/wiki/BibTeX and \cite for more info.
+# http://en.wikipedia.org/wiki/BibTeX and @cite for more info.
 # The default value is: plain.
 # This tag requires that the tag GENERATE_LATEX is set to YES.
 
@@ -1765,7 +1725,6 @@ LATEX_BIB_STYLE        = plain
 # The default value is: NO.
 # This tag requires that the tag GENERATE_LATEX is set to YES.
 
-LATEX_TIMESTAMP        = NO
 
 #---------------------------------------------------------------------------
 # Configuration options related to the RTF output
@@ -1831,7 +1790,6 @@ RTF_EXTENSIONS_FILE    =
 # The default value is: NO.
 # This tag requires that the tag GENERATE_RTF is set to YES.
 
-RTF_SOURCE_CODE        = NO
 
 #---------------------------------------------------------------------------
 # Configuration options related to the man page output
@@ -1929,7 +1887,6 @@ DOCBOOK_OUTPUT         = docbook
 # The default value is: NO.
 # This tag requires that the tag GENERATE_DOCBOOK is set to YES.
 
-DOCBOOK_PROGRAMLISTING = NO
 
 #---------------------------------------------------------------------------
 # Configuration options for the AutoGen Definitions output
@@ -2109,7 +2066,6 @@ EXTERNAL_PAGES         = YES
 # interpreter (i.e. the result of 'which perl').
 # The default file (with absolute path) is: /usr/bin/perl.
 
-PERL_PATH              = /usr/bin/perl
 
 #---------------------------------------------------------------------------
 # Configuration options related to the dot tool
@@ -2122,16 +2078,14 @@ PERL_PATH              = /usr/bin/perl
 # powerful graphs.
 # The default value is: YES.
 
-CLASS_DIAGRAMS         = YES
 
-# You can define message sequence charts within doxygen comments using the \msc
+# You can define message sequence charts within doxygen comments using the @msc
 # command. Doxygen will then run the mscgen tool (see:
 # http://www.mcternan.me.uk/mscgen/)) to produce the chart and insert it in the
 # documentation. The MSCGEN_PATH tag allows you to specify the directory where
 # the mscgen tool resides. If left empty the tool is assumed to be found in the
 # default search path.
 
-MSCGEN_PATH            =
 
 # You can include diagrams made with dia in doxygen documentation. Doxygen will
 # then run dia to produce the diagram and insert it in the documentation. The
@@ -2173,14 +2127,12 @@ DOT_NUM_THREADS        = 0
 # The default value is: Helvetica.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-DOT_FONTNAME           =
 
 # The DOT_FONTSIZE tag can be used to set the size (in points) of the font of
 # dot graphs.
 # Minimum value: 4, maximum value: 24, default value: 10.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-DOT_FONTSIZE           = 10
 
 # By default doxygen will tell dot to use the default font as specified with
 # DOT_FONTNAME. If you specify a different font using DOT_FONTNAME you can set
@@ -2265,8 +2217,8 @@ INCLUDED_BY_GRAPH      = YES
 #
 # Note that enabling this option will significantly increase the time of a run.
 # So in most cases it will be better to enable call graphs for selected
-# functions only using the \callgraph command. Disabling a call graph can be
-# accomplished by means of the command \hidecallgraph.
+# functions only using the @callgraph command. Disabling a call graph can be
+# accomplished by means of the command @hidecallgraph.
 # The default value is: NO.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
@@ -2277,8 +2229,8 @@ CALL_GRAPH             = NO
 #
 # Note that enabling this option will significantly increase the time of a run.
 # So in most cases it will be better to enable caller graphs for selected
-# functions only using the \callergraph command. Disabling a caller graph can be
-# accomplished by means of the command \hidecallergraph.
+# functions only using the @callergraph command. Disabling a caller graph can be
+# accomplished by means of the command @hidecallergraph.
 # The default value is: NO.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
@@ -2336,20 +2288,20 @@ INTERACTIVE_SVG        = NO
 DOT_PATH               =
 
 # The DOTFILE_DIRS tag can be used to specify one or more directories that
-# contain dot files that are included in the documentation (see the \dotfile
+# contain dot files that are included in the documentation (see the @dotfile
 # command).
 # This tag requires that the tag HAVE_DOT is set to YES.
 
 DOTFILE_DIRS           =
 
 # The MSCFILE_DIRS tag can be used to specify one or more directories that
-# contain msc files that are included in the documentation (see the \mscfile
+# contain msc files that are included in the documentation (see the @mscfile
 # command).
 
 MSCFILE_DIRS           =
 
 # The DIAFILE_DIRS tag can be used to specify one or more directories that
-# contain dia files that are included in the documentation (see the \diafile
+# contain dia files that are included in the documentation (see the @diafile
 # command).
 
 DIAFILE_DIRS           =
@@ -2357,7 +2309,7 @@ DIAFILE_DIRS           =
 # When using plantuml, the PLANTUML_JAR_PATH tag should be used to specify the
 # path where java can find the plantuml.jar file. If left blank, it is assumed
 # PlantUML is not used or called during a preprocessing step. Doxygen will
-# generate a warning when it encounters a \startuml command in this case and
+# generate a warning when it encounters a @startuml command in this case and
 # will not generate output for the diagram.
 
 PLANTUML_JAR_PATH      =
@@ -2401,7 +2353,6 @@ MAX_DOT_GRAPH_DEPTH    = 0
 # The default value is: NO.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-DOT_TRANSPARENT        = NO
 
 # Set the DOT_MULTI_TARGETS tag to YES to allow dot to generate multiple output
 # files in one run (i.e. multiple -o and -T options on the command line). This

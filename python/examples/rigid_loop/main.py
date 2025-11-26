@@ -4,7 +4,7 @@ import dartpy as dart
 import numpy as np
 
 
-class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
+class MyWorldNode(dart.gui.RealTimeWorldNode):
     def __init__(self, world, chain):
         super(MyWorldNode, self).__init__(world)
         self.chain = chain
@@ -33,7 +33,7 @@ def main():
     init_pose[29] = math.pi * 0.4
     chain.setPositions(init_pose)
 
-    # Create a ball joint contraint
+    # Create a ball joint constraint
     bd1 = chain.getBodyNode("link 6")
     bd2 = chain.getBodyNode("link 10")
     bd1.setColor([0, 1, 0])
@@ -48,12 +48,12 @@ def main():
     node = MyWorldNode(world, chain)
 
     # Create world node and add it to viewer
-    viewer = dart.gui.osg.Viewer()
+    viewer = dart.gui.Viewer()
     viewer.addWorldNode(node)
 
     # Grid settings
-    grid = dart.gui.osg.GridVisual()
-    grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.ZX)
+    grid = dart.gui.GridVisual()
+    grid.setPlaneType(dart.gui.GridVisual.PlaneType.ZX)
     grid.setOffset([0, -0.55, 0])
     viewer.addAttachment(grid)
 

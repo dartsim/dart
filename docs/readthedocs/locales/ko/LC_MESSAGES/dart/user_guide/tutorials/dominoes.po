@@ -285,28 +285,28 @@ msgstr "2a단원: URDF 파일 로드"
 #: ../../user_guide/tutorials/dominoes.md:219 0e5918531ec04abbb119ec3283c0daeb
 msgid ""
 "Our manipulator is going to be loaded from a URDF file. URDF files are "
-"loaded by the ``dart::io::DartLoader`` class (pending upcoming changes to "
-"DART's loading system). First, create a loader:"
+"loaded by the ``dart::utils::UrdfParser`` class (pending upcoming changes to "
+"DART's loading system). First, create a parser:"
 msgstr ""
-"조작자는 URDF 파일에서 로드됩니다. URDF 파일은 ``dart::io::DartLoader`` 클래스에 의해 로드됩니다(DART "
-"로딩 시스템에 대한 향후 변경 사항이 있을 때까지 대기 중). 먼저 로더를 만듭니다."
+"조작자는 URDF 파일에서 로드됩니다. URDF 파일은 ``dart::utils::UrdfParser`` 클래스에 의해 로드됩니다(DART "
+"로딩 시스템에 대한 향후 변경 사항이 있을 때까지 대기 중). 먼저 파서를 만듭니다."
 
 #: ../../user_guide/tutorials/dominoes.md:227 abb6ff6c8bc34795b700b19dd969b455
 msgid ""
 "Note that many URDF files use ROS's ``package:`` scheme to specify the "
 "locations of the resources that need to be loaded. We won't be using this in"
 " our example, but in general you should use the function "
-"``DartLoader::addPackageDirectory`` to specify the locations of these "
+"``UrdfParser::addPackageDirectory`` to specify the locations of these "
 "packages, because DART does not have the same package resolving abilities of"
 " ROS."
 msgstr ""
 "많은 URDF 파일은 로드해야 하는 리소스의 위치를 ​​지정하기 위해 ROS의 ``package:`` 구성표를 사용합니다. 예제에서는 "
 "이것을 사용하지 않을 것이지만 일반적으로 DART에는 ROS와 동일한 패키지 확인 기능이 없기 때문에 "
-"``DartLoader::addPackageDirectory`` 함수를 사용하여 이러한 패키지의 위치를 ​​지정해야 합니다."
+"``UrdfParser::addPackageDirectory`` 함수를 사용하여 이러한 패키지의 위치를 ​​지정해야 합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:233 0dbe6ce2f55c4027806f84f5ec6d65c5
-msgid "Now we'll have ``loader`` parse the file into a Skeleton:"
-msgstr "이제 ``loader``가 파일을 Skeleton으로 구문 분석하게 됩니다:"
+msgid "Now we'll have ``parser`` parse the file into a Skeleton:"
+msgstr "이제 ``parser``가 파일을 Skeleton으로 구문 분석하게 됩니다:"
 
 #: ../../user_guide/tutorials/dominoes.md:240 a8815b0090ee4ba08a31a8bfa936a716
 msgid "And we should give the Skeleton a convenient name:"
@@ -602,7 +602,7 @@ msgstr "PD 컨트롤러와 마찬가지로 중력과 코리올리 힘을 보상�
 #: ../../user_guide/tutorials/dominoes.md:505 130b68a3e501482a8a91793b91d439e6
 msgid ""
 "The gains for the operational space controller need to be in matrix form, "
-"but we're storing the gains as scalars, so we'll need to conver them:"
+"but we're storing the gains as scalars, so we'll need to convert them:"
 msgstr "작동 공간 컨트롤러의 이득은 행렬 형식이어야 하지만 이득을 스칼라로 저장하므로 이를 변환해야 합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:515 c29cb268b0e54e6fa044ecc42e45e59c

@@ -50,16 +50,31 @@
 #include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/VoxelGridShape.hpp"
 
 #include <assimp/scene.h>
 
+#include <algorithm>
+#include <limits>
+#include <string>
+
+#include <cstdint>
+
 namespace dart {
 namespace collision {
 
 namespace {
+
+std::string collisionObjectKey(const FCLCollisionObject* object)
+{
+  if (!object)
+    return "";
+
+  return object->getKey();
+}
 
 bool collisionCallback(
     fcl::CollisionObject* o1, fcl::CollisionObject* o2, void* cdata);
@@ -144,6 +159,11 @@ Contact convertContact(
     fcl::CollisionObject* o2,
     const CollisionOption& option);
 
+bool shouldSwapDeterministically(
+    const FCLCollisionObject* fclObj1, const FCLCollisionObject* fclObj2);
+
+void applyDeterministicSwap(Contact& contact);
+
 /// Collision data stores the collision request and the result given by
 /// collision algorithm.
 struct FCLCollisionCallbackData
@@ -224,8 +244,15 @@ struct FCLDistanceCallbackData
   /// @brief Whether the distance iteration can stop
   bool done;
 
+  /// Whether at least one distance query was evaluated
+  bool hasResult;
+
   FCLDistanceCallbackData(const DistanceOption& option, DistanceResult* result)
-    : option(option), result(result), done(false)
+    : option(option),
+      unclampedMinDistance(std::numeric_limits<double>::infinity()),
+      result(result),
+      done(false),
+      hasResult(false)
   {
     convertOption(option, fclRequest);
   }
@@ -733,6 +760,9 @@ double FCLCollisionDetector::distance(
 
   casted->getFCLCollisionManager()->distance(&distData, distanceCallback);
 
+  if (!distData.hasResult)
+    distData.unclampedMinDistance = 0.0;
+
   return std::max(distData.unclampedMinDistance, option.distanceLowerBound);
 }
 
@@ -764,6 +794,9 @@ double FCLCollisionDetector::distance(
 
   broadPhaseAlg1->distance(broadPhaseAlg2, &distData, distanceCallback);
 
+  if (!distData.hasResult)
+    distData.unclampedMinDistance = 0.0;
+
   return std::max(distData.unclampedMinDistance, option.distanceLowerBound);
 }
 
@@ -776,7 +809,7 @@ void FCLCollisionDetector::setPrimitiveShapeType(
       "You chose to use FCL's primitive shape collision feature while it's not "
       "complete (at least until 0.4.0) especially in use of dynamics "
       "simulation. It's recommended to use mesh even for primitive shapes by "
-      "settting FCLCollisionDetector::setPrimitiveShapeType(MESH).");
+      "setting FCLCollisionDetector::setPrimitiveShapeType(MESH).");
 
   mPrimitiveShapeType = type;
 }
@@ -837,6 +870,7 @@ void FCLCollisionDetector::refreshCollisionObject(CollisionObject* const object)
 
   fcl->mFCLCollisionObject = std::unique_ptr<fcl::CollisionObject>(
       new fcl::CollisionObject(claimFCLCollisionGeometry(object->getShape())));
+  fcl->mFCLCollisionObject->setUserData(fcl);
 }
 
 //==============================================================================
@@ -883,9 +917,9 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   using dynamics::Shape;
   using dynamics::SoftMeshShape;
   using dynamics::SphereShape;
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   using dynamics::VoxelGridShape;
-#endif // HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP
 
   fcl::CollisionGeometry* geom = nullptr;
   const auto& shapeType = shape->getType();
@@ -970,21 +1004,18 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     // Use mesh since FCL doesn't support pyramid shape.
     geom = createPyramid<fcl::OBBRSS>(*pyramid, fcl::getTransform3Identity());
   } else if (PlaneShape::getStaticType() == shapeType) {
-    if (FCLCollisionDetector::PRIMITIVE == type) {
-      DART_ASSERT(dynamic_cast<const PlaneShape*>(shape.get()));
-      auto plane = static_cast<const PlaneShape*>(shape.get());
-      const Eigen::Vector3d normal = plane->getNormal();
-      const double offset = plane->getOffset();
+    DART_ASSERT(dynamic_cast<const PlaneShape*>(shape.get()));
+    const auto plane = static_cast<const PlaneShape*>(shape.get());
+    const Eigen::Vector3d normal = plane->getNormal();
+    const double offset = plane->getOffset();
 
-      geom = new fcl::Halfspace(FCLTypes::convertVector3(normal), offset);
-    } else {
-      geom = createCube<fcl::OBBRSS>(1000.0, 0.0, 1000.0);
+    geom = new fcl::Halfspace(FCLTypes::convertVector3(normal), offset);
 
-      DART_WARN(
-          "[FCLCollisionDetector] PlaneShape is not supported by "
-          "FCLCollisionDetector. We create a thin box mesh instead, where the "
-          "size is [1000 0 1000].");
-    }
+    DART_WARN_ONCE_IF(
+        FCLCollisionDetector::MESH == type,
+        "[FCLCollisionDetector] PlaneShape requested with primitive shape type "
+        "MESH. Using analytic halfspace instead of the previous thin-box "
+        "fallback to keep plane collisions reliable.");
   } else if (MeshShape::getStaticType() == shapeType) {
     DART_ASSERT(dynamic_cast<const MeshShape*>(shape.get()));
 
@@ -1001,7 +1032,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     geom = createSoftMesh<fcl::OBBRSS>(aiMesh);
   }
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType) {
   #if FCL_HAVE_OCTOMAP
     DART_ASSERT(dynamic_cast<const VoxelGridShape*>(shape.get()));
@@ -1019,7 +1050,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
   #endif // FCL_HAVE_OCTOMAP
   }
-#endif // HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP
   else {
     DART_ERROR(
         "Attempting to create an unsupported shape type [{}]. Creating a "
@@ -1070,16 +1101,16 @@ bool collisionCallback(
   const auto& option = collData->option;
   const auto& filter = option.collisionFilter;
 
-  // Filtering
-  if (filter) {
-    auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
-    auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
-    DART_ASSERT(collisionObject1);
-    DART_ASSERT(collisionObject2);
+  auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+  auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
+  DART_ASSERT(collisionObject1);
+  DART_ASSERT(collisionObject2);
+  if (!collisionObject1 || !collisionObject2)
+    return collData->done;
 
-    if (filter->ignoresCollision(collisionObject2, collisionObject1))
-      return collData->done;
-  }
+  // Filtering
+  if (filter && filter->ignoresCollision(collisionObject2, collisionObject1))
+    return collData->done;
 
   // Clear previous results
   fclResult.clear();
@@ -1088,9 +1119,21 @@ bool collisionCallback(
   ::fcl::collide(o1, o2, fclRequest, fclResult);
 
   if (result) {
+    const bool usingMeshContacts
+        = (collData->primitiveShapeType == FCLCollisionDetector::MESH);
+    const bool forcingMeshFallback = usingMeshContacts
+                                     && collData->contactPointComputationMethod
+                                            == FCLCollisionDetector::FCL;
+
     // Post processing -- converting fcl contact information to ours if needed
-    if (FCLCollisionDetector::DART == collData->contactPointComputationMethod
-        && FCLCollisionDetector::MESH == collData->primitiveShapeType) {
+    if (usingMeshContacts) {
+      if (forcingMeshFallback) {
+        DART_WARN_ONCE(
+            "FCL mesh contact-point computation is known to be inaccurate "
+            "(see flexible-collision-library/fcl#106); falling back to DART's "
+            "mesh contact handler.");
+      }
+
       postProcessDART(fclResult, o1, o2, option, *result);
     } else {
       postProcessFCL(fclResult, o1, o2, option, *result);
@@ -1147,13 +1190,23 @@ bool distanceCallback(
   // Perform narrow-phase check
   ::fcl::distance(o1, o2, fclRequest, fclResult);
 
-  // Store the minimum distance just in case result is nullptr.
-  distData->unclampedMinDistance = fclResult.min_distance;
+  const auto currentDistance = fclResult.min_distance;
 
-  if (result)
-    interpreteDistanceResult(fclResult, o1, o2, option, *result);
+  if (!distData->hasResult
+      || currentDistance < distData->unclampedMinDistance) {
+    distData->unclampedMinDistance = currentDistance;
 
-  if (distData->unclampedMinDistance <= option.distanceLowerBound)
+    if (result)
+      interpreteDistanceResult(fclResult, o1, o2, option, *result);
+
+    distData->hasResult = true;
+  }
+
+  dist = distData->hasResult ? distData->unclampedMinDistance
+                             : std::numeric_limits<double>::infinity();
+
+  if (distData->hasResult
+      && distData->unclampedMinDistance <= option.distanceLowerBound)
     distData->done = true;
 
   return distData->done;
@@ -1378,6 +1431,15 @@ void postProcessDART(
       } else {
         numContacts++;
       }
+
+      const auto* fclObj1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+      const auto* fclObj2 = static_cast<FCLCollisionObject*>(o2->getUserData());
+      if (shouldSwapDeterministically(fclObj1, fclObj2)) {
+        if (option.enableContact)
+          std::swap(pair1.point, pair2.point);
+        applyDeterministicSwap(pair1);
+        applyDeterministicSwap(pair2);
+      }
     }
 
     // For binary check, return after adding the first contact point to the
@@ -1590,10 +1652,8 @@ Contact convertContact(
 {
   Contact contact;
 
-  contact.collisionObject1
-      = static_cast<FCLCollisionObject*>(o1->getUserData());
-  contact.collisionObject2
-      = static_cast<FCLCollisionObject*>(o2->getUserData());
+  contact.collisionObject1 = static_cast<CollisionObject*>(o1->getUserData());
+  contact.collisionObject2 = static_cast<CollisionObject*>(o2->getUserData());
 
   if (option.enableContact) {
     contact.point = FCLTypes::convertVector3(fclContact.pos);
@@ -1603,7 +1663,38 @@ Contact convertContact(
     contact.triID2 = fclContact.b2;
   }
 
+  // Enforce deterministic ordering across runs and clones. Tie-break on the
+  // underlying FCL object address if keys are identical.
+  const auto fclObj1
+      = static_cast<FCLCollisionObject*>(contact.collisionObject1);
+  const auto fclObj2
+      = static_cast<FCLCollisionObject*>(contact.collisionObject2);
+  if (shouldSwapDeterministically(fclObj1, fclObj2))
+    applyDeterministicSwap(contact);
+
   return contact;
+}
+
+//==============================================================================
+bool shouldSwapDeterministically(
+    const FCLCollisionObject* fclObj1, const FCLCollisionObject* fclObj2)
+{
+  const auto key1 = collisionObjectKey(fclObj1);
+  const auto key2 = collisionObjectKey(fclObj2);
+
+  const auto addr1 = reinterpret_cast<std::uintptr_t>(fclObj1);
+  const auto addr2 = reinterpret_cast<std::uintptr_t>(fclObj2);
+
+  return (key2 < key1) || (key1 == key2 && addr2 < addr1 && addr2 != 0u);
+}
+
+//==============================================================================
+void applyDeterministicSwap(Contact& contact)
+{
+  std::swap(contact.collisionObject1, contact.collisionObject2);
+  std::swap(contact.triID1, contact.triID2);
+
+  contact.normal = -contact.normal;
 }
 
 } // anonymous namespace

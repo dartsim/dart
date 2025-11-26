@@ -33,6 +33,8 @@
 #include "dart/dynamics/ShapeFrame.hpp"
 
 #include "dart/common/Macros.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -40,9 +42,18 @@ namespace dynamics {
 namespace detail {
 
 //==============================================================================
+Eigen::Vector4d VisualAspectProperties::getDefaultRGBA()
+{
+  return Eigen::Vector4d(0.5, 0.5, 1.0, 1.0);
+}
+
+//==============================================================================
 VisualAspectProperties::VisualAspectProperties(
     const Eigen::Vector4d& color, const bool hidden, const bool shadowed)
-  : mRGBA(color), mHidden(hidden), mShadowed(shadowed)
+  : mRGBA(color),
+    mUseDefaultColor(color.isApprox(getDefaultRGBA())),
+    mHidden(hidden),
+    mShadowed(shadowed)
 {
   // Do nothing
 }
@@ -108,6 +119,7 @@ VisualAspect::VisualAspect(const PropertiesData& properties)
 void VisualAspect::setRGBA(const Eigen::Vector4d& color)
 {
   mProperties.mRGBA = color;
+  mProperties.mUseDefaultColor = false;
 
   notifyPropertiesUpdated();
 
@@ -143,6 +155,29 @@ void VisualAspect::setAlpha(const double alpha)
   notifyPropertiesUpdated();
 
   mComposite->getShape()->notifyAlphaUpdated(alpha);
+}
+
+//==============================================================================
+void VisualAspect::resetColor()
+{
+  mProperties.mRGBA = getDefaultRGBA();
+  mProperties.mUseDefaultColor = true;
+
+  notifyPropertiesUpdated();
+
+  mComposite->getShape()->notifyColorUpdated(mProperties.mRGBA);
+}
+
+//==============================================================================
+bool VisualAspect::usesDefaultColor() const
+{
+  return mProperties.mUseDefaultColor;
+}
+
+//==============================================================================
+Eigen::Vector4d VisualAspect::getDefaultRGBA()
+{
+  return detail::VisualAspectProperties::getDefaultRGBA();
 }
 
 //==============================================================================
@@ -186,6 +221,76 @@ CollisionAspect::CollisionAspect(const PropertiesData& properties)
   : AspectImplementation(properties)
 {
   // Do nothing
+}
+
+//==============================================================================
+void CollisionAspect::setCollidable(const bool& value)
+{
+  const bool wasCollidable = getCollidable();
+  if (wasCollidable == value)
+    return;
+
+  mProperties.mCollidable = value;
+  notifyPropertiesUpdated();
+
+  auto* shapeFrame = getComposite();
+  if (nullptr == shapeFrame)
+    return;
+
+  ShapeNode* shapeNode = shapeFrame->asShapeNode();
+  if (nullptr == shapeNode)
+    return;
+
+  BodyNode* bodyNode = shapeNode->getBodyNodePtr().get();
+  if (nullptr == bodyNode)
+    return;
+
+  bodyNode->handleCollisionShapeStateChange(shapeNode, wasCollidable, value);
+}
+
+//==============================================================================
+const bool& CollisionAspect::getCollidable() const
+{
+  return mProperties.mCollidable;
+}
+
+//==============================================================================
+void CollisionAspect::setComposite(common::Composite* newComposite)
+{
+  AspectImplementation::setComposite(newComposite);
+
+  auto* shapeFrame = dynamic_cast<ShapeFrame*>(newComposite);
+  if (nullptr == shapeFrame)
+    return;
+
+  ShapeNode* shapeNode = shapeFrame->asShapeNode();
+  if (nullptr == shapeNode)
+    return;
+
+  BodyNode* bodyNode = shapeNode->getBodyNodePtr().get();
+  if (nullptr == bodyNode)
+    return;
+
+  bodyNode->handleCollisionShapeStateChange(
+      shapeNode, false, mProperties.mCollidable);
+}
+
+//==============================================================================
+void CollisionAspect::loseComposite(common::Composite* oldComposite)
+{
+  auto* shapeFrame = dynamic_cast<ShapeFrame*>(oldComposite);
+  ShapeNode* shapeNode
+      = (shapeFrame == nullptr) ? nullptr : shapeFrame->asShapeNode();
+
+  BodyNode* bodyNode
+      = (shapeNode == nullptr) ? nullptr : shapeNode->getBodyNodePtr().get();
+
+  const bool wasCollidable = mProperties.mCollidable;
+
+  if (nullptr != bodyNode)
+    bodyNode->handleCollisionShapeStateChange(shapeNode, wasCollidable, false);
+
+  AspectImplementation::loseComposite(oldComposite);
 }
 
 //==============================================================================
@@ -269,6 +374,13 @@ void ShapeFrame::setShape(const ShapePtr& shape)
     return;
 
   ShapePtr oldShape = mAspectProperties.mShape;
+  ShapeNode* shapeNode = asShapeNode();
+  BodyNode* bodyNode
+      = (shapeNode == nullptr) ? nullptr : shapeNode->getBodyNodePtr().get();
+  const auto* collision
+      = (shapeNode == nullptr) ? nullptr : shapeNode->get<CollisionAspect>();
+  const bool notifyCollisionChange = bodyNode != nullptr && collision != nullptr
+                                     && collision->getCollidable();
 
   mAspectProperties.mShape = shape;
   incrementVersion();
@@ -282,6 +394,11 @@ void ShapeFrame::setShape(const ShapePtr& shape)
             DART_UNUSED(shape);
             this->incrementVersion();
           });
+  }
+
+  if (notifyCollisionChange) {
+    bodyNode->handleCollisionShapeUpdated(
+        shapeNode, oldShape, mAspectProperties.mShape);
   }
 
   mShapeUpdatedSignal.raise(this, oldShape, mAspectProperties.mShape);

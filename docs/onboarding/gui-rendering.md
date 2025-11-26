@@ -8,11 +8,12 @@ The DART GUI uses OpenSceneGraph (OSG) as its rendering backend to visualize phy
 
 ## Core Architecture Components
 
-### 1. Viewer (`dart/gui/osg/Viewer.hpp/cpp`)
+### 1. Viewer (`dart/gui/Viewer.hpp/cpp`)
 
 **Purpose**: Main visualization window that manages the rendering loop and coordinates all visual components.
 
 **Key Responsibilities**:
+
 - Inherits from `osgViewer::Viewer` (OSG's core viewer class)
 - Manages multiple `WorldNode` instances (one per DART World)
 - Coordinates camera control, lighting, and event handling
@@ -53,6 +54,7 @@ The DART GUI uses OpenSceneGraph (OSG) as its rendering backend to visualize phy
    - Integration with Inverse Kinematics for body node manipulation
 
 **Key Member Variables**:
+
 ```cpp
 ::osg::ref_ptr<::osg::Group> mRootGroup;           // Scene root
 ::osg::ref_ptr<DefaultEventHandler> mDefaultEventHandler; // Event handler
@@ -64,11 +66,12 @@ bool mAllowSimulation;                             // Simulation permission
 
 ---
 
-### 2. WorldNode (`dart/gui/osg/WorldNode.hpp/cpp`)
+### 2. WorldNode (`dart/gui/WorldNode.hpp/cpp`)
 
 **Purpose**: Encapsulates a DART `simulation::World` for OSG rendering.
 
 **Key Responsibilities**:
+
 - Manages the visual representation of a DART physics world
 - Maintains scene graph of all entities and frames in the world
 - Handles simulation stepping and refresh cycles
@@ -77,14 +80,17 @@ bool mAllowSimulation;                             // Simulation permission
 **Architecture**:
 
 1. **Dual Group System**:
+
    ```cpp
    ::osg::ref_ptr<::osg::Group> mNormalGroup;          // Non-shadowed objects
    ::osg::ref_ptr<::osgShadow::ShadowedScene> mShadowedGroup; // Shadowed objects
    ```
+
    - Objects are placed in either group based on their shadow settings
    - Allows selective shadow rendering for performance
 
 2. **Refresh Cycle**:
+
    ```
    refresh() →
      ├─ customPreRefresh()
@@ -110,13 +116,14 @@ bool mAllowSimulation;                             // Simulation permission
    - `setupViewer()`: Called when added to a viewer
 
 **Node Lifecycle**:
+
 ```
 Frame Discovery → ShapeFrameNode Creation → Refresh → Utilization Check → Cleanup
 ```
 
 ---
 
-### 3. RealTimeWorldNode (`dart/gui/osg/RealTimeWorldNode.hpp/cpp`)
+### 3. RealTimeWorldNode (`dart/gui/RealTimeWorldNode.hpp/cpp`)
 
 **Purpose**: Specialized `WorldNode` that attempts real-time simulation playback.
 
@@ -128,6 +135,7 @@ Frame Discovery → ShapeFrameNode Creation → Refresh → Utilization Check �
    - Performance statistics: Min/max RTF achieved
 
 2. **Adaptive Stepping**:
+
    ```cpp
    while (mRefreshTimer.time_s() < mTargetRealTimeLapse) {
        const double nextSimTimeLapse = mWorld->getTime() - startSimTime + simTimeStep;
@@ -136,6 +144,7 @@ Frame Discovery → ShapeFrameNode Creation → Refresh → Utilization Check �
        }
    }
    ```
+
    - Takes as many steps as possible within the refresh period
    - Respects the target sim time lapse
    - Automatically adjusts to computational load
@@ -150,11 +159,12 @@ Frame Discovery → ShapeFrameNode Creation → Refresh → Utilization Check �
 
 ---
 
-### 4. ShapeFrameNode (`dart/gui/osg/ShapeFrameNode.hpp/cpp`)
+### 4. ShapeFrameNode (`dart/gui/ShapeFrameNode.hpp/cpp`)
 
 **Purpose**: Represents a DART `ShapeFrame` (a frame with an attached visual shape) in the OSG scene graph.
 
 **Key Responsibilities**:
+
 - Inherits from `osg::MatrixTransform` (allows transformation)
 - Manages the render node for the actual shape geometry
 - Handles shape changes and updates
@@ -162,9 +172,11 @@ Frame Discovery → ShapeFrameNode Creation → Refresh → Utilization Check �
 **Architecture**:
 
 1. **Transformation Management**:
+
    ```cpp
    setMatrix(eigToOsgMatrix(mShapeFrame->getWorldTransform()));
    ```
+
    - Updates world transform from DART to OSG coordinates
 
 2. **Shape Node Management**:
@@ -183,6 +195,7 @@ Frame Discovery → ShapeFrameNode Creation → Refresh → Utilization Check �
 
 **Shape Type Dispatch**:
 The `createShapeNode()` method creates specialized nodes for each shape type:
+
 - `SphereShapeNode`, `BoxShapeNode`, `EllipsoidShapeNode`
 - `CylinderShapeNode`, `CapsuleShapeNode`, `ConeShapeNode`, `PyramidShapeNode`
 - `PlaneShapeNode`, `MultiSphereShapeNode`
@@ -219,11 +232,12 @@ render/
 └── WarningShapeNode                   - Fallback for unsupported shapes
 ```
 
-### render::ShapeNode Base Class (`dart/gui/osg/render/ShapeNode.hpp/cpp`)
+### render::ShapeNode Base Class (`dart/gui/render/ShapeNode.hpp/cpp`)
 
 **Purpose**: Abstract base class for all shape-specific rendering nodes.
 
 **Core Data**:
+
 ```cpp
 const std::shared_ptr<dart::dynamics::Shape> mShape;     // Shape data
 dart::dynamics::ShapeFrame* mShapeFrame;                 // Parent frame
@@ -234,11 +248,13 @@ bool mUtilized;                                         // GC tracking
 ```
 
 **Interface**:
+
 - `refresh()`: Pure virtual - update geometry/appearance
 - `getShape()`: Access to DART shape
 - `getVisualAspect()`: Access to visual properties (color, material, etc.)
 
 **Typical Subclass Pattern**:
+
 1. Inherit from both `ShapeNode` and appropriate OSG node type
 2. Extract shape-specific data in constructor
 3. Create OSG geometry in `refresh()` or helper method
@@ -272,11 +288,12 @@ class MeshShapeNode : public ShapeNode, public ::osg::MatrixTransform {
 
 ## Event Handling System
 
-### 1. DefaultEventHandler (`dart/gui/osg/DefaultEventHandler.hpp/cpp`)
+### 1. DefaultEventHandler (`dart/gui/DefaultEventHandler.hpp/cpp`)
 
 **Purpose**: Central event processor for mouse and keyboard input.
 
 **Key Responsibilities**:
+
 - Inherits from `osgGA::GUIEventHandler`
 - Processes mouse and keyboard events
 - Performs object picking (raycasting)
@@ -286,6 +303,7 @@ class MeshShapeNode : public ShapeNode, public ::osg::MatrixTransform {
 **Event Types**:
 
 1. **Mouse Button Events**:
+
    ```cpp
    enum MouseButtonEvent {
        BUTTON_PUSH,        // Initial click
@@ -305,6 +323,7 @@ class MeshShapeNode : public ShapeNode, public ::osg::MatrixTransform {
    - `Ctrl+H`: Toggle headlights
 
 **Picking System** (`PickInfo`):
+
 ```cpp
 struct PickInfo {
     dart::dynamics::ShapeFrame* frame;    // Picked frame
@@ -315,12 +334,14 @@ struct PickInfo {
 ```
 
 **Picking Process**:
+
 1. Compute line segment intersection using OSG utilities
 2. Extract `render::ShapeNode` from hit drawable
 3. Retrieve associated DART shape and frame
 4. Convert intersection data to Eigen types
 
 **Cursor Delta Calculation**:
+
 - `getDeltaCursor()`: Projects cursor movement into 3D space
 - **Constraint Types**:
   - `UNCONSTRAINED`: Project onto plane parallel to camera
@@ -328,22 +349,25 @@ struct PickInfo {
   - `PLANE_CONSTRAINT`: Constrain to a plane
 
 **Pick Suppression**:
+
 - Can suppress picks for specific button/event combinations
 - Useful for implementing custom behaviors
 - Per-button, per-event control
 
 **MouseEventHandler Registry**:
+
 - Add handlers via `addMouseEventHandler()`
 - Automatic cleanup via Observer pattern
 - Handlers receive `update()` calls on each event
 
 ---
 
-### 2. MouseEventHandler (`dart/gui/osg/MouseEventHandler.hpp`)
+### 2. MouseEventHandler (`dart/gui/MouseEventHandler.hpp`)
 
 **Purpose**: Abstract base class for custom mouse event behaviors.
 
 **Interface**:
+
 ```cpp
 class MouseEventHandler {
 public:
@@ -354,6 +378,7 @@ protected:
 ```
 
 **Typical Usage Pattern**:
+
 ```cpp
 class MyHandler : public MouseEventHandler {
     void update() override {
@@ -367,6 +392,7 @@ class MyHandler : public MouseEventHandler {
 ```
 
 **Built-in Handlers**:
+
 - `DragAndDrop`: Base class for drag-and-drop interactions
 - `SimpleFrameDnD`: Drag simple frames
 - `SimpleFrameShapeDnD`: Drag shapes within frames
@@ -375,11 +401,12 @@ class MyHandler : public MouseEventHandler {
 
 ---
 
-### 3. TrackballManipulator (`dart/gui/osg/TrackballManipulator.hpp/cpp`)
+### 3. TrackballManipulator (`dart/gui/TrackballManipulator.hpp/cpp`)
 
 **Purpose**: Camera controller for interactive viewpoint manipulation.
 
 **Key Features**:
+
 - Inherits from `osgGA::OrbitManipulator`
 - Customizes mouse button behaviors:
   - **Left Mouse**: Disabled for interaction (not camera control)
@@ -388,12 +415,14 @@ class MyHandler : public MouseEventHandler {
   - **Scroll Wheel**: Zoom (inherited from OrbitManipulator)
 
 **Configuration**:
+
 ```cpp
 setVerticalAxisFixed(false);  // Allow free rotation
 setAllowThrow(false);         // Disable momentum-based camera motion
 ```
 
 **Rationale**:
+
 - Left mouse reserved for object selection/manipulation
 - Right mouse provides intuitive camera rotation
 - Standard trackball interaction model
@@ -455,21 +484,25 @@ setAllowThrow(false);         // Disable momentum-based camera motion
 ### Shadow Technique Support
 
 **Configuration**:
+
 ```cpp
 WorldNode::setShadowTechnique(osg::ref_ptr<osgShadow::ShadowTechnique>)
 ```
 
 **Default Technique** (`createDefaultShadowTechnique`):
+
 - Uses `osgShadow::ShadowMap`
 - 4096×4096 shadow texture resolution
 - Uses Light #1 (highest positioned light)
 
 **Shadow Groups**:
+
 - `mNormalGroup`: Objects without shadows
 - `mShadowedGroup`: Objects with shadows (osgShadow::ShadowedScene)
 - Objects automatically placed based on `VisualAspect::getShadowed()`
 
 **Traversal Masks**:
+
 - `ReceivesShadowTraversalMask = 0x2`: Objects that receive shadows
 - `CastsShadowTraversalMask = 0x1`: Objects that cast shadows
 
@@ -480,11 +513,13 @@ WorldNode::setShadowTechnique(osg::ref_ptr<osgShadow::ShadowTechnique>)
 ### Screen Capture
 
 **Single Frame Capture**:
+
 ```cpp
 viewer->captureScreen("screenshot.png");
 ```
 
 **Implementation**:
+
 - Uses `SaveScreen` callback attached to camera
 - Reads pixels via `glReadPixels` (GL_RGB format)
 - Saves via `osgDB::writeImageFile`
@@ -492,12 +527,14 @@ viewer->captureScreen("screenshot.png");
 ### Screen Recording
 
 **Continuous Recording**:
+
 ```cpp
 viewer->record("output_dir", "frame_prefix", restart=false, digits=6);
 viewer->pauseRecording();
 ```
 
 **Features**:
+
 - Automatic frame numbering with zero-padding
 - Configurable prefix and number of digits
 - Resume capability (restart=false)
@@ -519,6 +556,7 @@ viewer->pauseRecording();
    - Useful for debugging
 
 **Mode Switching**:
+
 ```cpp
 viewer->setCameraMode(CameraMode::DEPTH);
 CameraMode mode = viewer->getCameraMode();
@@ -532,6 +570,7 @@ double fov = viewer->getVerticalFieldOfView();
 ```
 
 **Constraints**:
+
 - Only works with perspective projection
 - Returns 0.0 for orthographic cameras
 
@@ -542,21 +581,25 @@ double fov = viewer->getVerticalFieldOfView();
 ### Light Configuration
 
 **Two-Light Setup**:
+
 - **Light #1** (`mLight1`, `mLightSource1`): Primary scene light
 - **Light #2** (`mLight2`, `mLightSource2`): Fill light
 
 **Positioning**:
+
 ```cpp
 mLight1->setPosition(mUpwards + mOver);  // Upper-side light
 mLight2->setPosition(mUpwards - mOver);  // Upper-opposite light
 ```
 
 **Headlights Mode**:
+
 - Headlights: Camera-attached lights
 - Scene lights: Fixed-position lights
 - Toggle via `switchHeadlights(bool)`
 
 **Light Properties**:
+
 ```cpp
 // Headlights ON
 mLight->setAmbient(0.1, 0.1, 0.1);
@@ -573,6 +616,7 @@ mLight2->setDiffuse(0.3, 0.3, 0.3);
 ```cpp
 viewer->setUpwardsDirection(Eigen::Vector3d(0, 0, 1));  // Z-up (default)
 ```
+
 - Affects light positioning
 - Influences camera manipulator
 
@@ -581,32 +625,40 @@ viewer->setUpwardsDirection(Eigen::Vector3d(0, 0, 1));  // Z-up (default)
 ## Utilization Tracking and Garbage Collection
 
 ### Purpose
+
 Prevent memory leaks from deleted DART entities while avoiding dangling pointers.
 
 ### Mechanism
 
 1. **Flag Clearing**:
+
    ```cpp
    WorldNode::clearChildUtilizationFlags()
    ```
+
    - Called at start of refresh cycle
    - Sets `mUtilized = false` on all ShapeFrameNodes
 
 2. **Utilization Marking**:
+
    ```cpp
    ShapeFrameNode::refresh()
    ```
+
    - Sets `mUtilized = true` when refreshed
    - Indicates frame still exists in DART world
 
 3. **Garbage Collection**:
+
    ```cpp
    WorldNode::clearUnusedNodes()
    ```
+
    - Removes nodes where `mUtilized == false`
    - Indicates DART entity was deleted
 
 ### Benefits
+
 - Automatic cleanup of stale visual nodes
 - No manual tracking required
 - Handles dynamic entity creation/destruction
@@ -672,6 +724,7 @@ Prevent memory leaks from deleted DART entities while avoiding dangling pointers
 ### Real-Time Simulation
 
 **RealTimeWorldNode** provides:
+
 - Adaptive stepping based on computational load
 - RTF monitoring for performance feedback
 - Smooth playback even if simulation is expensive
@@ -723,84 +776,92 @@ Common attachments you can reuse without writing custom logic:
 ## File Structure Summary
 
 ### Core Components
-- `dart/gui/osg/Viewer.hpp/cpp`
-   - Main viewer class
-- `dart/gui/osg/WorldNode.hpp/cpp`
-   - World visualization
-- `dart/gui/osg/RealTimeWorldNode.hpp/cpp`
-   - Real-time simulation support
-- `dart/gui/osg/ShapeFrameNode.hpp/cpp`
-   - Frame-to-node mapping
+
+- `dart/gui/Viewer.hpp/cpp`
+  - Main viewer class
+- `dart/gui/WorldNode.hpp/cpp`
+  - World visualization
+- `dart/gui/RealTimeWorldNode.hpp/cpp`
+  - Real-time simulation support
+- `dart/gui/ShapeFrameNode.hpp/cpp`
+  - Frame-to-node mapping
 
 ### Event Handling
-- `dart/gui/osg/DefaultEventHandler.hpp/cpp`
-   - Central event processor
-- `dart/gui/osg/MouseEventHandler.hpp`
-   - Custom handler base class
-- `dart/gui/osg/TrackballManipulator.hpp/cpp`
-   - Camera controller
+
+- `dart/gui/DefaultEventHandler.hpp/cpp`
+  - Central event processor
+- `dart/gui/MouseEventHandler.hpp`
+  - Custom handler base class
+- `dart/gui/TrackballManipulator.hpp/cpp`
+  - Camera controller
 
 ### Rendering
-- `dart/gui/osg/render/ShapeNode.hpp/cpp`
-   - Base shape renderer
-- `dart/gui/osg/render/BoxShapeNode.hpp/cpp`
-   - Box geometry rendering
-- `dart/gui/osg/render/SphereShapeNode.hpp/cpp`
-   - Sphere geometry rendering
-- `dart/gui/osg/render/CylinderShapeNode.hpp/cpp`
-   - Cylinder geometry rendering
-- `dart/gui/osg/render/CapsuleShapeNode.hpp/cpp`
-   - Capsule geometry rendering
-- `dart/gui/osg/render/ConeShapeNode.hpp/cpp`
-   - Cone geometry rendering
-- `dart/gui/osg/render/PyramidShapeNode.hpp/cpp`
-   - Pyramid geometry rendering
-- `dart/gui/osg/render/EllipsoidShapeNode.hpp/cpp`
-   - Ellipsoid geometry rendering
-- `dart/gui/osg/render/PlaneShapeNode.hpp/cpp`
-   - Plane geometry rendering
-- `dart/gui/osg/render/MultiSphereShapeNode.hpp/cpp`
-   - Multi-sphere convex hull rendering
-- `dart/gui/osg/render/MeshShapeNode.hpp/cpp`
-   - Mesh geometry rendering (using Assimp)
-- `dart/gui/osg/render/SoftMeshShapeNode.hpp/cpp`
-   - Deformable mesh rendering
-- `dart/gui/osg/render/LineSegmentShapeNode.hpp/cpp`
-   - Line segment rendering
-- `dart/gui/osg/render/PointCloudShapeNode.hpp/cpp`
-   - Point cloud rendering
-- `dart/gui/osg/render/VoxelGridShapeNode.hpp/cpp`
-   - Voxel grid rendering (requires OCTOMAP)
-- `dart/gui/osg/render/HeightmapShapeNode.hpp`
-   - Heightmap terrain rendering
-- `dart/gui/osg/render/WarningShapeNode.hpp/cpp`
-   - Fallback renderer for unsupported shapes
+
+- `dart/gui/render/ShapeNode.hpp/cpp`
+  - Base shape renderer
+- `dart/gui/render/BoxShapeNode.hpp/cpp`
+  - Box geometry rendering
+- `dart/gui/render/SphereShapeNode.hpp/cpp`
+  - Sphere geometry rendering
+- `dart/gui/render/CylinderShapeNode.hpp/cpp`
+  - Cylinder geometry rendering
+- `dart/gui/render/CapsuleShapeNode.hpp/cpp`
+  - Capsule geometry rendering
+- `dart/gui/render/ConeShapeNode.hpp/cpp`
+  - Cone geometry rendering
+- `dart/gui/render/PyramidShapeNode.hpp/cpp`
+  - Pyramid geometry rendering
+- `dart/gui/render/EllipsoidShapeNode.hpp/cpp`
+  - Ellipsoid geometry rendering
+- `dart/gui/render/PlaneShapeNode.hpp/cpp`
+  - Plane geometry rendering
+- `dart/gui/render/MultiSphereShapeNode.hpp/cpp`
+  - Multi-sphere convex hull rendering
+- `dart/gui/render/MeshShapeNode.hpp/cpp`
+  - Mesh geometry rendering (using Assimp)
+- `dart/gui/render/SoftMeshShapeNode.hpp/cpp`
+  - Deformable mesh rendering
+- `dart/gui/render/LineSegmentShapeNode.hpp/cpp`
+  - Line segment rendering
+- `dart/gui/render/PointCloudShapeNode.hpp/cpp`
+  - Point cloud rendering
+- `dart/gui/render/VoxelGridShapeNode.hpp/cpp`
+  - Voxel grid rendering (requires OCTOMAP)
+- `dart/gui/render/HeightmapShapeNode.hpp`
+  - Heightmap terrain rendering
+- `dart/gui/render/WarningShapeNode.hpp/cpp`
+  - Fallback renderer for unsupported shapes
 
 ---
 
 ## Key Design Patterns
 
 ### 1. Observer Pattern
+
 - `DefaultEventHandler` observes `MouseEventHandler` instances
 - Automatic cleanup when handlers are destroyed
 - Subject/Observer from DART common library
 
 ### 2. Visitor Pattern (via OSG)
+
 - Node callbacks for scene graph traversal
 - Update callbacks for per-frame logic
 - Draw callbacks for screen capture
 
 ### 3. Factory Pattern
+
 - `ShapeFrameNode::createShapeNode()` creates appropriate shape nodes
 - Type-based dispatch for different shape types
 - Extensible for new shape types
 
 ### 4. Utilization Tracking Pattern
+
 - Mark-and-sweep garbage collection
 - Prevents dangling pointers to deleted DART objects
 - Three-phase: clear flags → mark used → sweep unused
 
 ### 5. Dual Scene Graph Pattern
+
 - Separate groups for shadowed/non-shadowed objects
 - Performance optimization
 - Dynamic object migration between groups
@@ -813,13 +874,13 @@ Common attachments you can reuse without writing custom logic:
 
 ```cpp
 // Create viewer
-dart::gui::osg::Viewer viewer;
+dart::gui::Viewer viewer;
 
 // Create world node
-auto worldNode = new dart::gui::osg::WorldNode(myWorld);
+auto worldNode = new dart::gui::WorldNode(myWorld);
 
 // Configure shadows (optional)
-auto shadowTechnique = dart::gui::osg::WorldNode::createDefaultShadowTechnique(&viewer);
+auto shadowTechnique = dart::gui::WorldNode::createDefaultShadowTechnique(&viewer);
 worldNode->setShadowTechnique(shadowTechnique);
 
 // Add to viewer
@@ -835,17 +896,17 @@ viewer.run();
 ### Implementing Custom Mouse Interaction
 
 ```cpp
-class MyInteractionHandler : public dart::gui::osg::MouseEventHandler {
+class MyInteractionHandler : public dart::gui::MouseEventHandler {
 public:
     void update() override {
         // Check for left mouse button push
-        if (mEventHandler->getButtonEvent(dart::gui::osg::LEFT_MOUSE)
-            == dart::gui::osg::BUTTON_PUSH) {
+        if (mEventHandler->getButtonEvent(dart::gui::LEFT_MOUSE)
+            == dart::gui::BUTTON_PUSH) {
 
             // Get picked objects
             const auto& picks = mEventHandler->getButtonPicks(
-                dart::gui::osg::LEFT_MOUSE,
-                dart::gui::osg::BUTTON_PUSH);
+                dart::gui::LEFT_MOUSE,
+                dart::gui::BUTTON_PUSH);
 
             // Handle picks
             for (const auto& pick : picks) {
@@ -863,11 +924,11 @@ viewer.getDefaultEventHandler()->addMouseEventHandler(handler);
 ### Creating Custom Shape Rendering
 
 ```cpp
-class CustomShapeNode : public dart::gui::osg::render::ShapeNode,
+class CustomShapeNode : public dart::gui::render::ShapeNode,
                         public ::osg::Geode {
 public:
     CustomShapeNode(std::shared_ptr<MyCustomShape> shape,
-                    dart::gui::osg::ShapeFrameNode* parent)
+                    dart::gui::ShapeFrameNode* parent)
         : ShapeNode(shape, parent, this),
           mCustomShape(shape) {
         refresh();
@@ -907,6 +968,7 @@ if (MyCustomShape::getStaticType() == shapeType) {
 ### Visualizing the Scene Graph
 
 OSG provides built-in tools for scene graph inspection:
+
 ```cpp
 // Print scene graph structure
 osgDB::writeNodeFile(*viewer.getSceneData(), "scene_graph.osg");
@@ -915,6 +977,7 @@ osgDB::writeNodeFile(*viewer.getSceneData(), "scene_graph.osg");
 ### Checking Utilization
 
 Add debug output to track node lifecycle:
+
 ```cpp
 void WorldNode::clearUnusedNodes() {
     for (auto& node_pair : mFrameToNode) {
@@ -955,22 +1018,26 @@ void MyHandler::update() override {
 ## Limitations and Known Issues
 
 ### ImGui + Depth Mode Incompatibility
+
 - Depth rendering mode doesn't work with ImGui widgets
 - Use RGBA mode when ImGui UI is present
 - Documented in `CameraMode::DEPTH` enum
 
 ### Shadow Performance
+
 - Shadow rendering can be computationally expensive
 - Use shadow suppression for objects that don't need shadows
 - Consider disabling shadows on less important objects
 
 ### Real-Time Constraints
+
 - `RealTimeWorldNode` cannot guarantee real-time if simulation is too expensive
 - Monitor RTF to detect performance issues
 - Consider reducing simulation complexity if RTF < target
 
 ### OSG Namespace Conflict
-- DART's `dart::gui::osg` namespace conflicts with root `::osg`
+
+- DART's `dart::gui` namespace conflicts with root `::osg`
 - Always use `::osg::` for OSG types (note the leading `::`)
 - Custom META macros to work around namespace issues
 

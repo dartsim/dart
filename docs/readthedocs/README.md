@@ -7,6 +7,7 @@ This directory contains the source for DART's documentation, including both C++ 
 ### Prerequisites
 
 1. Install pixi (if not already installed):
+
    ```bash
    curl -fsSL https://pixi.sh/install.sh | bash
    ```
@@ -42,17 +43,18 @@ pixi run docs-serve-ko
 
 ### How It Works
 
-The Python API documentation is generated using Sphinx autodoc, which requires the `dartpy` module to be importable.
+The Python API documentation is generated using Sphinx autodoc, which requires the `dartpy` module (nanobind extension) to be importable.
 
 **Local builds:**
+
 - The `docs-build` task sets `PYTHONPATH` to the compiled dartpy module
 - Sphinx autodoc imports and introspects the module to generate full API documentation
 - All classes, methods, type hints, and docstrings are included
 
 **Read the Docs builds:**
-- dartpy is a C++ extension built with pybind11 and cannot be compiled on Read the Docs
-- API documentation pages will be empty until we implement pre-built wheels
-- The documentation structure and navigation will still work correctly
+
+- Read the Docs cannot compile the C++ extension, so `conf.py` falls back to generated stubs under `python/stubs/dartpy`.
+- If compatible wheels are available for RTD’s image, the requirements file pins one so autodoc can use the real module; otherwise the stubs keep the API pages rendering.
 
 ### Generating Stub Files
 
@@ -80,6 +82,7 @@ pixi run docs-serve-ko  # Korean at http://localhost:8001
 ```
 
 The `docs-build` task:
+
 1. Builds the compiled dartpy module (`build-py-dev`)
 2. Sets PYTHONPATH to the compiled module location
 3. Runs Sphinx autodoc to introspect and document the module
@@ -87,14 +90,10 @@ The `docs-build` task:
 
 ### Read the Docs ✅
 
-Read the Docs now installs `dartpy` prior to running Sphinx so the Python API pages
-render there as well. RTD's Ubuntu 22.04 images are still on glibc 2.35, so the
-requirements file pins `dartpy==6.16.0`, the last release whose wheels remain compatible
-with glibc 2.27. That wheel set only targets CPython 3.12+ (cp312–cp314), so `.readthedocs.yml`
-now pins the RTD runtime to Python 3.12. Local builds can continue using the
-`pip install --pre dartpy` flow for the bleeding-edge bindings. Once RTD upgrades
-(or we ship compatible wheels), update `docs/readthedocs/requirements.txt` and
-`.readthedocs.yml` to match and remove these temporary pins.
+Read the Docs currently relies on prebuilt `dartpy` wheels when they match the RTD
+image; otherwise it uses the shipped stubs. The requirements pin may change as RTD
+images and wheel compatibility evolve—adjust `docs/readthedocs/requirements.txt` and
+`.readthedocs.yml` when newer wheels are usable so autodoc can introspect the live module.
 
 ### Future: keep wheels fresh 🎯
 
@@ -140,11 +139,12 @@ When adding new Python API documentation:
 4. Test locally with `pixi run docs-build` and `pixi run docs-serve`
 
 Example module file:
+
 ```rst
-dartpy.simulation Module
+dartpy Module
 ========================
 
-.. automodule:: dartpy.simulation
+.. automodule:: dartpy
    :members:
    :undoc-members:
    :show-inheritance:

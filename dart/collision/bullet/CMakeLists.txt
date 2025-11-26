@@ -1,6 +1,6 @@
 # Dependency checks
 if(NOT DART_BUILD_COLLISION_BULLET)
-  set(HAVE_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
+  set(DART_HAVE_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
   unset(BT_USE_DOUBLE_PRECISION CACHE)
   unset(BT_USE_DOUBLE_PRECISION)
   return()
@@ -51,7 +51,7 @@ if(DART_VERBOSE)
   endif()
 endif()
 
-set(HAVE_BULLET TRUE CACHE BOOL "Check if BULLET found." FORCE)
+set(DART_HAVE_BULLET TRUE CACHE BOOL "Check if BULLET found." FORCE)
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp")

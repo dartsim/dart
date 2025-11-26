@@ -37,7 +37,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #        gui, [assimp, eigen3, fcl, fmt]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
-# dart-gui - {dart-utils}, gui/osg, gui/osg/render, [openscenegraph]
+# dart-gui - {dart-utils}, gui, gui/render, [openscenegraph]
 
 #===============================================================================
 # Components - (dependency component), {dependency targets}
@@ -171,6 +171,20 @@ endif()
 # C++ standard settings
 target_compile_features(dart PUBLIC cxx_std_20)
 
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" dart_host_processor)
+set(dart_host_architecture "unknown")
+if(dart_host_processor MATCHES "amd64|x86_64")
+  set(dart_host_architecture "x86_64")
+elseif(dart_host_processor MATCHES "i[3-6]86")
+  set(dart_host_architecture "x86")
+elseif(dart_host_processor MATCHES "aarch64|arm64")
+  set(dart_host_architecture "arm64")
+elseif(dart_host_processor MATCHES "^arm")
+  set(dart_host_architecture "arm")
+elseif(dart_host_processor MATCHES "riscv64")
+  set(dart_host_architecture "riscv64")
+endif()
+
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
   if(MSVC)
@@ -189,14 +203,13 @@ if(DART_ENABLE_SIMD)
     target_compile_options(dart PUBLIC -march=native -faligned-new)
   endif()
 else()
-  # TODO: Improve this part to detect the system's architecture and apply the
-  # appropriate SIMD instructions.
-  if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
-    # Remove SSE flags if set elsewhere
-    string(REPLACE "-msse" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    string(REPLACE "-msse2" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    string(REPLACE "-msse3" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    string(REPLACE "-mssse3" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  # Remove x86-specific flags when building on non-x86 architectures to keep
+  # builds portable without enabling the SIMD option.
+  if(NOT dart_host_architecture STREQUAL "x86"
+     AND NOT dart_host_architecture STREQUAL "x86_64")
+    foreach(flag "-msse" "-msse2" "-msse3" "-mssse3")
+      string(REPLACE "${flag}" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    endforeach()
   endif()
 endif()
 
@@ -243,7 +256,14 @@ if(DART_CODECOV)
 endif()
 
 if(DART_BUILD_PROFILE)
-  target_link_libraries(dart PUBLIC Tracy::TracyClient)
+  target_compile_definitions(dart PUBLIC
+    DART_PROFILE_ENABLE_TEXT=$<BOOL:${DART_PROFILE_BUILTIN}>
+    DART_PROFILE_ENABLE_TRACY=$<BOOL:${DART_PROFILE_TRACY}>
+  )
+
+  if(DART_PROFILE_TRACY)
+    target_link_libraries(dart PUBLIC Tracy::TracyClient)
+  endif()
 endif()
 
 install(

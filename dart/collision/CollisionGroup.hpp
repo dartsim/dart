@@ -133,18 +133,15 @@ public:
   void subscribeTo(
       const dynamics::ConstBodyNodePtr& bodyNode, const Others&... others);
 
-  /// Add ShapeFrames of skeleton, and also subscribe to the Skeleton so that
-  /// the results from this CollisionGroup automatically reflect any changes
-  /// that are made to skeleton.
+  /// Add ShapeFrames of metaSkeleton, and also subscribe so that the results
+  /// from this CollisionGroup automatically reflect any changes that are made
+  /// to metaSkeleton.
   ///
   /// This does likewise for the objects in ...others.
-  //
-  // TODO(MXG): Figure out how to determine a version number for MetaSkeletons
-  // so that this function can accept a ConstMetaSkeletonPtr instead of only a
-  // ConstSkeletonPtr.
   template <typename... Others>
   void subscribeTo(
-      const dynamics::ConstSkeletonPtr& skeleton, const Others&... others);
+      const dynamics::ConstMetaSkeletonPtr& metaSkeleton,
+      const Others&... others);
 
   /// Do nothing. This function is for terminating the recursive variadic
   /// template.
@@ -222,7 +219,7 @@ public:
   /// removed if no other source is requesting them for this group.
   template <typename... Others>
   void unsubscribeFrom(
-      const dynamics::Skeleton* skeleton, const Others*... others);
+      const dynamics::MetaSkeleton* skeleton, const Others*... others);
 
   /// Do nothing. This function is for terminating the recursive variadic
   /// template.
@@ -236,7 +233,7 @@ public:
   /// Check if this is subscribed to skeleton and the other sources
   template <typename... Others>
   bool isSubscribedTo(
-      const dynamics::Skeleton* skeleton, const Others*... others);
+      const dynamics::MetaSkeleton* skeleton, const Others*... others);
 
   /// Return true. This function is for terminating the recursive variadic
   /// template
@@ -296,11 +293,11 @@ public:
 
   /// Performs raycast to this collision group.
   ///
-  /// \param[in] from The start point of the ray in world coordinates.
-  /// \param[in] to The end point of the ray in world coordinates.
-  /// \param[in] option The raycast option.
-  /// \param[in] result The raycast result.
-  /// \return True if the ray hit an collision object.
+  /// @param[in] from The start point of the ray in world coordinates.
+  /// @param[in] to The end point of the ray in world coordinates.
+  /// @param[in] option The raycast option.
+  /// @param[in] result The raycast result.
+  /// @return True if the ray hit an collision object.
   bool raycast(
       const Eigen::Vector3d& from,
       const Eigen::Vector3d& to,
@@ -410,7 +407,7 @@ protected:
   //
   // fcl's collision result is dependent on the order of objects in the broad
   // phase classes. If we use std::map, the orders of element between the
-  // original and copy are not guranteed to be the same as we copy std::map
+  // original and copy are not guaranteed to be the same as we copy std::map
   // (e.g., by world cloning).
 
 private:
@@ -471,11 +468,16 @@ private:
   friend class ShapeFrameObserver;
   void handleShapeFrameDestruction(const dynamics::ShapeFrame* shapeFrame);
 
+  /// Compute a version tag for MetaSkeletons even when they do not expose a
+  /// VersionCounter interface.
+  static std::size_t computeMetaSkeletonVersion(
+      const dynamics::MetaSkeleton& metaSkeleton);
+
   /// Set this to true to have this CollisionGroup check for updates
   /// automatically. Default is true.
   bool mUpdateAutomatically;
 
-  /// \private This struct is used to store sources of ShapeFrames that the
+  /// @private This struct is used to store sources of ShapeFrames that the
   /// CollisionGroup is subscribed to, alongside the last version number of that
   /// source, as known by this CollisionGroup.
   template <typename Source, typename Child = void>
@@ -532,15 +534,15 @@ private:
       = std::unordered_map<const dynamics::BodyNode*, BodyNodeSource>;
 
   /// Internal function called to update a Skeleton source
-  /// \returns true if an update was performed
+  /// @returns true if an update was performed
   bool updateSkeletonSource(SkeletonSources::value_type& entry);
 
   /// Internal function called to update a BodyNode source
-  /// \returns true if an update was performed
+  /// @returns true if an update was performed
   bool updateBodyNodeSource(BodyNodeSources::value_type& entry);
 
   /// Internal function called to update a ShapeFrame
-  /// \returns true if an update was performed
+  /// @returns true if an update was performed
   bool updateShapeFrame(ObjectInfo* object);
 
   /// Skeleton sources that this group is subscribed to

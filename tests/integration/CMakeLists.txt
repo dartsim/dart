@@ -10,6 +10,13 @@ if(TARGET dart-utils)
   target_link_libraries(INTEGRATION_collision_Collision dart-utils)
 endif()
 
+if(DART_BUILD_COLLISION_FCL)
+  dart_add_test(
+    "integration"
+    INTEGRATION_collision_MeshContactRegression
+    collision/test_MeshContactRegression.cpp)
+endif()
+
 # Additional collision tests
 if(TARGET dart-utils-urdf)
   dart_add_test("integration" INTEGRATION_collision_SelfCollisionFiltering collision/test_SelfCollisionFiltering.cpp)
@@ -18,6 +25,8 @@ endif()
 
 if(DART_BUILD_COLLISION_BULLET)
   dart_add_test("integration" INTEGRATION_collision_CollisionAccuracy collision/test_CollisionAccuracy.cpp)
+  dart_add_test("integration" INTEGRATION_collision_BulletEllipsoidRolling collision/test_BulletEllipsoidRolling.cpp)
+  dart_add_test("integration" INTEGRATION_collision_BulletBoxStack collision/test_BulletBoxStack.cpp)
 endif()
 
 if(DART_BUILD_COLLISION_BULLET AND DART_BUILD_COLLISION_ODE)
@@ -68,8 +77,37 @@ dart_build_tests(
 )
 
 if(TARGET dart-utils)
-  dart_add_test("integration" INTEGRATION_dynamics_Dynamics dynamics/test_Dynamics.cpp)
-  target_link_libraries(INTEGRATION_dynamics_Dynamics dart-utils)
+  set(DYNAMICS_TEST_FIXTURE dynamics/DynamicsTestFixture.cpp)
+
+  dart_add_test("integration" INTEGRATION_dynamics_DynamicsJacobians
+    ${DYNAMICS_TEST_FIXTURE}
+    dynamics/test_DynamicsJacobians.cpp)
+  target_link_libraries(INTEGRATION_dynamics_DynamicsJacobians dart-utils)
+
+  dart_add_test("integration" INTEGRATION_dynamics_DynamicsFiniteDifference
+    ${DYNAMICS_TEST_FIXTURE}
+    dynamics/test_DynamicsFiniteDifference.cpp)
+  target_link_libraries(INTEGRATION_dynamics_DynamicsFiniteDifference dart-utils)
+
+  dart_add_test("integration" INTEGRATION_dynamics_DynamicsEquations
+    ${DYNAMICS_TEST_FIXTURE}
+    dynamics/test_DynamicsEquations.cpp)
+  target_link_libraries(INTEGRATION_dynamics_DynamicsEquations dart-utils)
+
+  dart_add_test("integration" INTEGRATION_dynamics_DynamicsCenterOfMass
+    ${DYNAMICS_TEST_FIXTURE}
+    dynamics/test_DynamicsCenterOfMass.cpp)
+  target_link_libraries(INTEGRATION_dynamics_DynamicsCenterOfMass dart-utils)
+
+  dart_add_test("integration" INTEGRATION_dynamics_DynamicsImpulse
+    ${DYNAMICS_TEST_FIXTURE}
+    dynamics/test_DynamicsImpulse.cpp)
+  target_link_libraries(INTEGRATION_dynamics_DynamicsImpulse dart-utils)
+
+  dart_add_test("integration" INTEGRATION_dynamics_DynamicsHybrid
+    ${DYNAMICS_TEST_FIXTURE}
+    dynamics/test_DynamicsHybrid.cpp)
+  target_link_libraries(INTEGRATION_dynamics_DynamicsHybrid dart-utils)
 
   dart_add_test("integration" INTEGRATION_dynamics_Joints dynamics/test_Joints.cpp)
   target_link_libraries(INTEGRATION_dynamics_Joints dart-utils)
@@ -127,8 +165,8 @@ endif()
 
 if(TARGET dart-utils-urdf)
   if(NOT MSVC)
-    dart_add_test("integration" INTEGRATION_io_DartLoader io/test_DartLoader.cpp)
-    target_link_libraries(INTEGRATION_io_DartLoader dart-utils-urdf)
+    dart_add_test("integration" INTEGRATION_io_UrdfParser io/test_UrdfParser.cpp)
+    target_link_libraries(INTEGRATION_io_UrdfParser dart-utils-urdf)
   endif()
 
   # Additional IO tests
@@ -146,11 +184,11 @@ if(TARGET dart-utils-urdf)
   target_compile_options(GeneratedWamIkFast PRIVATE -w)
 
   if(BUILD_SHARED_LIBS)
-    dart_add_test("integration" test_IkFast io/test_IkFast.cpp)
-    target_link_libraries(test_IkFast dart-utils-urdf)
-    add_dependencies(test_IkFast GeneratedWamIkFast SharedLibraryWamIkFast)
+    dart_add_test("integration" INTEGRATION_io_IkFast io/test_IkFast.cpp)
+    target_link_libraries(INTEGRATION_io_IkFast dart-utils-urdf)
+    add_dependencies(INTEGRATION_io_IkFast GeneratedWamIkFast SharedLibraryWamIkFast)
     target_compile_definitions(
-      test_IkFast PRIVATE
+      INTEGRATION_io_IkFast PRIVATE
         DART_IKFAST_GENERATED_LIB_PATH="$<TARGET_FILE:GeneratedWamIkFast>"
     )
   endif()
@@ -186,6 +224,9 @@ dart_build_tests(
     simulation/test_Building.cpp
 )
 
+dart_add_test(
+  "integration" INTEGRATION_simulation_Issue870 simulation/test_Issue870.cpp)
+
 if(TARGET dart-utils)
   dart_add_test("integration" INTEGRATION_simulation_FileInfoWorld simulation/test_FileInfoWorld.cpp)
   target_link_libraries(INTEGRATION_simulation_FileInfoWorld dart-utils)
@@ -199,6 +240,9 @@ if(TARGET dart-utils)
 
   dart_add_test("integration" INTEGRATION_simulation_MomentumConservation simulation/test_MomentumConservation.cpp)
   target_link_libraries(INTEGRATION_simulation_MomentumConservation dart-utils)
+
+  dart_add_test("integration" INTEGRATION_simulation_MimicConstraint simulation/test_MimicConstraint.cpp)
+  target_link_libraries(INTEGRATION_simulation_MimicConstraint dart-utils)
 endif()
 
 # ==============================================================================

@@ -55,7 +55,7 @@ namespace dart::common {
 /// preallocated memory is actually used using the free list data structure.
 ///
 /// If the preallocated memory is all used up, then this class allocates
-/// additional memory chunck using the base allocator.
+/// additional memory chunk using the base allocator.
 class DART_API FreeListAllocator : public MemoryAllocator
 {
 public:
@@ -63,8 +63,8 @@ public:
 
   /// Constructor
   ///
-  /// \param[in] baseAllocator: (optional) Base memory allocator.
-  /// \param[in] initialAllocation: (optional) Bytes to initially allocate.
+  /// @param[in] baseAllocator: (optional) Base memory allocator.
+  /// @param[in] initialAllocation: (optional) Bytes to initially allocate.
   explicit FreeListAllocator(
       MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault(),
       size_t initialAllocation = 1048576 /* 1 MB */);
@@ -129,16 +129,14 @@ private:
     /// Merges this memory block with the given memory block
     void merge(MemoryBlockHeader* other);
 
-#if DART_BUILD_MODE_DEBUG
-    /// [Debug only] Returns whether this memory block is valid
+    /// Returns whether this memory block is valid
     bool isValid() const;
-#endif
   };
 
-  /// Allocates a new memory block for \c sizeToAllocate bytes
+  /// Allocates a new memory block for @c sizeToAllocate bytes
   ///
-  /// \param[in] sizeToAllocate: The bytes to allocate.
-  /// \return The success
+  /// @param[in] sizeToAllocate: The bytes to allocate.
+  /// @return The success
   bool allocateMemoryBlock(size_t sizeToAllocate);
 
   struct AllocatedBlock

@@ -37,22 +37,18 @@
 
 #include <Eigen/Dense>
 
-namespace dart::math::lcp {
+namespace dart::math {
 
-/// \brief
+/// @brief
 int DART_API Lemke(
     const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd* _z);
 
-/// \brief
+/// @brief
 bool DART_API validate(
     const Eigen::MatrixXd& _M,
     const Eigen::VectorXd& _z,
     const Eigen::VectorXd& _q);
 
-} // namespace dart::math::lcp
-
-namespace dart::math {
-using namespace lcp;
 } // namespace dart::math
 
 #endif // DART_MATH_LCP_LEMKE_HPP_

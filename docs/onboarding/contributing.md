@@ -186,29 +186,29 @@ DART is developed by a diverse community of researchers and engineers from aroun
 
 ### Core Team
 
-| Name | Contributions |
-|------|---------------|
-| [C. Karen Liu](https://github.com/karenliu) | Project creator, multibody dynamics, constraint resolution, tutorials |
-| [Mike Stilman](https://github.com/mstilman) | Project creator |
-| [Siddhartha S. Srinivasa](https://github.com/siddhss5) | Project advisor |
-| [Jeongseok Lee](https://github.com/jslee02) | Project director, multibody dynamics, constraint resolution, collision detection, tutorials |
-| [Michael X. Grey](https://github.com/mxgrey) | Project director, extensive API improvements, inverse kinematics, gui::osg, tutorials |
-| [Tobias Kunz](https://github.com/tobiaskunz) | Former project director, motion planner |
+| Name                                                   | Contributions                                                                               |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| [C. Karen Liu](https://github.com/karenliu)            | Project creator, multibody dynamics, constraint resolution, tutorials                       |
+| [Mike Stilman](https://github.com/mstilman)            | Project creator                                                                             |
+| [Siddhartha S. Srinivasa](https://github.com/siddhss5) | Project advisor                                                                             |
+| [Jeongseok Lee](https://github.com/jslee02)            | Project director, multibody dynamics, constraint resolution, collision detection, tutorials |
+| [Michael X. Grey](https://github.com/mxgrey)           | Project director, extensive API improvements, inverse kinematics, gui, tutorials            |
+| [Tobias Kunz](https://github.com/tobiaskunz)           | Former project director, motion planner                                                     |
 
 ### Major Contributors
 
-| Name | Contributions |
-|------|---------------|
-| [Sumit Jain](http://www.cc.gatech.edu/graphics/projects/Sumit/homepage/) | Multibody dynamics |
-| [Yuting Ye](https://github.com/yutingye) | Multibody dynamics, GUI |
-| [Michael Koval](https://github.com/mkoval) | URI, resource retriever, bug fixes |
-| [Ana C. Huamán Quispe](https://github.com/ana-GT) | URDF parser |
-| [Chen Tang](https://github.com/chentang) | Collision detection |
-| [Konstantinos Chatzilygeroudis](https://github.com/costashatz) | Mimic joint, OSG shadows, shape deep copy, build and bug fixes |
-| [Sehoon Ha](https://github.com/sehoonha) | Early DART data structure design, [pydart](https://github.com/sehoonha/pydart) |
-| [Addisu Taddese](https://github.com/azeey) | ODE collision detector, slip effect, velocity/position integration, constraint grouping |
-| [Christoph Hinze](https://github.com/chhinze) | Python bindings |
-| [Silvio Traversaro](https://github.com/traversaro) | Build fixes on Windows/MSVC, vcpkg packaging |
+| Name                                                                     | Contributions                                                                           |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| [Sumit Jain](http://www.cc.gatech.edu/graphics/projects/Sumit/homepage/) | Multibody dynamics                                                                      |
+| [Yuting Ye](https://github.com/yutingye)                                 | Multibody dynamics, GUI                                                                 |
+| [Michael Koval](https://github.com/mkoval)                               | URI, resource retriever, bug fixes                                                      |
+| [Ana C. Huamán Quispe](https://github.com/ana-GT)                        | URDF parser                                                                             |
+| [Chen Tang](https://github.com/chentang)                                 | Collision detection                                                                     |
+| [Konstantinos Chatzilygeroudis](https://github.com/costashatz)           | Mimic joint, OSG shadows, shape deep copy, build and bug fixes                          |
+| [Sehoon Ha](https://github.com/sehoonha)                                 | Early DART data structure design, [pydart](https://github.com/sehoonha/pydart)          |
+| [Addisu Taddese](https://github.com/azeey)                               | ODE collision detector, slip effect, velocity/position integration, constraint grouping |
+| [Christoph Hinze](https://github.com/chhinze)                            | Python bindings                                                                         |
+| [Silvio Traversaro](https://github.com/traversaro)                       | Build fixes on Windows/MSVC, vcpkg packaging                                            |
 
 ### Community Contributors
 

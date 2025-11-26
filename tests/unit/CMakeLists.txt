@@ -13,27 +13,42 @@ dart_add_test("unit" UNIT_collision_Raycast collision/test_Raycast.cpp)
 
 dart_add_test("unit" UNIT_collision_CollisionResult collision/test_CollisionResult.cpp)
 
+if(DART_HAVE_BULLET)
+  dart_add_test("unit" UNIT_collision_BulletContact collision/test_BulletContact.cpp)
+endif()
+
+dart_add_test(
+  "unit" UNIT_collision_FCLCollisionObject collision/test_FCLCollisionObject.cpp)
+
 # ==============================================================================
 # Common Tests
 # ==============================================================================
+set(common_unit_sources
+  common/test_CAllocator.cpp
+  common/test_Composite.cpp
+  common/test_Factory.cpp
+  common/test_FreeListAllocator.cpp
+  common/test_Logging.cpp
+  common/test_MemoryManager.cpp
+  common/test_PoolAllocator.cpp
+  common/test_Resource.cpp
+  common/test_StlAllocator.cpp
+  common/test_Stopwatch.cpp
+  common/test_SubjectObserver.cpp
+  common/test_String.cpp
+  common/test_Uri.cpp
+)
+
+if(DART_BUILD_PROFILE AND DART_PROFILE_ENABLE_TEXT)
+  list(APPEND common_unit_sources common/test_Profile.cpp)
+endif()
+
 dart_build_tests(
   TYPE unit
   TARGET_PREFIX UNIT
   LINK_LIBRARIES dart
   SOURCES
-    common/test_CAllocator.cpp
-    common/test_Composite.cpp
-    common/test_Factory.cpp
-    common/test_FreeListAllocator.cpp
-    common/test_Logging.cpp
-    common/test_MemoryManager.cpp
-    common/test_PoolAllocator.cpp
-    common/test_Resource.cpp
-    common/test_StlAllocator.cpp
-    common/test_Stopwatch.cpp
-    common/test_SubjectObserver.cpp
-    common/test_String.cpp
-    common/test_Uri.cpp
+    ${common_unit_sources}
 )
 
 # ==============================================================================
@@ -57,7 +72,13 @@ dart_add_test("unit" UNIT_dynamics_BodyNodeDerivatives dynamics/test_BodyNodeDer
 dart_add_test(
   "unit" UNIT_dynamics_BodyNodePotentialEnergy dynamics/test_BodyNodePotentialEnergy.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeNodeInertia dynamics/test_ShapeNodeInertia.cpp)
+dart_add_test("unit" UNIT_dynamics_SkeletonClone dynamics/test_SkeletonClone.cpp)
+dart_add_test("unit" UNIT_dynamics_SkeletonAccessors dynamics/test_SkeletonAccessors.cpp)
 dart_add_test("unit" UNIT_dynamics_Noexcept dynamics/test_Noexcept.cpp)
+dart_add_test(
+  "unit" UNIT_dynamics_BodyNodeCollisionSignals dynamics/test_BodyNodeCollisionSignals.cpp)
+dart_add_test("unit" UNIT_dynamics_VisualAspect dynamics/test_VisualAspect.cpp)
+dart_add_test("unit" UNIT_dynamics_WeldJointMerge dynamics/test_WeldJointMerge.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
@@ -90,6 +111,14 @@ dart_build_tests(
 if(TARGET dart)
   dart_add_test("unit" UNIT_math_Convhull math/test_Convhull.cpp)
   target_link_libraries(UNIT_math_Convhull dart)
+endif()
+
+# ==============================================================================
+# GUI Tests
+# ==============================================================================
+if(TARGET dart-gui)
+  dart_add_test(
+    "unit" UNIT_gui_ImGuiWindowScaling gui/test_ImGuiWindowScaling.cpp)
 endif()
 
 # ==============================================================================

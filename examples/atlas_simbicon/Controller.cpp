@@ -64,8 +64,8 @@ Controller::Controller(
 {
   mCoronalLeftHip = mAtlasRobot->getDof("l_leg_hpx")->getIndexInSkeleton();
   mCoronalRightHip = mAtlasRobot->getDof("r_leg_hpx")->getIndexInSkeleton();
-  mSagitalLeftHip = mAtlasRobot->getDof("l_leg_hpy")->getIndexInSkeleton();
-  mSagitalRightHip = mAtlasRobot->getDof("r_leg_hpy")->getIndexInSkeleton();
+  mSagittalLeftHip = mAtlasRobot->getDof("l_leg_hpy")->getIndexInSkeleton();
+  mSagittalRightHip = mAtlasRobot->getDof("r_leg_hpy")->getIndexInSkeleton();
 
   _buildStateMachines();
   _setJointDamping();
@@ -144,7 +144,7 @@ void Controller::changeStateMachine(const string& _name, double _currentTime)
   // _state should be in mStates
   StateMachine* stateMachine = _findStateMachine(_name);
 
-  DART_ASSERT(stateMachine != nullptr && "Invaild state machine.");
+  DART_ASSERT(stateMachine != nullptr && "Invalid state machine.");
 
   changeStateMachine(stateMachine, _currentTime);
 }
@@ -445,10 +445,10 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   state3->setStanceFootToRightFoot();
 
   // Set global desired pelvis angle
-  state0->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
-  state1->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
-  state2->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
-  state3->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
+  state0->setDesiredPelvisGlobalAngleOnSagittal(0.0_deg);
+  state1->setDesiredPelvisGlobalAngleOnSagittal(0.0_deg);
+  state2->setDesiredPelvisGlobalAngleOnSagittal(0.0_deg);
+  state3->setDesiredPelvisGlobalAngleOnSagittal(0.0_deg);
   state0->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
   state1->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
   state2->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
@@ -480,14 +480,14 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
       mCoronalRightHip, -cd); // coronal right hip
   state0->setFeedbackCoronalCOMVelocity(
       mCoronalRightHip, -cv); // coronal right hip
-  state0->setFeedbackSagitalCOMDistance(
-      mSagitalLeftHip, -cd); // sagital left hip
-  state0->setFeedbackSagitalCOMVelocity(
-      mSagitalLeftHip, -cv); // sagital left hip
-  state0->setFeedbackSagitalCOMDistance(
-      mSagitalRightHip, -cd); // sagital right hip
-  state0->setFeedbackSagitalCOMVelocity(
-      mSagitalRightHip, -cv); // sagital right hip
+  state0->setFeedbackSagittalCOMDistance(
+      mSagittalLeftHip, -cd); // sagittal left hip
+  state0->setFeedbackSagittalCOMVelocity(
+      mSagittalLeftHip, -cv); // sagittal left hip
+  state0->setFeedbackSagittalCOMDistance(
+      mSagittalRightHip, -cd); // sagittal right hip
+  state0->setFeedbackSagittalCOMVelocity(
+      mSagittalRightHip, -cv); // sagittal right hip
 
   //-- State 1
   //---- pelvis
@@ -514,14 +514,14 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
       mCoronalRightHip, -cd); // coronal right hip
   state1->setFeedbackCoronalCOMVelocity(
       mCoronalRightHip, -cv); // coronal right hip
-  state1->setFeedbackSagitalCOMDistance(
-      mSagitalLeftHip, -cd); // sagital left hip
-  state1->setFeedbackSagitalCOMVelocity(
-      mSagitalLeftHip, -cv); // sagital left hip
-  state1->setFeedbackSagitalCOMDistance(
-      mSagitalRightHip, -cd); // sagital right hip
-  state1->setFeedbackSagitalCOMVelocity(
-      mSagitalRightHip, -cv); // sagital right hip
+  state1->setFeedbackSagittalCOMDistance(
+      mSagittalLeftHip, -cd); // sagittal left hip
+  state1->setFeedbackSagittalCOMVelocity(
+      mSagittalLeftHip, -cv); // sagittal left hip
+  state1->setFeedbackSagittalCOMDistance(
+      mSagittalRightHip, -cd); // sagittal right hip
+  state1->setFeedbackSagittalCOMVelocity(
+      mSagittalRightHip, -cv); // sagittal right hip
 
   //-- State 2
   //---- pelvis
@@ -548,14 +548,14 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
       mCoronalRightHip, -cd); // coronal right hip
   state2->setFeedbackCoronalCOMVelocity(
       mCoronalRightHip, -cv); // coronal right hip
-  state2->setFeedbackSagitalCOMDistance(
-      mSagitalLeftHip, -cd); // sagital left hip
-  state2->setFeedbackSagitalCOMVelocity(
-      mSagitalLeftHip, -cv); // sagital left hip
-  state2->setFeedbackSagitalCOMDistance(
-      mSagitalRightHip, -cd); // sagital right hip
-  state2->setFeedbackSagitalCOMVelocity(
-      mSagitalRightHip, -cv); // sagital right hip
+  state2->setFeedbackSagittalCOMDistance(
+      mSagittalLeftHip, -cd); // sagittal left hip
+  state2->setFeedbackSagittalCOMVelocity(
+      mSagittalLeftHip, -cv); // sagittal left hip
+  state2->setFeedbackSagittalCOMDistance(
+      mSagittalRightHip, -cd); // sagittal right hip
+  state2->setFeedbackSagittalCOMVelocity(
+      mSagittalRightHip, -cv); // sagittal right hip
 
   //-- State 3
   //---- pelvis
@@ -582,14 +582,14 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
       mCoronalRightHip, -cd); // coronal right hip
   state3->setFeedbackCoronalCOMVelocity(
       mCoronalRightHip, -cv); // coronal right hip
-  state3->setFeedbackSagitalCOMDistance(
-      mSagitalLeftHip, -cd); // sagital left hip
-  state3->setFeedbackSagitalCOMVelocity(
-      mSagitalLeftHip, -cv); // sagital left hip
-  state3->setFeedbackSagitalCOMDistance(
-      mSagitalRightHip, -cd); // sagital right hip
-  state3->setFeedbackSagitalCOMVelocity(
-      mSagitalRightHip, -cv); // sagital right hip
+  state3->setFeedbackSagittalCOMDistance(
+      mSagittalLeftHip, -cd); // sagittal left hip
+  state3->setFeedbackSagittalCOMVelocity(
+      mSagittalLeftHip, -cv); // sagittal left hip
+  state3->setFeedbackSagittalCOMDistance(
+      mSagittalRightHip, -cd); // sagittal right hip
+  state3->setFeedbackSagittalCOMVelocity(
+      mSagittalRightHip, -cv); // sagittal right hip
 
   sm->addState(state0);
   sm->addState(state1);
@@ -654,10 +654,10 @@ StateMachine* Controller::_createWalkingStateMachine()
   state3->setStanceFootToRightFoot();
 
   // Set global desired pelvis angle
-  state0->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
-  state1->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
-  state2->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
-  state3->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
+  state0->setDesiredPelvisGlobalAngleOnSagittal(0.0_deg);
+  state1->setDesiredPelvisGlobalAngleOnSagittal(0.0_deg);
+  state2->setDesiredPelvisGlobalAngleOnSagittal(0.0_deg);
+  state3->setDesiredPelvisGlobalAngleOnSagittal(0.0_deg);
   state0->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
   state1->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
   state2->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
@@ -689,14 +689,14 @@ StateMachine* Controller::_createWalkingStateMachine()
       mCoronalRightHip, -cd); // coronal right hip
   state0->setFeedbackCoronalCOMVelocity(
       mCoronalRightHip, -cv); // coronal right hip
-  state0->setFeedbackSagitalCOMDistance(
-      mSagitalLeftHip, -cd); // sagital left hip
-  state0->setFeedbackSagitalCOMVelocity(
-      mSagitalLeftHip, -cv); // sagital left hip
-  state0->setFeedbackSagitalCOMDistance(
-      mSagitalRightHip, -cd); // sagital right hip
-  state0->setFeedbackSagitalCOMVelocity(
-      mSagitalRightHip, -cv); // sagital right hip
+  state0->setFeedbackSagittalCOMDistance(
+      mSagittalLeftHip, -cd); // sagittal left hip
+  state0->setFeedbackSagittalCOMVelocity(
+      mSagittalLeftHip, -cv); // sagittal left hip
+  state0->setFeedbackSagittalCOMDistance(
+      mSagittalRightHip, -cd); // sagittal right hip
+  state0->setFeedbackSagittalCOMVelocity(
+      mSagittalRightHip, -cv); // sagittal right hip
 
   //-- State 1
   //---- pelvis
@@ -723,14 +723,14 @@ StateMachine* Controller::_createWalkingStateMachine()
       mCoronalRightHip, -cd); // coronal right hip
   state1->setFeedbackCoronalCOMVelocity(
       mCoronalRightHip, -cv); // coronal right hip
-  state1->setFeedbackSagitalCOMDistance(
-      mSagitalLeftHip, -cd); // sagital left hip
-  state1->setFeedbackSagitalCOMVelocity(
-      mSagitalLeftHip, -cv); // sagital left hip
-  state1->setFeedbackSagitalCOMDistance(
-      mSagitalRightHip, -cd); // sagital right hip
-  state1->setFeedbackSagitalCOMVelocity(
-      mSagitalRightHip, -cv); // sagital right hip
+  state1->setFeedbackSagittalCOMDistance(
+      mSagittalLeftHip, -cd); // sagittal left hip
+  state1->setFeedbackSagittalCOMVelocity(
+      mSagittalLeftHip, -cv); // sagittal left hip
+  state1->setFeedbackSagittalCOMDistance(
+      mSagittalRightHip, -cd); // sagittal right hip
+  state1->setFeedbackSagittalCOMVelocity(
+      mSagittalRightHip, -cv); // sagittal right hip
 
   //-- State 2
   //---- pelvis
@@ -757,14 +757,14 @@ StateMachine* Controller::_createWalkingStateMachine()
       mCoronalRightHip, -cd); // coronal right hip
   state2->setFeedbackCoronalCOMVelocity(
       mCoronalRightHip, -cv); // coronal right hip
-  state2->setFeedbackSagitalCOMDistance(
-      mSagitalLeftHip, -cd); // sagital left hip
-  state2->setFeedbackSagitalCOMVelocity(
-      mSagitalLeftHip, -cv); // sagital left hip
-  state2->setFeedbackSagitalCOMDistance(
-      mSagitalRightHip, -cd); // sagital right hip
-  state2->setFeedbackSagitalCOMVelocity(
-      mSagitalRightHip, -cv); // sagital right hip
+  state2->setFeedbackSagittalCOMDistance(
+      mSagittalLeftHip, -cd); // sagittal left hip
+  state2->setFeedbackSagittalCOMVelocity(
+      mSagittalLeftHip, -cv); // sagittal left hip
+  state2->setFeedbackSagittalCOMDistance(
+      mSagittalRightHip, -cd); // sagittal right hip
+  state2->setFeedbackSagittalCOMVelocity(
+      mSagittalRightHip, -cv); // sagittal right hip
 
   //-- State 3
   //---- pelvis
@@ -791,14 +791,14 @@ StateMachine* Controller::_createWalkingStateMachine()
       mCoronalRightHip, -cd); // coronal right hip
   state3->setFeedbackCoronalCOMVelocity(
       mCoronalRightHip, -cv); // coronal right hip
-  state3->setFeedbackSagitalCOMDistance(
-      mSagitalLeftHip, -cd); // sagital left hip
-  state3->setFeedbackSagitalCOMVelocity(
-      mSagitalLeftHip, -cv); // sagital left hip
-  state3->setFeedbackSagitalCOMDistance(
-      mSagitalRightHip, -cd); // sagital right hip
-  state3->setFeedbackSagitalCOMVelocity(
-      mSagitalRightHip, -cv); // sagital right hip
+  state3->setFeedbackSagittalCOMDistance(
+      mSagittalLeftHip, -cd); // sagittal left hip
+  state3->setFeedbackSagittalCOMVelocity(
+      mSagittalLeftHip, -cv); // sagittal left hip
+  state3->setFeedbackSagittalCOMDistance(
+      mSagittalRightHip, -cd); // sagittal right hip
+  state3->setFeedbackSagittalCOMVelocity(
+      mSagittalRightHip, -cv); // sagittal right hip
 
   sm->addState(state0);
   sm->addState(state1);
@@ -845,8 +845,8 @@ StateMachine* Controller::_createRunningStateMachine()
   state1->setStanceFootToRightFoot();
 
   // Set global desired pelvis angle
-  state0->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
-  state1->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
+  state0->setDesiredPelvisGlobalAngleOnSagittal(0.0_deg);
+  state1->setDesiredPelvisGlobalAngleOnSagittal(0.0_deg);
   state0->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
   state1->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
 
@@ -880,14 +880,14 @@ StateMachine* Controller::_createRunningStateMachine()
       mCoronalRightHip, -cd); // coronal right hip
   state0->setFeedbackCoronalCOMVelocity(
       mCoronalRightHip, -cv); // coronal right hip
-  state0->setFeedbackSagitalCOMDistance(
-      mSagitalLeftHip, -cd); // sagital left hip
-  state0->setFeedbackSagitalCOMVelocity(
-      mSagitalLeftHip, -cv); // sagital left hip
-  state0->setFeedbackSagitalCOMDistance(
-      mSagitalRightHip, -cd); // sagital right hip
-  state0->setFeedbackSagitalCOMVelocity(
-      mSagitalRightHip, -cv); // sagital right hip
+  state0->setFeedbackSagittalCOMDistance(
+      mSagittalLeftHip, -cd); // sagittal left hip
+  state0->setFeedbackSagittalCOMVelocity(
+      mSagittalLeftHip, -cv); // sagittal left hip
+  state0->setFeedbackSagittalCOMDistance(
+      mSagittalRightHip, -cd); // sagittal right hip
+  state0->setFeedbackSagittalCOMVelocity(
+      mSagittalRightHip, -cv); // sagittal right hip
 
   //-- State 2
   //---- pelvis
@@ -918,14 +918,14 @@ StateMachine* Controller::_createRunningStateMachine()
       mCoronalRightHip, -cd); // coronal right hip
   state1->setFeedbackCoronalCOMVelocity(
       mCoronalRightHip, -cv); // coronal right hip
-  state1->setFeedbackSagitalCOMDistance(
-      mSagitalLeftHip, -cd); // sagital left hip
-  state1->setFeedbackSagitalCOMVelocity(
-      mSagitalLeftHip, -cv); // sagital left hip
-  state1->setFeedbackSagitalCOMDistance(
-      mSagitalRightHip, -cd); // sagital right hip
-  state1->setFeedbackSagitalCOMVelocity(
-      mSagitalRightHip, -cv); // sagital right hip
+  state1->setFeedbackSagittalCOMDistance(
+      mSagittalLeftHip, -cd); // sagittal left hip
+  state1->setFeedbackSagittalCOMVelocity(
+      mSagittalLeftHip, -cv); // sagittal left hip
+  state1->setFeedbackSagittalCOMDistance(
+      mSagittalRightHip, -cd); // sagittal right hip
+  state1->setFeedbackSagittalCOMVelocity(
+      mSagittalRightHip, -cv); // sagittal right hip
 
   sm->addState(state0);
   sm->addState(state1);

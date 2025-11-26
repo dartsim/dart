@@ -403,6 +403,26 @@ void BodyNode::matchNodes(const BodyNode* otherBodyNode)
 }
 
 //==============================================================================
+std::vector<Node*> BodyNode::getNodes()
+{
+  std::vector<Node*> nodes;
+  for (auto& nodeType : mNodeMap)
+    nodes.insert(nodes.end(), nodeType.second.begin(), nodeType.second.end());
+
+  return nodes;
+}
+
+//==============================================================================
+std::vector<const Node*> BodyNode::getNodes() const
+{
+  std::vector<const Node*> nodes;
+  for (const auto& nodeType : mNodeMap)
+    nodes.insert(nodes.end(), nodeType.second.begin(), nodeType.second.end());
+
+  return nodes;
+}
+
+//==============================================================================
 const std::string& BodyNode::setName(const std::string& _name)
 {
   // If it already has the requested name, do nothing
@@ -472,6 +492,48 @@ bool BodyNode::isCollidable() const noexcept
 void BodyNode::setCollidable(bool _isCollidable)
 {
   mAspectProperties.mIsCollidable = _isCollidable;
+}
+
+//==============================================================================
+void BodyNode::handleCollisionShapeStateChange(
+    const ShapeNode* shapeNode, bool wasCollidable, bool isCollidable)
+{
+  if (!shapeNode)
+    return;
+
+  if (shapeNode->getBodyNodePtr().get() != this)
+    return;
+
+  ConstShapePtr shape = shapeNode->getShape();
+  if (!shape)
+    return;
+
+  if (isCollidable && !wasCollidable) {
+    mColShapeAddedSignal.raise(this, shape);
+  } else if (wasCollidable && !isCollidable) {
+    mColShapeRemovedSignal.raise(this, shape);
+  }
+}
+
+//==============================================================================
+void BodyNode::handleCollisionShapeUpdated(
+    const ShapeNode* shapeNode, ConstShapePtr oldShape, ConstShapePtr newShape)
+{
+  if (!shapeNode)
+    return;
+
+  if (shapeNode->getBodyNodePtr().get() != this)
+    return;
+
+  const auto* collision = shapeNode->get<CollisionAspect>();
+  if (collision == nullptr || !collision->getCollidable())
+    return;
+
+  if (oldShape)
+    mColShapeRemovedSignal.raise(this, oldShape);
+
+  if (newShape)
+    mColShapeAddedSignal.raise(this, newShape);
 }
 
 //==============================================================================
@@ -1367,7 +1429,7 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
     mConstDependentDofs.push_back(_skeleton->getDof(index));
   }
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   // Check whether there is duplicated indices.
   std::size_t nDepGenCoordIndices = mDependentGenCoordIndices.size();
   for (std::size_t i = 0; i < nDepGenCoordIndices; ++i) {

@@ -38,12 +38,23 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
-#define DART_CFM 1e-9
+#include <algorithm>
+
+#include <cmath>
+
+namespace {
+
+constexpr inline double kConstraintForceMixing = 1e-6;
+constexpr inline double kDefaultForceLimit = 800.0;
+constexpr inline double kDefaultVelocityLimit = 50.0;
+constexpr inline double kDefaultErp = 0.4;
+
+} // namespace
 
 namespace dart {
 namespace constraint {
 
-double CouplerConstraint::mConstraintForceMixing = DART_CFM;
+double CouplerConstraint::mConstraintForceMixing = kConstraintForceMixing;
 
 //==============================================================================
 CouplerConstraint::CouplerConstraint(
@@ -113,21 +124,39 @@ void CouplerConstraint::update()
   for (std::size_t i = 0; i < dof; ++i) {
     const auto& mimicProp = mMimicProps[i];
 
+    if (mJoint->getActuatorType(i) != dynamics::Joint::MIMIC
+        || mimicProp.mReferenceJoint == nullptr) {
+      mActive[i] = false;
+      continue;
+    }
+
     double timeStep = mJoint->getSkeleton()->getTimeStep();
+    double velLower = mJoint->getVelocityLowerLimit(i);
+    double velUpper = mJoint->getVelocityUpperLimit(i);
+    if (!std::isfinite(velLower))
+      velLower = -kDefaultVelocityLimit;
+    if (!std::isfinite(velUpper))
+      velUpper = kDefaultVelocityLimit;
     double qError
         = mimicProp.mReferenceJoint->getPosition(mimicProp.mReferenceDofIndex)
               * mimicProp.mMultiplier
           + mimicProp.mOffset - mJoint->getPosition(i);
-    double desiredVelocity = math::clip(
-        qError / timeStep,
-        mJoint->getVelocityLowerLimit(i),
-        mJoint->getVelocityUpperLimit(i));
+    const double erp = kDefaultErp;
+    double desiredVelocity
+        = math::clip((erp * qError) / timeStep, velLower, velUpper);
 
     mNegativeVelocityError[i] = desiredVelocity - mJoint->getVelocity(i);
 
     if (mNegativeVelocityError[i] != 0.0) {
-      mUpperBound[i] = mJoint->getForceUpperLimit(i) * timeStep;
-      mLowerBound[i] = mJoint->getForceLowerLimit(i) * timeStep;
+      double upper = mJoint->getForceUpperLimit(i);
+      double lower = mJoint->getForceLowerLimit(i);
+      if (!std::isfinite(upper))
+        upper = kDefaultForceLimit;
+      if (!std::isfinite(lower))
+        lower = -kDefaultForceLimit;
+
+      mUpperBound[i] = upper * timeStep;
+      mLowerBound[i] = lower * timeStep;
 
       if (mActive[i]) {
         ++(mLifeTime[i]);
@@ -318,8 +347,14 @@ void CouplerConstraint::uniteSkeletons()
 
   auto dependentRoot = ConstraintBase::compressPath(dependentSkeleton);
 
-  for (const auto& mimicProp : mMimicProps) {
-    if (mimicProp.mReferenceJoint == nullptr)
+  for (std::size_t i = 0; i < mJoint->getNumDofs(); ++i) {
+    if (i >= mMimicProps.size())
+      break;
+
+    const auto& mimicProp = mMimicProps[i];
+
+    if (mJoint->getActuatorType(i) != dynamics::Joint::MIMIC
+        || mimicProp.mReferenceJoint == nullptr)
       continue;
 
     auto referenceBody = mimicProp.mReferenceJoint->getChildBodyNode();
@@ -359,8 +394,13 @@ void CouplerConstraint::uniteSkeletons()
 //==============================================================================
 bool CouplerConstraint::isActive() const
 {
-  if (mJoint->getActuatorType() == dynamics::Joint::MIMIC)
-    return true;
+  const auto dof = std::min(mJoint->getNumDofs(), mMimicProps.size());
+  for (std::size_t i = 0; i < dof; ++i) {
+    if (mJoint->getActuatorType(i) == dynamics::Joint::MIMIC
+        && mMimicProps[i].mReferenceJoint != nullptr) {
+      return true;
+    }
+  }
 
   return false;
 }

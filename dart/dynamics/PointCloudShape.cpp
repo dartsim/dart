@@ -37,7 +37,7 @@
 namespace dart {
 namespace dynamics {
 
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
 
 namespace {
 
@@ -49,7 +49,7 @@ Eigen::Vector3d toVector3d(const octomap::point3d& point)
 
 } // namespace
 
-#endif // HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP
 
 //==============================================================================
 PointCloudShape::PointCloudShape(double visualSize)
@@ -109,7 +109,7 @@ void PointCloudShape::setPoint(std::span<const Eigen::Vector3d> points)
   incrementVersion();
 }
 
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
 //==============================================================================
 void PointCloudShape::setPoints(const ::octomap::Pointcloud& pointCloud)
 {
@@ -194,7 +194,7 @@ Eigen::Vector4d PointCloudShape::getOverallColor() const
 
   DART_WARN_IF(
       mColors.size() > 1,
-      "[PointCloudShape] Attempting to get the overal color when the color "
+      "[PointCloudShape] Attempting to get the overall color when the color "
       "array contains more than one color. This is potentially an error. "
       "Returning the first color in the color array.");
 

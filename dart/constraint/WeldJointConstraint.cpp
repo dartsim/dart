@@ -36,7 +36,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Constants.hpp"
-#include "dart/math/lcp/Dantzig/Lcp.hpp"
+#include "dart/math/lcp/dantzig/Lcp.hpp"
 
 namespace dart {
 namespace constraint {
@@ -282,7 +282,7 @@ void WeldJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
     _vel[i] = velChange[i];
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
-  // varaible in ODE
+  // variable in ODE
   if (_withCfm) {
     _vel[mAppliedImpulseIndex]
         += _vel[mAppliedImpulseIndex] * mConstraintForceMixing;

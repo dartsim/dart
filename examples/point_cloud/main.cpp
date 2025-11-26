@@ -32,12 +32,15 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
+#include <dart/gui/ImGuiHandler.hpp>
 
 #include <dart/utils/All.hpp>
 #include <dart/utils/urdf/urdf.hpp>
 
 #include <dart/All.hpp>
+
+#include <CLI/CLI.hpp>
 
 #include <cmath>
 
@@ -48,7 +51,7 @@ using namespace dart::math;
 
 static const std::string& robotName = "KR5";
 
-class PointCloudWorld : public gui::osg::RealTimeWorldNode
+class PointCloudWorld : public gui::RealTimeWorldNode
 {
 public:
   enum PointSamplingMode
@@ -59,7 +62,7 @@ public:
 
   explicit PointCloudWorld(
       simulation::WorldPtr world, dynamics::SkeletonPtr robot)
-    : gui::osg::RealTimeWorldNode(std::move(world)),
+    : gui::RealTimeWorldNode(std::move(world)),
       mSampleingMode(SAMPLE_ON_ROBOT),
       mRobot(std::move(robot))
   {
@@ -294,13 +297,13 @@ protected:
   bool mUpdate{true};
 };
 
-class PointCloudWidget : public dart::gui::osg::ImGuiWidget
+class PointCloudWidget : public dart::gui::ImGuiWidget
 {
 public:
   PointCloudWidget(
-      dart::gui::osg::ImGuiViewer* viewer,
+      dart::gui::ImGuiViewer* viewer,
       PointCloudWorld* node,
-      gui::osg::GridVisual* grid)
+      gui::GridVisual* grid)
     : mViewer(viewer), mNode(node), mGrid(grid)
   {
     // Do nothing
@@ -501,13 +504,13 @@ public:
           int e = static_cast<int>(mGrid->getPlaneType());
           if (mViewer->isAllowingSimulation()) {
             if (ImGui::RadioButton("XY-Plane", &e, 0))
-              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::XY);
+              mGrid->setPlaneType(gui::GridVisual::PlaneType::XY);
             ImGui::SameLine();
             if (ImGui::RadioButton("YZ-Plane", &e, 1))
-              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::YZ);
+              mGrid->setPlaneType(gui::GridVisual::PlaneType::YZ);
             ImGui::SameLine();
             if (ImGui::RadioButton("ZX-Plane", &e, 2))
-              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::ZX);
+              mGrid->setPlaneType(gui::GridVisual::PlaneType::ZX);
           }
 
           static Eigen::Vector3f offset;
@@ -604,14 +607,14 @@ public:
   }
 
 protected:
-  osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;
+  osg::ref_ptr<dart::gui::ImGuiViewer> mViewer;
   osg::ref_ptr<PointCloudWorld> mNode;
-  osg::ref_ptr<gui::osg::GridVisual> mGrid;
+  osg::ref_ptr<gui::GridVisual> mGrid;
 };
 
 dynamics::SkeletonPtr createRobot(const std::string& name)
 {
-  auto urdfParser = dart::utils::DartLoader();
+  auto urdfParser = dart::utils::UrdfParser();
 
   // Load the robot
   auto robot
@@ -628,7 +631,7 @@ dynamics::SkeletonPtr createRobot(const std::string& name)
 
 dynamics::SkeletonPtr createGround()
 {
-  auto urdfParser = dart::utils::DartLoader();
+  auto urdfParser = dart::utils::UrdfParser();
 
   auto ground = urdfParser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
 
@@ -684,8 +687,14 @@ dynamics::SimpleFramePtr createSensorFrame()
   return sensorFrame;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+  CLI::App app("Point cloud visualization example");
+  double guiScale = 1.0;
+  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
+      ->check(CLI::PositiveNumber);
+  CLI11_PARSE(app, argc, argv);
+
   auto world = dart::simulation::World::create();
   world->setGravity(Eigen::Vector3d::Zero());
 
@@ -708,13 +717,13 @@ int main()
   ::osg::ref_ptr<PointCloudWorld> node = new PointCloudWorld(world, robot);
 
   // Create the Viewer instance
-  osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
-      = new dart::gui::osg::ImGuiViewer();
+  osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
+  viewer->setImGuiScale(static_cast<float>(guiScale));
   viewer->addWorldNode(node);
   viewer->simulate(true);
 
   // Create grid
-  ::osg::ref_ptr<gui::osg::GridVisual> grid = new gui::osg::GridVisual();
+  ::osg::ref_ptr<gui::GridVisual> grid = new gui::GridVisual();
 
   // Add control widget for atlas
   viewer->getImGuiHandler()->addWidget(

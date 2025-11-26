@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/urdf/urdf.hpp>
 
@@ -58,7 +58,7 @@ using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::gui;
-using namespace dart::gui::osg;
+using namespace dart::gui;
 using namespace dart::math;
 
 class Controller
@@ -183,7 +183,7 @@ public:
     // Compute the Jacobian time derivative
     // snippet:cpp-dominoes-lesson3b-jacobian-deriv-start
     Jacobian dJ = mEndEffector->getJacobianClassicDeriv(mOffset);
-    // Comptue the pseudo-inverse of the Jacobian time derivative
+    // Compute the pseudo-inverse of the Jacobian time derivative
     Eigen::MatrixXd pinv_dJ
         = dJ.transpose()
           * (dJ * dJ.transpose() + 0.0025 * Eigen::Matrix6d::Identity())
@@ -555,11 +555,11 @@ SkeletonPtr createManipulator()
 {
   // Load the Skeleton from a file
   // snippet:cpp-dominoes-lesson2a-loader-start
-  dart::utils::DartLoader loader;
+  dart::utils::UrdfParser parser;
   // snippet:cpp-dominoes-lesson2a-loader-end
   // snippet:cpp-dominoes-lesson2a-parse-start
   SkeletonPtr manipulator
-      = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+      = parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   // snippet:cpp-dominoes-lesson2a-parse-end
   // snippet:cpp-dominoes-lesson2a-name-start
   manipulator->setName("manipulator");

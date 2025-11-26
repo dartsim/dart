@@ -38,7 +38,7 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Constants.hpp"
-#include "dart/math/lcp/Dantzig/Lcp.hpp"
+#include "dart/math/lcp/dantzig/Lcp.hpp"
 
 #include <iostream>
 
@@ -387,7 +387,7 @@ void JointLimitConstraint::getVelocityChange(double* delVel, bool withCfm)
   }
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
-  // varaible in ODE
+  // variable in ODE
   if (withCfm) {
     delVel[mAppliedImpulseIndex]
         += delVel[mAppliedImpulseIndex] * mConstraintForceMixing;

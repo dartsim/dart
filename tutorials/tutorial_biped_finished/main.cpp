@@ -32,7 +32,7 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
 
@@ -49,7 +49,7 @@ using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::gui;
-using namespace dart::gui::osg;
+using namespace dart::gui;
 using namespace dart::utils;
 using namespace dart::math;
 
@@ -409,7 +409,7 @@ void setVelocityActuators(SkeletonPtr biped)
 Eigen::VectorXd solveIK(SkeletonPtr biped)
 {
   // snippet:cpp-biped-lesson7-ik-start
-  // Modify the intial pose to one-foot stance before IK
+  // Modify the initial pose to one-foot stance before IK
   biped->setPosition(biped->getDof("j_shin_right")->getIndexInSkeleton(), -1.4);
   biped->setPosition(
       biped->getDof("j_bicep_left_x")->getIndexInSkeleton(), 0.8);

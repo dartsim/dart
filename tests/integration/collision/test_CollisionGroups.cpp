@@ -33,6 +33,7 @@
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Group.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/World.hpp"
 
@@ -43,6 +44,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <memory>
 
 class CollisionGroupsTest : public testing::Test,
                             public testing::WithParamInterface<const char*>
@@ -262,6 +264,70 @@ TEST_P(CollisionGroupsTest, BodyNodeSubscription)
   EXPECT_FALSE(group->collide());
 }
 
+TEST_P(CollisionGroupsTest, MetaSkeletonSubscription)
+{
+  if (!dart::collision::CollisionDetector::getFactory()->canCreate(
+          GetParam())) {
+    std::cout << "Skipping test for [" << GetParam() << "], because it is not "
+              << "available" << std::endl;
+    return;
+  } else {
+    std::cout << "Running CollisionGroups test for [" << GetParam() << "]"
+              << std::endl;
+  }
+
+  auto cd
+      = dart::collision::CollisionDetector::getFactory()->create(GetParam());
+  auto collisionGroup = cd->createCollisionGroup();
+
+  auto skelA = dart::dynamics::Skeleton::create("skelA");
+  auto skelB = dart::dynamics::Skeleton::create("skelB");
+
+  auto pairA = skelA->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto pairB1 = skelB->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto pairB2 = skelB->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  pairA.first->setTransform(tf);
+
+  tf.translation()[0] = 0.6;
+  pairB1.first->setTransform(tf);
+
+  tf.translation()[0] = 0.3;
+  pairB2.first->setTransform(tf);
+
+  auto metaGroup = dart::dynamics::Group::create(
+      "meta",
+      std::vector<dart::dynamics::BodyNode*>{pairA.second, pairB1.second});
+
+  collisionGroup->subscribeTo(
+      std::static_pointer_cast<const dart::dynamics::MetaSkeleton>(metaGroup));
+
+  EXPECT_FALSE(collisionGroup->collide());
+
+  auto sphere = std::make_shared<dart::dynamics::SphereShape>(0.4);
+
+  pairA.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(sphere);
+  pairB1.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(sphere);
+
+  EXPECT_TRUE(collisionGroup->collide());
+
+  metaGroup->removeBodyNode(pairB1.second);
+  EXPECT_FALSE(collisionGroup->collide());
+
+  pairB2.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(sphere);
+  metaGroup->addBodyNode(pairB2.second);
+
+  Eigen::Isometry3d tfB2 = Eigen::Isometry3d::Identity();
+  tfB2.translation()[0] = 0.2;
+  pairB2.first->setTransform(tfB2);
+
+  EXPECT_TRUE(collisionGroup->collide());
+
+  metaGroup->removeBodyNode(pairA.second);
+  EXPECT_FALSE(collisionGroup->collide());
+}
+
 TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
 {
   if (!dart::collision::CollisionDetector::getFactory()->canCreate(
@@ -286,7 +352,7 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
 
   auto group = world->getConstraintSolver()->getCollisionGroup();
 
-  // Check that there are no subscribtions before adding the skeletons to the
+  // Check that there are no subscriptions before adding the skeletons to the
   // world
   EXPECT_FALSE(group->isSubscribedTo(skel_A.get()));
   EXPECT_FALSE(group->isSubscribedTo(skel_B.get()));
@@ -294,7 +360,7 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
   world->addSkeleton(skel_A);
   world->addSkeleton(skel_B);
 
-  // Check that there are subscribtions after adding the skeletons to the
+  // Check that there are subscriptions after adding the skeletons to the
   // world
   EXPECT_TRUE(group->isSubscribedTo(skel_A.get()));
   EXPECT_TRUE(group->isSubscribedTo(skel_B.get()));
@@ -308,13 +374,13 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
   auto sn = pair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
       boxShape);
 
-  // Needed to update subscribtions
+  // Needed to update subscriptions
   world->step();
 
   EXPECT_TRUE(group->hasShapeFrame(sn));
   const auto* skel_A_ptr = skel_A.get();
   const auto* skel_B_ptr = skel_B.get();
-  // Check that there are no subscribtions after removing the skeletons from the
+  // Check that there are no subscriptions after removing the skeletons from the
   // world
   world->removeSkeleton(skel_A);
   world->removeSkeleton(skel_B);

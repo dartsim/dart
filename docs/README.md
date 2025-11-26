@@ -17,12 +17,12 @@ Located in `onboarding/` - **Architecture guides for developers:**
 - [Dynamics System](onboarding/dynamics.md) - Articulated body system and kinematics
 - [Constraint Solver](onboarding/constraints.md) - Constraint resolution and collision response
 - [GUI & Rendering](onboarding/gui-rendering.md) - OpenSceneGraph integration details
-- [Python Bindings](onboarding/python-bindings.md) - pybind11 bindings architecture
+- [Python Bindings](onboarding/python-bindings.md) - nanobind bindings architecture
 - [Build System](onboarding/build-system.md) - CMake internals and dependency analysis
 - [Building from Source](onboarding/building.md) - Step-by-step build instructions
 - [Code Style Guide](onboarding/code-style.md) - Code conventions for C++, Python, and CMake
 
-*Format: Markdown (GitHub/LLM-friendly) for internal codebase understanding*
+_Format: Markdown (GitHub/LLM-friendly) for internal codebase understanding_
 
 ### User Documentation (ReadTheDocs)
 
@@ -31,7 +31,7 @@ Located in `readthedocs/` - **Published documentation for end users:**
 - **[User Guides](readthedocs/dart/user_guide/)** - Installation, tutorials, migration guides
 - **[API Reference](https://dart.readthedocs.io/)** - Published API documentation
 
-*Format: ReStructuredText (RST) for Sphinx/ReadTheDocs publishing*
+_Format: ReStructuredText (RST) for Sphinx/ReadTheDocs publishing_
 
 ## Quick Links by Task
 

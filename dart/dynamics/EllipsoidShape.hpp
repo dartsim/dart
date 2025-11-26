@@ -41,12 +41,12 @@ namespace dynamics {
 class DART_API EllipsoidShape : public Shape
 {
 public:
-  /// \brief Constructor.
+  /// @brief Constructor.
   explicit EllipsoidShape(const Eigen::Vector3d& diameters);
   // TODO(JS): In order to follow the commonly used convention, change the
   // constructor to take radii instead of diameters in DART 7.
 
-  /// \brief Destructor.
+  /// @brief Destructor.
   virtual ~EllipsoidShape();
 
   // Documentation inherited.
@@ -55,10 +55,10 @@ public:
   /// Returns shape type for this class
   static const std::string& getStaticType();
 
-  /// \brief Set diameters of this ellipsoid.
+  /// @brief Set diameters of this ellipsoid.
   void setDiameters(const Eigen::Vector3d& diameters);
 
-  /// \brief Get diameters of this ellipsoid.
+  /// @brief Get diameters of this ellipsoid.
   const Eigen::Vector3d& getDiameters() const;
 
   /// Set radii of this ellipsoid.
@@ -67,12 +67,12 @@ public:
   /// Get radii of this ellipsoid.
   const Eigen::Vector3d getRadii() const;
 
-  /// \brief Compute volume from given properties
+  /// @brief Compute volume from given properties
   static double computeVolume(const Eigen::Vector3d& diameters);
   // TODO(JS): In order to follow the commonly used convention, change to take
   // radii instead of diameters in DART 7.
 
-  /// \brief Compute moments of inertia of a ellipsoid
+  /// @brief Compute moments of inertia of a ellipsoid
   static Eigen::Matrix3d computeInertia(
       const Eigen::Vector3d& diameters, double mass);
   // TODO(JS): In order to follow the commonly used convention, change to take
@@ -84,7 +84,7 @@ public:
   // Documentation inherited.
   ShapePtr clone() const override;
 
-  /// \brief True if all the radii are exactly eqaul.
+  /// @brief True if all the radii are exactly equal.
   bool isSphere(void) const;
 
 protected:
@@ -95,7 +95,7 @@ protected:
   void updateVolume() const override;
 
 private:
-  /// \brief Diameters of this ellipsoid
+  /// @brief Diameters of this ellipsoid
   Eigen::Vector3d mDiameters;
 };
 

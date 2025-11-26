@@ -195,7 +195,7 @@ inline double IKlog(double f)
 #endif
 
 // there are checkpoints in ikfast that are evaluated to make sure they are 0.
-// This threshold speicfies by how much they can deviate
+// This threshold specifies by how much they can deviate
 #ifndef IKFAST_EVALCOND_THRESH
   #define IKFAST_EVALCOND_THRESH ((IkReal)0.000005)
 #endif
@@ -423,7 +423,7 @@ inline CheckValue<T> IKPowWithIntegerCheck(T f, int n)
 }
 
 /// solves the forward kinematics equations.
-/// \param pfree is an array specifying the free joints of the chain.
+/// @param pfree is an array specifying the free joints of the chain.
 IKFAST_API void ComputeFk(const IkReal* j, IkReal* eetrans, IkReal* eerot)
 {
   IkReal x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15,
@@ -36914,7 +36914,7 @@ public:
 };
 
 /// solves the inverse kinematics equations.
-/// \param pfree is an array specifying the free joints of the chain.
+/// @param pfree is an array specifying the free joints of the chain.
 IKFAST_API bool ComputeIk(
     const IkReal* eetrans,
     const IkReal* eerot,

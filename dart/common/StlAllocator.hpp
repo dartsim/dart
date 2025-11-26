@@ -73,22 +73,25 @@ public:
 
   /// Allocates n * sizeof(T) bytes of uninitialized storage.
   ///
-  /// \param[in] n: The number of objects to allocate sotrage for.
-  /// \param[in] hint: Point to a nearby memory location.
-  /// \return On success, the pointer to the beginning of newly allocated
+  /// @param[in] n: The number of objects to allocate storage for.
+  /// @param[in] hint: Point to a nearby memory location.
+  /// @return On success, the pointer to the beginning of newly allocated
   /// memory.
-  /// \return On failure, a null pointer
+  /// @return On failure, a null pointer
   [[nodiscard]] pointer allocate(size_type n, const void* hint = 0);
 
-  /// Deallocates the storage referenced by the pointer \c p, which must be a
+  /// Deallocates the storage referenced by the pointer @c p, which must be a
   /// pointer obtained by an earlier cal to allocate().
   ///
-  /// \param[in] pointer: Pointer obtained from allocate().
-  /// \param[in] n: Number of objects earlier passed to allocate().
-  void deallocate(pointer pointer, size_type n);
-  // TODO(JS): Make this constexpr once migrated to C++20
+  /// @param[in] pointer: Pointer obtained from allocate().
+  /// @param[in] n: Number of objects earlier passed to allocate().
+  void deallocate(pointer pointer, size_type n) noexcept;
 
-  // TODO(JS): Add size_type max_size() const noexcept;
+  /// Upper bound on elements that can be allocated.
+  [[nodiscard]] constexpr size_type max_size() const noexcept
+  {
+    return std::allocator_traits<Base>::max_size(*this);
+  }
 
   /// Prints state of the memory allocator
   void print(std::ostream& os = std::cout, int indent = 0) const;

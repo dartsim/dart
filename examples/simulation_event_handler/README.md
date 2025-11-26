@@ -5,12 +5,14 @@ This example demonstrates a comprehensive event handler class that replaces the 
 ## Features
 
 ### 1. Force Application on Rigid Bodies
+
 - Apply forces to selected rigid bodies in world coordinates
 - Real-time force magnitude adjustment
 - Support for both translational forces and rotational torques
 - Forces applied at the center of mass of selected bodies
 
 ### 2. Keyboard Interaction for Simulation Control
+
 - **Simulation Control**: Play/pause, step-by-step execution, reset
 - **Body Selection**: Navigate through all rigid bodies in the scene
 - **Force Application**: Arrow keys for linear forces, QWEAZC keys for torques
@@ -18,12 +20,14 @@ This example demonstrates a comprehensive event handler class that replaces the 
 - **Visualization Control**: Toggle force arrow visualization
 
 ### 3. Arrow Visualization
+
 - Red arrows showing applied forces in real-time
 - Arrows scale with force magnitude and direction
 - Arrows automatically clear after each application
 - Toggle on/off visualization for performance
 
 ### 4. Time Stepping Logic
+
 - Configurable simulation time step
 - Real-time time step adjustment during simulation
 - Step-by-step simulation for debugging
@@ -32,34 +36,41 @@ This example demonstrates a comprehensive event handler class that replaces the 
 ## Controls
 
 ### Simulation Control
+
 - **Space**: Toggle simulation play/pause
 - **S**: Step simulation one frame forward
 - **R**: Reset simulation to initial state
 
 ### Body Selection
+
 - **Tab**: Select next rigid body
 - **Backspace**: Select previous rigid body
 
 ### Force Application (on selected body)
+
 - **Arrow Keys**: Apply forces in X/Y directions
 - **U**: Apply upward force (+Z direction)
 - **D**: Apply downward force (-Z direction)
 
 ### Torque Application (on selected body)
+
 - **Q/A**: Apply torque around X axis (+/-)
 - **W/Z**: Apply torque around Y axis (+/-)
 - **E/C**: Apply torque around Z axis (+/-)
 
 ### Parameter Adjustment
+
 - **+/=**: Increase force/torque magnitude
-- **-/_**: Decrease force/torque magnitude
+- **-/\_**: Decrease force/torque magnitude
 - **>/.**: Increase simulation time step
 - **</, **: Decrease simulation time step
 
 ### Visualization
+
 - **V**: Toggle force arrow visualization
 
 ### Information
+
 - **I**: Print current simulation state
 - **H/?**: Show detailed help
 
@@ -78,7 +89,7 @@ world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
 // ... (create and add skeletons)
 
 // Create viewer
-dart::gui::osg::Viewer viewer;
+dart::gui::Viewer viewer;
 
 // Create event handler
 SimulationEventHandler* handler = new SimulationEventHandler(world, &viewer);
@@ -106,11 +117,13 @@ void customRenderLoop() {
 ## Implementation Details
 
 ### Architecture
+
 - **Header File**: `SimulationEventHandler.hpp` - Class declaration and interface
 - **Implementation**: `SimulationEventHandler.cpp` - Full functionality implementation
 - **Demo**: `main.cpp` - Example usage with sample rigid bodies
 
 ### Key Components
+
 1. **Event Handling**: Inherits from `osgGA::GUIEventHandler` for OSG integration
 2. **Force System**: Manages force/torque application with visual feedback
 3. **Body Management**: Automatic detection and selection of rigid bodies
@@ -118,6 +131,7 @@ void customRenderLoop() {
 5. **State Management**: Tracks simulation state and user preferences
 
 ### Performance Considerations
+
 - Arrow visualization updates only every 5 frames to reduce overhead
 - Automatic cleanup of visualization objects
 - Efficient rigid body detection and caching
@@ -142,6 +156,7 @@ make simulation_event_handler
 The `SimulationEventHandler` class is designed to be easily extensible:
 
 ### Adding New Controls
+
 ```cpp
 // In handle() method, add new key cases:
 case 'n':  // Custom action
@@ -150,6 +165,7 @@ case 'n':  // Custom action
 ```
 
 ### Custom Force Application
+
 ```cpp
 // Override or extend force application methods:
 void applyCustomForce(const Eigen::Vector3d& direction) {
@@ -161,6 +177,7 @@ void applyCustomForce(const Eigen::Vector3d& direction) {
 ```
 
 ### Additional Visualizations
+
 ```cpp
 // Add new visualization types:
 void addCustomVisualization() {

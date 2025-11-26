@@ -32,18 +32,17 @@
 
 #include "dart/constraint/DantzigLCPSolver.hpp"
 
-#include "dart/common/Macros.hpp"
-
-#if DART_BUILD_MODE_DEBUG
-  #include <iomanip>
-  #include <iostream>
-#endif
-
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
-#include "dart/math/lcp/Dantzig/Lcp.hpp"
 #include "dart/math/lcp/Lemke.hpp"
+#include "dart/math/lcp/dantzig/Lcp.hpp"
+
+#include <iomanip>
+#include <iostream>
+
+#include <cstring>
 
 namespace dart {
 namespace constraint {
@@ -81,7 +80,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   int* findex = new int[n];
 
   // Set w to 0 and findex to -1
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   std::memset(A, 0.0, n * nSkip * sizeof(double));
 #endif
   std::memset(w, 0.0, n * sizeof(double));
@@ -144,7 +143,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
       }
     }
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
     DART_ASSERT(isSymmetric(
         n, A, offset[i], offset[i] + constraint->getDimension() - 1));
 #endif
@@ -152,7 +151,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
     constraint->unexcite();
   }
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   DART_ASSERT(isSymmetric(n, A));
 #endif
 
@@ -188,7 +187,6 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
 }
 
 //==============================================================================
-#if DART_BUILD_MODE_DEBUG
 bool DantzigLCPSolver::isSymmetric(std::size_t _n, double* _A)
 {
   std::size_t nSkip = math::padding(_n);
@@ -327,7 +325,6 @@ void DantzigLCPSolver::print(
 
   delete[] Ax;
 }
-#endif
 
 } // namespace constraint
 } // namespace dart

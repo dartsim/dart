@@ -6,11 +6,11 @@ This guide describes how to build DART from source, including both the C++ libra
 
 DART is supported on the following operating systems and compilers:
 
-| Operating System      | Compiler              |
-|-----------------------|-----------------------|
-| Ubuntu 22.04 or later | GCC 11.2 or later     |
-| Windows 2022 or later | Visual Studio 2022    |
-| macOS 13 or later     | Clang 13 or later     |
+| Operating System      | Compiler           |
+| --------------------- | ------------------ |
+| Ubuntu 22.04 or later | GCC 11.2 or later  |
+| Windows 2022 or later | Visual Studio 2022 |
+| macOS 13 or later     | Clang 13 or later  |
 
 > **Note:** DART requires C++20. See [Compatibility Policy](compatibility-policy.md) for details on how platform requirements are determined.
 
@@ -76,7 +76,7 @@ Install optional dependencies:
 ```bash
 vcpkg install --triplet x64-windows \
   assimp eigen3 fcl fmt spdlog bullet3 glfw3 nlopt ode \
-  opencl opengl osg pagmo2 pybind11 tinyxml2 urdfdom yaml-cpp
+  opencl opengl osg pagmo2 nanobind tinyxml2 urdfdom yaml-cpp
 ```
 
 ### Arch Linux (experimental)
@@ -93,7 +93,7 @@ Install optional dependencies:
 yay -S \
   bullet coin-or-ipopt nlopt octomap ode opencl-clhpp \
   opencl-headers opencl-icd-loader openscenegraph pagmo spdlog tinyxml2 \
-  urdfdom pybind11
+  urdfdom nanobind
 ```
 
 ### FreeBSD (experimental)
@@ -103,6 +103,7 @@ TODO
 ## Dependency Reference
 
 For the complete and up-to-date list of dependencies with version requirements, refer to:
+
 - [`CMakeLists.txt`](../../CMakeLists.txt) - Authoritative source for CMake dependencies and version requirements
 - [`pixi.toml`](../../pixi.toml) - Managed dependencies for reproducible builds
 
@@ -174,6 +175,7 @@ DART uses CMake as its build system. CMake generates build files for various bui
 ### CMake Options
 
 For all available CMake configuration options and their defaults, refer to [`CMakeLists.txt`](../../CMakeLists.txt). Common options include:
+
 - `CMAKE_BUILD_TYPE` - Build configuration (Release, Debug, etc.). Only applies to single-config generators (e.g., Ninja, Unix Makefiles). Multi-config generators (Visual Studio, Xcode) expose the configuration inside the IDE or via `cmake --build` `--config`.
 - `DART_BUILD_DARTPY` - Enable Python bindings
 - `DART_BUILD_GUI` - Enable OpenSceneGraph GUI

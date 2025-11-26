@@ -198,11 +198,36 @@ Node* ShapeNode::cloneNode(BodyNode* parent) const
   shapeNode->duplicateAspects(this);
 
   shapeNode->copy(this);
+  if (const auto& shape = getShape())
+    shapeNode->setShape(shape->clone());
 
   if (mIK)
     shapeNode->mIK = mIK->clone(shapeNode);
 
   return shapeNode;
+}
+
+//==============================================================================
+void ShapeNode::remove()
+{
+  stageForRemoval();
+}
+
+//==============================================================================
+void ShapeNode::stageForRemoval()
+{
+  bool wasCollidable = false;
+  if (has<CollisionAspect>()) {
+    const auto* collision = get<CollisionAspect>();
+    wasCollidable = collision != nullptr && collision->getCollidable();
+  }
+
+  BodyNode* bodyNode = getBodyNodePtr().get();
+  if (wasCollidable && bodyNode) {
+    bodyNode->handleCollisionShapeStateChange(this, true, false);
+  }
+
+  Node::stageForRemoval();
 }
 
 } // namespace dynamics

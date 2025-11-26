@@ -44,6 +44,7 @@
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/MimicDofProperties.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/ScrewJoint.hpp"
@@ -193,7 +194,20 @@ struct SDFJoint
   std::string parentName;
   std::string childName;
   std::string type;
+  struct MimicInfo
+  {
+    std::string referenceJointName;
+    std::size_t referenceDof = 0;
+    double multiplier = 1.0;
+    double offset = 0.0;
+    dynamics::MimicConstraintType constraintType
+        = dynamics::MimicConstraintType::Motor;
+  };
+  std::vector<MimicInfo> mimicInfos;
 };
+
+std::vector<SDFJoint::MimicInfo> readMimicElements(
+    const ElementPtr& axisElement);
 
 // Maps the name of a BodyNode to its properties
 using BodyMap = common::aligned_map<std::string, SDFBodyNode>;
@@ -212,6 +226,9 @@ dynamics::SkeletonPtr readSkeleton(
     const ElementPtr& skeletonElement,
     const common::Uri& baseUri,
     const ResolvedOptions& options);
+
+void applyMimicConstraints(
+    const dynamics::SkeletonPtr& skeleton, const JointMap& sdfJoints);
 
 bool createPair(
     dynamics::SkeletonPtr skeleton,
@@ -807,6 +824,8 @@ dynamics::SkeletonPtr readSkeleton(
   // Set positions to their initial values
   newSkeleton->resetPositions();
 
+  applyMimicConstraints(newSkeleton, sdfJoints);
+
   return newSkeleton;
 }
 
@@ -876,6 +895,62 @@ NextResult getNextJointAndNodePair(
   }
 
   return VALID;
+}
+
+//==============================================================================
+void applyMimicConstraints(
+    const dynamics::SkeletonPtr& skeleton, const JointMap& sdfJoints)
+{
+  for (const auto& entry : sdfJoints) {
+    const auto& jointInfo = entry.second;
+    if (jointInfo.mimicInfos.empty())
+      continue;
+
+    auto* joint = skeleton->getJoint(jointInfo.properties->mName);
+    if (!joint)
+      continue;
+
+    std::vector<dynamics::MimicDofProperties> props
+        = joint->getMimicDofProperties();
+    props.resize(joint->getNumDofs());
+
+    bool applied = false;
+    bool useCoupler = false;
+    for (const auto& mimic : jointInfo.mimicInfos) {
+      auto* ref = skeleton->getJoint(mimic.referenceJointName);
+      if (!ref) {
+        DART_WARN(
+            "[SdfParser] Ignoring mimic joint [{}] referencing missing joint "
+            "[{}]",
+            jointInfo.properties->mName,
+            mimic.referenceJointName);
+        continue;
+      }
+
+      const std::size_t followerIndex
+          = std::min(mimic.referenceDof, joint->getNumDofs() - 1);
+      const std::size_t referenceIndex
+          = std::min(mimic.referenceDof, ref->getNumDofs() - 1);
+
+      auto& prop = props[followerIndex];
+      prop.mReferenceJoint = ref;
+      prop.mReferenceDofIndex = referenceIndex;
+      prop.mMultiplier = mimic.multiplier;
+      prop.mOffset = mimic.offset;
+      prop.mConstraintType = mimic.constraintType;
+      applied = true;
+      useCoupler
+          = useCoupler
+            || mimic.constraintType == dynamics::MimicConstraintType::Coupler;
+    }
+
+    if (!applied)
+      continue;
+
+    joint->setMimicJointDofs(props);
+    joint->setActuatorType(dynamics::Joint::MIMIC);
+    joint->setUseCouplerConstraint(useCoupler);
+  }
 }
 
 dynamics::SkeletonPtr makeSkeleton(
@@ -1006,6 +1081,7 @@ SDFBodyNode readBodyNode(
   // Name attribute
   std::string name = getAttributeString(bodyNodeElement, "name");
   properties.mName = name;
+  const std::string bodyName = name;
 
   //--------------------------------------------------------------------------
   // gravity
@@ -1033,13 +1109,33 @@ SDFBodyNode readBodyNode(
 
   //--------------------------------------------------------------------------
   // inertia
+  constexpr double kMinReasonableMass = 1e-9; // 1 microgram
+  bool massSpecified = false;
   if (hasElement(bodyNodeElement, "inertial")) {
     const ElementPtr& inertiaElement = getElement(bodyNodeElement, "inertial");
 
     // mass
     if (hasElement(inertiaElement, "mass")) {
       double mass = getValueDouble(inertiaElement, "mass");
+      if (mass <= 0.0) {
+        DART_WARN(
+            "[SdfParser] Link [{}] has non-positive mass [{}]. Clamping to {} "
+            "to continue parsing.",
+            bodyName,
+            mass,
+            kMinReasonableMass);
+        mass = kMinReasonableMass;
+      } else if (mass < kMinReasonableMass) {
+        DART_WARN(
+            "[SdfParser] Link [{}] has a very small mass [{} kg]; clamping to "
+            "{} to avoid numerical issues.",
+            bodyName,
+            mass,
+            kMinReasonableMass);
+        mass = kMinReasonableMass;
+      }
       properties.mInertia.setMass(mass);
+      massSpecified = true;
     }
 
     // offset
@@ -1062,7 +1158,32 @@ SDFBodyNode readBodyNode(
       double iyz = getValueDouble(moiElement, "iyz");
 
       properties.mInertia.setMoment(ixx, iyy, izz, ixy, ixz, iyz);
+    } else if (massSpecified) {
+      // Keep the inertia physically meaningful by matching the moment scale
+      // to the specified mass; geometry is unknown, so use an isotropic guess.
+      const double mass = properties.mInertia.getMass();
+      properties.mInertia.setMoment(Eigen::Matrix3d::Identity() * mass);
+      DART_WARN(
+          "[SdfParser] Link [{}] defines <mass> but no <inertia>; using an "
+          "isotropic inertia tensor (mass * I). Provide <inertia> for "
+          "physically correct behavior.",
+          bodyName);
     }
+
+    if (!massSpecified) {
+      DART_WARN(
+          "[SdfParser] Link [{}] is missing <mass>; using default mass of 1 "
+          "kg. "
+          "Specify <inertial><mass> to avoid unstable simulation.",
+          bodyName);
+    }
+  } else {
+    DART_WARN(
+        "[SdfParser] Link [{}] is missing <inertial>; using default "
+        "mass/inertia "
+        "(1 kg, unit inertia). Specify <inertial> to avoid unstable "
+        "simulation.",
+        bodyName);
   }
 
   SDFBodyNode sdfBodyNode;
@@ -1343,6 +1464,34 @@ JointMap readAllJoints(
   return sdfJoints;
 }
 
+std::vector<SDFJoint::MimicInfo> readMimicElements(
+    const ElementPtr& axisElement)
+{
+  std::vector<SDFJoint::MimicInfo> mimics;
+  if (!axisElement || !hasElement(axisElement, "mimic"))
+    return mimics;
+
+  const auto mimicElement = getElement(axisElement, "mimic");
+  if (!mimicElement)
+    return mimics;
+
+  SDFJoint::MimicInfo info;
+  info.referenceJointName = getAttributeString(mimicElement, "joint");
+  if (hasAttribute(mimicElement, "axis")) {
+    const auto axisAttr = getAttributeString(mimicElement, "axis");
+    info.referenceDof = axisAttr == "axis2" ? 1u : 0u;
+  }
+  info.multiplier = hasElement(mimicElement, "multiplier")
+                        ? getValueDouble(mimicElement, "multiplier")
+                        : 1.0;
+  info.offset = hasElement(mimicElement, "offset")
+                    ? getValueDouble(mimicElement, "offset")
+                    : 0.0;
+  mimics.push_back(info);
+
+  return mimics;
+}
+
 SDFJoint readJoint(
     const ElementPtr& _jointElement,
     const BodyMap& _sdfBodyNodes,
@@ -1409,6 +1558,23 @@ SDFJoint readJoint(
   newJoint.parentName
       = (parent_it == _sdfBodyNodes.end()) ? "" : parent_it->first;
   newJoint.childName = (child_it == _sdfBodyNodes.end()) ? "" : child_it->first;
+
+  //--------------------------------------------------------------------------
+  // Mimic metadata (captured before joint creation)
+  if (hasElement(_jointElement, "axis")) {
+    const ElementPtr& axisElement = getElement(_jointElement, "axis");
+    const auto mimics = readMimicElements(axisElement);
+    newJoint.mimicInfos.insert(
+        newJoint.mimicInfos.end(), mimics.begin(), mimics.end());
+  }
+  if (hasElement(_jointElement, "axis2")) {
+    const ElementPtr& axis2Element = getElement(_jointElement, "axis2");
+    auto mimics = readMimicElements(axis2Element);
+    for (auto& m : mimics)
+      m.referenceDof = 1u; // axis2 maps to the second DoF
+    newJoint.mimicInfos.insert(
+        newJoint.mimicInfos.end(), mimics.begin(), mimics.end());
+  }
 
   //--------------------------------------------------------------------------
   // transformation

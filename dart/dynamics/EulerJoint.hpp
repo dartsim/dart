@@ -88,9 +88,9 @@ public:
   bool isCyclic(std::size_t _index) const override;
 
   /// Set the axis order
-  /// \param[in] _order Axis order
-  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
-  /// renmaed according to the axis order.
+  /// @param[in] _order Axis order
+  /// @param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// renamed according to the axis order.
   void setAxisOrder(AxisOrder _order, bool _renameDofs = true);
 
   /// Return the axis order

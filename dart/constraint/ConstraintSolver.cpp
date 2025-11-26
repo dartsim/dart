@@ -516,19 +516,47 @@ void ConstraintSolver::updateConstraints()
       }
 
       if (joint->areLimitsEnforced()
-          || joint->getActuatorType() == dynamics::Joint::SERVO) {
+          || joint->hasActuatorType(dynamics::Joint::SERVO)) {
         mJointConstraints.push_back(std::make_shared<JointConstraint>(joint));
       }
 
-      if (joint->getActuatorType() == dynamics::Joint::MIMIC
-          && joint->getMimicJoint()) {
-        if (joint->isUsingCouplerConstraint()) {
-          mCouplerConstraints.push_back(std::make_shared<CouplerConstraint>(
-              joint, joint->getMimicDofProperties()));
-        } else {
-          mMimicMotorConstraints.push_back(
-              std::make_shared<MimicMotorConstraint>(
-                  joint, joint->getMimicDofProperties()));
+      if (joint->hasActuatorType(dynamics::Joint::MIMIC)) {
+        auto mimicProps = joint->getMimicDofProperties();
+        mimicProps.resize(joint->getNumDofs());
+        const auto dofCount = joint->getNumDofs();
+        bool hasValidMimicDof = false;
+        bool useCouplerConstraint = false;
+        bool allMimicWithReference = true;
+        for (std::size_t dofIndex = 0; dofIndex < dofCount; ++dofIndex) {
+          if (joint->getActuatorType(dofIndex) == dynamics::Joint::MIMIC) {
+            if (mimicProps[dofIndex].mReferenceJoint != nullptr) {
+              hasValidMimicDof = true;
+              if (mimicProps[dofIndex].mConstraintType
+                  == dynamics::MimicConstraintType::Coupler) {
+                useCouplerConstraint = true;
+              }
+            } else {
+              allMimicWithReference = false;
+              DART_WARN(
+                  "Joint '{}' DoF {} is set to MIMIC without a reference; "
+                  "mimic constraint will be skipped.",
+                  joint->getName(),
+                  dofIndex);
+            }
+          } else {
+            allMimicWithReference = false;
+          }
+        }
+
+        if (hasValidMimicDof) {
+          if (useCouplerConstraint && allMimicWithReference) {
+            mCouplerConstraints.push_back(std::make_shared<CouplerConstraint>(
+                joint, joint->getMimicDofProperties()));
+          } else {
+            mMimicMotorConstraints.push_back(
+                std::make_shared<MimicMotorConstraint>(
+                    joint, joint->getMimicDofProperties()));
+          }
         }
       }
     }
@@ -631,19 +659,16 @@ void ConstraintSolver::solveConstrainedGroups()
 //==============================================================================
 bool ConstraintSolver::isSoftContact(const collision::Contact& contact) const
 {
-  auto* shapeNode1 = contact.collisionObject1->getShapeFrame()->asShapeNode();
-  auto* shapeNode2 = contact.collisionObject2->getShapeFrame()->asShapeNode();
-  DART_ASSERT(shapeNode1);
-  DART_ASSERT(shapeNode2);
+  const auto bodyNode1 = contact.getBodyNodePtr1();
+  const auto bodyNode2 = contact.getBodyNodePtr2();
+  DART_ASSERT(bodyNode1);
+  DART_ASSERT(bodyNode2);
 
-  auto* bodyNode1 = shapeNode1->getBodyNodePtr().get();
-  auto* bodyNode2 = shapeNode2->getBodyNodePtr().get();
+  const auto bodyNode1IsSoft
+      = dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode1.get()) != nullptr;
 
-  auto bodyNode1IsSoft
-      = dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode1) != nullptr;
-
-  auto bodyNode2IsSoft
-      = dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode2) != nullptr;
+  const auto bodyNode2IsSoft
+      = dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode2.get()) != nullptr;
 
   return bodyNode1IsSoft || bodyNode2IsSoft;
 }

@@ -15,7 +15,7 @@ import numpy as np
 import dartpy as dart
 
 
-class WholeBodyIKWorldNode(dart.gui.osg.RealTimeWorldNode):
+class WholeBodyIKWorldNode(dart.gui.RealTimeWorldNode):
     def __init__(self, world, robot):
         super().__init__(world)
         self.robot = robot
@@ -37,8 +37,8 @@ def parse_args():
 
 
 def load_atlas_robot():
-    loader = dart.utils.DartLoader()
-    atlas = loader.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
+    parser = dart.utils.UrdfParser()
+    atlas = parser.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
 
     if not atlas:
         raise RuntimeError("Failed to load Atlas robot!")
@@ -78,7 +78,7 @@ def configure_smooth_motion(ik):
 
 def enable_gui_controls(world, atlas, left_hand, right_hand):
     node = WholeBodyIKWorldNode(world, atlas)
-    viewer = dart.gui.osg.Viewer()
+    viewer = dart.gui.Viewer()
     viewer.addWorldNode(node)
 
     # TODO(Lesson 4): Call viewer.enableDragAndDrop on both hands to allow

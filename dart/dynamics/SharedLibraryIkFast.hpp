@@ -49,18 +49,18 @@ class DART_API SharedLibraryIkFast : public IkFast
 public:
   /// Constructor
   ///
-  /// \param[in] ik The parent InverseKinematics solver that is associated with
+  /// @param[in] ik The parent InverseKinematics solver that is associated with
   /// this gradient method.
-  /// \param[in] filePath The path to the shared library of the IkFast binary
+  /// @param[in] filePath The path to the shared library of the IkFast binary
   /// file
-  /// \param[in] dofMap The indices to the degrees-of-freedom that will be
+  /// @param[in] dofMap The indices to the degrees-of-freedom that will be
   /// solved by IkFast. The number of DOFs can be varied depending on the IkFast
   /// solvers.
-  /// \param[in] freeDofMap The indices to the DOFs that are not solved by the
+  /// @param[in] freeDofMap The indices to the DOFs that are not solved by the
   /// IkFast solver. The values of these DOFs should be set properly.
-  /// \param[in] methodName The name of this analytical inverse kinematics
+  /// @param[in] methodName The name of this analytical inverse kinematics
   /// method.
-  /// \param[in] properties Properties of InverseKinematics::Analytical.
+  /// @param[in] properties Properties of InverseKinematics::Analytical.
   SharedLibraryIkFast(
       InverseKinematics* ik,
       const std::string& filePath,

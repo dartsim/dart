@@ -38,7 +38,7 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Constants.hpp"
-#include "dart/math/lcp/Dantzig/Lcp.hpp"
+#include "dart/math/lcp/dantzig/Lcp.hpp"
 
 #include <algorithm>
 
@@ -298,7 +298,8 @@ void JointConstraint::update()
         continue;
       }
 
-      const bool isServo = mJoint->getActuatorType() == dynamics::Joint::SERVO;
+      const bool isServo = mJoint->getActuatorType(static_cast<std::size_t>(i))
+                           == dynamics::Joint::SERVO;
       const double servoCommand
           = isServo ? mJoint->getCommand(static_cast<std::size_t>(i)) : 0.0;
       const bool atLowerLimit
@@ -367,7 +368,8 @@ void JointConstraint::update()
     }
 
     // Servo motor constraint check
-    if (mJoint->getActuatorType() == dynamics::Joint::SERVO) {
+    if (mJoint->getActuatorType(static_cast<std::size_t>(i))
+        == dynamics::Joint::SERVO) {
       // The desired velocity shouldn't be out of the velocity limits
       double desired_velocity = math::clip(
           mJoint->getCommand(static_cast<std::size_t>(i)),
@@ -411,7 +413,7 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
     if (!mActive[i])
       continue;
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
     if (std::abs(lcp->w[index]) > 1e-6) {
       DART_ERROR(
           "Invalid {}-th slack variable. Expected: 0.0. Actual: {}.",
@@ -426,7 +428,7 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
     lcp->lo[index] = mImpulseLowerBound[i];
     lcp->hi[index] = mImpulseUpperBound[i];
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
     if (lcp->findex[index] != -1) {
       DART_ERROR(
           "Invalid {}-th friction index. Expected: -1. Actual: {}.",
@@ -494,7 +496,7 @@ void JointConstraint::getVelocityChange(double* delVel, bool withCfm)
   }
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
-  // varaible in ODE
+  // variable in ODE
   if (withCfm) {
     delVel[mAppliedImpulseIndex]
         += delVel[mAppliedImpulseIndex] * mConstraintForceMixing;

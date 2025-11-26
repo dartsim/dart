@@ -39,7 +39,7 @@
 
 #include <cmath>
 
-namespace dart::math::lcp {
+namespace dart::math {
 
 // double RandDouble(double _low, double _high) {
 //  double temp;
@@ -103,7 +103,7 @@ int Lemke(
   nonbas.clear();
 
   // TODO: here suppose initial guess z0 is [0,0,0,...], this contradicts to
-  // ODE's w always initilized as 0
+  // ODE's w always initialized as 0
   for (int i = 0; i < n; ++i) {
     nonbas.push_back(i);
   }
@@ -320,4 +320,4 @@ bool validate(
   return true;
 }
 
-} // namespace dart::math::lcp
+} // namespace dart::math

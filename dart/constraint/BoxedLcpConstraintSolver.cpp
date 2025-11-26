@@ -32,24 +32,22 @@
 
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 
-#include "dart/common/Macros.hpp"
-
-#include <fmt/ostream.h>
-
-#include <cassert>
-
-#if DART_BUILD_MODE_DEBUG
-  #include <iomanip>
-  #include <iostream>
-#endif
-
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
-#include "dart/math/lcp/Dantzig/Lcp.hpp"
 #include "dart/math/lcp/Lemke.hpp"
+#include "dart/math/lcp/dantzig/Lcp.hpp"
+
+#include <fmt/ostream.h>
+
+#include <iomanip>
+#include <iostream>
+
+#include <cassert>
+#include <cmath>
 
 namespace dart {
 namespace constraint {
@@ -143,12 +141,13 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     return;
 
   const int nSkip = math::padding(n);
-#if DART_BUILD_MODE_RELEASE
+#if defined(NDEBUG)
   mA.resize(n, nSkip);
 #else // debug
   mA.setZero(n, nSkip);
 #endif
   mX.resize(n);
+  mX.setZero();
   mB.resize(n);
   mW.setZero(n); // set w to 0
   mLo.resize(n);
@@ -228,7 +227,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     }
   }
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   DART_ASSERT(isSymmetric(n, mA.data()));
 #endif
 
@@ -267,9 +266,11 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   if (success && mX.hasNaN())
     success = false;
 
+  bool fallbackSuccess = false;
+  bool fallbackRan = false;
   if (!success && mSecondaryBoxedLcpSolver) {
     DART_PROFILE_SCOPED_N("Secondary LCP");
-    mSecondaryBoxedLcpSolver->solve(
+    fallbackSuccess = mSecondaryBoxedLcpSolver->solve(
         n,
         mABackup.data(),
         mXBackup.data(),
@@ -280,15 +281,40 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
         mFIndexBackup.data(),
         false);
     mX = mXBackup;
+    fallbackRan = true;
   }
 
-  if (mX.hasNaN()) {
-    DART_ERROR(
-        "[BoxedLcpConstraintSolver] The solution of LCP includes NAN values: "
-        "{}. We're setting it zero for safety. Consider using more robust "
-        "solver such as PGS as a secondary solver. If this happens even with "
-        "PGS solver, please report this as a bug.",
-        fmt::streamed(mX.transpose()));
+  const bool hasNaN = mX.hasNaN();
+  if (!success && fallbackRan && hasNaN) {
+    // If the fallback produced NaNs, zero just those entries but still allow
+    // non-NaN entries to propagate.
+    for (int i = 0; i < mX.size(); ++i) {
+      if (std::isnan(mX[i]))
+        mX[i] = 0.0;
+    }
+  }
+
+  // Treat a finite fallback solution as usable even if the solver reported
+  // failure to avoid discarding potentially valid impulses.
+  const bool finalSuccess
+      = success || fallbackSuccess || (fallbackRan && !mX.hasNaN());
+
+  if (!finalSuccess) {
+    if (hasNaN) {
+      DART_ERROR(
+          "[BoxedLcpConstraintSolver] The solution of LCP includes NAN values: "
+          "{}. We're setting it zero for safety. Consider using more robust "
+          "solver such as PGS as a secondary solver. If this happens even with "
+          "PGS solver, please report this as a bug.",
+          fmt::streamed(mX.transpose()));
+    } else {
+      DART_ERROR(
+          "[BoxedLcpConstraintSolver] Primary LCP solver failed to find a "
+          "solution. The constraint impulses are set to zero for safety. "
+          "Consider configuring a secondary solver (e.g., PGS) to provide a "
+          "fallback when Dantzig fails.");
+    }
+
     mX.setZero();
   }
 
@@ -308,8 +334,6 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   }
 }
 
-//==============================================================================
-#if DART_BUILD_MODE_DEBUG
 bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
 {
   std::size_t nSkip = math::padding(n);
@@ -448,7 +472,6 @@ void BoxedLcpConstraintSolver::print(
 
   delete[] Ax;
 }
-#endif
 
 } // namespace constraint
 } // namespace dart

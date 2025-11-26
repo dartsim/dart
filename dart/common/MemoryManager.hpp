@@ -33,15 +33,13 @@
 #ifndef DART_COMMON_MEMORYMANAGER_HPP_
 #define DART_COMMON_MEMORYMANAGER_HPP_
 
-#if DART_BUILD_MODE_DEBUG
-  #include <mutex>
-#endif
 #include <dart/common/FreeListAllocator.hpp>
 #include <dart/common/PoolAllocator.hpp>
 
 #include <dart/Export.hpp>
 
 #include <iostream>
+#include <memory>
 
 namespace dart::common {
 
@@ -63,7 +61,7 @@ public:
 
   /// Constructor
   ///
-  /// \param[in] baseAllocator: (optional) The most low level allocator to be
+  /// @param[in] baseAllocator: (optional) The most low level allocator to be
   /// used by all the underlying memory allocators.
   explicit MemoryManager(
       MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault());
@@ -80,39 +78,39 @@ public:
   /// Returns the pool allocator
   [[nodiscard]] PoolAllocator& getPoolAllocator();
 
-  /// Allocates \c size bytes of uninitialized storage.
+  /// Allocates @c size bytes of uninitialized storage.
   ///
-  /// \param[in] type: The memory allocator type.
-  /// \param[in] bytes: The byte size to allocate sotrage for.
-  /// \return On success, the pointer to the beginning of newly allocated
+  /// @param[in] type: The memory allocator type.
+  /// @param[in] bytes: The byte size to allocate storage for.
+  /// @return On success, the pointer to the beginning of newly allocated
   /// memory.
-  /// \return On failure, a null pointer
+  /// @return On failure, a null pointer
   [[nodiscard]] void* allocate(Type type, size_t bytes);
 
-  /// Allocates \c size bytes of uninitialized storage using FreeListAllocator.
+  /// Allocates @c size bytes of uninitialized storage using FreeListAllocator.
   ///
-  /// \param[in] bytes: The byte size to allocate sotrage for.
-  /// \return On success, the pointer to the beginning of newly allocated
+  /// @param[in] bytes: The byte size to allocate storage for.
+  /// @return On success, the pointer to the beginning of newly allocated
   /// memory.
-  /// \return On failure, a null pointer
+  /// @return On failure, a null pointer
   [[nodiscard]] void* allocateUsingFree(size_t bytes);
 
-  /// Allocates \c size bytes of uninitialized storage using PoolAllocator.
+  /// Allocates @c size bytes of uninitialized storage using PoolAllocator.
   ///
-  /// \param[in] bytes: The byte size to allocate sotrage for.
-  /// \return On success, the pointer to the beginning of newly allocated
+  /// @param[in] bytes: The byte size to allocate storage for.
+  /// @return On success, the pointer to the beginning of newly allocated
   /// memory.
-  /// \return On failure, a null pointer
+  /// @return On failure, a null pointer
   [[nodiscard]] void* allocateUsingPool(size_t bytes);
 
-  /// Deallocates the storage referenced by the pointer \c p, which must be a
+  /// Deallocates the storage referenced by the pointer @c p, which must be a
   /// pointer obtained by an earlier cal to allocate().
   ///
-  /// \param[in] type: The memory allocator type.
-  /// \param[in] pointer: Pointer obtained from allocate().
-  /// \param[in] bytes: The bytes of the allocated memory.
+  /// @param[in] type: The memory allocator type.
+  /// @param[in] pointer: Pointer obtained from allocate().
+  /// @param[in] bytes: The bytes of the allocated memory.
   void deallocate(Type type, void* pointer, size_t bytes);
-  // TODO(JS): Make this constexpr once migrated to C++20
+  // Note: Deallocates runtime memory; constexpr is not applicable.
 
   void deallocateUsingFree(void* pointer, size_t bytes);
 
@@ -121,11 +119,11 @@ public:
   /// Allocates uninitialized storage and constructs an object of type T to the
   /// allocated storage.
   ///
-  /// \tparam T: The object type to construct.
-  /// \tparam Args...: The argument types to pass to the object constructor.
+  /// @tparam T: The object type to construct.
+  /// @tparam Args...: The argument types to pass to the object constructor.
   ///
-  /// \param[in] type: The memory allocator type.
-  /// \param[in] args: The constructor arguments to use.
+  /// @param[in] type: The memory allocator type.
+  /// @param[in] args: The constructor arguments to use.
   template <typename T, typename... Args>
   [[nodiscard]] T* construct(Type type, Args&&... args) noexcept;
 
@@ -153,10 +151,8 @@ public:
   template <typename T>
   void destroyUsingPool(T* pointer) noexcept;
 
-#if DART_BUILD_MODE_DEBUG
   /// Returns true if a pointer is allocated by the internal allocator.
   [[nodiscard]] bool hasAllocated(void* pointer, size_t size) const noexcept;
-#endif
 
   /// Prints state of the memory manager.
   void print(std::ostream& os = std::cout, int indent = 0) const;
@@ -169,19 +165,20 @@ private:
   /// The base allocator to allocate memory chunk.
   MemoryAllocator& mBaseAllocator;
 
-#if DART_BUILD_MODE_RELEASE
   /// The free list allocator.
-  FreeListAllocator mFreeListAllocator;
+  std::unique_ptr<FreeListAllocator> mFreeListAllocator;
+
+  /// The free list allocator with debug instrumentation.
+  std::unique_ptr<FreeListAllocator::Debug> mFreeListAllocatorWithDebug;
 
   /// The pool allocator.
-  PoolAllocator mPoolAllocator;
-#else
-  /// The free list allocator.
-  FreeListAllocator::Debug mFreeListAllocator;
+  std::unique_ptr<PoolAllocator> mPoolAllocator;
 
-  /// The pool allocator.
-  PoolAllocator::Debug mPoolAllocator;
-#endif
+  /// The pool allocator with debug instrumentation.
+  std::unique_ptr<PoolAllocator::Debug> mPoolAllocatorWithDebug;
+
+  /// Whether to route allocations through the debug instrumented allocators.
+  bool mUseDebugAllocators{false};
 };
 
 } // namespace dart::common

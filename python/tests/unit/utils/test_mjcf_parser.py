@@ -8,7 +8,7 @@ from tests.util import get_asset_path
 
 def test_parse_fetch():
     assert (
-        dart.utils.MjcfParser.readWorld(
+        dart.io.MjcfParser.read_world(
             "dart://sample/mjcf/openai/robotics/fetch/pick_and_place.xml"
         )
         is not None

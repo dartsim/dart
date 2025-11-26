@@ -60,23 +60,23 @@ public:
   /// Returns the number of root <body> elements in <worldbody>.
   std::size_t getNumRootBodies() const;
 
-  /// Returns a root <body> elements at \c index in <worldbody>.
+  /// Returns a root <body> elements at @c index in <worldbody>.
   const Body& getRootBody(std::size_t index) const;
 
   /// Returns the number of <geom> elements in <worldbody>.
   std::size_t getNumGeoms() const;
 
-  /// Returns a root <geom> element at \c index in <worldbody>.
+  /// Returns a root <geom> element at @c index in <worldbody>.
   const Geom& getGeom(std::size_t index) const;
 
   /// Returns the number of <site> elements in <worldbody>.
   std::size_t getNumSites() const;
 
-  /// Returns a root <site> element at \c index in <worldbody>.
+  /// Returns a root <site> element at @c index in <worldbody>.
   const Site& getSite(std::size_t index) const;
 
 private:
-  // Private memebers used by MujocoModel class
+  // Private members used by MujocoModel class
   friend class MujocoModel;
   Errors read(
       tinyxml2::XMLElement* element,

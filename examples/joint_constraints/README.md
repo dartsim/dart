@@ -14,6 +14,7 @@ This example demonstrates joint constraint handling with SPD (Stable Proportiona
 ## Description
 
 The joint constraints example showcases:
+
 - SPD (Stable Proportional-Derivative) tracking control for balance
 - External force perturbations to test robustness
 - Dynamic constraint addition/removal (harness feature)

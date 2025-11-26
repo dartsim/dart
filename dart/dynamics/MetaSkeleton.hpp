@@ -91,7 +91,7 @@ public:
   // Skeleton::getMutex() to override it.
 
   //----------------------------------------------------------------------------
-  /// \{ \name Name
+  /// \{ @name Name
   //----------------------------------------------------------------------------
 
   /// Set the name of this MetaSkeleton
@@ -103,7 +103,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Structural Properties
+  /// \{ @name Structural Properties
   //----------------------------------------------------------------------------
 
   /// Get number of body nodes
@@ -117,20 +117,20 @@ public:
 
   /// Returns the BodyNode of given name.
   ///
-  /// \param[in] name The BodyNode name that want to search.
-  /// \return The body node of given name.
+  /// @param[in] name The BodyNode name that want to search.
+  /// @return The body node of given name.
   virtual BodyNode* getBodyNode(const std::string& name) = 0;
 
   /// Returns the BodyNode of given name.
   ///
-  /// \param[in] name The BodyNode name that want to search.
-  /// \return The body node of given name.
+  /// @param[in] name The BodyNode name that want to search.
+  /// @return The body node of given name.
   virtual const BodyNode* getBodyNode(const std::string& name) const = 0;
 
   /// Deprecated BodyNode list getter kept for downstream consumers (e.g.,
   /// gz-physics) until they migrate away from it.
   DART_DEPRECATED(6.13)
-  virtual const std::vector<BodyNode*>& getBodyNodes() = 0;
+  virtual std::vector<BodyNode*>& getBodyNodes() = 0;
 
   /// Deprecated BodyNode list getter kept for downstream consumers (e.g.,
   /// gz-physics) until they migrate away from it.
@@ -138,17 +138,17 @@ public:
   virtual const std::vector<const BodyNode*>& getBodyNodes() const = 0;
 
   /// Returns all the BodyNodes of given name.
-  /// \param[in] name The BodyNode name that want to search.
-  /// \return The list of BodyNodes of given name.
+  /// @param[in] name The BodyNode name that want to search.
+  /// @return The list of BodyNodes of given name.
   virtual std::vector<BodyNode*> getBodyNodes(const std::string& name) = 0;
 
   /// Returns all the BodyNodes of given name.
-  /// \param[in] name The BodyNode name that want to search.
-  /// \return The list of BodyNodes of given name.
+  /// @param[in] name The BodyNode name that want to search.
+  /// @return The list of BodyNodes of given name.
   virtual std::vector<const BodyNode*> getBodyNodes(
       const std::string& name) const = 0;
 
-  /// Returns whether this Skeleton contains \c bodyNode.
+  /// Returns whether this Skeleton contains @c bodyNode.
   virtual bool hasBodyNode(const BodyNode* bodyNode) const = 0;
 
   /// Get the index of a specific BodyNode within this ReferentialSkeleton.
@@ -168,13 +168,13 @@ public:
   virtual const Joint* getJoint(std::size_t _idx) const = 0;
 
   /// Returns the Joint of given name.
-  /// \param[in] name The joint name that want to search.
-  /// \return The joint of given name.
+  /// @param[in] name The joint name that want to search.
+  /// @return The joint of given name.
   virtual Joint* getJoint(const std::string& name) = 0;
 
   /// Returns the joint of given name.
-  /// \param[in] name The joint name that want to search.
-  /// \return The joint of given name.
+  /// @param[in] name The joint name that want to search.
+  /// @return The joint of given name.
   virtual const Joint* getJoint(const std::string& name) const = 0;
 
   /// Returns all the Joint of given name.
@@ -182,8 +182,8 @@ public:
   /// This MetaSkeleton can contain multiple Joints with the same name when
   /// this MetaSkeleton contains Joints from multiple Skeletons.
   ///
-  /// \param[in] name The joint name that want to search.
-  /// \return The list of joints of given name.
+  /// @param[in] name The joint name that want to search.
+  /// @return The list of joints of given name.
   virtual std::vector<Joint*> getJoints(const std::string& name) = 0;
 
   /// Returns all the Joint of given name.
@@ -191,8 +191,8 @@ public:
   /// This MetaSkeleton can contain multiple Joints with the same name when
   /// this MetaSkeleton contains Joints from multiple Skeletons.
   ///
-  /// \param[in] name The joint name that want to search.
-  /// \return The list of joints of given name.
+  /// @param[in] name The joint name that want to search.
+  /// @return The list of joints of given name.
   virtual std::vector<const Joint*> getJoints(
       const std::string& name) const = 0;
 
@@ -206,7 +206,7 @@ public:
   DART_DEPRECATED(6.13)
   virtual std::vector<const Joint*> getJoints() const = 0;
 
-  /// Returns whether this Skeleton contains \c join.
+  /// Returns whether this Skeleton contains @c join.
   virtual bool hasJoint(const Joint* joint) const = 0;
 
   /// Get the index of a specific Joint within this ReferentialSkeleton. Returns
@@ -245,7 +245,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Command
+  /// \{ @name Command
   //----------------------------------------------------------------------------
 
   /// Set a single command
@@ -274,7 +274,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Position
+  /// \{ @name Position
   //----------------------------------------------------------------------------
 
   /// Set the position of a single generalized coordinate
@@ -345,7 +345,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Velocity
+  /// \{ @name Velocity
   //----------------------------------------------------------------------------
 
   /// Set the velocity of a single generalized coordinate
@@ -420,7 +420,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Acceleration
+  /// \{ @name Acceleration
   //----------------------------------------------------------------------------
 
   /// Set the acceleration of a single generalized coordinate
@@ -496,7 +496,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Force
+  /// \{ @name Force
   //----------------------------------------------------------------------------
 
   /// Set the force of a single generalized coordinate
@@ -564,14 +564,14 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Velocity Change
+  /// \{ @name Velocity Change
   //----------------------------------------------------------------------------
 
   /// Get the velocity changes for all the generalized coordinates
   Eigen::VectorXd getVelocityChanges() const;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Constraint Impulse
+  /// \{ @name Constraint Impulse
   //----------------------------------------------------------------------------
 
   /// Set the constraint impulses for the generalized coordinates
@@ -581,7 +581,7 @@ public:
   Eigen::VectorXd getJointConstraintImpulses() const;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Jacobians
+  /// \{ @name Jacobians
   //----------------------------------------------------------------------------
 
   /// Get the spatial Jacobian targeting the origin of a BodyNode. The Jacobian
@@ -670,7 +670,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Jacobian derivatives
+  /// \{ @name Jacobian derivatives
   //----------------------------------------------------------------------------
 
   /// Get the angular Jacobian of a BodyNode. You can specify a coordinate Frame
@@ -771,7 +771,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Equations of Motion
+  /// \{ @name Equations of Motion
   //----------------------------------------------------------------------------
 
   /// Get the total mass of all BodyNodes in this MetaSkeleton. Note that
@@ -828,7 +828,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Center of Mass Jacobian
+  /// \{ @name Center of Mass Jacobian
   //----------------------------------------------------------------------------
 
   /// Get the MetaSkeleton's COM with respect to any Frame (default is World
@@ -917,65 +917,65 @@ public:
   /// don't get updated to the alpha value that was set beforehand.
   void setAlpha(double alpha);
 
-  /// \{ \name Iterations
+  /// \{ @name Iterations
 
   /// Iterates all the BodyNodes in this MetaSkeleton and invokes the callback
   /// function.
   ///
-  /// \tparam Func: The callback function type. The function signature should be
-  /// equivalent to \c void(const BodyNode*) or \c bool(const BodyNode*). If
-  /// you want to conditionally iterate, use \c bool(const BodyNode*) and
+  /// @tparam Func: The callback function type. The function signature should be
+  /// equivalent to @c void(const BodyNode*) or @c bool(const BodyNode*). If
+  /// you want to conditionally iterate, use @c bool(const BodyNode*) and
   /// return false when to stop iterating.
   ///
-  /// \param[in] func: The callback function to be called for each BodyNode.
+  /// @param[in] func: The callback function to be called for each BodyNode.
   template <typename Func>
   void eachBodyNode(Func func) const;
 
   /// Iterates all the BodyNodes in this MetaSkeleton and invokes the callback
   /// function.
   ///
-  /// \tparam Func: The callback function type. The function signature should be
-  /// equivalent to \c void(BodyNode*) or \c bool(BodyNode*). If
-  /// you want to conditionally iterate, use \c bool(BodyNode*) and
+  /// @tparam Func: The callback function type. The function signature should be
+  /// equivalent to @c void(BodyNode*) or @c bool(BodyNode*). If
+  /// you want to conditionally iterate, use @c bool(BodyNode*) and
   /// return false when to stop iterating.
   ///
-  /// \param[in] func: The callback function to be called for each BodyNode.
+  /// @param[in] func: The callback function to be called for each BodyNode.
   template <typename Func>
   void eachBodyNode(Func func);
 
   /// Iterates all the Joints in this MetaSkeleton and invokes the callback
   /// function.
   ///
-  /// \tparam Func: The callback function type. The function signature should be
-  /// equivalent to \c void(const Joint*) or \c bool(const Joint*). If
-  /// you want to conditionally iterate, use \c bool(const BodyNode*) and
+  /// @tparam Func: The callback function type. The function signature should be
+  /// equivalent to @c void(const Joint*) or @c bool(const Joint*). If
+  /// you want to conditionally iterate, use @c bool(const BodyNode*) and
   /// return false when to stop iterating.
   ///
-  /// \param[in] func: The callback function to be called for each Joint.
+  /// @param[in] func: The callback function to be called for each Joint.
   template <typename Func>
   void eachJoint(Func func) const;
 
   /// Iterates all the Joints in this MetaSkeleton and invokes the callback
   /// function.
   ///
-  /// \tparam Func: The callback function type. The function signature should be
-  /// equivalent to \c void(Joint*) or \c bool(Joint*). If
-  /// you want to conditionally iterate, use \c bool(Joint*) and
+  /// @tparam Func: The callback function type. The function signature should be
+  /// equivalent to @c void(Joint*) or @c bool(Joint*). If
+  /// you want to conditionally iterate, use @c bool(Joint*) and
   /// return false when to stop iterating.
   ///
-  /// \param[in] func: The callback function to be called for each Joint.
+  /// @param[in] func: The callback function to be called for each Joint.
   template <typename Func>
   void eachJoint(Func func);
 
   /// Iterates all the DegreeOfFreedoms in this MetaSkeleton and invokes the
   /// callback function.
   ///
-  /// \tparam Func: The callback function type. The function signature should be
-  /// equivalent to \c void(const DegreeOfFreedom*) or \c bool(const
-  /// DegreeOfFreedom*). If you want to conditionally iterate, use \c bool(const
+  /// @tparam Func: The callback function type. The function signature should be
+  /// equivalent to @c void(const DegreeOfFreedom*) or @c bool(const
+  /// DegreeOfFreedom*). If you want to conditionally iterate, use @c bool(const
   /// DegreeOfFreedom*) and return false when to stop iterating.
   ///
-  /// \param[in] func: The callback function to be called for each
+  /// @param[in] func: The callback function to be called for each
   /// DegreeOfFreedom.
   template <typename Func>
   void eachDof(Func func) const;
@@ -983,12 +983,12 @@ public:
   /// Iterates all the DegreeOfFreedoms in this MetaSkeleton and invokes the
   /// callback function.
   ///
-  /// \tparam Func: The callback function type. The function signature should be
-  /// equivalent to \c void(DegreeOfFreedom*) or \c bool(DegreeOfFreedom*). If
-  /// you want to conditionally iterate, use \c bool(DegreeOfFreedom*) and
+  /// @tparam Func: The callback function type. The function signature should be
+  /// equivalent to @c void(DegreeOfFreedom*) or @c bool(DegreeOfFreedom*). If
+  /// you want to conditionally iterate, use @c bool(DegreeOfFreedom*) and
   /// return false when to stop iterating.
   ///
-  /// \param[in] func: The callback function to be called for each
+  /// @param[in] func: The callback function to be called for each
   /// DegreeOfFreedom.
   template <typename Func>
   void eachDof(Func func);

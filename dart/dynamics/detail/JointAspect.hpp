@@ -40,7 +40,10 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <map>
 #include <vector>
+
+#include <cstddef>
 
 namespace dart {
 namespace dynamics {
@@ -59,7 +62,7 @@ namespace detail {
 /// the actuator types if the coefficients are non-zero. The default
 /// coefficients are zero.
 ///
-/// \sa setActuatorType(), getActuatorType(),
+/// @sa setActuatorType(), getActuatorType(),
 /// setSpringStiffness(), setDampingCoefficient(),
 enum ActuatorType
 {
@@ -105,7 +108,7 @@ enum ActuatorType
   VELOCITY,
 
   /// Locked joint always set the velocity and acceleration to zero so that
-  /// the joint dosen't move at all (locked), and the output is joint force.
+  /// the joint doesn't move at all (locked), and the output is joint force.
   /// force.
   ///
   /// All the joint constraints are invalid.
@@ -132,6 +135,10 @@ struct DART_API JointProperties
 
   /// Actuator type
   ActuatorType mActuatorType;
+
+  /// Actuator types for specific DoFs that override the joint-wide actuator
+  /// type.
+  std::map<std::size_t, ActuatorType> mActuatorTypes;
 
   /// Vector of MimicDofProperties for each dependent DoF in the joint.
   std::vector<MimicDofProperties> mMimicDofProps;

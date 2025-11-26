@@ -609,7 +609,7 @@ function(dart_benchmarks)
     target_link_libraries(${target_name} PRIVATE benchmark::benchmark benchmark::benchmark_main)
 
     if(UNIX)
-      # gbenchmark requies pthread when compiled on a Unix machine
+      # gbenchmark requires pthread when compiled on a Unix machine
       target_link_libraries(${target_name} PRIVATE pthread)
     endif()
 
@@ -728,8 +728,7 @@ function(add_component package_name component)
     FILE "${package_name}_${component}Targets.cmake"
     DESTINATION "${CONFIG_INSTALL_DIR}"
   )
-  # TODO(JS): It would be nice if we could check if ${target} has at least one
-  # dependency target.
+  # Record dependency state so install_component_exports can guard against empty components.
 
   set_property(
     TARGET "${target}"
@@ -746,6 +745,11 @@ function(add_component package_name component)
   set_property(
     TARGET "${target}"
     PROPERTY "${component_prefix}LIBRARIES"
+  )
+  set_property(
+    TARGET "${target}"
+    PROPERTY "${component_prefix}HAS_DEPENDENCY_TARGET"
+    FALSE
   )
   set_property(
     GLOBAL
@@ -852,6 +856,9 @@ function(add_component_targets package_name component)
   endif()
 
   set(target "${component_prefix}${component}")
+  if(NOT dependency_targets)
+    message(FATAL_ERROR "Component '${component}' must have at least one dependency target.")
+  endif()
   add_dependencies("${target}" ${ARGN})
 
   foreach(dependency_target IN LISTS dependency_targets)
@@ -884,6 +891,11 @@ function(add_component_targets package_name component)
 
   set_property(
     TARGET "${target}"
+    PROPERTY "${component_prefix}HAS_DEPENDENCY_TARGET"
+    TRUE
+  )
+  set_property(
+    TARGET "${target}"
     APPEND
     PROPERTY "${component_prefix}LIBRARIES" ${dependency_targets}
   )
@@ -899,11 +911,24 @@ function(install_component_exports package_name)
   get_property(components GLOBAL PROPERTY "${package_name}_COMPONENTS")
 
   set(output_prefix "${CMAKE_CURRENT_BINARY_DIR}/${CONFIG_INSTALL_DIR}")
+  file(MAKE_DIRECTORY "${output_prefix}")
 
   foreach(component IN LISTS components)
     set(target "${component_prefix}${component}")
 
-    # TODO: Replace this manual generation with a configure_file.
+    get_property(
+      has_dependency_targets
+      TARGET "${target}"
+      PROPERTY "${component_prefix}HAS_DEPENDENCY_TARGET"
+    )
+    if(NOT has_dependency_targets)
+      message(
+        FATAL_ERROR
+        "Component '${component}' has no dependency targets. "
+        "Call add_component_targets(${package_name} ${component} <targets>)."
+      )
+    endif()
+
     set(output_path
       "${output_prefix}/${package_name}_${component}Component.cmake")
 
@@ -1391,12 +1416,14 @@ macro(dart_check_optional_package variable component dependency)
   mark_as_advanced(DART_SKIP_${variable})
   if(${${variable}_FOUND} AND NOT ${DART_SKIP_${variable}})
     set(HAVE_${variable} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
+    set(DART_HAVE_${variable} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
     if(DART_VERBOSE)
       message(STATUS "Looking for ${dependency} - version ${${variable}_VERSION}"
                      " found")
     endif()
   else()
     set(HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
+    set(DART_HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
     if(NOT ${${variable}_FOUND})
       if(ARGV3) # version
         message(WARNING "Looking for ${dependency} - NOT found, to use"
@@ -1685,7 +1712,7 @@ function(dart_build_tests)
       ${target_name} PRIVATE ${_ARG_LINK_LIBRARIES}
     )
     if(UNIX)
-      # gtest requies pthread when compiled on a Unix machine
+      # gtest requires pthread when compiled on a Unix machine
       target_link_libraries(${target_name} PRIVATE pthread)
     endif()
 

@@ -46,6 +46,8 @@
 
 #include <sstream>
 
+#include <cmath>
+
 #define GenericJoint_REPORT_DIM_MISMATCH(func, arg)                            \
   {                                                                            \
     DART_ERROR(                                                                \
@@ -71,12 +73,12 @@
     DART_ASSERT(false);                                                        \
   }
 
-#define GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(func)                         \
+#define GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(func, typeExpr)               \
   {                                                                            \
     DART_ERROR(                                                                \
         "Unsupported actuator type ({}) for Joint [{}].",                      \
         #func,                                                                 \
-        static_cast<int>(Joint::mAspectProperties.mActuatorType),              \
+        static_cast<int>(typeExpr),                                            \
         this->getName());                                                      \
     DART_ASSERT(false);                                                        \
   }
@@ -87,8 +89,6 @@
   Base::mAspectProperties.mField = value;                                      \
   Joint::incrementVersion();
 
-#include <sstream>
-
 namespace dart::dynamics::detail {
 
 inline std::string formatCommandVector(const Eigen::VectorXd& commands)
@@ -96,6 +96,57 @@ inline std::string formatCommandVector(const Eigen::VectorXd& commands)
   std::ostringstream oss;
   oss << commands.transpose();
   return oss.str();
+}
+
+template <typename Derived>
+inline void assertFiniteState(
+    const Eigen::MatrixBase<Derived>& values,
+    const Joint* joint,
+    const char* context,
+    const char* valueName)
+{
+#ifndef NDEBUG
+  const bool finite = values.array().isFinite().all();
+  if (!finite) {
+    DART_ERROR(
+        "Non-finite {} passed to {} for Joint [{}] ({}).",
+        valueName,
+        context,
+        joint->getName(),
+        static_cast<const void*>(joint));
+  }
+  DART_ASSERT(finite);
+#else
+  (void)values;
+  (void)joint;
+  (void)context;
+  (void)valueName;
+#endif
+}
+
+inline void assertFiniteState(
+    double value,
+    const Joint* joint,
+    const char* context,
+    const char* valueName)
+{
+#ifndef NDEBUG
+  const bool finite = std::isfinite(value);
+  if (!finite) {
+    DART_ERROR(
+        "Non-finite {} passed to {} for Joint [{}] ({}).",
+        valueName,
+        context,
+        joint->getName(),
+        static_cast<const void*>(joint));
+  }
+  DART_ASSERT(finite);
+#else
+  (void)value;
+  (void)joint;
+  (void)context;
+  (void)valueName;
+#endif
 }
 
 } // namespace dart::dynamics::detail
@@ -346,7 +397,8 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
   if (index >= getNumDofs())
     GenericJoint_REPORT_OUT_OF_RANGE(setCommand, index);
 
-  switch (Joint::mAspectProperties.mActuatorType) {
+  const auto actuatorType = this->getActuatorType(index);
+  switch (actuatorType) {
     case Joint::FORCE:
       this->mAspectState.mCommands[index] = math::clip(
           command,
@@ -396,9 +448,10 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
           this->getName());
       this->mAspectState.mCommands[index] = 0.0;
       break;
-    default:
-      DART_ASSERT(false);
+    default: {
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(setCommand, actuatorType);
       break;
+    }
   }
 }
 
@@ -423,60 +476,8 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
     return;
   }
 
-  switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-      this->mAspectState.mCommands = math::clip(
-          commands,
-          Base::mAspectProperties.mForceLowerLimits,
-          Base::mAspectProperties.mForceUpperLimits);
-      break;
-    case Joint::PASSIVE:
-      DART_WARN_IF(
-          !commands.isZero(),
-          "Attempting to set a non-zero ({}) command for a PASSIVE joint [{}].",
-          detail::formatCommandVector(commands),
-          this->getName());
-      this->mAspectState.mCommands.setZero();
-      break;
-    case Joint::SERVO:
-      this->mAspectState.mCommands = math::clip(
-          commands,
-          Base::mAspectProperties.mVelocityLowerLimits,
-          Base::mAspectProperties.mVelocityUpperLimits);
-      break;
-    case Joint::MIMIC:
-      DART_WARN_IF(
-          !commands.isZero(),
-          "Attempting to set a non-zero ({}) command for a MIMIC joint [{}].",
-          detail::formatCommandVector(commands),
-          this->getName());
-      this->mAspectState.mCommands.setZero();
-      break;
-    case Joint::ACCELERATION:
-      this->mAspectState.mCommands = math::clip(
-          commands,
-          Base::mAspectProperties.mAccelerationLowerLimits,
-          Base::mAspectProperties.mAccelerationUpperLimits);
-      break;
-    case Joint::VELOCITY:
-      this->mAspectState.mCommands = math::clip(
-          commands,
-          Base::mAspectProperties.mVelocityLowerLimits,
-          Base::mAspectProperties.mVelocityUpperLimits);
-      // TODO: This possibly makes the acceleration to exceed the limits.
-      break;
-    case Joint::LOCKED:
-      DART_WARN_IF(
-          !commands.isZero(),
-          "Attempting to set a non-zero ({}) command for a LOCKED joint [{}].",
-          detail::formatCommandVector(commands),
-          this->getName());
-      this->mAspectState.mCommands.setZero();
-      break;
-    default:
-      DART_ASSERT(false);
-      break;
-  }
+  for (std::size_t i = 0; i < getNumDofs(); ++i)
+    setCommand(i, commands[static_cast<Eigen::Index>(i)]);
 }
 
 //==============================================================================
@@ -501,6 +502,8 @@ void GenericJoint<ConfigSpaceT>::setPosition(size_t index, double position)
     GenericJoint_REPORT_OUT_OF_RANGE(setPosition, index);
     return;
   }
+
+  detail::assertFiniteState(position, this, "setPosition", "position");
 
   if (this->mAspectState.mPositions[index] == position)
     return;
@@ -715,6 +718,8 @@ Eigen::VectorXd GenericJoint<ConfigSpaceT>::getInitialPositions() const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setPositionsStatic(const Vector& positions)
 {
+  detail::assertFiniteState(positions, this, "setPositions", "positions");
+
   if (this->mAspectState.mPositions == positions)
     return;
 
@@ -734,6 +739,8 @@ GenericJoint<ConfigSpaceT>::getPositionsStatic() const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setVelocitiesStatic(const Vector& velocities)
 {
+  detail::assertFiniteState(velocities, this, "setVelocities", "velocities");
+
   if (this->mAspectState.mVelocities == velocities)
     return;
 
@@ -753,6 +760,8 @@ GenericJoint<ConfigSpaceT>::getVelocitiesStatic() const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setAccelerationsStatic(const Vector& accels)
 {
+  detail::assertFiniteState(accels, this, "setAccelerations", "accelerations");
+
   if (this->mAspectState.mAccelerations == accels)
     return;
 
@@ -777,6 +786,8 @@ void GenericJoint<ConfigSpaceT>::setVelocity(size_t index, double velocity)
     return;
   }
 
+  detail::assertFiniteState(velocity, this, "setVelocity", "velocity");
+
   if (this->mAspectState.mVelocities[index] == velocity)
     return;
 
@@ -784,7 +795,7 @@ void GenericJoint<ConfigSpaceT>::setVelocity(size_t index, double velocity)
   this->mAspectState.mVelocities[index] = velocity;
   this->notifyVelocityUpdated();
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
+  if (this->getActuatorType(index) == Joint::VELOCITY)
     this->mAspectState.mCommands[index] = this->getVelocitiesStatic()[index];
 }
 
@@ -812,8 +823,10 @@ void GenericJoint<ConfigSpaceT>::setVelocities(
 
   setVelocitiesStatic(velocities);
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
-    this->mAspectState.mCommands = this->getVelocitiesStatic();
+  for (std::size_t i = 0; i < getNumDofs(); ++i) {
+    if (this->getActuatorType(i) == Joint::VELOCITY)
+      this->mAspectState.mCommands[i] = this->mAspectState.mVelocities[i];
+  }
 }
 
 //==============================================================================
@@ -987,6 +1000,9 @@ void GenericJoint<ConfigSpaceT>::setAcceleration(
     return;
   }
 
+  detail::assertFiniteState(
+      acceleration, this, "setAcceleration", "acceleration");
+
   if (this->mAspectState.mAccelerations[index] == acceleration)
     return;
 
@@ -994,7 +1010,7 @@ void GenericJoint<ConfigSpaceT>::setAcceleration(
   this->mAspectState.mAccelerations[index] = acceleration;
   this->notifyAccelerationUpdated();
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
+  if (this->getActuatorType(index) == Joint::ACCELERATION)
     this->mAspectState.mCommands[index] = this->getAccelerationsStatic()[index];
 }
 
@@ -1022,8 +1038,10 @@ void GenericJoint<ConfigSpaceT>::setAccelerations(
 
   setAccelerationsStatic(accelerations);
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
-    this->mAspectState.mCommands = this->getAccelerationsStatic();
+  for (std::size_t i = 0; i < getNumDofs(); ++i) {
+    if (this->getActuatorType(i) == Joint::ACCELERATION)
+      this->mAspectState.mCommands[i] = this->mAspectState.mAccelerations[i];
+  }
 }
 
 //==============================================================================
@@ -1140,7 +1158,7 @@ void GenericJoint<ConfigSpaceT>::setForce(size_t index, double force)
 
   this->mAspectState.mForces[index] = force;
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
+  if (this->getActuatorType(index) == Joint::FORCE)
     this->mAspectState.mCommands[index] = this->mAspectState.mForces[index];
 }
 
@@ -1167,8 +1185,10 @@ void GenericJoint<ConfigSpaceT>::setForces(const Eigen::VectorXd& forces)
 
   this->mAspectState.mForces = forces;
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
-    this->mAspectState.mCommands = this->mAspectState.mForces;
+  for (std::size_t i = 0; i < getNumDofs(); ++i) {
+    if (this->getActuatorType(i) == Joint::FORCE)
+      this->mAspectState.mCommands[i] = this->mAspectState.mForces[i];
+  }
 }
 
 //==============================================================================
@@ -1272,8 +1292,10 @@ void GenericJoint<ConfigSpaceT>::resetForces()
 {
   this->mAspectState.mForces.setZero();
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
-    this->mAspectState.mCommands = this->mAspectState.mForces;
+  for (std::size_t i = 0; i < getNumDofs(); ++i) {
+    if (this->getActuatorType(i) == Joint::FORCE)
+      this->mAspectState.mCommands[i] = this->mAspectState.mForces[i];
+  }
 }
 
 //==============================================================================
@@ -1443,6 +1465,26 @@ double GenericJoint<ConfigSpaceT>::getRestPosition(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::setRestPositions(
+    const Eigen::VectorXd& restPositions)
+{
+  if (static_cast<size_t>(restPositions.size()) != getNumDofs()) {
+    GenericJoint_REPORT_DIM_MISMATCH(setRestPositions, restPositions);
+    return;
+  }
+
+  GenericJoint_SET_IF_DIFFERENT(mRestPositions, restPositions);
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getRestPositions() const
+{
+  return Base::mAspectProperties.mRestPositions;
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setDampingCoefficient(size_t index, double d)
 {
   if (index >= getNumDofs()) {
@@ -1465,6 +1507,29 @@ double GenericJoint<ConfigSpaceT>::getDampingCoefficient(size_t index) const
   }
 
   return Base::mAspectProperties.mDampingCoefficients[index];
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::setDampingCoefficients(
+    const Eigen::VectorXd& dampingCoefficients)
+{
+  if (static_cast<size_t>(dampingCoefficients.size()) != getNumDofs()) {
+    GenericJoint_REPORT_DIM_MISMATCH(
+        setDampingCoefficients, dampingCoefficients);
+    return;
+  }
+
+  DART_ASSERT((dampingCoefficients.array() >= 0.0).all());
+
+  GenericJoint_SET_IF_DIFFERENT(mDampingCoefficients, dampingCoefficients);
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getDampingCoefficients() const
+{
+  return Base::mAspectProperties.mDampingCoefficients;
 }
 
 //==============================================================================
@@ -1492,6 +1557,27 @@ double GenericJoint<ConfigSpaceT>::getCoulombFriction(size_t index) const
   }
 
   return Base::mAspectProperties.mFrictions[index];
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::setFrictions(const Eigen::VectorXd& frictions)
+{
+  if (static_cast<size_t>(frictions.size()) != getNumDofs()) {
+    GenericJoint_REPORT_DIM_MISMATCH(setFrictions, frictions);
+    return;
+  }
+
+  DART_ASSERT((frictions.array() >= 0.0).all());
+
+  GenericJoint_SET_IF_DIFFERENT(mFrictions, frictions);
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getFrictions() const
+{
+  return Base::mAspectProperties.mFrictions;
 }
 
 //==============================================================================
@@ -1699,22 +1785,13 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildArtInertiaTo(
     Eigen::Matrix6d& parentArtInertia, const Eigen::Matrix6d& childArtInertia)
 {
-  switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
-      addChildArtInertiaToDynamic(parentArtInertia, childArtInertia);
-      break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
-      addChildArtInertiaToKinematic(parentArtInertia, childArtInertia);
-      break;
-    default:
-      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(addChildArtInertiaTo);
-      break;
-  }
+  if (Joint::isDynamic())
+    addChildArtInertiaToDynamic(parentArtInertia, childArtInertia);
+  else if (Joint::isKinematic())
+    addChildArtInertiaToKinematic(parentArtInertia, childArtInertia);
+  else
+    GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
+        addChildArtInertiaTo, Joint::mAspectProperties.mActuatorType);
 }
 
 //==============================================================================
@@ -1750,22 +1827,13 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitTo(
     Eigen::Matrix6d& parentArtInertia, const Eigen::Matrix6d& childArtInertia)
 {
-  switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
-      addChildArtInertiaImplicitToDynamic(parentArtInertia, childArtInertia);
-      break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
-      addChildArtInertiaImplicitToKinematic(parentArtInertia, childArtInertia);
-      break;
-    default:
-      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(addChildArtInertiaImplicitTo);
-      break;
-  }
+  if (Joint::isDynamic())
+    addChildArtInertiaImplicitToDynamic(parentArtInertia, childArtInertia);
+  else if (Joint::isKinematic())
+    addChildArtInertiaImplicitToKinematic(parentArtInertia, childArtInertia);
+  else
+    GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
+        addChildArtInertiaImplicitTo, Joint::mAspectProperties.mActuatorType);
 }
 
 //==============================================================================
@@ -1801,22 +1869,13 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateInvProjArtInertia(
     const Eigen::Matrix6d& artInertia)
 {
-  switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
-      updateInvProjArtInertiaDynamic(artInertia);
-      break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
-      updateInvProjArtInertiaKinematic(artInertia);
-      break;
-    default:
-      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateInvProjArtInertia);
-      break;
-  }
+  if (Joint::isDynamic())
+    updateInvProjArtInertiaDynamic(artInertia);
+  else if (Joint::isKinematic())
+    updateInvProjArtInertiaKinematic(artInertia);
+  else
+    GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
+        updateInvProjArtInertia, Joint::mAspectProperties.mActuatorType);
 }
 
 //==============================================================================
@@ -1848,22 +1907,14 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicit(
     const Eigen::Matrix6d& artInertia, double timeStep)
 {
-  switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
-      updateInvProjArtInertiaImplicitDynamic(artInertia, timeStep);
-      break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
-      updateInvProjArtInertiaImplicitKinematic(artInertia, timeStep);
-      break;
-    default:
-      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateInvProjArtInertiaImplicit);
-      break;
-  }
+  if (Joint::isDynamic())
+    updateInvProjArtInertiaImplicitDynamic(artInertia, timeStep);
+  else if (Joint::isKinematic())
+    updateInvProjArtInertiaImplicitKinematic(artInertia, timeStep);
+  else
+    GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
+        updateInvProjArtInertiaImplicit,
+        Joint::mAspectProperties.mActuatorType);
 }
 
 //==============================================================================
@@ -1903,23 +1954,15 @@ void GenericJoint<ConfigSpaceT>::addChildBiasForceTo(
     const Eigen::Vector6d& childBiasForce,
     const Eigen::Vector6d& childPartialAcc)
 {
-  switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
-      addChildBiasForceToDynamic(
-          parentBiasForce, childArtInertia, childBiasForce, childPartialAcc);
-      break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
-      addChildBiasForceToKinematic(
-          parentBiasForce, childArtInertia, childBiasForce, childPartialAcc);
-      break;
-    default:
-      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(addChildBiasForceTo);
-      break;
+  if (Joint::isDynamic()) {
+    addChildBiasForceToDynamic(
+        parentBiasForce, childArtInertia, childBiasForce, childPartialAcc);
+  } else if (Joint::isKinematic()) {
+    addChildBiasForceToKinematic(
+        parentBiasForce, childArtInertia, childBiasForce, childPartialAcc);
+  } else {
+    GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
+        addChildBiasForceTo, Joint::mAspectProperties.mActuatorType);
   }
 }
 
@@ -1989,23 +2032,15 @@ void GenericJoint<ConfigSpaceT>::addChildBiasImpulseTo(
     const Eigen::Matrix6d& childArtInertia,
     const Eigen::Vector6d& childBiasImpulse)
 {
-  switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
-      addChildBiasImpulseToDynamic(
-          parentBiasImpulse, childArtInertia, childBiasImpulse);
-      break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
-      addChildBiasImpulseToKinematic(
-          parentBiasImpulse, childArtInertia, childBiasImpulse);
-      break;
-    default:
-      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(addChildBiasImpulseTo);
-      break;
+  if (Joint::isDynamic()) {
+    addChildBiasImpulseToDynamic(
+        parentBiasImpulse, childArtInertia, childBiasImpulse);
+  } else if (Joint::isKinematic()) {
+    addChildBiasImpulseToKinematic(
+        parentBiasImpulse, childArtInertia, childBiasImpulse);
+  } else {
+    GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
+        addChildBiasImpulseTo, Joint::mAspectProperties.mActuatorType);
   }
 }
 
@@ -2075,7 +2110,8 @@ void GenericJoint<ConfigSpaceT>::updateTotalForce(
       updateTotalForceKinematic(bodyForce, timeStep);
       break;
     default:
-      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateTotalForce);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
+          updateTotalForce, Joint::mAspectProperties.mActuatorType);
       break;
   }
 }
@@ -2127,7 +2163,8 @@ void GenericJoint<ConfigSpaceT>::updateTotalImpulse(
       updateTotalImpulseKinematic(bodyImpulse);
       break;
     default:
-      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateTotalImpulse);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
+          updateTotalImpulse, Joint::mAspectProperties.mActuatorType);
       break;
   }
 }
@@ -2175,7 +2212,8 @@ void GenericJoint<ConfigSpaceT>::updateAcceleration(
       updateAccelerationKinematic(artInertia, spatialAcc);
       break;
     default:
-      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateAcceleration);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
+          updateAcceleration, Joint::mAspectProperties.mActuatorType);
       break;
   }
 }
@@ -2223,7 +2261,8 @@ void GenericJoint<ConfigSpaceT>::updateVelocityChange(
       updateVelocityChangeKinematic(artInertia, velocityChange);
       break;
     default:
-      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateVelocityChange);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
+          updateVelocityChange, Joint::mAspectProperties.mActuatorType);
       break;
   }
 }
@@ -2305,7 +2344,8 @@ void GenericJoint<ConfigSpaceT>::updateForceFD(
       updateForceID(bodyForce, timeStep, withDampingForces, withSpringForces);
       break;
     default:
-      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateForceFD);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
+          updateForceFD, Joint::mAspectProperties.mActuatorType);
       break;
   }
 }
@@ -2335,7 +2375,8 @@ void GenericJoint<ConfigSpaceT>::updateImpulseFD(
       updateImpulseID(bodyImpulse);
       break;
     default:
-      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateImpulseFD);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
+          updateImpulseFD, Joint::mAspectProperties.mActuatorType);
       break;
   }
 }
@@ -2357,7 +2398,8 @@ void GenericJoint<ConfigSpaceT>::updateConstrainedTerms(double timeStep)
       updateConstrainedTermsKinematic(timeStep);
       break;
     default:
-      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateConstrainedTerms);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
+          updateConstrainedTerms, Joint::mAspectProperties.mActuatorType);
       break;
   }
 }

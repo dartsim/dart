@@ -3,14 +3,14 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-from pathlib import Path
-from datetime import datetime
 import importlib
 import keyword
 import re
 import shutil
 import subprocess
 import sys
+from datetime import datetime
+from pathlib import Path
 
 from sphinx.util import logging
 
@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 
 # Paths used during the documentation build
 DOCS_ROOT = Path(__file__).resolve().parent
+EXTENSIONS_DIR = DOCS_ROOT / "_ext"
+if str(EXTENSIONS_DIR) not in sys.path:
+    sys.path.insert(0, str(EXTENSIONS_DIR))
 
 
 def _find_repo_root(docs_root: Path) -> Path:
@@ -69,6 +72,12 @@ def _rename_placeholder(text: str, name: str) -> str:
 def _sanitize_stub_source(text: str) -> str:
     """Rename invalid identifiers originating from the stub generator."""
 
+    def _strip_class_bases(src: str) -> str:
+        """Drop class inheritance to avoid NameError on forward references."""
+
+        pattern = re.compile(r"(?m)^(?P<indent>\s*)class\s+(?P<name>\w+)\([^:\n]*\):")
+        return pattern.sub(r"\g<indent>class \g<name>:", src)
+
     def _replace_keyword(match: re.Match[str]) -> str:
         return f"{match.group('prefix')}{match.group('name')}_"
 
@@ -83,7 +92,7 @@ def _sanitize_stub_source(text: str) -> str:
     for placeholder in ("std", "dart"):
         text = _rename_placeholder(text, placeholder)
 
-    return text
+    return _strip_class_bases(text)
 
 
 def _prepare_stub_modules(package: str) -> bool:
@@ -117,13 +126,17 @@ def _ensure_dartpy_available() -> None:
 
     try:
         importlib.import_module("dartpy")
-    except ModuleNotFoundError:
+    except (ModuleNotFoundError, ImportError) as exc:
         if _prepare_stub_modules("dartpy"):
             sys.stderr.write("Using generated dartpy stubs for autodoc.\n")
         else:
             sys.stderr.write(
                 "WARNING: dartpy module and stubs are unavailable; "
                 "dartpy API pages will be empty.\n"
+            )
+        if not isinstance(exc, ModuleNotFoundError):
+            sys.stderr.write(
+                f"Ignoring installed dartpy due to import failure: {exc}\n"
             )
 
 
@@ -157,6 +170,7 @@ def _render_doxyfile(output_path: Path):
         "DOXYGEN_INPUT_ROOT": _posix_path(REPO_ROOT / "dart"),
         "DOXYGEN_OUTPUT_ROOT": _posix_path(CPP_API_OUTPUT_DIR),
         "DOXYGEN_STRIP_FROM_PATH": _posix_path(REPO_ROOT),
+        "DOXYGEN_WARN_LOGFILE": _posix_path(CPP_API_OUTPUT_DIR / "doxygen_warnings.log"),
     }
 
     doxyfile_contents = DOXYFILE_TEMPLATE.read_text()
@@ -164,7 +178,6 @@ def _render_doxyfile(output_path: Path):
         doxyfile_contents = doxyfile_contents.replace(f"@{key}@", value)
 
     output_path.write_text(doxyfile_contents)
-
 
 def _read_dart_semver():
     """Return the DART semantic version as read from package.xml."""
@@ -190,13 +203,43 @@ def get_dart_version(prefix_with_v: bool = True):
     return f"v{semver}" if prefix_with_v else semver
 
 
+def _read_api_versions():
+    """Return the list of published documentation versions."""
+
+    versions_file = REPO_ROOT / "scripts" / "docs_versions.txt"
+    versions = []
+    try:
+        for line in versions_file.read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith("DART "):
+                versions.append(line)
+    except FileNotFoundError:
+        # Fallback to a safe default when running locally without the helper.
+        versions = ["v6.16.0"]
+    return versions
+
+
 # Get current DART version from package.xml
 current_version = get_dart_version()
+api_versions = _read_api_versions()
+if current_version in api_versions:
+    api_version_to_link = current_version
+else:
+    api_version_to_link = api_versions[0] if api_versions else current_version
 
-# Make these available to RST files via html_context
 html_context = {
     "current_version": current_version,
+    "api_versions": api_versions,
+    "api_version_to_link": api_version_to_link,
+    "cpp_api_url": f"https://dartsim.github.io/dart/{api_version_to_link}/",
+    "python_api_url": f"https://dartsim.github.io/dart/{api_version_to_link}-py/",
+    "gh_pages_url": "https://github.com/dartsim/dart/tree/gh-pages",
 }
+
+# Provide easy-to-reuse substitutions in the RST files.
+rst_epilog = f"""
+.. |python_api_url| replace:: {html_context['python_api_url']}
+"""
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -250,7 +293,12 @@ source_suffix = {
 # The master toctree document.
 root_doc = "index"
 
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "README.md"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "README.md",
+]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -278,7 +326,6 @@ latex_elements = {
         \usepackage{kotex}
     """
 }
-
 
 def build_cpp_api_docs(app):
     """Generate the Doxygen HTML bundle so RTD serves versioned C++ docs."""

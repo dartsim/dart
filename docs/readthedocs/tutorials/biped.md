@@ -1,6 +1,7 @@
 # Biped
 
 ## Overview
+
 This tutorial demonstrates the dynamic features in DART useful for
 developing controllers for bipedal or wheel-based robots. The tutorial
 consists of seven Lessons covering the following topics:
@@ -14,12 +15,13 @@ consists of seven Lessons covering the following topics:
 Please reference the source code in [**tutorial_biped/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_biped/main.cpp), [**tutorial_biped_finished/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_biped_finished/main.cpp), and the dartpy variant [**python/tutorials/04_biped/main_finished.py**](https://github.com/dartsim/dart/blob/main/python/tutorials/04_biped/main_finished.py).
 
 ## Lesson 1: Joint limits and self-collision
-Let's start by locating the ``main`` function in tutorials/tutorial_biped/main.cpp. We first create a floor
-and call ``loadBiped`` to load a bipedal figure described in SKEL
+
+Let's start by locating the `main` function in tutorials/tutorial*biped/main.cpp. We first create a floor
+and call `loadBiped` to load a bipedal figure described in SKEL
 format, which is an XML format representing a robot model. A SKEL file
-describes a ``World`` with one or more ``Skeleton``s in it. Here we
+describes a `World` with one or more `Skeleton`s in it. Here we
 load in a World from [**biped.skel**](https://github.com/dartsim/dart/blob/main/data/skel/biped.skel) and assign the bipedal figure to a
-``Skeleton`` pointer called *biped*.
+`Skeleton` pointer called \_biped*.
 
 ```{eval-rst}
 .. tabs::
@@ -56,18 +58,19 @@ should see the description of the right knee joint in **biped.skel**:
         <limit>
             <lower>-3.14</lower>
             <upper>0.0</upper>
-        </limit>                  
+        </limit>
     </axis>
 ...
 </joint>
 ```
+
 The &lt;upper> and &lt;lower> tags make sure that the knee can only flex but
 not extend. Alternatively, you can directly specify the joint limits
 in the code using
-``setPositionUpperLimit`` and ``setPositionLowerLimit``.
+`setPositionUpperLimit` and `setPositionLowerLimit`.
 
 In either case, the joint limits on the biped will not be activated
-until you call ``setPositionLimited``:
+until you call `setPositionLimited`:
 
 ```{eval-rst}
 .. tabs::
@@ -86,9 +89,11 @@ until you call ``setPositionLimited``:
          :start-after: # snippet:py-biped-lesson1-limits-start
          :end-before: # snippet:py-biped-lesson1-limits-end
 ```
+
 Once the joint limits are set, the next task is to enforce
 self-collision. By default, DART does not check self-collision within
 a skeleton. You can enable self-collision checking on the biped by
+
 ```{eval-rst}
 .. tabs::
 
@@ -106,12 +111,15 @@ a skeleton. You can enable self-collision checking on the biped by
          :start-after: # snippet:py-biped-lesson1-self-start
          :end-before: # snippet:py-biped-lesson1-self-end
 ```
+
 This function will enable self-collision on every pair of
 body nodes. If you wish to disable self-collisions on adjacent body
 nodes, call the following function
+
 ```cpp
 biped->disableAdjacentBodyCheck();
 ```
+
 Running the program again, you should see that the character is still
 floppy like a ragdoll, but now the joints do not bend backward and the
 body nodes do not penetrate each other anymore.
@@ -131,7 +139,7 @@ damping coefficients. The detailed description of a PD controller can
 be found [here](https://en.wikipedia.org/wiki/PID_controller).
 
 The first task is to set the biped to a particular configuration. You
-can use ``setPosition`` to set each degree of freedom individually:
+can use `setPosition` to set each degree of freedom individually:
 
 ```{eval-rst}
 .. tabs::
@@ -150,13 +158,14 @@ can use ``setPosition`` to set each degree of freedom individually:
          :start-after: # snippet:py-biped-lesson2-initial-pose-start
          :end-before: # snippet:py-biped-lesson2-initial-pose-end
 ```
+
 Here the degree of freedom named "j_thigh_left_z" is set to 0.15
 radian. Note that each degree of freedom in a skeleton has a numerical
 index which can be accessed by
-``getIndexInSkeleton``. You
+`getIndexInSkeleton`. You
 can also set the entire configuration using a vector that holds the
 positions of all the degreed of freedoms using
-``setPositions``.
+`setPositions`.
 
 We continue to set more degrees of freedoms in the lower
 body to create a roughly stable standing pose.
@@ -172,7 +181,7 @@ biped->setPosition(biped->getDof("j_heel_right_1")->getIndexInSkeleton(), 0.25);
 
 Now the biped will start in this configuration, but will not maintain
 this configuration as soon as the simulation starts. We need a
-controller to make this happen. Let's take a look at the constructor of our ``Controller`` in the
+controller to make this happen. Let's take a look at the constructor of our `Controller` in the
 skeleton code:
 
 ```{eval-rst}
@@ -202,7 +211,7 @@ zero. At the end of the constructor, we set the target position of the PD
 controller to the current configuration of the biped.
 
 With these settings, we can compute the forces generated by the PD
-controller and add them to the internal forces of biped using ``setForces``:
+controller and add them to the internal forces of biped using `setForces`:
 
 ```{eval-rst}
 .. tabs::
@@ -221,7 +230,8 @@ controller and add them to the internal forces of biped using ``setForces``:
          :start-after: # snippet:py-biped-lesson2-pd-start
          :end-before: # snippet:py-biped-lesson2-pd-end
 ```
-Note that the PD control force is *added* to the current internal force
+
+Note that the PD control force is _added_ to the current internal force
 stored in mForces instead of overriding it.
 
 Now try to run the program and see what happens. The skeleton
@@ -275,11 +285,11 @@ implementation of SPD simple and concise:
 
 You can get mass matrix, Coriolis force, gravitational force, and
 constraint force projected onto generalized coordinates using function
-calls ``getMassMatrix``,
-``getCoriolisForces``,
-``getGravityForces``,
+calls `getMassMatrix`,
+`getCoriolisForces`,
+`getGravityForces`,
 and
-``getConstraintForces``,
+`getConstraintForces`,
 respectively. Constraint forces include forces due to contacts, joint
 limits, and other joint constraints set by the user (e.g. the weld
 joint constraint in the multi-pendulum tutorial).
@@ -291,7 +301,6 @@ can stand on the ground in balance indefinitely. However, if you apply
 an external push force on the biped (hit ',' or '.' key to apply a
 backward or forward push), the biped loses its balance quickly. We
 will demonstrate a more robust feedback controller in the next Lesson.
-
 
 ## Lesson 4: Ankle strategy
 
@@ -328,11 +337,11 @@ anterior-posterior axis:
 ```
 
 DART provides various APIs to access useful kinematic information. For
-example, ``getCOM`` returns the center of mass of the skeleton and
-``getTransform`` returns transformation of the body node with
+example, `getCOM` returns the center of mass of the skeleton and
+`getTransform` returns transformation of the body node with
 respect to any coordinate frame specified by the parameter (world
 coordinate frame as default). DART APIs also come in handy when
-computing the derivative term,  -k<sub>d</sub> (x&#775; - p&#775;):
+computing the derivative term, -k<sub>d</sub> (x&#775; - p&#775;):
 
 ```{eval-rst}
 .. tabs::
@@ -354,7 +363,7 @@ computing the derivative term,  -k<sub>d</sub> (x&#775; - p&#775;):
 
 The linear/angular velocity/acceleration of any point in any coordinate
 frame can be easily accessed in DART. The full list of the APIs for accessing
-various velocities/accelerations can be found in the [API Documentation](http://dartsim.github.io/dart/). The 
+various velocities/accelerations can be found in the [API Documentation](http://dartsim.github.io/dart/). The
 following table summarizes the essential APIs.
 
 | Function Name          | Description                                                                                            |
@@ -401,7 +410,7 @@ We first load a skateboard from **skateboard.skel**:
 Our goal is to make the skateboard Skeleton a subtree of the biped
 Skeleton connected to the left heel BodyNode via a newly created
 Euler joint. To do so, you need to first create an instance of
-``EulerJoint::Properties`` for this new joint.
+`EulerJoint::Properties` for this new joint.
 
 Here we increase the vertical distance between the child BodyNode and
 the joint by 0.1m to give some space between the skateboard and the
@@ -418,7 +427,6 @@ a table of some relevant functions for quick references.
 | changeParentJointType | bd1->changeParentJointType&lt;BallJoint&gt;() | Change the Joint type of the BodyNode bd1's parent joint to BallJoint                                                                     |
 | copyTo                | bd1->copyTo(bd2)                              | Create clones of the BodyNode bd1 and its subtree and attach the clones to the specified the BodyNode bd2.                                |
 | copyAs                | auto newSkel = bd1->copyAs("new skeleton")    | Create clones of the BodyNode bd1 and its subtree and create a new Skeleton with "new skeleton" name to attach them to.                   |
-
 
 ## Lesson 6: Actuator types
 
@@ -483,8 +491,8 @@ command them by directly setting the desired velocity:
          :end-before: # snippet:py-biped-lesson6-wheel-commands-end
 ```
 
-Note that ``setCommand`` only exerts commanding force in the current time step. If you wish the
-wheel to continue spinning at a particular speed, ``setCommand``
+Note that `setCommand` only exerts commanding force in the current time step. If you wish the
+wheel to continue spinning at a particular speed, `setCommand`
 needs to be called at every time step.
 
 We also set the stiffness and damping coefficients for the wheels to zero.
@@ -529,7 +537,7 @@ left foot from the ground:
 <img src="IKObjective.png" width="180">
 
 where <b>c</b> and <b>p</b> indicate the projected center of mass and center of
-pressure on the ground, and *p<sub>i</sub>* indicates the vertical height of one
+pressure on the ground, and _p<sub>i</sub>_ indicates the vertical height of one
 corner of the left foot.
 
 To compute the gradient of the above objective function, we need to evaluate
@@ -559,14 +567,14 @@ of mass of a BodyNode:
          :end-before: # snippet:py-biped-lesson7-ik-end
 ```
 
-``getCOMLinearJacobian`` returns the linear Jacobian of the
-center of mass of the Skeleton, while ``getLinearJacobian``
+`getCOMLinearJacobian` returns the linear Jacobian of the
+center of mass of the Skeleton, while `getLinearJacobian`
 returns the Jacobian of a point on a BodyNode. The BodyNode and the
 local coordinate of the point are specified as parameters to this
 function. Here the point of interest is the center of mass of the left
-foot, which local coordinates can be accessed by ``getCOM``
+foot, which local coordinates can be accessed by `getCOM`
 with a parameter indicating the left foot being the frame of
-reference. We use ``getLinearJacobian`` again to compute the
+reference. We use `getLinearJacobian` again to compute the
 gradient of the second term of the objective function:
 
 ```cpp
@@ -579,7 +587,7 @@ math::VectorXd solveIK(SkeletonPtr biped)
 }
 ```
 
-The full list of Jacobian APIs can be found in the [API Documentation](http://dartsim.github.io/dart/). The 
+The full list of Jacobian APIs can be found in the [API Documentation](http://dartsim.github.io/dart/). The
 following table summarizes the essential APIs.
 
 | Function Name           | Description                                                                                                                                                        |

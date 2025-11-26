@@ -73,7 +73,7 @@ constexpr T toDegree(const T& radian)
   return radian * 180.0 / pi_v<T>;
 }
 
-/// \brief a cross b = (CR*a) dot b
+/// @brief a cross b = (CR*a) dot b
 /// const Matd CR(2,2,0.0,-1.0,1.0,0.0);
 const Eigen::Matrix2d CR((Eigen::Matrix2d() << 0.0, -1.0, 1.0, 0.0).finished());
 
@@ -367,7 +367,7 @@ inline bool isInt(double _x)
   return isApprox(round(_x), _x, static_cast<double>(1e-6));
 }
 
-/// \brief Returns whether _v is a NaN (Not-A-Number) value
+/// @brief Returns whether _v is a NaN (Not-A-Number) value
 inline bool isNan(double _v)
 {
 #ifdef _WIN32
@@ -377,7 +377,7 @@ inline bool isNan(double _v)
 #endif
 }
 
-/// \brief Returns whether _m is a NaN (Not-A-Number) matrix
+/// @brief Returns whether _m is a NaN (Not-A-Number) matrix
 inline bool isNan(const Eigen::MatrixXd& _m)
 {
   for (int i = 0; i < _m.rows(); ++i)
@@ -388,7 +388,7 @@ inline bool isNan(const Eigen::MatrixXd& _m)
   return false;
 }
 
-/// \brief Returns whether _v is an infinity value (either positive infinity or
+/// @brief Returns whether _v is an infinity value (either positive infinity or
 /// negative infinity).
 inline bool isInf(double _v)
 {
@@ -399,7 +399,7 @@ inline bool isInf(double _v)
 #endif
 }
 
-/// \brief Returns whether _m is an infinity matrix (either positive infinity or
+/// @brief Returns whether _m is an infinity matrix (either positive infinity or
 /// negative infinity).
 inline bool isInf(const Eigen::MatrixXd& _m)
 {
@@ -411,7 +411,7 @@ inline bool isInf(const Eigen::MatrixXd& _m)
   return false;
 }
 
-/// \brief Returns whether _m is symmetric or not
+/// @brief Returns whether _m is symmetric or not
 inline bool isSymmetric(const Eigen::MatrixXd& _m, double _tol = 1e-6)
 {
   std::size_t rows = _m.rows();

@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/GridVisual.hpp>
-#include <dart/gui/osg/ImGuiHandler.hpp>
-#include <dart/gui/osg/ImGuiViewer.hpp>
-#include <dart/gui/osg/ImGuiWidget.hpp>
-#include <dart/gui/osg/RealTimeWorldNode.hpp>
-#include <dart/gui/osg/Viewer.hpp>
+#include <dart/gui/GridVisual.hpp>
+#include <dart/gui/ImGuiHandler.hpp>
+#include <dart/gui/ImGuiViewer.hpp>
+#include <dart/gui/ImGuiWidget.hpp>
+#include <dart/gui/RealTimeWorldNode.hpp>
+#include <dart/gui/Viewer.hpp>
 
 #include <dart/simulation/World.hpp>
 
@@ -51,6 +51,7 @@
 
 #include <dart/math/Constants.hpp>
 
+#include <CLI/CLI.hpp>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <imgui.h>
@@ -469,7 +470,7 @@ private:
   std::vector<PairData> mPairs;
 };
 
-class CouplerWorldNode : public dart::gui::osg::RealTimeWorldNode
+class CouplerWorldNode : public dart::gui::RealTimeWorldNode
 {
 public:
   CouplerWorldNode(const WorldPtr& world, CouplerController* controller)
@@ -514,11 +515,10 @@ private:
   CouplerController* mController;
 };
 
-class CouplerOverlay : public dart::gui::osg::ImGuiWidget
+class CouplerOverlay : public dart::gui::ImGuiWidget
 {
 public:
-  CouplerOverlay(
-      dart::gui::osg::ImGuiViewer* viewer, CouplerController* controller)
+  CouplerOverlay(dart::gui::ImGuiViewer* viewer, CouplerController* controller)
     : mViewer(viewer), mController(controller)
   {
   }
@@ -594,14 +594,20 @@ public:
   }
 
 private:
-  dart::gui::osg::ImGuiViewer* mViewer;
+  dart::gui::ImGuiViewer* mViewer;
   CouplerController* mController;
 };
 
 } // namespace
 
-int main(int /*argc*/, char* /*argv*/[])
+int main(int argc, char* argv[])
 {
+  CLI::App app("Coupler constraint demo");
+  double guiScale = 1.0;
+  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
+      ->check(CLI::PositiveNumber);
+  CLI11_PARSE(app, argc, argv);
+
   WorldPtr world = World::create();
   world->setGravity(Eigen::Vector3d::Zero());
   world->setTimeStep(1e-3);
@@ -699,8 +705,8 @@ int main(int /*argc*/, char* /*argv*/[])
   ::osg::ref_ptr<CouplerEventHandler> handler
       = new CouplerEventHandler(controller.get());
 
-  osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
-      = new dart::gui::osg::ImGuiViewer();
+  osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
+  viewer->setImGuiScale(static_cast<float>(guiScale));
   if (osg::GraphicsContext::getWindowingSystemInterface() == nullptr) {
     std::cerr << "No OSG windowing system detected. Running the GUI example "
                  "requires an active display server.\n";
@@ -713,9 +719,9 @@ int main(int /*argc*/, char* /*argv*/[])
   viewer->addInstructionText("'r': reset both rigs\n");
   std::cout << viewer->getInstructions() << std::endl;
 
-  auto grid = ::osg::ref_ptr<dart::gui::osg::GridVisual>(
-      new dart::gui::osg::GridVisual());
-  grid->setPlaneType(dart::gui::osg::GridVisual::PlaneType::XY);
+  auto grid
+      = ::osg::ref_ptr<dart::gui::GridVisual>(new dart::gui::GridVisual());
+  grid->setPlaneType(dart::gui::GridVisual::PlaneType::XY);
   grid->setNumCells(25);
   grid->setMinorLineStepSize(0.05);
   viewer->addAttachment(grid);
