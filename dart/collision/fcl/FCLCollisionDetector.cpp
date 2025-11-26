@@ -58,9 +58,10 @@
 #include <assimp/scene.h>
 
 #include <algorithm>
-#include <cstdint>
 #include <limits>
 #include <string>
+
+#include <cstdint>
 
 namespace dart {
 namespace collision {
