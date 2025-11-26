@@ -47,7 +47,7 @@
 #include <iostream>
 #include <string>
 #include <utility>
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   #include "dart/collision/bullet/All.hpp"
 #endif
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
@@ -279,7 +279,7 @@ TEST(World, Cloning)
     for (std::size_t j = 1; j < 5; ++j)
       clones.push_back(clones[j - 1]->clone());
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
     std::size_t numIterations = 3;
 #else
     std::size_t numIterations = 500;
@@ -357,7 +357,7 @@ TEST(World, ValidatingClones)
     worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
 
     // Set non default collision detector
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
     worlds.back()->setCollisionDetector(CollisionDetectorType::Bullet);
 #else
     worlds.back()->setCollisionDetector(CollisionDetectorType::Dart);

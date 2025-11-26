@@ -281,11 +281,11 @@ protected:
 int main()
 {
   dart::simulation::WorldPtr world(new dart::simulation::World);
-  dart::utils::UrdfParser loader;
+  dart::utils::UrdfParser parser;
 
   // Load the robot
   dart::dynamics::SkeletonPtr robot
-      = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+      = parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   world->addSkeleton(robot);
 
   // Rotate the robot so that z is upwards (default transform is not Identity)
@@ -294,7 +294,7 @@ int main()
 
   // Load the ground
   dart::dynamics::SkeletonPtr ground
-      = loader.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
+      = parser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
   world->addSkeleton(ground);
 
   // Rotate and move the ground so that z is upwards

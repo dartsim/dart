@@ -910,9 +910,9 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   using dynamics::Shape;
   using dynamics::SoftMeshShape;
   using dynamics::SphereShape;
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   using dynamics::VoxelGridShape;
-#endif // HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP
 
   fcl::CollisionGeometry* geom = nullptr;
   const auto& shapeType = shape->getType();
@@ -1025,7 +1025,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     geom = createSoftMesh<fcl::OBBRSS>(aiMesh);
   }
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType) {
   #if FCL_HAVE_OCTOMAP
     DART_ASSERT(dynamic_cast<const VoxelGridShape*>(shape.get()));
@@ -1043,7 +1043,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
   #endif // FCL_HAVE_OCTOMAP
   }
-#endif // HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP
   else {
     DART_ERROR(
         "Attempting to create an unsupported shape type [{}]. Creating a "

@@ -30,42 +30,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
-#define DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
+#ifndef DART_COLLISION_BULLET_DETAIL_BULLETCONTACT_HPP_
+#define DART_COLLISION_BULLET_DETAIL_BULLETCONTACT_HPP_
 
-#include <dart/constraint/BoxedLcpSolver.hpp>
+#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/Contact.hpp"
+#include "dart/collision/bullet/BulletInclude.hpp"
 
-#include <dart/Export.hpp>
+namespace dart::collision::bullet::detail {
 
-namespace dart {
-namespace constraint {
-
-class DART_API DantzigBoxedLcpSolver : public BoxedLcpSolver
+/// Returns true if the manifold point should be reported as a contact for the
+/// given collision option.
+inline bool shouldReportContact(
+    const btManifoldPoint& cp, const CollisionOption& option)
 {
-public:
-  // Documentation inherited.
-  const std::string& getType() const override;
+  if (cp.m_normalWorldOnB.length2() < Contact::getNormalEpsilonSquared())
+    return false;
 
-  /// Returns type for this class
-  static const std::string& getStaticType();
+  if (!option.allowNegativePenetrationDepthContacts && cp.m_distance1 > 0.0)
+    return false;
 
-  // Documentation inherited.
-  bool solve(
-      int n,
-      double* A,
-      double* x,
-      double* b,
-      int nub,
-      double* lo,
-      double* hi,
-      int* findex,
-      bool earlyTermination) override;
+  return true;
+}
 
-  // Documentation inherited.
-  bool canSolve(int n, const double* A) override;
-};
+} // namespace dart::collision::bullet::detail
 
-} // namespace constraint
-} // namespace dart
-
-#endif // DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
+#endif // DART_COLLISION_BULLET_DETAIL_BULLETCONTACT_HPP_

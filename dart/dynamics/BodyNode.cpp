@@ -1429,7 +1429,7 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
     mConstDependentDofs.push_back(_skeleton->getDof(index));
   }
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   // Check whether there is duplicated indices.
   std::size_t nDepGenCoordIndices = mDependentGenCoordIndices.size();
   for (std::size_t i = 0; i < nDepGenCoordIndices; ++i) {

@@ -177,9 +177,9 @@ TEST(ForwardKinematics, JacobianPartialChange)
   // This is a regression test for issue #499
   const double tolerance = 1e-8;
 
-  dart::utils::UrdfParser loader;
+  dart::utils::UrdfParser parser;
   SkeletonPtr skeleton1
-      = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+      = parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 
   SkeletonPtr skeleton2 = skeleton1->cloneSkeleton();
 
@@ -226,9 +226,9 @@ TEST(ForwardKinematics, JacobianEndEffectorChange)
   // This is a regression test for pull request #683
   const double tolerance = 1e-8;
 
-  dart::utils::UrdfParser loader;
+  dart::utils::UrdfParser parser;
   SkeletonPtr skeleton1
-      = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+      = parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 
   BodyNode* last_bn1 = skeleton1->getBodyNode(skeleton1->getNumBodyNodes() - 1);
   EndEffector* ee1 = last_bn1->createEndEffector();

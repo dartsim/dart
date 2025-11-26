@@ -41,10 +41,10 @@
 
 #include <iostream>
 #include <limits>
-#if HAVE_ODE
+#if DART_HAVE_ODE
   #include "dart/collision/ode/All.hpp"
 #endif
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   #include "dart/collision/bullet/All.hpp"
 #endif
 #include "helpers/dynamics_helpers.hpp"
@@ -463,7 +463,7 @@ TEST_F(Collision, SimpleFrames)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testSimpleFrames(fcl_mesh_fcl);
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testSimpleFrames(bullet);
 #endif
@@ -549,7 +549,7 @@ void testSphereSphere(
     // contains the other object (no collisions between the hulls)
   } else {
     EXPECT_TRUE(group->collide(option, &result));
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
     if (cd->getType() == BulletCollisionDetector::getStaticType()) {
       // Regression guard for Bullet containment case (#876).
       EXPECT_EQ(result.getNumContacts(), 1u);
@@ -593,7 +593,7 @@ TEST_F(Collision, SphereSphere)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testSphereSphere(fcl_mesh_fcl);
 
-#if HAVE_ODE
+#if DART_HAVE_ODE
   {
     SCOPED_TRACE("OdeCollisionDetector");
     auto ode = OdeCollisionDetector::create();
@@ -601,7 +601,7 @@ TEST_F(Collision, SphereSphere)
   }
 #endif
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   {
     SCOPED_TRACE("BulletCollisionDetector");
     auto bullet = BulletCollisionDetector::create();
@@ -711,12 +711,12 @@ TEST_F(Collision, BoxBox)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testBoxBox(fcl_mesh_fcl);
 
-#if HAVE_ODE
+#if DART_HAVE_ODE
   auto ode = OdeCollisionDetector::create();
   testBoxBox(ode);
 #endif
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testBoxBox(bullet);
 #endif
@@ -842,12 +842,12 @@ TEST_F(Collision, testCylinderCylinder)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testCylinderCylinder(fcl_mesh_fcl);
 
-#if HAVE_ODE
+#if DART_HAVE_ODE
   auto ode = OdeCollisionDetector::create();
   testCylinderCylinder(ode);
 #endif
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testCylinderCylinder(bullet);
 #endif
@@ -925,7 +925,7 @@ TEST_F(Collision, testConeCone)
     testConeCone(fcl_prim_fcl);
   }
 
-#if HAVE_ODE
+#if DART_HAVE_ODE
   {
       // SCOPED_TRACE("OdeCollisionDetector");
       // auto ode = OdeCollisionDetector::create();
@@ -933,7 +933,7 @@ TEST_F(Collision, testConeCone)
   }
 #endif
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   {
     SCOPED_TRACE("BulletCollisionDetector");
     auto bullet = BulletCollisionDetector::create();
@@ -1071,12 +1071,12 @@ TEST_F(Collision, testCapsuleCapsule)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testCapsuleCapsule(fcl_mesh_fcl);
 
-#if HAVE_ODE
+#if DART_HAVE_ODE
   auto ode = OdeCollisionDetector::create();
   testCapsuleCapsule(ode);
 #endif
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testCapsuleCapsule(bullet);
 #endif
@@ -1124,7 +1124,7 @@ void testPlane(const std::shared_ptr<CollisionDetector>& cd)
 //==============================================================================
 TEST_F(Collision, testPlane)
 {
-#if HAVE_ODE
+#if DART_HAVE_ODE
   auto ode = OdeCollisionDetector::create();
   testPlane(ode);
 #endif
@@ -1307,7 +1307,7 @@ void testHeightmapBox(
 //==============================================================================
 TEST_F(Collision, testHeightmapBox)
 {
-#if HAVE_ODE
+#if DART_HAVE_ODE
   auto ode = OdeCollisionDetector::create();
   // TODO take this message out as soon as testing is done
   DART_DEBUG("Testing ODE (float)");
@@ -1318,7 +1318,7 @@ TEST_F(Collision, testHeightmapBox)
   testHeightmapBox<double>(ode.get(), true, true, 0.05);
 #endif
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
 
   // TODO take this message out as soon as testing is done
@@ -1435,7 +1435,7 @@ TEST_F(Collision, Options)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testOptions(fcl_mesh_fcl);
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testOptions(bullet);
 #endif
@@ -1537,7 +1537,7 @@ TEST_F(Collision, Filter)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testFilter(fcl_mesh_fcl);
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testFilter(bullet);
 #endif
@@ -1637,7 +1637,7 @@ TEST_F(Collision, CreateCollisionGroupFromVariousObject)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testCreateCollisionGroups(fcl_mesh_fcl);
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testCreateCollisionGroups(bullet);
 #endif
@@ -1769,7 +1769,7 @@ TEST_F(Collision, Factory)
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("fcl"));
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("dart"));
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   // Force-load the Bullet collision plugin on platforms (e.g., Windows) where
   // the DLL is otherwise not loaded unless a symbol is referenced.
   auto bulletDetector = collision::BulletCollisionDetector::create();
@@ -1784,7 +1784,7 @@ TEST_F(Collision, Factory)
   EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("bullet"));
 #endif
 
-#if HAVE_ODE
+#if DART_HAVE_ODE
   auto odeDetector = collision::OdeCollisionDetector::create();
   ASSERT_NE(odeDetector, nullptr);
   collision::CollisionDetector::getFactory()->registerCreator(
@@ -1798,7 +1798,7 @@ TEST_F(Collision, Factory)
 #endif
 }
 
-#if HAVE_ODE
+#if DART_HAVE_ODE
 //==============================================================================
 TEST(Issue1654, OdeContactHistoryClearsOnObjectRemoval)
 {
@@ -1917,10 +1917,10 @@ TEST(Issue1654, OdeHonorsMaxNumContacts)
   ASSERT_TRUE(group->collide(option, &result));
   EXPECT_EQ(1u, result.getNumContacts());
 }
-#endif // HAVE_ODE
+#endif // DART_HAVE_ODE
 
 //==============================================================================
-#if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 TEST_F(Collision, VoxelGrid)
 {
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
@@ -1953,4 +1953,4 @@ TEST_F(Collision, VoxelGrid)
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() >= 1u);
 }
-#endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
