@@ -41,12 +41,17 @@ void defCollisionOption(nb::module_& m)
           nb::init<
               bool,
               std::size_t,
-              const std::shared_ptr<CollisionFilter>&>(),
+              const std::shared_ptr<CollisionFilter>&,
+              bool>(),
           nb::arg("enableContact") = true,
           nb::arg("maxNumContacts") = 1000u,
-          nb::arg("collisionFilter") = nullptr)
+          nb::arg("collisionFilter") = nullptr,
+          nb::arg("allowNegativePenetrationDepthContacts") = false)
       .def_rw("enableContact", &CollisionOption::enableContact)
       .def_rw("maxNumContacts", &CollisionOption::maxNumContacts)
+      .def_rw(
+          "allowNegativePenetrationDepthContacts",
+          &CollisionOption::allowNegativePenetrationDepthContacts)
       .def_rw("collisionFilter", &CollisionOption::collisionFilter);
 }
 
