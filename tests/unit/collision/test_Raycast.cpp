@@ -242,3 +242,90 @@ TEST(Raycast, testOptions)
   auto dart = DARTCollisionDetector::create();
   testOptions(dart);
 }
+
+//==============================================================================
+void testFilters(const std::shared_ptr<CollisionDetector>& cd)
+{
+  if (cd->getType() != "bullet") {
+    DART_WARN(
+        "Aborting test: distance check is not supported by {}.", cd->getType());
+    return;
+  }
+
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
+
+  auto sphere = std::make_shared<SphereShape>(1.0);
+  simpleFrame1->setShape(sphere);
+  simpleFrame2->setShape(sphere);
+
+  auto group = cd->createCollisionGroup(simpleFrame1.get(), simpleFrame2.get());
+
+  collision::RaycastOption option;
+  collision::RaycastResult result;
+
+  simpleFrame1->setTranslation(Eigen::Vector3d(-2, 0, 0));
+  simpleFrame2->setTranslation(Eigen::Vector3d(2, 0, 0));
+
+  option.mEnableAllHits = false;
+  option.mSortByClosest = false;
+  option.mFilter = [&](const collision::CollisionObject* obj) {
+    return obj->getShapeFrame() == simpleFrame2.get();
+  };
+
+  result.clear();
+  cd->raycast(
+      group.get(),
+      Eigen::Vector3d(-5, 0, 0),
+      Eigen::Vector3d(5, 0, 0),
+      option,
+      &result);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mRayHits.size(), 1u);
+  auto rayHit = result.mRayHits[0];
+  EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(1, 0, 0)));
+  EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
+  EXPECT_NEAR(rayHit.mFraction, 0.6, 1e-5);
+
+  option.mEnableAllHits = true;
+  option.mFilter = [&](const collision::CollisionObject* obj) {
+    return obj->getShapeFrame() == simpleFrame1.get();
+  };
+  result.clear();
+  cd->raycast(
+      group.get(),
+      Eigen::Vector3d(-5, 0, 0),
+      Eigen::Vector3d(5, 0, 0),
+      option,
+      &result);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mRayHits.size(), 1u);
+  rayHit = result.mRayHits[0];
+  EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(-3, 0, 0)));
+  EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
+  EXPECT_NEAR(rayHit.mFraction, 0.2, 1e-5);
+
+  option.mFilter = [&](const collision::CollisionObject*) {
+    return false;
+  };
+  result.clear();
+  cd->raycast(
+      group.get(),
+      Eigen::Vector3d(-5, 0, 0),
+      Eigen::Vector3d(5, 0, 0),
+      option,
+      &result);
+  EXPECT_FALSE(result.hasHit());
+  EXPECT_TRUE(result.mRayHits.empty());
+}
+
+//==============================================================================
+TEST(Raycast, testFilters)
+{
+#if HAVE_BULLET
+  auto bullet = BulletCollisionDetector::create();
+  testFilters(bullet);
+#else
+  GTEST_SKIP() << "Bullet collision detector not available.";
+#endif
+}
