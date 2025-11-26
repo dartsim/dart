@@ -9,7 +9,7 @@
  *   Redistribution and use in source and binary forms, with or
  *   without modification, are permitted provided that the following
  *   conditions are met:
- *   * Redistributions of source code must retain the above copyright
+ *   * Redistributions of this software must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
  *   * Redistributions in binary form must reproduce the above
  *     copyright notice, this list of conditions and the following
@@ -30,25 +30,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionOption.hpp"
+#include "dart/config.hpp"
 
-namespace dart {
-namespace collision {
+#include <gtest/gtest.h>
 
-//==============================================================================
-CollisionOption::CollisionOption(
-    bool enableContact,
-    std::size_t maxNumContacts,
-    const std::shared_ptr<CollisionFilter>& collisionFilter,
-    bool allowNegativePenetrationDepthContacts)
-  : enableContact(enableContact),
-    maxNumContacts(maxNumContacts),
-    allowNegativePenetrationDepthContacts(
-        allowNegativePenetrationDepthContacts),
-    collisionFilter(collisionFilter)
+#if HAVE_BULLET
+  #include "dart/collision/CollisionOption.hpp"
+  #include "dart/collision/bullet/detail/BulletContact.hpp"
+#endif
+
+using namespace dart;
+using namespace dart::collision;
+
+#if HAVE_BULLET
+using dart::collision::bullet::detail::shouldReportContact;
+
+TEST(BulletContact, FiltersNegativePenetrationDepth)
 {
-  // Do nothing
+  CollisionOption option;
+
+  btManifoldPoint cp;
+  cp.m_normalWorldOnB = btVector3(0, 0, 1);
+  cp.m_distance1 = 0.01; // positive => negative penetration depth
+
+  EXPECT_FALSE(shouldReportContact(cp, option));
+
+  option.allowNegativePenetrationDepthContacts = true;
+  EXPECT_TRUE(shouldReportContact(cp, option));
 }
 
-} // namespace collision
-} // namespace dart
+TEST(BulletContact, StillReportsPenetratingContacts)
+{
+  CollisionOption option;
+
+  btManifoldPoint cp;
+  cp.m_normalWorldOnB = btVector3(0, 0, 1);
+  cp.m_distance1 = -0.02;
+
+  EXPECT_TRUE(shouldReportContact(cp, option));
+}
+
+TEST(BulletContact, RejectsZeroLengthNormals)
+{
+  CollisionOption option;
+  option.allowNegativePenetrationDepthContacts = true;
+
+  btManifoldPoint cp;
+  cp.m_normalWorldOnB = btVector3(0, 0, 0);
+  cp.m_distance1 = -0.01;
+
+  EXPECT_FALSE(shouldReportContact(cp, option));
+}
+#endif

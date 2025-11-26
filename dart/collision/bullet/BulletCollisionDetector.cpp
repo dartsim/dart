@@ -39,6 +39,7 @@
 #include "dart/collision/bullet/BulletInclude.hpp"
 #include "dart/collision/bullet/BulletTypes.hpp"
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
+#include "dart/collision/bullet/detail/BulletContact.hpp"
 #include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
@@ -713,11 +714,8 @@ void reportContacts(
     for (auto j = 0; j < numContacts; ++j) {
       const auto& cp = contactManifold->getContactPoint(j);
 
-      if (cp.m_normalWorldOnB.length2() < Contact::getNormalEpsilonSquared()) {
-        // Skip this contact. This is because we assume that a contact with
-        // zero-length normal is invalid.
+      if (!bullet::detail::shouldReportContact(cp, option))
         continue;
-      }
 
       result.addContact(convertContact(cp, collObj0, collObj1));
 
