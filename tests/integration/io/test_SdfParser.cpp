@@ -630,7 +630,7 @@ TEST(SdfParser, WarnsOnTinyMassAndDefaultsInertia)
   EXPECT_TRUE(inertia.getMoment().isApprox(expectedMoment));
 
   const auto logs = capture.contents();
-  EXPECT_NE(logs.find("clamping to"), std::string::npos)
+  EXPECT_NE(logs.find("Clamping to"), std::string::npos)
       << "Expected warning about tiny mass clamping in logs: " << logs;
   EXPECT_NE(logs.find("defines <mass> but no <inertia>"), std::string::npos)
       << "Expected warning about missing inertia tensor in logs: " << logs;
