@@ -94,7 +94,11 @@ BoxBounceWorld makeFourBoxBounceWorld(double pitch)
     tf.linear()
         = Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()).toRotationMatrix();
 
-    joint->setPositions(FreeJoint::convertToPositions(tf));
+    if (auto* weldJoint = dynamic_cast<WeldJoint*>(joint)) {
+      weldJoint->setTransformFromParentBodyNode(tf);
+    } else {
+      joint->setPositions(FreeJoint::convertToPositions(tf));
+    }
 
     if (!weld) {
       auto* freeJoint = dynamic_cast<FreeJoint*>(joint);
