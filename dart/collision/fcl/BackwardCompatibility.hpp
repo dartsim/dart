@@ -64,9 +64,9 @@ DART_SUPPRESS_CPP_WARNING_BEGIN
 #include <fcl/narrowphase/collision_object.h>
 #include <fcl/narrowphase/distance.h>
 
-#if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
   #include <fcl/geometry/octree/octree.h>
-#endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 DART_SUPPRESS_CPP_WARNING_END
 
 namespace dart {
@@ -84,9 +84,9 @@ using Cone = ::fcl::Cone<double>;
 using Ellipsoid = ::fcl::Ellipsoid<double>;
 using Halfspace = ::fcl::Halfspace<double>;
 using Sphere = ::fcl::Sphere<double>;
-#if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 using OcTree = ::fcl::OcTree<double>;
-#endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject<double>;
 using CollisionGeometry = ::fcl::CollisionGeometry<double>;

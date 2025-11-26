@@ -189,7 +189,7 @@ private:
 
 int main()
 {
-#if !HAVE_ODE
+#if !DART_HAVE_ODE
   DART_ERROR(
       "capsule_ground_contact requires DART to be built with ODE support.\n");
   return 1;
