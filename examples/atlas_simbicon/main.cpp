@@ -35,7 +35,6 @@
 #include "AtlasSimbiconWorldNode.hpp"
 
 #include <dart/gui/All.hpp>
-#include <dart/gui/ImGuiHandler.hpp>
 #include <dart/gui/IncludeImGui.hpp>
 
 #include <dart/utils/All.hpp>
@@ -77,7 +76,7 @@ int main(int argc, char* argv[])
   // Create a Viewer and set it up with the WorldNode
   osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
 
-  dart::gui::applyImGuiScale(static_cast<float>(guiScale));
+  viewer->setImGuiScale(static_cast<float>(guiScale));
   viewer->addWorldNode(node);
 
   // Enable shadow

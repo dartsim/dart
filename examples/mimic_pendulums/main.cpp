@@ -560,7 +560,7 @@ int main(int argc, char* argv[])
 
   osg::ref_ptr<RealTimeWorldNode> worldNode = new RealTimeWorldNode(world);
   osg::ref_ptr<ImGuiViewer> viewer = new ImGuiViewer();
-  dart::gui::applyImGuiScale(static_cast<float>(guiScale));
+  viewer->setImGuiScale(static_cast<float>(guiScale));
   viewer->addWorldNode(worldNode);
   viewer->addInstructionText("space: toggle simulation\n");
 

@@ -224,7 +224,7 @@ int main(int argc, char* argv[])
 
   // Create a Viewer and set it up with the WorldNode
   auto viewer = gui::ImGuiViewer();
-  dart::gui::applyImGuiScale(static_cast<float>(guiScale));
+  viewer.setImGuiScale(static_cast<float>(guiScale));
   viewer.addWorldNode(node);
 
   // Create grid
