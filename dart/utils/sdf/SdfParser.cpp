@@ -1123,13 +1123,15 @@ SDFBodyNode readBodyNode(
       if (mass <= 0.0) {
         DART_WARN(
             "[SdfParser] Link [{}] has non-positive mass [{}]. "
-            "Simulation results will be invalid; please provide a positive mass.",
+            "Simulation results will be invalid; please provide a positive "
+            "mass.",
             bodyName,
             mass);
       } else if (mass < kMinReasonableMass) {
         DART_WARN(
             "[SdfParser] Link [{}] has a very small mass [{} kg]; "
-            "this can cause severe numerical issues. Consider using a larger scale.",
+            "this can cause severe numerical issues. Consider using a larger "
+            "scale.",
             bodyName,
             mass);
       }
@@ -1169,14 +1171,17 @@ SDFBodyNode readBodyNode(
 
     if (!massSpecified) {
       DART_WARN(
-          "[SdfParser] Link [{}] is missing <mass>; using default mass of 1 kg. "
+          "[SdfParser] Link [{}] is missing <mass>; using default mass of 1 "
+          "kg. "
           "Specify <inertial><mass> to avoid unstable simulation.",
           bodyName);
     }
   } else {
     DART_WARN(
-        "[SdfParser] Link [{}] is missing <inertial>; using default mass/inertia "
-        "(1 kg, unit inertia). Specify <inertial> to avoid unstable simulation.",
+        "[SdfParser] Link [{}] is missing <inertial>; using default "
+        "mass/inertia "
+        "(1 kg, unit inertia). Specify <inertial> to avoid unstable "
+        "simulation.",
         bodyName);
   }
 
