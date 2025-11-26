@@ -85,10 +85,13 @@ public:
   ///
   /// @param[in] pointer: Pointer obtained from allocate().
   /// @param[in] n: Number of objects earlier passed to allocate().
-  void deallocate(pointer pointer, size_type n);
-  // TODO(JS): Make this constexpr once migrated to C++20
+  void deallocate(pointer pointer, size_type n) noexcept;
 
-  // TODO(JS): Add size_type max_size() const noexcept;
+  /// Upper bound on elements that can be allocated.
+  [[nodiscard]] constexpr size_type max_size() const noexcept
+  {
+    return std::allocator_traits<Base>::max_size(*this);
+  }
 
   /// Prints state of the memory allocator
   void print(std::ostream& os = std::cout, int indent = 0) const;

@@ -92,7 +92,6 @@ dynamics::SimpleFramePtr createHeightmapFrame(
 
   terrainFrame->createVisualAspect();
 
-  // TODO(JS): Remove?
   auto terrainShape = createHeightmapShape(
       xResolution, yResolution, xSize, ySize, zMin, zMax);
   terrainFrame->setShape(terrainShape);
