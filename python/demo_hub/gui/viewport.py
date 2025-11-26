@@ -42,13 +42,13 @@ def draw_topdown(name: str, segments: Iterable[Segment2D], size=(0, 0)) -> None:
 
     def project(pt):
         x, z = pt
-        return offset_x + (x - center_x) * scale, offset_z - (z - center_z) * scale
+        return imgui.ImVec2(offset_x + (x - center_x) * scale, offset_z - (z - center_z) * scale)
 
     for seg in segs:
         c = seg.color
         col = imgui.get_color_u32(imgui.ImVec4(c[0], c[1], c[2], 1.0))
         p0 = project(seg.start)
         p1 = project(seg.end)
-        draw_list.add_line(p0[0], p0[1], p1[0], p1[1], col, thickness=2.0)
+        draw_list.add_line(p0, p1, col, thickness=2.0)
 
     imgui.end()

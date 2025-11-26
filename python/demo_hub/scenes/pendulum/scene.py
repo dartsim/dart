@@ -109,17 +109,15 @@ class PendulumScene(Scene):
         inertia = self._make_link_inertia(length, radius, mass)
 
         # Root ball joint at the origin.
-        ball_props = dart.dynamics.BallJointProperties()
-        ball_props.mName = "root_joint"
-        ball_props.mRestPositions = [0.0, 0.0, 0.0]
-        ball_props.mSpringStiffnesses = [1.5, 1.5, 1.5]
-        ball_props.mDampingCoefficients = [0.02, 0.02, 0.02]
+        root_joint, root_body = pendulum.createBallJointAndBodyNodePair(None)
+        root_joint.setName("root_joint")
+        for i in range(3):
+            root_joint.setRestPosition(i, 0.0)
+            root_joint.setSpringStiffness(i, 1.5)
+            root_joint.setDampingCoefficient(i, 0.02)
 
-        root_body_props = dart.dynamics.BodyNodeProperties()
-        root_body_props.mName = "link0"
-        root_body_props.mInertia = inertia
-
-        root_joint, root_body = pendulum.createBallJointAndBodyNodePair(None, ball_props, root_body_props)
+        root_body.setName("link0")
+        root_body.setInertia(inertia)
         self._attach_geometry(root_body, radius, length)
 
         parent = root_body
