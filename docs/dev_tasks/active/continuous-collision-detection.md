@@ -16,5 +16,5 @@
 ## Next Steps
 
 - Track previous transforms per `CollisionObject`/`CollisionGroup` and add a CCD flag to `CollisionOption` so detectors can run swept queries (FCL `continuousCollide`, Bullet convex casts).
-- In `World::step()`, subdivide the time step at the earliest time of impact and feed TOI poses into `ConstraintSolver` instead of resolving after penetration.
+- In `World::step()`, subdivide the time step at the earliest time of impact and feed that impact pose into `ConstraintSolver` instead of resolving after penetration.
 - Add regressions for crossing thin plates and fast self-collision for each backend, and surface CCD toggles (including swept-sphere radius) through dartpy.

@@ -48,10 +48,10 @@
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
 
-#include <cmath>
-
 #include <gtest/gtest.h>
 #include <helpers/GTestUtils.hpp>
+
+#include <cmath>
 
 using namespace dart::dynamics;
 using namespace dart::test;
@@ -211,8 +211,8 @@ TEST(Issue426, FclThinBoxMeshModeUsesHalfspacePlane)
   group->subscribeTo(thin);
 
   dart::collision::CollisionResult result;
-  const bool collided = group->collide(dart::collision::CollisionOption(),
-                                       &result);
+  const bool collided
+      = group->collide(dart::collision::CollisionOption(), &result);
 
   EXPECT_TRUE(collided);
   EXPECT_GT(result.getNumContacts(), 0u);
