@@ -50,6 +50,7 @@
 #include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/VoxelGridShape.hpp"
@@ -58,11 +59,35 @@
 
 #include <algorithm>
 #include <limits>
+#include <string>
 
 namespace dart {
 namespace collision {
 
 namespace {
+
+std::string collisionObjectKey(const FCLCollisionObject* object)
+{
+  const auto* frame = object->getShapeFrame();
+  if (!frame)
+    return "";
+
+  const auto* shapeNode = dynamic_cast<const dynamics::ShapeNode*>(frame);
+  if (shapeNode) {
+    const auto bodyNode = shapeNode->getBodyNodePtr();
+    const auto skeleton = bodyNode ? bodyNode->getSkeleton() : nullptr;
+
+    std::string key;
+    if (skeleton)
+      key += skeleton->getName() + "::";
+    if (bodyNode)
+      key += bodyNode->getName() + "::";
+    key += shapeNode->getName();
+    return key;
+  }
+
+  return frame->getName();
+}
 
 bool collisionCallback(
     fcl::CollisionObject* o1, fcl::CollisionObject* o2, void* cdata);
@@ -1089,8 +1114,11 @@ bool collisionCallback(
   DART_ASSERT(collisionObject2);
 
   // Ensure deterministic ordering of the collision pair so that reported
-  // normals are stable even if the broadphase shuffles callback arguments.
-  if (collisionObject2 < collisionObject1) {
+  // normals are stable even if the broadphase shuffles callback arguments or
+  // when worlds are cloned.
+  const auto key1 = collisionObjectKey(collisionObject1);
+  const auto key2 = collisionObjectKey(collisionObject2);
+  if (key2 < key1 || (key1 == key2 && collisionObject2 < collisionObject1)) {
     std::swap(o1, o2);
     std::swap(collisionObject1, collisionObject2);
   }
