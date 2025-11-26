@@ -69,7 +69,7 @@ public:
   /// memory.
   /// @return On failure, a null pointer
   [[nodiscard]] virtual void* allocate(size_t bytes) noexcept = 0;
-  // TODO(JS): Make this constexpr once migrated to C++20
+  // Note: Virtual runtime allocation cannot be constexpr by design.
 
   /// Allocates object(s) without calling the constructor.
   ///
@@ -85,7 +85,7 @@ public:
   /// @param[in] pointer: Pointer obtained from allocate().
   /// @param[in] bytes: The bytes of the allocated memory.
   virtual void deallocate(void* pointer, size_t bytes) = 0;
-  // TODO(JS): Make this constexpr once migrated to C++20
+  // Note: Virtual runtime deallocation cannot be constexpr by design.
 
   /// Allocates uninitialized storage and constructs an object of type T to the
   /// allocated storage.

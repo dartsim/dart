@@ -110,7 +110,7 @@ public:
   /// @param[in] pointer: Pointer obtained from allocate().
   /// @param[in] bytes: The bytes of the allocated memory.
   void deallocate(Type type, void* pointer, size_t bytes);
-  // TODO(JS): Make this constexpr once migrated to C++20
+  // Note: Deallocates runtime memory; constexpr is not applicable.
 
   void deallocateUsingFree(void* pointer, size_t bytes);
 
