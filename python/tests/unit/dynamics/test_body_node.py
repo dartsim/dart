@@ -63,7 +63,7 @@ def test_get_inertia():
 
 def test_free_joint_world_jacobian_translational_dofs():
     skel = dart.Skeleton("test_free_joint_world_jacobian")
-    joint, body = skel.createFreeJointAndBodyNodePair()
+    joint, body = skel.create_free_joint_and_body_node_pair()
 
     world = dart.Frame.World()
 
