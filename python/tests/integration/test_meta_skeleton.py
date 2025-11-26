@@ -1,10 +1,5 @@
-import platform
-
 import dartpy as dart
 import pytest
-
-# TODO(JS): Move this to integration category once created
-
 
 def test_basic():
     urdfParser = dart.io.DartLoader()

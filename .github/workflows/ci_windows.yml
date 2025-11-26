@@ -45,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_type: ["Release"] # TODO: Add Debug
+        build_type: ["Release"] # Windows CI keeps Release-only to keep runtimes acceptable
     steps:
       - name: Checkout
         uses: actions/checkout@v6
