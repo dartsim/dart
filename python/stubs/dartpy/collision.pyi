@@ -177,6 +177,7 @@ class CollisionObject:
         Return the transformation of this CollisionObject in world coordinates.
         """
 class CollisionOption:
+    allowNegativePenetrationDepthContacts: bool
     collisionFilter: CollisionFilter
     enableContact: bool
     maxNumContacts: int
@@ -191,6 +192,9 @@ class CollisionOption:
         ...
     @typing.overload
     def __init__(self, enableContact: bool, maxNumContacts: int, collisionFilter: CollisionFilter) -> None:
+        ...
+    @typing.overload
+    def __init__(self, enableContact: bool, maxNumContacts: int, collisionFilter: CollisionFilter, allowNegativePenetrationDepthContacts: bool) -> None:
         ...
 class CollisionResult:
     def __init__(self) -> None:

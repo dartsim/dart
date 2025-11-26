@@ -43,6 +43,7 @@
   - Deprecated `ResourceRetriever::getFilePath()` and the overriding implementations across retrievers. The method now emits compiler deprecation warnings and will be removed in DART 8.0; use the new resource-materialization helpers (e.g., the SDF/OSG utilities) instead.
   - Removed the final compatibility headers that only re-included their replacements (`dart/collision/Option.hpp`, `dart/collision/Result.hpp`, and `dart/dynamics/MultiSphereShape.hpp`) and scrubbed the remaining deprecated documentation strings.
   - Removed `CollisionFilter::needCollision()` (deprecated in DART 6.3).
+  - Bullet collision detector now filters phantom contacts with negative penetration depth by default; set `CollisionOption::allowNegativePenetrationDepthContacts` to keep them (addresses [#1184](https://github.com/dartsim/dart/issues/1184)).
   - Removed `DART_COMMON_MAKE_SHARED_WEAK` macro (deprecated in DART 6.4).
   - Removed all APIs deprecated in DART 6.9 (`dart::common::make_unique`, `FreeJoint::setTransform` static helpers, and `NloptSolver` overloads taking raw `nlopt::algorithm` values).
   - Removed all APIs deprecated in DART 6.10 (`common::Signal::cleanupConnections`, `SharedLibrary`/`SharedLibraryManager` filesystem-path overloads, BodyNode friction/restitution helpers and aspect properties, and `Joint::{set,is}PositionLimitEnforced()` aliases).
