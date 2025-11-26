@@ -59,6 +59,7 @@ struct RollingResult
   double xDisplacement;
   double angularSpeedY;
   std::size_t contactCount;
+  double height;
 };
 
 RollingResult runRollingTrial(
@@ -136,7 +137,8 @@ RollingResult runRollingTrial(
   return RollingResult{
       transform.translation()[0],
       std::abs(omega[1]),
-      collisionResult.getNumContacts()};
+      collisionResult.getNumContacts(),
+      transform.translation()[2]};
 }
 
 } // namespace
@@ -167,6 +169,20 @@ TEST(BulletEllipsoidRolling, EllipsoidMultiSphereApproxRolls)
   EXPECT_GT(result.xDisplacement, 0.04);
   EXPECT_GT(result.angularSpeedY, 0.1);
   EXPECT_LE(result.contactCount, 4u);
+}
+
+//==============================================================================
+TEST(BulletEllipsoidRolling, HighAspectEllipsoidFallsBackToMesh)
+{
+  const double slopeRadians = 0.3; // ~17 degrees
+  auto shape = std::make_shared<dart::dynamics::EllipsoidShape>(
+      Eigen::Vector3d(0.2, 0.2, 0.02));
+
+  const RollingResult result = runRollingTrial(shape, slopeRadians);
+
+  EXPECT_GT(result.contactCount, 0u);
+  EXPECT_GT(result.height, 0.01);
+  EXPECT_GT(result.xDisplacement, 0.0);
 }
 
 #endif // HAVE_BULLET

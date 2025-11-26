@@ -937,8 +937,12 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMultiSphere(
     const Eigen::Vector3d& radii)
 {
   const double minRadius = radii.minCoeff();
+  const double maxRadius = radii.maxCoeff();
+  constexpr double kMaxAspectRatioForMultiSphere = 4.0;
 
   if (minRadius <= 0.0)
+    return nullptr;
+  if (maxRadius / minRadius > kMaxAspectRatioForMultiSphere)
     return nullptr;
 
   std::vector<btVector3> centers;
@@ -951,7 +955,9 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMultiSphere(
 
   for (auto i = 0u; i < 3; ++i) {
     const double axisRadius = radii[i];
-    const double delta = axisRadius - minRadius;
+    const double childRadius
+        = std::min({radii[(i + 1) % 3], radii[(i + 2) % 3], axisRadius});
+    const double delta = axisRadius - childRadius;
 
     if (delta <= axisEpsilon)
       continue;
@@ -959,11 +965,11 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMultiSphere(
     Eigen::Vector3d offset = Eigen::Vector3d::Zero();
     offset[i] = delta;
     centers.emplace_back(convertVector3(offset));
-    childRadii.emplace_back(static_cast<btScalar>(minRadius));
+    childRadii.emplace_back(static_cast<btScalar>(childRadius));
 
     offset[i] = -delta;
     centers.emplace_back(convertVector3(offset));
-    childRadii.emplace_back(static_cast<btScalar>(minRadius));
+    childRadii.emplace_back(static_cast<btScalar>(childRadius));
   }
 
   if (centers.empty())
