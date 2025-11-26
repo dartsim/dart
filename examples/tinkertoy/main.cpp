@@ -36,8 +36,11 @@
 #include <dart/config.hpp>
 
 #include <dart/gui/All.hpp>
+#include <dart/gui/ImGuiHandler.hpp>
 
 #include <dart/All.hpp>
+
+#include <CLI/CLI.hpp>
 
 //==============================================================================
 class TinkertoyInputHandler : public osgGA::GUIEventHandler
@@ -131,8 +134,14 @@ public:
 };
 
 //==============================================================================
-int main()
+int main(int argc, char* argv[])
 {
+  CLI::App app("Tinkertoy builder example");
+  double guiScale = 1.0;
+  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
+      ->check(CLI::PositiveNumber);
+  CLI11_PARSE(app, argc, argv);
+
   // Create a world
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
@@ -156,6 +165,7 @@ int main()
 
   // Create the viewer
   osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
+  viewer->setImGuiScale(static_cast<float>(guiScale));
   viewer->addWorldNode(node);
 
   // Add control widget for atlas
