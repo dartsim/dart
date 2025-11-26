@@ -342,7 +342,7 @@ def patch_custom_mesh_shape(mesh_shape_path: Path) -> bool:
     )
     new_tail = (
         "  this->setMesh(\n"
-        "      scene.release(),\n"
+        "      scene,\n"
         "      dart::dynamics::MeshShape::MeshOwnership::Manual,\n"
         "      dart::common::Uri(),\n"
         "      nullptr);\n"
