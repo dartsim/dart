@@ -129,32 +129,11 @@ def _render(state: GuiState) -> None:  # pragma: no cover - manual UI
 
 
 def _dockspace_fullscreen() -> None:
-    # Fullscreen dockspace so any window (including ImGui demo widgets) can dock.
-    viewport = imgui.get_main_viewport()
-    imgui.set_next_window_pos(viewport.pos)
-    imgui.set_next_window_size(viewport.size)
-    imgui.set_next_window_viewport(viewport.id_)
-    imgui.push_style_var(imgui.StyleVar_.window_rounding, 0.0)
-    imgui.push_style_var(imgui.StyleVar_.window_border_size, 0.0)
-    imgui.push_style_var(imgui.StyleVar_.window_padding, (0.0, 0.0))
-
-    window_flags = (
-        imgui.WindowFlags_.no_title_bar
-        | imgui.WindowFlags_.no_collapse
-        | imgui.WindowFlags_.no_resize
-        | imgui.WindowFlags_.no_move
-        | imgui.WindowFlags_.no_bring_to_front_on_focus
-        | imgui.WindowFlags_.no_nav_focus
-        | imgui.WindowFlags_.no_docking
-        | imgui.WindowFlags_.no_background
+    # Fullscreen dockspace over the main viewport; keep central node dockable.
+    dock_flags = imgui.DockNodeFlags_.passthru_central_node
+    return imgui.dock_space_over_viewport(
+        0, imgui.get_main_viewport(), dock_flags, None
     )
-
-    imgui.begin("MainDockSpaceHost", flags=window_flags)
-    imgui.pop_style_var(3)
-    dockspace_id = imgui.get_id("MainDockSpace")
-    imgui.dock_space(dockspace_id, (0.0, 0.0), imgui.DockNodeFlags_.none)
-    imgui.end()
-    return dockspace_id
 
 
 def main(argv: list[str] | None = None) -> None:
