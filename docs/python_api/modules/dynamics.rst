@@ -5,3 +5,4 @@ dartpy
 
 .. automodule:: dartpy
    :members:
+   :no-index:
