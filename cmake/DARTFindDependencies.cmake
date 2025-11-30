@@ -182,10 +182,10 @@ if(DART_BUILD_GUI)
       SOURCE_DIR     "${CMAKE_BINARY_DIR}/_deps/imgui-src"
     )
 
-    # Populate imgui
+    # Populate imgui using the modern helper (avoids CMP0169 warnings)
     FetchContent_GetProperties(imgui)
     if(NOT imgui_POPULATED)
-      FetchContent_Populate(imgui)
+      FetchContent_MakeAvailable(imgui)
     endif()
 
     # Check OpenGL dependency for ImGui

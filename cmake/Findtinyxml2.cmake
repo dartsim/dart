@@ -47,7 +47,7 @@ set(TINYXML2_VERSION ${PC_TINYXML2_VERSION})
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
-  tinyxml2
+  TINYXML2
   FAIL_MESSAGE DEFAULT_MSG
   REQUIRED_VARS TINYXML2_INCLUDE_DIRS TINYXML2_LIBRARIES
   VERSION_VAR TINYXML2_VERSION
