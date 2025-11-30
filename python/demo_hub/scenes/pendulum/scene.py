@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import numpy as np
 from typing import Optional
 
 import dartpy as dart
@@ -18,22 +19,22 @@ class PendulumScene(Scene):
 
     def __init__(self) -> None:
         super().__init__()
-        self._world: Optional[dart.simulation.World] = None
-        self._pendulum: Optional[dart.dynamics.Skeleton] = None
+        self._world: Optional[dart.World] = None
+        self._pendulum: Optional[dart.Skeleton] = None
         self._dt = 0.0
 
     def setup(self, dt: float) -> None:
         self._dt = dt
-        self._world = dart.simulation.World()
+        self._world = dart.World()
         self._world.setTimeStep(dt)
         self._world.setGravity([0, 0, -9.81])
 
-        self._pendulum = dart.dynamics.Skeleton("pendulum")
+        self._pendulum = dart.Skeleton("pendulum")
         self._build_chain(self._pendulum)
         self._world.addSkeleton(self._pendulum)
 
         # Kick the first joint a bit so it starts moving.
-        self._pendulum.getDof(0).setPosition(math.radians(45.0))
+        self._pendulum.get_dof(0).set_position(math.radians(45.0))
         self._set_last_dt(dt)
 
     def update(self, dt: float) -> None:
@@ -60,7 +61,7 @@ class PendulumScene(Scene):
         return {
             "time": float(self._world.getTime()),
             "frames": int(self._world.getSimFrames()),
-            "root_pos_rad": float(self._pendulum.getPosition(0)),
+            "root_pos_rad": float(self._pendulum.get_positions()[0]),
         }
 
     def debug_draw_2d(self):
@@ -71,66 +72,28 @@ class PendulumScene(Scene):
         prev = None
         for i in range(self._pendulum.getNumBodyNodes()):
             body = self._pendulum.getBodyNode(i)
-            pos = body.getWorldTransform().translation()
+            pos = body.get_world_transform().translation()
             x, _, z = pos
             if prev is not None:
                 segments.append((prev, (x, z), color))
             prev = (x, z)
         return segments
 
-    @staticmethod
-    def _make_link_inertia(length: float, radius: float, mass: float) -> dart.dynamics.Inertia:
-        box = dart.dynamics.BoxShape([radius * 2, radius * 2, length])
-        inertia = dart.dynamics.Inertia()
-        inertia.setMass(mass)
-        inertia.setMoment(box.computeInertia(mass))
-        return inertia
-
-    def _build_chain(self, pendulum: dart.dynamics.Skeleton) -> None:
+    def _build_chain(self, pendulum: dart.Skeleton) -> None:
         length = 0.6
         radius = 0.04
-        mass = 0.5
-        inertia = self._make_link_inertia(length, radius, mass)
 
         # Root ball joint at the origin.
-        root_joint, root_body = pendulum.createBallJointAndBodyNodePair(None)
-        root_joint.setName("root_joint")
+        root_joint, root_body = pendulum.create_ball_joint_and_body_node_pair(None)
         for i in range(3):
-            root_joint.setSpringStiffness(i, 1.5)
-            root_joint.setDampingCoefficient(i, 0.02)
-
-        root_body.setName("link0")
-        root_body.setInertia(inertia)
-        self._attach_geometry(root_body, radius, length)
-
+            root_joint.set_damping_coefficient(i, 0.02)
         parent = root_body
         for idx in range(1, 3):
-            revolute_props = dart.dynamics.RevoluteJointProperties()
-            revolute_props.mName = f"joint{idx}"
-            revolute_props.mAxis = [0.0, 1.0, 0.0]
-            revolute_props.mT_ParentBodyToJoint.set_translation([0.0, 0.0, -length])
+            joint, body = pendulum.create_revolute_joint_and_body_node_pair(parent)
+            joint.set_axis(np.array([0.0, 1.0, 0.0], dtype=float))
+            tf = dart.math.Isometry3()
+            tf.set_translation(np.array([0.0, 0.0, -length], dtype=float))
+            joint.set_transform_from_parent_body_node(tf)
+            joint.set_damping_coefficient(0, 0.02)
 
-            body_props = dart.dynamics.BodyNodeProperties()
-            body_props.mName = f"link{idx}"
-            body_props.mInertia = inertia
-
-            joint, body = pendulum.createRevoluteJointAndBodyNodePair(parent, revolute_props, body_props)
-            joint.setRestPosition(0, 0.0)
-            joint.setDampingCoefficient(0, 0.02)
-            joint.setSpringStiffness(0, 0.1)
-
-            self._attach_geometry(body, radius, length)
             parent = body
-
-    @staticmethod
-    def _attach_geometry(body: dart.dynamics.BodyNode, radius: float, length: float) -> None:
-        shape = dart.dynamics.CylinderShape(radius, length)
-        shape_node = body.createShapeNode(shape)
-        shape_node.createVisualAspect()
-        shape_node.createCollisionAspect()
-        shape_node.createDynamicsAspect()
-
-        # Center the cylinder along -Z so the joint sits at the top.
-        tf = dart.math.Isometry3()
-        tf.set_translation([0.0, 0.0, -length * 0.5])
-        shape_node.setRelativeTransform(tf)
