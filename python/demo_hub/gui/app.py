@@ -3,10 +3,12 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
 
+import dartpy as dart
 from imgui_bundle import hello_imgui, imgui, immapp
 
 from demo_hub.core import Recorder, build_default_registry
@@ -32,6 +34,7 @@ class GuiState:
         self.step_once = False
         self.scene = registry.create(scene_id)
         self.scene.setup(self.dt)
+        self.viewer_thread: threading.Thread | None = None
 
     def switch_scene(self, idx: int) -> None:
         self.selected_idx = idx
@@ -103,6 +106,19 @@ def _draw_controls(state: GuiState) -> None:
         imgui.same_line()
         imgui.text(f"REC -> {state.record_path.name}")
 
+    world = state.scene.get_world()
+    viewer_running = state.viewer_thread is not None and state.viewer_thread.is_alive()
+    if world is None:
+        imgui.begin_disabled()
+    if imgui.button("Open 3D Viewer"):
+        if not viewer_running and world is not None:
+            state.viewer_thread = _launch_viewer(world)
+    if world is None:
+        imgui.end_disabled()
+    if viewer_running:
+        imgui.same_line()
+        imgui.text("Viewer running")
+
     state_payload = state.scene.export_state() or {}
     if state_payload:
         imgui.separator()
@@ -118,6 +134,28 @@ def _draw_viewport(state: GuiState) -> None:
         Segment2D(seg[0], seg[1], seg[2]) for seg in state.scene.debug_draw_2d()
     ]
     draw_topdown_contents(segments)
+
+
+def _launch_viewer(world: dart.World) -> threading.Thread:
+    def run() -> None:
+        node = dart.gui.RealTimeWorldNode(world)
+        viewer = dart.gui.Viewer([0.1, 0.1, 0.1, 1.0])
+        viewer.add_world_node(node)
+
+        grid = dart.gui.GridVisual()
+        grid.set_plane_type(dart.gui.GridVisual.PlaneType.ZX)
+        grid.set_offset([0.0, -0.05, 0.0])
+        viewer.add_attachment(grid)
+
+        viewer.set_up_view_in_window(100, 100, 960, 720)
+        viewer.set_camera_home_position(
+            [2.0, 1.5, 2.0], [0.0, 0.0, 0.0], [-0.24, 0.94, -0.25]
+        )
+        viewer.run()
+
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
+    return thread
 
 
 def main(argv: list[str] | None = None) -> None:

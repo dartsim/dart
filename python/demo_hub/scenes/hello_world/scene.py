@@ -16,26 +16,26 @@ class HelloWorldScene(Scene):
 
     def __init__(self) -> None:
         super().__init__()
-        self._world: dart.simulation.World | None = None
+        self._world: dart.World | None = None
         self._dt = 0.0
 
     def setup(self, dt: float) -> None:
         self._dt = dt
-        self._world = dart.simulation.World()
-        self._world.setTimeStep(dt)
-        self._world.setGravity([0, 0, -9.81])
+        self._world = dart.World()
+        self._world.set_time_step(dt)
+        self._world.set_gravity([0, 0, -9.81])
 
-        box = dart.dynamics.Skeleton("box")
-        _, body = box.createFreeJointAndBodyNodePair()
+        box = dart.Skeleton("box")
+        _, body = box.create_free_joint_and_body_node_pair()
 
-        shape = dart.dynamics.BoxShape([0.15, 0.15, 0.15])
-        shape_node = body.createShapeNode(shape)
-        shape_node.createVisualAspect()
-        shape_node.createCollisionAspect()
-        shape_node.createDynamicsAspect()
+        shape = dart.BoxShape([0.15, 0.15, 0.15])
+        shape_node = body.create_shape_node(shape)
+        shape_node.create_visual_aspect()
+        shape_node.create_collision_aspect()
+        shape_node.create_dynamics_aspect()
 
-        box.getRootJoint().setPositions(np.array([0, 0, 0.5, 0, 0, 0], dtype=float))
-        self._world.addSkeleton(box)
+        box.get_root_joint().set_positions(np.array([0, 0, 0.5, 0, 0, 0], dtype=float))
+        self._world.add_skeleton(box)
 
         self._set_last_dt(dt)
 
@@ -43,7 +43,7 @@ class HelloWorldScene(Scene):
         if self._world is None:
             return
         if dt != self._dt:
-            self._world.setTimeStep(dt)
+            self._world.set_time_step(dt)
             self._dt = dt
             self._set_last_dt(dt)
         self._world.step()
@@ -54,17 +54,23 @@ class HelloWorldScene(Scene):
     def export_state(self) -> dict:
         if self._world is None:
             return {}
-        return {"time": float(self._world.getTime()), "frames": int(self._world.getSimFrames())}
+        return {
+            "time": float(self._world.get_time()),
+            "frames": int(self._world.get_sim_frames()),
+        }
+
+    def get_world(self):
+        return self._world
 
     def debug_draw_2d(self):
         if self._world is None:
             return []
         # Visualize the box as a square footprint on the XZ plane.
-        skel = self._world.getSkeleton(0)
+        skel = self._world.get_skeleton(0)
         if skel is None:
             return []
-        body = skel.getBodyNode(0)
-        tf = body.getWorldTransform()
+        body = skel.get_body_node(0)
+        tf = body.get_world_transform()
         # tf is a 4x4; extract translation
         pos = tf.translation()
         x, _, z = pos

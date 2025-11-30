@@ -47,5 +47,9 @@ class Scene(ABC):
         """Return line segments ((x1, z1), (x2, z2), (r, g, b)) for 2D top-down debug view."""
         return []
 
+    def get_world(self):
+        """Return the underlying dartpy.World if available (optional)."""
+        return None
+
     def _set_last_dt(self, dt: float) -> None:
         self._last_dt = dt
