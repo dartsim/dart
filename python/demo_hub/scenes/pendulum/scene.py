@@ -67,22 +67,6 @@ class PendulumScene(Scene):
         if self._pendulum is None:
             return []
         segments = []
-        pts = []
-        for i in range(self._pendulum.getNumBodyNodes()):
-            tf = self._pendulum.getBodyNode(i).getTransform()
-            pos = tf.translation()
-            pts.append((float(pos[0]), float(pos[2])))
-        if pts:
-            base = (0.0, 0.0)
-            segments.append((base, pts[0], (1.0, 1.0, 0.6)))
-            for i in range(len(pts) - 1):
-                segments.append((pts[i], pts[i + 1], (0.6, 0.9, 0.4)))
-        return segments
-
-    def debug_draw_2d(self):
-        if self._pendulum is None:
-            return []
-        segments = []
         color = (0.8, 0.6, 0.2)
         prev = None
         for i in range(self._pendulum.getNumBodyNodes()):
@@ -112,7 +96,6 @@ class PendulumScene(Scene):
         root_joint, root_body = pendulum.createBallJointAndBodyNodePair(None)
         root_joint.setName("root_joint")
         for i in range(3):
-            root_joint.setRestPosition(i, 0.0)
             root_joint.setSpringStiffness(i, 1.5)
             root_joint.setDampingCoefficient(i, 0.02)
 

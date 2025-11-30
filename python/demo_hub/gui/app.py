@@ -68,11 +68,6 @@ def _simulate(state: GuiState) -> None:
         state.accumulator -= state.dt
 
 
-def _render(state: GuiState) -> None:  # pragma: no cover - manual UI
-    # Legacy entry point; the real UI is composed via hello_imgui dockable windows.
-    imgui.text("GUI is built via dockable windows.")
-
-
 def _draw_controls(state: GuiState) -> None:
     changed, selected_idx = imgui.combo("Scene", state.selected_idx, state.scene_ids)
     if changed:
