@@ -7,11 +7,11 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from imgui_bundle import imgui, immapp
+from imgui_bundle import hello_imgui, imgui, immapp
 
 from demo_hub.core import Recorder, build_default_registry
 from demo_hub.gui.primitives import Segment2D
-from demo_hub.gui.viewport import draw_topdown
+from demo_hub.gui.viewport import draw_topdown_contents
 
 logger = logging.getLogger(__name__)
 
@@ -69,15 +69,11 @@ def _simulate(state: GuiState) -> None:
 
 
 def _render(state: GuiState) -> None:  # pragma: no cover - manual UI
-    io = imgui.get_io()
-    io.config_flags |= imgui.ConfigFlags_.docking_enable
-    dock_id = _dockspace_fullscreen()
+    # Legacy entry point; the real UI is composed via hello_imgui dockable windows.
+    imgui.text("GUI is built via dockable windows.")
 
-    _simulate(state)
 
-    imgui.set_next_window_dock_id(dock_id, imgui.Cond_.first_use_ever)
-    imgui.begin("Demo Hub")
-
+def _draw_controls(state: GuiState) -> None:
     changed, selected_idx = imgui.combo("Scene", state.selected_idx, state.scene_ids)
     if changed:
         state.switch_scene(selected_idx)
@@ -118,44 +114,15 @@ def _render(state: GuiState) -> None:  # pragma: no cover - manual UI
         imgui.text("State")
         for key, value in state_payload.items():
             imgui.text(f"{key}: {value}")
+    imgui.separator()
+    imgui.text(f"frames: {state.step_count}")
 
-    imgui.end()
 
-    imgui.set_next_window_dock_id(dock_id, imgui.Cond_.first_use_ever)
+def _draw_viewport(state: GuiState) -> None:
     segments = [
         Segment2D(seg[0], seg[1], seg[2]) for seg in state.scene.debug_draw_2d()
     ]
-    draw_topdown("Viewport (XZ top-down)", segments)
-
-
-def _dockspace_fullscreen() -> None:
-    # Follow Dear ImGui's recommended fullscreen dockspace pattern.
-    dockspace_flags = imgui.DockNodeFlags_.none
-    window_flags = (
-        imgui.WindowFlags_.no_title_bar
-        | imgui.WindowFlags_.no_collapse
-        | imgui.WindowFlags_.no_resize
-        | imgui.WindowFlags_.no_move
-        | imgui.WindowFlags_.no_bring_to_front_on_focus
-        | imgui.WindowFlags_.no_nav_focus
-        | imgui.WindowFlags_.no_docking
-    )
-    viewport = imgui.get_main_viewport()
-    imgui.set_next_window_pos(viewport.pos)
-    imgui.set_next_window_size(viewport.size)
-    imgui.set_next_window_viewport(viewport.id_)
-    imgui.push_style_var(imgui.StyleVar_.window_rounding, 0.0)
-    imgui.push_style_var(imgui.StyleVar_.window_border_size, 0.0)
-    imgui.push_style_var(imgui.StyleVar_.window_padding, (0.0, 0.0))
-    if dockspace_flags & imgui.DockNodeFlags_.passthru_central_node:
-        window_flags |= imgui.WindowFlags_.no_background
-
-    imgui.begin("MainDockSpaceHost", flags=window_flags)
-    imgui.pop_style_var(3)
-    dockspace_id = imgui.get_id("MainDockSpace")
-    imgui.dock_space(dockspace_id, (0.0, 0.0), dockspace_flags)
-    imgui.end()
-    return dockspace_id
+    draw_topdown_contents(segments)
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -188,9 +155,33 @@ def main(argv: list[str] | None = None) -> None:
 
     params = immapp.RunnerParams()
     params.docking_params.main_dock_space_node_flags = imgui.DockNodeFlags_.none
+    params.docking_params.layout_condition = (
+        hello_imgui.DockingLayoutCondition.first_use_ever
+    )
+    params.docking_params.dockable_windows = [
+        hello_imgui.DockableWindow(
+            "Demo Hub",
+            "MainDockSpace",
+            lambda: _draw_controls(state),
+        ),
+        hello_imgui.DockableWindow(
+            "Viewport (XZ top-down)",
+            "MainDockSpace",
+            lambda: _draw_viewport(state),
+        ),
+    ]
+
+    def _pre_new_frame() -> None:
+        io = imgui.get_io()
+        io.config_flags |= imgui.ConfigFlags_.docking_enable
+        _simulate(state)
+
+    params.callbacks.pre_new_frame = _pre_new_frame
+    params.imgui_window_params.default_imgui_window_type = (
+        hello_imgui.DefaultImGuiWindowType.provide_full_screen_dock_space
+    )
     params.app_window_params.window_title = "DART Demo Hub"
     params.app_window_params.window_geometry.size = [1280, 720]
-    params.callbacks.show_gui = lambda: _render(state)
     immapp.run(runner_params=params)
 
 

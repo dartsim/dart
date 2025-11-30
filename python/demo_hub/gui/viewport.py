@@ -7,16 +7,14 @@ from imgui_bundle import imgui
 from demo_hub.gui.primitives import Segment2D
 
 
-def draw_topdown(name: str, segments: Iterable[Segment2D], size=(0, 0)) -> None:
-    """Render a simple top-down 2D view using ImGui draw lists."""
-    imgui.begin(name)
+def draw_topdown_contents(segments: Iterable[Segment2D]) -> None:
+    """Render top-down view inside an already begun ImGui window."""
     canvas_pos = imgui.get_window_pos()
     canvas_size = imgui.get_window_size()
     width, height = canvas_size.x, canvas_size.y
 
     segs = list(segments)
     if not segs:
-        imgui.end()
         return
 
     # Compute bounds
@@ -51,4 +49,9 @@ def draw_topdown(name: str, segments: Iterable[Segment2D], size=(0, 0)) -> None:
         p1 = project(seg.end)
         draw_list.add_line(p0, p1, col, thickness=2.0)
 
+
+def draw_topdown(name: str, segments: Iterable[Segment2D], size=(0, 0)) -> None:
+    """Render a simple top-down 2D view using ImGui draw lists."""
+    imgui.begin(name)
+    draw_topdown_contents(segments)
     imgui.end()
