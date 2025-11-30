@@ -161,6 +161,9 @@ public:
     mLogger->set_level(spdlog::level::trace);
     mLogger->flush_on(spdlog::level::trace);
     spdlog::set_default_logger(mLogger);
+    // Capture third-party warnings that log directly to stdout/stderr.
+    mOldCout = std::cout.rdbuf(mStream->rdbuf());
+    mOldCerr = std::cerr.rdbuf(mStream->rdbuf());
 #else
     mOldCout = std::cout.rdbuf(mStream.rdbuf());
     mOldCerr = std::cerr.rdbuf(mStream.rdbuf());
@@ -175,6 +178,10 @@ public:
     spdlog::set_default_logger(mPreviousLogger);
     if (mLogger)
       spdlog::drop(mLogger->name());
+    if (mOldCout)
+      std::cout.rdbuf(mOldCout);
+    if (mOldCerr)
+      std::cerr.rdbuf(mOldCerr);
 #else
     std::cout.rdbuf(mOldCout);
     std::cerr.rdbuf(mOldCerr);
@@ -200,6 +207,8 @@ private:
   std::shared_ptr<spdlog::sinks::ostream_sink_mt> mSink;
   std::shared_ptr<spdlog::logger> mPreviousLogger;
   std::shared_ptr<spdlog::logger> mLogger;
+  std::streambuf* mOldCout{nullptr};
+  std::streambuf* mOldCerr{nullptr};
 #else
   std::ostringstream mStream;
   std::streambuf* mOldCout;
