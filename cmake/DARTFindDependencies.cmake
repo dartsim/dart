@@ -25,6 +25,10 @@ dart_check_required_package(fcl "fcl")
 dart_find_package(assimp)
 dart_check_required_package(assimp "assimp")
 
+#=======================
+# Optional dependencies
+#=======================
+
 # octomap
 dart_find_package(octomap)
 if(OCTOMAP_FOUND OR octomap_FOUND)
@@ -45,10 +49,6 @@ else()
       "please install octomap"
   )
 endif()
-
-#=======================
-# Optional dependencies
-#=======================
 
 if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
   if(DART_USE_SYSTEM_TRACY)
