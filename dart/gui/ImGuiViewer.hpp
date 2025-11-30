@@ -62,6 +62,9 @@ public:
   /// Get cosnt ImGui handler.
   const ImGuiHandler* getImGuiHandler() const;
 
+  /// Set the ImGui global scale factor (fonts + widget sizes).
+  void setImGuiScale(float scale);
+
   /// Show About widget.
   void showAbout();
 

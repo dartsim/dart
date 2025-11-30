@@ -127,9 +127,9 @@ protected:
 // snippet:cpp-load-atlas-start
 SkeletonPtr loadAtlasRobot()
 {
-  UrdfParser loader;
+  UrdfParser parser;
   SkeletonPtr atlas
-      = loader.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+      = parser.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
 
   if (!atlas) {
     std::cerr << "Failed to load Atlas robot!" << std::endl;

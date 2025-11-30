@@ -462,11 +462,8 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
     message(FATAL_ERROR "The installed g++ version is ${GCC_VERSION}. ${PROJECT_NAME} requires g++ ${gcc_required_version} or greater.")
   endif()
   if(GCC_VERSION VERSION_GREATER_EQUAL 13.2.0)
-    # TODO: These warnings should be properly addressed and these compiler options removed
-    add_compile_options(-Wno-overloaded-virtual -Wno-alloc-size-larger-than -Wno-dangling-pointer)
-  endif()
-  if(GCC_VERSION VERSION_GREATER_EQUAL 13.2.0)
-    # TODO: These warnings should be properly addressed and these compiler options removed
+    # GCC 13 currently reports noisy diagnostics in upstream dependencies; silence
+    # them until Eigen/FCL updates remove the false positives.
     add_compile_options(-Wno-overloaded-virtual -Wno-alloc-size-larger-than -Wno-dangling-pointer)
   endif()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")

@@ -307,7 +307,6 @@ math::LcpResult PgsBoxedLcpSolver::solve(
   return result;
 }
 
-#if DART_BUILD_MODE_DEBUG
 //==============================================================================
 bool PgsBoxedLcpSolver::canSolve(const Eigen::MatrixXd& A)
 {
@@ -326,7 +325,6 @@ bool PgsBoxedLcpSolver::canSolve(const Eigen::MatrixXd& A)
 
   return true;
 }
-#endif
 
 //==============================================================================
 void PgsBoxedLcpSolver::setOption(const PgsBoxedLcpSolver::Option& option)

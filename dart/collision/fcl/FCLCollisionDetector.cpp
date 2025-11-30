@@ -50,18 +50,31 @@
 #include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/VoxelGridShape.hpp"
 
 #include <assimp/scene.h>
 
+#include <algorithm>
 #include <limits>
+#include <string>
+
+#include <cstdint>
 
 namespace dart {
 namespace collision {
 
 namespace {
+
+std::string collisionObjectKey(const FCLCollisionObject* object)
+{
+  if (!object)
+    return "";
+
+  return object->getKey();
+}
 
 bool collisionCallback(
     fcl::CollisionObject* o1, fcl::CollisionObject* o2, void* cdata);
@@ -145,6 +158,11 @@ Contact convertContact(
     fcl::CollisionObject* o1,
     fcl::CollisionObject* o2,
     const CollisionOption& option);
+
+bool shouldSwapDeterministically(
+    const FCLCollisionObject* fclObj1, const FCLCollisionObject* fclObj2);
+
+void applyDeterministicSwap(Contact& contact);
 
 /// Collision data stores the collision request and the result given by
 /// collision algorithm.
@@ -852,6 +870,7 @@ void FCLCollisionDetector::refreshCollisionObject(CollisionObject* const object)
 
   fcl->mFCLCollisionObject = std::unique_ptr<fcl::CollisionObject>(
       new fcl::CollisionObject(claimFCLCollisionGeometry(object->getShape())));
+  fcl->mFCLCollisionObject->setUserData(fcl);
 }
 
 //==============================================================================
@@ -898,9 +917,9 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   using dynamics::Shape;
   using dynamics::SoftMeshShape;
   using dynamics::SphereShape;
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   using dynamics::VoxelGridShape;
-#endif // HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP
 
   fcl::CollisionGeometry* geom = nullptr;
   const auto& shapeType = shape->getType();
@@ -1013,7 +1032,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     geom = createSoftMesh<fcl::OBBRSS>(aiMesh);
   }
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType) {
   #if FCL_HAVE_OCTOMAP
     DART_ASSERT(dynamic_cast<const VoxelGridShape*>(shape.get()));
@@ -1031,7 +1050,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
   #endif // FCL_HAVE_OCTOMAP
   }
-#endif // HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP
   else {
     DART_ERROR(
         "Attempting to create an unsupported shape type [{}]. Creating a "
@@ -1082,16 +1101,16 @@ bool collisionCallback(
   const auto& option = collData->option;
   const auto& filter = option.collisionFilter;
 
-  // Filtering
-  if (filter) {
-    auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
-    auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
-    DART_ASSERT(collisionObject1);
-    DART_ASSERT(collisionObject2);
+  auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+  auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
+  DART_ASSERT(collisionObject1);
+  DART_ASSERT(collisionObject2);
+  if (!collisionObject1 || !collisionObject2)
+    return collData->done;
 
-    if (filter->ignoresCollision(collisionObject2, collisionObject1))
-      return collData->done;
-  }
+  // Filtering
+  if (filter && filter->ignoresCollision(collisionObject2, collisionObject1))
+    return collData->done;
 
   // Clear previous results
   fclResult.clear();
@@ -1412,6 +1431,15 @@ void postProcessDART(
       } else {
         numContacts++;
       }
+
+      const auto* fclObj1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+      const auto* fclObj2 = static_cast<FCLCollisionObject*>(o2->getUserData());
+      if (shouldSwapDeterministically(fclObj1, fclObj2)) {
+        if (option.enableContact)
+          std::swap(pair1.point, pair2.point);
+        applyDeterministicSwap(pair1);
+        applyDeterministicSwap(pair2);
+      }
     }
 
     // For binary check, return after adding the first contact point to the
@@ -1624,10 +1652,8 @@ Contact convertContact(
 {
   Contact contact;
 
-  contact.collisionObject1
-      = static_cast<FCLCollisionObject*>(o1->getUserData());
-  contact.collisionObject2
-      = static_cast<FCLCollisionObject*>(o2->getUserData());
+  contact.collisionObject1 = static_cast<CollisionObject*>(o1->getUserData());
+  contact.collisionObject2 = static_cast<CollisionObject*>(o2->getUserData());
 
   if (option.enableContact) {
     contact.point = FCLTypes::convertVector3(fclContact.pos);
@@ -1637,7 +1663,38 @@ Contact convertContact(
     contact.triID2 = fclContact.b2;
   }
 
+  // Enforce deterministic ordering across runs and clones. Tie-break on the
+  // underlying FCL object address if keys are identical.
+  const auto fclObj1
+      = static_cast<FCLCollisionObject*>(contact.collisionObject1);
+  const auto fclObj2
+      = static_cast<FCLCollisionObject*>(contact.collisionObject2);
+  if (shouldSwapDeterministically(fclObj1, fclObj2))
+    applyDeterministicSwap(contact);
+
   return contact;
+}
+
+//==============================================================================
+bool shouldSwapDeterministically(
+    const FCLCollisionObject* fclObj1, const FCLCollisionObject* fclObj2)
+{
+  const auto key1 = collisionObjectKey(fclObj1);
+  const auto key2 = collisionObjectKey(fclObj2);
+
+  const auto addr1 = reinterpret_cast<std::uintptr_t>(fclObj1);
+  const auto addr2 = reinterpret_cast<std::uintptr_t>(fclObj2);
+
+  return (key2 < key1) || (key1 == key2 && addr2 < addr1 && addr2 != 0u);
+}
+
+//==============================================================================
+void applyDeterministicSwap(Contact& contact)
+{
+  std::swap(contact.collisionObject1, contact.collisionObject2);
+  std::swap(contact.triID1, contact.triID2);
+
+  contact.normal = -contact.normal;
 }
 
 } // anonymous namespace

@@ -37,10 +37,8 @@
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/ContactSurface.hpp"
-#include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/simulation/World.hpp"
 
-#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include <limits>
@@ -165,66 +163,26 @@ public:
     return type;
   }
 
-  dart::math::LcpResult solve(
-      const Eigen::MatrixXd& A,
-      const Eigen::VectorXd& /*b*/,
-      const Eigen::VectorXd& /*lo*/,
-      const Eigen::VectorXd& /*hi*/,
-      const Eigen::VectorXi& /*findex*/,
-      Eigen::VectorXd& x,
-      const dart::math::LcpOptions& /*options*/) override
+  bool solve(
+      int n,
+      double* /*A*/,
+      double* x,
+      double* /*b*/,
+      int /*nub*/,
+      double* /*lo*/,
+      double* /*hi*/,
+      int* /*findex*/,
+      bool /*earlyTermination*/ = false) override
   {
-    x = Eigen::VectorXd::Constant(
-        A.rows(), std::numeric_limits<double>::quiet_NaN());
-    dart::math::LcpResult res;
-    res.status = dart::math::LcpSolverStatus::Success; // claims success despite
-                                                       // NaN output
-    return res;
+    for (int i = 0; i < n; ++i)
+      x[i] = std::numeric_limits<double>::quiet_NaN();
+    return true; // claims success despite NaN output
   }
 
-#if DART_BUILD_MODE_DEBUG
-  bool canSolve(const Eigen::MatrixXd& /*A*/) override
+  bool canSolve(int /*n*/, const double* /*A*/) override
   {
     return true;
   }
-#endif
-};
-
-// Solver that echoes the incoming warm-start seed.
-class WarmStartEchoBoxedLcpSolver : public constraint::BoxedLcpSolver
-{
-public:
-  const std::string& getType() const override
-  {
-    static const std::string type{"WarmStartEchoBoxedLcpSolver"};
-    return type;
-  }
-
-  dart::math::LcpResult solve(
-      const Eigen::MatrixXd& A,
-      const Eigen::VectorXd& /*b*/,
-      const Eigen::VectorXd& /*lo*/,
-      const Eigen::VectorXd& /*hi*/,
-      const Eigen::VectorXi& /*findex*/,
-      Eigen::VectorXd& x,
-      const dart::math::LcpOptions& options) override
-  {
-    (void)A;
-    // Honor warm-start flag: preserve the seed when enabled, otherwise reset.
-    if (!options.warmStart)
-      x = Eigen::VectorXd::Zero(A.rows());
-    dart::math::LcpResult res;
-    res.status = dart::math::LcpSolverStatus::Success;
-    res.iterations = 1;
-    return res;
-  }
-
-#if DART_BUILD_MODE_DEBUG
-  bool canSolve(const Eigen::MatrixXd& /*A*/) override
-  {
-    return true;
-  }
-#endif
 };
 
 // Secondary solver that succeeds and writes a constant impulse.
@@ -239,28 +197,26 @@ public:
     return type;
   }
 
-  dart::math::LcpResult solve(
-      const Eigen::MatrixXd& A,
-      const Eigen::VectorXd& /*b*/,
-      const Eigen::VectorXd& /*lo*/,
-      const Eigen::VectorXd& /*hi*/,
-      const Eigen::VectorXi& /*findex*/,
-      Eigen::VectorXd& x,
-      const dart::math::LcpOptions& /*options*/) override
+  bool solve(
+      int n,
+      double* /*A*/,
+      double* x,
+      double* /*b*/,
+      int /*nub*/,
+      double* /*lo*/,
+      double* /*hi*/,
+      int* /*findex*/,
+      bool /*earlyTermination*/ = false) override
   {
-    x = Eigen::VectorXd::Constant(A.rows(), mValue);
-    dart::math::LcpResult res;
-    res.status = dart::math::LcpSolverStatus::Success;
-    res.iterations = 1;
-    return res;
+    for (int i = 0; i < n; ++i)
+      x[i] = mValue;
+    return true;
   }
 
-#if DART_BUILD_MODE_DEBUG
-  bool canSolve(const Eigen::MatrixXd& /*A*/) override
+  bool canSolve(int /*n*/, const double* /*A*/) override
   {
     return true;
   }
-#endif
 
 private:
   double mValue;
@@ -278,29 +234,26 @@ public:
     return type;
   }
 
-  dart::math::LcpResult solve(
-      const Eigen::MatrixXd& A,
-      const Eigen::VectorXd& /*b*/,
-      const Eigen::VectorXd& /*lo*/,
-      const Eigen::VectorXd& /*hi*/,
-      const Eigen::VectorXi& /*findex*/,
-      Eigen::VectorXd& x,
-      const dart::math::LcpOptions& /*options*/) override
+  bool solve(
+      int n,
+      double* /*A*/,
+      double* x,
+      double* /*b*/,
+      int /*nub*/,
+      double* /*lo*/,
+      double* /*hi*/,
+      int* /*findex*/,
+      bool /*earlyTermination*/ = false) override
   {
-    x = Eigen::VectorXd::Constant(A.rows(), mValue);
-    dart::math::LcpResult res;
-    res.status
-        = dart::math::LcpSolverStatus::Failed; // intentionally report failure
-    res.iterations = 1;
-    return res;
+    for (int i = 0; i < n; ++i)
+      x[i] = mValue;
+    return false; // intentionally report failure
   }
 
-#if DART_BUILD_MODE_DEBUG
-  bool canSolve(const Eigen::MatrixXd& /*A*/) override
+  bool canSolve(int /*n*/, const double* /*A*/) override
   {
     return true;
   }
-#endif
 
 private:
   double mValue;
@@ -318,30 +271,28 @@ public:
     return type;
   }
 
-  dart::math::LcpResult solve(
-      const Eigen::MatrixXd& A,
-      const Eigen::VectorXd& /*b*/,
-      const Eigen::VectorXd& /*lo*/,
-      const Eigen::VectorXd& /*hi*/,
-      const Eigen::VectorXi& /*findex*/,
-      Eigen::VectorXd& x,
-      const dart::math::LcpOptions& /*options*/) override
+  bool solve(
+      int n,
+      double* /*A*/,
+      double* x,
+      double* /*b*/,
+      int /*nub*/,
+      double* /*lo*/,
+      double* /*hi*/,
+      int* /*findex*/,
+      bool /*earlyTermination*/ = false) override
   {
-    x = Eigen::VectorXd::Constant(A.rows(), mValue);
-    if (x.size() > 0)
+    if (n > 0)
       x[0] = std::numeric_limits<double>::quiet_NaN();
-    dart::math::LcpResult res;
-    res.status = dart::math::LcpSolverStatus::Success;
-    res.iterations = 1;
-    return res;
+    for (int i = 1; i < n; ++i)
+      x[i] = mValue;
+    return true;
   }
 
-#if DART_BUILD_MODE_DEBUG
-  bool canSolve(const Eigen::MatrixXd& /*A*/) override
+  bool canSolve(int /*n*/, const double* /*A*/) override
   {
     return true;
   }
-#endif
 
 private:
   double mValue;
@@ -357,26 +308,24 @@ public:
     return type;
   }
 
-  dart::math::LcpResult solve(
-      const Eigen::MatrixXd& /*A*/,
-      const Eigen::VectorXd& /*b*/,
-      const Eigen::VectorXd& /*lo*/,
-      const Eigen::VectorXd& /*hi*/,
-      const Eigen::VectorXi& /*findex*/,
-      Eigen::VectorXd& /*x*/,
-      const dart::math::LcpOptions& /*options*/) override
+  bool solve(
+      int /*n*/,
+      double* /*A*/,
+      double* /*x*/,
+      double* /*b*/,
+      int /*nub*/,
+      double* /*lo*/,
+      double* /*hi*/,
+      int* /*findex*/,
+      bool /*earlyTermination*/ = false) override
   {
-    dart::math::LcpResult res;
-    res.status = dart::math::LcpSolverStatus::Failed;
-    return res;
+    return false;
   }
 
-#if DART_BUILD_MODE_DEBUG
-  bool canSolve(const Eigen::MatrixXd& /*A*/) override
+  bool canSolve(int /*n*/, const double* /*A*/) override
   {
     return true;
   }
-#endif
 };
 
 // Expose the protected solve entry point for testing.
@@ -686,65 +635,4 @@ TEST(ConstraintSolver, LcpPartialNanFallbackZeroesOnlyNaNEntries)
   ASSERT_EQ(2u, constraintPtr->lastAppliedImpulse.size());
   EXPECT_DOUBLE_EQ(0.0, constraintPtr->lastAppliedImpulse[0]);
   EXPECT_DOUBLE_EQ(0.8, constraintPtr->lastAppliedImpulse[1]);
-}
-
-//==============================================================================
-TEST(ConstraintSolver, BoxedSolverEigenInterfaceRespectsWarmStart)
-{
-  WarmStartEchoBoxedLcpSolver solver;
-
-  Eigen::MatrixXd A(1, 1);
-  A << 1.0;
-  Eigen::VectorXd b(1);
-  b << 0.0;
-  Eigen::VectorXd lo(1);
-  lo << 0.0;
-  Eigen::VectorXd hi(1);
-  hi << 1.0;
-  Eigen::VectorXi findex(1);
-  findex << -1;
-  Eigen::VectorXd x(1);
-  x << 0.7;
-
-  auto opts = solver.getDefaultOptions();
-  opts.warmStart = true;
-  auto warmResult = solver.solve(A, b, lo, hi, findex, x, opts);
-  EXPECT_EQ(dart::math::LcpSolverStatus::Success, warmResult.status);
-  EXPECT_DOUBLE_EQ(0.7, x[0]);
-
-  x.setConstant(0.7);
-  opts.warmStart = false;
-  auto coldResult = solver.solve(A, b, lo, hi, findex, x, opts);
-  EXPECT_EQ(dart::math::LcpSolverStatus::Success, coldResult.status);
-  EXPECT_DOUBLE_EQ(0.0, x[0]);
-}
-
-//==============================================================================
-TEST(ConstraintSolver, PgsSolverHonorsLcpOptions)
-{
-  constraint::PgsBoxedLcpSolver solver;
-
-  Eigen::MatrixXd A(1, 1);
-  A << 1.0;
-  Eigen::VectorXd b(1);
-  b << 0.0;
-  Eigen::VectorXd lo(1);
-  lo << 0.0;
-  Eigen::VectorXd hi(1);
-  hi << 1.0;
-  Eigen::VectorXi findex(1);
-  findex << -1;
-  Eigen::VectorXd x(1);
-  x << 0.25;
-
-  dart::math::LcpOptions options = solver.getDefaultOptions();
-  options.maxIterations = 5;
-  options.absoluteTolerance = 1e-8;
-  options.relativeTolerance = 1e-6;
-  options.warmStart = true;
-
-  auto result = solver.solve(A, b, lo, hi, findex, x, options);
-  EXPECT_EQ(dart::math::LcpSolverStatus::Success, result.status);
-  EXPECT_EQ(5, result.iterations);
-  EXPECT_DOUBLE_EQ(0.0, x[0]);
 }

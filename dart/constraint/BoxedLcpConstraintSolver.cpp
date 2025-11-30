@@ -32,24 +32,21 @@
 
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 
-#include "dart/common/Macros.hpp"
-
-#include <fmt/ostream.h>
-
-#include <cassert>
-#include <cmath>
-
-#if DART_BUILD_MODE_DEBUG
-  #include <iomanip>
-  #include <iostream>
-#endif
-
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/math/lcp/dantzig/Lcp.hpp"
+
+#include <fmt/ostream.h>
+
+#include <iomanip>
+#include <iostream>
+
+#include <cassert>
+#include <cmath>
 
 namespace dart {
 namespace constraint {
@@ -143,7 +140,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     return;
 
   const int nSkip = math::padding(n);
-#if DART_BUILD_MODE_RELEASE
+#if defined(NDEBUG)
   mA.resize(n, nSkip);
 #else // debug
   mA.setZero(n, nSkip);
@@ -229,7 +226,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     }
   }
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   DART_ASSERT(isSymmetric(n, mA.data()));
 #endif
 
@@ -339,8 +336,6 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   }
 }
 
-//==============================================================================
-#if DART_BUILD_MODE_DEBUG
 bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
 {
   std::size_t nSkip = math::padding(n);
@@ -479,7 +474,6 @@ void BoxedLcpConstraintSolver::print(
 
   delete[] Ax;
 }
-#endif
 
 } // namespace constraint
 } // namespace dart

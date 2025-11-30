@@ -224,6 +224,9 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
   motor for a bilateral `CouplerConstraint`, so both the reference and
   dependent joints feel equal-and-opposite impulses. Leave it disabled to keep
   the original MimicMotorConstraint behavior.
+- URDF `<transmission>` blocks of type `SimpleTransmission` are parsed into
+  coupled mimic joints when multiple joints share the same actuator; the gear
+  ratio is derived from each joint's `mechanicalReduction`.
 
 **Internal Update Methods:**
 

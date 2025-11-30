@@ -364,11 +364,11 @@ std::vector<std::shared_ptr<IkHandle>> setupIkHandles(
 SkeletonPtr loadG1(
     const Options& options, const ResourceRetrieverPtr& retriever)
 {
-  UrdfParser::Options loaderOptions;
-  loaderOptions.mResourceRetriever = retriever;
-  UrdfParser loader(loaderOptions);
+  UrdfParser::Options parserOptions;
+  parserOptions.mResourceRetriever = retriever;
+  UrdfParser parser(parserOptions);
 
-  SkeletonPtr robot = loader.parseSkeleton(options.robotUri);
+  SkeletonPtr robot = parser.parseSkeleton(options.robotUri);
   if (!robot) {
     std::cerr << "Failed to load robot from '" << options.robotUri << "'.\n";
     return nullptr;

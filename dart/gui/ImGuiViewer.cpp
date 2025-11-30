@@ -69,6 +69,12 @@ const ImGuiHandler* ImGuiViewer::getImGuiHandler() const
 }
 
 //==============================================================================
+void ImGuiViewer::setImGuiScale(float scale)
+{
+  applyImGuiScale(scale);
+}
+
+//==============================================================================
 void ImGuiViewer::showAbout()
 {
   mAboutWidget->show();

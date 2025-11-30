@@ -15,7 +15,7 @@ TEST_F(DynamicsTest, HybridDynamics)
 {
   const double tol = 1e-8;
   const double timeStep = 1e-3;
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   const std::size_t numFrames = 50; // 0.05 secs
 #else
   const std::size_t numFrames = 5e+3; // 5 secs

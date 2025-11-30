@@ -33,6 +33,7 @@
 #include <dart/config.hpp>
 
 #include <dart/gui/GridVisual.hpp>
+#include <dart/gui/ImGuiHandler.hpp>
 #include <dart/gui/ImGuiViewer.hpp>
 #include <dart/gui/ImGuiWidget.hpp>
 #include <dart/gui/RealTimeWorldNode.hpp>
@@ -40,10 +41,10 @@
 #include <dart/utils/DartResourceRetriever.hpp>
 #include <dart/utils/sdf/SdfParser.hpp>
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #endif
-#if HAVE_ODE
+#if DART_HAVE_ODE
   #include <dart/collision/ode/OdeCollisionDetector.hpp>
 #endif
 #include <dart/simulation/World.hpp>
@@ -61,6 +62,7 @@
 
 #include <dart/common/Uri.hpp>
 
+#include <CLI/CLI.hpp>
 #include <Eigen/Core>
 #include <imgui.h>
 #include <osg/GraphicsContext>
@@ -160,7 +162,7 @@ struct SolverConfig
 void applyCollisionDetector(
     const SolverConfig& cfg, const dart::simulation::WorldPtr& world)
 {
-#if HAVE_ODE
+#if DART_HAVE_ODE
   if (cfg.useOdeCollision) {
     world->getConstraintSolver()->setCollisionDetector(
         dart::collision::OdeCollisionDetector::create());
@@ -168,7 +170,7 @@ void applyCollisionDetector(
   }
 #endif
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   world->getConstraintSolver()->setCollisionDetector(
       dart::collision::BulletCollisionDetector::create());
 #else
@@ -390,7 +392,7 @@ private:
     ImGui::Text("Collision / solver");
 
     bool odeSelected = mConfig.useOdeCollision;
-#if HAVE_ODE
+#if DART_HAVE_ODE
     if (ImGui::Checkbox(
             "Use ODE collision (closer to Gazebo repro)", &odeSelected)) {
       mConfig.useOdeCollision = odeSelected;
@@ -410,7 +412,7 @@ private:
     const auto contacts = mWorld->getLastCollisionResult().getNumContacts();
     ImGui::Text("Contacts last step: %zu", contacts);
 
-#if HAVE_ODE
+#if DART_HAVE_ODE
     if (mConfig.useOdeCollision) {
       ImGui::TextColored(
           ImVec4(0.9f, 0.7f, 0.2f, 1.0f),
@@ -522,8 +524,14 @@ private:
 } // namespace
 
 //==============================================================================
-int main(int /*argc*/, char*[] /*argv*/)
+int main(int argc, char* argv[])
 {
+  CLI::App app("Mimic pendulums example");
+  double guiScale = 1.0;
+  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
+      ->check(CLI::PositiveNumber);
+  CLI11_PARSE(app, argc, argv);
+
   const std::string worldUri
       = "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf";
 
@@ -552,6 +560,7 @@ int main(int /*argc*/, char*[] /*argv*/)
 
   osg::ref_ptr<RealTimeWorldNode> worldNode = new RealTimeWorldNode(world);
   osg::ref_ptr<ImGuiViewer> viewer = new ImGuiViewer();
+  viewer->setImGuiScale(static_cast<float>(guiScale));
   viewer->addWorldNode(worldNode);
   viewer->addInstructionText("space: toggle simulation\n");
 

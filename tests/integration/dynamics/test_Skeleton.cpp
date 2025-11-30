@@ -113,7 +113,7 @@ TEST(Skeleton, Restructuring)
 {
   std::vector<SkeletonPtr> skeletons = getSkeletons();
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   std::size_t numIterations = 10;
 #else
   std::size_t numIterations = 2 * skeletons.size();
@@ -635,7 +635,7 @@ TEST(Skeleton, NodePersistence)
 
     // The Node has been removed, so no reference to it will exist in the
     // Skeleton
-#if DART_BUILD_MODE_RELEASE
+#if defined(NDEBUG)
     EXPECT_NE(skel->getEndEffector("manip"), manip);
     EXPECT_EQ(skel->getEndEffector("manip"), nullptr);
 
@@ -643,7 +643,7 @@ TEST(Skeleton, NodePersistence)
     EXPECT_EQ(skel->getEndEffector(0), nullptr);
 #endif // Release Mode
 
-#if DART_BUILD_MODE_RELEASE
+#if defined(NDEBUG)
     // But it will not remain in the BodyNode's indexing.
     // Note: We should only run this test in release mode, because otherwise it
     // will trigger an assertion.
@@ -707,7 +707,7 @@ TEST(Skeleton, NodePersistence)
 
     // The Node has been removed, so no reference to it will exist in the
     // Skeleton
-#if DART_BUILD_MODE_RELEASE
+#if defined(NDEBUG)
     EXPECT_NE(skel->getNode<GenericNode>("node"), node);
     EXPECT_EQ(skel->getNode<GenericNode>("node"), nullptr);
 
@@ -715,7 +715,7 @@ TEST(Skeleton, NodePersistence)
     EXPECT_EQ(skel->getNode<GenericNode>(0), nullptr);
 #endif // Release Mode
 
-#if DART_BUILD_MODE_RELEASE
+#if defined(NDEBUG)
     // But it will not remain in the BodyNode's indexing.
     // Note: We should only run this test in release mode, because otherwise it
     // will trigger an assertion.

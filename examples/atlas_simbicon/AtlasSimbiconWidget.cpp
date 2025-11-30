@@ -39,6 +39,7 @@
 #include "AtlasSimbiconWidget.hpp"
 
 #include "AtlasSimbiconWorldNode.hpp"
+#include "dart/gui/IncludeImGui.hpp"
 
 //==============================================================================
 AtlasSimbiconWidget::AtlasSimbiconWidget(
@@ -55,10 +56,27 @@ AtlasSimbiconWidget::AtlasSimbiconWidget(
 }
 
 //==============================================================================
+std::pair<ImVec2, ImVec2> AtlasSimbiconWidget::computeWindowPlacement(
+    float fontSize)
+{
+  constexpr ImVec2 kBasePos(10.0f, 20.0f);
+  constexpr ImVec2 kBaseSize(360.0f, 400.0f);
+  constexpr float kDefaultFontSize = 13.0f; // ImGui's default font size
+
+  const float fontScale = fontSize / kDefaultFontSize;
+  const ImVec2 pos(kBasePos.x * fontScale, kBasePos.y * fontScale);
+  const ImVec2 size(kBaseSize.x * fontScale, kBaseSize.y * fontScale);
+  return {pos, size};
+}
+
+//==============================================================================
 void AtlasSimbiconWidget::render()
 {
-  ImGui::SetNextWindowPos(ImVec2(10, 20));
-  ImGui::SetNextWindowSize(ImVec2(360, 400));
+  const auto [windowPos, windowSize]
+      = computeWindowPlacement(ImGui::GetFontSize());
+
+  ImGui::SetNextWindowPos(windowPos);
+  ImGui::SetNextWindowSize(windowSize);
   ImGui::SetNextWindowBgAlpha(0.5f);
   if (!ImGui::Begin(
           "Atlas Control",
