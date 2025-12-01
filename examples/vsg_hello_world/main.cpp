@@ -4,7 +4,9 @@
 
 #include <dart/gui/vsg/Viewer.hpp>
 
+#include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
@@ -19,7 +21,8 @@ namespace {
 dynamics::SkeletonPtr createFloor()
 {
   auto floor = dynamics::Skeleton::create("floor");
-  auto [joint, body] = floor->createJointAndBodyNodePair<dynamics::WeldJoint>();
+  auto [joint, body]
+      = floor->createJointAndBodyNodePair<dynamics::WeldJoint, dynamics::BodyNode>();
   auto shape = std::make_shared<dynamics::BoxShape>(
       Eigen::Vector3d(5.0, 5.0, 0.2));
   auto* shapeNode = body->createShapeNodeWith<
@@ -27,14 +30,17 @@ dynamics::SkeletonPtr createFloor()
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
   shapeNode->getVisualAspect()->setColor(Eigen::Vector4d(0.8, 0.8, 0.8, 1.0));
-  body->setTranslation(Eigen::Vector3d(0.0, 0.0, -0.1));
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, -0.1);
+  joint->setTransformFromParentBodyNode(tf);
   return floor;
 }
 
 dynamics::SkeletonPtr createBox()
 {
   auto box = dynamics::Skeleton::create("box");
-  auto [joint, body] = box->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  auto [joint, body]
+      = box->createJointAndBodyNodePair<dynamics::FreeJoint, dynamics::BodyNode>();
   auto shape
       = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Constant(0.2));
   auto* shapeNode = body->createShapeNodeWith<
@@ -42,7 +48,9 @@ dynamics::SkeletonPtr createBox()
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
   shapeNode->getVisualAspect()->setColor(Eigen::Vector4d(0.2, 0.4, 0.8, 1.0));
-  body->setTranslation(Eigen::Vector3d(0.0, 0.0, 1.0));
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, 1.0);
+  joint->setTransformFromParentBodyNode(tf);
   return box;
 }
 

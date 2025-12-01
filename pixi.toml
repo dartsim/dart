@@ -34,7 +34,6 @@ ninja = ">=1.12.1,<2"
 numpy = ">=2.2.5,<3"
 octomap = ">=1.10.0,<2"
 openscenegraph = ">=3.6.5,<4"
-vsg = ">=1.1,<2"
 pip = ">=25.1.1,<26"
 pipx = ">=1.7.1,<2"
 pkg-config = ">=0.29.2,<0.30"
@@ -54,6 +53,7 @@ taplo = ">=0.9.3,<1"
 taskflow = ">=3.10.0,<4"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
+vulkanscenegraph = ">=1.1.12,<2"
 
 [tasks]
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
