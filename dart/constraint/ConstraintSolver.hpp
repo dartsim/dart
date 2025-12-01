@@ -33,7 +33,6 @@
 #ifndef DART_CONSTRAINT_CONSTRAINTSOVER_HPP_
 #define DART_CONSTRAINT_CONSTRAINTSOVER_HPP_
 
-#include <dart/constraint/BoxedLcpSolver.hpp>
 #include <dart/constraint/ConstrainedGroup.hpp>
 #include <dart/constraint/ConstraintBase.hpp>
 #include <dart/constraint/Fwd.hpp>
@@ -41,6 +40,8 @@
 #include <dart/collision/CollisionDetector.hpp>
 
 #include <dart/common/Deprecated.hpp>
+
+#include <dart/math/lcp/LcpSolver.hpp>
 
 #include <dart/Export.hpp>
 
@@ -70,6 +71,8 @@ public:
   ConstraintSolver();
   ConstraintSolver(BoxedLcpSolverPtr primary);
   ConstraintSolver(BoxedLcpSolverPtr primary, BoxedLcpSolverPtr secondary);
+  ConstraintSolver(math::LcpSolverPtr primary);
+  ConstraintSolver(math::LcpSolverPtr primary, math::LcpSolverPtr secondary);
 
   /// Copy constructor
   // TODO: implement copy constructor since this class contains a pointer to
@@ -208,12 +211,14 @@ public:
 
   /// Set the primary boxed LCP solver (default: Dantzig)
   void setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
+  void setBoxedLcpSolver(math::LcpSolverPtr lcpSolver);
 
   /// Get the primary boxed LCP solver
   ConstBoxedLcpSolverPtr getBoxedLcpSolver() const;
 
   /// Set the secondary boxed LCP solver (default: PGS, nullptr disables)
   void setSecondaryBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
+  void setSecondaryBoxedLcpSolver(math::LcpSolverPtr lcpSolver);
 
   /// Get the secondary boxed LCP solver
   ConstBoxedLcpSolverPtr getSecondaryBoxedLcpSolver() const;

@@ -41,21 +41,22 @@
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/constraint/BoxedLcpSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
 #include "dart/constraint/CouplerConstraint.hpp"
-#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/JointConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/MimicMotorConstraint.hpp"
-#include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/math/lcp/dantzig/Lcp.hpp"
+#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
+#include "dart/math/lcp/projection/PGSSolver.hpp"
 
 #include <fmt/ostream.h>
 
@@ -66,6 +67,86 @@ namespace constraint {
 
 using namespace dynamics;
 
+namespace {
+
+class MathBoxedLcpAdapter : public BoxedLcpSolver
+{
+public:
+  explicit MathBoxedLcpAdapter(math::LcpSolverPtr solver)
+    : mSolver(std::move(solver))
+  {
+    if (mSolver)
+      mDefaultOptions = mSolver->getDefaultOptions();
+  }
+
+  const std::string& getType() const override
+  {
+    if (mType.empty() && mSolver)
+      mType = mSolver->getName();
+    return mType;
+  }
+
+  math::LcpOptions getDefaultOptions() const override
+  {
+    if (mSolver)
+      mDefaultOptions = mSolver->getDefaultOptions();
+    return mDefaultOptions;
+  }
+
+  void setDefaultOptions(const math::LcpOptions& options) override
+  {
+    mDefaultOptions = options;
+    if (mSolver)
+      mSolver->setDefaultOptions(options);
+  }
+
+  math::LcpResult solve(
+      const Eigen::MatrixXd& A,
+      const Eigen::VectorXd& b,
+      const Eigen::VectorXd& lo,
+      const Eigen::VectorXd& hi,
+      const Eigen::VectorXi& findex,
+      Eigen::VectorXd& x,
+      const math::LcpOptions& options) override
+  {
+    math::LcpResult result{math::LcpSolverStatus::InvalidProblem};
+    if (!mSolver) {
+      result.message = "No solver set";
+      return result;
+    }
+
+    if (auto* dantzig = dynamic_cast<math::DantzigSolver*>(mSolver.get())) {
+      return dantzig->solve(A, b, lo, hi, findex, x, options);
+    }
+
+    if (auto* pgs = dynamic_cast<math::PGSSolver*>(mSolver.get())) {
+      return pgs->solve(A, b, lo, hi, findex, x, options);
+    }
+
+    result.message = "Solver does not support boxed LCP solve";
+    result.status = math::LcpSolverStatus::InvalidProblem;
+    return result;
+  }
+
+  bool canSolve(const Eigen::MatrixXd& /*A*/) override
+  {
+    return static_cast<bool>(mSolver);
+  }
+
+private:
+  math::LcpSolverPtr mSolver;
+  mutable std::string mType;
+};
+
+BoxedLcpSolverPtr makeAdapter(math::LcpSolverPtr solver)
+{
+  if (!solver)
+    return nullptr;
+  return std::make_shared<MathBoxedLcpAdapter>(std::move(solver));
+}
+
+} // namespace
+
 //==============================================================================
 ConstraintSolver::ConstraintSolver()
   : mCollisionDetector(collision::FCLCollisionDetector::create()),
@@ -74,8 +155,8 @@ ConstraintSolver::ConstraintSolver()
         true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
     mTimeStep(0.001),
     mContactSurfaceHandler(std::make_shared<DefaultContactSurfaceHandler>()),
-    mBoxedLcpSolver(std::make_shared<DantzigBoxedLcpSolver>()),
-    mSecondaryBoxedLcpSolver(std::make_shared<PgsBoxedLcpSolver>())
+    mBoxedLcpSolver(makeAdapter(std::make_shared<math::DantzigSolver>())),
+    mSecondaryBoxedLcpSolver(makeAdapter(std::make_shared<math::PGSSolver>()))
 {
   auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
       mCollisionDetector);
@@ -97,6 +178,22 @@ ConstraintSolver::ConstraintSolver(BoxedLcpSolverPtr primary)
 //==============================================================================
 ConstraintSolver::ConstraintSolver(
     BoxedLcpSolverPtr primary, BoxedLcpSolverPtr secondary)
+  : ConstraintSolver(std::move(primary))
+{
+  setSecondaryBoxedLcpSolver(std::move(secondary));
+}
+
+//==============================================================================
+ConstraintSolver::ConstraintSolver(math::LcpSolverPtr primary)
+  : ConstraintSolver()
+{
+  if (primary)
+    setBoxedLcpSolver(std::move(primary));
+}
+
+//==============================================================================
+ConstraintSolver::ConstraintSolver(
+    math::LcpSolverPtr primary, math::LcpSolverPtr secondary)
   : ConstraintSolver(std::move(primary))
 {
   setSecondaryBoxedLcpSolver(std::move(secondary));
@@ -761,6 +858,12 @@ void ConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
 }
 
 //==============================================================================
+void ConstraintSolver::setBoxedLcpSolver(math::LcpSolverPtr lcpSolver)
+{
+  setBoxedLcpSolver(makeAdapter(std::move(lcpSolver)));
+}
+
+//==============================================================================
 ConstBoxedLcpSolverPtr ConstraintSolver::getBoxedLcpSolver() const
 {
   return mBoxedLcpSolver;
@@ -776,6 +879,12 @@ void ConstraintSolver::setSecondaryBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
       "set the secondary LCP solver to nullptr.");
 
   mSecondaryBoxedLcpSolver = std::move(lcpSolver);
+}
+
+//==============================================================================
+void ConstraintSolver::setSecondaryBoxedLcpSolver(math::LcpSolverPtr lcpSolver)
+{
+  setSecondaryBoxedLcpSolver(makeAdapter(std::move(lcpSolver)));
 }
 
 //==============================================================================

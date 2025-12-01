@@ -81,36 +81,6 @@ const std::string& PgsBoxedLcpSolver::getStaticType()
 }
 
 //==============================================================================
-math::LcpResult PgsBoxedLcpSolver::solve(
-    const Eigen::MatrixXd& A,
-    const Eigen::VectorXd& b,
-    const Eigen::VectorXd& lo,
-    const Eigen::VectorXd& hi,
-    const Eigen::VectorXi& findex,
-    Eigen::VectorXd& x,
-    const math::LcpOptions& options)
-{
-  math::LcpOptions appliedOptions = mDefaultOptions;
-
-  if (options.maxIterations > 0)
-    appliedOptions.maxIterations = options.maxIterations;
-  if (options.absoluteTolerance > 0)
-    appliedOptions.absoluteTolerance = options.absoluteTolerance;
-  if (options.relativeTolerance > 0)
-    appliedOptions.relativeTolerance = options.relativeTolerance;
-
-  appliedOptions.complementarityTolerance
-      = options.complementarityTolerance; // use caller tolerance verbatim
-  appliedOptions.validateSolution = options.validateSolution;
-  appliedOptions.relaxation = options.relaxation;
-  appliedOptions.earlyTermination = options.earlyTermination;
-  appliedOptions.warmStart = options.warmStart;
-  appliedOptions.customOptions = options.customOptions;
-
-  return mSolver.solve(A, b, lo, hi, findex, x, appliedOptions);
-}
-
-//==============================================================================
 bool PgsBoxedLcpSolver::canSolve(const Eigen::MatrixXd& A)
 {
   const int n = static_cast<int>(A.rows());

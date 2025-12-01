@@ -339,9 +339,9 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPERCASE)
 
-set(DART_IS_DEBUG FALSE)
+set(_dart_is_debug FALSE)
 if("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "DEBUG")
-  set(DART_IS_DEBUG TRUE)
+  set(_dart_is_debug TRUE)
 endif()
 
 # Active log level:
@@ -353,7 +353,7 @@ endif()
 # - ERROR: To enable log with DART_ERROR() and below
 # - FATAL: To enable log with DART_FATAL()
 # - OFF: To turn off all the logs
-if(DART_IS_DEBUG)
+if(_dart_is_debug)
   set(DART_ACTIVE_LOG_LEVEL "DEBUG" CACHE STRING "Compile time active log level to enable")
 else()
   set(DART_ACTIVE_LOG_LEVEL "INFO" CACHE STRING "Compile time active log level to enable")
@@ -361,7 +361,7 @@ endif()
 set_property(CACHE DART_ACTIVE_LOG_LEVEL PROPERTY STRINGS TRACE DEBUG INFO WARN ERROR FATAL OFF)
 
 set(_dart_warnings_as_errors_default OFF)
-if(NOT DART_IS_DEBUG)
+if(NOT _dart_is_debug)
   set(_dart_warnings_as_errors_default ON)
 endif()
 option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" ${_dart_warnings_as_errors_default})
