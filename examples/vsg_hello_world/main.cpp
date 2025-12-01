@@ -14,6 +14,10 @@
 
 #include <Eigen/Geometry>
 
+#include <filesystem>
+#include <cstdlib>
+#include <iostream>
+
 using namespace dart;
 
 namespace {
@@ -58,13 +62,51 @@ dynamics::SkeletonPtr createBox()
 
 int main()
 {
+  const char* display = std::getenv("DISPLAY");
+  const char* wayland = std::getenv("WAYLAND_DISPLAY");
+  if ((!display || display[0] == '\0') && (!wayland || wayland[0] == '\0')) {
+    std::cerr
+        << "[vsg_hello_world] No DISPLAY or WAYLAND_DISPLAY found; skipping "
+           "run.\n";
+    return 0;
+  }
+
+  bool has_icd = false;
+  if (const char* icd_env = std::getenv("VK_ICD_FILENAMES")) {
+    has_icd = icd_env[0] != '\0';
+  } else {
+    const std::vector<std::filesystem::path> icd_paths{
+        "/usr/share/vulkan/icd.d",
+        "/etc/vulkan/icd.d",
+        "/usr/local/share/vulkan/icd.d"};
+    for (const auto& path : icd_paths) {
+      if (std::filesystem::exists(path) && !std::filesystem::is_empty(path)) {
+        has_icd = true;
+        break;
+      }
+    }
+  }
+  if (!has_icd) {
+    std::cerr
+        << "[vsg_hello_world] No Vulkan ICD detected; skipping run.\n";
+    return 0;
+  }
+
   auto world = std::make_shared<simulation::World>();
   world->setName("vsg-example");
   world->addSkeleton(createFloor());
   world->addSkeleton(createBox());
 
-  gui::vsg::Viewer viewer(world);
-  viewer.simulate(true);
-  viewer.setNumStepsPerCycle(4);
-  viewer.run();
+  try {
+    gui::vsg::Viewer viewer(world);
+    viewer.simulate(true);
+    viewer.setNumStepsPerCycle(4);
+    viewer.run();
+  } catch (const std::exception& e) {
+    std::cerr << "[vsg_hello_world] Failed to start VSG viewer: " << e.what()
+              << "\n";
+    return 1;
+  }
+
+  return 0;
 }
