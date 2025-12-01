@@ -180,12 +180,10 @@ public:
     return res;
   }
 
-#if DART_BUILD_MODE_DEBUG
   bool canSolve(const Eigen::MatrixXd& /*A*/) override
   {
     return true;
   }
-#endif
 };
 
 // Secondary solver that succeeds and writes a constant impulse.
@@ -215,12 +213,10 @@ public:
     return res;
   }
 
-#if DART_BUILD_MODE_DEBUG
   bool canSolve(const Eigen::MatrixXd& /*A*/) override
   {
     return true;
   }
-#endif
 
 private:
   double mValue;
@@ -253,12 +249,10 @@ public:
     return res;
   }
 
-#if DART_BUILD_MODE_DEBUG
   bool canSolve(const Eigen::MatrixXd& /*A*/) override
   {
     return true;
   }
-#endif
 
 private:
   double mValue;
@@ -293,12 +287,10 @@ public:
     return res;
   }
 
-#if DART_BUILD_MODE_DEBUG
   bool canSolve(const Eigen::MatrixXd& /*A*/) override
   {
     return true;
   }
-#endif
 
 private:
   double mValue;
@@ -328,12 +320,10 @@ public:
     return res;
   }
 
-#if DART_BUILD_MODE_DEBUG
   bool canSolve(const Eigen::MatrixXd& /*A*/) override
   {
     return true;
   }
-#endif
 };
 
 // Expose the protected solve entry point for testing.

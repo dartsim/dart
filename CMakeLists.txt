@@ -339,17 +339,9 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPERCASE)
 
-set(DART_BUILD_MODE_DEBUG FALSE)
-set(DART_BUILD_MODE_RELEASE FALSE)
-
+set(DART_IS_DEBUG FALSE)
 if("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "DEBUG")
-  set(DART_BUILD_MODE_DEBUG TRUE)
-elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELEASE")
-  set(DART_BUILD_MODE_RELEASE TRUE)
-elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELWITHDEBINFO")
-  set(DART_BUILD_MODE_RELEASE TRUE)
-elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "MINSIZEREL")
-  set(DART_BUILD_MODE_RELEASE TRUE)
+  set(DART_IS_DEBUG TRUE)
 endif()
 
 # Active log level:
@@ -361,18 +353,19 @@ endif()
 # - ERROR: To enable log with DART_ERROR() and below
 # - FATAL: To enable log with DART_FATAL()
 # - OFF: To turn off all the logs
-if(DART_BUILD_MODE_DEBUG)
+if(DART_IS_DEBUG)
   set(DART_ACTIVE_LOG_LEVEL "DEBUG" CACHE STRING "Compile time active log level to enable")
 else()
   set(DART_ACTIVE_LOG_LEVEL "INFO" CACHE STRING "Compile time active log level to enable")
 endif()
 set_property(CACHE DART_ACTIVE_LOG_LEVEL PROPERTY STRINGS TRACE DEBUG INFO WARN ERROR FATAL OFF)
 
-if(DART_BUILD_MODE_DEBUG)
-  option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
-else()
-  option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" ON)
+set(_dart_warnings_as_errors_default OFF)
+if(NOT DART_IS_DEBUG)
+  set(_dart_warnings_as_errors_default ON)
 endif()
+option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" ${_dart_warnings_as_errors_default})
+unset(_dart_warnings_as_errors_default)
 
 option(DART_BUILD_WHEELS "Indicate building dartpy for wheels" OFF)
 

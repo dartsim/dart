@@ -34,6 +34,7 @@
 #define DART_CONSTRAINT_PGSBOXEDLCPSOLVER_HPP_
 
 #include <dart/constraint/BoxedLcpSolver.hpp>
+
 #include <dart/math/lcp/projection/PGSSolver.hpp>
 
 #include <dart/Export.hpp>
@@ -82,10 +83,8 @@ public:
   /// Returns type for this class
   static const std::string& getStaticType();
 
-#if DART_BUILD_MODE_DEBUG
   // Documentation inherited.
   bool canSolve(const Eigen::MatrixXd& A) override;
-#endif
 
   /// Sets options
   void setOption(const Option& option);

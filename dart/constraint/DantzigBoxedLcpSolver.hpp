@@ -62,10 +62,8 @@ public:
   /// Returns type for this class
   static const std::string& getStaticType();
 
-#if DART_BUILD_MODE_DEBUG
   // Documentation inherited.
   bool canSolve(const Eigen::MatrixXd& A) override;
-#endif
 };
 
 } // namespace constraint

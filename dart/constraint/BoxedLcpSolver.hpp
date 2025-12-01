@@ -70,9 +70,7 @@ public:
       const math::LcpOptions& options)
       = 0;
 
-#if DART_BUILD_MODE_DEBUG
   virtual bool canSolve(const Eigen::MatrixXd& A) = 0;
-#endif
 
 protected:
   math::LcpOptions mDefaultOptions;

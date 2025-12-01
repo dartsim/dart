@@ -36,9 +36,10 @@
 #include "dart/math/lcp/dantzig/Misc.hpp"
 
 #include <algorithm>
-#include <cmath>
 #include <limits>
 #include <vector>
+
+#include <cmath>
 
 namespace dart::math {
 
@@ -100,16 +101,17 @@ LcpResult PGSSolver::solve(
     return result;
   }
 
-  const Parameters* params = options.customOptions
-                                 ? static_cast<const Parameters*>(
-                                     options.customOptions)
-                                 : &mParameters;
+  const Parameters* params
+      = options.customOptions
+            ? static_cast<const Parameters*>(options.customOptions)
+            : &mParameters;
 
   const int n = static_cast<int>(b.size());
   const int nSkip = padding(n);
   const int maxIterations = std::max(
-      1, (options.maxIterations > 0) ? options.maxIterations
-                                     : mDefaultOptions.maxIterations);
+      1,
+      (options.maxIterations > 0) ? options.maxIterations
+                                  : mDefaultOptions.maxIterations);
   const double absTolerance = (options.absoluteTolerance > 0)
                                   ? options.absoluteTolerance
                                   : mDefaultOptions.absoluteTolerance;
@@ -160,10 +162,9 @@ LcpResult PGSSolver::solve(
     newX /= Adata[static_cast<std::size_t>(nSkip * i + i)];
 
     if (findexData[static_cast<std::size_t>(i)] >= 0) {
-      const double hiTmp
-          = hiData[static_cast<std::size_t>(i)]
-            * xdata[static_cast<std::size_t>(
-                findexData[static_cast<std::size_t>(i)])];
+      const double hiTmp = hiData[static_cast<std::size_t>(i)]
+                           * xdata[static_cast<std::size_t>(
+                               findexData[static_cast<std::size_t>(i)])];
       const double loTmp = -hiTmp;
 
       if (newX > hiTmp)
@@ -205,8 +206,7 @@ LcpResult PGSSolver::solve(
     for (int iter = 1; iter < maxIterations; ++iter) {
       if (params->randomizeConstraintOrder && (iter & 7) == 0) {
         for (std::size_t i = 1; i < order.size(); ++i) {
-          const int swapIndex
-              = dRandInt(static_cast<int>(i + 1)); // NOLINT
+          const int swapIndex = dRandInt(static_cast<int>(i + 1)); // NOLINT
           std::swap(order[i], order[static_cast<std::size_t>(swapIndex)]);
         }
       }
@@ -280,9 +280,9 @@ LcpResult PGSSolver::solve(
 
   if (options.validateSolution) {
     const double tol = std::max(
-        options.complementarityTolerance > 0 ? options.complementarityTolerance
-                                             : mDefaultOptions
-                                                   .complementarityTolerance,
+        options.complementarityTolerance > 0
+            ? options.complementarityTolerance
+            : mDefaultOptions.complementarityTolerance,
         absTolerance);
     bool valid = true;
 

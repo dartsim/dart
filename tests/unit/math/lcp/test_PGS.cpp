@@ -35,8 +35,9 @@
 
 #include <gtest/gtest.h>
 
-#include <cmath>
 #include <limits>
+
+#include <cmath>
 
 using namespace dart::math;
 

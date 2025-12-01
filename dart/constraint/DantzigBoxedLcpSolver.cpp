@@ -91,14 +91,12 @@ const std::string& DantzigBoxedLcpSolver::getStaticType()
   return type;
 }
 
-#if DART_BUILD_MODE_DEBUG
 //==============================================================================
 bool DantzigBoxedLcpSolver::canSolve(const Eigen::MatrixXd& /*A*/)
 {
   // TODO(JS): Not implemented.
   return true;
 }
-#endif
 
 } // namespace constraint
 } // namespace dart
