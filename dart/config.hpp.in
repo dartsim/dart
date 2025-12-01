@@ -71,6 +71,7 @@
 #cmakedefine01 DART_HAVE_ODE
 #cmakedefine01 DART_HAVE_OCTOMAP
 #cmakedefine01 DART_HAVE_SDFORMAT
+#cmakedefine01 DART_HAVE_VULKANSCENEGRAPH
 
 #cmakedefine01 DART_ENABLE_SIMD
 

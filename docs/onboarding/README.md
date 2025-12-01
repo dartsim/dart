@@ -15,7 +15,7 @@
 
 ## 1. Overview
 
-**DART** (Dynamic Animation and Robotics Toolkit) is a comprehensive C++ physics engine for robotics simulation, kinematics, dynamics, and control. The **dart_gui** component provides 3D visualization and interactive manipulation capabilities built on OpenSceneGraph (OSG) and Dear ImGui.
+**DART** (Dynamic Animation and Robotics Toolkit) is a comprehensive C++ physics engine for robotics simulation, kinematics, dynamics, and control. The **dart_gui** component provides 3D visualization and interactive manipulation capabilities built on OpenSceneGraph (OSG) and Dear ImGui. An experimental VulkanSceneGraph (VSG) backend is also available via the optional `dart-gui-vsg` target (`DART_BUILD_GUI_VSG=ON`).
 
 ### Documentation Principles
 

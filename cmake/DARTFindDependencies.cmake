@@ -221,6 +221,32 @@ if(DART_BUILD_GUI)
   endif()
 endif()
 
+# VulkanSceneGraph (VSG)
+if(DART_BUILD_GUI_VSG)
+  dart_find_package(VulkanSceneGraph)
+  if(VULKANSCENEGRAPH_FOUND OR VulkanSceneGraph_FOUND OR vsg_FOUND)
+    set(DART_HAVE_VULKANSCENEGRAPH TRUE CACHE BOOL "Check if VulkanSceneGraph found." FORCE)
+    if(NOT DEFINED VulkanSceneGraph_VERSION AND DEFINED vsg_VERSION)
+      set(VulkanSceneGraph_VERSION "${vsg_VERSION}")
+    endif()
+    if(DART_VERBOSE)
+      if(DEFINED VulkanSceneGraph_VERSION)
+        message(
+          STATUS
+          "Looking for VulkanSceneGraph - ${VulkanSceneGraph_VERSION} found"
+        )
+      else()
+        message(STATUS "Looking for VulkanSceneGraph - found")
+      endif()
+    endif()
+  else()
+    set(DART_HAVE_VULKANSCENEGRAPH FALSE CACHE BOOL "Check if VulkanSceneGraph found." FORCE)
+    message(WARNING "Looking for VulkanSceneGraph - NOT found, skipping dart-gui-vsg")
+  endif()
+else()
+  set(DART_HAVE_VULKANSCENEGRAPH FALSE CACHE BOOL "Check if VulkanSceneGraph found." FORCE)
+endif()
+
 #--------------------
 # Misc. dependencies
 #--------------------

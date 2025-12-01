@@ -206,6 +206,11 @@ else()
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF CATEGORY build)
 dart_option(DART_BUILD_GUI "Build GUI library" ON CATEGORY build)
+dart_option(
+  DART_BUILD_GUI_VSG
+  "Build VulkanSceneGraph GUI backend (experimental, independent from OpenSceneGraph)"
+  OFF
+  CATEGORY build)
 dart_option(DART_BUILD_COLLISION_BULLET "Embed the Bullet collision backend into the core dart target" OFF CATEGORY build)
 dart_option(DART_BUILD_COLLISION_ODE "Embed the ODE collision backend into the core dart target" OFF CATEGORY build)
 dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)

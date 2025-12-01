@@ -28,6 +28,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # gui
 #   osg
 #     render
+#   vsg
 
 #===============================================================================
 # Targets - {dependency targets}, source directories, [external dependency libs]
@@ -68,6 +69,16 @@ add_subdirectory(constraint)
 add_subdirectory(simulation)
 add_subdirectory(utils) # tinyxml2, libsdformat
 add_subdirectory(gui) # osg
+if(DART_BUILD_GUI_VSG)
+  if(DART_HAVE_VULKANSCENEGRAPH)
+    add_subdirectory(gui/vsg)
+  else()
+    message(
+      STATUS
+      "Skipping VulkanSceneGraph GUI (DART_BUILD_GUI_VSG=ON but dependency not found)"
+    )
+  endif()
+endif()
 
 set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
 set(DART_CONFIG_HPP_OUT ${DART_BINARY_DIR}/dart/config.hpp)

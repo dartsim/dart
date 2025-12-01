@@ -41,6 +41,7 @@
 
 ```cmake
 DART_BUILD_GUI          = ON   # Build OpenSceneGraph GUI
+DART_BUILD_GUI_VSG      = OFF  # Build VulkanSceneGraph GUI backend
 DART_BUILD_DARTPY           = OFF  # Build Python bindings
 DART_BUILD_PROFILE          = OFF  # Enable profiling support
 DART_ENABLE_SIMD            = OFF  # Enable SIMD instructions
@@ -105,9 +106,10 @@ dart/
 ├── constraint/     # Constraint handling
 ├── simulation/     # Simulation framework + time stepping
 ├── utils/          # Parsers and helpers (URDF/SDF)
-└── gui/            # GUI components (OpenSceneGraph backend)
+└── gui/            # GUI components (OpenSceneGraph + optional VulkanSceneGraph)
     ├── render/     # Shape renderers
-    └── detail/     # Implementation details
+    ├── detail/     # Implementation details
+    └── vsg/        # VulkanSceneGraph backend
 ```
 
 #### 3. dart/gui/CMakeLists.txt
@@ -128,6 +130,11 @@ dart/
 - OpenSceneGraph 3.0.0+ (external)
 - ImGui 1.80+ (external or fetched)
 - OpenGL (for ImGui backend)
+
+**Sibling Backend:**
+
+- `dart/gui/vsg/CMakeLists.txt` builds `dart-gui-vsg` when
+  `DART_BUILD_GUI_VSG=ON`, linking against `vsg::vsg`.
 
 ---
 
@@ -201,6 +208,10 @@ dart/
   - macOS: Manual build required on osx-64 and osx-arm64 (git SHA: `2e4ae2ea94595995c1fc56860051410b0c0be605`)
   - Linux: Available via conda-forge
   - Windows: Available via conda-forge
+
+- **Alternative Backend:** VulkanSceneGraph (VSG) can be enabled with
+  `DART_BUILD_GUI_VSG=ON`, producing the experimental `dart-gui-vsg` target
+  (uses `cmake/DARTFindVulkanSceneGraph.cmake` to locate `vsg::vsg`).
 
 #### 8. ImGui (Immediate Mode GUI)
 
@@ -456,9 +467,10 @@ dart/
 ├── utils/           # Utility functions
 │   ├── sdf/        # SDF file parser
 │   └── urdf/       # URDF file parser
-└── gui/             # GUI components (OpenSceneGraph backend)
+└── gui/             # GUI components (OpenSceneGraph + optional VulkanSceneGraph)
     ├── render/      # Rendering utilities
-    └── detail/      # Implementation details
+    ├── detail/      # Implementation details
+    └── vsg/         # VulkanSceneGraph backend scaffold
 ```
 
 ---
@@ -487,6 +499,7 @@ dart/
 - **`dart-utils`** - Utility functions
 - **`dart-utils-urdf`** - URDF parser
 - **`dart-gui`** - OpenSceneGraph GUI
+- **`dart-gui-vsg`** - VulkanSceneGraph GUI (optional/experimental)
 
 ### Python Bindings Target
 
