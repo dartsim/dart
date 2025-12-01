@@ -101,7 +101,15 @@ int main()
     gui::vsg::Viewer viewer(world);
     viewer.simulate(true);
     viewer.setNumStepsPerCycle(4);
-    viewer.run();
+
+    const char* run_loop = std::getenv("DART_VSG_RUN");
+    if (run_loop && std::string_view(run_loop) == "1") {
+      viewer.run();
+    } else {
+      std::cout
+          << "[vsg_hello_world] VSG initialized; skipping render loop. Set "
+             "DART_VSG_RUN=1 to run the viewer.\n";
+    }
   } catch (const std::exception& e) {
     std::cerr << "[vsg_hello_world] Failed to start VSG viewer: " << e.what()
               << "\n";
