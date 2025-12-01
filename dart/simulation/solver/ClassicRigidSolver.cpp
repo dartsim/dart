@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/solver/LegacyRigidSolver.hpp"
+#include "dart/simulation/solver/ClassicRigidSolver.hpp"
 
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionGroup.hpp"
@@ -42,25 +42,25 @@
 
 namespace dart::simulation {
 
-LegacyRigidSolver::LegacyRigidSolver()
-  : WorldSolver("legacy_rigid", RigidSolverType::LegacySkeleton),
+ClassicRigidSolver::ClassicRigidSolver()
+  : WorldSolver("classic_rigid", RigidSolverType::ClassicSkeleton),
     mConstraintSolver(std::make_unique<constraint::BoxedLcpConstraintSolver>())
 {
 }
 
-LegacyRigidSolver::~LegacyRigidSolver() = default;
+ClassicRigidSolver::~ClassicRigidSolver() = default;
 
-bool LegacyRigidSolver::supportsConstraints() const
+bool ClassicRigidSolver::supportsConstraints() const
 {
   return true;
 }
 
-bool LegacyRigidSolver::supportsCollision() const
+bool ClassicRigidSolver::supportsCollision() const
 {
   return true;
 }
 
-void LegacyRigidSolver::setConstraintSolver(
+void ClassicRigidSolver::setConstraintSolver(
     constraint::UniqueConstraintSolverPtr solver)
 {
   if (!solver) {
@@ -75,93 +75,93 @@ void LegacyRigidSolver::setConstraintSolver(
   mConstraintSolver->setTimeStep(mTimeStep);
 }
 
-constraint::ConstraintSolver* LegacyRigidSolver::getConstraintSolver()
+constraint::ConstraintSolver* ClassicRigidSolver::getConstraintSolver()
 {
   return mConstraintSolver.get();
 }
 
-const constraint::ConstraintSolver* LegacyRigidSolver::getConstraintSolver()
+const constraint::ConstraintSolver* ClassicRigidSolver::getConstraintSolver()
     const
 {
   return mConstraintSolver.get();
 }
 
-void LegacyRigidSolver::setCollisionDetector(
+void ClassicRigidSolver::setCollisionDetector(
     const collision::CollisionDetectorPtr& collisionDetector)
 {
   if (!collisionDetector) {
     DART_WARN(
-        "Attempted to assign a null collision detector to legacy solver.");
+        "Attempted to assign a null collision detector to classic solver.");
     return;
   }
 
   mConstraintSolver->setCollisionDetector(collisionDetector);
 }
 
-void LegacyRigidSolver::setCollisionDetector(
+void ClassicRigidSolver::setCollisionDetector(
     CollisionDetectorType collisionDetector)
 {
   DART_WARN(
-      "LegacyRigidSolver::setCollisionDetector(CollisionDetectorType) should "
+      "ClassicRigidSolver::setCollisionDetector(CollisionDetectorType) should "
       "be routed through World for detector instantiation. Ignoring request "
       "for type {}.",
       static_cast<int>(collisionDetector));
 }
 
-collision::CollisionDetectorPtr LegacyRigidSolver::getCollisionDetector()
+collision::CollisionDetectorPtr ClassicRigidSolver::getCollisionDetector()
 {
   return mConstraintSolver->getCollisionDetector();
 }
 
-collision::ConstCollisionDetectorPtr LegacyRigidSolver::getCollisionDetector()
+collision::ConstCollisionDetectorPtr ClassicRigidSolver::getCollisionDetector()
     const
 {
   return mConstraintSolver->getCollisionDetector();
 }
 
-const collision::CollisionResult& LegacyRigidSolver::getLastCollisionResult()
+const collision::CollisionResult& ClassicRigidSolver::getLastCollisionResult()
     const
 {
   return mConstraintSolver->getLastCollisionResult();
 }
 
-bool LegacyRigidSolver::checkCollision(
+bool ClassicRigidSolver::checkCollision(
     const collision::CollisionOption& option,
     collision::CollisionResult* result)
 {
   return mConstraintSolver->getCollisionGroup()->collide(option, result);
 }
 
-void LegacyRigidSolver::handleSkeletonAdded(
+void ClassicRigidSolver::handleSkeletonAdded(
     World&, const dynamics::SkeletonPtr& skeleton)
 {
   mConstraintSolver->addSkeleton(skeleton);
 }
 
-void LegacyRigidSolver::handleSkeletonRemoved(
+void ClassicRigidSolver::handleSkeletonRemoved(
     World&, const dynamics::SkeletonPtr& skeleton)
 {
   mConstraintSolver->removeSkeleton(skeleton);
 }
 
-void LegacyRigidSolver::setTimeStep(double timeStep)
+void ClassicRigidSolver::setTimeStep(double timeStep)
 {
   mTimeStep = timeStep;
   if (mConstraintSolver)
     mConstraintSolver->setTimeStep(timeStep);
 }
 
-void LegacyRigidSolver::reset(World&)
+void ClassicRigidSolver::reset(World&)
 {
   if (mConstraintSolver)
     mConstraintSolver->clearLastCollisionResult();
 }
 
-void LegacyRigidSolver::step(World& world, bool resetCommand)
+void ClassicRigidSolver::step(World& world, bool resetCommand)
 {
   // Integrate velocity for unconstrained skeletons
   {
-    DART_PROFILE_SCOPED_N("LegacyRigidSolver::step - Integrate velocity");
+    DART_PROFILE_SCOPED_N("ClassicRigidSolver::step - Integrate velocity");
     world.eachSkeleton([&](dynamics::Skeleton* skel) {
       if (!skel->isMobile())
         return true;
@@ -174,7 +174,7 @@ void LegacyRigidSolver::step(World& world, bool resetCommand)
 
   // Detect activated constraints and compute constraint impulses
   {
-    DART_PROFILE_SCOPED_N("LegacyRigidSolver::step - Solve constraints");
+    DART_PROFILE_SCOPED_N("ClassicRigidSolver::step - Solve constraints");
     mConstraintSolver->solve();
   }
 

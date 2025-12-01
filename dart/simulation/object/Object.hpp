@@ -11,10 +11,10 @@
  *   conditions are met:
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -30,25 +30,33 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_FWD_HPP_
-#define DART_SIMULATION_FWD_HPP_
+#ifndef DART_SIMULATION_OBJECT_OBJECT_HPP_
+#define DART_SIMULATION_OBJECT_OBJECT_HPP_
 
-#include <dart/common/SmartPointer.hpp>
+#include <dart/Export.hpp>
 
-namespace dart {
-namespace simulation {
+#include <string>
 
-class World;
+namespace dart::simulation::object {
 
-DART_COMMON_DECLARE_SHARED_WEAK(World)
+/// Base class for simulation objects managed by the world.
+class DART_API Object
+{
+public:
+  Object();
+  explicit Object(std::string name);
+  virtual ~Object();
 
-namespace object {
+  /// Returns the object's identifier.
+  const std::string& getName() const;
 
-class Object;
+  /// Sets a human-readable identifier for this object.
+  void setName(std::string name);
 
-} // namespace object
+private:
+  std::string mName;
+};
 
-} // namespace simulation
-} // namespace dart
+} // namespace dart::simulation::object
 
-#endif // DART_SIMULATION_FWD_HPP_
+#endif // DART_SIMULATION_OBJECT_OBJECT_HPP_

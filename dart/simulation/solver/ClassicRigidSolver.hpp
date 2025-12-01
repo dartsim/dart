@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_SOLVER_LEGACYRIGIDSOLVER_HPP_
-#define DART_SIMULATION_SOLVER_LEGACYRIGIDSOLVER_HPP_
+#ifndef DART_SIMULATION_SOLVER_CLASSICRIGIDSOLVER_HPP_
+#define DART_SIMULATION_SOLVER_CLASSICRIGIDSOLVER_HPP_
 
 #include "dart/simulation/solver/WorldSolver.hpp"
 
@@ -39,12 +39,12 @@
 
 namespace dart::simulation {
 
-/// Rigid solver that wraps the legacy Skeleton + ConstraintSolver pipeline.
-class DART_API LegacyRigidSolver final : public WorldSolver
+/// Rigid solver that wraps the classic Skeleton + ConstraintSolver pipeline.
+class DART_API ClassicRigidSolver final : public WorldSolver
 {
 public:
-  LegacyRigidSolver();
-  ~LegacyRigidSolver() override;
+  ClassicRigidSolver();
+  ~ClassicRigidSolver() override;
 
   bool supportsConstraints() const override;
   bool supportsCollision() const override;
@@ -79,4 +79,4 @@ private:
 
 } // namespace dart::simulation
 
-#endif // DART_SIMULATION_SOLVER_LEGACYRIGIDSOLVER_HPP_
+#endif // DART_SIMULATION_SOLVER_CLASSICRIGIDSOLVER_HPP_

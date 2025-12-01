@@ -55,7 +55,7 @@ enum class CollisionDetectorType : int;
 enum class RigidSolverType
 {
   /// Existing Skeleton-based constraint solver.
-  LegacySkeleton,
+  ClassicSkeleton,
   /// Entity-component based rigid solver using entt::registry.
   EntityComponent,
 };

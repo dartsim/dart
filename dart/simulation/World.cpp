@@ -48,7 +48,7 @@
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/simulation/solver/LegacyRigidSolver.hpp"
+#include "dart/simulation/solver/ClassicRigidSolver.hpp"
 #include "dart/simulation/solver/RigidSolver.hpp"
 
 #include <algorithm>
@@ -188,7 +188,7 @@ World::World(const WorldConfig& config)
 {
   mIndices.push_back(0);
 
-  addSolver(std::make_unique<LegacyRigidSolver>());
+  addSolver(std::make_unique<ClassicRigidSolver>());
   addSolver(std::make_unique<RigidSolver>(mEntityManager));
 
   setConstraintSolver(std::make_unique<constraint::BoxedLcpConstraintSolver>());
@@ -293,8 +293,9 @@ void World::step(bool _resetCommand)
 {
   DART_PROFILE_FRAME;
 
-  for (auto& solver : mRigidSolvers)
+  for (auto& solver : mRigidSolvers) {
     solver->step(*this, _resetCommand);
+  }
 
   mTime += mTimeStep;
   mFrame++;
