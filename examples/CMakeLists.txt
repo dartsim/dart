@@ -42,6 +42,9 @@ add_subdirectory(g1_puppet)
 add_subdirectory(tinkertoy)
 add_subdirectory(vehicle)
 add_subdirectory(wam_ikfast)
+if(DART_HAVE_VULKANSCENEGRAPH)
+  add_subdirectory(vsg_hello_world)
+endif()
 
 # MJCF model based examples
 add_subdirectory(fetch)
