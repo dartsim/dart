@@ -49,7 +49,8 @@ public:
   bool supportsConstraints() const override;
   bool supportsCollision() const override;
 
-  void setConstraintSolver(constraint::UniqueConstraintSolverPtr solver) override;
+  void setConstraintSolver(
+      constraint::UniqueConstraintSolverPtr solver) override;
   constraint::ConstraintSolver* getConstraintSolver() override;
   const constraint::ConstraintSolver* getConstraintSolver() const override;
 

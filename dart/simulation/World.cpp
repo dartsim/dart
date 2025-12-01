@@ -783,7 +783,13 @@ WorldSolver* World::addSolver(std::unique_ptr<WorldSolver> solver)
 
   solver->setTimeStep(mTimeStep);
   mRigidSolvers.emplace_back(std::move(solver));
-  return mRigidSolvers.back().get();
+  auto* solverPtr = mRigidSolvers.back().get();
+
+  // Ensure the solver is aware of any skeletons that were already present.
+  for (auto& skeleton : mSkeletons)
+    solverPtr->handleSkeletonAdded(*this, skeleton);
+
+  return solverPtr;
 }
 
 //==============================================================================

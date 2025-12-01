@@ -41,15 +41,12 @@
 
 #include <dart/simulation/Fwd.hpp>
 #include <dart/simulation/Recording.hpp>
+#include <dart/simulation/solver/WorldSolver.hpp>
 
 #include <dart/constraint/Fwd.hpp>
 
 #include <dart/collision/CollisionOption.hpp>
 #include <dart/collision/Fwd.hpp>
-
-#include <dart/simulation/solver/WorldSolver.hpp>
-
-#include <entt/entt.hpp>
 
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
@@ -62,7 +59,9 @@
 #include <dart/Export.hpp>
 
 #include <Eigen/Dense>
+#include <entt/entt.hpp>
 
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -73,7 +72,7 @@ namespace dart {
 namespace simulation {
 
 /// Available collision detector backends for a World.
-enum class CollisionDetectorType
+enum class CollisionDetectorType : int
 {
   Dart,
   Fcl,
@@ -436,11 +435,11 @@ protected:
   /// Recording buffer for baked states
   Recording* mRecording;
 
-  /// Collection of rigid solvers that advance the world each step
-  std::vector<std::unique_ptr<WorldSolver>> mRigidSolvers;
-
   /// Centralized ECS registry shared across solvers.
   entt::registry mEntityManager;
+
+  /// Collection of rigid solvers that advance the world each step
+  std::vector<std::unique_ptr<WorldSolver>> mRigidSolvers;
 
   //--------------------------------------------------------------------------
   // Signals

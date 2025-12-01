@@ -35,10 +35,10 @@
 
 #include <dart/simulation/Fwd.hpp>
 
+#include <dart/constraint/Fwd.hpp>
+
 #include <dart/collision/CollisionOption.hpp>
 #include <dart/collision/Fwd.hpp>
-
-#include <dart/constraint/Fwd.hpp>
 
 #include <dart/dynamics/Fwd.hpp>
 
@@ -47,6 +47,9 @@
 #include <string>
 
 namespace dart::simulation {
+
+// Forward declaration to avoid circular include with World.
+enum class CollisionDetectorType : int;
 
 /// Identifies which rigid simulation backend a solver instance targets.
 enum class RigidSolverType
@@ -94,7 +97,8 @@ public:
       World& world, const dynamics::SkeletonPtr& skeleton);
 
   // Legacy constraint APIs (optional)
-  virtual void setConstraintSolver(constraint::UniqueConstraintSolverPtr solver);
+  virtual void setConstraintSolver(
+      constraint::UniqueConstraintSolverPtr solver);
   virtual constraint::ConstraintSolver* getConstraintSolver();
   virtual const constraint::ConstraintSolver* getConstraintSolver() const;
 

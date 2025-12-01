@@ -80,7 +80,8 @@ constraint::ConstraintSolver* LegacyRigidSolver::getConstraintSolver()
   return mConstraintSolver.get();
 }
 
-const constraint::ConstraintSolver* LegacyRigidSolver::getConstraintSolver() const
+const constraint::ConstraintSolver* LegacyRigidSolver::getConstraintSolver()
+    const
 {
   return mConstraintSolver.get();
 }
@@ -97,7 +98,8 @@ void LegacyRigidSolver::setCollisionDetector(
   mConstraintSolver->setCollisionDetector(collisionDetector);
 }
 
-void LegacyRigidSolver::setCollisionDetector(CollisionDetectorType collisionDetector)
+void LegacyRigidSolver::setCollisionDetector(
+    CollisionDetectorType collisionDetector)
 {
   DART_WARN(
       "LegacyRigidSolver::setCollisionDetector(CollisionDetectorType) should "
@@ -111,12 +113,14 @@ collision::CollisionDetectorPtr LegacyRigidSolver::getCollisionDetector()
   return mConstraintSolver->getCollisionDetector();
 }
 
-collision::ConstCollisionDetectorPtr LegacyRigidSolver::getCollisionDetector() const
+collision::ConstCollisionDetectorPtr LegacyRigidSolver::getCollisionDetector()
+    const
 {
   return mConstraintSolver->getCollisionDetector();
 }
 
-const collision::CollisionResult& LegacyRigidSolver::getLastCollisionResult() const
+const collision::CollisionResult& LegacyRigidSolver::getLastCollisionResult()
+    const
 {
   return mConstraintSolver->getLastCollisionResult();
 }

@@ -33,6 +33,7 @@
 #include "dart/simulation/solver/WorldSolver.hpp"
 
 #include <dart/collision/CollisionResult.hpp>
+
 #include <dart/common/Logging.hpp>
 
 namespace dart::simulation {
@@ -123,7 +124,8 @@ void WorldSolver::setCollisionDetector(
       mName);
 }
 
-void WorldSolver::setCollisionDetector(CollisionDetectorType /*collisionDetector*/)
+void WorldSolver::setCollisionDetector(
+    CollisionDetectorType /*collisionDetector*/)
 {
   DART_WARN(
       "Requested to set a collision detector on '{}', but this solver does not "
