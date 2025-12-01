@@ -241,7 +241,14 @@ if(DART_BUILD_GUI_VSG)
     endif()
   else()
     set(DART_HAVE_VULKANSCENEGRAPH FALSE CACHE BOOL "Check if VulkanSceneGraph found." FORCE)
-    message(WARNING "Looking for VulkanSceneGraph - NOT found, skipping dart-gui-vsg")
+    if(DART_REQUIRE_VSG)
+      message(
+        FATAL_ERROR
+        "DART_BUILD_GUI_VSG=ON but VulkanSceneGraph not found (DART_REQUIRE_VSG=ON). Please install VSG or set DART_BUILD_GUI_VSG=OFF."
+      )
+    else()
+      message(WARNING "Looking for VulkanSceneGraph - NOT found, skipping dart-gui-vsg")
+    endif()
   endif()
 else()
   set(DART_HAVE_VULKANSCENEGRAPH FALSE CACHE BOOL "Check if VulkanSceneGraph found." FORCE)

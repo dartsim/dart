@@ -42,6 +42,7 @@
 ```cmake
 DART_BUILD_GUI          = ON   # Build OpenSceneGraph GUI
 DART_BUILD_GUI_VSG      = OFF  # Build VulkanSceneGraph GUI backend
+DART_REQUIRE_VSG        = OFF  # Fail configure if VSG is missing while GUI VSG is requested
 DART_BUILD_DARTPY           = OFF  # Build Python bindings
 DART_BUILD_PROFILE          = OFF  # Enable profiling support
 DART_ENABLE_SIMD            = OFF  # Enable SIMD instructions
@@ -212,6 +213,7 @@ dart/
 - **Alternative Backend:** VulkanSceneGraph (VSG) can be enabled with
   `DART_BUILD_GUI_VSG=ON`, producing the experimental `dart-gui-vsg` target
   (uses `cmake/DARTFindVulkanSceneGraph.cmake` to locate `vsg::vsg`).
+  Set `DART_REQUIRE_VSG=ON` if configuration should fail when VSG is missing.
 
 #### 8. ImGui (Immediate Mode GUI)
 
