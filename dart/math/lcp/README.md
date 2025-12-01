@@ -6,8 +6,8 @@ This directory contains the Linear Complementarity Problem (LCP) solver infrastr
 
 ```
 lcp/
-├── Types.hpp/cpp               # Common types (LCPOptions, LCPResult, SolverStatus)
-├── Solver.hpp/cpp              # Base LCPSolver interface class
+├── Types.hpp/cpp               # Common types (LcpOptions, LcpResult, SolverStatus)
+├── Solver.hpp/cpp              # Base LcpSolver interface class
 ├── All.hpp                     # Convenience header including all solvers
 │
 │
@@ -19,8 +19,8 @@ lcp/
 ├── pivoting/                   # Pivoting methods
 │   └── LemkeSolver.hpp/cpp     # Modern Lemke wrapper
 │
-├── projection/                 # Projection/sweeping methods (future)
-│   ├── PGSSolver.hpp/cpp       # Projected Gauss-Seidel (planned)
+├── projection/                 # Projection/sweeping methods
+│   ├── PGSSolver.hpp/cpp       # Projected Gauss-Seidel (standard + boxed LCP)
 │   ├── PSORSolver.hpp/cpp      # Projected SOR (planned)
 │   └── ...
 │
@@ -36,7 +36,7 @@ Adding a new solver family:
 
 1. Add headers/sources under `pivoting/`, `projection/`, `newton/`, or `other/`.
 2. Include the solver in `All.hpp` if you want it in the umbrella header.
-3. Export a factory class deriving from `LCPSolver` (see `pivoting/LemkeSolver` for a template).
+3. Export a factory class deriving from `LcpSolver` (see `pivoting/LemkeSolver` for a template).
 4. Update unit tests under `tests/unit/math/lcp` to cover the new solver.
 5. Keep `CMakeLists.txt` glob-friendly—new headers/sources are auto-registered.
 
@@ -65,13 +65,13 @@ The new API provides a consistent interface across all solvers:
 auto solver = std::make_shared<dart::math::LemkeSolver>();
 
 // Configure options
-dart::math::LCPOptions options;
+dart::math::LcpOptions options;
 options.validateSolution = true;
 options.absoluteTolerance = 1e-8;
 
 // Solve
 Eigen::VectorXd x(n);
-dart::math::LCPResult result = solver->solve(A, b, x, options);
+dart::math::LcpResult result = solver->solve(A, b, x, options);
 
 // Check result
 if (result.succeeded()) {
@@ -102,12 +102,12 @@ enum class SolverStatus {
 };
 ```
 
-### LCPResult
+### LcpResult
 
 Result structure returned by all solvers:
 
 ```cpp
-struct LCPResult {
+struct LcpResult {
     SolverStatus status;      // Exit status
     int iterations;           // Number of iterations performed
     double residual;          // Final residual norm
@@ -119,12 +119,12 @@ struct LCPResult {
 };
 ```
 
-### LCPOptions
+### LcpOptions
 
 Configuration options for solvers:
 
 ```cpp
-struct LCPOptions {
+struct LcpOptions {
     int maxIterations;                  // Maximum iterations (0 = solver default)
     double absoluteTolerance;           // Absolute convergence tolerance
     double relativeTolerance;           // Relative convergence tolerance
@@ -136,42 +136,42 @@ struct LCPOptions {
     void* customOptions;                // Solver-specific options
 
     // Factory methods
-    static LCPOptions withRelaxation(double relaxation, int maxIter = 100);
-    static LCPOptions highAccuracy();
-    static LCPOptions realTime();
+    static LcpOptions withRelaxation(double relaxation, int maxIter = 100);
+    static LcpOptions highAccuracy();
+    static LcpOptions realTime();
 };
 ```
 
 ## Base Solver Interface
 
-All modern solvers inherit from `LCPSolver`:
+All modern solvers inherit from `LcpSolver`:
 
 ```cpp
-class LCPSolver {
+class LcpSolver {
 public:
-    virtual ~LCPSolver() = default;
+    virtual ~LcpSolver() = default;
 
     // Solve with default options
-    virtual LCPResult solve(
+    virtual LcpResult solve(
         const Eigen::MatrixXd& A,
         const Eigen::VectorXd& b,
         Eigen::VectorXd& x);
 
     // Solve with custom options
-    virtual LCPResult solve(
+    virtual LcpResult solve(
         const Eigen::MatrixXd& A,
         const Eigen::VectorXd& b,
         Eigen::VectorXd& x,
-        const LCPOptions& options) = 0;
+        const LcpOptions& options) = 0;
 
     virtual std::string getName() const = 0;
     virtual std::string getCategory() const = 0;
 
-    virtual LCPOptions getDefaultOptions() const;
-    virtual void setDefaultOptions(const LCPOptions& options);
+    virtual LcpOptions getDefaultOptions() const;
+    virtual void setDefaultOptions(const LcpOptions& options);
 
 protected:
-    LCPOptions defaultOptions_;
+    LcpOptions defaultOptions_;
 };
 ```
 
@@ -223,11 +223,47 @@ bool success = dart::math::SolveLCP<double>(
     n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
 ```
 
+#### Projected Gauss-Seidel (dart::math::PGSSolver)
+
+Iterative projection method for standard and boxed LCPs. The boxed overload
+handles lower/upper bounds and `findex` friction coupling for contact
+problems.
+
+**Properties**:
+
+- Algorithm: Coordinate-wise projected Gauss-Seidel (λ = 1 SOR)
+- Time: O(nk) per iteration (k = non-zeros per row)
+- Space: O(n)
+- Supports: Standard LCP and boxed LCP with friction index
+- Notes: Warm-start enabled by default; optional random sweep ordering via
+  `PGSSolver::Parameters`
+
+**Usage (boxed LCP)**:
+
+```cpp
+#include <dart/math/lcp/projection/PGSSolver.hpp>
+
+dart::math::PGSSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 50;
+options.validateSolution = true;
+
+// Bounds (lo/hi) and friction index mapping
+Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
+Eigen::VectorXd hi = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
+Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1); // or map friction dofs
+
+Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+dart::math::LcpResult result = solver.solve(A, b, lo, hi, findex, x, options);
+```
+
+To tweak the division epsilon or enable random sweep ordering, populate
+`options.customOptions` with a `PGSSolver::Parameters` instance.
+
 ## Planned Solvers
 
 ### Projection Methods (projection/)
 
-- **PGSSolver**: Projected Gauss-Seidel (O(n) per iteration)
 - **PSORSolver**: Projected SOR with relaxation parameter
 - **BGSSolver**: Blocked Gauss-Seidel for contact problems
 - **NNCGSolver**: Nonsmooth Nonlinear Conjugate Gradient
@@ -286,7 +322,7 @@ To add a new solver:
 
 1. **Choose the category**: pivoting, projection, newton, or other
 2. **Create header and source files** in the appropriate subdirectory
-3. **Inherit from LCPSolver** base class
+3. **Inherit from LcpSolver** base class
 4. **Implement required virtual methods**:
    - `solve(A, b, x, options)`
    - `getName()`
@@ -305,16 +341,16 @@ To add a new solver:
 
 namespace dart::math::pivoting {
 
-class MyNewSolver : public LCPSolver {
+class MyNewSolver : public LcpSolver {
 public:
     MyNewSolver();
     ~MyNewSolver() override = default;
 
-    LCPResult solve(
+    LcpResult solve(
         const Eigen::MatrixXd& A,
         const Eigen::VectorXd& b,
         Eigen::VectorXd& x,
-        const LCPOptions& options) override;
+        const LcpOptions& options) override;
 
     std::string getName() const override { return "MyNewSolver"; }
     std::string getCategory() const override { return "Pivoting"; }

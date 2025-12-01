@@ -77,7 +77,7 @@ Equivalently: `z = x^k - r ./ diag(A); x^{k+1} = max(0, z)`.
 ❌ Slower convergence than Gauss-Seidel
 ❌ May not converge for some problems
 
-## 2. Projected Gauss-Seidel (PGS) ❌ (Not Implemented, High Priority)
+## 2. Projected Gauss-Seidel (PGS) ✅ (Implemented)
 
 ### Splitting
 
@@ -115,6 +115,8 @@ function PGS(A, b, x, max_iter, epsilon):
 - **Storage**: O(n)
 - **Convergence**: Linear for symmetric PSD
 - **Parallelization**: Sequential
+- **DART support**: `dart::math::PGSSolver` implements both standard and boxed
+  LCPs (including friction `findex` coupling)
 
 ### Advantages/Disadvantages
 
@@ -128,6 +130,8 @@ function PGS(A, b, x, max_iter, epsilon):
 
 ### Use Cases
 
+- Implemented as `dart::math::PGSSolver` (standard and boxed LCP with optional
+  friction index mapping for contact)
 - Real-time rigid body simulation
 - Contact force computation
 - Interactive applications

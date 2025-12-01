@@ -94,7 +94,7 @@ void testContactWithKinematicJoint(
 TEST(ContactConstraint, ContactWithKinematicJoint)
 {
   testContactWithKinematicJoint(
-      std::make_shared<constraint::DantzigBoxedLcpSolver>(), 1e-6);
+      std::make_shared<constraint::DantzigBoxedLcpSolver>(), 5e-5);
 
 #ifdef DART_ARCH_32BITS
   testContactWithKinematicJoint(

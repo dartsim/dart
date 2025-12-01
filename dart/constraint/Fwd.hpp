@@ -40,11 +40,12 @@ namespace constraint {
 
 class BalanceConstraint;
 class BallJointConstraint;
-class BoxedLcpConstraintSolver;
 class BoxedLcpSolver;
 class ConstrainedGroup;
 class ConstraintBase;
 class ConstraintSolver;
+using BoxedLcpConstraintSolver = ConstraintSolver;
+class LcpSolver;
 class CouplerConstraint;
 class ContactConstraint;
 
@@ -52,7 +53,6 @@ struct ContactSurfaceParams;
 class ContactSurfaceHandler;
 class DefaultContactSurfaceHandler;
 
-class DantzigBoxedLcpSolver;
 class DynamicJointConstraint;
 
 class JointConstraint;
@@ -61,8 +61,6 @@ class JointLimitConstraint;
 
 class MimicMotorConstraint;
 class RevoluteJointConstraint;
-
-class PgsBoxedLcpSolver;
 
 class ServoMotorConstraint;
 class SoftContactConstraint;
@@ -83,11 +81,7 @@ DART_COMMON_DECLARE_SHARED_WEAK(MimicMotorConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(CouplerConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(JointCoulombFrictionConstraint)
 
-DART_COMMON_DECLARE_SHARED_WEAK(LCPSolver)
 DART_COMMON_DECLARE_SHARED_WEAK(BoxedLcpSolver)
-DART_COMMON_DECLARE_SHARED_WEAK(PgsBoxedLcpSolver)
-DART_COMMON_DECLARE_SHARED_WEAK(PsorBoxedLcpSolver)
-DART_COMMON_DECLARE_SHARED_WEAK(JacobiBoxedLcpSolver)
 
 DART_COMMON_DECLARE_SHARED_WEAK(DynamicJointConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(BallJointConstraint)

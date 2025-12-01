@@ -98,6 +98,7 @@ bool DantzigBoxedLcpSolver::canSolve(const Eigen::MatrixXd& /*A*/)
   // TODO(JS): Not implemented.
   return true;
 }
+#endif
 
 } // namespace constraint
 } // namespace dart

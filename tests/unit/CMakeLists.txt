@@ -116,6 +116,7 @@ dart_build_tests(
     math/lcp/test_DantzigVsODE.cpp
     math/lcp/test_LCPTestProblems.cpp
     math/lcp/test_Lemke.cpp
+    math/lcp/test_PGS.cpp
     math/lcp/test_PivotMatrix.cpp
 )
 

@@ -4,6 +4,6 @@ This folder is reserved for Newton-style LCP/NCP solvers (e.g., minimum map, Fis
 
 Guidelines:
 
-- Derive from `LCPSolver` and reuse `LCPOptions`/`LCPResult`.
-- Keep solver-specific configuration in an options struct referenced via `LCPOptions::customOptions`.
+- Derive from `LcpSolver` and reuse `LcpOptions`/`LcpResult`.
+- Keep solver-specific configuration in an options struct referenced via `LcpOptions::customOptions`.
 - Add comprehensive unit tests in `tests/unit/math/lcp`.

@@ -591,6 +591,10 @@ if(TARGET dart)
       add_subdirectory(tests EXCLUDE_FROM_ALL)
     endif()
 
+    if(DART_BUILD_DART8)
+      add_subdirectory(tests_dart8 EXCLUDE_FROM_ALL)
+    endif()
+
   elseif(NOT DART_BUILD_TESTS)
     message(STATUS "Skipping tests (DART_BUILD_TESTS == OFF)")
   else()

@@ -56,7 +56,7 @@ LcpResult DantzigSolver::solve(
   }
 
   const int n = static_cast<int>(b.size());
-  const int nSkip = n; // use tight stride here
+  const int nSkip = padding(n);
 
   std::vector<double> Adata(n * nSkip, 0.0);
   std::vector<double> xdata(n, 0.0);
@@ -133,7 +133,7 @@ LcpResult DantzigSolver::solve(
   }
 
   const int n = static_cast<int>(b.size());
-  const int nSkip = n;
+  const int nSkip = padding(n);
 
   std::vector<double> Adata(n * nSkip, 0.0);
   std::vector<double> xdata(n, 0.0);

@@ -34,6 +34,7 @@
 #define DART_CONSTRAINT_PGSBOXEDLCPSOLVER_HPP_
 
 #include <dart/constraint/BoxedLcpSolver.hpp>
+#include <dart/math/lcp/projection/PGSSolver.hpp>
 
 #include <dart/Export.hpp>
 
@@ -93,14 +94,10 @@ public:
   const Option& getOption() const;
 
 protected:
-  Option mOption;
+  void synchronizeDefaults();
 
-  mutable std::vector<int> mCacheOrder;
-  mutable std::vector<double> mCacheD;
-  mutable Eigen::VectorXd mCachedNormalizedA;
-  mutable Eigen::MatrixXd mCachedNormalizedB;
-  mutable Eigen::VectorXd mCacheZ;
-  mutable Eigen::VectorXd mCacheOldX;
+  Option mOption;
+  math::PGSSolver mSolver;
 };
 
 } // namespace constraint

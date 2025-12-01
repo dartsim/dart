@@ -40,6 +40,12 @@ namespace dart::math {
 class DART_API PGSSolver : public LcpSolver
 {
 public:
+  struct Parameters
+  {
+    double epsilonForDivision{1e-9};
+    bool randomizeConstraintOrder{false};
+  };
+
   PGSSolver();
   ~PGSSolver() override = default;
 
@@ -51,8 +57,27 @@ public:
       Eigen::VectorXd& x,
       const LcpOptions& options) override;
 
+  /// Solve a boxed LCP with bounds and friction index mapping.
+  LcpResult solve(
+      const Eigen::MatrixXd& A,
+      const Eigen::VectorXd& b,
+      const Eigen::VectorXd& lo,
+      const Eigen::VectorXd& hi,
+      const Eigen::VectorXi& findex,
+      Eigen::VectorXd& x,
+      const LcpOptions& options);
+
+  /// Set solver-specific parameters (e.g., division epsilon, ordering).
+  void setParameters(const Parameters& params);
+
+  /// Get the current solver-specific parameters.
+  const Parameters& getParameters() const;
+
   std::string getName() const override;
   std::string getCategory() const override;
+
+private:
+  Parameters mParameters;
 };
 
 } // namespace dart::math
