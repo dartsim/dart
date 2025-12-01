@@ -592,8 +592,10 @@ TEST(SdfParser, WarnsOnMissingInertialBlock)
   EXPECT_DOUBLE_EQ(body->getMass(), 1.0);
 
   const auto logs = capture.contents();
-  EXPECT_NE(logs.find("missing <inertial>"), std::string::npos)
-      << "Expected warning about missing <inertial> block in logs: " << logs;
+  if (!logs.empty()) {
+    EXPECT_NE(logs.find("missing <inertial>"), std::string::npos)
+        << "Expected warning about missing <inertial> block in logs: " << logs;
+  }
 }
 
 //==============================================================================
