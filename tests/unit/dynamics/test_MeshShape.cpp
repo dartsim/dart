@@ -331,3 +331,19 @@ TEST(ArrowShapeTest, CloneUsesMeshOwnershipSemantics)
   ASSERT_NE(cloned->getMesh(), nullptr);
   EXPECT_NE(cloned->getMesh(), arrow.getMesh());
 }
+
+TEST(ArrowShapeTest, MaterialCountIsInitialized)
+{
+  dynamics::ArrowShape arrow(
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::UnitX(),
+      dynamics::ArrowShape::Properties(),
+      Eigen::Vector4d::Ones(),
+      4);
+
+  const aiScene* scene = arrow.getMesh();
+  ASSERT_NE(scene, nullptr);
+  EXPECT_EQ(scene->mNumMaterials, 1u);
+  ASSERT_NE(scene->mMaterials, nullptr);
+  EXPECT_NE(scene->mMaterials[0], nullptr);
+}
