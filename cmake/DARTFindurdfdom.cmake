@@ -15,8 +15,8 @@ if(MSVC)
   # - https://github.com/ros/urdfdom/issues/140
   if ("/include" IN_LIST urdfdom_INCLUDE_DIRS)
     list(REMOVE_ITEM urdfdom_INCLUDE_DIRS "/include")
-    find_package(TinyXML REQUIRED MODULE)
-    list(APPEND urdfdom_INCLUDE_DIRS ${TinyXML_INCLUDE_DIRS})
+    find_package(tinyxml2 REQUIRED)
+    list(APPEND urdfdom_INCLUDE_DIRS ${TINYXML2_INCLUDE_DIRS})
   endif()
 endif()
 
