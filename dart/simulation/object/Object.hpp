@@ -33,30 +33,43 @@
 #ifndef DART_SIMULATION_OBJECT_OBJECT_HPP_
 #define DART_SIMULATION_OBJECT_OBJECT_HPP_
 
-#include <dart/Export.hpp>
+#include <dart/simulation/Fwd.hpp>
 
-#include <string>
+#include <entt/entt.hpp>
 
-namespace dart::simulation::object {
+namespace dart::simulation {
 
-/// Base class for simulation objects managed by the world.
-class DART_API Object
+namespace object {
+
+/// Non-template base class for all simulation objects backed by an ECS entity.
+class Object
 {
 public:
-  Object();
-  explicit Object(std::string name);
-  virtual ~Object();
+  /// Constructor
+  ///
+  /// @param entity Entity ID in the ECS registry
+  /// @param world Pointer to the owning World instance
+  Object(entt::entity entity = entt::null, World* world = nullptr);
 
-  /// Returns the object's identifier.
-  const std::string& getName() const;
+  /// Virtual destructor
+  virtual ~Object() = default;
 
-  /// Sets a human-readable identifier for this object.
-  void setName(std::string name);
+  /// Get the underlying entity ID
+  ///
+  /// @return Entity ID in the ECS registry
+  [[nodiscard]] entt::entity getEntity() const;
 
-private:
-  std::string mName;
+  /// Get the owning World instance
+  ///
+  /// @return Pointer to World instance
+  [[nodiscard]] World* getWorld() const;
+
+protected:
+  entt::entity mEntity; ///< Entity ID in ECS registry
+  World* mWorld;        ///< Owning World instance
 };
 
-} // namespace dart::simulation::object
+} // namespace object
+} // namespace dart::simulation
 
 #endif // DART_SIMULATION_OBJECT_OBJECT_HPP_

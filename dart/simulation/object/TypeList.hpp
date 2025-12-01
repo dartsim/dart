@@ -30,23 +30,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/object/Object.hpp"
+#ifndef DART_SIMULATION_OBJECT_TYPELIST_HPP_
+#define DART_SIMULATION_OBJECT_TYPELIST_HPP_
+
+#include <type_traits>
 
 namespace dart::simulation::object {
 
-Object::Object(entt::entity entity, World* world)
-  : mEntity(entity), mWorld(world)
+template <typename... Types>
+struct TypeList
 {
-}
+  static constexpr std::size_t size = sizeof...(Types);
+};
 
-entt::entity Object::getEntity() const
-{
-  return mEntity;
-}
+template <typename T, typename List>
+struct Contains;
 
-World* Object::getWorld() const
+template <typename T, typename... Types>
+struct Contains<T, TypeList<Types...>>
+  : std::bool_constant<(std::is_same_v<T, Types> || ...)>
 {
-  return mWorld;
-}
+};
+
+template <typename T, typename List>
+inline constexpr bool Contains_v = Contains<T, List>::value;
+
+template <typename List1, typename List2>
+struct HasOverlap;
+
+template <typename... Types1, typename... Types2>
+struct HasOverlap<TypeList<Types1...>, TypeList<Types2...>>
+  : std::bool_constant<(Contains_v<Types1, TypeList<Types2...>> || ...)>
+{
+};
+
+template <typename List1, typename List2>
+inline constexpr bool HasOverlap_v = HasOverlap<List1, List2>::value;
+
+template <typename List1, typename List2>
+struct Concat;
+
+template <typename... Types1, typename... Types2>
+struct Concat<TypeList<Types1...>, TypeList<Types2...>>
+{
+  using type = TypeList<Types1..., Types2...>;
+};
+
+template <typename List1, typename List2>
+using Concat_t = typename Concat<List1, List2>::type;
 
 } // namespace dart::simulation::object
+
+#endif // DART_SIMULATION_OBJECT_TYPELIST_HPP_

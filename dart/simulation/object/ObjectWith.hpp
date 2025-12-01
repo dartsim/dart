@@ -30,23 +30,72 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/object/Object.hpp"
+#ifndef DART_SIMULATION_OBJECT_OBJECTWITH_HPP_
+#define DART_SIMULATION_OBJECT_OBJECTWITH_HPP_
+
+#include <dart/simulation/object/Object.hpp>
+#include <dart/simulation/object/TypeList.hpp>
 
 namespace dart::simulation::object {
 
-Object::Object(entt::entity entity, World* world)
-  : mEntity(entity), mWorld(world)
+template <typename... Tags>
+struct TagComps
 {
-}
+  using type = TypeList<Tags...>;
+};
 
-entt::entity Object::getEntity() const
+template <typename... Comps>
+struct ReadOnlyComps
 {
-  return mEntity;
-}
+  using type = TypeList<Comps...>;
+};
 
-World* Object::getWorld() const
+template <typename... Comps>
+struct WriteOnlyComps
 {
-  return mWorld;
-}
+  using type = TypeList<Comps...>;
+};
+
+template <typename... Comps>
+struct ReadWriteComps
+{
+  using type = TypeList<Comps...>;
+};
+
+template <
+    typename Tags = TagComps<>,
+    typename ReadOnly = ReadOnlyComps<>,
+    typename WriteOnly = WriteOnlyComps<>,
+    typename ReadWrite = ReadWriteComps<>>
+class ObjectWith : public virtual Object
+{
+public:
+  using TagList = typename Tags::type;
+  using ReadOnlyList = typename ReadOnly::type;
+  using WriteOnlyList = typename WriteOnly::type;
+  using ReadWriteList = typename ReadWrite::type;
+
+  ObjectWith() = default;
+  virtual ~ObjectWith() = default;
+
+  template <typename Component>
+  const Component& getReadOnly() const;
+
+  template <typename Component>
+  Component& getMutable();
+
+  template <typename Component>
+  const Component* tryGetReadOnly() const;
+
+  template <typename Component>
+  Component* tryGetMutable();
+
+  template <typename Component>
+  Component* getCacheMutable() const;
+};
 
 } // namespace dart::simulation::object
+
+#include <dart/simulation/object/ObjectWith-impl.hpp>
+
+#endif // DART_SIMULATION_OBJECT_OBJECTWITH_HPP_

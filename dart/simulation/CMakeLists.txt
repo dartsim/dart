@@ -17,6 +17,7 @@ foreach(header ${hdrs} ${object_hdrs} ${solver_hdrs})
   list(APPEND header_names "${header_relpath}")
 endforeach()
 list(REMOVE_ITEM header_names SmartPointer.hpp)
+list(FILTER header_names EXCLUDE REGEX ".*-impl\\.hpp")
 list(REMOVE_DUPLICATES header_names)
 dart_generate_component_headers(
   COMPONENT_NAME simulation
