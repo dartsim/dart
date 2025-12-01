@@ -278,6 +278,8 @@ void ArrowShape::instantiate(std::size_t resolution)
   scene->mMeshes = new aiMesh*[3];
   scene->mRootNode = node;
 
+  // Explicitly record the material count so Assimp's destructor cleans it up.
+  scene->mNumMaterials = 1;
   scene->mMaterials = new aiMaterial*[1];
   scene->mMaterials[0] = new aiMaterial;
 
