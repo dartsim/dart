@@ -424,8 +424,7 @@ Skeleton::getMassMatrix()
 ConstraintSolver
     ├── ConstrainedGroup (groups skeletons)
     │     └── ConstraintBase (individual constraints)
-    └── BoxedLcpConstraintSolver
-          └── BoxedLcpSolver (Dantzig or PGS)
+    └── LcpSolver (Dantzig, Pgs, etc.)
 ```
 
 #### Key Classes:
@@ -456,17 +455,6 @@ ConstraintSolver
   - `excite()` - Mark related skeletons as active
 - **Lifecycle:**
   - Created → Updated → LCP solved → Applied → Destroyed
-
-**3. BoxedLcpConstraintSolver** (`dart/constraint/BoxedLcpConstraintSolver.hpp`)
-
-- Concrete implementation using boxed LCP formulation
-- **Strategy:** Primary solver + fallback solver
-  - Primary: DantzigBoxedLcpSolver (accurate but can fail)
-  - Fallback: PgsBoxedLcpSolver (always converges)
-- **Parameters:**
-  - Collision detection options
-  - Secondary friction cone (5-direction vs 4-direction)
-  - Primary/fallback solver options
 
 **4. ConstrainedGroup** (`dart/constraint/ConstrainedGroup.hpp`)
 
@@ -541,7 +529,7 @@ World::step()
 - ConstraintSolver: `dart/constraint/ConstraintSolver.hpp`
 - ConstraintBase: `dart/constraint/ConstraintBase.hpp`
 - ContactConstraint: `dart/constraint/ContactConstraint.hpp`
-- BoxedLcpConstraintSolver: `dart/constraint/BoxedLcpConstraintSolver.hpp`
+- LcpSolver implementations: `dart/math/lcp/*`
 
 ---
 

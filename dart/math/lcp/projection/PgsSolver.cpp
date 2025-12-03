@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lcp/projection/PGSSolver.hpp"
+#include "dart/math/lcp/projection/PgsSolver.hpp"
 
-#include "dart/math/lcp/dantzig/Common.hpp"
-#include "dart/math/lcp/dantzig/Misc.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Common.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Misc.hpp"
 
 #include <algorithm>
 #include <limits>
@@ -43,7 +43,7 @@
 
 namespace dart::math {
 
-PGSSolver::PGSSolver()
+PgsSolver::PgsSolver()
 {
   mDefaultOptions.maxIterations = 30;
   mDefaultOptions.absoluteTolerance = 1e-6;
@@ -53,43 +53,28 @@ PGSSolver::PGSSolver()
 }
 
 //==============================================================================
-void PGSSolver::setParameters(const Parameters& params)
+void PgsSolver::setParameters(const Parameters& params)
 {
   mParameters = params;
 }
 
 //==============================================================================
-const PGSSolver::Parameters& PGSSolver::getParameters() const
+const PgsSolver::Parameters& PgsSolver::getParameters() const
 {
   return mParameters;
 }
 
 //==============================================================================
-LcpResult PGSSolver::solve(
-    const Eigen::MatrixXd& A,
-    const Eigen::VectorXd& b,
-    Eigen::VectorXd& x,
-    const LcpOptions& options)
-{
-  const int n = static_cast<int>(b.size());
-  Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
-  Eigen::VectorXd hi
-      = Eigen::VectorXd::Constant(n, ScalarTraits<double>::inf());
-  Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
-  return solve(A, b, lo, hi, findex, x, options);
-}
-
-//==============================================================================
-LcpResult PGSSolver::solve(
-    const Eigen::MatrixXd& A,
-    const Eigen::VectorXd& b,
-    const Eigen::VectorXd& lo,
-    const Eigen::VectorXd& hi,
-    const Eigen::VectorXi& findex,
-    Eigen::VectorXd& x,
-    const LcpOptions& options)
+LcpResult PgsSolver::solve(
+    const LcpProblem& problem, Eigen::VectorXd& x, const LcpOptions& options)
 {
   LcpResult result;
+
+  const auto& A = problem.A;
+  const auto& b = problem.b;
+  const auto& lo = problem.lo;
+  const auto& hi = problem.hi;
+  const auto& findex = problem.findex;
 
   const bool dimensionMismatch
       = (A.rows() != A.cols()) || (A.rows() != b.size())
@@ -274,9 +259,13 @@ LcpResult PGSSolver::solve(
   result.residual = (wVec.array().min(Eigen::ArrayXd::Zero(n)))
                         .matrix()
                         .lpNorm<Eigen::Infinity>();
-  result.status = (possibleToTerminate && !x.hasNaN())
-                      ? LcpSolverStatus::Success
-                      : LcpSolverStatus::Failed;
+  if (x.hasNaN()) {
+    result.status = LcpSolverStatus::Failed;
+  } else if (!possibleToTerminate) {
+    result.status = LcpSolverStatus::MaxIterations;
+  } else {
+    result.status = LcpSolverStatus::Success;
+  }
 
   if (options.validateSolution) {
     const double tol = std::max(
@@ -306,13 +295,13 @@ LcpResult PGSSolver::solve(
 }
 
 //==============================================================================
-std::string PGSSolver::getName() const
+std::string PgsSolver::getName() const
 {
-  return "PGS";
+  return "Pgs";
 }
 
 //==============================================================================
-std::string PGSSolver::getCategory() const
+std::string PgsSolver::getCategory() const
 {
   return "Projection";
 }

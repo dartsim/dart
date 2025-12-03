@@ -32,8 +32,8 @@
 
 #include "dart/math/lcp/pivoting/DantzigSolver.hpp"
 
-#include "dart/math/lcp/dantzig/Common.hpp"
-#include "dart/math/lcp/dantzig/Lcp.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Common.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Lcp.hpp"
 
 #include <limits>
 #include <vector>
@@ -41,89 +41,22 @@
 namespace dart::math {
 
 //==============================================================================
-LcpResult DantzigSolver::solve(
-    const Eigen::MatrixXd& A,
-    const Eigen::VectorXd& b,
-    Eigen::VectorXd& x,
-    const LcpOptions& options)
+DantzigSolver::DantzigSolver()
 {
-  LcpResult result;
-
-  if (A.rows() != A.cols() || A.rows() != b.size()) {
-    result.status = LcpSolverStatus::InvalidProblem;
-    result.message = "Matrix dimensions inconsistent";
-    return result;
-  }
-
-  const int n = static_cast<int>(b.size());
-  const int nSkip = padding(n);
-
-  std::vector<double> Adata(n * nSkip, 0.0);
-  std::vector<double> xdata(n, 0.0);
-  std::vector<double> wdata(n, 0.0);
-  std::vector<double> bdata(n, 0.0);
-  std::vector<double> lo(n, 0.0);
-  std::vector<double> hi(n, ScalarTraits<double>::inf());
-  std::vector<int> findex(n, -1);
-
-  for (int i = 0; i < n; ++i) {
-    bdata[i] = b[i];
-    xdata[i] = options.warmStart ? x[i] : 0.0;
-    for (int j = 0; j < n; ++j) {
-      Adata[i * nSkip + j] = A(i, j);
-    }
-  }
-
-  const bool success = SolveLCP<double>(
-      n,
-      Adata.data(),
-      xdata.data(),
-      bdata.data(),
-      wdata.data(),
-      0, // nub
-      lo.data(),
-      hi.data(),
-      findex.data(),
-      options.earlyTermination);
-
-  result.iterations = 1;
-  if (!success) {
-    result.status = LcpSolverStatus::Failed;
-    result.message = "Dantzig solver failed";
-    return result;
-  }
-
-  x = Eigen::VectorXd::Map(xdata.data(), n);
-  const Eigen::VectorXd w = A * x - b;
-  result.complementarity = (x.array() * w.array()).abs().maxCoeff();
-  result.residual = (w.array().min(Eigen::ArrayXd::Zero(n)))
-                        .matrix()
-                        .lpNorm<Eigen::Infinity>();
-  result.status = LcpSolverStatus::Success;
-
-  if (options.validateSolution) {
-    const double tol
-        = std::max(options.complementarityTolerance, options.absoluteTolerance);
-    const bool feasible = (w.minCoeff() >= -options.absoluteTolerance)
-                          && (x.array() * w.array()).abs().maxCoeff() <= tol;
-    result.validated = true;
-    if (!feasible)
-      result.status = LcpSolverStatus::NumericalError;
-  }
-  return result;
+  mDefaultOptions.warmStart = true;
 }
 
 //==============================================================================
 LcpResult DantzigSolver::solve(
-    const Eigen::MatrixXd& A,
-    const Eigen::VectorXd& b,
-    const Eigen::VectorXd& lo,
-    const Eigen::VectorXd& hi,
-    const Eigen::VectorXi& findex,
-    Eigen::VectorXd& x,
-    const LcpOptions& options)
+    const LcpProblem& problem, Eigen::VectorXd& x, const LcpOptions& options)
 {
   LcpResult result;
+
+  const auto& A = problem.A;
+  const auto& b = problem.b;
+  const auto& lo = problem.lo;
+  const auto& hi = problem.hi;
+  const auto& findex = problem.findex;
 
   if (A.rows() != A.cols() || A.rows() != b.size() || lo.size() != b.size()
       || hi.size() != b.size() || findex.size() != b.size()) {

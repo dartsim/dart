@@ -187,6 +187,33 @@ struct DART_API LcpOptions
   }
 };
 
+//==============================================================================
+/// Bundles the inputs to a boxed LCP: w = Ax + b, l <= x <= u with optional
+/// friction index mapping.
+struct DART_API LcpProblem
+{
+  LcpProblem(
+      Eigen::MatrixXd A_,
+      Eigen::VectorXd b_,
+      Eigen::VectorXd lo_,
+      Eigen::VectorXd hi_,
+      Eigen::VectorXi findex_)
+    : A(std::move(A_)),
+      b(std::move(b_)),
+      lo(std::move(lo_)),
+      hi(std::move(hi_)),
+      findex(std::move(findex_))
+  {
+    // Empty
+  }
+
+  Eigen::MatrixXd A;
+  Eigen::VectorXd b;
+  Eigen::VectorXd lo;
+  Eigen::VectorXd hi;
+  Eigen::VectorXi findex;
+};
+
 } // namespace math
 } // namespace dart
 

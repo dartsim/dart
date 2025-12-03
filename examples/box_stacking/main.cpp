@@ -34,6 +34,9 @@
 
 #include <dart/utils/All.hpp>
 
+#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
+#include <dart/math/lcp/projection/PgsSolver.hpp>
+
 #include <dart/All.hpp>
 
 #include <CLI/CLI.hpp>
@@ -327,23 +330,16 @@ protected:
       return;
 
     if (solverType == 0) {
-      // auto solver
-      //     =
-      //     std::make_unique<constraint::SequentialImpulseConstraintSolver>(
-      //         mWorld->getTimeStep());
-      auto lcpSolver = std::make_shared<constraint::DantzigBoxedLcpSolver>();
-      auto solver
-          = std::make_unique<constraint::BoxedLcpConstraintSolver>(lcpSolver);
+      auto lcpSolver = std::make_shared<math::DantzigSolver>();
+      auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
       mWorld->setConstraintSolver(std::move(solver));
     } else if (solverType == 1) {
-      auto lcpSolver = std::make_shared<constraint::DantzigBoxedLcpSolver>();
-      auto solver
-          = std::make_unique<constraint::BoxedLcpConstraintSolver>(lcpSolver);
+      auto lcpSolver = std::make_shared<math::DantzigSolver>();
+      auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
       mWorld->setConstraintSolver(std::move(solver));
     } else if (solverType == 2) {
-      auto lcpSolver = std::make_shared<constraint::PgsBoxedLcpSolver>();
-      auto solver
-          = std::make_unique<constraint::BoxedLcpConstraintSolver>(lcpSolver);
+      auto lcpSolver = std::make_shared<math::PgsSolver>();
+      auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
       mWorld->setConstraintSolver(std::move(solver));
     } else {
       DART_WARN("Unsupported boxed-LCP solver selected: {}", solverType);

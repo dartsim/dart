@@ -66,15 +66,12 @@ class DART_API LemkeSolver : public LcpSolver
 public:
   /// Constructor
   LemkeSolver();
-
-  /// Destructor
   ~LemkeSolver() override = default;
 
   using LcpSolver::solve;
-  // Documentation inherited
+
   LcpResult solve(
-      const Eigen::MatrixXd& A,
-      const Eigen::VectorXd& b,
+      const LcpProblem& problem,
       Eigen::VectorXd& x,
       const LcpOptions& options) override;
 

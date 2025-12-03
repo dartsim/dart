@@ -30,43 +30,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
-#define DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
+#pragma once
 
-#include <dart/constraint/BoxedLcpSolver.hpp>
+#include <dart/math/lcp/LcpSolver.hpp>
 
-#include <dart/Export.hpp>
+namespace dart::math {
 
-namespace dart {
-namespace constraint {
-
-class DART_API DantzigBoxedLcpSolver : public BoxedLcpSolver
+/// Projected Gauss-Seidel solver for standard and boxed LCPs.
+class DART_API PgsSolver : public LcpSolver
 {
 public:
-  DantzigBoxedLcpSolver();
+  struct Parameters
+  {
+    double epsilonForDivision{1e-9};
+    bool randomizeConstraintOrder{false};
+  };
 
-  using BoxedLcpSolver::solve;
+  PgsSolver();
+  ~PgsSolver() override = default;
 
-  math::LcpResult solve(
-      const Eigen::MatrixXd& A,
-      const Eigen::VectorXd& b,
-      const Eigen::VectorXd& lo,
-      const Eigen::VectorXd& hi,
-      const Eigen::VectorXi& findex,
+  using LcpSolver::solve;
+
+  LcpResult solve(
+      const LcpProblem& problem,
       Eigen::VectorXd& x,
-      const math::LcpOptions& options) override;
+      const LcpOptions& options) override;
 
-  // Documentation inherited.
-  const std::string& getType() const override;
+  /// Set solver-specific parameters (e.g., division epsilon, ordering).
+  void setParameters(const Parameters& params);
 
-  /// Returns type for this class
-  static const std::string& getStaticType();
+  /// Get the current solver-specific parameters.
+  const Parameters& getParameters() const;
 
-  // Documentation inherited.
-  bool canSolve(const Eigen::MatrixXd& A) override;
+  std::string getName() const override;
+  std::string getCategory() const override;
+
+private:
+  Parameters mParameters;
 };
 
-} // namespace constraint
-} // namespace dart
-
-#endif // DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
+} // namespace dart::math

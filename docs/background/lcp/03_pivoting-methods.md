@@ -140,7 +140,7 @@ bool SolveLCP(int n, Scalar* A, Scalar* x, Scalar* b, Scalar* w,
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/dantzig/Lcp.hpp>
+#include <dart/math/lcp/pivoting/dantzig/Lcp.hpp>
 
 using namespace dart::math;
 

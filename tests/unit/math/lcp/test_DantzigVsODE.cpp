@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lcp/dantzig/Common.hpp"
-#include "dart/math/lcp/dantzig/Lcp.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Common.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Lcp.hpp"
 
 // Undefine assertion macros from dantzig to avoid conflicts with baseline
 #undef dIASSERT
@@ -53,7 +53,7 @@
 
 // Types from both implementations
 using dReal = double; // Compatibility alias for tests
-                      // dart/math/lcp/dantzig/)
+                      // dart/math/lcp/pivoting/dantzig/)
 
 // Forward declare the baseline function
 namespace dart {
@@ -173,7 +173,7 @@ void testDantzigVsODE(dart::test::LCPProblem problem)
       nullptr,
       false);
 
-  // Solve with Dantzig solver (from dart/math/lcp/dantzig/)
+  // Solve with Dantzig solver (from dart/math/lcp/pivoting/dantzig/)
   bool success_dantzig = dart::math::SolveLCP<double>(
       n,
       A_dantzig.data(),

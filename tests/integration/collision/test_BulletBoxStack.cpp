@@ -34,12 +34,13 @@
 
 #include <dart/simulation/World.hpp>
 
-#include <dart/constraint/BoxedLcpConstraintSolver.hpp>
-#include <dart/constraint/DantzigBoxedLcpSolver.hpp>
+#include <dart/constraint/ConstraintSolver.hpp>
 
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 
 #include <dart/dynamics/Skeleton.hpp>
+
+#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
 
 #include <gtest/gtest.h>
 
@@ -89,9 +90,8 @@ TEST(Issue867, BulletBoxStackingStaysStable)
   auto world = World::create();
   world->setTimeStep(kTimeStep);
 
-  auto lcpSolver = std::make_shared<constraint::DantzigBoxedLcpSolver>();
-  auto solver
-      = std::make_unique<constraint::BoxedLcpConstraintSolver>(lcpSolver);
+  auto lcpSolver = std::make_shared<math::DantzigSolver>();
+  auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
   solver->setCollisionDetector(collision::BulletCollisionDetector::create());
   world->setConstraintSolver(std::move(solver));
 

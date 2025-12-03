@@ -38,7 +38,7 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Constants.hpp"
-#include "dart/math/lcp/dantzig/Lcp.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Lcp.hpp"
 
 #include <algorithm>
 

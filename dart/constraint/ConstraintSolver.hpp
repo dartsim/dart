@@ -39,9 +39,9 @@
 
 #include <dart/collision/CollisionDetector.hpp>
 
-#include <dart/common/Deprecated.hpp>
-
 #include <dart/math/lcp/LcpSolver.hpp>
+
+#include <dart/common/Deprecated.hpp>
 
 #include <dart/Export.hpp>
 
@@ -69,8 +69,6 @@ public:
 
   /// Default constructor
   ConstraintSolver();
-  ConstraintSolver(BoxedLcpSolverPtr primary);
-  ConstraintSolver(BoxedLcpSolverPtr primary, BoxedLcpSolverPtr secondary);
   ConstraintSolver(math::LcpSolverPtr primary);
   ConstraintSolver(math::LcpSolverPtr primary, math::LcpSolverPtr secondary);
 
@@ -209,19 +207,17 @@ public:
   /// to make sure at least one handler is always available.
   bool removeContactSurfaceHandler(const ContactSurfaceHandlerPtr& handler);
 
-  /// Set the primary boxed LCP solver (default: Dantzig)
-  void setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
-  void setBoxedLcpSolver(math::LcpSolverPtr lcpSolver);
+  /// Set the primary LCP solver (default: math::DantzigSolver)
+  void setLcpSolver(math::LcpSolverPtr lcpSolver);
 
-  /// Get the primary boxed LCP solver
-  ConstBoxedLcpSolverPtr getBoxedLcpSolver() const;
+  /// Get the primary LCP solver
+  math::LcpSolverPtr getLcpSolver() const;
 
-  /// Set the secondary boxed LCP solver (default: PGS, nullptr disables)
-  void setSecondaryBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
-  void setSecondaryBoxedLcpSolver(math::LcpSolverPtr lcpSolver);
+  /// Set the secondary LCP solver (default: Pgs, nullptr disables)
+  void setSecondaryLcpSolver(math::LcpSolverPtr lcpSolver);
 
-  /// Get the secondary boxed LCP solver
-  ConstBoxedLcpSolverPtr getSecondaryBoxedLcpSolver() const;
+  /// Get the secondary LCP solver
+  math::LcpSolverPtr getSecondaryLcpSolver() const;
 
 protected:
   // TODO(JS): Docstring
@@ -320,11 +316,11 @@ protected:
   /// Factory for ContactSurfaceParams for each contact
   ContactSurfaceHandlerPtr mContactSurfaceHandler;
 
-  /// Boxed LCP solver (primary)
-  BoxedLcpSolverPtr mBoxedLcpSolver;
+  /// LCP solver (primary)
+  math::LcpSolverPtr mLcpSolver;
 
-  /// Boxed LCP solver to use as fallback
-  BoxedLcpSolverPtr mSecondaryBoxedLcpSolver;
+  /// LCP solver to use as fallback
+  math::LcpSolverPtr mSecondaryLcpSolver;
 
   /// Cache data for boxed LCP formulation
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> mA;

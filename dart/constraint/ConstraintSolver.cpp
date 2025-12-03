@@ -41,7 +41,6 @@
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
-#include "dart/constraint/BoxedLcpSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
@@ -54,9 +53,9 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/math/lcp/dantzig/Lcp.hpp"
 #include "dart/math/lcp/pivoting/DantzigSolver.hpp"
-#include "dart/math/lcp/projection/PGSSolver.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Lcp.hpp"
+#include "dart/math/lcp/projection/PgsSolver.hpp"
 
 #include <fmt/ostream.h>
 
@@ -67,86 +66,6 @@ namespace constraint {
 
 using namespace dynamics;
 
-namespace {
-
-class MathBoxedLcpAdapter : public BoxedLcpSolver
-{
-public:
-  explicit MathBoxedLcpAdapter(math::LcpSolverPtr solver)
-    : mSolver(std::move(solver))
-  {
-    if (mSolver)
-      mDefaultOptions = mSolver->getDefaultOptions();
-  }
-
-  const std::string& getType() const override
-  {
-    if (mType.empty() && mSolver)
-      mType = mSolver->getName();
-    return mType;
-  }
-
-  math::LcpOptions getDefaultOptions() const override
-  {
-    if (mSolver)
-      mDefaultOptions = mSolver->getDefaultOptions();
-    return mDefaultOptions;
-  }
-
-  void setDefaultOptions(const math::LcpOptions& options) override
-  {
-    mDefaultOptions = options;
-    if (mSolver)
-      mSolver->setDefaultOptions(options);
-  }
-
-  math::LcpResult solve(
-      const Eigen::MatrixXd& A,
-      const Eigen::VectorXd& b,
-      const Eigen::VectorXd& lo,
-      const Eigen::VectorXd& hi,
-      const Eigen::VectorXi& findex,
-      Eigen::VectorXd& x,
-      const math::LcpOptions& options) override
-  {
-    math::LcpResult result{math::LcpSolverStatus::InvalidProblem};
-    if (!mSolver) {
-      result.message = "No solver set";
-      return result;
-    }
-
-    if (auto* dantzig = dynamic_cast<math::DantzigSolver*>(mSolver.get())) {
-      return dantzig->solve(A, b, lo, hi, findex, x, options);
-    }
-
-    if (auto* pgs = dynamic_cast<math::PGSSolver*>(mSolver.get())) {
-      return pgs->solve(A, b, lo, hi, findex, x, options);
-    }
-
-    result.message = "Solver does not support boxed LCP solve";
-    result.status = math::LcpSolverStatus::InvalidProblem;
-    return result;
-  }
-
-  bool canSolve(const Eigen::MatrixXd& /*A*/) override
-  {
-    return static_cast<bool>(mSolver);
-  }
-
-private:
-  math::LcpSolverPtr mSolver;
-  mutable std::string mType;
-};
-
-BoxedLcpSolverPtr makeAdapter(math::LcpSolverPtr solver)
-{
-  if (!solver)
-    return nullptr;
-  return std::make_shared<MathBoxedLcpAdapter>(std::move(solver));
-}
-
-} // namespace
-
 //==============================================================================
 ConstraintSolver::ConstraintSolver()
   : mCollisionDetector(collision::FCLCollisionDetector::create()),
@@ -155,8 +74,8 @@ ConstraintSolver::ConstraintSolver()
         true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
     mTimeStep(0.001),
     mContactSurfaceHandler(std::make_shared<DefaultContactSurfaceHandler>()),
-    mBoxedLcpSolver(makeAdapter(std::make_shared<math::DantzigSolver>())),
-    mSecondaryBoxedLcpSolver(makeAdapter(std::make_shared<math::PGSSolver>()))
+    mLcpSolver(std::make_shared<math::DantzigSolver>()),
+    mSecondaryLcpSolver(std::make_shared<math::PgsSolver>())
 {
   auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
       mCollisionDetector);
@@ -168,27 +87,11 @@ ConstraintSolver::ConstraintSolver()
 }
 
 //==============================================================================
-ConstraintSolver::ConstraintSolver(BoxedLcpSolverPtr primary)
-  : ConstraintSolver()
-{
-  if (primary)
-    setBoxedLcpSolver(std::move(primary));
-}
-
-//==============================================================================
-ConstraintSolver::ConstraintSolver(
-    BoxedLcpSolverPtr primary, BoxedLcpSolverPtr secondary)
-  : ConstraintSolver(std::move(primary))
-{
-  setSecondaryBoxedLcpSolver(std::move(secondary));
-}
-
-//==============================================================================
 ConstraintSolver::ConstraintSolver(math::LcpSolverPtr primary)
   : ConstraintSolver()
 {
   if (primary)
-    setBoxedLcpSolver(std::move(primary));
+    setLcpSolver(std::move(primary));
 }
 
 //==============================================================================
@@ -196,7 +99,7 @@ ConstraintSolver::ConstraintSolver(
     math::LcpSolverPtr primary, math::LcpSolverPtr secondary)
   : ConstraintSolver(std::move(primary))
 {
-  setSecondaryBoxedLcpSolver(std::move(secondary));
+  setSecondaryLcpSolver(std::move(secondary));
 }
 
 //==============================================================================
@@ -842,55 +745,43 @@ bool ConstraintSolver::removeContactSurfaceHandler(
 }
 
 //==============================================================================
-void ConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
+void ConstraintSolver::setLcpSolver(math::LcpSolverPtr lcpSolver)
 {
   if (!lcpSolver) {
-    DART_WARN("nullptr for boxed LCP solver is not allowed.");
+    DART_WARN("nullptr for LCP solver is not allowed.");
     return;
   }
 
   DART_WARN_IF(
-      lcpSolver == mSecondaryBoxedLcpSolver,
+      lcpSolver == mSecondaryLcpSolver,
       "Attempting to set a primary LCP solver that is the same as the "
       "secondary LCP solver, which is discouraged. Ignoring this request.");
 
-  mBoxedLcpSolver = std::move(lcpSolver);
+  mLcpSolver = std::move(lcpSolver);
 }
 
 //==============================================================================
-void ConstraintSolver::setBoxedLcpSolver(math::LcpSolverPtr lcpSolver)
+math::LcpSolverPtr ConstraintSolver::getLcpSolver() const
 {
-  setBoxedLcpSolver(makeAdapter(std::move(lcpSolver)));
+  return mLcpSolver;
 }
 
 //==============================================================================
-ConstBoxedLcpSolverPtr ConstraintSolver::getBoxedLcpSolver() const
-{
-  return mBoxedLcpSolver;
-}
-
-//==============================================================================
-void ConstraintSolver::setSecondaryBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
+void ConstraintSolver::setSecondaryLcpSolver(math::LcpSolverPtr lcpSolver)
 {
   DART_WARN_IF(
-      lcpSolver == mBoxedLcpSolver,
+      lcpSolver == mLcpSolver,
       "Attempting to set the secondary LCP solver that is identical to the "
       "primary LCP solver, which is redundant. Please use different solvers or "
       "set the secondary LCP solver to nullptr.");
 
-  mSecondaryBoxedLcpSolver = std::move(lcpSolver);
+  mSecondaryLcpSolver = std::move(lcpSolver);
 }
 
 //==============================================================================
-void ConstraintSolver::setSecondaryBoxedLcpSolver(math::LcpSolverPtr lcpSolver)
+math::LcpSolverPtr ConstraintSolver::getSecondaryLcpSolver() const
 {
-  setSecondaryBoxedLcpSolver(makeAdapter(std::move(lcpSolver)));
-}
-
-//==============================================================================
-ConstBoxedLcpSolverPtr ConstraintSolver::getSecondaryBoxedLcpSolver() const
-{
-  return mSecondaryBoxedLcpSolver;
+  return mSecondaryLcpSolver;
 }
 
 //==============================================================================
@@ -987,7 +878,7 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   DART_ASSERT(isSymmetric(n, mA.data()));
 #endif
 
-  if (mSecondaryBoxedLcpSolver) {
+  if (mSecondaryLcpSolver) {
     mABackup = mA;
     mXBackup = mX;
     mBBackup = mB;
@@ -995,61 +886,67 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     mHiBackup = mHi;
     mFIndexBackup = mFIndex;
   }
-  const bool earlyTermination = (mSecondaryBoxedLcpSolver != nullptr);
-  DART_ASSERT(mBoxedLcpSolver);
-  math::LcpOptions primaryOptions = mBoxedLcpSolver->getDefaultOptions();
+  const bool earlyTermination = (mSecondaryLcpSolver != nullptr);
+  DART_ASSERT(mLcpSolver);
+  math::LcpOptions primaryOptions = mLcpSolver->getDefaultOptions();
   primaryOptions.earlyTermination = earlyTermination;
-  math::LcpResult primaryResult = mBoxedLcpSolver->solve(
-      mA.leftCols(static_cast<Eigen::Index>(n)).eval(),
-      mB,
-      mLo,
-      mHi,
-      mFIndex,
-      mX,
-      primaryOptions);
-  bool success = primaryResult.succeeded();
+  Eigen::MatrixXd Ablock = mA.leftCols(static_cast<Eigen::Index>(n)).eval();
+  math::LcpProblem problem(Ablock, mB, mLo, mHi, mFIndex);
+  math::LcpResult primaryResult
+      = mLcpSolver->solve(problem, mX, primaryOptions);
+  constexpr double kImpulseClamp = 1e12;
+  auto isUsable = [&](const Eigen::VectorXd& x) {
+    return x.allFinite() && x.array().abs().maxCoeff() < kImpulseClamp;
+  };
 
-  if (success && mX.hasNaN())
-    success = false;
+  bool success = primaryResult.succeeded() && isUsable(mX);
 
   bool fallbackSuccess = false;
   bool fallbackRan = false;
-  if (!success && mSecondaryBoxedLcpSolver) {
+  if (!success && mSecondaryLcpSolver) {
     DART_PROFILE_SCOPED_N("Secondary LCP");
-    math::LcpOptions fallbackOptions
-        = mSecondaryBoxedLcpSolver->getDefaultOptions();
+    math::LcpOptions fallbackOptions = mSecondaryLcpSolver->getDefaultOptions();
     fallbackOptions.earlyTermination = false;
-    math::LcpResult fallbackResult = mSecondaryBoxedLcpSolver->solve(
-        mABackup.leftCols(static_cast<Eigen::Index>(n)).eval(),
-        mBBackup,
-        mLoBackup,
-        mHiBackup,
-        mFIndexBackup,
-        mXBackup,
-        fallbackOptions);
-    fallbackSuccess = fallbackResult.succeeded() && !mXBackup.hasNaN();
+    fallbackOptions.validateSolution = false;
+    Eigen::MatrixXd Abackup
+        = mABackup.leftCols(static_cast<Eigen::Index>(n)).eval();
+    math::LcpProblem fallbackProblem(
+        Abackup, mBBackup, mLoBackup, mHiBackup, mFIndexBackup);
+    math::LcpResult fallbackResult = mSecondaryLcpSolver->solve(
+        fallbackProblem, mXBackup, fallbackOptions);
+    const bool fallbackUsable
+        = mXBackup.allFinite()
+          && fallbackResult.status != math::LcpSolverStatus::Failed
+          && fallbackResult.status != math::LcpSolverStatus::InvalidProblem
+          && mXBackup.array().abs().maxCoeff() < kImpulseClamp;
+    fallbackSuccess = fallbackUsable;
     mX = mXBackup;
     fallbackRan = true;
   }
 
-  const bool hasNaN = mX.hasNaN();
-  if (!success && fallbackRan && hasNaN) {
-    for (int i = 0; i < mX.size(); ++i) {
-      if (std::isnan(mX[i]))
-        mX[i] = 0.0;
-    }
+  const bool solutionFinite = mX.allFinite();
+  if (!success && fallbackRan && !solutionFinite) {
+    mX = mX.array().isFinite().select(mX, 0.0);
   }
 
-  const bool finalSuccess
-      = success || fallbackSuccess || (fallbackRan && !mX.hasNaN());
+  const bool finalSuccess = success || fallbackSuccess;
+
+#if !defined(NDEBUG)
+  const double maxImpulse = mX.size() > 0 ? mX.cwiseAbs().maxCoeff() : 0.0;
+  if (maxImpulse > 1e6) {
+    DART_WARN(
+        "[ConstraintSolver] Large impulse magnitude detected (max = {}).",
+        maxImpulse);
+  }
+#endif
 
   if (!finalSuccess) {
-    if (hasNaN) {
+    if (!isUsable(mX)) {
       DART_ERROR(
-          "[ConstraintSolver] The solution of LCP includes NAN values: {}. "
-          "We're setting it zero for safety. Consider using a more robust "
-          "secondary solver. If this happens even with a secondary solver, "
-          "please report this as a bug.",
+          "[ConstraintSolver] The solution of LCP includes non-finite or "
+          "unbounded values: {}. We're setting it zero for safety. Consider "
+          "using a more robust secondary solver. If this happens even with a "
+          "secondary solver, please report this as a bug.",
           fmt::streamed(mX.transpose()));
     } else {
       DART_ERROR(
@@ -1061,6 +958,8 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 
     mX.setZero();
   }
+  const double impulseClamp = 1e6;
+  mX = mX.array().max(-impulseClamp).min(impulseClamp);
 
   {
     DART_PROFILE_SCOPED_N("Apply constraint impulses");

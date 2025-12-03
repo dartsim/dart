@@ -20,7 +20,7 @@ lcp/
 │   └── LemkeSolver.hpp/cpp     # Modern Lemke wrapper
 │
 ├── projection/                 # Projection/sweeping methods
-│   ├── PGSSolver.hpp/cpp       # Projected Gauss-Seidel (standard + boxed LCP)
+│   ├── PgsSolver.hpp/cpp       # Projected Gauss-Seidel (standard + boxed LCP)
 │   ├── PSORSolver.hpp/cpp      # Projected SOR (planned)
 │   └── ...
 │
@@ -48,7 +48,7 @@ The legacy API is preserved for backward compatibility with Dantzig and ODE-base
 
 ```cpp
 // Legacy Dantzig solver
-#include <dart/math/lcp/dantzig/Lcp.hpp>
+#include <dart/math/lcp/pivoting/dantzig/Lcp.hpp>
 bool success = dart::math::SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
 
 ```
@@ -217,13 +217,13 @@ Dantzig-Cottle principal pivoting method for BLCP (Boxed LCP) with friction supp
 **Usage**:
 
 ```cpp
-#include <dart/math/lcp/dantzig/Lcp.hpp>
+#include <dart/math/lcp/pivoting/dantzig/Lcp.hpp>
 
 bool success = dart::math::SolveLCP<double>(
     n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
 ```
 
-#### Projected Gauss-Seidel (dart::math::PGSSolver)
+#### Projected Gauss-Seidel (dart::math::PgsSolver)
 
 Iterative projection method for standard and boxed LCPs. The boxed overload
 handles lower/upper bounds and `findex` friction coupling for contact
@@ -236,14 +236,14 @@ problems.
 - Space: O(n)
 - Supports: Standard LCP and boxed LCP with friction index
 - Notes: Warm-start enabled by default; optional random sweep ordering via
-  `PGSSolver::Parameters`
+  `PgsSolver::Parameters`
 
 **Usage (boxed LCP)**:
 
 ```cpp
-#include <dart/math/lcp/projection/PGSSolver.hpp>
+#include <dart/math/lcp/projection/PgsSolver.hpp>
 
-dart::math::PGSSolver solver;
+dart::math::PgsSolver solver;
 dart::math::LcpOptions options = solver.getDefaultOptions();
 options.maxIterations = 50;
 options.validateSolution = true;
@@ -258,7 +258,7 @@ dart::math::LcpResult result = solver.solve(A, b, lo, hi, findex, x, options);
 ```
 
 To tweak the division epsilon or enable random sweep ordering, populate
-`options.customOptions` with a `PGSSolver::Parameters` instance.
+`options.customOptions` with a `PgsSolver::Parameters` instance.
 
 ## Planned Solvers
 
@@ -307,7 +307,7 @@ The Dantzig principal pivoting solver currently only has a template function API
 
 ```cpp
 // Current (v1) - still recommended for BLCP
-#include <dart/math/lcp/dantzig/Lcp.hpp>
+#include <dart/math/lcp/pivoting/dantzig/Lcp.hpp>
 bool success = dart::math::SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
 
 // Future (v2) - planned

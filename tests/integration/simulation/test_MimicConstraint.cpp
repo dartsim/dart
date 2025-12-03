@@ -39,11 +39,11 @@
 
 #include <dart/simulation/World.hpp>
 
-#include <dart/constraint/BoxedLcpConstraintSolver.hpp>
 #include <dart/constraint/ConstraintSolver.hpp>
-#include <dart/constraint/DantzigBoxedLcpSolver.hpp>
 #include <dart/constraint/MimicMotorConstraint.hpp>
-#include <dart/constraint/PgsBoxedLcpSolver.hpp>
+
+#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
+#include <dart/math/lcp/projection/PgsSolver.hpp>
 
 #if DART_HAVE_BULLET
   #include <dart/collision/bullet/BulletCollisionDetector.hpp>
@@ -115,20 +115,18 @@ void setCollisionDetector(WorldPtr world, bool useOde)
 
 void setBoxedSolver(WorldPtr world, bool usePgs)
 {
-  auto* boxedSolver = dynamic_cast<dart::constraint::BoxedLcpConstraintSolver*>(
+  auto* boxedSolver = dynamic_cast<dart::constraint::ConstraintSolver*>(
       world->getConstraintSolver());
   if (!boxedSolver)
     return;
 
   if (usePgs) {
-    boxedSolver->setBoxedLcpSolver(
-        std::make_shared<dart::constraint::PgsBoxedLcpSolver>());
-    boxedSolver->setSecondaryBoxedLcpSolver(nullptr);
+    boxedSolver->setLcpSolver(std::make_shared<dart::math::PgsSolver>());
+    boxedSolver->setSecondaryLcpSolver(nullptr);
   } else {
-    boxedSolver->setBoxedLcpSolver(
-        std::make_shared<dart::constraint::DantzigBoxedLcpSolver>());
-    boxedSolver->setSecondaryBoxedLcpSolver(
-        std::make_shared<dart::constraint::PgsBoxedLcpSolver>());
+    boxedSolver->setLcpSolver(std::make_shared<dart::math::DantzigSolver>());
+    boxedSolver->setSecondaryLcpSolver(
+        std::make_shared<dart::math::PgsSolver>());
   }
 }
 

@@ -115,7 +115,7 @@ function PGS(A, b, x, max_iter, epsilon):
 - **Storage**: O(n)
 - **Convergence**: Linear for symmetric PSD
 - **Parallelization**: Sequential
-- **DART support**: `dart::math::PGSSolver` implements both standard and boxed
+- **DART support**: `dart::math::PgsSolver` implements both standard and boxed
   LCPs (including friction `findex` coupling)
 
 ### Advantages/Disadvantages
@@ -130,7 +130,7 @@ function PGS(A, b, x, max_iter, epsilon):
 
 ### Use Cases
 
-- Implemented as `dart::math::PGSSolver` (standard and boxed LCP with optional
+- Implemented as `dart::math::PgsSolver` (standard and boxed LCP with optional
   friction index mapping for contact)
 - Real-time rigid body simulation
 - Contact force computation

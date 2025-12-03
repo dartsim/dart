@@ -289,12 +289,12 @@ LemkeSolver::LemkeSolver()
 
 //==============================================================================
 LcpResult LemkeSolver::solve(
-    const Eigen::MatrixXd& A,
-    const Eigen::VectorXd& b,
-    Eigen::VectorXd& x,
-    const LcpOptions& options)
+    const LcpProblem& problem, Eigen::VectorXd& x, const LcpOptions& options)
 {
   LcpResult result;
+
+  const auto& A = problem.A;
+  const auto& b = problem.b;
 
   // Check problem dimensions
   if (A.rows() != A.cols() || A.rows() != b.size()) {

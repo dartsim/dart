@@ -56,7 +56,7 @@
 #pragma once
 
 #include "dart/common/Macros.hpp"
-#include "dart/math/lcp/dantzig/Common.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Common.hpp"
 
 #include <Eigen/Core>
 
@@ -603,4 +603,4 @@ inline int IsPositiveDefinite(const Scalar* A, int n, void* tmpbuf = nullptr)
 } // namespace dart::math
 
 // Include template implementations
-#include "dart/math/lcp/dantzig/Matrix-impl.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Matrix-impl.hpp"

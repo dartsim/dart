@@ -35,6 +35,9 @@
 
 #include <gtest/gtest.h>
 
+using dart::math::LcpOptions;
+using dart::math::LcpProblem;
+
 namespace {
 
 void ExpectValidLCP(
@@ -61,7 +64,14 @@ TEST(Lemke, Lemke_1D)
   A << 1;
   b << -1.5;
 
-  const auto result = solver.solve(A, b, f);
+  LcpProblem problem(
+      A,
+      b,
+      Eigen::VectorXd::Zero(1),
+      Eigen::VectorXd::Constant(1, std::numeric_limits<double>::infinity()),
+      Eigen::VectorXi::Constant(1, -1));
+  LcpOptions options = solver.getDefaultOptions();
+  const auto result = solver.solve(problem, f, options);
   EXPECT_EQ(result.status, dart::math::LcpSolverStatus::Success);
   ExpectValidLCP(A, b, f);
 }
@@ -77,7 +87,14 @@ TEST(Lemke, Lemke_2D)
   A << 3.12, 0.1877, 0.1877, 3.254;
   b << -0.00662, -0.006711;
 
-  const auto result = solver.solve(A, b, f);
+  LcpProblem problem(
+      A,
+      b,
+      Eigen::VectorXd::Zero(2),
+      Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity()),
+      Eigen::VectorXi::Constant(2, -1));
+  LcpOptions options = solver.getDefaultOptions();
+  const auto result = solver.solve(problem, f, options);
   EXPECT_EQ(result.status, dart::math::LcpSolverStatus::Success);
   ExpectValidLCP(A, b, f);
 }
@@ -95,7 +112,14 @@ TEST(Lemke, Lemke_4D)
 
   b << -0.01008, -0.009494, -0.07234, -0.07177;
 
-  const auto result = solver.solve(A, b, f);
+  LcpProblem problem(
+      A,
+      b,
+      Eigen::VectorXd::Zero(4),
+      Eigen::VectorXd::Constant(4, std::numeric_limits<double>::infinity()),
+      Eigen::VectorXi::Constant(4, -1));
+  LcpOptions options = solver.getDefaultOptions();
+  const auto result = solver.solve(problem, f, options);
   EXPECT_EQ(result.status, dart::math::LcpSolverStatus::Success);
   ExpectValidLCP(A, b, f);
 }
@@ -116,7 +140,14 @@ TEST(Lemke, Lemke_6D)
 
   b << 0.1649, -0.0025, -0.0904, -0.0093, -0.0000, -0.0889;
 
-  const auto result = solver.solve(A, b, f);
+  LcpProblem problem(
+      A,
+      b,
+      Eigen::VectorXd::Zero(6),
+      Eigen::VectorXd::Constant(6, std::numeric_limits<double>::infinity()),
+      Eigen::VectorXi::Constant(6, -1));
+  LcpOptions options = solver.getDefaultOptions();
+  const auto result = solver.solve(problem, f, options);
   EXPECT_EQ(result.status, dart::math::LcpSolverStatus::Success);
   ExpectValidLCP(A, b, f);
 }
@@ -148,7 +179,14 @@ TEST(Lemke, Lemke_12D)
   b << -0.00981, -1.458e-10, 5.357e-10, -0.0098, -1.44e-10, 5.298e-10,
       -0.009807, -1.399e-10, 5.375e-10, -0.009807, -1.381e-10, 5.316e-10;
 
-  const auto result = solver.solve(A, b, f);
+  LcpProblem problem(
+      A,
+      b,
+      Eigen::VectorXd::Zero(12),
+      Eigen::VectorXd::Constant(12, std::numeric_limits<double>::infinity()),
+      Eigen::VectorXi::Constant(12, -1));
+  LcpOptions options = solver.getDefaultOptions();
+  const auto result = solver.solve(problem, f, options);
   EXPECT_EQ(result.status, dart::math::LcpSolverStatus::Success);
   ExpectValidLCP(A, b, f);
 }

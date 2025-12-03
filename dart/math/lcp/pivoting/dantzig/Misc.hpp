@@ -57,7 +57,7 @@
 
 #pragma once
 
-#include "dart/math/lcp/dantzig/Common.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Common.hpp"
 
 namespace dart::math {
 

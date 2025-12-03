@@ -9,7 +9,7 @@
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 
 // Projection methods
-#include <dart/math/lcp/projection/PGSSolver.hpp>
+#include <dart/math/lcp/projection/PgsSolver.hpp>
 
 // Legacy LCP solvers (v1 - backward compatibility)
-#include <dart/math/lcp/dantzig/Lcp.hpp>
+#include <dart/math/lcp/pivoting/dantzig/Lcp.hpp>

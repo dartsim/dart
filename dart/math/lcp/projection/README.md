@@ -4,7 +4,7 @@ This folder is reserved for iterative projection-based LCP solvers (e.g., PGS, P
 
 Implemented solvers:
 
-- `PGSSolver`: Projected Gauss-Seidel for standard and boxed LCPs (supports
+- `PgsSolver`: Projected Gauss-Seidel for standard and boxed LCPs (supports
   `lo/hi/findex` for friction-limited contact).
 
 When adding a solver:
