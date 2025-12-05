@@ -42,7 +42,7 @@ namespace constraint {
 /// Compatibility subclass that preserves the legacy boxed LCP solver API used
 /// by external integrations (e.g., gz-physics) while delegating to the unified
 /// math::LcpSolver pipeline.
-class DART_DEPRECATED(8.0) DART_API BoxedLcpConstraintSolver
+class DART_DEPRECATED(7.0) DART_API BoxedLcpConstraintSolver
     : public ConstraintSolver
 {
 public:

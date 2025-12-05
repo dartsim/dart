@@ -47,7 +47,7 @@ namespace constraint {
 /// Backward-compatible boxed LCP solver interface used by external projects
 /// (e.g., gz-physics) to select a solver by name. Internally delegates to the
 /// unified math::LcpSolver API.
-class DART_DEPRECATED(8.0) DART_API BoxedLcpSolver
+class DART_DEPRECATED(7.0) DART_API BoxedLcpSolver
 {
 public:
   virtual ~BoxedLcpSolver() = default;

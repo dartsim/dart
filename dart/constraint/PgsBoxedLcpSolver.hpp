@@ -40,7 +40,7 @@ namespace constraint {
 
 /// Compatibility wrapper around math::PgsSolver that preserves the legacy
 /// PGS option struct used by external integrations.
-class DART_DEPRECATED(8.0) DART_API PgsBoxedLcpSolver : public BoxedLcpSolver
+class DART_DEPRECATED(7.0) DART_API PgsBoxedLcpSolver : public BoxedLcpSolver
 {
 public:
   struct Option
