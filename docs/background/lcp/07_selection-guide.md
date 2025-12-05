@@ -7,30 +7,28 @@
 ```
 START
   |
-  ├─ Real-time/Interactive? ──YES──> PGS or PSOR
-  |                                   (when implemented)
+  ├─ Real-time/Interactive? ──YES──> PGS (now) or PSOR (future)
   |
   ├─ High accuracy needed? ──YES──> Newton Methods or Pivoting
   |                                  (Dantzig/Lemke available now)
   |
-  ├─ Large problem (n>1000)? ──YES──> NNCG or PGS
-  |                                    (when implemented)
+  ├─ Large problem (n>1000)? ──YES──> PGS (now) or NNCG (future)
   |
   ├─ Ill-conditioned? ──YES──> Pivoting (Dantzig/Lemke)
   |                             or Interior Point
   |
   ├─ Contact problem? ──YES──> BGS or Dantzig
   |
-  └─ Default ──> Start with Dantzig or Lemke
-                  (currently implemented)
+  └─ Default ──> Start with Dantzig or PGS
+                  (Lemke for standard LCP)
 ```
 
 ## Detailed Selection by Use Case
 
 ### 1. Real-Time Physics Simulation
 
-**Recommended (when implemented)**: PGS > PSOR > BGS
-**Currently Available**: Dantzig, Lemke
+**Recommended**: PGS > PSOR (future) > BGS (future)
+**Currently Available**: PGS ✅, Dantzig ✅, Lemke ✅
 
 **Rationale**:
 
@@ -42,18 +40,15 @@ START
 **Configuration**:
 
 ```
-Method: PGS (when implemented)
+Method: PGS
 Max iterations: 50-100
 Tolerance: 1e-4 to 1e-6
 Warm start: Previous time-step solution
+Fallback: Dantzig if iterative solve stalls
 ```
 
-**Current Workaround**:
-
-```cpp
-// Use Dantzig for bounded problems
-SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
-```
+`constraint::ConstraintSolver` already wires this up by running
+`math::DantzigSolver` first and falling back to `math::PgsSolver` when needed.
 
 ### 2. High-Accuracy Off-Line Simulation
 
@@ -80,17 +75,23 @@ Subsolver: GMRES with tolerance 0.1*||H||
 **Current Best**:
 
 ```cpp
-// Dantzig for bounded problems
-SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
+dart::math::LcpProblem problem(A, b, lo, hi, findex);
+dart::math::DantzigSolver solver;
+solver.solve(problem, x, solver.getDefaultOptions());
 
-// Lemke for standard LCP
-Lemke(M, q, &z);
+// Lemke for standard LCP (lo=0, hi=inf, findex=-1)
+dart::math::LcpProblem standard(M, q, Eigen::VectorXd::Zero(q.size()),
+                                Eigen::VectorXd::Constant(q.size(),
+                                                          std::numeric_limits<double>::infinity()),
+                                Eigen::VectorXi::Constant(q.size(), -1));
+dart::math::LemkeSolver lemke;
+lemke.solve(standard, z, lemke.getDefaultOptions());
 ```
 
 ### For Contact Mechanics with Friction
 
-**Recommended**: Dantzig
-**Currently Available**: Dantzig ✅
+**Recommended**: Dantzig with optional PGS fallback
+**Currently Available**: Dantzig ✅, PGS ✅
 
 **Rationale**:
 
@@ -101,13 +102,14 @@ Lemke(M, q, &z);
 **Configuration**:
 
 ```cpp
-// Use Dantzig directly with friction indices
-int findex[n];
-// Set up findex for friction cone
-dart::math::SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
+// Use the boxed LCP API with friction indices
+dart::math::LcpProblem problem(A, b, lo, hi, findex);
+dart::math::DantzigSolver solver;
+Eigen::VectorXd x = Eigen::VectorXd::Zero(b.size());
+solver.solve(problem, x, solver.getDefaultOptions());
 ```
 
-**Future BGS (when implemented)**:
+**Future BGS**:
 
 ```
 Per-contact blocks with:
@@ -118,8 +120,8 @@ Per-contact blocks with:
 
 ### 4. Large-Scale Problems (n > 1000)
 
-**Recommended (when implemented)**: NNCG > PGS > Newton+Iterative
-**Currently Available**: Dantzig, Lemke (limited scalability)
+**Recommended**: PGS (available) > NNCG (future) > Newton+Iterative
+**Currently Available**: PGS ✅, Dantzig ✅, Lemke ✅
 
 **Rationale**:
 
@@ -138,12 +140,9 @@ Warm start: Previous solution or zeros
 
 **Current Approach**:
 
-```
-# For very large problems, consider:
-# 1. Problem decomposition
-# 2. Using external solvers (MOSEK, CPLEX)
-# 3. Approximation techniques
-```
+- Prefer `math::PgsSolver` for scalability, with Dantzig fallback if it fails
+- Decompose by contact groups to keep LCP blocks small
+- For extremely large problems, consider external solvers or approximations
 
 ### 5. Ill-Conditioned Problems
 
@@ -160,10 +159,20 @@ Warm start: Previous solution or zeros
 
 ```cpp
 // Dantzig is robust for ill-conditioned problems
-SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
+dart::math::LcpProblem problem(A, b, lo, hi, findex);
+dart::math::DantzigSolver solver;
+solver.solve(problem, x, solver.getDefaultOptions());
 
 // Or Lemke
-Lemke(M, q, &z);
+dart::math::LcpProblem standardProblem(
+    M,
+    q,
+    Eigen::VectorXd::Zero(q.size()),
+    Eigen::VectorXd::Constant(
+        q.size(), std::numeric_limits<double>::infinity()),
+    Eigen::VectorXi::Constant(q.size(), -1));
+dart::math::LemkeSolver lemke;
+lemke.solve(standardProblem, z, lemke.getDefaultOptions());
 validate(M, z, q);  // Always validate
 ```
 
@@ -179,7 +188,7 @@ Try:
 
 ### 6. Parallel/GPU Computing
 
-**Recommended (when implemented)**: Jacobi > Red-Black GS > Blocked Jacobi
+**Recommended**: Jacobi > Red-Black GS > Blocked Jacobi (future work)
 **Currently Available**: None (sequential methods only)
 
 **Rationale**:
@@ -265,40 +274,25 @@ Available solvers:
 
 - ✅ **Dantzig**: BLCP with bounds, friction support
 - ✅ **Lemke**: Standard LCP
+- ✅ **PGS**: Iterative boxed LCP with friction index fallback
 
 **Best Practices Now**:
 
 ```cpp
-// For bounded problems with friction
-SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
-
-// For standard LCP
-Lemke(M, q, &z);
+dart::math::LcpProblem problem(A, b, lo, hi, findex);
+dart::math::DantzigSolver dantzig;
+dart::math::PgsSolver pgs;
+auto result = dantzig.solve(problem, x, dantzig.getDefaultOptions());
+if (!result.succeeded()) {
+  pgs.solve(problem, x, pgs.getDefaultOptions());
+}
 ```
 
-### Phase 1: Core Iterative (Priority)
+### Remaining Gaps
 
-When PGS/PSOR are implemented:
-
-- ✅ Real-time simulation becomes viable
-- ✅ Most contact problems solvable interactively
-- ✅ O(n) iteration cost achieved
-
-### Phase 2: Blocked Methods
-
-When BGS is implemented:
-
-- ✅ Better contact force accuracy
-- ✅ Natural per-contact structure
-- ✅ Sub-solvers for small blocks
-
-### Phase 3: Advanced Iterative
-
-When NNCG is implemented:
-
-- ✅ Large-scale problems solvable
-- ✅ Better convergence than PGS
-- ✅ Mass ratio handling improved
+- PSOR (tunable relaxation on top of PGS)
+- Blocked Gauss-Seidel for per-contact blocks
+- NNCG or other large-scale iterative methods
 
 ### Phase 4: Newton Methods
 
@@ -317,8 +311,8 @@ When Newton methods are implemented:
 **Solution**:
 
 ```
-Current: Use Dantzig or limit problem size
-Future: Use PGS or PSOR when implemented
+Current: Use PGS for real-time and keep Dantzig as fallback
+Future: Add PSOR for tuned relaxation
 ```
 
 ### Pitfall 2: Expecting High Accuracy from Iterative
@@ -342,7 +336,7 @@ For 1e-10: Use Newton or Pivoting (Dantzig ✅ available)
 // Use previous solution
 x_init = x_previous_timestep;
 
-// Or warm-start with few PGS iterations (when available)
+// Or warm-start with few PGS iterations
 ```
 
 ### Pitfall 4: Wrong Method for Problem Structure
@@ -376,7 +370,7 @@ if (merit_function > gamma * previous_merit) {
 
 ## Parameter Tuning Guidelines
 
-### PGS/PSOR (when implemented)
+### PGS/PSOR
 
 ```
 max_iterations:
@@ -393,7 +387,7 @@ relaxation (PSOR only):
   - Under-relax if unstable: 0.8-0.95
 ```
 
-### Newton Methods (when implemented)
+### Newton Methods (future)
 
 ```
 max_iterations: 20-50

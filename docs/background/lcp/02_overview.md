@@ -6,29 +6,39 @@
 
 This section tracks which LCP solvers are currently implemented in DART (`dart/math/lcp/`).
 
-| Category           | Method                     | Status             | Location                   | Notes                       |
-| ------------------ | -------------------------- | ------------------ | -------------------------- | --------------------------- |
-| **Pivoting**       | Dantzig Principal Pivoting | ✅ Implemented     | `dantzig/Lcp.hpp`          | BLCP solver with friction   |
-| **Pivoting**       | Lemke Complementary Pivot  | ✅ Implemented     | `pivoting/LemkeSolver.hpp` | Standard LCP solver         |
-| **Pivoting**       | Baraff Incremental         | ❌ Not implemented | -                          | Planned                     |
-| **Projection**     | PGS (Gauss-Seidel)         | ❌ Not implemented | -                          | High priority for real-time |
-| **Projection**     | PSOR (Over-Relaxation)     | ❌ Not implemented | -                          | Extension of PGS            |
-| **Projection**     | Blocked Gauss-Seidel       | ❌ Not implemented | -                          | For contact problems        |
-| **Projection**     | NNCG (Conjugate Gradient)  | ❌ Not implemented | -                          | Better convergence than PGS |
-| **Projection**     | Subspace Minimization      | ❌ Not implemented | -                          | Hybrid PGS approach         |
-| **Newton**         | Minimum Map Newton         | ❌ Not implemented | -                          | High accuracy               |
-| **Newton**         | Fischer-Burmeister Newton  | ❌ Not implemented | -                          | Well-studied method         |
-| **Newton**         | Penalized FB Newton        | ❌ Not implemented | -                          | Extension of FB             |
-| **Interior Point** | Interior Point Method      | ❌ Not implemented | -                          | Very robust                 |
-| **Staggering**     | Staggering Method          | ❌ Not implemented | -                          | For coupled problems        |
+| Category           | Method                     | Status             | Location                          | Notes                                   |
+| ------------------ | -------------------------- | ------------------ | --------------------------------- | --------------------------------------- |
+| **Pivoting**       | Dantzig Principal Pivoting | ✅ Implemented     | `pivoting/dantzig/Lcp.hpp` (core) | BLCP solver with friction index support |
+| **Pivoting**       | Lemke Complementary Pivot  | ✅ Implemented     | `pivoting/LemkeSolver.hpp`        | Standard LCP solver                     |
+| **Pivoting**       | Baraff Incremental         | ❌ Not implemented | -                                 | Planned                                 |
+| **Projection**     | PGS (Gauss-Seidel)         | ✅ Implemented     | `projection/PgsSolver.hpp`        | Boxed LCP + friction index (iterative)  |
+| **Projection**     | PSOR (Over-Relaxation)     | ❌ Not implemented | -                                 | Extension of PGS                        |
+| **Projection**     | Blocked Gauss-Seidel       | ❌ Not implemented | -                                 | For contact problems                    |
+| **Projection**     | NNCG (Conjugate Gradient)  | ❌ Not implemented | -                                 | Better convergence than PGS             |
+| **Projection**     | Subspace Minimization      | ❌ Not implemented | -                                 | Hybrid PGS approach                     |
+| **Newton**         | Minimum Map Newton         | ❌ Not implemented | -                                 | High accuracy                           |
+| **Newton**         | Fischer-Burmeister Newton  | ❌ Not implemented | -                                 | Well-studied method                     |
+| **Newton**         | Penalized FB Newton        | ❌ Not implemented | -                                 | Extension of FB                         |
+| **Interior Point** | Interior Point Method      | ❌ Not implemented | -                                 | Very robust                             |
+| **Staggering**     | Staggering Method          | ❌ Not implemented | -                                 | For coupled problems                    |
 
 **Legend**: ✅ Implemented | 🚧 In Progress | ❌ Not Implemented | 📋 Planned
 
+### Unified API: `LcpProblem` + `LcpSolver`
+
+- `LcpProblem` bundles boxed LCP data `(A, b, lo, hi, findex)` so solvers share
+  one interface and handle friction index coupling consistently.
+- All solvers implement `LcpSolver::solve(const LcpProblem&, Eigen::VectorXd&,
+const LcpOptions&)`.
+- `constraint::ConstraintSolver` now builds an `LcpProblem` and calls
+  `math::DantzigSolver` (primary) with an optional `math::PgsSolver` fallback.
+
 ### Currently Implemented Solvers
 
-#### 1. Dantzig Principal Pivoting Method (`dantzig/Lcp.hpp`)
+#### 1. Dantzig Principal Pivoting Method (`pivoting/dantzig/Lcp.hpp`)
 
-- **Type**: Principal pivoting method for BLCP (Boxed Linear Complementarity Problem)
+- **Type**: Principal pivoting method for BLCP (Boxed Linear Complementarity
+  Problem)
 - **Algorithm**: Dantzig-Cottle principal pivoting
 - **Source**: Derived from Open Dynamics Engine (ODE)
 - **Named after**: George B. Dantzig (pioneer of linear programming and simplex method)
@@ -48,6 +58,18 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
   - Standard LCP formulation: Mx = q + w, x >= 0, w >= 0, x^T w = 0
   - Includes solution validation function
 - **Use Case**: Standard LCP problems without bounds
+
+#### 3. Projected Gauss-Seidel (PGS) (`projection/PgsSolver.hpp`)
+
+- **Type**: Iterative projection method for boxed LCP
+- **Algorithm**: Gauss-Seidel with projection onto `[lo, hi]` and friction index
+  coupling
+- **Features**:
+  - Handles bounds and `findex` friction pyramids
+  - Supports warm starts and customizable sweep order
+  - Early-out when the primary pivoting solver fails in ConstraintSolver
+- **Use Case**: Real-time fallback for constraint solving where approximate
+  solutions are acceptable
 
 ## Introduction
 
@@ -191,9 +213,9 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 
 ### Phase 1: Core Iterative Methods (High Priority)
 
-- [ ] Projected Gauss-Seidel (PGS)
+- [x] Projected Gauss-Seidel (PGS) — `dart::math::PgsSolver`
 - [ ] Projected SOR (PSOR)
-- [ ] Basic termination criteria and merit functions
+- [ ] Basic termination criteria and merit functions (shared utilities)
 
 ### Phase 2: Blocked Methods (Medium Priority)
 

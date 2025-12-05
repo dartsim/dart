@@ -565,24 +565,23 @@ Use only when `x >= 0`; also ensure `Ax + b >= 0` when `x = 0`.
 
 ## Comparison Table
 
-| Method    | Status        | Parallel | Convergence | Best For              |
-| --------- | ------------- | -------- | ----------- | --------------------- |
-| Jacobi    | ❌            | Yes      | Slow        | Parallel hardware     |
-| PGS       | ❌ (Priority) | No       | Linear      | Real-time             |
-| PSOR      | ❌ (Priority) | No       | Linear      | Real-time with tuning |
-| BGS       | ❌            | No       | Linear      | Contact problems      |
-| NNCG      | ❌            | No       | Superlinear | Large-scale           |
-| PGS-SM    | ❌            | No       | Better      | Medium problems       |
-| Red-Black | ❌            | 2-phase  | Medium      | GPU                   |
+| Method    | Status           | Parallel | Convergence | Best For              |
+| --------- | ---------------- | -------- | ----------- | --------------------- |
+| Jacobi    | ❌               | Yes      | Slow        | Parallel hardware     |
+| PGS       | ✅ (Implemented) | No       | Linear      | Real-time boxed LCP   |
+| PSOR      | ❌ (Priority)    | No       | Linear      | Real-time with tuning |
+| BGS       | ❌               | No       | Linear      | Contact problems      |
+| NNCG      | ❌               | No       | Superlinear | Large-scale           |
+| PGS-SM    | ❌               | No       | Better      | Medium problems       |
+| Red-Black | ❌               | 2-phase  | Medium      | GPU                   |
 
 ## Implementation Priority
 
 ### Phase 1 (Essential for Real-Time)
 
-1. **PGS** - Core method, highest priority
-2. **PSOR** - Extension of PGS with relaxation
-3. **Termination criteria** - Multiple stopping conditions
-4. **Merit functions** - For convergence monitoring
+1. **PSOR** - Extension of PGS with relaxation
+2. **Termination criteria** - Multiple stopping conditions
+3. **Merit functions** - For convergence monitoring
 
 ### Phase 2 (For Contact Problems)
 
