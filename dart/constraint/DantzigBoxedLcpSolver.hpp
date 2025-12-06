@@ -42,7 +42,7 @@ namespace constraint {
 /// Compatibility wrapper that exposes the legacy boxed solver name while using
 /// the new math::DantzigSolver implementation.
 class DART_DEPRECATED(7.0) DART_API DantzigBoxedLcpSolver
-    : public BoxedLcpSolver
+  : public BoxedLcpSolver
 {
 public:
   DantzigBoxedLcpSolver();

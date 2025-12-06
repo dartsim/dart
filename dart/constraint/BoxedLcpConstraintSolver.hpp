@@ -32,9 +32,10 @@
 
 #pragma once
 
-#include <dart/common/Deprecated.hpp>
 #include <dart/constraint/BoxedLcpSolver.hpp>
 #include <dart/constraint/ConstraintSolver.hpp>
+
+#include <dart/common/Deprecated.hpp>
 
 namespace dart {
 namespace constraint {
@@ -43,7 +44,7 @@ namespace constraint {
 /// by external integrations (e.g., gz-physics) while delegating to the unified
 /// math::LcpSolver pipeline.
 class DART_DEPRECATED(7.0) DART_API BoxedLcpConstraintSolver
-    : public ConstraintSolver
+  : public ConstraintSolver
 {
 public:
   BoxedLcpConstraintSolver();

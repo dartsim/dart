@@ -41,10 +41,12 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/common/String.hpp"
+#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -54,6 +56,7 @@
 #include <vector>
 
 #include <cmath>
+#include <cstdlib>
 
 namespace dart {
 namespace simulation {
@@ -183,7 +186,19 @@ World::World(const WorldConfig& config)
 {
   mIndices.push_back(0);
 
-  auto solver = std::make_unique<constraint::ConstraintSolver>();
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const char* legacyBoxedEnv = std::getenv("DART_ENABLE_LEGACY_BOXED_LCP");
+  const bool useLegacyBoxed = legacyBoxedEnv
+                              && common::toLower(legacyBoxedEnv) != "0"
+                              && common::toLower(legacyBoxedEnv) != "false";
+
+  std::unique_ptr<constraint::ConstraintSolver> solver;
+  if (useLegacyBoxed) {
+    solver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
+  } else {
+    solver = std::make_unique<constraint::ConstraintSolver>();
+  }
+  DART_SUPPRESS_DEPRECATED_END
   setConstraintSolver(std::move(solver));
 
   if (auto detector = resolveCollisionDetector(config))
