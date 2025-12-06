@@ -46,6 +46,7 @@
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/common/String.hpp"
+#include "dart/config.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
@@ -155,6 +156,19 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
   return nullptr;
 }
 
+std::unique_ptr<constraint::ConstraintSolver> createConstraintSolver(
+    const WorldConfig& config)
+{
+  using Backend = WorldConfig::ConstraintSolverBackend;
+  if (config.constraintSolverBackend == Backend::UnifiedLcp) {
+    return std::make_unique<constraint::ConstraintSolver>();
+  }
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  return std::make_unique<constraint::BoxedLcpConstraintSolver>();
+  DART_SUPPRESS_DEPRECATED_END
+}
+
 } // namespace
 
 //==============================================================================
@@ -186,20 +200,7 @@ World::World(const WorldConfig& config)
 {
   mIndices.push_back(0);
 
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  const char* legacyBoxedEnv = std::getenv("DART_ENABLE_LEGACY_BOXED_LCP");
-  const bool useLegacyBoxed = legacyBoxedEnv
-                              && common::toLower(legacyBoxedEnv) != "0"
-                              && common::toLower(legacyBoxedEnv) != "false";
-
-  std::unique_ptr<constraint::ConstraintSolver> solver;
-  if (useLegacyBoxed) {
-    solver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
-  } else {
-    solver = std::make_unique<constraint::ConstraintSolver>();
-  }
-  DART_SUPPRESS_DEPRECATED_END
-  setConstraintSolver(std::move(solver));
+  setConstraintSolver(createConstraintSolver(config));
 
   if (auto detector = resolveCollisionDetector(config))
     setCollisionDetector(detector);
