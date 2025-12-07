@@ -46,18 +46,15 @@
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/common/String.hpp"
-#include "dart/config.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
-
-#include <cmath>
-#include <cstdlib>
 
 namespace dart {
 namespace simulation {
@@ -159,8 +156,7 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
 std::unique_ptr<constraint::ConstraintSolver> createConstraintSolver(
     const WorldConfig& config)
 {
-  using Backend = WorldConfig::ConstraintSolverBackend;
-  if (config.constraintSolverBackend == Backend::UnifiedLcp) {
+  if (!config.useLegacyConstraintSolver) {
     return std::make_unique<constraint::ConstraintSolver>();
   }
 

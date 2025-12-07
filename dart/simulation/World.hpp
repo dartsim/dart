@@ -85,16 +85,9 @@ struct WorldConfig final
   /// Preferred collision detector for the world.
   CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
 
-  /// Constraint solver backend. Legacy boxed solver is kept for backward
-  /// compatibility (default) and will be removed in DART 8.0.
-  enum class ConstraintSolverBackend
-  {
-    LegacyBoxedLcp,
-    UnifiedLcp
-  };
-
-  ConstraintSolverBackend constraintSolverBackend
-      = ConstraintSolverBackend::LegacyBoxedLcp;
+  /// Whether to use the legacy boxed constraint solver (kept for backward
+  /// compatibility; will be removed in DART 8.0).
+  bool useLegacyConstraintSolver{true};
 
   WorldConfig() = default;
   explicit WorldConfig(std::string worldName) : name(std::move(worldName)) {}
