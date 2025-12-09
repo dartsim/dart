@@ -1,5 +1,6 @@
 #include "dynamics/shape_frame.hpp"
 
+#include "common/repr.hpp"
 #include "common/type_casters.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
@@ -120,6 +121,19 @@ void defShapeFrame(nb::module_& m)
           [](ShapeFrame& self) { return self.createDynamicsAspect(); },
           nb::rv_policy::reference_internal)
       .def("isShapeNode", &ShapeFrame::isShapeNode)
+      .def(
+          "__repr__",
+          [](const ShapeFrame& self) {
+            const auto shape = self.getShape();
+            const auto* parent = self.getParentFrame();
+            std::vector<std::pair<std::string, std::string>> fields;
+            fields.emplace_back("name", repr_string(self.getName()));
+            fields.emplace_back(
+                "shape", shape ? repr_string(shape->getType()) : "None");
+            fields.emplace_back(
+                "parent", parent ? repr_string(parent->getName()) : "None");
+            return format_repr("ShapeFrame", fields);
+          })
       .def(
           "asShapeNode",
           [](ShapeFrame& self) -> ShapeNode* { return self.asShapeNode(); },
