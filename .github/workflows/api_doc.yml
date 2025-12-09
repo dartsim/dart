@@ -45,6 +45,15 @@ jobs:
         if: github.event_name == 'pull_request'
         run: echo "BRANCH_NAME=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
 
+      - name: Detect passwordless sudo
+        run: |
+          if command -v sudo && sudo -n true 2>/dev/null; then
+            echo "SUDO_AVAILABLE=true" >> "$GITHUB_ENV"
+          else
+            echo "SUDO_AVAILABLE=false" >> "$GITHUB_ENV"
+            echo "Passwordless sudo unavailable; skipping apt-based setup."
+          fi
+
       - name: Checkout
         uses: actions/checkout@v5
 
@@ -62,15 +71,13 @@ jobs:
           echo "PIXI_PREFIX=${PIXI_PREFIX}" >> "$GITHUB_ENV"
 
       - name: Prework for installing packages using cache
+        if: env.SUDO_AVAILABLE == 'true'
         run: |
-          if command -v sudo && sudo -n true 2>/dev/null; then
-            sudo apt update
-            sudo apt install -y cmake
-          else
-            echo "Skipping apt prework because passwordless sudo is unavailable on this runner."
-          fi
+          sudo -n apt update
+          sudo -n apt install -y cmake
 
       - name: Install Dependencies with cache
+        if: env.SUDO_AVAILABLE == 'true'
         uses: awalsh128/cache-apt-pkgs-action@v1.5.3
         with:
           packages: >
