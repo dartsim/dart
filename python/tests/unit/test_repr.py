@@ -81,7 +81,7 @@ def test_chain_and_linkage_repr():
 def test_inverse_kinematics_repr():
     skel = dart.Skeleton("ik_skel")
     _, body = skel.create_free_joint_and_body_node_pair()
-    ik = body.get_or_create_i_k()
+    ik = body.get_or_create_ik()
     target = dart.SimpleFrame(body, "target_frame")
     ik.set_target(target)
 

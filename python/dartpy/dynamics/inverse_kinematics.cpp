@@ -118,7 +118,7 @@ void defInverseKinematics(nb::module_& m)
         fields.emplace_back(
             "target", target ? repr_string(target->getName()) : "None");
         fields.emplace_back("active", repr_bool(self.isActive()));
-        fields.emplace_back("whole_body", repr_bool(self.useWholeBody()));
+        fields.emplace_back("dofs", std::to_string(self.getDofs().size()));
         return format_repr("InverseKinematics", fields);
       });
 
