@@ -104,7 +104,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip3 install pytest -U
+          pip3 install pytest -U --break-system-packages
 
       - name: Build
         run: |
