@@ -49,9 +49,7 @@ void dart_collision(py::module& m);
 void dart_constraint(py::module& m);
 void dart_simulation(py::module& m);
 void dart_utils(py::module& m);
-#ifdef DARTPY_HAS_GUI
 void dart_gui(py::module& m);
-#endif
 
 PYBIND11_MODULE(dartpy, m)
 {
@@ -73,9 +71,7 @@ PYBIND11_MODULE(dartpy, m)
   dart_constraint(m);
   dart_simulation(m);
   dart_utils(m);
-#ifdef DARTPY_HAS_GUI
   dart_gui(m);
-#endif
 }
 
 } // namespace python
