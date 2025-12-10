@@ -95,7 +95,11 @@ EOF
     # Build documentation
     git -C ${DART_CLONE_DIR} checkout ${version}
     rm -rf *
-    cmake ${DART_CLONE_DIR}
+    if [ -n "${CMAKE_PREFIX_PATH}" ]; then
+      cmake ${DART_CLONE_DIR} -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
+    else
+      cmake ${DART_CLONE_DIR}
+    fi
     make docs
 
     # Check if docs/doxygen/html is not empty
