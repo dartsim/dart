@@ -48,6 +48,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.1
+        with:
+          cache: true
+
+      - name: Install pixi environment
+        run: pixi install --locked
+
       - name: Prework for installing packages using cache
         run: |
           if command -v sudo && sudo -n true 2>/dev/null; then
@@ -108,7 +116,7 @@ jobs:
 
       - name: Build
         run: |
-          ./scripts/build_docs.sh build
+          CMAKE_PREFIX_PATH="$HOME/.pixi/envs/default" ./scripts/build_docs.sh build
 
       - name: Upload documentation artifact
         if: ${{ github.ref == 'refs/heads/main' }}
