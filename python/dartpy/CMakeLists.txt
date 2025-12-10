@@ -20,6 +20,16 @@ set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
 file(GLOB_RECURSE dartpy_headers "*.h" "*.hpp")
 file(GLOB_RECURSE dartpy_sources "*.cpp")
 
+# Drop GUI bindings when their native targets are not built (e.g., OpenGL
+# dependencies missing on CI runners).
+if(NOT TARGET dart-gui)
+  list(FILTER dartpy_headers EXCLUDE REGEX "/gui/")
+  list(FILTER dartpy_sources EXCLUDE REGEX "/gui/")
+elseif(NOT TARGET dart-gui-osg)
+  list(FILTER dartpy_headers EXCLUDE REGEX "/gui/osg/")
+  list(FILTER dartpy_sources EXCLUDE REGEX "/gui/osg/")
+endif()
+
 # Python binding module name
 set(pybind_module dartpy)
 
@@ -46,9 +56,22 @@ set(dartpy_libraries
   dart
   dart-utils
   dart-utils-urdf
-  dart-gui
-  dart-gui-osg
 )
+
+foreach(required_lib dart dart-utils dart-utils-urdf)
+  if(NOT TARGET ${required_lib})
+    message(FATAL_ERROR "Cannot find the library ${required_lib}. Please check the configuration of DART.")
+  endif()
+endforeach()
+
+foreach(optional_lib dart-gui dart-gui-osg)
+  if(TARGET ${optional_lib})
+    list(APPEND dartpy_libraries ${optional_lib})
+  elseif(DART_VERBOSE)
+    message(STATUS "Skipping dartpy bindings for ${optional_lib} because the target is not available.")
+  endif()
+endforeach()
+
 foreach(dartpy_library ${dartpy_libraries})
   if(NOT TARGET ${dartpy_library})
     message(FATAL_ERROR "Cannot find the library ${dartpy_library}. Please check the configuration of DART.")
