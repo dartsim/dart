@@ -56,6 +56,22 @@ jobs:
       - name: Install pixi environment
         run: pixi install --locked
 
+      - name: Record pixi prefix
+        run: |
+          PIXI_PREFIX=$(pixi info --json | python - <<'PY'
+import json, sys
+data = json.load(sys.stdin)
+if "default_environment" in data:
+    prefix = data["default_environment"].get("prefix", "")
+else:
+    envs = data.get("environments_info") or []
+    target = next((env for env in envs if env.get("name") == "default"), envs[0] if envs else None)
+    prefix = target.get("prefix", "") if target else ""
+print(prefix)
+PY
+)
+          echo "PIXI_PREFIX=${PIXI_PREFIX}" >> "$GITHUB_ENV"
+
       - name: Prework for installing packages using cache
         run: |
           if command -v sudo && sudo -n true 2>/dev/null; then
@@ -112,11 +128,11 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip3 install pytest -U --break-system-packages
+          pixi run python -m pip install pytest -U
 
       - name: Build
         run: |
-          CMAKE_PREFIX_PATH="$HOME/.pixi/envs/default" ./scripts/build_docs.sh build
+          CMAKE_PREFIX_PATH="$PIXI_PREFIX" ./scripts/build_docs.sh build
 
       - name: Upload documentation artifact
         if: ${{ github.ref == 'refs/heads/main' }}
