@@ -1,5 +1,6 @@
 #include "dynamics/inverse_kinematics.hpp"
 
+#include "common/repr.hpp"
 #include "dart/common/Diagnostics.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -107,7 +108,19 @@ void defInverseKinematics(nb::module_& m)
           [](IK& self, bool allowIncompleteResult) {
             return self.solveAndApply(allowIncompleteResult);
           },
-          nb::arg("allowIncompleteResult") = true);
+          nb::arg("allowIncompleteResult") = true)
+      .def("__repr__", [](const IK& self) {
+        const auto target = self.getTarget();
+        const auto* node = self.getNode();
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back(
+            "node", node ? repr_string(node->getName()) : "None");
+        fields.emplace_back(
+            "target", target ? repr_string(target->getName()) : "None");
+        fields.emplace_back("active", repr_bool(self.isActive()));
+        fields.emplace_back("dofs", std::to_string(self.getDofs().size()));
+        return format_repr("InverseKinematics", fields);
+      });
 
   m.def(
       "createSimpleFrame",

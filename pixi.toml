@@ -899,7 +899,7 @@ shell-dartpy-forced = { cmd = [
   """
 set -euo pipefail
 echo "Using dartpy from build/default/cpp/{{ build_type }}/python"
-exec env PYTHONPATH="build/default/cpp/{{ build_type }}/python:${PYTHONPATH:-}" python
+exec env PYTHONPATH="build/default/cpp/{{ build_type }}/python:${PYTHONPATH:-}" python -i -c "import dartpy as dart"
 """,
 ], depends-on = [
   { task = "build-py-dev", args = [

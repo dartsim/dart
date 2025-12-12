@@ -1,5 +1,6 @@
 #include "dynamics/joint.hpp"
 
+#include "common/repr.hpp"
 #include "common/type_casters.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
@@ -70,6 +71,21 @@ void defJoint(nb::module_& m)
             return self.getType();
           },
           nb::rv_policy::reference_internal)
+      .def(
+          "__repr__",
+          [](const Joint& self) {
+            const auto* parent = self.getParentBodyNode();
+            const auto* child = self.getChildBodyNode();
+            std::vector<std::pair<std::string, std::string>> fields;
+            fields.emplace_back("name", repr_string(self.getName()));
+            fields.emplace_back("type", repr_string(self.getType()));
+            fields.emplace_back("dofs", std::to_string(self.getNumDofs()));
+            fields.emplace_back(
+                "parent", parent ? repr_string(parent->getName()) : "None");
+            fields.emplace_back(
+                "child", child ? repr_string(child->getName()) : "None");
+            return format_repr("Joint", fields);
+          })
       .def(
           "setActuatorType",
           [](Joint& self, ActuatorType actuatorType) {
