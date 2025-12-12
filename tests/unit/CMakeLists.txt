@@ -103,6 +103,7 @@ dart_build_tests(
     math/test_Icosphere.cpp
     math/test_Math.cpp
     math/test_Random.cpp
+    math/test_ValueEqual.cpp
     math/test_TriMesh.cpp
 )
 
