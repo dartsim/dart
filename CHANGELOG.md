@@ -2,7 +2,7 @@
 
 ## DART 6
 
-### [DART 6.16.1 (Unreleased)](https://github.com/dartsim/dart/milestone/86)
+### [DART 6.16.1 (2025-12-12)](https://github.com/dartsim/dart/milestone/86?closed=1)
 
 * Build
   * Fix FreeListAllocator assertions when building without NDEBUG (e.g., Ubuntu 24.04 GCC 13): [#2295](https://github.com/dartsim/dart/pull/2295)
