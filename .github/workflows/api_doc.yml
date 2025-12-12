@@ -5,7 +5,7 @@ name: API Documentation
 on:
   push:
     branches:
-      - "**"
+      - main
     paths-ignore:
       - ".github/workflows/cache_*.yml"
       - "docker/dev/**"
