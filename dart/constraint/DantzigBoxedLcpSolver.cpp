@@ -30,10 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Diagnostics.hpp"
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+DART_SUPPRESS_DEPRECATED_END
 
 #include "dart/math/lcp/pivoting/DantzigSolver.hpp"
 
+DART_SUPPRESS_DEPRECATED_BEGIN
 namespace dart::constraint {
 
 DantzigBoxedLcpSolver::DantzigBoxedLcpSolver()
@@ -53,3 +58,4 @@ math::LcpSolverPtr DantzigBoxedLcpSolver::getMathSolver() const
 }
 
 } // namespace dart::constraint
+DART_SUPPRESS_DEPRECATED_END

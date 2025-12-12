@@ -30,15 +30,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Diagnostics.hpp"
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
-
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+DART_SUPPRESS_DEPRECATED_END
 
+DART_SUPPRESS_DEPRECATED_BEGIN
 namespace dart::constraint {
 
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver()
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
   applySolver(std::make_shared<DantzigBoxedLcpSolver>());
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(BoxedLcpSolverPtr solver)
@@ -50,7 +56,9 @@ void BoxedLcpConstraintSolver::applySolver(BoxedLcpSolverPtr solver)
 {
   if (!solver) {
     // Default to Dantzig for backward compatibility.
+    DART_SUPPRESS_DEPRECATED_BEGIN
     solver = std::make_shared<DantzigBoxedLcpSolver>();
+    DART_SUPPRESS_DEPRECATED_END
   }
 
   mBoxedLcpSolver = std::move(solver);
@@ -68,3 +76,4 @@ BoxedLcpSolverPtr BoxedLcpConstraintSolver::getBoxedLcpSolver() const
 }
 
 } // namespace dart::constraint
+DART_SUPPRESS_DEPRECATED_END

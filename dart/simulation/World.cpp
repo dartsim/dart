@@ -51,10 +51,11 @@
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
-#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
+
+#include <cmath>
 
 namespace dart {
 namespace simulation {

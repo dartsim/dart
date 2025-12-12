@@ -30,10 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Diagnostics.hpp"
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
+DART_SUPPRESS_DEPRECATED_END
 
 #include "dart/math/lcp/projection/PgsSolver.hpp"
 
+DART_SUPPRESS_DEPRECATED_BEGIN
 namespace dart::constraint {
 
 PgsBoxedLcpSolver::PgsBoxedLcpSolver()
@@ -77,3 +82,4 @@ void PgsBoxedLcpSolver::syncOptions()
 }
 
 } // namespace dart::constraint
+DART_SUPPRESS_DEPRECATED_END
