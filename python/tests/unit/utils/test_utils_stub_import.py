@@ -11,6 +11,7 @@ from pathlib import Path
 def test_utils_stub_sanitized_executes(monkeypatch):
     """Exec the sanitized stub to catch missing symbols such as Options aliases."""
 
+    monkeypatch.setenv("DART_DOCS_SKIP_DARTPY_AUTODOC", "1")
     repo_root = Path(__file__).resolve().parents[4]
     stub_path = repo_root / "python" / "stubs" / "dartpy" / "utils" / "__init__.pyi"
     conf_path = repo_root / "docs" / "readthedocs" / "conf.py"
@@ -19,7 +20,11 @@ def test_utils_stub_sanitized_executes(monkeypatch):
     )
     assert spec is not None and spec.loader is not None
     conf_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(conf_module)
+    sys_path_before = list(sys.path)
+    try:
+        spec.loader.exec_module(conf_module)
+    finally:
+        sys.path[:] = sys_path_before
     sanitized = conf_module._sanitize_stub_source(stub_path.read_text())
 
     # Provide minimal placeholder modules that the stub expects to import.

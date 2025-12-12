@@ -5,6 +5,7 @@
 
 import importlib
 import keyword
+import os
 import re
 import shutil
 import subprocess
@@ -200,7 +201,8 @@ def _ensure_dartpy_available() -> None:
             )
 
 
-_ensure_dartpy_available()
+if os.environ.get("DART_DOCS_SKIP_DARTPY_AUTODOC") not in {"1", "true", "True"}:
+    _ensure_dartpy_available()
 
 
 def _ensure_cpp_api_extra_path(_app, _config):
