@@ -84,7 +84,7 @@
   }
 
 #define GenericJoint_SET_IF_DIFFERENT(mField, value)                           \
-  if (value == Base::mAspectProperties.mField)                                 \
+  if (dart::math::valueEqual(value, Base::mAspectProperties.mField))           \
     return;                                                                    \
   Base::mAspectProperties.mField = value;                                      \
   Joint::incrementVersion();
