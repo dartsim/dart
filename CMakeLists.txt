@@ -621,7 +621,7 @@ if(TARGET dart)
   endif()
 
   if(DART_BUILD_EXAMPLES)
-    if(TARGET dart-gui)
+    if(TARGET dart-gui OR TARGET dart-gui-vsg)
       # Add example subdirectories and an "examples" target.
       if(MSVC)
         add_subdirectory(examples)
@@ -642,7 +642,10 @@ if(TARGET dart)
         message(STATUS "Adding ${examples_length} examples")
       endif()
     else()
-      message(STATUS "Skipping examples (requires dart-gui target; enable DART_BUILD_GUI)")
+      message(
+        STATUS
+        "Skipping examples (requires dart-gui or dart-gui-vsg target; enable DART_BUILD_GUI or DART_BUILD_GUI_VSG)"
+      )
     endif()
   else()
     message(STATUS "Skipping examples (DART_BUILD_EXAMPLES == OFF)")
