@@ -31,8 +31,6 @@ add_subdirectory(capsule_ground_contact)
 if(DART_HAVE_OCTOMAP)
   add_subdirectory(point_cloud)
 endif()
-# TODO: Re-enable when rerun example has source files
-# add_subdirectory(rerun)
 add_subdirectory(rigid_chain)
 add_subdirectory(rigid_cubes)
 add_subdirectory(rigid_loop)

@@ -1,5 +1,6 @@
 #include "collision/collision_option.hpp"
 
+#include "common/repr.hpp"
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -52,7 +53,19 @@ void defCollisionOption(nb::module_& m)
       .def_rw(
           "allowNegativePenetrationDepthContacts",
           &CollisionOption::allowNegativePenetrationDepthContacts)
-      .def_rw("collisionFilter", &CollisionOption::collisionFilter);
+      .def_rw("collisionFilter", &CollisionOption::collisionFilter)
+      .def("__repr__", [](const CollisionOption& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("enable_contact", repr_bool(self.enableContact));
+        fields.emplace_back(
+            "max_contacts", std::to_string(self.maxNumContacts));
+        fields.emplace_back(
+            "allow_negative_penetration_depth_contacts",
+            repr_bool(self.allowNegativePenetrationDepthContacts));
+        fields.emplace_back(
+            "has_filter", self.collisionFilter ? "True" : "False");
+        return format_repr("CollisionOption", fields);
+      });
 }
 
 } // namespace dart::python_nb

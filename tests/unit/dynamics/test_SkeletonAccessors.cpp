@@ -30,43 +30,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_RAYCASTOPTION_HPP_
-#define DART_COLLISION_RAYCASTOPTION_HPP_
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/Group.hpp>
+#include <dart/dynamics/Skeleton.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/common/Deprecated.hpp>
 
-#include <functional>
-#include <memory>
+#include <gtest/gtest.h>
 
-#include <cstddef>
+using namespace dart::dynamics;
 
-namespace dart {
-namespace collision {
-
-class CollisionObject;
-
-struct DART_API RaycastOption
+//==============================================================================
+TEST(SkeletonAccessors, ReturnsMutableBodyNodeVector)
 {
-  using RaycastFilter = std::function<bool(const CollisionObject*)>;
+  auto skeleton = Skeleton::create("skeleton");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* body = pair.second;
 
-  /// Constructor
-  RaycastOption(
-      bool enableAllHits = false,
-      bool sortByClosest = false,
-      RaycastFilter filter = nullptr);
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto& nodes = skeleton->getBodyNodes();
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_EQ(nodes.size(), 1u);
+  EXPECT_EQ(nodes.front(), body);
+}
 
-  /// Returns true when the filter is not set or allows the object.
-  bool passesFilter(const CollisionObject* object) const;
+//==============================================================================
+TEST(ReferentialSkeletonAccessors, ReturnsMutableBodyNodeVector)
+{
+  auto skeleton = Skeleton::create("skeleton");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
 
-  bool mEnableAllHits;
+  auto group = Group::create("group");
+  ASSERT_TRUE(group->addComponent(pair.second));
 
-  bool mSortByClosest;
-
-  /// Optional filter to reject hits from specific collision objects.
-  RaycastFilter mFilter;
-};
-
-} // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_RAYCASTOPTION_HPP_
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto& nodes = group->getBodyNodes();
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_EQ(nodes.size(), 1u);
+  EXPECT_EQ(nodes.front(), pair.second);
+}

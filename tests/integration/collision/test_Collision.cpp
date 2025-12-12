@@ -949,6 +949,128 @@ TEST_F(Collision, testConeCone)
 }
 
 //==============================================================================
+TEST_F(Collision, FCLDeterministicPairOrdering)
+{
+  auto detector = FCLCollisionDetector::create();
+  detector->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  detector->setContactPointComputationMethod(FCLCollisionDetector::DART);
+
+  auto frameA = SimpleFrame::createShared(Frame::World());
+  auto frameB = SimpleFrame::createShared(Frame::World());
+
+  ShapePtr boxShape(new BoxShape(Eigen::Vector3d::Constant(0.1)));
+  frameA->setShape(boxShape);
+  frameB->setShape(boxShape);
+
+  // Slightly overlap the boxes to guarantee contact.
+  frameA->setTranslation(Eigen::Vector3d::Zero());
+  frameB->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.05));
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 1u;
+
+  collision::CollisionResult abResult;
+  auto groupAB1 = detector->createCollisionGroup(frameA.get());
+  auto groupAB2 = detector->createCollisionGroup(frameB.get());
+  EXPECT_TRUE(groupAB1->collide(groupAB2.get(), option, &abResult));
+  ASSERT_EQ(abResult.getNumContacts(), 1u);
+
+  collision::CollisionResult baResult;
+  auto groupBA1 = detector->createCollisionGroup(frameB.get());
+  auto groupBA2 = detector->createCollisionGroup(frameA.get());
+  EXPECT_TRUE(groupBA1->collide(groupBA2.get(), option, &baResult));
+  ASSERT_EQ(baResult.getNumContacts(), 1u);
+
+  const auto& contactAB = abResult.getContact(0);
+  const auto& contactBA = baResult.getContact(0);
+
+  // The collision pair ordering should be deterministic regardless of the
+  // groups passed into collide. Canonicalize the ordering by lexicographic
+  // comparison of shape-frame names; flip the normal if we swap.
+  const auto name1 = contactAB.getShapeFrame1()->getName();
+  const auto name2 = contactAB.getShapeFrame2()->getName();
+  auto orderedAB = contactAB;
+  if (name2 < name1) {
+    std::swap(orderedAB.collisionObject1, orderedAB.collisionObject2);
+    orderedAB.normal = -orderedAB.normal;
+  }
+
+  const auto baName1 = contactBA.getShapeFrame1()->getName();
+  const auto baName2 = contactBA.getShapeFrame2()->getName();
+  auto orderedBA = contactBA;
+  if (baName2 < baName1) {
+    std::swap(orderedBA.collisionObject1, orderedBA.collisionObject2);
+    orderedBA.normal = -orderedBA.normal;
+  }
+
+  ASSERT_GT(orderedAB.normal.norm(), 0.0);
+  ASSERT_GT(orderedBA.normal.norm(), 0.0);
+  EXPECT_EQ(
+      orderedAB.getShapeFrame1()->getName(),
+      orderedBA.getShapeFrame1()->getName());
+  EXPECT_EQ(
+      orderedAB.getShapeFrame2()->getName(),
+      orderedBA.getShapeFrame2()->getName());
+}
+
+//==============================================================================
+static void checkDeterministicPairOrderingForMethod(
+    FCLCollisionDetector::ContactPointComputationMethod method)
+{
+  auto detector = FCLCollisionDetector::create();
+  detector->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  detector->setContactPointComputationMethod(method);
+
+  auto frameA = SimpleFrame::createShared(Frame::World(), "A");
+  auto frameB = SimpleFrame::createShared(Frame::World(), "B");
+
+  ShapePtr boxShape(new BoxShape(Eigen::Vector3d::Constant(0.1)));
+  frameA->setShape(boxShape);
+  frameB->setShape(boxShape);
+
+  // Slightly overlap the boxes to guarantee contact.
+  frameA->setTranslation(Eigen::Vector3d::Zero());
+  frameB->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.05));
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 2u;
+
+  collision::CollisionResult abResult;
+  auto groupAB1 = detector->createCollisionGroup(frameA.get());
+  auto groupAB2 = detector->createCollisionGroup(frameB.get());
+  EXPECT_TRUE(groupAB1->collide(groupAB2.get(), option, &abResult));
+  ASSERT_GE(abResult.getNumContacts(), 1u);
+
+  collision::CollisionResult baResult;
+  auto groupBA1 = detector->createCollisionGroup(frameB.get());
+  auto groupBA2 = detector->createCollisionGroup(frameA.get());
+  EXPECT_TRUE(groupBA1->collide(groupBA2.get(), option, &baResult));
+  ASSERT_GE(baResult.getNumContacts(), 1u);
+
+  // Both orderings should surface the same canonical pair ordering.
+  for (const auto* res : {&abResult, &baResult}) {
+    for (std::size_t i = 0; i < res->getNumContacts(); ++i) {
+      const auto& contact = res->getContact(i);
+      EXPECT_EQ(contact.getShapeFrame1()->getName(), "A");
+      EXPECT_EQ(contact.getShapeFrame2()->getName(), "B");
+      ASSERT_GT(contact.normal.norm(), 0.0);
+    }
+  }
+}
+
+//==============================================================================
+TEST_F(Collision, FCLDeterministicPairOrderingMeshPaths)
+{
+  SCOPED_TRACE("FCL mesh contact via DART path");
+  checkDeterministicPairOrderingForMethod(FCLCollisionDetector::DART);
+
+  SCOPED_TRACE("FCL mesh contact via FCL path");
+  checkDeterministicPairOrderingForMethod(FCLCollisionDetector::FCL);
+}
+
+//==============================================================================
 void testCapsuleCapsule(const std::shared_ptr<CollisionDetector>& cd)
 {
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());

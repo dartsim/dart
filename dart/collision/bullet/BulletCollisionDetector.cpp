@@ -377,16 +377,50 @@ bool BulletCollisionDetector::raycast(
   const auto btFrom = convertVector3(from);
   const auto btTo = convertVector3(to);
 
-  if (option.mEnableAllHits) {
+  const bool needsAllHits
+      = option.mEnableAllHits || static_cast<bool>(option.mFilter);
+
+  if (needsAllHits) {
+    auto lessFraction = [](const RayHit& a, const RayHit& b) {
+      return a.mFraction < b.mFraction;
+    };
+
     auto callback = btCollisionWorld::AllHitsRayResultCallback(btFrom, btTo);
     castedGroup->updateEngineData();
     collisionWorld->rayTest(btFrom, btTo, callback);
 
-    if (result == nullptr)
-      return callback.hasHit();
+    if (result == nullptr) {
+      if (!callback.hasHit())
+        return false;
+
+      if (!option.mFilter)
+        return true;
+
+      for (int i = 0; i < callback.m_collisionObjects.size(); ++i) {
+        const auto* collObj = static_cast<BulletCollisionObject*>(
+            callback.m_collisionObjects[i]->getUserPointer());
+        if (option.passesFilter(collObj))
+          return true;
+      }
+
+      return false;
+    }
 
     if (callback.hasHit()) {
       reportRayHits(callback, option, *result);
+
+      if (!option.mEnableAllHits && !result->mRayHits.empty()) {
+        if (option.mSortByClosest) {
+          result->mRayHits.resize(1);
+        } else {
+          const auto closest = std::min_element(
+              result->mRayHits.begin(), result->mRayHits.end(), lessFraction);
+          const RayHit closestHit = *closest;
+          result->mRayHits.clear();
+          result->mRayHits.emplace_back(closestHit);
+        }
+      }
+
       return result->hasHit();
     } else {
       return false;
@@ -765,7 +799,7 @@ RayHit convertRayHit(
 //==============================================================================
 void reportRayHits(
     const btCollisionWorld::ClosestRayResultCallback callback,
-    const RaycastOption& /*option*/,
+    const RaycastOption& option,
     RaycastResult& result)
 {
   // This function shouldn't be called if callback has not ray hit.
@@ -779,7 +813,9 @@ void reportRayHits(
 
   result.mRayHits.clear();
   result.mRayHits.reserve(1);
-  result.mRayHits.emplace_back(rayHit);
+
+  if (option.passesFilter(rayHit.mCollisionObject))
+    result.mRayHits.emplace_back(rayHit);
 }
 
 //==============================================================================
@@ -807,7 +843,8 @@ void reportRayHits(
         callback.m_hitPointWorld[i],
         callback.m_hitNormalWorld[i],
         callback.m_hitFractions[i]);
-    result.mRayHits.emplace_back(rayHit);
+    if (option.passesFilter(rayHit.mCollisionObject))
+      result.mRayHits.emplace_back(rayHit);
   }
 
   if (option.mSortByClosest)

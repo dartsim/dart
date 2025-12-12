@@ -17,6 +17,9 @@ if(DART_HAVE_BULLET)
   dart_add_test("unit" UNIT_collision_BulletContact collision/test_BulletContact.cpp)
 endif()
 
+dart_add_test(
+  "unit" UNIT_collision_FCLCollisionObject collision/test_FCLCollisionObject.cpp)
+
 # ==============================================================================
 # Common Tests
 # ==============================================================================
@@ -70,6 +73,7 @@ dart_add_test(
   "unit" UNIT_dynamics_BodyNodePotentialEnergy dynamics/test_BodyNodePotentialEnergy.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeNodeInertia dynamics/test_ShapeNodeInertia.cpp)
 dart_add_test("unit" UNIT_dynamics_SkeletonClone dynamics/test_SkeletonClone.cpp)
+dart_add_test("unit" UNIT_dynamics_SkeletonAccessors dynamics/test_SkeletonAccessors.cpp)
 dart_add_test("unit" UNIT_dynamics_Noexcept dynamics/test_Noexcept.cpp)
 dart_add_test(
   "unit" UNIT_dynamics_BodyNodeCollisionSignals dynamics/test_BodyNodeCollisionSignals.cpp)
@@ -99,6 +103,7 @@ dart_build_tests(
     math/test_Icosphere.cpp
     math/test_Math.cpp
     math/test_Random.cpp
+    math/test_ValueEqual.cpp
     math/test_TriMesh.cpp
 )
 
@@ -106,6 +111,14 @@ dart_build_tests(
 if(TARGET dart)
   dart_add_test("unit" UNIT_math_Convhull math/test_Convhull.cpp)
   target_link_libraries(UNIT_math_Convhull dart)
+endif()
+
+# ==============================================================================
+# GUI Tests
+# ==============================================================================
+if(TARGET dart-gui)
+  dart_add_test(
+    "unit" UNIT_gui_ImGuiWindowScaling gui/test_ImGuiWindowScaling.cpp)
 endif()
 
 # ==============================================================================

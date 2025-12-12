@@ -35,6 +35,7 @@
 #include "dart/common/Resource.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
@@ -49,11 +50,19 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <map>
+#include <sstream>
+#include <string>
 
 #include <cstring>
+
+#if DART_HAVE_spdlog
+  #include <spdlog/sinks/ostream_sink.h>
+  #include <spdlog/spdlog.h>
+#endif
 
 using namespace dart;
 using namespace dart::dynamics;
@@ -138,6 +147,74 @@ public:
 
 private:
   std::map<std::string, std::string> mFiles;
+};
+
+class LogCapture
+{
+public:
+  LogCapture()
+  {
+#if DART_HAVE_spdlog
+    mStream = std::make_shared<std::ostringstream>();
+    mSink = std::make_shared<spdlog::sinks::ostream_sink_mt>(*mStream);
+    mPreviousLogger = spdlog::default_logger();
+    mLogger = std::make_shared<spdlog::logger>("sdf-parser-log-capture", mSink);
+    mLogger->set_level(spdlog::level::trace);
+    mLogger->flush_on(spdlog::level::trace);
+    spdlog::set_default_logger(mLogger);
+    // Capture third-party warnings that log directly to stdout/stderr.
+    mOldCout = std::cout.rdbuf(mStream->rdbuf());
+    mOldCerr = std::cerr.rdbuf(mStream->rdbuf());
+#else
+    mOldCout = std::cout.rdbuf(mStream.rdbuf());
+    mOldCerr = std::cerr.rdbuf(mStream.rdbuf());
+#endif
+  }
+
+  ~LogCapture()
+  {
+#if DART_HAVE_spdlog
+    if (mLogger)
+      mLogger->flush();
+    spdlog::set_default_logger(mPreviousLogger);
+    if (mLogger)
+      spdlog::drop(mLogger->name());
+    if (mOldCout)
+      std::cout.rdbuf(mOldCout);
+    if (mOldCerr)
+      std::cerr.rdbuf(mOldCerr);
+#else
+    std::cout.rdbuf(mOldCout);
+    std::cerr.rdbuf(mOldCerr);
+#endif
+  }
+
+  std::string contents()
+  {
+#if DART_HAVE_spdlog
+    if (mLogger)
+      mLogger->flush();
+    if (mStream)
+      return mStream->str();
+    return {};
+#else
+    return mStream.str();
+#endif
+  }
+
+private:
+#if DART_HAVE_spdlog
+  std::shared_ptr<std::ostringstream> mStream;
+  std::shared_ptr<spdlog::sinks::ostream_sink_mt> mSink;
+  std::shared_ptr<spdlog::logger> mPreviousLogger;
+  std::shared_ptr<spdlog::logger> mLogger;
+  std::streambuf* mOldCout{nullptr};
+  std::streambuf* mOldCerr{nullptr};
+#else
+  std::ostringstream mStream;
+  std::streambuf* mOldCout;
+  std::streambuf* mOldCerr;
+#endif
 };
 
 } // namespace
@@ -479,4 +556,105 @@ f 1 3 4
           foundMesh = true;
       });
   EXPECT_TRUE(foundMesh);
+}
+
+//==============================================================================
+TEST(SdfParser, WarnsOnMissingInertialBlock)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string modelUri = "memory://pkg/models/missing_inertial/model.sdf";
+
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="no_inertial">
+    <link name="link_without_inertial">
+      <visual name="v">
+        <geometry>
+          <box><size>0.1 0.1 0.1</size></box>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
+)";
+
+  retriever->add(modelUri, modelSdf);
+
+  LogCapture capture;
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  auto skeleton = SdfParser::readSkeleton(modelUri, options);
+
+  ASSERT_TRUE(skeleton);
+  ASSERT_EQ(skeleton->getNumBodyNodes(), 1u);
+  const auto* body = skeleton->getBodyNode(0);
+  EXPECT_DOUBLE_EQ(body->getMass(), 1.0);
+
+  const auto logs = capture.contents();
+  if (!logs.empty()) {
+    EXPECT_NE(logs.find("missing <inertial>"), std::string::npos)
+        << "Expected warning about missing <inertial> block in logs: " << logs;
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, WarnsOnTinyMassAndDefaultsInertia)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string modelUri = "memory://pkg/models/tiny_mass/model.sdf";
+  const double tinyMass = 1e-14;
+  const double clampedMass = 1e-9; // matches parser clamp
+
+  const std::string modelSdf = std::string(R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="tiny_mass_model">
+    <link name="link_with_mass_only">
+      <inertial>
+        <mass>)") + std::to_string(tinyMass)
+                               + R"(</mass>
+      </inertial>
+      <collision name="c">
+        <geometry>
+          <box><size>0.1 0.1 0.1</size></box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
+)";
+
+  retriever->add(modelUri, modelSdf);
+
+  LogCapture capture;
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  auto skeleton = SdfParser::readSkeleton(modelUri, options);
+
+  ASSERT_TRUE(skeleton);
+  ASSERT_EQ(skeleton->getNumBodyNodes(), 1u);
+  const auto* body = skeleton->getBodyNode(0);
+  const auto inertia = body->getInertia();
+  EXPECT_DOUBLE_EQ(inertia.getMass(), clampedMass);
+  const Eigen::Matrix3d expectedMoment
+      = Eigen::Matrix3d::Identity() * clampedMass;
+  EXPECT_TRUE(inertia.getMoment().isApprox(expectedMoment));
+
+  const auto logs = capture.contents();
+  const bool warningsCaptured = !logs.empty();
+  if (warningsCaptured) {
+    const bool hasSmallMassWarning
+        = logs.find("very small mass") != std::string::npos
+          || logs.find("non-positive mass") != std::string::npos;
+    EXPECT_TRUE(hasSmallMassWarning)
+        << "Expected warning about tiny mass clamping in logs: " << logs;
+    std::string logsLower = logs;
+    std::transform(
+        logsLower.begin(), logsLower.end(), logsLower.begin(), ::tolower);
+    EXPECT_NE(logsLower.find("clamping to"), std::string::npos)
+        << "Expected warning about tiny mass clamping in logs: " << logs;
+    EXPECT_NE(logs.find("defines <mass> but no <inertia>"), std::string::npos)
+        << "Expected warning about missing inertia tensor in logs: " << logs;
+  }
 }

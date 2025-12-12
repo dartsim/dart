@@ -252,10 +252,9 @@ ShapePtr ArrowShape::clone() const
   new_shape->mHead = mHead;
   new_shape->mProperties = mProperties;
 
-  new_shape->mMesh = new_scene;
-  new_shape->mMeshUri = mMeshUri;
+  new_shape->setMesh(
+      new_scene, MeshOwnership::Copied, mMeshUri, mResourceRetriever);
   new_shape->mMeshPath = mMeshPath;
-  new_shape->mResourceRetriever = mResourceRetriever;
   new_shape->mDisplayList = mDisplayList;
   new_shape->mScale = mScale;
   new_shape->mColorMode = mColorMode;
@@ -279,6 +278,8 @@ void ArrowShape::instantiate(std::size_t resolution)
   scene->mMeshes = new aiMesh*[3];
   scene->mRootNode = node;
 
+  // Explicitly record the material count so Assimp's destructor cleans it up.
+  scene->mNumMaterials = 1;
   scene->mMaterials = new aiMaterial*[1];
   scene->mMaterials[0] = new aiMaterial;
 
@@ -387,7 +388,7 @@ void ArrowShape::instantiate(std::size_t resolution)
     face->mIndices[2] = 2 * resolution;
   }
 
-  mMesh = scene;
+  setMesh(scene, MeshOwnership::Manual, common::Uri(), nullptr);
 
   // setColor(mColor);
   // TODO(JS)

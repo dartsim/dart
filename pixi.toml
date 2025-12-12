@@ -675,15 +675,7 @@ run-cpp-target = { cmd = """
   { arg = "build_type", default = "Release" },
 ] }
 
-ex = { depends-on = [
-  { task = "run-cpp-target", args = [
-    "{{ target }}",
-    "{{ build_type }}",
-  ] },
-], args = [
-  { arg = "target", default = "hello_world" },
-  { arg = "build_type", default = "Release" },
-] }
+ex = { cmd = "python scripts/run_cpp_example.py", depends-on = ["config"] }
 
 ex-atlas-puppet = { depends-on = [
   { task = "run-cpp-target", args = [
@@ -907,7 +899,7 @@ shell-dartpy-forced = { cmd = [
   """
 set -euo pipefail
 echo "Using dartpy from build/default/cpp/{{ build_type }}/python"
-exec env PYTHONPATH="build/default/cpp/{{ build_type }}/python:${PYTHONPATH:-}" python
+exec env PYTHONPATH="build/default/cpp/{{ build_type }}/python:${PYTHONPATH:-}" python -i -c "import dartpy as dart"
 """,
 ], depends-on = [
   { task = "build-py-dev", args = [
