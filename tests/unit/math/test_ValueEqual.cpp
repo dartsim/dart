@@ -76,6 +76,14 @@ TEST(ValueEqualTest, IntegralEquality)
   EXPECT_TRUE(valueEqual(static_cast<unsigned>(3), static_cast<unsigned>(3)));
 }
 
+TEST(ValueEqualTest, IsEqualAlias)
+{
+  using dart::math::isEqual;
+
+  EXPECT_TRUE(isEqual(3.0, 3.0));
+  EXPECT_FALSE(isEqual(3.0, 4.0));
+}
+
 TEST(ValueEqualTest, EigenContainers)
 {
   Eigen::Vector2d a;
@@ -91,6 +99,17 @@ TEST(ValueEqualTest, EigenContainers)
   EXPECT_FALSE(valueEqual(a, c));
 }
 
+TEST(ValueEqualTest, EigenDimensionMismatch)
+{
+  Eigen::Vector2d a = Eigen::Vector2d::Zero();
+  Eigen::Vector3d b = Eigen::Vector3d::Zero();
+
+  EXPECT_FALSE(valueEqual(a, b));
+
+  using dart::math::isApprox;
+  EXPECT_FALSE(isApprox(a, b));
+}
+
 TEST(ValueEqualTest, IsApproxScalar)
 {
   using dart::math::isApprox;
@@ -99,9 +118,24 @@ TEST(ValueEqualTest, IsApproxScalar)
   EXPECT_TRUE(isApprox(1.0, 1.0 + 1e-7, 1e-6, 1e-6));
   EXPECT_FALSE(isApprox(1.0, 1.0 + 1e-3, 1e-6, 1e-6));
 
+  EXPECT_TRUE(isApprox(
+      std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::infinity()));
+  EXPECT_FALSE(isApprox(
+      std::numeric_limits<double>::infinity(),
+      -std::numeric_limits<double>::infinity()));
+
   EXPECT_FALSE(isApprox(
       std::numeric_limits<double>::quiet_NaN(),
       std::numeric_limits<double>::quiet_NaN()));
+}
+
+TEST(ValueEqualTest, IsApproxIntegralScalar)
+{
+  using dart::math::isApprox;
+
+  EXPECT_TRUE(isApprox(5, 5));
+  EXPECT_FALSE(isApprox(5, 6));
 }
 
 TEST(ValueEqualTest, IsApproxEigen)
@@ -117,6 +151,19 @@ TEST(ValueEqualTest, IsApproxEigen)
   EXPECT_FALSE(isApprox(v1, v2, 1e-8, 1e-8));
 }
 
+TEST(ValueEqualTest, IsApproxEigenIntegral)
+{
+  using dart::math::isApprox;
+
+  Eigen::Vector2i i1;
+  i1 << 1, 2;
+  Eigen::Vector2i i2 = i1;
+  i2[1] = 3;
+
+  EXPECT_TRUE(isApprox(i1, i1));
+  EXPECT_FALSE(isApprox(i1, i2));
+}
+
 TEST(ValueEqualTest, IsZeroScalar)
 {
   using dart::math::isZero;
@@ -125,6 +172,7 @@ TEST(ValueEqualTest, IsZeroScalar)
   EXPECT_TRUE(isZero(-0.0));
   EXPECT_TRUE(isZero(1e-7, 1e-6));
   EXPECT_FALSE(isZero(1e-3, 1e-6));
+  EXPECT_FALSE(isZero(std::numeric_limits<double>::quiet_NaN()));
   EXPECT_TRUE(isZero(0));
   EXPECT_FALSE(isZero(5));
 }
@@ -132,6 +180,9 @@ TEST(ValueEqualTest, IsZeroScalar)
 TEST(ValueEqualTest, IsZeroEigen)
 {
   using dart::math::isZero;
+
+  Eigen::VectorXd empty;
+  EXPECT_TRUE(isZero(empty));
 
   Eigen::Vector3d zeros = Eigen::Vector3d::Zero();
   EXPECT_TRUE(isZero(zeros));

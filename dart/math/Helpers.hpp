@@ -250,7 +250,7 @@ inline std::enable_if_t<std::is_floating_point_v<T>, bool> isApprox(
     return false;
 
   if (std::isinf(lhs) || std::isinf(rhs))
-    return lhs == rhs;
+    return valueEqual(lhs, rhs);
 
   const T diff = std::abs(lhs - rhs);
   const T scale = std::max(std::abs(lhs), std::abs(rhs));
