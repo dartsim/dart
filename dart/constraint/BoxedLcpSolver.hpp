@@ -53,7 +53,7 @@ public:
   virtual ~BoxedLcpSolver() = default;
 
   /// Human-readable solver name (e.g., "DantzigBoxedLcpSolver").
-  virtual std::string getType() const = 0;
+  virtual const std::string& getType() const = 0;
 
   /// Underlying math solver instance.
   virtual math::LcpSolverPtr getMathSolver() const = 0;

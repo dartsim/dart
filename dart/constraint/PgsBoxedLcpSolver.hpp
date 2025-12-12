@@ -56,7 +56,7 @@ public:
   void setOption(const Option& option);
   Option getOption() const;
 
-  std::string getType() const override;
+  const std::string& getType() const override;
   math::LcpSolverPtr getMathSolver() const override;
 
 private:

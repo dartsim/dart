@@ -47,9 +47,10 @@ DantzigBoxedLcpSolver::DantzigBoxedLcpSolver()
   // Empty
 }
 
-std::string DantzigBoxedLcpSolver::getType() const
+const std::string& DantzigBoxedLcpSolver::getType() const
 {
-  return "DantzigBoxedLcpSolver";
+  static const std::string type = "DantzigBoxedLcpSolver";
+  return type;
 }
 
 math::LcpSolverPtr DantzigBoxedLcpSolver::getMathSolver() const

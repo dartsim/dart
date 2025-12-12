@@ -58,9 +58,10 @@ PgsBoxedLcpSolver::Option PgsBoxedLcpSolver::getOption() const
   return mOption;
 }
 
-std::string PgsBoxedLcpSolver::getType() const
+const std::string& PgsBoxedLcpSolver::getType() const
 {
-  return "PgsBoxedLcpSolver";
+  static const std::string type = "PgsBoxedLcpSolver";
+  return type;
 }
 
 math::LcpSolverPtr PgsBoxedLcpSolver::getMathSolver() const
