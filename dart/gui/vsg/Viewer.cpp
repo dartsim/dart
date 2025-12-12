@@ -44,11 +44,6 @@ Viewer::Viewer(
 {
   mWorldNode = std::make_unique<WorldNode>(mWorld);
   mScene->addChild(mWorldNode->getGroup());
-  if (mWorldNode) {
-    // Populate the scene graph before compilation so VSG can create Vulkan
-    // objects for the geometry during viewer->compile().
-    mWorldNode->refresh();
-  }
   initialize(std::move(traits));
 }
 
@@ -91,6 +86,11 @@ void Viewer::initialize(::vsg::ref_ptr<::vsg::WindowTraits> traits)
   mViewer->assignRecordAndSubmitTaskAndPresentation({commandGraph});
 
   try {
+    if (mWorldNode) {
+      // Populate the scene graph before compilation so VSG can create Vulkan
+      // objects for the geometry during viewer->compile().
+      mWorldNode->refresh();
+    }
     mViewer->compile();
   } catch (const ::vsg::Exception& e) {
     throw std::runtime_error(e.message);
