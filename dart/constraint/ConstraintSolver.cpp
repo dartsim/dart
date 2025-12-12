@@ -886,10 +886,8 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     mHiBackup = mHi;
     mFIndexBackup = mFIndex;
   }
-  const bool earlyTermination = (mSecondaryLcpSolver != nullptr);
   DART_ASSERT(mLcpSolver);
   math::LcpOptions primaryOptions = mLcpSolver->getDefaultOptions();
-  primaryOptions.earlyTermination = earlyTermination;
   Eigen::MatrixXd Ablock = mA.leftCols(static_cast<Eigen::Index>(n)).eval();
   math::LcpProblem problem(Ablock, mB, mLo, mHi, mFIndex);
   math::LcpResult primaryResult
