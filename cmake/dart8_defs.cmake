@@ -488,6 +488,7 @@ function(dart8_add_unit_test_dir MODULE_NAME MODULE_DIR)
   # Create meta target for this module
   add_custom_target(dart8_tests_${MODULE_NAME}
     DEPENDS ${module_test_targets}
+    COMMAND ${CMAKE_COMMAND} -E echo "Built DART8 ${MODULE_NAME} unit tests."
     COMMENT "Building DART8 ${MODULE_NAME} tests"
   )
 
