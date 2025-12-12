@@ -364,7 +364,7 @@ inline std::
 // check if it is an integer
 inline bool isInt(double _x)
 {
-  return isApprox(round(_x), _x, static_cast<double>(1e-6));
+  return isApprox(round(_x), _x, static_cast<double>(1e-6), 0.0);
 }
 
 /// @brief Returns whether _v is a NaN (Not-A-Number) value

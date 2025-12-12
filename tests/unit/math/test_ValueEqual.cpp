@@ -193,3 +193,20 @@ TEST(ValueEqualTest, IsZeroEigen)
   nearZero[1] = 1e-3;
   EXPECT_FALSE(isZero(nearZero, 1e-6));
 }
+
+TEST(ValueEqualTest, IsIntUsesAbsoluteTolerance)
+{
+  using dart::math::isInt;
+
+  EXPECT_TRUE(isInt(0.0));
+  EXPECT_TRUE(isInt(1.0));
+  EXPECT_FALSE(isInt(0.5));
+  EXPECT_FALSE(isInt(-0.5));
+
+  EXPECT_TRUE(isInt(1.0 + 5e-7));
+  EXPECT_FALSE(isInt(1.0 + 2e-6));
+
+  const double large = 1e12;
+  EXPECT_TRUE(isInt(large));
+  EXPECT_FALSE(isInt(large + 0.5));
+}
