@@ -81,6 +81,7 @@ set(dartpy_headers
   common/module.hpp
   common/logging.hpp
   common/observer.hpp
+  common/repr.hpp
   common/resource.hpp
   common/resource_retriever.hpp
   common/stopwatch.hpp
