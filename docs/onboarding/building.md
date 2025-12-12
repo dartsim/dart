@@ -183,8 +183,8 @@ For all available CMake configuration options and their defaults, refer to [`CMa
 - `DART_BUILD_GUI_VSG` - Enable the experimental VulkanSceneGraph GUI backend (`dart-gui-vsg`)
 - `DART_REQUIRE_VSG` - If `ON`, fail configuration when VulkanSceneGraph is missing while `DART_BUILD_GUI_VSG=ON`
 - `DART_BUILD_TESTS` - Build C++ tests (wraps the standard `BUILD_TESTING` option)
-- `DART_BUILD_EXAMPLES` - Build the GUI-based example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
-- `DART_BUILD_TUTORIALS` - Build the GUI-based tutorial targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
+- `DART_BUILD_EXAMPLES` - Build example targets (defaults to `ON`; GUI examples require `DART_BUILD_GUI=ON` and VSG examples require `DART_BUILD_GUI_VSG=ON`)
+- `DART_BUILD_TUTORIALS` - Build tutorial targets (defaults to `ON`; requires `DART_BUILD_GUI=ON`)
 
 ### Platform-Specific Configuration Examples
 
