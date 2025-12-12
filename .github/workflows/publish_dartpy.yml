@@ -44,48 +44,59 @@ jobs:
 
   build_wheels:
     name: ${{ matrix.os }}-${{ matrix.build }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        build: ["cp313-manylinux_x86_64"]
-        experimental: [false]
-        release_only: [false]
-
         include:
+          # Linux wheels require a container engine (docker/podman). Some of our
+          # self-hosted runners do not have docker installed, so run Linux wheel
+          # builds on a GitHub-hosted runner image that includes docker.
           - os: ubuntu-latest
+            runner: ubuntu-24.04
+            build: "cp313-manylinux_x86_64"
+            experimental: false
+            release_only: false
+
+          - os: ubuntu-latest
+            runner: ubuntu-24.04
             build: "cp312-manylinux_x86_64"
             experimental: false
             release_only: true
 
           - os: ubuntu-latest
+            runner: ubuntu-24.04
             build: "cp311-manylinux_x86_64"
             experimental: false
             release_only: true
 
           - os: ubuntu-latest
+            runner: ubuntu-24.04
             build: "cp310-manylinux_x86_64"
             experimental: false
             release_only: true
 
           - os: macos-latest
+            runner: macos-latest
             build: "cp313-macosx_arm64"
             experimental: false
             release_only: false
 
           - os: macos-latest
+            runner: macos-latest
             build: "cp312-macosx_arm64"
             experimental: false
             release_only: true
 
           - os: windows-latest
+            runner: windows-latest
             build: "cp313-win_amd64"
             experimental: false
             release_only: false
 
           - os: windows-latest
+            runner: windows-latest
             build: "cp312-win_amd64"
             experimental: false
             release_only: true

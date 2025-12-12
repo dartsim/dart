@@ -126,10 +126,8 @@ private:
     /// Merges this memory block with the given memory block
     void merge(MemoryBlockHeader* other);
 
-#if DART_BUILD_MODE_DEBUG
-    /// [Debug only] Returns whether this memory block is valid
+    /// Returns whether this memory block is valid
     bool isValid() const;
-#endif
   };
 
   /// Allocates a new memory block for \c sizeToAllocate bytes
