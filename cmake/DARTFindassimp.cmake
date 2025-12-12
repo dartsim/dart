@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(assimp 5.2.0 REQUIRED MODULE)
+find_package(assimp 5.2.2 REQUIRED MODULE)
 
 # Set target assimp if not set
 if((ASSIMP_FOUND OR assimp_FOUND) AND NOT TARGET assimp)
