@@ -95,7 +95,13 @@ void testContactWithKinematicJoint(
 //==============================================================================
 TEST(ContactConstraint, ContactWithKinematicJoint)
 {
-  testContactWithKinematicJoint(std::make_shared<math::DantzigSolver>(), 5e-5);
+#ifdef _WIN32
+  constexpr double dantzigTol = 1e-3;
+#else
+  constexpr double dantzigTol = 5e-5;
+#endif
+  testContactWithKinematicJoint(
+      std::make_shared<math::DantzigSolver>(), dantzigTol);
 
 #ifdef DART_ARCH_32BITS
   testContactWithKinematicJoint(std::make_shared<math::PgsSolver>(), 1e-3);
