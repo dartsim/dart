@@ -65,7 +65,6 @@ def test_free_joint_world_jacobian_translational_dofs():
     skel = dart.Skeleton("test_free_joint_world_jacobian")
     joint, body = skel.create_free_joint_and_body_node_pair()
 
-    world = dart.Frame.world()
     offset = np.zeros(3)
 
     positions = np.zeros(6)
@@ -85,8 +84,12 @@ def test_free_joint_world_jacobian_translational_dofs():
     spatial_from_jac = world_jac.dot(velocities)
     assert np.allclose(spatial_from_jac[3:], velocities[3:], atol=1e-12)
 
-    spatial_velocity = np.array(body.getSpatialVelocity()).reshape(6)
-    assert np.allclose(spatial_velocity[3:], velocities[3:], atol=1e-12)
+    rotation = np.array(body.get_world_transform().rotation())
+    spatial_velocity_body = np.array(body.get_spatial_velocity()).reshape(6)
+    spatial_velocity = np.concatenate(
+        [rotation.dot(spatial_velocity_body[:3]), rotation.dot(spatial_velocity_body[3:])]
+    )
+    assert np.allclose(spatial_velocity, spatial_from_jac, atol=1e-12)
 
     num_tests = 10
     for _ in range(num_tests):
@@ -103,8 +106,12 @@ def test_free_joint_world_jacobian_translational_dofs():
         spatial_from_jac = world_jac.dot(velocities)
         assert np.allclose(spatial_from_jac[3:], velocities[3:], atol=1e-12)
 
-        spatial_velocity = np.array(body.getSpatialVelocity()).reshape(6)
-        assert np.allclose(spatial_velocity[3:], velocities[3:], atol=1e-12)
+        rotation = np.array(body.get_world_transform().rotation())
+        spatial_velocity_body = np.array(body.get_spatial_velocity()).reshape(6)
+        spatial_velocity = np.concatenate(
+            [rotation.dot(spatial_velocity_body[:3]), rotation.dot(spatial_velocity_body[3:])]
+        )
+        assert np.allclose(spatial_velocity, spatial_from_jac, atol=1e-12)
 
 
 if __name__ == "__main__":
