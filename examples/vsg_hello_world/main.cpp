@@ -17,6 +17,8 @@
 #include <filesystem>
 #include <cstdlib>
 #include <iostream>
+#include <string_view>
+#include <vector>
 
 using namespace dart;
 
@@ -62,6 +64,16 @@ dynamics::SkeletonPtr createBox()
 
 int main()
 {
+  const char* run_loop = std::getenv("DART_VSG_RUN");
+  const bool should_run = run_loop && std::string_view(run_loop) == "1";
+  if (!should_run) {
+    std::cout
+        << "[vsg_hello_world] Example built; skipping viewer startup. Set "
+           "DART_VSG_RUN=1 to create a window. (Optional: set DART_VSG_FRAMES "
+           "to a positive integer to run a fixed number of frames.)\n";
+    return 0;
+  }
+
   const char* display = std::getenv("DISPLAY");
   const char* wayland = std::getenv("WAYLAND_DISPLAY");
   if ((!display || display[0] == '\0') && (!wayland || wayland[0] == '\0')) {
@@ -76,10 +88,17 @@ int main()
     has_icd = icd_env[0] != '\0';
   } else {
     const std::vector<std::filesystem::path> icd_paths{
+        (std::getenv("CONDA_PREFIX")
+             ? std::filesystem::path(std::getenv("CONDA_PREFIX"))
+                   / "share/vulkan/icd.d"
+             : std::filesystem::path()),
         "/usr/share/vulkan/icd.d",
         "/etc/vulkan/icd.d",
         "/usr/local/share/vulkan/icd.d"};
     for (const auto& path : icd_paths) {
+      if (path.empty()) {
+        continue;
+      }
       if (std::filesystem::exists(path) && !std::filesystem::is_empty(path)) {
         has_icd = true;
         break;
@@ -102,14 +121,20 @@ int main()
     viewer.simulate(true);
     viewer.setNumStepsPerCycle(4);
 
-    const char* run_loop = std::getenv("DART_VSG_RUN");
-    if (run_loop && std::string_view(run_loop) == "1") {
-      viewer.run();
+    const char* frames_env = std::getenv("DART_VSG_FRAMES");
+    const long frames = frames_env ? std::strtol(frames_env, nullptr, 10) : 0;
+    if (frames > 0) {
+      for (long i = 0; i < frames; ++i) {
+        if (!viewer.step()) {
+          break;
+        }
+      }
     } else {
-      std::cout
-          << "[vsg_hello_world] VSG initialized; skipping render loop. Set "
-             "DART_VSG_RUN=1 to run the viewer.\n";
+      viewer.run();
     }
+  } catch (const ::vsg::Exception& e) {
+    std::cerr << "[vsg_hello_world] VSG error: " << e.message << "\n";
+    return 1;
   } catch (const std::exception& e) {
     std::cerr << "[vsg_hello_world] Failed to start VSG viewer: " << e.what()
               << "\n";

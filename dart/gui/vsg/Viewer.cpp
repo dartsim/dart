@@ -44,6 +44,11 @@ Viewer::Viewer(
 {
   mWorldNode = std::make_unique<WorldNode>(mWorld);
   mScene->addChild(mWorldNode->getGroup());
+  if (mWorldNode) {
+    // Populate the scene graph before compilation so VSG can create Vulkan
+    // objects for the geometry during viewer->compile().
+    mWorldNode->refresh();
+  }
   initialize(std::move(traits));
 }
 
@@ -53,6 +58,14 @@ void Viewer::initialize(::vsg::ref_ptr<::vsg::WindowTraits> traits)
 {
   if (mInitialized) {
     return;
+  }
+
+  ::vsg::ShaderCompiler shaderCompiler;
+  if (!shaderCompiler.supported()) {
+    throw std::runtime_error(
+        "VulkanSceneGraph shader compilation is not supported by this VSG "
+        "build. Build/install VSG with GLSLang enabled (VSG_SUPPORTS_ShaderCompiler=1) "
+        "or use a precompiled-shader setup.");
   }
 
   if (!traits) {
@@ -77,7 +90,11 @@ void Viewer::initialize(::vsg::ref_ptr<::vsg::WindowTraits> traits)
   auto commandGraph = ::vsg::createCommandGraphForView(window, camera, mScene);
   mViewer->assignRecordAndSubmitTaskAndPresentation({commandGraph});
 
-  mViewer->compile();
+  try {
+    mViewer->compile();
+  } catch (const ::vsg::Exception& e) {
+    throw std::runtime_error(e.message);
+  }
   mInitialized = true;
 }
 
