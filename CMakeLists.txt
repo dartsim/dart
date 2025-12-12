@@ -585,7 +585,11 @@ if(TARGET dart)
     endif()
 
     if(DART_BUILD_DART8)
-      add_subdirectory(tests_dart8 EXCLUDE_FROM_ALL)
+      if(MSVC)
+        add_subdirectory(tests_dart8)
+      else()
+        add_subdirectory(tests_dart8 EXCLUDE_FROM_ALL)
+      endif()
     endif()
 
   elseif(NOT DART_BUILD_TESTS)
