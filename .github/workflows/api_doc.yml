@@ -58,18 +58,7 @@ jobs:
 
       - name: Record pixi prefix
         run: |
-          PIXI_PREFIX=$(pixi info --json | python - <<'PY'
-          import json, sys
-          data = json.load(sys.stdin)
-          if "default_environment" in data:
-              prefix = data["default_environment"].get("prefix", "")
-          else:
-              envs = data.get("environments_info") or []
-              target = next((env for env in envs if env.get("name") == "default"), envs[0] if envs else None)
-              prefix = target.get("prefix", "") if target else ""
-          print(prefix)
-          PY
-          )
+          PIXI_PREFIX=$(pixi -q run python -c "import sys; print(sys.prefix)")
           echo "PIXI_PREFIX=${PIXI_PREFIX}" >> "$GITHUB_ENV"
 
       - name: Prework for installing packages using cache
