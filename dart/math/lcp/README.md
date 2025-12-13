@@ -1,263 +1,82 @@
-# LCP Solver Architecture
+# LCP Solvers in DART
 
-This directory contains the Linear Complementarity Problem (LCP) solver infrastructure for DART.
+This directory contains the Linear Complementarity Problem (LCP) solver
+infrastructure for DART.
 
 ## Directory Structure
 
 ```
-lcp/
-├── Types.hpp/cpp               # Common types (LcpOptions, LcpResult, SolverStatus)
-├── Solver.hpp/cpp              # Base LcpSolver interface class
-├── All.hpp                     # Convenience header including all solvers
+dart/math/lcp/
+├── LcpTypes.hpp/cpp            # LcpProblem, LcpOptions, LcpResult, status codes
+├── LcpSolver.hpp/cpp           # LcpSolver interface
+├── LcpValidation.hpp           # Shared residual/KKT validation utilities
+├── All.hpp                     # Convenience umbrella header
 │
+├── pivoting/
+│   ├── DantzigSolver.hpp/cpp   # Boxed LCP + findex (pivoting, ODE-derived)
+│   ├── LemkeSolver.hpp/cpp     # Standard LCP only (no box bounds)
+│   └── dantzig/                # Low-level ODE Dantzig implementation
+│       ├── Lcp.hpp
+│       └── ...
 │
-├── dantzig/                    # Dantzig principal pivoting method (from ODE)
-│   ├── Lcp.hpp/cpp
-│   ├── Matrix.hpp
+├── projection/
+│   ├── PgsSolver.hpp/cpp       # Boxed LCP + findex (iterative)
 │   └── ...
 │
-├── pivoting/                   # Pivoting methods
-│   └── LemkeSolver.hpp/cpp     # Modern Lemke wrapper
-│
-├── projection/                 # Projection/sweeping methods
-│   ├── PgsSolver.hpp/cpp       # Projected Gauss-Seidel (standard + boxed LCP)
-│   ├── PSORSolver.hpp/cpp      # Projected SOR (planned)
-│   └── ...
-│
-├── newton/                     # Newton methods (future)
-│   ├── MinimumMapSolver.hpp    # Minimum map Newton (planned)
-│   └── ...
-│
-└── other/                      # Other methods (future)
-    └── ...
+├── newton/                     # Future Newton methods
+└── other/                      # Future solver families
 ```
 
-Adding a new solver family:
+## Problem Convention
+
+DART uses the convention:
+
+```
+w = Ax - b
+lo <= x <= hi
+(x, w) satisfy boxed complementarity (KKT) conditions
+```
+
+Many references write `w = Ax + q`; the mapping is `b = -q`.
+
+## Friction Index (`findex`)
+
+For contact-style friction coupling, a row `i` can reference a "normal"
+variable `j = findex[i] >= 0`. The bounds are interpreted as:
+
+```
+hiEff[i] = |hi[i] * x[j]|
+loEff[i] = -hiEff[i]
+```
+
+To encode `|x[i]| <= mu * x[j]`, store `lo[i] = -mu`, `hi[i] = +mu`,
+`findex[i] = j`.
+
+## Basic Usage
+
+```cpp
+#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
+
+dart::math::DantzigSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.validateSolution = true;
+
+dart::math::LcpProblem problem(A, b, lo, hi, findex);
+Eigen::VectorXd x = Eigen::VectorXd::Zero(b.size());
+dart::math::LcpResult result = solver.solve(problem, x, options);
+```
+
+## Testing and Benchmarks
+
+- Unit tests: `tests/unit/math/lcp`
+- Benchmarks: `tests/benchmark/lcpsolver`
+
+## Adding a New Solver
 
 1. Add headers/sources under `pivoting/`, `projection/`, `newton/`, or `other/`.
-2. Include the solver in `All.hpp` if you want it in the umbrella header.
-3. Export a factory class deriving from `LcpSolver` (see `pivoting/LemkeSolver` for a template).
-4. Update unit tests under `tests/unit/math/lcp` to cover the new solver.
-5. Keep `CMakeLists.txt` glob-friendly—new headers/sources are auto-registered.
-
-## Architecture
-
-### Version 1 (Legacy API - Backward Compatibility)
-
-The legacy API is preserved for backward compatibility with Dantzig and ODE-based solvers:
-
-```cpp
-// Legacy Dantzig solver
-#include <dart/math/lcp/pivoting/dantzig/Lcp.hpp>
-bool success = dart::math::SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
-
-```
-
-### Version 2 (Modern API - Recommended for New Code)
-
-The new API provides a consistent interface across all solvers:
-
-```cpp
-#include <dart/math/lcp/Types.hpp>
-#include <dart/math/lcp/pivoting/LemkeSolver.hpp>
-
-// Create solver
-auto solver = std::make_shared<dart::math::LemkeSolver>();
-
-// Configure options
-dart::math::LcpOptions options;
-options.validateSolution = true;
-options.absoluteTolerance = 1e-8;
-
-// Solve
-Eigen::VectorXd x(n);
-dart::math::LcpResult result = solver->solve(A, b, x, options);
-
-// Check result
-if (result.succeeded()) {
-    std::cout << "Solution found in " << result.iterations << " iterations\n";
-    std::cout << "Residual: " << result.residual << "\n";
-    std::cout << "Complementarity error: " << result.complementarity << "\n";
-} else {
-    std::cerr << "Solver failed: " << dart::math::toString(result.status) << "\n";
-    std::cerr << result.message << "\n";
-}
-```
-
-## Common Types
-
-### SolverStatus
-
-Exit status codes for solvers:
-
-```cpp
-enum class SolverStatus {
-    Success,           // Solution found successfully
-    Failed,            // Failed to find a solution
-    MaxIterations,     // Maximum iterations reached
-    NumericalError,    // Numerical issues (NaN, Inf, etc.)
-    InvalidProblem,    // Invalid problem formulation
-    Degenerate,        // Solution is degenerate
-    NotSolved          // Not yet solved
-};
-```
-
-### LcpResult
-
-Result structure returned by all solvers:
-
-```cpp
-struct LcpResult {
-    SolverStatus status;      // Exit status
-    int iterations;           // Number of iterations performed
-    double residual;          // Final residual norm
-    double complementarity;   // Complementarity error: ||x * (Ax + b)||
-    bool validated;           // Whether solution was validated
-    std::string message;      // Additional information
-
-    bool succeeded() const;   // Check if solution was successful
-};
-```
-
-### LcpOptions
-
-Configuration options for solvers:
-
-```cpp
-struct LcpOptions {
-    int maxIterations;                  // Maximum iterations (0 = solver default)
-    double absoluteTolerance;           // Absolute convergence tolerance
-    double relativeTolerance;           // Relative convergence tolerance
-    double complementarityTolerance;    // Complementarity tolerance
-    bool validateSolution;              // Validate solution after solving
-    double relaxation;                  // Relaxation parameter (for SOR)
-    bool warmStart;                     // Use warm starting
-    bool earlyTermination;              // Early termination (for pivoting)
-    void* customOptions;                // Solver-specific options
-
-    // Factory methods
-    static LcpOptions withRelaxation(double relaxation, int maxIter = 100);
-    static LcpOptions highAccuracy();
-    static LcpOptions realTime();
-};
-```
-
-## Base Solver Interface
-
-All modern solvers inherit from `LcpSolver`:
-
-```cpp
-class LcpSolver {
-public:
-    virtual ~LcpSolver() = default;
-
-    // Solve with default options
-    virtual LcpResult solve(
-        const Eigen::MatrixXd& A,
-        const Eigen::VectorXd& b,
-        Eigen::VectorXd& x);
-
-    // Solve with custom options
-    virtual LcpResult solve(
-        const Eigen::MatrixXd& A,
-        const Eigen::VectorXd& b,
-        Eigen::VectorXd& x,
-        const LcpOptions& options) = 0;
-
-    virtual std::string getName() const = 0;
-    virtual std::string getCategory() const = 0;
-
-    virtual LcpOptions getDefaultOptions() const;
-    virtual void setDefaultOptions(const LcpOptions& options);
-
-protected:
-    LcpOptions defaultOptions_;
-};
-```
-
-## Implemented Solvers
-
-### Pivoting Methods
-
-#### LemkeSolver (dart::math::LemkeSolver)
-
-Lemke's complementary pivot algorithm for standard LCP.
-
-**Properties**:
-
-- Algorithm: Lemke's complementary pivoting with artificial variable
-- Time: O(n^4) worst case
-- Space: O(n^2)
-- Convergence: Exact solution (finite termination)
-- Matrix Requirements: None (general LCP)
-- Named after: Carlton E. Lemke
-
-**Usage**:
-
-```cpp
-#include <dart/math/lcp/pivoting/LemkeSolver.hpp>
-
-auto solver = std::make_shared<dart::math::LemkeSolver>();
-LcpResult result = solver->solve(A, b, x);
-```
-
-#### Dantzig Principal Pivoting (dart::math::SolveLCP template function)
-
-Dantzig-Cottle principal pivoting method for BLCP (Boxed LCP) with friction support.
-
-**Properties**:
-
-- Algorithm: Principal pivoting method
-- Time: O(n^4) worst case
-- Space: O(n^2)
-- Supports: Bounded variables, friction cones
-- Source: Open Dynamics Engine (ODE)
-- Named after: George B. Dantzig
-
-**Usage**:
-
-```cpp
-#include <dart/math/lcp/pivoting/dantzig/Lcp.hpp>
-
-bool success = dart::math::SolveLCP<double>(
-    n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
-```
-
-#### Projected Gauss-Seidel (dart::math::PgsSolver)
-
-Iterative projection method for standard and boxed LCPs. The boxed overload
-handles lower/upper bounds and `findex` friction coupling for contact
-problems.
-
-**Properties**:
-
-- Algorithm: Coordinate-wise projected Gauss-Seidel (λ = 1 SOR)
-- Time: O(nk) per iteration (k = non-zeros per row)
-- Space: O(n)
-- Supports: Standard LCP and boxed LCP with friction index
-- Notes: Warm-start enabled by default; optional random sweep ordering via
-  `PgsSolver::Parameters`
-
-**Usage (boxed LCP)**:
-
-```cpp
-#include <dart/math/lcp/projection/PgsSolver.hpp>
-
-dart::math::PgsSolver solver;
-dart::math::LcpOptions options = solver.getDefaultOptions();
-options.maxIterations = 50;
-options.validateSolution = true;
-
-// Bounds (lo/hi) and friction index mapping
-Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
-Eigen::VectorXd hi = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
-Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1); // or map friction dofs
-
-Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
-dart::math::LcpResult result = solver.solve(A, b, lo, hi, findex, x, options);
-```
-
-To tweak the division epsilon or enable random sweep ordering, populate
+2. Implement `dart::math::LcpSolver::solve(const LcpProblem&, Eigen::VectorXd&, const LcpOptions&)`.
+3. Add unit tests under `tests/unit/math/lcp`.
+4. Optionally add a benchmark case under `tests/benchmark/lcpsolver`.
 `options.customOptions` with a `PgsSolver::Parameters` instance.
 
 ## Planned Solvers

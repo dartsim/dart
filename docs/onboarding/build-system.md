@@ -712,9 +712,9 @@ build/
 - `config-gz` - Configure gz-physics build
 - `build-gz` - Build gz-physics with dartsim plugin
 - `test-gz` - Verify DART integration
-- **Note:** Keep DART's legacy boxed LCP compatibility shims (`BoxedLcpConstraintSolver`,
-  `DantzigBoxedLcpSolver`, `PgsBoxedLcpSolver`) intact so
-  `pixi run -e gazebo test-gz` builds without patching gz-physics sources.
+- **Note:** `pixi run -e gazebo test-gz` patches gz-physics sources via
+  `scripts/patch_gz_physics.py` to keep the integration test working against the
+  current DART API.
 
 **Dependencies:**
 
