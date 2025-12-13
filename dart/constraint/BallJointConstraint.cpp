@@ -35,7 +35,6 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Constants.hpp"
-#include "dart/math/lcp/pivoting/dantzig/Lcp.hpp"
 
 #include <iostream>
 
