@@ -39,6 +39,53 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     return known, unknown
 
 
+def _cmake_cache_bool(build_dir: Path, option: str) -> bool | None:
+    cache_path = build_dir / "CMakeCache.txt"
+    if not cache_path.is_file():
+        return None
+
+    needle = f"{option}:BOOL="
+    with cache_path.open("r", encoding="utf-8", errors="ignore") as cache:
+        for line in cache:
+            if not line.startswith(needle):
+                continue
+            value = line.strip().split("=", maxsplit=1)[-1].upper()
+            if value in {"ON", "TRUE", "1"}:
+                return True
+            if value in {"OFF", "FALSE", "0"}:
+                return False
+            return None
+    return None
+
+
+def _ensure_target_requirements(
+    build_dir: Path, target: str, env: dict[str, str]
+) -> None:
+    if target != "raylib_gui":
+        return
+
+    enabled = _cmake_cache_bool(build_dir, "DART_BUILD_GUI_RAYLIB")
+    if enabled:
+        return
+
+    print(
+        "Enabling experimental Raylib backend (DART_BUILD_GUI_RAYLIB=ON) for this build...",
+        file=sys.stderr,
+    )
+    subprocess.run(
+        [
+            "cmake",
+            "-S",
+            ".",
+            "-B",
+            str(build_dir),
+            "-DDART_BUILD_GUI_RAYLIB=ON",
+        ],
+        check=True,
+        env=env,
+    )
+
+
 def ensure_build_exists(build_dir: Path, build_type: str) -> None:
     if build_dir.exists():
         return
@@ -60,6 +107,8 @@ def run(target: str, build_type: str, run_args: list[str]) -> int:
     env = os.environ.copy()
     env["BUILD_TYPE"] = build_type
     env["CMAKE_BUILD_DIR"] = str(build_dir)
+
+    _ensure_target_requirements(build_dir, target, env)
 
     subprocess.run(
         [
