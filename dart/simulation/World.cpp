@@ -47,9 +47,6 @@
 #include "dart/common/Profile.hpp"
 #include "dart/common/String.hpp"
 
-DART_SUPPRESS_DEPRECATED_BEGIN
-#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
-DART_SUPPRESS_DEPRECATED_END
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -160,13 +157,8 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
 std::unique_ptr<constraint::ConstraintSolver> createConstraintSolver(
     const WorldConfig& config)
 {
-  if (!config.useLegacyConstraintSolver) {
-    return std::make_unique<constraint::ConstraintSolver>();
-  }
-
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  return std::make_unique<constraint::BoxedLcpConstraintSolver>();
-  DART_SUPPRESS_DEPRECATED_END
+  (void)config;
+  return std::make_unique<constraint::ConstraintSolver>();
 }
 
 } // namespace
