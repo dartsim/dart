@@ -75,6 +75,10 @@ void PgsBoxedLcpSolver::syncOptions()
   if (!solver)
     return;
 
+  auto params = solver->getParameters();
+  params.randomizeConstraintOrder = mOption.mDoRandomize;
+  solver->setParameters(params);
+
   math::LcpOptions opts = solver->getDefaultOptions();
   opts.maxIterations = mOption.mMaxIteration;
   opts.absoluteTolerance = mOption.mTolerance;
