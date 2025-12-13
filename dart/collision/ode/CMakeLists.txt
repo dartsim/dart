@@ -72,3 +72,16 @@ install(
 dart_install_compat_headers(COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS} DESTINATION_PREFIX include/dart/collision/ode)
 
 dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})
+
+# Backward-compatibility CMake target/component
+set(target_name ${PROJECT_NAME}-collision-ode)
+set(component_name collision-ode)
+
+if(NOT TARGET ${target_name})
+  add_library(${target_name} INTERFACE)
+  target_link_libraries(${target_name} INTERFACE dart)
+
+  add_component(${PROJECT_NAME} ${component_name})
+  add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
+  add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
+endif()

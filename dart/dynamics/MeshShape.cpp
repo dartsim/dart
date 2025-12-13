@@ -63,6 +63,7 @@ MeshShape::MeshShape(
     MeshOwnership ownership)
   : Shape(MESH),
     mMesh(nullptr),
+    mMeshHandle(nullptr),
     mMeshOwnership(MeshOwnership::None),
     mDisplayList(0),
     mColorMode(MATERIAL_COLOR),
@@ -81,6 +82,7 @@ MeshShape::MeshShape(
     common::ResourceRetrieverPtr resourceRetriever)
   : Shape(MESH),
     mMesh(nullptr),
+    mMeshHandle(nullptr),
     mMeshOwnership(MeshOwnership::None),
     mDisplayList(0),
     mColorMode(MATERIAL_COLOR),
@@ -100,7 +102,8 @@ MeshShape::~MeshShape()
 //==============================================================================
 void MeshShape::releaseMesh()
 {
-  mMesh.reset();
+  mMesh = nullptr;
+  mMeshHandle.reset();
   mMeshOwnership = MeshOwnership::None;
 }
 
@@ -120,7 +123,7 @@ const std::string& MeshShape::getStaticType()
 //==============================================================================
 const aiScene* MeshShape::getMesh() const
 {
-  return mMesh.get();
+  return mMesh;
 }
 
 //==============================================================================
@@ -214,17 +217,18 @@ void MeshShape::setMesh(
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
 {
-  if (mesh == mMesh.get() && ownership == mMeshOwnership) {
+  if (mesh == mMesh && ownership == mMeshOwnership) {
     // Nothing to do.
     return;
   }
 
   releaseMesh();
 
-  mMesh = makeMeshHandle(mesh, ownership);
+  mMeshHandle = makeMeshHandle(mesh, ownership);
+  mMesh = mMeshHandle.get();
   mMeshOwnership = mesh ? ownership : MeshOwnership::None;
 
-  if (!mMesh) {
+  if (!mMeshHandle) {
     mMeshUri.clear();
     mMeshPath.clear();
     mResourceRetriever = nullptr;
@@ -254,15 +258,16 @@ void MeshShape::setMesh(
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
 {
-  if (mesh == mMesh && mMeshOwnership == MeshOwnership::Custom) {
+  if (mesh == mMeshHandle && mMeshOwnership == MeshOwnership::Custom) {
     return;
   }
 
   releaseMesh();
-  mMesh = std::move(mesh);
-  mMeshOwnership = mMesh ? MeshOwnership::Custom : MeshOwnership::None;
+  mMeshHandle = std::move(mesh);
+  mMesh = mMeshHandle.get();
+  mMeshOwnership = mMeshHandle ? MeshOwnership::Custom : MeshOwnership::None;
 
-  if (!mMesh) {
+  if (!mMeshHandle) {
     mMeshUri.clear();
     mMeshPath.clear();
     mResourceRetriever = nullptr;
@@ -423,7 +428,7 @@ aiScene* MeshShape::cloneMesh() const
     return nullptr;
 
   aiScene* new_scene = nullptr;
-  aiCopyScene(mMesh.get(), &new_scene);
+  aiCopyScene(mMesh, &new_scene);
   return new_scene;
 }
 

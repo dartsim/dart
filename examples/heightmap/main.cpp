@@ -33,10 +33,9 @@
 #include "dart/common/Macros.hpp"
 
 #include <dart/gui/All.hpp>
-#include <dart/gui/ImGuiHandler.hpp>
+#include <dart/gui/IncludeImGui.hpp>
 
 #include <dart/utils/All.hpp>
-#include <dart/utils/urdf/urdf.hpp>
 
 #include <dart/All.hpp>
 
@@ -50,6 +49,19 @@ using namespace dart::dynamics;
 using namespace dart::math;
 
 template <typename S>
+typename HeightmapShape<S>::HeightField generateHeightField(
+    std::size_t xResolution, std::size_t yResolution, S zMin, S zMax)
+{
+  typename HeightmapShape<S>::HeightField data(yResolution, xResolution);
+  for (auto i = 0u; i < yResolution; ++i) {
+    for (auto j = 0u; j < xResolution; ++j) {
+      data(i, j) = math::Random::uniform(zMin, zMax);
+    }
+  }
+  return data;
+}
+
+template <typename S>
 dynamics::ShapePtr createHeightmapShape(
     std::size_t xResolution = 20u,
     std::size_t yResolution = 20u,
@@ -60,17 +72,16 @@ dynamics::ShapePtr createHeightmapShape(
 {
   using Vector3 = Eigen::Matrix<S, 3, 1>;
 
-  typename HeightmapShape<S>::HeightField data(yResolution, xResolution);
-  for (auto i = 0u; i < yResolution; ++i) {
-    for (auto j = 0u; j < xResolution; ++j) {
-      data(i, j) = math::Random::uniform(zMin, zMax);
-    }
-  }
-  auto scale = Vector3(xSize / xResolution, ySize / yResolution, 1);
+  auto data = generateHeightField<S>(xResolution, yResolution, zMin, zMax);
+  const auto xStride = xResolution > 1 ? xResolution - 1 : 1u;
+  const auto yStride = yResolution > 1 ? yResolution - 1 : 1u;
+  auto scale = Vector3(
+      xSize / static_cast<S>(xStride), ySize / static_cast<S>(yStride), 1);
 
   auto terrainShape = std::make_shared<HeightmapShape<S>>();
   terrainShape->setScale(scale);
   terrainShape->setHeightField(data);
+  terrainShape->setDataVariance(dynamics::Shape::DYNAMIC);
 
   return terrainShape;
 }
@@ -132,7 +143,12 @@ public:
       S ySize = S(2),
       S zMin = S(0.0),
       S zMax = S(0.1))
-    : mViewer(viewer), mNode(node), mTerrain(std::move(terrain)), mGrid(grid)
+    : mViewer(viewer),
+      mNode(node),
+      mTerrain(std::move(terrain)),
+      mGrid(grid),
+      mHeightmapShape(
+          std::dynamic_pointer_cast<HeightmapShape<S>>(mTerrain->getShape()))
   {
     mXResolution = xResolution;
     mYResolution = yResolution;
@@ -146,8 +162,25 @@ public:
 
   void updateHeightmapShape()
   {
-    mTerrain->setShape(createHeightmapShape(
-        mXResolution, mYResolution, mXSize, mYSize, mZMin, mZMax));
+    if (!mHeightmapShape) {
+      mTerrain->setShape(createHeightmapShape(
+          mXResolution, mYResolution, mXSize, mYSize, mZMin, mZMax));
+      mHeightmapShape
+          = std::dynamic_pointer_cast<HeightmapShape<S>>(mTerrain->getShape());
+      if (!mHeightmapShape)
+        return;
+    }
+
+    mHeightmapShape->setHeightField(
+        generateHeightField<S>(mXResolution, mYResolution, mZMin, mZMax));
+    const auto xStride = mXResolution > 1 ? mXResolution - 1 : 1u;
+    const auto yStride = mYResolution > 1 ? mYResolution - 1 : 1u;
+    Eigen::Matrix<S, 3, 1> scale(
+        mXSize / static_cast<S>(xStride),
+        mYSize / static_cast<S>(yStride),
+        S(1));
+    mHeightmapShape->setScale(scale);
+    mTerrain->setShape(mHeightmapShape);
 
     auto tf = mTerrain->getRelativeTransform();
     tf.translation()[0] = -static_cast<double>(mXSize) / 2.0;
@@ -186,7 +219,9 @@ public:
 
     ImGui::Text("Heightmap rendering example");
     ImGui::Spacing();
-    ImGui::TextWrapped("TODO.");
+    ImGui::TextWrapped(
+        "Tweak the controls below to regenerate the heightmap. The grid stays "
+        "aligned with the terrain so you can check updates in real time.");
 
     if (ImGui::CollapsingHeader("Help")) {
       ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
@@ -415,6 +450,7 @@ protected:
   float mYSize;
   float mZMin;
   float mZMax;
+  std::shared_ptr<HeightmapShape<S>> mHeightmapShape;
 };
 
 int main(int argc, char* argv[])
@@ -428,7 +464,9 @@ int main(int argc, char* argv[])
   auto world = dart::simulation::World::create();
   world->setGravity(Eigen::Vector3d::Zero());
 
-  auto terrain = createHeightmapFrame<float>(100u, 100u, 2.f, 2.f, 0.f, 0.1f);
+  // Use a wider height range out of the box so the surface is visible above
+  // the grid without fiddling with the controls.
+  auto terrain = createHeightmapFrame<float>(100u, 100u, 2.f, 2.f, -0.1f, 0.4f);
   world->addSimpleFrame(terrain);
 
   DART_ASSERT(world->getNumSimpleFrames() == 1u);
@@ -445,10 +483,12 @@ int main(int argc, char* argv[])
 
   // Create grid
   ::osg::ref_ptr<gui::GridVisual> grid = new gui::GridVisual();
+  // Sink the grid slightly so the heightmap surface is not z-fighting with it.
+  grid->setOffset(Eigen::Vector3d(0.0, 0.0, -0.01));
 
   // Add control widget for atlas
   viewer.getImGuiHandler()->addWidget(std::make_shared<HeightmapWidget<float>>(
-      &viewer, node.get(), terrain, grid));
+      &viewer, node.get(), terrain, grid.get()));
 
   viewer.addAttachment(grid);
 

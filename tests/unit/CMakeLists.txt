@@ -68,6 +68,7 @@ dart_add_test("unit" UNIT_dynamics_Inertia dynamics/test_Inertia.cpp)
 dart_add_test("unit" UNIT_dynamics_ScrewJoint dynamics/test_ScrewJoint.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeNodePtr dynamics/test_ShapeNodePtr.cpp)
 dart_add_test("unit" UNIT_dynamics_MeshShape dynamics/test_MeshShape.cpp)
+dart_add_test("unit" UNIT_dynamics_HeightmapShape dynamics/test_HeightmapShape.cpp)
 dart_add_test("unit" UNIT_dynamics_BodyNodeDerivatives dynamics/test_BodyNodeDerivatives.cpp)
 dart_add_test(
   "unit" UNIT_dynamics_BodyNodePotentialEnergy dynamics/test_BodyNodePotentialEnergy.cpp)
@@ -83,6 +84,17 @@ dart_add_test("unit" UNIT_dynamics_WeldJointMerge dynamics/test_WeldJointMerge.c
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
   dart_add_test("unit" UNIT_dynamics_CreateShapeNodeApi dynamics/test_CreateShapeNodeApi.cpp)
+endif()
+
+# ==============================================================================
+# GUI Tests
+# ==============================================================================
+if(TARGET dart-gui)
+  find_package(OpenSceneGraph REQUIRED COMPONENTS osg)
+  dart_add_test("unit" UNIT_gui_HeightmapShapeNode gui/test_HeightmapShapeNode.cpp)
+  target_link_libraries(UNIT_gui_HeightmapShapeNode ${OPENSCENEGRAPH_LIBRARIES})
+  target_include_directories(
+    UNIT_gui_HeightmapShapeNode PRIVATE ${OPENSCENEGRAPH_INCLUDE_DIRS})
 endif()
 
 # ==============================================================================
