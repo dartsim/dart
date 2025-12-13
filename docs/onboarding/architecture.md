@@ -63,6 +63,7 @@ DART follows a **modular layered architecture** with clear separation of concern
   - Separates **State** (frequently changing) from **Properties** (rarely changing)
   - Enables runtime composition of behaviors
   - Used extensively in dynamics (BodyNode, Skeleton, etc.)
+  - See [`aspect-system.md`](aspect-system.md) for implementation details
 
 - **Memory Management**
   - `MemoryManager.hpp` - Custom memory allocation
