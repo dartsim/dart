@@ -30,19 +30,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/math/lcp/LcpValidation.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
-#include <dart/math/lcp/projection/PgsSolver.hpp>
 
 #include <gtest/gtest.h>
 
 #include <limits>
 
-#include <cmath>
-
 using namespace dart::math;
 
+namespace {
+
+void ExpectValidSolution(
+    const LcpProblem& problem, const Eigen::VectorXd& x, double tol)
+{
+  const Eigen::VectorXd w = problem.A * x - problem.b;
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string message;
+  ASSERT_TRUE(detail::computeEffectiveBounds(
+      problem.lo, problem.hi, problem.findex, x, loEff, hiEff, &message))
+      << message;
+  EXPECT_TRUE(detail::validateSolution(x, w, loEff, hiEff, tol, &message))
+      << message;
+}
+
+} // namespace
+
 //==============================================================================
-TEST(PgsSolver, SolvesStandardPositiveDefiniteLcp)
+TEST(DantzigSolver, SolvesStandardPositiveDefiniteLcp)
 {
   Eigen::Matrix2d A;
   A << 4.0, 1.0, 1.0, 3.0;
@@ -50,11 +66,9 @@ TEST(PgsSolver, SolvesStandardPositiveDefiniteLcp)
   const Eigen::Vector2d target(0.5, 0.25);
   const Eigen::Vector2d b = A * target;
 
-  PgsSolver solver;
+  DantzigSolver solver;
   LcpOptions options = solver.getDefaultOptions();
-  options.maxIterations = 1000;
   options.warmStart = false;
-  options.complementarityTolerance = 1e-3;
 
   Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
   LcpProblem problem(
@@ -66,13 +80,44 @@ TEST(PgsSolver, SolvesStandardPositiveDefiniteLcp)
   const auto result = solver.solve(problem, x, options);
 
   EXPECT_TRUE(result.succeeded());
-  EXPECT_FALSE(x.hasNaN());
-  EXPECT_NEAR(x[0], target[0], 1e-4);
-  EXPECT_NEAR(x[1], target[1], 1e-4);
+  EXPECT_NEAR(x[0], target[0], 1e-8);
+  EXPECT_NEAR(x[1], target[1], 1e-8);
+  ExpectValidSolution(problem, x, 1e-6);
 }
 
 //==============================================================================
-TEST(PgsSolver, SolvesBoxedProblemWithFrictionIndex)
+TEST(DantzigSolver, SolvesBoxedLcpWithActiveUpperBound)
+{
+  Eigen::Matrix2d A;
+  A << 2.0, 0.5, 0.5, 1.5;
+
+  Eigen::Vector2d lo;
+  lo << -1.0, 0.0;
+  Eigen::Vector2d hi;
+  hi << 1.0, 0.2;
+
+  Eigen::Vector2d target;
+  target << 0.1, 0.2;
+  Eigen::Vector2d w;
+  w << 0.0, -0.3;
+  const Eigen::Vector2d b = A * target - w;
+
+  DantzigSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  LcpProblem problem(A, b, lo, hi, Eigen::Vector2i::Constant(-1));
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_TRUE(result.succeeded());
+  EXPECT_NEAR(x[0], target[0], 1e-6);
+  EXPECT_NEAR(x[1], target[1], 1e-6);
+  ExpectValidSolution(problem, x, 1e-6);
+}
+
+//==============================================================================
+TEST(DantzigSolver, SolvesBoxedLcpWithFrictionIndex)
 {
   Eigen::Matrix3d A;
   A << 4.0, 0.5, 0.0, 0.5, 3.0, 0.25, 0.0, 0.25, 2.5;
@@ -86,61 +131,26 @@ TEST(PgsSolver, SolvesBoxedProblemWithFrictionIndex)
   Eigen::Vector3i findex;
   findex << -1, 0, 0;
 
-  PgsSolver pgs;
-  LcpOptions pgsOptions = pgs.getDefaultOptions();
-  pgsOptions.maxIterations = 5000;
-  pgsOptions.warmStart = false;
-  pgsOptions.complementarityTolerance = 1e-3;
+  DantzigSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
 
   Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
   LcpProblem problem(A, b, lo, hi, findex);
-  const auto pgsResult = pgs.solve(problem, x, pgsOptions);
-  EXPECT_TRUE(pgsResult.succeeded());
-  EXPECT_FALSE(x.hasNaN());
-
-  // Use the pivoting Dantzig solver as a reference for the boxed problem.
-  DantzigSolver reference;
-  Eigen::VectorXd referenceX = Eigen::VectorXd::Zero(3);
-  LcpOptions refOptions;
-  refOptions.warmStart = false;
-  const auto refResult = reference.solve(problem, referenceX, refOptions);
-  ASSERT_TRUE(refResult.succeeded());
-
-  EXPECT_NEAR(x[0], referenceX[0], 1e-3);
-  EXPECT_NEAR(x[1], referenceX[1], 1e-3);
-  EXPECT_NEAR(x[2], referenceX[2], 1e-3);
-
-  const double mu = hi[1];
-  EXPECT_LE(std::abs(x[1]), mu * x[0] + 1e-8);
-  EXPECT_LE(std::abs(x[2]), mu * x[0] + 1e-8);
-}
-
-//==============================================================================
-TEST(PgsSolver, ReportsInvalidProblemForDimensionMismatch)
-{
-  PgsSolver solver;
-  LcpOptions options = solver.getDefaultOptions();
-  options.maxIterations = 5;
-  options.warmStart = false;
-
-  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
-  LcpProblem problem(
-      Eigen::MatrixXd::Identity(2, 2),
-      Eigen::VectorXd::Zero(3),
-      Eigen::VectorXd::Zero(2),
-      Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity()),
-      Eigen::VectorXi::Constant(2, -1));
-
   const auto result = solver.solve(problem, x, options);
-  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+
+  EXPECT_TRUE(result.succeeded());
+  EXPECT_NEAR(x[0], target[0], 1e-6);
+  EXPECT_NEAR(x[1], target[1], 1e-6);
+  EXPECT_NEAR(x[2], target[2], 1e-6);
+  ExpectValidSolution(problem, x, 1e-6);
 }
 
 //==============================================================================
-TEST(PgsSolver, ReportsInvalidProblemForOutOfRangeFindex)
+TEST(DantzigSolver, ReportsInvalidProblemForOutOfRangeFindex)
 {
-  PgsSolver solver;
+  DantzigSolver solver;
   LcpOptions options = solver.getDefaultOptions();
-  options.maxIterations = 5;
   options.warmStart = false;
 
   Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
@@ -154,3 +164,4 @@ TEST(PgsSolver, ReportsInvalidProblemForOutOfRangeFindex)
   const auto result = solver.solve(problem, x, options);
   EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
 }
+

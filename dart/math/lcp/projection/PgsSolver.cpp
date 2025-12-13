@@ -87,12 +87,20 @@ LcpResult PgsSolver::solve(
     return result;
   }
 
+  const int n = static_cast<int>(b.size());
+  for (int i = 0; i < n; ++i) {
+    if (findex[i] >= n) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = "Friction index entry out of range";
+      return result;
+    }
+  }
+
   const Parameters* params
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
 
-  const int n = static_cast<int>(b.size());
   const int nSkip = padding(n);
   const int maxIterations = std::max(
       1,

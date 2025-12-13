@@ -68,6 +68,14 @@ LcpResult DantzigSolver::solve(
   }
 
   const int n = static_cast<int>(b.size());
+
+  for (int i = 0; i < n; ++i) {
+    if (findex[i] >= n) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = "Friction index entry out of range";
+      return result;
+    }
+  }
   const int nSkip = padding(n);
 
   std::vector<double> Adata(n * nSkip, 0.0);

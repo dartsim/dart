@@ -192,6 +192,27 @@ TEST(Lemke, Lemke_12D)
 }
 
 //==============================================================================
+TEST(Lemke, RejectsBoxedBounds)
+{
+  dart::math::LemkeSolver solver;
+
+  Eigen::MatrixXd A(1, 1);
+  Eigen::VectorXd b(1);
+  Eigen::VectorXd f(1);
+  A << 1.0;
+  b << 0.0;
+
+  LcpProblem problem(
+      A,
+      b,
+      Eigen::VectorXd::Zero(1),
+      Eigen::VectorXd::Constant(1, 1.0),
+      Eigen::VectorXi::Constant(1, -1));
+  const auto result = solver.solve(problem, f, solver.getDefaultOptions());
+  EXPECT_EQ(result.status, dart::math::LcpSolverStatus::InvalidProblem);
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

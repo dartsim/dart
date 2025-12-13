@@ -114,6 +114,7 @@ dart_build_tests(
   LINK_LIBRARIES dart dart-baseline-ode
   SOURCES
     math/lcp/test_DantzigVsODE.cpp
+    math/lcp/test_DantzigSolver.cpp
     math/lcp/test_LCPTestProblems.cpp
     math/lcp/test_Lemke.cpp
     math/lcp/test_PGS.cpp
