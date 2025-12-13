@@ -2,7 +2,7 @@
 
 ## Why this exists
 
-DART makes it easy to *simulate* articulated rigid bodies, but it does not pick
+DART makes it easy to _simulate_ articulated rigid bodies, but it does not pick
 controller gains, filter noisy measurements, or guarantee that an arbitrary
 control law is numerically stable for a given timestep. This page gives a short
 control-theory refresher and maps common concepts onto DART APIs.
@@ -100,4 +100,3 @@ See also:
 - :doc:`../tutorials/biped` (PD control in a full example)
 - :doc:`../tutorials/multi-pendulum` (implicit spring + damping)
 ```
-
