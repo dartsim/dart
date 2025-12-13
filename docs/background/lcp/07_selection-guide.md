@@ -212,7 +212,7 @@ Block size: 32-256 threads per block
 
 | Use Case      | Best Method | Per-Iter Time | Iterations | Total Time | Available Now |
 | ------------- | ----------- | ------------- | ---------- | ---------- | ------------- |
-| Real-time     | PGS         | O(n)          | 50-100     | O(50n)     | ❌            |
+| Real-time     | PGS         | O(n)          | 50-100     | O(50n)     | ✅            |
 | Real-time     | Dantzig     | O(n³)         | 1          | O(n³)      | ✅            |
 | High accuracy | Newton      | O(n³)\*       | 5-20       | O(20n³)\*  | ❌            |
 | High accuracy | Dantzig     | O(n³)         | 1          | O(n³)      | ✅            |
@@ -231,8 +231,8 @@ Slower          ─────────────────────�
 Pivoting ─> Newton ─> Interior Point ─> NNCG ─> BGS ─> PGS ─> Jacobi
 (exact)     (1e-10)   (1e-8)           (1e-6)  (1e-4) (1e-3) (1e-2)
 
-✅ Available:  Dantzig, Lemke
-❌ Future:     All others
+✅ Available:  Dantzig, Lemke, PGS
+❌ Future:     Newton, PSOR, BGS, NNCG, …
 ```
 
 ### Robustness vs Efficiency
@@ -243,8 +243,8 @@ Slower      ──────────────────────�
 
 Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
-✅ Available:  Dantzig, Lemke
-❌ Future:     All others
+✅ Available:  Dantzig, Lemke, PGS
+❌ Future:     Newton, PSOR, BGS, NNCG, …
 ```
 
 ## Problem Size Guidelines
@@ -253,17 +253,17 @@ Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 | ---------------- | ------------------------ | -------------------- |
 | n < 10           | Direct 2D/3D or Pivoting | Dantzig ✅, Lemke ✅ |
 | 10 ≤ n < 100     | Pivoting or Newton       | Dantzig ✅, Lemke ✅ |
-| 100 ≤ n < 1000   | PGS, BGS, or Newton      | Dantzig ✅ (slow)    |
-| 1000 ≤ n < 10000 | NNCG or PGS              | None (need PGS)      |
-| n ≥ 10000        | NNCG or specialized      | None                 |
+| 100 ≤ n < 1000   | PGS, BGS, or Newton      | PGS ✅, Dantzig ✅ |
+| 1000 ≤ n < 10000 | NNCG or PGS              | PGS ✅             |
+| n ≥ 10000        | NNCG or specialized      | PGS ✅ (approx)    |
 
 ## Conditioning Guidelines
 
 | Matrix Condition     | Recommended Method       | Currently Available  |
 | -------------------- | ------------------------ | -------------------- |
 | Well-conditioned     | Any method               | All ✅               |
-| Moderate             | PGS, Newton, Pivoting    | Dantzig ✅, Lemke ✅ |
-| Ill-conditioned      | Pivoting, Interior Point | Dantzig ✅, Lemke ✅ |
+| Moderate             | PGS, Newton, Pivoting    | PGS ✅, Dantzig ✅, Lemke ✅ |
+| Ill-conditioned      | Pivoting, Interior Point | PGS ✅, Dantzig ✅, Lemke ✅ |
 | Very ill-conditioned | Pivoting only            | Dantzig ✅, Lemke ✅ |
 
 ## Implementation Roadmap Impact
@@ -448,20 +448,20 @@ findex[i] = j;   // Depends on x[j] for friction cone
 ```
 1. Validate input: A, b satisfy LCP structure
 2. Check bounds: lo <= 0 <= hi
-3. Verify complementarity: x^T(Ax+b) ≈ 0
+3. Verify complementarity: x^T(Ax-b) ≈ 0
 4. Try different solver (Dantzig vs Lemke)
 ```
 
 ### Performance is Poor
 
 ```
-Current (with Dantzig/Lemke):
+Current (with Dantzig/PGS/Lemke):
 1. Limit problem size (n < 100)
 2. Use Dantzig for contacts
 3. Reduce contact points
 4. Simplify collision geometry
 
-Future (with PGS/Newton):
+Future (with Newton/PSOR/BGS):
 1. Use appropriate method for problem size
 2. Enable warm-starting
 3. Matrix-free implementations
@@ -470,15 +470,15 @@ Future (with PGS/Newton):
 
 ## Summary Recommendations
 
-### Current State (Until Phase 1 Complete)
+### Current State
 
 | Scenario               | Use                           | Notes                        |
 | ---------------------- | ----------------------------- | ---------------------------- |
 | Contact with friction  | Dantzig                       | Best option now              |
 | Bounded variables      | Dantzig                       | Supports bounds and friction |
 | Standard LCP           | Lemke                         | Simple and robust            |
-| Large problems (n>100) | Limit size or external solver | Current methods O(n³)        |
-| Real-time (n>50)       | Reduce problem size           | O(n³) too expensive          |
+| Large problems (n>100) | PGS                           | Scales better, approximate   |
+| Real-time (n>50)       | PGS                           | Use Dantzig as fallback      |
 
 ### Future State (After Implementation)
 

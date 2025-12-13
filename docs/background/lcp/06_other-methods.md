@@ -16,17 +16,17 @@ Iterative method based on Kojima mapping that solves a relaxed complementarity p
 
 ### Problem Reformulation
 
-Instead of `x^T(Ax + b) = 0`, solve:
+Instead of `x^T(Ax - b) = 0`, solve:
 
 ```
-x^T(Ax + b) = mu  (relaxed complementarity)
+x^T(Ax - b) = mu  (relaxed complementarity)
 where mu > 0 is a small parameter
 ```
 
 ### Kojima Mapping
 
 ```
-F(x, y, mu) = [ Ax - y + b    ]
+F(x, y, mu) = [ Ax - y - b    ]
               [ X*Y*e - mu*e  ]
 ```
 
@@ -46,7 +46,7 @@ for iter = 1 to max_iter:
   where 0 < sigma < 1
 
   # Solve Newton equation for Kojima mapping
-  [ A    -I  ] [ Δx ] = - [ Ax - y + b    ]
+  [ A    -I  ] [ Δx ] = - [ Ax - y - b    ]
   [ Y     X  ] [ Δy ]     [ X*Y*e - mu*e  ]
 
   # Line search for step length

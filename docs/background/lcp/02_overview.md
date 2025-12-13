@@ -8,7 +8,7 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 
 | Category           | Method                     | Status             | Location                          | Notes                                   |
 | ------------------ | -------------------------- | ------------------ | --------------------------------- | --------------------------------------- |
-| **Pivoting**       | Dantzig Principal Pivoting | ✅ Implemented     | `pivoting/dantzig/Lcp.hpp` (core) | BLCP solver with friction index support |
+| **Pivoting**       | Dantzig Principal Pivoting | ✅ Implemented     | `pivoting/DantzigSolver.hpp`      | BLCP solver with friction index support |
 | **Pivoting**       | Lemke Complementary Pivot  | ✅ Implemented     | `pivoting/LemkeSolver.hpp`        | Standard LCP solver                     |
 | **Pivoting**       | Baraff Incremental         | ❌ Not implemented | -                                 | Planned                                 |
 | **Projection**     | PGS (Gauss-Seidel)         | ✅ Implemented     | `projection/PgsSolver.hpp`        | Boxed LCP + friction index (iterative)  |
@@ -28,14 +28,14 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 
 - `LcpProblem` bundles boxed LCP data `(A, b, lo, hi, findex)` so solvers share
   one interface and handle friction index coupling consistently.
-- All solvers implement `LcpSolver::solve(const LcpProblem&, Eigen::VectorXd&,
-const LcpOptions&)`.
+- All solvers implement
+  `LcpSolver::solve(const LcpProblem&, Eigen::VectorXd&, const LcpOptions&)`.
 - `constraint::ConstraintSolver` now builds an `LcpProblem` and calls
   `math::DantzigSolver` (primary) with an optional `math::PgsSolver` fallback.
 
 ### Currently Implemented Solvers
 
-#### 1. Dantzig Principal Pivoting Method (`pivoting/dantzig/Lcp.hpp`)
+#### 1. Dantzig Principal Pivoting Method (`pivoting/DantzigSolver.hpp`)
 
 - **Type**: Principal pivoting method for BLCP (Boxed Linear Complementarity
   Problem)
@@ -56,7 +56,7 @@ const LcpOptions&)`.
 - **Named after**: Carlton E. Lemke (developed complementary pivot theory)
 - **Features**:
   - Standard LCP formulation: Mx = q + w, x >= 0, w >= 0, x^T w = 0
-  - Includes solution validation function
+  - Validates solutions against LCP conditions
 - **Use Case**: Standard LCP problems without bounds
 
 #### 3. Projected Gauss-Seidel (PGS) (`projection/PgsSolver.hpp`)
@@ -87,9 +87,9 @@ The standard LCP is defined as:
 
 ```
 Find x such that:
-  Ax + b >= 0
+  Ax - b >= 0
   x >= 0
-  x^T(Ax + b) = 0
+  x^T(Ax - b) = 0
 ```
 
 where:
@@ -98,7 +98,7 @@ where:
 - `b` is an n-dimensional vector
 - `x` is the n-dimensional solution vector
 
-The complementarity condition `x^T(Ax + b) = 0` means that for each index i, either `x_i = 0` or `(Ax + b)_i = 0`.
+The complementarity condition `x^T(Ax - b) = 0` means that for each index i, either `x_i = 0` or `(Ax - b)_i = 0`.
 
 ### Problem Variants
 
@@ -109,7 +109,7 @@ LCP with bounded variables:
 ```
 Find x such that:
   l <= x <= u
-  Ax + b complements x
+  Ax - b complements x
 ```
 
 where `l` and `u` are lower and upper bounds.
@@ -215,7 +215,7 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 
 - [x] Projected Gauss-Seidel (PGS) — `dart::math::PgsSolver`
 - [ ] Projected SOR (PSOR)
-- [ ] Basic termination criteria and merit functions (shared utilities)
+- [x] Basic termination criteria and merit functions (`dart/math/lcp/LcpValidation.hpp`)
 
 ### Phase 2: Blocked Methods (Medium Priority)
 

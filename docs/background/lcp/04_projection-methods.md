@@ -23,15 +23,15 @@ The split is chosen so that `M` is cheap to invert (non-zero diagonal is mandato
 Start from the LCP:
 
 ```
-Ax + b ≥ 0,   x ≥ 0,   xᵀ(Ax + b) = 0
+Ax - b ≥ 0,   x ≥ 0,   xᵀ(Ax - b) = 0
 ```
 
 Split `A = M - N` and treat the iteration as a fixed point:
 
 ```
-Mx^{k+1} - Nx^k + b ≥ 0
+Mx^{k+1} - Nx^k - b ≥ 0
 x^{k+1} ≥ 0
-(x^{k+1})ᵀ(Mx^{k+1} - Nx^k + b) = 0
+(x^{k+1})ᵀ(Mx^{k+1} - Nx^k - b) = 0
 ```
 
 For splittings where `M` is easy to invert, the complementarity subproblem has the closed form
@@ -57,8 +57,8 @@ Gauss-Seidel style methods update `x_i` in-place, so the sweep order changes the
 ### Update Rule
 
 ```
-x_i^{k+1} = max(0, -r_i / A_{ii})  for all i in parallel
-where r = b + Ax^k
+x_i^{k+1} = max(0, x_i^{k} - r_i / A_{ii})  for all i in parallel
+where r = Ax^k - b
 ```
 
 Equivalently: `z = x^k - r ./ diag(A); x^{k+1} = max(0, z)`.
@@ -88,7 +88,7 @@ Equivalently: `z = x^k - r ./ diag(A); x^{k+1} = max(0, z)`.
 
 ```
 for i = 1 to n:   # forward sweep
-  r_i = b_i
+  r_i = -b_i
       + sum_{j < i} A_{ij} * x_j^{k+1}   # uses freshly updated values
       + sum_{j >= i} A_{ij} * x_j^{k}
   x_i^{k+1} = max(0, x_i^{k} - r_i / A_{ii})
@@ -101,8 +101,8 @@ function PGS(A, b, x, max_iter, epsilon):
   for iter = 1 to max_iter:
     x_old = x
     for i = 1 to n:
-      r_i = b_i + dot(A[i,:], x)
-      x[i] = max(0, -r_i / A[i,i])
+      r_i = dot(A[i,:], x) - b_i
+      x[i] = max(0, x[i] - r_i / A[i,i])
 
     if ||x - x_old|| < epsilon:
       break
@@ -148,7 +148,7 @@ function PGS(A, b, x, max_iter, epsilon):
 
 ```
 for i = 1 to n:
-  r_i = b_i
+  r_i = -b_i
       + sum_{j < i} A_{ij} * x_j^{k+1}
       + sum_{j >= i} A_{ij} * x_j^{k}
 
@@ -158,7 +158,7 @@ for i = 1 to n:
   x_i^{k+1} = max(0, x_i^{k} + tau_lambda)
 ```
 
-Derived by using `A = L + D + U` with the splitting `M = (D + λL)/λ` and `N = ((1-λ)D - λU)/λ`, so the residual is scaled before projecting. `λ` can be seen as a relaxation of `Ax + b`.
+Derived by using `A = L + D + U` with the splitting `M = (D + λL)/λ` and `N = ((1-λ)D - λU)/λ`, so the residual is scaled before projecting. `λ` can be seen as a relaxation of `Ax - b`.
 
 ### Relaxation Parameter λ
 
@@ -172,7 +172,7 @@ Derived by using `A = L + D + U` with the splitting `M = (D + λL)/λ` and `N = 
 For symmetric `A`, PGS/PSOR are equivalent to coordinate descent on the quadratic objective
 
 ```
-f(x) = 0.5 xᵀ A x + bᵀ x
+f(x) = 0.5 xᵀ A x - bᵀ x
 ```
 
 Updating coordinate `i` minimizes the 1D polynomial
@@ -245,7 +245,7 @@ Block i contains variables for contact point i:
 for iter = 1 to max_iter:
   for each block i:
     # Compute residual for block
-    r_i = b_i + sum(A_{ij} * x_j, j=1..num_blocks)
+    r_i = -b_i + sum(A_{ij} * x_j, j=1..num_blocks)
 
     # Solve sub-LCP for block i
     x_i = SolveSubLCP(A_{ii}, r_i, bounds_i)
@@ -390,7 +390,7 @@ while not converged:
     A = {i | l_i < x_i < u_i}
 
     # Solve reduced system
-    A_{AA} * x_A = -(b_A + A_{AL}*l + A_{AU}*u)
+    A_{AA} * x_A = b_A - A_{AL}*l - A_{AU}*u
 
     # Project back
     x_A = min(u_A, max(l_A, x_A))
@@ -420,11 +420,11 @@ while not converged:
     L = { i | x_i = l_i }, U = { i | x_i = u_i }, A = others
 
     # Solve reduced system on active set
-    solve A_AA x_A = -(b_A + A_AL l + A_AU u)
+    solve A_AA x_A = b_A - A_AL l - A_AU u
 
     # Reconstruct residuals for bound sets
-    v_L = A_LA x_A + A_LL l + A_LU u + b_L
-    v_U = A_UA x_A + A_UL l + A_UU u + b_U
+    v_L = A_LA x_A + A_LL l + A_LU u - b_L
+    v_U = A_UA x_A + A_UL l + A_UU u - b_U
 
     # Project active solution back to the box
     x_A = min(u_A, max(l_A, x_A))
@@ -469,7 +469,7 @@ for iter = 1 to max_iter:
 ### Absolute Convergence
 
 ```
-||Ax + b|| < epsilon_abs
+||Ax - b|| < epsilon_abs
 ```
 
 Typical: epsilon_abs = 1e-6
@@ -485,7 +485,7 @@ Typical: epsilon_rel = 1e-4
 ### Complementarity
 
 ```
-||x ⊙ (Ax + b)|| < epsilon_comp
+||x ⊙ (Ax - b)|| < epsilon_comp
 ```
 
 where ⊙ is element-wise product
@@ -546,7 +546,7 @@ phi(x) = 0.5 * x^T * A * x + x^T * b
 ### Modified for x=0 Safety
 
 ```
-phi(x) = ||x ⊙ (Ax + b)||
+phi(x) = ||x ⊙ (Ax - b)||
 ```
 
 ### Infinity Norm (Cheap to Compute)
@@ -558,10 +558,10 @@ phi(x) = max_i |x_i|
 ### Complementarity Merit
 
 ```
-theta_compl(x) = x^T (Ax + b)
+theta_compl(x) = x^T (Ax - b)
 ```
 
-Use only when `x >= 0`; also ensure `Ax + b >= 0` when `x = 0`.
+Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
 
 ## Comparison Table
 

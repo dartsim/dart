@@ -8,7 +8,7 @@ Pivoting methods solve LCPs by exploiting their combinatorial nature through enu
 
 ## Active / Free index sets
 
-Let `y = Ax + b`. Partition the indices into:
+Let `y = Ax - b`. Partition the indices into:
 
 - Active set `A = { i | x_i > 0 }`
 - Free set `F = { i | y_i > 0 }`
@@ -16,8 +16,8 @@ Let `y = Ax + b`. Partition the indices into:
 Strict complementarity implies `A ∩ F = ∅` and `A ∪ F = I`, where `I = {1, …, n}`. Reordering rows/columns with this partition yields a reduced problem that makes the pivot structure explicit:
 
 ```
-[ I_F   -A_FA ] [ y_F ] = b_F
-  A_AF    A_AA   x_A   = -b_A
+[ I_F  -A_FA ] [ y_F ] = [ -b_F ]
+[  0    A_AA ] [ x_A ]   [  b_A ]
 ```
 
 The stacked matrix built from identity columns (for `y_F`) and negated `A` columns (for `x_A`) is a **complementarity matrix**. Choosing, for every index, whether the column comes from `I` or from `-A` enumerates up to `2^n` distinct matrices; this combinatorial explosion is what gives pivoting its exponential worst case. For symmetric positive (semi-)definite `A`, the same conditions can instead be written as a quadratic program, avoiding explicit pivot enumeration.
@@ -211,10 +211,19 @@ Eigen::VectorXd q(n), z(n);
 
 // Initialize M and q...
 
-int result = Lemke(M, q, &z);
+// DART uses w = Mz - b. For the common form w = Mz + q, set b = -q.
+Eigen::VectorXd b = -q;
+LcpProblem problem(
+    M,
+    b,
+    Eigen::VectorXd::Zero(n),
+    Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity()),
+    Eigen::VectorXi::Constant(n, -1));
 
-// Validate solution
-bool valid = validate(M, z, q);
+LemkeSolver solver;
+LcpOptions options = solver.getDefaultOptions();
+options.validateSolution = true;
+auto result = solver.solve(problem, z, options);
 ```
 
 ### Properties
@@ -239,14 +248,14 @@ Incrementally builds active/free index sets while maintaining complementarity co
 The method keeps three sets:
 
 - **Active A**: indices where `x_i > 0`
-- **Free F**: indices where `y_i = (Ax+b)_i > 0`
+- **Free F**: indices where `y_i = (Ax-b)_i > 0`
 - **Unprocessed U**: indices not yet assigned
 
 ### Key Concepts
 
 - **Index Sets**:
   - **Active set A**: indices where `xᵢ > 0`
-  - **Free set F**: indices where `yᵢ = (Ax + b)ᵢ > 0`
+  - **Free set F**: indices where `yᵢ = (Ax - b)ᵢ > 0`
   - **Unprocessed U**: indices not yet assigned
 - **Blocking constraints**: bounds on how far a candidate variable may move before violating complementarity in the current basis
 
