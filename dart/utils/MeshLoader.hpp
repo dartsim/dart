@@ -118,7 +118,7 @@ using MeshLoaderd = MeshLoader<double>;
 //
 //==============================================================================
 
-#include <dart/common/Console.hpp>
+#include <dart/common/Logging.hpp>
 
 #include <filesystem>
 
@@ -133,14 +133,15 @@ std::unique_ptr<typename MeshLoader<S>::Mesh> MeshLoader<S>::load(
   // Load the scene and return nullptr if it fails
   aiScenePtr scene = loadScene(filepath, retriever);
   if (!scene) {
-    dtwarn << "[MeshLoader::load] Failed to load mesh from: " << filepath
-           << "\n";
+    DART_WARN(
+        "[MeshLoader::load] Failed to load mesh from: {}",
+        filepath);
     return nullptr;
   }
 
   // Return nullptr if there are no meshes
   if (scene->mNumMeshes == 0) {
-    dtwarn << "[MeshLoader::load] No meshes found in: " << filepath << "\n";
+    DART_WARN("[MeshLoader::load] No meshes found in: {}", filepath);
     return nullptr;
   }
 
@@ -171,8 +172,10 @@ std::unique_ptr<typename MeshLoader<S>::Mesh> MeshLoader<S>::load(
 
     // TODO(JS): Support non-triangular faces
     if (face.mNumIndices != 3) {
-      dtwarn << "[MeshLoader::load] Non-triangular face detected in: "
-             << filepath << ". Skipping this face.\n";
+      DART_WARN(
+          "[MeshLoader::load] Non-triangular face detected in: {}. Skipping "
+          "this face.",
+          filepath);
       continue;
     }
 
@@ -233,9 +236,10 @@ typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
 
   // If loading failed, clean up and return
   if (!scene) {
-    dtwarn << "[MeshLoader::loadScene] Failed to import mesh from: " << filepath
-           << "\n";
-    dtwarn << "  Assimp error: " << aiGetErrorString() << "\n";
+    DART_WARN(
+        "[MeshLoader::loadScene] Failed to import mesh from: {}",
+        filepath);
+    DART_WARN("  Assimp error: {}", aiGetErrorString());
     aiReleasePropertyStore(propertyStore);
     return nullptr;
   }
@@ -264,7 +268,7 @@ typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
   // changed mTransformation above
   scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);
   if (!scene) {
-    dtwarn << "[MeshLoader::loadScene] Failed to pre-transform vertices.\n";
+    DART_WARN("[MeshLoader::loadScene] Failed to pre-transform vertices.");
   }
 
   aiReleasePropertyStore(propertyStore);

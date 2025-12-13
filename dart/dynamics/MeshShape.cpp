@@ -262,7 +262,7 @@ const aiScene* MeshShape::convertToAssimpMesh() const
 std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
     const aiScene* scene)
 {
-  if (!scene || scene->mNumMeshes == 0) {
+  if (!scene) {
     return nullptr;
   }
 
@@ -809,7 +809,7 @@ void MeshShape::updateBoundingBox() const
   // This handles lazy conversion for backward compatibility with CustomMeshShape
   const auto* triMesh = getTriMesh().get();
 
-  if (!triMesh) {
+  if (!triMesh || triMesh->getVertices().empty()) {
     mBoundingBox.setMin(Eigen::Vector3d::Zero());
     mBoundingBox.setMax(Eigen::Vector3d::Zero());
     mIsBoundingBoxDirty = false;
@@ -844,7 +844,9 @@ void MeshShape::updateVolume() const
 //==============================================================================
 aiScene* MeshShape::cloneMesh() const
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* scene = getMesh();
+  DART_SUPPRESS_DEPRECATED_END
   if (!scene)
     return nullptr;
 

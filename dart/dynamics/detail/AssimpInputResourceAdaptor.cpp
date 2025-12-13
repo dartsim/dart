@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/detail/AssimpInputResourceAdaptor.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 

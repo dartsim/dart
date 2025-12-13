@@ -308,6 +308,380 @@ dynamics::ShapePtr readShape(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& _retriever);
 
+dynamics::ShapeNode* readShapeNode(
+    dynamics::BodyNode* bodyNode,
+    const ElementPtr& shapeNodeEle,
+    const std::string& shapeNodeName,
+    const common::Uri& baseUri,
+    const common::ResourceRetrieverPtr& retriever);
+
+void readMaterial(
+    const ElementPtr& materialEle, dynamics::ShapeNode* shapeNode);
+
+void readVisualizationShapeNode(
+    dynamics::BodyNode* bodyNode,
+    const ElementPtr& vizShapeNodeEle,
+    const common::Uri& baseUri,
+    const common::ResourceRetrieverPtr& retriever);
+
+void readCollisionShapeNode(
+    dynamics::BodyNode* bodyNode,
+    const ElementPtr& collShapeNodeEle,
+    const common::Uri& baseUri,
+    const common::ResourceRetrieverPtr& retriever);
+
+void readAspects(
+    const dynamics::SkeletonPtr& skeleton,
+    const ElementPtr& skeletonElement,
+    const common::Uri& baseUri,
+    const common::ResourceRetrieverPtr& retriever);
+
+JointMap readAllJoints(
+    const ElementPtr& skeletonElement,
+    const Eigen::Isometry3d& skeletonFrame,
+    const BodyMap& sdfBodyNodes);
+
+SDFJoint readJoint(
+    const ElementPtr& jointElement,
+    const BodyMap& bodies,
+    const Eigen::Isometry3d& skeletonFrame);
+
+dart::dynamics::WeldJoint::Properties readWeldJoint(
+    const ElementPtr& jointElement,
+    const Eigen::Isometry3d& parentModelFrame,
+    const std::string& name);
+
+dynamics::RevoluteJoint::Properties readRevoluteJoint(
+    const ElementPtr& revoluteJointElement,
+    const Eigen::Isometry3d& parentModelFrame,
+    const std::string& name);
+
+dynamics::PrismaticJoint::Properties readPrismaticJoint(
+    const ElementPtr& jointElement,
+    const Eigen::Isometry3d& parentModelFrame,
+    const std::string& name);
+
+dynamics::ScrewJoint::Properties readScrewJoint(
+    const ElementPtr& jointElement,
+    const Eigen::Isometry3d& parentModelFrame,
+    const std::string& name);
+
+dynamics::UniversalJoint::Properties readUniversalJoint(
+    const ElementPtr& jointElement,
+    const Eigen::Isometry3d& parentModelFrame,
+    const std::string& name);
+
+dynamics::BallJoint::Properties readBallJoint(
+    const ElementPtr& jointElement,
+    const Eigen::Isometry3d& parentModelFrame,
+    const std::string& name);
+
+std::string describeSdformatError(const sdf::Error& error)
+{
+  std::ostringstream stream;
+  stream << error.Message();
+
+  if (const auto file = error.FilePath()) {
+    stream << " (" << *file;
+    if (const auto line = error.LineNumber()) {
+      stream << ':' << *line;
+    }
+    stream << ')';
+  }
+
+  return stream.str();
+}
+
+bool isMissingUriError(const std::string& message, std::string& uriValue)
+{
+  static const std::string needle = "Unable to find uri[";
+  const auto start = message.find(needle);
+  if (start == std::string::npos)
+    return false;
+
+  const auto uriStart = start + needle.size();
+  const auto uriEnd = message.find(']', uriStart);
+  if (uriEnd == std::string::npos)
+    return false;
+
+  uriValue = message.substr(uriStart, uriEnd - uriStart);
+  return true;
+}
+
+void logSdformatErrors(
+    const sdf::Errors& errors,
+    const common::Uri& uri,
+    const std::string& context)
+{
+  if (errors.empty())
+    return;
+
+  std::size_t warningCount = 0;
+  std::size_t errorCount = 0;
+  std::map<std::string, std::size_t> missingUriCounts;
+  std::vector<std::string> representativeMessages;
+
+  for (const auto& sdformatError : errors) {
+    const bool isWarning = (sdformatError.Code() == sdf::ErrorCode::WARNING);
+    if (isWarning)
+      ++warningCount;
+    else
+      ++errorCount;
+
+    const std::string description = describeSdformatError(sdformatError);
+    std::string uriValue;
+    if (isMissingUriError(description, uriValue)) {
+      ++missingUriCounts[uriValue];
+      continue;
+    }
+
+    if (representativeMessages.size() < 3)
+      representativeMessages.push_back(description);
+  }
+
+  std::ostringstream stream;
+  stream << "[SdfParser] " << context << " [" << uri.toString()
+         << "]: " << errors.size() << " issue(s) detected (" << errorCount
+         << " errors, " << warningCount << " warnings).";
+
+  if (!missingUriCounts.empty()) {
+    stream << " Missing URIs:";
+    for (const auto& [missingUri, count] : missingUriCounts)
+      stream << " [" << missingUri << " x" << count << ']';
+  }
+
+  DART_WARN("{}", stream.str());
+
+  for (const auto& message : representativeMessages) {
+    DART_WARN("  ↳ {}", message);
+  }
+}
+
+std::filesystem::path makeTemporaryPath(const common::Uri& uri)
+{
+  static std::atomic<uint64_t> counter{0};
+
+  const auto tempDir = std::filesystem::temp_directory_path();
+  const auto extension = std::filesystem::path(uri.getPath()).extension();
+
+  for (std::size_t attempt = 0; attempt < 64; ++attempt) {
+    std::stringstream name;
+    name << "dart_sdf_"
+         << std::chrono::high_resolution_clock::now().time_since_epoch().count()
+         << '_' << counter.fetch_add(1, std::memory_order_relaxed);
+    if (attempt > 0)
+      name << '_' << attempt;
+    if (!extension.empty())
+      name << extension.string();
+
+    const auto candidate = tempDir / name.str();
+    if (!std::filesystem::exists(candidate))
+      return candidate;
+  }
+
+  throw std::runtime_error(
+      "Failed to allocate temporary path for [" + uri.toString() + "]");
+}
+
+std::filesystem::path writeTemporaryResource(
+    const std::string& data, const common::Uri& uri)
+{
+  const auto tempPath = makeTemporaryPath(uri);
+
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output.write(data.data(), static_cast<std::streamsize>(data.size()));
+
+  if (!output) {
+    throw std::runtime_error(
+        "Failed to write temporary file for resource [" + uri.toString()
+        + "] at path [" + tempPath.string() + "]");
+  }
+
+  return tempPath;
+}
+
+std::string resolveWithRetriever(
+    const std::string& requested,
+    const common::ResourceRetrieverPtr& retriever,
+    const std::shared_ptr<std::vector<std::filesystem::path>>& tempFiles,
+    const std::shared_ptr<TempResourceMap>& origins)
+{
+  if (!retriever)
+    return std::string();
+
+  common::Uri requestedUri;
+  if (!requestedUri.fromStringOrPath(requested))
+    return std::string();
+
+  if (requestedUri.mScheme.get_value_or("file") == "file"
+      && requestedUri.mPath) {
+    std::error_code ec;
+    const auto candidate = requestedUri.getFilesystemPath();
+    if (std::filesystem::exists(candidate, ec) && !ec)
+      return candidate;
+  }
+
+  if (!retriever->exists(requestedUri))
+    return std::string();
+
+  try {
+    const auto data = retriever->readAll(requestedUri);
+    const auto tmp = writeTemporaryResource(data, requestedUri);
+    tempFiles->push_back(tmp);
+    if (origins) {
+      auto uri = common::Uri::createFromStringOrPath(requested);
+      (*origins)[tmp.string()] = uri;
+    }
+    return tmp.string();
+  } catch (const std::exception& e) {
+    DART_WARN(
+        "[SdfParser] Failed to materialize [{}] for libsdformat: {}",
+        requested,
+        e.what());
+    return std::string();
+  }
+}
+
+bool hasUriScheme(const std::string& candidate)
+{
+  return candidate.find("://") != std::string::npos;
+}
+
+bool isWindowsAbsolutePath(const std::string& path)
+{
+#ifdef _WIN32
+  return path.size() > 1 && path[1] == ':'
+         && std::isalpha(static_cast<unsigned char>(path[0]));
+#else
+  (void)path;
+  return false;
+#endif
+}
+
+bool requiresBaseUriResolution(const std::string& requested)
+{
+  if (requested.empty())
+    return false;
+
+  if (hasUriScheme(requested))
+    return false;
+
+  if (requested.front() == '/')
+    return false;
+
+  if (isWindowsAbsolutePath(requested))
+    return false;
+
+  return true;
+}
+
+std::string resolveRequestedUri(
+    const std::string& requested, const common::Uri& baseUri)
+{
+  if (!requiresBaseUriResolution(requested))
+    return requested;
+
+  if (!baseUri.mPath)
+    return requested;
+
+  const auto merged = common::Uri::getRelativeUri(baseUri, requested);
+  if (!merged.empty())
+    return merged;
+
+  return requested;
+}
+
+void cleanupTemporaryResources(
+    const std::shared_ptr<std::vector<std::filesystem::path>>& tempFiles)
+{
+  if (!tempFiles)
+    return;
+
+  for (const auto& path : *tempFiles) {
+    std::error_code ec;
+    std::filesystem::remove(path, ec);
+  }
+}
+
+struct TemporaryResourceOwner
+{
+  TemporaryResourceOwner() = default;
+
+  ~TemporaryResourceOwner()
+  {
+    cleanupTemporaryResources(files);
+  }
+
+  std::shared_ptr<std::vector<std::filesystem::path>> files;
+  std::shared_ptr<TempResourceMap> origins;
+};
+
+bool loadSdfRoot(
+    const common::Uri& uri,
+    const common::ResourceRetrieverPtr& retriever,
+    sdf::Root& root,
+    TemporaryResourceOwner& resources)
+{
+  if (!retriever) {
+    DART_WARN(
+        "[SdfParser] Unable to load [{}] because no ResourceRetriever was "
+        "provided.",
+        uri.toString());
+    return false;
+  }
+
+  resources.files = std::make_shared<std::vector<std::filesystem::path>>();
+  resources.origins = std::make_shared<TempResourceMap>();
+  sdf::ParserConfig config = sdf::ParserConfig::GlobalConfig();
+  config.SetFindCallback(
+      [retriever,
+       tempFiles = resources.files,
+       origins = resources.origins,
+       baseUri = uri](const std::string& requested) -> std::string {
+        const auto resolvedRequest = resolveRequestedUri(requested, baseUri);
+        return resolveWithRetriever(
+            resolvedRequest, retriever, tempFiles, origins);
+      });
+
+  sdf::Errors errors;
+  std::string localPath;
+  if (uri.mScheme.get_value_or("file") == "file" && uri.mPath) {
+    const auto candidate = uri.getFilesystemPath();
+    std::error_code ec;
+    if (std::filesystem::exists(candidate, ec) && !ec)
+      localPath = candidate;
+  }
+  if (!localPath.empty()) {
+    errors = root.Load(localPath, config);
+  } else {
+    std::string content;
+    try {
+      content = retriever->readAll(uri);
+    } catch (const std::exception& e) {
+      DART_WARN(
+          "[SdfParser] Failed to read [{}]: {}.", uri.toString(), e.what());
+      cleanupTemporaryResources(resources.files);
+      resources.files.reset();
+      resources.origins.reset();
+      return false;
+    }
+    errors = root.LoadSdfString(content, config);
+  }
+
+  logSdformatErrors(errors, uri, "libsdformat reported an issue while loading");
+
+  if (root.Element() == nullptr) {
+    DART_WARN(
+        "[SdfParser] [{}] produced an empty SDF document.", uri.toString());
+    cleanupTemporaryResources(resources.files);
+    resources.files.reset();
+    resources.origins.reset();
+    return false;
+  }
+
+  return true;
+}
+
 //==============================================================================
 simulation::WorldPtr readWorld(
     const ElementPtr& worldElement,

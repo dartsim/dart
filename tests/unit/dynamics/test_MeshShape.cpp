@@ -1,4 +1,5 @@
 #include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/ArrowShape.hpp"
@@ -165,15 +166,21 @@ TEST(MeshShapeTest, CloneCreatesIndependentScene)
   const aiScene* scene = dynamics::MeshShape::loadMesh(fileUri, retriever);
   ASSERT_NE(scene, nullptr);
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   auto original = std::make_shared<dynamics::MeshShape>(
       Eigen::Vector3d::Ones(), scene, fileUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
   const Eigen::Vector3d originalExtents
       = original->getBoundingBox().computeFullExtents();
 
   auto cloned
       = std::dynamic_pointer_cast<dynamics::MeshShape>(original->clone());
   ASSERT_NE(cloned, nullptr);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
   EXPECT_NE(original->getMesh(), cloned->getMesh());
+  DART_SUPPRESS_DEPRECATED_END
+
   EXPECT_TRUE(cloned->getBoundingBox().computeFullExtents().isApprox(
       originalExtents, 1e-12));
 
@@ -202,16 +209,20 @@ TEST(MeshShapeTest, ColladaUnitMetadataApplied)
   const aiScene* sceneWithUnits
       = dynamics::MeshShape::loadMesh(fileUri, retriever);
   ASSERT_NE(sceneWithUnits, nullptr);
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const auto shapeWithUnits = std::make_shared<dynamics::MeshShape>(
       Eigen::Vector3d::Ones(), sceneWithUnits);
+  DART_SUPPRESS_DEPRECATED_END
   const Eigen::Vector3d extentsWithUnits
       = shapeWithUnits->getBoundingBox().computeFullExtents();
 
   const aiScene* sceneIgnoringUnits
       = loadMeshWithOverrides(fileUri, retriever, true);
   ASSERT_NE(sceneIgnoringUnits, nullptr);
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const auto shapeIgnoringUnits = std::make_shared<dynamics::MeshShape>(
       Eigen::Vector3d::Ones(), sceneIgnoringUnits);
+  DART_SUPPRESS_DEPRECATED_END
   const Eigen::Vector3d extentsIgnoringUnits
       = shapeIgnoringUnits->getBoundingBox().computeFullExtents();
 
@@ -234,8 +245,10 @@ TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
   const aiScene* aliasScene
       = dynamics::MeshShape::loadMesh(aliasUri, aliasRetriever);
   ASSERT_NE(aliasScene, nullptr);
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const auto aliasShape = std::make_shared<dynamics::MeshShape>(
       Eigen::Vector3d::Ones(), aliasScene);
+  DART_SUPPRESS_DEPRECATED_END
   const Eigen::Vector3d aliasExtents
       = aliasShape->getBoundingBox().computeFullExtents();
 
@@ -243,8 +256,10 @@ TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
   const aiScene* canonicalScene = dynamics::MeshShape::loadMesh(
       common::Uri::createFromPath(filePath).toString(), canonicalRetriever);
   ASSERT_NE(canonicalScene, nullptr);
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const auto canonicalShape = std::make_shared<dynamics::MeshShape>(
       Eigen::Vector3d::Ones(), canonicalScene);
+  DART_SUPPRESS_DEPRECATED_END
   const Eigen::Vector3d canonicalExtents
       = canonicalShape->getBoundingBox().computeFullExtents();
 
@@ -265,7 +280,10 @@ TEST(MeshShapeTest, RespectsCustomMeshDeleter)
         });
 
     dynamics::MeshShape shape(Eigen::Vector3d::Ones(), scene);
+
+    DART_SUPPRESS_DEPRECATED_BEGIN
     EXPECT_EQ(shape.getMesh(), scene.get());
+    DART_SUPPRESS_DEPRECATED_END
   }
 
   EXPECT_EQ(deleted.load(), 1);
@@ -278,13 +296,19 @@ TEST(MeshShapeTest, TracksOwnershipAndUriMetadata)
       = common::Uri::createFromStringOrPath("/tmp/manual-mesh.dae");
 
   auto* manualScene = new aiScene;
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
   dynamics::MeshShape shape(
       Eigen::Vector3d::Ones(),
       manualScene,
       fileUri,
       retriever,
       dynamics::MeshShape::MeshOwnership::Manual);
+  DART_SUPPRESS_DEPRECATED_END
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
   EXPECT_EQ(shape.getMesh(), manualScene);
+  DART_SUPPRESS_DEPRECATED_END
   EXPECT_EQ(shape.getMeshPath(), fileUri.getFilesystemPath());
   EXPECT_EQ(shape.getMeshUri(), fileUri.toString());
 
@@ -297,14 +321,20 @@ TEST(MeshShapeTest, TracksOwnershipAndUriMetadata)
       retriever);
   EXPECT_EQ(retriever->lastUri, retrieverUri.toString());
   EXPECT_EQ(shape.getMeshPath(), "/virtual/path/from/retriever");
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
   EXPECT_EQ(shape.getMesh(), retrieverScene);
+  DART_SUPPRESS_DEPRECATED_END
 
   // No-op when the mesh pointer and ownership are unchanged.
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
   shape.setMesh(
       shape.getMesh(),
       dynamics::MeshShape::MeshOwnership::Manual,
       retrieverUri,
       retriever);
+  DART_SUPPRESS_DEPRECATED_END
 
   // Clearing the mesh resets related metadata.
   shape.setMesh(
@@ -312,7 +342,10 @@ TEST(MeshShapeTest, TracksOwnershipAndUriMetadata)
       dynamics::MeshShape::MeshOwnership::Manual,
       common::Uri(),
       nullptr);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
   EXPECT_EQ(shape.getMesh(), nullptr);
+  DART_SUPPRESS_DEPRECATED_END
   EXPECT_TRUE(shape.getMeshPath().empty());
   EXPECT_TRUE(shape.getMeshUri().empty());
 }
@@ -328,8 +361,11 @@ TEST(ArrowShapeTest, CloneUsesMeshOwnershipSemantics)
 
   auto cloned = std::dynamic_pointer_cast<dynamics::ArrowShape>(arrow.clone());
   ASSERT_TRUE(cloned);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
   ASSERT_NE(cloned->getMesh(), nullptr);
   EXPECT_NE(cloned->getMesh(), arrow.getMesh());
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 TEST(ArrowShapeTest, MaterialCountIsInitialized)
@@ -341,7 +377,9 @@ TEST(ArrowShapeTest, MaterialCountIsInitialized)
       Eigen::Vector4d::Ones(),
       4);
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* scene = arrow.getMesh();
+  DART_SUPPRESS_DEPRECATED_END
   ASSERT_NE(scene, nullptr);
   EXPECT_EQ(scene->mNumMaterials, 1u);
   ASSERT_NE(scene->mMaterials, nullptr);
