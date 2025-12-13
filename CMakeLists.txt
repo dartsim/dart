@@ -869,11 +869,33 @@ if(CLANG_FORMAT_EXECUTABLE)
     add_custom_target(
       format
       COMMAND ${CMAKE_COMMAND} -E echo "Formatting ${formatting_files_length} files... "
-      COMMAND ${CLANG_FORMAT_EXECUTABLE} -style=file -i ${formatting_files}
-      COMMAND ${CMAKE_COMMAND} -E echo "Done."
       DEPENDS ${CLANG_FORMAT_EXECUTABLE}
       WORKING_DIRECTORY ${DART_SOURCE_DIR}/dart
     )
+
+    # Avoid command line length limits (notably on macOS) by formatting in
+    # chunks instead of passing every file path to a single clang-format call.
+    set(_dart_format_chunk_size 100)
+    list(LENGTH formatting_files _dart_format_total)
+    math(EXPR _dart_format_last "${_dart_format_total} - 1")
+    foreach(_dart_format_start RANGE 0 ${_dart_format_last} ${_dart_format_chunk_size})
+      list(SUBLIST formatting_files ${_dart_format_start} ${_dart_format_chunk_size} _dart_format_chunk)
+      add_custom_command(
+        TARGET format
+        POST_BUILD
+        COMMAND ${CLANG_FORMAT_EXECUTABLE} -style=file -i ${_dart_format_chunk}
+      )
+    endforeach()
+    add_custom_command(
+      TARGET format
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E echo "Done."
+    )
+    unset(_dart_format_chunk)
+    unset(_dart_format_chunk_size)
+    unset(_dart_format_last)
+    unset(_dart_format_start)
+    unset(_dart_format_total)
 
     add_custom_target(
       check-format
