@@ -4,11 +4,14 @@ get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
 project(${example_name})
 
+set(example_target dart_${example_name})
+
 set(required_components dart)
 set(required_libraries dart raylib::raylib)
 
 if(DART_IN_SOURCE_BUILD)
-  dart_build_example_in_source(${example_name} LINK_LIBRARIES ${required_libraries})
+  dart_build_example_in_source(${example_target} LINK_LIBRARIES ${required_libraries})
+  set_target_properties(${example_target} PROPERTIES OUTPUT_NAME ${example_name})
   return()
 endif()
 
@@ -26,5 +29,6 @@ if(NOT TARGET raylib::raylib)
 endif()
 
 file(GLOB srcs "*.cpp" "*.hpp")
-add_executable(${example_name} ${srcs})
-target_link_libraries(${example_name} PUBLIC ${required_libraries})
+add_executable(${example_target} ${srcs})
+set_target_properties(${example_target} PROPERTIES OUTPUT_NAME ${example_name})
+target_link_libraries(${example_target} PUBLIC ${required_libraries})

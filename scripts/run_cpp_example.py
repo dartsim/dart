@@ -39,6 +39,19 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     return known, unknown
 
 
+def _normalize_target(target: str) -> str:
+    if target == "raylib_gui":
+        print("NOTE: example `raylib_gui` was renamed to `raylib`.", file=sys.stderr)
+        return "raylib"
+    return target
+
+
+def _resolve_build_and_binary(target: str) -> tuple[str, str]:
+    if target in {"raylib", "dart_raylib"}:
+        return "dart_raylib", "raylib"
+    return target, target
+
+
 def _cmake_cache_bool(build_dir: Path, option: str) -> bool | None:
     cache_path = build_dir / "CMakeCache.txt"
     if not cache_path.is_file():
@@ -61,7 +74,7 @@ def _cmake_cache_bool(build_dir: Path, option: str) -> bool | None:
 def _ensure_target_requirements(
     build_dir: Path, target: str, env: dict[str, str]
 ) -> None:
-    if target != "raylib_gui":
+    if target not in {"raylib", "dart_raylib"}:
         return
 
     enabled = _cmake_cache_bool(build_dir, "DART_BUILD_GUI_RAYLIB")
@@ -104,11 +117,14 @@ def run(target: str, build_type: str, run_args: list[str]) -> int:
 
     ensure_build_exists(build_dir, build_type)
 
+    target = _normalize_target(target)
+    build_target, binary_name = _resolve_build_and_binary(target)
+
     env = os.environ.copy()
     env["BUILD_TYPE"] = build_type
     env["CMAKE_BUILD_DIR"] = str(build_dir)
 
-    _ensure_target_requirements(build_dir, target, env)
+    _ensure_target_requirements(build_dir, build_target, env)
 
     subprocess.run(
         [
@@ -117,13 +133,13 @@ def run(target: str, build_type: str, run_args: list[str]) -> int:
             "--build-dir",
             str(build_dir),
             "--target",
-            target,
+            build_target,
         ],
         check=True,
         env=env,
     )
 
-    binary = build_dir / "bin" / target
+    binary = build_dir / "bin" / binary_name
     if not binary.exists():
         raise SystemExit(f"Binary not found: {binary}")
 
