@@ -367,6 +367,41 @@ def patch_custom_mesh_shape(mesh_shape_path: Path) -> bool:
     return True
 
 
+def patch_custom_heightmap_shape(heightmap_shape_path: Path) -> bool:
+    """Update CustomHeightmapShape scale to match HeightmapShape spacing semantics."""
+    if not heightmap_shape_path.exists():
+        print(
+            f"Error: CustomHeightmapShape not found at {heightmap_shape_path}",
+            file=sys.stderr,
+        )
+        return False
+
+    text = heightmap_shape_path.read_text()
+
+    old_x = "  scale.X(_size(0) / vertSize);\n"
+    old_y = "  scale.Y(_size(1) / vertSize);\n"
+
+    new_x = "  scale.X(_size(0) / (vertSize > 1 ? (vertSize - 1) : 1));\n"
+    new_y = "  scale.Y(_size(1) / (vertSize > 1 ? (vertSize - 1) : 1));\n"
+
+    if old_x not in text or old_y not in text:
+        if new_x in text and new_y in text:
+            print("✓ CustomHeightmapShape already patched")
+            return True
+        print(
+            "Error: Failed to locate CustomHeightmapShape scale computation block",
+            file=sys.stderr,
+        )
+        return False
+
+    text = text.replace(old_x, new_x, 1).replace(old_y, new_y, 1)
+    heightmap_shape_path.write_text(text)
+    print(
+        f"✓ Patched CustomHeightmapShape spacing calculation in {heightmap_shape_path}"
+    )
+    return True
+
+
 def main():
     """Main entry point for the script."""
     # Get the gz-physics CMakeLists.txt path
@@ -374,6 +409,9 @@ def main():
     cmake_file = repo_root / ".deps" / "gz-physics" / "CMakeLists.txt"
     gtest_root = cmake_file.parent / "test" / "gtest_vendor"
     custom_mesh_shape = cmake_file.parent / "dartsim" / "src" / "CustomMeshShape.cc"
+    custom_heightmap_shape = (
+        cmake_file.parent / "dartsim" / "src" / "CustomHeightmapShape.cc"
+    )
 
     # Patch versions
     old_version = "6.10"
@@ -389,6 +427,8 @@ def main():
         success = inject_make_and_register_overload(gtest_root) and success
     if success:
         success = patch_custom_mesh_shape(custom_mesh_shape) and success
+    if success:
+        success = patch_custom_heightmap_shape(custom_heightmap_shape) and success
 
     # Exit with appropriate code
     sys.exit(0 if success else 1)
