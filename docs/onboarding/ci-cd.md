@@ -240,6 +240,15 @@ All tests run through `pixi run test-all`, which includes:
 
 ## Monitoring and Maintenance
 
+### Watching runs from the CLI
+
+- List recent runs: `gh run list --branch <branch> --limit 10`
+- Watch a run: `gh run watch <run-id> --interval 30 --compact --exit-status`
+- View failed logs: `gh run view <run-id> --log-failed`
+
+Note: `gh run watch` exits only after the entire workflow run completes; it does
+not stop immediately when the first job fails.
+
 ### Expected CI Times
 
 **Without caching (first run):**
