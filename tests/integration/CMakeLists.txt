@@ -157,6 +157,9 @@ if(TARGET dart-utils)
   dart_add_test("integration" INTEGRATION_io_SkelParser io/test_SkelParser.cpp)
   target_link_libraries(INTEGRATION_io_SkelParser dart-utils)
 
+  dart_add_test("integration" INTEGRATION_io_UniversalLoader io/test_UniversalLoader.cpp)
+  target_link_libraries(INTEGRATION_io_UniversalLoader dart-utils)
+
   if(NOT MSVC)
     dart_add_test("integration" INTEGRATION_io_VskParser io/test_VskParser.cpp)
     target_link_libraries(INTEGRATION_io_VskParser dart-utils)
@@ -167,6 +170,13 @@ if(TARGET dart-utils-urdf)
   if(NOT MSVC)
     dart_add_test("integration" INTEGRATION_io_UrdfParser io/test_UrdfParser.cpp)
     target_link_libraries(INTEGRATION_io_UrdfParser dart-utils-urdf)
+
+    dart_add_test(
+      "integration"
+      INTEGRATION_io_UniversalLoaderUrdf
+      io/test_UniversalLoaderUrdf.cpp
+    )
+    target_link_libraries(INTEGRATION_io_UniversalLoaderUrdf dart-utils-urdf)
   endif()
 
   # Additional IO tests
