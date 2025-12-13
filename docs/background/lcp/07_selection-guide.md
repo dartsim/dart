@@ -44,6 +44,7 @@ Method: PGS
 Max iterations: 50-100
 Tolerance: 1e-4 to 1e-6
 Warm start: Previous time-step solution
+Randomize order: Optional (can improve robustness)
 Fallback: Dantzig if iterative solve stalls
 ```
 

@@ -117,6 +117,10 @@ function PGS(A, b, x, max_iter, epsilon):
 - **Parallelization**: Sequential
 - **DART support**: `dart::math::PgsSolver` implements both standard and boxed
   LCPs (including friction `findex` coupling)
+  - Configure solver-specific parameters (e.g., randomized sweep order) via
+    `dart::math::PgsSolver::setParameters()`.
+  - Legacy `dart::constraint::PgsBoxedLcpSolver::Option::mDoRandomize` maps to
+    `PgsSolver::Parameters::randomizeConstraintOrder`.
 
 ### Advantages/Disadvantages
 

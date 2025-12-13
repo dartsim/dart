@@ -32,6 +32,11 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
   `LcpSolver::solve(const LcpProblem&, Eigen::VectorXd&, const LcpOptions&)`.
 - `constraint::ConstraintSolver` now builds an `LcpProblem` and calls
   `math::DantzigSolver` (primary) with an optional `math::PgsSolver` fallback.
+- Solvers validate basic invariants (e.g., `lo <= hi`, `findex` in range, no
+  NaN bounds) and treat empty problems as a trivial success.
+- Deprecated boxed shims in `dart/constraint` (e.g., `BoxedLcpConstraintSolver`,
+  `PgsBoxedLcpSolver`) are kept for Gazebo / `gz-physics` compatibility and
+  delegate to the same `math::LcpSolver` implementations.
 
 ### Currently Implemented Solvers
 
