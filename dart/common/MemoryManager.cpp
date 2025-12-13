@@ -32,9 +32,7 @@
 
 #include "dart/common/MemoryManager.hpp"
 
-#if DART_BUILD_MODE_DEBUG
-  #include "dart/common/Logging.hpp"
-#endif
+#include "dart/common/Macros.hpp"
 
 namespace dart::common {
 
@@ -47,15 +45,21 @@ MemoryManager& MemoryManager::GetDefault()
 
 //==============================================================================
 MemoryManager::MemoryManager(MemoryAllocator& baseAllocator)
-  : mBaseAllocator(baseAllocator),
-    mFreeListAllocator(mBaseAllocator),
-#if DART_BUILD_MODE_RELEASE
-    mPoolAllocator(mFreeListAllocator)
-#else
-    mPoolAllocator(mFreeListAllocator.getInternalAllocator())
-#endif
+  : mBaseAllocator(baseAllocator)
 {
-  // Do nothing
+#if !defined(NDEBUG)
+  mUseDebugAllocators = true;
+#endif
+
+  if (mUseDebugAllocators) {
+    mFreeListAllocatorWithDebug
+        = std::make_unique<FreeListAllocator::Debug>(mBaseAllocator);
+    mPoolAllocatorWithDebug = std::make_unique<PoolAllocator::Debug>(
+        mFreeListAllocatorWithDebug->getInternalAllocator());
+  } else {
+    mFreeListAllocator = std::make_unique<FreeListAllocator>(mBaseAllocator);
+    mPoolAllocator = std::make_unique<PoolAllocator>(*mFreeListAllocator);
+  }
 }
 
 //==============================================================================
@@ -73,21 +77,25 @@ MemoryAllocator& MemoryManager::getBaseAllocator()
 //==============================================================================
 FreeListAllocator& MemoryManager::getFreeListAllocator()
 {
-#if DART_BUILD_MODE_RELEASE
-  return mFreeListAllocator;
-#else
-  return mFreeListAllocator.getInternalAllocator();
-#endif
+  if (mUseDebugAllocators) {
+    DART_ASSERT(mFreeListAllocatorWithDebug != nullptr);
+    return mFreeListAllocatorWithDebug->getInternalAllocator();
+  }
+
+  DART_ASSERT(mFreeListAllocator != nullptr);
+  return *mFreeListAllocator;
 }
 
 //==============================================================================
 PoolAllocator& MemoryManager::getPoolAllocator()
 {
-#if DART_BUILD_MODE_RELEASE
-  return mPoolAllocator;
-#else
-  return mPoolAllocator.getInternalAllocator();
-#endif
+  if (mUseDebugAllocators) {
+    DART_ASSERT(mPoolAllocatorWithDebug != nullptr);
+    return mPoolAllocatorWithDebug->getInternalAllocator();
+  }
+
+  DART_ASSERT(mPoolAllocator != nullptr);
+  return *mPoolAllocator;
 }
 
 //==============================================================================
@@ -97,9 +105,21 @@ void* MemoryManager::allocate(Type type, size_t bytes)
     case Type::Base:
       return mBaseAllocator.allocate(bytes);
     case Type::Free:
-      return mFreeListAllocator.allocate(bytes);
+      if (mUseDebugAllocators) {
+        DART_ASSERT(mFreeListAllocatorWithDebug != nullptr);
+        return mFreeListAllocatorWithDebug->allocate(bytes);
+      }
+
+      DART_ASSERT(mFreeListAllocator != nullptr);
+      return mFreeListAllocator->allocate(bytes);
     case Type::Pool:
-      return mPoolAllocator.allocate(bytes);
+      if (mUseDebugAllocators) {
+        DART_ASSERT(mPoolAllocatorWithDebug != nullptr);
+        return mPoolAllocatorWithDebug->allocate(bytes);
+      }
+
+      DART_ASSERT(mPoolAllocator != nullptr);
+      return mPoolAllocator->allocate(bytes);
   }
   return nullptr;
 }
@@ -124,10 +144,24 @@ void MemoryManager::deallocate(Type type, void* pointer, size_t bytes)
       mBaseAllocator.deallocate(pointer, bytes);
       break;
     case Type::Free:
-      mFreeListAllocator.deallocate(pointer, bytes);
+      if (mUseDebugAllocators) {
+        DART_ASSERT(mFreeListAllocatorWithDebug != nullptr);
+        mFreeListAllocatorWithDebug->deallocate(pointer, bytes);
+        break;
+      }
+
+      DART_ASSERT(mFreeListAllocator != nullptr);
+      mFreeListAllocator->deallocate(pointer, bytes);
       break;
     case Type::Pool:
-      mPoolAllocator.deallocate(pointer, bytes);
+      if (mUseDebugAllocators) {
+        DART_ASSERT(mPoolAllocatorWithDebug != nullptr);
+        mPoolAllocatorWithDebug->deallocate(pointer, bytes);
+        break;
+      }
+
+      DART_ASSERT(mPoolAllocator != nullptr);
+      mPoolAllocator->deallocate(pointer, bytes);
       break;
   }
 }
@@ -144,19 +178,23 @@ void MemoryManager::deallocateUsingPool(void* pointer, size_t bytes)
   deallocate(Type::Pool, pointer, bytes);
 }
 
-#if DART_BUILD_MODE_DEBUG
 //==============================================================================
 bool MemoryManager::hasAllocated(void* pointer, size_t size) const noexcept
 {
-  if (mFreeListAllocator.hasAllocated(pointer, size))
+  if (!mUseDebugAllocators) {
+    return false;
+  }
+
+  if (mFreeListAllocatorWithDebug != nullptr
+      && mFreeListAllocatorWithDebug->hasAllocated(pointer, size))
     return true;
 
-  if (mPoolAllocator.hasAllocated(pointer, size))
+  if (mPoolAllocatorWithDebug != nullptr
+      && mPoolAllocatorWithDebug->hasAllocated(pointer, size))
     return true;
 
   return false;
 }
-#endif
 
 //==============================================================================
 void MemoryManager::print(std::ostream& os, int indent) const
@@ -166,9 +204,21 @@ void MemoryManager::print(std::ostream& os, int indent) const
   }
   const std::string spaces(indent, ' ');
   os << spaces << "free_allocator:\n";
-  mFreeListAllocator.print(os, indent + 2);
+  if (mUseDebugAllocators) {
+    DART_ASSERT(mFreeListAllocatorWithDebug != nullptr);
+    mFreeListAllocatorWithDebug->print(os, indent + 2);
+  } else {
+    DART_ASSERT(mFreeListAllocator != nullptr);
+    mFreeListAllocator->print(os, indent + 2);
+  }
   os << spaces << "pool_allocator:\n";
-  mPoolAllocator.print(os, indent + 2);
+  if (mUseDebugAllocators) {
+    DART_ASSERT(mPoolAllocatorWithDebug != nullptr);
+    mPoolAllocatorWithDebug->print(os, indent + 2);
+  } else {
+    DART_ASSERT(mPoolAllocator != nullptr);
+    mPoolAllocator->print(os, indent + 2);
+  }
   os << spaces << "base_allocator:\n";
   mBaseAllocator.print(os, indent + 2);
 }

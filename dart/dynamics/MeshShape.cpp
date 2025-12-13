@@ -51,88 +51,6 @@
 #include <limits>
 #include <string>
 
-#if !(ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
-// We define our own constructor and destructor for aiScene, because it seems to
-// be missing from the standard assimp library (see #451)
-aiScene::aiScene()
-  : mFlags(0),
-    mRootNode(nullptr),
-    mNumMeshes(0),
-    mMeshes(nullptr),
-    mNumMaterials(0),
-    mMaterials(nullptr),
-    mAnimations(nullptr),
-    mNumTextures(0),
-    mTextures(nullptr),
-    mNumLights(0),
-    mLights(nullptr),
-    mNumCameras(0),
-    mCameras(nullptr)
-{
-}
-
-aiScene::~aiScene()
-{
-  delete mRootNode;
-
-  if (mNumMeshes && mMeshes)
-    for (std::size_t a = 0; a < mNumMeshes; ++a)
-      delete mMeshes[a];
-  delete[] mMeshes;
-
-  if (mNumMaterials && mMaterials)
-    for (std::size_t a = 0; a < mNumMaterials; ++a)
-      delete mMaterials[a];
-  delete[] mMaterials;
-
-  if (mNumAnimations && mAnimations)
-    for (std::size_t a = 0; a < mNumAnimations; ++a)
-      delete mAnimations[a];
-  delete[] mAnimations;
-
-  if (mNumTextures && mTextures)
-    for (std::size_t a = 0; a < mNumTextures; ++a)
-      delete mTextures[a];
-  delete[] mTextures;
-
-  if (mNumLights && mLights)
-    for (std::size_t a = 0; a < mNumLights; ++a)
-      delete mLights[a];
-  delete[] mLights;
-
-  if (mNumCameras && mCameras)
-    for (std::size_t a = 0; a < mNumCameras; ++a)
-      delete mCameras[a];
-  delete[] mCameras;
-}
-#endif // #if !(ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
-
-// We define our own constructor and destructor for aiMaterial, because it seems
-// to be missing from the standard assimp library (see #451)
-#if !(ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
-aiMaterial::aiMaterial()
-{
-  mNumProperties = 0;
-  mNumAllocated = 5;
-  mProperties = new aiMaterialProperty*[5];
-  for (std::size_t i = 0; i < 5; ++i)
-    mProperties[i] = nullptr;
-}
-
-aiMaterial::~aiMaterial()
-{
-  for (std::size_t i = 0; i < mNumProperties; ++i) {
-    auto* prop = mProperties[i];
-    if (!prop)
-      continue;
-    delete[] prop->mData;
-    delete prop;
-  }
-
-  delete[] mProperties;
-}
-#endif // #if !(ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
-
 namespace dart {
 namespace dynamics {
 
@@ -140,6 +58,25 @@ namespace dynamics {
 MeshShape::MeshShape(
     const Eigen::Vector3d& scale,
     const aiScene* mesh,
+    const common::Uri& path,
+    common::ResourceRetrieverPtr resourceRetriever,
+    MeshOwnership ownership)
+  : Shape(MESH),
+    mMesh(nullptr),
+    mMeshOwnership(MeshOwnership::None),
+    mDisplayList(0),
+    mColorMode(MATERIAL_COLOR),
+    mAlphaMode(BLEND),
+    mColorIndex(0)
+{
+  setMesh(mesh, ownership, path, std::move(resourceRetriever));
+  setScale(scale);
+}
+
+//==============================================================================
+MeshShape::MeshShape(
+    const Eigen::Vector3d& scale,
+    std::shared_ptr<const aiScene> mesh,
     const common::Uri& path,
     common::ResourceRetrieverPtr resourceRetriever)
   : Shape(MESH),
@@ -150,7 +87,7 @@ MeshShape::MeshShape(
     mAlphaMode(BLEND),
     mColorIndex(0)
 {
-  setMesh(mesh, path, std::move(resourceRetriever));
+  setMesh(std::move(mesh), path, std::move(resourceRetriever));
   setScale(scale);
 }
 
@@ -163,22 +100,7 @@ MeshShape::~MeshShape()
 //==============================================================================
 void MeshShape::releaseMesh()
 {
-  if (!mMesh)
-    return;
-
-  switch (mMeshOwnership) {
-    case MeshOwnership::Imported:
-      aiReleaseImport(const_cast<aiScene*>(mMesh));
-      break;
-    case MeshOwnership::Copied:
-      aiFreeScene(const_cast<aiScene*>(mMesh));
-      break;
-    case MeshOwnership::None:
-    default:
-      break;
-  }
-
-  mMesh = nullptr;
+  mMesh.reset();
   mMeshOwnership = MeshOwnership::None;
 }
 
@@ -198,7 +120,7 @@ const std::string& MeshShape::getStaticType()
 //==============================================================================
 const aiScene* MeshShape::getMesh() const
 {
-  return mMesh;
+  return mMesh.get();
 }
 
 //==============================================================================
@@ -237,7 +159,11 @@ void MeshShape::setMesh(
     const std::string& path,
     common::ResourceRetrieverPtr resourceRetriever)
 {
-  setMesh(mesh, common::Uri(path), std::move(resourceRetriever));
+  setMesh(
+      mesh,
+      MeshOwnership::Imported,
+      common::Uri(path),
+      std::move(resourceRetriever));
 }
 
 //==============================================================================
@@ -246,15 +172,95 @@ void MeshShape::setMesh(
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
 {
-  if (mesh == mMesh) {
+  setMesh(mesh, MeshOwnership::Imported, uri, std::move(resourceRetriever));
+}
+
+//==============================================================================
+namespace {
+
+std::shared_ptr<const aiScene> makeMeshHandle(
+    const aiScene* mesh, MeshShape::MeshOwnership ownership)
+{
+  if (!mesh)
+    return nullptr;
+
+  switch (ownership) {
+    case MeshShape::MeshOwnership::Imported:
+      return std::shared_ptr<const aiScene>(mesh, [](const aiScene* scene) { //
+        aiReleaseImport(const_cast<aiScene*>(scene));
+      });
+    case MeshShape::MeshOwnership::Copied:
+      return std::shared_ptr<const aiScene>(mesh, [](const aiScene* scene) {
+        aiFreeScene(const_cast<aiScene*>(scene));
+      });
+    case MeshShape::MeshOwnership::Manual:
+      return std::shared_ptr<const aiScene>(mesh, [](const aiScene* scene) {
+        delete const_cast<aiScene*>(scene);
+      });
+    case MeshShape::MeshOwnership::Custom:
+    case MeshShape::MeshOwnership::None:
+    default:
+      return std::shared_ptr<const aiScene>(
+          mesh, [](const aiScene*) { /* no-op */ });
+  }
+}
+
+} // namespace
+
+//==============================================================================
+void MeshShape::setMesh(
+    const aiScene* mesh,
+    MeshOwnership ownership,
+    const common::Uri& uri,
+    common::ResourceRetrieverPtr resourceRetriever)
+{
+  if (mesh == mMesh.get() && ownership == mMeshOwnership) {
     // Nothing to do.
     return;
   }
 
   releaseMesh();
 
-  mMesh = mesh;
-  mMeshOwnership = mesh ? MeshOwnership::Imported : MeshOwnership::None;
+  mMesh = makeMeshHandle(mesh, ownership);
+  mMeshOwnership = mesh ? ownership : MeshOwnership::None;
+
+  if (!mMesh) {
+    mMeshUri.clear();
+    mMeshPath.clear();
+    mResourceRetriever = nullptr;
+    return;
+  }
+
+  mMeshUri = uri;
+
+  if (uri.mScheme.get_value_or("file") == "file" && uri.mPath) {
+    mMeshPath = uri.getFilesystemPath();
+  } else if (resourceRetriever) {
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    mMeshPath = resourceRetriever->getFilePath(uri);
+    DART_SUPPRESS_DEPRECATED_END
+  } else {
+    mMeshPath.clear();
+  }
+
+  mResourceRetriever = std::move(resourceRetriever);
+
+  incrementVersion();
+}
+
+//==============================================================================
+void MeshShape::setMesh(
+    std::shared_ptr<const aiScene> mesh,
+    const common::Uri& uri,
+    common::ResourceRetrieverPtr resourceRetriever)
+{
+  if (mesh == mMesh && mMeshOwnership == MeshOwnership::Custom) {
+    return;
+  }
+
+  releaseMesh();
+  mMesh = std::move(mesh);
+  mMeshOwnership = mMesh ? MeshOwnership::Custom : MeshOwnership::None;
 
   if (!mMesh) {
     mMeshUri.clear();
@@ -363,8 +369,7 @@ ShapePtr MeshShape::clone() const
   aiScene* new_scene = cloneMesh();
 
   auto new_shape = std::make_shared<MeshShape>(
-      mScale, new_scene, mMeshUri, mResourceRetriever);
-  new_shape->mMeshOwnership = MeshOwnership::Copied;
+      mScale, new_scene, mMeshUri, mResourceRetriever, MeshOwnership::Copied);
   new_shape->mMeshPath = mMeshPath;
   new_shape->mDisplayList = mDisplayList;
   new_shape->mColorMode = mColorMode;
@@ -418,7 +423,7 @@ aiScene* MeshShape::cloneMesh() const
     return nullptr;
 
   aiScene* new_scene = nullptr;
-  aiCopyScene(mMesh, &new_scene);
+  aiCopyScene(mMesh.get(), &new_scene);
   return new_scene;
 }
 

@@ -1,15 +1,29 @@
-import platform
-
 import dartpy as dart
 import numpy as np
 import pytest
 
 
-def collision_groups_tester(cd):
-    size = [1, 1, 1]
-    pos1 = [0, 0, 0]
-    pos2 = [0.5, 0, 0]
+def _collision_detector_factories():
+    detectors = [("fcl", dart.FCLCollisionDetector)]
 
+    if hasattr(dart, "DARTCollisionDetector"):
+        detectors.append(("dart", dart.DARTCollisionDetector))
+
+    if hasattr(dart, "BulletCollisionDetector"):
+        detectors.append(("bullet", dart.BulletCollisionDetector))
+
+    if hasattr(dart, "OdeCollisionDetector"):
+        detectors.append(("ode", dart.OdeCollisionDetector))
+
+    return detectors
+
+
+_COLLISION_DETECTORS = _collision_detector_factories()
+if not _COLLISION_DETECTORS:
+    pytest.skip("No collision detectors available", allow_module_level=True)
+
+
+def collision_groups_tester(cd):
     simple_frame1 = dart.SimpleFrame()
     simple_frame2 = dart.SimpleFrame()
 
@@ -102,25 +116,16 @@ def collision_groups_tester(cd):
     assert not group.collide(group2)
 
 
-def test_collision_groups():
-    cd = dart.FCLCollisionDetector()
-    collision_groups_tester(cd)
-
-    cd = dart.DARTCollisionDetector()
-    collision_groups_tester(cd)
-
-    if hasattr(dart, "BulletCollisionDetector"):
-        cd = dart.BulletCollisionDetector()
-        collision_groups_tester(cd)
-
-    if hasattr(dart, "OdeCollisionDetector"):
-        cd = dart.OdeCollisionDetector()
-        collision_groups_tester(cd)
+_COLLISION_IDS = [name for name, _ in _COLLISION_DETECTORS]
 
 
-# TODO: Add more collision detectors
-@pytest.mark.parametrize("cd", [dart.FCLCollisionDetector()])
-def test_filter(cd):
+@pytest.mark.parametrize("name, cd_factory", _COLLISION_DETECTORS, ids=_COLLISION_IDS)
+def test_collision_groups(name, cd_factory):
+    collision_groups_tester(cd_factory())
+
+
+@pytest.mark.parametrize("name, cd_factory", _COLLISION_DETECTORS, ids=_COLLISION_IDS)
+def test_filter(name, cd_factory):
     # Create two bodies skeleton. The two bodies are placed at the same position
     # with the same size shape so that they collide by default.
     skel = dart.Skeleton()
@@ -143,7 +148,7 @@ def test_filter(cd):
 
     # Set a new collision detector
     constraint_solver = world.get_constraint_solver()
-    constraint_solver.set_collision_detector(cd)
+    constraint_solver.set_collision_detector(cd_factory())
 
     # Get the collision group from the constraint solver
     group = constraint_solver.get_collision_group()

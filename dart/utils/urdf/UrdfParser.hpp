@@ -52,6 +52,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 namespace urdf {
 class ModelInterface;
@@ -117,6 +118,22 @@ public:
   /// Sets options
   void setOptions(const Options& options);
 
+  /// Lightweight representation of a URDF transmission.
+  struct TransmissionInfo
+  {
+    std::string mActuatorName;
+    std::string mJointName;
+    double mMechanicalReduction = 1.0;
+    bool mUseCoupler = true;
+  };
+
+  /// Context passed through parsing helpers. Add future fields here instead of
+  /// extending function signatures.
+  struct ParseContext
+  {
+    std::vector<TransmissionInfo> mTransmissions;
+  };
+
   /// Returns options
   const Options& getOptions() const;
 
@@ -165,7 +182,8 @@ private:
       const urdf::ModelInterface* model,
       const common::Uri& baseUri,
       const common::ResourceRetrieverPtr& resourceRetriever,
-      const Options& options);
+      const Options& options,
+      const ParseContext* context = nullptr);
 
   static bool createSkeletonRecursive(
       const urdf::ModelInterface* model,
@@ -180,6 +198,14 @@ private:
       const urdf::ModelInterface* model,
       dynamics::SkeletonPtr _skel,
       const urdf::Link* _lk);
+
+  static std::vector<TransmissionInfo> parseTransmissions(
+      const std::string& urdfString);
+
+  static void applyTransmissions(
+      const std::vector<TransmissionInfo>& transmissions,
+      const urdf::ModelInterface* model,
+      dynamics::SkeletonPtr skel);
 
   template <class VisualOrCollision>
   static dynamics::ShapePtr createShape(

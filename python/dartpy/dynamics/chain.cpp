@@ -1,5 +1,6 @@
 #include "dynamics/chain.hpp"
 
+#include "common/repr.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Chain.hpp"
 
@@ -109,7 +110,18 @@ void defChain(nb::module_& m)
             return self.cloneMetaSkeleton(name);
           },
           nb::arg("name"))
-      .def("isStillChain", &Chain::isStillChain);
+      .def("isStillChain", &Chain::isStillChain)
+      .def("__repr__", [](const Chain& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("name", repr_string(self.getName()));
+        fields.emplace_back(
+            "body_nodes", std::to_string(self.getNumBodyNodes()));
+        fields.emplace_back("joints", std::to_string(self.getNumJoints()));
+        fields.emplace_back("dofs", std::to_string(self.getNumDofs()));
+        fields.emplace_back("assembled", repr_bool(self.isAssembled()));
+        fields.emplace_back("valid", repr_bool(self.isStillChain()));
+        return format_repr("Chain", fields);
+      });
 }
 
 } // namespace dart::python_nb

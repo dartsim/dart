@@ -1298,8 +1298,8 @@ robot->eachBodyNode([&](BodyNode* bodyNode) {
 
 ```cpp
 // URDF
-dart::utils::UrdfParser loader;
-auto robot = loader.parseSkeleton("path/to/robot.urdf");
+dart::utils::UrdfParser parser;
+auto robot = parser.parseSkeleton("path/to/robot.urdf");
 world->addSkeleton(robot);
 
 // SDF
@@ -1356,12 +1356,13 @@ viewer.getImGuiHandler()->addWidget(widget, true);
 
 This repository contains additional detailed analysis documents:
 
-- [`architecture.md`](docs/onboarding/architecture.md) - Core DART architecture deep dive
-- [`gui-rendering.md`](docs/onboarding/gui-rendering.md) - OpenSceneGraph integration details
-- [`python-bindings.md`](docs/onboarding/python-bindings.md) - Python bindings (dartpy) reference
-- [`build-system.md`](docs/onboarding/build-system.md) - Build system and dependencies
-- [`dynamics.md`](docs/onboarding/dynamics.md) - Dynamics system exploration
-- [`constraints.md`](docs/onboarding/constraints.md) - Constraint solver analysis
+- [`architecture.md`](architecture.md) - Core DART architecture deep dive
+- [`aspect-system.md`](aspect-system.md) - Aspect/State/Properties design and implementation
+- [`gui-rendering.md`](gui-rendering.md) - OpenSceneGraph integration details
+- [`python-bindings.md`](python-bindings.md) - Python bindings (dartpy) reference
+- [`build-system.md`](build-system.md) - Build system and dependencies
+- [`dynamics.md`](dynamics.md) - Dynamics system exploration
+- [`constraints.md`](constraints.md) - Constraint solver analysis
 
 ### Key Design Patterns Used in DART
 

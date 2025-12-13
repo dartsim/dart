@@ -9,13 +9,7 @@ dartpy provides Python bindings for DART (Dynamic Animation and Robotics Toolkit
    :maxdepth: 2
    :caption: API Modules
 
-   modules/common
-   modules/math
-   modules/dynamics
-   modules/simulation
-   modules/collision
-   modules/constraint
-   modules/optimizer
+   modules/dartpy
    modules/utils
    modules/gui
 
@@ -29,10 +23,10 @@ To use dartpy in your Python code:
    import dartpy as dart
 
    # Create a world
-   world = dart.simulation.World()
+   world = dart.World()
 
    # Add a skeleton
-   skeleton = dart.dynamics.Skeleton()
+   skeleton = dart.Skeleton()
    world.addSkeleton(skeleton)
 
    # Simulate

@@ -54,11 +54,9 @@ ConstrainedGroup::~ConstrainedGroup() {}
 void ConstrainedGroup::addConstraint(const ConstraintBasePtr& _constraint)
 {
   DART_ASSERT(_constraint != nullptr && "Attempted to add nullptr.");
-#if DART_BUILD_MODE_DEBUG
   DART_ASSERT(
       !containConstraint(_constraint)
       && "Attempted to add a duplicate constraint.");
-#endif
   DART_ASSERT(_constraint->isActive());
 
   mConstraints.push_back(_constraint);
@@ -88,11 +86,9 @@ ConstConstraintBasePtr ConstrainedGroup::getConstraint(std::size_t _index) const
 void ConstrainedGroup::removeConstraint(const ConstraintBasePtr& _constraint)
 {
   DART_ASSERT(_constraint != nullptr && "Attempted to add nullptr.");
-#if DART_BUILD_MODE_DEBUG
   DART_ASSERT(
       containConstraint(_constraint)
       && "Attempted to remove not existing constraint.");
-#endif
 
   mConstraints.erase(
       remove(mConstraints.begin(), mConstraints.end(), _constraint),
@@ -106,14 +102,12 @@ void ConstrainedGroup::removeAllConstraints()
 }
 
 //==============================================================================
-#if DART_BUILD_MODE_DEBUG
 bool ConstrainedGroup::containConstraint(
     const ConstConstraintBasePtr& _constraint) const
 {
   return std::find(mConstraints.begin(), mConstraints.end(), _constraint)
          != mConstraints.end();
 }
-#endif
 
 //==============================================================================
 std::size_t ConstrainedGroup::getTotalDimension() const

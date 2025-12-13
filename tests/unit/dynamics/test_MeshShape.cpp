@@ -1,14 +1,17 @@
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/config.hpp"
+#include "dart/dynamics/ArrowShape.hpp"
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 
+#include <Eigen/Core>
 #include <assimp/cimport.h>
 #include <assimp/config.h>
 #include <assimp/postprocess.h>
 #include <gtest/gtest.h>
 
+#include <atomic>
 #include <fstream>
 #include <memory>
 #include <string>
@@ -51,6 +54,28 @@ private:
   std::string mAliasUri;
   common::Uri mTargetUri;
   common::LocalResourceRetrieverPtr mDelegate;
+};
+
+class RecordingRetriever final : public common::ResourceRetriever
+{
+public:
+  bool exists(const common::Uri&) override
+  {
+    return true;
+  }
+
+  common::ResourcePtr retrieve(const common::Uri&) override
+  {
+    return nullptr;
+  }
+
+  std::string getFilePath(const common::Uri& uri) override
+  {
+    lastUri = uri.toString();
+    return "/virtual/path/from/retriever";
+  }
+
+  std::string lastUri;
 };
 
 const aiScene* loadMeshWithOverrides(
@@ -226,4 +251,99 @@ TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
   EXPECT_TRUE(aliasExtents.isApprox(canonicalExtents, 1e-6))
       << "aliasExtents=" << aliasExtents.transpose()
       << ", canonicalExtents=" << canonicalExtents.transpose();
+}
+
+TEST(MeshShapeTest, RespectsCustomMeshDeleter)
+{
+  std::atomic<int> deleted{0};
+
+  {
+    auto scene = std::shared_ptr<const aiScene>(
+        new aiScene, [&deleted](const aiScene* mesh) {
+          ++deleted;
+          delete const_cast<aiScene*>(mesh);
+        });
+
+    dynamics::MeshShape shape(Eigen::Vector3d::Ones(), scene);
+    EXPECT_EQ(shape.getMesh(), scene.get());
+  }
+
+  EXPECT_EQ(deleted.load(), 1);
+}
+
+TEST(MeshShapeTest, TracksOwnershipAndUriMetadata)
+{
+  auto retriever = std::make_shared<RecordingRetriever>();
+  const common::Uri fileUri
+      = common::Uri::createFromStringOrPath("/tmp/manual-mesh.dae");
+
+  auto* manualScene = new aiScene;
+  dynamics::MeshShape shape(
+      Eigen::Vector3d::Ones(),
+      manualScene,
+      fileUri,
+      retriever,
+      dynamics::MeshShape::MeshOwnership::Manual);
+  EXPECT_EQ(shape.getMesh(), manualScene);
+  EXPECT_EQ(shape.getMeshPath(), fileUri.getFilesystemPath());
+  EXPECT_EQ(shape.getMeshUri(), fileUri.toString());
+
+  const common::Uri retrieverUri("package://example/mesh.dae");
+  auto* retrieverScene = new aiScene;
+  shape.setMesh(
+      retrieverScene,
+      dynamics::MeshShape::MeshOwnership::Manual,
+      retrieverUri,
+      retriever);
+  EXPECT_EQ(retriever->lastUri, retrieverUri.toString());
+  EXPECT_EQ(shape.getMeshPath(), "/virtual/path/from/retriever");
+  EXPECT_EQ(shape.getMesh(), retrieverScene);
+
+  // No-op when the mesh pointer and ownership are unchanged.
+  shape.setMesh(
+      shape.getMesh(),
+      dynamics::MeshShape::MeshOwnership::Manual,
+      retrieverUri,
+      retriever);
+
+  // Clearing the mesh resets related metadata.
+  shape.setMesh(
+      nullptr,
+      dynamics::MeshShape::MeshOwnership::Manual,
+      common::Uri(),
+      nullptr);
+  EXPECT_EQ(shape.getMesh(), nullptr);
+  EXPECT_TRUE(shape.getMeshPath().empty());
+  EXPECT_TRUE(shape.getMeshUri().empty());
+}
+
+TEST(ArrowShapeTest, CloneUsesMeshOwnershipSemantics)
+{
+  dynamics::ArrowShape arrow(
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::UnitX(),
+      dynamics::ArrowShape::Properties(),
+      Eigen::Vector4d::Ones(),
+      4);
+
+  auto cloned = std::dynamic_pointer_cast<dynamics::ArrowShape>(arrow.clone());
+  ASSERT_TRUE(cloned);
+  ASSERT_NE(cloned->getMesh(), nullptr);
+  EXPECT_NE(cloned->getMesh(), arrow.getMesh());
+}
+
+TEST(ArrowShapeTest, MaterialCountIsInitialized)
+{
+  dynamics::ArrowShape arrow(
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::UnitX(),
+      dynamics::ArrowShape::Properties(),
+      Eigen::Vector4d::Ones(),
+      4);
+
+  const aiScene* scene = arrow.getMesh();
+  ASSERT_NE(scene, nullptr);
+  EXPECT_EQ(scene->mNumMaterials, 1u);
+  ASSERT_NE(scene->mMaterials, nullptr);
+  EXPECT_NE(scene->mMaterials[0], nullptr);
 }

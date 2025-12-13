@@ -20,6 +20,7 @@ import sys
 from pathlib import Path
 from shutil import which
 from typing import Dict, Optional, Tuple
+from urllib.request import urlopen
 
 from build_helpers import cmake_target_exists, get_build_dir
 
@@ -224,6 +225,105 @@ def run_command(
         return False, str(e)
 
 
+def patch_nanobind_if_needed() -> None:
+    """Work around corrupted nanobind headers in some environments.
+
+    A few conda builds of nanobind 2.9.2 ship with missing escape sequences in
+    nanobind sources, which makes compilation fail with missing-terminating-string
+    errors. If we detect the broken patterns, rewrite them in-place to match the
+    upstream source.
+    """
+
+    try:
+        import nanobind  # type: ignore
+    except Exception:
+        return
+
+    nb_root = Path(nanobind.__file__).resolve().parent
+    nb_type = nb_root / "src" / "nb_type.cpp"
+    nb_func = nb_root / "src" / "nb_func.cpp"
+    nb_error = nb_root / "src" / "error.cpp"
+    nb_version = getattr(nanobind, "__version__", "main")
+    base_url = f"https://raw.githubusercontent.com/wjakob/nanobind/v{nb_version}/src/"
+
+    force_refresh = nb_version.startswith("2.9.2")
+
+    def refresh_from_upstream(
+        path: Path, filename: str, bad_markers: Tuple[str, ...], force: bool = False
+    ) -> bool:
+        if not path.is_file():
+            return False
+
+        text = path.read_text(encoding="utf-8")
+        if not force and not any(marker in text for marker in bad_markers):
+            return False
+
+        try:
+            upstream = urlopen(base_url + filename, timeout=10).read().decode("utf-8")
+            path.write_text(upstream, encoding="utf-8")
+            print_warning(f"Refreshed nanobind source at {path} from upstream.")
+            return True
+        except Exception:
+            return False
+
+    refreshed = False
+    refreshed |= refresh_from_upstream(
+        nb_type, "nb_type.cpp", ('\\"%s")', '(")', '("['), force=force_refresh
+    )
+    refreshed |= refresh_from_upstream(
+        nb_func,
+        "nb_func.cpp",
+        ('\\"%s")', 'buf.put(" = \\");', 'buf.put(" = ");'),
+        force=force_refresh,
+    )
+    refreshed |= refresh_from_upstream(
+        nb_error,
+        "error.cpp",
+        ('buf.put("", line ");', 'buf.put("\\\\", line ");'),
+        force=force_refresh,
+    )
+
+    if refreshed:
+        return
+
+    # Fallback: minimal in-place fixes when network refresh fails.
+    if nb_type.is_file():
+        text = nb_type.read_text(encoding="utf-8")
+        fixed = (
+            text.replace('\\"%s")', '\\"%s\\")')
+            .replace('(\\"(")', '(\\"(\\")')
+            .replace('(\\"[")', '(\\"[\\")')
+        )
+        if fixed != text:
+            nb_type.write_text(fixed, encoding="utf-8")
+            print_warning(f"Patched nanobind source at {nb_type} to fix bad escapes.")
+
+    if nb_func.is_file():
+        func_text = nb_func.read_text(encoding="utf-8")
+        func_fixed = (
+            func_text.replace(
+                '\\"%s"): function not found!', '\\"%s\\"): function not found!'
+            )
+            .replace('buf.put(" = \\");', 'buf.put(" = \\\\");')
+            .replace('buf.put(" = ");', 'buf.put(" = \\\\");')
+        )
+        if func_fixed != func_text:
+            nb_func.write_text(func_fixed, encoding="utf-8")
+            print_warning(f"Patched nanobind source at {nb_func} to fix bad escapes.")
+
+    if nb_error.is_file():
+        err_text = nb_error.read_text(encoding="utf-8")
+        err_fixed = err_text.replace(
+            '            buf.put("", line ");',
+            '            buf.put("\\", line ");',
+        ).replace(
+            '            buf.put("\\\\", line ");', '            buf.put("\\", line ");'
+        )
+        if err_fixed != err_text:
+            nb_error.write_text(err_fixed, encoding="utf-8")
+            print_warning(f"Patched nanobind source at {nb_error} to fix bad escapes.")
+
+
 def check_pixi() -> bool:
     """Check if pixi is available"""
     pixi_exe = _resolve_pixi_path()
@@ -418,6 +518,8 @@ def main():
     # Check if pixi is available
     if not check_pixi():
         return 1
+
+    patch_nanobind_if_needed()
 
     results = {}
     continue_running = True

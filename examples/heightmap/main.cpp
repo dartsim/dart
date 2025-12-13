@@ -39,6 +39,8 @@
 
 #include <dart/All.hpp>
 
+#include <CLI/CLI.hpp>
+
 #include <cmath>
 
 using namespace dart;
@@ -101,7 +103,6 @@ dynamics::SimpleFramePtr createHeightmapFrame(
 
   terrainFrame->createVisualAspect();
 
-  // TODO(JS): Remove?
   auto terrainShape = createHeightmapShape(
       xResolution, yResolution, xSize, ySize, zMin, zMax);
   terrainFrame->setShape(terrainShape);
@@ -452,8 +453,14 @@ protected:
   std::shared_ptr<HeightmapShape<S>> mHeightmapShape;
 };
 
-int main()
+int main(int argc, char* argv[])
 {
+  CLI::App app("Heightmap example");
+  double guiScale = 1.0;
+  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
+      ->check(CLI::PositiveNumber);
+  CLI11_PARSE(app, argc, argv);
+
   auto world = dart::simulation::World::create();
   world->setGravity(Eigen::Vector3d::Zero());
 
@@ -470,6 +477,7 @@ int main()
 
   // Create the Viewer instance
   dart::gui::ImGuiViewer viewer;
+  viewer.setImGuiScale(static_cast<float>(guiScale));
   viewer.addWorldNode(node);
   viewer.simulate(true);
 

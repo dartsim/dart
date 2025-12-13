@@ -191,7 +191,7 @@ void Node::attach()
 
   // If we are in release mode, and the Node believes it is attached, then we
   // can shortcut this procedure
-#if DART_BUILD_MODE_RELEASE
+#if defined(NDEBUG)
   if (mAmAttached)
     return;
 #endif
@@ -243,7 +243,7 @@ void Node::stageForRemoval()
 
   // If we are in release mode, and the Node believes it is detached, then we
   // can shortcut this procedure.
-#if DART_BUILD_MODE_RELEASE
+#if defined(NDEBUG)
   if (!mAmAttached)
     return;
 #endif

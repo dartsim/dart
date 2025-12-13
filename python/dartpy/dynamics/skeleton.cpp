@@ -1,5 +1,6 @@
 #include "dynamics/skeleton.hpp"
 
+#include "common/repr.hpp"
 #include "common/type_casters.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -127,6 +128,23 @@ void defSkeleton(nb::module_& m)
           },
           nb::rv_policy::reference_internal)
       .def(
+          "get_joint",
+          [](Skeleton& self, std::size_t idx) -> dart::dynamics::Joint* {
+            return self.getJoint(idx);
+          },
+          nb::rv_policy::reference_internal)
+      .def(
+          "get_joint",
+          [](Skeleton& self, const std::string& name)
+              -> dart::dynamics::Joint* { return self.getJoint(name); },
+          nb::rv_policy::reference_internal)
+      .def(
+          "get_root_joint",
+          [](Skeleton& self) -> dart::dynamics::Joint* {
+            return self.getRootJoint();
+          },
+          nb::rv_policy::reference_internal)
+      .def(
           "getDof",
           [](Skeleton& self, std::size_t idx) { return self.getDof(idx); },
           nb::rv_policy::reference_internal,
@@ -159,6 +177,15 @@ void defSkeleton(nb::module_& m)
             return self.getIK(createIfNull);
           },
           nb::arg("createIfNull") = false);
+
+  skeletonClass.def("__repr__", [](const Skeleton& self) {
+    std::vector<std::pair<std::string, std::string>> fields;
+    fields.emplace_back("name", repr_string(self.getName()));
+    fields.emplace_back("body_nodes", std::to_string(self.getNumBodyNodes()));
+    fields.emplace_back("joints", std::to_string(self.getNumJoints()));
+    fields.emplace_back("dofs", std::to_string(self.getNumDofs()));
+    return format_repr("Skeleton", fields);
+  });
 
   skeletonClass.def(
       "createFreeJointAndBodyNodePair",

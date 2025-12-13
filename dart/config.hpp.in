@@ -67,19 +67,12 @@
 #cmakedefine01 DART_BUILD_MODE_DEBUG
 #cmakedefine01 DART_BUILD_MODE_RELEASE
 
-#cmakedefine01 HAVE_BULLET
-#cmakedefine01 HAVE_ODE
-#cmakedefine01 HAVE_OCTOMAP
-#cmakedefine01 HAVE_SDFORMAT
-// TODO(JS): Change names to DART_HAVE_*
-// TODO(JS): Use target_compile_definitions(<target_name> PUBLIC
-// -DDART_HAVE_*=1)
+#cmakedefine01 DART_HAVE_BULLET
+#cmakedefine01 DART_HAVE_ODE
+#cmakedefine01 DART_HAVE_OCTOMAP
+#cmakedefine01 DART_HAVE_SDFORMAT
 
 #cmakedefine01 DART_ENABLE_SIMD
-
-// See #451
-#cmakedefine01 ASSIMP_AISCENE_CTOR_DTOR_DEFINED
-#cmakedefine01 ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED
 
 // Workaround for the fact that Bullet does not add the definition to
 // BULLET_DEFINITIONS or generate a #cmakedefine header.

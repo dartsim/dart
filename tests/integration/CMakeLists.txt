@@ -25,6 +25,7 @@ endif()
 
 if(DART_BUILD_COLLISION_BULLET)
   dart_add_test("integration" INTEGRATION_collision_CollisionAccuracy collision/test_CollisionAccuracy.cpp)
+  dart_add_test("integration" INTEGRATION_collision_BulletEllipsoidRolling collision/test_BulletEllipsoidRolling.cpp)
   dart_add_test("integration" INTEGRATION_collision_BulletBoxStack collision/test_BulletBoxStack.cpp)
 endif()
 
@@ -175,12 +176,17 @@ if(TARGET dart-utils-urdf)
   dart_add_library(SharedLibraryWamIkFast io/SharedLibraryWamIkFast.hpp io/SharedLibraryWamIkFast.cpp)
   target_link_libraries(SharedLibraryWamIkFast PUBLIC dart)
   target_compile_definitions(SharedLibraryWamIkFast PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
-  target_compile_options(SharedLibraryWamIkFast PRIVATE -w)
+  if(NOT MSVC)
+    # Suppress warnings in auto-generated IKFast code without fighting MSVC's /W
+    target_compile_options(SharedLibraryWamIkFast PRIVATE -w)
+  endif()
 
   dart_add_library(GeneratedWamIkFast io/GeneratedWamIkFast.cpp)
   target_link_libraries(GeneratedWamIkFast PUBLIC dart)
   target_compile_definitions(GeneratedWamIkFast PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
-  target_compile_options(GeneratedWamIkFast PRIVATE -w)
+  if(NOT MSVC)
+    target_compile_options(GeneratedWamIkFast PRIVATE -w)
+  endif()
 
   if(BUILD_SHARED_LIBS)
     dart_add_test("integration" INTEGRATION_io_IkFast io/test_IkFast.cpp)
@@ -222,6 +228,9 @@ dart_build_tests(
   SOURCES
     simulation/test_Building.cpp
 )
+
+dart_add_test(
+  "integration" INTEGRATION_simulation_Issue870 simulation/test_Issue870.cpp)
 
 if(TARGET dart-utils)
   dart_add_test("integration" INTEGRATION_simulation_FileInfoWorld simulation/test_FileInfoWorld.cpp)

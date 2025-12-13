@@ -1,5 +1,6 @@
 #include "dynamics/shape.hpp"
 
+#include "common/repr.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
@@ -25,7 +26,12 @@ void defShape(nb::module_& m)
             return self.getType();
           },
           nb::rv_policy::reference_internal)
-      .def("computeInertia", &Shape::computeInertia, nb::arg("mass"));
+      .def("computeInertia", &Shape::computeInertia, nb::arg("mass"))
+      .def("__repr__", [](const Shape& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("type", repr_string(self.getType()));
+        return format_repr("Shape", fields);
+      });
 
   nb::class_<dart::dynamics::SphereShape, Shape>(m, "SphereShape")
       .def(
@@ -62,7 +68,12 @@ void defShape(nb::module_& m)
             return dart::dynamics::SphereShape::computeInertia(radius, mass);
           },
           nb::arg("radius"),
-          nb::arg("mass"));
+          nb::arg("mass"))
+      .def("__repr__", [](const dart::dynamics::SphereShape& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("radius", repr_double(self.getRadius()));
+        return format_repr("SphereShape", fields);
+      });
 
   nb::class_<dart::dynamics::BoxShape, Shape>(m, "BoxShape")
       .def(
@@ -105,7 +116,17 @@ void defShape(nb::module_& m)
             return dart::dynamics::BoxShape::computeInertia(size, mass);
           },
           nb::arg("size"),
-          nb::arg("mass"));
+          nb::arg("mass"))
+      .def("__repr__", [](const dart::dynamics::BoxShape& self) {
+        const auto size = self.getSize();
+        std::ostringstream size_stream;
+        size_stream << "[" << repr_double(size[0]) << ", "
+                    << repr_double(size[1]) << ", " << repr_double(size[2])
+                    << "]";
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("size", size_stream.str());
+        return format_repr("BoxShape", fields);
+      });
 }
 
 } // namespace dart::python_nb
