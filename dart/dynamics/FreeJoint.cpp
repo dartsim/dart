@@ -585,12 +585,15 @@ void FreeJoint::updateConstrainedTerms(double timeStep)
   Eigen::Vector6d accel = getAccelerationsStatic();
   accel.tail<3>() += velBefore.head<3>().cross(velBefore.tail<3>());
 
-  setVelocitiesStatic(getVelocitiesStatic() + mVelocityChanges);
+  setVelocitiesStatic(
+      getVelocitiesStatic() + this->mAspectState.mVelocityChanges);
 
   const Eigen::Vector6d& velAfter = getVelocitiesStatic();
   accel.tail<3>() -= velAfter.head<3>().cross(velAfter.tail<3>());
-  setAccelerationsStatic(accel + mVelocityChanges * invTimeStep);
-  this->mAspectState.mForces.noalias() += mImpulses * invTimeStep;
+  setAccelerationsStatic(
+      accel + this->mAspectState.mVelocityChanges * invTimeStep);
+  this->mAspectState.mForces.noalias()
+      += this->mAspectState.mImpulses * invTimeStep;
   // Note: As long as this is only called from BodyNode::updateConstrainedTerms
 }
 

@@ -136,3 +136,36 @@ TEST(Issue1243, State)
   EXPECT_FALSE(equals(bookmark_tf, final_tf));
   EXPECT_TRUE(equals(bookmark_tf, rewind_tf));
 }
+
+//==============================================================================
+TEST(Issue1089, JointImpulseState)
+{
+  auto skel = dart::dynamics::Skeleton::create("skel");
+
+  const auto pair
+      = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(nullptr);
+  auto* joint = pair.first;
+
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    joint->setVelocityChange(i, static_cast<double>(i + 1));
+    joint->setConstraintImpulse(i, static_cast<double>((i + 1) * 2));
+  }
+
+  const auto bookmark_state = skel->getState();
+
+  joint->resetVelocityChanges();
+  joint->resetConstraintImpulses();
+
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    EXPECT_DOUBLE_EQ(joint->getVelocityChange(i), 0.0);
+    EXPECT_DOUBLE_EQ(joint->getConstraintImpulse(i), 0.0);
+  }
+
+  skel->setState(bookmark_state);
+
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    EXPECT_DOUBLE_EQ(joint->getVelocityChange(i), static_cast<double>(i + 1));
+    EXPECT_DOUBLE_EQ(
+        joint->getConstraintImpulse(i), static_cast<double>((i + 1) * 2));
+  }
+}
