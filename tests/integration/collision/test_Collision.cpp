@@ -1426,6 +1426,66 @@ TEST_F(Collision, testOdeHeightmapAabbUsesUnscaledBounds)
 }
 
 //==============================================================================
+TEST_F(Collision, testOdeHeightmapCenteredInXY)
+{
+#if DART_HAVE_ODE
+  using S = float;
+  using Vector3 = Eigen::Matrix<S, 3, 1>;
+
+  auto ode = OdeCollisionDetector::create();
+  ASSERT_TRUE(ode);
+
+  auto terrainFrame = SimpleFrame::createShared(Frame::World());
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+
+  auto terrainShape = std::make_shared<HeightmapShape<S>>();
+  std::vector<S> heights = {S(0.0), S(0.0), S(0.0), S(0.0)};
+  terrainShape->setHeightField(2u, 2u, heights);
+  terrainShape->setScale(Vector3(2.0, 2.0, 1.0));
+  terrainFrame->setShape(terrainShape);
+
+  constexpr double radius = 0.1;
+  auto sphereShape = std::make_shared<SphereShape>(radius);
+  sphereFrame->setShape(sphereShape);
+
+  auto group = ode->createCollisionGroup(terrainFrame.get(), sphereFrame.get());
+  ASSERT_EQ(group->getNumShapeFrames(), 2u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+
+  const auto& scale = terrainShape->getScale();
+  const double spanX
+      = static_cast<double>(terrainShape->getWidth() - 1) * scale.x();
+  const double spanY
+      = static_cast<double>(terrainShape->getDepth() - 1) * scale.y();
+
+  const double testX = 0.25 * spanX;
+  const double testY = 0.25 * spanY;
+
+  for (const double signX : {1.0, -1.0}) {
+    for (const double signY : {1.0, -1.0}) {
+      SCOPED_TRACE(
+          ::testing::Message() << "signX=" << signX << " signY=" << signY);
+      result.clear();
+      sphereFrame->setTranslation(
+          Eigen::Vector3d(signX * testX, signY * testY, radius - 1e-2));
+      EXPECT_TRUE(group->collide(option, &result));
+      EXPECT_GT(result.getNumContacts(), 0u);
+
+      result.clear();
+      sphereFrame->setTranslation(
+          Eigen::Vector3d(signX * testX, signY * testY, radius + 1e-2));
+      EXPECT_FALSE(group->collide(option, &result));
+      EXPECT_EQ(result.getNumContacts(), 0u);
+    }
+  }
+#endif
+}
+
+//==============================================================================
 // Tests HeightmapShape::flipY();
 TEST_F(Collision, testHeightmapFlipY)
 {

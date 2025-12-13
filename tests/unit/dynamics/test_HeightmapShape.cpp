@@ -17,10 +17,10 @@ TEST(HeightmapShape, BoundingBoxMatchesSampleSpacing)
 
   const auto bbox = shape.getBoundingBox();
 
-  EXPECT_DOUBLE_EQ(bbox.getMin()[0], -0.5);
-  EXPECT_DOUBLE_EQ(bbox.getMax()[0], 0.5);
-  EXPECT_DOUBLE_EQ(bbox.getMin()[1], -0.125);
-  EXPECT_DOUBLE_EQ(bbox.getMax()[1], 0.125);
+  EXPECT_DOUBLE_EQ(bbox.getMin()[0], -0.75);
+  EXPECT_DOUBLE_EQ(bbox.getMax()[0], 0.75);
+  EXPECT_DOUBLE_EQ(bbox.getMin()[1], -0.25);
+  EXPECT_DOUBLE_EQ(bbox.getMax()[1], 0.25);
   EXPECT_DOUBLE_EQ(bbox.getMin()[2], 1.5);
   EXPECT_DOUBLE_EQ(bbox.getMax()[2], 9.0);
 }

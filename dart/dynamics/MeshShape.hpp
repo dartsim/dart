@@ -226,7 +226,14 @@ protected:
 
   void releaseMesh();
 
-  std::shared_ptr<const aiScene> mMesh;
+  /// Raw mesh pointer for backward compatibility with derived classes.
+  ///
+  /// Prefer using the public setters (e.g., setMesh()) so that ownership,
+  /// versioning, and associated metadata are updated consistently.
+  const aiScene* mMesh{nullptr};
+
+  /// Managed handle that owns the mesh when set via setMesh().
+  std::shared_ptr<const aiScene> mMeshHandle;
   MeshOwnership mMeshOwnership{MeshOwnership::None};
 
   /// URI the mesh, if available).

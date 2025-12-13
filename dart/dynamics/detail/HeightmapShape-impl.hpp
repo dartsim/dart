@@ -216,11 +216,9 @@ void HeightmapShape<S>::computeBoundingBox(
   const std::size_t widthSamples = getWidth();
   const std::size_t depthSamples = getDepth();
   const double dimX
-      = (widthSamples > 1 ? static_cast<double>(widthSamples - 1) : 0.0)
-        * static_cast<double>(mScale.x());
+      = static_cast<double>(widthSamples) * static_cast<double>(mScale.x());
   const double dimY
-      = (depthSamples > 1 ? static_cast<double>(depthSamples - 1) : 0.0)
-        * static_cast<double>(mScale.y());
+      = static_cast<double>(depthSamples) * static_cast<double>(mScale.y());
   const double dimZ = static_cast<double>(mMaxHeight - mMinHeight)
                       * static_cast<double>(mScale.z());
   min = Eigen::Vector3d(

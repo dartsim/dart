@@ -872,21 +872,29 @@ function(add_component_targets package_name component)
       PROPERTY TYPE
     )
     if(NOT ("${dependency_type}" STREQUAL STATIC_LIBRARY
-          OR "${dependency_type}" STREQUAL SHARED_LIBRARY))
+          OR "${dependency_type}" STREQUAL SHARED_LIBRARY
+          OR "${dependency_type}" STREQUAL INTERFACE_LIBRARY))
       message(
         FATAL_ERROR
         "Target '${dependency_target}' has unsupported type"
         " '${dependency_type}'. Only 'STATIC_LIBRARY' and 'SHARED_LIBRARY'"
-        " are supported."
+        " and 'INTERFACE_LIBRARY' are supported."
       )
     endif()
 
-    install(
-      TARGETS "${dependency_target}"
-      EXPORT "${target}"
-      ARCHIVE DESTINATION "${LIBRARY_INSTALL_DIR}"
-      LIBRARY DESTINATION "${LIBRARY_INSTALL_DIR}"
-    )
+    if("${dependency_type}" STREQUAL INTERFACE_LIBRARY)
+      install(
+        TARGETS "${dependency_target}"
+        EXPORT "${target}"
+      )
+    else()
+      install(
+        TARGETS "${dependency_target}"
+        EXPORT "${target}"
+        ARCHIVE DESTINATION "${LIBRARY_INSTALL_DIR}"
+        LIBRARY DESTINATION "${LIBRARY_INSTALL_DIR}"
+      )
+    endif()
   endforeach()
 
   set_property(
