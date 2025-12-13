@@ -154,15 +154,14 @@ public:
     using Data = typename GetData<AspectT>::Type;
     using AspectType = typename GetAspect<AspectT>::Type;
 
-    auto& it = this->mMap.insert(
-        std::make_pair<std::type_index, std::unique_ptr<Data>>(
-            typeid(AspectType), nullptr));
+    auto insertion = this->mMap.insert(
+        typename MapType::value_type(typeid(AspectType), nullptr));
+    auto& it = insertion.first;
 
-    const bool exists = !it.second;
-    if (!exists)
-      it.first = std::make_unique<Data>(std::forward<Args>(args)...);
+    if (insertion.second || !it->second)
+      it->second = std::make_unique<Data>(std::forward<Args>(args)...);
 
-    return static_cast<Data&>(*it.first);
+    return static_cast<Data&>(*it->second);
   }
 
   template <class AspectT>
