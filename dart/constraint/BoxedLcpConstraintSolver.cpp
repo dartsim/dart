@@ -77,4 +77,3 @@ BoxedLcpSolverPtr BoxedLcpConstraintSolver::getBoxedLcpSolver() const
 
 } // namespace dart::constraint
 DART_SUPPRESS_DEPRECATED_END
-

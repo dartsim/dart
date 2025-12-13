@@ -60,4 +60,3 @@ math::LcpSolverPtr DantzigBoxedLcpSolver::getMathSolver() const
 
 } // namespace dart::constraint
 DART_SUPPRESS_DEPRECATED_END
-

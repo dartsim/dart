@@ -34,6 +34,7 @@
 
 #include <dart/math/lcp/LcpSolver.hpp>
 
+#include <dart/common/Diagnostics.hpp>
 #include <dart/common/Deprecated.hpp>
 
 #include <dart/Export.hpp>
@@ -59,8 +60,9 @@ public:
   virtual math::LcpSolverPtr getMathSolver() const = 0;
 };
 
+DART_SUPPRESS_DEPRECATED_BEGIN
 using BoxedLcpSolverPtr = std::shared_ptr<BoxedLcpSolver>;
+DART_SUPPRESS_DEPRECATED_END
 
 } // namespace constraint
 } // namespace dart
-

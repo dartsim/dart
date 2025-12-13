@@ -84,4 +84,3 @@ void PgsBoxedLcpSolver::syncOptions()
 
 } // namespace dart::constraint
 DART_SUPPRESS_DEPRECATED_END
-
