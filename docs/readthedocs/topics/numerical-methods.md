@@ -83,4 +83,3 @@ filtering, you can build your own loop around DART’s exposed dynamics quantiti
 (`getMassMatrix()`, `getCoriolisForces()`, `getGravityForces()`, etc.) instead
 of relying on `World::step()`. Doing so means you also take responsibility for
 handling constraints/contacts appropriately.
-
