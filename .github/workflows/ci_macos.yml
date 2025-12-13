@@ -51,7 +51,7 @@ jobs:
         with:
           # Avoid cache key generation failures on macOS self-hosted runners
           cache: false
-          pixi-bin-path: ~/.pixi/bin/pixi.exe
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
@@ -103,7 +103,7 @@ jobs:
         with:
           # Avoid cache key generation failures on macOS self-hosted runners
           cache: false
-          pixi-bin-path: ~/.pixi/bin/pixi.exe
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9

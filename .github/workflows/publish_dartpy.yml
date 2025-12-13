@@ -92,7 +92,7 @@ jobs:
         with:
           pixi-version: latest
           cache: true
-          pixi-bin-path: ~/.pixi/bin/pixi.exe
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi${{ runner.os == 'Windows' && '.exe' || '' }}
 
       - name: Setup sccache
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
