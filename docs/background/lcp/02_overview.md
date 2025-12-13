@@ -6,21 +6,21 @@
 
 This section tracks which LCP solvers are currently implemented in DART (`dart/math/lcp/`).
 
-| Category           | Method                     | Status             | Location                          | Notes                                   |
-| ------------------ | -------------------------- | ------------------ | --------------------------------- | --------------------------------------- |
-| **Pivoting**       | Dantzig Principal Pivoting | ✅ Implemented     | `pivoting/DantzigSolver.hpp`      | BLCP solver with friction index support |
-| **Pivoting**       | Lemke Complementary Pivot  | ✅ Implemented     | `pivoting/LemkeSolver.hpp`        | Standard LCP solver                     |
-| **Pivoting**       | Baraff Incremental         | ❌ Not implemented | -                                 | Planned                                 |
-| **Projection**     | PGS (Gauss-Seidel)         | ✅ Implemented     | `projection/PgsSolver.hpp`        | Boxed LCP + friction index (iterative)  |
-| **Projection**     | PSOR (Over-Relaxation)     | ❌ Not implemented | -                                 | Extension of PGS                        |
-| **Projection**     | Blocked Gauss-Seidel       | ❌ Not implemented | -                                 | For contact problems                    |
-| **Projection**     | NNCG (Conjugate Gradient)  | ❌ Not implemented | -                                 | Better convergence than PGS             |
-| **Projection**     | Subspace Minimization      | ❌ Not implemented | -                                 | Hybrid PGS approach                     |
-| **Newton**         | Minimum Map Newton         | ❌ Not implemented | -                                 | High accuracy                           |
-| **Newton**         | Fischer-Burmeister Newton  | ❌ Not implemented | -                                 | Well-studied method                     |
-| **Newton**         | Penalized FB Newton        | ❌ Not implemented | -                                 | Extension of FB                         |
-| **Interior Point** | Interior Point Method      | ❌ Not implemented | -                                 | Very robust                             |
-| **Staggering**     | Staggering Method          | ❌ Not implemented | -                                 | For coupled problems                    |
+| Category           | Method                     | Status             | Location                     | Notes                                   |
+| ------------------ | -------------------------- | ------------------ | ---------------------------- | --------------------------------------- |
+| **Pivoting**       | Dantzig Principal Pivoting | ✅ Implemented     | `pivoting/DantzigSolver.hpp` | BLCP solver with friction index support |
+| **Pivoting**       | Lemke Complementary Pivot  | ✅ Implemented     | `pivoting/LemkeSolver.hpp`   | Standard LCP solver                     |
+| **Pivoting**       | Baraff Incremental         | ❌ Not implemented | -                            | Planned                                 |
+| **Projection**     | PGS (Gauss-Seidel)         | ✅ Implemented     | `projection/PgsSolver.hpp`   | Boxed LCP + friction index (iterative)  |
+| **Projection**     | PSOR (Over-Relaxation)     | ❌ Not implemented | -                            | Extension of PGS                        |
+| **Projection**     | Blocked Gauss-Seidel       | ❌ Not implemented | -                            | For contact problems                    |
+| **Projection**     | NNCG (Conjugate Gradient)  | ❌ Not implemented | -                            | Better convergence than PGS             |
+| **Projection**     | Subspace Minimization      | ❌ Not implemented | -                            | Hybrid PGS approach                     |
+| **Newton**         | Minimum Map Newton         | ❌ Not implemented | -                            | High accuracy                           |
+| **Newton**         | Fischer-Burmeister Newton  | ❌ Not implemented | -                            | Well-studied method                     |
+| **Newton**         | Penalized FB Newton        | ❌ Not implemented | -                            | Extension of FB                         |
+| **Interior Point** | Interior Point Method      | ❌ Not implemented | -                            | Very robust                             |
+| **Staggering**     | Staggering Method          | ❌ Not implemented | -                            | For coupled problems                    |
 
 **Legend**: ✅ Implemented | 🚧 In Progress | ❌ Not Implemented | 📋 Planned
 

@@ -361,9 +361,9 @@ LcpResult LemkeSolver::solve(
       result.validated = true;
       if (!isValid) {
         result.status = LcpSolverStatus::NumericalError;
-        result.message
-            = validationMessage.empty() ? "Solution validation failed"
-                                        : validationMessage;
+        result.message = validationMessage.empty()
+                             ? "Solution validation failed"
+                             : validationMessage;
       }
     }
   } else {

@@ -277,8 +277,7 @@ LcpResult PgsSolver::solve(
     return result;
   }
 
-  result.residual
-      = detail::naturalResidualInfinityNorm(x, wVec, loEff, hiEff);
+  result.residual = detail::naturalResidualInfinityNorm(x, wVec, loEff, hiEff);
   result.complementarity = detail::complementarityInfinityNorm(
       x, wVec, loEff, hiEff, absTolerance);
   if (x.hasNaN()) {
@@ -301,9 +300,8 @@ LcpResult PgsSolver::solve(
     result.validated = true;
     if (!valid) {
       result.status = LcpSolverStatus::NumericalError;
-      result.message
-          = validationMessage.empty() ? "Solution validation failed"
-                                      : validationMessage;
+      result.message = validationMessage.empty() ? "Solution validation failed"
+                                                 : validationMessage;
     }
   }
 

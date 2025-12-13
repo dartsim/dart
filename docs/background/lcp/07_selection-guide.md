@@ -253,18 +253,18 @@ Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 | ---------------- | ------------------------ | -------------------- |
 | n < 10           | Direct 2D/3D or Pivoting | Dantzig ✅, Lemke ✅ |
 | 10 ≤ n < 100     | Pivoting or Newton       | Dantzig ✅, Lemke ✅ |
-| 100 ≤ n < 1000   | PGS, BGS, or Newton      | PGS ✅, Dantzig ✅ |
-| 1000 ≤ n < 10000 | NNCG or PGS              | PGS ✅             |
-| n ≥ 10000        | NNCG or specialized      | PGS ✅ (approx)    |
+| 100 ≤ n < 1000   | PGS, BGS, or Newton      | PGS ✅, Dantzig ✅   |
+| 1000 ≤ n < 10000 | NNCG or PGS              | PGS ✅               |
+| n ≥ 10000        | NNCG or specialized      | PGS ✅ (approx)      |
 
 ## Conditioning Guidelines
 
-| Matrix Condition     | Recommended Method       | Currently Available  |
-| -------------------- | ------------------------ | -------------------- |
-| Well-conditioned     | Any method               | All ✅               |
+| Matrix Condition     | Recommended Method       | Currently Available          |
+| -------------------- | ------------------------ | ---------------------------- |
+| Well-conditioned     | Any method               | All ✅                       |
 | Moderate             | PGS, Newton, Pivoting    | PGS ✅, Dantzig ✅, Lemke ✅ |
 | Ill-conditioned      | Pivoting, Interior Point | PGS ✅, Dantzig ✅, Lemke ✅ |
-| Very ill-conditioned | Pivoting only            | Dantzig ✅, Lemke ✅ |
+| Very ill-conditioned | Pivoting only            | Dantzig ✅, Lemke ✅         |
 
 ## Implementation Roadmap Impact
 
@@ -472,13 +472,13 @@ Future (with Newton/PSOR/BGS):
 
 ### Current State
 
-| Scenario               | Use                           | Notes                        |
-| ---------------------- | ----------------------------- | ---------------------------- |
-| Contact with friction  | Dantzig                       | Best option now              |
-| Bounded variables      | Dantzig                       | Supports bounds and friction |
-| Standard LCP           | Lemke                         | Simple and robust            |
-| Large problems (n>100) | PGS                           | Scales better, approximate   |
-| Real-time (n>50)       | PGS                           | Use Dantzig as fallback      |
+| Scenario               | Use     | Notes                        |
+| ---------------------- | ------- | ---------------------------- |
+| Contact with friction  | Dantzig | Best option now              |
+| Bounded variables      | Dantzig | Supports bounds and friction |
+| Standard LCP           | Lemke   | Simple and robust            |
+| Large problems (n>100) | PGS     | Scales better, approximate   |
+| Real-time (n>50)       | PGS     | Use Dantzig as fallback      |
 
 ### Future State (After Implementation)
 

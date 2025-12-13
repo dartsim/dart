@@ -1,13 +1,15 @@
 #pragma once
 
-#include <dart/common/Macros.hpp>
 #include <dart/math/lcp/LcpTypes.hpp>
+
+#include <dart/common/Macros.hpp>
 
 #include <Eigen/Core>
 
-#include <cmath>
 #include <limits>
 #include <string>
+
+#include <cmath>
 
 namespace dart::math::detail {
 
@@ -104,13 +106,12 @@ inline double complementarityInfinityNorm(
       violation = std::max(violation, xi - hi[i]);
 
     const bool hasLo = std::isfinite(lo[i]);
-    const bool hasHi = std::isfinite(hi[i]);
+    const bool hasUpper = std::isfinite(hi[i]);
     const bool atLo = hasLo && std::abs(xi - lo[i]) <= tol;
-    const bool atHi = hasHi && std::abs(xi - hi[i]) <= tol;
+    const bool atHi = hasUpper && std::abs(xi - hi[i]) <= tol;
     const bool fixed = atLo && atHi;
-    const bool interior = (!atLo && !atHi)
-                          && (!hasLo || xi > lo[i] + tol)
-                          && (!hasHi || xi < hi[i] - tol);
+    const bool interior = (!atLo && !atHi) && (!hasLo || xi > lo[i] + tol)
+                          && (!hasUpper || xi < hi[i] - tol);
 
     if (fixed) {
       violation = std::max(violation, std::abs(wi));
@@ -165,13 +166,12 @@ inline bool validateSolution(
     }
 
     const bool hasLo = std::isfinite(lo[i]);
-    const bool hasHi = std::isfinite(hi[i]);
+    const bool hasUpper = std::isfinite(hi[i]);
     const bool atLo = hasLo && std::abs(xi - lo[i]) <= tol;
-    const bool atHi = hasHi && std::abs(xi - hi[i]) <= tol;
+    const bool atHi = hasUpper && std::abs(xi - hi[i]) <= tol;
     const bool fixed = atLo && atHi;
-    const bool interior = (!atLo && !atHi)
-                          && (!hasLo || xi > lo[i] + tol)
-                          && (!hasHi || xi < hi[i] - tol);
+    const bool interior = (!atLo && !atHi) && (!hasLo || xi > lo[i] + tol)
+                          && (!hasUpper || xi < hi[i] - tol);
 
     if (fixed) {
       if (std::abs(wi) > tol) {
@@ -182,8 +182,7 @@ inline bool validateSolution(
     } else if (atLo) {
       if (wi < -tol) {
         if (message)
-          *message
-              = "Solution validation failed: w must be non-negative at lo";
+          *message = "Solution validation failed: w must be non-negative at lo";
         return false;
       }
     } else if (atHi) {

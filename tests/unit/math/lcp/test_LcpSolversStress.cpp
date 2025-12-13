@@ -12,9 +12,8 @@
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
 
-#include <gtest/gtest.h>
-
 #include <Eigen/Dense>
+#include <gtest/gtest.h>
 
 #include <limits>
 #include <random>

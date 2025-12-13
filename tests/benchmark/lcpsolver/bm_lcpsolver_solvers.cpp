@@ -11,9 +11,8 @@
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
 
-#include <benchmark/benchmark.h>
-
 #include <Eigen/Dense>
+#include <benchmark/benchmark.h>
 
 #include <limits>
 #include <random>
@@ -34,9 +33,9 @@ LcpProblem makeStandardSpdProblem(int n, unsigned seed)
       M(r, c) = dist(rng);
   }
 
-  Eigen::MatrixXd A = M.transpose() * M
-                      + static_cast<double>(n)
-                            * Eigen::MatrixXd::Identity(n, n);
+  Eigen::MatrixXd A
+      = M.transpose() * M
+        + static_cast<double>(n) * Eigen::MatrixXd::Identity(n, n);
 
   Eigen::VectorXd xStar(n);
   for (int i = 0; i < n; ++i)
@@ -47,7 +46,12 @@ LcpProblem makeStandardSpdProblem(int n, unsigned seed)
   Eigen::VectorXd hi
       = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
   Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
-  return LcpProblem(std::move(A), std::move(b), std::move(lo), std::move(hi), std::move(findex));
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
 }
 
 LcpProblem makeFrictionIndexSpdProblem(int numContacts, unsigned seed)
@@ -63,9 +67,9 @@ LcpProblem makeFrictionIndexSpdProblem(int numContacts, unsigned seed)
       M(r, c) = dist(rng);
   }
 
-  Eigen::MatrixXd A = M.transpose() * M
-                      + static_cast<double>(n)
-                            * Eigen::MatrixXd::Identity(n, n);
+  Eigen::MatrixXd A
+      = M.transpose() * M
+        + static_cast<double>(n) * Eigen::MatrixXd::Identity(n, n);
 
   Eigen::VectorXd xStar = Eigen::VectorXd::Zero(n);
   Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
@@ -94,13 +98,19 @@ LcpProblem makeFrictionIndexSpdProblem(int numContacts, unsigned seed)
   }
 
   Eigen::VectorXd b = A * xStar;
-  return LcpProblem(std::move(A), std::move(b), std::move(lo), std::move(hi), std::move(findex));
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
 }
 
 static void BM_DantzigSolver_Standard(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
-  auto problem = makeStandardSpdProblem(n, /*seed=*/42u + static_cast<unsigned>(n));
+  auto problem
+      = makeStandardSpdProblem(n, /*seed=*/42u + static_cast<unsigned>(n));
 
   dart::math::DantzigSolver solver;
   LcpOptions options = solver.getDefaultOptions();
@@ -120,7 +130,8 @@ static void BM_DantzigSolver_Standard(benchmark::State& state)
 static void BM_PgsSolver_Standard(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
-  auto problem = makeStandardSpdProblem(n, /*seed=*/84u + static_cast<unsigned>(n));
+  auto problem
+      = makeStandardSpdProblem(n, /*seed=*/84u + static_cast<unsigned>(n));
 
   dart::math::PgsSolver solver;
   LcpOptions options = solver.getDefaultOptions();
@@ -142,8 +153,8 @@ static void BM_DantzigSolver_FrictionIndex(benchmark::State& state)
 {
   const int numContacts = static_cast<int>(state.range(0));
   const int n = 3 * numContacts;
-  auto problem
-      = makeFrictionIndexSpdProblem(numContacts, /*seed=*/1337u + static_cast<unsigned>(n));
+  auto problem = makeFrictionIndexSpdProblem(
+      numContacts, /*seed=*/1337u + static_cast<unsigned>(n));
 
   dart::math::DantzigSolver solver;
   LcpOptions options = solver.getDefaultOptions();
@@ -164,8 +175,8 @@ static void BM_PgsSolver_FrictionIndex(benchmark::State& state)
 {
   const int numContacts = static_cast<int>(state.range(0));
   const int n = 3 * numContacts;
-  auto problem
-      = makeFrictionIndexSpdProblem(numContacts, /*seed=*/4242u + static_cast<unsigned>(n));
+  auto problem = makeFrictionIndexSpdProblem(
+      numContacts, /*seed=*/4242u + static_cast<unsigned>(n));
 
   dart::math::PgsSolver solver;
   LcpOptions options = solver.getDefaultOptions();
@@ -186,9 +197,23 @@ static void BM_PgsSolver_FrictionIndex(benchmark::State& state)
 } // namespace
 
 BENCHMARK(BM_DantzigSolver_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
-BENCHMARK(BM_PgsSolver_Standard)->Args({12, 30})->Args({24, 30})->Args({48, 30})->Args({96, 30});
-BENCHMARK(BM_PgsSolver_Standard)->Args({12, 100})->Args({24, 100})->Args({48, 100})->Args({96, 100});
+BENCHMARK(BM_PgsSolver_Standard)
+    ->Args({12, 30})
+    ->Args({24, 30})
+    ->Args({48, 30})
+    ->Args({96, 30});
+BENCHMARK(BM_PgsSolver_Standard)
+    ->Args({12, 100})
+    ->Args({24, 100})
+    ->Args({48, 100})
+    ->Args({96, 100});
 
 BENCHMARK(BM_DantzigSolver_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
-BENCHMARK(BM_PgsSolver_FrictionIndex)->Args({4, 30})->Args({16, 30})->Args({64, 30});
-BENCHMARK(BM_PgsSolver_FrictionIndex)->Args({4, 100})->Args({16, 100})->Args({64, 100});
+BENCHMARK(BM_PgsSolver_FrictionIndex)
+    ->Args({4, 30})
+    ->Args({16, 30})
+    ->Args({64, 30});
+BENCHMARK(BM_PgsSolver_FrictionIndex)
+    ->Args({4, 100})
+    ->Args({16, 100})
+    ->Args({64, 100});

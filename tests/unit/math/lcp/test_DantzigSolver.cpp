@@ -164,4 +164,3 @@ TEST(DantzigSolver, ReportsInvalidProblemForOutOfRangeFindex)
   const auto result = solver.solve(problem, x, options);
   EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
 }
-
