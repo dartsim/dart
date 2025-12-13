@@ -55,6 +55,7 @@ jobs:
         with:
           cache: false
           run-install: false
+          pixi-bin-path: ~/.pixi/bin/pixi.exe
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
