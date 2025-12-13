@@ -14,4 +14,6 @@ below to keep the structure consistent.
    :maxdepth: 1
 
    Tutorials <../tutorials/index>
+   Control Theory Primer <control-theory>
+   Numerical Methods Primer <numerical-methods>
    Inverse Kinematics <../shared/inverse_kinematics/index>
