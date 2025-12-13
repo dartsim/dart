@@ -63,4 +63,3 @@ See also:
 - :doc:`../tutorials/collisions` (collision/contact setup patterns)
 - :doc:`../tutorials/multi-pendulum` (implicit spring + damping behavior)
 ```
-

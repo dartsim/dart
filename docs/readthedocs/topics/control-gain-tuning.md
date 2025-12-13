@@ -39,7 +39,7 @@ pick `omega` such that `omega * dt` is comfortably below 1 (often closer to
 ## Practical tuning workflow in DART
 
 1. Start with a conservative `dt` and verify the model behaves plausibly with
-   *no controller* (gravity, contacts, joint limits).
+   _no controller_ (gravity, contacts, joint limits).
 2. Implement PD with modest `omega` and `zeta ≈ 1` (critical-ish damping).
 3. Increase `omega` gradually until you hit a stability/quality limit, then
    either:
@@ -87,4 +87,3 @@ See also:
 - :doc:`../tutorials/biped` (full PD controller example)
 - :doc:`../tutorials/multi-pendulum` (implicit stiffness/damping as a stable alternative to huge gains)
 ```
-
