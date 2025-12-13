@@ -435,6 +435,13 @@ public:
   void integratePositions(double dt) override;
 
   // Documentation inherited
+  void integratePositions(
+      const Eigen::VectorXd& q0,
+      const Eigen::VectorXd& v,
+      double dt,
+      Eigen::VectorXd& result) const override;
+
+  // Documentation inherited
   void integrateVelocities(double dt) override;
 
   // Documentation inherited

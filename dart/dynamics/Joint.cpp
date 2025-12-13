@@ -553,6 +553,15 @@ double Joint::getPotentialEnergy() const
 }
 
 //==============================================================================
+Eigen::VectorXd Joint::integratePositions(
+    const Eigen::VectorXd& q0, const Eigen::VectorXd& v, double dt) const
+{
+  Eigen::VectorXd result(getNumDofs());
+  integratePositions(q0, v, dt, result);
+  return result;
+}
+
+//==============================================================================
 void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
   if (!math::verifyTransform(_T)) {
