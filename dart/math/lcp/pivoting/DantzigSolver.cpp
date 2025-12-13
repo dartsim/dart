@@ -37,6 +37,7 @@
 #include "dart/math/lcp/pivoting/dantzig/Lcp.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <vector>
 
@@ -68,11 +69,35 @@ LcpResult DantzigSolver::solve(
   }
 
   const int n = static_cast<int>(b.size());
+  if (n == 0) {
+    x.resize(0);
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual = 0.0;
+    result.complementarity = 0.0;
+    result.validated = options.validateSolution;
+    return result;
+  }
+
+  if (x.size() != n)
+    x = Eigen::VectorXd::Zero(n);
 
   for (int i = 0; i < n; ++i) {
     if (findex[i] >= n) {
       result.status = LcpSolverStatus::InvalidProblem;
       result.message = "Friction index entry out of range";
+      return result;
+    }
+
+    if (std::isnan(lo[i]) || std::isnan(hi[i])) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = "Bounds contain NaN";
+      return result;
+    }
+
+    if (std::isfinite(lo[i]) && std::isfinite(hi[i]) && lo[i] > hi[i]) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = "Lower bound exceeds upper bound";
       return result;
     }
   }
@@ -91,7 +116,7 @@ LcpResult DantzigSolver::solve(
     loData[i] = lo[i];
     hiData[i] = hi[i];
     findexData[i] = findex[i];
-    xdata[i] = options.warmStart ? x[i] : 0.0;
+    xdata[i] = (options.warmStart && std::isfinite(x[i])) ? x[i] : 0.0;
     for (int j = 0; j < n; ++j) {
       Adata[i * nSkip + j] = A(i, j);
     }

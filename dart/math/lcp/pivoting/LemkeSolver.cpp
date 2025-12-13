@@ -313,6 +313,17 @@ LcpResult LemkeSolver::solve(
     return result;
   }
 
+  const int n = static_cast<int>(b.size());
+  if (n == 0) {
+    x.resize(0);
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual = 0.0;
+    result.complementarity = 0.0;
+    result.validated = options.validateSolution;
+    return result;
+  }
+
   const double absTol = (options.absoluteTolerance > 0)
                             ? options.absoluteTolerance
                             : mDefaultOptions.absoluteTolerance;

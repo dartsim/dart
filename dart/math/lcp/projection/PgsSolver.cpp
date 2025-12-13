@@ -88,10 +88,35 @@ LcpResult PgsSolver::solve(
   }
 
   const int n = static_cast<int>(b.size());
+  if (n == 0) {
+    x.resize(0);
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual = 0.0;
+    result.complementarity = 0.0;
+    result.validated = options.validateSolution;
+    return result;
+  }
+
+  if (x.size() != n)
+    x = Eigen::VectorXd::Zero(n);
+
   for (int i = 0; i < n; ++i) {
     if (findex[i] >= n) {
       result.status = LcpSolverStatus::InvalidProblem;
       result.message = "Friction index entry out of range";
+      return result;
+    }
+
+    if (std::isnan(lo[i]) || std::isnan(hi[i])) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = "Bounds contain NaN";
+      return result;
+    }
+
+    if (std::isfinite(lo[i]) && std::isfinite(hi[i]) && lo[i] > hi[i]) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = "Lower bound exceeds upper bound";
       return result;
     }
   }
@@ -122,7 +147,8 @@ LcpResult PgsSolver::solve(
 
   for (int r = 0; r < n; ++r) {
     bdata[static_cast<std::size_t>(r)] = b[r];
-    xdata[static_cast<std::size_t>(r)] = options.warmStart ? x[r] : 0.0;
+    xdata[static_cast<std::size_t>(r)]
+        = (options.warmStart && std::isfinite(x[r])) ? x[r] : 0.0;
     loData[static_cast<std::size_t>(r)] = lo[r];
     hiData[static_cast<std::size_t>(r)] = hi[r];
     findexData[static_cast<std::size_t>(r)] = findex[r];
