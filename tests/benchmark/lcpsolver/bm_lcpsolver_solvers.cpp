@@ -54,6 +54,52 @@ LcpProblem makeStandardSpdProblem(int n, unsigned seed)
       std::move(findex));
 }
 
+LcpProblem makeBoxedActiveBoundsSpdProblem(int n, unsigned seed)
+{
+  std::mt19937 rng(seed);
+  std::uniform_real_distribution<double> dist(-1.0, 1.0);
+  std::uniform_real_distribution<double> slackDist(0.1, 1.0);
+
+  Eigen::MatrixXd M(n, n);
+  for (int r = 0; r < n; ++r) {
+    for (int c = 0; c < n; ++c)
+      M(r, c) = dist(rng);
+  }
+
+  Eigen::MatrixXd A
+      = M.transpose() * M
+        + static_cast<double>(n) * Eigen::MatrixXd::Identity(n, n);
+
+  Eigen::VectorXd lo = Eigen::VectorXd::Constant(n, -1.0);
+  Eigen::VectorXd hi = Eigen::VectorXd::Constant(n, 1.0);
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
+
+  Eigen::VectorXd xStar(n);
+  Eigen::VectorXd w = Eigen::VectorXd::Zero(n);
+  for (int i = 0; i < n; ++i) {
+    const int mode = i % 3;
+    if (mode == 0) {
+      xStar[i] = lo[i];
+      w[i] = slackDist(rng);
+    } else if (mode == 1) {
+      xStar[i] = hi[i];
+      w[i] = -slackDist(rng);
+    } else {
+      xStar[i] = 0.5 * dist(rng);
+      w[i] = 0.0;
+    }
+  }
+
+  Eigen::VectorXd b = A * xStar - w;
+
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
 LcpProblem makeFrictionIndexSpdProblem(int numContacts, unsigned seed)
 {
   const int n = 3 * numContacts;
@@ -149,6 +195,49 @@ static void BM_PgsSolver_Standard(benchmark::State& state)
   }
 }
 
+static void BM_DantzigSolver_BoxedActiveBounds(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  auto problem
+      = makeBoxedActiveBoundsSpdProblem(n, /*seed=*/900u + static_cast<unsigned>(n));
+
+  dart::math::DantzigSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+
+  for (auto _ : state) {
+    x.setZero();
+    auto result = solver.solve(problem, x, options);
+    benchmark::DoNotOptimize(result.status);
+    benchmark::DoNotOptimize(x.data());
+  }
+}
+
+static void BM_PgsSolver_BoxedActiveBounds(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  auto problem
+      = makeBoxedActiveBoundsSpdProblem(n, /*seed=*/901u + static_cast<unsigned>(n));
+
+  dart::math::PgsSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = static_cast<int>(state.range(1));
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+
+  for (auto _ : state) {
+    x.setZero();
+    auto result = solver.solve(problem, x, options);
+    benchmark::DoNotOptimize(result.status);
+    benchmark::DoNotOptimize(x.data());
+  }
+}
+
 static void BM_DantzigSolver_FrictionIndex(benchmark::State& state)
 {
   const int numContacts = static_cast<int>(state.range(0));
@@ -203,6 +292,18 @@ BENCHMARK(BM_PgsSolver_Standard)
     ->Args({48, 30})
     ->Args({96, 30});
 BENCHMARK(BM_PgsSolver_Standard)
+    ->Args({12, 100})
+    ->Args({24, 100})
+    ->Args({48, 100})
+    ->Args({96, 100});
+
+BENCHMARK(BM_DantzigSolver_BoxedActiveBounds)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
+BENCHMARK(BM_PgsSolver_BoxedActiveBounds)
+    ->Args({12, 30})
+    ->Args({24, 30})
+    ->Args({48, 30})
+    ->Args({96, 30});
+BENCHMARK(BM_PgsSolver_BoxedActiveBounds)
     ->Args({12, 100})
     ->Args({24, 100})
     ->Args({48, 100})

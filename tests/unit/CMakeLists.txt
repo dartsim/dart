@@ -56,6 +56,8 @@ dart_build_tests(
 # ==============================================================================
 dart_add_test("unit" UNIT_constraint_ConstraintSolver constraint/test_ConstraintSolver.cpp)
 dart_add_test(
+  "unit" UNIT_constraint_BoxedLcpCompatibility constraint/test_BoxedLcpCompatibility.cpp)
+dart_add_test(
   "unit" UNIT_constraint_JointLimitConstraint constraint/test_JointLimitConstraint.cpp)
 dart_add_test(
   "unit" UNIT_constraint_BalanceConstraint constraint/test_BalanceConstraint.cpp)
@@ -115,6 +117,7 @@ dart_build_tests(
   SOURCES
     math/lcp/test_DantzigVsODE.cpp
     math/lcp/test_DantzigSolver.cpp
+    math/lcp/test_LcpEdgeCases.cpp
     math/lcp/test_LCPTestProblems.cpp
     math/lcp/test_LcpSolversStress.cpp
     math/lcp/test_Lemke.cpp
