@@ -634,12 +634,12 @@ public:
   /// integration step should only depend on the provided initial position
   /// (q0), the provided velocity (v), and the timestep (dt).
   ///
-  /// \param[in] q0 The initial generalized coordinates of this Joint. Must have
+  /// @param[in] q0 The initial generalized coordinates of this Joint. Must have
   /// the same size as getNumDofs().
-  /// \param[in] v The generalized velocity to integrate. Must have the same
+  /// @param[in] v The generalized velocity to integrate. Must have the same
   /// size as getNumDofs().
-  /// \param[in] dt The timestep to integrate over.
-  /// \param[out] result The integrated generalized coordinates.
+  /// @param[in] dt The timestep to integrate over.
+  /// @param[out] result The integrated generalized coordinates.
   virtual void integratePositions(
       const Eigen::VectorXd& q0,
       const Eigen::VectorXd& v,
