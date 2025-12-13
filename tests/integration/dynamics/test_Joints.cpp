@@ -56,6 +56,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <iostream>
 
@@ -1988,7 +1989,7 @@ TEST_F(Joints, FreeJointRelativeTransformVelocityAcceleration)
 }
 
 //==============================================================================
-TEST_F(Joints, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION)
+TEST_F(Joints, FreeJointWorldJacobianTranslation)
 {
   SkeletonPtr skel = Skeleton::create();
 
@@ -2022,7 +2023,7 @@ TEST_F(Joints, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION)
 }
 
 //==============================================================================
-TEST_F(Joints, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION_RANDOMIZED)
+TEST_F(Joints, FreeJointWorldJacobianTranslationRandomized)
 {
   SkeletonPtr skel = Skeleton::create();
 
@@ -2056,7 +2057,7 @@ TEST_F(Joints, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION_RANDOMIZED)
 }
 
 //==============================================================================
-TEST_F(Joints, FREE_JOINT_WORLD_JACOBIAN_WITH_OFFSETS)
+TEST_F(Joints, FreeJointWorldJacobianWithOffsets)
 {
   SkeletonPtr skel = Skeleton::create();
 
@@ -2092,7 +2093,7 @@ TEST_F(Joints, FREE_JOINT_WORLD_JACOBIAN_WITH_OFFSETS)
 }
 
 //==============================================================================
-TEST_F(Joints, FREE_JOINT_INTEGRATION_TRANSLATION_UNCOUPLED)
+TEST_F(Joints, FreeJointIntegrationTranslationUncoupled)
 {
   SkeletonPtr skel = Skeleton::create();
 
@@ -2134,7 +2135,7 @@ TEST_F(Joints, FREE_JOINT_INTEGRATION_TRANSLATION_UNCOUPLED)
 }
 
 //==============================================================================
-TEST_F(Joints, FREE_JOINT_POSITION_DIFFERENCE_TRANSLATION_IN_WORLD)
+TEST_F(Joints, FreeJointPositionDifferenceTranslationInWorld)
 {
   SkeletonPtr skel = Skeleton::create();
 
@@ -2156,7 +2157,7 @@ TEST_F(Joints, FREE_JOINT_POSITION_DIFFERENCE_TRANSLATION_IN_WORLD)
 }
 
 //==============================================================================
-TEST_F(Joints, FREE_JOINT_INTEGRATION_MATCHES_BODY_TWIST)
+TEST_F(Joints, FreeJointIntegrationMatchesBodyTwist)
 {
   SkeletonPtr skel = Skeleton::create();
 
@@ -2183,7 +2184,7 @@ TEST_F(Joints, FREE_JOINT_INTEGRATION_MATCHES_BODY_TWIST)
 }
 
 //==============================================================================
-TEST_F(Joints, FREE_JOINT_INTEGRATION_MATCHES_BODY_TWIST_LARGE_DT)
+TEST_F(Joints, FreeJointIntegrationMatchesBodyTwistLargeDt)
 {
   SkeletonPtr skel = Skeleton::create();
 
@@ -2209,7 +2210,7 @@ TEST_F(Joints, FREE_JOINT_INTEGRATION_MATCHES_BODY_TWIST_LARGE_DT)
 }
 
 //==============================================================================
-TEST_F(Joints, FREE_JOINT_VELOCITY_INTEGRATES_ACCELERATION)
+TEST_F(Joints, FreeJointVelocityIntegratesAcceleration)
 {
   SkeletonPtr skel = Skeleton::create();
 
@@ -2229,7 +2230,7 @@ TEST_F(Joints, FREE_JOINT_VELOCITY_INTEGRATES_ACCELERATION)
 }
 
 //==============================================================================
-TEST_F(Joints, FREE_JOINT_VELOCITY_INVARIANT_THROUGH_INTEGRATION)
+TEST_F(Joints, FreeJointVelocityInvariantThroughIntegration)
 {
   SkeletonPtr skel = Skeleton::create();
 
@@ -2249,7 +2250,7 @@ TEST_F(Joints, FREE_JOINT_VELOCITY_INVARIANT_THROUGH_INTEGRATION)
 }
 
 //==============================================================================
-TEST_F(Joints, FREE_JOINT_RELATIVE_JACOBIAN_TIME_DERIVATIVE)
+TEST_F(Joints, FreeJointRelativeJacobianTimeDerivative)
 {
   SkeletonPtr skel = Skeleton::create();
 
@@ -2278,7 +2279,7 @@ TEST_F(Joints, FREE_JOINT_RELATIVE_JACOBIAN_TIME_DERIVATIVE)
 }
 
 //==============================================================================
-TEST_F(Joints, FREE_JOINT_RELATIVE_JACOBIAN_TIME_DERIVATIVE_IDENTITY_FRAMES)
+TEST_F(Joints, FreeJointRelativeJacobianTimeDerivativeIdentityFrames)
 {
   SkeletonPtr skel = Skeleton::create();
 
@@ -2301,6 +2302,293 @@ TEST_F(Joints, FREE_JOINT_RELATIVE_JACOBIAN_TIME_DERIVATIVE_IDENTITY_FRAMES)
   const double maxError = (jacobianDot - jacobianFd).cwiseAbs().maxCoeff();
 
   EXPECT_LT(maxError, 1e-6);
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointRelativeJacobianStaticUsesProvidedPositions)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+
+  joint->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
+  joint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
+
+  Eigen::Vector6d positions = Eigen::Vector6d::Zero();
+  positions.head<3>() = Eigen::Vector3d(0.4, -0.7, 0.2);
+  positions.tail<3>() = Eigen::Vector3d(0.1, -0.2, 0.3);
+
+  const Eigen::Isometry3d T = FreeJoint::convertToTransform(positions);
+  const Eigen::Matrix3d rotationTranspose = T.linear().transpose();
+
+  Eigen::Matrix6d expected = Eigen::Matrix6d::Zero();
+  expected.topLeftCorner<3, 3>() = rotationTranspose;
+  expected.bottomRightCorner<3, 3>() = rotationTranspose;
+
+  const Eigen::Matrix6d jacobian = joint->getRelativeJacobian(positions);
+  EXPECT_TRUE(equals(jacobian, expected));
+
+  Eigen::Vector6d otherPositions = positions;
+  otherPositions.head<3>() += Eigen::Vector3d(0.2, 0.1, -0.3);
+  const Eigen::Matrix6d otherJacobian
+      = joint->getRelativeJacobian(otherPositions);
+
+  EXPECT_GT((otherJacobian - jacobian).cwiseAbs().maxCoeff(), 1e-6);
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointSetRelativeSpatialVelocityAfterPoseChange)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+
+  joint->setTransformFromParentBodyNode(random_transform());
+  joint->setTransformFromChildBodyNode(random_transform());
+
+  joint->setPositions(FreeJoint::convertToPositions(random_transform()));
+  (void)joint->getRelativeJacobian();
+
+  joint->setPositions(FreeJoint::convertToPositions(random_transform()));
+
+  const Eigen::Vector6d desired = random_vec<6>(0.5);
+  joint->setRelativeSpatialVelocity(desired);
+
+  EXPECT_TRUE(equals(joint->getRelativeSpatialVelocity(), desired, 1e-12));
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointWorldJacobianMatchesFiniteDifference)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  const double dt = 1e-8;
+  const double tol = 1e-5;
+
+  const auto checkJacobianAt
+      = [&](const Eigen::Isometry3d& pose, const Eigen::Vector3d& offset) {
+          SCOPED_TRACE(testing::Message() << "offset = " << offset.transpose());
+          joint->setPositions(FreeJoint::convertToPositions(pose));
+          const Eigen::Vector6d q0 = joint->getPositions();
+          const math::Jacobian J = body->getWorldJacobian(offset);
+
+          for (int i = 0; i < 6; ++i) {
+            SCOPED_TRACE(testing::Message() << "column = " << i);
+            Eigen::Vector6d velocities = Eigen::Vector6d::Zero();
+            velocities[i] = 1.0;
+            joint->setVelocities(velocities);
+
+            const Eigen::Isometry3d T0 = body->getWorldTransform();
+            const Eigen::Matrix3d R0 = T0.linear();
+            const Eigen::Vector3d p0 = T0 * offset;
+
+            skel->integratePositions(dt);
+
+            const Eigen::Isometry3d T1 = body->getWorldTransform();
+            const Eigen::Matrix3d R1 = T1.linear();
+            const Eigen::Vector3d p1 = T1 * offset;
+
+            Eigen::Vector6d numeric;
+            numeric.head<3>() = math::logMap(R1 * R0.transpose()) / dt;
+            numeric.tail<3>() = (p1 - p0) / dt;
+
+            const double maxError = (numeric - J.col(i)).cwiseAbs().maxCoeff();
+            EXPECT_LT(maxError, tol) << "column = " << i;
+
+            joint->setPositions(q0);
+          }
+        };
+
+  joint->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
+  joint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
+  Eigen::Isometry3d pose0 = Eigen::Isometry3d::Identity();
+  pose0.linear() = math::expMapRot(Eigen::Vector3d(0.4, -0.7, 0.2));
+  pose0.translation() = Eigen::Vector3d(0.1, -0.2, 0.3);
+  checkJacobianAt(pose0, Eigen::Vector3d::Zero());
+  checkJacobianAt(pose0, Eigen::Vector3d(0.2, -0.1, 0.05));
+
+  Eigen::Isometry3d parentToJoint = Eigen::Isometry3d::Identity();
+  parentToJoint.linear() = math::expMapRot(Eigen::Vector3d(0.3, 0.1, -0.2));
+  parentToJoint.translation() = Eigen::Vector3d(0.2, -0.1, 0.05);
+  joint->setTransformFromParentBodyNode(parentToJoint);
+
+  Eigen::Isometry3d childToJoint = Eigen::Isometry3d::Identity();
+  childToJoint.linear() = math::expMapRot(Eigen::Vector3d(-0.2, 0.25, 0.1));
+  childToJoint.translation() = Eigen::Vector3d(-0.1, 0.05, 0.15);
+  joint->setTransformFromChildBodyNode(childToJoint);
+
+  Eigen::Isometry3d pose1 = Eigen::Isometry3d::Identity();
+  pose1.linear() = math::expMapRot(Eigen::Vector3d(-0.3, 0.6, 0.25));
+  pose1.translation() = Eigen::Vector3d(-0.2, 0.15, 0.1);
+  checkJacobianAt(pose1, Eigen::Vector3d(0.2, -0.1, 0.05));
+
+  Eigen::Isometry3d nearPi = Eigen::Isometry3d::Identity();
+  nearPi.linear() = math::expMapRot(Eigen::Vector3d(pi - 1e-6, 0.0, 0.0));
+  nearPi.translation() = Eigen::Vector3d(0.1, -0.05, 0.2);
+  joint->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
+  joint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
+  checkJacobianAt(nearPi, Eigen::Vector3d(0.2, 0.1, -0.05));
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointWorldJacobianClassicDerivMatchesFiniteDifference)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  const double dt = 1e-6;
+  const double tol = 1e-4;
+
+  const auto checkAt = [&](const Eigen::Isometry3d& parentToJoint,
+                           const Eigen::Isometry3d& childToJoint,
+                           const Eigen::Isometry3d& pose,
+                           const Eigen::Vector6d& velocities,
+                           const Eigen::Vector3d& offset) {
+    joint->setTransformFromParentBodyNode(parentToJoint);
+    joint->setTransformFromChildBodyNode(childToJoint);
+    joint->setPositions(FreeJoint::convertToPositions(pose));
+    joint->setVelocities(velocities);
+    joint->setAccelerations(Eigen::Vector6d::Zero());
+
+    const Eigen::Vector6d q0 = joint->getPositions();
+    const math::Jacobian dJ0 = body->getJacobianClassicDeriv(offset);
+
+    skel->integratePositions(dt);
+    const Eigen::Vector6d VPlus
+        = body->getSpatialVelocity(offset, Frame::World(), Frame::World());
+    joint->setPositions(q0);
+
+    skel->integratePositions(-dt);
+    const Eigen::Vector6d VMinus
+        = body->getSpatialVelocity(offset, Frame::World(), Frame::World());
+    joint->setPositions(q0);
+
+    const Eigen::Vector6d numeric = (VPlus - VMinus) / (2.0 * dt);
+    Eigen::Vector6d predicted = dJ0 * velocities;
+    const double maxError = (numeric - predicted).cwiseAbs().maxCoeff();
+    EXPECT_LT(maxError, tol);
+  };
+
+  const Eigen::Vector6d velocities
+      = (Eigen::Vector6d() << 0.3, -0.2, 0.1, 0.4, -0.1, 0.2).finished();
+  Eigen::Vector6d translationOnly = Eigen::Vector6d::Zero();
+  translationOnly.tail<3>() = Eigen::Vector3d(0.4, -0.1, 0.2);
+
+  Eigen::Isometry3d pose0 = Eigen::Isometry3d::Identity();
+  pose0.linear() = math::expMapRot(Eigen::Vector3d(0.4, -0.7, 0.2));
+  pose0.translation() = Eigen::Vector3d(0.1, -0.2, 0.3);
+
+  const Eigen::Vector3d offset(0.2, -0.1, 0.05);
+  checkAt(
+      Eigen::Isometry3d::Identity(),
+      Eigen::Isometry3d::Identity(),
+      pose0,
+      velocities,
+      offset);
+  checkAt(
+      Eigen::Isometry3d::Identity(),
+      Eigen::Isometry3d::Identity(),
+      pose0,
+      translationOnly,
+      offset);
+
+  Eigen::Isometry3d parentToJoint = Eigen::Isometry3d::Identity();
+  parentToJoint.linear() = math::expMapRot(Eigen::Vector3d(0.3, 0.1, -0.2));
+  parentToJoint.translation() = Eigen::Vector3d(0.2, -0.1, 0.05);
+
+  Eigen::Isometry3d childToJoint = Eigen::Isometry3d::Identity();
+  childToJoint.linear() = math::expMapRot(Eigen::Vector3d(-0.2, 0.25, 0.1));
+  childToJoint.translation() = Eigen::Vector3d(-0.1, 0.05, 0.15);
+
+  Eigen::Isometry3d pose1 = Eigen::Isometry3d::Identity();
+  pose1.linear() = math::expMapRot(Eigen::Vector3d(-0.3, 0.6, 0.25));
+  pose1.translation() = Eigen::Vector3d(-0.2, 0.15, 0.1);
+
+  checkAt(parentToJoint, childToJoint, pose1, velocities, offset);
+  checkAt(parentToJoint, childToJoint, pose1, translationOnly, offset);
+
+  Eigen::Isometry3d nearPi = Eigen::Isometry3d::Identity();
+  nearPi.linear() = math::expMapRot(Eigen::Vector3d(pi - 1e-6, 0.0, 0.0));
+  nearPi.translation() = Eigen::Vector3d(0.25, -0.15, 0.2);
+  checkAt(
+      Eigen::Isometry3d::Identity(),
+      Eigen::Isometry3d::Identity(),
+      nearPi,
+      velocities,
+      offset);
+  checkAt(
+      Eigen::Isometry3d::Identity(),
+      Eigen::Isometry3d::Identity(),
+      nearPi,
+      translationOnly,
+      offset);
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointEnergyConservationNoForces)
+{
+  simulation::WorldPtr world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  const double dt = 1e-4;
+  world->setTimeStep(dt);
+
+  auto runCase = [&](const Eigen::Vector6d& initialVelocities) {
+    SkeletonPtr skel = Skeleton::create();
+
+    auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+    FreeJoint* joint = pair.first;
+    BodyNode* body = pair.second;
+
+    body->setMass(2.0);
+    body->setMomentOfInertia(0.1, 0.2, 0.3);
+
+    for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+      joint->setDampingCoefficient(i, 0.0);
+      joint->setCoulombFriction(i, 0.0);
+    }
+
+    joint->setPositions(FreeJoint::convertToPositions(random_transform()));
+    joint->setVelocities(initialVelocities);
+
+    world->removeAllSkeletons();
+    world->addSkeleton(skel);
+
+    const double energy0 = skel->computeKineticEnergy();
+    double maxEnergyError = 0.0;
+
+    const std::size_t numSteps = 500;
+    for (std::size_t i = 0; i < numSteps; ++i) {
+      world->step();
+      const double energy = skel->computeKineticEnergy();
+      maxEnergyError = std::max(maxEnergyError, std::abs(energy - energy0));
+    }
+
+    const double scale = std::max(1.0, energy0);
+    EXPECT_LT(maxEnergyError / scale, 1e-3);
+  };
+
+  Eigen::Vector6d linearOnly = Eigen::Vector6d::Zero();
+  linearOnly.tail<3>() = Eigen::Vector3d(0.6, -0.4, 0.2);
+  runCase(linearOnly);
+
+  Eigen::Vector6d angularOnly = Eigen::Vector6d::Zero();
+  angularOnly.head<3>() = Eigen::Vector3d(0.5, -0.3, 0.4);
+  runCase(angularOnly);
+
+  Eigen::Vector6d both = Eigen::Vector6d::Zero();
+  both.head<3>() = Eigen::Vector3d(0.5, -0.3, 0.4);
+  both.tail<3>() = Eigen::Vector3d(0.6, -0.4, 0.2);
+  runCase(both);
 }
 
 //==============================================================================

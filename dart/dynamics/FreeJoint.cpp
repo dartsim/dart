@@ -229,8 +229,8 @@ void FreeJoint::setTransform(
 void FreeJoint::setRelativeSpatialVelocity(
     const Eigen::Vector6d& newSpatialVelocity)
 {
-  const Eigen::Vector6d jointVelocities
-      = getRelativeJacobianStatic().inverse() * newSpatialVelocity;
+  const Eigen::Matrix6d& J = getRelativeJacobianStatic();
+  const Eigen::Vector6d jointVelocities = J.inverse() * newSpatialVelocity;
   setVelocities(jointVelocities);
 }
 
@@ -531,9 +531,21 @@ void FreeJoint::setAngularAcceleration(
 
 //==============================================================================
 Eigen::Matrix6d FreeJoint::getRelativeJacobianStatic(
-    const Eigen::Vector6d& /*positions*/) const
+    const Eigen::Vector6d& positions) const
 {
-  return mJacobian;
+  const Eigen::Isometry3d Q = convertToTransform(positions);
+  const Eigen::Isometry3d T
+      = Joint::mAspectProperties.mT_ParentBodyToJoint * Q
+        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
+
+  const Eigen::Matrix3d rotationTranspose = T.linear().transpose();
+  const Eigen::Matrix6d baseJac
+      = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
+
+  Eigen::Matrix6d jacobian;
+  jacobian.topRows<3>() = rotationTranspose * baseJac.topRows<3>();
+  jacobian.bottomRows<3>() = rotationTranspose * baseJac.bottomRows<3>();
+  return jacobian;
 }
 
 //==============================================================================
@@ -597,15 +609,20 @@ void FreeJoint::integratePositions(double _dt)
   const Eigen::Vector6d spatialVelocity = getRelativeSpatialVelocity();
   const Eigen::Isometry3d relativeTransform = getRelativeTransform();
 
-  Eigen::Isometry3d nextQ = getQ();
-  nextQ.linear()
-      = nextQ.linear() * math::expMapRot(spatialVelocity.head<3>() * _dt);
+  Eigen::Isometry3d nextRelativeTransform = relativeTransform;
+  const Eigen::Matrix3d rotation = relativeTransform.linear();
+  nextRelativeTransform.linear()
+      = rotation * math::expMapRot(spatialVelocity.head<3>() * _dt);
+  nextRelativeTransform.translation()
+      += rotation * spatialVelocity.tail<3>() * _dt;
 
-  const Eigen::Vector3d vWorld
-      = relativeTransform.linear() * spatialVelocity.tail<3>();
-  const Eigen::Matrix3d parentJointRotation
-      = Joint::mAspectProperties.mT_ParentBodyToJoint.linear();
-  nextQ.translation() += parentJointRotation.transpose() * vWorld * _dt;
+  const Eigen::Isometry3d& parentBodyToJoint
+      = Joint::mAspectProperties.mT_ParentBodyToJoint;
+  const Eigen::Isometry3d& childBodyToJoint
+      = Joint::mAspectProperties.mT_ChildBodyToJoint;
+
+  const Eigen::Isometry3d nextQ
+      = parentBodyToJoint.inverse() * nextRelativeTransform * childBodyToJoint;
 
   setPositionsStatic(convertToPositions(nextQ));
 }
@@ -684,12 +701,8 @@ void FreeJoint::updateRelativeJacobianTimeDeriv() const
       = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
 
   const Eigen::Vector3d omega = getRelativeSpatialVelocity().head<3>();
-  const Eigen::Matrix3d childRotation
-      = Joint::mAspectProperties.mT_ChildBodyToJoint.linear();
-  const Eigen::Matrix3d omegaInJoint = childRotation
-                                       * math::makeSkewSymmetric(omega)
-                                       * childRotation.transpose();
-  const Eigen::Matrix3d rotationDeriv = -omegaInJoint * rotationTranspose;
+  const Eigen::Matrix3d rotationDeriv
+      = -math::makeSkewSymmetric(omega) * rotationTranspose;
 
   mJacobianDeriv.setZero();
   mJacobianDeriv.topRows<3>() = rotationDeriv * baseJac.topRows<3>();
