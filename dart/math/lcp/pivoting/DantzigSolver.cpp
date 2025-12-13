@@ -90,9 +90,21 @@ LcpResult DantzigSolver::solve(
       return result;
     }
 
+    if (findex[i] == i) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = "Friction index entry cannot reference itself";
+      return result;
+    }
+
     if (std::isnan(lo[i]) || std::isnan(hi[i])) {
       result.status = LcpSolverStatus::InvalidProblem;
       result.message = "Bounds contain NaN";
+      return result;
+    }
+
+    if (findex[i] >= 0 && !std::isfinite(hi[i])) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = "Friction coefficient (hi) must be finite";
       return result;
     }
 

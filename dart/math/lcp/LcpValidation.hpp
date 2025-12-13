@@ -44,9 +44,27 @@ inline bool computeEffectiveBounds(
       return false;
     }
 
+    if (ref == i) {
+      if (message)
+        *message = "Invalid friction index entry: self reference";
+      return false;
+    }
+
     const double scale = x[ref];
     const double mu = std::abs(hi[i]);
-    const double bound = std::abs(mu * scale);
+    if (!std::isfinite(scale)) {
+      if (message)
+        *message = "Invalid friction index reference value";
+      return false;
+    }
+
+    if (!std::isfinite(mu)) {
+      if (message)
+        *message = "Invalid friction coefficient (hi) for friction index entry";
+      return false;
+    }
+
+    const double bound = mu * std::abs(scale);
     loEff[i] = -bound;
     hiEff[i] = bound;
   }

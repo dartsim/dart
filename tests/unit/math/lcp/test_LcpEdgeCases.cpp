@@ -171,3 +171,54 @@ TEST(LcpEdgeCases, InvalidBoundsAreRejected)
   result = pgs.solve(problem, x, pgs.getDefaultOptions());
   EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
 }
+
+//==============================================================================
+TEST(LcpEdgeCases, FindexRequiresFiniteMu)
+{
+  Eigen::Matrix2d A = Eigen::Matrix2d::Identity();
+  Eigen::Vector2d b = Eigen::Vector2d::Zero();
+
+  Eigen::Vector2d lo;
+  lo << 0.0, -1.0;
+  Eigen::Vector2d hi;
+  hi << std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::infinity();
+  Eigen::Vector2i findex;
+  findex << -1, 0;
+
+  LcpProblem problem(A, b, lo, hi, findex);
+  Eigen::VectorXd x;
+
+  DantzigSolver dantzig;
+  auto result = dantzig.solve(problem, x, dantzig.getDefaultOptions());
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+
+  PgsSolver pgs;
+  result = pgs.solve(problem, x, pgs.getDefaultOptions());
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+}
+
+//==============================================================================
+TEST(LcpEdgeCases, FindexSelfReferenceIsRejected)
+{
+  Eigen::Matrix2d A = Eigen::Matrix2d::Identity();
+  Eigen::Vector2d b = Eigen::Vector2d::Zero();
+
+  Eigen::Vector2d lo;
+  lo << 0.0, -1.0;
+  Eigen::Vector2d hi;
+  hi << std::numeric_limits<double>::infinity(), 0.5;
+  Eigen::Vector2i findex;
+  findex << -1, 1;
+
+  LcpProblem problem(A, b, lo, hi, findex);
+  Eigen::VectorXd x;
+
+  DantzigSolver dantzig;
+  auto result = dantzig.solve(problem, x, dantzig.getDefaultOptions());
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+
+  PgsSolver pgs;
+  result = pgs.solve(problem, x, pgs.getDefaultOptions());
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+}
