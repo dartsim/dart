@@ -38,6 +38,8 @@
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/math/optimization/GradientDescentSolver.hpp"
 
+#include <unordered_map>
+
 namespace dart {
 namespace dynamics {
 
@@ -89,19 +91,12 @@ bool InverseKinematics::findSolution(Eigen::VectorXd& positions)
     bounds[i] = skel->getDof(mDofs[i])->getPositionUpperLimit();
   mProblem->setUpperBounds(bounds);
 
-  // Many GradientMethod implementations use Joint::integratePositions, so we
-  // need to clear out any velocities that might be in the Skeleton and then
-  // reset those velocities later. This has been opened as issue #699.
-  const Eigen::VectorXd originalVelocities = skel->getVelocities();
-  skel->resetVelocities();
-
   const Eigen::VectorXd originalPositions = getPositions();
   const bool wasSolved = mSolver->solve();
 
   positions = mProblem->getOptimalSolution();
 
   setPositions(originalPositions);
-  skel->setVelocities(originalVelocities);
   return wasSolved;
 }
 
@@ -709,22 +704,42 @@ void InverseKinematics::GradientMethod::convertJacobianMethodOutputToGradient(
   const SkeletonPtr& skel = mIK->getNode()->getSkeleton();
   mInitialPositionsCache = skel->getPositions(dofs);
 
-  for (std::size_t i = 0; i < dofs.size(); ++i)
-    skel->getDof(dofs[i])->setVelocity(grad[i]);
-  // Velocities of unused DOFs should already be set to zero.
+  struct JointIntegrationData
+  {
+    Eigen::VectorXd q0;
+    Eigen::VectorXd v;
+    Eigen::VectorXd qNext;
+  };
+
+  std::unordered_map<const Joint*, JointIntegrationData> jointData;
+  jointData.reserve(dofs.size());
 
   for (std::size_t i = 0; i < dofs.size(); ++i) {
-    Joint* joint = skel->getDof(dofs[i])->getJoint();
-    joint->integratePositions(1.0);
+    const DegreeOfFreedom* dof = skel->getDof(dofs[i]);
+    const Joint* joint = dof->getJoint();
 
-    // Reset this joint's velocities to zero to avoid double-integrating
-    const std::size_t numJointDofs = joint->getNumDofs();
-    for (std::size_t j = 0; j < numJointDofs; ++j)
-      joint->setVelocity(j, 0.0);
+    auto& data = jointData[joint];
+    if (data.v.size() == 0) {
+      data.q0 = joint->getPositions();
+      data.v = Eigen::VectorXd::Zero(joint->getNumDofs());
+      data.qNext.resize(joint->getNumDofs());
+    }
+
+    data.v[dof->getIndexInJoint()] = grad[i];
   }
 
-  grad = skel->getPositions(dofs);
-  grad -= mInitialPositionsCache;
+  for (auto& [joint, data] : jointData)
+    joint->integratePositions(data.q0, data.v, 1.0, data.qNext);
+
+  for (std::size_t i = 0; i < dofs.size(); ++i) {
+    const DegreeOfFreedom* dof = skel->getDof(dofs[i]);
+    const Joint* joint = dof->getJoint();
+    const auto it = jointData.find(joint);
+    DART_ASSERT(it != jointData.end());
+
+    grad[i] = it->second.qNext[dof->getIndexInJoint()]
+              - mInitialPositionsCache[i];
+  }
 }
 
 //==============================================================================

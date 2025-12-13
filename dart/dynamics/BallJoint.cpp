@@ -139,6 +139,35 @@ void BallJoint::integratePositions(double _dt)
 }
 
 //==============================================================================
+void BallJoint::integratePositions(
+    const Eigen::VectorXd& q0,
+    const Eigen::VectorXd& v,
+    double dt,
+    Eigen::VectorXd& result) const
+{
+  if (q0.size() != getNumDofs() || v.size() != getNumDofs()) {
+    DART_ERROR(
+        "q0's size [{}] and v's size [{}] must both equal the dof [{}] for "
+        "Joint [{}].",
+        q0.size(),
+        v.size(),
+        this->getNumDofs(),
+        this->getName());
+    DART_ASSERT(false);
+    result = Eigen::VectorXd::Zero(getNumDofs());
+    return;
+  }
+
+  const Eigen::Vector3d q0Static = q0;
+  const Eigen::Vector3d vStatic = v;
+
+  const Eigen::Matrix3d R0 = convertToRotation(q0Static);
+  const Eigen::Matrix3d Rnext = R0 * convertToRotation(vStatic * dt);
+
+  result = convertToPositions(Rnext);
+}
+
+//==============================================================================
 void BallJoint::updateDegreeOfFreedomNames()
 {
   if (!mDofs[0]->isNamePreserved())
