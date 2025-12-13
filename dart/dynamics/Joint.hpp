@@ -644,8 +644,7 @@ public:
       const Eigen::VectorXd& q0,
       const Eigen::VectorXd& v,
       double dt,
-      Eigen::VectorXd& result) const
-      = 0;
+      Eigen::VectorXd& result) const = 0;
 
   /// Convenience overload for integratePositions(q0, v, dt, result).
   Eigen::VectorXd integratePositions(

@@ -737,8 +737,8 @@ void InverseKinematics::GradientMethod::convertJacobianMethodOutputToGradient(
     const auto it = jointData.find(joint);
     DART_ASSERT(it != jointData.end());
 
-    grad[i] = it->second.qNext[dof->getIndexInJoint()]
-              - mInitialPositionsCache[i];
+    grad[i]
+        = it->second.qNext[dof->getIndexInJoint()] - mInitialPositionsCache[i];
   }
 }
 

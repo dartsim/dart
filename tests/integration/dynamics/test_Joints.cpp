@@ -2316,26 +2316,26 @@ TEST_F(Joints, IntegratePositionsStateIndependent)
   constexpr double dt = 0.25;
   constexpr double tol = 1e-12;
 
-  auto verify = [&](Joint& joint,
-                    const Eigen::VectorXd& q0,
-                    const Eigen::VectorXd& v) {
-    const Eigen::VectorXd positionsBefore = joint.getPositions();
-    const Eigen::VectorXd velocitiesBefore = joint.getVelocities();
+  auto verify
+      = [&](Joint& joint, const Eigen::VectorXd& q0, const Eigen::VectorXd& v) {
+          const Eigen::VectorXd positionsBefore = joint.getPositions();
+          const Eigen::VectorXd velocitiesBefore = joint.getVelocities();
 
-    const Eigen::VectorXd qNextStateless = joint.integratePositions(q0, v, dt);
-    EXPECT_VECTOR_NEAR(positionsBefore, joint.getPositions(), 0.0);
-    EXPECT_VECTOR_NEAR(velocitiesBefore, joint.getVelocities(), 0.0);
+          const Eigen::VectorXd qNextStateless
+              = joint.integratePositions(q0, v, dt);
+          EXPECT_VECTOR_NEAR(positionsBefore, joint.getPositions(), 0.0);
+          EXPECT_VECTOR_NEAR(velocitiesBefore, joint.getVelocities(), 0.0);
 
-    joint.setPositions(q0);
-    joint.setVelocities(v);
-    joint.integratePositions(dt);
-    const Eigen::VectorXd qNextStateful = joint.getPositions();
+          joint.setPositions(q0);
+          joint.setVelocities(v);
+          joint.integratePositions(dt);
+          const Eigen::VectorXd qNextStateful = joint.getPositions();
 
-    EXPECT_VECTOR_NEAR(qNextStateful, qNextStateless, tol);
+          EXPECT_VECTOR_NEAR(qNextStateful, qNextStateless, tol);
 
-    joint.setPositions(positionsBefore);
-    joint.setVelocities(velocitiesBefore);
-  };
+          joint.setPositions(positionsBefore);
+          joint.setVelocities(velocitiesBefore);
+        };
 
   {
     SkeletonPtr skel = Skeleton::create("integrate_revolute");
@@ -2359,8 +2359,7 @@ TEST_F(Joints, IntegratePositionsStateIndependent)
     joint->setPositions(Eigen::Vector3d(0.2, -0.1, 0.3));
     joint->setVelocities(Eigen::Vector3d(0.01, 0.02, -0.03));
 
-    const Eigen::VectorXd q0
-        = (Eigen::Vector3d(0.5, -0.4, 0.1)).eval();
+    const Eigen::VectorXd q0 = (Eigen::Vector3d(0.5, -0.4, 0.1)).eval();
     const Eigen::VectorXd v = (Eigen::Vector3d(0.07, -0.02, 0.04)).eval();
 
     verify(*joint, q0, v);
