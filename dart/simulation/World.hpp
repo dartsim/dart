@@ -85,6 +85,10 @@ struct WorldConfig final
   /// Preferred collision detector for the world.
   CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
 
+  /// Whether to use the legacy boxed constraint solver (kept for backward
+  /// compatibility; will be removed in DART 8.0).
+  bool useLegacyConstraintSolver{true};
+
   WorldConfig() = default;
   explicit WorldConfig(std::string worldName) : name(std::move(worldName)) {}
 };
