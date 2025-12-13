@@ -1263,6 +1263,47 @@ TEST_F(Collision, testHeightmapBox)
 }
 
 //==============================================================================
+TEST_F(Collision, testOdeHeightmapAabbUsesUnscaledBounds)
+{
+#if HAVE_ODE
+  using S = float;
+  using Vector3 = Eigen::Matrix<S, 3, 1>;
+
+  auto ode = OdeCollisionDetector::create();
+  ASSERT_TRUE(ode);
+
+  auto terrainFrame = SimpleFrame::createShared(Frame::World());
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+
+  auto terrainShape = std::make_shared<HeightmapShape<S>>();
+  constexpr S rawHeight = S(3.0);
+  constexpr S verticalScale = S(0.5);
+  std::vector<S> heights = {rawHeight, rawHeight, rawHeight, rawHeight};
+  terrainShape->setHeightField(2u, 2u, heights);
+  terrainShape->setScale(Vector3(2.0, 2.0, verticalScale));
+  terrainFrame->setShape(terrainShape);
+
+  constexpr double radius = 0.2;
+  auto sphereShape = std::make_shared<SphereShape>(radius);
+  sphereFrame->setShape(sphereShape);
+
+  auto group = ode->createCollisionGroup(terrainFrame.get(), sphereFrame.get());
+  ASSERT_EQ(group->getNumShapeFrames(), 2u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+  const double surfaceHeight = static_cast<double>(rawHeight * verticalScale);
+  sphereFrame->setTranslation(
+      Eigen::Vector3d(0.0, 0.0, surfaceHeight + radius - 0.01));
+
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+#endif
+}
+
+//==============================================================================
 // Tests HeightmapShape::flipY();
 TEST_F(Collision, testHeightmapFlipY)
 {

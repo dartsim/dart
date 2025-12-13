@@ -140,11 +140,13 @@ OdeHeightmap<S>::OdeHeightmap(
       scale);
 
   // Restrict the bounds of the AABB to improve efficiency
-  const auto minHeight
-      = static_cast<dReal>(heightMap->getMinHeight() * scale.z());
-  const auto maxHeight
-      = static_cast<dReal>(heightMap->getMaxHeight() * scale.z());
-  dGeomHeightfieldDataSetBounds(mOdeHeightfieldId, minHeight, maxHeight);
+  //
+  // Note: ODE applies the vertical scale/offset (and thickness to min height)
+  // when computing the AABB, so we pass the unscaled bounds here.
+  dGeomHeightfieldDataSetBounds(
+      mOdeHeightfieldId,
+      static_cast<dReal>(heightMap->getMinHeight()),
+      static_cast<dReal>(heightMap->getMaxHeight()));
 
   // create the height field
   mGeomId = dCreateHeightfield(0, mOdeHeightfieldId, 1);
