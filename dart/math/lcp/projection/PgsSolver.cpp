@@ -32,6 +32,7 @@
 
 #include "dart/math/lcp/projection/PgsSolver.hpp"
 
+#include "dart/math/lcp/LcpValidation.hpp"
 #include "dart/math/lcp/pivoting/dantzig/Common.hpp"
 #include "dart/math/lcp/pivoting/dantzig/Misc.hpp"
 
@@ -147,9 +148,10 @@ LcpResult PgsSolver::solve(
     newX /= Adata[static_cast<std::size_t>(nSkip * i + i)];
 
     if (findexData[static_cast<std::size_t>(i)] >= 0) {
-      const double hiTmp = hiData[static_cast<std::size_t>(i)]
-                           * xdata[static_cast<std::size_t>(
-                               findexData[static_cast<std::size_t>(i)])];
+      const double hiTmp = std::abs(
+          hiData[static_cast<std::size_t>(i)]
+          * xdata[static_cast<std::size_t>(
+              findexData[static_cast<std::size_t>(i)])]);
       const double loTmp = -hiTmp;
 
       if (newX > hiTmp)
@@ -210,10 +212,10 @@ LcpResult PgsSolver::solve(
           newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
 
         if (findexData[static_cast<std::size_t>(index)] >= 0) {
-          const double hiTmp
-              = hiData[static_cast<std::size_t>(index)]
-                * xdata[static_cast<std::size_t>(
-                    findexData[static_cast<std::size_t>(index)])];
+          const double hiTmp = std::abs(
+              hiData[static_cast<std::size_t>(index)]
+              * xdata[static_cast<std::size_t>(
+                  findexData[static_cast<std::size_t>(index)])]);
           const double loTmp = -hiTmp;
 
           if (newX > hiTmp)
@@ -255,10 +257,22 @@ LcpResult PgsSolver::solve(
 
   Eigen::VectorXd wVec = A * x - b;
   result.iterations = iterationsUsed;
-  result.complementarity = (x.array() * wVec.array()).abs().maxCoeff();
-  result.residual = (wVec.array().min(Eigen::ArrayXd::Zero(n)))
-                        .matrix()
-                        .lpNorm<Eigen::Infinity>();
+
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string boundsMessage;
+  const bool boundsOk = detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &boundsMessage);
+  if (!boundsOk) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = boundsMessage;
+    return result;
+  }
+
+  result.residual
+      = detail::naturalResidualInfinityNorm(x, wVec, loEff, hiEff);
+  result.complementarity = detail::complementarityInfinityNorm(
+      x, wVec, loEff, hiEff, absTolerance);
   if (x.hasNaN()) {
     result.status = LcpSolverStatus::Failed;
   } else if (!possibleToTerminate) {
@@ -267,27 +281,21 @@ LcpResult PgsSolver::solve(
     result.status = LcpSolverStatus::Success;
   }
 
-  if (options.validateSolution) {
-    const double tol = std::max(
-        options.complementarityTolerance > 0
-            ? options.complementarityTolerance
-            : mDefaultOptions.complementarityTolerance,
-        absTolerance);
-    bool valid = true;
+  if (options.validateSolution && result.status == LcpSolverStatus::Success) {
+    const double compTol = (options.complementarityTolerance > 0)
+                               ? options.complementarityTolerance
+                               : mDefaultOptions.complementarityTolerance;
+    const double validationTol = std::max(absTolerance, compTol);
 
-    if (wVec.minCoeff() < -absTolerance)
-      valid = false;
-    if ((x.array() - lo.array()).minCoeff() < -absTolerance)
-      valid = false;
-    if ((hi.array() - x.array()).minCoeff() < -absTolerance)
-      valid = false;
-    if ((x.array() * wVec.array()).abs().maxCoeff() > tol)
-      valid = false;
-
+    std::string validationMessage;
+    const bool valid = detail::validateSolution(
+        x, wVec, loEff, hiEff, validationTol, &validationMessage);
     result.validated = true;
     if (!valid) {
       result.status = LcpSolverStatus::NumericalError;
-      result.message = "Solution validation failed";
+      result.message
+          = validationMessage.empty() ? "Solution validation failed"
+                                      : validationMessage;
     }
   }
 

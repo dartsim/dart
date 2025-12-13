@@ -32,8 +32,11 @@
 
 #include "dart/math/lcp/pivoting/LemkeSolver.hpp"
 
+#include "dart/math/lcp/LcpValidation.hpp"
+
 #include <Eigen/SVD>
 
+#include <algorithm>
 #include <vector>
 
 #include <cmath>
@@ -295,32 +298,72 @@ LcpResult LemkeSolver::solve(
 
   const auto& A = problem.A;
   const auto& b = problem.b;
+  const auto& lo = problem.lo;
+  const auto& hi = problem.hi;
+  const auto& findex = problem.findex;
 
   // Check problem dimensions
-  if (A.rows() != A.cols() || A.rows() != b.size()) {
+  const bool dimensionMismatch
+      = (A.rows() != A.cols()) || (A.rows() != b.size())
+        || (lo.size() != b.size()) || (hi.size() != b.size())
+        || (findex.size() != b.size());
+  if (dimensionMismatch) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = "Matrix dimensions inconsistent";
     return result;
   }
 
-  // Call the legacy Lemke solver
-  const int exitCode = LemkeImpl(A, b, &x);
+  const double absTol = (options.absoluteTolerance > 0)
+                            ? options.absoluteTolerance
+                            : mDefaultOptions.absoluteTolerance;
+  const bool standardBounds
+      = (lo.array().abs().maxCoeff() <= absTol)
+        && (hi.array() == std::numeric_limits<double>::infinity()).all()
+        && (findex.array() < 0).all();
+  if (!standardBounds) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = "LemkeSolver supports only standard LCP (lo=0, hi=+inf)";
+    return result;
+  }
+
+  // Call the legacy Lemke solver (expects w = Ax + q)
+  const int exitCode = LemkeImpl(A, -b, &x);
 
   // Interpret exit code
   result.iterations = 1; // Pivoting methods don't have iterations in same sense
-  Eigen::VectorXd w = A * x + b;
-  const double complementarityError = (x.array() * w.array()).abs().maxCoeff();
-  const bool feasible = (w.minCoeff() >= -1e-8) && (x.minCoeff() >= -1e-8);
+  Eigen::VectorXd w = A * x - b;
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string boundsMessage;
+  const bool boundsOk = detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &boundsMessage);
+  if (!boundsOk) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = boundsMessage;
+    return result;
+  }
+
+  const double complementarityError
+      = detail::complementarityInfinityNorm(x, w, loEff, hiEff, absTol);
+  const bool feasible = detail::validateSolution(x, w, loEff, hiEff, absTol);
 
   if (exitCode == 0 || feasible) {
     result.status = LcpSolverStatus::Success;
 
     if (options.validateSolution) {
-      const bool isValid = ValidateImpl(A, x, b);
+      const double compTol = (options.complementarityTolerance > 0)
+                                 ? options.complementarityTolerance
+                                 : mDefaultOptions.complementarityTolerance;
+      const double validationTol = std::max(absTol, compTol);
+      std::string validationMessage;
+      const bool isValid = detail::validateSolution(
+          x, w, loEff, hiEff, validationTol, &validationMessage);
       result.validated = true;
       if (!isValid) {
         result.status = LcpSolverStatus::NumericalError;
-        result.message = "Solution validation failed";
+        result.message
+            = validationMessage.empty() ? "Solution validation failed"
+                                        : validationMessage;
       }
     }
   } else {
@@ -329,7 +372,7 @@ LcpResult LemkeSolver::solve(
   }
 
   result.complementarity = complementarityError;
-  result.residual = w.lpNorm<Eigen::Infinity>();
+  result.residual = detail::naturalResidualInfinityNorm(x, w, loEff, hiEff);
 
   return result;
 }

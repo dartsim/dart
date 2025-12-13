@@ -89,7 +89,7 @@ struct DART_API LcpResult
   /// Final residual norm
   double residual{std::numeric_limits<double>::quiet_NaN()};
 
-  /// Complementarity error: ||x * (Ax + b)||
+  /// Complementarity/KKT violation (infinity norm).
   double complementarity{std::numeric_limits<double>::quiet_NaN()};
 
   /// Whether the solution was validated
@@ -188,7 +188,7 @@ struct DART_API LcpOptions
 };
 
 //==============================================================================
-/// Bundles the inputs to a boxed LCP: w = Ax + b, l <= x <= u with optional
+/// Bundles the inputs to a boxed LCP: w = Ax - b, l <= x <= u with optional
 /// friction index mapping.
 struct DART_API LcpProblem
 {

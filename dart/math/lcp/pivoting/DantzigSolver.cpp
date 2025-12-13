@@ -32,9 +32,11 @@
 
 #include "dart/math/lcp/pivoting/DantzigSolver.hpp"
 
+#include "dart/math/lcp/LcpValidation.hpp"
 #include "dart/math/lcp/pivoting/dantzig/Common.hpp"
 #include "dart/math/lcp/pivoting/dantzig/Lcp.hpp"
 
+#include <algorithm>
 #include <limits>
 #include <vector>
 
@@ -102,22 +104,39 @@ LcpResult DantzigSolver::solve(
   x = Eigen::VectorXd::Map(xdata.data(), n);
   const Eigen::VectorXd w = A * x - b;
   result.iterations = 1;
-  result.complementarity = (x.array() * w.array()).abs().maxCoeff();
-  result.residual = (w.array().min(Eigen::ArrayXd::Zero(n)))
-                        .matrix()
-                        .lpNorm<Eigen::Infinity>();
+
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string boundsMessage;
+  const bool boundsOk = detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &boundsMessage);
+  if (!boundsOk) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = boundsMessage;
+    return result;
+  }
+
+  const double absTol = (options.absoluteTolerance > 0)
+                            ? options.absoluteTolerance
+                            : mDefaultOptions.absoluteTolerance;
+  result.residual = detail::naturalResidualInfinityNorm(x, w, loEff, hiEff);
+  result.complementarity
+      = detail::complementarityInfinityNorm(x, w, loEff, hiEff, absTol);
   result.status = success ? LcpSolverStatus::Success : LcpSolverStatus::Failed;
 
-  if (options.validateSolution) {
-    const double tol
-        = std::max(options.complementarityTolerance, options.absoluteTolerance);
-    const bool feasible = w.minCoeff() >= -options.absoluteTolerance
-                          && (x - lo).minCoeff() >= -options.absoluteTolerance
-                          && (hi - x).minCoeff() >= -options.absoluteTolerance
-                          && (x.array() * w.array()).abs().maxCoeff() <= tol;
+  if (options.validateSolution && result.status == LcpSolverStatus::Success) {
+    const double compTol = (options.complementarityTolerance > 0)
+                               ? options.complementarityTolerance
+                               : mDefaultOptions.complementarityTolerance;
+    const double validationTol = std::max(absTol, compTol);
+    std::string validationMessage;
+    const bool feasible = detail::validateSolution(
+        x, w, loEff, hiEff, validationTol, &validationMessage);
     result.validated = true;
-    if (!feasible)
+    if (!feasible) {
       result.status = LcpSolverStatus::NumericalError;
+      result.message = validationMessage;
+    }
   }
 
   return result;

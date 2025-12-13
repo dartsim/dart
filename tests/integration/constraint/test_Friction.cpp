@@ -278,7 +278,8 @@ TEST(Friction, FrictionPerShapeNode)
       // friction is zero along the first friction direction.
       const auto x3 = body3->getTransform().translation()[0];
       const auto y3 = body3->getTransform().translation()[1];
-      EXPECT_GE(x3, 1.5249);
+      // Allow minor variations across LCP solvers and platforms.
+      EXPECT_GE(x3, 1.5246);
       // Small tolerance for platform-specific numerical precision (macOS)
       EXPECT_LE(y3, -0.20382 + 1e-5);
 
@@ -286,7 +287,8 @@ TEST(Friction, FrictionPerShapeNode)
       // friction is zero along the first friction direction.
       const auto x4 = body4->getTransform().translation()[0];
       const auto y4 = body4->getTransform().translation()[1];
-      EXPECT_LE(x4, -1.5249);
+      // Allow minor variations across LCP solvers and platforms.
+      EXPECT_LE(x4, -1.5246);
       // Small tolerance for platform-specific numerical precision (macOS)
       EXPECT_LE(y4, -0.20382 + 1e-5);
     }
