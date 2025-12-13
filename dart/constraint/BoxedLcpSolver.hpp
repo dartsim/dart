@@ -34,8 +34,8 @@
 
 #include <dart/math/lcp/LcpSolver.hpp>
 
-#include <dart/common/Diagnostics.hpp>
 #include <dart/common/Deprecated.hpp>
+#include <dart/common/Diagnostics.hpp>
 
 #include <dart/Export.hpp>
 
