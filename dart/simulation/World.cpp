@@ -274,6 +274,11 @@ void World::reset()
   mFrame = 0;
   mRecording->clear();
   mConstraintSolver->clearLastCollisionResult();
+
+  for (auto& skel : mSkeletons) {
+    skel->clearConstraintImpulses();
+    skel->setImpulseApplied(false);
+  }
 }
 
 //==============================================================================
