@@ -1,1 +1,6 @@
-.. include:: ../../../../python_api/modules/math.rst
+:orphan:
+
+Math
+====
+
+This content is documented on the consolidated :doc:`dartpy` page.
