@@ -558,7 +558,8 @@ void FreeJoint::integratePositions(
     double dt,
     Eigen::VectorXd& result) const
 {
-  if (q0.size() != getNumDofs() || v.size() != getNumDofs()) {
+  if (static_cast<std::size_t>(q0.size()) != getNumDofs()
+      || static_cast<std::size_t>(v.size()) != getNumDofs()) {
     DART_ERROR(
         "q0's size [{}] and v's size [{}] must both equal the dof [{}] for "
         "Joint [{}].",
