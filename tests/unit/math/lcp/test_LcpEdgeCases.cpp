@@ -127,8 +127,8 @@ TEST(LcpEdgeCases, WarmStartIgnoresNaN)
 {
   const auto problem = MakeStandard2dProblem();
 
-  Eigen::VectorXd x = Eigen::VectorXd::Constant(
-      2, std::numeric_limits<double>::quiet_NaN());
+  Eigen::VectorXd x
+      = Eigen::VectorXd::Constant(2, std::numeric_limits<double>::quiet_NaN());
 
   DantzigSolver dantzig;
   LcpOptions dantzigOptions = dantzig.getDefaultOptions();
@@ -171,4 +171,3 @@ TEST(LcpEdgeCases, InvalidBoundsAreRejected)
   result = pgs.solve(problem, x, pgs.getDefaultOptions());
   EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
 }
-

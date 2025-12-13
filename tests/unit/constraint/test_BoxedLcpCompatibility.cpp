@@ -77,4 +77,3 @@ TEST(BoxedLcpCompatibility, ConstraintSolverUsesBoxedWrapper)
 }
 
 } // namespace
-

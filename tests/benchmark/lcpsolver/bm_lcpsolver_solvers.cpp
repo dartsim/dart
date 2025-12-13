@@ -198,8 +198,8 @@ static void BM_PgsSolver_Standard(benchmark::State& state)
 static void BM_DantzigSolver_BoxedActiveBounds(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
-  auto problem
-      = makeBoxedActiveBoundsSpdProblem(n, /*seed=*/900u + static_cast<unsigned>(n));
+  auto problem = makeBoxedActiveBoundsSpdProblem(
+      n, /*seed=*/900u + static_cast<unsigned>(n));
 
   dart::math::DantzigSolver solver;
   LcpOptions options = solver.getDefaultOptions();
@@ -219,8 +219,8 @@ static void BM_DantzigSolver_BoxedActiveBounds(benchmark::State& state)
 static void BM_PgsSolver_BoxedActiveBounds(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
-  auto problem
-      = makeBoxedActiveBoundsSpdProblem(n, /*seed=*/901u + static_cast<unsigned>(n));
+  auto problem = makeBoxedActiveBoundsSpdProblem(
+      n, /*seed=*/901u + static_cast<unsigned>(n));
 
   dart::math::PgsSolver solver;
   LcpOptions options = solver.getDefaultOptions();
@@ -297,7 +297,11 @@ BENCHMARK(BM_PgsSolver_Standard)
     ->Args({48, 100})
     ->Args({96, 100});
 
-BENCHMARK(BM_DantzigSolver_BoxedActiveBounds)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
+BENCHMARK(BM_DantzigSolver_BoxedActiveBounds)
+    ->Arg(12)
+    ->Arg(24)
+    ->Arg(48)
+    ->Arg(96);
 BENCHMARK(BM_PgsSolver_BoxedActiveBounds)
     ->Args({12, 30})
     ->Args({24, 30})

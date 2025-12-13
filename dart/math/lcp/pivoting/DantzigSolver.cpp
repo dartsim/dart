@@ -37,9 +37,10 @@
 #include "dart/math/lcp/pivoting/dantzig/Lcp.hpp"
 
 #include <algorithm>
-#include <cmath>
 #include <limits>
 #include <vector>
+
+#include <cmath>
 
 namespace dart::math {
 

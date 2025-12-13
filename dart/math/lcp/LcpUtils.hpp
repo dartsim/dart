@@ -44,4 +44,3 @@ constexpr int padding(int a)
 }
 
 } // namespace dart::math
-
