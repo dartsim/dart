@@ -244,6 +244,24 @@ if(spdlog_FOUND)
   add_component_dependency_packages(${PROJECT_NAME} dart spdlog)
 endif()
 
+if(DART_BUILD_COLLISION_BULLET)
+  add_library(dart-collision-bullet INTERFACE)
+  target_link_libraries(dart-collision-bullet INTERFACE dart)
+
+  add_component(${PROJECT_NAME} collision-bullet)
+  add_component_targets(${PROJECT_NAME} collision-bullet dart-collision-bullet)
+  add_component_dependencies(${PROJECT_NAME} collision-bullet dart)
+endif()
+
+if(DART_BUILD_COLLISION_ODE)
+  add_library(dart-collision-ode INTERFACE)
+  target_link_libraries(dart-collision-ode INTERFACE dart)
+
+  add_component(${PROJECT_NAME} collision-ode)
+  add_component_targets(${PROJECT_NAME} collision-ode dart-collision-ode)
+  add_component_dependencies(${PROJECT_NAME} collision-ode dart)
+endif()
+
 if(MSVC)
   set_target_properties(
     dart PROPERTIES

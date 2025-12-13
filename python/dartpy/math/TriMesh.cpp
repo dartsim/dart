@@ -39,9 +39,10 @@
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/vector.h>
 
-#include <cstddef>
 #include <memory>
 #include <vector>
+
+#include <cstddef>
 
 namespace nb = nanobind;
 
@@ -116,7 +117,8 @@ void defTriMesh(nb::module_& m)
       .def(
           "getVertices",
           [](const TriMeshd& self) {
-            return std::vector<Eigen::Vector3d>(self.getVertices().begin(), self.getVertices().end());
+            return std::vector<Eigen::Vector3d>(
+                self.getVertices().begin(), self.getVertices().end());
           },
           "Get the list of vertices")
       .def(
@@ -152,7 +154,10 @@ void defTriMesh(nb::module_& m)
           "getNumTriangles",
           [](const TriMeshd& self) { return self.getTriangles().size(); },
           "Get the number of triangles")
-      .def("clear", &TriMeshd::clear, "Clear all vertices, triangles, and normals");
+      .def(
+          "clear",
+          &TriMeshd::clear,
+          "Clear all vertices, triangles, and normals");
 }
 
 } // namespace dart::python_nb

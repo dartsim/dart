@@ -38,6 +38,7 @@
 #include <dart/math/TriMesh.hpp>
 
 #include <dart/common/Diagnostics.hpp>
+#include <dart/common/Resource.hpp>
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
 
@@ -48,8 +49,12 @@
 #include <assimp/scene.h>
 
 #include <algorithm>
+#include <memory>
+#include <string>
 
 #include <cassert>
+#include <cctype>
+#include <cstddef>
 
 namespace dart {
 namespace utils {
@@ -133,9 +138,7 @@ std::unique_ptr<typename MeshLoader<S>::Mesh> MeshLoader<S>::load(
   // Load the scene and return nullptr if it fails
   aiScenePtr scene = loadScene(filepath, retriever);
   if (!scene) {
-    DART_WARN(
-        "[MeshLoader::load] Failed to load mesh from: {}",
-        filepath);
+    DART_WARN("[MeshLoader::load] Failed to load mesh from: {}", filepath);
     return nullptr;
   }
 
@@ -205,12 +208,64 @@ template <typename S>
 typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
     const std::string& filepath, const common::ResourceRetrieverPtr& retriever)
 {
+  auto hasColladaExtension = [](const std::string& path) -> bool {
+    const std::size_t extensionIndex = path.find_last_of('.');
+    if (extensionIndex == std::string::npos)
+      return false;
+
+    std::string extension = path.substr(extensionIndex);
+    std::transform(
+        extension.begin(), extension.end(), extension.begin(), ::tolower);
+    return extension == ".dae" || extension == ".zae";
+  };
+
+  auto isColladaResource = [&](const std::string& uri) -> bool {
+    if (hasColladaExtension(uri))
+      return true;
+
+    const auto parsedUri = common::Uri::createFromStringOrPath(uri);
+    if (parsedUri.mScheme.get_value_or("file") == "file" && parsedUri.mPath) {
+      if (hasColladaExtension(parsedUri.mPath.get()))
+        return true;
+    }
+
+    if (!retriever)
+      return false;
+
+    const auto resource = retriever->retrieve(parsedUri);
+    if (!resource)
+      return false;
+
+    constexpr std::size_t kMaxProbeSize = 4096;
+    const auto sampleSize = std::min(kMaxProbeSize, resource->getSize());
+    std::string buffer(sampleSize, '\0');
+    const auto read = resource->read(buffer.data(), 1, sampleSize);
+    buffer.resize(read);
+    resource->seek(0, common::Resource::SEEKTYPE_SET);
+
+    const auto upper = buffer.find("COLLADA");
+    const auto lower = buffer.find("collada");
+    const auto mixed = buffer.find("Collada");
+    return upper != std::string::npos || lower != std::string::npos
+           || mixed != std::string::npos;
+  };
+
+  const bool isCollada = isColladaResource(filepath);
+
   // Remove points and lines from the import
   aiPropertyStore* propertyStore = aiCreatePropertyStore();
   aiSetImportPropertyInteger(
       propertyStore,
       AI_CONFIG_PP_SBP_REMOVE,
       aiPrimitiveType_POINT | aiPrimitiveType_LINE);
+
+#ifdef AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION
+  if (isCollada) {
+    // Keep authoring up-axis and allow us to preserve the Collada unit scale.
+    aiSetImportPropertyInteger(
+        propertyStore, AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION, 1);
+  }
+#endif
 
   // Set up the Assimp IOSystem for resource retrieval
   // Suppress deprecation warnings - internal implementation detail
@@ -237,31 +292,19 @@ typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
   // If loading failed, clean up and return
   if (!scene) {
     DART_WARN(
-        "[MeshLoader::loadScene] Failed to import mesh from: {}",
-        filepath);
+        "[MeshLoader::loadScene] Failed to import mesh from: {}", filepath);
     DART_WARN("  Assimp error: {}", aiGetErrorString());
     aiReleasePropertyStore(propertyStore);
     return nullptr;
   }
 
-  // Handle Collada file transformation quirks
+#if !defined(AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION)
   // Assimp rotates Collada files to align the up-axis with y-axis.
-  // We revert this transformation here.
-  std::string extension;
-  const std::size_t extensionIndex = filepath.find_last_of('.');
-  if (extensionIndex != std::string::npos) {
-    extension = filepath.substr(extensionIndex);
-  }
-
-  std::transform(
-      std::begin(extension),
-      std::end(extension),
-      std::begin(extension),
-      ::tolower);
-
-  if (extension == ".dae" || extension == ".zae") {
+  // Revert this transformation so authored coordinates remain consistent.
+  if (isCollada && scene->mRootNode) {
     const_cast<aiScene*>(scene)->mRootNode->mTransformation = aiMatrix4x4();
   }
+#endif
 
   // Apply vertex pre-transformation
   // We can't do this as part of the import process because we may have

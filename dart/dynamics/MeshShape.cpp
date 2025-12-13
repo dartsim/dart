@@ -50,7 +50,10 @@
 #include <assimp/postprocess.h>
 
 #include <algorithm>
+#include <iomanip>
 #include <limits>
+#include <locale>
+#include <sstream>
 #include <string>
 
 namespace dart {
@@ -64,8 +67,6 @@ MeshShape::MeshShape(
     common::ResourceRetrieverPtr resourceRetriever,
     MeshOwnership ownership)
   : Shape(MESH),
-    mMesh(nullptr),
-    mMeshOwnership(MeshOwnership::None),
     mTriMesh(nullptr),
     mCachedAiScene(nullptr),
     mDisplayList(0),
@@ -84,8 +85,6 @@ MeshShape::MeshShape(
     std::shared_ptr<math::TriMesh<double>> mesh,
     const common::Uri& uri)
   : Shape(MESH),
-    mMesh(nullptr),
-    mMeshOwnership(MeshOwnership::None),
     mTriMesh(std::move(mesh)),
     mCachedAiScene(nullptr),
     mMeshUri(uri),
@@ -107,8 +106,6 @@ MeshShape::MeshShape(
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
   : Shape(MESH),
-    mMesh(nullptr),
-    mMeshOwnership(MeshOwnership::None),
     mTriMesh(nullptr),
     mCachedAiScene(nullptr),
     mDisplayList(0),
@@ -137,7 +134,103 @@ MeshShape::~MeshShape()
 void MeshShape::releaseMesh()
 {
   mMesh.reset();
+}
+
+//==============================================================================
+std::shared_ptr<const aiScene> MeshShape::makeMeshHandle(
+    const aiScene* mesh, MeshOwnership ownership)
+{
+  if (!mesh)
+    return nullptr;
+
+  switch (ownership) {
+    case MeshOwnership::Imported:
+      return std::shared_ptr<const aiScene>(mesh, [](const aiScene* scene) {
+        aiReleaseImport(const_cast<aiScene*>(scene));
+      });
+    case MeshOwnership::Copied:
+      return std::shared_ptr<const aiScene>(mesh, [](const aiScene* scene) {
+        aiFreeScene(const_cast<aiScene*>(scene));
+      });
+    case MeshOwnership::Manual:
+      return std::shared_ptr<const aiScene>(mesh, [](const aiScene* scene) {
+        delete const_cast<aiScene*>(scene);
+      });
+    case MeshOwnership::Custom:
+    case MeshOwnership::None:
+    default:
+      return std::shared_ptr<const aiScene>(mesh, [](const aiScene*) {});
+  }
+}
+
+//==============================================================================
+MeshShape::MeshHandle& MeshShape::MeshHandle::operator=(const aiScene* mesh)
+{
+  // Backward compatibility: historically MeshShape exposed a std::shared_ptr
+  // member that derived classes could assign a manually constructed aiScene*
+  // into (e.g., Gazebo's CustomMeshShape). In that case the default deleter
+  // would invoke `delete`, so we preserve that behavior here.
+  set(mesh, MeshOwnership::Manual);
+  return *this;
+}
+
+//==============================================================================
+MeshShape::MeshHandle& MeshShape::MeshHandle::operator=(
+    std::shared_ptr<const aiScene> mesh)
+{
+  set(std::move(mesh));
+  return *this;
+}
+
+//==============================================================================
+const aiScene* MeshShape::MeshHandle::get() const
+{
+  return mMesh.get();
+}
+
+//==============================================================================
+const aiScene* MeshShape::MeshHandle::operator->() const
+{
+  return mMesh.get();
+}
+
+//==============================================================================
+MeshShape::MeshHandle::operator bool() const
+{
+  return static_cast<bool>(mMesh);
+}
+
+//==============================================================================
+void MeshShape::MeshHandle::reset()
+{
+  mMesh.reset();
   mMeshOwnership = MeshOwnership::None;
+}
+
+//==============================================================================
+MeshShape::MeshOwnership MeshShape::MeshHandle::getOwnership() const
+{
+  return mMeshOwnership;
+}
+
+//==============================================================================
+const std::shared_ptr<const aiScene>& MeshShape::MeshHandle::getShared() const
+{
+  return mMesh;
+}
+
+//==============================================================================
+void MeshShape::MeshHandle::set(const aiScene* mesh, MeshOwnership ownership)
+{
+  mMesh = MeshShape::makeMeshHandle(mesh, ownership);
+  mMeshOwnership = mesh ? ownership : MeshOwnership::None;
+}
+
+//==============================================================================
+void MeshShape::MeshHandle::set(std::shared_ptr<const aiScene> mesh)
+{
+  mMesh = std::move(mesh);
+  mMeshOwnership = mMesh ? MeshOwnership::Custom : MeshOwnership::None;
 }
 
 //==============================================================================
@@ -194,66 +287,68 @@ const aiScene* MeshShape::getMesh() const
 //==============================================================================
 const aiScene* MeshShape::convertToAssimpMesh() const
 {
-  if (!mTriMesh) {
+  if (!mTriMesh || !mTriMesh->hasTriangles()) {
     return nullptr;
   }
 
-  // Create a new aiScene structure
-  aiScene* scene = new aiScene();
+  // Assimp's aiScene is not designed as a mutable in-memory structure and its
+  // lifetime rules are complex (see #453). To keep getMesh() working for legacy
+  // callers while avoiding cross-module deallocation hazards, we round-trip the
+  // TriMesh through Assimp's importer so Assimp allocates and frees the scene.
 
-  // Set up basic scene structure
-  scene->mNumMeshes = 1;
-  scene->mMeshes = new aiMesh*[1];
-  scene->mMeshes[0] = new aiMesh();
-
-  aiMesh* mesh = scene->mMeshes[0];
+  std::ostringstream stream;
+  stream.imbue(std::locale::classic());
+  stream << std::setprecision(std::numeric_limits<double>::max_digits10);
 
   const auto& vertices = mTriMesh->getVertices();
-  const auto& triangles = mTriMesh->getTriangles();
-  const auto& normals = mTriMesh->getVertexNormals();
-
-  // Set vertex data
-  mesh->mNumVertices = vertices.size();
-  mesh->mVertices = new aiVector3D[mesh->mNumVertices];
-  for (size_t i = 0; i < vertices.size(); ++i) {
-    mesh->mVertices[i]
-        = aiVector3D(vertices[i].x(), vertices[i].y(), vertices[i].z());
+  for (const auto& vertex : vertices) {
+    stream << "v " << vertex.x() << ' ' << vertex.y() << ' ' << vertex.z()
+           << '\n';
   }
 
-  // Set normal data
-  if (!normals.empty()) {
-    mesh->mNormals = new aiVector3D[mesh->mNumVertices];
-    for (size_t i = 0; i < normals.size(); ++i) {
-      mesh->mNormals[i]
-          = aiVector3D(normals[i].x(), normals[i].y(), normals[i].z());
+  const auto& normals = mTriMesh->getVertexNormals();
+  const bool hasNormals = !normals.empty() && normals.size() == vertices.size();
+  if (hasNormals) {
+    for (const auto& normal : normals) {
+      stream << "vn " << normal.x() << ' ' << normal.y() << ' ' << normal.z()
+             << '\n';
     }
   }
 
-  // Set face data
-  mesh->mNumFaces = triangles.size();
-  mesh->mFaces = new aiFace[mesh->mNumFaces];
-  for (size_t i = 0; i < triangles.size(); ++i) {
-    aiFace& face = mesh->mFaces[i];
-    face.mNumIndices = 3;
-    face.mIndices = new unsigned int[3];
-    face.mIndices[0] = triangles[i].x();
-    face.mIndices[1] = triangles[i].y();
-    face.mIndices[2] = triangles[i].z();
+  const auto& triangles = mTriMesh->getTriangles();
+  for (const auto& triangle : triangles) {
+    const std::size_t i0 = static_cast<std::size_t>(triangle.x()) + 1;
+    const std::size_t i1 = static_cast<std::size_t>(triangle.y()) + 1;
+    const std::size_t i2 = static_cast<std::size_t>(triangle.z()) + 1;
+
+    if (hasNormals) {
+      stream << "f " << i0 << "//" << i0 << ' ' << i1 << "//" << i1 << ' ' << i2
+             << "//" << i2 << '\n';
+    } else {
+      stream << "f " << i0 << ' ' << i1 << ' ' << i2 << '\n';
+    }
   }
 
-  mesh->mPrimitiveTypes = aiPrimitiveType_TRIANGLE;
-  mesh->mMaterialIndex = 0;
+  const std::string obj = stream.str();
+  if (obj.empty()) {
+    return nullptr;
+  }
 
-  // Set up root node
-  scene->mRootNode = new aiNode();
-  scene->mRootNode->mNumMeshes = 1;
-  scene->mRootNode->mMeshes = new unsigned int[1];
-  scene->mRootNode->mMeshes[0] = 0;
+  const unsigned int flags = aiProcess_Triangulate
+                             | aiProcess_JoinIdenticalVertices
+                             | aiProcess_SortByPType | aiProcess_OptimizeMeshes
+                             | aiProcess_GenNormals;
 
-  // Set up a default material
-  scene->mNumMaterials = 1;
-  scene->mMaterials = new aiMaterial*[1];
-  scene->mMaterials[0] = new aiMaterial();
+  const aiScene* scene = aiImportFileFromMemory(
+      obj.data(), static_cast<unsigned int>(obj.size()), flags, "obj");
+
+  if (!scene) {
+    DART_WARN(
+        "[MeshShape::convertToAssimpMesh] Failed to import TriMesh via Assimp: "
+        "{}",
+        aiGetErrorString());
+    return nullptr;
+  }
 
   return scene;
 }
@@ -270,7 +365,8 @@ std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
 
   // ALWAYS merge all meshes into a single TriMesh
   // This is necessary because:
-  // 1. Files with multiple materials (common in COLLADA/OBJ) have multiple aiMesh objects
+  // 1. Files with multiple materials (common in COLLADA/OBJ) have multiple
+  // aiMesh objects
   // 2. All meshes in a scene belong to the same shape for collision/rendering
   // 3. CustomMeshShape from gz-physics creates one aiMesh per submesh
   const std::size_t numMeshesToProcess = scene->mNumMeshes;
@@ -397,8 +493,20 @@ void MeshShape::setMesh(
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
 {
-  // This overload intentionally does not retain the aiScene pointer. Call the
-  // MeshOwnership overload if you need explicit lifetime management.
+  setMesh(mesh, MeshOwnership::Imported, uri, std::move(resourceRetriever));
+}
+
+//==============================================================================
+void MeshShape::setMesh(
+    const aiScene* mesh,
+    MeshOwnership ownership,
+    const common::Uri& uri,
+    common::ResourceRetrieverPtr resourceRetriever)
+{
+  if (mesh == mMesh.get() && ownership == mMesh.getOwnership()) {
+    // Nothing to do.
+    return;
+  }
 
   // Clear cached aiScene to prevent stale data.
   if (mCachedAiScene) {
@@ -406,11 +514,14 @@ void MeshShape::setMesh(
     mCachedAiScene = nullptr;
   }
 
-  mTriMesh = convertAssimpMesh(mesh);
+  releaseMesh();
+
+  mMesh.set(mesh, ownership);
+
+  mTriMesh = convertAssimpMesh(mMesh.get());
   mMaterials.clear();
 
   if (!mTriMesh) {
-    releaseMesh();
     mMeshUri.clear();
     mMeshPath.clear();
     mResourceRetriever = nullptr;
@@ -435,100 +546,7 @@ void MeshShape::setMesh(
 
   // Extract material properties for Assimp-free rendering.
   extractMaterialsFromScene(
-      mesh, mMeshPath.empty() ? uri.getPath() : mMeshPath);
-
-  // Clear any previously retained aiScene after conversion/material extraction.
-  releaseMesh();
-
-  mIsBoundingBoxDirty = true;
-  mIsVolumeDirty = true;
-
-  incrementVersion();
-}
-
-//==============================================================================
-namespace {
-
-std::shared_ptr<const aiScene> makeMeshHandle(
-    const aiScene* mesh, MeshShape::MeshOwnership ownership)
-{
-  if (!mesh)
-    return nullptr;
-
-  switch (ownership) {
-    case MeshShape::MeshOwnership::Imported:
-      return std::shared_ptr<const aiScene>(mesh, [](const aiScene* scene) { //
-        aiReleaseImport(const_cast<aiScene*>(scene));
-      });
-    case MeshShape::MeshOwnership::Copied:
-      return std::shared_ptr<const aiScene>(mesh, [](const aiScene* scene) {
-        aiFreeScene(const_cast<aiScene*>(scene));
-      });
-    case MeshShape::MeshOwnership::Manual:
-      return std::shared_ptr<const aiScene>(mesh, [](const aiScene* scene) {
-        delete const_cast<aiScene*>(scene);
-      });
-    case MeshShape::MeshOwnership::Custom:
-    case MeshShape::MeshOwnership::None:
-    default:
-      return std::shared_ptr<const aiScene>(
-          mesh, [](const aiScene*) { /* no-op */ });
-  }
-}
-
-} // namespace
-
-//==============================================================================
-void MeshShape::setMesh(
-    const aiScene* mesh,
-    MeshOwnership ownership,
-    const common::Uri& uri,
-    common::ResourceRetrieverPtr resourceRetriever)
-{
-  if (mesh == mMesh.get() && ownership == mMeshOwnership) {
-    // Nothing to do.
-    return;
-  }
-
-  // Clear cached aiScene to prevent stale data.
-  if (mCachedAiScene) {
-    aiReleaseImport(mCachedAiScene);
-    mCachedAiScene = nullptr;
-  }
-
-  releaseMesh();
-
-  mMesh = makeMeshHandle(mesh, ownership);
-  mMeshOwnership = mesh ? ownership : MeshOwnership::None;
-
-  mTriMesh = convertAssimpMesh(mMesh.get());
-  mMaterials.clear();
-
-  if (!mTriMesh) {
-    mMeshUri.clear();
-    mMeshPath.clear();
-    mResourceRetriever = nullptr;
-    mIsBoundingBoxDirty = true;
-    mIsVolumeDirty = true;
-    return;
-  }
-
-  mMeshUri = uri;
-
-  if (uri.mScheme.get_value_or("file") == "file" && uri.mPath) {
-    mMeshPath = uri.getFilesystemPath();
-  } else if (resourceRetriever) {
-    DART_SUPPRESS_DEPRECATED_BEGIN
-    mMeshPath = resourceRetriever->getFilePath(uri);
-    DART_SUPPRESS_DEPRECATED_END
-  } else {
-    mMeshPath.clear();
-  }
-
-  mResourceRetriever = std::move(resourceRetriever);
-
-  // Extract material properties for Assimp-free rendering.
-  extractMaterialsFromScene(mMesh.get(), mMeshPath.empty() ? uri.getPath() : mMeshPath);
+      mMesh.get(), mMeshPath.empty() ? uri.getPath() : mMeshPath);
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -542,7 +560,8 @@ void MeshShape::setMesh(
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
 {
-  if (mesh == mMesh && mMeshOwnership == MeshOwnership::Custom) {
+  if (mesh && mesh.get() == mMesh.get()
+      && mMesh.getOwnership() == MeshOwnership::Custom) {
     return;
   }
 
@@ -552,8 +571,7 @@ void MeshShape::setMesh(
   }
 
   releaseMesh();
-  mMesh = std::move(mesh);
-  mMeshOwnership = mMesh ? MeshOwnership::Custom : MeshOwnership::None;
+  mMesh.set(std::move(mesh));
 
   mTriMesh = convertAssimpMesh(mMesh.get());
   mMaterials.clear();
@@ -582,7 +600,8 @@ void MeshShape::setMesh(
   mResourceRetriever = std::move(resourceRetriever);
 
   // Extract material properties for Assimp-free rendering.
-  extractMaterialsFromScene(mMesh.get(), mMeshPath.empty() ? uri.getPath() : mMeshPath);
+  extractMaterialsFromScene(
+      mMesh.get(), mMeshPath.empty() ? uri.getPath() : mMeshPath);
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -806,7 +825,8 @@ ShapePtr MeshShape::clone() const
 void MeshShape::updateBoundingBox() const
 {
   // Use getTriMesh() instead of directly accessing mTriMesh
-  // This handles lazy conversion for backward compatibility with CustomMeshShape
+  // This handles lazy conversion for backward compatibility with
+  // CustomMeshShape
   const auto* triMesh = getTriMesh().get();
 
   if (!triMesh || triMesh->getVertices().empty()) {

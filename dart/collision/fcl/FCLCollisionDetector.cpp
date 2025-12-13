@@ -56,9 +56,10 @@
 #include "dart/dynamics/VoxelGridShape.hpp"
 
 #include <algorithm>
-#include <cstdint>
 #include <limits>
 #include <string>
+
+#include <cstdint>
 
 namespace dart {
 namespace collision {

@@ -1,5 +1,5 @@
-#include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Diagnostics.hpp"
+#include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/ArrowShape.hpp"
@@ -78,6 +78,75 @@ public:
 
   std::string lastUri;
 };
+
+DART_SUPPRESS_DEPRECATED_BEGIN
+class DirectAssignMeshShape final : public dynamics::MeshShape
+{
+public:
+  DirectAssignMeshShape()
+    : dynamics::MeshShape(Eigen::Vector3d::Ones(), nullptr)
+  {
+    auto* scene = new aiScene();
+    scene->mNumMeshes = 2;
+    scene->mMeshes = new aiMesh*[scene->mNumMeshes];
+
+    scene->mRootNode = new aiNode();
+    scene->mRootNode->mNumMeshes = scene->mNumMeshes;
+    scene->mRootNode->mMeshes = new unsigned int[scene->mNumMeshes];
+    scene->mRootNode->mMeshes[0] = 0u;
+    scene->mRootNode->mMeshes[1] = 1u;
+
+    for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes;
+         ++meshIndex) {
+      auto* mesh = new aiMesh();
+
+      mesh->mNumVertices = 3;
+      mesh->mVertices = new aiVector3D[mesh->mNumVertices];
+      mesh->mNormals = new aiVector3D[mesh->mNumVertices];
+
+      const ai_real z = (meshIndex == 0 ? 0.0f : 1.0f);
+
+      mesh->mVertices[0] = aiVector3D(0.0f, 0.0f, z);
+      mesh->mVertices[1] = aiVector3D(1.0f, 0.0f, z);
+      mesh->mVertices[2] = aiVector3D(0.0f, 1.0f, z);
+
+      mesh->mNormals[0] = aiVector3D(0.0f, 0.0f, 1.0f);
+      mesh->mNormals[1] = aiVector3D(0.0f, 0.0f, 1.0f);
+      mesh->mNormals[2] = aiVector3D(0.0f, 0.0f, 1.0f);
+
+      mesh->mNumFaces = 1;
+      mesh->mFaces = new aiFace[mesh->mNumFaces];
+      mesh->mFaces[0].mNumIndices = 3;
+      mesh->mFaces[0].mIndices = new unsigned int[3];
+      mesh->mFaces[0].mIndices[0] = 0u;
+      mesh->mFaces[0].mIndices[1] = 1u;
+      mesh->mFaces[0].mIndices[2] = 2u;
+
+      mesh->mPrimitiveTypes = aiPrimitiveType_TRIANGLE;
+
+      scene->mMeshes[meshIndex] = mesh;
+    }
+
+    mRawScene = scene;
+    this->mMesh = scene;
+    this->mIsBoundingBoxDirty = true;
+    this->mIsVolumeDirty = true;
+  }
+
+  const aiScene* rawScene() const
+  {
+    return mRawScene;
+  }
+
+  MeshOwnership meshOwnership() const
+  {
+    return this->mMesh.getOwnership();
+  }
+
+private:
+  const aiScene* mRawScene{nullptr};
+};
+DART_SUPPRESS_DEPRECATED_END
 
 const aiScene* loadMeshWithOverrides(
     const std::string& uri,
@@ -287,6 +356,27 @@ TEST(MeshShapeTest, RespectsCustomMeshDeleter)
   }
 
   EXPECT_EQ(deleted.load(), 1);
+}
+
+TEST(MeshShapeTest, DirectAssignSceneBuildsTriMeshAndUsesDeleteSemantics)
+{
+  DirectAssignMeshShape shape;
+  EXPECT_EQ(shape.meshOwnership(), dynamics::MeshShape::MeshOwnership::Manual);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_EQ(shape.getMesh(), shape.rawScene());
+  DART_SUPPRESS_DEPRECATED_END
+
+  const auto triMesh = shape.getTriMesh();
+  ASSERT_NE(triMesh, nullptr);
+  EXPECT_EQ(triMesh->getVertices().size(), 6u);
+  EXPECT_EQ(triMesh->getTriangles().size(), 2u);
+  EXPECT_TRUE(triMesh->hasVertexNormals());
+
+  const Eigen::Vector3d extents = shape.getBoundingBox().computeFullExtents();
+  EXPECT_NEAR(extents.x(), 1.0, 1e-12);
+  EXPECT_NEAR(extents.y(), 1.0, 1e-12);
+  EXPECT_NEAR(extents.z(), 1.0, 1e-12);
 }
 
 TEST(MeshShapeTest, TracksOwnershipAndUriMetadata)

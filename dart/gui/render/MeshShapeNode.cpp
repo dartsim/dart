@@ -32,6 +32,7 @@
 
 #include "dart/gui/render/MeshShapeNode.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Filesystem.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
@@ -332,7 +333,9 @@ void MeshShapeNode::extractData(bool firstTime)
   // Use deprecated getMesh() for now to maintain backward compatibility
   // with the scene graph structure (aiScene contains node hierarchy)
   // TODO: Future work - refactor to use TriMesh directly with a scene graph
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* scene = mMeshShape->getMesh();
+  DART_SUPPRESS_DEPRECATED_END
   const aiNode* root = scene->mRootNode;
 
   if (firstTime) // extract material properties from MeshShape (Assimp-free)
@@ -609,7 +612,9 @@ void MeshShapeGeode::extractData(bool)
 {
   clearChildUtilizationFlags();
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* scene = mMeshShape->getMesh();
+  DART_SUPPRESS_DEPRECATED_END
   for (std::size_t i = 0; i < mAiNode->mNumMeshes; ++i) {
     aiMesh* mesh = scene->mMeshes[mAiNode->mMeshes[i]];
 

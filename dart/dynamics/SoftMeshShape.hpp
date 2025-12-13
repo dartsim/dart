@@ -68,7 +68,8 @@ public:
   /// Returns the TriMesh representation of this soft mesh.
   std::shared_ptr<math::TriMesh<double>> getTriMesh() const;
 
-  /// Returns the aiMesh representation (deprecated, for backward compatibility).
+  /// Returns the aiMesh representation (deprecated, for backward
+  /// compatibility).
   [[deprecated("Use getTriMesh() instead")]] const aiMesh* getAssimpMesh()
       const;
 

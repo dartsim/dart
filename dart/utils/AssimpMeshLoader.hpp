@@ -30,10 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_PUBLIC_HPP_
-#define DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_PUBLIC_HPP_
+#ifndef DART_UTILS_ASSIMPMESHLOADER_HPP_
+#define DART_UTILS_ASSIMPMESHLOADER_HPP_
 
-// Backward-compatibility header.
-#include <dart/dynamics/detail/AssimpInputResourceAdaptor.hpp>
+// Backward-compatibility header for the Assimp-backed mesh loader.
+#include <dart/utils/MeshLoader.hpp>
 
-#endif // DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_PUBLIC_HPP_
+namespace dart {
+namespace utils {
+
+template <typename S>
+using AssimpMeshLoader = MeshLoader<S>;
+
+using AssimpMeshLoaderf = AssimpMeshLoader<float>;
+using AssimpMeshLoaderd = AssimpMeshLoader<double>;
+
+} // namespace utils
+} // namespace dart
+
+#endif // DART_UTILS_ASSIMPMESHLOADER_HPP_

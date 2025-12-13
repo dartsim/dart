@@ -33,10 +33,9 @@
 #ifndef DART_DYNAMICS_MESHSHAPE_HPP_
 #define DART_DYNAMICS_MESHSHAPE_HPP_
 
+#include <dart/dynamics/MeshMaterial.hpp>
 #include <dart/dynamics/Shape.hpp>
 #include <dart/dynamics/fwd.hpp>
-
-#include <dart/dynamics/MeshMaterial.hpp>
 
 #include <dart/math/TriMesh.hpp>
 
@@ -247,6 +246,33 @@ public:
   virtual ShapePtr clone() const override;
 
 protected:
+  class MeshHandle
+  {
+  public:
+    MeshHandle() = default;
+
+    MeshHandle& operator=(const aiScene* mesh);
+    MeshHandle& operator=(std::shared_ptr<const aiScene> mesh);
+
+    const aiScene* get() const;
+    const aiScene* operator->() const;
+    explicit operator bool() const;
+
+    void reset();
+    MeshOwnership getOwnership() const;
+    const std::shared_ptr<const aiScene>& getShared() const;
+
+    void set(const aiScene* mesh, MeshOwnership ownership);
+    void set(std::shared_ptr<const aiScene> mesh);
+
+  private:
+    std::shared_ptr<const aiScene> mMesh;
+    MeshOwnership mMeshOwnership{MeshOwnership::None};
+  };
+
+  static std::shared_ptr<const aiScene> makeMeshHandle(
+      const aiScene* mesh, MeshOwnership ownership);
+
   // Documentation inherited.
   void updateBoundingBox() const override;
 
@@ -257,8 +283,7 @@ protected:
 
   void releaseMesh();
 
-  std::shared_ptr<const aiScene> mMesh;
-  MeshOwnership mMeshOwnership{MeshOwnership::None};
+  MeshHandle mMesh;
 
   /// Converts aiScene to TriMesh for internal use.
   static std::shared_ptr<math::TriMesh<double>> convertAssimpMesh(

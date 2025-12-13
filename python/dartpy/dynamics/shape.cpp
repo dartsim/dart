@@ -132,20 +132,21 @@ void defShape(nb::module_& m)
 
   nb::class_<dart::dynamics::MeshShape, Shape>(m, "MeshShape")
       .def(
-          nb::new_([](const nb::handle& scale,
-                      const std::shared_ptr<dart::math::TriMesh<double>>& mesh) {
-            nb::sequence seq = nb::cast<nb::sequence>(scale);
-            if (nb::len(seq) != 3) {
-              throw nb::type_error("MeshShape scale must have length 3");
-            }
+          nb::new_(
+              [](const nb::handle& scale,
+                 const std::shared_ptr<dart::math::TriMesh<double>>& mesh) {
+                nb::sequence seq = nb::cast<nb::sequence>(scale);
+                if (nb::len(seq) != 3) {
+                  throw nb::type_error("MeshShape scale must have length 3");
+                }
 
-            Eigen::Vector3d vec;
-            for (size_t i = 0; i < 3; ++i) {
-              vec[i] = nb::cast<double>(seq[i]);
-            }
+                Eigen::Vector3d vec;
+                for (size_t i = 0; i < 3; ++i) {
+                  vec[i] = nb::cast<double>(seq[i]);
+                }
 
-            return std::make_shared<dart::dynamics::MeshShape>(vec, mesh);
-          }),
+                return std::make_shared<dart::dynamics::MeshShape>(vec, mesh);
+              }),
           nb::arg("scale"),
           nb::arg("mesh"))
       .def("getTriMesh", &dart::dynamics::MeshShape::getTriMesh)
