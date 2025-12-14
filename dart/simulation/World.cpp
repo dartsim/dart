@@ -988,13 +988,9 @@ bool World::moveSolver(std::size_t fromIndex, std::size_t toIndex)
 
   auto begin = mRigidSolvers.begin();
   if (fromIndex < toIndex) {
-    std::rotate(
-        begin + fromIndex,
-        begin + fromIndex + 1,
-        begin + toIndex + 1);
+    std::rotate(begin + fromIndex, begin + fromIndex + 1, begin + toIndex + 1);
   } else {
-    std::rotate(
-        begin + toIndex, begin + fromIndex, begin + fromIndex + 1);
+    std::rotate(begin + toIndex, begin + fromIndex, begin + fromIndex + 1);
   }
 
   return true;
