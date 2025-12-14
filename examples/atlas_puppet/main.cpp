@@ -36,6 +36,7 @@
 #include <dart/utils/urdf/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 using namespace dart::common;
 using namespace dart::dynamics;
@@ -527,9 +528,8 @@ SkeletonPtr createGround()
 SkeletonPtr createAtlas()
 {
   // Parse in the atlas model
-  UrdfParser urdf;
   SkeletonPtr atlas
-      = urdf.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
 
   // Add a box to the root node to make it easier to click and drag
   double scale = 0.25;

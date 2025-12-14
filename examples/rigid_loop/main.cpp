@@ -37,6 +37,7 @@
 #include <dart/utils/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 using namespace dart;
 using namespace math;
@@ -78,7 +79,7 @@ int main()
   // load a skeleton file
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
-      = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
+      = dart::io::readWorld("dart://sample/skel/chain.skel");
   DART_ASSERT(myWorld != nullptr);
 
   // create and initialize the world

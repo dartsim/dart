@@ -37,6 +37,7 @@
 #include <dart/utils/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 const double default_speed_increment = 0.5;
 
@@ -334,7 +335,7 @@ SkeletonPtr loadBiped()
 {
   // snippet:cpp-biped-lesson1-load-start
   // Create the world with a skeleton
-  WorldPtr world = SkelParser::readWorld("dart://sample/skel/biped.skel");
+  WorldPtr world = dart::io::readWorld("dart://sample/skel/biped.skel");
   DART_ASSERT(world != nullptr);
 
   SkeletonPtr biped = world->getSkeleton("biped");
@@ -378,7 +379,7 @@ void modifyBipedWithSkateboard(SkeletonPtr biped)
 {
   // snippet:cpp-biped-lesson5-skateboard-start
   // Load the Skeleton from a file
-  WorldPtr world = SkelParser::readWorld("dart://sample/skel/skateboard.skel");
+  WorldPtr world = dart::io::readWorld("dart://sample/skel/skateboard.skel");
 
   SkeletonPtr skateboard = world->getSkeleton(0);
 

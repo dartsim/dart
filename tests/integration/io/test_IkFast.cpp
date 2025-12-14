@@ -34,9 +34,8 @@
 
 #include <dart/config.hpp>
 
-#include <dart/utils/urdf/All.hpp>
-
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <gtest/gtest.h>
 
@@ -119,11 +118,11 @@ TEST(IkFast, FailedToLoadSharedLibrary)
 //==============================================================================
 TEST(IkFast, LoadWamArmIk)
 {
-  utils::UrdfParser urdfParser;
-  urdfParser.addPackageDirectory(
+  dart::io::ReadOptions options;
+  options.addPackageDirectory(
       "herb_description", dart::config::dataPath("urdf/wam"));
-  auto wam
-      = urdfParser.parseSkeleton(dart::config::dataPath("urdf/wam/wam.urdf"));
+  auto wam = dart::io::readSkeleton(
+      dart::config::dataPath("urdf/wam/wam.urdf"), options);
   ASSERT_NE(wam, nullptr);
 
   auto wam7 = wam->getBodyNode("/wam7");

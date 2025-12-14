@@ -40,6 +40,7 @@
 #include <dart/utils/urdf/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 using namespace dart::math;
 using namespace dart::dynamics;
@@ -1114,10 +1115,11 @@ SkeletonPtr createGround()
 
 SkeletonPtr createHubo()
 {
-  dart::utils::UrdfParser parser;
-  parser.addPackageDirectory("drchubo", dart::config::dataPath("urdf/drchubo"));
-  SkeletonPtr hubo = parser.parseSkeleton(
-      dart::config::dataPath("urdf/drchubo/drchubo.urdf"));
+  dart::io::ReadOptions options;
+  options.addPackageDirectory(
+      "drchubo", dart::config::dataPath("urdf/drchubo"));
+  SkeletonPtr hubo = dart::io::readSkeleton(
+      dart::config::dataPath("urdf/drchubo/drchubo.urdf"), options);
 
   for (std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i) {
     BodyNode* bn = hubo->getBodyNode(i);
