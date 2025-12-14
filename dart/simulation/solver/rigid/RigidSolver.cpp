@@ -35,25 +35,13 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/comps/SkeletonComponents.hpp"
 #include "dart/simulation/detail/LegacySkeletonSync.hpp"
+#include "dart/simulation/detail/WorldEcsAccess.hpp"
 
 #include <algorithm>
 
 namespace dart::simulation {
 
-RigidSolver::RigidSolver(entt::registry& entityManager)
-  : WorldSolver("rigid"), mEntityManager(&entityManager)
-{
-}
-
-entt::registry& RigidSolver::getEntityManager()
-{
-  return *mEntityManager;
-}
-
-const entt::registry& RigidSolver::getEntityManager() const
-{
-  return *mEntityManager;
-}
+RigidSolver::RigidSolver() : WorldSolver("rigid") {}
 
 std::optional<RigidSolverType> RigidSolver::getRigidSolverType() const
 {
@@ -65,13 +53,10 @@ void RigidSolver::setTimeStep(double timeStep)
   mTimeStep = timeStep;
 }
 
-void RigidSolver::syncSkeletonStates()
+void RigidSolver::syncSkeletonStates(World& world)
 {
-  if (!mEntityManager)
-    return;
-
-  auto view
-      = mEntityManager->view<comps::LegacySkeleton, comps::SkeletonState>();
+  auto& entityManager = detail::WorldEcsAccess::getEntityManager(world);
+  auto view = entityManager.view<comps::LegacySkeleton, comps::SkeletonState>();
   for (auto entity : view) {
     const auto& legacy = view.get<comps::LegacySkeleton>(entity);
     if (legacy.skeleton)
@@ -80,19 +65,19 @@ void RigidSolver::syncSkeletonStates()
   }
 }
 
-void RigidSolver::reset(World&)
+void RigidSolver::reset(World& world)
 {
-  syncSkeletonStates();
+  syncSkeletonStates(world);
 }
 
-void RigidSolver::step(World&, bool)
+void RigidSolver::step(World& world, bool)
 {
-  syncSkeletonStates();
+  syncSkeletonStates(world);
 }
 
-void RigidSolver::sync(World&)
+void RigidSolver::sync(World& world)
 {
-  syncSkeletonStates();
+  syncSkeletonStates(world);
 }
 
 } // namespace dart::simulation

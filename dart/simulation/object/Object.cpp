@@ -34,12 +34,11 @@
 
 namespace dart::simulation::object {
 
-Object::Object(entt::entity entity, World* world)
-  : mEntity(entity), mWorld(world)
+Object::Object(EcsEntity entity, World* world) : mEntity(entity), mWorld(world)
 {
 }
 
-entt::entity Object::getEntity() const
+EcsEntity Object::getEntity() const
 {
   return mEntity;
 }

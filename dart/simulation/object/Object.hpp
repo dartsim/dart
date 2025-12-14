@@ -33,9 +33,8 @@
 #ifndef DART_SIMULATION_OBJECT_OBJECT_HPP_
 #define DART_SIMULATION_OBJECT_OBJECT_HPP_
 
+#include <dart/simulation/EcsEntity.hpp>
 #include <dart/simulation/Fwd.hpp>
-
-#include <entt/entt.hpp>
 
 namespace dart::simulation {
 
@@ -49,7 +48,7 @@ public:
   ///
   /// @param entity Entity ID in the ECS registry
   /// @param world Pointer to the owning World instance
-  Object(entt::entity entity = entt::null, World* world = nullptr);
+  Object(EcsEntity entity = EcsEntity(), World* world = nullptr);
 
   /// Virtual destructor
   virtual ~Object() = default;
@@ -57,7 +56,7 @@ public:
   /// Get the underlying entity ID
   ///
   /// @return Entity ID in the ECS registry
-  [[nodiscard]] entt::entity getEntity() const;
+  [[nodiscard]] EcsEntity getEntity() const;
 
   /// Get the owning World instance
   ///
@@ -65,8 +64,8 @@ public:
   [[nodiscard]] World* getWorld() const;
 
 protected:
-  entt::entity mEntity; ///< Entity ID in ECS registry
-  World* mWorld;        ///< Owning World instance
+  EcsEntity mEntity; ///< Entity ID in ECS registry
+  World* mWorld;     ///< Owning World instance
 };
 
 } // namespace object

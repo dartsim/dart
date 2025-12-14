@@ -55,8 +55,10 @@
 
 #include <algorithm>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -199,7 +201,7 @@ World::World(const WorldConfig& config)
   mIndices.push_back(0);
 
   addSolver(std::make_unique<ClassicRigidSolver>());
-  addSolver(std::make_unique<RigidSolver>(mEcsData->entityManager));
+  addSolver(std::make_unique<RigidSolver>());
 
   if (auto* collisionSolver = getCollisionCapableSolver()) {
     if (auto detector = resolveCollisionDetector(config))
@@ -876,24 +878,51 @@ const entt::registry& detail::WorldEcsAccess::getEntityManager(
 }
 
 //==============================================================================
-entt::entity detail::WorldEcsAccess::getSkeletonEntity(
+EcsEntity detail::WorldEcsAccess::getSkeletonEntity(
     const World& world, const dynamics::Skeleton* skeleton)
 {
   if (!skeleton || !world.mEcsData)
-    return entt::null;
+    return EcsEntity();
 
   const auto it = world.mEcsData->skeletonEntities.find(skeleton);
   if (it == world.mEcsData->skeletonEntities.end())
-    return entt::null;
+    return EcsEntity();
 
-  return it->second;
+  return toEcsEntity(it->second);
 }
 
 //==============================================================================
-entt::entity detail::WorldEcsAccess::getSkeletonEntity(
+EcsEntity detail::WorldEcsAccess::getSkeletonEntity(
     const World& world, const dynamics::SkeletonPtr& skeleton)
 {
   return getSkeletonEntity(world, skeleton.get());
+}
+
+//==============================================================================
+entt::entity detail::WorldEcsAccess::toEntt(EcsEntity entity)
+{
+  if (entity.isNull())
+    return entt::null;
+
+  using underlying = std::underlying_type_t<entt::entity>;
+  const auto maxValue = static_cast<EcsEntity::ValueType>(
+      std::numeric_limits<underlying>::max());
+
+  if (entity.value() > maxValue) {
+    DART_ASSERT(
+        false && "EcsEntity value does not fit in entt::entity storage.");
+    return entt::null;
+  }
+
+  return static_cast<entt::entity>(static_cast<underlying>(entity.value()));
+}
+
+//==============================================================================
+EcsEntity detail::WorldEcsAccess::toEcsEntity(entt::entity entity)
+{
+  using underlying = std::underlying_type_t<entt::entity>;
+  return EcsEntity{
+      static_cast<EcsEntity::ValueType>(static_cast<underlying>(entity))};
 }
 
 //==============================================================================

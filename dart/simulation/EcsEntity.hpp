@@ -30,35 +30,58 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_DETAIL_WORLDECSACCESS_HPP_
-#define DART_SIMULATION_DETAIL_WORLDECSACCESS_HPP_
+#ifndef DART_SIMULATION_ECSENTITY_HPP_
+#define DART_SIMULATION_ECSENTITY_HPP_
 
-#include <dart/simulation/EcsEntity.hpp>
-#include <dart/simulation/Fwd.hpp>
+#include <functional>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <cstdint>
 
-#include <dart/Export.hpp>
+namespace dart::simulation {
 
-#include <entt/entt.hpp>
-
-namespace dart::simulation::detail {
-
-/// Internal bridge for ECS access without exposing entt types in World.hpp.
-struct DART_API WorldEcsAccess final
+/// Opaque handle that identifies an entity in the internal ECS registry.
+///
+/// This is intentionally decoupled from the underlying ECS library so DART can
+/// change internal implementations without affecting the public API.
+class EcsEntity final
 {
-  static entt::registry& getEntityManager(World& world);
-  static const entt::registry& getEntityManager(const World& world);
+public:
+  using ValueType = std::uint64_t;
 
-  static EcsEntity getSkeletonEntity(
-      const World& world, const dynamics::Skeleton* skeleton);
-  static EcsEntity getSkeletonEntity(
-      const World& world, const dynamics::SkeletonPtr& skeleton);
+  constexpr EcsEntity() = default;
+  explicit constexpr EcsEntity(ValueType value) : mValue(value) {}
 
-  static entt::entity toEntt(EcsEntity entity);
-  static EcsEntity toEcsEntity(entt::entity entity);
+  [[nodiscard]] constexpr ValueType value() const
+  {
+    return mValue;
+  }
+
+  [[nodiscard]] constexpr bool isNull() const
+  {
+    return mValue == 0u;
+  }
+
+  friend constexpr bool operator==(EcsEntity, EcsEntity) = default;
+  friend constexpr bool operator!=(EcsEntity, EcsEntity) = default;
+
+private:
+  ValueType mValue{0u};
 };
 
-} // namespace dart::simulation::detail
+} // namespace dart::simulation
 
-#endif // DART_SIMULATION_DETAIL_WORLDECSACCESS_HPP_
+namespace std {
+
+template <>
+struct hash<dart::simulation::EcsEntity>
+{
+  std::size_t operator()(
+      const dart::simulation::EcsEntity& entity) const noexcept
+  {
+    return std::hash<dart::simulation::EcsEntity::ValueType>{}(entity.value());
+  }
+};
+
+} // namespace std
+
+#endif // DART_SIMULATION_ECSENTITY_HPP_

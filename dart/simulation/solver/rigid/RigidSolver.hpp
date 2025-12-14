@@ -35,19 +35,14 @@
 
 #include "dart/simulation/solver/WorldSolver.hpp"
 
-#include <entt/entt.hpp>
-
 namespace dart::simulation {
 
-/// Rigid solver backed by an entt::registry for ECS-based workflows.
+/// Rigid solver backed by an ECS registry for cache-friendly workflows.
 class DART_API RigidSolver final : public WorldSolver
 {
 public:
-  explicit RigidSolver(entt::registry& entityManager);
+  RigidSolver();
   ~RigidSolver() override = default;
-
-  entt::registry& getEntityManager();
-  const entt::registry& getEntityManager() const;
 
   std::optional<RigidSolverType> getRigidSolverType() const override;
 
@@ -57,9 +52,7 @@ public:
   void sync(World& world) override;
 
 private:
-  void syncSkeletonStates();
-
-  entt::registry* mEntityManager;
+  void syncSkeletonStates(World& world);
 };
 
 } // namespace dart::simulation
