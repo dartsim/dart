@@ -49,6 +49,8 @@ public:
   entt::registry& getEntityManager();
   const entt::registry& getEntityManager() const;
 
+  bool isRigidSolver() const override;
+
   void setTimeStep(double timeStep) override;
   void reset(World& world) override;
   void step(World& world, bool resetCommand) override;

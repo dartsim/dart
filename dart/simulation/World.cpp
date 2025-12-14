@@ -265,7 +265,7 @@ void World::setTimeStep(double _timeStep)
   }
 
   mTimeStep = _timeStep;
-  for (auto& entry : mRigidSolvers)
+  for (auto& entry : mSolvers)
     entry.solver->setTimeStep(_timeStep);
   for (auto& skel : mSkeletons)
     skel->setTimeStep(_timeStep);
@@ -283,7 +283,7 @@ void World::reset()
   mTime = 0.0;
   mFrame = 0;
   mRecording->clear();
-  for (auto& entry : mRigidSolvers)
+  for (auto& entry : mSolvers)
     entry.solver->reset(*this);
 }
 
@@ -296,17 +296,36 @@ void World::step(bool _resetCommand)
 
   if (mSolverSteppingMode == SolverSteppingMode::ActiveRigidSolverOnly) {
     auto* activeSolver = getActiveRigidSolver();
-    if (activeSolver && isSolverEnabled(activeSolver)) {
-      activeSolver->step(*this, _resetCommand);
-      ++steppedSolvers;
+    if (
+        activeSolver && isSolverEnabled(activeSolver)
+        && activeSolver->isRigidSolver()) {
+      std::vector<WorldSolver*> solversToSync;
 
-      for (auto& entry : mRigidSolvers) {
+      for (auto& entry : mSolvers) {
         if (!entry.enabled)
           continue;
-        if (entry.solver.get() == activeSolver)
+
+        auto* solver = entry.solver.get();
+        if (!solver)
           continue;
-        entry.solver->sync(*this);
+
+        if (solver == activeSolver) {
+          solver->step(*this, _resetCommand);
+          ++steppedSolvers;
+          continue;
+        }
+
+        if (solver->isRigidSolver()) {
+          solversToSync.push_back(solver);
+          continue;
+        }
+
+        solver->step(*this, _resetCommand);
+        ++steppedSolvers;
       }
+
+      for (auto* solver : solversToSync)
+        solver->sync(*this);
     } else {
       DART_WARN(
           "World '{}' is configured for ActiveRigidSolverOnly stepping, but "
@@ -317,7 +336,7 @@ void World::step(bool _resetCommand)
   }
 
   if (steppedSolvers == 0) {
-    for (auto& entry : mRigidSolvers) {
+    for (auto& entry : mSolvers) {
       if (!entry.enabled)
         continue;
       entry.solver->step(*this, _resetCommand);
@@ -471,7 +490,7 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
     }
   }
 
-  for (auto& entry : mRigidSolvers)
+  for (auto& entry : mSolvers)
     entry.solver->handleSkeletonAdded(*this, _skeleton);
 
   // Update recording
@@ -512,7 +531,7 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   mIndices.pop_back();
 
   // Notify solvers.
-  for (auto& entry : mRigidSolvers)
+  for (auto& entry : mSolvers)
     entry.solver->handleSkeletonRemoved(*this, _skeleton);
 
   {
@@ -871,8 +890,8 @@ WorldSolver* World::addSolver(std::unique_ptr<WorldSolver> solver, bool enabled)
   }
 
   solver->setTimeStep(mTimeStep);
-  mRigidSolvers.emplace_back(SolverEntry{std::move(solver), enabled});
-  auto* solverPtr = mRigidSolvers.back().solver.get();
+  mSolvers.emplace_back(SolverEntry{std::move(solver), enabled});
+  auto* solverPtr = mSolvers.back().solver.get();
 
   // Ensure the solver is aware of any skeletons that were already present.
   for (auto& skeleton : mSkeletons)
@@ -887,29 +906,29 @@ WorldSolver* World::addSolver(std::unique_ptr<WorldSolver> solver, bool enabled)
 //==============================================================================
 std::size_t World::getNumSolvers() const
 {
-  return mRigidSolvers.size();
+  return mSolvers.size();
 }
 
 //==============================================================================
 WorldSolver* World::getSolver(std::size_t index)
 {
-  if (index >= mRigidSolvers.size())
+  if (index >= mSolvers.size())
     return nullptr;
-  return mRigidSolvers[index].solver.get();
+  return mSolvers[index].solver.get();
 }
 
 //==============================================================================
 const WorldSolver* World::getSolver(std::size_t index) const
 {
-  if (index >= mRigidSolvers.size())
+  if (index >= mSolvers.size())
     return nullptr;
-  return mRigidSolvers[index].solver.get();
+  return mSolvers[index].solver.get();
 }
 
 //==============================================================================
 WorldSolver* World::getSolver(RigidSolverType type)
 {
-  for (auto& entry : mRigidSolvers) {
+  for (auto& entry : mSolvers) {
     if (entry.solver->getType() == type)
       return entry.solver.get();
   }
@@ -919,7 +938,7 @@ WorldSolver* World::getSolver(RigidSolverType type)
 //==============================================================================
 const WorldSolver* World::getSolver(RigidSolverType type) const
 {
-  for (const auto& entry : mRigidSolvers) {
+  for (const auto& entry : mSolvers) {
     if (entry.solver->getType() == type)
       return entry.solver.get();
   }
@@ -975,10 +994,10 @@ SolverSteppingMode World::getSolverSteppingMode() const
 //==============================================================================
 bool World::setSolverEnabled(std::size_t index, bool enabled)
 {
-  if (index >= mRigidSolvers.size())
+  if (index >= mSolvers.size())
     return false;
 
-  auto& entry = mRigidSolvers[index];
+  auto& entry = mSolvers[index];
   if (entry.enabled == enabled)
     return true;
 
@@ -992,10 +1011,10 @@ bool World::setSolverEnabled(std::size_t index, bool enabled)
 //==============================================================================
 bool World::isSolverEnabled(std::size_t index) const
 {
-  if (index >= mRigidSolvers.size())
+  if (index >= mSolvers.size())
     return false;
 
-  return mRigidSolvers[index].enabled;
+  return mSolvers[index].enabled;
 }
 
 //==============================================================================
@@ -1004,8 +1023,8 @@ bool World::setSolverEnabled(WorldSolver* solver, bool enabled)
   if (!solver)
     return false;
 
-  for (std::size_t i = 0; i < mRigidSolvers.size(); ++i) {
-    if (mRigidSolvers[i].solver.get() == solver)
+  for (std::size_t i = 0; i < mSolvers.size(); ++i) {
+    if (mSolvers[i].solver.get() == solver)
       return setSolverEnabled(i, enabled);
   }
 
@@ -1018,7 +1037,7 @@ bool World::isSolverEnabled(const WorldSolver* solver) const
   if (!solver)
     return false;
 
-  for (const auto& entry : mRigidSolvers) {
+  for (const auto& entry : mSolvers) {
     if (entry.solver.get() == solver)
       return entry.enabled;
   }
@@ -1029,13 +1048,13 @@ bool World::isSolverEnabled(const WorldSolver* solver) const
 //==============================================================================
 bool World::moveSolver(std::size_t fromIndex, std::size_t toIndex)
 {
-  if (fromIndex >= mRigidSolvers.size() || toIndex >= mRigidSolvers.size())
+  if (fromIndex >= mSolvers.size() || toIndex >= mSolvers.size())
     return false;
 
   if (fromIndex == toIndex)
     return true;
 
-  auto begin = mRigidSolvers.begin();
+  auto begin = mSolvers.begin();
   if (fromIndex < toIndex) {
     std::rotate(begin + fromIndex, begin + fromIndex + 1, begin + toIndex + 1);
   } else {
@@ -1053,7 +1072,7 @@ WorldSolver* World::getConstraintCapableSolver()
       return activeSolver;
   }
 
-  for (auto& entry : mRigidSolvers) {
+  for (auto& entry : mSolvers) {
     if (!entry.enabled)
       continue;
     if (entry.solver->supportsConstraints())
@@ -1070,7 +1089,7 @@ const WorldSolver* World::getConstraintCapableSolver() const
       return activeSolver;
   }
 
-  for (const auto& entry : mRigidSolvers) {
+  for (const auto& entry : mSolvers) {
     if (!entry.enabled)
       continue;
     if (entry.solver->supportsConstraints())
@@ -1087,7 +1106,7 @@ WorldSolver* World::getCollisionCapableSolver()
       return activeSolver;
   }
 
-  for (auto& entry : mRigidSolvers) {
+  for (auto& entry : mSolvers) {
     if (!entry.enabled)
       continue;
     if (entry.solver->supportsCollision())
@@ -1104,7 +1123,7 @@ const WorldSolver* World::getCollisionCapableSolver() const
       return activeSolver;
   }
 
-  for (const auto& entry : mRigidSolvers) {
+  for (const auto& entry : mSolvers) {
     if (!entry.enabled)
       continue;
     if (entry.solver->supportsCollision())

@@ -73,6 +73,9 @@ public:
   /// Returns which backend this solver represents.
   RigidSolverType getType() const;
 
+  /// Returns true if this solver advances rigid body state.
+  virtual bool isRigidSolver() const;
+
   /// Returns true if this solver owns a constraint solver backend.
   virtual bool supportsConstraints() const;
 

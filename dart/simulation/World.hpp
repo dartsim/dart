@@ -511,8 +511,8 @@ protected:
     bool enabled{true};
   };
 
-  /// Collection of rigid solvers registered with the world.
-  std::vector<SolverEntry> mRigidSolvers;
+  /// Collection of solvers registered with the world.
+  std::vector<SolverEntry> mSolvers;
 
   /// Solver stepping policy used by World::step().
   SolverSteppingMode mSolverSteppingMode{SolverSteppingMode::AllEnabledSolvers};

@@ -67,6 +67,11 @@ RigidSolverType WorldSolver::getType() const
   return mType;
 }
 
+bool WorldSolver::isRigidSolver() const
+{
+  return false;
+}
+
 bool WorldSolver::supportsConstraints() const
 {
   return false;

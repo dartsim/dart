@@ -49,6 +49,7 @@ public:
   ClassicRigidSolver();
   ~ClassicRigidSolver() override;
 
+  bool isRigidSolver() const override;
   bool supportsConstraints() const override;
   bool supportsCollision() const override;
 

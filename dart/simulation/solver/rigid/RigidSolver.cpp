@@ -56,6 +56,11 @@ const entt::registry& RigidSolver::getEntityManager() const
   return *mEntityManager;
 }
 
+bool RigidSolver::isRigidSolver() const
+{
+  return true;
+}
+
 void RigidSolver::setTimeStep(double timeStep)
 {
   mTimeStep = timeStep;

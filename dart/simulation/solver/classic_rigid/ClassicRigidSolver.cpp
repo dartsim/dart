@@ -50,6 +50,11 @@ ClassicRigidSolver::ClassicRigidSolver()
 
 ClassicRigidSolver::~ClassicRigidSolver() = default;
 
+bool ClassicRigidSolver::isRigidSolver() const
+{
+  return true;
+}
+
 bool ClassicRigidSolver::supportsConstraints() const
 {
   return true;
