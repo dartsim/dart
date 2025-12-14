@@ -82,7 +82,7 @@ dart::math::DantzigSolver solver;
 solver.solve(problem, x, solver.getDefaultOptions());
 
 // Lemke for standard LCP (lo=0, hi=inf, findex=-1)
-dart::math::LcpProblem standard(M, q, Eigen::VectorXd::Zero(q.size()),
+dart::math::LcpProblem standard(M, -q, Eigen::VectorXd::Zero(q.size()),
                                 Eigen::VectorXd::Constant(q.size(),
                                                           std::numeric_limits<double>::infinity()),
                                 Eigen::VectorXi::Constant(q.size(), -1));
