@@ -55,7 +55,10 @@ foreach(child ${children})
       if(DART_VERBOSE)
         message(STATUS "Adding Python example: " py_${child})
       endif()
+      dartpy_add_example(
+        py_example_${child}
+        "${CMAKE_CURRENT_LIST_DIR}/${child}/main.py"
+      )
     endif()
-    dartpy_add_example(py_example_${child} "${CMAKE_CURRENT_LIST_DIR}/${child}/main.py")
   endif()
 endforeach()
