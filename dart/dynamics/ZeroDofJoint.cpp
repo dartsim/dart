@@ -604,6 +604,27 @@ void ZeroDofJoint::integratePositions(double /*_dt*/)
 }
 
 //==============================================================================
+void ZeroDofJoint::integratePositions(
+    const Eigen::VectorXd& q0,
+    const Eigen::VectorXd& v,
+    double /*dt*/,
+    Eigen::VectorXd& result) const
+{
+  if (q0.size() != 0 || v.size() != 0) {
+    DART_ERROR(
+        "q0's size [{}] and v's size [{}] must both equal the dof [{}] for "
+        "Joint [{}].",
+        q0.size(),
+        v.size(),
+        this->getNumDofs(),
+        this->getName());
+    DART_ASSERT(false);
+  }
+
+  result.resize(0);
+}
+
+//==============================================================================
 void ZeroDofJoint::integrateVelocities(double /*_dt*/)
 {
   // Do nothing

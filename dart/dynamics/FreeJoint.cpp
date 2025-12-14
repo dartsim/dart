@@ -552,6 +552,37 @@ void FreeJoint::integratePositions(double _dt)
 }
 
 //==============================================================================
+void FreeJoint::integratePositions(
+    const Eigen::VectorXd& q0,
+    const Eigen::VectorXd& v,
+    double dt,
+    Eigen::VectorXd& result) const
+{
+  if (static_cast<std::size_t>(q0.size()) != getNumDofs()
+      || static_cast<std::size_t>(v.size()) != getNumDofs()) {
+    DART_ERROR(
+        "q0's size [{}] and v's size [{}] must both equal the dof [{}] for "
+        "Joint [{}].",
+        q0.size(),
+        v.size(),
+        this->getNumDofs(),
+        this->getName());
+    DART_ASSERT(false);
+    result = Eigen::VectorXd::Zero(getNumDofs());
+    return;
+  }
+
+  const Eigen::Vector6d q0Static = q0;
+  const Eigen::Vector6d vStatic = v;
+
+  const Eigen::Isometry3d Q0 = convertToTransform(q0Static);
+  const Eigen::Isometry3d Qdiff = convertToTransform(vStatic * dt);
+  const Eigen::Isometry3d Qnext = Q0 * Qdiff;
+
+  result = convertToPositions(Qnext);
+}
+
+//==============================================================================
 void FreeJoint::integrateVelocities(double _dt)
 {
   // Integrating the acceleration gives us the new velocity of child body frame.

@@ -138,6 +138,13 @@ controller, and k<sub>p</sub> and k<sub>d</sub> are the stiffness and
 damping coefficients. The detailed description of a PD controller can
 be found [here](https://en.wikipedia.org/wiki/PID_controller).
 
+```{eval-rst}
+See also:
+
+- :doc:`../topics/control-theory` (notation mapping, actuator notes, inverse dynamics)
+- :doc:`../topics/control-gain-tuning` (discrete-time gain tuning guidance)
+```
+
 The first task is to set the biped to a particular configuration. You
 can use `setPosition` to set each degree of freedom individually:
 
