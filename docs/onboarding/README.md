@@ -598,7 +598,7 @@ graph TB
 
 **Sequence Diagram**:
 
-````mermaid
+```mermaid
 sequenceDiagram
     participant User as User Code
     participant Skeleton as Skeleton
@@ -627,9 +627,10 @@ sequenceDiagram
         WorldNode->>OSG: update scene graph
         OSG->>Viewer: render frame
     end
-</mermaid>
+```
 
 **Key Files**:
+
 - Example: [`examples/hello_world/main.cpp`](examples/hello_world/main.cpp)
 - [`World::step()`](dart/simulation/World.cpp#L356)
 - [`RealTimeWorldNode::refresh()`](dart/gui/RealTimeWorldNode.cpp#L103)
@@ -674,9 +675,10 @@ sequenceDiagram
     User->>Viewer: Mouse Release
     Viewer->>DnD: handleRelease()
     DnD->>DnD: cleanup drag state
-</mermaid>
+```
 
 **Key Files**:
+
 - Example: [`examples/atlas_puppet/main.cpp`](examples/atlas_puppet/main.cpp)
 - [`BodyNodeDnD`](dart/gui/DragAndDrop.hpp#L266)
 - [`IK::solve()`](dart/dynamics/IK.cpp#L142)
@@ -720,9 +722,10 @@ sequenceDiagram
     Note over World: Built-in semi-implicit Euler:<br/>q̇ₙ₊₁ = q̇ₙ + q̈ₙ·dt<br/>qₙ₊₁ = qₙ + q̇ₙ₊₁·dt
 
     World->>World: time += dt
-</mermaid>
+```
 
 **Key Files**:
+
 - [`World::step()`](dart/simulation/World.cpp#L356)
 - [`Skeleton::computeForwardDynamics()`](dart/dynamics/Skeleton.cpp#L2154)
 - [`ConstraintSolver::solve()`](dart/constraint/ConstraintSolver.cpp#L159)
@@ -766,9 +769,10 @@ sequenceDiagram
     Note over ImGui: Draw UI on top of 3D scene
 
     OSG->>OSG: swap buffers
-</mermaid>
+```
 
 **Key Files**:
+
 - [`ImGuiHandler::newFrame()`](dart/gui/ImGuiHandler.cpp#L135)
 - [`ImGuiHandler::render()`](dart/gui/ImGuiHandler.cpp#L207)
 - [`ImGuiWidget::render()`](dart/gui/ImGuiWidget.hpp#L49)
@@ -804,9 +808,10 @@ sequenceDiagram
     UrdfParser-->>User: skeleton
     User->>World: addSkeleton(skeleton)
     User->>World: step()
-</mermaid>
+```
 
 **Key Files**:
+
 - [`UrdfParser`](dart/utils/urdf/UrdfParser.hpp)
 - [`UrdfParser::parseSkeleton()`](dart/utils/urdf/UrdfParser.cpp)
 - Example: [`examples/atlas_puppet/main.cpp`](examples/atlas_puppet/main.cpp)
@@ -845,9 +850,10 @@ sequenceDiagram
         DART->>NumPy: convert Eigen to ndarray
         NumPy-->>Python: positions array
     end
-</mermaid>
+```
 
 **Key Files**:
+
 - Example: [`examples/hello_world/main.py`](examples/hello_world/main.py)
 - [`python/dartpy/`](python/dartpy/) - Bindings implementation
 - [`setup.py`](setup.py) - Build configuration
@@ -863,6 +869,7 @@ sequenceDiagram
 **Purpose**: Articulated body system representing a robot or character
 
 **Key Fields**:
+
 - `mBodyNodes: std::vector<BodyNode*>` - Tree of rigid bodies
 - `mJoints: std::vector<Joint*>` - Joint connections
 - `mDofs: std::vector<DegreeOfFreedom*>` - Generalized coordinates
@@ -871,10 +878,12 @@ sequenceDiagram
 - `ddq: Eigen::VectorXd` - Generalized accelerations
 
 **Relations**:
+
 - Contains: BodyNode tree, Joints, DOFs
 - Used by: World, IK module, ConstraintSolver
 
 **Notes**:
+
 - Tree structure with efficient O(n) algorithms (ABA, RNEA)
 - Supports closed-loop structures via constraints
 - Configuration space uses Lie group representations for joints
@@ -888,6 +897,7 @@ sequenceDiagram
 **Purpose**: Individual rigid body in an articulated system
 
 **Key Fields**:
+
 - `mMass: double` - Body mass
 - `mInertia: Inertia` - Inertia tensor and COM offset
 - `mParentJoint: Joint*` - Incoming joint from parent
@@ -896,12 +906,14 @@ sequenceDiagram
 - `mT: Eigen::Isometry3d` - World transformation
 
 **Relations**:
+
 - Parent: Joint (incoming)
 - Children: BodyNode (outgoing)
 - Contains: ShapeNode collection
 - Part of: Skeleton
 
 **Notes**:
+
 - Mass properties required for dynamics
 - Multiple shapes per body supported
 - Transformations updated via forward kinematics
@@ -915,6 +927,7 @@ sequenceDiagram
 **Purpose**: Kinematic constraint connecting two BodyNodes
 
 **Key Fields**:
+
 - `mNumDofs: size_t` - Degrees of freedom (0-6)
 - `mPositions: Eigen::VectorXd` - Joint positions (q)
 - `mVelocities: Eigen::VectorXd` - Joint velocities (q̇)
@@ -925,10 +938,12 @@ sequenceDiagram
 - `mSpringStiffnesses: Eigen::VectorXd` - Spring forces
 
 **Relations**:
+
 - Connects: Parent BodyNode → Child BodyNode
 - Owned by: Skeleton
 
 **Notes**:
+
 - 10+ specialized joint types (Revolute, Prismatic, Free, etc.)
 - Supports position/velocity limits, damping, springs
 - Provides relative transformation between bodies
@@ -942,6 +957,7 @@ sequenceDiagram
 **Purpose**: Geometric representation for collision detection and visualization
 
 **Key Shape Types**:
+
 - `BoxShape` - Rectangular box
 - `SphereShape` - Sphere
 - `CylinderShape` - Cylinder
@@ -952,14 +968,17 @@ sequenceDiagram
 - `VoxelGridShape` - Voxel grid
 
 **Key Fields**:
+
 - `mVolume: double` - Shape volume
 - `mBoundingBox: BoundingBox` - Axis-aligned bounding box
 
 **Relations**:
+
 - Owned by: ShapeNode
 - Used by: CollisionDetector, Renderer
 
 **Notes**:
+
 - Shapes can have multiple aspects (Visual, Collision, Dynamics)
 - Inertia computed from shape geometry
 - Material properties for rendering
@@ -973,6 +992,7 @@ sequenceDiagram
 **Purpose**: Top-level simulation container
 
 **Key Fields**:
+
 - `mSkeletons: std::vector<Skeleton*>` - Articulated bodies
 - `mSimpleFrames: std::vector<SimpleFrame*>` - Non-simulated frames
 - `mTime: double` - Current simulation time
@@ -982,11 +1002,13 @@ sequenceDiagram
 - `mConstraintSolver: ConstraintSolver*` - Constraint system
 
 **Relations**:
+
 - Contains: Skeletons, SimpleFrames
 - Uses: CollisionDetector, ConstraintSolver
 - Rendered by: WorldNode
 
 **Notes**:
+
 - Manages simulation time and stepping
 - Coordinates collision detection and constraint solving
 - Supports recording for playback
@@ -1000,6 +1022,7 @@ sequenceDiagram
 **Purpose**: Contact point data from collision detection
 
 **Key Fields**:
+
 - `point: Eigen::Vector3d` - Contact point in world coordinates
 - `normal: Eigen::Vector3d` - Contact normal (from object A to B)
 - `penetrationDepth: double` - Overlap distance
@@ -1007,10 +1030,12 @@ sequenceDiagram
 - `collisionObject2: CollisionObject*` - Second colliding object
 
 **Relations**:
+
 - Generated by: CollisionDetector
 - Used by: ConstraintSolver (creates contact constraints)
 
 **Notes**:
+
 - Multiple contacts per collision pair
 - Normal points from object A to object B
 - Penetration depth used for impulse calculation
@@ -1024,6 +1049,7 @@ sequenceDiagram
 **Purpose**: Abstract base for constraint types
 
 **Constraint Types**:
+
 - `ContactConstraint` - Contact between bodies
 - `JointLimitConstraint` - Joint position/velocity limits
 - `ServoMotorConstraint` - Joint servo control
@@ -1032,14 +1058,17 @@ sequenceDiagram
 - Custom constraints
 
 **Key Fields**:
+
 - `mDim: size_t` - Constraint dimensionality
 - `mActive: bool` - Whether constraint is active
 
 **Relations**:
+
 - Managed by: ConstraintSolver
 - Acts on: Skeleton DOFs
 
 **Notes**:
+
 - Formulated as LCP (Linear Complementarity Problem)
 - Computes impulses to satisfy constraint equations
 
@@ -1052,20 +1081,24 @@ sequenceDiagram
 **Purpose**: Coordinate frame in the simulation world
 
 **Types**:
+
 - `BodyNode` - Frame attached to rigid body
 - `SimpleFrame` - User-defined static or movable frame
 - `InteractiveFrame` - Frame with 3D manipulation handles
 
 **Key Fields**:
+
 - `mParentFrame: Frame*` - Parent in frame hierarchy
 - `mRelativeTransform: Eigen::Isometry3d` - Transform relative to parent
 - `mWorldTransform: Eigen::Isometry3d` - Cached world transform
 
 **Relations**:
+
 - Hierarchy: Parent-child frame tree
 - Can contain: ShapeNodes for visualization
 
 **Notes**:
+
 - All entities inherit from Frame
 - World coordinate frame is root of hierarchy
 - Transformations propagate down the tree
@@ -1278,4 +1311,5 @@ The codebase demonstrates excellent software engineering practices with clear la
 **Generated**: 2025-10-19
 **Project Version**: 7.0.0
 **Maintainer**: Jeongseok Lee (Meta)
+
 </details>
