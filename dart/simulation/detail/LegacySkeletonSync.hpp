@@ -38,6 +38,7 @@
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <algorithm>
+
 #include <cstddef>
 
 namespace dart::simulation::detail {
