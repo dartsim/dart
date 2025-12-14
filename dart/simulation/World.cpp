@@ -491,7 +491,8 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
           == mEcsData->skeletonEntities.end()) {
         const auto entity = mEcsData->entityManager.create();
         mEcsData->skeletonEntities.emplace(key, entity);
-        mEcsData->entityManager.emplace<comps::LegacySkeleton>(entity, _skeleton);
+        mEcsData->entityManager.emplace<comps::LegacySkeleton>(
+            entity, _skeleton);
         auto& state
             = mEcsData->entityManager.emplace<comps::SkeletonState>(entity);
         detail::syncLegacySkeletonState(state, *_skeleton);
@@ -867,7 +868,8 @@ entt::registry& detail::WorldEcsAccess::getEntityManager(World& world)
 }
 
 //==============================================================================
-const entt::registry& detail::WorldEcsAccess::getEntityManager(const World& world)
+const entt::registry& detail::WorldEcsAccess::getEntityManager(
+    const World& world)
 {
   DART_ASSERT(world.mEcsData);
   return world.mEcsData->entityManager;

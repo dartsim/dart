@@ -33,8 +33,9 @@
 #ifndef DART_SIMULATION_DETAIL_WORLDECSACCESS_HPP_
 #define DART_SIMULATION_DETAIL_WORLDECSACCESS_HPP_
 
-#include <dart/dynamics/Fwd.hpp>
 #include <dart/simulation/Fwd.hpp>
+
+#include <dart/dynamics/Fwd.hpp>
 
 #include <dart/Export.hpp>
 
@@ -57,4 +58,3 @@ struct DART_API WorldEcsAccess final
 } // namespace dart::simulation::detail
 
 #endif // DART_SIMULATION_DETAIL_WORLDECSACCESS_HPP_
-
