@@ -41,8 +41,7 @@
 namespace dart::simulation {
 
 RigidSolver::RigidSolver(entt::registry& entityManager)
-  : WorldSolver("rigid", RigidSolverType::EntityComponent),
-    mEntityManager(&entityManager)
+  : WorldSolver("rigid"), mEntityManager(&entityManager)
 {
 }
 
@@ -56,9 +55,9 @@ const entt::registry& RigidSolver::getEntityManager() const
   return *mEntityManager;
 }
 
-bool RigidSolver::isRigidSolver() const
+std::optional<RigidSolverType> RigidSolver::getRigidSolverType() const
 {
-  return true;
+  return RigidSolverType::EntityComponent;
 }
 
 void RigidSolver::setTimeStep(double timeStep)

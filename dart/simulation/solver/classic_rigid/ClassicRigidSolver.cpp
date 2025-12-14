@@ -43,16 +43,16 @@
 namespace dart::simulation {
 
 ClassicRigidSolver::ClassicRigidSolver()
-  : WorldSolver("classic_rigid", RigidSolverType::ClassicSkeleton),
+  : WorldSolver("classic_rigid"),
     mConstraintSolver(std::make_unique<constraint::BoxedLcpConstraintSolver>())
 {
 }
 
 ClassicRigidSolver::~ClassicRigidSolver() = default;
 
-bool ClassicRigidSolver::isRigidSolver() const
+std::optional<RigidSolverType> ClassicRigidSolver::getRigidSolverType() const
 {
-  return true;
+  return RigidSolverType::ClassicSkeleton;
 }
 
 bool ClassicRigidSolver::supportsConstraints() const

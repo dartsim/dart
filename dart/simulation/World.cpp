@@ -925,7 +925,8 @@ const WorldSolver* World::getSolver(std::size_t index) const
 WorldSolver* World::getSolver(RigidSolverType type)
 {
   for (auto& entry : mSolvers) {
-    if (entry.solver->isRigidSolver() && entry.solver->getType() == type)
+    const auto rigidType = entry.solver->getRigidSolverType();
+    if (rigidType && *rigidType == type)
       return entry.solver.get();
   }
   return nullptr;
@@ -935,7 +936,8 @@ WorldSolver* World::getSolver(RigidSolverType type)
 const WorldSolver* World::getSolver(RigidSolverType type) const
 {
   for (const auto& entry : mSolvers) {
-    if (entry.solver->isRigidSolver() && entry.solver->getType() == type)
+    const auto rigidType = entry.solver->getRigidSolverType();
+    if (rigidType && *rigidType == type)
       return entry.solver.get();
   }
   return nullptr;

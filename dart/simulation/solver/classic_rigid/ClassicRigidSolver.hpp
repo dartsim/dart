@@ -49,7 +49,7 @@ public:
   ClassicRigidSolver();
   ~ClassicRigidSolver() override;
 
-  bool isRigidSolver() const override;
+  std::optional<RigidSolverType> getRigidSolverType() const override;
   bool supportsConstraints() const override;
   bool supportsCollision() const override;
 

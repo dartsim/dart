@@ -49,7 +49,7 @@ public:
   entt::registry& getEntityManager();
   const entt::registry& getEntityManager() const;
 
-  bool isRigidSolver() const override;
+  std::optional<RigidSolverType> getRigidSolverType() const override;
 
   void setTimeStep(double timeStep) override;
   void reset(World& world) override;

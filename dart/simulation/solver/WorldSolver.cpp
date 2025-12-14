@@ -50,8 +50,7 @@ const collision::CollisionResult& emptyCollisionResult()
 
 } // namespace
 
-WorldSolver::WorldSolver(std::string name, RigidSolverType type)
-  : mName(std::move(name)), mType(type)
+WorldSolver::WorldSolver(std::string name) : mName(std::move(name))
 {
 }
 
@@ -62,14 +61,14 @@ const std::string& WorldSolver::getName() const
   return mName;
 }
 
-RigidSolverType WorldSolver::getType() const
+std::optional<RigidSolverType> WorldSolver::getRigidSolverType() const
 {
-  return mType;
+  return std::nullopt;
 }
 
 bool WorldSolver::isRigidSolver() const
 {
-  return false;
+  return getRigidSolverType().has_value();
 }
 
 bool WorldSolver::supportsConstraints() const

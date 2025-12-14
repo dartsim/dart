@@ -114,16 +114,17 @@ class TrackingSolver final : public WorldSolver
 public:
   TrackingSolver(
       std::string name,
-      RigidSolverType type,
       std::vector<std::string>& callLog,
-      bool isRigid)
-    : WorldSolver(std::move(name), type), mCallLog(callLog), mIsRigid(isRigid)
+      std::optional<RigidSolverType> rigidSolverType = std::nullopt)
+    : WorldSolver(std::move(name)),
+      mCallLog(callLog),
+      mRigidSolverType(std::move(rigidSolverType))
   {
   }
 
-  bool isRigidSolver() const override
+  std::optional<RigidSolverType> getRigidSolverType() const override
   {
-    return mIsRigid;
+    return mRigidSolverType;
   }
 
   void setTimeStep(double) override {}
@@ -140,7 +141,7 @@ public:
 
 private:
   std::vector<std::string>& mCallLog;
-  bool mIsRigid{false};
+  std::optional<RigidSolverType> mRigidSolverType;
 };
 
 std::size_t findSolverIndex(const World& world, const WorldSolver* solver)
@@ -704,20 +705,15 @@ TEST(World, SolverSteppingActiveRigidSolverOnlyOrdersNonRigidAndSync)
 
   std::vector<std::string> callLog;
   auto* nonRigid = world->addSolver(std::make_unique<TrackingSolver>(
-      "nonrigid",
-      RigidSolverType::ClassicSkeleton,
-      callLog,
-      /*isRigid=*/false));
+      "nonrigid", callLog));
   auto* mirrorRigid = world->addSolver(std::make_unique<TrackingSolver>(
       "mirror",
-      RigidSolverType::EntityComponent,
       callLog,
-      /*isRigid=*/true));
+      RigidSolverType::EntityComponent));
   auto* activeRigid = world->addSolver(std::make_unique<TrackingSolver>(
       "active",
-      RigidSolverType::ClassicSkeleton,
       callLog,
-      /*isRigid=*/true));
+      RigidSolverType::ClassicSkeleton));
 
   ASSERT_TRUE(nonRigid);
   ASSERT_TRUE(mirrorRigid);

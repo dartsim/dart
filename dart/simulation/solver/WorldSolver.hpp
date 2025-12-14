@@ -44,6 +44,7 @@
 
 #include <dart/Export.hpp>
 
+#include <optional>
 #include <string>
 
 namespace dart::simulation {
@@ -64,17 +65,20 @@ enum class RigidSolverType
 class DART_API WorldSolver
 {
 public:
-  WorldSolver(std::string name, RigidSolverType type);
+  explicit WorldSolver(std::string name);
   virtual ~WorldSolver();
 
   /// Returns the human-friendly solver name.
   const std::string& getName() const;
 
-  /// Returns which backend this solver represents.
-  RigidSolverType getType() const;
+  /// Returns which rigid backend this solver represents, if any.
+  ///
+  /// Returning std::nullopt indicates that this solver is not a rigid body
+  /// solver and should not participate in rigid solver selection APIs.
+  virtual std::optional<RigidSolverType> getRigidSolverType() const;
 
   /// Returns true if this solver advances rigid body state.
-  virtual bool isRigidSolver() const;
+  bool isRigidSolver() const;
 
   /// Returns true if this solver owns a constraint solver backend.
   virtual bool supportsConstraints() const;
@@ -124,7 +128,6 @@ public:
 
 protected:
   std::string mName;
-  RigidSolverType mType;
   double mTimeStep{0.0};
 };
 
