@@ -296,8 +296,7 @@ void World::step(bool _resetCommand)
 
   if (mSolverSteppingMode == SolverSteppingMode::ActiveRigidSolverOnly) {
     auto* activeSolver = getActiveRigidSolver();
-    if (
-        activeSolver && isSolverEnabled(activeSolver)
+    if (activeSolver && isSolverEnabled(activeSolver)
         && activeSolver->isRigidSolver()) {
       std::vector<WorldSolver*> solversToSync;
 
