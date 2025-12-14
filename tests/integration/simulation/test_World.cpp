@@ -704,16 +704,12 @@ TEST(World, SolverSteppingActiveRigidSolverOnlyOrdersNonRigidAndSync)
     EXPECT_TRUE(world->setSolverEnabled(i, false));
 
   std::vector<std::string> callLog;
-  auto* nonRigid = world->addSolver(std::make_unique<TrackingSolver>(
-      "nonrigid", callLog));
+  auto* nonRigid
+      = world->addSolver(std::make_unique<TrackingSolver>("nonrigid", callLog));
   auto* mirrorRigid = world->addSolver(std::make_unique<TrackingSolver>(
-      "mirror",
-      callLog,
-      RigidSolverType::EntityComponent));
+      "mirror", callLog, RigidSolverType::EntityComponent));
   auto* activeRigid = world->addSolver(std::make_unique<TrackingSolver>(
-      "active",
-      callLog,
-      RigidSolverType::ClassicSkeleton));
+      "active", callLog, RigidSolverType::ClassicSkeleton));
 
   ASSERT_TRUE(nonRigid);
   ASSERT_TRUE(mirrorRigid);

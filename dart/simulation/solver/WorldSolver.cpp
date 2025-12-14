@@ -50,9 +50,7 @@ const collision::CollisionResult& emptyCollisionResult()
 
 } // namespace
 
-WorldSolver::WorldSolver(std::string name) : mName(std::move(name))
-{
-}
+WorldSolver::WorldSolver(std::string name) : mName(std::move(name)) {}
 
 WorldSolver::~WorldSolver() = default;
 
