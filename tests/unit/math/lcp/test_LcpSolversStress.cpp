@@ -178,3 +178,66 @@ TEST(LcpSolversStress, RandomSpdFrictionIndexProblems)
     }
   }
 }
+
+//==============================================================================
+TEST(LcpSolversStress, RandomSpdBoxedProblems)
+{
+  std::mt19937 rng(789u);
+  std::uniform_real_distribution<double> dist(-1.0, 1.0);
+  std::uniform_real_distribution<double> slackDist(0.1, 1.0);
+  const std::vector<int> sizes = {2, 5, 10};
+
+  for (const int n : sizes) {
+    const Eigen::MatrixXd A = MakeRandomSpdMatrix(n, rng);
+    const Eigen::VectorXd lo = Eigen::VectorXd::Constant(n, -1.0);
+    const Eigen::VectorXd hi = Eigen::VectorXd::Constant(n, 1.0);
+    const Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
+
+    Eigen::VectorXd xStar(n);
+    Eigen::VectorXd w = Eigen::VectorXd::Zero(n);
+    for (int i = 0; i < n; ++i) {
+      const int mode = i % 3;
+      if (mode == 0) {
+        xStar[i] = lo[i];
+        w[i] = slackDist(rng);
+      } else if (mode == 1) {
+        xStar[i] = hi[i];
+        w[i] = -slackDist(rng);
+      } else {
+        xStar[i] = 0.5 * dist(rng);
+        w[i] = 0.0;
+      }
+    }
+
+    const Eigen::VectorXd b = A * xStar - w;
+    const LcpProblem problem(A, b, lo, hi, findex);
+
+    DantzigSolver dantzig;
+    LcpOptions dantzigOptions = dantzig.getDefaultOptions();
+    dantzigOptions.warmStart = false;
+    dantzigOptions.validateSolution = true;
+    dantzigOptions.absoluteTolerance = 1e-8;
+    dantzigOptions.complementarityTolerance = 1e-6;
+
+    Eigen::VectorXd xDantzig = Eigen::VectorXd::Zero(n);
+    const auto dantzigResult = dantzig.solve(problem, xDantzig, dantzigOptions);
+    ASSERT_TRUE(dantzigResult.succeeded()) << dantzigResult.message;
+    ExpectFeasibleSolution(problem, xDantzig, 1e-6);
+    EXPECT_NEAR((xDantzig - xStar).lpNorm<Eigen::Infinity>(), 0.0, 1e-6);
+
+    PgsSolver pgs;
+    LcpOptions pgsOptions = pgs.getDefaultOptions();
+    pgsOptions.warmStart = false;
+    pgsOptions.maxIterations = 20000;
+    pgsOptions.absoluteTolerance = 1e-4;
+    pgsOptions.relativeTolerance = 1e-2;
+    pgsOptions.complementarityTolerance = 1e-2;
+    pgsOptions.validateSolution = true;
+
+    Eigen::VectorXd xPgs = Eigen::VectorXd::Zero(n);
+    const auto pgsResult = pgs.solve(problem, xPgs, pgsOptions);
+    ASSERT_TRUE(pgsResult.succeeded()) << pgsResult.message;
+    ExpectFeasibleSolution(problem, xPgs, 2e-2);
+    EXPECT_NEAR((xPgs - xDantzig).lpNorm<Eigen::Infinity>(), 0.0, 2e-2);
+  }
+}

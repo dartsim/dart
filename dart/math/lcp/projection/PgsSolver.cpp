@@ -149,6 +149,14 @@ LcpResult PgsSolver::solve(
   const double relativeTolerance = (options.relativeTolerance > 0)
                                        ? options.relativeTolerance
                                        : mDefaultOptions.relativeTolerance;
+  const double relaxation = (options.relaxation > 0)
+                                ? options.relaxation
+                                : mDefaultOptions.relaxation;
+  if (!std::isfinite(relaxation) || relaxation <= 0.0 || relaxation > 2.0) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = "Relaxation parameter must be in (0, 2]";
+    return result;
+  }
 
   std::vector<double> Adata(static_cast<std::size_t>(n * nSkip), 0.0);
   std::vector<double> xdata(static_cast<std::size_t>(n), 0.0);
@@ -192,6 +200,8 @@ LcpResult PgsSolver::solve(
       newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
 
     newX /= Adata[static_cast<std::size_t>(nSkip * i + i)];
+
+    newX = oldX + relaxation * (newX - oldX);
 
     if (findexData[static_cast<std::size_t>(i)] >= 0) {
       const double hiTmp = std::abs(
@@ -256,6 +266,8 @@ LcpResult PgsSolver::solve(
 
         for (int j = index + 1; j < n; j++)
           newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
+
+        newX = oldX + relaxation * (newX - oldX);
 
         if (findexData[static_cast<std::size_t>(index)] >= 0) {
           const double hiTmp = std::abs(

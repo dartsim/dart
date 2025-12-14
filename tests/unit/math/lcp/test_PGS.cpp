@@ -154,3 +154,38 @@ TEST(PgsSolver, ReportsInvalidProblemForOutOfRangeFindex)
   const auto result = solver.solve(problem, x, options);
   EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
 }
+
+//==============================================================================
+TEST(PgsSolver, RelaxationAffectsSinglePassUpdate)
+{
+  Eigen::Matrix2d A = Eigen::Matrix2d::Identity();
+  Eigen::Vector2d b;
+  b << 1.0, 2.0;
+
+  LcpProblem problem(
+      A,
+      b,
+      Eigen::Vector2d::Zero(),
+      Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()),
+      Eigen::Vector2i::Constant(-1));
+
+  PgsSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.maxIterations = 1;
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.complementarityTolerance = 1e-6;
+
+  Eigen::VectorXd x1 = Eigen::VectorXd::Zero(2);
+  options.relaxation = 1.0;
+  solver.solve(problem, x1, options);
+
+  Eigen::VectorXd xHalf = Eigen::VectorXd::Zero(2);
+  options.relaxation = 0.5;
+  solver.solve(problem, xHalf, options);
+
+  EXPECT_NEAR(x1[0], 1.0, 1e-12);
+  EXPECT_NEAR(x1[1], 2.0, 1e-12);
+  EXPECT_NEAR(xHalf[0], 0.5, 1e-12);
+  EXPECT_NEAR(xHalf[1], 1.0, 1e-12);
+}

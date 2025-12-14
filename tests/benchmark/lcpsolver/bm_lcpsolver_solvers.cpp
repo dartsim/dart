@@ -9,6 +9,7 @@
  */
 
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
+#include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
 
 #include <Eigen/Dense>
@@ -195,6 +196,50 @@ static void BM_PgsSolver_Standard(benchmark::State& state)
   }
 }
 
+static void BM_PgsSolver_Standard_Relax15(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  auto problem
+      = makeStandardSpdProblem(n, /*seed=*/148u + static_cast<unsigned>(n));
+
+  dart::math::PgsSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = static_cast<int>(state.range(1));
+  options.relaxation = 1.5;
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+
+  for (auto _ : state) {
+    x.setZero();
+    auto result = solver.solve(problem, x, options);
+    benchmark::DoNotOptimize(result.status);
+    benchmark::DoNotOptimize(x.data());
+  }
+}
+
+static void BM_LemkeSolver_Standard(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  auto problem
+      = makeStandardSpdProblem(n, /*seed=*/314u + static_cast<unsigned>(n));
+
+  dart::math::LemkeSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+
+  for (auto _ : state) {
+    x.setZero();
+    auto result = solver.solve(problem, x, options);
+    benchmark::DoNotOptimize(result.status);
+    benchmark::DoNotOptimize(x.data());
+  }
+}
+
 static void BM_DantzigSolver_BoxedActiveBounds(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
@@ -296,6 +341,13 @@ BENCHMARK(BM_PgsSolver_Standard)
     ->Args({24, 100})
     ->Args({48, 100})
     ->Args({96, 100});
+BENCHMARK(BM_PgsSolver_Standard_Relax15)
+    ->Args({12, 30})
+    ->Args({24, 30})
+    ->Args({48, 30})
+    ->Args({96, 30});
+
+BENCHMARK(BM_LemkeSolver_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 
 BENCHMARK(BM_DantzigSolver_BoxedActiveBounds)
     ->Arg(12)
