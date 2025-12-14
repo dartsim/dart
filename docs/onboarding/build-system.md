@@ -728,9 +728,9 @@ build/
 
 **Start here next time:**
 
-- `pixi.toml` (`[feature.gazebo]`) - task chain + env overrides
-- `scripts/patch_gz_physics.py` - intentionally limited patch scope (DART version only)
-- `.github/workflows/ci_gz_physics.yml` - CI entry point for this workflow
+- [`pixi.toml`](../../pixi.toml) (`[feature.gazebo]`) - task chain + env overrides
+- [`scripts/patch_gz_physics.py`](../../scripts/patch_gz_physics.py) - intentionally limited patch scope (DART version only)
+- [`.github/workflows/ci_gz_physics.yml`](../../.github/workflows/ci_gz_physics.yml) - CI entry point for this workflow
 
 **Used in this task:**
 
@@ -754,7 +754,7 @@ DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz
 - **Missing DART components at configure time.** Example errors:
   - `Could NOT find DART (missing: collision-bullet collision-ode) (Required is at least version "7.0")`
   - `... but it set DART_FOUND to FALSE ...`
-  If you see this, the downstream is requesting legacy components. In DART 7, Bullet/ODE backends are part of the core `dart` component; `collision-bullet` / `collision-ode` exist only as deprecated compatibility components and are planned for removal in DART 8. Prefer to update downstream to depend on `dart`, but keep this workflow passing for existing consumers.
+  - **Resolution:** The downstream is requesting legacy components. In DART 7, Bullet/ODE backends are part of the core `dart` component; `collision-bullet` / `collision-ode` exist only as deprecated compatibility components and are planned for removal in DART 8. Prefer to update downstream to depend on `dart`, but keep this workflow passing for existing consumers.
 - **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py` limited to the DART version requirement bump; otherwise this workflow stops catching real compatibility breaks.
 - **gtest header mismatches.** gz-physics vendors gtest headers; if system gtest headers are accidentally used instead, gz-physics tests can fail to compile. The `config-gz` task forces the vendored headers to take precedence; keep that behavior.
 - **Deprecation noise is expected.** When gz-physics links the deprecated compatibility targets, CMake may emit deprecation warnings; these are intentional and should be treated as migration pressure for downstreams.

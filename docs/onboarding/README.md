@@ -54,6 +54,10 @@ This onboarding guide is organized into several focused documents:
 - **[api-documentation.md](api-documentation.md)** - Publishing strategy for RTD and GitHub Pages API docs
 - **[build-system.md](build-system.md)** - CMake internals and dependency analysis
 
+### Feature Workflows
+
+- **Gazebo / gz-physics integration**: See [build-system.md](build-system.md#gazebo-integration-feature). Used in this task: `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
+
 ### Purpose and Problem Solved
 
 DART addresses the need for:

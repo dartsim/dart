@@ -295,7 +295,7 @@ gh run watch <run_id> --compact --exit-status
 
 Notes:
 
-- If the `CI gz-physics` workflow fails, reproduce locally with `pixi run -e gazebo test-gz` (see `docs/onboarding/build-system.md` under “Gazebo Integration Feature”).
+- If the `CI gz-physics` workflow fails, reproduce locally with `pixi run -e gazebo test-gz` (see [build-system.md](build-system.md#gazebo-integration-feature)).
 - If you create PRs from the command line, prefer `gh pr create --body-file <path>` over `--body "..."` when the body contains backticks; some shells (e.g., zsh) treat backticks as command substitution.
 
 ## Troubleshooting
