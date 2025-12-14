@@ -47,7 +47,7 @@ vcpkg install dartsim:x64-windows         # Windows
 
 ### User Documentation
 
-For more information on DART, please visit the DART documentation: [English](https://dart.readthedocs.io/) | [한국어](https://dart-ko.readthedocs.io/) (WIP)
+For more information on DART, please visit the DART documentation: [English](https://dart.readthedocs.io/) | [한국어](https://dart-ko.readthedocs.io/)
 
 An overview of DART is also available on [DeepWiki](https://deepwiki.com/dartsim/dart).
 
