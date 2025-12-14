@@ -66,7 +66,7 @@ DART addresses the need for:
 - **Efficient algorithms** - O(n) complexity for forward/inverse dynamics using Featherstone algorithms
 - **Interactive 3D visualization** for robotics research and development
 - **Python integration** for rapid prototyping and machine learning workflows
-- **Research-grade tooling** maintained by the robotics community and Meta employee Jeongseok Lee
+- **Research-grade tooling** maintained by the DART development contributors
 
 ### Key Features
 
@@ -1266,7 +1266,7 @@ viewer.getImGuiHandler()->addWidget(widget, true);
 ### Community
 
 - **GitHub**: https://github.com/dartsim/dart
-- **Maintained by**: Jeongseok Lee (Meta employee) and robotics community
+- **Maintained by**: the DART development contributors
 
 ### Related Analysis Documents
 
@@ -1305,11 +1305,5 @@ This repository contains additional detailed analysis documents:
 ✅ **Cross-platform** with reproducible builds via pixi
 
 The codebase demonstrates excellent software engineering practices with clear layering, design patterns, and extensibility. The GUI components provide rich interactivity for robotics research and development.
-
----
-
-**Generated**: 2025-10-19
-**Project Version**: 7.0.0
-**Maintainer**: Jeongseok Lee (Meta)
 
 </details>
