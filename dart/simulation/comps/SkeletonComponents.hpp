@@ -55,4 +55,3 @@ struct SkeletonState final
 } // namespace dart::simulation::comps
 
 #endif // DART_SIMULATION_COMPS_SKELETONCOMPONENTS_HPP_
-

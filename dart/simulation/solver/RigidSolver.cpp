@@ -32,9 +32,8 @@
 
 #include "dart/simulation/solver/RigidSolver.hpp"
 
-#include "dart/simulation/comps/SkeletonComponents.hpp"
-
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/simulation/comps/SkeletonComponents.hpp"
 
 #include <algorithm>
 
@@ -123,11 +122,13 @@ void RigidSolver::syncSkeletonStates()
   if (!mEntityManager)
     return;
 
-  auto view = mEntityManager->view<comps::LegacySkeleton, comps::SkeletonState>();
+  auto view
+      = mEntityManager->view<comps::LegacySkeleton, comps::SkeletonState>();
   for (auto entity : view) {
     const auto& legacy = view.get<comps::LegacySkeleton>(entity);
     if (legacy.skeleton)
-      syncSkeletonState(view.get<comps::SkeletonState>(entity), *legacy.skeleton);
+      syncSkeletonState(
+          view.get<comps::SkeletonState>(entity), *legacy.skeleton);
   }
 }
 
