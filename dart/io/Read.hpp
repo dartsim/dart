@@ -44,6 +44,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 namespace dart {
 namespace io {
@@ -70,6 +71,17 @@ enum class ModelFormat
   Vsk,
 };
 
+/// Root joint type used when a model does not explicitly specify its root
+/// joint.
+enum class RootJointType
+{
+  /// Floating joint type.
+  Floating = 0,
+
+  /// Fixed joint type.
+  Fixed,
+};
+
 /// Options for reading a model file.
 struct DART_IO_API ReadOptions
 {
@@ -80,11 +92,24 @@ struct DART_IO_API ReadOptions
   /// default CompositeResourceRetriever is used (file:// and dart://).
   common::ResourceRetrieverPtr resourceRetriever{nullptr};
 
+  /// Default root joint type for SDF models when it is not explicitly
+  /// specified.
+  RootJointType sdfDefaultRootJointType{RootJointType::Floating};
+
   /// Package directories for resolving package:// URIs in URDF files.
   ///
-  /// For example: add {"my_robot", "/path/to/my_robot"} to resolve
-  /// package://my_robot/... URIs.
-  std::map<std::string, std::string> urdfPackageDirectories;
+  /// This is equivalent to calling
+  /// dart::utils::UrdfParser::addPackageDirectory. You can provide multiple
+  /// directories per package name; they will be tried in the same order in
+  /// which they are added.
+  std::map<std::string, std::vector<std::string>> urdfPackageDirectories;
+
+  /// Add a package directory for resolving package:// URIs in URDF files.
+  void addPackageDirectory(
+      const std::string& packageName, const std::string& packageDirectory)
+  {
+    urdfPackageDirectories[packageName].push_back(packageDirectory);
+  }
 };
 
 /// Read World from a model file.

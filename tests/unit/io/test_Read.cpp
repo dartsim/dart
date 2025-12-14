@@ -32,9 +32,21 @@
 
 #include "dart/io/All.hpp"
 
+#include <dart/config.hpp>
+
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/WeldJoint.hpp>
+
 #include <gtest/gtest.h>
 
 using namespace dart;
+
+namespace {
+
+const char* kSingleBodySdfWorld
+    = "dart://sample/sdf/test/single_bodynode_skeleton.world";
+
+} // namespace
 
 //==============================================================================
 TEST(ReadUnit, ReadsSkelSkeletonFromWorldFile)
@@ -59,3 +71,55 @@ TEST(ReadUnit, ReturnsNullForMjcfSkeleton)
   const auto skeleton = io::readSkeleton("dart://sample/mjcf/openai/ant.xml");
   EXPECT_EQ(skeleton, nullptr);
 }
+
+//==============================================================================
+TEST(ReadUnit, ReadsSdfWorldWithFloatingRootByDefault)
+{
+  io::ReadOptions options;
+  options.format = io::ModelFormat::Sdf;
+
+  const auto world = io::readWorld(kSingleBodySdfWorld, options);
+  ASSERT_NE(world, nullptr);
+  ASSERT_EQ(world->getNumSkeletons(), 1u);
+
+  const auto skeleton = world->getSkeleton(0);
+  ASSERT_NE(skeleton, nullptr);
+  ASSERT_EQ(skeleton->getNumJoints(), 1u);
+
+  EXPECT_NE(dynamic_cast<dynamics::FreeJoint*>(skeleton->getJoint(0)), nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, ReadsSdfWorldWithFixedRootWhenRequested)
+{
+  io::ReadOptions options;
+  options.format = io::ModelFormat::Sdf;
+  options.sdfDefaultRootJointType = io::RootJointType::Fixed;
+
+  const auto world = io::readWorld(kSingleBodySdfWorld, options);
+  ASSERT_NE(world, nullptr);
+  ASSERT_EQ(world->getNumSkeletons(), 1u);
+
+  const auto skeleton = world->getSkeleton(0);
+  ASSERT_NE(skeleton, nullptr);
+  ASSERT_EQ(skeleton->getNumJoints(), 1u);
+
+  EXPECT_NE(dynamic_cast<dynamics::WeldJoint*>(skeleton->getJoint(0)), nullptr);
+}
+
+#if DART_IO_HAS_URDF
+//==============================================================================
+TEST(ReadUnit, ReadsUrdfWithPackageDirectories)
+{
+  const auto wamUri = config::dataPath("urdf/wam/wam.urdf");
+  const auto wamPackageDir = config::dataPath("urdf/wam");
+
+  io::ReadOptions options;
+  EXPECT_EQ(io::readSkeleton(wamUri, options), nullptr);
+
+  options.addPackageDirectory("herb_description", "/does/not/exist");
+  options.addPackageDirectory("herb_description", wamPackageDir);
+  const auto skeleton = io::readSkeleton(wamUri, options);
+  EXPECT_NE(skeleton, nullptr);
+}
+#endif

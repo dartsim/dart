@@ -37,6 +37,7 @@
 #include "dart/common/String.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
+#include "dart/utils/PackageResourceRetriever.hpp"
 #include "dart/utils/SkelParser.hpp"
 #include "dart/utils/VskParser.hpp"
 #include "dart/utils/mjcf/MjcfParser.hpp"
@@ -176,27 +177,45 @@ ReadOptions resolveOptions(const ReadOptions& options)
 }
 
 #if DART_IO_HAS_URDF
+common::ResourceRetrieverPtr getUrdfResourceRetriever(
+    const ReadOptions& options)
+{
+  if (options.urdfPackageDirectories.empty())
+    return options.resourceRetriever;
+
+  auto packageRetriever = std::make_shared<utils::PackageResourceRetriever>(
+      options.resourceRetriever);
+  for (const auto& [packageName, packageDirectories] :
+       options.urdfPackageDirectories) {
+    for (const auto& packageDirectory : packageDirectories)
+      packageRetriever->addPackageDirectory(packageName, packageDirectory);
+  }
+
+  auto resolver = std::make_shared<utils::CompositeResourceRetriever>();
+  resolver->addSchemaRetriever("package", packageRetriever);
+  resolver->addDefaultRetriever(options.resourceRetriever);
+  return resolver;
+}
+
 simulation::WorldPtr readUrdfWorld(
     const common::Uri& uri, const ReadOptions& options)
 {
+  ReadOptions resolved = options;
+  resolved.resourceRetriever = getUrdfResourceRetriever(options);
+
   utils::UrdfParser parser(
-      utils::UrdfParser::Options(options.resourceRetriever));
-  for (const auto& [packageName, packageDirectory] :
-       options.urdfPackageDirectories) {
-    parser.addPackageDirectory(packageName, packageDirectory);
-  }
+      utils::UrdfParser::Options(resolved.resourceRetriever));
   return parser.parseWorld(uri);
 }
 
 dynamics::SkeletonPtr readUrdfSkeleton(
     const common::Uri& uri, const ReadOptions& options)
 {
+  ReadOptions resolved = options;
+  resolved.resourceRetriever = getUrdfResourceRetriever(options);
+
   utils::UrdfParser parser(
-      utils::UrdfParser::Options(options.resourceRetriever));
-  for (const auto& [packageName, packageDirectory] :
-       options.urdfPackageDirectories) {
-    parser.addPackageDirectory(packageName, packageDirectory);
-  }
+      utils::UrdfParser::Options(resolved.resourceRetriever));
   return parser.parseSkeleton(uri);
 }
 #endif
@@ -224,9 +243,14 @@ simulation::WorldPtr readWorld(
   switch (format) {
     case ModelFormat::Skel:
       return utils::SkelParser::readWorld(uri, resolved.resourceRetriever);
-    case ModelFormat::Sdf:
-      return utils::SdfParser::readWorld(
-          uri, utils::SdfParser::Options(resolved.resourceRetriever));
+    case ModelFormat::Sdf: {
+      auto sdfOptions = utils::SdfParser::Options(resolved.resourceRetriever);
+      sdfOptions.mDefaultRootJointType
+          = (resolved.sdfDefaultRootJointType == RootJointType::Fixed)
+                ? utils::SdfParser::RootJointType::Fixed
+                : utils::SdfParser::RootJointType::Floating;
+      return utils::SdfParser::readWorld(uri, sdfOptions);
+    }
     case ModelFormat::Mjcf:
       return utils::MjcfParser::readWorld(
           uri, utils::MjcfParser::Options(resolved.resourceRetriever));
@@ -295,9 +319,14 @@ dynamics::SkeletonPtr readSkeleton(
 
       return utils::SkelParser::readSkeleton(uri, resolved.resourceRetriever);
     }
-    case ModelFormat::Sdf:
-      return utils::SdfParser::readSkeleton(
-          uri, utils::SdfParser::Options(resolved.resourceRetriever));
+    case ModelFormat::Sdf: {
+      auto sdfOptions = utils::SdfParser::Options(resolved.resourceRetriever);
+      sdfOptions.mDefaultRootJointType
+          = (resolved.sdfDefaultRootJointType == RootJointType::Fixed)
+                ? utils::SdfParser::RootJointType::Fixed
+                : utils::SdfParser::RootJointType::Floating;
+      return utils::SdfParser::readSkeleton(uri, sdfOptions);
+    }
     case ModelFormat::Vsk:
       return utils::VskParser::readSkeleton(
           uri, utils::VskParser::Options(resolved.resourceRetriever));
