@@ -48,8 +48,8 @@
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/simulation/solver/ClassicRigidSolver.hpp"
-#include "dart/simulation/solver/RigidSolver.hpp"
+#include "dart/simulation/solver/classic_rigid/ClassicRigidSolver.hpp"
+#include "dart/simulation/solver/rigid/RigidSolver.hpp"
 
 #include <algorithm>
 #include <iostream>

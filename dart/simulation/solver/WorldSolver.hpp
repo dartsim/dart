@@ -54,7 +54,7 @@ enum class CollisionDetectorType : int;
 /// Identifies which rigid simulation backend a solver instance targets.
 enum class RigidSolverType
 {
-  /// Existing Skeleton-based constraint solver.
+  /// Legacy Skeleton-based constraint solver.
   ClassicSkeleton,
   /// Entity-component based rigid solver using entt::registry.
   EntityComponent,

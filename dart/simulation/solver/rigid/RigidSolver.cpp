@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/solver/RigidSolver.hpp"
+#include "dart/simulation/solver/rigid/RigidSolver.hpp"
 
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/comps/SkeletonComponents.hpp"

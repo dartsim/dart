@@ -40,6 +40,9 @@
 namespace dart::simulation {
 
 /// Rigid solver that wraps the classic Skeleton + ConstraintSolver pipeline.
+///
+/// Note: This solver is considered legacy and will eventually be deprecated and
+/// removed in favor of the ECS-backed rigid solver.
 class DART_API ClassicRigidSolver final : public WorldSolver
 {
 public:

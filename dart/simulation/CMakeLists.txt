@@ -7,8 +7,8 @@ file(GLOB comps_hdrs "comps/*.hpp")
 file(GLOB comps_srcs "comps/*.cpp")
 file(GLOB object_hdrs "object/*.hpp")
 file(GLOB object_srcs "object/*.cpp")
-file(GLOB solver_hdrs "solver/*.hpp")
-file(GLOB solver_srcs "solver/*.cpp")
+file(GLOB solver_hdrs "solver/*.hpp" "solver/*/*.hpp")
+file(GLOB solver_srcs "solver/*.cpp" "solver/*/*.cpp")
 dart_add_core_headers(
   ${hdrs}
   ${detail_hdrs}
@@ -69,9 +69,11 @@ install(
   COMPONENT headers
 )
 install(
-  FILES ${solver_hdrs}
+  DIRECTORY solver/
   DESTINATION include/dart/simulation/solver
   COMPONENT headers
+  FILES_MATCHING
+  PATTERN "*.hpp"
 )
 # Install generated compatibility headers preserving subdirectory structure
 dart_install_compat_headers(

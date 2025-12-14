@@ -3,4 +3,4 @@
  */
 #pragma once
 
-#include <dart/simulation/solver/RigidSolver.hpp>
+#include <dart/simulation/solver/rigid/RigidSolver.hpp>

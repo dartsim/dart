@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/solver/ClassicRigidSolver.hpp"
+#include "dart/simulation/solver/classic_rigid/ClassicRigidSolver.hpp"
 
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionGroup.hpp"
