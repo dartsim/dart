@@ -158,7 +158,7 @@ void ArrowShape::configureArrow(
   // Regenerate the entire mesh with new parameters
   mTriMesh = std::make_shared<math::TriMesh<double>>();
 
-  const double pi = math::constantsd::pi();
+  const double pi = math::pi;
   const std::size_t resolution = mResolution;
 
   // Calculate z-coordinates for different parts

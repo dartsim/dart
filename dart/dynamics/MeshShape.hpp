@@ -245,7 +245,7 @@ public:
   virtual ShapePtr clone() const override;
 
 protected:
-  class MeshHandle
+  class DART_API MeshHandle
   {
   public:
     MeshHandle() = default;
