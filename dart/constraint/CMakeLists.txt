@@ -9,12 +9,6 @@ dart_add_core_sources(${srcs} ${detail_srcs})
 # Generate header for this namespace
 dart_get_filename_components(header_names "constraint headers" ${hdrs})
 list(REMOVE_ITEM header_names SmartPointer.hpp)
-list(REMOVE_ITEM header_names
-  BoxedLcpConstraintSolver.hpp
-  BoxedLcpSolver.hpp
-  DantzigBoxedLcpSolver.hpp
-  PgsBoxedLcpSolver.hpp
-)
 dart_generate_component_headers(
   COMPONENT_NAME constraint
   TARGET_DIR "dart/constraint/"

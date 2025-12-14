@@ -46,7 +46,6 @@
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/common/String.hpp"
-#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -154,16 +153,9 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
   return nullptr;
 }
 
-std::unique_ptr<constraint::ConstraintSolver> createConstraintSolver(
-    const WorldConfig& config)
+std::unique_ptr<constraint::ConstraintSolver> createConstraintSolver()
 {
-  if (!config.useLegacyConstraintSolver) {
-    return std::make_unique<constraint::ConstraintSolver>();
-  }
-
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  return std::make_unique<constraint::BoxedLcpConstraintSolver>();
-  DART_SUPPRESS_DEPRECATED_END
+  return std::make_unique<constraint::ConstraintSolver>();
 }
 
 } // namespace
@@ -197,7 +189,7 @@ World::World(const WorldConfig& config)
 {
   mIndices.push_back(0);
 
-  setConstraintSolver(createConstraintSolver(config));
+  setConstraintSolver(createConstraintSolver());
 
   if (auto detector = resolveCollisionDetector(config))
     setCollisionDetector(detector);
