@@ -17,6 +17,10 @@ if(DART_HAVE_BULLET)
   dart_add_test("unit" UNIT_collision_BulletContact collision/test_BulletContact.cpp)
 endif()
 
+if(DART_HAVE_ODE)
+  dart_add_test("unit" UNIT_collision_OdeHeightmap collision/test_OdeHeightmap.cpp)
+endif()
+
 dart_add_test(
   "unit" UNIT_collision_FCLCollisionObject collision/test_FCLCollisionObject.cpp)
 
