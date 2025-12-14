@@ -7,7 +7,7 @@
 ```
 START
   |
-  ├─ Real-time/Interactive? ──YES──> PGS (now) or PSOR (future)
+  ├─ Real-time/Interactive? ──YES──> PGS/PSOR (PgsSolver w/ relaxation)
   |
   ├─ High accuracy needed? ──YES──> Newton Methods or Pivoting
   |                                  (Dantzig/Lemke available now)
@@ -27,8 +27,8 @@ START
 
 ### 1. Real-Time Physics Simulation
 
-**Recommended**: PGS > PSOR (future) > BGS (future)
-**Currently Available**: PGS ✅, Dantzig ✅, Lemke ✅
+**Recommended**: PGS/PSOR (`PgsSolver` with relaxation) > BGS (future)
+**Currently Available**: PGS/PSOR ✅, Dantzig ✅, Lemke ✅
 
 **Rationale**:
 
@@ -44,6 +44,7 @@ Method: PGS
 Max iterations: 50-100
 Tolerance: 1e-4 to 1e-6
 Warm start: Previous time-step solution
+Relaxation: 1.0 (PGS), 1.2-1.5 (PSOR)
 Randomize order: Optional (can improve robustness)
 Fallback: Dantzig if iterative solve stalls
 ```
@@ -232,8 +233,8 @@ Slower          ─────────────────────�
 Pivoting ─> Newton ─> Interior Point ─> NNCG ─> BGS ─> PGS ─> Jacobi
 (exact)     (1e-10)   (1e-8)           (1e-6)  (1e-4) (1e-3) (1e-2)
 
-✅ Available:  Dantzig, Lemke, PGS
-❌ Future:     Newton, PSOR, BGS, NNCG, …
+✅ Available:  Dantzig, Lemke, PGS/PSOR
+❌ Future:     Newton, BGS, NNCG, …
 ```
 
 ### Robustness vs Efficiency
@@ -244,8 +245,8 @@ Slower      ──────────────────────�
 
 Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
-✅ Available:  Dantzig, Lemke, PGS
-❌ Future:     Newton, PSOR, BGS, NNCG, …
+✅ Available:  Dantzig, Lemke, PGS/PSOR
+❌ Future:     Newton, BGS, NNCG, …
 ```
 
 ## Problem Size Guidelines
@@ -275,7 +276,8 @@ Available solvers:
 
 - ✅ **Dantzig**: BLCP with bounds, friction support
 - ✅ **Lemke**: Standard LCP
-- ✅ **PGS**: Iterative boxed LCP with friction index fallback
+- ✅ **PGS/PSOR**: Iterative boxed LCP with friction index fallback (tune
+  `LcpOptions::relaxation`)
 
 **Best Practices Now**:
 
@@ -291,7 +293,6 @@ if (!result.succeeded()) {
 
 ### Remaining Gaps
 
-- PSOR (tunable relaxation on top of PGS)
 - Blocked Gauss-Seidel for per-contact blocks
 - NNCG or other large-scale iterative methods
 
@@ -313,7 +314,7 @@ When Newton methods are implemented:
 
 ```
 Current: Use PGS for real-time and keep Dantzig as fallback
-Future: Add PSOR for tuned relaxation
+Tune:   Use `LcpOptions::relaxation` for PSOR-style relaxation
 ```
 
 ### Pitfall 2: Expecting High Accuracy from Iterative
@@ -434,7 +435,7 @@ findex[i] = j;   // Depends on x[j] for friction cone
 4. Scale problem: divide A, b by max(|A|)
 ```
 
-**For Future Iterative Methods**:
+**For Iterative Methods (PGS/PSOR)**:
 
 ```
 1. Increase max_iterations
@@ -462,7 +463,7 @@ Current (with Dantzig/PGS/Lemke):
 3. Reduce contact points
 4. Simplify collision geometry
 
-Future (with Newton/PSOR/BGS):
+Future (with Newton/BGS):
 1. Use appropriate method for problem size
 2. Enable warm-starting
 3. Matrix-free implementations
@@ -479,13 +480,13 @@ Future (with Newton/PSOR/BGS):
 | Bounded variables      | Dantzig | Supports bounds and friction |
 | Standard LCP           | Lemke   | Simple and robust            |
 | Large problems (n>100) | PGS     | Scales better, approximate   |
-| Real-time (n>50)       | PGS     | Use Dantzig as fallback      |
+| Real-time (n>50)       | PGS/PSOR | Tune `relaxation`, keep Dantzig fallback |
 
 ### Future State (After Implementation)
 
 | Scenario        | Primary | Backup         | Notes              |
 | --------------- | ------- | -------------- | ------------------ |
-| Real-time       | PGS     | PSOR           | 50-100 iterations  |
+| Real-time       | PGS/PSOR | -             | 50-100 iterations  |
 | Contact         | BGS     | PGS            | Per-contact blocks |
 | High accuracy   | Newton  | Dantzig        | 5-20 iterations    |
 | Large-scale     | NNCG    | PGS            | >1000 variables    |

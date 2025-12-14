@@ -119,8 +119,8 @@ function PGS(A, b, x, max_iter, epsilon):
   LCPs (including friction `findex` coupling)
   - Configure solver-specific parameters (e.g., randomized sweep order) via
     `dart::math::PgsSolver::setParameters()`.
-  - Legacy `dart::constraint::PgsBoxedLcpSolver::Option::mDoRandomize` maps to
-    `PgsSolver::Parameters::randomizeConstraintOrder`.
+  - Use `dart::math::LcpOptions::relaxation` to enable PSOR-style relaxation
+    (`1.0` = PGS, `>1` = over-relaxation, `<1` = under-relaxation).
 
 ### Advantages/Disadvantages
 
@@ -141,7 +141,7 @@ function PGS(A, b, x, max_iter, epsilon):
 - Interactive applications
 - First-choice for most physics engines
 
-## 3. Projected SOR (PSOR) ❌ (Not Implemented, High Priority)
+## 3. Projected SOR (PSOR) ✅ (Implemented via `PgsSolver` relaxation)
 
 ### Splitting
 
@@ -170,6 +170,16 @@ Derived by using `A = L + D + U` with the splitting `M = (D + λL)/λ` and `N = 
 - **0 < λ < 1**: Under-relaxation (more stable)
 - **1 < λ < 2**: Over-relaxation (faster convergence)
 - **Typical**: λ = 1.2 to 1.5
+
+### DART Configuration
+
+```cpp
+dart::math::PgsSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.relaxation = 1.3;  // PSOR-style over-relaxation
+options.maxIterations = 100;
+solver.solve(problem, x, options);
+```
 
 ### Coordinate-descent view
 
@@ -573,7 +583,7 @@ Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
 | --------- | ---------------- | -------- | ----------- | --------------------- |
 | Jacobi    | ❌               | Yes      | Slow        | Parallel hardware     |
 | PGS       | ✅ (Implemented) | No       | Linear      | Real-time boxed LCP   |
-| PSOR      | ❌ (Priority)    | No       | Linear      | Real-time with tuning |
+| PSOR      | ✅ (Implemented) | No       | Linear      | Real-time with tuning |
 | BGS       | ❌               | No       | Linear      | Contact problems      |
 | NNCG      | ❌               | No       | Superlinear | Large-scale           |
 | PGS-SM    | ❌               | No       | Better      | Medium problems       |
@@ -583,9 +593,8 @@ Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
 
 ### Phase 1 (Essential for Real-Time)
 
-1. **PSOR** - Extension of PGS with relaxation
-2. **Termination criteria** - Multiple stopping conditions
-3. **Merit functions** - For convergence monitoring
+1. **Termination criteria** - Multiple stopping conditions
+2. **Merit functions** - For convergence monitoring
 
 ### Phase 2 (For Contact Problems)
 

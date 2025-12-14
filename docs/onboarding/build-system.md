@@ -712,9 +712,9 @@ build/
 - `config-gz` - Configure gz-physics build
 - `build-gz` - Build gz-physics with dartsim plugin
 - `test-gz` - Verify DART integration
-- **Note:** Keep DART's legacy boxed LCP compatibility shims (`BoxedLcpConstraintSolver`,
-  `DantzigBoxedLcpSolver`, `PgsBoxedLcpSolver`) intact so `gz-physics` can build
-  against DART without patching solver-related sources.
+- **Note:** `patch-gz` also updates `gz-physics`'s DART plugin sources to use
+  `dart::constraint::ConstraintSolver` and the `dart::math::LcpSolver` API
+  (solver names `Dantzig` / `Pgs`).
 
 **Dependencies:**
 

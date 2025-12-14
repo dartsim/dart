@@ -12,7 +12,7 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 | **Pivoting**       | Lemke Complementary Pivot  | ✅ Implemented     | `pivoting/LemkeSolver.hpp`   | Standard LCP solver                     |
 | **Pivoting**       | Baraff Incremental         | ❌ Not implemented | -                            | Planned                                 |
 | **Projection**     | PGS (Gauss-Seidel)         | ✅ Implemented     | `projection/PgsSolver.hpp`   | Boxed LCP + friction index (iterative)  |
-| **Projection**     | PSOR (Over-Relaxation)     | ❌ Not implemented | -                            | Extension of PGS                        |
+| **Projection**     | PSOR (Over-Relaxation)     | ✅ Implemented     | `projection/PgsSolver.hpp`   | Set `LcpOptions::relaxation`            |
 | **Projection**     | Blocked Gauss-Seidel       | ❌ Not implemented | -                            | For contact problems                    |
 | **Projection**     | NNCG (Conjugate Gradient)  | ❌ Not implemented | -                            | Better convergence than PGS             |
 | **Projection**     | Subspace Minimization      | ❌ Not implemented | -                            | Hybrid PGS approach                     |
@@ -34,9 +34,8 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
   `math::DantzigSolver` (primary) with an optional `math::PgsSolver` fallback.
 - Solvers validate basic invariants (e.g., `lo <= hi`, `findex` in range, no
   NaN bounds) and treat empty problems as a trivial success.
-- Deprecated boxed shims in `dart/constraint` (e.g., `BoxedLcpConstraintSolver`,
-  `PgsBoxedLcpSolver`) are kept for Gazebo / `gz-physics` compatibility and
-  delegate to the same `math::LcpSolver` implementations.
+- Gazebo integration (`gz-physics`) is patched during the `pixi run -e gazebo`
+  workflow to use the same solver APIs.
 
 ### Currently Implemented Solvers
 
@@ -71,7 +70,8 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
   coupling
 - **Features**:
   - Handles bounds and `findex` friction pyramids
-  - Supports warm starts and customizable sweep order
+  - Supports warm starts, optional relaxation (PSOR), and customizable sweep
+    order
   - Early-out when the primary pivoting solver fails in ConstraintSolver
 - **Use Case**: Real-time fallback for constraint solving where approximate
   solutions are acceptable
@@ -219,7 +219,7 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 ### Phase 1: Core Iterative Methods (High Priority)
 
 - [x] Projected Gauss-Seidel (PGS) — `dart::math::PgsSolver`
-- [ ] Projected SOR (PSOR)
+- [x] Projected SOR (PSOR) — `dart::math::PgsSolver` via `LcpOptions::relaxation`
 - [x] Basic termination criteria and merit functions (`dart/math/lcp/LcpValidation.hpp`)
 
 ### Phase 2: Blocked Methods (Medium Priority)

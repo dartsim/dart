@@ -14,7 +14,7 @@ dart/math/lcp/
 │
 ├── pivoting/
 │   ├── DantzigSolver.hpp/cpp   # Boxed LCP + findex (pivoting, ODE-derived)
-│   ├── LemkeSolver.hpp/cpp     # Standard LCP only (no box bounds)
+│   ├── LemkeSolver.hpp/cpp     # Standard LCP (boxed/findex delegates)
 │   └── dantzig/                # Low-level ODE Dantzig implementation
 │
 ├── projection/
@@ -64,10 +64,12 @@ options.validateSolution = true;
 dart::math::LcpResult result = solver.solve(problem, x, options);
 ```
 
-`dart::math::PgsSolver` uses the same `LcpProblem` interface.
+`dart::math::PgsSolver` uses the same `LcpProblem` interface and supports
+PSOR-style relaxation via `LcpOptions::relaxation`.
 
-`dart::math::LemkeSolver` supports standard LCP only (no finite bounds). For the
-common form `w = Mz + q`, construct `LcpProblem` with `b = -q`.
+`dart::math::LemkeSolver` implements the standard LCP Lemke algorithm and
+delegates boxed/findex problems to `dart::math::DantzigSolver`. For the common
+form `w = Mz + q`, construct `LcpProblem` with `b = -q`.
 
 ## Testing, Benchmarks, and References
 
