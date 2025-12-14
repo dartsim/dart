@@ -96,10 +96,6 @@ dynamics::SimpleFramePtr createHeightmapFrame(
     S zMax = S(0.1))
 {
   auto terrainFrame = SimpleFrame::createShared(Frame::World());
-  auto tf = terrainFrame->getRelativeTransform();
-  tf.translation()[0] = -static_cast<double>(xSize) / 2.0;
-  tf.translation()[1] = +static_cast<double>(ySize) / 2.0;
-  terrainFrame->setRelativeTransform(tf);
 
   terrainFrame->createVisualAspect();
 
@@ -181,11 +177,6 @@ public:
         S(1));
     mHeightmapShape->setScale(scale);
     mTerrain->setShape(mHeightmapShape);
-
-    auto tf = mTerrain->getRelativeTransform();
-    tf.translation()[0] = -static_cast<double>(mXSize) / 2.0;
-    tf.translation()[1] = +static_cast<double>(mYSize) / 2.0;
-    mTerrain->setRelativeTransform(tf);
   }
 
   void render() override
@@ -194,7 +185,7 @@ public:
     ImGui::SetNextWindowSize(ImVec2(360, 600));
     ImGui::SetNextWindowBgAlpha(0.5f);
     if (!ImGui::Begin(
-            "Point Cloud & Voxel Grid Demo",
+            "Heightmap Demo",
             nullptr,
             ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar)) {
       // Early out if the window is collapsed, as an optimization.
@@ -466,7 +457,14 @@ int main(int argc, char* argv[])
 
   // Use a wider height range out of the box so the surface is visible above
   // the grid without fiddling with the controls.
-  auto terrain = createHeightmapFrame<float>(100u, 100u, 2.f, 2.f, -0.1f, 0.4f);
+  constexpr auto xResolution = 100u;
+  constexpr auto yResolution = 100u;
+  constexpr auto xSize = 2.f;
+  constexpr auto ySize = 2.f;
+  constexpr auto zMin = -0.1f;
+  constexpr auto zMax = 0.4f;
+  auto terrain = createHeightmapFrame<float>(
+      xResolution, yResolution, xSize, ySize, zMin, zMax);
   world->addSimpleFrame(terrain);
 
   DART_ASSERT(world->getNumSimpleFrames() == 1u);
@@ -488,7 +486,16 @@ int main(int argc, char* argv[])
 
   // Add control widget for atlas
   viewer.getImGuiHandler()->addWidget(std::make_shared<HeightmapWidget<float>>(
-      &viewer, node.get(), terrain, grid.get()));
+      &viewer,
+      node.get(),
+      terrain,
+      grid.get(),
+      xResolution,
+      yResolution,
+      xSize,
+      ySize,
+      zMin,
+      zMax));
 
   viewer.addAttachment(grid);
 
