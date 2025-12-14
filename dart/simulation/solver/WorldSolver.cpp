@@ -32,10 +32,11 @@
 
 #include "dart/simulation/solver/WorldSolver.hpp"
 
+#include <dart/constraint/ConstraintSolver.hpp>
+
 #include <dart/collision/CollisionResult.hpp>
 
 #include <dart/common/Logging.hpp>
-#include <dart/constraint/ConstraintSolver.hpp>
 
 namespace dart::simulation {
 
