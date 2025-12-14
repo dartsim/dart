@@ -36,7 +36,8 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Scheduled runs should not preempt push/PR validation runs.
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
   build-release:
