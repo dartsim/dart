@@ -221,6 +221,79 @@ if(DART_BUILD_GUI)
   endif()
 endif()
 
+# Raylib (experimental)
+if(DART_BUILD_GUI_RAYLIB)
+  if(DART_USE_SYSTEM_RAYLIB)
+    dart_find_package(raylib)
+    if(NOT raylib_FOUND)
+      message(FATAL_ERROR "Raylib was requested (DART_BUILD_GUI_RAYLIB=ON, DART_USE_SYSTEM_RAYLIB=ON) but could not be found. Install raylib or set DART_USE_SYSTEM_RAYLIB=OFF to fetch it.")
+    endif()
+    if(DART_VERBOSE)
+      message(STATUS "Using system-installed Raylib")
+    endif()
+  else()
+    include(FetchContent)
+
+    set(DART_RAYLIB_GIT_TAG "latest" CACHE STRING "Raylib git tag to fetch when DART_USE_SYSTEM_RAYLIB=OFF")
+    mark_as_advanced(DART_RAYLIB_GIT_TAG)
+
+    set(_dart_raylib_git_tag "${DART_RAYLIB_GIT_TAG}")
+    if(_dart_raylib_git_tag STREQUAL "" OR _dart_raylib_git_tag STREQUAL "latest")
+      set(_dart_raylib_git_tag_resolved "")
+      find_package(Git QUIET)
+      if(Git_FOUND)
+        execute_process(
+          COMMAND "${GIT_EXECUTABLE}" ls-remote --tags --refs https://github.com/raysan5/raylib.git
+          OUTPUT_VARIABLE _dart_raylib_ls_remote
+          RESULT_VARIABLE _dart_raylib_ls_remote_result
+          OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if(_dart_raylib_ls_remote_result EQUAL 0 AND _dart_raylib_ls_remote)
+          string(REGEX MATCHALL "refs/tags/[^\n\r]+" _dart_raylib_refs "${_dart_raylib_ls_remote}")
+          set(_dart_raylib_tags)
+          foreach(_dart_raylib_ref IN LISTS _dart_raylib_refs)
+            string(REPLACE "refs/tags/" "" _dart_raylib_tag "${_dart_raylib_ref}")
+            if(_dart_raylib_tag MATCHES "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$")
+              list(APPEND _dart_raylib_tags "${_dart_raylib_tag}")
+            endif()
+          endforeach()
+          if(_dart_raylib_tags)
+            list(SORT _dart_raylib_tags COMPARE NATURAL ORDER DESCENDING)
+            list(GET _dart_raylib_tags 0 _dart_raylib_git_tag_resolved)
+          endif()
+        endif()
+      endif()
+      if(_dart_raylib_git_tag_resolved)
+        set(_dart_raylib_git_tag "${_dart_raylib_git_tag_resolved}")
+      endif()
+    endif()
+
+    if(_dart_raylib_git_tag STREQUAL "" OR _dart_raylib_git_tag STREQUAL "latest")
+      set(_dart_raylib_git_tag "5.5")
+      message(WARNING "Failed to determine the latest Raylib tag; falling back to ${_dart_raylib_git_tag}. Set -DDART_RAYLIB_GIT_TAG=<tag> to override.")
+    endif()
+
+    message(STATUS "Fetching Raylib ${_dart_raylib_git_tag} from GitHub...")
+    FetchContent_Declare(raylib
+      GIT_REPOSITORY https://github.com/raysan5/raylib.git
+      GIT_TAG ${_dart_raylib_git_tag}
+      GIT_SHALLOW TRUE
+      GIT_PROGRESS TRUE
+    )
+    FetchContent_MakeAvailable(raylib)
+  endif()
+
+  if(NOT TARGET raylib::raylib)
+    if(TARGET raylib)
+      add_library(raylib::raylib ALIAS raylib)
+    endif()
+  endif()
+
+  if(NOT TARGET raylib::raylib)
+    message(FATAL_ERROR "Raylib was requested (DART_BUILD_GUI_RAYLIB=ON) but no CMake target was provided by the dependency.")
+  endif()
+endif()
+
 #--------------------
 # Misc. dependencies
 #--------------------

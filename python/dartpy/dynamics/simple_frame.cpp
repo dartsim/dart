@@ -1,6 +1,7 @@
 #include "dynamics/simple_frame.hpp"
 
 #include "common/eigen_utils.hpp"
+#include "common/repr.hpp"
 #include "common/type_casters.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Frame.hpp"
@@ -61,6 +62,19 @@ void defSimpleFrame(nb::module_& m)
           },
           nb::rv_policy::reference_internal,
           nb::arg("name"))
+      .def(
+          "__repr__",
+          [](const SimpleFrame& self) {
+            const auto shape = self.getShape();
+            const auto* parent = self.getParentFrame();
+            std::vector<std::pair<std::string, std::string>> fields;
+            fields.emplace_back("name", repr_string(self.getName()));
+            fields.emplace_back(
+                "parent", parent ? repr_string(parent->getName()) : "None");
+            fields.emplace_back(
+                "shape", shape ? repr_string(shape->getType()) : "None");
+            return format_repr("SimpleFrame", fields);
+          })
       .def(
           "getName",
           [](const SimpleFrame& self) -> const std::string& {

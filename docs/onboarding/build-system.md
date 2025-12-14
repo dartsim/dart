@@ -41,10 +41,12 @@
 
 ```cmake
 DART_BUILD_GUI          = ON   # Build OpenSceneGraph GUI
+DART_BUILD_GUI_RAYLIB       = OFF  # Build experimental Raylib integration
 DART_BUILD_DARTPY           = OFF  # Build Python bindings
 DART_BUILD_PROFILE          = OFF  # Enable profiling support
 DART_ENABLE_SIMD            = OFF  # Enable SIMD instructions
 DART_USE_SYSTEM_IMGUI       = OFF  # Use system ImGui vs fetch from GitHub
+DART_USE_SYSTEM_RAYLIB      = OFF  # Use system Raylib vs fetch from GitHub
 DART_USE_SYSTEM_GOOGLEBENCHMARK = OFF
 DART_USE_SYSTEM_GOOGLETEST  = OFF
 DART_USE_SYSTEM_TRACY       = OFF
@@ -216,6 +218,15 @@ dart/
     - Repository: `https://github.com/ocornut/imgui.git`
     - Tag: `v1.84.2`
     - Not installed with DART (local build only)
+
+#### Raylib (Experimental)
+
+- **Purpose:** Optional/experimental backend for windowing + rendering (in progress)
+- **Options:**
+  - **Enable**: `DART_BUILD_GUI_RAYLIB=ON`
+  - **System Mode** (`DART_USE_SYSTEM_RAYLIB=ON`): Links against a system-installed `raylib`
+  - **Fetch Mode** (`DART_USE_SYSTEM_RAYLIB=OFF`): Fetches Raylib from `https://github.com/raysan5/raylib.git` (defaults to the latest git tag)
+  - **Fetch Tag Override**: `DART_RAYLIB_GIT_TAG=<tag>` (only used when fetching)
 
 #### 9. OpenGL
 

@@ -1,5 +1,6 @@
 #include "dynamics/degree_of_freedom.hpp"
 
+#include "common/repr.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
@@ -39,6 +40,24 @@ void defDegreeOfFreedom(nb::module_& m)
             return self.getName();
           },
           nb::rv_policy::reference_internal)
+      .def(
+          "__repr__",
+          [](const DegreeOfFreedom& self) {
+            const auto skeleton = self.getSkeleton();
+            const auto* joint = self.getJoint();
+            std::vector<std::pair<std::string, std::string>> fields;
+            fields.emplace_back("name", repr_string(self.getName()));
+            fields.emplace_back(
+                "index", std::to_string(self.getIndexInSkeleton()));
+            fields.emplace_back(
+                "index_in_joint", std::to_string(self.getIndexInJoint()));
+            fields.emplace_back(
+                "joint", joint ? repr_string(joint->getName()) : "None");
+            fields.emplace_back(
+                "skeleton",
+                skeleton ? repr_string(skeleton->getName()) : "None");
+            return format_repr("DegreeOfFreedom", fields);
+          })
       .def(
           "preserveName",
           [](DegreeOfFreedom& self, bool preserve) {

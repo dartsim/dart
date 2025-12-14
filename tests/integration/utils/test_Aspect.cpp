@@ -52,6 +52,10 @@
 
 #include <gtest/gtest.h>
 
+#include <vector>
+
+#include <cstddef>
+
 using namespace dart::common;
 using namespace dart::dynamics;
 
@@ -354,6 +358,87 @@ class CustomSpecializedComposite
 {
 };
 
+struct LifecycleEvent
+{
+  enum class Type
+  {
+    SetComposite,
+    LoseComposite,
+    Destroy
+  };
+
+  int tag;
+  int id;
+  Type type;
+};
+
+static std::vector<LifecycleEvent> lifecycleEvents;
+
+static std::size_t findLifecycleEventIndex(
+    const int tag, const int id, const LifecycleEvent::Type type)
+{
+  for (std::size_t i = 0; i < lifecycleEvents.size(); ++i) {
+    const auto& event = lifecycleEvents[i];
+    if (event.tag == tag && event.id == id && event.type == type)
+      return i;
+  }
+
+  return lifecycleEvents.size();
+}
+
+template <int Tag>
+class LifecycleAspect : public Aspect
+{
+public:
+  LifecycleAspect() : mId(++sNextId)
+  {
+    // Do nothing
+  }
+
+  ~LifecycleAspect() override
+  {
+    lifecycleEvents.push_back({Tag, mId, LifecycleEvent::Type::Destroy});
+  }
+
+  int getId() const
+  {
+    return mId;
+  }
+
+  std::unique_ptr<Aspect> cloneAspect() const override final
+  {
+    return std::make_unique<LifecycleAspect<Tag>>();
+  }
+
+protected:
+  void setComposite(Composite* newComposite) override
+  {
+    lifecycleEvents.push_back({Tag, mId, LifecycleEvent::Type::SetComposite});
+    Aspect::setComposite(newComposite);
+  }
+
+  void loseComposite(Composite* oldComposite) override
+  {
+    lifecycleEvents.push_back({Tag, mId, LifecycleEvent::Type::LoseComposite});
+    Aspect::loseComposite(oldComposite);
+  }
+
+private:
+  int mId;
+  static int sNextId;
+};
+
+template <int Tag>
+int LifecycleAspect<Tag>::sNextId = 0;
+
+using LifecycleAspect1 = LifecycleAspect<1>;
+using LifecycleAspect2 = LifecycleAspect<2>;
+
+class LifecycleSpecializedComposite
+  : public SpecializedForAspect<LifecycleAspect1>
+{
+};
+
 TEST(Aspect, Generic)
 {
   Composite comp;
@@ -377,6 +462,157 @@ TEST(Aspect, Generic)
   EXPECT_FALSE(nullptr == rawAspect);
   EXPECT_FALSE(rawAspect == newAspect);
   EXPECT_TRUE(nullptr == aspect);
+}
+
+TEST(Aspect, ReplaceNotifiesLifecycle)
+{
+  lifecycleEvents.clear();
+
+  Composite comp;
+
+  LifecycleAspect1* first = comp.createAspect<LifecycleAspect1>();
+  const int firstId = first->getId();
+
+  LifecycleAspect1* second = comp.createAspect<LifecycleAspect1>();
+  const int secondId = second->getId();
+
+  EXPECT_NE(firstId, secondId);
+
+  const std::size_t setFirstIndex
+      = findLifecycleEventIndex(1, firstId, LifecycleEvent::Type::SetComposite);
+  const std::size_t loseFirstIndex = findLifecycleEventIndex(
+      1, firstId, LifecycleEvent::Type::LoseComposite);
+  const std::size_t destroyFirstIndex
+      = findLifecycleEventIndex(1, firstId, LifecycleEvent::Type::Destroy);
+  const std::size_t setSecondIndex = findLifecycleEventIndex(
+      1, secondId, LifecycleEvent::Type::SetComposite);
+
+  ASSERT_LT(setFirstIndex, lifecycleEvents.size());
+  ASSERT_LT(loseFirstIndex, lifecycleEvents.size());
+  ASSERT_LT(destroyFirstIndex, lifecycleEvents.size());
+  ASSERT_LT(setSecondIndex, lifecycleEvents.size());
+
+  EXPECT_LT(setFirstIndex, loseFirstIndex);
+  EXPECT_LT(loseFirstIndex, destroyFirstIndex);
+  EXPECT_LT(destroyFirstIndex, setSecondIndex);
+
+  comp.set<LifecycleAspect1>(nullptr);
+
+  const std::size_t loseSecondIndex = findLifecycleEventIndex(
+      1, secondId, LifecycleEvent::Type::LoseComposite);
+  const std::size_t destroySecondIndex
+      = findLifecycleEventIndex(1, secondId, LifecycleEvent::Type::Destroy);
+
+  ASSERT_LT(loseSecondIndex, lifecycleEvents.size());
+  ASSERT_LT(destroySecondIndex, lifecycleEvents.size());
+  EXPECT_LT(loseSecondIndex, destroySecondIndex);
+}
+
+TEST(Aspect, ReplaceNotifiesLifecycleWhenSpecialized)
+{
+  lifecycleEvents.clear();
+
+  LifecycleSpecializedComposite comp;
+
+  LifecycleAspect1* first = comp.createAspect<LifecycleAspect1>();
+  const int firstId = first->getId();
+
+  LifecycleAspect1* second = comp.createAspect<LifecycleAspect1>();
+  const int secondId = second->getId();
+
+  EXPECT_NE(firstId, secondId);
+
+  const std::size_t setFirstIndex
+      = findLifecycleEventIndex(1, firstId, LifecycleEvent::Type::SetComposite);
+  const std::size_t loseFirstIndex = findLifecycleEventIndex(
+      1, firstId, LifecycleEvent::Type::LoseComposite);
+  const std::size_t destroyFirstIndex
+      = findLifecycleEventIndex(1, firstId, LifecycleEvent::Type::Destroy);
+  const std::size_t setSecondIndex = findLifecycleEventIndex(
+      1, secondId, LifecycleEvent::Type::SetComposite);
+
+  ASSERT_LT(setFirstIndex, lifecycleEvents.size());
+  ASSERT_LT(loseFirstIndex, lifecycleEvents.size());
+  ASSERT_LT(destroyFirstIndex, lifecycleEvents.size());
+  ASSERT_LT(setSecondIndex, lifecycleEvents.size());
+
+  EXPECT_LT(setFirstIndex, loseFirstIndex);
+  EXPECT_LT(loseFirstIndex, destroyFirstIndex);
+  EXPECT_LT(destroyFirstIndex, setSecondIndex);
+
+  comp.set<LifecycleAspect1>(nullptr);
+
+  const std::size_t loseSecondIndex = findLifecycleEventIndex(
+      1, secondId, LifecycleEvent::Type::LoseComposite);
+  const std::size_t destroySecondIndex
+      = findLifecycleEventIndex(1, secondId, LifecycleEvent::Type::Destroy);
+
+  ASSERT_LT(loseSecondIndex, lifecycleEvents.size());
+  ASSERT_LT(destroySecondIndex, lifecycleEvents.size());
+  EXPECT_LT(loseSecondIndex, destroySecondIndex);
+}
+
+TEST(Aspect, MatchAspectsNotifiesRemovedLifecycle)
+{
+  lifecycleEvents.clear();
+
+  Composite receiver;
+  LifecycleAspect1* receiverAspect1 = receiver.createAspect<LifecycleAspect1>();
+  LifecycleAspect2* receiverAspect2 = receiver.createAspect<LifecycleAspect2>();
+
+  const int receiverAspect1Id = receiverAspect1->getId();
+  const int receiverAspect2Id = receiverAspect2->getId();
+
+  Composite sender;
+  sender.createAspect<LifecycleAspect1>();
+
+  const std::size_t eventsBefore = lifecycleEvents.size();
+  receiver.matchAspects(&sender);
+
+  EXPECT_NE(receiver.get<LifecycleAspect1>(), nullptr);
+  EXPECT_EQ(receiver.get<LifecycleAspect2>(), nullptr);
+
+  const std::size_t loseAspect1Index = findLifecycleEventIndex(
+      1, receiverAspect1Id, LifecycleEvent::Type::LoseComposite);
+  const std::size_t destroyAspect1Index = findLifecycleEventIndex(
+      1, receiverAspect1Id, LifecycleEvent::Type::Destroy);
+
+  const std::size_t loseAspect2Index = findLifecycleEventIndex(
+      2, receiverAspect2Id, LifecycleEvent::Type::LoseComposite);
+  const std::size_t destroyAspect2Index = findLifecycleEventIndex(
+      2, receiverAspect2Id, LifecycleEvent::Type::Destroy);
+
+  ASSERT_LT(loseAspect1Index, lifecycleEvents.size());
+  ASSERT_LT(destroyAspect1Index, lifecycleEvents.size());
+  ASSERT_LT(loseAspect2Index, lifecycleEvents.size());
+  ASSERT_LT(destroyAspect2Index, lifecycleEvents.size());
+
+  EXPECT_LT(loseAspect1Index, destroyAspect1Index);
+  EXPECT_LT(loseAspect2Index, destroyAspect2Index);
+
+  bool sawSetAfter = false;
+  for (std::size_t i = eventsBefore; i < lifecycleEvents.size(); ++i) {
+    if (lifecycleEvents[i].tag == 1
+        && lifecycleEvents[i].type == LifecycleEvent::Type::SetComposite) {
+      sawSetAfter = true;
+      break;
+    }
+  }
+
+  EXPECT_TRUE(sawSetAfter);
+}
+
+TEST(Aspect, CompositeDataGetOrCreate)
+{
+  Composite::State states;
+
+  auto& state = states.getOrCreate<DoubleAspect>(42.0);
+  EXPECT_DOUBLE_EQ(state.val, 42.0);
+
+  auto& stateAgain = states.getOrCreate<DoubleAspect>(10.0);
+  EXPECT_DOUBLE_EQ(stateAgain.val, 42.0);
+
+  EXPECT_NE(states.get<DoubleAspect>(), nullptr);
 }
 
 TEST(Aspect, Specialized)

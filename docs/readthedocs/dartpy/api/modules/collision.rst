@@ -1,1 +1,6 @@
-.. include:: ../../../../python_api/modules/collision.rst
+:orphan:
+
+Collision
+=========
+
+This content is documented on the consolidated :doc:`dartpy` page.

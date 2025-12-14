@@ -14,4 +14,8 @@ below to keep the structure consistent.
    :maxdepth: 1
 
    Tutorials <../tutorials/index>
+   Control Theory Primer <control-theory>
+   Control Gain Tuning <control-gain-tuning>
+   Numerical Methods Primer <numerical-methods>
+   Simulation Stability <simulation-stability>
    Inverse Kinematics <../shared/inverse_kinematics/index>

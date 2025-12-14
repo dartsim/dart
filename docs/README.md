@@ -14,6 +14,7 @@ Located in `onboarding/` - **Architecture guides for developers:**
 
 - **[Onboarding Guide](onboarding/README.md)** - Complete internal architecture overview with diagrams
 - [Core Architecture](onboarding/architecture.md) - Deep dive into simulation engine internals
+- [Aspect System](onboarding/aspect-system.md) - Aspect/State/Properties design and implementation
 - [Dynamics System](onboarding/dynamics.md) - Articulated body system and kinematics
 - [GUI & Rendering](onboarding/gui-rendering.md) - OpenSceneGraph integration details
 - [Python Bindings](onboarding/python-bindings.md) - nanobind bindings architecture

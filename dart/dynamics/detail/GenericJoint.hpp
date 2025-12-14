@@ -84,7 +84,7 @@
   }
 
 #define GenericJoint_SET_IF_DIFFERENT(mField, value)                           \
-  if (value == Base::mAspectProperties.mField)                                 \
+  if (dart::math::valueEqual(value, Base::mAspectProperties.mField))           \
     return;                                                                    \
   Base::mAspectProperties.mField = value;                                      \
   Joint::incrementVersion();
@@ -1372,6 +1372,41 @@ void GenericJoint<ConfigSpaceT>::integratePositions(double dt)
       dt);
 
   setPositionsStatic(math::toEuclideanPoint<ConfigSpaceT>(point));
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::integratePositions(
+    const Eigen::VectorXd& q0,
+    const Eigen::VectorXd& v,
+    double dt,
+    Eigen::VectorXd& result) const
+{
+  if (static_cast<std::size_t>(q0.size()) != getNumDofs()
+      || static_cast<std::size_t>(v.size()) != getNumDofs()) {
+    DART_ERROR(
+        "q0's size [{}] and v's size [{}] must both equal the dof [{}] for "
+        "Joint [{}].",
+        q0.size(),
+        v.size(),
+        this->getNumDofs(),
+        this->getName());
+    DART_ASSERT(false);
+    result = Eigen::VectorXd::Zero(getNumDofs());
+    return;
+  }
+
+  detail::assertFiniteState(q0, this, "integratePositions", "q0");
+  detail::assertFiniteState(v, this, "integratePositions", "v");
+  detail::assertFiniteState(dt, this, "integratePositions", "dt");
+
+  const EuclideanPoint q0Static = q0;
+  const Vector vStatic = v;
+
+  const Point& point = math::integratePosition<ConfigSpaceT>(
+      math::toManifoldPoint<ConfigSpaceT>(q0Static), vStatic, dt);
+
+  result = math::toEuclideanPoint<ConfigSpaceT>(point);
 }
 
 //==============================================================================
