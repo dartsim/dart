@@ -35,7 +35,6 @@
 
 #include <dart/dynamics/MeshMaterial.hpp>
 #include <dart/dynamics/Shape.hpp>
-#include <dart/dynamics/fwd.hpp>
 
 #include <dart/math/TriMesh.hpp>
 
