@@ -394,7 +394,10 @@ def patch_dartsim_world_solver(world_features_path: Path) -> bool:
         + "#include <dart/math/lcp/pivoting/DantzigSolver.hpp>\n"
         + "#include <dart/math/lcp/projection/PgsSolver.hpp>\n"
     )
-    if include_anchor in text and "<dart/math/lcp/projection/PgsSolver.hpp>" not in text:
+    if (
+        include_anchor in text
+        and "<dart/math/lcp/projection/PgsSolver.hpp>" not in text
+    ):
         text = text.replace(include_anchor, include_injection, 1)
 
     old_set_solver = """void WorldFeatures::SetWorldSolver(const Identity &_id,

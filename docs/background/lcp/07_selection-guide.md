@@ -474,24 +474,24 @@ Future (with Newton/BGS):
 
 ### Current State
 
-| Scenario               | Use     | Notes                        |
-| ---------------------- | ------- | ---------------------------- |
-| Contact with friction  | Dantzig | Best option now              |
-| Bounded variables      | Dantzig | Supports bounds and friction |
-| Standard LCP           | Lemke   | Simple and robust            |
-| Large problems (n>100) | PGS     | Scales better, approximate   |
+| Scenario               | Use      | Notes                                    |
+| ---------------------- | -------- | ---------------------------------------- |
+| Contact with friction  | Dantzig  | Best option now                          |
+| Bounded variables      | Dantzig  | Supports bounds and friction             |
+| Standard LCP           | Lemke    | Simple and robust                        |
+| Large problems (n>100) | PGS      | Scales better, approximate               |
 | Real-time (n>50)       | PGS/PSOR | Tune `relaxation`, keep Dantzig fallback |
 
 ### Future State (After Implementation)
 
-| Scenario        | Primary | Backup         | Notes              |
-| --------------- | ------- | -------------- | ------------------ |
-| Real-time       | PGS/PSOR | -             | 50-100 iterations  |
-| Contact         | BGS     | PGS            | Per-contact blocks |
-| High accuracy   | Newton  | Dantzig        | 5-20 iterations    |
-| Large-scale     | NNCG    | PGS            | >1000 variables    |
-| Ill-conditioned | Dantzig | Interior Point | Most robust        |
-| Parallel        | Jacobi  | Red-Black GS   | GPU-friendly       |
+| Scenario        | Primary  | Backup         | Notes              |
+| --------------- | -------- | -------------- | ------------------ |
+| Real-time       | PGS/PSOR | -              | 50-100 iterations  |
+| Contact         | BGS      | PGS            | Per-contact blocks |
+| High accuracy   | Newton   | Dantzig        | 5-20 iterations    |
+| Large-scale     | NNCG     | PGS            | >1000 variables    |
+| Ill-conditioned | Dantzig  | Interior Point | Most robust        |
+| Parallel        | Jacobi   | Red-Black GS   | GPU-friendly       |
 
 ---
 
