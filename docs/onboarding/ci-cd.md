@@ -4,6 +4,16 @@
 
 DART uses GitHub Actions for continuous integration and deployment. The CI system validates code quality, runs tests across multiple platforms, builds documentation, and publishes Python wheels.
 
+## Quickstart
+
+- Used in this task:
+  - `pixi run lint`
+  - `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`
+  - `gh run list --branch <branch> --limit 10`
+  - `gh run watch <run_id> --compact --exit-status`
+- Suggested (Unverified): `pixi run test-all` (recommended by the PR template)
+- If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
+
 ## Workflow Architecture
 
 ### Core CI Workflows

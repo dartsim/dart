@@ -7,6 +7,15 @@
 
 ---
 
+## Quickstart (Read This First)
+
+- Day-to-day `pixi run …` workflows: see [building.md](building.md).
+- Gazebo / gz-physics integration: jump to [Gazebo Integration Feature](#gazebo-integration-feature) and run `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
+- CI workflow overview + `gh` monitoring commands: see [ci-cd.md](ci-cd.md).
+
+<details>
+<summary>Deep dive (optional): build system analysis</summary>
+
 ## Table of Contents
 
 1. [Build System Overview](#build-system-overview)
@@ -26,7 +35,7 @@
 
 - **CMake Version:** ≥ 3.22.1
 - **Build Generator:** Ninja (via pixi) / CMake default
-- **C++ Standard:** C++17
+- **C++ Standard:** C++20
 - **Package Manager:** pixi (conda-forge based)
 - **Python:** Python 3 (for dartpy bindings)
 
@@ -707,6 +716,8 @@ build/
             └── python/
                 └── dartpy/
 ```
+
+</details>
 
 ### Special Features
 

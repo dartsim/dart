@@ -86,7 +86,7 @@ DART addresses the need for:
 
 | Category                | Technology            | Purpose                   |
 | ----------------------- | --------------------- | ------------------------- |
-| **Core Language**       | C++17                 | Main implementation       |
+| **Core Language**       | C++20                 | Main implementation       |
 | **Build System**        | CMake 3.22.1+         | Cross-platform builds     |
 | **Python Bindings**     | nanobind 2.9.x        | Python API                |
 | **Linear Algebra**      | Eigen 3.4.0+          | Math operations           |
@@ -98,6 +98,15 @@ DART addresses the need for:
 | **Graphics API**        | OpenGL 2+             | Rendering backend         |
 
 ---
+
+### Quickstart (Decision Tree)
+
+- Want to build, test, or format DART? Start with [building.md](building.md) and [contributing.md](contributing.md).
+- Working on Gazebo / gz-physics compatibility? Jump to [build-system.md](build-system.md#gazebo-integration-feature).
+- Need to understand CI workflows or monitor runs? See [ci-cd.md](ci-cd.md).
+
+<details>
+<summary>Deep dive (optional): GUI architecture, data flow, and patterns</summary>
 
 ## 2. High-Level Architecture Diagram
 
@@ -1065,151 +1074,21 @@ sequenceDiagram
 
 ## 6. Build and Development Guide
 
-### Prerequisites
+This section is intentionally brief and delegates to the focused onboarding docs:
 
-**Required**:
-- CMake ≥ 3.22.1
-- C++17 compiler (GCC, Clang, MSVC)
-- Eigen ≥ 3.4.0
-- FCL ≥ 0.7.0
-- assimp ≥ 5.4.3
-- OpenSceneGraph ≥ 3.0.0
-- ImGui ≥ 1.91.9 or fetched automatically
+- Build / install / pixi tasks: [building.md](building.md)
+- Contribution workflow + formatting: [contributing.md](contributing.md)
+- Test suite structure + running tests: [testing.md](testing.md)
+- Gazebo / gz-physics integration: [build-system.md](build-system.md#gazebo-integration-feature)
 
-**Optional**:
-- Python ≥ 3.7 (for dartpy bindings)
-- Bullet, ODE (alternative collision backends)
-- urdfdom (URDF parsing)
+Used in this task:
 
-### Quick Start with pixi
+- `pixi run lint`
+- `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`
 
-[`pixi`](pixi.toml) provides a reproducible development environment:
+Suggested (Unverified):
 
-```bash
-# Install pixi (if not already installed)
-curl -fsSL https://pixi.sh/install.sh | bash
-
-# Configure and build
-pixi run config
-pixi run build
-
-# Run tests
-pixi run test
-
-# Run examples
-pixi run hello-world
-pixi run atlas-puppet
-
-# Build Python bindings
-pixi run build-py-dev
-pixi run test-py
-````
-
-### Manual CMake Build
-
-```bash
-# Create build directory
-mkdir build && cd build
-
-# Configure
-cmake .. \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DDART_BUILD_GUI=ON \
-  -DDART_BUILD_DARTPY=ON
-
-# Build
-cmake --build . -j$(nproc)
-
-# Install
-sudo cmake --install .
-```
-
-### CMake Options
-
-For the complete list of CMake configuration options and their defaults, refer to [`CMakeLists.txt`](/home/jeongseok/dev/dartsim/dart_ci/CMakeLists.txt).
-
-### Running Examples
-
-**C++ Examples** ([`examples/`](examples/)):
-
-```bash
-# Using pixi
-pixi run hello-world
-pixi run drag-and-drop
-pixi run atlas-puppet
-
-# Manual
-./build/bin/hello_world
-./build/bin/drag_and_drop
-./build/bin/atlas_puppet
-```
-
-**Python Examples**:
-
-```bash
-# Using pixi
-pixi run hello-world-py
-pixi run operational-space-control-py
-
-# Manual
-python examples/hello_world/main.py
-python examples/operational_space_control/main.py
-```
-
-### Development Workflow
-
-1. **Make code changes**
-2. **Run formatter**: `pixi run lint`
-3. **Check formatting**: `pixi run check-lint`
-4. **Build**: `pixi run build`
-5. **Run tests**: `pixi run test`
-6. **Build docs**: `pixi run docs-build`
-
-### Project Structure
-
-```
-dart_gui/
-├── dart/                      # C++ library source
-│   ├── collision/            # Collision detection backends (FCL + optional Bullet/ODE)
-│   ├── common/               # Common utilities and patterns
-│   ├── constraint/           # Constraint solver
-│   ├── dynamics/             # Kinematics and dynamics
-│   ├── gui/                  # OpenSceneGraph visualization
-│   │   ├── render/           # Rendering utilities
-│   │   └── detail/           # GUI internals
-│   ├── lcpsolver/            # LCP solver
-│   ├── math/                 # Mathematical utilities (includes math/optimization/)
-│   ├── optimizer/            # Deprecated alias headers forwarding to math/optimization
-│   ├── simulation/           # World simulation and time stepping
-│   └── utils/                # File parsers (URDF, SDF, etc.)
-├── python/                   # Python bindings (dartpy)
-├── examples/                 # C++ and Python examples
-├── tutorials/                # Tutorial code
-├── tests/                    # Unit tests
-├── docs/                     # Documentation
-├── cmake/                    # CMake modules
-├── CMakeLists.txt            # Root CMake file
-├── pixi.toml                 # pixi configuration
-└── pyproject.toml            # Python package configuration
-```
-
-### Key Entry Points
-
-**C++ API**:
-
-```cpp
-#include <dart/All.hpp>               // Core DART
-#include <dart/gui/All.hpp>           // GUI
-#include <dart/utils/urdf/urdf.hpp>   // URDF parsing
-```
-
-**Python API**:
-
-```python
-import dartpy as dart
-from dartpy.gui import Viewer, RealTimeWorldNode
-from dartpy.utils import UrdfParser
-```
+- `pixi run test-all` (recommended by the PR template)
 
 ---
 
@@ -1399,3 +1278,4 @@ The codebase demonstrates excellent software engineering practices with clear la
 **Generated**: 2025-10-19
 **Project Version**: 7.0.0
 **Maintainer**: Jeongseok Lee (Meta)
+</details>
