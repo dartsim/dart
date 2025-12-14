@@ -46,7 +46,8 @@
 //   class Foo : public virtual Bar { ... };
 //   DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 //
-// This expands to `#pragma vtordisp(push, 2)` / `pop` on MSVC (similar to /vd2).
+// This expands to `#pragma vtordisp(push, 2)` / `pop` on MSVC (similar to the
+// `/vd2` compiler option).
 #if defined(_MSC_VER)
   #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN __pragma(vtordisp(push, 2))
   #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END __pragma(vtordisp(pop))
