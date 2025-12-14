@@ -65,6 +65,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -298,6 +299,16 @@ public:
   entt::registry& getEntityManager();
   const entt::registry& getEntityManager() const;
 
+  /// Returns the ECS entity associated with the given Skeleton.
+  ///
+  /// Returns entt::null when the Skeleton is not part of this World.
+  entt::entity getSkeletonEntity(const dynamics::Skeleton* skeleton) const;
+
+  /// Returns the ECS entity associated with the given Skeleton.
+  ///
+  /// Returns entt::null when the Skeleton is null or not part of this World.
+  entt::entity getSkeletonEntity(const dynamics::SkeletonPtr& skeleton) const;
+
   /// Adds a solver to this world, taking ownership.
   WorldSolver* addSolver(std::unique_ptr<WorldSolver> solver);
 
@@ -490,6 +501,9 @@ protected:
 
   /// Centralized ECS registry shared across solvers.
   entt::registry mEntityManager;
+
+  /// Maps legacy Skeleton instances to their ECS entities.
+  std::unordered_map<const dynamics::Skeleton*, entt::entity> mSkeletonEntities;
 
   struct SolverEntry final
   {

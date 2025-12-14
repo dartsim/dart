@@ -30,65 +30,36 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/solver/rigid/RigidSolver.hpp"
+#ifndef DART_SIMULATION_DETAIL_LEGACYSKELETONSYNC_HPP_
+#define DART_SIMULATION_DETAIL_LEGACYSKELETONSYNC_HPP_
 
-#include "dart/dynamics/Skeleton.hpp"
-#include "dart/simulation/comps/SkeletonComponents.hpp"
-#include "dart/simulation/detail/LegacySkeletonSync.hpp"
+#include <dart/simulation/comps/SkeletonComponents.hpp>
+
+#include <dart/dynamics/Skeleton.hpp>
 
 #include <algorithm>
+#include <cstddef>
 
-namespace dart::simulation {
+namespace dart::simulation::detail {
 
-RigidSolver::RigidSolver(entt::registry& entityManager)
-  : WorldSolver("rigid", RigidSolverType::EntityComponent),
-    mEntityManager(&entityManager)
+inline void syncLegacySkeletonState(
+    comps::SkeletonState& state, const dynamics::Skeleton& skeleton)
 {
+  const auto dofs = static_cast<std::size_t>(skeleton.getNumDofs());
+  state.positions.assign(dofs, 0.0);
+  state.velocities.assign(dofs, 0.0);
+
+  const auto& positions = skeleton.getPositions();
+  const auto& velocities = skeleton.getVelocities();
+
+  const auto positionsCount = static_cast<std::size_t>(positions.size());
+  const auto velocitiesCount = static_cast<std::size_t>(velocities.size());
+
+  const auto copyCount = std::min({dofs, positionsCount, velocitiesCount});
+  std::copy_n(positions.data(), copyCount, state.positions.begin());
+  std::copy_n(velocities.data(), copyCount, state.velocities.begin());
 }
 
-entt::registry& RigidSolver::getEntityManager()
-{
-  return *mEntityManager;
-}
+} // namespace dart::simulation::detail
 
-const entt::registry& RigidSolver::getEntityManager() const
-{
-  return *mEntityManager;
-}
-
-void RigidSolver::setTimeStep(double timeStep)
-{
-  mTimeStep = timeStep;
-}
-
-void RigidSolver::syncSkeletonStates()
-{
-  if (!mEntityManager)
-    return;
-
-  auto view
-      = mEntityManager->view<comps::LegacySkeleton, comps::SkeletonState>();
-  for (auto entity : view) {
-    const auto& legacy = view.get<comps::LegacySkeleton>(entity);
-    if (legacy.skeleton)
-      detail::syncLegacySkeletonState(
-          view.get<comps::SkeletonState>(entity), *legacy.skeleton);
-  }
-}
-
-void RigidSolver::reset(World&)
-{
-  syncSkeletonStates();
-}
-
-void RigidSolver::step(World&, bool)
-{
-  syncSkeletonStates();
-}
-
-void RigidSolver::sync(World&)
-{
-  syncSkeletonStates();
-}
-
-} // namespace dart::simulation
+#endif // DART_SIMULATION_DETAIL_LEGACYSKELETONSYNC_HPP_

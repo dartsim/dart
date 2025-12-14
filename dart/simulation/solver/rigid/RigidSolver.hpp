@@ -37,8 +37,6 @@
 
 #include <entt/entt.hpp>
 
-#include <unordered_map>
-
 namespace dart::simulation {
 
 /// Rigid solver backed by an entt::registry for ECS-based workflows.
@@ -51,11 +49,6 @@ public:
   entt::registry& getEntityManager();
   const entt::registry& getEntityManager() const;
 
-  void handleSkeletonAdded(
-      World& world, const dynamics::SkeletonPtr& skeleton) override;
-  void handleSkeletonRemoved(
-      World& world, const dynamics::SkeletonPtr& skeleton) override;
-
   void setTimeStep(double timeStep) override;
   void reset(World& world) override;
   void step(World& world, bool resetCommand) override;
@@ -65,7 +58,6 @@ private:
   void syncSkeletonStates();
 
   entt::registry* mEntityManager;
-  std::unordered_map<const dynamics::Skeleton*, entt::entity> mSkeletonEntities;
 };
 
 } // namespace dart::simulation

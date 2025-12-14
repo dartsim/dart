@@ -48,6 +48,7 @@
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/simulation/detail/LegacySkeletonSync.hpp"
 #include "dart/simulation/solver/classic_rigid/ClassicRigidSolver.hpp"
 #include "dart/simulation/solver/rigid/RigidSolver.hpp"
 
@@ -451,6 +452,25 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   _skeleton->setGravity(mGravity);
 
   mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
+
+  {
+    const auto* key = _skeleton.get();
+    if (key) {
+      if (mSkeletonEntities.find(key) == mSkeletonEntities.end()) {
+        const auto entity = mEntityManager.create();
+        mSkeletonEntities.emplace(key, entity);
+        mEntityManager.emplace<comps::LegacySkeleton>(entity, _skeleton);
+        auto& state = mEntityManager.emplace<comps::SkeletonState>(entity);
+        detail::syncLegacySkeletonState(state, *_skeleton);
+      } else {
+        DART_WARN(
+            "Skeleton '{}' already has an ECS entity in world '{}'.",
+            _skeleton->getName(),
+            mName);
+      }
+    }
+  }
+
   for (auto& entry : mRigidSolvers)
     entry.solver->handleSkeletonAdded(*this, _skeleton);
 
@@ -494,6 +514,15 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   // Notify solvers.
   for (auto& entry : mRigidSolvers)
     entry.solver->handleSkeletonRemoved(*this, _skeleton);
+
+  {
+    const auto* key = _skeleton.get();
+    const auto it = mSkeletonEntities.find(key);
+    if (it != mSkeletonEntities.end()) {
+      mEntityManager.destroy(it->second);
+      mSkeletonEntities.erase(it);
+    }
+  }
 
   // Remove _skeleton from mSkeletons
   mSkeletons.erase(
@@ -805,6 +834,26 @@ entt::registry& World::getEntityManager()
 const entt::registry& World::getEntityManager() const
 {
   return mEntityManager;
+}
+
+//==============================================================================
+entt::entity World::getSkeletonEntity(const dynamics::Skeleton* skeleton) const
+{
+  if (!skeleton)
+    return entt::null;
+
+  const auto it = mSkeletonEntities.find(skeleton);
+  if (it == mSkeletonEntities.end())
+    return entt::null;
+
+  return it->second;
+}
+
+//==============================================================================
+entt::entity World::getSkeletonEntity(
+    const dynamics::SkeletonPtr& skeleton) const
+{
+  return getSkeletonEntity(skeleton.get());
 }
 
 //==============================================================================
