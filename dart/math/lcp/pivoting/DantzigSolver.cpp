@@ -62,10 +62,10 @@ LcpResult DantzigSolver::solve(
   const auto& hi = problem.hi;
   const auto& findex = problem.findex;
 
-  if (A.rows() != A.cols() || A.rows() != b.size() || lo.size() != b.size()
-      || hi.size() != b.size() || findex.size() != b.size()) {
+  std::string problemMessage;
+  if (!detail::validateProblem(problem, &problemMessage)) {
     result.status = LcpSolverStatus::InvalidProblem;
-    result.message = "Matrix dimensions inconsistent";
+    result.message = problemMessage;
     return result;
   }
 
@@ -82,38 +82,6 @@ LcpResult DantzigSolver::solve(
 
   if (x.size() != n)
     x = Eigen::VectorXd::Zero(n);
-
-  for (int i = 0; i < n; ++i) {
-    if (findex[i] >= n) {
-      result.status = LcpSolverStatus::InvalidProblem;
-      result.message = "Friction index entry out of range";
-      return result;
-    }
-
-    if (findex[i] == i) {
-      result.status = LcpSolverStatus::InvalidProblem;
-      result.message = "Friction index entry cannot reference itself";
-      return result;
-    }
-
-    if (std::isnan(lo[i]) || std::isnan(hi[i])) {
-      result.status = LcpSolverStatus::InvalidProblem;
-      result.message = "Bounds contain NaN";
-      return result;
-    }
-
-    if (findex[i] >= 0 && !std::isfinite(hi[i])) {
-      result.status = LcpSolverStatus::InvalidProblem;
-      result.message = "Friction coefficient (hi) must be finite";
-      return result;
-    }
-
-    if (std::isfinite(lo[i]) && std::isfinite(hi[i]) && lo[i] > hi[i]) {
-      result.status = LcpSolverStatus::InvalidProblem;
-      result.message = "Lower bound exceeds upper bound";
-      return result;
-    }
-  }
   const int nSkip = padding(n);
 
   std::vector<double> Adata(n * nSkip, 0.0);

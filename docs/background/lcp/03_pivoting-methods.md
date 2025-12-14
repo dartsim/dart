@@ -115,7 +115,8 @@ Ax = b + w, where each (xᵢ, wᵢ) satisfies one of:
 ### Key Features
 
 - **Bounded variables**: `lo[i] <= x[i] <= hi[i]`
-- **Unbounded variables**: First `nub` variables have infinite bounds
+- **Unbounded variables**: Represented by `lo = -∞`, `hi = +∞` (legacy API uses
+  `nub` to seed the initial unbounded block)
 - **Friction support**: `findex[i]` for friction cone constraints
   - When `findex[i] >= 0`: bounds become `hi[i] = |hi[i] * x[findex[i]]|`, `lo[i] = -hi[i]`
 - **Early termination**: Optional for faster approximate solutions
@@ -140,6 +141,21 @@ bool SolveLCP(int n, Scalar* A, Scalar* x, Scalar* b, Scalar* w,
 ### DART Implementation
 
 ```cpp
+#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
+
+using namespace dart::math;
+
+// Build an LcpProblem (boxed LCP with optional findex friction coupling)
+LcpProblem problem(A, b, lo, hi, findex);
+Eigen::VectorXd x = Eigen::VectorXd::Zero(b.size());
+
+DantzigSolver solver;
+LcpResult result = solver.solve(problem, x, solver.getDefaultOptions());
+```
+
+The underlying ODE-derived implementation is also available directly:
+
+```cpp
 #include <dart/math/lcp/pivoting/dantzig/Lcp.hpp>
 
 using namespace dart::math;
@@ -152,7 +168,7 @@ int findex[n];
 
 bool success = SolveLCP<double>(
     n, A, x, b, w,
-    0,        // nub (unbounded variables)
+    0,        // nub (unbounded variables); can be left 0 in most cases
     lo, hi,
     findex,
     false     // earlyTermination

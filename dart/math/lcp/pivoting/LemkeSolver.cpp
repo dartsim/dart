@@ -303,14 +303,10 @@ LcpResult LemkeSolver::solve(
   const auto& hi = problem.hi;
   const auto& findex = problem.findex;
 
-  // Check problem dimensions
-  const bool dimensionMismatch
-      = (A.rows() != A.cols()) || (A.rows() != b.size())
-        || (lo.size() != b.size()) || (hi.size() != b.size())
-        || (findex.size() != b.size());
-  if (dimensionMismatch) {
+  std::string problemMessage;
+  if (!detail::validateProblem(problem, &problemMessage)) {
     result.status = LcpSolverStatus::InvalidProblem;
-    result.message = "Matrix dimensions inconsistent";
+    result.message = problemMessage;
     return result;
   }
 

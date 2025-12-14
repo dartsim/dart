@@ -31,12 +31,14 @@
  */
 
 #include "../../../helpers/GTestUtils.hpp"
+#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
 #include "dart/math/lcp/pivoting/LemkeSolver.hpp"
 
 #include <gtest/gtest.h>
 
 using dart::math::LcpOptions;
 using dart::math::LcpProblem;
+using dart::math::LcpSolverStatus;
 
 namespace {
 
@@ -212,6 +214,46 @@ TEST(Lemke, SolvesBoxedBoundsViaFallback)
   EXPECT_EQ(result.status, dart::math::LcpSolverStatus::Success);
   EXPECT_GE(f[0], 0.0);
   EXPECT_LE(f[0], 1.0);
+}
+
+//==============================================================================
+TEST(Lemke, SolvesFrictionIndexViaFallback)
+{
+  dart::math::LemkeSolver solver;
+
+  Eigen::Matrix3d A;
+  A << 4.0, 0.5, 0.0, 0.5, 3.0, 0.25, 0.0, 0.25, 2.5;
+
+  const Eigen::Vector3d target(1.0, 0.2, -0.1);
+  const Eigen::Vector3d b = A * target;
+
+  Eigen::Vector3d lo;
+  lo << 0.0, -0.5, -0.5;
+  Eigen::Vector3d hi;
+  hi << std::numeric_limits<double>::infinity(), 0.5, 0.5;
+  Eigen::Vector3i findex;
+  findex << -1, 0, 0;
+
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+
+  dart::math::DantzigSolver reference;
+  Eigen::VectorXd referenceX = Eigen::VectorXd::Zero(3);
+  LcpOptions refOptions = reference.getDefaultOptions();
+  refOptions.warmStart = false;
+  const auto refResult = reference.solve(problem, referenceX, refOptions);
+  ASSERT_TRUE(refResult.succeeded());
+
+  EXPECT_NEAR(x[0], referenceX[0], 1e-6);
+  EXPECT_NEAR(x[1], referenceX[1], 1e-6);
+  EXPECT_NEAR(x[2], referenceX[2], 1e-6);
+
+  const double mu = hi[1];
+  EXPECT_LE(std::abs(x[1]), mu * x[0] + 1e-8);
+  EXPECT_LE(std::abs(x[2]), mu * x[0] + 1e-8);
 }
 
 //==============================================================================

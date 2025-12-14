@@ -13,6 +13,62 @@
 
 namespace dart::math::detail {
 
+inline bool validateProblem(
+    const LcpProblem& problem, std::string* message = nullptr)
+{
+  const auto& A = problem.A;
+  const auto& b = problem.b;
+  const auto& lo = problem.lo;
+  const auto& hi = problem.hi;
+  const auto& findex = problem.findex;
+
+  const bool dimensionMismatch
+      = (A.rows() != A.cols()) || (A.rows() != b.size())
+        || (lo.size() != b.size()) || (hi.size() != b.size())
+        || (findex.size() != b.size());
+  if (dimensionMismatch) {
+    if (message)
+      *message = "Matrix/vector dimensions inconsistent";
+    return false;
+  }
+
+  const Eigen::Index n = b.size();
+  for (Eigen::Index i = 0; i < n; ++i) {
+    const int ref = findex[i];
+    if (ref >= n) {
+      if (message)
+        *message = "Friction index entry out of range";
+      return false;
+    }
+
+    if (ref == i) {
+      if (message)
+        *message = "Friction index entry cannot reference itself";
+      return false;
+    }
+
+    if (std::isnan(lo[i]) || std::isnan(hi[i])) {
+      if (message)
+        *message = "Bounds contain NaN";
+      return false;
+    }
+
+    if (ref >= 0 && !std::isfinite(hi[i])) {
+      if (message)
+        *message = "Friction coefficient (hi) must be finite";
+      return false;
+    }
+
+    if (std::isfinite(lo[i]) && std::isfinite(hi[i]) && lo[i] > hi[i]) {
+      if (message)
+        *message = "Lower bound exceeds upper bound";
+      return false;
+    }
+  }
+
+  return true;
+}
+
 inline bool computeEffectiveBounds(
     const Eigen::VectorXd& lo,
     const Eigen::VectorXd& hi,

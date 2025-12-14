@@ -49,7 +49,7 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 - **Features**:
   - Supports bounded variables (lo, hi)
   - Handles friction with `findex` parameter
-  - Unbounded variables support (`nub` parameter)
+  - Supports unbounded variables via ±∞ bounds
   - Early termination option
 - **Use Case**: General BLCP problems with bounds, friction constraints
 
