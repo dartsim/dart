@@ -120,7 +120,7 @@ This is used for copy/clone/serialization-style workflows:
 
 ### Typed bundles (`Composite::MakeState` / `Composite::MakeProperties`)
 
-When you *know at compile time* which Aspects you care about, you can use the typed bundling helpers:
+When you _know at compile time_ which Aspects you care about, you can use the typed bundling helpers:
 
 - `Composite::MakeState<Aspects...>`
 - `Composite::MakeProperties<Aspects...>`
