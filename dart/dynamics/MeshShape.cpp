@@ -88,7 +88,7 @@ MeshShape::MeshShape(
     mTriMesh(std::move(mesh)),
     mCachedAiScene(nullptr),
     mMeshUri(uri),
-    mMeshPath(uri.getPath()),
+    mMeshPath(),
     mResourceRetriever(nullptr),
     mDisplayList(0),
     mScale(scale),
@@ -96,6 +96,11 @@ MeshShape::MeshShape(
     mAlphaMode(BLEND),
     mColorIndex(0)
 {
+  if (uri.mScheme.get_value_or("file") == "file" && uri.mPath) {
+    mMeshPath = uri.getFilesystemPath();
+  } else {
+    mMeshPath.clear();
+  }
   setScale(scale);
 }
 
@@ -508,15 +513,31 @@ void MeshShape::setMesh(
     return;
   }
 
-  // Clear cached aiScene to prevent stale data.
+  const bool meshIsCached = mesh && (mesh == mCachedAiScene);
+  const MeshOwnership effectiveOwnership
+      = meshIsCached ? MeshOwnership::Imported : ownership;
+
+  if (meshIsCached && ownership != MeshOwnership::Imported) {
+    DART_WARN(
+        "[MeshShape::setMesh] Overriding MeshOwnership ({}) to Imported when "
+        "adopting a cached aiScene created by getMesh().",
+        static_cast<int>(ownership));
+  }
+
+  // Clear cached aiScene to prevent stale data. If the caller is adopting the
+  // cached pointer, transfer ownership to mMesh without releasing it here.
   if (mCachedAiScene) {
-    aiReleaseImport(mCachedAiScene);
-    mCachedAiScene = nullptr;
+    if (meshIsCached) {
+      mCachedAiScene = nullptr;
+    } else {
+      aiReleaseImport(mCachedAiScene);
+      mCachedAiScene = nullptr;
+    }
   }
 
   releaseMesh();
 
-  mMesh.set(mesh, ownership);
+  mMesh.set(mesh, effectiveOwnership);
 
   mTriMesh = convertAssimpMesh(mMesh.get());
   mMaterials.clear();
@@ -566,8 +587,12 @@ void MeshShape::setMesh(
   }
 
   if (mCachedAiScene) {
-    aiReleaseImport(mCachedAiScene);
-    mCachedAiScene = nullptr;
+    if (mesh && mesh.get() == mCachedAiScene) {
+      mCachedAiScene = nullptr;
+    } else {
+      aiReleaseImport(mCachedAiScene);
+      mCachedAiScene = nullptr;
+    }
   }
 
   releaseMesh();

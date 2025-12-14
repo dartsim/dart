@@ -5,6 +5,7 @@
 #include "dart/dynamics/ArrowShape.hpp"
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 #include "dart/dynamics/MeshShape.hpp"
+#include "dart/math/TriMesh.hpp"
 
 #include <Eigen/Core>
 #include <assimp/cimport.h>
@@ -438,6 +439,80 @@ TEST(MeshShapeTest, TracksOwnershipAndUriMetadata)
   DART_SUPPRESS_DEPRECATED_END
   EXPECT_TRUE(shape.getMeshPath().empty());
   EXPECT_TRUE(shape.getMeshUri().empty());
+}
+
+TEST(MeshShapeTest, TriMeshConstructorTracksUriMetadata)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(1.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 1.0, 0.0);
+  triMesh->addTriangle(0, 1, 2);
+
+  const std::string filePath = dart::config::dataPath("skel/kima/l-foot.dae");
+  const common::Uri fileUri = common::Uri::createFromPath(filePath);
+
+  dynamics::MeshShape shape(Eigen::Vector3d::Ones(), triMesh, fileUri);
+
+  EXPECT_EQ(shape.getMeshUri(), fileUri.toString());
+  EXPECT_EQ(shape.getMeshPath(), fileUri.getFilesystemPath());
+}
+
+TEST(MeshShapeTest, TriMeshGetMeshCachesImportedScene)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(1.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 1.0, 0.0);
+  triMesh->addVertex(1.0, 1.0, 0.0);
+  triMesh->addTriangle(0, 1, 2);
+  triMesh->addTriangle(1, 3, 2);
+
+  dynamics::MeshShape shape(Eigen::Vector3d::Ones(), triMesh, common::Uri());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* sceneFirst = shape.getMesh();
+  ASSERT_NE(sceneFirst, nullptr);
+  const aiScene* sceneSecond = shape.getMesh();
+  DART_SUPPRESS_DEPRECATED_END
+
+  EXPECT_EQ(sceneFirst, sceneSecond);
+  ASSERT_GE(sceneFirst->mNumMeshes, 1u);
+  ASSERT_NE(sceneFirst->mMeshes, nullptr);
+  ASSERT_NE(sceneFirst->mMeshes[0], nullptr);
+  EXPECT_EQ(sceneFirst->mMeshes[0]->mNumVertices, 4u);
+  EXPECT_EQ(sceneFirst->mMeshes[0]->mNumFaces, 2u);
+}
+
+TEST(MeshShapeTest, SetMeshAdoptsCachedSceneWithoutUseAfterFree)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(1.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 1.0, 0.0);
+  triMesh->addTriangle(0, 1, 2);
+
+  dynamics::MeshShape shape(Eigen::Vector3d::Ones(), triMesh, common::Uri());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* cachedScene = shape.getMesh();
+  ASSERT_NE(cachedScene, nullptr);
+
+  // Calling setMesh() with the cached aiScene pointer should not release the
+  // scene before adopting it (regression test for use-after-free).
+  shape.setMesh(
+      cachedScene, common::Uri("package://example/mesh.obj"), nullptr);
+
+  const aiScene* adoptedScene = shape.getMesh();
+  DART_SUPPRESS_DEPRECATED_END
+
+  EXPECT_EQ(adoptedScene, cachedScene);
+
+  const auto updatedTriMesh = shape.getTriMesh();
+  ASSERT_NE(updatedTriMesh, nullptr);
+  EXPECT_TRUE(updatedTriMesh->hasTriangles());
+  EXPECT_EQ(updatedTriMesh->getVertices().size(), 3u);
+  EXPECT_EQ(updatedTriMesh->getTriangles().size(), 1u);
 }
 
 TEST(ArrowShapeTest, CloneUsesMeshOwnershipSemantics)
