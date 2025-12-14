@@ -37,7 +37,7 @@
 // RTTI (e.g., dynamic_cast) on objects with virtual base classes while they are
 // still under construction/destruction. DART's Aspect/Composite system can
 // trigger such casts during construction, which historically caused Windows
-// failures like "Access violation - no RTTI data!" (see dartsim/dart#1522).
+// failures like "Access violation - no RTTI data!" (see #1522).
 //
 // Wrap class declarations that both (1) use virtual inheritance and (2) may be
 // subject to RTTI casts during construction/destruction with these macros:
