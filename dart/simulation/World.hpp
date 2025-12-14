@@ -328,10 +328,10 @@ public:
   /// Returns the indexed solver (const).
   const WorldSolver* getSolver(std::size_t index) const;
 
-  /// Returns the first solver matching the given type, or nullptr.
+  /// Returns the first rigid solver matching the given type, or nullptr.
   WorldSolver* getSolver(RigidSolverType type);
 
-  /// Returns the first solver matching the given type, or nullptr.
+  /// Returns the first rigid solver matching the given type, or nullptr.
   const WorldSolver* getSolver(RigidSolverType type) const;
 
   /// Sets which rigid solver is considered active.
