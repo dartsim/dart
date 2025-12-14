@@ -328,11 +328,20 @@ public:
   /// Returns the indexed solver (const).
   const WorldSolver* getSolver(std::size_t index) const;
 
+  /// Returns the index of the given solver, or getNumSolvers() if not found.
+  std::size_t getSolverIndex(const WorldSolver* solver) const;
+
   /// Returns the first rigid solver matching the given type, or nullptr.
   WorldSolver* getSolver(RigidSolverType type);
 
   /// Returns the first rigid solver matching the given type, or nullptr.
   const WorldSolver* getSolver(RigidSolverType type) const;
+
+  /// Returns the first solver with the given name, or nullptr.
+  WorldSolver* getSolver(const std::string& name);
+
+  /// Returns the first solver with the given name, or nullptr.
+  const WorldSolver* getSolver(const std::string& name) const;
 
   /// Sets which rigid solver is considered active.
   ///

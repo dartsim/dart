@@ -144,15 +144,6 @@ private:
   std::optional<RigidSolverType> mRigidSolverType;
 };
 
-std::size_t findSolverIndex(const World& world, const WorldSolver* solver)
-{
-  for (std::size_t i = 0; i < world.getNumSolvers(); ++i) {
-    if (world.getSolver(i) == solver)
-      return i;
-  }
-  return world.getNumSolvers();
-}
-
 } // namespace
 
 //==============================================================================
@@ -716,7 +707,7 @@ TEST(World, SolverSteppingActiveRigidSolverOnlyOrdersNonRigidAndSync)
   ASSERT_TRUE(activeRigid);
 
   auto moveToIndex = [&](WorldSolver* solver, std::size_t target) {
-    const auto index = findSolverIndex(*world, solver);
+    const auto index = world->getSolverIndex(solver);
     ASSERT_LT(index, world->getNumSolvers());
     ASSERT_TRUE(world->moveSolver(index, target));
   };
