@@ -33,6 +33,7 @@
 #include "dart/math/lcp/pivoting/LemkeSolver.hpp"
 
 #include "dart/math/lcp/LcpValidation.hpp"
+#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
 
 #include <Eigen/SVD>
 
@@ -332,9 +333,11 @@ LcpResult LemkeSolver::solve(
         && (hi.array() == std::numeric_limits<double>::infinity()).all()
         && (findex.array() < 0).all();
   if (!standardBounds) {
-    result.status = LcpSolverStatus::InvalidProblem;
-    result.message = "LemkeSolver supports only standard LCP (lo=0, hi=+inf)";
-    return result;
+    // Lemke is implemented for standard LCP only, but callers may still route
+    // boxed/findex problems through this solver. Delegate to the boxed-capable
+    // pivoting implementation to provide consistent behavior across solvers.
+    DantzigSolver fallback;
+    return fallback.solve(problem, x, options);
   }
 
   // Call the legacy Lemke solver (expects w = Ax + q)

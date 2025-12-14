@@ -44,7 +44,8 @@ namespace math {
 /// Lemke's complementary pivot algorithm for LCP
 ///
 /// This solver uses Lemke's algorithm with an artificial variable to solve
-/// standard LCPs. It provides exact solutions when they exist.
+/// standard LCPs. For boxed LCPs (including friction-index coupling), it
+/// delegates to the boxed-capable pivoting solver implementation.
 ///
 /// Reference:
 ///   Lemke, C. E. (1965). "Bimatrix equilibrium points and mathematical

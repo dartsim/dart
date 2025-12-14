@@ -192,7 +192,7 @@ TEST(Lemke, Lemke_12D)
 }
 
 //==============================================================================
-TEST(Lemke, RejectsBoxedBounds)
+TEST(Lemke, SolvesBoxedBoundsViaFallback)
 {
   dart::math::LemkeSolver solver;
 
@@ -209,7 +209,9 @@ TEST(Lemke, RejectsBoxedBounds)
       Eigen::VectorXd::Constant(1, 1.0),
       Eigen::VectorXi::Constant(1, -1));
   const auto result = solver.solve(problem, f, solver.getDefaultOptions());
-  EXPECT_EQ(result.status, dart::math::LcpSolverStatus::InvalidProblem);
+  EXPECT_EQ(result.status, dart::math::LcpSolverStatus::Success);
+  EXPECT_GE(f[0], 0.0);
+  EXPECT_LE(f[0], 1.0);
 }
 
 //==============================================================================
