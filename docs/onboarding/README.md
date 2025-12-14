@@ -53,6 +53,7 @@ This onboarding guide is organized into several focused documents:
 - **[python-bindings.md](python-bindings.md)** - nanobind bindings architecture
 - **[api-documentation.md](api-documentation.md)** - Publishing strategy for RTD and GitHub Pages API docs
 - **[build-system.md](build-system.md)** - CMake internals and dependency analysis
+- **[io-parsing.md](io-parsing.md)** - Unified model loading API (`dart::io`)
 
 ### Purpose and Problem Solved
 
@@ -771,14 +772,13 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant User as User Code
-    participant UrdfParser as UrdfParser
+    participant IO as dart::io
     participant Skeleton as Skeleton
     participant Parser as URDF Parser
     participant World as World
 
-    User->>UrdfParser: UrdfParser()
-    User->>UrdfParser: parseSkeleton("robot.urdf")
-    UrdfParser->>Parser: parseURDF()
+    User->>IO: readSkeleton("robot.urdf", options)
+    IO->>Parser: parseURDF()
     Parser->>Parser: parse XML
     Parser->>Skeleton: create()
 
@@ -788,14 +788,15 @@ sequenceDiagram
         Parser->>Skeleton: setMass/Inertia()
     end
 
-    UrdfParser-->>User: skeleton
+    IO-->>User: skeleton
     User->>World: addSkeleton(skeleton)
     User->>World: step()
 </mermaid>
 
 **Key Files**:
-- [`UrdfParser`](dart/utils/urdf/UrdfParser.hpp)
-- [`UrdfParser::parseSkeleton()`](dart/utils/urdf/UrdfParser.cpp)
+- [`dart::io` unified API](dart/io/Read.hpp)
+- Implementation: [`dart/io/Read.cpp`](dart/io/Read.cpp)
+- URDF parser (used internally): [`UrdfParser`](dart/utils/urdf/UrdfParser.hpp)
 - Example: [`examples/atlas_puppet/main.cpp`](examples/atlas_puppet/main.cpp)
 - Notes: URDF `<limit>` on `planar` and `floating` joints is interpreted uniformly across all of their DOFs (with warnings), and planar joints derive their plane from the `<axis>` normal.
 
@@ -1174,10 +1175,11 @@ dart_gui/
 │   │   ├── render/           # Rendering utilities
 │   │   └── detail/           # GUI internals
 │   ├── lcpsolver/            # LCP solver
-│   ├── math/                 # Mathematical utilities (includes math/optimization/)
-│   ├── optimizer/            # Deprecated alias headers forwarding to math/optimization
-│   ├── simulation/           # World simulation and time stepping
-│   └── utils/                # File parsers (URDF, SDF, etc.)
+	│   ├── math/                 # Mathematical utilities (includes math/optimization/)
+	│   ├── optimizer/            # Deprecated alias headers forwarding to math/optimization
+	│   ├── simulation/           # World simulation and time stepping
+	│   ├── io/                   # Unified model loading (readWorld/readSkeleton)
+	│   └── utils/                # File parsers (URDF, SDF, etc.)
 ├── python/                   # Python bindings (dartpy)
 ├── examples/                 # C++ and Python examples
 ├── tutorials/                # Tutorial code
@@ -1196,7 +1198,7 @@ dart_gui/
 ```cpp
 #include <dart/All.hpp>               // Core DART
 #include <dart/gui/All.hpp>           // GUI
-#include <dart/utils/urdf/urdf.hpp>   // URDF parsing
+#include <dart/io/Read.hpp>           // Unified model loading (URDF/SDF/SKEL/...)
 ```
 
 **Python API**:
@@ -1297,16 +1299,18 @@ robot->eachBodyNode([&](BodyNode* bodyNode) {
 ### Pattern 5: Loading Robot Models
 
 ```cpp
-// URDF
-dart::utils::UrdfParser parser;
-auto robot = parser.parseSkeleton("path/to/robot.urdf");
+dart::io::ReadOptions options;
+
+// URDF (package:// mapping is optional)
+options.addPackageDirectory("my_robot", "/path/to/my_robot");
+auto robot = dart::io::readSkeleton("path/to/robot.urdf", options);
 world->addSkeleton(robot);
 
 // SDF
-auto robot = dart::utils::SdfParser::readSkeleton("path/to/model.sdf");
+auto model = dart::io::readSkeleton("path/to/model.sdf");
 
 // SKEL (DART native format)
-auto robot = dart::utils::SkelParser::readSkeleton("path/to/skel.skel");
+auto legacy = dart::io::readSkeleton("path/to/skel.skel");
 ```
 
 Note: SKEL stays as a legacy XML format for backward compatibility. There is no plan to redesign it (e.g., YAML); use URDF, SDF, or MJCF for new models.
