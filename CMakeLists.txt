@@ -206,6 +206,23 @@ else()
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF CATEGORY build)
 dart_option(DART_BUILD_GUI "Build GUI library" ON CATEGORY build)
+set(_dart_user_set_build_gui_raylib FALSE)
+if(DEFINED DART_BUILD_GUI_RAYLIB)
+  set(_dart_user_set_build_gui_raylib TRUE)
+endif()
+dart_option(DART_BUILD_GUI_RAYLIB "Build experimental Raylib GUI backend" OFF CATEGORY build)
+if(NOT _dart_user_set_build_gui_raylib AND DEFINED DART_BUILD_RAYLIB)
+  message(WARNING "DART_BUILD_RAYLIB is deprecated; use DART_BUILD_GUI_RAYLIB instead.")
+  if(DART_BUILD_RAYLIB)
+    set(_dart_build_gui_raylib_value ON)
+  else()
+    set(_dart_build_gui_raylib_value OFF)
+  endif()
+  set(DART_BUILD_GUI_RAYLIB "${_dart_build_gui_raylib_value}" CACHE BOOL "Build experimental Raylib GUI backend" FORCE)
+  unset(DART_BUILD_RAYLIB CACHE)
+  unset(_dart_build_gui_raylib_value)
+endif()
+unset(_dart_user_set_build_gui_raylib)
 dart_option(DART_BUILD_COLLISION_BULLET "Embed the Bullet collision backend into the core dart target" OFF CATEGORY build)
 dart_option(DART_BUILD_COLLISION_ODE "Embed the ODE collision backend into the core dart target" OFF CATEGORY build)
 dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)
@@ -245,6 +262,8 @@ dart_option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF CATEGORY diagnostics)
 dart_option(DART_USE_SYSTEM_IMGUI
   "Use system-installed ImGui instead of fetching from GitHub (recommended for package distributions)" OFF CATEGORY system)
+dart_option(DART_USE_SYSTEM_RAYLIB
+  "Use system-installed Raylib instead of fetching from GitHub (recommended for package distributions)" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind" OFF CATEGORY system)
@@ -375,6 +394,25 @@ else()
 endif()
 
 option(DART_BUILD_WHEELS "Indicate building dartpy for wheels" OFF)
+
+#===============================================================================
+# Uninstall
+#===============================================================================
+
+# Add an "uninstall" target early so that fetched dependencies (e.g., raylib)
+# don't create their own conflicting target.
+# https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/recipe/AddUninstallTarget
+if(NOT TARGET uninstall)
+  file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/cmake")
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/uninstall_target.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
+    IMMEDIATE @ONLY
+  )
+  add_custom_target(uninstall
+    COMMAND "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
+  )
+endif()
 
 #===============================================================================
 # Find dependencies
@@ -666,6 +704,19 @@ if(TARGET dart)
     message(STATUS "Skipping tutorials (DART_BUILD_TUTORIALS == OFF)")
   endif()
 
+  if(DART_BUILD_GUI_RAYLIB)
+    if(MSVC)
+      add_subdirectory(examples/raylib)
+    else()
+      add_subdirectory(examples/raylib EXCLUDE_FROM_ALL)
+    endif()
+    if(TARGET examples AND TARGET dart_raylib)
+      add_dependencies(examples dart_raylib)
+    endif()
+  else()
+    message(STATUS "Skipping Raylib example (DART_BUILD_GUI_RAYLIB == OFF)")
+  endif()
+
 endif()
 
 add_subdirectory(python)
@@ -693,6 +744,9 @@ foreach(target_candidate IN LISTS tutorials)
     list(APPEND all_targets ${target_candidate})
   endif()
 endforeach()
+if(TARGET dart_raylib)
+  list(APPEND all_targets dart_raylib)
+endif()
 add_custom_target(ALL DEPENDS ${all_targets})
 
 #===============================================================================
@@ -824,21 +878,6 @@ endif()
 # Tutorials source
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tutorials"
   DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH}
-)
-
-#===============================================================================
-# Uninstall
-#===============================================================================
-
-# Add an "uninstall" target
-# https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/recipe/AddUninstallTarget
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/uninstall_target.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/cmake/uninstall_target.cmake"
-  IMMEDIATE @ONLY
-)
-add_custom_target(uninstall
-  "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
 )
 
 #===============================================================================
