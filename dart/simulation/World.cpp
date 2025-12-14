@@ -45,7 +45,6 @@
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/common/String.hpp"
-#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/solver/ClassicRigidSolver.hpp"
@@ -190,8 +189,6 @@ World::World(const WorldConfig& config)
 
   addSolver(std::make_unique<ClassicRigidSolver>());
   addSolver(std::make_unique<RigidSolver>(mEntityManager));
-
-  setConstraintSolver(std::make_unique<constraint::BoxedLcpConstraintSolver>());
 
   if (auto* collisionSolver = getCollisionCapableSolver()) {
     if (auto detector = resolveCollisionDetector(config))
