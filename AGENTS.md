@@ -14,3 +14,4 @@ This file is a pointer board for agents working in this repository. Keep it conc
 - Use the existing tooling (`pixi run …`) described in the onboarding docs; do not invent new entry points.
 - When you learn something new, update the relevant document (usually under `docs/onboarding/` or the component README) and then add a short pointer here only if discoverability is still lacking.
 - Treat AGENTS.md as a TODO list for missing documentation: if this file grows beyond pointers, migrate the details to the appropriate doc and shrink this file again before you finish the task.
+- Keep `scripts/patch_gz_physics.py` limited to bumping gz-physics' DART CMake version requirement (no local source patches) so API compatibility issues are caught in DART or upstream.
