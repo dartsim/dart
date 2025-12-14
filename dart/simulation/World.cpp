@@ -298,6 +298,9 @@ void World::step(bool _resetCommand)
     auto* activeSolver = getActiveRigidSolver();
     if (activeSolver && isSolverEnabled(activeSolver)
         && activeSolver->isRigidSolver()) {
+      activeSolver->step(*this, _resetCommand);
+      ++steppedSolvers;
+
       std::vector<WorldSolver*> solversToSync;
 
       for (auto& entry : mSolvers) {
@@ -305,14 +308,8 @@ void World::step(bool _resetCommand)
           continue;
 
         auto* solver = entry.solver.get();
-        if (!solver)
+        if (!solver || solver == activeSolver)
           continue;
-
-        if (solver == activeSolver) {
-          solver->step(*this, _resetCommand);
-          ++steppedSolvers;
-          continue;
-        }
 
         if (solver->isRigidSolver()) {
           solversToSync.push_back(solver);
