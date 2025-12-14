@@ -64,6 +64,10 @@ struct FreeJointCase
   dart::dynamics::FreeJoint* joint{nullptr};
   dart::dynamics::BodyNode* body{nullptr};
 
+  dart::dynamics::SkeletonPtr referenceSkeleton;
+  dart::dynamics::FreeJoint* referenceJoint{nullptr};
+  dart::dynamics::ShapeNode* referenceShapeNode{nullptr};
+
   Eigen::Vector6d initialPositions{Eigen::Vector6d::Zero()};
   Eigen::Vector6d initialVelocities{Eigen::Vector6d::Zero()};
   double initialEnergy{0.0};
@@ -90,6 +94,7 @@ FreeJointCase makeCase(
   FreeJointCase data;
   data.name = name;
 
+  const Eigen::Vector3d boxSize = Eigen::Vector3d(0.3, 0.2, 0.15);
   data.skeleton = Skeleton::create(name);
   auto pair = data.skeleton->createJointAndBodyNodePair<FreeJoint>();
   data.joint = pair.first;
@@ -102,8 +107,7 @@ FreeJointCase makeCase(
   auto shapeNode = data.body->createShapeNodeWith<
       VisualAspect,
       CollisionAspect,
-      DynamicsAspect>(
-      std::make_shared<BoxShape>(Eigen::Vector3d(0.3, 0.2, 0.15)));
+      DynamicsAspect>(std::make_shared<BoxShape>(boxSize));
   shapeNode->getVisualAspect()->setColor(color);
 
   data.joint->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
@@ -116,7 +120,48 @@ FreeJointCase makeCase(
 
   data.initialEnergy = data.skeleton->computeKineticEnergy();
 
+  data.referenceSkeleton = Skeleton::create(name + " (ground truth)");
+  data.referenceSkeleton->setMobile(false);
+  auto referencePair
+      = data.referenceSkeleton->createJointAndBodyNodePair<FreeJoint>();
+  data.referenceJoint = referencePair.first;
+
+  auto* referenceBody = referencePair.second;
+  referenceBody->setCollidable(false);
+
+  Eigen::Vector4d referenceColor = color;
+  referenceColor.head<3>()
+      = 0.25 * Eigen::Vector3d::Ones() + 0.75 * referenceColor.head<3>();
+  referenceColor[3] = std::min(referenceColor[3], 0.15);
+
+  data.referenceShapeNode = referenceBody->createShapeNodeWith<VisualAspect>(
+      std::make_shared<BoxShape>(boxSize * 1.05));
+  data.referenceShapeNode->getVisualAspect()->setColor(referenceColor);
+  data.referenceShapeNode->getVisualAspect()->setShadowed(false);
+
+  data.referenceJoint->setTransformFromParentBodyNode(
+      Eigen::Isometry3d::Identity());
+  data.referenceJoint->setTransformFromChildBodyNode(
+      Eigen::Isometry3d::Identity());
+  data.referenceJoint->setPositions(data.initialPositions);
+  data.referenceJoint->setVelocities(Eigen::Vector6d::Zero());
+
   return data;
+}
+
+Eigen::Isometry3d computeExpectedTransform(const FreeJointCase& data, double t)
+{
+  using dart::dynamics::FreeJoint;
+
+  const Eigen::Isometry3d initial
+      = FreeJoint::convertToTransform(data.initialPositions);
+  Eigen::Isometry3d expected = initial;
+  expected.linear()
+      = dart::math::expMapRot(data.initialVelocities.head<3>() * t)
+        * initial.linear();
+  expected.translation()
+      = initial.translation() + data.initialVelocities.tail<3>() * t;
+  return expected;
 }
 
 CaseMetrics computeMetrics(const FreeJointCase& data, double dt)
@@ -217,19 +262,29 @@ public:
       osg::ref_ptr<dart::gui::ImGuiViewer> viewer,
       dart::simulation::WorldPtr world,
       std::vector<FreeJointCase> cases,
-      double numericDt)
+      double numericDt,
+      double guiScale)
     : mViewer(std::move(viewer)),
       mWorld(std::move(world)),
       mCases(std::move(cases)),
-      mNumericDt(numericDt)
+      mNumericDt(numericDt),
+      mGuiScale(guiScale)
   {
+    applyGroundTruthVisibility();
     recomputeMetrics();
   }
 
   void render() override
   {
-    ImGui::SetNextWindowPos(ImVec2(10, 20), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(520, 540), ImGuiCond_FirstUseEver);
+    updateGroundTruth();
+
+    const float windowScale = static_cast<float>(mGuiScale);
+    ImGui::SetNextWindowPos(
+        ImVec2(10.0f * windowScale, 20.0f * windowScale),
+        ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(
+        ImVec2(520.0f * windowScale, 540.0f * windowScale),
+        ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowBgAlpha(0.85f);
 
     if (!ImGui::Begin(
@@ -273,6 +328,18 @@ public:
       if (ImGui::Button("Numeric checks")) {
         recomputeMetrics();
       }
+    }
+
+    if (ImGui::CollapsingHeader(
+            "Ground truth", ImGuiTreeNodeFlags_DefaultOpen)) {
+      if (ImGui::Checkbox("Show reference bodies", &mShowGroundTruth)) {
+        applyGroundTruthVisibility();
+        updateGroundTruth();
+      }
+
+      ImGui::TextWrapped(
+          "Reference bodies are kinematic visuals whose pose is computed from "
+          "the initial world-frame velocities (ω, v).");
     }
 
     if (ImGui::CollapsingHeader("Cases", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -333,6 +400,38 @@ private:
       c.joint->setVelocities(c.initialVelocities);
       c.joint->setAccelerations(Eigen::Vector6d::Zero());
       c.initialEnergy = c.skeleton->computeKineticEnergy();
+
+      if (c.referenceJoint) {
+        c.referenceJoint->setPositions(c.initialPositions);
+        c.referenceJoint->setVelocities(Eigen::Vector6d::Zero());
+      }
+    }
+
+    updateGroundTruth();
+  }
+
+  void applyGroundTruthVisibility()
+  {
+    for (auto& c : mCases) {
+      if (!c.referenceShapeNode)
+        continue;
+      c.referenceShapeNode->getVisualAspect()->setHidden(!mShowGroundTruth);
+    }
+  }
+
+  void updateGroundTruth()
+  {
+    if (!mShowGroundTruth)
+      return;
+
+    const double t = mWorld->getTime();
+    for (auto& c : mCases) {
+      if (!c.referenceJoint)
+        continue;
+
+      const Eigen::Isometry3d expected = computeExpectedTransform(c, t);
+      c.referenceJoint->setPositions(
+          dart::dynamics::FreeJoint::convertToPositions(expected));
     }
   }
 
@@ -346,6 +445,8 @@ private:
   dart::simulation::WorldPtr mWorld;
   std::vector<FreeJointCase> mCases;
   double mNumericDt;
+  double mGuiScale;
+  bool mShowGroundTruth{true};
 };
 
 int main(int argc, char* argv[])
@@ -419,16 +520,18 @@ int main(int argc, char* argv[])
         makeCase("High ω multi-axis", pose, vel, dart::Color::Fuchsia(0.3)));
   }
 
-  for (const auto& c : cases)
+  for (const auto& c : cases) {
     world->addSkeleton(c.skeleton);
+    world->addSkeleton(c.referenceSkeleton);
+  }
 
   osg::ref_ptr<gui::WorldNode> node = new gui::WorldNode(world);
 
   osg::ref_ptr<gui::ImGuiViewer> viewer = new gui::ImGuiViewer();
   viewer->setImGuiScale(static_cast<float>(guiScale));
   viewer->addWorldNode(node);
-  viewer->getImGuiHandler()->addWidget(
-      std::make_shared<FreeJointCasesWidget>(viewer, world, cases, numericDt));
+  viewer->getImGuiHandler()->addWidget(std::make_shared<FreeJointCasesWidget>(
+      viewer, world, cases, numericDt, guiScale));
 
   viewer->setUpViewInWindow(0, 0, 1280, 720);
   viewer->getCameraManipulator()->setHomePosition(
