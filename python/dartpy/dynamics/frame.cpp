@@ -49,7 +49,7 @@ void defFrame(nb::module_& m)
       .def(
           "getParentFrame",
           [](Frame* self) -> Frame* { return self->getParentFrame(); },
-          nb::rv_policy::reference_internal)
+          nb::rv_policy::reference)
       .def(
           "descendsFrom",
           [](const Frame& self, const Frame* someFrame) {
