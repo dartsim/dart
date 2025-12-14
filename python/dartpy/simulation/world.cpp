@@ -1,5 +1,6 @@
 #include "simulation/world.hpp"
 
+#include "common/repr.hpp"
 #include "common/type_casters.hpp"
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
@@ -177,7 +178,16 @@ void defWorld(nb::module_& m)
             return self.getConstraintSolver();
           },
           nb::rv_policy::reference_internal)
-      .def("bake", &World::bake);
+      .def("bake", &World::bake)
+      .def("__repr__", [](const World& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("name", repr_string(self.getName()));
+        fields.emplace_back(
+            "skeletons", std::to_string(self.getNumSkeletons()));
+        fields.emplace_back("time", repr_double(self.getTime()));
+        fields.emplace_back("time_step", repr_double(self.getTimeStep()));
+        return format_repr("World", fields);
+      });
 }
 
 } // namespace dart::python_nb

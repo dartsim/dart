@@ -29,20 +29,10 @@ To explore the bindings locally:
 Module Reference
 ----------------
 
-.. note::
-   The dartpy API is flattened to the top-level ``dartpy`` package and
-   ``dartpy.io`` for parsers. Legacy submodules will be removed in DART 8.0.
-
 .. toctree::
    :maxdepth: 1
    :titlesonly:
 
-   api/modules/common
-   api/modules/math
-   api/modules/dynamics
-   api/modules/simulation
-   api/modules/collision
-   api/modules/constraint
-   api/modules/optimizer
+   api/modules/dartpy
    api/modules/utils
    api/modules/gui
