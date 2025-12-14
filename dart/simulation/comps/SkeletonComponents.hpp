@@ -30,43 +30,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_SOLVER_RIGIDSOLVER_HPP_
-#define DART_SIMULATION_SOLVER_RIGIDSOLVER_HPP_
+#ifndef DART_SIMULATION_COMPS_SKELETONCOMPONENTS_HPP_
+#define DART_SIMULATION_COMPS_SKELETONCOMPONENTS_HPP_
 
-#include "dart/simulation/solver/WorldSolver.hpp"
+#include <dart/dynamics/Fwd.hpp>
 
-#include <entt/entt.hpp>
+#include <vector>
 
-#include <unordered_map>
+namespace dart::simulation::comps {
 
-namespace dart::simulation {
-
-/// Rigid solver backed by an entt::registry for ECS-based workflows.
-class DART_API RigidSolver final : public WorldSolver
+/// Wraps a classic Skeleton instance so ECS tooling can refer to it.
+struct LegacySkeleton final
 {
-public:
-  explicit RigidSolver(entt::registry& entityManager);
-  ~RigidSolver() override = default;
-
-  entt::registry& getEntityManager();
-  const entt::registry& getEntityManager() const;
-
-  void handleSkeletonAdded(
-      World& world, const dynamics::SkeletonPtr& skeleton) override;
-  void handleSkeletonRemoved(
-      World& world, const dynamics::SkeletonPtr& skeleton) override;
-
-  void setTimeStep(double timeStep) override;
-  void reset(World& world) override;
-  void step(World& world, bool resetCommand) override;
-
-private:
-  void syncSkeletonStates();
-
-  entt::registry* mEntityManager;
-  std::unordered_map<const dynamics::Skeleton*, entt::entity> mSkeletonEntities;
+  dynamics::SkeletonPtr skeleton;
 };
 
-} // namespace dart::simulation
+/// Kinematic state extracted from a classic Skeleton.
+struct SkeletonState final
+{
+  std::vector<double> positions;
+  std::vector<double> velocities;
+};
 
-#endif // DART_SIMULATION_SOLVER_RIGIDSOLVER_HPP_
+} // namespace dart::simulation::comps
+
+#endif // DART_SIMULATION_COMPS_SKELETONCOMPONENTS_HPP_
+
