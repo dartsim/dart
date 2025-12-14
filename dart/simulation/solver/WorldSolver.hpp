@@ -88,6 +88,12 @@ public:
   /// Advances this solver one step.
   virtual void step(World& world, bool resetCommand) = 0;
 
+  /// Updates derived state without advancing simulation time.
+  ///
+  /// This hook is intended for solvers that cache or mirror state, so they can
+  /// observe changes driven by another active solver.
+  virtual void sync(World& world);
+
   /// Notifies the solver a skeleton has been added.
   virtual void handleSkeletonAdded(
       World& world, const dynamics::SkeletonPtr& skeleton);

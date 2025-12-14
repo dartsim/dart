@@ -142,4 +142,9 @@ void RigidSolver::step(World&, bool)
   syncSkeletonStates();
 }
 
+void RigidSolver::sync(World&)
+{
+  syncSkeletonStates();
+}
+
 } // namespace dart::simulation

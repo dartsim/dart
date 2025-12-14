@@ -264,8 +264,8 @@ void World::setTimeStep(double _timeStep)
   }
 
   mTimeStep = _timeStep;
-  for (auto& solver : mRigidSolvers)
-    solver->setTimeStep(_timeStep);
+  for (auto& entry : mRigidSolvers)
+    entry.solver->setTimeStep(_timeStep);
   for (auto& skel : mSkeletons)
     skel->setTimeStep(_timeStep);
 }
@@ -282,8 +282,8 @@ void World::reset()
   mTime = 0.0;
   mFrame = 0;
   mRecording->clear();
-  for (auto& solver : mRigidSolvers)
-    solver->reset(*this);
+  for (auto& entry : mRigidSolvers)
+    entry.solver->reset(*this);
 }
 
 //==============================================================================
@@ -291,8 +291,43 @@ void World::step(bool _resetCommand)
 {
   DART_PROFILE_FRAME;
 
-  for (auto& solver : mRigidSolvers) {
-    solver->step(*this, _resetCommand);
+  std::size_t steppedSolvers = 0;
+
+  if (mSolverSteppingMode == SolverSteppingMode::ActiveRigidSolverOnly) {
+    auto* activeSolver = getActiveRigidSolver();
+    if (activeSolver && isSolverEnabled(activeSolver)) {
+      activeSolver->step(*this, _resetCommand);
+      ++steppedSolvers;
+
+      for (auto& entry : mRigidSolvers) {
+        if (!entry.enabled)
+          continue;
+        if (entry.solver.get() == activeSolver)
+          continue;
+        entry.solver->sync(*this);
+      }
+    } else {
+      DART_WARN(
+          "World '{}' is configured for ActiveRigidSolverOnly stepping, but "
+          "the active solver is not available/enabled. Falling back to "
+          "stepping all enabled solvers.",
+          mName);
+    }
+  }
+
+  if (steppedSolvers == 0) {
+    for (auto& entry : mRigidSolvers) {
+      if (!entry.enabled)
+        continue;
+      entry.solver->step(*this, _resetCommand);
+      ++steppedSolvers;
+    }
+  }
+
+  if (steppedSolvers == 0) {
+    DART_WARN(
+        "World '{}' has no enabled solvers. Skipping simulation step.", mName);
+    return;
   }
 
   mTime += mTimeStep;
@@ -416,8 +451,8 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   _skeleton->setGravity(mGravity);
 
   mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
-  for (auto& solver : mRigidSolvers)
-    solver->handleSkeletonAdded(*this, _skeleton);
+  for (auto& entry : mRigidSolvers)
+    entry.solver->handleSkeletonAdded(*this, _skeleton);
 
   // Update recording
   mRecording->updateNumGenCoords(mSkeletons);
@@ -457,8 +492,8 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   mIndices.pop_back();
 
   // Notify solvers.
-  for (auto& solver : mRigidSolvers)
-    solver->handleSkeletonRemoved(*this, _skeleton);
+  for (auto& entry : mRigidSolvers)
+    entry.solver->handleSkeletonRemoved(*this, _skeleton);
 
   // Remove _skeleton from mSkeletons
   mSkeletons.erase(
@@ -775,18 +810,27 @@ const entt::registry& World::getEntityManager() const
 //==============================================================================
 WorldSolver* World::addSolver(std::unique_ptr<WorldSolver> solver)
 {
+  return addSolver(std::move(solver), true);
+}
+
+//==============================================================================
+WorldSolver* World::addSolver(std::unique_ptr<WorldSolver> solver, bool enabled)
+{
   if (!solver) {
     DART_WARN("Attempted to add a null solver to world '{}'.", mName);
     return nullptr;
   }
 
   solver->setTimeStep(mTimeStep);
-  mRigidSolvers.emplace_back(std::move(solver));
-  auto* solverPtr = mRigidSolvers.back().get();
+  mRigidSolvers.emplace_back(SolverEntry{std::move(solver), enabled});
+  auto* solverPtr = mRigidSolvers.back().solver.get();
 
   // Ensure the solver is aware of any skeletons that were already present.
   for (auto& skeleton : mSkeletons)
     solverPtr->handleSkeletonAdded(*this, skeleton);
+
+  if (enabled)
+    solverPtr->sync(*this);
 
   return solverPtr;
 }
@@ -802,7 +846,7 @@ WorldSolver* World::getSolver(std::size_t index)
 {
   if (index >= mRigidSolvers.size())
     return nullptr;
-  return mRigidSolvers[index].get();
+  return mRigidSolvers[index].solver.get();
 }
 
 //==============================================================================
@@ -810,15 +854,15 @@ const WorldSolver* World::getSolver(std::size_t index) const
 {
   if (index >= mRigidSolvers.size())
     return nullptr;
-  return mRigidSolvers[index].get();
+  return mRigidSolvers[index].solver.get();
 }
 
 //==============================================================================
 WorldSolver* World::getSolver(RigidSolverType type)
 {
-  for (auto& solver : mRigidSolvers) {
-    if (solver->getType() == type)
-      return solver.get();
+  for (auto& entry : mRigidSolvers) {
+    if (entry.solver->getType() == type)
+      return entry.solver.get();
   }
   return nullptr;
 }
@@ -826,19 +870,149 @@ WorldSolver* World::getSolver(RigidSolverType type)
 //==============================================================================
 const WorldSolver* World::getSolver(RigidSolverType type) const
 {
-  for (auto& solver : mRigidSolvers) {
-    if (solver->getType() == type)
-      return solver.get();
+  for (const auto& entry : mRigidSolvers) {
+    if (entry.solver->getType() == type)
+      return entry.solver.get();
   }
   return nullptr;
 }
 
 //==============================================================================
+bool World::setActiveRigidSolver(RigidSolverType type)
+{
+  if (!getSolver(type)) {
+    DART_WARN(
+        "Attempted to set active solver to type {}, but no matching solver is "
+        "registered in world '{}'.",
+        static_cast<int>(type),
+        mName);
+    return false;
+  }
+
+  mActiveRigidSolverType = type;
+  return true;
+}
+
+//==============================================================================
+RigidSolverType World::getActiveRigidSolverType() const
+{
+  return mActiveRigidSolverType;
+}
+
+//==============================================================================
+WorldSolver* World::getActiveRigidSolver()
+{
+  return getSolver(mActiveRigidSolverType);
+}
+
+//==============================================================================
+const WorldSolver* World::getActiveRigidSolver() const
+{
+  return getSolver(mActiveRigidSolverType);
+}
+
+//==============================================================================
+void World::setSolverSteppingMode(SolverSteppingMode mode)
+{
+  mSolverSteppingMode = mode;
+}
+
+//==============================================================================
+SolverSteppingMode World::getSolverSteppingMode() const
+{
+  return mSolverSteppingMode;
+}
+
+//==============================================================================
+bool World::setSolverEnabled(std::size_t index, bool enabled)
+{
+  if (index >= mRigidSolvers.size())
+    return false;
+
+  auto& entry = mRigidSolvers[index];
+  if (entry.enabled == enabled)
+    return true;
+
+  entry.enabled = enabled;
+  if (enabled)
+    entry.solver->sync(*this);
+
+  return true;
+}
+
+//==============================================================================
+bool World::isSolverEnabled(std::size_t index) const
+{
+  if (index >= mRigidSolvers.size())
+    return false;
+
+  return mRigidSolvers[index].enabled;
+}
+
+//==============================================================================
+bool World::setSolverEnabled(WorldSolver* solver, bool enabled)
+{
+  if (!solver)
+    return false;
+
+  for (std::size_t i = 0; i < mRigidSolvers.size(); ++i) {
+    if (mRigidSolvers[i].solver.get() == solver)
+      return setSolverEnabled(i, enabled);
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool World::isSolverEnabled(const WorldSolver* solver) const
+{
+  if (!solver)
+    return false;
+
+  for (const auto& entry : mRigidSolvers) {
+    if (entry.solver.get() == solver)
+      return entry.enabled;
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool World::moveSolver(std::size_t fromIndex, std::size_t toIndex)
+{
+  if (fromIndex >= mRigidSolvers.size() || toIndex >= mRigidSolvers.size())
+    return false;
+
+  if (fromIndex == toIndex)
+    return true;
+
+  auto begin = mRigidSolvers.begin();
+  if (fromIndex < toIndex) {
+    std::rotate(
+        begin + fromIndex,
+        begin + fromIndex + 1,
+        begin + toIndex + 1);
+  } else {
+    std::rotate(
+        begin + toIndex, begin + fromIndex, begin + fromIndex + 1);
+  }
+
+  return true;
+}
+
+//==============================================================================
 WorldSolver* World::getConstraintCapableSolver()
 {
-  for (auto& solver : mRigidSolvers) {
-    if (solver->supportsConstraints())
-      return solver.get();
+  if (auto* activeSolver = getActiveRigidSolver()) {
+    if (isSolverEnabled(activeSolver) && activeSolver->supportsConstraints())
+      return activeSolver;
+  }
+
+  for (auto& entry : mRigidSolvers) {
+    if (!entry.enabled)
+      continue;
+    if (entry.solver->supportsConstraints())
+      return entry.solver.get();
   }
   return nullptr;
 }
@@ -846,9 +1020,16 @@ WorldSolver* World::getConstraintCapableSolver()
 //==============================================================================
 const WorldSolver* World::getConstraintCapableSolver() const
 {
-  for (const auto& solver : mRigidSolvers) {
-    if (solver->supportsConstraints())
-      return solver.get();
+  if (const auto* activeSolver = getActiveRigidSolver()) {
+    if (isSolverEnabled(activeSolver) && activeSolver->supportsConstraints())
+      return activeSolver;
+  }
+
+  for (const auto& entry : mRigidSolvers) {
+    if (!entry.enabled)
+      continue;
+    if (entry.solver->supportsConstraints())
+      return entry.solver.get();
   }
   return nullptr;
 }
@@ -856,9 +1037,16 @@ const WorldSolver* World::getConstraintCapableSolver() const
 //==============================================================================
 WorldSolver* World::getCollisionCapableSolver()
 {
-  for (auto& solver : mRigidSolvers) {
-    if (solver->supportsCollision())
-      return solver.get();
+  if (auto* activeSolver = getActiveRigidSolver()) {
+    if (isSolverEnabled(activeSolver) && activeSolver->supportsCollision())
+      return activeSolver;
+  }
+
+  for (auto& entry : mRigidSolvers) {
+    if (!entry.enabled)
+      continue;
+    if (entry.solver->supportsCollision())
+      return entry.solver.get();
   }
   return nullptr;
 }
@@ -866,9 +1054,16 @@ WorldSolver* World::getCollisionCapableSolver()
 //==============================================================================
 const WorldSolver* World::getCollisionCapableSolver() const
 {
-  for (const auto& solver : mRigidSolvers) {
-    if (solver->supportsCollision())
-      return solver.get();
+  if (const auto* activeSolver = getActiveRigidSolver()) {
+    if (isSolverEnabled(activeSolver) && activeSolver->supportsCollision())
+      return activeSolver;
+  }
+
+  for (const auto& entry : mRigidSolvers) {
+    if (!entry.enabled)
+      continue;
+    if (entry.solver->supportsCollision())
+      return entry.solver.get();
   }
   return nullptr;
 }

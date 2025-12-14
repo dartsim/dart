@@ -80,6 +80,15 @@ enum class CollisionDetectorType : int
   Ode,
 };
 
+/// Controls how World dispatches solver stepping each frame.
+enum class SolverSteppingMode : int
+{
+  /// Step all enabled solvers in registration order.
+  AllEnabledSolvers,
+  /// Step only the active rigid solver, then sync other enabled solvers.
+  ActiveRigidSolverOnly,
+};
+
 /// Configuration bundle used when constructing a World.
 struct WorldConfig final
 {
@@ -292,6 +301,13 @@ public:
   /// Adds a solver to this world, taking ownership.
   WorldSolver* addSolver(std::unique_ptr<WorldSolver> solver);
 
+  /// Adds a solver to this world with an initial enabled state.
+  ///
+  /// Disabled solvers still receive structural notifications (e.g., skeleton
+  /// added/removed), but they are skipped when stepping and when resolving
+  /// World APIs that require a solver backend.
+  WorldSolver* addSolver(std::unique_ptr<WorldSolver> solver, bool enabled);
+
   /// Returns the number of solvers registered with this world.
   std::size_t getNumSolvers() const;
 
@@ -306,6 +322,43 @@ public:
 
   /// Returns the first solver matching the given type, or nullptr.
   const WorldSolver* getSolver(RigidSolverType type) const;
+
+  /// Sets which rigid solver is considered active.
+  ///
+  /// When SolverSteppingMode::ActiveRigidSolverOnly is selected, only the
+  /// active solver will receive step() calls.
+  bool setActiveRigidSolver(RigidSolverType type);
+
+  /// Returns which rigid solver type is currently active.
+  RigidSolverType getActiveRigidSolverType() const;
+
+  /// Returns the active rigid solver, or nullptr if it is not registered.
+  WorldSolver* getActiveRigidSolver();
+
+  /// Returns the active rigid solver (const), or nullptr if it is not
+  /// registered.
+  const WorldSolver* getActiveRigidSolver() const;
+
+  /// Controls how World steps the registered solvers.
+  void setSolverSteppingMode(SolverSteppingMode mode);
+
+  /// Returns the current solver stepping mode.
+  SolverSteppingMode getSolverSteppingMode() const;
+
+  /// Enables or disables a solver by index.
+  bool setSolverEnabled(std::size_t index, bool enabled);
+
+  /// Returns whether the indexed solver is enabled.
+  bool isSolverEnabled(std::size_t index) const;
+
+  /// Enables or disables a solver by pointer.
+  bool setSolverEnabled(WorldSolver* solver, bool enabled);
+
+  /// Returns whether the given solver is enabled.
+  bool isSolverEnabled(const WorldSolver* solver) const;
+
+  /// Moves a solver within the execution order.
+  bool moveSolver(std::size_t fromIndex, std::size_t toIndex);
 
   /// \{ @name Iterations
 
@@ -438,8 +491,20 @@ protected:
   /// Centralized ECS registry shared across solvers.
   entt::registry mEntityManager;
 
-  /// Collection of rigid solvers that advance the world each step
-  std::vector<std::unique_ptr<WorldSolver>> mRigidSolvers;
+  struct SolverEntry final
+  {
+    std::unique_ptr<WorldSolver> solver;
+    bool enabled{true};
+  };
+
+  /// Collection of rigid solvers registered with the world.
+  std::vector<SolverEntry> mRigidSolvers;
+
+  /// Solver stepping policy used by World::step().
+  SolverSteppingMode mSolverSteppingMode{SolverSteppingMode::AllEnabledSolvers};
+
+  /// Which rigid solver is considered active.
+  RigidSolverType mActiveRigidSolverType{RigidSolverType::ClassicSkeleton};
 
   //--------------------------------------------------------------------------
   // Signals

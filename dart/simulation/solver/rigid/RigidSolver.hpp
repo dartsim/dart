@@ -59,6 +59,7 @@ public:
   void setTimeStep(double timeStep) override;
   void reset(World& world) override;
   void step(World& world, bool resetCommand) override;
+  void sync(World& world) override;
 
 private:
   void syncSkeletonStates();

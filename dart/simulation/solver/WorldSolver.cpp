@@ -80,6 +80,11 @@ void WorldSolver::reset(World&)
   // Default no-op
 }
 
+void WorldSolver::sync(World&)
+{
+  // Default no-op
+}
+
 void WorldSolver::handleSkeletonAdded(
     World&, const dynamics::SkeletonPtr& /*skeleton*/)
 {
