@@ -30,48 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/UniversalLoader.hpp"
+#pragma once
 
-#include "dart/utils/urdf/UrdfParser.hpp"
+#include <dart/common/Export.hpp>
 
-namespace dart {
-namespace utils {
+#ifndef DART_IO_API
+  #if defined(DART_BUILDING_DART_IO)
+    #define DART_IO_API DART_DLL_EXPORT
+  #else
+    #define DART_IO_API DART_DLL_IMPORT
+  #endif
+#endif
 
-namespace {
-
-simulation::WorldPtr readUrdfWorld(const common::Uri& uri, const ReadOptions& options)
-{
-  UrdfParser parser(UrdfParser::Options(options.resourceRetriever));
-  for (const auto& [packageName, packageDirectory] :
-       options.urdfPackageDirectories) {
-    parser.addPackageDirectory(packageName, packageDirectory);
-  }
-  return parser.parseWorld(uri);
-}
-
-dynamics::SkeletonPtr readUrdfSkeleton(
-    const common::Uri& uri, const ReadOptions& options)
-{
-  UrdfParser parser(UrdfParser::Options(options.resourceRetriever));
-  for (const auto& [packageName, packageDirectory] :
-       options.urdfPackageDirectories) {
-    parser.addPackageDirectory(packageName, packageDirectory);
-  }
-  return parser.parseSkeleton(uri);
-}
-
-struct RegisterUrdfUniversalLoader
-{
-  RegisterUrdfUniversalLoader()
-  {
-    detail::registerUrdfParser(&readUrdfWorld, &readUrdfSkeleton);
-  }
-};
-
-const RegisterUrdfUniversalLoader registerUrdfUniversalLoader;
-
-} // namespace
-
-} // namespace utils
-} // namespace dart
-
+#ifndef DART_IO_LOCAL
+  #if DART_BUILD_SHARED
+    #define DART_IO_LOCAL DART_DLL_LOCAL
+  #else
+    #define DART_IO_LOCAL
+  #endif
+#endif

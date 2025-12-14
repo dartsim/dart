@@ -30,10 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_UNIVERSALLOADER_HPP_
-#define DART_UTILS_UNIVERSALLOADER_HPP_
-
-#include <dart/utils/Export.hpp>
+#ifndef DART_IO_READ_HPP_
+#define DART_IO_READ_HPP_
 
 #include <dart/simulation/World.hpp>
 
@@ -42,11 +40,13 @@
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
 
+#include <dart/io/Export.hpp>
+
 #include <map>
 #include <string>
 
 namespace dart {
-namespace utils {
+namespace io {
 
 /// Supported model formats for reading Skeletons and Worlds.
 enum class ModelFormat
@@ -71,7 +71,7 @@ enum class ModelFormat
 };
 
 /// Options for reading a model file.
-struct DART_UTILS_API ReadOptions
+struct DART_IO_API ReadOptions
 {
   /// Model format. If Auto, infer from URI.
   ModelFormat format{ModelFormat::Auto};
@@ -88,31 +88,14 @@ struct DART_UTILS_API ReadOptions
 };
 
 /// Read World from a model file.
-simulation::WorldPtr DART_UTILS_API
+simulation::WorldPtr DART_IO_API
 readWorld(const common::Uri& uri, const ReadOptions& options = ReadOptions());
 
 /// Read Skeleton from a model file.
-dynamics::SkeletonPtr DART_UTILS_API
-readSkeleton(const common::Uri& uri, const ReadOptions& options = ReadOptions());
+dynamics::SkeletonPtr DART_IO_API readSkeleton(
+    const common::Uri& uri, const ReadOptions& options = ReadOptions());
 
-namespace detail {
-
-using UrdfReadWorldFn
-    = simulation::WorldPtr (*)(const common::Uri&, const ReadOptions&);
-using UrdfReadSkeletonFn
-    = dynamics::SkeletonPtr (*)(const common::Uri&, const ReadOptions&);
-
-/// Register URDF parsing callbacks used by dart::utils::readWorld/readSkeleton.
-///
-/// This is intended to be called by the optional dart-utils-urdf component to
-/// avoid a dependency cycle between dart-utils and dart-utils-urdf.
-void DART_UTILS_API registerUrdfParser(
-    UrdfReadWorldFn readWorldFn, UrdfReadSkeletonFn readSkeletonFn);
-
-} // namespace detail
-
-} // namespace utils
+} // namespace io
 } // namespace dart
 
-#endif // DART_UTILS_UNIVERSALLOADER_HPP_
-
+#endif // DART_IO_READ_HPP_

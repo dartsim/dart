@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/UniversalLoader.hpp"
+#include "dart/io/Read.hpp"
 
+#include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/String.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
@@ -41,7 +42,9 @@
 #include "dart/utils/mjcf/MjcfParser.hpp"
 #include "dart/utils/sdf/SdfParser.hpp"
 
-#include <dart/common/LocalResourceRetriever.hpp>
+#if DART_IO_HAS_URDF
+  #include "dart/utils/urdf/UrdfParser.hpp"
+#endif
 
 #include <tinyxml2.h>
 
@@ -49,12 +52,9 @@
 #include <stdexcept>
 
 namespace dart {
-namespace utils {
+namespace io {
 
 namespace {
-
-detail::UrdfReadWorldFn gUrdfReadWorld = nullptr;
-detail::UrdfReadSkeletonFn gUrdfReadSkeleton = nullptr;
 
 common::ResourceRetrieverPtr getRetriever(
     const common::ResourceRetrieverPtr& retrieverOrNullptr)
@@ -65,7 +65,7 @@ common::ResourceRetrieverPtr getRetriever(
   auto composite = std::make_shared<utils::CompositeResourceRetriever>();
   composite->addSchemaRetriever(
       "file", std::make_shared<common::LocalResourceRetriever>());
-  composite->addSchemaRetriever("dart", DartResourceRetriever::create());
+  composite->addSchemaRetriever("dart", utils::DartResourceRetriever::create());
   return composite;
 }
 
@@ -112,7 +112,7 @@ std::optional<ModelFormat> inferFormatFromXmlRoot(
     content = retriever->readAll(uri);
   } catch (const std::exception& e) {
     DART_ERROR(
-        "[readWorld/readSkeleton] Failed reading [{}]: {}",
+        "[dart::io::readWorld/readSkeleton] Failed reading [{}]: {}",
         uri.toString(),
         e.what());
     return std::nullopt;
@@ -120,7 +120,7 @@ std::optional<ModelFormat> inferFormatFromXmlRoot(
 
   if (content.empty()) {
     DART_ERROR(
-        "[readWorld/readSkeleton] Failed reading [{}]: empty content",
+        "[dart::io::readWorld/readSkeleton] Failed reading [{}]: empty content",
         uri.toString());
     return std::nullopt;
   }
@@ -129,7 +129,7 @@ std::optional<ModelFormat> inferFormatFromXmlRoot(
   const auto result = doc.Parse(content.c_str(), content.size());
   if (result != tinyxml2::XML_SUCCESS) {
     DART_ERROR(
-        "[readWorld/readSkeleton] Failed parsing XML [{}]: {}",
+        "[dart::io::readWorld/readSkeleton] Failed parsing XML [{}]: {}",
         uri.toString(),
         doc.ErrorStr());
     return std::nullopt;
@@ -138,7 +138,8 @@ std::optional<ModelFormat> inferFormatFromXmlRoot(
   const auto* root = doc.RootElement();
   if (!root) {
     DART_ERROR(
-        "[readWorld/readSkeleton] Failed parsing XML [{}]: missing root element",
+        "[dart::io::readWorld/readSkeleton] Failed parsing XML [{}]: missing "
+        "root element",
         uri.toString());
     return std::nullopt;
   }
@@ -174,18 +175,37 @@ ReadOptions resolveOptions(const ReadOptions& options)
   return resolved;
 }
 
+#if DART_IO_HAS_URDF
+simulation::WorldPtr readUrdfWorld(
+    const common::Uri& uri, const ReadOptions& options)
+{
+  utils::UrdfParser parser(
+      utils::UrdfParser::Options(options.resourceRetriever));
+  for (const auto& [packageName, packageDirectory] :
+       options.urdfPackageDirectories) {
+    parser.addPackageDirectory(packageName, packageDirectory);
+  }
+  return parser.parseWorld(uri);
+}
+
+dynamics::SkeletonPtr readUrdfSkeleton(
+    const common::Uri& uri, const ReadOptions& options)
+{
+  utils::UrdfParser parser(
+      utils::UrdfParser::Options(options.resourceRetriever));
+  for (const auto& [packageName, packageDirectory] :
+       options.urdfPackageDirectories) {
+    parser.addPackageDirectory(packageName, packageDirectory);
+  }
+  return parser.parseSkeleton(uri);
+}
+#endif
+
 } // namespace
 
 //==============================================================================
-void detail::registerUrdfParser(
-    UrdfReadWorldFn readWorldFn, UrdfReadSkeletonFn readSkeletonFn)
-{
-  gUrdfReadWorld = readWorldFn;
-  gUrdfReadSkeleton = readSkeletonFn;
-}
-
-//==============================================================================
-simulation::WorldPtr readWorld(const common::Uri& uri, const ReadOptions& options)
+simulation::WorldPtr readWorld(
+    const common::Uri& uri, const ReadOptions& options)
 {
   const auto resolved = resolveOptions(options);
 
@@ -194,7 +214,7 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const ReadOptions& option
     const auto inferred = inferFormat(uri, resolved.resourceRetriever);
     if (!inferred) {
       DART_ERROR(
-          "[readWorld] Failed inferring model format from URI [{}]",
+          "[dart::io::readWorld] Failed inferring model format from URI [{}]",
           uri.toString());
       return nullptr;
     }
@@ -203,23 +223,26 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const ReadOptions& option
 
   switch (format) {
     case ModelFormat::Skel:
-      return SkelParser::readWorld(uri, resolved.resourceRetriever);
+      return utils::SkelParser::readWorld(uri, resolved.resourceRetriever);
     case ModelFormat::Sdf:
-      return SdfParser::readWorld(uri, SdfParser::Options(resolved.resourceRetriever));
+      return utils::SdfParser::readWorld(
+          uri, utils::SdfParser::Options(resolved.resourceRetriever));
     case ModelFormat::Mjcf:
-      return MjcfParser::readWorld(uri, MjcfParser::Options(resolved.resourceRetriever));
+      return utils::MjcfParser::readWorld(
+          uri, utils::MjcfParser::Options(resolved.resourceRetriever));
     case ModelFormat::Urdf:
-      if (!gUrdfReadWorld) {
-        DART_ERROR(
-            "[readWorld] URDF support is not available. Build and link against "
-            "dart-utils-urdf to read URDF files. URI=[{}]",
-            uri.toString());
-        return nullptr;
-      }
-      return gUrdfReadWorld(uri, resolved);
+#if DART_IO_HAS_URDF
+      return readUrdfWorld(uri, resolved);
+#else
+      DART_ERROR(
+          "[dart::io::readWorld] URDF support is not available. Build and link "
+          "against dart-utils-urdf to read URDF files. URI=[{}]",
+          uri.toString());
+      return nullptr;
+#endif
     case ModelFormat::Vsk:
       DART_ERROR(
-          "[readWorld] VSK does not support world parsing. URI=[{}]",
+          "[dart::io::readWorld] VSK does not support world parsing. URI=[{}]",
           uri.toString());
       return nullptr;
     case ModelFormat::Auto:
@@ -227,7 +250,8 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const ReadOptions& option
   }
 
   DART_ERROR(
-      "[readWorld] Unsupported model format for URI [{}]", uri.toString());
+      "[dart::io::readWorld] Unsupported model format for URI [{}]",
+      uri.toString());
   return nullptr;
 }
 
@@ -242,7 +266,8 @@ dynamics::SkeletonPtr readSkeleton(
     const auto inferred = inferFormat(uri, resolved.resourceRetriever);
     if (!inferred) {
       DART_ERROR(
-          "[readSkeleton] Failed inferring model format from URI [{}]",
+          "[dart::io::readSkeleton] Failed inferring model format from URI "
+          "[{}]",
           uri.toString());
       return nullptr;
     }
@@ -250,27 +275,46 @@ dynamics::SkeletonPtr readSkeleton(
   }
 
   switch (format) {
-    case ModelFormat::Skel:
-      return SkelParser::readSkeleton(uri, resolved.resourceRetriever);
-    case ModelFormat::Sdf:
-      return SdfParser::readSkeleton(
-          uri, SdfParser::Options(resolved.resourceRetriever));
-    case ModelFormat::Vsk:
-      return VskParser::readSkeleton(
-          uri, VskParser::Options(resolved.resourceRetriever));
-    case ModelFormat::Urdf:
-      if (!gUrdfReadSkeleton) {
-        DART_ERROR(
-            "[readSkeleton] URDF support is not available. Build and link "
-            "against dart-utils-urdf to read URDF files. URI=[{}]",
-            uri.toString());
-        return nullptr;
+    case ModelFormat::Skel: {
+      const auto world
+          = utils::SkelParser::readWorld(uri, resolved.resourceRetriever);
+      if (world) {
+        if (world->getNumSkeletons() == 0)
+          return nullptr;
+
+        if (world->getNumSkeletons() > 1) {
+          DART_WARN(
+              "[dart::io::readSkeleton] Loaded a Skel world containing "
+              "multiple "
+              "skeletons; returning the first skeleton. URI=[{}]",
+              uri.toString());
+        }
+
+        return world->getSkeleton(0);
       }
-      return gUrdfReadSkeleton(uri, resolved);
+
+      return utils::SkelParser::readSkeleton(uri, resolved.resourceRetriever);
+    }
+    case ModelFormat::Sdf:
+      return utils::SdfParser::readSkeleton(
+          uri, utils::SdfParser::Options(resolved.resourceRetriever));
+    case ModelFormat::Vsk:
+      return utils::VskParser::readSkeleton(
+          uri, utils::VskParser::Options(resolved.resourceRetriever));
+    case ModelFormat::Urdf:
+#if DART_IO_HAS_URDF
+      return readUrdfSkeleton(uri, resolved);
+#else
+      DART_ERROR(
+          "[dart::io::readSkeleton] URDF support is not available. Build and "
+          "link against dart-utils-urdf to read URDF files. URI=[{}]",
+          uri.toString());
+      return nullptr;
+#endif
     case ModelFormat::Mjcf:
       DART_ERROR(
-          "[readSkeleton] MJCF does not support direct skeleton parsing. "
-          "URI=[{}]",
+          "[dart::io::readSkeleton] MJCF does not support direct skeleton "
+          "parsing. URI=[{}]",
           uri.toString());
       return nullptr;
     case ModelFormat::Auto:
@@ -278,10 +322,10 @@ dynamics::SkeletonPtr readSkeleton(
   }
 
   DART_ERROR(
-      "[readSkeleton] Unsupported model format for URI [{}]", uri.toString());
+      "[dart::io::readSkeleton] Unsupported model format for URI [{}]",
+      uri.toString());
   return nullptr;
 }
 
-} // namespace utils
+} // namespace io
 } // namespace dart
-

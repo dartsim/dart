@@ -30,25 +30,64 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/All.hpp"
+#include "dart/io/All.hpp"
 
 #include <gtest/gtest.h>
 
 using namespace dart;
-using namespace dart::utils;
 
 //==============================================================================
-TEST(UniversalLoaderUrdf, ReadsUrdfSkeleton)
+TEST(Read, AutoDetectsSkelWorld)
 {
-  const auto skeleton
-      = readSkeleton("dart://sample/urdf/test/primitive_geometry.urdf");
+  const auto world = io::readWorld("dart://sample/skel/test/empty.skel");
+  ASSERT_NE(world, nullptr);
+  EXPECT_EQ(world->getNumSkeletons(), 0);
+}
+
+//==============================================================================
+TEST(Read, AutoDetectsSdfWorld)
+{
+  const auto world = io::readWorld("dart://sample/sdf/empty.world");
+  ASSERT_NE(world, nullptr);
+}
+
+//==============================================================================
+TEST(Read, AutoDetectsMjcfWorldByXmlRoot)
+{
+  const auto world = io::readWorld("dart://sample/mjcf/openai/ant.xml");
+  ASSERT_NE(world, nullptr);
+  EXPECT_GT(world->getNumSkeletons(), 0);
+}
+
+//==============================================================================
+TEST(Read, ExplicitFormatOverridesAuto)
+{
+  io::ReadOptions options;
+  options.format = io::ModelFormat::Skel;
+  const auto skeleton = io::readSkeleton(
+      "dart://sample/skel/test/single_pendulum.skel", options);
   EXPECT_NE(skeleton, nullptr);
 }
 
 //==============================================================================
-TEST(UniversalLoaderUrdf, ReadsUrdfWorld)
+TEST(Read, HandlesUrdfSkeletonSupport)
 {
-  const auto world = readWorld("dart://sample/urdf/test/testWorld.urdf");
-  EXPECT_NE(world, nullptr);
+  const auto skeleton
+      = io::readSkeleton("dart://sample/urdf/test/primitive_geometry.urdf");
+#if DART_IO_HAS_URDF
+  EXPECT_NE(skeleton, nullptr);
+#else
+  EXPECT_EQ(skeleton, nullptr);
+#endif
 }
 
+//==============================================================================
+TEST(Read, HandlesUrdfWorldSupport)
+{
+  const auto world = io::readWorld("dart://sample/urdf/test/testWorld.urdf");
+#if DART_IO_HAS_URDF
+  EXPECT_NE(world, nullptr);
+#else
+  EXPECT_EQ(world, nullptr);
+#endif
+}

@@ -30,52 +30,32 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/All.hpp"
+#include "dart/io/All.hpp"
 
 #include <gtest/gtest.h>
 
 using namespace dart;
-using namespace dart::utils;
 
 //==============================================================================
-TEST(UniversalLoader, AutoDetectsSkelWorld)
+TEST(ReadUnit, ReadsSkelSkeletonFromWorldFile)
 {
-  const auto world = readWorld("dart://sample/skel/test/empty.skel");
-  ASSERT_NE(world, nullptr);
-  EXPECT_EQ(world->getNumSkeletons(), 0);
-}
-
-//==============================================================================
-TEST(UniversalLoader, AutoDetectsSdfWorld)
-{
-  const auto world = readWorld("dart://sample/sdf/empty.world");
-  ASSERT_NE(world, nullptr);
-}
-
-//==============================================================================
-TEST(UniversalLoader, AutoDetectsMjcfWorldByXmlRoot)
-{
-  const auto world = readWorld("dart://sample/mjcf/openai/ant.xml");
-  ASSERT_NE(world, nullptr);
-  EXPECT_GT(world->getNumSkeletons(), 0);
-}
-
-//==============================================================================
-TEST(UniversalLoader, ExplicitFormatOverridesAuto)
-{
-  ReadOptions options;
-  options.format = ModelFormat::Skel;
-  const auto skeleton
-      = readSkeleton("dart://sample/skel/test/single_pendulum.skel", options);
+  io::ReadOptions options;
+  options.format = io::ModelFormat::Skel;
+  const auto skeleton = io::readSkeleton(
+      "dart://sample/skel/test/single_pendulum.skel", options);
   EXPECT_NE(skeleton, nullptr);
 }
 
 //==============================================================================
-TEST(UniversalLoader, UrdfRequiresUtilsUrdfComponent)
+TEST(ReadUnit, ReturnsNullForVskWorld)
 {
-  // This test intentionally links against dart-utils only (no dart-utils-urdf).
-  const auto skeleton
-      = readSkeleton("dart://sample/urdf/test/primitive_geometry.urdf");
-  EXPECT_EQ(skeleton, nullptr);
+  const auto world = io::readWorld("dart://sample/vsk/test/empty.vsk");
+  EXPECT_EQ(world, nullptr);
 }
 
+//==============================================================================
+TEST(ReadUnit, ReturnsNullForMjcfSkeleton)
+{
+  const auto skeleton = io::readSkeleton("dart://sample/mjcf/openai/ant.xml");
+  EXPECT_EQ(skeleton, nullptr);
+}
