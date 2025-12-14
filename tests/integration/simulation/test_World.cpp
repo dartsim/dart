@@ -144,6 +144,18 @@ private:
   std::optional<RigidSolverType> mRigidSolverType;
 };
 
+class SolverTestWorld final : public World
+{
+public:
+  using World::World;
+
+  using World::addSolver;
+  using World::getNumSolvers;
+  using World::getSolverIndex;
+  using World::moveSolver;
+  using World::setSolverEnabled;
+};
+
 } // namespace
 
 //==============================================================================
@@ -688,7 +700,7 @@ TEST(World, RevoluteJointConstraintBasics)
 //==============================================================================
 TEST(World, SolverSteppingActiveRigidSolverOnlyOrdersNonRigidAndSync)
 {
-  auto world = World::create();
+  auto world = std::make_shared<SolverTestWorld>();
   ASSERT_TRUE(world);
 
   for (std::size_t i = 0; i < world->getNumSolvers(); ++i)

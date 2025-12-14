@@ -49,6 +49,7 @@
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/detail/LegacySkeletonSync.hpp"
+#include "dart/simulation/detail/WorldEcsAccess.hpp"
 #include "dart/simulation/solver/classic_rigid/ClassicRigidSolver.hpp"
 #include "dart/simulation/solver/rigid/RigidSolver.hpp"
 
@@ -56,6 +57,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -63,6 +65,12 @@
 
 namespace dart {
 namespace simulation {
+
+struct World::EcsData final
+{
+  entt::registry entityManager;
+  std::unordered_map<const dynamics::Skeleton*, entt::entity> skeletonEntities;
+};
 
 namespace {
 
@@ -185,12 +193,13 @@ World::World(const WorldConfig& config)
     mTime(0.0),
     mFrame(0),
     mRecording(new Recording(mSkeletons)),
+    mEcsData(std::make_unique<EcsData>()),
     onNameChanged(mNameChangedSignal)
 {
   mIndices.push_back(0);
 
   addSolver(std::make_unique<ClassicRigidSolver>());
-  addSolver(std::make_unique<RigidSolver>(mEntityManager));
+  addSolver(std::make_unique<RigidSolver>(mEcsData->entityManager));
 
   if (auto* collisionSolver = getCollisionCapableSolver()) {
     if (auto detector = resolveCollisionDetector(config))
@@ -471,11 +480,20 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   {
     const auto* key = _skeleton.get();
     if (key) {
-      if (mSkeletonEntities.find(key) == mSkeletonEntities.end()) {
-        const auto entity = mEntityManager.create();
-        mSkeletonEntities.emplace(key, entity);
-        mEntityManager.emplace<comps::LegacySkeleton>(entity, _skeleton);
-        auto& state = mEntityManager.emplace<comps::SkeletonState>(entity);
+      if (!mEcsData) {
+        DART_WARN(
+            "World '{}' is missing ECS storage; skipping entity creation for "
+            "skeleton '{}'.",
+            mName,
+            _skeleton->getName());
+      } else if (
+          mEcsData->skeletonEntities.find(key)
+          == mEcsData->skeletonEntities.end()) {
+        const auto entity = mEcsData->entityManager.create();
+        mEcsData->skeletonEntities.emplace(key, entity);
+        mEcsData->entityManager.emplace<comps::LegacySkeleton>(entity, _skeleton);
+        auto& state
+            = mEcsData->entityManager.emplace<comps::SkeletonState>(entity);
         detail::syncLegacySkeletonState(state, *_skeleton);
       } else {
         DART_WARN(
@@ -532,10 +550,12 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 
   {
     const auto* key = _skeleton.get();
-    const auto it = mSkeletonEntities.find(key);
-    if (it != mSkeletonEntities.end()) {
-      mEntityManager.destroy(it->second);
-      mSkeletonEntities.erase(it);
+    if (mEcsData) {
+      const auto it = mEcsData->skeletonEntities.find(key);
+      if (it != mEcsData->skeletonEntities.end()) {
+        mEcsData->entityManager.destroy(it->second);
+        mEcsData->skeletonEntities.erase(it);
+      }
     }
   }
 
@@ -840,35 +860,38 @@ Recording* World::getRecording()
 }
 
 //==============================================================================
-entt::registry& World::getEntityManager()
+entt::registry& detail::WorldEcsAccess::getEntityManager(World& world)
 {
-  return mEntityManager;
+  DART_ASSERT(world.mEcsData);
+  return world.mEcsData->entityManager;
 }
 
 //==============================================================================
-const entt::registry& World::getEntityManager() const
+const entt::registry& detail::WorldEcsAccess::getEntityManager(const World& world)
 {
-  return mEntityManager;
+  DART_ASSERT(world.mEcsData);
+  return world.mEcsData->entityManager;
 }
 
 //==============================================================================
-entt::entity World::getSkeletonEntity(const dynamics::Skeleton* skeleton) const
+entt::entity detail::WorldEcsAccess::getSkeletonEntity(
+    const World& world, const dynamics::Skeleton* skeleton)
 {
-  if (!skeleton)
+  if (!skeleton || !world.mEcsData)
     return entt::null;
 
-  const auto it = mSkeletonEntities.find(skeleton);
-  if (it == mSkeletonEntities.end())
+  const auto it = world.mEcsData->skeletonEntities.find(skeleton);
+  if (it == world.mEcsData->skeletonEntities.end())
     return entt::null;
 
   return it->second;
 }
 
 //==============================================================================
-entt::entity World::getSkeletonEntity(
-    const dynamics::SkeletonPtr& skeleton) const
+entt::entity detail::WorldEcsAccess::getSkeletonEntity(
+    const World& world, const dynamics::SkeletonPtr& skeleton)
 {
-  return getSkeletonEntity(skeleton.get());
+  return getSkeletonEntity(world, skeleton.get());
 }
 
 //==============================================================================

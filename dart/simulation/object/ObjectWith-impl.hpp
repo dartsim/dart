@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simulation/World.hpp>
+#include <dart/simulation/detail/WorldEcsAccess.hpp>
 
 namespace dart::simulation::object {
 
@@ -53,7 +54,8 @@ const Component& ObjectWith<Tags, ReadOnly, WriteOnly, ReadWrite>::getReadOnly()
       "Component not declared in ReadOnlyComps<> or ReadWriteComps<> for this "
       "class. Add it to one of these lists.");
 
-  return mWorld->getEntityManager().template get<Component>(mEntity);
+  return detail::WorldEcsAccess::getEntityManager(*mWorld)
+      .template get<Component>(mEntity);
 }
 
 //==============================================================================
@@ -72,7 +74,8 @@ Component& ObjectWith<Tags, ReadOnly, WriteOnly, ReadWrite>::getMutable()
       "Component not declared in WriteOnlyComps<> or ReadWriteComps<> for this "
       "class. Add it to one of these lists or use getReadOnly().");
 
-  return mWorld->getEntityManager().template get<Component>(mEntity);
+  return detail::WorldEcsAccess::getEntityManager(*mWorld)
+      .template get<Component>(mEntity);
 }
 
 //==============================================================================
@@ -92,7 +95,8 @@ ObjectWith<Tags, ReadOnly, WriteOnly, ReadWrite>::tryGetReadOnly() const
       "Component not declared in ReadOnlyComps<> or ReadWriteComps<> for this "
       "class. Add it to one of these lists.");
 
-  return mWorld->getEntityManager().template try_get<Component>(mEntity);
+  return detail::WorldEcsAccess::getEntityManager(*mWorld)
+      .template try_get<Component>(mEntity);
 }
 
 //==============================================================================
@@ -111,7 +115,8 @@ Component* ObjectWith<Tags, ReadOnly, WriteOnly, ReadWrite>::tryGetMutable()
       "Component not declared in WriteOnlyComps<> or ReadWriteComps<> for this "
       "class. Add it to one of these lists or use tryGetReadOnly().");
 
-  return mWorld->getEntityManager().template try_get<Component>(mEntity);
+  return detail::WorldEcsAccess::getEntityManager(*mWorld)
+      .template try_get<Component>(mEntity);
 }
 
 //==============================================================================
