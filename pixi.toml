@@ -203,6 +203,8 @@ check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
 
 check-lint-spell = { cmd = "codespell --config .codespellrc" }
 
+check-docs-policy = { cmd = ["python", "scripts/check_docs_policy.py"] }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-dart8",
@@ -210,6 +212,7 @@ check-lint = { depends-on = [
   "check-lint-yaml",
   "check-lint-rst",
   "check-lint-spell",
+  "check-docs-policy",
 ] }
 
 build = { cmd = [
@@ -1305,6 +1308,7 @@ check-lint = { depends-on = [
   "check-lint-yaml",
   "check-lint-rst",
   "check-lint-spell",
+  "check-docs-policy",
 ] }
 
 build = { cmd = """
