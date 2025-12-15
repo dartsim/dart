@@ -7,6 +7,15 @@
 
 ---
 
+## Quickstart (Read This First)
+
+- Day-to-day `pixi run …` workflows: see [building.md](building.md).
+- Gazebo / gz-physics integration: jump to [Gazebo Integration Feature](#gazebo-integration-feature) and run `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
+- CI workflow overview + `gh` monitoring commands: see [ci-cd.md](ci-cd.md).
+
+<details>
+<summary>Deep dive (optional): build system analysis</summary>
+
 ## Table of Contents
 
 1. [Build System Overview](#build-system-overview)
@@ -26,7 +35,7 @@
 
 - **CMake Version:** ≥ 3.22.1
 - **Build Generator:** Ninja (via pixi) / CMake default
-- **C++ Standard:** C++17
+- **C++ Standard:** C++20
 - **Package Manager:** pixi (conda-forge based)
 - **Python:** Python 3 (for dartpy bindings)
 
@@ -708,6 +717,8 @@ build/
                 └── dartpy/
 ```
 
+</details>
+
 ### Special Features
 
 #### Gazebo Integration Feature
@@ -715,6 +726,8 @@ build/
 **Environment:** `pixi run -e gazebo <task>`
 
 **Purpose:** Test DART integration with Gazebo Physics
+
+**Context (why this exists):** This workflow is used to validate that a pinned gz-physics checkout builds and runs its DART plugin against the DART installed from this repository. When updating DART (e.g., DART 7), keep downstream compatibility by fixing issues in DART (or upstream gz-physics) rather than carrying local gz-physics source patches here. The only intended “patching” is bumping the DART CMake package version requirement so gz-physics will configure against DART 7.
 
 **Tasks:**
 
@@ -724,10 +737,42 @@ build/
 - `build-gz` - Build gz-physics with dartsim plugin
 - `test-gz` - Verify DART integration
 
+**Start here next time:**
+
+- [`pixi.toml`](../../pixi.toml) (`[feature.gazebo]`) - task chain + env overrides
+- [`scripts/patch_gz_physics.py`](../../scripts/patch_gz_physics.py) - intentionally limited patch scope (DART version only)
+- [`.github/workflows/ci_gz_physics.yml`](../../.github/workflows/ci_gz_physics.yml) - CI entry point for this workflow
+
+**Used in this task:**
+
+```bash
+pixi run lint
+DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz
+```
+
+**Fast iteration loop (smallest repeatable cycle):**
+
+1. Run `pixi run lint` before committing changes.
+2. Reproduce the integration suite locally with `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
+3. If the downstream build fails, fix compatibility in DART (preferred) or upstream gz-physics; avoid local gz-physics source patching in this repo.
+
+**What to look for (success signal):**
+
+- `test-gz` prints: `✓ DART plugin built successfully with DART integration!`
+
+**Gotchas (common failures and how to respond):**
+
+- **Missing DART components at configure time.** Example errors:
+  - `Could NOT find DART (missing: collision-bullet collision-ode) (Required is at least version "7.0")`
+  - `... but it set DART_FOUND to FALSE ...`
+  - **Resolution:** The downstream is requesting legacy components. In DART 7, Bullet/ODE backends are part of the core `dart` component; `collision-bullet` / `collision-ode` exist only as deprecated compatibility components and are planned for removal in DART 8. Prefer to update downstream to depend on `dart`, but keep this workflow passing for existing consumers.
+- **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py` limited to the DART version requirement bump; otherwise this workflow stops catching real compatibility breaks.
+- **gtest header mismatches.** gz-physics vendors gtest headers; if system gtest headers are accidentally used instead, gz-physics tests can fail to compile. The `config-gz` task forces the vendored headers to take precedence; keep that behavior.
+- **Deprecation noise is expected.** When gz-physics links the deprecated compatibility targets, CMake may emit deprecation warnings; these are intentional and should be treated as migration pressure for downstreams.
+
 **Dependencies:**
 
-- `libgz-cmake4`, `libgz-plugin3`, `libgz-math8`
-- `libgz-common6`, `libgz-utils2`, `libsdformat15`
+- Managed by pixi in `pixi.toml` under `[feature.gazebo.dependencies]` (avoid duplicating versioned package names here).
 
 ---
 

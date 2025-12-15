@@ -37,6 +37,7 @@
 
 #include <dart/common/ResourceRetriever.hpp>
 
+#include <assimp/cimport.h>
 #include <assimp/scene.h>
 
 #include <memory>
@@ -226,7 +227,44 @@ protected:
 
   void releaseMesh();
 
-  std::shared_ptr<const aiScene> mMesh;
+  struct MeshPtr : public std::shared_ptr<const aiScene>
+  {
+    // Backward-compatibility shim for downstream code (e.g., Gazebo) that
+    // assigns raw aiScene pointers directly to MeshShape::mMesh.
+    //
+    // Prefer using MeshShape::setMesh(..., MeshOwnership, ...) instead.
+    // TODO(DART 8): Remove this shim and require setMesh().
+    using std::shared_ptr<const aiScene>::shared_ptr;
+    using std::shared_ptr<const aiScene>::operator=;
+
+    MeshPtr& operator=(aiScene* scene)
+    {
+      if (!scene) {
+        this->reset();
+        return *this;
+      }
+
+      this->reset(scene, [](const aiScene* ownedScene) {
+        delete const_cast<aiScene*>(ownedScene);
+      });
+      return *this;
+    }
+
+    MeshPtr& operator=(const aiScene* scene)
+    {
+      if (!scene) {
+        this->reset();
+        return *this;
+      }
+
+      this->reset(scene, [](const aiScene* importedScene) {
+        aiReleaseImport(importedScene);
+      });
+      return *this;
+    }
+  };
+
+  MeshPtr mMesh;
   MeshOwnership mMeshOwnership{MeshOwnership::None};
 
   /// URI the mesh, if available).
