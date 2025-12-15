@@ -137,3 +137,8 @@ endif()
 # ==============================================================================
 dart_add_test("unit" test_SdfHelpers utils/test_SdfHelpers.cpp)
 target_link_libraries(test_SdfHelpers dart-utils sdformat::sdformat)
+
+if(TARGET dart-io)
+  dart_add_test("unit" test_IoRead io/test_Read.cpp)
+  target_link_libraries(test_IoRead dart-io)
+endif()

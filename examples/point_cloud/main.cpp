@@ -39,6 +39,7 @@
 #include <dart/utils/urdf/urdf.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <CLI/CLI.hpp>
 
@@ -614,11 +615,9 @@ protected:
 
 dynamics::SkeletonPtr createRobot(const std::string& name)
 {
-  auto urdfParser = dart::utils::UrdfParser();
-
   // Load the robot
   auto robot
-      = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+      = dart::io::readSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 
   // Rotate the robot so that z is upwards (default transform is not Identity)
   robot->getJoint(0)->setTransformFromParentBodyNode(
@@ -631,9 +630,7 @@ dynamics::SkeletonPtr createRobot(const std::string& name)
 
 dynamics::SkeletonPtr createGround()
 {
-  auto urdfParser = dart::utils::UrdfParser();
-
-  auto ground = urdfParser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
+  auto ground = dart::io::readSkeleton("dart://sample/urdf/KR5/ground.urdf");
 
   // Rotate and move the ground so that z is upwards
   Eigen::Isometry3d ground_tf

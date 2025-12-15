@@ -36,7 +36,8 @@
 #include "dart/config.hpp"
 #include "dart/math/Constants.hpp"
 #include "dart/math/Helpers.hpp"
-#include "dart/utils/urdf/All.hpp"
+
+#include <dart/io/Read.hpp>
 
 #include <gtest/gtest.h>
 
@@ -51,9 +52,8 @@ using namespace dart::test;
 TEST(AtlasIK, HandReachesTarget)
 {
   // Load Atlas
-  utils::UrdfParser parser;
   SkeletonPtr atlas
-      = parser.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
   ASSERT_NE(atlas, nullptr);
 
   // Set standing pose
@@ -127,8 +127,8 @@ TEST(AtlasIK, TightBoundsProduceNonZeroError)
 {
   // This test shows the FIX: tight bounds produce non-zero error
 
-  SkeletonPtr atlas = utils::UrdfParser().parseSkeleton(
-      "dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+  SkeletonPtr atlas
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
   ASSERT_NE(atlas, nullptr);
 
   BodyNode* l_hand_bn = atlas->getBodyNode("l_hand");

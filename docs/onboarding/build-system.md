@@ -438,6 +438,9 @@ Component Dependency Tree:
     ├── utils-urdf
     │   └── depends: utils, urdfdom
     │
+    ├── io
+    │   └── depends: utils (+ utils-urdf when available)
+    │
     └── gui
         └── depends: utils, OpenSceneGraph, ImGui, OpenGL
 ```
@@ -449,6 +452,7 @@ Component Dependency Tree:
 | `dart`           | `dart`                | `dart-external-odelcpsolver`, `Eigen3::Eigen`, `fcl`, `assimp`, `fmt::fmt` (plus Bullet/ODE when the collision options are enabled) |
 | `utils`          | `dart-utils`          | `dart`, `tinyxml2`, `libsdformat`                                                                                                   |
 | `utils-urdf`     | `dart-utils-urdf`     | `dart-utils`, `urdfdom`                                                                                                             |
+| `io`             | `dart-io`             | `dart-utils` (plus `dart-utils-urdf` when available)                                                                                |
 | `gui`            | `dart-gui`            | `dart-utils`, `osg::osg`, `imgui::imgui`                                                                                            |
 | `external-imgui` | `dart-external-imgui` | `OpenGL::GL`                                                                                                                        |
 
@@ -473,6 +477,7 @@ dart/
 │   └── ode/        # ODE collision engine (optional)
 ├── constraint/      # Constraint solver
 ├── simulation/      # Simulation world, integration, and time stepping
+├── io/              # Unified model loading (readWorld/readSkeleton)
 ├── utils/           # Utility functions
 │   ├── sdf/        # SDF file parser
 │   └── urdf/       # URDF file parser
@@ -506,6 +511,7 @@ dart/
 
 - **`dart-utils`** - Utility functions
 - **`dart-utils-urdf`** - URDF parser
+- **`dart-io`** - Unified model loading (`dart::io`)
 - **`dart-gui`** - OpenSceneGraph GUI
 
 ### Python Bindings Target
@@ -750,13 +756,13 @@ build/
 
 ```bash
 pixi run lint
-DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz
+DART_PARALLEL_JOBS=16 CMAKE_BUILD_PARALLEL_LEVEL=16 CTEST_PARALLEL_LEVEL=16 pixi run -e gazebo test-gz
 ```
 
 **Fast iteration loop (smallest repeatable cycle):**
 
 1. Run `pixi run lint` before committing changes.
-2. Reproduce the integration suite locally with `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
+2. Reproduce the integration suite locally with `DART_PARALLEL_JOBS=16 CMAKE_BUILD_PARALLEL_LEVEL=16 CTEST_PARALLEL_LEVEL=16 pixi run -e gazebo test-gz`.
 3. If the downstream build fails, fix compatibility in DART (preferred) or upstream gz-physics; avoid local gz-physics source patching in this repo.
 
 **What to look for (success signal):**
@@ -770,7 +776,7 @@ DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz
   - `... but it set DART_FOUND to FALSE ...`
   - **Resolution:** The downstream is requesting legacy components. In DART 7, Bullet/ODE backends are part of the core `dart` component; `collision-bullet` / `collision-ode` exist only as deprecated compatibility components and are planned for removal in DART 8. Prefer to update downstream to depend on `dart`, but keep this workflow passing for existing consumers.
 - **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py` limited to the DART version requirement bump; otherwise this workflow stops catching real compatibility breaks.
-- **gtest header mismatches.** gz-physics vendors gtest headers; if system gtest headers are accidentally used instead, gz-physics tests can fail to compile. The `config-gz` task forces the vendored headers to take precedence; keep that behavior.
+- **gtest header mismatches.** Symptom: link errors like `undefined reference to testing::internal::MakeAndRegisterTestInfo(std::string, ...)` when building gz-physics tests. The `config-gz` task forces the vendored headers to take precedence (see the `-DCMAKE_CXX_FLAGS=-I.../test/gtest_vendor/include` flag in `pixi.toml`); keep that behavior.
 - **Deprecation noise is expected.** When gz-physics links the deprecated compatibility targets, CMake may emit deprecation warnings; these are intentional and should be treated as migration pressure for downstreams.
 
 **Dependencies:**

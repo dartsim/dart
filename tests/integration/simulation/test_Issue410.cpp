@@ -30,8 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/SkelParser.hpp>
-
 #include <dart/simulation/World.hpp>
 
 #include <dart/collision/CollisionObject.hpp>
@@ -42,6 +40,8 @@
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
+
+#include <dart/io/Read.hpp>
 
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
@@ -57,7 +57,6 @@ using namespace dart;
 using namespace collision;
 using namespace dynamics;
 using namespace simulation;
-using namespace utils;
 
 namespace {
 
@@ -133,7 +132,7 @@ void applyVelocityCommands(
 // velocity commands, covering the original #410 report.
 TEST(Simulation, DISABLED_ClonedWorldsStayDeterministic)
 {
-  auto baseWorld = SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
+  auto baseWorld = dart::io::readWorld("dart://sample/skel/fullbody1.skel");
   ASSERT_NE(baseWorld, nullptr);
   baseWorld->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
   baseWorld->setTimeStep(1.0 / 240.0);

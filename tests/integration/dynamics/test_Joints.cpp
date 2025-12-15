@@ -50,10 +50,10 @@
 #include "dart/dynamics/TranslationalJoint2D.hpp"
 #include "dart/dynamics/UniversalJoint.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
+#include "dart/io/Read.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/SkelParser.hpp"
 
 #include <gtest/gtest.h>
 
@@ -492,8 +492,8 @@ void testCommandLimits(dynamics::Joint* joint)
 //==============================================================================
 TEST_F(Joints, CommandLimit)
 {
-  simulation::WorldPtr myWorld = utils::SkelParser::readWorld(
-      "dart://sample/skel/test/joint_limit_test.skel");
+  simulation::WorldPtr myWorld
+      = dart::io::readWorld("dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
@@ -528,8 +528,8 @@ TEST_F(Joints, CommandLimit)
 //==============================================================================
 TEST_F(Joints, PassiveActuatorClearsCommand)
 {
-  auto world = utils::SkelParser::readWorld(
-      "dart://sample/skel/test/joint_limit_test.skel");
+  auto world
+      = dart::io::readWorld("dart://sample/skel/test/joint_limit_test.skel");
   ASSERT_TRUE(world != nullptr);
 
   auto skeleton = world->getSkeleton("double_pendulum");
@@ -563,8 +563,8 @@ TEST_F(Joints, PositionLimit)
 {
   double tol = 1e-3;
 
-  simulation::WorldPtr myWorld = utils::SkelParser::readWorld(
-      "dart://sample/skel/test/joint_limit_test.skel");
+  simulation::WorldPtr myWorld
+      = dart::io::readWorld("dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -637,8 +637,8 @@ TEST_F(Joints, PositionAndVelocityLimit)
 
   const double tol = 1e-3;
 
-  simulation::WorldPtr myWorld = utils::SkelParser::readWorld(
-      "dart://sample/skel/test/joint_limit_test.skel");
+  simulation::WorldPtr myWorld
+      = dart::io::readWorld("dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -729,8 +729,8 @@ TEST_F(Joints, PositionAndVelocityLimit)
 //==============================================================================
 TEST_F(Joints, JointLimits)
 {
-  simulation::WorldPtr myWorld = utils::SkelParser::readWorld(
-      "dart://sample/skel/test/joint_limit_test.skel");
+  simulation::WorldPtr myWorld
+      = dart::io::readWorld("dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -802,8 +802,8 @@ void testJointCoulombFrictionForce(double _timeStep)
   // (previously 1e-9 which caused spammy failures due to numerical precision)
   double tol = 1e-6;
 
-  simulation::WorldPtr myWorld = utils::SkelParser::readWorld(
-      "dart://sample/skel/test/joint_friction_test.skel");
+  simulation::WorldPtr myWorld
+      = dart::io::readWorld("dart://sample/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -1533,8 +1533,8 @@ TEST_F(Joints, JointCoulombFrictionAndPositionLimit)
   const double timeStep = 1e-3;
   const double tol = 1e-2;
 
-  simulation::WorldPtr myWorld = utils::SkelParser::readWorld(
-      "dart://sample/skel/test/joint_friction_test.skel");
+  simulation::WorldPtr myWorld
+      = dart::io::readWorld("dart://sample/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));

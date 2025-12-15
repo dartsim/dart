@@ -43,6 +43,7 @@
 #include <dart/utils/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <fcl/config.h>
 
@@ -218,7 +219,7 @@ public:
 
 int main()
 {
-  WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/shapes.skel");
+  WorldPtr myWorld = dart::io::readWorld("dart://sample/skel/shapes.skel");
   DART_ASSERT(myWorld != nullptr);
 
   auto handler = new RigidShapesEventHandler(myWorld);

@@ -203,6 +203,8 @@ check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
 
 check-lint-spell = { cmd = "codespell --config .codespellrc" }
 
+check-docs-policy = { cmd = ["python", "scripts/check_docs_policy.py"] }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-dart8",
@@ -210,6 +212,7 @@ check-lint = { depends-on = [
   "check-lint-yaml",
   "check-lint-rst",
   "check-lint-spell",
+  "check-docs-policy",
 ] }
 
 build = { cmd = [
@@ -1305,6 +1308,7 @@ check-lint = { depends-on = [
   "check-lint-yaml",
   "check-lint-rst",
   "check-lint-spell",
+  "check-docs-policy",
 ] }
 
 build = { cmd = """
@@ -1625,7 +1629,7 @@ cmake \
     -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-    -DCMAKE_CXX_FLAGS=-I$PWD/.deps/gz-physics/test/gtest_vendor/include \
+    -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_physics_force_vendor_gtest.cmake \
     -DCMAKE_EXE_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
     -DCMAKE_SHARED_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
     -DBUILD_TESTING=ON \

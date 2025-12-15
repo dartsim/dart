@@ -6,12 +6,23 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 
 ## Quickstart
 
+- Start here next time:
+  - Local build/test entry points: [building.md](building.md) and [testing.md](testing.md)
+  - Gazebo / gz-physics workflow: [build-system.md](build-system.md#gazebo-integration-feature)
+  - PR template checklist: [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)
 - Used in this task:
   - `pixi run lint`
-  - `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`
+  - `DART_PARALLEL_JOBS=16 CMAKE_BUILD_PARALLEL_LEVEL=16 CTEST_PARALLEL_LEVEL=16 pixi run test`
+  - `DART_PARALLEL_JOBS=16 CMAKE_BUILD_PARALLEL_LEVEL=16 CTEST_PARALLEL_LEVEL=16 pixi run test-all`
+  - `DART_PARALLEL_JOBS=16 CMAKE_BUILD_PARALLEL_LEVEL=16 CTEST_PARALLEL_LEVEL=16 pixi run -e gazebo test-gz`
+  - `gh pr create --draft --milestone "DART 7.0" ...`
   - `gh run list --branch <branch> --limit 10`
-  - `gh run watch <run_id> --compact --exit-status`
-- Suggested (Unverified): `pixi run test-all` (recommended by the PR template)
+  - `gh run watch <run_id> --interval 30 --exit-status`
+  - `gh run view <run_id> --job <job_id> --log-failed`
+  - `gh api "repos/dartsim/dart/milestones?state=open" --jq '.[].title'`
+- Gotchas:
+  - `zsh` globbing: quote `gh api` paths that contain `?` (for example milestone queries).
+  - Headless environments: `git commit` may fail if it needs an interactive editor; prefer `git commit -m ...`.
 - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
 
 ## Workflow Architecture

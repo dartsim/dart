@@ -38,8 +38,7 @@
 #include <dart/gui/ImGuiWidget.hpp>
 #include <dart/gui/RealTimeWorldNode.hpp>
 
-#include <dart/utils/DartResourceRetriever.hpp>
-#include <dart/utils/sdf/SdfParser.hpp>
+#include <dart/io/Read.hpp>
 
 #if DART_HAVE_BULLET
   #include <dart/collision/bullet/BulletCollisionDetector.hpp>
@@ -533,10 +532,7 @@ int main(int argc, char* argv[])
   const std::string worldUri
       = "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf";
 
-  auto retriever = std::make_shared<dart::utils::DartResourceRetriever>();
-  dart::utils::SdfParser::Options options(retriever);
-
-  const auto world = dart::utils::SdfParser::readWorld(Uri(worldUri), options);
+  const auto world = dart::io::readWorld(Uri(worldUri));
   if (!world) {
     std::cerr << "Failed to load world from " << worldUri << "\n";
     return EXIT_FAILURE;

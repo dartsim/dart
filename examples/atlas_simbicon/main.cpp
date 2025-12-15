@@ -41,6 +41,7 @@
 #include <dart/utils/urdf/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <CLI/CLI.hpp>
 
@@ -56,10 +57,9 @@ int main(int argc, char* argv[])
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
   // Load ground and Atlas robot and add them to the world
-  dart::utils::UrdfParser urdfLoader;
-  auto ground = urdfLoader.parseSkeleton("dart://sample/sdf/atlas/ground.urdf");
-  auto atlas = dart::utils::SdfParser::readSkeleton(
-      "dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+  auto ground = dart::io::readSkeleton("dart://sample/sdf/atlas/ground.urdf");
+  auto atlas
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
   world->addSkeleton(ground);
   world->addSkeleton(atlas);
 

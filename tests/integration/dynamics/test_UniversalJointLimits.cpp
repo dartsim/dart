@@ -34,9 +34,8 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include <dart/utils/sdf/All.hpp>
-
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <gtest/gtest.h>
 
@@ -50,8 +49,8 @@ TEST(Issue1596, ServoJointWithPositionLimits)
 #else
   const auto num_steps = 1000;
 #endif
-  auto skel = dart::utils::SdfParser::readSkeleton(
-      "dart://sample/sdf/test/test_issue1596.model");
+  auto skel
+      = dart::io::readSkeleton("dart://sample/sdf/test/test_issue1596.model");
   ASSERT_NE(skel, nullptr);
 
   auto world = dart::simulation::World::create();
