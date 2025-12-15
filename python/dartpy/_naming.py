@@ -162,6 +162,9 @@ def _walk(target: object, warn_on_camel: bool, visited: set[int]) -> None:
   if inspect.isclass(target):
     for name, member in _iter_members(target):
       _alias_member(target, name, member, warn_on_camel)
+    for _, cls in inspect.getmembers(target, inspect.isclass):
+      if getattr(cls, "__module__", "").startswith(("_dartpy", "dartpy")):
+        _walk(cls, warn_on_camel, visited)
 
 
 def install_aliases(root: object, *, warn_on_camel: bool | None = None) -> None:

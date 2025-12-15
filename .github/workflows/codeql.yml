@@ -100,17 +100,15 @@ jobs:
         if: matrix.run_build
         env:
           DART_BUILD_GUI_OVERRIDE: ${{ matrix.gui }}
-          DART_BUILD_DARTPY_OVERRIDE: ${{ matrix.dartpy }}
         run: |
-          pixi run config
+          pixi run config ${{ matrix.dartpy }}
 
       - name: Build
         if: matrix.run_build
         env:
           DART_BUILD_GUI_OVERRIDE: ${{ matrix.gui }}
-          DART_BUILD_DARTPY_OVERRIDE: ${{ matrix.dartpy }}
         run: |
-          pixi run build
+          pixi run build ${{ matrix.dartpy }}
 
       - name: CodeQL Analyze
         uses: github/codeql-action/analyze@v4

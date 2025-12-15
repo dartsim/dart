@@ -217,7 +217,7 @@ void defSimpleFrame(nb::module_& m)
       .def(
           "getParentFrame",
           [](SimpleFrame& self) -> Frame* { return self.getParentFrame(); },
-          nb::rv_policy::reference_internal)
+          nb::rv_policy::reference)
       .def(
           "descendsFrom",
           [](const SimpleFrame& self, const Frame* someFrame) {

@@ -119,13 +119,22 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    pixi run config-debug          # Debug
    ```
 
-   You can override booleans via environment variables instead of editing `pixi.toml`:
+   `config` accepts args for common toggles:
+
+   ```bash
+   pixi run config OFF            # Used in this task: disable dartpy
+   pixi run config ON Debug       # Suggested (Unverified): enable dartpy + Debug build
+   ```
+
+   You can also override booleans via environment variables instead of editing `pixi.toml` (Suggested (Unverified)):
 
    ```bash
    DART_BUILD_DARTPY_OVERRIDE=OFF pixi run config
    DART_BUILD_GUI_OVERRIDE=OFF pixi run config
    DART_BUILD_GUI_RAYLIB_OVERRIDE=ON DART_USE_SYSTEM_RAYLIB_OVERRIDE=OFF pixi run config
    ```
+
+   Note: Official dartpy wheels include OSG/GUI; keep `DART_BUILD_GUI` enabled when validating dartpy changes.
 
 3. Build and test:
 
@@ -141,21 +150,31 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    - `CMAKE_BUILD_PARALLEL_LEVEL` - controls `cmake --build`
    - `CTEST_PARALLEL_LEVEL` - controls `ctest`
 
+   If you want to cap parallelism, set `DART_PARALLEL_JOBS=8` (used in this task).
+
    Used in this task:
 
    ```bash
-   DART_PARALLEL_JOBS=16 CMAKE_BUILD_PARALLEL_LEVEL=16 CTEST_PARALLEL_LEVEL=16 pixi run test
-   DART_PARALLEL_JOBS=16 CMAKE_BUILD_PARALLEL_LEVEL=16 CTEST_PARALLEL_LEVEL=16 pixi run test-all
+   pixi run lint
    ```
 
    Note: `pixi run test-all` runs `pixi run lint` (auto-fixing) internally; check `git status` afterwards before committing.
 
 4. (Optional) Gazebo / gz-physics integration test:
 
+   Suggested (Unverified):
+
+   ```bash
+   DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz
+   ```
+
    Used in this task:
 
    ```bash
-   DART_PARALLEL_JOBS=16 CMAKE_BUILD_PARALLEL_LEVEL=16 CTEST_PARALLEL_LEVEL=16 pixi run -e gazebo test-gz
+   DART_PARALLEL_JOBS=8 pixi run -e gazebo download-gz
+   DART_PARALLEL_JOBS=8 pixi run -e gazebo patch-gz
+   DART_PARALLEL_JOBS=8 pixi run -e gazebo config-gz
+   DART_PARALLEL_JOBS=8 pixi run -e gazebo ninja -C .deps/gz-physics/build -j 8 COMMON_TEST_collisions
    ```
 
    This runs the gz-physics integration workflow (task chain, patch policy, and common failure modes are documented in [build-system.md](build-system.md#gazebo-integration-feature)).

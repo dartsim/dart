@@ -1,6 +1,7 @@
 #include "dynamics/linkage.hpp"
 
 #include "common/repr.hpp"
+#include "common/type_casters.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Linkage.hpp"
 
@@ -12,6 +13,25 @@
 namespace nb = nanobind;
 
 namespace dart::python_nb {
+
+namespace {
+
+std::shared_ptr<dart::dynamics::BodyNode> lockBodyNode(
+    const dart::dynamics::WeakBodyNodePtr& weak)
+{
+  auto locked = weak.lock();
+  auto* node = locked.get();
+  if (!node)
+    return nullptr;
+
+  auto skeleton = node->getSkeleton();
+  if (!skeleton)
+    return nullptr;
+
+  return std::shared_ptr<dart::dynamics::BodyNode>(skeleton, node);
+}
+
+} // namespace
 
 void defLinkage(nb::module_& m)
 {
@@ -86,7 +106,19 @@ void defLinkage(nb::module_& m)
           nb::init<dart::dynamics::BodyNode*, bool>(),
           nb::arg("terminal"),
           nb::arg("inclusive"))
-      .def_rw("mTerminal", &Linkage::Criteria::Terminal::mTerminal)
+      .def_prop_rw(
+          "mTerminal",
+          [](const Linkage::Criteria::Terminal& self) {
+            return lockBodyNode(self.mTerminal);
+          },
+          [](Linkage::Criteria::Terminal& self, nb::handle terminal) {
+            if (!terminal || terminal.is_none()) {
+              self.mTerminal = nullptr;
+              return;
+            }
+            self.mTerminal = nb::cast<dart::dynamics::BodyNode*>(terminal);
+          },
+          nb::for_setter(nb::arg("terminal").none()))
       .def_rw("mInclusive", &Linkage::Criteria::Terminal::mInclusive);
 
   nb::class_<Linkage::Criteria::Target>(linkageCriteria, "Target")
@@ -106,7 +138,19 @@ void defLinkage(nb::module_& m)
           nb::arg("target"),
           nb::arg("policy"),
           nb::arg("chain"))
-      .def_rw("mNode", &Linkage::Criteria::Target::mNode)
+      .def_prop_rw(
+          "mNode",
+          [](const Linkage::Criteria::Target& self) {
+            return lockBodyNode(self.mNode);
+          },
+          [](Linkage::Criteria::Target& self, nb::handle node) {
+            if (!node || node.is_none()) {
+              self.mNode = nullptr;
+              return;
+            }
+            self.mNode = nb::cast<dart::dynamics::BodyNode*>(node);
+          },
+          nb::for_setter(nb::arg("node").none()))
       .def_rw("mPolicy", &Linkage::Criteria::Target::mPolicy)
       .def_rw("mChain", &Linkage::Criteria::Target::mChain);
 }
