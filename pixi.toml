@@ -1618,18 +1618,19 @@ fi
 if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
-cmake \
-    -G Ninja \
-    -S .deps/gz-physics \
-    -B .deps/gz-physics/build \
-    -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-    -DCMAKE_CXX_FLAGS="-I$PWD/.deps/gz-physics/test/gtest_vendor/include ${CMAKE_CXX_FLAGS:-}" \
-    -DCMAKE_EXE_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
-    -DCMAKE_SHARED_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
-    -DBUILD_TESTING=ON \
-    $LAUNCHER_DEFS
+	cmake \
+	    -G Ninja \
+	    -S .deps/gz-physics \
+	    -B .deps/gz-physics/build \
+	    -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+	    -DCMAKE_BUILD_TYPE=Release \
+	    -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+	    -DCMAKE_CXX_FLAGS="-I$PWD/.deps/gz-physics/test/gtest_vendor/include ${CMAKE_CXX_FLAGS:-}" \
+	    -DCMAKE_EXE_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
+	    -DCMAKE_SHARED_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
+	    -DCMAKE_NO_SYSTEM_FROM_IMPORTED=OFF \
+	    -DBUILD_TESTING=ON \
+	    $LAUNCHER_DEFS
 """,
 ], depends-on = [
   "patch-gz",
