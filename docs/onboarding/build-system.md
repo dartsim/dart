@@ -727,7 +727,7 @@ build/
 
 **Purpose:** Test DART integration with Gazebo Physics
 
-**Context (why this exists):** This workflow is used to validate that a pinned gz-physics checkout builds and runs its DART plugin against the DART installed from this repository. When updating DART (e.g., DART 7), keep downstream compatibility by fixing issues in DART (or upstream gz-physics) rather than carrying local gz-physics source patches here. The only intended “patching” is bumping the DART CMake package version requirement so gz-physics will configure against DART 7.
+**Context (why this exists):** This workflow is used to validate that a pinned gz-physics checkout builds and runs its DART plugin against the DART installed from this repository. When updating DART (e.g., DART 7), keep downstream compatibility by fixing issues in DART (or upstream gz-physics) rather than carrying local gz-physics source patches here. The only intended “patching” is bumping the DART CMake package version requirement so gz-physics will configure against DART 7, plus a small GoogleTest shim to keep the integration tests linkable.
 
 **Tasks:**
 
@@ -736,14 +736,11 @@ build/
 - `config-gz` - Configure gz-physics build
 - `build-gz` - Build gz-physics with dartsim plugin
 - `test-gz` - Verify DART integration
-- **Note:** `patch-gz` also updates `gz-physics`'s DART plugin sources to use
-  `dart::constraint::ConstraintSolver` and the `dart::math::LcpSolver` API
-  (solver names `Dantzig` / `Pgs`).
 
 **Start here next time:**
 
 - [`pixi.toml`](../../pixi.toml) (`[feature.gazebo]`) - task chain + env overrides
-- [`scripts/patch_gz_physics.py`](../../scripts/patch_gz_physics.py) - intentionally limited patch scope (DART version only)
+- [`scripts/patch_gz_physics.py`](../../scripts/patch_gz_physics.py) - patches DART version requirement + gtest shim
 - [`.github/workflows/ci_gz_physics.yml`](../../.github/workflows/ci_gz_physics.yml) - CI entry point for this workflow
 
 **Used in this task:**
@@ -769,8 +766,8 @@ DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz
   - `Could NOT find DART (missing: collision-bullet collision-ode) (Required is at least version "7.0")`
   - `... but it set DART_FOUND to FALSE ...`
   - **Resolution:** The downstream is requesting legacy components. In DART 7, Bullet/ODE backends are part of the core `dart` component; `collision-bullet` / `collision-ode` exist only as deprecated compatibility components and are planned for removal in DART 8. Prefer to update downstream to depend on `dart`, but keep this workflow passing for existing consumers.
-- **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py` limited to the DART version requirement bump; otherwise this workflow stops catching real compatibility breaks.
-- **gtest header mismatches.** gz-physics vendors gtest headers; if system gtest headers are accidentally used instead, gz-physics tests can fail to compile. The `config-gz` task forces the vendored headers to take precedence; keep that behavior.
+- **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py` limited to the DART version requirement bump and the minimal gtest shim; otherwise this workflow stops catching real compatibility breaks.
+- **gtest header mismatches.** gz-physics vendors gtest, but transitive dependencies can inject system gtest headers. `patch-gz` adds a small shim so the vendored gtest static library exports the std::string `MakeAndRegisterTestInfo` overload required by newer gtest headers.
 - **Deprecation noise is expected.** When gz-physics links the deprecated compatibility targets, CMake may emit deprecation warnings; these are intentional and should be treated as migration pressure for downstreams.
 
 **Dependencies:**
