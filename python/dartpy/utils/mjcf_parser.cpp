@@ -20,7 +20,7 @@ void defMjcfParser(nb::module_& m)
               const common::ResourceRetrieverPtr&,
               const std::string&,
               const std::string&>(),
-          nb::arg("resourceRetretrieverOrNullptrriever") = nullptr,
+          nb::arg("resourceRetriever") = nullptr,
           nb::arg("geomSkeletonNamePrefix") = "__geom_skel__",
           nb::arg("siteSkeletonNamePrefix") = "__site_skel__")
       .def_rw("mRetriever", &::dart::utils::MjcfParser::Options::mRetriever)

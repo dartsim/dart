@@ -37,6 +37,7 @@
 #include <dart/utils/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 class RigidChainWorldNode : public dart::gui::RealTimeWorldNode
 {
@@ -71,7 +72,7 @@ int main()
 {
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
-      = dart::utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
+      = dart::io::readWorld("dart://sample/skel/chain.skel");
   DART_ASSERT(myWorld != nullptr);
 
   // create and initialize the world

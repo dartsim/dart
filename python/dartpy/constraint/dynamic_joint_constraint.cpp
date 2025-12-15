@@ -1,5 +1,6 @@
 #include "constraint/dynamic_joint_constraint.hpp"
 
+#include "common/eigen_utils.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/DynamicJointConstraint.hpp"
 #include "dart/constraint/RevoluteJointConstraint.hpp"
@@ -11,36 +12,9 @@
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 
-#include <array>
-#include <new>
-
 namespace nb = nanobind;
 
 namespace dart::python_nb {
-
-namespace {
-
-Eigen::Vector3d toEigen(const std::array<double, 3>& src)
-{
-  return Eigen::Vector3d(src[0], src[1], src[2]);
-}
-
-Eigen::Vector3d toEigen(nb::handle src)
-{
-  const nb::sequence seq = nb::cast<nb::sequence>(src);
-  if (nb::len(seq) != 3) {
-    throw nb::value_error("Expected a 3-element sequence");
-  }
-
-  std::array<double, 3> values{};
-  for (size_t i = 0; i < values.size(); ++i) {
-    values[i] = nb::cast<double>(seq[i]);
-  }
-
-  return toEigen(values);
-}
-
-} // namespace
 
 void defDynamicJointConstraint(nb::module_& m)
 {
@@ -82,17 +56,25 @@ void defDynamicJointConstraint(nb::module_& m)
   nb::class_<BallJointConstraint, DynamicJointConstraint>(
       m, "BallJointConstraint")
       .def(
-          nb::init<dart::dynamics::BodyNode*, const Eigen::Vector3d&>(),
+          nb::new_([](dart::dynamics::BodyNode* bodyNode,
+                      nb::handle jointPosition) {
+            return new BallJointConstraint(bodyNode, toVector3(jointPosition));
+          }),
           nb::arg("bodyNode"),
-          nb::arg("jointPosition"))
+          nb::arg("jointPosition"),
+          nb::keep_alive<1, 2>())
       .def(
-          nb::init<
-              dart::dynamics::BodyNode*,
-              dart::dynamics::BodyNode*,
-              const Eigen::Vector3d&>(),
+          nb::new_([](dart::dynamics::BodyNode* bodyNode1,
+                      dart::dynamics::BodyNode* bodyNode2,
+                      nb::handle jointPosition) {
+            return new BallJointConstraint(
+                bodyNode1, bodyNode2, toVector3(jointPosition));
+          }),
           nb::arg("bodyNode1"),
           nb::arg("bodyNode2"),
-          nb::arg("jointPosition"))
+          nb::arg("jointPosition"),
+          nb::keep_alive<1, 2>(),
+          nb::keep_alive<1, 3>())
       .def(
           "getType",
           [](const BallJointConstraint& self) -> const std::string& {
@@ -104,51 +86,41 @@ void defDynamicJointConstraint(nb::module_& m)
           []() -> const std::string& {
             return BallJointConstraint::getStaticType();
           },
-          nb::rv_policy::reference_internal)
-      .def(
-          "__init__",
-          [](BallJointConstraint* self,
-             dart::dynamics::BodyNode* bodyNode,
-             nb::handle jointPosition) {
-            new (self) BallJointConstraint(bodyNode, toEigen(jointPosition));
-          },
-          nb::arg("bodyNode"),
-          nb::arg("jointPosition"))
-      .def(
-          "__init__",
-          [](BallJointConstraint* self,
-             dart::dynamics::BodyNode* bodyNode1,
-             dart::dynamics::BodyNode* bodyNode2,
-             nb::handle jointPosition) {
-            new (self) BallJointConstraint(
-                bodyNode1, bodyNode2, toEigen(jointPosition));
-          },
-          nb::arg("bodyNode1"),
-          nb::arg("bodyNode2"),
-          nb::arg("jointPosition"));
+          nb::rv_policy::reference_internal);
 
   nb::class_<RevoluteJointConstraint, DynamicJointConstraint>(
       m, "RevoluteJointConstraint")
       .def(
-          nb::init<
-              dart::dynamics::BodyNode*,
-              const Eigen::Vector3d&,
-              const Eigen::Vector3d&>(),
+          nb::new_([](dart::dynamics::BodyNode* bodyNode,
+                      nb::handle jointPosition,
+                      nb::handle axis) {
+            return new RevoluteJointConstraint(
+                bodyNode, toVector3(jointPosition), toVector3(axis));
+          }),
           nb::arg("bodyNode"),
           nb::arg("jointPosition"),
-          nb::arg("axis"))
+          nb::arg("axis"),
+          nb::keep_alive<1, 2>())
       .def(
-          nb::init<
-              dart::dynamics::BodyNode*,
-              dart::dynamics::BodyNode*,
-              const Eigen::Vector3d&,
-              const Eigen::Vector3d&,
-              const Eigen::Vector3d&>(),
+          nb::new_([](dart::dynamics::BodyNode* bodyNode1,
+                      dart::dynamics::BodyNode* bodyNode2,
+                      nb::handle jointPosition,
+                      nb::handle axis1,
+                      nb::handle axis2) {
+            return new RevoluteJointConstraint(
+                bodyNode1,
+                bodyNode2,
+                toVector3(jointPosition),
+                toVector3(axis1),
+                toVector3(axis2));
+          }),
           nb::arg("bodyNode1"),
           nb::arg("bodyNode2"),
           nb::arg("jointPosition"),
           nb::arg("axis1"),
-          nb::arg("axis2"))
+          nb::arg("axis2"),
+          nb::keep_alive<1, 2>(),
+          nb::keep_alive<1, 3>())
       .def(
           "getType",
           [](const RevoluteJointConstraint& self) -> const std::string& {
@@ -160,47 +132,25 @@ void defDynamicJointConstraint(nb::module_& m)
           []() -> const std::string& {
             return RevoluteJointConstraint::getStaticType();
           },
-          nb::rv_policy::reference_internal)
-      .def(
-          "__init__",
-          [](RevoluteJointConstraint* self,
-             dart::dynamics::BodyNode* bodyNode,
-             nb::handle jointPosition,
-             nb::handle axis) {
-            new (self) RevoluteJointConstraint(
-                bodyNode, toEigen(jointPosition), toEigen(axis));
-          },
-          nb::arg("bodyNode"),
-          nb::arg("jointPosition"),
-          nb::arg("axis"))
-      .def(
-          "__init__",
-          [](RevoluteJointConstraint* self,
-             dart::dynamics::BodyNode* bodyNode1,
-             dart::dynamics::BodyNode* bodyNode2,
-             nb::handle jointPosition,
-             nb::handle axis1,
-             nb::handle axis2) {
-            new (self) RevoluteJointConstraint(
-                bodyNode1,
-                bodyNode2,
-                toEigen(jointPosition),
-                toEigen(axis1),
-                toEigen(axis2));
-          },
-          nb::arg("bodyNode1"),
-          nb::arg("bodyNode2"),
-          nb::arg("jointPosition"),
-          nb::arg("axis1"),
-          nb::arg("axis2"));
+          nb::rv_policy::reference_internal);
 
   nb::class_<WeldJointConstraint, DynamicJointConstraint>(
       m, "WeldJointConstraint")
-      .def(nb::init<dart::dynamics::BodyNode*>(), nb::arg("bodyNode"))
       .def(
-          nb::init<dart::dynamics::BodyNode*, dart::dynamics::BodyNode*>(),
+          nb::new_([](dart::dynamics::BodyNode* bodyNode) {
+            return new WeldJointConstraint(bodyNode);
+          }),
+          nb::arg("bodyNode"),
+          nb::keep_alive<1, 2>())
+      .def(
+          nb::new_([](dart::dynamics::BodyNode* bodyNode1,
+                      dart::dynamics::BodyNode* bodyNode2) {
+            return new WeldJointConstraint(bodyNode1, bodyNode2);
+          }),
           nb::arg("bodyNode1"),
-          nb::arg("bodyNode2"))
+          nb::arg("bodyNode2"),
+          nb::keep_alive<1, 2>(),
+          nb::keep_alive<1, 3>())
       .def(
           "setRelativeTransform",
           [](WeldJointConstraint& self, const Eigen::Isometry3d& tf) {

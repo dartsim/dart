@@ -2,17 +2,16 @@
 
 ## Design Decisions
 
-### Why pybind11?
+### Why nanobind?
 
-**Choice**: pybind11 for C++/Python bindings
+**Choice**: nanobind for C++/Python bindings
 
 **Rationale**:
 
-- Header-only library, no external dependencies
-- Seamless Eigen ↔ NumPy integration with custom type casters
-- Automatic reference counting and lifetime management
-- Modern C++17 features support
-- Excellent performance (zero-copy when possible)
+- Header-only library with a CMake-first workflow
+- Eigen ↔ NumPy integration via `nanobind/eigen/*` (used throughout `python/dartpy/`)
+- Modern C++17+ support (DART is built as C++20)
+- Designed for high-performance bindings
 
 ### Why scikit-build-core?
 
@@ -64,9 +63,9 @@ dartpy/
 
 ### Eigen ↔ NumPy Integration
 
-**Key Design**: Custom pybind11 type casters enable seamless conversion
+**Key Design**: nanobind's Eigen support enables seamless conversion
 
-**Implementation**: `python/dartpy/eigen_geometry_pybind.h`
+**Implementation**: See `python/dartpy/math/geometry.cpp` for representative usage (`#include <nanobind/eigen/dense.h>`).
 
 **Features**:
 
@@ -90,28 +89,12 @@ positions = skel.get_positions()  # Returns ndarray
 
 ### OSG Bindings Design
 
-**Issue**: `dartpy.gui` was not available in wheels despite `DART_BUILD_GUI=ON`
+GUI bindings are built only when `DART_BUILD_GUI=ON`. The build wires this up by
+conditionally appending the GUI sources in `python/dartpy/CMakeLists.txt`.
 
-**Root Cause**: Python bindings previously checked for an undefined GUI feature macro
-
-**Solution**:
-
-1. Use `DART_BUILD_GUI` directly in `python/dartpy/gui/module.cpp`:
-
-   ```cpp
-   #if DART_BUILD_GUI
-     // Bind OSG module
-   #endif
-   ```
-
-2. Pass as compile definition in `python/dartpy/CMakeLists.txt`:
-   ```cmake
-   if(DART_BUILD_GUI)
-     target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI=1)
-   endif()
-   ```
-
-**Result**: OSG now works on all platforms where OpenSceneGraph is available (Linux, macOS, Windows via conda-forge)
+Project policy: official dartpy wheels build with GUI enabled, so `dartpy.gui`
+is expected to be available in release artifacts and CI. For local headless-only
+builds you can disable GUI, but some examples/tutorials will not run.
 
 ## Pythonic Naming Transition
 

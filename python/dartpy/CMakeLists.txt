@@ -249,6 +249,8 @@ set(dartpy_gui_sources
 if(DART_BUILD_GUI)
   list(APPEND dartpy_headers ${dartpy_gui_headers})
   list(APPEND dartpy_sources ${dartpy_gui_sources})
+else()
+  message(FATAL_ERROR "Building dartpy requires DART_BUILD_GUI=ON")
 endif()
 
 nanobind_add_module(dartpy
@@ -281,7 +283,6 @@ target_include_directories(dartpy
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}
 )
-target_compile_options(dartpy PRIVATE -g)
 
 if(BULLET_INCLUDE_DIR)
   target_include_directories(dartpy SYSTEM PRIVATE ${BULLET_INCLUDE_DIR})
@@ -306,32 +307,12 @@ foreach(lib ${dartpy_libraries})
   endif()
 endforeach()
 
-if(TARGET dart-collision-bullet)
-  target_link_libraries(dartpy PRIVATE dart-collision-bullet)
-  foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
-    get_target_property(_bullet_includes dart-collision-bullet ${prop})
-    if(_bullet_includes)
-      target_include_directories(dartpy PRIVATE ${_bullet_includes})
-    endif()
-  endforeach()
-endif()
-
 if(TARGET dart-gui)
   target_link_libraries(dartpy PRIVATE dart-gui)
   foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
     get_target_property(_gui_includes dart-gui ${prop})
     if(_gui_includes)
       target_include_directories(dartpy PRIVATE ${_gui_includes})
-    endif()
-  endforeach()
-endif()
-
-if(TARGET dart-collision-ode)
-  target_link_libraries(dartpy PRIVATE dart-collision-ode)
-  foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
-    get_target_property(_ode_includes dart-collision-ode ${prop})
-    if(_ode_includes)
-      target_include_directories(dartpy PRIVATE ${_ode_includes})
     endif()
   endforeach()
 endif()

@@ -4,6 +4,23 @@
 
 DART uses GitHub Actions for continuous integration and deployment. The CI system validates code quality, runs tests across multiple platforms, builds documentation, and publishes Python wheels.
 
+## Quickstart
+
+- Start here next time:
+  - Local build/test entry points: [building.md](building.md) and [testing.md](testing.md)
+  - Gazebo / gz-physics workflow: [build-system.md](build-system.md#gazebo-integration-feature)
+  - PR template checklist: [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)
+- Used in this task:
+  - `pixi run lint`
+  - `gh run list --branch <branch> -e pull_request -L 20`
+  - `gh run watch <run_id> --interval 30 --exit-status`
+  - `gh run view <run_id> --log-failed`
+  - `git fetch origin refs/pull/<pr_number>/merge:refs/remotes/origin/pr-<pr_number>-merge`
+- Gotchas:
+  - `gh` can fail with transient `GraphQL` HTTP 502 errors; fall back to `gh run list` / `gh run watch` / `gh run view --log-failed`.
+  - PR CI runs against the merge ref (`refs/pull/<id>/merge`), not just your head branch; fetch that ref locally when debugging what CI actually built.
+- If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
+
 ## Workflow Architecture
 
 ### Core CI Workflows
@@ -283,6 +300,27 @@ All tests run through `pixi run test-all`, which includes:
 - Update GitHub Actions versions
 - Review and optimize cache sizes
 - Evaluate new optimization opportunities
+
+### Monitoring Runs from the GitHub CLI (optional)
+
+Used in this task:
+
+```bash
+gh run list --branch <branch> -e pull_request -L 20
+gh run watch <run_id> --interval 30 --exit-status
+gh run view <run_id> --log-failed
+```
+
+Fast iteration loop (used in this task):
+
+1. Find the newest run id with `gh run list ...`.
+2. Block on completion with `gh run watch ...`.
+3. On failure, inspect `gh run view ... --log-failed`, fix, push, repeat.
+
+Notes:
+
+- Suggested (Unverified): If the `CI gz-physics` workflow fails, reproduce locally with `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz` (see [build-system.md](build-system.md#gazebo-integration-feature)).
+- Suggested (Unverified): If you create PRs from the command line, prefer `gh pr create --body-file <path>` over `--body "..."` when the body contains backticks; some shells (e.g., zsh) treat backticks as command substitution.
 
 ## Troubleshooting
 

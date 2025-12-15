@@ -35,6 +35,7 @@
 #include <dart/utils/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <iostream>
 
@@ -148,8 +149,7 @@ protected:
 int main()
 {
   // Create and initialize the world
-  auto world
-      = dart::utils::SkelParser::readWorld("dart://sample/skel/cubes.skel");
+  auto world = dart::io::readWorld("dart://sample/skel/cubes.skel");
   if (!world) {
     DART_ERROR("Failed to load world.");
     return EXIT_FAILURE;

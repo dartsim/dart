@@ -50,6 +50,7 @@
 #include "helpers/dynamics_helpers.hpp"
 
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/io/Read.hpp"
 #include "dart/simulation/All.hpp"
 #include "dart/utils/All.hpp"
 
@@ -1816,7 +1817,7 @@ TEST_F(Collision, CollisionOfPrescribedJoints)
   const std::size_t numFrames = 5e+0; // 5 secs
 
   // Load world and skeleton
-  WorldPtr world = SkelParser::readWorld(
+  WorldPtr world = dart::io::readWorld(
       "dart://sample/skel/test/collision_of_prescribed_joints_test.skel");
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != nullptr);
@@ -1890,7 +1891,7 @@ TEST_F(Collision, CollisionOfPrescribedJoints)
 //==============================================================================
 TEST_F(Collision, CollisionOfPrescribedJointsRejectsInvalidTimeStep)
 {
-  WorldPtr world = SkelParser::readWorld(
+  WorldPtr world = dart::io::readWorld(
       "dart://sample/skel/test/collision_of_prescribed_joints_test.skel");
   ASSERT_TRUE(world != nullptr);
 

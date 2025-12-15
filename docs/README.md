@@ -22,6 +22,7 @@ Located in `onboarding/` - **Architecture guides for developers:**
 - [Build System](onboarding/build-system.md) - CMake internals and dependency analysis
 - [Building from Source](onboarding/building.md) - Step-by-step build instructions
 - [Code Style Guide](onboarding/code-style.md) - Code conventions for C++, Python, and CMake
+- [Model Loading (IO)](onboarding/io-parsing.md) - Unified model loading API (`dart::io`)
 
 _Format: Markdown (GitHub/LLM-friendly) for internal codebase understanding_
 
