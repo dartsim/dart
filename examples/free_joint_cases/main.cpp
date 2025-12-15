@@ -34,6 +34,7 @@
 #include <dart/gui/ImGuiViewer.hpp>
 #include <dart/gui/ImGuiWidget.hpp>
 #include <dart/gui/IncludeImGui.hpp>
+#include <dart/gui/GridVisual.hpp>
 #include <dart/gui/WorldNode.hpp>
 
 #include <dart/All.hpp>
@@ -46,6 +47,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <cmath>
 
 namespace {
 
@@ -260,16 +263,22 @@ class FreeJointCasesWidget : public dart::gui::ImGuiWidget
 public:
   FreeJointCasesWidget(
       osg::ref_ptr<dart::gui::ImGuiViewer> viewer,
+      osg::ref_ptr<dart::gui::GridVisual> grid,
       dart::simulation::WorldPtr world,
       std::vector<FreeJointCase> cases,
       double numericDt,
       double guiScale)
     : mViewer(std::move(viewer)),
+      mGrid(std::move(grid)),
       mWorld(std::move(world)),
       mCases(std::move(cases)),
       mNumericDt(numericDt),
       mGuiScale(guiScale)
   {
+    const int scaleKey = static_cast<int>(std::lround(guiScale * 100.0));
+    mWindowLabel
+        = "FreeJoint cases##free_joint_cases_" + std::to_string(scaleKey);
+
     applyGroundTruthVisibility();
     recomputeMetrics();
   }
@@ -279,16 +288,23 @@ public:
     updateGroundTruth();
 
     const float windowScale = static_cast<float>(mGuiScale);
-    ImGui::SetNextWindowPos(
-        ImVec2(10.0f * windowScale, 20.0f * windowScale),
-        ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(
-        ImVec2(520.0f * windowScale, 540.0f * windowScale),
-        ImGuiCond_FirstUseEver);
+    const ImGuiIO& io = ImGui::GetIO();
+    const ImVec2 displaySize = io.DisplaySize;
+
+    const ImVec2 desiredPos(10.0f * windowScale, 20.0f * windowScale);
+    const ImVec2 desiredSize(520.0f * windowScale, 540.0f * windowScale);
+    const ImVec2 maxSize(
+        std::max(1.0f, displaySize.x - desiredPos.x),
+        std::max(1.0f, displaySize.y - desiredPos.y));
+    const ImVec2 clampedSize(
+        std::min(desiredSize.x, maxSize.x), std::min(desiredSize.y, maxSize.y));
+
+    ImGui::SetNextWindowPos(desiredPos, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(clampedSize, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowBgAlpha(0.85f);
 
     if (!ImGui::Begin(
-            "FreeJoint cases",
+            mWindowLabel.c_str(),
             nullptr,
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar)) {
       ImGui::End();
@@ -340,6 +356,12 @@ public:
       ImGui::TextWrapped(
           "Reference bodies are kinematic visuals whose pose is computed from "
           "the initial world-frame velocities (ω, v).");
+    }
+
+    if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
+      bool showGrid = mGrid && mGrid->isDisplayed();
+      if (ImGui::Checkbox("Show grid", &showGrid) && mGrid)
+        mGrid->display(showGrid);
     }
 
     if (ImGui::CollapsingHeader("Cases", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -442,10 +464,12 @@ private:
   }
 
   osg::ref_ptr<dart::gui::ImGuiViewer> mViewer;
+  osg::ref_ptr<dart::gui::GridVisual> mGrid;
   dart::simulation::WorldPtr mWorld;
   std::vector<FreeJointCase> mCases;
   double mNumericDt;
   double mGuiScale;
+  std::string mWindowLabel;
   bool mShowGroundTruth{true};
 };
 
@@ -530,8 +554,14 @@ int main(int argc, char* argv[])
   osg::ref_ptr<gui::ImGuiViewer> viewer = new gui::ImGuiViewer();
   viewer->setImGuiScale(static_cast<float>(guiScale));
   viewer->addWorldNode(node);
+
+  auto grid = ::osg::ref_ptr<gui::GridVisual>(new gui::GridVisual());
+  grid->setPlaneType(gui::GridVisual::PlaneType::XY);
+  grid->setNumCells(20);
+  viewer->addAttachment(grid);
+
   viewer->getImGuiHandler()->addWidget(std::make_shared<FreeJointCasesWidget>(
-      viewer, world, cases, numericDt, guiScale));
+      viewer, grid, world, cases, numericDt, guiScale));
 
   viewer->setUpViewInWindow(0, 0, 1280, 720);
   viewer->getCameraManipulator()->setHomePosition(
