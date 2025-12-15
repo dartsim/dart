@@ -566,7 +566,7 @@ int main(int argc, char* argv[])
   grid->setNumCells(20);
   viewer->addAttachment(grid);
 
-  viewer->setUpViewInWindow(0, 0, 1280, 720);
+  viewer->setUpViewInWindowScaled(0, 0, 1280, 720);
   viewer->getCameraManipulator()->setHomePosition(
       ::osg::Vec3(8.0f, -7.0f, 4.0f),
       ::osg::Vec3(0.5f, 0.0f, 1.5f),

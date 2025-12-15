@@ -563,7 +563,7 @@ int main(int argc, char* argv[])
   viewer->getImGuiHandler()->addWidget(std::make_shared<FreeJointCasesWidget>(
       viewer, grid, world, cases, numericDt, guiScale));
 
-  viewer->setUpViewInWindow(0, 0, 1280, 720);
+  viewer->setUpViewInWindowScaled(0, 0, 1280, 720);
   viewer->getCameraManipulator()->setHomePosition(
       ::osg::Vec3(4.5f, -10.0f, 4.0f),
       ::osg::Vec3(4.5f, 0.0f, 0.0f),

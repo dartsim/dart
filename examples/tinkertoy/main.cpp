@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
   viewer->getDefaultEventHandler()->addMouseEventHandler(mouse.get());
 
   // Set the dimensions for the window
-  viewer->setUpViewInWindow(0, 0, 1280, 720);
+  viewer->setUpViewInWindowScaled(0, 0, 1280, 720);
 
   // Set the window name
   viewer->realize();

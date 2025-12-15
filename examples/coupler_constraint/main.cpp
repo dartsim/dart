@@ -726,7 +726,7 @@ int main(int argc, char* argv[])
   grid->setMinorLineStepSize(0.05);
   viewer->addAttachment(grid);
 
-  viewer->setUpViewInWindow(0, 0, 960, 720);
+  viewer->setUpViewInWindowScaled(0, 0, 960, 720);
   viewer->getCameraManipulator()->setHomePosition(
       ::osg::Vec3(1.5f, 1.5f, 1.2f),
       ::osg::Vec3(0.4f, 0.0f, 0.2f),

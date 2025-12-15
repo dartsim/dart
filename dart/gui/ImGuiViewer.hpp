@@ -65,6 +65,12 @@ public:
   /// Set the ImGui global scale factor (fonts + widget sizes).
   void setImGuiScale(float scale);
 
+  /// Get the current ImGui scale factor.
+  float getImGuiScale() const;
+
+  /// Set up the viewer window, scaling width/height by the ImGui scale.
+  void setUpViewInWindowScaled(int x, int y, int width, int height);
+
   /// Show About widget.
   void showAbout();
 
@@ -77,6 +83,8 @@ protected:
 
   /// About widget.
   std::shared_ptr<AboutWidget> mAboutWidget;
+
+  float mImGuiScale{1.f};
 };
 
 } // namespace gui
