@@ -136,12 +136,26 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    pixi run test-all              # helper script that runs lint + build + tests
    ```
 
+   Parallelism knobs (optional):
+   - `DART_PARALLEL_JOBS` - used by helper scripts and the Gazebo workflow
+   - `CMAKE_BUILD_PARALLEL_LEVEL` - controls `cmake --build`
+   - `CTEST_PARALLEL_LEVEL` - controls `ctest`
+
+   Used in this task:
+
+   ```bash
+   DART_PARALLEL_JOBS=16 CMAKE_BUILD_PARALLEL_LEVEL=16 CTEST_PARALLEL_LEVEL=16 pixi run test
+   DART_PARALLEL_JOBS=16 CMAKE_BUILD_PARALLEL_LEVEL=16 CTEST_PARALLEL_LEVEL=16 pixi run test-all
+   ```
+
+   Note: `pixi run test-all` runs `pixi run lint` (auto-fixing) internally; check `git status` afterwards before committing.
+
 4. (Optional) Gazebo / gz-physics integration test:
 
    Used in this task:
 
    ```bash
-   DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz
+   DART_PARALLEL_JOBS=16 CMAKE_BUILD_PARALLEL_LEVEL=16 CTEST_PARALLEL_LEVEL=16 pixi run -e gazebo test-gz
    ```
 
    This runs the gz-physics integration workflow (task chain, patch policy, and common failure modes are documented in [build-system.md](build-system.md#gazebo-integration-feature)).
