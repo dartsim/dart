@@ -46,9 +46,19 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # utils - (dart), {dart-utils}
 # utils-urdf - (utils), {dart-utils-urdf}
 # gui - (utils), {dart-gui}
+# collision-bullet - (dart), {dart} [compat]
+# collision-ode - (dart), {dart} [compat]
 
 # Component. This should be called before adding subdirectories.
 add_component(${PROJECT_NAME} dart)
+
+if(DART_BUILD_COLLISION_BULLET)
+  add_component(${PROJECT_NAME} collision-bullet)
+endif()
+
+if(DART_BUILD_COLLISION_ODE)
+  add_component(${PROJECT_NAME} collision-ode)
+endif()
 
 function(dart_add_core_headers)
   dart_property_add(DART_CORE_HEADERS ${ARGN})
@@ -67,6 +77,7 @@ add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(simulation)
 add_subdirectory(utils) # tinyxml2, libsdformat
+add_subdirectory(io)
 add_subdirectory(gui) # osg
 
 set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
@@ -247,8 +258,11 @@ endif()
 if(DART_BUILD_COLLISION_BULLET)
   add_library(dart-collision-bullet INTERFACE)
   target_link_libraries(dart-collision-bullet INTERFACE dart)
-
-  add_component(${PROJECT_NAME} collision-bullet)
+  set_target_properties(
+    dart-collision-bullet PROPERTIES
+      DEPRECATION
+        "DART CMake component 'collision-bullet' is a deprecated stub in DART 7 and will be removed in DART 8; stop requesting it and depend on component 'dart' instead."
+  )
   add_component_targets(${PROJECT_NAME} collision-bullet dart-collision-bullet)
   add_component_dependencies(${PROJECT_NAME} collision-bullet dart)
 endif()
@@ -256,8 +270,11 @@ endif()
 if(DART_BUILD_COLLISION_ODE)
   add_library(dart-collision-ode INTERFACE)
   target_link_libraries(dart-collision-ode INTERFACE dart)
-
-  add_component(${PROJECT_NAME} collision-ode)
+  set_target_properties(
+    dart-collision-ode PROPERTIES
+      DEPRECATION
+        "DART CMake component 'collision-ode' is a deprecated stub in DART 7 and will be removed in DART 8; stop requesting it and depend on component 'dart' instead."
+  )
   add_component_targets(${PROJECT_NAME} collision-ode dart-collision-ode)
   add_component_dependencies(${PROJECT_NAME} collision-ode dart)
 endif()

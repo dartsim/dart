@@ -57,10 +57,10 @@ endif()
 # ==============================================================================
 # Dynamics Benchmarks
 # ==============================================================================
-if(TARGET dart-utils)
+if(TARGET dart-io)
   add_executable(bm_kinematics dynamics/bm_kinematics.cpp)
   target_link_libraries(bm_kinematics
-    dart-utils
+    dart-io
     benchmark::benchmark
     benchmark::benchmark_main
   )

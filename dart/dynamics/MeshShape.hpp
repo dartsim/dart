@@ -40,6 +40,7 @@
 
 #include <dart/common/ResourceRetriever.hpp>
 
+#include <assimp/cimport.h>
 #include <assimp/scene.h>
 
 #include <memory>

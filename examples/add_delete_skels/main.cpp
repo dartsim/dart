@@ -39,6 +39,7 @@
 #include <dart/collision/bullet/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <iostream>
 
@@ -119,7 +120,7 @@ protected:
 int main()
 {
   // Create and initialize the world
-  WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/ground.skel");
+  WorldPtr myWorld = dart::io::readWorld("dart://sample/skel/ground.skel");
   DART_ASSERT(myWorld != nullptr);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);

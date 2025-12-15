@@ -877,13 +877,17 @@ function(add_component_targets package_name component)
       message(
         FATAL_ERROR
         "Target '${dependency_target}' has unsupported type"
-        " '${dependency_type}'. Only 'STATIC_LIBRARY' and 'SHARED_LIBRARY'"
-        " and 'INTERFACE_LIBRARY' are supported."
+        " '${dependency_type}'. Only 'STATIC_LIBRARY', 'SHARED_LIBRARY', and"
+        " 'INTERFACE_LIBRARY' are supported."
       )
     endif()
 
     if("${dependency_type}" STREQUAL INTERFACE_LIBRARY)
-      install(TARGETS "${dependency_target}" EXPORT "${target}")
+      install(
+        TARGETS "${dependency_target}"
+        EXPORT "${target}"
+        INCLUDES DESTINATION "${INCLUDE_INSTALL_DIR}"
+      )
     else()
       install(
         TARGETS "${dependency_target}"
