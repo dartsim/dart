@@ -14,6 +14,14 @@ For most applications, this made “load a model from a URI” harder than it ne
 The `dart::io` component provides a consolidated front door for reading `World`s and
 `Skeleton`s while keeping the underlying format-specific parsers available when needed.
 
+## Task context (issue #604)
+
+This unified API and documentation were introduced while addressing issue #604 (parser naming)
+and migrating tests/examples/tutorials to the `dart::io` component APIs. The goal is a single,
+consistent “front door” (`dart::io`) without introducing new nested namespaces, while keeping
+full parser-specific customization available via `dart::utils::*` parsers. Unit coverage for
+the promoted options lives in `tests/unit/io/test_Read.cpp`.
+
 ## Scope and design decision
 
 ### One front door, not one mega-parser
@@ -47,6 +55,12 @@ Source of truth:
 
 - `dart/io/Read.hpp`
 - `dart/io/Read.cpp`
+
+## Start here next time
+
+- API surface: `dart/io/Read.hpp`
+- Implementation: `dart/io/Read.cpp`
+- Unit coverage for `ReadOptions`: `tests/unit/io/test_Read.cpp`
 
 ## Common usage patterns
 
