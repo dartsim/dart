@@ -46,7 +46,6 @@
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/common/String.hpp"
-#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -156,7 +155,7 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
 
 std::unique_ptr<constraint::ConstraintSolver> createConstraintSolver()
 {
-  return std::make_unique<constraint::BoxedLcpConstraintSolver>();
+  return std::make_unique<constraint::ConstraintSolver>();
 }
 
 } // namespace

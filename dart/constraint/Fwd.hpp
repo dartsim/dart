@@ -13,8 +13,6 @@
 namespace dart {
 namespace constraint {
 
-class BoxedLcpConstraintSolver;
-class BoxedLcpSolver;
 class ConstraintSolver;
 class ConstrainedGroup;
 class ConstraintBase;
@@ -30,20 +28,6 @@ class BallJointConstraint;
 class RevoluteJointConstraint;
 class WeldJointConstraint;
 class BalanceConstraint;
-
-using BoxedLcpConstraintSolverPtr = std::shared_ptr<BoxedLcpConstraintSolver>;
-using ConstBoxedLcpConstraintSolverPtr
-    = std::shared_ptr<const BoxedLcpConstraintSolver>;
-using WeakBoxedLcpConstraintSolverPtr = std::weak_ptr<BoxedLcpConstraintSolver>;
-using WeakConstBoxedLcpConstraintSolverPtr
-    = std::weak_ptr<const BoxedLcpConstraintSolver>;
-using UniqueBoxedLcpConstraintSolverPtr
-    = std::unique_ptr<BoxedLcpConstraintSolver>;
-
-using BoxedLcpSolverPtr = std::shared_ptr<BoxedLcpSolver>;
-using ConstBoxedLcpSolverPtr = std::shared_ptr<const BoxedLcpSolver>;
-using WeakBoxedLcpSolverPtr = std::weak_ptr<BoxedLcpSolver>;
-using WeakConstBoxedLcpSolverPtr = std::weak_ptr<const BoxedLcpSolver>;
 
 using ConstraintSolverPtr = std::shared_ptr<ConstraintSolver>;
 using ConstConstraintSolverPtr = std::shared_ptr<const ConstraintSolver>;
