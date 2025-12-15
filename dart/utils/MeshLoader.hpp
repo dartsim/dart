@@ -151,52 +151,75 @@ std::unique_ptr<typename MeshLoader<S>::Mesh> MeshLoader<S>::load(
   // Create the output mesh
   auto mesh = std::make_unique<Mesh>();
 
-  // Process all meshes in the scene
-  // TODO(JS): Support merging multiple meshes from the scene
-  const aiMesh* assimpMesh = scene->mMeshes[0];
-  assert(assimpMesh);
+  // Merge all aiMeshes into a single TriMesh.
+  // This matches MeshShape behavior and ensures meshes with multiple materials
+  // (and therefore multiple aiMesh entries) behave as expected.
 
-  // Reserve space for vertices
-  mesh->reserveVertices(assimpMesh->mNumVertices);
-
-  // Parse vertices
-  for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
-    const aiVector3D& vertex = assimpMesh->mVertices[i];
-    mesh->addVertex(
-        static_cast<S>(vertex.x),
-        static_cast<S>(vertex.y),
-        static_cast<S>(vertex.z));
+  std::size_t totalVertices = 0;
+  std::size_t totalFaces = 0;
+  for (std::size_t i = 0; i < scene->mNumMeshes; ++i) {
+    const aiMesh* assimpMesh = scene->mMeshes[i];
+    if (!assimpMesh) {
+      continue;
+    }
+    totalVertices += assimpMesh->mNumVertices;
+    totalFaces += assimpMesh->mNumFaces;
   }
 
-  // Parse faces (triangles)
-  mesh->reserveTriangles(assimpMesh->mNumFaces);
-  for (auto i = 0u; i < assimpMesh->mNumFaces; ++i) {
-    const aiFace& face = assimpMesh->mFaces[i];
+  mesh->reserveVertices(totalVertices);
+  mesh->reserveTriangles(totalFaces);
+  mesh->reserveVertexNormals(totalVertices);
 
-    // TODO(JS): Support non-triangular faces
-    if (face.mNumIndices != 3) {
-      DART_WARN(
-          "[MeshLoader::load] Non-triangular face detected in: {}. Skipping "
-          "this face.",
-          filepath);
+  for (std::size_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
+    const aiMesh* assimpMesh = scene->mMeshes[meshIndex];
+    if (!assimpMesh) {
       continue;
     }
 
-    mesh->addTriangle(face.mIndices[0], face.mIndices[1], face.mIndices[2]);
+    const std::size_t vertexOffset = mesh->getVertices().size();
+
+    // Parse vertices
+    for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
+      const aiVector3D& vertex = assimpMesh->mVertices[i];
+      mesh->addVertex(
+          static_cast<S>(vertex.x),
+          static_cast<S>(vertex.y),
+          static_cast<S>(vertex.z));
+    }
+
+    // Parse faces (triangles)
+    for (auto i = 0u; i < assimpMesh->mNumFaces; ++i) {
+      const aiFace& face = assimpMesh->mFaces[i];
+      if (face.mNumIndices != 3) {
+        DART_WARN(
+            "[MeshLoader::load] Non-triangular face detected in: {} (mesh {}). "
+            "Skipping this face.",
+            filepath,
+            meshIndex);
+        continue;
+      }
+
+      mesh->addTriangle(
+          face.mIndices[0] + vertexOffset,
+          face.mIndices[1] + vertexOffset,
+          face.mIndices[2] + vertexOffset);
+    }
+
+    // Parse vertex normals
+    if (assimpMesh->mNormals) {
+      for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
+        const aiVector3D& normal = assimpMesh->mNormals[i];
+        mesh->addVertexNormal(
+            static_cast<S>(normal.x),
+            static_cast<S>(normal.y),
+            static_cast<S>(normal.z));
+      }
+    }
   }
 
-  // Parse vertex normals
-  if (assimpMesh->mNormals) {
-    mesh->reserveVertexNormals(assimpMesh->mNumVertices);
-    for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
-      const aiVector3D& normal = assimpMesh->mNormals[i];
-      mesh->addVertexNormal(
-          static_cast<S>(normal.x),
-          static_cast<S>(normal.y),
-          static_cast<S>(normal.z));
-    }
-  } else {
-    // Compute vertex normals if not provided
+  // Compute vertex normals if they are missing or incomplete.
+  if (mesh->hasTriangles()
+      && mesh->getVertexNormals().size() != mesh->getVertices().size()) {
     mesh->computeVertexNormals();
   }
 

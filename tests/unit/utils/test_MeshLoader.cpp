@@ -9,8 +9,12 @@
 #include <dart/utils/MeshLoader.hpp>
 #include <dart/utils/DartResourceRetriever.hpp>
 #include <dart/common/LocalResourceRetriever.hpp>
+#include <dart/config.hpp>
 #include <dart/math/TriMesh.hpp>
 
+#include <assimp/cimport.h>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
 #include <gtest/gtest.h>
 
 using namespace dart;
@@ -130,4 +134,51 @@ TEST(MeshLoader, LoadActualMesh)
   if (mesh->hasVertexNormals()) {
     EXPECT_EQ(mesh->getVertexNormals().size(), mesh->getVertices().size());
   }
+}
+
+//==============================================================================
+TEST(MeshLoader, MergesMultipleMeshes)
+{
+  const std::string meshPath = dart::config::dataPath("skel/kima/thorax.dae");
+  ASSERT_FALSE(meshPath.empty());
+
+  auto loader = std::make_unique<utils::AssimpMeshLoaderd>();
+  auto mesh = loader->load(meshPath);
+
+  ASSERT_NE(mesh, nullptr) << "Failed to load mesh from " << meshPath;
+
+  const unsigned int flags = aiProcess_GenNormals | aiProcess_Triangulate
+                             | aiProcess_JoinIdenticalVertices
+                             | aiProcess_SortByPType | aiProcess_OptimizeMeshes;
+
+  const aiScene* scene = aiImportFile(meshPath.c_str(), flags);
+  ASSERT_NE(scene, nullptr) << "Assimp error: " << aiGetErrorString();
+
+  scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);
+  ASSERT_NE(scene, nullptr);
+
+  ASSERT_GT(scene->mNumMeshes, 1u)
+      << "Expected an asset with multiple meshes to validate merge behavior.";
+
+  std::size_t expectedVertices = 0;
+  std::size_t expectedTriangles = 0;
+  for (std::size_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
+    const aiMesh* assimpMesh = scene->mMeshes[meshIndex];
+    ASSERT_NE(assimpMesh, nullptr);
+
+    expectedVertices += assimpMesh->mNumVertices;
+    for (unsigned int faceIndex = 0; faceIndex < assimpMesh->mNumFaces;
+         ++faceIndex) {
+      if (assimpMesh->mFaces[faceIndex].mNumIndices == 3u) {
+        ++expectedTriangles;
+      }
+    }
+  }
+
+  EXPECT_EQ(mesh->getVertices().size(), expectedVertices);
+  EXPECT_EQ(mesh->getTriangles().size(), expectedTriangles);
+  EXPECT_TRUE(mesh->hasVertexNormals());
+  EXPECT_EQ(mesh->getVertexNormals().size(), mesh->getVertices().size());
+
+  aiReleaseImport(scene);
 }
