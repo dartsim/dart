@@ -4,8 +4,8 @@ get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
 project(${example_name})
 
-set(required_components utils-urdf)
-set(required_libraries dart dart-utils-urdf)
+set(required_components utils-urdf io)
+set(required_libraries dart dart-io dart-utils-urdf)
 
 if(DART_IN_SOURCE_BUILD)
   dart_build_example_in_source(${example_name} LINK_LIBRARIES ${required_libraries})

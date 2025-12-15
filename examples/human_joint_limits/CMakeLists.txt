@@ -40,9 +40,10 @@ if(missing_collision_features)
   return()
 endif()
 
-set(required_components utils-urdf gui)
+set(required_components utils-urdf gui io)
 set(required_libraries
   dart
+  dart-io
   dart-utils-urdf
   dart-gui
   ${TinyDNN_LIBRARIES}

@@ -4,8 +4,8 @@ get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
 project(${example_name})
 
-set(required_components gui utils)
-set(required_libraries dart dart-gui dart-utils)
+set(required_components gui utils io)
+set(required_libraries dart dart-gui dart-io dart-utils)
 
 if(DART_IN_SOURCE_BUILD)
   dart_build_example_in_source(${example_name} LINK_LIBRARIES ${required_libraries})

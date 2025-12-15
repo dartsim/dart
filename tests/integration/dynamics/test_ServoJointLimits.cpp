@@ -34,9 +34,8 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include <dart/utils/sdf/All.hpp>
-
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <gtest/gtest.h>
 
@@ -49,8 +48,8 @@ TEST(Issue1583, ServoJointWithPositionLimits)
   const double pos_ub = +0.1;
   const double vel_desired = 1;
 
-  auto skel = dart::utils::SdfParser::readSkeleton(
-      "dart://sample/sdf/test/test_issue1583.model");
+  auto skel
+      = dart::io::readSkeleton("dart://sample/sdf/test/test_issue1583.model");
   ASSERT_NE(skel, nullptr);
 
   auto world = dart::simulation::World::create();
@@ -95,8 +94,8 @@ TEST(Issue1683, ServoJointRecoversFromPositionLimits)
   const double velDesired = 1.0;
   const double velRecover = -0.05;
 
-  auto skel = dart::utils::SdfParser::readSkeleton(
-      "dart://sample/sdf/test/test_issue1683.model");
+  auto skel
+      = dart::io::readSkeleton("dart://sample/sdf/test/test_issue1683.model");
   ASSERT_NE(skel, nullptr);
 
   auto world = dart::simulation::World::create();
@@ -144,8 +143,8 @@ TEST(Issue1683, ServoJointRespectsVelocityLimitsAwayFromBounds)
   const double velLimit = 0.1;
   const double torque = 5.0;
 
-  auto skel = dart::utils::SdfParser::readSkeleton(
-      "dart://sample/sdf/test/test_issue1583.model");
+  auto skel
+      = dart::io::readSkeleton("dart://sample/sdf/test/test_issue1583.model");
   ASSERT_NE(skel, nullptr);
 
   auto world = dart::simulation::World::create();

@@ -46,6 +46,8 @@
 #include <dart/utils/All.hpp>
 #include <dart/All.hpp>
 
+#include <dart/io/Read.hpp>
+
 using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -116,9 +118,8 @@ protected:
 SkeletonPtr loadAtlasRobot()
 {
   // Lesson 1: Load the Atlas robot and configure it for a standing pose
-  UrdfParser parser;
   SkeletonPtr atlas
-      = parser.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
 
   if (!atlas) {
     std::cerr << "Failed to load Atlas robot!" << std::endl;
