@@ -47,7 +47,9 @@ def check_file(path: Path, repo_root: Path) -> list[str]:
     for index, line in enumerate(lines[tail_offset:], start=tail_offset + 1):
         for marker in FORBIDDEN_FOOTER_MARKERS:
             if marker in line:
-                failures.append(f"{rel_path}:{index}: disallowed footer marker {marker!r}")
+                failures.append(
+                    f"{rel_path}:{index}: disallowed footer marker {marker!r}"
+                )
                 break
 
     return failures
