@@ -34,9 +34,8 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include "dart/utils/sdf/SdfParser.hpp"
-
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <gtest/gtest.h>
 
@@ -44,7 +43,6 @@ using namespace dart::math;
 using namespace dart::collision;
 using namespace dart::dynamics;
 using namespace dart::simulation;
-using namespace dart::utils;
 using namespace dart::test;
 
 //==============================================================================
@@ -268,7 +266,7 @@ TEST(Issue1193, WithFixedJoint)
 //==============================================================================
 TEST(Issue1193, WithRevoluteJoint)
 {
-  auto world = SdfParser::readWorld(
+  auto world = dart::io::readWorld(
       "dart://sample/sdf/test/issue1193_revolute_test.sdf");
   ASSERT_TRUE(world != nullptr);
   const double dt = 0.001;
@@ -344,7 +342,7 @@ TEST(PlanarJoint, MomentumConservation)
 //==============================================================================
 TEST(Issue1193, ConservationOfMomentumWithRevoluteJointWithOffset)
 {
-  auto world = SdfParser::readWorld(
+  auto world = dart::io::readWorld(
       "dart://sample/sdf/test/issue1193_revolute_with_offset_test.sdf");
   ASSERT_TRUE(world != nullptr);
   const double dt = 0.0001;

@@ -35,10 +35,10 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/io/Read.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/FileInfoWorld.hpp"
-#include "dart/utils/SkelParser.hpp"
 
 #include <gtest/gtest.h>
 
@@ -60,7 +60,7 @@ TEST(FileInfoWorld, Basic)
   bool result = false;
   FileInfoWorld worldFile;
 
-  WorldPtr world = SkelParser::readWorld(
+  WorldPtr world = dart::io::readWorld(
       "dart://sample/skel/test/file_info_world_test.skel");
   EXPECT_TRUE(world != nullptr);
 

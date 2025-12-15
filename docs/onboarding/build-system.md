@@ -438,6 +438,9 @@ Component Dependency Tree:
     ├── utils-urdf
     │   └── depends: utils, urdfdom
     │
+    ├── io
+    │   └── depends: utils (+ utils-urdf when available)
+    │
     └── gui
         └── depends: utils, OpenSceneGraph, ImGui, OpenGL
 ```
@@ -449,6 +452,7 @@ Component Dependency Tree:
 | `dart`           | `dart`                | `dart-external-odelcpsolver`, `Eigen3::Eigen`, `fcl`, `assimp`, `fmt::fmt` (plus Bullet/ODE when the collision options are enabled) |
 | `utils`          | `dart-utils`          | `dart`, `tinyxml2`, `libsdformat`                                                                                                   |
 | `utils-urdf`     | `dart-utils-urdf`     | `dart-utils`, `urdfdom`                                                                                                             |
+| `io`             | `dart-io`             | `dart-utils` (plus `dart-utils-urdf` when available)                                                                                |
 | `gui`            | `dart-gui`            | `dart-utils`, `osg::osg`, `imgui::imgui`                                                                                            |
 | `external-imgui` | `dart-external-imgui` | `OpenGL::GL`                                                                                                                        |
 
@@ -473,6 +477,7 @@ dart/
 │   └── ode/        # ODE collision engine (optional)
 ├── constraint/      # Constraint solver
 ├── simulation/      # Simulation world, integration, and time stepping
+├── io/              # Unified model loading (readWorld/readSkeleton)
 ├── utils/           # Utility functions
 │   ├── sdf/        # SDF file parser
 │   └── urdf/       # URDF file parser
@@ -506,6 +511,7 @@ dart/
 
 - **`dart-utils`** - Utility functions
 - **`dart-utils-urdf`** - URDF parser
+- **`dart-io`** - Unified model loading (`dart::io`)
 - **`dart-gui`** - OpenSceneGraph GUI
 
 ### Python Bindings Target

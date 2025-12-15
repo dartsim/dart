@@ -39,8 +39,8 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/io/Read.hpp"
 #include "dart/math/Geometry.hpp"
-#include "dart/utils/SkelParser.hpp"
 
 #include <gtest/gtest.h>
 
@@ -270,7 +270,7 @@ TEST(World, Cloning)
 
   std::vector<dart::simulation::WorldPtr> worlds;
   for (std::size_t i = 0; i < fileList.size(); ++i)
-    worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
+    worlds.push_back(dart::io::readWorld(fileList[i]));
 
   for (std::size_t i = 0; i < worlds.size(); ++i) {
     dart::simulation::WorldPtr original = worlds[i];
@@ -354,7 +354,7 @@ TEST(World, ValidatingClones)
 
   std::vector<dart::simulation::WorldPtr> worlds;
   for (std::size_t i = 0; i < fileList.size(); ++i) {
-    worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
+    worlds.push_back(dart::io::readWorld(fileList[i]));
 
     // Set non default collision detector
 #if DART_HAVE_BULLET
@@ -537,7 +537,7 @@ simulation::WorldPtr createWorld()
 {
   // Create and initialize the world
   simulation::WorldPtr world
-      = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
+      = dart::io::readWorld("dart://sample/skel/chain.skel");
   DART_ASSERT(world != nullptr);
 
   // Create and initialize the world
@@ -570,7 +570,7 @@ simulation::WorldPtr createWorld()
 simulation::WorldPtr createWorldWithRevoluteConstraint()
 {
   simulation::WorldPtr world
-      = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
+      = dart::io::readWorld("dart://sample/skel/chain.skel");
   DART_ASSERT(world != nullptr);
 
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));

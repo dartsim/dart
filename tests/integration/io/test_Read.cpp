@@ -30,41 +30,64 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "helpers/GTestUtils.hpp"
-
-#include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include "dart/io/All.hpp"
 
 #include <gtest/gtest.h>
 
-using namespace dart::test;
+using namespace dart;
 
 //==============================================================================
-TEST(Issue838, MaterialParsing)
+TEST(Read, AutoDetectsSkelWorld)
 {
-  dart::dynamics::SkeletonPtr skeleton
-      = dart::io::readSkeleton("dart://sample/urdf/test/issue838.urdf");
-  EXPECT_TRUE(nullptr != skeleton);
-
-  std::vector<Eigen::Vector4d> colors;
-  colors.push_back(Eigen::Vector4d(0.0, 0.0, 0.8, 1.0));
-  colors.push_back(Eigen::Vector4d(1.0, 0.0, 0.0, 1.0));
-  colors.push_back(Eigen::Vector4d(1.0, 1.0, 0.0, 1.0));
-
-  EXPECT_EQ(colors.size(), skeleton->getNumBodyNodes());
-
-  for (size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
-    const Eigen::Vector4d& c = colors[i];
-    skeleton->getBodyNode(i)->eachShapeNodeWith<dart::dynamics::VisualAspect>(
-        [&](const dart::dynamics::ShapeNode* shapeNode) {
-          EXPECT_TRUE(equals(shapeNode->getVisualAspect()->getRGBA(), c));
-        });
-  }
+  const auto world = io::readWorld("dart://sample/skel/test/empty.skel");
+  ASSERT_NE(world, nullptr);
+  EXPECT_EQ(world->getNumSkeletons(), 0);
 }
 
 //==============================================================================
-int main(int argc, char* argv[])
+TEST(Read, AutoDetectsSdfWorld)
 {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  const auto world = io::readWorld("dart://sample/sdf/empty.world");
+  ASSERT_NE(world, nullptr);
+}
+
+//==============================================================================
+TEST(Read, AutoDetectsMjcfWorldByXmlRoot)
+{
+  const auto world = io::readWorld("dart://sample/mjcf/openai/ant.xml");
+  ASSERT_NE(world, nullptr);
+  EXPECT_GT(world->getNumSkeletons(), 0);
+}
+
+//==============================================================================
+TEST(Read, ExplicitFormatOverridesAuto)
+{
+  io::ReadOptions options;
+  options.format = io::ModelFormat::Skel;
+  const auto skeleton = io::readSkeleton(
+      "dart://sample/skel/test/single_pendulum.skel", options);
+  EXPECT_NE(skeleton, nullptr);
+}
+
+//==============================================================================
+TEST(Read, HandlesUrdfSkeletonSupport)
+{
+  const auto skeleton
+      = io::readSkeleton("dart://sample/urdf/test/primitive_geometry.urdf");
+#if DART_IO_HAS_URDF
+  EXPECT_NE(skeleton, nullptr);
+#else
+  EXPECT_EQ(skeleton, nullptr);
+#endif
+}
+
+//==============================================================================
+TEST(Read, HandlesUrdfWorldSupport)
+{
+  const auto world = io::readWorld("dart://sample/urdf/test/testWorld.urdf");
+#if DART_IO_HAS_URDF
+  EXPECT_NE(world, nullptr);
+#else
+  EXPECT_EQ(world, nullptr);
+#endif
 }

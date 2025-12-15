@@ -5,7 +5,6 @@
 #include <dart/utils/DartResourceRetriever.hpp>
 #include <dart/utils/HttpResourceRetriever.hpp>
 #include <dart/utils/PackageResourceRetriever.hpp>
-#include <dart/utils/urdf/UrdfParser.hpp>
 
 #include <dart/simulation/World.hpp>
 
@@ -18,6 +17,7 @@
 #include <dart/common/Uri.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <CLI/CLI.hpp>
 
@@ -364,11 +364,9 @@ std::vector<std::shared_ptr<IkHandle>> setupIkHandles(
 SkeletonPtr loadG1(
     const Options& options, const ResourceRetrieverPtr& retriever)
 {
-  UrdfParser::Options parserOptions;
-  parserOptions.mResourceRetriever = retriever;
-  UrdfParser parser(parserOptions);
-
-  SkeletonPtr robot = parser.parseSkeleton(options.robotUri);
+  dart::io::ReadOptions readOptions;
+  readOptions.resourceRetriever = retriever;
+  SkeletonPtr robot = dart::io::readSkeleton(options.robotUri, readOptions);
   if (!robot) {
     std::cerr << "Failed to load robot from '" << options.robotUri << "'.\n";
     return nullptr;
