@@ -4,6 +4,16 @@
 
 DART uses GitHub Actions for continuous integration and deployment. The CI system validates code quality, runs tests across multiple platforms, builds documentation, and publishes Python wheels.
 
+## Quickstart
+
+- Used in this task:
+  - `pixi run lint`
+  - `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`
+  - `gh run list --branch <branch> --limit 10`
+  - `gh run watch <run_id> --compact --exit-status`
+- Suggested (Unverified): `pixi run test-all` (recommended by the PR template)
+- If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
+
 ## Workflow Architecture
 
 ### Core CI Workflows
@@ -292,6 +302,20 @@ not stop immediately when the first job fails.
 - Update GitHub Actions versions
 - Review and optimize cache sizes
 - Evaluate new optimization opportunities
+
+### Monitoring Runs from the GitHub CLI (optional)
+
+Used in this task:
+
+```bash
+gh run list --branch <branch> --limit 10
+gh run watch <run_id> --compact --exit-status
+```
+
+Notes:
+
+- If the `CI gz-physics` workflow fails, reproduce locally with `pixi run -e gazebo test-gz` (see [build-system.md](build-system.md#gazebo-integration-feature)).
+- If you create PRs from the command line, prefer `gh pr create --body-file <path>` over `--body "..."` when the body contains backticks; some shells (e.g., zsh) treat backticks as command substitution.
 
 ## Troubleshooting
 

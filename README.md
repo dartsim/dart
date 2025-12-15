@@ -55,6 +55,7 @@ An overview of DART is also available on [DeepWiki](https://deepwiki.com/dartsim
 
 - **[Developer Onboarding Guide](docs/onboarding/README.md)** - Comprehensive guide for new contributors covering architecture, components, and workflows
 - **[Contributing Guide](CONTRIBUTING.md)** - Style guide and contribution process
+- **[Gazebo / gz-physics integration workflow](docs/onboarding/build-system.md#gazebo-integration-feature)** - How to run `pixi run -e gazebo test-gz` locally and interpret failures
 
 ## Project Status
 
