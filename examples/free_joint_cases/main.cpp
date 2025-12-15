@@ -60,6 +60,18 @@ struct CaseMetrics
   double relativeJacobianDotMaxError{0.0};
 };
 
+enum class GroundTruthModel
+{
+  ConstantWorldTwist,
+  TorqueFreeRigidBody,
+};
+
+struct TorqueFreeState
+{
+  Eigen::Quaterniond orientation{Eigen::Quaterniond::Identity()};
+  Eigen::Vector3d omegaBody{Eigen::Vector3d::Zero()};
+};
+
 struct FreeJointCase
 {
   std::string name;
@@ -70,6 +82,12 @@ struct FreeJointCase
   dart::dynamics::SkeletonPtr referenceSkeleton;
   dart::dynamics::FreeJoint* referenceJoint{nullptr};
   dart::dynamics::ShapeNode* referenceShapeNode{nullptr};
+
+  Eigen::Matrix3d anisotropicInertia{Eigen::Matrix3d::Identity()};
+  Eigen::Matrix3d sphericalInertia{Eigen::Matrix3d::Identity()};
+  Eigen::Matrix3d inertia{Eigen::Matrix3d::Identity()};
+  Eigen::Matrix3d inertiaInv{Eigen::Matrix3d::Identity()};
+  TorqueFreeState torqueFreeState;
 
   Eigen::Vector6d initialPositions{Eigen::Vector6d::Zero()};
   Eigen::Vector6d initialVelocities{Eigen::Vector6d::Zero()};
@@ -106,6 +124,11 @@ FreeJointCase makeCase(
   data.body->setMass(1.0);
   data.body->setMomentOfInertia(0.02, 0.04, 0.06);
   data.body->setCollidable(false);
+  data.anisotropicInertia = Eigen::Vector3d(0.02, 0.04, 0.06).asDiagonal();
+  data.sphericalInertia
+      = data.anisotropicInertia.diagonal().mean() * Eigen::Matrix3d::Identity();
+  data.inertia = data.anisotropicInertia;
+  data.inertiaInv = data.inertia.inverse();
 
   auto shapeNode = data.body->createShapeNodeWith<
       VisualAspect,
@@ -152,7 +175,8 @@ FreeJointCase makeCase(
   return data;
 }
 
-Eigen::Isometry3d computeExpectedTransform(const FreeJointCase& data, double t)
+Eigen::Isometry3d computeConstantTwistTransform(
+    const FreeJointCase& data, double t)
 {
   using dart::dynamics::FreeJoint;
 
@@ -165,6 +189,97 @@ Eigen::Isometry3d computeExpectedTransform(const FreeJointCase& data, double t)
   expected.translation()
       = initial.translation() + data.initialVelocities.tail<3>() * t;
   return expected;
+}
+
+struct TorqueFreeDeriv
+{
+  Eigen::Vector4d orientationDot{Eigen::Vector4d::Zero()};
+  Eigen::Vector3d omegaBodyDot{Eigen::Vector3d::Zero()};
+};
+
+Eigen::Vector3d computeTorqueFreeOmegaBodyDot(
+    const Eigen::Matrix3d& inertia,
+    const Eigen::Matrix3d& inertiaInv,
+    const Eigen::Vector3d& omegaBody)
+{
+  return -inertiaInv * (omegaBody.cross(inertia * omegaBody));
+}
+
+Eigen::Vector4d computeQuaternionCoeffDot(
+    const Eigen::Quaterniond& orientation, const Eigen::Vector3d& omegaBody)
+{
+  const Eigen::Quaterniond omegaQuat(
+      0.0, omegaBody.x(), omegaBody.y(), omegaBody.z());
+  Eigen::Quaterniond qdot = orientation * omegaQuat;
+  qdot.coeffs() *= 0.5;
+  return qdot.coeffs();
+}
+
+TorqueFreeDeriv evaluateTorqueFreeDeriv(
+    const TorqueFreeState& state,
+    const Eigen::Matrix3d& inertia,
+    const Eigen::Matrix3d& inertiaInv)
+{
+  TorqueFreeDeriv deriv;
+  deriv.orientationDot
+      = computeQuaternionCoeffDot(state.orientation, state.omegaBody);
+  deriv.omegaBodyDot
+      = computeTorqueFreeOmegaBodyDot(inertia, inertiaInv, state.omegaBody);
+  return deriv;
+}
+
+void integrateTorqueFreeStep(
+    TorqueFreeState& state,
+    const Eigen::Matrix3d& inertia,
+    const Eigen::Matrix3d& inertiaInv,
+    double dt)
+{
+  if (!(dt > 0.0))
+    return;
+
+  const TorqueFreeDeriv k1
+      = evaluateTorqueFreeDeriv(state, inertia, inertiaInv);
+
+  TorqueFreeState s2 = state;
+  s2.orientation.coeffs() += 0.5 * dt * k1.orientationDot;
+  s2.omegaBody += 0.5 * dt * k1.omegaBodyDot;
+  s2.orientation.normalize();
+  const TorqueFreeDeriv k2 = evaluateTorqueFreeDeriv(s2, inertia, inertiaInv);
+
+  TorqueFreeState s3 = state;
+  s3.orientation.coeffs() += 0.5 * dt * k2.orientationDot;
+  s3.omegaBody += 0.5 * dt * k2.omegaBodyDot;
+  s3.orientation.normalize();
+  const TorqueFreeDeriv k3 = evaluateTorqueFreeDeriv(s3, inertia, inertiaInv);
+
+  TorqueFreeState s4 = state;
+  s4.orientation.coeffs() += dt * k3.orientationDot;
+  s4.omegaBody += dt * k3.omegaBodyDot;
+  s4.orientation.normalize();
+  const TorqueFreeDeriv k4 = evaluateTorqueFreeDeriv(s4, inertia, inertiaInv);
+
+  state.orientation.coeffs()
+      += (dt / 6.0)
+         * (k1.orientationDot + 2.0 * k2.orientationDot
+            + 2.0 * k3.orientationDot + k4.orientationDot);
+  state.omegaBody += (dt / 6.0)
+                     * (k1.omegaBodyDot + 2.0 * k2.omegaBodyDot
+                        + 2.0 * k3.omegaBodyDot + k4.omegaBodyDot);
+  state.orientation.normalize();
+}
+
+void resetTorqueFreeState(FreeJointCase& data)
+{
+  using dart::dynamics::FreeJoint;
+
+  const Eigen::Isometry3d initial
+      = FreeJoint::convertToTransform(data.initialPositions);
+
+  data.torqueFreeState.orientation = Eigen::Quaterniond(initial.linear());
+  data.torqueFreeState.orientation.normalize();
+
+  const Eigen::Vector3d omegaWorld = data.initialVelocities.head<3>();
+  data.torqueFreeState.omegaBody = initial.linear().transpose() * omegaWorld;
 }
 
 CaseMetrics computeMetrics(const FreeJointCase& data, double dt)
@@ -267,24 +382,35 @@ public:
       dart::simulation::WorldPtr world,
       std::vector<FreeJointCase> cases,
       double numericDt,
+      double simulationDt,
+      GroundTruthModel groundTruthModel,
+      bool useSphericalInertia,
+      int torqueFreeSubsteps,
       double guiScale)
     : mViewer(std::move(viewer)),
       mGrid(std::move(grid)),
       mWorld(std::move(world)),
       mCases(std::move(cases)),
       mNumericDt(numericDt),
+      mSimulationDt(simulationDt),
+      mGroundTruthModel(groundTruthModel),
+      mUseSphericalInertia(useSphericalInertia),
+      mTorqueFreeSubsteps(std::max(1, torqueFreeSubsteps)),
       mGuiScale(guiScale)
   {
     const int scaleKey = static_cast<int>(std::lround(guiScale * 100.0));
     mWindowLabel
         = "FreeJoint cases##free_joint_cases_" + std::to_string(scaleKey);
 
+    applyInertiaMode();
     applyGroundTruthVisibility();
+    resetCases();
     recomputeMetrics();
   }
 
   void render() override
   {
+    advanceTorqueFreeGroundTruth();
     updateGroundTruth();
 
     const float windowScale = static_cast<float>(mGuiScale);
@@ -344,6 +470,11 @@ public:
       if (ImGui::Button("Numeric checks")) {
         recomputeMetrics();
       }
+
+      if (ImGui::Checkbox("Use spherical inertia", &mUseSphericalInertia)) {
+        applyInertiaMode();
+        resetCases();
+      }
     }
 
     if (ImGui::CollapsingHeader(
@@ -353,9 +484,32 @@ public:
         updateGroundTruth();
       }
 
-      ImGui::TextWrapped(
-          "Reference bodies are kinematic visuals whose pose is computed from "
-          "the initial world-frame velocities (ω, v).");
+      int modelIndex
+          = (mGroundTruthModel == GroundTruthModel::TorqueFreeRigidBody) ? 0
+                                                                         : 1;
+      constexpr const char* modelItems
+          = "Torque-free rigid body (RK4)\0Constant world twist\0";
+      if (ImGui::Combo("Model", &modelIndex, modelItems)) {
+        mGroundTruthModel = (modelIndex == 0)
+                                ? GroundTruthModel::TorqueFreeRigidBody
+                                : GroundTruthModel::ConstantWorldTwist;
+        updateGroundTruth();
+      }
+
+      if (mGroundTruthModel == GroundTruthModel::TorqueFreeRigidBody) {
+        if (ImGui::SliderInt("Substeps", &mTorqueFreeSubsteps, 1, 200)) {
+          mTorqueFreeSubsteps = std::max(1, mTorqueFreeSubsteps);
+        }
+
+        ImGui::TextWrapped(
+            "Integrates the torque-free rigid-body equations (Euler) with the "
+            "current inertia. Translation uses p(t)=p0+v0 t.");
+      } else {
+        ImGui::TextWrapped(
+            "Uses R(t)=Exp(ω t) R0 and p(t)=p0+v t, assuming the world-frame "
+            "twist (ω, v) stays constant. This holds for spherical inertia "
+            "(Ixx=Iyy=Izz) or special initial conditions.");
+      }
     }
 
     if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -414,6 +568,24 @@ public:
   }
 
 private:
+  void applyInertiaMode()
+  {
+    for (auto& c : mCases) {
+      const Eigen::Matrix3d& inertia
+          = mUseSphericalInertia ? c.sphericalInertia : c.anisotropicInertia;
+
+      c.body->setMomentOfInertia(
+          inertia(0, 0),
+          inertia(1, 1),
+          inertia(2, 2),
+          inertia(0, 1),
+          inertia(0, 2),
+          inertia(1, 2));
+      c.inertia = inertia;
+      c.inertiaInv = inertia.inverse();
+    }
+  }
+
   void resetCases()
   {
     mWorld->reset();
@@ -429,6 +601,7 @@ private:
       }
     }
 
+    resetTorqueFreeGroundTruth();
     updateGroundTruth();
   }
 
@@ -441,17 +614,60 @@ private:
     }
   }
 
+  void resetTorqueFreeGroundTruth()
+  {
+    mTorqueFreeTime = 0.0;
+    for (auto& c : mCases)
+      resetTorqueFreeState(c);
+  }
+
+  void advanceTorqueFreeGroundTruth()
+  {
+    const double targetTime = mWorld->getTime();
+    if (targetTime < mTorqueFreeTime) {
+      resetTorqueFreeGroundTruth();
+      return;
+    }
+
+    if (!(targetTime > mTorqueFreeTime))
+      return;
+
+    const double baseStep = (mSimulationDt > 0.0)
+                                ? (mSimulationDt / mTorqueFreeSubsteps)
+                                : (targetTime - mTorqueFreeTime);
+    if (!(baseStep > 0.0))
+      return;
+
+    double time = mTorqueFreeTime;
+    while (time + 1e-12 < targetTime) {
+      const double dt = std::min(baseStep, targetTime - time);
+      for (auto& c : mCases)
+        integrateTorqueFreeStep(c.torqueFreeState, c.inertia, c.inertiaInv, dt);
+      time += dt;
+    }
+
+    mTorqueFreeTime = targetTime;
+  }
+
   void updateGroundTruth()
   {
+    const double t = mWorld->getTime();
+
     if (!mShowGroundTruth)
       return;
 
-    const double t = mWorld->getTime();
     for (auto& c : mCases) {
       if (!c.referenceJoint)
         continue;
 
-      const Eigen::Isometry3d expected = computeExpectedTransform(c, t);
+      Eigen::Isometry3d expected = Eigen::Isometry3d::Identity();
+      if (mGroundTruthModel == GroundTruthModel::TorqueFreeRigidBody) {
+        expected.linear() = c.torqueFreeState.orientation.toRotationMatrix();
+        expected.translation()
+            = c.initialPositions.tail<3>() + c.initialVelocities.tail<3>() * t;
+      } else {
+        expected = computeConstantTwistTransform(c, t);
+      }
       c.referenceJoint->setPositions(
           dart::dynamics::FreeJoint::convertToPositions(expected));
     }
@@ -468,9 +684,14 @@ private:
   dart::simulation::WorldPtr mWorld;
   std::vector<FreeJointCase> mCases;
   double mNumericDt;
+  double mSimulationDt;
+  GroundTruthModel mGroundTruthModel;
+  bool mUseSphericalInertia;
+  int mTorqueFreeSubsteps;
   double mGuiScale;
   std::string mWindowLabel;
   bool mShowGroundTruth{true};
+  double mTorqueFreeTime{0.0};
 };
 
 int main(int argc, char* argv[])
@@ -481,13 +702,34 @@ int main(int argc, char* argv[])
   double guiScale = 1.0;
   double numericDt = 1e-6;
   double simulationDt = 1e-3;
+  bool sphericalInertia = false;
+  std::string groundTruthMode = "torque-free";
+  int torqueFreeSubsteps = 10;
   app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
       ->check(CLI::PositiveNumber);
   app.add_option("--numeric-dt", numericDt, "Finite difference dt for checks")
       ->check(CLI::PositiveNumber);
   app.add_option("--dt", simulationDt, "Simulation timestep")
       ->check(CLI::PositiveNumber);
+  app.add_flag(
+      "--spherical-inertia",
+      sphericalInertia,
+      "Use spherical inertia (Ixx=Iyy=Izz) so the world-frame twist stays "
+      "constant");
+  app.add_option(
+         "--ground-truth",
+         groundTruthMode,
+         "Ground truth model: torque-free|constant")
+      ->check(CLI::IsMember({"torque-free", "constant"}));
+  app.add_option(
+         "--ground-truth-substeps",
+         torqueFreeSubsteps,
+         "Substeps per simulation step for torque-free ground truth")
+      ->check(CLI::Range(1, 1000));
   CLI11_PARSE(app, argc, argv);
+  const GroundTruthModel groundTruthModel
+      = (groundTruthMode == "constant") ? GroundTruthModel::ConstantWorldTwist
+                                        : GroundTruthModel::TorqueFreeRigidBody;
 
   simulation::WorldPtr world = simulation::World::create();
   world->setGravity(Eigen::Vector3d::Zero());
@@ -561,7 +803,16 @@ int main(int argc, char* argv[])
   viewer->addAttachment(grid);
 
   viewer->getImGuiHandler()->addWidget(std::make_shared<FreeJointCasesWidget>(
-      viewer, grid, world, cases, numericDt, guiScale));
+      viewer,
+      grid,
+      world,
+      cases,
+      numericDt,
+      simulationDt,
+      groundTruthModel,
+      sphericalInertia,
+      torqueFreeSubsteps,
+      guiScale));
 
   viewer->setUpViewInWindowScaled(0, 0, 1280, 720);
   viewer->getCameraManipulator()->setHomePosition(
