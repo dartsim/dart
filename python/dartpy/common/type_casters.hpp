@@ -121,7 +121,8 @@ struct type_caster<dart::dynamics::BodyNode>
     using BareT = std::remove_cv_t<std::remove_reference_t<T>>;
     if constexpr (std::is_pointer_v<BareT>
                   || std::is_lvalue_reference_v<T>) {
-      policy = rv_policy::reference;
+      if (policy != rv_policy::reference_internal)
+        policy = rv_policy::reference;
     }
     return polymorphic_type_caster<dart::dynamics::BodyNode>::from_cpp(
         std::forward<T>(value), policy, cleanup);
@@ -139,7 +140,8 @@ struct type_caster<dart::dynamics::JacobianNode>
     using BareT = std::remove_cv_t<std::remove_reference_t<T>>;
     if constexpr (std::is_pointer_v<BareT>
                   || std::is_lvalue_reference_v<T>) {
-      policy = rv_policy::reference;
+      if (policy != rv_policy::reference_internal)
+        policy = rv_policy::reference;
     }
     return polymorphic_type_caster<dart::dynamics::JacobianNode>::from_cpp(
         std::forward<T>(value), policy, cleanup);
@@ -157,7 +159,8 @@ struct type_caster<dart::dynamics::Joint>
     using BareT = std::remove_cv_t<std::remove_reference_t<T>>;
     if constexpr (std::is_pointer_v<BareT>
                   || std::is_lvalue_reference_v<T>) {
-      policy = rv_policy::reference;
+      if (policy != rv_policy::reference_internal)
+        policy = rv_policy::reference;
     }
     return polymorphic_type_caster<dart::dynamics::Joint>::from_cpp(
         std::forward<T>(value), policy, cleanup);
@@ -174,10 +177,12 @@ struct type_caster<
 {
   template <typename T>
   NB_INLINE static handle from_cpp(
-      T&& value, rv_policy /*policy*/, cleanup_list* cleanup) noexcept
+      T&& value, rv_policy policy, cleanup_list* cleanup) noexcept
   {
+    if (policy != rv_policy::reference_internal)
+      policy = rv_policy::reference;
     return polymorphic_type_caster<JointT>::from_cpp(
-        std::forward<T>(value), rv_policy::reference, cleanup);
+        std::forward<T>(value), policy, cleanup);
   }
 };
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
+import importlib.machinery
 from pathlib import Path
 from typing import List
 
@@ -19,7 +20,7 @@ def _candidate_package_dirs() -> List[str]:
     candidate = (Path(entry).resolve() / "dartpy")
     if candidate == _PACKAGE_DIR or not candidate.is_dir():
       continue
-    for suffix in (".so", ".pyd", ".dylib"):
+    for suffix in importlib.machinery.EXTENSION_SUFFIXES:
       if any(candidate.glob(f"_dartpy*{suffix}")):
         roots.append(str(candidate))
         break

@@ -127,13 +127,14 @@ void defInverseKinematics(nb::module_& m)
       [](dart::dynamics::Frame* parent,
          const std::string& name,
          const Eigen::Isometry3d& tf) {
-        auto* frame = new dart::dynamics::SimpleFrame(parent, name, tf);
-        return std::shared_ptr<dart::dynamics::SimpleFrame>(frame);
+        dart::dynamics::Frame* resolved
+            = parent ? parent : dart::dynamics::Frame::World();
+        return std::make_shared<dart::dynamics::SimpleFrame>(
+            resolved, name, tf);
       },
       nb::arg("parent"),
       nb::arg("name"),
-      nb::arg("transform"),
-      nb::rv_policy::take_ownership);
+      nb::arg("transform"));
 }
 
 DART_SUPPRESS_DEPRECATED_END
