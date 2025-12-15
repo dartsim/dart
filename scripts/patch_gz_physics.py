@@ -2,11 +2,9 @@
 """
 Patch gz-physics CMakeLists.txt to accept DART 7.0.
 
-This script intentionally limits its scope to the CMake version requirement only.
-For DART 7.0, we want to preserve backward compatibility for the APIs currently
-used by Gazebo/gz-physics, so we should not carry local source patches here. If
-gz-physics fails to build against DART 7, fix the compatibility in DART or
-upstream in gz-physics instead of modifying their sources in this repository.
+This script patches the gz-physics source checkout used by the `pixi -e gazebo`
+workflow. It keeps the patch surface area small and focused on issues that
+block building and testing gz-physics against DART 7.0.
 """
 
 import re
@@ -71,11 +69,58 @@ def patch_gz_physics_cmake(
     return True
 
 
+def patch_gz_physics_gtest_vendor(gtest_vendor_cmake: Path) -> bool:
+    """
+    Ensure gz-physics tests use the vendored gtest headers.
+
+    The pixi `gazebo` environment provides a newer gtest in `$CONDA_PREFIX/include`.
+    gz-physics builds and links its vendored gtest library, but the include path
+    ordering can cause the newer gtest headers to be used instead, leading to
+    link errors due to mismatched `MakeAndRegisterTestInfo` signatures.
+    """
+    if not gtest_vendor_cmake.exists():
+        print(
+            f"Error: gtest_vendor CMakeLists.txt not found at {gtest_vendor_cmake}",
+            file=sys.stderr,
+        )
+        return False
+
+    content = gtest_vendor_cmake.read_text()
+
+    if "SYSTEM PUBLIC" not in content:
+        if "BEFORE PUBLIC" in content:
+            print(
+                f"✓ gtest_vendor include ordering already patched in {gtest_vendor_cmake}"
+            )
+            return True
+
+        print(
+            f"✓ No gtest_vendor SYSTEM include block found in {gtest_vendor_cmake}; leaving unchanged"
+        )
+        return True
+
+    new_content = content.replace("SYSTEM PUBLIC", "BEFORE PUBLIC", 1)
+
+    backup_file = gtest_vendor_cmake.with_suffix(".txt.bak")
+    backup_file.write_text(content)
+    gtest_vendor_cmake.write_text(new_content)
+
+    print(f"✓ Updated gtest_vendor include ordering in {gtest_vendor_cmake}")
+    print(f"  Changed: SYSTEM PUBLIC → BEFORE PUBLIC")
+    print(f"  Backup saved to: {backup_file}")
+    return True
+
+
 def main() -> None:
     repo_root = Path(__file__).parent.parent
     cmake_file = repo_root / ".deps" / "gz-physics" / "CMakeLists.txt"
+    gtest_vendor_cmake = (
+        repo_root / ".deps" / "gz-physics" / "test" / "gtest_vendor" / "CMakeLists.txt"
+    )
 
     success = patch_gz_physics_cmake(cmake_file, OLD_DART_VERSION, NEW_DART_VERSION)
+    if success:
+        success = patch_gz_physics_gtest_vendor(gtest_vendor_cmake)
     raise SystemExit(0 if success else 1)
 
 
