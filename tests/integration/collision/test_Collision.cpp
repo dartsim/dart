@@ -1388,7 +1388,7 @@ TEST_F(Collision, testHeightmapBox)
 //==============================================================================
 TEST_F(Collision, testOdeHeightmapAabbUsesUnscaledBounds)
 {
-#if HAVE_ODE
+#if DART_HAVE_ODE
   using S = float;
   using Vector3 = Eigen::Matrix<S, 3, 1>;
 
