@@ -136,6 +136,16 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    pixi run test-all              # helper script that runs lint + build + tests
    ```
 
+4. (Optional) Gazebo / gz-physics integration test:
+
+   Used in this task:
+
+   ```bash
+   DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz
+   ```
+
+   This runs the gz-physics integration workflow (task chain, patch policy, and common failure modes are documented in [build-system.md](build-system.md#gazebo-integration-feature)).
+
 Pixi automatically detects whether optional Ninja targets (for example `pytest` or GUI tutorials) were generated. If a target is missing (because its corresponding `DART_BUILD_*` option is `OFF`), the helper scripts skip it instead of hard failing, which mirrors the CI workflow. You can still use the “manual” CMake flow described below, but pixi is the fastest path to a working development environment on every platform.
 
 ## Clone the Repository

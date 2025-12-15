@@ -40,6 +40,7 @@
 #include <dart/collision/bullet/All.hpp>
 #include <dart/collision/ode/ode.hpp>
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <cmath>
 
@@ -125,7 +126,7 @@ public:
 
 int main()
 {
-  WorldPtr world = SkelParser::readWorld(
+  WorldPtr world = dart::io::readWorld(
       dart::config::dataPath("skel/kima/kima_human_edited.skel"));
   DART_ASSERT(world != nullptr);
 

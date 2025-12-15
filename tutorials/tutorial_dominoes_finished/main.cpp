@@ -35,6 +35,7 @@
 #include <dart/utils/urdf/urdf.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 const double default_domino_height = 0.3;
 const double default_domino_width = 0.4 * default_domino_height;
@@ -555,11 +556,11 @@ SkeletonPtr createManipulator()
 {
   // Load the Skeleton from a file
   // snippet:cpp-dominoes-lesson2a-loader-start
-  dart::utils::UrdfParser parser;
+  dart::io::ReadOptions options;
   // snippet:cpp-dominoes-lesson2a-loader-end
   // snippet:cpp-dominoes-lesson2a-parse-start
-  SkeletonPtr manipulator
-      = parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+  SkeletonPtr manipulator = dart::io::readSkeleton(
+      "dart://sample/urdf/KR5/KR5 sixx R650.urdf", options);
   // snippet:cpp-dominoes-lesson2a-parse-end
   // snippet:cpp-dominoes-lesson2a-name-start
   manipulator->setName("manipulator");
