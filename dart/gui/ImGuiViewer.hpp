@@ -65,8 +65,10 @@ public:
   /// Set the ImGui global scale factor (fonts + widget sizes).
   void setImGuiScale(float scale);
 
+  using Viewer::setUpViewInWindow;
+
   /// Set up the viewer window, scaling width/height by the ImGui scale.
-  void setUpViewInWindowScaled(int x, int y, int width, int height);
+  void setUpViewInWindow(int x, int y, int width, int height);
 
   /// Show About widget.
   void showAbout();

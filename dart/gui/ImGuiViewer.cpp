@@ -81,7 +81,7 @@ void ImGuiViewer::setImGuiScale(float scale)
 }
 
 //==============================================================================
-void ImGuiViewer::setUpViewInWindowScaled(int x, int y, int width, int height)
+void ImGuiViewer::setUpViewInWindow(int x, int y, int width, int height)
 {
   const float scale = mImGuiScale;
   int scaledWidth = width;
@@ -92,7 +92,7 @@ void ImGuiViewer::setUpViewInWindowScaled(int x, int y, int width, int height)
     scaledHeight = std::max(1, static_cast<int>(std::lround(height * scale)));
   }
 
-  setUpViewInWindow(x, y, scaledWidth, scaledHeight);
+  Viewer::setUpViewInWindow(x, y, scaledWidth, scaledHeight);
 }
 
 //==============================================================================

@@ -281,7 +281,7 @@ int main(int argc, char* argv[])
   viewer->addEventHandler(new CustomEventHandler);
 
   // Set up the window to be 640x480
-  viewer->setUpViewInWindowScaled(0, 0, 640, 480);
+  viewer->setUpViewInWindow(0, 0, 640, 480);
 
   // Adjust the viewpoint of the Viewer
   viewer->getCameraManipulator()->setHomePosition(

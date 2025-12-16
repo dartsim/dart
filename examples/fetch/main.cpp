@@ -240,7 +240,7 @@ int main(int argc, char* argv[])
   viewer.enableDragAndDrop(frame.get());
 
   // Set up the window to be 1280x960
-  viewer.setUpViewInWindowScaled(0, 0, 1280, 960);
+  viewer.setUpViewInWindow(0, 0, 1280, 960);
 
   // Adjust the viewpoint of the Viewer
   viewer.getCameraManipulator()->setHomePosition(

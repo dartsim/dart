@@ -2586,12 +2586,12 @@ TEST_F(Joints, FreeJointEnergyConservationNoForces)
   const double dt = 1e-4;
   world->setTimeStep(dt);
 
-  auto runCase = [&](const Eigen::Vector6d& initialVelocities) {
-    SkeletonPtr skel = Skeleton::create();
+	  auto runCase = [&](const Eigen::Vector6d& initialVelocities) {
+	    SkeletonPtr skel = Skeleton::create();
 
-    auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
-    FreeJoint* joint = pair.first;
-    BodyNode* body = pair.second;
+	    auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+	    FreeJoint* joint = pair.first;
+	    BodyNode* body = pair.second;
 
     body->setMass(2.0);
     body->setMomentOfInertia(0.1, 0.2, 0.3);
@@ -2604,22 +2604,34 @@ TEST_F(Joints, FreeJointEnergyConservationNoForces)
     joint->setPositions(FreeJoint::convertToPositions(random_transform()));
     joint->setVelocities(initialVelocities);
 
-    world->removeAllSkeletons();
-    world->addSkeleton(skel);
+	    world->removeAllSkeletons();
+	    world->addSkeleton(skel);
 
-    const double energy0 = skel->computeKineticEnergy();
-    double maxEnergyError = 0.0;
+	    const double energy0 = skel->computeKineticEnergy();
+	    const Eigen::Vector6d momentum0 = math::dAdInvT(
+	        body->getWorldTransform(),
+	        body->getSpatialInertia() * body->getSpatialVelocity());
+	    double maxEnergyError = 0.0;
+	    double maxMomentumError = 0.0;
 
-    const std::size_t numSteps = 500;
-    for (std::size_t i = 0; i < numSteps; ++i) {
-      world->step();
-      const double energy = skel->computeKineticEnergy();
-      maxEnergyError = std::max(maxEnergyError, std::abs(energy - energy0));
-    }
+	    const std::size_t numSteps = 500;
+	    for (std::size_t i = 0; i < numSteps; ++i) {
+	      world->step();
+	      const double energy = skel->computeKineticEnergy();
+	      maxEnergyError = std::max(maxEnergyError, std::abs(energy - energy0));
+	      const Eigen::Vector6d momentum = math::dAdInvT(
+	          body->getWorldTransform(),
+	          body->getSpatialInertia() * body->getSpatialVelocity());
+	      maxMomentumError = std::max(
+	          maxMomentumError, (momentum - momentum0).cwiseAbs().maxCoeff());
+	    }
 
-    const double scale = std::max(1.0, energy0);
-    EXPECT_LT(maxEnergyError / scale, 1e-3);
-  };
+	    const double scale = std::max(1.0, energy0);
+	    EXPECT_LT(maxEnergyError / scale, 1e-3);
+
+	    const double momentumScale = std::max(1.0, momentum0.norm());
+	    EXPECT_LT(maxMomentumError / momentumScale, 1e-3);
+	  };
 
   Eigen::Vector6d linearOnly = Eigen::Vector6d::Zero();
   linearOnly.tail<3>() = Eigen::Vector3d(0.6, -0.4, 0.2);

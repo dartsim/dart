@@ -817,7 +817,7 @@ int main(int argc, char* argv[])
       torqueFreeSubsteps,
       guiScale));
 
-  viewer->setUpViewInWindowScaled(0, 0, 1280, 720);
+  viewer->setUpViewInWindow(0, 0, 1280, 720);
   viewer->getCameraManipulator()->setHomePosition(
       ::osg::Vec3(2.5f, -10.0f, 4.0f),
       ::osg::Vec3(2.5f, 0.0f, 0.0f),

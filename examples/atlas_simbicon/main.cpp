@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
   viewer->addEventHandler(new AtlasSimbiconEventHandler(node));
 
   // Set the dimensions for the window
-  viewer->setUpViewInWindowScaled(0, 0, 1280, 960);
+  viewer->setUpViewInWindow(0, 0, 1280, 960);
 
   // Set the window name
   viewer->realize();

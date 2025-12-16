@@ -732,7 +732,7 @@ int main(int argc, char* argv[])
   std::cout << viewer->getInstructions() << std::endl;
 
   // Set up the window to be 1280x720 pixels
-  viewer->setUpViewInWindowScaled(0, 0, 1280, 720);
+  viewer->setUpViewInWindow(0, 0, 1280, 720);
 
   viewer->getCameraManipulator()->setHomePosition(
       ::osg::Vec3(2.57f, 3.14f, 1.64f),
