@@ -33,7 +33,7 @@ void defFrame(nb::module_& m)
                 = withRespectTo ? withRespectTo : Frame::World();
             return self.getTransform(target);
           },
-          nb::arg("withRespectTo"))
+          nb::arg("with_respect_to"))
       .def(
           "getTransform",
           [](const Frame& self,
@@ -44,8 +44,8 @@ void defFrame(nb::module_& m)
                 = inCoordinatesOf ? inCoordinatesOf : Frame::World();
             return self.getTransform(wrt, coords);
           },
-          nb::arg("withRespectTo"),
-          nb::arg("inCoordinatesOf"))
+          nb::arg("with_respect_to"),
+          nb::arg("in_coordinates_of"))
       .def(
           "getParentFrame",
           [](Frame* self) -> Frame* { return self->getParentFrame(); },
@@ -55,7 +55,7 @@ void defFrame(nb::module_& m)
           [](const Frame& self, const Frame* someFrame) {
             return self.descendsFrom(someFrame);
           },
-          nb::arg("someFrame") = nullptr)
+          nb::arg("some_frame") = nullptr)
       .def("isShapeFrame", &Frame::isShapeFrame)
       .def("isWorld", &Frame::isWorld)
       .def_static("World", []() { return Frame::WorldShared(); });

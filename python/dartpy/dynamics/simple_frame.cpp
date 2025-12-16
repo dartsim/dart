@@ -30,13 +30,13 @@ void defSimpleFrame(nb::module_& m)
             return std::make_shared<SimpleFrame>(
                 refFrame ? refFrame : Frame::World());
           }),
-          nb::arg("refFrame"))
+          nb::arg("ref_frame"))
       .def(
           nb::new_([](Frame* refFrame, const std::string& name) {
             return std::make_shared<SimpleFrame>(
                 refFrame ? refFrame : Frame::World(), name);
           }),
-          nb::arg("refFrame"),
+          nb::arg("ref_frame"),
           nb::arg("name"))
       .def(
           nb::new_([](Frame* refFrame,
@@ -45,9 +45,9 @@ void defSimpleFrame(nb::module_& m)
             return std::make_shared<SimpleFrame>(
                 refFrame ? refFrame : Frame::World(), name, relativeTransform);
           }),
-          nb::arg("refFrame"),
+          nb::arg("ref_frame"),
           nb::arg("name"),
-          nb::arg("relativeTransform") = Eigen::Isometry3d::Identity())
+          nb::arg("relative_transform") = Eigen::Isometry3d::Identity())
       .def(
           "isShapeFrame",
           [](const SimpleFrame& self) { return self.isShapeFrame(); })
@@ -98,7 +98,7 @@ void defSimpleFrame(nb::module_& m)
             return self.spawnChildSimpleFrame(name, relativeTransform);
           },
           nb::arg("name"),
-          nb::arg("relativeTransform"))
+          nb::arg("relative_transform"))
       .def(
           "setShape",
           [](SimpleFrame& self, const dart::dynamics::ShapePtr& shape) {
@@ -121,7 +121,7 @@ void defSimpleFrame(nb::module_& m)
           [](SimpleFrame& self, bool createIfNull) {
             return self.getVisualAspect(createIfNull);
           },
-          nb::arg("createIfNull") = false,
+          nb::arg("create_if_null") = false,
           nb::rv_policy::reference_internal)
       .def(
           "createVisualAspect",
@@ -133,7 +133,7 @@ void defSimpleFrame(nb::module_& m)
           [](SimpleFrame& self, bool createIfNull) {
             return self.getCollisionAspect(createIfNull);
           },
-          nb::arg("createIfNull") = false,
+          nb::arg("create_if_null") = false,
           nb::rv_policy::reference_internal)
       .def(
           "createCollisionAspect",
@@ -145,7 +145,7 @@ void defSimpleFrame(nb::module_& m)
           [](SimpleFrame& self, bool createIfNull) {
             return self.getDynamicsAspect(createIfNull);
           },
-          nb::arg("createIfNull") = true,
+          nb::arg("create_if_null") = true,
           nb::rv_policy::reference_internal)
       .def(
           "createDynamicsAspect",
@@ -156,25 +156,25 @@ void defSimpleFrame(nb::module_& m)
           [](SimpleFrame& self, const nb::handle& translation) {
             self.setRelativeTranslation(toVector3(translation));
           },
-          nb::arg("newTranslation"))
+          nb::arg("new_translation"))
       .def(
           "setRelativeRotation",
           [](SimpleFrame& self, const Eigen::Matrix3d& rotation) {
             self.setRelativeRotation(rotation);
           },
-          nb::arg("newRotation"))
+          nb::arg("new_rotation"))
       .def(
           "setRelativeTransform",
           [](SimpleFrame& self, const Eigen::Isometry3d& transform) {
             self.setRelativeTransform(transform);
           },
-          nb::arg("newRelTransform"))
+          nb::arg("new_rel_transform"))
       .def(
           "setTranslation",
           [](SimpleFrame& self, const nb::handle& translation) {
             self.setTranslation(toVector3(translation));
           },
-          nb::arg("newTranslation"))
+          nb::arg("new_translation"))
       .def(
           "setTranslation",
           [](SimpleFrame& self,
@@ -184,14 +184,14 @@ void defSimpleFrame(nb::module_& m)
                 = withRespectTo ? withRespectTo : Frame::World();
             self.setTranslation(toVector3(translation), target);
           },
-          nb::arg("newTranslation"),
-          nb::arg("withRespectTo"))
+          nb::arg("new_translation"),
+          nb::arg("with_respect_to"))
       .def(
           "setTransform",
           [](SimpleFrame& self, const Eigen::Isometry3d& transform) {
             self.setTransform(transform);
           },
-          nb::arg("newTransform"))
+          nb::arg("new_transform"))
       .def(
           "setTransform",
           [](SimpleFrame& self,
@@ -201,8 +201,8 @@ void defSimpleFrame(nb::module_& m)
                 = withRespectTo ? withRespectTo : Frame::World();
             self.setTransform(transform, target);
           },
-          nb::arg("newTransform"),
-          nb::arg("withRespectTo"))
+          nb::arg("new_transform"),
+          nb::arg("with_respect_to"))
       .def(
           "getTransform",
           [](const SimpleFrame& self) { return self.getTransform(); })
@@ -213,7 +213,7 @@ void defSimpleFrame(nb::module_& m)
                 = withRespectTo ? withRespectTo : Frame::World();
             return self.getTransform(target);
           },
-          nb::arg("withRespectTo"))
+          nb::arg("with_respect_to"))
       .def(
           "getParentFrame",
           [](SimpleFrame& self) -> Frame* { return self.getParentFrame(); },
@@ -223,7 +223,7 @@ void defSimpleFrame(nb::module_& m)
           [](const SimpleFrame& self, const Frame* someFrame) {
             return self.descendsFrom(someFrame);
           },
-          nb::arg("someFrame") = nullptr);
+          nb::arg("some_frame") = nullptr);
 
   registerPolymorphicCaster<Frame, SimpleFrame>();
   registerPolymorphicCaster<dart::dynamics::ShapeFrame, SimpleFrame>();

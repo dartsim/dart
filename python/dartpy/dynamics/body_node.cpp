@@ -102,7 +102,7 @@ void defBodyNode(nb::module_& m)
           [](BodyNode& self, bool createIfNull) {
             return self.getIK(createIfNull);
           },
-          nb::arg("createIfNull") = false)
+          nb::arg("create_if_null") = false)
       .def(
           "__repr__",
           [](const BodyNode& self) {

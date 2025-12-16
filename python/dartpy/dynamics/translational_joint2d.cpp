@@ -42,19 +42,19 @@ void defTranslationalJoint2D(nb::module_& m)
           [](TranslationalJoint2D& self, bool rename_dofs) {
             self.setXYPlane(rename_dofs);
           },
-          nb::arg("renameDofs") = true)
+          nb::arg("rename_dofs") = true)
       .def(
           "setYZPlane",
           [](TranslationalJoint2D& self, bool rename_dofs) {
             self.setYZPlane(rename_dofs);
           },
-          nb::arg("renameDofs") = true)
+          nb::arg("rename_dofs") = true)
       .def(
           "setZXPlane",
           [](TranslationalJoint2D& self, bool rename_dofs) {
             self.setZXPlane(rename_dofs);
           },
-          nb::arg("renameDofs") = true)
+          nb::arg("rename_dofs") = true)
       .def(
           "setArbitraryPlane",
           [](TranslationalJoint2D& self,
@@ -63,9 +63,9 @@ void defTranslationalJoint2D(nb::module_& m)
              bool rename_dofs) {
             self.setArbitraryPlane(axis1, axis2, rename_dofs);
           },
-          nb::arg("transAxis1"),
-          nb::arg("transAxis2"),
-          nb::arg("renameDofs") = true)
+          nb::arg("trans_axis1"),
+          nb::arg("trans_axis2"),
+          nb::arg("rename_dofs") = true)
       .def_static(
           "getStaticType",
           []() -> const std::string& {

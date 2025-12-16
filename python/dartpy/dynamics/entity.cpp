@@ -43,7 +43,7 @@ void defEntity(nb::module_& m)
           [](const Entity& self, const Frame* frame) {
             return self.descendsFrom(frame);
           },
-          nb::arg("someFrame") = nullptr)
+          nb::arg("some_frame") = nullptr)
       .def("isFrame", &Entity::isFrame)
       .def("isQuiet", &Entity::isQuiet);
 
@@ -53,7 +53,7 @@ void defEntity(nb::module_& m)
           [](Detachable& self, Frame* newParent) {
             self.setParentFrame(newParent);
           },
-          nb::arg("newParentFrame"));
+          nb::arg("new_parent_frame"));
 }
 
 } // namespace dart::python_nb
