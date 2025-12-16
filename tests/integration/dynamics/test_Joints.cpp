@@ -77,6 +77,13 @@ public:
   using CouplerConstraint::update;
 };
 
+class BodyNodeConstrainedTermsTestHelper : public BodyNode
+{
+public:
+  using BodyNode::BodyNode;
+  using BodyNode::updateConstrainedTerms;
+};
+
 //==============================================================================
 class Joints : public testing::Test
 {
@@ -2228,6 +2235,39 @@ TEST_F(Joints, FreeJointVelocityIntegratesAcceleration)
 
   const Eigen::Vector6d expected = velocities + accelerations * dt;
   EXPECT_TRUE(equals(joint->getVelocities(), expected));
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointConstrainedTermsMatchVelocityChange)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<
+      FreeJoint,
+      BodyNodeConstrainedTermsTestHelper>();
+  FreeJoint* joint = pair.first;
+  BodyNodeConstrainedTermsTestHelper* body = pair.second;
+
+  const Eigen::Vector6d velocities
+      = (Eigen::Vector6d() << 0.3, -0.2, 0.1, 0.4, -0.1, 0.2).finished();
+  const Eigen::Vector6d accelerations
+      = (Eigen::Vector6d() << -0.05, 0.02, 0.03, 0.01, -0.02, 0.04).finished();
+  const Eigen::Vector6d velocityChanges
+      = (Eigen::Vector6d() << 0.2, -0.1, 0.3, 0.1, 0.25, -0.2).finished();
+
+  joint->setActuatorType(Joint::FORCE);
+  joint->setVelocities(velocities);
+  joint->setAccelerations(accelerations);
+
+  for (std::size_t i = 0; i < 6; ++i)
+    joint->setVelocityChange(i, velocityChanges[i]);
+
+  const double dt = 1e-3;
+  body->updateConstrainedTerms(dt);
+
+  EXPECT_TRUE(equals(joint->getVelocities(), velocities + velocityChanges));
+  EXPECT_TRUE(
+      equals(joint->getAccelerations(), accelerations + velocityChanges / dt));
 }
 
 //==============================================================================
