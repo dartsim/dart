@@ -44,6 +44,7 @@
 #include <dart/dynamics/SimpleFrame.hpp>
 
 #include <osg/CullFace>
+#include <osg/Depth>
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/Light>
@@ -204,8 +205,6 @@ HeightmapShapeGeode<S>::HeightmapShapeGeode(
     mHeightmapShape(shape),
     mDrawable(nullptr)
 {
-  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
-  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   getOrCreateStateSet()->setAttributeAndModes(
       new ::osg::CullFace(::osg::CullFace::BACK));
   getOrCreateStateSet()->setMode(GL_LIGHTING, ::osg::StateAttribute::ON);
@@ -467,7 +466,6 @@ void HeightmapShapeDrawable<S>::refresh(bool /*firstTime*/)
         *mElements,
         *mNormals,
         mHeightmapShape->getScale());
-    addPrimitiveSet(mElements);
 
     setVertexArray(mVertices);
     setNormalArray(mNormals, ::osg::Array::BIND_PER_VERTEX);
@@ -480,10 +478,29 @@ void HeightmapShapeDrawable<S>::refresh(bool /*firstTime*/)
     if (mColors->size() != 1)
       mColors->resize(1);
 
-    (*mColors)[0] = eigToOsgVec4d(mVisualAspect->getRGBA());
+    const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());
+    (*mColors)[0] = color;
 
     setColorArray(mColors, ::osg::Array::BIND_OVERALL);
+
+    ::osg::StateSet* ss = getOrCreateStateSet();
+    if (std::abs(color.a()) > 1 - getAlphaThreshold()) {
+      ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
+      ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(true);
+      ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
+    } else {
+      ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+      ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+      depth->setWriteMask(false);
+      ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
+    }
   }
+
+  dirtyBound();
+  dirtyDisplayList();
 }
 
 } // namespace render
