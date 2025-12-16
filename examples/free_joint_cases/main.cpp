@@ -419,8 +419,10 @@ public:
 
     const ImVec2 desiredPos(10.0f * windowScale, 20.0f * windowScale);
     const ImVec2 desiredSize(520.0f * windowScale, 540.0f * windowScale);
+    constexpr float kMaxDisplayWidthFraction = 0.45f;
     const ImVec2 maxSize(
-        std::max(1.0f, displaySize.x - desiredPos.x),
+        std::max(
+            1.0f, (displaySize.x - desiredPos.x) * kMaxDisplayWidthFraction),
         std::max(1.0f, displaySize.y - desiredPos.y));
     const ImVec2 clampedSize(
         std::min(desiredSize.x, maxSize.x), std::min(desiredSize.y, maxSize.y));
@@ -502,12 +504,13 @@ public:
         }
 
         ImGui::TextWrapped(
-            "Integrates the torque-free rigid-body equations (Euler) with the "
-            "current inertia. Translation uses p(t)=p0+v0 t.");
+            "Integrates Euler's torque-free rigid-body equations (RK4) with "
+            "the current inertia. Translation uses p(t)=p0+v0 t.");
       } else {
         ImGui::TextWrapped(
-            "Uses R(t)=Exp(ω t) R0 and p(t)=p0+v t, assuming the world-frame "
-            "twist (ω, v) stays constant. This holds for spherical inertia "
+            "Uses R(t)=Exp(omega t) R0 and p(t)=p0+v t, assuming the "
+            "world-frame twist (omega, v) stays constant. This holds for "
+            "spherical inertia "
             "(Ixx=Iyy=Izz) or special initial conditions.");
       }
     }
@@ -772,7 +775,7 @@ int main(int argc, char* argv[])
     vel.head<3>() = Eigen::Vector3d(0.2, 0.8, -0.4);
     vel.tail<3>() = Eigen::Vector3d(0.3, -0.1, 0.2);
     cases.push_back(
-        makeCase("Near π rotation", pose, vel, dart::Color::Orange(0.3)));
+        makeCase("Near pi rotation", pose, vel, dart::Color::Orange(0.3)));
   }
 
   {
@@ -782,8 +785,8 @@ int main(int argc, char* argv[])
     Eigen::Vector6d vel = Eigen::Vector6d::Zero();
     vel.head<3>() = Eigen::Vector3d(1.2, 0.9, -1.0);
     vel.tail<3>() = Eigen::Vector3d(0.2, 0.3, 0.0);
-    cases.push_back(
-        makeCase("High ω multi-axis", pose, vel, dart::Color::Fuchsia(0.3)));
+    cases.push_back(makeCase(
+        "High omega multi-axis", pose, vel, dart::Color::Fuchsia(0.3)));
   }
 
   for (const auto& c : cases) {
@@ -816,8 +819,8 @@ int main(int argc, char* argv[])
 
   viewer->setUpViewInWindowScaled(0, 0, 1280, 720);
   viewer->getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(4.5f, -10.0f, 4.0f),
-      ::osg::Vec3(4.5f, 0.0f, 0.0f),
+      ::osg::Vec3(2.5f, -10.0f, 4.0f),
+      ::osg::Vec3(2.5f, 0.0f, 0.0f),
       ::osg::Vec3(0.0f, 0.0f, 1.0f));
   viewer->setCameraManipulator(viewer->getCameraManipulator());
 
