@@ -5,16 +5,12 @@ This file tracks execution progress. See `01-plan.md` for background and goals.
 ## Status
 
 - State: active
-- Focus (current): lifetime & ownership fixes
+- Focus (current): API consistency & ergonomics
 
 ## Open Decisions
 
 - Naming strategy:
-  - Prefer runtime snake_case aliasing (`python/dartpy/_naming.py`) as the source of truth, or
-  - Prefer hand-authored snake_case APIs in bindings and reduce aliasing?
-- Collision API shape:
-  - Keep C++-style “out parameter” support, or
-  - Move to Pythonic return values (e.g., return a `CollisionResult` / tuple)?
+  - Prefer runtime snake_case aliasing (`python/dartpy/_naming.py`) as the source of truth, and avoid redundant hand-authored snake_case bindings.
 - `World` ownership:
   - Keep `World()` as a value-like binding, or
   - Bind `World` primarily via `World::create(...)` to align with shared ownership patterns?
@@ -29,14 +25,15 @@ This file tracks execution progress. See `01-plan.md` for background and goals.
 - [x] Add keep-alive to constraints that capture `BodyNode*` / `Joint*` (`python/dartpy/constraint/*.cpp`).
 - [x] Avoid in-place construction for Eigen-aligned constraints (fix segfaults) (`python/dartpy/constraint/dynamic_joint_constraint.cpp`).
 - [x] Ensure `Joint` args use polymorphic caster (fix base-pointer offsets) (`python/dartpy/constraint/joint_constraint.cpp`, `python/dartpy/constraint/joint_coulomb_friction_constraint.cpp`).
+- [x] Ensure `MetaSkeleton` args use polymorphic caster (fix base-pointer offsets in `Skeleton` MI) (`python/dartpy/common/type_casters.hpp`, `python/dartpy/dynamics/meta_skeleton.cpp`, `python/dartpy/dynamics/skeleton.cpp`).
 - [x] Ensure `ChainCriteria` / `LinkageCriteria` lifetimes are safe given weak pointer storage (`python/dartpy/dynamics/chain.cpp`, `python/dartpy/dynamics/linkage.cpp`).
 - [x] Add unit tests for lifetime/GC regressions (`python/tests/unit/test_lifetime.py`).
 
 ### 2) API Consistency & Ergonomics
 
-- [ ] Remove redundant hand-authored snake_case methods that conflict with aliasing policy (or document exception cases).
-- [ ] Rename `nb::arg(...)` to snake_case across bindings (signatures + docs).
-- [ ] Make collision APIs ergonomic without requiring raw-pointer arguments (`python/dartpy/simulation/world.cpp`, `python/dartpy/collision/collision_group.cpp`).
+- [x] Remove redundant hand-authored snake_case methods that conflict with aliasing policy (or document exception cases).
+- [x] Rename `nb::arg(...)` to snake_case across bindings (signatures + docs).
+- [x] Make collision APIs ergonomic without requiring raw-pointer arguments (add `*Result` helpers returning result objects) (`python/dartpy/simulation/world.cpp`, `python/dartpy/collision/collision_group.cpp`).
 - [x] Reuse shared conversion helpers (`toVector3`) in constraint constructors (`python/dartpy/constraint/dynamic_joint_constraint.cpp`).
 - [x] Fix MJCF options argument name typo (`python/dartpy/utils/mjcf_parser.cpp`).
 - [ ] Reuse shared conversion helpers (`toVector3`, `toVector`) more broadly (`python/dartpy/common/eigen_utils.hpp` + other bindings).
@@ -55,5 +52,5 @@ This file tracks execution progress. See `01-plan.md` for background and goals.
 ## Validation
 
 - [x] Run `pixi run test-py`.
-- [ ] Run `pixi run test-all`.
+- [x] Run `pixi run test-all`.
 - [x] Investigate nanobind ref-leaks output (resolve shared_ptr/keep_alive cycles; no leaks under `pixi run test-py`).
