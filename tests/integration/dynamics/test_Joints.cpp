@@ -77,13 +77,6 @@ public:
   using CouplerConstraint::update;
 };
 
-class BodyNodeConstrainedTermsTestHelper : public BodyNode
-{
-public:
-  using BodyNode::BodyNode;
-  using BodyNode::updateConstrainedTerms;
-};
-
 //==============================================================================
 class Joints : public testing::Test
 {
@@ -2241,33 +2234,35 @@ TEST_F(Joints, FreeJointVelocityIntegratesAcceleration)
 TEST_F(Joints, FreeJointConstrainedTermsMatchVelocityChange)
 {
   SkeletonPtr skel = Skeleton::create();
+  const double dt = 1e-3;
+  skel->setTimeStep(dt);
+  skel->setMobile(true);
 
-  auto pair = skel->createJointAndBodyNodePair<
-      FreeJoint,
-      BodyNodeConstrainedTermsTestHelper>();
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
   FreeJoint* joint = pair.first;
-  BodyNodeConstrainedTermsTestHelper* body = pair.second;
+  BodyNode* body = pair.second;
 
-  const Eigen::Vector6d velocities
-      = (Eigen::Vector6d() << 0.3, -0.2, 0.1, 0.4, -0.1, 0.2).finished();
-  const Eigen::Vector6d accelerations
-      = (Eigen::Vector6d() << -0.05, 0.02, 0.03, 0.01, -0.02, 0.04).finished();
-  const Eigen::Vector6d velocityChanges
-      = (Eigen::Vector6d() << 0.2, -0.1, 0.3, 0.1, 0.25, -0.2).finished();
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.1, 0.2, 0.3);
 
   joint->setActuatorType(Joint::FORCE);
-  joint->setVelocities(velocities);
-  joint->setAccelerations(accelerations);
+  joint->setVelocities(Eigen::Vector6d::Zero());
+  joint->setAccelerations(Eigen::Vector6d::Zero());
 
-  for (std::size_t i = 0; i < 6; ++i)
-    joint->setVelocityChange(i, velocityChanges[i]);
+  body->setConstraintImpulse(
+      (Eigen::Vector6d() << 1.0, 2.0, 3.0, 4.0, -5.0, 6.0).finished());
 
-  const double dt = 1e-3;
-  body->updateConstrainedTerms(dt);
+  const Eigen::Vector6d vel0 = joint->getVelocities();
+  const Eigen::Vector6d accel0 = joint->getAccelerations();
 
-  EXPECT_TRUE(equals(joint->getVelocities(), velocities + velocityChanges));
-  EXPECT_TRUE(
-      equals(joint->getAccelerations(), accelerations + velocityChanges / dt));
+  skel->computeImpulseForwardDynamics();
+
+  const Eigen::Vector6d vel1 = joint->getVelocities();
+  const Eigen::Vector6d accel1 = joint->getAccelerations();
+  const Eigen::Vector6d deltaVel = vel1 - vel0;
+
+  EXPECT_GT(deltaVel.norm(), 1e-12);
+  EXPECT_TRUE(equals(accel1, accel0 + deltaVel / dt));
 }
 
 //==============================================================================
