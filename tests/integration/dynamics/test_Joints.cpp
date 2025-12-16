@@ -2136,7 +2136,7 @@ TEST_F(Joints, FreeJointIntegrationTranslationUncoupled)
 }
 
 //==============================================================================
-TEST_F(Joints, FreeJointPositionDifferenceTranslationInWorld)
+TEST_F(Joints, FreeJointPositionDifferenceInWorldFrame)
 {
   SkeletonPtr skel = Skeleton::create();
 
@@ -2144,17 +2144,25 @@ TEST_F(Joints, FreeJointPositionDifferenceTranslationInWorld)
   FreeJoint* joint = pair.first;
 
   Eigen::Vector6d q1 = Eigen::Vector6d::Zero();
-  q1.head<3>() = Eigen::Vector3d(0.25, -0.3, 0.15);
+  q1.head<3>() = Eigen::Vector3d(0.0, 0.0, 0.5 * pi);
   q1.tail<3>() = Eigen::Vector3d(0.4, -0.1, 0.2);
 
-  Eigen::Vector6d q2 = q1;
-  const Eigen::Vector3d delta(0.05, -0.08, 0.12);
-  q2.tail<3>() += delta;
+  const Eigen::Isometry3d Q1 = FreeJoint::convertToTransform(q1);
+
+  Eigen::Isometry3d Q2 = Q1;
+  const Eigen::Vector3d deltaRotationBody(0.1, -0.05, 0.02);
+  const Eigen::Vector3d deltaTranslationWorld(0.05, -0.08, 0.12);
+  Q2.linear() = Q2.linear() * math::expMapRot(deltaRotationBody);
+  Q2.translation() += deltaTranslationWorld;
+
+  const Eigen::Vector6d q2 = FreeJoint::convertToPositions(Q2);
 
   const Eigen::Vector6d diff = joint->getPositionDifferences(q2, q1);
 
-  EXPECT_TRUE(equals(Eigen::Vector3d::Zero(), diff.head<3>().eval()));
-  EXPECT_TRUE(equals(delta, diff.tail<3>().eval()));
+  const Eigen::Vector3d expectedRotationWorld = Q1.linear() * deltaRotationBody;
+
+  EXPECT_TRUE(equals(expectedRotationWorld, diff.head<3>().eval()));
+  EXPECT_TRUE(equals(deltaTranslationWorld, diff.tail<3>().eval()));
 }
 
 //==============================================================================
@@ -2625,6 +2633,61 @@ TEST_F(Joints, FreeJointEnergyConservationNoForces)
   both.head<3>() = Eigen::Vector3d(0.5, -0.3, 0.4);
   both.tail<3>() = Eigen::Vector3d(0.6, -0.4, 0.2);
   runCase(both);
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointSphericalInertiaConstantWorldTwistLongHorizon)
+{
+  simulation::WorldPtr world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  const double dt = 1e-3;
+  world->setTimeStep(dt);
+
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  body->setMass(2.0);
+  body->setMomentOfInertia(0.2, 0.2, 0.2);
+
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    joint->setDampingCoefficient(i, 0.0);
+    joint->setCoulombFriction(i, 0.0);
+  }
+
+  joint->setPositions(FreeJoint::convertToPositions(random_transform()));
+
+  Eigen::Vector6d velocities = Eigen::Vector6d::Zero();
+  velocities.head<3>() = Eigen::Vector3d(0.4, -0.3, 0.25);
+  velocities.tail<3>() = Eigen::Vector3d(0.5, -0.4, 0.2);
+  joint->setVelocities(velocities);
+
+  world->addSkeleton(skel);
+
+  const Eigen::Isometry3d start = joint->getRelativeTransform();
+  const double energy0 = skel->computeKineticEnergy();
+
+  const std::size_t numSteps = 1000;
+  for (std::size_t i = 0; i < numSteps; ++i)
+    world->step();
+
+  const double t = dt * static_cast<double>(numSteps);
+
+  const Eigen::Vector6d velocitiesEnd = joint->getVelocities();
+  EXPECT_TRUE(equals(velocitiesEnd, velocities, 1e-10));
+
+  Eigen::Isometry3d expected = Eigen::Isometry3d::Identity();
+  expected.linear()
+      = math::expMapRot(velocities.head<3>() * t) * start.linear();
+  expected.translation() = start.translation() + velocities.tail<3>() * t;
+  EXPECT_TRUE(equals(joint->getRelativeTransform(), expected, 1e-7));
+
+  const double energy = skel->computeKineticEnergy();
+  const double scale = std::max(1.0, energy0);
+  EXPECT_LT(std::abs(energy - energy0) / scale, 1e-6);
 }
 
 //==============================================================================

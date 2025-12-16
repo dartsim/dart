@@ -508,6 +508,7 @@ Eigen::Vector6d FreeJoint::getPositionDifferencesStatic(
   const Eigen::Isometry3d Q2 = convertToTransform(_q2);
 
   Eigen::Vector6d diff = Eigen::Vector6d::Zero();
+
   const Eigen::Matrix3d rotation1 = Q1.linear();
   const Eigen::Matrix3d rotationChange = rotation1.transpose() * Q2.linear();
 
