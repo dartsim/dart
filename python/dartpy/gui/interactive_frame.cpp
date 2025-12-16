@@ -23,7 +23,7 @@ void defInteractiveFrame(nb::module_& m)
             .def(
                 nb::init<InteractiveFrame*, double, const std::string&>(),
                 nb::arg("frame"),
-                nb::arg("defaultAlpha"),
+                nb::arg("default_alpha"),
                 nb::arg("name"))
             .def(
                 "setEnabled",
@@ -78,29 +78,29 @@ void defInteractiveFrame(nb::module_& m)
 
   nb::class_<InteractiveFrame, dart::dynamics::SimpleFrame>(
       m, "InteractiveFrame")
-      .def(nb::init<dart::dynamics::Frame*>(), nb::arg("referenceFrame"))
+      .def(nb::init<dart::dynamics::Frame*>(), nb::arg("reference_frame"))
       .def(
           nb::init<dart::dynamics::Frame*, const std::string&>(),
-          nb::arg("referenceFrame"),
+          nb::arg("reference_frame"),
           nb::arg("name"))
       .def(
           nb::init<
               dart::dynamics::Frame*,
               const std::string&,
               const Eigen::Isometry3d&>(),
-          nb::arg("referenceFrame"),
+          nb::arg("reference_frame"),
           nb::arg("name"),
-          nb::arg("relativeTransform"))
+          nb::arg("relative_transform"))
       .def(
           nb::init<
               dart::dynamics::Frame*,
               const std::string&,
               const Eigen::Isometry3d&,
               double>(),
-          nb::arg("referenceFrame"),
+          nb::arg("reference_frame"),
           nb::arg("name"),
-          nb::arg("relativeTransform"),
-          nb::arg("sizeScale"))
+          nb::arg("relative_transform"),
+          nb::arg("size_scale"))
       .def(
           nb::init<
               dart::dynamics::Frame*,
@@ -108,11 +108,11 @@ void defInteractiveFrame(nb::module_& m)
               const Eigen::Isometry3d&,
               double,
               double>(),
-          nb::arg("referenceFrame"),
+          nb::arg("reference_frame"),
           nb::arg("name"),
-          nb::arg("relativeTransform"),
-          nb::arg("sizeScale"),
-          nb::arg("thicknessScale"))
+          nb::arg("relative_transform"),
+          nb::arg("size_scale"),
+          nb::arg("thickness_scale"))
       .def(
           "resizeStandardVisuals",
           [](InteractiveFrame& self) { self.resizeStandardVisuals(); })
@@ -121,14 +121,14 @@ void defInteractiveFrame(nb::module_& m)
           [](InteractiveFrame& self, double sizeScale) {
             self.resizeStandardVisuals(sizeScale);
           },
-          nb::arg("sizeScale"))
+          nb::arg("size_scale"))
       .def(
           "resizeStandardVisuals",
           [](InteractiveFrame& self, double sizeScale, double thicknessScale) {
             self.resizeStandardVisuals(sizeScale, thicknessScale);
           },
-          nb::arg("sizeScale"),
-          nb::arg("thicknessScale"))
+          nb::arg("size_scale"),
+          nb::arg("thickness_scale"))
       .def(
           "getShapeFrames",
           [](InteractiveFrame& self) { return self.getShapeFrames(); })

@@ -2,6 +2,7 @@
 
 #include <nanobind/nanobind.h>
 
+#include <string>
 #include <typeindex>
 #include <unordered_map>
 
@@ -26,12 +27,15 @@ public:
   static void registerType(
       const std::type_info& info, Caster caster, Downcaster downcaster)
   {
-    getMap()[std::type_index(info)] = Entry{caster, downcaster};
+    const Entry entry{caster, downcaster};
+    getMap()[std::type_index(info)] = entry;
+    getNameMap()[info.name()] = entry;
   }
 
   static bool hasType(const std::type_info& info)
   {
-    return getMap().contains(std::type_index(info));
+    return getMap().contains(std::type_index(info))
+           || getNameMap().contains(info.name());
   }
 
   static Pointer convert(void* raw, const std::type_info& info)
@@ -39,11 +43,22 @@ public:
     if (raw == nullptr)
       return nullptr;
 
+    Entry* entry = nullptr;
     auto& map = getMap();
     auto it = map.find(std::type_index(info));
-    if (it == map.end())
+    if (it != map.end())
+      entry = &it->second;
+    else {
+      auto& nameMap = getNameMap();
+      auto itByName = nameMap.find(info.name());
+      if (itByName != nameMap.end())
+        entry = &itByName->second;
+    }
+
+    if (!entry)
       return static_cast<Pointer>(raw);
-    auto* caster = it->second.upcast;
+
+    auto* caster = entry->upcast;
     if (caster == nullptr)
       return static_cast<Pointer>(raw);
     return caster(raw);
@@ -54,11 +69,22 @@ public:
     if (raw == nullptr)
       return static_cast<void*>(raw);
 
+    Entry* entry = nullptr;
     auto& map = getMap();
     auto it = map.find(std::type_index(info));
-    if (it == map.end())
+    if (it != map.end())
+      entry = &it->second;
+    else {
+      auto& nameMap = getNameMap();
+      auto itByName = nameMap.find(info.name());
+      if (itByName != nameMap.end())
+        entry = &itByName->second;
+    }
+
+    if (!entry)
       return static_cast<void*>(raw);
-    auto* downcaster = it->second.downcast;
+
+    auto* downcaster = entry->downcast;
     if (downcaster == nullptr)
       return static_cast<void*>(raw);
     return downcaster(raw);
@@ -82,11 +108,16 @@ public:
   }
 
 private:
-  static std::unordered_map<std::type_index, Entry>& getMap()
+  static std::unordered_map<std::type_index, Entry>& getMap() { return sMap; }
+
+  inline static std::unordered_map<std::type_index, Entry> sMap;
+
+  static std::unordered_map<std::string, Entry>& getNameMap()
   {
-    static std::unordered_map<std::type_index, Entry> map;
-    return map;
+    return sNameMap;
   }
+
+  inline static std::unordered_map<std::string, Entry> sNameMap;
 
 };
 
@@ -107,7 +138,7 @@ inline void registerPolymorphicCaster()
         if (base == nullptr)
           return nullptr;
         auto* typed = dynamic_cast<Derived*>(base);
-        return typed ? static_cast<void*>(typed) : static_cast<void*>(base);
+        return typed ? static_cast<void*>(typed) : nullptr;
       });
 }
 

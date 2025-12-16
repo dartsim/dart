@@ -43,7 +43,7 @@ void defEndEffector(nb::module_& m)
             self.setDefaultRelativeTransform(transform, useNow);
           },
           nb::arg("transform"),
-          nb::arg("useNow") = false)
+          nb::arg("use_now") = false)
       .def(
           "getName",
           [](const EndEffector& self) -> const std::string& {
@@ -73,7 +73,7 @@ void defEndEffector(nb::module_& m)
             return self.getSupport(createIfNull);
           },
           nb::rv_policy::reference_internal,
-          nb::arg("createIfNull"))
+          nb::arg("create_if_null"))
       .def(
           "hasSupport",
           [](const EndEffector& self) { return self.hasSupport(); })
@@ -86,7 +86,7 @@ void defEndEffector(nb::module_& m)
           [](EndEffector& self, bool createIfNull) {
             return self.getIK(createIfNull);
           },
-          nb::arg("createIfNull") = false);
+          nb::arg("create_if_null") = false);
 
   registerPolymorphicCaster<dart::dynamics::Frame, EndEffector>();
   registerPolymorphicCaster<dart::dynamics::JacobianNode, EndEffector>();

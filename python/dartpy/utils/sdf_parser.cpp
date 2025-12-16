@@ -25,8 +25,8 @@ void defSdfParser(nb::module_& m)
   nb::class_<SdfParserNs::Options>(sm, "Options")
       .def(
           nb::init<common::ResourceRetrieverPtr, SdfParserNs::RootJointType>(),
-          nb::arg("resourceRetriever") = nullptr,
-          nb::arg("defaultRootJointType")
+          nb::arg("resource_retriever") = nullptr,
+          nb::arg("default_root_joint_type")
           = SdfParserNs::RootJointType::Floating)
       .def_rw("mResourceRetriever", &SdfParserNs::Options::mResourceRetriever)
       .def_rw(

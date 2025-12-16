@@ -38,7 +38,7 @@ void defSupportPolygonVisual(nb::module_& m)
                 std::move(skeleton), treeIndex, elevation);
           }),
           nb::arg("skeleton"),
-          nb::arg("treeIndex"),
+          nb::arg("tree_index"),
           nb::arg("elevation") = 0.02)
       .def(
           "setSkeleton",
@@ -51,7 +51,7 @@ void defSupportPolygonVisual(nb::module_& m)
       .def(
           "visualizeTree",
           &SupportPolygonVisual::visualizeTree,
-          nb::arg("treeIndex"))
+          nb::arg("tree_index"))
       .def(
           "setDisplayElevation",
           &SupportPolygonVisual::setDisplayElevation,

@@ -134,7 +134,7 @@ void defChain(nb::module_& m)
           }),
           nb::arg("start"),
           nb::arg("target"),
-          nb::arg("includeUpstreamParentJoint") = false,
+          nb::arg("include_upstream_parent_joint") = false,
           nb::arg("name") = std::string())
       .def("getNumBodyNodes", &Chain::getNumBodyNodes)
       .def("cloneChain", [](const Chain& self) { return self.cloneChain(); })
