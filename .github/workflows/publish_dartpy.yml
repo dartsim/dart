@@ -199,7 +199,7 @@ jobs:
     # upload to PyPI on every tag starting with 'release-'
     # if: github.event_name == 'push' && startsWith(github.ref, 'release-')
     # alternatively, to publish when a GitHub Release is created, use the following rule:
-    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true' && github.event.inputs.ref != '')
+    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true' && (github.event.inputs.ref != '' || startsWith(github.ref, 'refs/tags/v')))
     steps:
       - uses: actions/download-artifact@v5
         with:
