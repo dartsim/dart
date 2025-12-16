@@ -58,6 +58,8 @@ docs/doxygen/html/
 # Sphinx documentation
 docs/readthedocs/site
 docs/readthedocs/_build/
+docs/readthedocs/_generated/
+docs/readthedocs/_generated_stubs/
 
 # Data files
 data/screencap/*
