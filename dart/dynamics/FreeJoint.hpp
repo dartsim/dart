@@ -118,30 +118,6 @@ public:
       const Frame* withRespectTo = Frame::World(),
       bool applyToAllRootBodies = true);
 
-  // Documentation inherited
-  void setVelocities(const Eigen::VectorXd& velocities) override;
-
-  // Documentation inherited
-  void setVelocity(std::size_t index, double velocity) override;
-
-  // Documentation inherited
-  void setAccelerations(const Eigen::VectorXd& accelerations) override;
-
-  // Documentation inherited
-  void setAcceleration(std::size_t index, double acceleration) override;
-
-  // Documentation inherited
-  Eigen::VectorXd getVelocities() const override;
-
-  // Documentation inherited
-  double getVelocity(std::size_t index) const override;
-
-  // Documentation inherited
-  Eigen::VectorXd getAccelerations() const override;
-
-  // Documentation inherited
-  double getAcceleration(std::size_t index) const override;
-
   /// Set the transform, spatial velocity, and spatial acceleration of the child
   /// BodyNode relative to an arbitrary Frame. The reference frame can be
   /// arbitrarily specified.

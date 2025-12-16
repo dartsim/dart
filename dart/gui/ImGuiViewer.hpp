@@ -65,9 +65,6 @@ public:
   /// Set the ImGui global scale factor (fonts + widget sizes).
   void setImGuiScale(float scale);
 
-  /// Get the current ImGui scale factor.
-  float getImGuiScale() const;
-
   /// Set up the viewer window, scaling width/height by the ImGui scale.
   void setUpViewInWindowScaled(int x, int y, int width, int height);
 

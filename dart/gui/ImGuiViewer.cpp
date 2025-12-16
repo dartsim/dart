@@ -81,12 +81,6 @@ void ImGuiViewer::setImGuiScale(float scale)
 }
 
 //==============================================================================
-float ImGuiViewer::getImGuiScale() const
-{
-  return mImGuiScale;
-}
-
-//==============================================================================
 void ImGuiViewer::setUpViewInWindowScaled(int x, int y, int width, int height)
 {
   const float scale = mImGuiScale;

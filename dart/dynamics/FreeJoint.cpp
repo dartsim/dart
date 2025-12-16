@@ -159,54 +159,6 @@ void FreeJoint::setSpatialMotion(
 }
 
 //==============================================================================
-void FreeJoint::setVelocities(const Eigen::VectorXd& velocities)
-{
-  Base::setVelocities(velocities);
-}
-
-//==============================================================================
-void FreeJoint::setVelocity(std::size_t index, double velocity)
-{
-  Base::setVelocity(index, velocity);
-}
-
-//==============================================================================
-void FreeJoint::setAccelerations(const Eigen::VectorXd& accelerations)
-{
-  Base::setAccelerations(accelerations);
-}
-
-//==============================================================================
-void FreeJoint::setAcceleration(std::size_t index, double acceleration)
-{
-  Base::setAcceleration(index, acceleration);
-}
-
-//==============================================================================
-Eigen::VectorXd FreeJoint::getVelocities() const
-{
-  return Base::getVelocities();
-}
-
-//==============================================================================
-double FreeJoint::getVelocity(std::size_t index) const
-{
-  return Base::getVelocity(index);
-}
-
-//==============================================================================
-Eigen::VectorXd FreeJoint::getAccelerations() const
-{
-  return Base::getAccelerations();
-}
-
-//==============================================================================
-double FreeJoint::getAcceleration(std::size_t index) const
-{
-  return Base::getAcceleration(index);
-}
-
-//==============================================================================
 void FreeJoint::setRelativeTransform(const Eigen::Isometry3d& newTransform)
 {
   setPositionsStatic(convertToPositions(
