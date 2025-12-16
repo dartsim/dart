@@ -69,8 +69,8 @@ struct polymorphic_type_caster : type_caster_base_tag {
             adjusted = static_cast<void*>(ptr);
           }
         } else {
-          actual_type = &typeid(Type);
-          adjusted = static_cast<void*>(ptr);
+          if constexpr (std::is_polymorphic_v<Type>)
+            adjusted = dynamic_cast<void*>(ptr);
         }
       }
       return nb_type_put_p(
