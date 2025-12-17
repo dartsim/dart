@@ -1120,10 +1120,9 @@ This section is intentionally brief and delegates to the focused onboarding docs
 Used in this task:
 
 - `pixi run lint`
-- `DART_PARALLEL_JOBS=8 pixi run -e gazebo download-gz`
-- `DART_PARALLEL_JOBS=8 pixi run -e gazebo patch-gz`
-- `DART_PARALLEL_JOBS=8 pixi run -e gazebo config-gz`
-- `DART_PARALLEL_JOBS=8 pixi run -e gazebo ninja -C .deps/gz-physics/build -j 8 COMMON_TEST_collisions`
+- `pixi run test`
+- `DART_PARALLEL_JOBS=16 pixi run test-all`
+- `DART_PARALLEL_JOBS=16 pixi run -e gazebo test-gz`
 
 Suggested (Unverified):
 

@@ -11,14 +11,17 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Gazebo / gz-physics workflow: [build-system.md](build-system.md#gazebo-integration-feature)
   - PR template checklist: [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)
 - Used in this task:
-  - `pixi run lint`
-  - `gh run list --branch <branch> -e pull_request -L 20`
-  - `gh run watch <run_id> --interval 30 --exit-status`
-  - `gh run view <run_id> --log-failed`
-  - `git fetch origin refs/pull/<pr_number>/merge:refs/remotes/origin/pr-<pr_number>-merge`
-- Gotchas:
-  - `gh` can fail with transient `GraphQL` HTTP 502 errors; fall back to `gh run list` / `gh run watch` / `gh run view --log-failed`.
-  - PR CI runs against the merge ref (`refs/pull/<id>/merge`), not just your head branch; fetch that ref locally when debugging what CI actually built.
+  - `git status -sb`
+  - `gh pr list --head "$(git branch --show-current)" --json number,title,state,url,headRefName`
+  - `gh pr status`
+  - `gh pr checks 2298`
+  - `gh run view 20275198109 --job 58221775555 --log-failed`
+- Suggested (Unverified):
+  - `gh pr checks <pr_number> --watch --interval 30 --fail-fast`
+  - `gh run view <run_id> --job <job_id> --log-failed`
+- Gotchas (encountered in this task):
+  - `gh pr status --json ...` can error with `Unknown JSON field: ...` if you request unsupported fields; use `gh pr status` (no JSON) or `gh pr view --json ...`.
+  - `gh pr checks` may show duplicate entries when workflows run for both `push` and `pull_request` events; compare the run URLs and focus on the newest one.
 - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
 
 ## Workflow Architecture
@@ -301,21 +304,54 @@ All tests run through `pixi run test-all`, which includes:
 - Review and optimize cache sizes
 - Evaluate new optimization opportunities
 
-### Monitoring Runs from the GitHub CLI (optional)
+### Monitoring and Debugging from the GitHub CLI
 
-Used in this task:
+#### Branch / PR Recon (used in this task)
 
 ```bash
-gh run list --branch <branch> -e pull_request -L 20
-gh run watch <run_id> --interval 30 --exit-status
-gh run view <run_id> --log-failed
+git rev-parse --show-toplevel
+git status -sb
+git branch -vv
+git remote -v
+git log -20 --oneline --decorate
+git diff --stat
+git stash list
 ```
 
-Fast iteration loop (used in this task):
+Map the current branch to a PR (used in this task):
 
-1. Find the newest run id with `gh run list ...`.
-2. Block on completion with `gh run watch ...`.
-3. On failure, inspect `gh run view ... --log-failed`, fix, push, repeat.
+```bash
+gh pr list --head "$(git branch --show-current)" --json number,title,state,url,headRefName
+gh pr view --json number,title,url,state,baseRefName,headRefName,author,labels,body
+```
+
+#### CI Triage (used in this task)
+
+```bash
+gh pr status
+gh pr checks 2298
+gh pr view 2298 --json reviewDecision,latestReviews,reviewRequests,state,isDraft,mergeable,mergeStateStatus,statusCheckRollup
+```
+
+Inspect logs for a failing job (used in this task):
+
+```bash
+gh run view 20275198109 --job 58221775555 --log-failed
+gh run view 20275198456 --job 58221776649 --log-failed
+```
+
+If `--log-failed` is missing context, list job step outcomes first (used in this task):
+
+```bash
+gh run view 20275198109 --json jobs --jq '.jobs[] | select(.databaseId==58221775555) | {steps:[.steps[] | {name: .name, conclusion: .conclusion}]}'
+```
+
+Suggested (Unverified):
+
+```bash
+gh pr checks <pr_number> --watch --interval 30 --fail-fast
+gh run view <run_id> --job <job_id> --log-failed
+```
 
 Notes:
 
