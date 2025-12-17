@@ -83,22 +83,7 @@ jobs all share the same configuration**. You can disable auto-detection with
     disable_annotations: true
 
 - name: Configure environment for compiler cache
-  run: |
-    echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-    echo "SCCACHE_NO_DAEMON=1" >> $GITHUB_ENV
-    echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
-    if [ -n "${SCCACHE_PATH:-}" ]; then
-      echo "CMAKE_C_COMPILER_LAUNCHER=${SCCACHE_PATH}" >> $GITHUB_ENV
-      echo "CMAKE_CXX_COMPILER_LAUNCHER=${SCCACHE_PATH}" >> $GITHUB_ENV
-    else
-      echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-      echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-    fi
-    echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-    echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
-    echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
-    echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
-    mkdir -p "${RUNNER_TEMP}/ccache"
+  uses: ./.github/actions/configure-compiler-cache
 ```
 
 **Windows setup** (see `.github/workflows/ci_windows.yml`):

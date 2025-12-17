@@ -68,43 +68,7 @@ jobs:
           disable_annotations: true
 
       - name: Configure environment for compiler cache
-        run: |
-          if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
-            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          else
-            echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
-          fi
-          echo "SCCACHE_NO_DAEMON=1" >> $GITHUB_ENV
-          DART_COMPILER_CACHE_VALUE=""
-          CMAKE_COMPILER_LAUNCHER_VALUE="env"
-          if [ -n "${SCCACHE_PATH:-}" ]; then
-            DART_COMPILER_CACHE_VALUE="sccache"
-            CMAKE_COMPILER_LAUNCHER_VALUE="${SCCACHE_PATH}"
-          elif command -v sccache >/dev/null 2>&1; then
-            DART_COMPILER_CACHE_VALUE="sccache"
-            CMAKE_COMPILER_LAUNCHER_VALUE="sccache"
-          fi
-          if [ -n "${DART_COMPILER_CACHE_VALUE}" ]; then
-            CC_PATH="$(command -v cc || true)"
-            if [ -n "${CC_PATH}" ]; then
-              SANITY_DIR="${GITHUB_WORKSPACE}/build/sccache-sanity/CMakeFiles/CMakeScratch/TryCompile-sanity"
-              mkdir -p "${SANITY_DIR}"
-              printf '%s\n' 'int main(void) { return 0; }' > "${SANITY_DIR}/testCCompiler.c"
-              if ! "${CMAKE_COMPILER_LAUNCHER_VALUE}" "${CC_PATH}" -o "${SANITY_DIR}/testCCompiler.c.o" -c "${SANITY_DIR}/testCCompiler.c"; then
-                echo "sccache sanity check failed; falling back to no-op launcher (env)" >&2
-                DART_COMPILER_CACHE_VALUE="env"
-                CMAKE_COMPILER_LAUNCHER_VALUE="env"
-              fi
-            fi
-          fi
-          echo "DART_COMPILER_CACHE=${DART_COMPILER_CACHE_VALUE}" >> $GITHUB_ENV
-          echo "CMAKE_C_COMPILER_LAUNCHER=${CMAKE_COMPILER_LAUNCHER_VALUE}" >> $GITHUB_ENV
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_COMPILER_LAUNCHER_VALUE}" >> $GITHUB_ENV
-          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
-          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
-          mkdir -p "${RUNNER_TEMP}/ccache"
+        uses: ./.github/actions/configure-compiler-cache
 
       - name: Build with coverage
         run: |
@@ -153,43 +117,7 @@ jobs:
           disable_annotations: true
 
       - name: Configure environment for compiler cache
-        run: |
-          if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
-            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          else
-            echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
-          fi
-          echo "SCCACHE_NO_DAEMON=1" >> $GITHUB_ENV
-          DART_COMPILER_CACHE_VALUE=""
-          CMAKE_COMPILER_LAUNCHER_VALUE="env"
-          if [ -n "${SCCACHE_PATH:-}" ]; then
-            DART_COMPILER_CACHE_VALUE="sccache"
-            CMAKE_COMPILER_LAUNCHER_VALUE="${SCCACHE_PATH}"
-          elif command -v sccache >/dev/null 2>&1; then
-            DART_COMPILER_CACHE_VALUE="sccache"
-            CMAKE_COMPILER_LAUNCHER_VALUE="sccache"
-          fi
-          if [ -n "${DART_COMPILER_CACHE_VALUE}" ]; then
-            CC_PATH="$(command -v cc || true)"
-            if [ -n "${CC_PATH}" ]; then
-              SANITY_DIR="${GITHUB_WORKSPACE}/build/sccache-sanity/CMakeFiles/CMakeScratch/TryCompile-sanity"
-              mkdir -p "${SANITY_DIR}"
-              printf '%s\n' 'int main(void) { return 0; }' > "${SANITY_DIR}/testCCompiler.c"
-              if ! "${CMAKE_COMPILER_LAUNCHER_VALUE}" "${CC_PATH}" -o "${SANITY_DIR}/testCCompiler.c.o" -c "${SANITY_DIR}/testCCompiler.c"; then
-                echo "sccache sanity check failed; falling back to no-op launcher (env)" >&2
-                DART_COMPILER_CACHE_VALUE="env"
-                CMAKE_COMPILER_LAUNCHER_VALUE="env"
-              fi
-            fi
-          fi
-          echo "DART_COMPILER_CACHE=${DART_COMPILER_CACHE_VALUE}" >> $GITHUB_ENV
-          echo "CMAKE_C_COMPILER_LAUNCHER=${CMAKE_COMPILER_LAUNCHER_VALUE}" >> $GITHUB_ENV
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_COMPILER_LAUNCHER_VALUE}" >> $GITHUB_ENV
-          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
-          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
-          mkdir -p "${RUNNER_TEMP}/ccache"
+        uses: ./.github/actions/configure-compiler-cache
 
       - name: Check Lint
         run: |
@@ -242,43 +170,7 @@ jobs:
           disable_annotations: true
 
       - name: Configure environment for compiler cache
-        run: |
-          if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
-            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          else
-            echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
-          fi
-          echo "SCCACHE_NO_DAEMON=1" >> $GITHUB_ENV
-          DART_COMPILER_CACHE_VALUE=""
-          CMAKE_COMPILER_LAUNCHER_VALUE="env"
-          if [ -n "${SCCACHE_PATH:-}" ]; then
-            DART_COMPILER_CACHE_VALUE="sccache"
-            CMAKE_COMPILER_LAUNCHER_VALUE="${SCCACHE_PATH}"
-          elif command -v sccache >/dev/null 2>&1; then
-            DART_COMPILER_CACHE_VALUE="sccache"
-            CMAKE_COMPILER_LAUNCHER_VALUE="sccache"
-          fi
-          if [ -n "${DART_COMPILER_CACHE_VALUE}" ]; then
-            CC_PATH="$(command -v cc || true)"
-            if [ -n "${CC_PATH}" ]; then
-              SANITY_DIR="${GITHUB_WORKSPACE}/build/sccache-sanity/CMakeFiles/CMakeScratch/TryCompile-sanity"
-              mkdir -p "${SANITY_DIR}"
-              printf '%s\n' 'int main(void) { return 0; }' > "${SANITY_DIR}/testCCompiler.c"
-              if ! "${CMAKE_COMPILER_LAUNCHER_VALUE}" "${CC_PATH}" -o "${SANITY_DIR}/testCCompiler.c.o" -c "${SANITY_DIR}/testCCompiler.c"; then
-                echo "sccache sanity check failed; falling back to no-op launcher (env)" >&2
-                DART_COMPILER_CACHE_VALUE="env"
-                CMAKE_COMPILER_LAUNCHER_VALUE="env"
-              fi
-            fi
-          fi
-          echo "DART_COMPILER_CACHE=${DART_COMPILER_CACHE_VALUE}" >> $GITHUB_ENV
-          echo "CMAKE_C_COMPILER_LAUNCHER=${CMAKE_COMPILER_LAUNCHER_VALUE}" >> $GITHUB_ENV
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_COMPILER_LAUNCHER_VALUE}" >> $GITHUB_ENV
-          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
-          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
-          mkdir -p "${RUNNER_TEMP}/ccache"
+        uses: ./.github/actions/configure-compiler-cache
 
       - name: Test DART and dartpy
         run: |
