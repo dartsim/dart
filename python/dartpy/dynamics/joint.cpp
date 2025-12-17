@@ -64,7 +64,7 @@ void defJoint(nb::module_& m)
           "setName",
           &Joint::setName,
           nb::arg("name"),
-          nb::arg("preserveName") = true)
+          nb::arg("preserve_name") = true)
       .def(
           "getType",
           [](const Joint& self) -> const std::string& {
@@ -91,20 +91,20 @@ void defJoint(nb::module_& m)
           [](Joint& self, ActuatorType actuatorType) {
             self.setActuatorType(actuatorType);
           },
-          nb::arg("actuatorType"))
+          nb::arg("actuator_type"))
       .def(
           "setActuatorTypeForDof",
           [](Joint& self, std::size_t index, ActuatorType actuatorType) {
             self.setActuatorType(index, actuatorType);
           },
           nb::arg("index"),
-          nb::arg("actuatorType"))
+          nb::arg("actuator_type"))
       .def(
           "setActuatorTypes",
           [](Joint& self, const std::vector<ActuatorType>& actuatorTypes) {
             self.setActuatorTypes(actuatorTypes);
           },
-          nb::arg("actuatorTypes"))
+          nb::arg("actuator_types"))
       .def(
           "getActuatorType",
           [](const Joint& self) { return self.getActuatorType(); })
@@ -122,7 +122,7 @@ void defJoint(nb::module_& m)
           [](const Joint& self, ActuatorType actuatorType) {
             return self.hasActuatorType(actuatorType);
           },
-          nb::arg("actuatorType"))
+          nb::arg("actuator_type"))
       .def(
           "setUseCouplerConstraint",
           &Joint::setUseCouplerConstraint,
@@ -155,7 +155,7 @@ void defJoint(nb::module_& m)
           nb::rv_policy::reference_internal,
           nb::arg("index"),
           nb::arg("name"),
-          nb::arg("preserveName"))
+          nb::arg("preserve_name"))
       .def(
           "getDofName",
           [](const Joint& self, std::size_t index) -> const std::string& {

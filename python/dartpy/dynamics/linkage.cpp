@@ -58,13 +58,13 @@ void defLinkage(nb::module_& m)
           [](const Linkage& self, const std::string& name) {
             return self.cloneLinkage(name);
           },
-          nb::arg("cloneName"))
+          nb::arg("clone_name"))
       .def(
           "cloneMetaSkeleton",
           [](const Linkage& self, const std::string& name) {
             return self.cloneMetaSkeleton(name);
           },
-          nb::arg("cloneName"))
+          nb::arg("clone_name"))
       .def(
           "__repr__",
           [](const Linkage& self) {

@@ -60,8 +60,8 @@ void defDynamicJointConstraint(nb::module_& m)
                       nb::handle jointPosition) {
             return new BallJointConstraint(bodyNode, toVector3(jointPosition));
           }),
-          nb::arg("bodyNode"),
-          nb::arg("jointPosition"),
+          nb::arg("body_node"),
+          nb::arg("joint_position"),
           nb::keep_alive<1, 2>())
       .def(
           nb::new_([](dart::dynamics::BodyNode* bodyNode1,
@@ -70,9 +70,9 @@ void defDynamicJointConstraint(nb::module_& m)
             return new BallJointConstraint(
                 bodyNode1, bodyNode2, toVector3(jointPosition));
           }),
-          nb::arg("bodyNode1"),
-          nb::arg("bodyNode2"),
-          nb::arg("jointPosition"),
+          nb::arg("body_node1"),
+          nb::arg("body_node2"),
+          nb::arg("joint_position"),
           nb::keep_alive<1, 2>(),
           nb::keep_alive<1, 3>())
       .def(
@@ -97,8 +97,8 @@ void defDynamicJointConstraint(nb::module_& m)
             return new RevoluteJointConstraint(
                 bodyNode, toVector3(jointPosition), toVector3(axis));
           }),
-          nb::arg("bodyNode"),
-          nb::arg("jointPosition"),
+          nb::arg("body_node"),
+          nb::arg("joint_position"),
           nb::arg("axis"),
           nb::keep_alive<1, 2>())
       .def(
@@ -114,9 +114,9 @@ void defDynamicJointConstraint(nb::module_& m)
                 toVector3(axis1),
                 toVector3(axis2));
           }),
-          nb::arg("bodyNode1"),
-          nb::arg("bodyNode2"),
-          nb::arg("jointPosition"),
+          nb::arg("body_node1"),
+          nb::arg("body_node2"),
+          nb::arg("joint_position"),
           nb::arg("axis1"),
           nb::arg("axis2"),
           nb::keep_alive<1, 2>(),
@@ -140,15 +140,15 @@ void defDynamicJointConstraint(nb::module_& m)
           nb::new_([](dart::dynamics::BodyNode* bodyNode) {
             return new WeldJointConstraint(bodyNode);
           }),
-          nb::arg("bodyNode"),
+          nb::arg("body_node"),
           nb::keep_alive<1, 2>())
       .def(
           nb::new_([](dart::dynamics::BodyNode* bodyNode1,
                       dart::dynamics::BodyNode* bodyNode2) {
             return new WeldJointConstraint(bodyNode1, bodyNode2);
           }),
-          nb::arg("bodyNode1"),
-          nb::arg("bodyNode2"),
+          nb::arg("body_node1"),
+          nb::arg("body_node2"),
           nb::keep_alive<1, 2>(),
           nb::keep_alive<1, 3>())
       .def(

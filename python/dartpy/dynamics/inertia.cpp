@@ -28,8 +28,9 @@ void defInertia(nb::module_& m)
               }),
           nb::arg("mass") = 1.0,
           nb::arg("com") = nb::none(),
-          nb::arg("momentOfInertia") = nb::none())
-      .def(nb::init<const Eigen::Matrix6d&>(), nb::arg("spatialInertiaTensor"))
+          nb::arg("moment_of_inertia") = nb::none())
+      .def(
+          nb::init<const Eigen::Matrix6d&>(), nb::arg("spatial_inertia_tensor"))
       .def("setMass", &Inertia::setMass, nb::arg("mass"))
       .def("getMass", &Inertia::getMass)
       .def("setLocalCOM", &Inertia::setLocalCOM, nb::arg("com"))
@@ -51,7 +52,7 @@ void defInertia(nb::module_& m)
           nb::overload_cast<const Eigen::Matrix6d&, bool>(
               &Inertia::setSpatialTensor),
           nb::arg("spatial"),
-          nb::arg("printWarnings"))
+          nb::arg("print_warnings"))
       .def(
           "getSpatialTensor",
           &Inertia::getSpatialTensor,
@@ -65,7 +66,7 @@ void defInertia(nb::module_& m)
       .def(
           "verify",
           &Inertia::verify,
-          nb::arg("printWarnings") = true,
+          nb::arg("print_warnings") = true,
           nb::arg("tolerance") = 1e-8)
       .def(
           "__eq__",
@@ -76,13 +77,13 @@ void defInertia(nb::module_& m)
           "verifyMoment",
           &Inertia::verifyMoment,
           nb::arg("moment"),
-          nb::arg("printWarnings") = true,
+          nb::arg("print_warnings") = true,
           nb::arg("tolerance") = 1e-8)
       .def_static(
           "verifySpatialTensor",
           &Inertia::verifySpatialTensor,
           nb::arg("spatial"),
-          nb::arg("printWarnings") = true,
+          nb::arg("print_warnings") = true,
           nb::arg("tolerance") = 1e-8);
 }
 

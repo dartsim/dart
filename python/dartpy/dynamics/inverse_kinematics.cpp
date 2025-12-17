@@ -108,7 +108,7 @@ void defInverseKinematics(nb::module_& m)
           [](IK& self, bool allowIncompleteResult) {
             return self.solveAndApply(allowIncompleteResult);
           },
-          nb::arg("allowIncompleteResult") = true)
+          nb::arg("allow_incomplete_result") = true)
       .def("__repr__", [](const IK& self) {
         const auto target = self.getTarget();
         const auto* node = self.getNode();
