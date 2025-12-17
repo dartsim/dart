@@ -1619,9 +1619,9 @@ LAUNCHER_DEFS=""
 if [ -n "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}"
 fi
- if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
-   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
- fi
+if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
+  LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
+fi
 cmake \
     -G Ninja \
     -S .deps/gz-physics \
@@ -1629,14 +1629,14 @@ cmake \
     -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-    -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=$PWD/scripts/gz_physics_common_test_gtest_vendor_include.cmake \
+    -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_physics_force_vendor_gtest.cmake \
     -DCMAKE_EXE_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
     -DCMAKE_SHARED_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
     -DBUILD_TESTING=ON \
     $LAUNCHER_DEFS
- """,
- ], depends-on = [
-   "patch-gz",
+""",
+], depends-on = [
+  "patch-gz",
   { task = "install", args = [
     "OFF",
   ] },

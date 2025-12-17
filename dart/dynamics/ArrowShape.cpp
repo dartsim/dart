@@ -78,7 +78,7 @@ ArrowShape::ArrowShape(
 {
   instantiate(_resolution);
   configureArrow(mTail, mHead, mProperties);
-  setColorMode(MeshShape::COLOR_INDEX);
+  setColorMode(MeshShape::MATERIAL_COLOR);
   notifyColorUpdated(_color);
 }
 
@@ -116,9 +116,20 @@ void ArrowShape::setProperties(const Properties& _properties)
 //==============================================================================
 void ArrowShape::notifyColorUpdated(const Eigen::Vector4d& _color)
 {
-  // Store color for future use - TriMesh doesn't directly store colors
-  // Colors are typically handled by the renderer
-  (void)_color; // Suppress unused parameter warning
+  if (mMaterials.empty())
+    mMaterials.emplace_back();
+
+  auto& material = mMaterials.front();
+
+  const Eigen::Vector4f color = _color.cast<float>();
+  material.diffuse = color;
+  material.ambient = Eigen::Vector4f(
+      0.2f * color.x(), 0.2f * color.y(), 0.2f * color.z(), color.w());
+  material.specular = Eigen::Vector4f(0.0f, 0.0f, 0.0f, color.w());
+  material.emissive = Eigen::Vector4f(0.0f, 0.0f, 0.0f, color.w());
+  material.shininess = 0.0f;
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -156,6 +167,10 @@ void ArrowShape::configureArrow(
   headLength = std::min(maxHeadLength, std::max(minHeadLength, headLength));
 
   // Regenerate the entire mesh with new parameters
+  if (mCachedAiScene) {
+    aiReleaseImport(mCachedAiScene);
+    mCachedAiScene = nullptr;
+  }
   mTriMesh = std::make_shared<math::TriMesh<double>>();
 
   const double pi = math::pi;
@@ -317,8 +332,7 @@ void ArrowShape::configureArrow(
   }
 
   // Transform all vertices - need to get non-const access
-  auto& vertices
-      = const_cast<std::vector<Eigen::Vector3d>&>(mTriMesh->getVertices());
+  auto& vertices = mTriMesh->getVertices();
   for (auto& vertex : vertices) {
     vertex = tf * vertex;
   }
@@ -350,6 +364,7 @@ ShapePtr ArrowShape::clone() const
   new_shape->mColorMode = mColorMode;
   new_shape->mAlphaMode = mAlphaMode;
   new_shape->mColorIndex = mColorIndex;
+  new_shape->mMaterials = mMaterials;
 
   return new_shape;
 }

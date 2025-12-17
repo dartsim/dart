@@ -170,8 +170,7 @@ void SoftMeshShape::update()
   std::size_t nVertices = mSoftBodyNode->getNumPointMasses();
 
   // Get non-const access to vertices for in-place update
-  auto& vertices
-      = const_cast<std::vector<Eigen::Vector3d>&>(mTriMesh->getVertices());
+  auto& vertices = mTriMesh->getVertices();
 
   for (std::size_t i = 0; i < nVertices; ++i) {
     PointMass* itPointMass = mSoftBodyNode->getPointMass(i);

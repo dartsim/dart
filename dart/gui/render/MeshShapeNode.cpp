@@ -838,11 +838,9 @@ void MeshShapeGeometry::extractData(bool firstTime)
           != static_cast<unsigned int>(
               -1)) // -1 is being used by us to indicate no material
       {
-        isColored = true;
         ::osg::Material* material = mMainNode->getMaterial(matIndex);
 
-        // Check if material exists - if not, fall back to default rendering
-        // This is expected for mesh files without embedded materials
+        // Check if material exists - if not, fall back to shape color.
         if (!material) {
           ss->removeAttribute(::osg::StateAttribute::MATERIAL);
           ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
@@ -852,6 +850,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
           ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
         } else if (
             mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_ALPHA) {
+          isColored = true;
           const float shapeAlpha
               = static_cast<float>(mVisualAspect->getAlpha());
 
@@ -876,6 +875,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
             ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
           }
         } else if (mMeshShape->getAlphaMode() == dynamics::MeshShape::BLEND) {
+          isColored = true;
           float shapeAlpha = static_cast<float>(mVisualAspect->getAlpha());
           ::osg::ref_ptr<::osg::Material> newMaterial
               = new ::osg::Material(*material);
@@ -898,6 +898,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
             ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
           }
         } else {
+          isColored = true;
           ss->setAttributeAndModes(material);
 
           // Set alpha specific properties

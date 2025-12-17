@@ -296,14 +296,20 @@ void InteractiveFrame::createStandardVisualizationShapes(
     p.mHeadLengthScale = 0.4;
     p.mDoubleArrow = false;
 
-    mTools[InteractiveTool::LINEAR][a]->addShapeFrame(dart::dynamics::ShapePtr(
-        new dart::dynamics::ArrowShape(tail, head, p, color, 100)));
+    auto arrow = std::make_shared<dart::dynamics::ArrowShape>(
+        tail, head, p, color, 100);
+    arrow->setColorMode(dart::dynamics::MeshShape::SHAPE_COLOR);
+    auto arrowFrame = mTools[InteractiveTool::LINEAR][a]->addShapeFrame(arrow);
+    arrowFrame->getVisualAspect(true)->setRGBA(color);
 
     tail[a] = -ring_inner_scale;
     head[a] = -size;
 
-    mTools[InteractiveTool::LINEAR][a]->addShapeFrame(dart::dynamics::ShapePtr(
-        new dart::dynamics::ArrowShape(tail, head, p, color, 100)));
+    arrow = std::make_shared<dart::dynamics::ArrowShape>(
+        tail, head, p, color, 100);
+    arrow->setColorMode(dart::dynamics::MeshShape::SHAPE_COLOR);
+    arrowFrame = mTools[InteractiveTool::LINEAR][a]->addShapeFrame(arrow);
+    arrowFrame->getVisualAspect(true)->setRGBA(color);
   }
 
   // Create rotation rings - Generate TriMesh directly
@@ -393,7 +399,11 @@ void InteractiveFrame::createStandardVisualizationShapes(
 
     std::shared_ptr<dart::dynamics::MeshShape> shape(
         new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), triMesh));
-    shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
+    shape->setColorMode(dart::dynamics::MeshShape::SHAPE_COLOR);
+
+    Eigen::Vector4d color(Eigen::Vector4d::Zero());
+    color[r] = 1.0;
+    color[3] = getTool(InteractiveTool::ANGULAR, r)->getDefaultAlpha();
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     if (r == 1)
@@ -403,6 +413,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
 
     auto shapeFrame = mTools[InteractiveTool::ANGULAR][r]->addShapeFrame(shape);
     shapeFrame->setRelativeTransform(tf);
+    shapeFrame->getVisualAspect(true)->setRGBA(color);
   }
 
   // Create translation planes - Generate TriMesh directly
@@ -438,7 +449,11 @@ void InteractiveFrame::createStandardVisualizationShapes(
 
     std::shared_ptr<dart::dynamics::MeshShape> shape(
         new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), triMesh));
-    shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
+    shape->setColorMode(dart::dynamics::MeshShape::SHAPE_COLOR);
+
+    Eigen::Vector4d color(
+        0.1, 0.1, 0.1, getTool(InteractiveTool::PLANAR, p)->getDefaultAlpha());
+    color[p] = 0.9;
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     if (p == 1)
@@ -448,6 +463,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
 
     auto shapeFrame = mTools[InteractiveTool::PLANAR][p]->addShapeFrame(shape);
     shapeFrame->setRelativeTransform(tf);
+    shapeFrame->getVisualAspect(true)->setRGBA(color);
   }
 
   for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i) {
