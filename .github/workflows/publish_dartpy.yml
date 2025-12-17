@@ -145,12 +145,7 @@ jobs:
           tag="${DARTPY_REF#refs/tags/}"
           tag="${tag#v}"
 
-          pkg_version="$(python - <<'PY'
-import xml.etree.ElementTree as ET
-version = ET.parse("package.xml").getroot().findtext("version", default="").strip()
-print(version)
-PY
-)"
+          pkg_version="$(python -c 'import xml.etree.ElementTree as ET; print(ET.parse("package.xml").getroot().findtext("version", default="").strip())')"
 
           if [ -z "${pkg_version}" ]; then
             echo "::error::Failed to read version from package.xml in '${DARTPY_CHECKOUT_REF}'."
