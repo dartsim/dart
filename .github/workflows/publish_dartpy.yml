@@ -127,6 +127,7 @@ jobs:
 
       - name: Validate publish inputs
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true' }}
+        shell: bash
         run: |
           case "${DARTPY_REF}" in
             v*|refs/tags/v*) ;;
