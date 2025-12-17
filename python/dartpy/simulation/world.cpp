@@ -37,7 +37,7 @@ void defWorld(nb::module_& m)
           [](World& self, const std::string& new_name) -> const std::string& {
             return self.setName(new_name);
           },
-          nb::arg("newName"),
+          nb::arg("new_name"),
           nb::rv_policy::reference_internal)
       .def(
           "getName",
@@ -62,7 +62,7 @@ void defWorld(nb::module_& m)
           nb::arg("y"),
           nb::arg("z"))
       .def("getGravity", &World::getGravity, nb::rv_policy::reference_internal)
-      .def("setTimeStep", &World::setTimeStep, nb::arg("timeStep"))
+      .def("setTimeStep", &World::setTimeStep, nb::arg("time_step"))
       .def("getTimeStep", &World::getTimeStep)
       .def(
           "getSkeleton",
@@ -106,7 +106,7 @@ void defWorld(nb::module_& m)
           [](World& self, const std::string& skeleton_name) {
             return self.hasSkeleton(skeleton_name);
           },
-          nb::arg("skeletonName"))
+          nb::arg("skeleton_name"))
       .def(
           "getIndex",
           [](World& self, int index) { return self.getIndex(index); },
@@ -158,6 +158,15 @@ void defWorld(nb::module_& m)
           nb::arg("option"),
           nb::arg("result"))
       .def(
+          "checkCollisionResult",
+          [](World& self, const dart::collision::CollisionOption& option)
+              -> dart::collision::CollisionResult {
+            dart::collision::CollisionResult result;
+            self.checkCollision(option, &result);
+            return result;
+          },
+          nb::arg("option") = dart::collision::CollisionOption())
+      .def(
           "getLastCollisionResult",
           [](World& self) -> const dart::collision::CollisionResult& {
             return self.getLastCollisionResult();
@@ -168,7 +177,7 @@ void defWorld(nb::module_& m)
       .def(
           "step",
           [](World& self, bool resetCommand) { self.step(resetCommand); },
-          nb::arg("resetCommand"))
+          nb::arg("reset_command"))
       .def("setTime", &World::setTime, nb::arg("time"))
       .def("getTime", &World::getTime)
       .def("getSimFrames", &World::getSimFrames)

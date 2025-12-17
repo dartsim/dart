@@ -20,11 +20,11 @@ void defGradientDescentSolver(nb::module_& m)
   nb::class_<Solver::UniqueProperties>(
       m, "GradientDescentSolverUniqueProperties")
       .def(nb::init<>())
-      .def(nb::init<double>(), nb::arg("stepMultiplier"))
+      .def(nb::init<double>(), nb::arg("step_multiplier"))
       .def(
           nb::init<double, std::size_t>(),
-          nb::arg("stepMultiplier"),
-          nb::arg("maxAttempts"));
+          nb::arg("step_multiplier"),
+          nb::arg("max_attempts"));
 
   nb::class_<Solver::Properties, dart::math::Solver::Properties>(
       m, "GradientDescentSolverProperties")
@@ -33,8 +33,8 @@ void defGradientDescentSolver(nb::module_& m)
           nb::init<
               const dart::math::Solver::Properties&,
               const Solver::UniqueProperties&>(),
-          nb::arg("solverProperties"),
-          nb::arg("gradientProperties") = Solver::UniqueProperties());
+          nb::arg("solver_properties"),
+          nb::arg("gradient_properties") = Solver::UniqueProperties());
 
   nb::class_<Solver, dart::math::Solver>(m, "GradientDescentSolver")
       .def(nb::init<>())

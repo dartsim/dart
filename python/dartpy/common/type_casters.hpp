@@ -7,6 +7,7 @@
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/JacobianNode.hpp"
 #include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/MetaSkeleton.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 
 namespace nanobind::detail {
@@ -60,8 +61,17 @@ struct polymorphic_type_caster : type_caster_base_tag {
       const std::type_info* actual_type = ptr ? &typeid(*ptr) : nullptr;
       void* adjusted = static_cast<void*>(ptr);
       if (ptr != nullptr && actual_type != nullptr) {
-        adjusted = dart::python_nb::restorePolymorphicPointer<Type>(
-            ptr, *actual_type);
+        if (dart::python_nb::hasPolymorphicCaster<Type>(*actual_type)) {
+          adjusted = dart::python_nb::restorePolymorphicPointer<Type>(
+              ptr, *actual_type);
+          if (adjusted == nullptr) {
+            actual_type = &typeid(Type);
+            adjusted = static_cast<void*>(ptr);
+          }
+        } else {
+          if constexpr (std::is_polymorphic_v<Type>)
+            adjusted = dynamic_cast<void*>(ptr);
+        }
       }
       return nb_type_put_p(
           &typeid(Type), actual_type, adjusted, policy, cleanup, nullptr);
@@ -107,6 +117,12 @@ struct type_caster<dart::dynamics::Frame>
 template <>
 struct type_caster<dart::dynamics::ShapeFrame>
     : polymorphic_type_caster<dart::dynamics::ShapeFrame>
+{
+};
+
+template <>
+struct type_caster<dart::dynamics::MetaSkeleton>
+    : polymorphic_type_caster<dart::dynamics::MetaSkeleton>
 {
 };
 

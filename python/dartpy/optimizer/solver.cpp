@@ -49,7 +49,7 @@ void defOptimizerSolver(nb::module_& m)
           nb::init<std::shared_ptr<dart::math::Problem>, double, std::size_t>(),
           nb::arg("problem"),
           nb::arg("tolerance"),
-          nb::arg("numMaxIterations"))
+          nb::arg("num_max_iterations"))
       .def(
           nb::init<
               std::shared_ptr<dart::math::Problem>,
@@ -58,8 +58,8 @@ void defOptimizerSolver(nb::module_& m)
               std::size_t>(),
           nb::arg("problem"),
           nb::arg("tolerance"),
-          nb::arg("numMaxIterations"),
-          nb::arg("iterationsPerPrint"))
+          nb::arg("num_max_iterations"),
+          nb::arg("iterations_per_print"))
       .def(
           nb::init<
               std::shared_ptr<dart::math::Problem>,
@@ -69,8 +69,8 @@ void defOptimizerSolver(nb::module_& m)
               std::ostream*>(),
           nb::arg("problem"),
           nb::arg("tolerance"),
-          nb::arg("numMaxIterations"),
-          nb::arg("iterationsPerPrint"),
+          nb::arg("num_max_iterations"),
+          nb::arg("iterations_per_print"),
           nb::arg("ostream"))
       .def(
           nb::init<
@@ -82,10 +82,10 @@ void defOptimizerSolver(nb::module_& m)
               bool>(),
           nb::arg("problem"),
           nb::arg("tolerance"),
-          nb::arg("numMaxIterations"),
-          nb::arg("iterationsPerPrint"),
+          nb::arg("num_max_iterations"),
+          nb::arg("iterations_per_print"),
           nb::arg("ostream"),
-          nb::arg("printFinalResult"))
+          nb::arg("print_final_result"))
       .def(
           nb::init<
               std::shared_ptr<dart::math::Problem>,
@@ -97,11 +97,11 @@ void defOptimizerSolver(nb::module_& m)
               const std::string&>(),
           nb::arg("problem"),
           nb::arg("tolerance"),
-          nb::arg("numMaxIterations"),
-          nb::arg("iterationsPerPrint"),
+          nb::arg("num_max_iterations"),
+          nb::arg("iterations_per_print"),
           nb::arg("ostream"),
-          nb::arg("printFinalResult"),
-          nb::arg("resultFile"))
+          nb::arg("print_final_result"),
+          nb::arg("result_file"))
       .def_rw("mProblem", &Solver::Properties::mProblem)
       .def_rw("mTolerance", &Solver::Properties::mTolerance)
       .def_rw("mNumMaxIterations", &Solver::Properties::mNumMaxIterations)
@@ -142,7 +142,7 @@ void defOptimizerSolver(nb::module_& m)
       .def(
           "setResultFileName",
           &Solver::setResultFileName,
-          nb::arg("resultFile"))
+          nb::arg("result_file"))
       .def(
           "getResultFileName",
           &Solver::getResultFileName,
