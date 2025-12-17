@@ -87,6 +87,13 @@ skel.set_positions(np.array([0.1, 0.2, 0.3]))
 positions = skel.get_positions()  # Returns ndarray
 ```
 
+### Binding Conventions
+
+- Prefer shared numeric conversion helpers for Python inputs (sequences and NumPy) so bindings behave consistently across modules.
+- Release the GIL around long-running, non-callback C++ calls (e.g., stepping and collision queries) using `nb::call_guard<nb::gil_scoped_release>()` where safe.
+- Convert Python arguments to C++ types before releasing the GIL; nanobind casting and NumPy access require holding the GIL.
+- When the C++ API stores raw pointers, add explicit keep-alive/shared-ownership patterns to prevent lifetime bugs in Python.
+
 ### OSG Bindings Design
 
 GUI bindings are built only when `DART_BUILD_GUI=ON`. The build wires this up by
