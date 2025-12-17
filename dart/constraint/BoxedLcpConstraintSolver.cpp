@@ -32,20 +32,19 @@
 
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 
-#include "dart/common/Macros.hpp"
-
-#include <cassert>
-
-#include <iomanip>
-#include <iostream>
-
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/external/odelcpsolver/lcp.h"
 #include "dart/lcpsolver/Lemke.hpp"
+
+#include <iomanip>
+#include <iostream>
+
+#include <cassert>
 
 namespace dart {
 namespace constraint {

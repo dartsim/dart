@@ -32,16 +32,15 @@
 
 #include "dart/constraint/DantzigLCPSolver.hpp"
 
-#include "dart/common/Macros.hpp"
-
-#include <iomanip>
-#include <iostream>
-
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/external/odelcpsolver/lcp.h"
 #include "dart/lcpsolver/Lemke.hpp"
+
+#include <iomanip>
+#include <iostream>
 
 namespace dart {
 namespace constraint {
