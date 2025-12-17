@@ -81,14 +81,31 @@ jobs:
             echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
           fi
           echo "SCCACHE_NO_DAEMON=1" >> $GITHUB_ENV
-          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
+          DART_COMPILER_CACHE_VALUE=""
+          CMAKE_COMPILER_LAUNCHER_VALUE="env"
           if [ -n "${SCCACHE_PATH:-}" ]; then
-            echo "CMAKE_C_COMPILER_LAUNCHER=${SCCACHE_PATH}" >> $GITHUB_ENV
-            echo "CMAKE_CXX_COMPILER_LAUNCHER=${SCCACHE_PATH}" >> $GITHUB_ENV
-          else
-            echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-            echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+            DART_COMPILER_CACHE_VALUE="sccache"
+            CMAKE_COMPILER_LAUNCHER_VALUE="${SCCACHE_PATH}"
+          elif command -v sccache >/dev/null 2>&1; then
+            DART_COMPILER_CACHE_VALUE="sccache"
+            CMAKE_COMPILER_LAUNCHER_VALUE="sccache"
           fi
+          if [ -n "${DART_COMPILER_CACHE_VALUE}" ]; then
+            CC_PATH="$(command -v cc || true)"
+            if [ -n "${CC_PATH}" ]; then
+              SANITY_DIR="${GITHUB_WORKSPACE}/build/sccache-sanity/CMakeFiles/CMakeScratch/TryCompile-sanity"
+              mkdir -p "${SANITY_DIR}"
+              printf '%s\n' 'int main(void) { return 0; }' > "${SANITY_DIR}/testCCompiler.c"
+              if ! "${CMAKE_COMPILER_LAUNCHER_VALUE}" "${CC_PATH}" -o "${SANITY_DIR}/testCCompiler.c.o" -c "${SANITY_DIR}/testCCompiler.c"; then
+                echo "sccache sanity check failed; disabling compiler cache launcher" >&2
+                DART_COMPILER_CACHE_VALUE=""
+                CMAKE_COMPILER_LAUNCHER_VALUE="env"
+              fi
+            fi
+          fi
+          echo "DART_COMPILER_CACHE=${DART_COMPILER_CACHE_VALUE}" >> $GITHUB_ENV
+          echo "CMAKE_C_COMPILER_LAUNCHER=${CMAKE_COMPILER_LAUNCHER_VALUE}" >> $GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_COMPILER_LAUNCHER_VALUE}" >> $GITHUB_ENV
           echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
           echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
           echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
