@@ -86,8 +86,13 @@ jobs all share the same configuration**. You can disable auto-detection with
   run: |
     echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
     echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
-    echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-    echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+    if [ -n "${SCCACHE_PATH:-}" ]; then
+      echo "CMAKE_C_COMPILER_LAUNCHER=${SCCACHE_PATH}" >> $GITHUB_ENV
+      echo "CMAKE_CXX_COMPILER_LAUNCHER=${SCCACHE_PATH}" >> $GITHUB_ENV
+    else
+      echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+      echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+    fi
     echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
     echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
     echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
@@ -108,8 +113,13 @@ jobs all share the same configuration**. You can disable auto-detection with
   run: |
     echo "SCCACHE_GHA_ENABLED=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     echo "DART_COMPILER_CACHE=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    echo "CMAKE_C_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+    if ($env:SCCACHE_PATH) {
+      echo "CMAKE_C_COMPILER_LAUNCHER=$env:SCCACHE_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      echo "CMAKE_CXX_COMPILER_LAUNCHER=$env:SCCACHE_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+    } else {
+      echo "CMAKE_C_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+    }
     $ccacheDir = Join-Path $env:RUNNER_TEMP "ccache"
     New-Item -ItemType Directory -Force -Path $ccacheDir | Out-Null
     echo "CCACHE_BASEDIR=$env:GITHUB_WORKSPACE" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
