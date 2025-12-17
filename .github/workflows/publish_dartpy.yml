@@ -131,8 +131,8 @@ jobs:
               mkdir -p "${SANITY_DIR}"
               printf '%s\n' 'int main(void) { return 0; }' > "${SANITY_DIR}/testCCompiler.c"
               if ! "${CMAKE_COMPILER_LAUNCHER_VALUE}" "${CC_PATH}" -o "${SANITY_DIR}/testCCompiler.c.o" -c "${SANITY_DIR}/testCCompiler.c"; then
-                echo "sccache sanity check failed; disabling compiler cache launcher" >&2
-                DART_COMPILER_CACHE_VALUE=""
+                echo "sccache sanity check failed; falling back to no-op launcher (env)" >&2
+                DART_COMPILER_CACHE_VALUE="env"
                 CMAKE_COMPILER_LAUNCHER_VALUE="env"
               fi
             fi
