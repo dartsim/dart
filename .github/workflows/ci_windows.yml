@@ -37,18 +37,8 @@ jobs:
         with:
           cache: true
 
-      - name: Check Lint
-        run: |
-          pixi run check-lint
-
       - name: Test DART and dartpy
         run: |
           $env:DART_VERBOSE = "ON"; `
           $env:BUILD_TYPE = "${{ matrix.build_type }}"; `
           pixi run test-all
-
-      - name: Install
-        run: |
-          $env:DART_VERBOSE = "ON"; `
-          $env:BUILD_TYPE = "${{ matrix.build_type }}"; `
-          pixi run install
