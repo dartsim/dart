@@ -85,6 +85,7 @@ jobs all share the same configuration**. You can disable auto-detection with
 - name: Configure environment for compiler cache
   run: |
     echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+    echo "SCCACHE_NO_DAEMON=1" >> $GITHUB_ENV
     echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
     if [ -n "${SCCACHE_PATH:-}" ]; then
       echo "CMAKE_C_COMPILER_LAUNCHER=${SCCACHE_PATH}" >> $GITHUB_ENV
@@ -112,6 +113,7 @@ jobs all share the same configuration**. You can disable auto-detection with
   shell: powershell
   run: |
     echo "SCCACHE_GHA_ENABLED=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+    echo "SCCACHE_NO_DAEMON=1" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     echo "DART_COMPILER_CACHE=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     if ($env:SCCACHE_PATH) {
       echo "CMAKE_C_COMPILER_LAUNCHER=$env:SCCACHE_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append

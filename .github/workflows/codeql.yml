@@ -80,6 +80,7 @@ jobs:
           else
             echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
           fi
+          echo "SCCACHE_NO_DAEMON=1" >> $GITHUB_ENV
           echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
           if [ -n "${SCCACHE_PATH:-}" ]; then
             echo "CMAKE_C_COMPILER_LAUNCHER=${SCCACHE_PATH}" >> $GITHUB_ENV
