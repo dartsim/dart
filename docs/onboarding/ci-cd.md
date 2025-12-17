@@ -14,9 +14,8 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - `git status -sb`
   - `gh pr list --head "$(git branch --show-current)" --json number,title,state,url,headRefName`
   - `gh pr status`
-  - `gh pr checks 2298`
-  - `gh run view 20275198109 --job 58221775555 --log-failed`
 - Suggested (Unverified):
+  - `gh pr checks <pr_number>`
   - `gh pr checks <pr_number> --watch --interval 30 --fail-fast`
   - `gh run view <run_id> --job <job_id> --log-failed`
 - Gotchas (encountered in this task):
@@ -326,22 +325,47 @@ gh pr list --head "$(git branch --show-current)" --json number,title,state,url,h
 gh pr view --json number,title,url,state,baseRefName,headRefName,author,labels,body
 ```
 
-#### CI Triage (used in this task)
+#### CI Triage
+
+Suggested (Unverified):
 
 ```bash
 gh pr status
+gh pr checks <pr_number>
+gh pr view <pr_number> --json reviewDecision,latestReviews,reviewRequests,state,isDraft,mergeable,mergeStateStatus,statusCheckRollup
+```
+
+Example (used in this task):
+
+```bash
 gh pr checks 2298
 gh pr view 2298 --json reviewDecision,latestReviews,reviewRequests,state,isDraft,mergeable,mergeStateStatus,statusCheckRollup
 ```
 
-Inspect logs for a failing job (used in this task):
+Inspect logs for a failing job:
+
+Suggested (Unverified):
+
+```bash
+gh run view <run_id> --job <job_id> --log-failed
+```
+
+Example (used in this task):
 
 ```bash
 gh run view 20275198109 --job 58221775555 --log-failed
 gh run view 20275198456 --job 58221776649 --log-failed
 ```
 
-If `--log-failed` is missing context, list job step outcomes first (used in this task):
+If `--log-failed` is missing context, list job step outcomes first:
+
+Suggested (Unverified):
+
+```bash
+gh run view <run_id> --json jobs --jq '.jobs[] | select(.databaseId==<job_id>) | {steps:[.steps[] | {name: .name, conclusion: .conclusion}]}'
+```
+
+Example (used in this task):
 
 ```bash
 gh run view 20275198109 --json jobs --jq '.jobs[] | select(.databaseId==58221775555) | {steps:[.steps[] | {name: .name, conclusion: .conclusion}]}'
@@ -351,7 +375,6 @@ Suggested (Unverified):
 
 ```bash
 gh pr checks <pr_number> --watch --interval 30 --fail-fast
-gh run view <run_id> --job <job_id> --log-failed
 ```
 
 Notes:

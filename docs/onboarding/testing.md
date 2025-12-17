@@ -151,10 +151,18 @@ Performance benchmarks measure execution time and resource usage:
 3. **Is it verifying a bug fix from a GitHub issue?** → Add to `unit/<module>/` or `integration/<module>/` (depending on scope) and include the issue number/link in a comment.
 4. **Is it measuring performance?** → Add to `benchmark/<category>/`
 
-**Common starting points (examples from this repo):**
+**Common starting points (pick based on what you're changing):**
 
-- `tests/integration/dynamics/test_Joints.cpp` - Joint behavior/regression coverage
-- `python/tests/unit/dynamics/` - dartpy dynamics API tests
+- C++ unit tests: `tests/unit/<module>/`
+- C++ integration tests: `tests/integration/<module>/`
+- Python unit tests (dartpy): `python/tests/unit/<module>/`
+
+Suggested (Unverified): If you don't know the module yet, search for similar tests by symbol name, e.g. `rg -n "<ClassOrFeature>" tests python`.
+
+Examples (from this task):
+
+- `tests/integration/dynamics/test_Joints.cpp`
+- `python/tests/unit/dynamics/`
 
 ### Steps to Add a New Test
 
