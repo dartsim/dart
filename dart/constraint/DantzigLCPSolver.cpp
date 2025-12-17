@@ -34,10 +34,8 @@
 
 #include "dart/common/Macros.hpp"
 
-#if DART_BUILD_MODE_DEBUG
-  #include <iomanip>
-  #include <iostream>
-#endif
+#include <iomanip>
+#include <iostream>
 
 #include "dart/common/Console.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
@@ -184,7 +182,6 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
 }
 
 //==============================================================================
-#if DART_BUILD_MODE_DEBUG
 bool DantzigLCPSolver::isSymmetric(std::size_t _n, double* _A)
 {
   std::size_t nSkip = dPAD(_n);
@@ -323,7 +320,6 @@ void DantzigLCPSolver::print(
 
   delete[] Ax;
 }
-#endif
 
 } // namespace constraint
 } // namespace dart
