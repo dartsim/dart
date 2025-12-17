@@ -90,7 +90,7 @@ void defShapeFrame(nb::module_& m)
           [](ShapeFrame& self, bool createIfNull) -> VisualAspect* {
             return self.getVisualAspect(createIfNull);
           },
-          nb::arg("createIfNull") = true,
+          nb::arg("create_if_null") = true,
           nb::rv_policy::reference_internal)
       .def(
           "createVisualAspect",
@@ -102,7 +102,7 @@ void defShapeFrame(nb::module_& m)
           [](ShapeFrame& self, bool createIfNull) -> CollisionAspect* {
             return self.getCollisionAspect(createIfNull);
           },
-          nb::arg("createIfNull") = true,
+          nb::arg("create_if_null") = true,
           nb::rv_policy::reference_internal)
       .def(
           "createCollisionAspect",
@@ -114,7 +114,7 @@ void defShapeFrame(nb::module_& m)
           [](ShapeFrame& self, bool createIfNull) -> DynamicsAspect* {
             return self.getDynamicsAspect(createIfNull);
           },
-          nb::arg("createIfNull") = true,
+          nb::arg("create_if_null") = true,
           nb::rv_policy::reference_internal)
       .def(
           "createDynamicsAspect",

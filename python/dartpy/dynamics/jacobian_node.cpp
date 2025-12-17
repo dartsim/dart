@@ -26,7 +26,7 @@ void defJacobianNode(nb::module_& m)
           [](JacobianNode* self, bool createIfNull) {
             return self->getIK(createIfNull);
           },
-          nb::arg("createIfNull"))
+          nb::arg("create_if_null"))
       .def(
           "getOrCreateIK",
           [](JacobianNode* self) { return self->getOrCreateIK(); })
@@ -36,7 +36,7 @@ void defJacobianNode(nb::module_& m)
           [](const JacobianNode* self, std::size_t genCoordIndex) {
             return self->dependsOn(genCoordIndex);
           },
-          nb::arg("genCoordIndex"))
+          nb::arg("gen_coord_index"))
       .def(
           "getNumDependentGenCoords",
           [](const JacobianNode* self) {
@@ -47,7 +47,7 @@ void defJacobianNode(nb::module_& m)
           [](const JacobianNode* self, std::size_t arrayIndex) {
             return self->getDependentGenCoordIndex(arrayIndex);
           },
-          nb::arg("arrayIndex"))
+          nb::arg("array_index"))
       .def(
           "getNumDependentDofs",
           [](const JacobianNode* self) { return self->getNumDependentDofs(); })
@@ -59,7 +59,7 @@ void defJacobianNode(nb::module_& m)
           [](const JacobianNode* self, const Frame* inCoordinatesOf) {
             return self->getJacobian(inCoordinatesOf);
           },
-          nb::arg("inCoordinatesOf"))
+          nb::arg("in_coordinates_of"))
       .def(
           "getJacobian",
           [](const JacobianNode* self, const Eigen::Vector3d& offset) {
@@ -74,7 +74,7 @@ void defJacobianNode(nb::module_& m)
             return self->getJacobian(offset, inCoordinatesOf);
           },
           nb::arg("offset"),
-          nb::arg("inCoordinatesOf"))
+          nb::arg("in_coordinates_of"))
       .def(
           "getWorldJacobian",
           [](const JacobianNode* self, const Eigen::Vector3d& offset) {
@@ -89,7 +89,7 @@ void defJacobianNode(nb::module_& m)
           [](const JacobianNode* self, const Frame* inCoordinatesOf) {
             return self->getLinearJacobian(inCoordinatesOf);
           },
-          nb::arg("inCoordinatesOf"))
+          nb::arg("in_coordinates_of"))
       .def(
           "getLinearJacobian",
           [](const JacobianNode* self, const Eigen::Vector3d& offset) {
@@ -104,7 +104,7 @@ void defJacobianNode(nb::module_& m)
             return self->getLinearJacobian(offset, inCoordinatesOf);
           },
           nb::arg("offset"),
-          nb::arg("inCoordinatesOf"))
+          nb::arg("in_coordinates_of"))
       .def(
           "getAngularJacobian",
           [](const JacobianNode* self) { return self->getAngularJacobian(); })
@@ -113,13 +113,13 @@ void defJacobianNode(nb::module_& m)
           [](const JacobianNode* self, const Frame* inCoordinatesOf) {
             return self->getAngularJacobian(inCoordinatesOf);
           },
-          nb::arg("inCoordinatesOf"))
+          nb::arg("in_coordinates_of"))
       .def(
           "getJacobianSpatialDeriv",
           [](const JacobianNode* self, const Frame* inCoordinatesOf) {
             return self->getJacobianSpatialDeriv(inCoordinatesOf);
           },
-          nb::arg("inCoordinatesOf"))
+          nb::arg("in_coordinates_of"))
       .def(
           "getJacobianSpatialDeriv",
           [](const JacobianNode* self, const Eigen::Vector3d& offset) {
@@ -134,13 +134,13 @@ void defJacobianNode(nb::module_& m)
             return self->getJacobianSpatialDeriv(offset, inCoordinatesOf);
           },
           nb::arg("offset"),
-          nb::arg("inCoordinatesOf"))
+          nb::arg("in_coordinates_of"))
       .def(
           "getJacobianClassicDeriv",
           [](const JacobianNode* self, const Frame* inCoordinatesOf) {
             return self->getJacobianClassicDeriv(inCoordinatesOf);
           },
-          nb::arg("inCoordinatesOf"))
+          nb::arg("in_coordinates_of"))
       .def(
           "getJacobianClassicDeriv",
           [](const JacobianNode* self, const Eigen::Vector3d& offset) {
@@ -155,7 +155,7 @@ void defJacobianNode(nb::module_& m)
             return self->getJacobianClassicDeriv(offset, inCoordinatesOf);
           },
           nb::arg("offset"),
-          nb::arg("inCoordinatesOf"))
+          nb::arg("in_coordinates_of"))
       .def(
           "getLinearJacobianDeriv",
           [](const JacobianNode* self) {
@@ -166,7 +166,7 @@ void defJacobianNode(nb::module_& m)
           [](const JacobianNode* self, const Frame* inCoordinatesOf) {
             return self->getLinearJacobianDeriv(inCoordinatesOf);
           },
-          nb::arg("inCoordinatesOf"))
+          nb::arg("in_coordinates_of"))
       .def(
           "getLinearJacobianDeriv",
           [](const JacobianNode* self, const Eigen::Vector3d& offset) {
@@ -181,7 +181,7 @@ void defJacobianNode(nb::module_& m)
             return self->getLinearJacobianDeriv(offset, inCoordinatesOf);
           },
           nb::arg("offset"),
-          nb::arg("inCoordinatesOf"))
+          nb::arg("in_coordinates_of"))
       .def(
           "getAngularJacobianDeriv",
           [](const JacobianNode* self) {
@@ -192,7 +192,7 @@ void defJacobianNode(nb::module_& m)
           [](const JacobianNode* self, const Frame* inCoordinatesOf) {
             return self->getAngularJacobianDeriv(inCoordinatesOf);
           },
-          nb::arg("inCoordinatesOf"))
+          nb::arg("in_coordinates_of"))
       .def("dirtyJacobian", [](JacobianNode* self) { self->dirtyJacobian(); })
       .def("dirtyJacobianDeriv", [](JacobianNode* self) {
         self->dirtyJacobianDeriv();

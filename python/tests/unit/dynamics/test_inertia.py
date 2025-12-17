@@ -48,13 +48,13 @@ def test_inertia_static_methods():
     """
     Test the class methods `verifyMoment`and `verifySpatialTensor`.
     """
-    assert dart.Inertia.verify_moment(np.eye(3), printWarnings=False)
+    assert dart.Inertia.verify_moment(np.eye(3), print_warnings=False)
     for i in range(10):
         I = np.random.rand(3, 3) - 0.5 + np.diag(np.random.uniform(1, 10, 3), 0)
         I = (I + I.T) / 2
         assert dart.Inertia.verify_moment(I)
 
-    assert dart.Inertia.verify_spatial_tensor(np.eye(6), printWarnings=False)
+    assert dart.Inertia.verify_spatial_tensor(np.eye(6), print_warnings=False)
 
 
 def test_failing_moment_and_spatial():
@@ -64,11 +64,11 @@ def test_failing_moment_and_spatial():
 
     for i in range(10):
         I = np.random.rand(3, 3) - 0.5 - np.diag(np.random.uniform(1, 10, 3), 0)
-        assert not dart.Inertia.verify_moment(I, printWarnings=False)
+        assert not dart.Inertia.verify_moment(I, print_warnings=False)
 
     # fails e.g. due to off diagonal values in translational part.
     assert not dart.Inertia.verify_spatial_tensor(
-        np.random.rand(6, 6), printWarnings=False
+        np.random.rand(6, 6), print_warnings=False
     )
 
 

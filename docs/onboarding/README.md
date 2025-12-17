@@ -57,7 +57,7 @@ This onboarding guide is organized into several focused documents:
 
 ### Feature Workflows
 
-- **Gazebo / gz-physics integration**: See [build-system.md](build-system.md#gazebo-integration-feature). Used in this task: `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
+- **Gazebo / gz-physics integration**: See [build-system.md](build-system.md#gazebo-integration-feature).
 
 ### Purpose and Problem Solved
 
@@ -1119,7 +1119,10 @@ This section is intentionally brief and delegates to the focused onboarding docs
 Used in this task:
 
 - `pixi run lint`
-- `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`
+- `DART_PARALLEL_JOBS=8 pixi run -e gazebo download-gz`
+- `DART_PARALLEL_JOBS=8 pixi run -e gazebo patch-gz`
+- `DART_PARALLEL_JOBS=8 pixi run -e gazebo config-gz`
+- `DART_PARALLEL_JOBS=8 pixi run -e gazebo ninja -C .deps/gz-physics/build -j 8 COMMON_TEST_collisions`
 
 Suggested (Unverified):
 

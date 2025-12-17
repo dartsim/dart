@@ -12,17 +12,13 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - PR template checklist: [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)
 - Used in this task:
   - `pixi run lint`
-  - `DART_PARALLEL_JOBS=16 CMAKE_BUILD_PARALLEL_LEVEL=16 CTEST_PARALLEL_LEVEL=16 pixi run test`
-  - `DART_PARALLEL_JOBS=16 CMAKE_BUILD_PARALLEL_LEVEL=16 CTEST_PARALLEL_LEVEL=16 pixi run test-all`
-  - `DART_PARALLEL_JOBS=16 CMAKE_BUILD_PARALLEL_LEVEL=16 CTEST_PARALLEL_LEVEL=16 pixi run -e gazebo test-gz`
-  - `gh pr create --draft --milestone "DART 7.0" ...`
-  - `gh run list --branch <branch> --limit 10`
+  - `gh run list --branch <branch> -e pull_request -L 20`
   - `gh run watch <run_id> --interval 30 --exit-status`
-  - `gh run view <run_id> --job <job_id> --log-failed`
-  - `gh api "repos/dartsim/dart/milestones?state=open" --jq '.[].title'`
+  - `gh run view <run_id> --log-failed`
+  - `git fetch origin refs/pull/<pr_number>/merge:refs/remotes/origin/pr-<pr_number>-merge`
 - Gotchas:
-  - `zsh` globbing: quote `gh api` paths that contain `?` (for example milestone queries).
-  - Headless environments: `git commit` may fail if it needs an interactive editor; prefer `git commit -m ...`.
+  - `gh` can fail with transient `GraphQL` HTTP 502 errors; fall back to `gh run list` / `gh run watch` / `gh run view --log-failed`.
+  - PR CI runs against the merge ref (`refs/pull/<id>/merge`), not just your head branch; fetch that ref locally when debugging what CI actually built.
 - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
 
 ## Workflow Architecture
@@ -319,14 +315,21 @@ not stop immediately when the first job fails.
 Used in this task:
 
 ```bash
-gh run list --branch <branch> --limit 10
-gh run watch <run_id> --compact --exit-status
+gh run list --branch <branch> -e pull_request -L 20
+gh run watch <run_id> --interval 30 --exit-status
+gh run view <run_id> --log-failed
 ```
+
+Fast iteration loop (used in this task):
+
+1. Find the newest run id with `gh run list ...`.
+2. Block on completion with `gh run watch ...`.
+3. On failure, inspect `gh run view ... --log-failed`, fix, push, repeat.
 
 Notes:
 
-- If the `CI gz-physics` workflow fails, reproduce locally with `pixi run -e gazebo test-gz` (see [build-system.md](build-system.md#gazebo-integration-feature)).
-- If you create PRs from the command line, prefer `gh pr create --body-file <path>` over `--body "..."` when the body contains backticks; some shells (e.g., zsh) treat backticks as command substitution.
+- Suggested (Unverified): If the `CI gz-physics` workflow fails, reproduce locally with `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz` (see [build-system.md](build-system.md#gazebo-integration-feature)).
+- Suggested (Unverified): If you create PRs from the command line, prefer `gh pr create --body-file <path>` over `--body "..."` when the body contains backticks; some shells (e.g., zsh) treat backticks as command substitution.
 
 ## Troubleshooting
 
