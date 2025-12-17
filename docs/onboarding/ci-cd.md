@@ -20,8 +20,9 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - `gh pr checks <pr_number> --watch --interval 30 --fail-fast`
   - `gh run view <run_id> --job <job_id> --log-failed`
 - Gotchas (encountered in this task):
-  - `gh pr status --json ...` can error with `Unknown JSON field: ...` if you request unsupported fields; use `gh pr status` (no JSON) or `gh pr view --json ...`.
+  - `gh pr status --json ...` can error with `Unknown JSON field: ...` if you request unsupported fields; use `gh pr status` (no JSON) or `gh pr view --json ...`. In this task, `gh pr status --json currentBranch,createdBy,needsReview,reviewRequests,statusCheckRollup` failed with `Unknown JSON field: "currentBranch"`.
   - `gh pr checks` may show duplicate entries when workflows run for both `push` and `pull_request` events; compare the run URLs and focus on the newest one.
+  - zsh can produce `parse error near \`}'` if a `gh ... --jq` expression containing `{ ... }` isn't fully quoted; wrap the whole jq program in single quotes.
 - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
 
 ## Workflow Architecture
