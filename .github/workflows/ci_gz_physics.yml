@@ -62,27 +62,6 @@ jobs:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 1.0
 
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
-        with:
-          disable_annotations: true
-
-      - name: Configure environment for compiler cache
-        run: |
-          if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
-            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          else
-            echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
-          fi
-          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
-          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
-          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
-          mkdir -p "${RUNNER_TEMP}/ccache"
-
       - name: Test gz-physics
         env:
           DART_PARALLEL_JOBS: 8
