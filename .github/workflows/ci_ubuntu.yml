@@ -101,3 +101,48 @@ jobs:
           DART_VERBOSE=ON \
           BUILD_TYPE=${{ matrix.build_type }} \
           pixi run install
+
+  # Catch compile failures when assertions are enabled but we're not in a Debug
+  # build type (e.g., downstream builds that drop -DNDEBUG in Release).
+  build-asserts:
+    name: Asserts enabled (no -DNDEBUG)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.1
+        with:
+          cache: true
+
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.5.3
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: 1.0
+
+      - name: Build with assertions (no -DNDEBUG)
+        run: |
+          # NOTE: pixi tasks on release-6.16 set BUILD_TYPE internally, so we
+          # configure this variant explicitly to ensure NDEBUG is not defined.
+          pixi run -- bash -lc '
+            set -euo pipefail
+            BUILD_TYPE=None
+            DART_VERBOSE=ON
+            cmake \
+              -G Ninja \
+              -S . \
+              -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+              -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+              -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+              -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+              -DDART_BUILD_DARTPY=ON \
+              -DDART_BUILD_PROFILE=ON \
+              -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+              -DDART_USE_SYSTEM_GOOGLETEST=ON \
+              -DDART_USE_SYSTEM_IMGUI=ON \
+              -DDART_USE_SYSTEM_TRACY=ON \
+              -DDART_VERBOSE=$DART_VERBOSE
+            cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target ALL
+          '
