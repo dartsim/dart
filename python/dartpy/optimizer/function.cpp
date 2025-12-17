@@ -1,5 +1,6 @@
 #include "optimizer/function.hpp"
 
+#include "common/eigen_utils.hpp"
 #include "dart/common/Diagnostics.hpp"
 #include "dart/math/optimization/Function.hpp"
 
@@ -52,8 +53,8 @@ void defOptimizerFunction(nb::module_& m)
       .def(nb::init<const std::string&>(), nb::arg("name"))
       .def(
           "eval",
-          [](dart::math::NullFunction& self, const Eigen::VectorXd& x) {
-            return self.eval(x);
+          [](dart::math::NullFunction& self, const nb::handle& x) {
+            return self.eval(toVector(x));
           },
           nb::arg("x"));
 }
