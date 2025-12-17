@@ -102,7 +102,7 @@ void defBodyNode(nb::module_& m)
           [](BodyNode& self, bool createIfNull) {
             return self.getIK(createIfNull);
           },
-          nb::arg("createIfNull") = false)
+          nb::arg("create_if_null") = false)
       .def(
           "__repr__",
           [](const BodyNode& self) {
@@ -136,13 +136,11 @@ void defBodyNode(nb::module_& m)
           [](BodyNode& self,
              const std::string& name,
              const Eigen::Isometry3d& tf) {
-            auto* frame = new dart::dynamics::SimpleFrame(&self, name, tf);
-            return std::shared_ptr<dart::dynamics::SimpleFrame>(
-                frame); // owned by Python
+            return std::make_shared<dart::dynamics::SimpleFrame>(
+                &self, name, tf);
           },
           nb::arg("name"),
-          nb::arg("transform"),
-          nb::rv_policy::take_ownership);
+          nb::arg("transform"));
 
   registerPolymorphicCaster<dart::dynamics::Frame, BodyNode>();
   registerPolymorphicCaster<dart::dynamics::JacobianNode, BodyNode>();

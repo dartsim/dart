@@ -1,5 +1,6 @@
 #include "dynamics/meta_skeleton.hpp"
 
+#include "common/type_casters.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Joint.hpp"

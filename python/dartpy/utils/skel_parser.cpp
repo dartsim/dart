@@ -39,8 +39,8 @@ void defSkelParser(nb::module_& m)
          const common::ResourceRetrieverPtr& retriever) {
         return SkelParser::readWorldXML(xml, base, retriever);
       },
-      nb::arg("xmlString"),
-      nb::arg("baseUri") = "",
+      nb::arg("xml_string"),
+      nb::arg("base_uri") = "",
       nb::arg("retriever") = nullptr);
   sm.def(
       "readSkeleton",

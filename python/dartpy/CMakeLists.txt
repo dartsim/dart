@@ -251,6 +251,8 @@ set(dartpy_gui_sources
 if(DART_BUILD_GUI)
   list(APPEND dartpy_headers ${dartpy_gui_headers})
   list(APPEND dartpy_sources ${dartpy_gui_sources})
+else()
+  message(FATAL_ERROR "Building dartpy requires DART_BUILD_GUI=ON")
 endif()
 
 nanobind_add_module(dartpy
@@ -283,7 +285,6 @@ target_include_directories(dartpy
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}
 )
-target_compile_options(dartpy PRIVATE -g)
 
 if(BULLET_INCLUDE_DIR)
   target_include_directories(dartpy SYSTEM PRIVATE ${BULLET_INCLUDE_DIR})

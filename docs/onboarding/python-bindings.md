@@ -90,8 +90,11 @@ positions = skel.get_positions()  # Returns ndarray
 ### OSG Bindings Design
 
 GUI bindings are built only when `DART_BUILD_GUI=ON`. The build wires this up by
-conditionally appending the GUI sources in `python/dartpy/CMakeLists.txt`, so
-downstream code should treat `dartpy.gui` as an optional module.
+conditionally appending the GUI sources in `python/dartpy/CMakeLists.txt`.
+
+Project policy: official dartpy wheels build with GUI enabled, so `dartpy.gui`
+is expected to be available in release artifacts and CI. For local headless-only
+builds you can disable GUI, but some examples/tutorials will not run.
 
 ## Pythonic Naming Transition
 
