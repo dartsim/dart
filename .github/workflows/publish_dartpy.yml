@@ -19,6 +19,10 @@ name: Publish dartpy
         description: "Git ref (tag/sha) to build; publishing requires a version tag (v*)"
         required: false
         default: ""
+      checkout_ref:
+        description: "Optional git ref (tag/sha) to checkout for building; defaults to `ref` when set"
+        required: false
+        default: ""
       publish:
         description: "Set to 'true' to publish to PyPI (version tags only)"
         required: false
@@ -35,7 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.ref || github.ref }}
+          ref: ${{ github.event.inputs.checkout_ref || github.event.inputs.ref || github.ref }}
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v6
@@ -119,11 +123,12 @@ jobs:
       CIBW_BUILD: ${{ matrix.build }}
       CIBW_PRERELEASE_PYTHONS: true
       DARTPY_REF: ${{ github.event.inputs.ref || github.ref }}
+      DARTPY_CHECKOUT_REF: ${{ github.event.inputs.checkout_ref || github.event.inputs.ref || github.ref }}
 
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ env.DARTPY_REF }}
+          ref: ${{ env.DARTPY_CHECKOUT_REF }}
 
       - name: Validate publish inputs
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true' }}
@@ -136,6 +141,21 @@ jobs:
               exit 1
               ;;
           esac
+
+          tag="${DARTPY_REF#refs/tags/}"
+          tag="${tag#v}"
+
+          pkg_version="$(python -c 'import xml.etree.ElementTree as ET; print(ET.parse("package.xml").getroot().findtext("version", default="").strip())')"
+
+          if [ -z "${pkg_version}" ]; then
+            echo "::error::Failed to read version from package.xml in '${DARTPY_CHECKOUT_REF}'."
+            exit 1
+          fi
+
+          if [ "${pkg_version}" != "${tag}" ]; then
+            echo "::error::package.xml version '${pkg_version}' does not match tag '${tag}' (ref='${DARTPY_REF}', checkout_ref='${DARTPY_CHECKOUT_REF}')."
+            exit 1
+          fi
 
       - name: Set up Vcpkg
         if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || env.DARTPY_REF == 'refs/heads/main' || env.DARTPY_REF == 'main' || startsWith(env.DARTPY_REF, 'refs/heads/release-') || startsWith(env.DARTPY_REF, 'release-') || startsWith(env.DARTPY_REF, 'refs/tags/v') || startsWith(env.DARTPY_REF, 'v')) }}

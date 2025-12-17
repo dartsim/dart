@@ -41,9 +41,11 @@ jobs:
         id: extract_branch
 
       # Extract branch name on pull request
-      - name: Print branch name
+      # Note: build_docs.sh clones from dartsim/dart, so fork PR head refs may
+      # not exist there. Use the base ref to ensure the checkout succeeds.
+      - name: Set docs branch for pull requests
         if: github.event_name == 'pull_request'
-        run: echo "BRANCH_NAME=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
+        run: echo "BRANCH_NAME=${GITHUB_BASE_REF}" >> $GITHUB_ENV
 
       - name: Detect passwordless sudo
         run: |

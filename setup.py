@@ -9,6 +9,7 @@ import os
 import re
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from codecs import open  # To use a consistent encoding
 from glob import glob
 from pathlib import Path
@@ -183,27 +184,23 @@ sources.extend(glob("scripts/**/*", recursive=True))
 sources.extend(glob("tutorials/**/*", recursive=True))
 
 
-def get_new_patch_number(package_name, default: int):
-    import requests
-
+def get_version_from_package_xml(package_xml_path: str) -> str:
     try:
-        url = f"https://pypi.org/pypi/{package_name}/json"
-        response = requests.get(url)
-        if response.status_code == 200:
-            data = response.json()
-            version = data["info"]["version"]
-            patch_number = version.split(".")[-1].split("post")[-1]
-            return str(max(default, int(patch_number) + 1))
-        else:
-            return str(default)
-    except requests.exceptions.RequestException:
-        return str(default)
+        package_root = ET.parse(package_xml_path).getroot()
+        version_element = package_root.find("version")
+        if version_element is None or not version_element.text:
+            raise RuntimeError("Missing <version> in package.xml")
+        return version_element.text.strip()
+    except Exception as exc:
+        raise RuntimeError(
+            f"Failed to determine dartpy version from '{package_xml_path}'"
+        ) from exc
 
 
 # Set up the python package wrapping this extension.
 setup(
     name="dartpy",
-    version="0.2.0.post" + get_new_patch_number("dartpy", 31),
+    version=get_version_from_package_xml(os.path.join(dart_root, "package.xml")),
     description=description,
     long_description=long_description,
     long_description_content_type="text/markdown",
