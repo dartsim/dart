@@ -43,39 +43,32 @@ namespace constraint {
 
 namespace {
 
-math::LcpSolverPtr createPrimarySolver(const BoxedLcpSolverPtr& boxed)
+void configurePgsSolver(
+    const std::shared_ptr<math::PgsSolver>& solver,
+    const PgsBoxedLcpSolver::Option& option)
 {
-  if (!boxed)
-    return nullptr;
+  if (!solver)
+    return;
 
-  if (auto pgs = std::dynamic_pointer_cast<PgsBoxedLcpSolver>(boxed)) {
-    auto solver = std::make_shared<math::PgsSolver>();
+  math::LcpOptions options = solver->getDefaultOptions();
+  options.maxIterations = option.mMaxIteration;
+  options.absoluteTolerance = option.mDeltaXThreshold;
+  options.relativeTolerance = option.mRelativeDeltaXTolerance;
+  solver->setDefaultOptions(options);
 
-    math::LcpOptions options = solver->getDefaultOptions();
-    options.maxIterations = pgs->getOption().mMaxIteration;
-    options.absoluteTolerance = pgs->getOption().mDeltaXThreshold;
-    options.relativeTolerance = pgs->getOption().mRelativeDeltaXTolerance;
-    solver->setDefaultOptions(options);
-
-    math::PgsSolver::Parameters params;
-    params.epsilonForDivision = pgs->getOption().mEpsilonForDivision;
-    params.randomizeConstraintOrder
-        = pgs->getOption().mRandomizeConstraintOrder;
-    solver->setParameters(params);
-    return solver;
-  }
-
-  // Default to Dantzig.
-  return std::make_shared<math::DantzigSolver>();
+  math::PgsSolver::Parameters params;
+  params.epsilonForDivision = option.mEpsilonForDivision;
+  params.randomizeConstraintOrder = option.mRandomizeConstraintOrder;
+  solver->setParameters(params);
 }
 
 } // namespace
 
 //==============================================================================
-BoxedLcpConstraintSolver::BoxedLcpConstraintSolver() : ConstraintSolver()
+BoxedLcpConstraintSolver::BoxedLcpConstraintSolver()
+  : BoxedLcpConstraintSolver(std::make_shared<DantzigBoxedLcpSolver>())
 {
-  mBoxedLcpSolver = std::make_shared<DantzigBoxedLcpSolver>();
-  mSecondaryBoxedLcpSolver = std::make_shared<PgsBoxedLcpSolver>();
+  // Do nothing
 }
 
 //==============================================================================
@@ -92,7 +85,15 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
     BoxedLcpSolverPtr boxedLcpSolver, BoxedLcpSolverPtr secondaryBoxedLcpSolver)
   : ConstraintSolver()
 {
-  setBoxedLcpSolver(std::move(boxedLcpSolver));
+  if (boxedLcpSolver) {
+    setBoxedLcpSolver(std::move(boxedLcpSolver));
+  } else {
+    DART_WARN(
+        "[BoxedLcpConstraintSolver] Attempting to construct with nullptr LCP "
+        "solver, which is not allowed. Using Dantzig solver instead.");
+    setBoxedLcpSolver(std::make_shared<DantzigBoxedLcpSolver>());
+  }
+
   setSecondaryBoxedLcpSolver(std::move(secondaryBoxedLcpSolver));
 }
 
@@ -104,26 +105,13 @@ void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
     return;
   }
 
+  DART_WARN_IF(
+      lcpSolver == mSecondaryBoxedLcpSolver,
+      "Attempting to set a primary LCP solver that is the same as the "
+      "secondary LCP solver, which is discouraged.");
+
   mBoxedLcpSolver = std::move(lcpSolver);
-
-  setLcpSolver(createPrimarySolver(mBoxedLcpSolver));
-
-  // Mirror gz-physics expectations: PGS is a standalone primary solver without
-  // a fallback, while Dantzig uses PGS as a secondary solver by default.
-  if (std::dynamic_pointer_cast<PgsBoxedLcpSolver>(mBoxedLcpSolver)) {
-    mSecondaryBoxedLcpSolver.reset();
-    setSecondaryLcpSolver(nullptr);
-  } else if (!mSecondaryBoxedLcpSolver) {
-    mSecondaryBoxedLcpSolver = std::make_shared<PgsBoxedLcpSolver>();
-    setSecondaryLcpSolver(createPrimarySolver(mSecondaryBoxedLcpSolver));
-  }
-
-  if (auto dantzig
-      = std::dynamic_pointer_cast<math::DantzigSolver>(mLcpSolver)) {
-    math::LcpOptions options = dantzig->getDefaultOptions();
-    options.earlyTermination = (mSecondaryLcpSolver != nullptr);
-    dantzig->setDefaultOptions(options);
-  }
+  syncLcpSolversFromBoxedSolvers();
 }
 
 //==============================================================================
@@ -136,15 +124,14 @@ ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getBoxedLcpSolver() const
 void BoxedLcpConstraintSolver::setSecondaryBoxedLcpSolver(
     BoxedLcpSolverPtr lcpSolver)
 {
-  mSecondaryBoxedLcpSolver = std::move(lcpSolver);
-  setSecondaryLcpSolver(createPrimarySolver(mSecondaryBoxedLcpSolver));
+  DART_WARN_IF(
+      lcpSolver == mBoxedLcpSolver,
+      "Attempting to set the secondary LCP solver that is identical to the "
+      "primary LCP solver, which is redundant. Please use different solvers or "
+      "set the secondary LCP solver to nullptr.");
 
-  if (auto dantzig
-      = std::dynamic_pointer_cast<math::DantzigSolver>(mLcpSolver)) {
-    math::LcpOptions options = dantzig->getDefaultOptions();
-    options.earlyTermination = (mSecondaryLcpSolver != nullptr);
-    dantzig->setDefaultOptions(options);
-  }
+  mSecondaryBoxedLcpSolver = std::move(lcpSolver);
+  syncLcpSolversFromBoxedSolvers();
 }
 
 //==============================================================================
@@ -152,6 +139,54 @@ ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getSecondaryBoxedLcpSolver()
     const
 {
   return mSecondaryBoxedLcpSolver;
+}
+
+//==============================================================================
+void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
+{
+  syncLcpSolversFromBoxedSolvers();
+  ConstraintSolver::solveConstrainedGroup(group);
+}
+
+//==============================================================================
+void BoxedLcpConstraintSolver::syncLcpSolversFromBoxedSolvers()
+{
+  if (auto pgs
+      = std::dynamic_pointer_cast<PgsBoxedLcpSolver>(mBoxedLcpSolver)) {
+    auto primarySolver = std::dynamic_pointer_cast<math::PgsSolver>(mLcpSolver);
+    if (!primarySolver) {
+      primarySolver = std::make_shared<math::PgsSolver>();
+      mLcpSolver = primarySolver;
+    }
+    configurePgsSolver(primarySolver, pgs->getOption());
+  } else if (!std::dynamic_pointer_cast<math::DantzigSolver>(mLcpSolver)) {
+    mLcpSolver = std::make_shared<math::DantzigSolver>();
+  }
+
+  if (mSecondaryBoxedLcpSolver) {
+    if (auto pgs = std::dynamic_pointer_cast<PgsBoxedLcpSolver>(
+            mSecondaryBoxedLcpSolver)) {
+      auto secondarySolver
+          = std::dynamic_pointer_cast<math::PgsSolver>(mSecondaryLcpSolver);
+      if (!secondarySolver) {
+        secondarySolver = std::make_shared<math::PgsSolver>();
+        mSecondaryLcpSolver = secondarySolver;
+      }
+      configurePgsSolver(secondarySolver, pgs->getOption());
+    } else if (!std::dynamic_pointer_cast<math::DantzigSolver>(
+                   mSecondaryLcpSolver)) {
+      mSecondaryLcpSolver = std::make_shared<math::DantzigSolver>();
+    }
+  } else {
+    mSecondaryLcpSolver.reset();
+  }
+
+  if (auto dantzig
+      = std::dynamic_pointer_cast<math::DantzigSolver>(mLcpSolver)) {
+    math::LcpOptions options = dantzig->getDefaultOptions();
+    options.earlyTermination = (mSecondaryBoxedLcpSolver != nullptr);
+    dantzig->setDefaultOptions(options);
+  }
 }
 
 } // namespace constraint

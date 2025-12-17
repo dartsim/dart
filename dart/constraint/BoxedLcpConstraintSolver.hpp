@@ -57,8 +57,13 @@ public:
   ConstBoxedLcpSolverPtr getSecondaryBoxedLcpSolver() const;
 
 protected:
+  void solveConstrainedGroup(ConstrainedGroup& group) override;
+
   BoxedLcpSolverPtr mBoxedLcpSolver;
   BoxedLcpSolverPtr mSecondaryBoxedLcpSolver;
+
+private:
+  void syncLcpSolversFromBoxedSolvers();
 };
 
 } // namespace constraint
