@@ -14,6 +14,7 @@ runs:
           echo "SCCACHE_GHA_ENABLED=false" >> "${GITHUB_ENV}"
         fi
         echo "SCCACHE_NO_DAEMON=1" >> "${GITHUB_ENV}"
+        echo "SCCACHE_IGNORE_SERVER_IO_ERROR=1" >> "${GITHUB_ENV}"
 
         DART_COMPILER_CACHE_VALUE=""
         CMAKE_COMPILER_LAUNCHER_VALUE="env"

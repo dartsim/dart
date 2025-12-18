@@ -70,13 +70,7 @@ jobs:
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
-      - name: Build with coverage
-        run: |
-          DART_VERBOSE=ON \
-          BUILD_TYPE=Debug \
-          pixi run build-coverage
-
-      - name: Generate coverage report
+      - name: Build and generate coverage report
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
