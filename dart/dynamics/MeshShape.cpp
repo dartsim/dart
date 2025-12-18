@@ -84,12 +84,22 @@ MeshShape::MeshShape(
     const Eigen::Vector3d& scale,
     std::shared_ptr<math::TriMesh<double>> mesh,
     const common::Uri& uri)
+  : MeshShape(scale, std::move(mesh), uri, nullptr)
+{
+}
+
+//==============================================================================
+MeshShape::MeshShape(
+    const Eigen::Vector3d& scale,
+    std::shared_ptr<math::TriMesh<double>> mesh,
+    const common::Uri& uri,
+    common::ResourceRetrieverPtr resourceRetriever)
   : Shape(MESH),
     mTriMesh(std::move(mesh)),
     mCachedAiScene(nullptr),
     mMeshUri(uri),
     mMeshPath(),
-    mResourceRetriever(nullptr),
+    mResourceRetriever(std::move(resourceRetriever)),
     mDisplayList(0),
     mScale(scale),
     mColorMode(MATERIAL_COLOR),
@@ -98,9 +108,44 @@ MeshShape::MeshShape(
 {
   if (uri.mScheme.get_value_or("file") == "file" && uri.mPath) {
     mMeshPath = uri.getFilesystemPath();
+  } else if (mResourceRetriever) {
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    mMeshPath = mResourceRetriever->getFilePath(uri);
+    DART_SUPPRESS_DEPRECATED_END
   } else {
     mMeshPath.clear();
   }
+
+  mMaterials.clear();
+
+  const std::string uriString = uri.toString();
+  if (!uriString.empty()) {
+    common::ResourceRetrieverPtr materialRetriever = mResourceRetriever;
+    if (!materialRetriever && uri.mScheme.get_value_or("file") == "file"
+        && uri.mPath) {
+      materialRetriever = std::make_shared<common::LocalResourceRetriever>();
+    }
+
+    if (materialRetriever) {
+      struct AiSceneReleaser
+      {
+        void operator()(const aiScene* scene) const
+        {
+          if (scene)
+            aiReleaseImport(const_cast<aiScene*>(scene));
+        }
+      };
+
+      const std::unique_ptr<const aiScene, AiSceneReleaser> scene(
+          loadMesh(uri, materialRetriever));
+
+      if (scene) {
+        extractMaterialsFromScene(
+            scene.get(), mMeshPath.empty() ? uri.getPath() : mMeshPath);
+      }
+    }
+  }
+
   setScale(scale);
 }
 

@@ -98,6 +98,16 @@ public:
       std::shared_ptr<math::TriMesh<double>> mesh,
       const common::Uri& uri = "");
 
+  /// Constructor using TriMesh (preferred) with a resource retriever.
+  ///
+  /// Providing a resource retriever allows MeshShape to resolve and preserve
+  /// material/texture metadata associated with the source URI.
+  MeshShape(
+      const Eigen::Vector3d& scale,
+      std::shared_ptr<math::TriMesh<double>> mesh,
+      const common::Uri& uri,
+      common::ResourceRetrieverPtr resourceRetriever);
+
   /// Constructor using aiScene (deprecated, for backward compatibility).
   [[deprecated("Use TriMesh-based constructor instead")]] MeshShape(
       const Eigen::Vector3d& scale,

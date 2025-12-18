@@ -1386,7 +1386,7 @@ dynamics::ShapePtr readShape(
 
     if (triMesh) {
       newShape = std::make_shared<dynamics::MeshShape>(
-          scale, std::move(triMesh), meshUri);
+          scale, std::move(triMesh), meshUri, retriever);
     } else {
       DART_ERROR("Fail to load model[{}].", filename);
     }

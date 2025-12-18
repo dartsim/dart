@@ -120,7 +120,7 @@ dynamics::MeshShapePtr Mesh::createMeshShape() const
   }
 
   auto shape = std::make_shared<dynamics::MeshShape>(
-      mScale, std::move(triMesh), mMeshUri);
+      mScale, std::move(triMesh), mMeshUri, mRetriever);
   shape->setColorMode(dynamics::MeshShape::ColorMode::MATERIAL_COLOR);
   return shape;
 }

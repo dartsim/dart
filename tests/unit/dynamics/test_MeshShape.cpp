@@ -6,6 +6,7 @@
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/math/TriMesh.hpp"
+#include "dart/utils/MeshLoader.hpp"
 
 #include <Eigen/Core>
 #include <assimp/cimport.h>
@@ -45,6 +46,15 @@ public:
     if (isAlias(uri))
       return mDelegate->retrieve(mTargetUri);
     return mDelegate->retrieve(uri);
+  }
+
+  std::string getFilePath(const common::Uri& uri) override
+  {
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    if (isAlias(uri))
+      return mDelegate->getFilePath(mTargetUri);
+    return mDelegate->getFilePath(uri);
+    DART_SUPPRESS_DEPRECATED_END
   }
 
 private:
@@ -456,6 +466,29 @@ TEST(MeshShapeTest, TriMeshConstructorTracksUriMetadata)
 
   EXPECT_EQ(shape.getMeshUri(), fileUri.toString());
   EXPECT_EQ(shape.getMeshPath(), fileUri.getFilesystemPath());
+}
+
+TEST(MeshShapeTest, TriMeshConstructorPreservesMaterialsFromUri)
+{
+  const std::string filePath = dart::config::dataPath("skel/kima/l-foot.dae");
+  const std::string aliasUri = "collada-nodot://meshshape/lfoot";
+
+  auto aliasRetriever
+      = std::make_shared<AliasUriResourceRetriever>(aliasUri, filePath);
+  auto loader = std::make_unique<utils::MeshLoaderd>();
+  auto triMesh = loader->load(aliasUri, aliasRetriever);
+  ASSERT_NE(triMesh, nullptr);
+
+  dynamics::MeshShape shape(
+      Eigen::Vector3d::Ones(),
+      std::move(triMesh),
+      common::Uri(aliasUri),
+      aliasRetriever);
+
+  EXPECT_EQ(shape.getMeshUri(), aliasUri);
+  EXPECT_EQ(shape.getMeshPath(), filePath);
+  EXPECT_EQ(shape.getResourceRetriever(), aliasRetriever);
+  EXPECT_FALSE(shape.getMaterials().empty());
 }
 
 TEST(MeshShapeTest, TriMeshGetMeshCachesImportedScene)
