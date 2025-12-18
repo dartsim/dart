@@ -120,7 +120,7 @@ from the same cache.
 
 #### CI reliability notes
 
-- The `.github/actions/configure-compiler-cache` action may disable the sccache launcher on some Linux runners (e.g., self-hosted or non-Ubuntu) and fall back to `env` to avoid flaky `try_compile` failures.
+- The `.github/actions/configure-compiler-cache` action may disable the sccache launcher on some Linux runners (e.g., self-hosted or non-Ubuntu) and fall back to `ccache` when available (otherwise `env`) to avoid flaky `try_compile` failures.
 - In `.github/workflows/ci_macos.yml`, the "Setup sccache" step is best-effort (`continue-on-error: true`) so transient download timeouts don't fail the job.
 
 ## MSVC Multi-Core Compilation
@@ -413,7 +413,7 @@ Notes:
 **What to check:**
 
 1. Whether the job ran on a self-hosted runner vs GitHub-hosted (see the runner metadata snippet in [CI Triage](#ci-triage))
-2. Whether `.github/actions/configure-compiler-cache` disabled sccache and fell back to `env` (look for its stderr messages and `DART_COMPILER_CACHE` in logs)
+2. Whether `.github/actions/configure-compiler-cache` disabled sccache and selected `ccache` (or `env` if unavailable) (look for its stderr messages and `DART_COMPILER_CACHE` in logs)
 3. If this only happens on CI, treat sccache as optional and focus on correctness first; caching should not be required to pass CI
 
 **Related files:**

@@ -36,6 +36,11 @@ runs:
           fi
         fi
 
+        CCACHE_COMPILER_LAUNCHER_VALUE=""
+        if command -v ccache >/dev/null 2>&1; then
+          CCACHE_COMPILER_LAUNCHER_VALUE="ccache"
+        fi
+
         DART_COMPILER_CACHE_VALUE=""
         CMAKE_COMPILER_LAUNCHER_VALUE="env"
         if [ "${DISABLE_SCCACHE}" -eq 0 ]; then
@@ -48,16 +53,27 @@ runs:
           fi
         fi
 
-        if [ -n "${DART_COMPILER_CACHE_VALUE}" ]; then
+        if [ -z "${DART_COMPILER_CACHE_VALUE}" ] && [ -n "${CCACHE_COMPILER_LAUNCHER_VALUE}" ]; then
+          DART_COMPILER_CACHE_VALUE="ccache"
+          CMAKE_COMPILER_LAUNCHER_VALUE="${CCACHE_COMPILER_LAUNCHER_VALUE}"
+        fi
+
+        if [ "${DART_COMPILER_CACHE_VALUE}" = "sccache" ]; then
           CC_PATH="$(command -v cc || true)"
           if [ -n "${CC_PATH}" ]; then
             SANITY_DIR="${GITHUB_WORKSPACE}/build/sccache-sanity/CMakeFiles/CMakeScratch/TryCompile-sanity"
             mkdir -p "${SANITY_DIR}"
             printf '%s\n' 'int main(void) { return 0; }' > "${SANITY_DIR}/testCCompiler.c"
             if ! "${CMAKE_COMPILER_LAUNCHER_VALUE}" "${CC_PATH}" -o "${SANITY_DIR}/testCCompiler.c.o" -c "${SANITY_DIR}/testCCompiler.c"; then
-              echo "sccache sanity check failed; falling back to no-op launcher (env)" >&2
-              DART_COMPILER_CACHE_VALUE="env"
-              CMAKE_COMPILER_LAUNCHER_VALUE="env"
+              if [ -n "${CCACHE_COMPILER_LAUNCHER_VALUE}" ]; then
+                echo "sccache sanity check failed; falling back to ccache" >&2
+                DART_COMPILER_CACHE_VALUE="ccache"
+                CMAKE_COMPILER_LAUNCHER_VALUE="${CCACHE_COMPILER_LAUNCHER_VALUE}"
+              else
+                echo "sccache sanity check failed; falling back to no-op launcher (env)" >&2
+                DART_COMPILER_CACHE_VALUE=""
+                CMAKE_COMPILER_LAUNCHER_VALUE="env"
+              fi
             fi
           fi
         fi
