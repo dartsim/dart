@@ -784,11 +784,23 @@ simulation::WorldPtr readWorld(
             = collision::CollisionDetector::getFactory()->create(cdType);
       }
 
+      std::string_view hint;
+      if (cdType == "bullet") {
+        hint
+            = " Make sure DART was built with Bullet support and that your "
+              "application links against dart-collision-bullet.";
+      } else if (cdType == "ode") {
+        hint
+            = " Make sure DART was built with ODE support and that your "
+              "application links against dart-collision-ode.";
+      }
+
       DART_WARN_IF(
           !collision_detector,
           "Unknown collision detector[{}]. Default collision "
-          "detector[fcl_mesh] will be loaded.",
-          cdType);
+          "detector[fcl_mesh] will be loaded.{}",
+          cdType,
+          hint);
     }
 
     if (!collision_detector)
