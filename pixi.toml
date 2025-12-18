@@ -339,6 +339,24 @@ CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cm
   { arg = "build_type", default = "Release" },
 ] }
 
+build-examples = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_TYPE={{ build_type }}
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target examples
+""",
+], depends-on = [
+  { task = "config", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
+] }
+
 build-dart8-tests = { cmd = [
   "bash",
   "-lc",

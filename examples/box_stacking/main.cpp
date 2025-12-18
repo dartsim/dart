@@ -31,6 +31,7 @@
  */
 
 #include <dart/gui/All.hpp>
+#include <dart/gui/IncludeImGui.hpp>
 
 #include <dart/utils/All.hpp>
 

@@ -34,6 +34,7 @@
 #include <dart/gui/ImGuiHandler.hpp>
 #include <dart/gui/ImGuiViewer.hpp>
 #include <dart/gui/ImGuiWidget.hpp>
+#include <dart/gui/IncludeImGui.hpp>
 #include <dart/gui/RealTimeWorldNode.hpp>
 #include <dart/gui/Viewer.hpp>
 
@@ -54,7 +55,6 @@
 #include <CLI/CLI.hpp>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include <imgui.h>
 #include <osgGA/GUIEventAdapter>
 #include <osgGA/GUIEventHandler>
 
