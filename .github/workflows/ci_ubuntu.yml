@@ -45,6 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DART_PARALLEL_JOBS: 8
+      # Avoid sccache instability on self-hosted runners.
+      DART_DISABLE_COMPILER_CACHE: ON
     strategy:
       fail-fast: false
     steps:
@@ -90,6 +92,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DART_PARALLEL_JOBS: 8
+      # Avoid sccache instability on self-hosted runners.
+      DART_DISABLE_COMPILER_CACHE: ON
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -142,6 +146,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DART_PARALLEL_JOBS: 8
+      # Avoid sccache instability on self-hosted runners.
+      DART_DISABLE_COMPILER_CACHE: ON
     # Run Debug builds on every push/PR so regressions are caught before landing on main
     steps:
       - name: Checkout

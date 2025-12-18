@@ -29,6 +29,10 @@ if(DEFINED ENV{DART_DISABLE_COMPILER_CACHE})
         "Disable automatic detection of compiler cache launchers (sccache/ccache)."
         FORCE
       )
+      # Cache writes do not reliably update the normal variable in the current
+      # directory scope; keep the in-scope value consistent so option reporting
+      # and subsequent logic (dart_configure_compiler_cache) see the override.
+      set(DART_DISABLE_COMPILER_CACHE ON)
     endif()
   endif()
 endif()
