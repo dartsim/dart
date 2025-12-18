@@ -20,7 +20,8 @@ NEW_DART_VERSION = "7.0"
 def patch_gz_physics_cmake(
     cmake_file: Path, old_version: str, new_version: str
 ) -> bool:
-    """Update the DART version requirement in gz-physics' top-level CMakeLists.txt.
+    """
+    Update the DART version requirement in gz-physics' top-level CMakeLists.txt.
 
     Returns:
         True if patching succeeded or is already applied, False otherwise.
