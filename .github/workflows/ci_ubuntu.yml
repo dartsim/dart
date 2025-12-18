@@ -68,28 +68,9 @@ jobs:
           disable_annotations: true
 
       - name: Configure environment for compiler cache
-        run: |
-          if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
-            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          else
-            echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
-          fi
-          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
-          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
-          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
-          mkdir -p "${RUNNER_TEMP}/ccache"
+        uses: ./.github/actions/configure-compiler-cache
 
-      - name: Build with coverage
-        run: |
-          DART_VERBOSE=ON \
-          BUILD_TYPE=Debug \
-          pixi run build-coverage
-
-      - name: Generate coverage report
+      - name: Build and generate coverage report
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
@@ -130,20 +111,7 @@ jobs:
           disable_annotations: true
 
       - name: Configure environment for compiler cache
-        run: |
-          if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
-            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          else
-            echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
-          fi
-          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
-          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
-          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
-          mkdir -p "${RUNNER_TEMP}/ccache"
+        uses: ./.github/actions/configure-compiler-cache
 
       - name: Check Lint
         run: |
@@ -196,20 +164,7 @@ jobs:
           disable_annotations: true
 
       - name: Configure environment for compiler cache
-        run: |
-          if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
-            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          else
-            echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
-          fi
-          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
-          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
-          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
-          mkdir -p "${RUNNER_TEMP}/ccache"
+        uses: ./.github/actions/configure-compiler-cache
 
       - name: Test DART and dartpy
         run: |

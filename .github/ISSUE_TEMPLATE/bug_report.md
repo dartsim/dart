@@ -10,7 +10,7 @@ assignees: ""
 
 **Before submitting:**
 
-- [ ] Checked [documentation](http://dartsim.github.io/) and existing issues
+- [ ] Checked [documentation](https://dart.readthedocs.io/) and existing issues
 
 **Environment:**
 

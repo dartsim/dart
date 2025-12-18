@@ -1,5 +1,6 @@
 #include "dynamics/shape_frame.hpp"
 
+#include "common/eigen_utils.hpp"
 #include "common/repr.hpp"
 #include "common/type_casters.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -30,18 +31,11 @@ void defShapeFrame(nb::module_& m)
       .def(
           "setColor",
           [](VisualAspect& self, const nb::handle& color) {
-            nb::sequence seq = nb::cast<nb::sequence>(color);
-            const nb::ssize_t n = nb::len(seq);
-            if (n == 3) {
-              Eigen::Vector3d vec;
-              for (nb::ssize_t i = 0; i < n; ++i)
-                vec[i] = nb::cast<double>(seq[i]);
-              self.setColor(vec);
-            } else if (n == 4) {
-              Eigen::Vector4d vec;
-              for (nb::ssize_t i = 0; i < n; ++i)
-                vec[i] = nb::cast<double>(seq[i]);
-              self.setColor(vec);
+            Eigen::VectorXd vec = toVector(color);
+            if (vec.size() == 3) {
+              self.setColor(Eigen::Vector3d(vec));
+            } else if (vec.size() == 4) {
+              self.setColor(Eigen::Vector4d(vec));
             } else {
               throw nb::type_error("Color must be length 3 or 4");
             }

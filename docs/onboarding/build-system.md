@@ -756,19 +756,15 @@ build/
 **Used in this task:**
 
 ```bash
-pixi run lint
-DART_PARALLEL_JOBS=8 pixi run -e gazebo download-gz
-DART_PARALLEL_JOBS=8 pixi run -e gazebo patch-gz
-DART_PARALLEL_JOBS=8 pixi run -e gazebo config-gz
-DART_PARALLEL_JOBS=8 pixi run -e gazebo ninja -C .deps/gz-physics/build -j 8 COMMON_TEST_collisions
+DART_PARALLEL_JOBS=16 pixi run -e gazebo test-gz
 ```
 
-**Fast iteration loop (smallest repeatable cycle):**
+**Fast iteration loop (Suggested (Unverified)):**
 
 1. Run `pixi run lint` before committing changes.
 2. Configure gz-physics with `DART_PARALLEL_JOBS=8 pixi run -e gazebo config-gz`.
 3. Build the failing target(s) with `DART_PARALLEL_JOBS=8 pixi run -e gazebo ninja -C .deps/gz-physics/build -j 8 <target>`.
-4. Suggested (Unverified): Run the full suite with `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
+4. Run the full suite with `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
 
 **What to look for (success signal):**
 
