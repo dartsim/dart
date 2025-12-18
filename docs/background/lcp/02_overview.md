@@ -34,10 +34,6 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
   `math::DantzigSolver` (primary) with an optional `math::PgsSolver` fallback.
 - Solvers validate basic invariants (e.g., `lo <= hi`, `findex` in range, no
   NaN bounds) and treat empty problems as a trivial success.
-- Gazebo integration (`gz-physics`) continues to use the legacy boxed solver API
-  (`constraint::BoxedLcpConstraintSolver` / `constraint::BoxedLcpSolver`). The
-  `pixi run -e gazebo` workflow only patches the upstream `gz-physics`
-  `CMakeLists.txt` to accept the DART 7 CMake package version.
 
 ### Currently Implemented Solvers
 

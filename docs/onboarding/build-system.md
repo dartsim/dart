@@ -742,9 +742,6 @@ build/
 - `config-gz` - Configure gz-physics build
 - `build-gz` - Build gz-physics with dartsim plugin
 - `test-gz` - Verify DART integration
-- **Note:** `patch-gz` also updates `gz-physics`'s DART plugin sources to use
-  `dart::constraint::ConstraintSolver` and the `dart::math::LcpSolver` API
-  (solver names `Dantzig` / `Pgs`).
 
 **Start here next time:**
 
