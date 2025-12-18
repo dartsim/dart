@@ -16,14 +16,25 @@ runs:
         echo "SCCACHE_NO_DAEMON=1" >> "${GITHUB_ENV}"
         echo "SCCACHE_IGNORE_SERVER_IO_ERROR=1" >> "${GITHUB_ENV}"
 
+        DISABLE_SCCACHE=0
+        if [ "${RUNNER_OS:-}" = "Linux" ] && [ -f /etc/os-release ]; then
+          OS_ID="$(. /etc/os-release && echo "${ID:-}")"
+          if [ -n "${OS_ID}" ] && [ "${OS_ID}" != "ubuntu" ]; then
+            DISABLE_SCCACHE=1
+            echo "Non-Ubuntu Linux runner detected (ID=${OS_ID}); disabling sccache launcher." >&2
+          fi
+        fi
+
         DART_COMPILER_CACHE_VALUE=""
         CMAKE_COMPILER_LAUNCHER_VALUE="env"
-        if [ -n "${SCCACHE_PATH:-}" ]; then
-          DART_COMPILER_CACHE_VALUE="sccache"
-          CMAKE_COMPILER_LAUNCHER_VALUE="${SCCACHE_PATH}"
-        elif command -v sccache >/dev/null 2>&1; then
-          DART_COMPILER_CACHE_VALUE="sccache"
-          CMAKE_COMPILER_LAUNCHER_VALUE="sccache"
+        if [ "${DISABLE_SCCACHE}" -eq 0 ]; then
+          if [ -n "${SCCACHE_PATH:-}" ]; then
+            DART_COMPILER_CACHE_VALUE="sccache"
+            CMAKE_COMPILER_LAUNCHER_VALUE="${SCCACHE_PATH}"
+          elif command -v sccache >/dev/null 2>&1; then
+            DART_COMPILER_CACHE_VALUE="sccache"
+            CMAKE_COMPILER_LAUNCHER_VALUE="sccache"
+          fi
         fi
 
         if [ -n "${DART_COMPILER_CACHE_VALUE}" ]; then
