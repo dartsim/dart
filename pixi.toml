@@ -1012,7 +1012,7 @@ test-installation = { cmd = "python scripts/test_installation.py" }
 # Shared wheel helper tasks (reused by version-specific wheel features)
 wheel-build-core = { cmd = [
   "bash",
-  "-lc",
+  "-c",
   """
 set -euo pipefail
 USE_COMPILER_CACHE=1
@@ -1033,7 +1033,7 @@ if [ "${USE_COMPILER_CACHE}" -eq 0 ]; then
   CMAKE_ARGS="${CMAKE_ARGS} -DDART_DISABLE_COMPILER_CACHE=ON -DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER="
   export CMAKE_ARGS
 fi
-pip wheel . --no-deps -w dist/ -v
+python -m pip wheel . --no-deps -w dist/ -v
 """,
 ], args = [
   { arg = "use_system_imgui", default = "ON" },
