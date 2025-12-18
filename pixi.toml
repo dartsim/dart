@@ -1723,9 +1723,25 @@ config-gz = { cmd = [
   "-lc",
   """
 set -euo pipefail
-if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
-  CMAKE_C_COMPILER_LAUNCHER=sccache
-  CMAKE_CXX_COMPILER_LAUNCHER=sccache
+USE_COMPILER_CACHE=1
+if [ "${CI:-}" = "true" ] || [ "${CI:-}" = "1" ]; then
+  if [ "${SCCACHE_GHA_ENABLED:-false}" != "true" ]; then
+    USE_COMPILER_CACHE=0
+  fi
+fi
+case "${DART_DISABLE_COMPILER_CACHE:-}" in
+  1|ON|on|TRUE|true|YES|yes)
+    USE_COMPILER_CACHE=0
+    ;;
+esac
+if [ "${USE_COMPILER_CACHE}" -eq 0 ]; then
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
+else
+  if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+    CMAKE_C_COMPILER_LAUNCHER=sccache
+    CMAKE_CXX_COMPILER_LAUNCHER=sccache
+  fi
 fi
 LAUNCHER_DEFS=""
 if [ -n "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then

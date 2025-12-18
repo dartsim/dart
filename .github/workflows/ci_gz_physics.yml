@@ -45,6 +45,8 @@ jobs:
     env:
       # Keep parallelism modest to avoid process limits on shared runners.
       DART_PARALLEL_JOBS: 8
+      # Avoid sccache instability on self-hosted runners.
+      DART_DISABLE_COMPILER_CACHE: ON
       # Avoid spawning too many ninja processes on shared runners (posix_spawn failures)
       CMAKE_BUILD_PARALLEL_LEVEL: 1
     steps:
