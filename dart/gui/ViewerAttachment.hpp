@@ -1,10 +1,5 @@
-/*
- * Compatibility header for ViewerAttachment.
- *
- * ViewerAttachment is declared in Viewer.hpp. This header exists to preserve
- * older include paths used by examples and downstream projects.
- */
-
 #pragma once
+
+// Compatibility header: ViewerAttachment is now declared in Viewer.hpp.
 
 #include <dart/gui/Viewer.hpp>
