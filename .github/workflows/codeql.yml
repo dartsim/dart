@@ -45,6 +45,7 @@ jobs:
     env:
       BUILD_TYPE: Release
       DART_VERBOSE: ON
+      DART_DISABLE_COMPILER_CACHE: ON
     strategy:
       fail-fast: false
       matrix:
