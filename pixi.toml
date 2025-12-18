@@ -654,7 +654,7 @@ build-coverage = { cmd = [
   "-lc",
   """
 set -euo pipefail
-PARALLEL_JOBS=$(python scripts/parallel_jobs.py)
+PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
 CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE python scripts/cmake_build.py --parallel ${PARALLEL_JOBS} --target all --target tests \
   && ctest --output-on-failure -j ${PARALLEL_JOBS} --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
 """,
