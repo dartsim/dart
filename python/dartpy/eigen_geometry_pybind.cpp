@@ -61,7 +61,7 @@ namespace {
 
 // N.B. Use a loose tolerance, so that we don't have to be super strict with
 // C++.
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
 const double kCheckTolerance = 1e-5;
 #endif
 

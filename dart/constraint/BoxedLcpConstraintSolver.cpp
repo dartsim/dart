@@ -32,22 +32,19 @@
 
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 
-#include "dart/common/Macros.hpp"
-
-#include <cassert>
-
-#if DART_BUILD_MODE_DEBUG
-  #include <iomanip>
-  #include <iostream>
-#endif
-
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/external/odelcpsolver/lcp.h"
 #include "dart/lcpsolver/Lemke.hpp"
+
+#include <iomanip>
+#include <iostream>
+
+#include <cassert>
 
 namespace dart {
 namespace constraint {
@@ -318,7 +315,6 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 }
 
 //==============================================================================
-#if DART_BUILD_MODE_DEBUG
 bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
 {
   std::size_t nSkip = dPAD(n);
@@ -457,7 +453,6 @@ void BoxedLcpConstraintSolver::print(
 
   delete[] Ax;
 }
-#endif
 
 } // namespace constraint
 } // namespace dart

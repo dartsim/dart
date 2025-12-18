@@ -102,14 +102,12 @@ void ConstrainedGroup::removeAllConstraints()
 }
 
 //==============================================================================
-#if DART_BUILD_MODE_DEBUG
 bool ConstrainedGroup::containConstraint(
     const ConstConstraintBasePtr& _constraint) const
 {
   return std::find(mConstraints.begin(), mConstraints.end(), _constraint)
          != mConstraints.end();
 }
-#endif
 
 //==============================================================================
 std::size_t ConstrainedGroup::getTotalDimension() const
