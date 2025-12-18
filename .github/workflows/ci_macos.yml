@@ -53,6 +53,7 @@ jobs:
           cache: false
 
       - name: Setup sccache
+        continue-on-error: true
         uses: mozilla-actions/sccache-action@v0.0.9
         with:
           disable_annotations: true
@@ -91,6 +92,7 @@ jobs:
           cache: false
 
       - name: Setup sccache
+        continue-on-error: true
         uses: mozilla-actions/sccache-action@v0.0.9
         with:
           disable_annotations: true
