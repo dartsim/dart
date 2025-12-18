@@ -540,7 +540,7 @@ public:
       return;
     }
 
-    const double radToDeg = 180.0 / dart::math::constantsd::pi();
+    const double radToDeg = 180.0 / dart::math::pi;
     const auto statuses = mController->getStatuses();
 
     ImGui::TextWrapped(
@@ -630,7 +630,7 @@ int main(int argc, char* argv[])
   world->addSkeleton(couplerAssembly.skeleton);
   world->addSkeleton(motorAssembly.skeleton);
   const double targetAngle
-      = 45.0 * dart::math::constantsd::pi() / 180.0; // command for references
+      = 45.0 * dart::math::pi / 180.0; // command for references
 
   std::cout
       << "Coupler constraint demo:\n"
