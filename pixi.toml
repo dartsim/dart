@@ -86,13 +86,31 @@ RAYLIB_GIT_TAG_DEF=""
 if [ -n "${DART_RAYLIB_GIT_TAG_VALUE}" ]; then
   RAYLIB_GIT_TAG_DEF="-DDART_RAYLIB_GIT_TAG=${DART_RAYLIB_GIT_TAG_VALUE}"
 fi
-if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
-  if command -v sccache >/dev/null 2>&1; then
-    CMAKE_C_COMPILER_LAUNCHER=sccache
-    CMAKE_CXX_COMPILER_LAUNCHER=sccache
-  elif command -v ccache >/dev/null 2>&1; then
-    CMAKE_C_COMPILER_LAUNCHER=ccache
-    CMAKE_CXX_COMPILER_LAUNCHER=ccache
+USE_COMPILER_CACHE=1
+if [ "${CI:-}" = "true" ] || [ "${CI:-}" = "1" ]; then
+  if [ "${SCCACHE_GHA_ENABLED:-false}" != "true" ]; then
+    USE_COMPILER_CACHE=0
+  fi
+fi
+case "${DART_DISABLE_COMPILER_CACHE:-}" in
+  1|ON|on|TRUE|true|YES|yes)
+    USE_COMPILER_CACHE=0
+    ;;
+esac
+DISABLE_COMPILER_CACHE_DEF=""
+if [ "${USE_COMPILER_CACHE}" -eq 0 ]; then
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
+  DISABLE_COMPILER_CACHE_DEF="-DDART_DISABLE_COMPILER_CACHE=ON"
+else
+  if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+    if command -v sccache >/dev/null 2>&1; then
+      CMAKE_C_COMPILER_LAUNCHER=sccache
+      CMAKE_CXX_COMPILER_LAUNCHER=sccache
+    elif command -v ccache >/dev/null 2>&1; then
+      CMAKE_C_COMPILER_LAUNCHER=ccache
+      CMAKE_CXX_COMPILER_LAUNCHER=ccache
+    fi
   fi
 fi
 LAUNCHER_DEFS=""
@@ -130,7 +148,8 @@ cmake \
   -DDART_USE_SYSTEM_TRACY=ON \
   -DDART_VERBOSE=${DART_VERBOSE} \
   $RAYLIB_GIT_TAG_DEF \
-  $LAUNCHER_DEFS
+  $LAUNCHER_DEFS \
+  $DISABLE_COMPILER_CACHE_DEF
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
@@ -615,13 +634,31 @@ set -euo pipefail
 PIXI_ENVIRONMENT_NAME=${PIXI_ENVIRONMENT_NAME:-default}
 rm -rf "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
 echo "Configuring coverage build directory: build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
-if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
-  if command -v sccache >/dev/null 2>&1; then
-    CMAKE_C_COMPILER_LAUNCHER=sccache
-    CMAKE_CXX_COMPILER_LAUNCHER=sccache
-  elif command -v ccache >/dev/null 2>&1; then
-    CMAKE_C_COMPILER_LAUNCHER=ccache
-    CMAKE_CXX_COMPILER_LAUNCHER=ccache
+USE_COMPILER_CACHE=1
+if [ "${CI:-}" = "true" ] || [ "${CI:-}" = "1" ]; then
+  if [ "${SCCACHE_GHA_ENABLED:-false}" != "true" ]; then
+    USE_COMPILER_CACHE=0
+  fi
+fi
+case "${DART_DISABLE_COMPILER_CACHE:-}" in
+  1|ON|on|TRUE|true|YES|yes)
+    USE_COMPILER_CACHE=0
+    ;;
+esac
+DISABLE_COMPILER_CACHE_DEF=""
+if [ "${USE_COMPILER_CACHE}" -eq 0 ]; then
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
+  DISABLE_COMPILER_CACHE_DEF="-DDART_DISABLE_COMPILER_CACHE=ON"
+else
+  if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+    if command -v sccache >/dev/null 2>&1; then
+      CMAKE_C_COMPILER_LAUNCHER=sccache
+      CMAKE_CXX_COMPILER_LAUNCHER=sccache
+    elif command -v ccache >/dev/null 2>&1; then
+      CMAKE_C_COMPILER_LAUNCHER=ccache
+      CMAKE_CXX_COMPILER_LAUNCHER=ccache
+    fi
   fi
 fi
 LAUNCHER_DEFS=""
@@ -645,7 +682,8 @@ cmake \
     -DDART_USE_SYSTEM_IMGUI=ON \
     -DDART_USE_SYSTEM_TRACY=ON \
     -DDART_VERBOSE=$DART_VERBOSE \
-    $LAUNCHER_DEFS
+    $LAUNCHER_DEFS \
+    $DISABLE_COMPILER_CACHE_DEF
 """,
 ], env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" } }
 
@@ -867,6 +905,23 @@ config-install = { cmd = [
   "-lc",
   """
 set -euo pipefail
+USE_COMPILER_CACHE=1
+if [ "${CI:-}" = "true" ] || [ "${CI:-}" = "1" ]; then
+  if [ "${SCCACHE_GHA_ENABLED:-false}" != "true" ]; then
+    USE_COMPILER_CACHE=0
+  fi
+fi
+case "${DART_DISABLE_COMPILER_CACHE:-}" in
+  1|ON|on|TRUE|true|YES|yes)
+    USE_COMPILER_CACHE=0
+    ;;
+esac
+DISABLE_COMPILER_CACHE_DEF=""
+if [ "${USE_COMPILER_CACHE}" -eq 0 ]; then
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
+  DISABLE_COMPILER_CACHE_DEF="-DDART_DISABLE_COMPILER_CACHE=ON"
+fi
 cmake \
     -G Ninja \
     -S . \
@@ -885,7 +940,8 @@ cmake \
     -DDART_USE_SYSTEM_IMGUI=ON \
     -DDART_USE_SYSTEM_NANOBIND=OFF \
     -DDART_USE_SYSTEM_TRACY=ON \
-    -DDART_VERBOSE=$DART_VERBOSE
+    -DDART_VERBOSE=$DART_VERBOSE \
+    $DISABLE_COMPILER_CACHE_DEF
 """,
 ], env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
   { arg = "dartpy", default = "ON" },
@@ -945,7 +1001,32 @@ verify-wheel = { cmd = "bash -c 'python scripts/verify_wheel.py dist/dartpy-*.wh
 test-installation = { cmd = "python scripts/test_installation.py" }
 
 # Shared wheel helper tasks (reused by version-specific wheel features)
-wheel-build-core = { cmd = "pip wheel . --no-deps -w dist/ -v", args = [
+wheel-build-core = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+USE_COMPILER_CACHE=1
+if [ "${CI:-}" = "true" ] || [ "${CI:-}" = "1" ]; then
+  if [ "${SCCACHE_GHA_ENABLED:-false}" != "true" ]; then
+    USE_COMPILER_CACHE=0
+  fi
+fi
+case "${DART_DISABLE_COMPILER_CACHE:-}" in
+  1|ON|on|TRUE|true|YES|yes)
+    USE_COMPILER_CACHE=0
+    ;;
+esac
+if [ "${USE_COMPILER_CACHE}" -eq 0 ]; then
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
+  unset DART_COMPILER_CACHE
+  CMAKE_ARGS="${CMAKE_ARGS} -DDART_DISABLE_COMPILER_CACHE=ON"
+  export CMAKE_ARGS
+fi
+pip wheel . --no-deps -w dist/ -v
+""",
+], args = [
   { arg = "use_system_imgui", default = "ON" },
 ], env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DDART_BUILD_TESTS=OFF -DDART_BUILD_EXAMPLES=OFF -DDART_BUILD_TUTORIALS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI={{ use_system_imgui }}" } }
 
@@ -1065,9 +1146,27 @@ DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-ON}
 DART_BUILD_DART8_VALUE=${DART_BUILD_DART8_OVERRIDE:-ON}
-if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
-  CMAKE_C_COMPILER_LAUNCHER=sccache
-  CMAKE_CXX_COMPILER_LAUNCHER=sccache
+USE_COMPILER_CACHE=1
+if [ "${CI:-}" = "true" ] || [ "${CI:-}" = "1" ]; then
+  if [ "${SCCACHE_GHA_ENABLED:-false}" != "true" ]; then
+    USE_COMPILER_CACHE=0
+  fi
+fi
+case "${DART_DISABLE_COMPILER_CACHE:-}" in
+  1|ON|on|TRUE|true|YES|yes)
+    USE_COMPILER_CACHE=0
+    ;;
+esac
+DISABLE_COMPILER_CACHE_DEF=""
+if [ "${USE_COMPILER_CACHE}" -eq 0 ]; then
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
+  DISABLE_COMPILER_CACHE_DEF="-DDART_DISABLE_COMPILER_CACHE=ON"
+else
+  if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+    CMAKE_C_COMPILER_LAUNCHER=sccache
+    CMAKE_CXX_COMPILER_LAUNCHER=sccache
+  fi
 fi
 LAUNCHER_DEFS=""
 if [ -n "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
@@ -1093,7 +1192,8 @@ cmake \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=ON \
   -DDART_VERBOSE=${DART_VERBOSE} \
-  $LAUNCHER_DEFS
+  $LAUNCHER_DEFS \
+  $DISABLE_COMPILER_CACHE_DEF
 """,
 ], env = { BUILD_TYPE = "asan", CMAKE_BUILD_TYPE = "RelWithDebInfo", DART_BUILD_PROFILE = "OFF", DART_VERBOSE = "OFF" } }
 
@@ -1611,9 +1711,25 @@ config-gz = { cmd = [
   "-lc",
   """
 set -euo pipefail
-if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
-  CMAKE_C_COMPILER_LAUNCHER=sccache
-  CMAKE_CXX_COMPILER_LAUNCHER=sccache
+USE_COMPILER_CACHE=1
+if [ "${CI:-}" = "true" ] || [ "${CI:-}" = "1" ]; then
+  if [ "${SCCACHE_GHA_ENABLED:-false}" != "true" ]; then
+    USE_COMPILER_CACHE=0
+  fi
+fi
+case "${DART_DISABLE_COMPILER_CACHE:-}" in
+  1|ON|on|TRUE|true|YES|yes)
+    USE_COMPILER_CACHE=0
+    ;;
+esac
+if [ "${USE_COMPILER_CACHE}" -eq 0 ]; then
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
+else
+  if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+    CMAKE_C_COMPILER_LAUNCHER=sccache
+    CMAKE_CXX_COMPILER_LAUNCHER=sccache
+  fi
 fi
 LAUNCHER_DEFS=""
 if [ -n "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
