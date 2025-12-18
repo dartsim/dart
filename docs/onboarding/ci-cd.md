@@ -10,12 +10,18 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Local build/test entry points: [building.md](building.md) and [testing.md](testing.md)
   - Gazebo / gz-physics workflow: [build-system.md](build-system.md#gazebo-integration-feature)
   - PR template checklist: [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)
-- Fast CI fail-fast loop:
-  - Suggested (Unverified): `gh pr checks <PR_NUMBER> --watch --interval 30 --fail-fast`
-  - Suggested (Unverified): `gh run view --job <JOB_ID> --log-failed`
-- Gotchas (observed in this task):
-  - On some Linux runners (especially self-hosted), `sccache` can fail during CMake `try_compile` with `sccache: error: while hashing the input file ... No such file or directory (os error 2)`.
-  - On macOS, `mozilla-actions/sccache-action@v0.0.9` can fail with transient network errors like `HttpError: Connect Timeout Error`. Our `.github/workflows/ci_macos.yml` treats "Setup sccache" as best-effort (`continue-on-error: true`) so the job continues without sccache.
+- Used in this task:
+  - `git status -sb`
+  - `gh pr list --head "$(git branch --show-current)" --json number,title,state,url,headRefName`
+  - `gh pr status`
+- Suggested (Unverified):
+  - `gh pr checks <pr_number>`
+  - `gh pr checks <pr_number> --watch --interval 30 --fail-fast`
+  - `gh run view <run_id> --job <job_id> --log-failed`
+- Gotchas (encountered in this task):
+  - `gh pr status --json ...` can error with `Unknown JSON field: ...` if you request unsupported fields; use `gh pr status` (no JSON) or `gh pr view --json ...`. In this task, `gh pr status --json currentBranch,createdBy,needsReview,reviewRequests,statusCheckRollup` failed with `Unknown JSON field: "currentBranch"`.
+  - `gh pr checks` may show duplicate entries when workflows run for both `push` and `pull_request` events; compare the run URLs and focus on the newest one.
+  - zsh can produce `parse error near '}'` if a `gh ... --jq` expression containing `{ ... }` isn't fully quoted; wrap the whole jq program in single quotes.
 - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
 
 ## Workflow Architecture
@@ -77,7 +83,16 @@ jobs all share the same configuration**. You can disable auto-detection with
     disable_annotations: true
 
 - name: Configure environment for compiler cache
-  uses: ./.github/actions/configure-compiler-cache
+  run: |
+    echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+    echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
+    echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+    echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+    echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
+    echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
+    echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
+    echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
+    mkdir -p "${RUNNER_TEMP}/ccache"
 ```
 
 **Windows setup** (see `.github/workflows/ci_windows.yml`):
@@ -92,15 +107,9 @@ jobs all share the same configuration**. You can disable auto-detection with
   shell: powershell
   run: |
     echo "SCCACHE_GHA_ENABLED=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    echo "SCCACHE_NO_DAEMON=1" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     echo "DART_COMPILER_CACHE=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    if ($env:SCCACHE_PATH) {
-      echo "CMAKE_C_COMPILER_LAUNCHER=$env:SCCACHE_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      echo "CMAKE_CXX_COMPILER_LAUNCHER=$env:SCCACHE_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    } else {
-      echo "CMAKE_C_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    }
+    echo "CMAKE_C_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+    echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     $ccacheDir = Join-Path $env:RUNNER_TEMP "ccache"
     New-Item -ItemType Directory -Force -Path $ccacheDir | Out-Null
     echo "CCACHE_BASEDIR=$env:GITHUB_WORKSPACE" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -117,11 +126,6 @@ DART will automatically set `CMAKE_*_COMPILER_LAUNCHER` when you run `cmake`
 directly or via `pixi`. pixi still forwards `CMAKE_*_COMPILER_LAUNCHER` to any
 external CMake projects it drives (e.g., gz-physics) so nested builds benefit
 from the same cache.
-
-#### CI reliability notes
-
-- The `.github/actions/configure-compiler-cache` action may disable the sccache launcher on some Linux runners (e.g., self-hosted or non-Ubuntu) and fall back to `ccache` when available (otherwise `env`) to avoid flaky `try_compile` failures.
-- In `.github/workflows/ci_macos.yml`, the "Setup sccache" step is best-effort (`continue-on-error: true`) so transient download timeouts don't fail the job.
 
 ## MSVC Multi-Core Compilation
 
@@ -311,26 +315,19 @@ not stop immediately when the first job fails.
 
 ### Monitoring and Debugging from the GitHub CLI
 
-#### Branch / PR Recon
-
-Suggested (Unverified):
-
-```bash
-git status -sb
-git fetch origin
-git rev-list --left-right --count HEAD...origin/main
-```
-
-Example (used in this task):
+#### Branch / PR Recon (used in this task)
 
 ```bash
 git rev-parse --show-toplevel
-git status --porcelain=v1 -b
-git fetch origin
-git rev-list --left-right --count HEAD...origin/main
+git status -sb
+git branch -vv
+git remote -v
+git log -20 --oneline --decorate
+git diff --stat
+git stash list
 ```
 
-Map the current branch to a PR (Suggested (Unverified)):
+Map the current branch to a PR (used in this task):
 
 ```bash
 gh pr list --head "$(git branch --show-current)" --json number,title,state,url,headRefName
@@ -342,26 +339,31 @@ gh pr view --json number,title,url,state,baseRefName,headRefName,author,labels,b
 Suggested (Unverified):
 
 ```bash
-gh run list --branch <BRANCH> -e pull_request -L 20
-gh run watch <RUN_ID> --interval 30
-gh run view --job <JOB_ID> --log-failed
-gh pr checks <PR_NUMBER>
+gh pr status
+gh pr checks <pr_number>
+gh pr view <pr_number> --json reviewDecision,latestReviews,reviewRequests,state,isDraft,mergeable,mergeStateStatus,statusCheckRollup
 ```
 
 Example (used in this task):
 
 ```bash
-gh run list --branch fix/dartpy-bindings-cleanup -e pull_request -L 20
-gh run watch 20345022400 --interval 30
-gh run view --job 58403655163 --log-failed
-gh api repos/dartsim/dart/actions/jobs/58403655163 --jq '{id: .id, status: .status, conclusion: .conclusion, runner_name: .runner_name, runner_group: .runner_group_name, labels: .labels, started_at: .started_at, completed_at: .completed_at}'
-gh pr checks 2328
+gh pr checks 2298
+gh pr view 2298 --json reviewDecision,latestReviews,reviewRequests,state,isDraft,mergeable,mergeStateStatus,statusCheckRollup
 ```
 
-If a job behaves differently than expected, confirm which runner actually executed it (Suggested (Unverified)):
+Inspect logs for a failing job:
+
+Suggested (Unverified):
 
 ```bash
-gh api repos/<ORG>/<REPO>/actions/jobs/<JOB_ID> --jq '{id: .id, status: .status, conclusion: .conclusion, runner_name: .runner_name, runner_group: .runner_group_name, labels: .labels, started_at: .started_at, completed_at: .completed_at}'
+gh run view <run_id> --job <job_id> --log-failed
+```
+
+Example (used in this task):
+
+```bash
+gh run view 20275198109 --job 58221775555 --log-failed
+gh run view 20275198456 --job 58221776649 --log-failed
 ```
 
 If `--log-failed` is missing context, list job step outcomes first:
@@ -369,13 +371,19 @@ If `--log-failed` is missing context, list job step outcomes first:
 Suggested (Unverified):
 
 ```bash
-gh run view <RUN_ID> --json jobs --jq '.jobs[] | select(.databaseId==<JOB_ID>) | {steps:[.steps[] | {name: .name, conclusion: .conclusion}]}'
+gh run view <run_id> --json jobs --jq '.jobs[] | select(.databaseId==<job_id>) | {steps:[.steps[] | {name: .name, conclusion: .conclusion}]}'
+```
+
+Example (used in this task):
+
+```bash
+gh run view 20275198109 --json jobs --jq '.jobs[] | select(.databaseId==58221775555) | {steps:[.steps[] | {name: .name, conclusion: .conclusion}]}'
 ```
 
 Suggested (Unverified):
 
 ```bash
-gh pr checks <PR_NUMBER> --watch --interval 30 --fail-fast
+gh pr checks <pr_number> --watch --interval 30 --fail-fast
 ```
 
 Notes:
@@ -411,24 +419,6 @@ Notes:
 - Force cache bust by changing cache key
 - Add dependency tracking to cache key (e.g., hash of `pixi.lock`)
 - Run full clean build on schedule to catch issues
-
-### sccache Failures and Flakiness
-
-**Symptoms:**
-
-- CMake `try_compile` fails with `sccache: error: while hashing the input file ... No such file or directory (os error 2)`
-- The "Setup sccache" workflow step fails with `HttpError: Connect Timeout Error` (usually transient)
-
-**What to check:**
-
-1. Whether the job ran on a self-hosted runner vs GitHub-hosted (see the runner metadata snippet in [CI Triage](#ci-triage))
-2. Whether `.github/actions/configure-compiler-cache` disabled sccache and selected `ccache` (or `env` if unavailable) (look for its stderr messages and `DART_COMPILER_CACHE` in logs)
-3. If this only happens on CI, treat sccache as optional and focus on correctness first; caching should not be required to pass CI
-
-**Related files:**
-
-- `.github/actions/configure-compiler-cache/action.yml`
-- `.github/workflows/ci_macos.yml`
 
 ### Platform-Specific Issues
 
