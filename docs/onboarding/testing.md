@@ -141,15 +141,28 @@ Performance benchmarks measure execution time and resource usage:
 
 - **Integration tests**: `test_<ModuleOrFeature>.cpp` (e.g., `test_Collision.cpp`)
 - **Unit tests**: `test_<ClassName>.cpp` (e.g., `test_Factory.cpp`)
-- **Regression tests**: `test_Issue<number>.cpp` (e.g., `test_Issue1234.cpp`)
+- **Issue-based regressions**: Use a descriptive filename in `unit/` or `integration/`, and include the GitHub issue number/link in a comment near the test.
 - **Benchmarks**: `bm_<feature>.cpp` (e.g., `bm_boxes.cpp`)
 
 ### Where to Add Your Test
 
 1. **Is it testing a single class/function in isolation?** → Add to `unit/<module>/`
 2. **Is it testing multiple components working together?** → Add to `integration/<module>/`
-3. **Is it verifying a bug fix from a GitHub issue?** → Add to `regression/`
+3. **Is it verifying a bug fix from a GitHub issue?** → Add to `unit/<module>/` or `integration/<module>/` (depending on scope) and include the issue number/link in a comment.
 4. **Is it measuring performance?** → Add to `benchmark/<category>/`
+
+**Common starting points (pick based on what you're changing):**
+
+- C++ unit tests: `tests/unit/<module>/`
+- C++ integration tests: `tests/integration/<module>/`
+- Python unit tests (dartpy): `python/tests/unit/<module>/`
+
+Suggested (Unverified): If you don't know the module yet, search for similar tests by symbol name, e.g. `rg -n "<ClassOrFeature>" tests python`.
+
+Examples (from this task):
+
+- `tests/integration/dynamics/test_Joints.cpp`
+- `python/tests/unit/dynamics/`
 
 ### Steps to Add a New Test
 
