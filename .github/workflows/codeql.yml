@@ -72,6 +72,7 @@ jobs:
         uses: mozilla-actions/sccache-action@v0.0.9
         with:
           disable_annotations: true
+          version: "0.8.2"
 
       - name: Configure environment for compiler cache
         run: |
