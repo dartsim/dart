@@ -17,11 +17,22 @@ runs:
         echo "SCCACHE_IGNORE_SERVER_IO_ERROR=1" >> "${GITHUB_ENV}"
 
         DISABLE_SCCACHE=0
-        if [ "${RUNNER_OS:-}" = "Linux" ] && [ -f /etc/os-release ]; then
-          OS_ID="$(. /etc/os-release && echo "${ID:-}")"
-          if [ -n "${OS_ID}" ] && [ "${OS_ID}" != "ubuntu" ]; then
-            DISABLE_SCCACHE=1
-            echo "Non-Ubuntu Linux runner detected (ID=${OS_ID}); disabling sccache launcher." >&2
+        RUNNER_NAME_VALUE="${RUNNER_NAME:-}"
+        if [ "${RUNNER_OS:-}" = "Linux" ]; then
+          case "${RUNNER_NAME_VALUE}" in
+            GitHub\ Actions*) ;;
+            *)
+              DISABLE_SCCACHE=1
+              echo "Self-hosted Linux runner detected (RUNNER_NAME=${RUNNER_NAME_VALUE:-unknown}); disabling sccache launcher." >&2
+              ;;
+          esac
+
+          if [ "${DISABLE_SCCACHE}" -eq 0 ] && [ -f /etc/os-release ]; then
+            OS_ID="$(. /etc/os-release && echo "${ID:-}")"
+            if [ -n "${OS_ID}" ] && [ "${OS_ID}" != "ubuntu" ]; then
+              DISABLE_SCCACHE=1
+              echo "Non-Ubuntu Linux runner detected (ID=${OS_ID}); disabling sccache launcher." >&2
+            fi
           fi
         fi
 
