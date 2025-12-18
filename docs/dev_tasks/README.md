@@ -4,7 +4,14 @@ Documentation for development tasks in DART.
 
 ## Structure
 
-- **active/** - Currently active projects with task trackers
+- Each development task should live in its own subdirectory under `docs/dev_tasks/`.
+- If you can’t find a task folder (e.g., it was renamed or removed after completion), list what exists:
+
+  Example (Used in this task):
+
+  ```bash
+  find docs/dev_tasks -maxdepth 2 -type d -print
+  ```
 
 ## Documentation Principles
 
@@ -45,13 +52,13 @@ Documentation for development tasks in DART.
 
 **Before submitting PRs:**
 
-1. Run `pixi run test-all` - comprehensive test suite
+1. Suggested (Unverified): Run `pixi run test-all` - comprehensive test suite
 2. Fix any failures before pushing
 3. **Important**: If GitHub CI fails but `test-all` passed locally, update `test-all` to catch that failure
 
 **Before committing:**
 
-- Run `validate_changes` to check for errors
+- Suggested (Unverified): Run `pixi run lint` to catch common issues early
 - Update task status in tracker
 - No author names or ownership attribution
 
