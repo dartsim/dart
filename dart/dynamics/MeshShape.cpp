@@ -205,9 +205,12 @@ private:
   common::ResourceRetrieverPtr mFallback;
 };
 
-bool collectSubMeshRanges(
+} // namespace
+
+//==============================================================================
+bool MeshShape::collectSubMeshRanges(
     const aiScene* scene,
-    std::vector<MeshShape::SubMeshRange>& ranges,
+    std::vector<SubMeshRange>& ranges,
     std::size_t expectedVertices,
     std::size_t expectedTriangles)
 {
@@ -231,7 +234,7 @@ bool collectSubMeshRanges(
         ++triangleCount;
     }
 
-    MeshShape::SubMeshRange range;
+    SubMeshRange range;
     range.vertexOffset = vertexOffset;
     range.vertexCount = assimpMesh->mNumVertices;
     range.triangleOffset = triangleOffset;
@@ -254,8 +257,6 @@ bool collectSubMeshRanges(
 
   return !ranges.empty();
 }
-
-} // namespace
 
 //==============================================================================
 MeshShape::MeshShape(

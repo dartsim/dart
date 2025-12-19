@@ -329,6 +329,11 @@ protected:
       const aiScene* scene);
   static std::shared_ptr<math::TriMesh<double>> convertAssimpMesh(
       const aiScene* scene, std::vector<SubMeshRange>* subMeshes);
+  static bool collectSubMeshRanges(
+      const aiScene* scene,
+      std::vector<SubMeshRange>& ranges,
+      std::size_t expectedVertices,
+      std::size_t expectedTriangles);
 
   /// Converts TriMesh back to aiScene for backward compatibility.
   /// NOTE: This creates a new aiScene on every call and the caller is
