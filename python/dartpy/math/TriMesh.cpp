@@ -147,6 +147,10 @@ void defTriMesh(nb::module_& m)
           &TriMeshd::hasVertexNormals,
           "Check if the mesh has vertex normals")
       .def(
+          "computeVertexNormals",
+          &TriMeshd::computeVertexNormals,
+          "Compute vertex normals")
+      .def(
           "getNumVertices",
           [](const TriMeshd& self) { return self.getVertices().size(); },
           "Get the number of vertices")

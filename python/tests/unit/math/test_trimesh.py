@@ -36,6 +36,24 @@ def test_trimesh_basic():
     np.testing.assert_array_equal(np.asarray(triangles[0]), np.array([0, 1, 2]))
 
 
+def test_trimesh_compute_vertex_normals():
+    mesh = dart.TriMesh()
+    mesh.add_vertex([0.0, 0.0, 0.0])
+    mesh.add_vertex([1.0, 0.0, 0.0])
+    mesh.add_vertex([0.0, 1.0, 0.0])
+    mesh.add_triangle(0, 1, 2)
+
+    assert not mesh.has_vertex_normals()
+    mesh.compute_vertex_normals()
+    assert mesh.has_vertex_normals()
+
+    normals = mesh.get_vertex_normals()
+    assert len(normals) == 3
+    expected = np.array([0.0, 0.0, 1.0])
+    for normal in normals:
+        np.testing.assert_allclose(np.asarray(normal), expected)
+
+
 def test_trimesh_clear():
     mesh = dart.TriMesh()
     mesh.add_vertex([0.0, 0.0, 0.0])
