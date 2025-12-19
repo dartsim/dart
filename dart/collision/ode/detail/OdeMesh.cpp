@@ -52,6 +52,10 @@ OdeMesh::OdeMesh(
   if (!mOdeTriMeshDataId)
     mOdeTriMeshDataId = dGeomTriMeshDataCreate();
 
+  const double* normalData = nullptr;
+  if (!mNormals.empty() && mNormals.size() == mVertices.size())
+    normalData = mNormals.data();
+
   // Build the ODE triangle mesh
   dGeomTriMeshDataBuildDouble1(
       mOdeTriMeshDataId,
@@ -61,7 +65,7 @@ OdeMesh::OdeMesh(
       mIndices.data(),
       static_cast<int>(mIndices.size()),
       3 * sizeof(int),
-      mNormals.data());
+      normalData);
 
   mGeomId = dCreateTriMesh(0, mOdeTriMeshDataId, nullptr, nullptr, nullptr);
 }
