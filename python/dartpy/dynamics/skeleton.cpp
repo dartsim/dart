@@ -1,5 +1,6 @@
 #include "dynamics/skeleton.hpp"
 
+#include "common/eigen_utils.hpp"
 #include "common/repr.hpp"
 #include "common/type_casters.hpp"
 #include "dart/dynamics/BallJoint.hpp"
@@ -142,8 +143,8 @@ void defSkeleton(nb::module_& m)
       .def("getPositions", [](Skeleton& self) { return self.getPositions(); })
       .def(
           "setPositions",
-          [](Skeleton& self, const Eigen::VectorXd& positions) {
-            self.setPositions(positions);
+          [](Skeleton& self, const nb::handle& positions) {
+            self.setPositions(toVector(positions));
           },
           nb::arg("positions"))
       .def("resetPositions", &Skeleton::resetPositions)
