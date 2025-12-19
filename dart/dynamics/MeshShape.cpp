@@ -55,9 +55,207 @@
 #include <locale>
 #include <sstream>
 #include <string>
+#include <unordered_map>
+#include <utility>
+
+#include <cstring>
 
 namespace dart {
 namespace dynamics {
+
+namespace {
+
+class MemoryResource final : public common::Resource
+{
+public:
+  explicit MemoryResource(std::string data)
+    : mData(std::move(data)), mPosition(0)
+  {
+  }
+
+  std::size_t getSize() override
+  {
+    return mData.size();
+  }
+
+  std::size_t tell() override
+  {
+    return mPosition;
+  }
+
+  bool seek(ptrdiff_t offset, SeekType origin) override
+  {
+    ptrdiff_t base = 0;
+    switch (origin) {
+      case SEEKTYPE_CUR:
+        base = static_cast<ptrdiff_t>(mPosition);
+        break;
+      case SEEKTYPE_END:
+        base = static_cast<ptrdiff_t>(mData.size());
+        break;
+      case SEEKTYPE_SET:
+        base = 0;
+        break;
+      default:
+        return false;
+    }
+
+    const ptrdiff_t next = base + offset;
+    if (next < 0)
+      return false;
+    if (static_cast<std::size_t>(next) > mData.size())
+      return false;
+
+    mPosition = static_cast<std::size_t>(next);
+    return true;
+  }
+
+  std::size_t read(void* buffer, std::size_t size, std::size_t count) override
+  {
+    if (!buffer || size == 0 || count == 0)
+      return 0;
+
+    const std::size_t remaining = mData.size() - mPosition;
+    const std::size_t availableCount = remaining / size;
+    const std::size_t toReadCount = std::min(count, availableCount);
+    const std::size_t toReadBytes = toReadCount * size;
+
+    if (toReadBytes > 0) {
+      std::memcpy(buffer, mData.data() + mPosition, toReadBytes);
+      mPosition += toReadBytes;
+    }
+
+    return toReadCount;
+  }
+
+private:
+  std::string mData;
+  std::size_t mPosition;
+};
+
+class MemoryResourceRetriever final : public common::ResourceRetriever
+{
+public:
+  MemoryResourceRetriever(
+      std::unordered_map<std::string, std::string> data,
+      common::ResourceRetrieverPtr fallback)
+    : mData(std::move(data)), mFallback(std::move(fallback))
+  {
+  }
+
+  bool exists(const common::Uri& uri) override
+  {
+    return findData(uri) != nullptr || (mFallback && mFallback->exists(uri));
+  }
+
+  common::ResourcePtr retrieve(const common::Uri& uri) override
+  {
+    const std::string* data = findData(uri);
+    if (data)
+      return std::make_shared<MemoryResource>(*data);
+
+    if (mFallback)
+      return mFallback->retrieve(uri);
+
+    return nullptr;
+  }
+
+private:
+  const std::string* findData(const common::Uri& uri) const
+  {
+    const auto byFull = mData.find(uri.toString());
+    if (byFull != mData.end())
+      return &byFull->second;
+
+    const auto findByPath = [&](const std::string& path) -> const std::string* {
+      const auto byPath = mData.find(path);
+      if (byPath != mData.end())
+        return &byPath->second;
+
+      if (!path.empty() && path.front() == '/') {
+        const auto byTrim = mData.find(path.substr(1));
+        if (byTrim != mData.end())
+          return &byTrim->second;
+      }
+
+      const auto slash = path.find_last_of("/\\");
+      if (slash != std::string::npos) {
+        const auto byName = mData.find(path.substr(slash + 1));
+        if (byName != mData.end())
+          return &byName->second;
+      }
+
+      return nullptr;
+    };
+
+    if (uri.mPath) {
+      if (const std::string* data = findByPath(uri.mPath.get()))
+        return data;
+    }
+
+    if (uri.mAuthority) {
+      if (const std::string* data = findByPath(uri.mAuthority.get()))
+        return data;
+    }
+
+    return nullptr;
+  }
+
+  std::unordered_map<std::string, std::string> mData;
+  common::ResourceRetrieverPtr mFallback;
+};
+
+bool collectSubMeshRanges(
+    const aiScene* scene,
+    std::vector<MeshShape::SubMeshRange>& ranges,
+    std::size_t expectedVertices,
+    std::size_t expectedTriangles)
+{
+  ranges.clear();
+  if (!scene)
+    return false;
+
+  std::size_t vertexOffset = 0;
+  std::size_t triangleOffset = 0;
+
+  for (std::size_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
+    const aiMesh* assimpMesh = scene->mMeshes[meshIndex];
+    if (!assimpMesh) {
+      continue;
+    }
+
+    std::size_t triangleCount = 0;
+    for (auto i = 0u; i < assimpMesh->mNumFaces; ++i) {
+      const aiFace& face = assimpMesh->mFaces[i];
+      if (face.mNumIndices == 3)
+        ++triangleCount;
+    }
+
+    MeshShape::SubMeshRange range;
+    range.vertexOffset = vertexOffset;
+    range.vertexCount = assimpMesh->mNumVertices;
+    range.triangleOffset = triangleOffset;
+    range.triangleCount = triangleCount;
+    range.materialIndex = assimpMesh->mMaterialIndex;
+    ranges.push_back(range);
+
+    vertexOffset += assimpMesh->mNumVertices;
+    triangleOffset += triangleCount;
+  }
+
+  if (expectedVertices != 0 && vertexOffset != expectedVertices) {
+    ranges.clear();
+    return false;
+  }
+  if (expectedTriangles != 0 && triangleOffset != expectedTriangles) {
+    ranges.clear();
+    return false;
+  }
+
+  return !ranges.empty();
+}
+
+} // namespace
 
 //==============================================================================
 MeshShape::MeshShape(
@@ -146,6 +344,13 @@ MeshShape::MeshShape(
       if (scene) {
         extractMaterialsFromScene(
             scene.get(), mMeshPath.empty() ? uri.getPath() : mMeshPath);
+
+        const auto expectedVertices
+            = mTriMesh ? mTriMesh->getVertices().size() : 0;
+        const auto expectedTriangles
+            = mTriMesh ? mTriMesh->getTriangles().size() : 0;
+        collectSubMeshRanges(
+            scene.get(), mSubMeshRanges, expectedVertices, expectedTriangles);
       }
     }
   }
@@ -317,7 +522,8 @@ std::shared_ptr<math::TriMesh<double>> MeshShape::getTriMesh() const
 
     if (scene) {
       // Const cast is safe here - we're lazily populating internal cache.
-      const_cast<MeshShape*>(this)->mTriMesh = convertAssimpMesh(scene);
+      auto* self = const_cast<MeshShape*>(this);
+      self->mTriMesh = convertAssimpMesh(scene, &self->mSubMeshRanges);
     }
   }
   return mTriMesh;
@@ -372,16 +578,102 @@ const aiScene* MeshShape::convertToAssimpMesh() const
   }
 
   const auto& triangles = mTriMesh->getTriangles();
-  for (const auto& triangle : triangles) {
-    const std::size_t i0 = static_cast<std::size_t>(triangle.x()) + 1;
-    const std::size_t i1 = static_cast<std::size_t>(triangle.y()) + 1;
-    const std::size_t i2 = static_cast<std::size_t>(triangle.z()) + 1;
+  const bool hasSubMeshes = !mSubMeshRanges.empty() && mMaterials.size() > 1;
+  bool useSubMeshes = hasSubMeshes;
+  if (useSubMeshes) {
+    std::size_t totalVertices = 0;
+    std::size_t totalTriangles = 0;
+    for (const auto& range : mSubMeshRanges) {
+      if (range.vertexOffset + range.vertexCount > vertices.size()
+          || range.triangleOffset + range.triangleCount > triangles.size()) {
+        useSubMeshes = false;
+        break;
+      }
+      totalVertices += range.vertexCount;
+      totalTriangles += range.triangleCount;
+    }
+    if (useSubMeshes
+        && (totalVertices != vertices.size()
+            || totalTriangles != triangles.size())) {
+      useSubMeshes = false;
+    }
+  }
 
-    if (hasNormals) {
-      stream << "f " << i0 << "//" << i0 << ' ' << i1 << "//" << i1 << ' ' << i2
-             << "//" << i2 << '\n';
-    } else {
-      stream << "f " << i0 << ' ' << i1 << ' ' << i2 << '\n';
+  std::ostringstream mtlStream;
+  std::string mtlName;
+  if (useSubMeshes) {
+    mtlName = "dart_mesh.mtl";
+    stream << "mtllib " << mtlName << '\n';
+  }
+
+  if (useSubMeshes) {
+    bool warnedIndex = false;
+    for (const auto& range : mSubMeshRanges) {
+      if (range.triangleCount == 0)
+        continue;
+
+      unsigned int materialIndex = range.materialIndex;
+      if (materialIndex >= mMaterials.size()) {
+        if (!warnedIndex) {
+          DART_WARN(
+              "[MeshShape::convertToAssimpMesh] Material index {} is out of "
+              "range (materials: {}). Falling back to material 0.",
+              materialIndex,
+              mMaterials.size());
+          warnedIndex = true;
+        }
+        materialIndex = 0;
+      }
+
+      stream << "usemtl material_" << materialIndex << '\n';
+      for (std::size_t i = 0; i < range.triangleCount; ++i) {
+        const auto& triangle = triangles[range.triangleOffset + i];
+        const std::size_t i0 = static_cast<std::size_t>(triangle.x()) + 1;
+        const std::size_t i1 = static_cast<std::size_t>(triangle.y()) + 1;
+        const std::size_t i2 = static_cast<std::size_t>(triangle.z()) + 1;
+
+        if (hasNormals) {
+          stream << "f " << i0 << "//" << i0 << ' ' << i1 << "//" << i1 << ' '
+                 << i2 << "//" << i2 << '\n';
+        } else {
+          stream << "f " << i0 << ' ' << i1 << ' ' << i2 << '\n';
+        }
+      }
+    }
+
+    mtlStream.imbue(std::locale::classic());
+    mtlStream << std::setprecision(std::numeric_limits<double>::max_digits10);
+    for (std::size_t index = 0; index < mMaterials.size(); ++index) {
+      const auto& mat = mMaterials[index];
+      mtlStream << "newmtl material_" << index << '\n';
+      mtlStream << "Ka " << mat.ambient[0] << ' ' << mat.ambient[1] << ' '
+                << mat.ambient[2] << '\n';
+      mtlStream << "Kd " << mat.diffuse[0] << ' ' << mat.diffuse[1] << ' '
+                << mat.diffuse[2] << '\n';
+      mtlStream << "Ks " << mat.specular[0] << ' ' << mat.specular[1] << ' '
+                << mat.specular[2] << '\n';
+      mtlStream << "Ke " << mat.emissive[0] << ' ' << mat.emissive[1] << ' '
+                << mat.emissive[2] << '\n';
+      mtlStream << "Ns " << mat.shininess << '\n';
+      mtlStream << "d " << mat.diffuse[3] << '\n';
+
+      if (!mat.textureImagePaths.empty() && !mat.textureImagePaths[0].empty()) {
+        mtlStream << "map_Kd " << mat.textureImagePaths[0] << '\n';
+      }
+      mtlStream << '\n';
+    }
+  } else {
+    for (const auto& triangle : triangles) {
+      const std::size_t i0 = static_cast<std::size_t>(triangle.x()) + 1;
+      const std::size_t i1 = static_cast<std::size_t>(triangle.y()) + 1;
+      const std::size_t i2 = static_cast<std::size_t>(triangle.z()) + 1;
+
+      if (hasNormals) {
+        stream << "f " << i0 << "//" << i0 << ' ' << i1 << "//" << i1 << ' '
+               << i2 << "//" << i2 << '\n';
+      } else {
+        stream << "f " << i0 << ' ' << i1 << ' ' << i2 << '\n';
+      }
     }
   }
 
@@ -395,13 +687,47 @@ const aiScene* MeshShape::convertToAssimpMesh() const
                              | aiProcess_SortByPType | aiProcess_OptimizeMeshes
                              | aiProcess_GenNormals;
 
-  const aiScene* scene = aiImportFileFromMemory(
-      obj.data(), static_cast<unsigned int>(obj.size()), flags, "obj");
+  if (!useSubMeshes) {
+    const aiScene* scene = aiImportFileFromMemory(
+        obj.data(), static_cast<unsigned int>(obj.size()), flags, "obj");
+
+    if (!scene) {
+      DART_WARN(
+          "[MeshShape::convertToAssimpMesh] Failed to import TriMesh via "
+          "Assimp: {}",
+          aiGetErrorString());
+      return nullptr;
+    }
+
+    return scene;
+  }
+
+  const std::string objName = "dart_mesh.obj";
+  std::unordered_map<std::string, std::string> data;
+  data.emplace(objName, obj);
+  data.emplace(mtlName, mtlStream.str());
+
+  auto retriever = std::make_shared<MemoryResourceRetriever>(
+      std::move(data), mResourceRetriever);
+
+  aiPropertyStore* propertyStore = aiCreatePropertyStore();
+  aiSetImportPropertyInteger(
+      propertyStore,
+      AI_CONFIG_PP_SBP_REMOVE,
+      aiPrimitiveType_POINT | aiPrimitiveType_LINE);
+
+  AssimpInputResourceRetrieverAdaptor systemIO(retriever);
+  aiFileIO fileIO = createFileIO(&systemIO);
+
+  const aiScene* scene = aiImportFileExWithProperties(
+      objName.c_str(), flags, &fileIO, propertyStore);
+
+  aiReleasePropertyStore(propertyStore);
 
   if (!scene) {
     DART_WARN(
-        "[MeshShape::convertToAssimpMesh] Failed to import TriMesh via Assimp: "
-        "{}",
+        "[MeshShape::convertToAssimpMesh] Failed to import TriMesh with "
+        "materials via Assimp: {}",
         aiGetErrorString());
     return nullptr;
   }
@@ -413,11 +739,21 @@ const aiScene* MeshShape::convertToAssimpMesh() const
 std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
     const aiScene* scene)
 {
+  return convertAssimpMesh(scene, nullptr);
+}
+
+//==============================================================================
+std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
+    const aiScene* scene, std::vector<SubMeshRange>* subMeshes)
+{
   if (!scene) {
     return nullptr;
   }
 
   auto triMesh = std::make_shared<math::TriMesh<double>>();
+  if (subMeshes) {
+    subMeshes->clear();
+  }
 
   // ALWAYS merge all meshes into a single TriMesh
   // This is necessary because:
@@ -450,6 +786,8 @@ std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
 
     // Track the vertex offset for this submesh (for face indices)
     const std::size_t vertexOffset = triMesh->getVertices().size();
+    const std::size_t triangleOffset = triMesh->getTriangles().size();
+    std::size_t triangleCount = 0;
 
     // Parse vertices
     for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
@@ -477,6 +815,7 @@ std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
           face.mIndices[0] + vertexOffset,
           face.mIndices[1] + vertexOffset,
           face.mIndices[2] + vertexOffset);
+      ++triangleCount;
     }
 
     // Parse vertex normals
@@ -488,6 +827,16 @@ std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
             static_cast<double>(normal.y),
             static_cast<double>(normal.z));
       }
+    }
+
+    if (subMeshes) {
+      SubMeshRange range;
+      range.vertexOffset = vertexOffset;
+      range.vertexCount = assimpMesh->mNumVertices;
+      range.triangleOffset = triangleOffset;
+      range.triangleCount = triangleCount;
+      range.materialIndex = assimpMesh->mMaterialIndex;
+      subMeshes->push_back(range);
     }
   }
 
@@ -594,13 +943,14 @@ void MeshShape::setMesh(
 
   mMesh.set(mesh, effectiveOwnership);
 
-  mTriMesh = convertAssimpMesh(mMesh.get());
+  mTriMesh = convertAssimpMesh(mMesh.get(), &mSubMeshRanges);
   mMaterials.clear();
 
   if (!mTriMesh) {
     mMeshUri.clear();
     mMeshPath.clear();
     mResourceRetriever = nullptr;
+    mSubMeshRanges.clear();
     mIsBoundingBoxDirty = true;
     mIsVolumeDirty = true;
     return;
@@ -653,13 +1003,14 @@ void MeshShape::setMesh(
   releaseMesh();
   mMesh.set(std::move(mesh));
 
-  mTriMesh = convertAssimpMesh(mMesh.get());
+  mTriMesh = convertAssimpMesh(mMesh.get(), &mSubMeshRanges);
   mMaterials.clear();
 
   if (!mTriMesh) {
     mMeshUri.clear();
     mMeshPath.clear();
     mResourceRetriever = nullptr;
+    mSubMeshRanges.clear();
     mIsBoundingBoxDirty = true;
     mIsVolumeDirty = true;
     return;
@@ -897,6 +1248,7 @@ ShapePtr MeshShape::clone() const
   new_shape->mAlphaMode = mAlphaMode;
   new_shape->mColorIndex = mColorIndex;
   new_shape->mMaterials = mMaterials;
+  new_shape->mSubMeshRanges = mSubMeshRanges;
 
   return new_shape;
 }

@@ -300,6 +300,15 @@ protected:
     MeshOwnership mMeshOwnership{MeshOwnership::None};
   };
 
+  struct SubMeshRange
+  {
+    std::size_t vertexOffset{0};
+    std::size_t vertexCount{0};
+    std::size_t triangleOffset{0};
+    std::size_t triangleCount{0};
+    unsigned int materialIndex{0};
+  };
+
   static std::shared_ptr<const aiScene> makeMeshHandle(
       const aiScene* mesh, MeshOwnership ownership);
 
@@ -318,6 +327,8 @@ protected:
   /// Converts aiScene to TriMesh for internal use.
   static std::shared_ptr<math::TriMesh<double>> convertAssimpMesh(
       const aiScene* scene);
+  static std::shared_ptr<math::TriMesh<double>> convertAssimpMesh(
+      const aiScene* scene, std::vector<SubMeshRange>* subMeshes);
 
   /// Converts TriMesh back to aiScene for backward compatibility.
   /// NOTE: This creates a new aiScene on every call and the caller is
@@ -330,6 +341,9 @@ protected:
 
   /// TriMesh representation (preferred, ownership shared).
   std::shared_ptr<math::TriMesh<double>> mTriMesh;
+
+  /// Submesh ranges extracted from Assimp (for backward compatibility).
+  std::vector<SubMeshRange> mSubMeshRanges;
 
   /// Cached aiScene for backward compatibility (created on-demand).
   /// Mutable to allow lazy conversion in const getMesh() method.

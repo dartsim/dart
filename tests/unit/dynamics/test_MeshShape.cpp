@@ -1,4 +1,5 @@
 #include "dart/common/Diagnostics.hpp"
+#include "dart/common/Filesystem.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/config.hpp"
@@ -15,6 +16,7 @@
 #include <gtest/gtest.h>
 
 #include <atomic>
+#include <chrono>
 #include <fstream>
 #include <memory>
 #include <string>
@@ -523,6 +525,82 @@ TEST(MeshShapeTest, TriMeshGetMeshCachesImportedScene)
   ASSERT_NE(sceneFirst->mMeshes[0], nullptr);
   EXPECT_EQ(sceneFirst->mMeshes[0]->mNumVertices, 4u);
   EXPECT_EQ(sceneFirst->mMeshes[0]->mNumFaces, 2u);
+}
+
+TEST(MeshShapeTest, TriMeshGetMeshPreservesMaterialIndices)
+{
+  const auto tempDir = common::filesystem::temp_directory_path();
+  const auto timestamp
+      = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+  const auto baseName
+      = std::string("dart_meshshape_materials_") + std::to_string(timestamp);
+  const auto objPath = tempDir / (baseName + ".obj");
+  const auto mtlPath = tempDir / (baseName + ".mtl");
+
+  {
+    std::ofstream mtlFile(mtlPath.string());
+    ASSERT_TRUE(mtlFile);
+    mtlFile << "newmtl material_0\n"
+            << "Ka 0 0 0\n"
+            << "Kd 1 0 0\n"
+            << "Ks 0 0 0\n"
+            << "Ns 0\n"
+            << "newmtl material_1\n"
+            << "Ka 0 0 0\n"
+            << "Kd 0 1 0\n"
+            << "Ks 0 0 0\n"
+            << "Ns 0\n";
+  }
+
+  {
+    std::ofstream objFile(objPath.string());
+    ASSERT_TRUE(objFile);
+    objFile << "mtllib " << mtlPath.filename().string() << "\n"
+            << "v 0 0 0\n"
+            << "v 1 0 0\n"
+            << "v 0 1 0\n"
+            << "v 1 1 0\n"
+            << "usemtl material_0\n"
+            << "f 1 2 3\n"
+            << "usemtl material_1\n"
+            << "f 2 4 3\n";
+  }
+
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  auto loader = std::make_unique<utils::MeshLoaderd>();
+  auto triMesh = loader->load(objPath.string(), retriever);
+  ASSERT_NE(triMesh, nullptr);
+
+  dynamics::MeshShape shape(
+      Eigen::Vector3d::Ones(),
+      std::move(triMesh),
+      common::Uri::createFromPath(objPath.string()),
+      retriever);
+
+  EXPECT_GE(shape.getMaterials().size(), 2u);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = shape.getMesh();
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene, nullptr);
+
+  bool hasMat0 = false;
+  bool hasMat1 = false;
+  for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
+    const aiMesh* mesh = scene->mMeshes[i];
+    ASSERT_NE(mesh, nullptr);
+    if (mesh->mMaterialIndex == 0u)
+      hasMat0 = true;
+    if (mesh->mMaterialIndex == 1u)
+      hasMat1 = true;
+  }
+
+  EXPECT_TRUE(hasMat0);
+  EXPECT_TRUE(hasMat1);
+
+  common::error_code ec;
+  common::filesystem::remove(objPath, ec);
+  common::filesystem::remove(mtlPath, ec);
 }
 
 TEST(MeshShapeTest, SetMeshAdoptsCachedSceneWithoutUseAfterFree)
