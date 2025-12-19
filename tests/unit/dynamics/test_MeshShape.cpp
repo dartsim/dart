@@ -369,7 +369,9 @@ TEST(MeshShapeTest, RespectsCustomMeshDeleter)
           delete const_cast<aiScene*>(mesh);
         });
 
+    DART_SUPPRESS_DEPRECATED_BEGIN
     dynamics::MeshShape shape(Eigen::Vector3d::Ones(), scene);
+    DART_SUPPRESS_DEPRECATED_END
 
     DART_SUPPRESS_DEPRECATED_BEGIN
     EXPECT_EQ(shape.getMesh(), scene.get());
@@ -425,11 +427,13 @@ TEST(MeshShapeTest, TracksOwnershipAndUriMetadata)
 
   const common::Uri retrieverUri("package://example/mesh.dae");
   auto* retrieverScene = new aiScene;
+  DART_SUPPRESS_DEPRECATED_BEGIN
   shape.setMesh(
       retrieverScene,
       dynamics::MeshShape::MeshOwnership::Manual,
       retrieverUri,
       retriever);
+  DART_SUPPRESS_DEPRECATED_END
   EXPECT_EQ(retriever->lastUri, retrieverUri.toString());
   EXPECT_EQ(shape.getMeshPath(), "/virtual/path/from/retriever");
 
@@ -448,11 +452,13 @@ TEST(MeshShapeTest, TracksOwnershipAndUriMetadata)
   DART_SUPPRESS_DEPRECATED_END
 
   // Clearing the mesh resets related metadata.
+  DART_SUPPRESS_DEPRECATED_BEGIN
   shape.setMesh(
       nullptr,
       dynamics::MeshShape::MeshOwnership::Manual,
       common::Uri(),
       nullptr);
+  DART_SUPPRESS_DEPRECATED_END
 
   DART_SUPPRESS_DEPRECATED_BEGIN
   EXPECT_EQ(shape.getMesh(), nullptr);
