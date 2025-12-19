@@ -12,6 +12,7 @@
 #include <Eigen/Core>
 #include <assimp/cimport.h>
 #include <assimp/config.h>
+#include <assimp/material.h>
 #include <assimp/postprocess.h>
 #include <gtest/gtest.h>
 
@@ -19,6 +20,8 @@
 #include <chrono>
 #include <fstream>
 #include <memory>
+#include <set>
+#include <sstream>
 #include <string>
 
 using namespace dart;
@@ -590,19 +593,53 @@ TEST(MeshShapeTest, TriMeshGetMeshPreservesMaterialIndices)
   DART_SUPPRESS_DEPRECATED_END
   ASSERT_NE(scene, nullptr);
 
-  bool hasMat0 = false;
-  bool hasMat1 = false;
+  ASSERT_GE(scene->mNumMaterials, 2u);
+
+  std::set<unsigned int> usedMaterialIndices;
+  std::set<std::string> usedMaterialNames;
   for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
     const aiMesh* mesh = scene->mMeshes[i];
     ASSERT_NE(mesh, nullptr);
-    if (mesh->mMaterialIndex == 0u)
-      hasMat0 = true;
-    if (mesh->mMaterialIndex == 1u)
-      hasMat1 = true;
+    ASSERT_LT(mesh->mMaterialIndex, scene->mNumMaterials);
+    usedMaterialIndices.insert(mesh->mMaterialIndex);
+
+    aiString materialName;
+    if (aiGetMaterialString(
+            scene->mMaterials[mesh->mMaterialIndex],
+            AI_MATKEY_NAME,
+            &materialName)
+        == aiReturn_SUCCESS) {
+      usedMaterialNames.insert(materialName.C_Str());
+    }
   }
 
-  EXPECT_TRUE(hasMat0);
-  EXPECT_TRUE(hasMat1);
+  std::ostringstream materialSummary;
+  materialSummary << "indices=";
+  bool first = true;
+  for (const auto& index : usedMaterialIndices) {
+    if (!first)
+      materialSummary << ",";
+    materialSummary << index;
+    first = false;
+  }
+  materialSummary << " names=";
+  first = true;
+  for (const auto& name : usedMaterialNames) {
+    if (!first)
+      materialSummary << ",";
+    materialSummary << name;
+    first = false;
+  }
+  EXPECT_GE(usedMaterialIndices.size(), 2u) << materialSummary.str();
+  EXPECT_GE(usedMaterialNames.size(), 2u) << materialSummary.str();
+
+  std::set<std::string> expectedMaterialNames;
+  for (std::size_t index = 0; index < shape.getMaterials().size(); ++index) {
+    expectedMaterialNames.insert("material_" + std::to_string(index));
+  }
+  for (const auto& name : usedMaterialNames) {
+    EXPECT_TRUE(expectedMaterialNames.count(name)) << materialSummary.str();
+  }
 
   common::error_code ec;
   common::filesystem::remove(objPath, ec);
