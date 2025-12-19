@@ -75,7 +75,7 @@ bool DantzigBoxedLcpSolver::solve(
     int* findex,
     bool earlyTermination)
 {
-  if (n <= 0 || !A || !x || !b || !lo || !hi || !findex)
+  if (n <= 0 || !A || !x || !b || !lo || !hi)
     return false;
 
   const int nSkip = math::padding(n);
@@ -89,13 +89,14 @@ bool DantzigBoxedLcpSolver::solve(
   Eigen::VectorXd bVec(n);
   Eigen::VectorXd loVec(n);
   Eigen::VectorXd hiVec(n);
-  Eigen::VectorXi findexVec(n);
+  Eigen::VectorXi findexVec = Eigen::VectorXi::Constant(n, -1);
   Eigen::VectorXd xVec(n);
   for (int i = 0; i < n; ++i) {
     bVec[i] = b[i];
     loVec[i] = lo[i];
     hiVec[i] = hi[i];
-    findexVec[i] = findex[i];
+    if (findex)
+      findexVec[i] = findex[i];
     xVec[i] = x[i];
   }
 

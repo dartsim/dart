@@ -163,3 +163,41 @@ TEST(BoxedLcpConstraintSolver, SecondaryCanBeDisabled)
   EXPECT_FALSE(dantzig->getDefaultOptions().earlyTermination);
   EXPECT_EQ(solver.getSecondaryLcpSolver(), nullptr);
 }
+
+//==============================================================================
+TEST(DantzigBoxedLcpSolver, AcceptsNullFindex)
+{
+  constraint::DantzigBoxedLcpSolver solver;
+
+  constexpr int kSize = 1;
+  double A[kSize] = {1.0};
+  double x[kSize] = {0.0};
+  const double target = 0.5;
+  double b[kSize] = {A[0] * target};
+  double lo[kSize] = {0.0};
+  double hi[kSize] = {std::numeric_limits<double>::infinity()};
+
+  const bool success = solver.solve(kSize, A, x, b, 0, lo, hi, nullptr, false);
+
+  EXPECT_TRUE(success);
+  EXPECT_NEAR(x[0], target, 1e-8);
+}
+
+//==============================================================================
+TEST(PgsBoxedLcpSolver, AcceptsNullFindex)
+{
+  constraint::PgsBoxedLcpSolver solver;
+
+  constexpr int kSize = 1;
+  double A[kSize] = {1.0};
+  double x[kSize] = {0.0};
+  const double target = 0.5;
+  double b[kSize] = {A[0] * target};
+  double lo[kSize] = {0.0};
+  double hi[kSize] = {std::numeric_limits<double>::infinity()};
+
+  const bool success = solver.solve(kSize, A, x, b, 0, lo, hi, nullptr, false);
+
+  EXPECT_TRUE(success);
+  EXPECT_NEAR(x[0], target, 1e-6);
+}
