@@ -61,7 +61,6 @@ jobs:
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 1.0
-
       - name: Test gz-physics
         env:
           DART_PARALLEL_JOBS: 8

@@ -1,5 +1,6 @@
 #include "simulation/world.hpp"
 
+#include "common/eigen_utils.hpp"
 #include "common/repr.hpp"
 #include "common/type_casters.hpp"
 #include "dart/collision/CollisionOption.hpp"
@@ -51,8 +52,8 @@ void defWorld(nb::module_& m)
           nb::arg("gravity"))
       .def(
           "setGravity",
-          [](World& self, const std::array<double, 3>& gravity) {
-            self.setGravity(Eigen::Vector3d(gravity.data()));
+          [](World& self, const nb::handle& gravity) {
+            self.setGravity(toVector3(gravity));
           },
           nb::arg("gravity"))
       .def(
@@ -141,13 +142,17 @@ void defWorld(nb::module_& m)
       .def(
           "removeAllSimpleFrames",
           [](World& self) { return self.removeAllSimpleFrames(); })
-      .def("checkCollision", [](World& self) { return self.checkCollision(); })
+      .def(
+          "checkCollision",
+          [](World& self) { return self.checkCollision(); },
+          nb::call_guard<nb::gil_scoped_release>())
       .def(
           "checkCollision",
           [](World& self, const dart::collision::CollisionOption& option) {
             return self.checkCollision(option);
           },
-          nb::arg("option"))
+          nb::arg("option"),
+          nb::call_guard<nb::gil_scoped_release>())
       .def(
           "checkCollision",
           [](World& self,
@@ -156,7 +161,8 @@ void defWorld(nb::module_& m)
             return self.checkCollision(option, result);
           },
           nb::arg("option"),
-          nb::arg("result"))
+          nb::arg("result"),
+          nb::call_guard<nb::gil_scoped_release>())
       .def(
           "checkCollisionResult",
           [](World& self, const dart::collision::CollisionOption& option)
@@ -165,7 +171,8 @@ void defWorld(nb::module_& m)
             self.checkCollision(option, &result);
             return result;
           },
-          nb::arg("option") = dart::collision::CollisionOption())
+          nb::arg("option") = dart::collision::CollisionOption(),
+          nb::call_guard<nb::gil_scoped_release>())
       .def(
           "getLastCollisionResult",
           [](World& self) -> const dart::collision::CollisionResult& {
@@ -173,11 +180,15 @@ void defWorld(nb::module_& m)
           },
           nb::rv_policy::reference_internal)
       .def("reset", &World::reset)
-      .def("step", [](World& self) { self.step(); })
+      .def(
+          "step",
+          [](World& self) { self.step(); },
+          nb::call_guard<nb::gil_scoped_release>())
       .def(
           "step",
           [](World& self, bool resetCommand) { self.step(resetCommand); },
-          nb::arg("reset_command"))
+          nb::arg("reset_command"),
+          nb::call_guard<nb::gil_scoped_release>())
       .def("setTime", &World::setTime, nb::arg("time"))
       .def("getTime", &World::getTime)
       .def("getSimFrames", &World::getSimFrames)
