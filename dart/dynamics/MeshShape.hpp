@@ -109,7 +109,7 @@ public:
       common::ResourceRetrieverPtr resourceRetriever);
 
   /// Constructor using aiScene (deprecated, for backward compatibility).
-  [[deprecated("Use TriMesh-based constructor instead")]] MeshShape(
+  [[deprecated("Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] MeshShape(
       const Eigen::Vector3d& scale,
       const aiScene* mesh,
       const common::Uri& uri = "",
@@ -118,7 +118,7 @@ public:
 
   /// Constructor that accepts a shared_ptr so callers can supply a custom
   /// deleter for aiScene.
-  MeshShape(
+  [[deprecated("Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] MeshShape(
       const Eigen::Vector3d& scale,
       std::shared_ptr<const aiScene> mesh,
       const common::Uri& uri = "",
@@ -141,7 +141,10 @@ public:
   /// WARNING: This method performs an expensive conversion from TriMesh to
   /// aiScene on every call. It is provided only for backward compatibility.
   /// Please migrate to getTriMesh() for better performance.
-  [[deprecated("Use getTriMesh() instead")]] const aiScene* getMesh() const;
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART "
+      "8.")]] const aiScene*
+  getMesh() const;
 
   /// Updates positions of the vertices or the elements. By default, this does
   /// nothing; you must extend the MeshShape class and implement your own
@@ -149,25 +152,33 @@ public:
   /// rendering
   virtual void update();
 
-  void setMesh(
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] void
+  setMesh(
       const aiScene* mesh,
       const std::string& path = "",
       common::ResourceRetrieverPtr resourceRetriever = nullptr);
 
   /// Sets the mesh pointer with explicit ownership semantics.
-  void setMesh(
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] void
+  setMesh(
       const aiScene* mesh,
       MeshOwnership ownership,
       const common::Uri& path,
       common::ResourceRetrieverPtr resourceRetriever = nullptr);
 
-  void setMesh(
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] void
+  setMesh(
       const aiScene* mesh,
       const common::Uri& path,
       common::ResourceRetrieverPtr resourceRetriever = nullptr);
 
   /// Sets the mesh using a shared_ptr so callers can provide a custom deleter.
-  void setMesh(
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] void
+  setMesh(
       std::shared_ptr<const aiScene> mesh,
       const common::Uri& path = "",
       common::ResourceRetrieverPtr resourceRetriever = nullptr);
@@ -241,12 +252,21 @@ public:
   /// Returns nullptr if index is out of bounds.
   const MeshMaterial* getMaterial(std::size_t index) const;
 
-  static const aiScene* loadMesh(const std::string& filePath);
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART "
+      "8.")]] static const aiScene*
+  loadMesh(const std::string& filePath);
 
-  static const aiScene* loadMesh(
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART "
+      "8.")]] static const aiScene*
+  loadMesh(
       const std::string& _uri, const common::ResourceRetrieverPtr& retriever);
 
-  static const aiScene* loadMesh(
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART "
+      "8.")]] static const aiScene*
+  loadMesh(
       const common::Uri& uri, const common::ResourceRetrieverPtr& retriever);
 
   // Documentation inherited.

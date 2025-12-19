@@ -75,7 +75,9 @@ MeshShape::MeshShape(
     mAlphaMode(BLEND),
     mColorIndex(0)
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
   setMesh(mesh, ownership, uri, std::move(resourceRetriever));
+  DART_SUPPRESS_DEPRECATED_END
   setScale(scale);
 }
 
@@ -136,8 +138,10 @@ MeshShape::MeshShape(
         }
       };
 
+      DART_SUPPRESS_DEPRECATED_BEGIN
       const std::unique_ptr<const aiScene, AiSceneReleaser> scene(
           loadMesh(uri, materialRetriever));
+      DART_SUPPRESS_DEPRECATED_END
 
       if (scene) {
         extractMaterialsFromScene(
@@ -164,7 +168,9 @@ MeshShape::MeshShape(
     mAlphaMode(BLEND),
     mColorIndex(0)
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
   setMesh(std::move(mesh), uri, std::move(resourceRetriever));
+  DART_SUPPRESS_DEPRECATED_END
   setScale(scale);
 }
 
@@ -530,11 +536,13 @@ void MeshShape::setMesh(
     const std::string& path,
     common::ResourceRetrieverPtr resourceRetriever)
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
   setMesh(
       mesh,
       MeshOwnership::Imported,
       common::Uri(path),
       std::move(resourceRetriever));
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
@@ -543,7 +551,9 @@ void MeshShape::setMesh(
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
   setMesh(mesh, MeshOwnership::Imported, uri, std::move(resourceRetriever));
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
@@ -1061,14 +1071,20 @@ const aiScene* MeshShape::loadMesh(
 const aiScene* MeshShape::loadMesh(
     const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
 {
-  return loadMesh(uri.toString(), retriever);
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = loadMesh(uri.toString(), retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  return scene;
 }
 
 //==============================================================================
 const aiScene* MeshShape::loadMesh(const std::string& filePath)
 {
   const auto retriever = std::make_shared<common::LocalResourceRetriever>();
-  return loadMesh("file://" + filePath, retriever);
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = loadMesh("file://" + filePath, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  return scene;
 }
 
 } // namespace dynamics

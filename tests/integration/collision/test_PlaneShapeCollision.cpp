@@ -48,6 +48,8 @@
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
 
+#include <dart/common/Diagnostics.hpp>
+
 #include <gtest/gtest.h>
 #include <helpers/GTestUtils.hpp>
 
@@ -102,12 +104,16 @@ void runIssue1234Test(
 
   // Load mesh using MeshShape::loadMesh
   const auto retriever = dart::utils::DartResourceRetriever::create();
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* aiMesh
       = dart::dynamics::MeshShape::loadMesh(meshUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
 
   ASSERT_TRUE(aiMesh);
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const auto mesh = std::make_shared<dart::dynamics::MeshShape>(
       100.0 * Eigen::Vector3d::Ones(), aiMesh, dart::common::Uri(meshUri));
+  DART_SUPPRESS_DEPRECATED_END
 
   const auto bb = mesh->getBoundingBox();
   for (int i = 0; i < 3; ++i) {

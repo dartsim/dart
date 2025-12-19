@@ -70,8 +70,10 @@ public:
 
   /// Returns the aiMesh representation (deprecated, for backward
   /// compatibility).
-  [[deprecated("Use getTriMesh() instead")]] const aiMesh* getAssimpMesh()
-      const;
+  [[deprecated(
+      "Use getTriMesh() instead; Assimp APIs will be removed in DART "
+      "8.")]] const aiMesh*
+  getAssimpMesh() const;
 
   /// Get the SoftBodyNode that is associated with this SoftMeshShape
   const SoftBodyNode* getSoftBodyNode() const;

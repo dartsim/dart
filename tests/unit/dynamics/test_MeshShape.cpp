@@ -243,7 +243,9 @@ TEST(MeshShapeTest, CloneCreatesIndependentScene)
   ASSERT_FALSE(fileUri.empty());
 
   auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* scene = dynamics::MeshShape::loadMesh(fileUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
   ASSERT_NE(scene, nullptr);
 
   DART_SUPPRESS_DEPRECATED_BEGIN
@@ -286,8 +288,10 @@ TEST(MeshShapeTest, ColladaUnitMetadataApplied)
 
   auto retriever = std::make_shared<common::LocalResourceRetriever>();
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* sceneWithUnits
       = dynamics::MeshShape::loadMesh(fileUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
   ASSERT_NE(sceneWithUnits, nullptr);
   DART_SUPPRESS_DEPRECATED_BEGIN
   const auto shapeWithUnits = std::make_shared<dynamics::MeshShape>(
@@ -322,8 +326,10 @@ TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
 
   auto aliasRetriever
       = std::make_shared<AliasUriResourceRetriever>(aliasUri, filePath);
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* aliasScene
       = dynamics::MeshShape::loadMesh(aliasUri, aliasRetriever);
+  DART_SUPPRESS_DEPRECATED_END
   ASSERT_NE(aliasScene, nullptr);
   DART_SUPPRESS_DEPRECATED_BEGIN
   const auto aliasShape = std::make_shared<dynamics::MeshShape>(
@@ -333,8 +339,10 @@ TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
       = aliasShape->getBoundingBox().computeFullExtents();
 
   auto canonicalRetriever = std::make_shared<common::LocalResourceRetriever>();
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* canonicalScene = dynamics::MeshShape::loadMesh(
       common::Uri::createFromPath(filePath).toString(), canonicalRetriever);
+  DART_SUPPRESS_DEPRECATED_END
   ASSERT_NE(canonicalScene, nullptr);
   DART_SUPPRESS_DEPRECATED_BEGIN
   const auto canonicalShape = std::make_shared<dynamics::MeshShape>(
