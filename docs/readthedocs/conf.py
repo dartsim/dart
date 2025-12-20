@@ -3,14 +3,15 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-from pathlib import Path
-from datetime import datetime
 import importlib
 import keyword
+import os
 import re
 import shutil
 import subprocess
 import sys
+from datetime import datetime
+from pathlib import Path
 
 from sphinx.util import logging
 
@@ -18,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 # Paths used during the documentation build
 DOCS_ROOT = Path(__file__).resolve().parent
+EXTENSIONS_DIR = DOCS_ROOT / "_ext"
+if str(EXTENSIONS_DIR) not in sys.path:
+    sys.path.insert(0, str(EXTENSIONS_DIR))
 
 
 def _find_repo_root(docs_root: Path) -> Path:
@@ -69,6 +73,12 @@ def _rename_placeholder(text: str, name: str) -> str:
 def _sanitize_stub_source(text: str) -> str:
     """Rename invalid identifiers originating from the stub generator."""
 
+    def _strip_class_bases(src: str) -> str:
+        """Drop class inheritance to avoid NameError on forward references."""
+
+        pattern = re.compile(r"(?m)^(?P<indent>\s*)class\s+(?P<name>\w+)\([^:\n]*\):")
+        return pattern.sub(r"\g<indent>class \g<name>:", src)
+
     def _replace_keyword(match: re.Match[str]) -> str:
         return f"{match.group('prefix')}{match.group('name')}_"
 
@@ -83,7 +93,7 @@ def _sanitize_stub_source(text: str) -> str:
     for placeholder in ("std", "dart"):
         text = _rename_placeholder(text, placeholder)
 
-    return text
+    return _strip_class_bases(text)
 
 
 def _prepare_stub_modules(package: str) -> bool:
@@ -112,14 +122,74 @@ def _prepare_stub_modules(package: str) -> bool:
     return True
 
 
+def _purge_imported_package(package: str) -> None:
+    """Remove an imported package from sys.modules so stubs can take precedence."""
+
+    prefix = f"{package}."
+    for name in list(sys.modules):
+        if name == package or name.startswith(prefix):
+            sys.modules.pop(name, None)
+
+
+def _flatten_stub_dartpy() -> None:
+    """Promote stub submodule symbols to the top-level dartpy namespace."""
+
+    try:
+        dartpy_module = importlib.import_module("dartpy")
+    except Exception:
+        return
+
+    promote_modules = (
+        "common",
+        "math",
+        "dynamics",
+        "collision",
+        "simulation",
+        "constraint",
+        "optimizer",
+    )
+
+    for module in promote_modules:
+        try:
+            mod = importlib.import_module(f"dartpy.{module}")
+        except Exception:
+            continue
+        for attr in dir(mod):
+            if attr.startswith("_"):
+                continue
+            if not attr[0].isupper() and any(ch.isupper() for ch in attr):
+                continue
+            if hasattr(dartpy_module, attr):
+                continue
+            try:
+                setattr(dartpy_module, attr, getattr(mod, attr))
+            except Exception:
+                continue
+
+
 def _ensure_dartpy_available() -> None:
     """Make sure `import dartpy` succeeds for autodoc, falling back to stubs."""
 
     try:
         importlib.import_module("dartpy")
+        # The docs reference ``dartpy.io``; treat older wheels that do not ship
+        # this alias as incompatible and fall back to stubs.
+        importlib.import_module("dartpy.io")
+        return
     except (ModuleNotFoundError, ImportError) as exc:
+        reason = None
+        if isinstance(exc, ModuleNotFoundError) and exc.name == "dartpy.io":
+            reason = "installed dartpy missing dartpy.io"
+
         if _prepare_stub_modules("dartpy"):
-            sys.stderr.write("Using generated dartpy stubs for autodoc.\n")
+            _purge_imported_package("dartpy")
+            _flatten_stub_dartpy()
+            if reason:
+                sys.stderr.write(
+                    f"Using generated dartpy stubs for autodoc ({reason}).\n"
+                )
+            else:
+                sys.stderr.write("Using generated dartpy stubs for autodoc.\n")
         else:
             sys.stderr.write(
                 "WARNING: dartpy module and stubs are unavailable; "
@@ -131,7 +201,8 @@ def _ensure_dartpy_available() -> None:
             )
 
 
-_ensure_dartpy_available()
+if os.environ.get("DART_DOCS_SKIP_DARTPY_AUTODOC") not in {"1", "true", "True"}:
+    _ensure_dartpy_available()
 
 
 def _ensure_cpp_api_extra_path(_app, _config):
@@ -161,6 +232,7 @@ def _render_doxyfile(output_path: Path):
         "DOXYGEN_INPUT_ROOT": _posix_path(REPO_ROOT / "dart"),
         "DOXYGEN_OUTPUT_ROOT": _posix_path(CPP_API_OUTPUT_DIR),
         "DOXYGEN_STRIP_FROM_PATH": _posix_path(REPO_ROOT),
+        "DOXYGEN_WARN_LOGFILE": _posix_path(CPP_API_OUTPUT_DIR / "doxygen_warnings.log"),
     }
 
     doxyfile_contents = DOXYFILE_TEMPLATE.read_text()
@@ -288,7 +360,6 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     "README.md",
-    "dartpy/api/*",
 ]
 
 

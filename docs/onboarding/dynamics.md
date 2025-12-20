@@ -224,6 +224,9 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
   motor for a bilateral `CouplerConstraint`, so both the reference and
   dependent joints feel equal-and-opposite impulses. Leave it disabled to keep
   the original MimicMotorConstraint behavior.
+- URDF `<transmission>` blocks of type `SimpleTransmission` are parsed into
+  coupled mimic joints when multiple joints share the same actuator; the gear
+  ratio is derived from each joint's `mechanicalReduction`.
 
 **Internal Update Methods:**
 
@@ -516,6 +519,10 @@ const Eigen::MatrixXd& M = skeleton->getMassMatrix();
 const Eigen::VectorXd& C = skeleton->getCoriolisForces();
 const Eigen::VectorXd& g = skeleton->getGravityForces();
 ```
+
+## MeshShape and TriMesh
+
+**Design Decision:** MeshShape internally uses `dart::math::TriMesh<double>` for mesh representation instead of Assimp's `aiScene*`. This decouples mesh data from the loading library (Assimp), enabling format-agnostic mesh handling. The deprecated `aiScene*` API is maintained for backward compatibility via lazy on-demand conversion and is scheduled for removal in DART 8.0. For OSG rendering, materials/textures are accessed through `getMaterials()` (Assimp-free), while scene graph hierarchy uses the deprecated `getMesh()` (acceptable since TriMesh doesn't include scene graph structure). See `dart/dynamics/MeshShape.hpp` and `dart/utils/MeshLoader.hpp` for implementation.
 
 ## Summary
 

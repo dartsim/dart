@@ -37,9 +37,8 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include "dart/utils/sdf/All.hpp"
-
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <gtest/gtest.h>
 
@@ -47,15 +46,15 @@ using namespace dart;
 using namespace dart::math;
 using namespace dart::dynamics;
 using namespace dart::simulation;
-using namespace dart::utils;
 using namespace dart::test;
 
 //==============================================================================
 WorldPtr readWorld(const common::Uri& uri)
 {
-  SdfParser::Options options;
-  options.mDefaultRootJointType = SdfParser::RootJointType::Fixed;
-  WorldPtr world = SdfParser::readWorld(uri, options);
+  io::ReadOptions options;
+  options.format = io::ModelFormat::Sdf;
+  options.sdfDefaultRootJointType = io::RootJointType::Fixed;
+  WorldPtr world = io::readWorld(uri, options);
   world->eachSkeleton([](Skeleton* skel) {
     skel->eachJoint([](Joint* joint) { joint->setLimitEnforcement(true); });
   });

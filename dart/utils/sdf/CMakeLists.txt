@@ -5,7 +5,7 @@ file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 
 dart_add_utils_headers(${hdrs})
-dart_add_utils_headers(${srcs})
+dart_add_utils_sources(${srcs})
 dart_add_utils_headers(${detail_hdrs})
 dart_add_utils_sources(${detail_srcs})
 

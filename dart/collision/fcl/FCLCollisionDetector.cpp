@@ -51,20 +51,31 @@
 #include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/VoxelGridShape.hpp"
 
 #include <fcl/geometry/shape/convex.h>
 
-#include <assimp/scene.h>
-
+#include <algorithm>
 #include <limits>
+#include <string>
+
+#include <cstdint>
 
 namespace dart {
 namespace collision {
 
 namespace {
+
+std::string collisionObjectKey(const FCLCollisionObject* object)
+{
+  if (!object)
+    return "";
+
+  return object->getKey();
+}
 
 bool collisionCallback(
     fcl::CollisionObject* o1, fcl::CollisionObject* o2, void* cdata);
@@ -148,6 +159,11 @@ Contact convertContact(
     fcl::CollisionObject* o1,
     fcl::CollisionObject* o2,
     const CollisionOption& option);
+
+bool shouldSwapDeterministically(
+    const FCLCollisionObject* fclObj1, const FCLCollisionObject* fclObj2);
+
+void applyDeterministicSwap(Contact& contact);
 
 /// Collision data stores the collision request and the result given by
 /// collision algorithm.
@@ -547,48 +563,56 @@ template <typename BV>
 
 //==============================================================================
 template <class BV>
-::fcl::BVHModel<BV>* createMesh(
-    double _scaleX, double _scaleY, double _scaleZ, const aiScene* _mesh)
+::fcl::BVHModel<BV>* createMeshFromTriMesh(
+    double _scaleX,
+    double _scaleY,
+    double _scaleZ,
+    const std::shared_ptr<math::TriMesh<double>>& _triMesh)
 {
-  // Create FCL mesh from Assimp mesh
+  // Create FCL mesh from TriMesh
 
-  DART_ASSERT(_mesh);
+  DART_ASSERT(_triMesh);
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
   model->beginModel();
-  for (std::size_t i = 0; i < _mesh->mNumMeshes; i++) {
-    for (std::size_t j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++) {
-      fcl::Vector3 vertices[3];
-      for (std::size_t k = 0; k < 3; k++) {
-        const aiVector3D& vertex
-            = _mesh->mMeshes[i]
-                  ->mVertices[_mesh->mMeshes[i]->mFaces[j].mIndices[k]];
-        vertices[k] = fcl::Vector3(
-            vertex.x * _scaleX, vertex.y * _scaleY, vertex.z * _scaleZ);
-      }
-      model->addTriangle(vertices[0], vertices[1], vertices[2]);
+
+  const auto& vertices = _triMesh->getVertices();
+  const auto& triangles = _triMesh->getTriangles();
+
+  for (const auto& triangle : triangles) {
+    fcl::Vector3 fclVertices[3];
+    for (std::size_t i = 0; i < 3; i++) {
+      const auto& vertex = vertices[triangle[i]];
+      fclVertices[i] = fcl::Vector3(
+          vertex.x() * _scaleX, vertex.y() * _scaleY, vertex.z() * _scaleZ);
     }
+    model->addTriangle(fclVertices[0], fclVertices[1], fclVertices[2]);
   }
+
   model->endModel();
   return model;
 }
 
 //==============================================================================
 template <class BV>
-::fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
+::fcl::BVHModel<BV>* createSoftMesh(
+    const std::shared_ptr<math::TriMesh<double>>& triMesh)
 {
-  // Create FCL mesh from Assimp mesh
+  // Create FCL mesh from TriMesh
 
-  DART_ASSERT(_mesh);
+  DART_ASSERT(triMesh);
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
   model->beginModel();
 
-  for (std::size_t i = 0; i < _mesh->mNumFaces; i++) {
-    fcl::Vector3 vertices[3];
+  const auto& vertices = triMesh->getVertices();
+  const auto& triangles = triMesh->getTriangles();
+
+  for (const auto& triangle : triangles) {
+    fcl::Vector3 fclVertices[3];
     for (std::size_t j = 0; j < 3; j++) {
-      const aiVector3D& vertex = _mesh->mVertices[_mesh->mFaces[i].mIndices[j]];
-      vertices[j] = fcl::Vector3(vertex.x, vertex.y, vertex.z);
+      const auto& vertex = vertices[triangle[j]];
+      fclVertices[j] = fcl::Vector3(vertex.x(), vertex.y(), vertex.z());
     }
-    model->addTriangle(vertices[0], vertices[1], vertices[2]);
+    model->addTriangle(fclVertices[0], fclVertices[1], fclVertices[2]);
   }
 
   model->endModel();
@@ -855,6 +879,7 @@ void FCLCollisionDetector::refreshCollisionObject(CollisionObject* const object)
 
   fcl->mFCLCollisionObject = std::unique_ptr<fcl::CollisionObject>(
       new fcl::CollisionObject(claimFCLCollisionGeometry(object->getShape())));
+  fcl->mFCLCollisionObject->setUserData(fcl);
 }
 
 //==============================================================================
@@ -901,9 +926,9 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   using dynamics::Shape;
   using dynamics::SoftMeshShape;
   using dynamics::SphereShape;
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   using dynamics::VoxelGridShape;
-#endif // HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP
 
   fcl::CollisionGeometry* geom = nullptr;
   const auto& shapeType = shape->getType();
@@ -988,21 +1013,18 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     // Use mesh since FCL doesn't support pyramid shape.
     geom = createPyramid<fcl::OBBRSS>(*pyramid, fcl::getTransform3Identity());
   } else if (PlaneShape::getStaticType() == shapeType) {
-    if (FCLCollisionDetector::PRIMITIVE == type) {
-      DART_ASSERT(dynamic_cast<const PlaneShape*>(shape.get()));
-      auto plane = static_cast<const PlaneShape*>(shape.get());
-      const Eigen::Vector3d normal = plane->getNormal();
-      const double offset = plane->getOffset();
+    DART_ASSERT(dynamic_cast<const PlaneShape*>(shape.get()));
+    const auto plane = static_cast<const PlaneShape*>(shape.get());
+    const Eigen::Vector3d normal = plane->getNormal();
+    const double offset = plane->getOffset();
 
-      geom = new fcl::Halfspace(FCLTypes::convertVector3(normal), offset);
-    } else {
-      geom = createCube<fcl::OBBRSS>(1000.0, 0.0, 1000.0);
+    geom = new fcl::Halfspace(FCLTypes::convertVector3(normal), offset);
 
-      DART_WARN(
-          "[FCLCollisionDetector] PlaneShape is not supported by "
-          "FCLCollisionDetector. We create a thin box mesh instead, where the "
-          "size is [1000 0 1000].");
-    }
+    DART_WARN_ONCE_IF(
+        FCLCollisionDetector::MESH == type,
+        "[FCLCollisionDetector] PlaneShape requested with primitive shape type "
+        "MESH. Using analytic halfspace instead of the previous thin-box "
+        "fallback to keep plane collisions reliable.");
   } else if (dynamics::ConvexMeshShape::getStaticType() == shapeType) {
     DART_ASSERT(dynamic_cast<const dynamics::ConvexMeshShape*>(shape.get()));
 
@@ -1011,7 +1033,8 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     const auto mesh = convexMesh->getMesh();
 
     if (mesh && mesh->hasVertices() && !mesh->getTriangles().empty()) {
-      auto hullVertices = std::make_shared<std::vector<::fcl::Vector3<double>>>();
+      auto hullVertices
+          = std::make_shared<std::vector<::fcl::Vector3<double>>>();
       hullVertices->reserve(mesh->getVertices().size());
       for (const auto& vertex : mesh->getVertices()) {
         hullVertices->emplace_back(vertex.x(), vertex.y(), vertex.z());
@@ -1041,18 +1064,20 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     auto shapeMesh = static_cast<const MeshShape*>(shape.get());
     const Eigen::Vector3d& scale = shapeMesh->getScale();
-    auto aiScene = shapeMesh->getMesh();
 
-    geom = createMesh<fcl::OBBRSS>(scale[0], scale[1], scale[2], aiScene);
+    auto triMesh = shapeMesh->getTriMesh();
+
+    geom = createMeshFromTriMesh<fcl::OBBRSS>(
+        scale[0], scale[1], scale[2], triMesh);
   } else if (SoftMeshShape::getStaticType() == shapeType) {
     DART_ASSERT(dynamic_cast<const SoftMeshShape*>(shape.get()));
 
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
-    auto aiMesh = softMeshShape->getAssimpMesh();
+    auto triMesh = softMeshShape->getTriMesh();
 
-    geom = createSoftMesh<fcl::OBBRSS>(aiMesh);
+    geom = createSoftMesh<fcl::OBBRSS>(triMesh);
   }
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType) {
   #if FCL_HAVE_OCTOMAP
     DART_ASSERT(dynamic_cast<const VoxelGridShape*>(shape.get()));
@@ -1070,7 +1095,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
   #endif // FCL_HAVE_OCTOMAP
   }
-#endif // HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP
   else {
     DART_ERROR(
         "Attempting to create an unsupported shape type [{}]. Creating a "
@@ -1121,16 +1146,16 @@ bool collisionCallback(
   const auto& option = collData->option;
   const auto& filter = option.collisionFilter;
 
-  // Filtering
-  if (filter) {
-    auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
-    auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
-    DART_ASSERT(collisionObject1);
-    DART_ASSERT(collisionObject2);
+  auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+  auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
+  DART_ASSERT(collisionObject1);
+  DART_ASSERT(collisionObject2);
+  if (!collisionObject1 || !collisionObject2)
+    return collData->done;
 
-    if (filter->ignoresCollision(collisionObject2, collisionObject1))
-      return collData->done;
-  }
+  // Filtering
+  if (filter && filter->ignoresCollision(collisionObject2, collisionObject1))
+    return collData->done;
 
   // Clear previous results
   fclResult.clear();
@@ -1139,9 +1164,21 @@ bool collisionCallback(
   ::fcl::collide(o1, o2, fclRequest, fclResult);
 
   if (result) {
+    const bool usingMeshContacts
+        = (collData->primitiveShapeType == FCLCollisionDetector::MESH);
+    const bool forcingMeshFallback = usingMeshContacts
+                                     && collData->contactPointComputationMethod
+                                            == FCLCollisionDetector::FCL;
+
     // Post processing -- converting fcl contact information to ours if needed
-    if (FCLCollisionDetector::DART == collData->contactPointComputationMethod
-        && FCLCollisionDetector::MESH == collData->primitiveShapeType) {
+    if (usingMeshContacts) {
+      if (forcingMeshFallback) {
+        DART_WARN_ONCE(
+            "FCL mesh contact-point computation is known to be inaccurate "
+            "(see flexible-collision-library/fcl#106); falling back to DART's "
+            "mesh contact handler.");
+      }
+
       postProcessDART(fclResult, o1, o2, option, *result);
     } else {
       postProcessFCL(fclResult, o1, o2, option, *result);
@@ -1439,6 +1476,15 @@ void postProcessDART(
       } else {
         numContacts++;
       }
+
+      const auto* fclObj1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+      const auto* fclObj2 = static_cast<FCLCollisionObject*>(o2->getUserData());
+      if (shouldSwapDeterministically(fclObj1, fclObj2)) {
+        if (option.enableContact)
+          std::swap(pair1.point, pair2.point);
+        applyDeterministicSwap(pair1);
+        applyDeterministicSwap(pair2);
+      }
     }
 
     // For binary check, return after adding the first contact point to the
@@ -1651,10 +1697,8 @@ Contact convertContact(
 {
   Contact contact;
 
-  contact.collisionObject1
-      = static_cast<FCLCollisionObject*>(o1->getUserData());
-  contact.collisionObject2
-      = static_cast<FCLCollisionObject*>(o2->getUserData());
+  contact.collisionObject1 = static_cast<CollisionObject*>(o1->getUserData());
+  contact.collisionObject2 = static_cast<CollisionObject*>(o2->getUserData());
 
   if (option.enableContact) {
     contact.point = FCLTypes::convertVector3(fclContact.pos);
@@ -1664,7 +1708,38 @@ Contact convertContact(
     contact.triID2 = fclContact.b2;
   }
 
+  // Enforce deterministic ordering across runs and clones. Tie-break on the
+  // underlying FCL object address if keys are identical.
+  const auto fclObj1
+      = static_cast<FCLCollisionObject*>(contact.collisionObject1);
+  const auto fclObj2
+      = static_cast<FCLCollisionObject*>(contact.collisionObject2);
+  if (shouldSwapDeterministically(fclObj1, fclObj2))
+    applyDeterministicSwap(contact);
+
   return contact;
+}
+
+//==============================================================================
+bool shouldSwapDeterministically(
+    const FCLCollisionObject* fclObj1, const FCLCollisionObject* fclObj2)
+{
+  const auto key1 = collisionObjectKey(fclObj1);
+  const auto key2 = collisionObjectKey(fclObj2);
+
+  const auto addr1 = reinterpret_cast<std::uintptr_t>(fclObj1);
+  const auto addr2 = reinterpret_cast<std::uintptr_t>(fclObj2);
+
+  return (key2 < key1) || (key1 == key2 && addr2 < addr1 && addr2 != 0u);
+}
+
+//==============================================================================
+void applyDeterministicSwap(Contact& contact)
+{
+  std::swap(contact.collisionObject1, contact.collisionObject2);
+  std::swap(contact.triID1, contact.triID2);
+
+  contact.normal = -contact.normal;
 }
 
 } // anonymous namespace

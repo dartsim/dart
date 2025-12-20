@@ -1338,7 +1338,7 @@ typename Derived::PlainObject AdTJac3(
 //==============================================================================
 TEST(Math, PerformanceComparisonOfAdTJac)
 {
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   int testCount = 1e+2;
 #else
   int testCount = 1e+6;

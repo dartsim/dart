@@ -46,9 +46,19 @@ set(TINYXML2_VERSION ${PC_TINYXML2_VERSION})
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
+set(_tinyxml2_package "${CMAKE_FIND_PACKAGE_NAME}")
 find_package_handle_standard_args(
-  tinyxml2
+  "${_tinyxml2_package}"
   FAIL_MESSAGE DEFAULT_MSG
   REQUIRED_VARS TINYXML2_INCLUDE_DIRS TINYXML2_LIBRARIES
   VERSION_VAR TINYXML2_VERSION
 )
+
+# Mirror the FOUND result for both lower- and upper-case package names so callers
+# using either `tinyxml2` or `TINYXML2` see a consistent flag.
+if(NOT DEFINED tinyxml2_FOUND)
+  set(tinyxml2_FOUND ${${_tinyxml2_package}_FOUND})
+endif()
+if(NOT DEFINED TINYXML2_FOUND)
+  set(TINYXML2_FOUND ${${_tinyxml2_package}_FOUND})
+endif()

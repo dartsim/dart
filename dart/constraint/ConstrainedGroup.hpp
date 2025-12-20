@@ -37,6 +37,8 @@
 
 #include <dart/constraint/Fwd.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <memory>
@@ -57,7 +59,7 @@ class ConstraintSolver;
 /// ConstrainedGroup is a group of skeletons that interact each other with
 /// constraints
 /// @sa class ConstraintSolver
-class ConstrainedGroup
+class DART_API ConstrainedGroup
 {
 public:
   //----------------------------------------------------------------------------
@@ -102,10 +104,8 @@ public:
   friend class ConstraintSolver;
 
 private:
-#if DART_BUILD_MODE_DEBUG
   /// Return true if _constraint is contained
   bool containConstraint(const ConstConstraintBasePtr& _constraint) const;
-#endif
 
   /// List of constraints
   std::vector<ConstraintBasePtr> mConstraints;

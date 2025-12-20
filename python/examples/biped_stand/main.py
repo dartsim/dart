@@ -2,7 +2,7 @@ import dartpy as dart
 import numpy as np
 
 
-class InputHandler(dart.gui.osg.GUIEventHandler):
+class InputHandler(dart.gui.GUIEventHandler):
     def __init__(self, node):
         super(InputHandler, self).__init__()
         self.node = node
@@ -10,23 +10,23 @@ class InputHandler(dart.gui.osg.GUIEventHandler):
         self.impulse_duration = 0
 
     def handle(self, ea, aa):
-        if ea.getEventType() == dart.gui.osg.GUIEventAdapter.KEYDOWN:
-            if ea.getKey() == dart.gui.osg.GUIEventAdapter.KEY_1:
+        if ea.getEventType() == dart.gui.GUIEventAdapter.KEYDOWN:
+            if ea.getKey() == dart.gui.GUIEventAdapter.KEY_1:
                 ext_force = np.zeros(3)
                 ext_force[0] = 40
                 self.node.set_external_force(ext_force, 100)
                 return True
-            if ea.getKey() == dart.gui.osg.GUIEventAdapter.KEY_2:
+            if ea.getKey() == dart.gui.GUIEventAdapter.KEY_2:
                 ext_force = np.zeros(3)
                 ext_force[0] = -40
                 self.node.set_external_force(ext_force, 100)
                 return True
-            if ea.getKey() == dart.gui.osg.GUIEventAdapter.KEY_3:
+            if ea.getKey() == dart.gui.GUIEventAdapter.KEY_3:
                 ext_force = np.zeros(3)
                 ext_force[2] = 40
                 self.node.set_external_force(ext_force, 100)
                 return True
-            if ea.getKey() == dart.gui.osg.GUIEventAdapter.KEY_4:
+            if ea.getKey() == dart.gui.GUIEventAdapter.KEY_4:
                 ext_force = np.zeros(3)
                 ext_force[2] = -40
                 self.node.set_external_force(ext_force, 100)
@@ -35,7 +35,7 @@ class InputHandler(dart.gui.osg.GUIEventHandler):
         return False
 
 
-class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
+class MyWorldNode(dart.gui.RealTimeWorldNode):
     def __init__(self, world, skel):
         super(MyWorldNode, self).__init__(world)
         self.world = world
@@ -183,7 +183,7 @@ def main():
     node = MyWorldNode(world, biped)
 
     # Create world node and add it to viewer
-    viewer = dart.gui.osg.Viewer()
+    viewer = dart.gui.Viewer()
     viewer.addWorldNode(node)
 
     input_handler = InputHandler(node)

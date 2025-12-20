@@ -1,5 +1,7 @@
 #include "simulation/world.hpp"
 
+#include "common/eigen_utils.hpp"
+#include "common/repr.hpp"
 #include "common/type_casters.hpp"
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
@@ -36,7 +38,7 @@ void defWorld(nb::module_& m)
           [](World& self, const std::string& new_name) -> const std::string& {
             return self.setName(new_name);
           },
-          nb::arg("newName"),
+          nb::arg("new_name"),
           nb::rv_policy::reference_internal)
       .def(
           "getName",
@@ -50,8 +52,8 @@ void defWorld(nb::module_& m)
           nb::arg("gravity"))
       .def(
           "setGravity",
-          [](World& self, const std::array<double, 3>& gravity) {
-            self.setGravity(Eigen::Vector3d(gravity.data()));
+          [](World& self, const nb::handle& gravity) {
+            self.setGravity(toVector3(gravity));
           },
           nb::arg("gravity"))
       .def(
@@ -61,7 +63,7 @@ void defWorld(nb::module_& m)
           nb::arg("y"),
           nb::arg("z"))
       .def("getGravity", &World::getGravity, nb::rv_policy::reference_internal)
-      .def("setTimeStep", &World::setTimeStep, nb::arg("timeStep"))
+      .def("setTimeStep", &World::setTimeStep, nb::arg("time_step"))
       .def("getTimeStep", &World::getTimeStep)
       .def(
           "getSkeleton",
@@ -105,7 +107,7 @@ void defWorld(nb::module_& m)
           [](World& self, const std::string& skeleton_name) {
             return self.hasSkeleton(skeleton_name);
           },
-          nb::arg("skeletonName"))
+          nb::arg("skeleton_name"))
       .def(
           "getIndex",
           [](World& self, int index) { return self.getIndex(index); },
@@ -140,13 +142,17 @@ void defWorld(nb::module_& m)
       .def(
           "removeAllSimpleFrames",
           [](World& self) { return self.removeAllSimpleFrames(); })
-      .def("checkCollision", [](World& self) { return self.checkCollision(); })
+      .def(
+          "checkCollision",
+          [](World& self) { return self.checkCollision(); },
+          nb::call_guard<nb::gil_scoped_release>())
       .def(
           "checkCollision",
           [](World& self, const dart::collision::CollisionOption& option) {
             return self.checkCollision(option);
           },
-          nb::arg("option"))
+          nb::arg("option"),
+          nb::call_guard<nb::gil_scoped_release>())
       .def(
           "checkCollision",
           [](World& self,
@@ -155,7 +161,18 @@ void defWorld(nb::module_& m)
             return self.checkCollision(option, result);
           },
           nb::arg("option"),
-          nb::arg("result"))
+          nb::arg("result"),
+          nb::call_guard<nb::gil_scoped_release>())
+      .def(
+          "checkCollisionResult",
+          [](World& self, const dart::collision::CollisionOption& option)
+              -> dart::collision::CollisionResult {
+            dart::collision::CollisionResult result;
+            self.checkCollision(option, &result);
+            return result;
+          },
+          nb::arg("option") = dart::collision::CollisionOption(),
+          nb::call_guard<nb::gil_scoped_release>())
       .def(
           "getLastCollisionResult",
           [](World& self) -> const dart::collision::CollisionResult& {
@@ -163,11 +180,15 @@ void defWorld(nb::module_& m)
           },
           nb::rv_policy::reference_internal)
       .def("reset", &World::reset)
-      .def("step", [](World& self) { self.step(); })
+      .def(
+          "step",
+          [](World& self) { self.step(); },
+          nb::call_guard<nb::gil_scoped_release>())
       .def(
           "step",
           [](World& self, bool resetCommand) { self.step(resetCommand); },
-          nb::arg("resetCommand"))
+          nb::arg("reset_command"),
+          nb::call_guard<nb::gil_scoped_release>())
       .def("setTime", &World::setTime, nb::arg("time"))
       .def("getTime", &World::getTime)
       .def("getSimFrames", &World::getSimFrames)
@@ -177,7 +198,16 @@ void defWorld(nb::module_& m)
             return self.getConstraintSolver();
           },
           nb::rv_policy::reference_internal)
-      .def("bake", &World::bake);
+      .def("bake", &World::bake)
+      .def("__repr__", [](const World& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("name", repr_string(self.getName()));
+        fields.emplace_back(
+            "skeletons", std::to_string(self.getNumSkeletons()));
+        fields.emplace_back("time", repr_double(self.getTime()));
+        fields.emplace_back("time_step", repr_double(self.getTimeStep()));
+        return format_repr("World", fields);
+      });
 }
 
 } // namespace dart::python_nb

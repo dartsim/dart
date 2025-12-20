@@ -38,6 +38,8 @@
 
 #include <dart/math/Random.hpp>
 
+#include <dart/io/Read.hpp>
+
 #include <benchmark/benchmark.h>
 
 #include <chrono>
@@ -78,7 +80,7 @@ std::vector<dart::simulation::WorldPtr> getWorlds()
   std::vector<std::string> sceneFiles = getSceneFiles();
   std::vector<dart::simulation::WorldPtr> worlds;
   for (std::size_t i = 0; i < sceneFiles.size(); ++i)
-    worlds.push_back(dart::utils::SkelParser::readWorld(sceneFiles[i]));
+    worlds.push_back(dart::io::readWorld(sceneFiles[i]));
 
   return worlds;
 }

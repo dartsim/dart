@@ -36,9 +36,9 @@
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/io/Read.hpp"
 #include "dart/math/Constants.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/SkelParser.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -233,11 +233,10 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   std::size_t nRandomItr = 1;
 #else
   std::size_t nRandomItr = 1;
@@ -258,7 +257,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(_fileName);
+  myWorld = dart::io::readWorld(_fileName);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i) {
@@ -430,7 +429,7 @@ TEST_F(SoftDynamicsTest, compareEquationsOfMotion)
 
   //  for (int i = 0; i < getList().size(); ++i)
   //  {
-  // #if DART_BUILD_MODE_DEBUG
+  // #if !defined(NDEBUG)
   //    DART_DEBUG("{}", getList()[i]);
   // #endif
   //    compareEquationsOfMotion(getList()[i]);

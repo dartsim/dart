@@ -44,10 +44,12 @@ if(NOT DEFINED PYTHON_SITE_PACKAGES)
   set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
 endif()
 
+set(_dartpy_nanobind_min_version 2.9.2)
+
 # Locate nanobind (prefer the copy shipped with the active Python interpreter).
 set(_dartpy_nanobind_found FALSE)
 if(DART_USE_SYSTEM_NANOBIND)
-  find_package(nanobind CONFIG REQUIRED)
+  find_package(nanobind ${_dartpy_nanobind_min_version} CONFIG REQUIRED)
   set(_dartpy_nanobind_found TRUE)
 else()
   if(NOT DEFINED nanobind_DIR)
@@ -65,7 +67,7 @@ else()
     list(APPEND CMAKE_PREFIX_PATH "${nanobind_ROOT}")
     set(nanobind_DIR "${nanobind_ROOT}" CACHE PATH "nanobind CMake package path" FORCE)
   endif()
-  find_package(nanobind CONFIG REQUIRED)
+  find_package(nanobind ${_dartpy_nanobind_min_version} CONFIG REQUIRED)
   set(_dartpy_nanobind_found TRUE)
 endif()
 
@@ -79,6 +81,7 @@ set(dartpy_headers
   common/module.hpp
   common/logging.hpp
   common/observer.hpp
+  common/repr.hpp
   common/resource.hpp
   common/resource_retriever.hpp
   common/stopwatch.hpp
@@ -86,7 +89,7 @@ set(dartpy_headers
   common/subject.hpp
   common/uri.hpp
   utils/module.hpp
-  utils/dart_loader.hpp
+  utils/urdf_parser.hpp
   utils/resource_retriever.hpp
   utils/skel_parser.hpp
   utils/sdf_parser.hpp
@@ -101,6 +104,7 @@ set(dartpy_headers
   math/geometry.hpp
   math/random.hpp
   math/eigen_geometry.hpp
+  math/trimesh.hpp
   dynamics/module.hpp
   dynamics/entity.hpp
   dynamics/degree_of_freedom.hpp
@@ -161,7 +165,7 @@ set(dartpy_sources
   common/subject.cpp
   common/uri.cpp
   utils/module.cpp
-  utils/dart_loader.cpp
+  utils/urdf_parser.cpp
   utils/resource_retriever.cpp
   utils/skel_parser.cpp
   utils/sdf_parser.cpp
@@ -176,6 +180,7 @@ set(dartpy_sources
   math/geometry.cpp
   math/random.cpp
   math/eigen_geometry.cpp
+  math/TriMesh.cpp
   dynamics/module.cpp
   dynamics/entity.cpp
   dynamics/degree_of_freedom.cpp
@@ -225,27 +230,29 @@ set(dartpy_sources
 
 set(dartpy_gui_headers
   gui/module.hpp
-  gui/osg/osg.hpp
-  gui/osg/utils.hpp
-  gui/osg/support_polygon_visual.hpp
+  gui/gui.hpp
+  gui/utils.hpp
+  gui/support_polygon_visual.hpp
 )
 
 set(dartpy_gui_sources
   gui/module.cpp
-  gui/osg/gui_event_handler.cpp
-  gui/osg/world_node.cpp
-  gui/osg/interactive_frame.cpp
-  gui/osg/viewer_attachment.cpp
-  gui/osg/support_polygon_visual.cpp
-  gui/osg/drag_and_drop.cpp
-  gui/osg/shadow_technique.cpp
-  gui/osg/viewer.cpp
-  gui/osg/imgui.cpp
+  gui/gui_event_handler.cpp
+  gui/world_node.cpp
+  gui/interactive_frame.cpp
+  gui/viewer_attachment.cpp
+  gui/support_polygon_visual.cpp
+  gui/drag_and_drop.cpp
+  gui/shadow_technique.cpp
+  gui/viewer.cpp
+  gui/imgui.cpp
 )
 
 if(DART_BUILD_GUI)
   list(APPEND dartpy_headers ${dartpy_gui_headers})
   list(APPEND dartpy_sources ${dartpy_gui_sources})
+else()
+  message(FATAL_ERROR "Building dartpy requires DART_BUILD_GUI=ON")
 endif()
 
 nanobind_add_module(dartpy
@@ -256,6 +263,19 @@ nanobind_add_module(dartpy
 foreach(_nb_target nanobind-static nanobind-static-abi3 nanobind-static-ft)
   if(TARGET ${_nb_target})
     target_compile_options(${_nb_target} PRIVATE "-UNB_COMPACT_ASSERTIONS")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+      # Silence format warnings from nanobind sources that become errors under
+      # our global -Werror. These are third-party sources.
+      target_compile_options(
+        ${_nb_target}
+        PRIVATE
+          -Wno-format
+          -Wno-format-security
+          -Wno-error
+          -Wno-error=format
+          -Wno-error=format-security
+      )
+    endif()
   endif()
 endforeach()
 
@@ -265,7 +285,6 @@ target_include_directories(dartpy
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}
 )
-target_compile_options(dartpy PRIVATE -g)
 
 if(BULLET_INCLUDE_DIR)
   target_include_directories(dartpy SYSTEM PRIVATE ${BULLET_INCLUDE_DIR})
@@ -290,32 +309,12 @@ foreach(lib ${dartpy_libraries})
   endif()
 endforeach()
 
-if(TARGET dart-collision-bullet)
-  target_link_libraries(dartpy PRIVATE dart-collision-bullet)
-  foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
-    get_target_property(_bullet_includes dart-collision-bullet ${prop})
-    if(_bullet_includes)
-      target_include_directories(dartpy PRIVATE ${_bullet_includes})
-    endif()
-  endforeach()
-endif()
-
 if(TARGET dart-gui)
   target_link_libraries(dartpy PRIVATE dart-gui)
   foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
     get_target_property(_gui_includes dart-gui ${prop})
     if(_gui_includes)
       target_include_directories(dartpy PRIVATE ${_gui_includes})
-    endif()
-  endforeach()
-endif()
-
-if(TARGET dart-collision-ode)
-  target_link_libraries(dartpy PRIVATE dart-collision-ode)
-  foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
-    get_target_property(_ode_includes dart-collision-ode ${prop})
-    if(_ode_includes)
-      target_include_directories(dartpy PRIVATE ${_ode_includes})
     endif()
   endforeach()
 endif()
@@ -329,19 +328,21 @@ target_compile_options(dartpy PRIVATE "-UNB_COMPACT_ASSERTIONS")
 
 set_target_properties(dartpy PROPERTIES OUTPUT_NAME "_dartpy")
 
-# Copy the Python package shim into the build tree so tests can import it
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-  ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
-  COPYONLY
-)
-add_custom_command(
-  TARGET dartpy POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-          ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
-  COMMENT "Updating dartpy __init__.py"
-)
+# Copy pure-Python helpers into the build tree so tests can import them
+foreach(_py_file __init__.py _naming.py _layout.py)
+  configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/${_py_file}
+    ${CMAKE_CURRENT_BINARY_DIR}/${_py_file}
+    COPYONLY
+  )
+  add_custom_command(
+    TARGET dartpy POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/${_py_file}
+            ${CMAKE_CURRENT_BINARY_DIR}/${_py_file}
+    COMMENT "Updating dartpy ${_py_file}"
+  )
+endforeach()
 
 if(DEFINED DART_DARTPY_RUNTIME_DIR)
   set(_dartpy_output_dir "${DART_DARTPY_RUNTIME_DIR}")
@@ -372,6 +373,8 @@ if(DEFINED SKBUILD_PLATLIB_DIR)
     LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy"
   )
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
     DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy"
   )
 elseif(DEFINED PYTHON_SITE_PACKAGES)
@@ -379,6 +382,8 @@ elseif(DEFINED PYTHON_SITE_PACKAGES)
     LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy"
   )
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
     DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy"
   )
 endif()

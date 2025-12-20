@@ -30,22 +30,23 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/utils/urdf/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::math;
 
-class OperationalSpaceControlWorld : public dart::gui::osg::WorldNode
+class OperationalSpaceControlWorld : public dart::gui::WorldNode
 {
 public:
   OperationalSpaceControlWorld(dart::simulation::WorldPtr _world)
-    : dart::gui::osg::WorldNode(_world)
+    : dart::gui::WorldNode(_world)
   {
     // Extract the relevant pointers
     mRobot = mWorld->getSkeleton(0);
@@ -112,7 +113,7 @@ public:
     mRobot->setForces(mForces);
   }
 
-  dart::gui::osg::DragAndDrop* dnd;
+  dart::gui::DragAndDrop* dnd;
 
 protected:
   // Triggered when this node gets added to the Viewer
@@ -146,7 +147,7 @@ protected:
 class ConstraintEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
-  ConstraintEventHandler(dart::gui::osg::DragAndDrop* dnd = nullptr) : mDnD(dnd)
+  ConstraintEventHandler(dart::gui::DragAndDrop* dnd = nullptr) : mDnD(dnd)
   {
     clearConstraints();
     if (mDnD)
@@ -240,14 +241,14 @@ public:
 
   bool mConstrained[3];
 
-  dart::sub_ptr<dart::gui::osg::DragAndDrop> mDnD;
+  dart::sub_ptr<dart::gui::DragAndDrop> mDnD;
 };
 
 class ShadowEventHandler : public osgGA::GUIEventHandler
 {
 public:
   ShadowEventHandler(
-      OperationalSpaceControlWorld* node, dart::gui::osg::Viewer* viewer)
+      OperationalSpaceControlWorld* node, dart::gui::Viewer* viewer)
     : mNode(node), mViewer(viewer)
   {
   }
@@ -261,7 +262,7 @@ public:
           mNode->setShadowTechnique(nullptr);
         else
           mNode->setShadowTechnique(
-              dart::gui::osg::WorldNode::createDefaultShadowTechnique(mViewer));
+              dart::gui::WorldNode::createDefaultShadowTechnique(mViewer));
         return true;
       }
     }
@@ -275,17 +276,16 @@ public:
 
 protected:
   OperationalSpaceControlWorld* mNode;
-  dart::gui::osg::Viewer* mViewer;
+  dart::gui::Viewer* mViewer;
 };
 
 int main()
 {
   dart::simulation::WorldPtr world(new dart::simulation::World);
-  dart::utils::DartLoader loader;
 
   // Load the robot
   dart::dynamics::SkeletonPtr robot
-      = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+      = dart::io::readSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   world->addSkeleton(robot);
 
   // Rotate the robot so that z is upwards (default transform is not Identity)
@@ -294,7 +294,7 @@ int main()
 
   // Load the ground
   dart::dynamics::SkeletonPtr ground
-      = loader.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
+      = dart::io::readSkeleton("dart://sample/urdf/KR5/ground.urdf");
   world->addSkeleton(ground);
 
   // Rotate and move the ground so that z is upwards
@@ -310,7 +310,7 @@ int main()
   node->setNumStepsPerCycle(10);
 
   // Create the Viewer instance
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.addWorldNode(node);
   viewer.simulate(true);
 

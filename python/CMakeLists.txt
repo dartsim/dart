@@ -43,10 +43,10 @@ else()
 endif()
 
 set(_dart_pythonpath_components)
+list(APPEND _dart_pythonpath_components "${DART_PYTHON_BUILD_DIR}")
 if(DART_BUILD_DARTPY)
   list(APPEND _dart_pythonpath_components "${DART_DARTPY_RUNTIME_DIR}")
 endif()
-list(APPEND _dart_pythonpath_components "${DART_PYTHON_BUILD_DIR}")
 
 string(JOIN "${DART_PYTHONPATH_DELIM}" DART_PYTHONPATH_ENV
   ${_dart_pythonpath_components}

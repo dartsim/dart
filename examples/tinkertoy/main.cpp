@@ -35,16 +35,18 @@
 
 #include <dart/config.hpp>
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
+#include <dart/gui/ImGuiHandler.hpp>
 
 #include <dart/All.hpp>
+
+#include <CLI/CLI.hpp>
 
 //==============================================================================
 class TinkertoyInputHandler : public osgGA::GUIEventHandler
 {
 public:
-  TinkertoyInputHandler(
-      dart::gui::osg::Viewer* viewer, TinkertoyWorldNode* node)
+  TinkertoyInputHandler(dart::gui::Viewer* viewer, TinkertoyWorldNode* node)
     : mViewer(viewer), mNode(node)
   {
     // Do nothing
@@ -93,12 +95,12 @@ public:
     return false;
   }
 
-  dart::gui::osg::Viewer* mViewer;
+  dart::gui::Viewer* mViewer;
   TinkertoyWorldNode* mNode;
 };
 
 //==============================================================================
-class TinkertoyMouseHandler : public dart::gui::osg::MouseEventHandler
+class TinkertoyMouseHandler : public dart::gui::MouseEventHandler
 {
 public:
   TinkertoyMouseHandler(TinkertoyInputHandler* inputHandler)
@@ -109,17 +111,17 @@ public:
 
   void update() override
   {
-    dart::gui::osg::Viewer* viewer = mInputHandler->mViewer;
+    dart::gui::Viewer* viewer = mInputHandler->mViewer;
     TinkertoyWorldNode* node = mInputHandler->mNode;
 
-    dart::gui::osg::MouseButtonEvent event
+    dart::gui::MouseButtonEvent event
         = viewer->getDefaultEventHandler()->getButtonEvent(
-            dart::gui::osg::LEFT_MOUSE);
+            dart::gui::LEFT_MOUSE);
 
-    if (dart::gui::osg::BUTTON_PUSH == event) {
-      const std::vector<dart::gui::osg::PickInfo>& picks
+    if (dart::gui::BUTTON_PUSH == event) {
+      const std::vector<dart::gui::PickInfo>& picks
           = viewer->getDefaultEventHandler()->getButtonPicks(
-              dart::gui::osg::LEFT_MOUSE, dart::gui::osg::BUTTON_PUSH);
+              dart::gui::LEFT_MOUSE, dart::gui::BUTTON_PUSH);
 
       if (picks.empty())
         return;
@@ -132,14 +134,20 @@ public:
 };
 
 //==============================================================================
-int main()
+int main(int argc, char* argv[])
 {
+  CLI::App app("Tinkertoy builder example");
+  double guiScale = 1.0;
+  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
+      ->check(CLI::PositiveNumber);
+  CLI11_PARSE(app, argc, argv);
+
   // Create a world
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
   // Create some coordinate axes for the user's reference
-  dart::gui::osg::InteractiveFramePtr coordinates
-      = dart::gui::osg::InteractiveFrame::createShared(
+  dart::gui::InteractiveFramePtr coordinates
+      = dart::gui::InteractiveFrame::createShared(
           dart::dynamics::Frame::World(),
           "coordinates",
           Eigen::Isometry3d::Identity(),
@@ -147,7 +155,7 @@ int main()
 
   for (size_t i = 0; i < 3; ++i)
     for (size_t j = 0; j < 3; ++j)
-      coordinates->getTool((dart::gui::osg::InteractiveTool::Type)(i), j)
+      coordinates->getTool((dart::gui::InteractiveTool::Type)(i), j)
           ->setEnabled(false);
 
   world->addSimpleFrame(coordinates);
@@ -156,8 +164,8 @@ int main()
   osg::ref_ptr<TinkertoyWorldNode> node = new TinkertoyWorldNode(world);
 
   // Create the viewer
-  osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
-      = new dart::gui::osg::ImGuiViewer();
+  osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
+  viewer->setImGuiScale(static_cast<float>(guiScale));
   viewer->addWorldNode(node);
 
   // Add control widget for atlas

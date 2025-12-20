@@ -14,7 +14,7 @@ Once you have installed dartpy using pip install -U dartpy, you can run the foll
     def main():
         world = dart.simulation.World()
 
-        urdf_parser = dart.io.DartLoader()
+        urdf_parser = dart.utils.UrdfParser()
         kr5 = urdf_parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
         ground = urdf_parser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf")
         world.addSkeleton(kr5)

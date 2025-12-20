@@ -2,17 +2,16 @@
 
 ## Design Decisions
 
-### Why pybind11?
+### Why nanobind?
 
-**Choice**: pybind11 for C++/Python bindings
+**Choice**: nanobind for C++/Python bindings
 
 **Rationale**:
 
-- Header-only library, no external dependencies
-- Seamless Eigen ↔ NumPy integration with custom type casters
-- Automatic reference counting and lifetime management
-- Modern C++17 features support
-- Excellent performance (zero-copy when possible)
+- Header-only library with a CMake-first workflow
+- Eigen ↔ NumPy integration via `nanobind/eigen/*` (used throughout `python/dartpy/`)
+- Modern C++17+ support (DART is built as C++20)
+- Designed for high-performance bindings
 
 ### Why scikit-build-core?
 
@@ -45,26 +44,28 @@
 
 ### Module Structure
 
-dartpy organizes DART's C++ API into Python modules:
+dartpy now flattens most symbols onto the top-level package to avoid deep
+namespaces:
 
 ```
 dartpy/
-├── math          # Eigen integration, geometry utilities
-├── dynamics      # Skeletons, BodyNodes, Joints
-├── collision     # Collision detection backends
-├── constraint    # Constraint solving
-├── simulation    # World simulation
-├── utils         # File parsers (URDF, SDF, SKEL, MJCF)
-└── gui.osg       # 3D visualization (OpenSceneGraph + ImGui)
+├── io            # File parsers (URDF, SDF, SKEL, MJCF)
+└── gui           # 3D visualization (OpenSceneGraph + ImGui)
 ```
+
+- Core classes/functions (dynamics, collision, math, simulation, constraint,
+  optimizer) are promoted onto `dartpy` directly.
+- Legacy submodules remain importable in DART 7.x but will be removed in DART
+  8.0. Toggle deprecation handling with `DARTPY_WARN_ON_LEGACY_MODULES` or
+  `DARTPY_ENABLE_LEGACY_MODULES`.
 
 **Source**: See `python/dartpy/` directory for module implementations
 
 ### Eigen ↔ NumPy Integration
 
-**Key Design**: Custom pybind11 type casters enable seamless conversion
+**Key Design**: nanobind's Eigen support enables seamless conversion
 
-**Implementation**: `python/dartpy/eigen_geometry_pybind.h`
+**Implementation**: See `python/dartpy/math/geometry.cpp` for representative usage (`#include <nanobind/eigen/dense.h>`).
 
 **Features**:
 
@@ -80,36 +81,34 @@ import dartpy as dart
 import numpy as np
 
 # NumPy arrays automatically convert to Eigen types
-skel.setPositions(np.array([0.1, 0.2, 0.3]))
+skel.set_positions(np.array([0.1, 0.2, 0.3]))
 
 # Eigen types automatically convert to NumPy arrays
-positions = skel.getPositions()  # Returns ndarray
+positions = skel.get_positions()  # Returns ndarray
 ```
+
+### Binding Conventions
+
+- Prefer shared numeric conversion helpers for Python inputs (sequences and NumPy) so bindings behave consistently across modules.
+- Release the GIL around long-running, non-callback C++ calls (e.g., stepping and collision queries) using `nb::call_guard<nb::gil_scoped_release>()` where safe.
+- Convert Python arguments to C++ types before releasing the GIL; nanobind casting and NumPy access require holding the GIL.
+- When the C++ API stores raw pointers, add explicit keep-alive/shared-ownership patterns to prevent lifetime bugs in Python.
 
 ### OSG Bindings Design
 
-**Issue**: `dartpy.gui.osg` was not available in wheels despite `DART_BUILD_GUI=ON`
+GUI bindings are built only when `DART_BUILD_GUI=ON`. The build wires this up by
+conditionally appending the GUI sources in `python/dartpy/CMakeLists.txt`.
 
-**Root Cause**: Python bindings previously checked for an undefined `HAVE_DART_GUI_OSG` preprocessor macro
+Project policy: official dartpy wheels build with GUI enabled, so `dartpy.gui`
+is expected to be available in release artifacts and CI. For local headless-only
+builds you can disable GUI, but some examples/tutorials will not run.
 
-**Solution**:
+## Pythonic Naming Transition
 
-1. Use `DART_BUILD_GUI` directly in `python/dartpy/gui/module.cpp`:
-
-   ```cpp
-   #if DART_BUILD_GUI
-     // Bind OSG module
-   #endif
-   ```
-
-2. Pass as compile definition in `python/dartpy/CMakeLists.txt`:
-   ```cmake
-   if(DART_BUILD_GUI)
-     target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI=1)
-   endif()
-   ```
-
-**Result**: OSG now works on all platforms where OpenSceneGraph is available (Linux, macOS, Windows via conda-forge)
+- All camelCase bindings now receive snake_case aliases at import time (runtime shim lives in `python/dartpy/_naming.py`)
+- camelCase still works but emits a one-time `DeprecationWarning` per symbol by default; set `DARTPY_WARN_ON_CAMELCASE=0` to silence
+- Turn the shim off entirely with `DARTPY_ENABLE_SNAKE_CASE=0` (useful for bisecting)
+- Prefer snake_case in new code; ship a codemod/release note alongside the next major to help users update usages
 
 ## Installation Methods
 
@@ -195,8 +194,8 @@ pixi run -e py313-wheel wheel-upload
 import dartpy as dart
 
 world = dart.simulation.World()
-loader = dart.utils.DartLoader()
-robot = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+parser = dart.utils.UrdfParser()
+robot = parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
 world.addSkeleton(robot)
 
 for _ in range(100):
@@ -206,7 +205,7 @@ for _ in range(100):
 ### Pattern 2: Visualization with Custom Logic
 
 ```python
-class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
+class MyWorldNode(dart.gui.RealTimeWorldNode):
     def customPreStep(self):
         # Apply controls before physics step
         pass
@@ -218,7 +217,7 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
 world = dart.simulation.World()
 node = MyWorldNode(world)
 
-viewer = dart.gui.osg.Viewer()
+viewer = dart.gui.Viewer()
 viewer.addWorldNode(node)
 viewer.run()
 ```
@@ -250,6 +249,10 @@ robot.setForces(forces)
 **Purpose**: IDE autocomplete and type checking
 
 **Generation**: Can be regenerated with `pixi run generate-stubs`
+
+## MeshShape and TriMesh Bindings
+
+**Design Decision:** Python bindings expose only `dart::math::TriMesh<double>` for mesh operations, not Assimp's `aiScene*` types. This ensures Python users work with clean, format-agnostic mesh data. The MeshShape bindings provide TriMesh-based constructors and `getTriMesh()` accessor. Deprecated aiScene-based constructors were intentionally not exposed in Python bindings (breaking change allowed for dartpy). See `python/dartpy/math/TriMesh.cpp` and `python/dartpy/dynamics/Shape.cpp` for bindings implementation.
 
 ## References
 

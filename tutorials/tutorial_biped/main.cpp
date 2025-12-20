@@ -32,11 +32,12 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 const double default_speed_increment = 0.5;
 
@@ -49,7 +50,7 @@ using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::gui;
-using namespace dart::gui::osg;
+using namespace dart::gui;
 using namespace dart::utils;
 using namespace dart::math;
 
@@ -253,7 +254,7 @@ SkeletonPtr loadBiped()
   // Lesson 1
 
   // Create the world with a skeleton
-  WorldPtr world = SkelParser::readWorld("dart://sample/skel/biped.skel");
+  WorldPtr world = dart::io::readWorld("dart://sample/skel/biped.skel");
   DART_ASSERT(world != nullptr);
 
   SkeletonPtr biped = world->getSkeleton("biped");

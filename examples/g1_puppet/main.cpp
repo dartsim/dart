@@ -1,11 +1,10 @@
-#include <dart/gui/osg/All.hpp>
-#include <dart/gui/osg/SupportPolygonVisual.hpp>
+#include <dart/gui/All.hpp>
+#include <dart/gui/SupportPolygonVisual.hpp>
 
 #include <dart/utils/CompositeResourceRetriever.hpp>
 #include <dart/utils/DartResourceRetriever.hpp>
 #include <dart/utils/HttpResourceRetriever.hpp>
 #include <dart/utils/PackageResourceRetriever.hpp>
-#include <dart/utils/urdf/DartLoader.hpp>
 
 #include <dart/simulation/World.hpp>
 
@@ -18,6 +17,7 @@
 #include <dart/common/Uri.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <CLI/CLI.hpp>
 
@@ -47,17 +47,17 @@ struct IkHandle
 {
   dart::dynamics::EndEffector* effector = nullptr;
   dart::dynamics::InverseKinematicsPtr ik;
-  dart::gui::osg::InteractiveFramePtr frame;
+  dart::gui::InteractiveFramePtr frame;
   dart::simulation::WorldPtr world;
   int hotkey = 0;
   bool active = false;
   bool attached = false;
 };
 
-class G1WorldNode : public dart::gui::osg::WorldNode
+class G1WorldNode : public dart::gui::WorldNode
 {
 public:
-  using dart::gui::osg::WorldNode::WorldNode;
+  using dart::gui::WorldNode::WorldNode;
 
   void addIkHandle(const std::shared_ptr<IkHandle>& handle)
   {
@@ -306,7 +306,7 @@ SkeletonPtr createGround()
 std::vector<std::shared_ptr<IkHandle>> setupIkHandles(
     const SkeletonPtr& robot,
     const WorldPtr& world,
-    dart::gui::osg::Viewer& viewer,
+    dart::gui::Viewer& viewer,
     const ::osg::ref_ptr<G1WorldNode>& worldNode)
 {
   struct Config
@@ -338,7 +338,7 @@ std::vector<std::shared_ptr<IkHandle>> setupIkHandles(
 
     const Eigen::Isometry3d tf
         = Eigen::Translation3d(config.offset) * ee->getTransform();
-    auto frame = dart::gui::osg::InteractiveFrame::createShared(
+    auto frame = dart::gui::InteractiveFrame::createShared(
         dart::dynamics::Frame::World(), ee->getName() + "_frame", tf, 0.15);
 
     viewer.enableDragAndDrop(frame.get());
@@ -364,11 +364,9 @@ std::vector<std::shared_ptr<IkHandle>> setupIkHandles(
 SkeletonPtr loadG1(
     const Options& options, const ResourceRetrieverPtr& retriever)
 {
-  DartLoader::Options loaderOptions;
-  loaderOptions.mResourceRetriever = retriever;
-  DartLoader loader(loaderOptions);
-
-  SkeletonPtr robot = loader.parseSkeleton(options.robotUri);
+  dart::io::ReadOptions readOptions;
+  readOptions.resourceRetriever = retriever;
+  SkeletonPtr robot = dart::io::readSkeleton(options.robotUri, readOptions);
   if (!robot) {
     std::cerr << "Failed to load robot from '" << options.robotUri << "'.\n";
     return nullptr;
@@ -383,7 +381,7 @@ SkeletonPtr loadG1(
   return robot;
 }
 
-void enableDragAndDrop(dart::gui::osg::Viewer& viewer, const SkeletonPtr& robot)
+void enableDragAndDrop(dart::gui::Viewer& viewer, const SkeletonPtr& robot)
 {
   for (std::size_t i = 0; i < robot->getNumBodyNodes(); ++i)
     viewer.enableDragAndDrop(robot->getBodyNode(i), false, false);
@@ -414,19 +412,19 @@ int main(int argc, char* argv[])
             << options.packageUri << "'.\n";
 
   ::osg::ref_ptr<G1WorldNode> worldNode = new G1WorldNode(world);
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.addWorldNode(worldNode);
   viewer.allowSimulation(false);
 
-  auto grid = ::osg::ref_ptr<dart::gui::osg::GridVisual>(
-      new dart::gui::osg::GridVisual());
-  grid->setPlaneType(dart::gui::osg::GridVisual::PlaneType::XY);
+  auto grid
+      = ::osg::ref_ptr<dart::gui::GridVisual>(new dart::gui::GridVisual());
+  grid->setPlaneType(dart::gui::GridVisual::PlaneType::XY);
   grid->setNumCells(40);
   grid->setMinorLineStepSize(0.1);
   grid->setOffset(Eigen::Vector3d::Zero());
   viewer.addAttachment(grid);
   viewer.addAttachment(
-      new dart::gui::osg::SupportPolygonVisual(g1, kSupportVisualElevation));
+      new dart::gui::SupportPolygonVisual(g1, kSupportVisualElevation));
 
   enableDragAndDrop(viewer, g1);
 

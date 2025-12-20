@@ -33,9 +33,21 @@
 #ifndef DART_COMMON_CLASSWITHVIRTUALBASE_HPP_
 #define DART_COMMON_CLASSWITHVIRTUALBASE_HPP_
 
-// This macro is used to mark all the class that inherit
-// virtually from another to avoid problems on MSVC
-// See https://github.com/dartsim/dart/issues/1522
+// MSVC requires "construction displacement" (vtordisp) metadata to safely use
+// RTTI (e.g., dynamic_cast) on objects with virtual base classes while they are
+// still under construction/destruction. DART's Aspect/Composite system can
+// trigger such casts during construction, which historically caused Windows
+// failures like "Access violation - no RTTI data!" (see #1522).
+//
+// Wrap class declarations that both (1) use virtual inheritance and (2) may be
+// subject to RTTI casts during construction/destruction with these macros:
+//
+//   DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
+//   class Foo : public virtual Bar { ... };
+//   DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
+//
+// This expands to `#pragma vtordisp(push, 2)` / `pop` on MSVC (similar to the
+// `/vd2` compiler option).
 #if defined(_MSC_VER)
   #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN __pragma(vtordisp(push, 2))
   #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END __pragma(vtordisp(pop))

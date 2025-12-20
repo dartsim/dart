@@ -37,7 +37,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #        gui, [assimp, eigen3, fcl, fmt]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
-# dart-gui - {dart-utils}, gui/osg, gui/osg/render, [openscenegraph]
+# dart-gui - {dart-utils}, gui, gui/render, [openscenegraph]
 
 #===============================================================================
 # Components - (dependency component), {dependency targets}
@@ -46,9 +46,19 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # utils - (dart), {dart-utils}
 # utils-urdf - (utils), {dart-utils-urdf}
 # gui - (utils), {dart-gui}
+# collision-bullet - (dart), {dart} [compat]
+# collision-ode - (dart), {dart} [compat]
 
 # Component. This should be called before adding subdirectories.
 add_component(${PROJECT_NAME} dart)
+
+if(DART_BUILD_COLLISION_BULLET)
+  add_component(${PROJECT_NAME} collision-bullet)
+endif()
+
+if(DART_BUILD_COLLISION_ODE)
+  add_component(${PROJECT_NAME} collision-ode)
+endif()
 
 function(dart_add_core_headers)
   dart_property_add(DART_CORE_HEADERS ${ARGN})
@@ -67,6 +77,7 @@ add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(simulation)
 add_subdirectory(utils) # tinyxml2, libsdformat
+add_subdirectory(io)
 add_subdirectory(gui) # osg
 
 set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
@@ -171,6 +182,20 @@ endif()
 # C++ standard settings
 target_compile_features(dart PUBLIC cxx_std_20)
 
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" dart_host_processor)
+set(dart_host_architecture "unknown")
+if(dart_host_processor MATCHES "amd64|x86_64")
+  set(dart_host_architecture "x86_64")
+elseif(dart_host_processor MATCHES "i[3-6]86")
+  set(dart_host_architecture "x86")
+elseif(dart_host_processor MATCHES "aarch64|arm64")
+  set(dart_host_architecture "arm64")
+elseif(dart_host_processor MATCHES "^arm")
+  set(dart_host_architecture "arm")
+elseif(dart_host_processor MATCHES "riscv64")
+  set(dart_host_architecture "riscv64")
+endif()
+
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
   if(MSVC)
@@ -189,14 +214,13 @@ if(DART_ENABLE_SIMD)
     target_compile_options(dart PUBLIC -march=native -faligned-new)
   endif()
 else()
-  # TODO: Improve this part to detect the system's architecture and apply the
-  # appropriate SIMD instructions.
-  if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
-    # Remove SSE flags if set elsewhere
-    string(REPLACE "-msse" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    string(REPLACE "-msse2" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    string(REPLACE "-msse3" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    string(REPLACE "-mssse3" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  # Remove x86-specific flags when building on non-x86 architectures to keep
+  # builds portable without enabling the SIMD option.
+  if(NOT dart_host_architecture STREQUAL "x86"
+     AND NOT dart_host_architecture STREQUAL "x86_64")
+    foreach(flag "-msse" "-msse2" "-msse3" "-mssse3")
+      string(REPLACE "${flag}" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    endforeach()
   endif()
 endif()
 
@@ -229,6 +253,30 @@ if(TARGET octomap)
 endif()
 if(spdlog_FOUND)
   add_component_dependency_packages(${PROJECT_NAME} dart spdlog)
+endif()
+
+if(DART_BUILD_COLLISION_BULLET)
+  add_library(dart-collision-bullet INTERFACE)
+  target_link_libraries(dart-collision-bullet INTERFACE dart)
+  set_target_properties(
+    dart-collision-bullet PROPERTIES
+      DEPRECATION
+        "DART CMake component 'collision-bullet' is a deprecated stub in DART 7 and will be removed in DART 8; stop requesting it and depend on component 'dart' instead."
+  )
+  add_component_targets(${PROJECT_NAME} collision-bullet dart-collision-bullet)
+  add_component_dependencies(${PROJECT_NAME} collision-bullet dart)
+endif()
+
+if(DART_BUILD_COLLISION_ODE)
+  add_library(dart-collision-ode INTERFACE)
+  target_link_libraries(dart-collision-ode INTERFACE dart)
+  set_target_properties(
+    dart-collision-ode PROPERTIES
+      DEPRECATION
+        "DART CMake component 'collision-ode' is a deprecated stub in DART 7 and will be removed in DART 8; stop requesting it and depend on component 'dart' instead."
+  )
+  add_component_targets(${PROJECT_NAME} collision-ode dart-collision-ode)
+  add_component_dependencies(${PROJECT_NAME} collision-ode dart)
 endif()
 
 if(MSVC)

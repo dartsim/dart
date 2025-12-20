@@ -34,9 +34,8 @@
 
 #include <dart/config.hpp>
 
-#include <dart/utils/urdf/All.hpp>
-
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <gtest/gtest.h>
 
@@ -119,11 +118,11 @@ TEST(IkFast, FailedToLoadSharedLibrary)
 //==============================================================================
 TEST(IkFast, LoadWamArmIk)
 {
-  utils::DartLoader urdfParser;
-  urdfParser.addPackageDirectory(
+  dart::io::ReadOptions options;
+  options.addPackageDirectory(
       "herb_description", dart::config::dataPath("urdf/wam"));
-  auto wam
-      = urdfParser.parseSkeleton(dart::config::dataPath("urdf/wam/wam.urdf"));
+  auto wam = dart::io::readSkeleton(
+      dart::config::dataPath("urdf/wam/wam.urdf"), options);
   ASSERT_NE(wam, nullptr);
 
   auto wam7 = wam->getBodyNode("/wam7");
@@ -141,7 +140,7 @@ TEST(IkFast, LoadWamArmIk)
 #else
   std::stringstream ss;
   ss << DART_SHARED_LIB_PREFIX << "GeneratedWamIkFast";
-  #if (DART_OS_LINUX || DART_OS_MACOS) && DART_BUILD_MODE_DEBUG
+  #if (DART_OS_LINUX || DART_OS_MACOS) && !defined(NDEBUG)
   ss << "d";
   #endif
   ss << "." << DART_SHARED_LIB_EXTENSION;

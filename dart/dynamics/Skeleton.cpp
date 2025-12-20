@@ -507,19 +507,30 @@ SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
   // Fix mimic joint references
   for (std::size_t i = 0; i < getNumJoints(); ++i) {
     Joint* joint = skelClone->getJoint(i);
-    if (joint->getActuatorType() == Joint::MIMIC) {
-      const Joint* mimicJoint
-          = skelClone->getJoint(joint->getMimicJoint()->getName());
-      if (mimicJoint) {
-        joint->setMimicJoint(
-            mimicJoint, joint->getMimicMultiplier(), joint->getMimicOffset());
-      } else {
+    const auto& mimicProps = joint->getMimicDofProperties();
+    const std::size_t dofCount
+        = std::min(joint->getNumDofs(), mimicProps.size());
+    for (std::size_t dofIndex = 0; dofIndex < dofCount; ++dofIndex) {
+      const auto* sourceJoint = mimicProps[dofIndex].mReferenceJoint;
+      if (sourceJoint == nullptr
+          || joint->getActuatorType(dofIndex) != Joint::MIMIC)
+        continue;
+
+      const Joint* clonedReference
+          = skelClone->getJoint(sourceJoint->getName());
+      if (clonedReference == nullptr) {
         DART_ERROR(
             "Failed to clone mimic joint successfully: Unable to find the "
-            "mimic joint [{}] in the cloned Skeleton. Please report this as a "
-            "bug!",
-            joint->getMimicJoint()->getName());
+            "mimic joint [{}] for DoF {} in the cloned Skeleton. Please report "
+            "this as a bug!",
+            sourceJoint->getName(),
+            dofIndex);
+        continue;
       }
+
+      auto updatedProp = mimicProps[dofIndex];
+      updatedProp.mReferenceJoint = clonedReference;
+      joint->setMimicJointDof(dofIndex, updatedProp);
     }
   }
 
@@ -943,7 +954,7 @@ static std::vector<const T*>& convertToConstPtrVector(
 }
 
 //==============================================================================
-const std::vector<BodyNode*>& Skeleton::getBodyNodes()
+std::vector<BodyNode*>& Skeleton::getBodyNodes()
 {
   return mSkelCache.mBodyNodes;
 }
@@ -2149,7 +2160,7 @@ void Skeleton::constructNewTree()
 //==============================================================================
 void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 {
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   std::vector<BodyNode*>::iterator repeat = std::find(
       mSkelCache.mBodyNodes.begin(), mSkelCache.mBodyNodes.end(), _newBodyNode);
   if (repeat != mSkelCache.mBodyNodes.end()) {
@@ -2199,7 +2210,7 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   updateTotalMass();
   updateCacheDimensions(_newBodyNode->mTreeIndex);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i) {
     if (mSkelCache.mBodyNodes[i]->mIndexInSkeleton != i) {
       DART_ERROR(
@@ -3716,7 +3727,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
   // This skeleton should contain _bodyNode
   DART_ASSERT(_bodyNode->getSkeleton().get() == this);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     DART_ASSERT(
@@ -3747,7 +3758,7 @@ void Skeleton::updateBiasImpulse(
   // This skeleton should contain _bodyNode
   DART_ASSERT(_bodyNode->getSkeleton().get() == this);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     DART_ASSERT(
@@ -3794,7 +3805,7 @@ void Skeleton::updateBiasImpulse(
   DART_ASSERT(_bodyNode1->getSkeleton().get() == this);
   DART_ASSERT(_bodyNode2->getSkeleton().get() == this);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     DART_ASSERT(
@@ -3835,7 +3846,7 @@ void Skeleton::updateBiasImpulse(
       std::find(mSoftBodyNodes.begin(), mSoftBodyNodes.end(), _softBodyNode)
       != mSoftBodyNodes.end());
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     DART_ASSERT(

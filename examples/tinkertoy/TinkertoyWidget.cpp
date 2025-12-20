@@ -39,10 +39,11 @@
 #include "TinkertoyWidget.hpp"
 
 #include "TinkertoyWorldNode.hpp"
+#include "dart/gui/IncludeImGui.hpp"
 
 //==============================================================================
 TinkertoyWidget::TinkertoyWidget(
-    dart::gui::osg::ImGuiViewer* viewer, TinkertoyWorldNode* node)
+    dart::gui::ImGuiViewer* viewer, TinkertoyWorldNode* node)
   : mViewer(viewer),
     mNode(node),
     mGuiGravity(true),

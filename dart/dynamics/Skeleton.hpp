@@ -359,7 +359,7 @@ public:
   /// Deprecated list getter retained for backward compatibility until
   /// gz-physics migrates.
   DART_DEPRECATED(6.13)
-  const std::vector<BodyNode*>& getBodyNodes() override;
+  std::vector<BodyNode*>& getBodyNodes() override;
 
   /// Deprecated list getter retained for backward compatibility until
   /// gz-physics migrates.

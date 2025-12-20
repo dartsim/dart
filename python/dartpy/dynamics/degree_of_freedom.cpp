@@ -1,5 +1,6 @@
 #include "dynamics/degree_of_freedom.hpp"
 
+#include "common/repr.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
@@ -32,13 +33,31 @@ void defDegreeOfFreedom(nb::module_& m)
           },
           nb::rv_policy::reference_internal,
           nb::arg("name"),
-          nb::arg("preserveName"))
+          nb::arg("preserve_name"))
       .def(
           "getName",
           [](const DegreeOfFreedom& self) -> const std::string& {
             return self.getName();
           },
           nb::rv_policy::reference_internal)
+      .def(
+          "__repr__",
+          [](const DegreeOfFreedom& self) {
+            const auto skeleton = self.getSkeleton();
+            const auto* joint = self.getJoint();
+            std::vector<std::pair<std::string, std::string>> fields;
+            fields.emplace_back("name", repr_string(self.getName()));
+            fields.emplace_back(
+                "index", std::to_string(self.getIndexInSkeleton()));
+            fields.emplace_back(
+                "index_in_joint", std::to_string(self.getIndexInJoint()));
+            fields.emplace_back(
+                "joint", joint ? repr_string(joint->getName()) : "None");
+            fields.emplace_back(
+                "skeleton",
+                skeleton ? repr_string(skeleton->getName()) : "None");
+            return format_repr("DegreeOfFreedom", fields);
+          })
       .def(
           "preserveName",
           [](DegreeOfFreedom& self, bool preserve) {
@@ -98,8 +117,8 @@ void defDegreeOfFreedom(nb::module_& m)
           [](DegreeOfFreedom& self, double lower_limit, double upper_limit) {
             self.setPositionLimits(lower_limit, upper_limit);
           },
-          nb::arg("lowerLimit"),
-          nb::arg("upperLimit"))
+          nb::arg("lower_limit"),
+          nb::arg("upper_limit"))
       .def(
           "setPositionLimits",
           [](DegreeOfFreedom& self, const std::pair<double, double>& limits) {
@@ -167,8 +186,8 @@ void defDegreeOfFreedom(nb::module_& m)
           [](DegreeOfFreedom& self, double lower_limit, double upper_limit) {
             self.setVelocityLimits(lower_limit, upper_limit);
           },
-          nb::arg("lowerLimit"),
-          nb::arg("upperLimit"))
+          nb::arg("lower_limit"),
+          nb::arg("upper_limit"))
       .def(
           "setVelocityLimits",
           [](DegreeOfFreedom& self, const std::pair<double, double>& limits) {
@@ -231,8 +250,8 @@ void defDegreeOfFreedom(nb::module_& m)
           [](DegreeOfFreedom& self, double lower_limit, double upper_limit) {
             self.setAccelerationLimits(lower_limit, upper_limit);
           },
-          nb::arg("lowerLimit"),
-          nb::arg("upperLimit"))
+          nb::arg("lower_limit"),
+          nb::arg("upper_limit"))
       .def(
           "setAccelerationLimits",
           [](DegreeOfFreedom& self, const std::pair<double, double>& limits) {
@@ -279,8 +298,8 @@ void defDegreeOfFreedom(nb::module_& m)
           [](DegreeOfFreedom& self, double lower_limit, double upper_limit) {
             self.setForceLimits(lower_limit, upper_limit);
           },
-          nb::arg("lowerLimit"),
-          nb::arg("upperLimit"))
+          nb::arg("lower_limit"),
+          nb::arg("upper_limit"))
       .def(
           "setForceLimits",
           [](DegreeOfFreedom& self, const std::pair<double, double>& limits) {
@@ -317,7 +336,7 @@ void defDegreeOfFreedom(nb::module_& m)
           [](DegreeOfFreedom& self, double velocity_change) {
             self.setVelocityChange(velocity_change);
           },
-          nb::arg("velocityChange"))
+          nb::arg("velocity_change"))
       .def(
           "getVelocityChange",
           [](const DegreeOfFreedom& self) -> double {

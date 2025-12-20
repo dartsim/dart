@@ -4,8 +4,8 @@ get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
 project(${example_name})
 
-set(required_components utils-urdf gui)
-set(required_libraries dart dart-utils-urdf dart-gui)
+set(required_components utils-urdf gui io)
+set(required_libraries dart dart-io dart-utils-urdf dart-gui)
 
 if(DART_IN_SOURCE_BUILD)
   dart_build_example_in_source(${example_name} LINK_LIBRARIES ${required_libraries})
@@ -13,7 +13,8 @@ if(DART_IN_SOURCE_BUILD)
 endif()
 
 find_package(DART 6.16.0 REQUIRED COMPONENTS ${required_components} CONFIG)
+find_package(CLI11 2.4 CONFIG REQUIRED)
 
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})
-target_link_libraries(${example_name} PUBLIC ${required_libraries})
+target_link_libraries(${example_name} PUBLIC ${required_libraries} CLI11::CLI11)

@@ -34,10 +34,10 @@
 #define DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
 
 #include <dart/collision/ode/detail/OdeGeom.hpp>
-
-#include <assimp/scene.h>
 #include <dart/math/TriMesh.hpp>
 #include <ode/ode.h>
+
+#include <memory>
 
 namespace dart {
 namespace collision {
@@ -46,10 +46,10 @@ namespace detail {
 class OdeMesh : public OdeGeom
 {
 public:
-  /// Constructor
+  /// Constructor using TriMesh (preferred)
   OdeMesh(
       const OdeCollisionObject* parent,
-      const aiScene* scene,
+      const std::shared_ptr<math::TriMesh<double>>& mesh,
       const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
 
   /// Construct from a DART TriMesh (assumed to be already convex/triangulated).
@@ -62,8 +62,8 @@ public:
   void updateEngineData() override;
 
 private:
-  void fillArrays(
-      const aiScene* scene,
+  void fillArraysFromTriMesh(
+      const std::shared_ptr<math::TriMesh<double>>& mesh,
       const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
   void fillArrays(const dart::math::TriMeshd& mesh);
 

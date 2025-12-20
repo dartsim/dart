@@ -32,7 +32,7 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include <dart/utils/urdf/DartLoader.hpp>
+#include <dart/utils/urdf/UrdfParser.hpp>
 
 #include <dart/All.hpp>
 

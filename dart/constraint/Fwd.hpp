@@ -63,6 +63,7 @@ class JointLimitConstraint;
 class LCPSolver;
 
 class MimicMotorConstraint;
+class RevoluteJointConstraint;
 
 class PgsBoxedLcpSolver;
 class PGSLCPSolver;
@@ -94,6 +95,7 @@ DART_COMMON_DECLARE_SHARED_WEAK(JacobiBoxedLcpSolver)
 
 DART_COMMON_DECLARE_SHARED_WEAK(DynamicJointConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(BallJointConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(RevoluteJointConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(WeldJointConstraint)
 
 DART_COMMON_DECLARE_SHARED_WEAK(BalanceConstraint)

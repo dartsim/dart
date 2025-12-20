@@ -1,7 +1,5 @@
-dartpy.utils
-============
+dartpy.io
+=========
 
-.. automodule:: dartpy.utils
+.. automodule:: dartpy.io
    :members:
-   :undoc-members:
-   :show-inheritance:

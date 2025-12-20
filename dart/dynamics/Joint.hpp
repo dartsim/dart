@@ -46,6 +46,7 @@
 
 #include <dart/Export.hpp>
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -141,8 +142,31 @@ public:
   /// inputs do not leak across actuator modes.
   void setActuatorType(ActuatorType _actuatorType);
 
+  /// Set the actuator type for a specific DoF.
+  void setActuatorType(std::size_t index, ActuatorType actuatorType);
+
+  /// Set actuator types for each DoF. The first entry is used as the joint-wide
+  /// actuator type, and each subsequent entry overrides the joint-wide type
+  /// when it differs.
+  void setActuatorTypes(const std::vector<ActuatorType>& actuatorTypes);
+
   /// Get actuator type
   ActuatorType getActuatorType() const;
+
+  /// Gets the actuator type of the specified DoF.
+  ActuatorType getActuatorType(std::size_t index) const;
+
+  /// Returns the actuator type of each DoF.
+  std::vector<ActuatorType> getActuatorTypes() const;
+
+  /// Returns true if any DoF uses the specified actuator type.
+  bool hasActuatorType(ActuatorType actuatorType) const;
+
+  /// Returns true if the provided actuator type is considered kinematic.
+  static bool isKinematicActuatorType(ActuatorType actuatorType);
+
+  /// Returns true if the provided actuator type is considered dynamic.
+  static bool isDynamicActuatorType(ActuatorType actuatorType);
 
   /// Set the mimic joint with a single reference joint and the same multiplier
   /// and offset for all dependent joint's DoFs.
@@ -602,6 +626,29 @@ public:
 
   /// Integrate positions using Euler method
   virtual void integratePositions(double _dt) = 0;
+
+  /// Integrate positions using Euler method, without reading or modifying this
+  /// Joint's internal state.
+  ///
+  /// This is useful for applications such as inverse kinematics where an
+  /// integration step should only depend on the provided initial position
+  /// (q0), the provided velocity (v), and the timestep (dt).
+  ///
+  /// @param[in] q0 The initial generalized coordinates of this Joint. Must have
+  /// the same size as getNumDofs().
+  /// @param[in] v The generalized velocity to integrate. Must have the same
+  /// size as getNumDofs().
+  /// @param[in] dt The timestep to integrate over.
+  /// @param[out] result The integrated generalized coordinates.
+  virtual void integratePositions(
+      const Eigen::VectorXd& q0,
+      const Eigen::VectorXd& v,
+      double dt,
+      Eigen::VectorXd& result) const = 0;
+
+  /// Convenience overload for integratePositions(q0, v, dt, result).
+  Eigen::VectorXd integratePositions(
+      const Eigen::VectorXd& q0, const Eigen::VectorXd& v, double dt) const;
 
   /// Integrate velocities using Euler method
   virtual void integrateVelocities(double _dt) = 0;

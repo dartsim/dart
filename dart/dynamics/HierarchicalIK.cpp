@@ -86,19 +86,12 @@ bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
 
   refreshIKHierarchy();
 
-  // Many GradientMethod implementations use Joint::integratePositions, so we
-  // need to clear out any velocities that might be in the Skeleton and then
-  // reset those velocities later. This has been opened as issue #699.
-  const Eigen::VectorXd originalVelocities = skel->getVelocities();
-  skel->resetVelocities();
-
   const Eigen::VectorXd originalPositions = skel->getPositions();
   const bool wasSolved = mSolver->solve();
 
   positions = mProblem->getOptimalSolution();
 
   setPositions(originalPositions);
-  skel->setVelocities(originalVelocities);
   return wasSolved;
 }
 

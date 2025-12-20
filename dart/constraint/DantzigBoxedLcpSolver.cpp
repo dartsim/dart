@@ -33,7 +33,9 @@
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 
 #include "dart/common/Profile.hpp"
-#include "dart/math/lcp/Dantzig/Lcp.hpp"
+#include "dart/math/lcp/dantzig/Lcp.hpp"
+
+#include <cstring>
 
 namespace dart {
 namespace constraint {
@@ -76,14 +78,12 @@ bool DantzigBoxedLcpSolver::solve(
   return result;
 }
 
-#if DART_BUILD_MODE_DEBUG
 //==============================================================================
 bool DantzigBoxedLcpSolver::canSolve(int /*n*/, const double* /*A*/)
 {
   // TODO(JS): Not implemented.
   return true;
 }
-#endif
 
 } // namespace constraint
 } // namespace dart

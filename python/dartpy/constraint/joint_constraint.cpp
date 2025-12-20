@@ -1,5 +1,6 @@
 #include "constraint/joint_constraint.hpp"
 
+#include "common/type_casters.hpp"
 #include "dart/constraint/JointConstraint.hpp"
 #include "dart/dynamics/Joint.hpp"
 
@@ -16,7 +17,12 @@ void defJointConstraint(nb::module_& m)
 
   nb::class_<JointConstraint, dart::constraint::ConstraintBase>(
       m, "JointConstraint")
-      .def(nb::init<dart::dynamics::Joint*>(), nb::arg("joint"))
+      .def(
+          nb::new_([](dart::dynamics::Joint& joint) {
+            return new JointConstraint(&joint);
+          }),
+          nb::arg("joint"),
+          nb::keep_alive<1, 2>())
       .def_static(
           "setErrorAllowance",
           &JointConstraint::setErrorAllowance,

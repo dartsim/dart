@@ -32,11 +32,12 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <iostream>
 
@@ -44,7 +45,7 @@ using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::gui;
-using namespace dart::gui::osg;
+using namespace dart::gui;
 using namespace dart::utils;
 using namespace dart::math::suffixes;
 
@@ -152,7 +153,7 @@ protected:
 int main(int /*argc*/, char* /*argv*/[])
 {
   // Create and initialize the world
-  WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/vehicle.skel");
+  WorldPtr myWorld = dart::io::readWorld("dart://sample/skel/vehicle.skel");
   DART_ASSERT(myWorld != nullptr);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);

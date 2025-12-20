@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <iostream>
 
@@ -42,17 +43,17 @@ using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::gui;
-using namespace dart::gui::osg;
+using namespace dart::gui;
 using namespace dart::utils;
 using namespace dart::math;
 
-class RigidCubesWorldNode : public dart::gui::osg::RealTimeWorldNode
+class RigidCubesWorldNode : public dart::gui::RealTimeWorldNode
 {
 public:
   RigidCubesWorldNode(
       dart::simulation::WorldPtr world,
       ::osg::ref_ptr<osgShadow::ShadowTechnique> shadow = nullptr)
-    : dart::gui::osg::RealTimeWorldNode(std::move(world), std::move(shadow)),
+    : dart::gui::RealTimeWorldNode(std::move(world), std::move(shadow)),
       mForce(Eigen::Vector3d::Zero())
   {
   }
@@ -81,7 +82,7 @@ class RigidCubesEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
   RigidCubesEventHandler(
-      dart::gui::osg::Viewer* viewer,
+      dart::gui::Viewer* viewer,
       RigidCubesWorldNode* worldNode,
       const WorldPtr& world)
     : mViewer(viewer), mWorldNode(worldNode), mWorld(world)
@@ -140,7 +141,7 @@ public:
   }
 
 protected:
-  dart::gui::osg::Viewer* mViewer;
+  dart::gui::Viewer* mViewer;
   RigidCubesWorldNode* mWorldNode;
   WorldPtr mWorld;
 };
@@ -148,8 +149,7 @@ protected:
 int main()
 {
   // Create and initialize the world
-  auto world
-      = dart::utils::SkelParser::readWorld("dart://sample/skel/cubes.skel");
+  auto world = dart::io::readWorld("dart://sample/skel/cubes.skel");
   if (!world) {
     DART_ERROR("Failed to load world.");
     return EXIT_FAILURE;
@@ -157,11 +157,10 @@ int main()
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
   // Create OSG viewer
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
 
   // Create shadow technique
-  auto shadow
-      = dart::gui::osg::WorldNode::createDefaultShadowTechnique(&viewer);
+  auto shadow = dart::gui::WorldNode::createDefaultShadowTechnique(&viewer);
 
   // Create custom world node
   ::osg::ref_ptr<RigidCubesWorldNode> worldNode

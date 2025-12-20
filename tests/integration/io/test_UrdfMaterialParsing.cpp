@@ -32,9 +32,8 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include <dart/utils/urdf/DartLoader.hpp>
-
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <gtest/gtest.h>
 
@@ -43,9 +42,8 @@ using namespace dart::test;
 //==============================================================================
 TEST(Issue838, MaterialParsing)
 {
-  dart::utils::DartLoader loader;
   dart::dynamics::SkeletonPtr skeleton
-      = loader.parseSkeleton("dart://sample/urdf/test/issue838.urdf");
+      = dart::io::readSkeleton("dart://sample/urdf/test/issue838.urdf");
   EXPECT_TRUE(nullptr != skeleton);
 
   std::vector<Eigen::Vector4d> colors;

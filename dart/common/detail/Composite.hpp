@@ -93,11 +93,14 @@ void Composite::set(std::unique_ptr<T>&& aspect)
 template <class T, typename... Args>
 T* Composite::createAspect(Args&&... args)
 {
-  T* aspect = new T(std::forward<Args>(args)...);
-  mAspectMap[typeid(T)] = std::unique_ptr<T>(aspect);
-  addToComposite(aspect);
+  auto insertion = mAspectMap.insert(AspectMap::value_type(typeid(T), nullptr));
+  auto& slot = insertion.first->second;
 
-  return aspect;
+  auto aspect = std::make_unique<T>(std::forward<Args>(args)...);
+  T* raw = aspect.get();
+  _replaceAspect(slot, std::move(aspect));
+
+  return raw;
 }
 
 //==============================================================================
@@ -106,10 +109,8 @@ void Composite::removeAspect()
 {
   AspectMap::iterator it = mAspectMap.find(typeid(T));
   DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(removeAspect, T, DART_BLANK)
-  if (mAspectMap.end() != it) {
-    removeFromComposite(it->second.get());
-    it->second = nullptr;
-  }
+  if (mAspectMap.end() != it)
+    _replaceAspect(it->second, nullptr);
 }
 
 //==============================================================================

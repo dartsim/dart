@@ -30,21 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <osgViewer/Viewer>
 
 using namespace dart::dynamics;
 
-class RecordingWorld : public dart::gui::osg::RealTimeWorldNode
+class RecordingWorld : public dart::gui::RealTimeWorldNode
 {
 public:
   RecordingWorld(const dart::simulation::WorldPtr& world)
-    : dart::gui::osg::RealTimeWorldNode(world)
+    : dart::gui::RealTimeWorldNode(world)
   {
     grabTimeSlice();
     mCurrentIndex = 0;
@@ -200,14 +201,14 @@ int main()
 {
   using namespace dart::dynamics;
 
-  dart::simulation::WorldPtr world = dart::utils::SkelParser::readWorld(
-      "dart://sample/skel/softBodies.skel");
+  dart::simulation::WorldPtr world
+      = dart::io::readWorld("dart://sample/skel/softBodies.skel");
 
   osg::ref_ptr<RecordingWorld> node = new RecordingWorld(world);
 
   node->simulate(true);
 
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.addWorldNode(node);
   viewer.addEventHandler(new RecordingEventHandler(node));
 

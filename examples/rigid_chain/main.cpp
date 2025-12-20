@@ -32,17 +32,18 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
-class RigidChainWorldNode : public dart::gui::osg::RealTimeWorldNode
+class RigidChainWorldNode : public dart::gui::RealTimeWorldNode
 {
 public:
   RigidChainWorldNode(dart::simulation::WorldPtr world)
-    : dart::gui::osg::RealTimeWorldNode(world)
+    : dart::gui::RealTimeWorldNode(world)
   {
   }
 
@@ -71,7 +72,7 @@ int main()
 {
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
-      = dart::utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
+      = dart::io::readWorld("dart://sample/skel/chain.skel");
   DART_ASSERT(myWorld != nullptr);
 
   // create and initialize the world
@@ -89,7 +90,7 @@ int main()
   ::osg::ref_ptr<RigidChainWorldNode> node = new RigidChainWorldNode(myWorld);
 
   // Create a Viewer and set it up with the WorldNode
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.addWorldNode(node);
 
   // Set up the window to be 640x480

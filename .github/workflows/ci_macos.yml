@@ -36,7 +36,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
   build-release:
@@ -44,33 +44,22 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Ensure pixi home exists
-        run: mkdir -p "${HOME}/.pixi/bin"
+        uses: actions/checkout@v6
 
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
-          cache: true
-
-      - name: Add pixi to PATH (prepend to override system pixi)
-        run: echo "${HOME}/.pixi/bin" >> $GITHUB_PATH
+          # Avoid cache key generation failures on macOS self-hosted runners
+          cache: false
 
       - name: Setup sccache
+        continue-on-error: true
         uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
 
       - name: Configure environment for compiler cache
-        run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
-          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
-          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
-          mkdir -p "${RUNNER_TEMP}/ccache"
+        uses: ./.github/actions/configure-compiler-cache
 
       # Lint checks are now centralized to Ubuntu Release build only
       # See ci_ubuntu.yml for the single source of lint validation
@@ -94,33 +83,22 @@ jobs:
     # Run Debug builds on every push/PR so regressions are caught before landing on main
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Ensure pixi home exists
-        run: mkdir -p "${HOME}/.pixi/bin"
+        uses: actions/checkout@v6
 
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
-          cache: true
-
-      - name: Add pixi to PATH (prepend to override system pixi)
-        run: echo "${HOME}/.pixi/bin" >> $GITHUB_PATH
+          # Avoid cache key generation failures on macOS self-hosted runners
+          cache: false
 
       - name: Setup sccache
+        continue-on-error: true
         uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
 
       - name: Configure environment for compiler cache
-        run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
-          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
-          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
-          mkdir -p "${RUNNER_TEMP}/ccache"
+        uses: ./.github/actions/configure-compiler-cache
 
       - name: Test DART and dartpy
         run: |

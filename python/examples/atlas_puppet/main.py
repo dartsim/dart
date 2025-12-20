@@ -62,7 +62,7 @@ class TargetDisplayController:
         self.visible = False
 
 
-class AtlasKeyboardHandler(dart.gui.osg.GUIEventHandler):
+class AtlasKeyboardHandler(dart.gui.GUIEventHandler):
     """Custom keyboard event handler for Atlas control."""
 
     def __init__(self, teleop_world, target_displays):
@@ -85,7 +85,7 @@ class AtlasKeyboardHandler(dart.gui.osg.GUIEventHandler):
             return False
 
         # Handle key press
-        gui_adapter = dart.gui.osg.GUIEventAdapter.EventType
+        gui_adapter = dart.gui.GUIEventAdapter.EventType
 
         if event_type == gui_adapter.KEYDOWN:
             return self.teleop_world.handle_key_press(key_char)
@@ -97,7 +97,7 @@ class AtlasKeyboardHandler(dart.gui.osg.GUIEventHandler):
         return False
 
 
-class TeleoperationWorld(dart.gui.osg.RealTimeWorldNode):
+class TeleoperationWorld(dart.gui.RealTimeWorldNode):
     """Custom world node with keyboard teleoperation and continuous IK solving."""
 
     def __init__(self, world, atlas, interactive_targets, target_displays):
@@ -337,7 +337,7 @@ def create_ground():
 
 def create_atlas():
     """Load the Atlas robot model."""
-    urdf = dart.utils.DartLoader()
+    urdf = dart.utils.UrdfParser()
     atlas = urdf.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
 
     # Add a box to the root body for visualization
@@ -405,7 +405,7 @@ def setup_end_effectors(atlas):
     l_hand.setDefaultRelativeTransform(tf_hand, True)
 
     # Create interactive target with larger size for visibility
-    lh_target = dart.gui.osg.InteractiveFrame(
+    lh_target = dart.gui.InteractiveFrame(
         dart.dynamics.Frame.World(),
         "lh_target",
         dart.math.Isometry3.Identity(),
@@ -434,7 +434,7 @@ def setup_end_effectors(atlas):
     r_hand = atlas.getBodyNode("r_hand").createEndEffector("r_hand")
     r_hand.setDefaultRelativeTransform(tf_hand, True)
 
-    rh_target = dart.gui.osg.InteractiveFrame(
+    rh_target = dart.gui.InteractiveFrame(
         dart.dynamics.Frame.World(),
         "rh_target",
         dart.math.Isometry3.Identity(),
@@ -474,7 +474,7 @@ def setup_end_effectors(atlas):
     l_foot = atlas.getBodyNode("l_foot").createEndEffector("l_foot")
     l_foot.setRelativeTransform(tf_foot)
 
-    lf_target = dart.gui.osg.InteractiveFrame(
+    lf_target = dart.gui.InteractiveFrame(
         dart.dynamics.Frame.World(),
         "lf_target",
         dart.math.Isometry3.Identity(),
@@ -497,7 +497,7 @@ def setup_end_effectors(atlas):
     r_foot = atlas.getBodyNode("r_foot").createEndEffector("r_foot")
     r_foot.setRelativeTransform(tf_foot)
 
-    rf_target = dart.gui.osg.InteractiveFrame(
+    rf_target = dart.gui.InteractiveFrame(
         dart.dynamics.Frame.World(),
         "rf_target",
         dart.math.Isometry3.Identity(),
@@ -598,7 +598,7 @@ def main():
     print()
 
     # Create viewer
-    viewer = dart.gui.osg.Viewer()
+    viewer = dart.gui.Viewer()
     viewer.allowSimulation(False)  # Kinematics only - IK is solved in customPreRefresh
 
     # Manage interactive target visibility
@@ -616,7 +616,7 @@ def main():
     viewer.addWorldNode(node)
 
     # Visualize the support polygon, centroid, and COM just like the C++ demo.
-    support_visual = dart.gui.osg.SupportPolygonVisual(atlas, DISPLAY_ELEVATION)
+    support_visual = dart.gui.SupportPolygonVisual(atlas, DISPLAY_ELEVATION)
     viewer.addAttachment(support_visual)
 
     # Add custom instructions for atlas_puppet

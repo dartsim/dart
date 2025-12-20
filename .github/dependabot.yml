@@ -12,7 +12,8 @@ updates:
       interval: "weekly"
 
   - package-ecosystem: "docker"
-    directory: "/"
+    # Devcontainer Dockerfile lives under the hidden .devcontainer directory.
+    directory: "/.devcontainer"
     schedule:
       interval: "weekly"
 

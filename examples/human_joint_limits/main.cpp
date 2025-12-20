@@ -35,11 +35,12 @@
 #include "HumanLegJointLimitConstraint.hpp"
 
 #include <dart/config.hpp>
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 #include <dart/utils/All.hpp>
 #include <dart/collision/bullet/All.hpp>
 #include <dart/collision/ode/ode.hpp>
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <cmath>
 
@@ -48,11 +49,11 @@ using namespace dart::simulation;
 using namespace dart;
 using namespace utils;
 
-class HumanJointLimitsWorldNode : public dart::gui::osg::WorldNode
+class HumanJointLimitsWorldNode : public dart::gui::WorldNode
 {
 public:
   explicit HumanJointLimitsWorldNode(const WorldPtr& world)
-    : dart::gui::osg::WorldNode(world), ts(0)
+    : dart::gui::WorldNode(world), ts(0)
   {
   }
 
@@ -125,7 +126,7 @@ public:
 
 int main()
 {
-  WorldPtr world = SkelParser::readWorld(
+  WorldPtr world = dart::io::readWorld(
       dart::config::dataPath("skel/kima/kima_human_edited.skel"));
   DART_ASSERT(world != nullptr);
 
@@ -139,7 +140,7 @@ int main()
       = new HumanJointLimitsWorldNode(world);
 
   // Create the viewer
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.addWorldNode(node);
 
   // Add event handler

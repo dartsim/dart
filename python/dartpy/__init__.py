@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
+import importlib.machinery
 from pathlib import Path
 from typing import List
 
@@ -19,7 +20,7 @@ def _candidate_package_dirs() -> List[str]:
     candidate = (Path(entry).resolve() / "dartpy")
     if candidate == _PACKAGE_DIR or not candidate.is_dir():
       continue
-    for suffix in (".so", ".pyd", ".dylib"):
+    for suffix in importlib.machinery.EXTENSION_SUFFIXES:
       if any(candidate.glob(f"_dartpy*{suffix}")):
         roots.append(str(candidate))
         break
@@ -32,6 +33,7 @@ __path__ = _candidate_package_dirs()  # type: ignore[var-annotated]
 
 from . import _dartpy as _ext  # type: ignore[attr-defined]
 __version__ = getattr(_ext, "__version__", None)
+from . import _layout, _naming
 
 
 def _alias_extension_submodules() -> None:
@@ -58,6 +60,8 @@ def _alias_extension_submodules() -> None:
 from ._dartpy import *  # noqa: F401,F403
 
 _alias_extension_submodules()
+_naming.install_aliases(_ext)
+_layout.install_layout(sys.modules[__name__])
 
 
 def __getattr__(name: str):
@@ -68,4 +72,5 @@ def __getattr__(name: str):
   except ModuleNotFoundError as exc:  # pragma: no cover - passthrough
     raise AttributeError(name) from exc
   globals()[name] = module
+  _naming.install_aliases(module)
   return module
