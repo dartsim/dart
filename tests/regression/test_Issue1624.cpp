@@ -47,10 +47,6 @@ using namespace dart::utils;
 //==============================================================================
 TEST(Issue1624, ContactGrouping)
 {
-#if DART_OS_MACOS && DART_BUILD_MODE_DEBUG
-  GTEST_SKIP()
-      << "Skipping Issue1624 on macOS debug builds due to ODE segfaults.";
-#endif
   // Load a world with a large number of contacts and run simulation to ensure
   // constraint solver does not misbehave.
   auto world
