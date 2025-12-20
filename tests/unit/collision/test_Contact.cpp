@@ -55,6 +55,5 @@ TEST(Contact, ZeroNormalHonorsEpsilon)
   const double epsilon = Contact::getNormalEpsilon();
 
   EXPECT_TRUE(Contact::isZeroNormal(Eigen::Vector3d(0.0, 0.0, epsilon / 10.0)));
-  EXPECT_FALSE(Contact::isZeroNormal(
-      Eigen::Vector3d(0.0, 0.0, epsilon * 2.0)));
+  EXPECT_FALSE(Contact::isZeroNormal(Eigen::Vector3d(0.0, 0.0, epsilon * 2.0)));
 }
