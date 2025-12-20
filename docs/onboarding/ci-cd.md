@@ -14,12 +14,27 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Suggested (Unverified): `gh pr checks <PR_NUMBER> --watch --interval 30 --fail-fast`
   - Suggested (Unverified): `gh run view --job <JOB_ID> --log-failed`
 - Gotchas (observed in this task):
-  - On some Linux runners (especially self-hosted), `sccache` can fail during CMake `try_compile` with `sccache: error: while hashing the input file ... No such file or directory (os error 2)`.
-  - On macOS, `mozilla-actions/sccache-action@v0.0.9` can fail with transient network errors like `HttpError: Connect Timeout Error`. Our `.github/workflows/ci_macos.yml` treats "Setup sccache" as best-effort (`continue-on-error: true`) so the job continues without sccache.
-  - `gh` subcommands accept different `--json` fields; if you see `Unknown JSON field`, prefer `gh pr view --json ...` and check `gh <command> --help` for supported fields.
-  - `gh pr checks` can show duplicate entries when workflows run for both `push` and `pull_request`; focus on the newest run URL.
-  - Quote `--jq` programs (especially in zsh) to avoid `parse error near \`}'`.
+  - `gh run list` can show separate runs for `push` and `pull_request`; for PR gating, watch the `pull_request` run.
+  - `gh run watch` is blocking and can run for a long time; use a persistent shell and re-run it if your terminal session times out.
 - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
+
+## CI Monitoring (CLI)
+
+Use the GitHub CLI to locate the latest run for your branch and watch it to completion.
+
+Suggested (Unverified):
+
+```bash
+gh run list -R <OWNER>/<REPO> --branch <BRANCH> --limit <N>
+gh run watch <RUN_ID> --interval 30
+```
+
+Example (Used in this task):
+
+```bash
+gh run list -R dartsim/dart --branch refactor/mesh_loader --limit 10
+gh run watch 20397566461 --interval 30
+```
 
 ## Workflow Architecture
 
