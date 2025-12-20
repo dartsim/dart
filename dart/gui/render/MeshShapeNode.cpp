@@ -37,6 +37,7 @@
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Uri.hpp"
+#include "dart/dynamics/InvalidIndex.hpp"
 #include "dart/dynamics/MeshMaterial.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -299,7 +300,10 @@ protected:
 MeshShapeNode::MeshShapeNode(
     std::shared_ptr<dart::dynamics::MeshShape> shape,
     ShapeFrameNode* parentNode)
-  : ShapeNode(shape, parentNode, this), mMeshShape(shape), mRootAiNode(nullptr)
+  : ShapeNode(shape, parentNode, this),
+    mMeshShape(shape),
+    mRootAiNode(nullptr),
+    mMaterialVersion(dart::dynamics::INVALID_INDEX)
 {
   extractData(true);
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
@@ -338,7 +342,13 @@ void MeshShapeNode::extractData(bool firstTime)
   DART_SUPPRESS_DEPRECATED_END
   const aiNode* root = scene->mRootNode;
 
-  if (firstTime) // extract material properties from MeshShape (Assimp-free)
+  const bool updateMaterials
+      = firstTime
+        || (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+            && mMaterialVersion != mMeshShape->getVersion());
+
+  if (updateMaterials) // extract material properties from MeshShape
+                       // (Assimp-free)
   {
     clearTemporaryTextures();
     mMaterials.clear();
@@ -412,6 +422,8 @@ void MeshShapeNode::extractData(bool firstTime)
 
       mTextureImageArrays.emplace_back(std::move(textureImageArray));
     }
+
+    mMaterialVersion = mMeshShape->getVersion();
   }
 
   if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
