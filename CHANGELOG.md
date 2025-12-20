@@ -2,7 +2,7 @@
 
 ## DART 6
 
-### [DART 6.16.2 (2025-12-19)](https://github.com/dartsim/dart/milestone/87?closed=1)
+### [DART 6.16.2 (2025-12-20)](https://github.com/dartsim/dart/milestone/87?closed=1)
 
 * Build
   * Remove DART_BUILD_MODE_DEBUG guards to fix NDEBUG compilation: [#2326](https://github.com/dartsim/dart/pull/2326)
