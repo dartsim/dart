@@ -41,14 +41,12 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
-#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/common/String.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
-#include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <iostream>
@@ -154,11 +152,6 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
   return nullptr;
 }
 
-std::unique_ptr<constraint::ConstraintSolver> createConstraintSolver()
-{
-  return std::make_unique<constraint::BoxedLcpConstraintSolver>();
-}
-
 } // namespace
 
 //==============================================================================
@@ -190,7 +183,8 @@ World::World(const WorldConfig& config)
 {
   mIndices.push_back(0);
 
-  setConstraintSolver(createConstraintSolver());
+  auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
+  setConstraintSolver(std::move(solver));
 
   if (auto detector = resolveCollisionDetector(config))
     setCollisionDetector(detector);
@@ -286,24 +280,6 @@ void World::reset()
 void World::step(bool _resetCommand)
 {
   DART_PROFILE_FRAME;
-
-#if !defined(NDEBUG)
-  for (const auto& skel : mSkeletons) {
-    if (!skel)
-      continue;
-    const bool finite = skel->getPositions().allFinite()
-                        && skel->getVelocities().allFinite()
-                        && skel->getAccelerations().allFinite();
-    if (!finite) {
-      DART_ERROR(
-          "[World] Non-finite state detected at time {} in skeleton '{}'. "
-          "Aborting simulation step.",
-          mTime,
-          skel->getName());
-      DART_ASSERT(finite);
-    }
-  }
-#endif
 
   // Integrate velocity for unconstrained skeletons
   {

@@ -2,82 +2,98 @@
  * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
- * This file provides forward declarations and smart pointer aliases for
- * constraint classes.
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#ifndef DART_CONSTRAINT_FWD_HPP_
+#define DART_CONSTRAINT_FWD_HPP_
 
-#include <memory>
+#include <dart/common/SmartPointer.hpp>
 
 namespace dart {
 namespace constraint {
 
+class BalanceConstraint;
+class BallJointConstraint;
 class BoxedLcpConstraintSolver;
 class BoxedLcpSolver;
-class ConstraintSolver;
 class ConstrainedGroup;
 class ConstraintBase;
-class ContactSurfaceHandler;
-class ContactConstraint;
-class SoftContactConstraint;
-class JointConstraint;
-class MimicMotorConstraint;
+class ConstraintSolver;
 class CouplerConstraint;
-class JointCoulombFrictionConstraint;
+class ContactConstraint;
+
+struct ContactSurfaceParams;
+class ContactSurfaceHandler;
+class DefaultContactSurfaceHandler;
+
+class DantzigBoxedLcpSolver;
 class DynamicJointConstraint;
-class BallJointConstraint;
+
+class JointConstraint;
+class JointCoulombFrictionConstraint;
+class JointLimitConstraint;
+
+class MimicMotorConstraint;
 class RevoluteJointConstraint;
+
+class PgsBoxedLcpSolver;
+
+class ServoMotorConstraint;
+class SoftContactConstraint;
+
 class WeldJointConstraint;
-class BalanceConstraint;
 
-using BoxedLcpConstraintSolverPtr = std::shared_ptr<BoxedLcpConstraintSolver>;
-using ConstBoxedLcpConstraintSolverPtr
-    = std::shared_ptr<const BoxedLcpConstraintSolver>;
-using WeakBoxedLcpConstraintSolverPtr = std::weak_ptr<BoxedLcpConstraintSolver>;
-using WeakConstBoxedLcpConstraintSolverPtr
-    = std::weak_ptr<const BoxedLcpConstraintSolver>;
-using UniqueBoxedLcpConstraintSolverPtr
-    = std::unique_ptr<BoxedLcpConstraintSolver>;
+DART_COMMON_DECLARE_SMART_POINTERS(ConstraintSolver)
 
-using BoxedLcpSolverPtr = std::shared_ptr<BoxedLcpSolver>;
-using ConstBoxedLcpSolverPtr = std::shared_ptr<const BoxedLcpSolver>;
-using WeakBoxedLcpSolverPtr = std::weak_ptr<BoxedLcpSolver>;
-using WeakConstBoxedLcpSolverPtr = std::weak_ptr<const BoxedLcpSolver>;
+DART_COMMON_DECLARE_SHARED_WEAK(ConstrainedGroup)
 
-using ConstraintSolverPtr = std::shared_ptr<ConstraintSolver>;
-using ConstConstraintSolverPtr = std::shared_ptr<const ConstraintSolver>;
-using WeakConstraintSolverPtr = std::weak_ptr<ConstraintSolver>;
-using WeakConstConstraintSolverPtr = std::weak_ptr<const ConstraintSolver>;
-using UniqueConstraintSolverPtr = std::unique_ptr<ConstraintSolver>;
+DART_COMMON_DECLARE_SHARED_WEAK(ConstraintBase)
+DART_COMMON_DECLARE_SHARED_WEAK(ClosedLoopConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(ContactConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(ContactSurfaceHandler)
+DART_COMMON_DECLARE_SHARED_WEAK(SoftContactConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(JointConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(MimicMotorConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(CouplerConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(JointCoulombFrictionConstraint)
 
-using ConstrainedGroupPtr = std::shared_ptr<ConstrainedGroup>;
-using ConstConstrainedGroupPtr = std::shared_ptr<const ConstrainedGroup>;
-using WeakConstrainedGroupPtr = std::weak_ptr<ConstrainedGroup>;
-using WeakConstConstrainedGroupPtr = std::weak_ptr<const ConstrainedGroup>;
+DART_COMMON_DECLARE_SHARED_WEAK(BoxedLcpSolver)
+DART_COMMON_DECLARE_SHARED_WEAK(PgsBoxedLcpSolver)
 
-using ConstraintBasePtr = std::shared_ptr<ConstraintBase>;
-using ConstConstraintBasePtr = std::shared_ptr<const ConstraintBase>;
-using WeakConstraintBasePtr = std::weak_ptr<ConstraintBase>;
-using WeakConstConstraintBasePtr = std::weak_ptr<const ConstraintBase>;
+DART_COMMON_DECLARE_SHARED_WEAK(DynamicJointConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(BallJointConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(RevoluteJointConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(WeldJointConstraint)
 
-using ContactSurfaceHandlerPtr = std::shared_ptr<ContactSurfaceHandler>;
-using ContactSurfaceHandlerConstPtr
-    = std::shared_ptr<const ContactSurfaceHandler>;
-
-using ContactConstraintPtr = std::shared_ptr<ContactConstraint>;
-using SoftContactConstraintPtr = std::shared_ptr<SoftContactConstraint>;
-using JointConstraintPtr = std::shared_ptr<JointConstraint>;
-using MimicMotorConstraintPtr = std::shared_ptr<MimicMotorConstraint>;
-using CouplerConstraintPtr = std::shared_ptr<CouplerConstraint>;
-using JointCoulombFrictionConstraintPtr
-    = std::shared_ptr<JointCoulombFrictionConstraint>;
-
-using DynamicJointConstraintPtr = std::shared_ptr<DynamicJointConstraint>;
-using BallJointConstraintPtr = std::shared_ptr<BallJointConstraint>;
-using RevoluteJointConstraintPtr = std::shared_ptr<RevoluteJointConstraint>;
-using WeldJointConstraintPtr = std::shared_ptr<WeldJointConstraint>;
-using BalanceConstraintPtr = std::shared_ptr<BalanceConstraint>;
+DART_COMMON_DECLARE_SHARED_WEAK(BalanceConstraint)
 
 } // namespace constraint
 } // namespace dart
+
+#endif // DART_CONSTRAINT_FWD_HPP_
