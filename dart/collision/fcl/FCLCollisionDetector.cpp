@@ -43,9 +43,9 @@
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
-#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PyramidShape.hpp"
@@ -1050,9 +1050,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
       }
 
       geom = new ::fcl::Convex<double>(
-          hullVertices,
-          static_cast<int>(mesh->getTriangles().size()),
-          faces);
+          hullVertices, static_cast<int>(mesh->getTriangles().size()), faces);
     } else {
       DART_WARN(
           "ConvexMeshShape has no vertices; creating a sphere with 0.1 radius "

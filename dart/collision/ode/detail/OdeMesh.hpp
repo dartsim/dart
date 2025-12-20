@@ -34,7 +34,9 @@
 #define DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
 
 #include <dart/collision/ode/detail/OdeGeom.hpp>
+
 #include <dart/math/TriMesh.hpp>
+
 #include <ode/ode.h>
 
 #include <memory>

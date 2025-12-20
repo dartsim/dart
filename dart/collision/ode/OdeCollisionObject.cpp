@@ -44,10 +44,10 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/HeightmapShape.hpp"
-#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
@@ -173,11 +173,11 @@ detail::OdeGeom* createOdeGeom(
 {
   using dynamics::BoxShape;
   using dynamics::CapsuleShape;
+  using dynamics::ConvexMeshShape;
   using dynamics::CylinderShape;
   using dynamics::EllipsoidShape;
   using dynamics::HeightmapShaped;
   using dynamics::HeightmapShapef;
-  using dynamics::ConvexMeshShape;
   using dynamics::MeshShape;
   using dynamics::PlaneShape;
   using dynamics::Shape;

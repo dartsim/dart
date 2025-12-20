@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_CONVEXMESHSHAPE_HPP_
 
 #include <dart/dynamics/Shape.hpp>
+
 #include <dart/math/TriMesh.hpp>
 
 namespace dart {

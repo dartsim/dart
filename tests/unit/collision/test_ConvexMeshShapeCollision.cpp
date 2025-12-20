@@ -30,28 +30,31 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-
-#include <Eigen/Core>
-
-#include "dart/collision/bullet/BulletCollisionDetector.hpp"
-#include "dart/collision/bullet/BulletCollisionObject.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
-#include "dart/dynamics/ConvexMeshShape.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
+#include <Eigen/Core>
 #include <fcl/geometry/shape/convex.h>
+#include <gtest/gtest.h>
 
-using dart::collision::BulletCollisionDetector;
-using dart::collision::BulletCollisionObject;
+#if DART_HAVE_BULLET
+  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
+  #include "dart/collision/bullet/BulletCollisionObject.hpp"
+#endif
+
 using dart::collision::FCLCollisionDetector;
 using dart::collision::FCLCollisionObject;
+#if DART_HAVE_BULLET
+using dart::collision::BulletCollisionDetector;
+using dart::collision::BulletCollisionObject;
+#endif
 using dart::dynamics::CollisionAspect;
 using dart::dynamics::ConvexMeshShape;
-using dart::dynamics::SimpleFrame;
 
 namespace {
 
@@ -60,10 +63,12 @@ struct TestFCLDetector : public FCLCollisionDetector
   using FCLCollisionDetector::claimCollisionObject;
 };
 
+#if DART_HAVE_BULLET
 struct TestBulletDetector : public BulletCollisionDetector
 {
   using BulletCollisionDetector::claimCollisionObject;
 };
+#endif
 
 std::shared_ptr<ConvexMeshShape> makeTetraShape()
 {
@@ -84,30 +89,34 @@ std::shared_ptr<ConvexMeshShape> makeTetraShape()
 
 } // namespace
 
+// Regression coverage for https://github.com/dartsim/dart/issues/872.
 TEST(ConvexMeshShapeCollision, FclUsesConvexGeometry)
 {
   auto detector = std::make_shared<TestFCLDetector>();
   auto skel = dart::dynamics::Skeleton::create("s");
-  auto bn = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>().second;
+  auto bn
+      = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>().second;
   auto shape = makeTetraShape();
   auto shapeNode = bn->createShapeNodeWith<CollisionAspect>(shape);
 
   auto collObj = detector->claimCollisionObject(shapeNode);
   ASSERT_NE(collObj, nullptr);
 
-  auto fclObj
-      = static_cast<FCLCollisionObject*>(collObj.get())->getFCLCollisionObject();
+  auto fclObj = static_cast<FCLCollisionObject*>(collObj.get())
+                    ->getFCLCollisionObject();
   ASSERT_NE(fclObj, nullptr);
   ASSERT_NE(fclObj->collisionGeometry(), nullptr);
 
   EXPECT_EQ(fclObj->collisionGeometry()->getNodeType(), ::fcl::GEOM_CONVEX);
 }
 
+#if DART_HAVE_BULLET
 TEST(ConvexMeshShapeCollision, BulletUsesConvexHullShape)
 {
   auto detector = std::make_shared<TestBulletDetector>();
   auto skel = dart::dynamics::Skeleton::create("s");
-  auto bn = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>().second;
+  auto bn
+      = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>().second;
   auto shape = makeTetraShape();
   auto shapeNode = bn->createShapeNodeWith<CollisionAspect>(shape);
 
@@ -123,3 +132,4 @@ TEST(ConvexMeshShapeCollision, BulletUsesConvexHullShape)
       bulletObj->getCollisionShape()->getShapeType(),
       CONVEX_HULL_SHAPE_PROXYTYPE);
 }
+#endif

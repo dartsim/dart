@@ -40,10 +40,8 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-ConvexMeshShape::ConvexMeshShape(
-    const std::shared_ptr<TriMeshType>& mesh)
-  : Shape(CONVEX_MESH),
-    mMesh(mesh ? mesh : std::make_shared<TriMeshType>())
+ConvexMeshShape::ConvexMeshShape(const std::shared_ptr<TriMeshType>& mesh)
+  : Shape(CONVEX_MESH), mMesh(mesh ? mesh : std::make_shared<TriMeshType>())
 {
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -76,8 +74,8 @@ const std::string& ConvexMeshShape::getStaticType()
 }
 
 //==============================================================================
-const std::shared_ptr<ConvexMeshShape::TriMeshType>&
-ConvexMeshShape::getMesh() const
+const std::shared_ptr<ConvexMeshShape::TriMeshType>& ConvexMeshShape::getMesh()
+    const
 {
   return mMesh;
 }
@@ -96,8 +94,7 @@ std::shared_ptr<ConvexMeshShape> ConvexMeshShape::fromMesh(
     const std::shared_ptr<TriMeshType>& mesh, bool computeHull)
 {
   if (!mesh)
-    return std::make_shared<ConvexMeshShape>(
-        std::make_shared<TriMeshType>());
+    return std::make_shared<ConvexMeshShape>(std::make_shared<TriMeshType>());
 
   if (computeHull) {
     auto hull = mesh->generateConvexHull(true);
