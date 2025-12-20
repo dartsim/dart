@@ -47,7 +47,6 @@ if(DART8_BUILD_TESTS)
   # Create meta target for all unit tests
   add_custom_target(dart8_tests
     DEPENDS ${DART8_ALL_TESTS}
-    COMMAND ${CMAKE_COMMAND} -E echo "Built all DART8 unit tests."
     COMMENT "Building all DART8 unit tests"
   )
 
