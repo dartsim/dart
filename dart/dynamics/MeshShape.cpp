@@ -344,7 +344,9 @@ MeshShape::MeshShape(
 
       if (scene) {
         extractMaterialsFromScene(
-            scene.get(), mMeshPath.empty() ? uri.getPath() : mMeshPath);
+            scene.get(),
+            mMeshPath.empty() ? uri.getPath() : mMeshPath,
+            mMeshUri);
 
         const auto expectedVertices
             = mTriMesh ? mTriMesh->getVertices().size() : 0;
@@ -973,7 +975,7 @@ void MeshShape::setMesh(
 
   // Extract material properties for Assimp-free rendering.
   extractMaterialsFromScene(
-      mMesh.get(), mMeshPath.empty() ? uri.getPath() : mMeshPath);
+      mMesh.get(), mMeshPath.empty() ? uri.getPath() : mMeshPath, mMeshUri);
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -1033,7 +1035,7 @@ void MeshShape::setMesh(
 
   // Extract material properties for Assimp-free rendering.
   extractMaterialsFromScene(
-      mMesh.get(), mMeshPath.empty() ? uri.getPath() : mMeshPath);
+      mMesh.get(), mMeshPath.empty() ? uri.getPath() : mMeshPath, mMeshUri);
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -1134,7 +1136,9 @@ const MeshMaterial* MeshShape::getMaterial(std::size_t index) const
 
 //==============================================================================
 void MeshShape::extractMaterialsFromScene(
-    const aiScene* scene, const std::string& basePath)
+    const aiScene* scene,
+    const std::string& basePath,
+    const common::Uri& meshUri)
 {
   if (!scene || scene->mNumMaterials == 0) {
     return;
@@ -1142,6 +1146,13 @@ void MeshShape::extractMaterialsFromScene(
 
   mMaterials.clear();
   mMaterials.reserve(scene->mNumMaterials);
+
+  const common::filesystem::path meshPath = basePath;
+  std::error_code meshPathEc;
+  const bool meshPathExists = !basePath.empty()
+                              && common::filesystem::exists(
+                                  meshPath, meshPathEc)
+                              && !meshPathEc;
 
   for (std::size_t i = 0; i < scene->mNumMaterials; ++i) {
     aiMaterial* aiMat = scene->mMaterials[i];
@@ -1202,21 +1213,45 @@ void MeshShape::extractMaterialsFromScene(
       for (auto j = 0u; j < count; ++j) {
         aiString imagePath;
         if (aiMat->GetTexture(type, j, &imagePath) == AI_SUCCESS) {
-          const common::filesystem::path relativeImagePath = imagePath.C_Str();
-          const common::filesystem::path meshPath = basePath;
-          std::error_code ec;
-          const common::filesystem::path absoluteImagePath
-              = common::filesystem::canonical(
-                  meshPath.parent_path() / relativeImagePath, ec);
+          const std::string imagePathString = imagePath.C_Str();
+          if (imagePathString.empty()) {
+            continue;
+          }
 
-          if (ec) {
+          const common::filesystem::path relativeImagePath = imagePathString;
+          std::error_code ec;
+          bool attemptedCanonicalize = false;
+          if (!basePath.empty() || relativeImagePath.is_absolute()) {
+            const common::filesystem::path absoluteImagePath
+                = common::filesystem::canonical(
+                    meshPath.parent_path() / relativeImagePath, ec);
+            attemptedCanonicalize = true;
+            if (!ec) {
+              material.textureImagePaths.emplace_back(
+                  absoluteImagePath.string());
+              continue;
+            }
+          }
+
+          bool resolved = false;
+          if (meshUri.mPath) {
+            common::Uri resolvedUri;
+            if (resolvedUri.fromRelativeUri(meshUri, imagePathString)) {
+              material.textureImagePaths.emplace_back(resolvedUri.toString());
+              resolved = true;
+            }
+          }
+
+          if (!resolved) {
+            material.textureImagePaths.emplace_back(imagePathString);
+          }
+
+          if (meshPathExists && attemptedCanonicalize && !resolved) {
             DART_WARN(
                 "[MeshShape::extractMaterialsFromScene] Failed to resolve "
                 "texture image path from (base: `{}`, relative: '{}').",
                 meshPath.parent_path().string(),
                 relativeImagePath.string());
-          } else {
-            material.textureImagePaths.emplace_back(absoluteImagePath.string());
           }
         }
       }

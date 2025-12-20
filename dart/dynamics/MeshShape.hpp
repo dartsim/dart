@@ -342,7 +342,9 @@ protected:
 
   /// Extracts material information from aiScene for Assimp-free rendering.
   void extractMaterialsFromScene(
-      const aiScene* scene, const std::string& basePath);
+      const aiScene* scene,
+      const std::string& basePath,
+      const common::Uri& meshUri);
 
   /// TriMesh representation (preferred, ownership shared).
   std::shared_ptr<math::TriMesh<double>> mTriMesh;

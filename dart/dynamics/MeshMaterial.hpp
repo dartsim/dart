@@ -54,7 +54,7 @@ struct MeshMaterial
   /// Shininess coefficient
   float shininess{0.0f};
 
-  /// Texture image paths (absolute paths)
+  /// Texture image paths or URIs (absolute when resolved on the filesystem)
   /// Index 0: diffuse texture
   /// Index 1: specular texture
   /// Index 2: normal texture
