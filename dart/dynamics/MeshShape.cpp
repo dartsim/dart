@@ -354,6 +354,7 @@ MeshShape::MeshShape(
             = mTriMesh ? mTriMesh->getTriangles().size() : 0;
         collectSubMeshRanges(
             scene.get(), mSubMeshRanges, expectedVertices, expectedTriangles);
+        extractTextureCoordsFromScene(scene.get());
       }
     }
   }
@@ -527,6 +528,7 @@ std::shared_ptr<math::TriMesh<double>> MeshShape::getTriMesh() const
       // Const cast is safe here - we're lazily populating internal cache.
       auto* self = const_cast<MeshShape*>(this);
       self->mTriMesh = convertAssimpMesh(scene, &self->mSubMeshRanges);
+      self->extractTextureCoordsFromScene(scene);
     }
   }
   return mTriMesh;
@@ -569,6 +571,23 @@ const aiScene* MeshShape::convertToAssimpMesh() const
   for (const auto& vertex : vertices) {
     stream << "v " << vertex.x() << ' ' << vertex.y() << ' ' << vertex.z()
            << '\n';
+  }
+
+  const bool hasTexCoords = !mTextureCoords.empty()
+                            && mTextureCoords.size() == vertices.size()
+                            && mTextureCoordComponents > 0;
+  if (hasTexCoords) {
+    const int components = std::min(mTextureCoordComponents, 3);
+    for (const auto& texCoord : mTextureCoords) {
+      stream << "vt " << texCoord.x();
+      if (components >= 2) {
+        stream << ' ' << texCoord.y();
+      }
+      if (components >= 3) {
+        stream << ' ' << texCoord.z();
+      }
+      stream << '\n';
+    }
   }
 
   const auto& normals = mTriMesh->getVertexNormals();
@@ -635,7 +654,14 @@ const aiScene* MeshShape::convertToAssimpMesh() const
         const std::size_t i1 = static_cast<std::size_t>(triangle.y()) + 1;
         const std::size_t i2 = static_cast<std::size_t>(triangle.z()) + 1;
 
-        if (hasNormals) {
+        if (hasTexCoords && hasNormals) {
+          stream << "f " << i0 << "/" << i0 << "/" << i0 << ' ' << i1 << "/"
+                 << i1 << "/" << i1 << ' ' << i2 << "/" << i2 << "/" << i2
+                 << '\n';
+        } else if (hasTexCoords) {
+          stream << "f " << i0 << "/" << i0 << ' ' << i1 << "/" << i1 << ' '
+                 << i2 << "/" << i2 << '\n';
+        } else if (hasNormals) {
           stream << "f " << i0 << "//" << i0 << ' ' << i1 << "//" << i1 << ' '
                  << i2 << "//" << i2 << '\n';
         } else {
@@ -671,7 +697,14 @@ const aiScene* MeshShape::convertToAssimpMesh() const
       const std::size_t i1 = static_cast<std::size_t>(triangle.y()) + 1;
       const std::size_t i2 = static_cast<std::size_t>(triangle.z()) + 1;
 
-      if (hasNormals) {
+      if (hasTexCoords && hasNormals) {
+        stream << "f " << i0 << "/" << i0 << "/" << i0 << ' ' << i1 << "/"
+               << i1 << "/" << i1 << ' ' << i2 << "/" << i2 << "/" << i2
+               << '\n';
+      } else if (hasTexCoords) {
+        stream << "f " << i0 << "/" << i0 << ' ' << i1 << "/" << i1 << ' '
+               << i2 << "/" << i2 << '\n';
+      } else if (hasNormals) {
         stream << "f " << i0 << "//" << i0 << ' ' << i1 << "//" << i1 << ' '
                << i2 << "//" << i2 << '\n';
       } else {
@@ -953,11 +986,15 @@ void MeshShape::setMesh(
     mMeshUri.clear();
     mMeshPath.clear();
     mResourceRetriever = nullptr;
+    mTextureCoords.clear();
+    mTextureCoordComponents = 0;
     mSubMeshRanges.clear();
     mIsBoundingBoxDirty = true;
     mIsVolumeDirty = true;
     return;
   }
+
+  extractTextureCoordsFromScene(mMesh.get());
 
   mMeshUri = uri;
 
@@ -1013,11 +1050,15 @@ void MeshShape::setMesh(
     mMeshUri.clear();
     mMeshPath.clear();
     mResourceRetriever = nullptr;
+    mTextureCoords.clear();
+    mTextureCoordComponents = 0;
     mSubMeshRanges.clear();
     mIsBoundingBoxDirty = true;
     mIsVolumeDirty = true;
     return;
   }
+
+  extractTextureCoordsFromScene(mMesh.get());
 
   mMeshUri = uri;
 
@@ -1132,6 +1173,64 @@ const MeshMaterial* MeshShape::getMaterial(std::size_t index) const
     return &mMaterials[index];
   }
   return nullptr;
+}
+
+//==============================================================================
+void MeshShape::extractTextureCoordsFromScene(const aiScene* scene)
+{
+  mTextureCoords.clear();
+  mTextureCoordComponents = 0;
+
+  if (!scene || scene->mNumMeshes == 0) {
+    return;
+  }
+
+  std::size_t totalVertices = 0;
+  bool hasTexCoords = false;
+  unsigned int maxComponents = 0;
+  for (std::size_t i = 0; i < scene->mNumMeshes; ++i) {
+    const aiMesh* assimpMesh = scene->mMeshes[i];
+    if (!assimpMesh) {
+      continue;
+    }
+
+    totalVertices += assimpMesh->mNumVertices;
+    if (assimpMesh->HasTextureCoords(0)) {
+      hasTexCoords = true;
+      maxComponents = std::max(maxComponents, assimpMesh->mNumUVComponents[0]);
+    }
+  }
+
+  if (!hasTexCoords || totalVertices == 0) {
+    return;
+  }
+
+  if (mTriMesh) {
+    const auto expectedVertices = mTriMesh->getVertices().size();
+    if (expectedVertices != 0 && totalVertices != expectedVertices) {
+      return;
+    }
+  }
+
+  mTextureCoords.reserve(totalVertices);
+  for (std::size_t i = 0; i < scene->mNumMeshes; ++i) {
+    const aiMesh* assimpMesh = scene->mMeshes[i];
+    if (!assimpMesh) {
+      continue;
+    }
+
+    const bool meshHasTexCoords = assimpMesh->HasTextureCoords(0);
+    for (auto j = 0u; j < assimpMesh->mNumVertices; ++j) {
+      if (meshHasTexCoords) {
+        const aiVector3D& texCoord = assimpMesh->mTextureCoords[0][j];
+        mTextureCoords.emplace_back(texCoord.x, texCoord.y, texCoord.z);
+      } else {
+        mTextureCoords.emplace_back(0.0, 0.0, 0.0);
+      }
+    }
+  }
+
+  mTextureCoordComponents = static_cast<int>(std::min(maxComponents, 3u));
 }
 
 //==============================================================================
@@ -1284,6 +1383,8 @@ ShapePtr MeshShape::clone() const
   new_shape->mColorIndex = mColorIndex;
   new_shape->mMaterials = mMaterials;
   new_shape->mSubMeshRanges = mSubMeshRanges;
+  new_shape->mTextureCoords = mTextureCoords;
+  new_shape->mTextureCoordComponents = mTextureCoordComponents;
 
   return new_shape;
 }

@@ -17,6 +17,7 @@
 #include <gtest/gtest.h>
 
 #include <atomic>
+#include <cmath>
 #include <chrono>
 #include <fstream>
 #include <memory>
@@ -534,6 +535,68 @@ TEST(MeshShapeTest, TriMeshGetMeshCachesImportedScene)
   ASSERT_NE(sceneFirst->mMeshes[0], nullptr);
   EXPECT_EQ(sceneFirst->mMeshes[0]->mNumVertices, 4u);
   EXPECT_EQ(sceneFirst->mMeshes[0]->mNumFaces, 2u);
+}
+
+TEST(MeshShapeTest, TriMeshGetMeshPreservesTextureCoords)
+{
+  const auto tempDir = common::filesystem::temp_directory_path();
+  const auto timestamp
+      = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+  const auto baseName
+      = std::string("dart_meshshape_texcoords_") + std::to_string(timestamp);
+  const auto objPath = tempDir / (baseName + ".obj");
+
+  {
+    std::ofstream objFile(objPath.string());
+    ASSERT_TRUE(objFile);
+    objFile << "v 0 0 0\n"
+            << "v 1 0 0\n"
+            << "v 0 1 0\n"
+            << "vt 0 0\n"
+            << "vt 1 0\n"
+            << "vt 0 1\n"
+            << "f 1/1 2/2 3/3\n";
+  }
+
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  auto loader = std::make_unique<utils::MeshLoaderd>();
+  auto triMesh = loader->load(objPath.string(), retriever);
+  ASSERT_NE(triMesh, nullptr);
+
+  dynamics::MeshShape shape(
+      Eigen::Vector3d::Ones(),
+      std::move(triMesh),
+      common::Uri::createFromPath(objPath.string()),
+      retriever);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = shape.getMesh();
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene, nullptr);
+  ASSERT_GE(scene->mNumMeshes, 1u);
+  const aiMesh* mesh = scene->mMeshes[0];
+  ASSERT_NE(mesh, nullptr);
+  ASSERT_TRUE(mesh->HasTextureCoords(0));
+  ASSERT_NE(mesh->mTextureCoords[0], nullptr);
+  EXPECT_EQ(mesh->mNumVertices, 3u);
+
+  auto hasTexCoord = [mesh](float u, float v) {
+    for (unsigned int i = 0; i < mesh->mNumVertices; ++i) {
+      const auto& texCoord = mesh->mTextureCoords[0][i];
+      if (std::fabs(texCoord.x - u) < 1e-6f
+          && std::fabs(texCoord.y - v) < 1e-6f) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  EXPECT_TRUE(hasTexCoord(0.0f, 0.0f));
+  EXPECT_TRUE(hasTexCoord(1.0f, 0.0f));
+  EXPECT_TRUE(hasTexCoord(0.0f, 1.0f));
+
+  common::error_code ec;
+  common::filesystem::remove(objPath, ec);
 }
 
 TEST(MeshShapeTest, TriMeshGetMeshPreservesMaterialIndices)

@@ -346,6 +346,9 @@ protected:
       const std::string& basePath,
       const common::Uri& meshUri);
 
+  /// Extracts texture coordinates from aiScene for Assimp-free rendering.
+  void extractTextureCoordsFromScene(const aiScene* scene);
+
   /// TriMesh representation (preferred, ownership shared).
   std::shared_ptr<math::TriMesh<double>> mTriMesh;
 
@@ -364,6 +367,12 @@ protected:
 
   /// Optional method of loading resources by URI.
   common::ResourceRetrieverPtr mResourceRetriever;
+
+  /// Texture coordinates aligned with TriMesh vertex order.
+  std::vector<Eigen::Vector3d> mTextureCoords;
+
+  /// Number of texture coordinate components (0 means none).
+  int mTextureCoordComponents{0};
 
   /// OpenGL DisplayList id for rendering
   int mDisplayList;
