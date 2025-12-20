@@ -15,28 +15,6 @@ dart_option(
   CATEGORY performance
 )
 
-set(_dart_disable_compiler_cache_from_env OFF)
-if(DEFINED ENV{DART_DISABLE_COMPILER_CACHE})
-  string(STRIP "$ENV{DART_DISABLE_COMPILER_CACHE}" _dart_disable_compiler_cache_env)
-  if(NOT _dart_disable_compiler_cache_env STREQUAL "")
-    string(TOLOWER "${_dart_disable_compiler_cache_env}" _dart_disable_compiler_cache_env_lower)
-    if(_dart_disable_compiler_cache_env_lower MATCHES "^(1|on|true|yes)$")
-      set(_dart_disable_compiler_cache_from_env ON)
-      set(
-        DART_DISABLE_COMPILER_CACHE
-        ON
-        CACHE BOOL
-        "Disable automatic detection of compiler cache launchers (sccache/ccache)."
-        FORCE
-      )
-      # Cache writes do not reliably update the normal variable in the current
-      # directory scope; keep the in-scope value consistent so option reporting
-      # and subsequent logic (dart_configure_compiler_cache) see the override.
-      set(DART_DISABLE_COMPILER_CACHE ON)
-    endif()
-  endif()
-endif()
-
 set(
   DART_COMPILER_CACHE
   "${DART_COMPILER_CACHE}"
@@ -76,35 +54,6 @@ endfunction()
 
 function(dart_configure_compiler_cache)
   if(DART_DISABLE_COMPILER_CACHE)
-    if(_dart_disable_compiler_cache_from_env)
-      if(CMAKE_C_COMPILER_LAUNCHER OR CMAKE_CXX_COMPILER_LAUNCHER OR CMAKE_CUDA_COMPILER_LAUNCHER)
-        message(STATUS "Compiler cache disabled via environment; clearing configured launchers")
-        set(
-          CMAKE_C_COMPILER_LAUNCHER
-          ""
-          CACHE STRING
-          "C compiler launcher used for caching"
-          FORCE
-        )
-        set(
-          CMAKE_CXX_COMPILER_LAUNCHER
-          ""
-          CACHE STRING
-          "CXX compiler launcher used for caching"
-          FORCE
-        )
-        if(CMAKE_CUDA_COMPILER)
-          set(
-            CMAKE_CUDA_COMPILER_LAUNCHER
-            ""
-            CACHE STRING
-            "CUDA compiler launcher used for caching"
-            FORCE
-          )
-        endif()
-        unset(DART_ACTIVE_COMPILER_CACHE CACHE)
-      endif()
-    endif()
     message(STATUS "Compiler cache auto-detection disabled (DART_DISABLE_COMPILER_CACHE=ON)")
     return()
   endif()
