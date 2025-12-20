@@ -35,6 +35,47 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 - Solvers validate basic invariants (e.g., `lo <= hi`, `findex` in range, no
   NaN bounds) and treat empty problems as a trivial success.
 
+### Repository Layout
+
+```text
+dart/math/lcp/
+├── LcpTypes.hpp/cpp            # LcpProblem, LcpOptions, LcpResult, status codes
+├── LcpSolver.hpp/cpp           # LcpSolver interface
+├── LcpValidation.hpp           # Shared residual/KKT validation utilities
+├── All.hpp                     # Convenience umbrella header
+│
+├── pivoting/
+│   ├── DantzigSolver.hpp/cpp   # Boxed LCP + findex (pivoting, ODE-derived)
+│   ├── LemkeSolver.hpp/cpp     # Standard LCP (boxed/findex delegates)
+│   └── dantzig/                # Low-level ODE Dantzig implementation
+│
+├── projection/
+│   └── PgsSolver.hpp/cpp       # Boxed LCP + findex (iterative)
+│
+├── newton/                     # Future Newton methods
+└── other/                      # Future solver families
+```
+
+See [Problem Statement](01_problem-statement.md) for the `w = Ax - b`
+convention and the friction-index (`findex`) interpretation.
+
+### Adding a Solver
+
+1. Implement
+   `dart::math::LcpSolver::solve(const LcpProblem&, Eigen::VectorXd&, const LcpOptions&)`.
+2. Keep solver-specific parameters in a struct and reference it via
+   `LcpOptions::customOptions` (see `PgsSolver::Parameters`).
+3. Add unit tests under `tests/unit/math/lcp` (optionally benchmarks under
+   `tests/benchmark/lcpsolver`).
+4. Add the header to `dart/math/lcp/All.hpp` if it should be part of the
+   public API.
+
+### Usage Examples
+
+See [Pivoting Methods](03_pivoting-methods.md) and
+[Projection Methods](04_projection-methods.md) for `LcpProblem` setup and
+solver usage examples.
+
 ### Currently Implemented Solvers
 
 #### 1. Dantzig Principal Pivoting Method (`pivoting/DantzigSolver.hpp`)
