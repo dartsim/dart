@@ -34,12 +34,9 @@
 
 #include "dart/collision/All.hpp"
 #include "dart/common/All.hpp"
-#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/config.hpp"
-DART_SUPPRESS_DEPRECATED_BEGIN
 #include "dart/constraint/All.hpp"
-DART_SUPPRESS_DEPRECATED_END
 #include "dart/dynamics/All.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"

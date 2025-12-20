@@ -49,6 +49,7 @@ This onboarding guide is organized into several focused documents:
 - **[ci-cd.md](ci-cd.md)** - CI/CD workflows, caching strategies, and performance optimization
 - **[architecture.md](architecture.md)** - Deep dive into DART's simulation core
 - **[dynamics.md](dynamics.md)** - Articulated body system and kinematics
+- **[constraints.md](constraints.md)** - Constraint resolution and collision response
 - **[gui-rendering.md](gui-rendering.md)** - OpenSceneGraph integration details
 - **[python-bindings.md](python-bindings.md)** - nanobind bindings architecture
 - **[api-documentation.md](api-documentation.md)** - Publishing strategy for RTD and GitHub Pages API docs

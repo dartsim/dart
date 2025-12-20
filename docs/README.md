@@ -16,6 +16,7 @@ Located in `onboarding/` - **Architecture guides for developers:**
 - [Core Architecture](onboarding/architecture.md) - Deep dive into simulation engine internals
 - [Aspect System](onboarding/aspect-system.md) - Aspect/State/Properties design and implementation
 - [Dynamics System](onboarding/dynamics.md) - Articulated body system and kinematics
+- [Constraint Solver](onboarding/constraints.md) - Constraint resolution and collision response
 - [GUI & Rendering](onboarding/gui-rendering.md) - OpenSceneGraph integration details
 - [Python Bindings](onboarding/python-bindings.md) - nanobind bindings architecture
 - [Build System](onboarding/build-system.md) - CMake internals and dependency analysis
