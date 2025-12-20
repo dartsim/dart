@@ -114,10 +114,12 @@ Errors Mesh::postprocess(const Compiler& /*compiler*/)
 dynamics::MeshShapePtr Mesh::createMeshShape() const
 {
   auto loader = std::make_unique<utils::MeshLoaderd>();
-  auto triMesh = loader->load(mMeshUri.toString(), mRetriever);
-  if (triMesh == nullptr) {
+  auto triMeshUnique = loader->load(mMeshUri.toString(), mRetriever);
+  if (triMeshUnique == nullptr) {
     return nullptr;
   }
+
+  std::shared_ptr<math::TriMesh<double>> triMesh(std::move(triMeshUnique));
 
   auto shape = std::make_shared<dynamics::MeshShape>(
       mScale, std::move(triMesh), mMeshUri, mRetriever);

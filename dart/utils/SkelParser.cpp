@@ -1382,9 +1382,10 @@ dynamics::ShapePtr readShape(
         = common::Uri::createFromRelativeUri(baseUri, filename);
 
     auto loader = std::make_unique<utils::MeshLoaderd>();
-    auto triMesh = loader->load(meshUri.toString(), retriever);
+    auto triMeshUnique = loader->load(meshUri.toString(), retriever);
 
-    if (triMesh) {
+    if (triMeshUnique) {
+      std::shared_ptr<math::TriMesh<double>> triMesh(std::move(triMeshUnique));
       newShape = std::make_shared<dynamics::MeshShape>(
           scale, std::move(triMesh), meshUri, retriever);
     } else {

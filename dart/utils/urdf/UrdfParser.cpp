@@ -982,10 +982,12 @@ dynamics::ShapePtr UrdfParser::createShape(
     const std::string resolvedUri = absoluteUri.toString();
 
     auto loader = std::make_unique<utils::MeshLoaderd>();
-    auto triMesh = loader->load(resolvedUri, _resourceRetriever);
+    auto triMeshUnique = loader->load(resolvedUri, _resourceRetriever);
 
-    if (!triMesh)
+    if (!triMeshUnique)
       return nullptr;
+
+    std::shared_ptr<math::TriMesh<double>> triMesh(std::move(triMeshUnique));
 
     const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
     shape = std::make_shared<dynamics::MeshShape>(
