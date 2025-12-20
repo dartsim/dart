@@ -1,4 +1,4 @@
-[project]
+[workspace]
 name = "DART"
 version = "6.16.2"
 description = "Dynamic Animation and Robotics Toolkit"
@@ -6,7 +6,7 @@ authors = ["Jeongseok Lee <jslee02@gmail.com>"]
 channels = ["conda-forge"]
 platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
-[build-dependencies]
+[dependencies]
 benchmark = ">=1.9.3,<2"
 black = ">=25.1.0,<26"
 clang-format = ">=14.0.0,<15"
@@ -28,8 +28,6 @@ sphinx-intl = "*"
 sphinx_rtd_theme = "*"
 sphinx-tabs = "*"
 tracy-profiler-gui = ">=0.11.1,<0.12"
-
-[dependencies]
 assimp = ">=5.4.3,<6"
 bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
@@ -410,10 +408,8 @@ docs-clean = { cmd = """
 # linux-64
 ################################################################################
 
-[target.linux-64.build-dependencies]
-lcov = ">=1.16,<2"
-
 [target.linux-64.dependencies]
+lcov = ">=1.16,<2"
 freeglut = ">=3.2.2,<3.3"
 libgl-devel = ">=1.7.0,<2"
 libglu = ">=9.0.3,<10"
@@ -422,10 +418,8 @@ libglu = ">=9.0.3,<10"
 # osx-64
 ################################################################################
 
-[target.osx-64.build-dependencies]
-git = ">=2.40.0"
-
 [target.osx-64.dependencies]
+git = ">=2.40.0"
 
 [target.osx-64.tasks]
 download-osg = { cmd = """
@@ -456,10 +450,8 @@ install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on =
 # osx-arm64
 ################################################################################
 
-[target.osx-arm64.build-dependencies]
-git = ">=2.40.0"
-
 [target.osx-arm64.dependencies]
+git = ">=2.40.0"
 
 [target.osx-arm64.tasks]
 download-osg = { cmd = """
@@ -696,10 +688,8 @@ tracy = { cmd = "tracy-profiler.exe" }
 channels = ["conda-forge"]
 platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
-[feature.gazebo.build-dependencies]
-git = ">=1"
-
 [feature.gazebo.dependencies]
+git = ">=1"
 libgz-cmake4 = ">=4.0.0"
 libgz-plugin3 = ">=3.0.0"
 libgz-math8 = ">=8.0.0"
