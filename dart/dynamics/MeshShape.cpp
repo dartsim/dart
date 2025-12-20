@@ -698,12 +698,11 @@ const aiScene* MeshShape::convertToAssimpMesh() const
       const std::size_t i2 = static_cast<std::size_t>(triangle.z()) + 1;
 
       if (hasTexCoords && hasNormals) {
-        stream << "f " << i0 << "/" << i0 << "/" << i0 << ' ' << i1 << "/"
-               << i1 << "/" << i1 << ' ' << i2 << "/" << i2 << "/" << i2
-               << '\n';
+        stream << "f " << i0 << "/" << i0 << "/" << i0 << ' ' << i1 << "/" << i1
+               << "/" << i1 << ' ' << i2 << "/" << i2 << "/" << i2 << '\n';
       } else if (hasTexCoords) {
-        stream << "f " << i0 << "/" << i0 << ' ' << i1 << "/" << i1 << ' '
-               << i2 << "/" << i2 << '\n';
+        stream << "f " << i0 << "/" << i0 << ' ' << i1 << "/" << i1 << ' ' << i2
+               << "/" << i2 << '\n';
       } else if (hasNormals) {
         stream << "f " << i0 << "//" << i0 << ' ' << i1 << "//" << i1 << ' '
                << i2 << "//" << i2 << '\n';

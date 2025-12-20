@@ -17,13 +17,14 @@
 #include <gtest/gtest.h>
 
 #include <atomic>
-#include <cmath>
 #include <chrono>
 #include <fstream>
 #include <memory>
 #include <set>
 #include <sstream>
 #include <string>
+
+#include <cmath>
 
 using namespace dart;
 
