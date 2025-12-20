@@ -55,6 +55,9 @@ set(component_name collision-bullet)
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})
 target_link_libraries(${target_name} PUBLIC dart Bullet)
+if(BT_USE_DOUBLE_PRECISION)
+  target_compile_definitions(${target_name} PUBLIC BT_USE_DOUBLE_PRECISION)
+endif()
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
