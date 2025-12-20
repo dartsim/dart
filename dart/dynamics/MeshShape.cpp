@@ -1149,10 +1149,9 @@ void MeshShape::extractMaterialsFromScene(
 
   const common::filesystem::path meshPath = basePath;
   std::error_code meshPathEc;
-  const bool meshPathExists = !basePath.empty()
-                              && common::filesystem::exists(
-                                  meshPath, meshPathEc)
-                              && !meshPathEc;
+  const bool meshPathExists
+      = !basePath.empty() && common::filesystem::exists(meshPath, meshPathEc)
+        && !meshPathEc;
 
   for (std::size_t i = 0; i < scene->mNumMaterials; ++i) {
     aiMaterial* aiMat = scene->mMaterials[i];
