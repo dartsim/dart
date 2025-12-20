@@ -1,16 +1,15 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/gui/render/HeightmapShapeNode.hpp>
-
-#include <dart/dynamics/HeightmapShape.hpp>
+#include <dart/gui/render/detail/HeightmapShapeGeometry.hpp>
 
 #include <gtest/gtest.h>
 
 namespace {
 
 using Scalar = float;
-using HeightField = dart::dynamics::HeightmapShape<Scalar>::HeightField;
-using Drawable = dart::gui::render::HeightmapShapeDrawable<Scalar>;
+using HeightmapShape = dart::dynamics::HeightmapShape<Scalar>;
+using HeightField = HeightmapShape::HeightField;
+using Vector3 = HeightmapShape::Vector3;
 
 //------------------------------------------------------------------------------
 TEST(HeightmapShapeNode, VerticesAreCenteredAroundOrigin)
@@ -18,30 +17,36 @@ TEST(HeightmapShapeNode, VerticesAreCenteredAroundOrigin)
   HeightField heights(2, 3);
   heights.setZero();
 
-  ::osg::ref_ptr<Drawable::Vec3Array> vertices = new Drawable::Vec3Array;
-  ::osg::ref_ptr<Drawable::Vec3Array> normals = new Drawable::Vec3Array;
-  ::osg::ref_ptr<::osg::DrawElementsUInt> faces
-      = new ::osg::DrawElementsUInt(::osg::PrimitiveSet::TRIANGLES);
-
-  typename Drawable::Vector3 scale;
+  Vector3 scale;
   scale << 2.0f, 3.0f, 1.0f;
 
-  dart::gui::render::setVertices<Scalar>(
-      heights, *vertices, *faces, *normals, scale);
-
-  ASSERT_EQ(vertices->size(), heights.size());
+  const auto origin
+      = dart::gui::render::detail::computeHeightmapVertexOrigin<Scalar>(
+          heights, scale);
+  const auto p00
+      = dart::gui::render::detail::computeHeightmapVertexPosition<Scalar>(
+          heights, scale, origin, 0, 0);
+  const auto p01
+      = dart::gui::render::detail::computeHeightmapVertexPosition<Scalar>(
+          heights, scale, origin, 0, 1);
+  const auto p10
+      = dart::gui::render::detail::computeHeightmapVertexPosition<Scalar>(
+          heights, scale, origin, 1, 0);
+  const auto p12
+      = dart::gui::render::detail::computeHeightmapVertexPosition<Scalar>(
+          heights, scale, origin, 1, 2);
 
   const Scalar spanX
       = (heights.cols() > 1 ? heights.cols() - 1 : 0) * scale.x();
   const Scalar spanY
       = (heights.rows() > 1 ? heights.rows() - 1 : 0) * scale.y();
 
-  EXPECT_FLOAT_EQ(vertices->front().x(), -0.5f * spanX);
-  EXPECT_FLOAT_EQ(vertices->front().y(), 0.5f * spanY);
-  EXPECT_FLOAT_EQ((*vertices)[1].x(), 0.0f);
-  EXPECT_FLOAT_EQ((*vertices)[3].y(), -0.5f * spanY);
-  EXPECT_FLOAT_EQ(vertices->back().x(), 0.5f * spanX);
-  EXPECT_FLOAT_EQ(vertices->back().y(), -0.5f * spanY);
+  EXPECT_FLOAT_EQ(p00.x(), -0.5f * spanX);
+  EXPECT_FLOAT_EQ(p00.y(), 0.5f * spanY);
+  EXPECT_FLOAT_EQ(p01.x(), 0.0f);
+  EXPECT_FLOAT_EQ(p10.y(), -0.5f * spanY);
+  EXPECT_FLOAT_EQ(p12.x(), 0.5f * spanX);
+  EXPECT_FLOAT_EQ(p12.y(), -0.5f * spanY);
 }
 
 } // namespace

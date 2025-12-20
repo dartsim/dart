@@ -39,6 +39,7 @@
 
 #include <dart/gui/Utils.hpp>
 #include <dart/gui/render/ShapeNode.hpp>
+#include <dart/gui/render/detail/HeightmapShapeGeometry.hpp>
 
 #include <dart/dynamics/HeightmapShape.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
@@ -321,20 +322,16 @@ void setVertices(
 
   vertices.resize(static_cast<std::size_t>(heightmap.size()));
 
-  const S spanX = (cols > 1 ? static_cast<S>(cols - 1) : S(0)) * scale.x();
-  const S spanY = (rows > 1 ? static_cast<S>(rows - 1) : S(0)) * scale.y();
-  const S xOffset = static_cast<S>(-0.5) * spanX;
-  const S yOffset = static_cast<S>(0.5) * spanY;
+  const auto origin = detail::computeHeightmapVertexOrigin<S>(heightmap, scale);
 
   // Note that heightmap(i, j) represents the height value at
-  // (xOffset + j * scale.x(), -(i * scale.y()) + yOffset) in XY coordinates.
+  // (origin.xOffset + j * scale.x(), -(i * scale.y()) + origin.yOffset).
   for (auto i = 0; i < rows; ++i) {
     for (auto j = 0; j < cols; ++j) {
       const auto index = cols * i + j;
-      vertices[index].set(
-          static_cast<S>(j) * scale.x() + xOffset,
-          -static_cast<S>(i) * scale.y() + yOffset,
-          heightmap(i, j) * scale.z());
+      const auto position = detail::computeHeightmapVertexPosition<S>(
+          heightmap, scale, origin, i, j);
+      vertices[index].set(position.x(), position.y(), position.z());
     }
   }
 

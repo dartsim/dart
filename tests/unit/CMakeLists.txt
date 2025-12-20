@@ -123,7 +123,6 @@ endif()
 # ==============================================================================
 if(TARGET dart-gui)
   dart_add_test("unit" UNIT_gui_HeightmapShapeNode gui/test_HeightmapShapeNode.cpp)
-  target_link_libraries(UNIT_gui_HeightmapShapeNode dart-gui)
   dart_add_test(
     "unit" UNIT_gui_ImGuiWindowScaling gui/test_ImGuiWindowScaling.cpp)
 endif()
