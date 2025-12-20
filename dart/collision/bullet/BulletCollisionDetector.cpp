@@ -60,6 +60,8 @@
 #include <algorithm>
 #include <vector>
 
+#include <cmath>
+
 namespace dart {
 namespace collision {
 
@@ -98,6 +100,8 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromTriMesh(
 template <typename HeightmapShapeT>
 std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
     const HeightmapShapeT* heightMap);
+
+bool isConvex(const math::TriMesh<double>& mesh, float threshold = 0.001f);
 
 } // anonymous namespace
 
@@ -1036,8 +1040,7 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromTriMesh(
     triMesh->addTriangle(btVertices[0], btVertices[1], btVertices[2]);
   }
 
-  // For now, assume non-convex. We could add convexity checking later.
-  const bool makeConvexMesh = false;
+  const bool makeConvexMesh = isConvex(*mesh);
 
   if (makeConvexMesh) {
     auto convexMeshShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
@@ -1118,6 +1121,58 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
 
   return std::make_unique<BulletCollisionShape>(
       std::move(heightFieldShape), relativeShapeTransform);
+}
+
+//==============================================================================
+bool isConvex(const math::TriMesh<double>& mesh, float threshold)
+{
+  // Check whether all the other vertices on the mesh are on the internal side
+  // of the face, assuming that the direction of the normal of the face is
+  // pointing to the external side.
+  //
+  // Reference: https://stackoverflow.com/a/40056279/3122234
+  const auto& points = mesh.getVertices();
+  const auto& triangles = mesh.getTriangles();
+
+  if (points.empty() || triangles.empty()) {
+    return false;
+  }
+
+  btVector3 vertices[3];
+  for (const auto& triangle : triangles) {
+    for (auto j = 0u; j < 3; ++j) {
+      const auto& vertex = points[triangle[j]];
+      vertices[j] = btVector3(vertex.x(), vertex.y(), vertex.z());
+    }
+    const btVector3& A = vertices[0];
+    const btVector3 B = vertices[1] - A;
+    const btVector3 C = vertices[2] - A;
+
+    const btVector3 BCNormRaw = B.cross(C);
+    const btScalar normSquared = BCNormRaw.length2();
+    if (normSquared <= btScalar(0.0)) {
+      continue;
+    }
+    const btVector3 BCNorm = BCNormRaw / btSqrt(normSquared);
+
+    const float checkPoint = btVector3(
+                                 points[0].x() - A.x(),
+                                 points[0].y() - A.y(),
+                                 points[0].z() - A.z())
+                                 .dot(BCNorm);
+
+    for (const auto& point : points) {
+      const float dist
+          = btVector3(point.x() - A.x(), point.y() - A.y(), point.z() - A.z())
+                .dot(BCNorm);
+      if ((std::abs(checkPoint) > threshold) && (std::abs(dist) > threshold)
+          && (checkPoint * dist < 0.0f)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 } // anonymous namespace
