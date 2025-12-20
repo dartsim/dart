@@ -53,6 +53,7 @@
 #include <iomanip>
 #include <limits>
 #include <locale>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -1515,12 +1516,18 @@ const aiScene* MeshShape::loadMesh(
   // Wrap ResourceRetriever in an IOSystem from Assimp's C++ API.  Then wrap
   // the IOSystem in an aiFileIO from Assimp's C API. Yes, this API is
   // completely ridiculous...
-  // Suppress deprecation warnings - we need to use this for backward
-  // compatibility
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  AssimpInputResourceRetrieverAdaptor systemIO(retriever);
-  aiFileIO fileIO = createFileIO(&systemIO);
-  DART_SUPPRESS_DEPRECATED_END
+  aiFileIO* fileIOPtr = nullptr;
+  std::optional<AssimpInputResourceRetrieverAdaptor> systemIO;
+  std::optional<aiFileIO> fileIO;
+  if (retriever) {
+    // Suppress deprecation warnings - we need to use this for backward
+    // compatibility
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    systemIO.emplace(retriever);
+    fileIO.emplace(createFileIO(&systemIO.value()));
+    DART_SUPPRESS_DEPRECATED_END
+    fileIOPtr = &fileIO.value();
+  }
 
   // Import the file.
   const aiScene* scene = aiImportFileExWithProperties(
@@ -1528,7 +1535,7 @@ const aiScene* MeshShape::loadMesh(
       aiProcess_GenNormals | aiProcess_Triangulate
           | aiProcess_JoinIdenticalVertices | aiProcess_SortByPType
           | aiProcess_OptimizeMeshes,
-      &fileIO,
+      fileIOPtr,
       propertyStore);
 
   // If succeeded, store the importer in the scene to keep it alive. This is
