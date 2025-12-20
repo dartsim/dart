@@ -34,9 +34,10 @@
 
 #include <dart/gui/All.hpp>
 #include <dart/gui/ImGuiHandler.hpp>
+#include <dart/gui/IncludeImGui.hpp>
 
 #include <dart/utils/All.hpp>
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/utils/urdf/All.hpp>
 
 #include <dart/All.hpp>
 

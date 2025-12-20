@@ -5,6 +5,7 @@ Comprehensive testing script for DART before submitting a PR.
 This script runs all available tests locally:
 - Linting (C++ and Python)
 - Building (Release and Debug)
+- Building (tests and examples)
 - Unit tests
 - Python tests
 - Documentation build
@@ -358,6 +359,21 @@ def run_build_tests(skip_debug: bool = False) -> bool:
     # Build Release
     result, _ = run_command(pixi_command("build"), "Build Release")
     success = success and result
+
+    if result:
+        # Build all tests (compile-only; running happens in the Unit Tests step)
+        result, _ = run_command(
+            pixi_command("build-tests", PIXI_DEFAULT_DARTPY, "Release"),
+            "Build tests (Release)",
+        )
+        success = success and result
+
+        # Build all examples (compile-only)
+        result, _ = run_command(
+            pixi_command("build-examples", PIXI_DEFAULT_DARTPY, "Release"),
+            "Build examples (Release)",
+        )
+        success = success and result
 
     if not skip_debug:
         # Build Debug (for better error messages)

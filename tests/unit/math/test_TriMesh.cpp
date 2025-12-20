@@ -147,3 +147,65 @@ TEST(TriMeshTests, GenerateConvexHull)
   EXPECT_EQ(convexHull->getVertices().size(), vertices.size());
   EXPECT_EQ(convexHull->getTriangles().size(), 4);
 }
+
+//==============================================================================
+TEST(TriMeshTests, ReserveAndAdd)
+{
+  auto mesh = TriMeshd();
+
+  mesh.reserveVertices(3);
+  mesh.reserveTriangles(1);
+  mesh.reserveVertexNormals(3);
+
+  mesh.addVertex(0.0, 0.0, 0.0);
+  mesh.addVertex(1.0, 0.0, 0.0);
+  mesh.addVertex(0.0, 1.0, 0.0);
+  mesh.addTriangle(0, 1, 2);
+
+  EXPECT_EQ(mesh.getVertices().size(), 3u);
+  EXPECT_EQ(mesh.getTriangles().size(), 1u);
+  EXPECT_FALSE(mesh.hasVertexNormals());
+
+  mesh.addVertexNormal(0.0, 0.0, 1.0);
+  mesh.addVertexNormal(0.0, 0.0, 1.0);
+  mesh.addVertexNormal(0.0, 0.0, 1.0);
+  EXPECT_TRUE(mesh.hasVertexNormals());
+  EXPECT_EQ(mesh.getVertexNormals().size(), 3u);
+
+  Eigen::Vector3d vertex(0.5, 0.5, 0.0);
+  mesh.addVertex(vertex);
+  EXPECT_FALSE(mesh.hasVertexNormals());
+  EXPECT_EQ(mesh.getVertices().size(), 4u);
+
+  Eigen::Matrix<std::size_t, 3, 1> triangle;
+  triangle << 0, 1, 3;
+  mesh.addTriangle(triangle);
+  EXPECT_EQ(mesh.getTriangles().size(), 2u);
+
+  Eigen::Vector3d normal(0.0, 1.0, 0.0);
+  mesh.addVertexNormal(normal);
+  EXPECT_TRUE(mesh.hasVertexNormals());
+  EXPECT_EQ(mesh.getVertexNormals().size(), 4u);
+}
+
+//==============================================================================
+TEST(TriMeshTests, ComputeVertexNormals)
+{
+  auto mesh = TriMeshd();
+
+  mesh.addVertex(0.0, 0.0, 0.0);
+  mesh.addVertex(1.0, 0.0, 0.0);
+  mesh.addVertex(0.0, 1.0, 0.0);
+  mesh.addTriangle(0, 1, 2);
+
+  mesh.computeVertexNormals();
+
+  EXPECT_TRUE(mesh.hasVertexNormals());
+  EXPECT_EQ(mesh.getVertexNormals().size(), mesh.getVertices().size());
+
+  for (const auto& normal : mesh.getVertexNormals()) {
+    EXPECT_NEAR(normal.z(), 1.0, 1e-10);
+    EXPECT_NEAR(normal.x(), 0.0, 1e-10);
+    EXPECT_NEAR(normal.y(), 0.0, 1e-10);
+  }
+}

@@ -132,6 +132,13 @@ dart_build_tests(
 if(TARGET dart-gui)
   dart_add_test(
     "unit" UNIT_gui_ImGuiWindowScaling gui/test_ImGuiWindowScaling.cpp)
+  # System ImGui builds can depend on SDL3, which is not available in ASAN CI.
+  if(NOT (DART_ENABLE_ASAN AND DART_USE_SYSTEM_IMGUI))
+    dart_add_test(
+      "unit" UNIT_gui_MeshShapeNodeMaterialUpdates
+      gui/test_MeshShapeNodeMaterialUpdates.cpp)
+    target_link_libraries(UNIT_gui_MeshShapeNodeMaterialUpdates dart-gui)
+  endif()
 endif()
 
 # ==============================================================================
@@ -139,6 +146,9 @@ endif()
 # ==============================================================================
 dart_add_test("unit" test_SdfHelpers utils/test_SdfHelpers.cpp)
 target_link_libraries(test_SdfHelpers dart-utils sdformat::sdformat)
+
+dart_add_test("unit" test_MeshLoader utils/test_MeshLoader.cpp)
+target_link_libraries(test_MeshLoader dart-utils)
 
 if(TARGET dart-io)
   dart_add_test("unit" test_IoRead io/test_Read.cpp)

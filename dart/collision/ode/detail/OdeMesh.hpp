@@ -35,8 +35,11 @@
 
 #include <dart/collision/ode/detail/OdeGeom.hpp>
 
-#include <assimp/scene.h>
+#include <dart/math/TriMesh.hpp>
+
 #include <ode/ode.h>
+
+#include <memory>
 
 namespace dart {
 namespace collision {
@@ -45,10 +48,10 @@ namespace detail {
 class OdeMesh : public OdeGeom
 {
 public:
-  /// Constructor
+  /// Constructor using TriMesh (preferred)
   OdeMesh(
       const OdeCollisionObject* parent,
-      const aiScene* scene,
+      const std::shared_ptr<math::TriMesh<double>>& mesh,
       const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
 
   /// Destructor
@@ -58,8 +61,8 @@ public:
   void updateEngineData() override;
 
 private:
-  void fillArrays(
-      const aiScene* scene,
+  void fillArraysFromTriMesh(
+      const std::shared_ptr<math::TriMesh<double>>& mesh,
       const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
 
 private:

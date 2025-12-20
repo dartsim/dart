@@ -2,6 +2,57 @@
 
 This directory contains the complete test suite for DART (Dynamic Animation and Robotics Toolkit). The tests are organized by type and module to facilitate easy navigation, maintenance, and scalability.
 
+## Start here next time
+
+- Local build/test workflow: [building.md](building.md)
+- CI monitoring and expectations: [ci-cd.md](ci-cd.md)
+- Gazebo / gz-physics integration: [build-system.md](build-system.md#gazebo-integration-feature)
+
+## Fast Iteration Loop
+
+Smallest repeatable local loop before a full CI run.
+
+Choose a parallelism cap around two-thirds of logical cores, then set `DART_PARALLEL_JOBS` and `CTEST_PARALLEL_LEVEL` to that value (see [building.md](building.md) for details).
+
+Suggested (Unverified):
+
+```bash
+DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test
+```
+
+Example (Used in this task):
+
+```bash
+pixi run lint
+DART_PARALLEL_JOBS=12 CTEST_PARALLEL_LEVEL=12 pixi run test
+```
+
+Signals to look for:
+
+- `ctest` ends with `100% tests passed`
+- `pixi run lint` completes without modifying unrelated files
+
+Full validation.
+
+Suggested (Unverified):
+
+```bash
+DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test-all
+DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run -e gazebo test-gz
+```
+
+Example (Used in this task):
+
+```bash
+DART_PARALLEL_JOBS=12 CTEST_PARALLEL_LEVEL=12 pixi run test-all
+DART_PARALLEL_JOBS=12 CTEST_PARALLEL_LEVEL=12 pixi run -e gazebo test-gz
+```
+
+Signals to look for:
+
+- `pixi run test-all` ends with `✓ All tests passed!`
+- `pixi run -e gazebo test-gz` prints `✓ DART plugin built successfully with DART integration!`
+
 ## Directory Structure
 
 ```
@@ -159,10 +210,10 @@ Performance benchmarks measure execution time and resource usage:
 
 Suggested (Unverified): If you don't know the module yet, search for similar tests by symbol name, e.g. `rg -n "<ClassOrFeature>" tests python`.
 
-Examples (from this task):
+Examples (Suggested, Unverified):
 
-- `tests/integration/dynamics/test_Joints.cpp`
-- `python/tests/unit/dynamics/`
+- `tests/integration/<module>/test_<Feature>.cpp`
+- `python/tests/unit/<module>/`
 
 ### Steps to Add a New Test
 
