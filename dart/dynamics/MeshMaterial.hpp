@@ -30,61 +30,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_RENDER_MESHSHAPENODE_HPP_
-#define DART_GUI_RENDER_MESHSHAPENODE_HPP_
+#ifndef DART_DYNAMICS_MESHMATERIAL_HPP_
+#define DART_DYNAMICS_MESHMATERIAL_HPP_
 
-#include <dart/gui/render/ShapeNode.hpp>
+#include <Eigen/Core>
 
-#include <osg/Material>
-#include <osg/MatrixTransform>
-
-#include <map>
-
-struct aiNode;
+#include <string>
+#include <vector>
 
 namespace dart {
-
 namespace dynamics {
-class MeshShape;
-} // namespace dynamics
 
-namespace gui {
-
-namespace render {
-
-class osgAiNode;
-class MeshShapeGeode;
-class MeshShapeGeometry;
-
-class DART_GUI_API MeshShapeNode : public ShapeNode,
-                                   public ::osg::MatrixTransform
+/// Simple material representation for mesh rendering
+/// Stores material properties independently of Assimp types
+struct MeshMaterial
 {
-public:
-  MeshShapeNode(
-      std::shared_ptr<dart::dynamics::MeshShape> shape,
-      ShapeFrameNode* parentNode);
+  /// Material colors
+  Eigen::Vector4f ambient{0.2f, 0.2f, 0.2f, 1.0f};
+  Eigen::Vector4f diffuse{0.8f, 0.8f, 0.8f, 1.0f};
+  Eigen::Vector4f specular{0.0f, 0.0f, 0.0f, 1.0f};
+  Eigen::Vector4f emissive{0.0f, 0.0f, 0.0f, 1.0f};
 
-  void refresh();
-  void extractData(bool firstTime);
+  /// Shininess coefficient
+  float shininess{0.0f};
 
-  ::osg::Material* getMaterial(std::size_t index) const;
-  std::vector<std::string> getTextureImagePaths(std::size_t index) const;
+  /// Texture image paths or URIs (absolute when resolved on the filesystem)
+  /// Index 0: diffuse texture
+  /// Index 1: specular texture
+  /// Index 2: normal texture
+  /// etc.
+  std::vector<std::string> textureImagePaths;
 
-protected:
-  virtual ~MeshShapeNode();
-
-  void clearTemporaryTextures();
-
-  std::shared_ptr<dart::dynamics::MeshShape> mMeshShape;
-  osgAiNode* mRootAiNode;
-  std::vector<::osg::ref_ptr<::osg::Material>> mMaterials;
-  std::vector<std::vector<std::string>> mTextureImageArrays;
-  std::vector<std::string> mTemporaryTextureFiles;
-  std::size_t mMaterialVersion;
+  /// Default constructor
+  MeshMaterial() = default;
 };
 
-} // namespace render
-} // namespace gui
+} // namespace dynamics
 } // namespace dart
 
-#endif // DART_GUI_RENDER_MESHSHAPENODE_HPP_
+#endif // DART_DYNAMICS_MESHMATERIAL_HPP_

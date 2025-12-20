@@ -33,13 +33,15 @@
 #include "dart/dynamics/MeshShape.hpp"
 
 #include "dart/common/Diagnostics.hpp"
+#include "dart/common/Filesystem.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Resource.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/config.hpp"
-#include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/MeshMaterial.hpp"
+#include "dart/dynamics/detail/AssimpInputResourceAdaptor.hpp"
 
 #include <assimp/Importer.hpp>
 #include <assimp/cexport.h>
@@ -48,28 +50,316 @@
 #include <assimp/postprocess.h>
 
 #include <algorithm>
+#include <iomanip>
 #include <limits>
+#include <locale>
+#include <optional>
+#include <sstream>
 #include <string>
+#include <unordered_map>
+#include <utility>
+
+#include <cstring>
 
 namespace dart {
 namespace dynamics {
+
+namespace {
+
+class MemoryResource final : public common::Resource
+{
+public:
+  explicit MemoryResource(std::string data)
+    : mData(std::move(data)), mPosition(0)
+  {
+  }
+
+  std::size_t getSize() override
+  {
+    return mData.size();
+  }
+
+  std::size_t tell() override
+  {
+    return mPosition;
+  }
+
+  bool seek(ptrdiff_t offset, SeekType origin) override
+  {
+    ptrdiff_t base = 0;
+    switch (origin) {
+      case SEEKTYPE_CUR:
+        base = static_cast<ptrdiff_t>(mPosition);
+        break;
+      case SEEKTYPE_END:
+        base = static_cast<ptrdiff_t>(mData.size());
+        break;
+      case SEEKTYPE_SET:
+        base = 0;
+        break;
+      default:
+        return false;
+    }
+
+    const ptrdiff_t next = base + offset;
+    if (next < 0)
+      return false;
+    if (static_cast<std::size_t>(next) > mData.size())
+      return false;
+
+    mPosition = static_cast<std::size_t>(next);
+    return true;
+  }
+
+  std::size_t read(void* buffer, std::size_t size, std::size_t count) override
+  {
+    if (!buffer || size == 0 || count == 0)
+      return 0;
+
+    const std::size_t remaining = mData.size() - mPosition;
+    const std::size_t availableCount = remaining / size;
+    const std::size_t toReadCount = std::min(count, availableCount);
+    const std::size_t toReadBytes = toReadCount * size;
+
+    if (toReadBytes > 0) {
+      std::memcpy(buffer, mData.data() + mPosition, toReadBytes);
+      mPosition += toReadBytes;
+    }
+
+    return toReadCount;
+  }
+
+private:
+  std::string mData;
+  std::size_t mPosition;
+};
+
+class MemoryResourceRetriever final : public common::ResourceRetriever
+{
+public:
+  MemoryResourceRetriever(
+      std::unordered_map<std::string, std::string> data,
+      common::ResourceRetrieverPtr fallback)
+    : mData(std::move(data)), mFallback(std::move(fallback))
+  {
+  }
+
+  bool exists(const common::Uri& uri) override
+  {
+    return findData(uri) != nullptr || (mFallback && mFallback->exists(uri));
+  }
+
+  common::ResourcePtr retrieve(const common::Uri& uri) override
+  {
+    const std::string* data = findData(uri);
+    if (data)
+      return std::make_shared<MemoryResource>(*data);
+
+    if (mFallback)
+      return mFallback->retrieve(uri);
+
+    return nullptr;
+  }
+
+private:
+  const std::string* findData(const common::Uri& uri) const
+  {
+    const auto byFull = mData.find(uri.toString());
+    if (byFull != mData.end())
+      return &byFull->second;
+
+    const auto findByPath = [&](const std::string& path) -> const std::string* {
+      const auto byPath = mData.find(path);
+      if (byPath != mData.end())
+        return &byPath->second;
+
+      if (!path.empty() && path.front() == '/') {
+        const auto byTrim = mData.find(path.substr(1));
+        if (byTrim != mData.end())
+          return &byTrim->second;
+      }
+
+      const auto slash = path.find_last_of("/\\");
+      if (slash != std::string::npos) {
+        const auto byName = mData.find(path.substr(slash + 1));
+        if (byName != mData.end())
+          return &byName->second;
+      }
+
+      return nullptr;
+    };
+
+    if (uri.mPath) {
+      if (const std::string* data = findByPath(uri.mPath.get()))
+        return data;
+    }
+
+    if (uri.mAuthority) {
+      if (const std::string* data = findByPath(uri.mAuthority.get()))
+        return data;
+    }
+
+    return nullptr;
+  }
+
+  std::unordered_map<std::string, std::string> mData;
+  common::ResourceRetrieverPtr mFallback;
+};
+
+} // namespace
+
+//==============================================================================
+bool MeshShape::collectSubMeshRanges(
+    const aiScene* scene,
+    std::vector<SubMeshRange>& ranges,
+    std::size_t expectedVertices,
+    std::size_t expectedTriangles)
+{
+  ranges.clear();
+  if (!scene)
+    return false;
+
+  std::size_t vertexOffset = 0;
+  std::size_t triangleOffset = 0;
+
+  for (std::size_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
+    const aiMesh* assimpMesh = scene->mMeshes[meshIndex];
+    if (!assimpMesh) {
+      continue;
+    }
+
+    std::size_t triangleCount = 0;
+    for (auto i = 0u; i < assimpMesh->mNumFaces; ++i) {
+      const aiFace& face = assimpMesh->mFaces[i];
+      if (face.mNumIndices == 3)
+        ++triangleCount;
+    }
+
+    SubMeshRange range;
+    range.vertexOffset = vertexOffset;
+    range.vertexCount = assimpMesh->mNumVertices;
+    range.triangleOffset = triangleOffset;
+    range.triangleCount = triangleCount;
+    range.materialIndex = assimpMesh->mMaterialIndex;
+    ranges.push_back(range);
+
+    vertexOffset += assimpMesh->mNumVertices;
+    triangleOffset += triangleCount;
+  }
+
+  if (expectedVertices != 0 && vertexOffset != expectedVertices) {
+    ranges.clear();
+    return false;
+  }
+  if (expectedTriangles != 0 && triangleOffset != expectedTriangles) {
+    ranges.clear();
+    return false;
+  }
+
+  return !ranges.empty();
+}
 
 //==============================================================================
 MeshShape::MeshShape(
     const Eigen::Vector3d& scale,
     const aiScene* mesh,
-    const common::Uri& path,
+    const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever,
     MeshOwnership ownership)
   : Shape(MESH),
-    mMesh(nullptr),
-    mMeshOwnership(MeshOwnership::None),
+    mTriMesh(nullptr),
+    mCachedAiScene(nullptr),
     mDisplayList(0),
+    mScale(scale),
     mColorMode(MATERIAL_COLOR),
     mAlphaMode(BLEND),
     mColorIndex(0)
 {
-  setMesh(mesh, ownership, path, std::move(resourceRetriever));
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  setMesh(mesh, ownership, uri, std::move(resourceRetriever));
+  DART_SUPPRESS_DEPRECATED_END
+  setScale(scale);
+}
+
+//==============================================================================
+MeshShape::MeshShape(
+    const Eigen::Vector3d& scale,
+    std::shared_ptr<math::TriMesh<double>> mesh,
+    const common::Uri& uri)
+  : MeshShape(scale, std::move(mesh), uri, nullptr)
+{
+}
+
+//==============================================================================
+MeshShape::MeshShape(
+    const Eigen::Vector3d& scale,
+    std::shared_ptr<math::TriMesh<double>> mesh,
+    const common::Uri& uri,
+    common::ResourceRetrieverPtr resourceRetriever)
+  : Shape(MESH),
+    mTriMesh(std::move(mesh)),
+    mCachedAiScene(nullptr),
+    mMeshUri(uri),
+    mMeshPath(),
+    mResourceRetriever(std::move(resourceRetriever)),
+    mDisplayList(0),
+    mScale(scale),
+    mColorMode(MATERIAL_COLOR),
+    mAlphaMode(BLEND),
+    mColorIndex(0)
+{
+  if (uri.mScheme.get_value_or("file") == "file" && uri.mPath) {
+    mMeshPath = uri.getFilesystemPath();
+  } else if (mResourceRetriever) {
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    mMeshPath = mResourceRetriever->getFilePath(uri);
+    DART_SUPPRESS_DEPRECATED_END
+  } else {
+    mMeshPath.clear();
+  }
+
+  mMaterials.clear();
+
+  const std::string uriString = uri.toString();
+  if (!uriString.empty()) {
+    common::ResourceRetrieverPtr materialRetriever = mResourceRetriever;
+    if (!materialRetriever && uri.mScheme.get_value_or("file") == "file"
+        && uri.mPath) {
+      materialRetriever = std::make_shared<common::LocalResourceRetriever>();
+    }
+
+    if (materialRetriever) {
+      struct AiSceneReleaser
+      {
+        void operator()(const aiScene* scene) const
+        {
+          if (scene)
+            aiReleaseImport(const_cast<aiScene*>(scene));
+        }
+      };
+
+      DART_SUPPRESS_DEPRECATED_BEGIN
+      const std::unique_ptr<const aiScene, AiSceneReleaser> scene(
+          loadMesh(uri, materialRetriever));
+      DART_SUPPRESS_DEPRECATED_END
+
+      if (scene) {
+        extractMaterialsFromScene(
+            scene.get(),
+            mMeshPath.empty() ? uri.getPath() : mMeshPath,
+            mMeshUri);
+
+        const auto expectedVertices
+            = mTriMesh ? mTriMesh->getVertices().size() : 0;
+        const auto expectedTriangles
+            = mTriMesh ? mTriMesh->getTriangles().size() : 0;
+        collectSubMeshRanges(
+            scene.get(), mSubMeshRanges, expectedVertices, expectedTriangles);
+        extractTextureCoordsFromScene(scene.get());
+      }
+    }
+  }
+
   setScale(scale);
 }
 
@@ -77,23 +367,32 @@ MeshShape::MeshShape(
 MeshShape::MeshShape(
     const Eigen::Vector3d& scale,
     std::shared_ptr<const aiScene> mesh,
-    const common::Uri& path,
+    const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
   : Shape(MESH),
-    mMesh(nullptr),
-    mMeshOwnership(MeshOwnership::None),
+    mTriMesh(nullptr),
+    mCachedAiScene(nullptr),
     mDisplayList(0),
+    mScale(scale),
     mColorMode(MATERIAL_COLOR),
     mAlphaMode(BLEND),
     mColorIndex(0)
 {
-  setMesh(std::move(mesh), path, std::move(resourceRetriever));
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  setMesh(std::move(mesh), uri, std::move(resourceRetriever));
+  DART_SUPPRESS_DEPRECATED_END
   setScale(scale);
 }
 
 //==============================================================================
 MeshShape::~MeshShape()
 {
+  // Clean up cached aiScene if it was created.
+  if (mCachedAiScene) {
+    aiReleaseImport(mCachedAiScene);
+    mCachedAiScene = nullptr;
+  }
+
   releaseMesh();
 }
 
@@ -101,7 +400,103 @@ MeshShape::~MeshShape()
 void MeshShape::releaseMesh()
 {
   mMesh.reset();
+}
+
+//==============================================================================
+std::shared_ptr<const aiScene> MeshShape::makeMeshHandle(
+    const aiScene* mesh, MeshOwnership ownership)
+{
+  if (!mesh)
+    return nullptr;
+
+  switch (ownership) {
+    case MeshOwnership::Imported:
+      return std::shared_ptr<const aiScene>(mesh, [](const aiScene* scene) {
+        aiReleaseImport(const_cast<aiScene*>(scene));
+      });
+    case MeshOwnership::Copied:
+      return std::shared_ptr<const aiScene>(mesh, [](const aiScene* scene) {
+        aiFreeScene(const_cast<aiScene*>(scene));
+      });
+    case MeshOwnership::Manual:
+      return std::shared_ptr<const aiScene>(mesh, [](const aiScene* scene) {
+        delete const_cast<aiScene*>(scene);
+      });
+    case MeshOwnership::Custom:
+    case MeshOwnership::None:
+    default:
+      return std::shared_ptr<const aiScene>(mesh, [](const aiScene*) {});
+  }
+}
+
+//==============================================================================
+MeshShape::MeshHandle& MeshShape::MeshHandle::operator=(const aiScene* mesh)
+{
+  // Backward compatibility: historically MeshShape exposed a std::shared_ptr
+  // member that derived classes could assign a manually constructed aiScene*
+  // into (e.g., Gazebo's CustomMeshShape). In that case the default deleter
+  // would invoke `delete`, so we preserve that behavior here.
+  set(mesh, MeshOwnership::Manual);
+  return *this;
+}
+
+//==============================================================================
+MeshShape::MeshHandle& MeshShape::MeshHandle::operator=(
+    std::shared_ptr<const aiScene> mesh)
+{
+  set(std::move(mesh));
+  return *this;
+}
+
+//==============================================================================
+const aiScene* MeshShape::MeshHandle::get() const
+{
+  return mMesh.get();
+}
+
+//==============================================================================
+const aiScene* MeshShape::MeshHandle::operator->() const
+{
+  return mMesh.get();
+}
+
+//==============================================================================
+MeshShape::MeshHandle::operator bool() const
+{
+  return static_cast<bool>(mMesh);
+}
+
+//==============================================================================
+void MeshShape::MeshHandle::reset()
+{
+  mMesh.reset();
   mMeshOwnership = MeshOwnership::None;
+}
+
+//==============================================================================
+MeshShape::MeshOwnership MeshShape::MeshHandle::getOwnership() const
+{
+  return mMeshOwnership;
+}
+
+//==============================================================================
+const std::shared_ptr<const aiScene>& MeshShape::MeshHandle::getShared() const
+{
+  return mMesh;
+}
+
+//==============================================================================
+void MeshShape::MeshHandle::set(const aiScene* mesh, MeshOwnership ownership)
+{
+  mMesh = MeshShape::makeMeshHandle(mesh, ownership);
+  mMeshOwnership = mesh ? ownership : MeshOwnership::None;
+}
+
+//==============================================================================
+void MeshShape::MeshHandle::set(std::shared_ptr<const aiScene> mesh)
+{
+  mMesh = std::move(mesh);
+  mMeshOwnership = mMesh ? MeshOwnership::Custom : MeshOwnership::None;
 }
 
 //==============================================================================
@@ -118,9 +513,376 @@ const std::string& MeshShape::getStaticType()
 }
 
 //==============================================================================
+std::shared_ptr<math::TriMesh<double>> MeshShape::getTriMesh() const
+{
+  // Handle backward compatibility: if a derived class bypasses setMesh() and
+  // updates the underlying aiScene directly, we lazily populate the TriMesh.
+  if (!mTriMesh) {
+    const aiScene* scene = nullptr;
+    if (mMesh) {
+      scene = mMesh.get();
+    } else if (mCachedAiScene) {
+      scene = mCachedAiScene;
+    }
+
+    if (scene) {
+      // Const cast is safe here - we're lazily populating internal cache.
+      auto* self = const_cast<MeshShape*>(this);
+      self->mTriMesh = convertAssimpMesh(scene, &self->mSubMeshRanges);
+      self->extractTextureCoordsFromScene(scene);
+    }
+  }
+  return mTriMesh;
+}
+
+//==============================================================================
 const aiScene* MeshShape::getMesh() const
 {
-  return mMesh.get();
+  if (mMesh) {
+    return mMesh.get();
+  }
+
+  // Lazy conversion: only convert once and cache the result.
+  // NOTE: This is still expensive on first call! Please use getTriMesh()
+  // instead.
+  if (!mCachedAiScene) {
+    mCachedAiScene = convertToAssimpMesh();
+  }
+
+  return mCachedAiScene;
+}
+
+//==============================================================================
+const aiScene* MeshShape::convertToAssimpMesh() const
+{
+  if (!mTriMesh || !mTriMesh->hasTriangles()) {
+    return nullptr;
+  }
+
+  // Assimp's aiScene is not designed as a mutable in-memory structure and its
+  // lifetime rules are complex (see #453). To keep getMesh() working for legacy
+  // callers while avoiding cross-module deallocation hazards, we round-trip the
+  // TriMesh through Assimp's importer so Assimp allocates and frees the scene.
+
+  std::ostringstream stream;
+  stream.imbue(std::locale::classic());
+  stream << std::setprecision(std::numeric_limits<double>::max_digits10);
+
+  const auto& vertices = mTriMesh->getVertices();
+  for (const auto& vertex : vertices) {
+    stream << "v " << vertex.x() << ' ' << vertex.y() << ' ' << vertex.z()
+           << '\n';
+  }
+
+  const bool hasTexCoords = !mTextureCoords.empty()
+                            && mTextureCoords.size() == vertices.size()
+                            && mTextureCoordComponents > 0;
+  if (hasTexCoords) {
+    const int components = std::min(mTextureCoordComponents, 3);
+    for (const auto& texCoord : mTextureCoords) {
+      stream << "vt " << texCoord.x();
+      if (components >= 2) {
+        stream << ' ' << texCoord.y();
+      }
+      if (components >= 3) {
+        stream << ' ' << texCoord.z();
+      }
+      stream << '\n';
+    }
+  }
+
+  const auto& normals = mTriMesh->getVertexNormals();
+  const bool hasNormals = !normals.empty() && normals.size() == vertices.size();
+  if (hasNormals) {
+    for (const auto& normal : normals) {
+      stream << "vn " << normal.x() << ' ' << normal.y() << ' ' << normal.z()
+             << '\n';
+    }
+  }
+
+  const auto& triangles = mTriMesh->getTriangles();
+  const bool hasSubMeshes = !mSubMeshRanges.empty() && mMaterials.size() > 1;
+  bool useSubMeshes = hasSubMeshes;
+  if (useSubMeshes) {
+    std::size_t totalVertices = 0;
+    std::size_t totalTriangles = 0;
+    for (const auto& range : mSubMeshRanges) {
+      if (range.vertexOffset + range.vertexCount > vertices.size()
+          || range.triangleOffset + range.triangleCount > triangles.size()) {
+        useSubMeshes = false;
+        break;
+      }
+      totalVertices += range.vertexCount;
+      totalTriangles += range.triangleCount;
+    }
+    if (useSubMeshes
+        && (totalVertices != vertices.size()
+            || totalTriangles != triangles.size())) {
+      useSubMeshes = false;
+    }
+  }
+
+  std::ostringstream mtlStream;
+  std::string mtlName;
+  if (useSubMeshes) {
+    mtlName = "dart_mesh.mtl";
+    stream << "mtllib " << mtlName << '\n';
+  }
+
+  if (useSubMeshes) {
+    bool warnedIndex = false;
+    for (const auto& range : mSubMeshRanges) {
+      if (range.triangleCount == 0)
+        continue;
+
+      unsigned int materialIndex = range.materialIndex;
+      if (materialIndex >= mMaterials.size()) {
+        if (!warnedIndex) {
+          DART_WARN(
+              "[MeshShape::convertToAssimpMesh] Material index {} is out of "
+              "range (materials: {}). Falling back to material 0.",
+              materialIndex,
+              mMaterials.size());
+          warnedIndex = true;
+        }
+        materialIndex = 0;
+      }
+
+      stream << "usemtl material_" << materialIndex << '\n';
+      for (std::size_t i = 0; i < range.triangleCount; ++i) {
+        const auto& triangle = triangles[range.triangleOffset + i];
+        const std::size_t i0 = static_cast<std::size_t>(triangle.x()) + 1;
+        const std::size_t i1 = static_cast<std::size_t>(triangle.y()) + 1;
+        const std::size_t i2 = static_cast<std::size_t>(triangle.z()) + 1;
+
+        if (hasTexCoords && hasNormals) {
+          stream << "f " << i0 << "/" << i0 << "/" << i0 << ' ' << i1 << "/"
+                 << i1 << "/" << i1 << ' ' << i2 << "/" << i2 << "/" << i2
+                 << '\n';
+        } else if (hasTexCoords) {
+          stream << "f " << i0 << "/" << i0 << ' ' << i1 << "/" << i1 << ' '
+                 << i2 << "/" << i2 << '\n';
+        } else if (hasNormals) {
+          stream << "f " << i0 << "//" << i0 << ' ' << i1 << "//" << i1 << ' '
+                 << i2 << "//" << i2 << '\n';
+        } else {
+          stream << "f " << i0 << ' ' << i1 << ' ' << i2 << '\n';
+        }
+      }
+    }
+
+    mtlStream.imbue(std::locale::classic());
+    mtlStream << std::setprecision(std::numeric_limits<double>::max_digits10);
+    for (std::size_t index = 0; index < mMaterials.size(); ++index) {
+      const auto& mat = mMaterials[index];
+      mtlStream << "newmtl material_" << index << '\n';
+      mtlStream << "Ka " << mat.ambient[0] << ' ' << mat.ambient[1] << ' '
+                << mat.ambient[2] << '\n';
+      mtlStream << "Kd " << mat.diffuse[0] << ' ' << mat.diffuse[1] << ' '
+                << mat.diffuse[2] << '\n';
+      mtlStream << "Ks " << mat.specular[0] << ' ' << mat.specular[1] << ' '
+                << mat.specular[2] << '\n';
+      mtlStream << "Ke " << mat.emissive[0] << ' ' << mat.emissive[1] << ' '
+                << mat.emissive[2] << '\n';
+      mtlStream << "Ns " << mat.shininess << '\n';
+      mtlStream << "d " << mat.diffuse[3] << '\n';
+
+      if (!mat.textureImagePaths.empty() && !mat.textureImagePaths[0].empty()) {
+        mtlStream << "map_Kd " << mat.textureImagePaths[0] << '\n';
+      }
+      mtlStream << '\n';
+    }
+  } else {
+    for (const auto& triangle : triangles) {
+      const std::size_t i0 = static_cast<std::size_t>(triangle.x()) + 1;
+      const std::size_t i1 = static_cast<std::size_t>(triangle.y()) + 1;
+      const std::size_t i2 = static_cast<std::size_t>(triangle.z()) + 1;
+
+      if (hasTexCoords && hasNormals) {
+        stream << "f " << i0 << "/" << i0 << "/" << i0 << ' ' << i1 << "/" << i1
+               << "/" << i1 << ' ' << i2 << "/" << i2 << "/" << i2 << '\n';
+      } else if (hasTexCoords) {
+        stream << "f " << i0 << "/" << i0 << ' ' << i1 << "/" << i1 << ' ' << i2
+               << "/" << i2 << '\n';
+      } else if (hasNormals) {
+        stream << "f " << i0 << "//" << i0 << ' ' << i1 << "//" << i1 << ' '
+               << i2 << "//" << i2 << '\n';
+      } else {
+        stream << "f " << i0 << ' ' << i1 << ' ' << i2 << '\n';
+      }
+    }
+  }
+
+  const std::string obj = stream.str();
+  if (obj.empty()) {
+    return nullptr;
+  }
+
+  const unsigned int flags = aiProcess_Triangulate
+                             | aiProcess_JoinIdenticalVertices
+                             | aiProcess_SortByPType | aiProcess_OptimizeMeshes
+                             | aiProcess_GenNormals;
+
+  if (!useSubMeshes) {
+    const aiScene* scene = aiImportFileFromMemory(
+        obj.data(), static_cast<unsigned int>(obj.size()), flags, "obj");
+
+    if (!scene) {
+      DART_WARN(
+          "[MeshShape::convertToAssimpMesh] Failed to import TriMesh via "
+          "Assimp: {}",
+          aiGetErrorString());
+      return nullptr;
+    }
+
+    return scene;
+  }
+
+  const std::string objName = "dart_mesh.obj";
+  std::unordered_map<std::string, std::string> data;
+  data.emplace(objName, obj);
+  data.emplace(mtlName, mtlStream.str());
+
+  auto retriever = std::make_shared<MemoryResourceRetriever>(
+      std::move(data), mResourceRetriever);
+
+  aiPropertyStore* propertyStore = aiCreatePropertyStore();
+  aiSetImportPropertyInteger(
+      propertyStore,
+      AI_CONFIG_PP_SBP_REMOVE,
+      aiPrimitiveType_POINT | aiPrimitiveType_LINE);
+
+  AssimpInputResourceRetrieverAdaptor systemIO(retriever);
+  aiFileIO fileIO = createFileIO(&systemIO);
+
+  const aiScene* scene = aiImportFileExWithProperties(
+      objName.c_str(), flags, &fileIO, propertyStore);
+
+  aiReleasePropertyStore(propertyStore);
+
+  if (!scene) {
+    DART_WARN(
+        "[MeshShape::convertToAssimpMesh] Failed to import TriMesh with "
+        "materials via Assimp: {}",
+        aiGetErrorString());
+    return nullptr;
+  }
+
+  return scene;
+}
+
+//==============================================================================
+std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
+    const aiScene* scene)
+{
+  return convertAssimpMesh(scene, nullptr);
+}
+
+//==============================================================================
+std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
+    const aiScene* scene, std::vector<SubMeshRange>* subMeshes)
+{
+  if (!scene) {
+    return nullptr;
+  }
+
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  if (subMeshes) {
+    subMeshes->clear();
+  }
+
+  // ALWAYS merge all meshes into a single TriMesh
+  // This is necessary because:
+  // 1. Files with multiple materials (common in COLLADA/OBJ) have multiple
+  // aiMesh objects
+  // 2. All meshes in a scene belong to the same shape for collision/rendering
+  // 3. CustomMeshShape from gz-physics creates one aiMesh per submesh
+  const std::size_t numMeshesToProcess = scene->mNumMeshes;
+
+  // Reserve space for all vertices and faces upfront
+  std::size_t totalVertices = 0;
+  std::size_t totalFaces = 0;
+  for (std::size_t i = 0; i < numMeshesToProcess; ++i) {
+    if (scene->mMeshes[i]) {
+      totalVertices += scene->mMeshes[i]->mNumVertices;
+      totalFaces += scene->mMeshes[i]->mNumFaces;
+    }
+  }
+  triMesh->reserveVertices(totalVertices);
+  triMesh->reserveTriangles(totalFaces);
+  triMesh->reserveVertexNormals(totalVertices);
+
+  // Process all meshes and merge them into a single TriMesh
+  for (std::size_t meshIndex = 0; meshIndex < numMeshesToProcess; ++meshIndex) {
+    const aiMesh* assimpMesh = scene->mMeshes[meshIndex];
+
+    if (!assimpMesh) {
+      continue;
+    }
+
+    // Track the vertex offset for this submesh (for face indices)
+    const std::size_t vertexOffset = triMesh->getVertices().size();
+    const std::size_t triangleOffset = triMesh->getTriangles().size();
+    std::size_t triangleCount = 0;
+
+    // Parse vertices
+    for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
+      const aiVector3D& vertex = assimpMesh->mVertices[i];
+      triMesh->addVertex(
+          static_cast<double>(vertex.x),
+          static_cast<double>(vertex.y),
+          static_cast<double>(vertex.z));
+    }
+
+    // Parse faces (triangles), adjusting indices by vertex offset
+    for (auto i = 0u; i < assimpMesh->mNumFaces; ++i) {
+      const aiFace& face = assimpMesh->mFaces[i];
+
+      // Skip non-triangular faces
+      if (face.mNumIndices != 3) {
+        DART_WARN(
+            "[MeshShape::convertAssimpMesh] Non-triangular face detected in "
+            "mesh {}. Skipping this face.",
+            meshIndex);
+        continue;
+      }
+
+      triMesh->addTriangle(
+          face.mIndices[0] + vertexOffset,
+          face.mIndices[1] + vertexOffset,
+          face.mIndices[2] + vertexOffset);
+      ++triangleCount;
+    }
+
+    // Parse vertex normals
+    if (assimpMesh->mNormals) {
+      for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
+        const aiVector3D& normal = assimpMesh->mNormals[i];
+        triMesh->addVertexNormal(
+            static_cast<double>(normal.x),
+            static_cast<double>(normal.y),
+            static_cast<double>(normal.z));
+      }
+    }
+
+    if (subMeshes) {
+      SubMeshRange range;
+      range.vertexOffset = vertexOffset;
+      range.vertexCount = assimpMesh->mNumVertices;
+      range.triangleOffset = triangleOffset;
+      range.triangleCount = triangleCount;
+      range.materialIndex = assimpMesh->mMaterialIndex;
+      subMeshes->push_back(range);
+    }
+  }
+
+  // Compute vertex normals if they are missing or incomplete.
+  if (triMesh->hasTriangles()
+      && triMesh->getVertexNormals().size() != triMesh->getVertices().size()) {
+    triMesh->computeVertexNormals();
+  }
+
+  return triMesh;
 }
 
 //==============================================================================
@@ -159,11 +921,13 @@ void MeshShape::setMesh(
     const std::string& path,
     common::ResourceRetrieverPtr resourceRetriever)
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
   setMesh(
       mesh,
       MeshOwnership::Imported,
       common::Uri(path),
       std::move(resourceRetriever));
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
@@ -172,40 +936,10 @@ void MeshShape::setMesh(
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
   setMesh(mesh, MeshOwnership::Imported, uri, std::move(resourceRetriever));
+  DART_SUPPRESS_DEPRECATED_END
 }
-
-//==============================================================================
-namespace {
-
-std::shared_ptr<const aiScene> makeMeshHandle(
-    const aiScene* mesh, MeshShape::MeshOwnership ownership)
-{
-  if (!mesh)
-    return nullptr;
-
-  switch (ownership) {
-    case MeshShape::MeshOwnership::Imported:
-      return std::shared_ptr<const aiScene>(mesh, [](const aiScene* scene) { //
-        aiReleaseImport(const_cast<aiScene*>(scene));
-      });
-    case MeshShape::MeshOwnership::Copied:
-      return std::shared_ptr<const aiScene>(mesh, [](const aiScene* scene) {
-        aiFreeScene(const_cast<aiScene*>(scene));
-      });
-    case MeshShape::MeshOwnership::Manual:
-      return std::shared_ptr<const aiScene>(mesh, [](const aiScene* scene) {
-        delete const_cast<aiScene*>(scene);
-      });
-    case MeshShape::MeshOwnership::Custom:
-    case MeshShape::MeshOwnership::None:
-    default:
-      return std::shared_ptr<const aiScene>(
-          mesh, [](const aiScene*) { /* no-op */ });
-  }
-}
-
-} // namespace
 
 //==============================================================================
 void MeshShape::setMesh(
@@ -214,22 +948,53 @@ void MeshShape::setMesh(
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
 {
-  if (mesh == mMesh.get() && ownership == mMeshOwnership) {
+  if (mesh == mMesh.get() && ownership == mMesh.getOwnership()) {
     // Nothing to do.
     return;
   }
 
+  const bool meshIsCached = mesh && (mesh == mCachedAiScene);
+  const MeshOwnership effectiveOwnership
+      = meshIsCached ? MeshOwnership::Imported : ownership;
+
+  if (meshIsCached && ownership != MeshOwnership::Imported) {
+    DART_WARN(
+        "[MeshShape::setMesh] Overriding MeshOwnership ({}) to Imported when "
+        "adopting a cached aiScene created by getMesh().",
+        static_cast<int>(ownership));
+  }
+
+  // Clear cached aiScene to prevent stale data. If the caller is adopting the
+  // cached pointer, transfer ownership to mMesh without releasing it here.
+  if (mCachedAiScene) {
+    if (meshIsCached) {
+      mCachedAiScene = nullptr;
+    } else {
+      aiReleaseImport(mCachedAiScene);
+      mCachedAiScene = nullptr;
+    }
+  }
+
   releaseMesh();
 
-  mMesh = makeMeshHandle(mesh, ownership);
-  mMeshOwnership = mesh ? ownership : MeshOwnership::None;
+  mMesh.set(mesh, effectiveOwnership);
 
-  if (!mMesh) {
+  mTriMesh = convertAssimpMesh(mMesh.get(), &mSubMeshRanges);
+  mMaterials.clear();
+
+  if (!mTriMesh) {
     mMeshUri.clear();
     mMeshPath.clear();
     mResourceRetriever = nullptr;
+    mTextureCoords.clear();
+    mTextureCoordComponents = 0;
+    mSubMeshRanges.clear();
+    mIsBoundingBoxDirty = true;
+    mIsVolumeDirty = true;
     return;
   }
+
+  extractTextureCoordsFromScene(mMesh.get());
 
   mMeshUri = uri;
 
@@ -244,6 +1009,13 @@ void MeshShape::setMesh(
   }
 
   mResourceRetriever = std::move(resourceRetriever);
+
+  // Extract material properties for Assimp-free rendering.
+  extractMaterialsFromScene(
+      mMesh.get(), mMeshPath.empty() ? uri.getPath() : mMeshPath, mMeshUri);
+
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 
   incrementVersion();
 }
@@ -254,20 +1026,39 @@ void MeshShape::setMesh(
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
 {
-  if (mesh == mMesh && mMeshOwnership == MeshOwnership::Custom) {
+  if (mesh && mesh.get() == mMesh.get()
+      && mMesh.getOwnership() == MeshOwnership::Custom) {
     return;
+  }
+
+  if (mCachedAiScene) {
+    if (mesh && mesh.get() == mCachedAiScene) {
+      mCachedAiScene = nullptr;
+    } else {
+      aiReleaseImport(mCachedAiScene);
+      mCachedAiScene = nullptr;
+    }
   }
 
   releaseMesh();
-  mMesh = std::move(mesh);
-  mMeshOwnership = mMesh ? MeshOwnership::Custom : MeshOwnership::None;
+  mMesh.set(std::move(mesh));
 
-  if (!mMesh) {
+  mTriMesh = convertAssimpMesh(mMesh.get(), &mSubMeshRanges);
+  mMaterials.clear();
+
+  if (!mTriMesh) {
     mMeshUri.clear();
     mMeshPath.clear();
     mResourceRetriever = nullptr;
+    mTextureCoords.clear();
+    mTextureCoordComponents = 0;
+    mSubMeshRanges.clear();
+    mIsBoundingBoxDirty = true;
+    mIsVolumeDirty = true;
     return;
   }
+
+  extractTextureCoordsFromScene(mMesh.get());
 
   mMeshUri = uri;
 
@@ -282,6 +1073,13 @@ void MeshShape::setMesh(
   }
 
   mResourceRetriever = std::move(resourceRetriever);
+
+  // Extract material properties for Assimp-free rendering.
+  extractMaterialsFromScene(
+      mMesh.get(), mMeshPath.empty() ? uri.getPath() : mMeshPath, mMeshUri);
+
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 
   incrementVersion();
 }
@@ -357,6 +1155,211 @@ void MeshShape::setDisplayList(int index)
 }
 
 //==============================================================================
+const std::vector<MeshMaterial>& MeshShape::getMaterials() const
+{
+  return mMaterials;
+}
+
+//==============================================================================
+std::size_t MeshShape::getNumMaterials() const
+{
+  return mMaterials.size();
+}
+
+//==============================================================================
+const MeshMaterial* MeshShape::getMaterial(std::size_t index) const
+{
+  if (index < mMaterials.size()) {
+    return &mMaterials[index];
+  }
+  return nullptr;
+}
+
+//==============================================================================
+void MeshShape::extractTextureCoordsFromScene(const aiScene* scene)
+{
+  mTextureCoords.clear();
+  mTextureCoordComponents = 0;
+
+  if (!scene || scene->mNumMeshes == 0) {
+    return;
+  }
+
+  std::size_t totalVertices = 0;
+  bool hasTexCoords = false;
+  unsigned int maxComponents = 0;
+  for (std::size_t i = 0; i < scene->mNumMeshes; ++i) {
+    const aiMesh* assimpMesh = scene->mMeshes[i];
+    if (!assimpMesh) {
+      continue;
+    }
+
+    totalVertices += assimpMesh->mNumVertices;
+    if (assimpMesh->HasTextureCoords(0)) {
+      hasTexCoords = true;
+      maxComponents = std::max(maxComponents, assimpMesh->mNumUVComponents[0]);
+    }
+  }
+
+  if (!hasTexCoords || totalVertices == 0) {
+    return;
+  }
+
+  if (mTriMesh) {
+    const auto expectedVertices = mTriMesh->getVertices().size();
+    if (expectedVertices != 0 && totalVertices != expectedVertices) {
+      return;
+    }
+  }
+
+  mTextureCoords.reserve(totalVertices);
+  for (std::size_t i = 0; i < scene->mNumMeshes; ++i) {
+    const aiMesh* assimpMesh = scene->mMeshes[i];
+    if (!assimpMesh) {
+      continue;
+    }
+
+    const bool meshHasTexCoords = assimpMesh->HasTextureCoords(0);
+    for (auto j = 0u; j < assimpMesh->mNumVertices; ++j) {
+      if (meshHasTexCoords) {
+        const aiVector3D& texCoord = assimpMesh->mTextureCoords[0][j];
+        mTextureCoords.emplace_back(texCoord.x, texCoord.y, texCoord.z);
+      } else {
+        mTextureCoords.emplace_back(0.0, 0.0, 0.0);
+      }
+    }
+  }
+
+  mTextureCoordComponents = static_cast<int>(std::min(maxComponents, 3u));
+}
+
+//==============================================================================
+void MeshShape::extractMaterialsFromScene(
+    const aiScene* scene,
+    const std::string& basePath,
+    const common::Uri& meshUri)
+{
+  if (!scene || scene->mNumMaterials == 0) {
+    return;
+  }
+
+  mMaterials.clear();
+  mMaterials.reserve(scene->mNumMaterials);
+
+  const common::filesystem::path meshPath = basePath;
+  std::error_code meshPathEc;
+  const bool meshPathExists
+      = !basePath.empty() && common::filesystem::exists(meshPath, meshPathEc)
+        && !meshPathEc;
+
+  for (std::size_t i = 0; i < scene->mNumMaterials; ++i) {
+    aiMaterial* aiMat = scene->mMaterials[i];
+    assert(aiMat);
+
+    MeshMaterial material;
+
+    // Extract colors
+    aiColor4D c;
+    if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_AMBIENT, &c) == AI_SUCCESS) {
+      material.ambient = Eigen::Vector4f(c.r, c.g, c.b, c.a);
+    }
+
+    if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_DIFFUSE, &c) == AI_SUCCESS) {
+      material.diffuse = Eigen::Vector4f(c.r, c.g, c.b, c.a);
+    }
+
+    if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_SPECULAR, &c) == AI_SUCCESS) {
+      material.specular = Eigen::Vector4f(c.r, c.g, c.b, c.a);
+    }
+
+    if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &c) == AI_SUCCESS) {
+      material.emissive = Eigen::Vector4f(c.r, c.g, c.b, c.a);
+    }
+
+    // Extract shininess
+    unsigned int maxValue = 1;
+    float shininess = 0.0f, strength = 1.0f;
+    if (aiGetMaterialFloatArray(
+            aiMat, AI_MATKEY_SHININESS, &shininess, &maxValue)
+        == AI_SUCCESS) {
+      maxValue = 1;
+      if (aiGetMaterialFloatArray(
+              aiMat, AI_MATKEY_SHININESS_STRENGTH, &strength, &maxValue)
+          == AI_SUCCESS) {
+        shininess *= strength;
+      }
+      material.shininess = shininess;
+    }
+
+    // Extract texture paths for all texture types
+    // Check common texture types and store them
+    const aiTextureType textureTypes[]
+        = {aiTextureType_DIFFUSE,
+           aiTextureType_SPECULAR,
+           aiTextureType_NORMALS,
+           aiTextureType_AMBIENT,
+           aiTextureType_EMISSIVE,
+           aiTextureType_HEIGHT,
+           aiTextureType_SHININESS,
+           aiTextureType_OPACITY,
+           aiTextureType_DISPLACEMENT,
+           aiTextureType_LIGHTMAP,
+           aiTextureType_REFLECTION};
+
+    for (const auto& type : textureTypes) {
+      const auto count = aiMat->GetTextureCount(type);
+      for (auto j = 0u; j < count; ++j) {
+        aiString imagePath;
+        if (aiMat->GetTexture(type, j, &imagePath) == AI_SUCCESS) {
+          const std::string imagePathString = imagePath.C_Str();
+          if (imagePathString.empty()) {
+            continue;
+          }
+
+          const common::filesystem::path relativeImagePath = imagePathString;
+          std::error_code ec;
+          bool attemptedCanonicalize = false;
+          if (!basePath.empty() || relativeImagePath.is_absolute()) {
+            const common::filesystem::path absoluteImagePath
+                = common::filesystem::canonical(
+                    meshPath.parent_path() / relativeImagePath, ec);
+            attemptedCanonicalize = true;
+            if (!ec) {
+              material.textureImagePaths.emplace_back(
+                  absoluteImagePath.string());
+              continue;
+            }
+          }
+
+          bool resolved = false;
+          if (meshUri.mPath) {
+            common::Uri resolvedUri;
+            if (resolvedUri.fromRelativeUri(meshUri, imagePathString)) {
+              material.textureImagePaths.emplace_back(resolvedUri.toString());
+              resolved = true;
+            }
+          }
+
+          if (!resolved) {
+            material.textureImagePaths.emplace_back(imagePathString);
+          }
+
+          if (meshPathExists && attemptedCanonicalize && !resolved) {
+            DART_WARN(
+                "[MeshShape::extractMaterialsFromScene] Failed to resolve "
+                "texture image path from (base: `{}`, relative: '{}').",
+                meshPath.parent_path().string(),
+                relativeImagePath.string());
+          }
+        }
+      }
+    }
+
+    mMaterials.emplace_back(std::move(material));
+  }
+}
+
+//==============================================================================
 Eigen::Matrix3d MeshShape::computeInertia(double _mass) const
 {
   // Use bounding box to represent the mesh
@@ -366,15 +1369,22 @@ Eigen::Matrix3d MeshShape::computeInertia(double _mass) const
 //==============================================================================
 ShapePtr MeshShape::clone() const
 {
-  aiScene* new_scene = cloneMesh();
+  std::shared_ptr<math::TriMesh<double>> clonedTriMesh;
+  if (const auto triMesh = getTriMesh()) {
+    clonedTriMesh = std::make_shared<math::TriMesh<double>>(*triMesh);
+  }
 
-  auto new_shape = std::make_shared<MeshShape>(
-      mScale, new_scene, mMeshUri, mResourceRetriever, MeshOwnership::Copied);
+  auto new_shape = std::make_shared<MeshShape>(mScale, clonedTriMesh, mMeshUri);
   new_shape->mMeshPath = mMeshPath;
+  new_shape->mResourceRetriever = mResourceRetriever;
   new_shape->mDisplayList = mDisplayList;
   new_shape->mColorMode = mColorMode;
   new_shape->mAlphaMode = mAlphaMode;
   new_shape->mColorIndex = mColorIndex;
+  new_shape->mMaterials = mMaterials;
+  new_shape->mSubMeshRanges = mSubMeshRanges;
+  new_shape->mTextureCoords = mTextureCoords;
+  new_shape->mTextureCoordComponents = mTextureCoordComponents;
 
   return new_shape;
 }
@@ -382,7 +1392,12 @@ ShapePtr MeshShape::clone() const
 //==============================================================================
 void MeshShape::updateBoundingBox() const
 {
-  if (!mMesh) {
+  // Use getTriMesh() instead of directly accessing mTriMesh
+  // This handles lazy conversion for backward compatibility with
+  // CustomMeshShape
+  const auto* triMesh = getTriMesh().get();
+
+  if (!triMesh || triMesh->getVertices().empty()) {
     mBoundingBox.setMin(Eigen::Vector3d::Zero());
     mBoundingBox.setMax(Eigen::Vector3d::Zero());
     mIsBoundingBoxDirty = false;
@@ -393,13 +1408,11 @@ void MeshShape::updateBoundingBox() const
       = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
   Eigen::Vector3d maxPoint = -minPoint;
 
-  for (unsigned i = 0u; i < mMesh->mNumMeshes; i++) {
-    for (unsigned j = 0u; j < mMesh->mMeshes[i]->mNumVertices; j++) {
-      const auto& vertex = mMesh->mMeshes[i]->mVertices[j];
-      const Eigen::Vector3d eigenVertex(vertex.x, vertex.y, vertex.z);
-      minPoint = minPoint.cwiseMin(eigenVertex.cwiseProduct(mScale));
-      maxPoint = maxPoint.cwiseMax(eigenVertex.cwiseProduct(mScale));
-    }
+  const auto& vertices = triMesh->getVertices();
+  for (const auto& vertex : vertices) {
+    const Eigen::Vector3d scaledVertex = vertex.cwiseProduct(mScale);
+    minPoint = minPoint.cwiseMin(scaledVertex);
+    maxPoint = maxPoint.cwiseMax(scaledVertex);
   }
 
   mBoundingBox.setMin(minPoint);
@@ -419,11 +1432,14 @@ void MeshShape::updateVolume() const
 //==============================================================================
 aiScene* MeshShape::cloneMesh() const
 {
-  if (!mMesh)
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = getMesh();
+  DART_SUPPRESS_DEPRECATED_END
+  if (!scene)
     return nullptr;
 
   aiScene* new_scene = nullptr;
-  aiCopyScene(mMesh.get(), &new_scene);
+  aiCopyScene(scene, &new_scene);
   return new_scene;
 }
 
@@ -500,8 +1516,18 @@ const aiScene* MeshShape::loadMesh(
   // Wrap ResourceRetriever in an IOSystem from Assimp's C++ API.  Then wrap
   // the IOSystem in an aiFileIO from Assimp's C API. Yes, this API is
   // completely ridiculous...
-  AssimpInputResourceRetrieverAdaptor systemIO(retriever);
-  aiFileIO fileIO = createFileIO(&systemIO);
+  aiFileIO* fileIOPtr = nullptr;
+  std::optional<AssimpInputResourceRetrieverAdaptor> systemIO;
+  std::optional<aiFileIO> fileIO;
+  if (retriever) {
+    // Suppress deprecation warnings - we need to use this for backward
+    // compatibility
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    systemIO.emplace(retriever);
+    fileIO.emplace(createFileIO(&systemIO.value()));
+    DART_SUPPRESS_DEPRECATED_END
+    fileIOPtr = &fileIO.value();
+  }
 
   // Import the file.
   const aiScene* scene = aiImportFileExWithProperties(
@@ -509,7 +1535,7 @@ const aiScene* MeshShape::loadMesh(
       aiProcess_GenNormals | aiProcess_Triangulate
           | aiProcess_JoinIdenticalVertices | aiProcess_SortByPType
           | aiProcess_OptimizeMeshes,
-      &fileIO,
+      fileIOPtr,
       propertyStore);
 
   // If succeeded, store the importer in the scene to keep it alive. This is
@@ -539,14 +1565,20 @@ const aiScene* MeshShape::loadMesh(
 const aiScene* MeshShape::loadMesh(
     const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
 {
-  return loadMesh(uri.toString(), retriever);
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = loadMesh(uri.toString(), retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  return scene;
 }
 
 //==============================================================================
 const aiScene* MeshShape::loadMesh(const std::string& filePath)
 {
   const auto retriever = std::make_shared<common::LocalResourceRetriever>();
-  return loadMesh("file://" + filePath, retriever);
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = loadMesh("file://" + filePath, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  return scene;
 }
 
 } // namespace dynamics

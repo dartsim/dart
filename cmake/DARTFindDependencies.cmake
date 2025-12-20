@@ -165,6 +165,15 @@ if(DART_BUILD_GUI)
       ${IMGUI_BACKEND_HEADERS}
     )
 
+    if(WIN32 AND BUILD_SHARED_LIBS)
+      # ImGui does not export symbols by default; ensure an import library is
+      # generated so dart-gui can link against dart-imgui-lib on Windows.
+      set_target_properties(
+        ${imgui_library_name}
+        PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON
+      )
+    endif()
+
     # Configure include directories
     # Build tree: use fetched source directory
     # Install tree: use standard include paths (like system-installed imgui)

@@ -32,14 +32,18 @@
 
 #include "dart/gui/render/MeshShapeNode.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Filesystem.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Uri.hpp"
+#include "dart/dynamics/InvalidIndex.hpp"
+#include "dart/dynamics/MeshMaterial.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/Utils.hpp"
 
+#include <assimp/scene.h>
 #include <osg/CullFace>
 #include <osg/Depth>
 #include <osg/Geode>
@@ -63,39 +67,6 @@ namespace gui {
 namespace render {
 
 namespace {
-
-//==============================================================================
-#define GET_TEXTURE_TYPE_AND_COUNT(MATERIAL, TYPE)                             \
-  {                                                                            \
-    const auto count = MATERIAL.GetTextureCount(TYPE);                         \
-    if (count)                                                                 \
-      return std::make_pair(TYPE, count);                                      \
-  }
-
-//==============================================================================
-std::pair<aiTextureType, std::size_t> getTextureTypeAndCount(
-    const aiMaterial& material)
-{
-  // For now, only single texture is supported. So we only checks whether the
-  // texture counter is non-zero.
-
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_NONE)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_DIFFUSE)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_SPECULAR)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_AMBIENT)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_EMISSIVE)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_HEIGHT)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_NORMALS)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_SHININESS)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_OPACITY)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_DISPLACEMENT)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_LIGHTMAP)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_REFLECTION)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_UNKNOWN)
-
-  // This shouldn't be reached but put
-  return std::make_pair(aiTextureType_UNKNOWN, 0u);
-}
 
 //==============================================================================
 bool isTransparent(const ::osg::Material* material)
@@ -329,7 +300,10 @@ protected:
 MeshShapeNode::MeshShapeNode(
     std::shared_ptr<dart::dynamics::MeshShape> shape,
     ShapeFrameNode* parentNode)
-  : ShapeNode(shape, parentNode, this), mMeshShape(shape), mRootAiNode(nullptr)
+  : ShapeNode(shape, parentNode, this),
+    mMeshShape(shape),
+    mRootAiNode(nullptr),
+    mMaterialVersion(dart::dynamics::INVALID_INDEX)
 {
   extractData(true);
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
@@ -360,136 +334,96 @@ bool checkSpecularSanity(const aiColor4D& c)
 //==============================================================================
 void MeshShapeNode::extractData(bool firstTime)
 {
+  // Use deprecated getMesh() for now to maintain backward compatibility
+  // with the scene graph structure (aiScene contains node hierarchy)
+  // TODO: Future work - refactor to use TriMesh directly with a scene graph
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* scene = mMeshShape->getMesh();
+  DART_SUPPRESS_DEPRECATED_END
   const aiNode* root = scene->mRootNode;
 
-  if (firstTime) // extract material properties
+  const bool updateMaterials
+      = firstTime
+        || (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+            && mMaterialVersion != mMeshShape->getVersion());
+
+  if (updateMaterials) // extract material properties from MeshShape
+                       // (Assimp-free)
   {
     clearTemporaryTextures();
     mMaterials.clear();
     mTextureImageArrays.clear();
 
-    mMaterials.reserve(scene->mNumMaterials);
-    mTextureImageArrays.reserve(scene->mNumMaterials);
+    const auto& meshMaterials = mMeshShape->getMaterials();
+    mMaterials.reserve(meshMaterials.size());
+    mTextureImageArrays.reserve(meshMaterials.size());
 
     const auto retriever = mMeshShape->getResourceRetriever();
     const std::string meshUriString = mMeshShape->getMeshUri();
     common::Uri meshUri;
     const bool hasMeshUri
         = !meshUriString.empty() && meshUri.fromStringOrPath(meshUriString);
-    const common::filesystem::path meshPath = mMeshShape->getMeshPath();
-    const bool hasMeshFilesystemPath = !meshPath.empty();
+    const common::Uri* meshUriPtr = hasMeshUri ? &meshUri : nullptr;
 
-    for (std::size_t i = 0; i < scene->mNumMaterials; ++i) {
-      aiMaterial* aiMat = scene->mMaterials[i];
-      DART_ASSERT(aiMat);
-
+    for (const auto& meshMat : meshMaterials) {
       ::osg::ref_ptr<::osg::Material> material = new ::osg::Material;
 
-      aiColor4D c;
-      if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_AMBIENT, &c)
-          == AI_SUCCESS) {
-        material->setAmbient(
-            ::osg::Material::FRONT_AND_BACK, ::osg::Vec4(c.r, c.g, c.b, c.a));
+      // Convert from MeshMaterial to OSG Material
+      material->setAmbient(
+          ::osg::Material::FRONT_AND_BACK,
+          ::osg::Vec4(
+              meshMat.ambient[0],
+              meshMat.ambient[1],
+              meshMat.ambient[2],
+              meshMat.ambient[3]));
+
+      material->setDiffuse(
+          ::osg::Material::FRONT_AND_BACK,
+          ::osg::Vec4(
+              meshMat.diffuse[0],
+              meshMat.diffuse[1],
+              meshMat.diffuse[2],
+              meshMat.diffuse[3]));
+
+      // Check specular sanity
+      const bool specularSane
+          = !(meshMat.specular[0] >= 1.0f && meshMat.specular[1] >= 1.0f
+              && meshMat.specular[2] >= 1.0f && meshMat.specular[3] >= 1.0f);
+      if (specularSane) {
+        material->setSpecular(
+            ::osg::Material::FRONT_AND_BACK,
+            ::osg::Vec4(
+                meshMat.specular[0],
+                meshMat.specular[1],
+                meshMat.specular[2],
+                meshMat.specular[3]));
       }
 
-      if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_DIFFUSE, &c)
-          == AI_SUCCESS) {
-        material->setDiffuse(
-            ::osg::Material::FRONT_AND_BACK, ::osg::Vec4(c.r, c.g, c.b, c.a));
-      }
+      material->setEmission(
+          ::osg::Material::FRONT_AND_BACK,
+          ::osg::Vec4(
+              meshMat.emissive[0],
+              meshMat.emissive[1],
+              meshMat.emissive[2],
+              meshMat.emissive[3]));
 
-      if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_SPECULAR, &c)
-          == AI_SUCCESS) {
-        // Some files have insane specular vectors like [1.0, 1.0, 1.0, 1.0], so
-        // we weed those out here
-        if (checkSpecularSanity(c))
-          material->setSpecular(
-              ::osg::Material::FRONT_AND_BACK, ::osg::Vec4(c.r, c.g, c.b, c.a));
-      }
-
-      if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &c)
-          == AI_SUCCESS) {
-        material->setEmission(
-            ::osg::Material::FRONT_AND_BACK, ::osg::Vec4(c.r, c.g, c.b, c.a));
-      }
-
-      unsigned int maxValue = 1;
-      float shininess = 0.0f, strength = 1.0f;
-      if (aiGetMaterialFloatArray(
-              aiMat, AI_MATKEY_SHININESS, &shininess, &maxValue)
-          == AI_SUCCESS) {
-        maxValue = 1;
-        if (aiGetMaterialFloatArray(
-                aiMat, AI_MATKEY_SHININESS_STRENGTH, &strength, &maxValue)
-            == AI_SUCCESS)
-          shininess *= strength;
-        material->setShininess(::osg::Material::FRONT_AND_BACK, shininess);
-      } else {
-        material->setShininess(::osg::Material::FRONT_AND_BACK, 0.0f);
-      }
+      material->setShininess(
+          ::osg::Material::FRONT_AND_BACK, meshMat.shininess);
 
       mMaterials.push_back(material);
 
-      // Parse texture image paths
-      const auto textureTypeAndCount = getTextureTypeAndCount(*aiMat);
-      const auto& type = textureTypeAndCount.first;
-      const auto& count = textureTypeAndCount.second;
-
       std::vector<std::string> textureImageArray;
-      textureImageArray.reserve(count);
+      textureImageArray.reserve(meshMat.textureImagePaths.size());
 
-      aiString imagePath;
-      for (auto j = 0u; j < count; ++j) {
-        if ((textureTypeAndCount.first == aiTextureType_NONE)
-            || (textureTypeAndCount.first == aiTextureType_UNKNOWN)) {
-          textureImageArray.emplace_back("");
-        } else {
-          aiMat->GetTexture(type, j, &imagePath);
-          const common::filesystem::path relativeImagePath = imagePath.C_Str();
-          std::string resolvedTexturePath;
-          bool attemptedFilesystemResolution = false;
-
-          if (hasMeshFilesystemPath) {
-            attemptedFilesystemResolution = true;
-            std::error_code ec;
-            const auto absoluteImagePath = common::filesystem::canonical(
-                meshPath.parent_path() / relativeImagePath, ec);
-            if (!ec)
-              resolvedTexturePath = absoluteImagePath.string();
-          }
-
-          if (resolvedTexturePath.empty()) {
-            resolvedTexturePath = materializeTextureImage(
-                imagePath.C_Str(),
-                hasMeshUri ? &meshUri : nullptr,
-                retriever,
-                mTemporaryTextureFiles);
-          }
-
-          if (resolvedTexturePath.empty()) {
-            if (attemptedFilesystemResolution) {
-              DART_WARN(
-                  "[MeshShapeNode] Failed to resolve a texture image from base "
-                  "`{}` and relative path '{}'.",
-                  meshPath.parent_path(),
-                  relativeImagePath);
-            } else {
-              DART_WARN(
-                  "[MeshShapeNode] Failed to resolve a texture image '{}' for "
-                  "mesh URI '{}'.",
-                  imagePath.C_Str(),
-                  meshUriString);
-            }
-            textureImageArray.emplace_back("");
-          } else {
-            textureImageArray.emplace_back(std::move(resolvedTexturePath));
-          }
-        }
+      for (const auto& texturePath : meshMat.textureImagePaths) {
+        textureImageArray.emplace_back(materializeTextureImage(
+            texturePath, meshUriPtr, retriever, mTemporaryTextureFiles));
       }
 
       mTextureImageArrays.emplace_back(std::move(textureImageArray));
     }
+
+    mMaterialVersion = mMeshShape->getVersion();
   }
 
   if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
@@ -529,18 +463,9 @@ void MeshShapeNode::extractData(bool firstTime)
   if (index < mMaterials.size())
     return mMaterials[index];
 
-  if (!mMaterials.empty()) {
-    DART_WARN(
-        "Attempting to access material #{}, but materials only go up to {}",
-        index,
-        index - 1);
-  } else {
-    DART_WARN(
-        "Attempting to access material #{}, but there are no materials "
-        "available",
-        index);
-  }
-
+  // Silently return nullptr when materials don't exist - this is expected for
+  // many mesh formats (e.g., STL, plain OBJ) and robotics meshes without
+  // embedded materials. The renderer will use default materials.
   return nullptr;
 }
 
@@ -557,19 +482,8 @@ std::vector<std::string> MeshShapeNode::getTextureImagePaths(
   if (index == std::numeric_limits<unsigned int>::max())
     return {};
 
-  if (!mTextureImageArrays.empty()) {
-    DART_WARN(
-        "Attempting to access texture image set #{}, but materials only go up "
-        "to {}",
-        index,
-        index - 1);
-  } else {
-    DART_WARN(
-        "Attempting to access texture image set #{}, but there are no "
-        "materials available",
-        index);
-  }
-
+  // Silently return empty vector when textures don't exist - this is expected
+  // for meshes without embedded materials
   return std::vector<std::string>();
 }
 
@@ -710,7 +624,9 @@ void MeshShapeGeode::extractData(bool)
 {
   clearChildUtilizationFlags();
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* scene = mMeshShape->getMesh();
+  DART_SUPPRESS_DEPRECATED_END
   for (std::size_t i = 0; i < mAiNode->mNumMeshes; ++i) {
     aiMesh* mesh = scene->mMeshes[mAiNode->mMeshes[i]];
 
@@ -934,9 +850,19 @@ void MeshShapeGeometry::extractData(bool firstTime)
           != static_cast<unsigned int>(
               -1)) // -1 is being used by us to indicate no material
       {
-        isColored = true;
         ::osg::Material* material = mMainNode->getMaterial(matIndex);
-        if (mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_ALPHA) {
+
+        // Check if material exists - if not, fall back to shape color.
+        if (!material) {
+          ss->removeAttribute(::osg::StateAttribute::MATERIAL);
+          ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
+          ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
+          ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+          depth->setWriteMask(true);
+          ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
+        } else if (
+            mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_ALPHA) {
+          isColored = true;
           const float shapeAlpha
               = static_cast<float>(mVisualAspect->getAlpha());
 
@@ -961,6 +887,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
             ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
           }
         } else if (mMeshShape->getAlphaMode() == dynamics::MeshShape::BLEND) {
+          isColored = true;
           float shapeAlpha = static_cast<float>(mVisualAspect->getAlpha());
           ::osg::ref_ptr<::osg::Material> newMaterial
               = new ::osg::Material(*material);
@@ -983,6 +910,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
             ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
           }
         } else {
+          isColored = true;
           ss->setAttributeAndModes(material);
 
           // Set alpha specific properties

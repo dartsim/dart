@@ -30,61 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_RENDER_MESHSHAPENODE_HPP_
-#define DART_GUI_RENDER_MESHSHAPENODE_HPP_
+#ifndef DART_UTILS_ASSIMPMESHLOADER_HPP_
+#define DART_UTILS_ASSIMPMESHLOADER_HPP_
 
-#include <dart/gui/render/ShapeNode.hpp>
-
-#include <osg/Material>
-#include <osg/MatrixTransform>
-
-#include <map>
-
-struct aiNode;
+// Backward-compatibility header for the Assimp-backed mesh loader.
+#include <dart/utils/MeshLoader.hpp>
 
 namespace dart {
+namespace utils {
 
-namespace dynamics {
-class MeshShape;
-} // namespace dynamics
+template <typename S>
+using AssimpMeshLoader = MeshLoader<S>;
 
-namespace gui {
+using AssimpMeshLoaderf = AssimpMeshLoader<float>;
+using AssimpMeshLoaderd = AssimpMeshLoader<double>;
 
-namespace render {
-
-class osgAiNode;
-class MeshShapeGeode;
-class MeshShapeGeometry;
-
-class DART_GUI_API MeshShapeNode : public ShapeNode,
-                                   public ::osg::MatrixTransform
-{
-public:
-  MeshShapeNode(
-      std::shared_ptr<dart::dynamics::MeshShape> shape,
-      ShapeFrameNode* parentNode);
-
-  void refresh();
-  void extractData(bool firstTime);
-
-  ::osg::Material* getMaterial(std::size_t index) const;
-  std::vector<std::string> getTextureImagePaths(std::size_t index) const;
-
-protected:
-  virtual ~MeshShapeNode();
-
-  void clearTemporaryTextures();
-
-  std::shared_ptr<dart::dynamics::MeshShape> mMeshShape;
-  osgAiNode* mRootAiNode;
-  std::vector<::osg::ref_ptr<::osg::Material>> mMaterials;
-  std::vector<std::vector<std::string>> mTextureImageArrays;
-  std::vector<std::string> mTemporaryTextureFiles;
-  std::size_t mMaterialVersion;
-};
-
-} // namespace render
-} // namespace gui
+} // namespace utils
 } // namespace dart
 
-#endif // DART_GUI_RENDER_MESHSHAPENODE_HPP_
+#endif // DART_UTILS_ASSIMPMESHLOADER_HPP_
