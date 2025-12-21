@@ -1,6 +1,7 @@
 #include "constraint/dynamic_joint_constraint.hpp"
 
 #include "common/eigen_utils.hpp"
+#include "common/polymorphic_utils.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/DynamicJointConstraint.hpp"
 #include "dart/constraint/RevoluteJointConstraint.hpp"
@@ -64,11 +65,13 @@ void defDynamicJointConstraint(nb::module_& m)
           nb::arg("joint_position"),
           nb::keep_alive<1, 2>())
       .def(
-          nb::new_([](dart::dynamics::BodyNode* bodyNode1,
-                      dart::dynamics::BodyNode* bodyNode2,
+          nb::new_([](nb::handle bodyNode1,
+                      nb::handle bodyNode2,
                       nb::handle jointPosition) {
+            auto& node1 = refFromHandle<dart::dynamics::BodyNode>(bodyNode1);
+            auto& node2 = refFromHandle<dart::dynamics::BodyNode>(bodyNode2);
             return new BallJointConstraint(
-                bodyNode1, bodyNode2, toVector3(jointPosition));
+                &node1, &node2, toVector3(jointPosition));
           }),
           nb::arg("body_node1"),
           nb::arg("body_node2"),
@@ -102,14 +105,16 @@ void defDynamicJointConstraint(nb::module_& m)
           nb::arg("axis"),
           nb::keep_alive<1, 2>())
       .def(
-          nb::new_([](dart::dynamics::BodyNode* bodyNode1,
-                      dart::dynamics::BodyNode* bodyNode2,
+          nb::new_([](nb::handle bodyNode1,
+                      nb::handle bodyNode2,
                       nb::handle jointPosition,
                       nb::handle axis1,
                       nb::handle axis2) {
+            auto& node1 = refFromHandle<dart::dynamics::BodyNode>(bodyNode1);
+            auto& node2 = refFromHandle<dart::dynamics::BodyNode>(bodyNode2);
             return new RevoluteJointConstraint(
-                bodyNode1,
-                bodyNode2,
+                &node1,
+                &node2,
                 toVector3(jointPosition),
                 toVector3(axis1),
                 toVector3(axis2));
