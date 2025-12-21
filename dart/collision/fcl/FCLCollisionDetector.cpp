@@ -1687,6 +1687,37 @@ void convertOption(const DistanceOption& option, fcl::DistanceRequest& request)
 }
 
 //==============================================================================
+enum class FclContactGeometryOrder
+{
+  MatchesInput,
+  MatchesSwapped,
+  Unknown
+};
+
+FclContactGeometryOrder getContactGeometryOrder(
+    const fcl::Contact& fclContact,
+    fcl::CollisionObject* o1,
+    fcl::CollisionObject* o2)
+{
+  if (!o1 || !o2 || !fclContact.o1 || !fclContact.o2)
+    return FclContactGeometryOrder::Unknown;
+
+  const auto* geom1 = o1->collisionGeometry().get();
+  const auto* geom2 = o2->collisionGeometry().get();
+
+  if (!geom1 || !geom2)
+    return FclContactGeometryOrder::Unknown;
+
+  if (fclContact.o1 == geom1 && fclContact.o2 == geom2)
+    return FclContactGeometryOrder::MatchesInput;
+
+  if (geom1 != geom2 && fclContact.o1 == geom2 && fclContact.o2 == geom1)
+    return FclContactGeometryOrder::MatchesSwapped;
+
+  return FclContactGeometryOrder::Unknown;
+}
+
+//==============================================================================
 Contact convertContact(
     const fcl::Contact& fclContact,
     fcl::CollisionObject* o1,
@@ -1699,11 +1730,19 @@ Contact convertContact(
   contact.collisionObject2 = static_cast<CollisionObject*>(o2->getUserData());
 
   if (option.enableContact) {
+    const auto order = getContactGeometryOrder(fclContact, o1, o2);
     contact.point = FCLTypes::convertVector3(fclContact.pos);
-    contact.normal = -FCLTypes::convertVector3(fclContact.normal);
+    const auto normal = FCLTypes::convertVector3(fclContact.normal);
+    contact.normal
+        = (order == FclContactGeometryOrder::MatchesSwapped) ? normal : -normal;
     contact.penetrationDepth = fclContact.penetration_depth;
-    contact.triID1 = fclContact.b1;
-    contact.triID2 = fclContact.b2;
+    if (order == FclContactGeometryOrder::MatchesSwapped) {
+      contact.triID1 = fclContact.b2;
+      contact.triID2 = fclContact.b1;
+    } else {
+      contact.triID1 = fclContact.b1;
+      contact.triID2 = fclContact.b2;
+    }
   }
 
   // Enforce deterministic ordering across runs and clones. Tie-break on the

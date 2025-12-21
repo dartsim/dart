@@ -15,6 +15,10 @@ if(DART_BUILD_COLLISION_FCL)
     "integration"
     INTEGRATION_collision_MeshContactRegression
     collision/test_MeshContactRegression.cpp)
+  dart_add_test(
+    "integration"
+    INTEGRATION_collision_FclPrimitiveContactMatrix
+    collision/test_FclPrimitiveContactMatrix.cpp)
 endif()
 
 # Additional collision tests
