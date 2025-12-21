@@ -35,6 +35,7 @@
 #include "dart/common/Logging.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/math/lcp/LcpUtils.hpp"
 #include "dart/math/lcp/pivoting/DantzigSolver.hpp"
 #include "dart/math/lcp/projection/PgsSolver.hpp"
 
@@ -61,6 +62,88 @@ void configurePgsSolver(
   params.randomizeConstraintOrder = option.mRandomizeConstraintOrder;
   solver->setParameters(params);
 }
+
+class BoxedLcpSolverAdapter final : public math::LcpSolver
+{
+public:
+  explicit BoxedLcpSolverAdapter(BoxedLcpSolverPtr solver)
+    : mSolver(std::move(solver))
+  {
+    // Do nothing
+  }
+
+  const BoxedLcpSolverPtr& getBoxedSolver() const
+  {
+    return mSolver;
+  }
+
+  math::LcpResult solve(
+      const math::LcpProblem& problem,
+      Eigen::VectorXd& x,
+      const math::LcpOptions& options) override
+  {
+    math::LcpResult result;
+    if (!mSolver) {
+      result.status = math::LcpSolverStatus::Failed;
+      result.message = "Boxed LCP solver is not set";
+      return result;
+    }
+
+    const auto n = static_cast<int>(problem.b.size());
+    if (n <= 0) {
+      x.resize(0);
+      result.status = math::LcpSolverStatus::Success;
+      return result;
+    }
+
+    if (problem.A.rows() != n || problem.A.cols() != n || problem.lo.size() != n
+        || problem.hi.size() != n || problem.findex.size() != n) {
+      result.status = math::LcpSolverStatus::InvalidProblem;
+      result.message = "Invalid LCP problem dimensions";
+      return result;
+    }
+
+    const int nSkip = math::padding(n);
+    Eigen::MatrixXd paddedA(n, nSkip);
+    paddedA.setZero();
+    paddedA.leftCols(n) = problem.A;
+
+    Eigen::VectorXd xVec = (x.size() == n) ? x : Eigen::VectorXd::Zero(n);
+    Eigen::VectorXd bVec = problem.b;
+    Eigen::VectorXd loVec = problem.lo;
+    Eigen::VectorXd hiVec = problem.hi;
+    Eigen::VectorXi findexVec = problem.findex;
+
+    const bool success = mSolver->solve(
+        n,
+        paddedA.data(),
+        xVec.data(),
+        bVec.data(),
+        0,
+        loVec.data(),
+        hiVec.data(),
+        findexVec.data(),
+        options.earlyTermination);
+
+    x = std::move(xVec);
+    result.status = success ? math::LcpSolverStatus::Success
+                            : math::LcpSolverStatus::Failed;
+    return result;
+  }
+
+  std::string getName() const override
+  {
+    return mSolver ? mSolver->getType() : "BoxedLcpSolver";
+  }
+
+  std::string getCategory() const override
+  {
+    return "Boxed";
+  }
+
+private:
+  BoxedLcpSolverPtr mSolver;
+};
 
 } // namespace
 
@@ -159,8 +242,15 @@ void BoxedLcpConstraintSolver::syncLcpSolversFromBoxedSolvers()
       mLcpSolver = primarySolver;
     }
     configurePgsSolver(primarySolver, pgs->getOption());
-  } else if (!std::dynamic_pointer_cast<math::DantzigSolver>(mLcpSolver)) {
-    mLcpSolver = std::make_shared<math::DantzigSolver>();
+  } else if (std::dynamic_pointer_cast<DantzigBoxedLcpSolver>(
+                 mBoxedLcpSolver)) {
+    if (!std::dynamic_pointer_cast<math::DantzigSolver>(mLcpSolver))
+      mLcpSolver = std::make_shared<math::DantzigSolver>();
+  } else {
+    auto adapter = std::dynamic_pointer_cast<BoxedLcpSolverAdapter>(mLcpSolver);
+    if (!adapter || adapter->getBoxedSolver() != mBoxedLcpSolver) {
+      mLcpSolver = std::make_shared<BoxedLcpSolverAdapter>(mBoxedLcpSolver);
+    }
   }
 
   if (mSecondaryBoxedLcpSolver) {
@@ -173,12 +263,27 @@ void BoxedLcpConstraintSolver::syncLcpSolversFromBoxedSolvers()
         mSecondaryLcpSolver = secondarySolver;
       }
       configurePgsSolver(secondarySolver, pgs->getOption());
-    } else if (!std::dynamic_pointer_cast<math::DantzigSolver>(
-                   mSecondaryLcpSolver)) {
-      mSecondaryLcpSolver = std::make_shared<math::DantzigSolver>();
+    } else if (std::dynamic_pointer_cast<DantzigBoxedLcpSolver>(
+                   mSecondaryBoxedLcpSolver)) {
+      if (!std::dynamic_pointer_cast<math::DantzigSolver>(mSecondaryLcpSolver))
+        mSecondaryLcpSolver = std::make_shared<math::DantzigSolver>();
+    } else {
+      auto adapter = std::dynamic_pointer_cast<BoxedLcpSolverAdapter>(
+          mSecondaryLcpSolver);
+      if (!adapter || adapter->getBoxedSolver() != mSecondaryBoxedLcpSolver) {
+        mSecondaryLcpSolver
+            = std::make_shared<BoxedLcpSolverAdapter>(mSecondaryBoxedLcpSolver);
+      }
     }
   } else {
     mSecondaryLcpSolver.reset();
+  }
+
+  if (auto adapter
+      = std::dynamic_pointer_cast<BoxedLcpSolverAdapter>(mLcpSolver)) {
+    math::LcpOptions options = adapter->getDefaultOptions();
+    options.earlyTermination = (mSecondaryBoxedLcpSolver != nullptr);
+    adapter->setDefaultOptions(options);
   }
 
   if (auto dantzig
