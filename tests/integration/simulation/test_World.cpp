@@ -41,6 +41,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/io/Read.hpp"
 #include "dart/math/Geometry.hpp"
+#include "dart/math/Random.hpp"
 
 #include <gtest/gtest.h>
 
@@ -240,6 +241,9 @@ TEST(World, AddingAndRemovingSkeletons)
 //==============================================================================
 TEST(World, Cloning)
 {
+  // Seed random generator for deterministic tests
+  Random::setSeed(42);
+
   // Create a list of skel files to test with
   std::vector<common::Uri> fileList;
   fileList.push_back("dart://sample/skel/test/chainwhipa.skel");
@@ -279,10 +283,10 @@ TEST(World, Cloning)
     for (std::size_t j = 1; j < 5; ++j)
       clones.push_back(clones[j - 1]->clone());
 
-#if !defined(NDEBUG)
-    std::size_t numIterations = 3;
-#else
+#if DART_BUILD_MODE_RELEASE
     std::size_t numIterations = 500;
+#else
+    std::size_t numIterations = 3;
 #endif
 
     for (std::size_t j = 0; j < numIterations; ++j) {
