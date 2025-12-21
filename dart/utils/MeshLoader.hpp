@@ -35,6 +35,7 @@
 
 #include <dart/dynamics/detail/AssimpInputResourceAdaptor.hpp>
 
+#include <dart/math/PolygonMesh.hpp>
 #include <dart/math/TriMesh.hpp>
 
 #include <dart/common/Diagnostics.hpp>
@@ -75,6 +76,7 @@ class MeshLoader
 public:
   using Scalar = S;
   using Mesh = math::TriMesh<S>;
+  using PolygonMesh = math::PolygonMesh<S>;
 
   /// Constructor.
   MeshLoader() = default;
@@ -88,6 +90,16 @@ public:
   /// @param[in] retriever Optional resource retriever for loading from URIs
   /// @return A unique pointer to the loaded mesh, or nullptr if loading fails
   [[nodiscard]] std::unique_ptr<Mesh> load(
+      const std::string& filepath,
+      const common::ResourceRetrieverPtr& retriever = nullptr);
+
+  /// Loads a polygon mesh from a file using Assimp.
+  ///
+  /// @param[in] filepath Path or URI to the mesh file
+  /// @param[in] retriever Optional resource retriever for loading from URIs
+  /// @return A unique pointer to the loaded polygon mesh, or nullptr if loading
+  /// fails
+  [[nodiscard]] std::unique_ptr<PolygonMesh> loadPolygonMesh(
       const std::string& filepath,
       const common::ResourceRetrieverPtr& retriever = nullptr);
 
@@ -135,26 +147,39 @@ template <typename S>
 std::unique_ptr<typename MeshLoader<S>::Mesh> MeshLoader<S>::load(
     const std::string& filepath, const common::ResourceRetrieverPtr& retriever)
 {
+  auto polygonMesh = loadPolygonMesh(filepath, retriever);
+  if (!polygonMesh) {
+    return nullptr;
+  }
+
+  auto triMesh = std::make_unique<Mesh>(polygonMesh->triangulate());
+  return triMesh;
+}
+
+//==============================================================================
+template <typename S>
+std::unique_ptr<typename MeshLoader<S>::PolygonMesh>
+MeshLoader<S>::loadPolygonMesh(
+    const std::string& filepath, const common::ResourceRetrieverPtr& retriever)
+{
   // Load the scene and return nullptr if it fails
   aiScenePtr scene = loadScene(filepath, retriever);
   if (!scene) {
-    DART_WARN("[MeshLoader::load] Failed to load mesh from: {}", filepath);
+    DART_WARN(
+        "[MeshLoader::loadPolygonMesh] Failed to load mesh from: {}", filepath);
     return nullptr;
   }
 
   // Return nullptr if there are no meshes
   if (scene->mNumMeshes == 0) {
-    DART_WARN("[MeshLoader::load] No meshes found in: {}", filepath);
+    DART_WARN("[MeshLoader::loadPolygonMesh] No meshes found in: {}", filepath);
     return nullptr;
   }
 
   // Create the output mesh
-  auto mesh = std::make_unique<Mesh>();
+  auto mesh = std::make_unique<PolygonMesh>();
 
-  // Merge all aiMeshes into a single TriMesh.
-  // This matches MeshShape behavior and ensures meshes with multiple materials
-  // (and therefore multiple aiMesh entries) behave as expected.
-
+  // Merge all aiMeshes into a single PolygonMesh.
   std::size_t totalVertices = 0;
   std::size_t totalFaces = 0;
   for (std::size_t i = 0; i < scene->mNumMeshes; ++i) {
@@ -167,7 +192,7 @@ std::unique_ptr<typename MeshLoader<S>::Mesh> MeshLoader<S>::load(
   }
 
   mesh->reserveVertices(totalVertices);
-  mesh->reserveTriangles(totalFaces);
+  mesh->reserveFaces(totalFaces);
   mesh->reserveVertexNormals(totalVertices);
 
   for (std::size_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
@@ -187,22 +212,24 @@ std::unique_ptr<typename MeshLoader<S>::Mesh> MeshLoader<S>::load(
           static_cast<S>(vertex.z));
     }
 
-    // Parse faces (triangles)
+    // Parse faces
     for (auto i = 0u; i < assimpMesh->mNumFaces; ++i) {
       const aiFace& face = assimpMesh->mFaces[i];
-      if (face.mNumIndices != 3) {
+      if (face.mNumIndices < 3) {
         DART_WARN(
-            "[MeshLoader::load] Non-triangular face detected in: {} (mesh {}). "
-            "Skipping this face.",
+            "[MeshLoader::loadPolygonMesh] Face with fewer than 3 indices "
+            "detected in: {} (mesh {}). Skipping this face.",
             filepath,
             meshIndex);
         continue;
       }
 
-      mesh->addTriangle(
-          face.mIndices[0] + vertexOffset,
-          face.mIndices[1] + vertexOffset,
-          face.mIndices[2] + vertexOffset);
+      typename PolygonMesh::Face polygonFace;
+      polygonFace.reserve(face.mNumIndices);
+      for (auto index = 0u; index < face.mNumIndices; ++index) {
+        polygonFace.push_back(face.mIndices[index] + vertexOffset);
+      }
+      mesh->addFace(std::move(polygonFace));
     }
 
     // Parse vertex normals
@@ -215,12 +242,6 @@ std::unique_ptr<typename MeshLoader<S>::Mesh> MeshLoader<S>::load(
             static_cast<S>(normal.z));
       }
     }
-  }
-
-  // Compute vertex normals if they are missing or incomplete.
-  if (mesh->hasTriangles()
-      && mesh->getVertexNormals().size() != mesh->getVertices().size()) {
-    mesh->computeVertexNormals();
   }
 
   return mesh;

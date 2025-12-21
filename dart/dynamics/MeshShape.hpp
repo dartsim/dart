@@ -36,6 +36,7 @@
 #include <dart/dynamics/MeshMaterial.hpp>
 #include <dart/dynamics/Shape.hpp>
 
+#include <dart/math/PolygonMesh.hpp>
 #include <dart/math/TriMesh.hpp>
 
 #include <dart/common/ResourceRetriever.hpp>
@@ -135,6 +136,13 @@ public:
 
   /// Returns the TriMesh representation of this mesh (preferred).
   std::shared_ptr<math::TriMesh<double>> getTriMesh() const;
+
+  /// Returns the polygon mesh representation of this mesh, if available.
+  ///
+  /// This is intended for rendering/export pipelines that want to preserve
+  /// non-triangular faces. The returned mesh may be generated lazily and can be
+  /// a triangulated representation when no original polygons are available.
+  std::shared_ptr<math::PolygonMesh<double>> getPolygonMesh() const;
 
   /// Returns the aiScene representation of this mesh (deprecated).
   ///
@@ -329,6 +337,10 @@ protected:
       const aiScene* scene);
   static std::shared_ptr<math::TriMesh<double>> convertAssimpMesh(
       const aiScene* scene, std::vector<SubMeshRange>* subMeshes);
+  static std::shared_ptr<math::PolygonMesh<double>> convertAssimpPolygonMesh(
+      const aiScene* scene);
+  static std::shared_ptr<math::PolygonMesh<double>> convertTriMeshToPolygonMesh(
+      const math::TriMesh<double>& mesh);
   static bool collectSubMeshRanges(
       const aiScene* scene,
       std::vector<SubMeshRange>& ranges,
@@ -351,6 +363,9 @@ protected:
 
   /// TriMesh representation (preferred, ownership shared).
   std::shared_ptr<math::TriMesh<double>> mTriMesh;
+
+  /// Polygon mesh representation (optional, cached on demand).
+  std::shared_ptr<math::PolygonMesh<double>> mPolygonMesh;
 
   /// Submesh ranges extracted from Assimp (for backward compatibility).
   std::vector<SubMeshRange> mSubMeshRanges;

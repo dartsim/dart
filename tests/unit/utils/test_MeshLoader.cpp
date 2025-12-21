@@ -104,8 +104,9 @@ TEST(MeshLoader, MergesMultipleMeshes)
     expectedVertices += assimpMesh->mNumVertices;
     for (unsigned int faceIndex = 0; faceIndex < assimpMesh->mNumFaces;
          ++faceIndex) {
-      if (assimpMesh->mFaces[faceIndex].mNumIndices == 3u) {
-        ++expectedTriangles;
+      const aiFace& face = assimpMesh->mFaces[faceIndex];
+      if (face.mNumIndices >= 3u) {
+        expectedTriangles += face.mNumIndices - 2u;
       }
     }
   }
