@@ -3,7 +3,8 @@
 ## Status
 
 - Implemented a primitive collision-pair matrix test and a contact conversion
-  fix; awaiting PR/CI validation.
+  fix; PR #2339 open and CI green after a macOS arm64 rerun (flaky
+  `UNIT_dynamics_WeldJointMerge` segfault).
 
 ## Context
 
@@ -38,4 +39,4 @@
 
 ## Next Steps
 
-- Sync with `origin/main`, push branch, and open PR for review/CI.
+- Await review/merge; reassess default FCL primitive mode once merged.
