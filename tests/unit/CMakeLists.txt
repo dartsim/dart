@@ -13,6 +13,8 @@ dart_add_test("unit" UNIT_collision_Raycast collision/test_Raycast.cpp)
 
 dart_add_test("unit" UNIT_collision_CollisionResult collision/test_CollisionResult.cpp)
 
+dart_add_test("unit" UNIT_collision_Contact collision/test_Contact.cpp)
+
 if(DART_HAVE_BULLET)
   dart_add_test("unit" UNIT_collision_BulletContact collision/test_BulletContact.cpp)
 endif()

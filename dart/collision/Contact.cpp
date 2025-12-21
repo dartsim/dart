@@ -124,6 +124,9 @@ dynamics::ConstBodyNodePtr Contact::getBodyNodePtr2() const
 //==============================================================================
 bool Contact::isZeroNormal(const Eigen::Vector3d& normal)
 {
+  if (!normal.allFinite())
+    return true;
+
   if (normal.squaredNorm() < getNormalEpsilonSquared())
     return true;
   else

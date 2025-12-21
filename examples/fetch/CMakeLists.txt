@@ -19,7 +19,7 @@ if(DART_IN_SOURCE_BUILD)
   return()
 endif()
 
-find_package(DART 6.16.0 REQUIRED COMPONENTS ${required_components} CONFIG)
+find_package(DART 6.16.2 REQUIRED COMPONENTS ${required_components} CONFIG)
 find_package(CLI11 2.4 CONFIG REQUIRED)
 
 file(GLOB srcs "*.cpp" "*.hpp")
