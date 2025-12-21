@@ -5,6 +5,14 @@
 - Implemented a primitive collision-pair matrix test and a contact conversion
   fix; PR #2339 open and CI green after a macOS arm64 rerun (flaky
   `UNIT_dynamics_WeldJointMerge` segfault).
+- Added base collision-pair matrix tests for both pure FCL and DART primitive
+  mode; plane contacts accept mid-penetration points per FCL behavior.
+- Switched cylinder/cone primitive handling to analytic FCL shapes to align
+  normals/penetration depth with FCL results.
+- Added an X-axis shallow overlap case for non-cone pairs; cone side-contact
+  placement is still pending.
+- Drafted a comprehensive primitive collision test plan for pure FCL and DART
+  coverage; edge cases still in progress.
 
 ## Context
 
@@ -31,12 +39,22 @@
 - Normalize primitive contact conversion by checking whether FCL’s contact
   geometry order matches or swaps the input collision objects, and flip the
   normal/IDs accordingly.
+- Use FCL primitives for Cylinder/Cone in primitive mode (remove mesh fallback)
+  so DART primitive contacts match FCL conventions.
 
 ## Repro
 
 - Run the primitive contact matrix test:
   `ctest -R INTEGRATION_collision_FclPrimitiveContactMatrix`
+- Run the pure FCL matrix test:
+  `ctest -R INTEGRATION_collision_FclPrimitiveContactMatrixFcl`
+
+## Test Plan
+
+- See `docs/dev_tasks/fcl_primitive_shape/testing_plan.md` for the full matrix
+  and case coverage plan.
 
 ## Next Steps
 
-- Await review/merge; reassess default FCL primitive mode once merged.
+- Implement the expanded pure FCL + DART collision matrix and edge-case tests
+  described in the plan, then reassess default FCL primitive mode.

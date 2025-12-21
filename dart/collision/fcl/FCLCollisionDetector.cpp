@@ -974,11 +974,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     const auto height = cylinder->getHeight();
 
     if (FCLCollisionDetector::PRIMITIVE == type) {
-      geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
-      // TODO(JS): We still need to use mesh for cylinder because FCL 0.4.0
-      // returns single contact point for cylinder yet. Once FCL support
-      // multiple contact points then above code will be replaced by:
-      // fclCollGeom.reset(new fcl::Cylinder(radius, height));
+      geom = new fcl::Cylinder(radius, height);
     } else {
       geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
     }
@@ -990,15 +986,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     const auto height = cone->getHeight();
 
     if (FCLCollisionDetector::PRIMITIVE == type) {
-      // TODO(JS): We still need to use mesh for cone because FCL 0.4.0
-      // returns single contact point for cone yet. Once FCL support
-      // multiple contact points then above code will be replaced by:
-      // fclCollGeom.reset(new fcl::Cone(radius, height));
-      auto fclMesh = new ::fcl::BVHModel<fcl::OBBRSS>();
-      auto fclCone = fcl::Cone(radius, height);
-      ::fcl::generateBVHModel(
-          *fclMesh, fclCone, fcl::getTransform3Identity(), 16, 16);
-      geom = fclMesh;
+      geom = new fcl::Cone(radius, height);
     } else {
       auto fclMesh = new ::fcl::BVHModel<fcl::OBBRSS>();
       auto fclCone = fcl::Cone(radius, height);
