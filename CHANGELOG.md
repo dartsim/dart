@@ -2,6 +2,23 @@
 
 ## DART 6
 
+### [DART 6.16.2 (2025-12-20)](https://github.com/dartsim/dart/milestone/87?closed=1)
+
+* Build
+  * Remove DART_BUILD_MODE_DEBUG guards to fix NDEBUG compilation: [#2326](https://github.com/dartsim/dart/pull/2326)
+  * Use package.xml version for dartpy packaging: [#2327](https://github.com/dartsim/dart/pull/2327)
+
+* Tests
+  * Stabilize World::Cloning in asserts-enabled CI: [#2331](https://github.com/dartsim/dart/pull/2331)
+
+* Tooling and Docs
+  * Cover asserts-enabled build and fix API docs PR ref: [#2330](https://github.com/dartsim/dart/pull/2330)
+  * Fix publish_dartpy workflow YAML: [#2329](https://github.com/dartsim/dart/pull/2329)
+  * Fix manual publish validation on Windows: [#2324](https://github.com/dartsim/dart/pull/2324)
+  * Restrict manual dartpy publishing to tags: [#2323](https://github.com/dartsim/dart/pull/2323)
+  * Fix dartpy PyPI publishing on release-6.16: [#2322](https://github.com/dartsim/dart/pull/2322)
+  * Update pixi lockfile: [#2335](https://github.com/dartsim/dart/pull/2335), [#2307](https://github.com/dartsim/dart/pull/2307)
+
 ### [DART 6.16.1 (2025-12-12)](https://github.com/dartsim/dart/milestone/86?closed=1)
 
 * Build

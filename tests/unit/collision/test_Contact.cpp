@@ -30,44 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/Contact.hpp"
+#include <dart/collision/Contact.hpp>
 
-namespace dart {
-namespace collision {
+#include <gtest/gtest.h>
+
+#include <limits>
+
+using dart::collision::Contact;
 
 //==============================================================================
-Contact::Contact()
-  : point(Eigen::Vector3d::Zero()),
-    normal(Eigen::Vector3d::Zero()),
-    force(Eigen::Vector3d::Zero()),
-    collisionObject1(nullptr),
-    collisionObject2(nullptr),
-    penetrationDepth(0),
-    triID1(0),
-    triID2(0),
-    userData(nullptr)
+TEST(Contact, ZeroNormalRejectsNonFinite)
 {
-  // TODO(MXG): Consider using NaN instead of zero for uninitialized quantities
-  // Do nothing
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+
+  EXPECT_TRUE(Contact::isZeroNormal(Eigen::Vector3d(nan, 0.0, 0.0)));
+  EXPECT_TRUE(Contact::isZeroNormal(Eigen::Vector3d(0.0, inf, 0.0)));
+  EXPECT_TRUE(Contact::isZeroNormal(Eigen::Vector3d(0.0, 0.0, -inf)));
 }
 
 //==============================================================================
-bool Contact::isZeroNormal(const Eigen::Vector3d& normal)
+TEST(Contact, ZeroNormalHonorsEpsilon)
 {
-  if (!normal.allFinite())
-    return true;
+  const double epsilon = Contact::getNormalEpsilon();
 
-  if (normal.squaredNorm() < getNormalEpsilonSquared())
-    return true;
-  else
-    return false;
+  EXPECT_TRUE(Contact::isZeroNormal(Eigen::Vector3d(0.0, 0.0, epsilon / 10.0)));
+  EXPECT_FALSE(Contact::isZeroNormal(Eigen::Vector3d(0.0, 0.0, epsilon * 2.0)));
 }
-
-//==============================================================================
-bool Contact::isNonZeroNormal(const Eigen::Vector3d& normal)
-{
-  return !isZeroNormal(normal);
-}
-
-} // namespace collision
-} // namespace dart
