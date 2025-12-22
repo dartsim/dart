@@ -965,9 +965,6 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 
     mX.setZero();
   }
-  const double impulseClamp = 1e6;
-  mX = mX.array().max(-impulseClamp).min(impulseClamp);
-
   {
     DART_PROFILE_SCOPED_N("Apply constraint impulses");
     for (std::size_t i = 0; i < numConstraints; ++i) {
