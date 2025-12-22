@@ -929,8 +929,13 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     if (!fallbackSuccess && fallbackUsable) {
       DART_WARN(
           "[ConstraintSolver] Secondary LCP solver did not converge "
-          "(status = {}). Using best-effort solution.",
-          math::toString(fallbackResult.status));
+          "(status = {}, iterations = {}, max_iterations = {}, residual = {}, "
+          "complementarity = {}). Using best-effort solution.",
+          math::toString(fallbackResult.status),
+          fallbackResult.iterations,
+          fallbackOptions.maxIterations,
+          fallbackResult.residual,
+          fallbackResult.complementarity);
     }
   }
 
