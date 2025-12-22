@@ -86,6 +86,13 @@ public:
           spawnCylinder(getRandomTransform(), radius, height);
           return true;
         }
+        case 'r':
+        case 'R': {
+          const int vertexCount = Random::uniform<int>(16, 32);
+          const double bound = Random::uniform(0.1, 0.25);
+          spawnConvexMesh(getRandomTransform(), vertexCount, bound);
+          return true;
+        }
         case 'a':
         case 'A':
           if (mWorld->getNumSkeletons() > 1) {
@@ -205,6 +212,43 @@ private:
     mWorld->addSkeleton(newSkeleton);
   }
 
+  void spawnConvexMesh(
+      const Eigen::Isometry3d& _T,
+      int _vertexCount,
+      double _bound,
+      double _mass = 10)
+  {
+    SkeletonPtr newSkeleton = Skeleton::create();
+
+    auto mesh = std::make_shared<ConvexMeshShape::TriMeshType>();
+    mesh->reserveVertices(_vertexCount);
+
+    for (int i = 0; i < _vertexCount; ++i) {
+      mesh->addVertex(Random::uniform<Eigen::Vector3d>(-_bound, _bound));
+    }
+
+    ShapePtr newShape = ConvexMeshShape::fromMesh(mesh, true);
+
+    BodyNode::Properties bodyProp;
+    bodyProp.mName = "convex_mesh_link";
+    bodyProp.mInertia.setMass(_mass);
+
+    FreeJoint::Properties jointProp;
+    jointProp.mName = "convex_mesh_joint";
+    jointProp.mT_ParentBodyToJoint = _T;
+
+    auto pair = newSkeleton->createJointAndBodyNodePair<FreeJoint>(
+        nullptr, jointProp, bodyProp);
+    auto shapeNode = pair.second->createShapeNodeWith<
+        VisualAspect,
+        CollisionAspect,
+        DynamicsAspect>(newShape);
+    shapeNode->getVisualAspect()->setColor(
+        Random::uniform<Eigen::Vector3d>(0.0, 1.0));
+
+    mWorld->addSkeleton(newSkeleton);
+  }
+
 protected:
   WorldPtr mWorld;
 };
@@ -234,6 +278,7 @@ int main()
   viewer.addInstructionText("'q': spawn a random cube\n");
   viewer.addInstructionText("'w': spawn a random ellipsoid\n");
   viewer.addInstructionText("'e': spawn a random cylinder\n");
+  viewer.addInstructionText("'r': spawn a random convex mesh\n");
   viewer.addInstructionText("'a': delete a spawned object at last\n");
   std::cout << viewer.getInstructions() << std::endl;
 

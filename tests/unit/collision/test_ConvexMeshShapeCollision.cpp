@@ -34,13 +34,19 @@
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <fcl/geometry/shape/convex.h>
 #include <gtest/gtest.h>
+
+#include <array>
+#include <random>
 
 #if DART_HAVE_BULLET
   #include "dart/collision/bullet/BulletCollisionDetector.hpp"
@@ -65,6 +71,8 @@ using dart::dynamics::CollisionAspect;
 using dart::dynamics::ConvexMeshShape;
 
 namespace {
+
+constexpr double kPi = 3.141592653589793;
 
 struct TestFCLDetector : public FCLCollisionDetector
 {
@@ -119,6 +127,118 @@ std::shared_ptr<ConvexMeshShape> makeTetraShape()
          ConvexMeshShape::TriMeshType::Triangle(1, 2, 3)};
 
   return std::make_shared<ConvexMeshShape>(vertices, triangles);
+}
+
+Eigen::Isometry3d makeRandomTransform(
+    std::mt19937& rng, double translationBound, double rotationBound)
+{
+  std::uniform_real_distribution<double> dist(
+      -translationBound, translationBound);
+  std::uniform_real_distribution<double> angleDist(
+      -rotationBound, rotationBound);
+
+  Eigen::Vector3d axis(dist(rng), dist(rng), dist(rng));
+  if (axis.norm() < 1e-8) {
+    axis = Eigen::Vector3d::UnitX();
+  } else {
+    axis.normalize();
+  }
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(dist(rng), dist(rng), dist(rng));
+  tf.linear() = Eigen::AngleAxisd(angleDist(rng), axis).toRotationMatrix();
+
+  return tf;
+}
+
+std::shared_ptr<ConvexMeshShape> makeRandomConvexMeshShape(
+    std::mt19937& rng,
+    double scaleMin,
+    double scaleMax,
+    int duplicateStride = 0)
+{
+  std::uniform_real_distribution<double> scaleDist(scaleMin, scaleMax);
+  const Eigen::Vector3d scale(scaleDist(rng), scaleDist(rng), scaleDist(rng));
+  ConvexMeshShape::Vertices vertices
+      = {Eigen::Vector3d(1.0, 1.0, 1.0),
+         Eigen::Vector3d(-1.0, -1.0, 1.0),
+         Eigen::Vector3d(-1.0, 1.0, -1.0),
+         Eigen::Vector3d(1.0, -1.0, -1.0)};
+
+  for (auto& vertex : vertices) {
+    vertex = vertex.cwiseProduct(scale);
+  }
+
+  auto mesh = std::make_shared<ConvexMeshShape::TriMeshType>();
+  mesh->reserveVertices(
+      vertices.size() + (duplicateStride > 0 ? vertices.size() : 0));
+  for (std::size_t i = 0; i < vertices.size(); ++i) {
+    mesh->addVertex(vertices[i]);
+    if (duplicateStride > 0 && (static_cast<int>(i) % duplicateStride == 0)) {
+      mesh->addVertex(vertices[i]);
+    }
+  }
+
+  return ConvexMeshShape::fromMesh(mesh, true);
+}
+
+bool detectCollision(
+    const std::shared_ptr<dart::collision::CollisionDetector>& detector,
+    const dart::dynamics::ShapePtr& shapeA,
+    const Eigen::Isometry3d& tfA,
+    const dart::dynamics::ShapePtr& shapeB,
+    const Eigen::Isometry3d& tfB)
+{
+  auto frameA = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World());
+  auto frameB = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World());
+
+  frameA->setShape(shapeA);
+  frameB->setShape(shapeB);
+
+  frameA->setTransform(tfA);
+  frameB->setTransform(tfB);
+
+  auto groupA = detector->createCollisionGroup(frameA.get());
+  auto groupB = detector->createCollisionGroup(frameB.get());
+
+  dart::collision::CollisionResult result;
+  dart::collision::CollisionOption option(true, 1u, nullptr);
+  return detector->collide(groupA.get(), groupB.get(), option, &result);
+}
+
+void runRandomizedConvexMeshCollisionChecks(
+    const std::shared_ptr<dart::collision::CollisionDetector>& detector,
+    const std::string& label)
+{
+  const auto box = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d::Constant(0.2));
+
+  const std::array<unsigned int, 3> seeds = {11u, 29u, 71u};
+  for (const auto seed : seeds) {
+    std::mt19937 rng(seed);
+    auto convexShape = makeRandomConvexMeshShape(rng, 0.05, 0.2, 5);
+    ASSERT_NE(convexShape, nullptr) << label << " seed " << seed;
+    ASSERT_NE(convexShape->getMesh(), nullptr) << label << " seed " << seed;
+    ASSERT_FALSE(convexShape->getMesh()->getTriangles().empty())
+        << label << " seed " << seed;
+    ASSERT_FALSE(convexShape->getMesh()->getVertices().empty())
+        << label << " seed " << seed;
+
+    const auto meshTf = makeRandomTransform(rng, 0.05, kPi / 4.0);
+    const Eigen::Vector3d vertex
+        = convexShape->getMesh()->getVertices().front();
+    Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+    boxTf.translation() = meshTf * vertex;
+    EXPECT_TRUE(detectCollision(detector, convexShape, meshTf, box, boxTf))
+        << label << " seed " << seed;
+
+    Eigen::Isometry3d farBoxTf = boxTf;
+    farBoxTf.translation() += Eigen::Vector3d(5.0, 0.0, 0.0);
+    EXPECT_FALSE(detectCollision(detector, convexShape, meshTf, box, farBoxTf))
+        << label << " seed " << seed;
+  }
 }
 
 } // namespace
@@ -188,5 +308,27 @@ TEST(ConvexMeshShapeCollision, OdeUsesTriMeshGeometry)
   ASSERT_NE(geomId, nullptr);
 
   EXPECT_EQ(dGeomGetClass(geomId), dTriMeshClass);
+}
+#endif
+
+TEST(ConvexMeshShapeCollision, FclRandomizedCollisionCases)
+{
+  auto detector = FCLCollisionDetector::create();
+  runRandomizedConvexMeshCollisionChecks(detector, "FCL");
+}
+
+#if DART_HAVE_BULLET
+TEST(ConvexMeshShapeCollision, BulletRandomizedCollisionCases)
+{
+  auto detector = BulletCollisionDetector::create();
+  runRandomizedConvexMeshCollisionChecks(detector, "Bullet");
+}
+#endif
+
+#if DART_HAVE_ODE
+TEST(ConvexMeshShapeCollision, OdeRandomizedCollisionCases)
+{
+  auto detector = OdeCollisionDetector::create();
+  runRandomizedConvexMeshCollisionChecks(detector, "ODE");
 }
 #endif
