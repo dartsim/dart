@@ -61,6 +61,8 @@
 
 #include <algorithm>
 
+#include <cmath>
+
 namespace dart {
 namespace constraint {
 
@@ -927,15 +929,37 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     mX = mXBackup;
     fallbackRan = true;
     if (!fallbackSuccess && fallbackUsable) {
-      DART_WARN(
-          "[ConstraintSolver] Secondary LCP solver did not converge "
-          "(status = {}, iterations = {}, max_iterations = {}, residual = {}, "
-          "complementarity = {}). Using best-effort solution.",
-          math::toString(fallbackResult.status),
-          fallbackResult.iterations,
-          fallbackOptions.maxIterations,
-          fallbackResult.residual,
-          fallbackResult.complementarity);
+      const double absTol = (fallbackOptions.absoluteTolerance > 0.0)
+                                ? fallbackOptions.absoluteTolerance
+                                : 1e-6;
+      const double residualThreshold = 10.0 * absTol;
+      const bool residualFinite = std::isfinite(fallbackResult.residual);
+      const bool warn
+          = !residualFinite || fallbackResult.residual > residualThreshold;
+      if (warn) {
+        DART_WARN(
+            "[ConstraintSolver] Secondary LCP solver did not converge "
+            "(status = {}, iterations = {}, max_iterations = {}, residual = {} "
+            "(threshold = {}), complementarity = {}). Using best-effort "
+            "solution.",
+            math::toString(fallbackResult.status),
+            fallbackResult.iterations,
+            fallbackOptions.maxIterations,
+            fallbackResult.residual,
+            residualThreshold,
+            fallbackResult.complementarity);
+      } else {
+        DART_DEBUG(
+            "[ConstraintSolver] Secondary LCP solver did not converge "
+            "(status = {}, iterations = {}, max_iterations = {}, residual = "
+            "{}, "
+            "complementarity = {}). Using best-effort solution.",
+            math::toString(fallbackResult.status),
+            fallbackResult.iterations,
+            fallbackOptions.maxIterations,
+            fallbackResult.residual,
+            fallbackResult.complementarity);
+      }
     }
   }
 
