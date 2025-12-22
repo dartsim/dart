@@ -913,9 +913,7 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     math::LcpResult fallbackResult = mSecondaryLcpSolver->solve(
         fallbackProblem, mXBackup, fallbackOptions);
     const bool fallbackUsable
-        = mXBackup.allFinite()
-          && fallbackResult.status != math::LcpSolverStatus::Failed
-          && fallbackResult.status != math::LcpSolverStatus::InvalidProblem
+        = fallbackResult.succeeded() && mXBackup.allFinite()
           && mXBackup.array().abs().maxCoeff() < kImpulseClamp;
     fallbackSuccess = fallbackUsable;
     mX = mXBackup;
