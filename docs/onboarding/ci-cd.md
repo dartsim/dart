@@ -10,13 +10,31 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Local build/test entry points: [building.md](building.md) and [testing.md](testing.md)
   - Gazebo / gz-physics workflow: [build-system.md](build-system.md#gazebo-integration-feature)
   - PR template checklist: [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)
+  - Asserts-enabled CI build (no `-DNDEBUG`): see [Asserts-Enabled CI Build](#asserts-enabled-ci-build-no--dndebug)
 - Fast CI fail-fast loop:
   - Suggested (Unverified): `gh pr checks <PR_NUMBER> --watch --interval 30 --fail-fast`
   - Suggested (Unverified): `gh run view --job <JOB_ID> --log-failed`
-- Gotchas (observed in this task):
+- Gotchas:
   - `gh run list` can show separate runs for `push` and `pull_request`; for PR gating, watch the `pull_request` run.
   - `gh run watch` is blocking and can run for a long time; use a persistent shell and re-run it if your terminal session times out.
+  - The asserts-enabled CI job uses a custom CMake configure (`CMAKE_BUILD_TYPE=None`) instead of pixi tasks; pass required build toggles explicitly (e.g., Bullet collision).
+  - Deprecated headers that emit `#warning` fail under `-Werror=cpp` (e.g., use `dart/utils/urdf/All.hpp` instead of deprecated `dart/utils/urdf/urdf.hpp`).
+  - dartpy test failures can show up as a Python abort with minimal traceback when a C++ `DART_ASSERT` triggers; rerun the single test locally and inspect the C++ assert.
+  - Bullet-backed raycast tests require Bullet to be built; skip or enable Bullet if the backend is intentionally disabled.
 - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
+
+## Fast Iteration Loop
+
+- Identify the first failing step in the CI job log, then reproduce locally with the same build toggles.
+- Run the smallest failing test or target, then push and re-run CI.
+- Success signal: the failing job completes without `-Werror` compile failures or Python aborts.
+
+Suggested (Unverified):
+
+```bash
+gh run view <RUN_ID> --job <JOB_ID> --log-failed
+python -m pytest <TEST_PATH>::<TEST_NAME> -vv
+```
 
 ## CI Monitoring (CLI)
 
@@ -32,9 +50,30 @@ gh run watch <RUN_ID> --interval 30
 Example (Used in this task):
 
 ```bash
-gh run list -R dartsim/dart --branch refactor/mesh_loader --limit 10
-gh run watch 20397566461 --interval 30
+gh run view 20406646051 --job 58637291478 --log-failed
+python -m pytest python/tests/unit/constraint/test_constraint.py::test_revolute_joint_constraint -vv
 ```
+
+Suggested (Unverified):
+
+```bash
+gh run view <RUN_ID> --job <JOB_ID> --log-failed
+python -m pytest <TEST_PATH>::<TEST_NAME> -vv
+```
+
+## Asserts-Enabled CI Build (no -DNDEBUG)
+
+The asserts-enabled job uses a custom CMake configure with `CMAKE_BUILD_TYPE=None`
+to keep assertions enabled outside a Debug build.
+
+- Pass build toggles explicitly when bypassing pixi tasks (e.g., `DART_BUILD_COLLISION_BULLET=ON` if Bullet-backed tests are expected).
+- Expect `-Werror=cpp`; any deprecated headers that emit `#warning` will fail the build.
+- If a dartpy test aborts without a Python traceback, the C++ assert message is usually the first useful clue.
+
+## Next-Time Accelerators
+
+- When running dartpy tests against an in-tree build, set `PYTHONPATH` and `DARTPY_RUNTIME_DIR` to the build output.
+- If a test requires an optional backend, guard it (skip) or ensure the backend toggle is enabled in the build configuration.
 
 ## Workflow Architecture
 

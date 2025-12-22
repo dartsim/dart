@@ -201,6 +201,9 @@ def test_filter(name, cd_factory):
 
 
 def test_raycast():
+    if not hasattr(dart, "BulletCollisionDetector"):
+        pytest.skip("Bullet collision detector is not available")
+
     cd = dart.BulletCollisionDetector()
 
     simple_frame = dart.SimpleFrame()

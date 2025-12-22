@@ -17,6 +17,8 @@ dart_add_test(
   UNIT_collision_ConvexMesh
   collision/test_ConvexMeshShapeCollision.cpp)
 
+dart_add_test("unit" UNIT_collision_Contact collision/test_Contact.cpp)
+
 if(DART_HAVE_BULLET)
   dart_add_test("unit" UNIT_collision_BulletContact collision/test_BulletContact.cpp)
 endif()
