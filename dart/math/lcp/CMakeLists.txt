@@ -60,24 +60,18 @@ install(
   COMPONENT headers
 )
 
-install(
-  FILES ${math_lcp_detail_hdrs}
-  DESTINATION include/dart/math/lcp/detail
-  COMPONENT headers
-)
+if(math_lcp_pivoting_dantzig_hdrs)
+  install(
+    FILES ${math_lcp_pivoting_dantzig_hdrs}
+    DESTINATION include/dart/math/lcp/pivoting/dantzig
+    COMPONENT headers
+  )
+endif()
 
 if(math_lcp_pivoting_hdrs)
   install(
     FILES ${math_lcp_pivoting_hdrs}
     DESTINATION include/dart/math/lcp/pivoting
-    COMPONENT headers
-  )
-endif()
-
-if(math_lcp_pivoting_dantzig_hdrs)
-  install(
-    FILES ${math_lcp_pivoting_dantzig_hdrs}
-    DESTINATION include/dart/math/lcp/pivoting/dantzig
     COMPONENT headers
   )
 endif()
