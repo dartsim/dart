@@ -12,8 +12,8 @@
   edge/vertex diagonal cases, and rotated plane-normal coverage.
 - Added containment cases for box/sphere/cylinder/ellipsoid containers in both
   the pure FCL and DART collision matrices.
-- Drafted a comprehensive primitive collision test plan for pure FCL and DART
-  coverage; edge cases are now covered.
+- Completed the comprehensive primitive collision test plan for pure FCL and
+  DART coverage; edge cases are now covered.
 
 ## Context
 
@@ -49,11 +49,6 @@
   `ctest -R INTEGRATION_collision_FclPrimitiveContactMatrix`
 - Run the pure FCL matrix test:
   `ctest -R INTEGRATION_collision_FclPrimitiveContactMatrixFcl`
-
-## Test Plan
-
-- See `docs/dev_tasks/fcl_primitive_shape/testing_plan.md` for the full matrix
-  and case coverage plan.
 
 ## Local Checks
 
