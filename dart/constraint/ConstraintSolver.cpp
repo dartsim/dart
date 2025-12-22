@@ -939,8 +939,7 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     mX = mX.array().isFinite().select(mX, 0.0);
   }
 
-  const bool finalSuccess
-      = success || fallbackSuccess || (fallbackRan && fallbackUsable);
+  const bool finalSuccess = success || (fallbackRan && fallbackUsable);
 
 #if !defined(NDEBUG)
   const double maxImpulse = mX.size() > 0 ? mX.cwiseAbs().maxCoeff() : 0.0;
