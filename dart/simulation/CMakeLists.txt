@@ -24,9 +24,24 @@ dart_add_core_sources(
   ${solver_srcs}
 )
 
+# Filter internal ECS headers out of installed/public aggregates.
+set(detail_public_hdrs ${detail_hdrs})
+list(
+  REMOVE_ITEM
+  detail_public_hdrs
+  "${CMAKE_CURRENT_SOURCE_DIR}/detail/WorldEcsAccess.hpp"
+)
+set(object_public_hdrs ${object_hdrs})
+list(
+  REMOVE_ITEM
+  object_public_hdrs
+  "${CMAKE_CURRENT_SOURCE_DIR}/object/ObjectWith.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/object/ObjectWith-impl.hpp"
+)
+
 # Generate header for this namespace
 set(header_names "")
-foreach(header ${hdrs} ${comps_hdrs} ${object_hdrs} ${solver_hdrs})
+foreach(header ${hdrs} ${comps_hdrs} ${object_public_hdrs} ${solver_hdrs})
   file(RELATIVE_PATH header_relpath "${CMAKE_CURRENT_SOURCE_DIR}" "${header}")
   list(APPEND header_names "${header_relpath}")
 endforeach()
@@ -40,9 +55,9 @@ dart_generate_component_headers(
   HEADERS ${header_names}
   SOURCE_HEADERS
     ${hdrs}
-    ${detail_hdrs}
+    ${detail_public_hdrs}
     ${comps_hdrs}
-    ${object_hdrs}
+    ${object_public_hdrs}
     ${solver_hdrs}
 )
 
@@ -54,7 +69,7 @@ install(
   COMPONENT headers
 )
 install(
-  FILES ${detail_hdrs}
+  FILES ${detail_public_hdrs}
   DESTINATION include/dart/simulation/detail
   COMPONENT headers
 )
@@ -64,7 +79,7 @@ install(
   COMPONENT headers
 )
 install(
-  FILES ${object_hdrs}
+  FILES ${object_public_hdrs}
   DESTINATION include/dart/simulation/object
   COMPONENT headers
 )
