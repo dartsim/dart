@@ -344,6 +344,8 @@ void ConstraintSolver::setFromOtherConstraintSolver(
   mManualConstraints = other.mManualConstraints;
 
   mContactSurfaceHandler = other.mContactSurfaceHandler;
+  mLcpSolver = other.mLcpSolver;
+  mSecondaryLcpSolver = other.mSecondaryLcpSolver;
 }
 
 //==============================================================================
