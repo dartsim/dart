@@ -901,6 +901,7 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 
   bool fallbackSuccess = false;
   bool fallbackRan = false;
+  bool fallbackUsable = false;
   if (!success && mSecondaryLcpSolver) {
     DART_PROFILE_SCOPED_N("Secondary LCP");
     math::LcpOptions fallbackOptions = mSecondaryLcpSolver->getDefaultOptions();
@@ -912,12 +913,17 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
         Abackup, mBBackup, mLoBackup, mHiBackup, mFIndexBackup);
     math::LcpResult fallbackResult = mSecondaryLcpSolver->solve(
         fallbackProblem, mXBackup, fallbackOptions);
-    const bool fallbackUsable
-        = fallbackResult.succeeded() && mXBackup.allFinite()
-          && mXBackup.array().abs().maxCoeff() < kImpulseClamp;
-    fallbackSuccess = fallbackUsable;
+    fallbackSuccess = fallbackResult.succeeded();
+    fallbackUsable = mXBackup.allFinite()
+                     && mXBackup.array().abs().maxCoeff() < kImpulseClamp;
     mX = mXBackup;
     fallbackRan = true;
+    if (!fallbackSuccess && fallbackUsable) {
+      DART_WARN(
+          "[ConstraintSolver] Secondary LCP solver did not converge "
+          "(status = {}). Using best-effort solution.",
+          math::toString(fallbackResult.status));
+    }
   }
 
   const bool solutionFinite = mX.allFinite();
@@ -925,7 +931,8 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     mX = mX.array().isFinite().select(mX, 0.0);
   }
 
-  const bool finalSuccess = success || fallbackSuccess;
+  const bool finalSuccess
+      = success || fallbackSuccess || (fallbackRan && fallbackUsable);
 
 #if !defined(NDEBUG)
   const double maxImpulse = mX.size() > 0 ? mX.cwiseAbs().maxCoeff() : 0.0;
