@@ -41,7 +41,9 @@
 namespace dart {
 namespace constraint {
 
-class DART_API BoxedLcpConstraintSolver : public ConstraintSolver
+/// Deprecated; will be removed in DART 8.0. Use dart::math::LcpSolver.
+class DART_API DART_DEPRECATED("8.0") BoxedLcpConstraintSolver
+  : public ConstraintSolver
 {
 public:
   BoxedLcpConstraintSolver();

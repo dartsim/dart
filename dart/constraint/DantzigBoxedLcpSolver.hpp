@@ -40,7 +40,9 @@
 namespace dart {
 namespace constraint {
 
-class DART_API DantzigBoxedLcpSolver : public BoxedLcpSolver
+/// Deprecated; will be removed in DART 8.0. Use dart::math::LcpSolver.
+class DART_API DART_DEPRECATED("8.0") DantzigBoxedLcpSolver
+  : public BoxedLcpSolver
 {
 public:
   const std::string& getType() const override;

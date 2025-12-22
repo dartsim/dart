@@ -34,13 +34,16 @@
 #define DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_
 
 #include <dart/common/Castable.hpp>
+#include <dart/common/Deprecated.hpp>
 
 #include <string>
 
 namespace dart {
 namespace constraint {
 
-class BoxedLcpSolver : public common::Castable<BoxedLcpSolver>
+/// Deprecated; will be removed in DART 8.0. Use dart::math::LcpSolver.
+class DART_DEPRECATED("8.0") BoxedLcpSolver
+  : public common::Castable<BoxedLcpSolver>
 {
 public:
   virtual ~BoxedLcpSolver() = default;
