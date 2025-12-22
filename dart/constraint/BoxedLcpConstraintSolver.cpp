@@ -104,7 +104,8 @@ public:
     }
 
     const int nSkip = math::padding(n);
-    Eigen::MatrixXd paddedA(n, nSkip);
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+        paddedA(n, nSkip);
     paddedA.setZero();
     paddedA.leftCols(n) = problem.A;
 
