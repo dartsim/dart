@@ -107,7 +107,11 @@ std::shared_ptr<ConvexMeshShape> ConvexMeshShape::fromMesh(
 //==============================================================================
 ShapePtr ConvexMeshShape::clone() const
 {
-  return std::make_shared<ConvexMeshShape>(mMesh);
+  std::shared_ptr<TriMeshType> clonedMesh;
+  if (mMesh) {
+    clonedMesh = std::make_shared<TriMeshType>(*mMesh);
+  }
+  return std::make_shared<ConvexMeshShape>(clonedMesh);
 }
 
 //==============================================================================

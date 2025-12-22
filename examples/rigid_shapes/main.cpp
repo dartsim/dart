@@ -37,6 +37,7 @@
  */
 
 #include "dart/common/Macros.hpp"
+#include "dart/common/String.hpp"
 
 #include <dart/gui/All.hpp>
 
@@ -46,11 +47,8 @@
 #include <dart/io/Read.hpp>
 
 #include <CLI/CLI.hpp>
-
 #include <fcl/config.h>
 
-#include <algorithm>
-#include <cctype>
 #include <iostream>
 #include <string>
 
@@ -63,16 +61,6 @@ using namespace dart::utils;
 using namespace dart::math;
 
 namespace {
-
-std::string toLower(std::string value)
-{
-  std::transform(
-      value.begin(),
-      value.end(),
-      value.begin(),
-      [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-  return value;
-}
 
 bool tryParseCollisionDetector(
     const std::string& value, CollisionDetectorType& detector)
