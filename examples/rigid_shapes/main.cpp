@@ -86,6 +86,57 @@ bool tryParseCollisionDetector(
   return false;
 }
 
+bool updateGroundThickness(const WorldPtr& world, double thickness)
+{
+  if (!world) {
+    return false;
+  }
+
+  SkeletonPtr groundSkeleton = world->getSkeleton("ground skeleton");
+  if (!groundSkeleton) {
+    for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+      auto skeleton = world->getSkeleton(i);
+      if (skeleton && skeleton->getBodyNode("ground")) {
+        groundSkeleton = skeleton;
+        break;
+      }
+    }
+  }
+
+  if (!groundSkeleton) {
+    return false;
+  }
+
+  auto* groundBody = groundSkeleton->getBodyNode("ground");
+  if (!groundBody) {
+    return false;
+  }
+
+  auto updateShapeNode = [thickness](ShapeNode* shapeNode) {
+    if (!shapeNode) {
+      return;
+    }
+
+    auto box = std::dynamic_pointer_cast<BoxShape>(shapeNode->getShape());
+    if (!box) {
+      return;
+    }
+
+    Eigen::Vector3d size = box->getSize();
+    size.y() = thickness;
+    box->setSize(size);
+
+    Eigen::Vector3d translation = shapeNode->getRelativeTranslation();
+    translation.y() = -0.5 * thickness;
+    shapeNode->setRelativeTranslation(translation);
+  };
+
+  groundBody->eachShapeNodeWith<VisualAspect>(updateShapeNode);
+  groundBody->eachShapeNodeWith<CollisionAspect>(updateShapeNode);
+
+  return true;
+}
+
 } // namespace
 
 class CustomWorldNode : public RealTimeWorldNode
@@ -329,7 +380,13 @@ private:
     SkeletonPtr newSkeleton = Skeleton::create(nextSkeletonName("convex_mesh"));
 
     auto mesh = std::make_shared<ConvexMeshShape::TriMeshType>();
-    mesh->reserveVertices(_vertexCount);
+    mesh->reserveVertices(_vertexCount + 4);
+
+    const double seed = _bound * 0.6;
+    mesh->addVertex(Eigen::Vector3d(-seed, -seed, -seed));
+    mesh->addVertex(Eigen::Vector3d(seed, -seed, seed));
+    mesh->addVertex(Eigen::Vector3d(-seed, seed, seed));
+    mesh->addVertex(Eigen::Vector3d(seed, seed, -seed));
 
     for (int i = 0; i < _vertexCount; ++i) {
       mesh->addVertex(Random::uniform<Eigen::Vector3d>(-_bound, _bound));
@@ -367,10 +424,20 @@ int main(int argc, char* argv[])
 {
   CLI::App app("Rigid shapes example");
   std::string collisionDetector = "file";
+  std::size_t maxContacts = 1000;
+  double groundThickness = 0.0;
   app.add_option(
       "--collision-detector",
       collisionDetector,
       "Collision detector backend: file, fcl, bullet, ode, dart");
+  app.add_option(
+      "--max-contacts",
+      maxContacts,
+      "Maximum number of contacts per collision pass (0 disables collision)");
+  app.add_option(
+      "--ground-thickness",
+      groundThickness,
+      "Override ground box thickness in meters (0 keeps the file value)");
   CLI11_PARSE(app, argc, argv);
 
   WorldPtr myWorld = dart::io::readWorld("dart://sample/skel/shapes.skel");
@@ -389,6 +456,21 @@ int main(int argc, char* argv[])
 
   if (const auto detector = myWorld->getCollisionDetector()) {
     std::cout << "Collision detector: " << detector->getType() << std::endl;
+  }
+
+  auto& collisionOption = myWorld->getConstraintSolver()->getCollisionOption();
+  collisionOption.maxNumContacts = maxContacts;
+
+  if (groundThickness < 0.0) {
+    std::cerr << "--ground-thickness must be non-negative." << std::endl;
+    return 1;
+  }
+
+  if (groundThickness > 0.0) {
+    if (!updateGroundThickness(myWorld, groundThickness)) {
+      std::cerr << "Failed to update ground thickness." << std::endl;
+      return 1;
+    }
   }
 
   auto contactShape = std::make_shared<PointCloudShape>(0.02);
