@@ -1,6 +1,7 @@
 # Multi Solver World Refactor Plan (00)
 
 ## What Exists Today (feature/multi_solver)
+
 - World orchestration and config: `dart/simulation/World.hpp`, `dart/simulation/World.cpp`
   - `WorldConfig`, `CollisionDetectorType`, `SolverSteppingMode`, `RigidSolverType`
   - Active rigid selection (`setActiveRigidSolver`) and solver stepping modes
@@ -22,7 +23,9 @@
   - EnTT added as required dep: `cmake/DARTFindDependencies.cmake`, `dart/CMakeLists.txt`, `package.xml`
 
 ## First PR Milestone (Small, Shippable)
+
 ### Scope
+
 - Preserve classic Skeleton solver behavior and public APIs.
 - Keep multi-solver scheduling and active-rigid selection in `World`.
 - Keep ECS registry ownership in `World` and the sync-only `RigidSolver` path.
@@ -30,12 +33,14 @@
 - Keep test coverage for solver stepping order and world behavior.
 
 ### Non-Goals
+
 - No new ECS simulation objects or physics behavior.
 - No deprecation or removal of the classic solver.
 - No changes to `dart8/`.
 - No public exposure of `entt::registry` or raw solver pointers.
 
 ## Public API Decisions
+
 - `World` exposes config and policy via:
   - `WorldConfig` (`World::create(WorldConfig)`), `CollisionDetectorType`,
     `SolverSteppingMode`, `RigidSolverType`.
@@ -44,6 +49,7 @@
 - EnTT types must not appear in installed headers (see “Internal Design”).
 
 ## Internal Design (Milestone Target)
+
 - World owns solvers as `SolverEntry` and schedules them each step:
   - `AllEnabledSolvers`: step all enabled solvers in registration order.
   - `ActiveRigidSolverOnly`: step active rigid solver, step non-rigid solvers,
@@ -59,11 +65,13 @@
     need isolation before the first PR lands.
 
 ## Migration Direction (dart8)
+
 - Keep `dart8/` intact for now.
 - Long-term plan: bring ECS-first workflows into `dart/` and migrate features,
   then remove `dart8/` in a later, low-risk PR once parity is clear.
 
 ## Test Plan
+
 - Quick: `pixi run test`
 - Gazebo gate: `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`
 - Final: `pixi run test-all`
@@ -71,6 +79,7 @@
   validate solver scheduling and enable/disable behavior.
 
 ## Workflow Constraints (Docs-First)
+
 - Use `pixi run ...` tasks only (no new entry points).
 - Follow code style in `docs/onboarding/code-style.md`.
 - Keep docs concise; avoid footer metadata in Markdown.
