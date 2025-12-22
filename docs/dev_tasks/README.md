@@ -7,7 +7,7 @@ Documentation for development tasks in DART.
 - Each development task should live in its own subdirectory under `docs/dev_tasks/`.
 - If you can’t find a task folder (e.g., it was renamed or removed after completion), list what exists:
 
-  Example (Used in this task):
+  Suggested (Unverified):
 
   ```bash
   find docs/dev_tasks -maxdepth 2 -type d -print

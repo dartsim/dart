@@ -21,7 +21,17 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Deprecated headers that emit `#warning` fail under `-Werror=cpp` (e.g., use `dart/utils/urdf/All.hpp` instead of deprecated `dart/utils/urdf/urdf.hpp`).
   - dartpy test failures can show up as a Python abort with minimal traceback when a C++ `DART_ASSERT` triggers; rerun the single test locally and inspect the C++ assert.
   - Bullet-backed raycast tests require Bullet to be built; skip or enable Bullet if the backend is intentionally disabled.
-- If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
+  - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
+
+## PR Review Loop
+
+Task recap: Address PR review feedback by locating the comment context, updating the code, running the lint task, and rechecking PR status before pushing updates. This keeps CI signals aligned with the latest changes and avoids stale review context. Use the GitHub CLI for quick visibility into PR comments and checks.
+
+Repeatable playbook:
+
+- Locate review feedback and scope the affected files.
+- Apply the fix and run the lint task locally.
+- Commit/push, then confirm PR checks and review comments are updated.
 
 ## Fast Iteration Loop
 
@@ -47,11 +57,18 @@ gh run list -R <OWNER>/<REPO> --branch <BRANCH> --limit <N>
 gh run watch <RUN_ID> --interval 30
 ```
 
+Suggested (Unverified):
+
+```bash
+gh pr view <PR_NUMBER> --comments
+gh pr checks <PR_NUMBER>
+```
+
 Example (Used in this task):
 
 ```bash
-gh run view 20406646051 --job 58637291478 --log-failed
-python -m pytest python/tests/unit/constraint/test_constraint.py::test_revolute_joint_constraint -vv
+gh pr view 2318 --comments
+gh pr checks 2318
 ```
 
 Suggested (Unverified):

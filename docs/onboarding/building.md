@@ -167,25 +167,24 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    $env:N=[math]::Floor([Environment]::ProcessorCount*2/3)
    ```
 
-   Example (Used in this task):
+   Suggested (Unverified):
 
    ```bash
-   pixi run lint
-   DART_PARALLEL_JOBS=12 CTEST_PARALLEL_LEVEL=12 pixi run test
-   DART_PARALLEL_JOBS=12 CTEST_PARALLEL_LEVEL=12 pixi run test-all
+   DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test
+   DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test-all
    ```
 
    Note: `pixi run test-all` runs `pixi run lint` (auto-fixing) internally; check `git status` afterwards before committing.
 
 4. (Optional) Gazebo / gz-physics integration test:
 
-   Example (Used in this task):
+   Suggested (Unverified):
 
    ```bash
-   DART_PARALLEL_JOBS=12 CTEST_PARALLEL_LEVEL=12 pixi run -e gazebo test-gz
+   DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run -e gazebo test-gz
    ```
 
-   Suggested (Unverified): Run the same workflow with a different parallelism setting, e.g. `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
+   Suggested (Unverified): Run the same workflow with a different parallelism setting, e.g. `DART_PARALLEL_JOBS=<N> pixi run -e gazebo test-gz`.
 
    This runs the gz-physics integration workflow (task chain, patch policy, and common failure modes are documented in [build-system.md](build-system.md#gazebo-integration-feature)).
 
