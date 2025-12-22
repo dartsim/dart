@@ -938,10 +938,9 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
           = !residualFinite || fallbackResult.residual > residualThreshold;
       if (warn) {
         DART_WARN(
-            "[ConstraintSolver] Secondary LCP solver did not converge "
-            "(status = {}, iterations = {}, max_iterations = {}, residual = {} "
-            "(threshold = {}), complementarity = {}). Using best-effort "
-            "solution.",
+            "[ConstraintSolver] Secondary LCP fallback status={}, "
+            "iters={}/{}, res={:.3g} (thr={:.3g}), comp={:.3g}. "
+            "Using best-effort solution.",
             math::toString(fallbackResult.status),
             fallbackResult.iterations,
             fallbackOptions.maxIterations,
@@ -950,10 +949,8 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
             fallbackResult.complementarity);
       } else {
         DART_DEBUG(
-            "[ConstraintSolver] Secondary LCP solver did not converge "
-            "(status = {}, iterations = {}, max_iterations = {}, residual = "
-            "{}, "
-            "complementarity = {}). Using best-effort solution.",
+            "[ConstraintSolver] Secondary LCP fallback status={}, "
+            "iters={}/{}, res={:.3g}, comp={:.3g}. Using best-effort solution.",
             math::toString(fallbackResult.status),
             fallbackResult.iterations,
             fallbackOptions.maxIterations,
