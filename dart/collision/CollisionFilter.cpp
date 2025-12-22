@@ -108,8 +108,13 @@ bool BodyNodeCollisionFilter::ignoresCollision(
   if (object1 == object2)
     return true;
 
-  auto shapeNode1 = object1->getShapeFrame()->asShapeNode();
-  auto shapeNode2 = object2->getShapeFrame()->asShapeNode();
+  const auto* shapeFrame1 = object1->getShapeFrame();
+  const auto* shapeFrame2 = object2->getShapeFrame();
+  if (!shapeFrame1 || !shapeFrame2)
+    return false;
+
+  auto shapeNode1 = shapeFrame1->asShapeNode();
+  auto shapeNode2 = shapeFrame2->asShapeNode();
 
   // We don't filter out for non-ShapeNode because this class shouldn't have the
   // authority to make decisions about filtering any ShapeFrames that aren't
@@ -121,6 +126,8 @@ bool BodyNodeCollisionFilter::ignoresCollision(
 
   auto bodyNode1 = shapeNode1->getBodyNodePtr();
   auto bodyNode2 = shapeNode2->getBodyNodePtr();
+  if (!bodyNode1 || !bodyNode2)
+    return false;
 
   if (bodyNode1 == bodyNode2)
     return true;
@@ -130,6 +137,8 @@ bool BodyNodeCollisionFilter::ignoresCollision(
 
   const auto& skel1 = bodyNode1->getSkeleton();
   const auto& skel2 = bodyNode2->getSkeleton();
+  if (!skel1 || !skel2)
+    return false;
 
   if (!skel1->isMobile() && !skel2->isMobile())
     return true;
