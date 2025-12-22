@@ -50,7 +50,9 @@
 #include <fcl/config.h>
 
 #include <iostream>
+#include <span>
 #include <string>
+#include <vector>
 
 using namespace dart::common;
 using namespace dart::dynamics;
@@ -86,10 +88,76 @@ bool tryParseCollisionDetector(
 
 } // namespace
 
+class CustomWorldNode : public RealTimeWorldNode
+{
+public:
+  CustomWorldNode(
+      const WorldPtr& world,
+      const std::shared_ptr<PointCloudShape>& contactShape,
+      VisualAspect* contactVisual)
+    : RealTimeWorldNode(world),
+      mContactShape(contactShape),
+      mContactVisual(contactVisual),
+      mContactPointsVisible(false)
+  {
+    if (mContactVisual) {
+      mContactVisual->setHidden(true);
+    }
+  }
+
+  void toggleContactPoints()
+  {
+    setContactPointsVisible(!mContactPointsVisible);
+  }
+
+  void setContactPointsVisible(bool visible)
+  {
+    mContactPointsVisible = visible;
+    if (mContactVisual) {
+      mContactVisual->setHidden(!visible);
+    }
+    if (!visible && mContactShape) {
+      mContactShape->removeAllPoints();
+    }
+  }
+
+  bool getContactPointsVisible() const
+  {
+    return mContactPointsVisible;
+  }
+
+  void customPreRefresh() override
+  {
+    if (!mContactPointsVisible || !mContactShape) {
+      return;
+    }
+
+    const auto& contacts = getWorld()->getLastCollisionResult().getContacts();
+    mContactPoints.clear();
+    mContactPoints.reserve(contacts.size());
+    for (const auto& contact : contacts) {
+      mContactPoints.push_back(contact.point);
+    }
+
+    mContactShape->setPoint(std::span<const Eigen::Vector3d>(
+        mContactPoints.data(), mContactPoints.size()));
+  }
+
+private:
+  std::shared_ptr<PointCloudShape> mContactShape;
+  VisualAspect* mContactVisual;
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
+      mContactPoints;
+  bool mContactPointsVisible;
+};
+
 class RigidShapesEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
-  RigidShapesEventHandler(const WorldPtr& world) : mWorld(world) {}
+  RigidShapesEventHandler(const WorldPtr& world, CustomWorldNode* worldNode)
+    : mWorld(world), mWorldNode(worldNode)
+  {
+  }
 
   bool handle(
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
@@ -129,6 +197,12 @@ public:
                 mWorld->getSkeleton(mWorld->getNumSkeletons() - 1));
           }
           return true;
+        case 'c':
+        case 'C':
+          if (mWorldNode) {
+            mWorldNode->toggleContactPoints();
+          }
+          return true;
         default:
           return false;
       }
@@ -137,6 +211,11 @@ public:
   }
 
 private:
+  std::string nextSkeletonName(const std::string& prefix)
+  {
+    return prefix + "_" + std::to_string(mSpawnCount++);
+  }
+
   Eigen::Isometry3d getRandomTransform()
   {
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
@@ -158,7 +237,7 @@ private:
       const Eigen::Vector3d& _size,
       double _mass = 10)
   {
-    SkeletonPtr newSkeleton = Skeleton::create();
+    SkeletonPtr newSkeleton = Skeleton::create(nextSkeletonName("box"));
 
     ShapePtr newShape(new BoxShape(_size));
 
@@ -187,7 +266,7 @@ private:
       const Eigen::Vector3d& _radii,
       double _mass = 10)
   {
-    SkeletonPtr newSkeleton = Skeleton::create();
+    SkeletonPtr newSkeleton = Skeleton::create(nextSkeletonName("ellipsoid"));
 
     ShapePtr newShape(new EllipsoidShape(_radii * 2.0));
 
@@ -217,7 +296,7 @@ private:
       double _height,
       double _mass = 10)
   {
-    SkeletonPtr newSkeleton = Skeleton::create();
+    SkeletonPtr newSkeleton = Skeleton::create(nextSkeletonName("cylinder"));
 
     ShapePtr newShape(new CylinderShape(_radius, _height));
 
@@ -247,7 +326,7 @@ private:
       double _bound,
       double _mass = 10)
   {
-    SkeletonPtr newSkeleton = Skeleton::create();
+    SkeletonPtr newSkeleton = Skeleton::create(nextSkeletonName("convex_mesh"));
 
     auto mesh = std::make_shared<ConvexMeshShape::TriMeshType>();
     mesh->reserveVertices(_vertexCount);
@@ -280,14 +359,8 @@ private:
 
 protected:
   WorldPtr mWorld;
-};
-
-class CustomWorldNode : public RealTimeWorldNode
-{
-public:
-  CustomWorldNode(const WorldPtr& world) : RealTimeWorldNode(world) {}
-
-  void customPreStep() override {}
+  CustomWorldNode* mWorldNode;
+  std::size_t mSpawnCount{0};
 };
 
 int main(int argc, char* argv[])
@@ -318,9 +391,22 @@ int main(int argc, char* argv[])
     std::cout << "Collision detector: " << detector->getType() << std::endl;
   }
 
-  auto handler = new RigidShapesEventHandler(myWorld);
+  auto contactShape = std::make_shared<PointCloudShape>(0.02);
+  contactShape->setDataVariance(Shape::DYNAMIC);
+  contactShape->setPointShapeType(PointCloudShape::BILLBOARD_CIRCLE);
 
-  ::osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(myWorld);
+  auto contactFrame
+      = SimpleFrame::createShared(Frame::World(), "contact_points");
+  contactFrame->setShape(contactShape);
+  auto* contactVisual = contactFrame->createVisualAspect();
+  contactVisual->setRGBA(Eigen::Vector4d(0.9, 0.1, 0.1, 1.0));
+  contactVisual->setHidden(true);
+  myWorld->addSimpleFrame(contactFrame);
+
+  ::osg::ref_ptr<CustomWorldNode> node
+      = new CustomWorldNode(myWorld, contactShape, contactVisual);
+
+  auto handler = new RigidShapesEventHandler(myWorld, node.get());
 
   auto viewer = Viewer();
   viewer.addWorldNode(node);
@@ -332,6 +418,7 @@ int main(int argc, char* argv[])
   viewer.addInstructionText("'e': spawn a random cylinder\n");
   viewer.addInstructionText("'r': spawn a random convex mesh\n");
   viewer.addInstructionText("'a': delete a spawned object at last\n");
+  viewer.addInstructionText("'c': toggle contact points\n");
   std::cout << viewer.getInstructions() << std::endl;
 
   viewer.setUpViewInWindow(0, 0, 640, 480);
