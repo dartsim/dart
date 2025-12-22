@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/ConvexMeshShape.hpp"
 
 #include <Eigen/Core>
@@ -73,4 +74,50 @@ TEST(ConvexMeshShapeTest, CloneDeepCopiesMesh)
 
   EXPECT_EQ(original->getMesh()->getVertices().size(), originalVertexCount);
   EXPECT_EQ(cloned->getMesh()->getVertices().size(), originalVertexCount + 1);
+}
+
+TEST(ConvexMeshShapeTest, FromMeshHandlesNullMesh)
+{
+  using dart::dynamics::ConvexMeshShape;
+
+  auto shape = ConvexMeshShape::fromMesh(nullptr, true);
+  ASSERT_NE(shape, nullptr);
+  ASSERT_NE(shape->getMesh(), nullptr);
+  EXPECT_TRUE(shape->getMesh()->getVertices().empty());
+  EXPECT_TRUE(shape->getMesh()->getTriangles().empty());
+
+  const auto& boundingBox = shape->getBoundingBox();
+  EXPECT_TRUE(boundingBox.getMin().isZero());
+  EXPECT_TRUE(boundingBox.getMax().isZero());
+  EXPECT_DOUBLE_EQ(shape->getVolume(), 0.0);
+}
+
+TEST(ConvexMeshShapeTest, ComputeInertiaMatchesBoundingBox)
+{
+  using dart::dynamics::BoxShape;
+  using dart::dynamics::ConvexMeshShape;
+
+  ConvexMeshShape::Vertices vertices
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitZ()};
+
+  ConvexMeshShape::Triangles triangles
+      = {ConvexMeshShape::TriMeshType::Triangle(0, 1, 2),
+         ConvexMeshShape::TriMeshType::Triangle(0, 1, 3),
+         ConvexMeshShape::TriMeshType::Triangle(0, 2, 3),
+         ConvexMeshShape::TriMeshType::Triangle(1, 2, 3)};
+
+  auto mesh = std::make_shared<ConvexMeshShape::TriMeshType>();
+  mesh->setTriangles(vertices, triangles);
+  auto shape = ConvexMeshShape::fromMesh(mesh, false);
+
+  const double mass = 2.5;
+  const Eigen::Vector3d expectedExtents = Eigen::Vector3d::Ones();
+  const Eigen::Matrix3d expected
+      = BoxShape::computeInertia(expectedExtents, mass);
+
+  EXPECT_TRUE(shape->computeInertia(mass).isApprox(expected));
+  EXPECT_DOUBLE_EQ(shape->getVolume(), 1.0);
 }

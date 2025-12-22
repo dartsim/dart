@@ -129,6 +129,12 @@ std::shared_ptr<ConvexMeshShape> makeTetraShape()
   return std::make_shared<ConvexMeshShape>(vertices, triangles);
 }
 
+std::shared_ptr<ConvexMeshShape> makeEmptyConvexMeshShape()
+{
+  auto mesh = std::make_shared<ConvexMeshShape::TriMeshType>();
+  return std::make_shared<ConvexMeshShape>(mesh);
+}
+
 Eigen::Isometry3d makeRandomTransform(
     std::mt19937& rng, double translationBound, double rotationBound)
 {
@@ -264,6 +270,26 @@ TEST(ConvexMeshShapeCollision, FclUsesConvexGeometry)
   EXPECT_EQ(fclObj->collisionGeometry()->getNodeType(), ::fcl::GEOM_CONVEX);
 }
 
+TEST(ConvexMeshShapeCollision, FclFallsBackWithoutVertices)
+{
+  auto detector = std::make_shared<TestFCLDetector>();
+  auto skel = dart::dynamics::Skeleton::create("s");
+  auto bn
+      = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>().second;
+  auto shape = makeEmptyConvexMeshShape();
+  auto shapeNode = bn->createShapeNodeWith<CollisionAspect>(shape);
+
+  auto collObj = detector->claimCollisionObject(shapeNode);
+  ASSERT_NE(collObj, nullptr);
+
+  auto fclObj = static_cast<FCLCollisionObject*>(collObj.get())
+                    ->getFCLCollisionObject();
+  ASSERT_NE(fclObj, nullptr);
+  ASSERT_NE(fclObj->collisionGeometry(), nullptr);
+
+  EXPECT_NE(fclObj->collisionGeometry()->getNodeType(), ::fcl::GEOM_CONVEX);
+}
+
 #if DART_HAVE_BULLET
 TEST(ConvexMeshShapeCollision, BulletUsesConvexHullShape)
 {
@@ -285,6 +311,27 @@ TEST(ConvexMeshShapeCollision, BulletUsesConvexHullShape)
   EXPECT_EQ(
       bulletObj->getCollisionShape()->getShapeType(),
       CONVEX_HULL_SHAPE_PROXYTYPE);
+}
+
+TEST(ConvexMeshShapeCollision, BulletFallsBackWithoutVertices)
+{
+  auto detector = std::make_shared<TestBulletDetector>();
+  auto skel = dart::dynamics::Skeleton::create("s");
+  auto bn
+      = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>().second;
+  auto shape = makeEmptyConvexMeshShape();
+  auto shapeNode = bn->createShapeNodeWith<CollisionAspect>(shape);
+
+  auto collObj = detector->claimCollisionObject(shapeNode);
+  ASSERT_NE(collObj, nullptr);
+
+  auto bulletObj = static_cast<BulletCollisionObject*>(collObj.get())
+                       ->getBulletCollisionObject();
+  ASSERT_NE(bulletObj, nullptr);
+  ASSERT_NE(bulletObj->getCollisionShape(), nullptr);
+
+  EXPECT_EQ(
+      bulletObj->getCollisionShape()->getShapeType(), SPHERE_SHAPE_PROXYTYPE);
 }
 #endif
 
@@ -308,6 +355,27 @@ TEST(ConvexMeshShapeCollision, OdeUsesTriMeshGeometry)
   ASSERT_NE(geomId, nullptr);
 
   EXPECT_EQ(dGeomGetClass(geomId), dTriMeshClass);
+}
+
+TEST(ConvexMeshShapeCollision, OdeFallsBackWithoutVertices)
+{
+  auto detector = std::make_shared<TestOdeDetector>();
+  auto skel = dart::dynamics::Skeleton::create("s");
+  auto bn
+      = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>().second;
+  auto shape = makeEmptyConvexMeshShape();
+  auto shapeNode = bn->createShapeNodeWith<CollisionAspect>(shape);
+
+  auto collObj = detector->claimCollisionObject(shapeNode);
+  ASSERT_NE(collObj, nullptr);
+
+  auto odeObj = static_cast<TestOdeCollisionObject*>(collObj.get());
+  ASSERT_NE(odeObj, nullptr);
+
+  auto geomId = odeObj->getOdeGeomId();
+  ASSERT_NE(geomId, nullptr);
+
+  EXPECT_EQ(dGeomGetClass(geomId), dSphereClass);
 }
 #endif
 
