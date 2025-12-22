@@ -46,12 +46,20 @@
   #include "dart/collision/bullet/BulletCollisionDetector.hpp"
   #include "dart/collision/bullet/BulletCollisionObject.hpp"
 #endif
+#if DART_HAVE_ODE
+  #include "dart/collision/ode/OdeCollisionDetector.hpp"
+  #include "dart/collision/ode/OdeCollisionObject.hpp"
+#endif
 
 using dart::collision::FCLCollisionDetector;
 using dart::collision::FCLCollisionObject;
 #if DART_HAVE_BULLET
 using dart::collision::BulletCollisionDetector;
 using dart::collision::BulletCollisionObject;
+#endif
+#if DART_HAVE_ODE
+using dart::collision::OdeCollisionDetector;
+using dart::collision::OdeCollisionObject;
 #endif
 using dart::dynamics::CollisionAspect;
 using dart::dynamics::ConvexMeshShape;
@@ -67,6 +75,32 @@ struct TestFCLDetector : public FCLCollisionDetector
 struct TestBulletDetector : public BulletCollisionDetector
 {
   using BulletCollisionDetector::claimCollisionObject;
+};
+#endif
+#if DART_HAVE_ODE
+class TestOdeCollisionObject : public OdeCollisionObject
+{
+public:
+  TestOdeCollisionObject(
+      OdeCollisionDetector* detector,
+      const dart::dynamics::ShapeFrame* shapeFrame)
+    : OdeCollisionObject(detector, shapeFrame)
+  {
+  }
+
+  using OdeCollisionObject::getOdeGeomId;
+};
+
+struct TestOdeDetector : public OdeCollisionDetector
+{
+  using OdeCollisionDetector::claimCollisionObject;
+
+protected:
+  std::unique_ptr<dart::collision::CollisionObject> createCollisionObject(
+      const dart::dynamics::ShapeFrame* shapeFrame) override
+  {
+    return std::make_unique<TestOdeCollisionObject>(this, shapeFrame);
+  }
 };
 #endif
 
@@ -131,5 +165,28 @@ TEST(ConvexMeshShapeCollision, BulletUsesConvexHullShape)
   EXPECT_EQ(
       bulletObj->getCollisionShape()->getShapeType(),
       CONVEX_HULL_SHAPE_PROXYTYPE);
+}
+#endif
+
+#if DART_HAVE_ODE
+TEST(ConvexMeshShapeCollision, OdeUsesTriMeshGeometry)
+{
+  auto detector = std::make_shared<TestOdeDetector>();
+  auto skel = dart::dynamics::Skeleton::create("s");
+  auto bn
+      = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>().second;
+  auto shape = makeTetraShape();
+  auto shapeNode = bn->createShapeNodeWith<CollisionAspect>(shape);
+
+  auto collObj = detector->claimCollisionObject(shapeNode);
+  ASSERT_NE(collObj, nullptr);
+
+  auto odeObj = static_cast<TestOdeCollisionObject*>(collObj.get());
+  ASSERT_NE(odeObj, nullptr);
+
+  auto geomId = odeObj->getOdeGeomId();
+  ASSERT_NE(geomId, nullptr);
+
+  EXPECT_EQ(dGeomGetClass(geomId), dTriMeshClass);
 }
 #endif
