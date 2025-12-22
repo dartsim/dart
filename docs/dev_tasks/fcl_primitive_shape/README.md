@@ -9,8 +9,10 @@
   mode; plane contacts accept mid-penetration points per FCL behavior.
 - Switched cylinder/cone primitive handling to analytic FCL shapes to align
   normals/penetration depth with FCL results.
-- Added an X-axis shallow overlap case for non-cone pairs; cone side-contact
-  placement is still pending.
+- Added an X-axis shallow overlap case for non-cone pairs and a cone side
+  contact case with dedicated placement.
+- Added containment cases for box/sphere/cylinder/ellipsoid containers in both
+  the pure FCL and DART collision matrices.
 - Drafted a comprehensive primitive collision test plan for pure FCL and DART
   coverage; edge cases still in progress.
 

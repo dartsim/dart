@@ -79,6 +79,12 @@ constexpr double kConeRadius = 0.5;
 constexpr double kConeHeight = 1.0;
 const Eigen::Vector3d kPlaneNormal = Eigen::Vector3d::UnitZ();
 constexpr double kPlaneOffset = 0.0;
+const Eigen::Vector3d kContainerBoxSize(4.0, 4.0, 4.0);
+constexpr double kContainerSphereRadius = 2.0;
+const Eigen::Vector3d kContainerEllipsoidRadii(2.0, 1.5, 1.0);
+constexpr double kContainerCylinderRadius = 2.0;
+constexpr double kContainerCylinderHeight = 4.0;
+constexpr double kContainmentOffset = 0.2;
 constexpr double kYawQuarterTurn = 0.25 * 3.141592653589793;
 
 const std::vector<ShapeSpec> kShapeSpecs = {
@@ -88,6 +94,13 @@ const std::vector<ShapeSpec> kShapeSpecs = {
     {ShapeKind::Ellipsoid, "ellipsoid"},
     {ShapeKind::Cone, "cone"},
     {ShapeKind::Plane, "plane"},
+};
+
+const std::vector<ShapeSpec> kContainmentContainers = {
+    {ShapeKind::Box, "box"},
+    {ShapeKind::Sphere, "sphere"},
+    {ShapeKind::Cylinder, "cylinder"},
+    {ShapeKind::Ellipsoid, "ellipsoid"},
 };
 
 const std::vector<CaseSpec> kBaseCases = {
@@ -140,6 +153,31 @@ std::shared_ptr<fcl::CollisionGeometry<double>> makeGeometry(ShapeKind kind)
   return nullptr;
 }
 
+std::shared_ptr<fcl::CollisionGeometry<double>> makeContainerGeometry(
+    ShapeKind kind)
+{
+  switch (kind) {
+    case ShapeKind::Box:
+      return std::make_shared<fcl::Box<double>>(
+          kContainerBoxSize.x(), kContainerBoxSize.y(), kContainerBoxSize.z());
+    case ShapeKind::Sphere:
+      return std::make_shared<fcl::Sphere<double>>(kContainerSphereRadius);
+    case ShapeKind::Cylinder:
+      return std::make_shared<fcl::Cylinder<double>>(
+          kContainerCylinderRadius, kContainerCylinderHeight);
+    case ShapeKind::Ellipsoid:
+      return std::make_shared<fcl::Ellipsoid<double>>(
+          kContainerEllipsoidRadii.x(),
+          kContainerEllipsoidRadii.y(),
+          kContainerEllipsoidRadii.z());
+    case ShapeKind::Cone:
+    case ShapeKind::Plane:
+      return nullptr;
+  }
+
+  return nullptr;
+}
+
 bool getExtentAlongDirection(
     ShapeKind kind, const Eigen::Vector3d& direction, double& extent)
 {
@@ -177,6 +215,59 @@ bool getExtentAlongDirection(
       extent = std::max(apex, base);
       return true;
     }
+    case ShapeKind::Plane:
+      return false;
+  }
+
+  return false;
+}
+
+bool getConeSideExtentAlongDirection(
+    ShapeKind kind, const Eigen::Vector3d& direction, double& extent)
+{
+  if (kind == ShapeKind::Cone) {
+    if (std::abs(direction.z()) > 1e-6)
+      return false;
+    extent = 0.5 * kConeRadius;
+    return true;
+  }
+
+  return getExtentAlongDirection(kind, direction, extent);
+}
+
+bool getContainerExtentAlongDirection(
+    ShapeKind kind, const Eigen::Vector3d& direction, double& extent)
+{
+  const double norm = direction.norm();
+  if (norm <= 0.0)
+    return false;
+
+  const Eigen::Vector3d dir = direction / norm;
+  const Eigen::Vector3d dirAbs = dir.cwiseAbs();
+
+  switch (kind) {
+    case ShapeKind::Box:
+      extent = 0.5
+               * (dirAbs.x() * kContainerBoxSize.x()
+                  + dirAbs.y() * kContainerBoxSize.y()
+                  + dirAbs.z() * kContainerBoxSize.z());
+      return true;
+    case ShapeKind::Sphere:
+      extent = kContainerSphereRadius;
+      return true;
+    case ShapeKind::Cylinder: {
+      const double xy = std::sqrt(dir.x() * dir.x() + dir.y() * dir.y());
+      extent = kContainerCylinderRadius * xy
+               + 0.5 * kContainerCylinderHeight * std::abs(dir.z());
+      return true;
+    }
+    case ShapeKind::Ellipsoid:
+      extent = std::sqrt(
+          std::pow(kContainerEllipsoidRadii.x() * dir.x(), 2)
+          + std::pow(kContainerEllipsoidRadii.y() * dir.y(), 2)
+          + std::pow(kContainerEllipsoidRadii.z() * dir.z(), 2));
+      return true;
+    case ShapeKind::Cone:
     case ShapeKind::Plane:
       return false;
   }
@@ -343,6 +434,211 @@ TEST(FclPrimitiveContactsFcl, PairMatrixRespectsFclConventions)
           EXPECT_GE(contactProj, minSurface - kPointTol);
           EXPECT_LE(contactProj, maxSurface + kPointTol);
         }
+      }
+    }
+  }
+}
+
+TEST(FclPrimitiveContactsFcl, ContainmentCases)
+{
+  const double kNormalAlignment = 0.95;
+  const double kConeNormalAlignment = 0.9;
+  const double kNormalNormTol = 1e-6;
+  const double kPointTol = 1e-3;
+
+  for (const auto& containerSpec : kContainmentContainers) {
+    for (const auto& containedSpec : kShapeSpecs) {
+      if (isPlane(containedSpec.kind))
+        continue;
+
+      SCOPED_TRACE(
+          std::string("Container: ") + containerSpec.name
+          + ", contained: " + containedSpec.name);
+
+      auto geomContained = makeGeometry(containedSpec.kind);
+      auto geomContainer = makeContainerGeometry(containerSpec.kind);
+      if (!geomContained || !geomContainer) {
+        ADD_FAILURE() << "Failed to build containment geometries.";
+        continue;
+      }
+
+      const Eigen::Vector3d p1(kContainmentOffset, 0.0, 0.0);
+      const Eigen::Vector3d p2 = Eigen::Vector3d::Zero();
+
+      fcl::Transform3<double> tf1 = fcl::Transform3<double>::Identity();
+      fcl::Transform3<double> tf2 = fcl::Transform3<double>::Identity();
+      tf1.translation() = p1;
+      tf2.translation() = p2;
+
+      fcl::CollisionObject<double> obj1(geomContained, tf1);
+      fcl::CollisionObject<double> obj2(geomContainer, tf2);
+      obj1.computeAABB();
+      obj2.computeAABB();
+
+      fcl::CollisionRequest<double> request;
+      request.enable_contact = true;
+      request.num_max_contacts = 20u;
+
+      fcl::CollisionResult<double> result;
+      fcl::collide(&obj1, &obj2, request, result);
+
+      EXPECT_TRUE(result.isCollision());
+
+      std::vector<fcl::Contact<double>> contacts;
+      result.getContacts(contacts);
+      if (contacts.empty()) {
+        ADD_FAILURE() << "No contacts reported.";
+        continue;
+      }
+
+      Eigen::Vector3d expectedDir = p2 - p1;
+      const double expectedNorm = expectedDir.norm();
+      if (expectedNorm <= 0.0) {
+        ADD_FAILURE() << "Degenerate frame separation.";
+        continue;
+      }
+      expectedDir /= expectedNorm;
+
+      for (const auto& contact : contacts) {
+        const Eigen::Vector3d contactNormal = contact.normal;
+        const Eigen::Vector3d contactPoint = contact.pos;
+        const double alignment = contactNormal.dot(expectedDir);
+        const bool coneInvolved
+            = (containedSpec.kind == ShapeKind::Cone
+               || containerSpec.kind == ShapeKind::Cone);
+        const double alignmentThreshold
+            = coneInvolved ? kConeNormalAlignment : kNormalAlignment;
+
+        EXPECT_NEAR(contactNormal.norm(), 1.0, kNormalNormTol);
+        EXPECT_GT(alignment, alignmentThreshold);
+        EXPECT_GT(contact.penetration_depth, 0.0);
+
+        double extent1 = 0.0;
+        double extent2 = 0.0;
+        if (!getExtentAlongDirection(containedSpec.kind, expectedDir, extent1)
+            || !getContainerExtentAlongDirection(
+                containerSpec.kind, expectedDir, extent2)) {
+          ADD_FAILURE() << "Unsupported shape in containment check.";
+          continue;
+        }
+
+        const double p1Proj = expectedDir.dot(p1);
+        const double p2Proj = expectedDir.dot(p2);
+        const double surface1 = p1Proj + extent1;
+        const double surface2 = p2Proj - extent2;
+        const double minSurface = std::min(surface1, surface2);
+        const double maxSurface = std::max(surface1, surface2);
+        const double contactProj = expectedDir.dot(contactPoint);
+
+        EXPECT_GE(contactProj, minSurface - kPointTol);
+        EXPECT_LE(contactProj, maxSurface + kPointTol);
+      }
+    }
+  }
+}
+
+TEST(FclPrimitiveContactsFcl, ConeSideContacts)
+{
+  const double kNormalAlignment = 0.8;
+  const double kNormalNormTol = 1e-6;
+  const double kPointTol = 1e-3;
+  const Eigen::Vector3d direction = Eigen::Vector3d::UnitX();
+  const double kSeparationOffset = -0.02;
+
+  for (const auto& shapeA : kShapeSpecs) {
+    for (const auto& shapeB : kShapeSpecs) {
+      if (isPlane(shapeA.kind) || isPlane(shapeB.kind))
+        continue;
+
+      if (shapeA.kind != ShapeKind::Cone && shapeB.kind != ShapeKind::Cone)
+        continue;
+
+      SCOPED_TRACE(
+          std::string("Pair: ") + shapeA.name + " vs " + shapeB.name
+          + ", case: cone_side");
+
+      auto geom1 = makeGeometry(shapeA.kind);
+      auto geom2 = makeGeometry(shapeB.kind);
+      if (!geom1 || !geom2) {
+        ADD_FAILURE() << "Failed to build geometries.";
+        continue;
+      }
+
+      double extent1 = 0.0;
+      double extent2 = 0.0;
+      if (!getConeSideExtentAlongDirection(shapeA.kind, direction, extent1)
+          || !getConeSideExtentAlongDirection(
+              shapeB.kind, direction, extent2)) {
+        ADD_FAILURE() << "Unsupported shape in cone side placement.";
+        continue;
+      }
+
+      const double separation = extent1 + extent2 + kSeparationOffset;
+      const Eigen::Vector3d p1 = 0.5 * separation * direction;
+      const Eigen::Vector3d p2 = -0.5 * separation * direction;
+
+      fcl::Transform3<double> tf1 = fcl::Transform3<double>::Identity();
+      fcl::Transform3<double> tf2 = fcl::Transform3<double>::Identity();
+      tf1.translation() = p1;
+      tf2.translation() = p2;
+
+      fcl::CollisionObject<double> obj1(geom1, tf1);
+      fcl::CollisionObject<double> obj2(geom2, tf2);
+      obj1.computeAABB();
+      obj2.computeAABB();
+
+      fcl::CollisionRequest<double> request;
+      request.enable_contact = true;
+      request.num_max_contacts = 20u;
+
+      fcl::CollisionResult<double> result;
+      fcl::collide(&obj1, &obj2, request, result);
+
+      EXPECT_TRUE(result.isCollision());
+
+      std::vector<fcl::Contact<double>> contacts;
+      result.getContacts(contacts);
+      if (contacts.empty()) {
+        ADD_FAILURE() << "No contacts reported.";
+        continue;
+      }
+
+      Eigen::Vector3d expectedDir = p2 - p1;
+      const double expectedNorm = expectedDir.norm();
+      if (expectedNorm <= 0.0) {
+        ADD_FAILURE() << "Degenerate frame separation.";
+        continue;
+      }
+      expectedDir /= expectedNorm;
+
+      for (const auto& contact : contacts) {
+        const Eigen::Vector3d contactNormal = contact.normal;
+        const Eigen::Vector3d contactPoint = contact.pos;
+        const double alignment = contactNormal.dot(expectedDir);
+
+        EXPECT_NEAR(contactNormal.norm(), 1.0, kNormalNormTol);
+        EXPECT_GT(alignment, kNormalAlignment);
+        EXPECT_GT(contact.penetration_depth, 0.0);
+
+        double checkExtent1 = 0.0;
+        double checkExtent2 = 0.0;
+        if (!getExtentAlongDirection(shapeA.kind, expectedDir, checkExtent1)
+            || !getExtentAlongDirection(
+                shapeB.kind, expectedDir, checkExtent2)) {
+          ADD_FAILURE() << "Unsupported shape in cone side check.";
+          continue;
+        }
+
+        const double p1Proj = expectedDir.dot(p1);
+        const double p2Proj = expectedDir.dot(p2);
+        const double surface1 = p1Proj + checkExtent1;
+        const double surface2 = p2Proj - checkExtent2;
+        const double minSurface = std::min(surface1, surface2);
+        const double maxSurface = std::max(surface1, surface2);
+        const double contactProj = expectedDir.dot(contactPoint);
+
+        EXPECT_GE(contactProj, minSurface - kPointTol);
+        EXPECT_LE(contactProj, maxSurface + kPointTol);
       }
     }
   }

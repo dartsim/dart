@@ -127,12 +127,12 @@ Offsets for cases:
 - [x] Confirm primitive mapping support and finalize shape list
 - [x] Implement pure FCL harness + base cases
 - [x] Expand DART harness to mirror cases
-- [ ] Add edge/containment cases (rotated + X-axis shallow added; cone side
-      contact pending)
+- [x] Add containment cases (box/sphere/cylinder/ellipsoid containers)
+- [x] Add cone side-contact placement strategy and cases
 - [x] Run targeted tests and record outcomes
 - [x] Update README with summary and remaining issues
 
 Notes:
 
 - Added a Z-axis rotation case (`rotated_shallow`) to both FCL and DART matrix
-  tests; containment and additional edge cases still pending.
+  tests; cone side-contact placement is now covered.

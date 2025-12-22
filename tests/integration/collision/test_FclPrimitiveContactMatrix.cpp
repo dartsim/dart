@@ -90,6 +90,12 @@ const double kConeRadius = 0.5;
 const double kConeHeight = 1.0;
 const Eigen::Vector3d kPlaneNormal = Eigen::Vector3d::UnitZ();
 const double kPlaneOffset = 0.0;
+const Eigen::Vector3d kContainerBoxSize(4.0, 4.0, 4.0);
+const double kContainerSphereRadius = 2.0;
+const Eigen::Vector3d kContainerEllipsoidRadii(2.0, 1.5, 1.0);
+const double kContainerCylinderRadius = 2.0;
+const double kContainerCylinderHeight = 4.0;
+const double kContainmentOffset = 0.2;
 const double kYawQuarterTurn = 0.25 * 3.141592653589793;
 
 const std::vector<ShapeSpec> kShapeSpecs = {
@@ -99,6 +105,13 @@ const std::vector<ShapeSpec> kShapeSpecs = {
     {ShapeKind::Ellipsoid, "ellipsoid"},
     {ShapeKind::Cone, "cone"},
     {ShapeKind::Plane, "plane"},
+};
+
+const std::vector<ShapeSpec> kContainmentContainers = {
+    {ShapeKind::Box, "box"},
+    {ShapeKind::Sphere, "sphere"},
+    {ShapeKind::Cylinder, "cylinder"},
+    {ShapeKind::Ellipsoid, "ellipsoid"},
 };
 
 const std::vector<CaseSpec> kBaseCases = {
@@ -146,6 +159,28 @@ dart::dynamics::ShapePtr makeShape(ShapeKind kind)
     case ShapeKind::Plane:
       return std::make_shared<dart::dynamics::PlaneShape>(
           kPlaneNormal, kPlaneOffset);
+  }
+
+  return nullptr;
+}
+
+dart::dynamics::ShapePtr makeContainerShape(ShapeKind kind)
+{
+  switch (kind) {
+    case ShapeKind::Box:
+      return std::make_shared<dart::dynamics::BoxShape>(kContainerBoxSize);
+    case ShapeKind::Sphere:
+      return std::make_shared<dart::dynamics::SphereShape>(
+          kContainerSphereRadius);
+    case ShapeKind::Cylinder:
+      return std::make_shared<dart::dynamics::CylinderShape>(
+          kContainerCylinderRadius, kContainerCylinderHeight);
+    case ShapeKind::Ellipsoid:
+      return std::make_shared<dart::dynamics::EllipsoidShape>(
+          kContainerEllipsoidRadii * 2.0);
+    case ShapeKind::Cone:
+    case ShapeKind::Plane:
+      return nullptr;
   }
 
   return nullptr;
@@ -201,6 +236,22 @@ bool getExtentAlongDirection(
   }
 
   return false;
+}
+
+bool getConeSideExtentAlongDirection(
+    const dart::dynamics::Shape& shape,
+    const Eigen::Vector3d& direction,
+    double& extent)
+{
+  if (const auto* cone
+      = dynamic_cast<const dart::dynamics::ConeShape*>(&shape)) {
+    if (std::abs(direction.z()) > 1e-6)
+      return false;
+    extent = 0.5 * cone->getRadius();
+    return true;
+  }
+
+  return getExtentAlongDirection(shape, direction, extent);
 }
 
 double planeSignedDistance(
@@ -386,6 +437,241 @@ TEST(FclPrimitiveContacts, PairMatrixRespectsDartConventions)
           EXPECT_GE(contactProj, minSurface - kPointTol);
           EXPECT_LE(contactProj, maxSurface + kPointTol);
         }
+      }
+    }
+  }
+}
+
+TEST(FclPrimitiveContacts, ContainmentCases)
+{
+  const double kNormalAlignment = 0.95;
+  const double kConeNormalAlignment = 0.9;
+  const double kNormalNormTol = 1e-6;
+  const double kPointTol = 1e-3;
+
+  for (const auto& containerSpec : kContainmentContainers) {
+    for (const auto& containedSpec : kShapeSpecs) {
+      if (isPlane(containedSpec.kind))
+        continue;
+
+      SCOPED_TRACE(
+          std::string("Container: ") + containerSpec.name
+          + ", contained: " + containedSpec.name);
+
+      auto detector = dart::collision::FCLCollisionDetector::create();
+      detector->setPrimitiveShapeType(
+          dart::collision::FCLCollisionDetector::PRIMITIVE);
+
+      auto containerShape = makeContainerShape(containerSpec.kind);
+      auto containedShape = makeShape(containedSpec.kind);
+      if (!containerShape || !containedShape) {
+        ADD_FAILURE() << "Failed to build containment shapes.";
+        continue;
+      }
+
+      auto containedFrame = dart::dynamics::SimpleFrame::createShared(
+          dart::dynamics::Frame::World(),
+          std::string("contained_") + containedSpec.name + "_in_"
+              + containerSpec.name);
+      auto containerFrame = dart::dynamics::SimpleFrame::createShared(
+          dart::dynamics::Frame::World(),
+          std::string("container_") + containerSpec.name + "_with_"
+              + containedSpec.name);
+
+      containedFrame->setShape(containedShape);
+      containerFrame->setShape(containerShape);
+
+      containerFrame->setTranslation(Eigen::Vector3d::Zero());
+      containedFrame->setTranslation(
+          Eigen::Vector3d(kContainmentOffset, 0.0, 0.0));
+
+      auto group = detector->createCollisionGroup(
+          containedFrame.get(), containerFrame.get());
+
+      dart::collision::CollisionOption option;
+      option.enableContact = true;
+      option.maxNumContacts = 20u;
+
+      dart::collision::CollisionResult result;
+      const bool collided = group->collide(option, &result);
+
+      EXPECT_TRUE(collided);
+
+      if (!collided || result.getNumContacts() == 0u) {
+        ADD_FAILURE() << "No contacts reported.";
+        continue;
+      }
+
+      for (std::size_t i = 0; i < result.getNumContacts(); ++i) {
+        const auto& contact = result.getContact(i);
+
+        const auto* frameA = contact.getShapeFrame1();
+        const auto* frameB = contact.getShapeFrame2();
+        if (!frameA || !frameB) {
+          ADD_FAILURE() << "Missing shape frames in contact.";
+          continue;
+        }
+
+        const Eigen::Vector3d p1 = frameA->getWorldTransform().translation();
+        const Eigen::Vector3d p2 = frameB->getWorldTransform().translation();
+        const Eigen::Vector3d delta = p1 - p2;
+        const double deltaNorm = delta.norm();
+        if (deltaNorm <= 0.0) {
+          ADD_FAILURE() << "Degenerate frame separation.";
+          continue;
+        }
+
+        const Eigen::Vector3d expectedDir = delta / deltaNorm;
+        const double alignment = contact.normal.dot(expectedDir);
+        const bool coneInvolved
+            = (containedSpec.kind == ShapeKind::Cone
+               || containerSpec.kind == ShapeKind::Cone);
+        const double alignmentThreshold
+            = coneInvolved ? kConeNormalAlignment : kNormalAlignment;
+
+        EXPECT_NEAR(contact.normal.norm(), 1.0, kNormalNormTol);
+        EXPECT_GT(alignment, alignmentThreshold);
+        EXPECT_GT(contact.penetrationDepth, 0.0);
+
+        double extent1 = 0.0;
+        double extent2 = 0.0;
+        if (!getExtentAlongDirection(*frameA->getShape(), expectedDir, extent1)
+            || !getExtentAlongDirection(
+                *frameB->getShape(), expectedDir, extent2)) {
+          ADD_FAILURE() << "Unsupported shape in containment check.";
+          continue;
+        }
+
+        const double p1Proj = expectedDir.dot(p1);
+        const double p2Proj = expectedDir.dot(p2);
+        const double surface1 = p1Proj - extent1;
+        const double surface2 = p2Proj + extent2;
+        const double minSurface = std::min(surface1, surface2);
+        const double maxSurface = std::max(surface1, surface2);
+        const double contactProj = expectedDir.dot(contact.point);
+
+        EXPECT_GE(contactProj, minSurface - kPointTol);
+        EXPECT_LE(contactProj, maxSurface + kPointTol);
+      }
+    }
+  }
+}
+
+TEST(FclPrimitiveContacts, ConeSideContacts)
+{
+  const double kNormalAlignment = 0.8;
+  const double kNormalNormTol = 1e-6;
+  const double kPointTol = 1e-3;
+  const Eigen::Vector3d direction = Eigen::Vector3d::UnitX();
+  const double kSeparationOffset = -0.02;
+
+  for (const auto& shapeA : kShapeSpecs) {
+    for (const auto& shapeB : kShapeSpecs) {
+      if (isPlane(shapeA.kind) || isPlane(shapeB.kind))
+        continue;
+
+      if (shapeA.kind != ShapeKind::Cone && shapeB.kind != ShapeKind::Cone)
+        continue;
+
+      SCOPED_TRACE(
+          std::string("Pair: ") + shapeA.name + " vs " + shapeB.name
+          + ", case: cone_side");
+
+      auto detector = dart::collision::FCLCollisionDetector::create();
+      detector->setPrimitiveShapeType(
+          dart::collision::FCLCollisionDetector::PRIMITIVE);
+
+      auto shape1 = makeShape(shapeA.kind);
+      auto shape2 = makeShape(shapeB.kind);
+      if (!shape1 || !shape2) {
+        ADD_FAILURE() << "Failed to build shapes for cone side contact.";
+        continue;
+      }
+
+      auto frame1 = dart::dynamics::SimpleFrame::createShared(
+          dart::dynamics::Frame::World(),
+          std::string("cone_side_frame1_") + shapeA.name + "_" + shapeB.name);
+      auto frame2 = dart::dynamics::SimpleFrame::createShared(
+          dart::dynamics::Frame::World(),
+          std::string("cone_side_frame2_") + shapeA.name + "_" + shapeB.name);
+
+      frame1->setShape(shape1);
+      frame2->setShape(shape2);
+
+      double extent1 = 0.0;
+      double extent2 = 0.0;
+      if (!getConeSideExtentAlongDirection(*shape1, direction, extent1)
+          || !getConeSideExtentAlongDirection(*shape2, direction, extent2)) {
+        ADD_FAILURE() << "Unsupported shape in cone side placement.";
+        continue;
+      }
+
+      const double separation = extent1 + extent2 + kSeparationOffset;
+      frame1->setTranslation(0.5 * separation * direction);
+      frame2->setTranslation(-0.5 * separation * direction);
+
+      auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+
+      dart::collision::CollisionOption option;
+      option.enableContact = true;
+      option.maxNumContacts = 20u;
+
+      dart::collision::CollisionResult result;
+      const bool collided = group->collide(option, &result);
+
+      EXPECT_TRUE(collided);
+
+      if (!collided || result.getNumContacts() == 0u) {
+        ADD_FAILURE() << "No contacts reported.";
+        continue;
+      }
+
+      for (std::size_t i = 0; i < result.getNumContacts(); ++i) {
+        const auto& contact = result.getContact(i);
+
+        const auto* frameA = contact.getShapeFrame1();
+        const auto* frameB = contact.getShapeFrame2();
+        if (!frameA || !frameB) {
+          ADD_FAILURE() << "Missing shape frames in contact.";
+          continue;
+        }
+
+        const Eigen::Vector3d p1 = frameA->getWorldTransform().translation();
+        const Eigen::Vector3d p2 = frameB->getWorldTransform().translation();
+        const Eigen::Vector3d delta = p1 - p2;
+        const double deltaNorm = delta.norm();
+        if (deltaNorm <= 0.0) {
+          ADD_FAILURE() << "Degenerate frame separation.";
+          continue;
+        }
+
+        const Eigen::Vector3d expectedDir = delta / deltaNorm;
+        const double alignment = contact.normal.dot(expectedDir);
+
+        EXPECT_NEAR(contact.normal.norm(), 1.0, kNormalNormTol);
+        EXPECT_GT(alignment, kNormalAlignment);
+        EXPECT_GT(contact.penetrationDepth, 0.0);
+
+        double checkExtent1 = 0.0;
+        double checkExtent2 = 0.0;
+        if (!getExtentAlongDirection(
+                *frameA->getShape(), expectedDir, checkExtent1)
+            || !getExtentAlongDirection(
+                *frameB->getShape(), expectedDir, checkExtent2)) {
+          ADD_FAILURE() << "Unsupported shape in cone side check.";
+          continue;
+        }
+
+        const double p1Proj = expectedDir.dot(p1);
+        const double p2Proj = expectedDir.dot(p2);
+        const double surface1 = p1Proj - checkExtent1;
+        const double surface2 = p2Proj + checkExtent2;
+        const double minSurface = std::min(surface1, surface2);
+        const double maxSurface = std::max(surface1, surface2);
+        const double contactProj = expectedDir.dot(contact.point);
+
+        EXPECT_GE(contactProj, minSurface - kPointTol);
+        EXPECT_LE(contactProj, maxSurface + kPointTol);
       }
     }
   }
