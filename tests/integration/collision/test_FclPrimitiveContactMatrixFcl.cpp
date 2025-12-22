@@ -124,9 +124,20 @@ const std::vector<CaseSpec> kPlaneCases = {
     {"deep_overlap", -0.2, true, 0.0, kPlaneNormal, true},
 };
 
+const std::vector<CaseSpec> kEdgeVertexCases = {
+    {"edge_shallow", -0.02, true, 0.0, Eigen::Vector3d(1.0, 1.0, 0.0), true},
+    {"vertex_shallow", -0.02, true, 0.0, Eigen::Vector3d(1.0, 1.0, 1.0), true},
+};
+
 bool isPlane(ShapeKind kind)
 {
   return kind == ShapeKind::Plane;
+}
+
+bool isEdgeVertexKind(ShapeKind kind)
+{
+  return kind == ShapeKind::Box || kind == ShapeKind::Cylinder
+         || kind == ShapeKind::Cone;
 }
 
 std::shared_ptr<fcl::CollisionGeometry<double>> makeGeometry(ShapeKind kind)
@@ -287,6 +298,7 @@ TEST(FclPrimitiveContactsFcl, PairMatrixRespectsFclConventions)
 {
   // Issue #19: https://github.com/dartsim/dart/issues/19
   const double kNormalAlignment = 0.95;
+  const double kEdgeVertexAlignment = 0.7;
   const double kNormalNormTol = 1e-6;
   const double kPointTol = 1e-3;
   const double kPlaneTol = 1e-3;
@@ -298,12 +310,26 @@ TEST(FclPrimitiveContactsFcl, PairMatrixRespectsFclConventions)
 
       const bool planeA = isPlane(shapeA.kind);
       const bool planeB = isPlane(shapeB.kind);
-      const auto& cases = (planeA || planeB) ? kPlaneCases : kBaseCases;
+      std::vector<CaseSpec> cases
+          = (planeA || planeB) ? kPlaneCases : kBaseCases;
+      if (!planeA && !planeB && shapeA.kind == shapeB.kind
+          && isEdgeVertexKind(shapeA.kind)) {
+        cases.insert(
+            cases.end(), kEdgeVertexCases.begin(), kEdgeVertexCases.end());
+      }
 
       for (const auto& collisionCase : cases) {
         SCOPED_TRACE(
             std::string("Pair: ") + shapeA.name + " vs " + shapeB.name
             + ", case: " + collisionCase.name);
+        const bool edgeCase
+            = (std::string(collisionCase.name) == "edge_shallow");
+        const bool vertexCase
+            = (std::string(collisionCase.name) == "vertex_shallow");
+        const bool edgeVertexCase = edgeCase || vertexCase;
+        const bool useAxisPlacement = edgeVertexCase
+                                      && shapeA.kind == ShapeKind::Box
+                                      && shapeB.kind == ShapeKind::Box;
         if (!collisionCase.allowCone
             && (shapeA.kind == ShapeKind::Cone
                 || shapeB.kind == ShapeKind::Cone)) {
@@ -340,6 +366,41 @@ TEST(FclPrimitiveContactsFcl, PairMatrixRespectsFclConventions)
             p1 = otherPos;
             p2 = Eigen::Vector3d::Zero();
           }
+        } else if (useAxisPlacement) {
+          double extent1x = 0.0;
+          double extent1y = 0.0;
+          double extent1z = 0.0;
+          double extent2x = 0.0;
+          double extent2y = 0.0;
+          double extent2z = 0.0;
+          if (!getExtentAlongDirection(
+                  shapeA.kind, Eigen::Vector3d::UnitX(), extent1x)
+              || !getExtentAlongDirection(
+                  shapeA.kind, Eigen::Vector3d::UnitY(), extent1y)
+              || !getExtentAlongDirection(
+                  shapeB.kind, Eigen::Vector3d::UnitX(), extent2x)
+              || !getExtentAlongDirection(
+                  shapeB.kind, Eigen::Vector3d::UnitY(), extent2y)) {
+            ADD_FAILURE() << "Unsupported shape in edge/vertex placement.";
+            continue;
+          }
+          if (vertexCase) {
+            if (!getExtentAlongDirection(
+                    shapeA.kind, Eigen::Vector3d::UnitZ(), extent1z)
+                || !getExtentAlongDirection(
+                    shapeB.kind, Eigen::Vector3d::UnitZ(), extent2z)) {
+              ADD_FAILURE() << "Unsupported shape in vertex placement.";
+              continue;
+            }
+          }
+
+          const double offset = collisionCase.separationOffset;
+          const Eigen::Vector3d separation(
+              extent1x + extent2x + offset,
+              extent1y + extent2y + offset,
+              vertexCase ? (extent1z + extent2z + offset) : 0.0);
+          p1 = 0.5 * separation;
+          p2 = -0.5 * separation;
         } else {
           double extent1 = 0.0;
           double extent2 = 0.0;
@@ -349,8 +410,41 @@ TEST(FclPrimitiveContactsFcl, PairMatrixRespectsFclConventions)
             continue;
           }
 
-          const double separation
+          double separation
               = extent1 + extent2 + collisionCase.separationOffset;
+          if (edgeVertexCase && !useAxisPlacement) {
+            double extent1x = 0.0;
+            double extent2x = 0.0;
+            double extent1z = 0.0;
+            double extent2z = 0.0;
+            if (!getExtentAlongDirection(
+                    shapeA.kind, Eigen::Vector3d::UnitX(), extent1x)
+                || !getExtentAlongDirection(
+                    shapeB.kind, Eigen::Vector3d::UnitX(), extent2x)
+                || !getExtentAlongDirection(
+                    shapeA.kind, Eigen::Vector3d::UnitZ(), extent1z)
+                || !getExtentAlongDirection(
+                    shapeB.kind, Eigen::Vector3d::UnitZ(), extent2z)) {
+              ADD_FAILURE() << "Unsupported shape in edge/vertex placement.";
+              continue;
+            }
+
+            const double radialFactor = std::sqrt(
+                direction.x() * direction.x() + direction.y() * direction.y());
+            const double axialFactor = std::abs(direction.z());
+            if (radialFactor > 0.0) {
+              const double radialSep
+                  = (extent1x + extent2x + collisionCase.separationOffset)
+                    / radialFactor;
+              separation = std::min(separation, radialSep);
+            }
+            if (axialFactor > 0.0) {
+              const double axialSep
+                  = (extent1z + extent2z + collisionCase.separationOffset)
+                    / axialFactor;
+              separation = std::min(separation, axialSep);
+            }
+          }
           p1 = 0.5 * separation * direction;
           p2 = -0.5 * separation * direction;
         }
@@ -404,14 +498,24 @@ TEST(FclPrimitiveContactsFcl, PairMatrixRespectsFclConventions)
           const Eigen::Vector3d contactPoint = contact.pos;
           const double alignment = contactNormal.dot(expectedDir);
 
+          const double alignmentThreshold
+              = edgeVertexCase ? kEdgeVertexAlignment : kNormalAlignment;
+
           EXPECT_NEAR(contactNormal.norm(), 1.0, kNormalNormTol);
-          EXPECT_GT(alignment, kNormalAlignment);
+          EXPECT_GT(alignment, alignmentThreshold);
           EXPECT_GT(contact.penetration_depth, 0.0);
 
           if (planeA || planeB) {
             const double dist
                 = planeSignedDistance(kPlaneNormal, kPlaneOffset, contactPoint);
             EXPECT_LE(std::abs(dist), contact.penetration_depth + kPlaneTol);
+            continue;
+          }
+
+          const bool coneInvolved
+              = (shapeA.kind == ShapeKind::Cone
+                 || shapeB.kind == ShapeKind::Cone);
+          if (coneInvolved && edgeVertexCase) {
             continue;
           }
 
@@ -434,6 +538,116 @@ TEST(FclPrimitiveContactsFcl, PairMatrixRespectsFclConventions)
           EXPECT_GE(contactProj, minSurface - kPointTol);
           EXPECT_LE(contactProj, maxSurface + kPointTol);
         }
+      }
+    }
+  }
+}
+
+TEST(FclPrimitiveContactsFcl, RotatedPlaneNormal)
+{
+  const double kNormalAlignment = 0.95;
+  const double kNormalNormTol = 1e-6;
+  const double kPlaneTol = 1e-3;
+
+  struct TiltCase
+  {
+    const char* name;
+    double separationOffset;
+    bool expectCollision;
+  };
+
+  const std::vector<TiltCase> kTiltCases = {
+      {"tilted_above", 0.2, false},
+      {"tilted_shallow", -0.02, true},
+  };
+
+  const Eigen::Vector3d tiltedNormal
+      = Eigen::AngleAxisd(kYawQuarterTurn, Eigen::Vector3d::UnitY())
+            .toRotationMatrix()
+        * kPlaneNormal;
+
+  for (const auto& shapeSpec : kShapeSpecs) {
+    if (isPlane(shapeSpec.kind))
+      continue;
+
+    SCOPED_TRACE(std::string("Rotated plane vs ") + shapeSpec.name);
+
+    auto planeGeom
+        = std::make_shared<fcl::Halfspace<double>>(tiltedNormal, kPlaneOffset);
+    auto otherGeom = makeGeometry(shapeSpec.kind);
+    if (!planeGeom || !otherGeom) {
+      ADD_FAILURE() << "Failed to build geometries for rotated plane contact.";
+      continue;
+    }
+
+    fcl::Transform3<double> tfPlane = fcl::Transform3<double>::Identity();
+    tfPlane.translation() = Eigen::Vector3d::Zero();
+
+    for (const auto& tiltCase : kTiltCases) {
+      SCOPED_TRACE(std::string("Case: ") + tiltCase.name);
+
+      double extent = 0.0;
+      if (!getExtentAlongDirection(shapeSpec.kind, -tiltedNormal, extent)) {
+        ADD_FAILURE() << "Unsupported shape for rotated plane contact.";
+        continue;
+      }
+
+      const double offset = extent + tiltCase.separationOffset;
+      const Eigen::Vector3d p1 = Eigen::Vector3d::Zero();
+      const Eigen::Vector3d p2 = tiltedNormal * offset;
+
+      fcl::Transform3<double> tfOther = fcl::Transform3<double>::Identity();
+      tfOther.translation() = p2;
+
+      fcl::CollisionObject<double> obj1(planeGeom, tfPlane);
+      fcl::CollisionObject<double> obj2(otherGeom, tfOther);
+      obj1.computeAABB();
+      obj2.computeAABB();
+
+      fcl::CollisionRequest<double> request;
+      request.enable_contact = true;
+      request.num_max_contacts = 20u;
+
+      fcl::CollisionResult<double> result;
+      fcl::collide(&obj1, &obj2, request, result);
+
+      if (!tiltCase.expectCollision) {
+        EXPECT_FALSE(result.isCollision());
+        continue;
+      }
+
+      EXPECT_TRUE(result.isCollision());
+
+      std::vector<fcl::Contact<double>> contacts;
+      result.getContacts(contacts);
+      if (contacts.empty()) {
+        ADD_FAILURE() << "No contacts reported.";
+        continue;
+      }
+
+      Eigen::Vector3d expectedDir = p2 - p1;
+      const double expectedNorm = expectedDir.norm();
+      if (expectedNorm <= 0.0) {
+        ADD_FAILURE() << "Degenerate frame separation.";
+        continue;
+      }
+      expectedDir /= expectedNorm;
+
+      const Eigen::Vector3d worldNormal = tiltedNormal;
+      const double worldOffset = kPlaneOffset;
+
+      for (const auto& contact : contacts) {
+        const Eigen::Vector3d contactNormal = contact.normal;
+        const Eigen::Vector3d contactPoint = contact.pos;
+        const double alignment = contactNormal.dot(expectedDir);
+
+        EXPECT_NEAR(contactNormal.norm(), 1.0, kNormalNormTol);
+        EXPECT_GT(alignment, kNormalAlignment);
+        EXPECT_GT(contact.penetration_depth, 0.0);
+
+        const double dist
+            = planeSignedDistance(worldNormal, worldOffset, contactPoint);
+        EXPECT_LE(std::abs(dist), contact.penetration_depth + kPlaneTol);
       }
     }
   }

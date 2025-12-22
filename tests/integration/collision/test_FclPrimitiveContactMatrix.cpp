@@ -135,9 +135,20 @@ const std::vector<CaseSpec> kPlaneCases = {
     {"deep_overlap", -0.2, true, 0.0, kPlaneNormal, true},
 };
 
+const std::vector<CaseSpec> kEdgeVertexCases = {
+    {"edge_shallow", -0.02, true, 0.0, Eigen::Vector3d(1.0, 1.0, 0.0), true},
+    {"vertex_shallow", -0.02, true, 0.0, Eigen::Vector3d(1.0, 1.0, 1.0), true},
+};
+
 bool isPlane(ShapeKind kind)
 {
   return kind == ShapeKind::Plane;
+}
+
+bool isEdgeVertexKind(ShapeKind kind)
+{
+  return kind == ShapeKind::Box || kind == ShapeKind::Cylinder
+         || kind == ShapeKind::Cone;
 }
 
 dart::dynamics::ShapePtr makeShape(ShapeKind kind)
@@ -271,6 +282,7 @@ TEST(FclPrimitiveContacts, PairMatrixRespectsDartConventions)
 {
   // Issue #19: https://github.com/dartsim/dart/issues/19
   const double kNormalAlignment = 0.95;
+  const double kEdgeVertexAlignment = 0.7;
   const double kNormalNormTol = 1e-6;
   const double kPointTol = 1e-3;
   const double kPlaneTol = 1e-3;
@@ -282,12 +294,26 @@ TEST(FclPrimitiveContacts, PairMatrixRespectsDartConventions)
 
       const bool planeA = isPlane(shapeA.kind);
       const bool planeB = isPlane(shapeB.kind);
-      const auto& cases = (planeA || planeB) ? kPlaneCases : kBaseCases;
+      std::vector<CaseSpec> cases
+          = (planeA || planeB) ? kPlaneCases : kBaseCases;
+      if (!planeA && !planeB && shapeA.kind == shapeB.kind
+          && isEdgeVertexKind(shapeA.kind)) {
+        cases.insert(
+            cases.end(), kEdgeVertexCases.begin(), kEdgeVertexCases.end());
+      }
 
       for (const auto& collisionCase : cases) {
         SCOPED_TRACE(
             std::string("Pair: ") + shapeA.name + " vs " + shapeB.name
             + ", case: " + collisionCase.name);
+        const bool edgeCase
+            = (std::string(collisionCase.name) == "edge_shallow");
+        const bool vertexCase
+            = (std::string(collisionCase.name) == "vertex_shallow");
+        const bool edgeVertexCase = edgeCase || vertexCase;
+        const bool useAxisPlacement = edgeVertexCase
+                                      && shapeA.kind == ShapeKind::Box
+                                      && shapeB.kind == ShapeKind::Box;
         if (!collisionCase.allowCone
             && (shapeA.kind == ShapeKind::Cone
                 || shapeB.kind == ShapeKind::Cone)) {
@@ -331,6 +357,41 @@ TEST(FclPrimitiveContacts, PairMatrixRespectsDartConventions)
           const double offset = extent + collisionCase.separationOffset;
           planeFrame->setTranslation(Eigen::Vector3d::Zero());
           otherFrame->setTranslation(direction * offset);
+        } else if (useAxisPlacement) {
+          double extent1x = 0.0;
+          double extent1y = 0.0;
+          double extent1z = 0.0;
+          double extent2x = 0.0;
+          double extent2y = 0.0;
+          double extent2z = 0.0;
+          if (!getExtentAlongDirection(
+                  *shape1, Eigen::Vector3d::UnitX(), extent1x)
+              || !getExtentAlongDirection(
+                  *shape1, Eigen::Vector3d::UnitY(), extent1y)
+              || !getExtentAlongDirection(
+                  *shape2, Eigen::Vector3d::UnitX(), extent2x)
+              || !getExtentAlongDirection(
+                  *shape2, Eigen::Vector3d::UnitY(), extent2y)) {
+            ADD_FAILURE() << "Unsupported shape in edge/vertex placement.";
+            continue;
+          }
+          if (vertexCase) {
+            if (!getExtentAlongDirection(
+                    *shape1, Eigen::Vector3d::UnitZ(), extent1z)
+                || !getExtentAlongDirection(
+                    *shape2, Eigen::Vector3d::UnitZ(), extent2z)) {
+              ADD_FAILURE() << "Unsupported shape in vertex placement.";
+              continue;
+            }
+          }
+
+          const double offset = collisionCase.separationOffset;
+          const Eigen::Vector3d separation(
+              extent1x + extent2x + offset,
+              extent1y + extent2y + offset,
+              vertexCase ? (extent1z + extent2z + offset) : 0.0);
+          frame1->setTranslation(0.5 * separation);
+          frame2->setTranslation(-0.5 * separation);
         } else {
           double extent1 = 0.0;
           double extent2 = 0.0;
@@ -340,8 +401,41 @@ TEST(FclPrimitiveContacts, PairMatrixRespectsDartConventions)
             continue;
           }
 
-          const double separation
+          double separation
               = extent1 + extent2 + collisionCase.separationOffset;
+          if (edgeVertexCase && !useAxisPlacement) {
+            double extent1x = 0.0;
+            double extent2x = 0.0;
+            double extent1z = 0.0;
+            double extent2z = 0.0;
+            if (!getExtentAlongDirection(
+                    *shape1, Eigen::Vector3d::UnitX(), extent1x)
+                || !getExtentAlongDirection(
+                    *shape2, Eigen::Vector3d::UnitX(), extent2x)
+                || !getExtentAlongDirection(
+                    *shape1, Eigen::Vector3d::UnitZ(), extent1z)
+                || !getExtentAlongDirection(
+                    *shape2, Eigen::Vector3d::UnitZ(), extent2z)) {
+              ADD_FAILURE() << "Unsupported shape in edge/vertex placement.";
+              continue;
+            }
+
+            const double radialFactor = std::sqrt(
+                direction.x() * direction.x() + direction.y() * direction.y());
+            const double axialFactor = std::abs(direction.z());
+            if (radialFactor > 0.0) {
+              const double radialSep
+                  = (extent1x + extent2x + collisionCase.separationOffset)
+                    / radialFactor;
+              separation = std::min(separation, radialSep);
+            }
+            if (axialFactor > 0.0) {
+              const double axialSep
+                  = (extent1z + extent2z + collisionCase.separationOffset)
+                    / axialFactor;
+              separation = std::min(separation, axialSep);
+            }
+          }
           frame1->setTranslation(0.5 * separation * direction);
           frame2->setTranslation(-0.5 * separation * direction);
         }
@@ -396,8 +490,11 @@ TEST(FclPrimitiveContacts, PairMatrixRespectsDartConventions)
           const Eigen::Vector3d expectedDir = delta / deltaNorm;
           const double alignment = contact.normal.dot(expectedDir);
 
+          const double alignmentThreshold
+              = edgeVertexCase ? kEdgeVertexAlignment : kNormalAlignment;
+
           EXPECT_NEAR(contact.normal.norm(), 1.0, kNormalNormTol);
-          EXPECT_GT(alignment, kNormalAlignment);
+          EXPECT_GT(alignment, alignmentThreshold);
           EXPECT_GT(contact.penetrationDepth, 0.0);
 
           const auto* planeShapeA
@@ -413,6 +510,13 @@ TEST(FclPrimitiveContacts, PairMatrixRespectsDartConventions)
             const double dist
                 = planeSignedDistance(*planeShape, *planeFrame, contact.point);
             EXPECT_LE(std::abs(dist), contact.penetrationDepth + kPlaneTol);
+            continue;
+          }
+
+          const bool coneInvolved
+              = (shapeA.kind == ShapeKind::Cone
+                 || shapeB.kind == ShapeKind::Cone);
+          if (coneInvolved && edgeVertexCase) {
             continue;
           }
 
@@ -437,6 +541,136 @@ TEST(FclPrimitiveContacts, PairMatrixRespectsDartConventions)
           EXPECT_GE(contactProj, minSurface - kPointTol);
           EXPECT_LE(contactProj, maxSurface + kPointTol);
         }
+      }
+    }
+  }
+}
+
+TEST(FclPrimitiveContacts, RotatedPlaneNormal)
+{
+  const double kNormalAlignment = 0.95;
+  const double kNormalNormTol = 1e-6;
+  const double kPlaneTol = 1e-3;
+
+  struct TiltCase
+  {
+    const char* name;
+    double separationOffset;
+    bool expectCollision;
+  };
+
+  const std::vector<TiltCase> kTiltCases = {
+      {"tilted_above", 0.2, false},
+      {"tilted_shallow", -0.02, true},
+  };
+
+  const Eigen::Vector3d tiltedNormal
+      = Eigen::AngleAxisd(kYawQuarterTurn, Eigen::Vector3d::UnitY())
+            .toRotationMatrix()
+        * kPlaneNormal;
+
+  for (const auto& shapeSpec : kShapeSpecs) {
+    if (isPlane(shapeSpec.kind))
+      continue;
+
+    SCOPED_TRACE(std::string("Rotated plane vs ") + shapeSpec.name);
+
+    auto detector = dart::collision::FCLCollisionDetector::create();
+    detector->setPrimitiveShapeType(
+        dart::collision::FCLCollisionDetector::PRIMITIVE);
+
+    auto planeShape = std::make_shared<dart::dynamics::PlaneShape>(
+        tiltedNormal, kPlaneOffset);
+    auto otherShape = makeShape(shapeSpec.kind);
+    if (!planeShape || !otherShape) {
+      ADD_FAILURE() << "Failed to build shapes for rotated plane contact.";
+      continue;
+    }
+
+    auto planeFrame = dart::dynamics::SimpleFrame::createShared(
+        dart::dynamics::Frame::World(),
+        std::string("plane_tilt_") + shapeSpec.name);
+    auto otherFrame = dart::dynamics::SimpleFrame::createShared(
+        dart::dynamics::Frame::World(),
+        std::string("other_tilt_") + shapeSpec.name);
+
+    planeFrame->setShape(planeShape);
+    otherFrame->setShape(otherShape);
+
+    planeFrame->setRotation(Eigen::Matrix3d::Identity());
+    planeFrame->setTranslation(Eigen::Vector3d::Zero());
+
+    for (const auto& tiltCase : kTiltCases) {
+      SCOPED_TRACE(std::string("Case: ") + tiltCase.name);
+
+      double extent = 0.0;
+      if (!getExtentAlongDirection(*otherShape, -tiltedNormal, extent)) {
+        ADD_FAILURE() << "Unsupported shape for rotated plane contact.";
+        continue;
+      }
+
+      const double offset = extent + tiltCase.separationOffset;
+      otherFrame->setTranslation(tiltedNormal * offset);
+
+      auto group
+          = detector->createCollisionGroup(planeFrame.get(), otherFrame.get());
+
+      dart::collision::CollisionOption option;
+      option.enableContact = true;
+      option.maxNumContacts = 20u;
+
+      dart::collision::CollisionResult result;
+      const bool collided = group->collide(option, &result);
+
+      if (!tiltCase.expectCollision) {
+        EXPECT_FALSE(collided);
+        continue;
+      }
+
+      EXPECT_TRUE(collided);
+
+      if (!collided || result.getNumContacts() == 0u) {
+        ADD_FAILURE() << "No contacts reported.";
+        continue;
+      }
+
+      for (std::size_t i = 0; i < result.getNumContacts(); ++i) {
+        const auto& contact = result.getContact(i);
+
+        const auto* frameA = contact.getShapeFrame1();
+        const auto* frameB = contact.getShapeFrame2();
+        if (!frameA || !frameB) {
+          ADD_FAILURE() << "Missing shape frames in contact.";
+          continue;
+        }
+
+        const Eigen::Vector3d p1 = frameA->getWorldTransform().translation();
+        const Eigen::Vector3d p2 = frameB->getWorldTransform().translation();
+        const Eigen::Vector3d delta = p1 - p2;
+        const double deltaNorm = delta.norm();
+        if (deltaNorm <= 0.0) {
+          ADD_FAILURE() << "Degenerate frame separation.";
+          continue;
+        }
+
+        const Eigen::Vector3d expectedDir = delta / deltaNorm;
+        const double alignment = contact.normal.dot(expectedDir);
+
+        EXPECT_NEAR(contact.normal.norm(), 1.0, kNormalNormTol);
+        EXPECT_GT(alignment, kNormalAlignment);
+        EXPECT_GT(contact.penetrationDepth, 0.0);
+
+        const auto* planeShapeLocal
+            = dynamic_cast<const dart::dynamics::PlaneShape*>(
+                planeFrame->getShape().get());
+        if (!planeShapeLocal) {
+          ADD_FAILURE() << "Missing plane shape.";
+          continue;
+        }
+
+        const double dist
+            = planeSignedDistance(*planeShapeLocal, *planeFrame, contact.point);
+        EXPECT_LE(std::abs(dist), contact.penetrationDepth + kPlaneTol);
       }
     }
   }

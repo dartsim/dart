@@ -100,9 +100,9 @@ Plane cases:
 3. Edge-case validation
 
 - Include cases for near-zero penetration and containment.
-- Validate behavior around plane contacts and non-axis-aligned normals.
-- Defer cone side-contact offsets until a dedicated placement strategy is
-  defined (cone taper makes naive X-axis offsets miss contact).
+- Validate behavior around plane contacts and non-axis-aligned normals,
+  including rotated plane normals.
+- Use a dedicated cone side-contact placement to avoid taper misses.
 
 ## Parameter choices
 
@@ -129,10 +129,14 @@ Offsets for cases:
 - [x] Expand DART harness to mirror cases
 - [x] Add containment cases (box/sphere/cylinder/ellipsoid containers)
 - [x] Add cone side-contact placement strategy and cases
+- [x] Add edge/vertex diagonal cases for box/cylinder/cone pairs
+- [x] Add rotated plane-normal cases
 - [x] Run targeted tests and record outcomes
+- [x] Run local checks (pixi run test, pixi run test-all, pixi run lint, pixi run -e gazebo test-gz)
 - [x] Update README with summary and remaining issues
 
 Notes:
 
 - Added a Z-axis rotation case (`rotated_shallow`) to both FCL and DART matrix
-  tests; cone side-contact placement is now covered.
+  tests; cone side-contact, edge/vertex, and rotated plane-normal cases are
+  now covered.
