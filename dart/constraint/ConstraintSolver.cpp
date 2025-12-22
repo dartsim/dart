@@ -888,6 +888,8 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   }
   DART_ASSERT(mLcpSolver);
   math::LcpOptions primaryOptions = mLcpSolver->getDefaultOptions();
+  if (mSecondaryLcpSolver)
+    primaryOptions.earlyTermination = true;
   Eigen::MatrixXd Ablock = mA.leftCols(static_cast<Eigen::Index>(n)).eval();
   math::LcpProblem problem(Ablock, mB, mLo, mHi, mFIndex);
   math::LcpResult primaryResult
