@@ -36,6 +36,7 @@
 #include "dart/gui/render/BoxShapeNode.hpp"
 #include "dart/gui/render/CapsuleShapeNode.hpp"
 #include "dart/gui/render/ConeShapeNode.hpp"
+#include "dart/gui/render/ConvexMeshShapeNode.hpp"
 #include "dart/gui/render/CylinderShapeNode.hpp"
 #include "dart/gui/render/EllipsoidShapeNode.hpp"
 #include "dart/gui/render/LineSegmentShapeNode.hpp"
@@ -57,6 +58,7 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/Entity.hpp"
@@ -265,6 +267,13 @@ void ShapeFrameNode::createShapeNode(
         = std::dynamic_pointer_cast<MultiSphereConvexHullShape>(shape);
     if (ms)
       mRenderShapeNode = new render::MultiSphereShapeNode(ms, this);
+    else
+      warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  } else if (ConvexMeshShape::getStaticType() == shapeType) {
+    std::shared_ptr<ConvexMeshShape> cms
+        = std::dynamic_pointer_cast<ConvexMeshShape>(shape);
+    if (cms)
+      mRenderShapeNode = new render::ConvexMeshShapeNode(cms, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   } else if (MeshShape::getStaticType() == shapeType) {

@@ -339,7 +339,7 @@ int main(int argc, char* argv[])
   viewer.getCameraManipulator()->setHomePosition(
       ::osg::Vec3(2.0f, 2.0f, 2.0f),
       ::osg::Vec3(0.0f, 0.0f, 0.0f),
-      ::osg::Vec3(0.0f, 0.0f, 1.0f));
+      ::osg::Vec3(0.0f, 1.0f, 0.0f));
 
   viewer.setCameraManipulator(viewer.getCameraManipulator());
 
