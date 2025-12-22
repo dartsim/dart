@@ -1,5 +1,10 @@
 # Multi Solver World Refactor Plan (00)
 
+## Status
+
+- Completed: first PR milestone delivered.
+- Next plan: see `docs/dev_tasks/multi_solver/01_next.md`.
+
 ## What Exists Today (feature/multi_solver)
 
 - World orchestration and config: `dart/simulation/World.hpp`, `dart/simulation/World.cpp`
