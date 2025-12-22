@@ -344,8 +344,10 @@ void ConstraintSolver::setFromOtherConstraintSolver(
   mManualConstraints = other.mManualConstraints;
 
   mContactSurfaceHandler = other.mContactSurfaceHandler;
-  mLcpSolver = other.mLcpSolver;
-  mSecondaryLcpSolver = other.mSecondaryLcpSolver;
+  if (!mLcpSolverSetExplicitly)
+    mLcpSolver = other.mLcpSolver;
+  if (!mSecondaryLcpSolverSetExplicitly)
+    mSecondaryLcpSolver = other.mSecondaryLcpSolver;
 }
 
 //==============================================================================
@@ -760,6 +762,7 @@ void ConstraintSolver::setLcpSolver(math::LcpSolverPtr lcpSolver)
       "secondary LCP solver, which is discouraged. Ignoring this request.");
 
   mLcpSolver = std::move(lcpSolver);
+  mLcpSolverSetExplicitly = true;
 }
 
 //==============================================================================
@@ -778,6 +781,7 @@ void ConstraintSolver::setSecondaryLcpSolver(math::LcpSolverPtr lcpSolver)
       "set the secondary LCP solver to nullptr.");
 
   mSecondaryLcpSolver = std::move(lcpSolver);
+  mSecondaryLcpSolverSetExplicitly = true;
 }
 
 //==============================================================================

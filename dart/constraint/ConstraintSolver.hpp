@@ -319,8 +319,14 @@ protected:
   /// LCP solver (primary)
   math::LcpSolverPtr mLcpSolver;
 
+  /// True if the primary LCP solver was set explicitly by the caller
+  bool mLcpSolverSetExplicitly{false};
+
   /// LCP solver to use as fallback
   math::LcpSolverPtr mSecondaryLcpSolver;
+
+  /// True if the secondary LCP solver was set explicitly by the caller
+  bool mSecondaryLcpSolverSetExplicitly{false};
 
   /// Cache data for boxed LCP formulation
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> mA;
