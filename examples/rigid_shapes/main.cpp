@@ -45,9 +45,14 @@
 #include <dart/All.hpp>
 #include <dart/io/Read.hpp>
 
+#include <CLI/CLI.hpp>
+
 #include <fcl/config.h>
 
+#include <algorithm>
+#include <cctype>
 #include <iostream>
+#include <string>
 
 using namespace dart::common;
 using namespace dart::dynamics;
@@ -56,6 +61,42 @@ using namespace dart::gui;
 using namespace dart::gui;
 using namespace dart::utils;
 using namespace dart::math;
+
+namespace {
+
+std::string toLower(std::string value)
+{
+  std::transform(
+      value.begin(),
+      value.end(),
+      value.begin(),
+      [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return value;
+}
+
+bool tryParseCollisionDetector(
+    const std::string& value, CollisionDetectorType& detector)
+{
+  if (value == "dart") {
+    detector = CollisionDetectorType::Dart;
+    return true;
+  }
+  if (value == "fcl") {
+    detector = CollisionDetectorType::Fcl;
+    return true;
+  }
+  if (value == "bullet") {
+    detector = CollisionDetectorType::Bullet;
+    return true;
+  }
+  if (value == "ode") {
+    detector = CollisionDetectorType::Ode;
+    return true;
+  }
+  return false;
+}
+
+} // namespace
 
 class RigidShapesEventHandler : public ::osgGA::GUIEventHandler
 {
@@ -261,10 +302,33 @@ public:
   void customPreStep() override {}
 };
 
-int main()
+int main(int argc, char* argv[])
 {
+  CLI::App app("Rigid shapes example");
+  std::string collisionDetector = "file";
+  app.add_option(
+      "--collision-detector",
+      collisionDetector,
+      "Collision detector backend: file, fcl, bullet, ode, dart");
+  CLI11_PARSE(app, argc, argv);
+
   WorldPtr myWorld = dart::io::readWorld("dart://sample/skel/shapes.skel");
   DART_ASSERT(myWorld != nullptr);
+
+  const std::string detectorLower = toLower(collisionDetector);
+  if (detectorLower != "file") {
+    CollisionDetectorType detectorType;
+    if (!tryParseCollisionDetector(detectorLower, detectorType)) {
+      std::cerr << "Unsupported collision detector: " << collisionDetector
+                << std::endl;
+      return 1;
+    }
+    myWorld->setCollisionDetector(detectorType);
+  }
+
+  if (const auto detector = myWorld->getCollisionDetector()) {
+    std::cout << "Collision detector: " << detector->getType() << std::endl;
+  }
 
   auto handler = new RigidShapesEventHandler(myWorld);
 
