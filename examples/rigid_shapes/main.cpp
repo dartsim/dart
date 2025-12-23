@@ -430,7 +430,7 @@ int main(int argc, char* argv[])
   CLI::App app("Rigid shapes example");
   std::string collisionDetector = "file";
   std::size_t maxContacts = 1000;
-  double groundThickness = 0.05;
+  double groundThickness = 0.0;
   app.add_option(
       "--collision-detector",
       collisionDetector,
@@ -442,8 +442,7 @@ int main(int argc, char* argv[])
   app.add_option(
       "--ground-thickness",
       groundThickness,
-      "Override ground box thickness in meters (0 keeps the file value; "
-      "default 0.05)");
+      "Override ground box thickness in meters (0 keeps the file value)");
   CLI11_PARSE(app, argc, argv);
 
   WorldPtr myWorld = dart::io::readWorld("dart://sample/skel/shapes.skel");
