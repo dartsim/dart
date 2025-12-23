@@ -122,12 +122,17 @@ bool updateGroundThickness(const WorldPtr& world, double thickness)
       return;
     }
 
-    Eigen::Vector3d size = box->getSize();
+    const Eigen::Vector3d originalSize = box->getSize();
+    const Eigen::Vector3d originalTranslation
+        = shapeNode->getRelativeTranslation();
+    const double originalTop = originalTranslation.y() + 0.5 * originalSize.y();
+
+    Eigen::Vector3d size = originalSize;
     size.y() = thickness;
     box->setSize(size);
 
-    Eigen::Vector3d translation = shapeNode->getRelativeTranslation();
-    translation.y() = -0.5 * thickness;
+    Eigen::Vector3d translation = originalTranslation;
+    translation.y() = originalTop - 0.5 * thickness;
     shapeNode->setRelativeTranslation(translation);
   };
 
@@ -425,7 +430,7 @@ int main(int argc, char* argv[])
   CLI::App app("Rigid shapes example");
   std::string collisionDetector = "file";
   std::size_t maxContacts = 1000;
-  double groundThickness = 0.0;
+  double groundThickness = 0.05;
   app.add_option(
       "--collision-detector",
       collisionDetector,
@@ -437,7 +442,8 @@ int main(int argc, char* argv[])
   app.add_option(
       "--ground-thickness",
       groundThickness,
-      "Override ground box thickness in meters (0 keeps the file value)");
+      "Override ground box thickness in meters (0 keeps the file value; "
+      "default 0.05)");
   CLI11_PARSE(app, argc, argv);
 
   WorldPtr myWorld = dart::io::readWorld("dart://sample/skel/shapes.skel");
