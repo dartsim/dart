@@ -122,7 +122,7 @@ jobs:
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
         run: pixi run -e py${{ matrix.python-version }}-wheel wheel-test
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
         with:
           path: ./dist/*.whl
@@ -136,7 +136,7 @@ jobs:
     # Examples: v7.0.0, v7.0.0.dev0, v7.0.0.alpha1, v7.0.0.beta1, v7.0.0.rc1
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     steps:
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           # unpacks default artifact into dist/
           # if `name: artifact` is omitted, the action will create extra parent dir
