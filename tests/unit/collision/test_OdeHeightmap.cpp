@@ -38,12 +38,15 @@
   #include <dart/collision/CollisionOption.hpp>
   #include <dart/collision/CollisionResult.hpp>
   #include <dart/collision/ode/OdeCollisionDetector.hpp>
+  #include <dart/collision/ode/OdeCollisionObject.hpp>
 
   #include <dart/dynamics/HeightmapShape.hpp>
   #include <dart/dynamics/SimpleFrame.hpp>
   #include <dart/dynamics/SphereShape.hpp>
 
   #include <gtest/gtest.h>
+
+  #include <memory>
 
 using dart::collision::CollisionOption;
 using dart::collision::CollisionResult;
@@ -52,6 +55,74 @@ using dart::dynamics::Frame;
 using dart::dynamics::HeightmapShapef;
 using dart::dynamics::SimpleFrame;
 using dart::dynamics::SphereShape;
+
+namespace {
+
+class TestOdeCollisionObject : public dart::collision::OdeCollisionObject
+{
+public:
+  TestOdeCollisionObject(
+      dart::collision::OdeCollisionDetector* detector,
+      const dart::dynamics::ShapeFrame* shapeFrame)
+    : dart::collision::OdeCollisionObject(detector, shapeFrame)
+  {
+  }
+
+  using dart::collision::OdeCollisionObject::getOdeGeomId;
+};
+
+class TestOdeDetector : public dart::collision::OdeCollisionDetector
+{
+public:
+  using dart::collision::OdeCollisionDetector::claimCollisionObject;
+
+protected:
+  std::unique_ptr<dart::collision::CollisionObject> createCollisionObject(
+      const dart::dynamics::ShapeFrame* shapeFrame) override
+  {
+    return std::make_unique<TestOdeCollisionObject>(this, shapeFrame);
+  }
+};
+
+} // namespace
+
+//==============================================================================
+TEST(OdeHeightmap, CollisionOriginMatchesVisualOrigin)
+{
+  using S = float;
+  using Vector3 = Eigen::Matrix<S, 3, 1>;
+
+  auto ode = std::make_shared<TestOdeDetector>();
+  ASSERT_TRUE(ode);
+
+  auto terrainFrame = SimpleFrame::createShared(Frame::World());
+
+  auto terrainShape = std::make_shared<HeightmapShapef>();
+  constexpr std::size_t width = 3u;
+  constexpr std::size_t depth = 4u;
+  const std::vector<S> heights(width * depth, S(0.0));
+  terrainShape->setHeightField(width, depth, heights);
+  terrainShape->setScale(Vector3(1.5f, 2.5f, 1.0f));
+  terrainFrame->setShape(terrainShape);
+
+  auto collObj = ode->claimCollisionObject(terrainFrame.get());
+  auto odeObj = static_cast<TestOdeCollisionObject*>(collObj.get());
+  ASSERT_NE(odeObj, nullptr);
+
+  const auto geomId = odeObj->getOdeGeomId();
+  ASSERT_NE(geomId, nullptr);
+
+  const dReal* offset = dGeomGetOffsetPosition(geomId);
+  ASSERT_NE(offset, nullptr);
+
+  const auto& scale = terrainShape->getScale();
+  const double spanX = static_cast<double>(width - 1) * scale.x();
+  const double spanY = static_cast<double>(depth - 1) * scale.y();
+
+  EXPECT_NEAR(offset[0], -0.5 * spanX, 1e-6);
+  EXPECT_NEAR(offset[1], 0.5 * spanY, 1e-6);
+  EXPECT_NEAR(offset[2], 0.0, 1e-6);
+}
 
 //==============================================================================
 TEST(OdeHeightmap, CollisionCenteredInXY)
