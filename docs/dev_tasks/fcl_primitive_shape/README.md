@@ -14,6 +14,7 @@
   the pure FCL and DART collision matrices.
 - Completed the comprehensive primitive collision test plan for pure FCL and
   DART coverage; edge cases are now covered.
+- Switched the default FCL primitive handling to PRIMITIVE mode.
 
 ## Context
 
@@ -26,8 +27,8 @@
 
 ## Current Notes
 
-- FCL primitive handling is selectable via `FCLCollisionDetector` and currently
-  defaults to mesh mode.
+- FCL primitive handling is selectable via `FCLCollisionDetector` and now
+  defaults to primitive mode.
 - DART expects contact normals from collision object 2 → 1, while FCL normals
   are defined from o1 → o2; FCL may also swap contact geometry order vs the
   input collision objects.
@@ -56,8 +57,3 @@
 - `pixi run test-all`
 - `pixi run lint`
 - `DART_PARALLEL_JOBS=16 CTEST_PARALLEL_LEVEL=16 pixi run -e gazebo test-gz`
-
-## Next Steps
-
-- Reassess whether to switch the default FCL primitive mode now that the
-  expanded collision matrix and edge-case coverage are complete.

@@ -645,7 +645,10 @@ FCLCollisionDetector::~FCLCollisionDetector()
 std::shared_ptr<CollisionDetector>
 FCLCollisionDetector::cloneWithoutCollisionObjects() const
 {
-  return FCLCollisionDetector::create();
+  auto clone = FCLCollisionDetector::create();
+  clone->setPrimitiveShapeType(mPrimitiveShapeType);
+  clone->setContactPointComputationMethod(mContactPointComputationMethod);
+  return clone;
 }
 
 //==============================================================================
@@ -813,13 +816,6 @@ double FCLCollisionDetector::distance(
 void FCLCollisionDetector::setPrimitiveShapeType(
     FCLCollisionDetector::PrimitiveShape type)
 {
-  DART_WARN_IF(
-      type == PRIMITIVE,
-      "You chose to use FCL's primitive shape collision feature while it's not "
-      "complete (at least until 0.4.0) especially in use of dynamics "
-      "simulation. It's recommended to use mesh even for primitive shapes by "
-      "setting FCLCollisionDetector::setPrimitiveShapeType(MESH).");
-
   mPrimitiveShapeType = type;
 }
 
@@ -856,7 +852,7 @@ FCLCollisionDetector::getContactPointComputationMethod() const
 //==============================================================================
 FCLCollisionDetector::FCLCollisionDetector()
   : CollisionDetector(),
-    mPrimitiveShapeType(MESH),
+    mPrimitiveShapeType(PRIMITIVE),
     mContactPointComputationMethod(DART)
 {
   mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
