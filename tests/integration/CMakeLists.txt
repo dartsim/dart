@@ -16,6 +16,14 @@ if(DART_BUILD_COLLISION_FCL)
     INTEGRATION_collision_MeshContactRegression
     collision/test_MeshContactRegression.cpp)
 endif()
+dart_add_test(
+  "integration"
+  INTEGRATION_collision_FclPrimitiveContactMatrix
+  collision/test_FclPrimitiveContactMatrix.cpp)
+dart_add_test(
+  "integration"
+  INTEGRATION_collision_FclPrimitiveContactMatrixFcl
+  collision/test_FclPrimitiveContactMatrixFcl.cpp)
 
 # Additional collision tests
 if(TARGET dart-utils-urdf)
