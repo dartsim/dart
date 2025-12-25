@@ -2,6 +2,12 @@
 
 This guide describes how to build DART from source, including both the C++ library and Python bindings (dartpy).
 
+## Start here next time
+
+- Local test workflow: [testing.md](testing.md)
+- CI monitoring and expectations: [ci-cd.md](ci-cd.md)
+- Gazebo / gz-physics integration: [build-system.md](build-system.md#gazebo-integration-feature)
+
 ## Supported Environments
 
 DART is supported on the following operating systems and compilers:
@@ -119,13 +125,22 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    pixi run config-debug          # Debug
    ```
 
-   You can override booleans via environment variables instead of editing `pixi.toml`:
+   `config` accepts args for common toggles:
+
+   ```bash
+   pixi run config OFF            # Suggested (Unverified): disable dartpy
+   pixi run config ON Debug       # Suggested (Unverified): enable dartpy + Debug build
+   ```
+
+   You can also override booleans via environment variables instead of editing `pixi.toml` (Suggested (Unverified)):
 
    ```bash
    DART_BUILD_DARTPY_OVERRIDE=OFF pixi run config
    DART_BUILD_GUI_OVERRIDE=OFF pixi run config
    DART_BUILD_GUI_RAYLIB_OVERRIDE=ON DART_USE_SYSTEM_RAYLIB_OVERRIDE=OFF pixi run config
    ```
+
+   Note: Official dartpy wheels include OSG/GUI; keep `DART_BUILD_GUI` enabled when validating dartpy changes.
 
 3. Build and test:
 
@@ -135,6 +150,44 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    pixi run test                  # ctest -LE dart8
    pixi run test-all              # helper script that runs lint + build + tests
    ```
+
+   Parallelism knobs (optional):
+   - `DART_PARALLEL_JOBS` - used by helper scripts and the Gazebo workflow
+   - `CMAKE_BUILD_PARALLEL_LEVEL` - controls `cmake --build`
+   - `CTEST_PARALLEL_LEVEL` - controls `ctest`
+
+   If you want to cap parallelism for local runs, pick a value around two-thirds of logical cores to keep the machine responsive, then set `DART_PARALLEL_JOBS` (and `CTEST_PARALLEL_LEVEL` for ctest). Suggested (Unverified):
+
+   ```bash
+   # Linux
+   N=$(( ( $(nproc) * 2 ) / 3 ))
+   # macOS
+   N=$(( ( $(sysctl -n hw.ncpu) * 2 ) / 3 ))
+   # Windows (PowerShell)
+   $env:N=[math]::Floor([Environment]::ProcessorCount*2/3)
+   ```
+
+   Example (Used in this task):
+
+   ```bash
+   pixi run lint
+   DART_PARALLEL_JOBS=12 CTEST_PARALLEL_LEVEL=12 pixi run test
+   DART_PARALLEL_JOBS=12 CTEST_PARALLEL_LEVEL=12 pixi run test-all
+   ```
+
+   Note: `pixi run test-all` runs `pixi run lint` (auto-fixing) internally; check `git status` afterwards before committing.
+
+4. (Optional) Gazebo / gz-physics integration test:
+
+   Example (Used in this task):
+
+   ```bash
+   DART_PARALLEL_JOBS=12 CTEST_PARALLEL_LEVEL=12 pixi run -e gazebo test-gz
+   ```
+
+   Suggested (Unverified): Run the same workflow with a different parallelism setting, e.g. `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
+
+   This runs the gz-physics integration workflow (task chain, patch policy, and common failure modes are documented in [build-system.md](build-system.md#gazebo-integration-feature)).
 
 Pixi automatically detects whether optional Ninja targets (for example `pytest` or GUI tutorials) were generated. If a target is missing (because its corresponding `DART_BUILD_*` option is `OFF`), the helper scripts skip it instead of hard failing, which mirrors the CI workflow. You can still use the “manual” CMake flow described below, but pixi is the fastest path to a working development environment on every platform.
 

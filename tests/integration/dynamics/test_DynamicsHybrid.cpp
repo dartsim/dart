@@ -2,9 +2,9 @@
 
 #include "DynamicsTestFixture.hpp"
 #include "dart/dynamics/Inertia.hpp"
+#include "dart/io/Read.hpp"
 #include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/SkelParser.hpp"
 
 using namespace dart;
 using namespace simulation;
@@ -22,7 +22,7 @@ TEST_F(DynamicsTest, HybridDynamics)
 #endif // ------- Debug mode
 
   // Load world and skeleton
-  WorldPtr world = utils::SkelParser::readWorld(
+  WorldPtr world = dart::io::readWorld(
       "dart://sample/skel/test/hybrid_dynamics_test.skel");
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != nullptr);

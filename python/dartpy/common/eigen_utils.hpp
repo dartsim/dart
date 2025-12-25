@@ -140,6 +140,15 @@ inline Eigen::VectorXd toVector(const nanobind::handle& value)
         out[i] = base[i * s0 + 0 * s1];
       return out;
     }
+    if (array.ndim() == 2 && array.shape(0) == 1) {
+      Eigen::VectorXd out(array.shape(1));
+      const double* base = array.data();
+      const int64_t s0 = stride(0);
+      const int64_t s1 = stride(1);
+      for (Eigen::Index i = 0; i < out.size(); ++i)
+        out[i] = base[0 * s0 + i * s1];
+      return out;
+    }
   }
 
   std::vector<double> data = nanobind::cast<std::vector<double>>(value);

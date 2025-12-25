@@ -314,8 +314,9 @@ Instead, let's load a robotic manipulator and have it push over the first domino
 
 ### Lesson 2a: Load a URDF file
 
-Our manipulator is going to be loaded from a URDF file. URDF files are loaded
-by the `dart::utils::UrdfParser` class. First, create a parser:
+Our manipulator is going to be loaded from a URDF file. In C++, use
+`dart::io::readSkeleton` with a `dart::io::ReadOptions` object. In Python, use
+`dart.utils.UrdfParser`. First, create the loader/options:
 
 ```{eval-rst}
 .. tabs::
@@ -335,13 +336,16 @@ by the `dart::utils::UrdfParser` class. First, create a parser:
          :end-before: # snippet:py-dominoes-lesson2a-loader-end
 ```
 
-Note that many URDF files use ROS's `package:` scheme to specify the locations
+Note that many URDF files use ROS's `package://` scheme to specify the locations
 of the resources that need to be loaded. We won't be using this in our example,
-but in general you should use the function `UrdfParser::addPackageDirectory` to
+but in general you should register package directories to
 specify the locations of these packages, because DART does not have the same
 package resolving abilities of ROS.
 
-Now we'll have `parser` parse the file into a Skeleton:
+In C++, use `dart::io::ReadOptions::addPackageDirectory`. In Python, use
+`UrdfParser.addPackageDirectory`.
+
+Now we'll load the file into a Skeleton:
 
 ```{eval-rst}
 .. tabs::

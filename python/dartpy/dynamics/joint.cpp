@@ -1,5 +1,6 @@
 #include "dynamics/joint.hpp"
 
+#include "common/eigen_utils.hpp"
 #include "common/repr.hpp"
 #include "common/type_casters.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -64,7 +65,7 @@ void defJoint(nb::module_& m)
           "setName",
           &Joint::setName,
           nb::arg("name"),
-          nb::arg("preserveName") = true)
+          nb::arg("preserve_name") = true)
       .def(
           "getType",
           [](const Joint& self) -> const std::string& {
@@ -91,20 +92,20 @@ void defJoint(nb::module_& m)
           [](Joint& self, ActuatorType actuatorType) {
             self.setActuatorType(actuatorType);
           },
-          nb::arg("actuatorType"))
+          nb::arg("actuator_type"))
       .def(
           "setActuatorTypeForDof",
           [](Joint& self, std::size_t index, ActuatorType actuatorType) {
             self.setActuatorType(index, actuatorType);
           },
           nb::arg("index"),
-          nb::arg("actuatorType"))
+          nb::arg("actuator_type"))
       .def(
           "setActuatorTypes",
           [](Joint& self, const std::vector<ActuatorType>& actuatorTypes) {
             self.setActuatorTypes(actuatorTypes);
           },
-          nb::arg("actuatorTypes"))
+          nb::arg("actuator_types"))
       .def(
           "getActuatorType",
           [](const Joint& self) { return self.getActuatorType(); })
@@ -122,7 +123,7 @@ void defJoint(nb::module_& m)
           [](const Joint& self, ActuatorType actuatorType) {
             return self.hasActuatorType(actuatorType);
           },
-          nb::arg("actuatorType"))
+          nb::arg("actuator_type"))
       .def(
           "setUseCouplerConstraint",
           &Joint::setUseCouplerConstraint,
@@ -155,7 +156,7 @@ void defJoint(nb::module_& m)
           nb::rv_policy::reference_internal,
           nb::arg("index"),
           nb::arg("name"),
-          nb::arg("preserveName"))
+          nb::arg("preserve_name"))
       .def(
           "getDofName",
           [](const Joint& self, std::size_t index) -> const std::string& {
@@ -191,8 +192,8 @@ void defJoint(nb::module_& m)
           nb::arg("index"))
       .def(
           "setCommands",
-          [](Joint& self, const Eigen::VectorXd& commands) {
-            self.setCommands(commands);
+          [](Joint& self, const nb::handle& commands) {
+            self.setCommands(toVector(commands));
           },
           nb::arg("commands"))
       .def("getCommands", [](const Joint& self) { return self.getCommands(); })
@@ -206,8 +207,8 @@ void defJoint(nb::module_& m)
           nb::arg("value"))
       .def(
           "setPositions",
-          [](Joint& self, const Eigen::VectorXd& positions) {
-            self.setPositions(positions);
+          [](Joint& self, const nb::handle& positions) {
+            self.setPositions(toVector(positions));
           },
           nb::arg("positions"))
       .def(
@@ -228,8 +229,8 @@ void defJoint(nb::module_& m)
           nb::arg("value"))
       .def(
           "setVelocities",
-          [](Joint& self, const Eigen::VectorXd& velocities) {
-            self.setVelocities(velocities);
+          [](Joint& self, const nb::handle& velocities) {
+            self.setVelocities(toVector(velocities));
           },
           nb::arg("velocities"))
       .def(
@@ -257,8 +258,8 @@ void defJoint(nb::module_& m)
       .def("getRelativeTransform", &Joint::getRelativeTransform)
       .def(
           "getRelativeJacobian",
-          [](Joint& self, const Eigen::VectorXd& positions) {
-            return self.getRelativeJacobian(positions);
+          [](Joint& self, const nb::handle& positions) {
+            return self.getRelativeJacobian(toVector(positions));
           },
           nb::arg("positions"))
       .def(
@@ -310,8 +311,8 @@ void defJoint(nb::module_& m)
           nb::arg("index"))
       .def(
           "setAccelerations",
-          [](Joint& self, const Eigen::VectorXd& accelerations) {
-            self.setAccelerations(accelerations);
+          [](Joint& self, const nb::handle& accelerations) {
+            self.setAccelerations(toVector(accelerations));
           },
           nb::arg("accelerations"))
       .def(
@@ -333,8 +334,8 @@ void defJoint(nb::module_& m)
           nb::arg("index"))
       .def(
           "setForces",
-          [](Joint& self, const Eigen::VectorXd& forces) {
-            self.setForces(forces);
+          [](Joint& self, const nb::handle& forces) {
+            self.setForces(toVector(forces));
           },
           nb::arg("forces"))
       .def("getForces", [](Joint& self) { return self.getForces(); })

@@ -1,5 +1,6 @@
 #include "dynamics/skeleton.hpp"
 
+#include "common/eigen_utils.hpp"
 #include "common/repr.hpp"
 #include "common/type_casters.hpp"
 #include "dart/dynamics/BallJoint.hpp"
@@ -128,23 +129,6 @@ void defSkeleton(nb::module_& m)
           },
           nb::rv_policy::reference_internal)
       .def(
-          "get_joint",
-          [](Skeleton& self, std::size_t idx) -> dart::dynamics::Joint* {
-            return self.getJoint(idx);
-          },
-          nb::rv_policy::reference_internal)
-      .def(
-          "get_joint",
-          [](Skeleton& self, const std::string& name)
-              -> dart::dynamics::Joint* { return self.getJoint(name); },
-          nb::rv_policy::reference_internal)
-      .def(
-          "get_root_joint",
-          [](Skeleton& self) -> dart::dynamics::Joint* {
-            return self.getRootJoint();
-          },
-          nb::rv_policy::reference_internal)
-      .def(
           "getDof",
           [](Skeleton& self, std::size_t idx) { return self.getDof(idx); },
           nb::rv_policy::reference_internal,
@@ -159,8 +143,8 @@ void defSkeleton(nb::module_& m)
       .def("getPositions", [](Skeleton& self) { return self.getPositions(); })
       .def(
           "setPositions",
-          [](Skeleton& self, const Eigen::VectorXd& positions) {
-            self.setPositions(positions);
+          [](Skeleton& self, const nb::handle& positions) {
+            self.setPositions(toVector(positions));
           },
           nb::arg("positions"))
       .def("resetPositions", &Skeleton::resetPositions)
@@ -176,7 +160,7 @@ void defSkeleton(nb::module_& m)
           [](Skeleton& self, bool createIfNull) {
             return self.getIK(createIfNull);
           },
-          nb::arg("createIfNull") = false);
+          nb::arg("create_if_null") = false);
 
   skeletonClass.def("__repr__", [](const Skeleton& self) {
     std::vector<std::pair<std::string, std::string>> fields;
@@ -195,7 +179,7 @@ void defSkeleton(nb::module_& m)
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = nb::none());
+      nb::arg("joint_properties") = nb::none());
 
   skeletonClass.def(
       "createBallJointAndBodyNodePair",
@@ -205,7 +189,7 @@ void defSkeleton(nb::module_& m)
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = nb::none());
+      nb::arg("joint_properties") = nb::none());
 
   skeletonClass.def(
       "createEulerJointAndBodyNodePair",
@@ -215,7 +199,7 @@ void defSkeleton(nb::module_& m)
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = nb::none());
+      nb::arg("joint_properties") = nb::none());
 
   skeletonClass.def(
       "createRevoluteJointAndBodyNodePair",
@@ -225,7 +209,7 @@ void defSkeleton(nb::module_& m)
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = nb::none());
+      nb::arg("joint_properties") = nb::none());
 
   skeletonClass.def(
       "createPrismaticJointAndBodyNodePair",
@@ -235,7 +219,7 @@ void defSkeleton(nb::module_& m)
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = nb::none());
+      nb::arg("joint_properties") = nb::none());
 
   skeletonClass.def(
       "createScrewJointAndBodyNodePair",
@@ -245,7 +229,7 @@ void defSkeleton(nb::module_& m)
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = nb::none());
+      nb::arg("joint_properties") = nb::none());
 
   skeletonClass.def(
       "createPlanarJointAndBodyNodePair",
@@ -255,7 +239,7 @@ void defSkeleton(nb::module_& m)
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = nb::none());
+      nb::arg("joint_properties") = nb::none());
 
   skeletonClass.def(
       "createUniversalJointAndBodyNodePair",
@@ -265,7 +249,7 @@ void defSkeleton(nb::module_& m)
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = nb::none());
+      nb::arg("joint_properties") = nb::none());
 
   skeletonClass.def(
       "createTranslationalJointAndBodyNodePair",
@@ -275,7 +259,7 @@ void defSkeleton(nb::module_& m)
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = nb::none());
+      nb::arg("joint_properties") = nb::none());
 
   skeletonClass.def(
       "createTranslationalJoint2DAndBodyNodePair",
@@ -285,7 +269,7 @@ void defSkeleton(nb::module_& m)
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = nb::none());
+      nb::arg("joint_properties") = nb::none());
 
   skeletonClass.def(
       "createWeldJointAndBodyNodePair",
@@ -295,7 +279,7 @@ void defSkeleton(nb::module_& m)
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = nb::none());
+      nb::arg("joint_properties") = nb::none());
 
   skeletonClass
       .def(
@@ -312,6 +296,8 @@ void defSkeleton(nb::module_& m)
           },
           nb::rv_policy::reference_internal,
           nb::arg("idx"));
+
+  registerPolymorphicCaster<dart::dynamics::MetaSkeleton, Skeleton>();
 }
 
 } // namespace dart::python_nb

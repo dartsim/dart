@@ -34,11 +34,13 @@
 
 #include <dart/gui/All.hpp>
 #include <dart/gui/ImGuiHandler.hpp>
+#include <dart/gui/IncludeImGui.hpp>
 
 #include <dart/utils/All.hpp>
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/utils/urdf/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <CLI/CLI.hpp>
 
@@ -205,24 +207,17 @@ protected:
         continue;
       auto mesh = std::static_pointer_cast<dynamics::MeshShape>(shape);
 
-      auto assimpScene = mesh->getMesh();
-      DART_ASSERT(assimpScene);
+      const auto triMesh = mesh->getTriMesh();
+      DART_ASSERT(triMesh);
 
-      if (assimpScene->mNumMeshes < 1)
+      const auto& vertices = triMesh->getVertices();
+      if (vertices.empty())
         continue;
-      const auto meshIndex
-          = math::Random::uniform<std::size_t>(0, assimpScene->mNumMeshes - 1);
-
-      auto assimpMesh = assimpScene->mMeshes[meshIndex];
-      auto numVertices = assimpMesh->mNumVertices;
-
-      auto vertexIndex
-          = math::Random::uniform<unsigned int>(0, numVertices - 1);
-      auto vertex = assimpMesh->mVertices[vertexIndex];
 
       Eigen::Isometry3d tf = shapeNode->getWorldTransform();
-      Eigen::Vector3d eigenVertex
-          = Eigen::Vector3f(vertex.x, vertex.y, vertex.z).cast<double>();
+      const auto vertexIndex
+          = math::Random::uniform<std::size_t>(0, vertices.size() - 1);
+      Eigen::Vector3d eigenVertex = vertices[vertexIndex];
       eigenVertex = tf * eigenVertex;
 
       pointCloud.push_back(
@@ -614,11 +609,9 @@ protected:
 
 dynamics::SkeletonPtr createRobot(const std::string& name)
 {
-  auto urdfParser = dart::utils::UrdfParser();
-
   // Load the robot
   auto robot
-      = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+      = dart::io::readSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 
   // Rotate the robot so that z is upwards (default transform is not Identity)
   robot->getJoint(0)->setTransformFromParentBodyNode(
@@ -631,9 +624,7 @@ dynamics::SkeletonPtr createRobot(const std::string& name)
 
 dynamics::SkeletonPtr createGround()
 {
-  auto urdfParser = dart::utils::UrdfParser();
-
-  auto ground = urdfParser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
+  auto ground = dart::io::readSkeleton("dart://sample/urdf/KR5/ground.urdf");
 
   // Rotate and move the ground so that z is upwards
   Eigen::Isometry3d ground_tf

@@ -12,6 +12,12 @@ dart_add_test("unit" UNIT_collision_CollisionGroup collision/test_CollisionGroup
 dart_add_test("unit" UNIT_collision_Raycast collision/test_Raycast.cpp)
 
 dart_add_test("unit" UNIT_collision_CollisionResult collision/test_CollisionResult.cpp)
+dart_add_test(
+  "unit"
+  UNIT_collision_ConvexMesh
+  collision/test_ConvexMeshShapeCollision.cpp)
+
+dart_add_test("unit" UNIT_collision_Contact collision/test_Contact.cpp)
 
 if(DART_HAVE_BULLET)
   dart_add_test("unit" UNIT_collision_BulletContact collision/test_BulletContact.cpp)
@@ -68,6 +74,7 @@ dart_add_test("unit" UNIT_dynamics_Inertia dynamics/test_Inertia.cpp)
 dart_add_test("unit" UNIT_dynamics_ScrewJoint dynamics/test_ScrewJoint.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeNodePtr dynamics/test_ShapeNodePtr.cpp)
 dart_add_test("unit" UNIT_dynamics_MeshShape dynamics/test_MeshShape.cpp)
+dart_add_test("unit" UNIT_dynamics_ConvexMeshShape dynamics/test_ConvexMeshShape.cpp)
 dart_add_test("unit" UNIT_dynamics_BodyNodeDerivatives dynamics/test_BodyNodeDerivatives.cpp)
 dart_add_test(
   "unit" UNIT_dynamics_BodyNodePotentialEnergy dynamics/test_BodyNodePotentialEnergy.cpp)
@@ -119,6 +126,16 @@ endif()
 if(TARGET dart-gui)
   dart_add_test(
     "unit" UNIT_gui_ImGuiWindowScaling gui/test_ImGuiWindowScaling.cpp)
+  # System ImGui builds can depend on SDL3, which is not available in ASAN CI.
+  if(NOT (DART_ENABLE_ASAN AND DART_USE_SYSTEM_IMGUI))
+    dart_add_test(
+      "unit" UNIT_gui_MeshShapeNodeMaterialUpdates
+      gui/test_MeshShapeNodeMaterialUpdates.cpp)
+    target_link_libraries(UNIT_gui_MeshShapeNodeMaterialUpdates dart-gui)
+    dart_add_test(
+      "unit" UNIT_gui_ConvexMeshShapeNode gui/test_ConvexMeshShapeNode.cpp)
+    target_link_libraries(UNIT_gui_ConvexMeshShapeNode dart-gui)
+  endif()
 endif()
 
 # ==============================================================================
@@ -126,3 +143,11 @@ endif()
 # ==============================================================================
 dart_add_test("unit" test_SdfHelpers utils/test_SdfHelpers.cpp)
 target_link_libraries(test_SdfHelpers dart-utils sdformat::sdformat)
+
+dart_add_test("unit" test_MeshLoader utils/test_MeshLoader.cpp)
+target_link_libraries(test_MeshLoader dart-utils)
+
+if(TARGET dart-io)
+  dart_add_test("unit" test_IoRead io/test_Read.cpp)
+  target_link_libraries(test_IoRead dart-io)
+endif()

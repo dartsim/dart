@@ -69,28 +69,9 @@ jobs:
           disable_annotations: true
 
       - name: Configure environment for compiler cache
-        run: |
-          if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
-            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          else
-            echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
-          fi
-          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
-          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
-          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
-          mkdir -p "${RUNNER_TEMP}/ccache"
+        uses: ./.github/actions/configure-compiler-cache
 
-      - name: Build with coverage
-        run: |
-          DART_VERBOSE=ON \
-          BUILD_TYPE=Debug \
-          pixi run build-coverage
-
-      - name: Generate coverage report
+      - name: Build and generate coverage report
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
@@ -132,20 +113,7 @@ jobs:
           disable_annotations: true
 
       - name: Configure environment for compiler cache
-        run: |
-          if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
-            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          else
-            echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
-          fi
-          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
-          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
-          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
-          mkdir -p "${RUNNER_TEMP}/ccache"
+        uses: ./.github/actions/configure-compiler-cache
 
       - name: Check Lint
         run: |
@@ -199,20 +167,7 @@ jobs:
           disable_annotations: true
 
       - name: Configure environment for compiler cache
-        run: |
-          if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
-            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          else
-            echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
-          fi
-          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
-          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
-          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
-          mkdir -p "${RUNNER_TEMP}/ccache"
+        uses: ./.github/actions/configure-compiler-cache
 
       - name: Test DART and dartpy
         run: |
@@ -220,3 +175,59 @@ jobs:
           BUILD_TYPE=Debug \
           DART_BUILD_DART8_OVERRIDE=OFF \
           pixi run test-all
+
+  # Catch compile failures when assertions are enabled but we're not in a Debug
+  # build type (e.g., downstream builds that drop -DNDEBUG in Release).
+  build-asserts:
+    name: Asserts enabled (no -DNDEBUG)
+    runs-on: ubuntu-latest
+    env:
+      DART_PARALLEL_JOBS: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.3
+        with:
+          cache: true
+
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: 2
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
+
+      - name: Configure environment for compiler cache
+        uses: ./.github/actions/configure-compiler-cache
+
+      - name: Build with assertions (no -DNDEBUG)
+        run: |
+          # NOTE: pixi tasks set BUILD_TYPE internally, so configure this
+          # variant explicitly to ensure NDEBUG is not defined.
+          pixi run -- bash -lc '
+            set -euo pipefail
+            BUILD_TYPE=None
+            DART_VERBOSE=ON
+            cmake \
+              -G Ninja \
+              -S . \
+              -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+              -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+              -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+              -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+              -DDART_BUILD_DARTPY=ON \
+              -DDART_BUILD_COLLISION_BULLET=ON \
+              -DDART_BUILD_PROFILE=ON \
+              -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+              -DDART_USE_SYSTEM_GOOGLETEST=ON \
+              -DDART_USE_SYSTEM_IMGUI=ON \
+              -DDART_USE_SYSTEM_TRACY=ON \
+              -DDART_VERBOSE=$DART_VERBOSE
+            cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j
+          '

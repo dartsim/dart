@@ -37,6 +37,7 @@
 #include <dart/utils/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <iostream>
 
@@ -152,7 +153,7 @@ protected:
 int main(int /*argc*/, char* /*argv*/[])
 {
   // Create and initialize the world
-  WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/vehicle.skel");
+  WorldPtr myWorld = dart::io::readWorld("dart://sample/skel/vehicle.skel");
   DART_ASSERT(myWorld != nullptr);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/sdf/SdfParser.hpp"
+#include "dart/io/Read.hpp"
 
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
@@ -42,7 +42,6 @@ using namespace dart::math;
 using namespace dart::collision;
 using namespace dart::dynamics;
 using namespace dart::simulation;
-using namespace dart::utils;
 
 //==============================================================================
 TEST(Issue1624, ContactGrouping)
@@ -50,7 +49,7 @@ TEST(Issue1624, ContactGrouping)
   // Load a world with a large number of contacts and run simulation to ensure
   // constraint solver does not misbehave.
   auto world
-      = SdfParser::readWorld("dart://sample/sdf/test/issue1624_cubes.sdf");
+      = dart::io::readWorld("dart://sample/sdf/test/issue1624_cubes.sdf");
   ASSERT_TRUE(world != nullptr);
   world->setCollisionDetector(OdeCollisionDetector::create());
   const double dt = 0.001;

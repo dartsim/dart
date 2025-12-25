@@ -43,6 +43,7 @@
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
@@ -55,7 +56,7 @@
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/VoxelGridShape.hpp"
 
-#include <assimp/scene.h>
+#include <fcl/geometry/shape/convex.h>
 
 #include <algorithm>
 #include <limits>
@@ -562,48 +563,56 @@ template <typename BV>
 
 //==============================================================================
 template <class BV>
-::fcl::BVHModel<BV>* createMesh(
-    double _scaleX, double _scaleY, double _scaleZ, const aiScene* _mesh)
+::fcl::BVHModel<BV>* createMeshFromTriMesh(
+    double _scaleX,
+    double _scaleY,
+    double _scaleZ,
+    const std::shared_ptr<math::TriMesh<double>>& _triMesh)
 {
-  // Create FCL mesh from Assimp mesh
+  // Create FCL mesh from TriMesh
 
-  DART_ASSERT(_mesh);
+  DART_ASSERT(_triMesh);
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
   model->beginModel();
-  for (std::size_t i = 0; i < _mesh->mNumMeshes; i++) {
-    for (std::size_t j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++) {
-      fcl::Vector3 vertices[3];
-      for (std::size_t k = 0; k < 3; k++) {
-        const aiVector3D& vertex
-            = _mesh->mMeshes[i]
-                  ->mVertices[_mesh->mMeshes[i]->mFaces[j].mIndices[k]];
-        vertices[k] = fcl::Vector3(
-            vertex.x * _scaleX, vertex.y * _scaleY, vertex.z * _scaleZ);
-      }
-      model->addTriangle(vertices[0], vertices[1], vertices[2]);
+
+  const auto& vertices = _triMesh->getVertices();
+  const auto& triangles = _triMesh->getTriangles();
+
+  for (const auto& triangle : triangles) {
+    fcl::Vector3 fclVertices[3];
+    for (std::size_t i = 0; i < 3; i++) {
+      const auto& vertex = vertices[triangle[i]];
+      fclVertices[i] = fcl::Vector3(
+          vertex.x() * _scaleX, vertex.y() * _scaleY, vertex.z() * _scaleZ);
     }
+    model->addTriangle(fclVertices[0], fclVertices[1], fclVertices[2]);
   }
+
   model->endModel();
   return model;
 }
 
 //==============================================================================
 template <class BV>
-::fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
+::fcl::BVHModel<BV>* createSoftMesh(
+    const std::shared_ptr<math::TriMesh<double>>& triMesh)
 {
-  // Create FCL mesh from Assimp mesh
+  // Create FCL mesh from TriMesh
 
-  DART_ASSERT(_mesh);
+  DART_ASSERT(triMesh);
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
   model->beginModel();
 
-  for (std::size_t i = 0; i < _mesh->mNumFaces; i++) {
-    fcl::Vector3 vertices[3];
+  const auto& vertices = triMesh->getVertices();
+  const auto& triangles = triMesh->getTriangles();
+
+  for (const auto& triangle : triangles) {
+    fcl::Vector3 fclVertices[3];
     for (std::size_t j = 0; j < 3; j++) {
-      const aiVector3D& vertex = _mesh->mVertices[_mesh->mFaces[i].mIndices[j]];
-      vertices[j] = fcl::Vector3(vertex.x, vertex.y, vertex.z);
+      const auto& vertex = vertices[triangle[j]];
+      fclVertices[j] = fcl::Vector3(vertex.x(), vertex.y(), vertex.z());
     }
-    model->addTriangle(vertices[0], vertices[1], vertices[2]);
+    model->addTriangle(fclVertices[0], fclVertices[1], fclVertices[2]);
   }
 
   model->endModel();
@@ -1016,21 +1025,55 @@ FCLCollisionDetector::createFCLCollisionGeometry(
         "[FCLCollisionDetector] PlaneShape requested with primitive shape type "
         "MESH. Using analytic halfspace instead of the previous thin-box "
         "fallback to keep plane collisions reliable.");
+  } else if (dynamics::ConvexMeshShape::getStaticType() == shapeType) {
+    DART_ASSERT(dynamic_cast<const dynamics::ConvexMeshShape*>(shape.get()));
+
+    auto convexMesh
+        = static_cast<const dynamics::ConvexMeshShape*>(shape.get());
+    const auto mesh = convexMesh->getMesh();
+
+    if (mesh && mesh->hasVertices() && !mesh->getTriangles().empty()) {
+      auto hullVertices
+          = std::make_shared<std::vector<::fcl::Vector3<double>>>();
+      hullVertices->reserve(mesh->getVertices().size());
+      for (const auto& vertex : mesh->getVertices()) {
+        hullVertices->emplace_back(vertex.x(), vertex.y(), vertex.z());
+      }
+
+      auto faces = std::make_shared<std::vector<int>>();
+      faces->reserve(mesh->getTriangles().size() * 4);
+      for (const auto& tri : mesh->getTriangles()) {
+        faces->push_back(3);
+        faces->push_back(static_cast<int>(tri[0]));
+        faces->push_back(static_cast<int>(tri[1]));
+        faces->push_back(static_cast<int>(tri[2]));
+      }
+
+      geom = new ::fcl::Convex<double>(
+          hullVertices, static_cast<int>(mesh->getTriangles().size()), faces);
+    } else {
+      DART_WARN(
+          "ConvexMeshShape has no vertices; creating a sphere with 0.1 radius "
+          "instead.");
+      geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
+    }
   } else if (MeshShape::getStaticType() == shapeType) {
     DART_ASSERT(dynamic_cast<const MeshShape*>(shape.get()));
 
     auto shapeMesh = static_cast<const MeshShape*>(shape.get());
     const Eigen::Vector3d& scale = shapeMesh->getScale();
-    auto aiScene = shapeMesh->getMesh();
 
-    geom = createMesh<fcl::OBBRSS>(scale[0], scale[1], scale[2], aiScene);
+    auto triMesh = shapeMesh->getTriMesh();
+
+    geom = createMeshFromTriMesh<fcl::OBBRSS>(
+        scale[0], scale[1], scale[2], triMesh);
   } else if (SoftMeshShape::getStaticType() == shapeType) {
     DART_ASSERT(dynamic_cast<const SoftMeshShape*>(shape.get()));
 
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
-    auto aiMesh = softMeshShape->getAssimpMesh();
+    auto triMesh = softMeshShape->getTriMesh();
 
-    geom = createSoftMesh<fcl::OBBRSS>(aiMesh);
+    geom = createSoftMesh<fcl::OBBRSS>(triMesh);
   }
 #if DART_HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType) {

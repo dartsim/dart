@@ -33,9 +33,10 @@
 #include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/utils/urdf/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 using namespace dart::common;
 using namespace dart::dynamics;
@@ -281,11 +282,10 @@ protected:
 int main()
 {
   dart::simulation::WorldPtr world(new dart::simulation::World);
-  dart::utils::UrdfParser parser;
 
   // Load the robot
   dart::dynamics::SkeletonPtr robot
-      = parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+      = dart::io::readSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   world->addSkeleton(robot);
 
   // Rotate the robot so that z is upwards (default transform is not Identity)
@@ -294,7 +294,7 @@ int main()
 
   // Load the ground
   dart::dynamics::SkeletonPtr ground
-      = parser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
+      = dart::io::readSkeleton("dart://sample/urdf/KR5/ground.urdf");
   world->addSkeleton(ground);
 
   // Rotate and move the ground so that z is upwards

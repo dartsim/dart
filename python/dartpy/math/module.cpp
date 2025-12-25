@@ -36,6 +36,7 @@
 #include "math/eigen_geometry.hpp"
 #include "math/geometry.hpp"
 #include "math/random.hpp"
+#include "math/trimesh.hpp"
 
 namespace dart::python_nb {
 
@@ -45,6 +46,7 @@ void defMathModule(nanobind::module_& m)
   defRandom(m);
   defGeometry(m);
   defEigenGeometry(m);
+  defTriMesh(m);
 }
 
 } // namespace dart::python_nb

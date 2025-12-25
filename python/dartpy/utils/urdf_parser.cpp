@@ -29,10 +29,10 @@ void defUrdfParser(nb::module_& m)
                     common::ResourceRetrieverPtr,
                     UrdfParser::RootJointType,
                     const dynamics::Inertia&>(),
-                nb::arg("resourceRetriever") = nullptr,
-                nb::arg("defaultRootJointType")
+                nb::arg("resource_retriever") = nullptr,
+                nb::arg("default_root_joint_type")
                 = UrdfParser::RootJointType::Floating,
-                nb::arg("defaultInertia") = dynamics::Inertia())
+                nb::arg("default_inertia") = dynamics::Inertia())
             .def_rw(
                 "mResourceRetriever", &UrdfParser::Options::mResourceRetriever)
             .def_rw(
@@ -50,8 +50,8 @@ void defUrdfParser(nb::module_& m)
                  .def(
                      "addPackageDirectory",
                      &UrdfParser::addPackageDirectory,
-                     nb::arg("packageName"),
-                     nb::arg("packageDirectory"))
+                     nb::arg("package_name"),
+                     nb::arg("package_directory"))
                  .def(
                      "parseSkeleton",
                      [](UrdfParser& self, const common::Uri& uri) {
@@ -71,8 +71,8 @@ void defUrdfParser(nb::module_& m)
                         const common::Uri& base) {
                        return self.parseSkeletonString(data, base);
                      },
-                     nb::arg("urdfString"),
-                     nb::arg("baseUri"))
+                     nb::arg("urdf_string"),
+                     nb::arg("base_uri"))
                  .def(
                      "parseWorld",
                      [](UrdfParser& self, const common::Uri& uri) {
@@ -92,8 +92,8 @@ void defUrdfParser(nb::module_& m)
                         const common::Uri& base) {
                        return self.parseWorldString(data, base);
                      },
-                     nb::arg("urdfString"),
-                     nb::arg("baseUri"));
+                     nb::arg("urdf_string"),
+                     nb::arg("base_uri"));
 
   cls.attr("RootJointType") = root_joint_type;
   cls.attr("Options") = options;

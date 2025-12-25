@@ -99,28 +99,16 @@ jobs:
         uses: mozilla-actions/sccache-action@v0.0.9
         with:
           disable_annotations: true
-          # Enable only when GitHub cache backend is available; otherwise skip.
-          use-gha-cache: ${{ env.ACTIONS_CACHE_URL != '' }}
 
       - name: Configure environment for compiler cache
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: |
-          if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
-            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-            echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
-            echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-            echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-            echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-            echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
-            echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
-            echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
-            mkdir -p "${RUNNER_TEMP}/ccache"
-          else
-            echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
-          fi
+        uses: ./.github/actions/configure-compiler-cache
 
       - name: Build wheel
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
+        env:
+          # Work around occasional sccache spawn failures on ubuntu-latest + Python 3.14 wheel builds.
+          DART_DISABLE_COMPILER_CACHE: ${{ (matrix.os == 'ubuntu-latest' && matrix.python-version == '314') && 'ON' || 'OFF' }}
         run: pixi run -e py${{ matrix.python-version }}-wheel wheel-build
 
       - name: Repair wheel
@@ -135,7 +123,7 @@ jobs:
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
         run: pixi run -e py${{ matrix.python-version }}-wheel wheel-test
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
         with:
           path: ./dist/*.whl
@@ -149,7 +137,7 @@ jobs:
     # Examples: v7.0.0, v7.0.0.dev0, v7.0.0.alpha1, v7.0.0.beta1, v7.0.0.rc1
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     steps:
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           # unpacks default artifact into dist/
           # if `name: artifact` is omitted, the action will create extra parent dir
