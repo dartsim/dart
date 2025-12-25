@@ -32,6 +32,7 @@
 
 #include "dart/common/Macros.hpp"
 
+#include <dart/config.hpp>
 #include <dart/gui/All.hpp>
 #include <dart/gui/ImGuiHandler.hpp>
 #include <dart/gui/IncludeImGui.hpp>
@@ -39,7 +40,9 @@
 #include <dart/utils/All.hpp>
 #include <dart/utils/urdf/All.hpp>
 
+#if DART_HAVE_ODE
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
+#endif
 
 #include <dart/All.hpp>
 
@@ -244,8 +247,13 @@ void setupAlignmentDemo(const simulation::WorldPtr& world)
 
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->setTimeStep(0.001);
+#if DART_HAVE_ODE
   world->getConstraintSolver()->setCollisionDetector(
       collision::OdeCollisionDetector::create());
+#else
+  DART_WARN(
+      "Heightmap alignment demo requires ODE; using default collision detector.");
+#endif
 
   world->addSkeleton(createAlignmentHeightmap(config));
 
