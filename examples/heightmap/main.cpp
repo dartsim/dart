@@ -32,6 +32,7 @@
 
 #include "dart/common/Macros.hpp"
 
+#include <dart/collision/ode/OdeCollisionDetector.hpp>
 #include <dart/gui/All.hpp>
 #include <dart/gui/ImGuiHandler.hpp>
 #include <dart/gui/IncludeImGui.hpp>
@@ -44,11 +45,29 @@
 #include <CLI/CLI.hpp>
 
 #include <cmath>
+#include <string>
+#include <vector>
 
 using namespace dart;
 using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::math;
+
+struct Issue1658Config
+{
+  Eigen::Vector3d heightmapOrigin = Eigen::Vector3d::Zero();
+  std::size_t heightmapXResolution = 2u;
+  std::size_t heightmapYResolution = 2u;
+  float heightmapScale = 2.0f;
+  float heightmapZMin = 0.0f;
+  float heightmapZMax = 0.0f;
+  Eigen::Vector3d boxSize = Eigen::Vector3d(2.0, 2.0, 2.0);
+  Eigen::Vector3d boxOffset = Eigen::Vector3d(3.0, 0.0, -1.0);
+  std::size_t ballGridCount = 5u;
+  double ballRadius = 0.08;
+  double ballMass = 0.1;
+  double ballDropHeight = 1.0;
+};
 
 template <typename S>
 typename HeightmapShape<S>::HeightField generateHeightField(
@@ -106,6 +125,157 @@ dynamics::SimpleFramePtr createHeightmapFrame(
   terrainFrame->setShape(terrainShape);
 
   return terrainFrame;
+}
+
+SkeletonPtr createIssue1658Heightmap(const Issue1658Config& config)
+{
+  auto heightmap = Skeleton::create("heightmap");
+
+  auto [joint, body] = heightmap->createJointAndBodyNodePair<WeldJoint>(nullptr);
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = config.heightmapOrigin;
+  joint->setTransformFromParentBodyNode(tf);
+
+  std::vector<float> heights(
+      config.heightmapXResolution * config.heightmapYResolution, 0.0f);
+  for (auto& height : heights) {
+    height = math::Random::uniform(config.heightmapZMin, config.heightmapZMax);
+  }
+
+  auto shape = std::make_shared<HeightmapShape<float>>();
+  shape->setHeightField(
+      config.heightmapXResolution, config.heightmapYResolution, heights);
+  shape->setScale(Eigen::Vector3f(
+      config.heightmapScale, config.heightmapScale, 1.0f));
+
+  auto shapeNode = body->createShapeNodeWith<
+      CollisionAspect,
+      DynamicsAspect,
+      VisualAspect>(shape);
+  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.2, 0.4, 0.9));
+
+  return heightmap;
+}
+
+SkeletonPtr createIssue1658ReferenceBox(const Issue1658Config& config)
+{
+  auto box = Skeleton::create("reference_box");
+
+  auto [joint, body] = box->createJointAndBodyNodePair<WeldJoint>(nullptr);
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = config.boxOffset;
+  joint->setTransformFromParentBodyNode(tf);
+
+  auto shape = std::make_shared<BoxShape>(config.boxSize);
+  auto shapeNode = body->createShapeNodeWith<
+      CollisionAspect,
+      DynamicsAspect,
+      VisualAspect>(shape);
+  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.2, 0.7, 0.2));
+
+  return box;
+}
+
+SkeletonPtr createIssue1658Ball(
+    const std::string& name,
+    const Eigen::Vector3d& position,
+    double radius,
+    double mass,
+    const Eigen::Vector3d& color)
+{
+  auto ball = Skeleton::create(name);
+
+  auto [joint, body] = ball->createJointAndBodyNodePair<FreeJoint>(nullptr);
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = position;
+  joint->setTransformFromParentBodyNode(tf);
+
+  auto shape = std::make_shared<SphereShape>(radius);
+  auto shapeNode = body->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(shape);
+  shapeNode->getVisualAspect()->setColor(color);
+
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(mass);
+  inertia.setMoment(shape->computeInertia(mass));
+  body->setInertia(inertia);
+
+  return ball;
+}
+
+void addIssue1658BallGrid(
+    const simulation::WorldPtr& world,
+    const std::string& prefix,
+    const Eigen::Vector3d& center,
+    double halfExtent,
+    std::size_t count,
+    double dropHeight,
+    double radius,
+    double mass,
+    const Eigen::Vector3d& color)
+{
+  if (count == 0u) {
+    return;
+  }
+
+  const double step
+      = (count == 1u) ? 0.0 : (2.0 * halfExtent) / (count - 1u);
+  std::size_t index = 0u;
+  for (std::size_t row = 0u; row < count; ++row) {
+    for (std::size_t col = 0u; col < count; ++col) {
+      const double x = center.x() - halfExtent + step * row;
+      const double y = center.y() - halfExtent + step * col;
+      const double z = dropHeight;
+      const Eigen::Vector3d position(x, y, z);
+      world->addSkeleton(createIssue1658Ball(
+          prefix + std::to_string(index++),
+          position,
+          radius,
+          mass,
+          color));
+    }
+  }
+}
+
+void setupIssue1658World(const simulation::WorldPtr& world)
+{
+  Issue1658Config config;
+
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->setTimeStep(0.001);
+  world->getConstraintSolver()->setCollisionDetector(
+      collision::OdeCollisionDetector::create());
+
+  world->addSkeleton(createIssue1658Heightmap(config));
+
+  // Offset the reference box in X to keep collisions from overlapping while
+  // preserving the Z offset described in the issue.
+  world->addSkeleton(createIssue1658ReferenceBox(config));
+
+  const double halfExtent = 1.0 - config.ballRadius * 1.1;
+  const Eigen::Vector3d ballColor(0.9, 0.7, 0.3);
+  addIssue1658BallGrid(
+      world,
+      "heightmap_ball_",
+      config.heightmapOrigin,
+      halfExtent,
+      config.ballGridCount,
+      config.ballDropHeight,
+      config.ballRadius,
+      config.ballMass,
+      ballColor);
+  addIssue1658BallGrid(
+      world,
+      "box_ball_",
+      config.heightmapOrigin + config.boxOffset,
+      halfExtent,
+      config.ballGridCount,
+      config.ballDropHeight,
+      config.ballRadius,
+      config.ballMass,
+      ballColor);
 }
 
 class HeightmapWorld : public gui::WorldNode
@@ -450,12 +620,21 @@ int main(int argc, char* argv[])
 {
   CLI::App app("Heightmap example");
   double guiScale = 1.0;
+  bool issue1658Demo = false;
   app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
       ->check(CLI::PositiveNumber);
+  app.add_flag(
+      "--issue-1658",
+      issue1658Demo,
+      "Reproduce issue #1658 (heightmap vs reference box + ball grid)");
   CLI11_PARSE(app, argc, argv);
 
   auto world = dart::simulation::World::create();
-  world->setGravity(Eigen::Vector3d::Zero());
+  if (issue1658Demo) {
+    setupIssue1658World(world);
+  } else {
+    world->setGravity(Eigen::Vector3d::Zero());
+  }
 
   // Use a wider height range out of the box so the surface is visible above
   // the grid without fiddling with the controls.
@@ -465,11 +644,13 @@ int main(int argc, char* argv[])
   constexpr auto ySize = 2.f;
   constexpr auto zMin = -0.1f;
   constexpr auto zMax = 0.4f;
-  auto terrain = createHeightmapFrame<float>(
-      xResolution, yResolution, xSize, ySize, zMin, zMax);
-  world->addSimpleFrame(terrain);
-
-  DART_ASSERT(world->getNumSimpleFrames() == 1u);
+  dynamics::SimpleFramePtr terrain;
+  if (!issue1658Demo) {
+    terrain = createHeightmapFrame<float>(
+        xResolution, yResolution, xSize, ySize, zMin, zMax);
+    world->addSimpleFrame(terrain);
+    DART_ASSERT(world->getNumSimpleFrames() == 1u);
+  }
 
   // Create an instance of our customized WorldNode
   ::osg::ref_ptr<HeightmapWorld> node = new HeightmapWorld(world);
@@ -487,17 +668,20 @@ int main(int argc, char* argv[])
   grid->setOffset(Eigen::Vector3d(0.0, 0.0, -0.01));
 
   // Add control widget for atlas
-  viewer.getImGuiHandler()->addWidget(std::make_shared<HeightmapWidget<float>>(
-      &viewer,
-      node.get(),
-      terrain,
-      grid.get(),
-      xResolution,
-      yResolution,
-      xSize,
-      ySize,
-      zMin,
-      zMax));
+  if (!issue1658Demo) {
+    viewer.getImGuiHandler()->addWidget(
+        std::make_shared<HeightmapWidget<float>>(
+            &viewer,
+            node.get(),
+            terrain,
+            grid.get(),
+            xResolution,
+            yResolution,
+            xSize,
+            ySize,
+            zMin,
+            zMax));
+  }
 
   viewer.addAttachment(grid);
 
@@ -507,10 +691,17 @@ int main(int argc, char* argv[])
   // Set up the window to be 1280x720 pixels
   viewer.setUpViewInWindow(0, 0, 1280, 720);
 
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(2.57f, 3.14f, 1.64f),
-      ::osg::Vec3(0.00f, 0.00f, 0.30f),
-      ::osg::Vec3(-0.24f, -0.25f, 0.94f));
+  if (issue1658Demo) {
+    viewer.getCameraManipulator()->setHomePosition(
+        ::osg::Vec3(5.2f, 4.4f, 2.3f),
+        ::osg::Vec3(1.5f, 0.0f, 0.3f),
+        ::osg::Vec3(-0.2f, -0.2f, 0.95f));
+  } else {
+    viewer.getCameraManipulator()->setHomePosition(
+        ::osg::Vec3(2.57f, 3.14f, 1.64f),
+        ::osg::Vec3(0.00f, 0.00f, 0.30f),
+        ::osg::Vec3(-0.24f, -0.25f, 0.94f));
+  }
   // We need to re-dirty the CameraManipulator by passing it into the viewer
   // again, so that the viewer knows to update its HomePosition setting
   viewer.setCameraManipulator(viewer.getCameraManipulator());
