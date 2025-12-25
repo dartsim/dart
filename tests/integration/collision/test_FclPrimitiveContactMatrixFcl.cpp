@@ -296,7 +296,6 @@ double planeSignedDistance(
 
 TEST(FclPrimitiveContactsFcl, PairMatrixRespectsFclConventions)
 {
-  // Issue #19: https://github.com/dartsim/dart/issues/19
   const double kNormalAlignment = 0.95;
   const double kEdgeVertexAlignment = 0.7;
   const double kNormalNormTol = 1e-6;
