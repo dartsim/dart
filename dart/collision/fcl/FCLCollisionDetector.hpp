@@ -59,10 +59,8 @@ public:
   /// shapes. The contact result is probably less accurate than the analytic
   /// result.
   ///
-  /// Warning: FCL's primitive shape support is not complete. FCL 0.4.0 improved
-  /// the support a lot, but it still returns single contact point for a shape
-  /// pair except for box-box collision. For this reason, we recommend using
-  /// MESH until FCL fully supports primitive shapes.
+  /// Note: DART defaults to PRIMITIVE. Use MESH if you need legacy behavior
+  /// or want to work around FCL limitations for specific shape pairs.
   enum PrimitiveShape
   {
     PRIMITIVE = 0,
