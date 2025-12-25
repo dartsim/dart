@@ -55,7 +55,7 @@ using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::math;
 
-struct Issue1658Config
+struct HeightmapAlignmentDemoConfig
 {
   Eigen::Vector3d heightmapOrigin = Eigen::Vector3d::Zero();
   std::size_t heightmapXResolution = 2u;
@@ -129,7 +129,7 @@ dynamics::SimpleFramePtr createHeightmapFrame(
   return terrainFrame;
 }
 
-SkeletonPtr createIssue1658Heightmap(const Issue1658Config& config)
+SkeletonPtr createAlignmentHeightmap(const HeightmapAlignmentDemoConfig& config)
 {
   auto heightmap = Skeleton::create("heightmap");
 
@@ -160,7 +160,7 @@ SkeletonPtr createIssue1658Heightmap(const Issue1658Config& config)
   return heightmap;
 }
 
-SkeletonPtr createIssue1658ReferenceBox(const Issue1658Config& config)
+SkeletonPtr createAlignmentReferenceBox(const HeightmapAlignmentDemoConfig& config)
 {
   auto box = Skeleton::create("reference_box");
 
@@ -179,7 +179,7 @@ SkeletonPtr createIssue1658ReferenceBox(const Issue1658Config& config)
   return box;
 }
 
-SkeletonPtr createIssue1658Ball(
+SkeletonPtr createAlignmentBall(
     const std::string& name,
     const Eigen::Vector3d& position,
     double radius,
@@ -208,7 +208,7 @@ SkeletonPtr createIssue1658Ball(
   return ball;
 }
 
-void addIssue1658BallGrid(
+void addAlignmentBallGrid(
     const simulation::WorldPtr& world,
     const std::string& prefix,
     const Eigen::Vector3d& center,
@@ -231,30 +231,30 @@ void addIssue1658BallGrid(
       const double y = center.y() - halfExtent + step * col;
       const double z = dropHeight;
       const Eigen::Vector3d position(x, y, z);
-      world->addSkeleton(createIssue1658Ball(
+      world->addSkeleton(createAlignmentBall(
           prefix + std::to_string(index++), position, radius, mass, color));
     }
   }
 }
 
-void setupIssue1658World(const simulation::WorldPtr& world)
+void setupAlignmentDemo(const simulation::WorldPtr& world)
 {
-  Issue1658Config config;
+  HeightmapAlignmentDemoConfig config;
 
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->setTimeStep(0.001);
   world->getConstraintSolver()->setCollisionDetector(
       collision::OdeCollisionDetector::create());
 
-  world->addSkeleton(createIssue1658Heightmap(config));
+  world->addSkeleton(createAlignmentHeightmap(config));
 
   // Offset the reference box in X to keep collisions from overlapping while
-  // preserving the Z offset described in the issue.
-  world->addSkeleton(createIssue1658ReferenceBox(config));
+  // preserving the vertical offset described in the report.
+  world->addSkeleton(createAlignmentReferenceBox(config));
 
   const double halfExtent = 1.0 - config.ballRadius * 1.1;
   const Eigen::Vector3d ballColor(0.9, 0.7, 0.3);
-  addIssue1658BallGrid(
+  addAlignmentBallGrid(
       world,
       "heightmap_ball_",
       config.heightmapOrigin,
@@ -264,7 +264,7 @@ void setupIssue1658World(const simulation::WorldPtr& world)
       config.ballRadius,
       config.ballMass,
       ballColor);
-  addIssue1658BallGrid(
+  addAlignmentBallGrid(
       world,
       "box_ball_",
       config.heightmapOrigin + config.boxOffset,
@@ -618,18 +618,20 @@ int main(int argc, char* argv[])
 {
   CLI::App app("Heightmap example");
   double guiScale = 1.0;
-  bool issue1658Demo = false;
+  std::string demo = "interactive";
   app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
       ->check(CLI::PositiveNumber);
-  app.add_flag(
-      "--issue-1658",
-      issue1658Demo,
-      "Reproduce issue #1658 (heightmap vs reference box + ball grid)");
+  app.add_option(
+         "--demo",
+         demo,
+         "Demo mode: interactive or alignment (heightmap + box comparison)")
+      ->check(CLI::IsMember({"interactive", "alignment"}));
   CLI11_PARSE(app, argc, argv);
 
   auto world = dart::simulation::World::create();
-  if (issue1658Demo) {
-    setupIssue1658World(world);
+  const bool alignmentDemo = demo == "alignment";
+  if (alignmentDemo) {
+    setupAlignmentDemo(world);
   } else {
     world->setGravity(Eigen::Vector3d::Zero());
   }
@@ -643,7 +645,7 @@ int main(int argc, char* argv[])
   constexpr auto zMin = -0.1f;
   constexpr auto zMax = 0.4f;
   dynamics::SimpleFramePtr terrain;
-  if (!issue1658Demo) {
+  if (!alignmentDemo) {
     terrain = createHeightmapFrame<float>(
         xResolution, yResolution, xSize, ySize, zMin, zMax);
     world->addSimpleFrame(terrain);
@@ -666,7 +668,7 @@ int main(int argc, char* argv[])
   grid->setOffset(Eigen::Vector3d(0.0, 0.0, -0.01));
 
   // Add control widget for atlas
-  if (!issue1658Demo) {
+  if (!alignmentDemo) {
     viewer.getImGuiHandler()->addWidget(
         std::make_shared<HeightmapWidget<float>>(
             &viewer,
@@ -689,7 +691,7 @@ int main(int argc, char* argv[])
   // Set up the window to be 1280x720 pixels
   viewer.setUpViewInWindow(0, 0, 1280, 720);
 
-  if (issue1658Demo) {
+  if (alignmentDemo) {
     viewer.getCameraManipulator()->setHomePosition(
         ::osg::Vec3(5.2f, 4.4f, 2.3f),
         ::osg::Vec3(1.5f, 0.0f, 0.3f),
