@@ -140,8 +140,13 @@ OdeHeightmap<S>::OdeHeightmap(
       scale);
 
   // Restrict the bounds of the AABB to improve efficiency
+  //
+  // Note: ODE applies the vertical scale/offset (and thickness to min height)
+  // when computing the AABB, so we pass the unscaled bounds here.
   dGeomHeightfieldDataSetBounds(
-      mOdeHeightfieldId, heightMap->getMinHeight(), heightMap->getMaxHeight());
+      mOdeHeightfieldId,
+      static_cast<dReal>(heightMap->getMinHeight()),
+      static_cast<dReal>(heightMap->getMaxHeight()));
 
   // create the height field
   mGeomId = dCreateHeightfield(0, mOdeHeightfieldId, 1);
@@ -156,18 +161,9 @@ OdeHeightmap<S>::OdeHeightmap(
   q[3] = 0;
   dGeomSetQuaternion(mGeomId, q);
 
-  // TODO Take this out as soon as testing is finished, getting the
-  // AABB is only needed for the debug print.
-  dReal aabb[6];
-  dGeomGetAABB(mGeomId, aabb);
-  DART_DEBUG(
-      "ODE Heightfield AABB: min = {{}, {}, {}} max = {{}, {}, {}}",
-      aabb[0],
-      aabb[2],
-      aabb[4],
-      aabb[1],
-      aabb[3],
-      aabb[5]);
+  // Center the ODE heightfield so its visual and collision representations
+  // share the same origin.
+  dGeomSetPosition(mGeomId, 0.0, 0.0, 0.0);
 }
 
 //==============================================================================

@@ -94,8 +94,12 @@ OdeCollisionObject::OdeCollisionObject(
     // pose, so back it up first.
     dQuaternion geomRelRot;
     dGeomGetQuaternion(geomId, geomRelRot);
-    const dReal* geomRelPos = dGeomGetPosition(geomId);
-    DART_ASSERT(geomRelPos);
+    const dReal* geomRelPosPtr = dGeomGetPosition(geomId);
+    DART_ASSERT(geomRelPosPtr);
+    dVector3 geomRelPos;
+    geomRelPos[0] = geomRelPosPtr[0];
+    geomRelPos[1] = geomRelPosPtr[1];
+    geomRelPos[2] = geomRelPosPtr[2];
 
     // create the body
     mBodyId = dBodyCreate(collisionDetector->getOdeWorldId());
