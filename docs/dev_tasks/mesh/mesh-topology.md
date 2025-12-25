@@ -23,6 +23,7 @@ and validating downstream usage.
   preserved for rendering/export.
 - Triangulation uses ear clipping on a projected plane; faces are assumed
   simple and planar (concave supported).
+- OSG rendering tessellates polygon faces to triangles for concave shapes.
 
 ## Plan
 

@@ -50,6 +50,7 @@
 #include <osg/Geometry>
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
+#include <osgUtil/Tessellator>
 
 #include <atomic>
 #include <chrono>
@@ -733,6 +734,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
+  bool tessellatePolygons = false;
   if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
       || firstTime) {
     ::osg::ref_ptr<::osg::DrawElementsUInt> elements[4];
@@ -744,8 +746,9 @@ void MeshShapeGeometry::extractData(bool firstTime)
     for (std::size_t i = 0; i < mAiMesh->mNumFaces; ++i) {
       const aiFace& face = mAiMesh->mFaces[i];
 
-      if (face.mNumIndices > 4) // We have some arbitrary polygon
+      if (face.mNumIndices > 3) // Polygon (including quads)
       {
+        tessellatePolygons = true;
         ::osg::ref_ptr<::osg::DrawElementsUInt> polygon
             = new ::osg::DrawElementsUInt(GL_POLYGON);
         for (std::size_t j = 0; j < face.mNumIndices; ++j)
@@ -789,6 +792,14 @@ void MeshShapeGeometry::extractData(bool firstTime)
     setVertexArray(mVertices);
     if (mAiMesh->mNormals)
       setNormalArray(mNormals, ::osg::Array::BIND_PER_VERTEX);
+  }
+
+  if (tessellatePolygons) {
+    ::osgUtil::Tessellator tessellator;
+    tessellator.setTessellationType(
+        ::osgUtil::Tessellator::TESS_TYPE_GEOMETRY);
+    tessellator.setWindingType(::osgUtil::Tessellator::TESS_WINDING_ODD);
+    tessellator.retessellatePolygons(*this);
   }
 
   if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
