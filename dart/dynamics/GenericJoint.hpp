@@ -704,19 +704,6 @@ protected:
   std::array<DegreeOfFreedom*, NumDofs> mDofs;
 
   //----------------------------------------------------------------------------
-  // Impulse
-  //----------------------------------------------------------------------------
-
-  /// Change of generalized velocity
-  Vector mVelocityChanges;
-
-  /// Generalized impulse
-  Vector mImpulses;
-
-  /// Generalized constraint impulse
-  Vector mConstraintImpulses;
-
-  //----------------------------------------------------------------------------
   // For recursive dynamics algorithms
   //----------------------------------------------------------------------------
 

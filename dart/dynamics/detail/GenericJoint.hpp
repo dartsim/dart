@@ -197,6 +197,9 @@ void GenericJoint<ConfigSpaceT>::setAspectState(const AspectState& state)
   setVelocitiesStatic(state.mVelocities);
   setAccelerationsStatic(state.mAccelerations);
   setForces(state.mForces);
+  this->mAspectState.mVelocityChanges = state.mVelocityChanges;
+  this->mAspectState.mImpulses = state.mImpulses;
+  this->mAspectState.mConstraintImpulses = state.mConstraintImpulses;
 }
 
 //==============================================================================
@@ -1308,7 +1311,7 @@ void GenericJoint<ConfigSpaceT>::setVelocityChange(
     return;
   }
 
-  mVelocityChanges[index] = velocityChange;
+  this->mAspectState.mVelocityChanges[index] = velocityChange;
 }
 
 //==============================================================================
@@ -1320,14 +1323,14 @@ double GenericJoint<ConfigSpaceT>::getVelocityChange(size_t index) const
     return 0.0;
   }
 
-  return mVelocityChanges[index];
+  return this->mAspectState.mVelocityChanges[index];
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::resetVelocityChanges()
 {
-  mVelocityChanges.setZero();
+  this->mAspectState.mVelocityChanges.setZero();
 }
 
 //==============================================================================
@@ -1340,7 +1343,7 @@ void GenericJoint<ConfigSpaceT>::setConstraintImpulse(
     return;
   }
 
-  mConstraintImpulses[index] = impulse;
+  this->mAspectState.mConstraintImpulses[index] = impulse;
 }
 
 //==============================================================================
@@ -1352,14 +1355,14 @@ double GenericJoint<ConfigSpaceT>::getConstraintImpulse(size_t index) const
     return 0.0;
   }
 
-  return mConstraintImpulses[index];
+  return this->mAspectState.mConstraintImpulses[index];
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::resetConstraintImpulses()
 {
-  mConstraintImpulses.setZero();
+  this->mAspectState.mConstraintImpulses.setZero();
 }
 
 //==============================================================================
@@ -1683,10 +1686,7 @@ GenericJoint<ConfigSpaceT>::getRelativeJacobianTimeDerivStatic() const
 //==============================================================================
 template <class ConfigSpaceT>
 GenericJoint<ConfigSpaceT>::GenericJoint(const Properties& properties)
-  : mVelocityChanges(Vector::Zero()),
-    mImpulses(Vector::Zero()),
-    mConstraintImpulses(Vector::Zero()),
-    mJacobian(JacobianMatrix::Zero()),
+  : mJacobian(JacobianMatrix::Zero()),
     mJacobianDeriv(JacobianMatrix::Zero()),
     mInvProjArtInertia(Matrix::Zero()),
     mInvProjArtInertiaImplicit(Matrix::Zero()),
@@ -1789,7 +1789,8 @@ void GenericJoint<ConfigSpaceT>::addVelocityChangeTo(
     Eigen::Vector6d& velocityChange)
 {
   // Add joint velocity change to velocityChange
-  velocityChange.noalias() += getRelativeJacobianStatic() * mVelocityChanges;
+  velocityChange.noalias()
+      += getRelativeJacobianStatic() * this->mAspectState.mVelocityChanges;
 
   // Verification
   DART_ASSERT(!math::isNan(velocityChange));
@@ -2210,7 +2211,7 @@ void GenericJoint<ConfigSpaceT>::updateTotalImpulseDynamic(
     const Eigen::Vector6d& bodyImpulse)
 {
   //
-  mTotalImpulse = mConstraintImpulses
+  mTotalImpulse = this->mAspectState.mConstraintImpulses
                   - getRelativeJacobianStatic().transpose() * bodyImpulse;
 }
 
@@ -2308,14 +2309,14 @@ void GenericJoint<ConfigSpaceT>::updateVelocityChangeDynamic(
     const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& velocityChange)
 {
   //
-  mVelocityChanges
+  this->mAspectState.mVelocityChanges
       = getInvProjArtInertia()
         * (mTotalImpulse
            - getRelativeJacobianStatic().transpose() * artInertia
                  * math::AdInvT(this->getRelativeTransform(), velocityChange));
 
   // Verification
-  DART_ASSERT(!math::isNan(mVelocityChanges));
+  DART_ASSERT(!math::isNan(this->mAspectState.mVelocityChanges));
 }
 
 //==============================================================================
@@ -2390,7 +2391,8 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateImpulseID(
     const Eigen::Vector6d& bodyImpulse)
 {
-  mImpulses = getRelativeJacobianStatic().transpose() * bodyImpulse;
+  this->mAspectState.mImpulses
+      = getRelativeJacobianStatic().transpose() * bodyImpulse;
 }
 
 //==============================================================================
@@ -2445,10 +2447,13 @@ void GenericJoint<ConfigSpaceT>::updateConstrainedTermsDynamic(double timeStep)
 {
   const double invTimeStep = 1.0 / timeStep;
 
-  setVelocitiesStatic(getVelocitiesStatic() + mVelocityChanges);
+  setVelocitiesStatic(
+      getVelocitiesStatic() + this->mAspectState.mVelocityChanges);
   setAccelerationsStatic(
-      getAccelerationsStatic() + mVelocityChanges * invTimeStep);
-  this->mAspectState.mForces.noalias() += mImpulses * invTimeStep;
+      getAccelerationsStatic()
+      + this->mAspectState.mVelocityChanges * invTimeStep);
+  this->mAspectState.mForces.noalias()
+      += this->mAspectState.mImpulses * invTimeStep;
   // Note: As long as this is only called from BodyNode::updateConstrainedTerms
 }
 
@@ -2457,7 +2462,8 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateConstrainedTermsKinematic(
     double timeStep)
 {
-  this->mAspectState.mForces.noalias() += mImpulses / timeStep;
+  this->mAspectState.mForces.noalias()
+      += this->mAspectState.mImpulses / timeStep;
 }
 
 //==============================================================================
