@@ -5,7 +5,7 @@ This file is a pointer board for agents working in this repository. Keep it conc
 ## Read First
 
 - Architectural, build, and workflow expectations live in `docs/onboarding` (start with `docs/onboarding/ci-cd.md` and `docs/onboarding/build-system.md`).
-- The day-to-day pixi workflow (install, config, build, test) is documented in `docs/onboarding/building.md`.
+- The day-to-day pixi workflow (install, config, build, lint, test) is documented in `docs/onboarding/building.md` and `docs/onboarding/testing.md`.
 - Coding standards, formatting, and contribution flow are in `CONTRIBUTING.md`.
 - Feature‑specific notes belong beside the code (e.g., README in the component directory) or in `docs/`.
 - Unified model loading API (`dart::io`) is documented in `docs/onboarding/io-parsing.md`.

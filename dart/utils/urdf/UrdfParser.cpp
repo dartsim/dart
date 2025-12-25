@@ -48,6 +48,7 @@
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
+#include "dart/utils/MeshLoader.hpp"
 #include "dart/utils/urdf/BackwardCompatibility.hpp"
 #include "dart/utils/urdf/IncludeUrdf.hpp"
 #include "dart/utils/urdf/urdf_world_parser.hpp"
@@ -979,14 +980,21 @@ dynamics::ShapePtr UrdfParser::createShape(
 
     // Load the mesh.
     const std::string resolvedUri = absoluteUri.toString();
-    const aiScene* scene
-        = dynamics::MeshShape::loadMesh(resolvedUri, _resourceRetriever);
-    if (!scene)
+
+    auto loader = std::make_unique<utils::MeshLoaderd>();
+    auto triMeshUnique = loader->load(resolvedUri, _resourceRetriever);
+
+    if (!triMeshUnique)
       return nullptr;
+
+    std::shared_ptr<math::TriMesh<double>> triMesh(std::move(triMeshUnique));
 
     const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
     shape = std::make_shared<dynamics::MeshShape>(
-        scale, scene, resolvedUri, _resourceRetriever);
+        scale,
+        std::move(triMesh),
+        common::Uri(resolvedUri),
+        _resourceRetriever);
   }
   // Unknown geometry type
   else {

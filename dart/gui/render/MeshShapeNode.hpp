@@ -80,6 +80,7 @@ protected:
   std::vector<::osg::ref_ptr<::osg::Material>> mMaterials;
   std::vector<std::vector<std::string>> mTextureImageArrays;
   std::vector<std::string> mTemporaryTextureFiles;
+  std::size_t mMaterialVersion;
 };
 
 } // namespace render

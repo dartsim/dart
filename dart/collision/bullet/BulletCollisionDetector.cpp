@@ -46,6 +46,7 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/HeightmapShape.hpp"
@@ -59,6 +60,8 @@
 
 #include <algorithm>
 #include <vector>
+
+#include <cmath>
 
 namespace dart {
 namespace collision {
@@ -91,17 +94,15 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
 std::unique_ptr<btCollisionShape> createBulletEllipsoidMultiSphere(
     const Eigen::Vector3d& radii);
 
-std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
-    const Eigen::Vector3d& scale, const aiScene* scene);
-
-std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(
-    const aiMesh* mesh);
+std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromTriMesh(
+    const Eigen::Vector3d& scale,
+    const std::shared_ptr<math::TriMesh<double>>& mesh);
 
 template <typename HeightmapShapeT>
 std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
     const HeightmapShapeT* heightMap);
 
-bool isConvex(const aiMesh* mesh, float threshold = 0.001);
+bool isConvex(const math::TriMesh<double>& mesh, float threshold = 0.001f);
 
 } // anonymous namespace
 
@@ -647,19 +648,45 @@ BulletCollisionDetector::createBulletCollisionShape(
 
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
+  } else if (const auto convexMesh = shape->as<dynamics::ConvexMeshShape>()) {
+    const auto mesh = convexMesh->getMesh();
+    if (mesh && mesh->hasVertices()) {
+      auto hullShape = std::make_unique<btConvexHullShape>();
+      const auto& vertices = mesh->getVertices();
+      hullShape->setMargin(0.0f);
+      for (const auto& vertex : vertices) {
+        hullShape->addPoint(
+            btVector3(
+                static_cast<btScalar>(vertex.x()),
+                static_cast<btScalar>(vertex.y()),
+                static_cast<btScalar>(vertex.z())),
+            false);
+      }
+      hullShape->recalcLocalAabb();
+
+      return std::make_unique<BulletCollisionShape>(std::move(hullShape));
+    }
+
+    DART_WARN(
+        "ConvexMeshShape has no vertices; creating a sphere with 0.1 radius "
+        "instead.");
+    return std::make_unique<BulletCollisionShape>(
+        std::make_unique<btSphereShape>(0.1));
   } else if (const auto shapeMesh = shape->as<MeshShape>()) {
     const auto scale = shapeMesh->getScale();
-    const auto mesh = shapeMesh->getMesh();
+    const auto triMesh = shapeMesh->getTriMesh();
 
     auto bulletCollisionShape
-        = createBulletCollisionShapeFromAssimpScene(scale, mesh);
+        = createBulletCollisionShapeFromTriMesh(scale, triMesh);
 
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
   } else if (const auto softMeshShape = shape->as<SoftMeshShape>()) {
-    const auto mesh = softMeshShape->getAssimpMesh();
+    const auto triMesh = softMeshShape->getTriMesh();
+    const Eigen::Vector3d scale = Eigen::Vector3d::Ones();
 
-    auto bulletCollisionShape = createBulletCollisionShapeFromAssimpMesh(mesh);
+    auto bulletCollisionShape
+        = createBulletCollisionShapeFromTriMesh(scale, triMesh);
 
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
@@ -1015,26 +1042,31 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMultiSphere(
 }
 
 //==============================================================================
-std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
-    const Eigen::Vector3d& scale, const aiScene* scene)
+std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromTriMesh(
+    const Eigen::Vector3d& scale,
+    const std::shared_ptr<math::TriMesh<double>>& mesh)
 {
+  if (!mesh) {
+    return nullptr;
+  }
+
   auto triMesh = new btTriangleMesh();
 
-  for (auto i = 0u; i < scene->mNumMeshes; ++i) {
-    for (auto j = 0u; j < scene->mMeshes[i]->mNumFaces; ++j) {
-      btVector3 vertices[3];
-      for (auto k = 0u; k < 3; ++k) {
-        const aiVector3D& vertex
-            = scene->mMeshes[i]
-                  ->mVertices[scene->mMeshes[i]->mFaces[j].mIndices[k]];
-        vertices[k] = btVector3(
-            vertex.x * scale[0], vertex.y * scale[1], vertex.z * scale[2]);
-      }
-      triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
+  const auto& vertices = mesh->getVertices();
+  const auto& triangles = mesh->getTriangles();
+
+  for (const auto& triangle : triangles) {
+    btVector3 btVertices[3];
+    for (auto k = 0u; k < 3; ++k) {
+      const auto& vertex = vertices[triangle[k]];
+      btVertices[k] = btVector3(
+          vertex.x() * scale[0], vertex.y() * scale[1], vertex.z() * scale[2]);
     }
+    triMesh->addTriangle(btVertices[0], btVertices[1], btVertices[2]);
   }
-  const bool makeConvexMesh
-      = scene->mNumMeshes == 1 && isConvex(scene->mMeshes[0]);
+
+  const bool makeConvexMesh = isConvex(*mesh);
+
   if (makeConvexMesh) {
     auto convexMeshShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
     convexMeshShape->setMargin(0.0f);
@@ -1044,33 +1076,6 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
     auto gimpactMeshShape = std::make_unique<btGImpactMeshShape>(triMesh);
     gimpactMeshShape->updateBound();
     gimpactMeshShape->setUserPointer(triMesh);
-    return gimpactMeshShape;
-  }
-}
-
-//==============================================================================
-std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(
-    const aiMesh* mesh)
-{
-  auto triMesh = new btTriangleMesh();
-
-  for (auto i = 0u; i < mesh->mNumFaces; ++i) {
-    btVector3 vertices[3];
-    for (auto j = 0u; j < 3; ++j) {
-      const aiVector3D& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
-      vertices[j] = btVector3(vertex.x, vertex.y, vertex.z);
-    }
-    triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
-  }
-
-  const bool makeConvexMesh = isConvex(mesh);
-  if (makeConvexMesh) {
-    auto convexMeshShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
-    convexMeshShape->setMargin(0.0f);
-    return convexMeshShape;
-  } else {
-    auto gimpactMeshShape = std::make_unique<btGImpactMeshShape>(triMesh);
-    gimpactMeshShape->updateBound();
     return gimpactMeshShape;
   }
 }
@@ -1144,36 +1149,46 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
 }
 
 //==============================================================================
-bool isConvex(const aiMesh* mesh, float threshold)
+bool isConvex(const math::TriMesh<double>& mesh, float threshold)
 {
-  // Check whether all the other vertices on the mesh is on the internal side of
-  // the face, assuming that the direction of the normal of the face is pointing
-  // external side.
+  // Check whether all the other vertices on the mesh are on the internal side
+  // of the face, assuming that the direction of the normal of the face is
+  // pointing to the external side.
   //
   // Reference: https://stackoverflow.com/a/40056279/3122234
+  const auto& points = mesh.getVertices();
+  const auto& triangles = mesh.getTriangles();
 
-  const auto points = mesh->mVertices;
+  if (points.empty() || triangles.empty()) {
+    return false;
+  }
+
   btVector3 vertices[3];
-  for (auto i = 0u; i < mesh->mNumFaces; ++i) {
+  for (const auto& triangle : triangles) {
     for (auto j = 0u; j < 3; ++j) {
-      const aiVector3D& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
-      vertices[j] = btVector3(vertex.x, vertex.y, vertex.z);
+      const auto& vertex = points[triangle[j]];
+      vertices[j] = btVector3(vertex.x(), vertex.y(), vertex.z());
     }
     const btVector3& A = vertices[0];
     const btVector3 B = vertices[1] - A;
     const btVector3 C = vertices[2] - A;
 
-    const btVector3 BCNorm = B.cross(C).normalized();
+    const btVector3 BCNormRaw = B.cross(C);
+    const btScalar normSquared = BCNormRaw.length2();
+    if (normSquared <= btScalar(0.0)) {
+      continue;
+    }
+    const btVector3 BCNorm = BCNormRaw / btSqrt(normSquared);
 
-    const float checkPoint
-        = btVector3(
-              points[0].x - A.x(), points[0].y - A.y(), points[0].z - A.z())
-              .dot(BCNorm);
+    const float checkPoint = btVector3(
+                                 points[0].x() - A.x(),
+                                 points[0].y() - A.y(),
+                                 points[0].z() - A.z())
+                                 .dot(BCNorm);
 
-    for (auto j = 0u; j < mesh->mNumVertices; ++j) {
-      float dist
-          = btVector3(
-                points[j].x - A.x(), points[j].y - A.y(), points[j].z - A.z())
+    for (const auto& point : points) {
+      const float dist
+          = btVector3(point.x() - A.x(), point.y() - A.y(), point.z() - A.z())
                 .dot(BCNorm);
       if ((std::abs(checkPoint) > threshold) && (std::abs(dist) > threshold)
           && (checkPoint * dist < 0.0f)) {
@@ -1181,6 +1196,7 @@ bool isConvex(const aiMesh* mesh, float threshold)
       }
     }
   }
+
   return true;
 }
 

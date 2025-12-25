@@ -56,6 +56,7 @@
 #include "dart/simulation/World.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
+#include "dart/utils/MeshLoader.hpp"
 #include "dart/utils/SkelParser.hpp"
 #include "dart/utils/sdf/detail/GeometryParsers.hpp"
 #include "dart/utils/sdf/detail/SdfHelpers.hpp"
@@ -303,9 +304,9 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
     const ElementPtr& softBodyNodeElement);
 
 dynamics::ShapePtr readShape(
-    const ElementPtr& shapelement,
+    const ElementPtr& _shapelement,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever);
+    const common::ResourceRetrieverPtr& _retriever);
 
 dynamics::ShapeNode* readShapeNode(
     dynamics::BodyNode* bodyNode,

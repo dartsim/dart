@@ -65,8 +65,14 @@ public:
   /// Returns the vertices of the mesh.
   const Vertices& getVertices() const;
 
+  /// Returns the vertices of the mesh.
+  Vertices& getVertices();
+
   /// Returns the vertex normals of the mesh.
   const Normals& getVertexNormals() const;
+
+  /// Returns the vertex normals of the mesh.
+  Normals& getVertexNormals();
 
   /// Clears all the vertices and vertex normals.
   virtual void clear();

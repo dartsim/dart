@@ -34,9 +34,10 @@
 
 #include <dart/gui/All.hpp>
 #include <dart/gui/ImGuiHandler.hpp>
+#include <dart/gui/IncludeImGui.hpp>
 
 #include <dart/utils/All.hpp>
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/utils/urdf/All.hpp>
 
 #include <dart/All.hpp>
 #include <dart/io/Read.hpp>
@@ -206,24 +207,17 @@ protected:
         continue;
       auto mesh = std::static_pointer_cast<dynamics::MeshShape>(shape);
 
-      auto assimpScene = mesh->getMesh();
-      DART_ASSERT(assimpScene);
+      const auto triMesh = mesh->getTriMesh();
+      DART_ASSERT(triMesh);
 
-      if (assimpScene->mNumMeshes < 1)
+      const auto& vertices = triMesh->getVertices();
+      if (vertices.empty())
         continue;
-      const auto meshIndex
-          = math::Random::uniform<std::size_t>(0, assimpScene->mNumMeshes - 1);
-
-      auto assimpMesh = assimpScene->mMeshes[meshIndex];
-      auto numVertices = assimpMesh->mNumVertices;
-
-      auto vertexIndex
-          = math::Random::uniform<unsigned int>(0, numVertices - 1);
-      auto vertex = assimpMesh->mVertices[vertexIndex];
 
       Eigen::Isometry3d tf = shapeNode->getWorldTransform();
-      Eigen::Vector3d eigenVertex
-          = Eigen::Vector3f(vertex.x, vertex.y, vertex.z).cast<double>();
+      const auto vertexIndex
+          = math::Random::uniform<std::size_t>(0, vertices.size() - 1);
+      Eigen::Vector3d eigenVertex = vertices[vertexIndex];
       eigenVertex = tf * eigenVertex;
 
       pointCloud.push_back(

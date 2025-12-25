@@ -2,6 +2,12 @@
 
 This guide describes how to build DART from source, including both the C++ library and Python bindings (dartpy).
 
+## Start here next time
+
+- Local test workflow: [testing.md](testing.md)
+- CI monitoring and expectations: [ci-cd.md](ci-cd.md)
+- Gazebo / gz-physics integration: [build-system.md](build-system.md#gazebo-integration-feature)
+
 ## Supported Environments
 
 DART is supported on the following operating systems and compilers:
@@ -150,27 +156,33 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    - `CMAKE_BUILD_PARALLEL_LEVEL` - controls `cmake --build`
    - `CTEST_PARALLEL_LEVEL` - controls `ctest`
 
-   If you want to cap parallelism, set `DART_PARALLEL_JOBS=<n>` (Suggested (Unverified)).
+   If you want to cap parallelism for local runs, pick a value around two-thirds of logical cores to keep the machine responsive, then set `DART_PARALLEL_JOBS` (and `CTEST_PARALLEL_LEVEL` for ctest). Suggested (Unverified):
 
-   Used in this task:
+   ```bash
+   # Linux
+   N=$(( ( $(nproc) * 2 ) / 3 ))
+   # macOS
+   N=$(( ( $(sysctl -n hw.ncpu) * 2 ) / 3 ))
+   # Windows (PowerShell)
+   $env:N=[math]::Floor([Environment]::ProcessorCount*2/3)
+   ```
+
+   Example (Used in this task):
 
    ```bash
    pixi run lint
-   pixi run test
-   pixi run test-py
-   pixi run check-lint-cpp
-   pixi run lint-cpp
-   DART_PARALLEL_JOBS=16 pixi run test-all
+   DART_PARALLEL_JOBS=12 CTEST_PARALLEL_LEVEL=12 pixi run test
+   DART_PARALLEL_JOBS=12 CTEST_PARALLEL_LEVEL=12 pixi run test-all
    ```
 
    Note: `pixi run test-all` runs `pixi run lint` (auto-fixing) internally; check `git status` afterwards before committing.
 
 4. (Optional) Gazebo / gz-physics integration test:
 
-   Used in this task:
+   Example (Used in this task):
 
    ```bash
-   DART_PARALLEL_JOBS=16 pixi run -e gazebo test-gz
+   DART_PARALLEL_JOBS=12 CTEST_PARALLEL_LEVEL=12 pixi run -e gazebo test-gz
    ```
 
    Suggested (Unverified): Run the same workflow with a different parallelism setting, e.g. `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.

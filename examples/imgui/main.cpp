@@ -32,6 +32,7 @@
 
 #include <dart/gui/All.hpp>
 #include <dart/gui/ImGuiHandler.hpp>
+#include <dart/gui/IncludeImGui.hpp>
 
 #include <dart/All.hpp>
 
