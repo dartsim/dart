@@ -226,6 +226,9 @@ WorldPtr World::clone() const
 {
   WorldPtr worldClone = World::create(mName);
 
+  worldClone->setSolverSteppingMode(mSolverSteppingMode);
+  worldClone->setActiveRigidSolver(mActiveRigidSolverType);
+
   worldClone->setGravity(mGravity);
   worldClone->setTimeStep(mTimeStep);
 
