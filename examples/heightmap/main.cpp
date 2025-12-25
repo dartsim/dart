@@ -32,7 +32,6 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/collision/ode/OdeCollisionDetector.hpp>
 #include <dart/gui/All.hpp>
 #include <dart/gui/ImGuiHandler.hpp>
 #include <dart/gui/IncludeImGui.hpp>
@@ -40,13 +39,16 @@
 #include <dart/utils/All.hpp>
 #include <dart/utils/urdf/All.hpp>
 
+#include <dart/collision/ode/OdeCollisionDetector.hpp>
+
 #include <dart/All.hpp>
 
 #include <CLI/CLI.hpp>
 
-#include <cmath>
 #include <string>
 #include <vector>
+
+#include <cmath>
 
 using namespace dart;
 using namespace dart::common;
@@ -131,7 +133,8 @@ SkeletonPtr createIssue1658Heightmap(const Issue1658Config& config)
 {
   auto heightmap = Skeleton::create("heightmap");
 
-  auto [joint, body] = heightmap->createJointAndBodyNodePair<WeldJoint>(nullptr);
+  auto [joint, body]
+      = heightmap->createJointAndBodyNodePair<WeldJoint>(nullptr);
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = config.heightmapOrigin;
   joint->setTransformFromParentBodyNode(tf);
@@ -145,8 +148,8 @@ SkeletonPtr createIssue1658Heightmap(const Issue1658Config& config)
   auto shape = std::make_shared<HeightmapShape<float>>();
   shape->setHeightField(
       config.heightmapXResolution, config.heightmapYResolution, heights);
-  shape->setScale(Eigen::Vector3f(
-      config.heightmapScale, config.heightmapScale, 1.0f));
+  shape->setScale(
+      Eigen::Vector3f(config.heightmapScale, config.heightmapScale, 1.0f));
 
   auto shapeNode = body->createShapeNodeWith<
       CollisionAspect,
@@ -220,8 +223,7 @@ void addIssue1658BallGrid(
     return;
   }
 
-  const double step
-      = (count == 1u) ? 0.0 : (2.0 * halfExtent) / (count - 1u);
+  const double step = (count == 1u) ? 0.0 : (2.0 * halfExtent) / (count - 1u);
   std::size_t index = 0u;
   for (std::size_t row = 0u; row < count; ++row) {
     for (std::size_t col = 0u; col < count; ++col) {
@@ -230,11 +232,7 @@ void addIssue1658BallGrid(
       const double z = dropHeight;
       const Eigen::Vector3d position(x, y, z);
       world->addSkeleton(createIssue1658Ball(
-          prefix + std::to_string(index++),
-          position,
-          radius,
-          mass,
-          color));
+          prefix + std::to_string(index++), position, radius, mass, color));
     }
   }
 }
