@@ -160,7 +160,8 @@ SkeletonPtr createAlignmentHeightmap(const HeightmapAlignmentDemoConfig& config)
   return heightmap;
 }
 
-SkeletonPtr createAlignmentReferenceBox(const HeightmapAlignmentDemoConfig& config)
+SkeletonPtr createAlignmentReferenceBox(
+    const HeightmapAlignmentDemoConfig& config)
 {
   auto box = Skeleton::create("reference_box");
 

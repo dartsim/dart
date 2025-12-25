@@ -161,10 +161,8 @@ OdeHeightmap<S>::OdeHeightmap(
   q[3] = 0;
   dGeomSetQuaternion(mGeomId, q);
 
-  const dReal spanX
-      = static_cast<dReal>(heightMap->getWidth() - 1) * scale.x();
-  const dReal spanY
-      = static_cast<dReal>(heightMap->getDepth() - 1) * scale.y();
+  const dReal spanX = static_cast<dReal>(heightMap->getWidth() - 1) * scale.x();
+  const dReal spanY = static_cast<dReal>(heightMap->getDepth() - 1) * scale.y();
 
   // Center the ODE heightfield so its visual and collision representations
   // share the same origin.
