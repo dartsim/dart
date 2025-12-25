@@ -82,10 +82,7 @@ ConstraintSolver::ConstraintSolver()
   auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
       mCollisionDetector);
 
-  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-  // TODO(JS): Consider using FCL's primitive shapes once FCL addresses
-  // incorrect contact point computation.
-  // (see: https://github.com/flexible-collision-library/fcl/issues/106)
+  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
 }
 
 //==============================================================================
