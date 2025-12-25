@@ -61,6 +61,15 @@ jobs:
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 1.0
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
+
+      - name: Configure environment for compiler cache
+        uses: ./.github/actions/configure-compiler-cache
+
       - name: Test gz-physics
         env:
           DART_PARALLEL_JOBS: 8

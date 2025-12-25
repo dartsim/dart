@@ -45,7 +45,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DART_PARALLEL_JOBS: 8
-      DART_DISABLE_COMPILER_CACHE: ON
     strategy:
       fail-fast: false
     steps:
@@ -62,13 +61,16 @@ jobs:
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 2
-      - name: Build with coverage
-        run: |
-          DART_VERBOSE=ON \
-          BUILD_TYPE=Debug \
-          pixi run build-coverage
 
-      - name: Generate coverage report
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
+
+      - name: Configure environment for compiler cache
+        uses: ./.github/actions/configure-compiler-cache
+
+      - name: Build and generate coverage report
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
@@ -88,7 +90,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DART_PARALLEL_JOBS: 8
-      DART_DISABLE_COMPILER_CACHE: ON
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -103,6 +104,15 @@ jobs:
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 2
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
+
+      - name: Configure environment for compiler cache
+        uses: ./.github/actions/configure-compiler-cache
+
       - name: Check Lint
         run: |
           DART_VERBOSE=ON \
@@ -132,7 +142,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DART_PARALLEL_JOBS: 8
-      DART_DISABLE_COMPILER_CACHE: ON
     # Run Debug builds on every push/PR so regressions are caught before landing on main
     steps:
       - name: Checkout
@@ -148,6 +157,15 @@ jobs:
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 2
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
+
+      - name: Configure environment for compiler cache
+        uses: ./.github/actions/configure-compiler-cache
+
       - name: Test DART and dartpy
         run: |
           DART_VERBOSE=ON \
