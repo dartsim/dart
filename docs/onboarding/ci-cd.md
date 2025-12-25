@@ -23,6 +23,17 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Bullet-backed raycast tests require Bullet to be built; skip or enable Bullet if the backend is intentionally disabled.
 - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
 
+## Task Recap (General)
+
+This task followed the usual PR validation loop: run pixi workflows locally, validate the Gazebo integration task, then monitor GitHub Actions until all PR checks completed. The emphasis was on using the repo's standard entry points and keeping CI monitoring blocking and explicit.
+
+## How We Worked (Repeatable Playbook)
+
+- Sync with the target branch and inspect the diff before making edits.
+- Run the smallest local validation first, then expand to full test-all and Gazebo runs.
+- Update PR metadata after code or test changes.
+- Monitor CI with the GitHub CLI (list and watch runs) until all PR jobs complete.
+
 ## Fast Iteration Loop
 
 - Identify the first failing step in the CI job log, then reproduce locally with the same build toggles.
@@ -50,15 +61,8 @@ gh run watch <RUN_ID> --interval 30
 Example (Used in this task):
 
 ```bash
-gh run view 20406646051 --job 58637291478 --log-failed
-python -m pytest python/tests/unit/constraint/test_constraint.py::test_revolute_joint_constraint -vv
-```
-
-Suggested (Unverified):
-
-```bash
-gh run view <RUN_ID> --job <JOB_ID> --log-failed
-python -m pytest <TEST_PATH>::<TEST_NAME> -vv
+gh run list --branch issue/872_convex_mesh --limit 6
+gh run watch 20466623994 --interval 30
 ```
 
 ## Asserts-Enabled CI Build (no -DNDEBUG)
