@@ -30,61 +30,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
-#define DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
+#ifndef DART_GUI_RENDER_CONVEXMESHSHAPENODE_HPP_
+#define DART_GUI_RENDER_CONVEXMESHSHAPENODE_HPP_
 
-#include <dart/collision/ode/detail/OdeGeom.hpp>
+#include <dart/gui/render/ShapeNode.hpp>
 
-#include <dart/math/TriMesh.hpp>
-
-#include <ode/ode.h>
-
-#include <memory>
+#include <osg/MatrixTransform>
 
 namespace dart {
-namespace collision {
-namespace detail {
 
-class OdeMesh : public OdeGeom
+namespace dynamics {
+class ConvexMeshShape;
+} // namespace dynamics
+
+namespace gui {
+
+namespace render {
+
+class ConvexMeshShapeGeode;
+class ConvexMeshShapeDrawable;
+
+class DART_GUI_API ConvexMeshShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
-  /// Constructor using TriMesh (preferred)
-  OdeMesh(
-      const OdeCollisionObject* parent,
-      const std::shared_ptr<math::TriMesh<double>>& mesh,
-      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
+  ConvexMeshShapeNode(
+      std::shared_ptr<dart::dynamics::ConvexMeshShape> shape,
+      ShapeFrameNode* parent);
 
-  /// Construct from a DART TriMesh (assumed to be already convex/triangulated).
-  OdeMesh(const OdeCollisionObject* parent, const dart::math::TriMeshd& mesh);
+  void refresh();
+  void extractData(bool firstTime);
 
-  /// Destructor
-  virtual ~OdeMesh();
+protected:
+  virtual ~ConvexMeshShapeNode();
 
-  // Documentation inherited
-  void updateEngineData() override;
-
-private:
-  void fillArraysFromTriMesh(
-      const std::shared_ptr<math::TriMesh<double>>& mesh,
-      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
-  void fillArrays(const dart::math::TriMeshd& mesh);
-
-private:
-  /// Array of vertex values.
-  std::vector<double> mVertices;
-
-  /// Array of normals values.
-  std::vector<double> mNormals;
-
-  /// Array of index values.
-  std::vector<int> mIndices;
-
-  /// ODE trimesh data.
-  dTriMeshDataID mOdeTriMeshDataId;
+  std::shared_ptr<dart::dynamics::ConvexMeshShape> mConvexMeshShape;
+  ConvexMeshShapeGeode* mGeode;
 };
 
-} // namespace detail
-} // namespace collision
+} // namespace render
+} // namespace gui
 } // namespace dart
 
-#endif // DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
+#endif // DART_GUI_RENDER_CONVEXMESHSHAPENODE_HPP_

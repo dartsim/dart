@@ -84,6 +84,7 @@ class Marker;
 class MeshShape;
 class MetaSkeleton;
 struct MimicDofProperties;
+class ConvexMeshShape;
 class MultiSphereConvexHullShape;
 class Node;
 class PlanarJoint;
