@@ -420,7 +420,7 @@ TEST(World, ConfiguresCollisionDetectorViaConfig)
 }
 
 //==============================================================================
-TEST(World, DefaultWorldUsesFclMeshPrimitive)
+TEST(World, DefaultWorldUsesFclPrimitive)
 {
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
@@ -434,11 +434,11 @@ TEST(World, DefaultWorldUsesFclMeshPrimitive)
   ASSERT_TRUE(fclDetector);
   EXPECT_EQ(
       fclDetector->getPrimitiveShapeType(),
-      collision::FCLCollisionDetector::MESH);
+      collision::FCLCollisionDetector::PRIMITIVE);
 }
 
 //==============================================================================
-TEST(World, TypedSetterConfiguresFclMeshPrimitive)
+TEST(World, TypedSetterConfiguresFclPrimitive)
 {
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
@@ -455,7 +455,7 @@ TEST(World, TypedSetterConfiguresFclMeshPrimitive)
   ASSERT_TRUE(fclDetector);
   EXPECT_EQ(
       fclDetector->getPrimitiveShapeType(),
-      collision::FCLCollisionDetector::MESH);
+      collision::FCLCollisionDetector::PRIMITIVE);
 }
 
 //==============================================================================
