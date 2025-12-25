@@ -2,7 +2,7 @@
 
 ## Status
 
-- Completed: first PR milestone delivered.
+- In progress: finalizing first PR milestone on `feature/multi_solver`.
 - Next plan: see `docs/dev_tasks/multi_solver/01_next.md`.
 
 ## What Exists Today (feature/multi_solver)
@@ -19,9 +19,10 @@
   - Opaque entity handle: `dart/simulation/EcsEntity.hpp`
   - Legacy skeleton components: `dart/simulation/comps/SkeletonComponents.hpp`
   - Sync helper: `dart/simulation/detail/LegacySkeletonSync.hpp`
-  - ECS access bridge: `dart/simulation/detail/WorldEcsAccess.hpp`
+  - ECS access bridge (internal-only): `dart/simulation/detail/WorldEcsAccess.hpp`
   - Object scaffolding: `dart/simulation/object/Object.hpp`,
-    `dart/simulation/object/ObjectWith.hpp`, `dart/simulation/object/TypeList.hpp`
+    `dart/simulation/object/TypeList.hpp` (public), plus internal-only
+    `dart/simulation/object/ObjectWith.hpp`
 - Tests:
   - Solver stepping/scheduling coverage: `tests/integration/simulation/test_World.cpp`
 - Build deps:
@@ -64,10 +65,10 @@
 - Legacy skeletons are mirrored into ECS via `LegacySkeleton` +
   `SkeletonState` and synced by `RigidSolver`.
 - EnTT access is internal-only:
-  - Move entt-dependent accessors out of installed headers, or
-    gate them behind private/internal headers that are not installed.
-  - `WorldEcsAccess` and `ObjectWith-impl.hpp` currently include EnTT and
-    need isolation before the first PR lands.
+  - `WorldEcsAccess.hpp` and `ObjectWith-impl.hpp` include EnTT but are
+    excluded from installed headers and component aggregates.
+  - Public ECS scaffolding (`EcsEntity`, `Object`, `TypeList`) remains
+    EnTT-free.
 
 ## Migration Direction (dart8)
 
