@@ -51,6 +51,7 @@ jobs:
         with:
           # Avoid cache key generation failures on macOS self-hosted runners
           cache: false
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Setup sccache
         continue-on-error: true
@@ -90,6 +91,7 @@ jobs:
         with:
           # Avoid cache key generation failures on macOS self-hosted runners
           cache: false
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Setup sccache
         continue-on-error: true

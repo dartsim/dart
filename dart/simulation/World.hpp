@@ -239,7 +239,10 @@ public:
   // Simulation
   //--------------------------------------------------------------------------
 
-  /// Reset the time, frame counter and recorded histories
+  /// Reset the time, frame counter and recorded histories.
+  ///
+  /// This also clears constraint impulses on all Skeletons in the World so
+  /// stale constraint forces do not leak across independent simulation runs.
   void reset();
 
   /// Calculate the dynamics and integrate the world for one step
