@@ -85,6 +85,7 @@ public:
   ~MeshLoader() = default;
 
   /// Loads a mesh from a file using Assimp.
+  /// The mesh is triangulated using PolygonMesh::triangulate().
   ///
   /// @param[in] filepath Path or URI to the mesh file
   /// @param[in] retriever Optional resource retriever for loading from URIs
@@ -94,6 +95,7 @@ public:
       const common::ResourceRetrieverPtr& retriever = nullptr);
 
   /// Loads a polygon mesh from a file using Assimp.
+  /// Polygon faces are preserved (no pre-triangulation).
   ///
   /// @param[in] filepath Path or URI to the mesh file
   /// @param[in] retriever Optional resource retriever for loading from URIs
@@ -324,12 +326,11 @@ typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
   }
   DART_SUPPRESS_DEPRECATED_END
 
-  // Import the file with post-processing flags
+  // Import the file with post-processing flags (keep polygons intact).
   const aiScene* scene = aiImportFileExWithProperties(
       filepath.c_str(),
-      aiProcess_GenNormals | aiProcess_Triangulate
-          | aiProcess_JoinIdenticalVertices | aiProcess_SortByPType
-          | aiProcess_OptimizeMeshes,
+      aiProcess_GenNormals | aiProcess_JoinIdenticalVertices
+          | aiProcess_SortByPType | aiProcess_OptimizeMeshes,
       retriever ? &fileIO : nullptr,
       propertyStore);
 

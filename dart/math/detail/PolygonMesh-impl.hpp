@@ -35,10 +35,230 @@
 
 #include <dart/math/PolygonMesh.hpp>
 
+#include <algorithm>
+#include <cstddef>
+#include <cmath>
+#include <limits>
 #include <utility>
 
 namespace dart {
 namespace math {
+
+namespace detail {
+
+struct ProjectedPoint
+{
+  double x{0.0};
+  double y{0.0};
+};
+
+inline double cross(
+    const ProjectedPoint& a,
+    const ProjectedPoint& b,
+    const ProjectedPoint& c)
+{
+  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+}
+
+inline double polygonArea2(const std::vector<ProjectedPoint>& points)
+{
+  const std::size_t count = points.size();
+  double area2 = 0.0;
+  for (std::size_t i = 0; i < count; ++i) {
+    const auto& current = points[i];
+    const auto& next = points[(i + 1) % count];
+    area2 += current.x * next.y - next.x * current.y;
+  }
+  return area2;
+}
+
+template <typename Index, typename Vector3, typename Triangle>
+bool triangulateFaceEarClipping(
+    const std::vector<Index>& face,
+    const std::vector<Vector3>& vertices,
+    std::vector<Triangle>& triangles)
+{
+  triangles.clear();
+  const std::size_t count = face.size();
+  if (count < 3) {
+    return false;
+  }
+
+  if (count == 3) {
+    triangles.emplace_back(face[0], face[1], face[2]);
+    return true;
+  }
+
+  double normalX = 0.0;
+  double normalY = 0.0;
+  double normalZ = 0.0;
+  for (std::size_t i = 0; i < count; ++i) {
+    const auto& current = vertices[face[i]];
+    const auto& next = vertices[face[(i + 1) % count]];
+    const double cx = static_cast<double>(current.x());
+    const double cy = static_cast<double>(current.y());
+    const double cz = static_cast<double>(current.z());
+    const double nx = static_cast<double>(next.x());
+    const double ny = static_cast<double>(next.y());
+    const double nz = static_cast<double>(next.z());
+    normalX += (cy - ny) * (cz + nz);
+    normalY += (cz - nz) * (cx + nx);
+    normalZ += (cx - nx) * (cy + ny);
+  }
+
+  const double absX = std::abs(normalX);
+  const double absY = std::abs(normalY);
+  const double absZ = std::abs(normalZ);
+  if (absX <= std::numeric_limits<double>::epsilon()
+      && absY <= std::numeric_limits<double>::epsilon()
+      && absZ <= std::numeric_limits<double>::epsilon()) {
+    return false;
+  }
+
+  enum class DropAxis
+  {
+    X,
+    Y,
+    Z
+  };
+
+  DropAxis dropAxis = DropAxis::Z;
+  if (absX >= absY && absX >= absZ) {
+    dropAxis = DropAxis::X;
+  } else if (absY >= absZ) {
+    dropAxis = DropAxis::Y;
+  }
+
+  std::vector<ProjectedPoint> projected;
+  projected.reserve(count);
+  double scale = 0.0;
+  for (std::size_t i = 0; i < count; ++i) {
+    const auto& vertex = vertices[face[i]];
+    ProjectedPoint point;
+    if (dropAxis == DropAxis::X) {
+      point.x = static_cast<double>(vertex.y());
+      point.y = static_cast<double>(vertex.z());
+    } else if (dropAxis == DropAxis::Y) {
+      point.x = static_cast<double>(vertex.x());
+      point.y = static_cast<double>(vertex.z());
+    } else {
+      point.x = static_cast<double>(vertex.x());
+      point.y = static_cast<double>(vertex.y());
+    }
+    scale = std::max(scale, std::max(std::abs(point.x), std::abs(point.y)));
+    projected.emplace_back(point);
+  }
+
+  if (scale < 1.0) {
+    scale = 1.0;
+  }
+  const double eps = std::max(
+      1e-12,
+      std::numeric_limits<double>::epsilon() * scale * scale * 100.0);
+
+  const double area2 = polygonArea2(projected);
+  if (std::abs(area2) <= eps) {
+    return false;
+  }
+  const bool isCCW = area2 > 0.0;
+
+  std::vector<std::size_t> polygon(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    polygon[i] = i;
+  }
+
+  bool removedColinear = true;
+  while (removedColinear && polygon.size() > 3) {
+    removedColinear = false;
+    for (std::size_t i = 0; i < polygon.size(); ++i) {
+      const std::size_t prev
+          = polygon[(i + polygon.size() - 1) % polygon.size()];
+      const std::size_t curr = polygon[i];
+      const std::size_t next = polygon[(i + 1) % polygon.size()];
+      if (std::abs(cross(projected[prev], projected[curr], projected[next]))
+          <= eps) {
+        polygon.erase(polygon.begin() + static_cast<std::ptrdiff_t>(i));
+        removedColinear = true;
+        break;
+      }
+    }
+  }
+
+  if (polygon.size() < 3) {
+    return false;
+  }
+
+  triangles.reserve(polygon.size() - 2);
+  const std::size_t maxIterations = polygon.size() * polygon.size();
+  std::size_t iterations = 0;
+
+  auto isConvex = [&](std::size_t prev, std::size_t curr, std::size_t next) {
+    const double turn = cross(projected[prev], projected[curr], projected[next]);
+    return isCCW ? (turn > eps) : (turn < -eps);
+  };
+
+  auto containsPoint =
+      [&](std::size_t prev, std::size_t curr, std::size_t next, std::size_t idx)
+      -> bool {
+    const auto& point = projected[idx];
+    const double c1 = cross(projected[prev], projected[curr], point);
+    const double c2 = cross(projected[curr], projected[next], point);
+    const double c3 = cross(projected[next], projected[prev], point);
+    if (isCCW) {
+      return c1 >= -eps && c2 >= -eps && c3 >= -eps;
+    }
+    return c1 <= eps && c2 <= eps && c3 <= eps;
+  };
+
+  while (polygon.size() > 3 && iterations < maxIterations) {
+    bool earFound = false;
+    for (std::size_t i = 0; i < polygon.size(); ++i) {
+      const std::size_t prev
+          = polygon[(i + polygon.size() - 1) % polygon.size()];
+      const std::size_t curr = polygon[i];
+      const std::size_t next = polygon[(i + 1) % polygon.size()];
+
+      if (!isConvex(prev, curr, next)) {
+        continue;
+      }
+
+      bool hasInteriorPoint = false;
+      for (std::size_t j = 0; j < polygon.size(); ++j) {
+        const std::size_t idx = polygon[j];
+        if (idx == prev || idx == curr || idx == next) {
+          continue;
+        }
+        if (containsPoint(prev, curr, next, idx)) {
+          hasInteriorPoint = true;
+          break;
+        }
+      }
+      if (hasInteriorPoint) {
+        continue;
+      }
+
+      triangles.emplace_back(face[prev], face[curr], face[next]);
+      polygon.erase(polygon.begin() + static_cast<std::ptrdiff_t>(i));
+      earFound = true;
+      break;
+    }
+
+    if (!earFound) {
+      return false;
+    }
+    ++iterations;
+  }
+
+  if (polygon.size() == 3) {
+    triangles.emplace_back(
+        face[polygon[0]], face[polygon[1]], face[polygon[2]]);
+    return true;
+  }
+
+  return false;
+}
+
+} // namespace detail
 
 //==============================================================================
 template <typename S>
@@ -172,13 +392,22 @@ typename PolygonMesh<S>::TriMeshType PolygonMesh<S>::triangulate() const
   }
   triMesh.reserveTriangles(triangleCount);
 
+  std::vector<typename TriMeshType::Triangle> triangles;
   for (const auto& face : mFaces) {
     if (face.size() < 3) {
       continue;
     }
-    const Index v0 = face[0];
-    for (std::size_t i = 1; i + 1 < face.size(); ++i) {
-      triMesh.addTriangle(v0, face[i], face[i + 1]);
+    triangles.clear();
+    if (!detail::triangulateFaceEarClipping(
+            face, this->mVertices, triangles)) {
+      const Index v0 = face[0];
+      for (std::size_t i = 1; i + 1 < face.size(); ++i) {
+        triMesh.addTriangle(v0, face[i], face[i + 1]);
+      }
+      continue;
+    }
+    for (const auto& triangle : triangles) {
+      triMesh.addTriangle(triangle[0], triangle[1], triangle[2]);
     }
   }
 

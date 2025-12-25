@@ -111,7 +111,8 @@ public:
   /// Clears all data in the mesh.
   void clear() override;
 
-  /// Triangulates the polygon mesh into a TriMesh.
+  /// Triangulates the polygon mesh into a TriMesh using ear clipping on a
+  /// projected plane; faces are assumed simple and planar.
   TriMeshType triangulate() const;
 
 protected:

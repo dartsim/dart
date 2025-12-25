@@ -19,6 +19,10 @@ and validating downstream usage.
   deterministically for collision usage.
 - Rendering continues to use Assimp scene data until the Assimp deprecation
   path is complete.
+- Polygon-aware imports avoid Assimp pre-triangulation so face sizes are
+  preserved for rendering/export.
+- Triangulation uses ear clipping on a projected plane; faces are assumed
+  simple and planar (concave supported).
 
 ## Plan
 

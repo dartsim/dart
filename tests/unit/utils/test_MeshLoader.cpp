@@ -72,6 +72,23 @@ TEST(MeshLoader, LoadActualMesh)
 }
 
 //==============================================================================
+TEST(MeshLoader, LoadPolygonMeshPreservesQuad)
+{
+  const std::string meshPath = dart::config::dataPath("obj/Quad.obj");
+  auto loader = std::make_unique<utils::AssimpMeshLoaderd>();
+
+  auto polygonMesh = loader->loadPolygonMesh(meshPath);
+  ASSERT_NE(polygonMesh, nullptr);
+  ASSERT_TRUE(polygonMesh->hasFaces());
+  ASSERT_EQ(polygonMesh->getFaces().size(), 1u);
+  EXPECT_EQ(polygonMesh->getFaces()[0].size(), 4u);
+
+  auto triMesh = loader->load(meshPath);
+  ASSERT_NE(triMesh, nullptr);
+  EXPECT_EQ(triMesh->getTriangles().size(), 2u);
+}
+
+//==============================================================================
 TEST(MeshLoader, MergesMultipleMeshes)
 {
   const std::string meshPath = dart::config::dataPath("skel/kima/thorax.dae");

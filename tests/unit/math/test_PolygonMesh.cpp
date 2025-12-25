@@ -34,6 +34,8 @@
 
 #include <gtest/gtest.h>
 
+#include <cmath>
+
 using namespace dart;
 using namespace math;
 
@@ -54,10 +56,65 @@ TEST(PolygonMeshTests, TriangulateQuad)
   EXPECT_EQ(triMesh.getVertices().size(), 4u);
   EXPECT_EQ(triMesh.getTriangles().size(), 2u);
 
-  TriMeshd::Triangles expected;
-  expected.emplace_back(0, 1, 2);
-  expected.emplace_back(0, 2, 3);
-  EXPECT_EQ(triMesh.getTriangles(), expected);
+  const auto& vertices = triMesh.getVertices();
+  const auto& face = mesh.getFaces()[0];
+  double polygonArea = 0.0;
+  for (std::size_t i = 0; i < face.size(); ++i) {
+    const auto& p = vertices[face[i]];
+    const auto& q = vertices[face[(i + 1) % face.size()]];
+    polygonArea += p.x() * q.y() - q.x() * p.y();
+  }
+  polygonArea = 0.5 * std::abs(polygonArea);
+
+  double triangleArea = 0.0;
+  for (const auto& triangle : triMesh.getTriangles()) {
+    const auto& a = vertices[triangle[0]];
+    const auto& b = vertices[triangle[1]];
+    const auto& c = vertices[triangle[2]];
+    const auto cross = (b - a).cross(c - a);
+    triangleArea += 0.5 * std::abs(cross.z());
+  }
+
+  EXPECT_NEAR(triangleArea, polygonArea, 1e-12);
+}
+
+//==============================================================================
+TEST(PolygonMeshTests, TriangulateConcave)
+{
+  PolygonMeshd mesh;
+  mesh.reserveVertices(5);
+  mesh.reserveFaces(1);
+
+  mesh.addVertex(0.0, 0.0, 0.0);
+  mesh.addVertex(2.0, 0.0, 0.0);
+  mesh.addVertex(2.0, 2.0, 0.0);
+  mesh.addVertex(1.0, 1.0, 0.0);
+  mesh.addVertex(0.0, 2.0, 0.0);
+  mesh.addFace({0, 1, 2, 3, 4});
+
+  const auto triMesh = mesh.triangulate();
+  EXPECT_EQ(triMesh.getTriangles().size(), 3u);
+
+  const auto& vertices = triMesh.getVertices();
+  const auto& face = mesh.getFaces()[0];
+  double polygonArea = 0.0;
+  for (std::size_t i = 0; i < face.size(); ++i) {
+    const auto& p = vertices[face[i]];
+    const auto& q = vertices[face[(i + 1) % face.size()]];
+    polygonArea += p.x() * q.y() - q.x() * p.y();
+  }
+  polygonArea = 0.5 * std::abs(polygonArea);
+
+  double triangleArea = 0.0;
+  for (const auto& triangle : triMesh.getTriangles()) {
+    const auto& a = vertices[triangle[0]];
+    const auto& b = vertices[triangle[1]];
+    const auto& c = vertices[triangle[2]];
+    const auto cross = (b - a).cross(c - a);
+    triangleArea += 0.5 * std::abs(cross.z());
+  }
+
+  EXPECT_NEAR(triangleArea, polygonArea, 1e-12);
 }
 
 //==============================================================================

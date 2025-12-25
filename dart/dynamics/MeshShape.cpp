@@ -231,8 +231,9 @@ bool MeshShape::collectSubMeshRanges(
     std::size_t triangleCount = 0;
     for (auto i = 0u; i < assimpMesh->mNumFaces; ++i) {
       const aiFace& face = assimpMesh->mFaces[i];
-      if (face.mNumIndices == 3)
-        ++triangleCount;
+      if (face.mNumIndices >= 3) {
+        triangleCount += static_cast<std::size_t>(face.mNumIndices - 2);
+      }
     }
 
     SubMeshRange range;
@@ -812,96 +813,39 @@ std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
     return nullptr;
   }
 
-  auto triMesh = std::make_shared<math::TriMesh<double>>();
-  if (subMeshes) {
-    subMeshes->clear();
-  }
-
   // ALWAYS merge all meshes into a single TriMesh
   // This is necessary because:
   // 1. Files with multiple materials (common in COLLADA/OBJ) have multiple
   // aiMesh objects
   // 2. All meshes in a scene belong to the same shape for collision/rendering
   // 3. CustomMeshShape from gz-physics creates one aiMesh per submesh
-  const std::size_t numMeshesToProcess = scene->mNumMeshes;
-
-  // Reserve space for all vertices and faces upfront
-  std::size_t totalVertices = 0;
-  std::size_t totalTriangles = 0;
-  for (std::size_t i = 0; i < numMeshesToProcess; ++i) {
-    const aiMesh* assimpMesh = scene->mMeshes[i];
-    if (!assimpMesh) {
-      continue;
-    }
-    totalVertices += assimpMesh->mNumVertices;
-    for (std::size_t faceIndex = 0; faceIndex < assimpMesh->mNumFaces;
-         ++faceIndex) {
-      const aiFace& face = assimpMesh->mFaces[faceIndex];
-      if (face.mNumIndices >= 3) {
-        totalTriangles += face.mNumIndices - 2;
-      }
-    }
+  auto polygonMesh = convertAssimpPolygonMesh(scene);
+  if (!polygonMesh) {
+    return nullptr;
   }
-  triMesh->reserveVertices(totalVertices);
-  triMesh->reserveTriangles(totalTriangles);
-  triMesh->reserveVertexNormals(totalVertices);
 
-  // Process all meshes and merge them into a single TriMesh
-  for (std::size_t meshIndex = 0; meshIndex < numMeshesToProcess; ++meshIndex) {
-    const aiMesh* assimpMesh = scene->mMeshes[meshIndex];
+  auto triMesh = std::make_shared<math::TriMesh<double>>(
+      polygonMesh->triangulate());
 
-    if (!assimpMesh) {
-      continue;
-    }
-
-    // Track the vertex offset for this submesh (for face indices)
-    const std::size_t vertexOffset = triMesh->getVertices().size();
-    const std::size_t triangleOffset = triMesh->getTriangles().size();
-    std::size_t triangleCount = 0;
-
-    // Parse vertices
-    for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
-      const aiVector3D& vertex = assimpMesh->mVertices[i];
-      triMesh->addVertex(
-          static_cast<double>(vertex.x),
-          static_cast<double>(vertex.y),
-          static_cast<double>(vertex.z));
-    }
-
-    // Parse faces (triangulated), adjusting indices by vertex offset
-    for (auto i = 0u; i < assimpMesh->mNumFaces; ++i) {
-      const aiFace& face = assimpMesh->mFaces[i];
-
-      if (face.mNumIndices < 3) {
-        DART_WARN(
-            "[MeshShape::convertAssimpMesh] Face with fewer than 3 indices "
-            "detected in mesh {}. Skipping this face.",
-            meshIndex);
+  if (subMeshes) {
+    subMeshes->clear();
+    std::size_t vertexOffset = 0;
+    std::size_t triangleOffset = 0;
+    for (std::size_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
+      const aiMesh* assimpMesh = scene->mMeshes[meshIndex];
+      if (!assimpMesh) {
         continue;
       }
 
-      const auto baseIndex = face.mIndices[0] + vertexOffset;
-      for (std::size_t corner = 1; corner + 1 < face.mNumIndices; ++corner) {
-        triMesh->addTriangle(
-            baseIndex,
-            face.mIndices[corner] + vertexOffset,
-            face.mIndices[corner + 1] + vertexOffset);
-        ++triangleCount;
+      std::size_t triangleCount = 0;
+      for (auto faceIndex = 0u; faceIndex < assimpMesh->mNumFaces;
+           ++faceIndex) {
+        const aiFace& face = assimpMesh->mFaces[faceIndex];
+        if (face.mNumIndices >= 3u) {
+          triangleCount += static_cast<std::size_t>(face.mNumIndices - 2u);
+        }
       }
-    }
 
-    // Parse vertex normals
-    if (assimpMesh->mNormals) {
-      for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
-        const aiVector3D& normal = assimpMesh->mNormals[i];
-        triMesh->addVertexNormal(
-            static_cast<double>(normal.x),
-            static_cast<double>(normal.y),
-            static_cast<double>(normal.z));
-      }
-    }
-
-    if (subMeshes) {
       SubMeshRange range;
       range.vertexOffset = vertexOffset;
       range.vertexCount = assimpMesh->mNumVertices;
@@ -909,13 +853,10 @@ std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
       range.triangleCount = triangleCount;
       range.materialIndex = assimpMesh->mMaterialIndex;
       subMeshes->push_back(range);
-    }
-  }
 
-  // Compute vertex normals if they are missing or incomplete.
-  if (triMesh->hasTriangles()
-      && triMesh->getVertexNormals().size() != triMesh->getVertices().size()) {
-    triMesh->computeVertexNormals();
+      vertexOffset += assimpMesh->mNumVertices;
+      triangleOffset += triangleCount;
+    }
   }
 
   return triMesh;
@@ -1668,9 +1609,8 @@ const aiScene* MeshShape::loadMesh(
   // Import the file.
   const aiScene* scene = aiImportFileExWithProperties(
       _uri.c_str(),
-      aiProcess_GenNormals | aiProcess_Triangulate
-          | aiProcess_JoinIdenticalVertices | aiProcess_SortByPType
-          | aiProcess_OptimizeMeshes,
+      aiProcess_GenNormals | aiProcess_JoinIdenticalVertices
+          | aiProcess_SortByPType | aiProcess_OptimizeMeshes,
       fileIOPtr,
       propertyStore);
 

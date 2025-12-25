@@ -363,6 +363,30 @@ TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
       << ", canonicalExtents=" << canonicalExtents.transpose();
 }
 
+TEST(MeshShapeTest, PolygonMeshPreservesQuadFaces)
+{
+  const std::string filePath = dart::config::dataPath("obj/Quad.obj");
+  const std::string fileUri = common::Uri::createFromPath(filePath).toString();
+  ASSERT_FALSE(fileUri.empty());
+
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = dynamics::MeshShape::loadMesh(fileUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene, nullptr);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto shape = std::make_shared<dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), scene, fileUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+
+  const auto polygonMesh = shape->getPolygonMesh();
+  ASSERT_NE(polygonMesh, nullptr);
+  ASSERT_TRUE(polygonMesh->hasFaces());
+  ASSERT_EQ(polygonMesh->getFaces().size(), 1u);
+  EXPECT_EQ(polygonMesh->getFaces()[0].size(), 4u);
+}
+
 TEST(MeshShapeTest, RespectsCustomMeshDeleter)
 {
   std::atomic<int> deleted{0};
