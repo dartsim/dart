@@ -72,6 +72,23 @@ TEST(MeshLoader, LoadActualMesh)
 }
 
 //==============================================================================
+TEST(MeshLoader, LoadPolygonMeshPreservesQuad)
+{
+  const std::string meshPath = dart::config::dataPath("obj/Quad.obj");
+  auto loader = std::make_unique<utils::AssimpMeshLoaderd>();
+
+  auto polygonMesh = loader->loadPolygonMesh(meshPath);
+  ASSERT_NE(polygonMesh, nullptr);
+  ASSERT_TRUE(polygonMesh->hasFaces());
+  ASSERT_EQ(polygonMesh->getFaces().size(), 1u);
+  EXPECT_EQ(polygonMesh->getFaces()[0].size(), 4u);
+
+  auto triMesh = loader->load(meshPath);
+  ASSERT_NE(triMesh, nullptr);
+  EXPECT_EQ(triMesh->getTriangles().size(), 2u);
+}
+
+//==============================================================================
 TEST(MeshLoader, MergesMultipleMeshes)
 {
   const std::string meshPath = dart::config::dataPath("skel/kima/thorax.dae");
@@ -104,8 +121,9 @@ TEST(MeshLoader, MergesMultipleMeshes)
     expectedVertices += assimpMesh->mNumVertices;
     for (unsigned int faceIndex = 0; faceIndex < assimpMesh->mNumFaces;
          ++faceIndex) {
-      if (assimpMesh->mFaces[faceIndex].mNumIndices == 3u) {
-        ++expectedTriangles;
+      const aiFace& face = assimpMesh->mFaces[faceIndex];
+      if (face.mNumIndices >= 3u) {
+        expectedTriangles += face.mNumIndices - 2u;
       }
     }
   }

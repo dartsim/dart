@@ -24,15 +24,54 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
 #include <dart/gui/ShapeFrameNode.hpp>
 #include <dart/gui/render/MeshShapeNode.hpp>
 
 #include <dart/dynamics/ArrowShape.hpp>
+#include <dart/dynamics/MeshShape.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 
+#include <dart/common/Diagnostics.hpp>
+#include <dart/common/LocalResourceRetriever.hpp>
+#include <dart/common/Uri.hpp>
+
 #include <gtest/gtest.h>
+#include <osg/Geode>
+#include <osg/Geometry>
+#include <osg/Group>
 #include <osg/Material>
+#include <osg/PrimitiveSet>
 #include <osg/ref_ptr>
+
+#include <string>
+#include <vector>
+
+namespace {
+
+void collectGeometries(osg::Node* node, std::vector<osg::Geometry*>& geometries)
+{
+  if (!node)
+    return;
+
+  if (auto* geode = node->asGeode()) {
+    const unsigned int numDrawables = geode->getNumDrawables();
+    for (unsigned int i = 0; i < numDrawables; ++i) {
+      auto* geometry = dynamic_cast<osg::Geometry*>(geode->getDrawable(i));
+      if (geometry)
+        geometries.push_back(geometry);
+    }
+  }
+
+  if (auto* group = node->asGroup()) {
+    const unsigned int numChildren = group->getNumChildren();
+    for (unsigned int i = 0; i < numChildren; ++i)
+      collectGeometries(group->getChild(i), geometries);
+  }
+}
+
+} // namespace
 
 TEST(MeshShapeNodeTest, UpdatesMaterialOnColorChange)
 {
@@ -74,4 +113,67 @@ TEST(MeshShapeNodeTest, UpdatesMaterialOnColorChange)
   EXPECT_FLOAT_EQ(diffuse.g(), static_cast<float>(updatedColor[1]));
   EXPECT_FLOAT_EQ(diffuse.b(), static_cast<float>(updatedColor[2]));
   EXPECT_FLOAT_EQ(diffuse.a(), static_cast<float>(updatedColor[3]));
+}
+
+TEST(MeshShapeNodeTest, TessellatesConcavePolygons)
+{
+  const std::string filePath = dart::config::dataPath("obj/Concave.obj");
+  const std::string fileUri
+      = dart::common::Uri::createFromPath(filePath).toString();
+  ASSERT_FALSE(fileUri.empty());
+
+  auto retriever = std::make_shared<dart::common::LocalResourceRetriever>();
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene
+      = dart::dynamics::MeshShape::loadMesh(fileUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene, nullptr);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto meshShape = std::make_shared<dart::dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), scene, fileUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+
+  dart::dynamics::SimpleFrame frame;
+  frame.setShape(meshShape);
+  frame.getVisualAspect(true);
+
+  osg::ref_ptr<dart::gui::ShapeFrameNode> frameNode
+      = new dart::gui::ShapeFrameNode(&frame, nullptr);
+  ASSERT_GT(frameNode->getNumChildren(), 0u);
+
+  dart::gui::render::MeshShapeNode* meshNode = nullptr;
+  for (unsigned int i = 0; i < frameNode->getNumChildren(); ++i) {
+    meshNode = dynamic_cast<dart::gui::render::MeshShapeNode*>(
+        frameNode->getChild(i));
+    if (meshNode)
+      break;
+  }
+  ASSERT_NE(meshNode, nullptr);
+
+  std::vector<osg::Geometry*> geometries;
+  collectGeometries(meshNode, geometries);
+  ASSERT_FALSE(geometries.empty());
+
+  bool hasPolygons = false;
+  bool hasTriangles = false;
+  for (const auto* geometry : geometries) {
+    const unsigned int primitiveCount = geometry->getNumPrimitiveSets();
+    for (unsigned int i = 0; i < primitiveCount; ++i) {
+      const osg::PrimitiveSet* primitive = geometry->getPrimitiveSet(i);
+      if (!primitive)
+        continue;
+
+      const auto mode = primitive->getMode();
+      if (mode == osg::PrimitiveSet::POLYGON)
+        hasPolygons = true;
+      if (mode == osg::PrimitiveSet::TRIANGLES
+          || mode == osg::PrimitiveSet::TRIANGLE_FAN
+          || mode == osg::PrimitiveSet::TRIANGLE_STRIP)
+        hasTriangles = true;
+    }
+  }
+
+  EXPECT_FALSE(hasPolygons);
+  EXPECT_TRUE(hasTriangles);
 }
