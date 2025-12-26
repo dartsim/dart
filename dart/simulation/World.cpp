@@ -41,6 +41,7 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
@@ -184,7 +185,9 @@ World::World(const WorldConfig& config)
 {
   mIndices.push_back(0);
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
+  DART_SUPPRESS_DEPRECATED_END
   setConstraintSolver(std::move(solver));
 
   if (auto detector = resolveCollisionDetector(config))

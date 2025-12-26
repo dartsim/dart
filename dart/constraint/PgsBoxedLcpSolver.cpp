@@ -32,11 +32,14 @@
 
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/math/lcp/LcpTypes.hpp"
 #include "dart/math/lcp/LcpUtils.hpp"
 #include "dart/math/lcp/projection/PgsSolver.hpp"
 
 #include <Eigen/Core>
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 namespace dart {
 namespace constraint {
@@ -168,3 +171,5 @@ const PgsBoxedLcpSolver::Option& PgsBoxedLcpSolver::getOption() const
 
 } // namespace constraint
 } // namespace dart
+
+DART_SUPPRESS_DEPRECATED_END

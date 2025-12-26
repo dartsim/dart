@@ -32,12 +32,15 @@
 
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/math/lcp/LcpUtils.hpp"
 #include "dart/math/lcp/pivoting/DantzigSolver.hpp"
 #include "dart/math/lcp/projection/PgsSolver.hpp"
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 namespace dart {
 namespace constraint {
@@ -297,3 +300,5 @@ void BoxedLcpConstraintSolver::syncLcpSolversFromBoxedSolvers()
 
 } // namespace constraint
 } // namespace dart
+
+DART_SUPPRESS_DEPRECATED_END

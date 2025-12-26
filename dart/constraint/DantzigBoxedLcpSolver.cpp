@@ -32,11 +32,14 @@
 
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/math/lcp/LcpTypes.hpp"
 #include "dart/math/lcp/LcpUtils.hpp"
 #include "dart/math/lcp/pivoting/DantzigSolver.hpp"
 
 #include <Eigen/Core>
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 namespace dart {
 namespace constraint {
@@ -128,3 +131,5 @@ bool DantzigBoxedLcpSolver::canSolve(int n, const double* A)
 
 } // namespace constraint
 } // namespace dart
+
+DART_SUPPRESS_DEPRECATED_END
