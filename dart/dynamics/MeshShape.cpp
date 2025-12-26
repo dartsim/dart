@@ -824,14 +824,15 @@ std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
     return nullptr;
   }
 
-  auto triMesh = std::make_shared<math::TriMesh<double>>(
-      polygonMesh->triangulate());
+  auto triMesh
+      = std::make_shared<math::TriMesh<double>>(polygonMesh->triangulate());
 
   if (subMeshes) {
     subMeshes->clear();
     std::size_t vertexOffset = 0;
     std::size_t triangleOffset = 0;
-    for (std::size_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
+    for (std::size_t meshIndex = 0; meshIndex < scene->mNumMeshes;
+         ++meshIndex) {
       const aiMesh* assimpMesh = scene->mMeshes[meshIndex];
       if (!assimpMesh) {
         continue;

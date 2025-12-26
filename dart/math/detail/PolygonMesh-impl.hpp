@@ -36,10 +36,11 @@
 #include <dart/math/PolygonMesh.hpp>
 
 #include <algorithm>
-#include <cstddef>
-#include <cmath>
 #include <limits>
 #include <utility>
+
+#include <cmath>
+#include <cstddef>
 
 namespace dart {
 namespace math {
@@ -53,9 +54,7 @@ struct ProjectedPoint
 };
 
 inline double cross(
-    const ProjectedPoint& a,
-    const ProjectedPoint& b,
-    const ProjectedPoint& c)
+    const ProjectedPoint& a, const ProjectedPoint& b, const ProjectedPoint& c)
 {
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 }
@@ -89,9 +88,9 @@ bool triangulateFaceEarClipping(
     return true;
   }
 
-  double normalX = 0.0;
-  double normalY = 0.0;
-  double normalZ = 0.0;
+  double normalXComponent = 0.0;
+  double normalYComponent = 0.0;
+  double normalZComponent = 0.0;
   for (std::size_t i = 0; i < count; ++i) {
     const auto& current = vertices[face[i]];
     const auto& next = vertices[face[(i + 1) % count]];
@@ -101,14 +100,14 @@ bool triangulateFaceEarClipping(
     const double nx = static_cast<double>(next.x());
     const double ny = static_cast<double>(next.y());
     const double nz = static_cast<double>(next.z());
-    normalX += (cy - ny) * (cz + nz);
-    normalY += (cz - nz) * (cx + nx);
-    normalZ += (cx - nx) * (cy + ny);
+    normalXComponent += (cy - ny) * (cz + nz);
+    normalYComponent += (cz - nz) * (cx + nx);
+    normalZComponent += (cx - nx) * (cy + ny);
   }
 
-  const double absX = std::abs(normalX);
-  const double absY = std::abs(normalY);
-  const double absZ = std::abs(normalZ);
+  const double absX = std::abs(normalXComponent);
+  const double absY = std::abs(normalYComponent);
+  const double absZ = std::abs(normalZComponent);
   if (absX <= std::numeric_limits<double>::epsilon()
       && absY <= std::numeric_limits<double>::epsilon()
       && absZ <= std::numeric_limits<double>::epsilon()) {
@@ -153,8 +152,7 @@ bool triangulateFaceEarClipping(
     scale = 1.0;
   }
   const double eps = std::max(
-      1e-12,
-      std::numeric_limits<double>::epsilon() * scale * scale * 100.0);
+      1e-12, std::numeric_limits<double>::epsilon() * scale * scale * 100.0);
 
   const double area2 = polygonArea2(projected);
   if (std::abs(area2) <= eps) {
@@ -193,13 +191,15 @@ bool triangulateFaceEarClipping(
   std::size_t iterations = 0;
 
   auto isConvex = [&](std::size_t prev, std::size_t curr, std::size_t next) {
-    const double turn = cross(projected[prev], projected[curr], projected[next]);
+    const double turn
+        = cross(projected[prev], projected[curr], projected[next]);
     return isCCW ? (turn > eps) : (turn < -eps);
   };
 
-  auto containsPoint =
-      [&](std::size_t prev, std::size_t curr, std::size_t next, std::size_t idx)
-      -> bool {
+  auto containsPoint = [&](std::size_t prev,
+                           std::size_t curr,
+                           std::size_t next,
+                           std::size_t idx) -> bool {
     const auto& point = projected[idx];
     const double c1 = cross(projected[prev], projected[curr], point);
     const double c2 = cross(projected[curr], projected[next], point);
@@ -398,8 +398,7 @@ typename PolygonMesh<S>::TriMeshType PolygonMesh<S>::triangulate() const
       continue;
     }
     triangles.clear();
-    if (!detail::triangulateFaceEarClipping(
-            face, this->mVertices, triangles)) {
+    if (!detail::triangulateFaceEarClipping(face, this->mVertices, triangles)) {
       const Index v0 = face[0];
       for (std::size_t i = 1; i + 1 < face.size(); ++i) {
         triMesh.addTriangle(v0, face[i], face[i + 1]);

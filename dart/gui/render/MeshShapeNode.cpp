@@ -796,8 +796,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
   if (tessellatePolygons) {
     ::osgUtil::Tessellator tessellator;
-    tessellator.setTessellationType(
-        ::osgUtil::Tessellator::TESS_TYPE_GEOMETRY);
+    tessellator.setTessellationType(::osgUtil::Tessellator::TESS_TYPE_GEOMETRY);
     tessellator.setWindingType(::osgUtil::Tessellator::TESS_WINDING_ODD);
     tessellator.retessellatePolygons(*this);
   }

@@ -24,16 +24,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
 #include <dart/gui/ShapeFrameNode.hpp>
 #include <dart/gui/render/MeshShapeNode.hpp>
+
+#include <dart/dynamics/ArrowShape.hpp>
+#include <dart/dynamics/MeshShape.hpp>
+#include <dart/dynamics/SimpleFrame.hpp>
 
 #include <dart/common/Diagnostics.hpp>
 #include <dart/common/LocalResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
-#include <dart/config.hpp>
-#include <dart/dynamics/ArrowShape.hpp>
-#include <dart/dynamics/MeshShape.hpp>
-#include <dart/dynamics/SimpleFrame.hpp>
 
 #include <gtest/gtest.h>
 #include <osg/Geode>
@@ -48,8 +50,7 @@
 
 namespace {
 
-void collectGeometries(
-    osg::Node* node, std::vector<osg::Geometry*>& geometries)
+void collectGeometries(osg::Node* node, std::vector<osg::Geometry*>& geometries)
 {
   if (!node)
     return;
