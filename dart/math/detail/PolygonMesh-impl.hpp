@@ -88,9 +88,9 @@ bool triangulateFaceEarClipping(
     return true;
   }
 
-  double normalXComponent = 0.0;
-  double normalYComponent = 0.0;
-  double normalZComponent = 0.0;
+  double normalX = 0.0;
+  double normalY = 0.0;
+  double normalZ = 0.0;
   for (std::size_t i = 0; i < count; ++i) {
     const auto& current = vertices[face[i]];
     const auto& next = vertices[face[(i + 1) % count]];
@@ -100,14 +100,14 @@ bool triangulateFaceEarClipping(
     const double nx = static_cast<double>(next.x());
     const double ny = static_cast<double>(next.y());
     const double nz = static_cast<double>(next.z());
-    normalXComponent += (cy - ny) * (cz + nz);
-    normalYComponent += (cz - nz) * (cx + nx);
-    normalZComponent += (cx - nx) * (cy + ny);
+    normalX += (cy - ny) * (cz + nz);
+    normalY += (cz - nz) * (cx + nx);
+    normalZ += (cx - nx) * (cy + ny);
   }
 
-  const double absX = std::abs(normalXComponent);
-  const double absY = std::abs(normalYComponent);
-  const double absZ = std::abs(normalZComponent);
+  const double absX = std::abs(normalX);
+  const double absY = std::abs(normalY);
+  const double absZ = std::abs(normalZ);
   if (absX <= std::numeric_limits<double>::epsilon()
       && absY <= std::numeric_limits<double>::epsilon()
       && absZ <= std::numeric_limits<double>::epsilon()) {
