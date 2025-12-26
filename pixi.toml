@@ -21,7 +21,6 @@ eigen = ">=3.4.0,<4"
 entt = ">=3.14.0,<4"
 fcl = ">=0.7.0,<0.8"
 fmt = ">=11.1.4,<12"
-gtest = ">=1.17.0,<2"
 imgui = ">=1.91.9,<2"
 isort = ">=6.0.1,<7"
 jinja2 = ">=3.1.2"
@@ -53,6 +52,9 @@ taplo = ">=0.9.3,<1"
 taskflow = ">=3.10.0,<4"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
+
+[feature.testing.dependencies]
+gtest = ">=1.17.0,<2"
 
 [tasks]
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
@@ -1582,6 +1584,7 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 [feature.gazebo.activation.env]
 DART_BUILD_COLLISION_BULLET_OVERRIDE = "ON"
 DART_BUILD_COLLISION_ODE_OVERRIDE = "ON"
+DART_BUILD_TESTS_OVERRIDE = "OFF"
 
 [feature.gazebo.dependencies]
 git = ">=1"
@@ -2102,6 +2105,7 @@ wheel-repair = { depends-on = [
 #==============
 
 [environments]
+default = ["testing"]
 gazebo = ["gazebo"]
 py312-wheel = ["py312-wheel"]
 py313-wheel = ["py313-wheel"]
