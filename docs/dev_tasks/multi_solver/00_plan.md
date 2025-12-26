@@ -2,7 +2,7 @@
 
 ## Status
 
-- In progress: finalizing first PR milestone on `feature/multi_solver`.
+- Completed: first PR milestone delivered on `feature/multi_solver`.
 - Next plan: see `docs/dev_tasks/multi_solver/01_next.md`.
 
 ## What Exists Today (feature/multi_solver)
