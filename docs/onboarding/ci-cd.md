@@ -21,17 +21,10 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Deprecated headers that emit `#warning` fail under `-Werror=cpp` (e.g., use `dart/utils/urdf/All.hpp` instead of deprecated `dart/utils/urdf/urdf.hpp`).
   - dartpy test failures can show up as a Python abort with minimal traceback when a C++ `DART_ASSERT` triggers; rerun the single test locally and inspect the C++ assert.
   - Bullet-backed raycast tests require Bullet to be built; skip or enable Bullet if the backend is intentionally disabled.
+  - `gh pr status --json ...` can error with `Unknown JSON field: ...` if you request unsupported fields; use `gh pr status` (no JSON) or `gh pr view --json ...`.
+  - `gh pr checks` may show duplicate entries when workflows run for both `push` and `pull_request` events; compare the run URLs and focus on the newest one.
+  - zsh can produce ``parse error near `}'`` if a `gh ... --jq` expression containing `{ ... }` isn't fully quoted; wrap the whole jq program in single quotes.
   - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
-
-## PR Review Loop
-
-Task recap: Address PR review feedback by locating the comment context, updating the code, running the lint task, and rechecking PR status before pushing updates. This keeps CI signals aligned with the latest changes and avoids stale review context. Use the GitHub CLI for quick visibility into PR comments and checks.
-
-Repeatable playbook:
-
-- Locate review feedback and scope the affected files.
-- Apply the fix and run the lint task locally.
-- Commit/push, then confirm PR checks and review comments are updated.
 
 ## Task Recap (General)
 
@@ -66,13 +59,6 @@ Suggested (Unverified):
 ```bash
 gh run list -R <OWNER>/<REPO> --branch <BRANCH> --limit <N>
 gh run watch <RUN_ID> --interval 30
-```
-
-Suggested (Unverified):
-
-```bash
-gh pr view <PR_NUMBER> --comments
-gh pr checks <PR_NUMBER>
 ```
 
 Example (Used in this task):

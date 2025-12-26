@@ -22,6 +22,7 @@ install(
 )
 
 dart_format_add(
+  detail/HeightmapShapeGeometry.hpp
   HeightmapShapeNode.hpp
   PointCloudShapeNode.hpp
   PointCloudShapeNode.cpp

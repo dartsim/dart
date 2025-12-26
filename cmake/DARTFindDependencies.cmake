@@ -200,6 +200,12 @@ if(DART_BUILD_GUI)
     # This is the modern way to add -fPIC
     set_target_properties(${imgui_library_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
+    # Ensure MSVC generates an import library when building shared libs.
+    # Without exports, linkers can fail to find dart-imgui-lib.lib (LNK1181).
+    if(MSVC AND BUILD_SHARED_LIBS)
+      set_target_properties(${imgui_library_name} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    endif()
+
     # Define IMGUI_DISABLE_OBSOLETE_FUNCTIONS to avoid using deprecated APIs
     target_compile_definitions(${imgui_library_name} PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 

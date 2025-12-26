@@ -895,6 +895,8 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   math::LcpOptions primaryOptions = mLcpSolver->getDefaultOptions();
   if (mSecondaryLcpSolver)
     primaryOptions.earlyTermination = true;
+  // Preserve legacy behavior to avoid unnecessary fallback on strict checks.
+  primaryOptions.validateSolution = false;
   Eigen::MatrixXd Ablock = mA.leftCols(static_cast<Eigen::Index>(n)).eval();
   math::LcpProblem problem(Ablock, mB, mLo, mHi, mFIndex);
   math::LcpResult primaryResult

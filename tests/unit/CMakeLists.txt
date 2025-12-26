@@ -23,6 +23,10 @@ if(DART_HAVE_BULLET)
   dart_add_test("unit" UNIT_collision_BulletContact collision/test_BulletContact.cpp)
 endif()
 
+if(DART_HAVE_ODE)
+  dart_add_test("unit" UNIT_collision_OdeHeightmap collision/test_OdeHeightmap.cpp)
+endif()
+
 dart_add_test(
   "unit" UNIT_collision_FCLCollisionObject collision/test_FCLCollisionObject.cpp)
 
@@ -76,6 +80,7 @@ dart_add_test("unit" UNIT_dynamics_Inertia dynamics/test_Inertia.cpp)
 dart_add_test("unit" UNIT_dynamics_ScrewJoint dynamics/test_ScrewJoint.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeNodePtr dynamics/test_ShapeNodePtr.cpp)
 dart_add_test("unit" UNIT_dynamics_MeshShape dynamics/test_MeshShape.cpp)
+dart_add_test("unit" UNIT_dynamics_HeightmapShape dynamics/test_HeightmapShape.cpp)
 dart_add_test("unit" UNIT_dynamics_ConvexMeshShape dynamics/test_ConvexMeshShape.cpp)
 dart_add_test("unit" UNIT_dynamics_BodyNodeDerivatives dynamics/test_BodyNodeDerivatives.cpp)
 dart_add_test(
@@ -137,6 +142,7 @@ dart_build_tests(
 # GUI Tests
 # ==============================================================================
 if(TARGET dart-gui)
+  dart_add_test("unit" UNIT_gui_HeightmapShapeNode gui/test_HeightmapShapeNode.cpp)
   dart_add_test(
     "unit" UNIT_gui_ImGuiWindowScaling gui/test_ImGuiWindowScaling.cpp)
   # System ImGui builds can depend on SDL3, which is not available in ASAN CI.
