@@ -214,12 +214,12 @@ coverage-report = { cmd = """
 ex = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --target $EXE \
+        --target {{ example }} \
         --parallel \
-    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/$EXE
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/{{ example }}
 """, depends-on = [
     "config",
-], env = { EXE = "hello_world", BUILD_TYPE = "Release" } }
+], args = [{ arg = "example", default = "hello_world" }], env = { BUILD_TYPE = "Release" } }
 
 ex-atlas-puppet = { cmd = """
     cmake \
