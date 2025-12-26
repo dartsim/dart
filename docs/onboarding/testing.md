@@ -12,19 +12,20 @@ This directory contains the complete test suite for DART (Dynamic Animation and 
 
 Smallest repeatable local loop before a full CI run.
 
-Choose a parallelism cap around two-thirds of logical cores, then set `DART_PARALLEL_JOBS` and `CTEST_PARALLEL_LEVEL` to that value (see [building.md](building.md) for details).
-
 Suggested (Unverified):
 
 ```bash
-DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test
+pixi run lint
+cmake --build <BUILD_DIR> --target <TARGET>
+ctest --test-dir <BUILD_DIR> --output-on-failure -R <TEST_REGEX>
 ```
 
 Example (Used in this task):
 
 ```bash
 pixi run lint
-DART_PARALLEL_JOBS=12 CTEST_PARALLEL_LEVEL=12 pixi run test
+cmake --build build/default/cpp/Release --target UNIT_gui_MeshShapeNodeMaterialUpdates
+ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_gui_MeshShapeNodeMaterialUpdates
 ```
 
 Signals to look for:
@@ -41,17 +42,17 @@ DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test-all
 DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run -e gazebo test-gz
 ```
 
-Example (Used in this task):
-
-```bash
-DART_PARALLEL_JOBS=12 CTEST_PARALLEL_LEVEL=12 pixi run test-all
-DART_PARALLEL_JOBS=12 CTEST_PARALLEL_LEVEL=12 pixi run -e gazebo test-gz
-```
-
 Signals to look for:
 
 - `pixi run test-all` ends with `✓ All tests passed!`
 - `pixi run -e gazebo test-gz` prints `✓ DART plugin built successfully with DART integration!`
+
+If you need broader coverage, choose a parallelism cap around two-thirds of logical cores, then set `DART_PARALLEL_JOBS` and `CTEST_PARALLEL_LEVEL` to that value (see [building.md](building.md) for details).
+
+## Gotchas
+
+- `pixi run lint` can rewrite identifiers via codespell; if a spelling or casing is intentional, add it to `.codespellrc` and re-run lint.
+- Lint runs can modify files; check `git status` before committing.
 
 ## Directory Structure
 
