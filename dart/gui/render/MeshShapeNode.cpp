@@ -42,6 +42,7 @@
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/Utils.hpp"
+#include "dart/math/PolygonMesh.hpp"
 
 #include <assimp/scene.h>
 #include <osg/CullFace>
@@ -735,30 +736,68 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
   if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
       || firstTime) {
-    ::osg::ref_ptr<::osg::DrawElementsUInt> elements[4];
+    ::osg::ref_ptr<::osg::DrawElementsUInt> elements[3];
     elements[0] = new ::osg::DrawElementsUInt(GL_POINTS);
     elements[1] = new ::osg::DrawElementsUInt(GL_LINES);
     elements[2] = new ::osg::DrawElementsUInt(GL_TRIANGLES);
-    elements[3] = new ::osg::DrawElementsUInt(GL_QUADS);
+
+    std::vector<Eigen::Vector3d> vertices;
+    vertices.reserve(mAiMesh->mNumVertices);
+    for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i) {
+      const aiVector3D& vertex = mAiMesh->mVertices[i];
+      vertices.emplace_back(vertex.x, vertex.y, vertex.z);
+    }
+
+    std::vector<std::size_t> polygon;
+    std::vector<Eigen::Matrix<std::size_t, 3, 1>> triangles;
 
     for (std::size_t i = 0; i < mAiMesh->mNumFaces; ++i) {
       const aiFace& face = mAiMesh->mFaces[i];
 
-      if (face.mNumIndices > 4) // We have some arbitrary polygon
-      {
-        ::osg::ref_ptr<::osg::DrawElementsUInt> polygon
-            = new ::osg::DrawElementsUInt(GL_POLYGON);
-        for (std::size_t j = 0; j < face.mNumIndices; ++j)
-          polygon->push_back(face.mIndices[j]);
-        addPrimitiveSet(polygon);
-      } else if (face.mNumIndices > 0) {
+      if (face.mNumIndices == 0) {
+        continue;
+      }
+
+      if (face.mNumIndices < 3) {
         ::osg::DrawElementsUInt* elem = elements[face.mNumIndices - 1];
         for (std::size_t j = 0; j < face.mNumIndices; ++j)
           elem->push_back(face.mIndices[j]);
+        continue;
+      }
+
+      if (face.mNumIndices == 3) {
+        ::osg::DrawElementsUInt* elem = elements[2];
+        for (std::size_t j = 0; j < face.mNumIndices; ++j)
+          elem->push_back(face.mIndices[j]);
+        continue;
+      }
+
+      polygon.clear();
+      polygon.reserve(face.mNumIndices);
+      for (std::size_t j = 0; j < face.mNumIndices; ++j) {
+        polygon.push_back(face.mIndices[j]);
+      }
+
+      triangles.clear();
+      if (!dart::math::detail::triangulateFaceEarClipping(
+              polygon, vertices, triangles)) {
+        const std::size_t v0 = polygon[0];
+        for (std::size_t j = 1; j + 1 < polygon.size(); ++j) {
+          elements[2]->push_back(v0);
+          elements[2]->push_back(polygon[j]);
+          elements[2]->push_back(polygon[j + 1]);
+        }
+        continue;
+      }
+
+      for (const auto& triangle : triangles) {
+        elements[2]->push_back(triangle[0]);
+        elements[2]->push_back(triangle[1]);
+        elements[2]->push_back(triangle[2]);
       }
     }
 
-    for (std::size_t i = 0; i < 4; ++i)
+    for (std::size_t i = 0; i < 3; ++i)
       if (elements[i]->size() > 0)
         addPrimitiveSet(elements[i]);
   }

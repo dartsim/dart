@@ -170,6 +170,20 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    Suggested (Unverified):
 
    ```bash
+   pixi run lint
+   cmake --build <BUILD_DIR> --target <TARGET>
+   ```
+
+   Example:
+
+   ```bash
+   pixi run lint
+   cmake --build build/default/cpp/Release --target UNIT_gui_MeshShapeNodeMaterialUpdates
+   ```
+
+   Suggested (Unverified):
+
+   ```bash
    DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test
    DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test-all
    ```
@@ -183,8 +197,6 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    ```bash
    DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run -e gazebo test-gz
    ```
-
-   Suggested (Unverified): Run the same workflow with a different parallelism setting, e.g. `DART_PARALLEL_JOBS=<N> pixi run -e gazebo test-gz`.
 
    This runs the gz-physics integration workflow (task chain, patch policy, and common failure modes are documented in [build-system.md](build-system.md#gazebo-integration-feature)).
 

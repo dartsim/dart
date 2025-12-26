@@ -17,6 +17,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 - Gotchas:
   - `gh run list` can show separate runs for `push` and `pull_request`; for PR gating, watch the `pull_request` run.
   - `gh run watch` is blocking and can run for a long time; use a persistent shell and re-run it if your terminal session times out.
+  - GitHub Actions API calls can return `HTTP 406` if you omit required headers; include an explicit `Accept` header.
   - The asserts-enabled CI job uses a custom CMake configure (`CMAKE_BUILD_TYPE=None`) instead of pixi tasks; pass required build toggles explicitly (e.g., Bullet collision).
   - Deprecated headers that emit `#warning` fail under `-Werror=cpp` (e.g., use `dart/utils/urdf/All.hpp` instead of deprecated `dart/utils/urdf/urdf.hpp`).
   - dartpy test failures can show up as a Python abort with minimal traceback when a C++ `DART_ASSERT` triggers; rerun the single test locally and inspect the C++ assert.
@@ -28,14 +29,14 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 
 ## Task Recap (General)
 
-This task followed the usual PR validation loop: run pixi workflows locally, validate the Gazebo integration task, then monitor GitHub Actions until all PR checks completed. The emphasis was on using the repo's standard entry points and keeping CI monitoring blocking and explicit.
+This task followed the usual PR validation loop: run `pixi` workflows locally, keep lint in sync before commits, then monitor GitHub Actions until all PR checks completed. The emphasis was on using the repo's standard entry points and verifying CI status with explicit polling.
 
 ## How We Worked (Repeatable Playbook)
 
 - Sync with the target branch and inspect the diff before making edits.
-- Run the smallest local validation first, then expand to full test-all and Gazebo runs.
-- Update PR metadata after code or test changes.
-- Monitor CI with the GitHub CLI (list and watch runs) until all PR jobs complete.
+- Run lint before committing so formatter/codespell changes are captured.
+- Run the smallest local validation first, then expand to full test or CI as needed.
+- Push each commit and monitor GitHub Actions until all jobs complete.
 
 ## Fast Iteration Loop
 
@@ -61,11 +62,26 @@ gh run list -R <OWNER>/<REPO> --branch <BRANCH> --limit <N>
 gh run watch <RUN_ID> --interval 30
 ```
 
-Example (Used in this task):
+## CI Monitoring (API)
+
+If the GitHub CLI is unavailable, use the GitHub Actions REST API to poll runs and job steps.
+
+Suggested (Unverified):
 
 ```bash
-gh run list --branch issue/872_convex_mesh --limit 6
-gh run watch 20466623994 --interval 30
+python - <<'PY'
+import json
+import urllib.request
+
+branch = "<BRANCH>"
+url = f"https://api.github.com/repos/<OWNER>/<REPO>/actions/runs?branch={branch}&per_page=100"
+headers = {"Accept": "application/vnd.github+json", "User-Agent": "codex-cli"}
+req = urllib.request.Request(url, headers=headers)
+with urllib.request.urlopen(req) as resp:
+    data = json.load(resp)
+for run in data.get("workflow_runs", []):
+    print(run["name"], run["status"], run["conclusion"], run["html_url"])
+PY
 ```
 
 ## Asserts-Enabled CI Build (no -DNDEBUG)

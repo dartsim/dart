@@ -22,10 +22,21 @@ Suggested (Unverified):
 pixi run lint
 ```
 
-Example (Used in this task):
+Targeted build + test (optional, fastest when a single target fails).
+
+Suggested (Unverified):
+
+```bash
+cmake --build <BUILD_DIR> --target <TARGET>
+ctest --test-dir <BUILD_DIR> --output-on-failure -R <TEST_REGEX>
+```
+
+Example:
 
 ```bash
 pixi run lint
+cmake --build build/default/cpp/Release --target UNIT_gui_MeshShapeNodeMaterialUpdates
+ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_gui_MeshShapeNodeMaterialUpdates
 ```
 
 Signals to look for:
@@ -62,7 +73,8 @@ Signals to look for:
 ## Gotchas
 
 - The lint task can take a while on the first run because it configures and formats; rerun if it was interrupted.
-- Linting runs auto-fixers (formatters/codespell), so expect file diffs even when the code is functionally unchanged.
+- Linting runs auto-fixers (formatters/codespell), so expect file diffs even when the code is functionally unchanged; check `git status` before committing.
+- `pixi run lint` can rewrite identifiers via codespell; if a spelling or casing is intentional, add it to `.codespellrc` and re-run lint.
 
 ## Next-Time Accelerators
 
