@@ -5,6 +5,7 @@
  * This file is provided under the BSD-style License.
  */
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
@@ -16,6 +17,8 @@
 
 #include <limits>
 #include <memory>
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 using namespace dart;
 
@@ -201,3 +204,5 @@ TEST(PgsBoxedLcpSolver, AcceptsNullFindex)
   EXPECT_TRUE(success);
   EXPECT_NEAR(x[0], target, 1e-6);
 }
+
+DART_SUPPRESS_DEPRECATED_END
