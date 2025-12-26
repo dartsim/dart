@@ -92,7 +92,7 @@ EIGEN_DONT_INLINE void inv(const T& a, T& b)
 EIGEN_DONT_INLINE
 Isometry3d Inv2(const Isometry3d& I)
 {
-  Eigen::Isometry3d ret;
+  Eigen::Isometry3d ret = Eigen::Isometry3d::Identity();
 
   ret(0, 0) = I(0, 0);
   ret(1, 0) = I(0, 1);

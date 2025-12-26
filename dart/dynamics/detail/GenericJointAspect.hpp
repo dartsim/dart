@@ -71,12 +71,28 @@ struct GenericJointState
   /// Command
   Vector mCommands;
 
+  //----------------------------------------------------------------------------
+  // Impulse / constraint solver state
+  //----------------------------------------------------------------------------
+
+  /// Change of generalized velocity
+  Vector mVelocityChanges;
+
+  /// Generalized impulse
+  Vector mImpulses;
+
+  /// Generalized constraint impulse
+  Vector mConstraintImpulses;
+
   GenericJointState(
       const EuclideanPoint& positions = EuclideanPoint::Zero(),
       const Vector& velocities = Vector::Zero(),
       const Vector& accelerations = Vector::Zero(),
       const Vector& forces = Vector::Zero(),
-      const Vector& commands = Vector::Zero());
+      const Vector& commands = Vector::Zero(),
+      const Vector& velocityChanges = Vector::Zero(),
+      const Vector& impulses = Vector::Zero(),
+      const Vector& constraintImpulses = Vector::Zero());
 
   virtual ~GenericJointState() = default;
 
@@ -217,12 +233,18 @@ GenericJointState<ConfigSpaceT>::GenericJointState(
     const Vector& velocities,
     const Vector& accelerations,
     const Vector& forces,
-    const Vector& commands)
+    const Vector& commands,
+    const Vector& velocityChanges,
+    const Vector& impulses,
+    const Vector& constraintImpulses)
   : mPositions(positions),
     mVelocities(velocities),
     mAccelerations(accelerations),
     mForces(forces),
-    mCommands(commands)
+    mCommands(commands),
+    mVelocityChanges(velocityChanges),
+    mImpulses(impulses),
+    mConstraintImpulses(constraintImpulses)
 {
   // Do nothing
 }

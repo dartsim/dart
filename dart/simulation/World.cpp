@@ -73,7 +73,8 @@ void configureCollisionDetector(
     auto fclDetector
         = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(detector);
     if (fclDetector) {
-      fclDetector->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+      fclDetector->setPrimitiveShapeType(
+          collision::FCLCollisionDetector::PRIMITIVE);
     }
   }
 }
@@ -274,6 +275,11 @@ void World::reset()
   mFrame = 0;
   mRecording->clear();
   mConstraintSolver->clearLastCollisionResult();
+
+  for (auto& skel : mSkeletons) {
+    skel->clearConstraintImpulses();
+    skel->setImpulseApplied(false);
+  }
 }
 
 //==============================================================================

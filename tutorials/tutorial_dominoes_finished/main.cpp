@@ -32,7 +32,7 @@
 
 #include <dart/gui/All.hpp>
 
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/utils/urdf/All.hpp>
 
 #include <dart/All.hpp>
 #include <dart/io/Read.hpp>
