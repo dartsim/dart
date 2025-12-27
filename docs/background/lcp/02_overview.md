@@ -13,7 +13,7 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 | **Pivoting**       | Baraff Incremental         | ❌ Not implemented | -                                                   | Planned                                 |
 | **Projection**     | PGS (Gauss-Seidel)         | ✅ Implemented     | `projection/PgsSolver.hpp`                          | Boxed LCP + friction index (iterative)  |
 | **Projection**     | PSOR (Over-Relaxation)     | ✅ Implemented     | `projection/PgsSolver.hpp`                          | Set `LcpOptions::relaxation`            |
-| **Projection**     | Blocked Gauss-Seidel       | ❌ Not implemented | -                                                   | For contact problems                    |
+| **Projection**     | Blocked Gauss-Seidel       | ✅ Implemented     | `projection/BgsSolver.hpp`                          | For contact problems                    |
 | **Projection**     | NNCG (Conjugate Gradient)  | ✅ Implemented     | `projection/NncgSolver.hpp`                         | Better convergence than PGS             |
 | **Projection**     | Subspace Minimization      | ❌ Not implemented | -                                                   | Hybrid PGS approach                     |
 | **Newton**         | Minimum Map Newton         | ✅ Implemented     | `newton/MinimumMapNewtonSolver.hpp`                 | Standard LCP (boxed/findex fallback)    |
@@ -50,6 +50,7 @@ dart/math/lcp/
 │   └── dantzig/                # Low-level ODE Dantzig implementation
 │
 ├── projection/
+│   ├── BgsSolver.hpp/cpp       # Blocked Gauss-Seidel
 │   ├── NncgSolver.hpp/cpp      # NNCG acceleration of PGS
 │   └── PgsSolver.hpp/cpp       # Boxed LCP + findex (iterative)
 │
@@ -116,7 +117,17 @@ solver usage examples.
 - **Use Case**: Real-time fallback for constraint solving where approximate
   solutions are acceptable
 
-#### 4. NNCG (Nonsmooth Nonlinear Conjugate Gradient) (`projection/NncgSolver.hpp`)
+#### 4. Blocked Gauss-Seidel (BGS) (`projection/BgsSolver.hpp`)
+
+- **Type**: Blocked projection method for boxed LCP
+- **Algorithm**: Block Gauss-Seidel with per-block Dantzig solves
+- **Features**:
+  - Groups variables via `findex` by default (contact-style blocks)
+  - Optional explicit block sizes via solver parameters
+  - Shares bounds and friction index handling with PGS
+- **Use Case**: Contact problems where per-contact blocks improve convergence
+
+#### 5. NNCG (Nonsmooth Nonlinear Conjugate Gradient) (`projection/NncgSolver.hpp`)
 
 - **Type**: Projection method with conjugate gradient acceleration
 - **Algorithm**: NNCG using PGS sweeps as the nonlinear projection map
@@ -126,7 +137,7 @@ solver usage examples.
   - PGS-based warm start and projection
 - **Use Case**: Large-scale problems needing faster convergence than PGS
 
-#### 5. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
+#### 6. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
 
 - **Type**: Newton method using the minimum map reformulation
 - **Algorithm**: Active/free set Newton on `H(x) = min(x, Ax - b)`
@@ -135,7 +146,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 6. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
+#### 7. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using the Fischer-Burmeister function
 - **Algorithm**: Smooth FB reformulation with line search
@@ -144,7 +155,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 7. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
+#### 8. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using a penalized Fischer-Burmeister function
 - **Algorithm**: FB reformulation with penalty term and line search
@@ -302,7 +313,7 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 
 ### Phase 2: Blocked Methods (Medium Priority)
 
-- [ ] Blocked Gauss-Seidel (BGS)
+- [x] Blocked Gauss-Seidel (BGS)
 - [ ] Per-contact block structure
 - [ ] Direct 2D/3D sub-solvers
 

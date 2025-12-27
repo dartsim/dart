@@ -240,7 +240,7 @@ for k = 1..N:
 
 Sweep order matters for Gauss-Seidel/PSOR. A symmetric variant performs one forward and one backward sweep to mitigate order bias (useful for PSOR/PGS; not for Jacobi which is already order-free).
 
-## 5. Blocked Gauss-Seidel (BGS) ❌ (Not Implemented, Medium Priority)
+## 5. Blocked Gauss-Seidel (BGS) ✅ (Implemented)
 
 ### Description
 
@@ -268,6 +268,20 @@ for iter = 1 to max_iter:
 ```
 
 In code, form the local right-hand side as `b'_i = b_i - (A_ij x_j)_j∈blocks, j≠i`, then solve `A_ii x_i = b'_i` under the per-block bounds.
+
+### DART Implementation
+
+```cpp
+dart::math::BgsSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+
+// Optional explicit block sizes (must sum to n).
+dart::math::BgsSolver::Parameters params;
+params.blockSizes = {3, 3, 3}; // Example: three contact blocks
+options.customOptions = &params;
+
+solver.solve(problem, x, options);
+```
 
 ### Sub-LCP Solvers
 
@@ -601,7 +615,7 @@ Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
 | Jacobi    | ❌               | Yes      | Slow        | Parallel hardware     |
 | PGS       | ✅ (Implemented) | No       | Linear      | Real-time boxed LCP   |
 | PSOR      | ✅ (Implemented) | No       | Linear      | Real-time with tuning |
-| BGS       | ❌               | No       | Linear      | Contact problems      |
+| BGS       | ✅ (Implemented) | No       | Linear      | Contact problems      |
 | NNCG      | ✅ (Implemented) | No       | Superlinear | Large-scale           |
 | PGS-SM    | ❌               | No       | Better      | Medium problems       |
 | Red-Black | ❌               | 2-phase  | Medium      | GPU                   |
@@ -615,7 +629,7 @@ Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
 
 ### Phase 2 (For Contact Problems)
 
-5. **BGS** - Natural for multi-contact scenarios
+5. ✅ **BGS** - Natural for multi-contact scenarios
 6. **Direct 2D/3D sub-solvers** - For BGS blocks
 
 ### Phase 3 (Advanced)
