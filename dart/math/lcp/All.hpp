@@ -9,6 +9,7 @@
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 
 // Projection methods
+#include <dart/math/lcp/projection/NncgSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
 
 // Newton methods
