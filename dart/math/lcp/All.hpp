@@ -22,5 +22,8 @@
 #include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
 #include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
 
+// Other methods
+#include <dart/math/lcp/other/StaggeringSolver.hpp>
+
 // Legacy LCP solvers (v1 - backward compatibility)
 #include <dart/math/lcp/pivoting/dantzig/Lcp.hpp>
