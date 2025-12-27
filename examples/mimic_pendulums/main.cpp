@@ -50,16 +50,16 @@
 
 #include <dart/simulation/World.hpp>
 
-#include <dart/constraint/BoxedLcpConstraintSolver.hpp>
-#include <dart/constraint/DantzigBoxedLcpSolver.hpp>
+#include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/constraint/MimicMotorConstraint.hpp>
-#include <dart/constraint/PgsBoxedLcpSolver.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/Joint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <dart/math/Helpers.hpp>
+#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
+#include <dart/math/lcp/projection/PgsSolver.hpp>
 
 #include <dart/common/Uri.hpp>
 
@@ -154,20 +154,18 @@ void applyCollisionDetector(
 void applyLcpSolver(
     const SolverConfig& cfg, const dart::simulation::WorldPtr& world)
 {
-  auto* boxedSolver = dynamic_cast<dart::constraint::BoxedLcpConstraintSolver*>(
+  auto* boxedSolver = dynamic_cast<dart::constraint::ConstraintSolver*>(
       world->getConstraintSolver());
   if (!boxedSolver)
     return;
 
   if (cfg.usePgsSolver) {
-    boxedSolver->setBoxedLcpSolver(
-        std::make_shared<dart::constraint::PgsBoxedLcpSolver>());
-    boxedSolver->setSecondaryBoxedLcpSolver(nullptr);
+    boxedSolver->setLcpSolver(std::make_shared<dart::math::PgsSolver>());
+    boxedSolver->setSecondaryLcpSolver(nullptr);
   } else {
-    boxedSolver->setBoxedLcpSolver(
-        std::make_shared<dart::constraint::DantzigBoxedLcpSolver>());
-    boxedSolver->setSecondaryBoxedLcpSolver(
-        std::make_shared<dart::constraint::PgsBoxedLcpSolver>());
+    boxedSolver->setLcpSolver(std::make_shared<dart::math::DantzigSolver>());
+    boxedSolver->setSecondaryLcpSolver(
+        std::make_shared<dart::math::PgsSolver>());
   }
 }
 

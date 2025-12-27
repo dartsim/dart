@@ -47,15 +47,21 @@
 #include "dart/constraint/CouplerConstraint.hpp"
 #include "dart/constraint/JointConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
-#include "dart/constraint/LCPSolver.hpp"
 #include "dart/constraint/MimicMotorConstraint.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/math/lcp/LcpUtils.hpp"
+#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
+#include "dart/math/lcp/projection/PgsSolver.hpp"
+
+#include <fmt/ostream.h>
 
 #include <algorithm>
+
+#include <cmath>
 
 namespace dart {
 namespace constraint {
@@ -69,12 +75,30 @@ ConstraintSolver::ConstraintSolver()
     mCollisionOption(collision::CollisionOption(
         true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
     mTimeStep(0.001),
-    mContactSurfaceHandler(std::make_shared<DefaultContactSurfaceHandler>())
+    mContactSurfaceHandler(std::make_shared<DefaultContactSurfaceHandler>()),
+    mLcpSolver(std::make_shared<math::DantzigSolver>()),
+    mSecondaryLcpSolver(std::make_shared<math::PgsSolver>())
 {
   auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
       mCollisionDetector);
 
   cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
+}
+
+//==============================================================================
+ConstraintSolver::ConstraintSolver(math::LcpSolverPtr primary)
+  : ConstraintSolver()
+{
+  if (primary)
+    setLcpSolver(std::move(primary));
+}
+
+//==============================================================================
+ConstraintSolver::ConstraintSolver(
+    math::LcpSolverPtr primary, math::LcpSolverPtr secondary)
+  : ConstraintSolver(std::move(primary))
+{
+  setSecondaryLcpSolver(std::move(secondary));
 }
 
 //==============================================================================
@@ -319,6 +343,10 @@ void ConstraintSolver::setFromOtherConstraintSolver(
   mManualConstraints = other.mManualConstraints;
 
   mContactSurfaceHandler = other.mContactSurfaceHandler;
+  if (!mLcpSolverSetExplicitly)
+    mLcpSolver = other.mLcpSolver;
+  if (!mSecondaryLcpSolverSetExplicitly)
+    mSecondaryLcpSolver = other.mSecondaryLcpSolver;
 }
 
 //==============================================================================
@@ -717,6 +745,385 @@ bool ConstraintSolver::removeContactSurfaceHandler(
       "DefaultContactSurfaceHandler.");
 
   return found;
+}
+
+//==============================================================================
+void ConstraintSolver::setLcpSolver(math::LcpSolverPtr lcpSolver)
+{
+  if (!lcpSolver) {
+    DART_WARN("nullptr for LCP solver is not allowed.");
+    return;
+  }
+
+  DART_WARN_IF(
+      lcpSolver == mSecondaryLcpSolver,
+      "Attempting to set a primary LCP solver that is the same as the "
+      "secondary LCP solver, which is discouraged. Ignoring this request.");
+
+  mLcpSolver = std::move(lcpSolver);
+  mLcpSolverSetExplicitly = true;
+}
+
+//==============================================================================
+math::LcpSolverPtr ConstraintSolver::getLcpSolver() const
+{
+  return mLcpSolver;
+}
+
+//==============================================================================
+void ConstraintSolver::setSecondaryLcpSolver(math::LcpSolverPtr lcpSolver)
+{
+  DART_WARN_IF(
+      lcpSolver == mLcpSolver,
+      "Attempting to set the secondary LCP solver that is identical to the "
+      "primary LCP solver, which is redundant. Please use different solvers or "
+      "set the secondary LCP solver to nullptr.");
+
+  mSecondaryLcpSolver = std::move(lcpSolver);
+  mSecondaryLcpSolverSetExplicitly = true;
+}
+
+//==============================================================================
+math::LcpSolverPtr ConstraintSolver::getSecondaryLcpSolver() const
+{
+  return mSecondaryLcpSolver;
+}
+
+//==============================================================================
+void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
+{
+  DART_PROFILE_SCOPED;
+
+  const std::size_t numConstraints = group.getNumConstraints();
+  const std::size_t n = group.getTotalDimension();
+
+  if (0u == n)
+    return;
+
+  const int nSkip = math::padding(n);
+#if defined(NDEBUG)
+  mA.resize(n, nSkip);
+#else
+  mA.setZero(n, nSkip);
+#endif
+  mX.resize(n);
+  mX.setZero();
+  mB.resize(n);
+  mW.setZero(n);
+  mLo.resize(n);
+  mHi.resize(n);
+  mFIndex.setConstant(n, -1);
+
+  mOffset.resize(numConstraints);
+  mOffset[0] = 0;
+  for (std::size_t i = 1; i < numConstraints; ++i) {
+    const ConstraintBasePtr& constraint = group.getConstraint(i - 1);
+    DART_ASSERT(constraint->getDimension() > 0);
+    mOffset[i] = mOffset[i - 1] + constraint->getDimension();
+  }
+
+  {
+    DART_PROFILE_SCOPED_N("Construct LCP");
+    ConstraintInfo constInfo;
+    constInfo.invTimeStep = 1.0 / mTimeStep;
+    for (std::size_t i = 0; i < numConstraints; ++i) {
+      const ConstraintBasePtr& constraint = group.getConstraint(i);
+
+      constInfo.x = mX.data() + mOffset[i];
+      constInfo.lo = mLo.data() + mOffset[i];
+      constInfo.hi = mHi.data() + mOffset[i];
+      constInfo.b = mB.data() + mOffset[i];
+      constInfo.findex = mFIndex.data() + mOffset[i];
+      constInfo.w = mW.data() + mOffset[i];
+
+      {
+        DART_PROFILE_SCOPED_N("Fill lo, hi, b, w");
+        constraint->getInformation(&constInfo);
+      }
+
+      {
+        DART_PROFILE_SCOPED_N("Fill A");
+        constraint->excite();
+        for (std::size_t j = 0; j < constraint->getDimension(); ++j) {
+          if (mFIndex[mOffset[i] + j] >= 0)
+            mFIndex[mOffset[i] + j] += mOffset[i];
+
+          {
+            DART_PROFILE_SCOPED_N("Unit impulse test");
+            constraint->applyUnitImpulse(j);
+          }
+
+          {
+            DART_PROFILE_SCOPED_N("Fill upper triangle of A");
+            int index = nSkip * (mOffset[i] + j) + mOffset[i];
+            constraint->getVelocityChange(mA.data() + index, true);
+            for (std::size_t k = i + 1; k < numConstraints; ++k) {
+              index = nSkip * (mOffset[i] + j) + mOffset[k];
+              group.getConstraint(k)->getVelocityChange(
+                  mA.data() + index, false);
+            }
+          }
+        }
+      }
+
+      {
+        DART_PROFILE_SCOPED_N("Unexcite");
+        constraint->unexcite();
+      }
+    }
+
+    {
+      DART_PROFILE_SCOPED_N("Fill lower triangle of A");
+      mA.leftCols(n).triangularView<Eigen::Lower>()
+          = mA.leftCols(n).triangularView<Eigen::Upper>().transpose();
+    }
+  }
+
+#if !defined(NDEBUG)
+  DART_ASSERT(isSymmetric(n, mA.data()));
+#endif
+
+  if (mSecondaryLcpSolver) {
+    mABackup = mA;
+    mXBackup = mX;
+    mBBackup = mB;
+    mLoBackup = mLo;
+    mHiBackup = mHi;
+    mFIndexBackup = mFIndex;
+  }
+  DART_ASSERT(mLcpSolver);
+  math::LcpOptions primaryOptions = mLcpSolver->getDefaultOptions();
+  if (mSecondaryLcpSolver)
+    primaryOptions.earlyTermination = true;
+  // Preserve legacy behavior to avoid unnecessary fallback on strict checks.
+  primaryOptions.validateSolution = false;
+  Eigen::MatrixXd Ablock = mA.leftCols(static_cast<Eigen::Index>(n)).eval();
+  math::LcpProblem problem(Ablock, mB, mLo, mHi, mFIndex);
+  math::LcpResult primaryResult
+      = mLcpSolver->solve(problem, mX, primaryOptions);
+  constexpr double kImpulseClamp = 1e12;
+  auto isUsable = [&](const Eigen::VectorXd& x) {
+    return x.allFinite() && x.array().abs().maxCoeff() < kImpulseClamp;
+  };
+
+  bool success = primaryResult.succeeded() && isUsable(mX);
+
+  bool fallbackSuccess = false;
+  bool fallbackRan = false;
+  bool fallbackUsable = false;
+  if (!success && mSecondaryLcpSolver) {
+    DART_PROFILE_SCOPED_N("Secondary LCP");
+    math::LcpOptions fallbackOptions = mSecondaryLcpSolver->getDefaultOptions();
+    fallbackOptions.earlyTermination = false;
+    fallbackOptions.validateSolution = false;
+    Eigen::MatrixXd Abackup
+        = mABackup.leftCols(static_cast<Eigen::Index>(n)).eval();
+    math::LcpProblem fallbackProblem(
+        Abackup, mBBackup, mLoBackup, mHiBackup, mFIndexBackup);
+    math::LcpResult fallbackResult = mSecondaryLcpSolver->solve(
+        fallbackProblem, mXBackup, fallbackOptions);
+    fallbackSuccess = fallbackResult.succeeded();
+    fallbackUsable = mXBackup.allFinite()
+                     && mXBackup.array().abs().maxCoeff() < kImpulseClamp;
+    mX = mXBackup;
+    fallbackRan = true;
+    if (!fallbackSuccess && fallbackUsable) {
+      const double absTol = (fallbackOptions.absoluteTolerance > 0.0)
+                                ? fallbackOptions.absoluteTolerance
+                                : 1e-6;
+      const double residualThreshold = 10.0 * absTol;
+      const bool residualFinite = std::isfinite(fallbackResult.residual);
+      const bool warn
+          = !residualFinite || fallbackResult.residual > residualThreshold;
+      if (warn) {
+        DART_WARN(
+            "[ConstraintSolver] Secondary LCP fallback status={}, "
+            "iters={}/{}, res={:.3g} (thr={:.3g}), comp={:.3g}. "
+            "Using best-effort solution.",
+            math::toString(fallbackResult.status),
+            fallbackResult.iterations,
+            fallbackOptions.maxIterations,
+            fallbackResult.residual,
+            residualThreshold,
+            fallbackResult.complementarity);
+      } else {
+        DART_DEBUG(
+            "[ConstraintSolver] Secondary LCP fallback status={}, "
+            "iters={}/{}, res={:.3g}, comp={:.3g}. Using best-effort solution.",
+            math::toString(fallbackResult.status),
+            fallbackResult.iterations,
+            fallbackOptions.maxIterations,
+            fallbackResult.residual,
+            fallbackResult.complementarity);
+      }
+    }
+  }
+
+  const bool solutionFinite = mX.allFinite();
+  if (!success && fallbackRan && !solutionFinite) {
+    mX = mX.array().isFinite().select(mX, 0.0);
+  }
+
+  const bool finalSuccess = success || (fallbackRan && fallbackUsable);
+
+#if !defined(NDEBUG)
+  const double maxImpulse = mX.size() > 0 ? mX.cwiseAbs().maxCoeff() : 0.0;
+  if (maxImpulse > 1e6) {
+    DART_WARN(
+        "[ConstraintSolver] Large impulse magnitude detected (max = {}).",
+        maxImpulse);
+  }
+#endif
+
+  if (!finalSuccess) {
+    if (!isUsable(mX)) {
+      DART_ERROR(
+          "[ConstraintSolver] The solution of LCP includes non-finite or "
+          "unbounded values: {}. We're setting it zero for safety. Consider "
+          "using a more robust secondary solver. If this happens even with a "
+          "secondary solver, please report this as a bug.",
+          fmt::streamed(mX.transpose()));
+    } else {
+      DART_ERROR(
+          "[ConstraintSolver] Primary LCP solver failed to find a solution. "
+          "The constraint impulses are set to zero for safety. Consider "
+          "configuring a secondary solver (e.g., PGS) to provide a fallback "
+          "when Dantzig fails.");
+    }
+
+    mX.setZero();
+  }
+  {
+    DART_PROFILE_SCOPED_N("Apply constraint impulses");
+    for (std::size_t i = 0; i < numConstraints; ++i) {
+      const ConstraintBasePtr& constraint = group.getConstraint(i);
+      constraint->applyImpulse(mX.data() + mOffset[i]);
+      constraint->excite();
+    }
+  }
+}
+
+//==============================================================================
+bool ConstraintSolver::isSymmetric(std::size_t n, double* A)
+{
+  std::size_t nSkip = math::padding(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    for (std::size_t j = 0; j < n; ++j) {
+      if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6) {
+        std::cout << "A: " << std::endl;
+        for (std::size_t k = 0; k < n; ++k) {
+          for (std::size_t l = 0; l < nSkip; ++l) {
+            std::cout << std::setprecision(4) << A[k * nSkip + l] << " ";
+          }
+          std::cout << std::endl;
+        }
+
+        std::cout << "A(" << i << ", " << j << "): " << A[nSkip * i + j]
+                  << std::endl;
+        std::cout << "A(" << j << ", " << i << "): " << A[nSkip * j + i]
+                  << std::endl;
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
+bool ConstraintSolver::isSymmetric(
+    std::size_t n, double* A, std::size_t begin, std::size_t end)
+{
+  std::size_t nSkip = math::padding(n);
+  for (std::size_t i = begin; i <= end; ++i) {
+    for (std::size_t j = begin; j <= end; ++j) {
+      if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6) {
+        std::cout << "A: " << std::endl;
+        for (std::size_t k = 0; k < n; ++k) {
+          for (std::size_t l = 0; l < nSkip; ++l) {
+            std::cout << std::setprecision(4) << A[k * nSkip + l] << " ";
+          }
+          std::cout << std::endl;
+        }
+
+        std::cout << "A(" << i << ", " << j << "): " << A[nSkip * i + j]
+                  << std::endl;
+        std::cout << "A(" << j << ", " << i << "): " << A[nSkip * j + i]
+                  << std::endl;
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
+void ConstraintSolver::print(
+    std::size_t n,
+    double* A,
+    double* x,
+    double* /*lo*/,
+    double* /*hi*/,
+    double* b,
+    double* w,
+    int* findex)
+{
+  std::size_t nSkip = math::padding(n);
+  std::cout << "A: " << std::endl;
+  for (std::size_t i = 0; i < n; ++i) {
+    for (std::size_t j = 0; j < nSkip; ++j) {
+      std::cout << std::setprecision(4) << A[i * nSkip + j] << " ";
+    }
+    std::cout << std::endl;
+  }
+
+  std::cout << "b: ";
+  for (std::size_t i = 0; i < n; ++i) {
+    std::cout << std::setprecision(4) << b[i] << " ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "w: ";
+  for (std::size_t i = 0; i < n; ++i) {
+    std::cout << w[i] << " ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "x: ";
+  for (std::size_t i = 0; i < n; ++i) {
+    std::cout << x[i] << " ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "frictionIndex: ";
+  for (std::size_t i = 0; i < n; ++i) {
+    std::cout << findex[i] << " ";
+  }
+  std::cout << std::endl;
+
+  auto* Ax = new double[n];
+  for (std::size_t i = 0; i < n; ++i)
+    Ax[i] = 0.0;
+  for (std::size_t i = 0; i < n; ++i) {
+    for (std::size_t j = 0; j < n; ++j) {
+      Ax[i] += A[i * nSkip + j] * x[j];
+    }
+  }
+
+  std::cout << "Ax   : ";
+  for (std::size_t i = 0; i < n; ++i) {
+    std::cout << Ax[i] << " ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "b + w: ";
+  for (std::size_t i = 0; i < n; ++i) {
+    std::cout << b[i] + w[i] << " ";
+  }
+  std::cout << std::endl;
+
+  delete[] Ax;
 }
 
 } // namespace constraint

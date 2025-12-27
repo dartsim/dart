@@ -53,20 +53,16 @@ class ContactSurfaceHandler;
 class DefaultContactSurfaceHandler;
 
 class DantzigBoxedLcpSolver;
-class DantzigLCPSolver;
 class DynamicJointConstraint;
 
 class JointConstraint;
 class JointCoulombFrictionConstraint;
 class JointLimitConstraint;
 
-class LCPSolver;
-
 class MimicMotorConstraint;
 class RevoluteJointConstraint;
 
 class PgsBoxedLcpSolver;
-class PGSLCPSolver;
 
 class ServoMotorConstraint;
 class SoftContactConstraint;
@@ -87,11 +83,8 @@ DART_COMMON_DECLARE_SHARED_WEAK(MimicMotorConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(CouplerConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(JointCoulombFrictionConstraint)
 
-DART_COMMON_DECLARE_SHARED_WEAK(LCPSolver)
 DART_COMMON_DECLARE_SHARED_WEAK(BoxedLcpSolver)
 DART_COMMON_DECLARE_SHARED_WEAK(PgsBoxedLcpSolver)
-DART_COMMON_DECLARE_SHARED_WEAK(PsorBoxedLcpSolver)
-DART_COMMON_DECLARE_SHARED_WEAK(JacobiBoxedLcpSolver)
 
 DART_COMMON_DECLARE_SHARED_WEAK(DynamicJointConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(BallJointConstraint)

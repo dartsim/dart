@@ -560,7 +560,7 @@ graph TB
 
 **Depends On**:
 
-- **Internal**: Constraint classes, BoxedLcpSolver, Skeleton
+- **Internal**: Constraint classes, math::LcpSolver, Skeleton
 - **External**: Eigen for matrix operations
 
 ---

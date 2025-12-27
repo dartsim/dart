@@ -30,63 +30,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * This file contains code derived from Open Dynamics Engine (ODE).
- * Original copyright notice:
- *
- * Open Dynamics Engine, Copyright (C) 2001,2002 Russell L. Smith.
- * All rights reserved.  Email: russ@q12.org   Web: www.q12.org
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of EITHER:
- *   (1) The GNU Lesser General Public License as published by the Free
- *       Software Foundation; either version 2.1 of the License, or (at
- *       your option) any later version. The text of the GNU Lesser
- *       General Public License is included with this library in the
- *       file LICENSE.TXT.
- *   (2) The BSD-style license that is included with this library in
- *       the file LICENSE-BSD.TXT.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the files
- * LICENSE.TXT and LICENSE-BSD.TXT for more details.
- */
+#pragma once
 
-#include "dart/math/lcp/dantzig/Misc.hpp"
+#include <dart/math/lcp/LcpSolver.hpp>
 
 namespace dart::math {
 
-//==============================================================================
-// Random number generation
-//==============================================================================
-
-static unsigned long rng_seed = 0;
-
-unsigned long dRand()
+/// Wrapper around the legacy Dantzig BLCP solver exposing the modern
+/// `LcpSolver` interface.
+class DART_API DantzigSolver : public LcpSolver
 {
-  rng_seed = (rng_seed * 1103515245 + 12345) & 0xffffffff;
-  return rng_seed;
-}
+public:
+  DantzigSolver();
+  ~DantzigSolver() override = default;
 
-unsigned long dRandGetSeed()
-{
-  return rng_seed;
-}
+  using LcpSolver::solve;
 
-void dRandSetSeed(unsigned long s)
-{
-  rng_seed = s;
-}
+  LcpResult solve(
+      const LcpProblem& problem,
+      Eigen::VectorXd& x,
+      const LcpOptions& options) override;
 
-int dRandInt(int n)
-{
-  return static_cast<int>(dRandReal() * n);
-}
-
-double dRandReal()
-{
-  return static_cast<double>(dRand()) / static_cast<double>(0xffffffff);
-}
+  std::string getName() const override;
+  std::string getCategory() const override;
+};
 
 } // namespace dart::math

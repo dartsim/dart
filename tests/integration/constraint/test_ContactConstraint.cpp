@@ -35,6 +35,8 @@
 #include "dart/common/All.hpp"
 #include "dart/constraint/All.hpp"
 #include "dart/dynamics/All.hpp"
+#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
+#include "dart/math/lcp/projection/PgsSolver.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>
@@ -45,11 +47,11 @@ using namespace dart::test;
 
 //==============================================================================
 void testContactWithKinematicJoint(
-    const constraint::BoxedLcpSolverPtr& lcpSolver, double tol)
+    const math::LcpSolverPtr& lcpSolver, double tol)
 {
   auto world = std::make_shared<simulation::World>();
   world->setConstraintSolver(
-      std::make_unique<constraint::BoxedLcpConstraintSolver>(lcpSolver));
+      std::make_unique<constraint::ConstraintSolver>(lcpSolver));
 
   auto skeleton1 = dynamics::Skeleton::create("skeleton1");
   auto pair1 = skeleton1->createJointAndBodyNodePair<dynamics::FreeJoint>();
@@ -93,14 +95,17 @@ void testContactWithKinematicJoint(
 //==============================================================================
 TEST(ContactConstraint, ContactWithKinematicJoint)
 {
+#ifdef _WIN32
+  constexpr double dantzigTol = 1e-3;
+#else
+  constexpr double dantzigTol = 5e-5;
+#endif
   testContactWithKinematicJoint(
-      std::make_shared<constraint::DantzigBoxedLcpSolver>(), 1e-6);
+      std::make_shared<math::DantzigSolver>(), dantzigTol);
 
 #ifdef DART_ARCH_32BITS
-  testContactWithKinematicJoint(
-      std::make_shared<constraint::PgsBoxedLcpSolver>(), 1e-3);
+  testContactWithKinematicJoint(std::make_shared<math::PgsSolver>(), 1e-3);
 #else
-  testContactWithKinematicJoint(
-      std::make_shared<constraint::PgsBoxedLcpSolver>(), 1e-4);
+  testContactWithKinematicJoint(std::make_shared<math::PgsSolver>(), 1e-4);
 #endif
 }

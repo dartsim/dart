@@ -44,7 +44,8 @@ namespace math {
 /// Lemke's complementary pivot algorithm for LCP
 ///
 /// This solver uses Lemke's algorithm with an artificial variable to solve
-/// standard LCPs. It provides exact solutions when they exist.
+/// standard LCPs. For boxed LCPs (including friction-index coupling), it
+/// delegates to the boxed-capable pivoting solver implementation.
 ///
 /// Reference:
 ///   Lemke, C. E. (1965). "Bimatrix equilibrium points and mathematical
@@ -66,14 +67,12 @@ class DART_API LemkeSolver : public LcpSolver
 public:
   /// Constructor
   LemkeSolver();
-
-  /// Destructor
   ~LemkeSolver() override = default;
 
-  // Documentation inherited
+  using LcpSolver::solve;
+
   LcpResult solve(
-      const Eigen::MatrixXd& A,
-      const Eigen::VectorXd& b,
+      const LcpProblem& problem,
       Eigen::VectorXd& x,
       const LcpOptions& options) override;
 

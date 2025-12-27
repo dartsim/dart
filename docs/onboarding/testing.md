@@ -12,15 +12,26 @@ This directory contains the complete test suite for DART (Dynamic Animation and 
 
 Smallest repeatable local loop before a full CI run.
 
+Choose a parallelism cap around two-thirds of logical cores, then set `DART_PARALLEL_JOBS` and `CTEST_PARALLEL_LEVEL` to that value (see [building.md](building.md) for details).
+
+Lint/format pass (fastest local sanity check).
+
 Suggested (Unverified):
 
 ```bash
 pixi run lint
+```
+
+Targeted build + test (optional, fastest when a single target fails).
+
+Suggested (Unverified):
+
+```bash
 cmake --build <BUILD_DIR> --target <TARGET>
 ctest --test-dir <BUILD_DIR> --output-on-failure -R <TEST_REGEX>
 ```
 
-Example (Used in this task):
+Example:
 
 ```bash
 pixi run lint
@@ -30,8 +41,20 @@ ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_gui_MeshS
 
 Signals to look for:
 
-- `ctest` ends with `100% tests passed`
-- `pixi run lint` completes without modifying unrelated files
+- The lint task completes without reporting errors
+- Any auto-formatting changes are expected and reviewed before committing
+
+Targeted tests (optional, but recommended before pushing when behavior changes).
+
+Suggested (Unverified):
+
+```bash
+DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test
+```
+
+Signals to look for:
+
+- The test runner ends with `100% tests passed`
 
 Full validation.
 
@@ -44,15 +67,18 @@ DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run -e gazebo test-gz
 
 Signals to look for:
 
-- `pixi run test-all` ends with `✓ All tests passed!`
-- `pixi run -e gazebo test-gz` prints `✓ DART plugin built successfully with DART integration!`
-
-If you need broader coverage, choose a parallelism cap around two-thirds of logical cores, then set `DART_PARALLEL_JOBS` and `CTEST_PARALLEL_LEVEL` to that value (see [building.md](building.md) for details).
+- The full test run ends with `✓ All tests passed!`
+- The Gazebo integration workflow prints `✓ DART plugin built successfully with DART integration!`
 
 ## Gotchas
 
+- The lint task can take a while on the first run because it configures and formats; rerun if it was interrupted.
+- Linting runs auto-fixers (formatters/codespell), so expect file diffs even when the code is functionally unchanged; check `git status` before committing.
 - `pixi run lint` can rewrite identifiers via codespell; if a spelling or casing is intentional, add it to `.codespellrc` and re-run lint.
-- Lint runs can modify files; check `git status` before committing.
+
+## Next-Time Accelerators
+
+- Run the lint task early to surface formatting/codespell changes before longer build/test cycles.
 
 ## Directory Structure
 

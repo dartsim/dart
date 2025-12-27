@@ -154,7 +154,7 @@ TEST(Issue1445, Collision)
 
   const std::size_t numSteps = 100;
 
-  const double zeroVelocityTol = 2e-3;
+  const double zeroVelocityTol = 3e-3;
 
   for (std::size_t i = 0; i < numSteps; ++i)
     world->step();

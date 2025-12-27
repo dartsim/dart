@@ -3,7 +3,7 @@
  * All rights reserved.
  */
 
-#include "dart/math/lcp/dantzig/PivotMatrix.hpp"
+#include "dart/math/lcp/pivoting/dantzig/PivotMatrix.hpp"
 
 #include <gtest/gtest.h>
 

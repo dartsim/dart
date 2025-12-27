@@ -174,11 +174,18 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    cmake --build <BUILD_DIR> --target <TARGET>
    ```
 
-   Example (Used in this task):
+   Example:
 
    ```bash
    pixi run lint
    cmake --build build/default/cpp/Release --target UNIT_gui_MeshShapeNodeMaterialUpdates
+   ```
+
+   Suggested (Unverified):
+
+   ```bash
+   DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test
+   DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test-all
    ```
 
    Note: `pixi run test-all` runs `pixi run lint` (auto-fixing) internally; check `git status` afterwards before committing.

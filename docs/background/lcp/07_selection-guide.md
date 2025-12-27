@@ -7,31 +7,28 @@
 ```
 START
   |
-  ├─ Real-time/Interactive? ──YES──> PGS or PSOR
-  |                                   (when implemented)
+  ├─ Real-time/Interactive? ──YES──> PGS/PSOR (PgsSolver w/ relaxation)
   |
   ├─ High accuracy needed? ──YES──> Newton Methods or Pivoting
   |                                  (Dantzig/Lemke available now)
   |
-  ├─ Large problem (n>1000)? ──YES──> NNCG or PGS
-  |                                    (when implemented)
+  ├─ Large problem (n>1000)? ──YES──> PGS (now) or NNCG (future)
   |
   ├─ Ill-conditioned? ──YES──> Pivoting (Dantzig/Lemke)
   |                             or Interior Point
   |
-  ├─ Contact problem? ──YES──> BGS or ODELCPSolver
-  |                             (ODELCPSolver available now)
+  ├─ Contact problem? ──YES──> BGS or Dantzig
   |
-  └─ Default ──> Start with Dantzig or Lemke
-                  (currently implemented)
+  └─ Default ──> Start with Dantzig or PGS
+                  (Lemke for standard LCP)
 ```
 
 ## Detailed Selection by Use Case
 
 ### 1. Real-Time Physics Simulation
 
-**Recommended (when implemented)**: PGS > PSOR > BGS
-**Currently Available**: Dantzig, Lemke, ODELCPSolver
+**Recommended**: PGS/PSOR (`PgsSolver` with relaxation) > BGS (future)
+**Currently Available**: PGS/PSOR ✅, Dantzig ✅, Lemke ✅
 
 **Rationale**:
 
@@ -43,22 +40,17 @@ START
 **Configuration**:
 
 ```
-Method: PGS (when implemented)
+Method: PGS
 Max iterations: 50-100
 Tolerance: 1e-4 to 1e-6
 Warm start: Previous time-step solution
+Relaxation: 1.0 (PGS), 1.2-1.5 (PSOR)
+Randomize order: Optional (can improve robustness)
+Fallback: Dantzig if iterative solve stalls
 ```
 
-**Current Workaround**:
-
-```cpp
-// Use ODELCPSolver for contact problems
-ODELCPSolver solver;
-solver.Solve(A, b, &x, numContacts, mu, numDir, true);
-
-// Or Dantzig for bounded problems
-SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
-```
+`constraint::ConstraintSolver` already wires this up by running
+`math::DantzigSolver` first and falling back to `math::PgsSolver` when needed.
 
 ### 2. High-Accuracy Off-Line Simulation
 
@@ -85,45 +77,41 @@ Subsolver: GMRES with tolerance 0.1*||H||
 **Current Best**:
 
 ```cpp
-// Dantzig for bounded problems
-SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
+dart::math::LcpProblem problem(A, b, lo, hi, findex);
+dart::math::DantzigSolver solver;
+solver.solve(problem, x, solver.getDefaultOptions());
 
-// Lemke for standard LCP
-Lemke(M, q, &z);
+// Lemke for standard LCP (lo=0, hi=inf, findex=-1)
+dart::math::LcpProblem standard(M, -q, Eigen::VectorXd::Zero(q.size()),
+                                Eigen::VectorXd::Constant(q.size(),
+                                                          std::numeric_limits<double>::infinity()),
+                                Eigen::VectorXi::Constant(q.size(), -1));
+dart::math::LemkeSolver lemke;
+lemke.solve(standard, z, lemke.getDefaultOptions());
 ```
 
 ### For Contact Mechanics with Friction
 
-**Recommended**: ODELCPSolver (uses Dantzig) > Dantzig directly
-**Currently Available**: ODELCPSolver ✅, Dantzig ✅
+**Recommended**: Dantzig with optional PGS fallback
+**Currently Available**: Dantzig ✅, PGS ✅
 
 **Rationale**:
 
 - Natural block structure (per-contact)
 - Friction cone constraints
 - Normal/tangential coupling
-- ODELCPSolver handles formulation automatically
 
 **Configuration**:
 
 ```cpp
-// Current: Use ODELCPSolver (wrapper around Dantzig)
-dart::math::ODELCPSolver solver;
-bool success = solver.Solve(
-    A, b, &x,
-    numContacts,  // Number of contact points
-    mu,           // Friction coefficient
-    numDir,       // Friction directions (0, 2, or 4)
-    true          // Use internal Dantzig solver
-);
-
-// Or use Dantzig directly with friction indices
-int findex[n];
-// Set up findex for friction cone
-dart::math::SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
+// Use the boxed LCP API with friction indices
+dart::math::LcpProblem problem(A, b, lo, hi, findex);
+dart::math::DantzigSolver solver;
+Eigen::VectorXd x = Eigen::VectorXd::Zero(b.size());
+solver.solve(problem, x, solver.getDefaultOptions());
 ```
 
-**Future BGS (when implemented)**:
+**Future BGS**:
 
 ```
 Per-contact blocks with:
@@ -134,8 +122,8 @@ Per-contact blocks with:
 
 ### 4. Large-Scale Problems (n > 1000)
 
-**Recommended (when implemented)**: NNCG > PGS > Newton+Iterative
-**Currently Available**: Dantzig, Lemke (limited scalability)
+**Recommended**: PGS (available) > NNCG (future) > Newton+Iterative
+**Currently Available**: PGS ✅, Dantzig ✅, Lemke ✅
 
 **Rationale**:
 
@@ -154,12 +142,9 @@ Warm start: Previous solution or zeros
 
 **Current Approach**:
 
-```
-# For very large problems, consider:
-# 1. Problem decomposition
-# 2. Using external solvers (MOSEK, CPLEX)
-# 3. Approximation techniques
-```
+- Prefer `math::PgsSolver` for scalability, with Dantzig fallback if it fails
+- Decompose by contact groups to keep LCP blocks small
+- For extremely large problems, consider external solvers or approximations
 
 ### 5. Ill-Conditioned Problems
 
@@ -176,10 +161,20 @@ Warm start: Previous solution or zeros
 
 ```cpp
 // Dantzig is robust for ill-conditioned problems
-SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
+dart::math::LcpProblem problem(A, b, lo, hi, findex);
+dart::math::DantzigSolver solver;
+solver.solve(problem, x, solver.getDefaultOptions());
 
 // Or Lemke
-Lemke(M, q, &z);
+dart::math::LcpProblem standardProblem(
+    M,
+    q,
+    Eigen::VectorXd::Zero(q.size()),
+    Eigen::VectorXd::Constant(
+        q.size(), std::numeric_limits<double>::infinity()),
+    Eigen::VectorXi::Constant(q.size(), -1));
+dart::math::LemkeSolver lemke;
+lemke.solve(standardProblem, z, lemke.getDefaultOptions());
 validate(M, z, q);  // Always validate
 ```
 
@@ -195,7 +190,7 @@ Try:
 
 ### 6. Parallel/GPU Computing
 
-**Recommended (when implemented)**: Jacobi > Red-Black GS > Blocked Jacobi
+**Recommended**: Jacobi > Red-Black GS > Blocked Jacobi (future work)
 **Currently Available**: None (sequential methods only)
 
 **Rationale**:
@@ -217,15 +212,15 @@ Block size: 32-256 threads per block
 
 ### Computational Cost
 
-| Use Case      | Best Method  | Per-Iter Time | Iterations | Total Time | Available Now |
-| ------------- | ------------ | ------------- | ---------- | ---------- | ------------- |
-| Real-time     | PGS          | O(n)          | 50-100     | O(50n)     | ❌            |
-| Real-time     | Dantzig      | O(n³)         | 1          | O(n³)      | ✅            |
-| High accuracy | Newton       | O(n³)\*       | 5-20       | O(20n³)\*  | ❌            |
-| High accuracy | Dantzig      | O(n³)         | 1          | O(n³)      | ✅            |
-| Contact       | BGS          | O(nb³)        | 50-100     | O(50nb³)   | ❌            |
-| Contact       | ODELCPSolver | -             | -          | -          | ✅            |
-| Large-scale   | NNCG         | O(n)          | 20-200     | O(200n)    | ❌            |
+| Use Case      | Best Method | Per-Iter Time | Iterations | Total Time | Available Now |
+| ------------- | ----------- | ------------- | ---------- | ---------- | ------------- |
+| Real-time     | PGS         | O(n)          | 50-100     | O(50n)     | ✅            |
+| Real-time     | Dantzig     | O(n³)         | 1          | O(n³)      | ✅            |
+| High accuracy | Newton      | O(n³)\*       | 5-20       | O(20n³)\*  | ❌            |
+| High accuracy | Dantzig     | O(n³)         | 1          | O(n³)      | ✅            |
+| Contact       | BGS         | O(nb³)        | 50-100     | O(50nb³)   | ❌            |
+| Contact       | Dantzig     | -             | -          | -          | ✅            |
+| Large-scale   | NNCG        | O(n)          | 20-200     | O(200n)    | ❌            |
 
 \* With iterative subsolver
 
@@ -238,8 +233,8 @@ Slower          ─────────────────────�
 Pivoting ─> Newton ─> Interior Point ─> NNCG ─> BGS ─> PGS ─> Jacobi
 (exact)     (1e-10)   (1e-8)           (1e-6)  (1e-4) (1e-3) (1e-2)
 
-✅ Available:  Dantzig, Lemke
-❌ Future:     All others
+✅ Available:  Dantzig, Lemke, PGS/PSOR
+❌ Future:     Newton, BGS, NNCG, …
 ```
 
 ### Robustness vs Efficiency
@@ -250,8 +245,8 @@ Slower      ──────────────────────�
 
 Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
-✅ Available:  Dantzig, Lemke
-❌ Future:     All others
+✅ Available:  Dantzig, Lemke, PGS/PSOR
+❌ Future:     Newton, BGS, NNCG, …
 ```
 
 ## Problem Size Guidelines
@@ -260,18 +255,18 @@ Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 | ---------------- | ------------------------ | -------------------- |
 | n < 10           | Direct 2D/3D or Pivoting | Dantzig ✅, Lemke ✅ |
 | 10 ≤ n < 100     | Pivoting or Newton       | Dantzig ✅, Lemke ✅ |
-| 100 ≤ n < 1000   | PGS, BGS, or Newton      | Dantzig ✅ (slow)    |
-| 1000 ≤ n < 10000 | NNCG or PGS              | None (need PGS)      |
-| n ≥ 10000        | NNCG or specialized      | None                 |
+| 100 ≤ n < 1000   | PGS, BGS, or Newton      | PGS ✅, Dantzig ✅   |
+| 1000 ≤ n < 10000 | NNCG or PGS              | PGS ✅               |
+| n ≥ 10000        | NNCG or specialized      | PGS ✅ (approx)      |
 
 ## Conditioning Guidelines
 
-| Matrix Condition     | Recommended Method       | Currently Available  |
-| -------------------- | ------------------------ | -------------------- |
-| Well-conditioned     | Any method               | All ✅               |
-| Moderate             | PGS, Newton, Pivoting    | Dantzig ✅, Lemke ✅ |
-| Ill-conditioned      | Pivoting, Interior Point | Dantzig ✅, Lemke ✅ |
-| Very ill-conditioned | Pivoting only            | Dantzig ✅, Lemke ✅ |
+| Matrix Condition     | Recommended Method       | Currently Available          |
+| -------------------- | ------------------------ | ---------------------------- |
+| Well-conditioned     | Any method               | All ✅                       |
+| Moderate             | PGS, Newton, Pivoting    | PGS ✅, Dantzig ✅, Lemke ✅ |
+| Ill-conditioned      | Pivoting, Interior Point | PGS ✅, Dantzig ✅, Lemke ✅ |
+| Very ill-conditioned | Pivoting only            | Dantzig ✅, Lemke ✅         |
 
 ## Implementation Roadmap Impact
 
@@ -281,45 +276,25 @@ Available solvers:
 
 - ✅ **Dantzig**: BLCP with bounds, friction support
 - ✅ **Lemke**: Standard LCP
-- ✅ **ODELCPSolver**: Contact problems wrapper
+- ✅ **PGS/PSOR**: Iterative boxed LCP with friction index fallback (tune
+  `LcpOptions::relaxation`)
 
 **Best Practices Now**:
 
 ```cpp
-// For bounded problems with friction
-SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
-
-// For standard LCP
-Lemke(M, q, &z);
-
-// For contact problems
-ODELCPSolver solver;
-solver.Solve(A, b, &x, numContacts, mu, numDir, true);
+dart::math::LcpProblem problem(A, b, lo, hi, findex);
+dart::math::DantzigSolver dantzig;
+dart::math::PgsSolver pgs;
+auto result = dantzig.solve(problem, x, dantzig.getDefaultOptions());
+if (!result.succeeded()) {
+  pgs.solve(problem, x, pgs.getDefaultOptions());
+}
 ```
 
-### Phase 1: Core Iterative (Priority)
+### Remaining Gaps
 
-When PGS/PSOR are implemented:
-
-- ✅ Real-time simulation becomes viable
-- ✅ Most contact problems solvable interactively
-- ✅ O(n) iteration cost achieved
-
-### Phase 2: Blocked Methods
-
-When BGS is implemented:
-
-- ✅ Better contact force accuracy
-- ✅ Natural per-contact structure
-- ✅ Sub-solvers for small blocks
-
-### Phase 3: Advanced Iterative
-
-When NNCG is implemented:
-
-- ✅ Large-scale problems solvable
-- ✅ Better convergence than PGS
-- ✅ Mass ratio handling improved
+- Blocked Gauss-Seidel for per-contact blocks
+- NNCG or other large-scale iterative methods
 
 ### Phase 4: Newton Methods
 
@@ -338,8 +313,8 @@ When Newton methods are implemented:
 **Solution**:
 
 ```
-Current: Use ODELCPSolver or limit problem size
-Future: Use PGS or PSOR when implemented
+Current: Use PGS for real-time and keep Dantzig as fallback
+Tune:   Use `LcpOptions::relaxation` for PSOR-style relaxation
 ```
 
 ### Pitfall 2: Expecting High Accuracy from Iterative
@@ -363,7 +338,7 @@ For 1e-10: Use Newton or Pivoting (Dantzig ✅ available)
 // Use previous solution
 x_init = x_previous_timestep;
 
-// Or warm-start with few PGS iterations (when available)
+// Or warm-start with few PGS iterations
 ```
 
 ### Pitfall 4: Wrong Method for Problem Structure
@@ -373,7 +348,7 @@ x_init = x_previous_timestep;
 **Solution**:
 
 ```
-Current: Use ODELCPSolver ✅
+Current: Use Dantzig ✅
 Future: Use BGS (better per-contact structure)
 ```
 
@@ -397,7 +372,7 @@ if (merit_function > gamma * previous_merit) {
 
 ## Parameter Tuning Guidelines
 
-### PGS/PSOR (when implemented)
+### PGS/PSOR
 
 ```
 max_iterations:
@@ -414,7 +389,7 @@ relaxation (PSOR only):
   - Under-relax if unstable: 0.8-0.95
 ```
 
-### Newton Methods (when implemented)
+### Newton Methods (future)
 
 ```
 max_iterations: 20-50
@@ -460,7 +435,7 @@ findex[i] = j;   // Depends on x[j] for friction cone
 4. Scale problem: divide A, b by max(|A|)
 ```
 
-**For Future Iterative Methods**:
+**For Iterative Methods (PGS/PSOR)**:
 
 ```
 1. Increase max_iterations
@@ -475,20 +450,20 @@ findex[i] = j;   // Depends on x[j] for friction cone
 ```
 1. Validate input: A, b satisfy LCP structure
 2. Check bounds: lo <= 0 <= hi
-3. Verify complementarity: x^T(Ax+b) ≈ 0
+3. Verify complementarity: x^T(Ax-b) ≈ 0
 4. Try different solver (Dantzig vs Lemke)
 ```
 
 ### Performance is Poor
 
 ```
-Current (with Dantzig/Lemke):
+Current (with Dantzig/PGS/Lemke):
 1. Limit problem size (n < 100)
-2. Use ODELCPSolver for contacts
+2. Use Dantzig for contacts
 3. Reduce contact points
 4. Simplify collision geometry
 
-Future (with PGS/Newton):
+Future (with Newton/BGS):
 1. Use appropriate method for problem size
 2. Enable warm-starting
 3. Matrix-free implementations
@@ -497,26 +472,26 @@ Future (with PGS/Newton):
 
 ## Summary Recommendations
 
-### Current State (Until Phase 1 Complete)
+### Current State
 
-| Scenario               | Use                           | Notes                        |
-| ---------------------- | ----------------------------- | ---------------------------- |
-| Contact with friction  | ODELCPSolver                  | Best option now              |
-| Bounded variables      | Dantzig                       | Supports bounds and friction |
-| Standard LCP           | Lemke                         | Simple and robust            |
-| Large problems (n>100) | Limit size or external solver | Current methods O(n³)        |
-| Real-time (n>50)       | Reduce problem size           | O(n³) too expensive          |
+| Scenario               | Use      | Notes                                    |
+| ---------------------- | -------- | ---------------------------------------- |
+| Contact with friction  | Dantzig  | Best option now                          |
+| Bounded variables      | Dantzig  | Supports bounds and friction             |
+| Standard LCP           | Lemke    | Simple and robust                        |
+| Large problems (n>100) | PGS      | Scales better, approximate               |
+| Real-time (n>50)       | PGS/PSOR | Tune `relaxation`, keep Dantzig fallback |
 
 ### Future State (After Implementation)
 
-| Scenario        | Primary | Backup         | Notes              |
-| --------------- | ------- | -------------- | ------------------ |
-| Real-time       | PGS     | PSOR           | 50-100 iterations  |
-| Contact         | BGS     | PGS            | Per-contact blocks |
-| High accuracy   | Newton  | Dantzig        | 5-20 iterations    |
-| Large-scale     | NNCG    | PGS            | >1000 variables    |
-| Ill-conditioned | Dantzig | Interior Point | Most robust        |
-| Parallel        | Jacobi  | Red-Black GS   | GPU-friendly       |
+| Scenario        | Primary  | Backup         | Notes              |
+| --------------- | -------- | -------------- | ------------------ |
+| Real-time       | PGS/PSOR | -              | 50-100 iterations  |
+| Contact         | BGS      | PGS            | Per-contact blocks |
+| High accuracy   | Newton   | Dantzig        | 5-20 iterations    |
+| Large-scale     | NNCG     | PGS            | >1000 variables    |
+| Ill-conditioned | Dantzig  | Interior Point | Most robust        |
+| Parallel        | Jacobi   | Red-Black GS   | GPU-friendly       |
 
 ---
 

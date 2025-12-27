@@ -30,25 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_LCP_LEMKE_HPP_
-#define DART_MATH_LCP_LEMKE_HPP_
-
-#include "dart/Export.hpp"
-
-#include <Eigen/Dense>
+#pragma once
 
 namespace dart::math {
 
-/// @brief
-int DART_API Lemke(
-    const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd* _z);
-
-/// @brief
-bool DART_API validate(
-    const Eigen::MatrixXd& _M,
-    const Eigen::VectorXd& _z,
-    const Eigen::VectorXd& _q);
+/// Round an integer up to a multiple of 4, except that 0 and 1 are unmodified.
+///
+/// This matches the legacy behavior used by the ODE-derived Dantzig solver
+/// implementation for computing matrix leading dimensions.
+constexpr int padding(int a)
+{
+  return (a > 1) ? ((((a)-1) | 3) + 1) : a;
+}
 
 } // namespace dart::math
-
-#endif // DART_MATH_LCP_LEMKE_HPP_

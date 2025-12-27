@@ -30,59 +30,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_LCP_ODELCPSOLVER_HPP_
-#define DART_MATH_LCP_ODELCPSOLVER_HPP_
+#pragma once
 
-#include "dart/Export.hpp"
-
-#include <Eigen/Dense>
+#include <dart/math/lcp/LcpSolver.hpp>
 
 namespace dart::math {
 
-/// @brief
-class DART_API ODELCPSolver
+/// Projected Gauss-Seidel solver for standard and boxed LCPs.
+class DART_API PgsSolver : public LcpSolver
 {
 public:
-  /// @brief
-  ODELCPSolver();
+  struct Parameters
+  {
+    double epsilonForDivision{1e-9};
+    bool randomizeConstraintOrder{false};
+  };
 
-  /// @brief
-  virtual ~ODELCPSolver();
+  PgsSolver();
+  ~PgsSolver() override = default;
 
-  /// @brief
-  bool Solve(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      Eigen::VectorXd* _x,
-      int numContacts,
-      double mu = 0,
-      int numDir = 0,
-      bool bUseODESolver = false);
+  using LcpSolver::solve;
+
+  LcpResult solve(
+      const LcpProblem& problem,
+      Eigen::VectorXd& x,
+      const LcpOptions& options) override;
+
+  /// Set solver-specific parameters (e.g., division epsilon, ordering).
+  void setParameters(const Parameters& params);
+
+  /// Get the current solver-specific parameters.
+  const Parameters& getParameters() const;
+
+  std::string getName() const override;
+  std::string getCategory() const override;
 
 private:
-  /// @brief
-  void transferToODEFormulation(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      Eigen::MatrixXd* _AOut,
-      Eigen::VectorXd* _bOut,
-      int _numDir,
-      int _numContacts);
-
-  /// @brief
-  void transferSolFromODEFormulation(
-      const Eigen::VectorXd& _x,
-      Eigen::VectorXd* _xOut,
-      int _numDir,
-      int _numContacts);
-
-  /// @brief
-  bool checkIfSolution(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      const Eigen::VectorXd& _x);
+  Parameters mParameters;
 };
 
 } // namespace dart::math
-
-#endif // DART_MATH_LCP_ODELCPSOLVER_HPP_

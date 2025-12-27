@@ -54,10 +54,10 @@
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
-#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
-#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
-#include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/RevoluteJointConstraint.hpp"
+#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
+#include "dart/math/lcp/projection/PgsSolver.hpp"
 #include "dart/simulation/World.hpp"
 
 using namespace dart;
@@ -610,8 +610,8 @@ TEST(World, SetNewConstraintSolver)
   EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
   EXPECT_TRUE(world->getConstraintSolver()->getNumConstraints() == 1);
 
-  auto solver1 = std::make_unique<constraint::BoxedLcpConstraintSolver>(
-      std::make_shared<constraint::DantzigBoxedLcpSolver>());
+  auto solver1 = std::make_unique<constraint::ConstraintSolver>(
+      std::make_shared<math::DantzigSolver>());
   EXPECT_TRUE(solver1->getSkeletons().size() == 0);
   EXPECT_TRUE(solver1->getNumConstraints() == 0);
 
@@ -619,8 +619,8 @@ TEST(World, SetNewConstraintSolver)
   EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
   EXPECT_TRUE(world->getConstraintSolver()->getNumConstraints() == 1);
 
-  auto solver2 = std::make_unique<constraint::BoxedLcpConstraintSolver>(
-      std::make_shared<constraint::PgsBoxedLcpSolver>());
+  auto solver2 = std::make_unique<constraint::ConstraintSolver>(
+      std::make_shared<math::PgsSolver>());
   EXPECT_TRUE(solver2->getSkeletons().size() == 0);
   EXPECT_TRUE(solver2->getNumConstraints() == 0);
 

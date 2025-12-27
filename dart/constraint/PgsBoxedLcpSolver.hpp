@@ -37,13 +37,11 @@
 
 #include <dart/Export.hpp>
 
-#include <vector>
-
 namespace dart {
 namespace constraint {
 
-/// Implementation of projected Gauss-Seidel (PGS) LCP solver.
-class DART_API PgsBoxedLcpSolver : public BoxedLcpSolver
+/// Deprecated; will be removed in DART 8.0. Use dart::math::LcpSolver.
+class DART_API DART_DEPRECATED("8.0") PgsBoxedLcpSolver : public BoxedLcpSolver
 {
 public:
   struct DART_API Option
@@ -62,13 +60,10 @@ public:
         bool randomizeConstraintOrder = false);
   };
 
-  // Documentation inherited.
   const std::string& getType() const override;
 
-  /// Returns type for this class
   static const std::string& getStaticType();
 
-  // Documentation inherited.
   bool solve(
       int n,
       double* A,
@@ -80,24 +75,14 @@ public:
       int* findex,
       bool earlyTermination) override;
 
-  // Documentation inherited.
   bool canSolve(int n, const double* A) override;
 
-  /// Sets options
   void setOption(const Option& option);
 
-  /// Returns options.
   const Option& getOption() const;
 
 protected:
   Option mOption;
-
-  mutable std::vector<int> mCacheOrder;
-  mutable std::vector<double> mCacheD;
-  mutable Eigen::VectorXd mCachedNormalizedA;
-  mutable Eigen::MatrixXd mCachedNormalizedB;
-  mutable Eigen::VectorXd mCacheZ;
-  mutable Eigen::VectorXd mCacheOldX;
 };
 
 } // namespace constraint

@@ -56,7 +56,7 @@
 #pragma once
 
 #include "dart/Export.hpp"
-#include "dart/math/lcp/dantzig/Common.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Common.hpp"
 
 #include <Eigen/Core>
 
@@ -119,4 +119,4 @@ bool SolveLCP(
 } // namespace dart::math
 
 // Template implementations for header-only usage
-#include "dart/math/lcp/dantzig/Lcp-impl.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Lcp-impl.hpp"

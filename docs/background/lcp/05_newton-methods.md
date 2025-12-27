@@ -25,15 +25,15 @@ All Newton methods follow this pattern:
 ### Reformulation
 
 ```
-H(x) = min(x, Ax + b) = 0
+H(x) = min(x, Ax - b) = 0
 ```
 
 ### B-Derivative (Generalized Jacobian)
 
 ```
 Partition indices into:
-  A = {i | y_i = (Ax+b)_i < x_i}  (active set)
-  F = {i | y_i = (Ax+b)_i >= x_i}  (free set)
+  A = {i | y_i = (Ax-b)_i < x_i}  (active set)
+  F = {i | y_i = (Ax-b)_i >= x_i}  (free set)
 
 Then:
   JH = [ A_AA ]  (block for active set)
@@ -55,7 +55,7 @@ For free set:
 ```
 while not converged:
   # Compute residual
-  y = Ax + b
+  y = Ax - b
   H = min(x, y)
 
   # Partition into active/free sets
@@ -96,7 +96,7 @@ while not converged:
 ```
 For each component:
   phi_FB(x_i, y_i) = sqrt(x_i² + y_i²) - x_i - y_i = 0
-where y_i = (Ax + b)_i
+where y_i = (Ax - b)_i
 ```
 
 ### Generalized Jacobian
@@ -124,7 +124,7 @@ For (x_i, y_i) = (0, 0):
 ```
 while not converged:
   # Compute Fischer-Burmeister function
-  y = Ax + b
+  y = Ax - b
   for i = 1 to n:
     F_i = sqrt(x_i² + y_i²) - x_i - y_i
 

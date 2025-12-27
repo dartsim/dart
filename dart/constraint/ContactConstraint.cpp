@@ -39,7 +39,6 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Constants.hpp"
 #include "dart/math/Helpers.hpp"
-#include "dart/math/lcp/dantzig/Lcp.hpp"
 
 #include <iostream>
 

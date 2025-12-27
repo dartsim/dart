@@ -56,6 +56,7 @@
 #pragma once
 
 #include "dart/common/Macros.hpp"
+#include "dart/math/lcp/LcpUtils.hpp"
 
 #include <Eigen/Core>
 
@@ -215,13 +216,6 @@ struct ScalarTraits<double>
     return std::cos(x);
   }
 };
-
-/// Round an integer up to a multiple of 4, except that 0 and 1 are unmodified
-/// (used to compute matrix leading dimensions)
-constexpr int padding(int a)
-{
-  return (a > 1) ? ((((a)-1) | 3) + 1) : a;
-}
 
 /// Reciprocal (1/x) - template function for type-safe division
 template <typename S>

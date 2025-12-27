@@ -39,6 +39,8 @@
 
 #include <dart/collision/CollisionDetector.hpp>
 
+#include <dart/math/lcp/LcpSolver.hpp>
+
 #include <dart/common/Deprecated.hpp>
 
 #include <dart/Export.hpp>
@@ -67,6 +69,8 @@ public:
 
   /// Default constructor
   ConstraintSolver();
+  ConstraintSolver(math::LcpSolverPtr primary);
+  ConstraintSolver(math::LcpSolverPtr primary, math::LcpSolverPtr secondary);
 
   /// Copy constructor
   // TODO: implement copy constructor since this class contains a pointer to
@@ -203,9 +207,39 @@ public:
   /// to make sure at least one handler is always available.
   bool removeContactSurfaceHandler(const ContactSurfaceHandlerPtr& handler);
 
+  /// Set the primary LCP solver (default: math::DantzigSolver)
+  void setLcpSolver(math::LcpSolverPtr lcpSolver);
+
+  /// Get the primary LCP solver
+  math::LcpSolverPtr getLcpSolver() const;
+
+  /// Set the secondary LCP solver (default: Pgs, nullptr disables)
+  void setSecondaryLcpSolver(math::LcpSolverPtr lcpSolver);
+
+  /// Get the secondary LCP solver
+  math::LcpSolverPtr getSecondaryLcpSolver() const;
+
 protected:
   // TODO(JS): Docstring
-  virtual void solveConstrainedGroup(ConstrainedGroup& group) = 0;
+  virtual void solveConstrainedGroup(ConstrainedGroup& group);
+
+  /// Return true if the matrix is symmetric
+  bool isSymmetric(std::size_t n, double* A);
+
+  /// Return true if the diagonal block of matrix is symmetric
+  bool isSymmetric(
+      std::size_t n, double* A, std::size_t begin, std::size_t end);
+
+  /// Print debug information
+  void print(
+      std::size_t n,
+      double* A,
+      double* x,
+      double* lo,
+      double* hi,
+      double* b,
+      double* w,
+      int* findex);
 
   /// Checks if the skeleton is contained in this solver
   bool hasSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const;
@@ -281,6 +315,35 @@ protected:
 
   /// Factory for ContactSurfaceParams for each contact
   ContactSurfaceHandlerPtr mContactSurfaceHandler;
+
+  /// LCP solver (primary)
+  math::LcpSolverPtr mLcpSolver;
+
+  /// True if the primary LCP solver was set explicitly by the caller
+  bool mLcpSolverSetExplicitly{false};
+
+  /// LCP solver to use as fallback
+  math::LcpSolverPtr mSecondaryLcpSolver;
+
+  /// True if the secondary LCP solver was set explicitly by the caller
+  bool mSecondaryLcpSolverSetExplicitly{false};
+
+  /// Cache data for boxed LCP formulation
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> mA;
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+      mABackup;
+  Eigen::VectorXd mX;
+  Eigen::VectorXd mXBackup;
+  Eigen::VectorXd mB;
+  Eigen::VectorXd mBBackup;
+  Eigen::VectorXd mW;
+  Eigen::VectorXd mLo;
+  Eigen::VectorXd mLoBackup;
+  Eigen::VectorXd mHi;
+  Eigen::VectorXd mHiBackup;
+  Eigen::VectorXi mFIndex;
+  Eigen::VectorXi mFIndexBackup;
+  Eigen::VectorXi mOffset;
 };
 
 } // namespace constraint

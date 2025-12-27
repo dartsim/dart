@@ -57,9 +57,9 @@
 #define DART_MATH_LCP_DANTZIG_LCP_IMPL_HPP_
 
 #include "dart/common/Macros.hpp"
-#include "dart/math/lcp/dantzig/Matrix.hpp"
-#include "dart/math/lcp/dantzig/Misc.hpp"
-#include "dart/math/lcp/dantzig/PivotMatrix.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Matrix.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Misc.hpp"
+#include "dart/math/lcp/pivoting/dantzig/PivotMatrix.hpp"
 
 #define ROWPTRS // Keep for compatibility (but now uses PivotMatrix internally)
 #define AROW(i) (m_A[i])
