@@ -33,8 +33,9 @@
 #ifndef DART_COLLISION_BULLET_BULLETTYPES_HPP_
 #define DART_COLLISION_BULLET_BULLETTYPES_HPP_
 
+#include <dart/collision/bullet/BulletInclude.hpp>
+
 #include <Eigen/Dense>
-#include <btBulletCollisionCommon.h>
 
 namespace dart {
 namespace collision {
