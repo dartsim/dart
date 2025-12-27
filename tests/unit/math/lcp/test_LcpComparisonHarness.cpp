@@ -21,6 +21,7 @@
 #include <dart/math/lcp/projection/NncgSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
 #include <dart/math/lcp/projection/SubspaceMinimizationSolver.hpp>
+#include <dart/math/lcp/projection/SymmetricPsorSolver.hpp>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -99,6 +100,23 @@ TEST(LcpComparisonHarness, PgsOnStandardAndBoxedFixtures)
 TEST(LcpComparisonHarness, JacobiOnStandardAndBoxedFixtures)
 {
   dart::math::JacobiSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 20000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 1e-2;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-2, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, SymmetricPsorOnStandardAndBoxedFixtures)
+{
+  dart::math::SymmetricPsorSolver solver;
   LcpOptions options = solver.getDefaultOptions();
   options.warmStart = false;
   options.validateSolution = false;
@@ -210,6 +228,23 @@ TEST(LcpComparisonHarness, PgsOnFrictionIndexFixtures)
 TEST(LcpComparisonHarness, JacobiOnFrictionIndexFixtures)
 {
   dart::math::JacobiSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 20000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 2e-2;
+
+  for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 2e-2, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, SymmetricPsorOnFrictionIndexFixtures)
+{
+  dart::math::SymmetricPsorSolver solver;
   LcpOptions options = solver.getDefaultOptions();
   options.warmStart = false;
   options.validateSolution = false;
