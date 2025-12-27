@@ -512,7 +512,7 @@ while not converged:
     if termination reached (e.g., active set unchanged): return x
 ```
 
-## 8. Red-Black Gauss-Seidel ❌ (Not Implemented)
+## 8. Red-Black Gauss-Seidel ✅ (Implemented)
 
 ### Description
 
@@ -536,6 +536,17 @@ for iter = 1 to max_iter:
 
 - **Parallelization**: 2-phase parallel
 - **Convergence**: Between Jacobi and Gauss-Seidel
+
+### DART Implementation
+
+```cpp
+dart::math::RedBlackGaussSeidelSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.relaxation = 1.0;
+solver.solve(problem, x, options);
+```
+
+> Note: DART uses an even/odd index partition as the red/black sets.
 
 ### Use Cases
 
@@ -653,7 +664,7 @@ Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
 | BGS        | ✅ (Implemented) | No       | Linear      | Contact problems      |
 | NNCG       | ✅ (Implemented) | No       | Superlinear | Large-scale           |
 | PGS-SM     | ✅ (Implemented) | No       | Better      | Medium problems       |
-| Red-Black  | ❌               | 2-phase  | Medium      | GPU                   |
+| Red-Black  | ✅ (Implemented) | 2-phase  | Medium      | GPU                   |
 
 ## Implementation Priority
 
