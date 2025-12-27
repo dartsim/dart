@@ -6,7 +6,8 @@
 
 Newton methods solve LCPs by reformulating them as nonsmooth root-finding problems and applying generalized Newton iteration. They offer superlinear to quadratic convergence but require globalization for robustness.
 
-**All Newton methods are currently not implemented** but documented here for future reference.
+Minimum Map Newton is implemented in DART. Other Newton methods are documented
+here for future reference.
 
 ## Common Framework
 
@@ -20,7 +21,7 @@ All Newton methods follow this pattern:
 5. Repeat until convergence
 ```
 
-## 1. Minimum Map Newton Method ❌ (Not Implemented)
+## 1. Minimum Map Newton Method ✅ (Implemented)
 
 ### Reformulation
 
@@ -48,6 +49,26 @@ Reduced system (only for active set):
 
 For free set:
   Δx_F = -H_F = -x_F  (directly set to zero)
+```
+
+### DART Implementation
+
+```cpp
+#include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
+
+dart::math::MinimumMapNewtonSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 50;
+options.warmStart = false;
+
+dart::math::LcpProblem problem(
+    A,
+    b,
+    Eigen::VectorXd::Zero(n),
+    Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity()),
+    Eigen::VectorXi::Constant(n, -1));
+
+solver.solve(problem, x, options);
 ```
 
 ### Algorithm Pseudocode
