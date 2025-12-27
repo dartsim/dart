@@ -6,24 +6,24 @@
 
 This section tracks which LCP solvers are currently implemented in DART (`dart/math/lcp/`).
 
-| Category           | Method                     | Status             | Location                                            | Notes                                   |
-| ------------------ | -------------------------- | ------------------ | --------------------------------------------------- | --------------------------------------- |
-| **Pivoting**       | Dantzig Principal Pivoting | ✅ Implemented     | `pivoting/DantzigSolver.hpp`                        | BLCP solver with friction index support |
-| **Pivoting**       | Lemke Complementary Pivot  | ✅ Implemented     | `pivoting/LemkeSolver.hpp`                          | Standard LCP solver                     |
-| **Pivoting**       | Baraff Incremental         | ✅ Implemented     | `pivoting/BaraffSolver.hpp`                         | Symmetric PSD pivoting                  |
-| **Projection**     | PGS (Gauss-Seidel)         | ✅ Implemented     | `projection/PgsSolver.hpp`                          | Boxed LCP + friction index (iterative)  |
-| **Projection**     | PSOR (Over-Relaxation)     | ✅ Implemented     | `projection/PgsSolver.hpp`                          | Set `LcpOptions::relaxation`            |
-| **Projection**     | Symmetric PSOR             | ✅ Implemented     | `projection/SymmetricPsorSolver.hpp`                | Forward/backward sweeps                 |
-| **Projection**     | Jacobi (Projected)         | ✅ Implemented     | `projection/JacobiSolver.hpp`                       | Parallel-friendly baseline              |
-| **Projection**     | Red-Black Gauss-Seidel     | ✅ Implemented     | `projection/RedBlackGaussSeidelSolver.hpp`          | Two-color sweeps                        |
-| **Projection**     | Blocked Gauss-Seidel       | ✅ Implemented     | `projection/BgsSolver.hpp`                          | For contact problems                    |
-| **Projection**     | NNCG (Conjugate Gradient)  | ✅ Implemented     | `projection/NncgSolver.hpp`                         | Better convergence than PGS             |
-| **Projection**     | Subspace Minimization      | ✅ Implemented     | `projection/SubspaceMinimizationSolver.hpp`         | Hybrid PGS approach                     |
-| **Newton**         | Minimum Map Newton         | ✅ Implemented     | `newton/MinimumMapNewtonSolver.hpp`                 | Standard LCP (boxed/findex fallback)    |
-| **Newton**         | Fischer-Burmeister Newton  | ✅ Implemented     | `newton/FischerBurmeisterNewtonSolver.hpp`          | Standard LCP (boxed/findex fallback)    |
-| **Newton**         | Penalized FB Newton        | ✅ Implemented     | `newton/PenalizedFischerBurmeisterNewtonSolver.hpp` | Extension of FB                         |
-| **Interior Point** | Interior Point Method      | ❌ Not implemented | -                                                   | Very robust                             |
-| **Staggering**     | Staggering Method          | ✅ Implemented     | `other/StaggeringSolver.hpp`                        | Normal/friction splitting               |
+| Category           | Method                     | Status         | Location                                            | Notes                                   |
+| ------------------ | -------------------------- | -------------- | --------------------------------------------------- | --------------------------------------- |
+| **Pivoting**       | Dantzig Principal Pivoting | ✅ Implemented | `pivoting/DantzigSolver.hpp`                        | BLCP solver with friction index support |
+| **Pivoting**       | Lemke Complementary Pivot  | ✅ Implemented | `pivoting/LemkeSolver.hpp`                          | Standard LCP solver                     |
+| **Pivoting**       | Baraff Incremental         | ✅ Implemented | `pivoting/BaraffSolver.hpp`                         | Symmetric PSD pivoting                  |
+| **Projection**     | PGS (Gauss-Seidel)         | ✅ Implemented | `projection/PgsSolver.hpp`                          | Boxed LCP + friction index (iterative)  |
+| **Projection**     | PSOR (Over-Relaxation)     | ✅ Implemented | `projection/PgsSolver.hpp`                          | Set `LcpOptions::relaxation`            |
+| **Projection**     | Symmetric PSOR             | ✅ Implemented | `projection/SymmetricPsorSolver.hpp`                | Forward/backward sweeps                 |
+| **Projection**     | Jacobi (Projected)         | ✅ Implemented | `projection/JacobiSolver.hpp`                       | Parallel-friendly baseline              |
+| **Projection**     | Red-Black Gauss-Seidel     | ✅ Implemented | `projection/RedBlackGaussSeidelSolver.hpp`          | Two-color sweeps                        |
+| **Projection**     | Blocked Gauss-Seidel       | ✅ Implemented | `projection/BgsSolver.hpp`                          | For contact problems                    |
+| **Projection**     | NNCG (Conjugate Gradient)  | ✅ Implemented | `projection/NncgSolver.hpp`                         | Better convergence than PGS             |
+| **Projection**     | Subspace Minimization      | ✅ Implemented | `projection/SubspaceMinimizationSolver.hpp`         | Hybrid PGS approach                     |
+| **Newton**         | Minimum Map Newton         | ✅ Implemented | `newton/MinimumMapNewtonSolver.hpp`                 | Standard LCP (boxed/findex fallback)    |
+| **Newton**         | Fischer-Burmeister Newton  | ✅ Implemented | `newton/FischerBurmeisterNewtonSolver.hpp`          | Standard LCP (boxed/findex fallback)    |
+| **Newton**         | Penalized FB Newton        | ✅ Implemented | `newton/PenalizedFischerBurmeisterNewtonSolver.hpp` | Extension of FB                         |
+| **Interior Point** | Interior Point Method      | ✅ Implemented | `other/InteriorPointSolver.hpp`                     | Very robust                             |
+| **Staggering**     | Staggering Method          | ✅ Implemented | `other/StaggeringSolver.hpp`                        | Normal/friction splitting               |
 
 **Legend**: ✅ Implemented | 🚧 In Progress | ❌ Not Implemented | 📋 Planned
 
@@ -64,6 +64,7 @@ dart/math/lcp/
 │
 ├── newton/                     # Minimum map, FB, penalized FB Newton
 └── other/
+    ├── InteriorPointSolver.hpp/cpp  # Primal-dual interior point
     └── StaggeringSolver.hpp/cpp  # Normal/friction staggering
 ```
 
@@ -206,7 +207,17 @@ solver usage examples.
   - Relaxation via `LcpOptions::relaxation`
 - **Use Case**: Contact problems where normal/tangential coupling slows PGS
 
-#### 12. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
+#### 12. Interior Point Method (`other/InteriorPointSolver.hpp`)
+
+- **Type**: Primal-dual interior-point method for standard LCP
+- **Algorithm**: Path-following with Newton solves on the KKT system
+- **Features**:
+  - Standard LCP only (`lo = 0`, `hi = +inf`, `findex = -1`)
+  - Boxed/findex problems delegate to the boxed-capable pivoting solver
+  - Central path parameter and fraction-to-boundary step control
+- **Use Case**: Ill-conditioned problems where robustness is critical
+
+#### 13. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
 
 - **Type**: Newton method using the minimum map reformulation
 - **Algorithm**: Active/free set Newton on `H(x) = min(x, Ax - b)`
@@ -215,7 +226,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 13. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
+#### 14. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using the Fischer-Burmeister function
 - **Algorithm**: Smooth FB reformulation with line search
@@ -224,7 +235,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 14. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
+#### 15. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using a penalized Fischer-Burmeister function
 - **Algorithm**: FB reformulation with penalty term and line search
@@ -407,7 +418,7 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 
 ### Phase 5: Additional Methods (Future)
 
-- [ ] Interior Point method
+- [x] Interior Point method
 - [x] Baraff incremental pivoting
 - [ ] Specialized methods (shock propagation, etc.)
 
@@ -449,4 +460,4 @@ When implementing new LCP solvers:
 
 ---
 
-**Last Updated**: 2025-11-22
+**Last Updated**: 2025-12-27

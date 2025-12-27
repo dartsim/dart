@@ -4,12 +4,14 @@
 
 ## Overview
 
-This document covers additional LCP solver methods including Interior Point, Staggering, and specialized methods that don't fit into the main categories of pivoting, projection, or Newton methods.
+This document covers additional LCP solver methods including Interior Point,
+Staggering, and specialized methods that don't fit into the main categories of
+pivoting, projection, or Newton methods.
 
-Interior point remains unimplemented. Staggering is implemented in DART as
-`dart::math::StaggeringSolver`.
+Interior point is implemented in DART as `dart::math::InteriorPointSolver`.
+Staggering is implemented as `dart::math::StaggeringSolver`.
 
-## 1. Interior Point Method ❌ (Not Implemented)
+## 1. Interior Point Method ✅ (Implemented)
 
 ### Description
 
@@ -62,6 +64,30 @@ for iter = 1 to max_iter:
   # Reduce mu toward 0
   mu = mu / (iter + 1)
 ```
+
+### DART Implementation
+
+```cpp
+#include <dart/math/lcp/other/InteriorPointSolver.hpp>
+
+using namespace dart::math;
+
+LcpProblem problem(
+    A,
+    b,
+    Eigen::VectorXd::Zero(n),
+    Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity()),
+    Eigen::VectorXi::Constant(n, -1));
+
+Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+InteriorPointSolver solver;
+LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 50;
+auto result = solver.solve(problem, x, options);
+```
+
+> Note: DART's implementation targets standard LCPs and delegates boxed or
+> friction-indexed problems to the boxed-capable pivoting solver.
 
 ### Properties
 
@@ -290,7 +316,7 @@ for iter = 1 to max_iter:
 
 | Method            | Convergence | Complexity | Robustness | Parallelization |
 | ----------------- | ----------- | ---------- | ---------- | --------------- |
-| Interior Point    | Superlinear | O(n³)      | Very High  | No              |
+| Interior Point ✅ | Superlinear | O(n³)      | Very High  | No              |
 | Staggering ✅     | Variable    | Depends    | Medium     | No              |
 | Shock-Propagation | Linear      | O(n)       | Medium     | Limited         |
 | MPRGP             | Monotone    | O(n²)      | High       | No              |
@@ -300,6 +326,7 @@ for iter = 1 to max_iter:
 
 ### Implemented in DART
 
+- **Interior Point**: Primal-dual path-following for standard LCPs
 - **Staggering**: Normal/friction block solve for contact-style problems
 
 ### Low Priority (Specialized Use Cases)
@@ -308,7 +335,6 @@ for iter = 1 to max_iter:
 
 ### Very Low Priority (Niche Applications)
 
-- **Interior Point**: When all else fails
 - **MPRGP**: Fluid-specific applications
 - **Blocked Jacobi**: Parallel hardware optimization
 

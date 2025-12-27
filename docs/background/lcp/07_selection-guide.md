@@ -236,8 +236,7 @@ Slower          ─────────────────────�
 Pivoting ─> Newton ─> Interior Point ─> NNCG ─> BGS ─> PGS ─> Jacobi
 (exact)     (1e-10)   (1e-8)           (1e-6)  (1e-4) (1e-3) (1e-2)
 
-✅ Available:  Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP)
-❌ Future:     Interior Point, …
+✅ Available:  Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point
 ```
 
 ### Robustness vs Efficiency
@@ -248,8 +247,7 @@ Slower      ──────────────────────�
 
 Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
-✅ Available:  Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP)
-❌ Future:     Interior Point, …
+✅ Available:  Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point
 ```
 
 ## Problem Size Guidelines
@@ -268,8 +266,8 @@ Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 | -------------------- | ------------------------ | -------------------------------------------------- |
 | Well-conditioned     | Any method               | All ✅                                             |
 | Moderate             | PGS, Newton, Pivoting    | PGS ✅, Dantzig ✅, Lemke ✅, Newton ✅ (standard) |
-| Ill-conditioned      | Pivoting, Interior Point | PGS ✅, Dantzig ✅, Lemke ✅                       |
-| Very ill-conditioned | Pivoting only            | Dantzig ✅, Lemke ✅                               |
+| Ill-conditioned      | Pivoting, Interior Point | Dantzig ✅, Lemke ✅, Interior Point ✅            |
+| Very ill-conditioned | Pivoting only            | Dantzig ✅, Lemke ✅, Interior Point ✅            |
 
 ## Implementation Roadmap Impact
 
@@ -280,6 +278,7 @@ Available solvers:
 - ✅ **Dantzig**: BLCP with bounds, friction support
 - ✅ **Lemke**: Standard LCP
 - ✅ **Baraff**: Incremental pivoting for symmetric PSD standard LCPs
+- ✅ **Interior Point**: Primal-dual method for robust standard LCP solves
 - ✅ **PGS/PSOR**: Iterative boxed LCP with friction index fallback (tune
   `LcpOptions::relaxation`)
 - ✅ **Symmetric PSOR**: Forward/backward sweep variant for reduced bias
@@ -305,7 +304,7 @@ if (!result.succeeded()) {
 
 ### Remaining Gaps
 
-- Interior point methods
+- Specialized methods (shock propagation, etc.)
 
 ### Newton Methods (Implemented)
 
@@ -466,17 +465,12 @@ findex[i] = j;   // Depends on x[j] for friction cone
 ### Performance is Poor
 
 ```
-Current (with Dantzig/PGS/BGS/Lemke/Newton):
+Current (with Dantzig/PGS/BGS/Lemke/Newton/Interior Point):
 1. Limit problem size (n < 100)
 2. Use Dantzig for contacts
 3. Reduce contact points
 4. Simplify collision geometry
-
-Future (with Interior Point):
-1. Use appropriate method for problem size
-2. Enable warm-starting
-3. Matrix-free implementations
-4. Exploit sparsity
+5. Use Interior Point for ill-conditioned problems
 ```
 
 ## Summary Recommendations
@@ -491,7 +485,7 @@ Future (with Interior Point):
 | Large problems (n>100) | NNCG or PGS     | NNCG converges faster, both approximate  |
 | Real-time (n>50)       | PGS/PSOR        | Tune `relaxation`, keep Dantzig fallback |
 
-### Future State (After Interior Point)
+### Current State (With Interior Point)
 
 | Scenario        | Primary  | Backup         | Notes              |
 | --------------- | -------- | -------------- | ------------------ |
