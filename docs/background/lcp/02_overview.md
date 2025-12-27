@@ -425,7 +425,7 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 - [x] Blocked Gauss-Seidel (BGS)
 - [x] Blocked Jacobi
 - [ ] Per-contact block structure
-- [ ] Direct 2D/3D sub-solvers
+- [x] Direct 2D/3D sub-solvers
 
 ### Phase 3: Advanced Iterative (Medium Priority)
 

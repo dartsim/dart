@@ -311,6 +311,9 @@ solver.solve(problem, x, options);
 - **4D pyramid**: Direct or small iterative
 - **General**: Any LCP solver
 
+> Note: DART uses `DirectSolver` for standard blocks up to 3 variables and
+> falls back to `DantzigSolver` for boxed or larger blocks.
+
 For common contact splittings:
 
 - Normal sub-block: 1D projection (`x_n = max(0, x_n - r_n / A_nn)`).
@@ -676,7 +679,7 @@ Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
 ### Phase 2 (For Contact Problems)
 
 5. ✅ **BGS** - Natural for multi-contact scenarios
-6. **Direct 2D/3D sub-solvers** - For BGS blocks
+6. ✅ **Direct 2D/3D sub-solvers** - For BGS blocks
 
 ### Phase 3 (Advanced)
 
