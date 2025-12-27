@@ -11,6 +11,7 @@
 
 // Projection methods
 #include <dart/math/lcp/projection/BgsSolver.hpp>
+#include <dart/math/lcp/projection/BlockedJacobiSolver.hpp>
 #include <dart/math/lcp/projection/JacobiSolver.hpp>
 #include <dart/math/lcp/projection/NncgSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
