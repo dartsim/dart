@@ -20,6 +20,7 @@
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 #include <dart/math/lcp/projection/BgsSolver.hpp>
+#include <dart/math/lcp/projection/BlockedJacobiSolver.hpp>
 #include <dart/math/lcp/projection/JacobiSolver.hpp>
 #include <dart/math/lcp/projection/NncgSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
@@ -223,6 +224,23 @@ TEST(LcpComparisonHarness, BgsOnStandardAndBoxedFixtures)
 }
 
 //==============================================================================
+TEST(LcpComparisonHarness, BlockedJacobiOnStandardAndBoxedFixtures)
+{
+  dart::math::BlockedJacobiSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 20000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 1e-2;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-2, true);
+  }
+}
+
+//==============================================================================
 TEST(LcpComparisonHarness, NncgOnStandardAndBoxedFixtures)
 {
   dart::math::NncgSolver solver;
@@ -375,6 +393,23 @@ TEST(LcpComparisonHarness, BgsOnFrictionIndexFixtures)
   options.warmStart = false;
   options.validateSolution = false;
   options.maxIterations = 5000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 2e-2;
+
+  for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 2e-2, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, BlockedJacobiOnFrictionIndexFixtures)
+{
+  dart::math::BlockedJacobiSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 20000;
   options.absoluteTolerance = 1e-4;
   options.relativeTolerance = 1e-2;
   options.complementarityTolerance = 2e-2;
