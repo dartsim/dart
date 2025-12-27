@@ -34,6 +34,7 @@
 
 #include "dart/math/lcp/LcpValidation.hpp"
 #include "dart/math/lcp/pivoting/DantzigSolver.hpp"
+#include "dart/math/lcp/pivoting/DirectSolver.hpp"
 
 #include <Eigen/Dense>
 
@@ -46,6 +47,8 @@
 
 namespace dart::math {
 namespace {
+
+constexpr int kMaxDirectBlockSize = 3;
 
 struct BlockData
 {
@@ -68,6 +71,13 @@ double matrixInfinityNorm(const Eigen::MatrixXd& A)
 double vectorInfinityNorm(const Eigen::VectorXd& v)
 {
   return v.size() > 0 ? v.cwiseAbs().maxCoeff() : 0.0;
+}
+
+bool isStandardBlock(const BlockData& block, double absTol)
+{
+  return (block.lo.array().abs().maxCoeff() <= absTol)
+         && (block.hi.array() == std::numeric_limits<double>::infinity()).all()
+         && (block.findex.array() < 0).all();
 }
 
 bool buildBlockData(
@@ -331,6 +341,7 @@ LcpResult BlockedJacobiSolver::solve(
   bool converged = (residual <= tol && complementarity <= compTol);
   int iterationsUsed = 0;
 
+  DirectSolver directSolver;
   DantzigSolver blockSolver;
   LcpOptions blockOptions = blockSolver.getDefaultOptions();
   blockOptions.absoluteTolerance = absTol;
@@ -362,8 +373,11 @@ LcpResult BlockedJacobiSolver::solve(
       const Eigen::VectorXd bEff = block.baseB - (AxBlock - AxSelf);
 
       LcpProblem subProblem(block.A, bEff, block.lo, block.hi, block.findex);
+      const bool useDirect
+          = (m <= kMaxDirectBlockSize) && isStandardBlock(block, absTol);
       const LcpResult blockResult
-          = blockSolver.solve(subProblem, xBlock, blockOptions);
+          = useDirect ? directSolver.solve(subProblem, xBlock, blockOptions)
+                      : blockSolver.solve(subProblem, xBlock, blockOptions);
       if (blockResult.status == LcpSolverStatus::InvalidProblem
           || blockResult.status == LcpSolverStatus::NumericalError) {
         result.status = blockResult.status;

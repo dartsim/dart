@@ -270,6 +270,34 @@ TEST(LcpComparisonHarness, BlockedJacobiOnStandardAndBoxedFixtures)
 }
 
 //==============================================================================
+TEST(LcpComparisonHarness, BlockedJacobiOnStandardFixtureWithExplicitBlocks)
+{
+  dart::math::BlockedJacobiSolver solver;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+      continue;
+    const int n = static_cast<int>(fixture.problem.b.size());
+    if (n > 3)
+      continue;
+
+    dart::math::BlockedJacobiSolver::Parameters params;
+    params.blockSizes = {n};
+
+    LcpOptions options = solver.getDefaultOptions();
+    options.warmStart = false;
+    options.validateSolution = false;
+    options.maxIterations = 5;
+    options.absoluteTolerance = 1e-8;
+    options.relativeTolerance = 1e-6;
+    options.complementarityTolerance = 1e-6;
+    options.customOptions = &params;
+
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
+  }
+}
+
+//==============================================================================
 TEST(LcpComparisonHarness, NncgOnStandardAndBoxedFixtures)
 {
   dart::math::NncgSolver solver;

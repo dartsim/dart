@@ -324,6 +324,8 @@ auto result = solver.solve(problem, x, options);
 
 > Note: Block partitions follow `findex` by default (contact blocks), or can be
 > set explicitly via `BlockedJacobiSolver::Parameters::blockSizes`.
+> DART uses `DirectSolver` for standard blocks up to 3 variables and falls back
+> to `DantzigSolver` for boxed or larger blocks.
 
 ### Properties
 
