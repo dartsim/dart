@@ -15,6 +15,7 @@
 #include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
+#include <dart/math/lcp/projection/NncgSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
 
 #include <Eigen/Dense>
@@ -236,6 +237,21 @@ static void BM_LcpCompare_Pgs_Standard(benchmark::State& state)
       state, problem, options, MakeLabel("Pgs", "Standard"));
 }
 
+static void BM_LcpCompare_Nncg_Standard(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeStandardSpdProblem(n, 134u + static_cast<unsigned>(n));
+  auto options = MakeBenchmarkOptions(200);
+  dart::math::NncgSolver::Parameters params;
+  params.pgsIterations = 1;
+  params.restartInterval = 10;
+  params.restartThreshold = 1.0;
+  options.customOptions = &params;
+  RunBenchmark<dart::math::NncgSolver>(
+      state, problem, options, MakeLabel("Nncg", "Standard"));
+}
+
 static void BM_LcpCompare_Lemke_Standard(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
@@ -307,6 +323,21 @@ static void BM_LcpCompare_Pgs_Boxed(benchmark::State& state)
       state, problem, options, MakeLabel("Pgs", "Boxed"));
 }
 
+static void BM_LcpCompare_Nncg_Boxed(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeBoxedActiveBoundsProblem(n, 902u + static_cast<unsigned>(n));
+  auto options = MakeBenchmarkOptions(200);
+  dart::math::NncgSolver::Parameters params;
+  params.pgsIterations = 1;
+  params.restartInterval = 10;
+  params.restartThreshold = 1.0;
+  options.customOptions = &params;
+  RunBenchmark<dart::math::NncgSolver>(
+      state, problem, options, MakeLabel("Nncg", "Boxed"));
+}
+
 static void BM_LcpCompare_Dantzig_FrictionIndex(benchmark::State& state)
 {
   const int numContacts = static_cast<int>(state.range(0));
@@ -361,6 +392,7 @@ static void BM_LCP_COMPARE_SMOKE(benchmark::State& state)
 
 BENCHMARK(BM_LcpCompare_Dantzig_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_Pgs_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
+BENCHMARK(BM_LcpCompare_Nncg_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_Lemke_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_MinimumMapNewton_Standard)
     ->Arg(12)
@@ -380,6 +412,7 @@ BENCHMARK(BM_LcpCompare_PenalizedFischerBurmeisterNewton_Standard)
 
 BENCHMARK(BM_LcpCompare_Dantzig_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_Pgs_Boxed)->Arg(12)->Arg(24)->Arg(48);
+BENCHMARK(BM_LcpCompare_Nncg_Boxed)->Arg(12)->Arg(24)->Arg(48);
 
 BENCHMARK(BM_LcpCompare_Dantzig_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 BENCHMARK(BM_LcpCompare_Pgs_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
