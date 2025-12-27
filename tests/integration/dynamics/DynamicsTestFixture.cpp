@@ -39,11 +39,11 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/io/Read.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/SkelParser.hpp"
 
 #include <Eigen/Dense>
 
@@ -804,7 +804,6 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
 
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-6;
@@ -822,7 +821,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
   Vector3d gravity(0.0, -9.81, 0.0);
 
   // load skeleton
-  WorldPtr world = SkelParser::readWorld(uri);
+  WorldPtr world = dart::io::readWorld(uri);
   DART_ASSERT(world != nullptr);
   world->setGravity(gravity);
 
@@ -977,7 +976,6 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
 
   //----------------------------- Settings -------------------------------------
 #if !defined(NDEBUG)
@@ -996,7 +994,7 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
   double TOLERANCE = 5e-4;
 
   // load skeleton
-  WorldPtr world = SkelParser::readWorld(uri);
+  WorldPtr world = dart::io::readWorld(uri);
   DART_ASSERT(world != nullptr);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
@@ -1064,7 +1062,6 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
 
   //----------------------------- Settings -------------------------------------
 #if !defined(NDEBUG)
@@ -1085,7 +1082,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
   const double tol = timeStep * 1e+2;
 
   // load skeleton
-  WorldPtr world = SkelParser::readWorld(uri);
+  WorldPtr world = dart::io::readWorld(uri);
   DART_ASSERT(world != nullptr);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
@@ -1153,7 +1150,6 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
 
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-2;
@@ -1172,7 +1168,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
   double timeStep = 1.0e-6;
 
   // load skeleton
-  WorldPtr world = SkelParser::readWorld(uri);
+  WorldPtr world = dart::io::readWorld(uri);
   DART_ASSERT(world != nullptr);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
@@ -1402,7 +1398,7 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
 //==============================================================================
 void DynamicsTest::testForwardKinematics(const common::Uri& uri)
 {
-  auto world = utils::SkelParser::readWorld(uri);
+  auto world = dart::io::readWorld(uri);
   EXPECT_TRUE(world != nullptr);
 
   auto numSkeletons = world->getNumSkeletons();
@@ -1437,7 +1433,7 @@ void DynamicsTest::testInverseDynamics(const common::Uri& uri)
   const double lbF = -10.0;
   const double ubF = 10.0;
 
-  simulation::WorldPtr world = utils::SkelParser::readWorld(uri);
+  simulation::WorldPtr world = dart::io::readWorld(uri);
   ASSERT_TRUE(world != nullptr);
 
   for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
@@ -1496,7 +1492,6 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
@@ -1521,7 +1516,7 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(uri);
+  myWorld = dart::io::readWorld(uri);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i) {
@@ -1773,7 +1768,6 @@ void DynamicsTest::testCenterOfMass(const common::Uri& uri)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
@@ -1798,7 +1792,7 @@ void DynamicsTest::testCenterOfMass(const common::Uri& uri)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(uri);
+  myWorld = dart::io::readWorld(uri);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i) {
@@ -1926,7 +1920,6 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
@@ -1956,7 +1949,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(uri);
+  myWorld = dart::io::readWorld(uri);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i) {
@@ -2033,7 +2026,6 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
@@ -2052,7 +2044,7 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(uri);
+  myWorld = dart::io::readWorld(uri);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i) {
@@ -2121,7 +2113,6 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
@@ -2142,7 +2133,7 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(uri);
+  myWorld = dart::io::readWorld(uri);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i) {

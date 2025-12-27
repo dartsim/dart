@@ -94,8 +94,8 @@ void defWorldNode(nb::module_& m)
             return makeOsgShared<WorldNode>(world, toShadowRef(shadow));
           }),
           nb::arg("world"),
-          nb::arg("shadowTechnique") = nullptr)
-      .def("setWorld", &WorldNode::setWorld, nb::arg("newWorld"))
+          nb::arg("shadow_technique") = nullptr)
+      .def("setWorld", &WorldNode::setWorld, nb::arg("new_world"))
       .def("getWorld", &WorldNode::getWorld)
       .def("refresh", &WorldNode::refresh)
       .def("customPreRefresh", &WorldNode::customPreRefresh)
@@ -115,7 +115,7 @@ void defWorldNode(nb::module_& m)
           [](WorldNode& self, const ShadowTechniquePtr& shadow) {
             self.setShadowTechnique(toShadowRef(shadow));
           },
-          nb::arg("shadowTechnique") = nullptr)
+          nb::arg("shadow_technique") = nullptr)
       .def(
           "getShadowTechnique",
           [](const WorldNode& self) {
@@ -150,17 +150,17 @@ void defRealTimeWorldNode(nb::module_& m)
           }),
           nb::arg("world"),
           nb::arg("shadower") = nullptr,
-          nb::arg("targetFrequency") = 60.0,
-          nb::arg("targetRealTimeFactor") = 1.0)
+          nb::arg("target_frequency") = 60.0,
+          nb::arg("target_real_time_factor") = 1.0)
       .def(
           "setTargetFrequency",
           &RealTimeWorldNode::setTargetFrequency,
-          nb::arg("targetFrequency"))
+          nb::arg("target_frequency"))
       .def("getTargetFrequency", &RealTimeWorldNode::getTargetFrequency)
       .def(
           "setTargetRealTimeFactor",
           &RealTimeWorldNode::setTargetRealTimeFactor,
-          nb::arg("targetRTF"))
+          nb::arg("target_rtf"))
       .def(
           "getTargetRealTimeFactor",
           &RealTimeWorldNode::getTargetRealTimeFactor)

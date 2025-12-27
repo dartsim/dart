@@ -20,7 +20,7 @@ void defHierarchicalIK(nb::module_& m)
           [](HierarchicalIK& self, bool allowIncompleteResult) {
             return self.solveAndApply(allowIncompleteResult);
           },
-          nb::arg("allowIncompleteResult") = true);
+          nb::arg("allow_incomplete_result") = true);
 
   nb::class_<WholeBodyIK, HierarchicalIK>(m, "WholeBodyIK")
       .def("refreshIKHierarchy", &WholeBodyIK::refreshIKHierarchy);

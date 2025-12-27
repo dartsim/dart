@@ -70,6 +70,7 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
+#include "dart/utils/MeshLoader.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 
 #include <Eigen/Dense>
@@ -730,6 +731,18 @@ createFclMeshCollisionDetector()
 }
 
 //==============================================================================
+static std::shared_ptr<collision::CollisionDetector>
+createFclPrimitiveCollisionDetector()
+{
+  auto cd = collision::CollisionDetector::getFactory()->create("fcl");
+  auto fcl = std::static_pointer_cast<collision::FCLCollisionDetector>(cd);
+  fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
+  fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::DART);
+
+  return fcl;
+}
+
+//==============================================================================
 simulation::WorldPtr readWorld(
     tinyxml2::XMLElement* _worldElement,
     const common::Uri& _baseUri,
@@ -792,7 +805,7 @@ simulation::WorldPtr readWorld(
     }
 
     if (!collision_detector)
-      collision_detector = createFclMeshCollisionDetector();
+      collision_detector = createFclPrimitiveCollisionDetector();
 
     newWorld->setCollisionDetector(collision_detector);
   }
@@ -1379,10 +1392,14 @@ dynamics::ShapePtr readShape(
 
     const common::Uri meshUri
         = common::Uri::createFromRelativeUri(baseUri, filename);
-    const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, retriever);
-    if (model) {
+
+    auto loader = std::make_unique<utils::MeshLoaderd>();
+    auto triMeshUnique = loader->load(meshUri.toString(), retriever);
+
+    if (triMeshUnique) {
+      std::shared_ptr<math::TriMesh<double>> triMesh(std::move(triMeshUnique));
       newShape = std::make_shared<dynamics::MeshShape>(
-          scale, model, meshUri, retriever);
+          scale, std::move(triMesh), meshUri, retriever);
     } else {
       DART_ERROR("Fail to load model[{}].", filename);
     }

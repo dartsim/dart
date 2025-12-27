@@ -11,15 +11,15 @@ if(NOT DART_BUILD_COLLISION_BULLET)
   return()
 endif()
 
-set(required_components utils-urdf gui)
-set(required_libraries dart dart-utils-urdf dart-gui)
+set(required_components utils-urdf gui io)
+set(required_libraries dart dart-io dart-utils-urdf dart-gui)
 
 if(DART_IN_SOURCE_BUILD)
   dart_build_example_in_source(${example_name} LINK_LIBRARIES ${required_libraries})
   return()
 endif()
 
-find_package(DART 6.16.0 REQUIRED COMPONENTS ${required_components} CONFIG)
+find_package(DART 7.0.0 REQUIRED COMPONENTS ${required_components} CONFIG)
 find_package(CLI11 2.4 CONFIG REQUIRED)
 
 file(GLOB srcs "*.cpp" "*.hpp")

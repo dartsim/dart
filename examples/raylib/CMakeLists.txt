@@ -15,7 +15,7 @@ if(DART_IN_SOURCE_BUILD)
   return()
 endif()
 
-find_package(DART 6.16.0 REQUIRED COMPONENTS ${required_components} CONFIG)
+find_package(DART 7.0.0 REQUIRED COMPONENTS ${required_components} CONFIG)
 find_package(raylib CONFIG REQUIRED)
 
 if(NOT TARGET raylib::raylib)

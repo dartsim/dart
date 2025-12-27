@@ -37,6 +37,7 @@
 #include <dart/utils/All.hpp>
 
 #include <dart/All.hpp>
+#include <dart/io/Read.hpp>
 
 #include <iostream>
 
@@ -136,7 +137,7 @@ private:
 int main()
 {
   // Load the skeleton file
-  dart::simulation::WorldPtr myWorld = dart::utils::SkelParser::readWorld(
+  dart::simulation::WorldPtr myWorld = dart::io::readWorld(
       "dart://sample/skel/test/test_articulated_bodies_10bodies.skel");
   DART_ASSERT(myWorld != nullptr);
 

@@ -54,10 +54,11 @@ This onboarding guide is organized into several focused documents:
 - **[python-bindings.md](python-bindings.md)** - nanobind bindings architecture
 - **[api-documentation.md](api-documentation.md)** - Publishing strategy for RTD and GitHub Pages API docs
 - **[build-system.md](build-system.md)** - CMake internals and dependency analysis
+- **[io-parsing.md](io-parsing.md)** - Unified model loading API (`dart::io`)
 
 ### Feature Workflows
 
-- **Gazebo / gz-physics integration**: See [build-system.md](build-system.md#gazebo-integration-feature). Used in this task: `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
+- **Gazebo / gz-physics integration**: See [build-system.md](build-system.md#gazebo-integration-feature).
 
 ### Purpose and Problem Solved
 
@@ -102,7 +103,7 @@ DART addresses the need for:
 
 ### Quickstart (Decision Tree)
 
-- Want to build, test, or format DART? Start with [building.md](building.md) and [contributing.md](contributing.md).
+- Want to build, test, or format DART? Start with [building.md](building.md), [testing.md](testing.md), and [contributing.md](contributing.md).
 - Working on Gazebo / gz-physics compatibility? Jump to [build-system.md](build-system.md#gazebo-integration-feature).
 - Need to understand CI workflows or monitor runs? See [ci-cd.md](ci-cd.md).
 
@@ -559,7 +560,7 @@ graph TB
 
 **Depends On**:
 
-- **Internal**: Constraint classes, BoxedLcpSolver, Skeleton
+- **Internal**: Constraint classes, math::LcpSolver, Skeleton
 - **External**: Eigen for matrix operations
 
 ---
@@ -789,14 +790,13 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant User as User Code
-    participant UrdfParser as UrdfParser
+    participant IO as dart::io
     participant Skeleton as Skeleton
     participant Parser as URDF Parser
     participant World as World
 
-    User->>UrdfParser: UrdfParser()
-    User->>UrdfParser: parseSkeleton("robot.urdf")
-    UrdfParser->>Parser: parseURDF()
+    User->>IO: readSkeleton("robot.urdf", options)
+    IO->>Parser: parseURDF()
     Parser->>Parser: parse XML
     Parser->>Skeleton: create()
 
@@ -806,15 +806,17 @@ sequenceDiagram
         Parser->>Skeleton: setMass/Inertia()
     end
 
-    UrdfParser-->>User: skeleton
+    IO-->>User: skeleton
     User->>World: addSkeleton(skeleton)
     User->>World: step()
 ```
 
 **Key Files**:
 
-- [`UrdfParser`](dart/utils/urdf/UrdfParser.hpp)
-- [`UrdfParser::parseSkeleton()`](dart/utils/urdf/UrdfParser.cpp)
+- [`dart::io` unified API](dart/io/Read.hpp)
+- Implementation: [`dart/io/Read.cpp`](dart/io/Read.cpp)
+- Internal parser: [`UrdfParser`](dart/utils/urdf/UrdfParser.hpp)
+- Entry point: [`UrdfParser::parseSkeleton()`](dart/utils/urdf/UrdfParser.cpp)
 - Example: [`examples/atlas_puppet/main.cpp`](examples/atlas_puppet/main.cpp)
 - Notes: URDF `<limit>` on `planar` and `floating` joints is interpreted uniformly across all of their DOFs (with warnings), and planar joints derive their plane from the `<axis>` normal.
 
@@ -1118,7 +1120,9 @@ This section is intentionally brief and delegates to the focused onboarding docs
 Used in this task:
 
 - `pixi run lint`
-- `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`
+- `pixi run test`
+- `DART_PARALLEL_JOBS=16 pixi run test-all`
+- `DART_PARALLEL_JOBS=16 pixi run -e gazebo test-gz`
 
 Suggested (Unverified):
 
@@ -1214,16 +1218,18 @@ robot->eachBodyNode([&](BodyNode* bodyNode) {
 ### Pattern 5: Loading Robot Models
 
 ```cpp
-// URDF
-dart::utils::UrdfParser parser;
-auto robot = parser.parseSkeleton("path/to/robot.urdf");
+dart::io::ReadOptions options;
+
+// URDF (package:// mapping is optional)
+options.addPackageDirectory("my_robot", "/path/to/my_robot");
+auto robot = dart::io::readSkeleton("path/to/robot.urdf", options);
 world->addSkeleton(robot);
 
 // SDF
-auto robot = dart::utils::SdfParser::readSkeleton("path/to/model.sdf");
+auto model = dart::io::readSkeleton("path/to/model.sdf");
 
 // SKEL (DART native format)
-auto robot = dart::utils::SkelParser::readSkeleton("path/to/skel.skel");
+auto legacy = dart::io::readSkeleton("path/to/skel.skel");
 ```
 
 Note: SKEL stays as a legacy XML format for backward compatibility. There is no plan to redesign it (e.g., YAML); use URDF, SDF, or MJCF for new models.

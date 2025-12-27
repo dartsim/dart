@@ -104,6 +104,7 @@ set(dartpy_headers
   math/geometry.hpp
   math/random.hpp
   math/eigen_geometry.hpp
+  math/trimesh.hpp
   dynamics/module.hpp
   dynamics/entity.hpp
   dynamics/degree_of_freedom.hpp
@@ -179,6 +180,7 @@ set(dartpy_sources
   math/geometry.cpp
   math/random.cpp
   math/eigen_geometry.cpp
+  math/TriMesh.cpp
   dynamics/module.cpp
   dynamics/entity.cpp
   dynamics/degree_of_freedom.cpp
@@ -249,6 +251,8 @@ set(dartpy_gui_sources
 if(DART_BUILD_GUI)
   list(APPEND dartpy_headers ${dartpy_gui_headers})
   list(APPEND dartpy_sources ${dartpy_gui_sources})
+else()
+  message(FATAL_ERROR "Building dartpy requires DART_BUILD_GUI=ON")
 endif()
 
 nanobind_add_module(dartpy
@@ -281,7 +285,6 @@ target_include_directories(dartpy
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}
 )
-target_compile_options(dartpy PRIVATE -g)
 
 if(BULLET_INCLUDE_DIR)
   target_include_directories(dartpy SYSTEM PRIVATE ${BULLET_INCLUDE_DIR})

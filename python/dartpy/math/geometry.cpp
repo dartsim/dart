@@ -29,6 +29,7 @@
 
 #include "math/geometry.hpp"
 
+#include "common/eigen_utils.hpp"
 #include "dart/math/Geometry.hpp"
 
 #include <nanobind/eigen/dense.h>
@@ -44,17 +45,7 @@ namespace {
 
 Eigen::Vector3d toVec3(const nb::handle& h)
 {
-  try {
-    return nb::cast<Eigen::Vector3d>(h);
-  } catch (const nb::cast_error&) {
-    nb::sequence seq = nb::cast<nb::sequence>(h);
-    if (nb::len(seq) != 3)
-      throw nb::type_error("Expected a length-3 sequence for euler angles");
-    Eigen::Vector3d vec;
-    for (nb::ssize_t i = 0; i < 3; ++i)
-      vec[i] = nb::cast<double>(seq[i]);
-    return vec;
-  }
+  return toVector3(h);
 }
 
 #define DARTPY_DEF_EULER_TO_MATRIX(order)                                      \
@@ -72,7 +63,7 @@ Eigen::Vector3d toVec3(const nb::handle& h)
       [](const Eigen::Matrix3d& R) {                                           \
         return dart::math::matrixToEuler##order(R);                            \
       },                                                                       \
-      nb::arg("R"));
+      nb::arg("rotation"));
 
 } // namespace
 
@@ -107,7 +98,7 @@ void defGeometry(nb::module_& m)
   m.def(
       "expMap",
       [](const Eigen::Vector6d& S) { return dart::math::expMap(S); },
-      nb::arg("S"));
+      nb::arg("screw_axis"));
 
   m.def(
       "expMapJac",
@@ -141,12 +132,12 @@ void defGeometry(nb::module_& m)
   m.def(
       "verifyRotation",
       [](const Eigen::Matrix3d& R) { return dart::math::verifyRotation(R); },
-      nb::arg("R"));
+      nb::arg("rotation"));
 
   m.def(
       "verifyTransform",
       [](const Eigen::Isometry3d& T) { return dart::math::verifyTransform(T); },
-      nb::arg("T"));
+      nb::arg("transform"));
 }
 
 } // namespace dart::python_nb

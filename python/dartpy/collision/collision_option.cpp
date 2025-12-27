@@ -26,13 +26,13 @@ void defCollisionOption(nb::module_& m)
       .def(
           "addBodyNodePairToBlackList",
           &BodyNodeCollisionFilter::addBodyNodePairToBlackList,
-          nb::arg("bodyNode1"),
-          nb::arg("bodyNode2"))
+          nb::arg("body_node1"),
+          nb::arg("body_node2"))
       .def(
           "removeBodyNodePairFromBlackList",
           &BodyNodeCollisionFilter::removeBodyNodePairFromBlackList,
-          nb::arg("bodyNode1"),
-          nb::arg("bodyNode2"))
+          nb::arg("body_node1"),
+          nb::arg("body_node2"))
       .def(
           "removeAllBodyNodePairsFromBlackList",
           &BodyNodeCollisionFilter::removeAllBodyNodePairsFromBlackList);
@@ -44,10 +44,10 @@ void defCollisionOption(nb::module_& m)
               std::size_t,
               const std::shared_ptr<CollisionFilter>&,
               bool>(),
-          nb::arg("enableContact") = true,
-          nb::arg("maxNumContacts") = 1000u,
-          nb::arg("collisionFilter") = nullptr,
-          nb::arg("allowNegativePenetrationDepthContacts") = false)
+          nb::arg("enable_contact") = true,
+          nb::arg("max_num_contacts") = 1000u,
+          nb::arg("collision_filter") = nullptr,
+          nb::arg("allow_negative_penetration_depth_contacts") = false)
       .def_rw("enableContact", &CollisionOption::enableContact)
       .def_rw("maxNumContacts", &CollisionOption::maxNumContacts)
       .def_rw(

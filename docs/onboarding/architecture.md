@@ -139,11 +139,9 @@ DART follows a **modular layered architecture** with clear separation of concern
 
 **Key Components:**
 
-- **Lemke.hpp** - Lemke's algorithm for solving LCPs
+- **pivoting/LemkeSolver.hpp** - Lemke's algorithm for solving LCPs
   - `int Lemke(M, q, z)` - Main solver
   - `bool validate(M, z, q)` - Solution validation
-
-- **ODELCPSolver.hpp** - ODE-based LCP solver integration
 
 **Mathematical Foundation:**
 LCP formulation: Find `z ≥ 0` such that `w = Mz + q ≥ 0` and `z^T w = 0`
@@ -427,8 +425,7 @@ Skeleton::getMassMatrix()
 ConstraintSolver
     ├── ConstrainedGroup (groups skeletons)
     │     └── ConstraintBase (individual constraints)
-    └── BoxedLcpConstraintSolver
-          └── BoxedLcpSolver (Dantzig or PGS)
+    └── LcpSolver (Dantzig, Pgs, etc.)
 ```
 
 #### Key Classes:
@@ -459,17 +456,6 @@ ConstraintSolver
   - `excite()` - Mark related skeletons as active
 - **Lifecycle:**
   - Created → Updated → LCP solved → Applied → Destroyed
-
-**3. BoxedLcpConstraintSolver** (`dart/constraint/BoxedLcpConstraintSolver.hpp`)
-
-- Concrete implementation using boxed LCP formulation
-- **Strategy:** Primary solver + fallback solver
-  - Primary: DantzigBoxedLcpSolver (accurate but can fail)
-  - Fallback: PgsBoxedLcpSolver (always converges)
-- **Parameters:**
-  - Collision detection options
-  - Secondary friction cone (5-direction vs 4-direction)
-  - Primary/fallback solver options
 
 **4. ConstrainedGroup** (`dart/constraint/ConstrainedGroup.hpp`)
 
@@ -509,12 +495,14 @@ ConstraintSolver
 
 #### LCP Solvers:
 
-| Solver                    | Algorithm              | Accuracy | Speed  | Robustness                          |
-| ------------------------- | ---------------------- | -------- | ------ | ----------------------------------- |
-| **DantzigBoxedLcpSolver** | Lemke/Dantzig pivoting | High     | Medium | Can fail on ill-conditioned systems |
-| **PgsBoxedLcpSolver**     | Projected Gauss-Seidel | Medium   | Fast   | Always converges                    |
+| Solver            | Algorithm                    | Accuracy | Speed  | Robustness/Notes                         |
+| ----------------- | ---------------------------- | -------- | ------ | ---------------------------------------- |
+| **DantzigSolver** | Principal pivoting (boxed)   | High     | Medium | Supports bounds + friction index mapping |
+| **LemkeSolver**   | Complementary pivoting (LCP) | High     | Medium | Standard LCP (no bounds)                 |
+| **PgsSolver**     | Projected Gauss-Seidel       | Medium   | Fast   | Iterative boxed LCP fallback with findex |
 
-**Default Strategy:** Try Dantzig first, fallback to PGS if it fails.
+**Default Strategy:** ConstraintSolver uses `math::DantzigSolver` as primary
+and optionally falls back to `math::PgsSolver` when configured.
 
 ---
 
@@ -544,7 +532,7 @@ World::step()
 - ConstraintSolver: `dart/constraint/ConstraintSolver.hpp`
 - ConstraintBase: `dart/constraint/ConstraintBase.hpp`
 - ContactConstraint: `dart/constraint/ContactConstraint.hpp`
-- BoxedLcpConstraintSolver: `dart/constraint/BoxedLcpConstraintSolver.hpp`
+- LcpSolver implementations: `dart/math/lcp/*`
 
 ---
 
@@ -665,12 +653,11 @@ User calls: world->step()
     │     ├─> Group skeletons into ConstrainedGroups
     │     │
     │     ├─> For each ConstrainedGroup:
-    │     │     ├─> Build LCP matrices:
-    │     │     │     A·λ + b ≥ 0, λ ≥ 0, λ^T(A·λ + b) = 0
+    │     │     ├─> Build boxed LCP (A, b, lo, hi, findex)
     │     │     │
-    │     │     ├─> BoxedLcpSolver::solve()
-    │     │     │     ├─> Try DantzigBoxedLcpSolver
-    │     │     │     └─> If fails, use PgsBoxedLcpSolver
+    │     │     ├─> math::LcpSolver::solve()
+    │     │     │     ├─> Primary: DantzigSolver (pivoting)
+    │     │     │     └─> Optional fallback: PgsSolver (iterative)
     │     │     │
     │     │     └─> Apply constraint impulses λ to velocities
     │     │           v_new = v_old + M^(-1) * J^T * λ
@@ -704,7 +691,8 @@ DART employs numerous software design patterns throughout:
 ### 2. **Strategy Pattern**
 
 - `CollisionDetector` - Different collision engines (FCL, Bullet, etc.)
-- `BoxedLcpSolver` - Different LCP solvers (Dantzig, PGS)
+- `LcpSolver` (`dart/math/lcp`) - Pivoting vs projection solvers (Dantzig,
+  Lemke, Pgs)
 - Allows swapping algorithms at runtime
 
 ### 3. **Observer Pattern**
@@ -787,7 +775,7 @@ ConstraintSolver
   ├─ Uses ──────> CollisionDetector
   ├─ Creates ───> ConstraintBase instances
   ├─ Creates ───> ConstrainedGroup(s)
-  └─ Uses ──────> BoxedLcpSolver
+  └─ Uses ──────> LcpSolver (math::DantzigSolver primary, PgsSolver fallback)
 
 CollisionDetector
   ├─ Creates ───> CollisionGroup
@@ -831,7 +819,8 @@ CollisionDetector
 - **Solvers:**
   - Lemke/Dantzig (pivoting method)
   - PGS (iterative method)
-- **Implementation:** `math::Lemke()`, `DantzigBoxedLcpSolver`, `PgsBoxedLcpSolver`
+- **Implementation:** `math::LemkeSolver`, `math::DantzigSolver`,
+  `math::PgsSolver`
 
 ### 5. **Semi-Implicit Euler Integration**
 

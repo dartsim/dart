@@ -2,6 +2,12 @@
 
 This guide describes how to build DART from source, including both the C++ library and Python bindings (dartpy).
 
+## Start here next time
+
+- Local test workflow: [testing.md](testing.md)
+- CI monitoring and expectations: [ci-cd.md](ci-cd.md)
+- Gazebo / gz-physics integration: [build-system.md](build-system.md#gazebo-integration-feature)
+
 ## Supported Environments
 
 DART is supported on the following operating systems and compilers:
@@ -119,13 +125,22 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    pixi run config-debug          # Debug
    ```
 
-   You can override booleans via environment variables instead of editing `pixi.toml`:
+   `config` accepts args for common toggles:
+
+   ```bash
+   pixi run config OFF            # Suggested (Unverified): disable dartpy
+   pixi run config ON Debug       # Suggested (Unverified): enable dartpy + Debug build
+   ```
+
+   You can also override booleans via environment variables instead of editing `pixi.toml` (Suggested (Unverified)):
 
    ```bash
    DART_BUILD_DARTPY_OVERRIDE=OFF pixi run config
    DART_BUILD_GUI_OVERRIDE=OFF pixi run config
    DART_BUILD_GUI_RAYLIB_OVERRIDE=ON DART_USE_SYSTEM_RAYLIB_OVERRIDE=OFF pixi run config
    ```
+
+   Note: Official dartpy wheels include OSG/GUI; keep `DART_BUILD_GUI` enabled when validating dartpy changes.
 
 3. Build and test:
 
@@ -136,12 +151,51 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    pixi run test-all              # helper script that runs lint + build + tests
    ```
 
-4. (Optional) Gazebo / gz-physics integration test:
+   Parallelism knobs (optional):
+   - `DART_PARALLEL_JOBS` - used by helper scripts and the Gazebo workflow
+   - `CMAKE_BUILD_PARALLEL_LEVEL` - controls `cmake --build`
+   - `CTEST_PARALLEL_LEVEL` - controls `ctest`
 
-   Used in this task:
+   If you want to cap parallelism for local runs, pick a value around two-thirds of logical cores to keep the machine responsive, then set `DART_PARALLEL_JOBS` (and `CTEST_PARALLEL_LEVEL` for ctest). Suggested (Unverified):
 
    ```bash
-   DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz
+   # Linux
+   N=$(( ( $(nproc) * 2 ) / 3 ))
+   # macOS
+   N=$(( ( $(sysctl -n hw.ncpu) * 2 ) / 3 ))
+   # Windows (PowerShell)
+   $env:N=[math]::Floor([Environment]::ProcessorCount*2/3)
+   ```
+
+   Suggested (Unverified):
+
+   ```bash
+   pixi run lint
+   cmake --build <BUILD_DIR> --target <TARGET>
+   ```
+
+   Example:
+
+   ```bash
+   pixi run lint
+   cmake --build build/default/cpp/Release --target UNIT_gui_MeshShapeNodeMaterialUpdates
+   ```
+
+   Suggested (Unverified):
+
+   ```bash
+   DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test
+   DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test-all
+   ```
+
+   Note: `pixi run test-all` runs `pixi run lint` (auto-fixing) internally; check `git status` afterwards before committing.
+
+4. (Optional) Gazebo / gz-physics integration test:
+
+   Suggested (Unverified):
+
+   ```bash
+   DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run -e gazebo test-gz
    ```
 
    This runs the gz-physics integration workflow (task chain, patch policy, and common failure modes are documented in [build-system.md](build-system.md#gazebo-integration-feature)).

@@ -44,6 +44,7 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/HeightmapShape.hpp"
@@ -93,8 +94,12 @@ OdeCollisionObject::OdeCollisionObject(
     // pose, so back it up first.
     dQuaternion geomRelRot;
     dGeomGetQuaternion(geomId, geomRelRot);
-    const dReal* geomRelPos = dGeomGetPosition(geomId);
-    DART_ASSERT(geomRelPos);
+    const dReal* geomRelPosPtr = dGeomGetPosition(geomId);
+    DART_ASSERT(geomRelPosPtr);
+    dVector3 geomRelPos;
+    geomRelPos[0] = geomRelPosPtr[0];
+    geomRelPos[1] = geomRelPosPtr[1];
+    geomRelPos[2] = geomRelPosPtr[2];
 
     // create the body
     mBodyId = dBodyCreate(collisionDetector->getOdeWorldId());
@@ -172,6 +177,7 @@ detail::OdeGeom* createOdeGeom(
 {
   using dynamics::BoxShape;
   using dynamics::CapsuleShape;
+  using dynamics::ConvexMeshShape;
   using dynamics::CylinderShape;
   using dynamics::EllipsoidShape;
   using dynamics::HeightmapShaped;
@@ -208,11 +214,21 @@ detail::OdeGeom* createOdeGeom(
     const double offset = plane->getOffset();
 
     geom = new detail::OdePlane(collObj, normal, offset);
+  } else if (const auto convexMesh = shape->as<ConvexMeshShape>()) {
+    const auto mesh = convexMesh->getMesh();
+    if (mesh && mesh->hasVertices() && !mesh->getTriangles().empty()) {
+      geom = new detail::OdeMesh(collObj, *mesh);
+    } else {
+      DART_WARN(
+          "[OdeCollisionDetector] ConvexMeshShape is missing mesh data. "
+          "Creating a sphere with 0.01 radius instead.");
+      geom = new detail::OdeSphere(collObj, 0.01);
+    }
   } else if (const auto shapeMesh = shape->as<MeshShape>()) {
     const Eigen::Vector3d& scale = shapeMesh->getScale();
-    auto aiScene = shapeMesh->getMesh();
+    auto triMesh = shapeMesh->getTriMesh();
 
-    geom = new detail::OdeMesh(collObj, aiScene, scale);
+    geom = new detail::OdeMesh(collObj, triMesh, scale);
   } else if (const auto heightMap = shape->as<HeightmapShapef>()) {
     geom = new detail::OdeHeightmapf(collObj, heightMap);
   } else if (const auto heightMap = shape->as<HeightmapShaped>()) {

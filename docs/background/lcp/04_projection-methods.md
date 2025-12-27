@@ -16,6 +16,37 @@ Mx^{k+1} = Nx^k + b  (fixed-point iteration)
 x^{k+1} = max(0, M^{-1}(Nx^k + b))  (projection onto positive orthant)
 ```
 
+The split is chosen so that `M` is cheap to invert (non-zero diagonal is mandatory; diagonal dominance or triangular structure helps). If `M` is a Q-matrix (its LCP is always solvable), then any fixed point of this iteration is also a solution of the original LCP.
+
+### Derivation sketch
+
+Start from the LCP:
+
+```
+Ax - b ≥ 0,   x ≥ 0,   xᵀ(Ax - b) = 0
+```
+
+Split `A = M - N` and treat the iteration as a fixed point:
+
+```
+Mx^{k+1} - Nx^k - b ≥ 0
+x^{k+1} ≥ 0
+(x^{k+1})ᵀ(Mx^{k+1} - Nx^k - b) = 0
+```
+
+For splittings where `M` is easy to invert, the complementarity subproblem has the closed form
+
+```
+z^k = M^{-1}(Nx^k + b)
+x^{k+1} = max(0, z^k)
+```
+
+All specific methods below are specializations of this formula.
+
+### Sweep order and symmetry
+
+Gauss-Seidel style methods update `x_i` in-place, so the sweep order changes the fixed point they approach. A symmetric variant (forward then backward sweep) halves this bias at twice the per-iteration cost; Jacobi has no order dependency because it updates all entries in parallel.
+
 ## 1. Jacobi Method ❌ (Not Implemented)
 
 ### Splitting
@@ -26,9 +57,11 @@ x^{k+1} = max(0, M^{-1}(Nx^k + b))  (projection onto positive orthant)
 ### Update Rule
 
 ```
-x_i^{k+1} = max(0, -r_i / A_{ii})  for all i in parallel
-where r = b + Ax^k
+x_i^{k+1} = max(0, x_i^{k} - r_i / A_{ii})  for all i in parallel
+where r = Ax^k - b
 ```
+
+Equivalently: `z = x^k - r ./ diag(A); x^{k+1} = max(0, z)`.
 
 ### Properties
 
@@ -44,7 +77,7 @@ where r = b + Ax^k
 ❌ Slower convergence than Gauss-Seidel
 ❌ May not converge for some problems
 
-## 2. Projected Gauss-Seidel (PGS) ❌ (Not Implemented, High Priority)
+## 2. Projected Gauss-Seidel (PGS) ✅ (Implemented)
 
 ### Splitting
 
@@ -54,9 +87,11 @@ where r = b + Ax^k
 ### Update Rule
 
 ```
-for i = 1 to n:
-  r_i = b_i + sum(A_{ij} * x_j, j=1..n)
-  x_i = max(0, -r_i / A_{ii})
+for i = 1 to n:   # forward sweep
+  r_i = -b_i
+      + sum_{j < i} A_{ij} * x_j^{k+1}   # uses freshly updated values
+      + sum_{j >= i} A_{ij} * x_j^{k}
+  x_i^{k+1} = max(0, x_i^{k} - r_i / A_{ii})
 ```
 
 ### Pseudocode
@@ -66,8 +101,8 @@ function PGS(A, b, x, max_iter, epsilon):
   for iter = 1 to max_iter:
     x_old = x
     for i = 1 to n:
-      r_i = b_i + dot(A[i,:], x)
-      x[i] = max(0, -r_i / A[i,i])
+      r_i = dot(A[i,:], x) - b_i
+      x[i] = max(0, x[i] - r_i / A[i,i])
 
     if ||x - x_old|| < epsilon:
       break
@@ -80,6 +115,12 @@ function PGS(A, b, x, max_iter, epsilon):
 - **Storage**: O(n)
 - **Convergence**: Linear for symmetric PSD
 - **Parallelization**: Sequential
+- **DART support**: `dart::math::PgsSolver` implements both standard and boxed
+  LCPs (including friction `findex` coupling)
+  - Configure solver-specific parameters (e.g., randomized sweep order) via
+    `dart::math::PgsSolver::setParameters()`.
+  - Use `dart::math::LcpOptions::relaxation` to enable PSOR-style relaxation
+    (`1.0` = PGS, `>1` = over-relaxation, `<1` = under-relaxation).
 
 ### Advantages/Disadvantages
 
@@ -93,12 +134,14 @@ function PGS(A, b, x, max_iter, epsilon):
 
 ### Use Cases
 
+- Implemented as `dart::math::PgsSolver` (standard and boxed LCP with optional
+  friction index mapping for contact)
 - Real-time rigid body simulation
 - Contact force computation
 - Interactive applications
 - First-choice for most physics engines
 
-## 3. Projected SOR (PSOR) ❌ (Not Implemented, High Priority)
+## 3. Projected SOR (PSOR) ✅ (Implemented via `PgsSolver` relaxation)
 
 ### Splitting
 
@@ -109,9 +152,17 @@ function PGS(A, b, x, max_iter, epsilon):
 
 ```
 for i = 1 to n:
-  r_i = b_i + sum(A_{ij} * x_j, j=1..n)
-  x_i = max(0, x_i - lambda * r_i / A_{ii})
+  r_i = -b_i
+      + sum_{j < i} A_{ij} * x_j^{k+1}
+      + sum_{j >= i} A_{ij} * x_j^{k}
+
+  # Coordinate-wise relaxation step
+  tau_star   = -r_i / A_{ii}            # minimizer of local quadratic
+  tau_lambda = -λ * r_i / A_{ii}        # relaxed step
+  x_i^{k+1} = max(0, x_i^{k} + tau_lambda)
 ```
+
+Derived by using `A = L + D + U` with the splitting `M = (D + λL)/λ` and `N = ((1-λ)D - λU)/λ`, so the residual is scaled before projecting. `λ` can be seen as a relaxation of `Ax - b`.
 
 ### Relaxation Parameter λ
 
@@ -119,6 +170,35 @@ for i = 1 to n:
 - **0 < λ < 1**: Under-relaxation (more stable)
 - **1 < λ < 2**: Over-relaxation (faster convergence)
 - **Typical**: λ = 1.2 to 1.5
+
+### DART Configuration
+
+```cpp
+dart::math::PgsSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.relaxation = 1.3;  // PSOR-style over-relaxation
+options.maxIterations = 100;
+solver.solve(problem, x, options);
+```
+
+### Coordinate-descent view
+
+For symmetric `A`, PGS/PSOR are equivalent to coordinate descent on the quadratic objective
+
+```
+f(x) = 0.5 xᵀ A x - bᵀ x
+```
+
+Updating coordinate `i` minimizes the 1D polynomial
+
+```
+g_i(tau) = 0.5 A_ii tau² + r_i tau + const
+tau_star  = -r_i / A_ii           # minimizer
+tau_lambda = -λ r_i / A_ii        # relaxed minimizer (PSOR)
+x_i^{k+1} = max(0, x_i^k + tau_lambda)
+```
+
+If `A_ii <= 0`, the local quadratic is non-convex; clip with the projection above and consider regularizing the diagonal to keep the method stable.
 
 ### Properties
 
@@ -146,6 +226,18 @@ Forward sweep (i = 1 to n) followed by backward sweep (i = n to 1).
 - 2× cost per iteration
 - Better convergence behavior
 
+### Generic projected iteration
+
+A simple implementation shared by Jacobi/PGS/PSOR:
+
+```
+for k = 1..N:
+  z = M^{-1}(N x + b)
+  x = max(0, z)          # or box projection for BLCP
+```
+
+Sweep order matters for Gauss-Seidel/PSOR. A symmetric variant performs one forward and one backward sweep to mitigate order bias (useful for PSOR/PGS; not for Jacobi which is already order-free).
+
 ## 5. Blocked Gauss-Seidel (BGS) ❌ (Not Implemented, Medium Priority)
 
 ### Description
@@ -167,11 +259,13 @@ Block i contains variables for contact point i:
 for iter = 1 to max_iter:
   for each block i:
     # Compute residual for block
-    r_i = b_i + sum(A_{ij} * x_j, j=1..num_blocks)
+    r_i = -b_i + sum(A_{ij} * x_j, j=1..num_blocks)
 
     # Solve sub-LCP for block i
     x_i = SolveSubLCP(A_{ii}, r_i, bounds_i)
 ```
+
+In code, form the local right-hand side as `b'_i = b_i - (A_ij x_j)_j∈blocks, j≠i`, then solve `A_ii x_i = b'_i` under the per-block bounds.
 
 ### Sub-LCP Solvers
 
@@ -179,6 +273,11 @@ for iter = 1 to max_iter:
 - **2D/3D friction**: Direct geometric method
 - **4D pyramid**: Direct or small iterative
 - **General**: Any LCP solver
+
+For common contact splittings:
+
+- Normal sub-block: 1D projection (`x_n = max(0, x_n - r_n / A_nn)`).
+- Friction sub-block: 2D/4D problem; if the reduced matrix is symmetric PSD, solve with a tiny PCG or a direct enumerator.
 
 ### Properties
 
@@ -201,6 +300,38 @@ for iter = 1 to max_iter:
 - Contact force problems
 - One block per contact point
 - When sub-problems are small and cheap
+- Hierarchical blocking: partition a configuration into sub-blocks (e.g., joints vs contacts) and apply specialized solvers per block, repeating sweeps until convergence.
+
+### Practical blocking tips
+
+- Keep the **normal block** tiny (often 1×1) so it can be solved by direct projection.
+- Friction blocks may be **non-symmetric**; small dimension allows direct enumeration or a tiny PCG even when symmetry is missing.
+- For joints or tightly coupled contacts, group them into a single block and solve with a symmetric solver (e.g., PCG) while keeping the scalar per-contact structure for the rest.
+- Hierarchical strategies work well: first block by joint/contact type, then run BGS sweeps inside each group.
+
+### Staggered normal/friction solve (contact-specific)
+
+When contacts are split into normal (`x_N`) and friction (`x_F`) variables (plus optional slack):
+
+```
+# repeat until fixed point
+solve normal LCP:      x_N = PGS/PSOR/PCG on A_NN, with x_F held fixed
+update friction bounds: |x_F| ≤ μ x_N
+solve friction subproblem: small LCP or QP on A_FF, with x_N fixed
+```
+
+Normal blocks are often symmetric PSD, making the normal step amenable to QP/PCG; the friction block can be treated as a cone-constrained QP. One sweep already gives a useful warm start for higher-accuracy methods.
+
+### Extension to Boxed LCP (BLCP)
+
+Use the same splitting but project onto bounds:
+
+```
+z^k = M^{-1}(N x^k + b)
+x^{k+1} = min(u, max(l, z^k))
+```
+
+For contact problems, `l` and `u` are often functions of the normal impulse (`±μN`), so the projection step should recompute bounds whenever `N` changes.
 
 ## 6. Nonsmooth Nonlinear Conjugate Gradient (NNCG) ❌ (Not Implemented)
 
@@ -212,20 +343,21 @@ Conjugate gradient acceleration of PGS using Fletcher-Reeves formula.
 
 ```
 function NNCG(A, b, x, max_iter):
-  r = PGS_iteration(x) - x  # residual
-  p = r                      # search direction
+  x = PGS(x)              # warm start
+  r = PGS(x) - x          # residual (acts as gradient)
+  p = -r                  # search direction
 
-  for iter = 1 to max_iter:
-    x = x + p  # full step
-    r_new = PGS_iteration(x) - x
+  for k = 1..max_iter:
+    x = PGS(x + p)        # projected step along p
+    r_new = PGS(x) - x
 
     beta = ||r_new||² / ||r||²
-
-    if beta > 1:
-      p = r_new  # restart
+    if beta > 1:          # restart if direction is bad
+      p = -r_new
     else:
-      p = r_new + beta * p
+      p = -r_new + beta * p
 
+    if ||r_new|| < tol: return x
     r = r_new
 ```
 
@@ -272,7 +404,7 @@ while not converged:
     A = {i | l_i < x_i < u_i}
 
     # Solve reduced system
-    A_{AA} * x_A = -(b_A + A_{AL}*l + A_{AU}*u)
+    A_{AA} * x_A = b_A - A_{AL}*l - A_{AU}*u
 
     # Project back
     x_A = min(u_A, max(l_A, x_A))
@@ -289,6 +421,31 @@ while not converged:
 - Small to medium problems with joints
 - When PGS alone is not accurate enough
 - Problems with clear active/inactive distinction
+
+### Full algorithm (from Silcowitz et al.)
+
+```
+input: k_pgs (PGS warm-start iterations), k_sm (subspace iterations), l, u
+while not converged:
+  x = run PGS for at least k_pgs iterations
+  if termination reached: return x
+
+  for k = 1..k_sm:
+    L = { i | x_i = l_i }, U = { i | x_i = u_i }, A = others
+
+    # Solve reduced system on active set
+    solve A_AA x_A = b_A - A_AL l - A_AU u
+
+    # Reconstruct residuals for bound sets
+    v_L = A_LA x_A + A_LL l + A_LU u - b_L
+    v_U = A_UA x_A + A_UL l + A_UU u - b_U
+
+    # Project active solution back to the box
+    x_A = min(u_A, max(l_A, x_A))
+    x   = assemble [x_L = l; x_U = u; x_A]
+
+    if termination reached (e.g., active set unchanged): return x
+```
 
 ## 8. Red-Black Gauss-Seidel ❌ (Not Implemented)
 
@@ -326,7 +483,7 @@ for iter = 1 to max_iter:
 ### Absolute Convergence
 
 ```
-||Ax + b|| < epsilon_abs
+||Ax - b|| < epsilon_abs
 ```
 
 Typical: epsilon_abs = 1e-6
@@ -342,10 +499,47 @@ Typical: epsilon_rel = 1e-4
 ### Complementarity
 
 ```
-||x ⊙ (Ax + b)|| < epsilon_comp
+||x ⊙ (Ax - b)|| < epsilon_comp
 ```
 
 where ⊙ is element-wise product
+
+### Infinity Norm (Cheap) and Divergence Check
+
+```
+delta_k = max_i |x_i^k|
+rho_k   = max(delta_k, delta_{k-1})
+
+# divergence detection
+if delta_k > gamma: stop (diverging), where gamma is a user cap
+
+# contraction
+if |delta_k - delta_{k-1}| / max(1, delta_{k-1}) < epsilon_rel: converged
+```
+
+The infinity norm can be accumulated during the sweep with no extra passes.
+
+**Practical sweep-time test** (cheap and easy to implement):
+
+```
+delta_old = ∞
+rho = ∞
+for k = 1..max_iter:
+  delta = 0
+  for each i:
+    x_i = update_i(...)
+    delta = max(delta, |x_i|)
+
+  # Divergence: getting larger
+  if delta > rho: return "diverging"
+  rho = max(delta, delta_old)
+  delta_old = delta
+
+  # Relative contraction
+  if delta < rho * (1 - eps_rel): return "converged"
+```
+
+This uses only per-iteration maxima; no vector norms are required.
 
 ### Maximum Iterations
 
@@ -366,7 +560,7 @@ phi(x) = 0.5 * x^T * A * x + x^T * b
 ### Modified for x=0 Safety
 
 ```
-phi(x) = ||x ⊙ (Ax + b)||
+phi(x) = ||x ⊙ (Ax - b)||
 ```
 
 ### Infinity Norm (Cheap to Compute)
@@ -375,26 +569,32 @@ phi(x) = ||x ⊙ (Ax + b)||
 phi(x) = max_i |x_i|
 ```
 
+### Complementarity Merit
+
+```
+theta_compl(x) = x^T (Ax - b)
+```
+
+Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
+
 ## Comparison Table
 
-| Method    | Status        | Parallel | Convergence | Best For              |
-| --------- | ------------- | -------- | ----------- | --------------------- |
-| Jacobi    | ❌            | Yes      | Slow        | Parallel hardware     |
-| PGS       | ❌ (Priority) | No       | Linear      | Real-time             |
-| PSOR      | ❌ (Priority) | No       | Linear      | Real-time with tuning |
-| BGS       | ❌            | No       | Linear      | Contact problems      |
-| NNCG      | ❌            | No       | Superlinear | Large-scale           |
-| PGS-SM    | ❌            | No       | Better      | Medium problems       |
-| Red-Black | ❌            | 2-phase  | Medium      | GPU                   |
+| Method    | Status           | Parallel | Convergence | Best For              |
+| --------- | ---------------- | -------- | ----------- | --------------------- |
+| Jacobi    | ❌               | Yes      | Slow        | Parallel hardware     |
+| PGS       | ✅ (Implemented) | No       | Linear      | Real-time boxed LCP   |
+| PSOR      | ✅ (Implemented) | No       | Linear      | Real-time with tuning |
+| BGS       | ❌               | No       | Linear      | Contact problems      |
+| NNCG      | ❌               | No       | Superlinear | Large-scale           |
+| PGS-SM    | ❌               | No       | Better      | Medium problems       |
+| Red-Black | ❌               | 2-phase  | Medium      | GPU                   |
 
 ## Implementation Priority
 
 ### Phase 1 (Essential for Real-Time)
 
-1. **PGS** - Core method, highest priority
-2. **PSOR** - Extension of PGS with relaxation
-3. **Termination criteria** - Multiple stopping conditions
-4. **Merit functions** - For convergence monitoring
+1. **Termination criteria** - Multiple stopping conditions
+2. **Merit functions** - For convergence monitoring
 
 ### Phase 2 (For Contact Problems)
 

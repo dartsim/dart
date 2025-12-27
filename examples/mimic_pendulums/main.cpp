@@ -38,8 +38,7 @@
 #include <dart/gui/ImGuiWidget.hpp>
 #include <dart/gui/RealTimeWorldNode.hpp>
 
-#include <dart/utils/DartResourceRetriever.hpp>
-#include <dart/utils/sdf/SdfParser.hpp>
+#include <dart/io/Read.hpp>
 
 #if DART_HAVE_BULLET
   #include <dart/collision/bullet/BulletCollisionDetector.hpp>
@@ -47,24 +46,25 @@
 #if DART_HAVE_ODE
   #include <dart/collision/ode/OdeCollisionDetector.hpp>
 #endif
+#include <dart/gui/IncludeImGui.hpp>
+
 #include <dart/simulation/World.hpp>
 
-#include <dart/constraint/BoxedLcpConstraintSolver.hpp>
-#include <dart/constraint/DantzigBoxedLcpSolver.hpp>
+#include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/constraint/MimicMotorConstraint.hpp>
-#include <dart/constraint/PgsBoxedLcpSolver.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/Joint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <dart/math/Helpers.hpp>
+#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
+#include <dart/math/lcp/projection/PgsSolver.hpp>
 
 #include <dart/common/Uri.hpp>
 
 #include <CLI/CLI.hpp>
 #include <Eigen/Core>
-#include <imgui.h>
 #include <osg/GraphicsContext>
 #include <osg/Vec3>
 
@@ -125,34 +125,6 @@ Eigen::Vector3d translationOf(const BodyNode* bn)
   return bn->getWorldTransform().translation();
 }
 
-std::string formatErrors(const sdf::Errors& errors)
-{
-  std::stringstream ss;
-  for (const auto& err : errors)
-    ss << err.Message() << "\n";
-  return ss.str();
-}
-
-std::string readSdfText(
-    const dart::common::Uri& uri,
-    const std::shared_ptr<dart::utils::DartResourceRetriever>& retriever)
-{
-  auto resource = retriever->retrieve(uri);
-  if (!resource) {
-    std::cerr << "Failed to retrieve SDF: " << uri.toString() << "\n";
-    return {};
-  }
-
-  std::string text(resource->getSize(), '\0');
-  const auto read = resource->read(text.data(), 1, text.size());
-  if (read != resource->getSize()) {
-    std::cerr << "Failed to read SDF bytes for " << uri.toString() << "\n";
-    return {};
-  }
-
-  return text;
-}
-
 struct SolverConfig
 {
   bool useOdeCollision = true;
@@ -182,20 +154,18 @@ void applyCollisionDetector(
 void applyLcpSolver(
     const SolverConfig& cfg, const dart::simulation::WorldPtr& world)
 {
-  auto* boxedSolver = dynamic_cast<dart::constraint::BoxedLcpConstraintSolver*>(
+  auto* boxedSolver = dynamic_cast<dart::constraint::ConstraintSolver*>(
       world->getConstraintSolver());
   if (!boxedSolver)
     return;
 
   if (cfg.usePgsSolver) {
-    boxedSolver->setBoxedLcpSolver(
-        std::make_shared<dart::constraint::PgsBoxedLcpSolver>());
-    boxedSolver->setSecondaryBoxedLcpSolver(nullptr);
+    boxedSolver->setLcpSolver(std::make_shared<dart::math::PgsSolver>());
+    boxedSolver->setSecondaryLcpSolver(nullptr);
   } else {
-    boxedSolver->setBoxedLcpSolver(
-        std::make_shared<dart::constraint::DantzigBoxedLcpSolver>());
-    boxedSolver->setSecondaryBoxedLcpSolver(
-        std::make_shared<dart::constraint::PgsBoxedLcpSolver>());
+    boxedSolver->setLcpSolver(std::make_shared<dart::math::DantzigSolver>());
+    boxedSolver->setSecondaryLcpSolver(
+        std::make_shared<dart::math::PgsSolver>());
   }
 }
 
@@ -535,10 +505,7 @@ int main(int argc, char* argv[])
   const std::string worldUri
       = "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf";
 
-  auto retriever = std::make_shared<dart::utils::DartResourceRetriever>();
-  dart::utils::SdfParser::Options options(retriever);
-
-  const auto world = dart::utils::SdfParser::readWorld(Uri(worldUri), options);
+  const auto world = dart::io::readWorld(Uri(worldUri));
   if (!world) {
     std::cerr << "Failed to load world from " << worldUri << "\n";
     return EXIT_FAILURE;

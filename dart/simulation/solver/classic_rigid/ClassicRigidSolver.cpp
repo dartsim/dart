@@ -34,6 +34,7 @@
 
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionGroup.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
@@ -42,10 +43,11 @@
 
 namespace dart::simulation {
 
-ClassicRigidSolver::ClassicRigidSolver()
-  : WorldSolver("classic_rigid"),
-    mConstraintSolver(std::make_unique<constraint::BoxedLcpConstraintSolver>())
+ClassicRigidSolver::ClassicRigidSolver() : WorldSolver("classic_rigid")
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  mConstraintSolver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 ClassicRigidSolver::~ClassicRigidSolver() = default;

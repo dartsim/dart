@@ -33,7 +33,11 @@
 #ifndef DART_DYNAMICS_MESHSHAPE_HPP_
 #define DART_DYNAMICS_MESHSHAPE_HPP_
 
+#include <dart/dynamics/MeshMaterial.hpp>
 #include <dart/dynamics/Shape.hpp>
+
+#include <dart/math/PolygonMesh.hpp>
+#include <dart/math/TriMesh.hpp>
 
 #include <dart/common/ResourceRetriever.hpp>
 
@@ -42,6 +46,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace dart {
 namespace dynamics {
@@ -88,8 +93,24 @@ public:
     SHAPE_ALPHA
   };
 
-  /// Constructor.
+  /// Constructor using TriMesh (preferred).
   MeshShape(
+      const Eigen::Vector3d& scale,
+      std::shared_ptr<math::TriMesh<double>> mesh,
+      const common::Uri& uri = "");
+
+  /// Constructor using TriMesh (preferred) with a resource retriever.
+  ///
+  /// Providing a resource retriever allows MeshShape to resolve and preserve
+  /// material/texture metadata associated with the source URI.
+  MeshShape(
+      const Eigen::Vector3d& scale,
+      std::shared_ptr<math::TriMesh<double>> mesh,
+      const common::Uri& uri,
+      common::ResourceRetrieverPtr resourceRetriever);
+
+  /// Constructor using aiScene (deprecated, for backward compatibility).
+  [[deprecated("Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] MeshShape(
       const Eigen::Vector3d& scale,
       const aiScene* mesh,
       const common::Uri& uri = "",
@@ -98,7 +119,7 @@ public:
 
   /// Constructor that accepts a shared_ptr so callers can supply a custom
   /// deleter for aiScene.
-  MeshShape(
+  [[deprecated("Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] MeshShape(
       const Eigen::Vector3d& scale,
       std::shared_ptr<const aiScene> mesh,
       const common::Uri& uri = "",
@@ -113,7 +134,25 @@ public:
   /// Returns shape type for this class
   static const std::string& getStaticType();
 
-  const aiScene* getMesh() const;
+  /// Returns the TriMesh representation of this mesh (preferred).
+  std::shared_ptr<math::TriMesh<double>> getTriMesh() const;
+
+  /// Returns the polygon mesh representation of this mesh, if available.
+  ///
+  /// This is intended for rendering/export pipelines that want to preserve
+  /// non-triangular faces. The returned mesh may be generated lazily and can be
+  /// a triangulated representation when no original polygons are available.
+  std::shared_ptr<math::PolygonMesh<double>> getPolygonMesh() const;
+
+  /// Returns the aiScene representation of this mesh (deprecated).
+  ///
+  /// WARNING: This method performs an expensive conversion from TriMesh to
+  /// aiScene on every call. It is provided only for backward compatibility.
+  /// Please migrate to getTriMesh() for better performance.
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART "
+      "8.")]] const aiScene*
+  getMesh() const;
 
   /// Updates positions of the vertices or the elements. By default, this does
   /// nothing; you must extend the MeshShape class and implement your own
@@ -121,25 +160,33 @@ public:
   /// rendering
   virtual void update();
 
-  void setMesh(
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] void
+  setMesh(
       const aiScene* mesh,
       const std::string& path = "",
       common::ResourceRetrieverPtr resourceRetriever = nullptr);
 
   /// Sets the mesh pointer with explicit ownership semantics.
-  void setMesh(
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] void
+  setMesh(
       const aiScene* mesh,
       MeshOwnership ownership,
       const common::Uri& path,
       common::ResourceRetrieverPtr resourceRetriever = nullptr);
 
-  void setMesh(
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] void
+  setMesh(
       const aiScene* mesh,
       const common::Uri& path,
       common::ResourceRetrieverPtr resourceRetriever = nullptr);
 
   /// Sets the mesh using a shared_ptr so callers can provide a custom deleter.
-  void setMesh(
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] void
+  setMesh(
       std::shared_ptr<const aiScene> mesh,
       const common::Uri& path = "",
       common::ResourceRetrieverPtr resourceRetriever = nullptr);
@@ -202,12 +249,32 @@ public:
 
   void setDisplayList(int index);
 
-  static const aiScene* loadMesh(const std::string& filePath);
+  /// Returns materials extracted from the mesh (for rendering without Assimp).
+  /// This provides an Assimp-free way to access material properties.
+  const std::vector<MeshMaterial>& getMaterials() const;
 
-  static const aiScene* loadMesh(
+  /// Returns the number of materials in this mesh.
+  std::size_t getNumMaterials() const;
+
+  /// Returns a specific material by index.
+  /// Returns nullptr if index is out of bounds.
+  const MeshMaterial* getMaterial(std::size_t index) const;
+
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART "
+      "8.")]] static const aiScene*
+  loadMesh(const std::string& filePath);
+
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART "
+      "8.")]] static const aiScene*
+  loadMesh(
       const std::string& _uri, const common::ResourceRetrieverPtr& retriever);
 
-  static const aiScene* loadMesh(
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART "
+      "8.")]] static const aiScene*
+  loadMesh(
       const common::Uri& uri, const common::ResourceRetrieverPtr& retriever);
 
   // Documentation inherited.
@@ -217,6 +284,42 @@ public:
   virtual ShapePtr clone() const override;
 
 protected:
+  class DART_API MeshHandle
+  {
+  public:
+    MeshHandle() = default;
+
+    MeshHandle& operator=(const aiScene* mesh);
+    MeshHandle& operator=(std::shared_ptr<const aiScene> mesh);
+
+    const aiScene* get() const;
+    const aiScene* operator->() const;
+    explicit operator bool() const;
+
+    void reset();
+    MeshOwnership getOwnership() const;
+    const std::shared_ptr<const aiScene>& getShared() const;
+
+    void set(const aiScene* mesh, MeshOwnership ownership);
+    void set(std::shared_ptr<const aiScene> mesh);
+
+  private:
+    std::shared_ptr<const aiScene> mMesh;
+    MeshOwnership mMeshOwnership{MeshOwnership::None};
+  };
+
+  struct SubMeshRange
+  {
+    std::size_t vertexOffset{0};
+    std::size_t vertexCount{0};
+    std::size_t triangleOffset{0};
+    std::size_t triangleCount{0};
+    unsigned int materialIndex{0};
+  };
+
+  static std::shared_ptr<const aiScene> makeMeshHandle(
+      const aiScene* mesh, MeshOwnership ownership);
+
   // Documentation inherited.
   void updateBoundingBox() const override;
 
@@ -227,45 +330,49 @@ protected:
 
   void releaseMesh();
 
-  struct MeshPtr : public std::shared_ptr<const aiScene>
-  {
-    // Backward-compatibility shim for downstream code (e.g., Gazebo) that
-    // assigns raw aiScene pointers directly to MeshShape::mMesh.
-    //
-    // Prefer using MeshShape::setMesh(..., MeshOwnership, ...) instead.
-    // TODO(DART 8): Remove this shim and require setMesh().
-    using std::shared_ptr<const aiScene>::shared_ptr;
-    using std::shared_ptr<const aiScene>::operator=;
+  MeshHandle mMesh;
 
-    MeshPtr& operator=(aiScene* scene)
-    {
-      if (!scene) {
-        this->reset();
-        return *this;
-      }
+  /// Converts aiScene to TriMesh for internal use.
+  static std::shared_ptr<math::TriMesh<double>> convertAssimpMesh(
+      const aiScene* scene);
+  static std::shared_ptr<math::TriMesh<double>> convertAssimpMesh(
+      const aiScene* scene, std::vector<SubMeshRange>* subMeshes);
+  static std::shared_ptr<math::PolygonMesh<double>> convertAssimpPolygonMesh(
+      const aiScene* scene);
+  static std::shared_ptr<math::PolygonMesh<double>> convertTriMeshToPolygonMesh(
+      const math::TriMesh<double>& mesh);
+  static bool collectSubMeshRanges(
+      const aiScene* scene,
+      std::vector<SubMeshRange>& ranges,
+      std::size_t expectedVertices,
+      std::size_t expectedTriangles);
 
-      this->reset(scene, [](const aiScene* ownedScene) {
-        delete const_cast<aiScene*>(ownedScene);
-      });
-      return *this;
-    }
+  /// Converts TriMesh back to aiScene for backward compatibility.
+  /// NOTE: This creates a new aiScene on every call and the caller is
+  /// responsible for freeing it with aiReleaseImport().
+  const aiScene* convertToAssimpMesh() const;
 
-    MeshPtr& operator=(const aiScene* scene)
-    {
-      if (!scene) {
-        this->reset();
-        return *this;
-      }
+  /// Extracts material information from aiScene for Assimp-free rendering.
+  void extractMaterialsFromScene(
+      const aiScene* scene,
+      const std::string& basePath,
+      const common::Uri& meshUri);
 
-      this->reset(scene, [](const aiScene* importedScene) {
-        aiReleaseImport(importedScene);
-      });
-      return *this;
-    }
-  };
+  /// Extracts texture coordinates from aiScene for Assimp-free rendering.
+  void extractTextureCoordsFromScene(const aiScene* scene);
 
-  MeshPtr mMesh;
-  MeshOwnership mMeshOwnership{MeshOwnership::None};
+  /// TriMesh representation (preferred, ownership shared).
+  std::shared_ptr<math::TriMesh<double>> mTriMesh;
+
+  /// Polygon mesh representation (optional, cached on demand).
+  std::shared_ptr<math::PolygonMesh<double>> mPolygonMesh;
+
+  /// Submesh ranges extracted from Assimp (for backward compatibility).
+  std::vector<SubMeshRange> mSubMeshRanges;
+
+  /// Cached aiScene for backward compatibility (created on-demand).
+  /// Mutable to allow lazy conversion in const getMesh() method.
+  mutable const aiScene* mCachedAiScene;
 
   /// URI the mesh, if available).
   common::Uri mMeshUri;
@@ -275,6 +382,12 @@ protected:
 
   /// Optional method of loading resources by URI.
   common::ResourceRetrieverPtr mResourceRetriever;
+
+  /// Texture coordinates aligned with TriMesh vertex order.
+  std::vector<Eigen::Vector3d> mTextureCoords;
+
+  /// Number of texture coordinate components (0 means none).
+  int mTextureCoordComponents{0};
 
   /// OpenGL DisplayList id for rendering
   int mDisplayList;
@@ -290,6 +403,9 @@ protected:
 
   /// Specifies which color index should be used when mColorMode is COLOR_INDEX
   int mColorIndex;
+
+  /// Materials extracted from the mesh (for Assimp-free rendering).
+  std::vector<MeshMaterial> mMaterials;
 };
 
 } // namespace dynamics

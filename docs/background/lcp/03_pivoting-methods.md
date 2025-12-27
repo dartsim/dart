@@ -6,11 +6,36 @@
 
 Pivoting methods solve LCPs by exploiting their combinatorial nature through enumerating solution candidates. They can find exact solutions when they exist.
 
+## Active / Free index sets
+
+Let `y = Ax - b`. Partition the indices into:
+
+- Active set `A = { i | x_i > 0 }`
+- Free set `F = { i | y_i > 0 }`
+
+Strict complementarity implies `A ∩ F = ∅` and `A ∪ F = I`, where `I = {1, …, n}`. Reordering rows/columns with this partition yields a reduced problem that makes the pivot structure explicit:
+
+```
+[ I_F  -A_FA ] [ y_F ] = [ -b_F ]
+[  0    A_AA ] [ x_A ]   [  b_A ]
+```
+
+The stacked matrix built from identity columns (for `y_F`) and negated `A` columns (for `x_A`) is a **complementarity matrix**. Choosing, for every index, whether the column comes from `I` or from `-A` enumerates up to `2^n` distinct matrices; this combinatorial explosion is what gives pivoting its exponential worst case. For symmetric positive (semi-)definite `A`, the same conditions can instead be written as a quadratic program, avoiding explicit pivot enumeration.
+
+### Constructing a complementarity matrix
+
+1. Decide the membership of each index (active vs free).
+2. Zero out columns in `A` that belong to `F` (since `x_F = 0`) and rows that belong to `A` (since `y_A = 0`).
+3. Reorder unknowns to `[y_F; x_A]` and build `C = [I_F, -A_FA]`.
+4. Solve `C s = b` for `s = [y_F; x_A]` and keep only solutions with `s ≥ 0`.
+
+Each feasible `s` corresponds to one candidate LCP solution. Pivoting methods search these candidates without testing all `2^n` possibilities when possible.
+
 ## 1. Direct Methods for Small-Sized Problems
 
 ### Description
 
-Geometric approaches for 2D and 3D LCPs using complementarity cones and angle intersection tests.
+Geometric approaches for 2D and 3D LCPs using complementarity cones and angle intersection tests. They explicitly enumerate all complementarity matrices but remain cheap because the dimension is tiny.
 
 ### 2D Algorithm
 
@@ -40,6 +65,22 @@ For cone C = [c₁, c₂, c₃]:
      (c₃ × c₁)·b >= 0:
     return x = C⁻¹b
 ```
+
+#### Bitmask implementation (2D)
+
+```
+for k = 1..4:
+  mask = 2^(k-1)
+  c1 = (mask & 0b01) ? e1 : -a1
+  c2 = (mask & 0b10) ? e2 : -a2
+  # b inside cone iff signed areas with b have opposite sign
+  if det(c1, b) * det(c2, b) <= 0:
+    x = [c1 c2]^{-1} b
+    return x
+return "no solution"
+```
+
+This tests whether `b` lies in the cone spanned by `c1, c2` by checking that the signed areas (determinants) with `b` have opposite signs.
 
 ### Properties
 
@@ -74,7 +115,8 @@ Ax = b + w, where each (xᵢ, wᵢ) satisfies one of:
 ### Key Features
 
 - **Bounded variables**: `lo[i] <= x[i] <= hi[i]`
-- **Unbounded variables**: First `nub` variables have infinite bounds
+- **Unbounded variables**: Represented by `lo = -∞`, `hi = +∞` (legacy API uses
+  `nub` to seed the initial unbounded block)
 - **Friction support**: `findex[i]` for friction cone constraints
   - When `findex[i] >= 0`: bounds become `hi[i] = |hi[i] * x[findex[i]]|`, `lo[i] = -hi[i]`
 - **Early termination**: Optional for faster approximate solutions
@@ -99,7 +141,22 @@ bool SolveLCP(int n, Scalar* A, Scalar* x, Scalar* b, Scalar* w,
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/dantzig/Lcp.hpp>
+#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
+
+using namespace dart::math;
+
+// Build an LcpProblem (boxed LCP with optional findex friction coupling)
+LcpProblem problem(A, b, lo, hi, findex);
+Eigen::VectorXd x = Eigen::VectorXd::Zero(b.size());
+
+DantzigSolver solver;
+LcpResult result = solver.solve(problem, x, solver.getDefaultOptions());
+```
+
+The underlying ODE-derived implementation is also available directly:
+
+```cpp
+#include <dart/math/lcp/pivoting/dantzig/Lcp.hpp>
 
 using namespace dart::math;
 
@@ -111,7 +168,7 @@ int findex[n];
 
 bool success = SolveLCP<double>(
     n, A, x, b, w,
-    0,        // nub (unbounded variables)
+    0,        // nub (unbounded variables); can be left 0 in most cases
     lo, hi,
     findex,
     false     // earlyTermination
@@ -161,7 +218,7 @@ Find z such that:
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/Lemke.hpp>
+#include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 
 using namespace dart::math;
 
@@ -170,10 +227,19 @@ Eigen::VectorXd q(n), z(n);
 
 // Initialize M and q...
 
-int result = Lemke(M, q, &z);
+// DART uses w = Mz - b. For the common form w = Mz + q, set b = -q.
+Eigen::VectorXd b = -q;
+LcpProblem problem(
+    M,
+    b,
+    Eigen::VectorXd::Zero(n),
+    Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity()),
+    Eigen::VectorXi::Constant(n, -1));
 
-// Validate solution
-bool valid = validate(M, z, q);
+LemkeSolver solver;
+LcpOptions options = solver.getDefaultOptions();
+options.validateSolution = true;
+auto result = solver.solve(problem, z, options);
 ```
 
 ### Properties
@@ -195,40 +261,58 @@ bool valid = validate(M, z, q);
 
 Incrementally builds active/free index sets while maintaining complementarity constraints as invariants.
 
+The method keeps three sets:
+
+- **Active A**: indices where `x_i > 0`
+- **Free F**: indices where `y_i = (Ax-b)_i > 0`
+- **Unprocessed U**: indices not yet assigned
+
 ### Key Concepts
 
 - **Index Sets**:
   - **Active set A**: indices where `xᵢ > 0`
-  - **Free set F**: indices where `yᵢ = (Ax + b)ᵢ > 0`
+  - **Free set F**: indices where `yᵢ = (Ax - b)ᵢ > 0`
   - **Unprocessed U**: indices not yet assigned
+- **Blocking constraints**: bounds on how far a candidate variable may move before violating complementarity in the current basis
 
 ### Algorithm Pseudocode
 
 ```
-Initialize: A = ∅, F = ∅, U = {1,...,n}
+Given symmetric PSD A, b. Start with x = 0, y = b, A = ∅, F = ∅, U = I
 
-while U ≠ ∅:
-  Select j ∈ U
+while U not empty:
+  j = argmin_{i in U} y_i           # most negative residual
+  enter j into tentative active set
 
-  # Try to make x_j positive
-  Find maximum x_j such that:
-    - All complementarity constraints satisfied
-    - x_j is limited by blocking constraints
+  repeat:  # pivoting loop
+    # Solve for search direction that increases x_j
+    Δx = 0; Δx_j = 1
+    Δy = A * Δx
 
-  if blocking from A:
-    # Pivot: swap index from A to F
-    Continue inner pivoting loop
-  else if blocking from F:
-    # Pivot: swap index from F to A
-    Continue inner pivoting loop
-  else:
-    # No blocking, assign j to A or F
-    if x_j > 0:
-      A ← A ∪ {j}
+    # Blocking values: how far can we move before violating complementarity?
+    B_A = { -x_i / Δx_i | i in A and Δx_i < 0 }
+    B_F = { -y_i / Δy_i | i in F and Δy_i < 0 }
+    α = min( B_A ∪ B_F ∪ {∞} )
+
+    x = x + α * Δx
+    y = y + α * Δy
+
+    if α came from B_A with index q:
+      move q from A to F            # swap its complement
+    else if α came from B_F with index q:
+      move q from F to A
     else:
-      F ← F ∪ {j}
-    U ← U \ {j}
+      # no blocking constraint hit; finalize j
+      if x_j > 0: A = A ∪ {j} else F = F ∪ {j}
+      U = U \ {j}
+      break
+  until false
 ```
+
+Notes:
+
+- Only one index swaps at a time, so an incremental factorization of `A_AA` keeps the inner loop O(n²) while the outer loop runs O(n) times (practical O(n³), worst-case O(n⁴)).
+- Works best when `A` is symmetric positive semidefinite (common for contact problems), where it mirrors an active-set QP solve.
 
 ### Properties
 

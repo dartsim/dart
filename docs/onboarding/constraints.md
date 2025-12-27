@@ -15,7 +15,6 @@ This document provides a comprehensive analysis of the constraint subsystem in t
 - ConstraintBase.hpp/cpp - Base class for all constraints
 - ConstraintSolver.hpp/cpp - Main solver managing constraints
 - ConstrainedGroup.hpp/cpp - Groups of interacting skeletons
-- BoxedLcpConstraintSolver.hpp/cpp - LCP-based constraint solver
 
 **Constraint Types:**
 
@@ -32,21 +31,20 @@ This document provides a comprehensive analysis of the constraint subsystem in t
 - WeldJointConstraint.hpp/cpp - Weld joint constraints
 - DynamicJointConstraint.hpp/cpp - Dynamic joint constraints
 
-**LCP Solvers:**
+**LCP Solvers (`dart/math/lcp`):**
 
-- LCPSolver.hpp/cpp - Base LCP solver
-- BoxedLcpSolver.hpp - Boxed LCP solver interface
-- DantzigLCPSolver.hpp/cpp - Dantzig LCP solver
-- DantzigBoxedLcpSolver.hpp/cpp - Dantzig boxed LCP solver
-- PGSLCPSolver.hpp/cpp - Projected Gauss-Seidel LCP solver
-- PgsBoxedLcpSolver.hpp/cpp - PGS boxed LCP solver
+The constraint system formulates a boxed LCP and delegates the solve step to
+the unified LCP solver API in `dart/math/lcp/`:
+
+- LcpSolver.hpp/cpp - Solver interface (`dart::math::LcpSolver`)
+- LcpTypes.hpp/cpp - `LcpProblem`/`LcpOptions`/`LcpResult` and status codes
+- pivoting/DantzigSolver.hpp/cpp - Boxed LCP + friction index (pivoting)
+- projection/PgsSolver.hpp/cpp - Boxed LCP + friction index (iterative)
+- pivoting/LemkeSolver.hpp/cpp - Standard LCP (boxed/findex delegates)
 
 **Dantzig Solver Implementation:**
-Modern C++20 template-based implementation in `dart/math/lcp/dantzig/` with two key design decisions:
-
-- **PivotMatrix:** Hybrid architecture combining Eigen storage with pointer-based O(1) row swapping
-- **Hybrid SIMD:** Threshold-based strategy switching between raw pointers and Eigen SIMD based on problem size
-  See code for implementation details.
+ODE-derived principal pivoting BLCP implementation lives in
+`dart/math/lcp/pivoting/dantzig/` and is wrapped by `dart::math::DantzigSolver`.
 
 **Utilities:**
 
@@ -163,33 +161,35 @@ solve()
 
 **Purpose:** Enables efficient parallel solving of independent constraint groups.
 
-### 4. BoxedLcpConstraintSolver
+### 4. LCP Solving Pipeline
 
-**File:** `dart/constraint/BoxedLcpConstraintSolver.hpp`
+**Where:** `dart/constraint/ConstraintSolver.cpp` (`ConstraintSolver::solveConstrainedGroup`)
 
-**Role:** Concrete implementation of ConstraintSolver using Boxed LCP formulation.
+**Role:** Build a boxed LCP from active constraints and solve it using the
+unified solver interfaces in `dart/math/lcp/`.
 
 **Key Responsibilities:**
 
-- Formulate constraints as boxed LCP: `A*x = b + w`
-- Solve using primary and optional secondary LCP solvers
-- Handle solver fallback on failure
+- Assemble LCP data (`A`, `b`, `lo`, `hi`, `findex`) and warm-start guess `x`
+- Solve using a primary `dart::math::LcpSolver` (default: `math::DantzigSolver`)
+- Optionally fall back to a secondary solver (default: `math::PgsSolver`)
+- Sanitize/clamp impulses and apply them back to constraints
 
-**LCP Formulation:**
+**LCP Formulation (DART convention):**
 
 ```
-A*x = b + w
-where each x[i], w[i] satisfies:
-  (1) x = lo, w >= 0
-  (2) x = hi, w <= 0
-  (3) lo < x < hi, w = 0
+w = A*x - b
+lo <= x <= hi
 ```
+
+with boxed complementarity/KKT conditions per row.
 
 **Solver Strategy:**
 
-- Primary solver: DantzigBoxedLcpSolver (default)
-- Secondary solver: PgsBoxedLcpSolver (fallback, default)
-- Caches matrix data (A, x, b, lo, hi, w, findex) for efficiency
+- Primary solver: `math::DantzigSolver` (exact pivoting, boxed + findex)
+- Secondary solver: `math::PgsSolver` (iterative boxed + findex; can be disabled)
+- Options are taken from each solver’s `getDefaultOptions()` and may be tuned
+  per solver (e.g., `LcpOptions::relaxation` for PSOR-style sweeps).
 
 ### 5. Constraint Types
 
@@ -314,30 +314,36 @@ the legacy servo-style behavior when bilateral coupling is not required.
 
 ### 6. LCP Solvers
 
-#### BoxedLcpSolver Interface
+#### `math::LcpSolver` Interface
 
-**File:** `dart/constraint/BoxedLcpSolver.hpp`
+**File:** `dart/math/lcp/LcpSolver.hpp`
 
-**Role:** Abstract interface for boxed LCP solvers.
+**Role:** Unified interface for standard and boxed LCP solvers, including
+friction coupling via `findex`.
 
 **Key Method:**
 
 ```cpp
-bool solve(int n, double* A, double* x, double* b,
-           int nub, double* lo, double* hi,
-           int* findex, bool earlyTermination)
+LcpResult solve(
+    const LcpProblem& problem, Eigen::VectorXd& x, const LcpOptions& options);
 ```
+
+`LcpProblem` bundles boxed LCP data `(A, b, lo, hi, findex)` using the DART
+convention `w = A*x - b`. When `findex[i] >= 0`, row `i`’s effective bounds are
+scaled by `x[findex[i]]` to model friction limits.
 
 **Available Implementations:**
 
-1. **DantzigBoxedLcpSolver** - Dantzig pivoting method (accurate but slower)
-2. **PgsBoxedLcpSolver** - Projected Gauss-Seidel (fast iterative method)
+1. **`math::DantzigSolver`** - Pivoting BLCP solver (boxed + findex, exact)
+2. **`math::PgsSolver`** - Projected Gauss-Seidel / PSOR-style solver (boxed + findex)
+3. **`math::LemkeSolver`** - Standard LCP solver (boxed/findex delegates)
 
 **Solver Selection Strategy:**
 
-- Dantzig: Better for small, dense systems; guaranteed convergence
-- PGS: Better for large systems; faster but may not converge
-- Default: Dantzig with PGS fallback
+- Dantzig: Robust for small-to-medium dense systems; exact when it succeeds
+- PGS/PSOR: Fast iterative fallback for real-time; tune iterations/tolerances
+- `constraint::ConstraintSolver` defaults to Dantzig primary + PGS secondary
+- Algorithm details and tuning live in `docs/background/lcp`
 
 ---
 
@@ -400,7 +406,7 @@ ConstraintSolver::solve()
   └─> [3] solveConstrainedGroups()
         └─> For each ConstrainedGroup:
               |
-              └─> BoxedLcpConstraintSolver::solveConstrainedGroup()
+              └─> ConstraintSolver::solveConstrainedGroup()
                     |
                     ├─> Build LCP matrices:
                     |     ├─> A matrix (constraint jacobians * inv(M) * jacobians^T)
@@ -408,8 +414,8 @@ ConstraintSolver::solve()
                     |     ├─> lo/hi bounds (friction cones, limits)
                     |     └─> findex (friction coupling)
                     |
-                    ├─> Solve: A*x = b + w (primary solver)
-                    |     └─> If failed: try secondary solver
+                    ├─> Solve: w = A*x - b (primary `math::LcpSolver`)
+                    |     └─> If needed: try secondary solver
                     |
                     └─> Apply impulses: lambda = x
                           └─> Each constraint: applyImpulse(lambda)
@@ -426,15 +432,15 @@ ConstraintSolver::solve()
 
 ### 1. Strategy Pattern
 
-- **Where:** BoxedLcpSolver hierarchy
-- **Purpose:** Allow runtime selection of constraint solving method
+- **Where:** `math::LcpSolver` selection in `constraint::ConstraintSolver`
+- **Purpose:** Allow runtime selection of LCP solving algorithm
 - **Benefit:** Easy to add new solvers without modifying existing code
 
 ### 2. Template Method Pattern
 
-- **Where:** ConstraintSolver with abstract `solveConstrainedGroup()`
+- **Where:** `ConstraintSolver::solve()` with virtual `solveConstrainedGroup()`
 - **Purpose:** Define skeleton of constraint solving algorithm
-- **Benefit:** Concrete solvers only implement specific solving logic
+- **Benefit:** Alternative formulations can override only the group solve step
 
 ### 3. Factory Pattern
 
@@ -498,16 +504,16 @@ ConstraintSolver::solve()
 **Primary Solver Selection:**
 
 ```cpp
-auto dantzig = std::make_shared<DantzigBoxedLcpSolver>();
-auto solver = std::make_shared<BoxedLcpConstraintSolver>(dantzig);
+dart::constraint::ConstraintSolver solver;
+solver.setLcpSolver(std::make_shared<dart::math::DantzigSolver>());
 ```
 
 **With Fallback:**
 
 ```cpp
-auto primary = std::make_shared<DantzigBoxedLcpSolver>();
-auto secondary = std::make_shared<PgsBoxedLcpSolver>();
-auto solver = std::make_shared<BoxedLcpConstraintSolver>(primary, secondary);
+dart::constraint::ConstraintSolver solver;
+solver.setLcpSolver(std::make_shared<dart::math::DantzigSolver>());
+solver.setSecondaryLcpSolver(std::make_shared<dart::math::PgsSolver>());
 ```
 
 ## Extension Points
@@ -522,10 +528,10 @@ auto solver = std::make_shared<BoxedLcpConstraintSolver>(primary, secondary);
 
 ### Adding New LCP Solvers
 
-1. Inherit from `BoxedLcpSolver`
-2. Implement `solve()` method
-3. Handle the boxed LCP formulation
-4. Register with `BoxedLcpConstraintSolver`
+1. Inherit from `dart::math::LcpSolver`
+2. Implement `solve(const LcpProblem&, Eigen::VectorXd&, const LcpOptions&)`
+3. Add unit tests under `tests/unit/math/lcp`
+4. Register via `ConstraintSolver::setLcpSolver()` / `setSecondaryLcpSolver()`
 
 ## Common Issues and Solutions
 
@@ -607,13 +613,18 @@ auto solver = std::make_shared<BoxedLcpConstraintSolver>(primary, secondary);
 - `dart/constraint/ConstraintBase.hpp`
 - `dart/constraint/ConstraintSolver.hpp`
 - `dart/constraint/ConstrainedGroup.hpp`
-- `dart/constraint/BoxedLcpConstraintSolver.hpp`
 - `dart/constraint/ContactConstraint.hpp`
 - `dart/constraint/JointConstraint.hpp`
 - `dart/constraint/RevoluteJointConstraint.hpp`
 - `dart/constraint/JointLimitConstraint.hpp`
 - `dart/constraint/ServoMotorConstraint.hpp`
-- `dart/constraint/BoxedLcpSolver.hpp`
+
+**LCP Solvers:**
+
+- `dart/math/lcp/LcpSolver.hpp`
+- `dart/math/lcp/LcpTypes.hpp`
+- `dart/math/lcp/pivoting/DantzigSolver.hpp`
+- `dart/math/lcp/projection/PgsSolver.hpp`
 
 ### Related Concepts
 

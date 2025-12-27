@@ -169,6 +169,15 @@ if(DART_BUILD_GUI)
       ${IMGUI_BACKEND_HEADERS}
     )
 
+    if(WIN32 AND BUILD_SHARED_LIBS)
+      # ImGui does not export symbols by default; ensure an import library is
+      # generated so dart-gui can link against dart-imgui-lib on Windows.
+      set_target_properties(
+        ${imgui_library_name}
+        PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON
+      )
+    endif()
+
     # Configure include directories
     # Build tree: use fetched source directory
     # Install tree: use standard include paths (like system-installed imgui)
@@ -194,6 +203,12 @@ if(DART_BUILD_GUI)
     # Set position independent code for linking into shared libraries (e.g., Python extensions)
     # This is the modern way to add -fPIC
     set_target_properties(${imgui_library_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+    # Ensure MSVC generates an import library when building shared libs.
+    # Without exports, linkers can fail to find dart-imgui-lib.lib (LNK1181).
+    if(MSVC AND BUILD_SHARED_LIBS)
+      set_target_properties(${imgui_library_name} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    endif()
 
     # Define IMGUI_DISABLE_OBSOLETE_FUNCTIONS to avoid using deprecated APIs
     target_compile_definitions(${imgui_library_name} PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)

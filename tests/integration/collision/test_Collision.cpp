@@ -50,6 +50,7 @@
 #include "helpers/dynamics_helpers.hpp"
 
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/io/Read.hpp"
 #include "dart/simulation/All.hpp"
 #include "dart/utils/All.hpp"
 
@@ -1385,6 +1386,107 @@ TEST_F(Collision, testHeightmapBox)
 }
 
 //==============================================================================
+TEST_F(Collision, testOdeHeightmapAabbUsesUnscaledBounds)
+{
+#if DART_HAVE_ODE
+  using S = float;
+  using Vector3 = Eigen::Matrix<S, 3, 1>;
+
+  auto ode = OdeCollisionDetector::create();
+  ASSERT_TRUE(ode);
+
+  auto terrainFrame = SimpleFrame::createShared(Frame::World());
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+
+  auto terrainShape = std::make_shared<HeightmapShape<S>>();
+  constexpr S rawHeight = S(3.0);
+  constexpr S verticalScale = S(0.5);
+  std::vector<S> heights = {rawHeight, rawHeight, rawHeight, rawHeight};
+  terrainShape->setHeightField(2u, 2u, heights);
+  terrainShape->setScale(Vector3(2.0, 2.0, verticalScale));
+  terrainFrame->setShape(terrainShape);
+
+  constexpr double radius = 0.2;
+  auto sphereShape = std::make_shared<SphereShape>(radius);
+  sphereFrame->setShape(sphereShape);
+
+  auto group = ode->createCollisionGroup(terrainFrame.get(), sphereFrame.get());
+  ASSERT_EQ(group->getNumShapeFrames(), 2u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+  const double surfaceHeight = static_cast<double>(rawHeight * verticalScale);
+  sphereFrame->setTranslation(
+      Eigen::Vector3d(0.0, 0.0, surfaceHeight + radius - 0.01));
+
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+#endif
+}
+
+//==============================================================================
+TEST_F(Collision, testOdeHeightmapCenteredInXY)
+{
+#if DART_HAVE_ODE
+  using S = float;
+  using Vector3 = Eigen::Matrix<S, 3, 1>;
+
+  auto ode = OdeCollisionDetector::create();
+  ASSERT_TRUE(ode);
+
+  auto terrainFrame = SimpleFrame::createShared(Frame::World());
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+
+  auto terrainShape = std::make_shared<HeightmapShape<S>>();
+  std::vector<S> heights = {S(0.0), S(0.0), S(0.0), S(0.0)};
+  terrainShape->setHeightField(2u, 2u, heights);
+  terrainShape->setScale(Vector3(2.0, 2.0, 1.0));
+  terrainFrame->setShape(terrainShape);
+
+  constexpr double radius = 0.1;
+  auto sphereShape = std::make_shared<SphereShape>(radius);
+  sphereFrame->setShape(sphereShape);
+
+  auto group = ode->createCollisionGroup(terrainFrame.get(), sphereFrame.get());
+  ASSERT_EQ(group->getNumShapeFrames(), 2u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+
+  const auto& scale = terrainShape->getScale();
+  const double spanX
+      = static_cast<double>(terrainShape->getWidth() - 1) * scale.x();
+  const double spanY
+      = static_cast<double>(terrainShape->getDepth() - 1) * scale.y();
+
+  const double testX = 0.25 * spanX;
+  const double testY = 0.25 * spanY;
+
+  for (const double signX : {1.0, -1.0}) {
+    for (const double signY : {1.0, -1.0}) {
+      SCOPED_TRACE(
+          ::testing::Message() << "signX=" << signX << " signY=" << signY);
+      result.clear();
+      sphereFrame->setTranslation(
+          Eigen::Vector3d(signX * testX, signY * testY, radius - 1e-2));
+      EXPECT_TRUE(group->collide(option, &result));
+      EXPECT_GT(result.getNumContacts(), 0u);
+
+      result.clear();
+      sphereFrame->setTranslation(
+          Eigen::Vector3d(signX * testX, signY * testY, radius + 1e-2));
+      EXPECT_FALSE(group->collide(option, &result));
+      EXPECT_EQ(result.getNumContacts(), 0u);
+    }
+  }
+#endif
+}
+
+//==============================================================================
 // Tests HeightmapShape::flipY();
 TEST_F(Collision, testHeightmapFlipY)
 {
@@ -1715,7 +1817,7 @@ TEST_F(Collision, CollisionOfPrescribedJoints)
   const std::size_t numFrames = 5e+0; // 5 secs
 
   // Load world and skeleton
-  WorldPtr world = SkelParser::readWorld(
+  WorldPtr world = dart::io::readWorld(
       "dart://sample/skel/test/collision_of_prescribed_joints_test.skel");
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != nullptr);
@@ -1789,7 +1891,7 @@ TEST_F(Collision, CollisionOfPrescribedJoints)
 //==============================================================================
 TEST_F(Collision, CollisionOfPrescribedJointsRejectsInvalidTimeStep)
 {
-  WorldPtr world = SkelParser::readWorld(
+  WorldPtr world = dart::io::readWorld(
       "dart://sample/skel/test/collision_of_prescribed_joints_test.skel");
   ASSERT_TRUE(world != nullptr);
 

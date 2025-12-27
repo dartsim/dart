@@ -4,7 +4,7 @@ import dartpy.dynamics
 import dartpy.math
 import numpy
 import typing
-__all__: list[str] = ['BallJointConstraint', 'BoxedLcpConstraintSolver', 'BoxedLcpSolver', 'ConstraintBase', 'ConstraintSolver', 'DantzigBoxedLcpSolver', 'DynamicJointConstraint', 'JointConstraint', 'JointCoulombFrictionConstraint', 'PgsBoxedLcpSolver', 'PgsBoxedLcpSolverOption', 'RevoluteJointConstraint', 'WeldJointConstraint']
+__all__: list[str] = ['BallJointConstraint', 'ConstraintBase', 'ConstraintSolver', 'DynamicJointConstraint', 'JointConstraint', 'JointCoulombFrictionConstraint', 'RevoluteJointConstraint', 'WeldJointConstraint']
 class BallJointConstraint(DynamicJointConstraint):
     @staticmethod
     def getStaticType() -> str:
@@ -24,25 +24,6 @@ class RevoluteJointConstraint(DynamicJointConstraint):
         ...
     @typing.overload
     def __init__(self, body1: dartpy.dynamics.BodyNode, body2: dartpy.dynamics.BodyNode, jointPos: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]], axis1: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]], axis2: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]) -> None:
-        ...
-class BoxedLcpConstraintSolver(ConstraintSolver):
-    @typing.overload
-    def __init__(self) -> None:
-        ...
-    @typing.overload
-    def __init__(self, boxedLcpSolver: BoxedLcpSolver) -> None:
-        ...
-    @typing.overload
-    def __init__(self, boxedLcpSolver: BoxedLcpSolver, secondaryBoxedLcpSolver: BoxedLcpSolver) -> None:
-        ...
-    def getBoxedLcpSolver(self) -> BoxedLcpSolver:
-        ...
-    def setBoxedLcpSolver(self, lcpSolver: BoxedLcpSolver) -> None:
-        ...
-class BoxedLcpSolver:
-    def getType(self) -> str:
-        ...
-    def solve(self, n: int, A: float, x: float, b: float, nub: int, lo: float, hi: float, findex: int) -> None:
         ...
 class ConstraintBase:
     @staticmethod
@@ -136,14 +117,6 @@ class ConstraintSolver:
         ...
     def solve(self) -> None:
         ...
-class DantzigBoxedLcpSolver(BoxedLcpSolver):
-    @staticmethod
-    def getStaticType() -> str:
-        ...
-    def getType(self) -> str:
-        ...
-    def solve(self, n: int, A: float, x: float, b: float, nub: int, lo: float, hi: float, findex: int, earlyTermination: bool) -> bool:
-        ...
 class DynamicJointConstraint(ConstraintBase):
     @staticmethod
     def getConstraintForceMixing() -> float:
@@ -204,40 +177,6 @@ class JointCoulombFrictionConstraint(ConstraintBase):
     def setConstraintForceMixing(cfm: float) -> None:
         ...
     def __init__(self, joint: dartpy.dynamics.Joint) -> None:
-        ...
-class PgsBoxedLcpSolver(BoxedLcpSolver):
-    @staticmethod
-    def getStaticType() -> str:
-        ...
-    def getType(self) -> str:
-        ...
-    def setOption(self, option: PgsBoxedLcpSolverOption) -> None:
-        ...
-    def solve(self, n: int, A: float, x: float, b: float, nub: int, lo: float, hi: float, findex: int, earlyTermination: bool) -> bool:
-        ...
-class PgsBoxedLcpSolverOption:
-    mDeltaXThreshold: float
-    mEpsilonForDivision: float
-    mMaxIteration: int
-    mRandomizeConstraintOrder: bool
-    mRelativeDeltaXTolerance: float
-    @typing.overload
-    def __init__(self) -> None:
-        ...
-    @typing.overload
-    def __init__(self, maxIteration: int) -> None:
-        ...
-    @typing.overload
-    def __init__(self, maxIteration: int, deltaXTolerance: float) -> None:
-        ...
-    @typing.overload
-    def __init__(self, maxIteration: int, deltaXTolerance: float, relativeDeltaXTolerance: float) -> None:
-        ...
-    @typing.overload
-    def __init__(self, maxIteration: int, deltaXTolerance: float, relativeDeltaXTolerance: float, epsilonForDivision: float) -> None:
-        ...
-    @typing.overload
-    def __init__(self, maxIteration: int, deltaXTolerance: float, relativeDeltaXTolerance: float, epsilonForDivision: float, randomizeConstraintOrder: bool) -> None:
         ...
 class WeldJointConstraint(DynamicJointConstraint):
     @staticmethod

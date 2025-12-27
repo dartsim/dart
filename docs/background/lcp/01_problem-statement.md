@@ -9,11 +9,15 @@ The **Linear Complementarity Problem (LCP)** is defined as:
 ```
 Given A ∈ ℝⁿˣⁿ and b ∈ ℝⁿ, find x ∈ ℝⁿ such that:
 
-  w = Ax + b
+  w = Ax - b
   w ≥ 0
   x ≥ 0
   xᵀw = 0    (complementarity condition)
 ```
+
+> Note: Many references write the standard LCP as `w = Ax + q`. DART uses the
+> equivalent convention `w = Ax - b` (i.e., `b = -q`), matching the ODE-style
+> `Ax = b + w` form used by the constraint solver.
 
 The complementarity condition `xᵀw = 0` means that for each index `i`:
 
@@ -25,7 +29,7 @@ This can also be written component-wise as:
 
 ```
 For each i ∈ {1, ..., n}:
-  wᵢ = (Ax + b)ᵢ ≥ 0
+  wᵢ = (Ax - b)ᵢ ≥ 0
   xᵢ ≥ 0
   xᵢ · wᵢ = 0
 ```
@@ -35,7 +39,7 @@ For each i ∈ {1, ..., n}:
 ### Minimum Map Reformulation
 
 ```
-x = min(x, Ax + b)
+x = min(x, Ax - b)
 ```
 
 where the minimum is taken component-wise.
@@ -44,20 +48,20 @@ where the minimum is taken component-wise.
 
 ```
 F(x) = 0
-where F(x) = min(x, Ax + b)
+where F(x) = min(x, Ax - b)
 ```
 
 ### Variational Inequality (VI)
 
 ```
 Find x ≥ 0 such that:
-  (Ax + b)ᵀ(y - x) ≥ 0  for all y ≥ 0
+  (Ax - b)ᵀ(y - x) ≥ 0  for all y ≥ 0
 ```
 
 ### Quadratic Programming (QP) - When A is Symmetric PD
 
 ```
-minimize: ½xᵀAx + xᵀb
+minimize: ½xᵀAx - xᵀb
 subject to: x ≥ 0
 ```
 
@@ -74,7 +78,7 @@ LCP with box constraints on variables:
 ```
 Find x such that:
   l ≤ x ≤ u
-  w = Ax + b
+  w = Ax - b
   For each i:
     - If xᵢ = lᵢ, then wᵢ ≥ 0
     - If xᵢ = uᵢ, then wᵢ ≤ 0
@@ -111,6 +115,13 @@ where:
   - μ is friction coefficient
 ```
 
+In DART, this coupling is represented using the `findex` array:
+
+- For a tangential variable `i` coupled to normal `j`:
+  - Set `findex[i] = j`
+  - Store the coefficient in the box bounds: `lo[i] = -μ`, `hi[i] = +μ`
+  - The effective bounds are interpreted as `|x[i]| ≤ μ·x[j]`
+
 ## Applications in Physics-Based Simulation
 
 ### 1. Contact Mechanics
@@ -133,7 +144,7 @@ After time discretization and linearization:
 
 ```
 x = [N₁, N₂, ..., Nₙ]ᵀ  (normal forces)
-Ax + b represents velocity constraint violations
+Ax - b represents the constraint-space residual
 Complementarity ensures forces are zero when separated
 ```
 
@@ -263,9 +274,9 @@ Used in theoretical analysis and pivoting methods.
 ### Physics Form
 
 ```
-(Ax + b) ≥ 0
+(Ax - b) ≥ 0
 x ≥ 0
-xᵀ(Ax + b) = 0
+xᵀ(Ax - b) = 0
 ```
 
 Direct from physics constraints.

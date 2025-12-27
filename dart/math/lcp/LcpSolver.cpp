@@ -32,18 +32,13 @@
 
 #include "dart/math/lcp/LcpSolver.hpp"
 
+#include <limits>
+
 namespace dart {
 namespace math {
 
 //==============================================================================
-LcpResult LcpSolver::solve(
-    const Eigen::MatrixXd& A, const Eigen::VectorXd& b, Eigen::VectorXd& x)
-{
-  return solve(A, b, x, mDefaultOptions);
-}
-
-//==============================================================================
-LcpOptions LcpSolver::getDefaultOptions() const
+const LcpOptions& LcpSolver::getDefaultOptions() const
 {
   return mDefaultOptions;
 }

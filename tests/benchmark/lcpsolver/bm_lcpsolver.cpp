@@ -8,7 +8,7 @@
  * Benchmark comparing Dantzig LCP solver vs ODE baseline
  */
 
-#include "dart/math/lcp/dantzig/Lcp.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Lcp.hpp"
 #include "tests/baseline/odelcpsolver/lcp.h"
 #include "tests/common/lcpsolver/LCPTestProblems.hpp"
 
@@ -88,7 +88,7 @@ static void BM_Dantzig_F64_Solver(
   for (auto _ : state) {
     data.reset(problem);
 
-    // Solve LCP using Dantzig solver (from dart/math/lcp/dantzig/)
+    // Solve LCP using Dantzig solver (from dart/math/lcp/pivoting/dantzig/)
     bool success = dart::math::SolveLCP<double>(
         data.n,
         data.A.data(),

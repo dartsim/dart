@@ -41,6 +41,7 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
@@ -89,7 +90,8 @@ void configureCollisionDetector(
     auto fclDetector
         = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(detector);
     if (fclDetector) {
-      fclDetector->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+      fclDetector->setPrimitiveShapeType(
+          collision::FCLCollisionDetector::PRIMITIVE);
     }
   }
 }
@@ -299,6 +301,10 @@ void World::reset()
   mRecording->clear();
   for (auto& entry : mSolvers)
     entry.solver->reset(*this);
+  for (auto& skel : mSkeletons) {
+    skel->clearConstraintImpulses();
+    skel->setImpulseApplied(false);
+  }
 }
 
 //==============================================================================

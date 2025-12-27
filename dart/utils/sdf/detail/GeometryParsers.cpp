@@ -32,6 +32,7 @@
 
 #include "dart/utils/sdf/detail/GeometryParsers.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Uri.hpp"
 
 #include <dart/dynamics/BoxShape.hpp>
@@ -85,14 +86,19 @@ dynamics::ShapePtr readMeshShape(
                                     : Eigen::Vector3d::Ones();
   const std::string meshUri = common::Uri::getRelativeUri(baseUri, uri);
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
   if (!model) {
     DART_WARN("Failed to load mesh model [{}].", meshUri);
     return nullptr;
   }
 
-  return std::make_shared<dynamics::MeshShape>(
-      scale, model, meshUri, retriever);
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto shape
+      = std::make_shared<dynamics::MeshShape>(scale, model, meshUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  return shape;
 }
 
 } // namespace

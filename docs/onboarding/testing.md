@@ -2,6 +2,84 @@
 
 This directory contains the complete test suite for DART (Dynamic Animation and Robotics Toolkit). The tests are organized by type and module to facilitate easy navigation, maintenance, and scalability.
 
+## Start here next time
+
+- Local build/test workflow: [building.md](building.md)
+- CI monitoring and expectations: [ci-cd.md](ci-cd.md)
+- Gazebo / gz-physics integration: [build-system.md](build-system.md#gazebo-integration-feature)
+
+## Fast Iteration Loop
+
+Smallest repeatable local loop before a full CI run.
+
+Choose a parallelism cap around two-thirds of logical cores, then set `DART_PARALLEL_JOBS` and `CTEST_PARALLEL_LEVEL` to that value (see [building.md](building.md) for details).
+
+Lint/format pass (fastest local sanity check).
+
+Suggested (Unverified):
+
+```bash
+pixi run lint
+```
+
+Targeted build + test (optional, fastest when a single target fails).
+
+Suggested (Unverified):
+
+```bash
+cmake --build <BUILD_DIR> --target <TARGET>
+ctest --test-dir <BUILD_DIR> --output-on-failure -R <TEST_REGEX>
+```
+
+Example:
+
+```bash
+pixi run lint
+cmake --build build/default/cpp/Release --target UNIT_gui_MeshShapeNodeMaterialUpdates
+ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_gui_MeshShapeNodeMaterialUpdates
+```
+
+Signals to look for:
+
+- The lint task completes without reporting errors
+- Any auto-formatting changes are expected and reviewed before committing
+
+Targeted tests (optional, but recommended before pushing when behavior changes).
+
+Suggested (Unverified):
+
+```bash
+DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test
+```
+
+Signals to look for:
+
+- The test runner ends with `100% tests passed`
+
+Full validation.
+
+Suggested (Unverified):
+
+```bash
+DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test-all
+DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run -e gazebo test-gz
+```
+
+Signals to look for:
+
+- The full test run ends with `✓ All tests passed!`
+- The Gazebo integration workflow prints `✓ DART plugin built successfully with DART integration!`
+
+## Gotchas
+
+- The lint task can take a while on the first run because it configures and formats; rerun if it was interrupted.
+- Linting runs auto-fixers (formatters/codespell), so expect file diffs even when the code is functionally unchanged; check `git status` before committing.
+- `pixi run lint` can rewrite identifiers via codespell; if a spelling or casing is intentional, add it to `.codespellrc` and re-run lint.
+
+## Next-Time Accelerators
+
+- Run the lint task early to surface formatting/codespell changes before longer build/test cycles.
+
 ## Directory Structure
 
 ```
@@ -141,15 +219,28 @@ Performance benchmarks measure execution time and resource usage:
 
 - **Integration tests**: `test_<ModuleOrFeature>.cpp` (e.g., `test_Collision.cpp`)
 - **Unit tests**: `test_<ClassName>.cpp` (e.g., `test_Factory.cpp`)
-- **Regression tests**: `test_Issue<number>.cpp` (e.g., `test_Issue1234.cpp`)
+- **Issue-based regressions**: Use a descriptive filename in `unit/` or `integration/`, and include the GitHub issue number/link in a comment near the test.
 - **Benchmarks**: `bm_<feature>.cpp` (e.g., `bm_boxes.cpp`)
 
 ### Where to Add Your Test
 
 1. **Is it testing a single class/function in isolation?** → Add to `unit/<module>/`
 2. **Is it testing multiple components working together?** → Add to `integration/<module>/`
-3. **Is it verifying a bug fix from a GitHub issue?** → Add to `regression/`
+3. **Is it verifying a bug fix from a GitHub issue?** → Add to `unit/<module>/` or `integration/<module>/` (depending on scope) and include the issue number/link in a comment.
 4. **Is it measuring performance?** → Add to `benchmark/<category>/`
+
+**Common starting points (pick based on what you're changing):**
+
+- C++ unit tests: `tests/unit/<module>/`
+- C++ integration tests: `tests/integration/<module>/`
+- Python unit tests (dartpy): `python/tests/unit/<module>/`
+
+Suggested (Unverified): If you don't know the module yet, search for similar tests by symbol name, e.g. `rg -n "<ClassOrFeature>" tests python`.
+
+Examples (Suggested, Unverified):
+
+- `tests/integration/<module>/test_<Feature>.cpp`
+- `python/tests/unit/<module>/`
 
 ### Steps to Add a New Test
 

@@ -33,17 +33,18 @@
 #include "helpers/GTestUtils.hpp"
 
 #include "dart/utils/DartResourceRetriever.hpp"
-#include "dart/utils/sdf/SdfParser.hpp"
 
 #include <dart/config.hpp>
 
 #include <dart/simulation/World.hpp>
 
-#include <dart/constraint/BoxedLcpConstraintSolver.hpp>
 #include <dart/constraint/ConstraintSolver.hpp>
-#include <dart/constraint/DantzigBoxedLcpSolver.hpp>
 #include <dart/constraint/MimicMotorConstraint.hpp>
-#include <dart/constraint/PgsBoxedLcpSolver.hpp>
+
+#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
+#include <dart/math/lcp/projection/PgsSolver.hpp>
+
+#include <dart/io/Read.hpp>
 
 #if DART_HAVE_BULLET
   #include <dart/collision/bullet/BulletCollisionDetector.hpp>
@@ -115,20 +116,18 @@ void setCollisionDetector(WorldPtr world, bool useOde)
 
 void setBoxedSolver(WorldPtr world, bool usePgs)
 {
-  auto* boxedSolver = dynamic_cast<dart::constraint::BoxedLcpConstraintSolver*>(
+  auto* boxedSolver = dynamic_cast<dart::constraint::ConstraintSolver*>(
       world->getConstraintSolver());
   if (!boxedSolver)
     return;
 
   if (usePgs) {
-    boxedSolver->setBoxedLcpSolver(
-        std::make_shared<dart::constraint::PgsBoxedLcpSolver>());
-    boxedSolver->setSecondaryBoxedLcpSolver(nullptr);
+    boxedSolver->setLcpSolver(std::make_shared<dart::math::PgsSolver>());
+    boxedSolver->setSecondaryLcpSolver(nullptr);
   } else {
-    boxedSolver->setBoxedLcpSolver(
-        std::make_shared<dart::constraint::DantzigBoxedLcpSolver>());
-    boxedSolver->setSecondaryBoxedLcpSolver(
-        std::make_shared<dart::constraint::PgsBoxedLcpSolver>());
+    boxedSolver->setLcpSolver(std::make_shared<dart::math::DantzigSolver>());
+    boxedSolver->setSecondaryLcpSolver(
+        std::make_shared<dart::math::PgsSolver>());
   }
 }
 
@@ -191,9 +190,10 @@ TEST(MimicConstraint, PendulumMimicWorldFromSdf)
       = "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf";
 
   auto retriever = std::make_shared<dart::utils::DartResourceRetriever>();
-  dart::utils::SdfParser::Options options(retriever);
+  dart::io::ReadOptions options;
+  options.resourceRetriever = retriever;
 
-  WorldPtr world = dart::utils::SdfParser::readWorld(Uri(worldUri), options);
+  WorldPtr world = dart::io::readWorld(Uri(worldUri), options);
   ASSERT_TRUE(world);
 
   retargetMimicJoints(world, "pendulum_with_base");
@@ -281,9 +281,10 @@ TEST(MimicConstraint, FollowersMatchMiddlePendulum)
       = "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf";
 
   auto retriever = std::make_shared<dart::utils::DartResourceRetriever>();
-  dart::utils::SdfParser::Options options(retriever);
+  dart::io::ReadOptions options;
+  options.resourceRetriever = retriever;
 
-  WorldPtr world = dart::utils::SdfParser::readWorld(Uri(worldUri), options);
+  WorldPtr world = dart::io::readWorld(Uri(worldUri), options);
   ASSERT_TRUE(world);
 
   retargetMimicJoints(world, "pendulum_with_base");
@@ -424,9 +425,10 @@ TEST(MimicConstraint, OdeMimicDoesNotExplode)
       = "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf";
 
   auto retriever = std::make_shared<dart::utils::DartResourceRetriever>();
-  dart::utils::SdfParser::Options options(retriever);
+  dart::io::ReadOptions options;
+  options.resourceRetriever = retriever;
 
-  WorldPtr world = dart::utils::SdfParser::readWorld(Uri(worldUri), options);
+  WorldPtr world = dart::io::readWorld(Uri(worldUri), options);
   ASSERT_TRUE(world);
 
   retargetMimicJoints(world, "pendulum_with_base");
@@ -512,9 +514,10 @@ TEST(MimicConstraint, OdeTracksReferenceLongRun)
       = "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf";
 
   auto retriever = std::make_shared<dart::utils::DartResourceRetriever>();
-  dart::utils::SdfParser::Options options(retriever);
+  dart::io::ReadOptions options;
+  options.resourceRetriever = retriever;
 
-  WorldPtr world = dart::utils::SdfParser::readWorld(Uri(worldUri), options);
+  WorldPtr world = dart::io::readWorld(Uri(worldUri), options);
   ASSERT_TRUE(world);
 
   setCollisionDetector(world, /*useOde=*/true);

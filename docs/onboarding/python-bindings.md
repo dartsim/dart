@@ -87,11 +87,21 @@ skel.set_positions(np.array([0.1, 0.2, 0.3]))
 positions = skel.get_positions()  # Returns ndarray
 ```
 
+### Binding Conventions
+
+- Prefer shared numeric conversion helpers for Python inputs (sequences and NumPy) so bindings behave consistently across modules.
+- Release the GIL around long-running, non-callback C++ calls (e.g., stepping and collision queries) using `nb::call_guard<nb::gil_scoped_release>()` where safe.
+- Convert Python arguments to C++ types before releasing the GIL; nanobind casting and NumPy access require holding the GIL.
+- When the C++ API stores raw pointers, add explicit keep-alive/shared-ownership patterns to prevent lifetime bugs in Python.
+
 ### OSG Bindings Design
 
 GUI bindings are built only when `DART_BUILD_GUI=ON`. The build wires this up by
-conditionally appending the GUI sources in `python/dartpy/CMakeLists.txt`, so
-downstream code should treat `dartpy.gui` as an optional module.
+conditionally appending the GUI sources in `python/dartpy/CMakeLists.txt`.
+
+Project policy: official dartpy wheels build with GUI enabled, so `dartpy.gui`
+is expected to be available in release artifacts and CI. For local headless-only
+builds you can disable GUI, but some examples/tutorials will not run.
 
 ## Pythonic Naming Transition
 
@@ -239,6 +249,10 @@ robot.setForces(forces)
 **Purpose**: IDE autocomplete and type checking
 
 **Generation**: Can be regenerated with `pixi run generate-stubs`
+
+## MeshShape and TriMesh Bindings
+
+**Design Decision:** Python bindings expose only `dart::math::TriMesh<double>` for mesh operations, not Assimp's `aiScene*` types. This ensures Python users work with clean, format-agnostic mesh data. The MeshShape bindings provide TriMesh-based constructors and `getTriMesh()` accessor. Deprecated aiScene-based constructors were intentionally not exposed in Python bindings (breaking change allowed for dartpy). See `python/dartpy/math/TriMesh.cpp` and `python/dartpy/dynamics/Shape.cpp` for bindings implementation.
 
 ## References
 
