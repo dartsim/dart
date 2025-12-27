@@ -5,6 +5,7 @@
 #include <dart/math/lcp/LcpTypes.hpp>
 
 // Pivoting methods
+#include <dart/math/lcp/pivoting/BaraffSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 
