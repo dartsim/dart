@@ -19,6 +19,7 @@
 #include <dart/math/lcp/projection/BgsSolver.hpp>
 #include <dart/math/lcp/projection/NncgSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
+#include <dart/math/lcp/projection/SubspaceMinimizationSolver.hpp>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -126,6 +127,27 @@ TEST(LcpComparisonHarness, NncgOnStandardAndBoxedFixtures)
   params.pgsIterations = 2;
   params.restartInterval = 10;
   params.restartThreshold = 1.0;
+  options.customOptions = &params;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-2, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, SubspaceMinimizationOnStandardAndBoxedFixtures)
+{
+  dart::math::SubspaceMinimizationSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 1000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 1e-2;
+
+  dart::math::SubspaceMinimizationSolver::Parameters params;
+  params.pgsIterations = 5;
   options.customOptions = &params;
 
   for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
