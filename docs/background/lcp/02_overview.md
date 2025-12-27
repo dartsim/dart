@@ -26,6 +26,7 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 | **Newton**         | Penalized FB Newton        | ✅ Implemented | `newton/PenalizedFischerBurmeisterNewtonSolver.hpp` | Extension of FB                         |
 | **Interior Point** | Interior Point Method      | ✅ Implemented | `other/InteriorPointSolver.hpp`                     | Very robust                             |
 | **Other**          | MPRGP (QP)                 | ✅ Implemented | `other/MprgpSolver.hpp`                             | Standard SPD LCPs                       |
+| **Other**          | Shock Propagation          | ✅ Implemented | `other/ShockPropagationSolver.hpp`                  | Layered contact solves                  |
 | **Staggering**     | Staggering Method          | ✅ Implemented | `other/StaggeringSolver.hpp`                        | Normal/friction splitting               |
 
 **Legend**: ✅ Implemented | 🚧 In Progress | ❌ Not Implemented | 📋 Planned
@@ -71,6 +72,7 @@ dart/math/lcp/
 └── other/
     ├── InteriorPointSolver.hpp/cpp  # Primal-dual interior point
     ├── MprgpSolver.hpp/cpp  # MPRGP QP solver
+    ├── ShockPropagationSolver.hpp/cpp  # Layered contact solver
     └── StaggeringSolver.hpp/cpp  # Normal/friction staggering
 ```
 
@@ -254,7 +256,17 @@ solver usage examples.
 - **Use Case**: Symmetric SPD problems (e.g., fluid constraints) where a QP
   interpretation is available
 
-#### 16. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
+#### 16. Shock Propagation (`other/ShockPropagationSolver.hpp`)
+
+- **Type**: Layered block solver for contact-style LCPs
+- **Algorithm**: Solve block LCPs in gravity-ordered layers
+- **Features**:
+  - Uses explicit layer ordering (via solver parameters)
+  - Blocks can be derived from `findex` or explicit sizes
+  - Falls back to pivoting per block for robustness
+- **Use Case**: Stacking/contact scenes with strong gravity layering
+
+#### 17. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
 
 - **Type**: Newton method using the minimum map reformulation
 - **Algorithm**: Active/free set Newton on `H(x) = min(x, Ax - b)`
@@ -263,7 +275,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 17. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
+#### 18. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using the Fischer-Burmeister function
 - **Algorithm**: Smooth FB reformulation with line search
@@ -272,7 +284,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 18. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
+#### 19. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using a penalized Fischer-Burmeister function
 - **Algorithm**: FB reformulation with penalty term and line search
@@ -459,7 +471,7 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 - [x] Interior Point method
 - [x] MPRGP (QP-based solver)
 - [x] Baraff incremental pivoting
-- [ ] Specialized methods (shock propagation, etc.)
+- [x] Shock propagation (layered contact solver)
 
 ## References
 

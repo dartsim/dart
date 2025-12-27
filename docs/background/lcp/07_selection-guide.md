@@ -236,7 +236,7 @@ Slower          ─────────────────────�
 Pivoting ─> Newton ─> Interior Point ─> NNCG ─> BGS ─> PGS ─> Jacobi
 (exact)     (1e-10)   (1e-8)           (1e-6)  (1e-4) (1e-3) (1e-2)
 
-✅ Available:  Direct 2D/3D, Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point, MPRGP (standard SPD)
+✅ Available:  Direct 2D/3D, Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point, MPRGP (standard SPD), Shock Propagation
 ```
 
 ### Robustness vs Efficiency
@@ -247,7 +247,7 @@ Slower      ──────────────────────�
 
 Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
-✅ Available:  Direct 2D/3D, Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point, MPRGP (standard SPD)
+✅ Available:  Direct 2D/3D, Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point, MPRGP (standard SPD), Shock Propagation
 ```
 
 ## Problem Size Guidelines
@@ -288,6 +288,7 @@ Available solvers:
 - ✅ **Blocked Jacobi**: Parallel block updates for contact-style problems
 - ✅ **Red-Black GS**: Two-color Gauss-Seidel variant for parallel-style updates
 - ✅ **Staggering**: Normal/friction block staggering for contact structure
+- ✅ **Shock Propagation**: Layered contact solve for gravity-dominated scenes
 - ✅ **BGS**: Blocked Gauss-Seidel for per-contact blocks
 - ✅ **PGS-SM**: Subspace minimization hybrid for medium problems
 - ✅ **Newton (Minimum Map, FB, Penalized FB)**: Standard LCP only
@@ -307,7 +308,7 @@ if (!result.succeeded()) {
 
 ### Remaining Gaps
 
-- Shock-propagation and other contact-structure specialized methods
+- Additional contact-structure specialized methods
 
 ### Newton Methods (Implemented)
 

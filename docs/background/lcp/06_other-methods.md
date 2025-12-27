@@ -12,6 +12,7 @@ Interior point is implemented in DART as `dart::math::InteriorPointSolver`.
 Staggering is implemented as `dart::math::StaggeringSolver`.
 Blocked Jacobi is implemented as `dart::math::BlockedJacobiSolver`.
 MPRGP is implemented as `dart::math::MprgpSolver`.
+Shock propagation is implemented as `dart::math::ShockPropagationSolver`.
 
 ## 1. Interior Point Method ✅ (Implemented)
 
@@ -231,7 +232,7 @@ solver.solve(problem, x, options);
 
 ## 3. Specialized Methods
 
-### 3.1 Shock-Propagation Method ❌ (Not Implemented)
+### 3.1 Shock-Propagation Method ✅ (Implemented)
 
 **Description**: Spatial blocking along gravity direction for fast shock wave propagation.
 
@@ -249,6 +250,29 @@ for layer in layers (bottom to top):
 
   # Forces propagate to next layer
 ```
+
+### DART Implementation
+
+```cpp
+#include <dart/math/lcp/other/ShockPropagationSolver.hpp>
+
+using namespace dart::math;
+
+LcpProblem problem(A, b, lo, hi, findex);
+Eigen::VectorXd x = Eigen::VectorXd::Zero(b.size());
+
+ShockPropagationSolver solver;
+ShockPropagationSolver::Parameters params;
+params.blockSizes = {3, 3, 3};  // One block per contact (example)
+params.layers = {{0}, {1}, {2}}; // Bottom-to-top ordering
+
+LcpOptions options = solver.getDefaultOptions();
+options.customOptions = &params;
+solver.solve(problem, x, options);
+```
+
+> Note: Layers must cover all blocks. If `layers` is empty, DART uses a single
+> layer containing all blocks (equivalent to an ordered block sweep).
 
 **Properties**:
 
@@ -361,13 +385,13 @@ auto result = solver.solve(problem, x, options);
 
 ## Comparison Summary
 
-| Method            | Convergence | Complexity | Robustness | Parallelization |
-| ----------------- | ----------- | ---------- | ---------- | --------------- |
-| Interior Point ✅ | Superlinear | O(n³)      | Very High  | No              |
-| Staggering ✅     | Variable    | Depends    | Medium     | No              |
-| Shock-Propagation | Linear      | O(n)       | Medium     | Limited         |
-| MPRGP ✅          | Monotone    | O(n²)      | High       | No              |
-| Blocked Jacobi ✅ | Linear      | O(n·b³)    | Medium     | Yes             |
+| Method               | Convergence | Complexity | Robustness | Parallelization |
+| -------------------- | ----------- | ---------- | ---------- | --------------- |
+| Interior Point ✅    | Superlinear | O(n³)      | Very High  | No              |
+| Staggering ✅        | Variable    | Depends    | Medium     | No              |
+| Shock-Propagation ✅ | Linear      | O(n)       | Medium     | Limited         |
+| MPRGP ✅             | Monotone    | O(n²)      | High       | No              |
+| Blocked Jacobi ✅    | Linear      | O(n·b³)    | Medium     | Yes             |
 
 ## Implementation Priority
 
@@ -377,10 +401,11 @@ auto result = solver.solve(problem, x, options);
 - **Staggering**: Normal/friction block solve for contact-style problems
 - **Blocked Jacobi**: Parallel block updates with per-block LCP solves
 - **MPRGP**: Bound-constrained QP solver for standard SPD LCPs
+- **Shock-Propagation**: Layered block solve for gravity-dominated contact
 
 ### Low Priority (Specialized Use Cases)
 
-- **Shock-Propagation**: For gravity-dominated scenarios
+- Additional gravity-structured contact methods
 
 ### Very Low Priority (Niche Applications)
 
