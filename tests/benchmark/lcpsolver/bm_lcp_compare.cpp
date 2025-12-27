@@ -10,6 +10,7 @@
 
 #include "tests/common/lcpsolver/LcpTestHarness.hpp"
 
+#include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
@@ -243,6 +244,16 @@ static void BM_LcpCompare_Lemke_Standard(benchmark::State& state)
       state, problem, options, MakeLabel("Lemke", "Standard"));
 }
 
+static void BM_LcpCompare_MinimumMapNewton_Standard(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeStandardSpdProblem(n, 515u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(50);
+  RunBenchmark<dart::math::MinimumMapNewtonSolver>(
+      state, problem, options, MakeLabel("MinimumMapNewton", "Standard"));
+}
+
 static void BM_LcpCompare_Dantzig_Boxed(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
@@ -318,6 +329,11 @@ static void BM_LCP_COMPARE_SMOKE(benchmark::State& state)
 BENCHMARK(BM_LcpCompare_Dantzig_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_Pgs_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_Lemke_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
+BENCHMARK(BM_LcpCompare_MinimumMapNewton_Standard)
+    ->Arg(12)
+    ->Arg(24)
+    ->Arg(48)
+    ->Arg(96);
 
 BENCHMARK(BM_LcpCompare_Dantzig_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_Pgs_Boxed)->Arg(12)->Arg(24)->Arg(48);
