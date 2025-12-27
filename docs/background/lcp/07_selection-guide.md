@@ -55,7 +55,7 @@ Fallback: Dantzig if iterative solve stalls
 ### 2. High-Accuracy Off-Line Simulation
 
 **Recommended**: Newton > Pivoting > Interior Point
-**Currently Available**: Minimum Map Newton ✅, Dantzig ✅, Lemke ✅
+**Currently Available**: Minimum Map Newton ✅, Fischer-Burmeister Newton ✅, Dantzig ✅, Lemke ✅
 
 **Rationale**:
 
@@ -64,7 +64,7 @@ Fallback: Dantzig if iterative solve stalls
 - 5-20 iterations typical for Newton
 - Exact solutions from pivoting
 
-**Configuration (Minimum Map Newton)**:
+**Configuration (Newton Methods)**:
 
 ```
 Method: Minimum Map Newton

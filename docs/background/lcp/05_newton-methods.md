@@ -6,8 +6,8 @@
 
 Newton methods solve LCPs by reformulating them as nonsmooth root-finding problems and applying generalized Newton iteration. They offer superlinear to quadratic convergence but require globalization for robustness.
 
-Minimum Map Newton is implemented in DART. Other Newton methods are documented
-here for future reference.
+Minimum Map Newton and Fischer-Burmeister Newton are implemented in DART. Other
+Newton methods are documented here for future reference.
 
 ## Common Framework
 
@@ -110,7 +110,7 @@ while not converged:
 ❌ Needs globalization (line search)
 ❌ More complex than projection methods
 
-## 2. Fischer-Burmeister Newton Method ❌ (Not Implemented)
+## 2. Fischer-Burmeister Newton Method ✅ (Implemented)
 
 ### Reformulation
 
@@ -118,6 +118,26 @@ while not converged:
 For each component:
   phi_FB(x_i, y_i) = sqrt(x_i² + y_i²) - x_i - y_i = 0
 where y_i = (Ax - b)_i
+```
+
+### DART Implementation
+
+```cpp
+#include <dart/math/lcp/newton/FischerBurmeisterNewtonSolver.hpp>
+
+dart::math::FischerBurmeisterNewtonSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 50;
+options.warmStart = false;
+
+dart::math::LcpProblem problem(
+    A,
+    b,
+    Eigen::VectorXd::Zero(n),
+    Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity()),
+    Eigen::VectorXi::Constant(n, -1));
+
+solver.solve(problem, x, options);
 ```
 
 ### Generalized Jacobian
