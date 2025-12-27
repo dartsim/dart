@@ -11,10 +11,10 @@
  *   conditions are met:
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -30,25 +30,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_FWD_HPP_
-#define DART_SIMULATION_FWD_HPP_
+#ifndef DART_SIMULATION_OBJECT_OBJECT_HPP_
+#define DART_SIMULATION_OBJECT_OBJECT_HPP_
 
-#include <dart/common/SmartPointer.hpp>
+#include <dart/simulation/EcsEntity.hpp>
+#include <dart/simulation/Fwd.hpp>
 
-namespace dart {
-namespace simulation {
-
-class World;
-
-DART_COMMON_DECLARE_SHARED_WEAK(World)
+namespace dart::simulation {
 
 namespace object {
 
-class Object;
+/// Non-template base class for all simulation objects backed by an ECS entity.
+class Object
+{
+public:
+  /// Constructor
+  ///
+  /// @param entity Entity ID in the ECS registry
+  /// @param world Pointer to the owning World instance
+  Object(EcsEntity entity = EcsEntity(), World* world = nullptr);
+
+  /// Virtual destructor
+  virtual ~Object() = default;
+
+  /// Get the underlying entity ID
+  ///
+  /// @return Entity ID in the ECS registry
+  [[nodiscard]] EcsEntity getEntity() const;
+
+  /// Get the owning World instance
+  ///
+  /// @return Pointer to World instance
+  [[nodiscard]] World* getWorld() const;
+
+protected:
+  EcsEntity mEntity; ///< Entity ID in ECS registry
+  World* mWorld;     ///< Owning World instance
+};
 
 } // namespace object
+} // namespace dart::simulation
 
-} // namespace simulation
-} // namespace dart
-
-#endif // DART_SIMULATION_FWD_HPP_
+#endif // DART_SIMULATION_OBJECT_OBJECT_HPP_

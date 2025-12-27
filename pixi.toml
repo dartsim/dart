@@ -21,7 +21,6 @@ eigen = ">=3.4.0,<4"
 entt = ">=3.14.0,<4"
 fcl = ">=0.7.0,<0.8"
 fmt = ">=11.1.4,<12"
-gtest = ">=1.17.0,<2"
 imgui = ">=1.91.9,<2"
 isort = ">=6.0.1,<7"
 jinja2 = ">=3.1.2"
@@ -53,6 +52,9 @@ taplo = ">=0.9.3,<1"
 taskflow = ">=3.10.0,<4"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
+
+[feature.testing.dependencies]
+gtest = ">=1.17.0,<2"
 
 [tasks]
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
@@ -958,9 +960,9 @@ cmake \
     -DDART_BUILD_GUI=${DART_BUILD_GUI_OVERRIDE:-ON} \
     -DDART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET_OVERRIDE:-ON} \
     -DDART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE_OVERRIDE:-ON} \
+    -DDART_BUILD_TESTS=${DART_BUILD_TESTS_OVERRIDE:-ON} \
     -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
     -DDART_BUILD_PROFILE=OFF \
-    -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE:-OFF} \
     -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
     -DDART_USE_SYSTEM_GOOGLETEST=ON \
     -DDART_USE_SYSTEM_IMGUI=ON \
@@ -1632,6 +1634,7 @@ config-install = { cmd = """
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY={{ dartpy }} \
         -DDART_BUILD_DART8={{ dartpy }} \
+        -DDART_BUILD_TESTS=${DART_BUILD_TESTS_OVERRIDE:-ON} \
         -DDART_BUILD_PROFILE=OFF \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -1678,6 +1681,7 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 [feature.gazebo.activation.env]
 DART_BUILD_COLLISION_BULLET_OVERRIDE = "ON"
 DART_BUILD_COLLISION_ODE_OVERRIDE = "ON"
+DART_BUILD_TESTS_OVERRIDE = "OFF"
 
 [feature.gazebo.dependencies]
 git = ">=1"
@@ -1728,6 +1732,9 @@ fi
 if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
+GZ_GTEST_VENDOR="$PWD/.deps/gz-physics/test/gtest_vendor/include"
+# Prefer gz-physics vendored gtest headers over the system install.
+export CPATH="$GZ_GTEST_VENDOR${CPATH:+:$CPATH}"
 cmake \
     -G Ninja \
     -S .deps/gz-physics \
@@ -1753,6 +1760,9 @@ build-gz = { cmd = [
   "-lc",
   """
 set -euo pipefail
+GZ_GTEST_VENDOR="$PWD/.deps/gz-physics/test/gtest_vendor/include"
+# Prefer gz-physics vendored gtest headers over the system install.
+export CPATH="$GZ_GTEST_VENDOR${CPATH:+:$CPATH}"
 CMAKE_BUILD_DIR=.deps/gz-physics/build python scripts/cmake_build.py --target all
 """,
 ], depends-on = [
@@ -1768,6 +1778,9 @@ test-gz = { cmd = """
         export LIBRARY_PATH=$CONDA_PREFIX/lib:${LIBRARY_PATH:-}
         export LD_LIBRARY_PATH=.deps/gz-physics/build/lib:$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}
         ROOT_DIR=$PWD
+        GZ_GTEST_VENDOR="$ROOT_DIR/.deps/gz-physics/test/gtest_vendor/include"
+        # Prefer gz-physics vendored gtest headers over the system install.
+        export CPATH="$GZ_GTEST_VENDOR${CPATH:+:$CPATH}"
         cd .deps/gz-physics/build
         python "$ROOT_DIR/scripts/cmake_build.py" --build-dir . --parallel ${DART_PARALLEL_JOBS} --target all
         python <<\"PY\"
@@ -2199,6 +2212,7 @@ wheel-repair = { depends-on = [
 #==============
 
 [environments]
+default = ["testing"]
 gazebo = ["gazebo"]
 py312-wheel = ["py312-wheel"]
 py313-wheel = ["py313-wheel"]

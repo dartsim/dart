@@ -11,10 +11,10 @@
  *   conditions are met:
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -30,25 +30,31 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_FWD_HPP_
-#define DART_SIMULATION_FWD_HPP_
+#ifndef DART_SIMULATION_SOLVER_RIGIDSOLVER_HPP_
+#define DART_SIMULATION_SOLVER_RIGIDSOLVER_HPP_
 
-#include <dart/common/SmartPointer.hpp>
+#include "dart/simulation/solver/WorldSolver.hpp"
 
-namespace dart {
-namespace simulation {
+namespace dart::simulation {
 
-class World;
+/// Rigid solver backed by an ECS registry for cache-friendly workflows.
+class DART_API RigidSolver final : public WorldSolver
+{
+public:
+  RigidSolver();
+  ~RigidSolver() override = default;
 
-DART_COMMON_DECLARE_SHARED_WEAK(World)
+  std::optional<RigidSolverType> getRigidSolverType() const override;
 
-namespace object {
+  void setTimeStep(double timeStep) override;
+  void reset(World& world) override;
+  void step(World& world, bool resetCommand) override;
+  void sync(World& world) override;
 
-class Object;
+private:
+  void syncSkeletonStates(World& world);
+};
 
-} // namespace object
+} // namespace dart::simulation
 
-} // namespace simulation
-} // namespace dart
-
-#endif // DART_SIMULATION_FWD_HPP_
+#endif // DART_SIMULATION_SOLVER_RIGIDSOLVER_HPP_

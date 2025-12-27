@@ -11,10 +11,10 @@
  *   conditions are met:
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -30,25 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_FWD_HPP_
-#define DART_SIMULATION_FWD_HPP_
+#include "dart/simulation/object/Object.hpp"
 
-#include <dart/common/SmartPointer.hpp>
+namespace dart::simulation::object {
 
-namespace dart {
-namespace simulation {
+Object::Object(EcsEntity entity, World* world) : mEntity(entity), mWorld(world)
+{
+}
 
-class World;
+EcsEntity Object::getEntity() const
+{
+  return mEntity;
+}
 
-DART_COMMON_DECLARE_SHARED_WEAK(World)
+World* Object::getWorld() const
+{
+  return mWorld;
+}
 
-namespace object {
-
-class Object;
-
-} // namespace object
-
-} // namespace simulation
-} // namespace dart
-
-#endif // DART_SIMULATION_FWD_HPP_
+} // namespace dart::simulation::object

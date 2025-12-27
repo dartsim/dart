@@ -10,7 +10,7 @@
 ## Quickstart (Read This First)
 
 - Day-to-day `pixi run …` workflows: see [building.md](building.md).
-- Gazebo / gz-physics integration: jump to [Gazebo Integration Feature](#gazebo-integration-feature) and run `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
+- Gazebo / gz-physics integration: jump to [Gazebo Integration Feature](#gazebo-integration-feature). Suggested (Unverified): `DART_PARALLEL_JOBS=<N> pixi run -e gazebo test-gz`.
 - CI workflow overview + `gh` monitoring commands: see [ci-cd.md](ci-cd.md).
 
 <details>
@@ -752,18 +752,18 @@ build/
 - [`cmake/gz_physics_force_vendor_gtest.cmake`](../../cmake/gz_physics_force_vendor_gtest.cmake) - ensures gz-physics uses its vendored GoogleTest headers
 - [`.github/workflows/ci_gz_physics.yml`](../../.github/workflows/ci_gz_physics.yml) - CI entry point for this workflow
 
-**Used in this task:**
+**Example (Used in this task):**
 
 ```bash
-DART_PARALLEL_JOBS=16 pixi run -e gazebo test-gz
+DART_PARALLEL_JOBS=12 pixi run -e gazebo test-gz
 ```
 
 **Fast iteration loop (Suggested (Unverified)):**
 
 1. Run `pixi run lint` before committing changes.
-2. Configure gz-physics with `DART_PARALLEL_JOBS=8 pixi run -e gazebo config-gz`.
-3. Build the failing target(s) with `DART_PARALLEL_JOBS=8 pixi run -e gazebo ninja -C .deps/gz-physics/build -j 8 <target>`.
-4. Run the full suite with `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
+2. Configure gz-physics with `DART_PARALLEL_JOBS=<N> pixi run -e gazebo config-gz`.
+3. Build the failing target(s) with `DART_PARALLEL_JOBS=<N> pixi run -e gazebo ninja -C .deps/gz-physics/build -j <N> <target>`.
+4. Run the full suite with `DART_PARALLEL_JOBS=<N> pixi run -e gazebo test-gz`.
 
 **What to look for (success signal):**
 
@@ -778,6 +778,7 @@ DART_PARALLEL_JOBS=16 pixi run -e gazebo test-gz
 - **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py` limited to the DART version requirement bump; otherwise this workflow stops catching real compatibility breaks.
 - **gtest header mismatches.** Symptom: link errors like `undefined reference to testing::internal::MakeAndRegisterTestInfo(std::string, ...)` when building gz-physics tests. The `config-gz` task passes `-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_physics_force_vendor_gtest.cmake` to ensure gz-physics compiles against the vendored headers that match its vendored gtest library; keep that behavior.
 - **Deprecation noise is expected.** When gz-physics links the deprecated compatibility targets, CMake may emit deprecation warnings; these are intentional and should be treated as migration pressure for downstreams.
+- **The gz-physics checkout is ephemeral.** `download-gz` clones into `.deps/gz-physics`, and `patch-gz` writes a `.bak` backup in that directory; both are expected and should remain untracked.
 
 **Dependencies:**
 

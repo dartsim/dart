@@ -11,10 +11,10 @@
  *   conditions are met:
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -30,25 +30,37 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_FWD_HPP_
-#define DART_SIMULATION_FWD_HPP_
+#ifndef DART_SIMULATION_DETAIL_LEGACYSKELETONSYNC_HPP_
+#define DART_SIMULATION_DETAIL_LEGACYSKELETONSYNC_HPP_
 
-#include <dart/common/SmartPointer.hpp>
+#include <dart/simulation/comps/SkeletonComponents.hpp>
 
-namespace dart {
-namespace simulation {
+#include <dart/dynamics/Skeleton.hpp>
 
-class World;
+#include <algorithm>
 
-DART_COMMON_DECLARE_SHARED_WEAK(World)
+#include <cstddef>
 
-namespace object {
+namespace dart::simulation::detail {
 
-class Object;
+inline void syncLegacySkeletonState(
+    comps::SkeletonState& state, const dynamics::Skeleton& skeleton)
+{
+  const auto dofs = static_cast<std::size_t>(skeleton.getNumDofs());
+  state.positions.assign(dofs, 0.0);
+  state.velocities.assign(dofs, 0.0);
 
-} // namespace object
+  const auto& positions = skeleton.getPositions();
+  const auto& velocities = skeleton.getVelocities();
 
-} // namespace simulation
-} // namespace dart
+  const auto positionsCount = static_cast<std::size_t>(positions.size());
+  const auto velocitiesCount = static_cast<std::size_t>(velocities.size());
 
-#endif // DART_SIMULATION_FWD_HPP_
+  const auto copyCount = std::min({dofs, positionsCount, velocitiesCount});
+  std::copy_n(positions.data(), copyCount, state.positions.begin());
+  std::copy_n(velocities.data(), copyCount, state.velocities.begin());
+}
+
+} // namespace dart::simulation::detail
+
+#endif // DART_SIMULATION_DETAIL_LEGACYSKELETONSYNC_HPP_

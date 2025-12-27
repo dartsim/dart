@@ -17,6 +17,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 - Gotchas:
   - `gh run list` can show separate runs for `push` and `pull_request`; for PR gating, watch the `pull_request` run.
   - `gh run watch` is blocking and can run for a long time; use a persistent shell and re-run it if your terminal session times out.
+  - If a PR is not mergeable due to conflicts, CI checks may be blocked or fail early (including AppVeyor); resolve conflicts locally and push before re-running CI.
   - GitHub Actions API calls can return `HTTP 406` if you omit required headers; include an explicit `Accept` header.
   - The asserts-enabled CI job uses a custom CMake configure (`CMAKE_BUILD_TYPE=None`) instead of pixi tasks; pass required build toggles explicitly (e.g., Bullet collision).
   - Deprecated headers that emit `#warning` fail under `-Werror=cpp` (e.g., use `dart/utils/urdf/All.hpp` instead of deprecated `dart/utils/urdf/urdf.hpp`).
@@ -36,6 +37,7 @@ This task followed the usual PR validation loop: run `pixi` workflows locally, k
 - Sync with the target branch and inspect the diff before making edits.
 - Run lint before committing so formatter/codespell changes are captured.
 - Run the smallest local validation first, then expand to full test or CI as needed.
+- Resolve merge conflicts before re-running CI so the PR remains mergeable.
 - Push each commit and monitor GitHub Actions until all jobs complete.
 
 ## Fast Iteration Loop
@@ -60,6 +62,13 @@ Suggested (Unverified):
 ```bash
 gh run list -R <OWNER>/<REPO> --branch <BRANCH> --limit <N>
 gh run watch <RUN_ID> --interval 30
+```
+
+**Example (Used in this task):**
+
+```bash
+gh run list --branch "$(git branch --show-current)" --limit 6
+gh pr status
 ```
 
 ## CI Monitoring (API)

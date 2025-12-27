@@ -11,10 +11,10 @@
  *   conditions are met:
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -30,25 +30,28 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_FWD_HPP_
-#define DART_SIMULATION_FWD_HPP_
+#ifndef DART_SIMULATION_COMPS_SKELETONCOMPONENTS_HPP_
+#define DART_SIMULATION_COMPS_SKELETONCOMPONENTS_HPP_
 
-#include <dart/common/SmartPointer.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
-namespace dart {
-namespace simulation {
+#include <vector>
 
-class World;
+namespace dart::simulation::comps {
 
-DART_COMMON_DECLARE_SHARED_WEAK(World)
+/// Wraps a classic Skeleton instance so ECS tooling can refer to it.
+struct LegacySkeleton final
+{
+  dynamics::SkeletonPtr skeleton;
+};
 
-namespace object {
+/// Kinematic state extracted from a classic Skeleton.
+struct SkeletonState final
+{
+  std::vector<double> positions;
+  std::vector<double> velocities;
+};
 
-class Object;
+} // namespace dart::simulation::comps
 
-} // namespace object
-
-} // namespace simulation
-} // namespace dart
-
-#endif // DART_SIMULATION_FWD_HPP_
+#endif // DART_SIMULATION_COMPS_SKELETONCOMPONENTS_HPP_
