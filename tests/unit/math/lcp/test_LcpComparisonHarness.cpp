@@ -16,6 +16,7 @@
 #include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/other/InteriorPointSolver.hpp>
 #include <dart/math/lcp/other/MprgpSolver.hpp>
+#include <dart/math/lcp/other/ShockPropagationSolver.hpp>
 #include <dart/math/lcp/other/StaggeringSolver.hpp>
 #include <dart/math/lcp/pivoting/BaraffSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
@@ -138,6 +139,34 @@ TEST(LcpComparisonHarness, MprgpOnStandardFixtures)
   for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
     if (fixture.kind != dart::test::LcpFixtureKind::Standard)
       continue;
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, ShockPropagationOnStandardFixtures)
+{
+  dart::math::ShockPropagationSolver solver;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+      continue;
+
+    const int n = static_cast<int>(fixture.problem.b.size());
+
+    dart::math::ShockPropagationSolver::Parameters params;
+    params.blockSizes = {n};
+    params.layers = {{0}};
+
+    LcpOptions options = solver.getDefaultOptions();
+    options.warmStart = false;
+    options.validateSolution = false;
+    options.maxIterations = 1;
+    options.absoluteTolerance = 1e-8;
+    options.relativeTolerance = 1e-6;
+    options.complementarityTolerance = 1e-6;
+    options.customOptions = &params;
+
     ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
   }
 }

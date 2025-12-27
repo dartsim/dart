@@ -15,6 +15,7 @@
 #include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/other/InteriorPointSolver.hpp>
 #include <dart/math/lcp/other/MprgpSolver.hpp>
+#include <dart/math/lcp/other/ShockPropagationSolver.hpp>
 #include <dart/math/lcp/other/StaggeringSolver.hpp>
 #include <dart/math/lcp/pivoting/BaraffSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
@@ -276,6 +277,33 @@ static void BM_LcpCompare_Mprgp_Standard(benchmark::State& state)
   const auto options = MakeBenchmarkOptions(200);
   RunBenchmark<dart::math::MprgpSolver>(
       state, problem, options, MakeLabel("MPRGP", "Standard"));
+}
+
+static void BM_LcpCompare_ShockPropagation_Standard(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeStandardSpdProblem(n, 194u + static_cast<unsigned>(n));
+
+  dart::math::ShockPropagationSolver::Parameters params;
+  params.blockSizes.clear();
+  const int blockSize = 3;
+  int remaining = n;
+  while (remaining > 0) {
+    const int size = std::min(blockSize, remaining);
+    params.blockSizes.push_back(size);
+    remaining -= size;
+  }
+
+  params.layers.clear();
+  params.layers.reserve(params.blockSizes.size());
+  for (int i = 0; i < static_cast<int>(params.blockSizes.size()); ++i)
+    params.layers.push_back({i});
+
+  auto options = MakeBenchmarkOptions(1);
+  options.customOptions = &params;
+  RunBenchmark<dart::math::ShockPropagationSolver>(
+      state, problem, options, MakeLabel("ShockPropagation", "Standard"));
 }
 
 static void BM_LcpCompare_BlockedJacobi_Standard(benchmark::State& state)
@@ -657,6 +685,11 @@ BENCHMARK(BM_LcpCompare_InteriorPoint_Standard)
     ->Arg(48)
     ->Arg(96);
 BENCHMARK(BM_LcpCompare_Mprgp_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
+BENCHMARK(BM_LcpCompare_ShockPropagation_Standard)
+    ->Arg(12)
+    ->Arg(24)
+    ->Arg(48)
+    ->Arg(96);
 BENCHMARK(BM_LcpCompare_BlockedJacobi_Standard)
     ->Arg(12)
     ->Arg(24)
