@@ -14,6 +14,7 @@
 #include <dart/math/lcp/newton/FischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
 #include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
+#include <dart/math/lcp/other/StaggeringSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 #include <dart/math/lcp/projection/BgsSolver.hpp>
@@ -139,6 +140,23 @@ TEST(LcpComparisonHarness, RedBlackGaussSeidelOnStandardAndBoxedFixtures)
   options.warmStart = false;
   options.validateSolution = false;
   options.maxIterations = 20000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 1e-2;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-2, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, StaggeringOnStandardAndBoxedFixtures)
+{
+  dart::math::StaggeringSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 200;
   options.absoluteTolerance = 1e-4;
   options.relativeTolerance = 1e-2;
   options.complementarityTolerance = 1e-2;
@@ -284,6 +302,23 @@ TEST(LcpComparisonHarness, RedBlackGaussSeidelOnFrictionIndexFixtures)
   options.warmStart = false;
   options.validateSolution = false;
   options.maxIterations = 20000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 2e-2;
+
+  for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 2e-2, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, StaggeringOnFrictionIndexFixtures)
+{
+  dart::math::StaggeringSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 200;
   options.absoluteTolerance = 1e-4;
   options.relativeTolerance = 1e-2;
   options.complementarityTolerance = 2e-2;

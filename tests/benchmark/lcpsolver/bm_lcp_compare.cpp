@@ -13,6 +13,7 @@
 #include <dart/math/lcp/newton/FischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
 #include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
+#include <dart/math/lcp/other/StaggeringSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 #include <dart/math/lcp/projection/BgsSolver.hpp>
@@ -272,6 +273,16 @@ static void BM_LcpCompare_RedBlackGaussSeidel_Standard(benchmark::State& state)
       state, problem, options, MakeLabel("RedBlackGS", "Standard"));
 }
 
+static void BM_LcpCompare_Staggering_Standard(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeStandardSpdProblem(n, 118u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(100);
+  RunBenchmark<dart::math::StaggeringSolver>(
+      state, problem, options, MakeLabel("Staggering", "Standard"));
+}
+
 static void BM_LcpCompare_Bgs_Standard(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
@@ -411,6 +422,16 @@ static void BM_LcpCompare_RedBlackGaussSeidel_Boxed(benchmark::State& state)
       state, problem, options, MakeLabel("RedBlackGS", "Boxed"));
 }
 
+static void BM_LcpCompare_Staggering_Boxed(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeBoxedActiveBoundsProblem(n, 908u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(100);
+  RunBenchmark<dart::math::StaggeringSolver>(
+      state, problem, options, MakeLabel("Staggering", "Boxed"));
+}
+
 static void BM_LcpCompare_Bgs_Boxed(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
@@ -500,6 +521,16 @@ static void BM_LcpCompare_RedBlackGaussSeidel_FrictionIndex(
       state, problem, options, MakeLabel("RedBlackGS", "FrictionIndex"));
 }
 
+static void BM_LcpCompare_Staggering_FrictionIndex(benchmark::State& state)
+{
+  const int numContacts = static_cast<int>(state.range(0));
+  const auto problem = MakeFrictionIndexProblem(
+      numContacts, 4747u + static_cast<unsigned>(numContacts));
+  const auto options = MakeBenchmarkOptions(100);
+  RunBenchmark<dart::math::StaggeringSolver>(
+      state, problem, options, MakeLabel("Staggering", "FrictionIndex"));
+}
+
 static void BM_LcpCompare_Bgs_FrictionIndex(benchmark::State& state)
 {
   const int numContacts = static_cast<int>(state.range(0));
@@ -555,6 +586,11 @@ BENCHMARK(BM_LcpCompare_RedBlackGaussSeidel_Standard)
     ->Arg(24)
     ->Arg(48)
     ->Arg(96);
+BENCHMARK(BM_LcpCompare_Staggering_Standard)
+    ->Arg(12)
+    ->Arg(24)
+    ->Arg(48)
+    ->Arg(96);
 BENCHMARK(BM_LcpCompare_Bgs_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_Nncg_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_SubspaceMinimization_Standard)
@@ -584,6 +620,7 @@ BENCHMARK(BM_LcpCompare_Pgs_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_Jacobi_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_SymmetricPsor_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_RedBlackGaussSeidel_Boxed)->Arg(12)->Arg(24)->Arg(48);
+BENCHMARK(BM_LcpCompare_Staggering_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_Bgs_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_Nncg_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_SubspaceMinimization_Boxed)->Arg(12)->Arg(24)->Arg(48);
@@ -596,6 +633,7 @@ BENCHMARK(BM_LcpCompare_RedBlackGaussSeidel_FrictionIndex)
     ->Arg(4)
     ->Arg(16)
     ->Arg(64);
+BENCHMARK(BM_LcpCompare_Staggering_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 BENCHMARK(BM_LcpCompare_Bgs_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 
 BENCHMARK(BM_LcpCompare_Dantzig_Scaled)->Args({12, 0})->Args({12, 1});
