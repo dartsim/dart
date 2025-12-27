@@ -172,6 +172,37 @@ TEST(LcpComparisonHarness, ShockPropagationOnStandardFixtures)
 }
 
 //==============================================================================
+TEST(LcpComparisonHarness, ShockPropagationOnFrictionIndexFixtures)
+{
+  dart::math::ShockPropagationSolver solver;
+
+  for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
+    const int n = static_cast<int>(fixture.problem.b.size());
+    if (n % 3 != 0)
+      continue;
+
+    const int numBlocks = n / 3;
+    dart::math::ShockPropagationSolver::Parameters params;
+    params.blockSizes.assign(numBlocks, 3);
+    params.layers.clear();
+    params.layers.reserve(numBlocks);
+    for (int i = 0; i < numBlocks; ++i)
+      params.layers.push_back({i});
+
+    LcpOptions options = solver.getDefaultOptions();
+    options.warmStart = false;
+    options.validateSolution = false;
+    options.maxIterations = 1;
+    options.absoluteTolerance = 1e-6;
+    options.relativeTolerance = 1e-4;
+    options.complementarityTolerance = 1e-6;
+    options.customOptions = &params;
+
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
+  }
+}
+
+//==============================================================================
 TEST(LcpComparisonHarness, PgsOnStandardAndBoxedFixtures)
 {
   dart::math::PgsSolver solver;

@@ -644,6 +644,26 @@ static void BM_LcpCompare_BlockedJacobi_FrictionIndex(benchmark::State& state)
       state, problem, options, MakeLabel("BlockedJacobi", "FrictionIndex"));
 }
 
+static void BM_LcpCompare_ShockPropagation_FrictionIndex(
+    benchmark::State& state)
+{
+  const int numContacts = static_cast<int>(state.range(0));
+  const auto problem = MakeFrictionIndexProblem(
+      numContacts, 4948u + static_cast<unsigned>(numContacts));
+
+  dart::math::ShockPropagationSolver::Parameters params;
+  params.blockSizes.assign(numContacts, 3);
+  params.layers.clear();
+  params.layers.reserve(numContacts);
+  for (int i = 0; i < numContacts; ++i)
+    params.layers.push_back({i});
+
+  auto options = MakeBenchmarkOptions(1);
+  options.customOptions = &params;
+  RunBenchmark<dart::math::ShockPropagationSolver>(
+      state, problem, options, MakeLabel("ShockPropagation", "FrictionIndex"));
+}
+
 static void BM_LcpCompare_Dantzig_Scaled(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
@@ -758,6 +778,10 @@ BENCHMARK(BM_LcpCompare_RedBlackGaussSeidel_FrictionIndex)
 BENCHMARK(BM_LcpCompare_Staggering_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 BENCHMARK(BM_LcpCompare_Bgs_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 BENCHMARK(BM_LcpCompare_BlockedJacobi_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
+BENCHMARK(BM_LcpCompare_ShockPropagation_FrictionIndex)
+    ->Arg(4)
+    ->Arg(16)
+    ->Arg(64);
 
 BENCHMARK(BM_LcpCompare_Dantzig_Scaled)->Args({12, 0})->Args({12, 1});
 BENCHMARK(BM_LcpCompare_Pgs_Scaled)->Args({12, 0})->Args({12, 1});
