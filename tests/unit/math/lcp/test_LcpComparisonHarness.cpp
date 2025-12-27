@@ -557,6 +557,50 @@ TEST(LcpComparisonHarness, BlockedJacobiOnFrictionIndexFixtures)
 }
 
 //==============================================================================
+TEST(LcpComparisonHarness, NncgOnFrictionIndexFixtures)
+{
+  dart::math::NncgSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 5000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 2e-2;
+
+  dart::math::NncgSolver::Parameters params;
+  params.pgsIterations = 2;
+  params.restartInterval = 10;
+  params.restartThreshold = 1.0;
+  options.customOptions = &params;
+
+  for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 2e-2, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, SubspaceMinimizationOnFrictionIndexFixtures)
+{
+  dart::math::SubspaceMinimizationSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 5000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 2e-2;
+
+  dart::math::SubspaceMinimizationSolver::Parameters params;
+  params.pgsIterations = 5;
+  options.customOptions = &params;
+
+  for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 2e-2, true);
+  }
+}
+
+//==============================================================================
 TEST(LcpComparisonHarness, LemkeOnStandardFixtures)
 {
   dart::math::LemkeSolver solver;

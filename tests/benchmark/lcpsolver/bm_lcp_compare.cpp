@@ -673,6 +673,38 @@ static void BM_LcpCompare_BlockedJacobi_FrictionIndex(benchmark::State& state)
       state, problem, options, MakeLabel("BlockedJacobi", "FrictionIndex"));
 }
 
+static void BM_LcpCompare_Nncg_FrictionIndex(benchmark::State& state)
+{
+  const int numContacts = static_cast<int>(state.range(0));
+  const auto problem = MakeFrictionIndexProblem(
+      numContacts, 4949u + static_cast<unsigned>(numContacts));
+  auto options = MakeBenchmarkOptions(200);
+  dart::math::NncgSolver::Parameters params;
+  params.pgsIterations = 1;
+  params.restartInterval = 10;
+  params.restartThreshold = 1.0;
+  options.customOptions = &params;
+  RunBenchmark<dart::math::NncgSolver>(
+      state, problem, options, MakeLabel("Nncg", "FrictionIndex"));
+}
+
+static void BM_LcpCompare_SubspaceMinimization_FrictionIndex(
+    benchmark::State& state)
+{
+  const int numContacts = static_cast<int>(state.range(0));
+  const auto problem = MakeFrictionIndexProblem(
+      numContacts, 4950u + static_cast<unsigned>(numContacts));
+  auto options = MakeBenchmarkOptions(200);
+  dart::math::SubspaceMinimizationSolver::Parameters params;
+  params.pgsIterations = 5;
+  options.customOptions = &params;
+  RunBenchmark<dart::math::SubspaceMinimizationSolver>(
+      state,
+      problem,
+      options,
+      MakeLabel("SubspaceMinimization", "FrictionIndex"));
+}
+
 static void BM_LcpCompare_ShockPropagation_FrictionIndex(
     benchmark::State& state)
 {
@@ -808,6 +840,11 @@ BENCHMARK(BM_LcpCompare_RedBlackGaussSeidel_FrictionIndex)
 BENCHMARK(BM_LcpCompare_Staggering_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 BENCHMARK(BM_LcpCompare_Bgs_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 BENCHMARK(BM_LcpCompare_BlockedJacobi_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
+BENCHMARK(BM_LcpCompare_Nncg_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
+BENCHMARK(BM_LcpCompare_SubspaceMinimization_FrictionIndex)
+    ->Arg(4)
+    ->Arg(16)
+    ->Arg(64);
 BENCHMARK(BM_LcpCompare_ShockPropagation_FrictionIndex)
     ->Arg(4)
     ->Arg(16)
