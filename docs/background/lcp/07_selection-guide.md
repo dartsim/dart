@@ -236,8 +236,8 @@ Slower          ─────────────────────�
 Pivoting ─> Newton ─> Interior Point ─> NNCG ─> BGS ─> PGS ─> Jacobi
 (exact)     (1e-10)   (1e-8)           (1e-6)  (1e-4) (1e-3) (1e-2)
 
-✅ Available:  Dantzig, Lemke, PGS/PSOR/Symmetric PSOR, Jacobi, Red-Black GS, BGS, PGS-SM, NNCG, Newton (standard LCP)
-❌ Future:     Interior Point, Staggering, …
+✅ Available:  Dantzig, Lemke, PGS/PSOR/Symmetric PSOR, Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP)
+❌ Future:     Interior Point, …
 ```
 
 ### Robustness vs Efficiency
@@ -248,8 +248,8 @@ Slower      ──────────────────────�
 
 Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
-✅ Available:  Dantzig, Lemke, PGS/PSOR/Symmetric PSOR, Jacobi, Red-Black GS, BGS, PGS-SM, NNCG, Newton (standard LCP)
-❌ Future:     Interior Point, Staggering, …
+✅ Available:  Dantzig, Lemke, PGS/PSOR/Symmetric PSOR, Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP)
+❌ Future:     Interior Point, …
 ```
 
 ## Problem Size Guidelines
@@ -284,6 +284,7 @@ Available solvers:
 - ✅ **Symmetric PSOR**: Forward/backward sweep variant for reduced bias
 - ✅ **Jacobi**: Projected Jacobi baseline (parallel-friendly)
 - ✅ **Red-Black GS**: Two-color Gauss-Seidel variant for parallel-style updates
+- ✅ **Staggering**: Normal/friction block staggering for contact structure
 - ✅ **BGS**: Blocked Gauss-Seidel for per-contact blocks
 - ✅ **PGS-SM**: Subspace minimization hybrid for medium problems
 - ✅ **Newton (Minimum Map, FB, Penalized FB)**: Standard LCP only
@@ -303,7 +304,7 @@ if (!result.succeeded()) {
 
 ### Remaining Gaps
 
-- Interior point and staggering methods
+- Interior point methods
 
 ### Newton Methods (Implemented)
 
@@ -470,7 +471,7 @@ Current (with Dantzig/PGS/BGS/Lemke/Newton):
 3. Reduce contact points
 4. Simplify collision geometry
 
-Future (with Interior Point/Staggering):
+Future (with Interior Point):
 1. Use appropriate method for problem size
 2. Enable warm-starting
 3. Matrix-free implementations
@@ -489,7 +490,7 @@ Future (with Interior Point/Staggering):
 | Large problems (n>100) | NNCG or PGS     | NNCG converges faster, both approximate  |
 | Real-time (n>50)       | PGS/PSOR        | Tune `relaxation`, keep Dantzig fallback |
 
-### Future State (After Interior Point/Staggering)
+### Future State (After Interior Point)
 
 | Scenario        | Primary  | Backup         | Notes              |
 | --------------- | -------- | -------------- | ------------------ |

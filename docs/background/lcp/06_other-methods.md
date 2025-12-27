@@ -6,7 +6,8 @@
 
 This document covers additional LCP solver methods including Interior Point, Staggering, and specialized methods that don't fit into the main categories of pivoting, projection, or Newton methods.
 
-**All methods in this document are currently not implemented** but documented for future reference.
+Interior point remains unimplemented. Staggering is implemented in DART as
+`dart::math::StaggeringSolver`.
 
 ## 1. Interior Point Method ❌ (Not Implemented)
 
@@ -91,7 +92,7 @@ for iter = 1 to max_iter:
 - Problems requiring guaranteed feasibility
 - When computational budget allows
 
-## 2. Staggering Methods ❌ (Not Implemented)
+## 2. Staggering Methods ✅ (Implemented)
 
 ### Description
 
@@ -145,6 +146,19 @@ F = solve_friction(...)
 # Use as warm-start for Newton or other method
 x_final = newton_method(x=[N, F])
 ```
+
+### DART Implementation
+
+```cpp
+dart::math::StaggeringSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 50;
+options.relaxation = 1.0;  // Optional damping
+solver.solve(problem, x, options);
+```
+
+> Note: DART partitions variables by `findex` (normal indices are `findex < 0`,
+> friction indices are `findex >= 0`) and alternates normal and friction sub-solves.
 
 ### Properties
 
@@ -277,16 +291,19 @@ for iter = 1 to max_iter:
 | Method            | Convergence | Complexity | Robustness | Parallelization |
 | ----------------- | ----------- | ---------- | ---------- | --------------- |
 | Interior Point    | Superlinear | O(n³)      | Very High  | No              |
-| Staggering        | Variable    | Depends    | Medium     | No              |
+| Staggering ✅     | Variable    | Depends    | Medium     | No              |
 | Shock-Propagation | Linear      | O(n)       | Medium     | Limited         |
 | MPRGP             | Monotone    | O(n²)      | High       | No              |
 | Blocked Jacobi    | Linear      | O(n·b³)    | Medium     | Yes             |
 
 ## Implementation Priority
 
+### Implemented in DART
+
+- **Staggering**: Normal/friction block solve for contact-style problems
+
 ### Low Priority (Specialized Use Cases)
 
-- **Staggering**: For specific contact problem structures
 - **Shock-Propagation**: For gravity-dominated scenarios
 
 ### Very Low Priority (Niche Applications)

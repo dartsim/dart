@@ -23,7 +23,7 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 | **Newton**         | Fischer-Burmeister Newton  | ✅ Implemented     | `newton/FischerBurmeisterNewtonSolver.hpp`          | Standard LCP (boxed/findex fallback)    |
 | **Newton**         | Penalized FB Newton        | ✅ Implemented     | `newton/PenalizedFischerBurmeisterNewtonSolver.hpp` | Extension of FB                         |
 | **Interior Point** | Interior Point Method      | ❌ Not implemented | -                                                   | Very robust                             |
-| **Staggering**     | Staggering Method          | ❌ Not implemented | -                                                   | For coupled problems                    |
+| **Staggering**     | Staggering Method          | ✅ Implemented     | `other/StaggeringSolver.hpp`                        | Normal/friction splitting               |
 
 **Legend**: ✅ Implemented | 🚧 In Progress | ❌ Not Implemented | 📋 Planned
 
@@ -62,7 +62,8 @@ dart/math/lcp/
 │   └── SymmetricPsorSolver.hpp/cpp  # Forward/backward PSOR
 │
 ├── newton/                     # Minimum map, FB, penalized FB Newton
-└── other/                      # Future solver families
+└── other/
+    └── StaggeringSolver.hpp/cpp  # Normal/friction staggering
 ```
 
 See [Problem Statement](01_problem-statement.md) for the `w = Ax - b`
@@ -184,7 +185,17 @@ solver usage examples.
   - Works with bounds and friction index coupling
 - **Use Case**: Medium-scale problems where PGS converges slowly
 
-#### 10. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
+#### 10. Staggering Method (`other/StaggeringSolver.hpp`)
+
+- **Type**: Alternating block solve for contact-style LCPs
+- **Algorithm**: Solve normal block, then friction block with updated bounds
+- **Features**:
+  - Splits variables using `findex` (normal vs friction)
+  - Uses boxed sub-solves with updated friction bounds
+  - Relaxation via `LcpOptions::relaxation`
+- **Use Case**: Contact problems where normal/tangential coupling slows PGS
+
+#### 11. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
 
 - **Type**: Newton method using the minimum map reformulation
 - **Algorithm**: Active/free set Newton on `H(x) = min(x, Ax - b)`
@@ -193,7 +204,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 11. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
+#### 12. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using the Fischer-Burmeister function
 - **Algorithm**: Smooth FB reformulation with line search
@@ -202,7 +213,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 12. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
+#### 13. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using a penalized Fischer-Burmeister function
 - **Algorithm**: FB reformulation with penalty term and line search
@@ -299,7 +310,7 @@ LCP solvers can be categorized into several main families:
 | High accuracy        | Newton, Pivoting         | Superlinear convergence |
 | Large-scale          | NNCG, PGS                | Scalable, matrix-free   |
 | Poorly conditioned   | Pivoting, Interior Point | Numerically robust      |
-| Contact mechanics    | BGS, Dantzig             | Natural block structure |
+| Contact mechanics    | BGS, Dantzig, Staggering | Natural block structure |
 | Parallel computing   | Jacobi, Red-Black GS     | Embarrassingly parallel |
 
 See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
@@ -373,7 +384,7 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 
 - [x] Nonsmooth Nonlinear Conjugate Gradient (NNCG)
 - [x] Subspace Minimization (PGS-SM)
-- [ ] Staggering methods
+- [x] Staggering methods
 
 ### Phase 4: Newton Methods (Low Priority)
 
