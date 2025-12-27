@@ -17,6 +17,7 @@
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 #include <dart/math/lcp/projection/BgsSolver.hpp>
+#include <dart/math/lcp/projection/JacobiSolver.hpp>
 #include <dart/math/lcp/projection/NncgSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
 #include <dart/math/lcp/projection/SubspaceMinimizationSolver.hpp>
@@ -81,6 +82,23 @@ TEST(LcpComparisonHarness, DantzigOnStandardAndBoxedFixtures)
 TEST(LcpComparisonHarness, PgsOnStandardAndBoxedFixtures)
 {
   dart::math::PgsSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 20000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 1e-2;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-2, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, JacobiOnStandardAndBoxedFixtures)
+{
+  dart::math::JacobiSolver solver;
   LcpOptions options = solver.getDefaultOptions();
   options.warmStart = false;
   options.validateSolution = false;
@@ -175,6 +193,23 @@ TEST(LcpComparisonHarness, DantzigOnFrictionIndexFixtures)
 TEST(LcpComparisonHarness, PgsOnFrictionIndexFixtures)
 {
   dart::math::PgsSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 20000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 2e-2;
+
+  for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 2e-2, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, JacobiOnFrictionIndexFixtures)
+{
+  dart::math::JacobiSolver solver;
   LcpOptions options = solver.getDefaultOptions();
   options.warmStart = false;
   options.validateSolution = false;
