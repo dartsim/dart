@@ -55,7 +55,8 @@ Fallback: Dantzig if iterative solve stalls
 ### 2. High-Accuracy Off-Line Simulation
 
 **Recommended**: Newton > Pivoting > Interior Point
-**Currently Available**: Minimum Map Newton ✅, Fischer-Burmeister Newton ✅, Dantzig ✅, Lemke ✅
+**Currently Available**: Minimum Map Newton ✅, Fischer-Burmeister Newton ✅,
+Penalized FB Newton ✅ (standard LCP only), Dantzig ✅, Lemke ✅
 
 **Rationale**:
 
@@ -73,6 +74,8 @@ Tolerance: 1e-8 to 1e-12
 Warm start: PGS (10 iterations)
 Subsolver: GMRES with tolerance 0.1*||H||
 ```
+
+For Penalized FB, set `PenalizedFischerBurmeisterNewtonSolver::Parameters::lambda`.
 
 **Current Best**:
 
@@ -216,7 +219,7 @@ Block size: 32-256 threads per block
 | ------------- | ----------- | ------------- | ---------- | ---------- | ------------- |
 | Real-time     | PGS         | O(n)          | 50-100     | O(50n)     | ✅            |
 | Real-time     | Dantzig     | O(n³)         | 1          | O(n³)      | ✅            |
-| High accuracy | Newton      | O(n³)\*       | 5-20       | O(20n³)\*  | ❌            |
+| High accuracy | Newton      | O(n³)\*       | 5-20       | O(20n³)\*  | ✅ (standard) |
 | High accuracy | Dantzig     | O(n³)         | 1          | O(n³)      | ✅            |
 | Contact       | BGS         | O(nb³)        | 50-100     | O(50nb³)   | ❌            |
 | Contact       | Dantzig     | -             | -          | -          | ✅            |
@@ -233,8 +236,8 @@ Slower          ─────────────────────�
 Pivoting ─> Newton ─> Interior Point ─> NNCG ─> BGS ─> PGS ─> Jacobi
 (exact)     (1e-10)   (1e-8)           (1e-6)  (1e-4) (1e-3) (1e-2)
 
-✅ Available:  Dantzig, Lemke, PGS/PSOR
-❌ Future:     Newton, BGS, NNCG, …
+✅ Available:  Dantzig, Lemke, PGS/PSOR, Newton (standard LCP)
+❌ Future:     BGS, NNCG, …
 ```
 
 ### Robustness vs Efficiency
@@ -245,28 +248,28 @@ Slower      ──────────────────────�
 
 Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
-✅ Available:  Dantzig, Lemke, PGS/PSOR
-❌ Future:     Newton, BGS, NNCG, …
+✅ Available:  Dantzig, Lemke, PGS/PSOR, Newton (standard LCP)
+❌ Future:     BGS, NNCG, …
 ```
 
 ## Problem Size Guidelines
 
-| Problem Size     | Recommended Method       | Currently Available  |
-| ---------------- | ------------------------ | -------------------- |
-| n < 10           | Direct 2D/3D or Pivoting | Dantzig ✅, Lemke ✅ |
-| 10 ≤ n < 100     | Pivoting or Newton       | Dantzig ✅, Lemke ✅ |
-| 100 ≤ n < 1000   | PGS, BGS, or Newton      | PGS ✅, Dantzig ✅   |
-| 1000 ≤ n < 10000 | NNCG or PGS              | PGS ✅               |
-| n ≥ 10000        | NNCG or specialized      | PGS ✅ (approx)      |
+| Problem Size     | Recommended Method       | Currently Available                        |
+| ---------------- | ------------------------ | ------------------------------------------ |
+| n < 10           | Direct 2D/3D or Pivoting | Dantzig ✅, Lemke ✅                       |
+| 10 ≤ n < 100     | Pivoting or Newton       | Dantzig ✅, Lemke ✅, Newton ✅ (standard) |
+| 100 ≤ n < 1000   | PGS, BGS, or Newton      | PGS ✅, Dantzig ✅, Newton ✅ (standard)   |
+| 1000 ≤ n < 10000 | NNCG or PGS              | PGS ✅                                     |
+| n ≥ 10000        | NNCG or specialized      | PGS ✅ (approx)                            |
 
 ## Conditioning Guidelines
 
-| Matrix Condition     | Recommended Method       | Currently Available          |
-| -------------------- | ------------------------ | ---------------------------- |
-| Well-conditioned     | Any method               | All ✅                       |
-| Moderate             | PGS, Newton, Pivoting    | PGS ✅, Dantzig ✅, Lemke ✅ |
-| Ill-conditioned      | Pivoting, Interior Point | PGS ✅, Dantzig ✅, Lemke ✅ |
-| Very ill-conditioned | Pivoting only            | Dantzig ✅, Lemke ✅         |
+| Matrix Condition     | Recommended Method       | Currently Available                                |
+| -------------------- | ------------------------ | -------------------------------------------------- |
+| Well-conditioned     | Any method               | All ✅                                             |
+| Moderate             | PGS, Newton, Pivoting    | PGS ✅, Dantzig ✅, Lemke ✅, Newton ✅ (standard) |
+| Ill-conditioned      | Pivoting, Interior Point | PGS ✅, Dantzig ✅, Lemke ✅                       |
+| Very ill-conditioned | Pivoting only            | Dantzig ✅, Lemke ✅                               |
 
 ## Implementation Roadmap Impact
 
@@ -278,6 +281,7 @@ Available solvers:
 - ✅ **Lemke**: Standard LCP
 - ✅ **PGS/PSOR**: Iterative boxed LCP with friction index fallback (tune
   `LcpOptions::relaxation`)
+- ✅ **Newton (Minimum Map, FB, Penalized FB)**: Standard LCP only
 
 **Best Practices Now**:
 
@@ -296,9 +300,7 @@ if (!result.succeeded()) {
 - Blocked Gauss-Seidel for per-contact blocks
 - NNCG or other large-scale iterative methods
 
-### Phase 4: Newton Methods
-
-When Newton methods are implemented:
+### Newton Methods (Implemented)
 
 - ✅ High accuracy achievable
 - ✅ Superlinear convergence
@@ -389,7 +391,7 @@ relaxation (PSOR only):
   - Under-relax if unstable: 0.8-0.95
 ```
 
-### Newton Methods (future)
+### Newton Methods
 
 ```
 max_iterations: 20-50
@@ -457,13 +459,13 @@ findex[i] = j;   // Depends on x[j] for friction cone
 ### Performance is Poor
 
 ```
-Current (with Dantzig/PGS/Lemke):
+Current (with Dantzig/PGS/Lemke/Newton):
 1. Limit problem size (n < 100)
 2. Use Dantzig for contacts
 3. Reduce contact points
 4. Simplify collision geometry
 
-Future (with Newton/BGS):
+Future (with BGS/NNCG):
 1. Use appropriate method for problem size
 2. Enable warm-starting
 3. Matrix-free implementations
@@ -474,15 +476,15 @@ Future (with Newton/BGS):
 
 ### Current State
 
-| Scenario               | Use      | Notes                                    |
-| ---------------------- | -------- | ---------------------------------------- |
-| Contact with friction  | Dantzig  | Best option now                          |
-| Bounded variables      | Dantzig  | Supports bounds and friction             |
-| Standard LCP           | Lemke    | Simple and robust                        |
-| Large problems (n>100) | PGS      | Scales better, approximate               |
-| Real-time (n>50)       | PGS/PSOR | Tune `relaxation`, keep Dantzig fallback |
+| Scenario               | Use             | Notes                                    |
+| ---------------------- | --------------- | ---------------------------------------- |
+| Contact with friction  | Dantzig         | Best option now                          |
+| Bounded variables      | Dantzig         | Supports bounds and friction             |
+| Standard LCP           | Lemke or Newton | Newton for high accuracy (standard only) |
+| Large problems (n>100) | PGS             | Scales better, approximate               |
+| Real-time (n>50)       | PGS/PSOR        | Tune `relaxation`, keep Dantzig fallback |
 
-### Future State (After Implementation)
+### Future State (After BGS/NNCG)
 
 | Scenario        | Primary  | Backup         | Notes              |
 | --------------- | -------- | -------------- | ------------------ |

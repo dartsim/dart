@@ -6,21 +6,21 @@
 
 This section tracks which LCP solvers are currently implemented in DART (`dart/math/lcp/`).
 
-| Category           | Method                     | Status             | Location                                   | Notes                                   |
-| ------------------ | -------------------------- | ------------------ | ------------------------------------------ | --------------------------------------- |
-| **Pivoting**       | Dantzig Principal Pivoting | ✅ Implemented     | `pivoting/DantzigSolver.hpp`               | BLCP solver with friction index support |
-| **Pivoting**       | Lemke Complementary Pivot  | ✅ Implemented     | `pivoting/LemkeSolver.hpp`                 | Standard LCP solver                     |
-| **Pivoting**       | Baraff Incremental         | ❌ Not implemented | -                                          | Planned                                 |
-| **Projection**     | PGS (Gauss-Seidel)         | ✅ Implemented     | `projection/PgsSolver.hpp`                 | Boxed LCP + friction index (iterative)  |
-| **Projection**     | PSOR (Over-Relaxation)     | ✅ Implemented     | `projection/PgsSolver.hpp`                 | Set `LcpOptions::relaxation`            |
-| **Projection**     | Blocked Gauss-Seidel       | ❌ Not implemented | -                                          | For contact problems                    |
-| **Projection**     | NNCG (Conjugate Gradient)  | ❌ Not implemented | -                                          | Better convergence than PGS             |
-| **Projection**     | Subspace Minimization      | ❌ Not implemented | -                                          | Hybrid PGS approach                     |
-| **Newton**         | Minimum Map Newton         | ✅ Implemented     | `newton/MinimumMapNewtonSolver.hpp`        | Standard LCP (boxed/findex fallback)    |
-| **Newton**         | Fischer-Burmeister Newton  | ✅ Implemented     | `newton/FischerBurmeisterNewtonSolver.hpp` | Standard LCP (boxed/findex fallback)    |
-| **Newton**         | Penalized FB Newton        | ❌ Not implemented | -                                          | Extension of FB                         |
-| **Interior Point** | Interior Point Method      | ❌ Not implemented | -                                          | Very robust                             |
-| **Staggering**     | Staggering Method          | ❌ Not implemented | -                                          | For coupled problems                    |
+| Category           | Method                     | Status             | Location                                            | Notes                                   |
+| ------------------ | -------------------------- | ------------------ | --------------------------------------------------- | --------------------------------------- |
+| **Pivoting**       | Dantzig Principal Pivoting | ✅ Implemented     | `pivoting/DantzigSolver.hpp`                        | BLCP solver with friction index support |
+| **Pivoting**       | Lemke Complementary Pivot  | ✅ Implemented     | `pivoting/LemkeSolver.hpp`                          | Standard LCP solver                     |
+| **Pivoting**       | Baraff Incremental         | ❌ Not implemented | -                                                   | Planned                                 |
+| **Projection**     | PGS (Gauss-Seidel)         | ✅ Implemented     | `projection/PgsSolver.hpp`                          | Boxed LCP + friction index (iterative)  |
+| **Projection**     | PSOR (Over-Relaxation)     | ✅ Implemented     | `projection/PgsSolver.hpp`                          | Set `LcpOptions::relaxation`            |
+| **Projection**     | Blocked Gauss-Seidel       | ❌ Not implemented | -                                                   | For contact problems                    |
+| **Projection**     | NNCG (Conjugate Gradient)  | ❌ Not implemented | -                                                   | Better convergence than PGS             |
+| **Projection**     | Subspace Minimization      | ❌ Not implemented | -                                                   | Hybrid PGS approach                     |
+| **Newton**         | Minimum Map Newton         | ✅ Implemented     | `newton/MinimumMapNewtonSolver.hpp`                 | Standard LCP (boxed/findex fallback)    |
+| **Newton**         | Fischer-Burmeister Newton  | ✅ Implemented     | `newton/FischerBurmeisterNewtonSolver.hpp`          | Standard LCP (boxed/findex fallback)    |
+| **Newton**         | Penalized FB Newton        | ✅ Implemented     | `newton/PenalizedFischerBurmeisterNewtonSolver.hpp` | Extension of FB                         |
+| **Interior Point** | Interior Point Method      | ❌ Not implemented | -                                                   | Very robust                             |
+| **Staggering**     | Staggering Method          | ❌ Not implemented | -                                                   | For coupled problems                    |
 
 **Legend**: ✅ Implemented | 🚧 In Progress | ❌ Not Implemented | 📋 Planned
 
@@ -52,7 +52,7 @@ dart/math/lcp/
 ├── projection/
 │   └── PgsSolver.hpp/cpp       # Boxed LCP + findex (iterative)
 │
-├── newton/                     # Minimum map Newton + future methods
+├── newton/                     # Minimum map, FB, penalized FB Newton
 └── other/                      # Future solver families
 ```
 
@@ -132,6 +132,16 @@ solver usage examples.
   - Standard LCP only (`lo = 0`, `hi = +inf`, `findex = -1`)
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
+
+#### 6. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
+
+- **Type**: Newton method using a penalized Fischer-Burmeister function
+- **Algorithm**: FB reformulation with penalty term and line search
+- **Features**:
+  - Standard LCP only (`lo = 0`, `hi = +inf`, `findex = -1`)
+  - Boxed/findex problems delegate to the boxed-capable pivoting solver
+  - Penalty parameter (`lambda`) to tune convergence behavior
+- **Use Case**: High-accuracy solves for standard LCPs with tunable penalty
 
 ## Introduction
 
@@ -293,9 +303,10 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 
 ### Phase 4: Newton Methods (Low Priority)
 
-- [ ] Minimum Map Newton
-- [ ] Fischer-Burmeister Newton
-- [ ] Projected line search
+- [x] Minimum Map Newton
+- [x] Fischer-Burmeister Newton
+- [x] Penalized Fischer-Burmeister Newton
+- [x] Projected line search
 - [ ] Nonsmooth gradient descent (warm start)
 
 ### Phase 5: Additional Methods (Future)
