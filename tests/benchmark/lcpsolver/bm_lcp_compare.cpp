@@ -13,6 +13,7 @@
 #include <dart/math/lcp/newton/FischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
 #include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
+#include <dart/math/lcp/other/InteriorPointSolver.hpp>
 #include <dart/math/lcp/other/StaggeringSolver.hpp>
 #include <dart/math/lcp/pivoting/BaraffSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
@@ -242,6 +243,16 @@ static void BM_LcpCompare_Baraff_Standard(benchmark::State& state)
   const auto options = MakeBenchmarkOptions(100);
   RunBenchmark<dart::math::BaraffSolver>(
       state, problem, options, MakeLabel("Baraff", "Standard"));
+}
+
+static void BM_LcpCompare_InteriorPoint_Standard(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeStandardSpdProblem(n, 164u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(50);
+  RunBenchmark<dart::math::InteriorPointSolver>(
+      state, problem, options, MakeLabel("InteriorPoint", "Standard"));
 }
 
 static void BM_LcpCompare_Pgs_Standard(benchmark::State& state)
@@ -586,6 +597,11 @@ static void BM_LCP_COMPARE_SMOKE(benchmark::State& state)
 
 BENCHMARK(BM_LcpCompare_Dantzig_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_Baraff_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
+BENCHMARK(BM_LcpCompare_InteriorPoint_Standard)
+    ->Arg(12)
+    ->Arg(24)
+    ->Arg(48)
+    ->Arg(96);
 BENCHMARK(BM_LcpCompare_Pgs_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_Jacobi_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_SymmetricPsor_Standard)
