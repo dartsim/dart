@@ -328,7 +328,7 @@ static void BM_LcpCompare_ShockPropagation_Standard(benchmark::State& state)
   for (int i = 0; i < static_cast<int>(params.blockSizes.size()); ++i)
     params.layers.push_back({i});
 
-  auto options = MakeBenchmarkOptions(1);
+  auto options = MakeBenchmarkOptions(100);
   options.customOptions = &params;
   RunBenchmark<dart::math::ShockPropagationSolver>(
       state, problem, options, MakeLabel("ShockPropagation", "Standard"));
@@ -719,7 +719,7 @@ static void BM_LcpCompare_ShockPropagation_FrictionIndex(
   for (int i = 0; i < numContacts; ++i)
     params.layers.push_back({i});
 
-  auto options = MakeBenchmarkOptions(1);
+  auto options = MakeBenchmarkOptions(100);
   options.customOptions = &params;
   RunBenchmark<dart::math::ShockPropagationSolver>(
       state, problem, options, MakeLabel("ShockPropagation", "FrictionIndex"));
