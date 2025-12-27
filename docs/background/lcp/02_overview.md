@@ -11,6 +11,7 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 | **Pivoting**       | Dantzig Principal Pivoting | ✅ Implemented | `pivoting/DantzigSolver.hpp`                        | BLCP solver with friction index support |
 | **Pivoting**       | Lemke Complementary Pivot  | ✅ Implemented | `pivoting/LemkeSolver.hpp`                          | Standard LCP solver                     |
 | **Pivoting**       | Baraff Incremental         | ✅ Implemented | `pivoting/BaraffSolver.hpp`                         | Symmetric PSD pivoting                  |
+| **Pivoting**       | Direct 2D/3D               | ✅ Implemented | `pivoting/DirectSolver.hpp`                         | Tiny standard LCPs                      |
 | **Projection**     | PGS (Gauss-Seidel)         | ✅ Implemented | `projection/PgsSolver.hpp`                          | Boxed LCP + friction index (iterative)  |
 | **Projection**     | PSOR (Over-Relaxation)     | ✅ Implemented | `projection/PgsSolver.hpp`                          | Set `LcpOptions::relaxation`            |
 | **Projection**     | Symmetric PSOR             | ✅ Implemented | `projection/SymmetricPsorSolver.hpp`                | Forward/backward sweeps                 |
@@ -51,6 +52,7 @@ dart/math/lcp/
 ├── pivoting/
 │   ├── BaraffSolver.hpp/cpp    # Incremental pivoting (SPD/PSD)
 │   ├── DantzigSolver.hpp/cpp   # Boxed LCP + findex (pivoting, ODE-derived)
+│   ├── DirectSolver.hpp/cpp    # Direct 2D/3D enumeration
 │   ├── LemkeSolver.hpp/cpp     # Standard LCP (boxed/findex delegates)
 │   └── dantzig/                # Low-level ODE Dantzig implementation
 │
@@ -126,7 +128,17 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: Contact problems where a symmetric PSD solve is appropriate
 
-#### 4. Jacobi (Projected) (`projection/JacobiSolver.hpp`)
+#### 4. Direct 2D/3D Solver (`pivoting/DirectSolver.hpp`)
+
+- **Type**: Direct enumeration for tiny standard LCPs
+- **Algorithm**: Enumerate complementarity sets and solve small linear systems
+- **Features**:
+  - Standard LCP only (`lo = 0`, `hi = +inf`, `findex = -1`)
+  - Supports dimensions up to 3 (fallback to pivoting otherwise)
+  - Exact solutions for small problems
+- **Use Case**: 2D/3D problems, validation, and debugging
+
+#### 5. Jacobi (Projected) (`projection/JacobiSolver.hpp`)
 
 - **Type**: Iterative projection method for boxed LCP
 - **Algorithm**: Jacobi updates with projection onto `[lo, hi]`
@@ -136,7 +148,7 @@ solver usage examples.
   - Optional damping via `LcpOptions::relaxation`
 - **Use Case**: Parallel/GPU baselines and coarse approximations
 
-#### 5. Projected Gauss-Seidel (PGS) (`projection/PgsSolver.hpp`)
+#### 6. Projected Gauss-Seidel (PGS) (`projection/PgsSolver.hpp`)
 
 - **Type**: Iterative projection method for boxed LCP
 - **Algorithm**: Gauss-Seidel with projection onto `[lo, hi]` and friction index
@@ -149,7 +161,7 @@ solver usage examples.
 - **Use Case**: Real-time fallback for constraint solving where approximate
   solutions are acceptable
 
-#### 6. Symmetric PSOR (`projection/SymmetricPsorSolver.hpp`)
+#### 7. Symmetric PSOR (`projection/SymmetricPsorSolver.hpp`)
 
 - **Type**: Iterative projection method for boxed LCP
 - **Algorithm**: Forward Gauss-Seidel sweep + backward sweep each iteration
@@ -159,7 +171,7 @@ solver usage examples.
   - Supports bounds and `findex` friction coupling
 - **Use Case**: More stable convergence than PGS when sweep order matters
 
-#### 7. Red-Black Gauss-Seidel (`projection/RedBlackGaussSeidelSolver.hpp`)
+#### 8. Red-Black Gauss-Seidel (`projection/RedBlackGaussSeidelSolver.hpp`)
 
 - **Type**: Two-color Gauss-Seidel projection method for boxed LCP
 - **Algorithm**: Update even (red) indices, then odd (black) indices
@@ -169,7 +181,7 @@ solver usage examples.
   - Uses `LcpOptions::relaxation` for damping/acceleration
 - **Use Case**: Parallel-style baseline with reduced data dependency
 
-#### 8. Blocked Gauss-Seidel (BGS) (`projection/BgsSolver.hpp`)
+#### 9. Blocked Gauss-Seidel (BGS) (`projection/BgsSolver.hpp`)
 
 - **Type**: Blocked projection method for boxed LCP
 - **Algorithm**: Block Gauss-Seidel with per-block Dantzig solves
@@ -179,7 +191,7 @@ solver usage examples.
   - Shares bounds and friction index handling with PGS
 - **Use Case**: Contact problems where per-contact blocks improve convergence
 
-#### 9. Blocked Jacobi (`projection/BlockedJacobiSolver.hpp`)
+#### 10. Blocked Jacobi (`projection/BlockedJacobiSolver.hpp`)
 
 - **Type**: Blocked projection method for boxed LCP
 - **Algorithm**: Jacobi updates over blocks with per-block Dantzig solves
@@ -189,7 +201,7 @@ solver usage examples.
   - Supports bounds and friction index coupling
 - **Use Case**: Parallel-friendly baseline for block-structured problems
 
-#### 10. NNCG (Nonsmooth Nonlinear Conjugate Gradient) (`projection/NncgSolver.hpp`)
+#### 11. NNCG (Nonsmooth Nonlinear Conjugate Gradient) (`projection/NncgSolver.hpp`)
 
 - **Type**: Projection method with conjugate gradient acceleration
 - **Algorithm**: NNCG using PGS sweeps as the nonlinear projection map
@@ -199,7 +211,7 @@ solver usage examples.
   - PGS-based warm start and projection
 - **Use Case**: Large-scale problems needing faster convergence than PGS
 
-#### 11. Subspace Minimization (PGS-SM) (`projection/SubspaceMinimizationSolver.hpp`)
+#### 12. Subspace Minimization (PGS-SM) (`projection/SubspaceMinimizationSolver.hpp`)
 
 - **Type**: Two-phase projection method for boxed LCP
 - **Algorithm**: PGS for active set estimation + reduced solve on free set
@@ -209,7 +221,7 @@ solver usage examples.
   - Works with bounds and friction index coupling
 - **Use Case**: Medium-scale problems where PGS converges slowly
 
-#### 12. Staggering Method (`other/StaggeringSolver.hpp`)
+#### 13. Staggering Method (`other/StaggeringSolver.hpp`)
 
 - **Type**: Alternating block solve for contact-style LCPs
 - **Algorithm**: Solve normal block, then friction block with updated bounds
@@ -219,7 +231,7 @@ solver usage examples.
   - Relaxation via `LcpOptions::relaxation`
 - **Use Case**: Contact problems where normal/tangential coupling slows PGS
 
-#### 13. Interior Point Method (`other/InteriorPointSolver.hpp`)
+#### 14. Interior Point Method (`other/InteriorPointSolver.hpp`)
 
 - **Type**: Primal-dual interior-point method for standard LCP
 - **Algorithm**: Path-following with Newton solves on the KKT system
@@ -229,7 +241,7 @@ solver usage examples.
   - Central path parameter and fraction-to-boundary step control
 - **Use Case**: Ill-conditioned problems where robustness is critical
 
-#### 14. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
+#### 15. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
 
 - **Type**: Newton method using the minimum map reformulation
 - **Algorithm**: Active/free set Newton on `H(x) = min(x, Ax - b)`
@@ -238,7 +250,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 15. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
+#### 16. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using the Fischer-Burmeister function
 - **Algorithm**: Smooth FB reformulation with line search
@@ -247,7 +259,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 16. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
+#### 17. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using a penalized Fischer-Burmeister function
 - **Algorithm**: FB reformulation with penalty term and line search

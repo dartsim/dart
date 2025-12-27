@@ -236,7 +236,7 @@ Slower          ─────────────────────�
 Pivoting ─> Newton ─> Interior Point ─> NNCG ─> BGS ─> PGS ─> Jacobi
 (exact)     (1e-10)   (1e-8)           (1e-6)  (1e-4) (1e-3) (1e-2)
 
-✅ Available:  Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point
+✅ Available:  Direct 2D/3D, Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point
 ```
 
 ### Robustness vs Efficiency
@@ -247,14 +247,14 @@ Slower      ──────────────────────�
 
 Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
-✅ Available:  Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point
+✅ Available:  Direct 2D/3D, Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point
 ```
 
 ## Problem Size Guidelines
 
 | Problem Size     | Recommended Method          | Currently Available                                         |
 | ---------------- | --------------------------- | ----------------------------------------------------------- |
-| n < 10           | Direct 2D/3D or Pivoting    | Dantzig ✅, Lemke ✅                                        |
+| n < 10           | Direct 2D/3D or Pivoting    | Direct ✅, Dantzig ✅, Lemke ✅                             |
 | 10 ≤ n < 100     | Pivoting or Newton          | Dantzig ✅, Lemke ✅, Newton ✅ (standard)                  |
 | 100 ≤ n < 1000   | PGS, BGS, PGS-SM, or Newton | PGS ✅, BGS ✅, PGS-SM ✅, Dantzig ✅, Newton ✅ (standard) |
 | 1000 ≤ n < 10000 | NNCG or PGS                 | PGS ✅, NNCG ✅                                             |
@@ -278,6 +278,7 @@ Available solvers:
 - ✅ **Dantzig**: BLCP with bounds, friction support
 - ✅ **Lemke**: Standard LCP
 - ✅ **Baraff**: Incremental pivoting for symmetric PSD standard LCPs
+- ✅ **Direct 2D/3D**: Enumeration solver for tiny standard LCPs
 - ✅ **Interior Point**: Primal-dual method for robust standard LCP solves
 - ✅ **PGS/PSOR**: Iterative boxed LCP with friction index fallback (tune
   `LcpOptions::relaxation`)
