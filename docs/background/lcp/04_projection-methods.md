@@ -413,7 +413,7 @@ solver.solve(problem, x, options);
 - Better accuracy than PGS
 - When PGS converges too slowly
 
-## 7. Subspace Minimization (PGS-SM) ❌ (Not Implemented)
+## 7. Subspace Minimization (PGS-SM) ✅ (Implemented)
 
 ### Description
 
@@ -439,6 +439,19 @@ while not converged:
 
     # Project back
     x_A = min(u_A, max(l_A, x_A))
+```
+
+### DART Implementation
+
+```cpp
+dart::math::SubspaceMinimizationSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+
+dart::math::SubspaceMinimizationSolver::Parameters params;
+params.pgsIterations = 5;
+options.customOptions = &params;
+
+solver.solve(problem, x, options);
 ```
 
 ### Properties
@@ -617,7 +630,7 @@ Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
 | PSOR      | ✅ (Implemented) | No       | Linear      | Real-time with tuning |
 | BGS       | ✅ (Implemented) | No       | Linear      | Contact problems      |
 | NNCG      | ✅ (Implemented) | No       | Superlinear | Large-scale           |
-| PGS-SM    | ❌               | No       | Better      | Medium problems       |
+| PGS-SM    | ✅ (Implemented) | No       | Better      | Medium problems       |
 | Red-Black | ❌               | 2-phase  | Medium      | GPU                   |
 
 ## Implementation Priority
@@ -635,7 +648,7 @@ Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
 ### Phase 3 (Advanced)
 
 7. **NNCG** - Better convergence for large systems
-8. **PGS-SM** - Hybrid approach
+8. ✅ **PGS-SM** - Hybrid approach
 
 ## When to Use Projection Methods
 

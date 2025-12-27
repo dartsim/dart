@@ -15,7 +15,7 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 | **Projection**     | PSOR (Over-Relaxation)     | ✅ Implemented     | `projection/PgsSolver.hpp`                          | Set `LcpOptions::relaxation`            |
 | **Projection**     | Blocked Gauss-Seidel       | ✅ Implemented     | `projection/BgsSolver.hpp`                          | For contact problems                    |
 | **Projection**     | NNCG (Conjugate Gradient)  | ✅ Implemented     | `projection/NncgSolver.hpp`                         | Better convergence than PGS             |
-| **Projection**     | Subspace Minimization      | ❌ Not implemented | -                                                   | Hybrid PGS approach                     |
+| **Projection**     | Subspace Minimization      | ✅ Implemented     | `projection/SubspaceMinimizationSolver.hpp`         | Hybrid PGS approach                     |
 | **Newton**         | Minimum Map Newton         | ✅ Implemented     | `newton/MinimumMapNewtonSolver.hpp`                 | Standard LCP (boxed/findex fallback)    |
 | **Newton**         | Fischer-Burmeister Newton  | ✅ Implemented     | `newton/FischerBurmeisterNewtonSolver.hpp`          | Standard LCP (boxed/findex fallback)    |
 | **Newton**         | Penalized FB Newton        | ✅ Implemented     | `newton/PenalizedFischerBurmeisterNewtonSolver.hpp` | Extension of FB                         |
@@ -52,7 +52,8 @@ dart/math/lcp/
 ├── projection/
 │   ├── BgsSolver.hpp/cpp       # Blocked Gauss-Seidel
 │   ├── NncgSolver.hpp/cpp      # NNCG acceleration of PGS
-│   └── PgsSolver.hpp/cpp       # Boxed LCP + findex (iterative)
+│   ├── PgsSolver.hpp/cpp       # Boxed LCP + findex (iterative)
+│   └── SubspaceMinimizationSolver.hpp/cpp  # PGS-SM hybrid
 │
 ├── newton/                     # Minimum map, FB, penalized FB Newton
 └── other/                      # Future solver families
@@ -137,7 +138,17 @@ solver usage examples.
   - PGS-based warm start and projection
 - **Use Case**: Large-scale problems needing faster convergence than PGS
 
-#### 6. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
+#### 6. Subspace Minimization (PGS-SM) (`projection/SubspaceMinimizationSolver.hpp`)
+
+- **Type**: Two-phase projection method for boxed LCP
+- **Algorithm**: PGS for active set estimation + reduced solve on free set
+- **Features**:
+  - Uses PGS sweeps to estimate active constraints
+  - Solves a reduced system for interior variables each iteration
+  - Works with bounds and friction index coupling
+- **Use Case**: Medium-scale problems where PGS converges slowly
+
+#### 7. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
 
 - **Type**: Newton method using the minimum map reformulation
 - **Algorithm**: Active/free set Newton on `H(x) = min(x, Ax - b)`
@@ -146,7 +157,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 7. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
+#### 8. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using the Fischer-Burmeister function
 - **Algorithm**: Smooth FB reformulation with line search
@@ -155,7 +166,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 8. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
+#### 9. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using a penalized Fischer-Burmeister function
 - **Algorithm**: FB reformulation with penalty term and line search
@@ -225,7 +236,7 @@ LCP solvers can be categorized into several main families:
 
 ### 2. [Projection/Sweeping Methods](04_projection-methods.md)
 
-- **PGS**, **PSOR**, **Blocked Gauss-Seidel**, **NNCG**
+- **PGS**, **PSOR**, **Blocked Gauss-Seidel**, **NNCG**, **PGS-SM**
 - Iterative with linear convergence
 - Time: O(n) per iteration, Storage: O(n)
 - Best for: Real-time simulation, interactive applications
@@ -282,11 +293,12 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 ### Computational Cost per Iteration
 
 | Method         | Time               | Storage        | Notes                          |
-| -------------- | ------------------ | -------------- | ------------------------------ |
+| -------------- | ------------------ | -------------- | ------------------------------ | ---- | ---------------------- |
 | Pivoting       | O(n^3)             | O(n^2)         | With incremental factorization |
 | PGS/PSOR       | O(nk)\*            | O(n)           | k = max non-zeros per row      |
 | BGS            | O(n·b^3)           | O(n)           | b = block size                 |
 | NNCG           | O(n)               | O(n)           | Same as PGS                    |
+| PGS-SM         | O(nk) + O(         | A              | ^3)                            | O(n) | Reduced subspace solve |
 | Interior Point | O(n^3) or O(n)\*\* | O(n^2) or O(n) | Depends on solver              |
 | Newton         | O(n^3) or O(n)\*\* | O(n^2) or O(n) | Depends on solver              |
 
@@ -320,7 +332,7 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 ### Phase 3: Advanced Iterative (Medium Priority)
 
 - [x] Nonsmooth Nonlinear Conjugate Gradient (NNCG)
-- [ ] Subspace Minimization (PGS-SM)
+- [x] Subspace Minimization (PGS-SM)
 - [ ] Staggering methods
 
 ### Phase 4: Newton Methods (Low Priority)
