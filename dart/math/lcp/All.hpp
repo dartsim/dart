@@ -7,6 +7,7 @@
 // Pivoting methods
 #include <dart/math/lcp/pivoting/BaraffSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
+#include <dart/math/lcp/pivoting/DirectSolver.hpp>
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 
 // Projection methods
