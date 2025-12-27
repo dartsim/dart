@@ -49,31 +49,30 @@ All invariants are evaluated against `loEff/hiEff` for friction-index problems.
 
 ## Stopping Criteria (Normalized)
 
-Comparisons use a shared `LcpOptions` profile; solvers that do not honor a field
-may ignore it, but the harness still enforces the external invariants.
+The contract is enforced by the harness; solver options are set by the caller.
 
-Baseline comparison profile (tests):
+Unit harness (tests):
 
-- `maxIterations`: set per test category (see test matrix).
-- `absoluteTolerance = 1e-6`
-- `relativeTolerance = 1e-4`
-- `complementarityTolerance = 1e-6`
-- `relaxation = 1.0`
-- `warmStart = false`
-- `earlyTermination = false`
-- `validateSolution = false` (harness does validation consistently)
+- Options are tuned per solver in
+  `tests/unit/math/lcp/test_LcpComparisonHarness.cpp` (tighter tolerances for
+  direct solvers, relaxed for iterative).
+- The harness still checks scaled tolerances derived from those options.
+- `warmStart = false`, `validateSolution = false`.
 
-Benchmark profile:
+Benchmark harness:
 
-- Same tolerances as above, `validateSolution = false`.
-- Optional fixed wall-time budget for runaway cases (harness-level timeout).
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` uses `MakeBenchmarkOptions()`
+  with `absoluteTolerance = 1e-6`, `relativeTolerance = 1e-4`,
+  `complementarityTolerance = 1e-6`, `relaxation = 1.0`,
+  `warmStart = false`, `validateSolution = false`, and per-solver
+  `maxIterations`.
+- Some solvers set custom options (e.g., NNCG/SubspaceMinimization PGS
+  iterations, ShockPropagation block parameters, Penalized FB lambda).
 
-Iteration normalization:
+Iteration handling:
 
-- Iterative solvers must respect `maxIterations`.
-- Direct/pivoting solvers report `iterations = 1` (or 0 for empty problems).
-- If a solver reaches `maxIterations` but still satisfies invariants, the
-  harness reports `MaxIterations` + `pass_within_tolerance`.
+- The harness reports `LcpResult.iterations` as provided; no normalization is
+  applied.
 
 ## Tolerance Policy and Scaling
 
@@ -90,9 +89,8 @@ complementarity checks.
 
 Ill-conditioned or degenerate cases:
 
-- Keep the same tolerance formula but record a "relaxed" secondary threshold
-  (e.g., 10x `tol`) for reporting. If only the relaxed threshold is met, mark
-  as "soft pass" and flag the case for review.
+- The harness does not apply a secondary "relaxed" threshold; use the reported
+  residual/complementarity/bound violation to flag borderline results.
 
 ## Determinism Expectations
 

@@ -12,7 +12,7 @@ Fill this template when adding or evaluating a solver.
 
 ## Contract Settings
 
-- `maxIterations`:
+- `maxIterations` (per solver):
 - `absoluteTolerance`:
 - `relativeTolerance`:
 - `complementarityTolerance`:
@@ -29,42 +29,44 @@ Fill this template when adding or evaluating a solver.
 
 ## Benchmark Results (Release Build)
 
-Include JSON/CSV artifact path or command used.
+Include JSON/CSV artifact path or command used. Use benchmark counters for
+residual/complementarity/bound_violation/contract_ok.
 
 ### Standard SPD
 
-| Size | Solver | Time | Iterations | Residual | Complementarity | Contract OK |
-| ---- | ------ | ---- | ---------- | -------- | --------------- | ----------- |
-| 12   |        |      |            |          |                 |             |
-| 24   |        |      |            |          |                 |             |
-| 48   |        |      |            |          |                 |             |
-| 96   |        |      |            |          |                 |             |
+| Size | Solver | Time | Iterations | Residual | Complementarity | Bound violation | Contract OK |
+| ---- | ------ | ---- | ---------- | -------- | --------------- | --------------- | ----------- |
+| 12   |        |      |            |          |                 |                 |             |
+| 24   |        |      |            |          |                 |                 |             |
+| 48   |        |      |            |          |                 |                 |             |
+| 96   |        |      |            |          |                 |                 |             |
 
 ### Boxed (Active Bounds)
 
-| Size | Solver | Time | Iterations | Residual | Complementarity | Contract OK |
-| ---- | ------ | ---- | ---------- | -------- | --------------- | ----------- |
-| 12   |        |      |            |          |                 |             |
-| 24   |        |      |            |          |                 |             |
-| 48   |        |      |            |          |                 |             |
+| Size | Solver | Time | Iterations | Residual | Complementarity | Bound violation | Contract OK |
+| ---- | ------ | ---- | ---------- | -------- | --------------- | --------------- | ----------- |
+| 12   |        |      |            |          |                 |                 |             |
+| 24   |        |      |            |          |                 |                 |             |
+| 48   |        |      |            |          |                 |                 |             |
 
 ### Friction Index
 
-| Contacts | Solver | Time | Iterations | Residual | Complementarity | Contract OK |
-| -------- | ------ | ---- | ---------- | -------- | --------------- | ----------- |
-| 4        |        |      |            |          |                 |             |
-| 16       |        |      |            |          |                 |             |
-| 64       |        |      |            |          |                 |             |
+| Contacts | Solver | Time | Iterations | Residual | Complementarity | Bound violation | Contract OK |
+| -------- | ------ | ---- | ---------- | -------- | --------------- | --------------- | ----------- |
+| 4        |        |      |            |          |                 |                 |             |
+| 16       |        |      |            |          |                 |                 |             |
+| 64       |        |      |            |          |                 |                 |             |
 
 ### Scaling
 
-| Size | Scale | Solver | Time | Iterations | Residual | Complementarity | Contract OK |
-| ---- | ----- | ------ | ---- | ---------- | -------- | --------------- | ----------- |
-| 12   | 1e-6  |        |      |            |          |                 |             |
-| 12   | 1e6   |        |      |            |          |                 |             |
+| Size | Scale | Solver | Time | Iterations | Residual | Complementarity | Bound violation | Contract OK |
+| ---- | ----- | ------ | ---- | ---------- | -------- | --------------- | --------------- | ----------- |
+| 12   | 1e-6  |        |      |            |          |                 |                 |             |
+| 12   | 1e6   |        |      |            |          |                 |                 |             |
 
 ## Notes and Follow-ups
 
 - Regressions or anomalies:
+- Known outliers (e.g., PenalizedFischerBurmeisterNewton size 24 contract_ok=0):
 - Any solver-specific tuning applied:
 - Next action items:

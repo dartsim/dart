@@ -7,19 +7,22 @@ structure for apples-to-apples LCP solver comparisons.
 
 - Wall time per solve (primary).
 - Iterations reported by solver (if applicable).
-- Residual and complementarity at exit (for validation and comparison).
-- Success rate (fraction of runs meeting the contract tolerances).
+- Residual, complementarity, and bound violation at exit (contract checks).
+- Contract pass rate (`contract_ok` counter).
 
 ## Fairness Controls
 
-- Same problem instances and seeds for all solvers.
-- Same `LcpOptions` contract profile across solvers:
-  - `maxIterations` fixed per category.
-  - `absoluteTolerance`, `relativeTolerance`, `complementarityTolerance`
-    consistent with the comparison contract.
-  - `warmStart = false`, `validateSolution = false`.
-- No solver-specific early termination unless specified by the contract.
-- Fixed number of warm-up iterations for each benchmark.
+- Same problem instances and seeds for all solvers (see generator functions in
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`).
+- `MakeBenchmarkOptions()` provides the baseline profile:
+  - `absoluteTolerance = 1e-6`, `relativeTolerance = 1e-4`,
+    `complementarityTolerance = 1e-6`
+  - `relaxation = 1.0`, `warmStart = false`, `validateSolution = false`,
+    `earlyTermination = false`
+  - `maxIterations` is set per solver entry in the benchmark file.
+- Solver-specific custom options are recorded in the benchmark harness:
+  - NNCG/SubspaceMinimization PGS iterations, ShockPropagation block params,
+    Penalized FB lambda.
 - Repeat count and iteration count reported by Google Benchmark.
 - Pin threads when using threaded math backends (e.g., set `OMP_NUM_THREADS=1`,
   `MKL_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1`) to reduce variance.
@@ -28,11 +31,11 @@ structure for apples-to-apples LCP solver comparisons.
 
 ## Benchmark Categories (Aligned With Test Matrix)
 
-1. Standard SPD: sizes 12, 24, 48, 96.
+1. Standard SPD: sizes 12, 24, 48, 96 (Direct uses 2 and 3 only).
 2. Boxed (active bounds): sizes 12, 24, 48.
 3. Friction-index: contact groups 4, 16, 64 (3 vars per group).
-4. Scaling/conditioning: scaled versions of standard SPD (1e-6, 1e6).
-5. Large dense baseline: size 250 (local only; not for CI).
+4. Scaling/conditioning: size 12 scaled by 1e-6 and 1e6 (Dantzig, Pgs).
+5. Smoke: size 12 standard SPD (Dantzig).
 
 ## Output Format
 
@@ -47,7 +50,10 @@ Required columns/fields:
 
 - `name` (solver + problem + size)
 - `cpu_time` / `real_time`
-- custom counters for `iterations`, `residual`, `complementarity`
+- custom counters for `iterations`, `residual`, `complementarity`,
+  `bound_violation`, `contract_ok`
+- ShockPropagation counters: `layer_count`, `block_count`, `max_block_size`,
+  `max_blocks_per_layer`
 
 Also produce a short human summary (markdown table) using
 `11_result_reporting_template.md` for comparisons shared in reviews.
@@ -64,7 +70,8 @@ Also produce a short human summary (markdown table) using
 
 ## Notes
 
-- For ill-conditioned or degenerate categories, report both strict and relaxed
-  tolerance pass rates. Use the contract’s tolerance scaling.
-- Benchmark harness should reuse the same fixture generators as tests to avoid
-  divergence between correctness and performance comparisons.
+- PenalizedFischerBurmeisterNewton occasionally fails the contract on standard
+  SPD size 24 (contract_ok=0 with residual/complementarity around 1.6e-2).
+  Call this out as a known outlier in reports.
+- Benchmark generators are local to `bm_lcp_compare.cpp`; keep seeds and
+  problem construction stable so comparisons remain apples-to-apples.

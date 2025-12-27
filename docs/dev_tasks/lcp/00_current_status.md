@@ -8,8 +8,8 @@ comparison plan can build on verified repo state.
 - `dart/math/lcp/LcpTypes.hpp` defines `LcpProblem`, `LcpOptions`, `LcpResult`,
   and solver status codes.
 - `dart/math/lcp/LcpSolver.hpp` defines the solver interface; implementations
-  live under `dart/math/lcp/pivoting` (Dantzig, Lemke) and
-  `dart/math/lcp/projection` (PGS).
+  live under `dart/math/lcp/pivoting`, `dart/math/lcp/projection`,
+  `dart/math/lcp/newton`, and `dart/math/lcp/other`.
 - `dart/math/lcp/LcpValidation.hpp` provides shared problem validation and
   residual/complementarity metrics.
 - `dart/constraint/ConstraintSolver` builds `LcpProblem` and uses
@@ -31,28 +31,26 @@ comparison plan can build on verified repo state.
 
 ## Existing Tests
 
-- Unit coverage in `tests/unit/math/lcp` for Dantzig, PGS, Lemke, including:
-  - Small deterministic standard/boxed problems (incl. friction index).
-  - Edge cases (empty problems, invalid bounds/findex, warm-start sizing).
-  - Stress tests on random SPD problems and friction-index cases with relaxed
-    tolerances.
-- Shared standard-problem fixtures in
-  `tests/common/lcpsolver/LCPTestProblems.hpp` (standard LCP only).
+- Solver-agnostic harness coverage in
+  `tests/unit/math/lcp/test_LcpComparisonHarness.cpp` using shared fixtures and
+  the contract checks in `tests/common/lcpsolver/LcpTestHarness.hpp`.
+- Deterministic fixtures in `tests/common/lcpsolver/LcpTestFixtures.hpp` cover
+  standard, boxed, and friction-index cases with known solutions.
+- Legacy fixtures in `tests/common/lcpsolver/LCPTestProblems.hpp` (standard LCP
+  only) are still used by Dantzig-vs-ODE checks and the older benchmarks.
 
 ## Existing Benchmarks
 
-- Google Benchmark harness in `tests/benchmark/lcpsolver`:
+- Google Benchmark harnesses in `tests/benchmark/lcpsolver`:
   - `BM_LCPSOLVER`: low-level Dantzig (float/double) vs ODE baseline on the
     standard-problem fixtures.
   - `BM_LCPSOLVER_SOLVERS`: Dantzig/PGS/Lemke on generated standard, boxed, and
     friction-index problems.
+  - `BM_LCP_COMPARE`: solver-agnostic comparisons across standard, boxed,
+    friction-index, and scaled categories with contract counters.
 
-## Gaps For Apples-to-Apples Comparison
+## Notes
 
-- No solver-agnostic test harness enforcing uniform residual/complementarity
-  checks and reporting.
-- Boxed and friction-index fixtures are sparse and not organized as a shared
-  contract-style matrix (degenerate, scaling, infeasible, etc.).
-- Benchmarks do not use the same problem instances or normalized stopping
-  criteria across solvers, and outputs are only the default Google Benchmark
-  format (no JSON/CSV contract).
+- PenalizedFischerBurmeisterNewton occasionally fails the contract on
+  `BM_LCP_COMPARE` standard SPD size 24 (contract_ok=0, residual and
+  complementarity around 1.6e-2 with default benchmark options).

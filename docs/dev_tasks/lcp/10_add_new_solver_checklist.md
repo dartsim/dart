@@ -17,6 +17,8 @@ Use this checklist when adding a new solver implementation.
   `tests/unit/math/lcp/test_LcpComparisonHarness.cpp`.
 - Use fixtures from `tests/common/lcpsolver/LcpTestFixtures.hpp`.
 - Keep `LcpOptions` aligned with `01_comparison_contract.md`.
+- If the solver does not support a fixture category, document the skip and the
+  reason in the test.
 - Run unit coverage:
   - Suggested (Unverified): `DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test`
   - Suggested (Unverified): `ctest --test-dir build/<env>/cpp/Release -R UNIT_math_lcp`
@@ -24,8 +26,9 @@ Use this checklist when adding a new solver implementation.
 ## Benchmark Integration
 
 - Add the solver to `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` (standard,
-  boxed, friction-index categories as applicable).
-- Use the shared `MakeBenchmarkOptions()` profile and the same fixtures.
+  boxed, friction-index, scaled categories as applicable).
+- Use `MakeBenchmarkOptions()` and the benchmark generator helpers in that
+  file; add solver-specific custom options if needed.
 - Run the smoke benchmark:
   - Suggested (Unverified): `pixi run bm --target BM_LCP_COMPARE -- --benchmark_filter=BM_LCP_COMPARE_SMOKE`
 
