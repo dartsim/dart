@@ -10,6 +10,7 @@ pivoting, projection, or Newton methods.
 
 Interior point is implemented in DART as `dart::math::InteriorPointSolver`.
 Staggering is implemented as `dart::math::StaggeringSolver`.
+Blocked Jacobi is implemented as `dart::math::BlockedJacobiSolver`.
 
 ## 1. Interior Point Method ✅ (Implemented)
 
@@ -290,7 +291,7 @@ while not converged:
   x = x + t * direction
 ```
 
-## 4. Blocked Jacobi ❌ (Not Implemented)
+## 4. Blocked Jacobi ✅ (Implemented)
 
 ### Description
 
@@ -306,6 +307,24 @@ for iter = 1 to max_iter:
     x_i^{k+1} = SolveSubLCP(A_{ii}, r_i)
 ```
 
+### DART Implementation
+
+```cpp
+#include <dart/math/lcp/projection/BlockedJacobiSolver.hpp>
+
+using namespace dart::math;
+
+LcpProblem problem(A, b, lo, hi, findex);
+Eigen::VectorXd x = Eigen::VectorXd::Zero(b.size());
+BlockedJacobiSolver solver;
+LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 200;
+auto result = solver.solve(problem, x, options);
+```
+
+> Note: Block partitions follow `findex` by default (contact blocks), or can be
+> set explicitly via `BlockedJacobiSolver::Parameters::blockSizes`.
+
 ### Properties
 
 - **Parallelization**: Fully parallel (all blocks independent)
@@ -320,7 +339,7 @@ for iter = 1 to max_iter:
 | Staggering ✅     | Variable    | Depends    | Medium     | No              |
 | Shock-Propagation | Linear      | O(n)       | Medium     | Limited         |
 | MPRGP             | Monotone    | O(n²)      | High       | No              |
-| Blocked Jacobi    | Linear      | O(n·b³)    | Medium     | Yes             |
+| Blocked Jacobi ✅ | Linear      | O(n·b³)    | Medium     | Yes             |
 
 ## Implementation Priority
 
@@ -328,6 +347,7 @@ for iter = 1 to max_iter:
 
 - **Interior Point**: Primal-dual path-following for standard LCPs
 - **Staggering**: Normal/friction block solve for contact-style problems
+- **Blocked Jacobi**: Parallel block updates with per-block LCP solves
 
 ### Low Priority (Specialized Use Cases)
 
@@ -336,7 +356,6 @@ for iter = 1 to max_iter:
 ### Very Low Priority (Niche Applications)
 
 - **MPRGP**: Fluid-specific applications
-- **Blocked Jacobi**: Parallel hardware optimization
 
 ## When to Use These Methods
 

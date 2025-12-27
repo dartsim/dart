@@ -193,8 +193,8 @@ Try:
 
 ### 6. Parallel/GPU Computing
 
-**Recommended**: Jacobi > Red-Black GS > Blocked Jacobi (future work)
-**Currently Available**: Jacobi, Red-Black GS (single-threaded baselines)
+**Recommended**: Jacobi > Blocked Jacobi > Red-Black GS
+**Currently Available**: Jacobi, Blocked Jacobi, Red-Black GS (single-threaded baselines)
 
 **Rationale**:
 
@@ -236,7 +236,7 @@ Slower          ─────────────────────�
 Pivoting ─> Newton ─> Interior Point ─> NNCG ─> BGS ─> PGS ─> Jacobi
 (exact)     (1e-10)   (1e-8)           (1e-6)  (1e-4) (1e-3) (1e-2)
 
-✅ Available:  Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point
+✅ Available:  Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point
 ```
 
 ### Robustness vs Efficiency
@@ -247,7 +247,7 @@ Slower      ──────────────────────�
 
 Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
-✅ Available:  Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point
+✅ Available:  Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point
 ```
 
 ## Problem Size Guidelines
@@ -283,6 +283,7 @@ Available solvers:
   `LcpOptions::relaxation`)
 - ✅ **Symmetric PSOR**: Forward/backward sweep variant for reduced bias
 - ✅ **Jacobi**: Projected Jacobi baseline (parallel-friendly)
+- ✅ **Blocked Jacobi**: Parallel block updates for contact-style problems
 - ✅ **Red-Black GS**: Two-color Gauss-Seidel variant for parallel-style updates
 - ✅ **Staggering**: Normal/friction block staggering for contact structure
 - ✅ **BGS**: Blocked Gauss-Seidel for per-contact blocks
@@ -487,14 +488,14 @@ Current (with Dantzig/PGS/BGS/Lemke/Newton/Interior Point):
 
 ### Current State (With Interior Point)
 
-| Scenario        | Primary  | Backup         | Notes              |
-| --------------- | -------- | -------------- | ------------------ |
-| Real-time       | PGS/PSOR | -              | 50-100 iterations  |
-| Contact         | BGS      | PGS            | Per-contact blocks |
-| High accuracy   | Newton   | Dantzig        | 5-20 iterations    |
-| Large-scale     | NNCG     | PGS            | >1000 variables    |
-| Ill-conditioned | Dantzig  | Interior Point | Most robust        |
-| Parallel        | Jacobi   | Red-Black GS   | GPU-friendly       |
+| Scenario        | Primary  | Backup                        | Notes              |
+| --------------- | -------- | ----------------------------- | ------------------ |
+| Real-time       | PGS/PSOR | -                             | 50-100 iterations  |
+| Contact         | BGS      | PGS                           | Per-contact blocks |
+| High accuracy   | Newton   | Dantzig                       | 5-20 iterations    |
+| Large-scale     | NNCG     | PGS                           | >1000 variables    |
+| Ill-conditioned | Dantzig  | Interior Point                | Most robust        |
+| Parallel        | Jacobi   | Blocked Jacobi / Red-Black GS | GPU-friendly       |
 
 ---
 

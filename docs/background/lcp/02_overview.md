@@ -17,6 +17,7 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 | **Projection**     | Jacobi (Projected)         | ✅ Implemented | `projection/JacobiSolver.hpp`                       | Parallel-friendly baseline              |
 | **Projection**     | Red-Black Gauss-Seidel     | ✅ Implemented | `projection/RedBlackGaussSeidelSolver.hpp`          | Two-color sweeps                        |
 | **Projection**     | Blocked Gauss-Seidel       | ✅ Implemented | `projection/BgsSolver.hpp`                          | For contact problems                    |
+| **Projection**     | Blocked Jacobi             | ✅ Implemented | `projection/BlockedJacobiSolver.hpp`                | Parallel block updates                  |
 | **Projection**     | NNCG (Conjugate Gradient)  | ✅ Implemented | `projection/NncgSolver.hpp`                         | Better convergence than PGS             |
 | **Projection**     | Subspace Minimization      | ✅ Implemented | `projection/SubspaceMinimizationSolver.hpp`         | Hybrid PGS approach                     |
 | **Newton**         | Minimum Map Newton         | ✅ Implemented | `newton/MinimumMapNewtonSolver.hpp`                 | Standard LCP (boxed/findex fallback)    |
@@ -55,6 +56,7 @@ dart/math/lcp/
 │
 ├── projection/
 │   ├── BgsSolver.hpp/cpp       # Blocked Gauss-Seidel
+│   ├── BlockedJacobiSolver.hpp/cpp  # Blocked Jacobi updates
 │   ├── JacobiSolver.hpp/cpp    # Projected Jacobi
 │   ├── NncgSolver.hpp/cpp      # NNCG acceleration of PGS
 │   ├── PgsSolver.hpp/cpp       # Boxed LCP + findex (iterative)
@@ -177,7 +179,17 @@ solver usage examples.
   - Shares bounds and friction index handling with PGS
 - **Use Case**: Contact problems where per-contact blocks improve convergence
 
-#### 9. NNCG (Nonsmooth Nonlinear Conjugate Gradient) (`projection/NncgSolver.hpp`)
+#### 9. Blocked Jacobi (`projection/BlockedJacobiSolver.hpp`)
+
+- **Type**: Blocked projection method for boxed LCP
+- **Algorithm**: Jacobi updates over blocks with per-block Dantzig solves
+- **Features**:
+  - Block partition identical to BGS (by `findex` or explicit block sizes)
+  - Parallel-friendly block updates
+  - Supports bounds and friction index coupling
+- **Use Case**: Parallel-friendly baseline for block-structured problems
+
+#### 10. NNCG (Nonsmooth Nonlinear Conjugate Gradient) (`projection/NncgSolver.hpp`)
 
 - **Type**: Projection method with conjugate gradient acceleration
 - **Algorithm**: NNCG using PGS sweeps as the nonlinear projection map
@@ -187,7 +199,7 @@ solver usage examples.
   - PGS-based warm start and projection
 - **Use Case**: Large-scale problems needing faster convergence than PGS
 
-#### 10. Subspace Minimization (PGS-SM) (`projection/SubspaceMinimizationSolver.hpp`)
+#### 11. Subspace Minimization (PGS-SM) (`projection/SubspaceMinimizationSolver.hpp`)
 
 - **Type**: Two-phase projection method for boxed LCP
 - **Algorithm**: PGS for active set estimation + reduced solve on free set
@@ -197,7 +209,7 @@ solver usage examples.
   - Works with bounds and friction index coupling
 - **Use Case**: Medium-scale problems where PGS converges slowly
 
-#### 11. Staggering Method (`other/StaggeringSolver.hpp`)
+#### 12. Staggering Method (`other/StaggeringSolver.hpp`)
 
 - **Type**: Alternating block solve for contact-style LCPs
 - **Algorithm**: Solve normal block, then friction block with updated bounds
@@ -207,7 +219,7 @@ solver usage examples.
   - Relaxation via `LcpOptions::relaxation`
 - **Use Case**: Contact problems where normal/tangential coupling slows PGS
 
-#### 12. Interior Point Method (`other/InteriorPointSolver.hpp`)
+#### 13. Interior Point Method (`other/InteriorPointSolver.hpp`)
 
 - **Type**: Primal-dual interior-point method for standard LCP
 - **Algorithm**: Path-following with Newton solves on the KKT system
@@ -217,7 +229,7 @@ solver usage examples.
   - Central path parameter and fraction-to-boundary step control
 - **Use Case**: Ill-conditioned problems where robustness is critical
 
-#### 13. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
+#### 14. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
 
 - **Type**: Newton method using the minimum map reformulation
 - **Algorithm**: Active/free set Newton on `H(x) = min(x, Ax - b)`
@@ -226,7 +238,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 14. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
+#### 15. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using the Fischer-Burmeister function
 - **Algorithm**: Smooth FB reformulation with line search
@@ -235,7 +247,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 15. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
+#### 16. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using a penalized Fischer-Burmeister function
 - **Algorithm**: FB reformulation with penalty term and line search
@@ -306,7 +318,7 @@ LCP solvers can be categorized into several main families:
 ### 2. [Projection/Sweeping Methods](04_projection-methods.md)
 
 - **Jacobi**, **PGS**, **PSOR**, **Symmetric PSOR**, **Red-Black Gauss-Seidel**,
-  **Blocked Gauss-Seidel**, **NNCG**, **PGS-SM**
+  **Blocked Gauss-Seidel**, **Blocked Jacobi**, **NNCG**, **PGS-SM**
 - Iterative with linear convergence
 - Time: O(n) per iteration, Storage: O(n)
 - Best for: Real-time simulation, interactive applications
@@ -326,14 +338,14 @@ LCP solvers can be categorized into several main families:
 
 ## Quick Selection Guide
 
-| Use Case             | Recommended Method               | Reason                  |
-| -------------------- | -------------------------------- | ----------------------- |
-| Real-time simulation | PGS, PSOR, BGS                   | Fast O(n) iterations    |
-| High accuracy        | Newton, Pivoting                 | Superlinear convergence |
-| Large-scale          | NNCG, PGS                        | Scalable, matrix-free   |
-| Poorly conditioned   | Pivoting, Interior Point         | Numerically robust      |
-| Contact mechanics    | BGS, Baraff, Dantzig, Staggering | Natural block structure |
-| Parallel computing   | Jacobi, Red-Black GS             | Embarrassingly parallel |
+| Use Case             | Recommended Method                   | Reason                  |
+| -------------------- | ------------------------------------ | ----------------------- |
+| Real-time simulation | PGS, PSOR, BGS                       | Fast O(n) iterations    |
+| High accuracy        | Newton, Pivoting                     | Superlinear convergence |
+| Large-scale          | NNCG, PGS                            | Scalable, matrix-free   |
+| Poorly conditioned   | Pivoting, Interior Point             | Numerically robust      |
+| Contact mechanics    | BGS, Baraff, Dantzig, Staggering     | Natural block structure |
+| Parallel computing   | Jacobi, Blocked Jacobi, Red-Black GS | Embarrassingly parallel |
 
 See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 
@@ -399,6 +411,7 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 ### Phase 2: Blocked Methods (Medium Priority)
 
 - [x] Blocked Gauss-Seidel (BGS)
+- [x] Blocked Jacobi
 - [ ] Per-contact block structure
 - [ ] Direct 2D/3D sub-solvers
 
@@ -455,7 +468,7 @@ When implementing new LCP solvers:
 ## Implementation References
 
 - **Pivoting**: Active/free set formulation, 2D/3D direct solvers, and incremental Baraff pivoting (see `03_pivoting-methods.md`).
-- **Projection**: Splitting derivations, PSOR update, BLCP projection, BGS block structure, PGS-SM, and NNCG pseudocode (see `04_projection-methods.md`).
+- **Projection**: Splitting derivations, PSOR update, BLCP projection, BGS/Blocked Jacobi block structure, PGS-SM, and NNCG pseudocode (see `04_projection-methods.md`).
 - **Other**: Staggering details and friction QP notes (see `06_other-methods.md`).
 
 ---
