@@ -13,6 +13,7 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 | **Pivoting**       | Baraff Incremental         | ❌ Not implemented | -                                                   | Planned                                 |
 | **Projection**     | PGS (Gauss-Seidel)         | ✅ Implemented     | `projection/PgsSolver.hpp`                          | Boxed LCP + friction index (iterative)  |
 | **Projection**     | PSOR (Over-Relaxation)     | ✅ Implemented     | `projection/PgsSolver.hpp`                          | Set `LcpOptions::relaxation`            |
+| **Projection**     | Jacobi (Projected)         | ✅ Implemented     | `projection/JacobiSolver.hpp`                       | Parallel-friendly baseline              |
 | **Projection**     | Blocked Gauss-Seidel       | ✅ Implemented     | `projection/BgsSolver.hpp`                          | For contact problems                    |
 | **Projection**     | NNCG (Conjugate Gradient)  | ✅ Implemented     | `projection/NncgSolver.hpp`                         | Better convergence than PGS             |
 | **Projection**     | Subspace Minimization      | ✅ Implemented     | `projection/SubspaceMinimizationSolver.hpp`         | Hybrid PGS approach                     |
@@ -51,6 +52,7 @@ dart/math/lcp/
 │
 ├── projection/
 │   ├── BgsSolver.hpp/cpp       # Blocked Gauss-Seidel
+│   ├── JacobiSolver.hpp/cpp    # Projected Jacobi
 │   ├── NncgSolver.hpp/cpp      # NNCG acceleration of PGS
 │   ├── PgsSolver.hpp/cpp       # Boxed LCP + findex (iterative)
 │   └── SubspaceMinimizationSolver.hpp/cpp  # PGS-SM hybrid
@@ -105,7 +107,17 @@ solver usage examples.
   - Validates solutions against LCP conditions
 - **Use Case**: Standard LCP problems without bounds
 
-#### 3. Projected Gauss-Seidel (PGS) (`projection/PgsSolver.hpp`)
+#### 3. Jacobi (Projected) (`projection/JacobiSolver.hpp`)
+
+- **Type**: Iterative projection method for boxed LCP
+- **Algorithm**: Jacobi updates with projection onto `[lo, hi]`
+- **Features**:
+  - Uses the previous iterate for all updates (parallel-friendly)
+  - Supports bounds and `findex` friction coupling
+  - Optional damping via `LcpOptions::relaxation`
+- **Use Case**: Parallel/GPU baselines and coarse approximations
+
+#### 4. Projected Gauss-Seidel (PGS) (`projection/PgsSolver.hpp`)
 
 - **Type**: Iterative projection method for boxed LCP
 - **Algorithm**: Gauss-Seidel with projection onto `[lo, hi]` and friction index
@@ -118,7 +130,7 @@ solver usage examples.
 - **Use Case**: Real-time fallback for constraint solving where approximate
   solutions are acceptable
 
-#### 4. Blocked Gauss-Seidel (BGS) (`projection/BgsSolver.hpp`)
+#### 5. Blocked Gauss-Seidel (BGS) (`projection/BgsSolver.hpp`)
 
 - **Type**: Blocked projection method for boxed LCP
 - **Algorithm**: Block Gauss-Seidel with per-block Dantzig solves
@@ -128,7 +140,7 @@ solver usage examples.
   - Shares bounds and friction index handling with PGS
 - **Use Case**: Contact problems where per-contact blocks improve convergence
 
-#### 5. NNCG (Nonsmooth Nonlinear Conjugate Gradient) (`projection/NncgSolver.hpp`)
+#### 6. NNCG (Nonsmooth Nonlinear Conjugate Gradient) (`projection/NncgSolver.hpp`)
 
 - **Type**: Projection method with conjugate gradient acceleration
 - **Algorithm**: NNCG using PGS sweeps as the nonlinear projection map
@@ -138,7 +150,7 @@ solver usage examples.
   - PGS-based warm start and projection
 - **Use Case**: Large-scale problems needing faster convergence than PGS
 
-#### 6. Subspace Minimization (PGS-SM) (`projection/SubspaceMinimizationSolver.hpp`)
+#### 7. Subspace Minimization (PGS-SM) (`projection/SubspaceMinimizationSolver.hpp`)
 
 - **Type**: Two-phase projection method for boxed LCP
 - **Algorithm**: PGS for active set estimation + reduced solve on free set
@@ -148,7 +160,7 @@ solver usage examples.
   - Works with bounds and friction index coupling
 - **Use Case**: Medium-scale problems where PGS converges slowly
 
-#### 7. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
+#### 8. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
 
 - **Type**: Newton method using the minimum map reformulation
 - **Algorithm**: Active/free set Newton on `H(x) = min(x, Ax - b)`
@@ -157,7 +169,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 8. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
+#### 9. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using the Fischer-Burmeister function
 - **Algorithm**: Smooth FB reformulation with line search
@@ -166,7 +178,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 9. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
+#### 10. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using a penalized Fischer-Burmeister function
 - **Algorithm**: FB reformulation with penalty term and line search
@@ -236,7 +248,7 @@ LCP solvers can be categorized into several main families:
 
 ### 2. [Projection/Sweeping Methods](04_projection-methods.md)
 
-- **PGS**, **PSOR**, **Blocked Gauss-Seidel**, **NNCG**, **PGS-SM**
+- **Jacobi**, **PGS**, **PSOR**, **Blocked Gauss-Seidel**, **NNCG**, **PGS-SM**
 - Iterative with linear convergence
 - Time: O(n) per iteration, Storage: O(n)
 - Best for: Real-time simulation, interactive applications
@@ -321,6 +333,7 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 
 - [x] Projected Gauss-Seidel (PGS) — `dart::math::PgsSolver`
 - [x] Projected SOR (PSOR) — `dart::math::PgsSolver` via `LcpOptions::relaxation`
+- [x] Projected Jacobi — `dart::math::JacobiSolver`
 - [x] Basic termination criteria and merit functions (`dart/math/lcp/LcpValidation.hpp`)
 
 ### Phase 2: Blocked Methods (Medium Priority)

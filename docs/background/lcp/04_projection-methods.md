@@ -47,7 +47,7 @@ All specific methods below are specializations of this formula.
 
 Gauss-Seidel style methods update `x_i` in-place, so the sweep order changes the fixed point they approach. A symmetric variant (forward then backward sweep) halves this bias at twice the per-iteration cost; Jacobi has no order dependency because it updates all entries in parallel.
 
-## 1. Jacobi Method ❌ (Not Implemented)
+## 1. Jacobi Method ✅ (Implemented)
 
 ### Splitting
 
@@ -76,6 +76,18 @@ Equivalently: `z = x^k - r ./ diag(A); x^{k+1} = max(0, z)`.
 ✅ Simple to implement
 ❌ Slower convergence than Gauss-Seidel
 ❌ May not converge for some problems
+
+### DART Implementation
+
+```cpp
+dart::math::JacobiSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+
+// Optional: damped Jacobi via relaxation (0 < relaxation <= 2)
+options.relaxation = 1.0;
+
+solver.solve(problem, x, options);
+```
 
 ## 2. Projected Gauss-Seidel (PGS) ✅ (Implemented)
 
@@ -625,7 +637,7 @@ Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
 
 | Method    | Status           | Parallel | Convergence | Best For              |
 | --------- | ---------------- | -------- | ----------- | --------------------- |
-| Jacobi    | ❌               | Yes      | Slow        | Parallel hardware     |
+| Jacobi    | ✅ (Implemented) | Yes      | Slow        | Parallel hardware     |
 | PGS       | ✅ (Implemented) | No       | Linear      | Real-time boxed LCP   |
 | PSOR      | ✅ (Implemented) | No       | Linear      | Real-time with tuning |
 | BGS       | ✅ (Implemented) | No       | Linear      | Contact problems      |

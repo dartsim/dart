@@ -194,7 +194,7 @@ Try:
 ### 6. Parallel/GPU Computing
 
 **Recommended**: Jacobi > Red-Black GS > Blocked Jacobi (future work)
-**Currently Available**: None (sequential methods only)
+**Currently Available**: Jacobi (single-threaded baseline)
 
 **Rationale**:
 
@@ -236,7 +236,7 @@ Slower          ─────────────────────�
 Pivoting ─> Newton ─> Interior Point ─> NNCG ─> BGS ─> PGS ─> Jacobi
 (exact)     (1e-10)   (1e-8)           (1e-6)  (1e-4) (1e-3) (1e-2)
 
-✅ Available:  Dantzig, Lemke, PGS/PSOR, BGS, PGS-SM, NNCG, Newton (standard LCP)
+✅ Available:  Dantzig, Lemke, PGS/PSOR, Jacobi, BGS, PGS-SM, NNCG, Newton (standard LCP)
 ❌ Future:     Interior Point, Staggering, …
 ```
 
@@ -248,7 +248,7 @@ Slower      ──────────────────────�
 
 Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
-✅ Available:  Dantzig, Lemke, PGS/PSOR, BGS, PGS-SM, NNCG, Newton (standard LCP)
+✅ Available:  Dantzig, Lemke, PGS/PSOR, Jacobi, BGS, PGS-SM, NNCG, Newton (standard LCP)
 ❌ Future:     Interior Point, Staggering, …
 ```
 
@@ -281,6 +281,7 @@ Available solvers:
 - ✅ **Lemke**: Standard LCP
 - ✅ **PGS/PSOR**: Iterative boxed LCP with friction index fallback (tune
   `LcpOptions::relaxation`)
+- ✅ **Jacobi**: Projected Jacobi baseline (parallel-friendly)
 - ✅ **BGS**: Blocked Gauss-Seidel for per-contact blocks
 - ✅ **PGS-SM**: Subspace minimization hybrid for medium problems
 - ✅ **Newton (Minimum Map, FB, Penalized FB)**: Standard LCP only
