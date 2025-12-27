@@ -236,7 +236,7 @@ Slower          ─────────────────────�
 Pivoting ─> Newton ─> Interior Point ─> NNCG ─> BGS ─> PGS ─> Jacobi
 (exact)     (1e-10)   (1e-8)           (1e-6)  (1e-4) (1e-3) (1e-2)
 
-✅ Available:  Dantzig, Lemke, PGS/PSOR/Symmetric PSOR, Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP)
+✅ Available:  Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP)
 ❌ Future:     Interior Point, …
 ```
 
@@ -248,7 +248,7 @@ Slower      ──────────────────────�
 
 Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
-✅ Available:  Dantzig, Lemke, PGS/PSOR/Symmetric PSOR, Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP)
+✅ Available:  Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP)
 ❌ Future:     Interior Point, …
 ```
 
@@ -279,6 +279,7 @@ Available solvers:
 
 - ✅ **Dantzig**: BLCP with bounds, friction support
 - ✅ **Lemke**: Standard LCP
+- ✅ **Baraff**: Incremental pivoting for symmetric PSD standard LCPs
 - ✅ **PGS/PSOR**: Iterative boxed LCP with friction index fallback (tune
   `LcpOptions::relaxation`)
 - ✅ **Symmetric PSOR**: Forward/backward sweep variant for reduced bias
