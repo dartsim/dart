@@ -69,6 +69,8 @@ Deterministic fixtures (checked into tests):
 Generated fixtures (seeded):
 - Random SPD and friction-index problems using fixed seeds per size.
 - Degenerate/scaled variants created from base problems.
+- Harness + fixtures live under `tests/common/lcpsolver/` and are shared by
+  unit tests and benchmarks to keep comparisons aligned.
 
 ## Assertions Summary
 

@@ -21,6 +21,8 @@ structure for apples-to-apples LCP solver comparisons.
 - No solver-specific early termination unless specified by the contract.
 - Fixed number of warm-up iterations for each benchmark.
 - Repeat count and iteration count reported by Google Benchmark.
+- Pin threads when using threaded math backends (e.g., set `OMP_NUM_THREADS=1`,
+  `MKL_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1`) to reduce variance.
 - Run on Release builds (`-DCMAKE_BUILD_TYPE=Release`) with consistent flags.
 - Record machine info (CPU model, cores, OS, build flags) in the benchmark log.
 
@@ -46,6 +48,9 @@ Required columns/fields:
 - `cpu_time` / `real_time`
 - custom counters for `iterations`, `residual`, `complementarity`
 
+Also produce a short human summary (markdown table) using
+`11_result_reporting_template.md` for comparisons shared in reviews.
+
 ## CI-Friendly Smoke Benchmark
 
 - A single small-size run (e.g., standard SPD size 12) with short repetition.
@@ -53,6 +58,8 @@ Required columns/fields:
   - `--benchmark_filter=BM_LCP_COMPARE_SMOKE`
   - `--benchmark_min_time=0.01`
   - `--benchmark_repetitions=3`
+- Suggested (Unverified):
+  - `pixi run bm --target BM_LCP_COMPARE -- --benchmark_filter=BM_LCP_COMPARE_SMOKE --benchmark_min_time=0.01 --benchmark_repetitions=3`
 
 ## Notes
 
