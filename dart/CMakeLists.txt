@@ -136,6 +136,7 @@ target_link_libraries(
   PUBLIC
     ${CMAKE_DL_LIBS}
     Eigen3::Eigen
+    EnTT::EnTT
     fcl
     assimp
 )
@@ -246,7 +247,7 @@ endif()
 # Default component
 add_component_targets(${PROJECT_NAME} dart dart)
 add_component_dependency_packages(${PROJECT_NAME} dart
-  assimp Eigen3 fcl fmt
+  assimp EnTT Eigen3 fcl fmt
 )
 if(TARGET octomap)
   add_component_dependency_packages(${PROJECT_NAME} dart octomap)

@@ -11,10 +11,10 @@
  *   conditions are met:
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -30,25 +30,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_FWD_HPP_
-#define DART_SIMULATION_FWD_HPP_
+#ifndef DART_SIMULATION_DETAIL_WORLDECSACCESS_HPP_
+#define DART_SIMULATION_DETAIL_WORLDECSACCESS_HPP_
 
-#include <dart/common/SmartPointer.hpp>
+#include <dart/simulation/EcsEntity.hpp>
+#include <dart/simulation/Fwd.hpp>
 
-namespace dart {
-namespace simulation {
+#include <dart/dynamics/Fwd.hpp>
 
-class World;
+#include <dart/Export.hpp>
 
-DART_COMMON_DECLARE_SHARED_WEAK(World)
+#include <entt/entt.hpp>
 
-namespace object {
+namespace dart::simulation::detail {
 
-class Object;
+/// Internal bridge for ECS access without exposing entt types in World.hpp.
+struct DART_API WorldEcsAccess final
+{
+  static entt::registry& getEntityManager(World& world);
+  static const entt::registry& getEntityManager(const World& world);
 
-} // namespace object
+  static EcsEntity getSkeletonEntity(
+      const World& world, const dynamics::Skeleton* skeleton);
+  static EcsEntity getSkeletonEntity(
+      const World& world, const dynamics::SkeletonPtr& skeleton);
 
-} // namespace simulation
-} // namespace dart
+  static entt::entity toEntt(EcsEntity entity);
+  static EcsEntity toEcsEntity(entt::entity entity);
+};
 
-#endif // DART_SIMULATION_FWD_HPP_
+} // namespace dart::simulation::detail
+
+#endif // DART_SIMULATION_DETAIL_WORLDECSACCESS_HPP_
