@@ -228,7 +228,7 @@ If `A_ii <= 0`, the local quadratic is non-convex; clip with the projection abov
 ❌ Requires tuning λ parameter
 ❌ Bad λ can make convergence worse
 
-## 4. Symmetric PSOR ❌ (Not Implemented)
+## 4. Symmetric PSOR ✅ (Implemented)
 
 ### Algorithm
 
@@ -239,6 +239,15 @@ Forward sweep (i = 1 to n) followed by backward sweep (i = n to 1).
 - Reduces sweep-order dependency
 - 2× cost per iteration
 - Better convergence behavior
+
+### DART Implementation
+
+```cpp
+dart::math::SymmetricPsorSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.relaxation = 1.2;  // Optional PSOR-style relaxation
+solver.solve(problem, x, options);
+```
 
 ### Generic projected iteration
 
@@ -635,15 +644,16 @@ Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
 
 ## Comparison Table
 
-| Method    | Status           | Parallel | Convergence | Best For              |
-| --------- | ---------------- | -------- | ----------- | --------------------- |
-| Jacobi    | ✅ (Implemented) | Yes      | Slow        | Parallel hardware     |
-| PGS       | ✅ (Implemented) | No       | Linear      | Real-time boxed LCP   |
-| PSOR      | ✅ (Implemented) | No       | Linear      | Real-time with tuning |
-| BGS       | ✅ (Implemented) | No       | Linear      | Contact problems      |
-| NNCG      | ✅ (Implemented) | No       | Superlinear | Large-scale           |
-| PGS-SM    | ✅ (Implemented) | No       | Better      | Medium problems       |
-| Red-Black | ❌               | 2-phase  | Medium      | GPU                   |
+| Method     | Status           | Parallel | Convergence | Best For              |
+| ---------- | ---------------- | -------- | ----------- | --------------------- |
+| Jacobi     | ✅ (Implemented) | Yes      | Slow        | Parallel hardware     |
+| PGS        | ✅ (Implemented) | No       | Linear      | Real-time boxed LCP   |
+| PSOR       | ✅ (Implemented) | No       | Linear      | Real-time with tuning |
+| Symm. PSOR | ✅ (Implemented) | No       | Linear      | Reduced sweep bias    |
+| BGS        | ✅ (Implemented) | No       | Linear      | Contact problems      |
+| NNCG       | ✅ (Implemented) | No       | Superlinear | Large-scale           |
+| PGS-SM     | ✅ (Implemented) | No       | Better      | Medium problems       |
+| Red-Black  | ❌               | 2-phase  | Medium      | GPU                   |
 
 ## Implementation Priority
 
