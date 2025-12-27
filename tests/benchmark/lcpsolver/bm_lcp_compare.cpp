@@ -14,6 +14,7 @@
 #include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
 #include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/other/InteriorPointSolver.hpp>
+#include <dart/math/lcp/other/MprgpSolver.hpp>
 #include <dart/math/lcp/other/StaggeringSolver.hpp>
 #include <dart/math/lcp/pivoting/BaraffSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
@@ -267,11 +268,21 @@ static void BM_LcpCompare_InteriorPoint_Standard(benchmark::State& state)
       state, problem, options, MakeLabel("InteriorPoint", "Standard"));
 }
 
-static void BM_LcpCompare_BlockedJacobi_Standard(benchmark::State& state)
+static void BM_LcpCompare_Mprgp_Standard(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
   const auto problem
       = MakeStandardSpdProblem(n, 174u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(200);
+  RunBenchmark<dart::math::MprgpSolver>(
+      state, problem, options, MakeLabel("MPRGP", "Standard"));
+}
+
+static void BM_LcpCompare_BlockedJacobi_Standard(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeStandardSpdProblem(n, 184u + static_cast<unsigned>(n));
   const auto options = MakeBenchmarkOptions(200);
   RunBenchmark<dart::math::BlockedJacobiSolver>(
       state, problem, options, MakeLabel("BlockedJacobi", "Standard"));
@@ -645,6 +656,7 @@ BENCHMARK(BM_LcpCompare_InteriorPoint_Standard)
     ->Arg(24)
     ->Arg(48)
     ->Arg(96);
+BENCHMARK(BM_LcpCompare_Mprgp_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_BlockedJacobi_Standard)
     ->Arg(12)
     ->Arg(24)

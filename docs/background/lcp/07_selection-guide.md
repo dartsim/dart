@@ -236,7 +236,7 @@ Slower          ─────────────────────�
 Pivoting ─> Newton ─> Interior Point ─> NNCG ─> BGS ─> PGS ─> Jacobi
 (exact)     (1e-10)   (1e-8)           (1e-6)  (1e-4) (1e-3) (1e-2)
 
-✅ Available:  Direct 2D/3D, Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point
+✅ Available:  Direct 2D/3D, Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point, MPRGP (standard SPD)
 ```
 
 ### Robustness vs Efficiency
@@ -247,7 +247,7 @@ Slower      ──────────────────────�
 
 Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
-✅ Available:  Direct 2D/3D, Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point
+✅ Available:  Direct 2D/3D, Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point, MPRGP (standard SPD)
 ```
 
 ## Problem Size Guidelines
@@ -280,6 +280,7 @@ Available solvers:
 - ✅ **Baraff**: Incremental pivoting for symmetric PSD standard LCPs
 - ✅ **Direct 2D/3D**: Enumeration solver for tiny standard LCPs
 - ✅ **Interior Point**: Primal-dual method for robust standard LCP solves
+- ✅ **MPRGP**: QP-based solver for standard SPD LCPs
 - ✅ **PGS/PSOR**: Iterative boxed LCP with friction index fallback (tune
   `LcpOptions::relaxation`)
 - ✅ **Symmetric PSOR**: Forward/backward sweep variant for reduced bias
@@ -306,7 +307,7 @@ if (!result.succeeded()) {
 
 ### Remaining Gaps
 
-- Specialized methods (shock propagation, etc.)
+- Shock-propagation and other contact-structure specialized methods
 
 ### Newton Methods (Implemented)
 

@@ -15,6 +15,7 @@
 #include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
 #include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/other/InteriorPointSolver.hpp>
+#include <dart/math/lcp/other/MprgpSolver.hpp>
 #include <dart/math/lcp/other/StaggeringSolver.hpp>
 #include <dart/math/lcp/pivoting/BaraffSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
@@ -119,6 +120,25 @@ TEST(LcpComparisonHarness, InteriorPointOnStandardFixtures)
     if (fixture.kind != dart::test::LcpFixtureKind::Standard)
       continue;
     ExpectSolverPassesFixture(solver, fixture, options, 1e-4, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, MprgpOnStandardFixtures)
+{
+  dart::math::MprgpSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 200;
+  options.absoluteTolerance = 1e-8;
+  options.relativeTolerance = 1e-6;
+  options.complementarityTolerance = 1e-6;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+      continue;
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
   }
 }
 

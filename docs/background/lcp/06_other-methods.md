@@ -11,6 +11,7 @@ pivoting, projection, or Newton methods.
 Interior point is implemented in DART as `dart::math::InteriorPointSolver`.
 Staggering is implemented as `dart::math::StaggeringSolver`.
 Blocked Jacobi is implemented as `dart::math::BlockedJacobiSolver`.
+MPRGP is implemented as `dart::math::MprgpSolver`.
 
 ## 1. Interior Point Method ✅ (Implemented)
 
@@ -262,7 +263,7 @@ for layer in layers (bottom to top):
 - Gravity-dominated scenes
 - High-fidelity contact propagation
 
-### 3.2 Modified Proportioning with Reduced-Gradient Projections (MPRGP) ❌
+### 3.2 Modified Proportioning with Reduced-Gradient Projections (MPRGP) ✅
 
 **Description**: QP solver method using proportioning and reduced-gradient projections.
 
@@ -290,6 +291,31 @@ while not converged:
   # Update
   x = x + t * direction
 ```
+
+### DART Implementation
+
+```cpp
+#include <dart/math/lcp/other/MprgpSolver.hpp>
+
+using namespace dart::math;
+
+LcpProblem problem(
+    A,
+    b,
+    Eigen::VectorXd::Zero(n),
+    Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity()),
+    Eigen::VectorXi::Constant(n, -1));
+
+Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+MprgpSolver solver;
+LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 200;
+auto result = solver.solve(problem, x, options);
+```
+
+> Note: DART's implementation targets standard LCPs with symmetric positive
+> definite matrices and delegates boxed or friction-indexed problems to the
+> boxed-capable pivoting solver.
 
 ## 4. Blocked Jacobi ✅ (Implemented)
 
@@ -340,7 +366,7 @@ auto result = solver.solve(problem, x, options);
 | Interior Point ✅ | Superlinear | O(n³)      | Very High  | No              |
 | Staggering ✅     | Variable    | Depends    | Medium     | No              |
 | Shock-Propagation | Linear      | O(n)       | Medium     | Limited         |
-| MPRGP             | Monotone    | O(n²)      | High       | No              |
+| MPRGP ✅          | Monotone    | O(n²)      | High       | No              |
 | Blocked Jacobi ✅ | Linear      | O(n·b³)    | Medium     | Yes             |
 
 ## Implementation Priority
@@ -350,6 +376,7 @@ auto result = solver.solve(problem, x, options);
 - **Interior Point**: Primal-dual path-following for standard LCPs
 - **Staggering**: Normal/friction block solve for contact-style problems
 - **Blocked Jacobi**: Parallel block updates with per-block LCP solves
+- **MPRGP**: Bound-constrained QP solver for standard SPD LCPs
 
 ### Low Priority (Specialized Use Cases)
 
@@ -357,7 +384,7 @@ auto result = solver.solve(problem, x, options);
 
 ### Very Low Priority (Niche Applications)
 
-- **MPRGP**: Fluid-specific applications
+- Additional specialized QP methods
 
 ## When to Use These Methods
 
