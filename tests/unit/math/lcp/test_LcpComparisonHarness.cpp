@@ -18,6 +18,7 @@
 #include <dart/math/lcp/other/StaggeringSolver.hpp>
 #include <dart/math/lcp/pivoting/BaraffSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
+#include <dart/math/lcp/pivoting/DirectSolver.hpp>
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 #include <dart/math/lcp/projection/BgsSolver.hpp>
 #include <dart/math/lcp/projection/BlockedJacobiSolver.hpp>
@@ -434,6 +435,24 @@ TEST(LcpComparisonHarness, LemkeOnStandardFixtures)
     if (fixture.kind != dart::test::LcpFixtureKind::Standard)
       continue;
     ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, DirectOnStandardFixtures)
+{
+  dart::math::DirectSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.absoluteTolerance = 1e-10;
+  options.relativeTolerance = 1e-8;
+  options.complementarityTolerance = 1e-8;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+      continue;
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-8, false);
   }
 }
 

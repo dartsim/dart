@@ -17,6 +17,7 @@
 #include <dart/math/lcp/other/StaggeringSolver.hpp>
 #include <dart/math/lcp/pivoting/BaraffSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
+#include <dart/math/lcp/pivoting/DirectSolver.hpp>
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 #include <dart/math/lcp/projection/BgsSolver.hpp>
 #include <dart/math/lcp/projection/BlockedJacobiSolver.hpp>
@@ -244,6 +245,16 @@ static void BM_LcpCompare_Baraff_Standard(benchmark::State& state)
   const auto options = MakeBenchmarkOptions(100);
   RunBenchmark<dart::math::BaraffSolver>(
       state, problem, options, MakeLabel("Baraff", "Standard"));
+}
+
+static void BM_LcpCompare_Direct_Standard(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeStandardSpdProblem(n, 154u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(1);
+  RunBenchmark<dart::math::DirectSolver>(
+      state, problem, options, MakeLabel("Direct", "Standard"));
 }
 
 static void BM_LcpCompare_InteriorPoint_Standard(benchmark::State& state)
@@ -628,6 +639,7 @@ static void BM_LCP_COMPARE_SMOKE(benchmark::State& state)
 
 BENCHMARK(BM_LcpCompare_Dantzig_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_Baraff_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
+BENCHMARK(BM_LcpCompare_Direct_Standard)->Arg(2)->Arg(3);
 BENCHMARK(BM_LcpCompare_InteriorPoint_Standard)
     ->Arg(12)
     ->Arg(24)
