@@ -15,6 +15,7 @@
 #include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
+#include <dart/math/lcp/projection/BgsSolver.hpp>
 #include <dart/math/lcp/projection/NncgSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
 
@@ -237,6 +238,16 @@ static void BM_LcpCompare_Pgs_Standard(benchmark::State& state)
       state, problem, options, MakeLabel("Pgs", "Standard"));
 }
 
+static void BM_LcpCompare_Bgs_Standard(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeStandardSpdProblem(n, 124u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(200);
+  RunBenchmark<dart::math::BgsSolver>(
+      state, problem, options, MakeLabel("Bgs", "Standard"));
+}
+
 static void BM_LcpCompare_Nncg_Standard(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
@@ -323,6 +334,16 @@ static void BM_LcpCompare_Pgs_Boxed(benchmark::State& state)
       state, problem, options, MakeLabel("Pgs", "Boxed"));
 }
 
+static void BM_LcpCompare_Bgs_Boxed(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeBoxedActiveBoundsProblem(n, 903u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(200);
+  RunBenchmark<dart::math::BgsSolver>(
+      state, problem, options, MakeLabel("Bgs", "Boxed"));
+}
+
 static void BM_LcpCompare_Nncg_Boxed(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
@@ -356,6 +377,16 @@ static void BM_LcpCompare_Pgs_FrictionIndex(benchmark::State& state)
   const auto options = MakeBenchmarkOptions(100);
   RunBenchmark<dart::math::PgsSolver>(
       state, problem, options, MakeLabel("Pgs", "FrictionIndex"));
+}
+
+static void BM_LcpCompare_Bgs_FrictionIndex(benchmark::State& state)
+{
+  const int numContacts = static_cast<int>(state.range(0));
+  const auto problem = MakeFrictionIndexProblem(
+      numContacts, 4343u + static_cast<unsigned>(numContacts));
+  const auto options = MakeBenchmarkOptions(200);
+  RunBenchmark<dart::math::BgsSolver>(
+      state, problem, options, MakeLabel("Bgs", "FrictionIndex"));
 }
 
 static void BM_LcpCompare_Dantzig_Scaled(benchmark::State& state)
@@ -392,6 +423,7 @@ static void BM_LCP_COMPARE_SMOKE(benchmark::State& state)
 
 BENCHMARK(BM_LcpCompare_Dantzig_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_Pgs_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
+BENCHMARK(BM_LcpCompare_Bgs_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_Nncg_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_Lemke_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_MinimumMapNewton_Standard)
@@ -412,10 +444,12 @@ BENCHMARK(BM_LcpCompare_PenalizedFischerBurmeisterNewton_Standard)
 
 BENCHMARK(BM_LcpCompare_Dantzig_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_Pgs_Boxed)->Arg(12)->Arg(24)->Arg(48);
+BENCHMARK(BM_LcpCompare_Bgs_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_Nncg_Boxed)->Arg(12)->Arg(24)->Arg(48);
 
 BENCHMARK(BM_LcpCompare_Dantzig_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 BENCHMARK(BM_LcpCompare_Pgs_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
+BENCHMARK(BM_LcpCompare_Bgs_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 
 BENCHMARK(BM_LcpCompare_Dantzig_Scaled)->Args({12, 0})->Args({12, 1});
 BENCHMARK(BM_LcpCompare_Pgs_Scaled)->Args({12, 0})->Args({12, 1});

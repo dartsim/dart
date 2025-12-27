@@ -16,6 +16,7 @@
 #include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
+#include <dart/math/lcp/projection/BgsSolver.hpp>
 #include <dart/math/lcp/projection/NncgSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
 
@@ -93,6 +94,23 @@ TEST(LcpComparisonHarness, PgsOnStandardAndBoxedFixtures)
 }
 
 //==============================================================================
+TEST(LcpComparisonHarness, BgsOnStandardAndBoxedFixtures)
+{
+  dart::math::BgsSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 5000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 1e-2;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-2, true);
+  }
+}
+
+//==============================================================================
 TEST(LcpComparisonHarness, NncgOnStandardAndBoxedFixtures)
 {
   dart::math::NncgSolver solver;
@@ -139,6 +157,23 @@ TEST(LcpComparisonHarness, PgsOnFrictionIndexFixtures)
   options.warmStart = false;
   options.validateSolution = false;
   options.maxIterations = 20000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 2e-2;
+
+  for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 2e-2, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, BgsOnFrictionIndexFixtures)
+{
+  dart::math::BgsSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 5000;
   options.absoluteTolerance = 1e-4;
   options.relativeTolerance = 1e-2;
   options.complementarityTolerance = 2e-2;
