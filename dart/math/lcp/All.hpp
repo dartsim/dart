@@ -12,6 +12,7 @@
 #include <dart/math/lcp/projection/PgsSolver.hpp>
 
 // Newton methods
+#include <dart/math/lcp/newton/FischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
 
 // Legacy LCP solvers (v1 - backward compatibility)
