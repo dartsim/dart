@@ -202,6 +202,34 @@ std::string MakeLabel(const std::string& solver, const std::string& category)
   return out.str();
 }
 
+void AddShockPropagationCounters(
+    benchmark::State& state,
+    const dart::math::ShockPropagationSolver::Parameters& params)
+{
+  const int blockCount = static_cast<int>(params.blockSizes.size());
+  int layerCount = static_cast<int>(params.layers.size());
+  if (layerCount == 0 && blockCount > 0)
+    layerCount = 1;
+
+  int maxBlockSize = 0;
+  for (const int size : params.blockSizes)
+    maxBlockSize = std::max(maxBlockSize, size);
+
+  int maxBlocksPerLayer = 0;
+  if (!params.layers.empty()) {
+    for (const auto& layer : params.layers)
+      maxBlocksPerLayer
+          = std::max(maxBlocksPerLayer, static_cast<int>(layer.size()));
+  } else {
+    maxBlocksPerLayer = blockCount;
+  }
+
+  state.counters["layer_count"] = layerCount;
+  state.counters["block_count"] = blockCount;
+  state.counters["max_block_size"] = maxBlockSize;
+  state.counters["max_blocks_per_layer"] = maxBlocksPerLayer;
+}
+
 template <typename Solver>
 void RunBenchmark(
     benchmark::State& state,
@@ -304,6 +332,7 @@ static void BM_LcpCompare_ShockPropagation_Standard(benchmark::State& state)
   options.customOptions = &params;
   RunBenchmark<dart::math::ShockPropagationSolver>(
       state, problem, options, MakeLabel("ShockPropagation", "Standard"));
+  AddShockPropagationCounters(state, params);
 }
 
 static void BM_LcpCompare_BlockedJacobi_Standard(benchmark::State& state)
@@ -662,6 +691,7 @@ static void BM_LcpCompare_ShockPropagation_FrictionIndex(
   options.customOptions = &params;
   RunBenchmark<dart::math::ShockPropagationSolver>(
       state, problem, options, MakeLabel("ShockPropagation", "FrictionIndex"));
+  AddShockPropagationCounters(state, params);
 }
 
 static void BM_LcpCompare_Dantzig_Scaled(benchmark::State& state)
