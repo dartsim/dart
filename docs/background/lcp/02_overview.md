@@ -14,7 +14,7 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 | **Projection**     | PGS (Gauss-Seidel)         | ✅ Implemented     | `projection/PgsSolver.hpp`                          | Boxed LCP + friction index (iterative)  |
 | **Projection**     | PSOR (Over-Relaxation)     | ✅ Implemented     | `projection/PgsSolver.hpp`                          | Set `LcpOptions::relaxation`            |
 | **Projection**     | Blocked Gauss-Seidel       | ❌ Not implemented | -                                                   | For contact problems                    |
-| **Projection**     | NNCG (Conjugate Gradient)  | ❌ Not implemented | -                                                   | Better convergence than PGS             |
+| **Projection**     | NNCG (Conjugate Gradient)  | ✅ Implemented     | `projection/NncgSolver.hpp`                         | Better convergence than PGS             |
 | **Projection**     | Subspace Minimization      | ❌ Not implemented | -                                                   | Hybrid PGS approach                     |
 | **Newton**         | Minimum Map Newton         | ✅ Implemented     | `newton/MinimumMapNewtonSolver.hpp`                 | Standard LCP (boxed/findex fallback)    |
 | **Newton**         | Fischer-Burmeister Newton  | ✅ Implemented     | `newton/FischerBurmeisterNewtonSolver.hpp`          | Standard LCP (boxed/findex fallback)    |
@@ -50,6 +50,7 @@ dart/math/lcp/
 │   └── dantzig/                # Low-level ODE Dantzig implementation
 │
 ├── projection/
+│   ├── NncgSolver.hpp/cpp      # NNCG acceleration of PGS
 │   └── PgsSolver.hpp/cpp       # Boxed LCP + findex (iterative)
 │
 ├── newton/                     # Minimum map, FB, penalized FB Newton
@@ -115,7 +116,17 @@ solver usage examples.
 - **Use Case**: Real-time fallback for constraint solving where approximate
   solutions are acceptable
 
-#### 4. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
+#### 4. NNCG (Nonsmooth Nonlinear Conjugate Gradient) (`projection/NncgSolver.hpp`)
+
+- **Type**: Projection method with conjugate gradient acceleration
+- **Algorithm**: NNCG using PGS sweeps as the nonlinear projection map
+- **Features**:
+  - Boxed LCP support (same bounds and `findex` handling as PGS)
+  - Configurable restart interval and threshold
+  - PGS-based warm start and projection
+- **Use Case**: Large-scale problems needing faster convergence than PGS
+
+#### 5. Minimum Map Newton (`newton/MinimumMapNewtonSolver.hpp`)
 
 - **Type**: Newton method using the minimum map reformulation
 - **Algorithm**: Active/free set Newton on `H(x) = min(x, Ax - b)`
@@ -124,7 +135,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 5. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
+#### 6. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using the Fischer-Burmeister function
 - **Algorithm**: Smooth FB reformulation with line search
@@ -133,7 +144,7 @@ solver usage examples.
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: High-accuracy solves for standard LCPs
 
-#### 6. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
+#### 7. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
 
 - **Type**: Newton method using a penalized Fischer-Burmeister function
 - **Algorithm**: FB reformulation with penalty term and line search
@@ -297,7 +308,7 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 
 ### Phase 3: Advanced Iterative (Medium Priority)
 
-- [ ] Nonsmooth Nonlinear Conjugate Gradient (NNCG)
+- [x] Nonsmooth Nonlinear Conjugate Gradient (NNCG)
 - [ ] Subspace Minimization (PGS-SM)
 - [ ] Staggering methods
 

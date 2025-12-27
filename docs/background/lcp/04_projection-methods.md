@@ -121,6 +121,8 @@ function PGS(A, b, x, max_iter, epsilon):
     `dart::math::PgsSolver::setParameters()`.
   - Use `dart::math::LcpOptions::relaxation` to enable PSOR-style relaxation
     (`1.0` = PGS, `>1` = over-relaxation, `<1` = under-relaxation).
+- **DART support**: `dart::math::NncgSolver` accelerates PGS for boxed LCPs,
+  sharing the same bounds and `findex` handling.
 
 ### Advantages/Disadvantages
 
@@ -333,7 +335,7 @@ x^{k+1} = min(u, max(l, z^k))
 
 For contact problems, `l` and `u` are often functions of the normal impulse (`±μN`), so the projection step should recompute bounds whenever `N` changes.
 
-## 6. Nonsmooth Nonlinear Conjugate Gradient (NNCG) ❌ (Not Implemented)
+## 6. Nonsmooth Nonlinear Conjugate Gradient (NNCG) ✅ (Implemented)
 
 ### Description
 
@@ -359,6 +361,21 @@ function NNCG(A, b, x, max_iter):
 
     if ||r_new|| < tol: return x
     r = r_new
+```
+
+### DART Implementation
+
+```cpp
+dart::math::NncgSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+
+dart::math::NncgSolver::Parameters params;
+params.pgsIterations = 1;
+params.restartInterval = 10;
+params.restartThreshold = 1.0;
+options.customOptions = &params;
+
+solver.solve(problem, x, options);
 ```
 
 ### Properties
@@ -585,7 +602,7 @@ Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
 | PGS       | ✅ (Implemented) | No       | Linear      | Real-time boxed LCP   |
 | PSOR      | ✅ (Implemented) | No       | Linear      | Real-time with tuning |
 | BGS       | ❌               | No       | Linear      | Contact problems      |
-| NNCG      | ❌               | No       | Superlinear | Large-scale           |
+| NNCG      | ✅ (Implemented) | No       | Superlinear | Large-scale           |
 | PGS-SM    | ❌               | No       | Better      | Medium problems       |
 | Red-Black | ❌               | 2-phase  | Medium      | GPU                   |
 

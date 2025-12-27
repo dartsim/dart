@@ -12,7 +12,7 @@ START
   ├─ High accuracy needed? ──YES──> Newton Methods or Pivoting
   |                                  (Dantzig/Lemke available now)
   |
-  ├─ Large problem (n>1000)? ──YES──> PGS (now) or NNCG (future)
+  ├─ Large problem (n>1000)? ──YES──> PGS or NNCG
   |
   ├─ Ill-conditioned? ──YES──> Pivoting (Dantzig/Lemke)
   |                             or Interior Point
@@ -125,7 +125,7 @@ Per-contact blocks with:
 
 ### 4. Large-Scale Problems (n > 1000)
 
-**Recommended**: PGS (available) > NNCG (future) > Newton+Iterative
+**Recommended**: PGS (available) > NNCG (available) > Newton+Iterative
 **Currently Available**: PGS ✅, Dantzig ✅, Lemke ✅
 
 **Rationale**:
@@ -223,7 +223,7 @@ Block size: 32-256 threads per block
 | High accuracy | Dantzig     | O(n³)         | 1          | O(n³)      | ✅            |
 | Contact       | BGS         | O(nb³)        | 50-100     | O(50nb³)   | ❌            |
 | Contact       | Dantzig     | -             | -          | -          | ✅            |
-| Large-scale   | NNCG        | O(n)          | 20-200     | O(200n)    | ❌            |
+| Large-scale   | NNCG        | O(n)          | 20-200     | O(200n)    | ✅            |
 
 \* With iterative subsolver
 
@@ -236,8 +236,8 @@ Slower          ─────────────────────�
 Pivoting ─> Newton ─> Interior Point ─> NNCG ─> BGS ─> PGS ─> Jacobi
 (exact)     (1e-10)   (1e-8)           (1e-6)  (1e-4) (1e-3) (1e-2)
 
-✅ Available:  Dantzig, Lemke, PGS/PSOR, Newton (standard LCP)
-❌ Future:     BGS, NNCG, …
+✅ Available:  Dantzig, Lemke, PGS/PSOR, NNCG, Newton (standard LCP)
+❌ Future:     BGS, Subspace Minimization, …
 ```
 
 ### Robustness vs Efficiency
@@ -248,8 +248,8 @@ Slower      ──────────────────────�
 
 Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
-✅ Available:  Dantzig, Lemke, PGS/PSOR, Newton (standard LCP)
-❌ Future:     BGS, NNCG, …
+✅ Available:  Dantzig, Lemke, PGS/PSOR, NNCG, Newton (standard LCP)
+❌ Future:     BGS, Subspace Minimization, …
 ```
 
 ## Problem Size Guidelines
@@ -259,8 +259,8 @@ Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 | n < 10           | Direct 2D/3D or Pivoting | Dantzig ✅, Lemke ✅                       |
 | 10 ≤ n < 100     | Pivoting or Newton       | Dantzig ✅, Lemke ✅, Newton ✅ (standard) |
 | 100 ≤ n < 1000   | PGS, BGS, or Newton      | PGS ✅, Dantzig ✅, Newton ✅ (standard)   |
-| 1000 ≤ n < 10000 | NNCG or PGS              | PGS ✅                                     |
-| n ≥ 10000        | NNCG or specialized      | PGS ✅ (approx)                            |
+| 1000 ≤ n < 10000 | NNCG or PGS              | PGS ✅, NNCG ✅                            |
+| n ≥ 10000        | NNCG or specialized      | NNCG ✅, PGS ✅ (approx)                   |
 
 ## Conditioning Guidelines
 
@@ -282,6 +282,7 @@ Available solvers:
 - ✅ **PGS/PSOR**: Iterative boxed LCP with friction index fallback (tune
   `LcpOptions::relaxation`)
 - ✅ **Newton (Minimum Map, FB, Penalized FB)**: Standard LCP only
+- ✅ **NNCG**: Conjugate-gradient acceleration on PGS sweeps
 
 **Best Practices Now**:
 
@@ -298,7 +299,7 @@ if (!result.succeeded()) {
 ### Remaining Gaps
 
 - Blocked Gauss-Seidel for per-contact blocks
-- NNCG or other large-scale iterative methods
+- Subspace minimization and other hybrid methods
 
 ### Newton Methods (Implemented)
 
@@ -465,7 +466,7 @@ Current (with Dantzig/PGS/Lemke/Newton):
 3. Reduce contact points
 4. Simplify collision geometry
 
-Future (with BGS/NNCG):
+Future (with BGS/Subspace):
 1. Use appropriate method for problem size
 2. Enable warm-starting
 3. Matrix-free implementations
@@ -481,10 +482,10 @@ Future (with BGS/NNCG):
 | Contact with friction  | Dantzig         | Best option now                          |
 | Bounded variables      | Dantzig         | Supports bounds and friction             |
 | Standard LCP           | Lemke or Newton | Newton for high accuracy (standard only) |
-| Large problems (n>100) | PGS             | Scales better, approximate               |
+| Large problems (n>100) | NNCG or PGS     | NNCG converges faster, both approximate  |
 | Real-time (n>50)       | PGS/PSOR        | Tune `relaxation`, keep Dantzig fallback |
 
-### Future State (After BGS/NNCG)
+### Future State (After BGS/Subspace)
 
 | Scenario        | Primary  | Backup         | Notes              |
 | --------------- | -------- | -------------- | ------------------ |
