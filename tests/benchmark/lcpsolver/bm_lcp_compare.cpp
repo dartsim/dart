@@ -19,6 +19,7 @@
 #include <dart/math/lcp/projection/JacobiSolver.hpp>
 #include <dart/math/lcp/projection/NncgSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
+#include <dart/math/lcp/projection/RedBlackGaussSeidelSolver.hpp>
 #include <dart/math/lcp/projection/SubspaceMinimizationSolver.hpp>
 #include <dart/math/lcp/projection/SymmetricPsorSolver.hpp>
 
@@ -261,6 +262,16 @@ static void BM_LcpCompare_SymmetricPsor_Standard(benchmark::State& state)
       state, problem, options, MakeLabel("SymmetricPsor", "Standard"));
 }
 
+static void BM_LcpCompare_RedBlackGaussSeidel_Standard(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeStandardSpdProblem(n, 114u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(100);
+  RunBenchmark<dart::math::RedBlackGaussSeidelSolver>(
+      state, problem, options, MakeLabel("RedBlackGS", "Standard"));
+}
+
 static void BM_LcpCompare_Bgs_Standard(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
@@ -390,6 +401,16 @@ static void BM_LcpCompare_SymmetricPsor_Boxed(benchmark::State& state)
       state, problem, options, MakeLabel("SymmetricPsor", "Boxed"));
 }
 
+static void BM_LcpCompare_RedBlackGaussSeidel_Boxed(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeBoxedActiveBoundsProblem(n, 907u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(100);
+  RunBenchmark<dart::math::RedBlackGaussSeidelSolver>(
+      state, problem, options, MakeLabel("RedBlackGS", "Boxed"));
+}
+
 static void BM_LcpCompare_Bgs_Boxed(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
@@ -468,6 +489,17 @@ static void BM_LcpCompare_SymmetricPsor_FrictionIndex(benchmark::State& state)
       state, problem, options, MakeLabel("SymmetricPsor", "FrictionIndex"));
 }
 
+static void BM_LcpCompare_RedBlackGaussSeidel_FrictionIndex(
+    benchmark::State& state)
+{
+  const int numContacts = static_cast<int>(state.range(0));
+  const auto problem = MakeFrictionIndexProblem(
+      numContacts, 4646u + static_cast<unsigned>(numContacts));
+  const auto options = MakeBenchmarkOptions(100);
+  RunBenchmark<dart::math::RedBlackGaussSeidelSolver>(
+      state, problem, options, MakeLabel("RedBlackGS", "FrictionIndex"));
+}
+
 static void BM_LcpCompare_Bgs_FrictionIndex(benchmark::State& state)
 {
   const int numContacts = static_cast<int>(state.range(0));
@@ -518,6 +550,11 @@ BENCHMARK(BM_LcpCompare_SymmetricPsor_Standard)
     ->Arg(24)
     ->Arg(48)
     ->Arg(96);
+BENCHMARK(BM_LcpCompare_RedBlackGaussSeidel_Standard)
+    ->Arg(12)
+    ->Arg(24)
+    ->Arg(48)
+    ->Arg(96);
 BENCHMARK(BM_LcpCompare_Bgs_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_Nncg_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
 BENCHMARK(BM_LcpCompare_SubspaceMinimization_Standard)
@@ -546,6 +583,7 @@ BENCHMARK(BM_LcpCompare_Dantzig_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_Pgs_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_Jacobi_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_SymmetricPsor_Boxed)->Arg(12)->Arg(24)->Arg(48);
+BENCHMARK(BM_LcpCompare_RedBlackGaussSeidel_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_Bgs_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_Nncg_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_SubspaceMinimization_Boxed)->Arg(12)->Arg(24)->Arg(48);
@@ -554,6 +592,10 @@ BENCHMARK(BM_LcpCompare_Dantzig_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 BENCHMARK(BM_LcpCompare_Pgs_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 BENCHMARK(BM_LcpCompare_Jacobi_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 BENCHMARK(BM_LcpCompare_SymmetricPsor_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
+BENCHMARK(BM_LcpCompare_RedBlackGaussSeidel_FrictionIndex)
+    ->Arg(4)
+    ->Arg(16)
+    ->Arg(64);
 BENCHMARK(BM_LcpCompare_Bgs_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 
 BENCHMARK(BM_LcpCompare_Dantzig_Scaled)->Args({12, 0})->Args({12, 1});
