@@ -14,6 +14,7 @@
 // Newton methods
 #include <dart/math/lcp/newton/FischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
+#include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
 
 // Legacy LCP solvers (v1 - backward compatibility)
 #include <dart/math/lcp/pivoting/dantzig/Lcp.hpp>
