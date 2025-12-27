@@ -14,6 +14,7 @@
 #include <dart/math/lcp/projection/NncgSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
 #include <dart/math/lcp/projection/SubspaceMinimizationSolver.hpp>
+#include <dart/math/lcp/projection/SymmetricPsorSolver.hpp>
 
 // Newton methods
 #include <dart/math/lcp/newton/FischerBurmeisterNewtonSolver.hpp>
