@@ -38,11 +38,12 @@ void ExpectSolverPassesFixture(
 
   const bool statusOk
       = report.result.succeeded()
-        || (allowMaxIterations && report.result.status == LcpSolverStatus::MaxIterations
+        || (allowMaxIterations
+            && report.result.status == LcpSolverStatus::MaxIterations
             && report.check.ok);
 
-  EXPECT_TRUE(statusOk)
-      << fixture.name << ": " << dart::test::DescribeReport(report);
+  EXPECT_TRUE(statusOk) << fixture.name << ": "
+                        << dart::test::DescribeReport(report);
   EXPECT_TRUE(report.check.ok)
       << fixture.name << ": " << dart::test::DescribeReport(report);
 

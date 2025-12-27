@@ -28,11 +28,11 @@ structure for apples-to-apples LCP solver comparisons.
 
 ## Benchmark Categories (Aligned With Test Matrix)
 
-1) Standard SPD: sizes 12, 24, 48, 96.
-2) Boxed (active bounds): sizes 12, 24, 48.
-3) Friction-index: contact groups 4, 16, 64 (3 vars per group).
-4) Scaling/conditioning: scaled versions of standard SPD (1e-6, 1e6).
-5) Large dense baseline: size 250 (local only; not for CI).
+1. Standard SPD: sizes 12, 24, 48, 96.
+2. Boxed (active bounds): sizes 12, 24, 48.
+3. Friction-index: contact groups 4, 16, 64 (3 vars per group).
+4. Scaling/conditioning: scaled versions of standard SPD (1e-6, 1e6).
+5. Large dense baseline: size 250 (local only; not for CI).
 
 ## Output Format
 
@@ -44,6 +44,7 @@ Use Google Benchmark's built-in JSON/CSV output:
 ```
 
 Required columns/fields:
+
 - `name` (solver + problem + size)
 - `cpu_time` / `real_time`
 - custom counters for `iterations`, `residual`, `complementarity`

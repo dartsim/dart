@@ -8,11 +8,11 @@ the existing `dart::math::LcpProblem` / `LcpOptions` types.
 
 All comparisons use `LcpProblem` with DART's `w = Ax - b` convention.
 
-1) Standard LCP
+1. Standard LCP
    - `lo = 0`, `hi = +inf`, `findex = -1`.
-2) Boxed LCP
+2. Boxed LCP
    - Finite or infinite `lo/hi`, `findex = -1`.
-3) Boxed LCP + friction index
+3. Boxed LCP + friction index
    - `findex[i] = j` couples variable `i` to normal variable `j`.
    - `hi[i]` stores the finite friction coefficient `mu`.
    - Effective bounds are `|x[i]| <= |mu| * |x[j]|` as computed by
@@ -21,10 +21,12 @@ All comparisons use `LcpProblem` with DART's `w = Ax - b` convention.
 ## Required Outputs
 
 Solvers must provide:
+
 - `x` (solution vector).
 - `LcpResult` fields: status, iterations, residual, complementarity.
 
 The harness computes:
+
 - `w = A * x - b`.
 - Effective bounds (`loEff`, `hiEff`) via `computeEffectiveBounds()`.
 - Natural residual infinity norm.
@@ -51,6 +53,7 @@ Comparisons use a shared `LcpOptions` profile; solvers that do not honor a field
 may ignore it, but the harness still enforces the external invariants.
 
 Baseline comparison profile (tests):
+
 - `maxIterations`: set per test category (see test matrix).
 - `absoluteTolerance = 1e-6`
 - `relativeTolerance = 1e-4`
@@ -61,10 +64,12 @@ Baseline comparison profile (tests):
 - `validateSolution = false` (harness does validation consistently)
 
 Benchmark profile:
+
 - Same tolerances as above, `validateSolution = false`.
 - Optional fixed wall-time budget for runaway cases (harness-level timeout).
 
 Iteration normalization:
+
 - Iterative solvers must respect `maxIterations`.
 - Direct/pivoting solvers report `iterations = 1` (or 0 for empty problems).
 - If a solver reaches `maxIterations` but still satisfies invariants, the
@@ -84,6 +89,7 @@ Use `tol` for bounds feasibility and natural residual; use `compTol` for
 complementarity checks.
 
 Ill-conditioned or degenerate cases:
+
 - Keep the same tolerance formula but record a "relaxed" secondary threshold
   (e.g., 10x `tol`) for reporting. If only the relaxed threshold is met, mark
   as "soft pass" and flag the case for review.

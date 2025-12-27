@@ -21,11 +21,11 @@ Fill this template when adding or evaluating a solver.
 
 ## Correctness (Tests)
 
-| Suite | Result | Notes |
-| --- | --- | --- |
-| LCP comparison harness | PASS/FAIL | |
-| LCP edge cases | PASS/FAIL | |
-| LCP stress tests | PASS/FAIL | |
+| Suite                  | Result    | Notes |
+| ---------------------- | --------- | ----- |
+| LCP comparison harness | PASS/FAIL |       |
+| LCP edge cases         | PASS/FAIL |       |
+| LCP stress tests       | PASS/FAIL |       |
 
 ## Benchmark Results (Release Build)
 
@@ -34,34 +34,34 @@ Include JSON/CSV artifact path or command used.
 ### Standard SPD
 
 | Size | Solver | Time | Iterations | Residual | Complementarity | Contract OK |
-| --- | --- | --- | --- | --- | --- | --- |
-| 12 | | | | | | |
-| 24 | | | | | | |
-| 48 | | | | | | |
-| 96 | | | | | | |
+| ---- | ------ | ---- | ---------- | -------- | --------------- | ----------- |
+| 12   |        |      |            |          |                 |             |
+| 24   |        |      |            |          |                 |             |
+| 48   |        |      |            |          |                 |             |
+| 96   |        |      |            |          |                 |             |
 
 ### Boxed (Active Bounds)
 
 | Size | Solver | Time | Iterations | Residual | Complementarity | Contract OK |
-| --- | --- | --- | --- | --- | --- | --- |
-| 12 | | | | | | |
-| 24 | | | | | | |
-| 48 | | | | | | |
+| ---- | ------ | ---- | ---------- | -------- | --------------- | ----------- |
+| 12   |        |      |            |          |                 |             |
+| 24   |        |      |            |          |                 |             |
+| 48   |        |      |            |          |                 |             |
 
 ### Friction Index
 
 | Contacts | Solver | Time | Iterations | Residual | Complementarity | Contract OK |
-| --- | --- | --- | --- | --- | --- | --- |
-| 4 | | | | | | |
-| 16 | | | | | | |
-| 64 | | | | | | |
+| -------- | ------ | ---- | ---------- | -------- | --------------- | ----------- |
+| 4        |        |      |            |          |                 |             |
+| 16       |        |      |            |          |                 |             |
+| 64       |        |      |            |          |                 |             |
 
 ### Scaling
 
 | Size | Scale | Solver | Time | Iterations | Residual | Complementarity | Contract OK |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 12 | 1e-6 | | | | | | |
-| 12 | 1e6 | | | | | | |
+| ---- | ----- | ------ | ---- | ---------- | -------- | --------------- | ----------- |
+| 12   | 1e-6  |        |      |            |          |                 |             |
+| 12   | 1e6   |        |      |            |          |                 |             |
 
 ## Notes and Follow-ups
 

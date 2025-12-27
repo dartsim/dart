@@ -287,8 +287,8 @@ static void BM_LcpCompare_Dantzig_Scaled(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
   const double scale = (state.range(1) == 0) ? 1e-6 : 1e6;
-  const auto problem = MakeScaledProblem(
-      n, scale, 777u + static_cast<unsigned>(n));
+  const auto problem
+      = MakeScaledProblem(n, scale, 777u + static_cast<unsigned>(n));
   const auto options = MakeBenchmarkOptions(100);
   RunBenchmark<dart::math::DantzigSolver>(
       state, problem, options, MakeLabel("Dantzig", "Scaled"));
@@ -298,8 +298,8 @@ static void BM_LcpCompare_Pgs_Scaled(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
   const double scale = (state.range(1) == 0) ? 1e-6 : 1e6;
-  const auto problem = MakeScaledProblem(
-      n, scale, 888u + static_cast<unsigned>(n));
+  const auto problem
+      = MakeScaledProblem(n, scale, 888u + static_cast<unsigned>(n));
   const auto options = MakeBenchmarkOptions(100);
   RunBenchmark<dart::math::PgsSolver>(
       state, problem, options, MakeLabel("Pgs", "Scaled"));
@@ -325,11 +325,7 @@ BENCHMARK(BM_LcpCompare_Pgs_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_Dantzig_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 BENCHMARK(BM_LcpCompare_Pgs_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 
-BENCHMARK(BM_LcpCompare_Dantzig_Scaled)
-    ->Args({12, 0})
-    ->Args({12, 1});
-BENCHMARK(BM_LcpCompare_Pgs_Scaled)
-    ->Args({12, 0})
-    ->Args({12, 1});
+BENCHMARK(BM_LcpCompare_Dantzig_Scaled)->Args({12, 0})->Args({12, 1});
+BENCHMARK(BM_LcpCompare_Pgs_Scaled)->Args({12, 0})->Args({12, 1});
 
 BENCHMARK(BM_LCP_COMPARE_SMOKE);

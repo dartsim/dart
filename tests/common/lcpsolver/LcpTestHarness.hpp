@@ -39,10 +39,11 @@
 #include <Eigen/Core>
 
 #include <algorithm>
-#include <cmath>
 #include <limits>
 #include <sstream>
 #include <string>
+
+#include <cmath>
 
 namespace dart::test {
 
@@ -121,27 +122,29 @@ inline LcpCheckResult CheckLcpSolution(
   Eigen::VectorXd hiEff;
   std::string boundsMessage;
   if (!dart::math::detail::computeEffectiveBounds(
-          problem.lo, problem.hi, problem.findex, x, loEff, hiEff,
+          problem.lo,
+          problem.hi,
+          problem.findex,
+          x,
+          loEff,
+          hiEff,
           &boundsMessage)) {
     report.message = boundsMessage;
     return report;
   }
 
-  const double absTol = (options.absoluteTolerance > 0.0)
-                            ? options.absoluteTolerance
-                            : 1e-6;
-  const double relTol = (options.relativeTolerance > 0.0)
-                            ? options.relativeTolerance
-                            : 1e-4;
+  const double absTol
+      = (options.absoluteTolerance > 0.0) ? options.absoluteTolerance : 1e-6;
+  const double relTol
+      = (options.relativeTolerance > 0.0) ? options.relativeTolerance : 1e-4;
   const double compTol = (options.complementarityTolerance > 0.0)
                              ? options.complementarityTolerance
                              : absTol;
 
-  const double scale
-      = std::max(1.0,
-                 std::max(
-                     InfinityNorm(problem.b),
-                     InfinityNorm(problem.A) * InfinityNorm(x)));
+  const double scale = std::max(
+      1.0,
+      std::max(
+          InfinityNorm(problem.b), InfinityNorm(problem.A) * InfinityNorm(x)));
   report.tol = std::max(absTol, relTol * scale);
   report.compTol = std::max(compTol, relTol * scale);
 
@@ -190,8 +193,7 @@ inline std::string DescribeReport(const LcpSolveReport& report)
       << " iters=" << report.result.iterations
       << " res=" << report.result.residual
       << " comp=" << report.result.complementarity
-      << " tol=" << report.check.tol
-      << " compTol=" << report.check.compTol
+      << " tol=" << report.check.tol << " compTol=" << report.check.compTol
       << " boundViolation=" << report.check.boundViolation;
   if (!report.result.message.empty())
     out << " msg=" << report.result.message;
