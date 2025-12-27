@@ -569,9 +569,11 @@ Tutorials are built in `build/.../bin/`:
 
 ### Benchmark Executables (Performance Testing)
 
-- `BM_INTEGRATION_empty`
-- `BM_INTEGRATION_boxes`
-- `BM_INTEGRATION_kinematics`
+- Benchmarks are built in `build/.../bin/` and can be run via pixi:
+  - `pixi run bm boxes`
+  - `pixi run bm kinematics`
+  - `pixi run bm lcp_compare`
+  - `pixi run bm --pixi-help` for more aliases/targets
 
 ---
 

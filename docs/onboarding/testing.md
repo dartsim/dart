@@ -372,9 +372,10 @@ ctest --output-on-failure  # Only show output for failing tests
 ### Run benchmarks:
 
 ```bash
-./benchmark/integration/bm_empty
-./benchmark/collision/bm_boxes
-./benchmark/dynamics/bm_kinematics
+pixi run bm boxes
+pixi run bm kinematics
+pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE
+pixi run bm --pixi-help
 ```
 
 ## CMake Integration

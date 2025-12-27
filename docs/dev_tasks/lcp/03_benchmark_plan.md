@@ -66,7 +66,7 @@ Also produce a short human summary (markdown table) using
   - `--benchmark_min_time=0.01`
   - `--benchmark_repetitions=3`
 - Suggested (Unverified):
-  - `pixi run bm --target BM_LCP_COMPARE -- --benchmark_filter=BM_LCP_COMPARE_SMOKE --benchmark_min_time=0.01 --benchmark_repetitions=3`
+  - `pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE --benchmark_min_time=0.01 --benchmark_repetitions=3`
 
 ## Notes
 
