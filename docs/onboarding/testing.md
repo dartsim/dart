@@ -22,6 +22,12 @@ Suggested (Unverified):
 pixi run lint
 ```
 
+**Example (Used in this task):**
+
+```bash
+DART_PARALLEL_JOBS=12 pixi run lint
+```
+
 Targeted build + test (optional, fastest when a single target fails).
 
 Suggested (Unverified):
@@ -52,6 +58,12 @@ Suggested (Unverified):
 DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test
 ```
 
+**Example (Used in this task):**
+
+```bash
+DART_PARALLEL_JOBS=12 pixi run test
+```
+
 Signals to look for:
 
 - The test runner ends with `100% tests passed`
@@ -63,6 +75,13 @@ Suggested (Unverified):
 ```bash
 DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test-all
 DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run -e gazebo test-gz
+```
+
+**Example (Used in this task):**
+
+```bash
+DART_PARALLEL_JOBS=12 pixi run test-all
+DART_PARALLEL_JOBS=12 pixi run -e gazebo test-gz
 ```
 
 Signals to look for:
