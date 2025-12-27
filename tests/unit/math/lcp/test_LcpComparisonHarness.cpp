@@ -13,6 +13,7 @@
 
 #include <dart/math/lcp/newton/FischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
+#include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/pivoting/DantzigSolver.hpp>
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 #include <dart/math/lcp/projection/PgsSolver.hpp>
@@ -171,6 +172,29 @@ TEST(LcpComparisonHarness, FischerBurmeisterNewtonOnStandardFixtures)
   options.absoluteTolerance = 1e-8;
   options.relativeTolerance = 1e-6;
   options.complementarityTolerance = 1e-6;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+      continue;
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, PenalizedFischerBurmeisterNewtonOnStandardFixtures)
+{
+  dart::math::PenalizedFischerBurmeisterNewtonSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 50;
+  options.absoluteTolerance = 1e-8;
+  options.relativeTolerance = 1e-6;
+  options.complementarityTolerance = 1e-6;
+
+  dart::math::PenalizedFischerBurmeisterNewtonSolver::Parameters params;
+  params.lambda = 0.5;
+  options.customOptions = &params;
 
   for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
     if (fixture.kind != dart::test::LcpFixtureKind::Standard)
