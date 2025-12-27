@@ -28,6 +28,7 @@
 // Other methods
 #include <dart/math/lcp/other/InteriorPointSolver.hpp>
 #include <dart/math/lcp/other/MprgpSolver.hpp>
+#include <dart/math/lcp/other/ShockPropagationSolver.hpp>
 #include <dart/math/lcp/other/StaggeringSolver.hpp>
 
 // Legacy LCP solvers (v1 - backward compatibility)
