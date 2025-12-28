@@ -201,6 +201,8 @@ World::World(const WorldConfig& config)
     mFrame(0),
     mRecording(new Recording(mSkeletons)),
     mEcsData(std::make_unique<EcsData>()),
+    mSkeletonSolverType(config.solverRouting.skeletons),
+    mObjectSolverType(config.solverRouting.objects),
     onNameChanged(mNameChangedSignal)
 {
   mIndices.push_back(0);
@@ -232,10 +234,11 @@ World::~World()
 //==============================================================================
 WorldPtr World::clone() const
 {
-  WorldPtr worldClone = World::create(mName);
+  WorldConfig config(mName);
+  config.solverRouting.skeletons = mSkeletonSolverType;
+  config.solverRouting.objects = mObjectSolverType;
 
-  worldClone->setSolverSteppingMode(mSolverSteppingMode);
-  worldClone->setActiveRigidSolver(mActiveRigidSolverType);
+  WorldPtr worldClone = World::create(config);
 
   worldClone->setGravity(mGravity);
   worldClone->setTimeStep(mTimeStep);
@@ -324,54 +327,12 @@ void World::step(bool _resetCommand)
 
   std::size_t steppedSolvers = 0;
 
-  if (mSolverSteppingMode == SolverSteppingMode::ActiveRigidSolverOnly) {
-    auto* activeSolver = getActiveRigidSolver();
-    if (activeSolver && isSolverEnabled(activeSolver)
-        && activeSolver->isRigidSolver()) {
-      activeSolver->step(*this, _resetCommand);
-      ++steppedSolvers;
-
-      std::vector<Solver*> solversToSync;
-
-      for (auto& entry : mSolvers) {
-        if (!entry.enabled) {
-          continue;
-        }
-
-        auto* solver = entry.solver.get();
-        if (!solver || solver == activeSolver) {
-          continue;
-        }
-
-        if (solver->isRigidSolver()) {
-          solversToSync.push_back(solver);
-          continue;
-        }
-
-        solver->step(*this, _resetCommand);
-        ++steppedSolvers;
-      }
-
-      for (auto* solver : solversToSync) {
-        solver->sync(*this);
-      }
-    } else {
-      DART_WARN(
-          "World '{}' is configured for ActiveRigidSolverOnly stepping, but "
-          "the active solver is not available/enabled. Falling back to "
-          "stepping all enabled solvers.",
-          mName);
+  for (auto& entry : mSolvers) {
+    if (!entry.enabled) {
+      continue;
     }
-  }
-
-  if (steppedSolvers == 0) {
-    for (auto& entry : mSolvers) {
-      if (!entry.enabled) {
-        continue;
-      }
-      entry.solver->step(*this, _resetCommand);
-      ++steppedSolvers;
-    }
+    entry.solver->step(*this, _resetCommand);
+    ++steppedSolvers;
   }
 
   if (steppedSolvers == 0) {
@@ -504,10 +465,23 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 
   mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
 
-  for (auto& entry : mSolvers) {
-    if (entry.solver->supportsSkeletons()) {
-      entry.solver->handleSkeletonAdded(*this, _skeleton);
+  auto* skeletonSolver = getSkeletonSolver();
+  if (skeletonSolver) {
+    if (skeletonSolver->supportsSkeletons()) {
+      skeletonSolver->handleSkeletonAdded(*this, _skeleton);
+    } else {
+      DART_WARN(
+          "World '{}' routes Skeletons to solver '{}', but it does not "
+          "support Skeletons.",
+          mName,
+          skeletonSolver->getName());
     }
+  } else {
+    DART_WARN(
+        "World '{}' routes Skeletons to solver type {}, but no matching "
+        "solver is registered.",
+        mName,
+        static_cast<int>(mSkeletonSolverType));
   }
 
   // Update recording
@@ -549,11 +523,24 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   }
   mIndices.pop_back();
 
-  // Notify solvers.
-  for (auto& entry : mSolvers) {
-    if (entry.solver->supportsSkeletons()) {
-      entry.solver->handleSkeletonRemoved(*this, _skeleton);
+  // Notify the configured skeleton solver.
+  auto* skeletonSolver = getSkeletonSolver();
+  if (skeletonSolver) {
+    if (skeletonSolver->supportsSkeletons()) {
+      skeletonSolver->handleSkeletonRemoved(*this, _skeleton);
+    } else {
+      DART_WARN(
+          "World '{}' routes Skeletons to solver '{}', but it does not "
+          "support Skeletons.",
+          mName,
+          skeletonSolver->getName());
     }
+  } else {
+    DART_WARN(
+        "World '{}' routes Skeletons to solver type {}, but no matching "
+        "solver is registered.",
+        mName,
+        static_cast<int>(mSkeletonSolverType));
   }
 
   // Remove _skeleton from mSkeletons
@@ -889,8 +876,15 @@ EcsEntity detail::WorldEcsAccess::createEntity(World& world)
   const auto entity = world.mEcsData->entityManager.create();
   const auto ecsEntity = toEcsEntity(entity);
 
-  for (auto& entry : world.mSolvers) {
-    entry.solver->handleEntityAdded(world, ecsEntity);
+  auto* objectSolver = world.getObjectSolver();
+  if (objectSolver) {
+    objectSolver->handleEntityAdded(world, ecsEntity);
+  } else {
+    DART_WARN(
+        "World '{}' routes ECS objects to solver type {}, but no matching "
+        "solver is registered.",
+        world.getName(),
+        static_cast<int>(world.mObjectSolverType));
   }
 
   return ecsEntity;
@@ -913,8 +907,15 @@ bool detail::WorldEcsAccess::destroyEntity(World& world, EcsEntity entity)
     return false;
   }
 
-  for (auto& entry : world.mSolvers) {
-    entry.solver->handleEntityRemoved(world, entity);
+  auto* objectSolver = world.getObjectSolver();
+  if (objectSolver) {
+    objectSolver->handleEntityRemoved(world, entity);
+  } else {
+    DART_WARN(
+        "World '{}' routes ECS objects to solver type {}, but no matching "
+        "solver is registered.",
+        world.getName(),
+        static_cast<int>(world.mObjectSolverType));
   }
 
   registry.destroy(enttEntity);
@@ -987,10 +988,31 @@ Solver* World::addSolver(std::unique_ptr<Solver> solver, bool enabled)
   mSolvers.emplace_back(SolverEntry{std::move(solver), enabled});
   auto* solverPtr = mSolvers.back().solver.get();
 
-  // Ensure the solver is aware of any skeletons that were already present.
-  if (solverPtr->supportsSkeletons()) {
-    for (auto& skeleton : mSkeletons) {
-      solverPtr->handleSkeletonAdded(*this, skeleton);
+  const auto solverRigidType = solverPtr->getRigidSolverType();
+  if (solverRigidType && *solverRigidType == mSkeletonSolverType
+      && getSkeletonSolver() == solverPtr) {
+    if (solverPtr->supportsSkeletons()) {
+      for (auto& skeleton : mSkeletons) {
+        solverPtr->handleSkeletonAdded(*this, skeleton);
+      }
+    } else {
+      DART_WARN(
+          "World '{}' routes Skeletons to solver '{}', but it does not "
+          "support Skeletons.",
+          mName,
+          solverPtr->getName());
+    }
+  }
+
+  if (solverRigidType && *solverRigidType == mObjectSolverType
+      && getObjectSolver() == solverPtr) {
+    if (mEcsData) {
+      auto& registry = mEcsData->entityManager;
+      auto& entities = registry.storage<entt::entity>();
+      for (const auto entity : entities) {
+        solverPtr->handleEntityAdded(
+            *this, detail::WorldEcsAccess::toEcsEntity(entity));
+      }
     }
   }
 
@@ -1088,49 +1110,57 @@ const Solver* World::getSolver(const std::string& name) const
 }
 
 //==============================================================================
-bool World::setActiveRigidSolver(RigidSolverType type)
+Solver* World::getSkeletonSolver()
 {
-  if (!getSolver(type)) {
-    DART_WARN(
-        "Attempted to set active solver to type {}, but no matching solver is "
-        "registered in world '{}'.",
-        static_cast<int>(type),
-        mName);
-    return false;
-  }
-
-  mActiveRigidSolverType = type;
-  return true;
+  return getSolver(mSkeletonSolverType);
 }
 
 //==============================================================================
-RigidSolverType World::getActiveRigidSolverType() const
+const Solver* World::getSkeletonSolver() const
 {
-  return mActiveRigidSolverType;
+  return getSolver(mSkeletonSolverType);
+}
+
+//==============================================================================
+Solver* World::getObjectSolver()
+{
+  return getSolver(mObjectSolverType);
+}
+
+//==============================================================================
+const Solver* World::getObjectSolver() const
+{
+  return getSolver(mObjectSolverType);
 }
 
 //==============================================================================
 Solver* World::getActiveRigidSolver()
 {
-  return getSolver(mActiveRigidSolverType);
+  auto* solver = getSkeletonSolver();
+  if (!solver) {
+    return nullptr;
+  }
+
+  if (!isSolverEnabled(solver)) {
+    return nullptr;
+  }
+
+  return solver;
 }
 
 //==============================================================================
 const Solver* World::getActiveRigidSolver() const
 {
-  return getSolver(mActiveRigidSolverType);
-}
+  auto* solver = getSkeletonSolver();
+  if (!solver) {
+    return nullptr;
+  }
 
-//==============================================================================
-void World::setSolverSteppingMode(SolverSteppingMode mode)
-{
-  mSolverSteppingMode = mode;
-}
+  if (!isSolverEnabled(solver)) {
+    return nullptr;
+  }
 
-//==============================================================================
-SolverSteppingMode World::getSolverSteppingMode() const
-{
-  return mSolverSteppingMode;
+  return solver;
 }
 
 //==============================================================================
@@ -1202,6 +1232,9 @@ bool World::moveSolver(std::size_t fromIndex, std::size_t toIndex)
     return false;
   }
 
+  Solver* previousSkeletonSolver = getSkeletonSolver();
+  Solver* previousObjectSolver = getObjectSolver();
+
   if (fromIndex == toIndex) {
     return true;
   }
@@ -1213,86 +1246,108 @@ bool World::moveSolver(std::size_t fromIndex, std::size_t toIndex)
     std::rotate(begin + toIndex, begin + fromIndex, begin + fromIndex + 1);
   }
 
+  Solver* currentSkeletonSolver = getSkeletonSolver();
+  if (currentSkeletonSolver != previousSkeletonSolver) {
+    if (previousSkeletonSolver && previousSkeletonSolver->supportsSkeletons()) {
+      for (auto& skeleton : mSkeletons) {
+        previousSkeletonSolver->handleSkeletonRemoved(*this, skeleton);
+      }
+    }
+
+    if (currentSkeletonSolver) {
+      if (currentSkeletonSolver->supportsSkeletons()) {
+        for (auto& skeleton : mSkeletons) {
+          currentSkeletonSolver->handleSkeletonAdded(*this, skeleton);
+        }
+      } else {
+        DART_WARN(
+            "World '{}' routes Skeletons to solver '{}', but it does not "
+            "support Skeletons.",
+            mName,
+            currentSkeletonSolver->getName());
+      }
+    }
+  }
+
+  Solver* currentObjectSolver = getObjectSolver();
+  if (currentObjectSolver != previousObjectSolver && mEcsData) {
+    auto& registry = mEcsData->entityManager;
+    auto& entities = registry.storage<entt::entity>();
+    if (previousObjectSolver) {
+      for (const auto entity : entities) {
+        previousObjectSolver->handleEntityRemoved(
+            *this, detail::WorldEcsAccess::toEcsEntity(entity));
+      }
+    }
+
+    if (currentObjectSolver) {
+      for (const auto entity : entities) {
+        currentObjectSolver->handleEntityAdded(
+            *this, detail::WorldEcsAccess::toEcsEntity(entity));
+      }
+    }
+  }
+
   return true;
 }
 
 //==============================================================================
 Solver* World::getConstraintCapableSolver()
 {
-  if (auto* activeSolver = getActiveRigidSolver()) {
-    if (isSolverEnabled(activeSolver) && activeSolver->supportsConstraints()) {
-      return activeSolver;
-    }
+  auto* activeSolver = getActiveRigidSolver();
+  if (!activeSolver) {
+    return nullptr;
   }
 
-  for (auto& entry : mSolvers) {
-    if (!entry.enabled) {
-      continue;
-    }
-    if (entry.solver->supportsConstraints()) {
-      return entry.solver.get();
-    }
+  if (activeSolver->supportsConstraints()) {
+    return activeSolver;
   }
+
   return nullptr;
 }
 
 //==============================================================================
 const Solver* World::getConstraintCapableSolver() const
 {
-  if (const auto* activeSolver = getActiveRigidSolver()) {
-    if (isSolverEnabled(activeSolver) && activeSolver->supportsConstraints()) {
-      return activeSolver;
-    }
+  const auto* activeSolver = getActiveRigidSolver();
+  if (!activeSolver) {
+    return nullptr;
   }
 
-  for (const auto& entry : mSolvers) {
-    if (!entry.enabled) {
-      continue;
-    }
-    if (entry.solver->supportsConstraints()) {
-      return entry.solver.get();
-    }
+  if (activeSolver->supportsConstraints()) {
+    return activeSolver;
   }
+
   return nullptr;
 }
 
 //==============================================================================
 Solver* World::getCollisionCapableSolver()
 {
-  if (auto* activeSolver = getActiveRigidSolver()) {
-    if (isSolverEnabled(activeSolver) && activeSolver->supportsCollision()) {
-      return activeSolver;
-    }
+  auto* activeSolver = getActiveRigidSolver();
+  if (!activeSolver) {
+    return nullptr;
   }
 
-  for (auto& entry : mSolvers) {
-    if (!entry.enabled) {
-      continue;
-    }
-    if (entry.solver->supportsCollision()) {
-      return entry.solver.get();
-    }
+  if (activeSolver->supportsCollision()) {
+    return activeSolver;
   }
+
   return nullptr;
 }
 
 //==============================================================================
 const Solver* World::getCollisionCapableSolver() const
 {
-  if (const auto* activeSolver = getActiveRigidSolver()) {
-    if (isSolverEnabled(activeSolver) && activeSolver->supportsCollision()) {
-      return activeSolver;
-    }
+  const auto* activeSolver = getActiveRigidSolver();
+  if (!activeSolver) {
+    return nullptr;
   }
 
-  for (const auto& entry : mSolvers) {
-    if (!entry.enabled) {
-      continue;
-    }
-    if (entry.solver->supportsCollision()) {
-      return entry.solver.get();
-    }
+  if (activeSolver->supportsCollision()) {
+    return activeSolver;
   }
+
   return nullptr;
 }
 

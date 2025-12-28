@@ -16,10 +16,11 @@
   EnTT in public headers.
 - Add minimal entity lifecycle hooks on `Solver` using `EcsEntity`, called
   by World on create/destroy to keep solvers in sync.
-- Keep classic Skeleton data on the legacy path and notify only
-  `ClassicRigidSolver` (via `supportsSkeletons()`).
+- Keep classic Skeleton data on the legacy path and notify only the solver
+  configured by `WorldConfig::SolverRouting` (default: `ClassicRigidSolver`).
 - Route ECS-backed simulation objects (`simulation::object::Object` derivatives)
-  to `RigidSolver` only.
+  to the solver configured by `WorldConfig::SolverRouting` (default:
+  `RigidSolver`).
 - Extend the ECS-backed rigid solver to update ECS-only components (kept in
   `dart/simulation/detail`, not installed), with no Skeleton mirroring.
 - Add integration tests for solver enable/disable and ECS entity lifecycle.

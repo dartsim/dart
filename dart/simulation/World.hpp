@@ -83,15 +83,6 @@ enum class CollisionDetectorType : int
   Ode,
 };
 
-/// Controls how World dispatches solver stepping each frame.
-enum class SolverSteppingMode : int
-{
-  /// Step all enabled solvers in registration order.
-  AllEnabledSolvers,
-  /// Step only the active rigid solver, then sync other enabled solvers.
-  ActiveRigidSolverOnly,
-};
-
 /// Configuration bundle used when constructing a World.
 struct WorldConfig final
 {
@@ -100,6 +91,22 @@ struct WorldConfig final
 
   /// Preferred collision detector for the world.
   CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
+
+  /// Assigns which rigid solver owns each world object class.
+  struct SolverRouting final
+  {
+    /// Solver responsible for classic Skeletons.
+    RigidSolverType skeletons = RigidSolverType::ClassicSkeleton;
+
+    /// Solver responsible for ECS-backed simulation objects.
+    RigidSolverType objects = RigidSolverType::EntityComponent;
+  };
+
+  /// Routing configuration for Skeletons and ECS-backed objects.
+  ///
+  /// The first solver of the requested type in registration order is selected
+  /// as the owner.
+  SolverRouting solverRouting;
 
   WorldConfig() = default;
   explicit WorldConfig(std::string worldName) : name(std::move(worldName)) {}
@@ -300,21 +307,6 @@ public:
   /// Get recording
   Recording* getRecording();
 
-  /// Sets which rigid solver is considered active.
-  ///
-  /// When SolverSteppingMode::ActiveRigidSolverOnly is selected, only the
-  /// active solver will receive step() calls.
-  bool setActiveRigidSolver(RigidSolverType type);
-
-  /// Returns which rigid solver type is currently active.
-  RigidSolverType getActiveRigidSolverType() const;
-
-  /// Controls how World steps the registered solvers.
-  void setSolverSteppingMode(SolverSteppingMode mode);
-
-  /// Returns the current solver stepping mode.
-  SolverSteppingMode getSolverSteppingMode() const;
-
   /// \{ @name Iterations
 
   /// Iterates all the Skeletons and invokes the callback function.
@@ -394,6 +386,18 @@ protected:
   Solver* getCollisionCapableSolver();
   const Solver* getCollisionCapableSolver() const;
 
+  /// Returns the solver configured to handle Skeletons, or nullptr.
+  Solver* getSkeletonSolver();
+
+  /// Returns the solver configured to handle Skeletons, or nullptr.
+  const Solver* getSkeletonSolver() const;
+
+  /// Returns the solver configured to handle ECS-backed objects, or nullptr.
+  Solver* getObjectSolver();
+
+  /// Returns the solver configured to handle ECS-backed objects, or nullptr.
+  const Solver* getObjectSolver() const;
+
   //--------------------------------------------------------------------------
   // Solver & ECS internals
   //--------------------------------------------------------------------------
@@ -403,9 +407,10 @@ protected:
 
   /// Adds a solver to this world with an initial enabled state.
   ///
-  /// Disabled solvers still receive structural notifications (e.g., skeleton
-  /// added/removed), but they are skipped when stepping and when resolving
-  /// World APIs that require a solver backend.
+  /// Disabled solvers still receive structural notifications when they are
+  /// configured to own those objects (e.g., Skeletons or ECS objects), but
+  /// they are skipped when stepping and when resolving World APIs that
+  /// require a solver backend.
   Solver* addSolver(std::unique_ptr<Solver> solver, bool enabled);
 
   /// Returns the number of solvers registered with this world.
@@ -432,11 +437,10 @@ protected:
   /// Returns the first solver with the given name, or nullptr.
   const Solver* getSolver(const std::string& name) const;
 
-  /// Returns the active rigid solver, or nullptr if it is not registered.
+  /// Returns the enabled solver configured for Skeletons, or nullptr.
   Solver* getActiveRigidSolver();
 
-  /// Returns the active rigid solver (const), or nullptr if it is not
-  /// registered.
+  /// Returns the enabled solver configured for Skeletons, or nullptr.
   const Solver* getActiveRigidSolver() const;
 
   /// Enables or disables a solver by index.
@@ -519,11 +523,11 @@ protected:
   /// Collection of solvers registered with the world.
   std::vector<SolverEntry> mSolvers;
 
-  /// Solver stepping policy used by World::step().
-  SolverSteppingMode mSolverSteppingMode{SolverSteppingMode::AllEnabledSolvers};
+  /// Solver type configured to handle classic Skeletons.
+  RigidSolverType mSkeletonSolverType{RigidSolverType::ClassicSkeleton};
 
-  /// Which rigid solver is considered active.
-  RigidSolverType mActiveRigidSolverType{RigidSolverType::ClassicSkeleton};
+  /// Solver type configured to handle ECS-backed objects.
+  RigidSolverType mObjectSolverType{RigidSolverType::EntityComponent};
 
   //--------------------------------------------------------------------------
   // Signals
