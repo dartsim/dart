@@ -37,24 +37,780 @@
 
 #include <dart/simulation/World.hpp>
 
-#include <CLI/CLI.hpp>
-#include <osg/Group>
+#include <dart/math/lcp/All.hpp>
+#include <dart/math/lcp/LcpValidation.hpp>
 
+#include <CLI/CLI.hpp>
+#include <Eigen/Core>
+#include <Eigen/QR>
+
+#include <algorithm>
+#include <chrono>
+#include <limits>
 #include <memory>
+#include <random>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include <cmath>
 
 namespace {
+
+constexpr int kMaxHistory = 120;
+
+struct ContractCheck
+{
+  bool finiteOk{false};
+  bool boundsOk{false};
+  bool residualOk{false};
+  bool complementarityOk{false};
+  bool validated{false};
+  bool ok{false};
+
+  double tol{std::numeric_limits<double>::quiet_NaN()};
+  double compTol{std::numeric_limits<double>::quiet_NaN()};
+  double residual{std::numeric_limits<double>::quiet_NaN()};
+  double complementarity{std::numeric_limits<double>::quiet_NaN()};
+  double boundViolation{std::numeric_limits<double>::quiet_NaN()};
+
+  std::string message;
+};
+
+struct RunStats
+{
+  bool hasResult{false};
+  dart::math::LcpResult result;
+  ContractCheck check;
+  double avgMs{0.0};
+  double minMs{0.0};
+  double maxMs{0.0};
+  std::vector<float> historyMs;
+};
+
+double MatrixInfinityNorm(const Eigen::MatrixXd& m)
+{
+  if (m.size() == 0)
+    return 0.0;
+  return m.cwiseAbs().rowwise().sum().maxCoeff();
+}
+
+double VectorInfinityNorm(const Eigen::VectorXd& v)
+{
+  return v.size() > 0 ? v.cwiseAbs().maxCoeff() : 0.0;
+}
+
+double ComputeBoundViolation(
+    const Eigen::VectorXd& lo,
+    const Eigen::VectorXd& hi,
+    const Eigen::VectorXd& x)
+{
+  double violation = 0.0;
+  for (Eigen::Index i = 0; i < x.size(); ++i) {
+    if (std::isfinite(lo[i]))
+      violation = std::max(violation, lo[i] - x[i]);
+    if (std::isfinite(hi[i]))
+      violation = std::max(violation, x[i] - hi[i]);
+  }
+  return std::max(0.0, violation);
+}
+
+ContractCheck CheckSolution(
+    const dart::math::LcpProblem& problem,
+    const Eigen::VectorXd& x,
+    const dart::math::LcpOptions& options)
+{
+  ContractCheck report;
+
+  if (x.size() != problem.b.size()) {
+    report.message = "Solution size does not match problem dimension";
+    return report;
+  }
+
+  const Eigen::VectorXd w = problem.A * x - problem.b;
+  report.finiteOk = x.allFinite() && w.allFinite();
+  if (!report.finiteOk) {
+    report.message = "Non-finite values in solution";
+    return report;
+  }
+
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string boundsMessage;
+  if (!dart::math::detail::computeEffectiveBounds(
+          problem.lo,
+          problem.hi,
+          problem.findex,
+          x,
+          loEff,
+          hiEff,
+          &boundsMessage)) {
+    report.message = boundsMessage;
+    return report;
+  }
+
+  const double absTol
+      = (options.absoluteTolerance > 0.0) ? options.absoluteTolerance : 1e-6;
+  const double relTol
+      = (options.relativeTolerance > 0.0) ? options.relativeTolerance : 1e-4;
+  const double compTolOpt = (options.complementarityTolerance > 0.0)
+                                ? options.complementarityTolerance
+                                : absTol;
+
+  const double scale = std::max(
+      1.0,
+      std::max(
+          VectorInfinityNorm(problem.b),
+          MatrixInfinityNorm(problem.A) * VectorInfinityNorm(x)));
+  report.tol = std::max(absTol, relTol * scale);
+  report.compTol = std::max(compTolOpt, relTol * scale);
+
+  report.residual
+      = dart::math::detail::naturalResidualInfinityNorm(x, w, loEff, hiEff);
+  report.complementarity = dart::math::detail::complementarityInfinityNorm(
+      x, w, loEff, hiEff, report.compTol);
+  report.boundViolation = ComputeBoundViolation(loEff, hiEff, x);
+
+  report.residualOk = report.residual <= report.tol;
+  report.complementarityOk = report.complementarity <= report.compTol;
+  report.boundsOk = report.boundViolation <= report.tol;
+
+  std::string validationMessage;
+  const double validationTol = std::max(report.tol, report.compTol);
+  report.validated = dart::math::detail::validateSolution(
+      x, w, loEff, hiEff, validationTol, &validationMessage);
+  if (!report.validated && report.message.empty())
+    report.message = validationMessage;
+
+  report.ok = report.finiteOk && report.boundsOk && report.residualOk
+              && report.complementarityOk && report.validated;
+
+  if (!report.ok && report.message.empty())
+    report.message = "Solution violates comparison contract";
+
+  return report;
+}
+
+Eigen::MatrixXd MakeSpdMatrix(int n, unsigned seed, double diagShift)
+{
+  std::mt19937 rng(seed);
+  std::uniform_real_distribution<double> dist(-1.0, 1.0);
+
+  Eigen::MatrixXd M(n, n);
+  for (int r = 0; r < n; ++r) {
+    for (int c = 0; c < n; ++c)
+      M(r, c) = dist(rng);
+  }
+
+  Eigen::MatrixXd A = M.transpose() * M;
+  A += diagShift * Eigen::MatrixXd::Identity(n, n);
+  return A;
+}
+
+Eigen::MatrixXd MakeIllConditionedSpd(int n, unsigned seed)
+{
+  std::mt19937 rng(seed);
+  std::normal_distribution<double> dist(0.0, 1.0);
+
+  Eigen::MatrixXd M(n, n);
+  for (int r = 0; r < n; ++r) {
+    for (int c = 0; c < n; ++c)
+      M(r, c) = dist(rng);
+  }
+
+  Eigen::HouseholderQR<Eigen::MatrixXd> qr(M);
+  Eigen::MatrixXd Q = qr.householderQ() * Eigen::MatrixXd::Identity(n, n);
+
+  Eigen::VectorXd eigs(n);
+  const double minExp = -6.0;
+  const double maxExp = 1.5;
+  for (int i = 0; i < n; ++i) {
+    const double t = (n > 1) ? static_cast<double>(i) / (n - 1) : 0.0;
+    eigs[i] = std::pow(10.0, minExp + (maxExp - minExp) * t);
+  }
+
+  return Q * eigs.asDiagonal() * Q.transpose();
+}
+
+Eigen::MatrixXd MakeMassRatioSpd(int n, unsigned seed)
+{
+  std::mt19937 rng(seed);
+  std::uniform_real_distribution<double> dist(-0.1, 0.1);
+
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n, n);
+  for (int i = 0; i < n; ++i) {
+    const double t = (n > 1) ? static_cast<double>(i) / (n - 1) : 0.0;
+    A(i, i) = std::pow(10.0, -3.0 + 6.0 * t);
+  }
+
+  for (int r = 0; r < n; ++r) {
+    for (int c = r + 1; c < n; ++c) {
+      const double v = 0.01 * dist(rng);
+      A(r, c) += v;
+      A(c, r) += v;
+    }
+  }
+
+  A += 0.05 * Eigen::MatrixXd::Identity(n, n);
+  return A;
+}
+
+Eigen::MatrixXd MakeContactSpdMatrix(int contacts, unsigned seed)
+{
+  const int n = contacts * 3;
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n, n);
+
+  std::mt19937 rng(seed);
+  std::uniform_real_distribution<double> dist(-0.15, 0.15);
+
+  for (int i = 0; i < contacts; ++i) {
+    Eigen::Matrix3d block;
+    block << 3.0 + dist(rng), 0.2, 0.0, 0.2, 2.6 + dist(rng), 0.1, 0.0, 0.1,
+        2.2 + dist(rng);
+    A.block<3, 3>(3 * i, 3 * i) = block;
+  }
+
+  for (int i = 0; i + 1 < contacts; ++i) {
+    const double coupling = 0.05 + 0.02 * dist(rng);
+    const int a = 3 * i;
+    const int b = 3 * (i + 1);
+    A(a, b) += coupling;
+    A(b, a) += coupling;
+    A(a + 1, b + 1) += 0.5 * coupling;
+    A(b + 1, a + 1) += 0.5 * coupling;
+    A(a + 2, b + 2) += 0.5 * coupling;
+    A(b + 2, a + 2) += 0.5 * coupling;
+  }
+
+  A += 0.3 * Eigen::MatrixXd::Identity(n, n);
+  return A;
+}
+
+Eigen::VectorXd MakePositiveVector(
+    int n, unsigned seed, double minVal, double maxVal)
+{
+  std::mt19937 rng(seed);
+  std::uniform_real_distribution<double> dist(minVal, maxVal);
+  Eigen::VectorXd x(n);
+  for (int i = 0; i < n; ++i)
+    x[i] = dist(rng);
+  return x;
+}
+
+struct ExampleCase
+{
+  std::string label;
+  std::string category;
+  std::string description;
+  std::vector<std::string> references;
+  unsigned seed{0};
+  bool isBoxed{false};
+  bool hasFindex{false};
+  dart::math::LcpProblem problem;
+
+  ExampleCase(
+      std::string labelText,
+      std::string categoryText,
+      std::string descriptionText,
+      std::vector<std::string> referenceTags,
+      unsigned seedValue,
+      bool boxed,
+      bool findex,
+      dart::math::LcpProblem lcpProblem)
+    : label(std::move(labelText)),
+      category(std::move(categoryText)),
+      description(std::move(descriptionText)),
+      references(std::move(referenceTags)),
+      seed(seedValue),
+      isBoxed(boxed),
+      hasFindex(findex),
+      problem(std::move(lcpProblem))
+  {
+  }
+};
+
+enum class SolverType
+{
+  Dantzig,
+  Lemke,
+  Baraff,
+  Direct,
+  Pgs,
+  SymmetricPsor,
+  Jacobi,
+  RedBlack,
+  BlockedJacobi,
+  Bgs,
+  Nncg,
+  SubspaceMinimization,
+  MinimumMapNewton,
+  FischerBurmeisterNewton,
+  PenalizedFischerBurmeisterNewton,
+  InteriorPoint,
+  Mprgp,
+  ShockPropagation,
+  Staggering
+};
+
+struct SolverInfo
+{
+  SolverType type;
+  std::string name;
+  std::string category;
+  bool supportsStandard{true};
+  bool supportsBoxed{true};
+  bool supportsFindex{true};
+  std::string fallbackNote;
+};
+
+std::unique_ptr<dart::math::LcpSolver> CreateSolver(SolverType type)
+{
+  using namespace dart::math;
+  switch (type) {
+    case SolverType::Dantzig:
+      return std::make_unique<DantzigSolver>();
+    case SolverType::Lemke:
+      return std::make_unique<LemkeSolver>();
+    case SolverType::Baraff:
+      return std::make_unique<BaraffSolver>();
+    case SolverType::Direct:
+      return std::make_unique<DirectSolver>();
+    case SolverType::Pgs:
+      return std::make_unique<PgsSolver>();
+    case SolverType::SymmetricPsor:
+      return std::make_unique<SymmetricPsorSolver>();
+    case SolverType::Jacobi:
+      return std::make_unique<JacobiSolver>();
+    case SolverType::RedBlack:
+      return std::make_unique<RedBlackGaussSeidelSolver>();
+    case SolverType::BlockedJacobi:
+      return std::make_unique<BlockedJacobiSolver>();
+    case SolverType::Bgs:
+      return std::make_unique<BgsSolver>();
+    case SolverType::Nncg:
+      return std::make_unique<NncgSolver>();
+    case SolverType::SubspaceMinimization:
+      return std::make_unique<SubspaceMinimizationSolver>();
+    case SolverType::MinimumMapNewton:
+      return std::make_unique<MinimumMapNewtonSolver>();
+    case SolverType::FischerBurmeisterNewton:
+      return std::make_unique<FischerBurmeisterNewtonSolver>();
+    case SolverType::PenalizedFischerBurmeisterNewton:
+      return std::make_unique<PenalizedFischerBurmeisterNewtonSolver>();
+    case SolverType::InteriorPoint:
+      return std::make_unique<InteriorPointSolver>();
+    case SolverType::Mprgp:
+      return std::make_unique<MprgpSolver>();
+    case SolverType::ShockPropagation:
+      return std::make_unique<ShockPropagationSolver>();
+    case SolverType::Staggering:
+      return std::make_unique<StaggeringSolver>();
+  }
+  return nullptr;
+}
+
+std::vector<SolverInfo> BuildSolvers()
+{
+  std::vector<SolverInfo> solvers;
+
+  solvers.push_back(
+      {SolverType::Dantzig, "Dantzig", "Pivoting", true, true, true, ""});
+  solvers.push_back(
+      {SolverType::Lemke,
+       "Lemke",
+       "Pivoting",
+       true,
+       false,
+       false,
+       "Fallback to Dantzig for boxed or findex problems"});
+  solvers.push_back(
+      {SolverType::Baraff,
+       "Baraff",
+       "Pivoting",
+       true,
+       false,
+       false,
+       "Fallback to Dantzig for boxed or findex problems"});
+  solvers.push_back(
+      {SolverType::Direct,
+       "Direct",
+       "Pivoting",
+       true,
+       false,
+       false,
+       "Fallback to Dantzig for boxed/findex or size > 3"});
+
+  solvers.push_back(
+      {SolverType::Pgs, "PGS", "Projection", true, true, true, ""});
+  solvers.push_back(
+      {SolverType::SymmetricPsor,
+       "Symmetric PSOR",
+       "Projection",
+       true,
+       true,
+       true,
+       ""});
+  solvers.push_back(
+      {SolverType::Jacobi, "Jacobi", "Projection", true, true, true, ""});
+  solvers.push_back(
+      {SolverType::RedBlack,
+       "Red-Black GS",
+       "Projection",
+       true,
+       true,
+       true,
+       ""});
+  solvers.push_back(
+      {SolverType::BlockedJacobi,
+       "Blocked Jacobi",
+       "Projection",
+       true,
+       true,
+       true,
+       ""});
+  solvers.push_back(
+      {SolverType::Bgs, "BGS", "Projection", true, true, true, ""});
+  solvers.push_back(
+      {SolverType::Nncg, "NNCG", "Projection", true, true, true, ""});
+  solvers.push_back(
+      {SolverType::SubspaceMinimization,
+       "Subspace Minimization",
+       "Projection",
+       true,
+       true,
+       true,
+       ""});
+
+  solvers.push_back(
+      {SolverType::MinimumMapNewton,
+       "Minimum Map Newton",
+       "Newton",
+       true,
+       false,
+       false,
+       "Fallback to Dantzig for boxed or findex problems"});
+  solvers.push_back(
+      {SolverType::FischerBurmeisterNewton,
+       "Fischer-Burmeister Newton",
+       "Newton",
+       true,
+       false,
+       false,
+       "Fallback to Dantzig for boxed or findex problems"});
+  solvers.push_back(
+      {SolverType::PenalizedFischerBurmeisterNewton,
+       "Penalized FB Newton",
+       "Newton",
+       true,
+       false,
+       false,
+       "Fallback to Dantzig for boxed or findex problems"});
+
+  solvers.push_back(
+      {SolverType::InteriorPoint,
+       "Interior Point",
+       "Other",
+       true,
+       false,
+       false,
+       "Fallback to Dantzig for boxed or findex problems"});
+  solvers.push_back(
+      {SolverType::Mprgp,
+       "MPRGP",
+       "Other",
+       true,
+       false,
+       false,
+       "Fallback to Dantzig for boxed or findex problems"});
+  solvers.push_back(
+      {SolverType::ShockPropagation,
+       "Shock Propagation",
+       "Other",
+       true,
+       true,
+       true,
+       ""});
+  solvers.push_back(
+      {SolverType::Staggering, "Staggering", "Other", true, true, true, ""});
+
+  return solvers;
+}
+
+std::vector<ExampleCase> BuildExamples()
+{
+  const double kInf = std::numeric_limits<double>::infinity();
+  std::vector<ExampleCase> examples;
+
+  {
+    const unsigned seed = 1001;
+    Eigen::MatrixXd A(2, 2);
+    A << 2.0, 0.5, 0.5, 1.5;
+    Eigen::VectorXd xStar(2);
+    xStar << 0.4, 0.2;
+    Eigen::VectorXd b = A * xStar;
+    Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+    Eigen::VectorXd hi = Eigen::VectorXd::Constant(2, kInf);
+    Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+    examples.emplace_back(
+        "2x2 Standard LCP",
+        "Toy / Didactic",
+        "Minimal standard LCP for pivoting basics.",
+        std::vector<std::string>{"Lemke1965", "CottleDantzig1968"},
+        seed,
+        false,
+        false,
+        dart::math::LcpProblem(A, b, lo, hi, findex));
+  }
+
+  {
+    const unsigned seed = 1002;
+    Eigen::MatrixXd A = MakeSpdMatrix(3, seed, 1.0);
+    Eigen::VectorXd xStar(3);
+    xStar << -1.0, 0.1, 0.8;
+    Eigen::VectorXd b = A * xStar;
+    Eigen::VectorXd lo(3);
+    Eigen::VectorXd hi(3);
+    lo << -1.0, -0.5, 0.0;
+    hi << 0.5, 0.5, 0.8;
+    Eigen::VectorXi findex = Eigen::VectorXi::Constant(3, -1);
+    examples.emplace_back(
+        "3x3 Boxed LCP (active bounds)",
+        "Toy / Didactic",
+        "Boxed LCP with mixed active bounds.",
+        std::vector<std::string>{"Murty1988", "CottlePangStone1992"},
+        seed,
+        true,
+        false,
+        dart::math::LcpProblem(A, b, lo, hi, findex));
+  }
+
+  {
+    const unsigned seed = 1003;
+    Eigen::Matrix3d A;
+    A << 4.0, 0.5, 0.0, 0.5, 3.0, 0.25, 0.0, 0.25, 2.5;
+    Eigen::Vector3d xStar;
+    xStar << 1.0, 0.2, -0.1;
+    Eigen::Vector3d b = A * xStar;
+    const double mu = 0.5;
+    Eigen::Vector3d lo;
+    Eigen::Vector3d hi;
+    lo << 0.0, -mu, -mu;
+    hi << kInf, mu, mu;
+    Eigen::Vector3i findex;
+    findex << -1, 0, 0;
+    examples.emplace_back(
+        "Single-contact friction pyramid",
+        "Toy / Didactic",
+        "One normal + two tangents using findex coupling.",
+        std::vector<std::string>{
+            "Smith2000", "Smith2006", "StewartTrinkle1996"},
+        seed,
+        true,
+        true,
+        dart::math::LcpProblem(A, b, lo, hi, findex));
+  }
+
+  {
+    const unsigned seed = 2001;
+    const int n = 8;
+    Eigen::MatrixXd A = MakeIllConditionedSpd(n, seed);
+    Eigen::VectorXd xStar = MakePositiveVector(n, seed + 1, 0.1, 1.0);
+    Eigen::VectorXd b = A * xStar;
+    Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
+    Eigen::VectorXd hi = Eigen::VectorXd::Constant(n, kInf);
+    Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
+    examples.emplace_back(
+        "Near-singular standard LCP",
+        "Intermediate / Stress",
+        "Ill-conditioned SPD matrix to stress robustness.",
+        std::vector<std::string>{"Kojima1991", "Wright1997"},
+        seed,
+        false,
+        false,
+        dart::math::LcpProblem(A, b, lo, hi, findex));
+  }
+
+  {
+    const unsigned seed = 2002;
+    const int n = 12;
+    Eigen::MatrixXd A = MakeMassRatioSpd(n, seed);
+    Eigen::VectorXd xStar = MakePositiveVector(n, seed + 1, 0.05, 0.6);
+    Eigen::VectorXd b = A * xStar;
+    Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
+    Eigen::VectorXd hi = Eigen::VectorXd::Constant(n, kInf);
+    Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
+    examples.emplace_back(
+        "Large mass-ratio block",
+        "Intermediate / Stress",
+        "Diagonal dominance with large scale variation.",
+        std::vector<std::string>{"Silcowitz2009", "Silcowitz2010"},
+        seed,
+        false,
+        false,
+        dart::math::LcpProblem(A, b, lo, hi, findex));
+  }
+
+  auto addContactExample = [&](const std::string& label,
+                               const std::string& category,
+                               const std::string& description,
+                               const std::vector<std::string>& refs,
+                               unsigned seed,
+                               int contacts,
+                               double mu) {
+    const int n = contacts * 3;
+    Eigen::MatrixXd A = MakeContactSpdMatrix(contacts, seed);
+    Eigen::VectorXd xStar = Eigen::VectorXd::Zero(n);
+    for (int i = 0; i < contacts; ++i) {
+      const double normal = 0.6 + 0.05 * i;
+      const double tangentScale = 0.3 * mu * normal;
+      xStar[3 * i] = normal;
+      xStar[3 * i + 1] = tangentScale * ((i % 2 == 0) ? 1.0 : -1.0);
+      xStar[3 * i + 2] = -tangentScale * 0.5;
+    }
+    Eigen::VectorXd b = A * xStar;
+
+    Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
+    Eigen::VectorXd hi = Eigen::VectorXd::Zero(n);
+    Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
+    for (int i = 0; i < contacts; ++i) {
+      lo[3 * i] = 0.0;
+      hi[3 * i] = kInf;
+      lo[3 * i + 1] = -mu;
+      hi[3 * i + 1] = mu;
+      findex[3 * i + 1] = 3 * i;
+      lo[3 * i + 2] = -mu;
+      hi[3 * i + 2] = mu;
+      findex[3 * i + 2] = 3 * i;
+    }
+
+    examples.emplace_back(
+        label,
+        category,
+        description,
+        refs,
+        seed,
+        true,
+        true,
+        dart::math::LcpProblem(A, b, lo, hi, findex));
+  };
+
+  addContactExample(
+      "Rigid-body time-stepping contact",
+      "Real-world inspired",
+      "Multi-contact friction using a time-stepping style LCP.",
+      {"StewartTrinkle1996", "AnitescuPotra1997"},
+      3001,
+      6,
+      0.6);
+
+  addContactExample(
+      "Granular pile / multi-contact blocks",
+      "Real-world inspired",
+      "Many contact blocks motivated by NSCD-style solvers.",
+      {"Moreau1988", "Jean1999", "AcaryBrogliato2008"},
+      3002,
+      10,
+      0.5);
+
+  addContactExample(
+      "Stacking / shock propagation layers",
+      "Real-world inspired",
+      "Layered contact ordering for stacking scenarios.",
+      {"Guendelman2003"},
+      3003,
+      4,
+      0.4);
+
+  addContactExample(
+      "Staggered normal/tangent solve",
+      "Real-world inspired",
+      "Normal vs tangent split for staggered updates.",
+      {"Kaufman2008", "Tournier2015"},
+      3004,
+      5,
+      0.7);
+
+  {
+    const unsigned seed = 3005;
+    const int n = 10;
+    Eigen::MatrixXd A = MakeSpdMatrix(n, seed, 2.5);
+    Eigen::VectorXd xStar = MakePositiveVector(n, seed + 1, 0.1, 0.8);
+    Eigen::VectorXd b = A * xStar;
+    Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
+    Eigen::VectorXd hi = Eigen::VectorXd::Constant(n, kInf);
+    Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
+    examples.emplace_back(
+        "Newton accuracy-focused case",
+        "Real-world inspired",
+        "Moderate SPD system for Newton-style accuracy.",
+        std::vector<std::string>{"Fischer1992", "QiSun1993"},
+        seed,
+        false,
+        false,
+        dart::math::LcpProblem(A, b, lo, hi, findex));
+  }
+
+  return examples;
+}
+
+const std::unordered_map<std::string, std::string>& ReferenceMap()
+{
+  static const std::unordered_map<std::string, std::string> refs{
+      {"Lemke1965",
+       "Lemke (1965) Bimatrix equilibrium points and mathematical programming"},
+      {"CottleDantzig1968",
+       "Cottle and Dantzig (1968) Complementary pivot theory"},
+      {"Murty1988",
+       "Murty (1988) Linear complementarity, linear and nonlinear programming"},
+      {"CottlePangStone1992",
+       "Cottle, Pang, Stone (1992) The linear complementarity problem"},
+      {"Smith2000", "Smith (2000) Open Dynamics Engine user guide"},
+      {"Smith2006", "Smith (2006) Open Dynamics Engine"},
+      {"StewartTrinkle1996",
+       "Stewart and Trinkle (1996) Implicit time-stepping with friction"},
+      {"Kojima1991", "Kojima et al. (1991) Interior point algorithms for LCP"},
+      {"Wright1997", "Wright (1997) Primal-dual interior-point methods"},
+      {"Silcowitz2009", "Silcowitz et al. (2009) NNCG for interactive contact"},
+      {"Silcowitz2010",
+       "Silcowitz et al. (2010) NNCG for interactive contact (extended)"},
+      {"AnitescuPotra1997", "Anitescu and Potra (1997) Multi-body contact LCP"},
+      {"Moreau1988", "Moreau (1988) Unilateral contact and dry friction"},
+      {"Jean1999", "Jean (1999) Non-smooth contact dynamics"},
+      {"AcaryBrogliato2008",
+       "Acary and Brogliato (2008) Numerical methods for nonsmooth dynamics"},
+      {"Guendelman2003",
+       "Guendelman et al. (2003) Nonconvex rigid bodies with stacking"},
+      {"Kaufman2008",
+       "Kaufman et al. (2008) Staggered projections for frictional contact"},
+      {"Tournier2015", "Tournier et al. (2015) Stable constrained dynamics"},
+      {"Fischer1992", "Fischer (1992) Special Newton-type optimization method"},
+      {"QiSun1993", "Qi and Sun (1993) Nonsmooth Newton method"}};
+  return refs;
+}
 
 class LcpDashboardWidget : public dart::gui::ImGuiWidget
 {
 public:
-  explicit LcpDashboardWidget(dart::gui::ImGuiViewer* viewer) : mViewer(viewer)
+  explicit LcpDashboardWidget(dart::gui::ImGuiViewer* viewer)
+    : mViewer(viewer),
+      mExamples(BuildExamples()),
+      mSolvers(BuildSolvers()),
+      mSolverStats(mSolvers.size())
   {
+    mOptions.maxIterations = 100;
+    mOptions.absoluteTolerance = 1e-6;
+    mOptions.relativeTolerance = 1e-4;
+    mOptions.complementarityTolerance = 1e-6;
+    mOptions.relaxation = 1.0;
+    mOptions.warmStart = false;
+    mOptions.validateSolution = false;
+    mOptions.earlyTermination = false;
   }
 
   void render() override
   {
     ImGui::SetNextWindowPos(ImVec2(10, 20), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(520, 520), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(620, 720), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowBgAlpha(0.6f);
 
     if (!ImGui::Begin(
@@ -79,21 +835,302 @@ public:
       ImGui::EndMenuBar();
     }
 
-    ImGui::TextWrapped(
-        "Placeholder UI. This example will showcase LCP solver behavior, "
-        "performance, and tradeoffs.");
-
+    RenderExamplePanel();
     ImGui::Separator();
-    ImGui::Text("Next steps:");
-    ImGui::BulletText("Scenario selector with references");
-    ImGui::BulletText("Solver selector by category");
-    ImGui::BulletText("Results, contract checks, and performance plots");
+    RenderSolverPanel();
+    ImGui::Separator();
+    RenderOptionsPanel();
+    ImGui::Separator();
+    RenderRunPanel();
+    ImGui::Separator();
+    RenderResultsPanel();
 
     ImGui::End();
   }
 
 private:
+  void RenderExamplePanel()
+  {
+    ImGui::Text("Example");
+    const ExampleCase& current = mExamples[mExampleIndex];
+    if (ImGui::BeginCombo("Scenario", current.label.c_str())) {
+      std::string lastCategory;
+      for (int i = 0; i < static_cast<int>(mExamples.size()); ++i) {
+        const auto& ex = mExamples[i];
+        if (ex.category != lastCategory) {
+          ImGui::SeparatorText(ex.category.c_str());
+          lastCategory = ex.category;
+        }
+        const bool selected = (mExampleIndex == i);
+        if (ImGui::Selectable(ex.label.c_str(), selected)) {
+          mExampleIndex = i;
+          ClearResults();
+        }
+        if (selected)
+          ImGui::SetItemDefaultFocus();
+      }
+      ImGui::EndCombo();
+    }
+
+    const ExampleCase& selected = mExamples[mExampleIndex];
+    ImGui::TextWrapped("%s", selected.description.c_str());
+    const char* typeText = selected.hasFindex
+                               ? "Boxed + friction index"
+                               : (selected.isBoxed ? "Boxed" : "Standard");
+    ImGui::Text("Problem type: %s", typeText);
+    ImGui::Text("Dimension: %ld", static_cast<long>(selected.problem.b.size()));
+    ImGui::Text("Seed: %u", selected.seed);
+
+    RenderReferenceTags(selected.references);
+  }
+
+  void RenderSolverPanel()
+  {
+    ImGui::Text("Solver");
+    const SolverInfo& current = mSolvers[mSolverIndex];
+
+    if (ImGui::BeginCombo("Solver", current.name.c_str())) {
+      std::string lastCategory;
+      for (int i = 0; i < static_cast<int>(mSolvers.size()); ++i) {
+        const auto& solver = mSolvers[i];
+        if (solver.category != lastCategory) {
+          ImGui::SeparatorText(solver.category.c_str());
+          lastCategory = solver.category;
+        }
+        const bool selected = (mSolverIndex == i);
+        if (ImGui::Selectable(solver.name.c_str(), selected))
+          mSolverIndex = i;
+        if (selected)
+          ImGui::SetItemDefaultFocus();
+      }
+      ImGui::EndCombo();
+    }
+
+    if (ImGui::CollapsingHeader(
+            "Capabilities", ImGuiTreeNodeFlags_DefaultOpen)) {
+      const SolverInfo& solver = mSolvers[mSolverIndex];
+      ImGui::Text("Standard: %s", solver.supportsStandard ? "yes" : "no");
+      ImGui::Text("Boxed: %s", solver.supportsBoxed ? "yes" : "no");
+      ImGui::Text("Findex: %s", solver.supportsFindex ? "yes" : "no");
+      if (!solver.fallbackNote.empty())
+        ImGui::TextWrapped("%s", solver.fallbackNote.c_str());
+    }
+  }
+
+  void RenderOptionsPanel()
+  {
+    if (!ImGui::CollapsingHeader(
+            "Solver Options", ImGuiTreeNodeFlags_DefaultOpen))
+      return;
+
+    ImGui::TextWrapped(
+        "Shared options apply to all solvers for apples-to-apples comparison.");
+
+    ImGui::InputInt("Max iterations", &mOptions.maxIterations);
+    ImGui::InputDouble(
+        "Abs tolerance", &mOptions.absoluteTolerance, 0.0, 0.0, "%.2e");
+    ImGui::InputDouble(
+        "Rel tolerance", &mOptions.relativeTolerance, 0.0, 0.0, "%.2e");
+    ImGui::InputDouble(
+        "Complementarity tol",
+        &mOptions.complementarityTolerance,
+        0.0,
+        0.0,
+        "%.2e");
+    ImGui::InputDouble("Relaxation", &mOptions.relaxation, 0.0, 0.0, "%.2f");
+    ImGui::Checkbox("Warm start", &mOptions.warmStart);
+    ImGui::Checkbox("Validate solution", &mOptions.validateSolution);
+    ImGui::Checkbox("Early termination", &mOptions.earlyTermination);
+  }
+
+  void RenderRunPanel()
+  {
+    if (!ImGui::CollapsingHeader("Run", ImGuiTreeNodeFlags_DefaultOpen))
+      return;
+
+    ImGui::InputInt("Runs per solver", &mRunCount);
+    if (mRunCount < 1)
+      mRunCount = 1;
+
+    if (ImGui::Button("Run selected"))
+      RunSolverIndex(mSolverIndex);
+    ImGui::SameLine();
+    if (ImGui::Button("Run all"))
+      RunAllSolvers();
+    ImGui::SameLine();
+    if (ImGui::Button("Clear results"))
+      ClearResults();
+  }
+
+  void RenderResultsPanel()
+  {
+    if (!ImGui::CollapsingHeader("Results", ImGuiTreeNodeFlags_DefaultOpen))
+      return;
+
+    ImGui::Checkbox("Show all solvers", &mShowAllResults);
+
+    ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg
+                            | ImGuiTableFlags_Resizable
+                            | ImGuiTableFlags_SizingStretchProp;
+    if (!ImGui::BeginTable("lcp_results", 9, flags))
+      return;
+
+    ImGui::TableSetupColumn("Solver");
+    ImGui::TableSetupColumn("Status");
+    ImGui::TableSetupColumn("Iters");
+    ImGui::TableSetupColumn("Residual");
+    ImGui::TableSetupColumn("Complementarity");
+    ImGui::TableSetupColumn("Bound violation");
+    ImGui::TableSetupColumn("Contract ok");
+    ImGui::TableSetupColumn("Avg ms");
+    ImGui::TableSetupColumn("Min/Max ms");
+    ImGui::TableHeadersRow();
+
+    auto renderRow = [&](int index) {
+      const auto& solver = mSolvers[index];
+      const auto& stats = mSolverStats[index];
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      ImGui::TextUnformatted(solver.name.c_str());
+
+      ImGui::TableSetColumnIndex(1);
+      if (!stats.hasResult) {
+        ImGui::TextUnformatted("Not run");
+        return;
+      }
+      ImGui::TextUnformatted(dart::math::toString(stats.result.status).c_str());
+
+      ImGui::TableSetColumnIndex(2);
+      ImGui::Text("%d", stats.result.iterations);
+
+      ImGui::TableSetColumnIndex(3);
+      ImGui::Text("%.3e", stats.check.residual);
+
+      ImGui::TableSetColumnIndex(4);
+      ImGui::Text("%.3e", stats.check.complementarity);
+
+      ImGui::TableSetColumnIndex(5);
+      ImGui::Text("%.3e", stats.check.boundViolation);
+
+      ImGui::TableSetColumnIndex(6);
+      if (stats.check.ok) {
+        ImGui::TextColored(ImVec4(0.2f, 0.8f, 0.3f, 1.0f), "yes");
+      } else {
+        ImGui::TextColored(ImVec4(0.9f, 0.3f, 0.3f, 1.0f), "no");
+        if (ImGui::IsItemHovered() && !stats.check.message.empty()) {
+          ImGui::SetTooltip("%s", stats.check.message.c_str());
+        }
+      }
+
+      ImGui::TableSetColumnIndex(7);
+      ImGui::Text("%.3f", stats.avgMs);
+
+      ImGui::TableSetColumnIndex(8);
+      ImGui::Text("%.3f / %.3f", stats.minMs, stats.maxMs);
+    };
+
+    if (mShowAllResults) {
+      for (int i = 0; i < static_cast<int>(mSolvers.size()); ++i)
+        renderRow(i);
+    } else {
+      renderRow(mSolverIndex);
+    }
+
+    ImGui::EndTable();
+  }
+
+  void RenderReferenceTags(const std::vector<std::string>& refs)
+  {
+    if (refs.empty())
+      return;
+
+    ImGui::Text("References:");
+    const auto& refMap = ReferenceMap();
+    for (const auto& tag : refs) {
+      ImGui::SameLine();
+      ImGui::SmallButton(tag.c_str());
+      if (ImGui::IsItemHovered()) {
+        auto it = refMap.find(tag);
+        if (it != refMap.end())
+          ImGui::SetTooltip("%s", it->second.c_str());
+      }
+    }
+  }
+
+  void ClearResults()
+  {
+    for (auto& stats : mSolverStats) {
+      stats = RunStats{};
+    }
+  }
+
+  void RunAllSolvers()
+  {
+    for (int i = 0; i < static_cast<int>(mSolvers.size()); ++i)
+      RunSolverIndex(i);
+  }
+
+  void RunSolverIndex(int index)
+  {
+    const auto& solverInfo = mSolvers[index];
+    auto solver = CreateSolver(solverInfo.type);
+    if (!solver)
+      return;
+
+    const auto& problem = mExamples[mExampleIndex].problem;
+    auto& stats = mSolverStats[index];
+
+    dart::math::LcpOptions options = mOptions;
+    options.customOptions = nullptr;
+
+    const int n = static_cast<int>(problem.b.size());
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+
+    double minMs = std::numeric_limits<double>::infinity();
+    double maxMs = 0.0;
+    double totalMs = 0.0;
+
+    for (int i = 0; i < mRunCount; ++i) {
+      if (!mOptions.warmStart || i == 0)
+        x = Eigen::VectorXd::Zero(n);
+
+      const auto start = std::chrono::steady_clock::now();
+      stats.result = solver->solve(problem, x, options);
+      const auto end = std::chrono::steady_clock::now();
+      const double ms
+          = std::chrono::duration<double, std::milli>(end - start).count();
+
+      totalMs += ms;
+      minMs = std::min(minMs, ms);
+      maxMs = std::max(maxMs, ms);
+      AppendHistory(stats.historyMs, static_cast<float>(ms));
+    }
+
+    stats.check = CheckSolution(problem, x, mOptions);
+    stats.avgMs = totalMs / static_cast<double>(mRunCount);
+    stats.minMs = std::isfinite(minMs) ? minMs : 0.0;
+    stats.maxMs = maxMs;
+    stats.hasResult = true;
+  }
+
+  static void AppendHistory(std::vector<float>& history, float value)
+  {
+    if (history.size() >= kMaxHistory)
+      history.erase(history.begin());
+    history.push_back(value);
+  }
+
   dart::gui::ImGuiViewer* mViewer;
+  std::vector<ExampleCase> mExamples;
+  std::vector<SolverInfo> mSolvers;
+  std::vector<RunStats> mSolverStats;
+
+  int mExampleIndex{0};
+  int mSolverIndex{0};
+  int mRunCount{10};
+  bool mShowAllResults{false};
+
+  dart::math::LcpOptions mOptions;
 };
 
 } // namespace
