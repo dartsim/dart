@@ -37,11 +37,15 @@
 
 #include <dart/simulation/World.hpp>
 
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/SimpleFrame.hpp>
+
 #include <dart/math/lcp/All.hpp>
 #include <dart/math/lcp/LcpValidation.hpp>
 
 #include <CLI/CLI.hpp>
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <Eigen/QR>
 
 #include <algorithm>
@@ -922,6 +926,55 @@ const std::unordered_map<std::string, std::string>& ReferenceMap()
   return refs;
 }
 
+void AddReferenceScene(const dart::simulation::WorldPtr& world)
+{
+  const double groundSize = 4.0;
+  const double groundThickness = 0.1;
+  const double axisLength = 1.5;
+  const double axisThickness = 0.05;
+
+  auto ground = std::make_shared<dart::dynamics::SimpleFrame>(
+      dart::dynamics::Frame::World(), "ground");
+  ground->setShape(std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d(groundSize, groundSize, groundThickness)));
+  Eigen::Isometry3d groundTf = Eigen::Isometry3d::Identity();
+  groundTf.translation() = Eigen::Vector3d(0.0, 0.0, -0.5 * groundThickness);
+  ground->setRelativeTransform(groundTf);
+  ground->getVisualAspect(true)->setColor(Eigen::Vector3d(0.85, 0.85, 0.85));
+  world->addSimpleFrame(ground);
+
+  auto addAxis = [&world](
+                     const std::string& name,
+                     const Eigen::Vector3d& size,
+                     const Eigen::Vector3d& center,
+                     const Eigen::Vector3d& color) {
+    auto axis = std::make_shared<dart::dynamics::SimpleFrame>(
+        dart::dynamics::Frame::World(), name);
+    axis->setShape(std::make_shared<dart::dynamics::BoxShape>(size));
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    tf.translation() = center;
+    axis->setRelativeTransform(tf);
+    axis->getVisualAspect(true)->setColor(color);
+    world->addSimpleFrame(axis);
+  };
+
+  addAxis(
+      "axis_x",
+      Eigen::Vector3d(axisLength, axisThickness, axisThickness),
+      Eigen::Vector3d(0.5 * axisLength, 0.0, 0.5 * axisThickness),
+      Eigen::Vector3d(0.9, 0.2, 0.2));
+  addAxis(
+      "axis_y",
+      Eigen::Vector3d(axisThickness, axisLength, axisThickness),
+      Eigen::Vector3d(0.0, 0.5 * axisLength, 0.5 * axisThickness),
+      Eigen::Vector3d(0.2, 0.8, 0.2));
+  addAxis(
+      "axis_z",
+      Eigen::Vector3d(axisThickness, axisThickness, axisLength),
+      Eigen::Vector3d(0.0, 0.0, 0.5 * axisLength),
+      Eigen::Vector3d(0.2, 0.4, 0.9));
+}
+
 struct SolverParameters
 {
   dart::math::PgsSolver::Parameters pgs;
@@ -1740,6 +1793,7 @@ int main(int argc, char* argv[])
 
   dart::simulation::WorldPtr world
       = dart::simulation::World::create("lcp_solvers_world");
+  AddReferenceScene(world);
   osg::ref_ptr<dart::gui::WorldNode> worldNode
       = new dart::gui::WorldNode(world);
 
@@ -1749,7 +1803,18 @@ int main(int argc, char* argv[])
   viewer->getImGuiHandler()->addWidget(
       std::make_shared<LcpDashboardWidget>(viewer, guiScale));
 
-  viewer->setUpViewInWindow(100, 100, 1280, 720);
+  const double baseWidth = 1280.0;
+  const double baseHeight = 720.0;
+  const int windowWidth
+      = static_cast<int>(std::round(std::max(640.0, baseWidth * guiScale)));
+  const int windowHeight
+      = static_cast<int>(std::round(std::max(480.0, baseHeight * guiScale)));
+  viewer->setUpViewInWindow(100, 100, windowWidth, windowHeight);
+  viewer->getCameraManipulator()->setHomePosition(
+      ::osg::Vec3(3.5f, 3.0f, 2.5f),
+      ::osg::Vec3(0.0f, 0.0f, 0.0f),
+      ::osg::Vec3(0.0f, 0.0f, 1.0f));
+  viewer->setCameraManipulator(viewer->getCameraManipulator());
   viewer->run();
 
   return 0;
