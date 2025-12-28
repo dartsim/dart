@@ -94,6 +94,8 @@ public:
   ///
   /// This affects how positions map to rotations. Generalized velocities
   /// remain angular velocities.
+  ///
+  /// Preserves the current pose by reparameterizing existing positions.
   void setCoordinateChart(CoordinateChart chart);
 
   /// Get the coordinate chart used for generalized positions.

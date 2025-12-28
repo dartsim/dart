@@ -96,6 +96,8 @@ public:
 
   /// Set the coordinate chart used for the rotational portion of generalized
   /// positions. Generalized velocities remain spatial velocities.
+  ///
+  /// Preserves the current pose by reparameterizing existing positions.
   void setCoordinateChart(CoordinateChart chart);
 
   /// Get the coordinate chart used for the rotational portion of generalized

@@ -106,10 +106,14 @@ void FreeJoint::setCoordinateChart(CoordinateChart chart)
   if (mAspectProperties.mCoordinateChart == chart)
     return;
 
+  const CoordinateChart previousChart = mAspectProperties.mCoordinateChart;
+  const Eigen::Isometry3d transform
+      = convertToTransform(getPositionsStatic(), previousChart);
+
   mAspectProperties.mCoordinateChart = chart;
   updateDegreeOfFreedomNames();
 
-  Joint::notifyPositionUpdated();
+  setPositionsStatic(convertToPositions(transform, chart));
   updateRelativeJacobian(true);
   Joint::incrementVersion();
 }

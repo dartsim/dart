@@ -126,10 +126,14 @@ void BallJoint::setCoordinateChart(CoordinateChart chart)
   if (mAspectProperties.mCoordinateChart == chart)
     return;
 
+  const CoordinateChart previousChart = mAspectProperties.mCoordinateChart;
+  const Eigen::Matrix3d rotation
+      = convertToRotation(getPositionsStatic(), previousChart);
+
   mAspectProperties.mCoordinateChart = chart;
   updateDegreeOfFreedomNames();
 
-  Joint::notifyPositionUpdated();
+  setPositionsStatic(convertToPositions(rotation, chart));
   updateRelativeJacobian(true);
   Joint::incrementVersion();
 }

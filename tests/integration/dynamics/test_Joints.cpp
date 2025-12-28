@@ -1813,9 +1813,13 @@ TEST_F(Joints, BallJointCoordinateChart)
   EXPECT_TRUE(
       ballJoint->getRelativeTransform().linear().isApprox(xyzRotation, 1e-10));
 
+  const Eigen::Matrix3d xyzRelative
+      = ballJoint->getRelativeTransform().linear();
   ballJoint->setCoordinateChart(BallJoint::CoordinateChart::EULER_ZYX);
   EXPECT_EQ(
       ballJoint->getCoordinateChart(), BallJoint::CoordinateChart::EULER_ZYX);
+  EXPECT_TRUE(
+      ballJoint->getRelativeTransform().linear().isApprox(xyzRelative, 1e-10));
 
   const Eigen::Vector3d zyxAngles(0.3, -0.2, 0.15);
   const Eigen::Matrix3d zyxRotation = math::eulerZYXToMatrix(zyxAngles);
@@ -1854,9 +1858,14 @@ TEST_F(Joints, FreeJointCoordinateChart)
   EXPECT_TRUE(freeJoint->getRelativeTransform().translation().isApprox(
       tf.translation(), 1e-12));
 
+  const Eigen::Isometry3d relativeTransform = freeJoint->getRelativeTransform();
   freeJoint->setCoordinateChart(FreeJoint::CoordinateChart::EULER_XYZ);
   EXPECT_EQ(
       freeJoint->getCoordinateChart(), FreeJoint::CoordinateChart::EULER_XYZ);
+  EXPECT_TRUE(freeJoint->getRelativeTransform().linear().isApprox(
+      relativeTransform.linear(), 1e-10));
+  EXPECT_TRUE(freeJoint->getRelativeTransform().translation().isApprox(
+      relativeTransform.translation(), 1e-12));
 }
 
 //==============================================================================
