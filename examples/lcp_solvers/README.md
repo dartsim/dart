@@ -12,6 +12,7 @@ options, and reports solver metrics with a contract check based on
 - Shared `LcpOptions` applied across solvers for fair comparisons
 - Contract metrics: residual, complementarity, bound violation, contract_ok
 - Per-solver runtime summaries with history plots
+- A UI-only view (no 3D scene content by default)
 
 ## Scenario Catalog
 

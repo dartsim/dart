@@ -943,8 +943,9 @@ struct SolverParameters
 class LcpDashboardWidget : public dart::gui::ImGuiWidget
 {
 public:
-  explicit LcpDashboardWidget(dart::gui::ImGuiViewer* viewer)
+  LcpDashboardWidget(dart::gui::ImGuiViewer* viewer, double guiScale)
     : mViewer(viewer),
+      mGuiScale(guiScale),
       mExamples(BuildExamples()),
       mSolvers(BuildSolvers()),
       mSolverStats(mSolvers.size())
@@ -961,8 +962,26 @@ public:
 
   void render() override
   {
-    ImGui::SetNextWindowPos(ImVec2(10, 20), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(660, 760), ImGuiCond_FirstUseEver);
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    const float scale = static_cast<float>(mGuiScale);
+    const float padding = 10.0f * scale;
+    const ImVec2 baseSize(660.0f * scale, 760.0f * scale);
+    const ImVec2 maxSize(
+        std::max(240.0f * scale, viewport->WorkSize.x - 2.0f * padding),
+        std::max(240.0f * scale, viewport->WorkSize.y - 2.0f * padding));
+    const ImVec2 windowSize(
+        std::min(baseSize.x, maxSize.x), std::min(baseSize.y, maxSize.y));
+    const ImVec2 windowPos(
+        viewport->WorkPos.x + padding, viewport->WorkPos.y + padding);
+
+    if (mApplyInitialLayout) {
+      ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
+      ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+      mApplyInitialLayout = false;
+    } else {
+      ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
+      ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
+    }
     ImGui::SetNextWindowBgAlpha(0.6f);
 
     if (!ImGui::Begin(
@@ -1684,6 +1703,8 @@ private:
   }
 
   dart::gui::ImGuiViewer* mViewer;
+  double mGuiScale{1.0};
+  bool mApplyInitialLayout{true};
   std::vector<ExampleCase> mExamples;
   std::vector<SolverInfo> mSolvers;
   std::vector<RunStats> mSolverStats;
@@ -1726,7 +1747,7 @@ int main(int argc, char* argv[])
   viewer->setImGuiScale(static_cast<float>(guiScale));
   viewer->addWorldNode(worldNode);
   viewer->getImGuiHandler()->addWidget(
-      std::make_shared<LcpDashboardWidget>(viewer));
+      std::make_shared<LcpDashboardWidget>(viewer, guiScale));
 
   viewer->setUpViewInWindow(100, 100, 1280, 720);
   viewer->run();
