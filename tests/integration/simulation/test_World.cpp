@@ -59,6 +59,8 @@
 #include "dart/math/lcp/pivoting/DantzigSolver.hpp"
 #include "dart/math/lcp/projection/PgsSolver.hpp"
 #include "dart/simulation/World.hpp"
+#include "dart/simulation/detail/RigidSolverComponents.hpp"
+#include "dart/simulation/detail/WorldEcsAccess.hpp"
 
 using namespace dart;
 using namespace math;
@@ -79,8 +81,9 @@ public:
       mKey(std::move(key)),
       mRestorer(std::move(restorer))
   {
-    if (!mFactory || !mFactory->canCreate(mKey))
+    if (!mFactory || !mFactory->canCreate(mKey)) {
       return;
+    }
 
     mDisabled = true;
     mFactory->unregisterCreator(mKey);
@@ -94,8 +97,9 @@ public:
 
   ~ScopedCollisionFactoryDisabler()
   {
-    if (mFactory && mDisabled && mRestorer)
+    if (mFactory && mDisabled && mRestorer) {
       mFactory->registerCreator(mKey, mRestorer);
+    }
   }
 
   bool wasDisabled() const
@@ -110,16 +114,18 @@ private:
   bool mDisabled{false};
 };
 
-class TrackingSolver final : public WorldSolver
+class TrackingSolver final : public simulation::Solver
 {
 public:
   TrackingSolver(
       std::string name,
       std::vector<std::string>& callLog,
-      std::optional<RigidSolverType> rigidSolverType = std::nullopt)
-    : WorldSolver(std::move(name)),
+      std::optional<RigidSolverType> rigidSolverType = std::nullopt,
+      bool supportsSkeletons = false)
+    : simulation::Solver(std::move(name)),
       mCallLog(callLog),
-      mRigidSolverType(std::move(rigidSolverType))
+      mRigidSolverType(std::move(rigidSolverType)),
+      mSupportsSkeletons(supportsSkeletons)
   {
   }
 
@@ -128,21 +134,47 @@ public:
     return mRigidSolverType;
   }
 
+  bool supportsSkeletons() const override
+  {
+    return mSupportsSkeletons;
+  }
+
   void setTimeStep(double) override {}
 
   void step(World&, bool) override
   {
-    mCallLog.push_back(mName + ".step");
+    mCallLog.push_back(getName() + ".step");
   }
 
   void sync(World&) override
   {
-    mCallLog.push_back(mName + ".sync");
+    mCallLog.push_back(getName() + ".sync");
+  }
+
+  void handleEntityAdded(World&, EcsEntity) override
+  {
+    mCallLog.push_back(getName() + ".entity_added");
+  }
+
+  void handleEntityRemoved(World&, EcsEntity) override
+  {
+    mCallLog.push_back(getName() + ".entity_removed");
+  }
+
+  void handleSkeletonAdded(World&, const dynamics::SkeletonPtr&) override
+  {
+    mCallLog.push_back(getName() + ".skeleton_added");
+  }
+
+  void handleSkeletonRemoved(World&, const dynamics::SkeletonPtr&) override
+  {
+    mCallLog.push_back(getName() + ".skeleton_removed");
   }
 
 private:
   std::vector<std::string>& mCallLog;
   std::optional<RigidSolverType> mRigidSolverType;
+  bool mSupportsSkeletons;
 };
 
 class SolverTestWorld final : public World
@@ -209,8 +241,9 @@ TEST(World, AddingAndRemovingSkeletons)
   int nSteps = 20;
 
   // Empty world
-  for (int i = 0; i < nSteps; ++i)
+  for (int i = 0; i < nSteps; ++i) {
     world->step();
+  }
 
   EXPECT_FALSE(world->hasSkeleton(skeleton1));
   EXPECT_FALSE(world->hasSkeleton(skeleton2));
@@ -223,8 +256,9 @@ TEST(World, AddingAndRemovingSkeletons)
   world->addSkeleton(skeleton2);
   EXPECT_TRUE(world->hasSkeleton(skeleton2));
   EXPECT_TRUE(world->getNumSkeletons() == 2);
-  for (int i = 0; i < nSteps; ++i)
+  for (int i = 0; i < nSteps; ++i) {
     world->step();
+  }
 
   std::string s1name = skeleton1->getName();
   std::string s2name = skeleton2->getName();
@@ -234,8 +268,9 @@ TEST(World, AddingAndRemovingSkeletons)
   // Remove skeleton2
   world->removeSkeleton(skeleton2);
   EXPECT_TRUE(world->getNumSkeletons() == 1);
-  for (int i = 0; i < nSteps; ++i)
+  for (int i = 0; i < nSteps; ++i) {
     world->step();
+  }
 
   EXPECT_TRUE(skeleton1 == world->getSkeleton(s1name));
   EXPECT_FALSE(skeleton2 == world->getSkeleton(s2name));
@@ -247,8 +282,9 @@ TEST(World, AddingAndRemovingSkeletons)
   world->addSkeleton(skeleton4);
   EXPECT_TRUE(world->hasSkeleton(skeleton4));
   EXPECT_TRUE(world->getNumSkeletons() == 3);
-  for (int i = 0; i < nSteps; ++i)
+  for (int i = 0; i < nSteps; ++i) {
     world->step();
+  }
 
   std::string s3name = skeleton3->getName();
   std::string s4name = skeleton4->getName();
@@ -263,8 +299,9 @@ TEST(World, AddingAndRemovingSkeletons)
   // Remove skeleton1
   world->removeSkeleton(skeleton1);
   EXPECT_TRUE(world->getNumSkeletons() == 2);
-  for (int i = 0; i < nSteps; ++i)
+  for (int i = 0; i < nSteps; ++i) {
     world->step();
+  }
 
   EXPECT_FALSE(skeleton1 == world->getSkeleton(s1name));
   EXPECT_TRUE(world->getSkeleton(s1name) == nullptr);
@@ -272,8 +309,9 @@ TEST(World, AddingAndRemovingSkeletons)
   // Remove all the skeletons
   world->removeAllSkeletons();
   EXPECT_EQ((int)world->getNumSkeletons(), 0);
-  for (int i = 0; i < nSteps; ++i)
+  for (int i = 0; i < nSteps; ++i) {
     world->step();
+  }
 
   EXPECT_FALSE(skeleton3 == world->getSkeleton(s3name));
   EXPECT_TRUE(world->getSkeleton(s3name) == nullptr);
@@ -320,15 +358,17 @@ TEST(World, Cloning)
   fileList.push_back("dart://sample/skel/fullbody1.skel");
 
   std::vector<dart::simulation::WorldPtr> worlds;
-  for (std::size_t i = 0; i < fileList.size(); ++i)
+  for (std::size_t i = 0; i < fileList.size(); ++i) {
     worlds.push_back(dart::io::readWorld(fileList[i]));
+  }
 
   for (std::size_t i = 0; i < worlds.size(); ++i) {
     dart::simulation::WorldPtr original = worlds[i];
     std::vector<dart::simulation::WorldPtr> clones;
     clones.push_back(original);
-    for (std::size_t j = 1; j < 5; ++j)
+    for (std::size_t j = 1; j < 5; ++j) {
       clones.push_back(clones[j - 1]->clone());
+    }
 
 #if DART_BUILD_MODE_RELEASE
     std::size_t numIterations = 500;
@@ -342,8 +382,9 @@ TEST(World, Cloning)
 
         // Generate a random command vector
         Eigen::VectorXd commands = skel->getCommands();
-        for (int q = 0; q < commands.size(); ++q)
+        for (int q = 0; q < commands.size(); ++q) {
           commands[q] = Random::uniform(-0.1, 0.1);
+        }
 
         // Assign the command vector to each clone of the kth skeleton
         for (std::size_t c = 0; c < clones.size(); ++c) {
@@ -353,8 +394,9 @@ TEST(World, Cloning)
       }
 
       // Step each clone forward
-      for (std::size_t c = 0; c < clones.size(); ++c)
+      for (std::size_t c = 0; c < clones.size(); ++c) {
         clones[c]->step(false);
+      }
     }
 
     for (std::size_t c = 0; c < clones.size(); ++c) {
@@ -439,8 +481,9 @@ TEST(World, SetCollisionDetectorByType)
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
 
-  if (!factory->canCreate("dart"))
+  if (!factory->canCreate("dart")) {
     GTEST_SKIP() << "dart collision detector is not available in this build";
+  }
 
   auto world = World::create();
   world->setCollisionDetector(CollisionDetectorType::Dart);
@@ -455,8 +498,9 @@ TEST(World, ConfiguresCollisionDetectorViaConfig)
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
 
-  if (!factory->canCreate("dart"))
+  if (!factory->canCreate("dart")) {
     GTEST_SKIP() << "dart collision detector is not available in this build";
+  }
 
   WorldConfig config;
   config.name = "configured-world";
@@ -472,8 +516,9 @@ TEST(World, DefaultWorldUsesFclPrimitive)
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
 
-  if (!factory->canCreate("fcl"))
+  if (!factory->canCreate("fcl")) {
     GTEST_SKIP() << "fcl collision detector is not available in this build";
+  }
 
   auto world = World::create();
   auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
@@ -490,8 +535,9 @@ TEST(World, TypedSetterConfiguresFclPrimitive)
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
 
-  if (!factory->canCreate("fcl"))
+  if (!factory->canCreate("fcl")) {
     GTEST_SKIP() << "fcl collision detector is not available in this build";
+  }
 
   auto world = World::create();
   world->setCollisionDetector(CollisionDetectorType::Dart);
@@ -514,8 +560,9 @@ TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
         return collision::DARTCollisionDetector::create();
       });
 
-  if (!disableDart.wasDisabled())
+  if (!disableDart.wasDisabled()) {
     GTEST_SKIP() << "dart collision detector is not registered in this build";
+  }
 
   auto world = World::create();
   auto original = world->getCollisionDetector();
@@ -537,8 +584,9 @@ TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
         return collision::DARTCollisionDetector::create();
       });
 
-  if (!disableDart.wasDisabled())
+  if (!disableDart.wasDisabled()) {
     GTEST_SKIP() << "dart collision detector is not registered in this build";
+  }
 
   WorldConfig config;
   config.name = "fallback-pref";
@@ -560,8 +608,9 @@ TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
         return collision::DARTCollisionDetector::create();
       });
 
-  if (!disableDart.wasDisabled())
+  if (!disableDart.wasDisabled()) {
     GTEST_SKIP() << "dart collision detector is not registered in this build";
+  }
 
   ScopedCollisionFactoryDisabler disableFcl(
       collision::FCLCollisionDetector::getStaticType(),
@@ -569,8 +618,9 @@ TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
         return collision::FCLCollisionDetector::create();
       });
 
-  if (!disableFcl.wasDisabled())
+  if (!disableFcl.wasDisabled()) {
     GTEST_SKIP() << "fcl collision detector is not registered in this build";
+  }
 
   WorldConfig config;
   config.name = "no-fallback-world";
@@ -687,8 +737,9 @@ TEST(World, RevoluteJointConstraintBasics)
   auto* bd2 = world->getSkeleton(0)->getBodyNode("link 10");
   const Eigen::Vector3d offset(0.0, 0.025, 0.0);
 
-  for (int i = 0; i < 200; ++i)
+  for (int i = 0; i < 200; ++i) {
     world->step();
+  }
 
   const Eigen::Vector3d pos1 = bd1->getTransform() * offset;
   const Eigen::Vector3d pos2 = bd2->getTransform() * offset;
@@ -702,13 +753,71 @@ TEST(World, RevoluteJointConstraintBasics)
 }
 
 //==============================================================================
+TEST(World, SkeletonNotificationsRespectSupportsSkeletons)
+{
+  auto world = std::make_shared<SolverTestWorld>();
+  ASSERT_TRUE(world);
+
+  const auto skeleton1 = createThreeLinkRobot(
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_X,
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_Y,
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_Z,
+      false,
+      false);
+  world->addSkeleton(skeleton1);
+
+  std::vector<std::string> callLog;
+  auto* classicSolver = world->addSolver(
+      std::make_unique<TrackingSolver>("classic", callLog, std::nullopt, true),
+      false);
+  auto* ecsSolver = world->addSolver(
+      std::make_unique<TrackingSolver>(
+          "ecs", callLog, RigidSolverType::EntityComponent, false),
+      false);
+  ASSERT_TRUE(classicSolver);
+  ASSERT_TRUE(ecsSolver);
+
+  const std::vector<std::string> expectedExisting{"classic.skeleton_added"};
+  EXPECT_EQ(callLog, expectedExisting);
+
+  callLog.clear();
+  const auto skeleton2 = createThreeLinkRobot(
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_X,
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_Y,
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      DOF_Z,
+      false,
+      false);
+  world->addSkeleton(skeleton2);
+
+  const std::vector<std::string> expectedNew{"classic.skeleton_added"};
+  EXPECT_EQ(callLog, expectedNew);
+
+  callLog.clear();
+  world->removeSkeleton(skeleton1);
+  world->removeSkeleton(skeleton2);
+
+  const std::vector<std::string> expectedRemoved{
+      "classic.skeleton_removed",
+      "classic.skeleton_removed",
+  };
+  EXPECT_EQ(callLog, expectedRemoved);
+}
+
+//==============================================================================
 TEST(World, SolverSteppingActiveRigidSolverOnlyOrdersNonRigidAndSync)
 {
   auto world = std::make_shared<SolverTestWorld>();
   ASSERT_TRUE(world);
 
-  for (std::size_t i = 0; i < world->getNumSolvers(); ++i)
+  for (std::size_t i = 0; i < world->getNumSolvers(); ++i) {
     EXPECT_TRUE(world->setSolverEnabled(i, false));
+  }
 
   std::vector<std::string> callLog;
   auto* nonRigid
@@ -722,7 +831,7 @@ TEST(World, SolverSteppingActiveRigidSolverOnlyOrdersNonRigidAndSync)
   ASSERT_TRUE(mirrorRigid);
   ASSERT_TRUE(activeRigid);
 
-  auto moveToIndex = [&](WorldSolver* solver, std::size_t target) {
+  auto moveToIndex = [&](simulation::Solver* solver, std::size_t target) {
     const auto index = world->getSolverIndex(solver);
     ASSERT_LT(index, world->getNumSolvers());
     ASSERT_TRUE(world->moveSolver(index, target));
@@ -744,4 +853,110 @@ TEST(World, SolverSteppingActiveRigidSolverOnlyOrdersNonRigidAndSync)
       "mirror.sync",
   };
   EXPECT_EQ(callLog, expected);
+}
+
+//==============================================================================
+TEST(World, SolverEnableDisableSkipsStepAndSyncOnEnable)
+{
+  auto world = std::make_shared<SolverTestWorld>();
+  ASSERT_TRUE(world);
+
+  for (std::size_t i = 0; i < world->getNumSolvers(); ++i) {
+    EXPECT_TRUE(world->setSolverEnabled(i, false));
+  }
+
+  std::vector<std::string> callLog;
+  auto* solver
+      = world->addSolver(std::make_unique<TrackingSolver>("track", callLog));
+  ASSERT_TRUE(solver);
+
+  const auto solverIndex = world->getSolverIndex(solver);
+  ASSERT_LT(solverIndex, world->getNumSolvers());
+
+  callLog.clear();
+  ASSERT_TRUE(world->setSolverEnabled(solverIndex, false));
+  world->step(false);
+  EXPECT_TRUE(callLog.empty());
+
+  callLog.clear();
+  ASSERT_TRUE(world->setSolverEnabled(solverIndex, true));
+  const std::vector<std::string> expected{"track.sync"};
+  EXPECT_EQ(callLog, expected);
+}
+
+//==============================================================================
+TEST(World, EcsEntityLifecycleNotifiesSolvers)
+{
+  auto world = std::make_shared<SolverTestWorld>();
+  ASSERT_TRUE(world);
+
+  for (std::size_t i = 0; i < world->getNumSolvers(); ++i) {
+    EXPECT_TRUE(world->setSolverEnabled(i, false));
+  }
+
+  std::vector<std::string> callLog;
+  auto* first
+      = world->addSolver(std::make_unique<TrackingSolver>("first", callLog));
+  auto* second
+      = world->addSolver(std::make_unique<TrackingSolver>("second", callLog));
+
+  ASSERT_TRUE(first);
+  ASSERT_TRUE(second);
+
+  ASSERT_TRUE(world->setSolverEnabled(world->getSolverIndex(first), false));
+  ASSERT_TRUE(world->setSolverEnabled(world->getSolverIndex(second), false));
+
+  callLog.clear();
+  const auto entity = simulation::detail::WorldEcsAccess::createEntity(*world);
+  EXPECT_FALSE(entity.isNull());
+  EXPECT_TRUE(
+      simulation::detail::WorldEcsAccess::isEntityValid(*world, entity));
+
+  const std::vector<std::string> expectedAdded{
+      "first.entity_added",
+      "second.entity_added",
+  };
+  EXPECT_EQ(callLog, expectedAdded);
+
+  callLog.clear();
+  EXPECT_TRUE(
+      simulation::detail::WorldEcsAccess::destroyEntity(*world, entity));
+  EXPECT_FALSE(
+      simulation::detail::WorldEcsAccess::isEntityValid(*world, entity));
+
+  const std::vector<std::string> expectedRemoved{
+      "first.entity_removed",
+      "second.entity_removed",
+  };
+  EXPECT_EQ(callLog, expectedRemoved);
+}
+
+//==============================================================================
+TEST(World, RigidSolverSyncsRigidBodyState)
+{
+  auto world = World::create();
+  ASSERT_TRUE(world);
+
+  const auto entity = simulation::detail::WorldEcsAccess::createEntity(*world);
+  ASSERT_FALSE(entity.isNull());
+
+  auto& registry = simulation::detail::WorldEcsAccess::getEntityManager(*world);
+  const auto enttEntity = simulation::detail::WorldEcsAccess::toEntt(entity);
+  ASSERT_TRUE(registry.valid(enttEntity));
+
+  registry.emplace<simulation::detail::comps::RigidBodyTag>(enttEntity);
+
+  world->step(false);
+
+  const auto* state
+      = registry.try_get<simulation::detail::comps::RigidBodyState>(enttEntity);
+  ASSERT_NE(state, nullptr);
+
+  const int frame = world->getSimFrames();
+  ASSERT_GT(frame, 0);
+  const auto expectedFrame = static_cast<std::size_t>(frame - 1);
+  const double expectedTime = world->getTime() - world->getTimeStep();
+
+  EXPECT_EQ(state->lastSyncedFrame, expectedFrame);
+  EXPECT_NEAR(state->lastSyncedTime, expectedTime, 1e-12);
 }

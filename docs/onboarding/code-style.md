@@ -56,11 +56,13 @@ bool operator==(const Ptr& other) const = default;
 
 ```cpp
 // Use [[likely]] / [[unlikely]] for hot paths
-if (objects.empty()) [[unlikely]]
+if (objects.empty()) [[unlikely]] {
   return false;
+}
 
-if (!result.isCollision()) [[likely]]
+if (!result.isCollision()) [[likely]] {
   return;
+}
 ```
 
 **When NOT to use C++20 features:**
@@ -90,7 +92,8 @@ DART now maintains two naming schemes in parallel:
 - **File extensions**: `.hpp` for headers, `.cpp` for sources
 - **File naming**: PascalCase in `dart/` and `python/dartpy/`; snake*case everywhere in `dart8/` and its dependents; legacy `tests/` use `test*` + PascalCase while dart8-era tests stay fully snake_case
 - **Header guards**: `DART_NAMESPACE_CLASSNAME_HPP_`
-- **Braces**: No "cuddled" braces (except namespaces)
+- **Braces**: No "cuddled" braces (except namespaces); always use braces for
+  control statements, even for single-line bodies
 - **Documentation**: Doxygen-style comments (`///`)
 
 ### Parameter Naming
@@ -201,6 +204,7 @@ private:
 - Use **camelCase** function names
 - Use **PascalCase** class names
 - No "cuddled" braces!
+- Always use braces for control statements, even for single-line bodies
 - Each function is separated by an 80 column line of "=" characters
 
 **Example:**
@@ -223,8 +227,9 @@ namespace example {
 //==============================================================================
 int ExampleClass::exampleInterfaceFunction() const
 {
-  if (mExampleMember)
+  if (mExampleMember) {
     return 3;
+  }
 
   return -1;
 }
@@ -233,8 +238,9 @@ int ExampleClass::exampleInterfaceFunction() const
 int ExampleClass::exampleMethod(int a, int b, int* out) const
 {
   int result = a + b;
-  if (out)
+  if (out) {
     *out = result;
+  }
   return result;
 }
 

@@ -12,14 +12,13 @@
   - Active rigid selection (`setActiveRigidSolver`) and solver stepping modes
   - Solver enable/disable and ordering controls
 - Solver abstraction and implementations:
-  - Base: `dart/simulation/solver/WorldSolver.hpp`, `dart/simulation/solver/WorldSolver.cpp`
+  - Base: `dart/simulation/solver/Solver.hpp`, `dart/simulation/solver/Solver.cpp`
   - Classic solver wrapper: `dart/simulation/solver/classic_rigid/ClassicRigidSolver.hpp`, `dart/simulation/solver/classic_rigid/ClassicRigidSolver.cpp`
   - ECS-backed rigid scaffold: `dart/simulation/solver/rigid/RigidSolver.hpp`, `dart/simulation/solver/rigid/RigidSolver.cpp`
-- ECS scaffolding and legacy mirroring:
+- ECS scaffolding:
   - Opaque entity handle: `dart/simulation/EcsEntity.hpp`
-  - Legacy skeleton components: `dart/simulation/comps/SkeletonComponents.hpp`
-  - Sync helper: `dart/simulation/detail/LegacySkeletonSync.hpp`
   - ECS access bridge (internal-only): `dart/simulation/detail/WorldEcsAccess.hpp`
+  - ECS-only rigid components (internal-only): `dart/simulation/detail/RigidSolverComponents.hpp`
   - Object scaffolding: `dart/simulation/object/Object.hpp`,
     `dart/simulation/object/TypeList.hpp` (public), plus internal-only
     `dart/simulation/object/ObjectWith.hpp`
@@ -51,6 +50,8 @@
   - `WorldConfig` (`World::create(WorldConfig)`), `CollisionDetectorType`,
     `SolverSteppingMode`, `RigidSolverType`.
 - `World` does not expose solver pointers; selection is via enum/policy.
+- `Solver` is the base solver name; `WorldSolver` remains as a compatibility
+  alias for existing code.
 - `EcsEntity` is the only public ECS handle (opaque value type).
 - EnTT types must not appear in installed headers (see “Internal Design”).
 
@@ -62,8 +63,10 @@
     then `sync()` other rigid solvers.
 - Classic solver is the constraint/collision backend and remains Skeleton-based.
 - ECS registry lives in `World::EcsData` (private in `World.cpp`).
-- Legacy skeletons are mirrored into ECS via `LegacySkeleton` +
-  `SkeletonState` and synced by `RigidSolver`.
+- Classic Skeletons remain on the legacy Aspect/Properties/Composite path and
+  are only handed to `ClassicRigidSolver`.
+- `RigidSolver` is ECS-only; it syncs ECS components but does not consume
+  Skeleton data.
 - EnTT access is internal-only:
   - `WorldEcsAccess.hpp` and `ObjectWith-impl.hpp` include EnTT but are
     excluded from installed headers and component aggregates.

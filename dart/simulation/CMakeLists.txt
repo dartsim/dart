@@ -30,6 +30,7 @@ list(
   REMOVE_ITEM
   detail_public_hdrs
   "${CMAKE_CURRENT_SOURCE_DIR}/detail/WorldEcsAccess.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/detail/RigidSolverComponents.hpp"
 )
 set(object_public_hdrs ${object_hdrs})
 list(

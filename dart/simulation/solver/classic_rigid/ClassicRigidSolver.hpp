@@ -33,7 +33,7 @@
 #ifndef DART_SIMULATION_SOLVER_CLASSICRIGIDSOLVER_HPP_
 #define DART_SIMULATION_SOLVER_CLASSICRIGIDSOLVER_HPP_
 
-#include "dart/simulation/solver/WorldSolver.hpp"
+#include "dart/simulation/solver/Solver.hpp"
 
 #include <memory>
 
@@ -43,7 +43,7 @@ namespace dart::simulation {
 ///
 /// Note: This solver is considered legacy and will eventually be deprecated and
 /// removed in favor of the ECS-backed rigid solver.
-class DART_API ClassicRigidSolver final : public WorldSolver
+class DART_API ClassicRigidSolver final : public Solver
 {
 public:
   ClassicRigidSolver();
@@ -52,6 +52,7 @@ public:
   std::optional<RigidSolverType> getRigidSolverType() const override;
   bool supportsConstraints() const override;
   bool supportsCollision() const override;
+  bool supportsSkeletons() const override;
 
   void setConstraintSolver(
       constraint::UniqueConstraintSolverPtr solver) override;

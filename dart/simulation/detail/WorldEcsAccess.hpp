@@ -36,8 +36,6 @@
 #include <dart/simulation/EcsEntity.hpp>
 #include <dart/simulation/Fwd.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
-
 #include <dart/Export.hpp>
 
 #include <entt/entt.hpp>
@@ -50,10 +48,9 @@ struct DART_API WorldEcsAccess final
   static entt::registry& getEntityManager(World& world);
   static const entt::registry& getEntityManager(const World& world);
 
-  static EcsEntity getSkeletonEntity(
-      const World& world, const dynamics::Skeleton* skeleton);
-  static EcsEntity getSkeletonEntity(
-      const World& world, const dynamics::SkeletonPtr& skeleton);
+  static EcsEntity createEntity(World& world);
+  static bool destroyEntity(World& world, EcsEntity entity);
+  static bool isEntityValid(const World& world, EcsEntity entity);
 
   static entt::entity toEntt(EcsEntity entity);
   static EcsEntity toEcsEntity(entt::entity entity);

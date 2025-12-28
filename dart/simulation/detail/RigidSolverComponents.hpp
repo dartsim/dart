@@ -30,28 +30,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_COMPS_SKELETONCOMPONENTS_HPP_
-#define DART_SIMULATION_COMPS_SKELETONCOMPONENTS_HPP_
+#ifndef DART_SIMULATION_DETAIL_RIGIDSOLVERCOMPONENTS_HPP_
+#define DART_SIMULATION_DETAIL_RIGIDSOLVERCOMPONENTS_HPP_
 
-#include <dart/dynamics/Fwd.hpp>
+#include <cstddef>
 
-#include <vector>
+namespace dart::simulation::detail::comps {
 
-namespace dart::simulation::comps {
-
-/// Wraps a classic Skeleton instance so ECS tooling can refer to it.
-struct LegacySkeleton final
+/// Marks an ECS entity as a rigid body owned by the ECS-backed solver.
+struct RigidBodyTag final
 {
-  dynamics::SkeletonPtr skeleton;
 };
 
-/// Kinematic state extracted from a classic Skeleton.
-struct SkeletonState final
+/// Minimal rigid body state tracked by the ECS-backed solver.
+struct RigidBodyState final
 {
-  std::vector<double> positions;
-  std::vector<double> velocities;
+  std::size_t lastSyncedFrame{0};
+  double lastSyncedTime{0.0};
 };
 
-} // namespace dart::simulation::comps
+} // namespace dart::simulation::detail::comps
 
-#endif // DART_SIMULATION_COMPS_SKELETONCOMPONENTS_HPP_
+#endif // DART_SIMULATION_DETAIL_RIGIDSOLVERCOMPONENTS_HPP_

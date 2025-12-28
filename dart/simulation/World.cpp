@@ -49,7 +49,6 @@
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/simulation/detail/LegacySkeletonSync.hpp"
 #include "dart/simulation/detail/WorldEcsAccess.hpp"
 #include "dart/simulation/solver/classic_rigid/ClassicRigidSolver.hpp"
 #include "dart/simulation/solver/rigid/RigidSolver.hpp"
@@ -60,7 +59,6 @@
 #include <memory>
 #include <string>
 #include <type_traits>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -72,7 +70,6 @@ namespace simulation {
 struct World::EcsData final
 {
   entt::registry entityManager;
-  std::unordered_map<const dynamics::Skeleton*, entt::entity> skeletonEntities;
 };
 
 namespace {
@@ -83,8 +80,9 @@ using dart::collision::CollisionDetectorPtr;
 void configureCollisionDetector(
     const CollisionDetectorPtr& detector, const std::string& key)
 {
-  if (!detector)
+  if (!detector) {
     return;
+  }
 
   if (key == "fcl") {
     auto fclDetector
@@ -117,15 +115,17 @@ std::string toCollisionDetectorKey(CollisionDetectorType type)
 
 CollisionDetectorPtr tryCreateCollisionDetector(const std::string& requestedKey)
 {
-  if (requestedKey.empty())
+  if (requestedKey.empty()) {
     return nullptr;
+  }
 
   auto key = common::toLower(requestedKey);
 
   auto* factory = CollisionDetector::getFactory();
   DART_ASSERT(factory);
-  if (!factory->canCreate(key))
+  if (!factory->canCreate(key)) {
     return nullptr;
+  }
 
   auto detector = factory->create(key);
   if (!detector) {
@@ -148,8 +148,9 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
 {
   const auto requestedType = config.collisionDetector;
   const auto requestedKey = toCollisionDetectorKey(requestedType);
-  if (auto detector = tryCreateCollisionDetector(requestedType))
+  if (auto detector = tryCreateCollisionDetector(requestedType)) {
     return detector;
+  }
 
   if (requestedType != CollisionDetectorType::Fcl) {
     DART_WARN(
@@ -158,8 +159,10 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
         "Falling back to the default 'fcl' detector.",
         requestedKey);
 
-    if (auto fallback = tryCreateCollisionDetector(CollisionDetectorType::Fcl))
+    if (auto fallback
+        = tryCreateCollisionDetector(CollisionDetectorType::Fcl)) {
       return fallback;
+    }
   }
 
   DART_WARN(
@@ -206,8 +209,9 @@ World::World(const WorldConfig& config)
   addSolver(std::make_unique<RigidSolver>());
 
   if (auto* collisionSolver = getCollisionCapableSolver()) {
-    if (auto detector = resolveCollisionDetector(config))
+    if (auto detector = resolveCollisionDetector(config)) {
       collisionSolver->setCollisionDetector(detector);
+    }
   }
 }
 
@@ -216,11 +220,13 @@ World::~World()
 {
   delete mRecording;
 
-  for (common::Connection& connection : mNameConnectionsForSkeletons)
+  for (common::Connection& connection : mNameConnectionsForSkeletons) {
     connection.disconnect();
+  }
 
-  for (common::Connection& connection : mNameConnectionsForSimpleFrames)
+  for (common::Connection& connection : mNameConnectionsForSimpleFrames) {
     connection.disconnect();
+  }
 }
 
 //==============================================================================
@@ -262,8 +268,9 @@ WorldPtr World::clone() const
     dynamics::SimpleFramePtr parent_candidate
         = worldClone->getSimpleFrame(current_parent->getName());
 
-    if (parent_candidate)
+    if (parent_candidate) {
       worldClone->getSimpleFrame(i)->setParentFrame(parent_candidate.get());
+    }
   }
 
   return worldClone;
@@ -281,10 +288,12 @@ void World::setTimeStep(double _timeStep)
   }
 
   mTimeStep = _timeStep;
-  for (auto& entry : mSolvers)
+  for (auto& entry : mSolvers) {
     entry.solver->setTimeStep(_timeStep);
-  for (auto& skel : mSkeletons)
+  }
+  for (auto& skel : mSkeletons) {
     skel->setTimeStep(_timeStep);
+  }
 }
 
 //==============================================================================
@@ -299,8 +308,9 @@ void World::reset()
   mTime = 0.0;
   mFrame = 0;
   mRecording->clear();
-  for (auto& entry : mSolvers)
+  for (auto& entry : mSolvers) {
     entry.solver->reset(*this);
+  }
   for (auto& skel : mSkeletons) {
     skel->clearConstraintImpulses();
     skel->setImpulseApplied(false);
@@ -321,15 +331,17 @@ void World::step(bool _resetCommand)
       activeSolver->step(*this, _resetCommand);
       ++steppedSolvers;
 
-      std::vector<WorldSolver*> solversToSync;
+      std::vector<Solver*> solversToSync;
 
       for (auto& entry : mSolvers) {
-        if (!entry.enabled)
+        if (!entry.enabled) {
           continue;
+        }
 
         auto* solver = entry.solver.get();
-        if (!solver || solver == activeSolver)
+        if (!solver || solver == activeSolver) {
           continue;
+        }
 
         if (solver->isRigidSolver()) {
           solversToSync.push_back(solver);
@@ -340,8 +352,9 @@ void World::step(bool _resetCommand)
         ++steppedSolvers;
       }
 
-      for (auto* solver : solversToSync)
+      for (auto* solver : solversToSync) {
         solver->sync(*this);
+      }
     } else {
       DART_WARN(
           "World '{}' is configured for ActiveRigidSolverOnly stepping, but "
@@ -353,8 +366,9 @@ void World::step(bool _resetCommand)
 
   if (steppedSolvers == 0) {
     for (auto& entry : mSolvers) {
-      if (!entry.enabled)
+      if (!entry.enabled) {
         continue;
+      }
       entry.solver->step(*this, _resetCommand);
       ++steppedSolvers;
     }
@@ -391,8 +405,9 @@ int World::getSimFrames() const
 //==============================================================================
 const std::string& World::setName(const std::string& _newName)
 {
-  if (_newName == mName)
+  if (_newName == mName) {
     return mName;
+  }
 
   const std::string oldName = mName;
   mName = _newName;
@@ -437,8 +452,9 @@ const Eigen::Vector3d& World::getGravity() const
 //==============================================================================
 dynamics::SkeletonPtr World::getSkeleton(std::size_t _index) const
 {
-  if (_index < mSkeletons.size())
+  if (_index < mSkeletons.size()) {
     return mSkeletons[_index];
+  }
 
   return nullptr;
 }
@@ -488,36 +504,11 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 
   mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
 
-  {
-    const auto* key = _skeleton.get();
-    if (key) {
-      if (!mEcsData) {
-        DART_WARN(
-            "World '{}' is missing ECS storage; skipping entity creation for "
-            "skeleton '{}'.",
-            mName,
-            _skeleton->getName());
-      } else if (
-          mEcsData->skeletonEntities.find(key)
-          == mEcsData->skeletonEntities.end()) {
-        const auto entity = mEcsData->entityManager.create();
-        mEcsData->skeletonEntities.emplace(key, entity);
-        mEcsData->entityManager.emplace<comps::LegacySkeleton>(
-            entity, _skeleton);
-        auto& state
-            = mEcsData->entityManager.emplace<comps::SkeletonState>(entity);
-        detail::syncLegacySkeletonState(state, *_skeleton);
-      } else {
-        DART_WARN(
-            "Skeleton '{}' already has an ECS entity in world '{}'.",
-            _skeleton->getName(),
-            mName);
-      }
+  for (auto& entry : mSolvers) {
+    if (entry.solver->supportsSkeletons()) {
+      entry.solver->handleSkeletonAdded(*this, _skeleton);
     }
   }
-
-  for (auto& entry : mSolvers)
-    entry.solver->handleSkeletonAdded(*this, _skeleton);
 
   // Update recording
   mRecording->updateNumGenCoords(mSkeletons);
@@ -540,8 +531,9 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   // Find index of _skeleton in mSkeleton.
   std::size_t index = 0;
   for (; index < mSkeletons.size(); ++index) {
-    if (mSkeletons[index] == _skeleton)
+    if (mSkeletons[index] == _skeleton) {
       break;
+    }
   }
 
   // If i is equal to the number of skeletons, then _skeleton is not in
@@ -552,22 +544,15 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   }
 
   // Update mIndices.
-  for (std::size_t i = index + 1; i < mSkeletons.size() - 1; ++i)
+  for (std::size_t i = index + 1; i < mSkeletons.size() - 1; ++i) {
     mIndices[i] = mIndices[i + 1] - _skeleton->getNumDofs();
+  }
   mIndices.pop_back();
 
   // Notify solvers.
-  for (auto& entry : mSolvers)
-    entry.solver->handleSkeletonRemoved(*this, _skeleton);
-
-  {
-    const auto* key = _skeleton.get();
-    if (mEcsData) {
-      const auto it = mEcsData->skeletonEntities.find(key);
-      if (it != mEcsData->skeletonEntities.end()) {
-        mEcsData->entityManager.destroy(it->second);
-        mEcsData->skeletonEntities.erase(it);
-      }
+  for (auto& entry : mSolvers) {
+    if (entry.solver->supportsSkeletons()) {
+      entry.solver->handleSkeletonRemoved(*this, _skeleton);
     }
   }
 
@@ -598,11 +583,13 @@ std::set<dynamics::SkeletonPtr> World::removeAllSkeletons()
   for (std::vector<dynamics::SkeletonPtr>::iterator it = mSkeletons.begin(),
                                                     end = mSkeletons.end();
        it != end;
-       ++it)
+       ++it) {
     ptrs.insert(*it);
+  }
 
-  while (getNumSkeletons() > 0)
+  while (getNumSkeletons() > 0) {
     removeSkeleton(getSkeleton(0));
+  }
 
   return ptrs;
 }
@@ -629,8 +616,9 @@ int World::getIndex(int _index) const
 //==============================================================================
 dynamics::SimpleFramePtr World::getSimpleFrame(std::size_t _index) const
 {
-  if (_index < mSimpleFrames.size())
+  if (_index < mSimpleFrames.size()) {
     return mSimpleFrames[_index];
+  }
 
   return nullptr;
 }
@@ -720,11 +708,13 @@ std::set<dynamics::SimpleFramePtr> World::removeAllSimpleFrames()
        = mSimpleFrames.begin(),
        end = mSimpleFrames.end();
        it != end;
-       ++it)
+       ++it) {
     ptrs.insert(*it);
+  }
 
-  while (getNumSimpleFrames() > 0)
+  while (getNumSimpleFrames() > 0) {
     removeSimpleFrame(getSimpleFrame(0));
+  }
 
   return ptrs;
 }
@@ -887,61 +877,106 @@ const entt::registry& detail::WorldEcsAccess::getEntityManager(
 }
 
 //==============================================================================
-EcsEntity detail::WorldEcsAccess::getSkeletonEntity(
-    const World& world, const dynamics::Skeleton* skeleton)
+EcsEntity detail::WorldEcsAccess::createEntity(World& world)
 {
-  if (!skeleton || !world.mEcsData)
+  if (!world.mEcsData) {
+    DART_WARN(
+        "World '{}' is missing ECS storage; cannot create ECS entity.",
+        world.getName());
     return EcsEntity();
+  }
 
-  const auto it = world.mEcsData->skeletonEntities.find(skeleton);
-  if (it == world.mEcsData->skeletonEntities.end())
-    return EcsEntity();
+  const auto entity = world.mEcsData->entityManager.create();
+  const auto ecsEntity = toEcsEntity(entity);
 
-  return toEcsEntity(it->second);
+  for (auto& entry : world.mSolvers) {
+    entry.solver->handleEntityAdded(world, ecsEntity);
+  }
+
+  return ecsEntity;
 }
 
 //==============================================================================
-EcsEntity detail::WorldEcsAccess::getSkeletonEntity(
-    const World& world, const dynamics::SkeletonPtr& skeleton)
+bool detail::WorldEcsAccess::destroyEntity(World& world, EcsEntity entity)
 {
-  return getSkeletonEntity(world, skeleton.get());
+  if (!world.mEcsData) {
+    return false;
+  }
+
+  const auto enttEntity = toEntt(entity);
+  if (enttEntity == entt::null) {
+    return false;
+  }
+
+  auto& registry = world.mEcsData->entityManager;
+  if (!registry.valid(enttEntity)) {
+    return false;
+  }
+
+  for (auto& entry : world.mSolvers) {
+    entry.solver->handleEntityRemoved(world, entity);
+  }
+
+  registry.destroy(enttEntity);
+  return true;
+}
+
+//==============================================================================
+bool detail::WorldEcsAccess::isEntityValid(const World& world, EcsEntity entity)
+{
+  if (!world.mEcsData) {
+    return false;
+  }
+
+  const auto enttEntity = toEntt(entity);
+  if (enttEntity == entt::null) {
+    return false;
+  }
+
+  return world.mEcsData->entityManager.valid(enttEntity);
 }
 
 //==============================================================================
 entt::entity detail::WorldEcsAccess::toEntt(EcsEntity entity)
 {
-  if (entity.isNull())
+  if (entity.isNull()) {
     return entt::null;
+  }
 
   using underlying = std::underlying_type_t<entt::entity>;
   const auto maxValue = static_cast<EcsEntity::ValueType>(
       std::numeric_limits<underlying>::max());
+  const auto rawValue = entity.value() - 1u;
 
-  if (entity.value() > maxValue) {
+  if (rawValue > maxValue) {
     DART_ASSERT(
         false && "EcsEntity value does not fit in entt::entity storage.");
     return entt::null;
   }
 
-  return static_cast<entt::entity>(static_cast<underlying>(entity.value()));
+  return static_cast<entt::entity>(static_cast<underlying>(rawValue));
 }
 
 //==============================================================================
 EcsEntity detail::WorldEcsAccess::toEcsEntity(entt::entity entity)
 {
+  if (entity == entt::null) {
+    return EcsEntity();
+  }
+
   using underlying = std::underlying_type_t<entt::entity>;
   return EcsEntity{
-      static_cast<EcsEntity::ValueType>(static_cast<underlying>(entity))};
+      static_cast<EcsEntity::ValueType>(static_cast<underlying>(entity)) + 1u};
 }
 
 //==============================================================================
-WorldSolver* World::addSolver(std::unique_ptr<WorldSolver> solver)
+Solver* World::addSolver(std::unique_ptr<Solver> solver)
 {
   return addSolver(std::move(solver), true);
 }
 
 //==============================================================================
-WorldSolver* World::addSolver(std::unique_ptr<WorldSolver> solver, bool enabled)
+Solver* World::addSolver(std::unique_ptr<Solver> solver, bool enabled)
 {
   if (!solver) {
     DART_WARN("Attempted to add a null solver to world '{}'.", mName);
@@ -953,11 +988,15 @@ WorldSolver* World::addSolver(std::unique_ptr<WorldSolver> solver, bool enabled)
   auto* solverPtr = mSolvers.back().solver.get();
 
   // Ensure the solver is aware of any skeletons that were already present.
-  for (auto& skeleton : mSkeletons)
-    solverPtr->handleSkeletonAdded(*this, skeleton);
+  if (solverPtr->supportsSkeletons()) {
+    for (auto& skeleton : mSkeletons) {
+      solverPtr->handleSkeletonAdded(*this, skeleton);
+    }
+  }
 
-  if (enabled)
+  if (enabled) {
     solverPtr->sync(*this);
+  }
 
   return solverPtr;
 }
@@ -969,73 +1008,81 @@ std::size_t World::getNumSolvers() const
 }
 
 //==============================================================================
-WorldSolver* World::getSolver(std::size_t index)
+Solver* World::getSolver(std::size_t index)
 {
-  if (index >= mSolvers.size())
+  if (index >= mSolvers.size()) {
     return nullptr;
+  }
   return mSolvers[index].solver.get();
 }
 
 //==============================================================================
-const WorldSolver* World::getSolver(std::size_t index) const
+const Solver* World::getSolver(std::size_t index) const
 {
-  if (index >= mSolvers.size())
+  if (index >= mSolvers.size()) {
     return nullptr;
+  }
   return mSolvers[index].solver.get();
 }
 
 //==============================================================================
-std::size_t World::getSolverIndex(const WorldSolver* solver) const
+std::size_t World::getSolverIndex(const Solver* solver) const
 {
-  if (!solver)
+  if (!solver) {
     return mSolvers.size();
+  }
 
   for (std::size_t index = 0; index < mSolvers.size(); ++index) {
-    if (mSolvers[index].solver.get() == solver)
+    if (mSolvers[index].solver.get() == solver) {
       return index;
+    }
   }
 
   return mSolvers.size();
 }
 
 //==============================================================================
-WorldSolver* World::getSolver(RigidSolverType type)
+Solver* World::getSolver(RigidSolverType type)
 {
   for (auto& entry : mSolvers) {
     const auto rigidType = entry.solver->getRigidSolverType();
-    if (rigidType && *rigidType == type)
+    if (rigidType && *rigidType == type) {
       return entry.solver.get();
+    }
   }
   return nullptr;
 }
 
 //==============================================================================
-const WorldSolver* World::getSolver(RigidSolverType type) const
+const Solver* World::getSolver(RigidSolverType type) const
 {
   for (const auto& entry : mSolvers) {
     const auto rigidType = entry.solver->getRigidSolverType();
-    if (rigidType && *rigidType == type)
+    if (rigidType && *rigidType == type) {
       return entry.solver.get();
+    }
   }
   return nullptr;
 }
 
 //==============================================================================
-WorldSolver* World::getSolver(const std::string& name)
+Solver* World::getSolver(const std::string& name)
 {
   for (auto& entry : mSolvers) {
-    if (entry.solver->getName() == name)
+    if (entry.solver->getName() == name) {
       return entry.solver.get();
+    }
   }
   return nullptr;
 }
 
 //==============================================================================
-const WorldSolver* World::getSolver(const std::string& name) const
+const Solver* World::getSolver(const std::string& name) const
 {
   for (const auto& entry : mSolvers) {
-    if (entry.solver->getName() == name)
+    if (entry.solver->getName() == name) {
       return entry.solver.get();
+    }
   }
   return nullptr;
 }
@@ -1063,13 +1110,13 @@ RigidSolverType World::getActiveRigidSolverType() const
 }
 
 //==============================================================================
-WorldSolver* World::getActiveRigidSolver()
+Solver* World::getActiveRigidSolver()
 {
   return getSolver(mActiveRigidSolverType);
 }
 
 //==============================================================================
-const WorldSolver* World::getActiveRigidSolver() const
+const Solver* World::getActiveRigidSolver() const
 {
   return getSolver(mActiveRigidSolverType);
 }
@@ -1089,16 +1136,19 @@ SolverSteppingMode World::getSolverSteppingMode() const
 //==============================================================================
 bool World::setSolverEnabled(std::size_t index, bool enabled)
 {
-  if (index >= mSolvers.size())
+  if (index >= mSolvers.size()) {
     return false;
+  }
 
   auto& entry = mSolvers[index];
-  if (entry.enabled == enabled)
+  if (entry.enabled == enabled) {
     return true;
+  }
 
   entry.enabled = enabled;
-  if (enabled)
+  if (enabled) {
     entry.solver->sync(*this);
+  }
 
   return true;
 }
@@ -1106,35 +1156,40 @@ bool World::setSolverEnabled(std::size_t index, bool enabled)
 //==============================================================================
 bool World::isSolverEnabled(std::size_t index) const
 {
-  if (index >= mSolvers.size())
+  if (index >= mSolvers.size()) {
     return false;
+  }
 
   return mSolvers[index].enabled;
 }
 
 //==============================================================================
-bool World::setSolverEnabled(WorldSolver* solver, bool enabled)
+bool World::setSolverEnabled(Solver* solver, bool enabled)
 {
-  if (!solver)
+  if (!solver) {
     return false;
+  }
 
   for (std::size_t i = 0; i < mSolvers.size(); ++i) {
-    if (mSolvers[i].solver.get() == solver)
+    if (mSolvers[i].solver.get() == solver) {
       return setSolverEnabled(i, enabled);
+    }
   }
 
   return false;
 }
 
 //==============================================================================
-bool World::isSolverEnabled(const WorldSolver* solver) const
+bool World::isSolverEnabled(const Solver* solver) const
 {
-  if (!solver)
+  if (!solver) {
     return false;
+  }
 
   for (const auto& entry : mSolvers) {
-    if (entry.solver.get() == solver)
+    if (entry.solver.get() == solver) {
       return entry.enabled;
+    }
   }
 
   return false;
@@ -1143,11 +1198,13 @@ bool World::isSolverEnabled(const WorldSolver* solver) const
 //==============================================================================
 bool World::moveSolver(std::size_t fromIndex, std::size_t toIndex)
 {
-  if (fromIndex >= mSolvers.size() || toIndex >= mSolvers.size())
+  if (fromIndex >= mSolvers.size() || toIndex >= mSolvers.size()) {
     return false;
+  }
 
-  if (fromIndex == toIndex)
+  if (fromIndex == toIndex) {
     return true;
+  }
 
   auto begin = mSolvers.begin();
   if (fromIndex < toIndex) {
@@ -1160,69 +1217,81 @@ bool World::moveSolver(std::size_t fromIndex, std::size_t toIndex)
 }
 
 //==============================================================================
-WorldSolver* World::getConstraintCapableSolver()
+Solver* World::getConstraintCapableSolver()
 {
   if (auto* activeSolver = getActiveRigidSolver()) {
-    if (isSolverEnabled(activeSolver) && activeSolver->supportsConstraints())
+    if (isSolverEnabled(activeSolver) && activeSolver->supportsConstraints()) {
       return activeSolver;
+    }
   }
 
   for (auto& entry : mSolvers) {
-    if (!entry.enabled)
+    if (!entry.enabled) {
       continue;
-    if (entry.solver->supportsConstraints())
+    }
+    if (entry.solver->supportsConstraints()) {
       return entry.solver.get();
+    }
   }
   return nullptr;
 }
 
 //==============================================================================
-const WorldSolver* World::getConstraintCapableSolver() const
+const Solver* World::getConstraintCapableSolver() const
 {
   if (const auto* activeSolver = getActiveRigidSolver()) {
-    if (isSolverEnabled(activeSolver) && activeSolver->supportsConstraints())
+    if (isSolverEnabled(activeSolver) && activeSolver->supportsConstraints()) {
       return activeSolver;
+    }
   }
 
   for (const auto& entry : mSolvers) {
-    if (!entry.enabled)
+    if (!entry.enabled) {
       continue;
-    if (entry.solver->supportsConstraints())
+    }
+    if (entry.solver->supportsConstraints()) {
       return entry.solver.get();
+    }
   }
   return nullptr;
 }
 
 //==============================================================================
-WorldSolver* World::getCollisionCapableSolver()
+Solver* World::getCollisionCapableSolver()
 {
   if (auto* activeSolver = getActiveRigidSolver()) {
-    if (isSolverEnabled(activeSolver) && activeSolver->supportsCollision())
+    if (isSolverEnabled(activeSolver) && activeSolver->supportsCollision()) {
       return activeSolver;
+    }
   }
 
   for (auto& entry : mSolvers) {
-    if (!entry.enabled)
+    if (!entry.enabled) {
       continue;
-    if (entry.solver->supportsCollision())
+    }
+    if (entry.solver->supportsCollision()) {
       return entry.solver.get();
+    }
   }
   return nullptr;
 }
 
 //==============================================================================
-const WorldSolver* World::getCollisionCapableSolver() const
+const Solver* World::getCollisionCapableSolver() const
 {
   if (const auto* activeSolver = getActiveRigidSolver()) {
-    if (isSolverEnabled(activeSolver) && activeSolver->supportsCollision())
+    if (isSolverEnabled(activeSolver) && activeSolver->supportsCollision()) {
       return activeSolver;
+    }
   }
 
   for (const auto& entry : mSolvers) {
-    if (!entry.enabled)
+    if (!entry.enabled) {
       continue;
-    if (entry.solver->supportsCollision())
+    }
+    if (entry.solver->supportsCollision()) {
       return entry.solver.get();
+    }
   }
   return nullptr;
 }

@@ -2,7 +2,7 @@
 
 ## Status
 
-- Draft: follow-up milestone after PR 00.
+- In progress: follow-up milestone after PR 00.
 
 ## Goal
 
@@ -11,13 +11,18 @@
 
 ## Scope
 
-- Define internal APIs for ECS object creation/registration in World
-  (non-public, non-installed headers).
-- Extend the ECS-backed rigid solver to consume components beyond legacy
-  skeleton mirrors (still no real physics step).
-- Provide minimal lifecycle hooks for add/remove to keep solvers in sync.
-- Add targeted tests for solver enable/disable and ECS object registration
-  lifecycles.
+- Add internal ECS entity lifecycle helpers in `detail::WorldEcsAccess`
+  (create/destroy/valid) so new ECS objects can be registered without exposing
+  EnTT in public headers.
+- Add minimal entity lifecycle hooks on `Solver` using `EcsEntity`, called
+  by World on create/destroy to keep solvers in sync.
+- Keep classic Skeleton data on the legacy path and notify only
+  `ClassicRigidSolver` (via `supportsSkeletons()`).
+- Route ECS-backed simulation objects (`simulation::object::Object` derivatives)
+  to `RigidSolver` only.
+- Extend the ECS-backed rigid solver to update ECS-only components (kept in
+  `dart/simulation/detail`, not installed), with no Skeleton mirroring.
+- Add integration tests for solver enable/disable and ECS entity lifecycle.
 
 ## Non-Goals
 
@@ -28,8 +33,10 @@
 
 ## Open Questions
 
-- Ownership model for ECS objects (World-owned vs solver-owned).
-- Placement of ECS component definitions to keep public installs clean.
+- Ownership model: default to World-owned ECS entity lifetimes; objects hold
+  `EcsEntity` + `World*` handles.
+- Component placement: keep ECS-only components in `dart/simulation/detail`
+  and exclude them from installed headers until the public object API is ready.
 
 ## Test Plan
 
