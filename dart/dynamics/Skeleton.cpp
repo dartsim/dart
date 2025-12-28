@@ -1560,6 +1560,45 @@ void Skeleton::integratePositions(double _dt)
 }
 
 //==============================================================================
+void Skeleton::integratePositions(
+    double _dt, const Eigen::VectorXd& velocityChanges)
+{
+  if (getNumDofs() == 0) {
+    integratePositions(_dt);
+    return;
+  }
+
+  if (velocityChanges.size() != static_cast<Eigen::Index>(getNumDofs())) {
+    DART_ASSERT(false);
+    integratePositions(_dt);
+    return;
+  }
+
+  for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i) {
+    auto* joint = mSkelCache.mBodyNodes[i]->getParentJoint();
+    const std::size_t dofs = joint->getNumDofs();
+    if (dofs == 0)
+      continue;
+
+    Eigen::VectorXd q0 = joint->getPositions();
+    Eigen::VectorXd v = joint->getVelocities();
+    for (std::size_t j = 0; j < dofs; ++j) {
+      const std::size_t index = joint->getIndexInSkeleton(j);
+      v[j] += velocityChanges[static_cast<Eigen::Index>(index)];
+    }
+
+    Eigen::VectorXd q;
+    joint->integratePositions(q0, v, _dt, q);
+    joint->setPositions(q);
+  }
+
+  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i) {
+    for (std::size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
+      mSoftBodyNodes[i]->getPointMass(j)->integratePositions(_dt);
+  }
+}
+
+//==============================================================================
 void Skeleton::integrateVelocities(double _dt)
 {
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
@@ -2121,7 +2160,10 @@ const Eigen::VectorXd& Skeleton::getConstraintForces() const
 
 //==============================================================================
 Skeleton::Skeleton(const AspectPropertiesData& properties)
-  : mTotalMass(0.0), mIsImpulseApplied(false), mUnionSize(1)
+  : mTotalMass(0.0),
+    mIsImpulseApplied(false),
+    mIsPositionImpulseApplied(false),
+    mUnionSize(1)
 {
   createAspect<Aspect>(properties);
   createAspect<detail::BodyNodeVectorProxyAspect>();
@@ -2773,6 +2815,7 @@ void Skeleton::updateCacheDimensions(std::size_t _treeIdx)
 {
   updateCacheDimensions(mTreeCache[_treeIdx]);
   updateCacheDimensions(mSkelCache);
+  mPositionVelocityChanges = Eigen::VectorXd::Zero(getNumDofs());
 
   dirtyArticulatedInertia(_treeIdx);
 }
@@ -3714,6 +3757,13 @@ void Skeleton::clearConstraintImpulses()
 }
 
 //==============================================================================
+void Skeleton::clearPositionConstraintImpulses()
+{
+  for (auto& bodyNode : mSkelCache.mBodyNodes)
+    bodyNode->clearPositionConstraintImpulse();
+}
+
+//==============================================================================
 void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
 {
   if (nullptr == _bodyNode) {
@@ -3877,6 +3927,29 @@ void Skeleton::updateVelocityChange()
 }
 
 //==============================================================================
+void Skeleton::computePositionVelocityChanges()
+{
+  if (!isMobile() || getNumDofs() == 0) {
+    mPositionVelocityChanges = Eigen::VectorXd::Zero(getNumDofs());
+    return;
+  }
+
+  // Backward recursion
+  for (auto it = mSkelCache.mBodyNodes.rbegin();
+       it != mSkelCache.mBodyNodes.rend();
+       ++it)
+    (*it)->updateBiasImpulseFromPositionImpulse();
+
+  // Forward recursion
+  for (auto& bodyNode : mSkelCache.mBodyNodes)
+    bodyNode->updateVelocityChangeFD();
+
+  mPositionVelocityChanges.resize(getNumDofs());
+  for (std::size_t i = 0; i < mSkelCache.mDofs.size(); ++i)
+    mPositionVelocityChanges[i] = mSkelCache.mDofs[i]->getVelocityChange();
+}
+
+//==============================================================================
 void Skeleton::setImpulseApplied(bool _val)
 {
   mIsImpulseApplied = _val;
@@ -3886,6 +3959,30 @@ void Skeleton::setImpulseApplied(bool _val)
 bool Skeleton::isImpulseApplied() const
 {
   return mIsImpulseApplied;
+}
+
+//==============================================================================
+void Skeleton::setPositionImpulseApplied(bool _val)
+{
+  mIsPositionImpulseApplied = _val;
+}
+
+//==============================================================================
+bool Skeleton::isPositionImpulseApplied() const
+{
+  return mIsPositionImpulseApplied;
+}
+
+//==============================================================================
+const Eigen::VectorXd& Skeleton::getPositionVelocityChanges() const
+{
+  return mPositionVelocityChanges;
+}
+
+//==============================================================================
+void Skeleton::clearPositionVelocityChanges()
+{
+  mPositionVelocityChanges = Eigen::VectorXd::Zero(getNumDofs());
 }
 
 //==============================================================================

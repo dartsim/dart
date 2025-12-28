@@ -65,6 +65,7 @@ dart_build_tests(
 )
 
 dart_add_test("integration" INTEGRATION_constraint_ContactConstraint constraint/test_ContactConstraint.cpp)
+dart_add_test("integration" INTEGRATION_constraint_SplitImpulse constraint/test_SplitImpulse.cpp)
 
 if(DART_BUILD_COLLISION_ODE)
   dart_add_test("integration" INTEGRATION_constraint_ForceDependentSlip constraint/test_ForceDependentSlip.cpp)
