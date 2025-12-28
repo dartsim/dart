@@ -48,6 +48,7 @@
 #include <chrono>
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <random>
 #include <string>
 #include <unordered_map>
@@ -297,6 +298,63 @@ Eigen::VectorXd MakePositiveVector(
   return x;
 }
 
+std::vector<int> BuildUniformBlockSizes(int n, int blockSize)
+{
+  std::vector<int> sizes;
+  if (blockSize <= 0 || n <= 0)
+    return sizes;
+
+  int remaining = n;
+  while (remaining > 0) {
+    const int size = std::min(blockSize, remaining);
+    sizes.push_back(size);
+    remaining -= size;
+  }
+  return sizes;
+}
+
+std::vector<int> ComputeFindexBlockSizes(const Eigen::VectorXi& findex)
+{
+  const int n = static_cast<int>(findex.size());
+  if (n == 0)
+    return {};
+
+  std::vector<int> parent(n);
+  std::iota(parent.begin(), parent.end(), 0);
+
+  auto findRoot = [&](int v) {
+    while (parent[v] != v) {
+      parent[v] = parent[parent[v]];
+      v = parent[v];
+    }
+    return v;
+  };
+
+  auto unite = [&](int a, int b) {
+    const int rootA = findRoot(a);
+    const int rootB = findRoot(b);
+    if (rootA != rootB)
+      parent[rootB] = rootA;
+  };
+
+  for (int i = 0; i < n; ++i) {
+    const int ref = findex[i];
+    if (ref >= 0)
+      unite(i, ref);
+  }
+
+  std::unordered_map<int, int> counts;
+  for (int i = 0; i < n; ++i)
+    ++counts[findRoot(i)];
+
+  std::vector<int> sizes;
+  sizes.reserve(counts.size());
+  for (const auto& entry : counts)
+    sizes.push_back(entry.second);
+  std::sort(sizes.begin(), sizes.end());
+  return sizes;
+}
+
 struct ExampleCase
 {
   std::string label;
@@ -361,6 +419,8 @@ struct SolverInfo
   bool supportsBoxed{true};
   bool supportsFindex{true};
   std::string fallbackNote;
+  std::vector<std::string> pros;
+  std::vector<std::string> cons;
 };
 
 std::unique_ptr<dart::math::LcpSolver> CreateSolver(SolverType type)
@@ -414,7 +474,15 @@ std::vector<SolverInfo> BuildSolvers()
   std::vector<SolverInfo> solvers;
 
   solvers.push_back(
-      {SolverType::Dantzig, "Dantzig", "Pivoting", true, true, true, ""});
+      {SolverType::Dantzig,
+       "Dantzig",
+       "Pivoting",
+       true,
+       true,
+       true,
+       "",
+       {"Exact pivoting, handles boxed and findex", "Solid for small systems"},
+       {"High cost; scales poorly"}});
   solvers.push_back(
       {SolverType::Lemke,
        "Lemke",
@@ -422,7 +490,9 @@ std::vector<SolverInfo> BuildSolvers()
        true,
        false,
        false,
-       "Fallback to Dantzig for boxed or findex problems"});
+       "Fallback to Dantzig for boxed or findex problems",
+       {"Exact for standard LCP", "Useful for verification"},
+       {"Standard only; not ideal for large problems"}});
   solvers.push_back(
       {SolverType::Baraff,
        "Baraff",
@@ -430,7 +500,9 @@ std::vector<SolverInfo> BuildSolvers()
        true,
        false,
        false,
-       "Fallback to Dantzig for boxed or findex problems"});
+       "Fallback to Dantzig for boxed or findex problems",
+       {"Incremental pivoting for contact", "Keeps complementarity explicit"},
+       {"Standard only; expensive for large systems"}});
   solvers.push_back(
       {SolverType::Direct,
        "Direct",
@@ -438,10 +510,20 @@ std::vector<SolverInfo> BuildSolvers()
        true,
        false,
        false,
-       "Fallback to Dantzig for boxed/findex or size > 3"});
+       "Fallback to Dantzig for boxed/findex or size > 3",
+       {"Enumerates active sets for tiny problems"},
+       {"Exponential cost; limited to n <= 3"}});
 
   solvers.push_back(
-      {SolverType::Pgs, "PGS", "Projection", true, true, true, ""});
+      {SolverType::Pgs,
+       "PGS",
+       "Projection",
+       true,
+       true,
+       true,
+       "",
+       {"Fast per-iteration; common in real time", "Handles boxed and findex"},
+       {"Slow convergence; sensitive to conditioning"}});
   solvers.push_back(
       {SolverType::SymmetricPsor,
        "Symmetric PSOR",
@@ -449,9 +531,19 @@ std::vector<SolverInfo> BuildSolvers()
        true,
        true,
        true,
-       ""});
+       "",
+       {"Forward and backward sweep can reduce error"},
+       {"Iterative; needs tuning"}});
   solvers.push_back(
-      {SolverType::Jacobi, "Jacobi", "Projection", true, true, true, ""});
+      {SolverType::Jacobi,
+       "Jacobi",
+       "Projection",
+       true,
+       true,
+       true,
+       "",
+       {"Parallel-friendly iterations"},
+       {"Slow convergence; many iterations"}});
   solvers.push_back(
       {SolverType::RedBlack,
        "Red-Black GS",
@@ -459,7 +551,9 @@ std::vector<SolverInfo> BuildSolvers()
        true,
        true,
        true,
-       ""});
+       "",
+       {"Parallel-friendly ordering"},
+       {"Ordering sensitive; convergence varies"}});
   solvers.push_back(
       {SolverType::BlockedJacobi,
        "Blocked Jacobi",
@@ -467,11 +561,29 @@ std::vector<SolverInfo> BuildSolvers()
        true,
        true,
        true,
-       ""});
+       "",
+       {"Per-block solves can improve convergence"},
+       {"Block partition affects quality"}});
   solvers.push_back(
-      {SolverType::Bgs, "BGS", "Projection", true, true, true, ""});
+      {SolverType::Bgs,
+       "BGS",
+       "Projection",
+       true,
+       true,
+       true,
+       "",
+       {"Contact block structure improves stability"},
+       {"Block choice affects speed and accuracy"}});
   solvers.push_back(
-      {SolverType::Nncg, "NNCG", "Projection", true, true, true, ""});
+      {SolverType::Nncg,
+       "NNCG",
+       "Projection",
+       true,
+       true,
+       true,
+       "",
+       {"Improves convergence over plain PGS on tough contacts"},
+       {"Parameter sensitive; higher per-iteration cost"}});
   solvers.push_back(
       {SolverType::SubspaceMinimization,
        "Subspace Minimization",
@@ -479,7 +591,9 @@ std::vector<SolverInfo> BuildSolvers()
        true,
        true,
        true,
-       ""});
+       "",
+       {"Active-set prediction with local direct solves"},
+       {"Extra tuning; still iterative"}});
 
   solvers.push_back(
       {SolverType::MinimumMapNewton,
@@ -488,7 +602,9 @@ std::vector<SolverInfo> BuildSolvers()
        true,
        false,
        false,
-       "Fallback to Dantzig for boxed or findex problems"});
+       "Fallback to Dantzig for boxed or findex problems",
+       {"Fast local convergence; accurate"},
+       {"Standard only; needs good initial guess"}});
   solvers.push_back(
       {SolverType::FischerBurmeisterNewton,
        "Fischer-Burmeister Newton",
@@ -496,7 +612,9 @@ std::vector<SolverInfo> BuildSolvers()
        true,
        false,
        false,
-       "Fallback to Dantzig for boxed or findex problems"});
+       "Fallback to Dantzig for boxed or findex problems",
+       {"NCP reformulation enables Newton steps"},
+       {"Standard only; line search overhead"}});
   solvers.push_back(
       {SolverType::PenalizedFischerBurmeisterNewton,
        "Penalized FB Newton",
@@ -504,7 +622,9 @@ std::vector<SolverInfo> BuildSolvers()
        true,
        false,
        false,
-       "Fallback to Dantzig for boxed or findex problems"});
+       "Fallback to Dantzig for boxed or findex problems",
+       {"Smoothing can improve convergence"},
+       {"Parameter sensitive; standard only"}});
 
   solvers.push_back(
       {SolverType::InteriorPoint,
@@ -513,7 +633,9 @@ std::vector<SolverInfo> BuildSolvers()
        true,
        false,
        false,
-       "Fallback to Dantzig for boxed or findex problems"});
+       "Fallback to Dantzig for boxed or findex problems",
+       {"Robust for ill-conditioned standard LCPs"},
+       {"Heavy linear algebra; standard only"}});
   solvers.push_back(
       {SolverType::Mprgp,
        "MPRGP",
@@ -521,7 +643,9 @@ std::vector<SolverInfo> BuildSolvers()
        true,
        false,
        false,
-       "Fallback to Dantzig for boxed or findex problems"});
+       "Fallback to Dantzig for boxed or findex problems",
+       {"Efficient for SPD bound-constrained problems"},
+       {"Requires SPD and symmetry; standard only"}});
   solvers.push_back(
       {SolverType::ShockPropagation,
        "Shock Propagation",
@@ -529,9 +653,19 @@ std::vector<SolverInfo> BuildSolvers()
        true,
        true,
        true,
-       ""});
+       "",
+       {"Layered ordering for stacks and contacts"},
+       {"Order dependent; block setup matters"}});
   solvers.push_back(
-      {SolverType::Staggering, "Staggering", "Other", true, true, true, ""});
+      {SolverType::Staggering,
+       "Staggering",
+       "Other",
+       true,
+       true,
+       true,
+       "",
+       {"Splits normal and friction updates"},
+       {"More iterations; sensitive to coupling"}});
 
   return solvers;
 }
@@ -788,6 +922,24 @@ const std::unordered_map<std::string, std::string>& ReferenceMap()
   return refs;
 }
 
+struct SolverParameters
+{
+  dart::math::PgsSolver::Parameters pgs;
+  dart::math::SymmetricPsorSolver::Parameters symPsor;
+  dart::math::JacobiSolver::Parameters jacobi;
+  dart::math::RedBlackGaussSeidelSolver::Parameters redBlack;
+  dart::math::BlockedJacobiSolver::Parameters blockedJacobi;
+  dart::math::BgsSolver::Parameters bgs;
+  dart::math::NncgSolver::Parameters nncg;
+  dart::math::SubspaceMinimizationSolver::Parameters subspace;
+  dart::math::MinimumMapNewtonSolver::Parameters minMap;
+  dart::math::FischerBurmeisterNewtonSolver::Parameters fb;
+  dart::math::PenalizedFischerBurmeisterNewtonSolver::Parameters pfb;
+  dart::math::InteriorPointSolver::Parameters interior;
+  dart::math::MprgpSolver::Parameters mprgp;
+  dart::math::ShockPropagationSolver::Parameters shock;
+};
+
 class LcpDashboardWidget : public dart::gui::ImGuiWidget
 {
 public:
@@ -810,7 +962,7 @@ public:
   void render() override
   {
     ImGui::SetNextWindowPos(ImVec2(10, 20), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(620, 720), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(660, 760), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowBgAlpha(0.6f);
 
     if (!ImGui::Begin(
@@ -844,6 +996,8 @@ public:
     RenderRunPanel();
     ImGui::Separator();
     RenderResultsPanel();
+    ImGui::Separator();
+    RenderPerformancePanel();
 
     ImGui::End();
   }
@@ -915,6 +1069,25 @@ private:
       if (!solver.fallbackNote.empty())
         ImGui::TextWrapped("%s", solver.fallbackNote.c_str());
     }
+
+    if (ImGui::CollapsingHeader(
+            "Pros and Cons", ImGuiTreeNodeFlags_DefaultOpen)) {
+      const SolverInfo& solver = mSolvers[mSolverIndex];
+      ImGui::Text("Pros");
+      if (solver.pros.empty()) {
+        ImGui::TextDisabled("No notes");
+      } else {
+        for (const auto& item : solver.pros)
+          ImGui::BulletText("%s", item.c_str());
+      }
+      ImGui::Text("Cons");
+      if (solver.cons.empty()) {
+        ImGui::TextDisabled("No notes");
+      } else {
+        for (const auto& item : solver.cons)
+          ImGui::BulletText("%s", item.c_str());
+      }
+    }
   }
 
   void RenderOptionsPanel()
@@ -941,6 +1114,249 @@ private:
     ImGui::Checkbox("Warm start", &mOptions.warmStart);
     ImGui::Checkbox("Validate solution", &mOptions.validateSolution);
     ImGui::Checkbox("Early termination", &mOptions.earlyTermination);
+
+    RenderSolverSpecificOptions();
+  }
+
+  void RenderSolverSpecificOptions()
+  {
+    if (!ImGui::CollapsingHeader(
+            "Solver-specific options", ImGuiTreeNodeFlags_DefaultOpen)) {
+      return;
+    }
+
+    const SolverInfo& solver = mSolvers[mSolverIndex];
+    const ExampleCase& example = mExamples[mExampleIndex];
+
+    switch (solver.type) {
+      case SolverType::Pgs:
+        ImGui::InputDouble(
+            "Division epsilon",
+            &mSolverParams.pgs.epsilonForDivision,
+            0.0,
+            0.0,
+            "%.1e");
+        ImGui::Checkbox(
+            "Randomize order", &mSolverParams.pgs.randomizeConstraintOrder);
+        break;
+      case SolverType::SymmetricPsor:
+        ImGui::InputDouble(
+            "Division epsilon",
+            &mSolverParams.symPsor.epsilonForDivision,
+            0.0,
+            0.0,
+            "%.1e");
+        break;
+      case SolverType::Jacobi:
+        ImGui::InputDouble(
+            "Division epsilon",
+            &mSolverParams.jacobi.epsilonForDivision,
+            0.0,
+            0.0,
+            "%.1e");
+        break;
+      case SolverType::RedBlack:
+        ImGui::InputDouble(
+            "Division epsilon",
+            &mSolverParams.redBlack.epsilonForDivision,
+            0.0,
+            0.0,
+            "%.1e");
+        break;
+      case SolverType::BlockedJacobi:
+        RenderBlockOptions(
+            "Blocked Jacobi",
+            mBlockedJacobiManualBlocks,
+            mBlockedJacobiBlockSize,
+            example);
+        break;
+      case SolverType::Bgs:
+        RenderBlockOptions("BGS", mBgsManualBlocks, mBgsBlockSize, example);
+        break;
+      case SolverType::Nncg:
+        ImGui::InputInt("PGS iterations", &mSolverParams.nncg.pgsIterations);
+        ImGui::InputInt(
+            "Restart interval", &mSolverParams.nncg.restartInterval);
+        ImGui::InputDouble(
+            "Restart threshold",
+            &mSolverParams.nncg.restartThreshold,
+            0.0,
+            0.0,
+            "%.2f");
+        break;
+      case SolverType::SubspaceMinimization:
+        ImGui::InputInt(
+            "PGS iterations", &mSolverParams.subspace.pgsIterations);
+        ImGui::InputDouble(
+            "Active-set tolerance",
+            &mSolverParams.subspace.activeSetTolerance,
+            0.0,
+            0.0,
+            "%.2e");
+        break;
+      case SolverType::MinimumMapNewton:
+        ImGui::InputInt(
+            "Max line search", &mSolverParams.minMap.maxLineSearchSteps);
+        ImGui::InputDouble(
+            "Step reduction",
+            &mSolverParams.minMap.stepReduction,
+            0.0,
+            0.0,
+            "%.2f");
+        ImGui::InputDouble(
+            "Sufficient decrease",
+            &mSolverParams.minMap.sufficientDecrease,
+            0.0,
+            0.0,
+            "%.2e");
+        ImGui::InputDouble(
+            "Min step", &mSolverParams.minMap.minStep, 0.0, 0.0, "%.2e");
+        break;
+      case SolverType::FischerBurmeisterNewton:
+        ImGui::InputDouble(
+            "Smoothing epsilon",
+            &mSolverParams.fb.smoothingEpsilon,
+            0.0,
+            0.0,
+            "%.2e");
+        ImGui::InputInt(
+            "Max line search", &mSolverParams.fb.maxLineSearchSteps);
+        ImGui::InputDouble(
+            "Step reduction",
+            &mSolverParams.fb.stepReduction,
+            0.0,
+            0.0,
+            "%.2f");
+        ImGui::InputDouble(
+            "Sufficient decrease",
+            &mSolverParams.fb.sufficientDecrease,
+            0.0,
+            0.0,
+            "%.2e");
+        ImGui::InputDouble(
+            "Min step", &mSolverParams.fb.minStep, 0.0, 0.0, "%.2e");
+        break;
+      case SolverType::PenalizedFischerBurmeisterNewton:
+        ImGui::InputDouble(
+            "Smoothing epsilon",
+            &mSolverParams.pfb.smoothingEpsilon,
+            0.0,
+            0.0,
+            "%.2e");
+        ImGui::InputDouble(
+            "Penalty lambda", &mSolverParams.pfb.lambda, 0.0, 0.0, "%.2f");
+        ImGui::InputInt(
+            "Max line search", &mSolverParams.pfb.maxLineSearchSteps);
+        ImGui::InputDouble(
+            "Step reduction",
+            &mSolverParams.pfb.stepReduction,
+            0.0,
+            0.0,
+            "%.2f");
+        ImGui::InputDouble(
+            "Sufficient decrease",
+            &mSolverParams.pfb.sufficientDecrease,
+            0.0,
+            0.0,
+            "%.2e");
+        ImGui::InputDouble(
+            "Min step", &mSolverParams.pfb.minStep, 0.0, 0.0, "%.2e");
+        break;
+      case SolverType::InteriorPoint:
+        ImGui::InputDouble(
+            "Sigma", &mSolverParams.interior.sigma, 0.0, 0.0, "%.2f");
+        ImGui::InputDouble(
+            "Step scale", &mSolverParams.interior.stepScale, 0.0, 0.0, "%.2f");
+        break;
+      case SolverType::Mprgp:
+        ImGui::InputDouble(
+            "Symmetry tolerance",
+            &mSolverParams.mprgp.symmetryTolerance,
+            0.0,
+            0.0,
+            "%.2e");
+        ImGui::InputDouble(
+            "Division epsilon",
+            &mSolverParams.mprgp.epsilonForDivision,
+            0.0,
+            0.0,
+            "%.2e");
+        ImGui::Checkbox(
+            "Check positive definite",
+            &mSolverParams.mprgp.checkPositiveDefinite);
+        break;
+      case SolverType::ShockPropagation:
+        RenderShockOptions(example);
+        break;
+      case SolverType::Staggering:
+      case SolverType::Dantzig:
+      case SolverType::Lemke:
+      case SolverType::Baraff:
+      case SolverType::Direct:
+        ImGui::TextDisabled("No solver-specific parameters.");
+        break;
+    }
+  }
+
+  void RenderBlockOptions(
+      const char* label,
+      bool& manualBlocks,
+      int& blockSize,
+      const ExampleCase& example)
+  {
+    const bool allowManual = !example.hasFindex;
+    if (!allowManual) {
+      ImGui::TextDisabled("Manual block sizes disabled for findex problems.");
+    }
+
+    if (!allowManual)
+      ImGui::BeginDisabled();
+    ImGui::Checkbox(
+        (std::string("Manual blocks (") + label + ")").c_str(), &manualBlocks);
+    if (manualBlocks) {
+      ImGui::InputInt(
+          (std::string("Block size (") + label + ")").c_str(), &blockSize);
+      if (blockSize < 1)
+        blockSize = 1;
+    }
+    if (!allowManual)
+      ImGui::EndDisabled();
+
+    const int n = static_cast<int>(example.problem.b.size());
+    if (manualBlocks && allowManual) {
+      const int count
+          = static_cast<int>(BuildUniformBlockSizes(n, blockSize).size());
+      ImGui::Text("Manual blocks: %d", count);
+    } else if (example.hasFindex) {
+      const int count = static_cast<int>(
+          ComputeFindexBlockSizes(example.problem.findex).size());
+      ImGui::Text("Derived blocks: %d", count);
+    } else {
+      ImGui::Text("Derived blocks: 1");
+    }
+  }
+
+  void RenderShockOptions(const ExampleCase& example)
+  {
+    ImGui::Checkbox("Manual block size", &mShockManualBlocks);
+    if (mShockManualBlocks) {
+      ImGui::InputInt("Shock block size", &mShockBlockSize);
+      if (mShockBlockSize < 1)
+        mShockBlockSize = 1;
+      if (example.hasFindex) {
+        ImGui::TextDisabled("Manual blocks ignored for findex problems.");
+      }
+    }
+
+    ImGui::Checkbox("Use layer ordering", &mShockUseLayers);
+    if (mShockUseLayers) {
+      ImGui::InputInt("Blocks per layer", &mShockBlocksPerLayer);
+      if (mShockBlocksPerLayer < 1)
+        mShockBlocksPerLayer = 1;
+    }
+
+    const int blockCount = BlockCountForExample(example, mShockManualBlocks);
+    ImGui::Text("Blocks: %d", blockCount);
   }
 
   void RenderRunPanel()
@@ -1039,6 +1455,47 @@ private:
     ImGui::EndTable();
   }
 
+  void RenderPerformancePanel()
+  {
+    if (!ImGui::CollapsingHeader(
+            "Performance history", ImGuiTreeNodeFlags_DefaultOpen))
+      return;
+
+    const auto& stats = mSolverStats[mSolverIndex];
+    if (stats.historyMs.empty()) {
+      ImGui::TextDisabled("No samples yet.");
+      return;
+    }
+
+    const auto [minIt, maxIt]
+        = std::minmax_element(stats.historyMs.begin(), stats.historyMs.end());
+    float minVal = *minIt;
+    float maxVal = *maxIt;
+    if (minVal == maxVal) {
+      minVal = std::max(0.0f, minVal - 0.1f);
+      maxVal = maxVal + 0.1f;
+    }
+
+    ImGui::PlotLines(
+        "Solve time (ms)",
+        stats.historyMs.data(),
+        static_cast<int>(stats.historyMs.size()),
+        0,
+        nullptr,
+        minVal,
+        maxVal,
+        ImVec2(0, 80));
+    ImGui::PlotHistogram(
+        "Distribution (ms)",
+        stats.historyMs.data(),
+        static_cast<int>(stats.historyMs.size()),
+        0,
+        nullptr,
+        minVal,
+        maxVal,
+        ImVec2(0, 80));
+  }
+
   void RenderReferenceTags(const std::vector<std::string>& refs)
   {
     if (refs.empty())
@@ -1077,11 +1534,12 @@ private:
     if (!solver)
       return;
 
-    const auto& problem = mExamples[mExampleIndex].problem;
+    const auto& example = mExamples[mExampleIndex];
+    const auto& problem = example.problem;
     auto& stats = mSolverStats[index];
 
     dart::math::LcpOptions options = mOptions;
-    options.customOptions = nullptr;
+    options.customOptions = GetCustomOptionsPointer(solverInfo, example);
 
     const int n = static_cast<int>(problem.b.size());
     Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
@@ -1113,6 +1571,111 @@ private:
     stats.hasResult = true;
   }
 
+  void* GetCustomOptionsPointer(
+      const SolverInfo& solver, const ExampleCase& example)
+  {
+    switch (solver.type) {
+      case SolverType::Pgs:
+        return &mSolverParams.pgs;
+      case SolverType::SymmetricPsor:
+        return &mSolverParams.symPsor;
+      case SolverType::Jacobi:
+        return &mSolverParams.jacobi;
+      case SolverType::RedBlack:
+        return &mSolverParams.redBlack;
+      case SolverType::BlockedJacobi:
+        ConfigureBlockSizes(
+            mSolverParams.blockedJacobi.blockSizes,
+            mBlockedJacobiManualBlocks,
+            mBlockedJacobiBlockSize,
+            example);
+        return &mSolverParams.blockedJacobi;
+      case SolverType::Bgs:
+        ConfigureBlockSizes(
+            mSolverParams.bgs.blockSizes,
+            mBgsManualBlocks,
+            mBgsBlockSize,
+            example);
+        return &mSolverParams.bgs;
+      case SolverType::Nncg:
+        return &mSolverParams.nncg;
+      case SolverType::SubspaceMinimization:
+        return &mSolverParams.subspace;
+      case SolverType::MinimumMapNewton:
+        return &mSolverParams.minMap;
+      case SolverType::FischerBurmeisterNewton:
+        return &mSolverParams.fb;
+      case SolverType::PenalizedFischerBurmeisterNewton:
+        return &mSolverParams.pfb;
+      case SolverType::InteriorPoint:
+        return &mSolverParams.interior;
+      case SolverType::Mprgp:
+        return &mSolverParams.mprgp;
+      case SolverType::ShockPropagation:
+        ConfigureShockParameters(example);
+        return &mSolverParams.shock;
+      case SolverType::Dantzig:
+      case SolverType::Lemke:
+      case SolverType::Baraff:
+      case SolverType::Direct:
+      case SolverType::Staggering:
+        return nullptr;
+    }
+    return nullptr;
+  }
+
+  void ConfigureBlockSizes(
+      std::vector<int>& blockSizes,
+      bool manualBlocks,
+      int blockSize,
+      const ExampleCase& example)
+  {
+    blockSizes.clear();
+    if (!manualBlocks)
+      return;
+    if (example.hasFindex)
+      return;
+
+    const int n = static_cast<int>(example.problem.b.size());
+    blockSizes = BuildUniformBlockSizes(n, blockSize);
+  }
+
+  void ConfigureShockParameters(const ExampleCase& example)
+  {
+    mSolverParams.shock.blockSizes.clear();
+    mSolverParams.shock.layers.clear();
+
+    if (mShockManualBlocks && !example.hasFindex) {
+      const int n = static_cast<int>(example.problem.b.size());
+      mSolverParams.shock.blockSizes
+          = BuildUniformBlockSizes(n, mShockBlockSize);
+    }
+
+    if (mShockUseLayers) {
+      const int blockCount = BlockCountForExample(example, mShockManualBlocks);
+      const int blocksPerLayer = std::max(1, mShockBlocksPerLayer);
+      for (int i = 0; i < blockCount; i += blocksPerLayer) {
+        std::vector<int> layer;
+        for (int j = i; j < std::min(blockCount, i + blocksPerLayer); ++j)
+          layer.push_back(j);
+        mSolverParams.shock.layers.push_back(std::move(layer));
+      }
+    }
+  }
+
+  int BlockCountForExample(const ExampleCase& example, bool manualBlocks) const
+  {
+    if (manualBlocks && !example.hasFindex) {
+      const int n = static_cast<int>(example.problem.b.size());
+      return static_cast<int>(
+          BuildUniformBlockSizes(n, mShockBlockSize).size());
+    }
+    if (example.hasFindex)
+      return static_cast<int>(
+          ComputeFindexBlockSizes(example.problem.findex).size());
+    return 1;
+  }
+
   static void AppendHistory(std::vector<float>& history, float value)
   {
     if (history.size() >= kMaxHistory)
@@ -1124,11 +1687,22 @@ private:
   std::vector<ExampleCase> mExamples;
   std::vector<SolverInfo> mSolvers;
   std::vector<RunStats> mSolverStats;
+  SolverParameters mSolverParams;
 
   int mExampleIndex{0};
   int mSolverIndex{0};
   int mRunCount{10};
   bool mShowAllResults{false};
+
+  bool mBlockedJacobiManualBlocks{false};
+  int mBlockedJacobiBlockSize{3};
+  bool mBgsManualBlocks{false};
+  int mBgsBlockSize{3};
+
+  bool mShockManualBlocks{false};
+  int mShockBlockSize{3};
+  bool mShockUseLayers{false};
+  int mShockBlocksPerLayer{1};
 
   dart::math::LcpOptions mOptions;
 };
