@@ -1717,8 +1717,10 @@ int main(int argc, char* argv[])
       ->check(CLI::PositiveNumber);
   CLI11_PARSE(app, argc, argv);
 
-  auto world = dart::simulation::World::create("lcp_dashboard_world");
-  auto worldNode = std::make_shared<dart::gui::WorldNode>(world);
+  dart::simulation::WorldPtr world
+      = dart::simulation::World::create("lcp_dashboard_world");
+  osg::ref_ptr<dart::gui::WorldNode> worldNode
+      = new dart::gui::WorldNode(world);
 
   osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
   viewer->setImGuiScale(static_cast<float>(guiScale));
