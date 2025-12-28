@@ -33,7 +33,9 @@
 #ifndef DART_DYNAMICS_BALLJOINT_HPP_
 #define DART_DYNAMICS_BALLJOINT_HPP_
 
-#include <dart/dynamics/GenericJoint.hpp>
+#include <dart/dynamics/detail/BallJointAspect.hpp>
+
+#include <dart/math/Geometry.hpp>
 
 #include <dart/Export.hpp>
 
@@ -43,24 +45,29 @@ namespace dart {
 namespace dynamics {
 
 /// class BallJoint
-class DART_API BallJoint : public GenericJoint<math::SO3Space>
+class DART_API BallJoint : public detail::BallJointBase
 {
 public:
   friend class Skeleton;
 
-  using Base = GenericJoint<math::SO3Space>;
+  using CoordinateChart = detail::CoordinateChart;
+  using UniqueProperties = detail::BallJointUniqueProperties;
+  using Properties = detail::BallJointProperties;
+  using Base = detail::BallJointBase;
 
-  struct DART_API Properties : Base::Properties
-  {
-    DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Properties)
-
-    Properties(const Base::Properties& properties = Base::Properties());
-
-    virtual ~Properties() = default;
-  };
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, BallJointAspect)
 
   /// Destructor
   virtual ~BallJoint();
+
+  /// Set the Properties of this BallJoint
+  void setProperties(const Properties& properties);
+
+  /// Set the Properties of this BallJoint
+  void setProperties(const UniqueProperties& properties);
+
+  /// Set the AspectProperties of this BallJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   // Documentation inherited
   const std::string& getType() const override;
@@ -74,6 +81,24 @@ public:
   /// Get the Properties of this BallJoint
   Properties getBallJointProperties() const;
 
+  /// Copy the Properties of another BallJoint
+  void copy(const BallJoint& otherJoint);
+
+  /// Copy the Properties of another BallJoint
+  void copy(const BallJoint* otherJoint);
+
+  /// Same as copy(const BallJoint&)
+  BallJoint& operator=(const BallJoint& otherJoint);
+
+  /// Set the coordinate chart used for generalized positions.
+  ///
+  /// This affects how positions map to rotations. Generalized velocities
+  /// remain angular velocities.
+  void setCoordinateChart(CoordinateChart chart);
+
+  /// Get the coordinate chart used for generalized positions.
+  CoordinateChart getCoordinateChart() const;
+
   /// Convert a rotation into a 3D vector that can be used to set the positions
   /// of a BallJoint. The positions returned by this function will result in a
   /// relative transform of
@@ -83,15 +108,46 @@ public:
   template <typename RotationType>
   static Eigen::Vector3d convertToPositions(const RotationType& _rotation)
   {
-    return math::logMap(_rotation);
+    return convertToPositions(_rotation, CoordinateChart::EXP_MAP);
+  }
+
+  /// Convert a rotation into a 3D vector that can be used to set the positions
+  /// of a BallJoint using the specified coordinate chart.
+  template <typename RotationType>
+  static Eigen::Vector3d convertToPositions(
+      const RotationType& _rotation, CoordinateChart chart)
+  {
+    switch (chart) {
+      case CoordinateChart::EXP_MAP:
+        return math::logMap(_rotation);
+      case CoordinateChart::EULER_XYZ:
+        return math::matrixToEulerXYZ(_rotation);
+      case CoordinateChart::EULER_ZYX:
+        return math::matrixToEulerZYX(_rotation);
+      default:
+        DART_WARN(
+            "Unsupported coordinate chart ({}); returning zero vector",
+            static_cast<int>(chart));
+        return Eigen::Vector3d::Zero();
+    }
   }
 
   /// Convert a BallJoint-style position vector into a transform
   static Eigen::Isometry3d convertToTransform(
       const Eigen::Vector3d& _positions);
 
+  /// Convert a BallJoint-style position vector into a transform using the
+  /// specified coordinate chart.
+  static Eigen::Isometry3d convertToTransform(
+      const Eigen::Vector3d& _positions, CoordinateChart chart);
+
   /// Convert a BallJoint-style position vector into a rotation matrix
   static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions);
+
+  /// Convert a BallJoint-style position vector into a rotation matrix using
+  /// the specified coordinate chart.
+  static Eigen::Matrix3d convertToRotation(
+      const Eigen::Vector3d& _positions, CoordinateChart chart);
 
   // Documentation inherited
   Eigen::Matrix<double, 6, 3> getRelativeJacobianStatic(

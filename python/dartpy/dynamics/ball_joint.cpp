@@ -24,11 +24,15 @@ void defBallJoint(nb::module_& m)
           nb::arg("transform"))
       .def_static(
           "convertToRotation",
-          &BallJoint::convertToRotation,
+          [](const Eigen::Vector3d& positions) {
+            return BallJoint::convertToRotation(positions);
+          },
           nb::arg("positions"))
       .def_static(
           "convertToTransform",
-          &BallJoint::convertToTransform,
+          [](const Eigen::Vector3d& positions) {
+            return BallJoint::convertToTransform(positions);
+          },
           nb::arg("positions"));
 
   registerPolymorphicCaster<dart::dynamics::Joint, BallJoint>();

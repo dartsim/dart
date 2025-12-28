@@ -1791,6 +1791,75 @@ TEST_F(Joints, ConvenienceFunctions)
 }
 
 //==============================================================================
+TEST_F(Joints, BallJointCoordinateChart)
+{
+  SkeletonPtr skel = Skeleton::create("ball_chart");
+
+  BallJoint::Properties ballProps;
+  ballProps.mCoordinateChart = BallJoint::CoordinateChart::EULER_XYZ;
+
+  auto [ballJoint, ballBody]
+      = skel->createJointAndBodyNodePair<BallJoint>(nullptr, ballProps);
+  (void)ballBody;
+
+  EXPECT_EQ(
+      ballJoint->getCoordinateChart(), BallJoint::CoordinateChart::EULER_XYZ);
+
+  const Eigen::Vector3d xyzAngles(0.2, -0.1, 0.3);
+  const Eigen::Matrix3d xyzRotation = math::eulerXYZToMatrix(xyzAngles);
+  const Eigen::Vector3d xyzPositions = BallJoint::convertToPositions(
+      xyzRotation, BallJoint::CoordinateChart::EULER_XYZ);
+  ballJoint->setPositions(xyzPositions);
+  EXPECT_TRUE(
+      ballJoint->getRelativeTransform().linear().isApprox(xyzRotation, 1e-10));
+
+  ballJoint->setCoordinateChart(BallJoint::CoordinateChart::EULER_ZYX);
+  EXPECT_EQ(
+      ballJoint->getCoordinateChart(), BallJoint::CoordinateChart::EULER_ZYX);
+
+  const Eigen::Vector3d zyxAngles(0.3, -0.2, 0.15);
+  const Eigen::Matrix3d zyxRotation = math::eulerZYXToMatrix(zyxAngles);
+  const Eigen::Vector3d zyxPositions = BallJoint::convertToPositions(
+      zyxRotation, BallJoint::CoordinateChart::EULER_ZYX);
+  ballJoint->setPositions(zyxPositions);
+  EXPECT_TRUE(
+      ballJoint->getRelativeTransform().linear().isApprox(zyxRotation, 1e-10));
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointCoordinateChart)
+{
+  SkeletonPtr skel = Skeleton::create("free_chart");
+
+  FreeJoint::Properties freeProps;
+  freeProps.mCoordinateChart = FreeJoint::CoordinateChart::EULER_ZYX;
+
+  auto [freeJoint, freeBody]
+      = skel->createJointAndBodyNodePair<FreeJoint>(nullptr, freeProps);
+  (void)freeBody;
+
+  EXPECT_EQ(
+      freeJoint->getCoordinateChart(), FreeJoint::CoordinateChart::EULER_ZYX);
+
+  const Eigen::Vector3d zyxAngles(0.1, -0.25, 0.05);
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = math::eulerZYXToMatrix(zyxAngles);
+  tf.translation() = Eigen::Vector3d(0.4, -0.2, 0.3);
+
+  const Eigen::Vector6d positions = FreeJoint::convertToPositions(
+      tf, FreeJoint::CoordinateChart::EULER_ZYX);
+  freeJoint->setPositions(positions);
+  EXPECT_TRUE(
+      freeJoint->getRelativeTransform().linear().isApprox(tf.linear(), 1e-10));
+  EXPECT_TRUE(freeJoint->getRelativeTransform().translation().isApprox(
+      tf.translation(), 1e-12));
+
+  freeJoint->setCoordinateChart(FreeJoint::CoordinateChart::EULER_XYZ);
+  EXPECT_EQ(
+      freeJoint->getCoordinateChart(), FreeJoint::CoordinateChart::EULER_XYZ);
+}
+
+//==============================================================================
 TEST_F(Joints, FreeJointRelativeTransformVelocityAcceleration)
 {
   const std::size_t numTests = 50;
