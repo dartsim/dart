@@ -108,5 +108,18 @@ TEST(SensorIntegration, NameManagementAndEnable)
   EXPECT_EQ(second->updateCount, 1);
 }
 
+TEST(SensorIntegration, ManagerDisconnectsOnDestruction)
+{
+  auto sensor = std::make_shared<CountingSensor>();
+  {
+    auto world = simulation::World::create();
+    world->addSensor(sensor);
+    EXPECT_TRUE(world->hasSensor(sensor));
+  }
+
+  sensor->setName("after-world");
+  EXPECT_EQ(sensor->getName(), "after-world");
+}
+
 } // namespace
 } // namespace dart

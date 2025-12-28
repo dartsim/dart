@@ -53,6 +53,7 @@ public:
   explicit SensorManager(
       const std::string& managerName = "SensorManager",
       const std::string& defaultName = "sensor");
+  ~SensorManager();
 
   /// Set the NameManager label used in diagnostics.
   void setManagerName(const std::string& name);

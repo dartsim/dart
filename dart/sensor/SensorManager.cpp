@@ -49,6 +49,13 @@ SensorManager::SensorManager(
 }
 
 //==============================================================================
+SensorManager::~SensorManager()
+{
+  for (const auto& connection : mNameConnections)
+    connection.disconnect();
+}
+
+//==============================================================================
 void SensorManager::setManagerName(const std::string& name)
 {
   mNameManager.setManagerName(name);
