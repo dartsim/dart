@@ -397,6 +397,11 @@ pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE
 pixi run bm --pixi-help
 ```
 
+Note: LCP solver comparisons use the solver-agnostic harness and the
+`BM_LCP_COMPARE` benchmark so all solvers share the same contract and fixtures.
+See `tests/common/lcpsolver` and `tests/benchmark/lcpsolver` for the sources,
+and keep benchmark outputs under the build tree.
+
 ## CMake Integration
 
 The test suite uses custom CMake functions defined in `/tests/CMakeLists.txt`:
