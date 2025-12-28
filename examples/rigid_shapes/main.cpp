@@ -50,6 +50,7 @@
 #include <fcl/config.h>
 
 #include <iostream>
+#include <memory>
 #include <span>
 #include <string>
 #include <vector>
@@ -166,6 +167,15 @@ public:
     setContactPointsVisible(!mContactPointsVisible);
   }
 
+  void addRollingBody(
+      const SkeletonPtr& skeleton,
+      const std::string& bodyName,
+      const Eigen::Vector3d& torque,
+      bool isLocal = false)
+  {
+    mRollingBodies.push_back({skeleton, bodyName, torque, isLocal});
+  }
+
   void setContactPointsVisible(bool visible)
   {
     mContactPointsVisible = visible;
@@ -180,6 +190,26 @@ public:
   bool getContactPointsVisible() const
   {
     return mContactPointsVisible;
+  }
+
+  void customPreStep() override
+  {
+    for (auto it = mRollingBodies.begin(); it != mRollingBodies.end();) {
+      auto skeleton = it->skeleton.lock();
+      if (!skeleton) {
+        it = mRollingBodies.erase(it);
+        continue;
+      }
+
+      auto* body = skeleton->getBodyNode(it->bodyName);
+      if (!body) {
+        it = mRollingBodies.erase(it);
+        continue;
+      }
+
+      body->addExtTorque(it->torque, it->isLocal);
+      ++it;
+    }
   }
 
   void customPreRefresh() override
@@ -200,11 +230,20 @@ public:
   }
 
 private:
+  struct RollingBody
+  {
+    std::weak_ptr<Skeleton> skeleton;
+    std::string bodyName;
+    Eigen::Vector3d torque;
+    bool isLocal;
+  };
+
   std::shared_ptr<PointCloudShape> mContactShape;
   VisualAspect* mContactVisual;
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
       mContactPoints;
   bool mContactPointsVisible;
+  std::vector<RollingBody> mRollingBodies;
 };
 
 class RigidShapesEventHandler : public ::osgGA::GUIEventHandler
@@ -246,6 +285,10 @@ public:
           spawnConvexMesh(getRandomTransform(), vertexCount, bound);
           return true;
         }
+        case 't':
+        case 'T':
+          spawnRollingCylinder();
+          return true;
         case 'a':
         case 'A':
           if (mWorld->getNumSkeletons() > 1) {
@@ -419,6 +462,46 @@ private:
     mWorld->addSkeleton(newSkeleton);
   }
 
+  void spawnRollingCylinder()
+  {
+    const double radius = 0.2;
+    const double height = 0.05;
+    const double mass = 2.0;
+    const double torque = 0.3;
+
+    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+    T.translation() = Eigen::Vector3d(-2.0, 0.0, 1.0);
+
+    SkeletonPtr newSkeleton
+        = Skeleton::create(nextSkeletonName("rolling_cylinder"));
+
+    ShapePtr newShape(new CylinderShape(radius, height));
+
+    BodyNode::Properties bodyProp;
+    bodyProp.mName = "rolling_cylinder_link";
+    bodyProp.mInertia.setMass(mass);
+
+    FreeJoint::Properties jointProp;
+    jointProp.mName = "rolling_cylinder_joint";
+    jointProp.mT_ParentBodyToJoint = T;
+
+    auto pair = newSkeleton->createJointAndBodyNodePair<FreeJoint>(
+        nullptr, jointProp, bodyProp);
+    auto shapeNode = pair.second->createShapeNodeWith<
+        VisualAspect,
+        CollisionAspect,
+        DynamicsAspect>(newShape);
+    shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.9, 0.6, 0.1));
+    shapeNode->getDynamicsAspect()->setFrictionCoeff(1.0);
+
+    mWorld->addSkeleton(newSkeleton);
+
+    if (mWorldNode) {
+      mWorldNode->addRollingBody(
+          newSkeleton, bodyProp.mName, Eigen::Vector3d(0.0, 0.0, torque));
+    }
+  }
+
 protected:
   WorldPtr mWorld;
   CustomWorldNode* mWorldNode;
@@ -504,6 +587,7 @@ int main(int argc, char* argv[])
   viewer.addInstructionText("'w': spawn a random ellipsoid\n");
   viewer.addInstructionText("'e': spawn a random cylinder\n");
   viewer.addInstructionText("'r': spawn a random convex mesh\n");
+  viewer.addInstructionText("'t': spawn a driven rolling cylinder\n");
   viewer.addInstructionText("'a': delete a spawned object at last\n");
   viewer.addInstructionText("'c': toggle contact points\n");
   std::cout << viewer.getInstructions() << std::endl;
