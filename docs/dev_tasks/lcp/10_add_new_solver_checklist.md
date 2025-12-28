@@ -30,7 +30,7 @@ Use this checklist when adding a new solver implementation.
 - Use `MakeBenchmarkOptions()` and the benchmark generator helpers in that
   file; add solver-specific custom options if needed.
 - Run the smoke benchmark:
-  - Suggested (Unverified): `pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE`
+  - Suggested (Unverified): `pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE --benchmark_min_time=0.01s --benchmark_repetitions=3`
 
 ## Reporting
 

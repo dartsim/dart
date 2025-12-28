@@ -42,9 +42,12 @@ structure for apples-to-apples LCP solver comparisons.
 Use Google Benchmark's built-in JSON/CSV output:
 
 ```
---benchmark_out=benchmarks/lcp.json
+--benchmark_out=build/<env>/cpp/Release/benchmarks/lcp_compare.json
 --benchmark_out_format=json
 ```
+
+Store artifacts under the build tree (e.g., `build/<env>/cpp/Release/benchmarks`)
+to avoid accidentally tracking benchmark outputs.
 
 Required columns/fields:
 
@@ -63,10 +66,10 @@ Also produce a short human summary (markdown table) using
 - A single small-size run (e.g., standard SPD size 12) with short repetition.
 - Execute locally with:
   - `--benchmark_filter=BM_LCP_COMPARE_SMOKE`
-  - `--benchmark_min_time=0.01`
+  - `--benchmark_min_time=0.01s`
   - `--benchmark_repetitions=3`
 - Suggested (Unverified):
-  - `pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE --benchmark_min_time=0.01 --benchmark_repetitions=3`
+  - `pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE --benchmark_min_time=0.01s --benchmark_repetitions=3`
 
 ## Notes
 

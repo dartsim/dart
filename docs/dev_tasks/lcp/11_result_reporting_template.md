@@ -29,7 +29,8 @@ Fill this template when adding or evaluating a solver.
 
 ## Benchmark Results (Release Build)
 
-Include JSON/CSV artifact path or command used. Use benchmark counters for
+Include JSON/CSV artifact path or command used (prefer
+`build/<env>/cpp/Release/benchmarks/...`). Use benchmark counters for
 residual/complementarity/bound_violation/contract_ok.
 
 ### Standard SPD
