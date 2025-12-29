@@ -155,6 +155,9 @@ if(TARGET dart-gui)
     dart_add_test(
       "unit" UNIT_gui_ConvexMeshShapeNode gui/test_ConvexMeshShapeNode.cpp)
     target_link_libraries(UNIT_gui_ConvexMeshShapeNode dart-gui)
+    dart_add_test(
+      "unit" UNIT_gui_PlaneShapeNode gui/test_PlaneShapeNode.cpp)
+    target_link_libraries(UNIT_gui_PlaneShapeNode dart-gui)
   endif()
 endif()
 
