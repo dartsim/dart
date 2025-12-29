@@ -28,6 +28,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - zsh can produce ``parse error near `}'`` if a `gh ... --jq` expression containing `{ ... }` isn't fully quoted; wrap the whole jq program in single quotes.
   - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
   - CI jobs can sit in the queue for a long time; re-check the run list and wait for the PR run to start before assuming a failure.
+  - Wheel publishing workflows may lag behind other jobs and stay queued longer; keep watching the PR run until all workflows complete.
 
 ## Task Recap (General)
 
@@ -65,6 +66,7 @@ Suggested (Unverified):
 ```bash
 gh run list --repo <OWNER>/<REPO> --branch <BRANCH> --limit <N>
 gh run watch <RUN_ID> --interval 30 --repo <OWNER>/<REPO>
+gh run view <RUN_ID> --json status,conclusion,updatedAt
 ```
 
 ## CI Monitoring (API)
