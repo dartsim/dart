@@ -475,7 +475,7 @@ static void BM_LcpCompare_PenalizedFischerBurmeisterNewton_Standard(
       = MakeStandardSpdProblem(n, 717u + static_cast<unsigned>(n));
   auto options = MakeBenchmarkOptions(50);
   dart::math::PenalizedFischerBurmeisterNewtonSolver::Parameters params;
-  params.lambda = 0.5;
+  params.lambda = 1.0;
   options.customOptions = &params;
   RunBenchmark<dart::math::PenalizedFischerBurmeisterNewtonSolver>(
       state,
