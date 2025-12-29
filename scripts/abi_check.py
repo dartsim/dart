@@ -1,0 +1,250 @@
+#!/usr/bin/env python3
+"""
+Run an ABI compatibility check against the latest release tag.
+
+This script builds the baseline tag and current branch with identical options,
+then compares shared libraries with libabigail (abidiff).
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import tarfile
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def run(cmd, cwd=None, env=None):
+    print(f"+ {' '.join(cmd)}")
+    return subprocess.run(cmd, cwd=cwd, env=env, check=True)
+
+
+def read_version():
+    package_xml = ROOT / "package.xml"
+    text = package_xml.read_text(encoding="utf-8")
+    match = re.search(r"<version>([^<]+)</version>", text)
+    if not match:
+        raise RuntimeError("Failed to read <version> from package.xml")
+    return match.group(1)
+
+
+def select_baseline_tag(major, override_tag):
+    if override_tag:
+        return override_tag
+
+    cmd = [
+        "git",
+        "tag",
+        "--list",
+        f"v{major}.*",
+        "--sort=-v:refname",
+    ]
+    result = subprocess.run(cmd, cwd=ROOT, check=True, text=True, stdout=subprocess.PIPE)
+    for tag in result.stdout.splitlines():
+        tag = tag.strip()
+        if re.match(rf"^v{major}\.\d+\.\d+$", tag):
+            return tag
+    return None
+
+
+def extract_baseline(tag, dest_dir):
+    if dest_dir.exists():
+        shutil.rmtree(dest_dir)
+    dest_dir.mkdir(parents=True)
+
+    cmd = ["git", "archive", "--format=tar", tag]
+    proc = subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.PIPE)
+    try:
+        with tarfile.open(fileobj=proc.stdout, mode="r|*") as tar:
+            tar.extractall(dest_dir)
+    finally:
+        if proc.stdout:
+            proc.stdout.close()
+    if proc.wait() != 0:
+        raise RuntimeError(f"git archive failed for tag {tag}")
+
+
+def prepare_baseline_source(tag, work_dir):
+    baseline_root = work_dir / f"baseline-{tag.replace('/', '_')}"
+    src_dir = baseline_root / "src"
+    marker = baseline_root / "tag.txt"
+    if src_dir.exists() and marker.exists() and marker.read_text(encoding="utf-8") == tag:
+        return src_dir
+
+    baseline_root.mkdir(parents=True, exist_ok=True)
+    extract_baseline(tag, src_dir)
+    marker.write_text(tag, encoding="utf-8")
+    return src_dir
+
+
+def cmake_configure(src_dir, build_dir, build_type, prefix, extra_cmake_args):
+    build_dir.mkdir(parents=True, exist_ok=True)
+    cmake_cmd = [
+        "cmake",
+        "-G",
+        "Ninja",
+        "-S",
+        str(src_dir),
+        "-B",
+        str(build_dir),
+        f"-DCMAKE_BUILD_TYPE={build_type}",
+        f"-DCMAKE_INSTALL_PREFIX={prefix}",
+        f"-DCMAKE_PREFIX_PATH={prefix}",
+        "-DBUILD_SHARED_LIBS=ON",
+        "-DDART_BUILD_DARTPY=OFF",
+        "-DDART_BUILD_DART8=OFF",
+        "-DDART_BUILD_GUI=OFF",
+        "-DDART_BUILD_GUI_RAYLIB=OFF",
+        "-DDART_BUILD_EXAMPLES=OFF",
+        "-DDART_BUILD_TUTORIALS=OFF",
+        "-DDART_BUILD_TESTS=OFF",
+        "-DDART_BUILD_PROFILE=OFF",
+        "-DDART_PROFILE_BUILTIN=OFF",
+        "-DDART_PROFILE_TRACY=OFF",
+        "-DDART_BUILD_COLLISION_BULLET=ON",
+        "-DDART_BUILD_COLLISION_ODE=ON",
+        "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
+        "-DDART_USE_SYSTEM_GOOGLETEST=ON",
+        "-DDART_USE_SYSTEM_IMGUI=ON",
+        "-DDART_USE_SYSTEM_TRACY=ON",
+        "-DDART_VERBOSE=OFF",
+    ]
+
+    if extra_cmake_args:
+        cmake_cmd.extend(extra_cmake_args)
+
+    run(cmake_cmd)
+
+
+def cmake_build(build_dir, targets, jobs):
+    cmd = ["cmake", "--build", str(build_dir)]
+    if targets:
+        cmd.append("--target")
+        cmd.extend(targets)
+    if jobs:
+        cmd.extend(["-j", str(jobs)])
+    run(cmd)
+
+
+def find_library(build_dir, lib_name):
+    lib_dir = build_dir / "lib"
+    if not lib_name.startswith("lib"):
+        lib_name = f"lib{lib_name}"
+    exact = lib_dir / f"{lib_name}.so"
+    if exact.exists():
+        return exact
+    candidates = sorted(lib_dir.glob(f"{lib_name}.so.*"))
+    if candidates:
+        return candidates[0]
+    raise FileNotFoundError(f"Unable to find {lib_name}.so in {lib_dir}")
+
+
+def run_abidiff(baseline_lib, current_lib, suppressions):
+    cmd = ["abidiff", "--no-added-syms", "--fail-no-debug-info"]
+    if suppressions:
+        cmd.extend(["--suppressions", suppressions])
+    cmd.extend([str(baseline_lib), str(current_lib)])
+    print(f"+ {' '.join(cmd)}")
+    return subprocess.run(cmd, check=False).returncode
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Run ABI compatibility checks")
+    parser.add_argument(
+        "--baseline-tag",
+        default=os.environ.get("DART_ABI_BASELINE_TAG", ""),
+        help="Baseline git tag (defaults to latest v<major>.<minor>.<patch>)",
+    )
+    parser.add_argument(
+        "--build-type",
+        default=os.environ.get("DART_ABI_BUILD_TYPE", "RelWithDebInfo"),
+        help="CMake build type for ABI checks",
+    )
+    parser.add_argument(
+        "--libs",
+        default=os.environ.get("DART_ABI_LIBS", "dart"),
+        help="Comma-separated list of libraries to check (default: dart)",
+    )
+    parser.add_argument(
+        "--work-dir",
+        default=os.environ.get("DART_ABI_WORK_DIR", str(ROOT / "build" / "abi")),
+        help="Working directory for ABI builds",
+    )
+    parser.add_argument(
+        "--require-baseline",
+        action="store_true",
+        default=os.environ.get("DART_ABI_REQUIRE_BASELINE", "OFF") == "ON",
+        help="Fail if no baseline tag is found",
+    )
+    parser.add_argument(
+        "--suppressions",
+        default=os.environ.get("DART_ABI_SUPPRESSIONS", ""),
+        help="Path to abidiff suppressions file",
+    )
+
+    args = parser.parse_args()
+
+    if not sys.platform.startswith("linux"):
+        print("ABI checks are only supported on Linux with libabigail.")
+        return 0
+
+    if not shutil.which("abidiff"):
+        print("abidiff not found. Install libabigail or set PATH.")
+        return 1
+
+    prefix = os.environ.get("DART_ABI_PREFIX", os.environ.get("CONDA_PREFIX", ""))
+    if not prefix:
+        print("CONDA_PREFIX is not set; run via pixi or set DART_ABI_PREFIX.")
+        return 1
+
+    version = read_version()
+    major = version.split(".")[0]
+    baseline_tag = select_baseline_tag(major, args.baseline_tag)
+    if not baseline_tag:
+        msg = f"No baseline tag found for major {major}. Set DART_ABI_BASELINE_TAG."
+        if args.require_baseline:
+            print(msg)
+            return 1
+        print(f"{msg} Skipping ABI check.")
+        return 0
+
+    work_dir = Path(args.work_dir)
+    baseline_src = prepare_baseline_source(baseline_tag, work_dir)
+    baseline_build = work_dir / f"baseline-{baseline_tag.replace('/', '_')}" / "build"
+    current_build = work_dir / "current" / "build"
+
+    extra_args = shlex.split(os.environ.get("DART_ABI_CMAKE_ARGS", ""))
+    libs = [lib.strip() for lib in args.libs.split(",") if lib.strip()]
+    targets = libs
+
+    print(f"Baseline tag: {baseline_tag}")
+    print(f"Build type: {args.build_type}")
+    print(f"Libraries: {', '.join(libs)}")
+
+    cmake_configure(baseline_src, baseline_build, args.build_type, prefix, extra_args)
+    cmake_build(baseline_build, targets, os.environ.get("DART_PARALLEL_JOBS"))
+
+    cmake_configure(ROOT, current_build, args.build_type, prefix, extra_args)
+    cmake_build(current_build, targets, os.environ.get("DART_PARALLEL_JOBS"))
+
+    exit_code = 0
+    for lib in libs:
+        baseline_lib = find_library(baseline_build, lib)
+        current_lib = find_library(current_build, lib)
+        result = run_abidiff(baseline_lib, current_lib, args.suppressions)
+        if result != 0:
+            exit_code = result
+
+    return exit_code
+
+
+if __name__ == "__main__":
+    sys.exit(main())

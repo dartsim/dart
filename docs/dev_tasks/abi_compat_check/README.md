@@ -2,7 +2,7 @@
 
 ## Status
 
-- Tooling approach selected; implementation pending.
+- In progress: script, pixi task, and Linux CI job added.
 
 ## Problem Statement
 
@@ -27,6 +27,21 @@ no current CI or local workflow to flag ABI changes before merge.
 - Build baseline and current libraries with debug info (RelWithDebInfo).
 - Start with `libdart` only, then expand to other shared libraries if needed.
 - Treat added symbols as compatible; fail on removed or changed ABI.
+
+## Current Implementation
+
+- Script: `scripts/abi_check.py`
+- Pixi task: `pixi run abi-check`
+- CI: Linux job in `ci_ubuntu.yml`
+
+## Usage
+
+- Default: `pixi run abi-check` (selects latest `v<major>.<minor>.<patch>` tag).
+- Override baseline: `DART_ABI_BASELINE_TAG=vX.Y.Z pixi run abi-check`.
+- Configure libs: `DART_ABI_LIBS=dart,dart-utils pixi run abi-check`.
+- Require a baseline: `DART_ABI_REQUIRE_BASELINE=ON pixi run abi-check`.
+- If no tag exists for the current major version, the check skips unless
+  `DART_ABI_REQUIRE_BASELINE=ON` is set.
 
 ## Plan
 

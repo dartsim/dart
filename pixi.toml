@@ -1142,6 +1142,8 @@ test-all = { cmd = """
     python scripts/test_all.py
 """ }
 
+abi-check = { cmd = "python scripts/abi_check.py" }
+
 test-dartpy-install = { cmd = """
     python scripts/test_dartpy_install.py
 """ }
@@ -1237,6 +1239,7 @@ ctest \
 
 [target.linux-64.dependencies]
 lcov = ">=1.16,<2"
+libabigail = ">=2.9,<3"
 mesalib = ">=24"
 libglvnd = ">=1.7"
 libgl-devel = ">=1.7"

@@ -176,6 +176,42 @@ jobs:
           DART_BUILD_DART8_OVERRIDE=OFF \
           pixi run test-all
 
+  abi-check:
+    name: ABI Check
+    runs-on: ubuntu-latest
+    env:
+      DART_PARALLEL_JOBS: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.3
+        with:
+          cache: true
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: 2
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
+
+      - name: Configure environment for compiler cache
+        uses: ./.github/actions/configure-compiler-cache
+
+      - name: Run ABI check
+        run: |
+          DART_VERBOSE=ON \
+          pixi run abi-check
+
   # Catch compile failures when assertions are enabled but we're not in a Debug
   # build type (e.g., downstream builds that drop -DNDEBUG in Release).
   build-asserts:
