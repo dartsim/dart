@@ -1117,13 +1117,6 @@ This section is intentionally brief and delegates to the focused onboarding docs
 - Test suite structure + running tests: [testing.md](testing.md)
 - Gazebo / gz-physics integration: [build-system.md](build-system.md#gazebo-integration-feature)
 
-Used in this task:
-
-- `pixi run lint`
-- `pixi run test`
-- `DART_PARALLEL_JOBS=16 pixi run test-all`
-- `DART_PARALLEL_JOBS=16 pixi run -e gazebo test-gz`
-
 Suggested (Unverified):
 
 - `pixi run test-all` (recommended by the PR template)
