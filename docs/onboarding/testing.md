@@ -14,18 +14,18 @@ Smallest repeatable local loop before a full CI run.
 
 Choose a parallelism cap around two-thirds of logical cores, then set `DART_PARALLEL_JOBS` and `CTEST_PARALLEL_LEVEL` to that value (see [building.md](building.md) for details).
 
+Suggested (Unverified, Linux example):
+
+```bash
+N=$(( ( $(nproc) * 2 ) / 3 ))
+```
+
 Lint/format pass (fastest local sanity check).
 
 Suggested (Unverified):
 
 ```bash
 pixi run lint
-```
-
-**Example (Used in this task):**
-
-```bash
-DART_PARALLEL_JOBS=12 pixi run lint
 ```
 
 Targeted build + test (optional, fastest when a single target fails).
@@ -55,13 +55,8 @@ Targeted tests (optional, but recommended before pushing when behavior changes).
 Suggested (Unverified):
 
 ```bash
-DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test
-```
-
-**Example (Used in this task):**
-
-```bash
-DART_PARALLEL_JOBS=12 pixi run test
+N=$(( ( $(nproc) * 2 ) / 3 ))
+DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run test
 ```
 
 Signals to look for:
@@ -73,15 +68,9 @@ Full validation.
 Suggested (Unverified):
 
 ```bash
-DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test-all
-DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run -e gazebo test-gz
-```
-
-**Example (Used in this task):**
-
-```bash
-DART_PARALLEL_JOBS=12 pixi run test-all
-DART_PARALLEL_JOBS=12 pixi run -e gazebo test-gz
+N=$(( ( $(nproc) * 2 ) / 3 ))
+DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run test-all
+DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 ```
 
 Signals to look for:

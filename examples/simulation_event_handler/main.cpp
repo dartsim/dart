@@ -47,6 +47,72 @@ using namespace dart::gui;
 using namespace dart::utils;
 using namespace dart::math;
 
+struct SensorMarker
+{
+  SimpleFramePtr frame;
+  VisualAspect* visual{nullptr};
+};
+
+SensorMarker createSensorMarker(
+    const std::string& name,
+    Frame* parent,
+    const Eigen::Isometry3d& relativeTransform,
+    double radius,
+    const Eigen::Vector4d& color)
+{
+  Frame* resolvedParent = parent ? parent : Frame::World();
+  auto sphereShape = std::make_shared<SphereShape>(radius);
+  auto marker = SimpleFrame::createShared(resolvedParent);
+  marker->setName(name);
+  marker->setShape(sphereShape);
+  marker->setRelativeTransform(relativeTransform);
+  auto visual = marker->createVisualAspect();
+  visual->setRGBA(color);
+
+  return SensorMarker{marker, visual};
+}
+
+class BlinkingSensor final : public dart::sensor::Sensor
+{
+public:
+  BlinkingSensor(
+      const Properties& properties,
+      const SensorMarker& marker,
+      const Eigen::Vector4d& activeColor,
+      const Eigen::Vector4d& inactiveColor)
+    : dart::sensor::Sensor(properties),
+      mMarker(marker.frame),
+      mVisual(marker.visual),
+      mActiveColor(activeColor),
+      mInactiveColor(inactiveColor)
+  {
+    if (mVisual)
+      mVisual->setRGBA(mInactiveColor);
+  }
+
+private:
+  void updateImpl(
+      const World&, const dart::sensor::SensorUpdateContext&) override
+  {
+    if (mVisual)
+      mVisual->setRGBA(mPulseOn ? mActiveColor : mInactiveColor);
+    mPulseOn = !mPulseOn;
+  }
+
+  void resetImpl() override
+  {
+    mPulseOn = false;
+    if (mVisual)
+      mVisual->setRGBA(mInactiveColor);
+  }
+
+  SimpleFramePtr mMarker;
+  VisualAspect* mVisual{nullptr};
+  Eigen::Vector4d mActiveColor;
+  Eigen::Vector4d mInactiveColor;
+  bool mPulseOn{false};
+};
+
 /// @brief Create a simple box rigid body
 SkeletonPtr createBox(
     const std::string& name,
@@ -228,6 +294,49 @@ int main()
       Eigen::Vector3d(0.9, 0.9, 0.2));
   world->addSkeleton(box3);
 
+  auto sensorParent = box1->getBodyNode(0);
+  Eigen::Isometry3d fastOffset = Eigen::Isometry3d::Identity();
+  fastOffset.translation() = Eigen::Vector3d(0.2, 0.0, 0.35);
+  Eigen::Isometry3d slowOffset = Eigen::Isometry3d::Identity();
+  slowOffset.translation() = Eigen::Vector3d(-0.2, 0.0, 0.35);
+
+  auto fastMarker = createSensorMarker(
+      "fast_sensor_marker",
+      sensorParent,
+      fastOffset,
+      0.08,
+      dart::Color::Green(0.2));
+  auto slowMarker = createSensorMarker(
+      "slow_sensor_marker",
+      sensorParent,
+      slowOffset,
+      0.1,
+      dart::Color::Orange(0.2));
+
+  dart::sensor::Sensor::Properties fastProps;
+  fastProps.name = "fast_sensor";
+  fastProps.updateRate = 30.0;
+  fastProps.relativeTransform = fastOffset;
+  auto fastSensor = std::make_shared<BlinkingSensor>(
+      fastProps, fastMarker, dart::Color::Green(0.9), dart::Color::Green(0.2));
+  fastSensor->setParentFrame(sensorParent);
+
+  dart::sensor::Sensor::Properties slowProps;
+  slowProps.name = "slow_sensor";
+  slowProps.updateRate = 5.0;
+  slowProps.relativeTransform = slowOffset;
+  auto slowSensor = std::make_shared<BlinkingSensor>(
+      slowProps,
+      slowMarker,
+      dart::Color::Orange(0.9),
+      dart::Color::Orange(0.2));
+  slowSensor->setParentFrame(sensorParent);
+
+  world->addSensor(fastSensor);
+  world->addSensor(slowSensor);
+  world->addSimpleFrame(fastMarker.frame);
+  world->addSimpleFrame(slowMarker.frame);
+
   // Create OSG viewer
   Viewer viewer;
 
@@ -262,6 +371,8 @@ int main()
   viewer.addInstructionText("Use arrow keys to apply forces\n");
   viewer.addInstructionText("Use Q/W/E/A/Z/C for torques\n");
   viewer.addInstructionText("Press 'V' to toggle force visualization\n");
+  viewer.addInstructionText(
+      "Sensors: green=fast (30 Hz), orange=slow (5 Hz)\n");
 
   std::cout << "\n=== Simulation Event Handler Demo ===" << std::endl;
   std::cout << "World created with " << world->getNumSkeletons()
@@ -270,6 +381,7 @@ int main()
     std::cout << "  " << (i + 1) << ". " << world->getSkeleton(i)->getName()
               << std::endl;
   }
+  std::cout << "Sensors: " << world->getNumSensors() << std::endl;
   std::cout << "\nPress 'H' for help or start interacting!" << std::endl;
 
   // Start the application
