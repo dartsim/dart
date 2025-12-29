@@ -27,14 +27,17 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - `gh pr checks` may show duplicate entries when workflows run for both `push` and `pull_request` events; compare the run URLs and focus on the newest one.
   - zsh can produce ``parse error near `}'`` if a `gh ... --jq` expression containing `{ ... }` isn't fully quoted; wrap the whole jq program in single quotes.
   - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
+  - CI jobs can sit in the queue for a long time; re-check the run list and wait for the PR run to start before assuming a failure.
 
 ## Task Recap (General)
 
-This task followed the usual PR validation loop: run `pixi` workflows locally, keep lint in sync before commits, then monitor GitHub Actions until all PR checks completed. The emphasis was on using the repo's standard entry points and verifying CI status with explicit polling.
+This task confirmed the issue state on the current main branch, applied a minimal fix with regression coverage, and ran the standard pixi workflows locally. Then the branch was pushed and GitHub Actions runs were tracked with the GitHub CLI, rechecking queued jobs as needed. The emphasis was on using the repo's standard entry points and explicit CI polling.
 
 ## How We Worked (Repeatable Playbook)
 
+- Confirm the issue still reproduces on the current main branch before implementing changes.
 - Sync with the target branch and inspect the diff before making edits.
+- When resuming work, identify the PR associated with the current branch before monitoring CI.
 - Run lint before committing so formatter/codespell changes are captured.
 - Run the smallest local validation first, then expand to full test or CI as needed.
 - Resolve merge conflicts before re-running CI so the PR remains mergeable.
@@ -60,15 +63,8 @@ Use the GitHub CLI to locate the latest run for your branch and watch it to comp
 Suggested (Unverified):
 
 ```bash
-gh run list -R <OWNER>/<REPO> --branch <BRANCH> --limit <N>
-gh run watch <RUN_ID> --interval 30
-```
-
-**Example (Used in this task):**
-
-```bash
-gh run list --branch "$(git branch --show-current)" --limit 6
-gh pr status
+gh run list --repo <OWNER>/<REPO> --branch <BRANCH> --limit <N>
+gh run watch <RUN_ID> --interval 30 --repo <OWNER>/<REPO>
 ```
 
 ## CI Monitoring (API)
@@ -401,15 +397,6 @@ git fetch origin
 git rev-list --left-right --count HEAD...origin/main
 ```
 
-Example (used in this task):
-
-```bash
-git rev-parse --show-toplevel
-git status --porcelain=v1 -b
-git fetch origin
-git rev-list --left-right --count HEAD...origin/main
-```
-
 Map the current branch to a PR (Suggested (Unverified)):
 
 ```bash
@@ -426,16 +413,6 @@ gh run list --branch <BRANCH> -e pull_request -L 20
 gh run watch <RUN_ID> --interval 30
 gh run view --job <JOB_ID> --log-failed
 gh pr checks <PR_NUMBER>
-```
-
-Example (used in this task):
-
-```bash
-gh run list --branch fix/dartpy-bindings-cleanup -e pull_request -L 20
-gh run watch 20345022400 --interval 30
-gh run view --job 58403655163 --log-failed
-gh api repos/dartsim/dart/actions/jobs/58403655163 --jq '{id: .id, status: .status, conclusion: .conclusion, runner_name: .runner_name, runner_group: .runner_group_name, labels: .labels, started_at: .started_at, completed_at: .completed_at}'
-gh pr checks 2328
 ```
 
 If a job behaves differently than expected, confirm which runner actually executed it (Suggested (Unverified)):
@@ -460,7 +437,7 @@ gh pr checks <PR_NUMBER> --watch --interval 30 --fail-fast
 
 Notes:
 
-- Suggested (Unverified): If the `CI gz-physics` workflow fails, reproduce locally with `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz` (see [build-system.md](build-system.md#gazebo-integration-feature)).
+- Suggested (Unverified): If the `CI gz-physics` workflow fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature); Linux example (2/3 cores): `N=$(( ( $(nproc) * 2 ) / 3 ))` then `DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz`.
 - Suggested (Unverified): If you create PRs from the command line, prefer `gh pr create --body-file <path>` over `--body "..."` when the body contains backticks; some shells (e.g., zsh) treat backticks as command substitution.
 
 ## Troubleshooting

@@ -253,6 +253,9 @@ dart_add_test(
 dart_add_test(
   "integration" INTEGRATION_simulation_Issue743 simulation/test_Issue743.cpp)
 
+dart_add_test(
+  "integration" INTEGRATION_simulation_Sensors simulation/test_Sensors.cpp)
+
 if(TARGET dart-utils AND TARGET dart-io)
   dart_add_test("integration" INTEGRATION_simulation_FileInfoWorld simulation/test_FileInfoWorld.cpp)
   target_link_libraries(INTEGRATION_simulation_FileInfoWorld dart-io)
