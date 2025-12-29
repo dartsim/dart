@@ -173,6 +173,13 @@ protected:
   /// to call the protected Aspect::loseComposite function.
   void removeFromComposite(Aspect* aspect);
 
+  /// Replace the Aspect stored in a given slot.
+  ///
+  /// This ensures that the old Aspect is notified that it is losing its
+  /// Composite and that the new Aspect is notified of its new Composite.
+  void _replaceAspect(
+      std::unique_ptr<Aspect>& slot, std::unique_ptr<Aspect> replacement);
+
   /// Non-templated version of set(const T*)
   void _set(std::type_index type_idx, const Aspect* aspect);
 

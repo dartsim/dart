@@ -43,6 +43,7 @@
   - Deprecated `ResourceRetriever::getFilePath()` and the overriding implementations across retrievers. The method now emits compiler deprecation warnings and will be removed in DART 8.0; use the new resource-materialization helpers (e.g., the SDF/OSG utilities) instead.
   - Removed the final compatibility headers that only re-included their replacements (`dart/collision/Option.hpp`, `dart/collision/Result.hpp`, and `dart/dynamics/MultiSphereShape.hpp`) and scrubbed the remaining deprecated documentation strings.
   - Removed `CollisionFilter::needCollision()` (deprecated in DART 6.3).
+  - Bullet collision detector now filters phantom contacts with negative penetration depth by default; set `CollisionOption::allowNegativePenetrationDepthContacts` to keep them (addresses [#1184](https://github.com/dartsim/dart/issues/1184)).
   - Removed `DART_COMMON_MAKE_SHARED_WEAK` macro (deprecated in DART 6.4).
   - Removed all APIs deprecated in DART 6.9 (`dart::common::make_unique`, `FreeJoint::setTransform` static helpers, and `NloptSolver` overloads taking raw `nlopt::algorithm` values).
   - Removed all APIs deprecated in DART 6.10 (`common::Signal::cleanupConnections`, `SharedLibrary`/`SharedLibraryManager` filesystem-path overloads, BodyNode friction/restitution helpers and aspect properties, and `Joint::{set,is}PositionLimitEnforced()` aliases).
@@ -60,6 +61,28 @@
   - Added explicit placeholder bodies to unfinished domino and biped Python tutorials so users can import/run the scaffolds without `IndentationError`s.
 
 ## DART 6
+
+### [DART 6.16.2 (2025-12-20)](https://github.com/dartsim/dart/milestone/87?closed=1)
+
+- Build
+  - Remove DART_BUILD_MODE_DEBUG guards to fix NDEBUG compilation: [#2326](https://github.com/dartsim/dart/pull/2326)
+  - Use package.xml version for dartpy packaging: [#2327](https://github.com/dartsim/dart/pull/2327)
+
+- Tests
+  - Stabilize World::Cloning in asserts-enabled CI: [#2331](https://github.com/dartsim/dart/pull/2331)
+
+- Tooling and Docs
+  - Cover asserts-enabled build and fix API docs PR ref: [#2330](https://github.com/dartsim/dart/pull/2330)
+  - Fix publish_dartpy workflow YAML: [#2329](https://github.com/dartsim/dart/pull/2329)
+  - Fix manual publish validation on Windows: [#2324](https://github.com/dartsim/dart/pull/2324)
+  - Restrict manual dartpy publishing to tags: [#2323](https://github.com/dartsim/dart/pull/2323)
+  - Fix dartpy PyPI publishing on release-6.16: [#2322](https://github.com/dartsim/dart/pull/2322)
+  - Update pixi lockfile: [#2335](https://github.com/dartsim/dart/pull/2335), [#2307](https://github.com/dartsim/dart/pull/2307)
+
+### [DART 6.16.1 (2025-12-12)](https://github.com/dartsim/dart/milestone/86?closed=1)
+
+- Build
+  - Fix FreeListAllocator assertions when building without NDEBUG (e.g., Ubuntu 24.04 GCC 13): [#2295](https://github.com/dartsim/dart/pull/2295)
 
 ### [DART 6.16.0 (2025-11-09)](https://github.com/dartsim/dart/milestone/83?closed=1)
 

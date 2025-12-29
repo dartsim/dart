@@ -1,4 +1,4 @@
 #pragma once
 
-#include "dart/lcpsolver/Lemke.hpp"
-#include "dart/lcpsolver/ODELCPSolver.hpp"
+#include "dart/lcpsolver/detail/DeprecatedNamespace.hpp"
+#include "dart/math/lcp/All.hpp"

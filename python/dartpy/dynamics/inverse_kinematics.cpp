@@ -1,9 +1,10 @@
 #include "dynamics/inverse_kinematics.hpp"
 
+#include "common/repr.hpp"
 #include "dart/common/Diagnostics.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/optimizer/Solver.hpp"
+#include "dart/math/optimization/Solver.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
@@ -92,7 +93,7 @@ void defInverseKinematics(nb::module_& m)
       .def("getSolver", [](IK& self) { return self.getSolver(); })
       .def(
           "setSolver",
-          [](IK& self, const std::shared_ptr<dart::optimizer::Solver>& solver) {
+          [](IK& self, const std::shared_ptr<dart::math::Solver>& solver) {
             self.setSolver(solver);
           },
           nb::arg("solver"),
@@ -107,20 +108,33 @@ void defInverseKinematics(nb::module_& m)
           [](IK& self, bool allowIncompleteResult) {
             return self.solveAndApply(allowIncompleteResult);
           },
-          nb::arg("allowIncompleteResult") = true);
+          nb::arg("allow_incomplete_result") = true)
+      .def("__repr__", [](const IK& self) {
+        const auto target = self.getTarget();
+        const auto* node = self.getNode();
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back(
+            "node", node ? repr_string(node->getName()) : "None");
+        fields.emplace_back(
+            "target", target ? repr_string(target->getName()) : "None");
+        fields.emplace_back("active", repr_bool(self.isActive()));
+        fields.emplace_back("dofs", std::to_string(self.getDofs().size()));
+        return format_repr("InverseKinematics", fields);
+      });
 
   m.def(
       "createSimpleFrame",
       [](dart::dynamics::Frame* parent,
          const std::string& name,
          const Eigen::Isometry3d& tf) {
-        auto* frame = new dart::dynamics::SimpleFrame(parent, name, tf);
-        return std::shared_ptr<dart::dynamics::SimpleFrame>(frame);
+        dart::dynamics::Frame* resolved
+            = parent ? parent : dart::dynamics::Frame::World();
+        return std::make_shared<dart::dynamics::SimpleFrame>(
+            resolved, name, tf);
       },
       nb::arg("parent"),
       nb::arg("name"),
-      nb::arg("transform"),
-      nb::rv_policy::take_ownership);
+      nb::arg("transform"));
 }
 
 DART_SUPPRESS_DEPRECATED_END

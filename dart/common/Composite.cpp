@@ -243,7 +243,7 @@ void Composite::matchAspects(const Composite* otherComposite)
   }
 
   for (auto& aspect : mAspectMap)
-    aspect.second = nullptr;
+    _replaceAspect(aspect.second, nullptr);
 
   duplicateAspects(otherComposite);
 }
@@ -263,21 +263,28 @@ void Composite::removeFromComposite(Aspect* aspect)
 }
 
 //==============================================================================
+void Composite::_replaceAspect(
+    std::unique_ptr<Aspect>& slot, std::unique_ptr<Aspect> replacement)
+{
+  removeFromComposite(slot.get());
+  slot = std::move(replacement);
+  addToComposite(slot.get());
+}
+
+//==============================================================================
 void Composite::_set(std::type_index type_idx, const Aspect* aspect)
 {
-  if (aspect) {
-    mAspectMap[type_idx] = aspect->cloneAspect();
-    addToComposite(mAspectMap[type_idx].get());
-  } else {
-    mAspectMap[type_idx] = nullptr;
-  }
+  auto insertion = mAspectMap.insert(AspectMap::value_type(type_idx, nullptr));
+  auto& slot = insertion.first->second;
+  _replaceAspect(slot, aspect ? aspect->cloneAspect() : nullptr);
 }
 
 //==============================================================================
 void Composite::_set(std::type_index type_idx, std::unique_ptr<Aspect> aspect)
 {
-  mAspectMap[type_idx] = std::move(aspect);
-  addToComposite(mAspectMap[type_idx].get());
+  auto insertion = mAspectMap.insert(AspectMap::value_type(type_idx, nullptr));
+  auto& slot = insertion.first->second;
+  _replaceAspect(slot, std::move(aspect));
 }
 
 } // namespace common

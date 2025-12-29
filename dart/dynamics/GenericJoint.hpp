@@ -435,6 +435,13 @@ public:
   void integratePositions(double dt) override;
 
   // Documentation inherited
+  void integratePositions(
+      const Eigen::VectorXd& q0,
+      const Eigen::VectorXd& v,
+      double dt,
+      Eigen::VectorXd& result) const override;
+
+  // Documentation inherited
   void integrateVelocities(double dt) override;
 
   // Documentation inherited
@@ -695,19 +702,6 @@ protected:
 protected:
   /// Array of DegreeOfFreedom objects
   std::array<DegreeOfFreedom*, NumDofs> mDofs;
-
-  //----------------------------------------------------------------------------
-  // Impulse
-  //----------------------------------------------------------------------------
-
-  /// Change of generalized velocity
-  Vector mVelocityChanges;
-
-  /// Generalized impulse
-  Vector mImpulses;
-
-  /// Generalized constraint impulse
-  Vector mConstraintImpulses;
 
   //----------------------------------------------------------------------------
   // For recursive dynamics algorithms

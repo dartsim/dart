@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_FREEJOINT_HPP_
 #define DART_DYNAMICS_FREEJOINT_HPP_
 
-#include <dart/dynamics/GenericJoint.hpp>
+#include <dart/dynamics/detail/FreeJointAspect.hpp>
 
 #include <dart/common/Deprecated.hpp>
 
@@ -47,29 +47,43 @@ namespace dart {
 namespace dynamics {
 
 /// class FreeJoint
-class DART_API FreeJoint : public GenericJoint<math::SE3Space>
+class DART_API FreeJoint : public detail::FreeJointBase
 {
 public:
   friend class Skeleton;
 
-  using Base = GenericJoint<math::SE3Space>;
+  using CoordinateChart = detail::CoordinateChart;
+  using UniqueProperties = detail::FreeJointUniqueProperties;
+  using Properties = detail::FreeJointProperties;
+  using Base = detail::FreeJointBase;
 
-  struct DART_API Properties : Base::Properties
-  {
-    DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Properties)
-
-    Properties(const Base::Properties& properties = Base::Properties());
-
-    virtual ~Properties() = default;
-  };
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, FreeJointAspect)
 
   FreeJoint(const FreeJoint&) = delete;
 
   /// Destructor
   virtual ~FreeJoint();
 
+  /// Set the Properties of this FreeJoint
+  void setProperties(const Properties& properties);
+
+  /// Set the Properties of this FreeJoint
+  void setProperties(const UniqueProperties& properties);
+
+  /// Set the AspectProperties of this FreeJoint
+  void setAspectProperties(const AspectProperties& properties);
+
   /// Get the Properties of this FreeJoint
   Properties getFreeJointProperties() const;
+
+  /// Copy the Properties of another FreeJoint
+  void copy(const FreeJoint& otherJoint);
+
+  /// Copy the Properties of another FreeJoint
+  void copy(const FreeJoint* otherJoint);
+
+  /// Same as copy(const FreeJoint&)
+  FreeJoint& operator=(const FreeJoint& otherJoint);
 
   // Documentation inherited
   const std::string& getType() const override;
@@ -80,6 +94,16 @@ public:
   // Documentation inherited
   bool isCyclic(std::size_t _index) const override;
 
+  /// Set the coordinate chart used for the rotational portion of generalized
+  /// positions. Generalized velocities remain spatial velocities.
+  ///
+  /// Preserves the current pose by reparameterizing existing positions.
+  void setCoordinateChart(CoordinateChart chart);
+
+  /// Get the coordinate chart used for the rotational portion of generalized
+  /// positions.
+  CoordinateChart getCoordinateChart() const;
+
   /// Convert a transform into a 6D vector that can be used to set the positions
   /// of a FreeJoint. The positions returned by this function will result in a
   /// relative transform of
@@ -88,9 +112,20 @@ public:
   /// the child BodyNode frames when applied to a FreeJoint.
   static Eigen::Vector6d convertToPositions(const Eigen::Isometry3d& _tf);
 
+  /// Convert a transform into a 6D vector that can be used to set the positions
+  /// of a FreeJoint using the specified coordinate chart for the rotational
+  /// portion.
+  static Eigen::Vector6d convertToPositions(
+      const Eigen::Isometry3d& _tf, CoordinateChart chart);
+
   /// Convert a FreeJoint-style 6D vector into a transform
   static Eigen::Isometry3d convertToTransform(
       const Eigen::Vector6d& _positions);
+
+  /// Convert a FreeJoint-style 6D vector into a transform using the specified
+  /// coordinate chart for the rotational portion.
+  static Eigen::Isometry3d convertToTransform(
+      const Eigen::Vector6d& _positions, CoordinateChart chart);
 
   /// If the given joint is a FreeJoint, then set the transform of the given
   /// Joint's child BodyNode so that its transform with respect to
@@ -299,6 +334,13 @@ protected:
 
   // Documentation inherited
   void integratePositions(double _dt) override;
+
+  // Documentation inherited
+  void integratePositions(
+      const Eigen::VectorXd& q0,
+      const Eigen::VectorXd& v,
+      double dt,
+      Eigen::VectorXd& result) const override;
 
   // Documentation inherited
   void integrateVelocities(double _dt) override;

@@ -75,7 +75,7 @@ SimulationEventHandler::SimulationEventHandler(
 }
 
 bool SimulationEventHandler::handle(
-    const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa)
+    const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& /*aa*/)
 {
   if (ea.getEventType() != osgGA::GUIEventAdapter::KEYDOWN) {
     return false;

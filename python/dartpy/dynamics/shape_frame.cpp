@@ -1,5 +1,7 @@
 #include "dynamics/shape_frame.hpp"
 
+#include "common/eigen_utils.hpp"
+#include "common/repr.hpp"
 #include "common/type_casters.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
@@ -8,6 +10,8 @@
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
+
+#include <cstddef>
 
 namespace nb = nanobind;
 
@@ -27,18 +31,11 @@ void defShapeFrame(nb::module_& m)
       .def(
           "setColor",
           [](VisualAspect& self, const nb::handle& color) {
-            nb::sequence seq = nb::cast<nb::sequence>(color);
-            ssize_t n = nb::len(seq);
-            if (n == 3) {
-              Eigen::Vector3d vec;
-              for (ssize_t i = 0; i < n; ++i)
-                vec[i] = nb::cast<double>(seq[i]);
-              self.setColor(vec);
-            } else if (n == 4) {
-              Eigen::Vector4d vec;
-              for (ssize_t i = 0; i < n; ++i)
-                vec[i] = nb::cast<double>(seq[i]);
-              self.setColor(vec);
+            Eigen::VectorXd vec = toVector(color);
+            if (vec.size() == 3) {
+              self.setColor(Eigen::Vector3d(vec));
+            } else if (vec.size() == 4) {
+              self.setColor(Eigen::Vector4d(vec));
             } else {
               throw nb::type_error("Color must be length 3 or 4");
             }
@@ -87,7 +84,7 @@ void defShapeFrame(nb::module_& m)
           [](ShapeFrame& self, bool createIfNull) -> VisualAspect* {
             return self.getVisualAspect(createIfNull);
           },
-          nb::arg("createIfNull") = true,
+          nb::arg("create_if_null") = true,
           nb::rv_policy::reference_internal)
       .def(
           "createVisualAspect",
@@ -99,7 +96,7 @@ void defShapeFrame(nb::module_& m)
           [](ShapeFrame& self, bool createIfNull) -> CollisionAspect* {
             return self.getCollisionAspect(createIfNull);
           },
-          nb::arg("createIfNull") = true,
+          nb::arg("create_if_null") = true,
           nb::rv_policy::reference_internal)
       .def(
           "createCollisionAspect",
@@ -111,13 +108,26 @@ void defShapeFrame(nb::module_& m)
           [](ShapeFrame& self, bool createIfNull) -> DynamicsAspect* {
             return self.getDynamicsAspect(createIfNull);
           },
-          nb::arg("createIfNull") = true,
+          nb::arg("create_if_null") = true,
           nb::rv_policy::reference_internal)
       .def(
           "createDynamicsAspect",
           [](ShapeFrame& self) { return self.createDynamicsAspect(); },
           nb::rv_policy::reference_internal)
       .def("isShapeNode", &ShapeFrame::isShapeNode)
+      .def(
+          "__repr__",
+          [](const ShapeFrame& self) {
+            const auto shape = self.getShape();
+            const auto* parent = self.getParentFrame();
+            std::vector<std::pair<std::string, std::string>> fields;
+            fields.emplace_back("name", repr_string(self.getName()));
+            fields.emplace_back(
+                "shape", shape ? repr_string(shape->getType()) : "None");
+            fields.emplace_back(
+                "parent", parent ? repr_string(parent->getName()) : "None");
+            return format_repr("ShapeFrame", fields);
+          })
       .def(
           "asShapeNode",
           [](ShapeFrame& self) -> ShapeNode* { return self.asShapeNode(); },

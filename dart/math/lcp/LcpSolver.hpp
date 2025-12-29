@@ -47,71 +47,34 @@ namespace dart {
 namespace math {
 
 //==============================================================================
-/// Base class for LCP solvers
-///
-/// This provides a common interface for all LCP solvers. Solvers can implement
-/// different algorithms (pivoting, projection, Newton, etc.) while maintaining
-/// a consistent API.
-///
-/// Problem formulation:
-/// Find x such that:
-///   w = Ax + b
-///   w >= 0, x >= 0
-///   x^T * w = 0 (complementarity)
-///
-/// For bounded problems (BLCP):
-///   l <= x <= u
-///   with complementarity on bounds
 class DART_API LcpSolver
 {
 public:
   /// Virtual destructor
   virtual ~LcpSolver() = default;
 
-  /// Solve the LCP problem
-  ///
-  /// \param[in] A Coefficient matrix (n x n)
-  /// \param[in] b Right-hand side vector (n)
-  /// \param[out] x Solution vector (n)
-  /// \return Result structure with status and statistics
-  ///
-  /// \note Default behavior: calls solve() with default options
   virtual LcpResult solve(
-      const Eigen::MatrixXd& A, const Eigen::VectorXd& b, Eigen::VectorXd& x);
-
-  /// Solve the LCP problem with options
-  ///
-  /// \param[in] A Coefficient matrix (n x n)
-  /// \param[in] b Right-hand side vector (n)
-  /// \param[in,out] x Solution vector (n), can be used as initial guess if
-  ///                  warmStart=true
-  /// \param[in] options Solver options
-  /// \return Result structure with status and statistics
-  virtual LcpResult solve(
-      const Eigen::MatrixXd& A,
-      const Eigen::VectorXd& b,
-      Eigen::VectorXd& x,
-      const LcpOptions& options)
+      const LcpProblem& problem, Eigen::VectorXd& x, const LcpOptions& options)
       = 0;
 
   /// Get the solver name
   ///
-  /// \return Name of the solver (e.g., "Lemke", "Dantzig")
+  /// @return Name of the solver (e.g., "Lemke", "Dantzig")
   virtual std::string getName() const = 0;
 
   /// Get the solver category
   ///
-  /// \return Category name (e.g., "Pivoting", "Projection", "Newton")
+  /// @return Category name (e.g., "Pivoting", "Projection", "Newton")
   virtual std::string getCategory() const = 0;
 
   /// Get default options for this solver
   ///
-  /// \return Default LcpOptions
-  virtual LcpOptions getDefaultOptions() const;
+  /// @return Default LcpOptions
+  virtual const LcpOptions& getDefaultOptions() const;
 
   /// Set default options for this solver
   ///
-  /// \param[in] options New default options
+  /// @param[in] options New default options
   virtual void setDefaultOptions(const LcpOptions& options);
 
 protected:

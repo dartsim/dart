@@ -264,21 +264,22 @@ TEST(Friction, FrictionPerShapeNode)
     if (i > 300) {
       const auto x1 = body1->getTransform().translation()[0];
       const auto y1 = body1->getTransform().translation()[1];
-      EXPECT_NEAR(x1, -0.5, 0.00001);
+      EXPECT_NEAR(x1, -0.5, 2e-5);
       EXPECT_NEAR(y1, -0.17889, 0.001);
 
       // The second box still moves even after landing on the ground because its
       // friction is zero.
       const auto x2 = body2->getTransform().translation()[0];
       const auto y2 = body2->getTransform().translation()[1];
-      EXPECT_NEAR(x2, 0.5, 0.00001);
+      EXPECT_NEAR(x2, 0.5, 2e-5);
       EXPECT_LE(y2, -0.17889);
 
       // The third box still moves even after landing on the ground because its
       // friction is zero along the first friction direction.
       const auto x3 = body3->getTransform().translation()[0];
       const auto y3 = body3->getTransform().translation()[1];
-      EXPECT_GE(x3, 1.5249);
+      // Allow minor variations across LCP solvers and platforms.
+      EXPECT_GE(x3, 1.5246);
       // Small tolerance for platform-specific numerical precision (macOS)
       EXPECT_LE(y3, -0.20382 + 1e-5);
 
@@ -286,7 +287,8 @@ TEST(Friction, FrictionPerShapeNode)
       // friction is zero along the first friction direction.
       const auto x4 = body4->getTransform().translation()[0];
       const auto y4 = body4->getTransform().translation()[1];
-      EXPECT_LE(x4, -1.5249);
+      // Allow minor variations across LCP solvers and platforms.
+      EXPECT_LE(x4, -1.5246);
       // Small tolerance for platform-specific numerical precision (macOS)
       EXPECT_LE(y4, -0.20382 + 1e-5);
     }

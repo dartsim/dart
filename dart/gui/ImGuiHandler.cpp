@@ -48,6 +48,8 @@
 
 #include <algorithm>
 
+#include <cmath>
+
 namespace dart {
 namespace gui {
 
@@ -202,6 +204,29 @@ ConvertedKey convertFromOSGKey(int key)
 }
 
 //==============================================================================
+void applyImGuiScale(float scale)
+{
+  if (!std::isfinite(scale) || scale <= 0.f)
+    return;
+
+  static ImGuiStyle baseStyle
+      = ImGui::GetStyle(); // capture styled defaults (dark palette)
+  auto& style = ImGui::GetStyle();
+  ImGuiIO& io = ImGui::GetIO();
+
+  // Reset to the captured base style before applying the requested scale so
+  // repeated calls are idempotent and preserve the configured palette.
+  style = baseStyle;
+  io.FontGlobalScale = 1.f;
+
+  if (std::abs(scale - 1.f) < 1e-6f)
+    return;
+
+  style.ScaleAllSizes(scale);
+  io.FontGlobalScale = scale;
+}
+
+//==============================================================================
 struct ImGuiNewFrameCallback : public ::osg::Camera::DrawCallback
 {
   ImGuiNewFrameCallback(ImGuiHandler* handler) : mHandler(handler)
@@ -237,7 +262,10 @@ private:
 
 //==============================================================================
 ImGuiHandler::ImGuiHandler()
-  : mTime{0.0}, mMousePressed{false, false, false}, mMouseWheel{0.0f}
+  : mTime{0.0},
+    mMousePressed{false, false, false},
+    mMouseWheel{0.0f},
+    mFramebufferScale{1.0f, 1.0f}
 {
   ImGui::CreateContext();
 
@@ -344,6 +372,18 @@ bool ImGuiHandler::handle(
   const bool wantCaptureMouse = io.WantCaptureMouse;
   const bool wantCaptureKeyboard = io.WantCaptureKeyboard;
 
+  const float invScaleX
+      = mFramebufferScale[0] > 0.0f ? 1.0f / mFramebufferScale[0] : 1.0f;
+  const float invScaleY
+      = mFramebufferScale[1] > 0.0f ? 1.0f / mFramebufferScale[1] : 1.0f;
+
+  const auto getScaledMousePosition
+      = [&](const osgGA::GUIEventAdapter& adapter) {
+          const float scaledX = static_cast<float>(adapter.getX()) * invScaleX;
+          const float scaledY = static_cast<float>(adapter.getY()) * invScaleY;
+          return ImVec2(scaledX, io.DisplaySize.y - scaledY);
+        };
+
   switch (eventAdapter.getEventType()) {
     case osgGA::GUIEventAdapter::KEYDOWN: {
       const int key = eventAdapter.getUnmodifiedKey();
@@ -417,8 +457,7 @@ bool ImGuiHandler::handle(
       return wantCaptureKeyboard;
     }
     case osgGA::GUIEventAdapter::PUSH: {
-      io.MousePos
-          = ImVec2(eventAdapter.getX(), io.DisplaySize.y - eventAdapter.getY());
+      io.MousePos = getScaledMousePosition(eventAdapter);
 
       if (eventAdapter.getButtonMask()
           == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) {
@@ -440,8 +479,7 @@ bool ImGuiHandler::handle(
     }
     case osgGA::GUIEventAdapter::DRAG:
     case osgGA::GUIEventAdapter::MOVE: {
-      io.MousePos
-          = ImVec2(eventAdapter.getX(), io.DisplaySize.y - eventAdapter.getY());
+      io.MousePos = getScaledMousePosition(eventAdapter);
 
       return wantCaptureMouse;
     }
@@ -489,9 +527,39 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
   ImGui_ImplOpenGL2_NewFrame();
 
   auto& io = ImGui::GetIO();
-  auto* viewport = renderInfo.getCurrentCamera()->getViewport();
+  auto* camera = renderInfo.getCurrentCamera();
+  auto* viewport = camera ? camera->getViewport() : nullptr;
 
-  io.DisplaySize = ImVec2(viewport->width(), viewport->height());
+  ImVec2 displaySize(1.0f, 1.0f);
+  ImVec2 framebufferScale(1.0f, 1.0f);
+
+  if (viewport) {
+    // Use framebuffer-to-window ratio to honor OS display scaling.
+    displaySize = ImVec2(viewport->width(), viewport->height());
+
+    auto* graphicsContext = camera->getGraphicsContext();
+    const auto* traits
+        = graphicsContext ? graphicsContext->getTraits() : nullptr;
+    if (traits && traits->width > 0 && traits->height > 0) {
+      framebufferScale.x = static_cast<float>(viewport->width())
+                           / static_cast<float>(traits->width);
+      framebufferScale.y = static_cast<float>(viewport->height())
+                           / static_cast<float>(traits->height);
+
+      framebufferScale.x
+          = framebufferScale.x > 0.0f ? framebufferScale.x : 1.0f;
+      framebufferScale.y
+          = framebufferScale.y > 0.0f ? framebufferScale.y : 1.0f;
+
+      displaySize = ImVec2(
+          static_cast<float>(traits->width),
+          static_cast<float>(traits->height));
+    }
+  }
+
+  io.DisplaySize = displaySize;
+  io.DisplayFramebufferScale = framebufferScale;
+  mFramebufferScale = {framebufferScale.x, framebufferScale.y};
 
   const auto currentTime
       = renderInfo.getView()->getFrameStamp()->getSimulationTime();

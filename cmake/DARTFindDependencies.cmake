@@ -13,6 +13,10 @@ endif()
 dart_find_package(fmt)
 dart_check_required_package(fmt "libfmt")
 
+# EnTT
+dart_find_package(EnTT)
+dart_check_required_package(EnTT "EnTT")
+
 # Eigen
 dart_find_package(Eigen3)
 dart_check_required_package(EIGEN3 "eigen3")
@@ -24,99 +28,31 @@ dart_check_required_package(fcl "fcl")
 # ASSIMP
 dart_find_package(assimp)
 dart_check_required_package(assimp "assimp")
-if(ASSIMP_FOUND)
-  # Check for missing symbols in ASSIMP (see #451)
-  include(CheckCXXSourceCompiles)
-  set(CMAKE_REQUIRED_DEFINITIONS "")
-  if(MSVC)
-    set(CMAKE_REQUIRED_FLAGS "-w")
-  else()
-    set(CMAKE_REQUIRED_FLAGS "-std=c++11 -w")
-  endif()
-  set(CMAKE_REQUIRED_INCLUDES "${ASSIMP_INCLUDE_DIRS}")
-  set(CMAKE_REQUIRED_LIBRARIES "${ASSIMP_LIBRARIES}")
 
-  check_cxx_source_compiles(
-    "
-    #include <assimp/scene.h>
-    int main()
-    {
-      aiScene* scene = new aiScene;
-      delete scene;
-      return 1;
-    }
-    "
-    ASSIMP_AISCENE_CTOR_DTOR_DEFINED
-  )
-
-  if(NOT ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
-    if(DART_VERBOSE)
-      message(
-        WARNING
-        "The installed version of ASSIMP (${ASSIMP_VERSION}) is "
-        "missing symbols for the constructor and/or destructor of "
-        "aiScene. DART will use its own implementations of these "
-        "functions. We recommend using a version of ASSIMP that "
-        "does not have this issue, once one becomes available."
-      )
-    endif()
-  endif()
-
-  check_cxx_source_compiles(
-    "
-    #include <assimp/material.h>
-    int main()
-    {
-      aiMaterial* material = new aiMaterial;
-      delete material;
-      return 1;
-    }
-    "
-    ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED
-  )
-
-  if(NOT ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
-    if(DART_VERBOSE)
-      message(
-        WARNING
-        "The installed version of ASSIMP (${ASSIMP_VERSION}) is "
-        "missing symbols for the constructor and/or destructor of "
-        "aiMaterial. DART will use its own implementations of "
-        "these functions. We recommend using a version of ASSIMP "
-        "that does not have this issue, once one becomes available."
-      )
-    endif()
-  endif()
-
-  unset(CMAKE_REQUIRED_FLAGS)
-  unset(CMAKE_REQUIRED_INCLUDES)
-  unset(CMAKE_REQUIRED_LIBRARIES)
-endif()
+#=======================
+# Optional dependencies
+#=======================
 
 # octomap
 dart_find_package(octomap)
 if(OCTOMAP_FOUND OR octomap_FOUND)
   if(NOT DEFINED octomap_VERSION)
-    set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+    set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
     message(WARNING "Looking for octomap - octomap_VERSION is not defined, "
         "please install octomap with version information"
     )
   else()
-    set(HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
+    set(DART_HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
     if(DART_VERBOSE)
       message(STATUS "Looking for octomap - version ${octomap_VERSION} found")
     endif()
   endif()
 else()
-  set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+  set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
   message(WARNING "Looking for octomap - NOT found, to use VoxelGridShape, "
       "please install octomap"
   )
 endif()
-
-#=======================
-# Optional dependencies
-#=======================
 
 if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
   if(DART_USE_SYSTEM_TRACY)
@@ -182,10 +118,10 @@ if(DART_BUILD_GUI)
       SOURCE_DIR     "${CMAKE_BINARY_DIR}/_deps/imgui-src"
     )
 
-    # Populate imgui
+    # Populate imgui using the modern helper (avoids CMP0169 warnings)
     FetchContent_GetProperties(imgui)
     if(NOT imgui_POPULATED)
-      FetchContent_Populate(imgui)
+      FetchContent_MakeAvailable(imgui)
     endif()
 
     # Check OpenGL dependency for ImGui
@@ -233,6 +169,15 @@ if(DART_BUILD_GUI)
       ${IMGUI_BACKEND_HEADERS}
     )
 
+    if(WIN32 AND BUILD_SHARED_LIBS)
+      # ImGui does not export symbols by default; ensure an import library is
+      # generated so dart-gui can link against dart-imgui-lib on Windows.
+      set_target_properties(
+        ${imgui_library_name}
+        PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON
+      )
+    endif()
+
     # Configure include directories
     # Build tree: use fetched source directory
     # Install tree: use standard include paths (like system-installed imgui)
@@ -258,6 +203,12 @@ if(DART_BUILD_GUI)
     # Set position independent code for linking into shared libraries (e.g., Python extensions)
     # This is the modern way to add -fPIC
     set_target_properties(${imgui_library_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+    # Ensure MSVC generates an import library when building shared libs.
+    # Without exports, linkers can fail to find dart-imgui-lib.lib (LNK1181).
+    if(MSVC AND BUILD_SHARED_LIBS)
+      set_target_properties(${imgui_library_name} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    endif()
 
     # Define IMGUI_DISABLE_OBSOLETE_FUNCTIONS to avoid using deprecated APIs
     target_compile_definitions(${imgui_library_name} PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
@@ -286,6 +237,79 @@ if(DART_BUILD_GUI)
 
     # Add install-time warning about installing fetched ImGui
     install(CODE "message(WARNING \"Installing fetched ImGui headers to \${CMAKE_INSTALL_PREFIX}/include/. If you have system ImGui installed, this may cause conflicts. For production use, consider building with -DDART_USE_SYSTEM_IMGUI=ON instead.\")" COMPONENT headers)
+  endif()
+endif()
+
+# Raylib (experimental)
+if(DART_BUILD_GUI_RAYLIB)
+  if(DART_USE_SYSTEM_RAYLIB)
+    dart_find_package(raylib)
+    if(NOT raylib_FOUND)
+      message(FATAL_ERROR "Raylib was requested (DART_BUILD_GUI_RAYLIB=ON, DART_USE_SYSTEM_RAYLIB=ON) but could not be found. Install raylib or set DART_USE_SYSTEM_RAYLIB=OFF to fetch it.")
+    endif()
+    if(DART_VERBOSE)
+      message(STATUS "Using system-installed Raylib")
+    endif()
+  else()
+    include(FetchContent)
+
+    set(DART_RAYLIB_GIT_TAG "latest" CACHE STRING "Raylib git tag to fetch when DART_USE_SYSTEM_RAYLIB=OFF")
+    mark_as_advanced(DART_RAYLIB_GIT_TAG)
+
+    set(_dart_raylib_git_tag "${DART_RAYLIB_GIT_TAG}")
+    if(_dart_raylib_git_tag STREQUAL "" OR _dart_raylib_git_tag STREQUAL "latest")
+      set(_dart_raylib_git_tag_resolved "")
+      find_package(Git QUIET)
+      if(Git_FOUND)
+        execute_process(
+          COMMAND "${GIT_EXECUTABLE}" ls-remote --tags --refs https://github.com/raysan5/raylib.git
+          OUTPUT_VARIABLE _dart_raylib_ls_remote
+          RESULT_VARIABLE _dart_raylib_ls_remote_result
+          OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if(_dart_raylib_ls_remote_result EQUAL 0 AND _dart_raylib_ls_remote)
+          string(REGEX MATCHALL "refs/tags/[^\n\r]+" _dart_raylib_refs "${_dart_raylib_ls_remote}")
+          set(_dart_raylib_tags)
+          foreach(_dart_raylib_ref IN LISTS _dart_raylib_refs)
+            string(REPLACE "refs/tags/" "" _dart_raylib_tag "${_dart_raylib_ref}")
+            if(_dart_raylib_tag MATCHES "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$")
+              list(APPEND _dart_raylib_tags "${_dart_raylib_tag}")
+            endif()
+          endforeach()
+          if(_dart_raylib_tags)
+            list(SORT _dart_raylib_tags COMPARE NATURAL ORDER DESCENDING)
+            list(GET _dart_raylib_tags 0 _dart_raylib_git_tag_resolved)
+          endif()
+        endif()
+      endif()
+      if(_dart_raylib_git_tag_resolved)
+        set(_dart_raylib_git_tag "${_dart_raylib_git_tag_resolved}")
+      endif()
+    endif()
+
+    if(_dart_raylib_git_tag STREQUAL "" OR _dart_raylib_git_tag STREQUAL "latest")
+      set(_dart_raylib_git_tag "5.5")
+      message(WARNING "Failed to determine the latest Raylib tag; falling back to ${_dart_raylib_git_tag}. Set -DDART_RAYLIB_GIT_TAG=<tag> to override.")
+    endif()
+
+    message(STATUS "Fetching Raylib ${_dart_raylib_git_tag} from GitHub...")
+    FetchContent_Declare(raylib
+      GIT_REPOSITORY https://github.com/raysan5/raylib.git
+      GIT_TAG ${_dart_raylib_git_tag}
+      GIT_SHALLOW TRUE
+      GIT_PROGRESS TRUE
+    )
+    FetchContent_MakeAvailable(raylib)
+  endif()
+
+  if(NOT TARGET raylib::raylib)
+    if(TARGET raylib)
+      add_library(raylib::raylib ALIAS raylib)
+    endif()
+  endif()
+
+  if(NOT TARGET raylib::raylib)
+    message(FATAL_ERROR "Raylib was requested (DART_BUILD_GUI_RAYLIB=ON) but no CMake target was provided by the dependency.")
   endif()
 endif()
 

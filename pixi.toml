@@ -1,6 +1,6 @@
 [workspace]
 name = "DART"
-version = "6.16.0"
+version = "7.0.0"
 description = "Dynamic Animation and Robotics Toolkit"
 authors = ["Jeongseok Lee <jslee02@gmail.com>"]
 channels = ["conda-forge"]
@@ -21,7 +21,6 @@ eigen = ">=3.4.0,<4"
 entt = ">=3.14.0,<4"
 fcl = ">=0.7.0,<0.8"
 fmt = ">=11.1.4,<12"
-gtest = ">=1.17.0,<2"
 imgui = ">=1.91.9,<2"
 isort = ">=6.0.1,<7"
 jinja2 = ">=3.1.2"
@@ -54,6 +53,9 @@ taskflow = ">=3.10.0,<4"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
 
+[feature.testing.dependencies]
+gtest = ">=1.17.0,<2"
+
 [tasks]
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
 
@@ -79,8 +81,27 @@ DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-ON}
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
+DART_BUILD_GUI_RAYLIB_VALUE=${DART_BUILD_GUI_RAYLIB_OVERRIDE:-${DART_BUILD_RAYLIB_OVERRIDE:-OFF}}
+DART_USE_SYSTEM_RAYLIB_VALUE=${DART_USE_SYSTEM_RAYLIB_OVERRIDE:-OFF}
+DART_RAYLIB_GIT_TAG_VALUE=${DART_RAYLIB_GIT_TAG_OVERRIDE:-}
+DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
+RAYLIB_GIT_TAG_DEF=""
+if [ -n "${DART_RAYLIB_GIT_TAG_VALUE}" ]; then
+  RAYLIB_GIT_TAG_DEF="-DDART_RAYLIB_GIT_TAG=${DART_RAYLIB_GIT_TAG_VALUE}"
+fi
+if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
+  DART_DISABLE_COMPILER_CACHE_VALUE=ON
+  unset DART_COMPILER_CACHE
+  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
+    unset CMAKE_C_COMPILER_LAUNCHER
+  fi
+  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
+    unset CMAKE_CXX_COMPILER_LAUNCHER
+  fi
+fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
-  if command -v sccache >/dev/null 2>&1; then
+  if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
+    && command -v sccache >/dev/null 2>&1; then
     CMAKE_C_COMPILER_LAUNCHER=sccache
     CMAKE_CXX_COMPILER_LAUNCHER=sccache
   elif command -v ccache >/dev/null 2>&1; then
@@ -108,20 +129,25 @@ cmake \
   -DDART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET_VALUE} \
   -DDART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE_VALUE} \
   -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
+  -DDART_BUILD_GUI_RAYLIB=${DART_BUILD_GUI_RAYLIB_VALUE} \
   -DDART_BUILD_EXAMPLES=${DART_BUILD_EXAMPLES_VALUE} \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
+  -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
   -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} \
   -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} \
   -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} \
   -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} \
+  -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
   -DDART_USE_SYSTEM_GOOGLETEST=ON \
   -DDART_USE_SYSTEM_IMGUI=ON \
+  -DDART_USE_SYSTEM_RAYLIB=${DART_USE_SYSTEM_RAYLIB_VALUE} \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=ON \
   -DDART_VERBOSE=${DART_VERBOSE} \
   -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} \
+  $RAYLIB_GIT_TAG_DEF \
   $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
@@ -195,6 +221,8 @@ check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
 
 check-lint-spell = { cmd = "codespell --config .codespellrc" }
 
+check-docs-policy = { cmd = ["python", "scripts/check_docs_policy.py"] }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-dart8",
@@ -202,6 +230,7 @@ check-lint = { depends-on = [
   "check-lint-yaml",
   "check-lint-rst",
   "check-lint-spell",
+  "check-docs-policy",
 ] }
 
 build = { cmd = [
@@ -253,8 +282,27 @@ DART_BUILD_DART8_VALUE=${DART_BUILD_DART8_OVERRIDE:-ON}
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
+DART_BUILD_GUI_RAYLIB_VALUE=${DART_BUILD_GUI_RAYLIB_OVERRIDE:-${DART_BUILD_RAYLIB_OVERRIDE:-OFF}}
+DART_USE_SYSTEM_RAYLIB_VALUE=${DART_USE_SYSTEM_RAYLIB_OVERRIDE:-OFF}
+DART_RAYLIB_GIT_TAG_VALUE=${DART_RAYLIB_GIT_TAG_OVERRIDE:-}
+DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
+RAYLIB_GIT_TAG_DEF=""
+if [ -n "${DART_RAYLIB_GIT_TAG_VALUE}" ]; then
+  RAYLIB_GIT_TAG_DEF="-DDART_RAYLIB_GIT_TAG=${DART_RAYLIB_GIT_TAG_VALUE}"
+fi
+if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
+  DART_DISABLE_COMPILER_CACHE_VALUE=ON
+  unset DART_COMPILER_CACHE
+  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
+    unset CMAKE_C_COMPILER_LAUNCHER
+  fi
+  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
+    unset CMAKE_CXX_COMPILER_LAUNCHER
+  fi
+fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
-  if command -v sccache >/dev/null 2>&1; then
+  if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
+    && command -v sccache >/dev/null 2>&1; then
     CMAKE_C_COMPILER_LAUNCHER=sccache
     CMAKE_CXX_COMPILER_LAUNCHER=sccache
   elif command -v ccache >/dev/null 2>&1; then
@@ -278,19 +326,24 @@ cmake \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_DART8=${DART_BUILD_DART8_VALUE} \
+  -DDART_BUILD_GUI_RAYLIB=${DART_BUILD_GUI_RAYLIB_VALUE} \
   -DDART_BUILD_EXAMPLES=${DART_BUILD_EXAMPLES_VALUE} \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
+  -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
   -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} \
   -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} \
   -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} \
   -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} \
+  -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
   -DDART_USE_SYSTEM_GOOGLETEST=ON \
   -DDART_USE_SYSTEM_IMGUI=ON \
+  -DDART_USE_SYSTEM_RAYLIB=${DART_USE_SYSTEM_RAYLIB_VALUE} \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=ON \
   -DDART_VERBOSE=${DART_VERBOSE} \
+  $RAYLIB_GIT_TAG_DEF \
   $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
@@ -307,6 +360,24 @@ build-tests = { cmd = [
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
 CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target tests
+""",
+], depends-on = [
+  { task = "config", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
+] }
+
+build-examples = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_TYPE={{ build_type }}
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target examples
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -384,8 +455,19 @@ DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
 if [ -z "${DART_BUILD_DARTPY_VALUE}" ]; then
   DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
 fi
+DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
+if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
+  DART_DISABLE_COMPILER_CACHE_VALUE=ON
+  unset DART_COMPILER_CACHE
+  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
+    unset CMAKE_C_COMPILER_LAUNCHER
+  fi
+  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
+    unset CMAKE_CXX_COMPILER_LAUNCHER
+  fi
+fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
-  if command -v sccache >/dev/null 2>&1; then
+  if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] && command -v sccache >/dev/null 2>&1; then
     CMAKE_C_COMPILER_LAUNCHER=sccache
     CMAKE_CXX_COMPILER_LAUNCHER=sccache
   elif command -v ccache >/dev/null 2>&1; then
@@ -401,7 +483,7 @@ if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
 NANOBIND_CMAKE_DIR=$CONDA_PREFIX/lib/python3.12/site-packages/nanobind/cmake
-cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART8=ON -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} $LAUNCHER_DEFS
+cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART8=ON -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
@@ -624,8 +706,20 @@ set -euo pipefail
 PIXI_ENVIRONMENT_NAME=${PIXI_ENVIRONMENT_NAME:-default}
 rm -rf "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
 echo "Configuring coverage build directory: build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
+DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
+if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
+  DART_DISABLE_COMPILER_CACHE_VALUE=ON
+  unset DART_COMPILER_CACHE
+  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
+    unset CMAKE_C_COMPILER_LAUNCHER
+  fi
+  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
+    unset CMAKE_CXX_COMPILER_LAUNCHER
+  fi
+fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
-  if command -v sccache >/dev/null 2>&1; then
+  if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
+    && command -v sccache >/dev/null 2>&1; then
     CMAKE_C_COMPILER_LAUNCHER=sccache
     CMAKE_CXX_COMPILER_LAUNCHER=sccache
   elif command -v ccache >/dev/null 2>&1; then
@@ -648,6 +742,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
     -DDART_BUILD_PROFILE=OFF \
+    -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
     -DDART_CODECOV=ON \
     -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
     -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -663,7 +758,7 @@ build-coverage = { cmd = [
   "-lc",
   """
 set -euo pipefail
-PARALLEL_JOBS=$(python scripts/parallel_jobs.py)
+PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
 CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE python scripts/cmake_build.py --parallel ${PARALLEL_JOBS} --target all --target tests \
   && ctest --output-on-failure -j ${PARALLEL_JOBS} --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
 """,
@@ -707,15 +802,7 @@ run-cpp-target = { cmd = """
   { arg = "build_type", default = "Release" },
 ] }
 
-ex = { depends-on = [
-  { task = "run-cpp-target", args = [
-    "{{ target }}",
-    "{{ build_type }}",
-  ] },
-], args = [
-  { arg = "target", default = "hello_world" },
-  { arg = "build_type", default = "Release" },
-] }
+ex = { cmd = "python scripts/run_cpp_example.py", depends-on = ["config"] }
 
 ex-atlas-puppet = { depends-on = [
   { task = "run-cpp-target", args = [
@@ -884,6 +971,34 @@ config-install = { cmd = [
   "-lc",
   """
 set -euo pipefail
+DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
+if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
+  DART_DISABLE_COMPILER_CACHE_VALUE=ON
+  unset DART_COMPILER_CACHE
+  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
+    unset CMAKE_C_COMPILER_LAUNCHER
+  fi
+  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
+    unset CMAKE_CXX_COMPILER_LAUNCHER
+  fi
+fi
+if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
+    && command -v sccache >/dev/null 2>&1; then
+    CMAKE_C_COMPILER_LAUNCHER=sccache
+    CMAKE_CXX_COMPILER_LAUNCHER=sccache
+  elif command -v ccache >/dev/null 2>&1; then
+    CMAKE_C_COMPILER_LAUNCHER=ccache
+    CMAKE_CXX_COMPILER_LAUNCHER=ccache
+  fi
+fi
+LAUNCHER_DEFS=""
+if [ -n "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}"
+fi
+if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
+  LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
+fi
 cmake \
     -G Ninja \
     -S . \
@@ -896,13 +1011,16 @@ cmake \
     -DDART_BUILD_GUI=${DART_BUILD_GUI_OVERRIDE:-ON} \
     -DDART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET_OVERRIDE:-ON} \
     -DDART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE_OVERRIDE:-ON} \
+    -DDART_BUILD_TESTS=${DART_BUILD_TESTS_OVERRIDE:-ON} \
+    -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
     -DDART_BUILD_PROFILE=OFF \
     -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
     -DDART_USE_SYSTEM_GOOGLETEST=ON \
     -DDART_USE_SYSTEM_IMGUI=ON \
     -DDART_USE_SYSTEM_NANOBIND=OFF \
     -DDART_USE_SYSTEM_TRACY=ON \
-    -DDART_VERBOSE=$DART_VERBOSE
+    -DDART_VERBOSE=$DART_VERBOSE \
+    $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
   { arg = "dartpy", default = "ON" },
@@ -939,7 +1057,7 @@ shell-dartpy-forced = { cmd = [
   """
 set -euo pipefail
 echo "Using dartpy from build/default/cpp/{{ build_type }}/python"
-exec env PYTHONPATH="build/default/cpp/{{ build_type }}/python:${PYTHONPATH:-}" python
+exec env PYTHONPATH="build/default/cpp/{{ build_type }}/python:${PYTHONPATH:-}" python -i -c "import dartpy as dart"
 """,
 ], depends-on = [
   { task = "build-py-dev", args = [
@@ -962,9 +1080,9 @@ verify-wheel = { cmd = "bash -c 'python scripts/verify_wheel.py dist/dartpy-*.wh
 test-installation = { cmd = "python scripts/test_installation.py" }
 
 # Shared wheel helper tasks (reused by version-specific wheel features)
-wheel-build-core = { cmd = "pip wheel . --no-deps -w dist/ -v", args = [
+wheel-build-core = { cmd = "python scripts/wheel_build.py {{ use_system_imgui }}", args = [
   { arg = "use_system_imgui", default = "ON" },
-], env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI={{ use_system_imgui }}" } }
+] }
 
 wheel-repair-linux-core = { cmd = "auditwheel repair dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl -w dist/ && rm dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl", args = [
   { arg = "python_tag" },
@@ -987,11 +1105,11 @@ wheel-repair-windows-core = { cmd = """
 
 wheel-verify-core = { cmd = "python scripts/verify_version.py dist/dartpy-*-{{ python_tag }}-*.whl", args = [
   { arg = "python_tag" },
-] }
+], env = { PYTHONIOENCODING = "utf-8" } }
 
 wheel-test-core = { cmd = "python scripts/test_wheel.py dist/dartpy-*-{{ python_tag }}-*.whl", args = [
   { arg = "python_tag" },
-] }
+], env = { PYTHONIOENCODING = "utf-8" } }
 
 wheel-upload-core = { cmd = "twine upload --repository dartpy dist/dartpy-*-{{ python_tag }}-*.whl", args = [
   { arg = "python_tag" },
@@ -1082,7 +1200,20 @@ DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-ON}
 DART_BUILD_DART8_VALUE=${DART_BUILD_DART8_OVERRIDE:-ON}
-if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
+if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
+  DART_DISABLE_COMPILER_CACHE_VALUE=ON
+  unset DART_COMPILER_CACHE
+  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
+    unset CMAKE_C_COMPILER_LAUNCHER
+  fi
+  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
+    unset CMAKE_CXX_COMPILER_LAUNCHER
+  fi
+fi
+if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
+  && command -v sccache >/dev/null 2>&1 \
+  && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   CMAKE_C_COMPILER_LAUNCHER=sccache
   CMAKE_CXX_COMPILER_LAUNCHER=sccache
 fi
@@ -1102,6 +1233,7 @@ cmake \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_DART8=${DART_BUILD_DART8_VALUE} \
+  -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
   -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} \
   -DDART_ENABLE_ASAN=ON \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -1325,6 +1457,7 @@ check-lint = { depends-on = [
   "check-lint-yaml",
   "check-lint-rst",
   "check-lint-spell",
+  "check-docs-policy",
 ] }
 
 build = { cmd = """
@@ -1552,6 +1685,7 @@ config-install = { cmd = """
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY={{ dartpy }} \
         -DDART_BUILD_DART8={{ dartpy }} \
+        -DDART_BUILD_TESTS=${DART_BUILD_TESTS_OVERRIDE:-ON} \
         -DDART_BUILD_PROFILE=OFF \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -1598,6 +1732,7 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 [feature.gazebo.activation.env]
 DART_BUILD_COLLISION_BULLET_OVERRIDE = "ON"
 DART_BUILD_COLLISION_ODE_OVERRIDE = "ON"
+DART_BUILD_TESTS_OVERRIDE = "OFF"
 
 [feature.gazebo.dependencies]
 git = ">=1"
@@ -1627,7 +1762,17 @@ config-gz = { cmd = [
   "-lc",
   """
 set -euo pipefail
-if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
+  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
+    unset CMAKE_C_COMPILER_LAUNCHER
+  fi
+  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
+    unset CMAKE_CXX_COMPILER_LAUNCHER
+  fi
+fi
+if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
+  && command -v sccache >/dev/null 2>&1 \
+  && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   CMAKE_C_COMPILER_LAUNCHER=sccache
   CMAKE_CXX_COMPILER_LAUNCHER=sccache
 fi
@@ -1638,6 +1783,9 @@ fi
 if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
+GZ_GTEST_VENDOR="$PWD/.deps/gz-physics/test/gtest_vendor/include"
+# Prefer gz-physics vendored gtest headers over the system install.
+export CPATH="$GZ_GTEST_VENDOR${CPATH:+:$CPATH}"
 cmake \
     -G Ninja \
     -S .deps/gz-physics \
@@ -1645,6 +1793,7 @@ cmake \
     -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+    -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_physics_force_vendor_gtest.cmake \
     -DCMAKE_EXE_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
     -DCMAKE_SHARED_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
     -DBUILD_TESTING=ON \
@@ -1662,6 +1811,9 @@ build-gz = { cmd = [
   "-lc",
   """
 set -euo pipefail
+GZ_GTEST_VENDOR="$PWD/.deps/gz-physics/test/gtest_vendor/include"
+# Prefer gz-physics vendored gtest headers over the system install.
+export CPATH="$GZ_GTEST_VENDOR${CPATH:+:$CPATH}"
 CMAKE_BUILD_DIR=.deps/gz-physics/build python scripts/cmake_build.py --target all
 """,
 ], depends-on = [
@@ -1677,6 +1829,9 @@ test-gz = { cmd = """
         export LIBRARY_PATH=$CONDA_PREFIX/lib:${LIBRARY_PATH:-}
         export LD_LIBRARY_PATH=.deps/gz-physics/build/lib:$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}
         ROOT_DIR=$PWD
+        GZ_GTEST_VENDOR="$ROOT_DIR/.deps/gz-physics/test/gtest_vendor/include"
+        # Prefer gz-physics vendored gtest headers over the system install.
+        export CPATH="$GZ_GTEST_VENDOR${CPATH:+:$CPATH}"
         cd .deps/gz-physics/build
         python "$ROOT_DIR/scripts/cmake_build.py" --build-dir . --parallel ${DART_PARALLEL_JOBS} --target all
         python <<\"PY\"
@@ -2108,7 +2263,7 @@ wheel-repair = { depends-on = [
 #==============
 
 [environments]
-default = ["py-default", "imgui-python"]
+default = ["testing", "py-default", "imgui-python"]
 gazebo = ["gazebo"]
 py312-wheel = ["py312-wheel"]
 py313-wheel = ["py313-wheel"]

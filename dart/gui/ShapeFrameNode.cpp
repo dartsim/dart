@@ -36,6 +36,7 @@
 #include "dart/gui/render/BoxShapeNode.hpp"
 #include "dart/gui/render/CapsuleShapeNode.hpp"
 #include "dart/gui/render/ConeShapeNode.hpp"
+#include "dart/gui/render/ConvexMeshShapeNode.hpp"
 #include "dart/gui/render/CylinderShapeNode.hpp"
 #include "dart/gui/render/EllipsoidShapeNode.hpp"
 #include "dart/gui/render/LineSegmentShapeNode.hpp"
@@ -51,12 +52,13 @@
 #include <osg/Geode>
 #include <osg/Group>
 #include <osg/Node>
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   #include "dart/gui/render/VoxelGridShapeNode.hpp"
 #endif
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/Entity.hpp"
@@ -72,7 +74,7 @@
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/gui/render/HeightmapShapeNode.hpp"
 #include "dart/gui/render/WarningShapeNode.hpp"
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   #include "dart/dynamics/VoxelGridShape.hpp"
 #endif
 #include "dart/dynamics/HeightmapShape.hpp"
@@ -267,6 +269,13 @@ void ShapeFrameNode::createShapeNode(
       mRenderShapeNode = new render::MultiSphereShapeNode(ms, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  } else if (ConvexMeshShape::getStaticType() == shapeType) {
+    std::shared_ptr<ConvexMeshShape> cms
+        = std::dynamic_pointer_cast<ConvexMeshShape>(shape);
+    if (cms)
+      mRenderShapeNode = new render::ConvexMeshShapeNode(cms, this);
+    else
+      warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   } else if (MeshShape::getStaticType() == shapeType) {
     std::shared_ptr<MeshShape> ms = std::dynamic_pointer_cast<MeshShape>(shape);
     if (ms)
@@ -295,7 +304,7 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType) {
     std::shared_ptr<VoxelGridShape> lss
         = std::dynamic_pointer_cast<VoxelGridShape>(shape);
@@ -304,7 +313,7 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-#endif // HAVE_OCTOMAP
+#endif // DART_HAVE_OCTOMAP
   else if (HeightmapShapef::getStaticType() == shapeType) {
     std::shared_ptr<HeightmapShapef> lss
         = std::dynamic_pointer_cast<HeightmapShapef>(shape);

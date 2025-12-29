@@ -38,7 +38,6 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Constants.hpp"
-#include "dart/math/lcp/dantzig/Lcp.hpp"
 
 #include <algorithm>
 
@@ -413,7 +412,7 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
     if (!mActive[i])
       continue;
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
     if (std::abs(lcp->w[index]) > 1e-6) {
       DART_ERROR(
           "Invalid {}-th slack variable. Expected: 0.0. Actual: {}.",
@@ -428,7 +427,7 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
     lcp->lo[index] = mImpulseLowerBound[i];
     lcp->hi[index] = mImpulseUpperBound[i];
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
     if (lcp->findex[index] != -1) {
       DART_ERROR(
           "Invalid {}-th friction index. Expected: -1. Actual: {}.",

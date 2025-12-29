@@ -1,5 +1,6 @@
 #include "dynamics/body_node.hpp"
 
+#include "common/repr.hpp"
 #include "common/type_casters.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/EndEffector.hpp"
@@ -101,7 +102,25 @@ void defBodyNode(nb::module_& m)
           [](BodyNode& self, bool createIfNull) {
             return self.getIK(createIfNull);
           },
-          nb::arg("createIfNull") = false)
+          nb::arg("create_if_null") = false)
+      .def(
+          "__repr__",
+          [](const BodyNode& self) {
+            const auto skeleton = self.getSkeleton();
+            const auto* parent = self.getParentBodyNode();
+            std::vector<std::pair<std::string, std::string>> fields;
+            fields.emplace_back("name", repr_string(self.getName()));
+            fields.emplace_back(
+                "skeleton",
+                skeleton ? repr_string(skeleton->getName()) : "None");
+            fields.emplace_back(
+                "parent", parent ? repr_string(parent->getName()) : "None");
+            fields.emplace_back(
+                "child_joints", std::to_string(self.getNumChildJoints()));
+            fields.emplace_back(
+                "shape_nodes", std::to_string(self.getNumShapeNodes()));
+            return format_repr("BodyNode", fields);
+          })
       .def(
           "createEndEffector",
           [](BodyNode& self, const std::string& name) {
@@ -117,13 +136,11 @@ void defBodyNode(nb::module_& m)
           [](BodyNode& self,
              const std::string& name,
              const Eigen::Isometry3d& tf) {
-            auto* frame = new dart::dynamics::SimpleFrame(&self, name, tf);
-            return std::shared_ptr<dart::dynamics::SimpleFrame>(
-                frame); // owned by Python
+            return std::make_shared<dart::dynamics::SimpleFrame>(
+                &self, name, tf);
           },
           nb::arg("name"),
-          nb::arg("transform"),
-          nb::rv_policy::take_ownership);
+          nb::arg("transform"));
 
   registerPolymorphicCaster<dart::dynamics::Frame, BodyNode>();
   registerPolymorphicCaster<dart::dynamics::JacobianNode, BodyNode>();

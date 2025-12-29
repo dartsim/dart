@@ -38,9 +38,9 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/io/Read.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/SkelParser.hpp"
 
 #include <gtest/gtest.h>
 
@@ -92,7 +92,7 @@ std::vector<SkeletonPtr> getSkeletons()
 
   std::vector<WorldPtr> worlds;
   for (std::size_t i = 0; i < fileList.size(); ++i)
-    worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
+    worlds.push_back(dart::io::readWorld(fileList[i]));
 
   std::vector<SkeletonPtr> skeletons;
   for (std::size_t i = 0; i < worlds.size(); ++i) {
@@ -109,7 +109,7 @@ TEST(MetaSkeleton, Referential)
 {
   std::vector<SkeletonPtr> skeletons = getSkeletons();
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   std::size_t numIterations = 1;
 #else // Release mode
   std::size_t numIterations = 20;

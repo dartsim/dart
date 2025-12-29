@@ -42,6 +42,12 @@ class World;
 
 DART_COMMON_DECLARE_SHARED_WEAK(World)
 
+namespace object {
+
+class Object;
+
+} // namespace object
+
 } // namespace simulation
 } // namespace dart
 

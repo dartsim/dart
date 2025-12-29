@@ -48,6 +48,8 @@
 #include <dart/utils/All.hpp>
 #include <dart/All.hpp>
 
+#include <dart/io/Read.hpp>
+
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -127,9 +129,8 @@ protected:
 // snippet:cpp-load-atlas-start
 SkeletonPtr loadAtlasRobot()
 {
-  DartLoader loader;
   SkeletonPtr atlas
-      = loader.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
 
   if (!atlas) {
     std::cerr << "Failed to load Atlas robot!" << std::endl;

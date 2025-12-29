@@ -37,22 +37,35 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 
+#include <array>
 #include <string>
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-BallJoint::Properties::Properties(const Base::Properties& properties)
-  : Base::Properties(properties)
+BallJoint::~BallJoint()
 {
   // Do nothing
 }
 
 //==============================================================================
-BallJoint::~BallJoint()
+void BallJoint::setProperties(const Properties& properties)
 {
-  // Do nothing
+  Base::setProperties(static_cast<const Base::Properties&>(properties));
+  setProperties(static_cast<const UniqueProperties&>(properties));
+}
+
+//==============================================================================
+void BallJoint::setProperties(const UniqueProperties& properties)
+{
+  setAspectProperties(properties);
+}
+
+//==============================================================================
+void BallJoint::setAspectProperties(const AspectProperties& properties)
+{
+  setCoordinateChart(properties.mCoordinateChart);
 }
 
 //==============================================================================
@@ -78,20 +91,95 @@ bool BallJoint::isCyclic(std::size_t _index) const
 //==============================================================================
 BallJoint::Properties BallJoint::getBallJointProperties() const
 {
-  return getGenericJointProperties();
+  return BallJoint::Properties(
+      getGenericJointProperties(), getBallJointAspect()->getProperties());
+}
+
+//==============================================================================
+void BallJoint::copy(const BallJoint& otherJoint)
+{
+  if (this == &otherJoint)
+    return;
+
+  setProperties(otherJoint.getBallJointProperties());
+}
+
+//==============================================================================
+void BallJoint::copy(const BallJoint* otherJoint)
+{
+  if (nullptr == otherJoint)
+    return;
+
+  copy(*otherJoint);
+}
+
+//==============================================================================
+BallJoint& BallJoint::operator=(const BallJoint& otherJoint)
+{
+  copy(otherJoint);
+  return *this;
+}
+
+//==============================================================================
+void BallJoint::setCoordinateChart(CoordinateChart chart)
+{
+  if (mAspectProperties.mCoordinateChart == chart)
+    return;
+
+  const CoordinateChart previousChart = mAspectProperties.mCoordinateChart;
+  const Eigen::Matrix3d rotation
+      = convertToRotation(getPositionsStatic(), previousChart);
+
+  mAspectProperties.mCoordinateChart = chart;
+  updateDegreeOfFreedomNames();
+
+  setPositionsStatic(convertToPositions(rotation, chart));
+  updateRelativeJacobian(true);
+  Joint::incrementVersion();
+}
+
+//==============================================================================
+BallJoint::CoordinateChart BallJoint::getCoordinateChart() const
+{
+  return mAspectProperties.mCoordinateChart;
 }
 
 //==============================================================================
 Eigen::Isometry3d BallJoint::convertToTransform(
     const Eigen::Vector3d& _positions)
 {
-  return Eigen::Isometry3d(convertToRotation(_positions));
+  return convertToTransform(_positions, CoordinateChart::EXP_MAP);
+}
+
+//==============================================================================
+Eigen::Isometry3d BallJoint::convertToTransform(
+    const Eigen::Vector3d& _positions, CoordinateChart chart)
+{
+  return Eigen::Isometry3d(convertToRotation(_positions, chart));
 }
 
 //==============================================================================
 Eigen::Matrix3d BallJoint::convertToRotation(const Eigen::Vector3d& _positions)
 {
-  return math::expMapRot(_positions);
+  return convertToRotation(_positions, CoordinateChart::EXP_MAP);
+}
+
+//==============================================================================
+Eigen::Matrix3d BallJoint::convertToRotation(
+    const Eigen::Vector3d& _positions, CoordinateChart chart)
+{
+  switch (chart) {
+    case CoordinateChart::EXP_MAP:
+      return math::expMapRot(_positions);
+    case CoordinateChart::EULER_XYZ:
+      return math::eulerXYZToMatrix(_positions);
+    case CoordinateChart::EULER_ZYX:
+      return math::eulerZYXToMatrix(_positions);
+    default:
+      DART_ERROR(
+          "Invalid coordinate chart specified ({})", static_cast<int>(chart));
+      return Eigen::Matrix3d::Identity();
+  }
 }
 
 //==============================================================================
@@ -102,6 +190,7 @@ BallJoint::BallJoint(const Properties& properties)
 
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
+  createBallJointAspect(properties);
   createGenericJointAspect(properties);
   createJointAspect(properties);
 }
@@ -123,36 +212,69 @@ Eigen::Matrix<double, 6, 3> BallJoint::getRelativeJacobianStatic(
 Eigen::Vector3d BallJoint::getPositionDifferencesStatic(
     const Eigen::Vector3d& _q2, const Eigen::Vector3d& _q1) const
 {
-  const Eigen::Matrix3d R1 = convertToRotation(_q1);
-  const Eigen::Matrix3d R2 = convertToRotation(_q2);
+  const Eigen::Matrix3d R1 = convertToRotation(_q1, getCoordinateChart());
+  const Eigen::Matrix3d R2 = convertToRotation(_q2, getCoordinateChart());
 
-  return convertToPositions(R1.transpose() * R2);
+  return convertToPositions(R1.transpose() * R2, getCoordinateChart());
 }
 
 //==============================================================================
 void BallJoint::integratePositions(double _dt)
 {
-  Eigen::Matrix3d Rnext
-      = getR().linear() * convertToRotation(getVelocitiesStatic() * _dt);
+  const Eigen::Matrix3d Rnext
+      = getR().linear() * math::expMapRot(getVelocitiesStatic() * _dt);
 
-  setPositionsStatic(convertToPositions(Rnext));
+  setPositionsStatic(convertToPositions(Rnext, getCoordinateChart()));
+}
+
+//==============================================================================
+void BallJoint::integratePositions(
+    const Eigen::VectorXd& q0,
+    const Eigen::VectorXd& v,
+    double dt,
+    Eigen::VectorXd& result) const
+{
+  if (static_cast<std::size_t>(q0.size()) != getNumDofs()
+      || static_cast<std::size_t>(v.size()) != getNumDofs()) {
+    DART_ERROR(
+        "q0's size [{}] and v's size [{}] must both equal the dof [{}] for "
+        "Joint [{}].",
+        q0.size(),
+        v.size(),
+        this->getNumDofs(),
+        this->getName());
+    DART_ASSERT(false);
+    result = Eigen::VectorXd::Zero(getNumDofs());
+    return;
+  }
+
+  const Eigen::Vector3d q0Static = q0;
+  const Eigen::Vector3d vStatic = v;
+
+  const Eigen::Matrix3d R0 = convertToRotation(q0Static, getCoordinateChart());
+  const Eigen::Matrix3d Rnext = R0 * math::expMapRot(vStatic * dt);
+
+  result = convertToPositions(Rnext, getCoordinateChart());
 }
 
 //==============================================================================
 void BallJoint::updateDegreeOfFreedomNames()
 {
-  if (!mDofs[0]->isNamePreserved())
-    mDofs[0]->setName(Joint::mAspectProperties.mName + "_x", false);
-  if (!mDofs[1]->isNamePreserved())
-    mDofs[1]->setName(Joint::mAspectProperties.mName + "_y", false);
-  if (!mDofs[2]->isNamePreserved())
-    mDofs[2]->setName(Joint::mAspectProperties.mName + "_z", false);
+  std::array<std::string, 3> affixes{"_x", "_y", "_z"};
+
+  if (getCoordinateChart() == CoordinateChart::EULER_ZYX)
+    affixes = {"_z", "_y", "_x"};
+
+  for (std::size_t i = 0; i < affixes.size(); ++i) {
+    if (!mDofs[i]->isNamePreserved())
+      mDofs[i]->setName(Joint::mAspectProperties.mName + affixes[i], false);
+  }
 }
 
 //==============================================================================
 void BallJoint::updateRelativeTransform() const
 {
-  mR.linear() = convertToRotation(getPositionsStatic());
+  mR.linear() = convertToRotation(getPositionsStatic(), getCoordinateChart());
 
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint * mR
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();

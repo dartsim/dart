@@ -337,7 +337,7 @@ def create_ground():
 
 def create_atlas():
     """Load the Atlas robot model."""
-    urdf = dart.utils.DartLoader()
+    urdf = dart.utils.UrdfParser()
     atlas = urdf.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
 
     # Add a box to the root body for visualization

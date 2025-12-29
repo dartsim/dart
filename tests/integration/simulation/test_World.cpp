@@ -39,24 +39,25 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/io/Read.hpp"
 #include "dart/math/Geometry.hpp"
-#include "dart/utils/SkelParser.hpp"
+#include "dart/math/Random.hpp"
 
 #include <gtest/gtest.h>
 
 #include <iostream>
 #include <string>
 #include <utility>
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   #include "dart/collision/bullet/All.hpp"
 #endif
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
-#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
-#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
-#include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/RevoluteJointConstraint.hpp"
+#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
+#include "dart/math/lcp/projection/PgsSolver.hpp"
 #include "dart/simulation/World.hpp"
 
 using namespace dart;
@@ -107,6 +108,53 @@ private:
   std::string mKey;
   Creator mRestorer;
   bool mDisabled{false};
+};
+
+class TrackingSolver final : public WorldSolver
+{
+public:
+  TrackingSolver(
+      std::string name,
+      std::vector<std::string>& callLog,
+      std::optional<RigidSolverType> rigidSolverType = std::nullopt)
+    : WorldSolver(std::move(name)),
+      mCallLog(callLog),
+      mRigidSolverType(std::move(rigidSolverType))
+  {
+  }
+
+  std::optional<RigidSolverType> getRigidSolverType() const override
+  {
+    return mRigidSolverType;
+  }
+
+  void setTimeStep(double) override {}
+
+  void step(World&, bool) override
+  {
+    mCallLog.push_back(mName + ".step");
+  }
+
+  void sync(World&) override
+  {
+    mCallLog.push_back(mName + ".sync");
+  }
+
+private:
+  std::vector<std::string>& mCallLog;
+  std::optional<RigidSolverType> mRigidSolverType;
+};
+
+class SolverTestWorld final : public World
+{
+public:
+  using World::World;
+
+  using World::addSolver;
+  using World::getNumSolvers;
+  using World::getSolverIndex;
+  using World::moveSolver;
+  using World::setSolverEnabled;
 };
 
 } // namespace
@@ -240,6 +288,9 @@ TEST(World, AddingAndRemovingSkeletons)
 //==============================================================================
 TEST(World, Cloning)
 {
+  // Seed random generator for deterministic tests
+  Random::setSeed(42);
+
   // Create a list of skel files to test with
   std::vector<common::Uri> fileList;
   fileList.push_back("dart://sample/skel/test/chainwhipa.skel");
@@ -270,7 +321,7 @@ TEST(World, Cloning)
 
   std::vector<dart::simulation::WorldPtr> worlds;
   for (std::size_t i = 0; i < fileList.size(); ++i)
-    worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
+    worlds.push_back(dart::io::readWorld(fileList[i]));
 
   for (std::size_t i = 0; i < worlds.size(); ++i) {
     dart::simulation::WorldPtr original = worlds[i];
@@ -279,10 +330,10 @@ TEST(World, Cloning)
     for (std::size_t j = 1; j < 5; ++j)
       clones.push_back(clones[j - 1]->clone());
 
-#if DART_BUILD_MODE_DEBUG
-    std::size_t numIterations = 3;
-#else
+#if DART_BUILD_MODE_RELEASE
     std::size_t numIterations = 500;
+#else
+    std::size_t numIterations = 3;
 #endif
 
     for (std::size_t j = 0; j < numIterations; ++j) {
@@ -354,10 +405,10 @@ TEST(World, ValidatingClones)
 
   std::vector<dart::simulation::WorldPtr> worlds;
   for (std::size_t i = 0; i < fileList.size(); ++i) {
-    worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
+    worlds.push_back(dart::io::readWorld(fileList[i]));
 
     // Set non default collision detector
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
     worlds.back()->setCollisionDetector(CollisionDetectorType::Bullet);
 #else
     worlds.back()->setCollisionDetector(CollisionDetectorType::Dart);
@@ -416,7 +467,7 @@ TEST(World, ConfiguresCollisionDetectorViaConfig)
 }
 
 //==============================================================================
-TEST(World, DefaultWorldUsesFclMeshPrimitive)
+TEST(World, DefaultWorldUsesFclPrimitive)
 {
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
@@ -430,11 +481,11 @@ TEST(World, DefaultWorldUsesFclMeshPrimitive)
   ASSERT_TRUE(fclDetector);
   EXPECT_EQ(
       fclDetector->getPrimitiveShapeType(),
-      collision::FCLCollisionDetector::MESH);
+      collision::FCLCollisionDetector::PRIMITIVE);
 }
 
 //==============================================================================
-TEST(World, TypedSetterConfiguresFclMeshPrimitive)
+TEST(World, TypedSetterConfiguresFclPrimitive)
 {
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
@@ -451,7 +502,7 @@ TEST(World, TypedSetterConfiguresFclMeshPrimitive)
   ASSERT_TRUE(fclDetector);
   EXPECT_EQ(
       fclDetector->getPrimitiveShapeType(),
-      collision::FCLCollisionDetector::MESH);
+      collision::FCLCollisionDetector::PRIMITIVE);
 }
 
 //==============================================================================
@@ -537,7 +588,7 @@ simulation::WorldPtr createWorld()
 {
   // Create and initialize the world
   simulation::WorldPtr world
-      = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
+      = dart::io::readWorld("dart://sample/skel/chain.skel");
   DART_ASSERT(world != nullptr);
 
   // Create and initialize the world
@@ -570,7 +621,7 @@ simulation::WorldPtr createWorld()
 simulation::WorldPtr createWorldWithRevoluteConstraint()
 {
   simulation::WorldPtr world
-      = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
+      = dart::io::readWorld("dart://sample/skel/chain.skel");
   DART_ASSERT(world != nullptr);
 
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
@@ -606,8 +657,8 @@ TEST(World, SetNewConstraintSolver)
   EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
   EXPECT_TRUE(world->getConstraintSolver()->getNumConstraints() == 1);
 
-  auto solver1 = std::make_unique<constraint::BoxedLcpConstraintSolver>(
-      std::make_shared<constraint::DantzigBoxedLcpSolver>());
+  auto solver1 = std::make_unique<constraint::ConstraintSolver>(
+      std::make_shared<math::DantzigSolver>());
   EXPECT_TRUE(solver1->getSkeletons().size() == 0);
   EXPECT_TRUE(solver1->getNumConstraints() == 0);
 
@@ -615,8 +666,8 @@ TEST(World, SetNewConstraintSolver)
   EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
   EXPECT_TRUE(world->getConstraintSolver()->getNumConstraints() == 1);
 
-  auto solver2 = std::make_unique<constraint::BoxedLcpConstraintSolver>(
-      std::make_shared<constraint::PgsBoxedLcpSolver>());
+  auto solver2 = std::make_unique<constraint::ConstraintSolver>(
+      std::make_shared<math::PgsSolver>());
   EXPECT_TRUE(solver2->getSkeletons().size() == 0);
   EXPECT_TRUE(solver2->getNumConstraints() == 0);
 
@@ -648,4 +699,49 @@ TEST(World, RevoluteJointConstraintBasics)
   const Eigen::Vector3d axis2
       = bd2->getTransform().linear() * Eigen::Vector3d::UnitY();
   EXPECT_GT(axis1.normalized().dot(axis2.normalized()), 0.2);
+}
+
+//==============================================================================
+TEST(World, SolverSteppingActiveRigidSolverOnlyOrdersNonRigidAndSync)
+{
+  auto world = std::make_shared<SolverTestWorld>();
+  ASSERT_TRUE(world);
+
+  for (std::size_t i = 0; i < world->getNumSolvers(); ++i)
+    EXPECT_TRUE(world->setSolverEnabled(i, false));
+
+  std::vector<std::string> callLog;
+  auto* nonRigid
+      = world->addSolver(std::make_unique<TrackingSolver>("nonrigid", callLog));
+  auto* mirrorRigid = world->addSolver(std::make_unique<TrackingSolver>(
+      "mirror", callLog, RigidSolverType::EntityComponent));
+  auto* activeRigid = world->addSolver(std::make_unique<TrackingSolver>(
+      "active", callLog, RigidSolverType::ClassicSkeleton));
+
+  ASSERT_TRUE(nonRigid);
+  ASSERT_TRUE(mirrorRigid);
+  ASSERT_TRUE(activeRigid);
+
+  auto moveToIndex = [&](WorldSolver* solver, std::size_t target) {
+    const auto index = world->getSolverIndex(solver);
+    ASSERT_LT(index, world->getNumSolvers());
+    ASSERT_TRUE(world->moveSolver(index, target));
+  };
+
+  moveToIndex(nonRigid, 0);
+  moveToIndex(mirrorRigid, 1);
+  moveToIndex(activeRigid, 2);
+
+  ASSERT_TRUE(world->setActiveRigidSolver(RigidSolverType::ClassicSkeleton));
+  world->setSolverSteppingMode(SolverSteppingMode::ActiveRigidSolverOnly);
+
+  callLog.clear();
+  world->step(false);
+
+  const std::vector<std::string> expected{
+      "active.step",
+      "nonrigid.step",
+      "mirror.sync",
+  };
+  EXPECT_EQ(callLog, expected);
 }

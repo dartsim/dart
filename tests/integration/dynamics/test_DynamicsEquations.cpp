@@ -3,7 +3,7 @@
 TEST_F(DynamicsTest, InverseDynamics)
 {
   for (const auto& uri : getList()) {
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
     DART_DEBUG("{}", uri.toString());
 #endif
     testInverseDynamics(uri);
@@ -27,7 +27,7 @@ TEST_F(DynamicsTest, EquationsOfMotion)
     }
     ////////////////////////////////////////////////////////////////////////////
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
     DART_DEBUG("{}", uri.toString());
 #endif
     compareEquationsOfMotion(uri);

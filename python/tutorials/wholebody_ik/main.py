@@ -37,8 +37,8 @@ def parse_args():
 
 
 def load_atlas_robot():
-    loader = dart.utils.DartLoader()
-    atlas = loader.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
+    parser = dart.utils.UrdfParser()
+    atlas = parser.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
 
     if not atlas:
         raise RuntimeError("Failed to load Atlas robot!")

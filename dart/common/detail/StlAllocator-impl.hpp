@@ -80,7 +80,7 @@ typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
 
 //==============================================================================
 template <typename T>
-void StlAllocator<T>::deallocate(pointer pointer, size_type n)
+void StlAllocator<T>::deallocate(pointer pointer, size_type n) noexcept
 {
   mBaseAllocator.deallocate(pointer, n * sizeof(T));
 }

@@ -18,7 +18,7 @@
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *     MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
  *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
  *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
@@ -32,11 +32,27 @@
 
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 
-#include "dart/common/Profile.hpp"
-#include "dart/math/lcp/dantzig/Lcp.hpp"
+#include "dart/common/Diagnostics.hpp"
+#include "dart/math/lcp/LcpTypes.hpp"
+#include "dart/math/lcp/LcpUtils.hpp"
+#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
+
+#include <Eigen/Core>
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 namespace dart {
 namespace constraint {
+
+namespace {
+
+const std::string& dantzigBoxedLcpType()
+{
+  static const std::string type = "DantzigBoxedLcpSolver";
+  return type;
+}
+
+} // namespace
 
 //==============================================================================
 const std::string& DantzigBoxedLcpSolver::getType() const
@@ -47,8 +63,7 @@ const std::string& DantzigBoxedLcpSolver::getType() const
 //==============================================================================
 const std::string& DantzigBoxedLcpSolver::getStaticType()
 {
-  static const std::string type = "DantzigBoxedLcpSolver";
-  return type;
+  return dantzigBoxedLcpType();
 }
 
 //==============================================================================
@@ -57,33 +72,64 @@ bool DantzigBoxedLcpSolver::solve(
     double* A,
     double* x,
     double* b,
-    int nub,
+    int /*nub*/,
     double* lo,
     double* hi,
     int* findex,
     bool earlyTermination)
 {
-  DART_PROFILE_SCOPED;
+  if (n <= 0 || !A || !x || !b || !lo || !hi)
+    return false;
 
-  // Allocate w vector for LCP solver
-  double* w = new double[n];
-  std::memset(w, 0, n * sizeof(double));
+  const int nSkip = math::padding(n);
+  Eigen::MatrixXd Ablock(n, n);
+  for (int r = 0; r < n; ++r) {
+    const double* row = A + nSkip * r;
+    for (int c = 0; c < n; ++c)
+      Ablock(r, c) = row[c];
+  }
 
-  bool result = math::SolveLCP<double>(
-      n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
+  Eigen::VectorXd bVec(n);
+  Eigen::VectorXd loVec(n);
+  Eigen::VectorXd hiVec(n);
+  Eigen::VectorXi findexVec = Eigen::VectorXi::Constant(n, -1);
+  Eigen::VectorXd xVec(n);
+  for (int i = 0; i < n; ++i) {
+    bVec[i] = b[i];
+    loVec[i] = lo[i];
+    hiVec[i] = hi[i];
+    if (findex)
+      findexVec[i] = findex[i];
+    xVec[i] = x[i];
+  }
 
-  delete[] w;
-  return result;
+  math::LcpProblem problem(
+      std::move(Ablock),
+      std::move(bVec),
+      std::move(loVec),
+      std::move(hiVec),
+      std::move(findexVec));
+
+  math::DantzigSolver solver;
+  math::LcpOptions options = solver.getDefaultOptions();
+  options.earlyTermination = earlyTermination;
+  options.validateSolution = false;
+
+  const math::LcpResult result = solver.solve(problem, xVec, options);
+
+  for (int i = 0; i < n; ++i)
+    x[i] = xVec[i];
+
+  return result.succeeded();
 }
 
-#if DART_BUILD_MODE_DEBUG
 //==============================================================================
-bool DantzigBoxedLcpSolver::canSolve(int /*n*/, const double* /*A*/)
+bool DantzigBoxedLcpSolver::canSolve(int n, const double* A)
 {
-  // TODO(JS): Not implemented.
-  return true;
+  return n >= 0 && A != nullptr;
 }
-#endif
 
 } // namespace constraint
 } // namespace dart
+
+DART_SUPPRESS_DEPRECATED_END

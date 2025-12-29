@@ -16,17 +16,17 @@ Iterative method based on Kojima mapping that solves a relaxed complementarity p
 
 ### Problem Reformulation
 
-Instead of `x^T(Ax + b) = 0`, solve:
+Instead of `x^T(Ax - b) = 0`, solve:
 
 ```
-x^T(Ax + b) = mu  (relaxed complementarity)
+x^T(Ax - b) = mu  (relaxed complementarity)
 where mu > 0 is a small parameter
 ```
 
 ### Kojima Mapping
 
 ```
-F(x, y, mu) = [ Ax - y + b    ]
+F(x, y, mu) = [ Ax - y - b    ]
               [ X*Y*e - mu*e  ]
 ```
 
@@ -46,7 +46,7 @@ for iter = 1 to max_iter:
   where 0 < sigma < 1
 
   # Solve Newton equation for Kojima mapping
-  [ A    -I  ] [ Δx ] = - [ Ax - y + b    ]
+  [ A    -I  ] [ Δx ] = - [ Ax - y - b    ]
   [ Y     X  ] [ Δy ]     [ X*Y*e - mu*e  ]
 
   # Line search for step length
@@ -166,6 +166,19 @@ x_final = newton_method(x=[N, F])
 ❌ No convergence guarantees
 ❌ May not converge for all problems
 ❌ Requires problem-specific partitioning
+
+### Implementation notes for contact/friction
+
+- Split variables into normal impulses `x_N`, friction impulses `x_F`, and (optionally) slack `x_S`.
+- Normal subproblem often has a symmetric PSD matrix `A_NN` → can be solved by QP or PCG and produces `x_N`.
+- Friction subproblem is a BLCP with bounds `|x_F| ≤ μ x_N`; when `A_FF` is symmetric PSD it is equivalent to the QP
+
+  ```
+  minimize 0.5 x_F^T A_FF x_F + c_F^T x_F
+  subject to x_F ≥ 0,  c_N - e^T x_F ≥ 0
+  ```
+
+- Iterate: solve normal → update bounds for friction → solve friction (QP or small LCP) → repeat until fixed point. A single pass can also be used to warm-start Newton or PGS.
 
 ### Use Cases
 

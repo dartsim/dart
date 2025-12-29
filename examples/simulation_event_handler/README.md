@@ -33,6 +33,12 @@ This example demonstrates a comprehensive event handler class that replaces the 
 - Step-by-step simulation for debugging
 - Automatic integration with DART's physics engine
 
+### 5. Sensor Scaffolding Visualization
+
+- Two sensor markers attached to a rigid body
+- Blinking colors reflect sensor update cadence
+- Fast sensor (green) and slow sensor (orange) update at different rates
+
 ## Controls
 
 ### Simulation Control
@@ -68,6 +74,11 @@ This example demonstrates a comprehensive event handler class that replaces the 
 ### Visualization
 
 - **V**: Toggle force arrow visualization
+
+### Sensors
+
+- Green marker: 30 Hz update cadence
+- Orange marker: 5 Hz update cadence
 
 ### Information
 

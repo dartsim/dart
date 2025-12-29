@@ -40,9 +40,10 @@ if(missing_collision_features)
   return()
 endif()
 
-set(required_components utils-urdf gui)
+set(required_components utils-urdf gui io)
 set(required_libraries
   dart
+  dart-io
   dart-utils-urdf
   dart-gui
   ${TinyDNN_LIBRARIES}
@@ -57,7 +58,7 @@ if(DART_IN_SOURCE_BUILD)
   return()
 endif()
 
-find_package(DART 6.16.0 REQUIRED COMPONENTS ${required_components} CONFIG)
+find_package(DART 7.0.0 REQUIRED COMPONENTS ${required_components} CONFIG)
 
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})

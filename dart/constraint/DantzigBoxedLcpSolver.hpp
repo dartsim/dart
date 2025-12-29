@@ -40,16 +40,15 @@
 namespace dart {
 namespace constraint {
 
-class DART_API DantzigBoxedLcpSolver : public BoxedLcpSolver
+/// Deprecated; will be removed in DART 8.0. Use dart::math::LcpSolver.
+class DART_API DART_DEPRECATED("8.0") DantzigBoxedLcpSolver
+  : public BoxedLcpSolver
 {
 public:
-  // Documentation inherited.
   const std::string& getType() const override;
 
-  /// Returns type for this class
   static const std::string& getStaticType();
 
-  // Documentation inherited.
   bool solve(
       int n,
       double* A,
@@ -61,10 +60,7 @@ public:
       int* findex,
       bool earlyTermination) override;
 
-#if DART_BUILD_MODE_DEBUG
-  // Documentation inherited.
   bool canSolve(int n, const double* A) override;
-#endif
 };
 
 } // namespace constraint

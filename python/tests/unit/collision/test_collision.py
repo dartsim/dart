@@ -1,15 +1,29 @@
-import platform
-
 import dartpy as dart
 import numpy as np
 import pytest
 
 
-def collision_groups_tester(cd):
-    size = [1, 1, 1]
-    pos1 = [0, 0, 0]
-    pos2 = [0.5, 0, 0]
+def _collision_detector_factories():
+    detectors = [("fcl", dart.FCLCollisionDetector)]
 
+    if hasattr(dart, "DARTCollisionDetector"):
+        detectors.append(("dart", dart.DARTCollisionDetector))
+
+    if hasattr(dart, "BulletCollisionDetector"):
+        detectors.append(("bullet", dart.BulletCollisionDetector))
+
+    if hasattr(dart, "OdeCollisionDetector"):
+        detectors.append(("ode", dart.OdeCollisionDetector))
+
+    return detectors
+
+
+_COLLISION_DETECTORS = _collision_detector_factories()
+if not _COLLISION_DETECTORS:
+    pytest.skip("No collision detectors available", allow_module_level=True)
+
+
+def collision_groups_tester(cd):
     simple_frame1 = dart.SimpleFrame()
     simple_frame2 = dart.SimpleFrame()
 
@@ -40,16 +54,15 @@ def collision_groups_tester(cd):
     assert not group.collide()
 
     option = dart.CollisionOption()
-    result = dart.CollisionResult()
 
-    group.collide(option, result)
+    result = group.collide_result(option)
     assert not result.is_collision()
     assert result.get_num_contacts() == 0
 
     option.enable_contact = True
     simple_frame2.set_translation([1.99, 0, 0])
 
-    group.collide(option, result)
+    result = group.collide_result(option)
     assert result.is_collision()
     assert result.get_num_contacts() != 0
 
@@ -102,25 +115,16 @@ def collision_groups_tester(cd):
     assert not group.collide(group2)
 
 
-def test_collision_groups():
-    cd = dart.FCLCollisionDetector()
-    collision_groups_tester(cd)
-
-    cd = dart.DARTCollisionDetector()
-    collision_groups_tester(cd)
-
-    if hasattr(dart, "BulletCollisionDetector"):
-        cd = dart.BulletCollisionDetector()
-        collision_groups_tester(cd)
-
-    if hasattr(dart, "OdeCollisionDetector"):
-        cd = dart.OdeCollisionDetector()
-        collision_groups_tester(cd)
+_COLLISION_IDS = [name for name, _ in _COLLISION_DETECTORS]
 
 
-# TODO: Add more collision detectors
-@pytest.mark.parametrize("cd", [dart.FCLCollisionDetector()])
-def test_filter(cd):
+@pytest.mark.parametrize("name, cd_factory", _COLLISION_DETECTORS, ids=_COLLISION_IDS)
+def test_collision_groups(name, cd_factory):
+    collision_groups_tester(cd_factory())
+
+
+@pytest.mark.parametrize("name, cd_factory", _COLLISION_DETECTORS, ids=_COLLISION_IDS)
+def test_filter(name, cd_factory):
     # Create two bodies skeleton. The two bodies are placed at the same position
     # with the same size shape so that they collide by default.
     skel = dart.Skeleton()
@@ -143,7 +147,7 @@ def test_filter(cd):
 
     # Set a new collision detector
     constraint_solver = world.get_constraint_solver()
-    constraint_solver.set_collision_detector(cd)
+    constraint_solver.set_collision_detector(cd_factory())
 
     # Get the collision group from the constraint solver
     group = constraint_solver.get_collision_group()
@@ -160,6 +164,7 @@ def test_filter(cd):
     assert skel.is_enabled_adjacent_body_check()
     assert group.collide()
     assert group.collide(option)
+    assert world.check_collision_result(option).is_collision()
 
     skel.enable_self_collision_check()
     skel.disable_adjacent_body_check()
@@ -196,6 +201,9 @@ def test_filter(cd):
 
 
 def test_raycast():
+    if not hasattr(dart, "BulletCollisionDetector"):
+        pytest.skip("Bullet collision detector is not available")
+
     cd = dart.BulletCollisionDetector()
 
     simple_frame = dart.SimpleFrame()
@@ -209,14 +217,8 @@ def test_raycast():
     option = dart.RaycastOption()
     option.m_enable_all_hits = False
 
-    result = dart.RaycastResult()
-    assert not result.has_hit()
-
-    ray_hit = dart.RayHit()
-
-    result.clear()
     simple_frame.set_translation(np.zeros(3))
-    assert group.raycast([-2, 0, 0], [2, 0, 0], option, result)
+    result = group.raycast_result([-2, 0, 0], [2, 0, 0], option)
     assert result.has_hit()
     assert len(result.m_ray_hits) == 1
     ray_hit = result.m_ray_hits[0]
@@ -224,9 +226,8 @@ def test_raycast():
     assert np.isclose(ray_hit.m_normal, [-1, 0, 0]).all()
     assert ray_hit.m_fraction == pytest.approx(0.25)
 
-    result.clear()
     simple_frame.set_translation(np.zeros(3))
-    assert group.raycast([2, 0, 0], [-2, 0, 0], option, result)
+    result = group.raycast_result([2, 0, 0], [-2, 0, 0], option)
     assert result.has_hit()
     assert len(result.m_ray_hits) == 1
     ray_hit = result.m_ray_hits[0]
@@ -234,9 +235,8 @@ def test_raycast():
     assert np.isclose(ray_hit.m_normal, [1, 0, 0]).all()
     assert ray_hit.m_fraction == pytest.approx(0.25)
 
-    result.clear()
     simple_frame.set_translation([1, 0, 0])
-    assert group.raycast([-2, 0, 0], [2, 0, 0], option, result)
+    result = group.raycast_result([-2, 0, 0], [2, 0, 0], option)
     assert result.has_hit()
     assert len(result.m_ray_hits) == 1
     ray_hit = result.m_ray_hits[0]

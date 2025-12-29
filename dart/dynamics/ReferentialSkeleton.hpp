@@ -109,7 +109,7 @@ public:
   const BodyNode* getBodyNode(const std::string& name) const override;
 
   // Documentation inherited
-  const std::vector<BodyNode*>& getBodyNodes() override;
+  std::vector<BodyNode*>& getBodyNodes() override;
 
   // Documentation inherited
   const std::vector<const BodyNode*>& getBodyNodes() const override;

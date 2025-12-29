@@ -1,3 +1,4 @@
+#include "common/eigen_utils.hpp"
 #include "common/type_casters.hpp"
 #include "gui/gui.hpp"
 #include "gui/utils.hpp"
@@ -22,6 +23,8 @@
 #include <osgGA/GUIEventHandler>
 #include <osgViewer/View>
 
+#include <cstddef>
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -30,32 +33,15 @@ namespace {
 
 Eigen::Vector4d toVec4(const nb::handle& h)
 {
-  try {
-    return nb::cast<Eigen::Vector4d>(h);
-  } catch (const nb::cast_error&) {
-    nb::sequence seq = nb::cast<nb::sequence>(h);
-    if (nb::len(seq) != 4)
-      throw nb::type_error("Expected a length-4 sequence");
-    Eigen::Vector4d vec;
-    for (ssize_t i = 0; i < 4; ++i)
-      vec[i] = nb::cast<double>(seq[i]);
-    return vec;
-  }
+  Eigen::VectorXd vec = toVector(h);
+  if (vec.size() != 4)
+    throw nb::type_error("Expected a length-4 sequence");
+  return Eigen::Vector4d(vec);
 }
 
 Eigen::Vector3d toVec3(const nb::handle& h)
 {
-  try {
-    return nb::cast<Eigen::Vector3d>(h);
-  } catch (const nb::cast_error&) {
-    nb::sequence seq = nb::cast<nb::sequence>(h);
-    if (nb::len(seq) != 3)
-      throw nb::type_error("Expected a length-3 sequence");
-    Eigen::Vector3d vec;
-    for (ssize_t i = 0; i < 3; ++i)
-      vec[i] = nb::cast<double>(seq[i]);
-    return vec;
-  }
+  return toVector3(h);
 }
 
 } // namespace
@@ -71,7 +57,7 @@ void defViewer(nb::module_& m)
           [](osgViewer::View& self, osgGA::GUIEventHandler* eventHandler) {
             self.addEventHandler(eventHandler);
           },
-          nb::arg("eventHandler"));
+          nb::arg("event_handler"));
 
   auto viewer
       = nb::class_<Viewer, osgViewer::View>(m, "Viewer")
@@ -82,12 +68,12 @@ void defViewer(nb::module_& m)
                   return makeOsgShared<Viewer>(
                       ::osg::Vec4(c[0], c[1], c[2], c[3]));
                 }),
-                nb::arg("clearColor"))
+                nb::arg("clear_color"))
             .def(
                 nb::new_([](const osg::Vec4& clearColor) {
                   return makeOsgShared<Viewer>(clearColor);
                 }),
-                nb::arg("clearColor"))
+                nb::arg("clear_color"))
             .def(
                 "captureScreen",
                 [](Viewer& self, const std::string& filename) {
@@ -147,34 +133,34 @@ void defViewer(nb::module_& m)
             .def(
                 "setLightingMode",
                 &Viewer::setLightingMode,
-                nb::arg("lightingMode"))
+                nb::arg("lighting_mode"))
             .def("getLightingMode", &Viewer::getLightingMode)
             .def(
                 "addWorldNode",
                 [](Viewer& self, dart::gui::WorldNode* node) {
                   self.addWorldNode(node);
                 },
-                nb::arg("newWorldNode"))
+                nb::arg("new_world_node"))
             .def(
                 "addWorldNode",
                 [](Viewer& self, dart::gui::WorldNode* node, bool active) {
                   self.addWorldNode(node, active);
                 },
-                nb::arg("newWorldNode"),
+                nb::arg("new_world_node"),
                 nb::arg("active"))
             .def(
                 "removeWorldNode",
                 [](Viewer& self, dart::gui::WorldNode* node) {
                   self.removeWorldNode(node);
                 },
-                nb::arg("oldWorldNode"))
+                nb::arg("old_world_node"))
             .def(
                 "removeWorldNode",
                 [](Viewer& self,
                    std::shared_ptr<dart::simulation::World> world) {
                   self.removeWorldNode(std::move(world));
                 },
-                nb::arg("oldWorld"))
+                nb::arg("old_world"))
             .def(
                 "addAttachment",
                 [](Viewer& self, dart::gui::ViewerAttachment* attachment) {
@@ -267,9 +253,9 @@ void defViewer(nb::module_& m)
                       bn, useExternalIK, useWholeBody);
                 },
                 nb::rv_policy::reference_internal,
-                nb::arg("bodyNode"),
-                nb::arg("useExternalIK") = true,
-                nb::arg("useWholeBody") = false)
+                nb::arg("body_node"),
+                nb::arg("use_external_ik") = true,
+                nb::arg("use_whole_body") = false)
             .def(
                 "enableDragAndDrop",
                 [](Viewer& self, dart::dynamics::Entity* entity) {
@@ -335,7 +321,7 @@ void defViewer(nb::module_& m)
                 [](Viewer& self, double simulationTime) {
                   self.frame(simulationTime);
                 },
-                nb::arg("simulationTime"))
+                nb::arg("simulation_time"))
             .def(
                 "setUpViewInWindow",
                 [](Viewer& self, int x, int y, int width, int height) {

@@ -81,6 +81,7 @@ set(dartpy_headers
   common/module.hpp
   common/logging.hpp
   common/observer.hpp
+  common/repr.hpp
   common/resource.hpp
   common/resource_retriever.hpp
   common/stopwatch.hpp
@@ -88,7 +89,7 @@ set(dartpy_headers
   common/subject.hpp
   common/uri.hpp
   utils/module.hpp
-  utils/dart_loader.hpp
+  utils/urdf_parser.hpp
   utils/resource_retriever.hpp
   utils/skel_parser.hpp
   utils/sdf_parser.hpp
@@ -103,6 +104,7 @@ set(dartpy_headers
   math/geometry.hpp
   math/random.hpp
   math/eigen_geometry.hpp
+  math/trimesh.hpp
   dynamics/module.hpp
   dynamics/entity.hpp
   dynamics/degree_of_freedom.hpp
@@ -163,7 +165,7 @@ set(dartpy_sources
   common/subject.cpp
   common/uri.cpp
   utils/module.cpp
-  utils/dart_loader.cpp
+  utils/urdf_parser.cpp
   utils/resource_retriever.cpp
   utils/skel_parser.cpp
   utils/sdf_parser.cpp
@@ -178,6 +180,7 @@ set(dartpy_sources
   math/geometry.cpp
   math/random.cpp
   math/eigen_geometry.cpp
+  math/TriMesh.cpp
   dynamics/module.cpp
   dynamics/entity.cpp
   dynamics/degree_of_freedom.cpp
@@ -248,6 +251,8 @@ set(dartpy_gui_sources
 if(DART_BUILD_GUI)
   list(APPEND dartpy_headers ${dartpy_gui_headers})
   list(APPEND dartpy_sources ${dartpy_gui_sources})
+else()
+  message(FATAL_ERROR "Building dartpy requires DART_BUILD_GUI=ON")
 endif()
 
 nanobind_add_module(dartpy
@@ -280,7 +285,6 @@ target_include_directories(dartpy
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}
 )
-target_compile_options(dartpy PRIVATE -g)
 
 if(BULLET_INCLUDE_DIR)
   target_include_directories(dartpy SYSTEM PRIVATE ${BULLET_INCLUDE_DIR})
@@ -305,32 +309,12 @@ foreach(lib ${dartpy_libraries})
   endif()
 endforeach()
 
-if(TARGET dart-collision-bullet)
-  target_link_libraries(dartpy PRIVATE dart-collision-bullet)
-  foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
-    get_target_property(_bullet_includes dart-collision-bullet ${prop})
-    if(_bullet_includes)
-      target_include_directories(dartpy PRIVATE ${_bullet_includes})
-    endif()
-  endforeach()
-endif()
-
 if(TARGET dart-gui)
   target_link_libraries(dartpy PRIVATE dart-gui)
   foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
     get_target_property(_gui_includes dart-gui ${prop})
     if(_gui_includes)
       target_include_directories(dartpy PRIVATE ${_gui_includes})
-    endif()
-  endforeach()
-endif()
-
-if(TARGET dart-collision-ode)
-  target_link_libraries(dartpy PRIVATE dart-collision-ode)
-  foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
-    get_target_property(_ode_includes dart-collision-ode ${prop})
-    if(_ode_includes)
-      target_include_directories(dartpy PRIVATE ${_ode_includes})
     endif()
   endforeach()
 endif()

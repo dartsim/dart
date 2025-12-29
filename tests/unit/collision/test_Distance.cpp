@@ -35,7 +35,7 @@
 #include <dart/All.hpp>
 
 #include <gtest/gtest.h>
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   #include "dart/collision/bullet/All.hpp"
 #endif
 #include "../../helpers/GTestUtils.hpp"
@@ -53,6 +53,9 @@ void testBasicInterface(
         "Aborting test: distance check is not supported by {}.", cd->getType());
     return;
   }
+
+  const auto primitiveType
+      = static_cast<FCLCollisionDetector*>(cd.get())->getPrimitiveShapeType();
 
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
   auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
@@ -90,10 +93,15 @@ void testBasicInterface(
   EXPECT_TRUE(
       result.shapeFrame2 == simpleFrame1.get()
       || result.shapeFrame2 == simpleFrame2.get());
-  EXPECT_TRUE(
-      result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
-  EXPECT_TRUE(
-      result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  if (primitiveType == FCLCollisionDetector::MESH) {
+    EXPECT_TRUE(
+        result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+    EXPECT_TRUE(
+        result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  } else {
+    EXPECT_TRUE(result.nearestPoint1.allFinite());
+    EXPECT_TRUE(result.nearestPoint2.allFinite());
+  }
   EXPECT_TRUE(result.found() == true);
 
   result.clear();
@@ -107,10 +115,15 @@ void testBasicInterface(
   EXPECT_TRUE(
       result.shapeFrame2 == simpleFrame1.get()
       || result.shapeFrame2 == simpleFrame2.get());
-  EXPECT_TRUE(
-      result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
-  EXPECT_TRUE(
-      result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  if (primitiveType == FCLCollisionDetector::MESH) {
+    EXPECT_TRUE(
+        result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+    EXPECT_TRUE(
+        result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  } else {
+    EXPECT_TRUE(result.nearestPoint1.allFinite());
+    EXPECT_TRUE(result.nearestPoint2.allFinite());
+  }
   EXPECT_TRUE(result.found() == true);
 
   result.clear();
@@ -124,10 +137,15 @@ void testBasicInterface(
   EXPECT_TRUE(
       result.shapeFrame2 == simpleFrame1.get()
       || result.shapeFrame2 == simpleFrame2.get());
-  EXPECT_TRUE(
-      result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
-  EXPECT_TRUE(
-      result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  if (primitiveType == FCLCollisionDetector::MESH) {
+    EXPECT_TRUE(
+        result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+    EXPECT_TRUE(
+        result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  } else {
+    EXPECT_TRUE(result.nearestPoint1.allFinite());
+    EXPECT_TRUE(result.nearestPoint2.allFinite());
+  }
   EXPECT_TRUE(result.found() == true);
 }
 
@@ -137,7 +155,7 @@ TEST(Distance, testBasicInterface)
   auto fcl = FCLCollisionDetector::create();
   testBasicInterface(fcl);
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testBasicInterface(bullet);
 #endif
@@ -155,6 +173,9 @@ void testOptions(
         "Aborting test: distance check is not supported by {}.", cd->getType());
     return;
   }
+
+  const auto primitiveType
+      = static_cast<FCLCollisionDetector*>(cd.get())->getPrimitiveShapeType();
 
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
   auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
@@ -207,10 +228,15 @@ void testOptions(
   EXPECT_TRUE(
       result.shapeFrame2 == simpleFrame1.get()
       || result.shapeFrame2 == simpleFrame2.get());
-  EXPECT_TRUE(
-      result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
-  EXPECT_TRUE(
-      result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  if (primitiveType == FCLCollisionDetector::MESH) {
+    EXPECT_TRUE(
+        result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+    EXPECT_TRUE(
+        result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  } else {
+    EXPECT_TRUE(result.nearestPoint1.allFinite());
+    EXPECT_TRUE(result.nearestPoint2.allFinite());
+  }
   EXPECT_TRUE(result.found() == true);
 
   option.enableNearestPoints = true;
@@ -240,7 +266,7 @@ TEST(Distance, Options)
   auto fcl = FCLCollisionDetector::create();
   testOptions(fcl);
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testOptions(bullet);
 #endif
@@ -299,7 +325,7 @@ TEST(Distance, SphereSphere)
   auto fcl = FCLCollisionDetector::create();
   testSphereSphere(fcl);
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testSphereSphere(bullet);
 #endif

@@ -35,6 +35,10 @@
 #include "dart/gui/ImGuiHandler.hpp"
 #include "dart/gui/ImGuiWidget.hpp"
 
+#include <algorithm>
+
+#include <cmath>
+
 namespace dart {
 namespace gui {
 
@@ -66,6 +70,36 @@ ImGuiHandler* ImGuiViewer::getImGuiHandler()
 const ImGuiHandler* ImGuiViewer::getImGuiHandler() const
 {
   return mImGuiHandler.get();
+}
+
+//==============================================================================
+void ImGuiViewer::setImGuiScale(float scale)
+{
+  applyImGuiScale(scale);
+  if (std::isfinite(scale) && scale > 0.f)
+    mImGuiScale = scale;
+}
+
+//==============================================================================
+void ImGuiViewer::setUpViewInWindow(int x, int y, int width, int height)
+{
+  setUpViewInWindow(x, y, width, height, 0);
+}
+
+//==============================================================================
+void ImGuiViewer::setUpViewInWindow(
+    int x, int y, int width, int height, int screenNum)
+{
+  const float scale = mImGuiScale;
+  int scaledWidth = width;
+  int scaledHeight = height;
+
+  if (std::isfinite(scale) && scale > 0.f && std::abs(scale - 1.f) > 1e-6f) {
+    scaledWidth = std::max(1, static_cast<int>(std::lround(width * scale)));
+    scaledHeight = std::max(1, static_cast<int>(std::lround(height * scale)));
+  }
+
+  Viewer::setUpViewInWindow(x, y, scaledWidth, scaledHeight, screenNum);
 }
 
 //==============================================================================

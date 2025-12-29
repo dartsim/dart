@@ -18,26 +18,27 @@ void defComposite(nb::module_& m)
       .def(
           "setCompositeState",
           &Composite::setCompositeState,
-          nb::arg("newStates"))
+          nb::arg("new_states"))
       .def("getCompositeState", &Composite::getCompositeState)
       .def(
           "copyCompositeStateTo",
           &Composite::copyCompositeStateTo,
-          nb::arg("outgoingStates"))
+          nb::arg("outgoing_states"))
       .def(
           "setCompositeProperties",
           &Composite::setCompositeProperties,
-          nb::arg("newProperties"))
+          nb::arg("new_properties"))
       .def("getCompositeProperties", &Composite::getCompositeProperties)
       .def(
           "copyCompositePropertiesTo",
           &Composite::copyCompositePropertiesTo,
-          nb::arg("outgoingProperties"))
+          nb::arg("outgoing_properties"))
       .def(
           "duplicateAspects",
           &Composite::duplicateAspects,
-          nb::arg("fromComposite"))
-      .def("matchAspects", &Composite::matchAspects, nb::arg("otherComposite"));
+          nb::arg("from_composite"))
+      .def(
+          "matchAspects", &Composite::matchAspects, nb::arg("other_composite"));
 }
 
 } // namespace dart::python_nb

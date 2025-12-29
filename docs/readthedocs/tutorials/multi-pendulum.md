@@ -491,6 +491,13 @@ we allow it to curl up too much, so let's put a limit on the magnitude of the
 rest angle. Right before `dof->setRestPosition(q0);` we can put:
 
 ```{eval-rst}
+See also:
+
+- :doc:`../topics/numerical-methods` (time stepping + constraints overview)
+- :doc:`../topics/simulation-stability` (stability checklist and common fixes)
+```
+
+```{eval-rst}
 .. tabs::
 
    .. tab:: C++

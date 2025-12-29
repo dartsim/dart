@@ -14,6 +14,7 @@ Located in `onboarding/` - **Architecture guides for developers:**
 
 - **[Onboarding Guide](onboarding/README.md)** - Complete internal architecture overview with diagrams
 - [Core Architecture](onboarding/architecture.md) - Deep dive into simulation engine internals
+- [Aspect System](onboarding/aspect-system.md) - Aspect/State/Properties design and implementation
 - [Dynamics System](onboarding/dynamics.md) - Articulated body system and kinematics
 - [Constraint Solver](onboarding/constraints.md) - Constraint resolution and collision response
 - [GUI & Rendering](onboarding/gui-rendering.md) - OpenSceneGraph integration details
@@ -21,6 +22,7 @@ Located in `onboarding/` - **Architecture guides for developers:**
 - [Build System](onboarding/build-system.md) - CMake internals and dependency analysis
 - [Building from Source](onboarding/building.md) - Step-by-step build instructions
 - [Code Style Guide](onboarding/code-style.md) - Code conventions for C++, Python, and CMake
+- [Model Loading (IO)](onboarding/io-parsing.md) - Unified model loading API (`dart::io`)
 
 _Format: Markdown (GitHub/LLM-friendly) for internal codebase understanding_
 

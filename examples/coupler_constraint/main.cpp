@@ -34,6 +34,7 @@
 #include <dart/gui/ImGuiHandler.hpp>
 #include <dart/gui/ImGuiViewer.hpp>
 #include <dart/gui/ImGuiWidget.hpp>
+#include <dart/gui/IncludeImGui.hpp>
 #include <dart/gui/RealTimeWorldNode.hpp>
 #include <dart/gui/Viewer.hpp>
 
@@ -51,9 +52,9 @@
 
 #include <dart/math/Constants.hpp>
 
+#include <CLI/CLI.hpp>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include <imgui.h>
 #include <osgGA/GUIEventAdapter>
 #include <osgGA/GUIEventHandler>
 
@@ -539,7 +540,7 @@ public:
       return;
     }
 
-    const double radToDeg = 180.0 / dart::math::constantsd::pi();
+    const double radToDeg = 180.0 / dart::math::pi;
     const auto statuses = mController->getStatuses();
 
     ImGui::TextWrapped(
@@ -599,8 +600,14 @@ private:
 
 } // namespace
 
-int main(int /*argc*/, char* /*argv*/[])
+int main(int argc, char* argv[])
 {
+  CLI::App app("Coupler constraint demo");
+  double guiScale = 1.0;
+  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
+      ->check(CLI::PositiveNumber);
+  CLI11_PARSE(app, argc, argv);
+
   WorldPtr world = World::create();
   world->setGravity(Eigen::Vector3d::Zero());
   world->setTimeStep(1e-3);
@@ -623,7 +630,7 @@ int main(int /*argc*/, char* /*argv*/[])
   world->addSkeleton(couplerAssembly.skeleton);
   world->addSkeleton(motorAssembly.skeleton);
   const double targetAngle
-      = 45.0 * dart::math::constantsd::pi() / 180.0; // command for references
+      = 45.0 * dart::math::pi / 180.0; // command for references
 
   std::cout
       << "Coupler constraint demo:\n"
@@ -699,6 +706,7 @@ int main(int /*argc*/, char* /*argv*/[])
       = new CouplerEventHandler(controller.get());
 
   osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
+  viewer->setImGuiScale(static_cast<float>(guiScale));
   if (osg::GraphicsContext::getWindowingSystemInterface() == nullptr) {
     std::cerr << "No OSG windowing system detected. Running the GUI example "
                  "requires an active display server.\n";

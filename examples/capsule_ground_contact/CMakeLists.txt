@@ -4,15 +4,22 @@ get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
 project(${example_name})
 
-set(required_components gui collision-ode)
-set(required_libraries dart dart-gui dart-collision-ode)
+set(required_components gui)
+set(required_libraries dart dart-gui)
 
 if(DART_IN_SOURCE_BUILD)
+  if(NOT DART_BUILD_COLLISION_ODE)
+    return()
+  endif()
+
   dart_build_example_in_source(${example_name} LINK_LIBRARIES ${required_libraries})
   return()
 endif()
 
-find_package(DART 6.15.0 REQUIRED COMPONENTS ${required_components} CONFIG)
+find_package(DART 7.0 REQUIRED COMPONENTS ${required_components} CONFIG)
+if(NOT DART_BUILD_COLLISION_ODE)
+  message(FATAL_ERROR "This example requires DART to be built with ODE collision support (DART_BUILD_COLLISION_ODE=ON).")
+endif()
 
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})

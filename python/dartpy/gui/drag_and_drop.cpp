@@ -61,7 +61,7 @@ void defDragAndDrop(nb::module_& m)
           [](DragAndDrop& self, osgGA::GUIEventAdapter::ModKeyMask modKey) {
             self.setRotationModKey(modKey);
           },
-          nb::arg("rotationModKey"))
+          nb::arg("rotation_mod_key"))
       .def("getRotationModKey", &DragAndDrop::getRotationModKey);
 
   auto attr = m.attr("DragAndDrop");
@@ -100,13 +100,13 @@ void defDragAndDrop(nb::module_& m)
           nb::init<dart::gui::Viewer*, dart::dynamics::BodyNode*, bool>(),
           nb::arg("viewer"),
           nb::arg("bn"),
-          nb::arg("useExternalIK"))
+          nb::arg("use_external_ik"))
       .def(
           nb::init<dart::gui::Viewer*, dart::dynamics::BodyNode*, bool, bool>(),
           nb::arg("viewer"),
           nb::arg("bn"),
-          nb::arg("useExternalIK"),
-          nb::arg("useWholeBody"))
+          nb::arg("use_external_ik"),
+          nb::arg("use_whole_body"))
       .def("update", &dart::gui::BodyNodeDnD::update)
       .def("move", &dart::gui::BodyNodeDnD::move)
       .def("saveState", &dart::gui::BodyNodeDnD::saveState)
@@ -123,7 +123,7 @@ void defDragAndDrop(nb::module_& m)
           [](dart::gui::BodyNodeDnD& self, bool wholeBody) {
             self.useWholeBody(wholeBody);
           },
-          nb::arg("wholeBody"))
+          nb::arg("whole_body"))
       .def("isUsingWholeBody", &dart::gui::BodyNodeDnD::isUsingWholeBody)
       .def(
           "setPreserveOrientationModKey",

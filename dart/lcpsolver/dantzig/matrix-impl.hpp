@@ -1,4 +1,4 @@
 #pragma once
 
 #include "dart/lcpsolver/detail/DeprecatedNamespace.hpp"
-#include "dart/math/lcp/dantzig/Matrix-impl.hpp"
+#include "dart/math/lcp/pivoting/dantzig/Matrix-impl.hpp"
