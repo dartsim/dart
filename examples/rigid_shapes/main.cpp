@@ -47,9 +47,8 @@
 #include <dart/io/Read.hpp>
 
 #include <CLI/CLI.hpp>
-#include <fcl/config.h>
-
 #include <Eigen/Geometry>
+#include <fcl/config.h>
 
 #include <iostream>
 #include <memory>
@@ -485,9 +484,9 @@ private:
       lateral = Eigen::Vector3d::UnitZ();
     }
     const Eigen::Vector3d rollAxis = up.cross(lateral).normalized();
-    T.linear() = Eigen::Quaterniond::FromTwoVectors(
-                     Eigen::Vector3d::UnitZ(), rollAxis)
-                     .toRotationMatrix();
+    T.linear()
+        = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(), rollAxis)
+              .toRotationMatrix();
 
     SkeletonPtr newSkeleton
         = Skeleton::create(nextSkeletonName("rolling_cylinder"));
@@ -515,10 +514,7 @@ private:
 
     if (mWorldNode) {
       mWorldNode->addRollingBody(
-          newSkeleton,
-          bodyProp.mName,
-          Eigen::Vector3d(0.0, 0.0, torque),
-          true);
+          newSkeleton, bodyProp.mName, Eigen::Vector3d(0.0, 0.0, torque), true);
     }
   }
 
