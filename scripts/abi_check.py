@@ -2,8 +2,8 @@
 """
 Run an ABI compatibility check between two refs or the working tree.
 
-This script builds the baseline ref and current ref (or working tree) with
-identical options, then compares shared libraries with libabigail (abidiff).
+This script builds the from/to refs (or working tree for --to) with identical
+options, then compares shared libraries with libabigail (abidiff).
 """
 
 from __future__ import annotations
@@ -145,6 +145,7 @@ def cmake_configure(src_dir, build_dir, build_type, prefix, extra_cmake_args):
         "-DDART_BUILD_DARTPY=OFF",
         "-DDART_BUILD_DART8=OFF",
         "-DDART_BUILD_GUI=OFF",
+        "-DDART_BUILD_GUI_OSG=OFF",
         "-DDART_BUILD_GUI_RAYLIB=OFF",
         "-DDART_BUILD_EXAMPLES=OFF",
         "-DDART_BUILD_TUTORIALS=OFF",
@@ -178,16 +179,27 @@ def cmake_build(build_dir, targets, jobs):
 
 
 def find_library(build_dir, lib_name):
-    lib_dir = build_dir / "lib"
     if not lib_name.startswith("lib"):
         lib_name = f"lib{lib_name}"
+    lib_dir = build_dir / "lib"
     exact = lib_dir / f"{lib_name}.so"
     if exact.exists():
         return exact
     candidates = sorted(lib_dir.glob(f"{lib_name}.so.*"))
     if candidates:
         return candidates[0]
-    raise FileNotFoundError(f"Unable to find {lib_name}.so in {lib_dir}")
+
+    # Fallback: search the entire build tree for out-of-tree lib outputs.
+    fallback = sorted(build_dir.rglob(f"{lib_name}.so"))
+    if fallback:
+        return fallback[0]
+    fallback = sorted(build_dir.rglob(f"{lib_name}.so.*"))
+    if fallback:
+        return fallback[0]
+
+    raise FileNotFoundError(
+        f"Unable to find {lib_name}.so under {build_dir}"
+    )
 
 
 def run_abidiff(baseline_lib, current_lib, suppressions):
@@ -202,19 +214,16 @@ def run_abidiff(baseline_lib, current_lib, suppressions):
 def main():
     parser = argparse.ArgumentParser(description="Run ABI compatibility checks")
     parser.add_argument(
-        "--baseline-ref",
-        default=os.environ.get("DART_ABI_BASELINE_REF", ""),
-        help="Baseline git ref (tag/branch/commit). Defaults to latest v<major>.<minor>.<patch> tag",
+        "--from",
+        dest="from_ref",
+        default=os.environ.get("DART_ABI_FROM", ""),
+        help="From git ref (tag/branch/commit). Defaults to latest v<major>.<minor>.<patch> tag",
     )
     parser.add_argument(
-        "--baseline-tag",
-        default=os.environ.get("DART_ABI_BASELINE_TAG", ""),
-        help="Legacy alias for --baseline-ref (tag only)",
-    )
-    parser.add_argument(
-        "--current-ref",
-        default=os.environ.get("DART_ABI_CURRENT_REF", ""),
-        help="Current git ref (tag/branch/commit). Defaults to working tree",
+        "--to",
+        dest="to_ref",
+        default=os.environ.get("DART_ABI_TO", ""),
+        help="To git ref (tag/branch/commit). Defaults to working tree",
     )
     parser.add_argument(
         "--build-type",
@@ -235,7 +244,7 @@ def main():
         "--require-baseline",
         action="store_true",
         default=os.environ.get("DART_ABI_REQUIRE_BASELINE", "OFF") == "ON",
-        help="Fail if no baseline tag is found",
+        help="Fail if no from tag is found",
     )
     parser.add_argument(
         "--suppressions",
@@ -246,7 +255,7 @@ def main():
         "--allow-cross-major",
         action="store_true",
         default=os.environ.get("DART_ABI_ALLOW_CROSS_MAJOR", "OFF") == "ON",
-        help="Allow comparing against a baseline tag from a different major",
+        help="Allow comparing from/to refs with different major versions",
     )
     parser.add_argument(
         "--list-refs",
@@ -281,57 +290,57 @@ def main():
 
     work_dir = Path(args.work_dir)
 
-    if args.current_ref:
-        current_commit = resolve_ref(args.current_ref)
+    if args.to_ref:
+        current_commit = resolve_ref(args.to_ref)
         if not current_commit:
-            print(f"Current ref not found: {args.current_ref}")
+            print(f"To ref not found: {args.to_ref}")
             return 1
-        current_src = prepare_source(args.current_ref, current_commit, work_dir, "current")
-        current_label = f"{sanitize_ref(args.current_ref)}-{current_commit[:12]}"
+        current_src = prepare_source(args.to_ref, current_commit, work_dir, "to")
+        to_label = f"{sanitize_ref(args.to_ref)}-{current_commit[:12]}"
     else:
         current_src = ROOT
-        current_label = "worktree"
+        to_label = "worktree"
 
     current_version = read_version_from_source(current_src)
     current_major = major_from_version(current_version)
 
-    baseline_ref = args.baseline_ref or args.baseline_tag
-    if baseline_ref:
-        baseline_commit = resolve_ref(baseline_ref)
+    from_ref = args.from_ref
+    if from_ref:
+        baseline_commit = resolve_ref(from_ref)
         if not baseline_commit:
-            print(f"Baseline ref not found: {baseline_ref}")
+            print(f"From ref not found: {from_ref}")
             return 1
     else:
-        baseline_ref = select_baseline_tag(current_major)
-        baseline_commit = resolve_ref(baseline_ref) if baseline_ref else None
+        from_ref = select_baseline_tag(current_major)
+        baseline_commit = resolve_ref(from_ref) if from_ref else None
 
-    if not baseline_ref or not baseline_commit:
-        msg = f"No baseline tag found for major {current_major}. Set DART_ABI_BASELINE_TAG."
+    if not from_ref or not baseline_commit:
+        msg = f"No from tag found for major {current_major}. Set --from or DART_ABI_FROM."
         if args.require_baseline:
             print(msg)
             return 1
         print(f"{msg} Skipping ABI check.")
         return 0
 
-    baseline_src = prepare_source(baseline_ref, baseline_commit, work_dir, "baseline")
+    baseline_src = prepare_source(from_ref, baseline_commit, work_dir, "from")
     baseline_version = read_version_from_source(baseline_src)
     baseline_major = major_from_version(baseline_version)
     if baseline_major != current_major and not args.allow_cross_major:
         print(
-            "Baseline major does not match current major. "
+            "From major does not match to major. "
             "Set DART_ABI_ALLOW_CROSS_MAJOR=ON or pass --allow-cross-major to override."
         )
         return 1
 
-    baseline_build = work_dir / f"baseline-{sanitize_ref(baseline_ref)}" / "build"
-    current_build = work_dir / f"current-{current_label}" / "build"
+    baseline_build = work_dir / f"from-{sanitize_ref(from_ref)}" / "build"
+    current_build = work_dir / f"to-{to_label}" / "build"
 
     extra_args = shlex.split(os.environ.get("DART_ABI_CMAKE_ARGS", ""))
     libs = [lib.strip() for lib in args.libs.split(",") if lib.strip()]
     targets = libs
 
-    print(f"Baseline ref: {baseline_ref}")
-    print(f"Current ref: {args.current_ref or 'WORKTREE'}")
+    print(f"From ref: {from_ref}")
+    print(f"To ref: {args.to_ref or 'WORKTREE'}")
     print(f"Build type: {args.build_type}")
     print(f"Libraries: {', '.join(libs)}")
 

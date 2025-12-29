@@ -13,7 +13,7 @@ no current CI or local workflow to flag ABI changes before merge.
 
 - Linux ABI checks for shared libraries.
 - Local workflow plus CI job for PRs.
-- Baseline comparison against the latest release tag (or an explicit tag).
+- From/to comparison against the latest release tag (or an explicit ref).
 
 ## Out of Scope
 
@@ -24,7 +24,7 @@ no current CI or local workflow to flag ABI changes before merge.
 ## Recommendation
 
 - Use libabigail (`abidiff`) on Linux.
-- Build baseline and current libraries with debug info (RelWithDebInfo).
+- Build from/to libraries with debug info (RelWithDebInfo).
 - Start with `libdart` only, then expand to other shared libraries if needed.
 - Treat added symbols as compatible; fail on removed or changed ABI.
 
@@ -37,31 +37,30 @@ no current CI or local workflow to flag ABI changes before merge.
 ## Usage
 
 - Default: `pixi run abi-check` (selects latest `v<major>.<minor>.<patch>` tag).
-- Override baseline: `DART_ABI_BASELINE_REF=vX.Y.Z pixi run abi-check`.
+- Override from ref: `DART_ABI_FROM=vX.Y.Z pixi run abi-check`.
+- Override to ref: `DART_ABI_TO=origin/main pixi run abi-check`.
 - Configure libs: `DART_ABI_LIBS=dart,dart-utils pixi run abi-check`.
-- Require a baseline: `DART_ABI_REQUIRE_BASELINE=ON pixi run abi-check`.
+- Require a from ref: `DART_ABI_REQUIRE_BASELINE=ON pixi run abi-check`.
 - If no tag exists for the current major version, the check skips unless
   `DART_ABI_REQUIRE_BASELINE=ON` is set.
-- Cross-major baselines are blocked unless `DART_ABI_ALLOW_CROSS_MAJOR=ON` or
+- Cross-major comparisons are blocked unless `DART_ABI_ALLOW_CROSS_MAJOR=ON` or
   `--allow-cross-major` is provided.
 - Compare arbitrary refs:
-  `pixi run abi-check -- --baseline-ref v7.0.0 --current-ref HEAD`.
-- Legacy tag-only override: `DART_ABI_BASELINE_TAG=vX.Y.Z`.
-- Current ref override: `DART_ABI_CURRENT_REF=origin/main`.
-- List refs: `pixi run abi-check -- --list-refs`.
-- Filter refs: `pixi run abi-check -- --list-refs --list-pattern '^v7\\.'`.
+  `pixi run abi-check --from v6.16.0 --to v6.16.2`.
+- List refs: `pixi run abi-check --list-refs`.
+- Filter refs: `pixi run abi-check --list-refs --list-pattern '^v6\\.16\\.'`.
 
 ## TODO
 
-- TODO: Flip CI to require a baseline tag once v7 tags exist.
+- TODO: Flip CI to require a from tag once v7 tags exist.
 - TODO: Expand the library list beyond `libdart` once CI signal is stable.
 - TODO: Add suppressions only if recurring false positives appear.
 
 ## Plan
 
-- Pick the baseline selection rule (latest release tag by default; allow an
+- Pick the from selection rule (latest release tag by default; allow an
   explicit override).
-- Add a script under `scripts/` to build baseline and current, then run
+- Add a script under `scripts/` to build from/to, then run
   `abidiff` with consistent build options.
 - Add a pixi task that runs the script locally.
 - Add a Linux CI job that runs the same script on PRs.
@@ -69,7 +68,7 @@ no current CI or local workflow to flag ABI changes before merge.
 
 ## Inputs / Outputs
 
-- Inputs: baseline tag, build options, list of libraries in scope.
+- Inputs: from ref, build options, list of libraries in scope.
 - Output: ABI report with a non-zero exit on incompatible changes.
 
 ## Validation / Success Criteria
@@ -81,11 +80,11 @@ no current CI or local workflow to flag ABI changes before merge.
 ## Risks / Trade-offs
 
 - ABI checks add CI time and require debug info in builds.
-- False positives may occur if build flags differ across baseline/current.
+- False positives may occur if build flags differ across from/to builds.
 - ABI checks do not catch header-only or template-only changes.
 
 ## Open Questions
 
 - Which additional libraries should be included beyond `libdart`?
 - Do we need a suppression list for approved breaks?
-- Should CI build the baseline tag each run or reuse cached artifacts?
+- Should CI build the from tag each run or reuse cached artifacts?
