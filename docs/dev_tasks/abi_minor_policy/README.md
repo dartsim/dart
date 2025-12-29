@@ -35,6 +35,13 @@ plugin users when ABI breaks occur.
 - Ensure release notes call out any intentional ABI breaks.
 - Confirm downstream expectations (Gazebo) match the policy.
 
+## TODO
+
+- TODO: Add the ABI policy note and link to the ABI check workflow.
+- TODO: Add ABI review to the release checklist.
+- TODO: Confirm Gazebo expectations and communicate exceptions.
+- TODO: Revisit SOVERSION only if the policy changes from best-effort.
+
 ## Deliverables
 
 - Updated policy docs (no new files).

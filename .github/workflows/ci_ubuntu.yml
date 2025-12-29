@@ -209,6 +209,7 @@ jobs:
 
       - name: Run ABI check
         run: |
+          # TODO: Require a baseline tag once v7 releases are tagged.
           DART_VERBOSE=ON \
           pixi run abi-check
 

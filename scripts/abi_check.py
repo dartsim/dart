@@ -55,6 +55,13 @@ def select_baseline_tag(major, override_tag):
     return None
 
 
+def major_from_tag(tag):
+    match = re.match(r"^v(\d+)\.", tag)
+    if match:
+        return match.group(1)
+    return None
+
+
 def extract_baseline(tag, dest_dir):
     if dest_dir.exists():
         shutil.rmtree(dest_dir)
@@ -189,6 +196,12 @@ def main():
         default=os.environ.get("DART_ABI_SUPPRESSIONS", ""),
         help="Path to abidiff suppressions file",
     )
+    parser.add_argument(
+        "--allow-cross-major",
+        action="store_true",
+        default=os.environ.get("DART_ABI_ALLOW_CROSS_MAJOR", "OFF") == "ON",
+        help="Allow comparing against a baseline tag from a different major",
+    )
 
     args = parser.parse_args()
 
@@ -215,6 +228,14 @@ def main():
             return 1
         print(f"{msg} Skipping ABI check.")
         return 0
+
+    baseline_major = major_from_tag(baseline_tag)
+    if baseline_major and baseline_major != major and not args.allow_cross_major:
+        print(
+            "Baseline tag major does not match current major. "
+            "Set DART_ABI_ALLOW_CROSS_MAJOR=ON or pass --allow-cross-major to override."
+        )
+        return 1
 
     work_dir = Path(args.work_dir)
     baseline_src = prepare_baseline_source(baseline_tag, work_dir)

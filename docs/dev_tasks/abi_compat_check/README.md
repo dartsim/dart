@@ -2,7 +2,7 @@
 
 ## Status
 
-- In progress: script, pixi task, and Linux CI job added.
+- In progress: script, pixi task, and Linux CI job added; TODOs remain.
 
 ## Problem Statement
 
@@ -42,6 +42,14 @@ no current CI or local workflow to flag ABI changes before merge.
 - Require a baseline: `DART_ABI_REQUIRE_BASELINE=ON pixi run abi-check`.
 - If no tag exists for the current major version, the check skips unless
   `DART_ABI_REQUIRE_BASELINE=ON` is set.
+- Cross-major baselines are blocked unless `DART_ABI_ALLOW_CROSS_MAJOR=ON` or
+  `--allow-cross-major` is provided.
+
+## TODO
+
+- TODO: Flip CI to require a baseline tag once v7 tags exist.
+- TODO: Expand the library list beyond `libdart` once CI signal is stable.
+- TODO: Add suppressions only if recurring false positives appear.
 
 ## Plan
 
