@@ -20,6 +20,9 @@
   tree in repo; no hits under dart/collision/bullet.
 - Restored legacy contact error reduction when split impulse is disabled and
   made split impulse opt-in by default; tests now enable it explicitly.
+- Opened PR: https://github.com/dartsim/dart/pull/2354.
+- CI macOS Release Tests (arm64) initially failed with
+  UNIT_dynamics_ShapeNodePtr segfault; rerun passed.
 
 ## Validation
 
@@ -30,4 +33,4 @@
 
 ## Next
 
-- Sync with origin/main, commit, push, open PR, and monitor CI.
+- Await review/merge; all CI checks green after macOS rerun.
