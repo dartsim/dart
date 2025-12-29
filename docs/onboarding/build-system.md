@@ -750,10 +750,11 @@ build/
 - [`cmake/gz_physics_force_vendor_gtest.cmake`](../../cmake/gz_physics_force_vendor_gtest.cmake) - ensures gz-physics uses its vendored GoogleTest headers
 - [`.github/workflows/ci_gz_physics.yml`](../../.github/workflows/ci_gz_physics.yml) - CI entry point for this workflow
 
-**Example (Used in this task):**
+**Suggested (Unverified, Linux example):**
 
 ```bash
-DART_PARALLEL_JOBS=12 pixi run -e gazebo test-gz
+N=$(( ( $(nproc) * 2 ) / 3 ))
+DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 ```
 
 **Fast iteration loop (Suggested (Unverified)):**

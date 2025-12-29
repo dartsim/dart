@@ -30,19 +30,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/dynamics/BallJoint.hpp"
 
-// clang-format off
-#include <dart/config.hpp>
-#include <dart/Export.hpp>
-#include <dart/common/All.hpp>
-#include <dart/math/All.hpp>
-#define DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
-#include <dart/optimizer/All.hpp>
-#undef DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
-#include <dart/collision/All.hpp>
-#include <dart/constraint/All.hpp>
-#include <dart/dynamics/All.hpp>
-#include <dart/simulation/All.hpp>
-#include <dart/sensor/All.hpp>
-// clang-format on
+namespace dart {
+namespace dynamics {
+namespace detail {
+
+//==============================================================================
+BallJointUniqueProperties::BallJointUniqueProperties(CoordinateChart _chart)
+  : mCoordinateChart(_chart)
+{
+  // Do nothing
+}
+
+//==============================================================================
+BallJointProperties::BallJointProperties(
+    const GenericJoint<math::SO3Space>::Properties& genericProperties,
+    const BallJointUniqueProperties& ballJointProperties)
+  : GenericJoint<math::SO3Space>::Properties(genericProperties),
+    BallJointUniqueProperties(ballJointProperties)
+{
+  // Do nothing
+}
+
+} // namespace detail
+} // namespace dynamics
+} // namespace dart
