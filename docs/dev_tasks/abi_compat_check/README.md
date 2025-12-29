@@ -48,6 +48,8 @@ no current CI or local workflow to flag ABI changes before merge.
   `pixi run abi-check -- --baseline-ref v7.0.0 --current-ref HEAD`.
 - Legacy tag-only override: `DART_ABI_BASELINE_TAG=vX.Y.Z`.
 - Current ref override: `DART_ABI_CURRENT_REF=origin/main`.
+- List refs: `pixi run abi-check -- --list-refs`.
+- Filter refs: `pixi run abi-check -- --list-refs --list-pattern '^v7\\.'`.
 
 ## TODO
 
