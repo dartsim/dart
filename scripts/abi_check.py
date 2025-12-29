@@ -60,6 +60,41 @@ def sanitize_ref(ref_name):
     return re.sub(r"[^A-Za-z0-9._-]+", "_", ref_name)
 
 
+def resolve_ref(ref_name):
+    result = subprocess.run(
+        ["git", "rev-parse", "--verify", f"{ref_name}^{{commit}}"],
+        cwd=ROOT,
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if result.returncode != 0:
+        return None
+    commit = result.stdout.strip()
+    return commit
+
+
+def list_refs(pattern):
+    cmd = [
+        "git",
+        "for-each-ref",
+        "--sort=refname",
+        "--format=%(refname:short)",
+        "refs/heads",
+        "refs/remotes",
+        "refs/tags",
+    ]
+    result = subprocess.run(cmd, cwd=ROOT, check=True, text=True, stdout=subprocess.PIPE)
+    refs = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    refs = [ref for ref in refs if not ref.endswith("/HEAD")]
+    if pattern:
+        regex = re.compile(pattern)
+        refs = [ref for ref in refs if regex.search(ref)]
+    for ref in refs:
+        print(ref)
+
+
 def extract_ref(ref_name, dest_dir):
     if dest_dir.exists():
         shutil.rmtree(dest_dir)
@@ -77,17 +112,19 @@ def extract_ref(ref_name, dest_dir):
         raise RuntimeError(f"git archive failed for ref {ref_name}")
 
 
-def prepare_source(ref_name, work_dir, label):
-    ref_id = sanitize_ref(ref_name)
+def prepare_source(ref_name, ref_commit, work_dir, label):
+    short_commit = ref_commit[:12]
+    ref_id = f"{sanitize_ref(ref_name)}-{short_commit}"
     ref_root = work_dir / f"{label}-{ref_id}"
     src_dir = ref_root / "src"
     marker = ref_root / "ref.txt"
-    if src_dir.exists() and marker.exists() and marker.read_text(encoding="utf-8") == ref_name:
+    marker_value = f"{ref_name}\n{ref_commit}\n"
+    if src_dir.exists() and marker.exists() and marker.read_text(encoding="utf-8") == marker_value:
         return src_dir
 
     ref_root.mkdir(parents=True, exist_ok=True)
     extract_ref(ref_name, src_dir)
-    marker.write_text(ref_name, encoding="utf-8")
+    marker.write_text(marker_value, encoding="utf-8")
     return src_dir
 
 
@@ -211,11 +248,26 @@ def main():
         default=os.environ.get("DART_ABI_ALLOW_CROSS_MAJOR", "OFF") == "ON",
         help="Allow comparing against a baseline tag from a different major",
     )
+    parser.add_argument(
+        "--list-refs",
+        action="store_true",
+        default=False,
+        help="List available refs and exit",
+    )
+    parser.add_argument(
+        "--list-pattern",
+        default=os.environ.get("DART_ABI_LIST_PATTERN", ""),
+        help="Regex filter for --list-refs output",
+    )
 
     args = parser.parse_args()
 
     if not sys.platform.startswith("linux"):
         print("ABI checks are only supported on Linux with libabigail.")
+        return 0
+
+    if args.list_refs:
+        list_refs(args.list_pattern)
         return 0
 
     if not shutil.which("abidiff"):
@@ -230,8 +282,12 @@ def main():
     work_dir = Path(args.work_dir)
 
     if args.current_ref:
-        current_src = prepare_source(args.current_ref, work_dir, "current")
-        current_label = sanitize_ref(args.current_ref)
+        current_commit = resolve_ref(args.current_ref)
+        if not current_commit:
+            print(f"Current ref not found: {args.current_ref}")
+            return 1
+        current_src = prepare_source(args.current_ref, current_commit, work_dir, "current")
+        current_label = f"{sanitize_ref(args.current_ref)}-{current_commit[:12]}"
     else:
         current_src = ROOT
         current_label = "worktree"
@@ -240,10 +296,16 @@ def main():
     current_major = major_from_version(current_version)
 
     baseline_ref = args.baseline_ref or args.baseline_tag
-    if not baseline_ref:
+    if baseline_ref:
+        baseline_commit = resolve_ref(baseline_ref)
+        if not baseline_commit:
+            print(f"Baseline ref not found: {baseline_ref}")
+            return 1
+    else:
         baseline_ref = select_baseline_tag(current_major)
+        baseline_commit = resolve_ref(baseline_ref) if baseline_ref else None
 
-    if not baseline_ref:
+    if not baseline_ref or not baseline_commit:
         msg = f"No baseline tag found for major {current_major}. Set DART_ABI_BASELINE_TAG."
         if args.require_baseline:
             print(msg)
@@ -251,7 +313,7 @@ def main():
         print(f"{msg} Skipping ABI check.")
         return 0
 
-    baseline_src = prepare_source(baseline_ref, work_dir, "baseline")
+    baseline_src = prepare_source(baseline_ref, baseline_commit, work_dir, "baseline")
     baseline_version = read_version_from_source(baseline_src)
     baseline_major = major_from_version(baseline_version)
     if baseline_major != current_major and not args.allow_cross_major:

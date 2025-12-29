@@ -1142,6 +1142,10 @@ test-all = { cmd = """
     python scripts/test_all.py
 """ }
 
+# ABI check (Linux only). Examples:
+# - Default: pixi run abi-check
+# - Compare refs: pixi run abi-check -- --baseline-ref v7.0.0 --current-ref HEAD
+# - Override via env: DART_ABI_BASELINE_REF=v7.0.0 DART_ABI_CURRENT_REF=origin/main pixi run abi-check
 abi-check = { cmd = "python scripts/abi_check.py" }
 
 test-dartpy-install = { cmd = """
