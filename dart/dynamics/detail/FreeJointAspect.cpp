@@ -8,7 +8,7 @@
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
  *   without modification, are permitted provided that the following
- *   conditions are met:
+ *     conditions are met:
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
  *   * Redistributions in binary form must reproduce the above
@@ -30,19 +30,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/dynamics/FreeJoint.hpp"
 
-// clang-format off
-#include <dart/config.hpp>
-#include <dart/Export.hpp>
-#include <dart/common/All.hpp>
-#include <dart/math/All.hpp>
-#define DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
-#include <dart/optimizer/All.hpp>
-#undef DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
-#include <dart/collision/All.hpp>
-#include <dart/constraint/All.hpp>
-#include <dart/dynamics/All.hpp>
-#include <dart/simulation/All.hpp>
-#include <dart/sensor/All.hpp>
-// clang-format on
+namespace dart {
+namespace dynamics {
+namespace detail {
+
+//==============================================================================
+FreeJointUniqueProperties::FreeJointUniqueProperties(CoordinateChart _chart)
+  : mCoordinateChart(_chart)
+{
+  // Do nothing
+}
+
+//==============================================================================
+FreeJointProperties::FreeJointProperties(
+    const GenericJoint<math::SE3Space>::Properties& genericProperties,
+    const FreeJointUniqueProperties& freeJointProperties)
+  : GenericJoint<math::SE3Space>::Properties(genericProperties),
+    FreeJointUniqueProperties(freeJointProperties)
+{
+  // Do nothing
+}
+
+} // namespace detail
+} // namespace dynamics
+} // namespace dart

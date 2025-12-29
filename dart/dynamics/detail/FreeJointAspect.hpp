@@ -30,19 +30,57 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#ifndef DART_DYNAMICS_DETAIL_FREEJOINTASPECT_HPP_
+#define DART_DYNAMICS_DETAIL_FREEJOINTASPECT_HPP_
 
-// clang-format off
-#include <dart/config.hpp>
+#include <dart/dynamics/GenericJoint.hpp>
+#include <dart/dynamics/detail/JointCoordinateChart.hpp>
+
 #include <dart/Export.hpp>
-#include <dart/common/All.hpp>
-#include <dart/math/All.hpp>
-#define DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
-#include <dart/optimizer/All.hpp>
-#undef DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
-#include <dart/collision/All.hpp>
-#include <dart/constraint/All.hpp>
-#include <dart/dynamics/All.hpp>
-#include <dart/simulation/All.hpp>
-#include <dart/sensor/All.hpp>
-// clang-format on
+
+namespace dart {
+namespace dynamics {
+
+class FreeJoint;
+
+namespace detail {
+
+//==============================================================================
+struct DART_API FreeJointUniqueProperties
+{
+  /// Coordinate chart for the rotational portion of generalized positions.
+  CoordinateChart mCoordinateChart;
+
+  /// Constructor
+  FreeJointUniqueProperties(CoordinateChart _chart = CoordinateChart::EXP_MAP);
+
+  virtual ~FreeJointUniqueProperties() = default;
+};
+
+//==============================================================================
+struct DART_API FreeJointProperties : GenericJoint<math::SE3Space>::Properties,
+                                      FreeJointUniqueProperties
+{
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(FreeJointProperties)
+
+  /// Composed constructor
+  FreeJointProperties(
+      const GenericJoint<math::SE3Space>::Properties& genericJointProperties
+      = GenericJoint<math::SE3Space>::Properties(),
+      const FreeJointUniqueProperties& freeJointProperties
+      = FreeJointUniqueProperties());
+
+  virtual ~FreeJointProperties() = default;
+};
+
+//==============================================================================
+using FreeJointBase = common::EmbedPropertiesOnTopOf<
+    FreeJoint,
+    FreeJointUniqueProperties,
+    GenericJoint<math::SE3Space>>;
+
+} // namespace detail
+} // namespace dynamics
+} // namespace dart
+
+#endif // DART_DYNAMICS_DETAIL_FREEJOINTASPECT_HPP_
