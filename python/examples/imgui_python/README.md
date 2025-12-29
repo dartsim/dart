@@ -9,7 +9,7 @@ drive the UI from Python code while DART owns the Dear ImGui rendering loop.
 - A Python Dear ImGui package built against a compatible ImGui version, e.g.:
 
   ```bash
-  pip install "imgui>=2.0.0"
+  pip install imgui-bundle
   ```
 
 ## Run

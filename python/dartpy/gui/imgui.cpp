@@ -36,7 +36,11 @@ public:
 
 void defImGuiWidget(nb::module_& m)
 {
-  nb::class_<dart::gui::ImGuiWidget, PyImGuiWidget>(m, "ImGuiWidget")
+  nb::class_<
+      dart::gui::ImGuiWidget,
+      PyImGuiWidget,
+      nb::holder_type<std::shared_ptr<dart::gui::ImGuiWidget>>>(
+      m, "ImGuiWidget")
       .def(nb::init<>())
       .def("render", &dart::gui::ImGuiWidget::render)
       .def(
@@ -62,11 +66,11 @@ void defImGuiHandler(nb::module_& m)
           [](ImGuiHandler& self, osg::RenderInfo& info) {
             self.newFrame(info);
           },
-          nb::arg("renderInfo"))
+          nb::arg("render_info"))
       .def(
           "render",
           [](ImGuiHandler& self, osg::RenderInfo& info) { self.render(info); },
-          nb::arg("renderInfo"))
+          nb::arg("render_info"))
       .def(
           "setCameraCallbacks",
           [](ImGuiHandler& self, osg::Camera* camera) {
@@ -112,10 +116,10 @@ void defImGuiHandler(nb::module_& m)
             return self.handle(
                 eventAdapter, actionAdapter, object, nodeVisitor);
           },
-          nb::arg("eventAdapter"),
-          nb::arg("actionAdapter"),
+          nb::arg("event_adapter"),
+          nb::arg("action_adapter"),
           nb::arg("object"),
-          nb::arg("nodeVisitor"));
+          nb::arg("node_visitor"));
 }
 
 void defImGuiViewer(nb::module_& m)
@@ -129,8 +133,8 @@ void defImGuiViewer(nb::module_& m)
           [](ImGuiViewer* self, const Eigen::Vector4d& clearColor) {
             new (self) ImGuiViewer(dart::gui::eigToOsgVec4f(clearColor));
           },
-          nb::arg("clearColor"))
-      .def(nb::init<const osg::Vec4&>(), nb::arg("clearColor"))
+          nb::arg("clear_color"))
+      .def(nb::init<const osg::Vec4&>(), nb::arg("clear_color"))
       .def(
           "getImGuiHandler",
           [](ImGuiViewer& self) { return self.getImGuiHandler(); },
