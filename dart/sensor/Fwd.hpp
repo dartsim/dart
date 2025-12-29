@@ -30,19 +30,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#ifndef DART_SENSOR_FWD_HPP_
+#define DART_SENSOR_FWD_HPP_
 
-// clang-format off
-#include <dart/config.hpp>
-#include <dart/Export.hpp>
-#include <dart/common/All.hpp>
-#include <dart/math/All.hpp>
-#define DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
-#include <dart/optimizer/All.hpp>
-#undef DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
-#include <dart/collision/All.hpp>
-#include <dart/constraint/All.hpp>
-#include <dart/dynamics/All.hpp>
-#include <dart/simulation/All.hpp>
-#include <dart/sensor/All.hpp>
-// clang-format on
+#include <dart/common/SmartPointer.hpp>
+
+namespace dart {
+namespace sensor {
+
+class Sensor;
+class SensorManager;
+
+DART_COMMON_DECLARE_SHARED_WEAK(Sensor)
+DART_COMMON_DECLARE_SHARED_WEAK(SensorManager)
+
+} // namespace sensor
+} // namespace dart
+
+#endif // DART_SENSOR_FWD_HPP_

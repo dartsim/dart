@@ -596,6 +596,10 @@ World (simulation environment)
   - Analysis of trajectory data
   - State checkpointing
 
+#### Sensors
+
+DART includes lightweight sensor scaffolding that is updated by the World to keep time and step context consistent. Sensors are managed centrally to keep naming and lifecycle coherent across world objects, while leaving concrete sensor types to downstream code.
+
 ---
 
 **Key Files:**

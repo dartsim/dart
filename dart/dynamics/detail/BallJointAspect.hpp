@@ -30,19 +30,57 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#ifndef DART_DYNAMICS_DETAIL_BALLJOINTASPECT_HPP_
+#define DART_DYNAMICS_DETAIL_BALLJOINTASPECT_HPP_
 
-// clang-format off
-#include <dart/config.hpp>
+#include <dart/dynamics/GenericJoint.hpp>
+#include <dart/dynamics/detail/JointCoordinateChart.hpp>
+
 #include <dart/Export.hpp>
-#include <dart/common/All.hpp>
-#include <dart/math/All.hpp>
-#define DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
-#include <dart/optimizer/All.hpp>
-#undef DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
-#include <dart/collision/All.hpp>
-#include <dart/constraint/All.hpp>
-#include <dart/dynamics/All.hpp>
-#include <dart/simulation/All.hpp>
-#include <dart/sensor/All.hpp>
-// clang-format on
+
+namespace dart {
+namespace dynamics {
+
+class BallJoint;
+
+namespace detail {
+
+//==============================================================================
+struct DART_API BallJointUniqueProperties
+{
+  /// Coordinate chart for generalized positions.
+  CoordinateChart mCoordinateChart;
+
+  /// Constructor
+  BallJointUniqueProperties(CoordinateChart _chart = CoordinateChart::EXP_MAP);
+
+  virtual ~BallJointUniqueProperties() = default;
+};
+
+//==============================================================================
+struct DART_API BallJointProperties : GenericJoint<math::SO3Space>::Properties,
+                                      BallJointUniqueProperties
+{
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(BallJointProperties)
+
+  /// Composed constructor
+  BallJointProperties(
+      const GenericJoint<math::SO3Space>::Properties& genericJointProperties
+      = GenericJoint<math::SO3Space>::Properties(),
+      const BallJointUniqueProperties& ballJointProperties
+      = BallJointUniqueProperties());
+
+  virtual ~BallJointProperties() = default;
+};
+
+//==============================================================================
+using BallJointBase = common::EmbedPropertiesOnTopOf<
+    BallJoint,
+    BallJointUniqueProperties,
+    GenericJoint<math::SO3Space>>;
+
+} // namespace detail
+} // namespace dynamics
+} // namespace dart
+
+#endif // DART_DYNAMICS_DETAIL_BALLJOINTASPECT_HPP_
