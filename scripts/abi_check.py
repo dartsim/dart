@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Run an ABI compatibility check against the latest release tag.
+Run an ABI compatibility check between two refs or the working tree.
 
-This script builds the baseline tag and current branch with identical options,
-then compares shared libraries with libabigail (abidiff).
+This script builds the baseline ref and current ref (or working tree) with
+identical options, then compares shared libraries with libabigail (abidiff).
 """
 
 from __future__ import annotations
@@ -27,19 +27,16 @@ def run(cmd, cwd=None, env=None):
     return subprocess.run(cmd, cwd=cwd, env=env, check=True)
 
 
-def read_version():
-    package_xml = ROOT / "package.xml"
+def read_version_from_source(src_dir):
+    package_xml = Path(src_dir) / "package.xml"
     text = package_xml.read_text(encoding="utf-8")
     match = re.search(r"<version>([^<]+)</version>", text)
     if not match:
-        raise RuntimeError("Failed to read <version> from package.xml")
+        raise RuntimeError(f"Failed to read <version> from {package_xml}")
     return match.group(1)
 
 
-def select_baseline_tag(major, override_tag):
-    if override_tag:
-        return override_tag
-
+def select_baseline_tag(major):
     cmd = [
         "git",
         "tag",
@@ -55,19 +52,20 @@ def select_baseline_tag(major, override_tag):
     return None
 
 
-def major_from_tag(tag):
-    match = re.match(r"^v(\d+)\.", tag)
-    if match:
-        return match.group(1)
-    return None
+def major_from_version(version):
+    return version.split(".")[0]
 
 
-def extract_baseline(tag, dest_dir):
+def sanitize_ref(ref_name):
+    return re.sub(r"[^A-Za-z0-9._-]+", "_", ref_name)
+
+
+def extract_ref(ref_name, dest_dir):
     if dest_dir.exists():
         shutil.rmtree(dest_dir)
     dest_dir.mkdir(parents=True)
 
-    cmd = ["git", "archive", "--format=tar", tag]
+    cmd = ["git", "archive", "--format=tar", ref_name]
     proc = subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.PIPE)
     try:
         with tarfile.open(fileobj=proc.stdout, mode="r|*") as tar:
@@ -76,19 +74,20 @@ def extract_baseline(tag, dest_dir):
         if proc.stdout:
             proc.stdout.close()
     if proc.wait() != 0:
-        raise RuntimeError(f"git archive failed for tag {tag}")
+        raise RuntimeError(f"git archive failed for ref {ref_name}")
 
 
-def prepare_baseline_source(tag, work_dir):
-    baseline_root = work_dir / f"baseline-{tag.replace('/', '_')}"
-    src_dir = baseline_root / "src"
-    marker = baseline_root / "tag.txt"
-    if src_dir.exists() and marker.exists() and marker.read_text(encoding="utf-8") == tag:
+def prepare_source(ref_name, work_dir, label):
+    ref_id = sanitize_ref(ref_name)
+    ref_root = work_dir / f"{label}-{ref_id}"
+    src_dir = ref_root / "src"
+    marker = ref_root / "ref.txt"
+    if src_dir.exists() and marker.exists() and marker.read_text(encoding="utf-8") == ref_name:
         return src_dir
 
-    baseline_root.mkdir(parents=True, exist_ok=True)
-    extract_baseline(tag, src_dir)
-    marker.write_text(tag, encoding="utf-8")
+    ref_root.mkdir(parents=True, exist_ok=True)
+    extract_ref(ref_name, src_dir)
+    marker.write_text(ref_name, encoding="utf-8")
     return src_dir
 
 
@@ -166,9 +165,19 @@ def run_abidiff(baseline_lib, current_lib, suppressions):
 def main():
     parser = argparse.ArgumentParser(description="Run ABI compatibility checks")
     parser.add_argument(
+        "--baseline-ref",
+        default=os.environ.get("DART_ABI_BASELINE_REF", ""),
+        help="Baseline git ref (tag/branch/commit). Defaults to latest v<major>.<minor>.<patch> tag",
+    )
+    parser.add_argument(
         "--baseline-tag",
         default=os.environ.get("DART_ABI_BASELINE_TAG", ""),
-        help="Baseline git tag (defaults to latest v<major>.<minor>.<patch>)",
+        help="Legacy alias for --baseline-ref (tag only)",
+    )
+    parser.add_argument(
+        "--current-ref",
+        default=os.environ.get("DART_ABI_CURRENT_REF", ""),
+        help="Current git ref (tag/branch/commit). Defaults to working tree",
     )
     parser.add_argument(
         "--build-type",
@@ -218,42 +227,56 @@ def main():
         print("CONDA_PREFIX is not set; run via pixi or set DART_ABI_PREFIX.")
         return 1
 
-    version = read_version()
-    major = version.split(".")[0]
-    baseline_tag = select_baseline_tag(major, args.baseline_tag)
-    if not baseline_tag:
-        msg = f"No baseline tag found for major {major}. Set DART_ABI_BASELINE_TAG."
+    work_dir = Path(args.work_dir)
+
+    if args.current_ref:
+        current_src = prepare_source(args.current_ref, work_dir, "current")
+        current_label = sanitize_ref(args.current_ref)
+    else:
+        current_src = ROOT
+        current_label = "worktree"
+
+    current_version = read_version_from_source(current_src)
+    current_major = major_from_version(current_version)
+
+    baseline_ref = args.baseline_ref or args.baseline_tag
+    if not baseline_ref:
+        baseline_ref = select_baseline_tag(current_major)
+
+    if not baseline_ref:
+        msg = f"No baseline tag found for major {current_major}. Set DART_ABI_BASELINE_TAG."
         if args.require_baseline:
             print(msg)
             return 1
         print(f"{msg} Skipping ABI check.")
         return 0
 
-    baseline_major = major_from_tag(baseline_tag)
-    if baseline_major and baseline_major != major and not args.allow_cross_major:
+    baseline_src = prepare_source(baseline_ref, work_dir, "baseline")
+    baseline_version = read_version_from_source(baseline_src)
+    baseline_major = major_from_version(baseline_version)
+    if baseline_major != current_major and not args.allow_cross_major:
         print(
-            "Baseline tag major does not match current major. "
+            "Baseline major does not match current major. "
             "Set DART_ABI_ALLOW_CROSS_MAJOR=ON or pass --allow-cross-major to override."
         )
         return 1
 
-    work_dir = Path(args.work_dir)
-    baseline_src = prepare_baseline_source(baseline_tag, work_dir)
-    baseline_build = work_dir / f"baseline-{baseline_tag.replace('/', '_')}" / "build"
-    current_build = work_dir / "current" / "build"
+    baseline_build = work_dir / f"baseline-{sanitize_ref(baseline_ref)}" / "build"
+    current_build = work_dir / f"current-{current_label}" / "build"
 
     extra_args = shlex.split(os.environ.get("DART_ABI_CMAKE_ARGS", ""))
     libs = [lib.strip() for lib in args.libs.split(",") if lib.strip()]
     targets = libs
 
-    print(f"Baseline tag: {baseline_tag}")
+    print(f"Baseline ref: {baseline_ref}")
+    print(f"Current ref: {args.current_ref or 'WORKTREE'}")
     print(f"Build type: {args.build_type}")
     print(f"Libraries: {', '.join(libs)}")
 
     cmake_configure(baseline_src, baseline_build, args.build_type, prefix, extra_args)
     cmake_build(baseline_build, targets, os.environ.get("DART_PARALLEL_JOBS"))
 
-    cmake_configure(ROOT, current_build, args.build_type, prefix, extra_args)
+    cmake_configure(current_src, current_build, args.build_type, prefix, extra_args)
     cmake_build(current_build, targets, os.environ.get("DART_PARALLEL_JOBS"))
 
     exit_code = 0

@@ -37,13 +37,17 @@ no current CI or local workflow to flag ABI changes before merge.
 ## Usage
 
 - Default: `pixi run abi-check` (selects latest `v<major>.<minor>.<patch>` tag).
-- Override baseline: `DART_ABI_BASELINE_TAG=vX.Y.Z pixi run abi-check`.
+- Override baseline: `DART_ABI_BASELINE_REF=vX.Y.Z pixi run abi-check`.
 - Configure libs: `DART_ABI_LIBS=dart,dart-utils pixi run abi-check`.
 - Require a baseline: `DART_ABI_REQUIRE_BASELINE=ON pixi run abi-check`.
 - If no tag exists for the current major version, the check skips unless
   `DART_ABI_REQUIRE_BASELINE=ON` is set.
 - Cross-major baselines are blocked unless `DART_ABI_ALLOW_CROSS_MAJOR=ON` or
   `--allow-cross-major` is provided.
+- Compare arbitrary refs:
+  `pixi run abi-check -- --baseline-ref v7.0.0 --current-ref HEAD`.
+- Legacy tag-only override: `DART_ABI_BASELINE_TAG=vX.Y.Z`.
+- Current ref override: `DART_ABI_CURRENT_REF=origin/main`.
 
 ## TODO
 
