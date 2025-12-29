@@ -49,6 +49,8 @@
 #include <CLI/CLI.hpp>
 #include <fcl/config.h>
 
+#include <Eigen/Geometry>
+
 #include <iostream>
 #include <memory>
 #include <span>
@@ -471,6 +473,21 @@ private:
 
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     T.translation() = Eigen::Vector3d(-2.0, 0.0, 1.0);
+    Eigen::Vector3d up = Eigen::Vector3d::UnitY();
+    if (mWorld) {
+      const Eigen::Vector3d gravity = mWorld->getGravity();
+      if (gravity.squaredNorm() > 0.0) {
+        up = -gravity.normalized();
+      }
+    }
+    Eigen::Vector3d lateral = Eigen::Vector3d::UnitX();
+    if (std::abs(up.dot(lateral)) > 0.9) {
+      lateral = Eigen::Vector3d::UnitZ();
+    }
+    const Eigen::Vector3d rollAxis = up.cross(lateral).normalized();
+    T.linear() = Eigen::Quaterniond::FromTwoVectors(
+                     Eigen::Vector3d::UnitZ(), rollAxis)
+                     .toRotationMatrix();
 
     SkeletonPtr newSkeleton
         = Skeleton::create(nextSkeletonName("rolling_cylinder"));
@@ -498,7 +515,10 @@ private:
 
     if (mWorldNode) {
       mWorldNode->addRollingBody(
-          newSkeleton, bodyProp.mName, Eigen::Vector3d(0.0, 0.0, torque));
+          newSkeleton,
+          bodyProp.mName,
+          Eigen::Vector3d(0.0, 0.0, torque),
+          true);
     }
   }
 
