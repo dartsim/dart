@@ -6,11 +6,12 @@
 - Phase 2 scaffolding started: DARTCollisionDetector now delegates pair iteration and contact merging to DartCollisionEngine.
 - Added axis-aligned bounding box prechecks in DartCollisionEngine to skip narrowphase on separated pairs.
 - Added a sweep-based candidate pair pass for single-group queries to reduce pair checks.
+- Cached per-object world AABBs in DARTCollisionObject, with DARTCollisionDetector calling updateEngineData before queries.
 
 ## Next Actions
 - Define the standalone library boundary and the DART adapter layer.
 - Prototype the core data model and query pipeline (broadphase, narrowphase, contact generation).
-- Plan the compatibility and migration path while keeping the public API stable.
+- Decide the next broadphase step for group-group queries (sweep vs spatial structure).
 - Prepare parity test and benchmark updates to compare against existing backends.
 
 ## Questions and Decisions Needed

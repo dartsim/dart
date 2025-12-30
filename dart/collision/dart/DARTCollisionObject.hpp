@@ -47,6 +47,12 @@ class DARTCollisionObject : public CollisionObject
 public:
   friend class DARTCollisionDetector;
 
+  const Eigen::Vector3d& getWorldAabbMin() const;
+
+  const Eigen::Vector3d& getWorldAabbMax() const;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 protected:
   /// Constructor
   DARTCollisionObject(
@@ -55,6 +61,10 @@ protected:
 
   // Documentation inherited
   void updateEngineData() override;
+
+protected:
+  Eigen::Vector3d mWorldAabbMin;
+  Eigen::Vector3d mWorldAabbMax;
 };
 
 } // namespace collision

@@ -32,6 +32,8 @@
 
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 
+#include "dart/dynamics/Shape.hpp"
+
 namespace dart {
 namespace collision {
 
@@ -39,15 +41,48 @@ namespace collision {
 DARTCollisionObject::DARTCollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame)
-  : CollisionObject(collisionDetector, shapeFrame)
+  : CollisionObject(collisionDetector, shapeFrame),
+    mWorldAabbMin(Eigen::Vector3d::Zero()),
+    mWorldAabbMax(Eigen::Vector3d::Zero())
 {
   // Do nothing
 }
 
 //==============================================================================
+const Eigen::Vector3d& DARTCollisionObject::getWorldAabbMin() const
+{
+  return mWorldAabbMin;
+}
+
+//==============================================================================
+const Eigen::Vector3d& DARTCollisionObject::getWorldAabbMax() const
+{
+  return mWorldAabbMax;
+}
+
+//==============================================================================
 void DARTCollisionObject::updateEngineData()
 {
-  // Do nothing
+  const Eigen::Isometry3d& tf = getTransform();
+  const Eigen::Vector3d center = tf.translation();
+  const auto shape = getShape();
+
+  if (!shape) {
+    mWorldAabbMin = center;
+    mWorldAabbMax = center;
+    return;
+  }
+
+  const auto& bbox = shape->getBoundingBox();
+  const Eigen::Vector3d localCenter = bbox.computeCenter();
+  const Eigen::Vector3d localHalfExtents = bbox.computeHalfExtents();
+
+  const Eigen::Vector3d worldCenter = tf * localCenter;
+  const Eigen::Vector3d worldHalfExtents
+      = tf.linear().cwiseAbs() * localHalfExtents;
+
+  mWorldAabbMin = worldCenter - worldHalfExtents;
+  mWorldAabbMax = worldCenter + worldHalfExtents;
 }
 
 } // namespace collision

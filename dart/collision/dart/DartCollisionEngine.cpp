@@ -35,7 +35,7 @@
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/dart/DARTCollide.hpp"
-#include "dart/dynamics/Shape.hpp"
+#include "dart/collision/dart/DARTCollisionObject.hpp"
 
 #include <Eigen/Dense>
 
@@ -54,23 +54,9 @@ struct Aabb
 
 Aabb computeWorldAabb(const CollisionObject* object)
 {
-  const auto shape = object->getShape();
-  const Eigen::Vector3d center = object->getTransform().translation();
+  const auto* dartObject = static_cast<const DARTCollisionObject*>(object);
 
-  if (!shape) {
-    return {center, center};
-  }
-
-  const auto& bbox = shape->getBoundingBox();
-  const Eigen::Vector3d localCenter = bbox.computeCenter();
-  const Eigen::Vector3d localHalfExtents = bbox.computeHalfExtents();
-
-  const Eigen::Isometry3d& tf = object->getTransform();
-  const Eigen::Vector3d worldCenter = tf * localCenter;
-  const Eigen::Vector3d worldHalfExtents
-      = tf.linear().cwiseAbs() * localHalfExtents;
-
-  return {worldCenter - worldHalfExtents, worldCenter + worldHalfExtents};
+  return {dartObject->getWorldAabbMin(), dartObject->getWorldAabbMax()};
 }
 
 bool overlaps(const Aabb& a, const Aabb& b)
