@@ -1419,6 +1419,145 @@ static void swapContactOrder(
 }
 
 //==============================================================================
+static double planeSignedDistance(
+    const Eigen::Vector3d& plane_normal,
+    double plane_offset,
+    const Eigen::Isometry3d& plane_tf,
+    const Eigen::Vector3d& point_world,
+    Eigen::Vector3d* plane_normal_world)
+{
+  if (plane_normal_world)
+    *plane_normal_world = plane_tf.linear() * plane_normal;
+
+  const Eigen::Vector3d point_local = plane_tf.inverse() * point_world;
+  return plane_normal.dot(point_local) - plane_offset;
+}
+
+//==============================================================================
+static int collidePlaneSphere(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& plane_normal,
+    const double& plane_offset,
+    const Eigen::Isometry3d& T1,
+    const double& sphere_rad,
+    const Eigen::Isometry3d& T2,
+    CollisionResult& result)
+{
+  Eigen::Vector3d normal_world;
+  const Eigen::Vector3d center = T2.translation();
+  const double signedDistance
+      = planeSignedDistance(plane_normal, plane_offset, T1, center, &normal_world);
+  const double penetration = sphere_rad - std::abs(signedDistance);
+
+  if (penetration < 0.0)
+    return 0;
+
+  const Eigen::Vector3d normal
+      = (signedDistance >= 0.0) ? -normal_world : normal_world;
+
+  Contact contact;
+  contact.collisionObject1 = o1;
+  contact.collisionObject2 = o2;
+  contact.point = center + normal * sphere_rad;
+  contact.normal = normal;
+  contact.penetrationDepth = penetration;
+  result.addContact(contact);
+
+  return 1;
+}
+
+//==============================================================================
+static int collideSpherePlane(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& sphere_rad,
+    const Eigen::Isometry3d& T1,
+    const Eigen::Vector3d& plane_normal,
+    const double& plane_offset,
+    const Eigen::Isometry3d& T2,
+    CollisionResult& result)
+{
+  const auto startIndex = result.getNumContacts();
+  const int count = collidePlaneSphere(
+      o2, o1, plane_normal, plane_offset, T2, sphere_rad, T1, result);
+
+  if (count > 0)
+    swapContactOrder(result, startIndex);
+
+  return count;
+}
+
+//==============================================================================
+static int collidePlaneBox(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& plane_normal,
+    const double& plane_offset,
+    const Eigen::Isometry3d& T1,
+    const Eigen::Vector3d& size,
+    const Eigen::Isometry3d& T2,
+    CollisionResult& result)
+{
+  Eigen::Vector3d normal_world;
+  const Eigen::Vector3d center = T2.translation();
+  const double signedDistance
+      = planeSignedDistance(plane_normal, plane_offset, T1, center, &normal_world);
+
+  const Eigen::Vector3d halfSize = 0.5 * size;
+  const Eigen::Vector3d axis0 = T2.linear().col(0);
+  const Eigen::Vector3d axis1 = T2.linear().col(1);
+  const Eigen::Vector3d axis2 = T2.linear().col(2);
+
+  const double radius
+      = std::abs(normal_world.dot(axis0)) * halfSize[0]
+        + std::abs(normal_world.dot(axis1)) * halfSize[1]
+        + std::abs(normal_world.dot(axis2)) * halfSize[2];
+  const double penetration = radius - std::abs(signedDistance);
+
+  if (penetration < 0.0)
+    return 0;
+
+  const Eigen::Vector3d normal
+      = (signedDistance >= 0.0) ? -normal_world : normal_world;
+  Eigen::Vector3d support = center;
+  support += axis0 * (normal.dot(axis0) >= 0.0 ? halfSize[0] : -halfSize[0]);
+  support += axis1 * (normal.dot(axis1) >= 0.0 ? halfSize[1] : -halfSize[1]);
+  support += axis2 * (normal.dot(axis2) >= 0.0 ? halfSize[2] : -halfSize[2]);
+
+  Contact contact;
+  contact.collisionObject1 = o1;
+  contact.collisionObject2 = o2;
+  contact.point = support;
+  contact.normal = normal;
+  contact.penetrationDepth = penetration;
+  result.addContact(contact);
+
+  return 1;
+}
+
+//==============================================================================
+static int collideBoxPlane(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& size,
+    const Eigen::Isometry3d& T1,
+    const Eigen::Vector3d& plane_normal,
+    const double& plane_offset,
+    const Eigen::Isometry3d& T2,
+    CollisionResult& result)
+{
+  const auto startIndex = result.getNumContacts();
+  const int count = collidePlaneBox(
+      o2, o1, plane_normal, plane_offset, T2, size, T1, result);
+
+  if (count > 0)
+    swapContactOrder(result, startIndex);
+
+  return count;
+}
+
+//==============================================================================
 static int collideSphereCylinder(
     CollisionObject* o1,
     CollisionObject* o2,
@@ -1503,6 +1642,19 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           0.5 * cylinder1->getHeight(),
           T2,
           result);
+    } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
+      const auto* plane1
+          = static_cast<const dynamics::PlaneShape*>(shape2.get());
+
+      return collideSpherePlane(
+          o1,
+          o2,
+          sphere0->getRadius(),
+          T1,
+          plane1->getNormal(),
+          plane1->getOffset(),
+          T2,
+          result);
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
           = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
@@ -1536,6 +1688,19 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 
       return collideBoxSphere(
           o1, o2, box0->getSize(), T1, ellipsoid1->getRadii()[0], T2, result);
+    } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
+      const auto* plane1
+          = static_cast<const dynamics::PlaneShape*>(shape2.get());
+
+      return collideBoxPlane(
+          o1,
+          o2,
+          box0->getSize(),
+          T1,
+          plane1->getNormal(),
+          plane1->getOffset(),
+          T2,
+          result);
     }
   } else if (dynamics::CylinderShape::getStaticType() == shapeType1) {
     const auto* cylinder0
@@ -1615,6 +1780,19 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           0.5 * cylinder1->getHeight(),
           T2,
           result);
+    } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
+      const auto* plane1
+          = static_cast<const dynamics::PlaneShape*>(shape2.get());
+
+      return collideSpherePlane(
+          o1,
+          o2,
+          ellipsoid0->getRadii()[0],
+          T1,
+          plane1->getNormal(),
+          plane1->getOffset(),
+          T2,
+          result);
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
           = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
@@ -1631,7 +1809,45 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
   } else if (dynamics::PlaneShape::getStaticType() == shapeType1) {
     const auto* plane0 = static_cast<const dynamics::PlaneShape*>(shape1.get());
 
-    if (dynamics::CylinderShape::getStaticType() == shapeType2) {
+    if (dynamics::SphereShape::getStaticType() == shapeType2) {
+      const auto* sphere1
+          = static_cast<const dynamics::SphereShape*>(shape2.get());
+
+      return collidePlaneSphere(
+          o1,
+          o2,
+          plane0->getNormal(),
+          plane0->getOffset(),
+          T1,
+          sphere1->getRadius(),
+          T2,
+          result);
+    } else if (dynamics::BoxShape::getStaticType() == shapeType2) {
+      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2.get());
+
+      return collidePlaneBox(
+          o1,
+          o2,
+          plane0->getNormal(),
+          plane0->getOffset(),
+          T1,
+          box1->getSize(),
+          T2,
+          result);
+    } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
+      const auto* ellipsoid1
+          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+
+      return collidePlaneSphere(
+          o1,
+          o2,
+          plane0->getNormal(),
+          plane0->getOffset(),
+          T1,
+          ellipsoid1->getRadii()[0],
+          T2,
+          result);
+    } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
       const auto* cylinder1
           = static_cast<const dynamics::CylinderShape*>(shape2.get());
 

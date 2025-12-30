@@ -12,6 +12,8 @@
 - Added initial core data structs and wired DARTCollisionObject to populate them on update.
 - Added cylinder-sphere and cylinder-plane pair support in the DART narrowphase, with new DARTCollisionDetector tests.
 - Drafted a lightweight performance and benchmark plan for the new engine path.
+- Routed broadphase pair generation through core entries and sweep helpers.
+- Added plane-sphere and plane-box support in the DART narrowphase and enabled DART plane tests.
 
 ## Next Actions
 - Define the standalone library boundary and the DART adapter layer.

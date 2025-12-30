@@ -1269,6 +1269,9 @@ TEST_F(Collision, testPlane)
   auto ode = OdeCollisionDetector::create();
   testPlane(ode);
 #endif
+
+  auto dart = DARTCollisionDetector::create();
+  testPlane(dart);
 }
 
 //==============================================================================
