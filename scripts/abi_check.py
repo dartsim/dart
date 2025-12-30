@@ -345,15 +345,37 @@ def main():
     print(f"Libraries: {', '.join(libs)}")
 
     cmake_configure(baseline_src, baseline_build, args.build_type, prefix, extra_args)
-    cmake_build(baseline_build, targets, os.environ.get("DART_PARALLEL_JOBS"))
+    try:
+        cmake_build(baseline_build, targets, os.environ.get("DART_PARALLEL_JOBS"))
+    except subprocess.CalledProcessError as exc:
+        print(
+            f"Failed to build targets ({', '.join(targets)}) for from ref {from_ref}. "
+            "Check that the targets exist in this ref."
+        )
+        return exc.returncode
 
     cmake_configure(current_src, current_build, args.build_type, prefix, extra_args)
-    cmake_build(current_build, targets, os.environ.get("DART_PARALLEL_JOBS"))
+    try:
+        cmake_build(current_build, targets, os.environ.get("DART_PARALLEL_JOBS"))
+    except subprocess.CalledProcessError as exc:
+        print(
+            f"Failed to build targets ({', '.join(targets)}) for to ref {args.to_ref or 'WORKTREE'}. "
+            "Check that the targets exist in this ref."
+        )
+        return exc.returncode
 
     exit_code = 0
     for lib in libs:
-        baseline_lib = find_library(baseline_build, lib)
-        current_lib = find_library(current_build, lib)
+        try:
+            baseline_lib = find_library(baseline_build, lib)
+        except FileNotFoundError as exc:
+            print(f"From ref {from_ref}: {exc}")
+            return 1
+        try:
+            current_lib = find_library(current_build, lib)
+        except FileNotFoundError as exc:
+            print(f"To ref {args.to_ref or 'WORKTREE'}: {exc}")
+            return 1
         result = run_abidiff(baseline_lib, current_lib, args.suppressions)
         if result != 0:
             exit_code = result
