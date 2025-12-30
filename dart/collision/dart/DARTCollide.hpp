@@ -34,6 +34,7 @@
 #define DART_COLLISION_DART_DARTCOLLIDE_HPP_
 
 #include <dart/collision/CollisionDetector.hpp>
+#include <dart/collision/dart/DartCollisionCore.hpp>
 
 #include <Eigen/Dense>
 
@@ -43,6 +44,13 @@ namespace dart {
 namespace collision {
 
 int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result);
+
+int collideCore(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const CoreObject& core1,
+    const CoreObject& core2,
+    CollisionResult& result);
 
 int collideBoxBox(
     CollisionObject* o1,

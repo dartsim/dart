@@ -247,7 +247,11 @@ bool DartCollisionEngine::checkPair(
 {
   CollisionResult pairResult;
 
-  dart::collision::collide(o1, o2, pairResult);
+  const auto* dartObj1 = static_cast<const DARTCollisionObject*>(o1);
+  const auto* dartObj2 = static_cast<const DARTCollisionObject*>(o2);
+
+  dart::collision::collideCore(
+      o1, o2, dartObj1->getCoreObject(), dartObj2->getCoreObject(), pairResult);
 
   if (!result) {
     if (option.allowNegativePenetrationDepthContacts)

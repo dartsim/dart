@@ -1600,6 +1600,142 @@ static int collidePlaneCylinder(
 }
 
 //==============================================================================
+int collideCore(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const CoreObject& core1,
+    const CoreObject& core2,
+    CollisionResult& result)
+{
+  const auto& shape1 = core1.shape;
+  const auto& shape2 = core2.shape;
+  const Eigen::Isometry3d& T1 = core1.worldTransform;
+  const Eigen::Isometry3d& T2 = core2.worldTransform;
+
+  switch (shape1.type) {
+    case CoreShapeType::kSphere: {
+      const double radius1 = shape1.radius;
+      switch (shape2.type) {
+        case CoreShapeType::kSphere:
+          return collideSphereSphere(
+              o1, o2, radius1, T1, shape2.radius, T2, result);
+        case CoreShapeType::kBox:
+          return collideSphereBox(
+              o1, o2, radius1, T1, shape2.size, T2, result);
+        case CoreShapeType::kCylinder:
+          return collideSphereCylinder(
+              o1,
+              o2,
+              radius1,
+              T1,
+              shape2.radius,
+              0.5 * shape2.height,
+              T2,
+              result);
+        case CoreShapeType::kPlane:
+          return collideSpherePlane(
+              o1,
+              o2,
+              radius1,
+              T1,
+              shape2.planeNormal,
+              shape2.planeOffset,
+              T2,
+              result);
+        default:
+          break;
+      }
+      break;
+    }
+    case CoreShapeType::kBox: {
+      const Eigen::Vector3d& size1 = shape1.size;
+      switch (shape2.type) {
+        case CoreShapeType::kSphere:
+          return collideBoxSphere(o1, o2, size1, T1, shape2.radius, T2, result);
+        case CoreShapeType::kBox:
+          return collideBoxBox(o1, o2, size1, T1, shape2.size, T2, result);
+        case CoreShapeType::kPlane:
+          return collideBoxPlane(
+              o1,
+              o2,
+              size1,
+              T1,
+              shape2.planeNormal,
+              shape2.planeOffset,
+              T2,
+              result);
+        default:
+          break;
+      }
+      break;
+    }
+    case CoreShapeType::kCylinder: {
+      const double radius1 = shape1.radius;
+      const double halfHeight1 = 0.5 * shape1.height;
+      switch (shape2.type) {
+        case CoreShapeType::kSphere:
+          return collideCylinderSphere(
+              o1, o2, radius1, halfHeight1, T1, shape2.radius, T2, result);
+        case CoreShapeType::kPlane:
+          return collideCylinderPlane(
+              o1,
+              o2,
+              radius1,
+              halfHeight1,
+              T1,
+              shape2.planeNormal,
+              T2,
+              result);
+        default:
+          break;
+      }
+      break;
+    }
+    case CoreShapeType::kPlane: {
+      switch (shape2.type) {
+        case CoreShapeType::kSphere:
+          return collidePlaneSphere(
+              o1,
+              o2,
+              shape1.planeNormal,
+              shape1.planeOffset,
+              T1,
+              shape2.radius,
+              T2,
+              result);
+        case CoreShapeType::kBox:
+          return collidePlaneBox(
+              o1,
+              o2,
+              shape1.planeNormal,
+              shape1.planeOffset,
+              T1,
+              shape2.size,
+              T2,
+              result);
+        case CoreShapeType::kCylinder:
+          return collidePlaneCylinder(
+              o1,
+              o2,
+              shape2.radius,
+              0.5 * shape2.height,
+              T2,
+              shape1.planeNormal,
+              T1,
+              result);
+        default:
+          break;
+      }
+      break;
+    }
+    default:
+      break;
+  }
+
+  return 0;
+}
+
+//==============================================================================
 int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 {
   // TODO(JS): We could make the contact point computation as optional for

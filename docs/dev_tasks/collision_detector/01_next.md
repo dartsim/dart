@@ -15,6 +15,7 @@
 - Routed broadphase pair generation through core entries and sweep helpers.
 - Added plane-sphere and plane-box support in the DART narrowphase and enabled DART plane tests.
 - Skip narrowphase for core entries marked as missing or unsupported.
+- Added core-shape dispatch in DartCollisionEngine to avoid per-pair shape lookups.
 
 ## Next Actions
 - Define the standalone library boundary and the DART adapter layer.
