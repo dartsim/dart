@@ -45,6 +45,8 @@ enum class CoreShapeType : std::uint8_t
   kNone = 0u,
   kSphere,
   kBox,
+  kCylinder,
+  kPlane,
   kUnsupported
 };
 
@@ -52,7 +54,10 @@ struct CoreShape
 {
   CoreShapeType type{CoreShapeType::kNone};
   Eigen::Vector3d size{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d planeNormal{Eigen::Vector3d::UnitZ()};
   double radius{0.0};
+  double height{0.0};
+  double planeOffset{0.0};
 };
 
 struct CoreObject

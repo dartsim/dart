@@ -821,6 +821,51 @@ void testCylinderCylinder(const std::shared_ptr<CollisionDetector>& cd)
 }
 
 //==============================================================================
+void testCylinderSphere(const std::shared_ptr<CollisionDetector>& cd)
+{
+  auto cylinderFrame = SimpleFrame::createShared(Frame::World());
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+
+  auto cylinder = std::make_shared<CylinderShape>(1.0, 2.0);
+  auto sphere = std::make_shared<SphereShape>(0.5);
+
+  cylinderFrame->setShape(cylinder);
+  sphereFrame->setShape(sphere);
+
+  auto group
+      = cd->createCollisionGroup(cylinderFrame.get(), sphereFrame.get());
+
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+
+  result.clear();
+  sphereFrame->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+
+  result.clear();
+  sphereFrame->setTranslation(Eigen::Vector3d(1.25, 0.0, 0.0));
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() >= 1u);
+
+  result.clear();
+  sphereFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 1.4));
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() >= 1u);
+}
+
+//==============================================================================
+TEST_F(Collision, testCylinderSphere)
+{
+  auto dart = DARTCollisionDetector::create();
+  testCylinderSphere(dart);
+}
+
+//==============================================================================
 TEST_F(Collision, testCylinderCylinder)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
@@ -855,6 +900,45 @@ TEST_F(Collision, testCylinderCylinder)
 
   // auto dart = DARTCollisionDetector::create();
   // testCylinderCylinder(dart);
+}
+
+//==============================================================================
+void testCylinderPlane(const std::shared_ptr<CollisionDetector>& cd)
+{
+  auto cylinderFrame = SimpleFrame::createShared(Frame::World());
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+
+  auto cylinder = std::make_shared<CylinderShape>(0.5, 2.0);
+  auto plane = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+
+  cylinderFrame->setShape(cylinder);
+  planeFrame->setShape(plane);
+
+  auto group = cd->createCollisionGroup(planeFrame.get(), cylinderFrame.get());
+
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+
+  result.clear();
+  cylinderFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 2.0));
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+
+  result.clear();
+  cylinderFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() >= 1u);
+}
+
+//==============================================================================
+TEST_F(Collision, testCylinderPlane)
+{
+  auto dart = DARTCollisionDetector::create();
+  testCylinderPlane(dart);
 }
 
 //==============================================================================

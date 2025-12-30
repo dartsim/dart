@@ -37,9 +37,11 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/math/Helpers.hpp"
 
+#include <cstddef>
 #include <memory>
 
 namespace dart {
@@ -1276,7 +1278,7 @@ int collideCylinderSphere(
           * Eigen::Vector3d(
               center[0], center[1], half_height - contact.penetrationDepth);
     contact.normal
-        = T0.linear() * Eigen::Vector3d(0.0, 0.0, math::sign(center[2]));
+        = T0.linear() * Eigen::Vector3d(0.0, 0.0, -math::sign(center[2]));
     result.addContact(contact);
     return 1;
   } else {
@@ -1404,6 +1406,61 @@ int collideCylinderPlane(
 }
 
 //==============================================================================
+static void swapContactOrder(
+    CollisionResult& result, std::size_t startIndex)
+{
+  for (auto i = startIndex; i < result.getNumContacts(); ++i) {
+    auto& contact = result.getContact(i);
+    auto* temp = contact.collisionObject1;
+    contact.collisionObject1 = contact.collisionObject2;
+    contact.collisionObject2 = temp;
+    contact.normal = -contact.normal;
+  }
+}
+
+//==============================================================================
+static int collideSphereCylinder(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& sphere_rad,
+    const Eigen::Isometry3d& T1,
+    const double& cyl_rad,
+    const double& half_height,
+    const Eigen::Isometry3d& T2,
+    CollisionResult& result)
+{
+  const auto startIndex = result.getNumContacts();
+  const int count = collideCylinderSphere(
+      o2, o1, cyl_rad, half_height, T2, sphere_rad, T1, result);
+
+  if (count > 0)
+    swapContactOrder(result, startIndex);
+
+  return count;
+}
+
+//==============================================================================
+static int collidePlaneCylinder(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& plane_normal,
+    const Eigen::Isometry3d& T1,
+    const double& cyl_rad,
+    const double& half_height,
+    const Eigen::Isometry3d& T2,
+    CollisionResult& result)
+{
+  const auto startIndex = result.getNumContacts();
+  const int count = collideCylinderPlane(
+      o2, o1, cyl_rad, half_height, T2, plane_normal, T1, result);
+
+  if (count > 0)
+    swapContactOrder(result, startIndex);
+
+  return count;
+}
+
+//==============================================================================
 int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 {
   // TODO(JS): We could make the contact point computation as optional for
@@ -1433,6 +1490,19 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 
       return collideSphereBox(
           o1, o2, sphere0->getRadius(), T1, box1->getSize(), T2, result);
+    } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
+      const auto* cylinder1
+          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+
+      return collideSphereCylinder(
+          o1,
+          o2,
+          sphere0->getRadius(),
+          T1,
+          cylinder1->getRadius(),
+          0.5 * cylinder1->getHeight(),
+          T2,
+          result);
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
           = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
@@ -1467,6 +1537,50 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
       return collideBoxSphere(
           o1, o2, box0->getSize(), T1, ellipsoid1->getRadii()[0], T2, result);
     }
+  } else if (dynamics::CylinderShape::getStaticType() == shapeType1) {
+    const auto* cylinder0
+        = static_cast<const dynamics::CylinderShape*>(shape1.get());
+
+    if (dynamics::SphereShape::getStaticType() == shapeType2) {
+      const auto* sphere1
+          = static_cast<const dynamics::SphereShape*>(shape2.get());
+
+      return collideCylinderSphere(
+          o1,
+          o2,
+          cylinder0->getRadius(),
+          0.5 * cylinder0->getHeight(),
+          T1,
+          sphere1->getRadius(),
+          T2,
+          result);
+    } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
+      const auto* ellipsoid1
+          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+
+      return collideCylinderSphere(
+          o1,
+          o2,
+          cylinder0->getRadius(),
+          0.5 * cylinder0->getHeight(),
+          T1,
+          ellipsoid1->getRadii()[0],
+          T2,
+          result);
+    } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
+      const auto* plane1
+          = static_cast<const dynamics::PlaneShape*>(shape2.get());
+
+      return collideCylinderPlane(
+          o1,
+          o2,
+          cylinder0->getRadius(),
+          0.5 * cylinder0->getHeight(),
+          T1,
+          plane1->getNormal(),
+          T2,
+          result);
+    }
   } else if (dynamics::EllipsoidShape::getStaticType() == shapeType1) {
     const auto* ellipsoid0
         = static_cast<const dynamics::EllipsoidShape*>(shape1.get());
@@ -1488,6 +1602,19 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 
       return collideSphereBox(
           o1, o2, ellipsoid0->getRadii()[0], T1, box1->getSize(), T2, result);
+    } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
+      const auto* cylinder1
+          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+
+      return collideSphereCylinder(
+          o1,
+          o2,
+          ellipsoid0->getRadii()[0],
+          T1,
+          cylinder1->getRadius(),
+          0.5 * cylinder1->getHeight(),
+          T2,
+          result);
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
           = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
@@ -1498,6 +1625,23 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           ellipsoid0->getRadii()[0],
           T1,
           ellipsoid1->getRadii()[0],
+          T2,
+          result);
+    }
+  } else if (dynamics::PlaneShape::getStaticType() == shapeType1) {
+    const auto* plane0 = static_cast<const dynamics::PlaneShape*>(shape1.get());
+
+    if (dynamics::CylinderShape::getStaticType() == shapeType2) {
+      const auto* cylinder1
+          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+
+      return collidePlaneCylinder(
+          o1,
+          o2,
+          plane0->getNormal(),
+          T1,
+          cylinder1->getRadius(),
+          0.5 * cylinder1->getHeight(),
           T2,
           result);
     }

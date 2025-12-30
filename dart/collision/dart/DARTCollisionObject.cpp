@@ -33,7 +33,9 @@
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 
@@ -95,6 +97,19 @@ void DARTCollisionObject::updateEngineData()
 
     mCoreObject.shape.type = CoreShapeType::kBox;
     mCoreObject.shape.size = box->getSize();
+  } else if (shapeType == dynamics::CylinderShape::getStaticType()) {
+    const auto* cylinder
+        = static_cast<const dynamics::CylinderShape*>(shape.get());
+
+    mCoreObject.shape.type = CoreShapeType::kCylinder;
+    mCoreObject.shape.radius = cylinder->getRadius();
+    mCoreObject.shape.height = cylinder->getHeight();
+  } else if (shapeType == dynamics::PlaneShape::getStaticType()) {
+    const auto* plane = static_cast<const dynamics::PlaneShape*>(shape.get());
+
+    mCoreObject.shape.type = CoreShapeType::kPlane;
+    mCoreObject.shape.planeNormal = plane->getNormal();
+    mCoreObject.shape.planeOffset = plane->getOffset();
   } else if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
     const auto* ellipsoid
         = static_cast<const dynamics::EllipsoidShape*>(shape.get());
