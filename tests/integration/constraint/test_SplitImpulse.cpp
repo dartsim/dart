@@ -33,6 +33,7 @@
 #include "helpers/GTestUtils.hpp"
 
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/ContactConstraint.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Inertia.hpp"
@@ -51,6 +52,31 @@ constexpr double kFloorHeight = 0.1;
 constexpr double kFloorSize = 10.0;
 constexpr double kBoxSize = 0.2;
 constexpr double kPenetration = 0.01;
+
+struct ContactConstraintParamsGuard
+{
+  ContactConstraintParamsGuard()
+    : errorAllowance(constraint::ContactConstraint::getErrorAllowance()),
+      errorReductionParameter(
+          constraint::ContactConstraint::getErrorReductionParameter()),
+      maxErrorReductionVelocity(
+          constraint::ContactConstraint::getMaxErrorReductionVelocity())
+  {
+  }
+
+  ~ContactConstraintParamsGuard()
+  {
+    constraint::ContactConstraint::setErrorAllowance(errorAllowance);
+    constraint::ContactConstraint::setErrorReductionParameter(
+        errorReductionParameter);
+    constraint::ContactConstraint::setMaxErrorReductionVelocity(
+        maxErrorReductionVelocity);
+  }
+
+  double errorAllowance;
+  double errorReductionParameter;
+  double maxErrorReductionVelocity;
+};
 
 SkeletonPtr createFloor()
 {
@@ -105,6 +131,10 @@ SkeletonPtr createBox(double centerHeight)
 
 TEST(Issue201, SplitImpulseKeepsRestingContactVelocityZero)
 {
+  ContactConstraintParamsGuard paramsGuard;
+  constraint::ContactConstraint::setErrorReductionParameter(0.2);
+  constraint::ContactConstraint::setMaxErrorReductionVelocity(0.1);
+
   auto world = simulation::World::create();
   world->setGravity(Eigen::Vector3d::Zero());
   world->setTimeStep(0.001);
@@ -119,8 +149,12 @@ TEST(Issue201, SplitImpulseKeepsRestingContactVelocityZero)
   world->addSkeleton(floor);
   world->addSkeleton(box);
 
+  const auto* body = box->getRootBodyNode();
+  ASSERT_NE(body, nullptr);
+  const double initialHeight = body->getTransform().translation().z();
+
   world->step();
 
-  const auto* body = box->getRootBodyNode();
   EXPECT_NEAR(body->getLinearVelocity().z(), 0.0, 1e-6);
+  EXPECT_GT(body->getTransform().translation().z(), initialHeight);
 }
