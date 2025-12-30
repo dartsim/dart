@@ -49,12 +49,15 @@ no current CI or local workflow to flag ABI changes before merge.
   `pixi run abi-check --from v6.16.0 --to v6.16.2`.
 - List refs: `pixi run abi-check --list-refs`.
 - Filter refs: `pixi run abi-check --list-refs --list-pattern '^v6\\.16\\.'`.
+- Skip missing targets across refs:
+  `DART_ABI_SKIP_MISSING_TARGETS=ON pixi run abi-check --allow-cross-major --libs dart-utils`.
 
 ## TODO
 
 - TODO: Flip CI to require a from tag once v7 tags exist.
 - TODO: Expand the library list beyond `libdart` once CI signal is stable.
 - TODO: Add suppressions only if recurring false positives appear.
+- TODO: Decide whether missing targets should fail or skip by default.
 
 ## Plan
 

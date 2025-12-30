@@ -178,6 +178,24 @@ def cmake_build(build_dir, targets, jobs):
     run(cmd)
 
 
+def list_ninja_targets(build_dir):
+    result = subprocess.run(
+        ["ninja", "-t", "targets"],
+        cwd=build_dir,
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+    )
+    targets = set()
+    for line in result.stdout.splitlines():
+        if not line:
+            continue
+        target = line.split(":", 1)[0].strip()
+        if target:
+            targets.add(target)
+    return targets
+
+
 def find_library(build_dir, lib_name):
     if not lib_name.startswith("lib"):
         lib_name = f"lib{lib_name}"
@@ -268,6 +286,12 @@ def main():
         default=os.environ.get("DART_ABI_LIST_PATTERN", ""),
         help="Regex filter for --list-refs output",
     )
+    parser.add_argument(
+        "--skip-missing-targets",
+        action="store_true",
+        default=os.environ.get("DART_ABI_SKIP_MISSING_TARGETS", "OFF") == "ON",
+        help="Skip targets missing from one of the refs (useful for cross-major comparisons)",
+    )
 
     args = parser.parse_args()
 
@@ -339,12 +363,29 @@ def main():
     libs = [lib.strip() for lib in args.libs.split(",") if lib.strip()]
     targets = libs
 
+    cmake_configure(baseline_src, baseline_build, args.build_type, prefix, extra_args)
+    cmake_configure(current_src, current_build, args.build_type, prefix, extra_args)
+
+    if args.skip_missing_targets:
+        from_targets = list_ninja_targets(baseline_build)
+        to_targets = list_ninja_targets(current_build)
+        missing_from = [target for target in targets if target not in from_targets]
+        missing_to = [target for target in targets if target not in to_targets]
+        if missing_from:
+            print(f"Skipping targets missing in from ref: {', '.join(missing_from)}")
+        if missing_to:
+            print(f"Skipping targets missing in to ref: {', '.join(missing_to)}")
+        targets = [target for target in targets if target in from_targets and target in to_targets]
+        libs = targets
+        if not targets:
+            print("No common targets to compare after skipping missing targets.")
+            return 0
+
     print(f"From ref: {from_ref}")
     print(f"To ref: {args.to_ref or 'WORKTREE'}")
     print(f"Build type: {args.build_type}")
     print(f"Libraries: {', '.join(libs)}")
 
-    cmake_configure(baseline_src, baseline_build, args.build_type, prefix, extra_args)
     try:
         cmake_build(baseline_build, targets, os.environ.get("DART_PARALLEL_JOBS"))
     except subprocess.CalledProcessError as exc:
@@ -354,7 +395,6 @@ def main():
         )
         return exc.returncode
 
-    cmake_configure(current_src, current_build, args.build_type, prefix, extra_args)
     try:
         cmake_build(current_build, targets, os.environ.get("DART_PARALLEL_JOBS"))
     except subprocess.CalledProcessError as exc:
