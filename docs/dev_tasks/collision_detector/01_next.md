@@ -14,6 +14,7 @@
 - Drafted a lightweight performance and benchmark plan for the new engine path.
 - Routed broadphase pair generation through core entries and sweep helpers.
 - Added plane-sphere and plane-box support in the DART narrowphase and enabled DART plane tests.
+- Skip narrowphase for core entries marked as missing or unsupported.
 
 ## Next Actions
 - Define the standalone library boundary and the DART adapter layer.

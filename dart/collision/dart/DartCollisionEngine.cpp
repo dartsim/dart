@@ -140,6 +140,12 @@ bool DartCollisionEngine::collide(
 
     const auto& aabb1 = *entries[pair.first].object;
     const auto& aabb2 = *entries[pair.second].object;
+    if (aabb1.shape.type == CoreShapeType::kNone
+        || aabb2.shape.type == CoreShapeType::kNone
+        || aabb1.shape.type == CoreShapeType::kUnsupported
+        || aabb2.shape.type == CoreShapeType::kUnsupported) {
+      continue;
+    }
     if (!overlaps(aabb1, aabb2))
       continue;
 
@@ -210,6 +216,12 @@ bool DartCollisionEngine::collide(
 
     const auto& aabb1 = *entries[pair.first].object;
     const auto& aabb2 = *entries[pair.second].object;
+    if (aabb1.shape.type == CoreShapeType::kNone
+        || aabb2.shape.type == CoreShapeType::kNone
+        || aabb1.shape.type == CoreShapeType::kUnsupported
+        || aabb2.shape.type == CoreShapeType::kUnsupported) {
+      continue;
+    }
     if (!overlaps(aabb1, aabb2))
       continue;
 
