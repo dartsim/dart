@@ -9,6 +9,7 @@
 - Cached per-object world AABBs in DARTCollisionObject, with DARTCollisionDetector calling updateEngineData before queries.
 - Added a sweep-based candidate pair pass for group-group queries using combined membership flags.
 - Respect negative penetration filtering in DartCollisionEngine when requested by CollisionOption.
+- Added initial core data structs and wired DARTCollisionObject to populate them on update.
 
 ## Next Actions
 - Define the standalone library boundary and the DART adapter layer.

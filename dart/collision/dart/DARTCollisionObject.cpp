@@ -32,7 +32,10 @@
 
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 
 namespace dart {
 namespace collision {
@@ -41,9 +44,7 @@ namespace collision {
 DARTCollisionObject::DARTCollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame)
-  : CollisionObject(collisionDetector, shapeFrame),
-    mWorldAabbMin(Eigen::Vector3d::Zero()),
-    mWorldAabbMax(Eigen::Vector3d::Zero())
+  : CollisionObject(collisionDetector, shapeFrame)
 {
   // Do nothing
 }
@@ -51,13 +52,19 @@ DARTCollisionObject::DARTCollisionObject(
 //==============================================================================
 const Eigen::Vector3d& DARTCollisionObject::getWorldAabbMin() const
 {
-  return mWorldAabbMin;
+  return mCoreObject.worldAabbMin;
 }
 
 //==============================================================================
 const Eigen::Vector3d& DARTCollisionObject::getWorldAabbMax() const
 {
-  return mWorldAabbMax;
+  return mCoreObject.worldAabbMax;
+}
+
+//==============================================================================
+const CoreObject& DARTCollisionObject::getCoreObject() const
+{
+  return mCoreObject;
 }
 
 //==============================================================================
@@ -67,10 +74,39 @@ void DARTCollisionObject::updateEngineData()
   const Eigen::Vector3d center = tf.translation();
   const auto shape = getShape();
 
+  mCoreObject.worldTransform = tf;
+  mCoreObject.shape = CoreShape();
+
   if (!shape) {
-    mWorldAabbMin = center;
-    mWorldAabbMax = center;
+    mCoreObject.worldAabbMin = center;
+    mCoreObject.worldAabbMax = center;
     return;
+  }
+
+  const auto& shapeType = shape->getType();
+
+  if (shapeType == dynamics::SphereShape::getStaticType()) {
+    const auto* sphere = static_cast<const dynamics::SphereShape*>(shape.get());
+
+    mCoreObject.shape.type = CoreShapeType::kSphere;
+    mCoreObject.shape.radius = sphere->getRadius();
+  } else if (shapeType == dynamics::BoxShape::getStaticType()) {
+    const auto* box = static_cast<const dynamics::BoxShape*>(shape.get());
+
+    mCoreObject.shape.type = CoreShapeType::kBox;
+    mCoreObject.shape.size = box->getSize();
+  } else if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
+    const auto* ellipsoid
+        = static_cast<const dynamics::EllipsoidShape*>(shape.get());
+
+    if (ellipsoid->isSphere()) {
+      mCoreObject.shape.type = CoreShapeType::kSphere;
+      mCoreObject.shape.radius = ellipsoid->getRadii()[0];
+    } else {
+      mCoreObject.shape.type = CoreShapeType::kUnsupported;
+    }
+  } else {
+    mCoreObject.shape.type = CoreShapeType::kUnsupported;
   }
 
   const auto& bbox = shape->getBoundingBox();
@@ -81,8 +117,8 @@ void DARTCollisionObject::updateEngineData()
   const Eigen::Vector3d worldHalfExtents
       = tf.linear().cwiseAbs() * localHalfExtents;
 
-  mWorldAabbMin = worldCenter - worldHalfExtents;
-  mWorldAabbMax = worldCenter + worldHalfExtents;
+  mCoreObject.worldAabbMin = worldCenter - worldHalfExtents;
+  mCoreObject.worldAabbMax = worldCenter + worldHalfExtents;
 }
 
 } // namespace collision

@@ -30,46 +30,40 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
-#define DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
-
-#include <dart/collision/CollisionObject.hpp>
-#include <dart/collision/dart/DartCollisionCore.hpp>
+#ifndef DART_COLLISION_DART_DARTCOLLISIONCORE_HPP_
+#define DART_COLLISION_DART_DARTCOLLISIONCORE_HPP_
 
 #include <Eigen/Dense>
+
+#include <cstdint>
 
 namespace dart {
 namespace collision {
 
-class CollisionObject;
-
-class DARTCollisionObject : public CollisionObject
+enum class CoreShapeType : std::uint8_t
 {
-public:
-  friend class DARTCollisionDetector;
+  kNone = 0u,
+  kSphere,
+  kBox,
+  kUnsupported
+};
 
-  const Eigen::Vector3d& getWorldAabbMin() const;
+struct CoreShape
+{
+  CoreShapeType type{CoreShapeType::kNone};
+  Eigen::Vector3d size{Eigen::Vector3d::Zero()};
+  double radius{0.0};
+};
 
-  const Eigen::Vector3d& getWorldAabbMax() const;
-
-  const CoreObject& getCoreObject() const;
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-protected:
-  /// Constructor
-  DARTCollisionObject(
-      CollisionDetector* collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame);
-
-  // Documentation inherited
-  void updateEngineData() override;
-
-protected:
-  CoreObject mCoreObject;
+struct CoreObject
+{
+  CoreShape shape;
+  Eigen::Isometry3d worldTransform{Eigen::Isometry3d::Identity()};
+  Eigen::Vector3d worldAabbMin{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d worldAabbMax{Eigen::Vector3d::Zero()};
 };
 
 } // namespace collision
 } // namespace dart
 
-#endif // DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
+#endif // DART_COLLISION_DART_DARTCOLLISIONCORE_HPP_
