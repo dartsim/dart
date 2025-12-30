@@ -32,9 +32,8 @@
 
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 
-#include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/dart/DARTCollide.hpp"
+#include "dart/collision/dart/DartCollisionEngine.hpp"
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/common/Logging.hpp"
@@ -45,26 +44,6 @@
 
 namespace dart {
 namespace collision {
-
-namespace {
-
-bool checkPair(
-    CollisionObject* o1,
-    CollisionObject* o2,
-    const CollisionOption& option,
-    CollisionResult* result = nullptr);
-
-bool isClose(
-    const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2, double tol);
-
-void postProcess(
-    CollisionObject* o1,
-    CollisionObject* o2,
-    const CollisionOption& option,
-    CollisionResult& totalResult,
-    const CollisionResult& pairResult);
-
-} // anonymous namespace
 
 //==============================================================================
 DARTCollisionDetector::Registrar<DARTCollisionDetector>
@@ -142,36 +121,7 @@ bool DARTCollisionDetector::collide(
   auto casted = static_cast<DARTCollisionGroup*>(group);
   const auto& objects = casted->mCollisionObjects;
 
-  if (objects.empty()) [[unlikely]]
-    return false;
-
-  auto collisionFound = false;
-  const auto& filter = option.collisionFilter;
-
-  for (auto i = 0u; i < objects.size() - 1; ++i) {
-    auto* collObj1 = objects[i];
-
-    for (auto j = i + 1u; j < objects.size(); ++j) {
-      auto* collObj2 = objects[j];
-
-      if (filter && filter->ignoresCollision(collObj1, collObj2)) [[unlikely]]
-        continue;
-
-      collisionFound = checkPair(collObj1, collObj2, option, result);
-
-      if (result) {
-        if (result->getNumContacts() >= option.maxNumContacts) [[unlikely]]
-          return true;
-      } else {
-        // If no result is passed, stop checking when the first contact is found
-        if (collisionFound) [[unlikely]]
-          return true;
-      }
-    }
-  }
-
-  // Either no collision found or not reached the maximum number of contacts
-  return collisionFound;
+  return mEngine->collide(objects, option, result);
 }
 
 //==============================================================================
@@ -203,36 +153,7 @@ bool DARTCollisionDetector::collide(
   const auto& objects1 = casted1->mCollisionObjects;
   const auto& objects2 = casted2->mCollisionObjects;
 
-  if (objects1.empty() || objects2.empty()) [[unlikely]]
-    return false;
-
-  auto collisionFound = false;
-  const auto& filter = option.collisionFilter;
-
-  for (auto i = 0u; i < objects1.size(); ++i) {
-    auto* collObj1 = objects1[i];
-
-    for (auto j = 0u; j < objects2.size(); ++j) {
-      auto* collObj2 = objects2[j];
-
-      if (filter && filter->ignoresCollision(collObj1, collObj2))
-        continue;
-
-      collisionFound = checkPair(collObj1, collObj2, option, result);
-
-      if (result) {
-        if (result->getNumContacts() >= option.maxNumContacts)
-          return true;
-      } else {
-        // If no result is passed, stop checking when the first contact is found
-        if (collisionFound)
-          return true;
-      }
-    }
-  }
-
-  // Either no collision found or not reached the maximum number of contacts
-  return collisionFound;
+  return mEngine->collide(objects1, objects2, option, result);
 }
 
 //==============================================================================
@@ -266,6 +187,7 @@ double DARTCollisionDetector::distance(
 DARTCollisionDetector::DARTCollisionDetector() : CollisionDetector()
 {
   mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
+  mEngine = std::make_unique<DartCollisionEngine>();
 }
 
 //==============================================================================
@@ -314,75 +236,5 @@ void DARTCollisionDetector::refreshCollisionObject(CollisionObject* /*object*/)
 {
   // Do nothing
 }
-
-namespace {
-
-//==============================================================================
-bool checkPair(
-    CollisionObject* o1,
-    CollisionObject* o2,
-    const CollisionOption& option,
-    CollisionResult* result)
-{
-  CollisionResult pairResult;
-
-  // Perform narrow-phase detection
-  collide(o1, o2, pairResult);
-
-  // Early return for binary check
-  if (!result)
-    return pairResult.isCollision();
-
-  postProcess(o1, o2, option, *result, pairResult);
-
-  return pairResult.isCollision();
-}
-
-//==============================================================================
-bool isClose(
-    const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2, double tol)
-{
-  return (pos1 - pos2).norm() < tol;
-}
-
-//==============================================================================
-void postProcess(
-    CollisionObject* o1,
-    CollisionObject* o2,
-    const CollisionOption& option,
-    CollisionResult& totalResult,
-    const CollisionResult& pairResult)
-{
-  if (!pairResult.isCollision()) [[likely]]
-    return;
-
-  // Don't add repeated points
-  const auto tol = 3.0e-12;
-
-  for (auto pairContact : pairResult.getContacts()) {
-    auto foundClose = false;
-
-    for (auto totalContact : totalResult.getContacts()) {
-      if (isClose(pairContact.point, totalContact.point, tol)) {
-        foundClose = true;
-        break;
-      }
-    }
-
-    if (foundClose)
-      continue;
-
-    auto contact = pairContact;
-    contact.collisionObject1 = o1;
-    contact.collisionObject2 = o2;
-    totalResult.addContact(contact);
-
-    if (totalResult.getNumContacts() >= option.maxNumContacts)
-      break;
-  }
-}
-
-} // anonymous namespace
-
 } // namespace collision
 } // namespace dart

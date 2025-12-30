@@ -35,12 +35,15 @@
 
 #include <dart/collision/CollisionDetector.hpp>
 
+#include <memory>
+
 #include <vector>
 
 namespace dart {
 namespace collision {
 
 class DARTCollisionObject;
+class DartCollisionEngine;
 
 class DART_API DARTCollisionDetector : public CollisionDetector
 {
@@ -101,6 +104,8 @@ protected:
 
 private:
   static Registrar<DARTCollisionDetector> mRegistrar;
+
+  std::unique_ptr<DartCollisionEngine> mEngine;
 };
 
 } // namespace collision
