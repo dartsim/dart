@@ -82,6 +82,7 @@ Signals to look for:
 
 - The lint task can take a while on the first run because it configures and formats; rerun if it was interrupted.
 - Linting runs auto-fixers (formatters/codespell), so expect file diffs even when the code is functionally unchanged; check `git status` before committing.
+- `pixi run test-all` runs linting and documentation builds as part of the suite; expect longer runtime and potential formatting diffs, so review changes before committing.
 - `pixi run lint` can rewrite identifiers via codespell; if a spelling or casing is intentional, add it to `.codespellrc` and re-run lint.
 
 ## Next-Time Accelerators
