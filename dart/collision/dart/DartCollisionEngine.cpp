@@ -40,6 +40,8 @@
 #include <Eigen/Dense>
 
 #include <algorithm>
+#include <cstdint>
+#include <unordered_map>
 
 namespace dart {
 namespace collision {
@@ -187,29 +189,85 @@ bool DartCollisionEngine::collide(
   if (objects1.empty() || objects2.empty()) [[unlikely]]
     return false;
 
-  std::vector<Aabb> aabbs1;
-  aabbs1.reserve(objects1.size());
-  for (const auto* object : objects1)
-    aabbs1.push_back(computeWorldAabb(object));
+  constexpr std::uint8_t kGroup1 = 1u;
+  constexpr std::uint8_t kGroup2 = 1u << 1u;
 
-  std::vector<Aabb> aabbs2;
-  aabbs2.reserve(objects2.size());
-  for (const auto* object : objects2)
-    aabbs2.push_back(computeWorldAabb(object));
+  struct Entry
+  {
+    CollisionObject* object;
+    std::uint8_t mask;
+    Aabb aabb;
+  };
+
+  std::vector<Entry> entries;
+  entries.reserve(objects1.size() + objects2.size());
+
+  std::unordered_map<CollisionObject*, std::size_t> entryMap;
+  entryMap.reserve(objects1.size() + objects2.size());
+
+  auto addEntry = [&](CollisionObject* object, std::uint8_t mask) {
+    auto [it, inserted] = entryMap.emplace(object, entries.size());
+    if (inserted) {
+      entries.push_back({object, mask, computeWorldAabb(object)});
+    } else {
+      entries[it->second].mask |= mask;
+    }
+  };
+
+  for (auto* object : objects1)
+    addEntry(object, kGroup1);
+  for (auto* object : objects2)
+    addEntry(object, kGroup2);
+
+  struct SweepEntry
+  {
+    double minX;
+    double maxX;
+    std::size_t index;
+  };
+
+  std::vector<SweepEntry> sweep;
+  sweep.reserve(entries.size());
+  for (std::size_t i = 0; i < entries.size(); ++i) {
+    sweep.push_back({entries[i].aabb.min.x(), entries[i].aabb.max.x(), i});
+  }
+
+  std::stable_sort(
+      sweep.begin(),
+      sweep.end(),
+      [](const SweepEntry& a, const SweepEntry& b) {
+        return a.minX < b.minX;
+      });
 
   bool collisionFound = false;
   const auto& filter = option.collisionFilter;
 
-  for (auto i = 0u; i < objects1.size(); ++i) {
-    auto* collObj1 = objects1[i];
+  for (std::size_t i = 0; i + 1u < sweep.size(); ++i) {
+    const auto& entry = sweep[i];
+    const auto maxX = entry.maxX;
+    const auto& current = entries[entry.index];
+    auto* collObj1 = current.object;
 
-    for (auto j = 0u; j < objects2.size(); ++j) {
-      auto* collObj2 = objects2[j];
+    for (std::size_t j = i + 1u; j < sweep.size(); ++j) {
+      if (sweep[j].minX > maxX)
+        break;
+
+      const auto& other = entries[sweep[j].index];
+      const std::uint8_t mask1 = current.mask;
+      const std::uint8_t mask2 = other.mask;
+      const bool validPair
+          = ((mask1 & kGroup1) && (mask2 & kGroup2))
+            || ((mask1 & kGroup2) && (mask2 & kGroup1));
+
+      if (!validPair)
+        continue;
+
+      auto* collObj2 = other.object;
 
       if (filter && filter->ignoresCollision(collObj1, collObj2))
         continue;
 
-      if (!overlaps(aabbs1[i], aabbs2[j]))
+      if (!overlaps(current.aabb, other.aabb))
         continue;
 
       collisionFound = checkPair(collObj1, collObj2, option, result);
