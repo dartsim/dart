@@ -45,6 +45,12 @@
 - Maintain and extend benchmarks to track performance trends.
 - Add CI checks to prevent regressions and track parity.
 
+## Performance and Benchmark Plan
+- Capture a baseline from existing collision benchmarks before enabling the new path.
+- Add scenarios that stress broadphase pair generation, narrowphase contact generation, and group-group queries.
+- Track timing, candidate pair counts, contact counts, and allocation hot spots.
+- Define acceptable regression thresholds and enforce them before switching defaults.
+
 ## Risks
 - Contact generation differences affecting solver stability.
 - Missing feature coverage (distance, raycast, mesh contact fidelity).

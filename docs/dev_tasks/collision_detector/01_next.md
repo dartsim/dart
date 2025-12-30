@@ -11,6 +11,7 @@
 - Respect negative penetration filtering in DartCollisionEngine when requested by CollisionOption.
 - Added initial core data structs and wired DARTCollisionObject to populate them on update.
 - Added cylinder-sphere and cylinder-plane pair support in the DART narrowphase, with new DARTCollisionDetector tests.
+- Drafted a lightweight performance and benchmark plan for the new engine path.
 
 ## Next Actions
 - Define the standalone library boundary and the DART adapter layer.
