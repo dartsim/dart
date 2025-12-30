@@ -23,7 +23,8 @@ using namespace dart::math;
 
 namespace {
 
-// Deterministic scaling avoids platform-specific uniform_real_distribution output.
+// Deterministic scaling avoids platform-specific uniform_real_distribution
+// output.
 double Uniform01(std::mt19937& rng)
 {
   const double denom = static_cast<double>(rng.max()) + 1.0;
