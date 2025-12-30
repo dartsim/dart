@@ -36,10 +36,10 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/dart/DARTCollide.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/collision/dart/DartCollisionBroadphase.hpp"
 
 #include <Eigen/Dense>
 
-#include <algorithm>
 #include <cstdint>
 #include <unordered_map>
 
@@ -48,23 +48,10 @@ namespace collision {
 
 namespace {
 
-struct Aabb
+bool overlaps(const CoreObject& a, const CoreObject& b)
 {
-  Eigen::Vector3d min;
-  Eigen::Vector3d max;
-};
-
-Aabb computeWorldAabb(const CollisionObject* object)
-{
-  const auto* dartObject = static_cast<const DARTCollisionObject*>(object);
-
-  return {dartObject->getWorldAabbMin(), dartObject->getWorldAabbMax()};
-}
-
-bool overlaps(const Aabb& a, const Aabb& b)
-{
-  return (a.min.array() <= b.max.array()).all()
-         && (a.max.array() >= b.min.array()).all();
+  return (a.worldAabbMin.array() <= b.worldAabbMax.array()).all()
+         && (a.worldAabbMax.array() >= b.worldAabbMin.array()).all();
 }
 
 bool isClose(
@@ -124,60 +111,45 @@ bool DartCollisionEngine::collide(
   if (objects.size() < 2u) [[unlikely]]
     return false;
 
-  std::vector<Aabb> aabbs;
-  aabbs.reserve(objects.size());
-  for (const auto* object : objects)
-    aabbs.push_back(computeWorldAabb(object));
+  constexpr std::uint8_t kGroup = 1u;
 
-  struct SweepEntry
-  {
-    double minX;
-    double maxX;
-    std::size_t index;
-  };
+  std::vector<CollisionObject*> collObjects;
+  collObjects.reserve(objects.size());
 
-  std::vector<SweepEntry> sweep;
-  sweep.reserve(objects.size());
-  for (std::size_t i = 0; i < aabbs.size(); ++i) {
-    sweep.push_back({aabbs[i].min.x(), aabbs[i].max.x(), i});
+  std::vector<CoreBroadphaseEntry> entries;
+  entries.reserve(objects.size());
+  for (auto* object : objects) {
+    const auto* dartObject = static_cast<const DARTCollisionObject*>(object);
+    collObjects.push_back(object);
+    entries.push_back({&dartObject->getCoreObject(), kGroup});
   }
 
-  std::stable_sort(
-      sweep.begin(),
-      sweep.end(),
-      [](const SweepEntry& a, const SweepEntry& b) {
-        return a.minX < b.minX;
-      });
+  std::vector<CoreBroadphasePair> pairs;
+  pairs.reserve(objects.size());
+  computeSweepPairs(entries, kGroup, kGroup, &pairs);
 
   bool collisionFound = false;
   const auto& filter = option.collisionFilter;
 
-  for (std::size_t i = 0; i + 1u < sweep.size(); ++i) {
-    const auto& entry = sweep[i];
-    const auto maxX = entry.maxX;
-    auto* collObj1 = objects[entry.index];
+  for (const auto& pair : pairs) {
+    auto* collObj1 = collObjects[pair.first];
+    auto* collObj2 = collObjects[pair.second];
 
-    for (std::size_t j = i + 1u; j < sweep.size(); ++j) {
-      if (sweep[j].minX > maxX)
-        break;
+    if (filter && filter->ignoresCollision(collObj1, collObj2)) [[unlikely]]
+      continue;
 
-      const auto otherIndex = sweep[j].index;
-      auto* collObj2 = objects[otherIndex];
+    const auto& aabb1 = *entries[pair.first].object;
+    const auto& aabb2 = *entries[pair.second].object;
+    if (!overlaps(aabb1, aabb2))
+      continue;
 
-      if (filter && filter->ignoresCollision(collObj1, collObj2)) [[unlikely]]
-        continue;
+    collisionFound = checkPair(collObj1, collObj2, option, result);
 
-      if (!overlaps(aabbs[entry.index], aabbs[otherIndex]))
-        continue;
-
-      collisionFound = checkPair(collObj1, collObj2, option, result);
-
-      if (result) {
-        if (result->getNumContacts() >= option.maxNumContacts) [[unlikely]]
-          return true;
-      } else if (collisionFound) [[unlikely]] {
+    if (result) {
+      if (result->getNumContacts() >= option.maxNumContacts) [[unlikely]]
         return true;
-      }
+    } else if (collisionFound) [[unlikely]] {
+      return true;
     }
   }
 
@@ -197,14 +169,10 @@ bool DartCollisionEngine::collide(
   constexpr std::uint8_t kGroup1 = 1u;
   constexpr std::uint8_t kGroup2 = 1u << 1u;
 
-  struct Entry
-  {
-    CollisionObject* object;
-    std::uint8_t mask;
-    Aabb aabb;
-  };
+  std::vector<CollisionObject*> collObjects;
+  collObjects.reserve(objects1.size() + objects2.size());
 
-  std::vector<Entry> entries;
+  std::vector<CoreBroadphaseEntry> entries;
   entries.reserve(objects1.size() + objects2.size());
 
   std::unordered_map<CollisionObject*, std::size_t> entryMap;
@@ -213,7 +181,9 @@ bool DartCollisionEngine::collide(
   auto addEntry = [&](CollisionObject* object, std::uint8_t mask) {
     auto [it, inserted] = entryMap.emplace(object, entries.size());
     if (inserted) {
-      entries.push_back({object, mask, computeWorldAabb(object)});
+      const auto* dartObject = static_cast<const DARTCollisionObject*>(object);
+      entries.push_back({&dartObject->getCoreObject(), mask});
+      collObjects.push_back(object);
     } else {
       entries[it->second].mask |= mask;
     }
@@ -224,65 +194,32 @@ bool DartCollisionEngine::collide(
   for (auto* object : objects2)
     addEntry(object, kGroup2);
 
-  struct SweepEntry
-  {
-    double minX;
-    double maxX;
-    std::size_t index;
-  };
-
-  std::vector<SweepEntry> sweep;
-  sweep.reserve(entries.size());
-  for (std::size_t i = 0; i < entries.size(); ++i) {
-    sweep.push_back({entries[i].aabb.min.x(), entries[i].aabb.max.x(), i});
-  }
-
-  std::stable_sort(
-      sweep.begin(),
-      sweep.end(),
-      [](const SweepEntry& a, const SweepEntry& b) {
-        return a.minX < b.minX;
-      });
+  std::vector<CoreBroadphasePair> pairs;
+  pairs.reserve(entries.size());
+  computeSweepPairs(entries, kGroup1, kGroup2, &pairs);
 
   bool collisionFound = false;
   const auto& filter = option.collisionFilter;
 
-  for (std::size_t i = 0; i + 1u < sweep.size(); ++i) {
-    const auto& entry = sweep[i];
-    const auto maxX = entry.maxX;
-    const auto& current = entries[entry.index];
-    auto* collObj1 = current.object;
+  for (const auto& pair : pairs) {
+    auto* collObj1 = collObjects[pair.first];
+    auto* collObj2 = collObjects[pair.second];
 
-    for (std::size_t j = i + 1u; j < sweep.size(); ++j) {
-      if (sweep[j].minX > maxX)
-        break;
+    if (filter && filter->ignoresCollision(collObj1, collObj2))
+      continue;
 
-      const auto& other = entries[sweep[j].index];
-      const std::uint8_t mask1 = current.mask;
-      const std::uint8_t mask2 = other.mask;
-      const bool validPair
-          = ((mask1 & kGroup1) && (mask2 & kGroup2))
-            || ((mask1 & kGroup2) && (mask2 & kGroup1));
+    const auto& aabb1 = *entries[pair.first].object;
+    const auto& aabb2 = *entries[pair.second].object;
+    if (!overlaps(aabb1, aabb2))
+      continue;
 
-      if (!validPair)
-        continue;
+    collisionFound = checkPair(collObj1, collObj2, option, result);
 
-      auto* collObj2 = other.object;
-
-      if (filter && filter->ignoresCollision(collObj1, collObj2))
-        continue;
-
-      if (!overlaps(current.aabb, other.aabb))
-        continue;
-
-      collisionFound = checkPair(collObj1, collObj2, option, result);
-
-      if (result) {
-        if (result->getNumContacts() >= option.maxNumContacts)
-          return true;
-      } else if (collisionFound) {
+    if (result) {
+      if (result->getNumContacts() >= option.maxNumContacts)
         return true;
-      }
+    } else if (collisionFound) {
+      return true;
     }
   }
 
