@@ -694,6 +694,12 @@ void ConstraintSolver::solvePositionConstrainedGroups()
 {
   DART_PROFILE_SCOPED;
 
+  // Preserve velocity-impulse flags across the position pass.
+  std::vector<bool> impulseAppliedStates;
+  impulseAppliedStates.reserve(mSkeletons.size());
+  for (const auto& skeleton : mSkeletons)
+    impulseAppliedStates.push_back(skeleton->isImpulseApplied());
+
   for (auto& constraintGroup : mConstrainedGroups) {
     std::vector<ConstraintBasePtr> positionConstraints;
     positionConstraints.reserve(constraintGroup.getNumConstraints());
@@ -711,6 +717,9 @@ void ConstraintSolver::solvePositionConstrainedGroups()
     if (skeleton->isPositionImpulseApplied())
       skeleton->computePositionVelocityChanges();
   }
+
+  for (std::size_t i = 0; i < mSkeletons.size(); ++i)
+    mSkeletons[i]->setImpulseApplied(impulseAppliedStates[i]);
 }
 
 //==============================================================================
