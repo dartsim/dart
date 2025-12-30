@@ -1577,8 +1577,9 @@ void Skeleton::integratePositions(
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i) {
     auto* joint = mSkelCache.mBodyNodes[i]->getParentJoint();
     const std::size_t dofs = joint->getNumDofs();
-    if (dofs == 0)
+    if (dofs == 0) {
       continue;
+    }
 
     Eigen::VectorXd q0 = joint->getPositions();
     Eigen::VectorXd v = joint->getVelocities();
@@ -1593,8 +1594,9 @@ void Skeleton::integratePositions(
   }
 
   for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i) {
-    for (std::size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
+    for (std::size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j) {
       mSoftBodyNodes[i]->getPointMass(j)->integratePositions(_dt);
+    }
   }
 }
 
@@ -3759,8 +3761,9 @@ void Skeleton::clearConstraintImpulses()
 //==============================================================================
 void Skeleton::clearPositionConstraintImpulses()
 {
-  for (auto& bodyNode : mSkelCache.mBodyNodes)
+  for (auto& bodyNode : mSkelCache.mBodyNodes) {
     bodyNode->clearPositionConstraintImpulse();
+  }
 }
 
 //==============================================================================
@@ -3937,16 +3940,19 @@ void Skeleton::computePositionVelocityChanges()
   // Backward recursion
   for (auto it = mSkelCache.mBodyNodes.rbegin();
        it != mSkelCache.mBodyNodes.rend();
-       ++it)
+       ++it) {
     (*it)->updateBiasImpulseFromPositionImpulse();
+  }
 
   // Forward recursion
-  for (auto& bodyNode : mSkelCache.mBodyNodes)
+  for (auto& bodyNode : mSkelCache.mBodyNodes) {
     bodyNode->updateVelocityChangeFD();
+  }
 
   mPositionVelocityChanges.resize(getNumDofs());
-  for (std::size_t i = 0; i < mSkelCache.mDofs.size(); ++i)
+  for (std::size_t i = 0; i < mSkelCache.mDofs.size(); ++i) {
     mPositionVelocityChanges[i] = mSkelCache.mDofs[i]->getVelocityChange();
+  }
 }
 
 //==============================================================================

@@ -221,8 +221,9 @@ public:
       mSplitImpulseEnabled(false),
       mSolverType(-1)
   {
-    if (auto* solver = mWorld->getConstraintSolver())
+    if (auto* solver = mWorld->getConstraintSolver()) {
       mSplitImpulseEnabled = solver->isSplitImpulseEnabled();
+    }
   }
 
   // Documentation inherited
@@ -287,8 +288,9 @@ public:
       ImGui::RadioButton("PGS", &solverType, 2);
       setLcpSolver(solverType);
 
-      if (ImGui::Checkbox("Split impulse", &mSplitImpulseEnabled))
+      if (ImGui::Checkbox("Split impulse", &mSplitImpulseEnabled)) {
         setSplitImpulse(mSplitImpulseEnabled);
+      }
 
       ImGui::Text("Time: %.3f", mWorld->getTime());
     }
@@ -373,8 +375,9 @@ protected:
   void setSplitImpulse(bool enabled)
   {
     auto* solver = mWorld->getConstraintSolver();
-    if (!solver)
+    if (!solver) {
       return;
+    }
 
     solver->setSplitImpulseEnabled(enabled);
   }

@@ -335,8 +335,9 @@ void ConstraintSolver::solve()
   // Solve constrained groups
   solveConstrainedGroups();
 
-  if (mSplitImpulseEnabled)
+  if (mSplitImpulseEnabled) {
     solvePositionConstrainedGroups();
+  }
 }
 
 //==============================================================================
@@ -350,10 +351,12 @@ void ConstraintSolver::setFromOtherConstraintSolver(
   mManualConstraints = other.mManualConstraints;
 
   mContactSurfaceHandler = other.mContactSurfaceHandler;
-  if (!mLcpSolverSetExplicitly)
+  if (!mLcpSolverSetExplicitly) {
     mLcpSolver = other.mLcpSolver;
-  if (!mSecondaryLcpSolverSetExplicitly)
+  }
+  if (!mSecondaryLcpSolverSetExplicitly) {
     mSecondaryLcpSolver = other.mSecondaryLcpSolver;
+  }
   mSplitImpulseEnabled = other.mSplitImpulseEnabled;
 }
 
@@ -697,16 +700,18 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   // Preserve velocity-impulse flags across the position pass.
   std::vector<bool> impulseAppliedStates;
   impulseAppliedStates.reserve(mSkeletons.size());
-  for (const auto& skeleton : mSkeletons)
+  for (const auto& skeleton : mSkeletons) {
     impulseAppliedStates.push_back(skeleton->isImpulseApplied());
+  }
 
   for (auto& constraintGroup : mConstrainedGroups) {
     std::vector<ConstraintBasePtr> positionConstraints;
     positionConstraints.reserve(constraintGroup.getNumConstraints());
     for (std::size_t i = 0; i < constraintGroup.getNumConstraints(); ++i) {
       const ConstraintBasePtr& constraint = constraintGroup.getConstraint(i);
-      if (std::dynamic_pointer_cast<ContactConstraint>(constraint))
+      if (std::dynamic_pointer_cast<ContactConstraint>(constraint)) {
         positionConstraints.push_back(constraint);
+      }
     }
 
     solveConstrainedGroupInternal(
@@ -714,12 +719,14 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   }
 
   for (auto& skeleton : mSkeletons) {
-    if (skeleton->isPositionImpulseApplied())
+    if (skeleton->isPositionImpulseApplied()) {
       skeleton->computePositionVelocityChanges();
+    }
   }
 
-  for (std::size_t i = 0; i < mSkeletons.size(); ++i)
+  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
     mSkeletons[i]->setImpulseApplied(impulseAppliedStates[i]);
+  }
 }
 
 //==============================================================================
@@ -850,11 +857,13 @@ void ConstraintSolver::solveConstrainedGroupInternal(
 
   const std::size_t numConstraints = constraints.size();
   std::size_t n = 0;
-  for (const auto& constraint : constraints)
+  for (const auto& constraint : constraints) {
     n += constraint->getDimension();
+  }
 
-  if (0u == n)
+  if (0u == n) {
     return;
+  }
 
   const int nSkip = math::padding(n);
 #if defined(NDEBUG)
@@ -904,8 +913,9 @@ void ConstraintSolver::solveConstrainedGroupInternal(
         DART_PROFILE_SCOPED_N("Fill A");
         constraint->excite();
         for (std::size_t j = 0; j < constraint->getDimension(); ++j) {
-          if (mFIndex[mOffset[i] + j] >= 0)
+          if (mFIndex[mOffset[i] + j] >= 0) {
             mFIndex[mOffset[i] + j] += mOffset[i];
+          }
 
           {
             DART_PROFILE_SCOPED_N("Unit impulse test");
@@ -951,8 +961,9 @@ void ConstraintSolver::solveConstrainedGroupInternal(
   }
   DART_ASSERT(mLcpSolver);
   math::LcpOptions primaryOptions = mLcpSolver->getDefaultOptions();
-  if (mSecondaryLcpSolver)
+  if (mSecondaryLcpSolver) {
     primaryOptions.earlyTermination = true;
+  }
   // Preserve legacy behavior to avoid unnecessary fallback on strict checks.
   primaryOptions.validateSolution = false;
   Eigen::MatrixXd Ablock = mA.leftCols(static_cast<Eigen::Index>(n)).eval();
@@ -1057,8 +1068,9 @@ void ConstraintSolver::solveConstrainedGroupInternal(
     for (std::size_t i = 0; i < numConstraints; ++i) {
       auto* contact = dynamic_cast<ContactConstraint*>(constraints[i].get());
       DART_ASSERT(contact);
-      if (contact)
+      if (contact) {
         contact->applyPositionImpulse(mX.data() + mOffset[i]);
+      }
     }
   } else {
     DART_PROFILE_SCOPED_N("Apply constraint impulses");

@@ -353,12 +353,14 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
   const bool useSplitImpulse = info->useSplitImpulse;
   const auto computeErrorReductionVelocity = [&]() {
     double errorReductionVelocity = mContact.penetrationDepth - mErrorAllowance;
-    if (errorReductionVelocity < 0.0)
+    if (errorReductionVelocity < 0.0) {
       return 0.0;
+    }
 
     errorReductionVelocity *= mErrorReductionParameter * info->invTimeStep;
-    if (errorReductionVelocity > mMaxErrorReductionVelocity)
+    if (errorReductionVelocity > mMaxErrorReductionVelocity) {
       errorReductionVelocity = mMaxErrorReductionVelocity;
+    }
     return errorReductionVelocity;
   };
 
@@ -432,8 +434,9 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
 
       if (!useSplitImpulse) {
         const double errorReductionVelocity = computeErrorReductionVelocity();
-        if (errorReductionVelocity > bouncingVelocity)
+        if (errorReductionVelocity > bouncingVelocity) {
           bouncingVelocity = errorReductionVelocity;
+        }
       }
     }
 
@@ -479,22 +482,25 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
           if (restitutionVel > bouncingVelocity) {
             bouncingVelocity = restitutionVel;
 
-            if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY)
+            if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY) {
               bouncingVelocity = DART_MAX_BOUNCING_VELOCITY;
+            }
           }
         }
       }
 
       if (!useSplitImpulse) {
         const double errorReductionVelocity = computeErrorReductionVelocity();
-        if (errorReductionVelocity > bouncingVelocity)
+        if (errorReductionVelocity > bouncingVelocity) {
           bouncingVelocity = errorReductionVelocity;
+        }
       }
     }
 
     info->b[0] += bouncingVelocity;
-    if (!isPositionPhase)
+    if (!isPositionPhase) {
       info->b[0] += mContactSurfaceMotionVelocity.x();
+    }
 
     // TODO(JS): Initial guess
     // x
@@ -671,18 +677,22 @@ void ContactConstraint::applyImpulse(double* lambda)
 //==============================================================================
 void ContactConstraint::applyPositionImpulse(double* lambda)
 {
-  if (mBodyNodeA->isReactive())
+  if (mBodyNodeA->isReactive()) {
     mBodyNodeA->addPositionConstraintImpulse(
         mSpatialNormalA.col(0) * lambda[0]);
+  }
 
-  if (mBodyNodeB->isReactive())
+  if (mBodyNodeB->isReactive()) {
     mBodyNodeB->addPositionConstraintImpulse(
         mSpatialNormalB.col(0) * lambda[0]);
+  }
 
-  if (mBodyNodeA->isReactive())
+  if (mBodyNodeA->isReactive()) {
     mBodyNodeA->getSkeleton()->setPositionImpulseApplied(true);
-  if (mBodyNodeB->isReactive())
+  }
+  if (mBodyNodeB->isReactive()) {
     mBodyNodeB->getSkeleton()->setPositionImpulseApplied(true);
+  }
 }
 
 //==============================================================================
