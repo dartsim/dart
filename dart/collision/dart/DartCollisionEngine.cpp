@@ -86,6 +86,11 @@ void mergeContacts(
   const auto tol = 3.0e-12;
 
   for (auto pairContact : pairResult.getContacts()) {
+    if (!option.allowNegativePenetrationDepthContacts
+        && pairContact.penetrationDepth < 0.0) {
+      continue;
+    }
+
     bool foundClose = false;
 
     for (const auto& totalContact : totalResult.getContacts()) {
@@ -295,8 +300,17 @@ bool DartCollisionEngine::checkPair(
 
   dart::collision::collide(o1, o2, pairResult);
 
-  if (!result)
-    return pairResult.isCollision();
+  if (!result) {
+    if (option.allowNegativePenetrationDepthContacts)
+      return pairResult.isCollision();
+
+    for (const auto& contact : pairResult.getContacts()) {
+      if (contact.penetrationDepth >= 0.0)
+        return true;
+    }
+
+    return false;
+  }
 
   mergeContacts(o1, o2, option, *result, pairResult);
 
