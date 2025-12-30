@@ -54,6 +54,14 @@ if(DART_BUILD_COLLISION_BULLET)
   dart_format_add(collision/bm_boxes.cpp)
 endif()
 
+add_executable(bm_boxes_dart collision/bm_boxes_dart.cpp)
+target_link_libraries(bm_boxes_dart
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(collision/bm_boxes_dart.cpp)
+
 # ==============================================================================
 # Dynamics Benchmarks
 # ==============================================================================

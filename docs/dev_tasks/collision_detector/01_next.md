@@ -16,6 +16,7 @@
 - Added plane-sphere and plane-box support in the DART narrowphase and enabled DART plane tests.
 - Skip narrowphase for core entries marked as missing or unsupported.
 - Added core-shape dispatch in DartCollisionEngine to avoid per-pair shape lookups.
+- Added a DART collision benchmark variant mirroring the box stack scenario.
 
 ## Next Actions
 - Define the standalone library boundary and the DART adapter layer.
