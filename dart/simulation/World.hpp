@@ -41,7 +41,7 @@
 
 #include <dart/simulation/Fwd.hpp>
 #include <dart/simulation/Recording.hpp>
-#include <dart/simulation/solver/Solver.hpp>
+#include <dart/simulation/solver/SolverTypes.hpp>
 
 #include <dart/constraint/Fwd.hpp>
 
@@ -73,6 +73,8 @@ namespace simulation {
 namespace detail {
 struct WorldEcsAccess;
 } // namespace detail
+
+class Solver;
 
 /// Available collision detector backends for a World.
 enum class CollisionDetectorType : int

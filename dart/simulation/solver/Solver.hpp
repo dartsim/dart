@@ -35,6 +35,7 @@
 
 #include <dart/simulation/EcsEntity.hpp>
 #include <dart/simulation/Fwd.hpp>
+#include <dart/simulation/solver/SolverTypes.hpp>
 
 #include <dart/constraint/Fwd.hpp>
 
@@ -52,15 +53,6 @@ namespace dart::simulation {
 
 // Forward declaration to avoid circular include with World.
 enum class CollisionDetectorType : int;
-
-/// Identifies which rigid simulation backend a solver instance targets.
-enum class RigidSolverType
-{
-  /// Legacy Skeleton-based constraint solver.
-  ClassicSkeleton,
-  /// Entity-component based rigid solver using entt::registry (ECS-only).
-  EntityComponent,
-};
 
 /// Base class for simulation solvers that can be scheduled by World.
 class DART_API Solver

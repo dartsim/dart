@@ -61,6 +61,7 @@
 #include "dart/simulation/World.hpp"
 #include "dart/simulation/detail/RigidSolverComponents.hpp"
 #include "dart/simulation/detail/WorldEcsAccess.hpp"
+#include "dart/simulation/solver/Solver.hpp"
 
 using namespace dart;
 using namespace math;
