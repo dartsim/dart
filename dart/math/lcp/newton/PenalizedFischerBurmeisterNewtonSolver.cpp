@@ -78,7 +78,7 @@ void computePenalizedFbFunction(
     const double xi = x[i];
     const double yi = y[i];
     const double r = std::sqrt(xi * xi + yi * yi + epsilon * epsilon);
-    const double invR = 1.0 / r;
+    const double invR = (r > 0.0) ? (1.0 / r) : 0.0;
     const double maxY = std::max(0.0, yi);
 
     phi[i] = lambda * (r - xi - yi) - penaltyScale * xi * maxY;
