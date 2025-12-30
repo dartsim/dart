@@ -107,9 +107,11 @@ namespace dart::math::detail {
 /// convexHull3dBuild(vertices, faces, numFaces);
 /// // Result: 4 faces (tetrahedron), 12 indices total
 /// ```
-template <typename S>
+template <
+    typename S,
+    typename VertexAllocator = std::allocator<Eigen::Vector3<S>>>
 void convexHull3dBuild(
-    const std::vector<Eigen::Vector3<S>>& inVertices,
+    const std::vector<Eigen::Vector3<S>, VertexAllocator>& inVertices,
     std::vector<int>& outFaces,
     int& numOutFaces);
 

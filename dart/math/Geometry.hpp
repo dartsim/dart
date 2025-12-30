@@ -546,12 +546,16 @@ SupportPolygon computeConvexHull(
 /// referred to in the resulted convex hull. The resulted indices will be
 /// updated accordingly.
 /// @return A tuple of the vertices and indices of the resulted convex hull.
-template <typename S = double, typename Index = std::size_t>
+template <
+    typename S = double,
+    typename Index = std::size_t,
+    typename VertexAllocator = std::allocator<Eigen::Matrix<S, 3, 1>>>
 std::tuple<
-    std::vector<Eigen::Matrix<S, 3, 1>>,
+    std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>,
     std::vector<Eigen::Matrix<Index, 3, 1>>>
 computeConvexHull3D(
-    const std::vector<Eigen::Matrix<S, 3, 1>>& vertices, bool optimize = true);
+    const std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>& vertices,
+    bool optimize = true);
 
 /// Compute the centroid of a polygon, assuming the polygon is a convex hull
 DART_API Eigen::Vector2d computeCentroidOfHull(

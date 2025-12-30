@@ -42,15 +42,15 @@ namespace dart {
 namespace math {
 
 //==============================================================================
-template <typename S, typename Index>
+template <typename S, typename Index, typename VertexAllocator>
 std::tuple<
-    std::vector<Eigen::Matrix<S, 3, 1>>,
+    std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>,
     std::vector<Eigen::Matrix<Index, 3, 1>>>
 discardUnusedVertices(
-    const std::vector<Eigen::Matrix<S, 3, 1>>& vertices,
+    const std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>& vertices,
     const std::vector<Eigen::Matrix<Index, 3, 1>>& triangles)
 {
-  auto newVertices = std::vector<Eigen::Matrix<S, 3, 1>>();
+  auto newVertices = std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>();
   auto newTriangles = std::vector<Eigen::Matrix<Index, 3, 1>>();
   newTriangles.resize(triangles.size());
   auto indexMap = std::unordered_map<Index, Index>();
@@ -77,12 +77,13 @@ discardUnusedVertices(
 }
 
 //==============================================================================
-template <typename S, typename Index>
+template <typename S, typename Index, typename VertexAllocator>
 std::tuple<
-    std::vector<Eigen::Matrix<S, 3, 1>>,
+    std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>,
     std::vector<Eigen::Matrix<Index, 3, 1>>>
 computeConvexHull3D(
-    const std::vector<Eigen::Matrix<S, 3, 1>>& inputVertices, bool optimize)
+    const std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>& inputVertices,
+    bool optimize)
 {
   // Use Eigen API directly - no conversion needed
   std::vector<int> faces;
@@ -102,7 +103,8 @@ computeConvexHull3D(
   }
 
   if (optimize)
-    return discardUnusedVertices<S, Index>(inputVertices, eigenFaces);
+    return discardUnusedVertices<S, Index, VertexAllocator>(
+        inputVertices, eigenFaces);
   else
     return std::make_pair(inputVertices, eigenFaces);
 }

@@ -71,10 +71,14 @@ inline double polygonArea2(const std::vector<ProjectedPoint>& points)
   return area2;
 }
 
-template <typename Index, typename Vector3, typename Triangle>
+template <
+    typename Index,
+    typename Vector3,
+    typename Triangle,
+    typename Allocator>
 bool triangulateFaceEarClipping(
     const std::vector<Index>& face,
-    const std::vector<Vector3>& vertices,
+    const std::vector<Vector3, Allocator>& vertices,
     std::vector<Triangle>& triangles)
 {
   triangles.clear();
