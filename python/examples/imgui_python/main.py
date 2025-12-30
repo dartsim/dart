@@ -1,8 +1,6 @@
 """
 Python ImGui widget embedded in dartpy's ImGuiViewer.
 
-Prerequisite: install the Python Dear ImGui binding via the imgui-bundle
-package (PyPI/conda `imgui-bundle`, e.g., `pip install imgui-bundle`).
 The widget below lives inside the ImGui context created by DART and renders via
 the same event loop.
 """
@@ -15,13 +13,7 @@ from typing import List
 import dartpy as dart
 import numpy as np
 
-try:
-    from imgui_bundle import imgui  # type: ignore
-except ImportError as exc:  # pragma: no cover - optional dependency
-    raise SystemExit(
-        "Missing dependency: install the 'imgui-bundle' package (PyPI/conda) to run "
-        "this example, e.g. `pip install imgui-bundle`."
-    ) from exc
+imgui = dart.gui.imgui
 
 
 class PythonImGuiWidget(dart.gui.ImGuiWidget):
@@ -74,8 +66,15 @@ class PythonImGuiWidget(dart.gui.ImGuiWidget):
 
 
 def make_world() -> dart.simulation.World:
-    world = dart.World()
+    world = dart.simulation.World()
     world.set_gravity([0.0, -9.81, 0.0])
+
+    skeleton = dart.dynamics.Skeleton.create("box")
+    _, body = skeleton.create_free_joint_and_body_node_pair()
+    shape = dart.dynamics.BoxShape([0.4, 0.4, 0.4])
+    body.create_shape_node(shape)
+    world.add_skeleton(skeleton)
+
     return world
 
 
@@ -94,7 +93,7 @@ def main(argv: List[str] | None = None) -> int:
     viewer.get_im_gui_handler().add_widget(widget, True)
 
     grid = dart.gui.GridVisual()
-    grid.set_plane_type(dart.gui.GridVisual.PlaneType.XY)
+    grid.set_plane_type(dart.gui.GridVisual.PlaneType.ZX)
     grid.set_offset([0.0, -0.5, 0.0])
     grid.refresh()
     viewer.add_attachment(grid)

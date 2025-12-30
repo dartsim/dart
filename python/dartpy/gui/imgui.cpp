@@ -4,11 +4,13 @@
 #include <dart/gui/ImGuiHandler.hpp>
 #include <dart/gui/ImGuiViewer.hpp>
 #include <dart/gui/ImGuiWidget.hpp>
+#include <dart/gui/IncludeImGui.hpp>
 #include <dart/gui/Utils.hpp>
 #include <dart/gui/Viewer.hpp>
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/pair.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/trampoline.h>
@@ -49,6 +51,71 @@ void defImGuiWidget(nb::module_& m)
       .def("show", &dart::gui::ImGuiWidget::show)
       .def("hide", &dart::gui::ImGuiWidget::hide)
       .def("isVisible", &dart::gui::ImGuiWidget::isVisible);
+}
+
+void defImGuiApi(nb::module_& m)
+{
+  auto imgui = m.def_submodule("imgui", "Bindings for Dear ImGui (DART).");
+
+  imgui.attr("FIRST_USE_EVER") = static_cast<int>(ImGuiCond_FirstUseEver);
+
+  nb::enum_<ImGuiKey>(imgui, "Key").value("Escape", ImGuiKey_Escape);
+
+  nb::class_<ImGuiIO>(imgui, "IO")
+      .def_prop_ro("framerate", [](const ImGuiIO& io) { return io.Framerate; });
+
+  imgui.def(
+      "get_io",
+      []() -> ImGuiIO& { return ImGui::GetIO(); },
+      nb::rv_policy::reference);
+  imgui.def(
+      "set_next_window_size",
+      [](float width, float height, int cond) {
+        ImGui::SetNextWindowSize(
+            ImVec2(width, height), static_cast<ImGuiCond>(cond));
+      },
+      nb::arg("width"),
+      nb::arg("height"),
+      nb::arg("cond") = static_cast<int>(ImGuiCond_Always));
+  imgui.def(
+      "set_next_window_bg_alpha",
+      [](float alpha) { ImGui::SetNextWindowBgAlpha(alpha); },
+      nb::arg("alpha"));
+  imgui.def(
+      "begin",
+      [](const std::string& name, int flags) {
+        return ImGui::Begin(
+            name.c_str(), nullptr, static_cast<ImGuiWindowFlags>(flags));
+      },
+      nb::arg("name"),
+      nb::arg("flags") = 0);
+  imgui.def("end", []() { ImGui::End(); });
+  imgui.def(
+      "text",
+      [](const std::string& text) { ImGui::TextUnformatted(text.c_str()); },
+      nb::arg("text"));
+  imgui.def(
+      "button",
+      [](const std::string& label) { return ImGui::Button(label.c_str()); },
+      nb::arg("label"));
+  imgui.def("same_line", []() { ImGui::SameLine(); });
+  imgui.def("separator", []() { ImGui::Separator(); });
+  imgui.def(
+      "slider_float",
+      [](const std::string& label, float value, float min, float max) {
+        float current = value;
+        const bool changed
+            = ImGui::SliderFloat(label.c_str(), &current, min, max);
+        return std::make_pair(changed, current);
+      },
+      nb::arg("label"),
+      nb::arg("value"),
+      nb::arg("min"),
+      nb::arg("max"));
+  imgui.def(
+      "is_key_down",
+      [](ImGuiKey key) { return ImGui::IsKeyDown(key); },
+      nb::arg("key"));
 }
 
 void defImGuiHandler(nb::module_& m)

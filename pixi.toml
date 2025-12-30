@@ -116,7 +116,7 @@ fi
 if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
-NANOBIND_CMAKE_DIR=$CONDA_PREFIX/lib/python3.12/site-packages/nanobind/cmake
+NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir)
 cmake \
   -G Ninja \
   -S . \
@@ -482,7 +482,7 @@ fi
 if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
-NANOBIND_CMAKE_DIR=$CONDA_PREFIX/lib/python3.12/site-packages/nanobind/cmake
+NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir)
 cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART8=ON -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
@@ -2263,7 +2263,7 @@ wheel-repair = { depends-on = [
 #==============
 
 [environments]
-default = ["testing", "py-default", "imgui-python"]
+default = ["testing", "py-default"]
 gazebo = ["gazebo"]
 py312-wheel = ["py312-wheel"]
 py313-wheel = ["py313-wheel"]
@@ -2271,6 +2271,3 @@ py314-wheel = ["py314-wheel"]
 
 [feature.py-default.dependencies]
 python = "3.12.*"
-
-[feature.imgui-python.dependencies]
-imgui-bundle = "*"

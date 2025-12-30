@@ -6,13 +6,15 @@ drive the UI from Python code while DART owns the Dear ImGui rendering loop.
 ## Requirements
 
 - `dartpy` built with GUI support (`DART_BUILD_GUI=ON`) and the Python bindings
-- A Python Dear ImGui package built against a compatible ImGui version, e.g.:
-
-  ```bash
-  pip install imgui-bundle
-  ```
+- The bundled `dartpy.gui.imgui` module (no extra Python ImGui package needed)
 
 ## Run
+
+```bash
+pixi run py-ex imgui_python
+```
+
+Or, without pixi:
 
 ```bash
 PYTHONPATH=build/<env>/cpp/<build_type>/python \
