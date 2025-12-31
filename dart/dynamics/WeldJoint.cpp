@@ -167,7 +167,9 @@ BodyNode* WeldJoint::merge()
   }
 
   // Remove the child BodyNode (and this WeldJoint) from the Skeleton.
-  child->remove();
+  // Keep the temporary Skeleton alive until we return.
+  const auto removedSkeleton = child->remove();
+  (void)removedSkeleton;
   return parent;
 }
 
