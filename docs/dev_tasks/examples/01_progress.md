@@ -13,6 +13,7 @@
 - Drafted a minimal metadata template and shared harness sketch.
 - Added an asset layout proposal to the plan.
 - Validated the metadata template on a small set of representative examples.
+- Selected a pilot category and recorded the harness decision.
 
 ## Discovery findings
 
@@ -53,9 +54,9 @@
 
 ## Next steps
 
-1. Select a pilot category for the first migration pass.
-2. Decide whether the shared harness is required for that pilot.
-3. Expand metadata headers to the rest of the pilot category.
+1. Draft the pilot category index text and migration checklist.
+2. Expand metadata headers to the rest of the pilot category.
+3. Decide whether to add a top-level `examples/README.md` onboarding index now.
 
 ## Open questions
 

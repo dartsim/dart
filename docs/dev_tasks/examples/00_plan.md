@@ -96,6 +96,13 @@ Each example should include a short header block in its README:
 - A shared harness exists (or an explicit decision not to) with consistent CLI flags.
 - Assets are discoverable without hardcoded absolute paths.
 
+## Pilot migration (proposal)
+
+- Pilot category: getting started (minimal world + basic visualization).
+- Scope: reorganize a small set of beginner examples, update their metadata
+  headers, and add a short category index.
+- Harness: optional for the pilot; avoid code changes unless required.
+
 ## Milestones and sequencing
 
 - Keep changes incremental and reviewable; avoid giant renames in one PR.
