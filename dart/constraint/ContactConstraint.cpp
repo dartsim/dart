@@ -351,8 +351,8 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
 {
   const bool isPositionPhase = info->phase == ConstraintPhase::Position;
   const bool useSplitImpulse = info->useSplitImpulse;
-  const auto computeErrorReductionVelocity = [&]() {
-    double errorReductionVelocity = mContact.penetrationDepth - mErrorAllowance;
+  const auto computeErrorReductionVelocity = [&](double errorAllowance) {
+    double errorReductionVelocity = mContact.penetrationDepth - errorAllowance;
     if (errorReductionVelocity < 0.0) {
       return 0.0;
     }
@@ -414,7 +414,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     double bouncingVelocity = 0.0;
     if (isPositionPhase) {
       // A. Penetration correction
-      bouncingVelocity = computeErrorReductionVelocity();
+      bouncingVelocity = computeErrorReductionVelocity(mErrorAllowance);
     } else {
       // B. Restitution
       if (mIsBounceOn) {
@@ -433,7 +433,8 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
       }
 
       if (!useSplitImpulse) {
-        const double errorReductionVelocity = computeErrorReductionVelocity();
+        const double errorReductionVelocity
+            = computeErrorReductionVelocity(mErrorAllowance);
         if (errorReductionVelocity > bouncingVelocity) {
           bouncingVelocity = errorReductionVelocity;
         }
@@ -471,7 +472,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     double bouncingVelocity = 0.0;
     if (isPositionPhase) {
       // A. Penetration correction
-      bouncingVelocity = computeErrorReductionVelocity();
+      bouncingVelocity = computeErrorReductionVelocity(DART_ERROR_ALLOWANCE);
     } else {
       // B. Restitution
       if (mIsBounceOn) {
@@ -490,7 +491,8 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
       }
 
       if (!useSplitImpulse) {
-        const double errorReductionVelocity = computeErrorReductionVelocity();
+        const double errorReductionVelocity
+            = computeErrorReductionVelocity(DART_ERROR_ALLOWANCE);
         if (errorReductionVelocity > bouncingVelocity) {
           bouncingVelocity = errorReductionVelocity;
         }
