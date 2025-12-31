@@ -136,6 +136,9 @@ protected:
   // Documentation inherited
   void applyImpulse(double* lambda) override;
 
+  /// Apply position-correction impulses (split impulse).
+  void applyPositionImpulse(double* lambda);
+
   // Documentation inherited
   dynamics::SkeletonPtr getRootSkeleton() const override;
 

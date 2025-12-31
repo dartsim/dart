@@ -2,5 +2,5 @@
 # Exclude generated and third-party content to keep signal-to-noise low.
 skip = ./.git,./.pixi,./build,./build-*,./docs/readthedocs/_build,./docs/readthedocs/_generated,./external,./node_modules,*/_build/*,*/_generated/*,*/.venv/*,*/__pycache__/*
 # Ignore domain terms that are not typos.
-ignore-words-list = DOUBLECLICK,mKe,Reacher,reacher,abd,normalY
+ignore-words-list = DOUBLECLICK,mKe,Reacher,reacher,abd,normalY,kInf
 quiet-level = 3

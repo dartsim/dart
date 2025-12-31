@@ -218,9 +218,12 @@ public:
       mGuiGravity(true),
       mGravity(true),
       mGuiHeadlights(true),
+      mSplitImpulseEnabled(false),
       mSolverType(-1)
   {
-    // Do nothing
+    if (auto* solver = mWorld->getConstraintSolver()) {
+      mSplitImpulseEnabled = solver->isSplitImpulseEnabled();
+    }
   }
 
   // Documentation inherited
@@ -285,6 +288,10 @@ public:
       ImGui::RadioButton("PGS", &solverType, 2);
       setLcpSolver(solverType);
 
+      if (ImGui::Checkbox("Split impulse", &mSplitImpulseEnabled)) {
+        setSplitImpulse(mSplitImpulseEnabled);
+      }
+
       ImGui::Text("Time: %.3f", mWorld->getTime());
     }
 
@@ -333,14 +340,17 @@ protected:
     if (solverType == 0) {
       auto lcpSolver = std::make_shared<math::DantzigSolver>();
       auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
+      solver->setSplitImpulseEnabled(mSplitImpulseEnabled);
       mWorld->setConstraintSolver(std::move(solver));
     } else if (solverType == 1) {
       auto lcpSolver = std::make_shared<math::DantzigSolver>();
       auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
+      solver->setSplitImpulseEnabled(mSplitImpulseEnabled);
       mWorld->setConstraintSolver(std::move(solver));
     } else if (solverType == 2) {
       auto lcpSolver = std::make_shared<math::PgsSolver>();
       auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
+      solver->setSplitImpulseEnabled(mSplitImpulseEnabled);
       mWorld->setConstraintSolver(std::move(solver));
     } else {
       DART_WARN("Unsupported boxed-LCP solver selected: {}", solverType);
@@ -362,11 +372,22 @@ protected:
       mWorld->setGravity(Eigen::Vector3d::Zero());
   }
 
+  void setSplitImpulse(bool enabled)
+  {
+    auto* solver = mWorld->getConstraintSolver();
+    if (!solver) {
+      return;
+    }
+
+    solver->setSplitImpulseEnabled(enabled);
+  }
+
   ::osg::ref_ptr<dart::gui::ImGuiViewer> mViewer;
   dart::simulation::WorldPtr mWorld;
   bool mGuiGravity;
   bool mGravity;
   bool mGuiHeadlights;
+  bool mSplitImpulseEnabled;
   int mSolverType;
 };
 
