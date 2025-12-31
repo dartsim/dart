@@ -76,6 +76,7 @@ Current status:
 - Distance tests include missing-shape coverage.
 - Raycast tests include missing-shape coverage.
 - Collision tests include missing-shape coverage.
+- Raycast runs in DartCollisionEngine with detector forwarding.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.
@@ -84,6 +85,5 @@ Where to look:
 Next focus:
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Extend raycast coverage to additional edge cases and future shape types.
-- Decide when to move raycast into the core engine once query types stabilize.
 - Keep task docs updated after each checkpoint.
 - Keep task docs updated after each checkpoint.

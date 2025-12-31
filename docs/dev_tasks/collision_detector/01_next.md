@@ -64,6 +64,7 @@
 - Added missing-shape distance coverage.
 - Added missing-shape raycast coverage.
 - Added missing-shape collision coverage.
+- Moved raycast implementation into DartCollisionEngine with detector forwarding.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.
@@ -71,7 +72,7 @@
 - Explore additional distance broadphase pruning and candidate ordering improvements.
 
 ## Questions and Decisions Needed
-- Decide when to move raycast into the core engine once query types stabilize.
+- Confirm any additional raycast API surface changes required before standalone packaging.
 
 ## Decisions Captured
 - Core namespace: `dart::collision`.

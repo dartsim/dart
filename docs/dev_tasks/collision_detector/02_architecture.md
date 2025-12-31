@@ -23,7 +23,7 @@
 - `DARTCollisionObject` owns the cached `CoreObject` and world AABB values.
 - `DARTCollisionGroup` refreshes core data before each query to honor ShapeFrame versioning.
 - `DARTCollisionDetector` owns API-level validation, filter translation, and contact merging.
-- Raycast remains in `DARTCollisionDetector`, but uses `CoreObject` data and is a candidate for a core move once query types stabilize.
+- Raycast is implemented in `DartCollisionEngine`, with `DARTCollisionDetector` forwarding API calls after refreshing core data.
 
 ## Adapter Responsibilities
 - Maintain object lifetimes and stable pointers expected by the constraint solver.
@@ -51,7 +51,7 @@
 ## Distance and Raycast
 - Distance queries return the minimum signed distance, with optional nearest points.
 - Distance lower bound supports early exit to match current option behavior.
-- Raycast supports closest hit or all hits with optional sorting and a filter predicate; MVP covers primitive shapes with AABB pruning.
+- Raycast supports closest hit or all hits with optional sorting and a filter predicate; MVP covers primitive shapes with AABB pruning and runs in the core engine.
 - Distance MVP now covers primitive shapes; broader coverage will follow.
 
 ## Filtering

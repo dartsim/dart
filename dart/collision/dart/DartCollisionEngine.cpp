@@ -35,6 +35,8 @@
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/DistanceFilter.hpp"
+#include "dart/collision/RaycastOption.hpp"
+#include "dart/collision/RaycastResult.hpp"
 #include "dart/collision/dart/DARTCollide.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/dart/DartCollisionBroadphase.hpp"
@@ -53,6 +55,7 @@ namespace collision {
 namespace {
 
 constexpr double kDistanceEps = 1.0e-12;
+constexpr double kRaycastEps = 1.0e-12;
 
 bool overlaps(const CoreObject& a, const CoreObject& b)
 {
@@ -119,6 +122,13 @@ struct DistanceEntry
   const CoreObject* core{nullptr};
   double minX{0.0};
   double maxX{0.0};
+};
+
+struct RaycastCandidate
+{
+  Eigen::Vector3d point{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d normal{Eigen::Vector3d::Zero()};
+  double fraction{0.0};
 };
 
 struct SatDistanceResult
@@ -201,6 +211,307 @@ double projectBoxExtent(
   return std::abs(n.dot(axis0)) * halfSize[0]
          + std::abs(n.dot(axis1)) * halfSize[1]
          + std::abs(n.dot(axis2)) * halfSize[2];
+}
+
+bool raycastIntersectsAabb(
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& dir,
+    const Eigen::Vector3d& aabbMin,
+    const Eigen::Vector3d& aabbMax)
+{
+  double tmin = 0.0;
+  double tmax = 1.0;
+
+  for (int i = 0; i < 3; ++i) {
+    if (std::abs(dir[i]) < kRaycastEps) {
+      if (from[i] < aabbMin[i] || from[i] > aabbMax[i])
+        return false;
+      continue;
+    }
+
+    const double invDir = 1.0 / dir[i];
+    double t1 = (aabbMin[i] - from[i]) * invDir;
+    double t2 = (aabbMax[i] - from[i]) * invDir;
+    if (t1 > t2)
+      std::swap(t1, t2);
+
+    tmin = std::max(tmin, t1);
+    tmax = std::min(tmax, t2);
+    if (tmin > tmax)
+      return false;
+  }
+
+  return tmax >= 0.0 && tmin <= 1.0;
+}
+
+bool raycastSphere(
+    const CoreObject& core,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& dir,
+    RaycastCandidate* candidate)
+{
+  if (!candidate)
+    return false;
+
+  const Eigen::Vector3d center = core.worldTransform.translation();
+  const double radius = core.shape.radius;
+  const Eigen::Vector3d m = from - center;
+
+  const double a = dir.dot(dir);
+  if (a < kRaycastEps)
+    return false;
+
+  const double b = 2.0 * m.dot(dir);
+  const double c = m.dot(m) - radius * radius;
+  const double discriminant = b * b - 4.0 * a * c;
+
+  if (discriminant < 0.0)
+    return false;
+
+  const double sqrtDiscriminant = std::sqrt(discriminant);
+  const double inv2a = 0.5 / a;
+  double t0 = (-b - sqrtDiscriminant) * inv2a;
+  double t1 = (-b + sqrtDiscriminant) * inv2a;
+
+  if (t0 > t1)
+    std::swap(t0, t1);
+
+  double t = t0;
+  if (t < 0.0 || t > 1.0) {
+    t = t1;
+    if (t < 0.0 || t > 1.0)
+      return false;
+  }
+
+  candidate->fraction = t;
+  candidate->point = from + t * dir;
+  candidate->normal = (candidate->point - center).normalized();
+
+  return true;
+}
+
+bool raycastPlane(
+    const CoreObject& core,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& dir,
+    RaycastCandidate* candidate)
+{
+  if (!candidate)
+    return false;
+
+  const Eigen::Isometry3d inv = core.worldTransform.inverse();
+  const Eigen::Vector3d fromLocal = inv * from;
+  const Eigen::Vector3d dirLocal = inv.linear() * dir;
+  const Eigen::Vector3d& normalLocal = core.shape.planeNormal;
+
+  const double denom = normalLocal.dot(dirLocal);
+  if (std::abs(denom) < kRaycastEps)
+    return false;
+
+  const double t
+      = (core.shape.planeOffset - normalLocal.dot(fromLocal)) / denom;
+  if (t < 0.0 || t > 1.0)
+    return false;
+
+  candidate->fraction = t;
+  candidate->point = from + t * dir;
+  candidate->normal
+      = (core.worldTransform.linear() * normalLocal).normalized();
+
+  return true;
+}
+
+bool raycastBox(
+    const CoreObject& core,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& dir,
+    RaycastCandidate* candidate)
+{
+  if (!candidate)
+    return false;
+
+  const Eigen::Isometry3d inv = core.worldTransform.inverse();
+  const Eigen::Vector3d fromLocal = inv * from;
+  const Eigen::Vector3d dirLocal = inv.linear() * dir;
+  const Eigen::Vector3d halfSize = 0.5 * core.shape.size;
+
+  double tmin = 0.0;
+  double tmax = 1.0;
+  int axisEntry = -1;
+  int axisExit = -1;
+  double signEntry = 0.0;
+  double signExit = 0.0;
+
+  for (int i = 0; i < 3; ++i) {
+    if (std::abs(dirLocal[i]) < kRaycastEps) {
+      if (fromLocal[i] < -halfSize[i] || fromLocal[i] > halfSize[i])
+        return false;
+      continue;
+    }
+
+    double t1 = (-halfSize[i] - fromLocal[i]) / dirLocal[i];
+    double t2 = (halfSize[i] - fromLocal[i]) / dirLocal[i];
+    double entrySign = (t1 > t2) ? 1.0 : -1.0;
+
+    if (t1 > t2)
+      std::swap(t1, t2);
+
+    if (t1 > tmin) {
+      tmin = t1;
+      axisEntry = i;
+      signEntry = entrySign;
+    }
+
+    if (t2 < tmax) {
+      tmax = t2;
+      axisExit = i;
+      signExit = -entrySign;
+    }
+
+    if (tmin > tmax)
+      return false;
+  }
+
+  if (tmax < 0.0)
+    return false;
+
+  double tHit = tmin;
+  int axis = axisEntry;
+  double sign = signEntry;
+  if (tHit < 0.0) {
+    tHit = tmax;
+    axis = axisExit;
+    sign = signExit;
+  }
+
+  if (tHit < 0.0 || tHit > 1.0)
+    return false;
+
+  Eigen::Vector3d normalLocal = Eigen::Vector3d::Zero();
+  if (axis >= 0)
+    normalLocal[axis] = sign;
+
+  candidate->fraction = tHit;
+  candidate->point = from + tHit * dir;
+  candidate->normal
+      = (core.worldTransform.linear() * normalLocal).normalized();
+
+  return true;
+}
+
+bool raycastCylinder(
+    const CoreObject& core,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& dir,
+    RaycastCandidate* candidate)
+{
+  if (!candidate)
+    return false;
+
+  const Eigen::Isometry3d inv = core.worldTransform.inverse();
+  const Eigen::Vector3d fromLocal = inv * from;
+  const Eigen::Vector3d dirLocal = inv.linear() * dir;
+  const double radius = core.shape.radius;
+  const double halfHeight = 0.5 * core.shape.height;
+
+  double bestT = std::numeric_limits<double>::infinity();
+  Eigen::Vector3d bestNormal = Eigen::Vector3d::Zero();
+  bool hit = false;
+
+  const double a = dirLocal.x() * dirLocal.x() + dirLocal.y() * dirLocal.y();
+  if (a > kRaycastEps) {
+    const double b
+        = 2.0 * (fromLocal.x() * dirLocal.x() + fromLocal.y() * dirLocal.y());
+    const double c = fromLocal.x() * fromLocal.x()
+                     + fromLocal.y() * fromLocal.y() - radius * radius;
+    const double discriminant = b * b - 4.0 * a * c;
+    if (discriminant >= 0.0) {
+      const double sqrtDiscriminant = std::sqrt(discriminant);
+      const double inv2a = 0.5 / a;
+      double t0 = (-b - sqrtDiscriminant) * inv2a;
+      double t1 = (-b + sqrtDiscriminant) * inv2a;
+
+      if (t0 > t1)
+        std::swap(t0, t1);
+
+      auto checkSideHit = [&](double t) {
+        if (t < 0.0 || t > 1.0)
+          return;
+
+        const double z = fromLocal.z() + t * dirLocal.z();
+        if (z < -halfHeight || z > halfHeight)
+          return;
+
+        if (t < bestT) {
+          const Eigen::Vector3d pointLocal = fromLocal + t * dirLocal;
+          Eigen::Vector3d normalLocal(pointLocal.x(), pointLocal.y(), 0.0);
+          if (normalLocal.norm() > kRaycastEps)
+            normalLocal.normalize();
+          bestNormal = core.worldTransform.linear() * normalLocal;
+          bestT = t;
+          hit = true;
+        }
+      };
+
+      checkSideHit(t0);
+      checkSideHit(t1);
+    }
+  }
+
+  if (std::abs(dirLocal.z()) > kRaycastEps) {
+    const double invDz = 1.0 / dirLocal.z();
+    const double tTop = (halfHeight - fromLocal.z()) * invDz;
+    const double tBottom = (-halfHeight - fromLocal.z()) * invDz;
+
+    auto checkCapHit = [&](double t, double capZ) {
+      if (t < 0.0 || t > 1.0)
+        return;
+
+      const double x = fromLocal.x() + t * dirLocal.x();
+      const double y = fromLocal.y() + t * dirLocal.y();
+      if (x * x + y * y > radius * radius)
+        return;
+
+      if (t < bestT) {
+        Eigen::Vector3d normalLocal(0.0, 0.0, capZ > 0.0 ? 1.0 : -1.0);
+        bestNormal = core.worldTransform.linear() * normalLocal;
+        bestT = t;
+        hit = true;
+      }
+    };
+
+    checkCapHit(tTop, halfHeight);
+    checkCapHit(tBottom, -halfHeight);
+  }
+
+  if (!hit)
+    return false;
+
+  candidate->fraction = bestT;
+  candidate->point = from + bestT * dir;
+  candidate->normal = bestNormal.normalized();
+
+  return true;
+}
+
+bool raycastCoreObject(
+    const CoreObject& core,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& dir,
+    RaycastCandidate* candidate)
+{
+  switch (core.shape.type) {
+    case CoreShapeType::kSphere:
+      return raycastSphere(core, from, dir, candidate);
+    case CoreShapeType::kBox:
+      return raycastBox(core, from, dir, candidate);
+    case CoreShapeType::kCylinder:
+      return raycastCylinder(core, from, dir, candidate);
+    case CoreShapeType::kPlane:
+      return raycastPlane(core, from, dir, candidate);
+    default:
+      return false;
+  }
 }
 
 double projectCylinderExtent(
@@ -1232,6 +1543,90 @@ double DartCollisionEngine::distance(
   }
 
   return std::max(bestDistance, option.distanceLowerBound);
+}
+
+//==============================================================================
+bool DartCollisionEngine::raycast(
+    const ObjectList& objects,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    const RaycastOption& option,
+    RaycastResult* result) const
+{
+  if (result)
+    result->clear();
+
+  if (objects.empty())
+    return false;
+
+  const Eigen::Vector3d dir = to - from;
+  if (dir.squaredNorm() < kRaycastEps)
+    return false;
+
+  bool hasHit = false;
+  RayHit bestHit;
+  double bestFraction = std::numeric_limits<double>::infinity();
+  std::vector<RayHit> hits;
+
+  for (auto* object : objects) {
+    if (!object || !option.passesFilter(object))
+      continue;
+
+    const auto* dartObject = static_cast<const DARTCollisionObject*>(object);
+    const auto& core = dartObject->getCoreObject();
+    if (core.shape.type == CoreShapeType::kNone
+        || core.shape.type == CoreShapeType::kUnsupported) {
+      continue;
+    }
+
+    if (!raycastIntersectsAabb(
+            from, dir, core.worldAabbMin, core.worldAabbMax)) {
+      continue;
+    }
+
+    RaycastCandidate candidate;
+    if (!raycastCoreObject(core, from, dir, &candidate))
+      continue;
+
+    RayHit hit;
+    hit.mCollisionObject = object;
+    hit.mPoint = candidate.point;
+    hit.mNormal = candidate.normal;
+    hit.mFraction = candidate.fraction;
+
+    if (!option.mEnableAllHits) {
+      if (!hasHit || hit.mFraction < bestFraction) {
+        bestHit = hit;
+        bestFraction = hit.mFraction;
+        hasHit = true;
+      }
+    } else {
+      hits.push_back(hit);
+      hasHit = true;
+    }
+  }
+
+  if (!result)
+    return hasHit;
+
+  if (!hasHit)
+    return false;
+
+  if (!option.mEnableAllHits) {
+    result->mRayHits.push_back(bestHit);
+  } else {
+    if (option.mSortByClosest) {
+      std::sort(
+          hits.begin(),
+          hits.end(),
+          [](const RayHit& a, const RayHit& b) {
+            return a.mFraction < b.mFraction;
+          });
+    }
+    result->mRayHits = std::move(hits);
+  }
+
+  return result->hasHit();
 }
 
 //==============================================================================

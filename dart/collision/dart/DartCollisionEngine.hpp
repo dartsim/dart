@@ -37,7 +37,11 @@
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/DistanceOption.hpp>
 #include <dart/collision/DistanceResult.hpp>
+#include <dart/collision/RaycastOption.hpp>
+#include <dart/collision/RaycastResult.hpp>
 #include <dart/collision/Fwd.hpp>
+
+#include <Eigen/Dense>
 
 #include <vector>
 
@@ -70,6 +74,13 @@ public:
       const ObjectList& objects2,
       const DistanceOption& option,
       DistanceResult* result) const;
+
+  bool raycast(
+      const ObjectList& objects,
+      const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to,
+      const RaycastOption& option,
+      RaycastResult* result) const;
 
 private:
   bool checkPair(

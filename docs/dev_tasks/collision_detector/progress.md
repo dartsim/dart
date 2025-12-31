@@ -46,6 +46,7 @@
 - Distance tests include missing-shape coverage.
 - Raycast tests include missing-shape coverage.
 - Collision tests include missing-shape coverage.
+- Raycast now runs in DartCollisionEngine with detector forwarding.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
@@ -96,6 +97,7 @@
 - Added missing-shape distance coverage.
 - Added missing-shape raycast coverage.
 - Added missing-shape collision coverage.
+- Moved raycast implementation into DartCollisionEngine.
 
 ## Next Steps
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
