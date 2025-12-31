@@ -6,6 +6,17 @@
 #
 # This file is provided under the "BSD-style" License
 
+if(NOT DART_USE_SYSTEM_ODE)
+  if(TARGET ODE)
+    if(NOT TARGET ODE::ODE)
+      add_library(ODE::ODE ALIAS ODE)
+    endif()
+    set(ODE_FOUND TRUE)
+    set(ode_FOUND TRUE)
+    return()
+  endif()
+endif()
+
 find_package(ODE QUIET CONFIG NAMES ODE ode)
 
 if(NOT ODE_FOUND AND NOT ode_FOUND)

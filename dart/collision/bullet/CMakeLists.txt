@@ -5,27 +5,32 @@
 # with Bullet, which uses relative paths and may break transitive dependencies.
 dart_find_package(Bullet)
 if(BULLET_FOUND)
-  # Test whether Bullet was built with double precision. If so, we need to
-  # define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
-  # any Bullet headers. This is a workaround for the fact that Bullet does not
-  # add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
-  include(CheckCXXSourceCompiles)
-  set(CMAKE_REQUIRED_FLAGS "-w")
-  set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
-  set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
-  set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
-  check_cxx_source_compiles(
-    "
-    #include <btBulletCollisionCommon.h>
-    int main()
-    {
-      btVector3 v(0., 0., 1.);
-      btStaticPlaneShape planeShape(v, 0.);
-      return 0;
-    }
-    "
-    BT_USE_DOUBLE_PRECISION
-  )
+  if(DART_USE_SYSTEM_BULLET)
+    # Test whether Bullet was built with double precision. If so, we need to
+    # define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
+    # any Bullet headers. This is a workaround for the fact that Bullet does not
+    # add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
+    include(CheckCXXSourceCompiles)
+    set(CMAKE_REQUIRED_FLAGS "-w")
+    set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
+    set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
+    set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
+    check_cxx_source_compiles(
+      "
+      #include <btBulletCollisionCommon.h>
+      int main()
+      {
+        btVector3 v(0., 0., 1.);
+        btStaticPlaneShape planeShape(v, 0.);
+        return 0;
+      }
+      "
+      BT_USE_DOUBLE_PRECISION
+    )
+  else()
+    # FetchContent builds Bullet with USE_DOUBLE_PRECISION=ON, so keep DART in sync.
+    set(BT_USE_DOUBLE_PRECISION TRUE)
+  endif()
 
   if(DART_VERBOSE)
     if(BT_USE_DOUBLE_PRECISION)
@@ -55,6 +60,9 @@ set(component_name collision-bullet)
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})
 target_link_libraries(${target_name} PUBLIC dart Bullet)
+if(BT_USE_DOUBLE_PRECISION)
+  target_compile_definitions(${target_name} PUBLIC BT_USE_DOUBLE_PRECISION)
+endif()
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
