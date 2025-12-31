@@ -527,7 +527,7 @@ graph TB
 
 - [`FCLCollisionDetector`](dart/collision/fcl/FCLCollisionDetector.hpp) - Default, uses FCL library
 - [`BulletCollisionDetector`](dart/collision/bullet/BulletCollisionDetector.hpp) - Uses Bullet physics
-- [`DARTCollisionDetector`](dart/collision/dart/DARTCollisionDetector.hpp) - Native implementation
+- [`DARTCollisionDetector`](dart/collision/dart/DartCollisionDetector.hpp) - Native implementation
 - [`OdeCollisionDetector`](dart/collision/ode/OdeCollisionDetector.hpp) - Uses ODE library
 
 **Key Elements**:

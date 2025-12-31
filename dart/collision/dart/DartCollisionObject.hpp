@@ -30,9 +30,46 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_DARTCOLLISIONQUERY_WRAPPER_HPP_
-#define DART_COLLISION_DART_DARTCOLLISIONQUERY_WRAPPER_HPP_
+#ifndef DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
+#define DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
 
-#include <dart/collision/dart/engine/DartCollisionQuery.hpp>
+#include <dart/collision/CollisionObject.hpp>
+#include <dart/collision/dart/engine/DartCollisionCore.hpp>
 
-#endif // DART_COLLISION_DART_DARTCOLLISIONQUERY_WRAPPER_HPP_
+#include <Eigen/Dense>
+
+namespace dart {
+namespace collision {
+
+class CollisionObject;
+
+class DARTCollisionObject : public CollisionObject
+{
+public:
+  friend class DARTCollisionDetector;
+
+  const Eigen::Vector3d& getWorldAabbMin() const;
+
+  const Eigen::Vector3d& getWorldAabbMax() const;
+
+  const CoreObject& getCoreObject() const;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+protected:
+  /// Constructor
+  DARTCollisionObject(
+      CollisionDetector* collisionDetector,
+      const dynamics::ShapeFrame* shapeFrame);
+
+  // Documentation inherited
+  void updateEngineData() override;
+
+protected:
+  CoreObject mCoreObject;
+};
+
+} // namespace collision
+} // namespace dart
+
+#endif // DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_

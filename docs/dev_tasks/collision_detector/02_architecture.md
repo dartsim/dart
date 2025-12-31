@@ -29,7 +29,7 @@
 - `DARTCollisionGroup` refreshes core data before each query to honor ShapeFrame versioning.
 - `DARTCollisionDetector` owns API-level validation, filter translation, and contact merging.
 - Raycast is implemented in `DartCollisionEngine`, with `DARTCollisionDetector` forwarding API calls after refreshing core data.
-- Engine implementation files live under `dart/collision/dart/engine` with wrapper headers at `dart/collision/dart` to preserve includes.
+- Engine implementation files live under `dart/collision/dart/engine`, while adapter headers remain in `dart/collision/dart`.
 
 ## Adapter Responsibilities
 
@@ -63,6 +63,7 @@
 - Distance queries return the minimum signed distance, with optional nearest points.
 - Distance lower bound supports early exit to match current option behavior.
 - Raycast supports closest hit or all hits with optional sorting and a filter predicate; MVP covers primitive shapes with AABB pruning and runs in the core engine.
+- DARTCollisionDetector currently gates raycast via `setRaycastEnabled` to preserve the existing gazebo ray intersection expectations.
 - Distance MVP now covers primitive shapes; broader coverage will follow.
 
 ## Filtering

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/DartCollisionBroadphase.hpp"
+#include "dart/collision/dart/engine/DartCollisionBroadphase.hpp"
 
 #include <algorithm>
 

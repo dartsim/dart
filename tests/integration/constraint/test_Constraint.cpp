@@ -34,7 +34,7 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/dart/DartCollisionDetector.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"

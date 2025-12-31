@@ -98,6 +98,12 @@ public:
       const RaycastOption& option = RaycastOption(),
       RaycastResult* result = nullptr) override;
 
+  /// Enable or disable raycast support for this detector.
+  void setRaycastEnabled(bool enabled);
+
+  /// Returns true if raycast support is enabled.
+  bool isRaycastEnabled() const;
+
 protected:
   /// Constructor
   DARTCollisionDetector();
@@ -113,6 +119,7 @@ private:
   static Registrar<DARTCollisionDetector> mRegistrar;
 
   std::unique_ptr<DartCollisionEngine> mEngine;
+  bool mRaycastEnabled{false};
 };
 
 } // namespace collision

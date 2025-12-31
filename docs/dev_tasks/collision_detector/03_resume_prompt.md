@@ -84,7 +84,9 @@ Current status:
 - Raycast runs in DartCollisionEngine with detector forwarding.
 - Raycast reserves hits for all-hit queries and exits early on zero-fraction hits.
 - Added a DART raycast benchmark covering closest-hit and all-hit queries.
-- Core engine implementation files live under `dart/collision/dart/engine` with wrapper headers at `dart/collision/dart`.
+- Core engine implementation files live under `dart/collision/dart/engine`, with adapter headers in `dart/collision/dart`.
+- Adapter file names use the `DartCollision*` prefix; class names remain unchanged.
+- DART raycast is gated behind `DARTCollisionDetector::setRaycastEnabled`.
 
 Where to look:
 

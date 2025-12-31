@@ -48,12 +48,19 @@ namespace {
 constexpr double kFractionTolerance = 1e-5;
 constexpr double kPi = 3.141592653589793;
 
+std::shared_ptr<DARTCollisionDetector> createRaycastDetector()
+{
+  auto detector = createRaycastDetector();
+  detector->setRaycastEnabled(true);
+  return detector;
+}
+
 } // namespace
 
 //==============================================================================
 TEST(DartRaycast, BasicInterface)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<SphereShape>(1.0));
@@ -112,7 +119,7 @@ TEST(DartRaycast, BasicInterface)
 //==============================================================================
 TEST(DartRaycast, ZeroLengthRay)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<SphereShape>(1.0));
@@ -135,7 +142,7 @@ TEST(DartRaycast, ZeroLengthRay)
 //==============================================================================
 TEST(DartRaycast, EmptyGroup)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto group = detector->createCollisionGroup();
 
@@ -155,7 +162,7 @@ TEST(DartRaycast, EmptyGroup)
 //==============================================================================
 TEST(DartRaycast, MissingShape)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto emptyFrame = SimpleFrame::createShared(Frame::World());
   auto group = detector->createCollisionGroup(emptyFrame.get());
@@ -176,7 +183,7 @@ TEST(DartRaycast, MissingShape)
 //==============================================================================
 TEST(DartRaycast, EllipsoidHit)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(
@@ -204,7 +211,7 @@ TEST(DartRaycast, EllipsoidHit)
 //==============================================================================
 TEST(DartRaycast, InsideHits)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   RaycastOption option;
   RaycastResult result;
@@ -264,7 +271,7 @@ TEST(DartRaycast, InsideHits)
 //==============================================================================
 TEST(DartRaycast, TangentSphereHit)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<SphereShape>(1.0));
@@ -291,7 +298,7 @@ TEST(DartRaycast, TangentSphereHit)
 //==============================================================================
 TEST(DartRaycast, TangentCylinderHit)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<CylinderShape>(1.0, 2.0));
@@ -318,7 +325,7 @@ TEST(DartRaycast, TangentCylinderHit)
 //==============================================================================
 TEST(DartRaycast, Options)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto frame1 = SimpleFrame::createShared(Frame::World());
   frame1->setShape(std::make_shared<SphereShape>(1.0));
@@ -360,7 +367,7 @@ TEST(DartRaycast, Options)
 //==============================================================================
 TEST(DartRaycast, Filters)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto frame1 = SimpleFrame::createShared(Frame::World());
   auto frame2 = SimpleFrame::createShared(Frame::World());
@@ -431,7 +438,7 @@ TEST(DartRaycast, Filters)
 //==============================================================================
 TEST(DartRaycast, BoxHits)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
@@ -459,7 +466,7 @@ TEST(DartRaycast, BoxHits)
 //==============================================================================
 TEST(DartRaycast, CylinderHits)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<CylinderShape>(1.0, 2.0));
@@ -501,7 +508,7 @@ TEST(DartRaycast, CylinderHits)
 //==============================================================================
 TEST(DartRaycast, PlaneHits)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
@@ -528,7 +535,7 @@ TEST(DartRaycast, PlaneHits)
 //==============================================================================
 TEST(DartRaycast, PlaneOffsetHit)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 1.0));
@@ -555,7 +562,7 @@ TEST(DartRaycast, PlaneOffsetHit)
 //==============================================================================
 TEST(DartRaycast, RotatedPlaneHit)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
@@ -584,7 +591,7 @@ TEST(DartRaycast, RotatedPlaneHit)
 //==============================================================================
 TEST(DartRaycast, RotatedBoxHit)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
@@ -613,7 +620,7 @@ TEST(DartRaycast, RotatedBoxHit)
 //==============================================================================
 TEST(DartRaycast, RotatedCylinderHit)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<CylinderShape>(1.0, 2.0));
@@ -642,7 +649,7 @@ TEST(DartRaycast, RotatedCylinderHit)
 //==============================================================================
 TEST(DartRaycast, ParallelPlaneMiss)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = createRaycastDetector();
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));

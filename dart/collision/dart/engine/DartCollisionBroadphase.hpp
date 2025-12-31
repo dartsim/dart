@@ -33,7 +33,7 @@
 #ifndef DART_COLLISION_DART_DARTCOLLISIONBROADPHASE_HPP_
 #define DART_COLLISION_DART_DARTCOLLISIONBROADPHASE_HPP_
 
-#include <dart/collision/dart/DartCollisionCore.hpp>
+#include <dart/collision/dart/engine/DartCollisionCore.hpp>
 
 #include <vector>
 

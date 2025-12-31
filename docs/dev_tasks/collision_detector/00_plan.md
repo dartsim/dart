@@ -32,7 +32,8 @@
 - Core builds into the `dart` target for now (no separate CMake target).
 - Default switch only after feature parity and acceptable performance.
 - Engine class name: `DartCollisionEngine`.
-- Core engine implementation files live under `dart/collision/dart/engine` with wrapper headers at `dart/collision/dart`.
+- Core engine implementation files live under `dart/collision/dart/engine`, with adapter headers in `dart/collision/dart`.
+- DART raycast is enabled per detector via `DARTCollisionDetector::setRaycastEnabled` for now.
 
 ## Milestones
 

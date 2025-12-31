@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/collision/dart/DartCollisionObject.hpp"
 
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"

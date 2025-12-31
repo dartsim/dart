@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/DARTCollide.hpp"
+#include "dart/collision/dart/engine/DartCollide.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -1961,11 +1961,11 @@ int collideCore(
           return collidePlaneCylinder(
               o1,
               o2,
+              shape1.planeNormal,
+              T1,
               shape2.radius,
               0.5 * shape2.height,
               T2,
-              shape1.planeNormal,
-              T1,
               result);
         default:
           break;

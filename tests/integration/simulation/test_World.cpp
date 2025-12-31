@@ -51,7 +51,7 @@
 #if DART_HAVE_BULLET
   #include "dart/collision/bullet/All.hpp"
 #endif
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/dart/DartCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"

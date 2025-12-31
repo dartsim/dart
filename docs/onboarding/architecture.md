@@ -239,7 +239,7 @@ DART supports **4 pluggable backends** via Strategy Pattern:
 
 - FCL: `dart/collision/fcl/FCLCollisionDetector.hpp`
 - Bullet: `dart/collision/bullet/BulletCollisionDetector.hpp`
-- DART: `dart/collision/dart/DARTCollisionDetector.hpp`
+- DART: `dart/collision/dart/DartCollisionDetector.hpp`
 - ODE: `dart/collision/ode/OdeCollisionDetector.hpp`
 
 ---

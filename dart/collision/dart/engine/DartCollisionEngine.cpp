@@ -30,16 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/DartCollisionEngine.hpp"
+#include "dart/collision/dart/engine/DartCollisionEngine.hpp"
 
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/DistanceFilter.hpp"
 #include "dart/collision/RaycastOption.hpp"
 #include "dart/collision/RaycastResult.hpp"
-#include "dart/collision/dart/DARTCollide.hpp"
-#include "dart/collision/dart/DARTCollisionObject.hpp"
-#include "dart/collision/dart/DartCollisionBroadphase.hpp"
+#include "dart/collision/dart/engine/DartCollide.hpp"
+#include "dart/collision/dart/DartCollisionObject.hpp"
+#include "dart/collision/dart/engine/DartCollisionBroadphase.hpp"
 
 #include <Eigen/Dense>
 
@@ -675,8 +675,10 @@ bool distanceSphereSphere(
   const Eigen::Vector3d delta = c1 - c2;
   const double dist = delta.norm();
   const double radiusSum = sphere1.shape.radius + sphere2.shape.radius;
-  const Eigen::Vector3d normal
-      = (dist > kDistanceEps) ? delta / dist : Eigen::Vector3d::UnitX();
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitX();
+  if (dist > kDistanceEps) {
+    normal = delta / dist;
+  }
 
   out->distance = dist - radiusSum;
   out->point1 = c1 - normal * sphere1.shape.radius;

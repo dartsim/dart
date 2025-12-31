@@ -33,7 +33,7 @@
 #include "../../helpers/GTestUtils.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/DistanceFilter.hpp"
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/dart/DartCollisionDetector.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"

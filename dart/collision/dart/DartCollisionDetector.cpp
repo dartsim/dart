@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/dart/DartCollisionDetector.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/dart/DARTCollisionGroup.hpp"
-#include "dart/collision/dart/DARTCollisionObject.hpp"
-#include "dart/collision/dart/DartCollisionEngine.hpp"
+#include "dart/collision/dart/DartCollisionGroup.hpp"
+#include "dart/collision/dart/DartCollisionObject.hpp"
+#include "dart/collision/dart/engine/DartCollisionEngine.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -218,6 +218,9 @@ bool DARTCollisionDetector::raycast(
   if (result)
     result->clear();
 
+  if (!mRaycastEnabled)
+    return CollisionDetector::raycast(group, from, to, option, result);
+
   if (!checkGroupValidity(this, group))
     return false;
 
@@ -225,6 +228,18 @@ bool DARTCollisionDetector::raycast(
   casted->updateEngineData();
   const auto& objects = casted->mCollisionObjects;
   return mEngine->raycast(objects, from, to, option, result);
+}
+
+//==============================================================================
+void DARTCollisionDetector::setRaycastEnabled(bool enabled)
+{
+  mRaycastEnabled = enabled;
+}
+
+//==============================================================================
+bool DARTCollisionDetector::isRaycastEnabled() const
+{
+  return mRaycastEnabled;
 }
 
 //==============================================================================

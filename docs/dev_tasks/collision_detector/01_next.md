@@ -68,7 +68,10 @@
 - Moved raycast implementation into DartCollisionEngine with detector forwarding.
 - Added minor raycast early-exit and hit reservation optimizations.
 - Added a DART raycast benchmark covering closest-hit and all-hit queries.
-- Moved core engine implementation files into `dart/collision/dart/engine` with wrapper headers to preserve includes.
+- Moved core engine implementation files into `dart/collision/dart/engine` and updated includes to use the engine path.
+- Renamed adapter file names to `DartCollision*` and updated includes to match the new paths.
+- Gated DART raycast behind `DARTCollisionDetector::setRaycastEnabled` to keep the gazebo ray intersection expectations unchanged; DART raycast tests and benchmarks enable it explicitly.
+- Verified `pixi run -e gazebo test-gz` passes after the layout and raycast gating changes.
 
 ## Next Actions
 
@@ -77,6 +80,7 @@
 - Explore additional distance broadphase pruning and candidate ordering improvements.
 - Capture baseline timings for the new raycast benchmark.
 - Validate build and install paths after the engine layout change.
+- Revisit the raycast enablement default once gazebo expectations change.
 
 ## Questions and Decisions Needed
 

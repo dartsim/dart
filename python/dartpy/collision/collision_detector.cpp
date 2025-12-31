@@ -2,7 +2,7 @@
 
 #include "collision/collision_group.hpp"
 #include "dart/collision/CollisionDetector.hpp"
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/dart/DartCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 
 #include <nanobind/nanobind.h>

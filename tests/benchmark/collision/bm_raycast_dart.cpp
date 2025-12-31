@@ -54,8 +54,10 @@ struct RaycastScene
 RaycastScene createScene(std::size_t count)
 {
   RaycastScene scene;
-  scene.detector = collision::DARTCollisionDetector::create();
-  scene.group = scene.detector->createCollisionGroup();
+  auto detector = collision::DARTCollisionDetector::create();
+  detector->setRaycastEnabled(true);
+  scene.detector = detector;
+  scene.group = detector->createCollisionGroup();
   scene.frames.reserve(count);
 
   for (std::size_t i = 0; i < count; ++i) {

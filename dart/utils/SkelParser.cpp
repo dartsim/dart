@@ -33,7 +33,7 @@
 #include "dart/utils/SkelParser.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/dart/DartCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
