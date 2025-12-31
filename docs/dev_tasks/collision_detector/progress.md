@@ -42,6 +42,7 @@
 - Raycast tests include zero-length ray coverage.
 - Distance tests include coverage for DistanceOption without nearest points.
 - Raycast tests include empty-group coverage.
+- Collision tests include empty-group coverage.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
@@ -88,6 +89,7 @@
 - Added zero-length raycast coverage.
 - Added coverage for DistanceOption without nearest points.
 - Added empty-group raycast coverage.
+- Added empty-group collision coverage.
 
 ## Next Steps
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.

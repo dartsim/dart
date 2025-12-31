@@ -72,6 +72,7 @@ Current status:
 - Raycast tests include zero-length ray coverage.
 - Distance tests include coverage for DistanceOption without nearest points.
 - Raycast tests include empty-group coverage.
+- Collision tests include empty-group coverage.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.

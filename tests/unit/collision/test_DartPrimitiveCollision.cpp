@@ -140,3 +140,18 @@ TEST(DartCollisionPrimitives, EllipsoidSphere)
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_GE(result.getNumContacts(), 1u);
 }
+
+//==============================================================================
+TEST(DartCollisionPrimitives, EmptyGroup)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto group = detector->createCollisionGroup();
+
+  CollisionOption option;
+  option.enableContact = true;
+
+  CollisionResult result;
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+}
