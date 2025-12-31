@@ -120,6 +120,8 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
   mCollisionGroup->subscribeTo(skeleton);
   mSkeletons.push_back(skeleton);
   mConstrainedGroups.reserve(mSkeletons.size());
+  mContactPatchCache.reset();
+  mPersistentContacts.clear();
 }
 
 //==============================================================================
@@ -152,6 +154,8 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), skeleton), mSkeletons.end());
   mConstrainedGroups.reserve(mSkeletons.size());
+  mContactPatchCache.reset();
+  mPersistentContacts.clear();
 }
 
 //==============================================================================
@@ -166,6 +170,8 @@ void ConstraintSolver::removeAllSkeletons()
 {
   mCollisionGroup->removeAllShapeFrames();
   mSkeletons.clear();
+  mContactPatchCache.reset();
+  mPersistentContacts.clear();
 }
 
 //==============================================================================
@@ -228,6 +234,8 @@ ConstConstraintBasePtr ConstraintSolver::getConstraint(std::size_t index) const
 void ConstraintSolver::clearLastCollisionResult()
 {
   mCollisionResult.clear();
+  mContactPatchCache.reset();
+  mPersistentContacts.clear();
 }
 
 //==============================================================================
@@ -262,6 +270,9 @@ void ConstraintSolver::setCollisionDetector(
 
   for (const auto& skeleton : mSkeletons)
     mCollisionGroup->addShapeFramesOf(skeleton.get());
+
+  mContactPatchCache.reset();
+  mPersistentContacts.clear();
 }
 
 //==============================================================================
@@ -299,6 +310,42 @@ collision::CollisionOption& ConstraintSolver::getCollisionOption()
 const collision::CollisionOption& ConstraintSolver::getCollisionOption() const
 {
   return mCollisionOption;
+}
+
+//==============================================================================
+void ConstraintSolver::setContactPatchCacheOptions(
+    const ContactPatchCacheOptions& options)
+{
+  const bool toggled = (mContactPatchOptions.enabled != options.enabled);
+  mContactPatchOptions = options;
+  if (toggled) {
+    mContactPatchCache.reset();
+    mPersistentContacts.clear();
+  }
+}
+
+//==============================================================================
+const ContactPatchCacheOptions& ConstraintSolver::getContactPatchCacheOptions()
+    const
+{
+  return mContactPatchOptions;
+}
+
+//==============================================================================
+void ConstraintSolver::setContactPatchCacheEnabled(bool enabled)
+{
+  if (mContactPatchOptions.enabled == enabled)
+    return;
+
+  mContactPatchOptions.enabled = enabled;
+  mContactPatchCache.reset();
+  mPersistentContacts.clear();
+}
+
+//==============================================================================
+bool ConstraintSolver::isContactPatchCacheEnabled() const
+{
+  return mContactPatchOptions.enabled;
 }
 
 //==============================================================================
@@ -358,6 +405,9 @@ void ConstraintSolver::setFromOtherConstraintSolver(
     mSecondaryLcpSolver = other.mSecondaryLcpSolver;
   }
   mSplitImpulseEnabled = other.mSplitImpulseEnabled;
+  mContactPatchOptions = other.mContactPatchOptions;
+  mContactPatchCache.reset();
+  mPersistentContacts.clear();
 }
 
 //==============================================================================
@@ -445,6 +495,13 @@ void ConstraintSolver::updateConstraints()
   // Destroy previous soft contact constraints
   mSoftContactConstraints.clear();
 
+  if (mContactPatchOptions.enabled) {
+    mContactPatchCache.update(
+        mCollisionResult, mContactPatchOptions, mPersistentContacts);
+  } else {
+    mPersistentContacts.clear();
+  }
+
   // Create a mapping of contact pairs to the number of contacts between them
   using ContactPair
       = std::pair<collision::CollisionObject*, collision::CollisionObject*>;
@@ -469,14 +526,11 @@ void ConstraintSolver::updateConstraints()
   std::map<ContactPair, size_t, ContactPairCompare> contactPairMap;
   std::vector<collision::Contact*> contacts;
 
-  // Create new contact constraints
-  for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
-    auto& contact = mCollisionResult.getContact(i);
-
+  auto isContactValid = [](const collision::Contact& contact) {
     if (collision::Contact::isZeroNormal(contact.normal)) {
       // Skip this contact. This is because we assume that a contact with
       // zero-length normal is invalid.
-      continue;
+      return false;
     }
 
     // If penetration depth is negative, then the collision isn't really
@@ -484,18 +538,45 @@ void ConstraintSolver::updateConstraints()
     // TODO(MXG): Investigate ways to leverage the proximity information of a
     //            negative penetration to improve collision handling.
     if (contact.penetrationDepth < 0.0)
-      continue;
+      return false;
 
-    if (isSoftContact(contact)) {
-      mSoftContactConstraints.push_back(
-          std::make_shared<SoftContactConstraint>(contact, mTimeStep));
-    } else {
-      // Increment the count of contacts between the two collision objects
-      ++contactPairMap[std::make_pair(
-          contact.collisionObject1, contact.collisionObject2)];
+    return true;
+  };
 
-      contacts.push_back(&contact);
-    }
+  auto handleSoftContact = [&](collision::Contact& contact) {
+    if (!isContactValid(contact))
+      return;
+
+    if (!isSoftContact(contact))
+      return;
+
+    mSoftContactConstraints.push_back(
+        std::make_shared<SoftContactConstraint>(contact, mTimeStep));
+  };
+
+  auto handleRigidContact = [&](collision::Contact& contact) {
+    if (!isContactValid(contact))
+      return;
+
+    if (isSoftContact(contact))
+      return;
+
+    // Increment the count of contacts between the two collision objects
+    ++contactPairMap[std::make_pair(
+        contact.collisionObject1, contact.collisionObject2)];
+
+    contacts.push_back(&contact);
+  };
+
+  for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
+    handleSoftContact(mCollisionResult.getContact(i));
+
+  if (mContactPatchOptions.enabled) {
+    for (auto& contact : mPersistentContacts)
+      handleRigidContact(contact);
+  } else {
+    for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
+      handleRigidContact(mCollisionResult.getContact(i));
   }
 
   // Add the new contact constraints to dynamic constraint list

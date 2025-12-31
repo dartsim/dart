@@ -4,7 +4,7 @@
 
 - [x] Stage 0: Recon and requirements capture
 - [x] Stage 1: Plan docs
-- [ ] Stage 2: Skeleton implementation (feature gated, compiles)
+- [x] Stage 2: Skeleton implementation (feature gated, compiles)
 - [ ] Stage 3: Full behavior wiring (use persistent contacts)
 - [ ] Stage 4: Tests and regression protection
 - [ ] Stage 4.5: GUI demo
@@ -12,8 +12,8 @@
 
 ## Current Status
 
-- Stage 1 docs written in `docs/dev_tasks/contact_manifold/`
-- Next: Stage 2 implementation
+- Stage 2 skeleton implementation complete
+- Next: Stage 3 wiring of full persistence behavior
 
 ## Decisions
 

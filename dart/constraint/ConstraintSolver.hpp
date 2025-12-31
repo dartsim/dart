@@ -35,6 +35,7 @@
 
 #include <dart/constraint/ConstrainedGroup.hpp>
 #include <dart/constraint/ConstraintBase.hpp>
+#include <dart/constraint/ContactPatchCache.hpp>
 #include <dart/constraint/Fwd.hpp>
 
 #include <dart/collision/CollisionDetector.hpp>
@@ -176,6 +177,18 @@ public:
   /// ConstraintSolver to generate contact constraints.
   const collision::CollisionOption& getCollisionOption() const;
 
+  /// Set contact patch cache options used to build persistent contacts.
+  void setContactPatchCacheOptions(const ContactPatchCacheOptions& options);
+
+  /// Return contact patch cache options used to build persistent contacts.
+  const ContactPatchCacheOptions& getContactPatchCacheOptions() const;
+
+  /// Enable or disable the contact patch cache.
+  void setContactPatchCacheEnabled(bool enabled);
+
+  /// Return true if the contact patch cache is enabled.
+  bool isContactPatchCacheEnabled() const;
+
   /// Return the last collision checking result
   collision::CollisionResult& getLastCollisionResult();
 
@@ -291,6 +304,15 @@ protected:
 
   /// Last collision checking result
   collision::CollisionResult mCollisionResult;
+
+  /// Persistent contact cache options
+  ContactPatchCacheOptions mContactPatchOptions;
+
+  /// Persistent contact cache
+  ContactPatchCache mContactPatchCache;
+
+  /// Persistent contacts used for constraint construction
+  std::vector<collision::Contact> mPersistentContacts;
 
   /// Time step
   double mTimeStep;
