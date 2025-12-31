@@ -62,6 +62,37 @@ struct RaycastCandidate
   double fraction{0.0};
 };
 
+bool raycastIntersectsAabb(
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& dir,
+    const Eigen::Vector3d& aabbMin,
+    const Eigen::Vector3d& aabbMax)
+{
+  double tmin = 0.0;
+  double tmax = 1.0;
+
+  for (int i = 0; i < 3; ++i) {
+    if (std::abs(dir[i]) < kRaycastEps) {
+      if (from[i] < aabbMin[i] || from[i] > aabbMax[i])
+        return false;
+      continue;
+    }
+
+    const double invDir = 1.0 / dir[i];
+    double t1 = (aabbMin[i] - from[i]) * invDir;
+    double t2 = (aabbMax[i] - from[i]) * invDir;
+    if (t1 > t2)
+      std::swap(t1, t2);
+
+    tmin = std::max(tmin, t1);
+    tmax = std::min(tmax, t2);
+    if (tmin > tmax)
+      return false;
+  }
+
+  return tmax >= 0.0 && tmin <= 1.0;
+}
+
 bool raycastSphere(
     const CoreObject& core,
     const Eigen::Vector3d& from,
@@ -510,6 +541,11 @@ bool DARTCollisionDetector::raycast(
     const auto& core = dartObject->getCoreObject();
     if (core.shape.type == CoreShapeType::kNone
         || core.shape.type == CoreShapeType::kUnsupported) {
+      continue;
+    }
+
+    if (!raycastIntersectsAabb(
+            from, dir, core.worldAabbMin, core.worldAabbMax)) {
       continue;
     }
 
