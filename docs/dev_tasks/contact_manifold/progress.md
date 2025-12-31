@@ -35,6 +35,8 @@
   but overall 4x4x4 overhead remains ~68%
 - Reused scratch buffers inside the cache to cut per-frame allocations
 - Latest micro-benchmark shows continued gains; 4x4x4 overhead ~64%
+- Reused per-pair candidate vectors inside update loop
+- Latest 4x4x4 run shows ~60% overhead with cache enabled
 
 ## Verification
 

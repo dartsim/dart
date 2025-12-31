@@ -368,6 +368,11 @@ void ContactPatchCache::update(
   mOutputScratch.reserve(mRawEntries.size());
 
   std::size_t index = 0u;
+  std::vector<Candidate> freshCandidates;
+  std::vector<Candidate> staleCandidates;
+  std::vector<Candidate> existingCandidates;
+  std::vector<unsigned char> matchedExisting;
+  std::vector<unsigned char> matchedRaw;
   while (index < mRawEntries.size()) {
     const auto& key = mRawEntries[index].key;
     std::size_t end = index + 1u;
@@ -378,14 +383,14 @@ void ContactPatchCache::update(
 
     Patch* patch = findOrCreatePatch(key, options);
 
-    std::vector<Candidate> freshCandidates;
-    std::vector<Candidate> staleCandidates;
-
     if (patch) {
+      freshCandidates.clear();
+      staleCandidates.clear();
+      existingCandidates.clear();
+
       freshCandidates.reserve(contactCount + patch->count);
       staleCandidates.reserve(patch->count);
 
-      std::vector<Candidate> existingCandidates;
       existingCandidates.reserve(patch->count);
 
       for (std::size_t i = 0u; i < patch->count; ++i) {
@@ -396,9 +401,8 @@ void ContactPatchCache::update(
         existingCandidates.push_back(candidate);
       }
 
-      std::vector<unsigned char> matchedExisting(
-          existingCandidates.size(), 0u);
-      std::vector<unsigned char> matchedRaw(contactCount, 0u);
+      matchedExisting.assign(existingCandidates.size(), 0u);
+      matchedRaw.assign(contactCount, 0u);
 
       for (std::size_t i = 0u; i < contactCount; ++i) {
         const auto& raw = *mRawEntries[index + i].contact;
