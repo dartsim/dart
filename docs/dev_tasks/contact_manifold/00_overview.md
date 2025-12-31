@@ -5,6 +5,7 @@
 - Stage 0 recon complete
 - Stage 1 docs complete
 - Stage 2 skeleton implementation complete
+- Stage 3 wiring complete
 
 ## Motivation
 

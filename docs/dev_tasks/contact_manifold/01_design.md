@@ -97,11 +97,10 @@ For each simulation step:
 
 Heuristic to balance stability and coverage:
 
-- Always keep the deepest penetration contact
-- For remaining points, maximize spatial coverage in the contact plane:
-  - pick the point farthest from the deepest contact
-  - pick the point farthest from the line formed by the first two
-  - pick the point that maximizes polygon area (projected)
+- Always keep the deepest penetration contact from the current raw set
+- For remaining points, use greedy farthest-point sampling:
+  - at each step, pick the point with the largest minimum distance to already
+    selected points
 - Apply uniqueness thresholds before inserting to reduce churn
 
 ### When There Are More Than 4 Candidates

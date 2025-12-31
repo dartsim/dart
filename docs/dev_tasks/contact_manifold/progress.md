@@ -5,15 +5,15 @@
 - [x] Stage 0: Recon and requirements capture
 - [x] Stage 1: Plan docs
 - [x] Stage 2: Skeleton implementation (feature gated, compiles)
-- [ ] Stage 3: Full behavior wiring (use persistent contacts)
+- [x] Stage 3: Full behavior wiring (use persistent contacts)
 - [ ] Stage 4: Tests and regression protection
 - [ ] Stage 4.5: GUI demo
 - [ ] Stage 5: Benchmarks and documentation polish
 
 ## Current Status
 
-- Stage 2 skeleton implementation complete
-- Next: Stage 3 wiring of full persistence behavior
+- Stage 3 wiring complete (persistent contacts used for constraints)
+- Next: Stage 4 tests and regression coverage
 
 ## Decisions
 
