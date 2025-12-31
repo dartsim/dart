@@ -10,6 +10,7 @@
 - Core/adapter boundary decisions are captured in the architecture proposal.
 - Distance tests now cover sphere-plane, sphere-box, sphere-cylinder, and box-cylinder nearest points.
 - Raycast tests now include inside-hit cases for sphere, box, and cylinder.
+- Distance tests include rotated box coverage, and raycast tests include a rotated plane hit.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
@@ -24,8 +25,9 @@
 - Documented the core/adapter boundary and raycast placement in the architecture proposal.
 - Expanded distance tests for sphere-plane, sphere-box, sphere-cylinder, and box-cylinder.
 - Added inside-hit raycast coverage for sphere, box, and cylinder.
+- Added rotated box distance coverage and a rotated plane raycast check.
 
 ## Next Steps
-- Expand distance coverage for rotated or oblique configurations and refine nearest-point accuracy.
+- Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Extend raycast coverage to additional edge cases and future shape types.
 - Decide when to move raycast into the core engine once query types stabilize.

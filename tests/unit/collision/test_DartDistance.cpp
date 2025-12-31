@@ -32,6 +32,8 @@
 
 #include <dart/All.hpp>
 
+#include <cmath>
+
 #include <gtest/gtest.h>
 
 using namespace dart;
@@ -41,6 +43,7 @@ using namespace dynamics;
 namespace {
 
 constexpr double kDistanceTol = 1e-6;
+constexpr double kPi = 3.141592653589793;
 
 } // namespace
 
@@ -132,6 +135,39 @@ TEST(DartDistance, SphereBoxDistance)
   EXPECT_TRUE(result.found());
   EXPECT_TRUE(result.nearestPoint1.isApprox(Eigen::Vector3d(2.5, 0.0, 0.0)));
   EXPECT_TRUE(result.nearestPoint2.isApprox(Eigen::Vector3d(1.0, 0.0, 0.0)));
+}
+
+//==============================================================================
+TEST(DartDistance, SphereBoxRotatedDistance)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+
+  sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+
+  boxFrame->setRotation(
+      Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitZ()).toRotationMatrix());
+  sphereFrame->setTranslation(Eigen::Vector3d(3.0, 0.0, 0.0));
+
+  auto group = detector->createCollisionGroup(
+      sphereFrame.get(), boxFrame.get());
+
+  DistanceOption option(true, 0.0, nullptr);
+  DistanceResult result;
+
+  const double root2 = std::sqrt(2.0);
+  const double expected = 3.0 - root2 - 0.5;
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, expected, kDistanceTol);
+  EXPECT_NEAR(result.minDistance, expected, kDistanceTol);
+  EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(
+      Eigen::Vector3d(2.5, 0.0, 0.0), kDistanceTol));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(
+      Eigen::Vector3d(root2, 0.0, 0.0), kDistanceTol));
 }
 
 //==============================================================================

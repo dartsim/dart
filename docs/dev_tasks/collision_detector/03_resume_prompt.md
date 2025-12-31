@@ -40,13 +40,14 @@ Current status:
 - The architecture proposal documents the current core/adapter boundary and raycast placement.
 - Distance tests cover sphere-plane, sphere-box, sphere-cylinder, and box-cylinder nearest points.
 - Raycast tests include inside-hit cases for sphere, box, and cylinder.
+- Distance tests include a rotated box case; raycast tests include a rotated plane hit.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.
 - Task tracking: `docs/dev_tasks/collision_detector/00_plan.md`, `docs/dev_tasks/collision_detector/01_next.md`, `docs/dev_tasks/collision_detector/02_architecture.md`, and `docs/dev_tasks/collision_detector/progress.md`.
 
 Next focus:
-- Expand distance coverage for rotated or oblique configurations and refine nearest-point accuracy.
+- Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Extend raycast coverage to additional edge cases and future shape types.
 - Decide when to move raycast into the core engine once query types stabilize.
 - Keep task docs updated after each checkpoint.

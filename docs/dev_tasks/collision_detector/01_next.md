@@ -28,10 +28,11 @@
 - Documented the current core/adapter boundary and raycast placement in the architecture proposal.
 - Expanded distance tests for sphere-plane, sphere-box, sphere-cylinder, and box-cylinder with nearest-point checks.
 - Added raycast inside-hit coverage for sphere, box, and cylinder.
+- Added rotated box distance coverage and a rotated plane raycast check.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.
-- Expand distance coverage for rotated or oblique configurations and refine nearest-point accuracy.
+- Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Explore additional distance broadphase pruning and candidate ordering improvements.
 
 ## Questions and Decisions Needed
