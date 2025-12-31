@@ -58,8 +58,7 @@
 
 ## Next steps
 
-1. Choose the first category to physically reorganize in `examples/`.
-2. Execute the pilot migration checklist (folders, CMake, README updates).
+1. Execute the pilot migration checklist (folders, CMake, README updates).
 
 ## Open questions
 
