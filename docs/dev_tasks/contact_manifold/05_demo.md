@@ -2,8 +2,8 @@
 
 ## Target Example
 
-- Update `examples/box_stacking` to add a persistent contact demo
-- Create two identical worlds side-by-side:
+- Updated `examples/box_stacking` to add a persistent contact demo
+- Two identical worlds are rendered side-by-side:
   - Left: feature OFF (legacy)
   - Right: feature ON (ContactPatchCache)
 
@@ -15,20 +15,20 @@
 
 ## Runtime Toggle
 
-- Add a hotkey or ImGui checkbox to toggle the feature per world
-- Add a reset key to restore the initial state
+- ImGui checkboxes toggle the feature per world
+- Reset button restores the initial stack for both worlds
 
 ## On-screen Diagnostics
 
-- Contact count used for constraints
-- Per-pair contact count (max 4)
-- Contact churn count per frame
+- Active patch count per world
+- Persistent contact count per world
+- Contact constraint count per world
 
 ## Repro Steps
 
 1. Run the example
-2. Press reset to align both worlds
-3. Observe jitter and contact churn on the OFF side
+2. Use the \"Reset stacks\" button to align both worlds
+3. Observe jitter and contact stability on the OFF side
 4. Compare to the ON side
 
 ## Notes

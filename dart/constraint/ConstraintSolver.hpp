@@ -189,6 +189,18 @@ public:
   /// Return true if the contact patch cache is enabled.
   bool isContactPatchCacheEnabled() const;
 
+  /// Return the number of persistent contacts used for constraints.
+  std::size_t getNumPersistentContacts() const;
+
+  /// Return the number of active contact patches.
+  std::size_t getNumContactPatches() const;
+
+  /// Return the number of rigid contact constraints.
+  std::size_t getNumContactConstraints() const;
+
+  /// Return the number of soft contact constraints.
+  std::size_t getNumSoftContactConstraints() const;
+
   /// Return the last collision checking result
   collision::CollisionResult& getLastCollisionResult();
 

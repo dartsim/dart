@@ -349,6 +349,30 @@ bool ConstraintSolver::isContactPatchCacheEnabled() const
 }
 
 //==============================================================================
+std::size_t ConstraintSolver::getNumPersistentContacts() const
+{
+  return mPersistentContacts.size();
+}
+
+//==============================================================================
+std::size_t ConstraintSolver::getNumContactPatches() const
+{
+  return mContactPatchCache.getNumPatches();
+}
+
+//==============================================================================
+std::size_t ConstraintSolver::getNumContactConstraints() const
+{
+  return mContactConstraints.size();
+}
+
+//==============================================================================
+std::size_t ConstraintSolver::getNumSoftContactConstraints() const
+{
+  return mSoftContactConstraints.size();
+}
+
+//==============================================================================
 collision::CollisionResult& ConstraintSolver::getLastCollisionResult()
 {
   return mCollisionResult;

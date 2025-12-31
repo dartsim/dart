@@ -7,6 +7,7 @@
 - Stage 2 skeleton implementation complete
 - Stage 3 wiring complete
 - Stage 4 tests complete
+- Stage 4.5 GUI demo complete
 
 ## Motivation
 

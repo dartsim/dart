@@ -26,3 +26,14 @@ Launch the executable from the build directory above:
     $ ./{generated_executable}
 
 Follow the instructions detailed in the console.
+
+## Contact Patch Cache Demo
+
+This example now spawns two identical box stacks side-by-side:
+
+- Left stack: persistent contacts OFF by default
+- Right stack: persistent contacts ON by default
+
+Use the ImGui panel to toggle persistent contacts for each stack and to reset
+the stacks to their initial state. The diagnostics show the number of active
+patches, persistent contacts, and contact constraints per world.

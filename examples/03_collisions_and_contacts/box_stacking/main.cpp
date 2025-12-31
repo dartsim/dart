@@ -47,7 +47,9 @@
 using namespace dart;
 
 //==============================================================================
-dynamics::SkeletonPtr createBox(const Eigen::Vector3d& position)
+dynamics::SkeletonPtr createBox(
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& offset = Eigen::Vector3d::Zero())
 {
   dynamics::SkeletonPtr boxSkel = dynamics::Skeleton::create("box");
 
@@ -71,7 +73,7 @@ dynamics::SkeletonPtr createBox(const Eigen::Vector3d& position)
 
   // Put the body into position
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = position;
+  tf.translation() = position + offset;
   boxBody->getParentJoint()->setTransformFromParentBodyNode(tf);
 
   return boxSkel;
@@ -79,19 +81,22 @@ dynamics::SkeletonPtr createBox(const Eigen::Vector3d& position)
 
 //==============================================================================
 std::vector<dynamics::SkeletonPtr> createBoxStack(
-    std::size_t numBoxes, double heightFromGround = 0.5)
+    std::size_t numBoxes,
+    const Eigen::Vector3d& offset = Eigen::Vector3d::Zero(),
+    double heightFromGround = 0.5)
 {
   std::vector<dynamics::SkeletonPtr> boxSkels(numBoxes);
 
   for (auto i = 0u; i < numBoxes; ++i)
     boxSkels[i] = createBox(
-        Eigen::Vector3d(0.0, 0.0, heightFromGround + 0.25 + i * 0.5));
+        Eigen::Vector3d(0.0, 0.0, heightFromGround + 0.25 + i * 0.5), offset);
 
   return boxSkels;
 }
 
 //==============================================================================
-dynamics::SkeletonPtr createFloor()
+dynamics::SkeletonPtr createFloor(
+    const Eigen::Vector3d& offset = Eigen::Vector3d::Zero())
 {
   dynamics::SkeletonPtr floor = dynamics::Skeleton::create("floor");
 
@@ -112,10 +117,26 @@ dynamics::SkeletonPtr createFloor()
 
   // Put the body into position
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = Eigen::Vector3d(0.0, 0.0, -floorHeight / 2.0);
+  tf.translation() = offset + Eigen::Vector3d(0.0, 0.0, -floorHeight / 2.0);
   body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
   return floor;
+}
+
+//==============================================================================
+void populateWorld(
+    const simulation::WorldPtr& world,
+    const Eigen::Vector3d& offset,
+    std::size_t numBoxes)
+{
+  world->removeAllSkeletons();
+  world->addSkeleton(createFloor(offset));
+
+  auto boxSkels = createBoxStack(numBoxes, offset);
+  for (const auto& boxSkel : boxSkels)
+    world->addSkeleton(boxSkel);
+
+  world->reset();
 }
 
 //==============================================================================
@@ -212,18 +233,38 @@ class TestWidget : public dart::gui::ImGuiWidget
 {
 public:
   /// Constructor
-  TestWidget(dart::gui::ImGuiViewer* viewer, dart::simulation::WorldPtr world)
+  TestWidget(
+      dart::gui::ImGuiViewer* viewer,
+      dart::simulation::WorldPtr worldLeft,
+      dart::simulation::WorldPtr worldRight,
+      const Eigen::Vector3d& leftOffset,
+      const Eigen::Vector3d& rightOffset,
+      std::size_t numBoxes)
     : mViewer(viewer),
-      mWorld(std::move(world)),
+      mWorldLeft(std::move(worldLeft)),
+      mWorldRight(std::move(worldRight)),
+      mLeftOffset(leftOffset),
+      mRightOffset(rightOffset),
+      mNumBoxes(numBoxes),
       mGuiGravity(true),
       mGravity(true),
       mGuiHeadlights(true),
       mSplitImpulseEnabled(false),
-      mSolverType(-1)
+      mSolverType(-1),
+      mManifoldEnabledLeft(false),
+      mManifoldEnabledRight(true)
   {
-    if (auto* solver = mWorld->getConstraintSolver()) {
+    applyContactManifoldSetting(mWorldLeft, mManifoldEnabledLeft);
+    applyContactManifoldSetting(mWorldRight, mManifoldEnabledRight);
+
+    if (auto* solver = mWorldLeft ? mWorldLeft->getConstraintSolver() : nullptr)
       mSplitImpulseEnabled = solver->isSplitImpulseEnabled();
-    }
+    else if (
+        auto* solver
+        = mWorldRight ? mWorldRight->getConstraintSolver() : nullptr)
+      mSplitImpulseEnabled = solver->isSplitImpulseEnabled();
+
+    setSplitImpulse(mSplitImpulseEnabled);
   }
 
   // Documentation inherited
@@ -292,7 +333,10 @@ public:
         setSplitImpulse(mSplitImpulseEnabled);
       }
 
-      ImGui::Text("Time: %.3f", mWorld->getTime());
+      const auto time = mWorldLeft
+                            ? mWorldLeft->getTime()
+                            : (mWorldRight ? mWorldRight->getTime() : 0.0);
+      ImGui::Text("Time: %.3f", time);
     }
 
     if (ImGui::CollapsingHeader(
@@ -307,6 +351,43 @@ public:
       mGuiHeadlights = mViewer->checkHeadlights();
       ImGui::Checkbox("Headlights On/Off", &mGuiHeadlights);
       mViewer->switchHeadlights(mGuiHeadlights);
+    }
+
+    if (ImGui::CollapsingHeader("Contact Manifold")) {
+      bool manifoldLeft = mManifoldEnabledLeft;
+      bool manifoldRight = mManifoldEnabledRight;
+
+      ImGui::Checkbox("Left world (legacy)", &manifoldLeft);
+      ImGui::Checkbox("Right world (persistent)", &manifoldRight);
+
+      if (manifoldLeft != mManifoldEnabledLeft) {
+        mManifoldEnabledLeft = manifoldLeft;
+        applyContactManifoldSetting(mWorldLeft, mManifoldEnabledLeft);
+      }
+
+      if (manifoldRight != mManifoldEnabledRight) {
+        mManifoldEnabledRight = manifoldRight;
+        applyContactManifoldSetting(mWorldRight, mManifoldEnabledRight);
+      }
+
+      if (ImGui::Button("Reset stacks")) {
+        populateWorld(mWorldLeft, mLeftOffset, mNumBoxes);
+        populateWorld(mWorldRight, mRightOffset, mNumBoxes);
+        applyContactManifoldSetting(mWorldLeft, mManifoldEnabledLeft);
+        applyContactManifoldSetting(mWorldRight, mManifoldEnabledRight);
+      }
+
+      ImGui::Spacing();
+      ImGui::Text(
+          "Left: manifolds %zu, persistent contacts %zu, constraints %zu",
+          getManifoldCount(mWorldLeft),
+          getPersistentCount(mWorldLeft),
+          getContactConstraintCount(mWorldLeft));
+      ImGui::Text(
+          "Right: manifolds %zu, persistent contacts %zu, constraints %zu",
+          getManifoldCount(mWorldRight),
+          getPersistentCount(mWorldRight),
+          getContactConstraintCount(mWorldRight));
     }
 
     if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -337,23 +418,30 @@ protected:
     if (solverType == mSolverType)
       return;
 
-    if (solverType == 0) {
-      auto lcpSolver = std::make_shared<math::DantzigSolver>();
-      auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
-      solver->setSplitImpulseEnabled(mSplitImpulseEnabled);
-      mWorld->setConstraintSolver(std::move(solver));
-    } else if (solverType == 1) {
-      auto lcpSolver = std::make_shared<math::DantzigSolver>();
-      auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
-      solver->setSplitImpulseEnabled(mSplitImpulseEnabled);
-      mWorld->setConstraintSolver(std::move(solver));
-    } else if (solverType == 2) {
-      auto lcpSolver = std::make_shared<math::PgsSolver>();
-      auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
-      solver->setSplitImpulseEnabled(mSplitImpulseEnabled);
-      mWorld->setConstraintSolver(std::move(solver));
-    } else {
-      DART_WARN("Unsupported boxed-LCP solver selected: {}", solverType);
+    for (const auto& world : {mWorldLeft, mWorldRight}) {
+      if (!world)
+        continue;
+
+      if (solverType == 0) {
+        auto lcpSolver = std::make_shared<math::DantzigSolver>();
+        auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
+        solver->setSplitImpulseEnabled(mSplitImpulseEnabled);
+        world->setConstraintSolver(std::move(solver));
+      } else if (solverType == 1) {
+        auto lcpSolver = std::make_shared<math::DantzigSolver>();
+        auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
+        solver->setSplitImpulseEnabled(mSplitImpulseEnabled);
+        world->setConstraintSolver(std::move(solver));
+      } else if (solverType == 2) {
+        auto lcpSolver = std::make_shared<math::PgsSolver>();
+        auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
+        solver->setSplitImpulseEnabled(mSplitImpulseEnabled);
+        world->setConstraintSolver(std::move(solver));
+      } else {
+        DART_WARN("Unsupported boxed-LCP solver selected: {}", solverType);
+      }
+
+      applyContactManifoldSetting(world, getManifoldEnabled(world));
     }
 
     mSolverType = solverType;
@@ -366,29 +454,84 @@ protected:
 
     mGravity = gravity;
 
-    if (mGravity)
-      mWorld->setGravity(-9.81 * Eigen::Vector3d::UnitZ());
-    else
-      mWorld->setGravity(Eigen::Vector3d::Zero());
+    for (const auto& world : {mWorldLeft, mWorldRight}) {
+      if (!world)
+        continue;
+
+      if (mGravity)
+        world->setGravity(-9.81 * Eigen::Vector3d::UnitZ());
+      else
+        world->setGravity(Eigen::Vector3d::Zero());
+    }
+  }
+
+  bool getManifoldEnabled(const simulation::WorldPtr& world) const
+  {
+    if (world == mWorldLeft)
+      return mManifoldEnabledLeft;
+    if (world == mWorldRight)
+      return mManifoldEnabledRight;
+    return false;
+  }
+
+  void applyContactManifoldSetting(
+      const simulation::WorldPtr& world, bool enabled) const
+  {
+    if (!world)
+      return;
+
+    auto* solver = world->getConstraintSolver();
+    if (!solver)
+      return;
+
+    solver->setContactManifoldEnabled(enabled);
+  }
+
+  std::size_t getManifoldCount(const simulation::WorldPtr& world) const
+  {
+    auto* solver = world ? world->getConstraintSolver() : nullptr;
+    return solver ? solver->getNumContactManifolds() : 0u;
+  }
+
+  std::size_t getPersistentCount(const simulation::WorldPtr& world) const
+  {
+    auto* solver = world ? world->getConstraintSolver() : nullptr;
+    return solver ? solver->getNumPersistentContacts() : 0u;
+  }
+
+  std::size_t getContactConstraintCount(const simulation::WorldPtr& world) const
+  {
+    auto* solver = world ? world->getConstraintSolver() : nullptr;
+    return solver ? solver->getNumContactConstraints() : 0u;
   }
 
   void setSplitImpulse(bool enabled)
   {
-    auto* solver = mWorld->getConstraintSolver();
-    if (!solver) {
-      return;
-    }
+    for (const auto& world : {mWorldLeft, mWorldRight}) {
+      if (!world)
+        continue;
 
-    solver->setSplitImpulseEnabled(enabled);
+      auto* solver = world->getConstraintSolver();
+      if (!solver)
+        continue;
+
+      solver->setSplitImpulseEnabled(enabled);
+    }
   }
 
   ::osg::ref_ptr<dart::gui::ImGuiViewer> mViewer;
-  dart::simulation::WorldPtr mWorld;
+  dart::simulation::WorldPtr mWorldLeft;
+  dart::simulation::WorldPtr mWorldRight;
+  Eigen::Vector3d mLeftOffset;
+  Eigen::Vector3d mRightOffset;
+  std::size_t mNumBoxes;
   bool mGuiGravity;
   bool mGravity;
   bool mGuiHeadlights;
   bool mSplitImpulseEnabled;
   int mSolverType;
+  bool mManifoldEnabledLeft;
+  bool mManifoldEnabledRight;
 };
 
 //==============================================================================
@@ -400,24 +543,32 @@ int main(int argc, char* argv[])
       ->check(CLI::PositiveNumber);
   CLI11_PARSE(app, argc, argv);
 
-  simulation::WorldPtr world = simulation::World::create();
-  world->addSkeleton(createFloor());
+  const Eigen::Vector3d leftOffset(-3.0, 0.0, 0.0);
+  const Eigen::Vector3d rightOffset(3.0, 0.0, 0.0);
+  constexpr std::size_t numBoxes = 5u;
 
-  auto boxSkels = createBoxStack(5);
-  for (const auto& boxSkel : boxSkels)
-    world->addSkeleton(boxSkel);
+  simulation::WorldPtr worldLeft = simulation::World::create();
+  simulation::WorldPtr worldRight = simulation::World::create();
+
+  populateWorld(worldLeft, leftOffset, numBoxes);
+  populateWorld(worldRight, rightOffset, numBoxes);
+
+  if (auto* solver = worldRight->getConstraintSolver())
+    solver->setContactManifoldEnabled(true);
 
   // Wrap a WorldNode around it
-  osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world);
+  osg::ref_ptr<CustomWorldNode> nodeLeft = new CustomWorldNode(worldLeft);
+  osg::ref_ptr<CustomWorldNode> nodeRight = new CustomWorldNode(worldRight);
 
   // Create a Viewer and set it up with the WorldNode
   osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
   viewer->setImGuiScale(static_cast<float>(guiScale));
-  viewer->addWorldNode(node);
+  viewer->addWorldNode(nodeLeft);
+  viewer->addWorldNode(nodeRight);
 
   // Add control widget for atlas
-  viewer->getImGuiHandler()->addWidget(
-      std::make_shared<TestWidget>(viewer, world));
+  viewer->getImGuiHandler()->addWidget(std::make_shared<TestWidget>(
+      viewer, worldLeft, worldRight, leftOffset, rightOffset, numBoxes));
 
   // Pass in the custom event handler
   viewer->addEventHandler(new CustomEventHandler);

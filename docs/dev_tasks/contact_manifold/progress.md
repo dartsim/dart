@@ -7,13 +7,13 @@
 - [x] Stage 2: Skeleton implementation (feature gated, compiles)
 - [x] Stage 3: Full behavior wiring (use persistent contacts)
 - [x] Stage 4: Tests and regression protection
-- [ ] Stage 4.5: GUI demo
+- [x] Stage 4.5: GUI demo
 - [ ] Stage 5: Benchmarks and documentation polish
 
 ## Current Status
 
-- Stage 4 tests and regression coverage complete
-- Next: Stage 4.5 GUI demo
+- Stage 4.5 GUI demo complete
+- Next: Stage 5 benchmarks and documentation polish
 
 ## Decisions
 
