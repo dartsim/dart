@@ -5,13 +5,14 @@
 - Core data and broadphase scaffolding are in place, with AABB caching.
 - Narrowphase supports sphere, box, cylinder, and plane primitives.
 - Raycast is available for the supported primitives with AABB pruning.
-- Distance queries are still pending for the DART path.
+- Distance query MVP is implemented for supported primitives.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
 - Sweep-based broadphase candidate generation for single and group queries.
 - Primitive narrowphase coverage for sphere, box, cylinder, and plane pairs.
 - Added box-cylinder and cylinder-cylinder narrowphase support with DART-only unit tests.
+- Added a DART-focused distance unit test suite for primitives.
 - Raycast support for primitives plus DART-only unit coverage.
 - Added a DART collision benchmark variant for baseline tracking.
 

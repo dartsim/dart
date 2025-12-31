@@ -4,7 +4,7 @@
 - Phase 0 (research and inventory): complete
 - Phase 1 (architecture proposal): complete
 - Phase 2 (core implementation): in progress
-- Raycast MVP exists for supported primitives; distance queries are still pending.
+- Raycast MVP exists for supported primitives; distance MVP covers primitives.
 
 ## Scope
 - Replace reliance on external collision backends with a new or revised in-house detector.

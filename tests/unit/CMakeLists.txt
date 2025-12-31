@@ -15,6 +15,10 @@ dart_add_test(
   "unit"
   UNIT_collision_DartPrimitiveCollision
   collision/test_DartPrimitiveCollision.cpp)
+dart_add_test(
+  "unit"
+  UNIT_collision_DartDistance
+  collision/test_DartDistance.cpp)
 
 dart_add_test("unit" UNIT_collision_CollisionResult collision/test_CollisionResult.cpp)
 dart_add_test(

@@ -482,29 +482,49 @@ bool DARTCollisionDetector::collide(
 
 //==============================================================================
 double DARTCollisionDetector::distance(
-    CollisionGroup* /*group*/,
-    const DistanceOption& /*option*/,
-    DistanceResult* /*result*/)
+    CollisionGroup* group,
+    const DistanceOption& option,
+    DistanceResult* result)
 {
-  DART_WARN(
-      "This collision detector does not support (signed) distance queries. "
-      "Returning 0.0.");
+  if (result)
+    result->clear();
 
-  return 0.0;
+  if (!checkGroupValidity(this, group))
+    return 0.0;
+
+  auto casted = static_cast<DARTCollisionGroup*>(group);
+  casted->updateEngineData();
+
+  const auto& objects = casted->mCollisionObjects;
+  return mEngine->distance(objects, option, result);
 }
 
 //==============================================================================
 double DARTCollisionDetector::distance(
-    CollisionGroup* /*group1*/,
-    CollisionGroup* /*group2*/,
-    const DistanceOption& /*option*/,
-    DistanceResult* /*result*/)
+    CollisionGroup* group1,
+    CollisionGroup* group2,
+    const DistanceOption& option,
+    DistanceResult* result)
 {
-  DART_WARN(
-      "This collision detector does not support (signed) distance queries. "
-      "Returning 0.0.");
+  if (result)
+    result->clear();
 
-  return 0.0;
+  if (!checkGroupValidity(this, group1))
+    return 0.0;
+
+  if (!checkGroupValidity(this, group2))
+    return 0.0;
+
+  auto casted1 = static_cast<DARTCollisionGroup*>(group1);
+  auto casted2 = static_cast<DARTCollisionGroup*>(group2);
+
+  casted1->updateEngineData();
+  casted2->updateEngineData();
+
+  const auto& objects1 = casted1->mCollisionObjects;
+  const auto& objects2 = casted2->mCollisionObjects;
+
+  return mEngine->distance(objects1, objects2, option, result);
 }
 
 //==============================================================================

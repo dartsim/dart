@@ -21,11 +21,12 @@
 - Added DART raycast support for core shapes with DART-focused unit coverage and AABB pruning.
 - Added a resume prompt and progress tracking doc for the task.
 - Added box-cylinder and cylinder-cylinder narrowphase support with DART-only unit coverage.
+- Added distance query MVP for primitives with DART-only unit coverage.
 
 ## Next Actions
 - Clarify the core/adapter boundary and record decisions in the architecture doc.
-- Implement distance query MVP for primitives with filters and nearest points.
 - Extend raycast coverage to additional shapes.
+- Expand distance coverage (edge cases, additional primitives) and add benchmarks.
 
 ## Questions and Decisions Needed
 - Confirm the boundary between core engine code and DART-specific adapters.

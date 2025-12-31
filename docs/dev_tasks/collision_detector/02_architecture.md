@@ -45,6 +45,7 @@
 - Distance queries return the minimum signed distance, with optional nearest points.
 - Distance lower bound supports early exit to match current option behavior.
 - Raycast supports closest hit or all hits with optional sorting and a filter predicate; MVP covers primitive shapes with AABB pruning.
+- Distance MVP now covers primitive shapes; broader coverage will follow.
 
 ## Filtering
 - Pair filtering integrates with existing DART collision and distance filters.

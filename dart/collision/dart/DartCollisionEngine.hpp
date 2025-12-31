@@ -35,6 +35,8 @@
 
 #include <dart/collision/CollisionOption.hpp>
 #include <dart/collision/CollisionResult.hpp>
+#include <dart/collision/DistanceOption.hpp>
+#include <dart/collision/DistanceResult.hpp>
 #include <dart/collision/Fwd.hpp>
 
 #include <vector>
@@ -57,6 +59,17 @@ public:
       const ObjectList& objects2,
       const CollisionOption& option,
       CollisionResult* result) const;
+
+  double distance(
+      const ObjectList& objects,
+      const DistanceOption& option,
+      DistanceResult* result) const;
+
+  double distance(
+      const ObjectList& objects1,
+      const ObjectList& objects2,
+      const DistanceOption& option,
+      DistanceResult* result) const;
 
 private:
   bool checkPair(
