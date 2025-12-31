@@ -319,8 +319,12 @@ void ConstraintSolver::solve()
 {
   DART_PROFILE_SCOPED_N("ConstraintSolver::solve");
 
-  for (auto& skeleton : mSkeletons)
+  for (auto& skeleton : mSkeletons) {
     skeleton->clearConstraintImpulses();
+    skeleton->clearPositionConstraintImpulses();
+    skeleton->clearPositionVelocityChanges();
+    skeleton->setPositionImpulseApplied(false);
+  }
 
   // Update constraints and collect active constraints
   updateConstraints();
@@ -330,6 +334,10 @@ void ConstraintSolver::solve()
 
   // Solve constrained groups
   solveConstrainedGroups();
+
+  if (mSplitImpulseEnabled) {
+    solvePositionConstrainedGroups();
+  }
 }
 
 //==============================================================================
@@ -343,10 +351,13 @@ void ConstraintSolver::setFromOtherConstraintSolver(
   mManualConstraints = other.mManualConstraints;
 
   mContactSurfaceHandler = other.mContactSurfaceHandler;
-  if (!mLcpSolverSetExplicitly)
+  if (!mLcpSolverSetExplicitly) {
     mLcpSolver = other.mLcpSolver;
-  if (!mSecondaryLcpSolverSetExplicitly)
+  }
+  if (!mSecondaryLcpSolverSetExplicitly) {
     mSecondaryLcpSolver = other.mSecondaryLcpSolver;
+  }
+  mSplitImpulseEnabled = other.mSplitImpulseEnabled;
 }
 
 //==============================================================================
@@ -682,6 +693,43 @@ void ConstraintSolver::solveConstrainedGroups()
 }
 
 //==============================================================================
+void ConstraintSolver::solvePositionConstrainedGroups()
+{
+  DART_PROFILE_SCOPED;
+
+  // Preserve velocity-impulse flags across the position pass.
+  std::vector<bool> impulseAppliedStates;
+  impulseAppliedStates.reserve(mSkeletons.size());
+  for (const auto& skeleton : mSkeletons) {
+    impulseAppliedStates.push_back(skeleton->isImpulseApplied());
+  }
+
+  for (auto& constraintGroup : mConstrainedGroups) {
+    std::vector<ConstraintBasePtr> positionConstraints;
+    positionConstraints.reserve(constraintGroup.getNumConstraints());
+    for (std::size_t i = 0; i < constraintGroup.getNumConstraints(); ++i) {
+      const ConstraintBasePtr& constraint = constraintGroup.getConstraint(i);
+      if (std::dynamic_pointer_cast<ContactConstraint>(constraint)) {
+        positionConstraints.push_back(constraint);
+      }
+    }
+
+    solveConstrainedGroupInternal(
+        positionConstraints, ConstraintPhase::Position);
+  }
+
+  for (auto& skeleton : mSkeletons) {
+    if (skeleton->isPositionImpulseApplied()) {
+      skeleton->computePositionVelocityChanges();
+    }
+  }
+
+  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+    mSkeletons[i]->setImpulseApplied(impulseAppliedStates[i]);
+  }
+}
+
+//==============================================================================
 bool ConstraintSolver::isSoftContact(const collision::Contact& contact) const
 {
   const auto bodyNode1 = contact.getBodyNodePtr1();
@@ -790,15 +838,32 @@ math::LcpSolverPtr ConstraintSolver::getSecondaryLcpSolver() const
 }
 
 //==============================================================================
-void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
+void ConstraintSolver::setSplitImpulseEnabled(bool enabled)
+{
+  mSplitImpulseEnabled = enabled;
+}
+
+//==============================================================================
+bool ConstraintSolver::isSplitImpulseEnabled() const
+{
+  return mSplitImpulseEnabled;
+}
+
+//==============================================================================
+void ConstraintSolver::solveConstrainedGroupInternal(
+    const std::vector<ConstraintBasePtr>& constraints, ConstraintPhase phase)
 {
   DART_PROFILE_SCOPED;
 
-  const std::size_t numConstraints = group.getNumConstraints();
-  const std::size_t n = group.getTotalDimension();
+  const std::size_t numConstraints = constraints.size();
+  std::size_t n = 0;
+  for (const auto& constraint : constraints) {
+    n += constraint->getDimension();
+  }
 
-  if (0u == n)
+  if (0u == n) {
     return;
+  }
 
   const int nSkip = math::padding(n);
 #if defined(NDEBUG)
@@ -817,7 +882,7 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   mOffset.resize(numConstraints);
   mOffset[0] = 0;
   for (std::size_t i = 1; i < numConstraints; ++i) {
-    const ConstraintBasePtr& constraint = group.getConstraint(i - 1);
+    const ConstraintBasePtr& constraint = constraints[i - 1];
     DART_ASSERT(constraint->getDimension() > 0);
     mOffset[i] = mOffset[i - 1] + constraint->getDimension();
   }
@@ -826,8 +891,11 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     DART_PROFILE_SCOPED_N("Construct LCP");
     ConstraintInfo constInfo;
     constInfo.invTimeStep = 1.0 / mTimeStep;
+    constInfo.phase = phase;
+    constInfo.useSplitImpulse
+        = (phase == ConstraintPhase::Velocity && mSplitImpulseEnabled);
     for (std::size_t i = 0; i < numConstraints; ++i) {
-      const ConstraintBasePtr& constraint = group.getConstraint(i);
+      const ConstraintBasePtr& constraint = constraints[i];
 
       constInfo.x = mX.data() + mOffset[i];
       constInfo.lo = mLo.data() + mOffset[i];
@@ -845,8 +913,9 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
         DART_PROFILE_SCOPED_N("Fill A");
         constraint->excite();
         for (std::size_t j = 0; j < constraint->getDimension(); ++j) {
-          if (mFIndex[mOffset[i] + j] >= 0)
+          if (mFIndex[mOffset[i] + j] >= 0) {
             mFIndex[mOffset[i] + j] += mOffset[i];
+          }
 
           {
             DART_PROFILE_SCOPED_N("Unit impulse test");
@@ -859,8 +928,7 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
             constraint->getVelocityChange(mA.data() + index, true);
             for (std::size_t k = i + 1; k < numConstraints; ++k) {
               index = nSkip * (mOffset[i] + j) + mOffset[k];
-              group.getConstraint(k)->getVelocityChange(
-                  mA.data() + index, false);
+              constraints[k]->getVelocityChange(mA.data() + index, false);
             }
           }
         }
@@ -893,8 +961,9 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   }
   DART_ASSERT(mLcpSolver);
   math::LcpOptions primaryOptions = mLcpSolver->getDefaultOptions();
-  if (mSecondaryLcpSolver)
+  if (mSecondaryLcpSolver) {
     primaryOptions.earlyTermination = true;
+  }
   // Preserve legacy behavior to avoid unnecessary fallback on strict checks.
   primaryOptions.validateSolution = false;
   Eigen::MatrixXd Ablock = mA.leftCols(static_cast<Eigen::Index>(n)).eval();
@@ -993,14 +1062,30 @@ void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 
     mX.setZero();
   }
-  {
+
+  if (phase == ConstraintPhase::Position) {
+    DART_PROFILE_SCOPED_N("Apply position impulses");
+    for (std::size_t i = 0; i < numConstraints; ++i) {
+      auto* contact = dynamic_cast<ContactConstraint*>(constraints[i].get());
+      DART_ASSERT(contact);
+      if (contact) {
+        contact->applyPositionImpulse(mX.data() + mOffset[i]);
+      }
+    }
+  } else {
     DART_PROFILE_SCOPED_N("Apply constraint impulses");
     for (std::size_t i = 0; i < numConstraints; ++i) {
-      const ConstraintBasePtr& constraint = group.getConstraint(i);
+      const ConstraintBasePtr& constraint = constraints[i];
       constraint->applyImpulse(mX.data() + mOffset[i]);
       constraint->excite();
     }
   }
+}
+
+//==============================================================================
+void ConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
+{
+  solveConstrainedGroupInternal(group.mConstraints, ConstraintPhase::Velocity);
 }
 
 //==============================================================================

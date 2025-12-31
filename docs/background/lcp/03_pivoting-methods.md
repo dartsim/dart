@@ -255,7 +255,57 @@ auto result = solver.solve(problem, z, options);
 - When matrix A is not symmetric
 - Validation and testing
 
-## 4. Baraff Incremental Pivoting ❌ (Not Implemented)
+## 4. Direct 2D/3D Solver ✅ (Implemented)
+
+### Description
+
+Direct enumeration of complementarity sets for tiny standard LCPs.
+
+### Algorithm Overview
+
+```
+for each active set S ⊆ {1..n}:
+  Solve A_SS x_S = b_S
+  Set x_{~S} = 0
+  w = A x - b
+  Accept if x >= 0, w >= 0, and xᵀw ≈ 0
+```
+
+### DART Implementation
+
+```cpp
+#include <dart/math/lcp/pivoting/DirectSolver.hpp>
+
+using namespace dart::math;
+
+LcpProblem problem(
+    A,
+    b,
+    Eigen::VectorXd::Zero(n),
+    Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity()),
+    Eigen::VectorXi::Constant(n, -1));
+
+Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+DirectSolver solver;
+auto result = solver.solve(problem, x, solver.getDefaultOptions());
+```
+
+> Note: DART limits the direct solver to n ≤ 3 and delegates larger problems
+> to the boxed-capable pivoting solver.
+
+### Properties
+
+- **Time Complexity**: O(2ⁿ) (only practical for n ≤ 3)
+- **Space Complexity**: O(n²)
+- **Convergence**: Exact solution (if exists)
+- **Matrix Requirements**: None (general LCP)
+
+### Use Cases
+
+- 2D/3D LCP validation
+- Debugging small contact configurations
+
+## 5. Baraff Incremental Pivoting ✅ (Implemented)
 
 ### Description
 
@@ -314,6 +364,30 @@ Notes:
 - Only one index swaps at a time, so an incremental factorization of `A_AA` keeps the inner loop O(n²) while the outer loop runs O(n) times (practical O(n³), worst-case O(n⁴)).
 - Works best when `A` is symmetric positive semidefinite (common for contact problems), where it mirrors an active-set QP solve.
 
+### DART Implementation
+
+```cpp
+#include <dart/math/lcp/pivoting/BaraffSolver.hpp>
+
+using namespace dart::math;
+
+LcpProblem problem(
+    A,
+    b,
+    Eigen::VectorXd::Zero(n),
+    Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity()),
+    Eigen::VectorXi::Constant(n, -1));
+
+Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+BaraffSolver solver;
+LcpOptions options = solver.getDefaultOptions();
+options.validateSolution = true;
+auto result = solver.solve(problem, x, options);
+```
+
+> Note: DART's implementation assumes symmetric PSD matrices and currently uses
+> direct solves per pivot (no incremental factorization yet).
+
 ### Properties
 
 - **Time Complexity**: O(n⁴) with incremental factorization
@@ -335,12 +409,12 @@ Notes:
 
 ## Comparison Table
 
-| Method       | Status          | Problem Type | Time  | Matrix Requirements |
-| ------------ | --------------- | ------------ | ----- | ------------------- |
-| Direct 2D/3D | Not implemented | LCP          | O(2ⁿ) | None                |
-| Dantzig      | ✅ Implemented  | BLCP         | O(n⁴) | None                |
-| Lemke        | ✅ Implemented  | LCP          | O(n⁴) | None                |
-| Baraff       | Not implemented | LCP          | O(n⁴) | Symmetric PD/PSD    |
+| Method       | Status         | Problem Type | Time  | Matrix Requirements |
+| ------------ | -------------- | ------------ | ----- | ------------------- |
+| Direct 2D/3D | ✅ Implemented | LCP          | O(2ⁿ) | None                |
+| Dantzig      | ✅ Implemented | BLCP         | O(n⁴) | None                |
+| Lemke        | ✅ Implemented | LCP          | O(n⁴) | None                |
+| Baraff       | ✅ Implemented | LCP          | O(n⁴) | Symmetric PD/PSD    |
 
 ## When to Use Pivoting Methods
 
@@ -390,7 +464,7 @@ Notes:
 
 ### For Future Implementations
 
-- Consider incremental factorization (Baraff)
+- Add incremental factorization to Baraff for faster inner solves
 - Use sparse matrix representations when possible
 - Implement efficient pivoting strategies
 - Add comprehensive unit tests

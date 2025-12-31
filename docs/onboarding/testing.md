@@ -381,10 +381,16 @@ ctest --output-on-failure  # Only show output for failing tests
 ### Run benchmarks:
 
 ```bash
-./benchmark/integration/bm_empty
-./benchmark/collision/bm_boxes
-./benchmark/dynamics/bm_kinematics
+pixi run bm boxes
+pixi run bm kinematics
+pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE
+pixi run bm --pixi-help
 ```
+
+Note: LCP solver comparisons use the solver-agnostic harness and the
+`BM_LCP_COMPARE` benchmark so all solvers share the same contract and fixtures.
+See `tests/common/lcpsolver` and `tests/benchmark/lcpsolver` for the sources,
+and keep benchmark outputs under the build tree.
 
 ## CMake Integration
 

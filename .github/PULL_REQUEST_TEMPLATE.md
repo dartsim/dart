@@ -1,12 +1,17 @@
+## Summary
+
+-
+
 <!-- Describe this pull request. Link to relevant GitHub issues, if any. -->
 
-Describe your changes here.
+## Testing
+
+- What you tested (commands, manual steps, or explain why not). Example: `pixi run test-all`
 
 ---
 
-#### Before creating a pull request
+#### Checklist
 
-- [ ] Run `pixi run test-all` to lint, build, and test your changes
 - [ ] Add unit tests for new functionality
 - [ ] Document new methods and classes
 - [ ] Add Python bindings (dartpy) if applicable
