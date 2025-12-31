@@ -27,20 +27,23 @@ Decisions:
 - Core builds into the `dart` target (no standalone CMake target yet).
 - Default detector switch happens only after parity and performance are proven.
 - Engine class name is `DartCollisionEngine`.
+- Future direction: DART8 consolidates under `dart/collision/`, dropping other backends.
 
 Current status:
 - Phase 2 (core implementation) is in progress.
 - Core data structs exist (`CoreShape`, `CoreObject`) with cached world AABBs.
 - Broadphase uses a sweep-based pass for MVP.
-- Narrowphase supports sphere, box, cylinder, and plane primitives.
-- Raycast is implemented for those primitives with AABB pruning.
-- Distance queries are not implemented in the DART path.
+- Narrowphase supports sphere, box, cylinder, and plane primitives, including box-cylinder and cylinder-cylinder.
+- Raycast is implemented for those primitives with AABB pruning and unit coverage.
+- Distance query MVP is implemented for primitives with unit coverage and benchmarks.
+- Distance queries use sweep pruning plus AABB lower-bound checks.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.
 - Task tracking: `docs/dev_tasks/collision_detector/00_plan.md`, `docs/dev_tasks/collision_detector/01_next.md`, `docs/dev_tasks/collision_detector/02_architecture.md`, and `docs/dev_tasks/collision_detector/progress.md`.
 
 Next focus:
-- Extend narrowphase coverage (box-cylinder, cylinder-cylinder) with DART-only tests.
-- Add distance query MVP for primitives with filters and nearest points.
+- Expand distance coverage to additional primitives and refine nearest-point accuracy.
+- Extend raycast coverage to edge cases and future shape types.
+- Keep task docs updated after each checkpoint.
 - Keep task docs updated after each checkpoint.

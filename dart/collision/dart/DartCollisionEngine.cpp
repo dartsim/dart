@@ -113,6 +113,14 @@ struct DistanceInfo
   Eigen::Vector3d point2{Eigen::Vector3d::Zero()};
 };
 
+struct DistanceEntry
+{
+  CollisionObject* object{nullptr};
+  const CoreObject* core{nullptr};
+  double minX{0.0};
+  double maxX{0.0};
+};
+
 struct SatDistanceResult
 {
   bool separated{false};
@@ -141,6 +149,39 @@ Eigen::Vector3d clampPoint(
     const Eigen::Vector3d& maxPoint)
 {
   return point.cwiseMin(maxPoint).cwiseMax(minPoint);
+}
+
+void buildDistanceEntries(
+    const std::vector<CollisionObject*>& objects,
+    std::vector<DistanceEntry>* entries)
+{
+  if (!entries)
+    return;
+
+  entries->clear();
+  entries->reserve(objects.size());
+
+  for (auto* object : objects) {
+    if (!object)
+      continue;
+
+    const auto* dartObject = static_cast<const DARTCollisionObject*>(object);
+    const auto& core = dartObject->getCoreObject();
+    if (core.shape.type == CoreShapeType::kNone
+        || core.shape.type == CoreShapeType::kUnsupported) {
+      continue;
+    }
+
+    entries->push_back(
+        {object, &core, core.worldAabbMin.x(), core.worldAabbMax.x()});
+  }
+
+  std::sort(
+      entries->begin(),
+      entries->end(),
+      [](const DistanceEntry& a, const DistanceEntry& b) {
+        return a.minX < b.minX;
+      });
 }
 
 double projectBoxExtent(
@@ -1017,6 +1058,11 @@ double DartCollisionEngine::distance(
   if (objects.size() < 2u)
     return 0.0;
 
+  std::vector<DistanceEntry> entries;
+  buildDistanceEntries(objects, &entries);
+  if (entries.size() < 2u)
+    return 0.0;
+
   const auto& filter = option.distanceFilter;
   bool hasResult = false;
   DistanceInfo bestInfo;
@@ -1025,26 +1071,24 @@ double DartCollisionEngine::distance(
   double bestDistance = std::numeric_limits<double>::infinity();
   bool done = false;
 
-  for (std::size_t i = 0; i + 1u < objects.size() && !done; ++i) {
-    auto* obj1 = objects[i];
-    const auto& core1
-        = static_cast<const DARTCollisionObject*>(obj1)->getCoreObject();
-    if (core1.shape.type == CoreShapeType::kNone
-        || core1.shape.type == CoreShapeType::kUnsupported) {
-      continue;
-    }
+  for (std::size_t i = 0; i + 1u < entries.size() && !done; ++i) {
+    const auto& entry1 = entries[i];
+    auto* obj1 = entry1.object;
+    const auto& core1 = *entry1.core;
 
-    for (std::size_t j = i + 1u; j < objects.size(); ++j) {
-      auto* obj2 = objects[j];
+    for (std::size_t j = i + 1u; j < entries.size(); ++j) {
+      const auto& entry2 = entries[j];
+
+      const bool canPrune
+          = hasResult && bestDistance >= 0.0 && std::isfinite(bestDistance);
+      if (canPrune && entry2.minX > entry1.maxX + bestDistance)
+        break;
+
+      auto* obj2 = entry2.object;
       if (filter && !filter->needDistance(obj2, obj1))
         continue;
 
-      const auto& core2
-          = static_cast<const DARTCollisionObject*>(obj2)->getCoreObject();
-      if (core2.shape.type == CoreShapeType::kNone
-          || core2.shape.type == CoreShapeType::kUnsupported) {
-        continue;
-      }
+      const auto& core2 = *entry2.core;
 
       if (hasResult && bestDistance >= 0.0) {
         const double lowerBound2 = aabbDistanceSquared(core1, core2);
@@ -1102,6 +1146,13 @@ double DartCollisionEngine::distance(
   if (objects1.empty() || objects2.empty())
     return 0.0;
 
+  std::vector<DistanceEntry> entries1;
+  std::vector<DistanceEntry> entries2;
+  buildDistanceEntries(objects1, &entries1);
+  buildDistanceEntries(objects2, &entries2);
+  if (entries1.empty() || entries2.empty())
+    return 0.0;
+
   const auto& filter = option.distanceFilter;
   bool hasResult = false;
   DistanceInfo bestInfo;
@@ -1110,30 +1161,27 @@ double DartCollisionEngine::distance(
   double bestDistance = std::numeric_limits<double>::infinity();
   bool done = false;
 
-  for (auto* obj1 : objects1) {
+  for (const auto& entry1 : entries1) {
     if (done)
       break;
 
-    const auto& core1
-        = static_cast<const DARTCollisionObject*>(obj1)->getCoreObject();
-    if (core1.shape.type == CoreShapeType::kNone
-        || core1.shape.type == CoreShapeType::kUnsupported) {
-      continue;
-    }
+    auto* obj1 = entry1.object;
+    const auto& core1 = *entry1.core;
 
-    for (auto* obj2 : objects2) {
+    for (const auto& entry2 : entries2) {
+      const bool canPrune
+          = hasResult && bestDistance >= 0.0 && std::isfinite(bestDistance);
+      if (canPrune && entry2.minX > entry1.maxX + bestDistance)
+        break;
+
+      auto* obj2 = entry2.object;
       if (obj1 == obj2)
         continue;
 
       if (filter && !filter->needDistance(obj2, obj1))
         continue;
 
-      const auto& core2
-          = static_cast<const DARTCollisionObject*>(obj2)->getCoreObject();
-      if (core2.shape.type == CoreShapeType::kNone
-          || core2.shape.type == CoreShapeType::kUnsupported) {
-        continue;
-      }
+      const auto& core2 = *entry2.core;
 
       if (hasResult && bestDistance >= 0.0) {
         const double lowerBound2 = aabbDistanceSquared(core1, core2);
