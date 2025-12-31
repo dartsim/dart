@@ -61,6 +61,7 @@
 - Added coverage for DistanceOption without nearest points.
 - Added empty-group raycast coverage.
 - Added empty-group collision coverage.
+- Added missing-shape distance coverage.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.

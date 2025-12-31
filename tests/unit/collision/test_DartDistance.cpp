@@ -1105,6 +1105,29 @@ TEST(DartDistance, EmptyGroupDistance)
 }
 
 //==============================================================================
+TEST(DartDistance, MissingShapeDistance)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  auto emptyFrame = SimpleFrame::createShared(Frame::World());
+
+  sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+  sphereFrame->setTranslation(Eigen::Vector3d::Zero());
+  emptyFrame->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+
+  auto group = detector->createCollisionGroup(
+      sphereFrame.get(), emptyFrame.get());
+
+  DistanceOption option(true, 0.0, nullptr);
+  DistanceResult result;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, 0.0, kDistanceTol);
+  EXPECT_FALSE(result.found());
+}
+
+//==============================================================================
 TEST(DartDistance, GroupGroupDistanceWithEmptyGroup)
 {
   auto detector = DARTCollisionDetector::create();
