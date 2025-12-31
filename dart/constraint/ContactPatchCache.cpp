@@ -365,13 +365,16 @@ void ContactPatchCache::update(
 
   std::sort(entries.begin(), entries.end(), rawEntryLess);
 
-  struct PairOutput
+  struct PairOutputRange
   {
     PairKey key;
-    std::vector<collision::Contact> contacts;
+    std::size_t start{0u};
+    std::size_t count{0u};
   };
-  std::vector<PairOutput> outputs;
+  std::vector<PairOutputRange> outputs;
   outputs.reserve(entries.size());
+  std::vector<collision::Contact> outputScratch;
+  outputScratch.reserve(entries.size());
 
   std::size_t index = 0u;
   while (index < entries.size()) {
@@ -467,9 +470,9 @@ void ContactPatchCache::update(
       patch->framesSinceSeen = 0u;
       patch->lastUpdateFrame = mFrameCounter;
 
-      PairOutput output;
+      PairOutputRange output;
       output.key = key;
-      output.contacts.reserve(selected.size());
+      output.start = outputScratch.size();
       for (const auto& candidate : selected) {
         if (patch->count >= kMaxPatchPoints)
           break;
@@ -478,17 +481,19 @@ void ContactPatchCache::update(
         patch->points[patch->count].age = candidate.age;
         ++patch->count;
 
-        output.contacts.push_back(candidate.contact);
+        outputScratch.push_back(candidate.contact);
+        ++output.count;
       }
 
       outputs.push_back(std::move(output));
     } else {
-      PairOutput output;
+      PairOutputRange output;
       output.key = key;
+      output.start = outputScratch.size();
       const auto outputCount = std::min<std::size_t>(contactCount, maxPoints);
-      output.contacts.reserve(outputCount);
       for (std::size_t i = 0u; i < outputCount; ++i) {
-        output.contacts.push_back(*entries[index + i].contact);
+        outputScratch.push_back(*entries[index + i].contact);
+        ++output.count;
       }
       outputs.push_back(std::move(output));
     }
@@ -498,9 +503,7 @@ void ContactPatchCache::update(
 
   pruneStalePatches(options);
 
-  std::size_t reserveCount = 0u;
-  for (const auto& output : outputs)
-    reserveCount += output.contacts.size();
+  std::size_t reserveCount = outputScratch.size();
   reserveCount += mPatches.size() * maxPoints;
 
   std::vector<collision::Contact> merged;
@@ -513,7 +516,9 @@ void ContactPatchCache::update(
     if (patchIndex >= mPatches.size()) {
       const auto& output = outputs[outputIndex++];
       merged.insert(
-          merged.end(), output.contacts.begin(), output.contacts.end());
+          merged.end(),
+          outputScratch.begin() + output.start,
+          outputScratch.begin() + output.start + output.count);
       continue;
     }
 
@@ -534,7 +539,9 @@ void ContactPatchCache::update(
     if (pairLess(outputKey, patchKey)) {
       const auto& output = outputs[outputIndex++];
       merged.insert(
-          merged.end(), output.contacts.begin(), output.contacts.end());
+          merged.end(),
+          outputScratch.begin() + output.start,
+          outputScratch.begin() + output.start + output.count);
       continue;
     }
 
@@ -551,7 +558,9 @@ void ContactPatchCache::update(
 
     const auto& output = outputs[outputIndex++];
     merged.insert(
-        merged.end(), output.contacts.begin(), output.contacts.end());
+        merged.end(),
+        outputScratch.begin() + output.start,
+        outputScratch.begin() + output.start + output.count);
     ++patchIndex;
   }
 

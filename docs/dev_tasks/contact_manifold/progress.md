@@ -29,6 +29,8 @@
 - Switched cache update grouping to sorted vectors (removed maps)
 - Post-change micro-benchmark shows faster small/medium cases; 4x4x4
   `bm_boxes` run still shows overhead but with higher variance
+- Added output scratch buffer to reduce per-pair allocations
+- Latest 4x4x4 run shows ~63% overhead with cache enabled (stable CV)
 
 ## Verification
 
