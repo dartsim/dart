@@ -45,6 +45,7 @@ Current status:
 - Distance tests include cylinder-cylinder nearest points; raycast tests include tangent cylinder hits.
 - Distance tests include a rotated plane case for sphere-plane queries.
 - Distance tests include rotated box/cylinder plane cases; raycast tests include rotated box hits.
+- Raycast tests include rotated cylinder hits.
 - Distance tests include a group-group case to validate pair selection and nearest points.
 - Distance tests include diagonal box-box coverage for oblique nearest points.
 - Distance tests include group-group filter coverage for distance queries.

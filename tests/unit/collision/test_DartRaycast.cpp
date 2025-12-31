@@ -489,6 +489,35 @@ TEST(DartRaycast, RotatedBoxHit)
 }
 
 //==============================================================================
+TEST(DartRaycast, RotatedCylinderHit)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto frame = SimpleFrame::createShared(Frame::World());
+  frame->setShape(std::make_shared<CylinderShape>(1.0, 2.0));
+  frame->setRotation(
+      Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY()).toRotationMatrix());
+
+  auto group = detector->createCollisionGroup(frame.get());
+
+  RaycastOption option;
+  RaycastResult result;
+
+  detector->raycast(
+      group.get(),
+      Eigen::Vector3d(-3.0, 0.0, 0.0),
+      Eigen::Vector3d(3.0, 0.0, 0.0),
+      option,
+      &result);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mRayHits.size(), 1u);
+  const auto& hit = result.mRayHits[0];
+  EXPECT_TRUE(equals(hit.mPoint, Eigen::Vector3d(-1.0, 0.0, 0.0)));
+  EXPECT_TRUE(equals(hit.mNormal, Eigen::Vector3d(-1.0, 0.0, 0.0)));
+  EXPECT_NEAR(hit.mFraction, 1.0 / 3.0, kFractionTolerance);
+}
+
+//==============================================================================
 TEST(DartRaycast, ParallelPlaneMiss)
 {
   auto detector = DARTCollisionDetector::create();

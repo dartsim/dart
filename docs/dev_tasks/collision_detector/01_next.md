@@ -33,6 +33,7 @@
 - Added cylinder-cylinder nearest-point checks and tangent cylinder raycast coverage.
 - Added rotated plane distance coverage for sphere-plane.
 - Added rotated box raycast coverage and rotated box/cylinder plane distance checks.
+- Added rotated cylinder raycast coverage.
 - Added group-group distance coverage to validate pair selection and nearest points.
 - Added diagonal box-box distance coverage to validate oblique nearest points.
 - Added group-group distance filter coverage to validate filter application.
