@@ -37,6 +37,7 @@
 - Added diagonal box-box distance coverage to validate oblique nearest points.
 - Added group-group distance filter coverage to validate filter application.
 - Added overlapping sphere distance coverage for negative distance semantics.
+- Added overlapping box distance coverage for negative distance semantics.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.

@@ -49,6 +49,7 @@ Current status:
 - Distance tests include diagonal box-box coverage for oblique nearest points.
 - Distance tests include group-group filter coverage for distance queries.
 - Distance tests include overlapping sphere coverage for negative distances.
+- Distance tests include overlapping box coverage for negative distances.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.
