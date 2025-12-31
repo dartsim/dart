@@ -11,7 +11,8 @@ contact jitter, with a runtime feature flag default OFF. Keep backends as raw
 contact providers. Preserve CollisionResult semantics when the flag is OFF.
 
 Status:
-- Stage 0-5 complete (docs, implementation, tests, GUI demo, benchmarks)
+- Stage 0-4.5 complete (docs, implementation, tests, GUI demo)
+- Stage 5 ongoing: perf tuning and benchmark tracking
 
 Key docs to read:
 - docs/dev_tasks/contact_manifold/00_overview.md
@@ -20,6 +21,7 @@ Key docs to read:
 - docs/dev_tasks/contact_manifold/03_testing.md
 - docs/dev_tasks/contact_manifold/04_benchmarking.md
 - docs/dev_tasks/contact_manifold/05_demo.md
+- docs/dev_tasks/contact_manifold/progress.md
 - CONTRIBUTING.md and docs/onboarding/building.md, testing.md
 
 Key code entry points:
@@ -41,6 +43,7 @@ Decisions so far:
 - Recording uses contacts fed into constraints via
   `ConstraintSolver::getContactsUsedForConstraints()`
 - `World::getContactsUsedForConstraints()` provides a convenience wrapper
+- Latest perf change: fast path for empty patches with <= max points
 
 Constraints:
 - No mention of any external reference project in code or docs
@@ -48,5 +51,6 @@ Constraints:
 - Add tests, benchmarks, and GUI demo per the Stage plan
 
 Next actions:
-1) Review open issues: contact force reporting when cache is enabled
+1) Continue perf tuning if needed; see latest numbers in 04_benchmarking.md
+2) Review open issues: contact force reporting when cache is enabled
 ```

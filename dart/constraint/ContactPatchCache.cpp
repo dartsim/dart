@@ -410,6 +410,29 @@ void ContactPatchCache::update(
     Patch* patch = findOrCreatePatch(key, options);
 
     if (patch) {
+      if (patch->count == 0u && contactCount <= maxPoints) {
+        patch->count = 0u;
+        patch->framesSinceSeen = 0u;
+        patch->lastUpdateFrame = mFrameCounter;
+
+        OutputRange output;
+        output.key = key;
+        output.start = mOutputScratch.size();
+
+        for (std::size_t i = 0u; i < contactCount; ++i) {
+          const auto& contact = *mRawEntries[index + i].contact;
+          patch->points[patch->count].contact = contact;
+          patch->points[patch->count].age = 0u;
+          ++patch->count;
+          mOutputScratch.push_back(contact);
+          ++output.count;
+        }
+
+        mOutputRanges.push_back(std::move(output));
+        index = end;
+        continue;
+      }
+
       freshCandidates.clear();
       staleCandidates.clear();
       existingCandidates.clear();

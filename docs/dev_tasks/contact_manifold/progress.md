@@ -12,7 +12,7 @@
 
 ## Current Status
 
-- Stage 5 complete with benchmark results recorded
+- Stage 5 ongoing: perf tuning and benchmark tracking
 
 ## Stage 5 Notes
 
@@ -42,6 +42,8 @@
   overhead remains ~64%
 - Added thread-local scratch reuse for per-pair candidate buffers
 - Latest 4x4x4 run shows ~65% overhead with cache enabled
+- Added empty-patch fast path for first-frame pairs with <= max points
+- Latest 4x4x4 run shows ~65% overhead with cache enabled (low CV)
 
 ## Verification
 
