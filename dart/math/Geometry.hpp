@@ -41,6 +41,7 @@
 #include <dart/Export.hpp>
 
 #include <Eigen/Dense>
+#include <Eigen/StdVector>
 
 namespace dart {
 namespace math {
@@ -552,7 +553,9 @@ template <
     typename VertexAllocator = std::allocator<Eigen::Matrix<S, 3, 1>>>
 std::tuple<
     std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>,
-    std::vector<Eigen::Matrix<Index, 3, 1>>>
+    std::vector<
+        Eigen::Matrix<Index, 3, 1>,
+        Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>>
 computeConvexHull3D(
     const std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>& vertices,
     bool optimize = true);

@@ -75,11 +75,12 @@ template <
     typename Index,
     typename Vector3,
     typename Triangle,
-    typename Allocator>
+    typename VertexAllocator,
+    typename TriangleAllocator>
 bool triangulateFaceEarClipping(
     const std::vector<Index>& face,
-    const std::vector<Vector3, Allocator>& vertices,
-    std::vector<Triangle>& triangles)
+    const std::vector<Vector3, VertexAllocator>& vertices,
+    std::vector<Triangle, TriangleAllocator>& triangles)
 {
   triangles.clear();
   const std::size_t count = face.size();
@@ -396,7 +397,7 @@ typename PolygonMesh<S>::TriMeshType PolygonMesh<S>::triangulate() const
   }
   triMesh.reserveTriangles(triangleCount);
 
-  std::vector<typename TriMeshType::Triangle> triangles;
+  typename TriMeshType::Triangles triangles;
   for (const auto& face : mFaces) {
     if (face.size() < 3) {
       continue;
