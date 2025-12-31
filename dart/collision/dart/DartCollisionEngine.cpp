@@ -1090,10 +1090,14 @@ double DartCollisionEngine::distance(
 
       const auto& core2 = *entry2.core;
 
-      if (hasResult && bestDistance >= 0.0) {
+      if (hasResult) {
         const double lowerBound2 = aabbDistanceSquared(core1, core2);
-        if (lowerBound2 > bestDistance * bestDistance)
+        if (bestDistance >= 0.0) {
+          if (lowerBound2 > bestDistance * bestDistance)
+            continue;
+        } else if (lowerBound2 > 0.0) {
           continue;
+        }
       }
 
       DistanceInfo info;
@@ -1183,10 +1187,14 @@ double DartCollisionEngine::distance(
 
       const auto& core2 = *entry2.core;
 
-      if (hasResult && bestDistance >= 0.0) {
+      if (hasResult) {
         const double lowerBound2 = aabbDistanceSquared(core1, core2);
-        if (lowerBound2 > bestDistance * bestDistance)
+        if (bestDistance >= 0.0) {
+          if (lowerBound2 > bestDistance * bestDistance)
+            continue;
+        } else if (lowerBound2 > 0.0) {
           continue;
+        }
       }
 
       DistanceInfo info;

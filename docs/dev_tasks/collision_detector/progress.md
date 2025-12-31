@@ -32,6 +32,7 @@
 - Raycast tests include ellipsoid-as-sphere coverage.
 - Collision tests include ellipsoid-as-sphere coverage.
 - Distance tests include empty-group coverage for single and group-group queries.
+- Distance pruning skips separated pairs once a negative minimum distance is found.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
@@ -68,6 +69,7 @@
 - Added ellipsoid-as-sphere raycast coverage.
 - Added ellipsoid-as-sphere collision coverage.
 - Added empty-group distance coverage for single and group-group queries.
+- Tightened distance AABB pruning once a penetrating pair is found.
 
 ## Next Steps
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
