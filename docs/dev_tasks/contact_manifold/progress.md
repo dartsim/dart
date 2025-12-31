@@ -15,6 +15,11 @@
 - Stage 4.5 GUI demo complete
 - Next: Stage 5 benchmarks and documentation polish
 
+## Stage 5 Notes
+
+- Benchmark coverage added in `tests/benchmark/collision/bm_boxes.cpp`
+- Results not captured yet (pending local runs)
+
 ## Decisions
 
 - Name: ContactPatchCache

@@ -78,7 +78,7 @@ namespace {
   return boxSkel;
 }
 
-[[nodiscard]] simulation::WorldPtr createWorld(size_t dim)
+[[nodiscard]] simulation::WorldPtr createWorld(size_t dim, bool enablePatchCache)
 {
   // Create an empty world
   auto world = simulation::World::create();
@@ -118,6 +118,9 @@ namespace {
   groundShapeNode->getDynamicsAspect()->setRestitutionCoeff(0.9);
   world->addSkeleton(ground);
 
+  if (auto* solver = world->getConstraintSolver())
+    solver->setContactPatchCacheEnabled(enablePatchCache);
+
   return world;
 }
 
@@ -126,7 +129,19 @@ namespace {
 static void BM_RunBoxes(benchmark::State& state)
 {
   const auto steps = 2000u;
-  auto world = createWorld(state.range(0));
+  auto world = createWorld(state.range(0), false);
+
+  for (auto _ : state) {
+    for (size_t i = 0; i < steps; ++i) {
+      world->step();
+    }
+  }
+}
+
+static void BM_RunBoxesPersistentContacts(benchmark::State& state)
+{
+  const auto steps = 2000u;
+  auto world = createWorld(state.range(0), true);
 
   for (auto _ : state) {
     for (size_t i = 0; i < steps; ++i) {
@@ -136,3 +151,8 @@ static void BM_RunBoxes(benchmark::State& state)
 }
 
 BENCHMARK(BM_RunBoxes)->Arg(2)->Arg(4)->Arg(8)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_RunBoxesPersistentContacts)
+    ->Arg(2)
+    ->Arg(4)
+    ->Arg(8)
+    ->Unit(benchmark::kMillisecond);

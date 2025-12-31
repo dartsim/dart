@@ -142,6 +142,9 @@ solve()
 - Creates `ContactConstraint` objects for each contact
 - Manages `ContactSurfaceHandler` for surface parameters
 - Supports multiple collision detection backends
+- Optional contact patch cache in `ConstraintSolver` can reuse up to 4 contacts
+  per pair for stability; it is disabled by default and lives in
+  `dart/constraint/ContactPatchCache.*`.
 
 **Key Features:**
 

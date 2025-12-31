@@ -9,8 +9,8 @@
 ## Proposed Benchmarks
 
 1. Extend collision benchmark
-   - Add a new benchmark executable or extend `bm_boxes.cpp`
-   - Run two modes: feature OFF and feature ON
+   - Updated `tests/benchmark/collision/bm_boxes.cpp`
+   - Runs two modes: feature OFF and feature ON
    - Record wall time per simulation step
 
 2. Contact update micro-benchmark
