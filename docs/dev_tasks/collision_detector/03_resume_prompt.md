@@ -63,6 +63,7 @@ Current status:
 - Collision tests include ellipsoid-as-sphere coverage.
 - Distance tests include empty-group coverage for single and group-group queries.
 - Distance pruning skips separated pairs once a negative minimum distance is found.
+- Distance tests include diagonal sphere-cylinder coverage for oblique separation.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.
