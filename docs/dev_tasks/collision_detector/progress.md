@@ -39,6 +39,7 @@
 - Distance tests include plane offset coverage for sphere queries; raycast tests include plane offset hits.
 - Distance tests include a tilted cylinder-plane case for oblique extent coverage.
 - Distance tests include DistanceResult clamping status coverage.
+- Raycast tests include zero-length ray coverage.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
@@ -82,6 +83,7 @@
 - Added plane offset coverage for sphere distance and raycast queries.
 - Added tilted cylinder-plane distance coverage for oblique extent checks.
 - Added DistanceResult clamping status coverage.
+- Added zero-length raycast coverage.
 
 ## Next Steps
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.

@@ -57,6 +57,7 @@
 - Added plane offset coverage for sphere distance and raycast queries.
 - Added tilted cylinder-plane distance coverage for oblique extent checks.
 - Added DistanceResult clamping status coverage.
+- Added zero-length raycast coverage.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.

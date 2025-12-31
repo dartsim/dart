@@ -110,6 +110,29 @@ TEST(DartRaycast, BasicInterface)
 }
 
 //==============================================================================
+TEST(DartRaycast, ZeroLengthRay)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto frame = SimpleFrame::createShared(Frame::World());
+  frame->setShape(std::make_shared<SphereShape>(1.0));
+
+  auto group = detector->createCollisionGroup(frame.get());
+
+  RaycastOption option;
+  RaycastResult result;
+
+  detector->raycast(
+      group.get(),
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::Zero(),
+      option,
+      &result);
+  EXPECT_FALSE(result.hasHit());
+  EXPECT_TRUE(result.mRayHits.empty());
+}
+
+//==============================================================================
 TEST(DartRaycast, EllipsoidHit)
 {
   auto detector = DARTCollisionDetector::create();
