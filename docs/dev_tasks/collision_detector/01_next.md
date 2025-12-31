@@ -72,6 +72,7 @@
 - Renamed adapter file names to `DartCollision*` and updated includes to match the new paths.
 - Gated DART raycast behind `DARTCollisionDetector::setRaycastEnabled` to keep the gazebo ray intersection expectations unchanged; DART raycast tests and benchmarks enable it explicitly.
 - Verified `pixi run -e gazebo test-gz` passes after the layout and raycast gating changes.
+- Fixed CI build issues by adding an out-of-line `DARTCollisionDetector` destructor, updating distance filter tests to use shared_ptrs, and formatting the engine file.
 
 ## Next Actions
 

@@ -964,10 +964,10 @@ TEST(DartDistance, GroupGroupDistanceWithFilter)
     }
   };
 
-  ShapeFrameDistanceFilter filter;
-  filter.skipFrame = sphereFrame1.get();
+  auto filter = std::make_shared<ShapeFrameDistanceFilter>();
+  filter->skipFrame = sphereFrame1.get();
 
-  DistanceOption option(true, 0.0, &filter);
+  DistanceOption option(true, 0.0, filter);
   DistanceResult result;
 
   const double distance = group1->distance(group2.get(), option, &result);
@@ -1052,10 +1052,10 @@ TEST(DartDistance, GroupDistanceWithFilter)
     }
   };
 
-  ShapeFrameDistanceFilter filter;
-  filter.skipFrame = sphereFrame1.get();
+  auto filter = std::make_shared<ShapeFrameDistanceFilter>();
+  filter->skipFrame = sphereFrame1.get();
 
-  DistanceOption option(true, 0.0, &filter);
+  DistanceOption option(true, 0.0, filter);
   DistanceResult result;
 
   const double distance = group->distance(option, &result);
@@ -1097,9 +1097,9 @@ TEST(DartDistance, GroupDistanceFilterRejectsAll)
     }
   };
 
-  RejectAllDistanceFilter filter;
+  auto filter = std::make_shared<RejectAllDistanceFilter>();
 
-  DistanceOption option(true, 0.0, &filter);
+  DistanceOption option(true, 0.0, filter);
   DistanceResult result;
 
   const double distance = group->distance(option, &result);

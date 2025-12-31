@@ -50,6 +50,7 @@ public:
   using CollisionDetector::createCollisionGroup;
 
   static std::shared_ptr<DARTCollisionDetector> create();
+  ~DARTCollisionDetector() override;
 
   // Documentation inherited
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()

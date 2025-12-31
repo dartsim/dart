@@ -37,8 +37,8 @@
 #include "dart/collision/DistanceFilter.hpp"
 #include "dart/collision/RaycastOption.hpp"
 #include "dart/collision/RaycastResult.hpp"
-#include "dart/collision/dart/engine/DartCollide.hpp"
 #include "dart/collision/dart/DartCollisionObject.hpp"
+#include "dart/collision/dart/engine/DartCollide.hpp"
 #include "dart/collision/dart/engine/DartCollisionBroadphase.hpp"
 
 #include <Eigen/Dense>

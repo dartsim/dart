@@ -250,6 +250,9 @@ DARTCollisionDetector::DARTCollisionDetector() : CollisionDetector()
 }
 
 //==============================================================================
+DARTCollisionDetector::~DARTCollisionDetector() = default;
+
+//==============================================================================
 void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
 {
   if (!shapeFrame)
