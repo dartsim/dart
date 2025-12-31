@@ -39,6 +39,8 @@
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 
+#include <limits>
+
 namespace dart {
 namespace collision {
 
@@ -122,6 +124,13 @@ void DARTCollisionObject::updateEngineData()
     }
   } else {
     mCoreObject.shape.type = CoreShapeType::kUnsupported;
+  }
+
+  if (mCoreObject.shape.type == CoreShapeType::kPlane) {
+    const double inf = std::numeric_limits<double>::infinity();
+    mCoreObject.worldAabbMin = Eigen::Vector3d::Constant(-inf);
+    mCoreObject.worldAabbMax = Eigen::Vector3d::Constant(inf);
+    return;
   }
 
   const auto& bbox = shape->getBoundingBox();

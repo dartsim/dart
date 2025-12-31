@@ -50,7 +50,7 @@ constexpr double kPi = 3.141592653589793;
 
 std::shared_ptr<DARTCollisionDetector> createRaycastDetector()
 {
-  auto detector = createRaycastDetector();
+  auto detector = DARTCollisionDetector::create();
   detector->setRaycastEnabled(true);
   return detector;
 }

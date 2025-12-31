@@ -123,6 +123,7 @@ struct DistanceEntry
   const CoreObject* core{nullptr};
   double minX{0.0};
   double maxX{0.0};
+  std::size_t order{0u};
 };
 
 struct RaycastCandidate
@@ -172,7 +173,8 @@ void buildDistanceEntries(
   entries->clear();
   entries->reserve(objects.size());
 
-  for (auto* object : objects) {
+  for (std::size_t index = 0; index < objects.size(); ++index) {
+    auto* object = objects[index];
     if (!object)
       continue;
 
@@ -184,7 +186,7 @@ void buildDistanceEntries(
     }
 
     entries->push_back(
-        {object, &core, core.worldAabbMin.x(), core.worldAabbMax.x()});
+        {object, &core, core.worldAabbMin.x(), core.worldAabbMax.x(), index});
   }
 
   std::sort(
@@ -1382,8 +1384,6 @@ double DartCollisionEngine::distance(
 
   for (std::size_t i = 0; i + 1u < entries.size() && !done; ++i) {
     const auto& entry1 = entries[i];
-    auto* obj1 = entry1.object;
-    const auto& core1 = *entry1.core;
 
     for (std::size_t j = i + 1u; j < entries.size(); ++j) {
       const auto& entry2 = entries[j];
@@ -1393,14 +1393,26 @@ double DartCollisionEngine::distance(
       if (canPrune && entry2.minX > entry1.maxX + bestDistance)
         break;
 
-      auto* obj2 = entry2.object;
-      if (filter && !filter->needDistance(obj2, obj1))
+      auto* objA = entry1.object;
+      auto* objB = entry2.object;
+      if (filter && !filter->needDistance(objB, objA))
         continue;
 
-      const auto& core2 = *entry2.core;
+      const auto* coreA = entry1.core;
+      const auto* coreB = entry2.core;
+
+      auto* obj1 = objA;
+      auto* obj2 = objB;
+      const auto* core1 = coreA;
+      const auto* core2 = coreB;
+
+      if (entry1.order > entry2.order) {
+        std::swap(obj1, obj2);
+        std::swap(core1, core2);
+      }
 
       if (hasResult) {
-        const double lowerBound2 = aabbDistanceSquared(core1, core2);
+        const double lowerBound2 = aabbDistanceSquared(*core1, *core2);
         if (bestDistance >= 0.0) {
           if (lowerBound2 > bestDistance * bestDistance)
             continue;
@@ -1410,7 +1422,7 @@ double DartCollisionEngine::distance(
       }
 
       DistanceInfo info;
-      if (!distanceCore(core1, core2, &info))
+      if (!distanceCore(*core1, *core2, &info))
         continue;
 
       if (!hasResult || info.distance < bestDistance) {

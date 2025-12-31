@@ -73,6 +73,7 @@
 - Gated DART raycast behind `DARTCollisionDetector::setRaycastEnabled` to keep the gazebo ray intersection expectations unchanged; DART raycast tests and benchmarks enable it explicitly.
 - Verified `pixi run -e gazebo test-gz` passes after the layout and raycast gating changes.
 - Fixed CI build issues by adding an out-of-line `DARTCollisionDetector` destructor, updating distance filter tests to use shared_ptrs, and formatting the engine file.
+- Fixed plane AABB handling to avoid NaNs and restored single-group distance result ordering to match group insertion order.
 
 ## Next Actions
 
