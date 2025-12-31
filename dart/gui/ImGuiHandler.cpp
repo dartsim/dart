@@ -47,8 +47,6 @@
 #include <osg/RenderInfo>
 
 #include <algorithm>
-#include <atomic>
-
 #include <cmath>
 
 namespace dart {
@@ -263,9 +261,6 @@ private:
 
 namespace {
 
-std::atomic<int> gImGuiHandlerCount{0};
-ImGuiContext* gImGuiContext = nullptr;
-
 void setCurrentContext(ImGuiContext* context)
 {
   if (context && ImGui::GetCurrentContext() != context)
@@ -281,41 +276,36 @@ ImGuiHandler::ImGuiHandler()
     mMouseWheel{0.0f},
     mFramebufferScale{1.0f, 1.0f}
 {
-  const bool first = gImGuiHandlerCount.fetch_add(1) == 0;
-  if (first)
-    gImGuiContext = ImGui::CreateContext();
-  mContext = gImGuiContext;
+  mContext = ImGui::CreateContext();
   setCurrentContext(mContext);
 
-  if (first) {
-    ImGui::StyleColorsDark();
-    ImGui_ImplOpenGL2_Init();
+  ImGui::StyleColorsDark();
+  ImGui_ImplOpenGL2_Init();
 
 #if IMGUI_VERSION_NUM < 19150
-    // Keyboard mapping. ImGui will use those indices to peek into the
-    // io.KeyDown[] array.
-    ImGuiIO& io = ImGui::GetIO();
-    io.KeyMap[ImGuiKey_Tab] = ConvertedKey_Tab;
-    io.KeyMap[ImGuiKey_LeftArrow] = ConvertedKey_Left;
-    io.KeyMap[ImGuiKey_RightArrow] = ConvertedKey_Right;
-    io.KeyMap[ImGuiKey_UpArrow] = ConvertedKey_Up;
-    io.KeyMap[ImGuiKey_DownArrow] = ConvertedKey_Down;
-    io.KeyMap[ImGuiKey_PageUp] = ConvertedKey_PageUp;
-    io.KeyMap[ImGuiKey_PageDown] = ConvertedKey_PageDown;
-    io.KeyMap[ImGuiKey_Home] = ConvertedKey_Home;
-    io.KeyMap[ImGuiKey_End] = ConvertedKey_End;
-    io.KeyMap[ImGuiKey_Delete] = ConvertedKey_Delete;
-    io.KeyMap[ImGuiKey_Backspace] = ConvertedKey_BackSpace;
-    io.KeyMap[ImGuiKey_Enter] = ConvertedKey_Enter;
-    io.KeyMap[ImGuiKey_Escape] = ConvertedKey_Escape;
-    io.KeyMap[ImGuiKey_A] = osgGA::GUIEventAdapter::KeySymbol::KEY_A;
-    io.KeyMap[ImGuiKey_C] = osgGA::GUIEventAdapter::KeySymbol::KEY_C;
-    io.KeyMap[ImGuiKey_V] = osgGA::GUIEventAdapter::KeySymbol::KEY_V;
-    io.KeyMap[ImGuiKey_X] = osgGA::GUIEventAdapter::KeySymbol::KEY_X;
-    io.KeyMap[ImGuiKey_Y] = osgGA::GUIEventAdapter::KeySymbol::KEY_Y;
-    io.KeyMap[ImGuiKey_Z] = osgGA::GUIEventAdapter::KeySymbol::KEY_Z;
+  // Keyboard mapping. ImGui will use those indices to peek into the
+  // io.KeyDown[] array.
+  ImGuiIO& io = ImGui::GetIO();
+  io.KeyMap[ImGuiKey_Tab] = ConvertedKey_Tab;
+  io.KeyMap[ImGuiKey_LeftArrow] = ConvertedKey_Left;
+  io.KeyMap[ImGuiKey_RightArrow] = ConvertedKey_Right;
+  io.KeyMap[ImGuiKey_UpArrow] = ConvertedKey_Up;
+  io.KeyMap[ImGuiKey_DownArrow] = ConvertedKey_Down;
+  io.KeyMap[ImGuiKey_PageUp] = ConvertedKey_PageUp;
+  io.KeyMap[ImGuiKey_PageDown] = ConvertedKey_PageDown;
+  io.KeyMap[ImGuiKey_Home] = ConvertedKey_Home;
+  io.KeyMap[ImGuiKey_End] = ConvertedKey_End;
+  io.KeyMap[ImGuiKey_Delete] = ConvertedKey_Delete;
+  io.KeyMap[ImGuiKey_Backspace] = ConvertedKey_BackSpace;
+  io.KeyMap[ImGuiKey_Enter] = ConvertedKey_Enter;
+  io.KeyMap[ImGuiKey_Escape] = ConvertedKey_Escape;
+  io.KeyMap[ImGuiKey_A] = osgGA::GUIEventAdapter::KeySymbol::KEY_A;
+  io.KeyMap[ImGuiKey_C] = osgGA::GUIEventAdapter::KeySymbol::KEY_C;
+  io.KeyMap[ImGuiKey_V] = osgGA::GUIEventAdapter::KeySymbol::KEY_V;
+  io.KeyMap[ImGuiKey_X] = osgGA::GUIEventAdapter::KeySymbol::KEY_X;
+  io.KeyMap[ImGuiKey_Y] = osgGA::GUIEventAdapter::KeySymbol::KEY_Y;
+  io.KeyMap[ImGuiKey_Z] = osgGA::GUIEventAdapter::KeySymbol::KEY_Z;
 #endif
-  }
 }
 
 //==============================================================================
@@ -327,12 +317,8 @@ ImGuiHandler::~ImGuiHandler()
     return;
 
   setCurrentContext(mContext);
-  const bool last = gImGuiHandlerCount.fetch_sub(1) == 1;
-  if (last) {
-    ImGui_ImplOpenGL2_Shutdown();
-    ImGui::DestroyContext(mContext);
-    gImGuiContext = nullptr;
-  }
+  ImGui_ImplOpenGL2_Shutdown();
+  ImGui::DestroyContext(mContext);
   mContext = nullptr;
 }
 

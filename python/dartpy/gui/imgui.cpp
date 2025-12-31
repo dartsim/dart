@@ -16,8 +16,6 @@
 #include <nanobind/trampoline.h>
 
 #include <memory>
-#include <type_traits>
-
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -60,25 +58,19 @@ void defImGuiApi(nb::module_& m)
 
   imgui.attr("FIRST_USE_EVER") = static_cast<int>(ImGuiCond_FirstUseEver);
 
-  if constexpr (std::is_enum_v<ImGuiKey>) {
-    nb::enum_<ImGuiKey>(imgui, "Key").value("Escape", ImGuiKey_Escape);
-    imgui.def(
-        "is_key_down",
-        [](ImGuiKey key) { return ImGui::IsKeyDown(key); },
-        nb::arg("key"));
-  } else {
-    enum class ImGuiKeyShim : int
-    {
-      Escape = ImGuiKey_Escape
-    };
-    nb::enum_<ImGuiKeyShim>(imgui, "Key").value("Escape", ImGuiKeyShim::Escape);
-    imgui.def(
-        "is_key_down",
-        [](ImGuiKeyShim key) {
-          return ImGui::IsKeyDown(static_cast<ImGuiKey>(key));
-        },
-        nb::arg("key"));
-  }
+  // ImGuiKey is a typedef to int in some ImGui releases; use a shim enum for
+  // nanobind's enum bindings.
+  enum class ImGuiKeyShim : int
+  {
+    Escape = ImGuiKey_Escape
+  };
+  nb::enum_<ImGuiKeyShim>(imgui, "Key").value("Escape", ImGuiKeyShim::Escape);
+  imgui.def(
+      "is_key_down",
+      [](ImGuiKeyShim key) {
+        return ImGui::IsKeyDown(static_cast<ImGuiKey>(key));
+      },
+      nb::arg("key"));
 
   nb::class_<ImGuiIO>(imgui, "IO")
       .def_prop_ro("framerate", [](const ImGuiIO& io) { return io.Framerate; });
@@ -209,14 +201,18 @@ void defImGuiViewer(nb::module_& m)
   using dart::gui::ImGuiViewer;
 
   nb::class_<ImGuiViewer, dart::gui::Viewer>(m, "ImGuiViewer")
-      .def(nb::init<>())
+      .def(nb::new_([]() { return makeOsgShared<ImGuiViewer>(); }))
       .def(
-          "__init__",
-          [](ImGuiViewer* self, const Eigen::Vector4d& clearColor) {
-            new (self) ImGuiViewer(dart::gui::eigToOsgVec4f(clearColor));
-          },
+          nb::new_([](const Eigen::Vector4d& clearColor) {
+            return makeOsgShared<ImGuiViewer>(
+                dart::gui::eigToOsgVec4f(clearColor));
+          }),
           nb::arg("clear_color"))
-      .def(nb::init<const osg::Vec4&>(), nb::arg("clear_color"))
+      .def(
+          nb::new_([](const osg::Vec4& clearColor) {
+            return makeOsgShared<ImGuiViewer>(clearColor);
+          }),
+          nb::arg("clear_color"))
       .def(
           "getImGuiHandler",
           [](ImGuiViewer& self) { return self.getImGuiHandler(); },
