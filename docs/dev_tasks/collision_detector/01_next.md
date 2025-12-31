@@ -53,6 +53,7 @@
 - Tightened distance AABB pruning once a penetrating pair is found.
 - Added diagonal sphere-cylinder distance coverage for oblique separation.
 - Added overlapping sphere-plane distance coverage for negative distance semantics.
+- Added overlapping box-plane distance coverage for negative distance semantics.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.

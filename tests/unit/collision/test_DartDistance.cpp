@@ -315,6 +315,35 @@ TEST(DartDistance, BoxPlaneDistance)
 }
 
 //==============================================================================
+TEST(DartDistance, BoxPlaneOverlapDistance)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+
+  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  planeFrame->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  boxFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
+
+  auto group = detector->createCollisionGroup(boxFrame.get(), planeFrame.get());
+
+  DistanceOption option(true, -5.0, nullptr);
+  DistanceResult result;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, -0.5, kDistanceTol);
+  EXPECT_NEAR(result.minDistance, -0.5, kDistanceTol);
+  EXPECT_NEAR(result.unclampedMinDistance, -0.5, kDistanceTol);
+  EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(
+      Eigen::Vector3d(0.0, 0.0, -0.5), kDistanceTol));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(
+      Eigen::Vector3d(0.0, 0.0, 0.0), kDistanceTol));
+}
+
+//==============================================================================
 TEST(DartDistance, BoxRotatedPlaneDistance)
 {
   auto detector = DARTCollisionDetector::create();
