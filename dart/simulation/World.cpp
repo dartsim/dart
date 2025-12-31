@@ -827,8 +827,7 @@ void World::getContactsUsedForConstraints(
 {
   auto* solver = getConstraintSolver();
   if (!solver) {
-    DART_WARN(
-        "World '{}' does not have a constraint-capable solver.", mName);
+    DART_WARN("World '{}' does not have a constraint-capable solver.", mName);
     contacts.clear();
     return;
   }

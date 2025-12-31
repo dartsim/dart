@@ -5,10 +5,12 @@
  * This file is provided under the BSD-style License.
  */
 
-#include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/simulation/World.hpp>
 
+#include <dart/constraint/ConstraintSolver.hpp>
+
 #include <dart/collision/CollisionObject.hpp>
+
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
@@ -18,9 +20,10 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
-#include <cmath>
 #include <string>
 #include <vector>
+
+#include <cmath>
 
 using namespace dart;
 using namespace dart::collision;
@@ -33,8 +36,7 @@ SkeletonPtr createGround()
 {
   auto ground = Skeleton::create("ground");
   auto pair = ground->createJointAndBodyNodePair<WeldJoint>(nullptr);
-  auto shape
-      = std::make_shared<BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.2));
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.2));
   pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
 
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
@@ -144,7 +146,8 @@ TEST(Simulation, ContactManifoldCacheKeepsCollisionResultStable)
   ASSERT_NE(solver, nullptr);
 
   world->step();
-  auto contactsOff = sortedContacts(world->getLastCollisionResult().getContacts());
+  auto contactsOff
+      = sortedContacts(world->getLastCollisionResult().getContacts());
   ASSERT_FALSE(contactsOff.empty());
   std::vector<Contact> constraintContactsOff;
   solver->getContactsUsedForConstraints(constraintContactsOff);
@@ -156,7 +159,8 @@ TEST(Simulation, ContactManifoldCacheKeepsCollisionResultStable)
   solver->setContactManifoldCacheEnabled(true);
 
   world->step();
-  auto contactsOn = sortedContacts(world->getLastCollisionResult().getContacts());
+  auto contactsOn
+      = sortedContacts(world->getLastCollisionResult().getContacts());
   std::vector<Contact> constraintContactsOn;
   solver->getContactsUsedForConstraints(constraintContactsOn);
   EXPECT_EQ(constraintContactsOn.size(), solver->getNumPersistentContacts());

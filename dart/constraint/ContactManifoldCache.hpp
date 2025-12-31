@@ -39,9 +39,10 @@
 #include <dart/Export.hpp>
 
 #include <array>
-#include <cstdint>
 #include <tuple>
 #include <vector>
+
+#include <cstdint>
 
 namespace dart {
 namespace constraint {
@@ -118,8 +119,7 @@ private:
   };
 
   static PairKey makePairKey(
-      collision::CollisionObject* first,
-      collision::CollisionObject* second);
+      collision::CollisionObject* first, collision::CollisionObject* second);
 
   Manifold* findOrCreateManifold(
       const PairKey& key, const ContactManifoldCacheOptions& options);

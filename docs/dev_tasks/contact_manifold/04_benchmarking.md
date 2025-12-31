@@ -65,11 +65,11 @@ Run info:
 
 Times in milliseconds (lower is better):
 
-| Case | Legacy | Cache ON | Delta |
-| --- | --- | --- | --- |
-| 2x2x2 | 150 | 149 | -1% |
-| 4x4x4 | 1944 | 3270 | +68% |
-| 8x8x8 | 21840 | 22843 | +5% |
+| Case  | Legacy | Cache ON | Delta |
+| ----- | ------ | -------- | ----- |
+| 2x2x2 | 150    | 149      | -1%   |
+| 4x4x4 | 1944   | 3270     | +68%  |
+| 8x8x8 | 21840  | 22843    | +5%   |
 
 Note: 4x4x4 numbers use a repeated run (mean of 3) with:
 
@@ -83,14 +83,14 @@ Note: 4x4x4 numbers use a repeated run (mean of 3) with:
 
 Times in microseconds:
 
-| Pairs | Contacts/Pair | Time |
-| --- | --- | --- |
-| 1 | 4 | 0.852 |
-| 1 | 16 | 2.34 |
-| 10 | 4 | 10.6 |
-| 10 | 16 | 21.4 |
-| 100 | 4 | 92.1 |
-| 100 | 16 | 237 |
+| Pairs | Contacts/Pair | Time  |
+| ----- | ------------- | ----- |
+| 1     | 4             | 0.852 |
+| 1     | 16            | 2.34  |
+| 10    | 4             | 10.6  |
+| 10    | 16            | 21.4  |
+| 100   | 4             | 92.1  |
+| 100   | 16            | 237   |
 
 ### Post-optimization run (vector grouping)
 
@@ -103,22 +103,22 @@ Run info:
 
 Times in microseconds:
 
-| Pairs | Contacts/Pair | Time |
-| --- | --- | --- |
-| 1 | 4 | 0.731 |
-| 1 | 16 | 2.04 |
-| 10 | 4 | 7.16 |
-| 10 | 16 | 22.1 |
-| 100 | 4 | 83.6 |
-| 100 | 16 | 235 |
+| Pairs | Contacts/Pair | Time  |
+| ----- | ------------- | ----- |
+| 1     | 4             | 0.731 |
+| 1     | 16            | 2.04  |
+| 10    | 4             | 7.16  |
+| 10    | 16            | 22.1  |
+| 100   | 4             | 83.6  |
+| 100   | 16            | 235   |
 
 #### Collision benchmark (bm_boxes, 4x4x4 only)
 
 Times in milliseconds (mean of 3):
 
-| Case | Legacy | Cache ON | Delta |
-| --- | --- | --- | --- |
-| 4x4x4 | 2763 | 3871 | +40% |
+| Case  | Legacy | Cache ON | Delta |
+| ----- | ------ | -------- | ----- |
+| 4x4x4 | 2763   | 3871     | +40%  |
 
 Note: this run had higher variance (18% CV for legacy), so compare with care.
 
@@ -133,22 +133,22 @@ Run info:
 
 Times in microseconds:
 
-| Pairs | Contacts/Pair | Time |
-| --- | --- | --- |
-| 1 | 4 | 0.691 |
-| 1 | 16 | 1.91 |
-| 10 | 4 | 6.56 |
-| 10 | 16 | 20.6 |
-| 100 | 4 | 66.7 |
-| 100 | 16 | 207 |
+| Pairs | Contacts/Pair | Time  |
+| ----- | ------------- | ----- |
+| 1     | 4             | 0.691 |
+| 1     | 16            | 1.91  |
+| 10    | 4             | 6.56  |
+| 10    | 16            | 20.6  |
+| 100   | 4             | 66.7  |
+| 100   | 16            | 207   |
 
 #### Collision benchmark (bm_boxes, 4x4x4 only)
 
 Times in milliseconds (mean of 3):
 
-| Case | Legacy | Cache ON | Delta |
-| --- | --- | --- | --- |
-| 4x4x4 | 1958 | 3200 | +63% |
+| Case  | Legacy | Cache ON | Delta |
+| ----- | ------ | -------- | ----- |
+| 4x4x4 | 1958   | 3200     | +63%  |
 
 ### Post-optimization run (direct output)
 
@@ -161,22 +161,22 @@ Run info:
 
 Times in microseconds:
 
-| Pairs | Contacts/Pair | Time |
-| --- | --- | --- |
-| 1 | 4 | 0.625 |
-| 1 | 16 | 1.77 |
-| 10 | 4 | 5.94 |
-| 10 | 16 | 18.7 |
-| 100 | 4 | 61.9 |
-| 100 | 16 | 193 |
+| Pairs | Contacts/Pair | Time  |
+| ----- | ------------- | ----- |
+| 1     | 4             | 0.625 |
+| 1     | 16            | 1.77  |
+| 10    | 4             | 5.94  |
+| 10    | 16            | 18.7  |
+| 100   | 4             | 61.9  |
+| 100   | 16            | 193   |
 
 #### Collision benchmark (bm_boxes, 4x4x4 only)
 
 Times in milliseconds (mean of 3):
 
-| Case | Legacy | Cache ON | Delta |
-| --- | --- | --- | --- |
-| 4x4x4 | 1934 | 3242 | +68% |
+| Case  | Legacy | Cache ON | Delta |
+| ----- | ------ | -------- | ----- |
+| 4x4x4 | 1934   | 3242     | +68%  |
 
 ### Post-optimization run (scratch reuse)
 
@@ -189,22 +189,22 @@ Run info:
 
 Times in microseconds:
 
-| Pairs | Contacts/Pair | Time |
-| --- | --- | --- |
-| 1 | 4 | 0.585 |
-| 1 | 16 | 1.65 |
-| 10 | 4 | 5.81 |
-| 10 | 16 | 18.0 |
-| 100 | 4 | 60.8 |
-| 100 | 16 | 181 |
+| Pairs | Contacts/Pair | Time  |
+| ----- | ------------- | ----- |
+| 1     | 4             | 0.585 |
+| 1     | 16            | 1.65  |
+| 10    | 4             | 5.81  |
+| 10    | 16            | 18.0  |
+| 100   | 4             | 60.8  |
+| 100   | 16            | 181   |
 
 #### Collision benchmark (bm_boxes, 4x4x4 only)
 
 Times in milliseconds (mean of 3):
 
-| Case | Legacy | Cache ON | Delta |
-| --- | --- | --- | --- |
-| 4x4x4 | 2015 | 3313 | +64% |
+| Case  | Legacy | Cache ON | Delta |
+| ----- | ------ | -------- | ----- |
+| 4x4x4 | 2015   | 3313     | +64%  |
 
 ### Post-optimization run (candidate reuse)
 
@@ -217,22 +217,22 @@ Run info:
 
 Times in microseconds:
 
-| Pairs | Contacts/Pair | Time |
-| --- | --- | --- |
-| 1 | 4 | 0.618 |
-| 1 | 16 | 1.68 |
-| 10 | 4 | 5.72 |
-| 10 | 16 | 17.3 |
-| 100 | 4 | 57.4 |
-| 100 | 16 | 176 |
+| Pairs | Contacts/Pair | Time  |
+| ----- | ------------- | ----- |
+| 1     | 4             | 0.618 |
+| 1     | 16            | 1.68  |
+| 10    | 4             | 5.72  |
+| 10    | 16            | 17.3  |
+| 100   | 4             | 57.4  |
+| 100   | 16            | 176   |
 
 #### Collision benchmark (bm_boxes, 4x4x4 only)
 
 Times in milliseconds (mean of 3):
 
-| Case | Legacy | Cache ON | Delta |
-| --- | --- | --- | --- |
-| 4x4x4 | 1975 | 3165 | +60% |
+| Case  | Legacy | Cache ON | Delta |
+| ----- | ------ | -------- | ----- |
+| 4x4x4 | 1975   | 3165     | +60%  |
 
 ### Post-optimization run (fresh-only fast path)
 
@@ -245,22 +245,22 @@ Run info:
 
 Times in microseconds:
 
-| Pairs | Contacts/Pair | Time |
-| --- | --- | --- |
-| 1 | 4 | 0.449 |
-| 1 | 16 | 1.78 |
-| 10 | 4 | 4.09 |
-| 10 | 16 | 17.5 |
-| 100 | 4 | 43.1 |
-| 100 | 16 | 174 |
+| Pairs | Contacts/Pair | Time  |
+| ----- | ------------- | ----- |
+| 1     | 4             | 0.449 |
+| 1     | 16            | 1.78  |
+| 10    | 4             | 4.09  |
+| 10    | 16            | 17.5  |
+| 100   | 4             | 43.1  |
+| 100   | 16            | 174   |
 
 #### Collision benchmark (bm_boxes, 4x4x4 only)
 
 Times in milliseconds (mean of 3):
 
-| Case | Legacy | Cache ON | Delta |
-| --- | --- | --- | --- |
-| 4x4x4 | 1938 | 3179 | +64% |
+| Case  | Legacy | Cache ON | Delta |
+| ----- | ------ | -------- | ----- |
+| 4x4x4 | 1938   | 3179     | +64%  |
 
 ### Post-optimization run (scratch across frames)
 
@@ -273,22 +273,22 @@ Run info:
 
 Times in microseconds:
 
-| Pairs | Contacts/Pair | Time |
-| --- | --- | --- |
-| 1 | 4 | 0.476 |
-| 1 | 16 | 1.76 |
-| 10 | 4 | 4.43 |
-| 10 | 16 | 18.5 |
-| 100 | 4 | 46.5 |
-| 100 | 16 | 184 |
+| Pairs | Contacts/Pair | Time  |
+| ----- | ------------- | ----- |
+| 1     | 4             | 0.476 |
+| 1     | 16            | 1.76  |
+| 10    | 4             | 4.43  |
+| 10    | 16            | 18.5  |
+| 100   | 4             | 46.5  |
+| 100   | 16            | 184   |
 
 #### Collision benchmark (bm_boxes, 4x4x4 only)
 
 Times in milliseconds (mean of 3):
 
-| Case | Legacy | Cache ON | Delta |
-| --- | --- | --- | --- |
-| 4x4x4 | 1957 | 3229 | +65% |
+| Case  | Legacy | Cache ON | Delta |
+| ----- | ------ | -------- | ----- |
+| 4x4x4 | 1957   | 3229     | +65%  |
 
 ### Post-optimization run (empty-manifold fast path)
 
@@ -301,22 +301,22 @@ Run info:
 
 Times in microseconds:
 
-| Pairs | Contacts/Pair | Time |
-| --- | --- | --- |
-| 1 | 4 | 0.481 |
-| 1 | 16 | 1.74 |
-| 10 | 4 | 4.65 |
-| 10 | 16 | 18.1 |
-| 100 | 4 | 48.7 |
-| 100 | 16 | 182 |
+| Pairs | Contacts/Pair | Time  |
+| ----- | ------------- | ----- |
+| 1     | 4             | 0.481 |
+| 1     | 16            | 1.74  |
+| 10    | 4             | 4.65  |
+| 10    | 16            | 18.1  |
+| 100   | 4             | 48.7  |
+| 100   | 16            | 182   |
 
 #### Collision benchmark (bm_boxes, 4x4x4 only)
 
 Times in milliseconds (mean of 3):
 
-| Case | Legacy | Cache ON | Delta |
-| --- | --- | --- | --- |
-| 4x4x4 | 1949 | 3224 | +65% |
+| Case  | Legacy | Cache ON | Delta |
+| ----- | ------ | -------- | ----- |
+| 4x4x4 | 1949   | 3224     | +65%  |
 
 ### Post-optimization run (force sync)
 
@@ -329,6 +329,6 @@ Run info:
 
 Times in milliseconds (mean of 3):
 
-| Case | Legacy | Cache ON | Delta |
-| --- | --- | --- | --- |
-| 4x4x4 | 1940 | 3243 | +67% |
+| Case  | Legacy | Cache ON | Delta |
+| ----- | ------ | -------- | ----- |
+| 4x4x4 | 1940   | 3243     | +67%  |

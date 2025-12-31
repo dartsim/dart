@@ -60,11 +60,11 @@
 #include <fmt/ostream.h>
 
 #include <algorithm>
-
 #include <functional>
-#include <cmath>
 #include <limits>
 #include <tuple>
+
+#include <cmath>
 
 namespace dart {
 namespace constraint {
@@ -104,8 +104,7 @@ struct PairKeyLess
 };
 
 PairKey makePairKey(
-    collision::CollisionObject* first,
-    collision::CollisionObject* second)
+    collision::CollisionObject* first, collision::CollisionObject* second)
 {
   if (std::less<collision::CollisionObject*>()(second, first))
     std::swap(first, second);
@@ -113,8 +112,7 @@ PairKey makePairKey(
   return PairKey{first, second};
 }
 
-double normalizedDot(
-    const Eigen::Vector3d& a, const Eigen::Vector3d& b)
+double normalizedDot(const Eigen::Vector3d& a, const Eigen::Vector3d& b)
 {
   const double normA = a.norm();
   const double normB = b.norm();
@@ -407,8 +405,8 @@ void ConstraintSolver::setContactManifoldCacheOptions(
 }
 
 //==============================================================================
-const ContactManifoldCacheOptions& ConstraintSolver::getContactManifoldCacheOptions()
-    const
+const ContactManifoldCacheOptions&
+ConstraintSolver::getContactManifoldCacheOptions() const
 {
   return mContactManifoldOptions;
 }

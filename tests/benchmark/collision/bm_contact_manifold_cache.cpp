@@ -36,12 +36,12 @@
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/Contact.hpp>
 
+#include <Eigen/Core>
 #include <benchmark/benchmark.h>
 
-#include <Eigen/Core>
+#include <vector>
 
 #include <cstddef>
-#include <vector>
 
 using namespace dart;
 
@@ -141,8 +141,7 @@ static void BM_ContactManifoldCacheUpdate(benchmark::State& state)
     benchmark::DoNotOptimize(output.data());
   }
 
-  state.SetItemsProcessed(
-      state.iterations() * pairCount * contactsPerPair);
+  state.SetItemsProcessed(state.iterations() * pairCount * contactsPerPair);
 }
 
 BENCHMARK(BM_ContactManifoldCacheUpdate)

@@ -178,7 +178,8 @@ public:
   const collision::CollisionOption& getCollisionOption() const;
 
   /// Set contact manifold cache options used to build persistent contacts.
-  void setContactManifoldCacheOptions(const ContactManifoldCacheOptions& options);
+  void setContactManifoldCacheOptions(
+      const ContactManifoldCacheOptions& options);
 
   /// Return contact manifold cache options used to build persistent contacts.
   const ContactManifoldCacheOptions& getContactManifoldCacheOptions() const;
