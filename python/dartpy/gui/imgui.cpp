@@ -16,6 +16,7 @@
 #include <nanobind/trampoline.h>
 
 #include <memory>
+#include <type_traits>
 
 namespace nb = nanobind;
 
@@ -59,7 +60,12 @@ void defImGuiApi(nb::module_& m)
 
   imgui.attr("FIRST_USE_EVER") = static_cast<int>(ImGuiCond_FirstUseEver);
 
-  nb::enum_<ImGuiKey>(imgui, "Key").value("Escape", ImGuiKey_Escape);
+  if constexpr (std::is_enum_v<ImGuiKey>) {
+    nb::enum_<ImGuiKey>(imgui, "Key").value("Escape", ImGuiKey_Escape);
+  } else {
+    enum class ImGuiKeyShim : int { Escape = ImGuiKey_Escape };
+    nb::enum_<ImGuiKeyShim>(imgui, "Key").value("Escape", ImGuiKeyShim::Escape);
+  }
 
   nb::class_<ImGuiIO>(imgui, "IO")
       .def_prop_ro("framerate", [](const ImGuiIO& io) { return io.Framerate; });
@@ -114,7 +120,7 @@ void defImGuiApi(nb::module_& m)
       nb::arg("max"));
   imgui.def(
       "is_key_down",
-      [](ImGuiKey key) { return ImGui::IsKeyDown(key); },
+      [](int key) { return ImGui::IsKeyDown(static_cast<ImGuiKey>(key)); },
       nb::arg("key"));
 }
 
