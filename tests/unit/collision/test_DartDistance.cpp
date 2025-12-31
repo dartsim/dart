@@ -280,9 +280,9 @@ TEST(DartDistance, BoxRotatedPlaneDistance)
   EXPECT_NEAR(result.minDistance, expected, kDistanceTol);
   EXPECT_TRUE(result.found());
   EXPECT_TRUE(result.nearestPoint1.isApprox(
-      Eigen::Vector3d(0.0, 0.0, expected), kDistanceTol));
+      Eigen::Vector3d(0.0, 1.0, expected), kDistanceTol));
   EXPECT_TRUE(result.nearestPoint2.isApprox(
-      Eigen::Vector3d(0.0, 0.0, 0.0), kDistanceTol));
+      Eigen::Vector3d(0.0, 1.0, 0.0), kDistanceTol));
 }
 
 //==============================================================================
@@ -401,7 +401,7 @@ TEST(DartDistance, CylinderRotatedPlaneDistance)
   EXPECT_TRUE(result.nearestPoint1.isApprox(
       Eigen::Vector3d(1.0, 0.0, 1.5), kDistanceTol));
   EXPECT_TRUE(result.nearestPoint2.isApprox(
-      Eigen::Vector3d(0.0, 0.0, 0.0), kDistanceTol));
+      Eigen::Vector3d(1.0, 0.0, 0.0), kDistanceTol));
 }
 
 //==============================================================================
