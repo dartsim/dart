@@ -145,6 +145,9 @@ solve()
 - Optional contact patch cache in `ConstraintSolver` can reuse up to 4 contacts
   per pair for stability; it is disabled by default and lives in
   `dart/constraint/ContactPatchCache.*`.
+- ODE backend contact history is controlled by
+  `CollisionOption::useBackendContactHistory`; the solver disables it when
+  the patch cache is enabled to avoid double persistence.
 
 **Key Features:**
 
