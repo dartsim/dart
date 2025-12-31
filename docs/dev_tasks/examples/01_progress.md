@@ -17,6 +17,7 @@
 - Drafted a pilot category index and migration checklist.
 - Expanded metadata headers to more beginner-focused examples.
 - Deferred updating `examples/README.md` until the new category layout exists.
+- Decided the pilot migration does not require a shared harness initially.
 
 ## Discovery findings
 
@@ -58,7 +59,7 @@
 ## Next steps
 
 1. Choose the first category to physically reorganize in `examples/`.
-2. Decide if the pilot needs a shared harness before moving files.
+2. Execute the pilot migration checklist (folders, CMake, README updates).
 
 ## Open questions
 
