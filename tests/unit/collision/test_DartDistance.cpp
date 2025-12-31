@@ -584,6 +584,38 @@ TEST(DartDistance, BoxCylinderDistance)
 }
 
 //==============================================================================
+TEST(DartDistance, BoxCylinderRotatedDistance)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+  auto cylinderFrame = SimpleFrame::createShared(Frame::World());
+
+  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  cylinderFrame->setShape(std::make_shared<CylinderShape>(0.5, 2.0));
+
+  cylinderFrame->setRotation(
+      Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY()).toRotationMatrix());
+  cylinderFrame->setTranslation(Eigen::Vector3d::Zero());
+  boxFrame->setTranslation(Eigen::Vector3d(3.0, 0.0, 0.0));
+
+  auto group = detector->createCollisionGroup(
+      boxFrame.get(), cylinderFrame.get());
+
+  DistanceOption option(true, 0.0, nullptr);
+  DistanceResult result;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, 1.0, kDistanceTol);
+  EXPECT_NEAR(result.minDistance, 1.0, kDistanceTol);
+  EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(
+      Eigen::Vector3d(2.0, 0.0, 0.0), kDistanceTol));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(
+      Eigen::Vector3d(1.0, 0.0, 0.0), kDistanceTol));
+}
+
+//==============================================================================
 TEST(DartDistance, CylinderCylinderDistance)
 {
   auto detector = DARTCollisionDetector::create();

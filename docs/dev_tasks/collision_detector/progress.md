@@ -27,6 +27,7 @@
 - Distance tests include diagonal cylinder-cylinder coverage for oblique separation.
 - Distance tests include rotated box-box coverage for aligned separation.
 - Distance tests include coverage for filters rejecting all pairs.
+- Distance tests include rotated box-cylinder coverage for axial separation.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
@@ -58,6 +59,7 @@
 - Added diagonal cylinder-cylinder distance coverage for oblique separation.
 - Added rotated box-box distance coverage for aligned separation.
 - Added distance coverage for filters rejecting all pairs.
+- Added rotated box-cylinder distance coverage for axial separation.
 
 ## Next Steps
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
