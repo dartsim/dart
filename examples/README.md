@@ -1,5 +1,11 @@
 # DART Examples README
 
+## Overview
+
+- Examples are being reorganized into numbered categories (pilot in progress).
+- Start in `00_getting_started` for minimal, first-run examples.
+- Tutorials remain in `tutorials/` and are cross-linked as categories expand.
+
 ## Build Each Example
 
 Copy the subdirectory to your workspace and follow the instruction of README.md

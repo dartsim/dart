@@ -20,6 +20,7 @@
 - Decided the pilot migration does not require a shared harness initially.
 - Executed the pilot migration: added a getting-started category folder and
   moved initial examples into it.
+- Updated `examples/README.md` with a brief onboarding note.
 
 ## Discovery findings
 
@@ -60,8 +61,9 @@
 
 ## Next steps
 
-1. Update `examples/README.md` once category layout stabilizes.
-2. Decide whether to migrate additional categories or iterate on the pilot.
+1. Decide whether to migrate additional categories or iterate on the pilot.
+2. If continuing, update `examples/CMakeLists.txt` grouping comments to match
+   the new category layout.
 
 ## Open questions
 
