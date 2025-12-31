@@ -1,6 +1,7 @@
 # Collision Detector Task - Progress
 
 ## Status
+
 - Phase 2 (core implementation) is in progress.
 - Core data and broadphase scaffolding are in place, with AABB caching.
 - Narrowphase supports sphere, box, cylinder, and plane primitives.
@@ -49,6 +50,7 @@
 - Raycast now runs in DartCollisionEngine with detector forwarding.
 
 ## Completed Checkpoints
+
 - Core engine path wired into the DART detector with AABB prechecks.
 - Sweep-based broadphase candidate generation for single and group queries.
 - Primitive narrowphase coverage for sphere, box, cylinder, and plane pairs.
@@ -100,6 +102,7 @@
 - Moved raycast implementation into DartCollisionEngine.
 
 ## Next Steps
+
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Extend raycast coverage to additional edge cases and future shape types.
 - Decide when to move raycast into the core engine once query types stabilize.

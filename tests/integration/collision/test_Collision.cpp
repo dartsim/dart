@@ -832,8 +832,7 @@ void testCylinderSphere(const std::shared_ptr<CollisionDetector>& cd)
   cylinderFrame->setShape(cylinder);
   sphereFrame->setShape(sphere);
 
-  auto group
-      = cd->createCollisionGroup(cylinderFrame.get(), sphereFrame.get());
+  auto group = cd->createCollisionGroup(cylinderFrame.get(), sphereFrame.get());
 
   EXPECT_EQ(group->getNumShapeFrames(), 2u);
 

@@ -32,9 +32,9 @@
 
 #include <dart/All.hpp>
 
-#include <cmath>
-
 #include <gtest/gtest.h>
+
+#include <cmath>
 
 using namespace dart;
 using namespace collision;
@@ -128,15 +128,15 @@ TEST(DartDistance, EllipsoidSphereDistance)
   auto ellipsoidFrame = SimpleFrame::createShared(Frame::World());
   auto sphereFrame = SimpleFrame::createShared(Frame::World());
 
-  ellipsoidFrame->setShape(std::make_shared<EllipsoidShape>(
-      Eigen::Vector3d(1.0, 1.0, 1.0)));
+  ellipsoidFrame->setShape(
+      std::make_shared<EllipsoidShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
   sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
 
   ellipsoidFrame->setTranslation(Eigen::Vector3d::Zero());
   sphereFrame->setTranslation(Eigen::Vector3d(3.0, 0.0, 0.0));
 
-  auto group = detector->createCollisionGroup(
-      ellipsoidFrame.get(), sphereFrame.get());
+  auto group
+      = detector->createCollisionGroup(ellipsoidFrame.get(), sphereFrame.get());
 
   DistanceOption option(true, 0.0, nullptr);
   DistanceResult result;
@@ -160,12 +160,13 @@ TEST(DartDistance, SpherePlaneDistance)
   auto planeFrame = SimpleFrame::createShared(Frame::World());
 
   sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
-  planeFrame->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
 
   sphereFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 2.0));
 
-  auto group = detector->createCollisionGroup(
-      sphereFrame.get(), planeFrame.get());
+  auto group
+      = detector->createCollisionGroup(sphereFrame.get(), planeFrame.get());
 
   DistanceOption option(true, 0.0, nullptr);
   DistanceResult result;
@@ -187,12 +188,13 @@ TEST(DartDistance, SpherePlaneOffsetDistance)
   auto planeFrame = SimpleFrame::createShared(Frame::World());
 
   sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
-  planeFrame->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 1.0));
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 1.0));
 
   sphereFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 3.0));
 
-  auto group = detector->createCollisionGroup(
-      sphereFrame.get(), planeFrame.get());
+  auto group
+      = detector->createCollisionGroup(sphereFrame.get(), planeFrame.get());
 
   DistanceOption option(true, 0.0, nullptr);
   DistanceResult result;
@@ -214,12 +216,13 @@ TEST(DartDistance, SpherePlaneOverlapDistance)
   auto planeFrame = SimpleFrame::createShared(Frame::World());
 
   sphereFrame->setShape(std::make_shared<SphereShape>(1.0));
-  planeFrame->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
 
   sphereFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
 
-  auto group = detector->createCollisionGroup(
-      sphereFrame.get(), planeFrame.get());
+  auto group
+      = detector->createCollisionGroup(sphereFrame.get(), planeFrame.get());
 
   DistanceOption option(true, -5.0, nullptr);
   DistanceResult result;
@@ -244,14 +247,15 @@ TEST(DartDistance, SphereRotatedPlaneDistance)
   auto planeFrame = SimpleFrame::createShared(Frame::World());
 
   sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
-  planeFrame->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
-  planeFrame->setRotation(
-      Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY()).toRotationMatrix());
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  planeFrame->setRotation(Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY())
+                              .toRotationMatrix());
 
   sphereFrame->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
 
-  auto group = detector->createCollisionGroup(
-      sphereFrame.get(), planeFrame.get());
+  auto group
+      = detector->createCollisionGroup(sphereFrame.get(), planeFrame.get());
 
   DistanceOption option(true, 0.0, nullptr);
   DistanceResult result;
@@ -273,13 +277,14 @@ TEST(DartDistance, SphereBoxDistance)
   auto boxFrame = SimpleFrame::createShared(Frame::World());
 
   sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
-  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  boxFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
 
   sphereFrame->setTranslation(Eigen::Vector3d(3.0, 0.0, 0.0));
   boxFrame->setTranslation(Eigen::Vector3d::Zero());
 
-  auto group = detector->createCollisionGroup(
-      sphereFrame.get(), boxFrame.get());
+  auto group
+      = detector->createCollisionGroup(sphereFrame.get(), boxFrame.get());
 
   DistanceOption option(true, 0.0, nullptr);
   DistanceResult result;
@@ -301,14 +306,15 @@ TEST(DartDistance, SphereBoxRotatedDistance)
   auto boxFrame = SimpleFrame::createShared(Frame::World());
 
   sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
-  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  boxFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
 
-  boxFrame->setRotation(
-      Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitZ()).toRotationMatrix());
+  boxFrame->setRotation(Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitZ())
+                            .toRotationMatrix());
   sphereFrame->setTranslation(Eigen::Vector3d(3.0, 0.0, 0.0));
 
-  auto group = detector->createCollisionGroup(
-      sphereFrame.get(), boxFrame.get());
+  auto group
+      = detector->createCollisionGroup(sphereFrame.get(), boxFrame.get());
 
   DistanceOption option(true, 0.0, nullptr);
   DistanceResult result;
@@ -333,8 +339,10 @@ TEST(DartDistance, BoxPlaneDistance)
   auto boxFrame = SimpleFrame::createShared(Frame::World());
   auto planeFrame = SimpleFrame::createShared(Frame::World());
 
-  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
-  planeFrame->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  boxFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
 
   boxFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 2.0));
 
@@ -359,8 +367,10 @@ TEST(DartDistance, BoxPlaneOverlapDistance)
   auto boxFrame = SimpleFrame::createShared(Frame::World());
   auto planeFrame = SimpleFrame::createShared(Frame::World());
 
-  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
-  planeFrame->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  boxFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
 
   boxFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
 
@@ -388,11 +398,13 @@ TEST(DartDistance, BoxRotatedPlaneDistance)
   auto boxFrame = SimpleFrame::createShared(Frame::World());
   auto planeFrame = SimpleFrame::createShared(Frame::World());
 
-  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
-  planeFrame->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  boxFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
 
-  boxFrame->setRotation(
-      Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitY()).toRotationMatrix());
+  boxFrame->setRotation(Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitY())
+                            .toRotationMatrix());
   boxFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 2.0));
 
   auto group = detector->createCollisionGroup(boxFrame.get(), planeFrame.get());
@@ -420,13 +432,15 @@ TEST(DartDistance, SphereInsideBoxDistance)
   auto boxFrame = SimpleFrame::createShared(Frame::World());
   auto sphereFrame = SimpleFrame::createShared(Frame::World());
 
-  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  boxFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
   sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
 
   boxFrame->setTranslation(Eigen::Vector3d::Zero());
   sphereFrame->setTranslation(Eigen::Vector3d::Zero());
 
-  auto group = detector->createCollisionGroup(boxFrame.get(), sphereFrame.get());
+  auto group
+      = detector->createCollisionGroup(boxFrame.get(), sphereFrame.get());
 
   DistanceOption option(false, 0.0, nullptr);
   DistanceResult result;
@@ -454,8 +468,8 @@ TEST(DartDistance, CylinderPlaneDistance)
 
   cylinderFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 2.0));
 
-  auto group = detector->createCollisionGroup(
-      cylinderFrame.get(), planeFrame.get());
+  auto group
+      = detector->createCollisionGroup(cylinderFrame.get(), planeFrame.get());
 
   DistanceOption option(true, 0.0, nullptr);
   DistanceResult result;
@@ -482,8 +496,8 @@ TEST(DartDistance, CylinderPlaneOverlapDistance)
 
   cylinderFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.2));
 
-  auto group = detector->createCollisionGroup(
-      cylinderFrame.get(), planeFrame.get());
+  auto group
+      = detector->createCollisionGroup(cylinderFrame.get(), planeFrame.get());
 
   DistanceOption option(true, -5.0, nullptr);
   DistanceResult result;
@@ -512,11 +526,12 @@ TEST(DartDistance, CylinderRotatedPlaneDistance)
       std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
 
   cylinderFrame->setRotation(
-      Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY()).toRotationMatrix());
+      Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY())
+          .toRotationMatrix());
   cylinderFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 2.0));
 
-  auto group = detector->createCollisionGroup(
-      cylinderFrame.get(), planeFrame.get());
+  auto group
+      = detector->createCollisionGroup(cylinderFrame.get(), planeFrame.get());
 
   DistanceOption option(true, 0.0, nullptr);
   DistanceResult result;
@@ -544,12 +559,13 @@ TEST(DartDistance, CylinderTiltedPlaneDistance)
       std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
 
   const Eigen::Matrix3d rotation
-      = Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitY()).toRotationMatrix();
+      = Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
   cylinderFrame->setRotation(rotation);
   cylinderFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 2.0));
 
-  auto group = detector->createCollisionGroup(
-      cylinderFrame.get(), planeFrame.get());
+  auto group
+      = detector->createCollisionGroup(cylinderFrame.get(), planeFrame.get());
 
   DistanceOption option(false, 0.0, nullptr);
   DistanceResult result;
@@ -582,8 +598,8 @@ TEST(DartDistance, SphereCylinderDistance)
   sphereFrame->setTranslation(Eigen::Vector3d(3.0, 0.0, 0.0));
   cylinderFrame->setTranslation(Eigen::Vector3d::Zero());
 
-  auto group = detector->createCollisionGroup(
-      sphereFrame.get(), cylinderFrame.get());
+  auto group
+      = detector->createCollisionGroup(sphereFrame.get(), cylinderFrame.get());
 
   DistanceOption option(true, 0.0, nullptr);
   DistanceResult result;
@@ -610,8 +626,8 @@ TEST(DartDistance, SphereCylinderDiagonalDistance)
   sphereFrame->setTranslation(Eigen::Vector3d(2.0, 2.0, 0.0));
   cylinderFrame->setTranslation(Eigen::Vector3d::Zero());
 
-  auto group = detector->createCollisionGroup(
-      sphereFrame.get(), cylinderFrame.get());
+  auto group
+      = detector->createCollisionGroup(sphereFrame.get(), cylinderFrame.get());
 
   DistanceOption option(true, 0.0, nullptr);
   DistanceResult result;
@@ -626,8 +642,7 @@ TEST(DartDistance, SphereCylinderDiagonalDistance)
   const Eigen::Vector3d normal(invSqrt2, invSqrt2, 0.0);
   EXPECT_TRUE(result.nearestPoint1.isApprox(
       Eigen::Vector3d(2.0, 2.0, 0.0) - 0.5 * normal, kDistanceTol));
-  EXPECT_TRUE(result.nearestPoint2.isApprox(
-      normal, kDistanceTol));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(normal, kDistanceTol));
 }
 
 //==============================================================================
@@ -699,7 +714,8 @@ TEST(DartDistance, BoxBoxRotatedDistance)
   frame2->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
 
   const Eigen::Matrix3d rotation
-      = Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+      = Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitZ())
+            .toRotationMatrix();
   frame1->setRotation(rotation);
   frame2->setRotation(rotation);
 
@@ -717,10 +733,8 @@ TEST(DartDistance, BoxBoxRotatedDistance)
   EXPECT_NEAR(distance, 1.0, kDistanceTol);
   EXPECT_NEAR(result.minDistance, 1.0, kDistanceTol);
   EXPECT_TRUE(result.found());
-  EXPECT_TRUE(result.nearestPoint1.isApprox(
-      axis0 * 1.0, kDistanceTol));
-  EXPECT_TRUE(result.nearestPoint2.isApprox(
-      axis0 * 2.0, kDistanceTol));
+  EXPECT_TRUE(result.nearestPoint1.isApprox(axis0 * 1.0, kDistanceTol));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(axis0 * 2.0, kDistanceTol));
 }
 
 //==============================================================================
@@ -761,14 +775,15 @@ TEST(DartDistance, BoxCylinderDistance)
   auto boxFrame = SimpleFrame::createShared(Frame::World());
   auto cylinderFrame = SimpleFrame::createShared(Frame::World());
 
-  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  boxFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
   cylinderFrame->setShape(std::make_shared<CylinderShape>(1.0, 2.0));
 
   boxFrame->setTranslation(Eigen::Vector3d::Zero());
   cylinderFrame->setTranslation(Eigen::Vector3d(3.0, 0.0, 0.0));
 
-  auto group = detector->createCollisionGroup(
-      boxFrame.get(), cylinderFrame.get());
+  auto group
+      = detector->createCollisionGroup(boxFrame.get(), cylinderFrame.get());
 
   DistanceOption option(true, 0.0, nullptr);
   DistanceResult result;
@@ -789,16 +804,18 @@ TEST(DartDistance, BoxCylinderRotatedDistance)
   auto boxFrame = SimpleFrame::createShared(Frame::World());
   auto cylinderFrame = SimpleFrame::createShared(Frame::World());
 
-  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  boxFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
   cylinderFrame->setShape(std::make_shared<CylinderShape>(0.5, 2.0));
 
   cylinderFrame->setRotation(
-      Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY()).toRotationMatrix());
+      Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY())
+          .toRotationMatrix());
   cylinderFrame->setTranslation(Eigen::Vector3d::Zero());
   boxFrame->setTranslation(Eigen::Vector3d(3.0, 0.0, 0.0));
 
-  auto group = detector->createCollisionGroup(
-      boxFrame.get(), cylinderFrame.get());
+  auto group
+      = detector->createCollisionGroup(boxFrame.get(), cylinderFrame.get());
 
   DistanceOption option(true, 0.0, nullptr);
   DistanceResult result;
@@ -870,9 +887,8 @@ TEST(DartDistance, CylinderCylinderDiagonalDistance)
       Eigen::Vector3d(0.5 / std::sqrt(2.0), 0.5 / std::sqrt(2.0), 0.0),
       kDistanceTol));
   EXPECT_TRUE(result.nearestPoint2.isApprox(
-      Eigen::Vector3d(2.0 - 0.5 / std::sqrt(2.0),
-                      2.0 - 0.5 / std::sqrt(2.0),
-                      0.0),
+      Eigen::Vector3d(
+          2.0 - 0.5 / std::sqrt(2.0), 2.0 - 0.5 / std::sqrt(2.0), 0.0),
       kDistanceTol));
 }
 
@@ -886,15 +902,16 @@ TEST(DartDistance, GroupGroupDistance)
   auto sphereFrame2 = SimpleFrame::createShared(Frame::World());
 
   sphereFrame1->setShape(std::make_shared<SphereShape>(0.5));
-  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  boxFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
   sphereFrame2->setShape(std::make_shared<SphereShape>(0.5));
 
   sphereFrame1->setTranslation(Eigen::Vector3d::Zero());
   boxFrame->setTranslation(Eigen::Vector3d(5.0, 0.0, 0.0));
   sphereFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
 
-  auto group1 = detector->createCollisionGroup(
-      sphereFrame1.get(), boxFrame.get());
+  auto group1
+      = detector->createCollisionGroup(sphereFrame1.get(), boxFrame.get());
   auto group2 = detector->createCollisionGroup(sphereFrame2.get());
 
   DistanceOption option(true, 0.0, nullptr);
@@ -922,15 +939,16 @@ TEST(DartDistance, GroupGroupDistanceWithFilter)
   auto sphereFrame2 = SimpleFrame::createShared(Frame::World());
 
   sphereFrame1->setShape(std::make_shared<SphereShape>(0.5));
-  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  boxFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
   sphereFrame2->setShape(std::make_shared<SphereShape>(0.5));
 
   sphereFrame1->setTranslation(Eigen::Vector3d::Zero());
   boxFrame->setTranslation(Eigen::Vector3d(5.0, 0.0, 0.0));
   sphereFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
 
-  auto group1 = detector->createCollisionGroup(
-      sphereFrame1.get(), boxFrame.get());
+  auto group1
+      = detector->createCollisionGroup(sphereFrame1.get(), boxFrame.get());
   auto group2 = detector->createCollisionGroup(sphereFrame2.get());
 
   struct ShapeFrameDistanceFilter final : DistanceFilter
@@ -981,10 +999,10 @@ TEST(DartDistance, GroupGroupDistanceSkipsSharedObjects)
   sphereFrame1->setTranslation(Eigen::Vector3d(3.0, 0.0, 0.0));
   sphereFrame2->setTranslation(Eigen::Vector3d(5.0, 0.0, 0.0));
 
-  auto group1 = detector->createCollisionGroup(
-      sharedFrame.get(), sphereFrame1.get());
-  auto group2 = detector->createCollisionGroup(
-      sharedFrame.get(), sphereFrame2.get());
+  auto group1
+      = detector->createCollisionGroup(sharedFrame.get(), sphereFrame1.get());
+  auto group2
+      = detector->createCollisionGroup(sharedFrame.get(), sphereFrame2.get());
 
   DistanceOption option(true, 0.0, nullptr);
   DistanceResult result;
@@ -1061,19 +1079,19 @@ TEST(DartDistance, GroupDistanceFilterRejectsAll)
   auto boxFrame = SimpleFrame::createShared(Frame::World());
 
   sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
-  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  boxFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
 
   sphereFrame->setTranslation(Eigen::Vector3d::Zero());
   boxFrame->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
 
-  auto group = detector->createCollisionGroup(
-      sphereFrame.get(), boxFrame.get());
+  auto group
+      = detector->createCollisionGroup(sphereFrame.get(), boxFrame.get());
 
   struct RejectAllDistanceFilter final : DistanceFilter
   {
     bool needDistance(
-        const CollisionObject*,
-        const CollisionObject*) const override
+        const CollisionObject*, const CollisionObject*) const override
     {
       return false;
     }
@@ -1116,8 +1134,8 @@ TEST(DartDistance, MissingShapeDistance)
   sphereFrame->setTranslation(Eigen::Vector3d::Zero());
   emptyFrame->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
 
-  auto group = detector->createCollisionGroup(
-      sphereFrame.get(), emptyFrame.get());
+  auto group
+      = detector->createCollisionGroup(sphereFrame.get(), emptyFrame.get());
 
   DistanceOption option(true, 0.0, nullptr);
   DistanceResult result;

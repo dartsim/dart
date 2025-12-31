@@ -33,9 +33,9 @@
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/dart/DartCollisionEngine.hpp"
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/collision/dart/DartCollisionEngine.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -164,9 +164,7 @@ bool DARTCollisionDetector::collide(
 
 //==============================================================================
 double DARTCollisionDetector::distance(
-    CollisionGroup* group,
-    const DistanceOption& option,
-    DistanceResult* result)
+    CollisionGroup* group, const DistanceOption& option, DistanceResult* result)
 {
   if (result)
     result->clear();

@@ -35,8 +35,9 @@
 
 #include <Eigen/Dense>
 
-#include <cstddef>
 #include <vector>
+
+#include <cstddef>
 
 namespace dart {
 namespace collision {

@@ -66,17 +66,14 @@ void computeSweepPairs(
     if (!object)
       continue;
 
-    sweep.push_back(
-        {object->worldAabbMin.x(), object->worldAabbMax.x(), i});
+    sweep.push_back({object->worldAabbMin.x(), object->worldAabbMax.x(), i});
   }
 
   if (sweep.size() < 2u)
     return;
 
   std::stable_sort(
-      sweep.begin(),
-      sweep.end(),
-      [](const SweepEntry& a, const SweepEntry& b) {
+      sweep.begin(), sweep.end(), [](const SweepEntry& a, const SweepEntry& b) {
         return a.minX < b.minX;
       });
 

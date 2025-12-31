@@ -37,9 +37,9 @@
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/DistanceOption.hpp>
 #include <dart/collision/DistanceResult.hpp>
+#include <dart/collision/Fwd.hpp>
 #include <dart/collision/RaycastOption.hpp>
 #include <dart/collision/RaycastResult.hpp>
-#include <dart/collision/Fwd.hpp>
 
 #include <Eigen/Dense>
 

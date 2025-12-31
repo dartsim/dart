@@ -31,6 +31,7 @@
  */
 
 #include <dart/collision/dart/All.hpp>
+
 #include <dart/dynamics/All.hpp>
 
 #include <benchmark/benchmark.h>
@@ -58,7 +59,8 @@ DistanceScene createScene(std::size_t count)
   for (std::size_t i = 0; i < count; ++i) {
     auto frame = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
     frame->setShape(std::make_shared<dynamics::SphereShape>(0.5));
-    frame->setTranslation(Eigen::Vector3d(static_cast<double>(i) * 2.0, 0.0, 0.0));
+    frame->setTranslation(
+        Eigen::Vector3d(static_cast<double>(i) * 2.0, 0.0, 0.0));
     scene.group->addShapeFrame(frame.get());
     scene.frames.push_back(std::move(frame));
   }

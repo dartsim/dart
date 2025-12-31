@@ -44,10 +44,11 @@
 #include <Eigen/Dense>
 
 #include <algorithm>
-#include <cmath>
-#include <cstdint>
 #include <limits>
 #include <unordered_map>
+
+#include <cmath>
+#include <cstdint>
 
 namespace dart {
 namespace collision {
@@ -315,8 +316,7 @@ bool raycastPlane(
 
   candidate->fraction = t;
   candidate->point = from + t * dir;
-  candidate->normal
-      = (core.worldTransform.linear() * normalLocal).normalized();
+  candidate->normal = (core.worldTransform.linear() * normalLocal).normalized();
 
   return true;
 }
@@ -393,8 +393,7 @@ bool raycastBox(
 
   candidate->fraction = tHit;
   candidate->point = from + tHit * dir;
-  candidate->normal
-      = (core.worldTransform.linear() * normalLocal).normalized();
+  candidate->normal = (core.worldTransform.linear() * normalLocal).normalized();
 
   return true;
 }
@@ -607,7 +606,8 @@ double signedDistancePointCylinderLocal(
     double halfHeight,
     Eigen::Vector3d* closestPoint)
 {
-  const double radial = std::sqrt(point.x() * point.x() + point.y() * point.y());
+  const double radial
+      = std::sqrt(point.x() * point.x() + point.y() * point.y());
   const double dr = radial - radius;
   const double dz = std::abs(point.z()) - halfHeight;
 
@@ -642,9 +642,9 @@ double signedDistancePointCylinderLocal(
 
   const double outsideRadialDist = std::max(dr, 0.0);
   const double outsideAxialDist = std::max(dz, 0.0);
-  const double outsideDist
-      = std::sqrt(outsideRadialDist * outsideRadialDist
-                  + outsideAxialDist * outsideAxialDist);
+  const double outsideDist = std::sqrt(
+      outsideRadialDist * outsideRadialDist
+      + outsideAxialDist * outsideAxialDist);
   const double insideDist = std::min(std::max(dr, dz), 0.0);
 
   return outsideDist + insideDist;
@@ -665,9 +665,7 @@ double signedDistanceToPlane(
 }
 
 bool distanceSphereSphere(
-    const CoreObject& sphere1,
-    const CoreObject& sphere2,
-    DistanceInfo* out)
+    const CoreObject& sphere1, const CoreObject& sphere2, DistanceInfo* out)
 {
   if (!out)
     return false;
@@ -687,9 +685,7 @@ bool distanceSphereSphere(
 }
 
 bool distanceSphereBox(
-    const CoreObject& sphere,
-    const CoreObject& box,
-    DistanceInfo* out)
+    const CoreObject& sphere, const CoreObject& box, DistanceInfo* out)
 {
   if (!out)
     return false;
@@ -699,8 +695,7 @@ bool distanceSphereBox(
   const Eigen::Isometry3d invBox = box.worldTransform.inverse();
   Eigen::Vector3d centerLocal = invBox * center;
 
-  Eigen::Vector3d closestLocal = clampPoint(
-      centerLocal, -halfSize, halfSize);
+  Eigen::Vector3d closestLocal = clampPoint(centerLocal, -halfSize, halfSize);
   Eigen::Vector3d closestWorld = box.worldTransform * closestLocal;
 
   Eigen::Vector3d delta = center - closestWorld;
@@ -738,9 +733,7 @@ bool distanceSphereBox(
 }
 
 bool distanceBoxSphere(
-    const CoreObject& box,
-    const CoreObject& sphere,
-    DistanceInfo* out)
+    const CoreObject& box, const CoreObject& sphere, DistanceInfo* out)
 {
   if (!out)
     return false;
@@ -756,16 +749,15 @@ bool distanceBoxSphere(
 }
 
 bool distanceSpherePlane(
-    const CoreObject& sphere,
-    const CoreObject& plane,
-    DistanceInfo* out)
+    const CoreObject& sphere, const CoreObject& plane, DistanceInfo* out)
 {
   if (!out)
     return false;
 
   Eigen::Vector3d normalWorld = Eigen::Vector3d::UnitZ();
   const Eigen::Vector3d center = sphere.worldTransform.translation();
-  const double signedDistance = signedDistanceToPlane(plane, center, &normalWorld);
+  const double signedDistance
+      = signedDistanceToPlane(plane, center, &normalWorld);
   const double absDistance = std::abs(signedDistance);
   const double distance = absDistance - sphere.shape.radius;
   const Eigen::Vector3d normal
@@ -778,9 +770,7 @@ bool distanceSpherePlane(
 }
 
 bool distancePlaneSphere(
-    const CoreObject& plane,
-    const CoreObject& sphere,
-    DistanceInfo* out)
+    const CoreObject& plane, const CoreObject& sphere, DistanceInfo* out)
 {
   if (!out)
     return false;
@@ -796,9 +786,7 @@ bool distancePlaneSphere(
 }
 
 bool distanceBoxBox(
-    const CoreObject& box1,
-    const CoreObject& box2,
-    DistanceInfo* out)
+    const CoreObject& box1, const CoreObject& box2, DistanceInfo* out)
 {
   if (!out)
     return false;
@@ -853,9 +841,7 @@ bool distanceBoxBox(
 }
 
 bool distanceCylinderSphere(
-    const CoreObject& cylinder,
-    const CoreObject& sphere,
-    DistanceInfo* out)
+    const CoreObject& cylinder, const CoreObject& sphere, DistanceInfo* out)
 {
   if (!out)
     return false;
@@ -865,7 +851,10 @@ bool distanceCylinderSphere(
   const Eigen::Vector3d centerLocal = invCyl * center;
   Eigen::Vector3d closestLocal = Eigen::Vector3d::Zero();
   const double signedPointDistance = signedDistancePointCylinderLocal(
-      centerLocal, cylinder.shape.radius, 0.5 * cylinder.shape.height, &closestLocal);
+      centerLocal,
+      cylinder.shape.radius,
+      0.5 * cylinder.shape.height,
+      &closestLocal);
 
   const Eigen::Vector3d closestWorld = cylinder.worldTransform * closestLocal;
   Eigen::Vector3d normal = center - closestWorld;
@@ -882,9 +871,7 @@ bool distanceCylinderSphere(
 }
 
 bool distanceSphereCylinder(
-    const CoreObject& sphere,
-    const CoreObject& cylinder,
-    DistanceInfo* out)
+    const CoreObject& sphere, const CoreObject& cylinder, DistanceInfo* out)
 {
   if (!out)
     return false;
@@ -900,16 +887,15 @@ bool distanceSphereCylinder(
 }
 
 bool distanceCylinderPlane(
-    const CoreObject& cylinder,
-    const CoreObject& plane,
-    DistanceInfo* out)
+    const CoreObject& cylinder, const CoreObject& plane, DistanceInfo* out)
 {
   if (!out)
     return false;
 
   Eigen::Vector3d normalWorld = Eigen::Vector3d::UnitZ();
   const Eigen::Vector3d center = cylinder.worldTransform.translation();
-  const double signedDistance = signedDistanceToPlane(plane, center, &normalWorld);
+  const double signedDistance
+      = signedDistanceToPlane(plane, center, &normalWorld);
   const Eigen::Vector3d axis = cylinder.worldTransform.linear().col(2);
   const double extent = projectCylinderExtent(
       normalWorld.normalized(),
@@ -918,15 +904,15 @@ bool distanceCylinderPlane(
       cylinder.shape.radius);
 
   const double distance = std::abs(signedDistance) - extent;
-  const Eigen::Vector3d normal
-      = (signedDistance >= 0.0) ? normalWorld.normalized()
-                                : -normalWorld.normalized();
+  const Eigen::Vector3d normal = (signedDistance >= 0.0)
+                                     ? normalWorld.normalized()
+                                     : -normalWorld.normalized();
 
-  const Eigen::Vector3d pointCylinder
-      = supportCylinder(cylinder.worldTransform,
-                        cylinder.shape.radius,
-                        0.5 * cylinder.shape.height,
-                        -normal);
+  const Eigen::Vector3d pointCylinder = supportCylinder(
+      cylinder.worldTransform,
+      cylinder.shape.radius,
+      0.5 * cylinder.shape.height,
+      -normal);
   out->distance = distance;
   out->point1 = pointCylinder;
   out->point2 = pointCylinder - normal * distance;
@@ -934,9 +920,7 @@ bool distanceCylinderPlane(
 }
 
 bool distancePlaneCylinder(
-    const CoreObject& plane,
-    const CoreObject& cylinder,
-    DistanceInfo* out)
+    const CoreObject& plane, const CoreObject& cylinder, DistanceInfo* out)
 {
   if (!out)
     return false;
@@ -952,25 +936,22 @@ bool distancePlaneCylinder(
 }
 
 bool distanceBoxPlane(
-    const CoreObject& box,
-    const CoreObject& plane,
-    DistanceInfo* out)
+    const CoreObject& box, const CoreObject& plane, DistanceInfo* out)
 {
   if (!out)
     return false;
 
   Eigen::Vector3d normalWorld = Eigen::Vector3d::UnitZ();
   const Eigen::Vector3d center = box.worldTransform.translation();
-  const double signedDistance = signedDistanceToPlane(plane, center, &normalWorld);
+  const double signedDistance
+      = signedDistanceToPlane(plane, center, &normalWorld);
   const double extent = projectBoxExtent(
-      normalWorld.normalized(),
-      0.5 * box.shape.size,
-      box.worldTransform);
+      normalWorld.normalized(), 0.5 * box.shape.size, box.worldTransform);
 
   const double distance = std::abs(signedDistance) - extent;
-  const Eigen::Vector3d normal
-      = (signedDistance >= 0.0) ? normalWorld.normalized()
-                                : -normalWorld.normalized();
+  const Eigen::Vector3d normal = (signedDistance >= 0.0)
+                                     ? normalWorld.normalized()
+                                     : -normalWorld.normalized();
 
   const Eigen::Vector3d pointBox
       = supportBox(box.worldTransform, box.shape.size, -normal);
@@ -981,9 +962,7 @@ bool distanceBoxPlane(
 }
 
 bool distancePlaneBox(
-    const CoreObject& plane,
-    const CoreObject& box,
-    DistanceInfo* out)
+    const CoreObject& plane, const CoreObject& box, DistanceInfo* out)
 {
   if (!out)
     return false;
@@ -999,16 +978,14 @@ bool distancePlaneBox(
 }
 
 bool distanceCylinderBox(
-    const CoreObject& cylinder,
-    const CoreObject& box,
-    DistanceInfo* out)
+    const CoreObject& cylinder, const CoreObject& box, DistanceInfo* out)
 {
   if (!out)
     return false;
 
   SatDistanceResult sat;
-  const Eigen::Vector3d centerDelta
-      = cylinder.worldTransform.translation() - box.worldTransform.translation();
+  const Eigen::Vector3d centerDelta = cylinder.worldTransform.translation()
+                                      - box.worldTransform.translation();
   const Eigen::Vector3d cylAxis = cylinder.worldTransform.linear().col(2);
   const Eigen::Vector3d halfSize = 0.5 * box.shape.size;
 
@@ -1020,21 +997,30 @@ bool distanceCylinderBox(
   updateSatAxis(
       boxAxes[0],
       projectCylinderExtent(
-          boxAxes[0], cylAxis, 0.5 * cylinder.shape.height, cylinder.shape.radius),
+          boxAxes[0],
+          cylAxis,
+          0.5 * cylinder.shape.height,
+          cylinder.shape.radius),
       projectBoxExtent(boxAxes[0], halfSize, box.worldTransform),
       centerDelta,
       sat);
   updateSatAxis(
       boxAxes[1],
       projectCylinderExtent(
-          boxAxes[1], cylAxis, 0.5 * cylinder.shape.height, cylinder.shape.radius),
+          boxAxes[1],
+          cylAxis,
+          0.5 * cylinder.shape.height,
+          cylinder.shape.radius),
       projectBoxExtent(boxAxes[1], halfSize, box.worldTransform),
       centerDelta,
       sat);
   updateSatAxis(
       boxAxes[2],
       projectCylinderExtent(
-          boxAxes[2], cylAxis, 0.5 * cylinder.shape.height, cylinder.shape.radius),
+          boxAxes[2],
+          cylAxis,
+          0.5 * cylinder.shape.height,
+          cylinder.shape.radius),
       projectBoxExtent(boxAxes[2], halfSize, box.worldTransform),
       centerDelta,
       sat);
@@ -1069,9 +1055,7 @@ bool distanceCylinderBox(
 }
 
 bool distanceBoxCylinder(
-    const CoreObject& box,
-    const CoreObject& cylinder,
-    DistanceInfo* out)
+    const CoreObject& box, const CoreObject& cylinder, DistanceInfo* out)
 {
   if (!out)
     return false;
@@ -1087,16 +1071,14 @@ bool distanceBoxCylinder(
 }
 
 bool distanceCylinderCylinder(
-    const CoreObject& cylinder1,
-    const CoreObject& cylinder2,
-    DistanceInfo* out)
+    const CoreObject& cylinder1, const CoreObject& cylinder2, DistanceInfo* out)
 {
   if (!out)
     return false;
 
   SatDistanceResult sat;
-  const Eigen::Vector3d centerDelta
-      = cylinder1.worldTransform.translation() - cylinder2.worldTransform.translation();
+  const Eigen::Vector3d centerDelta = cylinder1.worldTransform.translation()
+                                      - cylinder2.worldTransform.translation();
   const Eigen::Vector3d axis1 = cylinder1.worldTransform.linear().col(2);
   const Eigen::Vector3d axis2 = cylinder2.worldTransform.linear().col(2);
 
@@ -1121,19 +1103,32 @@ bool distanceCylinderCylinder(
   updateSatAxis(
       crossAxis,
       projectCylinderExtent(
-          crossAxis, axis1, 0.5 * cylinder1.shape.height, cylinder1.shape.radius),
+          crossAxis,
+          axis1,
+          0.5 * cylinder1.shape.height,
+          cylinder1.shape.radius),
       projectCylinderExtent(
-          crossAxis, axis2, 0.5 * cylinder2.shape.height, cylinder2.shape.radius),
+          crossAxis,
+          axis2,
+          0.5 * cylinder2.shape.height,
+          cylinder2.shape.radius),
       centerDelta,
       sat);
 
-  const Eigen::Vector3d deltaPerp = centerDelta - centerDelta.dot(axis1) * axis1;
+  const Eigen::Vector3d deltaPerp
+      = centerDelta - centerDelta.dot(axis1) * axis1;
   updateSatAxis(
       deltaPerp,
       projectCylinderExtent(
-          deltaPerp, axis1, 0.5 * cylinder1.shape.height, cylinder1.shape.radius),
+          deltaPerp,
+          axis1,
+          0.5 * cylinder1.shape.height,
+          cylinder1.shape.radius),
       projectCylinderExtent(
-          deltaPerp, axis2, 0.5 * cylinder2.shape.height, cylinder2.shape.radius),
+          deltaPerp,
+          axis2,
+          0.5 * cylinder2.shape.height,
+          cylinder2.shape.radius),
       centerDelta,
       sat);
 
@@ -1152,7 +1147,8 @@ bool distanceCylinderCylinder(
   return true;
 }
 
-bool distanceCore(const CoreObject& obj1, const CoreObject& obj2, DistanceInfo* out)
+bool distanceCore(
+    const CoreObject& obj1, const CoreObject& obj2, DistanceInfo* out)
 {
   if (!out)
     return false;
@@ -1435,8 +1431,7 @@ double DartCollisionEngine::distance(
 
   if (result) {
     result->unclampedMinDistance = bestDistance;
-    result->minDistance
-        = std::max(bestDistance, option.distanceLowerBound);
+    result->minDistance = std::max(bestDistance, option.distanceLowerBound);
     result->shapeFrame1 = bestObj1 ? bestObj1->getShapeFrame() : nullptr;
     result->shapeFrame2 = bestObj2 ? bestObj2->getShapeFrame() : nullptr;
     if (option.enableNearestPoints) {
@@ -1532,8 +1527,7 @@ double DartCollisionEngine::distance(
 
   if (result) {
     result->unclampedMinDistance = bestDistance;
-    result->minDistance
-        = std::max(bestDistance, option.distanceLowerBound);
+    result->minDistance = std::max(bestDistance, option.distanceLowerBound);
     result->shapeFrame1 = bestObj1 ? bestObj1->getShapeFrame() : nullptr;
     result->shapeFrame2 = bestObj2 ? bestObj2->getShapeFrame() : nullptr;
     if (option.enableNearestPoints) {
@@ -1616,12 +1610,9 @@ bool DartCollisionEngine::raycast(
     result->mRayHits.push_back(bestHit);
   } else {
     if (option.mSortByClosest) {
-      std::sort(
-          hits.begin(),
-          hits.end(),
-          [](const RayHit& a, const RayHit& b) {
-            return a.mFraction < b.mFraction;
-          });
+      std::sort(hits.begin(), hits.end(), [](const RayHit& a, const RayHit& b) {
+        return a.mFraction < b.mFraction;
+      });
     }
     result->mRayHits = std::move(hits);
   }

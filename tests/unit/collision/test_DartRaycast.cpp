@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/All.hpp>
+#include "../../helpers/GTestUtils.hpp"
 
-#include <cmath>
+#include <dart/All.hpp>
 
 #include <gtest/gtest.h>
 
-#include "../../helpers/GTestUtils.hpp"
+#include <cmath>
 
 using namespace dart;
 using namespace collision;
@@ -227,7 +227,8 @@ TEST(DartRaycast, InsideHits)
 
   result.clear();
   auto boxFrame = SimpleFrame::createShared(Frame::World());
-  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  boxFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
   auto boxGroup = detector->createCollisionGroup(boxFrame.get());
   detector->raycast(
       boxGroup.get(),
@@ -413,7 +414,9 @@ TEST(DartRaycast, Filters)
   EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(-1.0, 0.0, 0.0)));
   EXPECT_NEAR(rayHit.mFraction, 0.2, kFractionTolerance);
 
-  option.mFilter = [&](const collision::CollisionObject*) { return false; };
+  option.mFilter = [&](const collision::CollisionObject*) {
+    return false;
+  };
   result.clear();
   detector->raycast(
       group.get(),
@@ -556,8 +559,8 @@ TEST(DartRaycast, RotatedPlaneHit)
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
-  frame->setRotation(
-      Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY()).toRotationMatrix());
+  frame->setRotation(Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY())
+                         .toRotationMatrix());
 
   auto group = detector->createCollisionGroup(frame.get());
 
@@ -585,8 +588,8 @@ TEST(DartRaycast, RotatedBoxHit)
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
-  frame->setRotation(
-      Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitZ()).toRotationMatrix());
+  frame->setRotation(Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitZ())
+                         .toRotationMatrix());
 
   auto group = detector->createCollisionGroup(frame.get());
 
@@ -614,8 +617,8 @@ TEST(DartRaycast, RotatedCylinderHit)
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<CylinderShape>(1.0, 2.0));
-  frame->setRotation(
-      Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY()).toRotationMatrix());
+  frame->setRotation(Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY())
+                         .toRotationMatrix());
 
   auto group = detector->createCollisionGroup(frame.get());
 

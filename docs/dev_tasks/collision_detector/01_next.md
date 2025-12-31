@@ -1,6 +1,7 @@
 # Collision Detector Task - Next
 
 ## Current Status
+
 - Phase 1 complete with an initial architecture proposal in 02_architecture.md.
 - Research covered the collision API surface, contact conventions, solver and world integration, test and benchmark coverage, and build and packaging touchpoints.
 - Phase 2 scaffolding started: DARTCollisionDetector now delegates pair iteration and contact merging to DartCollisionEngine.
@@ -67,14 +68,17 @@
 - Moved raycast implementation into DartCollisionEngine with detector forwarding.
 
 ## Next Actions
+
 - Extend raycast coverage to edge cases and future shape types.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Explore additional distance broadphase pruning and candidate ordering improvements.
 
 ## Questions and Decisions Needed
+
 - Confirm any additional raycast API surface changes required before standalone packaging.
 
 ## Decisions Captured
+
 - Core namespace: `dart::collision`.
 - Implementation lives under `dart/collision/dart`.
 - Core builds into the `dart` target for now (no separate CMake target).

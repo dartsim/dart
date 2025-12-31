@@ -35,9 +35,10 @@
 
 #include <dart/collision/dart/DartCollisionCore.hpp>
 
+#include <vector>
+
 #include <cstddef>
 #include <cstdint>
-#include <vector>
 
 namespace dart {
 namespace collision {

@@ -42,10 +42,11 @@
 #include "dart/math/Helpers.hpp"
 
 #include <algorithm>
-#include <cmath>
-#include <cstddef>
 #include <limits>
 #include <memory>
+
+#include <cmath>
+#include <cstddef>
 
 namespace dart {
 namespace collision {
@@ -1286,8 +1287,8 @@ static double projectCylinderExtent(
 {
   const double axisDot = axis.dot(cylinderAxis);
   const double axial = std::abs(axisDot) * halfHeight;
-  const double radial = radius
-                        * std::sqrt(std::max(0.0, 1.0 - axisDot * axisDot));
+  const double radial
+      = radius * std::sqrt(std::max(0.0, 1.0 - axisDot * axisDot));
   return axial + radial;
 }
 
@@ -1513,8 +1514,7 @@ int collideCylinderPlane(
 }
 
 //==============================================================================
-static void swapContactOrder(
-    CollisionResult& result, std::size_t startIndex)
+static void swapContactOrder(CollisionResult& result, std::size_t startIndex)
 {
   for (auto i = startIndex; i < result.getNumContacts(); ++i) {
     auto& contact = result.getContact(i);
@@ -1627,7 +1627,8 @@ static int collideCylinderCylinder(
   testAxis(axis1);
   testAxis(axis2);
   testAxis(axis1.cross(axis2));
-  const Eigen::Vector3d deltaPerp = centerDelta - centerDelta.dot(axis1) * axis1;
+  const Eigen::Vector3d deltaPerp
+      = centerDelta - centerDelta.dot(axis1) * axis1;
   testAxis(deltaPerp);
 
   if (sat.separated || !std::isfinite(sat.overlap))
@@ -1674,8 +1675,8 @@ static int collidePlaneSphere(
 {
   Eigen::Vector3d normal_world;
   const Eigen::Vector3d center = T2.translation();
-  const double signedDistance
-      = planeSignedDistance(plane_normal, plane_offset, T1, center, &normal_world);
+  const double signedDistance = planeSignedDistance(
+      plane_normal, plane_offset, T1, center, &normal_world);
   const double penetration = sphere_rad - std::abs(signedDistance);
 
   if (penetration < 0.0)
@@ -1729,18 +1730,17 @@ static int collidePlaneBox(
 {
   Eigen::Vector3d normal_world;
   const Eigen::Vector3d center = T2.translation();
-  const double signedDistance
-      = planeSignedDistance(plane_normal, plane_offset, T1, center, &normal_world);
+  const double signedDistance = planeSignedDistance(
+      plane_normal, plane_offset, T1, center, &normal_world);
 
   const Eigen::Vector3d halfSize = 0.5 * size;
   const Eigen::Vector3d axis0 = T2.linear().col(0);
   const Eigen::Vector3d axis1 = T2.linear().col(1);
   const Eigen::Vector3d axis2 = T2.linear().col(2);
 
-  const double radius
-      = std::abs(normal_world.dot(axis0)) * halfSize[0]
-        + std::abs(normal_world.dot(axis1)) * halfSize[1]
-        + std::abs(normal_world.dot(axis2)) * halfSize[2];
+  const double radius = std::abs(normal_world.dot(axis0)) * halfSize[0]
+                        + std::abs(normal_world.dot(axis1)) * halfSize[1]
+                        + std::abs(normal_world.dot(axis2)) * halfSize[2];
   const double penetration = radius - std::abs(signedDistance);
 
   if (penetration < 0.0)
@@ -1848,8 +1848,7 @@ int collideCore(
           return collideSphereSphere(
               o1, o2, radius1, T1, shape2.radius, T2, result);
         case CoreShapeType::kBox:
-          return collideSphereBox(
-              o1, o2, radius1, T1, shape2.size, T2, result);
+          return collideSphereBox(o1, o2, radius1, T1, shape2.size, T2, result);
         case CoreShapeType::kCylinder:
           return collideSphereCylinder(
               o1,
@@ -1916,14 +1915,7 @@ int collideCore(
               o1, o2, radius1, halfHeight1, T1, shape2.radius, T2, result);
         case CoreShapeType::kBox:
           return collideCylinderBox(
-              o1,
-              o2,
-              radius1,
-              halfHeight1,
-              T1,
-              shape2.size,
-              T2,
-              result);
+              o1, o2, radius1, halfHeight1, T1, shape2.size, T2, result);
         case CoreShapeType::kCylinder:
           return collideCylinderCylinder(
               o1,
@@ -1937,14 +1929,7 @@ int collideCore(
               result);
         case CoreShapeType::kPlane:
           return collideCylinderPlane(
-              o1,
-              o2,
-              radius1,
-              halfHeight1,
-              T1,
-              shape2.planeNormal,
-              T2,
-              result);
+              o1, o2, radius1, halfHeight1, T1, shape2.planeNormal, T2, result);
         default:
           break;
       }

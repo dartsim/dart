@@ -81,11 +81,12 @@ TEST(DartCollisionPrimitives, BoxCylinder)
   auto boxFrame = SimpleFrame::createShared(Frame::World());
   auto cylinderFrame = SimpleFrame::createShared(Frame::World());
 
-  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  boxFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
   cylinderFrame->setShape(std::make_shared<CylinderShape>(0.5, 2.0));
 
-  auto group = detector->createCollisionGroup(
-      boxFrame.get(), cylinderFrame.get());
+  auto group
+      = detector->createCollisionGroup(boxFrame.get(), cylinderFrame.get());
 
   CollisionOption option;
   option.enableContact = true;
@@ -117,12 +118,12 @@ TEST(DartCollisionPrimitives, EllipsoidSphere)
   auto ellipsoidFrame = SimpleFrame::createShared(Frame::World());
   auto sphereFrame = SimpleFrame::createShared(Frame::World());
 
-  ellipsoidFrame->setShape(std::make_shared<EllipsoidShape>(
-      Eigen::Vector3d(1.0, 1.0, 1.0)));
+  ellipsoidFrame->setShape(
+      std::make_shared<EllipsoidShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
   sphereFrame->setShape(std::make_shared<SphereShape>(1.0));
 
-  auto group = detector->createCollisionGroup(
-      ellipsoidFrame.get(), sphereFrame.get());
+  auto group
+      = detector->createCollisionGroup(ellipsoidFrame.get(), sphereFrame.get());
 
   CollisionOption option;
   option.enableContact = true;
@@ -168,8 +169,8 @@ TEST(DartCollisionPrimitives, MissingShape)
   sphereFrame->setTranslation(Eigen::Vector3d::Zero());
   emptyFrame->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
 
-  auto group = detector->createCollisionGroup(
-      sphereFrame.get(), emptyFrame.get());
+  auto group
+      = detector->createCollisionGroup(sphereFrame.get(), emptyFrame.get());
 
   CollisionOption option;
   option.enableContact = true;

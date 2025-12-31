@@ -36,7 +36,6 @@
 #include <dart/collision/CollisionDetector.hpp>
 
 #include <memory>
-
 #include <vector>
 
 namespace dart {
