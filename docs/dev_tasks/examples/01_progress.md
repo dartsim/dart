@@ -16,6 +16,7 @@
 - Selected a pilot category and recorded the harness decision.
 - Drafted a pilot category index and migration checklist.
 - Expanded metadata headers to more beginner-focused examples.
+- Deferred updating `examples/README.md` until the new category layout exists.
 
 ## Discovery findings
 
@@ -56,8 +57,8 @@
 
 ## Next steps
 
-1. Decide whether to add a top-level `examples/README.md` onboarding index now.
-2. Choose the first category to physically reorganize in `examples/`.
+1. Choose the first category to physically reorganize in `examples/`.
+2. Decide if the pilot needs a shared harness before moving files.
 
 ## Open questions
 
