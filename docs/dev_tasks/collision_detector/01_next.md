@@ -18,12 +18,14 @@
 - Added core-shape dispatch in DartCollisionEngine to avoid per-pair shape lookups.
 - Added a DART collision benchmark variant mirroring the box stack scenario.
 - Added initial core query result and option types for future standalone use.
+- Added DART raycast support for core shapes with DART-focused unit coverage.
 
 ## Next Actions
 - Define the standalone library boundary and the DART adapter layer.
 - Prototype the core data model and query pipeline (broadphase, narrowphase, contact generation).
 - Evaluate whether to keep sweep-based broadphase for group-group or move to a spatial structure.
 - Prepare parity test and benchmark updates to compare against existing backends.
+- Extend raycast coverage to additional shapes and add broadphase pruning for rays.
 
 ## Questions and Decisions Needed
 - Confirm the boundary between core engine code and DART-specific adapters.
