@@ -64,6 +64,7 @@ Current status:
 - Distance tests include empty-group coverage for single and group-group queries.
 - Distance pruning skips separated pairs once a negative minimum distance is found.
 - Distance tests include diagonal sphere-cylinder coverage for oblique separation.
+- Distance tests include overlapping sphere-plane coverage for negative distances.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.

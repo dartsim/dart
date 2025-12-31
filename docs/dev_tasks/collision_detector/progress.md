@@ -34,6 +34,7 @@
 - Distance tests include empty-group coverage for single and group-group queries.
 - Distance pruning skips separated pairs once a negative minimum distance is found.
 - Distance tests include diagonal sphere-cylinder coverage for oblique separation.
+- Distance tests include overlapping sphere-plane coverage for negative distances.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
@@ -72,6 +73,7 @@
 - Added empty-group distance coverage for single and group-group queries.
 - Tightened distance AABB pruning once a penetrating pair is found.
 - Added diagonal sphere-cylinder distance coverage for oblique separation.
+- Added overlapping sphere-plane distance coverage for negative distance semantics.
 
 ## Next Steps
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
