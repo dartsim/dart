@@ -31,6 +31,8 @@
   `bm_boxes` run still shows overhead but with higher variance
 - Added output scratch buffer to reduce per-pair allocations
 - Latest 4x4x4 run shows ~63% overhead with cache enabled (stable CV)
+- Direct output merge (no extra copy) further improved micro-benchmark numbers
+  but overall 4x4x4 overhead remains ~68%
 
 ## Verification
 

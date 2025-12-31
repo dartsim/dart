@@ -391,6 +391,9 @@ void ContactPatchCache::update(
     std::vector<Candidate> staleCandidates;
 
     if (patch) {
+      freshCandidates.reserve(contactCount + patch->count);
+      staleCandidates.reserve(patch->count);
+
       std::vector<Candidate> existingCandidates;
       existingCandidates.reserve(patch->count);
 
@@ -402,8 +405,9 @@ void ContactPatchCache::update(
         existingCandidates.push_back(candidate);
       }
 
-      std::vector<bool> matchedExisting(existingCandidates.size(), false);
-      std::vector<bool> matchedRaw(contactCount, false);
+      std::vector<unsigned char> matchedExisting(
+          existingCandidates.size(), 0u);
+      std::vector<unsigned char> matchedRaw(contactCount, 0u);
 
       for (std::size_t i = 0u; i < contactCount; ++i) {
         const auto& raw = *entries[index + i].contact;
@@ -432,8 +436,8 @@ void ContactPatchCache::update(
           existingCandidates[bestIndex].contact = raw;
           existingCandidates[bestIndex].age = 0u;
           existingCandidates[bestIndex].isFresh = true;
-          matchedExisting[bestIndex] = true;
-          matchedRaw[i] = true;
+          matchedExisting[bestIndex] = 1u;
+          matchedRaw[i] = 1u;
         }
       }
 
@@ -506,8 +510,7 @@ void ContactPatchCache::update(
   std::size_t reserveCount = outputScratch.size();
   reserveCount += mPatches.size() * maxPoints;
 
-  std::vector<collision::Contact> merged;
-  merged.reserve(reserveCount);
+  outputContacts.reserve(reserveCount);
 
   std::size_t outputIndex = 0u;
   std::size_t patchIndex = 0u;
@@ -515,8 +518,8 @@ void ContactPatchCache::update(
   while (outputIndex < outputs.size() || patchIndex < mPatches.size()) {
     if (patchIndex >= mPatches.size()) {
       const auto& output = outputs[outputIndex++];
-      merged.insert(
-          merged.end(),
+      outputContacts.insert(
+          outputContacts.end(),
           outputScratch.begin() + output.start,
           outputScratch.begin() + output.start + output.count);
       continue;
@@ -529,7 +532,7 @@ void ContactPatchCache::update(
       const auto outputCount
           = std::min<std::size_t>(patch.count, maxPoints);
       for (std::size_t i = 0u; i < outputCount; ++i)
-        merged.push_back(patch.points[i].contact);
+        outputContacts.push_back(patch.points[i].contact);
       continue;
     }
 
@@ -538,8 +541,8 @@ void ContactPatchCache::update(
 
     if (pairLess(outputKey, patchKey)) {
       const auto& output = outputs[outputIndex++];
-      merged.insert(
-          merged.end(),
+      outputContacts.insert(
+          outputContacts.end(),
           outputScratch.begin() + output.start,
           outputScratch.begin() + output.start + output.count);
       continue;
@@ -552,19 +555,17 @@ void ContactPatchCache::update(
       const auto outputCount
           = std::min<std::size_t>(patch.count, maxPoints);
       for (std::size_t i = 0u; i < outputCount; ++i)
-        merged.push_back(patch.points[i].contact);
+        outputContacts.push_back(patch.points[i].contact);
       continue;
     }
 
     const auto& output = outputs[outputIndex++];
-    merged.insert(
-        merged.end(),
+    outputContacts.insert(
+        outputContacts.end(),
         outputScratch.begin() + output.start,
         outputScratch.begin() + output.start + output.count);
     ++patchIndex;
   }
-
-  outputContacts.swap(merged);
 }
 
 //=============================================================================
