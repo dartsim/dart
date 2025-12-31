@@ -12,6 +12,7 @@
 - Drafted a user-first taxonomy and ordering in `docs/dev_tasks/examples/00_plan.md`.
 - Drafted a minimal metadata template and shared harness sketch.
 - Added an asset layout proposal to the plan.
+- Validated the metadata template on a small set of representative examples.
 
 ## Discovery findings
 
@@ -52,8 +53,9 @@
 
 ## Next steps
 
-1. Validate the metadata template against a small subset of examples.
-2. Select a pilot category for the first migration pass.
+1. Select a pilot category for the first migration pass.
+2. Decide whether the shared harness is required for that pilot.
+3. Expand metadata headers to the rest of the pilot category.
 
 ## Open questions
 

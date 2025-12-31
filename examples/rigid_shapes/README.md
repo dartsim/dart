@@ -1,3 +1,12 @@
+# Rigid Shapes Example
+
+## Summary
+
+- Goal: spawn primitive shapes and observe collisions/contact points.
+- Concepts/APIs: `dart::io::readWorld`, collision detectors, viewer event handling.
+- Expected output: an interactive OSG viewer with key bindings to spawn shapes.
+- Controls: see the console instructions for spawn/toggle keys.
+
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.
 
