@@ -47,6 +47,7 @@
 - Latest 4x4x4 run shows ~65% overhead with cache enabled (low CV)
 - Synced persistent contact forces back into raw collision results
 - Added integration coverage for force sync when cache is enabled
+- Latest 4x4x4 run after force sync shows ~67% overhead with cache enabled
 
 ## Verification
 

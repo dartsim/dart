@@ -317,3 +317,18 @@ Times in milliseconds (mean of 3):
 | Case | Legacy | Cache ON | Delta |
 | --- | --- | --- | --- |
 | 4x4x4 | 1949 | 3224 | +65% |
+
+### Post-optimization run (force sync)
+
+Run info:
+
+- Date: 2025-12-31
+- CPU scaling enabled (benchmark warning about noisy real-time)
+
+#### Collision benchmark (bm_boxes, 4x4x4 only)
+
+Times in milliseconds (mean of 3):
+
+| Case | Legacy | Cache ON | Delta |
+| --- | --- | --- | --- |
+| 4x4x4 | 1940 | 3243 | +67% |
