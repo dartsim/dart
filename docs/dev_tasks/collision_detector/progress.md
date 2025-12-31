@@ -37,6 +37,7 @@
 - Distance tests include overlapping sphere-plane coverage for negative distances.
 - Distance tests include overlapping box-plane coverage for negative distances.
 - Distance tests include plane offset coverage for sphere queries; raycast tests include plane offset hits.
+- Distance tests include a tilted cylinder-plane case for oblique extent coverage.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
@@ -78,6 +79,7 @@
 - Added overlapping sphere-plane distance coverage for negative distance semantics.
 - Added overlapping box-plane distance coverage for negative distance semantics.
 - Added plane offset coverage for sphere distance and raycast queries.
+- Added tilted cylinder-plane distance coverage for oblique extent checks.
 
 ## Next Steps
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
