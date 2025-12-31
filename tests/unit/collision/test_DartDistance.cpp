@@ -80,6 +80,61 @@ TEST(DartDistance, SphereSphereDistance)
 }
 
 //==============================================================================
+TEST(DartDistance, SpherePlaneDistance)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+
+  sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+  planeFrame->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  sphereFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 2.0));
+
+  auto group = detector->createCollisionGroup(
+      sphereFrame.get(), planeFrame.get());
+
+  DistanceOption option(true, 0.0, nullptr);
+  DistanceResult result;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, 1.5, kDistanceTol);
+  EXPECT_NEAR(result.minDistance, 1.5, kDistanceTol);
+  EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(Eigen::Vector3d(0.0, 0.0, 1.5)));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(Eigen::Vector3d(0.0, 0.0, 0.0)));
+}
+
+//==============================================================================
+TEST(DartDistance, SphereBoxDistance)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+
+  sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+
+  sphereFrame->setTranslation(Eigen::Vector3d(3.0, 0.0, 0.0));
+  boxFrame->setTranslation(Eigen::Vector3d::Zero());
+
+  auto group = detector->createCollisionGroup(
+      sphereFrame.get(), boxFrame.get());
+
+  DistanceOption option(true, 0.0, nullptr);
+  DistanceResult result;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, 1.5, kDistanceTol);
+  EXPECT_NEAR(result.minDistance, 1.5, kDistanceTol);
+  EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(Eigen::Vector3d(2.5, 0.0, 0.0)));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(Eigen::Vector3d(1.0, 0.0, 0.0)));
+}
+
+//==============================================================================
 TEST(DartDistance, BoxPlaneDistance)
 {
   auto detector = DARTCollisionDetector::create();
@@ -101,6 +156,8 @@ TEST(DartDistance, BoxPlaneDistance)
   EXPECT_NEAR(distance, 1.0, kDistanceTol);
   EXPECT_NEAR(result.minDistance, 1.0, kDistanceTol);
   EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(Eigen::Vector3d(0.0, 0.0, 1.0)));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(Eigen::Vector3d(0.0, 0.0, 0.0)));
 }
 
 //==============================================================================
@@ -160,6 +217,34 @@ TEST(DartDistance, CylinderPlaneDistance)
 }
 
 //==============================================================================
+TEST(DartDistance, SphereCylinderDistance)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  auto cylinderFrame = SimpleFrame::createShared(Frame::World());
+
+  sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+  cylinderFrame->setShape(std::make_shared<CylinderShape>(1.0, 2.0));
+
+  sphereFrame->setTranslation(Eigen::Vector3d(3.0, 0.0, 0.0));
+  cylinderFrame->setTranslation(Eigen::Vector3d::Zero());
+
+  auto group = detector->createCollisionGroup(
+      sphereFrame.get(), cylinderFrame.get());
+
+  DistanceOption option(true, 0.0, nullptr);
+  DistanceResult result;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, 1.5, kDistanceTol);
+  EXPECT_NEAR(result.minDistance, 1.5, kDistanceTol);
+  EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(Eigen::Vector3d(2.5, 0.0, 0.0)));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(Eigen::Vector3d(1.0, 0.0, 0.0)));
+}
+
+//==============================================================================
 TEST(DartDistance, BoxBoxDistance)
 {
   auto detector = DARTCollisionDetector::create();
@@ -174,6 +259,34 @@ TEST(DartDistance, BoxBoxDistance)
   frame2->setTranslation(Eigen::Vector3d(3.0, 0.0, 0.0));
 
   auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+
+  DistanceOption option(true, 0.0, nullptr);
+  DistanceResult result;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, 1.0, kDistanceTol);
+  EXPECT_NEAR(result.minDistance, 1.0, kDistanceTol);
+  EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(Eigen::Vector3d(1.0, 0.0, 0.0)));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(Eigen::Vector3d(2.0, 0.0, 0.0)));
+}
+
+//==============================================================================
+TEST(DartDistance, BoxCylinderDistance)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+  auto cylinderFrame = SimpleFrame::createShared(Frame::World());
+
+  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  cylinderFrame->setShape(std::make_shared<CylinderShape>(1.0, 2.0));
+
+  boxFrame->setTranslation(Eigen::Vector3d::Zero());
+  cylinderFrame->setTranslation(Eigen::Vector3d(3.0, 0.0, 0.0));
+
+  auto group = detector->createCollisionGroup(
+      boxFrame.get(), cylinderFrame.get());
 
   DistanceOption option(true, 0.0, nullptr);
   DistanceResult result;

@@ -38,14 +38,16 @@ Current status:
 - Distance query MVP is implemented for primitives with unit coverage and benchmarks.
 - Distance queries use sweep pruning plus AABB lower-bound checks.
 - The architecture proposal documents the current core/adapter boundary and raycast placement.
+- Distance tests cover sphere-plane, sphere-box, sphere-cylinder, and box-cylinder nearest points.
+- Raycast tests include inside-hit cases for sphere, box, and cylinder.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.
 - Task tracking: `docs/dev_tasks/collision_detector/00_plan.md`, `docs/dev_tasks/collision_detector/01_next.md`, `docs/dev_tasks/collision_detector/02_architecture.md`, and `docs/dev_tasks/collision_detector/progress.md`.
 
 Next focus:
-- Expand distance coverage to additional primitives and refine nearest-point accuracy.
-- Extend raycast coverage to edge cases and future shape types.
+- Expand distance coverage for rotated or oblique configurations and refine nearest-point accuracy.
+- Extend raycast coverage to additional edge cases and future shape types.
 - Decide when to move raycast into the core engine once query types stabilize.
 - Keep task docs updated after each checkpoint.
 - Keep task docs updated after each checkpoint.
