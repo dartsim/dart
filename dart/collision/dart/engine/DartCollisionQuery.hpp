@@ -30,9 +30,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_DARTCOLLISIONQUERY_WRAPPER_HPP_
-#define DART_COLLISION_DART_DARTCOLLISIONQUERY_WRAPPER_HPP_
+#ifndef DART_COLLISION_DART_DARTCOLLISIONQUERY_HPP_
+#define DART_COLLISION_DART_DARTCOLLISIONQUERY_HPP_
 
-#include <dart/collision/dart/engine/DartCollisionQuery.hpp>
+#include <Eigen/Dense>
 
-#endif // DART_COLLISION_DART_DARTCOLLISIONQUERY_WRAPPER_HPP_
+#include <vector>
+
+#include <cstddef>
+
+namespace dart {
+namespace collision {
+
+struct CoreContact
+{
+  Eigen::Vector3d point{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d normal{Eigen::Vector3d::Zero()};
+  double penetrationDepth{0.0};
+  std::size_t objectIndex1{0u};
+  std::size_t objectIndex2{0u};
+};
+
+struct CoreResult
+{
+  std::vector<CoreContact> contacts;
+
+  void clear()
+  {
+    contacts.clear();
+  }
+
+  std::size_t getNumContacts() const
+  {
+    return contacts.size();
+  }
+
+  bool isCollision() const
+  {
+    return !contacts.empty();
+  }
+};
+
+struct CoreOption
+{
+  bool enableContact{true};
+  std::size_t maxNumContacts{1000u};
+  bool allowNegativePenetrationDepthContacts{false};
+};
+
+} // namespace collision
+} // namespace dart
+
+#endif // DART_COLLISION_DART_DARTCOLLISIONQUERY_HPP_

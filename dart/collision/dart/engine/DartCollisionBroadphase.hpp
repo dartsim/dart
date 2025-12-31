@@ -30,9 +30,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_DARTCOLLISIONQUERY_WRAPPER_HPP_
-#define DART_COLLISION_DART_DARTCOLLISIONQUERY_WRAPPER_HPP_
+#ifndef DART_COLLISION_DART_DARTCOLLISIONBROADPHASE_HPP_
+#define DART_COLLISION_DART_DARTCOLLISIONBROADPHASE_HPP_
 
-#include <dart/collision/dart/engine/DartCollisionQuery.hpp>
+#include <dart/collision/dart/DartCollisionCore.hpp>
 
-#endif // DART_COLLISION_DART_DARTCOLLISIONQUERY_WRAPPER_HPP_
+#include <vector>
+
+#include <cstddef>
+#include <cstdint>
+
+namespace dart {
+namespace collision {
+
+struct CoreBroadphaseEntry
+{
+  const CoreObject* object{nullptr};
+  std::uint8_t mask{0u};
+};
+
+struct CoreBroadphasePair
+{
+  std::size_t first{0u};
+  std::size_t second{0u};
+};
+
+void computeSweepPairs(
+    const std::vector<CoreBroadphaseEntry>& entries,
+    std::uint8_t mask1,
+    std::uint8_t mask2,
+    std::vector<CoreBroadphasePair>* pairs);
+
+} // namespace collision
+} // namespace dart
+
+#endif // DART_COLLISION_DART_DARTCOLLISIONBROADPHASE_HPP_

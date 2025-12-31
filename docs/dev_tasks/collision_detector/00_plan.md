@@ -7,6 +7,7 @@
 - Phase 2 (core implementation): in progress
 - Raycast MVP runs in DartCollisionEngine for supported primitives; distance MVP covers primitives.
 - Raycast benchmark added for baseline tracking.
+- Core engine implementation files live under `dart/collision/dart/engine`.
 
 ## Scope
 
@@ -31,6 +32,7 @@
 - Core builds into the `dart` target for now (no separate CMake target).
 - Default switch only after feature parity and acceptable performance.
 - Engine class name: `DartCollisionEngine`.
+- Core engine implementation files live under `dart/collision/dart/engine` with wrapper headers at `dart/collision/dart`.
 
 ## Milestones
 

@@ -30,9 +30,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_DARTCOLLISIONQUERY_WRAPPER_HPP_
-#define DART_COLLISION_DART_DARTCOLLISIONQUERY_WRAPPER_HPP_
+#ifndef DART_COLLISION_DART_DARTCOLLISIONCORE_HPP_
+#define DART_COLLISION_DART_DARTCOLLISIONCORE_HPP_
 
-#include <dart/collision/dart/engine/DartCollisionQuery.hpp>
+#include <Eigen/Dense>
 
-#endif // DART_COLLISION_DART_DARTCOLLISIONQUERY_WRAPPER_HPP_
+#include <cstdint>
+
+namespace dart {
+namespace collision {
+
+enum class CoreShapeType : std::uint8_t
+{
+  kNone = 0u,
+  kSphere,
+  kBox,
+  kCylinder,
+  kPlane,
+  kUnsupported
+};
+
+struct CoreShape
+{
+  CoreShapeType type{CoreShapeType::kNone};
+  Eigen::Vector3d size{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d planeNormal{Eigen::Vector3d::UnitZ()};
+  double radius{0.0};
+  double height{0.0};
+  double planeOffset{0.0};
+};
+
+struct CoreObject
+{
+  CoreShape shape;
+  Eigen::Isometry3d worldTransform{Eigen::Isometry3d::Identity()};
+  Eigen::Vector3d worldAabbMin{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d worldAabbMax{Eigen::Vector3d::Zero()};
+};
+
+} // namespace collision
+} // namespace dart
+
+#endif // DART_COLLISION_DART_DARTCOLLISIONCORE_HPP_

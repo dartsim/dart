@@ -84,10 +84,12 @@ Current status:
 - Raycast runs in DartCollisionEngine with detector forwarding.
 - Raycast reserves hits for all-hit queries and exits early on zero-fraction hits.
 - Added a DART raycast benchmark covering closest-hit and all-hit queries.
+- Core engine implementation files live under `dart/collision/dart/engine` with wrapper headers at `dart/collision/dart`.
 
 Where to look:
 
 - Core engine and adapter: `dart/collision/dart/`.
+- Core engine implementation files: `dart/collision/dart/engine/`.
 - Task tracking: `docs/dev_tasks/collision_detector/00_plan.md`, `docs/dev_tasks/collision_detector/01_next.md`, `docs/dev_tasks/collision_detector/02_architecture.md`, and `docs/dev_tasks/collision_detector/progress.md`.
 - CI monitoring: follow `docs/onboarding/ci-cd.md` (use `gh run list` and `gh run watch`).
 

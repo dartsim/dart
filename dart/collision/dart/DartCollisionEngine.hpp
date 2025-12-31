@@ -30,67 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_DARTCOLLISIONENGINE_HPP_
-#define DART_COLLISION_DART_DARTCOLLISIONENGINE_HPP_
+#ifndef DART_COLLISION_DART_DARTCOLLISIONENGINE_WRAPPER_HPP_
+#define DART_COLLISION_DART_DARTCOLLISIONENGINE_WRAPPER_HPP_
 
-#include <dart/collision/CollisionOption.hpp>
-#include <dart/collision/CollisionResult.hpp>
-#include <dart/collision/DistanceOption.hpp>
-#include <dart/collision/DistanceResult.hpp>
-#include <dart/collision/Fwd.hpp>
-#include <dart/collision/RaycastOption.hpp>
-#include <dart/collision/RaycastResult.hpp>
+#include <dart/collision/dart/engine/DartCollisionEngine.hpp>
 
-#include <Eigen/Dense>
-
-#include <vector>
-
-namespace dart {
-namespace collision {
-
-class DartCollisionEngine
-{
-public:
-  using ObjectList = std::vector<CollisionObject*>;
-
-  bool collide(
-      const ObjectList& objects,
-      const CollisionOption& option,
-      CollisionResult* result) const;
-
-  bool collide(
-      const ObjectList& objects1,
-      const ObjectList& objects2,
-      const CollisionOption& option,
-      CollisionResult* result) const;
-
-  double distance(
-      const ObjectList& objects,
-      const DistanceOption& option,
-      DistanceResult* result) const;
-
-  double distance(
-      const ObjectList& objects1,
-      const ObjectList& objects2,
-      const DistanceOption& option,
-      DistanceResult* result) const;
-
-  bool raycast(
-      const ObjectList& objects,
-      const Eigen::Vector3d& from,
-      const Eigen::Vector3d& to,
-      const RaycastOption& option,
-      RaycastResult* result) const;
-
-private:
-  bool checkPair(
-      CollisionObject* o1,
-      CollisionObject* o2,
-      const CollisionOption& option,
-      CollisionResult* result) const;
-};
-
-} // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_DART_DARTCOLLISIONENGINE_HPP_
+#endif // DART_COLLISION_DART_DARTCOLLISIONENGINE_WRAPPER_HPP_

@@ -11,7 +11,8 @@
 ## Namespace and Layout
 
 - Core API namespace: `dart::collision`.
-- Implementation lives under `dart/collision/dart` during this effort; DART8 can consolidate to `dart/collision/` when legacy backends are removed.
+- Implementation lives under `dart/collision/dart` during this effort, with the core engine in `dart/collision/dart/engine` and adapters in `dart/collision/dart`.
+- DART8 can consolidate to `dart/collision/` when legacy backends are removed.
 - Adapter responsibilities remain within `dart::collision` to avoid public API churn.
 
 ## Layered Design
@@ -28,6 +29,7 @@
 - `DARTCollisionGroup` refreshes core data before each query to honor ShapeFrame versioning.
 - `DARTCollisionDetector` owns API-level validation, filter translation, and contact merging.
 - Raycast is implemented in `DartCollisionEngine`, with `DARTCollisionDetector` forwarding API calls after refreshing core data.
+- Engine implementation files live under `dart/collision/dart/engine` with wrapper headers at `dart/collision/dart` to preserve includes.
 
 ## Adapter Responsibilities
 

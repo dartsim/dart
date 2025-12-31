@@ -50,6 +50,7 @@
 - Raycast now runs in DartCollisionEngine with detector forwarding.
 - Raycast now reserves hits for all-hit queries and exits early on zero-fraction hits.
 - Added a DART raycast benchmark covering closest-hit and all-hit queries.
+- Moved core engine implementation files into `dart/collision/dart/engine` with wrapper headers.
 
 ## Completed Checkpoints
 
@@ -104,9 +105,11 @@
 - Moved raycast implementation into DartCollisionEngine.
 - Added minor raycast early-exit and hit reservation optimizations.
 - Added a DART raycast benchmark for closest-hit and all-hit cases.
+- Moved core engine implementation files into `dart/collision/dart/engine` with wrapper headers.
 
 ## Next Steps
 
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Extend raycast coverage to additional edge cases and future shape types.
 - Capture baseline timings for the new raycast benchmark.
+- Validate build and install paths after the engine layout change.
