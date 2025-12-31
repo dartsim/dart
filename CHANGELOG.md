@@ -44,6 +44,7 @@
   - Removed the final compatibility headers that only re-included their replacements (`dart/collision/Option.hpp`, `dart/collision/Result.hpp`, and `dart/dynamics/MultiSphereShape.hpp`) and scrubbed the remaining deprecated documentation strings.
   - Removed `CollisionFilter::needCollision()` (deprecated in DART 6.3).
   - Bullet collision detector now filters phantom contacts with negative penetration depth by default; set `CollisionOption::allowNegativePenetrationDepthContacts` to keep them (addresses [#1184](https://github.com/dartsim/dart/issues/1184)).
+  - Ensure Bullet double-precision builds include `dart/collision/bullet/BulletInclude.hpp` before Bullet headers so `BT_USE_DOUBLE_PRECISION` is honored: [#2334](https://github.com/dartsim/dart/pull/2334).
   - Removed `DART_COMMON_MAKE_SHARED_WEAK` macro (deprecated in DART 6.4).
   - Removed all APIs deprecated in DART 6.9 (`dart::common::make_unique`, `FreeJoint::setTransform` static helpers, and `NloptSolver` overloads taking raw `nlopt::algorithm` values).
   - Removed all APIs deprecated in DART 6.10 (`common::Signal::cleanupConnections`, `SharedLibrary`/`SharedLibraryManager` filesystem-path overloads, BodyNode friction/restitution helpers and aspect properties, and `Joint::{set,is}PositionLimitEnforced()` aliases).
