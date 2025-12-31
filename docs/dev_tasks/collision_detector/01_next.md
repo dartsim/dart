@@ -54,6 +54,7 @@
 - Added diagonal sphere-cylinder distance coverage for oblique separation.
 - Added overlapping sphere-plane distance coverage for negative distance semantics.
 - Added overlapping box-plane distance coverage for negative distance semantics.
+- Added plane offset coverage for sphere distance and raycast queries.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.

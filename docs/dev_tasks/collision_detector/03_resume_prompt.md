@@ -66,6 +66,7 @@ Current status:
 - Distance tests include diagonal sphere-cylinder coverage for oblique separation.
 - Distance tests include overlapping sphere-plane coverage for negative distances.
 - Distance tests include overlapping box-plane coverage for negative distances.
+- Distance tests include plane offset coverage for sphere queries; raycast tests include plane offset hits.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.
