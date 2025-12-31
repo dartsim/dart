@@ -30,7 +30,7 @@
 
 ## Query Pipeline
 - Update phase: refresh transforms each step; rebuild cached geometry only when shape versions change.
-- Broadphase: dynamic AABB tree with incremental updates; optional static vs dynamic partitioning.
+- Broadphase: dynamic AABB tree with incremental updates; optional static vs dynamic partitioning. MVP uses sweep-and-prune while core data types stabilize.
 - Narrowphase: pair-specific algorithms with analytic paths for primitives, convex-convex via iterative methods, and mesh/heightfield paths via BVH traversal.
 - Result reduction: contact merging and deterministic ordering; Biased to keep results stable for tests.
 
