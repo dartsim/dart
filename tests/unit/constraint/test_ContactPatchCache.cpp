@@ -185,11 +185,16 @@ TEST(ContactPatchCache, PrunesStalePairs)
   std::vector<collision::Contact> output;
   cache.update(raw, options, output);
   EXPECT_EQ(cache.getNumPatches(), 1u);
+  ASSERT_EQ(output.size(), 1u);
+  EXPECT_TRUE(hasPoint(output, Eigen::Vector3d::Zero()));
 
   raw.clearRaw();
   cache.update(raw, options, output);
   EXPECT_EQ(cache.getNumPatches(), 1u);
+  ASSERT_EQ(output.size(), 1u);
+  EXPECT_TRUE(hasPoint(output, Eigen::Vector3d::Zero()));
 
   cache.update(raw, options, output);
   EXPECT_EQ(cache.getNumPatches(), 0u);
+  EXPECT_TRUE(output.empty());
 }

@@ -12,13 +12,15 @@
 
 ## Current Status
 
-- Stage 4.5 GUI demo complete
-- Next: Stage 5 benchmarks and documentation polish
+- Stage 5 in progress: benchmarks extended, results pending
+- Update pending: record benchmark results and finalize docs
 
 ## Stage 5 Notes
 
 - Benchmark coverage added in `tests/benchmark/collision/bm_boxes.cpp`
 - Results not captured yet (pending local runs)
+- Cache now emits persisted contacts for unseen pairs up to
+  `maxSeparationFrames`
 
 ## Decisions
 
@@ -26,6 +28,7 @@
 - Default: feature OFF
 - Keep CollisionResult semantics unchanged
 - Soft contacts stay on legacy path initially
+- Allow short TTL output when raw contacts drop out
 
 ## Open Questions
 

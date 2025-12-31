@@ -11,9 +11,8 @@ contact jitter, with a runtime feature flag default OFF. Keep backends as raw
 contact providers. Preserve CollisionResult semantics when the flag is OFF.
 
 Status:
-- Stage 0 recon complete
-- Stage 1 docs complete (see docs/dev_tasks/contact_manifold/)
-- Stage 2 (skeleton implementation) is next
+- Stage 0-4.5 complete (docs, implementation, tests, GUI demo)
+- Stage 5 in progress: benchmark added, results pending
 
 Key docs to read:
 - docs/dev_tasks/contact_manifold/00_overview.md
@@ -27,6 +26,7 @@ Key docs to read:
 Key code entry points:
 - dart/constraint/ConstraintSolver.cpp (updateConstraints)
 - dart/constraint/ConstraintSolver.hpp
+- dart/constraint/ContactPatchCache.hpp/.cpp
 - dart/collision/CollisionResult.hpp/.cpp
 - dart/simulation/World.cpp (CollisionResult usage)
 - dart/collision/ode/OdeCollisionDetector.cpp (backend contact history)
@@ -37,6 +37,7 @@ Decisions so far:
   CollisionResult behavior
 - Soft contacts remain on the legacy path initially
 - Determinism requires stable ordering (no unordered iteration in output)
+- Cached contacts are emitted for unseen pairs up to maxSeparationFrames
 
 Constraints:
 - No mention of any external reference project in code or docs
@@ -44,7 +45,7 @@ Constraints:
 - Add tests, benchmarks, and GUI demo per the Stage plan
 
 Next actions:
-1) Implement ContactPatchCache types and wire into ConstraintSolver
-2) Add feature flag and cache lifecycle resets
-3) Keep raw collision results unchanged
+1) Run the updated benchmarks and record results
+2) Consider adding a micro-benchmark for cache update (optional follow-up)
+3) Review open issues: contact force reporting when cache is enabled
 ```

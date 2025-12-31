@@ -469,6 +469,24 @@ void ContactPatchCache::update(
 
   pruneStalePatches(options);
 
+  for (const auto& patch : mPatches) {
+    const auto& key = patch.pair;
+    if (outputByPair.find(key) != outputByPair.end())
+      continue;
+
+    if (patch.count == 0u)
+      continue;
+
+    auto& outputForPair = outputByPair[key];
+    const auto outputCount
+        = std::min<std::size_t>(patch.count, maxPoints);
+    outputForPair.reserve(outputCount);
+
+    for (std::size_t i = 0u; i < outputCount; ++i) {
+      outputForPair.push_back(patch.points[i].contact);
+    }
+  }
+
   for (const auto& entry : outputByPair) {
     for (const auto& contact : entry.second) {
       outputContacts.push_back(contact);
@@ -530,9 +548,6 @@ ContactPatchCache::Patch* ContactPatchCache::findOrCreatePatch(
 void ContactPatchCache::pruneStalePatches(
     const ContactPatchCacheOptions& options)
 {
-  if (options.maxSeparationFrames == 0u)
-    return;
-
   mPatches.erase(
       std::remove_if(
           mPatches.begin(),

@@ -112,6 +112,8 @@ Heuristic to balance stability and coverage:
 ## Pair Lifetime and Sleeping
 
 - If a pair has no raw contacts in a step, increment `framesSinceSeen`
+- Continue emitting the cached contacts for up to `maxSeparationFrames` while
+  the pair is unseen to avoid flicker
 - Drop the patch when `framesSinceSeen > maxSeparationFrames`
 - If a pair reappears before TTL expires, reuse and update the patch
 

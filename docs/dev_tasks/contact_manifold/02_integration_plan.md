@@ -1,5 +1,10 @@
 # Contact Patch Cache Integration Plan (02)
 
+## Status
+
+- Steps 1-5 implemented with `ContactPatchCache`
+- Step 6 (backend history toggle) is still a follow-up
+
 ## Step-by-step Code Changes
 
 1. Add cache types
@@ -13,9 +18,9 @@
      - `std::vector<collision::Contact> mPersistentContacts`
      - `ContactPatchCacheOptions mContactPatchOptions`
    - Add setters/getters in `dart/constraint/ConstraintSolver.hpp/.cpp`:
-     - `setContactPatchOptions(...)`
-     - `getContactPatchOptions() const`
-     - `setContactPatchEnabled(bool)` convenience helper
+     - `setContactPatchCacheOptions(...)`
+     - `getContactPatchCacheOptions() const`
+     - `setContactPatchCacheEnabled(bool)` convenience helper
 
 3. Update constraint creation path
    - In `dart/constraint/ConstraintSolver.cpp`:
@@ -42,6 +47,7 @@
      this flag to avoid double persistence
    - When ContactPatchCache is enabled, set
      `mCollisionOption.useBackendContactHistory = false`
+   - Status: not implemented yet
 
 7. Feature flag integration
    - Runtime-only flag in `ConstraintSolver` options (default OFF)

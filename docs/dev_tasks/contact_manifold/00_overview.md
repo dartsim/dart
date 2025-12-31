@@ -8,6 +8,7 @@
 - Stage 3 wiring complete
 - Stage 4 tests complete
 - Stage 4.5 GUI demo complete
+- Stage 5 benchmarks/doc polish in progress (bench added, results pending)
 
 ## Motivation
 

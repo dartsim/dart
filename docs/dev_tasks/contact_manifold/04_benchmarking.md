@@ -1,5 +1,10 @@
 # Contact Patch Cache Benchmarking Plan (04)
 
+## Status
+
+- Extended `tests/benchmark/collision/bm_boxes.cpp` with cache ON/OFF modes
+- Results not captured yet (pending local runs)
+
 ## Existing Benchmark Harness
 
 - Benchmarks live under `tests/benchmark/`
@@ -14,7 +19,7 @@
    - Record wall time per simulation step
 
 2. Contact update micro-benchmark
-   - New file: `tests/benchmark/collision/bm_contact_patch_cache.cpp`
+   - Follow-up: add `tests/benchmark/collision/bm_contact_patch_cache.cpp`
    - Feed synthetic contact lists with varying sizes and pairs
    - Measure cache update cost only
 

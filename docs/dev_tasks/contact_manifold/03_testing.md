@@ -20,7 +20,7 @@ Implemented:
 - `tests/unit/constraint/test_ContactPatchCache.cpp`
   - Persistence across frames and churn reduction
   - Cap at 4 contacts and deepest preservation
-  - TTL pruning behavior
+  - TTL pruning behavior and stale-output retention
 
 ## Integration Tests
 
