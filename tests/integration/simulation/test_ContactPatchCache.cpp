@@ -8,6 +8,7 @@
 #include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/simulation/World.hpp>
 
+#include <dart/collision/CollisionObject.hpp>
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/Skeleton.hpp>
