@@ -243,6 +243,16 @@ std::vector<Candidate> selectRepresentativeContacts(
   if (freshCandidates.empty())
     return {};
 
+  if (staleCandidates.empty() && freshCandidates.size() <= maxPoints) {
+    std::sort(
+        freshCandidates.begin(),
+        freshCandidates.end(),
+        [](const Candidate& a, const Candidate& b) {
+          return contactLess(a.contact, b.contact);
+        });
+    return freshCandidates;
+  }
+
   std::vector<Candidate> selected;
   selected.reserve(maxPoints);
 

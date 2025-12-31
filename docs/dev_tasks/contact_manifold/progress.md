@@ -37,6 +37,9 @@
 - Latest micro-benchmark shows continued gains; 4x4x4 overhead ~64%
 - Reused per-pair candidate vectors inside update loop
 - Latest 4x4x4 run shows ~60% overhead with cache enabled
+- Added fast path when only fresh contacts fit within max points
+- Latest micro-benchmark shows large gains for small contact sets; 4x4x4
+  overhead remains ~64%
 
 ## Verification
 
