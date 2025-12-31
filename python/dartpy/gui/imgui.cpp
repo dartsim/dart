@@ -62,12 +62,22 @@ void defImGuiApi(nb::module_& m)
 
   if constexpr (std::is_enum_v<ImGuiKey>) {
     nb::enum_<ImGuiKey>(imgui, "Key").value("Escape", ImGuiKey_Escape);
+    imgui.def(
+        "is_key_down",
+        [](ImGuiKey key) { return ImGui::IsKeyDown(key); },
+        nb::arg("key"));
   } else {
     enum class ImGuiKeyShim : int
     {
       Escape = ImGuiKey_Escape
     };
     nb::enum_<ImGuiKeyShim>(imgui, "Key").value("Escape", ImGuiKeyShim::Escape);
+    imgui.def(
+        "is_key_down",
+        [](ImGuiKeyShim key) {
+          return ImGui::IsKeyDown(static_cast<ImGuiKey>(key));
+        },
+        nb::arg("key"));
   }
 
   nb::class_<ImGuiIO>(imgui, "IO")
@@ -123,7 +133,9 @@ void defImGuiApi(nb::module_& m)
       nb::arg("max"));
   imgui.def(
       "is_key_down",
-      [](int key) { return ImGui::IsKeyDown(static_cast<ImGuiKey>(key)); },
+      [](int key) {
+        return ImGui::IsKeyDown(static_cast<ImGuiKey>(key));
+      },
       nb::arg("key"));
 }
 
