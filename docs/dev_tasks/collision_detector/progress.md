@@ -24,6 +24,7 @@
 - Distance tests include overlapping cylinder-plane coverage for negative distances.
 - Distance tests include single-group filter coverage for distance queries.
 - Distance tests include group-group shared-object skip coverage.
+- Distance tests include diagonal cylinder-cylinder coverage for oblique separation.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
@@ -52,6 +53,7 @@
 - Added overlapping cylinder-plane distance coverage for negative distance semantics.
 - Added single-group distance filter coverage.
 - Added group-group distance coverage for shared-object skipping.
+- Added diagonal cylinder-cylinder distance coverage for oblique separation.
 
 ## Next Steps
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.

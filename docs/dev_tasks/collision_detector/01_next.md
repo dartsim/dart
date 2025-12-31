@@ -42,6 +42,7 @@
 - Added overlapping cylinder-plane distance coverage for negative distance semantics.
 - Added single-group distance filter coverage.
 - Added group-group distance coverage for shared-object skipping.
+- Added diagonal cylinder-cylinder distance coverage for oblique separation.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.
