@@ -29,6 +29,7 @@
 - Distance tests include coverage for filters rejecting all pairs.
 - Distance tests include rotated box-cylinder coverage for axial separation.
 - Distance tests include ellipsoid-as-sphere coverage.
+- Raycast tests include ellipsoid-as-sphere coverage.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
@@ -62,6 +63,7 @@
 - Added distance coverage for filters rejecting all pairs.
 - Added rotated box-cylinder distance coverage for axial separation.
 - Added ellipsoid-as-sphere distance coverage.
+- Added ellipsoid-as-sphere raycast coverage.
 
 ## Next Steps
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.

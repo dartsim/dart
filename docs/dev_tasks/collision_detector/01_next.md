@@ -47,6 +47,7 @@
 - Added distance coverage for filters rejecting all pairs.
 - Added rotated box-cylinder distance coverage for axial separation.
 - Added ellipsoid-as-sphere distance coverage.
+- Added ellipsoid-as-sphere raycast coverage.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.
