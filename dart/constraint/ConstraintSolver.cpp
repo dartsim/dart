@@ -66,6 +66,28 @@
 namespace dart {
 namespace constraint {
 
+namespace {
+
+bool isContactValid(const collision::Contact& contact)
+{
+  if (collision::Contact::isZeroNormal(contact.normal)) {
+    // Skip this contact. This is because we assume that a contact with
+    // zero-length normal is invalid.
+    return false;
+  }
+
+  // If penetration depth is negative, then the collision isn't really
+  // happening and the contact point should be ignored.
+  // TODO(MXG): Investigate ways to leverage the proximity information of a
+  //            negative penetration to improve collision handling.
+  if (contact.penetrationDepth < 0.0)
+    return false;
+
+  return true;
+}
+
+} // namespace
+
 using namespace dynamics;
 
 //==============================================================================
@@ -373,6 +395,35 @@ std::size_t ConstraintSolver::getNumSoftContactConstraints() const
 }
 
 //==============================================================================
+void ConstraintSolver::getContactsUsedForConstraints(
+    std::vector<collision::Contact>& contacts) const
+{
+  contacts.clear();
+
+  if (!mContactPatchOptions.enabled) {
+    contacts = mCollisionResult.getContacts();
+    return;
+  }
+
+  contacts.reserve(mPersistentContacts.size());
+  contacts.insert(
+      contacts.end(), mPersistentContacts.begin(), mPersistentContacts.end());
+
+  for (const auto& contact : mCollisionResult.getContacts()) {
+    if (!contact.collisionObject1 || !contact.collisionObject2)
+      continue;
+
+    if (!isContactValid(contact))
+      continue;
+
+    if (!isSoftContact(contact))
+      continue;
+
+    contacts.push_back(contact);
+  }
+}
+
+//==============================================================================
 collision::CollisionResult& ConstraintSolver::getLastCollisionResult()
 {
   return mCollisionResult;
@@ -553,23 +604,6 @@ void ConstraintSolver::updateConstraints()
 
   std::map<ContactPair, size_t, ContactPairCompare> contactPairMap;
   std::vector<collision::Contact*> contacts;
-
-  auto isContactValid = [](const collision::Contact& contact) {
-    if (collision::Contact::isZeroNormal(contact.normal)) {
-      // Skip this contact. This is because we assume that a contact with
-      // zero-length normal is invalid.
-      return false;
-    }
-
-    // If penetration depth is negative, then the collision isn't really
-    // happening and the contact point should be ignored.
-    // TODO(MXG): Investigate ways to leverage the proximity information of a
-    //            negative penetration to improve collision handling.
-    if (contact.penetrationDepth < 0.0)
-      return false;
-
-    return true;
-  };
 
   auto handleSoftContact = [&](collision::Contact& contact) {
     if (!isContactValid(contact))

@@ -59,3 +59,5 @@ creates instability for resting and stacking scenarios due to:
 - Keep soft contacts on the legacy path initially to reduce risk.
 - Disable backend contact history during cached contact use to avoid double
   persistence (currently implemented for ODE).
+- Recording (`World::bake`) uses contacts that fed constraints so forces and
+  points remain consistent when the cache is enabled.

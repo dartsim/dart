@@ -41,6 +41,7 @@ Implemented:
 
 - `tests/integration/simulation/test_ContactPatchCache.cpp`
   - Verifies collision results remain stable when the cache is toggled on
+  - Confirms `getContactsUsedForConstraints()` count matches expectations
 
 ## Legacy Behavior Tests (Feature OFF)
 

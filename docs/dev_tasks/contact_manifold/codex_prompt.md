@@ -38,6 +38,8 @@ Decisions so far:
 - Determinism requires stable ordering (no unordered iteration in output)
 - Cached contacts are emitted for unseen pairs up to maxSeparationFrames
 - ODE backend history is gated by CollisionOption and disabled when cache is on
+- Recording uses contacts fed into constraints via
+  `ConstraintSolver::getContactsUsedForConstraints()`
 
 Constraints:
 - No mention of any external reference project in code or docs

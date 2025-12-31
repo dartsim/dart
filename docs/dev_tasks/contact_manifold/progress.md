@@ -22,6 +22,8 @@
 - Cache now emits persisted contacts for unseen pairs up to
   `maxSeparationFrames`
 - Backend contact history can be disabled via `CollisionOption`
+- Added `ConstraintSolver::getContactsUsedForConstraints()` and updated
+  `World::bake()` to use constraint contacts when recording
 
 ## Verification
 

@@ -130,11 +130,17 @@ TEST(Simulation, ContactPatchCacheKeepsCollisionResultStable)
   world->step();
   auto contactsOff = sortedContacts(world->getLastCollisionResult().getContacts());
   ASSERT_FALSE(contactsOff.empty());
+  std::vector<Contact> constraintContactsOff;
+  solver->getContactsUsedForConstraints(constraintContactsOff);
+  EXPECT_EQ(constraintContactsOff.size(), contactsOff.size());
 
   solver->setContactPatchCacheEnabled(true);
 
   world->step();
   auto contactsOn = sortedContacts(world->getLastCollisionResult().getContacts());
+  std::vector<Contact> constraintContactsOn;
+  solver->getContactsUsedForConstraints(constraintContactsOn);
+  EXPECT_EQ(constraintContactsOn.size(), solver->getNumPersistentContacts());
 
   ASSERT_EQ(contactsOff.size(), contactsOn.size());
   for (std::size_t i = 0; i < contactsOff.size(); ++i) {

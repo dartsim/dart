@@ -201,6 +201,10 @@ public:
   /// Return the number of soft contact constraints.
   std::size_t getNumSoftContactConstraints() const;
 
+  /// Fill contacts used for constraint construction (rigid + soft).
+  void getContactsUsedForConstraints(
+      std::vector<collision::Contact>& contacts) const;
+
   /// Return the last collision checking result
   collision::CollisionResult& getLastCollisionResult();
 
