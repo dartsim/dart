@@ -10,6 +10,7 @@
 - Reviewed DART examples/tutorials structure and build notes.
 - Reviewed Newton and Genesis example organization for patterns.
 - Drafted a user-first taxonomy and ordering in `docs/dev_tasks/examples/00_plan.md`.
+- Drafted a minimal metadata template and shared harness sketch.
 
 ## Discovery findings
 
@@ -36,9 +37,9 @@
 
 ## Next steps
 
-1. Define a minimal example metadata template (goal, APIs, expected output).
-2. Propose a shared harness strategy and asset layout.
-3. Map current examples into the new taxonomy (no file lists in docs).
+1. Map current examples into the new taxonomy (no file lists in docs).
+2. Validate the metadata template against a small subset of examples.
+3. Decide whether the shared harness is required for the initial migration.
 
 ## Open questions
 

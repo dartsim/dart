@@ -28,6 +28,24 @@ Notes:
 - Category names are draft; keep them short and ordered with numeric prefixes.
 - Tutorials remain separate but should be cross-linked from relevant categories.
 
+## Example metadata template (draft)
+
+Each example should include a short header block in its README:
+- Goal (user story)
+- Concepts/APIs touched
+- Expected output (visual or numeric)
+- Run command (pixi entry point)
+- Variants (headless, alternate viewer, data files)
+
+## Shared harness sketch (draft)
+
+- Provide a small `examples/common` helper with a minimal `ExampleOptions` and
+  CLI parsing for headless runs, step counts, and viewer selection.
+- Ensure viewer selection respects build flags (OSG vs Raylib) with clear
+  fallback behavior.
+- Include helpers for asset lookup via `dart::common::Uri` and
+  `dart::io::ReadOptions` where relevant.
+
 ## References
 
 - `docs/onboarding/building.md`
