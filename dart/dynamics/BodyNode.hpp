@@ -802,6 +802,10 @@ public:
   /// @param[in] _constImp Spatial constraint impulse w.r.t. body frame
   void addConstraintImpulse(const Eigen::Vector6d& _constImp);
 
+  /// Add position constraint impulse for split impulse handling.
+  /// @param[in] _constImp Spatial constraint impulse w.r.t. body frame
+  void addPositionConstraintImpulse(const Eigen::Vector6d& _constImp);
+
   /// Add constraint impulse
   void addConstraintImpulse(
       const Eigen::Vector3d& _constImp,
@@ -813,8 +817,14 @@ public:
   /// dynamics algorithm
   virtual void clearConstraintImpulse();
 
+  /// Clear position constraint impulses used for split impulse handling.
+  virtual void clearPositionConstraintImpulse();
+
   /// Return constraint impulse
   const Eigen::Vector6d& getConstraintImpulse() const;
+
+  /// Return position constraint impulse
+  const Eigen::Vector6d& getPositionConstraintImpulse() const;
 
   //----------------------------------------------------------------------------
   // Energies
@@ -955,6 +965,9 @@ protected:
   /// Update bias impulse associated with the articulated body inertia for
   /// impulse-based forward dynamics.
   virtual void updateBiasImpulse();
+
+  /// Update bias impulse using position constraint impulses for split impulse.
+  virtual void updateBiasImpulseFromPositionImpulse();
 
   /// Update spatial body acceleration with the partial spatial body
   /// acceleration for inverse dynamics.
@@ -1224,6 +1237,9 @@ protected:
 
   /// Constraint impulse: contact impulse, dynamic joint impulse
   Eigen::Vector6d mConstraintImpulse;
+
+  /// Position correction impulse used for split impulse handling
+  Eigen::Vector6d mPositionConstraintImpulse;
 
   // TODO(JS): rename with more informative one
   /// Generalized impulsive body force w.r.t. body frame.

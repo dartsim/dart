@@ -77,6 +77,59 @@ private:
   dynamics::SkeletonPtr mSkeleton;
 };
 
+class PhaseTrackingConstraint : public constraint::ConstraintBase
+{
+public:
+  explicit PhaseTrackingConstraint(dynamics::SkeletonPtr skeleton)
+    : mSkeleton(std::move(skeleton))
+  {
+    mDim = 1;
+  }
+
+  void update() override {}
+
+  void getInformation(constraint::ConstraintInfo* info) override
+  {
+    phases.push_back(info->phase);
+    useSplitImpulse.push_back(info->useSplitImpulse);
+    ++getInformationCalls;
+
+    info->lo[0] = 0.0;
+    info->hi[0] = 0.0;
+    info->b[0] = 0.0;
+    info->w[0] = 0.0;
+    info->findex[0] = -1;
+  }
+
+  void applyUnitImpulse(std::size_t) override {}
+
+  void getVelocityChange(double* vel, bool) override
+  {
+    vel[0] = 1.0;
+  }
+
+  void excite() override {}
+  void unexcite() override {}
+  void applyImpulse(double*) override {}
+
+  bool isActive() const override
+  {
+    return true;
+  }
+
+  dynamics::SkeletonPtr getRootSkeleton() const override
+  {
+    return mSkeleton;
+  }
+
+  std::vector<constraint::ConstraintPhase> phases;
+  std::vector<bool> useSplitImpulse;
+  std::size_t getInformationCalls{0};
+
+private:
+  dynamics::SkeletonPtr mSkeleton;
+};
+
 class NanLcpSolver : public math::LcpSolver
 {
 public:
@@ -289,4 +342,26 @@ TEST(ConstraintSolver, PartialNanHandled)
       = std::dynamic_pointer_cast<DummyConstraint>(solver.getConstraint(0));
   ASSERT_TRUE(constraint);
   EXPECT_DOUBLE_EQ(constraint->lastAppliedImpulse, 0.0); // sanitized
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SplitImpulseSkipsNonContactPositionPass)
+{
+  constraint::ConstraintSolver solver;
+  auto skeleton = dynamics::Skeleton::create("dummy");
+  solver.addSkeleton(skeleton);
+  auto constraint = std::make_shared<PhaseTrackingConstraint>(skeleton);
+  solver.addConstraint(constraint);
+
+  solver.setLcpSolver(std::make_shared<ConstantLcpSolver>(0.0));
+  solver.setSecondaryLcpSolver(nullptr);
+  solver.setSplitImpulseEnabled(true);
+
+  solver.solve();
+
+  ASSERT_EQ(constraint->getInformationCalls, 1u);
+  ASSERT_EQ(constraint->phases.size(), 1u);
+  EXPECT_EQ(constraint->phases[0], constraint::ConstraintPhase::Velocity);
+  ASSERT_EQ(constraint->useSplitImpulse.size(), 1u);
+  EXPECT_TRUE(constraint->useSplitImpulse[0]);
 }
