@@ -296,6 +296,9 @@ std::vector<Candidate> selectRepresentativeContacts(
 void ContactPatchCache::reset()
 {
   mPatches.clear();
+  mRawEntries.clear();
+  mOutputRanges.clear();
+  mOutputScratch.clear();
   mFrameCounter = 0u;
 }
 
@@ -326,14 +329,8 @@ void ContactPatchCache::update(
       ++patch.framesSinceSeen;
   }
 
-  struct RawEntry
-  {
-    PairKey key;
-    const collision::Contact* contact{nullptr};
-  };
-
-  std::vector<RawEntry> entries;
-  entries.reserve(rawContacts.getNumContacts());
+  mRawEntries.clear();
+  mRawEntries.reserve(rawContacts.getNumContacts());
 
   for (const auto& contact : rawContacts.getContacts()) {
     if (!contact.collisionObject1 || !contact.collisionObject2)
@@ -345,7 +342,7 @@ void ContactPatchCache::update(
     RawEntry entry;
     entry.key = makePairKey(contact.collisionObject1, contact.collisionObject2);
     entry.contact = &contact;
-    entries.push_back(entry);
+    mRawEntries.push_back(entry);
   }
 
   const double positionThresholdSquared
@@ -363,24 +360,18 @@ void ContactPatchCache::update(
     return contactLess(*a.contact, *b.contact);
   };
 
-  std::sort(entries.begin(), entries.end(), rawEntryLess);
+  std::sort(mRawEntries.begin(), mRawEntries.end(), rawEntryLess);
 
-  struct PairOutputRange
-  {
-    PairKey key;
-    std::size_t start{0u};
-    std::size_t count{0u};
-  };
-  std::vector<PairOutputRange> outputs;
-  outputs.reserve(entries.size());
-  std::vector<collision::Contact> outputScratch;
-  outputScratch.reserve(entries.size());
+  mOutputRanges.clear();
+  mOutputRanges.reserve(mRawEntries.size());
+  mOutputScratch.clear();
+  mOutputScratch.reserve(mRawEntries.size());
 
   std::size_t index = 0u;
-  while (index < entries.size()) {
-    const auto& key = entries[index].key;
+  while (index < mRawEntries.size()) {
+    const auto& key = mRawEntries[index].key;
     std::size_t end = index + 1u;
-    while (end < entries.size() && pairEqual(entries[end].key, key))
+    while (end < mRawEntries.size() && pairEqual(mRawEntries[end].key, key))
       ++end;
 
     const std::size_t contactCount = end - index;
@@ -410,7 +401,7 @@ void ContactPatchCache::update(
       std::vector<unsigned char> matchedRaw(contactCount, 0u);
 
       for (std::size_t i = 0u; i < contactCount; ++i) {
-        const auto& raw = *entries[index + i].contact;
+        const auto& raw = *mRawEntries[index + i].contact;
         std::size_t bestIndex = existingCandidates.size();
         double bestDistance = positionThresholdSquared;
 
@@ -457,7 +448,7 @@ void ContactPatchCache::update(
           continue;
 
         Candidate candidate;
-        candidate.contact = *entries[index + i].contact;
+        candidate.contact = *mRawEntries[index + i].contact;
         candidate.age = 0u;
         candidate.isFresh = true;
         freshCandidates.push_back(candidate);
@@ -474,9 +465,9 @@ void ContactPatchCache::update(
       patch->framesSinceSeen = 0u;
       patch->lastUpdateFrame = mFrameCounter;
 
-      PairOutputRange output;
+      OutputRange output;
       output.key = key;
-      output.start = outputScratch.size();
+      output.start = mOutputScratch.size();
       for (const auto& candidate : selected) {
         if (patch->count >= kMaxPatchPoints)
           break;
@@ -485,21 +476,21 @@ void ContactPatchCache::update(
         patch->points[patch->count].age = candidate.age;
         ++patch->count;
 
-        outputScratch.push_back(candidate.contact);
+        mOutputScratch.push_back(candidate.contact);
         ++output.count;
       }
 
-      outputs.push_back(std::move(output));
+      mOutputRanges.push_back(std::move(output));
     } else {
-      PairOutputRange output;
+      OutputRange output;
       output.key = key;
-      output.start = outputScratch.size();
+      output.start = mOutputScratch.size();
       const auto outputCount = std::min<std::size_t>(contactCount, maxPoints);
       for (std::size_t i = 0u; i < outputCount; ++i) {
-        outputScratch.push_back(*entries[index + i].contact);
+        mOutputScratch.push_back(*mRawEntries[index + i].contact);
         ++output.count;
       }
-      outputs.push_back(std::move(output));
+      mOutputRanges.push_back(std::move(output));
     }
 
     index = end;
@@ -507,7 +498,7 @@ void ContactPatchCache::update(
 
   pruneStalePatches(options);
 
-  std::size_t reserveCount = outputScratch.size();
+  std::size_t reserveCount = mOutputScratch.size();
   reserveCount += mPatches.size() * maxPoints;
 
   outputContacts.reserve(reserveCount);
@@ -515,17 +506,17 @@ void ContactPatchCache::update(
   std::size_t outputIndex = 0u;
   std::size_t patchIndex = 0u;
 
-  while (outputIndex < outputs.size() || patchIndex < mPatches.size()) {
+  while (outputIndex < mOutputRanges.size() || patchIndex < mPatches.size()) {
     if (patchIndex >= mPatches.size()) {
-      const auto& output = outputs[outputIndex++];
+      const auto& output = mOutputRanges[outputIndex++];
       outputContacts.insert(
           outputContacts.end(),
-          outputScratch.begin() + output.start,
-          outputScratch.begin() + output.start + output.count);
+          mOutputScratch.begin() + output.start,
+          mOutputScratch.begin() + output.start + output.count);
       continue;
     }
 
-    if (outputIndex >= outputs.size()) {
+    if (outputIndex >= mOutputRanges.size()) {
       const auto& patch = mPatches[patchIndex++];
       if (patch.count == 0u)
         continue;
@@ -536,15 +527,15 @@ void ContactPatchCache::update(
       continue;
     }
 
-    const auto& outputKey = outputs[outputIndex].key;
+    const auto& outputKey = mOutputRanges[outputIndex].key;
     const auto& patchKey = mPatches[patchIndex].pair;
 
     if (pairLess(outputKey, patchKey)) {
-      const auto& output = outputs[outputIndex++];
+      const auto& output = mOutputRanges[outputIndex++];
       outputContacts.insert(
           outputContacts.end(),
-          outputScratch.begin() + output.start,
-          outputScratch.begin() + output.start + output.count);
+          mOutputScratch.begin() + output.start,
+          mOutputScratch.begin() + output.start + output.count);
       continue;
     }
 
@@ -559,11 +550,11 @@ void ContactPatchCache::update(
       continue;
     }
 
-    const auto& output = outputs[outputIndex++];
+    const auto& output = mOutputRanges[outputIndex++];
     outputContacts.insert(
         outputContacts.end(),
-        outputScratch.begin() + output.start,
-        outputScratch.begin() + output.start + output.count);
+        mOutputScratch.begin() + output.start,
+        mOutputScratch.begin() + output.start + output.count);
     ++patchIndex;
   }
 }

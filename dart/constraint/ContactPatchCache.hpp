@@ -104,6 +104,19 @@ private:
     std::uint32_t lastUpdateFrame{0u};
   };
 
+  struct RawEntry
+  {
+    PairKey key;
+    const collision::Contact* contact{nullptr};
+  };
+
+  struct OutputRange
+  {
+    PairKey key;
+    std::size_t start{0u};
+    std::size_t count{0u};
+  };
+
   static PairKey makePairKey(
       collision::CollisionObject* first,
       collision::CollisionObject* second);
@@ -114,6 +127,9 @@ private:
   void pruneStalePatches(const ContactPatchCacheOptions& options);
 
   std::vector<Patch> mPatches;
+  std::vector<RawEntry> mRawEntries;
+  std::vector<OutputRange> mOutputRanges;
+  std::vector<collision::Contact> mOutputScratch;
   std::uint32_t mFrameCounter{0u};
 };
 
