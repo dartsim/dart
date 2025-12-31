@@ -51,4 +51,4 @@
 - TTL value for inactive pairs
 - Uniqueness thresholds and normal-angle cutoff
 - Final data layout (AoS vs SoA)
-- Contact force reporting when cache is enabled
+- Whether to expose constraint-contact list via World convenience API

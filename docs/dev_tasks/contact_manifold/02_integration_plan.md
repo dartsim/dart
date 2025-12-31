@@ -48,6 +48,11 @@
      `mCollisionOption.useBackendContactHistory = false`
    - Status: implemented (auto-disabled per-step when cache is enabled)
 
+7. Reporting contacts used for constraints
+   - Add `ConstraintSolver::getContactsUsedForConstraints(...)`
+   - Update `World::bake()` to record constraint contacts for forces/points
+   - Status: implemented
+
 7. Feature flag integration
    - Runtime-only flag in `ConstraintSolver` options (default OFF)
    - Expose through `World` or demo code as needed
