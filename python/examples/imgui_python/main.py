@@ -71,14 +71,34 @@ def make_world() -> dart.World:
     world = dart.World()
     world.set_gravity(np.array([0.0, -9.81, 0.0], dtype=float))
 
+    ground = dart.Skeleton("ground")
+    ground_joint, ground_body = ground.create_weld_joint_and_body_node_pair()
+    ground_shape = dart.BoxShape([6.0, 0.2, 6.0])
+    ground_node = ground_body.create_shape_node(ground_shape)
+    ground_node.create_visual_aspect()
+    ground_node.get_visual_aspect().set_rgba(
+        np.array([0.75, 0.75, 0.75, 1.0], dtype=float)
+    )
+    ground_node.create_collision_aspect()
+    ground_node.create_dynamics_aspect()
+    ground_tf = dart.Isometry3()
+    ground_tf.set_translation([0.0, -0.6, 0.0])
+    ground_joint.set_transform_from_parent_body_node(ground_tf)
+    world.add_skeleton(ground)
+
     skeleton = dart.Skeleton("box")
-    _, body = skeleton.create_free_joint_and_body_node_pair()
+    joint, body = skeleton.create_free_joint_and_body_node_pair()
     shape = dart.BoxShape([0.4, 0.4, 0.4])
     shape_node = body.create_shape_node(shape)
     shape_node.create_visual_aspect()
     shape_node.get_visual_aspect().set_rgba(
         np.array([0.2, 0.6, 0.9, 1.0], dtype=float)
     )
+    shape_node.create_collision_aspect()
+    shape_node.create_dynamics_aspect()
+    box_tf = dart.Isometry3()
+    box_tf.set_translation([0.0, 0.6, 0.0])
+    joint.set_transform(box_tf)
     world.add_skeleton(skeleton)
 
     return world
