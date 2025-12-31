@@ -68,6 +68,7 @@ Current status:
 - Distance tests include overlapping box-plane coverage for negative distances.
 - Distance tests include plane offset coverage for sphere queries; raycast tests include plane offset hits.
 - Distance tests include a tilted cylinder-plane case for oblique extent coverage.
+- Distance tests include DistanceResult clamping status coverage.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.

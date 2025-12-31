@@ -71,6 +71,7 @@ TEST(DartDistance, SphereSphereDistance)
   EXPECT_NEAR(result.minDistance, 1.5, kDistanceTol);
   EXPECT_NEAR(result.unclampedMinDistance, 1.5, kDistanceTol);
   EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.isMinDistanceClamped());
   EXPECT_TRUE(result.nearestPoint1.isApprox(Eigen::Vector3d(1.0, 0.0, 0.0)));
   EXPECT_TRUE(result.nearestPoint2.isApprox(Eigen::Vector3d(2.5, 0.0, 0.0)));
 
@@ -80,6 +81,7 @@ TEST(DartDistance, SphereSphereDistance)
   EXPECT_NEAR(clamped, 2.0, kDistanceTol);
   EXPECT_NEAR(result.minDistance, 2.0, kDistanceTol);
   EXPECT_NEAR(result.unclampedMinDistance, 1.5, kDistanceTol);
+  EXPECT_FALSE(result.isMinDistanceClamped());
 }
 
 //==============================================================================
