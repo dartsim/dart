@@ -56,6 +56,7 @@ Current status:
 - Distance tests include group-group shared-object skip coverage.
 - Distance tests include diagonal cylinder-cylinder coverage for oblique separation.
 - Distance tests include rotated box-box coverage for aligned separation.
+- Distance tests include coverage for filters rejecting all pairs.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.

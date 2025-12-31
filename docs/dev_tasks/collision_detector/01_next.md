@@ -44,6 +44,7 @@
 - Added group-group distance coverage for shared-object skipping.
 - Added diagonal cylinder-cylinder distance coverage for oblique separation.
 - Added rotated box-box distance coverage for aligned separation.
+- Added distance coverage for filters rejecting all pairs.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.

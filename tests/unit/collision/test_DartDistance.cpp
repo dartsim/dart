@@ -821,3 +821,40 @@ TEST(DartDistance, GroupDistanceWithFilter)
   EXPECT_TRUE(result.nearestPoint2.isApprox(
       Eigen::Vector3d(4.5, 0.0, 0.0), kDistanceTol));
 }
+
+//==============================================================================
+TEST(DartDistance, GroupDistanceFilterRejectsAll)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+
+  sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+
+  sphereFrame->setTranslation(Eigen::Vector3d::Zero());
+  boxFrame->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+
+  auto group = detector->createCollisionGroup(
+      sphereFrame.get(), boxFrame.get());
+
+  struct RejectAllDistanceFilter final : DistanceFilter
+  {
+    bool needDistance(
+        const CollisionObject*,
+        const CollisionObject*) const override
+    {
+      return false;
+    }
+  };
+
+  RejectAllDistanceFilter filter;
+
+  DistanceOption option(true, 0.0, &filter);
+  DistanceResult result;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, 0.0, kDistanceTol);
+  EXPECT_FALSE(result.found());
+}
