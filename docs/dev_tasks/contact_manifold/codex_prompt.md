@@ -37,6 +37,7 @@ Decisions so far:
 - Soft contacts remain on the legacy path initially
 - Determinism requires stable ordering (no unordered iteration in output)
 - Cached contacts are emitted for unseen pairs up to maxSeparationFrames
+- ODE backend history is gated by CollisionOption and disabled when cache is on
 
 Constraints:
 - No mention of any external reference project in code or docs

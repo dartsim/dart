@@ -62,6 +62,10 @@ struct DART_API CollisionOption
   /// reported by some collision backends such as Bullet) are ignored.
   bool allowNegativePenetrationDepthContacts;
 
+  /// If true, collision backends may reuse or supplement contacts using their
+  /// internal history (only supported by some backends).
+  bool useBackendContactHistory;
+
   /// CollisionFilter
   std::shared_ptr<CollisionFilter> collisionFilter;
 
@@ -70,7 +74,8 @@ struct DART_API CollisionOption
       bool enableContact = true,
       std::size_t maxNumContacts = 1000u,
       const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr,
-      bool allowNegativePenetrationDepthContacts = false);
+      bool allowNegativePenetrationDepthContacts = false,
+      bool useBackendContactHistory = true);
 };
 
 } // namespace collision

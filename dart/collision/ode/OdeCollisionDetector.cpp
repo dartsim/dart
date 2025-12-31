@@ -223,11 +223,17 @@ bool OdeCollisionDetector::collide(
 
   OdeCollisionCallbackData data(option, result);
   data.contactGeoms = contactCollisions;
-  data.history = &mContactHistory;
+  if (option.useBackendContactHistory) {
+    data.history = &mContactHistory;
+  } else {
+    if (!mContactHistory.empty())
+      mContactHistory.clear();
+    data.history = nullptr;
+  }
 
   dSpaceCollide(odeGroup->getOdeSpaceId(), &data, CollisionCallback);
 
-  if (result) {
+  if (result && option.useBackendContactHistory) {
     pruneContactHistory(*result);
   }
 

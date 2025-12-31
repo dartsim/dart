@@ -21,6 +21,7 @@
 - Results captured (see `04_benchmarking.md`)
 - Cache now emits persisted contacts for unseen pairs up to
   `maxSeparationFrames`
+- Backend contact history can be disabled via `CollisionOption`
 
 ## Verification
 
@@ -46,6 +47,5 @@
 
 - TTL value for inactive pairs
 - Uniqueness thresholds and normal-angle cutoff
-- Whether to disable backend contact history when cache is enabled
 - Final data layout (AoS vs SoA)
 - Contact force reporting when cache is enabled

@@ -57,3 +57,5 @@ creates instability for resting and stacking scenarios due to:
 - Reset or prune the cache when collision detectors change or skeletons are
   added/removed.
 - Keep soft contacts on the legacy path initially to reduce risk.
+- Disable backend contact history during cached contact use to avoid double
+  persistence (currently implemented for ODE).

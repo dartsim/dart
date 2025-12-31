@@ -2,8 +2,7 @@
 
 ## Status
 
-- Steps 1-5 implemented with `ContactPatchCache`
-- Step 6 (backend history toggle) is still a follow-up
+- Steps 1-6 implemented with `ContactPatchCache`
 
 ## Step-by-step Code Changes
 
@@ -47,7 +46,7 @@
      this flag to avoid double persistence
    - When ContactPatchCache is enabled, set
      `mCollisionOption.useBackendContactHistory = false`
-   - Status: not implemented yet
+   - Status: implemented (auto-disabled per-step when cache is enabled)
 
 7. Feature flag integration
    - Runtime-only flag in `ConstraintSolver` options (default OFF)

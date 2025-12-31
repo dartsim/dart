@@ -511,7 +511,11 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   mCollisionResult.clear();
 
-  mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
+  auto collisionOption = mCollisionOption;
+  if (mContactPatchOptions.enabled)
+    collisionOption.useBackendContactHistory = false;
+
+  mCollisionGroup->collide(collisionOption, &mCollisionResult);
 
   // Destroy previous contact constraints
   mContactConstraints.clear();
