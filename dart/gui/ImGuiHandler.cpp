@@ -47,6 +47,7 @@
 #include <osg/RenderInfo>
 
 #include <algorithm>
+#include <atomic>
 
 #include <cmath>
 
@@ -260,6 +261,19 @@ private:
   ::osg::ref_ptr<ImGuiHandler> mHandler;
 };
 
+namespace {
+
+std::atomic<int> gImGuiHandlerCount{0};
+ImGuiContext* gImGuiContext = nullptr;
+
+void setCurrentContext(ImGuiContext* context)
+{
+  if (context && ImGui::GetCurrentContext() != context)
+    ImGui::SetCurrentContext(context);
+}
+
+} // namespace
+
 //==============================================================================
 ImGuiHandler::ImGuiHandler()
   : mTime{0.0},
@@ -267,37 +281,41 @@ ImGuiHandler::ImGuiHandler()
     mMouseWheel{0.0f},
     mFramebufferScale{1.0f, 1.0f}
 {
-  mContext = ImGui::CreateContext();
-  ImGui::SetCurrentContext(mContext);
+  const bool first = gImGuiHandlerCount.fetch_add(1) == 0;
+  if (first)
+    gImGuiContext = ImGui::CreateContext();
+  mContext = gImGuiContext;
+  setCurrentContext(mContext);
 
-  ImGui::StyleColorsDark();
-
-  ImGui_ImplOpenGL2_Init();
+  if (first) {
+    ImGui::StyleColorsDark();
+    ImGui_ImplOpenGL2_Init();
 
 #if IMGUI_VERSION_NUM < 19150
-  // Keyboard mapping. ImGui will use those indices to peek into the
-  // io.KeyDown[] array.
-  ImGuiIO& io = ImGui::GetIO();
-  io.KeyMap[ImGuiKey_Tab] = ConvertedKey_Tab;
-  io.KeyMap[ImGuiKey_LeftArrow] = ConvertedKey_Left;
-  io.KeyMap[ImGuiKey_RightArrow] = ConvertedKey_Right;
-  io.KeyMap[ImGuiKey_UpArrow] = ConvertedKey_Up;
-  io.KeyMap[ImGuiKey_DownArrow] = ConvertedKey_Down;
-  io.KeyMap[ImGuiKey_PageUp] = ConvertedKey_PageUp;
-  io.KeyMap[ImGuiKey_PageDown] = ConvertedKey_PageDown;
-  io.KeyMap[ImGuiKey_Home] = ConvertedKey_Home;
-  io.KeyMap[ImGuiKey_End] = ConvertedKey_End;
-  io.KeyMap[ImGuiKey_Delete] = ConvertedKey_Delete;
-  io.KeyMap[ImGuiKey_Backspace] = ConvertedKey_BackSpace;
-  io.KeyMap[ImGuiKey_Enter] = ConvertedKey_Enter;
-  io.KeyMap[ImGuiKey_Escape] = ConvertedKey_Escape;
-  io.KeyMap[ImGuiKey_A] = osgGA::GUIEventAdapter::KeySymbol::KEY_A;
-  io.KeyMap[ImGuiKey_C] = osgGA::GUIEventAdapter::KeySymbol::KEY_C;
-  io.KeyMap[ImGuiKey_V] = osgGA::GUIEventAdapter::KeySymbol::KEY_V;
-  io.KeyMap[ImGuiKey_X] = osgGA::GUIEventAdapter::KeySymbol::KEY_X;
-  io.KeyMap[ImGuiKey_Y] = osgGA::GUIEventAdapter::KeySymbol::KEY_Y;
-  io.KeyMap[ImGuiKey_Z] = osgGA::GUIEventAdapter::KeySymbol::KEY_Z;
+    // Keyboard mapping. ImGui will use those indices to peek into the
+    // io.KeyDown[] array.
+    ImGuiIO& io = ImGui::GetIO();
+    io.KeyMap[ImGuiKey_Tab] = ConvertedKey_Tab;
+    io.KeyMap[ImGuiKey_LeftArrow] = ConvertedKey_Left;
+    io.KeyMap[ImGuiKey_RightArrow] = ConvertedKey_Right;
+    io.KeyMap[ImGuiKey_UpArrow] = ConvertedKey_Up;
+    io.KeyMap[ImGuiKey_DownArrow] = ConvertedKey_Down;
+    io.KeyMap[ImGuiKey_PageUp] = ConvertedKey_PageUp;
+    io.KeyMap[ImGuiKey_PageDown] = ConvertedKey_PageDown;
+    io.KeyMap[ImGuiKey_Home] = ConvertedKey_Home;
+    io.KeyMap[ImGuiKey_End] = ConvertedKey_End;
+    io.KeyMap[ImGuiKey_Delete] = ConvertedKey_Delete;
+    io.KeyMap[ImGuiKey_Backspace] = ConvertedKey_BackSpace;
+    io.KeyMap[ImGuiKey_Enter] = ConvertedKey_Enter;
+    io.KeyMap[ImGuiKey_Escape] = ConvertedKey_Escape;
+    io.KeyMap[ImGuiKey_A] = osgGA::GUIEventAdapter::KeySymbol::KEY_A;
+    io.KeyMap[ImGuiKey_C] = osgGA::GUIEventAdapter::KeySymbol::KEY_C;
+    io.KeyMap[ImGuiKey_V] = osgGA::GUIEventAdapter::KeySymbol::KEY_V;
+    io.KeyMap[ImGuiKey_X] = osgGA::GUIEventAdapter::KeySymbol::KEY_X;
+    io.KeyMap[ImGuiKey_Y] = osgGA::GUIEventAdapter::KeySymbol::KEY_Y;
+    io.KeyMap[ImGuiKey_Z] = osgGA::GUIEventAdapter::KeySymbol::KEY_Z;
 #endif
+  }
 }
 
 //==============================================================================
@@ -308,9 +326,13 @@ ImGuiHandler::~ImGuiHandler()
   if (!mContext)
     return;
 
-  ImGui::SetCurrentContext(mContext);
-  ImGui_ImplOpenGL2_Shutdown();
-  ImGui::DestroyContext(mContext);
+  setCurrentContext(mContext);
+  const bool last = gImGuiHandlerCount.fetch_sub(1) == 1;
+  if (last) {
+    ImGui_ImplOpenGL2_Shutdown();
+    ImGui::DestroyContext(mContext);
+    gImGuiContext = nullptr;
+  }
   mContext = nullptr;
 }
 
@@ -377,6 +399,7 @@ bool ImGuiHandler::handle(
     ::osg::Object* /*object*/,
     ::osg::NodeVisitor* /*nodeVisitor*/)
 {
+  setCurrentContext(mContext);
   ImGuiIO& io = ImGui::GetIO();
   const bool wantCaptureMouse = io.WantCaptureMouse;
   const bool wantCaptureKeyboard = io.WantCaptureKeyboard;
@@ -533,6 +556,7 @@ bool ImGuiHandler::handle(
 //==============================================================================
 void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
 {
+  setCurrentContext(mContext);
   ImGui_ImplOpenGL2_NewFrame();
 
   auto& io = ImGui::GetIO();
@@ -591,6 +615,7 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
 //==============================================================================
 void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
 {
+  setCurrentContext(mContext);
   for (const auto& widget : mWidgets) {
     if (widget->isVisible())
       widget->render();

@@ -133,9 +133,7 @@ void defImGuiApi(nb::module_& m)
       nb::arg("max"));
   imgui.def(
       "is_key_down",
-      [](int key) {
-        return ImGui::IsKeyDown(static_cast<ImGuiKey>(key));
-      },
+      [](int key) { return ImGui::IsKeyDown(static_cast<ImGuiKey>(key)); },
       nb::arg("key"));
 }
 
@@ -225,17 +223,15 @@ void defImGuiViewer(nb::module_& m)
           nb::rv_policy::reference_internal)
       .def("showAbout", &ImGuiViewer::showAbout)
       .def("hideAbout", &ImGuiViewer::hideAbout)
-      .def(
-          "run",
-          [](ImGuiViewer& self) {
-            int result = 0;
-            {
-              nb::gil_scoped_release release;
-              result = self.run();
-            }
-            self.getImGuiHandler()->removeAllWidget();
-            return result;
-          });
+      .def("run", [](ImGuiViewer& self) {
+        int result = 0;
+        {
+          nb::gil_scoped_release release;
+          result = self.run();
+        }
+        self.getImGuiHandler()->removeAllWidget();
+        return result;
+      });
 }
 
 } // namespace dart::python_nb
