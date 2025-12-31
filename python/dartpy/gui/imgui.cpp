@@ -224,7 +224,18 @@ void defImGuiViewer(nb::module_& m)
           [](ImGuiViewer& self) { return self.getImGuiHandler(); },
           nb::rv_policy::reference_internal)
       .def("showAbout", &ImGuiViewer::showAbout)
-      .def("hideAbout", &ImGuiViewer::hideAbout);
+      .def("hideAbout", &ImGuiViewer::hideAbout)
+      .def(
+          "run",
+          [](ImGuiViewer& self) {
+            int result = 0;
+            {
+              nb::gil_scoped_release release;
+              result = self.run();
+            }
+            self.getImGuiHandler()->removeAllWidget();
+            return result;
+          });
 }
 
 } // namespace dart::python_nb

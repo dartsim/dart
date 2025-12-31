@@ -267,7 +267,8 @@ ImGuiHandler::ImGuiHandler()
     mMouseWheel{0.0f},
     mFramebufferScale{1.0f, 1.0f}
 {
-  ImGui::CreateContext();
+  mContext = ImGui::CreateContext();
+  ImGui::SetCurrentContext(mContext);
 
   ImGui::StyleColorsDark();
 
@@ -302,7 +303,15 @@ ImGuiHandler::ImGuiHandler()
 //==============================================================================
 ImGuiHandler::~ImGuiHandler()
 {
-  // Do nothing
+  removeAllWidget();
+
+  if (!mContext)
+    return;
+
+  ImGui::SetCurrentContext(mContext);
+  ImGui_ImplOpenGL2_Shutdown();
+  ImGui::DestroyContext(mContext);
+  mContext = nullptr;
 }
 
 //==============================================================================
