@@ -21,7 +21,7 @@ class PythonImGuiWidget(dart.gui.ImGuiWidget):
         super().__init__()
         self._viewer = viewer
         self._node = world_node
-        self._gravity = list(self._node.get_world().get_gravity())
+        self._gravity = self._node.get_world().get_gravity().tolist()
         self._frames = 0
 
     def render(self) -> None:
@@ -44,14 +44,16 @@ class PythonImGuiWidget(dart.gui.ImGuiWidget):
             self._node.get_world().step()
 
         imgui.separator()
-        imgui.text(f"Sim time: {self._node.get_world().getTime():.3f} s")
+        imgui.text(f"Sim time: {self._node.get_world().get_time():.3f} s")
         imgui.text(f"Frame rate: {imgui.get_io().framerate:.1f} fps")
 
         changed, self._gravity[1] = imgui.slider_float(
             "Gravity Y", self._gravity[1], -20.0, 5.0
         )
         if changed:
-            self._node.get_world().set_gravity(self._gravity)
+            self._node.get_world().set_gravity(
+                np.array(self._gravity, dtype=float)
+            )
 
         if imgui.button("Quit viewer"):
             self._viewer.close()
@@ -65,14 +67,18 @@ class PythonImGuiWidget(dart.gui.ImGuiWidget):
         imgui.end()
 
 
-def make_world() -> dart.simulation.World:
-    world = dart.simulation.World()
-    world.set_gravity([0.0, -9.81, 0.0])
+def make_world() -> dart.World:
+    world = dart.World()
+    world.set_gravity(np.array([0.0, -9.81, 0.0], dtype=float))
 
-    skeleton = dart.dynamics.Skeleton.create("box")
+    skeleton = dart.Skeleton("box")
     _, body = skeleton.create_free_joint_and_body_node_pair()
-    shape = dart.dynamics.BoxShape([0.4, 0.4, 0.4])
-    body.create_shape_node(shape)
+    shape = dart.BoxShape([0.4, 0.4, 0.4])
+    shape_node = body.create_shape_node(shape)
+    shape_node.create_visual_aspect()
+    shape_node.get_visual_aspect().set_rgba(
+        np.array([0.2, 0.6, 0.9, 1.0], dtype=float)
+    )
     world.add_skeleton(skeleton)
 
     return world
@@ -87,7 +93,13 @@ def main(argv: List[str] | None = None) -> int:
     node = dart.gui.RealTimeWorldNode(world)
 
     viewer = dart.gui.ImGuiViewer(np.array([0.95, 0.95, 0.95, 1.0], dtype=float))
+    # Keep ImGui callbacks on the main thread for Python.
+    viewer.set_threading_model(dart.gui.Viewer.ThreadingModel.SingleThreaded)
     viewer.add_world_node(node)
+    viewer.set_key_event_sets_done(
+        dart.gui.GUIEventAdapter.KeySymbol.KEY_Escape.value
+    )
+    viewer.set_quit_event_sets_done(True)
 
     widget = PythonImGuiWidget(viewer, node)
     viewer.get_im_gui_handler().add_widget(widget, True)
