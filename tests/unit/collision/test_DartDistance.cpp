@@ -82,6 +82,14 @@ TEST(DartDistance, SphereSphereDistance)
   EXPECT_NEAR(result.minDistance, 2.0, kDistanceTol);
   EXPECT_NEAR(result.unclampedMinDistance, 1.5, kDistanceTol);
   EXPECT_FALSE(result.isMinDistanceClamped());
+
+  DistanceOption noPoints(false, 0.0, nullptr);
+  result.clear();
+  const double noPointDistance = group->distance(noPoints, &result);
+  EXPECT_NEAR(noPointDistance, 1.5, kDistanceTol);
+  EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(Eigen::Vector3d::Zero()));
 }
 
 //==============================================================================

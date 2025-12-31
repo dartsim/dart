@@ -58,6 +58,7 @@
 - Added tilted cylinder-plane distance coverage for oblique extent checks.
 - Added DistanceResult clamping status coverage.
 - Added zero-length raycast coverage.
+- Added coverage for DistanceOption without nearest points.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.

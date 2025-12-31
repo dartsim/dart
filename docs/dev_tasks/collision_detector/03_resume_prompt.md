@@ -70,6 +70,7 @@ Current status:
 - Distance tests include a tilted cylinder-plane case for oblique extent coverage.
 - Distance tests include DistanceResult clamping status coverage.
 - Raycast tests include zero-length ray coverage.
+- Distance tests include coverage for DistanceOption without nearest points.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.

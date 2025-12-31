@@ -40,6 +40,7 @@
 - Distance tests include a tilted cylinder-plane case for oblique extent coverage.
 - Distance tests include DistanceResult clamping status coverage.
 - Raycast tests include zero-length ray coverage.
+- Distance tests include coverage for DistanceOption without nearest points.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
@@ -84,6 +85,7 @@
 - Added tilted cylinder-plane distance coverage for oblique extent checks.
 - Added DistanceResult clamping status coverage.
 - Added zero-length raycast coverage.
+- Added coverage for DistanceOption without nearest points.
 
 ## Next Steps
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
