@@ -26,6 +26,9 @@
   `World::bake()` to use constraint contacts when recording
 - Repeated 4x4x4 benchmark run confirms ~68% overhead with cache enabled
 - Added `World::getContactsUsedForConstraints()` convenience API
+- Switched cache update grouping to sorted vectors (removed maps)
+- Post-change micro-benchmark shows faster small/medium cases; 4x4x4
+  `bm_boxes` run still shows overhead but with higher variance
 
 ## Verification
 

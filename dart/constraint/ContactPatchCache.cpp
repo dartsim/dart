@@ -34,7 +34,6 @@
 
 #include <algorithm>
 #include <limits>
-#include <map>
 #include <utility>
 
 namespace dart {
@@ -327,10 +326,15 @@ void ContactPatchCache::update(
       ++patch.framesSinceSeen;
   }
 
-  using PairMap
-      = std::map<PairKey, std::vector<const collision::Contact*>, PairKeyLess>;
+  struct RawEntry
+  {
+    PairKey key;
+    const collision::Contact* contact{nullptr};
+  };
 
-  PairMap contactsByPair;
+  std::vector<RawEntry> entries;
+  entries.reserve(rawContacts.getNumContacts());
+
   for (const auto& contact : rawContacts.getContacts()) {
     if (!contact.collisionObject1 || !contact.collisionObject2)
       continue;
@@ -338,29 +342,45 @@ void ContactPatchCache::update(
     if (!isContactValid(contact))
       continue;
 
-    const auto key
-        = makePairKey(contact.collisionObject1, contact.collisionObject2);
-    contactsByPair[key].push_back(&contact);
+    RawEntry entry;
+    entry.key = makePairKey(contact.collisionObject1, contact.collisionObject2);
+    entry.contact = &contact;
+    entries.push_back(entry);
   }
 
   const double positionThresholdSquared
       = options.positionThreshold * options.positionThreshold;
 
-  using OutputMap
-      = std::map<PairKey, std::vector<collision::Contact>, PairKeyLess>;
-  OutputMap outputByPair;
+  PairKeyLess pairLess;
+  auto pairEqual = [&](const PairKey& a, const PairKey& b) {
+    return !pairLess(a, b) && !pairLess(b, a);
+  };
+  auto rawEntryLess = [&](const RawEntry& a, const RawEntry& b) {
+    if (pairLess(a.key, b.key))
+      return true;
+    if (pairLess(b.key, a.key))
+      return false;
+    return contactLess(*a.contact, *b.contact);
+  };
 
-  for (const auto& entry : contactsByPair) {
-    const auto& key = entry.first;
-    const auto& contacts = entry.second;
+  std::sort(entries.begin(), entries.end(), rawEntryLess);
 
-    std::vector<const collision::Contact*> sortedContacts = contacts;
-    std::sort(
-        sortedContacts.begin(),
-        sortedContacts.end(),
-        [](const collision::Contact* a, const collision::Contact* b) {
-          return contactLess(*a, *b);
-        });
+  struct PairOutput
+  {
+    PairKey key;
+    std::vector<collision::Contact> contacts;
+  };
+  std::vector<PairOutput> outputs;
+  outputs.reserve(entries.size());
+
+  std::size_t index = 0u;
+  while (index < entries.size()) {
+    const auto& key = entries[index].key;
+    std::size_t end = index + 1u;
+    while (end < entries.size() && pairEqual(entries[end].key, key))
+      ++end;
+
+    const std::size_t contactCount = end - index;
 
     Patch* patch = findOrCreatePatch(key, options);
 
@@ -380,10 +400,10 @@ void ContactPatchCache::update(
       }
 
       std::vector<bool> matchedExisting(existingCandidates.size(), false);
-      std::vector<bool> matchedRaw(sortedContacts.size(), false);
+      std::vector<bool> matchedRaw(contactCount, false);
 
-      for (std::size_t i = 0u; i < sortedContacts.size(); ++i) {
-        const auto& raw = *sortedContacts[i];
+      for (std::size_t i = 0u; i < contactCount; ++i) {
+        const auto& raw = *entries[index + i].contact;
         std::size_t bestIndex = existingCandidates.size();
         double bestDistance = positionThresholdSquared;
 
@@ -425,12 +445,12 @@ void ContactPatchCache::update(
         }
       }
 
-      for (std::size_t i = 0u; i < sortedContacts.size(); ++i) {
+      for (std::size_t i = 0u; i < contactCount; ++i) {
         if (matchedRaw[i])
           continue;
 
         Candidate candidate;
-        candidate.contact = *sortedContacts[i];
+        candidate.contact = *entries[index + i].contact;
         candidate.age = 0u;
         candidate.isFresh = true;
         freshCandidates.push_back(candidate);
@@ -447,7 +467,9 @@ void ContactPatchCache::update(
       patch->framesSinceSeen = 0u;
       patch->lastUpdateFrame = mFrameCounter;
 
-      auto& outputForPair = outputByPair[key];
+      PairOutput output;
+      output.key = key;
+      output.contacts.reserve(selected.size());
       for (const auto& candidate : selected) {
         if (patch->count >= kMaxPatchPoints)
           break;
@@ -456,42 +478,84 @@ void ContactPatchCache::update(
         patch->points[patch->count].age = candidate.age;
         ++patch->count;
 
-        outputForPair.push_back(candidate.contact);
+        output.contacts.push_back(candidate.contact);
       }
+
+      outputs.push_back(std::move(output));
     } else {
-      for (const auto* contact : sortedContacts) {
-        outputByPair[key].push_back(*contact);
-        if (outputByPair[key].size() >= maxPoints)
-          break;
+      PairOutput output;
+      output.key = key;
+      const auto outputCount = std::min<std::size_t>(contactCount, maxPoints);
+      output.contacts.reserve(outputCount);
+      for (std::size_t i = 0u; i < outputCount; ++i) {
+        output.contacts.push_back(*entries[index + i].contact);
       }
+      outputs.push_back(std::move(output));
     }
+
+    index = end;
   }
 
   pruneStalePatches(options);
 
-  for (const auto& patch : mPatches) {
-    const auto& key = patch.pair;
-    if (outputByPair.find(key) != outputByPair.end())
+  std::size_t reserveCount = 0u;
+  for (const auto& output : outputs)
+    reserveCount += output.contacts.size();
+  reserveCount += mPatches.size() * maxPoints;
+
+  std::vector<collision::Contact> merged;
+  merged.reserve(reserveCount);
+
+  std::size_t outputIndex = 0u;
+  std::size_t patchIndex = 0u;
+
+  while (outputIndex < outputs.size() || patchIndex < mPatches.size()) {
+    if (patchIndex >= mPatches.size()) {
+      const auto& output = outputs[outputIndex++];
+      merged.insert(
+          merged.end(), output.contacts.begin(), output.contacts.end());
       continue;
-
-    if (patch.count == 0u)
-      continue;
-
-    auto& outputForPair = outputByPair[key];
-    const auto outputCount
-        = std::min<std::size_t>(patch.count, maxPoints);
-    outputForPair.reserve(outputCount);
-
-    for (std::size_t i = 0u; i < outputCount; ++i) {
-      outputForPair.push_back(patch.points[i].contact);
     }
+
+    if (outputIndex >= outputs.size()) {
+      const auto& patch = mPatches[patchIndex++];
+      if (patch.count == 0u)
+        continue;
+      const auto outputCount
+          = std::min<std::size_t>(patch.count, maxPoints);
+      for (std::size_t i = 0u; i < outputCount; ++i)
+        merged.push_back(patch.points[i].contact);
+      continue;
+    }
+
+    const auto& outputKey = outputs[outputIndex].key;
+    const auto& patchKey = mPatches[patchIndex].pair;
+
+    if (pairLess(outputKey, patchKey)) {
+      const auto& output = outputs[outputIndex++];
+      merged.insert(
+          merged.end(), output.contacts.begin(), output.contacts.end());
+      continue;
+    }
+
+    if (pairLess(patchKey, outputKey)) {
+      const auto& patch = mPatches[patchIndex++];
+      if (patch.count == 0u)
+        continue;
+      const auto outputCount
+          = std::min<std::size_t>(patch.count, maxPoints);
+      for (std::size_t i = 0u; i < outputCount; ++i)
+        merged.push_back(patch.points[i].contact);
+      continue;
+    }
+
+    const auto& output = outputs[outputIndex++];
+    merged.insert(
+        merged.end(), output.contacts.begin(), output.contacts.end());
+    ++patchIndex;
   }
 
-  for (const auto& entry : outputByPair) {
-    for (const auto& contact : entry.second) {
-      outputContacts.push_back(contact);
-    }
-  }
+  outputContacts.swap(merged);
 }
 
 //=============================================================================

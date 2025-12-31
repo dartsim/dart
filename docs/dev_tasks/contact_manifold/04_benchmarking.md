@@ -91,3 +91,33 @@ Times in microseconds:
 | 10 | 16 | 21.4 |
 | 100 | 4 | 92.1 |
 | 100 | 16 | 237 |
+
+### Post-optimization run (vector grouping)
+
+Run info:
+
+- Date: 2025-12-31
+- CPU scaling enabled and higher load variance (see `bm_boxes` CV)
+
+#### Cache update micro-benchmark (bm_contact_patch_cache)
+
+Times in microseconds:
+
+| Pairs | Contacts/Pair | Time |
+| --- | --- | --- |
+| 1 | 4 | 0.731 |
+| 1 | 16 | 2.04 |
+| 10 | 4 | 7.16 |
+| 10 | 16 | 22.1 |
+| 100 | 4 | 83.6 |
+| 100 | 16 | 235 |
+
+#### Collision benchmark (bm_boxes, 4x4x4 only)
+
+Times in milliseconds (mean of 3):
+
+| Case | Legacy | Cache ON | Delta |
+| --- | --- | --- | --- |
+| 4x4x4 | 2763 | 3871 | +40% |
+
+Note: this run had higher variance (18% CV for legacy), so compare with care.
