@@ -47,6 +47,21 @@ struct Candidate
   bool isFresh{false};
 };
 
+struct UpdateScratch
+{
+  std::vector<Candidate> freshCandidates;
+  std::vector<Candidate> staleCandidates;
+  std::vector<Candidate> existingCandidates;
+  std::vector<unsigned char> matchedExisting;
+  std::vector<unsigned char> matchedRaw;
+};
+
+UpdateScratch& getUpdateScratch()
+{
+  static thread_local UpdateScratch scratch;
+  return scratch;
+}
+
 double normalizedDot(
     const Eigen::Vector3d& a, const Eigen::Vector3d& b)
 {
@@ -378,11 +393,12 @@ void ContactPatchCache::update(
   mOutputScratch.reserve(mRawEntries.size());
 
   std::size_t index = 0u;
-  std::vector<Candidate> freshCandidates;
-  std::vector<Candidate> staleCandidates;
-  std::vector<Candidate> existingCandidates;
-  std::vector<unsigned char> matchedExisting;
-  std::vector<unsigned char> matchedRaw;
+  auto& scratch = getUpdateScratch();
+  auto& freshCandidates = scratch.freshCandidates;
+  auto& staleCandidates = scratch.staleCandidates;
+  auto& existingCandidates = scratch.existingCandidates;
+  auto& matchedExisting = scratch.matchedExisting;
+  auto& matchedRaw = scratch.matchedRaw;
   while (index < mRawEntries.size()) {
     const auto& key = mRawEntries[index].key;
     std::size_t end = index + 1u;

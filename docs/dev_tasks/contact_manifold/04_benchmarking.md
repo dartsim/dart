@@ -261,3 +261,31 @@ Times in milliseconds (mean of 3):
 | Case | Legacy | Cache ON | Delta |
 | --- | --- | --- | --- |
 | 4x4x4 | 1938 | 3179 | +64% |
+
+### Post-optimization run (scratch across frames)
+
+Run info:
+
+- Date: 2025-12-31
+- CPU scaling enabled (benchmark warning about noisy real-time)
+
+#### Cache update micro-benchmark (bm_contact_patch_cache)
+
+Times in microseconds:
+
+| Pairs | Contacts/Pair | Time |
+| --- | --- | --- |
+| 1 | 4 | 0.476 |
+| 1 | 16 | 1.76 |
+| 10 | 4 | 4.43 |
+| 10 | 16 | 18.5 |
+| 100 | 4 | 46.5 |
+| 100 | 16 | 184 |
+
+#### Collision benchmark (bm_boxes, 4x4x4 only)
+
+Times in milliseconds (mean of 3):
+
+| Case | Legacy | Cache ON | Delta |
+| --- | --- | --- | --- |
+| 4x4x4 | 1957 | 3229 | +65% |

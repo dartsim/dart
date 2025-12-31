@@ -40,6 +40,8 @@
 - Added fast path when only fresh contacts fit within max points
 - Latest micro-benchmark shows large gains for small contact sets; 4x4x4
   overhead remains ~64%
+- Added thread-local scratch reuse for per-pair candidate buffers
+- Latest 4x4x4 run shows ~65% overhead with cache enabled
 
 ## Verification
 
