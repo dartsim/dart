@@ -6,6 +6,7 @@
 - Stage 1 docs complete
 - Stage 2 skeleton implementation complete
 - Stage 3 wiring complete
+- Stage 4 tests complete
 
 ## Motivation
 

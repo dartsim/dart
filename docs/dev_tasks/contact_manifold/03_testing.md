@@ -15,6 +15,13 @@ Suggested location: `tests/unit/constraint/`.
 - Determinism
   - Identical inputs produce identical output ordering
 
+Implemented:
+
+- `tests/unit/constraint/test_ContactPatchCache.cpp`
+  - Persistence across frames and churn reduction
+  - Cap at 4 contacts and deepest preservation
+  - TTL pruning behavior
+
 ## Integration Tests
 
 Suggested location: `tests/integration/constraint/` or
@@ -29,6 +36,11 @@ Suggested location: `tests/integration/constraint/` or
 - Sliding contact
   - Box sliding on plane or slope
   - Ensure persistent cache does not over-stabilize (contacts update)
+
+Implemented:
+
+- `tests/integration/simulation/test_ContactPatchCache.cpp`
+  - Verifies collision results remain stable when the cache is toggled on
 
 ## Legacy Behavior Tests (Feature OFF)
 
