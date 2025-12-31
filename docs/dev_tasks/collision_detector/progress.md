@@ -11,6 +11,7 @@
 - Core engine path wired into the DART detector with AABB prechecks.
 - Sweep-based broadphase candidate generation for single and group queries.
 - Primitive narrowphase coverage for sphere, box, cylinder, and plane pairs.
+- Added box-cylinder and cylinder-cylinder narrowphase support with DART-only unit tests.
 - Raycast support for primitives plus DART-only unit coverage.
 - Added a DART collision benchmark variant for baseline tracking.
 

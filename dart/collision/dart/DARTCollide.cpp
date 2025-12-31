@@ -41,7 +41,10 @@
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/math/Helpers.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
+#include <limits>
 #include <memory>
 
 namespace dart {
@@ -1253,6 +1256,110 @@ int collideSphereSphere(
   return 1;
 }
 
+struct SatResult
+{
+  bool separated{false};
+  double separation{std::numeric_limits<double>::infinity()};
+  double overlap{std::numeric_limits<double>::infinity()};
+  Eigen::Vector3d axis{Eigen::Vector3d::UnitX()};
+};
+
+static double projectBoxExtent(
+    const Eigen::Vector3d& axis,
+    const Eigen::Vector3d& halfSize,
+    const Eigen::Isometry3d& T)
+{
+  const Eigen::Vector3d axis0 = T.linear().col(0);
+  const Eigen::Vector3d axis1 = T.linear().col(1);
+  const Eigen::Vector3d axis2 = T.linear().col(2);
+
+  return std::abs(axis.dot(axis0)) * halfSize[0]
+         + std::abs(axis.dot(axis1)) * halfSize[1]
+         + std::abs(axis.dot(axis2)) * halfSize[2];
+}
+
+static double projectCylinderExtent(
+    const Eigen::Vector3d& axis,
+    const Eigen::Vector3d& cylinderAxis,
+    double halfHeight,
+    double radius)
+{
+  const double axisDot = axis.dot(cylinderAxis);
+  const double axial = std::abs(axisDot) * halfHeight;
+  const double radial = radius
+                        * std::sqrt(std::max(0.0, 1.0 - axisDot * axisDot));
+  return axial + radial;
+}
+
+static Eigen::Vector3d supportBox(
+    const Eigen::Isometry3d& T,
+    const Eigen::Vector3d& size,
+    const Eigen::Vector3d& dir)
+{
+  const Eigen::Vector3d halfSize = 0.5 * size;
+  Eigen::Vector3d result = T.translation();
+
+  for (int i = 0; i < 3; ++i) {
+    const Eigen::Vector3d axis = T.linear().col(i);
+    result += axis * ((dir.dot(axis) >= 0.0) ? halfSize[i] : -halfSize[i]);
+  }
+
+  return result;
+}
+
+static Eigen::Vector3d supportCylinder(
+    const Eigen::Isometry3d& T,
+    double radius,
+    double halfHeight,
+    const Eigen::Vector3d& dir)
+{
+  Eigen::Vector3d dirNorm = dir;
+  const double dirNormValue = dirNorm.norm();
+  if (dirNormValue > DART_COLLISION_EPS)
+    dirNorm /= dirNormValue;
+  else
+    dirNorm = Eigen::Vector3d::UnitX();
+
+  const Eigen::Vector3d axis = T.linear().col(2);
+  const double axisDot = dirNorm.dot(axis);
+  const double sign = (axisDot >= 0.0) ? 1.0 : -1.0;
+  const Eigen::Vector3d radial = dirNorm - axisDot * axis;
+  Eigen::Vector3d radialDir = Eigen::Vector3d::Zero();
+  if (radial.squaredNorm() > DART_COLLISION_EPS)
+    radialDir = radial.normalized();
+
+  return T.translation() + sign * halfHeight * axis + radius * radialDir;
+}
+
+static void updateSatAxis(
+    const Eigen::Vector3d& axis,
+    double extent1,
+    double extent2,
+    const Eigen::Vector3d& centerDelta,
+    SatResult& result)
+{
+  if (axis.squaredNorm() < DART_COLLISION_EPS)
+    return;
+
+  const Eigen::Vector3d n = axis.normalized();
+  const double centerDiff = centerDelta.dot(n);
+  const double gap = std::abs(centerDiff) - (extent1 + extent2);
+
+  if (gap > 0.0) {
+    if (!result.separated || gap < result.separation) {
+      result.separated = true;
+      result.separation = gap;
+      result.axis = (centerDiff >= 0.0) ? n : -n;
+    }
+  } else if (!result.separated) {
+    const double overlap = -gap;
+    if (overlap < result.overlap) {
+      result.overlap = overlap;
+      result.axis = (centerDiff >= 0.0) ? n : -n;
+    }
+  }
+}
+
 int collideCylinderSphere(
     CollisionObject* o1,
     CollisionObject* o2,
@@ -1416,6 +1523,127 @@ static void swapContactOrder(
     contact.collisionObject2 = temp;
     contact.normal = -contact.normal;
   }
+}
+
+//==============================================================================
+static int collideCylinderBox(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& cyl_rad,
+    const double& half_height,
+    const Eigen::Isometry3d& T0,
+    const Eigen::Vector3d& box_size,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  SatResult sat;
+  const Eigen::Vector3d centerDelta = T0.translation() - T1.translation();
+  const Eigen::Vector3d cylAxis = T0.linear().col(2);
+  const Eigen::Vector3d halfSize = 0.5 * box_size;
+
+  auto testAxis = [&](const Eigen::Vector3d& axis) {
+    if (axis.squaredNorm() < DART_COLLISION_EPS)
+      return;
+    const Eigen::Vector3d n = axis.normalized();
+    const double cylExtent
+        = projectCylinderExtent(n, cylAxis, half_height, cyl_rad);
+    const double boxExtent = projectBoxExtent(n, halfSize, T1);
+    updateSatAxis(n, cylExtent, boxExtent, centerDelta, sat);
+  };
+
+  testAxis(T1.linear().col(0));
+  testAxis(T1.linear().col(1));
+  testAxis(T1.linear().col(2));
+  testAxis(cylAxis);
+  testAxis(cylAxis.cross(T1.linear().col(0)));
+  testAxis(cylAxis.cross(T1.linear().col(1)));
+  testAxis(cylAxis.cross(T1.linear().col(2)));
+
+  if (sat.separated || !std::isfinite(sat.overlap))
+    return 0;
+
+  Contact contact;
+  contact.collisionObject1 = o1;
+  contact.collisionObject2 = o2;
+  contact.normal = sat.axis;
+  contact.penetrationDepth = sat.overlap;
+  contact.point = 0.5
+                  * (supportCylinder(T0, cyl_rad, half_height, -sat.axis)
+                     + supportBox(T1, box_size, sat.axis));
+  result.addContact(contact);
+
+  return 1;
+}
+
+//==============================================================================
+static int collideBoxCylinder(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& box_size,
+    const Eigen::Isometry3d& T1,
+    const double& cyl_rad,
+    const double& half_height,
+    const Eigen::Isometry3d& T2,
+    CollisionResult& result)
+{
+  const auto startIndex = result.getNumContacts();
+  const int count = collideCylinderBox(
+      o2, o1, cyl_rad, half_height, T2, box_size, T1, result);
+
+  if (count > 0)
+    swapContactOrder(result, startIndex);
+
+  return count;
+}
+
+//==============================================================================
+static int collideCylinderCylinder(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& cyl_rad1,
+    const double& half_height1,
+    const Eigen::Isometry3d& T1,
+    const double& cyl_rad2,
+    const double& half_height2,
+    const Eigen::Isometry3d& T2,
+    CollisionResult& result)
+{
+  SatResult sat;
+  const Eigen::Vector3d centerDelta = T1.translation() - T2.translation();
+  const Eigen::Vector3d axis1 = T1.linear().col(2);
+  const Eigen::Vector3d axis2 = T2.linear().col(2);
+
+  auto testAxis = [&](const Eigen::Vector3d& axis) {
+    if (axis.squaredNorm() < DART_COLLISION_EPS)
+      return;
+    const Eigen::Vector3d n = axis.normalized();
+    const double extent1
+        = projectCylinderExtent(n, axis1, half_height1, cyl_rad1);
+    const double extent2
+        = projectCylinderExtent(n, axis2, half_height2, cyl_rad2);
+    updateSatAxis(n, extent1, extent2, centerDelta, sat);
+  };
+
+  testAxis(axis1);
+  testAxis(axis2);
+  testAxis(axis1.cross(axis2));
+  const Eigen::Vector3d deltaPerp = centerDelta - centerDelta.dot(axis1) * axis1;
+  testAxis(deltaPerp);
+
+  if (sat.separated || !std::isfinite(sat.overlap))
+    return 0;
+
+  Contact contact;
+  contact.collisionObject1 = o1;
+  contact.collisionObject2 = o2;
+  contact.normal = sat.axis;
+  contact.penetrationDepth = sat.overlap;
+  contact.point = 0.5
+                  * (supportCylinder(T1, cyl_rad1, half_height1, -sat.axis)
+                     + supportCylinder(T2, cyl_rad2, half_height2, sat.axis));
+  result.addContact(contact);
+
+  return 1;
 }
 
 //==============================================================================
@@ -1654,6 +1882,16 @@ int collideCore(
           return collideBoxSphere(o1, o2, size1, T1, shape2.radius, T2, result);
         case CoreShapeType::kBox:
           return collideBoxBox(o1, o2, size1, T1, shape2.size, T2, result);
+        case CoreShapeType::kCylinder:
+          return collideBoxCylinder(
+              o1,
+              o2,
+              size1,
+              T1,
+              shape2.radius,
+              0.5 * shape2.height,
+              T2,
+              result);
         case CoreShapeType::kPlane:
           return collideBoxPlane(
               o1,
@@ -1676,6 +1914,27 @@ int collideCore(
         case CoreShapeType::kSphere:
           return collideCylinderSphere(
               o1, o2, radius1, halfHeight1, T1, shape2.radius, T2, result);
+        case CoreShapeType::kBox:
+          return collideCylinderBox(
+              o1,
+              o2,
+              radius1,
+              halfHeight1,
+              T1,
+              shape2.size,
+              T2,
+              result);
+        case CoreShapeType::kCylinder:
+          return collideCylinderCylinder(
+              o1,
+              o2,
+              radius1,
+              halfHeight1,
+              T1,
+              shape2.radius,
+              0.5 * shape2.height,
+              T2,
+              result);
         case CoreShapeType::kPlane:
           return collideCylinderPlane(
               o1,
@@ -1837,6 +2096,19 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           plane1->getOffset(),
           T2,
           result);
+    } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
+      const auto* cylinder1
+          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+
+      return collideBoxCylinder(
+          o1,
+          o2,
+          box0->getSize(),
+          T1,
+          cylinder1->getRadius(),
+          0.5 * cylinder1->getHeight(),
+          T2,
+          result);
     }
   } else if (dynamics::CylinderShape::getStaticType() == shapeType1) {
     const auto* cylinder0
@@ -1879,6 +2151,32 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           0.5 * cylinder0->getHeight(),
           T1,
           plane1->getNormal(),
+          T2,
+          result);
+    } else if (dynamics::BoxShape::getStaticType() == shapeType2) {
+      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2.get());
+
+      return collideCylinderBox(
+          o1,
+          o2,
+          cylinder0->getRadius(),
+          0.5 * cylinder0->getHeight(),
+          T1,
+          box1->getSize(),
+          T2,
+          result);
+    } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
+      const auto* cylinder1
+          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+
+      return collideCylinderCylinder(
+          o1,
+          o2,
+          cylinder0->getRadius(),
+          0.5 * cylinder0->getHeight(),
+          T1,
+          cylinder1->getRadius(),
+          0.5 * cylinder1->getHeight(),
           T2,
           result);
     }

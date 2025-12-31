@@ -11,6 +11,10 @@ dart_add_test("unit" UNIT_collision_CollisionGroup collision/test_CollisionGroup
 
 dart_add_test("unit" UNIT_collision_Raycast collision/test_Raycast.cpp)
 dart_add_test("unit" UNIT_collision_DartRaycast collision/test_DartRaycast.cpp)
+dart_add_test(
+  "unit"
+  UNIT_collision_DartPrimitiveCollision
+  collision/test_DartPrimitiveCollision.cpp)
 
 dart_add_test("unit" UNIT_collision_CollisionResult collision/test_CollisionResult.cpp)
 dart_add_test(
