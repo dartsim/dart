@@ -14,6 +14,7 @@
 - Added an asset layout proposal to the plan.
 - Validated the metadata template on a small set of representative examples.
 - Selected a pilot category and recorded the harness decision.
+- Drafted a pilot category index and migration checklist.
 
 ## Discovery findings
 
@@ -54,9 +55,8 @@
 
 ## Next steps
 
-1. Draft the pilot category index text and migration checklist.
-2. Expand metadata headers to the rest of the pilot category.
-3. Decide whether to add a top-level `examples/README.md` onboarding index now.
+1. Expand metadata headers to the rest of the pilot category.
+2. Decide whether to add a top-level `examples/README.md` onboarding index now.
 
 ## Open questions
 

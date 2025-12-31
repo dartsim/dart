@@ -103,6 +103,21 @@ Each example should include a short header block in its README:
   headers, and add a short category index.
 - Harness: optional for the pilot; avoid code changes unless required.
 
+## Pilot category index (draft)
+
+Getting Started: Start here to build and run a minimal DART scene, visualize a
+simple rigid body, and understand the basic world loop. These examples are the
+shortest path to a first successful run and provide the foundation for later
+topics.
+
+## Pilot migration checklist (draft)
+
+- Create the category folder and add a short index README.
+- Move a small set of beginner examples into the category.
+- Update example READMEs with the metadata header.
+- Update `examples/CMakeLists.txt` to reflect the new layout.
+- Cross-link to tutorials where a learning path continues.
+
 ## Milestones and sequencing
 
 - Keep changes incremental and reviewable; avoid giant renames in one PR.
