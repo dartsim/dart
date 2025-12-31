@@ -358,4 +358,8 @@ TEST(DartDistance, CylinderCylinderDistance)
   EXPECT_NEAR(distance, 1.0, kDistanceTol);
   EXPECT_NEAR(result.minDistance, 1.0, kDistanceTol);
   EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(
+      Eigen::Vector3d(1.0, 0.0, 0.0), kDistanceTol));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(
+      Eigen::Vector3d(2.0, 0.0, 0.0), kDistanceTol));
 }

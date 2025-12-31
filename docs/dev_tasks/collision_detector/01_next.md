@@ -30,6 +30,7 @@
 - Added raycast inside-hit coverage for sphere, box, and cylinder.
 - Added rotated box distance coverage and a rotated plane raycast check.
 - Added tangent sphere and parallel plane raycast coverage.
+- Added cylinder-cylinder nearest-point checks and tangent cylinder raycast coverage.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.
