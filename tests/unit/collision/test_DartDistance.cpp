@@ -490,6 +490,42 @@ TEST(DartDistance, BoxBoxDiagonalDistance)
 }
 
 //==============================================================================
+TEST(DartDistance, BoxBoxRotatedDistance)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto frame1 = SimpleFrame::createShared(Frame::World());
+  auto frame2 = SimpleFrame::createShared(Frame::World());
+
+  frame1->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  frame2->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+
+  const Eigen::Matrix3d rotation
+      = Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  frame1->setRotation(rotation);
+  frame2->setRotation(rotation);
+
+  const double root2 = std::sqrt(2.0);
+  const Eigen::Vector3d axis0(root2 * 0.5, root2 * 0.5, 0.0);
+  frame1->setTranslation(Eigen::Vector3d::Zero());
+  frame2->setTranslation(axis0 * 3.0);
+
+  auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+
+  DistanceOption option(true, 0.0, nullptr);
+  DistanceResult result;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, 1.0, kDistanceTol);
+  EXPECT_NEAR(result.minDistance, 1.0, kDistanceTol);
+  EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(
+      axis0 * 1.0, kDistanceTol));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(
+      axis0 * 2.0, kDistanceTol));
+}
+
+//==============================================================================
 TEST(DartDistance, BoxBoxOverlapDistance)
 {
   auto detector = DARTCollisionDetector::create();
