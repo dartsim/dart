@@ -78,7 +78,8 @@ namespace {
   return boxSkel;
 }
 
-[[nodiscard]] simulation::WorldPtr createWorld(size_t dim, bool enablePatchCache)
+[[nodiscard]] simulation::WorldPtr createWorld(
+    size_t dim, bool enableManifoldCache)
 {
   // Create an empty world
   auto world = simulation::World::create();
@@ -119,7 +120,7 @@ namespace {
   world->addSkeleton(ground);
 
   if (auto* solver = world->getConstraintSolver())
-    solver->setContactPatchCacheEnabled(enablePatchCache);
+    solver->setContactManifoldCacheEnabled(enableManifoldCache);
 
   return world;
 }

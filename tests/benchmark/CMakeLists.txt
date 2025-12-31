@@ -54,13 +54,13 @@ if(DART_BUILD_COLLISION_BULLET)
   dart_format_add(collision/bm_boxes.cpp)
 endif()
 
-add_executable(bm_contact_patch_cache collision/bm_contact_patch_cache.cpp)
-target_link_libraries(bm_contact_patch_cache
+add_executable(bm_contact_manifold_cache collision/bm_contact_manifold_cache.cpp)
+target_link_libraries(bm_contact_manifold_cache
   dart
   benchmark::benchmark
   benchmark::benchmark_main
 )
-dart_format_add(collision/bm_contact_patch_cache.cpp)
+dart_format_add(collision/bm_contact_manifold_cache.cpp)
 
 # ==============================================================================
 # Dynamics Benchmarks

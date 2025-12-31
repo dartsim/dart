@@ -259,8 +259,8 @@ dart_add_test(
 
 dart_add_test(
   "integration"
-  INTEGRATION_simulation_ContactPatchCache
-  simulation/test_ContactPatchCache.cpp)
+  INTEGRATION_simulation_ContactManifoldCache
+  simulation/test_ContactManifoldCache.cpp)
 
 if(TARGET dart-utils AND TARGET dart-io)
   dart_add_test("integration" INTEGRATION_simulation_FileInfoWorld simulation/test_FileInfoWorld.cpp)

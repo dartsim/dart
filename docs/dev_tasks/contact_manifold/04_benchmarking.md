@@ -1,9 +1,9 @@
-# Contact Patch Cache Benchmarking Plan (04)
+# Contact Manifold Cache Benchmarking Plan (04)
 
 ## Status
 
 - Extended `tests/benchmark/collision/bm_boxes.cpp` with cache ON/OFF modes
-- Added `tests/benchmark/collision/bm_contact_patch_cache.cpp` micro-benchmark
+- Added `tests/benchmark/collision/bm_contact_manifold_cache.cpp` micro-benchmark
 - Results captured (see Results)
 
 ## Existing Benchmark Harness
@@ -20,7 +20,7 @@
    - Record wall time per simulation step
 
 2. Contact update micro-benchmark
-   - Added `tests/benchmark/collision/bm_contact_patch_cache.cpp`
+   - Added `tests/benchmark/collision/bm_contact_manifold_cache.cpp`
    - Feed synthetic contact lists with varying sizes and pairs
    - Measure cache update cost only
 
@@ -33,7 +33,7 @@
 - Contact update time per step
 - Constraint build time per step
 - Total simulation step time
-- Peak pair count and patch count
+- Peak pair count and manifold count
 
 ## How to Run
 
@@ -41,9 +41,9 @@ Commands used:
 
 ```bash
 cmake --build build/default/cpp/Release --target bm_boxes
-cmake --build build/default/cpp/Release --target bm_contact_patch_cache
+cmake --build build/default/cpp/Release --target bm_contact_manifold_cache
 ./build/default/cpp/Release/bin/bm_boxes
-./build/default/cpp/Release/bin/bm_contact_patch_cache
+./build/default/cpp/Release/bin/bm_contact_manifold_cache
 ```
 
 For custom runs:
@@ -79,7 +79,7 @@ Note: 4x4x4 numbers use a repeated run (mean of 3) with:
   --benchmark_min_time=1s --benchmark_repetitions=3
 ```
 
-### Cache update micro-benchmark (bm_contact_patch_cache)
+### Cache update micro-benchmark (bm_contact_manifold_cache)
 
 Times in microseconds:
 
@@ -99,7 +99,7 @@ Run info:
 - Date: 2025-12-31
 - CPU scaling enabled and higher load variance (see `bm_boxes` CV)
 
-#### Cache update micro-benchmark (bm_contact_patch_cache)
+#### Cache update micro-benchmark (bm_contact_manifold_cache)
 
 Times in microseconds:
 
@@ -129,7 +129,7 @@ Run info:
 - Date: 2025-12-31
 - CPU scaling enabled (benchmark warning about noisy real-time)
 
-#### Cache update micro-benchmark (bm_contact_patch_cache)
+#### Cache update micro-benchmark (bm_contact_manifold_cache)
 
 Times in microseconds:
 
@@ -157,7 +157,7 @@ Run info:
 - Date: 2025-12-31
 - CPU scaling enabled (benchmark warning about noisy real-time)
 
-#### Cache update micro-benchmark (bm_contact_patch_cache)
+#### Cache update micro-benchmark (bm_contact_manifold_cache)
 
 Times in microseconds:
 
@@ -185,7 +185,7 @@ Run info:
 - Date: 2025-12-31
 - CPU scaling enabled (benchmark warning about noisy real-time)
 
-#### Cache update micro-benchmark (bm_contact_patch_cache)
+#### Cache update micro-benchmark (bm_contact_manifold_cache)
 
 Times in microseconds:
 
@@ -213,7 +213,7 @@ Run info:
 - Date: 2025-12-31
 - CPU scaling enabled (benchmark warning about noisy real-time)
 
-#### Cache update micro-benchmark (bm_contact_patch_cache)
+#### Cache update micro-benchmark (bm_contact_manifold_cache)
 
 Times in microseconds:
 
@@ -241,7 +241,7 @@ Run info:
 - Date: 2025-12-31
 - CPU scaling enabled (benchmark warning about noisy real-time)
 
-#### Cache update micro-benchmark (bm_contact_patch_cache)
+#### Cache update micro-benchmark (bm_contact_manifold_cache)
 
 Times in microseconds:
 
@@ -269,7 +269,7 @@ Run info:
 - Date: 2025-12-31
 - CPU scaling enabled (benchmark warning about noisy real-time)
 
-#### Cache update micro-benchmark (bm_contact_patch_cache)
+#### Cache update micro-benchmark (bm_contact_manifold_cache)
 
 Times in microseconds:
 
@@ -290,14 +290,14 @@ Times in milliseconds (mean of 3):
 | --- | --- | --- | --- |
 | 4x4x4 | 1957 | 3229 | +65% |
 
-### Post-optimization run (empty-patch fast path)
+### Post-optimization run (empty-manifold fast path)
 
 Run info:
 
 - Date: 2025-12-31
 - CPU scaling enabled (benchmark warning about noisy real-time)
 
-#### Cache update micro-benchmark (bm_contact_patch_cache)
+#### Cache update micro-benchmark (bm_contact_manifold_cache)
 
 Times in microseconds:
 

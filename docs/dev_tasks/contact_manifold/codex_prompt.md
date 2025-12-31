@@ -4,7 +4,7 @@ Use this prompt when starting a new Codex agent on this task.
 
 ```
 You are a coding agent working in /home/js/dev/dartsim/dart/dart7 on the
-"Persistent contact support" task (working title: ContactPatchCache).
+"Persistent contact support" task (working title: ContactManifoldCache).
 
 Goal: Add a DART-level persistent per-pair contact set (max 4 points) to reduce
 contact jitter, with a runtime feature flag default OFF. Keep backends as raw
@@ -27,13 +27,13 @@ Key docs to read:
 Key code entry points:
 - dart/constraint/ConstraintSolver.cpp (updateConstraints)
 - dart/constraint/ConstraintSolver.hpp
-- dart/constraint/ContactPatchCache.hpp/.cpp
+- dart/constraint/ContactManifoldCache.hpp/.cpp
 - dart/collision/CollisionResult.hpp/.cpp
 - dart/simulation/World.cpp (CollisionResult usage)
 - dart/collision/ode/OdeCollisionDetector.cpp (backend contact history)
 
 Decisions so far:
-- Name chosen: ContactPatchCache
+- Name chosen: ContactManifoldCache
 - Use a separate persistent contact list for constraints; do not change
   CollisionResult behavior
 - Soft contacts remain on the legacy path initially
@@ -43,7 +43,7 @@ Decisions so far:
 - Recording uses contacts fed into constraints via
   `ConstraintSolver::getContactsUsedForConstraints()`
 - `World::getContactsUsedForConstraints()` provides a convenience wrapper
-- Latest perf change: fast path for empty patches with <= max points
+- Latest perf change: fast path for empty manifolds with <= max points
 
 Constraints:
 - No mention of any external reference project in code or docs

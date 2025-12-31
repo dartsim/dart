@@ -5,7 +5,7 @@
  * This file is provided under the BSD-style License.
  */
 
-#include <dart/constraint/ContactPatchCache.hpp>
+#include <dart/constraint/ContactManifoldCache.hpp>
 
 #include <dart/collision/CollisionObject.hpp>
 #include <dart/collision/Contact.hpp>
@@ -89,10 +89,10 @@ std::size_t churnCount(
 
 } // namespace
 
-TEST(ContactPatchCache, DisabledClearsCache)
+TEST(ContactManifoldCache, DisabledClearsCache)
 {
-  constraint::ContactPatchCache cache;
-  constraint::ContactPatchCacheOptions options;
+  constraint::ContactManifoldCache cache;
+  constraint::ContactManifoldCacheOptions options;
   options.enabled = false;
 
   DummyCollisionObject objA;
@@ -105,13 +105,13 @@ TEST(ContactPatchCache, DisabledClearsCache)
   cache.update(raw, options, output);
 
   EXPECT_TRUE(output.empty());
-  EXPECT_EQ(cache.getNumPatches(), 0u);
+  EXPECT_EQ(cache.getNumManifolds(), 0u);
 }
 
-TEST(ContactPatchCache, RetainsPointsAcrossFrames)
+TEST(ContactManifoldCache, RetainsPointsAcrossFrames)
 {
-  constraint::ContactPatchCache cache;
-  constraint::ContactPatchCacheOptions options;
+  constraint::ContactManifoldCache cache;
+  constraint::ContactManifoldCacheOptions options;
   options.enabled = true;
   options.maxSeparationFrames = 2u;
 
@@ -145,10 +145,10 @@ TEST(ContactPatchCache, RetainsPointsAcrossFrames)
   EXPECT_LT(churnCount(firstOutput, output), churnCount(firstOutput, raw.getContacts()));
 }
 
-TEST(ContactPatchCache, CapsContactsAndKeepsDeepest)
+TEST(ContactManifoldCache, CapsContactsAndKeepsDeepest)
 {
-  constraint::ContactPatchCache cache;
-  constraint::ContactPatchCacheOptions options;
+  constraint::ContactManifoldCache cache;
+  constraint::ContactManifoldCacheOptions options;
   options.enabled = true;
   options.maxPointsPerPair = 4u;
 
@@ -169,10 +169,10 @@ TEST(ContactPatchCache, CapsContactsAndKeepsDeepest)
   EXPECT_TRUE(hasPoint(output, Eigen::Vector3d(5.0, 0.0, 0.0)));
 }
 
-TEST(ContactPatchCache, PrunesStalePairs)
+TEST(ContactManifoldCache, PrunesStalePairs)
 {
-  constraint::ContactPatchCache cache;
-  constraint::ContactPatchCacheOptions options;
+  constraint::ContactManifoldCache cache;
+  constraint::ContactManifoldCacheOptions options;
   options.enabled = true;
   options.maxSeparationFrames = 1u;
 
@@ -184,17 +184,17 @@ TEST(ContactPatchCache, PrunesStalePairs)
 
   std::vector<collision::Contact> output;
   cache.update(raw, options, output);
-  EXPECT_EQ(cache.getNumPatches(), 1u);
+  EXPECT_EQ(cache.getNumManifolds(), 1u);
   ASSERT_EQ(output.size(), 1u);
   EXPECT_TRUE(hasPoint(output, Eigen::Vector3d::Zero()));
 
   raw.clearRaw();
   cache.update(raw, options, output);
-  EXPECT_EQ(cache.getNumPatches(), 1u);
+  EXPECT_EQ(cache.getNumManifolds(), 1u);
   ASSERT_EQ(output.size(), 1u);
   EXPECT_TRUE(hasPoint(output, Eigen::Vector3d::Zero()));
 
   cache.update(raw, options, output);
-  EXPECT_EQ(cache.getNumPatches(), 0u);
+  EXPECT_EQ(cache.getNumManifolds(), 0u);
   EXPECT_TRUE(output.empty());
 }

@@ -1,11 +1,11 @@
-# Contact Patch Cache GUI Demo Plan (05)
+# Contact Manifold Cache GUI Demo Plan (05)
 
 ## Target Example
 
 - Updated `examples/box_stacking` to add a persistent contact demo
 - Two identical worlds are rendered side-by-side:
   - Left: feature OFF (legacy)
-  - Right: feature ON (ContactPatchCache)
+  - Right: feature ON (ContactManifoldCache)
 
 ## Scenario
 
@@ -20,7 +20,7 @@
 
 ## On-screen Diagnostics
 
-- Active patch count per world
+- Active manifold count per world
 - Persistent contact count per world
 - Contact constraint count per world
 

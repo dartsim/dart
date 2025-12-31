@@ -1,21 +1,24 @@
-# Contact Patch Cache Design (01)
+# Contact Manifold Cache Design (01)
 
 ## Naming
 
 Alternatives considered:
 
-- PersistentContactPatch
-- ContactPatchCache
+- ContactPairCache
+- ContactPair
+- ContactManifold
+- ContactManifoldCache
 - PersistentContactSet
 - ContactPointCache
 - ContactCluster
+- PersistentContactPatch
 - ContactPatchSet
 
-Chosen: `ContactPatchCache`
+Chosen: `ContactManifoldCache`
 
-Rationale: it emphasizes persistence and caching at the DART layer without
-reusing the term "manifold", and it describes a small patch of representative
-points rather than all raw contacts.
+Rationale: "contact manifold" is a common term across physics engines, and
+adding "cache" makes the persistence intent explicit while keeping the name
+backend-agnostic.
 
 ## Data Model
 
@@ -25,23 +28,21 @@ points rather than all raw contacts.
 - `PairKey = (min(collisionObject1, collisionObject2), max(...))`
 - Ordering is only used for deterministic storage and lookup within a run
 
-### Patch Storage
+### Manifold Storage
 
 Goal: contiguous storage with stable iteration and minimal pointer chasing.
 
 Proposed representation:
 
-- `std::vector<ContactPatch>` where each patch holds up to 4 points
-- `ContactPatch` contains:
+- `std::vector<ContactManifold>` where each manifold holds up to 4 points
+- `ContactManifold` contains:
   - `PairKey pair`
-  - `std::array<ContactPoint, kMaxPoints>`
+  - `std::array<ContactManifoldPoint, kMaxManifoldPoints>`
   - `std::uint8_t count`
   - `std::uint16_t framesSinceSeen`
   - `std::uint32_t lastUpdateFrame`
-- `ContactPoint` contains:
-  - `Eigen::Vector3d point`
-  - `Eigen::Vector3d normal`
-  - `double penetrationDepth`
+- `ContactManifoldPoint` contains:
+  - `collision::Contact contact`
   - `std::uint8_t age`
 
 Output contacts for constraints are stored in a separate contiguous
@@ -50,7 +51,7 @@ constraint construction.
 
 ### Configuration
 
-A `ContactPatchCacheOptions` struct owned by `ConstraintSolver`:
+A `ContactManifoldCacheOptions` struct owned by `ConstraintSolver`:
 
 - `bool enabled` (default false)
 - `std::size_t maxPointsPerPair` (default 4)
@@ -65,8 +66,8 @@ A `ContactPatchCacheOptions` struct owned by `ConstraintSolver`:
 - `count <= maxPointsPerPair`
 - normals are non-zero (skip invalid raw contacts)
 - penetration depth is non-negative unless the global option allows otherwise
-- points within a patch are unique by position and normal thresholds
-- deterministic ordering of points inside each patch
+- points within a manifold are unique by position and normal thresholds
+- deterministic ordering of points inside each manifold
 
 ## Update Algorithm Overview
 
@@ -74,11 +75,11 @@ For each simulation step:
 
 1. Collect raw contacts from `CollisionResult` and group by pair key.
 2. For each pair:
-   - If the patch exists, match raw contacts to existing points.
-   - Otherwise, initialize a new patch.
+   - If the manifold exists, match raw contacts to existing points.
+   - Otherwise, initialize a new manifold.
 3. Update points in place, add new points if capacity allows, or replace based
    on coverage and depth rules.
-4. Increment `framesSinceSeen` for pairs with no raw contacts. Drop patches that
+4. Increment `framesSinceSeen` for pairs with no raw contacts. Drop manifolds that
    exceed TTL.
 5. Emit a contiguous list of `collision::Contact` for constraint construction
    in a stable order.
@@ -90,7 +91,7 @@ For each simulation step:
   - normal dot > `normalThreshold`
 - Update matched points (point, normal, depth, age reset)
 - For unmatched raw contacts:
-  - If patch has capacity: insert
+  - If manifold has capacity: insert
   - If full: replace a point using the selection policy below
 
 ### Selection Policy (<= 4 points)
@@ -114,14 +115,14 @@ Heuristic to balance stability and coverage:
 - If a pair has no raw contacts in a step, increment `framesSinceSeen`
 - Continue emitting the cached contacts for up to `maxSeparationFrames` while
   the pair is unseen to avoid flicker
-- Drop the patch when `framesSinceSeen > maxSeparationFrames`
-- If a pair reappears before TTL expires, reuse and update the patch
+- Drop the manifold when `framesSinceSeen > maxSeparationFrames`
+- If a pair reappears before TTL expires, reuse and update the manifold
 
 ## Determinism Considerations
 
 - Avoid iteration over unordered containers in output ordering
-- For each step, sort pair keys and emit patches in that order
-- Within each patch, keep a stable ordering of points using tie-breakers:
+- For each step, sort pair keys and emit manifolds in that order
+- Within each manifold, keep a stable ordering of points using tie-breakers:
   - deeper penetration first
   - then lexicographic position (x,y,z)
   - then normal direction

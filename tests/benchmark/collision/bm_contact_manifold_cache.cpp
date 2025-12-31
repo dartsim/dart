@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/constraint/ContactPatchCache.hpp>
+#include <dart/constraint/ContactManifoldCache.hpp>
 
 #include <dart/collision/CollisionObject.hpp>
 #include <dart/collision/CollisionResult.hpp>
@@ -116,7 +116,7 @@ void buildContacts(
 
 } // namespace
 
-static void BM_ContactPatchCacheUpdate(benchmark::State& state)
+static void BM_ContactManifoldCacheUpdate(benchmark::State& state)
 {
   const auto pairCount = static_cast<std::size_t>(state.range(0));
   const auto contactsPerPair = static_cast<std::size_t>(state.range(1));
@@ -125,8 +125,8 @@ static void BM_ContactPatchCacheUpdate(benchmark::State& state)
   RawCollisionResult raw;
   buildContacts(objects, pairCount, contactsPerPair, raw);
 
-  constraint::ContactPatchCache cache;
-  constraint::ContactPatchCacheOptions options;
+  constraint::ContactManifoldCache cache;
+  constraint::ContactManifoldCacheOptions options;
   options.enabled = true;
   options.maxPointsPerPair = 4u;
 
@@ -145,7 +145,7 @@ static void BM_ContactPatchCacheUpdate(benchmark::State& state)
       state.iterations() * pairCount * contactsPerPair);
 }
 
-BENCHMARK(BM_ContactPatchCacheUpdate)
+BENCHMARK(BM_ContactManifoldCacheUpdate)
     ->Args({1, 4})
     ->Args({1, 16})
     ->Args({10, 4})

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/ContactPatchCache.hpp"
+#include "dart/constraint/ContactManifoldCache.hpp"
 
 #include <algorithm>
 #include <limits>
@@ -318,9 +318,9 @@ std::vector<Candidate> selectRepresentativeContacts(
 } // namespace
 
 //=============================================================================
-void ContactPatchCache::reset()
+void ContactManifoldCache::reset()
 {
-  mPatches.clear();
+  mManifolds.clear();
   mRawEntries.clear();
   mOutputRanges.clear();
   mOutputScratch.clear();
@@ -328,9 +328,9 @@ void ContactPatchCache::reset()
 }
 
 //=============================================================================
-void ContactPatchCache::update(
+void ContactManifoldCache::update(
     const collision::CollisionResult& rawContacts,
-    const ContactPatchCacheOptions& options,
+    const ContactManifoldCacheOptions& options,
     std::vector<collision::Contact>& outputContacts)
 {
   outputContacts.clear();
@@ -341,7 +341,7 @@ void ContactPatchCache::update(
   }
 
   const auto maxPoints
-      = std::min(options.maxPointsPerPair, kMaxPatchPoints);
+      = std::min(options.maxPointsPerPair, kMaxManifoldPoints);
   if (maxPoints == 0u) {
     reset();
     return;
@@ -349,7 +349,7 @@ void ContactPatchCache::update(
 
   ++mFrameCounter;
 
-  for (auto& patch : mPatches) {
+  for (auto& patch : mManifolds) {
     if (patch.framesSinceSeen < std::numeric_limits<std::uint16_t>::max())
       ++patch.framesSinceSeen;
   }
@@ -407,7 +407,7 @@ void ContactPatchCache::update(
 
     const std::size_t contactCount = end - index;
 
-    Patch* patch = findOrCreatePatch(key, options);
+    Manifold* patch = findOrCreateManifold(key, options);
 
     if (patch) {
       if (patch->count == 0u && contactCount <= maxPoints) {
@@ -522,7 +522,7 @@ void ContactPatchCache::update(
       output.key = key;
       output.start = mOutputScratch.size();
       for (const auto& candidate : selected) {
-        if (patch->count >= kMaxPatchPoints)
+        if (patch->count >= kMaxManifoldPoints)
           break;
 
         patch->points[patch->count].contact = candidate.contact;
@@ -549,18 +549,18 @@ void ContactPatchCache::update(
     index = end;
   }
 
-  pruneStalePatches(options);
+  pruneStaleManifolds(options);
 
   std::size_t reserveCount = mOutputScratch.size();
-  reserveCount += mPatches.size() * maxPoints;
+  reserveCount += mManifolds.size() * maxPoints;
 
   outputContacts.reserve(reserveCount);
 
   std::size_t outputIndex = 0u;
   std::size_t patchIndex = 0u;
 
-  while (outputIndex < mOutputRanges.size() || patchIndex < mPatches.size()) {
-    if (patchIndex >= mPatches.size()) {
+  while (outputIndex < mOutputRanges.size() || patchIndex < mManifolds.size()) {
+    if (patchIndex >= mManifolds.size()) {
       const auto& output = mOutputRanges[outputIndex++];
       outputContacts.insert(
           outputContacts.end(),
@@ -570,7 +570,7 @@ void ContactPatchCache::update(
     }
 
     if (outputIndex >= mOutputRanges.size()) {
-      const auto& patch = mPatches[patchIndex++];
+      const auto& patch = mManifolds[patchIndex++];
       if (patch.count == 0u)
         continue;
       const auto outputCount
@@ -581,7 +581,7 @@ void ContactPatchCache::update(
     }
 
     const auto& outputKey = mOutputRanges[outputIndex].key;
-    const auto& patchKey = mPatches[patchIndex].pair;
+    const auto& patchKey = mManifolds[patchIndex].pair;
 
     if (pairLess(outputKey, patchKey)) {
       const auto& output = mOutputRanges[outputIndex++];
@@ -593,7 +593,7 @@ void ContactPatchCache::update(
     }
 
     if (pairLess(patchKey, outputKey)) {
-      const auto& patch = mPatches[patchIndex++];
+      const auto& patch = mManifolds[patchIndex++];
       if (patch.count == 0u)
         continue;
       const auto outputCount
@@ -613,19 +613,19 @@ void ContactPatchCache::update(
 }
 
 //=============================================================================
-std::size_t ContactPatchCache::getNumPatches() const
+std::size_t ContactManifoldCache::getNumManifolds() const
 {
-  return mPatches.size();
+  return mManifolds.size();
 }
 
 //=============================================================================
-std::uint32_t ContactPatchCache::getFrameCounter() const
+std::uint32_t ContactManifoldCache::getFrameCounter() const
 {
   return mFrameCounter;
 }
 
 //=============================================================================
-ContactPatchCache::PairKey ContactPatchCache::makePairKey(
+ContactManifoldCache::PairKey ContactManifoldCache::makePairKey(
     collision::CollisionObject* first, collision::CollisionObject* second)
 {
   if (std::less<collision::CollisionObject*>()(second, first))
@@ -635,45 +635,45 @@ ContactPatchCache::PairKey ContactPatchCache::makePairKey(
 }
 
 //=============================================================================
-ContactPatchCache::Patch* ContactPatchCache::findOrCreatePatch(
-    const PairKey& key, const ContactPatchCacheOptions& options)
+ContactManifoldCache::Manifold* ContactManifoldCache::findOrCreateManifold(
+    const PairKey& key, const ContactManifoldCacheOptions& options)
 {
   auto it = std::lower_bound(
-      mPatches.begin(),
-      mPatches.end(),
+      mManifolds.begin(),
+      mManifolds.end(),
       key,
-      [](const Patch& patch, const PairKey& searchKey) {
+      [](const Manifold& patch, const PairKey& searchKey) {
         PairKeyLess less;
         return less(patch.pair, searchKey);
       });
 
-  if (it != mPatches.end() && it->pair.first == key.first
+  if (it != mManifolds.end() && it->pair.first == key.first
       && it->pair.second == key.second) {
     return &(*it);
   }
 
-  if (options.maxPairs > 0u && mPatches.size() >= options.maxPairs)
+  if (options.maxPairs > 0u && mManifolds.size() >= options.maxPairs)
     return nullptr;
 
-  Patch patch;
+  Manifold patch;
   patch.pair = key;
 
-  it = mPatches.insert(it, patch);
+  it = mManifolds.insert(it, patch);
   return &(*it);
 }
 
 //=============================================================================
-void ContactPatchCache::pruneStalePatches(
-    const ContactPatchCacheOptions& options)
+void ContactManifoldCache::pruneStaleManifolds(
+    const ContactManifoldCacheOptions& options)
 {
-  mPatches.erase(
+  mManifolds.erase(
       std::remove_if(
-          mPatches.begin(),
-          mPatches.end(),
-          [&](const Patch& patch) {
+          mManifolds.begin(),
+          mManifolds.end(),
+          [&](const Manifold& patch) {
             return patch.framesSinceSeen > options.maxSeparationFrames;
           }),
-      mPatches.end());
+      mManifolds.end());
 }
 
 } // namespace constraint

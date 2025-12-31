@@ -1,4 +1,4 @@
-# Persistent Contact Patches Overview (00)
+# Persistent Contact Manifolds Overview (00)
 
 ## Status
 
@@ -8,7 +8,7 @@
 - Stage 3 wiring complete
 - Stage 4 tests complete
 - Stage 4.5 GUI demo complete
-- Stage 5 benchmarks/doc polish complete
+- Stage 5 benchmarks/doc polish ongoing
 
 ## Motivation
 
@@ -31,7 +31,7 @@ creates instability for resting and stacking scenarios due to:
 
 - No change to raw contact generation inside backends
 - No change to public collision APIs or the meaning of CollisionResult
-- No multiple contact patches per pair in the initial version
+- No multiple contact manifolds per pair in the initial version
 - No behavioral changes for soft-body contacts in the first pass
 
 ## Current Pipeline (Stage 0)
@@ -49,7 +49,7 @@ creates instability for resting and stacking scenarios due to:
 
 ## Proposed Integration Points
 
-- Add a DART-level persistent contact cache owned by `ConstraintSolver`.
+- Add a DART-level contact manifold cache owned by `ConstraintSolver`.
 - Update it immediately after `mCollisionGroup->collide(...)` and before
   creating contact constraints.
 - Use the persistent set for constraint construction when the feature flag is

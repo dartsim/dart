@@ -1,30 +1,30 @@
-# Contact Patch Cache Integration Plan (02)
+# Contact Manifold Cache Integration Plan (02)
 
 ## Status
 
-- Steps 1-6 implemented with `ContactPatchCache`
+- Steps 1-6 implemented with `ContactManifoldCache`
 
 ## Step-by-step Code Changes
 
 1. Add cache types
-   - New files: `dart/constraint/ContactPatchCache.hpp` and
-     `dart/constraint/ContactPatchCache.cpp`
-   - Define `ContactPatchCacheOptions`, `ContactPatch`, and update APIs
+   - New files: `dart/constraint/ContactManifoldCache.hpp` and
+     `dart/constraint/ContactManifoldCache.cpp`
+   - Define `ContactManifoldCacheOptions`, `ContactManifold`, and update APIs
 
 2. Wire cache into `ConstraintSolver`
    - Add members in `dart/constraint/ConstraintSolver.hpp`:
-     - `ContactPatchCache mContactPatchCache`
+     - `ContactManifoldCache mContactManifoldCache`
      - `std::vector<collision::Contact> mPersistentContacts`
-     - `ContactPatchCacheOptions mContactPatchOptions`
+     - `ContactManifoldCacheOptions mContactManifoldOptions`
    - Add setters/getters in `dart/constraint/ConstraintSolver.hpp/.cpp`:
-     - `setContactPatchCacheOptions(...)`
-     - `getContactPatchCacheOptions() const`
-     - `setContactPatchCacheEnabled(bool)` convenience helper
+     - `setContactManifoldCacheOptions(...)`
+     - `getContactManifoldCacheOptions() const`
+     - `setContactManifoldCacheEnabled(bool)` convenience helper
 
 3. Update constraint creation path
    - In `dart/constraint/ConstraintSolver.cpp`:
      - After `mCollisionGroup->collide(...)`, call
-       `mContactPatchCache.update(mCollisionResult, mContactPatchOptions, ...)`
+       `mContactManifoldCache.update(mCollisionResult, mContactManifoldOptions, ...)`
      - Select contacts for constraint creation:
        - feature OFF: use `mCollisionResult.getContacts()`
        - feature ON: use `mPersistentContacts`
@@ -44,7 +44,7 @@
      `dart/collision/CollisionOption.hpp/.cpp`
    - In `dart/collision/ode/OdeCollisionDetector.cpp`, gate history reuse on
      this flag to avoid double persistence
-   - When ContactPatchCache is enabled, set
+   - When ContactManifoldCache is enabled, set
      `mCollisionOption.useBackendContactHistory = false`
    - Status: implemented (auto-disabled per-step when cache is enabled)
 

@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONTACTPATCHCACHE_HPP_
-#define DART_CONSTRAINT_CONTACTPATCHCACHE_HPP_
+#ifndef DART_CONSTRAINT_CONTACTMANIFOLDCACHE_HPP_
+#define DART_CONSTRAINT_CONTACTMANIFOLDCACHE_HPP_
 
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/Contact.hpp>
@@ -46,7 +46,7 @@
 namespace dart {
 namespace constraint {
 
-struct DART_API ContactPatchCacheOptions
+struct DART_API ContactManifoldCacheOptions
 {
   bool enabled{false};
   std::size_t maxPointsPerPair{4u};
@@ -57,25 +57,25 @@ struct DART_API ContactPatchCacheOptions
   double depthEpsilon{1e-6};
 };
 
-class DART_API ContactPatchCache
+class DART_API ContactManifoldCache
 {
 public:
-  ContactPatchCache() = default;
+  ContactManifoldCache() = default;
 
   void reset();
 
   void update(
       const collision::CollisionResult& rawContacts,
-      const ContactPatchCacheOptions& options,
+      const ContactManifoldCacheOptions& options,
       std::vector<collision::Contact>& outputContacts);
 
-  std::size_t getNumPatches() const;
+  std::size_t getNumManifolds() const;
   std::uint32_t getFrameCounter() const;
 
 private:
-  static constexpr std::size_t kMaxPatchPoints = 4u;
+  static constexpr std::size_t kMaxManifoldPoints = 4u;
 
-  struct PatchPoint
+  struct ManifoldPoint
   {
     collision::Contact contact;
     std::uint8_t age{0u};
@@ -95,10 +95,10 @@ private:
     }
   };
 
-  struct Patch
+  struct Manifold
   {
     PairKey pair;
-    std::array<PatchPoint, kMaxPatchPoints> points{};
+    std::array<ManifoldPoint, kMaxManifoldPoints> points{};
     std::uint8_t count{0u};
     std::uint16_t framesSinceSeen{0u};
     std::uint32_t lastUpdateFrame{0u};
@@ -121,12 +121,12 @@ private:
       collision::CollisionObject* first,
       collision::CollisionObject* second);
 
-  Patch* findOrCreatePatch(
-      const PairKey& key, const ContactPatchCacheOptions& options);
+  Manifold* findOrCreateManifold(
+      const PairKey& key, const ContactManifoldCacheOptions& options);
 
-  void pruneStalePatches(const ContactPatchCacheOptions& options);
+  void pruneStaleManifolds(const ContactManifoldCacheOptions& options);
 
-  std::vector<Patch> mPatches;
+  std::vector<Manifold> mManifolds;
   std::vector<RawEntry> mRawEntries;
   std::vector<OutputRange> mOutputRanges;
   std::vector<collision::Contact> mOutputScratch;
@@ -136,4 +136,4 @@ private:
 } // namespace constraint
 } // namespace dart
 
-#endif // DART_CONSTRAINT_CONTACTPATCHCACHE_HPP_
+#endif // DART_CONSTRAINT_CONTACTMANIFOLDCACHE_HPP_

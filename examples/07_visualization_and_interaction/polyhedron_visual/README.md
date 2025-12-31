@@ -27,7 +27,7 @@ Launch the executable from the build directory above:
 
 Follow the instructions detailed in the console.
 
-## Contact Patch Cache Demo
+## Contact Manifold Cache Demo
 
 This example now spawns two identical box stacks side-by-side:
 
@@ -36,4 +36,4 @@ This example now spawns two identical box stacks side-by-side:
 
 Use the ImGui panel to toggle persistent contacts for each stack and to reset
 the stacks to their initial state. The diagnostics show the number of active
-patches, persistent contacts, and contact constraints per world.
+manifolds, persistent contacts, and contact constraints per world.

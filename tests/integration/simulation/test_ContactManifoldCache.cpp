@@ -117,7 +117,7 @@ std::vector<Contact> sortedContacts(const std::vector<Contact>& contacts)
 
 } // namespace
 
-TEST(Simulation, ContactPatchCacheKeepsCollisionResultStable)
+TEST(Simulation, ContactManifoldCacheKeepsCollisionResultStable)
 {
   auto world = World::create();
   world->setGravity(Eigen::Vector3d::Zero());
@@ -137,7 +137,7 @@ TEST(Simulation, ContactPatchCacheKeepsCollisionResultStable)
   world->getContactsUsedForConstraints(worldContactsOff);
   EXPECT_EQ(worldContactsOff.size(), constraintContactsOff.size());
 
-  solver->setContactPatchCacheEnabled(true);
+  solver->setContactManifoldCacheEnabled(true);
 
   world->step();
   auto contactsOn = sortedContacts(world->getLastCollisionResult().getContacts());

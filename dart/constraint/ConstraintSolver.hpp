@@ -35,7 +35,7 @@
 
 #include <dart/constraint/ConstrainedGroup.hpp>
 #include <dart/constraint/ConstraintBase.hpp>
-#include <dart/constraint/ContactPatchCache.hpp>
+#include <dart/constraint/ContactManifoldCache.hpp>
 #include <dart/constraint/Fwd.hpp>
 
 #include <dart/collision/CollisionDetector.hpp>
@@ -177,23 +177,23 @@ public:
   /// ConstraintSolver to generate contact constraints.
   const collision::CollisionOption& getCollisionOption() const;
 
-  /// Set contact patch cache options used to build persistent contacts.
-  void setContactPatchCacheOptions(const ContactPatchCacheOptions& options);
+  /// Set contact manifold cache options used to build persistent contacts.
+  void setContactManifoldCacheOptions(const ContactManifoldCacheOptions& options);
 
-  /// Return contact patch cache options used to build persistent contacts.
-  const ContactPatchCacheOptions& getContactPatchCacheOptions() const;
+  /// Return contact manifold cache options used to build persistent contacts.
+  const ContactManifoldCacheOptions& getContactManifoldCacheOptions() const;
 
-  /// Enable or disable the contact patch cache.
-  void setContactPatchCacheEnabled(bool enabled);
+  /// Enable or disable the contact manifold cache.
+  void setContactManifoldCacheEnabled(bool enabled);
 
-  /// Return true if the contact patch cache is enabled.
-  bool isContactPatchCacheEnabled() const;
+  /// Return true if the contact manifold cache is enabled.
+  bool isContactManifoldCacheEnabled() const;
 
   /// Return the number of persistent contacts used for constraints.
   std::size_t getNumPersistentContacts() const;
 
-  /// Return the number of active contact patches.
-  std::size_t getNumContactPatches() const;
+  /// Return the number of active contact manifolds.
+  std::size_t getNumContactManifolds() const;
 
   /// Return the number of rigid contact constraints.
   std::size_t getNumContactConstraints() const;
@@ -322,10 +322,10 @@ protected:
   collision::CollisionResult mCollisionResult;
 
   /// Persistent contact cache options
-  ContactPatchCacheOptions mContactPatchOptions;
+  ContactManifoldCacheOptions mContactManifoldOptions;
 
   /// Persistent contact cache
-  ContactPatchCache mContactPatchCache;
+  ContactManifoldCache mContactManifoldCache;
 
   /// Persistent contacts used for constraint construction
   std::vector<collision::Contact> mPersistentContacts;

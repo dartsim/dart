@@ -16,8 +16,9 @@
 
 ## Stage 5 Notes
 
+- Renamed ContactPatchCache to ContactManifoldCache (API, files, docs)
 - Benchmark coverage added in `tests/benchmark/collision/bm_boxes.cpp`
-- Added micro-benchmark `tests/benchmark/collision/bm_contact_patch_cache.cpp`
+- Added micro-benchmark `tests/benchmark/collision/bm_contact_manifold_cache.cpp`
 - Results captured (see `04_benchmarking.md`)
 - Cache now emits persisted contacts for unseen pairs up to
   `maxSeparationFrames`
@@ -42,24 +43,24 @@
   overhead remains ~64%
 - Added thread-local scratch reuse for per-pair candidate buffers
 - Latest 4x4x4 run shows ~65% overhead with cache enabled
-- Added empty-patch fast path for first-frame pairs with <= max points
+- Added empty-manifold fast path for first-frame pairs with <= max points
 - Latest 4x4x4 run shows ~65% overhead with cache enabled (low CV)
 
 ## Verification
 
 - Benchmarks:
   - `pixi run -- cmake --build build/default/cpp/Release --target bm_boxes`
-  - `pixi run -- cmake --build build/default/cpp/Release --target bm_contact_patch_cache`
+  - `pixi run -- cmake --build build/default/cpp/Release --target bm_contact_manifold_cache`
   - `pixi run -- ./build/default/cpp/Release/bin/bm_boxes`
-  - `pixi run -- ./build/default/cpp/Release/bin/bm_contact_patch_cache`
+  - `pixi run -- ./build/default/cpp/Release/bin/bm_contact_manifold_cache`
 - Tests:
-  - `pixi run -- cmake --build build/default/cpp/Release --target UNIT_constraint_ContactPatchCache`
-  - `pixi run -- cmake --build build/default/cpp/Release --target INTEGRATION_simulation_ContactPatchCache`
-  - `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R ContactPatchCache`
+  - `pixi run -- cmake --build build/default/cpp/Release --target UNIT_constraint_ContactManifoldCache`
+  - `pixi run -- cmake --build build/default/cpp/Release --target INTEGRATION_simulation_ContactManifoldCache`
+  - `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R ContactManifoldCache`
 
 ## Decisions
 
-- Name: ContactPatchCache
+- Name: ContactManifoldCache
 - Default: feature OFF
 - Keep CollisionResult semantics unchanged
 - Soft contacts stay on legacy path initially

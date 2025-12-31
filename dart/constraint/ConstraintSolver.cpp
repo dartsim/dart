@@ -142,7 +142,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
   mCollisionGroup->subscribeTo(skeleton);
   mSkeletons.push_back(skeleton);
   mConstrainedGroups.reserve(mSkeletons.size());
-  mContactPatchCache.reset();
+  mContactManifoldCache.reset();
   mPersistentContacts.clear();
 }
 
@@ -176,7 +176,7 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), skeleton), mSkeletons.end());
   mConstrainedGroups.reserve(mSkeletons.size());
-  mContactPatchCache.reset();
+  mContactManifoldCache.reset();
   mPersistentContacts.clear();
 }
 
@@ -192,7 +192,7 @@ void ConstraintSolver::removeAllSkeletons()
 {
   mCollisionGroup->removeAllShapeFrames();
   mSkeletons.clear();
-  mContactPatchCache.reset();
+  mContactManifoldCache.reset();
   mPersistentContacts.clear();
 }
 
@@ -256,7 +256,7 @@ ConstConstraintBasePtr ConstraintSolver::getConstraint(std::size_t index) const
 void ConstraintSolver::clearLastCollisionResult()
 {
   mCollisionResult.clear();
-  mContactPatchCache.reset();
+  mContactManifoldCache.reset();
   mPersistentContacts.clear();
 }
 
@@ -293,7 +293,7 @@ void ConstraintSolver::setCollisionDetector(
   for (const auto& skeleton : mSkeletons)
     mCollisionGroup->addShapeFramesOf(skeleton.get());
 
-  mContactPatchCache.reset();
+  mContactManifoldCache.reset();
   mPersistentContacts.clear();
 }
 
@@ -335,39 +335,39 @@ const collision::CollisionOption& ConstraintSolver::getCollisionOption() const
 }
 
 //==============================================================================
-void ConstraintSolver::setContactPatchCacheOptions(
-    const ContactPatchCacheOptions& options)
+void ConstraintSolver::setContactManifoldCacheOptions(
+    const ContactManifoldCacheOptions& options)
 {
-  const bool toggled = (mContactPatchOptions.enabled != options.enabled);
-  mContactPatchOptions = options;
+  const bool toggled = (mContactManifoldOptions.enabled != options.enabled);
+  mContactManifoldOptions = options;
   if (toggled) {
-    mContactPatchCache.reset();
+    mContactManifoldCache.reset();
     mPersistentContacts.clear();
   }
 }
 
 //==============================================================================
-const ContactPatchCacheOptions& ConstraintSolver::getContactPatchCacheOptions()
+const ContactManifoldCacheOptions& ConstraintSolver::getContactManifoldCacheOptions()
     const
 {
-  return mContactPatchOptions;
+  return mContactManifoldOptions;
 }
 
 //==============================================================================
-void ConstraintSolver::setContactPatchCacheEnabled(bool enabled)
+void ConstraintSolver::setContactManifoldCacheEnabled(bool enabled)
 {
-  if (mContactPatchOptions.enabled == enabled)
+  if (mContactManifoldOptions.enabled == enabled)
     return;
 
-  mContactPatchOptions.enabled = enabled;
-  mContactPatchCache.reset();
+  mContactManifoldOptions.enabled = enabled;
+  mContactManifoldCache.reset();
   mPersistentContacts.clear();
 }
 
 //==============================================================================
-bool ConstraintSolver::isContactPatchCacheEnabled() const
+bool ConstraintSolver::isContactManifoldCacheEnabled() const
 {
-  return mContactPatchOptions.enabled;
+  return mContactManifoldOptions.enabled;
 }
 
 //==============================================================================
@@ -377,9 +377,9 @@ std::size_t ConstraintSolver::getNumPersistentContacts() const
 }
 
 //==============================================================================
-std::size_t ConstraintSolver::getNumContactPatches() const
+std::size_t ConstraintSolver::getNumContactManifolds() const
 {
-  return mContactPatchCache.getNumPatches();
+  return mContactManifoldCache.getNumManifolds();
 }
 
 //==============================================================================
@@ -400,7 +400,7 @@ void ConstraintSolver::getContactsUsedForConstraints(
 {
   contacts.clear();
 
-  if (!mContactPatchOptions.enabled) {
+  if (!mContactManifoldOptions.enabled) {
     contacts = mCollisionResult.getContacts();
     return;
   }
@@ -480,8 +480,8 @@ void ConstraintSolver::setFromOtherConstraintSolver(
     mSecondaryLcpSolver = other.mSecondaryLcpSolver;
   }
   mSplitImpulseEnabled = other.mSplitImpulseEnabled;
-  mContactPatchOptions = other.mContactPatchOptions;
-  mContactPatchCache.reset();
+  mContactManifoldOptions = other.mContactManifoldOptions;
+  mContactManifoldCache.reset();
   mPersistentContacts.clear();
 }
 
@@ -563,7 +563,7 @@ void ConstraintSolver::updateConstraints()
   mCollisionResult.clear();
 
   auto collisionOption = mCollisionOption;
-  if (mContactPatchOptions.enabled)
+  if (mContactManifoldOptions.enabled)
     collisionOption.useBackendContactHistory = false;
 
   mCollisionGroup->collide(collisionOption, &mCollisionResult);
@@ -574,9 +574,9 @@ void ConstraintSolver::updateConstraints()
   // Destroy previous soft contact constraints
   mSoftContactConstraints.clear();
 
-  if (mContactPatchOptions.enabled) {
-    mContactPatchCache.update(
-        mCollisionResult, mContactPatchOptions, mPersistentContacts);
+  if (mContactManifoldOptions.enabled) {
+    mContactManifoldCache.update(
+        mCollisionResult, mContactManifoldOptions, mPersistentContacts);
   } else {
     mPersistentContacts.clear();
   }
@@ -633,7 +633,7 @@ void ConstraintSolver::updateConstraints()
   for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
     handleSoftContact(mCollisionResult.getContact(i));
 
-  if (mContactPatchOptions.enabled) {
+  if (mContactManifoldOptions.enabled) {
     for (auto& contact : mPersistentContacts)
       handleRigidContact(contact);
   } else {

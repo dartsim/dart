@@ -1,4 +1,4 @@
-# Contact Patch Cache Testing Plan (03)
+# Contact Manifold Cache Testing Plan (03)
 
 ## Unit Tests
 
@@ -17,7 +17,7 @@ Suggested location: `tests/unit/constraint/`.
 
 Implemented:
 
-- `tests/unit/constraint/test_ContactPatchCache.cpp`
+- `tests/unit/constraint/test_ContactManifoldCache.cpp`
   - Persistence across frames and churn reduction
   - Cap at 4 contacts and deepest preservation
   - TTL pruning behavior and stale-output retention
@@ -39,7 +39,7 @@ Suggested location: `tests/integration/constraint/` or
 
 Implemented:
 
-- `tests/integration/simulation/test_ContactPatchCache.cpp`
+- `tests/integration/simulation/test_ContactManifoldCache.cpp`
   - Verifies collision results remain stable when the cache is toggled on
   - Confirms `getContactsUsedForConstraints()` count matches expectations
   - Confirms `World::getContactsUsedForConstraints()` mirrors solver output
@@ -70,13 +70,13 @@ pixi run test
 Targeted:
 
 ```bash
-ctest --test-dir build/default/cpp/Release --output-on-failure -R ContactPatch
+ctest --test-dir build/default/cpp/Release --output-on-failure -R ContactManifold
 ```
 
 ## Executed
 
 ```bash
-pixi run -- cmake --build build/default/cpp/Release --target UNIT_constraint_ContactPatchCache
-pixi run -- cmake --build build/default/cpp/Release --target INTEGRATION_simulation_ContactPatchCache
-pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R ContactPatchCache
+pixi run -- cmake --build build/default/cpp/Release --target UNIT_constraint_ContactManifoldCache
+pixi run -- cmake --build build/default/cpp/Release --target INTEGRATION_simulation_ContactManifoldCache
+pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R ContactManifoldCache
 ```

@@ -66,7 +66,7 @@ dart_build_tests(
 # ==============================================================================
 dart_add_test("unit" UNIT_constraint_ConstraintSolver constraint/test_ConstraintSolver.cpp)
 dart_add_test(
-  "unit" UNIT_constraint_ContactPatchCache constraint/test_ContactPatchCache.cpp)
+  "unit" UNIT_constraint_ContactManifoldCache constraint/test_ContactManifoldCache.cpp)
 dart_add_test(
   "unit" UNIT_constraint_BoxedLcpConstraintSolver constraint/test_BoxedLcpConstraintSolver.cpp)
 dart_add_test(
