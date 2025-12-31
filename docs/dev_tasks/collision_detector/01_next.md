@@ -49,6 +49,7 @@
 - Added ellipsoid-as-sphere distance coverage.
 - Added ellipsoid-as-sphere raycast coverage.
 - Added ellipsoid-as-sphere collision coverage.
+- Added empty-group distance coverage for single and group-group queries.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.

@@ -921,3 +921,37 @@ TEST(DartDistance, GroupDistanceFilterRejectsAll)
   EXPECT_NEAR(distance, 0.0, kDistanceTol);
   EXPECT_FALSE(result.found());
 }
+
+//==============================================================================
+TEST(DartDistance, EmptyGroupDistance)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto group = detector->createCollisionGroup();
+
+  DistanceOption option(true, 0.0, nullptr);
+  DistanceResult result;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, 0.0, kDistanceTol);
+  EXPECT_FALSE(result.found());
+}
+
+//==============================================================================
+TEST(DartDistance, GroupGroupDistanceWithEmptyGroup)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+
+  auto group1 = detector->createCollisionGroup(sphereFrame.get());
+  auto group2 = detector->createCollisionGroup();
+
+  DistanceOption option(true, 0.0, nullptr);
+  DistanceResult result;
+
+  const double distance = group1->distance(group2.get(), option, &result);
+  EXPECT_NEAR(distance, 0.0, kDistanceTol);
+  EXPECT_FALSE(result.found());
+}

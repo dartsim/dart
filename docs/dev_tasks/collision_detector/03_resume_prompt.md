@@ -61,6 +61,7 @@ Current status:
 - Distance tests include ellipsoid-as-sphere coverage.
 - Raycast tests include ellipsoid-as-sphere coverage.
 - Collision tests include ellipsoid-as-sphere coverage.
+- Distance tests include empty-group coverage for single and group-group queries.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.
