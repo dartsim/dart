@@ -41,6 +41,7 @@ Current status:
 - Distance tests cover sphere-plane, sphere-box, sphere-cylinder, and box-cylinder nearest points.
 - Raycast tests include inside-hit cases for sphere, box, and cylinder.
 - Distance tests include a rotated box case; raycast tests include a rotated plane hit.
+- Raycast tests include tangent sphere hits and parallel plane misses.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.
