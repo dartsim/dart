@@ -70,6 +70,14 @@ target_link_libraries(bm_distance_dart
 )
 dart_format_add(collision/bm_distance_dart.cpp)
 
+add_executable(bm_raycast_dart collision/bm_raycast_dart.cpp)
+target_link_libraries(bm_raycast_dart
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(collision/bm_raycast_dart.cpp)
+
 # ==============================================================================
 # Dynamics Benchmarks
 # ==============================================================================

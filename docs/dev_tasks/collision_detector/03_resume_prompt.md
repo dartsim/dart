@@ -22,7 +22,7 @@ Constraints:
 - Follow C++20 style and naming (PascalCase under `dart/`).
 - Do not mention external backend names in any code, comments, or docs.
 - Keep DART public API stable; use deprecation paths if needed.
-- Commit after each checkpoint.
+- Commit in reasonable chunks and push at logical times.
 
 Decisions:
 
@@ -83,15 +83,17 @@ Current status:
 - Collision tests include missing-shape coverage.
 - Raycast runs in DartCollisionEngine with detector forwarding.
 - Raycast reserves hits for all-hit queries and exits early on zero-fraction hits.
+- Added a DART raycast benchmark covering closest-hit and all-hit queries.
 
 Where to look:
 
 - Core engine and adapter: `dart/collision/dart/`.
 - Task tracking: `docs/dev_tasks/collision_detector/00_plan.md`, `docs/dev_tasks/collision_detector/01_next.md`, `docs/dev_tasks/collision_detector/02_architecture.md`, and `docs/dev_tasks/collision_detector/progress.md`.
+- CI monitoring: follow `docs/onboarding/ci-cd.md` (use `gh run list` and `gh run watch`).
 
 Next focus:
 
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Extend raycast coverage to additional edge cases and future shape types.
-- Keep task docs updated after each checkpoint.
+- Capture baseline timings for the raycast benchmark.
 - Keep task docs updated after each checkpoint.

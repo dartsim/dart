@@ -6,6 +6,7 @@
 - Phase 1 (architecture proposal): complete
 - Phase 2 (core implementation): in progress
 - Raycast MVP runs in DartCollisionEngine for supported primitives; distance MVP covers primitives.
+- Raycast benchmark added for baseline tracking.
 
 ## Scope
 

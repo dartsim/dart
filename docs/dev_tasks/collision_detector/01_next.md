@@ -67,12 +67,14 @@
 - Added missing-shape collision coverage.
 - Moved raycast implementation into DartCollisionEngine with detector forwarding.
 - Added minor raycast early-exit and hit reservation optimizations.
+- Added a DART raycast benchmark covering closest-hit and all-hit queries.
 
 ## Next Actions
 
 - Extend raycast coverage to edge cases and future shape types.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Explore additional distance broadphase pruning and candidate ordering improvements.
+- Capture baseline timings for the new raycast benchmark.
 
 ## Questions and Decisions Needed
 

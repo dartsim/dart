@@ -49,6 +49,7 @@
 - Collision tests include missing-shape coverage.
 - Raycast now runs in DartCollisionEngine with detector forwarding.
 - Raycast now reserves hits for all-hit queries and exits early on zero-fraction hits.
+- Added a DART raycast benchmark covering closest-hit and all-hit queries.
 
 ## Completed Checkpoints
 
@@ -102,9 +103,10 @@
 - Added missing-shape collision coverage.
 - Moved raycast implementation into DartCollisionEngine.
 - Added minor raycast early-exit and hit reservation optimizations.
+- Added a DART raycast benchmark for closest-hit and all-hit cases.
 
 ## Next Steps
 
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Extend raycast coverage to additional edge cases and future shape types.
-- Decide when to move raycast into the core engine once query types stabilize.
+- Capture baseline timings for the new raycast benchmark.
