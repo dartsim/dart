@@ -82,6 +82,7 @@ Current status:
 - Raycast tests include missing-shape coverage.
 - Collision tests include missing-shape coverage.
 - Raycast runs in DartCollisionEngine with detector forwarding.
+- Raycast reserves hits for all-hit queries and exits early on zero-fraction hits.
 
 Where to look:
 

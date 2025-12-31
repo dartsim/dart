@@ -5,7 +5,7 @@
 - Phase 0 (research and inventory): complete
 - Phase 1 (architecture proposal): complete
 - Phase 2 (core implementation): in progress
-- Raycast MVP exists for supported primitives; distance MVP covers primitives.
+- Raycast MVP runs in DartCollisionEngine for supported primitives; distance MVP covers primitives.
 
 ## Scope
 

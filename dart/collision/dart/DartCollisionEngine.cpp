@@ -1561,6 +1561,8 @@ bool DartCollisionEngine::raycast(
   RayHit bestHit;
   double bestFraction = std::numeric_limits<double>::infinity();
   std::vector<RayHit> hits;
+  if (option.mEnableAllHits)
+    hits.reserve(objects.size());
 
   for (auto* object : objects) {
     if (!object || !option.passesFilter(object))
@@ -1598,6 +1600,9 @@ bool DartCollisionEngine::raycast(
       hits.push_back(hit);
       hasHit = true;
     }
+
+    if (!option.mEnableAllHits && hasHit && bestFraction <= 0.0)
+      break;
   }
 
   if (!result)

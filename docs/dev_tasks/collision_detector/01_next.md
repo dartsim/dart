@@ -66,6 +66,7 @@
 - Added missing-shape raycast coverage.
 - Added missing-shape collision coverage.
 - Moved raycast implementation into DartCollisionEngine with detector forwarding.
+- Added minor raycast early-exit and hit reservation optimizations.
 
 ## Next Actions
 
