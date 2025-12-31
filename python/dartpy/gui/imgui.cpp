@@ -63,7 +63,10 @@ void defImGuiApi(nb::module_& m)
   if constexpr (std::is_enum_v<ImGuiKey>) {
     nb::enum_<ImGuiKey>(imgui, "Key").value("Escape", ImGuiKey_Escape);
   } else {
-    enum class ImGuiKeyShim : int { Escape = ImGuiKey_Escape };
+    enum class ImGuiKeyShim : int
+    {
+      Escape = ImGuiKey_Escape
+    };
     nb::enum_<ImGuiKeyShim>(imgui, "Key").value("Escape", ImGuiKeyShim::Escape);
   }
 
