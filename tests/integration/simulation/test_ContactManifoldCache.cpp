@@ -11,6 +11,7 @@
 #include <dart/collision/CollisionObject.hpp>
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
 
@@ -53,6 +54,21 @@ SkeletonPtr createBox()
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = Eigen::Vector3d(0.0, 0.0, 0.45);
   pair.first->setTransformFromParentBodyNode(tf);
+
+  return box;
+}
+
+SkeletonPtr createDynamicBox()
+{
+  auto box = Skeleton::create("box");
+  auto pair = box->createJointAndBodyNodePair<FreeJoint>(nullptr);
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
+  pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+  pair.second->setMass(1.0);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, 0.6);
+  FreeJoint::setTransformOf(pair.first, tf);
 
   return box;
 }
@@ -153,4 +169,43 @@ TEST(Simulation, ContactManifoldCacheKeepsCollisionResultStable)
     EXPECT_TRUE(isContactApproxEqual(contactsOff[i], contactsOn[i]))
         << "Contact mismatch at index " << i;
   }
+}
+
+TEST(Simulation, ContactManifoldCacheSyncsCollisionResultForces)
+{
+  auto world = World::create();
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->addSkeleton(createGround());
+  world->addSkeleton(createDynamicBox());
+
+  auto* solver = world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  solver->setContactManifoldCacheEnabled(true);
+
+  const double minForce = 1e-12;
+  bool sawContact = false;
+  bool sawForce = false;
+
+  const int steps = 300;
+  for (int i = 0; i < steps; ++i) {
+    world->step();
+
+    const auto& contacts = world->getLastCollisionResult().getContacts();
+    if (contacts.empty())
+      continue;
+
+    sawContact = true;
+    for (const auto& contact : contacts) {
+      if (contact.force.norm() > minForce) {
+        sawForce = true;
+        break;
+      }
+    }
+
+    if (sawForce)
+      break;
+  }
+
+  EXPECT_TRUE(sawContact);
+  EXPECT_TRUE(sawForce);
 }

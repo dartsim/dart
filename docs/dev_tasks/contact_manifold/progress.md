@@ -45,6 +45,8 @@
 - Latest 4x4x4 run shows ~65% overhead with cache enabled
 - Added empty-manifold fast path for first-frame pairs with <= max points
 - Latest 4x4x4 run shows ~65% overhead with cache enabled (low CV)
+- Synced persistent contact forces back into raw collision results
+- Added integration coverage for force sync when cache is enabled
 
 ## Verification
 

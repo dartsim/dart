@@ -43,6 +43,7 @@ Implemented:
   - Verifies collision results remain stable when the cache is toggled on
   - Confirms `getContactsUsedForConstraints()` count matches expectations
   - Confirms `World::getContactsUsedForConstraints()` mirrors solver output
+  - Confirms cached runs sync non-zero forces into `CollisionResult`
 
 ## Legacy Behavior Tests (Feature OFF)
 

@@ -54,7 +54,12 @@
    - Update `World::bake()` to record constraint contacts for forces/points
    - Status: implemented
 
-7. Feature flag integration
+8. Sync constraint forces into raw contacts (cache enabled)
+   - After solving, copy forces from persistent contacts back into
+     `mCollisionResult` for matching rigid contacts
+   - Status: implemented
+
+9. Feature flag integration
    - Runtime-only flag in `ConstraintSolver` options (default OFF)
    - Expose through `World` or demo code as needed
 

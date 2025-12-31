@@ -54,6 +54,8 @@ creates instability for resting and stacking scenarios due to:
   creating contact constraints.
 - Use the persistent set for constraint construction when the feature flag is
   enabled, while leaving `mCollisionResult` unchanged.
+- Sync constraint forces back into raw collision contacts for rigid bodies when
+  the cache is enabled.
 - Reset or prune the cache when collision detectors change or skeletons are
   added/removed.
 - Keep soft contacts on the legacy path initially to reduce risk.

@@ -52,5 +52,5 @@ Constraints:
 
 Next actions:
 1) Continue perf tuning if needed; see latest numbers in 04_benchmarking.md
-2) Review open issues: contact force reporting when cache is enabled
+2) Review force sync behavior if further refinement is needed
 ```

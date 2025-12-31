@@ -304,6 +304,9 @@ protected:
   /// Solve constrained groups
   void solveConstrainedGroups();
 
+  /// Sync constraint forces back to raw collision contacts when cached.
+  void syncCollisionResultForcesFromManifolds();
+
   /// Return true if at least one of colliding body is soft body
   bool isSoftContact(const collision::Contact& contact) const;
 

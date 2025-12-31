@@ -61,7 +61,10 @@
 
 #include <algorithm>
 
+#include <functional>
 #include <cmath>
+#include <limits>
+#include <tuple>
 
 namespace dart {
 namespace constraint {
@@ -84,6 +87,63 @@ bool isContactValid(const collision::Contact& contact)
     return false;
 
   return true;
+}
+
+struct PairKey
+{
+  collision::CollisionObject* first{nullptr};
+  collision::CollisionObject* second{nullptr};
+};
+
+struct PairKeyLess
+{
+  bool operator()(const PairKey& a, const PairKey& b) const
+  {
+    return std::tie(a.first, a.second) < std::tie(b.first, b.second);
+  }
+};
+
+PairKey makePairKey(
+    collision::CollisionObject* first,
+    collision::CollisionObject* second)
+{
+  if (std::less<collision::CollisionObject*>()(second, first))
+    std::swap(first, second);
+
+  return PairKey{first, second};
+}
+
+double normalizedDot(
+    const Eigen::Vector3d& a, const Eigen::Vector3d& b)
+{
+  const double normA = a.norm();
+  const double normB = b.norm();
+  const double denom = normA * normB;
+  if (denom <= 0.0)
+    return -1.0;
+  return a.dot(b) / denom;
+}
+
+bool contactLess(const collision::Contact& a, const collision::Contact& b)
+{
+  if (a.penetrationDepth != b.penetrationDepth)
+    return a.penetrationDepth > b.penetrationDepth;
+
+  if (a.point.x() != b.point.x())
+    return a.point.x() < b.point.x();
+  if (a.point.y() != b.point.y())
+    return a.point.y() < b.point.y();
+  if (a.point.z() != b.point.z())
+    return a.point.z() < b.point.z();
+
+  if (a.normal.x() != b.normal.x())
+    return a.normal.x() < b.normal.x();
+  if (a.normal.y() != b.normal.y())
+    return a.normal.y() < b.normal.y();
+  if (a.normal.z() != b.normal.z())
+    return a.normal.z() < b.normal.z();
+
+  return false;
 }
 
 } // namespace
@@ -460,6 +520,9 @@ void ConstraintSolver::solve()
   if (mSplitImpulseEnabled) {
     solvePositionConstrainedGroups();
   }
+
+  // Sync forces back to the raw collision result when cached contacts are used.
+  syncCollisionResultForcesFromManifolds();
 }
 
 //==============================================================================
@@ -869,6 +932,114 @@ void ConstraintSolver::solvePositionConstrainedGroups()
 
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
     mSkeletons[i]->setImpulseApplied(impulseAppliedStates[i]);
+  }
+}
+
+//==============================================================================
+void ConstraintSolver::syncCollisionResultForcesFromManifolds()
+{
+  if (!mContactManifoldOptions.enabled)
+    return;
+
+  if (mPersistentContacts.empty())
+    return;
+
+  struct PersistentEntry
+  {
+    PairKey key;
+    const collision::Contact* contact{nullptr};
+  };
+
+  std::vector<PersistentEntry> entries;
+  entries.reserve(mPersistentContacts.size());
+
+  for (const auto& contact : mPersistentContacts) {
+    if (!contact.collisionObject1 || !contact.collisionObject2)
+      continue;
+
+    PersistentEntry entry;
+    entry.key = makePairKey(contact.collisionObject1, contact.collisionObject2);
+    entry.contact = &contact;
+    entries.push_back(entry);
+  }
+
+  if (entries.empty())
+    return;
+
+  PairKeyLess pairLess;
+  // ContactManifold::update emits contacts sorted by pair and contact order.
+
+  const double positionThresholdSquared
+      = mContactManifoldOptions.positionThreshold
+        * mContactManifoldOptions.positionThreshold;
+  const double normalThreshold = mContactManifoldOptions.normalThreshold;
+
+  for (std::size_t i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
+    auto& raw = mCollisionResult.getContact(i);
+    if (!raw.collisionObject1 || !raw.collisionObject2)
+      continue;
+
+    if (!isContactValid(raw))
+      continue;
+
+    if (isSoftContact(raw))
+      continue;
+
+    const auto key = makePairKey(raw.collisionObject1, raw.collisionObject2);
+    auto lower = std::lower_bound(
+        entries.begin(),
+        entries.end(),
+        key,
+        [&](const PersistentEntry& entry, const PairKey& matchKey) {
+          return pairLess(entry.key, matchKey);
+        });
+    auto upper = std::upper_bound(
+        entries.begin(),
+        entries.end(),
+        key,
+        [&](const PairKey& matchKey, const PersistentEntry& entry) {
+          return pairLess(matchKey, entry.key);
+        });
+
+    if (lower == upper)
+      continue;
+
+    const collision::Contact* best = nullptr;
+    bool bestFlipped = false;
+    double bestDistance = std::numeric_limits<double>::infinity();
+
+    for (auto it = lower; it != upper; ++it) {
+      const auto* candidate = it->contact;
+      const bool sameOrder
+          = raw.collisionObject1 == candidate->collisionObject1
+            && raw.collisionObject2 == candidate->collisionObject2;
+      const bool flippedOrder
+          = raw.collisionObject1 == candidate->collisionObject2
+            && raw.collisionObject2 == candidate->collisionObject1;
+
+      if (!sameOrder && !flippedOrder)
+        continue;
+
+      const Eigen::Vector3d delta = raw.point - candidate->point;
+      const double distance = delta.squaredNorm();
+      if (distance > positionThresholdSquared)
+        continue;
+
+      const Eigen::Vector3d candidateNormal
+          = flippedOrder ? -candidate->normal : candidate->normal;
+      if (normalizedDot(raw.normal, candidateNormal) < normalThreshold)
+        continue;
+
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        best = candidate;
+        bestFlipped = flippedOrder;
+      }
+    }
+
+    if (best) {
+      raw.force = bestFlipped ? -best->force : best->force;
+    }
   }
 }
 
