@@ -18,6 +18,7 @@
 ## Stage 5 Notes
 
 - Benchmark coverage added in `tests/benchmark/collision/bm_boxes.cpp`
+- Added micro-benchmark `tests/benchmark/collision/bm_contact_patch_cache.cpp`
 - Results not captured yet (pending local runs)
 - Cache now emits persisted contacts for unseen pairs up to
   `maxSeparationFrames`

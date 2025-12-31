@@ -3,6 +3,7 @@
 ## Status
 
 - Extended `tests/benchmark/collision/bm_boxes.cpp` with cache ON/OFF modes
+- Added `tests/benchmark/collision/bm_contact_patch_cache.cpp` micro-benchmark
 - Results not captured yet (pending local runs)
 
 ## Existing Benchmark Harness
@@ -19,7 +20,7 @@
    - Record wall time per simulation step
 
 2. Contact update micro-benchmark
-   - Follow-up: add `tests/benchmark/collision/bm_contact_patch_cache.cpp`
+   - Added `tests/benchmark/collision/bm_contact_patch_cache.cpp`
    - Feed synthetic contact lists with varying sizes and pairs
    - Measure cache update cost only
 
@@ -40,7 +41,9 @@ Suggested (Unverified):
 
 ```bash
 cmake --build build/default/cpp/Release --target bm_boxes
+cmake --build build/default/cpp/Release --target bm_contact_patch_cache
 ./build/default/cpp/Release/tests/benchmark/bm_boxes
+./build/default/cpp/Release/tests/benchmark/bm_contact_patch_cache
 ```
 
 For custom runs (Unverified):
