@@ -68,8 +68,16 @@ Times in milliseconds (lower is better):
 | Case | Legacy | Cache ON | Delta |
 | --- | --- | --- | --- |
 | 2x2x2 | 150 | 149 | -1% |
-| 4x4x4 | 1944 | 3292 | +69% |
+| 4x4x4 | 1944 | 3270 | +68% |
 | 8x8x8 | 21840 | 22843 | +5% |
+
+Note: 4x4x4 numbers use a repeated run (mean of 3) with:
+
+```bash
+./build/default/cpp/Release/bin/bm_boxes \
+  --benchmark_filter="BM_RunBoxes/4|BM_RunBoxesPersistentContacts/4" \
+  --benchmark_min_time=1s --benchmark_repetitions=3
+```
 
 ### Cache update micro-benchmark (bm_contact_patch_cache)
 

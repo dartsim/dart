@@ -24,6 +24,7 @@
 - Backend contact history can be disabled via `CollisionOption`
 - Added `ConstraintSolver::getContactsUsedForConstraints()` and updated
   `World::bake()` to use constraint contacts when recording
+- Repeated 4x4x4 benchmark run confirms ~68% overhead with cache enabled
 
 ## Verification
 
