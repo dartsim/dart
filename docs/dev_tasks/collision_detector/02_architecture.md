@@ -16,6 +16,7 @@
 - Core engine: geometry representations, broadphase, narrowphase, and query results with minimal dependencies.
 - DART adapter: maps ShapeFrame and Shape to core objects, owns CollisionObject handles, and translates options/results for the existing API.
 - Compatibility layer: keeps factory keys, configuration options, and public types stable during migration.
+- Boundary today: `DartCollisionEngine` operates on `CoreObject` data, while `DARTCollisionDetector` and `DARTCollisionObject` remain the adapter layer for DART APIs.
 
 ## Adapter Responsibilities
 - Maintain object lifetimes and stable pointers expected by the constraint solver.
@@ -43,7 +44,7 @@
 ## Distance and Raycast
 - Distance queries return the minimum signed distance, with optional nearest points.
 - Distance lower bound supports early exit to match current option behavior.
-- Raycast supports closest hit or all hits with optional sorting and a filter predicate.
+- Raycast supports closest hit or all hits with optional sorting and a filter predicate; MVP covers primitive shapes with AABB pruning.
 
 ## Filtering
 - Pair filtering integrates with existing DART collision and distance filters.

@@ -19,12 +19,12 @@
 - Added a DART collision benchmark variant mirroring the box stack scenario.
 - Added initial core query result and option types for future standalone use.
 - Added DART raycast support for core shapes with DART-focused unit coverage and AABB pruning.
+- Added a resume prompt and progress tracking doc for the task.
 
 ## Next Actions
-- Define the standalone library boundary and the DART adapter layer.
-- Prototype the core data model and query pipeline (broadphase, narrowphase, contact generation).
-- Evaluate whether to keep sweep-based broadphase for group-group or move to a spatial structure.
-- Prepare parity test and benchmark updates to compare against existing backends.
+- Clarify the core/adapter boundary and record decisions in the architecture doc.
+- Expand primitive narrowphase coverage (box-cylinder, cylinder-cylinder) and add DART-only tests.
+- Implement distance query MVP for primitives with filters and nearest points.
 - Extend raycast coverage to additional shapes.
 
 ## Questions and Decisions Needed
@@ -36,3 +36,4 @@
 - Core builds into the `dart` target for now (no separate CMake target).
 - Switch the default detector only after feature parity and performance are acceptable.
 - No additional downstream constraints beyond keeping the gazebo integration workflow green.
+- Engine class name: `DartCollisionEngine`.

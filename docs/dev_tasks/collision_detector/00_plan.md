@@ -4,6 +4,7 @@
 - Phase 0 (research and inventory): complete
 - Phase 1 (architecture proposal): complete
 - Phase 2 (core implementation): in progress
+- Raycast MVP exists for supported primitives; distance queries are still pending.
 
 ## Scope
 - Replace reliance on external collision backends with a new or revised in-house detector.
@@ -24,6 +25,7 @@
 - Implementation lives under `dart/collision/dart` during this effort.
 - Core builds into the `dart` target for now (no separate CMake target).
 - Default switch only after feature parity and acceptable performance.
+- Engine class name: `DartCollisionEngine`.
 
 ## Milestones
 1. Research and inventory (complete): current API surface, integration points, tests, benchmarks, build and packaging touchpoints.
@@ -66,5 +68,5 @@
 - Gazebo integration workflows remain green with existing task chains.
 
 ## Open Questions
-- What is the preferred boundary between DART-specific adapters and the standalone core?
+- When should the core split into a standalone target and what packaging constraints apply?
 - Which broadphase and narrowphase strategies best fit parity and performance goals?
