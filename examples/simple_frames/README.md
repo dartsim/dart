@@ -1,3 +1,12 @@
+# Simple Frames Example
+
+## Summary
+
+- Goal: show how to build and render a hierarchy of `SimpleFrame` objects.
+- Concepts/APIs: `SimpleFrame`, shape attachments, frame transforms.
+- Expected output: an OSG viewer with boxes, ellipsoids, and an arrow shape.
+- Controls: none.
+
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.
 
