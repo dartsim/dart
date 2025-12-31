@@ -6,6 +6,7 @@
 - Narrowphase supports sphere, box, cylinder, and plane primitives.
 - Raycast is available for the supported primitives with AABB pruning.
 - Distance query MVP is implemented for supported primitives.
+- Raycast tests now cover box, cylinder, and plane hits.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
@@ -13,6 +14,7 @@
 - Primitive narrowphase coverage for sphere, box, cylinder, and plane pairs.
 - Added box-cylinder and cylinder-cylinder narrowphase support with DART-only unit tests.
 - Added a DART-focused distance unit test suite for primitives.
+- Added a DART distance benchmark and expanded distance edge-case tests.
 - Raycast support for primitives plus DART-only unit coverage.
 - Added a DART collision benchmark variant for baseline tracking.
 

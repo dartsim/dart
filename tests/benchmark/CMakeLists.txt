@@ -62,6 +62,14 @@ target_link_libraries(bm_boxes_dart
 )
 dart_format_add(collision/bm_boxes_dart.cpp)
 
+add_executable(bm_distance_dart collision/bm_distance_dart.cpp)
+target_link_libraries(bm_distance_dart
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(collision/bm_distance_dart.cpp)
+
 # ==============================================================================
 # Dynamics Benchmarks
 # ==============================================================================

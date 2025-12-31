@@ -22,11 +22,14 @@
 - Added a resume prompt and progress tracking doc for the task.
 - Added box-cylinder and cylinder-cylinder narrowphase support with DART-only unit coverage.
 - Added distance query MVP for primitives with DART-only unit coverage.
+- Expanded DART raycast tests to cover box, cylinder, and plane hits.
+- Added DART distance edge-case coverage and a DART distance benchmark.
 
 ## Next Actions
 - Clarify the core/adapter boundary and record decisions in the architecture doc.
-- Extend raycast coverage to additional shapes.
-- Expand distance coverage (edge cases, additional primitives) and add benchmarks.
+- Extend raycast coverage to edge cases and future shape types.
+- Expand distance coverage to additional primitives and refine nearest-point accuracy.
+- Add broadphase pruning for distance queries.
 
 ## Questions and Decisions Needed
 - Confirm the boundary between core engine code and DART-specific adapters.
