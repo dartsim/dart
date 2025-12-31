@@ -133,6 +133,26 @@ TEST(DartRaycast, ZeroLengthRay)
 }
 
 //==============================================================================
+TEST(DartRaycast, EmptyGroup)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto group = detector->createCollisionGroup();
+
+  RaycastOption option;
+  RaycastResult result;
+
+  detector->raycast(
+      group.get(),
+      Eigen::Vector3d(-1.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      option,
+      &result);
+  EXPECT_FALSE(result.hasHit());
+  EXPECT_TRUE(result.mRayHits.empty());
+}
+
+//==============================================================================
 TEST(DartRaycast, EllipsoidHit)
 {
   auto detector = DARTCollisionDetector::create();

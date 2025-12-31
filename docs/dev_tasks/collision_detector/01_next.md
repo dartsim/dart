@@ -59,6 +59,7 @@
 - Added DistanceResult clamping status coverage.
 - Added zero-length raycast coverage.
 - Added coverage for DistanceOption without nearest points.
+- Added empty-group raycast coverage.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.
