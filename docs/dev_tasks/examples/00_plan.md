@@ -46,6 +46,13 @@ Each example should include a short header block in its README:
 - Include helpers for asset lookup via `dart::common::Uri` and
   `dart::io::ReadOptions` where relevant.
 
+## Asset layout proposal (draft)
+
+- Prefer shared assets already shipped with DART via `dart://` URIs.
+- New example-specific assets live under `examples/assets/` or the example
+  directory when they are not reused.
+- Add a small helper to resolve assets for in-source and install builds.
+
 ## References
 
 - `docs/onboarding/building.md`
@@ -87,6 +94,7 @@ Each example should include a short header block in its README:
 - Each example has minimal metadata: purpose, primary APIs, expected output.
 - `dart::io` unified loading is demonstrated in the IO category.
 - A shared harness exists (or an explicit decision not to) with consistent CLI flags.
+- Assets are discoverable without hardcoded absolute paths.
 
 ## Milestones and sequencing
 

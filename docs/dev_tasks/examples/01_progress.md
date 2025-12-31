@@ -11,6 +11,7 @@
 - Reviewed Newton and Genesis example organization for patterns.
 - Drafted a user-first taxonomy and ordering in `docs/dev_tasks/examples/00_plan.md`.
 - Drafted a minimal metadata template and shared harness sketch.
+- Added an asset layout proposal to the plan.
 
 ## Discovery findings
 
@@ -27,19 +28,32 @@
   READMEs for complex domains and a mix of performance, rendering, sensors, and
   coupling topics.
 
-## Gap analysis (high level)
+## Coverage by category (draft)
 
-- No structured learning path or capability-based grouping.
-- No shared example harness (CLI args, viewer selection, headless/test mode).
-- Limited visibility of `dart::io` unified loading in the examples.
-- Mixed viewer backends without consistent guidance (OSG, Raylib, headless).
-- Performance and scalability coverage is minimal.
+- Getting started: basic entry points exist, but there is no single guided path
+  that shows build/run via pixi and a first visualization.
+- Rigid bodies and frames: strong coverage of shapes, frames, and simple
+  rigid-body scenes.
+- Joints and constraints: good coverage of joint types, limits, and constraint
+  behaviors; fewer examples explain when to choose each model.
+- Collisions and contacts: partial coverage (stacking, ground contact, terrain),
+  but little on tuning contact parameters or broad-phase choices.
+- Control and IK: strong coverage of IK and higher-level control, but missing a
+  minimal, reusable controller baseline.
+- IO and models: partial coverage via format-specific loaders; `dart::io`
+  unified loading is not showcased directly.
+- Soft and hybrid: a small set of examples exist, but breadth is limited.
+- Visualization and interaction: OSG-based UI and interaction exist, Raylib is
+  isolated, and viewer selection is inconsistent.
+- Performance and scaling: only a single speed benchmark is prominent; no
+  headless batch, determinism, or profiling workflow.
+- Integration and tools: point cloud and tooling touchpoints exist, but logging
+  and external tooling examples are sparse.
 
 ## Next steps
 
-1. Map current examples into the new taxonomy (no file lists in docs).
-2. Validate the metadata template against a small subset of examples.
-3. Decide whether the shared harness is required for the initial migration.
+1. Validate the metadata template against a small subset of examples.
+2. Select a pilot category for the first migration pass.
 
 ## Open questions
 
