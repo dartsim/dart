@@ -63,6 +63,7 @@
 - Added empty-group collision coverage.
 - Added missing-shape distance coverage.
 - Added missing-shape raycast coverage.
+- Added missing-shape collision coverage.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.

@@ -155,3 +155,26 @@ TEST(DartCollisionPrimitives, EmptyGroup)
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 0u);
 }
+
+//==============================================================================
+TEST(DartCollisionPrimitives, MissingShape)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  auto emptyFrame = SimpleFrame::createShared(Frame::World());
+
+  sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+  sphereFrame->setTranslation(Eigen::Vector3d::Zero());
+  emptyFrame->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
+
+  auto group = detector->createCollisionGroup(
+      sphereFrame.get(), emptyFrame.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+
+  CollisionResult result;
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+}
