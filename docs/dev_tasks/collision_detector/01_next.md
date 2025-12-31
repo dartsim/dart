@@ -25,15 +25,15 @@
 - Expanded DART raycast tests to cover box, cylinder, and plane hits.
 - Added DART distance edge-case coverage and a DART distance benchmark.
 - Added sweep-based pruning for distance queries with AABB lower-bound checks.
+- Documented the current core/adapter boundary and raycast placement in the architecture proposal.
 
 ## Next Actions
-- Clarify the core/adapter boundary and record decisions in the architecture doc.
 - Extend raycast coverage to edge cases and future shape types.
 - Expand distance coverage to additional primitives and refine nearest-point accuracy.
 - Explore additional distance broadphase pruning and candidate ordering improvements.
 
 ## Questions and Decisions Needed
-- Confirm the boundary between core engine code and DART-specific adapters.
+- Decide when to move raycast into the core engine once query types stabilize.
 
 ## Decisions Captured
 - Core namespace: `dart::collision`.

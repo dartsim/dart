@@ -37,6 +37,7 @@ Current status:
 - Raycast is implemented for those primitives with AABB pruning and unit coverage.
 - Distance query MVP is implemented for primitives with unit coverage and benchmarks.
 - Distance queries use sweep pruning plus AABB lower-bound checks.
+- The architecture proposal documents the current core/adapter boundary and raycast placement.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.
@@ -45,5 +46,6 @@ Where to look:
 Next focus:
 - Expand distance coverage to additional primitives and refine nearest-point accuracy.
 - Extend raycast coverage to edge cases and future shape types.
+- Decide when to move raycast into the core engine once query types stabilize.
 - Keep task docs updated after each checkpoint.
 - Keep task docs updated after each checkpoint.

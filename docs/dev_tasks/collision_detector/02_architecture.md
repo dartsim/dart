@@ -18,6 +18,13 @@
 - Compatibility layer: keeps factory keys, configuration options, and public types stable during migration.
 - Boundary today: `DartCollisionEngine` operates on `CoreObject` data, while `DARTCollisionDetector` and `DARTCollisionObject` remain the adapter layer for DART APIs.
 
+## Current Boundary (Phase 2)
+- `DartCollisionEngine` consumes `CoreObject` data to run broadphase, narrowphase, and distance queries.
+- `DARTCollisionObject` owns the cached `CoreObject` and world AABB values.
+- `DARTCollisionGroup` refreshes core data before each query to honor ShapeFrame versioning.
+- `DARTCollisionDetector` owns API-level validation, filter translation, and contact merging.
+- Raycast remains in `DARTCollisionDetector`, but uses `CoreObject` data and is a candidate for a core move once query types stabilize.
+
 ## Adapter Responsibilities
 - Maintain object lifetimes and stable pointers expected by the constraint solver.
 - Translate DART filters (collision, distance, raycast) into core query filters.
