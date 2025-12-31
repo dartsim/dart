@@ -110,6 +110,35 @@ TEST(DartDistance, SpherePlaneDistance)
 }
 
 //==============================================================================
+TEST(DartDistance, SphereRotatedPlaneDistance)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+
+  sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+  planeFrame->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  planeFrame->setRotation(
+      Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY()).toRotationMatrix());
+
+  sphereFrame->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+
+  auto group = detector->createCollisionGroup(
+      sphereFrame.get(), planeFrame.get());
+
+  DistanceOption option(true, 0.0, nullptr);
+  DistanceResult result;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, 1.5, kDistanceTol);
+  EXPECT_NEAR(result.minDistance, 1.5, kDistanceTol);
+  EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(Eigen::Vector3d(1.5, 0.0, 0.0)));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(Eigen::Vector3d(0.0, 0.0, 0.0)));
+}
+
+//==============================================================================
 TEST(DartDistance, SphereBoxDistance)
 {
   auto detector = DARTCollisionDetector::create();

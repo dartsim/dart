@@ -13,6 +13,7 @@
 - Distance tests include rotated box coverage, and raycast tests include a rotated plane hit.
 - Raycast tests include tangent sphere hits and parallel plane misses.
 - Distance tests now check cylinder-cylinder nearest points; raycast tests include tangent cylinder hits.
+- Distance tests include a rotated plane case for sphere-plane queries.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
@@ -30,6 +31,7 @@
 - Added rotated box distance coverage and a rotated plane raycast check.
 - Added tangent sphere and parallel plane raycast coverage.
 - Added cylinder-cylinder nearest-point checks and tangent cylinder raycast coverage.
+- Added rotated plane distance coverage for sphere-plane.
 
 ## Next Steps
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
