@@ -48,6 +48,7 @@ Current status:
 - Distance tests include a group-group case to validate pair selection and nearest points.
 - Distance tests include diagonal box-box coverage for oblique nearest points.
 - Distance tests include group-group filter coverage for distance queries.
+- Distance tests include overlapping sphere coverage for negative distances.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.

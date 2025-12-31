@@ -18,6 +18,7 @@
 - Distance tests include a group-group distance case to validate pair selection.
 - Distance tests include diagonal box-box coverage for oblique nearest points.
 - Distance tests include group-group filter coverage for distance queries.
+- Distance tests include overlapping sphere coverage for negative distances.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
@@ -40,6 +41,7 @@
 - Added group-group distance coverage to validate pair selection and nearest points.
 - Added diagonal box-box distance coverage to validate oblique nearest points.
 - Added group-group distance filter coverage to validate filter application.
+- Added overlapping sphere distance coverage for negative distance semantics.
 
 ## Next Steps
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
