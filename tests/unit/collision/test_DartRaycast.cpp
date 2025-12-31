@@ -32,6 +32,8 @@
 
 #include <dart/All.hpp>
 
+#include <cmath>
+
 #include <gtest/gtest.h>
 
 #include "../../helpers/GTestUtils.hpp"
@@ -454,6 +456,35 @@ TEST(DartRaycast, RotatedPlaneHit)
   const auto& hit = result.mRayHits[0];
   EXPECT_TRUE(equals(hit.mPoint, Eigen::Vector3d(0.0, 0.0, 0.0)));
   EXPECT_TRUE(equals(hit.mNormal, Eigen::Vector3d(1.0, 0.0, 0.0)));
+  EXPECT_NEAR(hit.mFraction, 0.5, kFractionTolerance);
+}
+
+//==============================================================================
+TEST(DartRaycast, RotatedBoxHit)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto frame = SimpleFrame::createShared(Frame::World());
+  frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  frame->setRotation(
+      Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitZ()).toRotationMatrix());
+
+  auto group = detector->createCollisionGroup(frame.get());
+
+  RaycastOption option;
+  RaycastResult result;
+
+  const double root2 = std::sqrt(2.0);
+  const Eigen::Vector3d normal(root2 * 0.5, root2 * 0.5, 0.0);
+  const Eigen::Vector3d from = normal * 3.0;
+  const Eigen::Vector3d to = -normal;
+
+  detector->raycast(group.get(), from, to, option, &result);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mRayHits.size(), 1u);
+  const auto& hit = result.mRayHits[0];
+  EXPECT_TRUE(equals(hit.mPoint, normal));
+  EXPECT_TRUE(equals(hit.mNormal, normal));
   EXPECT_NEAR(hit.mFraction, 0.5, kFractionTolerance);
 }
 
