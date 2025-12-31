@@ -34,6 +34,7 @@
 - Added rotated plane distance coverage for sphere-plane.
 - Added rotated box raycast coverage and rotated box/cylinder plane distance checks.
 - Added group-group distance coverage to validate pair selection and nearest points.
+- Added diagonal box-box distance coverage to validate oblique nearest points.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.
