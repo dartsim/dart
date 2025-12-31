@@ -60,6 +60,7 @@ Current status:
 - Distance tests include rotated box-cylinder coverage for axial separation.
 - Distance tests include ellipsoid-as-sphere coverage.
 - Raycast tests include ellipsoid-as-sphere coverage.
+- Collision tests include ellipsoid-as-sphere coverage.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.

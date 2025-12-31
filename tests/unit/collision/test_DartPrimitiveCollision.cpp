@@ -108,3 +108,35 @@ TEST(DartCollisionPrimitives, BoxCylinder)
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_GE(result.getNumContacts(), 1u);
 }
+
+//==============================================================================
+TEST(DartCollisionPrimitives, EllipsoidSphere)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto ellipsoidFrame = SimpleFrame::createShared(Frame::World());
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+
+  ellipsoidFrame->setShape(std::make_shared<EllipsoidShape>(
+      Eigen::Vector3d(1.0, 1.0, 1.0)));
+  sphereFrame->setShape(std::make_shared<SphereShape>(1.0));
+
+  auto group = detector->createCollisionGroup(
+      ellipsoidFrame.get(), sphereFrame.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+
+  CollisionResult result;
+
+  ellipsoidFrame->setTranslation(Eigen::Vector3d::Zero());
+  sphereFrame->setTranslation(Eigen::Vector3d(3.0, 0.0, 0.0));
+  result.clear();
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+
+  sphereFrame->setTranslation(Eigen::Vector3d(1.5, 0.0, 0.0));
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GE(result.getNumContacts(), 1u);
+}

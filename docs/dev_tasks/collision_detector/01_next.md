@@ -48,6 +48,7 @@
 - Added rotated box-cylinder distance coverage for axial separation.
 - Added ellipsoid-as-sphere distance coverage.
 - Added ellipsoid-as-sphere raycast coverage.
+- Added ellipsoid-as-sphere collision coverage.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.
