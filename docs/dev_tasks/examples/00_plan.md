@@ -11,6 +11,23 @@
 - Coverage includes performance and integration examples where appropriate.
 - Examples follow consistent conventions (naming, CLI args, assets, and build notes).
 
+## Draft taxonomy and ordering (user-first)
+
+1. `00_getting_started`: build/run, minimal world + skeleton, first visualization
+2. `01_rigid_bodies_and_frames`: shapes, frames, transforms, basic dynamics
+3. `02_joints_and_constraints`: joint types, limits, mimic/coupler, constraints
+4. `03_collisions_and_contacts`: collision setup, contact tuning, terrains
+5. `04_control_and_ik`: IK, operational space, controllers, motion tasks
+6. `05_io_and_models`: `dart::io` loading, URDF/SDF/MJCF, resource retrieval
+7. `06_soft_and_hybrid`: soft bodies, hybrid dynamics, mixed simulations
+8. `07_visualization_and_interaction`: viewer usage, UI, interaction hooks
+9. `08_performance_and_scaling`: headless runs, profiling, scale tests
+10. `09_integration_and_tools`: point clouds, external tooling, logging
+
+Notes:
+- Category names are draft; keep them short and ordered with numeric prefixes.
+- Tutorials remain separate but should be cross-linked from relevant categories.
+
 ## References
 
 - `docs/onboarding/building.md`
@@ -45,6 +62,13 @@
 5. Validation and polish
    - Add smoke tests or scripted runs for non-GUI examples when feasible.
    - Update `examples/README.md` and cross-link to tutorials.
+
+## Success criteria (Phase 1/2)
+
+- Each category has a short index describing the user goal and prerequisites.
+- Each example has minimal metadata: purpose, primary APIs, expected output.
+- `dart::io` unified loading is demonstrated in the IO category.
+- A shared harness exists (or an explicit decision not to) with consistent CLI flags.
 
 ## Milestones and sequencing
 

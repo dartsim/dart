@@ -2,13 +2,14 @@
 
 ## Status
 
-- Discovery completed; taxonomy draft pending.
+- Discovery completed; taxonomy draft captured in plan.
 
 ## Completed
 
 - Created the plan and Codex prompt.
 - Reviewed DART examples/tutorials structure and build notes.
 - Reviewed Newton and Genesis example organization for patterns.
+- Drafted a user-first taxonomy and ordering in `docs/dev_tasks/examples/00_plan.md`.
 
 ## Discovery findings
 
@@ -35,9 +36,9 @@
 
 ## Next steps
 
-1. Draft taxonomy and ordering aligned to user journeys and DART subsystems.
-2. Define a minimal example metadata template (goal, APIs, expected output).
-3. Propose a shared harness strategy and asset layout.
+1. Define a minimal example metadata template (goal, APIs, expected output).
+2. Propose a shared harness strategy and asset layout.
+3. Map current examples into the new taxonomy (no file lists in docs).
 
 ## Open questions
 
