@@ -111,6 +111,37 @@ TEST(DartDistance, SphereSphereOverlapDistance)
 }
 
 //==============================================================================
+TEST(DartDistance, EllipsoidSphereDistance)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto ellipsoidFrame = SimpleFrame::createShared(Frame::World());
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+
+  ellipsoidFrame->setShape(std::make_shared<EllipsoidShape>(
+      Eigen::Vector3d(1.0, 1.0, 1.0)));
+  sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+
+  ellipsoidFrame->setTranslation(Eigen::Vector3d::Zero());
+  sphereFrame->setTranslation(Eigen::Vector3d(3.0, 0.0, 0.0));
+
+  auto group = detector->createCollisionGroup(
+      ellipsoidFrame.get(), sphereFrame.get());
+
+  DistanceOption option(true, 0.0, nullptr);
+  DistanceResult result;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, 1.5, kDistanceTol);
+  EXPECT_NEAR(result.minDistance, 1.5, kDistanceTol);
+  EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(
+      Eigen::Vector3d(1.0, 0.0, 0.0), kDistanceTol));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(
+      Eigen::Vector3d(2.5, 0.0, 0.0), kDistanceTol));
+}
+
+//==============================================================================
 TEST(DartDistance, SpherePlaneDistance)
 {
   auto detector = DARTCollisionDetector::create();
