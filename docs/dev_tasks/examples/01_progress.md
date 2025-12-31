@@ -18,6 +18,8 @@
 - Expanded metadata headers to more beginner-focused examples.
 - Deferred updating `examples/README.md` until the new category layout exists.
 - Decided the pilot migration does not require a shared harness initially.
+- Executed the pilot migration: added a getting-started category folder and
+  moved initial examples into it.
 
 ## Discovery findings
 
@@ -58,7 +60,8 @@
 
 ## Next steps
 
-1. Execute the pilot migration checklist (folders, CMake, README updates).
+1. Update `examples/README.md` once category layout stabilizes.
+2. Decide whether to migrate additional categories or iterate on the pilot.
 
 ## Open questions
 

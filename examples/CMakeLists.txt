@@ -2,8 +2,11 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project(dart-examples)
 
+# Getting started examples
+add_subdirectory(00_getting_started/hello_world)
+add_subdirectory(00_getting_started/simple_frames)
+
 # None GUI examples
-add_subdirectory(hello_world)
 add_subdirectory(speed_test)
 
 # OSG renderer examples
@@ -36,7 +39,6 @@ add_subdirectory(rigid_chain)
 add_subdirectory(rigid_cubes)
 add_subdirectory(rigid_loop)
 add_subdirectory(rigid_shapes)
-add_subdirectory(simple_frames)
 add_subdirectory(simulation_event_handler)
 add_subdirectory(soft_bodies)
 add_subdirectory(g1_puppet)
