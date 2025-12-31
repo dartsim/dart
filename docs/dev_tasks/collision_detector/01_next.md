@@ -40,6 +40,7 @@
 - Added overlapping sphere distance coverage for negative distance semantics.
 - Added overlapping box distance coverage for negative distance semantics.
 - Added overlapping cylinder-plane distance coverage for negative distance semantics.
+- Added single-group distance filter coverage.
 
 ## Next Actions
 - Extend raycast coverage to edge cases and future shape types.

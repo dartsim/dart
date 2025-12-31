@@ -22,6 +22,7 @@
 - Distance tests include overlapping sphere coverage for negative distances.
 - Distance tests include overlapping box coverage for negative distances.
 - Distance tests include overlapping cylinder-plane coverage for negative distances.
+- Distance tests include single-group filter coverage for distance queries.
 
 ## Completed Checkpoints
 - Core engine path wired into the DART detector with AABB prechecks.
@@ -48,6 +49,7 @@
 - Added overlapping sphere distance coverage for negative distance semantics.
 - Added overlapping box distance coverage for negative distance semantics.
 - Added overlapping cylinder-plane distance coverage for negative distance semantics.
+- Added single-group distance filter coverage.
 
 ## Next Steps
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.

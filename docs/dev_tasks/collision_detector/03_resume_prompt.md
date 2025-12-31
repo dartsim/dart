@@ -52,6 +52,7 @@ Current status:
 - Distance tests include overlapping sphere coverage for negative distances.
 - Distance tests include overlapping box coverage for negative distances.
 - Distance tests include overlapping cylinder-plane coverage for negative distances.
+- Distance tests include single-group filter coverage for distance queries.
 
 Where to look:
 - Core engine and adapter: `dart/collision/dart/`.

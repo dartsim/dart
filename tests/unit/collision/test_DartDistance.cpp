@@ -663,3 +663,54 @@ TEST(DartDistance, GroupGroupDistanceWithFilter)
   EXPECT_TRUE(result.nearestPoint2.isApprox(
       Eigen::Vector3d(2.5, 0.0, 0.0), kDistanceTol));
 }
+
+//==============================================================================
+TEST(DartDistance, GroupDistanceWithFilter)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto sphereFrame1 = SimpleFrame::createShared(Frame::World());
+  auto sphereFrame2 = SimpleFrame::createShared(Frame::World());
+  auto sphereFrame3 = SimpleFrame::createShared(Frame::World());
+
+  sphereFrame1->setShape(std::make_shared<SphereShape>(0.5));
+  sphereFrame2->setShape(std::make_shared<SphereShape>(0.5));
+  sphereFrame3->setShape(std::make_shared<SphereShape>(0.5));
+
+  sphereFrame1->setTranslation(Eigen::Vector3d::Zero());
+  sphereFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+  sphereFrame3->setTranslation(Eigen::Vector3d(5.0, 0.0, 0.0));
+
+  auto group = detector->createCollisionGroup(
+      sphereFrame1.get(), sphereFrame2.get(), sphereFrame3.get());
+
+  struct ShapeFrameDistanceFilter final : DistanceFilter
+  {
+    const dynamics::ShapeFrame* skipFrame{nullptr};
+
+    bool needDistance(
+        const CollisionObject* object1,
+        const CollisionObject* object2) const override
+    {
+      return object1->getShapeFrame() != skipFrame
+             && object2->getShapeFrame() != skipFrame;
+    }
+  };
+
+  ShapeFrameDistanceFilter filter;
+  filter.skipFrame = sphereFrame1.get();
+
+  DistanceOption option(true, 0.0, &filter);
+  DistanceResult result;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, 2.0, kDistanceTol);
+  EXPECT_NEAR(result.minDistance, 2.0, kDistanceTol);
+  EXPECT_TRUE(result.found());
+  EXPECT_EQ(result.shapeFrame1, sphereFrame2.get());
+  EXPECT_EQ(result.shapeFrame2, sphereFrame3.get());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(
+      Eigen::Vector3d(2.5, 0.0, 0.0), kDistanceTol));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(
+      Eigen::Vector3d(4.5, 0.0, 0.0), kDistanceTol));
+}
