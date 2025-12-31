@@ -50,6 +50,7 @@
 
 7. Reporting contacts used for constraints
    - Add `ConstraintSolver::getContactsUsedForConstraints(...)`
+   - Add `World::getContactsUsedForConstraints(...)` convenience API
    - Update `World::bake()` to record constraint contacts for forces/points
    - Status: implemented
 

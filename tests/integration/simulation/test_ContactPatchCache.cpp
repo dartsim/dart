@@ -133,6 +133,9 @@ TEST(Simulation, ContactPatchCacheKeepsCollisionResultStable)
   std::vector<Contact> constraintContactsOff;
   solver->getContactsUsedForConstraints(constraintContactsOff);
   EXPECT_EQ(constraintContactsOff.size(), contactsOff.size());
+  std::vector<Contact> worldContactsOff;
+  world->getContactsUsedForConstraints(worldContactsOff);
+  EXPECT_EQ(worldContactsOff.size(), constraintContactsOff.size());
 
   solver->setContactPatchCacheEnabled(true);
 
@@ -141,6 +144,9 @@ TEST(Simulation, ContactPatchCacheKeepsCollisionResultStable)
   std::vector<Contact> constraintContactsOn;
   solver->getContactsUsedForConstraints(constraintContactsOn);
   EXPECT_EQ(constraintContactsOn.size(), solver->getNumPersistentContacts());
+  std::vector<Contact> worldContactsOn;
+  world->getContactsUsedForConstraints(worldContactsOn);
+  EXPECT_EQ(worldContactsOn.size(), constraintContactsOn.size());
 
   ASSERT_EQ(contactsOff.size(), contactsOn.size());
   for (std::size_t i = 0; i < contactsOff.size(); ++i) {

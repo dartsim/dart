@@ -25,6 +25,7 @@
 - Added `ConstraintSolver::getContactsUsedForConstraints()` and updated
   `World::bake()` to use constraint contacts when recording
 - Repeated 4x4x4 benchmark run confirms ~68% overhead with cache enabled
+- Added `World::getContactsUsedForConstraints()` convenience API
 
 ## Verification
 
@@ -51,4 +52,3 @@
 - TTL value for inactive pairs
 - Uniqueness thresholds and normal-angle cutoff
 - Final data layout (AoS vs SoA)
-- Whether to expose constraint-contact list via World convenience API

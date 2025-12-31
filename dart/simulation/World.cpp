@@ -822,6 +822,21 @@ const collision::CollisionResult& World::getLastCollisionResult() const
 }
 
 //==============================================================================
+void World::getContactsUsedForConstraints(
+    std::vector<collision::Contact>& contacts) const
+{
+  auto* solver = getConstraintSolver();
+  if (!solver) {
+    DART_WARN(
+        "World '{}' does not have a constraint-capable solver.", mName);
+    contacts.clear();
+    return;
+  }
+
+  solver->getContactsUsedForConstraints(contacts);
+}
+
+//==============================================================================
 void World::setCollisionDetector(
     const collision::CollisionDetectorPtr& collisionDetector)
 {

@@ -40,6 +40,7 @@ Decisions so far:
 - ODE backend history is gated by CollisionOption and disabled when cache is on
 - Recording uses contacts fed into constraints via
   `ConstraintSolver::getContactsUsedForConstraints()`
+- `World::getContactsUsedForConstraints()` provides a convenience wrapper
 
 Constraints:
 - No mention of any external reference project in code or docs
