@@ -8,20 +8,31 @@
 - [x] Stage 3: Full behavior wiring (use persistent contacts)
 - [x] Stage 4: Tests and regression protection
 - [x] Stage 4.5: GUI demo
-- [ ] Stage 5: Benchmarks and documentation polish
+- [x] Stage 5: Benchmarks and documentation polish
 
 ## Current Status
 
-- Stage 5 in progress: benchmarks extended, results pending
-- Update pending: record benchmark results and finalize docs
+- Stage 5 complete with benchmark results recorded
 
 ## Stage 5 Notes
 
 - Benchmark coverage added in `tests/benchmark/collision/bm_boxes.cpp`
 - Added micro-benchmark `tests/benchmark/collision/bm_contact_patch_cache.cpp`
-- Results not captured yet (pending local runs)
+- Results captured (see `04_benchmarking.md`)
 - Cache now emits persisted contacts for unseen pairs up to
   `maxSeparationFrames`
+
+## Verification
+
+- Benchmarks:
+  - `pixi run -- cmake --build build/default/cpp/Release --target bm_boxes`
+  - `pixi run -- cmake --build build/default/cpp/Release --target bm_contact_patch_cache`
+  - `pixi run -- ./build/default/cpp/Release/bin/bm_boxes`
+  - `pixi run -- ./build/default/cpp/Release/bin/bm_contact_patch_cache`
+- Tests:
+  - `pixi run -- cmake --build build/default/cpp/Release --target UNIT_constraint_ContactPatchCache`
+  - `pixi run -- cmake --build build/default/cpp/Release --target INTEGRATION_simulation_ContactPatchCache`
+  - `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R ContactPatchCache`
 
 ## Decisions
 
@@ -37,3 +48,4 @@
 - Uniqueness thresholds and normal-angle cutoff
 - Whether to disable backend contact history when cache is enabled
 - Final data layout (AoS vs SoA)
+- Contact force reporting when cache is enabled

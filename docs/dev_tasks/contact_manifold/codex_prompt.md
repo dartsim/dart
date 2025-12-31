@@ -11,8 +11,7 @@ contact jitter, with a runtime feature flag default OFF. Keep backends as raw
 contact providers. Preserve CollisionResult semantics when the flag is OFF.
 
 Status:
-- Stage 0-4.5 complete (docs, implementation, tests, GUI demo)
-- Stage 5 in progress: benchmarks added, results pending
+- Stage 0-5 complete (docs, implementation, tests, GUI demo, benchmarks)
 
 Key docs to read:
 - docs/dev_tasks/contact_manifold/00_overview.md
@@ -45,6 +44,5 @@ Constraints:
 - Add tests, benchmarks, and GUI demo per the Stage plan
 
 Next actions:
-1) Run the benchmarks and record results
-2) Review open issues: contact force reporting when cache is enabled
+1) Review open issues: contact force reporting when cache is enabled
 ```

@@ -59,14 +59,22 @@ Use this to assert improvement when enabled and parity when disabled.
 
 ## How to Run
 
-Suggested (Unverified):
+Suggested:
 
 ```bash
 pixi run test
 ```
 
-Targeted (Unverified):
+Targeted:
 
 ```bash
 ctest --test-dir build/default/cpp/Release --output-on-failure -R ContactPatch
+```
+
+## Executed
+
+```bash
+pixi run -- cmake --build build/default/cpp/Release --target UNIT_constraint_ContactPatchCache
+pixi run -- cmake --build build/default/cpp/Release --target INTEGRATION_simulation_ContactPatchCache
+pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R ContactPatchCache
 ```
