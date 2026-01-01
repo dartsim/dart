@@ -6,7 +6,8 @@
 - Preserve current contact conventions (normal direction, penetration depth semantics, filtering).
 - Keep the existing world and constraint solver integration behavior intact.
 - Maintain the existing integration workflow for gazebo without extra patches.
-- Delay default switching until parity and performance are acceptable.
+- Default collision detector is the built-in detector; parity and performance
+  tracking now inform legacy backend removal.
 
 ## Namespace and Layout
 

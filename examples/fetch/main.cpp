@@ -38,15 +38,12 @@
 
 #include <dart/utils/All.hpp>
 
-#include <dart/collision/bullet/All.hpp>
-
 #include <dart/All.hpp>
 #include <dart/io/Read.hpp>
 
 #include <CLI/CLI.hpp>
 
 using namespace dart;
-using dart::simulation::CollisionDetectorType;
 
 class FetchWorldNode : public gui::RealTimeWorldNode
 {
@@ -169,8 +166,6 @@ int main(int argc, char* argv[])
   auto world = dart::io::readWorld(
       "dart://sample/mjcf/openai/robotics/fetch/pick_and_place.xml");
   DART_ASSERT(world);
-  world->setCollisionDetector(CollisionDetectorType::Bullet);
-
   // Get Fetch robot and set properties
   auto robot = world->getSkeleton("robot0:base_link");
   DART_ASSERT(robot);

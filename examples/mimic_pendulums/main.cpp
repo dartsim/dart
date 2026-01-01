@@ -30,8 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
-
 #include <dart/gui/GridVisual.hpp>
 #include <dart/gui/ImGuiHandler.hpp>
 #include <dart/gui/ImGuiViewer.hpp>
@@ -40,12 +38,6 @@
 
 #include <dart/io/Read.hpp>
 
-#if DART_HAVE_BULLET
-  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
-#endif
-#if DART_HAVE_ODE
-  #include <dart/collision/ode/OdeCollisionDetector.hpp>
-#endif
 #include <dart/gui/IncludeImGui.hpp>
 
 #include <dart/simulation/World.hpp>
@@ -127,29 +119,8 @@ Eigen::Vector3d translationOf(const BodyNode* bn)
 
 struct SolverConfig
 {
-  bool useOdeCollision = true;
   bool usePgsSolver = false;
 };
-
-void applyCollisionDetector(
-    const SolverConfig& cfg, const dart::simulation::WorldPtr& world)
-{
-#if DART_HAVE_ODE
-  if (cfg.useOdeCollision) {
-    world->getConstraintSolver()->setCollisionDetector(
-        dart::collision::OdeCollisionDetector::create());
-    return;
-  }
-#endif
-
-#if DART_HAVE_BULLET
-  world->getConstraintSolver()->setCollisionDetector(
-      dart::collision::BulletCollisionDetector::create());
-#else
-  (void)cfg;
-  (void)world;
-#endif
-}
 
 void applyLcpSolver(
     const SolverConfig& cfg, const dart::simulation::WorldPtr& world)
@@ -296,7 +267,6 @@ public:
       mWorldPath(std::move(worldPath)),
       mConfig(std::move(cfg))
   {
-    applyCollisionDetector(mConfig, mWorld);
     applyLcpSolver(mConfig, mWorld);
   }
 
@@ -359,19 +329,7 @@ private:
   void renderSolverControls()
   {
     ImGui::Separator();
-    ImGui::Text("Collision / solver");
-
-    bool odeSelected = mConfig.useOdeCollision;
-#if DART_HAVE_ODE
-    if (ImGui::Checkbox(
-            "Use ODE collision (closer to Gazebo repro)", &odeSelected)) {
-      mConfig.useOdeCollision = odeSelected;
-      applyCollisionDetector(mConfig, mWorld);
-    }
-#else
-    (void)odeSelected;
-    ImGui::TextDisabled("ODE collision detector not built");
-#endif
+    ImGui::Text("Solver");
     bool pgs = mConfig.usePgsSolver;
     ImGui::SameLine();
     if (ImGui::Checkbox("Force PGS solver", &pgs)) {
@@ -381,15 +339,6 @@ private:
 
     const auto contacts = mWorld->getLastCollisionResult().getNumContacts();
     ImGui::Text("Contacts last step: %zu", contacts);
-
-#if DART_HAVE_ODE
-    if (mConfig.useOdeCollision) {
-      ImGui::TextColored(
-          ImVec4(0.9f, 0.7f, 0.2f, 1.0f),
-          "ODE collision detector requested; requires "
-          "DART_BUILD_COLLISION_ODE.");
-    }
-#endif
   }
 
   void renderMimicTable()

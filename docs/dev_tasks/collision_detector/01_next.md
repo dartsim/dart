@@ -78,19 +78,24 @@
 - Fixed plane AABB handling to avoid NaNs and restored single-group distance result ordering to match group insertion order.
 - Added axis-aligned distance paths for box-box, cylinder-box, and parallel cylinder-cylinder cases, plus plane-aligned nearest point selection for box-plane, sphere-plane, and cylinder-plane.
 - Updated ellipsoid-as-sphere core radius to use diameters.
-- Adjusted raycast AABB entry handling for inside hits (box inside-hit still failing).
-- Current local failures: UNIT_collision_DartRaycast (InsideHits), UNIT_collision_DartDistance (SphereRotatedPlaneDistance, CylinderRotatedPlaneDistance).
+- Fixed box inside-hit raycast normal/fraction selection.
+- Latest local runs: `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartDistance` pass.
+- Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
+- Added tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
+- Switched the default collision detector to the built-in detector and
+  deprecated backend-selection APIs.
+- Migrated examples and tutorials away from backend-selection APIs and updated
+  relevant docs to describe legacy backends.
 
 ## Next Actions
 
-- Fix box inside-hit raycast normal/fraction selection.
-- Correct rotated-plane nearest points for sphere-plane and cylinder-plane distances.
 - Extend raycast coverage to edge cases and future shape types.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Explore additional distance broadphase pruning and candidate ordering improvements.
-- Capture baseline timings for the new raycast benchmark.
 - Validate build and install paths after the engine layout change.
 - Revisit the raycast enablement default once gazebo expectations change.
+- Audit remaining downstream-facing docs/examples for deprecated backend
+  selection and update as needed.
 
 ## Questions and Decisions Needed
 
@@ -101,6 +106,7 @@
 - Core namespace: `dart::collision`.
 - Implementation lives under `dart/collision/dart`.
 - Core builds into the `dart` target for now (no separate CMake target).
-- Switch the default detector only after feature parity and performance are acceptable.
+- Default collision detector is the built-in detector, with backend selection
+  deprecated during the migration window.
 - No additional downstream constraints beyond keeping the gazebo integration workflow green.
 - Engine class name: `DartCollisionEngine`.

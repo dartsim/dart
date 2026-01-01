@@ -45,6 +45,8 @@ namespace collision {
 
 class FCLCollisionObject;
 
+/// Deprecated in DART 7; will be removed in DART 8 in favor of the built-in
+/// collision detector.
 class DART_API FCLCollisionDetector : public CollisionDetector
 {
 public:

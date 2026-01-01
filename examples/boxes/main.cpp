@@ -32,14 +32,11 @@
 
 #include <dart/gui/All.hpp>
 
-#include <dart/collision/bullet/All.hpp>
-
 #include <dart/All.hpp>
 
 #include <osgShadow/ShadowMap>
 
 using namespace dart;
-using dart::simulation::CollisionDetectorType;
 
 [[nodiscard]] dynamics::SkeletonPtr createBox(
     const Eigen::Vector3d& position,
@@ -77,9 +74,6 @@ int main()
 {
   // Create an empty world
   auto world = simulation::World::create();
-
-  // Set collision detector type
-  world->setCollisionDetector(collision::BulletCollisionDetector::create());
 
   // Create dim x dim x dim boxes
   auto dim = 5;

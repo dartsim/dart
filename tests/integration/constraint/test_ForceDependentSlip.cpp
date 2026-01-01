@@ -33,6 +33,7 @@
 #include "../../helpers/GTestUtils.hpp"
 #include "../../helpers/dynamics_helpers.hpp"
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/math/Geometry.hpp"
@@ -53,7 +54,9 @@ constexpr double kVelocityTol = 2e-3;
 std::shared_ptr<World> createWorld()
 {
   auto world = simulation::World::create();
+  DART_SUPPRESS_DEPRECATED_BEGIN
   world->setCollisionDetector(collision::OdeCollisionDetector::create());
+  DART_SUPPRESS_DEPRECATED_END
   return world;
 }
 

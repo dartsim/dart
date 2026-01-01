@@ -42,6 +42,7 @@
 
 #include <dart/dynamics/Fwd.hpp>
 
+#include <dart/common/Deprecated.hpp>
 #include <dart/Export.hpp>
 
 #include <optional>
@@ -116,8 +117,10 @@ public:
   virtual const constraint::ConstraintSolver* getConstraintSolver() const;
 
   // Legacy collision APIs (optional)
+  DART_DEPRECATED(7.0)
   virtual void setCollisionDetector(
       const collision::CollisionDetectorPtr& collisionDetector);
+  DART_DEPRECATED(7.0)
   virtual void setCollisionDetector(CollisionDetectorType collisionDetector);
   virtual collision::CollisionDetectorPtr getCollisionDetector();
   virtual collision::ConstCollisionDetectorPtr getCollisionDetector() const;

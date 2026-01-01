@@ -52,6 +52,7 @@
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
+#include <dart/common/Deprecated.hpp>
 #include <dart/common/NameManager.hpp>
 #include <dart/common/SmartPointer.hpp>
 #include <dart/common/Subject.hpp>
@@ -100,7 +101,8 @@ struct WorldConfig final
   std::string name = "world";
 
   /// Preferred collision detector for the world.
-  CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
+  DART_DEPRECATED(7.0)
+  CollisionDetectorType collisionDetector = CollisionDetectorType::Dart;
 
   WorldConfig() = default;
   explicit WorldConfig(std::string worldName) : name(std::move(worldName)) {}
@@ -275,10 +277,12 @@ public:
   const collision::CollisionResult& getLastCollisionResult() const;
 
   /// Sets the collision detector used by the world's constraint solver.
+  DART_DEPRECATED(7.0)
   void setCollisionDetector(
       const collision::CollisionDetectorPtr& collisionDetector);
 
   /// Sets the collision detector via a typed backend selection.
+  DART_DEPRECATED(7.0)
   void setCollisionDetector(CollisionDetectorType collisionDetector);
 
   /// Returns the collision detector used by the world.

@@ -151,6 +151,7 @@ public:
   double getTimeStep() const;
 
   /// Set collision detector
+  DART_DEPRECATED(7.0)
   void setCollisionDetector(
       const std::shared_ptr<collision::CollisionDetector>& collisionDetector);
 

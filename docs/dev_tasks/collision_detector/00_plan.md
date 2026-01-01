@@ -5,6 +5,7 @@
 - Phase 0 (research and inventory): complete
 - Phase 1 (architecture proposal): complete
 - Phase 2 (core implementation): in progress
+- Phase 2.5 (default switch and backend-selection deprecation): in progress
 - Raycast MVP runs in DartCollisionEngine for supported primitives; distance MVP covers primitives.
 - Raycast benchmark added for baseline tracking.
 - Core engine implementation files live under `dart/collision/dart/engine`.
@@ -30,7 +31,8 @@
 - Core namespace: `dart::collision`.
 - Implementation lives under `dart/collision/dart` during this effort.
 - Core builds into the `dart` target for now (no separate CMake target).
-- Default switch only after feature parity and acceptable performance.
+- Default collision detector is the built-in detector; parity/performance
+  tracking remains part of the migration.
 - Engine class name: `DartCollisionEngine`.
 - Core engine implementation files live under `dart/collision/dart/engine`, with adapter headers in `dart/collision/dart`.
 - DART raycast is enabled per detector via `DARTCollisionDetector::setRaycastEnabled` for now.
@@ -40,9 +42,13 @@
 1. Research and inventory (complete): current API surface, integration points, tests, benchmarks, build and packaging touchpoints.
 2. Architecture proposal: data model, ownership, broadphase and narrowphase approach, shape adaptation, and factory integration.
 3. Core implementation: new detector core, adapters, and compatibility layers.
-4. Feature parity: collision, distance, raycast, filtering, contact generation, and self-collision semantics.
-5. Performance parity: profiling, targeted optimizations, and benchmark coverage.
-6. Migration and dependency removal: deprecation messaging, downstream guidance, and cleanup.
+4. Default switch and deprecations: update defaults, deprecate backend
+   selection, and migrate examples/docs.
+5. Feature parity: collision, distance, raycast, filtering, contact generation,
+   and self-collision semantics.
+6. Performance parity: profiling, targeted optimizations, and benchmark
+   coverage.
+7. Migration and dependency removal: downstream guidance and cleanup.
 
 ## Deprecation and Migration Strategy
 

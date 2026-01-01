@@ -42,8 +42,8 @@ If you see contact instability:
 
 - Reduce `dt` first.
 - Verify collision geometry and inertial parameters (mass/inertia scaling).
-- Experiment with collision detector backends and constraint solver settings
-  through `World::getConstraintSolver()`.
+- Experiment with collision settings and constraint solver settings through
+  `World::getConstraintSolver()`.
 
 ## Prefer compliance over huge gains
 

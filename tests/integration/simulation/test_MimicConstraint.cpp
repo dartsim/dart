@@ -59,6 +59,7 @@
 
 #include <dart/math/Constants.hpp>
 
+#include <dart/common/Diagnostics.hpp>
 #include <dart/common/Uri.hpp>
 
 #include <Eigen/Core>
@@ -99,16 +100,20 @@ void setCollisionDetector(WorldPtr world, bool useOde)
 {
 #if DART_HAVE_ODE
   if (useOde) {
+    DART_SUPPRESS_DEPRECATED_BEGIN
     world->getConstraintSolver()->setCollisionDetector(
         dart::collision::OdeCollisionDetector::create());
+    DART_SUPPRESS_DEPRECATED_END
     return;
   }
 #else
   (void)useOde;
 #endif
 #if DART_HAVE_BULLET
+  DART_SUPPRESS_DEPRECATED_BEGIN
   world->getConstraintSolver()->setCollisionDetector(
       dart::collision::BulletCollisionDetector::create());
+  DART_SUPPRESS_DEPRECATED_END
 #else
   (void)world;
 #endif

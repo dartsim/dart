@@ -35,6 +35,7 @@
 #include "helpers/dynamics_helpers.hpp"
 
 #include "dart/collision/dart/DartCollisionDetector.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
@@ -125,7 +126,9 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
 #endif
 
   WorldConfig config;
+  DART_SUPPRESS_DEPRECATED_BEGIN
   config.collisionDetector = CollisionDetectorType::Dart;
+  DART_SUPPRESS_DEPRECATED_END
   WorldPtr world = World::create(config);
   EXPECT_TRUE(world != nullptr);
   world->setGravity(Vector3d(0.0, -10.00, 0.0));

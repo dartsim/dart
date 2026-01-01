@@ -38,6 +38,8 @@
 
   #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 
+  #include <dart/common/Diagnostics.hpp>
+
   #include <dart/dynamics/BoxShape.hpp>
   #include <dart/dynamics/EllipsoidShape.hpp>
   #include <dart/dynamics/FreeJoint.hpp>
@@ -74,8 +76,10 @@ RollingResult runRollingTrial(
   auto world = dart::simulation::World::create("bullet-ellipsoid-rolling");
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->setTimeStep(0.001);
+  DART_SUPPRESS_DEPRECATED_BEGIN
   world->setCollisionDetector(
       dart::collision::BulletCollisionDetector::create());
+  DART_SUPPRESS_DEPRECATED_END
 
   // Ramp
   const double rampThickness = 0.1;

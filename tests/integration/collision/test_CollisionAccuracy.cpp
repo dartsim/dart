@@ -38,6 +38,8 @@
 
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 
+#include <dart/common/Diagnostics.hpp>
+
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
@@ -48,8 +50,6 @@
 #include <gtest/gtest.h>
 
 using namespace dart::test;
-using dart::simulation::CollisionDetectorType;
-
 //==============================================================================
 TEST(Issue1184, Accuracy)
 {
@@ -106,8 +106,10 @@ TEST(Issue1184, Accuracy)
       for (const double halfsize : halfsizes) {
         for (const bool falling : fallingModes) {
           auto world = dart::simulation::World::create("test");
+          DART_SUPPRESS_DEPRECATED_BEGIN
           world->setCollisionDetector(
               dart::collision::BulletCollisionDetector::create());
+          DART_SUPPRESS_DEPRECATED_END
 
           Eigen::Isometry3d tf_object = Eigen::Isometry3d::Identity();
           const double initialHeight

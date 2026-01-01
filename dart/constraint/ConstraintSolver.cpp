@@ -37,7 +37,6 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DartCollisionDetector.hpp"
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
@@ -70,7 +69,7 @@ using namespace dynamics;
 
 //==============================================================================
 ConstraintSolver::ConstraintSolver()
-  : mCollisionDetector(collision::FCLCollisionDetector::create()),
+  : mCollisionDetector(collision::DARTCollisionDetector::create()),
     mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
     mCollisionOption(collision::CollisionOption(
         true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
@@ -79,10 +78,6 @@ ConstraintSolver::ConstraintSolver()
     mLcpSolver(std::make_shared<math::DantzigSolver>()),
     mSecondaryLcpSolver(std::make_shared<math::PgsSolver>())
 {
-  auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-      mCollisionDetector);
-
-  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
 }
 
 //==============================================================================

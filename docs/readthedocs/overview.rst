@@ -36,7 +36,8 @@ General
 Collision Detection
 ~~~~~~~~~~~~~~~~~~~
 
-* Support for multiple collision detectors: FCL, Bullet, and ODE.
+* Support for multiple legacy collision detectors (deprecated in DART 7;
+  scheduled for removal in DART 8).
 * Support for various collision shapes including primitive shapes, concave mesh, and probabilistic voxel grid.
 * Support for minimum distance computation.
 

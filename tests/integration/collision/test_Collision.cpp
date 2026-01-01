@@ -33,6 +33,7 @@
 #include "dart/collision/All.hpp"
 #include "dart/collision/fcl/All.hpp"
 #include "dart/common/All.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/All.hpp"
 #include "dart/math/All.hpp"
@@ -1705,7 +1706,9 @@ void testFilter(const std::shared_ptr<CollisionDetector>& cd)
   // Create a world and add the created skeleton
   auto world = std::make_shared<simulation::World>();
   auto constraintSolver = world->getConstraintSolver();
+  DART_SUPPRESS_DEPRECATED_BEGIN
   constraintSolver->setCollisionDetector(cd);
+  DART_SUPPRESS_DEPRECATED_END
   world->addSkeleton(skel);
 
   // Get the collision group from the constraint solver
@@ -1837,7 +1840,9 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
 
   // Regression test for #666
   auto world = std::make_unique<World>();
+  DART_SUPPRESS_DEPRECATED_BEGIN
   world->setCollisionDetector(cd);
+  DART_SUPPRESS_DEPRECATED_END
   world->addSkeleton(boxSkeleton1);
   world->addSkeleton(boxSkeleton2);
   const collision::CollisionResult& result1 = world->getLastCollisionResult();

@@ -40,6 +40,8 @@
 
 #include <dart/math/All.hpp>
 
+#include <dart/common/Diagnostics.hpp>
+
 #include <benchmark/benchmark.h>
 
 using namespace dart;
@@ -83,7 +85,9 @@ namespace {
   auto world = simulation::World::create();
 
   // Set collision detector type
+  DART_SUPPRESS_DEPRECATED_BEGIN
   world->setCollisionDetector(collision::DARTCollisionDetector::create());
+  DART_SUPPRESS_DEPRECATED_END
 
   // Create dim x dim x dim boxes
   for (auto i = 0u; i < dim; ++i) {

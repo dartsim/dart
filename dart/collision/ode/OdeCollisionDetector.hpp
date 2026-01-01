@@ -58,6 +58,8 @@ namespace collision {
 ///
 /// ODE additionally supports ray and heightfiled, but DART doesn't support them
 /// yet.
+/// Deprecated in DART 7; will be removed in DART 8 in favor of the built-in
+/// collision detector.
 class DART_API OdeCollisionDetector : public CollisionDetector
 {
 public:

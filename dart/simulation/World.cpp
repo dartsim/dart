@@ -146,27 +146,26 @@ CollisionDetectorPtr tryCreateCollisionDetector(CollisionDetectorType type)
 
 CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const auto requestedType = config.collisionDetector;
-  const auto requestedKey = toCollisionDetectorKey(requestedType);
+  DART_SUPPRESS_DEPRECATED_END
+  const auto defaultType = CollisionDetectorType::Dart;
   if (auto detector = tryCreateCollisionDetector(requestedType))
     return detector;
 
-  if (requestedType != CollisionDetectorType::Fcl) {
+  if (requestedType != defaultType) {
     DART_WARN(
-        "WorldConfig requested collision detector '{}', but it is not "
-        "available. "
-        "Falling back to the default 'fcl' detector.",
-        requestedKey);
+        "Requested collision detector is not available. Falling back to the "
+        "default detector.");
 
-    if (auto fallback = tryCreateCollisionDetector(CollisionDetectorType::Fcl))
+    if (auto fallback = tryCreateCollisionDetector(defaultType))
       return fallback;
   }
 
   DART_WARN(
-      "Collision detector '{}' is not available and fallback 'fcl' also "
-      "failed. "
-      "The world will keep its existing collision detector.",
-      requestedKey);
+      "Requested collision detector is not available and fallback to the "
+      "default detector also failed. The world will keep its existing collision "
+      "detector.");
   return nullptr;
 }
 
@@ -207,8 +206,11 @@ World::World(const WorldConfig& config)
   addSolver(std::make_unique<RigidSolver>());
 
   if (auto* collisionSolver = getCollisionCapableSolver()) {
-    if (auto detector = resolveCollisionDetector(config))
+    if (auto detector = resolveCollisionDetector(config)) {
+      DART_SUPPRESS_DEPRECATED_BEGIN
       collisionSolver->setCollisionDetector(detector);
+      DART_SUPPRESS_DEPRECATED_END
+    }
   }
 }
 
@@ -238,7 +240,9 @@ WorldPtr World::clone() const
   if (auto* constraintSolver = getConstraintSolver()) {
     auto cd = constraintSolver->getCollisionDetector();
     if (cd) {
+      DART_SUPPRESS_DEPRECATED_BEGIN
       worldClone->setCollisionDetector(cd->cloneWithoutCollisionObjects());
+      DART_SUPPRESS_DEPRECATED_END
     }
   }
 
@@ -840,7 +844,9 @@ void World::setCollisionDetector(
     return;
   }
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   solver->setCollisionDetector(collisionDetector);
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
@@ -859,7 +865,9 @@ void World::setCollisionDetector(CollisionDetectorType collisionDetector)
     return;
   }
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   setCollisionDetector(detector);
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================

@@ -39,6 +39,7 @@
 
 #include <dart/dynamics/SphereShape.hpp>
 
+#include <dart/common/Diagnostics.hpp>
 #include <dart/common/String.hpp>
 
 #include <gtest/gtest.h>
@@ -66,8 +67,10 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
   // Note: When skeletons are added to a world, the constraint solver will
   // subscribe to them.
   dart::simulation::WorldPtr world = dart::simulation::World::create();
+  DART_SUPPRESS_DEPRECATED_BEGIN
   world->setCollisionDetector(
       dart::collision::CollisionDetector::getFactory()->create(GetParam()));
+  DART_SUPPRESS_DEPRECATED_END
 
   dart::dynamics::SkeletonPtr skel_A = dart::dynamics::Skeleton::create("A");
   dart::dynamics::SkeletonPtr skel_B = dart::dynamics::Skeleton::create("B");
@@ -345,7 +348,9 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
   auto cd
       = dart::collision::CollisionDetector::getFactory()->create(GetParam());
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   world->setCollisionDetector(cd);
+  DART_SUPPRESS_DEPRECATED_END
 
   dart::dynamics::SkeletonPtr skel_A = dart::dynamics::Skeleton::create("A");
   dart::dynamics::SkeletonPtr skel_B = dart::dynamics::Skeleton::create("B");

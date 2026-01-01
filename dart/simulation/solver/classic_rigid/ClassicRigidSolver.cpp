@@ -102,7 +102,9 @@ void ClassicRigidSolver::setCollisionDetector(
     return;
   }
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   mConstraintSolver->setCollisionDetector(collisionDetector);
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 void ClassicRigidSolver::setCollisionDetector(

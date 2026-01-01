@@ -39,6 +39,8 @@
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
+#include <dart/common/Diagnostics.hpp>
+
 #include <dart/dynamics/CapsuleShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/Inertia.hpp>
@@ -68,7 +70,9 @@ using DetectorFactory = std::function<dart::collision::CollisionDetectorPtr()>;
 void runCapsuleGroundContactTest(const DetectorFactory& factory)
 {
   auto world = World::create();
+  DART_SUPPRESS_DEPRECATED_BEGIN
   world->getConstraintSolver()->setCollisionDetector(factory());
+  DART_SUPPRESS_DEPRECATED_END
 
   auto ground = createBox({10000, 1000, 0.1}, {0, 0, -0.05});
   ground->setMobile(false);

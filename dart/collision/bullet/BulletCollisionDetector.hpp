@@ -44,6 +44,8 @@
 namespace dart {
 namespace collision {
 
+/// Deprecated in DART 7; will be removed in DART 8 in favor of the built-in
+/// collision detector.
 class DART_API BulletCollisionDetector : public CollisionDetector
 {
 public:

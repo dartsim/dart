@@ -326,12 +326,7 @@ int main()
   Eigen::VectorXd balancedPose = solveIK(biped);
   biped->setPositions(balancedPose);
 
-  WorldConfig config;
-  if (auto* factory = dart::collision::CollisionDetector::getFactory();
-      factory && factory->canCreate("bullet")) {
-    config.collisionDetector = CollisionDetectorType::Bullet;
-  }
-  WorldPtr world = std::make_shared<World>(config);
+  WorldPtr world = World::create();
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
   world->addSkeleton(floor);

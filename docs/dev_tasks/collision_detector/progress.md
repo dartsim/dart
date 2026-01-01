@@ -3,7 +3,12 @@
 ## Status
 
 - Phase 2 (core implementation) is in progress.
-- Latest local run: `pixi run test` fails in UNIT_collision_DartRaycast (InsideHits) and UNIT_collision_DartDistance (SphereRotatedPlaneDistance, CylinderRotatedPlaneDistance).
+- Phase 2.5 (default switch + deprecation) complete: built-in detector is the
+  default, backend-selection APIs are deprecated, and examples/docs are
+  migrated.
+- Latest local runs: `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartDistance` pass.
+- Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
+- Raycast baseline (Release): Closest 32=1.90us, 128=7.54us, 512=32.0us; AllHits 32=2.18us, 128=8.59us, 512=38.0us.
 - Core data and broadphase scaffolding are in place, with AABB caching.
 - Narrowphase supports sphere, box, cylinder, and plane primitives.
 - Raycast is available for the supported primitives with AABB pruning.
@@ -42,6 +47,7 @@
 - Distance tests include overlapping box-plane coverage for negative distances.
 - Distance tests include plane offset coverage for sphere queries; raycast tests include plane offset hits.
 - Distance tests include a tilted cylinder-plane case for oblique extent coverage.
+- Distance tests include tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
 - Distance tests include DistanceResult clamping status coverage.
 - Raycast tests include zero-length ray coverage.
 - Distance tests include coverage for DistanceOption without nearest points.
@@ -61,7 +67,16 @@
 - Fixed plane AABB handling to avoid NaNs and restored single-group distance result ordering to match group insertion order.
 - Added axis-aligned distance paths for box-box, cylinder-box, and parallel cylinder-cylinder cases, plus plane-aligned nearest point selection for box-plane, sphere-plane, and cylinder-plane.
 - Updated ellipsoid-as-sphere core radius to use diameters.
-- Adjusted raycast AABB entry handling for inside hits (needs follow-up for box inside-hit behavior).
+- Fixed box inside-hit raycast normal/fraction selection.
+- Switched the default collision detector to the built-in detector in world and
+  constraint solver construction.
+- Deprecated backend-selection APIs and added deprecation notes to legacy
+  detector classes.
+- Updated `.skel` parsing to ignore collision detector selection with a
+  deprecation warning.
+- Migrated examples/tutorials away from backend-selection APIs and added
+  deprecation suppressions in tests/benchmarks.
+- Updated docs to describe legacy collision backends as deprecated.
 
 ## Completed Checkpoints
 
@@ -107,6 +122,7 @@
 - Added overlapping box-plane distance coverage for negative distance semantics.
 - Added plane offset coverage for sphere distance and raycast queries.
 - Added tilted cylinder-plane distance coverage for oblique extent checks.
+- Added tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
 - Added DistanceResult clamping status coverage.
 - Added zero-length raycast coverage.
 - Added coverage for DistanceOption without nearest points.
@@ -121,11 +137,11 @@
 - Moved core engine implementation files into `dart/collision/dart/engine` and updated includes to use the engine path.
 - Renamed adapter file names to `DartCollision*` and updated includes to match the new paths.
 - Gated DART raycast behind `DARTCollisionDetector::setRaycastEnabled` and updated DART raycast tests and benchmarks to enable it explicitly.
+- Fixed box inside-hit raycast normal/fraction selection.
+- Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart`.
 
 ## Next Steps
 
-- Fix box inside-hit raycast normal and fraction selection.
-- Correct rotated-plane nearest points for sphere-plane and cylinder-plane distances.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
-- Capture baseline timings for the new raycast benchmark.
 - Validate build and install paths after the engine layout change.
+- Continue parity/performance tracking to justify future legacy backend removal.

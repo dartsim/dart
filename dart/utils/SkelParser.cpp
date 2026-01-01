@@ -33,8 +33,6 @@
 #include "dart/utils/SkelParser.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/dart/DartCollisionDetector.hpp"
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/config.hpp"
@@ -719,30 +717,6 @@ tinyxml2::XMLElement* checkFormatAndGetWorldElement(
 }
 
 //==============================================================================
-static std::shared_ptr<collision::CollisionDetector>
-createFclMeshCollisionDetector()
-{
-  auto cd = collision::CollisionDetector::getFactory()->create("fcl");
-  auto fcl = std::static_pointer_cast<collision::FCLCollisionDetector>(cd);
-  fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-  fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::DART);
-
-  return fcl;
-}
-
-//==============================================================================
-static std::shared_ptr<collision::CollisionDetector>
-createFclPrimitiveCollisionDetector()
-{
-  auto cd = collision::CollisionDetector::getFactory()->create("fcl");
-  auto fcl = std::static_pointer_cast<collision::FCLCollisionDetector>(cd);
-  fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
-  fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::DART);
-
-  return fcl;
-}
-
-//==============================================================================
 simulation::WorldPtr readWorld(
     tinyxml2::XMLElement* _worldElement,
     const common::Uri& _baseUri,
@@ -777,37 +751,11 @@ simulation::WorldPtr readWorld(
     }
 
     // Collision detector
-    std::shared_ptr<collision::CollisionDetector> collision_detector;
-
     if (hasElement(physicsElement, "collision_detector")) {
-      const auto cdType = getValueString(physicsElement, "collision_detector");
-
-      if (cdType == "fcl_mesh") {
-        collision_detector = createFclMeshCollisionDetector();
-      } else if (cdType == "fcl") {
-        collision_detector
-            = collision::CollisionDetector::getFactory()->create("fcl");
-        auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-            collision_detector);
-        cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
-        cd->setContactPointComputationMethod(
-            collision::FCLCollisionDetector::DART);
-      } else {
-        collision_detector
-            = collision::CollisionDetector::getFactory()->create(cdType);
-      }
-
-      DART_WARN_IF(
-          !collision_detector,
-          "Unknown collision detector[{}]. Default collision "
-          "detector[fcl_mesh] will be loaded.",
-          cdType);
+      DART_WARN(
+          "Collision detector selection in .skel files is deprecated and "
+          "ignored. Using the built-in collision detector.");
     }
-
-    if (!collision_detector)
-      collision_detector = createFclPrimitiveCollisionDetector();
-
-    newWorld->setCollisionDetector(collision_detector);
   }
 
   //--------------------------------------------------------------------------

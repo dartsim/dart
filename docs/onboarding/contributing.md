@@ -206,7 +206,7 @@ DART is developed by a diverse community of researchers and engineers from aroun
 | [Chen Tang](https://github.com/chentang)                                 | Collision detection                                                                     |
 | [Konstantinos Chatzilygeroudis](https://github.com/costashatz)           | Mimic joint, OSG shadows, shape deep copy, build and bug fixes                          |
 | [Sehoon Ha](https://github.com/sehoonha)                                 | Early DART data structure design, [pydart](https://github.com/sehoonha/pydart)          |
-| [Addisu Taddese](https://github.com/azeey)                               | ODE collision detector, slip effect, velocity/position integration, constraint grouping |
+| [Addisu Taddese](https://github.com/azeey)                               | Legacy collision detector, slip effect, velocity/position integration, constraint grouping |
 | [Christoph Hinze](https://github.com/chhinze)                            | Python bindings                                                                         |
 | [Silvio Traversaro](https://github.com/traversaro)                       | Build fixes on Windows/MSVC, vcpkg packaging                                            |
 

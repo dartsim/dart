@@ -38,6 +38,8 @@
 
   #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 
+  #include <dart/common/Diagnostics.hpp>
+
   #include <dart/dynamics/BoxShape.hpp>
   #include <dart/dynamics/CylinderShape.hpp>
   #include <dart/dynamics/FreeJoint.hpp>
@@ -76,7 +78,9 @@ RollingResult runRollingTrial()
   auto world = World::create("bullet-cylinder-rolling");
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->setTimeStep(0.001);
+  DART_SUPPRESS_DEPRECATED_BEGIN
   world->setCollisionDetector(BulletCollisionDetector::create());
+  DART_SUPPRESS_DEPRECATED_END
 
   // Ground plane.
   const double groundThickness = 0.1;

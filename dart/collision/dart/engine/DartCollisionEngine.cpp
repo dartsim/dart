@@ -338,8 +338,8 @@ bool raycastBox(
   const Eigen::Vector3d dirLocal = inv.linear() * dir;
   const Eigen::Vector3d halfSize = 0.5 * core.shape.size;
 
-  double tmin = 0.0;
-  double tmax = 1.0;
+  double tmin = -std::numeric_limits<double>::infinity();
+  double tmax = std::numeric_limits<double>::infinity();
   int axisEntry = -1;
   int axisExit = -1;
   double signEntry = 0.0;
@@ -375,7 +375,7 @@ bool raycastBox(
       return false;
   }
 
-  if (tmax < 0.0)
+  if (tmax < 0.0 || tmin > 1.0)
     return false;
 
   double tHit = tmin;

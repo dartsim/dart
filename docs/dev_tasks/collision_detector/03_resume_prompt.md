@@ -29,7 +29,8 @@ Decisions:
 - Core namespace is `dart::collision`.
 - Implementation lives under `dart/collision/dart` for now.
 - Core builds into the `dart` target (no standalone CMake target yet).
-- Default detector switch happens only after parity and performance are proven.
+- Default collision detector is the built-in detector; parity and performance
+  tracking now inform legacy backend removal.
 - Engine class name is `DartCollisionEngine`.
 - Future direction: DART8 consolidates under `dart/collision/`, dropping other backends.
 
@@ -92,8 +93,17 @@ Current status:
 - Added axis-aligned distance paths for box-box, cylinder-box, and parallel cylinder-cylinder cases.
 - Added plane-aligned nearest point selection for box-plane, sphere-plane, and cylinder-plane distances.
 - Updated ellipsoid-as-sphere core radius to use diameters.
-- Adjusted raycast AABB entry handling for inside hits (box inside-hit still failing).
-- Current local failures: UNIT_collision_DartRaycast (InsideHits) and UNIT_collision_DartDistance (SphereRotatedPlaneDistance, CylinderRotatedPlaneDistance).
+- Fixed box inside-hit raycast normal/fraction selection.
+- Latest local runs: `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartDistance` pass.
+- Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
+- Added tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
+- Default collision detector switched to the built-in detector in world and
+  constraint solver initialization.
+- Backend-selection APIs are deprecated; legacy detector classes carry
+  deprecation notes.
+- Examples/tutorials migrated off backend-selection APIs; tests/benchmarks
+  suppress deprecated calls.
+- `.skel` collision detector selection is deprecated and ignored (with warning).
 
 Where to look:
 
@@ -104,9 +114,7 @@ Where to look:
 
 Next focus:
 
-- Fix box inside-hit raycast normal/fraction selection.
-- Correct rotated-plane nearest points for sphere-plane and cylinder-plane distances.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Extend raycast coverage to additional edge cases and future shape types.
-- Capture baseline timings for the raycast benchmark.
+- Keep parity/performance tracking current for legacy backend removal.
 - Keep task docs updated after each checkpoint.

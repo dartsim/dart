@@ -73,7 +73,8 @@ DART addresses the need for:
 ### Key Features
 
 - **Advanced Dynamics**: Articulated body simulation with 10+ joint types, contact resolution, constraint solving
-- **Multiple Collision Backends**: FCL (default), Bullet, DART native, ODE
+- **Collision Detection**: Built-in detector with legacy backends deprecated in
+  DART 7 and scheduled for removal in DART 8
 - **3D Visualization**: OpenSceneGraph-based rendering with shadows, materials, and real-time updates
 - **Interactive Manipulation**: Drag-and-drop, inverse kinematics, interactive frames with visual handles
 - **ImGui Integration**: Modern immediate-mode GUI for controls, debugging, and custom widgets
@@ -92,7 +93,7 @@ DART addresses the need for:
 | **Build System**        | CMake 3.22.1+         | Cross-platform builds     |
 | **Python Bindings**     | nanobind 2.9.x        | Python API                |
 | **Linear Algebra**      | Eigen 3.4.0+          | Math operations           |
-| **Collision Detection** | FCL 0.7.0+            | Primary collision backend |
+| **Collision Detection** | Built-in detector     | Primary collision backend |
 | **3D Rendering**        | OpenSceneGraph 3.0.0+ | Visualization             |
 | **GUI Framework**       | Dear ImGui 1.91.9     | Immediate-mode UI         |
 | **Model Loading**       | assimp 5.4.3+         | 3D asset import           |
@@ -232,7 +233,8 @@ graph TB
 
 - **World**: Top-level simulation container with time-stepping
 - **Skeleton**: Articulated body system (robot/character)
-- **Collision Detection**: Multi-backend support (FCL, Bullet, ODE)
+- **Collision Detection**: Built-in detector with legacy backends deprecated in
+  DART 7 and scheduled for removal in DART 8
 - **Constraint Solver**: LCP-based constraint resolution
 - **Integration**: Time-stepping schemes (Euler, Semi-Implicit Euler, RK4)
 
@@ -521,14 +523,13 @@ graph TB
 
 **File**: [`CollisionDetector.hpp`](dart/collision/CollisionDetector.hpp) | [`CollisionGroup.hpp`](dart/collision/CollisionGroup.hpp)
 
-**Purpose**: Pluggable collision detection system supporting multiple backends. Detects collisions between shapes and generates contact points.
+**Purpose**: Collision detection system with a built-in detector and legacy
+backends available during the DART 7 deprecation window. Detects collisions
+between shapes and generates contact points.
 
-**Key Backends**:
+**Key Detector**:
 
-- [`FCLCollisionDetector`](dart/collision/fcl/FCLCollisionDetector.hpp) - Default, uses FCL library
-- [`BulletCollisionDetector`](dart/collision/bullet/BulletCollisionDetector.hpp) - Uses Bullet physics
-- [`DARTCollisionDetector`](dart/collision/dart/DartCollisionDetector.hpp) - Native implementation
-- [`OdeCollisionDetector`](dart/collision/ode/OdeCollisionDetector.hpp) - Uses ODE library
+- [`DARTCollisionDetector`](dart/collision/dart/DartCollisionDetector.hpp) - Built-in implementation
 
 **Key Elements**:
 
@@ -539,7 +540,7 @@ graph TB
 **Depends On**:
 
 - **Internal**: Shape, CollisionObject
-- **External**: FCL, Bullet, or ODE depending on backend
+- **External**: Legacy collision libraries (deprecated)
 
 ---
 
@@ -1283,7 +1284,7 @@ This repository contains additional detailed analysis documents:
 ### Key Design Patterns Used in DART
 
 - **Factory Pattern**: Skeleton::create(), Joint factories
-- **Strategy Pattern**: Pluggable collision backends, integrators, solvers
+- **Strategy Pattern**: Pluggable collision backends (legacy), integrators, solvers
 - **Observer Pattern**: Event handlers, callbacks
 - **Composite Pattern**: Frame hierarchy, BodyNode tree
 - **Aspect Pattern**: Runtime extensibility for entities
@@ -1299,7 +1300,7 @@ This repository contains additional detailed analysis documents:
 
 ✅ **O(n) efficient dynamics** via Featherstone algorithms
 ✅ **Interactive 3D visualization** with OSG + ImGui
-✅ **Multiple collision backends** (FCL, Bullet, ODE)
+✅ **Legacy collision backends** (deprecated in DART 7; scheduled for removal in DART 8)
 ✅ **Python integration** for ML/research workflows
 ✅ **Extensive file format support** (URDF, SDF, MJCF, SKEL)
 ✅ **Cross-platform** with reproducible builds via pixi

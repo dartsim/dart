@@ -58,8 +58,10 @@ public:
   constraint::ConstraintSolver* getConstraintSolver() override;
   const constraint::ConstraintSolver* getConstraintSolver() const override;
 
+  DART_DEPRECATED(7.0)
   void setCollisionDetector(
       const collision::CollisionDetectorPtr& collisionDetector) override;
+  DART_DEPRECATED(7.0)
   void setCollisionDetector(CollisionDetectorType collisionDetector) override;
   collision::CollisionDetectorPtr getCollisionDetector() override;
   collision::ConstCollisionDetectorPtr getCollisionDetector() const override;
