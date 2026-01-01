@@ -2,14 +2,14 @@
 
 ## Status
 
-- Current phase: Phase 1 (mechanical cleanup)
-- Code changes: Phase 1 complete; Phase 2 not started.
+- Current phase: Phase 2 (standard library modernization)
+- Code changes: Phase 2 in progress.
 
 ## Phase checklist
 
 - Phase 0 - Discovery and guardrails: Complete
 - Phase 1 - Mechanical no-op cleanup: Complete
-- Phase 2 - Standard library modernization: Not started
+- Phase 2 - Standard library modernization: In progress
 - Phase 3 - Additive public header updates: Not started
 - Phase 4 - Consolidation and validation: Not started
 
@@ -30,4 +30,7 @@
   it unchanged unless we decide to vendor-update it.
 - Remaining `typedef` usage is limited to third-party baselines and IKFast.
 - Phase 1 checks: `pixi run lint`, `pixi run test` (both passed).
-- Phase 2 pending: no standard library modernization changes yet.
+- Phase 2 started: use `std::erase`/`std::erase_if` for container cleanup and
+  introduce `std::span` in internal helper functions for pointer vector
+  conversions.
+- Phase 2 checks: `pixi run lint`, `pixi run test` (both passed).
