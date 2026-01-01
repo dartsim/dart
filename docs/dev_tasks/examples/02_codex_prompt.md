@@ -32,6 +32,7 @@ Current state (read in repo):
 - Numbered categories now cover the examples tree; uncategorized folders are gone.
 - Most examples have metadata headers; some advanced areas still need gap analysis.
 - `examples/README.md` lists the category order at a high level.
+- Gap analysis priorities are captured in `docs/dev_tasks/examples/01_progress.md`.
 - See `docs/dev_tasks/examples/01_progress.md` for detailed status and gaps.
 
 Deliverables:
