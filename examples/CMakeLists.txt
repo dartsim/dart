@@ -52,8 +52,8 @@ add_subdirectory(07_visualization_and_interaction/raylib)
 add_subdirectory(07_visualization_and_interaction/simulation_event_handler)
 add_subdirectory(07_visualization_and_interaction/tinkertoy)
 
-# None GUI examples
-add_subdirectory(speed_test)
+# Performance and scaling examples
+add_subdirectory(08_performance_and_scaling/speed_test)
 
 # OSG renderer examples
 add_subdirectory(hardcoded_design)

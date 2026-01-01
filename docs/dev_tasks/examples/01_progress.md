@@ -35,6 +35,8 @@
   metadata headers.
 - Created the visualization-and-interaction category and moved initial examples
   with refreshed metadata headers.
+- Created the performance-and-scaling category and moved initial examples with
+  refreshed metadata headers.
 
 ## Discovery findings
 
@@ -75,7 +77,7 @@
 
 ## Next steps
 
-1. Migrate the next category (performance or integration/tools).
+1. Migrate the next category (integration/tools or remaining cleanup).
 2. Keep `examples/CMakeLists.txt` grouping comments aligned with the new
    category layout.
 
