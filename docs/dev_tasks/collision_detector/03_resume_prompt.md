@@ -50,6 +50,7 @@ Current status:
 - Raycast tests include parallel plane surface-start misses.
 - Distance tests include a rotated box case; raycast tests include a rotated plane hit.
 - Raycast tests include rotated plane offset hits.
+- Raycast tests include rotated plane parallel misses.
 - Raycast tests include tangent sphere hits and parallel plane misses.
 - Distance tests include cylinder-cylinder nearest points; raycast tests include tangent cylinder hits.
 - Raycast tests include cylinder cap rim hits.
