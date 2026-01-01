@@ -30,6 +30,7 @@
 - Expanded distance tests for sphere-plane, sphere-box, sphere-cylinder, and box-cylinder with nearest-point checks.
 - Added raycast inside-hit coverage for sphere, box, and cylinder.
 - Added raycast surface-start coverage for sphere, box, cylinder, and plane.
+- Added raycast parallel plane surface-start miss coverage.
 - Added rotated box distance coverage and a rotated plane raycast check.
 - Added tangent sphere and parallel plane raycast coverage.
 - Added cylinder-cylinder nearest-point checks and tangent cylinder raycast coverage.

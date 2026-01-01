@@ -18,6 +18,7 @@
 - Distance tests now cover sphere-plane, sphere-box, sphere-cylinder, and box-cylinder nearest points.
 - Raycast tests now include inside-hit cases for sphere, box, and cylinder.
 - Raycast tests now include surface-start hits for sphere, box, cylinder, and plane.
+- Raycast tests now include parallel plane surface-start misses.
 - Distance tests include rotated box coverage, and raycast tests include a rotated plane hit.
 - Raycast tests include tangent sphere hits and parallel plane misses.
 - Distance tests now check cylinder-cylinder nearest points; raycast tests include tangent cylinder hits.
@@ -94,6 +95,7 @@
 - Expanded distance tests for sphere-plane, sphere-box, sphere-cylinder, and box-cylinder.
 - Added inside-hit raycast coverage for sphere, box, and cylinder.
 - Added surface-start raycast coverage for sphere, box, cylinder, and plane.
+- Added parallel plane surface-start raycast miss coverage.
 - Added rotated box distance coverage and a rotated plane raycast check.
 - Added tangent sphere and parallel plane raycast coverage.
 - Added cylinder-cylinder nearest-point checks and tangent cylinder raycast coverage.
