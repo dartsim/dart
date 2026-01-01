@@ -48,6 +48,7 @@
 - Added diagonal cylinder-cylinder distance coverage for oblique separation.
 - Added perpendicular cylinder-cylinder distance coverage for non-parallel axes.
 - Added rotated box-box distance coverage for aligned separation.
+- Added skewed box-cylinder distance coverage for non-parallel axes.
 - Added distance coverage for filters rejecting all pairs.
 - Added rotated box-cylinder distance coverage for axial separation.
 - Added diagonal box-cylinder distance coverage for oblique separation with axial offsets.
