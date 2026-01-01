@@ -88,6 +88,7 @@ Current status:
 - Distance tests include overlapping box-plane coverage for negative distances.
 - Distance tests include plane offset coverage for sphere queries; raycast tests include plane offset hits.
 - Distance tests include a tilted cylinder-plane case for oblique extent coverage.
+- Distance tests include tilted plane overlap coverage for cylinder-plane distances.
 - Distance tests include DistanceResult clamping status coverage.
 - Raycast tests include zero-length ray coverage.
 - Distance tests include coverage for DistanceOption without nearest points.

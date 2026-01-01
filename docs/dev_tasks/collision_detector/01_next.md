@@ -71,6 +71,7 @@
 - Added overlapping box-plane distance coverage for negative distance semantics.
 - Added plane offset coverage for sphere distance and raycast queries.
 - Added tilted cylinder-plane distance coverage for oblique extent checks.
+- Added tilted cylinder-plane overlap distance coverage.
 - Added DistanceResult clamping status coverage.
 - Added zero-length raycast coverage.
 - Added coverage for DistanceOption without nearest points.
