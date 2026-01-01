@@ -206,3 +206,29 @@ TEST(CompositeTests, ReleaseAndMovePreservesAspectLifecycle)
   EXPECT_FALSE(detachedAgain->hasComposite());
   EXPECT_EQ(second.get<StatefulAspect>(), nullptr);
 }
+
+//==============================================================================
+TEST(CompositeTests, CloneableMapCopyHandlesNullEntries)
+{
+  Composite::State source;
+  source.getMap().emplace(typeid(StatefulAspect), nullptr);
+  EXPECT_EQ(source.getMap().size(), 1u);
+
+  Composite::State destination;
+  destination.copy(source);
+
+  EXPECT_EQ(destination.getMap().size(), 1u);
+  EXPECT_EQ(destination.get<StatefulAspect>(), nullptr);
+
+  Composite::State nonEmpty;
+  auto& nonEmptyState = nonEmpty.getOrCreate<StatefulAspect>();
+  nonEmptyState.value = 2.0;
+  nonEmptyState.visits = 3;
+
+  Composite::State destinationNonEmpty;
+  destinationNonEmpty.copy(nonEmpty);
+  auto* copiedState = destinationNonEmpty.get<StatefulAspect>();
+  ASSERT_NE(copiedState, nullptr);
+  EXPECT_DOUBLE_EQ(copiedState->value, 2.0);
+  EXPECT_EQ(copiedState->visits, 3);
+}
