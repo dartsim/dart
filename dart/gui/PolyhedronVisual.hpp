@@ -76,7 +76,7 @@ public:
   void setVertices(const Eigen::Ref<const Eigen::MatrixXd>& vertices);
 
   /// Returns the raw vertices that were provided most recently.
-  const std::vector<Eigen::Vector3d>& getVertices() const;
+  std::span<const Eigen::Vector3d> getVertices() const;
 
   /// Removes all vertices and clears the rendered geometry.
   void clear();

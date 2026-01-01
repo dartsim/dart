@@ -72,13 +72,7 @@ const Contact& CollisionResult::getContact(std::size_t index) const
 }
 
 //==============================================================================
-const std::vector<Contact>& CollisionResult::getContacts() const
-{
-  return mContacts;
-}
-
-//==============================================================================
-std::span<const Contact> CollisionResult::getContactsSpan() const
+std::span<const Contact> CollisionResult::getContacts() const
 {
   return std::span<const Contact>(mContacts);
 }

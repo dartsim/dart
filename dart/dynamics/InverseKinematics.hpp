@@ -270,7 +270,7 @@ public:
   void setDofs(std::span<const std::size_t> _dofs);
 
   /// Get the indices of the DOFs that this IK module will use when solving.
-  const std::vector<std::size_t>& getDofs() const;
+  std::span<const std::size_t> getDofs() const;
 
   /// When a Jacobian is computed for a JacobianNode, it will include a column
   /// for every DegreeOfFreedom that the node depends on. Given the column index
@@ -278,7 +278,7 @@ public:
   /// in the mDofs vector. A value of -1 means that it is not present in the
   /// mDofs vector and therefore should not be used when performing inverse
   /// kinematics.
-  const std::vector<int>& getDofMap() const;
+  std::span<const int> getDofMap() const;
 
   /// Set an objective function that should be minimized while satisfying the
   /// inverse kinematics constraint. Pass in a nullptr to remove the objective
@@ -903,7 +903,7 @@ public:
   /// through this function before returning it will make the gradient
   /// suitable for a standard solver.
   void convertJacobianMethodOutputToGradient(
-      Eigen::VectorXd& grad, const std::vector<std::size_t>& dofs);
+      Eigen::VectorXd& grad, std::span<const std::size_t> dofs);
 
   /// Get the Properties of this GradientMethod
   Properties getGradientMethodProperties() const;
@@ -1154,14 +1154,13 @@ public:
   /// whether each solution is valid. This function will assume that you want
   /// to use the desired transform given by the IK module's current
   /// ErrorMethod.
-  const std::vector<Solution>& getSolutions();
+  std::span<const Solution> getSolutions();
 
   /// Get the solutions for this IK module, along with a tag indicating
   /// whether each solution is valid. This function will compute the
   /// configurations using the given desired transform instead of using the
   /// IK module's current ErrorMethod.
-  const std::vector<Solution>& getSolutions(
-      const Eigen::Isometry3d& _desiredTf);
+  std::span<const Solution> getSolutions(const Eigen::Isometry3d& _desiredTf);
 
   /// You should not need to override this function. Instead, you should
   /// override computeSolutions.
@@ -1177,7 +1176,7 @@ public:
   /// checkSolutionJointLimits() and the end of the function, which will set
   /// the LIMIT_VIOLATED flags of any configurations that are outside of the
   /// position limits.
-  virtual const std::vector<Solution>& computeSolutions(
+  virtual std::span<const Solution> computeSolutions(
       const Eigen::Isometry3d& _desiredBodyTf)
       = 0;
 
@@ -1186,7 +1185,7 @@ public:
   /// the DOFs being used by the InverseKinematics module, but this might not
   /// always be possible, so this function ensures that solutions can be
   /// interpreted correctly.
-  virtual const std::vector<std::size_t>& getDofs() const = 0;
+  virtual std::span<const std::size_t> getDofs() const = 0;
 
   /// Set the configuration of the DOFs. The components of _config must
   /// correspond to the DOFs provided by getDofs().

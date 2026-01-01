@@ -174,7 +174,8 @@ InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const
     newProblem->addIneqConstraint(
         cloneIkFunc(mProblem->getIneqConstraint(i), newIK.get()));
 
-  newProblem->getSeeds() = mProblem->getSeeds();
+  const auto seeds = mProblem->getSeeds();
+  newProblem->getSeeds().assign(seeds.begin(), seeds.end());
 
   return newIK;
 }
@@ -699,10 +700,11 @@ const Eigen::VectorXd& InverseKinematics::GradientMethod::getComponentWeights()
 
 //==============================================================================
 void InverseKinematics::GradientMethod::convertJacobianMethodOutputToGradient(
-    Eigen::VectorXd& grad, const std::vector<std::size_t>& dofs)
+    Eigen::VectorXd& grad, std::span<const std::size_t> dofs)
 {
   const SkeletonPtr& skel = mIK->getNode()->getSkeleton();
-  mInitialPositionsCache = skel->getPositions(dofs);
+  const std::vector<std::size_t> dofIndices(dofs.begin(), dofs.end());
+  mInitialPositionsCache = skel->getPositions(dofIndices);
 
   struct JointIntegrationData
   {
@@ -913,7 +915,7 @@ void InverseKinematics::Analytical::UniqueProperties::
   mQualityComparator = [](const Eigen::VectorXd& better,
                           const Eigen::VectorXd& worse,
                           const InverseKinematics* ik) {
-    const std::vector<std::size_t>& dofs = ik->getAnalytical()->getDofs();
+    const auto dofs = ik->getAnalytical()->getDofs();
     double biggestJump = 0.0;
     bool isBetter = true;
     for (std::size_t i = 0; i < dofs.size(); ++i) {
@@ -973,7 +975,7 @@ InverseKinematics::Analytical::Analytical(
 }
 
 //==============================================================================
-const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions()
+std::span<const IK::Analytical::Solution> IK::Analytical::getSolutions()
 {
   const Eigen::Isometry3d& currentTf = mIK->getNode()->getWorldTransform();
   const Eigen::Vector6d& error = mIK->getErrorMethod().computeError();
@@ -985,7 +987,7 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions()
 }
 
 //==============================================================================
-const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions(
+std::span<const IK::Analytical::Solution> IK::Analytical::getSolutions(
     const Eigen::Isometry3d& _desiredTf)
 {
   mRestoreConfigCache = getPositions();
@@ -1039,7 +1041,7 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions(
 
   setPositions(mRestoreConfigCache);
 
-  return mSolutions;
+  return std::span<const IK::Analytical::Solution>(mSolutions);
 }
 
 //==============================================================================
@@ -1050,7 +1052,7 @@ void InverseKinematics::Analytical::addExtraDofGradient(
 {
   mExtraDofGradCache.resize(mExtraDofs.size());
   const math::Jacobian& J = mIK->computeJacobian();
-  const std::vector<int>& gradMap = mIK->getDofMap();
+  const auto gradMap = mIK->getDofMap();
 
   for (std::size_t i = 0; i < mExtraDofs.size(); ++i) {
     std::size_t depIndex = mExtraDofs[i];
@@ -1107,7 +1109,7 @@ void InverseKinematics::Analytical::computeGradient(
 
     addExtraDofGradient(_grad, error, PRE_ANALYTICAL);
 
-    const std::vector<int>& gradMap = mIK->getDofMap();
+    const auto gradMap = mIK->getDofMap();
     for (std::size_t i = 0; i < mExtraDofs.size(); ++i) {
       const std::size_t depIndex = mExtraDofs[i];
       DegreeOfFreedom* dof = mIK->getNode()->getDependentDof(depIndex);
@@ -1129,7 +1131,7 @@ void InverseKinematics::Analytical::computeGradient(
   mConfigCache = getPositions();
 
   const std::vector<int>& analyticalToDependent = mDofMap;
-  const std::vector<int>& dependentToGradient = mIK->getDofMap();
+  const auto dependentToGradient = mIK->getDofMap();
 
   for (std::size_t i = 0; i < analyticalToDependent.size(); ++i) {
     if (analyticalToDependent[i] == -1)
@@ -1164,13 +1166,17 @@ void InverseKinematics::Analytical::computeGradient(
 //==============================================================================
 void InverseKinematics::Analytical::setPositions(const Eigen::VectorXd& _config)
 {
-  mIK->getNode()->getSkeleton()->setPositions(getDofs(), _config);
+  const auto dofs = getDofs();
+  mIK->getNode()->getSkeleton()->setPositions(
+      std::vector<std::size_t>(dofs.begin(), dofs.end()), _config);
 }
 
 //==============================================================================
 Eigen::VectorXd InverseKinematics::Analytical::getPositions() const
 {
-  return mIK->getNode()->getSkeleton()->getPositions(getDofs());
+  const auto dofs = getDofs();
+  return mIK->getNode()->getSkeleton()->getPositions(
+      std::vector<std::size_t>(dofs.begin(), dofs.end()));
 }
 
 //==============================================================================
@@ -1222,9 +1228,8 @@ InverseKinematics::Analytical::getAnalyticalProperties() const
 //==============================================================================
 void InverseKinematics::Analytical::constructDofMap()
 {
-  const std::vector<std::size_t>& analyticalDofs = getDofs();
-  const std::vector<std::size_t>& nodeDofs
-      = mIK->getNode()->getDependentGenCoordIndices();
+  const auto analyticalDofs = getDofs();
+  const auto nodeDofs = mIK->getNode()->getDependentGenCoordIndices();
 
   mDofMap.clear();
   mDofMap.resize(analyticalDofs.size());
@@ -1259,7 +1264,7 @@ void InverseKinematics::Analytical::constructDofMap()
   mExtraDofs.clear();
   mExtraDofs.reserve(isExtraDof.size());
 
-  const std::vector<int>& gradDofMap = mIK->getDofMap();
+  const auto gradDofMap = mIK->getDofMap();
   for (std::size_t i = 0; i < isExtraDof.size(); ++i) {
     if (isExtraDof[i] && (gradDofMap[i] > -1))
       mExtraDofs.push_back(i);
@@ -1269,7 +1274,7 @@ void InverseKinematics::Analytical::constructDofMap()
 //==============================================================================
 void InverseKinematics::Analytical::checkSolutionJointLimits()
 {
-  const std::vector<std::size_t>& dofs = getDofs();
+  const auto dofs = getDofs();
   for (std::size_t i = 0; i < mSolutions.size(); ++i) {
     Solution& s = mSolutions[i];
     const Eigen::VectorXd& q = s.mConfig;
@@ -1338,8 +1343,7 @@ void InverseKinematics::useWholeBody()
 void InverseKinematics::setDofs(std::span<const std::size_t> _dofs)
 {
   mDofs.assign(_dofs.begin(), _dofs.end());
-  const std::vector<std::size_t>& entityDependencies
-      = mNode->getDependentGenCoordIndices();
+  const auto entityDependencies = mNode->getDependentGenCoordIndices();
 
   mDofMap.resize(entityDependencies.size());
   for (std::size_t i = 0; i < mDofMap.size(); ++i) {
@@ -1358,15 +1362,15 @@ void InverseKinematics::setDofs(std::span<const std::size_t> _dofs)
 }
 
 //==============================================================================
-const std::vector<std::size_t>& InverseKinematics::getDofs() const
+std::span<const std::size_t> InverseKinematics::getDofs() const
 {
-  return mDofs;
+  return std::span<const std::size_t>(mDofs);
 }
 
 //==============================================================================
-const std::vector<int>& InverseKinematics::getDofMap() const
+std::span<const int> InverseKinematics::getDofMap() const
 {
-  return mDofMap;
+  return std::span<const int>(mDofMap);
 }
 
 //==============================================================================

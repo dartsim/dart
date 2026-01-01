@@ -40,6 +40,7 @@
 #include <dart/Export.hpp>
 
 #include <memory>
+#include <span>
 #include <unordered_set>
 
 namespace dart {
@@ -100,8 +101,7 @@ public:
       std::size_t _arrayIndex) const = 0;
 
   /// Indices of the generalized coordinates which affect this JacobianNode
-  virtual const std::vector<std::size_t>& getDependentGenCoordIndices()
-      const = 0;
+  virtual std::span<const std::size_t> getDependentGenCoordIndices() const = 0;
 
   /// Same as getNumDependentGenCoords()
   virtual std::size_t getNumDependentDofs() const = 0;
@@ -113,11 +113,10 @@ public:
   virtual const DegreeOfFreedom* getDependentDof(std::size_t _index) const = 0;
 
   /// Return a std::vector of DegreeOfFreedom pointers that this Node depends on
-  virtual const std::vector<DegreeOfFreedom*>& getDependentDofs() = 0;
+  virtual std::span<DegreeOfFreedom* const> getDependentDofs() = 0;
 
   /// Return a std::vector of DegreeOfFreedom pointers that this Node depends on
-  virtual const std::vector<const DegreeOfFreedom*>& getDependentDofs()
-      const = 0;
+  virtual std::span<const DegreeOfFreedom* const> getDependentDofs() const = 0;
 
   /// Returns a DegreeOfFreedom vector containing the dofs that form a Chain
   /// leading up to this JacobianNode from the root of the Skeleton.

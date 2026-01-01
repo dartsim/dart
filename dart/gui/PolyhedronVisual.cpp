@@ -131,9 +131,9 @@ void PolyhedronVisual::setVertices(
 }
 
 //==============================================================================
-const std::vector<Eigen::Vector3d>& PolyhedronVisual::getVertices() const
+std::span<const Eigen::Vector3d> PolyhedronVisual::getVertices() const
 {
-  return mVertices;
+  return std::span<const Eigen::Vector3d>(mVertices);
 }
 
 //==============================================================================

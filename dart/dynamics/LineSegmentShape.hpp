@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/Shape.hpp>
 
+#include <span>
+
 namespace dart {
 namespace dynamics {
 
@@ -87,7 +89,7 @@ public:
   const Eigen::Vector3d& getVertex(std::size_t _idx) const;
 
   /// Get all the vertices
-  const std::vector<Eigen::Vector3d>& getVertices() const;
+  std::span<const Eigen::Vector3d> getVertices() const;
 
   /// Create a connection between the two specified vertices
   void addConnection(std::size_t _idx1, std::size_t _idx2);
@@ -102,7 +104,7 @@ public:
   void removeConnection(std::size_t _connectionIdx);
 
   /// Get all the connections
-  const common::aligned_vector<Eigen::Vector2i>& getConnections() const;
+  std::span<const Eigen::Vector2i> getConnections() const;
 
   /// The returned inertia matrix will be like a very thin cylinder. The _mass
   /// will be evenly distributed across all lines.

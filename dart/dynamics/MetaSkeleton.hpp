@@ -47,6 +47,7 @@
 
 #include <Eigen/Dense>
 
+#include <span>
 #include <string>
 #include <vector>
 
@@ -135,7 +136,7 @@ public:
   /// Deprecated BodyNode list getter kept for downstream consumers (e.g.,
   /// gz-physics) until they migrate away from it.
   DART_DEPRECATED(6.13)
-  virtual const std::vector<const BodyNode*>& getBodyNodes() const = 0;
+  virtual std::span<const BodyNode* const> getBodyNodes() const = 0;
 
   /// Returns all the BodyNodes of given name.
   /// @param[in] name The BodyNode name that want to search.
@@ -228,7 +229,7 @@ public:
   /// Deprecated DOF list getter kept for downstream consumers (e.g.,
   /// gz-physics) until they migrate away from it.
   DART_DEPRECATED(6.13)
-  virtual const std::vector<DegreeOfFreedom*>& getDofs() = 0;
+  virtual std::span<DegreeOfFreedom* const> getDofs() = 0;
 
   /// Deprecated DOF list getter kept for downstream consumers (e.g.,
   /// gz-physics) until they migrate away from it.
@@ -918,6 +919,11 @@ public:
   void setAlpha(double alpha);
 
   /// \{ @name Iterations
+
+  /// Note: For simple iteration without early-exit, prefer span-returning
+  /// accessors (e.g., getBodyNodes()/getDofs() const) with range-for. The
+  /// each*() helpers remain for early-exit and for types that don't expose
+  /// contiguous storage.
 
   /// Iterates all the BodyNodes in this MetaSkeleton and invokes the callback
   /// function.

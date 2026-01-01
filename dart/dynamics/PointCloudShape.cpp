@@ -130,9 +130,9 @@ void PointCloudShape::addPoints(const ::octomap::Pointcloud& pointCloud)
 #endif
 
 //==============================================================================
-const std::vector<Eigen::Vector3d>& PointCloudShape::getPoints() const
+std::span<const Eigen::Vector3d> PointCloudShape::getPoints() const
 {
-  return mPoints;
+  return std::span<const Eigen::Vector3d>(mPoints);
 }
 
 //==============================================================================
@@ -217,10 +217,9 @@ void PointCloudShape::setColors(std::span<const Eigen::Vector4d> colors)
 }
 
 //==============================================================================
-const std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d>>&
-PointCloudShape::getColors() const
+std::span<const Eigen::Vector4d> PointCloudShape::getColors() const
 {
-  return mColors;
+  return std::span<const Eigen::Vector4d>(mColors);
 }
 
 //==============================================================================

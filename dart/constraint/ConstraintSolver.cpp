@@ -130,9 +130,9 @@ void ConstraintSolver::addSkeletons(std::span<const SkeletonPtr> skeletons)
 }
 
 //==============================================================================
-const std::vector<SkeletonPtr>& ConstraintSolver::getSkeletons() const
+std::span<const SkeletonPtr> ConstraintSolver::getSkeletons() const
 {
-  return mSkeletons;
+  return std::span<const SkeletonPtr>(mSkeletons);
 }
 
 //==============================================================================
@@ -557,7 +557,9 @@ void ConstraintSolver::updateConstraints()
       }
 
       if (joint->hasActuatorType(dynamics::Joint::MIMIC)) {
-        auto mimicProps = joint->getMimicDofProperties();
+        std::vector<dynamics::MimicDofProperties> mimicProps(
+            joint->getMimicDofProperties().begin(),
+            joint->getMimicDofProperties().end());
         mimicProps.resize(joint->getNumDofs());
         const auto dofCount = joint->getNumDofs();
         bool hasValidMimicDof = false;

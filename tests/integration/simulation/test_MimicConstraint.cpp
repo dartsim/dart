@@ -149,7 +149,9 @@ void retargetMimicJoints(const WorldPtr& world, const std::string& baselineName)
       if (!joint)
         continue;
 
-      auto props = joint->getMimicDofProperties();
+      std::vector<dart::dynamics::MimicDofProperties> props(
+          joint->getMimicDofProperties().begin(),
+          joint->getMimicDofProperties().end());
       if (props.empty())
         continue;
 

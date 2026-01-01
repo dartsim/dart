@@ -911,8 +911,9 @@ void applyMimicConstraints(
     if (!joint)
       continue;
 
-    std::vector<dynamics::MimicDofProperties> props
-        = joint->getMimicDofProperties();
+    std::vector<dynamics::MimicDofProperties> props(
+        joint->getMimicDofProperties().begin(),
+        joint->getMimicDofProperties().end());
     props.resize(joint->getNumDofs());
 
     bool applied = false;

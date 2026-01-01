@@ -48,6 +48,7 @@
 
 #include <map>
 #include <memory>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -198,9 +199,8 @@ public:
   /// joint.
   double getMimicOffset(std::size_t index = 0) const;
 
-  /// Returns the vector of MimicDofProperties for all DoFs of the dependent
-  /// joint.
-  const std::vector<MimicDofProperties>& getMimicDofProperties() const;
+  /// Returns a span of MimicDofProperties for all DoFs of the dependent joint.
+  std::span<const MimicDofProperties> getMimicDofProperties() const;
 
   /// Sets the constraint type used to enforce the mimic relationship.
   void setMimicConstraintType(MimicConstraintType type);
