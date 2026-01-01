@@ -7,26 +7,121 @@
 
 #include <dart/constraint/ContactManifoldCache.hpp>
 
+#include <dart/collision/CollisionDetector.hpp>
 #include <dart/collision/CollisionObject.hpp>
 #include <dart/collision/Contact.hpp>
+
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/SimpleFrame.hpp>
 
 #include <gtest/gtest.h>
 
 #include <algorithm>
 #include <limits>
+#include <memory>
+#include <string>
 #include <vector>
 
 using namespace dart;
 
 namespace {
 
+class DummyCollisionDetector final : public collision::CollisionDetector
+{
+public:
+  std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
+      const override
+  {
+    return std::make_shared<DummyCollisionDetector>();
+  }
+
+  const std::string& getType() const override
+  {
+    static const std::string kType = "dummy";
+    return kType;
+  }
+
+  std::unique_ptr<collision::CollisionGroup> createCollisionGroup() override
+  {
+    return nullptr;
+  }
+
+  bool collide(
+      collision::CollisionGroup* /*group*/,
+      const collision::CollisionOption& /*option*/,
+      collision::CollisionResult* /*result*/) override
+  {
+    return false;
+  }
+
+  bool collide(
+      collision::CollisionGroup* /*group1*/,
+      collision::CollisionGroup* /*group2*/,
+      const collision::CollisionOption& /*option*/,
+      collision::CollisionResult* /*result*/) override
+  {
+    return false;
+  }
+
+  double distance(
+      collision::CollisionGroup* /*group*/,
+      const collision::DistanceOption& /*option*/,
+      collision::DistanceResult* /*result*/) override
+  {
+    return 0.0;
+  }
+
+  double distance(
+      collision::CollisionGroup* /*group1*/,
+      collision::CollisionGroup* /*group2*/,
+      const collision::DistanceOption& /*option*/,
+      collision::DistanceResult* /*result*/) override
+  {
+    return 0.0;
+  }
+
+protected:
+  std::unique_ptr<collision::CollisionObject> createCollisionObject(
+      const dynamics::ShapeFrame* /*shapeFrame*/) override
+  {
+    return nullptr;
+  }
+
+  void refreshCollisionObject(collision::CollisionObject* /*object*/) override
+  {
+  }
+};
+
 class DummyCollisionObject : public collision::CollisionObject
 {
 public:
-  DummyCollisionObject() : CollisionObject(nullptr, nullptr) {}
+  DummyCollisionObject(
+      collision::CollisionDetector* detector,
+      const dynamics::ShapeFrame* shapeFrame)
+    : CollisionObject(detector, shapeFrame)
+  {
+  }
 
 private:
   void updateEngineData() override {}
+};
+
+struct TestCollisionObjects
+{
+  DummyCollisionDetector detector;
+  dynamics::SimpleFrame frameA;
+  dynamics::SimpleFrame frameB;
+  DummyCollisionObject objA;
+  DummyCollisionObject objB;
+
+  TestCollisionObjects()
+    : frameA(), frameB(), objA(&detector, &frameA), objB(&detector, &frameB)
+  {
+    const auto shape
+        = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+    frameA.setShape(shape);
+    frameB.setShape(shape);
+  }
 };
 
 class TestCollisionResult : public collision::CollisionResult
@@ -95,11 +190,11 @@ TEST(ContactManifoldCache, DisabledClearsCache)
   constraint::ContactManifoldCacheOptions options;
   options.enabled = false;
 
-  DummyCollisionObject objA;
-  DummyCollisionObject objB;
+  TestCollisionObjects objects;
 
   TestCollisionResult raw;
-  raw.addContactRaw(makeContact(&objA, &objB, Eigen::Vector3d::Zero(), 0.1));
+  raw.addContactRaw(
+      makeContact(&objects.objA, &objects.objB, Eigen::Vector3d::Zero(), 0.1));
 
   std::vector<collision::Contact> output;
   cache.update(raw, options, output);
@@ -115,14 +210,13 @@ TEST(ContactManifoldCache, RetainsPointsAcrossFrames)
   options.enabled = true;
   options.maxSeparationFrames = 2u;
 
-  DummyCollisionObject objA;
-  DummyCollisionObject objB;
+  TestCollisionObjects objects;
 
   TestCollisionResult raw;
-  raw.addContactRaw(
-      makeContact(&objA, &objB, Eigen::Vector3d(0.0, 0.0, 0.0), 0.1));
-  raw.addContactRaw(
-      makeContact(&objA, &objB, Eigen::Vector3d(0.2, 0.0, 0.0), 0.2));
+  raw.addContactRaw(makeContact(
+      &objects.objA, &objects.objB, Eigen::Vector3d(0.0, 0.0, 0.0), 0.1));
+  raw.addContactRaw(makeContact(
+      &objects.objA, &objects.objB, Eigen::Vector3d(0.2, 0.0, 0.0), 0.2));
 
   std::vector<collision::Contact> output;
   cache.update(raw, options, output);
@@ -134,8 +228,8 @@ TEST(ContactManifoldCache, RetainsPointsAcrossFrames)
   const auto firstOutput = output;
 
   raw.clearRaw();
-  raw.addContactRaw(
-      makeContact(&objA, &objB, Eigen::Vector3d(0.0, 0.0, 0.0), 0.1));
+  raw.addContactRaw(makeContact(
+      &objects.objA, &objects.objB, Eigen::Vector3d(0.0, 0.0, 0.0), 0.1));
 
   cache.update(raw, options, output);
 
@@ -154,14 +248,13 @@ TEST(ContactManifoldCache, CapsContactsAndKeepsDeepest)
   options.enabled = true;
   options.maxPointsPerPair = 4u;
 
-  DummyCollisionObject objA;
-  DummyCollisionObject objB;
+  TestCollisionObjects objects;
 
   TestCollisionResult raw;
   for (int i = 0; i < 6; ++i) {
     const double depth = 0.1 * (i + 1);
-    raw.addContactRaw(
-        makeContact(&objA, &objB, Eigen::Vector3d(i, 0.0, 0.0), depth));
+    raw.addContactRaw(makeContact(
+        &objects.objA, &objects.objB, Eigen::Vector3d(i, 0.0, 0.0), depth));
   }
 
   std::vector<collision::Contact> output;
@@ -178,11 +271,11 @@ TEST(ContactManifoldCache, PrunesStalePairs)
   options.enabled = true;
   options.maxSeparationFrames = 1u;
 
-  DummyCollisionObject objA;
-  DummyCollisionObject objB;
+  TestCollisionObjects objects;
 
   TestCollisionResult raw;
-  raw.addContactRaw(makeContact(&objA, &objB, Eigen::Vector3d::Zero(), 0.1));
+  raw.addContactRaw(
+      makeContact(&objects.objA, &objects.objB, Eigen::Vector3d::Zero(), 0.1));
 
   std::vector<collision::Contact> output;
   cache.update(raw, options, output);
