@@ -619,6 +619,29 @@ TEST(DartRaycast, BoxHits)
 }
 
 //==============================================================================
+TEST(DartRaycast, BoxParallelMiss)
+{
+  auto detector = createRaycastDetector();
+
+  auto frame = SimpleFrame::createShared(Frame::World());
+  frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+
+  auto group = detector->createCollisionGroup(frame.get());
+
+  RaycastOption option;
+  RaycastResult result;
+
+  detector->raycast(
+      group.get(),
+      Eigen::Vector3d(-3.0, 2.0, 0.0),
+      Eigen::Vector3d(3.0, 2.0, 0.0),
+      option,
+      &result);
+  EXPECT_FALSE(result.hasHit());
+  EXPECT_TRUE(result.mRayHits.empty());
+}
+
+//==============================================================================
 TEST(DartRaycast, CylinderHits)
 {
   auto detector = createRaycastDetector();
