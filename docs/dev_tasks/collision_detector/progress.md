@@ -37,7 +37,7 @@
 - Collision tests include ellipsoid-as-sphere coverage.
 - Distance tests include empty-group coverage for single and group-group queries.
 - Distance pruning skips separated pairs once a negative minimum distance is found.
-- Distance tests include diagonal sphere-cylinder coverage for oblique separation.
+- Distance tests include diagonal sphere-cylinder coverage for oblique separation with axial offsets.
 - Distance tests include overlapping sphere-plane coverage for negative distances.
 - Distance tests include overlapping box-plane coverage for negative distances.
 - Distance tests include plane offset coverage for sphere queries; raycast tests include plane offset hits.
@@ -102,7 +102,7 @@
 - Added ellipsoid-as-sphere collision coverage.
 - Added empty-group distance coverage for single and group-group queries.
 - Tightened distance AABB pruning once a penetrating pair is found.
-- Added diagonal sphere-cylinder distance coverage for oblique separation.
+- Added diagonal sphere-cylinder distance coverage for oblique separation with axial offsets.
 - Added overlapping sphere-plane distance coverage for negative distance semantics.
 - Added overlapping box-plane distance coverage for negative distance semantics.
 - Added plane offset coverage for sphere distance and raycast queries.

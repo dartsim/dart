@@ -54,7 +54,7 @@
 - Added ellipsoid-as-sphere collision coverage.
 - Added empty-group distance coverage for single and group-group queries.
 - Tightened distance AABB pruning once a penetrating pair is found.
-- Added diagonal sphere-cylinder distance coverage for oblique separation.
+- Added diagonal sphere-cylinder distance coverage for oblique separation with axial offsets.
 - Added overlapping sphere-plane distance coverage for negative distance semantics.
 - Added overlapping box-plane distance coverage for negative distance semantics.
 - Added plane offset coverage for sphere distance and raycast queries.

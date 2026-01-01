@@ -70,7 +70,7 @@ Current status:
 - Collision tests include ellipsoid-as-sphere coverage.
 - Distance tests include empty-group coverage for single and group-group queries.
 - Distance pruning skips separated pairs once a negative minimum distance is found.
-- Distance tests include diagonal sphere-cylinder coverage for oblique separation.
+- Distance tests include diagonal sphere-cylinder coverage for oblique separation with axial offsets.
 - Distance tests include overlapping sphere-plane coverage for negative distances.
 - Distance tests include overlapping box-plane coverage for negative distances.
 - Distance tests include plane offset coverage for sphere queries; raycast tests include plane offset hits.
