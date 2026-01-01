@@ -32,6 +32,8 @@
 
 #include "dart/common/Macros.hpp"
 
+#include <span>
+
 #include <dart/config.hpp>
 
 #include <dart/gui/All.hpp>
