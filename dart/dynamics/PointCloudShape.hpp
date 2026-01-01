@@ -138,6 +138,12 @@ public:
   ///
   /// The count of colors should be the same with points. It's undefined
   /// behavior, otherwise.
+  void setColors(std::span<const Eigen::Vector4d> colors);
+
+  /// Sets the point cloud colors.
+  ///
+  /// The count of colors should be the same with points. It's undefined
+  /// behavior, otherwise.
   void setColors(const std::vector<
                  Eigen::Vector4d,
                  Eigen::aligned_allocator<Eigen::Vector4d>>& colors);

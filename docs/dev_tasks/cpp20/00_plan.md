@@ -2,7 +2,7 @@
 
 ## Status
 
-- Draft: initial plan defined; execution not started.
+- Active: executing phases; Phase 3 in progress.
 
 ## Objective
 

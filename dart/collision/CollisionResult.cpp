@@ -78,6 +78,12 @@ const std::vector<Contact>& CollisionResult::getContacts() const
 }
 
 //==============================================================================
+std::span<const Contact> CollisionResult::getContactsSpan() const
+{
+  return std::span<const Contact>(mContacts);
+}
+
+//==============================================================================
 const std::unordered_set<const dynamics::BodyNode*>&
 CollisionResult::getCollidingBodyNodes() const
 {
