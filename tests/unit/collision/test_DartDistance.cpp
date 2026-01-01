@@ -751,6 +751,34 @@ TEST(DartDistance, CylinderPlaneDistance)
 }
 
 //==============================================================================
+TEST(DartDistance, CylinderPlaneOffsetDistance)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto cylinderFrame = SimpleFrame::createShared(Frame::World());
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+
+  cylinderFrame->setShape(std::make_shared<CylinderShape>(0.5, 2.0));
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 1.0));
+
+  cylinderFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 3.0));
+
+  auto group
+      = detector->createCollisionGroup(cylinderFrame.get(), planeFrame.get());
+
+  DistanceOption option(true, 0.0, nullptr);
+  DistanceResult result;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, 1.0, kDistanceTol);
+  EXPECT_NEAR(result.minDistance, 1.0, kDistanceTol);
+  EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(Eigen::Vector3d(0.0, 0.0, 2.0)));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(Eigen::Vector3d(0.0, 0.0, 1.0)));
+}
+
+//==============================================================================
 TEST(DartDistance, CylinderPlaneOverlapDistance)
 {
   auto detector = DARTCollisionDetector::create();
