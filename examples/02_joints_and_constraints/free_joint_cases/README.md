@@ -1,4 +1,13 @@
-# `free_joint_cases`
+# Free Joint Cases Example
+
+## Summary
+
+- Goal: compare free-joint integration against reference models in zero gravity.
+- Concepts/APIs: `dynamics::FreeJoint`, Jacobian checks, ImGui viewer.
+- Expected output: multiple colored bodies with transparent reference boxes.
+- Controls: use the ImGui panel; CLI flags tune the reference model.
+
+## Details
 
 Visualizes multiple `dart::dynamics::FreeJoint` single-body scenarios in a
 zero-gravity world.

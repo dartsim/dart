@@ -5,6 +5,7 @@
 - Examples are being reorganized into numbered categories (pilot in progress).
 - Start in `00_getting_started` for minimal, first-run examples.
 - Continue with `01_rigid_bodies_and_frames` for basic rigid-body scenes.
+- Explore `02_joints_and_constraints` for joint types and constraint behavior.
 - Tutorials remain in `tutorials/` and are cross-linked as categories expand.
 
 ## Build Each Example
