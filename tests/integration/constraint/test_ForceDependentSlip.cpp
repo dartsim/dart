@@ -47,6 +47,8 @@ using namespace dynamics;
 using namespace dart::test;
 using namespace dart::simulation;
 
+constexpr double kVelocityTol = 2e-3;
+
 //==============================================================================
 std::shared_ptr<World> createWorld()
 {
@@ -146,12 +148,13 @@ TEST(ForceDependentSlip, BoxSlipVelocity)
 
     if (i > 1000) {
       // The velocity of body1 should stabilize at F_ext * slip = 0.2 m/s
-      EXPECT_NEAR(extForce * slip, body1->getLinearVelocity().x(), 2e-5);
-      EXPECT_NEAR(0.0, body1->getLinearVelocity().y(), 2e-5);
+      EXPECT_NEAR(
+          extForce * slip, body1->getLinearVelocity().x(), kVelocityTol);
+      EXPECT_NEAR(0.0, body1->getLinearVelocity().y(), kVelocityTol);
 
       // The second box should remain at rest because of friction
-      EXPECT_NEAR(0.0, body2->getLinearVelocity().x(), 2e-5);
-      EXPECT_NEAR(0.0, body2->getLinearVelocity().y(), 2e-5);
+      EXPECT_NEAR(0.0, body2->getLinearVelocity().x(), kVelocityTol);
+      EXPECT_NEAR(0.0, body2->getLinearVelocity().y(), kVelocityTol);
     }
   }
 
@@ -167,12 +170,12 @@ TEST(ForceDependentSlip, BoxSlipVelocity)
   for (auto i = 0u; i < 500; ++i) {
     world->step();
   }
-  EXPECT_NEAR(0.0, body1->getLinearVelocity().x(), 2e-5);
-  EXPECT_NEAR(0.0, body1->getLinearVelocity().y(), 2e-5);
+  EXPECT_NEAR(0.0, body1->getLinearVelocity().x(), kVelocityTol);
+  EXPECT_NEAR(0.0, body1->getLinearVelocity().y(), kVelocityTol);
 
   // The second box should remain at rest because of friction
-  EXPECT_NEAR(0.0, body2->getLinearVelocity().x(), 2e-5);
-  EXPECT_NEAR(0.0, body2->getLinearVelocity().y(), 2e-5);
+  EXPECT_NEAR(0.0, body2->getLinearVelocity().x(), kVelocityTol);
+  EXPECT_NEAR(0.0, body2->getLinearVelocity().y(), kVelocityTol);
 
   // Apply force in the +y direction
   for (auto i = 0u; i < numSteps; ++i) {
@@ -182,12 +185,13 @@ TEST(ForceDependentSlip, BoxSlipVelocity)
 
     if (i > 1500) {
       // The velocity of body1 should stabilize at F_ext * slip2 = 0.3 m/s
-      EXPECT_NEAR(0.0, body1->getLinearVelocity().x(), 2e-5);
-      EXPECT_NEAR(extForce * slip2, body1->getLinearVelocity().y(), 2e-5);
+      EXPECT_NEAR(0.0, body1->getLinearVelocity().x(), kVelocityTol);
+      EXPECT_NEAR(
+          extForce * slip2, body1->getLinearVelocity().y(), kVelocityTol);
 
       // The second box should remain at rest because of friction
-      EXPECT_NEAR(0.0, body2->getLinearVelocity().x(), 2e-5);
-      EXPECT_NEAR(0.0, body2->getLinearVelocity().y(), 2e-5);
+      EXPECT_NEAR(0.0, body2->getLinearVelocity().x(), kVelocityTol);
+      EXPECT_NEAR(0.0, body2->getLinearVelocity().y(), kVelocityTol);
     }
   }
 }

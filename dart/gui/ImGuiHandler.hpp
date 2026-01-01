@@ -50,6 +50,8 @@
 #include <memory>
 #include <vector>
 
+struct ImGuiContext;
+
 namespace dart {
 namespace gui {
 
@@ -109,6 +111,8 @@ protected:
   std::array<float, 2> mFramebufferScale;
 
   std::vector<std::shared_ptr<ImGuiWidget>> mWidgets;
+
+  ImGuiContext* mContext{nullptr};
 };
 
 } // namespace gui

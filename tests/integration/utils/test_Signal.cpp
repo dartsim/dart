@@ -225,7 +225,7 @@ float difference(float x, float y)
 template <typename T>
 struct signal_maximum
 {
-  typedef T result_type;
+  using result_type = T;
 
   template <typename InputIterator>
   static T process(InputIterator first, InputIterator last)
@@ -251,7 +251,7 @@ struct signal_maximum
 template <typename T>
 struct signal_sum
 {
-  typedef T result_type;
+  using result_type = T;
 
   template <typename InputIterator>
   static T process(InputIterator first, InputIterator last)

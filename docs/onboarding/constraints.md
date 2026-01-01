@@ -84,6 +84,8 @@ struct ConstraintInfo {
     double* w;        // Slack variable
     int* findex;      // Friction index
     double invTimeStep;
+    ConstraintPhase phase;   // Velocity or Position solve phase
+    bool useSplitImpulse;    // Skip penetration correction in velocity phase
 };
 ```
 
@@ -131,6 +133,7 @@ solve()
   → buildConstrainedGroups()
   → solveConstrainedGroups()
     → solveConstrainedGroup() [per group]
+  → [optional] solvePositionConstrainedGroups() (split impulse)
 ```
 
 **Collision Detection Integration:**
@@ -146,6 +149,18 @@ solve()
 - Supports skeleton unification for articulated systems
 - Configurable time stepping
 - Extensible constraint surface handling
+- Optional split impulse position correction (opt-in)
+
+**Split impulse position correction:**
+
+- Enable with `ConstraintSolver::setSplitImpulseEnabled(true)` (default: off).
+- The solver runs the normal velocity LCP first (restitution + friction),
+  then a position-only pass over contact constraints to resolve penetration.
+- The position pass disables friction tangents (zero bounds) and applies only
+  penetration correction; resulting position impulses are integrated via
+  `Skeleton::computePositionVelocityChanges()` and
+  `Skeleton::integratePositions(dt, velocityChanges)` without changing
+  velocities.
 
 ### 3. ConstrainedGroup
 

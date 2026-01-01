@@ -195,7 +195,13 @@ void ClassicRigidSolver::step(World& world, bool resetCommand)
       skel->setImpulseApplied(false);
     }
 
-    skel->integratePositions(mTimeStep);
+    if (skel->isPositionImpulseApplied()) {
+      skel->integratePositions(mTimeStep, skel->getPositionVelocityChanges());
+      skel->setPositionImpulseApplied(false);
+      skel->clearPositionVelocityChanges();
+    } else {
+      skel->integratePositions(mTimeStep);
+    }
 
     if (resetCommand) {
       skel->clearInternalForces();

@@ -19,6 +19,7 @@ add_subdirectory(02_joints_and_constraints/joint_constraints)
 add_subdirectory(02_joints_and_constraints/mimic_pendulums)
 add_subdirectory(02_joints_and_constraints/rigid_chain)
 add_subdirectory(02_joints_and_constraints/rigid_loop)
+add_subdirectory(02_joints_and_constraints/lcp_solvers)
 
 # Collisions and contacts examples
 add_subdirectory(03_collisions_and_contacts/box_stacking)

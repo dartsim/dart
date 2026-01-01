@@ -23,14 +23,26 @@ using namespace dart::math;
 
 namespace {
 
+// Deterministic scaling avoids platform-specific uniform_real_distribution
+// output.
+double Uniform01(std::mt19937& rng)
+{
+  const double denom = static_cast<double>(rng.max()) + 1.0;
+  return static_cast<double>(rng()) / denom;
+}
+
+double Uniform(std::mt19937& rng, double lo, double hi)
+{
+  return lo + (hi - lo) * Uniform01(rng);
+}
+
 Eigen::MatrixXd MakeRandomSpdMatrix(int n, std::mt19937& rng)
 {
-  std::uniform_real_distribution<double> dist(-1.0, 1.0);
-
   Eigen::MatrixXd M(n, n);
   for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c)
-      M(r, c) = dist(rng);
+    for (int c = 0; c < n; ++c) {
+      M(r, c) = Uniform(rng, -1.0, 1.0);
+    }
   }
 
   return M.transpose() * M
@@ -62,10 +74,10 @@ TEST(LcpSolversStress, RandomSpdStandardProblems)
   for (const int n : sizes) {
     const Eigen::MatrixXd A = MakeRandomSpdMatrix(n, rng);
 
-    std::uniform_real_distribution<double> dist(0.1, 1.0);
     Eigen::VectorXd xStar(n);
-    for (int i = 0; i < n; ++i)
-      xStar[i] = dist(rng);
+    for (int i = 0; i < n; ++i) {
+      xStar[i] = Uniform(rng, 0.1, 1.0);
+    }
 
     const Eigen::VectorXd b = A * xStar;
 
@@ -109,8 +121,6 @@ TEST(LcpSolversStress, RandomSpdStandardProblems)
 TEST(LcpSolversStress, RandomSpdFrictionIndexProblems)
 {
   std::mt19937 rng(456u);
-  std::uniform_real_distribution<double> dist(0.1, 1.0);
-  std::uniform_real_distribution<double> muDist(0.2, 1.0);
   const std::vector<int> contactsCases = {1, 4, 8};
 
   for (const int numContacts : contactsCases) {
@@ -124,8 +134,8 @@ TEST(LcpSolversStress, RandomSpdFrictionIndexProblems)
 
     for (int c = 0; c < numContacts; ++c) {
       const int base = 3 * c;
-      const double normal = (c == 0) ? 0.0 : dist(rng);
-      const double mu = muDist(rng);
+      const double normal = (c == 0) ? 0.0 : Uniform(rng, 0.1, 1.0);
+      const double mu = Uniform(rng, 0.2, 1.0);
 
       xStar[base + 0] = normal;
       xStar[base + 1] = 0.25 * mu * normal;
@@ -183,8 +193,6 @@ TEST(LcpSolversStress, RandomSpdFrictionIndexProblems)
 TEST(LcpSolversStress, RandomSpdBoxedProblems)
 {
   std::mt19937 rng(789u);
-  std::uniform_real_distribution<double> dist(-1.0, 1.0);
-  std::uniform_real_distribution<double> slackDist(0.1, 1.0);
   const std::vector<int> sizes = {2, 5, 10};
 
   for (const int n : sizes) {
@@ -199,12 +207,12 @@ TEST(LcpSolversStress, RandomSpdBoxedProblems)
       const int mode = i % 3;
       if (mode == 0) {
         xStar[i] = lo[i];
-        w[i] = slackDist(rng);
+        w[i] = Uniform(rng, 0.1, 1.0);
       } else if (mode == 1) {
         xStar[i] = hi[i];
-        w[i] = -slackDist(rng);
+        w[i] = -Uniform(rng, 0.1, 1.0);
       } else {
-        xStar[i] = 0.5 * dist(rng);
+        xStar[i] = 0.5 * Uniform(rng, -1.0, 1.0);
         w[i] = 0.0;
       }
     }

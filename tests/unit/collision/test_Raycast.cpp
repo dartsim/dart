@@ -161,8 +161,8 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
       Eigen::Vector3d(2, 0, 0),
       option,
       &result);
-  EXPECT_TRUE(result.hasHit());
-  EXPECT_EQ(result.mRayHits.size(), 1u);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mRayHits.size(), 1u);
   rayHit = result.mRayHits[0];
   EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(-1, 0, 0)));
   EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
@@ -177,8 +177,8 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
       Eigen::Vector3d(-2, 0, 0),
       option,
       &result);
-  EXPECT_TRUE(result.hasHit());
-  EXPECT_EQ(result.mRayHits.size(), 1u);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mRayHits.size(), 1u);
   rayHit = result.mRayHits[0];
   EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(1, 0, 0)));
   EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(1, 0, 0)));
@@ -192,8 +192,8 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
       Eigen::Vector3d(2, 0, 0),
       option,
       &result);
-  EXPECT_TRUE(result.hasHit());
-  EXPECT_EQ(result.mRayHits.size(), 1u);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mRayHits.size(), 1u);
   rayHit = result.mRayHits[0];
   EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(0, 0, 0)));
   EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
@@ -253,8 +253,8 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
       Eigen::Vector3d(5, 0, 0),
       option,
       &result);
-  EXPECT_TRUE(result.hasHit());
-  EXPECT_EQ(result.mRayHits.size(), 1u);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mRayHits.size(), 1u);
   rayHit = result.mRayHits[0];
   EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(-3, 0, 0)));
   EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));
@@ -271,8 +271,8 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
       Eigen::Vector3d(5, 0, 0),
       option,
       &result);
-  EXPECT_TRUE(result.hasHit());
-  EXPECT_EQ(result.mRayHits.size(), 2u);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mRayHits.size(), 2u);
   rayHit = result.mRayHits[0];
   EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(-3, 0, 0)));
   EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(-1, 0, 0)));

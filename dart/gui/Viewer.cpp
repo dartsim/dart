@@ -612,10 +612,10 @@ SimpleFrameDnD* Viewer::enableDragAndDrop(dart::dynamics::SimpleFrame* _frame)
 }
 
 //==============================================================================
-// Creating a typedef for a very long and ugly template
+// Creating a type alias for a very long and ugly template
 namespace sfs_dnd {
-typedef std::multimap<dart::dynamics::Shape*, SimpleFrameShapeDnD*>::iterator
-    iterator;
+using iterator
+    = std::multimap<dart::dynamics::Shape*, SimpleFrameShapeDnD*>::iterator;
 } // namespace sfs_dnd
 
 //==============================================================================

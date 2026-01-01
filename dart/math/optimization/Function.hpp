@@ -83,17 +83,16 @@ protected:
   std::string mName;
 };
 
-typedef std::shared_ptr<Function> FunctionPtr;
-typedef std::unique_ptr<Function> UniqueFunctionPtr;
+using FunctionPtr = std::shared_ptr<Function>;
+using UniqueFunctionPtr = std::unique_ptr<Function>;
 
-typedef std::function<double(const Eigen::VectorXd&)> CostFunction;
+using CostFunction = std::function<double(const Eigen::VectorXd&)>;
 
-typedef std::function<void(const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd>)>
-    GradientFunction;
+using GradientFunction
+    = std::function<void(const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd>)>;
 
-typedef std::function<void(
-    const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd, Eigen::RowMajor>)>
-    HessianFunction;
+using HessianFunction = std::function<void(
+    const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd, Eigen::RowMajor>)>;
 
 /// ModularFunction uses C++11 std::function to allow you to easily swap
 /// out the cost function, gradient function, and Hessian function during

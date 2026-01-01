@@ -174,8 +174,8 @@ public:
       const std::string& urdfString, const common::Uri& baseUri);
 
 private:
-  typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
-  typedef std::shared_ptr<dynamics::Joint::Properties> JointPropPtr;
+  using BodyPropPtr = std::shared_ptr<dynamics::BodyNode::Properties>;
+  using JointPropPtr = std::shared_ptr<dynamics::Joint::Properties>;
 
   /// Parses the ModelInterface and spits out a Skeleton object
   static dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(

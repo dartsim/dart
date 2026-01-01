@@ -33,6 +33,7 @@ endif()
 
 if(DART_BUILD_COLLISION_BULLET)
   dart_add_test("integration" INTEGRATION_collision_CollisionAccuracy collision/test_CollisionAccuracy.cpp)
+  dart_add_test("integration" INTEGRATION_collision_BulletCylinderRolling collision/test_BulletCylinderRolling.cpp)
   dart_add_test("integration" INTEGRATION_collision_BulletEllipsoidRolling collision/test_BulletEllipsoidRolling.cpp)
   dart_add_test("integration" INTEGRATION_collision_BulletBoxStack collision/test_BulletBoxStack.cpp)
 endif()
@@ -65,6 +66,7 @@ dart_build_tests(
 )
 
 dart_add_test("integration" INTEGRATION_constraint_ContactConstraint constraint/test_ContactConstraint.cpp)
+dart_add_test("integration" INTEGRATION_constraint_SplitImpulse constraint/test_SplitImpulse.cpp)
 
 if(DART_BUILD_COLLISION_ODE)
   dart_add_test("integration" INTEGRATION_constraint_ForceDependentSlip constraint/test_ForceDependentSlip.cpp)

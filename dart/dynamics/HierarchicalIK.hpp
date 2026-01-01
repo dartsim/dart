@@ -47,8 +47,8 @@ namespace dynamics {
 /// their gradients added. Precedence of the modules decreases as the index of
 /// the outer vector increases. Modules with lower precedence will be projected
 /// through the null spaces of modules with higher precedence.
-typedef std::vector<std::vector<std::shared_ptr<InverseKinematics>>>
-    IKHierarchy;
+using IKHierarchy
+    = std::vector<std::vector<std::shared_ptr<InverseKinematics>>>;
 
 /// The HierarchicalIK class provides a convenient way of setting up a
 /// hierarchical inverse kinematics optimization problem which combines several
@@ -336,9 +336,9 @@ public:
 class DART_API CompositeIK : public HierarchicalIK
 {
 public:
-  typedef std::unordered_set<std::shared_ptr<InverseKinematics>> ModuleSet;
-  typedef std::unordered_set<std::shared_ptr<const InverseKinematics>>
-      ConstModuleSet;
+  using ModuleSet = std::unordered_set<std::shared_ptr<InverseKinematics>>;
+  using ConstModuleSet
+      = std::unordered_set<std::shared_ptr<const InverseKinematics>>;
 
   /// Create a CompositeIK module
   static std::shared_ptr<CompositeIK> create(const SkeletonPtr& _skel);

@@ -51,7 +51,7 @@ namespace gui {
   }                                                                            \
   bool isSameKindAs(const ::osg::Object* obj) const override                   \
   {                                                                            \
-    return dynamic_cast<const name*>(obj) != NULL;                             \
+    return dynamic_cast<const name*>(obj) != nullptr;                          \
   }                                                                            \
   const char* libraryName() const override                                     \
   {                                                                            \
