@@ -25,12 +25,14 @@
 10. `09_integration_and_tools`: point clouds, external tooling, logging
 
 Notes:
+
 - Category names are draft; keep them short and ordered with numeric prefixes.
 - Tutorials remain separate but should be cross-linked from relevant categories.
 
 ## Example metadata template (draft)
 
 Each example should include a short header block in its README:
+
 - Goal (user story)
 - Concepts/APIs touched
 - Expected output (visual or numeric)
