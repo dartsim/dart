@@ -38,6 +38,7 @@
 - Added cylinder parallel raycast miss coverage.
 - Added tangent box raycast coverage.
 - Added box parallel raycast miss coverage.
+- Added rotated box parallel raycast miss coverage.
 - Added rotated plane distance coverage for sphere-plane.
 - Added rotated box raycast coverage and rotated box/cylinder plane distance checks.
 - Added rotated cylinder raycast coverage.
