@@ -49,6 +49,7 @@
 
 #include <algorithm>
 #include <queue>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -945,7 +946,7 @@ const SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
 //==============================================================================
 template <class T>
 static std::vector<const T*>& convertToConstPtrVector(
-    const std::vector<T*>& vec, std::vector<const T*>& const_vec)
+    std::span<T*> vec, std::vector<const T*>& const_vec)
 {
   const_vec.resize(vec.size());
   for (std::size_t i = 0; i < vec.size(); ++i)
@@ -2461,9 +2462,7 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
   if (soft) {
     mNameMgrForSoftBodyNodes.removeName(soft->getName());
 
-    mSoftBodyNodes.erase(
-        std::remove(mSoftBodyNodes.begin(), mSoftBodyNodes.end(), soft),
-        mSoftBodyNodes.end());
+    std::erase(mSoftBodyNodes, soft);
   }
 
   updateTotalMass();
@@ -2500,12 +2499,10 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
     mNameMgrForDofs.removeObject(dof);
 
     firstSkelIndex = std::min(firstSkelIndex, dof->getIndexInSkeleton());
-    skelDofs.erase(
-        std::remove(skelDofs.begin(), skelDofs.end(), dof), skelDofs.end());
+    std::erase(skelDofs, dof);
 
     firstTreeIndex = std::min(firstTreeIndex, dof->getIndexInTree());
-    treeDofs.erase(
-        std::remove(treeDofs.begin(), treeDofs.end(), dof), treeDofs.end());
+    std::erase(treeDofs, dof);
   }
 
   for (std::size_t i = firstSkelIndex; i < skelDofs.size(); ++i) {
