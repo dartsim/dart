@@ -65,6 +65,7 @@
 - Distance tests include tilted plane offset coverage for sphere-plane nearest points.
 - Distance tests include tilted plane overlap coverage for sphere-plane distances.
 - Distance tests include tilted plane offset coverage for box-plane nearest points.
+- Distance tests include tilted plane overlap coverage for box-plane distances.
 - Distance tests include DistanceResult clamping status coverage.
 - Raycast tests include zero-length ray coverage.
 - Distance tests include coverage for DistanceOption without nearest points.
@@ -157,6 +158,7 @@
 - Added tilted plane offset coverage for sphere-plane nearest points.
 - Added tilted plane overlap coverage for sphere-plane distances.
 - Added tilted plane offset coverage for box-plane nearest points.
+- Added tilted plane overlap coverage for box-plane distances.
 - Added DistanceResult clamping status coverage.
 - Added zero-length raycast coverage.
 - Added coverage for DistanceOption without nearest points.
