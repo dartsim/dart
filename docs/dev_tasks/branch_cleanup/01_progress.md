@@ -19,12 +19,15 @@
 - Audited origin/7/* branches vs origin/main and origin/release-7.0.
   - All origin/7/* branches are ahead of origin/main (not merged).
   - Unique commits vs origin/release-7.0 are 0-2 per branch.
+- Triaged origin/7/doc against origin/main and origin/release-7.0:
+  - No unique commits vs origin/release-7.0.
+  - Decision: delete remote branch.
+  - Deleted: origin/7/doc.
 
 ## Triage results (origin/7/*)
 
 Recommend delete (no unique commits vs origin/release-7.0):
 - origin/7/constraint_solver
-- origin/7/doc
 
 Small, focused changes (candidate rebase if still desired; otherwise delete):
 - origin/7/coupler_constraint (cb1b621: coupled mode for mimic constraint)
