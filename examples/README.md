@@ -8,6 +8,7 @@
 - Explore `02_joints_and_constraints` for joint types and constraint behavior.
 - Dig into `03_collisions_and_contacts` for collision and terrain workflows.
 - Move on to `04_control_and_ik` for controllers and inverse kinematics.
+- Visit `05_io_and_models` for model loading and resource retrieval.
 - Tutorials remain in `tutorials/` and are cross-linked as categories expand.
 
 ## Build Each Example

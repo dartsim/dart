@@ -33,6 +33,10 @@ add_subdirectory(04_control_and_ik/hubo_puppet)
 add_subdirectory(04_control_and_ik/operational_space_control)
 add_subdirectory(04_control_and_ik/wam_ikfast)
 
+# IO and models examples
+add_subdirectory(05_io_and_models/fetch)
+add_subdirectory(05_io_and_models/g1_puppet)
+
 # None GUI examples
 add_subdirectory(speed_test)
 
@@ -50,9 +54,5 @@ if(DART_HAVE_OCTOMAP)
 endif()
 add_subdirectory(simulation_event_handler)
 add_subdirectory(soft_bodies)
-add_subdirectory(g1_puppet)
 add_subdirectory(tinkertoy)
 add_subdirectory(vehicle)
-
-# MJCF model based examples
-add_subdirectory(fetch)
