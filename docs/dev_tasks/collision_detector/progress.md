@@ -62,6 +62,7 @@
 - Distance tests include plane offset coverage for sphere queries; raycast tests include plane offset hits.
 - Distance tests include plane offset coverage for cylinder-plane distances.
 - Distance tests include plane offset coverage for box-plane distances.
+- Distance tests include rotated plane offset coverage for cylinder-plane distances.
 - Distance tests include a tilted cylinder-plane case for oblique extent coverage.
 - Distance tests include tilted plane overlap coverage for cylinder-plane distances.
 - Distance tests include tilted plane offset overlap coverage for cylinder-plane distances.
@@ -160,6 +161,7 @@
 - Added plane offset coverage for sphere distance and raycast queries.
 - Added plane offset coverage for cylinder-plane distances.
 - Added plane offset coverage for box-plane distances.
+- Added rotated cylinder-plane offset distance coverage.
 - Added tilted cylinder-plane distance coverage for oblique extent checks.
 - Added tilted cylinder-plane overlap distance coverage.
 - Added tilted plane offset overlap coverage for cylinder-plane distances.
