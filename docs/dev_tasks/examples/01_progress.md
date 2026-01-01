@@ -71,7 +71,7 @@
 - Control and IK: strong coverage of IK and higher-level control, but missing a
   minimal, reusable controller baseline.
 - IO and models: partial coverage via format-specific loaders; `dart::io`
-  unified loading is not showcased directly.
+  unified loading is not showcased directly or compared across formats.
 - Soft and hybrid: a small set of examples exist, but breadth is limited.
 - Visualization and interaction: OSG-based UI and interaction exist, Raylib is
   isolated, and viewer selection is inconsistent.
