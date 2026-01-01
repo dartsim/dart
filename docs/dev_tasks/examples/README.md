@@ -2,8 +2,8 @@
 
 ## Status
 
-- In progress: discovery and pilot migration are complete; see progress doc for
-  next steps.
+- In progress: taxonomy migration is complete; see progress doc for gap
+  analysis and polish.
 
 ## Goal
 

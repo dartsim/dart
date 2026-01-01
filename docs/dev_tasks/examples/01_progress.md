@@ -2,7 +2,7 @@
 
 ## Status
 
-- Discovery completed; pilot plus first follow-on category migrated.
+- Taxonomy migration complete; remaining work is gap analysis and polish.
 
 ## Completed
 
@@ -79,8 +79,11 @@
 
 ## Next steps
 
-1. Check for any remaining uncategorized examples or doc gaps.
-2. Keep `examples/CMakeLists.txt` grouping comments aligned with the new
+1. Identify top gaps per category (especially IO, performance, and tools) and
+   decide whether to add or defer missing examples.
+2. Cross-link tutorials from the category READMEs where the learning path
+   continues.
+3. Keep `examples/CMakeLists.txt` grouping comments aligned with the new
    category layout.
 
 ## Resume checklist
@@ -88,7 +91,7 @@
 - Read `docs/dev_tasks/examples/00_plan.md` and this progress log.
 - Review the current category layout in `examples/` and the build wiring in
   `examples/CMakeLists.txt`.
-- Pick the next category to migrate and update plan/progress as you go.
+- Scan for missing metadata headers and category index tweaks.
 - Create a commit per checkpoint so progress is resumable.
 
 ## Open questions
