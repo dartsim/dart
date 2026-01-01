@@ -29,15 +29,15 @@ Inspect:
   - `/home/js/dev/physics_engine/Genesis/examples`
 
 Current state (read in repo):
-- A pilot category `00_getting_started` exists with starter examples moved.
-- Example metadata headers were added to several beginner examples.
-- `examples/README.md` has a brief onboarding note.
-- See `docs/dev_tasks/examples/01_progress.md` for detailed status.
+- Numbered categories now cover the examples tree; uncategorized folders are gone.
+- Most examples have metadata headers; some advanced areas still need gap analysis.
+- `examples/README.md` lists the category order at a high level.
+- See `docs/dev_tasks/examples/01_progress.md` for detailed status and gaps.
 
 Deliverables:
 - Update `docs/dev_tasks/examples/01_progress.md` with new checkpoints.
 - Update `docs/dev_tasks/examples/00_plan.md` only if taxonomy or criteria change.
-- Continue the pilot migration or move the next category, and keep docs concise.
+- Focus on gap analysis, tutorial cross-links, and any missing metadata.
 - Create a commit per checkpoint so progress is resumable.
 
 Constraints:
