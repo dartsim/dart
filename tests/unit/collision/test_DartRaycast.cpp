@@ -269,6 +269,49 @@ TEST(DartRaycast, InsideHits)
 }
 
 //==============================================================================
+TEST(DartRaycast, SurfaceStartHits)
+{
+  auto detector = createRaycastDetector();
+
+  RaycastOption option;
+  RaycastResult result;
+
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  sphereFrame->setShape(std::make_shared<SphereShape>(1.0));
+  auto sphereGroup = detector->createCollisionGroup(sphereFrame.get());
+  detector->raycast(
+      sphereGroup.get(),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      option,
+      &result);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mRayHits.size(), 1u);
+  auto rayHit = result.mRayHits[0];
+  EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(1.0, 0.0, 0.0)));
+  EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(1.0, 0.0, 0.0)));
+  EXPECT_NEAR(rayHit.mFraction, 0.0, kFractionTolerance);
+
+  result.clear();
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  auto planeGroup = detector->createCollisionGroup(planeFrame.get());
+  detector->raycast(
+      planeGroup.get(),
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(0.0, 0.0, 1.0),
+      option,
+      &result);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mRayHits.size(), 1u);
+  rayHit = result.mRayHits[0];
+  EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(0.0, 0.0, 0.0)));
+  EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(0.0, 0.0, 1.0)));
+  EXPECT_NEAR(rayHit.mFraction, 0.0, kFractionTolerance);
+}
+
+//==============================================================================
 TEST(DartRaycast, TangentSphereHit)
 {
   auto detector = createRaycastDetector();
