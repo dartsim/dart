@@ -56,6 +56,7 @@ add_subdirectory(07_visualization_and_interaction/simulation_event_handler)
 add_subdirectory(07_visualization_and_interaction/tinkertoy)
 
 # Performance and scaling examples
+add_subdirectory(08_performance_and_scaling/headless_simulation)
 add_subdirectory(08_performance_and_scaling/speed_test)
 
 # Integration and tools examples
