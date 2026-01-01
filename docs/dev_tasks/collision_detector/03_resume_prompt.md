@@ -109,6 +109,7 @@ Current status:
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Added tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
 - Added tilted plane offset coverage for cylinder-plane nearest points.
+- Added tilted plane offset coverage for sphere-plane nearest points.
 - Added tilted plane offset coverage for box-plane nearest points.
 - Default collision detector switched to the built-in detector in world and
   constraint solver initialization.
