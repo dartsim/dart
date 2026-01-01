@@ -27,6 +27,10 @@
   - No unique commits vs origin/release-7.0.
   - Decision: delete remote branch.
   - Deleted: origin/7/constraint_solver.
+- Triaged origin/7/soa against origin/main and origin/release-7.0:
+  - Single WIP commit adding SoA header + unit test.
+  - Decision: delete remote branch.
+  - Deleted: origin/7/soa.
 
 ## Triage results (origin/7/*)
 
