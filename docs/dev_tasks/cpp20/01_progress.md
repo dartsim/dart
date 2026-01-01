@@ -18,8 +18,8 @@
 - C++20 is enabled via compile features on core targets; remaining straggler
   targets were aligned to the project default in Phase 1.
 - Guardrails updated for DART 7: public API/ABI breaks are allowed when needed
-  for span migrations, but Gazebo must stay compatible (`pixi run -e gazebo
-test-gz`) without changing Gazebo code.
+  for span migrations, but Gazebo must stay compatible
+  (`pixi run -e gazebo test-gz`) without changing Gazebo code.
 - Phase 1: aligned remaining non-C++20 compile feature settings on straggler
   targets; replaced a legacy `NULL` check with `nullptr`, defaulted a trivial
   destructor in the GUI trackball manipulator, and converted several `typedef`
