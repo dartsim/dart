@@ -49,8 +49,11 @@ Constraints:
 - No mention of any external reference project in code or docs
 - Keep feature OFF by default
 - Add tests, benchmarks, and GUI demo per the Stage plan
+- Run `pixi run lint` before any new commits
+- Repo may contain unrelated changes; do not revert or modify them unless asked
 
 Next actions:
 1) Continue perf tuning if needed; see latest numbers in 04_benchmarking.md
 2) Review force sync behavior if further refinement is needed
+3) Rebuild benchmarks (last attempt was interrupted): `pixi run -- cmake --build build/default/cpp/Release --target bm_boxes bm_contact_manifold`
 ```

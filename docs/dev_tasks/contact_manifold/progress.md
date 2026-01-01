@@ -13,6 +13,9 @@
 ## Current Status
 
 - Stage 5 ongoing: perf tuning and benchmark tracking
+- Workflow: run `pixi run lint` before every commit
+- Benchmark rebuild pending (last `bm_boxes`/`bm_contact_manifold` build was
+  interrupted)
 
 ## Stage 5 Notes
 
