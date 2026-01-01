@@ -33,8 +33,11 @@
 #include "dart/constraint/ContactManifoldCache.hpp"
 
 #include <algorithm>
+#include <iterator>
 #include <limits>
 #include <utility>
+
+#include <cmath>
 
 namespace dart {
 namespace constraint {
@@ -42,7 +45,7 @@ namespace {
 
 struct Candidate
 {
-  collision::Contact contact;
+  const collision::Contact* contact{nullptr};
   std::uint8_t age{0u};
   bool isFresh{false};
 };
@@ -62,14 +65,26 @@ UpdateScratch& getUpdateScratch()
   return scratch;
 }
 
-double normalizedDot(const Eigen::Vector3d& a, const Eigen::Vector3d& b)
+bool isNormalWithinThreshold(
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    double normalThreshold,
+    double normalThresholdSquared)
 {
-  const double normA = a.norm();
-  const double normB = b.norm();
-  const double denom = normA * normB;
-  if (denom <= 0.0)
-    return -1.0;
-  return a.dot(b) / denom;
+  const double normASq = a.squaredNorm();
+  const double normBSq = b.squaredNorm();
+  if (normASq <= 0.0 || normBSq <= 0.0)
+    return false;
+
+  const double dot = a.dot(b);
+  if (normalThreshold >= 0.0) {
+    if (dot < 0.0)
+      return false;
+    return dot * dot >= normalThresholdSquared * normASq * normBSq;
+  }
+
+  const double denom = std::sqrt(normASq * normBSq);
+  return dot / denom >= normalThreshold;
 }
 
 bool isContactValid(const collision::Contact& contact)
@@ -110,9 +125,9 @@ bool candidateLess(const Candidate& a, const Candidate& b)
   if (a.isFresh != b.isFresh)
     return a.isFresh;
 
-  if (contactLess(a.contact, b.contact))
+  if (contactLess(*a.contact, *b.contact))
     return true;
-  if (contactLess(b.contact, a.contact))
+  if (contactLess(*b.contact, *a.contact))
     return false;
 
   return a.age < b.age;
@@ -122,20 +137,26 @@ bool isNear(
     const collision::Contact& a,
     const collision::Contact& b,
     double positionThresholdSquared,
-    double normalThreshold)
+    double normalThreshold,
+    double normalThresholdSquared)
 {
   const Eigen::Vector3d delta = a.point - b.point;
   if (delta.squaredNorm() > positionThresholdSquared)
     return false;
 
-  return normalizedDot(a.normal, b.normal) >= normalThreshold;
+  return isNormalWithinThreshold(
+      a.normal, b.normal, normalThreshold, normalThresholdSquared);
 }
 
 std::vector<Candidate> deduplicateCandidates(
     std::vector<Candidate> candidates,
     double positionThresholdSquared,
-    double normalThreshold)
+    double normalThreshold,
+    double normalThresholdSquared)
 {
+  if (candidates.size() < 2)
+    return candidates;
+
   std::sort(candidates.begin(), candidates.end(), candidateLess);
 
   std::vector<Candidate> unique;
@@ -145,10 +166,11 @@ std::vector<Candidate> deduplicateCandidates(
     bool duplicate = false;
     for (const auto& kept : unique) {
       if (isNear(
-              candidate.contact,
-              kept.contact,
+              *candidate.contact,
+              *kept.contact,
               positionThresholdSquared,
-              normalThreshold)) {
+              normalThreshold,
+              normalThresholdSquared)) {
         duplicate = true;
         break;
       }
@@ -162,11 +184,15 @@ std::vector<Candidate> deduplicateCandidates(
 }
 
 std::vector<Candidate> filterNearExisting(
-    const std::vector<Candidate>& candidates,
+    std::vector<Candidate> candidates,
     const std::vector<Candidate>& existing,
     double positionThresholdSquared,
-    double normalThreshold)
+    double normalThreshold,
+    double normalThresholdSquared)
 {
+  if (candidates.empty() || existing.empty())
+    return candidates;
+
   std::vector<Candidate> filtered;
   filtered.reserve(candidates.size());
 
@@ -174,10 +200,11 @@ std::vector<Candidate> filterNearExisting(
     bool duplicate = false;
     for (const auto& kept : existing) {
       if (isNear(
-              candidate.contact,
-              kept.contact,
+              *candidate.contact,
+              *kept.contact,
               positionThresholdSquared,
-              normalThreshold)) {
+              normalThreshold,
+              normalThresholdSquared)) {
         duplicate = true;
         break;
       }
@@ -194,7 +221,7 @@ Candidate selectDeepest(const std::vector<Candidate>& candidates)
 {
   auto best = candidates.begin();
   for (auto it = candidates.begin(); it != candidates.end(); ++it) {
-    if (contactLess(it->contact, best->contact))
+    if (contactLess(*it->contact, *best->contact))
       best = it;
   }
   return *best;
@@ -205,7 +232,7 @@ double minDistanceSquared(
 {
   double minDist = std::numeric_limits<double>::infinity();
   for (const auto& entry : selected) {
-    const double dist = (candidate.point - entry.contact.point).squaredNorm();
+    const double dist = (candidate.point - entry.contact->point).squaredNorm();
     if (dist < minDist)
       minDist = dist;
   }
@@ -221,9 +248,9 @@ bool candidateBetter(
   if (a.isFresh != b.isFresh)
     return a.isFresh;
 
-  if (contactLess(a.contact, b.contact))
+  if (contactLess(*a.contact, *b.contact))
     return true;
-  if (contactLess(b.contact, a.contact))
+  if (contactLess(*b.contact, *a.contact))
     return false;
 
   return a.age < b.age;
@@ -239,28 +266,46 @@ std::vector<Candidate> selectRepresentativeContacts(
   if (freshCandidates.empty())
     return {};
 
+  const double normalThresholdSquared = normalThreshold * normalThreshold;
   freshCandidates = deduplicateCandidates(
-      freshCandidates, positionThresholdSquared, normalThreshold);
-  staleCandidates = deduplicateCandidates(
-      staleCandidates, positionThresholdSquared, normalThreshold);
-
-  staleCandidates = filterNearExisting(
-      staleCandidates,
       freshCandidates,
       positionThresholdSquared,
-      normalThreshold);
+      normalThreshold,
+      normalThresholdSquared);
+  staleCandidates = deduplicateCandidates(
+      staleCandidates,
+      positionThresholdSquared,
+      normalThreshold,
+      normalThresholdSquared);
+
+  staleCandidates = filterNearExisting(
+      std::move(staleCandidates),
+      freshCandidates,
+      positionThresholdSquared,
+      normalThreshold,
+      normalThresholdSquared);
 
   if (freshCandidates.empty())
     return {};
 
-  if (staleCandidates.empty() && freshCandidates.size() <= maxPoints) {
+  if (freshCandidates.size() + staleCandidates.size() <= maxPoints) {
+    std::vector<Candidate> combined;
+    combined.reserve(freshCandidates.size() + staleCandidates.size());
+    combined.insert(
+        combined.end(),
+        std::make_move_iterator(freshCandidates.begin()),
+        std::make_move_iterator(freshCandidates.end()));
+    combined.insert(
+        combined.end(),
+        std::make_move_iterator(staleCandidates.begin()),
+        std::make_move_iterator(staleCandidates.end()));
     std::sort(
-        freshCandidates.begin(),
-        freshCandidates.end(),
+        combined.begin(),
+        combined.end(),
         [](const Candidate& a, const Candidate& b) {
-          return contactLess(a.contact, b.contact);
+          return contactLess(*a.contact, *b.contact);
         });
-    return freshCandidates;
+    return combined;
   }
 
   std::vector<Candidate> selected;
@@ -270,8 +315,8 @@ std::vector<Candidate> selectRepresentativeContacts(
   selected.push_back(seed);
 
   auto seedMatch = [&](const Candidate& candidate) {
-    return !contactLess(candidate.contact, seed.contact)
-           && !contactLess(seed.contact, candidate.contact);
+    return !contactLess(*candidate.contact, *seed.contact)
+           && !contactLess(*seed.contact, *candidate.contact);
   };
 
   freshCandidates.erase(
@@ -285,10 +330,10 @@ std::vector<Candidate> selectRepresentativeContacts(
 
   while (selected.size() < maxPoints && !pool.empty()) {
     auto bestIt = pool.begin();
-    double bestDist = minDistanceSquared(bestIt->contact, selected);
+    double bestDist = minDistanceSquared(*bestIt->contact, selected);
 
     for (auto it = pool.begin(); it != pool.end(); ++it) {
-      const double dist = minDistanceSquared(it->contact, selected);
+      const double dist = minDistanceSquared(*it->contact, selected);
       if (candidateBetter(*it, dist, *bestIt, bestDist)) {
         bestIt = it;
         bestDist = dist;
@@ -303,7 +348,7 @@ std::vector<Candidate> selectRepresentativeContacts(
       selected.begin(),
       selected.end(),
       [](const Candidate& a, const Candidate& b) {
-        return contactLess(a.contact, b.contact);
+        return contactLess(*a.contact, *b.contact);
       });
 
   if (selected.size() > maxPoints)
@@ -368,6 +413,8 @@ void ContactManifoldCache::update(
 
   const double positionThresholdSquared
       = options.positionThreshold * options.positionThreshold;
+  const double normalThreshold = options.normalThreshold;
+  const double normalThresholdSquared = normalThreshold * normalThreshold;
 
   PairKeyLess pairLess;
   auto pairEqual = [&](const PairKey& a, const PairKey& b) {
@@ -440,7 +487,7 @@ void ContactManifoldCache::update(
 
       for (std::size_t i = 0u; i < patch->count; ++i) {
         Candidate candidate;
-        candidate.contact = patch->points[i].contact;
+        candidate.contact = &patch->points[i].contact;
         candidate.age = patch->points[i].age;
         candidate.isFresh = false;
         existingCandidates.push_back(candidate);
@@ -461,13 +508,14 @@ void ContactManifoldCache::update(
           const auto& candidate = existingCandidates[j].contact;
           if (!isNear(
                   raw,
-                  candidate,
+                  *candidate,
                   positionThresholdSquared,
-                  options.normalThreshold)) {
+                  normalThreshold,
+                  normalThresholdSquared)) {
             continue;
           }
 
-          const double dist = (raw.point - candidate.point).squaredNorm();
+          const double dist = (raw.point - candidate->point).squaredNorm();
           if (dist <= bestDistance) {
             bestDistance = dist;
             bestIndex = j;
@@ -475,7 +523,7 @@ void ContactManifoldCache::update(
         }
 
         if (bestIndex < existingCandidates.size()) {
-          existingCandidates[bestIndex].contact = raw;
+          existingCandidates[bestIndex].contact = &raw;
           existingCandidates[bestIndex].age = 0u;
           existingCandidates[bestIndex].isFresh = true;
           matchedExisting[bestIndex] = 1u;
@@ -499,7 +547,7 @@ void ContactManifoldCache::update(
           continue;
 
         Candidate candidate;
-        candidate.contact = *mRawEntries[index + i].contact;
+        candidate.contact = mRawEntries[index + i].contact;
         candidate.age = 0u;
         candidate.isFresh = true;
         freshCandidates.push_back(candidate);
@@ -519,15 +567,22 @@ void ContactManifoldCache::update(
       OutputRange output;
       output.key = key;
       output.start = mOutputScratch.size();
-      for (const auto& candidate : selected) {
-        if (patch->count >= kMaxManifoldPoints)
-          break;
+      const auto selectedCount
+          = std::min<std::size_t>(selected.size(), kMaxManifoldPoints);
+      std::array<collision::Contact, kMaxManifoldPoints> selectedContacts;
+      std::array<std::uint8_t, kMaxManifoldPoints> selectedAges;
 
-        patch->points[patch->count].contact = candidate.contact;
-        patch->points[patch->count].age = candidate.age;
+      for (std::size_t i = 0u; i < selectedCount; ++i) {
+        selectedContacts[i] = *selected[i].contact;
+        selectedAges[i] = selected[i].age;
+      }
+
+      for (std::size_t i = 0u; i < selectedCount; ++i) {
+        patch->points[patch->count].contact = selectedContacts[i];
+        patch->points[patch->count].age = selectedAges[i];
         ++patch->count;
 
-        mOutputScratch.push_back(candidate.contact);
+        mOutputScratch.push_back(selectedContacts[i]);
         ++output.count;
       }
 

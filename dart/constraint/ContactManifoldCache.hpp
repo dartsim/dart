@@ -39,7 +39,6 @@
 #include <dart/Export.hpp>
 
 #include <array>
-#include <tuple>
 #include <vector>
 
 #include <cstdint>
@@ -92,7 +91,9 @@ private:
   {
     bool operator()(const PairKey& a, const PairKey& b) const
     {
-      return std::tie(a.first, a.second) < std::tie(b.first, b.second);
+      if (a.first != b.first)
+        return a.first < b.first;
+      return a.second < b.second;
     }
   };
 

@@ -62,7 +62,6 @@
 #include <algorithm>
 #include <functional>
 #include <limits>
-#include <tuple>
 
 #include <cmath>
 
@@ -99,7 +98,9 @@ struct PairKeyLess
 {
   bool operator()(const PairKey& a, const PairKey& b) const
   {
-    return std::tie(a.first, a.second) < std::tie(b.first, b.second);
+    if (a.first != b.first)
+      return a.first < b.first;
+    return a.second < b.second;
   }
 };
 
@@ -112,36 +113,26 @@ PairKey makePairKey(
   return PairKey{first, second};
 }
 
-double normalizedDot(const Eigen::Vector3d& a, const Eigen::Vector3d& b)
+bool isNormalWithinThreshold(
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    double normalThreshold,
+    double normalThresholdSquared)
 {
-  const double normA = a.norm();
-  const double normB = b.norm();
-  const double denom = normA * normB;
-  if (denom <= 0.0)
-    return -1.0;
-  return a.dot(b) / denom;
-}
+  const double normASq = a.squaredNorm();
+  const double normBSq = b.squaredNorm();
+  if (normASq <= 0.0 || normBSq <= 0.0)
+    return false;
 
-bool contactLess(const collision::Contact& a, const collision::Contact& b)
-{
-  if (a.penetrationDepth != b.penetrationDepth)
-    return a.penetrationDepth > b.penetrationDepth;
+  const double dot = a.dot(b);
+  if (normalThreshold >= 0.0) {
+    if (dot < 0.0)
+      return false;
+    return dot * dot >= normalThresholdSquared * normASq * normBSq;
+  }
 
-  if (a.point.x() != b.point.x())
-    return a.point.x() < b.point.x();
-  if (a.point.y() != b.point.y())
-    return a.point.y() < b.point.y();
-  if (a.point.z() != b.point.z())
-    return a.point.z() < b.point.z();
-
-  if (a.normal.x() != b.normal.x())
-    return a.normal.x() < b.normal.x();
-  if (a.normal.y() != b.normal.y())
-    return a.normal.y() < b.normal.y();
-  if (a.normal.z() != b.normal.z())
-    return a.normal.z() < b.normal.z();
-
-  return false;
+  const double denom = std::sqrt(normASq * normBSq);
+  return dot / denom >= normalThreshold;
 }
 
 } // namespace
@@ -642,28 +633,6 @@ void ConstraintSolver::updateConstraints()
     mPersistentContacts.clear();
   }
 
-  // Create a mapping of contact pairs to the number of contacts between them
-  using ContactPair
-      = std::pair<collision::CollisionObject*, collision::CollisionObject*>;
-
-  // Compare contact pairs while ignoring their order in the pair.
-  struct ContactPairCompare
-  {
-    ContactPair getSortedPair(const ContactPair& a) const
-    {
-      if (a.first < a.second)
-        return std::make_pair(a.second, a.first);
-      return a;
-    }
-
-    bool operator()(const ContactPair& a, const ContactPair& b) const
-    {
-      // Sort each pair and then do a lexicographical comparison
-      return getSortedPair(a) < getSortedPair(b);
-    }
-  };
-
-  std::map<ContactPair, size_t, ContactPairCompare> contactPairMap;
   std::vector<collision::Contact*> contacts;
 
   auto handleSoftContact = [&](collision::Contact& contact) {
@@ -677,47 +646,107 @@ void ConstraintSolver::updateConstraints()
         std::make_shared<SoftContactConstraint>(contact, mTimeStep));
   };
 
-  auto handleRigidContact = [&](collision::Contact& contact) {
-    if (!isContactValid(contact))
-      return;
+  auto createContactConstraint
+      = [&](collision::Contact& contact, std::size_t numContacts) {
+          auto contactConstraint = mContactSurfaceHandler->createConstraint(
+              contact, numContacts, mTimeStep);
+          mContactConstraints.push_back(contactConstraint);
 
-    if (isSoftContact(contact))
-      return;
+          contactConstraint->update();
 
-    // Increment the count of contacts between the two collision objects
-    ++contactPairMap[std::make_pair(
-        contact.collisionObject1, contact.collisionObject2)];
-
-    contacts.push_back(&contact);
-  };
+          if (contactConstraint->isActive())
+            mActiveConstraints.push_back(contactConstraint);
+        };
 
   for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
     handleSoftContact(mCollisionResult.getContact(i));
 
   if (mContactManifoldOptions.enabled) {
-    for (auto& contact : mPersistentContacts)
-      handleRigidContact(contact);
+    for (auto& contact : mPersistentContacts) {
+      if (!isContactValid(contact))
+        continue;
+
+      if (isSoftContact(contact))
+        continue;
+
+      contacts.push_back(&contact);
+    }
+
+    PairKeyLess pairLess;
+    auto pairEqual = [&](const PairKey& a, const PairKey& b) {
+      return !pairLess(a, b) && !pairLess(b, a);
+    };
+
+    std::size_t index = 0u;
+    while (index < contacts.size()) {
+      const auto key = makePairKey(
+          contacts[index]->collisionObject1, contacts[index]->collisionObject2);
+      std::size_t end = index + 1u;
+      while (end < contacts.size()) {
+        const auto nextKey = makePairKey(
+            contacts[end]->collisionObject1, contacts[end]->collisionObject2);
+        if (!pairEqual(nextKey, key))
+          break;
+        ++end;
+      }
+
+      const auto numContacts = end - index;
+      for (std::size_t i = index; i < end; ++i)
+        createContactConstraint(*contacts[i], numContacts);
+
+      index = end;
+    }
   } else {
+    // Create a mapping of contact pairs to the number of contacts between them
+    using ContactPair
+        = std::pair<collision::CollisionObject*, collision::CollisionObject*>;
+
+    // Compare contact pairs while ignoring their order in the pair.
+    struct ContactPairCompare
+    {
+      ContactPair getSortedPair(const ContactPair& a) const
+      {
+        if (a.first < a.second)
+          return std::make_pair(a.second, a.first);
+        return a;
+      }
+
+      bool operator()(const ContactPair& a, const ContactPair& b) const
+      {
+        // Sort each pair and then do a lexicographical comparison
+        return getSortedPair(a) < getSortedPair(b);
+      }
+    };
+
+    std::map<ContactPair, size_t, ContactPairCompare> contactPairMap;
+
+    auto handleRigidContact = [&](collision::Contact& contact) {
+      if (!isContactValid(contact))
+        return;
+
+      if (isSoftContact(contact))
+        return;
+
+      // Increment the count of contacts between the two collision objects
+      ++contactPairMap[std::make_pair(
+          contact.collisionObject1, contact.collisionObject2)];
+
+      contacts.push_back(&contact);
+    };
+
     for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
       handleRigidContact(mCollisionResult.getContact(i));
-  }
 
-  // Add the new contact constraints to dynamic constraint list
-  for (auto* contact : contacts) {
-    std::size_t numContacts = 1;
-    auto it = contactPairMap.find(
-        std::make_pair(contact->collisionObject1, contact->collisionObject2));
-    if (it != contactPairMap.end())
-      numContacts = it->second;
+    // Add the new contact constraints to dynamic constraint list
+    for (auto* contact : contacts) {
+      std::size_t numContacts = 1;
+      auto it = contactPairMap.find(
+          std::make_pair(contact->collisionObject1, contact->collisionObject2));
+      if (it != contactPairMap.end())
+        numContacts = it->second;
 
-    auto contactConstraint = mContactSurfaceHandler->createConstraint(
-        *contact, numContacts, mTimeStep);
-    mContactConstraints.push_back(contactConstraint);
-
-    contactConstraint->update();
-
-    if (contactConstraint->isActive())
-      mActiveConstraints.push_back(contactConstraint);
+      createContactConstraint(*contact, numContacts);
+    }
   }
 
   // Add the new soft contact constraints to dynamic constraint list
@@ -971,6 +1000,7 @@ void ConstraintSolver::syncCollisionResultForcesFromManifolds()
       = mContactManifoldOptions.positionThreshold
         * mContactManifoldOptions.positionThreshold;
   const double normalThreshold = mContactManifoldOptions.normalThreshold;
+  const double normalThresholdSquared = normalThreshold * normalThreshold;
 
   for (std::size_t i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
     auto& raw = mCollisionResult.getContact(i);
@@ -1025,7 +1055,11 @@ void ConstraintSolver::syncCollisionResultForcesFromManifolds()
 
       const Eigen::Vector3d candidateNormal
           = flippedOrder ? -candidate->normal : candidate->normal;
-      if (normalizedDot(raw.normal, candidateNormal) < normalThreshold)
+      if (!isNormalWithinThreshold(
+              raw.normal,
+              candidateNormal,
+              normalThreshold,
+              normalThresholdSquared))
         continue;
 
       if (distance < bestDistance) {

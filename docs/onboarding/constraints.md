@@ -142,13 +142,11 @@ solve()
 - Creates `ContactConstraint` objects for each contact
 - Manages `ContactSurfaceHandler` for surface parameters
 - Supports multiple collision detection backends
-- Optional contact manifold cache in `ConstraintSolver` can reuse up to 4 contacts
-  per pair for stability; it is disabled by default and lives in
-  `dart/constraint/ContactManifoldCache.*`. When enabled, the solver syncs
-  forces back into matching raw contacts so `CollisionResult` remains useful.
-- ODE backend contact history is controlled by
-  `CollisionOption::useBackendContactHistory`; the solver disables it when
-  the manifold cache is enabled to avoid double persistence.
+- Optional persistent contact manifold support keeps up to 4 contacts per pair
+  for stability; it is disabled by default and uses manifold contacts for
+  constraint construction while leaving `CollisionResult` semantics unchanged.
+  Backend contact history is disabled when the manifold is enabled to avoid
+  double persistence.
 
 **Key Features:**
 
