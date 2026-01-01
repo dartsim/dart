@@ -20,11 +20,10 @@
 
 ### Release & Branch Strategy
 
-- `main` (preparing DART 7.0.0): Python-first API on top of a refreshed C++ architecture; legacy DART 6 APIs remain available for the transition and begin deprecation starting with 7.1.
-- `release-6.16`: maintenance line for the established DART 6 API, focused on build fixes, critical issues, and exceptional urgent work.
-- `release-6.15`: frozen and retained for historical reference only.
+- `main`: active development targeting DART 7 (Python-first API).
+- `release-6.16`: maintenance branch for DART 6 (critical fixes only).
 
-We balance maintenance of the stable DART 6 interface with a clean, Python-centric redesign. DART 7 ships both APIs while we complete the transition; from DART 8 onward only the new interface will continue. Contributions that keep the legacy API healthy are welcome when they maintain backward compatibility and avoid performance regressions. Backward compatibility is best-effort and monitored by building and testing against gz-physics via `pixi run -e gazebo test-gz`. Algorithmic behavior aligns with DART 6, with multi-core performance improvements expected; GPU work is not currently planned.
+See [release-roadmap.md](release-roadmap.md) for the detailed roadmap, compatibility, and deprecation policy.
 
 ### Documentation Principles
 
@@ -55,6 +54,7 @@ This onboarding guide is organized into several focused documents:
 - **[code-style.md](code-style.md)** - Code style conventions for C++, Python, and CMake
 - **[testing.md](testing.md)** - Test suite organization, unit vs integration tests, running tests
 - **[ci-cd.md](ci-cd.md)** - CI/CD workflows, caching strategies, and performance optimization
+- **[release-roadmap.md](release-roadmap.md)** - Release/branch strategy and deprecation policy
 - **[architecture.md](architecture.md)** - Deep dive into DART's simulation core
 - **[dynamics.md](dynamics.md)** - Articulated body system and kinematics
 - **[constraints.md](constraints.md)** - Constraint resolution and collision response

@@ -67,13 +67,10 @@ An overview of DART is also available on [DeepWiki](https://deepwiki.com/dartsim
 
 ## Release & Branch Strategy
 
-We're modernizing DART while keeping current users supported.
+- `main`: active development targeting DART 7.
+- `release-6.16`: maintenance branch for DART 6 (critical fixes only).
 
-- `main` (targeting 7.0.0): new Python-first API built on a refreshed C++ architecture; legacy DART 6 APIs remain available for the transition and are slated for removal beginning with 7.1.
-- `release-6.16`: maintenance line for the established DART 6 API; expect build fixes, critical bugs, and exceptional urgent work only.
-- `release-6.15`: frozen for historical reference with no further updates planned.
-
-DART 6 remains the stable interface for teams that rely on it today. Starting with DART 7, we co-develop the Pythonic API alongside the legacy surface; by DART 8 only the new interface continues forward. Contributions that help keep the legacy API viable are welcome when they stay backward compatible and avoid performance regressions for other users. Backward compatibility is best-effort and validated by building and testing against gz-physics (`pixi run -e gazebo test-gz`). The algorithmic stack aligns with DART 6, with potential multi-core gains from the new architecture; GPU support is not currently planned.
+Details on compatibility, deprecations, and the full roadmap live in `docs/onboarding/release-roadmap.md`.
 
 ## Citation
 
