@@ -37,6 +37,11 @@ add_subdirectory(04_control_and_ik/wam_ikfast)
 add_subdirectory(05_io_and_models/fetch)
 add_subdirectory(05_io_and_models/g1_puppet)
 
+# Soft and hybrid examples
+add_subdirectory(06_soft_and_hybrid/hybrid_dynamics)
+add_subdirectory(06_soft_and_hybrid/mixed_chain)
+add_subdirectory(06_soft_and_hybrid/soft_bodies)
+
 # None GUI examples
 add_subdirectory(speed_test)
 
@@ -45,14 +50,11 @@ add_subdirectory(add_delete_skels)
 add_subdirectory(drag_and_drop)
 add_subdirectory(empty)
 add_subdirectory(hardcoded_design)
-add_subdirectory(hybrid_dynamics)
 add_subdirectory(imgui)
-add_subdirectory(mixed_chain)
 add_subdirectory(polyhedron_visual)
 if(DART_HAVE_OCTOMAP)
   add_subdirectory(point_cloud)
 endif()
 add_subdirectory(simulation_event_handler)
-add_subdirectory(soft_bodies)
 add_subdirectory(tinkertoy)
 add_subdirectory(vehicle)
