@@ -488,7 +488,11 @@ void CloneableMap<MapType>::copy(const MapType& otherMap, bool merge)
     if (mMap.end() == receiver) {
       // If we've reached the end of this CloneableMapHolder's map, then we
       // should just add each entry
-      mMap[sender->first] = sender->second->clone();
+      if (sender->second) {
+        mMap[sender->first] = sender->second->clone();
+      } else if (!merge) {
+        mMap[sender->first] = nullptr;
+      }
       ++sender;
     } else if (receiver->first == sender->first) {
       if (sender->second) {
