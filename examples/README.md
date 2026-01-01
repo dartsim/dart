@@ -6,6 +6,7 @@
 - Start in `00_getting_started` for minimal, first-run examples.
 - Continue with `01_rigid_bodies_and_frames` for basic rigid-body scenes.
 - Explore `02_joints_and_constraints` for joint types and constraint behavior.
+- Dig into `03_collisions_and_contacts` for collision and terrain workflows.
 - Tutorials remain in `tutorials/` and are cross-linked as categories expand.
 
 ## Build Each Example

@@ -7,6 +7,11 @@
 - Expected output: an interactive OSG viewer with key bindings to spawn shapes.
 - Controls: see the console instructions for spawn/toggle keys.
 
+## Notes
+
+- CLI options include `--collision-detector`, `--max-contacts`, and
+  `--ground-thickness`.
+
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.
 

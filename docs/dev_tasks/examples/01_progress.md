@@ -25,6 +25,8 @@
   metadata headers.
 - Created the joints-and-constraints category and moved initial examples with
   refreshed metadata headers.
+- Created the collisions-and-contacts category and moved initial examples with
+  refreshed metadata headers.
 
 ## Discovery findings
 
@@ -65,7 +67,7 @@
 
 ## Next steps
 
-1. Migrate the next category (collisions/contacts or control/IK).
+1. Migrate the next category (control/IK or IO/models).
 2. Keep `examples/CMakeLists.txt` grouping comments aligned with the new
    category layout.
 
