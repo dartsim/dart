@@ -37,6 +37,7 @@
 - Distance tests include diagonal cylinder-cylinder coverage for oblique separation.
 - Distance tests include perpendicular cylinder-cylinder coverage for non-parallel axes.
 - Distance tests include rotated box-box coverage for aligned separation.
+- Distance tests include skewed box-box coverage for mixed rotations.
 - Distance tests include skewed box-cylinder coverage for non-parallel axes.
 - Distance tests include coverage for filters rejecting all pairs.
 - Distance tests include rotated box-cylinder coverage for axial separation.
@@ -116,6 +117,7 @@
 - Added diagonal cylinder-cylinder distance coverage for oblique separation.
 - Added perpendicular cylinder-cylinder distance coverage for non-parallel axes.
 - Added rotated box-box distance coverage for aligned separation.
+- Added skewed box-box distance coverage for mixed rotations.
 - Added skewed box-cylinder distance coverage for non-parallel axes.
 - Added distance coverage for filters rejecting all pairs.
 - Added rotated box-cylinder distance coverage for axial separation.
