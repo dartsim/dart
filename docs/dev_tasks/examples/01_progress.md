@@ -81,6 +81,17 @@
 - Integration and tools: point cloud and tooling touchpoints exist, but logging
   and external tooling examples are sparse.
 
+## Gap analysis priorities (draft)
+
+- Document a `dart::io`-first example that highlights shared options and format
+  inference.
+- Add at least one headless/performance workflow that is repeatable and
+  deterministic.
+- Provide an integration example that exports or logs simulation data for
+  external tooling.
+- Clarify viewer/backend selection guidance (OSG vs Raylib) in the
+  visualization category.
+
 ## Next steps
 
 1. Identify top gaps per category (especially IO, performance, and tools) and
