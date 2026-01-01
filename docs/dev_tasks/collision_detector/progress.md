@@ -30,6 +30,7 @@
 - Distance tests include a rotated plane case for sphere-plane queries.
 - Distance tests include rotated box/cylinder plane cases, and raycast tests include rotated box hits.
 - Raycast tests include rotated cylinder hits.
+- Raycast tests include rotated cylinder parallel misses.
 - Distance tests include box-plane offset coverage.
 - Distance tests include a group-group distance case to validate pair selection.
 - Distance tests include diagonal box-box coverage for oblique nearest points.
@@ -117,6 +118,7 @@
 - Added rotated plane distance coverage for sphere-plane.
 - Added rotated box raycast coverage and rotated box/cylinder plane distance checks.
 - Added rotated cylinder raycast coverage.
+- Added rotated cylinder parallel raycast miss coverage.
 - Added box-plane offset distance coverage.
 - Added group-group distance coverage to validate pair selection and nearest points.
 - Added diagonal box-box distance coverage to validate oblique nearest points.

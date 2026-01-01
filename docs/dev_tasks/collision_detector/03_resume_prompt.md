@@ -59,6 +59,7 @@ Current status:
 - Distance tests include a rotated plane case for sphere-plane queries.
 - Distance tests include rotated box/cylinder plane cases; raycast tests include rotated box hits.
 - Raycast tests include rotated cylinder hits.
+- Raycast tests include rotated cylinder parallel misses.
 - Distance tests include box-plane offset coverage.
 - Distance tests include a group-group case to validate pair selection and nearest points.
 - Distance tests include diagonal box-box coverage for oblique nearest points.
