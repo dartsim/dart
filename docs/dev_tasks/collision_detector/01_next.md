@@ -97,6 +97,7 @@
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Added tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
 - Added tilted plane offset coverage for cylinder-plane nearest points.
+- Added tilted plane offset overlap coverage for cylinder-plane distances.
 - Added tilted plane offset coverage for sphere-plane nearest points.
 - Added tilted plane overlap coverage for sphere-plane distances.
 - Added tilted plane offset coverage for box-plane nearest points.
