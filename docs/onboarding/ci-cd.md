@@ -12,6 +12,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - PR template checklist: [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)
   - Asserts-enabled CI build (no `-DNDEBUG`): see [Asserts-Enabled CI Build](#asserts-enabled-ci-build-no--dndebug)
   - CI monitoring commands: see [CI Monitoring (CLI)](#ci-monitoring-cli) and [CI Monitoring (API)](#ci-monitoring-api)
+  - Common CI failure fixes: see [Common CI Failure Modes](#common-ci-failure-modes)
 - Fast CI fail-fast loop:
   - Suggested (Unverified): `gh pr checks <PR_NUMBER> --watch --interval 30 --fail-fast`
   - Suggested (Unverified): `gh run view --job <JOB_ID> --log-failed`
@@ -36,10 +37,18 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Wheel publishing workflows may lag behind other jobs and stay queued longer; keep watching the PR run until all workflows complete.
   - Randomized stress tests can diverge across platforms if they rely on library-dependent distributions; prefer deterministic RNG transforms when portability matters.
   - `check-format` failures usually mean formatting drift; run lint before pushing to keep CI green.
+  - Codecov patch failures usually mean new lines or branches are uncovered; add targeted tests and re-run coverage.
+  - Codecov patch status can lag until coverage jobs complete; confirm Coverage (Debug) finished before acting.
+
+## Common CI Failure Modes
+
+- Formatting checks fail: run the C++ formatting task and re-run CI.
+- Codecov patch failures: add targeted coverage for new lines or branches.
+- Unit test crashes or segfaults: isolate the failing test from job logs, reproduce locally, and add a regression for the edge case.
 
 ## Task Recap (General)
 
-This task validated the issue state, applied a minimal fix with regression coverage, and ran the standard pixi workflows locally. CI was monitored via GitHub CLI and job logs were retrieved to isolate failures, then fixes were pushed and CI was re-run. The emphasis was on using the repo's standard entry points, keeping formatting in sync, and keeping CI feedback loops tight.
+This task validated the issue state, applied a minimal fix with regression coverage, and ran the standard pixi workflows locally. CI was monitored via GitHub CLI and job logs were retrieved to isolate failures, then fixes were pushed and CI was re-run. The emphasis was on using the repo's standard entry points, keeping formatting and coverage in sync, and keeping CI feedback loops tight.
 
 ## How We Worked (Repeatable Playbook)
 
@@ -50,12 +59,14 @@ This task validated the issue state, applied a minimal fix with regression cover
 - Run the smallest local validation first, then expand to full test or CI as needed.
 - Resolve merge conflicts before re-running CI so the PR remains mergeable.
 - When a job fails inside a still-running workflow, pull the job logs directly and fix the smallest failure first.
+- If coverage gates fail, add targeted tests for new lines before re-running CI.
 - Push each commit and monitor GitHub Actions until all jobs complete.
 
 ## Fast Iteration Loop
 
 - Identify the first failing step in the CI job log, then reproduce locally with the same build toggles.
 - Run the smallest failing test or target, then push and re-run CI.
+- If the failure is formatting-related, run the C++ formatter before retrying CI.
 - Success signal: the failing job completes without `-Werror` compile failures or Python aborts.
 
 Suggested (Unverified):
@@ -63,6 +74,8 @@ Suggested (Unverified):
 ```bash
 gh run view <RUN_ID> --json status,conclusion,url
 gh run view <RUN_ID> --job <JOB_ID> --log-failed
+pixi run lint-cpp
+ctest --test-dir <BUILD_DIR> -R <TEST>
 gh api -H "Accept: application/vnd.github+json" /repos/<OWNER>/<REPO>/actions/jobs/<JOB_ID>/logs > /tmp/<JOB_ID>.log
 rg -n "FAILED|SegFault|Exception|\\bError\\b|✗" /tmp/<JOB_ID>.log
 python -m pytest <TEST_PATH>::<TEST_NAME> -vv
@@ -75,6 +88,7 @@ Use the GitHub CLI to locate the latest run for your branch and watch it to comp
 Suggested (Unverified):
 
 ```bash
+gh pr checks <PR_NUMBER>
 gh run list --repo <OWNER>/<REPO> --branch <BRANCH> --limit <N>
 gh run watch <RUN_ID> --interval 30 --repo <OWNER>/<REPO>
 gh run view <RUN_ID> --json status,conclusion,updatedAt,url
