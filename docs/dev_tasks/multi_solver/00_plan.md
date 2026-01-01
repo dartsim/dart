@@ -2,28 +2,33 @@
 
 ## Status
 
-- Completed: first PR milestone delivered on `feature/multi_solver`.
-- Next plan: see `docs/dev_tasks/multi_solver/01_next.md`.
+- Completed: PR 00 landed on `main` (multi-solver scaffolding).
+- Completed: follow-up milestone 01 implemented on `feature/multi_solver-next`.
+- Next plan: see `docs/dev_tasks/multi_solver/02_next.md`.
+- Resume prompt: see `docs/dev_tasks/multi_solver/02_resume_prompt.md`.
 
-## What Exists Today (feature/multi_solver)
+## What Exists Today (feature/multi_solver-next)
 
 - World orchestration and config: `dart/simulation/World.hpp`, `dart/simulation/World.cpp`
   - `WorldConfig`, `WorldConfig::SolverRouting`, `CollisionDetectorType`,
     `RigidSolverType`
   - Solver enable/disable and ordering controls
 - Solver abstraction and implementations:
+  - Solver types: `dart/simulation/solver/SolverTypes.hpp`
   - Base: `dart/simulation/solver/Solver.hpp`, `dart/simulation/solver/Solver.cpp`
   - Classic solver wrapper: `dart/simulation/solver/classic_rigid/ClassicRigidSolver.hpp`, `dart/simulation/solver/classic_rigid/ClassicRigidSolver.cpp`
   - ECS-backed rigid scaffold: `dart/simulation/solver/rigid/RigidSolver.hpp`, `dart/simulation/solver/rigid/RigidSolver.cpp`
 - ECS scaffolding:
   - Opaque entity handle: `dart/simulation/EcsEntity.hpp`
   - ECS access bridge (internal-only): `dart/simulation/detail/WorldEcsAccess.hpp`
+    (create/destroy/valid + EnTT conversion helpers)
   - ECS-only rigid components (internal-only): `dart/simulation/detail/RigidSolverComponents.hpp`
   - Object scaffolding: `dart/simulation/object/Object.hpp`,
     `dart/simulation/object/TypeList.hpp` (public), plus internal-only
     `dart/simulation/object/ObjectWith.hpp`
 - Tests:
-  - Solver stepping/scheduling coverage: `tests/integration/simulation/test_World.cpp`
+  - Solver stepping, routing, enable/disable, ECS lifecycle coverage:
+    `tests/integration/simulation/test_World.cpp`
 - Build deps:
   - EnTT added as required dep: `cmake/DARTFindDependencies.cmake`, `dart/CMakeLists.txt`, `package.xml`
 
@@ -54,6 +59,8 @@
   ordering APIs.
 - `Solver` is the base solver name; `WorldSolver` remains as a compatibility
   alias for existing code.
+- `RigidSolverType` lives in `dart/simulation/solver/SolverTypes.hpp` so
+  `World.hpp` can forward declare `Solver` without pulling solver internals.
 - `EcsEntity` is the only public ECS handle (opaque value type).
 - EnTT types must not appear in installed headers (see “Internal Design”).
 
