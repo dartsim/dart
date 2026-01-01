@@ -36,6 +36,7 @@ add_subdirectory(04_control_and_ik/vehicle)
 add_subdirectory(04_control_and_ik/wam_ikfast)
 
 # IO and models examples
+add_subdirectory(05_io_and_models/unified_loading)
 add_subdirectory(05_io_and_models/fetch)
 add_subdirectory(05_io_and_models/g1_puppet)
 
