@@ -6,8 +6,13 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Use /bin/bash to use pushd/popd
 SHELL ["/bin/bash", "-c"]
 
-# Update apt-get
-RUN apt-get update -qq
+# Update apt-get (fallback to old-releases for EOL images)
+RUN apt-get update -qq || ( \
+    sed -i 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list && \
+    sed -i 's|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list && \
+    sed -i 's|http://ports.ubuntu.com/ubuntu-ports|http://old-releases.ubuntu.com/ubuntu-ports|g' /etc/apt/sources.list && \
+    apt-get update -qq \
+  )
 
 # ==============================================================================
 # Build tools
