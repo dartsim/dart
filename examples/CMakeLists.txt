@@ -62,5 +62,3 @@ if(DART_HAVE_OCTOMAP)
   add_subdirectory(09_integration_and_tools/point_cloud)
 endif()
 add_subdirectory(09_integration_and_tools/rerun)
-
-# OSG renderer examples
