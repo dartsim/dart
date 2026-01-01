@@ -65,6 +65,14 @@
 2. If continuing, update `examples/CMakeLists.txt` grouping comments to match
    the new category layout.
 
+## Resume checklist
+
+- Read `docs/dev_tasks/examples/00_plan.md` and this progress log.
+- Review the current category layout in `examples/` and the build wiring in
+  `examples/CMakeLists.txt`.
+- Pick the next category to migrate and update plan/progress as you go.
+- Create a commit per checkpoint so progress is resumable.
+
 ## Open questions
 
 - Should tutorials and examples share a common harness, or stay separate?

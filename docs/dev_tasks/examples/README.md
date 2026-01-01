@@ -2,7 +2,8 @@
 
 ## Status
 
-- Draft: planning and prompt are ready; discovery has not started.
+- In progress: discovery and pilot migration are complete; see progress doc for
+  next steps.
 
 ## Goal
 
@@ -25,3 +26,8 @@
 - Plan: `docs/dev_tasks/examples/00_plan.md`
 - Progress: `docs/dev_tasks/examples/01_progress.md`
 - Codex prompt: `docs/dev_tasks/examples/02_codex_prompt.md`
+
+## Resume
+
+- Start with `docs/dev_tasks/examples/01_progress.md`.
+- Use `docs/dev_tasks/examples/02_codex_prompt.md` when opening a fresh chat.

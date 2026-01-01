@@ -6,7 +6,9 @@ Use the text below as the prompt for a new Codex chat.
 
 You are Codex, working in `/home/js/dev/dartsim/dart/refactor`.
 
-Goal: Plan a multi-phase reorganization of DART C++ examples so they are user-first, logically ordered, and cover core capabilities. Produce or update task docs under `docs/dev_tasks/examples/` with plan and progress so work can resume later.
+Goal: Continue the multi-phase reorganization of DART C++ examples so they are
+user-first, logically ordered, and cover core capabilities. Keep task docs
+under `docs/dev_tasks/examples/` up to date so work can resume later.
 
 Read first:
 - `AGENTS.md`
@@ -26,10 +28,17 @@ Inspect:
   - `/home/js/dev/physics_engine/newton/newton/examples`
   - `/home/js/dev/physics_engine/Genesis/examples`
 
+Current state (read in repo):
+- A pilot category `00_getting_started` exists with starter examples moved.
+- Example metadata headers were added to several beginner examples.
+- `examples/README.md` has a brief onboarding note.
+- See `docs/dev_tasks/examples/01_progress.md` for detailed status.
+
 Deliverables:
-- Update `docs/dev_tasks/examples/00_plan.md` with a refined taxonomy, phases, and success criteria.
-- Update `docs/dev_tasks/examples/01_progress.md` with discovery findings and next steps.
-- Optionally update `examples/README.md` with a concise onboarding index (do not add detailed file lists).
+- Update `docs/dev_tasks/examples/01_progress.md` with new checkpoints.
+- Update `docs/dev_tasks/examples/00_plan.md` only if taxonomy or criteria change.
+- Continue the pilot migration or move the next category, and keep docs concise.
+- Create a commit per checkpoint so progress is resumable.
 
 Constraints:
 - Use `pixi run` entry points; do not invent new ones.
