@@ -43,6 +43,7 @@
   control category READMEs.
 - Added a CMake guard to skip the empty `rerun` example until sources exist.
 - Updated the examples index to reflect the completed taxonomy and pixi note.
+- Linked tutorials README back to the examples index.
 
 ## Discovery findings
 
