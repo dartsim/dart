@@ -2,7 +2,7 @@
 
 ## Status
 
-- Discovery completed; taxonomy draft captured in plan.
+- Discovery completed; pilot plus first follow-on category migrated.
 
 ## Completed
 
@@ -21,6 +21,8 @@
 - Executed the pilot migration: added a getting-started category folder and
   moved initial examples into it.
 - Updated `examples/README.md` with a brief onboarding note.
+- Created the rigid-bodies category and moved initial examples with refreshed
+  metadata headers.
 
 ## Discovery findings
 
@@ -61,9 +63,9 @@
 
 ## Next steps
 
-1. Decide whether to migrate additional categories or iterate on the pilot.
-2. If continuing, update `examples/CMakeLists.txt` grouping comments to match
-   the new category layout.
+1. Migrate the next category (joints/constraints or collisions/contacts).
+2. Keep `examples/CMakeLists.txt` grouping comments aligned with the new
+   category layout.
 
 ## Resume checklist
 

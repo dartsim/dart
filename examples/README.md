@@ -4,6 +4,7 @@
 
 - Examples are being reorganized into numbered categories (pilot in progress).
 - Start in `00_getting_started` for minimal, first-run examples.
+- Continue with `01_rigid_bodies_and_frames` for basic rigid-body scenes.
 - Tutorials remain in `tutorials/` and are cross-linked as categories expand.
 
 ## Build Each Example

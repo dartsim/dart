@@ -6,6 +6,10 @@ project(dart-examples)
 add_subdirectory(00_getting_started/hello_world)
 add_subdirectory(00_getting_started/simple_frames)
 
+# Rigid bodies and frames examples
+add_subdirectory(01_rigid_bodies_and_frames/boxes)
+add_subdirectory(01_rigid_bodies_and_frames/rigid_cubes)
+
 # None GUI examples
 add_subdirectory(speed_test)
 
@@ -15,7 +19,6 @@ add_subdirectory(atlas_puppet)
 add_subdirectory(atlas_simbicon)
 add_subdirectory(biped_stand)
 add_subdirectory(box_stacking)
-add_subdirectory(boxes)
 add_subdirectory(coupler_constraint)
 add_subdirectory(drag_and_drop)
 add_subdirectory(empty)
@@ -36,7 +39,6 @@ if(DART_HAVE_OCTOMAP)
   add_subdirectory(point_cloud)
 endif()
 add_subdirectory(rigid_chain)
-add_subdirectory(rigid_cubes)
 add_subdirectory(rigid_loop)
 add_subdirectory(rigid_shapes)
 add_subdirectory(simulation_event_handler)
