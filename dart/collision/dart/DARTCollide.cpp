@@ -49,15 +49,14 @@ namespace collision {
 // normal : normal vector from right to left 0 <- 1
 // penetration : real positive means penetration
 
-#define DART_COLLISION_EPS 1E-6
+constexpr double kDartCollisionEps = 1e-6;
 
-typedef double dVector3[4];
-typedef double dVector3[4];
-typedef double dVector4[4];
-typedef double dMatrix3[12];
-typedef double dMatrix4[16];
-typedef double dMatrix6[48];
-typedef double dQuaternion[4];
+using dVector3 = double[4];
+using dVector4 = double[4];
+using dMatrix3 = double[12];
+using dMatrix4 = double[16];
+using dMatrix6 = double[48];
+using dQuaternion = double[4];
 
 inline void convVector(const Eigen::Vector3d& p0, dVector3& p1)
 {
@@ -1034,7 +1033,7 @@ int collideBoxSphere(
     return 0;
   }
 
-  if (mag > DART_COLLISION_EPS) {
+  if (mag > kDartCollisionEps) {
     normal *= (1.0 / mag);
 
     Contact contact;
@@ -1159,7 +1158,7 @@ int collideSphereBox(
     return 0;
   }
 
-  if (mag > DART_COLLISION_EPS) {
+  if (mag > kDartCollisionEps) {
     normal *= (1.0 / mag);
 
     Contact contact;
@@ -1223,7 +1222,7 @@ int collideSphereSphere(
   Eigen::Vector3d point = r1 * c0.translation() + r0 * c1.translation();
   double penetration;
 
-  if (normal_sqr < DART_COLLISION_EPS) {
+  if (normal_sqr < kDartCollisionEps) {
     normal.setZero();
     penetration = rsum;
 
@@ -1340,8 +1339,8 @@ int collideCylinderPlane(
   Eigen::Vector3d Ry = normal - normal.dot(Rx) * Rx;
   double mag = Ry.norm();
   Ry.normalize();
-  if (mag < DART_COLLISION_EPS) {
-    if (std::abs(Rx[2]) > 1.0 - DART_COLLISION_EPS)
+  if (mag < kDartCollisionEps) {
+    if (std::abs(Rx[2]) > 1.0 - kDartCollisionEps)
       Ry = Eigen::Vector3d::UnitX();
     else
       Ry = (Eigen::Vector3d(Rx[1], -Rx[0], 0.0)).normalized();
@@ -1382,9 +1381,9 @@ int collideCylinderPlane(
 
   Eigen::Vector3d point;
 
-  if (std::abs(depth[found] - depth[(found + 1) % 4]) < DART_COLLISION_EPS)
+  if (std::abs(depth[found] - depth[(found + 1) % 4]) < kDartCollisionEps)
     point = T * (0.5 * (c[found] + c[(found + 1) % 4]));
-  else if (std::abs(depth[found] - depth[(found + 3) % 4]) < DART_COLLISION_EPS)
+  else if (std::abs(depth[found] - depth[(found + 3) % 4]) < kDartCollisionEps)
     point = T * (0.5 * (c[found] + c[(found + 3) % 4]));
   else
     point = T * c[found];

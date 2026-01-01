@@ -53,7 +53,7 @@ set(required_libraries
 if(DART_IN_SOURCE_BUILD)
   dart_build_example_in_source(${example_name}
     LINK_LIBRARIES ${required_libraries}
-    COMPILE_FEATURES cxx_std_14
+    COMPILE_FEATURES cxx_std_20
   )
   return()
 endif()
@@ -63,4 +63,4 @@ find_package(DART 7.0.0 REQUIRED COMPONENTS ${required_components} CONFIG)
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})
 target_link_libraries(${example_name} PUBLIC ${required_libraries})
-target_compile_features(${example_name} PUBLIC cxx_std_14)
+target_compile_features(${example_name} PUBLIC cxx_std_20)

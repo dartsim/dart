@@ -172,7 +172,7 @@ protected:
   std::vector<std::unique_ptr<dart::dynamics::SimpleFrame>> mSimpleFrames;
 };
 
-typedef std::shared_ptr<InteractiveFrame> InteractiveFramePtr;
+using InteractiveFramePtr = std::shared_ptr<InteractiveFrame>;
 
 } // namespace gui
 } // namespace dart

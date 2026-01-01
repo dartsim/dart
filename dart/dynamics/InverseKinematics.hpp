@@ -523,7 +523,7 @@ protected:
   mutable math::Jacobian mJacobian;
 };
 
-typedef InverseKinematics IK;
+using IK = InverseKinematics;
 
 //==============================================================================
 /// This class should be inherited by math::Function classes that have a
@@ -549,7 +549,7 @@ public:
 class DART_API InverseKinematics::ErrorMethod : public common::Subject
 {
 public:
-  typedef std::pair<Eigen::Vector6d, Eigen::Vector6d> Bounds;
+  using Bounds = std::pair<Eigen::Vector6d, Eigen::Vector6d>;
 
   /// The Properties struct contains settings that are commonly used by
   /// methods that compute error for inverse kinematics.
@@ -1097,11 +1097,10 @@ public:
   };
 
   // std::function template for comparing the quality of configurations
-  typedef std::function<bool(
+  using QualityComparison = std::function<bool(
       const Eigen::VectorXd& _better,
       const Eigen::VectorXd& _worse,
-      const InverseKinematics* _ik)>
-      QualityComparison;
+      const InverseKinematics* _ik)>;
 
   struct DART_API UniqueProperties
   {

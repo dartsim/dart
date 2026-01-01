@@ -39,8 +39,8 @@
 namespace dart {
 namespace dynamics {
 
-typedef std::set<Entity*> EntityPtrSet;
-typedef std::set<Frame*> FramePtrSet;
+using EntityPtrSet = std::set<Entity*>;
+using FramePtrSet = std::set<Frame*>;
 
 //==============================================================================
 Frame::~Frame()

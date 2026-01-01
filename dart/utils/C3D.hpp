@@ -50,7 +50,7 @@ namespace utils {
 
 #define C3D_REC_SIZE 512
 
-typedef struct c3d_head_t
+struct c3d_head_t
 {
   unsigned char prec_start;
   unsigned char key;
@@ -64,28 +64,32 @@ typedef struct c3d_head_t
   short a_frames;
   float freq;
   short stuff[244];
-} c3d_head;
+};
+using c3d_head = c3d_head_t;
 
-typedef struct c3d_param_t
+struct c3d_param_t
 {
   unsigned char reserved[2];
   unsigned char pblocks;
   unsigned char ftype;
   char stuff[C3D_REC_SIZE - 4];
-} c3d_param;
+};
+using c3d_param = c3d_param_t;
 
-typedef struct c3d_frameSI_t
+struct c3d_frameSI_t
 {
   short x, y, z;
   unsigned char cam_byte;
   unsigned char residual;
-} c3d_frameSI;
+};
+using c3d_frameSI = c3d_frameSI_t;
 
-typedef struct c3d_frame_t
+struct c3d_frame_t
 {
   float x, y, z;
   float residual;
-} c3d_frame;
+};
+using c3d_frame = c3d_frame_t;
 
 float convertDecToFloat(char _bytes[4]);
 void convertFloatToDec(float _f, char* _bytes);

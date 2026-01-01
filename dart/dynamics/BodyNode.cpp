@@ -197,7 +197,7 @@ ConstSkeletonPtr SkeletonRefCountingBase::getSkeleton() const
 #define CHECK_FLAG(X) skel->mTreeCache[mTreeIndex].mDirty.X
 
 //==============================================================================
-typedef std::set<Entity*> EntityPtrSet;
+using EntityPtrSet = std::set<Entity*>;
 
 //==============================================================================
 std::size_t BodyNode::msBodyNodeCount = 0;
