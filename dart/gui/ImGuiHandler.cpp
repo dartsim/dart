@@ -47,6 +47,7 @@
 #include <osg/RenderInfo>
 
 #include <algorithm>
+
 #include <cmath>
 
 namespace dart {
