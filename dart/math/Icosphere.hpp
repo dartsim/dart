@@ -55,9 +55,9 @@ public:
   using Index = typename Base::Index;
   using Vector3 = typename Base::Vector3;
   using Triangle = typename Base::Triangle;
-  using Vertices = std::vector<Vector3>;
+  using Vertices = typename Base::Vertices;
   using Normals = typename Base::Normals;
-  using Triangles = std::vector<Triangle>;
+  using Triangles = typename Base::Triangles;
 
   /// Returns the number of vertices of icosphere given subdivisions.
   static std::size_t getNumVertices(std::size_t subdivisions);

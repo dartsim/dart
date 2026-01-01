@@ -314,14 +314,40 @@ void defViewer(nb::module_& m)
                 },
                 nb::arg("fov"))
             .def("getVerticalFieldOfView", &Viewer::getVerticalFieldOfView)
-            .def("run", [](Viewer& self) { return self.run(); })
-            .def("frame", [](Viewer& self) { self.frame(); })
+            .def(
+                "setThreadingModel",
+                [](Viewer& self, osgViewer::ViewerBase::ThreadingModel model) {
+                  self.setThreadingModel(model);
+                },
+                nb::arg("threading_model"))
+            .def("getThreadingModel", &Viewer::getThreadingModel)
+            .def(
+                "setKeyEventSetsDone",
+                [](Viewer& self, int key) { self.setKeyEventSetsDone(key); },
+                nb::arg("key"))
+            .def("getKeyEventSetsDone", &Viewer::getKeyEventSetsDone)
+            .def(
+                "setQuitEventSetsDone",
+                [](Viewer& self, bool flag) {
+                  self.setQuitEventSetsDone(flag);
+                },
+                nb::arg("flag"))
+            .def("getQuitEventSetsDone", &Viewer::getQuitEventSetsDone)
+            .def(
+                "run",
+                [](Viewer& self) { return self.run(); },
+                nb::call_guard<nb::gil_scoped_release>())
+            .def(
+                "frame",
+                [](Viewer& self) { self.frame(); },
+                nb::call_guard<nb::gil_scoped_release>())
             .def(
                 "frame",
                 [](Viewer& self, double simulationTime) {
                   self.frame(simulationTime);
                 },
-                nb::arg("simulation_time"))
+                nb::arg("simulation_time"),
+                nb::call_guard<nb::gil_scoped_release>())
             .def(
                 "setUpViewInWindow",
                 [](Viewer& self, int x, int y, int width, int height) {
@@ -353,12 +379,53 @@ void defViewer(nb::module_& m)
                 nb::arg("center"),
                 nb::arg("up"))
             .def("setCameraMode", &Viewer::setCameraMode, nb::arg("mode"))
-            .def("getCameraMode", &Viewer::getCameraMode);
+            .def("getCameraMode", &Viewer::getCameraMode)
+            .def(
+                "close",
+                [](Viewer& self) {
+                  self.setDone(true);
+                  self.setReleaseContextAtEndOfFrameHint(true);
+                })
+            .def("is_closed", [](const Viewer& self) { return self.done(); })
+            .def(
+                "set_clear_color",
+                [](Viewer& self, const Eigen::Vector4d& clearColor) {
+                  self.getCamera()->setClearColor(
+                      dart::gui::eigToOsgVec4f(clearColor));
+                })
+            .def("get_clear_color", [](Viewer& self) {
+              const auto c = self.getCamera()->getClearColor();
+              return Eigen::Vector4d(c[0], c[1], c[2], c[3]);
+            });
 
   nb::enum_<Viewer::LightingMode>(viewer, "LightingMode")
       .value("NO_LIGHT", Viewer::NO_LIGHT)
       .value("HEADLIGHT", Viewer::HEADLIGHT)
       .value("SKY_LIGHT", Viewer::SKY_LIGHT);
+
+  nb::enum_<osgViewer::ViewerBase::ThreadingModel>(viewer, "ThreadingModel")
+      .value(
+          "SingleThreaded",
+          osgViewer::ViewerBase::ThreadingModel::SingleThreaded)
+      .value(
+          "CullDrawThreadPerContext",
+          osgViewer::ViewerBase::ThreadingModel::CullDrawThreadPerContext)
+      .value(
+          "ThreadPerContext",
+          osgViewer::ViewerBase::ThreadingModel::ThreadPerContext)
+      .value(
+          "DrawThreadPerContext",
+          osgViewer::ViewerBase::ThreadingModel::DrawThreadPerContext)
+      .value(
+          "CullThreadPerCameraDrawThreadPerContext",
+          osgViewer::ViewerBase::ThreadingModel::
+              CullThreadPerCameraDrawThreadPerContext)
+      .value(
+          "ThreadPerCamera",
+          osgViewer::ViewerBase::ThreadingModel::ThreadPerCamera)
+      .value(
+          "AutomaticSelection",
+          osgViewer::ViewerBase::ThreadingModel::AutomaticSelection);
 
   nb::enum_<dart::gui::CameraMode>(m, "CameraMode")
       .value("RGBA", dart::gui::CameraMode::RGBA)
