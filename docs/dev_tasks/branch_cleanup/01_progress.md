@@ -23,11 +23,14 @@
   - No unique commits vs origin/release-7.0.
   - Decision: delete remote branch.
   - Deleted: origin/7/doc.
+- Triaged origin/7/constraint_solver against origin/main and origin/release-7.0:
+  - No unique commits vs origin/release-7.0.
+  - Decision: delete remote branch.
+  - Deleted: origin/7/constraint_solver.
 
 ## Triage results (origin/7/*)
 
 Recommend delete (no unique commits vs origin/release-7.0):
-- origin/7/constraint_solver
 
 Small, focused changes (candidate rebase if still desired; otherwise delete):
 - origin/7/coupler_constraint (cb1b621: coupled mode for mimic constraint)
