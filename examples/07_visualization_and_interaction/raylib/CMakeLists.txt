@@ -9,6 +9,13 @@ set(example_target dart_${example_name})
 set(required_components dart)
 set(required_libraries dart raylib::raylib)
 
+if(NOT DART_BUILD_GUI_RAYLIB)
+  if(DART_VERBOSE OR NOT DART_IN_SOURCE_BUILD)
+    message(STATUS "Skipping ${example_name} example (requires DART_BUILD_GUI_RAYLIB=ON)")
+  endif()
+  return()
+endif()
+
 if(DART_IN_SOURCE_BUILD)
   dart_build_example_in_source(${example_target} LINK_LIBRARIES ${required_libraries})
   set_target_properties(${example_target} PROPERTIES OUTPUT_NAME ${example_name})
