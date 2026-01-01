@@ -118,7 +118,7 @@ void DARTCollisionObject::updateEngineData()
 
     if (ellipsoid->isSphere()) {
       mCoreObject.shape.type = CoreShapeType::kSphere;
-      mCoreObject.shape.radius = ellipsoid->getRadii()[0];
+      mCoreObject.shape.radius = ellipsoid->getDiameters()[0];
     } else {
       mCoreObject.shape.type = CoreShapeType::kUnsupported;
     }

@@ -74,9 +74,15 @@
 - Verified `pixi run -e gazebo test-gz` passes after the layout and raycast gating changes.
 - Fixed CI build issues by adding an out-of-line `DARTCollisionDetector` destructor, updating distance filter tests to use shared_ptrs, and formatting the engine file.
 - Fixed plane AABB handling to avoid NaNs and restored single-group distance result ordering to match group insertion order.
+- Added axis-aligned distance paths for box-box, cylinder-box, and parallel cylinder-cylinder cases, plus plane-aligned nearest point selection for box-plane, sphere-plane, and cylinder-plane.
+- Updated ellipsoid-as-sphere core radius to use diameters.
+- Adjusted raycast AABB entry handling for inside hits (box inside-hit still failing).
+- Current local failures: UNIT_collision_DartRaycast (InsideHits), UNIT_collision_DartDistance (SphereRotatedPlaneDistance, CylinderRotatedPlaneDistance).
 
 ## Next Actions
 
+- Fix box inside-hit raycast normal/fraction selection.
+- Correct rotated-plane nearest points for sphere-plane and cylinder-plane distances.
 - Extend raycast coverage to edge cases and future shape types.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Explore additional distance broadphase pruning and candidate ordering improvements.

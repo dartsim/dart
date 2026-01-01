@@ -87,6 +87,11 @@ Current status:
 - Core engine implementation files live under `dart/collision/dart/engine`, with adapter headers in `dart/collision/dart`.
 - Adapter file names use the `DartCollision*` prefix; class names remain unchanged.
 - DART raycast is gated behind `DARTCollisionDetector::setRaycastEnabled`.
+- Added axis-aligned distance paths for box-box, cylinder-box, and parallel cylinder-cylinder cases.
+- Added plane-aligned nearest point selection for box-plane, sphere-plane, and cylinder-plane distances.
+- Updated ellipsoid-as-sphere core radius to use diameters.
+- Adjusted raycast AABB entry handling for inside hits (box inside-hit still failing).
+- Current local failures: UNIT_collision_DartRaycast (InsideHits) and UNIT_collision_DartDistance (SphereRotatedPlaneDistance, CylinderRotatedPlaneDistance).
 
 Where to look:
 
@@ -97,6 +102,8 @@ Where to look:
 
 Next focus:
 
+- Fix box inside-hit raycast normal/fraction selection.
+- Correct rotated-plane nearest points for sphere-plane and cylinder-plane distances.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Extend raycast coverage to additional edge cases and future shape types.
 - Capture baseline timings for the raycast benchmark.

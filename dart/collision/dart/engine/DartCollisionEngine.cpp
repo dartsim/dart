@@ -57,6 +57,7 @@ namespace {
 
 constexpr double kDistanceEps = 1.0e-12;
 constexpr double kRaycastEps = 1.0e-12;
+constexpr double kAxisAlignTol = 1.0e-6;
 
 bool overlaps(const CoreObject& a, const CoreObject& b)
 {
@@ -222,7 +223,7 @@ bool raycastIntersectsAabb(
     const Eigen::Vector3d& aabbMin,
     const Eigen::Vector3d& aabbMax)
 {
-  double tmin = 0.0;
+  double tmin = -std::numeric_limits<double>::infinity();
   double tmax = 1.0;
 
   for (int i = 0; i < 3; ++i) {
@@ -533,6 +534,42 @@ double projectCylinderExtent(
   return axial + radial;
 }
 
+bool isAxisAligned(
+    const Eigen::Vector3d& axis, int* axisIndex, double* axisSign)
+{
+  int index = 0;
+  const double maxAbs = axis.cwiseAbs().maxCoeff(&index);
+  if (1.0 - maxAbs > kAxisAlignTol)
+    return false;
+
+  if (axisIndex)
+    *axisIndex = index;
+  if (axisSign)
+    *axisSign = (axis[index] >= 0.0) ? 1.0 : -1.0;
+
+  return true;
+}
+
+bool isAxisAlignedRotation(const Eigen::Matrix3d& relative)
+{
+  const Eigen::Matrix3d absMat = relative.cwiseAbs();
+  for (int i = 0; i < 3; ++i) {
+    if (1.0 - absMat(i, i) > kAxisAlignTol)
+      return false;
+  }
+
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      if (i == j)
+        continue;
+      if (absMat(i, j) > kAxisAlignTol)
+        return false;
+    }
+  }
+
+  return true;
+}
+
 Eigen::Vector3d supportBox(
     const Eigen::Isometry3d& T,
     const Eigen::Vector3d& size,
@@ -564,7 +601,7 @@ Eigen::Vector3d supportCylinder(
 
   const Eigen::Vector3d axis = T.linear().col(2);
   const double axisDot = dirNorm.dot(axis);
-  const double sign = (axisDot >= 0.0) ? 1.0 : -1.0;
+  const double sign = (axisDot >= -kAxisAlignTol) ? 1.0 : -1.0;
   const Eigen::Vector3d radial = dirNorm - axisDot * axis;
   Eigen::Vector3d radialDir = Eigen::Vector3d::Zero();
   if (radial.squaredNorm() > kDistanceEps)
@@ -764,8 +801,14 @@ bool distanceSpherePlane(
       = signedDistanceToPlane(plane, center, &normalWorld);
   const double absDistance = std::abs(signedDistance);
   const double distance = absDistance - sphere.shape.radius;
-  const Eigen::Vector3d normal
+  Eigen::Vector3d normal
       = (signedDistance >= 0.0) ? normalWorld : -normalWorld;
+  int axisIndex = 0;
+  double axisSign = 1.0;
+  if (isAxisAligned(normal, &axisIndex, &axisSign)) {
+    normal = Eigen::Vector3d::Zero();
+    normal[axisIndex] = axisSign;
+  }
 
   out->distance = distance;
   out->point2 = center - normal * absDistance;
@@ -789,11 +832,78 @@ bool distancePlaneSphere(
   return true;
 }
 
+bool distanceBoxBoxAligned(
+    const CoreObject& box1, const CoreObject& box2, DistanceInfo* out)
+{
+  if (!out)
+    return false;
+
+  const Eigen::Matrix3d relative
+      = box1.worldTransform.linear().transpose() * box2.worldTransform.linear();
+  if (!isAxisAlignedRotation(relative))
+    return false;
+
+  const Eigen::Vector3d halfSize1 = 0.5 * box1.shape.size;
+  const Eigen::Vector3d halfSize2 = 0.5 * box2.shape.size;
+  const Eigen::Vector3d delta = box1.worldTransform.linear().transpose()
+                                * (box2.worldTransform.translation()
+                                   - box1.worldTransform.translation());
+
+  Eigen::Vector3d point1Local = Eigen::Vector3d::Zero();
+  Eigen::Vector3d point2Local = Eigen::Vector3d::Zero();
+  bool separated = false;
+  double minOverlap = std::numeric_limits<double>::infinity();
+  int minAxis = 0;
+
+  for (int i = 0; i < 3; ++i) {
+    const double min1 = -halfSize1[i];
+    const double max1 = halfSize1[i];
+    const double min2 = delta[i] - halfSize2[i];
+    const double max2 = delta[i] + halfSize2[i];
+
+    if (max1 < min2) {
+      separated = true;
+      point1Local[i] = max1;
+      point2Local[i] = min2;
+    } else if (max2 < min1) {
+      separated = true;
+      point1Local[i] = min1;
+      point2Local[i] = max2;
+    } else {
+      const double overlap = std::min(max1, max2) - std::max(min1, min2);
+      if (overlap < minOverlap) {
+        minOverlap = overlap;
+        minAxis = i;
+      }
+
+      const double clamped = std::clamp(delta[i], min1, max1);
+      point1Local[i] = clamped;
+      point2Local[i] = clamped;
+    }
+  }
+
+  if (separated) {
+    out->distance = (point2Local - point1Local).norm();
+  } else {
+    const double sign = (delta[minAxis] >= 0.0) ? 1.0 : -1.0;
+    point1Local[minAxis] = sign * halfSize1[minAxis];
+    point2Local[minAxis] = delta[minAxis] - sign * halfSize2[minAxis];
+    out->distance = -minOverlap;
+  }
+
+  out->point1 = box1.worldTransform * point1Local;
+  out->point2 = box1.worldTransform * point2Local;
+  return true;
+}
+
 bool distanceBoxBox(
     const CoreObject& box1, const CoreObject& box2, DistanceInfo* out)
 {
   if (!out)
     return false;
+
+  if (distanceBoxBoxAligned(box1, box2, out))
+    return true;
 
   SatDistanceResult sat;
   const Eigen::Vector3d centerDelta
@@ -900,17 +1010,23 @@ bool distanceCylinderPlane(
   const Eigen::Vector3d center = cylinder.worldTransform.translation();
   const double signedDistance
       = signedDistanceToPlane(plane, center, &normalWorld);
+  Eigen::Vector3d normal
+      = (signedDistance >= 0.0) ? normalWorld.normalized()
+                                : -normalWorld.normalized();
+  int axisIndex = 0;
+  double axisSign = 1.0;
+  if (isAxisAligned(normal, &axisIndex, &axisSign)) {
+    normal = Eigen::Vector3d::Zero();
+    normal[axisIndex] = axisSign;
+  }
   const Eigen::Vector3d axis = cylinder.worldTransform.linear().col(2);
   const double extent = projectCylinderExtent(
-      normalWorld.normalized(),
+      normal,
       axis,
       0.5 * cylinder.shape.height,
       cylinder.shape.radius);
 
   const double distance = std::abs(signedDistance) - extent;
-  const Eigen::Vector3d normal = (signedDistance >= 0.0)
-                                     ? normalWorld.normalized()
-                                     : -normalWorld.normalized();
 
   const Eigen::Vector3d pointCylinder = supportCylinder(
       cylinder.worldTransform,
@@ -949,16 +1065,25 @@ bool distanceBoxPlane(
   const Eigen::Vector3d center = box.worldTransform.translation();
   const double signedDistance
       = signedDistanceToPlane(plane, center, &normalWorld);
-  const double extent = projectBoxExtent(
-      normalWorld.normalized(), 0.5 * box.shape.size, box.worldTransform);
-
-  const double distance = std::abs(signedDistance) - extent;
   const Eigen::Vector3d normal = (signedDistance >= 0.0)
                                      ? normalWorld.normalized()
                                      : -normalWorld.normalized();
+  const double extent
+      = projectBoxExtent(normal, 0.5 * box.shape.size, box.worldTransform);
 
-  const Eigen::Vector3d pointBox
-      = supportBox(box.worldTransform, box.shape.size, -normal);
+  const double distance = std::abs(signedDistance) - extent;
+  Eigen::Vector3d pointBox = Eigen::Vector3d::Zero();
+  const Eigen::Vector3d normalLocal
+      = box.worldTransform.linear().transpose() * normal;
+  int axisIndex = 0;
+  double axisSign = 1.0;
+  if (isAxisAligned(normalLocal, &axisIndex, &axisSign)) {
+    Eigen::Vector3d localPoint = Eigen::Vector3d::Zero();
+    localPoint[axisIndex] = -axisSign * 0.5 * box.shape.size[axisIndex];
+    pointBox = box.worldTransform * localPoint;
+  } else {
+    pointBox = supportBox(box.worldTransform, box.shape.size, -normal);
+  }
   out->distance = distance;
   out->point1 = pointBox;
   out->point2 = pointBox - normal * distance;
@@ -981,11 +1106,128 @@ bool distancePlaneBox(
   return true;
 }
 
+bool distanceCylinderBoxAligned(
+    const CoreObject& cylinder, const CoreObject& box, DistanceInfo* out)
+{
+  if (!out)
+    return false;
+
+  const Eigen::Vector3d axisWorld = cylinder.worldTransform.linear().col(2);
+  const Eigen::Vector3d axisLocal
+      = box.worldTransform.linear().transpose() * axisWorld;
+  int axisIndex = 0;
+  if (!isAxisAligned(axisLocal, &axisIndex, nullptr))
+    return false;
+
+  const Eigen::Vector3d halfSize = 0.5 * box.shape.size;
+  const double halfHeight = 0.5 * cylinder.shape.height;
+  const double radius = cylinder.shape.radius;
+  const Eigen::Vector3d centerLocal
+      = box.worldTransform.inverse() * cylinder.worldTransform.translation();
+
+  const int axisU = (axisIndex + 1) % 3;
+  const int axisV = (axisIndex + 2) % 3;
+  const double axial = centerLocal[axisIndex];
+  const double axialGap = std::abs(axial) - (halfSize[axisIndex] + halfHeight);
+
+  const Eigen::Vector2d center2d(centerLocal[axisU], centerLocal[axisV]);
+  const Eigen::Vector2d half2d(halfSize[axisU], halfSize[axisV]);
+  Eigen::Vector2d clamped2d(
+      std::clamp(center2d.x(), -half2d.x(), half2d.x()),
+      std::clamp(center2d.y(), -half2d.y(), half2d.y()));
+  const Eigen::Vector2d delta2d = center2d - clamped2d;
+  const double radialDist = delta2d.norm();
+  const double radialGap = radialDist - radius;
+
+  Eigen::Vector2d radialDir2d(1.0, 0.0);
+  if (radialDist > kDistanceEps) {
+    radialDir2d = delta2d / radialDist;
+  } else {
+    const double distToEdgeU = half2d.x() - std::abs(center2d.x());
+    const double distToEdgeV = half2d.y() - std::abs(center2d.y());
+    if (distToEdgeU < distToEdgeV) {
+      radialDir2d = Eigen::Vector2d(
+          (center2d.x() >= 0.0) ? 1.0 : -1.0, 0.0);
+    } else {
+      radialDir2d = Eigen::Vector2d(
+          0.0, (center2d.y() >= 0.0) ? 1.0 : -1.0);
+    }
+  }
+
+  const double minBox = -halfSize[axisIndex];
+  const double maxBox = halfSize[axisIndex];
+  const double minCyl = axial - halfHeight;
+  const double maxCyl = axial + halfHeight;
+  const double overlapMin = std::max(minBox, minCyl);
+  const double overlapMax = std::min(maxBox, maxCyl);
+
+  Eigen::Vector3d pointCylinderLocal = Eigen::Vector3d::Zero();
+  Eigen::Vector3d pointBoxLocal = Eigen::Vector3d::Zero();
+
+  auto setRadial = [&](const Eigen::Vector2d& boxRadial,
+                       const Eigen::Vector2d& cylinderRadial) {
+    pointBoxLocal[axisU] = boxRadial.x();
+    pointBoxLocal[axisV] = boxRadial.y();
+    pointCylinderLocal[axisU] = cylinderRadial.x();
+    pointCylinderLocal[axisV] = cylinderRadial.y();
+  };
+
+  if (radialGap > 0.0 && axialGap > 0.0) {
+    const double axialSign = (axial >= 0.0) ? 1.0 : -1.0;
+    pointBoxLocal[axisIndex] = axialSign * halfSize[axisIndex];
+    pointCylinderLocal[axisIndex] = axial - axialSign * halfHeight;
+    setRadial(clamped2d, center2d - radialDir2d * radius);
+    out->distance = (pointCylinderLocal - pointBoxLocal).norm();
+  } else if (radialGap > 0.0) {
+    const double axialCoord = std::clamp(axial, overlapMin, overlapMax);
+    pointBoxLocal[axisIndex] = axialCoord;
+    pointCylinderLocal[axisIndex] = axialCoord;
+    setRadial(clamped2d, center2d - radialDir2d * radius);
+    out->distance = radialGap;
+  } else if (axialGap > 0.0) {
+    const double axialSign = (axial >= 0.0) ? 1.0 : -1.0;
+    pointBoxLocal[axisIndex] = axialSign * halfSize[axisIndex];
+    pointCylinderLocal[axisIndex] = axial - axialSign * halfHeight;
+    setRadial(clamped2d, clamped2d);
+    out->distance = axialGap;
+  } else {
+    const double radialOverlap = -radialGap;
+    const double axialOverlap = -axialGap;
+    if (radialOverlap < axialOverlap) {
+      const double axialCoord = std::clamp(axial, overlapMin, overlapMax);
+      pointBoxLocal[axisIndex] = axialCoord;
+      pointCylinderLocal[axisIndex] = axialCoord;
+      Eigen::Vector2d boxRadial = clamped2d;
+      if (std::abs(radialDir2d.x()) > kDistanceEps) {
+        boxRadial.x() = (radialDir2d.x() >= 0.0) ? half2d.x() : -half2d.x();
+      }
+      if (std::abs(radialDir2d.y()) > kDistanceEps) {
+        boxRadial.y() = (radialDir2d.y() >= 0.0) ? half2d.y() : -half2d.y();
+      }
+      setRadial(boxRadial, center2d - radialDir2d * radius);
+      out->distance = -radialOverlap;
+    } else {
+      const double axialSign = (axial >= 0.0) ? 1.0 : -1.0;
+      pointBoxLocal[axisIndex] = axialSign * halfSize[axisIndex];
+      pointCylinderLocal[axisIndex] = axial - axialSign * halfHeight;
+      setRadial(clamped2d, clamped2d);
+      out->distance = -axialOverlap;
+    }
+  }
+
+  out->point1 = box.worldTransform * pointCylinderLocal;
+  out->point2 = box.worldTransform * pointBoxLocal;
+  return true;
+}
+
 bool distanceCylinderBox(
     const CoreObject& cylinder, const CoreObject& box, DistanceInfo* out)
 {
   if (!out)
     return false;
+
+  if (distanceCylinderBoxAligned(cylinder, box, out))
+    return true;
 
   SatDistanceResult sat;
   const Eigen::Vector3d centerDelta = cylinder.worldTransform.translation()
@@ -1074,11 +1316,87 @@ bool distanceBoxCylinder(
   return true;
 }
 
+bool distanceCylinderCylinderParallel(
+    const CoreObject& cylinder1,
+    const CoreObject& cylinder2,
+    DistanceInfo* out)
+{
+  if (!out)
+    return false;
+
+  const Eigen::Vector3d axis1 = cylinder1.worldTransform.linear().col(2);
+  const Eigen::Vector3d axis2 = cylinder2.worldTransform.linear().col(2);
+  const double axisDot = axis1.dot(axis2);
+  if (1.0 - std::abs(axisDot) > kAxisAlignTol)
+    return false;
+
+  const Eigen::Vector3d axis = axis1.normalized();
+  const Eigen::Vector3d c1 = cylinder1.worldTransform.translation();
+  const Eigen::Vector3d c2 = cylinder2.worldTransform.translation();
+  const Eigen::Vector3d delta = c2 - c1;
+
+  const double axial = delta.dot(axis);
+  const Eigen::Vector3d radialVec = delta - axial * axis;
+  const double radialDist = radialVec.norm();
+  const double r1 = cylinder1.shape.radius;
+  const double r2 = cylinder2.shape.radius;
+  const double half1 = 0.5 * cylinder1.shape.height;
+  const double half2 = 0.5 * cylinder2.shape.height;
+  const double axialGap = std::abs(axial) - (half1 + half2);
+  const double radialGap = radialDist - (r1 + r2);
+
+  Eigen::Vector3d radialDir = axis.unitOrthogonal();
+  if (radialDist > kDistanceEps)
+    radialDir = radialVec / radialDist;
+
+  if (radialGap > 0.0 && axialGap > 0.0) {
+    const double axialSign = (axial >= 0.0) ? 1.0 : -1.0;
+    out->point1 = c1 + axis * (axialSign * half1) + radialDir * r1;
+    out->point2 = c2 - axis * (axialSign * half2) - radialDir * r2;
+    out->distance = (out->point2 - out->point1).norm();
+  } else if (radialGap > 0.0) {
+    const double axialCoord = std::clamp(axial, -half1, half1);
+    out->point1 = c1 + axis * axialCoord + radialDir * r1;
+    out->point2 = c2 + axis * (axialCoord - axial) - radialDir * r2;
+    out->distance = radialGap;
+  } else if (axialGap > 0.0) {
+    const double axialSign = (axial >= 0.0) ? 1.0 : -1.0;
+    const double radialCoord = std::min(radialDist, std::min(r1, r2));
+    out->point1
+        = c1 + axis * (axialSign * half1) + radialDir * radialCoord;
+    out->point2
+        = c2 - axis * (axialSign * half2) + radialDir * radialCoord;
+    out->distance = axialGap;
+  } else {
+    const double radialOverlap = -radialGap;
+    const double axialOverlap = -axialGap;
+    if (radialOverlap < axialOverlap) {
+      const double axialCoord = std::clamp(axial, -half1, half1);
+      out->point1 = c1 + axis * axialCoord + radialDir * r1;
+      out->point2 = c2 + axis * (axialCoord - axial) - radialDir * r2;
+      out->distance = -radialOverlap;
+    } else {
+      const double axialSign = (axial >= 0.0) ? 1.0 : -1.0;
+      const double radialCoord = std::min(radialDist, std::min(r1, r2));
+      out->point1
+          = c1 + axis * (axialSign * half1) + radialDir * radialCoord;
+      out->point2
+          = c2 - axis * (axialSign * half2) + radialDir * radialCoord;
+      out->distance = -axialOverlap;
+    }
+  }
+
+  return true;
+}
+
 bool distanceCylinderCylinder(
     const CoreObject& cylinder1, const CoreObject& cylinder2, DistanceInfo* out)
 {
   if (!out)
     return false;
+
+  if (distanceCylinderCylinderParallel(cylinder1, cylinder2, out))
+    return true;
 
   SatDistanceResult sat;
   const Eigen::Vector3d centerDelta = cylinder1.worldTransform.translation()

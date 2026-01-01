@@ -259,6 +259,8 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
     return;
 
   const auto& shape = shapeFrame->getShape();
+  if (!shape)
+    return;
   const auto& shapeType = shape->getType();
 
   if (shapeType == dynamics::SphereShape::getStaticType())
