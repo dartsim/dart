@@ -9,7 +9,7 @@ set(example_target dart_${example_name})
 set(required_components dart)
 set(required_libraries dart raylib::raylib)
 
-if(NOT DART_BUILD_GUI_RAYLIB)
+if(DART_IN_SOURCE_BUILD AND NOT DART_BUILD_GUI_RAYLIB)
   if(DART_VERBOSE OR NOT DART_IN_SOURCE_BUILD)
     message(STATUS "Skipping ${example_name} example (requires DART_BUILD_GUI_RAYLIB=ON)")
   endif()
