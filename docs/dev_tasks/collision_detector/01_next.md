@@ -34,6 +34,7 @@
 - Added rotated box distance coverage and a rotated plane raycast check.
 - Added tangent sphere and parallel plane raycast coverage.
 - Added cylinder-cylinder nearest-point checks and tangent cylinder raycast coverage.
+- Added tangent box raycast coverage.
 - Added rotated plane distance coverage for sphere-plane.
 - Added rotated box raycast coverage and rotated box/cylinder plane distance checks.
 - Added rotated cylinder raycast coverage.
