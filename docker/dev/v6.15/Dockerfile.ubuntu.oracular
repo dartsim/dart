@@ -6,8 +6,21 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Use /bin/bash to use pushd/popd
 SHELL ["/bin/bash", "-c"]
 
-# Update apt-get
-RUN apt-get update -qq
+# Update apt-get (fallback to old-releases for EOL images)
+RUN apt-get update -qq || ( \
+    for file in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do \
+      [ -f "$file" ] || continue; \
+      sed -i \
+        -e 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
+        -e 's|https://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
+        -e 's|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
+        -e 's|https://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
+        -e 's|http://ports.ubuntu.com/ubuntu-ports|http://old-releases.ubuntu.com/ubuntu-ports|g' \
+        -e 's|https://ports.ubuntu.com/ubuntu-ports|http://old-releases.ubuntu.com/ubuntu-ports|g' \
+        "$file"; \
+    done && \
+    apt-get -o Acquire::Check-Valid-Until=false update -qq \
+  )
 
 # ==============================================================================
 # Build tools
