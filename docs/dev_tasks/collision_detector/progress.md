@@ -28,6 +28,7 @@
 - Raycast tests include box parallel misses.
 - Raycast tests include rotated box parallel misses.
 - Distance tests include a rotated plane case for sphere-plane queries.
+- Raycast tests include rotated plane offset hits.
 - Distance tests include rotated box/cylinder plane cases, and raycast tests include rotated box hits.
 - Raycast tests include rotated cylinder hits.
 - Raycast tests include rotated cylinder parallel misses.
@@ -117,6 +118,7 @@
 - Added box parallel raycast miss coverage.
 - Added rotated box parallel raycast miss coverage.
 - Added rotated plane distance coverage for sphere-plane.
+- Added rotated plane offset raycast coverage.
 - Added rotated box raycast coverage and rotated box/cylinder plane distance checks.
 - Added rotated cylinder raycast coverage.
 - Added rotated cylinder parallel raycast miss coverage.

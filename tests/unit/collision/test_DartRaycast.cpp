@@ -767,6 +767,39 @@ TEST(DartRaycast, RotatedPlaneHit)
 }
 
 //==============================================================================
+TEST(DartRaycast, RotatedPlaneOffsetHit)
+{
+  auto detector = createRaycastDetector();
+
+  auto frame = SimpleFrame::createShared(Frame::World());
+  const double offset = 1.0;
+  frame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), offset));
+  const Eigen::Matrix3d rotation
+      = Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  frame->setRotation(rotation);
+
+  auto group = detector->createCollisionGroup(frame.get());
+
+  RaycastOption option;
+  RaycastResult result;
+
+  const Eigen::Vector3d normalWorld
+      = (rotation * Eigen::Vector3d::UnitZ()).normalized();
+  const Eigen::Vector3d from = normalWorld * (offset + 2.0);
+  const Eigen::Vector3d to = normalWorld * (offset - 2.0);
+
+  detector->raycast(group.get(), from, to, option, &result);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mRayHits.size(), 1u);
+  const auto& hit = result.mRayHits[0];
+  EXPECT_TRUE(equals(hit.mPoint, normalWorld * offset));
+  EXPECT_TRUE(equals(hit.mNormal, normalWorld));
+  EXPECT_NEAR(hit.mFraction, 0.5, kFractionTolerance);
+}
+
+//==============================================================================
 TEST(DartRaycast, RotatedBoxHit)
 {
   auto detector = createRaycastDetector();
