@@ -97,6 +97,7 @@
 - Added tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
 - Added tilted plane offset coverage for cylinder-plane nearest points.
 - Added tilted plane offset coverage for sphere-plane nearest points.
+- Added tilted plane overlap coverage for sphere-plane distances.
 - Added tilted plane offset coverage for box-plane nearest points.
 - Switched the default collision detector to the built-in detector and
   deprecated backend-selection APIs.
