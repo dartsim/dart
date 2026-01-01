@@ -25,22 +25,25 @@ add_subdirectory(03_collisions_and_contacts/capsule_ground_contact)
 add_subdirectory(03_collisions_and_contacts/heightmap)
 add_subdirectory(03_collisions_and_contacts/rigid_shapes)
 
+# Control and IK examples
+add_subdirectory(04_control_and_ik/atlas_puppet)
+add_subdirectory(04_control_and_ik/atlas_simbicon)
+add_subdirectory(04_control_and_ik/biped_stand)
+add_subdirectory(04_control_and_ik/hubo_puppet)
+add_subdirectory(04_control_and_ik/operational_space_control)
+add_subdirectory(04_control_and_ik/wam_ikfast)
+
 # None GUI examples
 add_subdirectory(speed_test)
 
 # OSG renderer examples
 add_subdirectory(add_delete_skels)
-add_subdirectory(atlas_puppet)
-add_subdirectory(atlas_simbicon)
-add_subdirectory(biped_stand)
 add_subdirectory(drag_and_drop)
 add_subdirectory(empty)
 add_subdirectory(hardcoded_design)
 add_subdirectory(hybrid_dynamics)
-add_subdirectory(hubo_puppet)
 add_subdirectory(imgui)
 add_subdirectory(mixed_chain)
-add_subdirectory(operational_space_control)
 add_subdirectory(polyhedron_visual)
 if(DART_HAVE_OCTOMAP)
   add_subdirectory(point_cloud)
@@ -50,7 +53,6 @@ add_subdirectory(soft_bodies)
 add_subdirectory(g1_puppet)
 add_subdirectory(tinkertoy)
 add_subdirectory(vehicle)
-add_subdirectory(wam_ikfast)
 
 # MJCF model based examples
 add_subdirectory(fetch)
