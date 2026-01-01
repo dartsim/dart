@@ -39,6 +39,8 @@
   refreshed metadata headers.
 - Created the integration-and-tools category and moved remaining uncategorized
   examples into the numbered layout.
+- Added tutorial cross-links in the getting-started, joints, collisions, and
+  control category READMEs.
 
 ## Discovery findings
 
@@ -81,8 +83,7 @@
 
 1. Identify top gaps per category (especially IO, performance, and tools) and
    decide whether to add or defer missing examples.
-2. Cross-link tutorials from the category READMEs where the learning path
-   continues.
+2. Review remaining categories for tutorial cross-links where helpful.
 3. Keep `examples/CMakeLists.txt` grouping comments aligned with the new
    category layout.
 
