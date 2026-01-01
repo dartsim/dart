@@ -65,6 +65,13 @@ An overview of DART is also available on [DeepWiki](https://deepwiki.com/dartsim
 | Doc, Coverage, Linter | [![Documentation Status](https://readthedocs.org/projects/dart/badge/?version=latest)](https://dart.readthedocs.io/en/latest/?badge=latest) [![codecov](https://codecov.io/gh/dartsim/dart/branch/main/graph/badge.svg)](https://codecov.io/gh/dartsim/dart) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/2d95a9b951be4b73a71097670ec351e8)](https://www.codacy.com/gh/dartsim/dart/dashboard?utm_source=github.com&utm_medium=referral&utm_content=dartsim/dart&utm_campaign=Badge_Grade) |
 | Packages              | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/dartsim/badges/version.svg)](https://anaconda.org/conda-forge/dartsim) [![PyPI Version](https://img.shields.io/pypi/v/dartpy)](https://pypi.org/project/dartpy/) [All Distributions →](https://repology.org/project/dart-sim/versions)                                                                                                                                                                                                         |
 
+## Release & Branch Strategy
+
+- `main`: active development targeting DART 7.
+- `release-6.16`: maintenance branch for DART 6 (critical fixes only).
+
+Details on compatibility, deprecations, and the full roadmap live in `docs/onboarding/release-roadmap.md`.
+
 ## Citation
 
 If you use DART in an academic publication, please consider citing this [JOSS Paper](https://doi.org/10.21105/joss.00500) [[BibTeX](https://gist.github.com/jslee02/998b8809e3ae1b7aef6ef04dd2ad5e27)]

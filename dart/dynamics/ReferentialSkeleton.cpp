@@ -38,6 +38,8 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 
+#include <span>
+
 namespace dart {
 namespace dynamics {
 
@@ -130,7 +132,7 @@ const BodyNode* ReferentialSkeleton::getBodyNode(const std::string& name) const
 //==============================================================================
 template <class T1, class T2>
 static std::vector<T2>& convertVector(
-    const std::vector<T1>& t1_vec, std::vector<T2>& t2_vec)
+    std::span<const T1> t1_vec, std::vector<T2>& t2_vec)
 {
   t2_vec.resize(t1_vec.size());
   for (std::size_t i = 0; i < t1_vec.size(); ++i)

@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase 1 complete: mechanical cleanup finished; Phase 2 pending.
+- Phase 2 in progress: standard library modernization underway.
 
 ## Goal
 
