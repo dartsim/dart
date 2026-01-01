@@ -30,16 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/All.hpp>
 #include <dart/io/Read.hpp>
 
-#include <dart/All.hpp>
-
 #include <chrono>
-#include <cstdlib>
 #include <iostream>
 #include <limits>
 #include <string>
 #include <string_view>
+
+#include <cstdlib>
 
 namespace {
 
@@ -94,7 +94,8 @@ bool parseUnsignedInt(std::string_view value, unsigned int& output)
     return false;
 
   char* end = nullptr;
-  const unsigned long result = std::strtoul(std::string(value).c_str(), &end, 10);
+  const unsigned long result
+      = std::strtoul(std::string(value).c_str(), &end, 10);
   if (!end || *end != '\0')
     return false;
 
@@ -144,7 +145,8 @@ ParseResult parseArgs(int argc, char* argv[], Options& options)
     }
 
     if (arg == "--dt" && i + 1 < argc) {
-      if (!parseDouble(argv[++i], options.timeStep) || options.timeStep <= 0.0) {
+      if (!parseDouble(argv[++i], options.timeStep)
+          || options.timeStep <= 0.0) {
         std::cerr << "Invalid time step: " << argv[i] << "\n";
         printUsage(argv[0]);
         return ParseResult::Error;

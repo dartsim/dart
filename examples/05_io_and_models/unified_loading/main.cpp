@@ -33,12 +33,13 @@
 #include <dart/io/Read.hpp>
 
 #include <algorithm>
-#include <cctype>
 #include <iostream>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include <cctype>
 
 namespace {
 
@@ -49,8 +50,7 @@ struct Options
   bool loadWorld = true;
   bool loadSkeleton = true;
   dart::io::ModelFormat format = dart::io::ModelFormat::Auto;
-  dart::io::RootJointType sdfRootJointType
-      = dart::io::RootJointType::Floating;
+  dart::io::RootJointType sdfRootJointType = dart::io::RootJointType::Floating;
   std::vector<std::pair<std::string, std::string>> packageMappings;
 };
 
@@ -66,8 +66,8 @@ std::string toLower(std::string_view value)
   std::string result;
   result.reserve(value.size());
   for (char character : value) {
-    result.push_back(static_cast<char>(
-        std::tolower(static_cast<unsigned char>(character))));
+    result.push_back(
+        static_cast<char>(std::tolower(static_cast<unsigned char>(character))));
   }
   return result;
 }
@@ -132,8 +132,7 @@ bool parseModelFormat(std::string_view value, dart::io::ModelFormat& format)
   return false;
 }
 
-bool parseRootJointType(
-    std::string_view value, dart::io::RootJointType& type)
+bool parseRootJointType(std::string_view value, dart::io::RootJointType& type)
 {
   const std::string lower = toLower(value);
   if (lower == "floating") {
@@ -148,9 +147,7 @@ bool parseRootJointType(
 }
 
 bool parsePackageMapping(
-    std::string_view value,
-    std::string& packageName,
-    std::string& packagePath)
+    std::string_view value, std::string& packageName, std::string& packagePath)
 {
   const std::size_t equalSign = value.find('=');
   if (equalSign == std::string_view::npos)
@@ -164,18 +161,20 @@ bool parsePackageMapping(
 
 void printUsage(const char* argv0)
 {
-  std::cout << "Usage: " << argv0 << " [options]\n\n"
-            << "Options:\n"
-            << "  --world <uri>           World URI to load\n"
-            << "  --skeleton <uri>        Skeleton URI to load\n"
-            << "  --format <auto|skel|sdf|urdf|mjcf|vsk>\n"
-            << "                          Force the model format for both loads\n"
-            << "  --sdf-root-joint <floating|fixed>\n"
-            << "                          Default root joint type for SDF models\n"
-            << "  --package <name=path>   Register a package:// mapping (repeatable)\n"
-            << "  --no-world              Skip readWorld\n"
-            << "  --no-skeleton           Skip readSkeleton\n"
-            << "  -h, --help              Show this help\n";
+  std::cout
+      << "Usage: " << argv0 << " [options]\n\n"
+      << "Options:\n"
+      << "  --world <uri>           World URI to load\n"
+      << "  --skeleton <uri>        Skeleton URI to load\n"
+      << "  --format <auto|skel|sdf|urdf|mjcf|vsk>\n"
+      << "                          Force the model format for both loads\n"
+      << "  --sdf-root-joint <floating|fixed>\n"
+      << "                          Default root joint type for SDF models\n"
+      << "  --package <name=path>   Register a package:// mapping "
+         "(repeatable)\n"
+      << "  --no-world              Skip readWorld\n"
+      << "  --no-skeleton           Skip readSkeleton\n"
+      << "  -h, --help              Show this help\n";
 }
 
 ParseResult parseArgs(int argc, char* argv[], Options& options)
