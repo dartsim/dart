@@ -2,18 +2,17 @@
 
 ## Status
 
-- Phase 4 in progress: span input consolidation.
+- Phase 2 in progress: standard library modernization underway.
 
 ## Goal
 
-Modernize the codebase to idiomatic C++20 while preserving behavior. Public API
-breaks are acceptable for DART 7 if `pixi run -e gazebo test-gz` passes without
-changing Gazebo code.
+Modernize the codebase to idiomatic C++20 while preserving behavior and public
+APIs.
 
 ## Non-goals
 
 - Behavior changes or algorithmic refactors
-- Gazebo code changes to accommodate DART API updates
+- Public API or ABI breaks
 - New dependencies or build entry points
 
 ## Constraints
