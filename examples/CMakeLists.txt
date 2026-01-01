@@ -8,6 +8,7 @@ add_subdirectory(00_getting_started/simple_frames)
 
 # Rigid bodies and frames examples
 add_subdirectory(01_rigid_bodies_and_frames/boxes)
+add_subdirectory(01_rigid_bodies_and_frames/hardcoded_design)
 add_subdirectory(01_rigid_bodies_and_frames/rigid_cubes)
 
 # Joints and constraints examples
@@ -31,6 +32,7 @@ add_subdirectory(04_control_and_ik/atlas_simbicon)
 add_subdirectory(04_control_and_ik/biped_stand)
 add_subdirectory(04_control_and_ik/hubo_puppet)
 add_subdirectory(04_control_and_ik/operational_space_control)
+add_subdirectory(04_control_and_ik/vehicle)
 add_subdirectory(04_control_and_ik/wam_ikfast)
 
 # IO and models examples
@@ -55,9 +57,10 @@ add_subdirectory(07_visualization_and_interaction/tinkertoy)
 # Performance and scaling examples
 add_subdirectory(08_performance_and_scaling/speed_test)
 
-# OSG renderer examples
-add_subdirectory(hardcoded_design)
+# Integration and tools examples
 if(DART_HAVE_OCTOMAP)
-  add_subdirectory(point_cloud)
+  add_subdirectory(09_integration_and_tools/point_cloud)
 endif()
-add_subdirectory(vehicle)
+add_subdirectory(09_integration_and_tools/rerun)
+
+# OSG renderer examples

@@ -12,6 +12,7 @@
 - Check `06_soft_and_hybrid` for soft-body and mixed dynamics examples.
 - Explore `07_visualization_and_interaction` for GUI and input patterns.
 - See `08_performance_and_scaling` for timing and scaling examples.
+- Check `09_integration_and_tools` for tooling and integration demos.
 - Tutorials remain in `tutorials/` and are cross-linked as categories expand.
 
 ## Build Each Example

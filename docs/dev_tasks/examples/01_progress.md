@@ -37,6 +37,8 @@
   with refreshed metadata headers.
 - Created the performance-and-scaling category and moved initial examples with
   refreshed metadata headers.
+- Created the integration-and-tools category and moved remaining uncategorized
+  examples into the numbered layout.
 
 ## Discovery findings
 
@@ -77,7 +79,7 @@
 
 ## Next steps
 
-1. Migrate the next category (integration/tools or remaining cleanup).
+1. Check for any remaining uncategorized examples or doc gaps.
 2. Keep `examples/CMakeLists.txt` grouping comments aligned with the new
    category layout.
 
