@@ -6,13 +6,6 @@ Goal: modernize the codebase to idiomatic C++20 with no behavior changes.
 Public API/ABI breaks are acceptable for DART 7 when needed for span migrations,
 as long as `pixi run -e gazebo test-gz` passes without Gazebo code changes.
 
-Current status:
-
-- Phase 4 (span input consolidation) is active on `cpp20/phase4`.
-- PR: dartsim/dart#2367 (update as needed).
-- Latest validation: `pixi run test-all` and `pixi run -e gazebo test-gz`
-  passed (gz-physics emits sign-compare warnings from vendored gtest headers).
-
 Required docs:
 
 - Read `docs/onboarding/ci-cd.md` and `docs/onboarding/build-system.md`.
