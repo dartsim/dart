@@ -42,6 +42,7 @@
 - Added tutorial cross-links in the getting-started, joints, collisions, and
   control category READMEs.
 - Added a CMake guard to skip the empty `rerun` example until sources exist.
+- Updated the examples index to reflect the completed taxonomy and pixi note.
 
 ## Discovery findings
 

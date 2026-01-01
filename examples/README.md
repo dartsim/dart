@@ -2,7 +2,7 @@
 
 ## Overview
 
-- Examples are being reorganized into numbered categories (pilot in progress).
+- Examples are organized into numbered, user-first categories.
 - Start in `00_getting_started` for minimal, first-run examples.
 - Continue with `01_rigid_bodies_and_frames` for basic rigid-body scenes.
 - Explore `02_joints_and_constraints` for joint types and constraint behavior.
@@ -13,12 +13,15 @@
 - Explore `07_visualization_and_interaction` for GUI and input patterns.
 - See `08_performance_and_scaling` for timing and scaling examples.
 - Check `09_integration_and_tools` for tooling and integration demos.
-- Tutorials remain in `tutorials/` and are cross-linked as categories expand.
+- Tutorials remain in `tutorials/` and are cross-linked from category indexes.
 
 ## Build Each Example
 
 Copy the subdirectory to your workspace and follow the instruction of README.md
 in the subdirectory.
+
+If you are working inside the DART repo, prefer the `pixi run` entry points
+documented in `docs/onboarding/building.md` when available.
 
 ## Build Examples as One Project
 
