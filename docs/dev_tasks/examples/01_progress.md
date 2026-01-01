@@ -41,6 +41,7 @@
   examples into the numbered layout.
 - Added tutorial cross-links in the getting-started, joints, collisions, and
   control category READMEs.
+- Added a CMake guard to skip the empty `rerun` example until sources exist.
 
 ## Discovery findings
 
