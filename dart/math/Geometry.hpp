@@ -507,9 +507,9 @@ void computeNullSpace(const MatrixType& _M, ReturnType& _NS)
   extractNullSpace(svd, _NS);
 }
 
-typedef std::vector<Eigen::Vector3d> SupportGeometry;
+using SupportGeometry = std::vector<Eigen::Vector3d>;
 
-typedef common::aligned_vector<Eigen::Vector2d> SupportPolygon;
+using SupportPolygon = common::aligned_vector<Eigen::Vector2d>;
 
 /// Project the support geometry points onto a plane with the given axes
 /// and then compute their convex hull, which will take the form of a polgyon.

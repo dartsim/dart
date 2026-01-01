@@ -70,7 +70,7 @@ public:
   using CompositeProperties = common::Composite::Properties;
   using Properties = detail::JointProperties;
 
-  typedef detail::ActuatorType ActuatorType;
+  using ActuatorType = detail::ActuatorType;
   static constexpr ActuatorType FORCE = detail::FORCE;
   static constexpr ActuatorType PASSIVE = detail::PASSIVE;
   static constexpr ActuatorType SERVO = detail::SERVO;

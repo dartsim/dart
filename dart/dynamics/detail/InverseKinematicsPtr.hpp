@@ -52,7 +52,7 @@ public:
   template <class, class>
   friend class TemplateInverseKinematicsPtr;
 
-  typedef IkType element_type;
+  using element_type = IkType;
 
   /// Constructor that accepts a shared_ptr
   TemplateInverseKinematicsPtr(const std::shared_ptr<element_type>& sptr)
@@ -238,7 +238,7 @@ public:
   template <class, class>
   friend class TemplateWeakInverseKinematicsPtr;
 
-  typedef InverseKinematicsT element_type;
+  using element_type = InverseKinematicsT;
 
   /// Default constructor
   TemplateWeakInverseKinematicsPtr() = default;
