@@ -428,6 +428,29 @@ TEST(DartRaycast, CylinderCapRimHit)
 }
 
 //==============================================================================
+TEST(DartRaycast, CylinderParallelMiss)
+{
+  auto detector = createRaycastDetector();
+
+  auto frame = SimpleFrame::createShared(Frame::World());
+  frame->setShape(std::make_shared<CylinderShape>(1.0, 2.0));
+
+  auto group = detector->createCollisionGroup(frame.get());
+
+  RaycastOption option;
+  RaycastResult result;
+
+  detector->raycast(
+      group.get(),
+      Eigen::Vector3d(2.0, 0.0, 3.0),
+      Eigen::Vector3d(2.0, 0.0, -3.0),
+      option,
+      &result);
+  EXPECT_FALSE(result.hasHit());
+  EXPECT_TRUE(result.mRayHits.empty());
+}
+
+//==============================================================================
 TEST(DartRaycast, TangentBoxHit)
 {
   auto detector = createRaycastDetector();
