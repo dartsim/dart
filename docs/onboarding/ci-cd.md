@@ -29,6 +29,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - `gh pr status --json ...` can error with `Unknown JSON field: ...` if you request unsupported fields; use `gh pr status` (no JSON) or `gh pr view --json ...`.
   - `gh run view --json ...` only accepts supported fields; prefer the `url` field instead of guessing `htmlURL`.
   - `gh pr checks` may show duplicate entries when workflows run for both `push` and `pull_request` events; compare the run URLs and focus on the newest one.
+  - Newer runs can cancel older ones; confirm the run status/conclusion before spending time on job logs.
   - zsh can produce ``parse error near `}'`` if a `gh ... --jq` expression containing `{ ... }` isn't fully quoted; wrap the whole jq program in single quotes.
   - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
   - CI jobs can sit in the queue for a long time; re-check the run list and wait for the PR run to start before assuming a failure.
@@ -60,6 +61,7 @@ This task validated the issue state, applied a minimal fix with regression cover
 Suggested (Unverified):
 
 ```bash
+gh run view <RUN_ID> --json status,conclusion,url
 gh run view <RUN_ID> --job <JOB_ID> --log-failed
 gh api -H "Accept: application/vnd.github+json" /repos/<OWNER>/<REPO>/actions/jobs/<JOB_ID>/logs > /tmp/<JOB_ID>.log
 rg -n "FAILED|SegFault|Exception|\\bError\\b|✗" /tmp/<JOB_ID>.log
