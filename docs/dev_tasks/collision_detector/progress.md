@@ -59,6 +59,7 @@
 - Distance tests include a tilted cylinder-plane case for oblique extent coverage.
 - Distance tests include tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
 - Distance tests include tilted plane offset coverage for cylinder-plane nearest points.
+- Distance tests include tilted plane offset coverage for box-plane nearest points.
 - Distance tests include DistanceResult clamping status coverage.
 - Raycast tests include zero-length ray coverage.
 - Distance tests include coverage for DistanceOption without nearest points.
@@ -145,6 +146,7 @@
 - Added tilted cylinder-plane distance coverage for oblique extent checks.
 - Added tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
 - Added tilted plane offset coverage for cylinder-plane nearest points.
+- Added tilted plane offset coverage for box-plane nearest points.
 - Added DistanceResult clamping status coverage.
 - Added zero-length raycast coverage.
 - Added coverage for DistanceOption without nearest points.
