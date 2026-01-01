@@ -45,7 +45,7 @@ Current status:
 - The architecture proposal documents the current core/adapter boundary and raycast placement.
 - Distance tests cover sphere-plane, sphere-box, sphere-cylinder, and box-cylinder nearest points.
 - Raycast tests include inside-hit cases for sphere, box, and cylinder.
-- Raycast tests include surface-start hits for sphere and plane.
+- Raycast tests include surface-start hits for sphere, box, cylinder, and plane.
 - Distance tests include a rotated box case; raycast tests include a rotated plane hit.
 - Raycast tests include tangent sphere hits and parallel plane misses.
 - Distance tests include cylinder-cylinder nearest points; raycast tests include tangent cylinder hits.

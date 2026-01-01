@@ -309,6 +309,41 @@ TEST(DartRaycast, SurfaceStartHits)
   EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(0.0, 0.0, 0.0)));
   EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(0.0, 0.0, 1.0)));
   EXPECT_NEAR(rayHit.mFraction, 0.0, kFractionTolerance);
+
+  result.clear();
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+  boxFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  auto boxGroup = detector->createCollisionGroup(boxFrame.get());
+  detector->raycast(
+      boxGroup.get(),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      option,
+      &result);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mRayHits.size(), 1u);
+  rayHit = result.mRayHits[0];
+  EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(1.0, 0.0, 0.0)));
+  EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(1.0, 0.0, 0.0)));
+  EXPECT_NEAR(rayHit.mFraction, 0.0, kFractionTolerance);
+
+  result.clear();
+  auto cylinderFrame = SimpleFrame::createShared(Frame::World());
+  cylinderFrame->setShape(std::make_shared<CylinderShape>(1.0, 2.0));
+  auto cylinderGroup = detector->createCollisionGroup(cylinderFrame.get());
+  detector->raycast(
+      cylinderGroup.get(),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      option,
+      &result);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mRayHits.size(), 1u);
+  rayHit = result.mRayHits[0];
+  EXPECT_TRUE(equals(rayHit.mPoint, Eigen::Vector3d(1.0, 0.0, 0.0)));
+  EXPECT_TRUE(equals(rayHit.mNormal, Eigen::Vector3d(1.0, 0.0, 0.0)));
+  EXPECT_NEAR(rayHit.mFraction, 0.0, kFractionTolerance);
 }
 
 //==============================================================================

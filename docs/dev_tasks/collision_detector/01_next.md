@@ -29,7 +29,7 @@
 - Documented the current core/adapter boundary and raycast placement in the architecture proposal.
 - Expanded distance tests for sphere-plane, sphere-box, sphere-cylinder, and box-cylinder with nearest-point checks.
 - Added raycast inside-hit coverage for sphere, box, and cylinder.
-- Added raycast surface-start coverage for sphere and plane.
+- Added raycast surface-start coverage for sphere, box, cylinder, and plane.
 - Added rotated box distance coverage and a rotated plane raycast check.
 - Added tangent sphere and parallel plane raycast coverage.
 - Added cylinder-cylinder nearest-point checks and tangent cylinder raycast coverage.
