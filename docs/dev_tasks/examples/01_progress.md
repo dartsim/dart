@@ -2,7 +2,8 @@
 
 ## Status
 
-- Taxonomy migration complete; remaining work is gap analysis and polish.
+- Taxonomy migration and initial gap fixes complete; remaining work is polish
+  and viewer/backend guidance.
 
 ## Completed
 
@@ -44,6 +45,9 @@
 - Added a CMake guard to skip the empty `rerun` example until sources exist.
 - Updated the examples index to reflect the completed taxonomy and pixi note.
 - Linked tutorials README back to the examples index.
+- Added a unified `dart::io` loading example with shared options.
+- Added a headless simulation workflow example for batch runs.
+- Added a CSV logging example for external data workflows.
 
 ## Discovery findings
 
@@ -72,31 +76,24 @@
   but little on tuning contact parameters or broad-phase choices.
 - Control and IK: strong coverage of IK and higher-level control, but missing a
   minimal, reusable controller baseline.
-- IO and models: partial coverage via format-specific loaders; `dart::io`
-  unified loading is not showcased directly or compared across formats.
+- IO and models: unified `dart::io` loading is now showcased; format comparison
+  coverage is still limited.
 - Soft and hybrid: a small set of examples exist, but breadth is limited.
 - Visualization and interaction: OSG-based UI and interaction exist, Raylib is
   isolated, and viewer selection is inconsistent.
-- Performance and scaling: only a single speed benchmark is prominent; no
-  headless batch, determinism, or profiling workflow.
-- Integration and tools: point cloud and tooling touchpoints exist, but logging
-  and external tooling examples are sparse.
+- Performance and scaling: now includes a headless batch workflow; profiling
+  guidance is still limited.
+- Integration and tools: point cloud and logging examples exist, but external
+  tooling integrations remain limited.
 
-## Gap analysis priorities (draft)
+## Gap analysis priorities (remaining)
 
-- Document a `dart::io`-first example that highlights shared options and format
-  inference.
-- Add at least one headless/performance workflow that is repeatable and
-  deterministic.
-- Provide an integration example that exports or logs simulation data for
-  external tooling.
 - Clarify viewer/backend selection guidance (OSG vs Raylib) in the
   visualization category.
 
 ## Next steps
 
-1. Identify top gaps per category (especially IO, performance, and tools) and
-   decide whether to add or defer missing examples.
+1. Clarify viewer/backend selection guidance in the visualization category.
 2. Review remaining categories for tutorial cross-links where helpful.
 3. Keep `examples/CMakeLists.txt` grouping comments aligned with the new
    category layout.
