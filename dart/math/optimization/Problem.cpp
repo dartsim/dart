@@ -255,18 +255,14 @@ FunctionPtr Problem::getIneqConstraint(std::size_t _idx) const
 void Problem::removeEqConstraint(FunctionPtr _eqConst)
 {
   // TODO(JS): Need to delete?
-  mEqConstraints.erase(
-      std::remove(mEqConstraints.begin(), mEqConstraints.end(), _eqConst),
-      mEqConstraints.end());
+  std::erase(mEqConstraints, _eqConst);
 }
 
 //==============================================================================
 void Problem::removeIneqConstraint(FunctionPtr _ineqConst)
 {
   // TODO(JS): Need to delete?
-  mIneqConstraints.erase(
-      std::remove(mIneqConstraints.begin(), mIneqConstraints.end(), _ineqConst),
-      mIneqConstraints.end());
+  std::erase(mIneqConstraints, _ineqConst);
 }
 
 //==============================================================================

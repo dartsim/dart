@@ -369,8 +369,7 @@ void ImGuiHandler::removeWidget(const std::shared_ptr<ImGuiWidget>& widget)
     return;
   }
 
-  mWidgets.erase(
-      std::remove(mWidgets.begin(), mWidgets.end(), widget), mWidgets.end());
+  std::erase(mWidgets, widget);
 }
 
 //==============================================================================
