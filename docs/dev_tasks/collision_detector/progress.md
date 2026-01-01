@@ -30,6 +30,7 @@
 - Distance tests include rotated box-box coverage for aligned separation.
 - Distance tests include coverage for filters rejecting all pairs.
 - Distance tests include rotated box-cylinder coverage for axial separation.
+- Distance tests include diagonal box-cylinder coverage for oblique separation with axial offsets.
 - Distance tests include ellipsoid-as-sphere coverage.
 - Raycast tests include ellipsoid-as-sphere coverage.
 - Collision tests include ellipsoid-as-sphere coverage.
@@ -93,6 +94,7 @@
 - Added rotated box-box distance coverage for aligned separation.
 - Added distance coverage for filters rejecting all pairs.
 - Added rotated box-cylinder distance coverage for axial separation.
+- Added diagonal box-cylinder distance coverage for oblique separation with axial offsets.
 - Added ellipsoid-as-sphere distance coverage.
 - Added ellipsoid-as-sphere raycast coverage.
 - Added ellipsoid-as-sphere collision coverage.

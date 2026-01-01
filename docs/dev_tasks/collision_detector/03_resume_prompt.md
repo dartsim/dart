@@ -63,6 +63,7 @@ Current status:
 - Distance tests include rotated box-box coverage for aligned separation.
 - Distance tests include coverage for filters rejecting all pairs.
 - Distance tests include rotated box-cylinder coverage for axial separation.
+- Distance tests include diagonal box-cylinder coverage for oblique separation with axial offsets.
 - Distance tests include ellipsoid-as-sphere coverage.
 - Raycast tests include ellipsoid-as-sphere coverage.
 - Collision tests include ellipsoid-as-sphere coverage.
