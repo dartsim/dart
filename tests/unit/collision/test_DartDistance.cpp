@@ -63,7 +63,7 @@ TEST(DartDistance, SphereSphereDistance)
 
   auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
 
-  DistanceOption option(true, 0.0, nullptr);
+  DistanceOption option(true, -5.0, nullptr);
   DistanceResult result;
 
   const double distance = group->distance(option, &result);
@@ -196,7 +196,7 @@ TEST(DartDistance, SpherePlaneOffsetDistance)
   auto group
       = detector->createCollisionGroup(sphereFrame.get(), planeFrame.get());
 
-  DistanceOption option(true, 0.0, nullptr);
+  DistanceOption option(true, -5.0, nullptr);
   DistanceResult result;
 
   const double distance = group->distance(option, &result);
@@ -648,6 +648,64 @@ TEST(DartDistance, CylinderTiltedPlaneNearestPoints)
   const double halfHeight = 1.0;
   const double radius = 0.5;
   const double signedDistance = normalWorld.dot(center);
+  const double axisDot = std::abs(normalWorld.dot(axis));
+  const double extent
+      = axisDot * halfHeight
+        + radius * std::sqrt(std::max(0.0, 1.0 - axisDot * axisDot));
+  const double expected = std::abs(signedDistance) - extent;
+
+  const Eigen::Vector3d dir = -normalWorld;
+  const double axisDotDir = dir.dot(axis);
+  const double axisSign = (axisDotDir >= 0.0) ? 1.0 : -1.0;
+  Eigen::Vector3d radial = dir - axisDotDir * axis;
+  Eigen::Vector3d radialDir = Eigen::Vector3d::Zero();
+  if (radial.norm() > kDistanceTol)
+    radialDir = radial.normalized();
+
+  const Eigen::Vector3d expectedPoint1
+      = center + axisSign * halfHeight * axis + radius * radialDir;
+  const Eigen::Vector3d expectedPoint2
+      = expectedPoint1 - normalWorld * expected;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, expected, kDistanceTol);
+  EXPECT_NEAR(result.minDistance, expected, kDistanceTol);
+  EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(expectedPoint1, kDistanceTol));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(expectedPoint2, kDistanceTol));
+}
+
+//==============================================================================
+TEST(DartDistance, CylinderTiltedPlaneOffsetNearestPoints)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto cylinderFrame = SimpleFrame::createShared(Frame::World());
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+
+  cylinderFrame->setShape(std::make_shared<CylinderShape>(0.5, 2.0));
+  const double offset = 0.5;
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), offset));
+
+  const Eigen::Matrix3d rotation
+      = Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  planeFrame->setRotation(rotation);
+  const Eigen::Vector3d center(0.0, 0.0, 2.0);
+  cylinderFrame->setTranslation(center);
+
+  auto group
+      = detector->createCollisionGroup(cylinderFrame.get(), planeFrame.get());
+
+  DistanceOption option(true, -5.0, nullptr);
+  DistanceResult result;
+
+  const Eigen::Vector3d normalWorld = rotation * Eigen::Vector3d::UnitZ();
+  const Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
+  const double halfHeight = 1.0;
+  const double radius = 0.5;
+  const double signedDistance = normalWorld.dot(center) - offset;
   const double axisDot = std::abs(normalWorld.dot(axis));
   const double extent
       = axisDot * halfHeight

@@ -92,6 +92,7 @@
 - Latest local runs: `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartDistance` pass.
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Added tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
+- Added tilted plane offset coverage for cylinder-plane nearest points.
 - Switched the default collision detector to the built-in detector and
   deprecated backend-selection APIs.
 - Migrated examples and tutorials away from backend-selection APIs and updated
