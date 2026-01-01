@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 
-def read_world(uri: dart.common.Uri):
+def read_world(uri: dart.Uri):
     options = dart.io.SdfParser.Options()
     options.m_default_root_joint_type = dart.io.SdfParser.RootJointType.Fixed
     world = dart.io.SdfParser.read_world(uri, options)

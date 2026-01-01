@@ -55,7 +55,7 @@ public:
   using Triangle = Eigen::Matrix<Index, 3, 1>;
   using Vertices = typename Base::Vertices;
   using Normals = typename Base::Normals;
-  using Triangles = std::vector<Triangle>;
+  using Triangles = std::vector<Triangle, Eigen::aligned_allocator<Triangle>>;
 
   /// Default constructor.
   TriMesh();

@@ -76,7 +76,7 @@ Icosphere<S>::computeIcosahedron(S radius)
   const S x = radius * unitX;
   const S z = radius * unitZ;
 
-  std::vector<Vector3> vertices
+  Vertices vertices
       = {{-x, 0, z},
          {x, 0, z},
          {-x, 0, -z},
@@ -90,7 +90,7 @@ Icosphere<S>::computeIcosahedron(S radius)
          {z, -x, 0},
          {-z, -x, 0}};
 
-  static std::vector<Triangle> triangles
+  static const Triangles triangles
       = {{0, 4, 1},  {0, 9, 4},  {9, 5, 4},  {4, 5, 8},  {4, 8, 1},
          {8, 10, 1}, {8, 3, 10}, {5, 3, 8},  {5, 2, 3},  {2, 7, 3},
          {7, 10, 3}, {7, 6, 10}, {7, 11, 6}, {11, 0, 6}, {0, 1, 6},
@@ -144,7 +144,7 @@ void Icosphere<S>::build()
   IndexMap midVertexIndices;
 
   // Create a temporary array of faces that is used for subdivision
-  std::vector<Triangle> tmpFaces;
+  Triangles tmpFaces;
   if (mSubdivisions % 2) {
     this->mTriangles.reserve(getNumTriangles(mSubdivisions - 1));
     tmpFaces.reserve(getNumTriangles(mSubdivisions));
@@ -154,8 +154,8 @@ void Icosphere<S>::build()
   }
 
   // Create more intermediate variables that are used for subdivision
-  std::vector<Triangle>* currFaces = &(this->mTriangles);
-  std::vector<Triangle>* newFaces = &tmpFaces;
+  Triangles* currFaces = &(this->mTriangles);
+  Triangles* newFaces = &tmpFaces;
   std::array<std::size_t, 3> mid;
 
   // Subdivide icosahedron/icosphere iteratively. The key is to not duplicate

@@ -1,5 +1,11 @@
 # DART Python Bindings (dartpy)
 
+## Start here next time
+
+- Local build/test workflow: [building.md](building.md) and [testing.md](testing.md)
+- CI monitoring and expectations: [ci-cd.md](ci-cd.md)
+- Dartpy developer build guide: [docs/readthedocs/dartpy/developer_guide/build.rst](../readthedocs/dartpy/developer_guide/build.rst)
+
 ## Design Decisions
 
 ### Why nanobind?
@@ -102,6 +108,26 @@ conditionally appending the GUI sources in `python/dartpy/CMakeLists.txt`.
 Project policy: official dartpy wheels build with GUI enabled, so `dartpy.gui`
 is expected to be available in release artifacts and CI. For local headless-only
 builds you can disable GUI, but some examples/tutorials will not run.
+
+## Fast Iteration Loop
+
+Smallest repeatable local loop for dartpy binding changes.
+
+Suggested (Unverified):
+
+```bash
+pixi run lint
+pixi run build-py-dev
+```
+
+Signals to look for:
+
+- Lint completes without errors; auto-formatting changes are reviewed before committing.
+- The dartpy build finishes without nanobind compile errors.
+
+## Gotchas
+
+- `ImGuiKey` can be a typedef to `int` in some ImGui releases; nanobind `enum_` requires an enum type, so bind a shim enum and cast back to `ImGuiKey` for ImGui calls.
 
 ## Pythonic Naming Transition
 
