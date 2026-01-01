@@ -33,6 +33,7 @@
 - Distance tests include single-group filter coverage for distance queries.
 - Distance tests include group-group shared-object skip coverage.
 - Distance tests include diagonal cylinder-cylinder coverage for oblique separation.
+- Distance tests include perpendicular cylinder-cylinder coverage for non-parallel axes.
 - Distance tests include rotated box-box coverage for aligned separation.
 - Distance tests include coverage for filters rejecting all pairs.
 - Distance tests include rotated box-cylinder coverage for axial separation.
@@ -108,6 +109,7 @@
 - Added single-group distance filter coverage.
 - Added group-group distance coverage for shared-object skipping.
 - Added diagonal cylinder-cylinder distance coverage for oblique separation.
+- Added perpendicular cylinder-cylinder distance coverage for non-parallel axes.
 - Added rotated box-box distance coverage for aligned separation.
 - Added distance coverage for filters rejecting all pairs.
 - Added rotated box-cylinder distance coverage for axial separation.

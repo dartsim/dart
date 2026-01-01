@@ -45,6 +45,7 @@
 - Added single-group distance filter coverage.
 - Added group-group distance coverage for shared-object skipping.
 - Added diagonal cylinder-cylinder distance coverage for oblique separation.
+- Added perpendicular cylinder-cylinder distance coverage for non-parallel axes.
 - Added rotated box-box distance coverage for aligned separation.
 - Added distance coverage for filters rejecting all pairs.
 - Added rotated box-cylinder distance coverage for axial separation.
