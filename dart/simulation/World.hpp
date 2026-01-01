@@ -53,6 +53,7 @@
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <dart/common/Deprecated.hpp>
+#include <dart/common/Diagnostics.hpp>
 #include <dart/common/NameManager.hpp>
 #include <dart/common/SmartPointer.hpp>
 #include <dart/common/Subject.hpp>
@@ -104,8 +105,10 @@ struct WorldConfig final
   DART_DEPRECATED(7.0)
   CollisionDetectorType collisionDetector = CollisionDetectorType::Dart;
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   WorldConfig() = default;
   explicit WorldConfig(std::string worldName) : name(std::move(worldName)) {}
+  DART_SUPPRESS_DEPRECATED_END
 };
 
 /// class World
