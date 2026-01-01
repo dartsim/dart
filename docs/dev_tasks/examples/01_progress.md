@@ -33,6 +33,8 @@
   metadata headers.
 - Created the soft-and-hybrid category and moved initial examples with refreshed
   metadata headers.
+- Created the visualization-and-interaction category and moved initial examples
+  with refreshed metadata headers.
 
 ## Discovery findings
 
@@ -73,7 +75,7 @@
 
 ## Next steps
 
-1. Migrate the next category (visualization/interaction or performance).
+1. Migrate the next category (performance or integration/tools).
 2. Keep `examples/CMakeLists.txt` grouping comments aligned with the new
    category layout.
 

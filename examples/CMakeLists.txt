@@ -42,19 +42,22 @@ add_subdirectory(06_soft_and_hybrid/hybrid_dynamics)
 add_subdirectory(06_soft_and_hybrid/mixed_chain)
 add_subdirectory(06_soft_and_hybrid/soft_bodies)
 
+# Visualization and interaction examples
+add_subdirectory(07_visualization_and_interaction/add_delete_skels)
+add_subdirectory(07_visualization_and_interaction/drag_and_drop)
+add_subdirectory(07_visualization_and_interaction/empty)
+add_subdirectory(07_visualization_and_interaction/imgui)
+add_subdirectory(07_visualization_and_interaction/polyhedron_visual)
+add_subdirectory(07_visualization_and_interaction/raylib)
+add_subdirectory(07_visualization_and_interaction/simulation_event_handler)
+add_subdirectory(07_visualization_and_interaction/tinkertoy)
+
 # None GUI examples
 add_subdirectory(speed_test)
 
 # OSG renderer examples
-add_subdirectory(add_delete_skels)
-add_subdirectory(drag_and_drop)
-add_subdirectory(empty)
 add_subdirectory(hardcoded_design)
-add_subdirectory(imgui)
-add_subdirectory(polyhedron_visual)
 if(DART_HAVE_OCTOMAP)
   add_subdirectory(point_cloud)
 endif()
-add_subdirectory(simulation_event_handler)
-add_subdirectory(tinkertoy)
 add_subdirectory(vehicle)

@@ -10,6 +10,7 @@
 - Move on to `04_control_and_ik` for controllers and inverse kinematics.
 - Visit `05_io_and_models` for model loading and resource retrieval.
 - Check `06_soft_and_hybrid` for soft-body and mixed dynamics examples.
+- Explore `07_visualization_and_interaction` for GUI and input patterns.
 - Tutorials remain in `tutorials/` and are cross-linked as categories expand.
 
 ## Build Each Example
