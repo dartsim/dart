@@ -2,15 +2,15 @@
 
 ## Status
 
-- Current phase: Phase 2 (standard library modernization)
-- Code changes: Phase 2 in progress.
+- Current phase: Phase 3 (additive public header updates)
+- Code changes: Phase 3 in progress.
 
 ## Phase checklist
 
 - Phase 0 - Discovery and guardrails: Complete
 - Phase 1 - Mechanical no-op cleanup: Complete
-- Phase 2 - Standard library modernization: In progress
-- Phase 3 - Additive public header updates: Not started
+- Phase 2 - Standard library modernization: Complete
+- Phase 3 - Additive public header updates: In progress
 - Phase 4 - Consolidation and validation: Not started
 
 ## Notes
@@ -34,3 +34,7 @@
   introduce `std::span` in internal helper functions for pointer vector
   conversions.
 - Phase 2 checks: `pixi run lint`, `pixi run test` (both passed).
+- Phase 3 started: add `std::span` overloads for public point/vertex APIs and
+  a `std::span` view accessor for collision contacts to provide C++20-friendly
+  entry points without changing behavior.
+- Phase 3 checks: `pixi run lint`, `pixi run test` (both passed).

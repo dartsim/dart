@@ -2,7 +2,7 @@
 
 ## Status
 
-- Active: executing phases; Phase 4 (span input consolidation) in progress.
+- Active: executing phases; Phase 3 in progress.
 
 ## Objective
 

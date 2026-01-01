@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase 2 in progress: standard library modernization underway.
+- Phase 3 in progress: additive public header updates underway.
 
 ## Goal
 

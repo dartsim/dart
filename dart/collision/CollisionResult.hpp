@@ -70,6 +70,9 @@ public:
   /// Return contacts
   std::span<const Contact> getContacts() const;
 
+  /// Return contacts as a span view
+  std::span<const Contact> getContactsSpan() const;
+
   /// Return the set of BodyNodes that are in collision
   const std::unordered_set<const dynamics::BodyNode*>& getCollidingBodyNodes()
       const;
