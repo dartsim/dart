@@ -2,14 +2,13 @@
 
 ## DART 6
 
-### [DART 6.16.3 (2025-12-31)](https://github.com/dartsim/dart/milestone/88)
+### [DART 6.16.3 (2025-12-31)](https://github.com/dartsim/dart/milestone/88?closed=1)
 
 * Collision
   * Fix Bullet double-precision includes on release-6.16: [#2334](https://github.com/dartsim/dart/pull/2334)
 
 * Tooling and Docs
   * Fix pixi ex example selection: [f716548](https://github.com/dartsim/dart/commit/f7165480d66)
-  * Update pixi lockfile: [#2347](https://github.com/dartsim/dart/pull/2347)
 
 ### [DART 6.16.2 (2025-12-20)](https://github.com/dartsim/dart/milestone/87?closed=1)
 
