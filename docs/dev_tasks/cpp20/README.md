@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase 3 in progress: public API span migrations underway.
+- Phase 4 in progress: span input consolidation.
 
 ## Goal
 

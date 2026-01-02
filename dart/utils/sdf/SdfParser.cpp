@@ -73,6 +73,7 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <span>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -949,7 +950,8 @@ void applyMimicConstraints(
     if (!applied)
       continue;
 
-    joint->setMimicJointDofs(props);
+    joint->setMimicJointDofs(
+        std::span<const dynamics::MimicDofProperties>(props));
     joint->setActuatorType(dynamics::Joint::MIMIC);
     joint->setUseCouplerConstraint(useCoupler);
   }

@@ -13,6 +13,8 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
+#include <span>
+
 #include <cstddef>
 
 namespace nb = nanobind;
@@ -72,7 +74,7 @@ void defPolyhedronVisual(nb::module_& m)
           "setVertices",
           [](PolyhedronVisual& self,
              const std::vector<Eigen::Vector3d>& vertices) {
-            self.setVertices(vertices);
+            self.setVertices(std::span<const Eigen::Vector3d>(vertices));
           })
       .def(
           "setVerticesMatrix",

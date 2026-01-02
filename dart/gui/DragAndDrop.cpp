@@ -43,6 +43,8 @@
 #include "dart/gui/Viewer.hpp"
 #include "dart/math/Helpers.hpp"
 
+#include <span>
+
 namespace dart {
 namespace gui {
 
@@ -681,7 +683,7 @@ void BodyNodeDnD::move()
         dofs.push_back(joint->getDof(j)->getIndexInSkeleton());
     }
 
-    mIK->setDofs(dofs);
+    mIK->setDofs(std::span<const std::size_t>(dofs));
   } else {
     if (mUseWholeBody)
       mIK->useWholeBody();

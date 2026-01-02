@@ -2,16 +2,19 @@
 
 ## Status
 
-- Current phase: Phase 3 (public API span migrations)
-- Code changes: Phase 3 in progress.
+- Current phase: Phase 4 (span input consolidation)
+- Code changes: Phase 4 in progress.
 
 ## Phase checklist
 
 - Phase 0 - Discovery and guardrails: Complete
 - Phase 1 - Mechanical no-op cleanup: Complete
 - Phase 2 - Standard library modernization: Complete
-- Phase 3 - Additive public header updates: In progress
-- Phase 4 - Consolidation and validation: Not started
+- Phase 3 - Additive public header updates: Complete
+- Phase 4 - Span input consolidation: In progress
+- Phase 5 - String/view cleanup: Not started
+- Phase 6 - Algorithm and ranges cleanup: Not started
+- Phase 7 - Consolidation and validation: Not started
 
 ## Notes
 
@@ -34,7 +37,7 @@
   introduce `std::span` in internal helper functions for pointer vector
   conversions.
 - Phase 2 checks: `pixi run lint`, `pixi run test` (both passed).
-- Phase 3 started: replace const vector-reference getters with `std::span`
+- Phase 3: replace const vector-reference getters with `std::span`
   returns (e.g., collision contacts, point/mesh/line segment accessors,
   Jacobian/MetaSkeleton/Skeleton/IK accessors, constraint solver skeleton
   views, package paths, cloneable vectors) and remove redundant span helpers.
@@ -51,3 +54,14 @@
 - Phase 3 checks: `pixi run lint`, `pixi run test`, and
   `pixi run -e gazebo test-gz` (all passed; some deprecation warnings emitted
   from gz-physics during test-gz build).
+- Phase 4: remove remaining span-to-vector conversion in
+  `tests/integration/io/test_IkFast.cpp` now that `setPositions` accepts spans.
+- Phase 4: remove redundant `std::vector` overloads where `std::span` covers
+  read-only inputs and update call sites (including python bindings) to pass
+  spans explicitly.
+- Phase 4: removed vector overloads for `Joint::setActuatorTypes`,
+  `Joint::setMimicJointDofs`, `InverseKinematics::setDofs`,
+  `PolyhedronVisual::setVertices`, and `PointCloudShape::setColors`, updating
+  GUI, SDF, tests, examples, and python bindings to pass spans explicitly.
+- Phase 4 checks: `pixi run test-all` and `pixi run -e gazebo test-gz` passed;
+  gz-physics emits sign-compare warnings from vendored gtest headers.

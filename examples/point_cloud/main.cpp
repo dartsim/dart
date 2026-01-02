@@ -44,6 +44,8 @@
 
 #include <CLI/CLI.hpp>
 
+#include <span>
+
 #include <cmath>
 
 using namespace dart;
@@ -143,7 +145,7 @@ public:
     // Update point cloud colors
     auto colors = generatePointCloudColors(pointCloud);
     DART_ASSERT(pointCloud.size() == colors.size());
-    mPointCloudShape->setColors(colors);
+    mPointCloudShape->setColors(std::span<const Eigen::Vector4d>(colors));
 
     // Update voxel
     mVoxelGridShape->updateOccupancy(pointCloud, sensorPos);
