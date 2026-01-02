@@ -26,9 +26,6 @@ endif()
 
 @PACKAGE_INIT@
 
-set(DART_BUILD_COLLISION_BULLET "@DART_BUILD_COLLISION_BULLET@")
-set(DART_BUILD_COLLISION_ODE "@DART_BUILD_COLLISION_ODE@")
-
 #===============================================================================
 function(@PROJECT_NAME@_traverse_components output_variable)
   set(output_components)

@@ -24,10 +24,9 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Example reorganizations can conflict in `examples/CMakeLists.txt`; reconcile any new example entries and keep the category layout aligned before pushing.
   - GitHub Actions API calls can return `HTTP 406` if you omit required headers; include an explicit `Accept` header.
   - `gh api` writes to stdout and does not support `--output`; redirect to a file when you need to search logs.
-  - The asserts-enabled CI job uses a custom CMake configure (`CMAKE_BUILD_TYPE=None`) instead of pixi tasks; pass required build toggles explicitly (e.g., Bullet collision).
+  - The asserts-enabled CI job uses a custom CMake configure (`CMAKE_BUILD_TYPE=None`) instead of pixi tasks; pass required build toggles explicitly.
   - Deprecated headers that emit `#warning` fail under `-Werror=cpp` (e.g., use `dart/utils/urdf/All.hpp` instead of deprecated `dart/utils/urdf/urdf.hpp`).
   - dartpy test failures can show up as a Python abort with minimal traceback when a C++ `DART_ASSERT` triggers; rerun the single test locally and inspect the C++ assert.
-  - Bullet-backed raycast tests require Bullet to be built; skip or enable Bullet if the backend is intentionally disabled.
   - `gh pr status --json ...` can error with `Unknown JSON field: ...` if you request unsupported fields; use `gh pr status` (no JSON) or `gh pr view --json ...`.
   - `gh run view --json ...` only accepts supported fields; prefer the `url` field instead of guessing `htmlURL`.
   - `gh run rerun --job` expects the job `databaseId` (not the numeric ID from the job URL); if `gh run view --json jobs` shows `id: null`, use `databaseId`. Suggested (Unverified): `gh run view <RUN_ID> --json jobs --jq '.jobs[] | {name, databaseId}'`.
@@ -141,7 +140,7 @@ rg -n "FAILED|SegFault|Exception|\\bError\\b|✗" /tmp/<RUN_ID>
 The asserts-enabled job uses a custom CMake configure with `CMAKE_BUILD_TYPE=None`
 to keep assertions enabled outside a Debug build.
 
-- Pass build toggles explicitly when bypassing pixi tasks (e.g., `DART_BUILD_COLLISION_BULLET=ON` if Bullet-backed tests are expected).
+- Pass build toggles explicitly when bypassing pixi tasks.
 - Expect `-Werror=cpp`; any deprecated headers that emit `#warning` will fail the build.
 - If a dartpy test aborts without a Python traceback, the C++ assert message is usually the first useful clue.
 

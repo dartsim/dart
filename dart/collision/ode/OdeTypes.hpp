@@ -33,8 +33,9 @@
 #ifndef DART_COLLISION_ODE_ODETYPES_HPP_
 #define DART_COLLISION_ODE_ODETYPES_HPP_
 
+#include <dart/collision/ode/OdeStub.hpp>
+
 #include <Eigen/Eigen>
-#include <ode/ode.h>
 
 namespace dart {
 namespace collision {

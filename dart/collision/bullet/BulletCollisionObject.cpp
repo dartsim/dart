@@ -32,7 +32,7 @@
 
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 
-#include "dart/collision/bullet/BulletTypes.hpp"
+#include "dart/collision/bullet/BulletInclude.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 
 namespace dart {

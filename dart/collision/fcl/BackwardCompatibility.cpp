@@ -32,6 +32,8 @@
 
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
 
+#include <cmath>
+
 namespace dart {
 namespace collision {
 namespace fcl {

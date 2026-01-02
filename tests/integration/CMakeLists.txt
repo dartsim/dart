@@ -5,25 +5,10 @@
 # ==============================================================================
 dart_add_test("integration" INTEGRATION_collision_CollisionGroups collision/test_CollisionGroups.cpp)
 
-if(TARGET dart-io)
-  dart_add_test("integration" INTEGRATION_collision_Collision collision/test_Collision.cpp)
-  target_link_libraries(INTEGRATION_collision_Collision dart-io)
-endif()
-
-if(DART_BUILD_COLLISION_FCL)
-  dart_add_test(
-    "integration"
-    INTEGRATION_collision_MeshContactRegression
-    collision/test_MeshContactRegression.cpp)
-endif()
 dart_add_test(
   "integration"
   INTEGRATION_collision_FclPrimitiveContactMatrix
   collision/test_FclPrimitiveContactMatrix.cpp)
-dart_add_test(
-  "integration"
-  INTEGRATION_collision_FclPrimitiveContactMatrixFcl
-  collision/test_FclPrimitiveContactMatrixFcl.cpp)
 
 # Additional collision tests
 if(TARGET dart-utils-urdf)
@@ -31,27 +16,6 @@ if(TARGET dart-utils-urdf)
   dart_add_test("integration" INTEGRATION_collision_NoFalseContacts collision/test_NoFalseContacts.cpp)
 endif()
 
-if(DART_BUILD_COLLISION_BULLET)
-  dart_add_test("integration" INTEGRATION_collision_CollisionAccuracy collision/test_CollisionAccuracy.cpp)
-  dart_add_test("integration" INTEGRATION_collision_BulletCylinderRolling collision/test_BulletCylinderRolling.cpp)
-  dart_add_test("integration" INTEGRATION_collision_BulletEllipsoidRolling collision/test_BulletEllipsoidRolling.cpp)
-  dart_add_test("integration" INTEGRATION_collision_BulletBoxStack collision/test_BulletBoxStack.cpp)
-endif()
-
-if(DART_BUILD_COLLISION_BULLET AND DART_BUILD_COLLISION_ODE)
-  dart_add_test("integration" INTEGRATION_collision_PlaneShapeCollision collision/test_PlaneShapeCollision.cpp)
-  target_link_libraries(INTEGRATION_collision_PlaneShapeCollision dart-utils)
-
-  if(TARGET dart-io)
-    dart_add_test("integration" INTEGRATION_collision_ContactGrouping collision/test_ContactGrouping.cpp)
-    target_link_libraries(INTEGRATION_collision_ContactGrouping dart-io)
-  endif()
-
-  dart_add_test(
-    "integration"
-    INTEGRATION_collision_CapsuleGroundContact
-    collision/test_CapsuleGroundContact.cpp)
-endif()
 
 # ==============================================================================
 # Constraint Tests
@@ -68,9 +32,6 @@ dart_build_tests(
 dart_add_test("integration" INTEGRATION_constraint_ContactConstraint constraint/test_ContactConstraint.cpp)
 dart_add_test("integration" INTEGRATION_constraint_SplitImpulse constraint/test_SplitImpulse.cpp)
 
-if(DART_BUILD_COLLISION_ODE)
-  dart_add_test("integration" INTEGRATION_constraint_ForceDependentSlip constraint/test_ForceDependentSlip.cpp)
-endif()
 
 # Additional constraint tests
 if(TARGET dart-utils-urdf)

@@ -35,11 +35,22 @@
 
 #include <dart/config.hpp>
 
-#include <dart/common/Diagnostics.hpp>
-
 #include <dart/Export.hpp>
 
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
+
+#include <memory>
+
+#ifndef FCL_MAJOR_VERSION
+  #define FCL_MAJOR_VERSION 0
+#endif
+#ifndef FCL_MINOR_VERSION
+  #define FCL_MINOR_VERSION 0
+#endif
+#ifndef FCL_PATCH_VERSION
+  #define FCL_PATCH_VERSION 0
+#endif
 
 // clang-format off
 #define FCL_VERSION_AT_LEAST(x,y,z)                                            \
@@ -52,22 +63,176 @@
   (FCL_MINOR_VERSION < y || (FCL_MINOR_VERSION <= y))))
 // clang-format on
 
-DART_SUPPRESS_CPP_WARNING_BEGIN
-#include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
-#include <fcl/config.h>
-#include <fcl/geometry/bvh/BVH_model.h>
-#include <fcl/geometry/geometric_shape_to_BVH_model.h>
-#include <fcl/math/bv/OBBRSS.h>
-#include <fcl/math/bv/utility.h>
-#include <fcl/math/geometry.h>
-#include <fcl/narrowphase/collision.h>
-#include <fcl/narrowphase/collision_object.h>
-#include <fcl/narrowphase/distance.h>
+namespace fcl {
 
-#if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
-  #include <fcl/geometry/octree/octree.h>
-#endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
-DART_SUPPRESS_CPP_WARNING_END
+enum NodeType
+{
+  GEOM_UNKNOWN = 0,
+  GEOM_CONVEX = 1
+};
+
+template <typename S>
+using Vector3 = Eigen::Matrix<S, 3, 1>;
+
+template <typename S>
+using Matrix3 = Eigen::Matrix<S, 3, 3>;
+
+template <typename S>
+using Transform3 = Eigen::Transform<S, 3, Eigen::Isometry>;
+
+template <typename S>
+class CollisionGeometry
+{
+public:
+  NodeType getNodeType() const { return mNodeType; }
+  void setNodeType(NodeType nodeType) { mNodeType = nodeType; }
+
+private:
+  NodeType mNodeType{GEOM_UNKNOWN};
+};
+
+template <typename S>
+class CollisionObject
+{
+public:
+  CollisionObject() = default;
+
+  explicit CollisionObject(std::shared_ptr<CollisionGeometry<S>> geometry)
+    : mGeometry(std::move(geometry))
+  {
+  }
+
+  CollisionGeometry<S>* collisionGeometry() const { return mGeometry.get(); }
+
+  void* getUserData() const { return mUserData; }
+  void setUserData(void* data) { mUserData = data; }
+
+private:
+  std::shared_ptr<CollisionGeometry<S>> mGeometry;
+  void* mUserData{nullptr};
+};
+
+template <typename S>
+class DynamicAABBTreeCollisionManager
+{
+};
+
+template <typename S>
+class OBBRSS
+{
+};
+
+template <typename S>
+struct CollisionRequest
+{
+};
+
+template <typename S>
+struct CollisionResult
+{
+};
+
+template <typename S>
+struct DistanceRequest
+{
+};
+
+template <typename S>
+struct DistanceResult
+{
+};
+
+template <typename S>
+struct Contact
+{
+};
+
+template <typename S>
+class Box : public CollisionGeometry<S>
+{
+public:
+  Box(S x, S y, S z) : mSize(x, y, z) {}
+
+private:
+  Vector3<S> mSize;
+};
+
+template <typename S>
+class Cylinder : public CollisionGeometry<S>
+{
+public:
+  Cylinder(S radius, S height) : mRadius(radius), mHeight(height) {}
+
+private:
+  S mRadius;
+  S mHeight;
+};
+
+template <typename S>
+class Cone : public CollisionGeometry<S>
+{
+public:
+  Cone(S radius, S height) : mRadius(radius), mHeight(height) {}
+
+private:
+  S mRadius;
+  S mHeight;
+};
+
+template <typename S>
+class Ellipsoid : public CollisionGeometry<S>
+{
+public:
+  Ellipsoid(S a, S b, S c) : mRadii(a, b, c) {}
+
+private:
+  Vector3<S> mRadii;
+};
+
+template <typename S>
+class Halfspace : public CollisionGeometry<S>
+{
+public:
+  Halfspace(const Vector3<S>& normal, S offset)
+    : mNormal(normal), mOffset(offset)
+  {
+  }
+
+private:
+  Vector3<S> mNormal;
+  S mOffset;
+};
+
+template <typename S>
+class Sphere : public CollisionGeometry<S>
+{
+public:
+  explicit Sphere(S radius) : mRadius(radius) {}
+
+private:
+  S mRadius;
+};
+
+template <typename S>
+class OcTree : public CollisionGeometry<S>
+{
+};
+
+template <class BV>
+class BVHModel
+{
+public:
+  void beginModel() {}
+
+  template <typename Vec>
+  void addTriangle(const Vec&, const Vec&, const Vec&)
+  {
+  }
+
+  void endModel() {}
+};
+
+} // namespace fcl
 
 namespace dart {
 namespace collision {
@@ -84,9 +249,7 @@ using Cone = ::fcl::Cone<double>;
 using Ellipsoid = ::fcl::Ellipsoid<double>;
 using Halfspace = ::fcl::Halfspace<double>;
 using Sphere = ::fcl::Sphere<double>;
-#if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 using OcTree = ::fcl::OcTree<double>;
-#endif // DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject<double>;
 using CollisionGeometry = ::fcl::CollisionGeometry<double>;

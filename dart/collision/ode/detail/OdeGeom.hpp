@@ -33,10 +33,15 @@
 #ifndef DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_
 #define DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_
 
-#include <dart/collision/ode/OdeCollisionDetector.hpp>
-#include <dart/collision/ode/OdeCollisionObject.hpp>
+#include <dart/collision/ode/OdeStub.hpp>
 
-#include <ode/ode.h>
+namespace dart {
+namespace collision {
+
+class OdeCollisionObject;
+
+} // namespace collision
+} // namespace dart
 
 namespace dart {
 namespace collision {
@@ -47,32 +52,26 @@ class OdeGeom
 public:
   struct GeomUserData;
 
-  /// Constructor.
-  OdeGeom(const OdeCollisionObject* collObj);
+  explicit OdeGeom(const OdeCollisionObject* collObj)
+    : mParentCollisionObject(collObj), mGeomId(nullptr)
+  {
+  }
 
-  /// Destructor.
-  virtual ~OdeGeom();
+  virtual ~OdeGeom() = default;
 
-  /// Returns the parent collision object.
-  const OdeCollisionObject* getParentCollisionObject() const;
+  const OdeCollisionObject* getParentCollisionObject() const
+  {
+    return mParentCollisionObject;
+  }
 
-  // Documentation inherited.
-  virtual void updateEngineData();
+  virtual void updateEngineData() {}
 
-  /// Returns the ODE geom ID associated to this object.
-  dGeomID getOdeGeomId() const;
+  dGeomID getOdeGeomId() const { return mGeomId; }
 
-  /// Returns true if the ODE geom is placeable.
-  virtual bool isPlaceable() const;
+  virtual bool isPlaceable() const { return false; }
 
 protected:
-  /// Parent collision object
   const OdeCollisionObject* mParentCollisionObject;
-
-  /// ODE geom ID associated with this object.
-  ///
-  /// This geom ID should be set by the concrete classes such as OdeBox and
-  /// OdeSphere.
   dGeomID mGeomId;
 };
 

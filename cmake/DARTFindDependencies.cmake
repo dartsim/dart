@@ -21,10 +21,6 @@ dart_check_required_package(EnTT "EnTT")
 dart_find_package(Eigen3)
 dart_check_required_package(EIGEN3 "eigen3")
 
-# FCL
-dart_find_package(fcl)
-dart_check_required_package(fcl "fcl")
-
 # ASSIMP
 dart_find_package(assimp)
 dart_check_required_package(assimp "assimp")

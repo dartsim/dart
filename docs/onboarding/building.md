@@ -33,7 +33,7 @@ Install required dependencies using `apt`:
 ```bash
 sudo apt install \
   build-essential cmake pkg-config git libassimp-dev \
-  libeigen3-dev libfcl-dev libfmt-dev \
+  libeigen3-dev libfmt-dev \
   libsdformat15 libgz-math8 libgz-utils2
 ```
 
@@ -43,9 +43,9 @@ Install optional dependencies:
 
 ```bash
 sudo apt install \
-  coinor-libipopt-dev libbullet-dev \
+  coinor-libipopt-dev \
   libtinyxml2-dev liburdfdom-dev liburdfdom-headers-dev \
-  libopenscenegraph-dev libnlopt-cxx-dev liboctomap-dev libode-dev \
+  libopenscenegraph-dev libnlopt-cxx-dev liboctomap-dev \
   libspdlog-dev libyaml-cpp-dev ocl-icd-opencl-dev opencl-headers \
   opencl-clhpp-headers
 ```
@@ -56,7 +56,7 @@ Add the OSRF tap and install required dependencies using `brew`:
 
 ```bash
 brew tap osrf/simulation
-brew install assimp cmake eigen fmt fcl osrf/simulation/sdformat13
+brew install assimp cmake eigen fmt osrf/simulation/sdformat13
 ```
 
 > **Note:** Replace `sdformat13` with the latest formula published in the `osrf/simulation` tap.
@@ -64,7 +64,7 @@ brew install assimp cmake eigen fmt fcl osrf/simulation/sdformat13
 Install optional dependencies:
 
 ```bash
-brew install bullet ipopt nlopt octomap ode \
+brew install ipopt nlopt octomap \
   open-scene-graph --HEAD \
   spdlog tinyxml2 urdfdom yaml-cpp
 ```
@@ -74,14 +74,14 @@ brew install bullet ipopt nlopt octomap ode \
 Install required dependencies using `vcpkg`:
 
 ```bash
-vcpkg install --triplet x64-windows assimp eigen3 fcl fmt sdformat spdlog
+vcpkg install --triplet x64-windows assimp eigen3 fmt sdformat spdlog
 ```
 
 Install optional dependencies:
 
 ```bash
 vcpkg install --triplet x64-windows \
-  assimp eigen3 fcl fmt spdlog bullet3 glfw3 nlopt ode \
+  assimp eigen3 fmt spdlog glfw3 nlopt \
   opencl opengl osg pagmo2 nanobind tinyxml2 urdfdom yaml-cpp
 ```
 
@@ -90,14 +90,14 @@ vcpkg install --triplet x64-windows \
 Install required dependencies using `yay`:
 
 ```bash
-yay -S assimp cmake eigen fcl fmt sdformat
+yay -S assimp cmake eigen fmt sdformat
 ```
 
 Install optional dependencies:
 
 ```bash
 yay -S \
-  bullet coin-or-ipopt nlopt octomap ode opencl-clhpp \
+  coin-or-ipopt nlopt octomap opencl-clhpp \
   opencl-headers opencl-icd-loader openscenegraph pagmo spdlog tinyxml2 \
   urdfdom nanobind
 ```

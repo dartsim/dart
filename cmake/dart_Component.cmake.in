@@ -6,7 +6,7 @@ set_property(DIRECTORY PROPERTY "@PROJECT_NAME_UPPERCASE@_@component@_FOUND" TRU
 if("@component@" STREQUAL "collision-bullet" OR "@component@" STREQUAL "collision-ode")
   if(NOT @PROJECT_NAME_UPPERCASE@_FIND_QUIETLY)
     message(DEPRECATION
-      "DART CMake component '@component@' is a deprecated stub in DART 7: Bullet/ODE backends are part of the 'dart' core component. "
+      "DART CMake component '@component@' is a deprecated stub in DART 7. "
       "This component will be removed in DART 8. Stop requesting '@component@' and depend on component 'dart' instead."
     )
   endif()

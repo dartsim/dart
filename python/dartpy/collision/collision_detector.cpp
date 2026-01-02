@@ -4,16 +4,12 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/dart/DartCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/collision/bullet/BulletCollisionDetector.hpp"
+#include "dart/collision/ode/OdeCollisionDetector.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
-#if DART_HAVE_BULLET
-  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
-#endif
-#if DART_HAVE_ODE
-  #include "dart/collision/ode/OdeCollisionDetector.hpp"
-#endif
 
 namespace nb = nanobind;
 
@@ -60,7 +56,6 @@ void defCollisionDetector(nb::module_& m)
           },
           nb::rv_policy::reference_internal);
 
-#if DART_HAVE_BULLET
   nb::class_<dart::collision::BulletCollisionDetector, CollisionDetector>(
       m, "BulletCollisionDetector")
       .def(nb::new_(
@@ -73,9 +68,7 @@ void defCollisionDetector(nb::module_& m)
             return dart::collision::BulletCollisionDetector::getStaticType();
           },
           nb::rv_policy::reference_internal);
-#endif
 
-#if DART_HAVE_ODE
   nb::class_<dart::collision::OdeCollisionDetector, CollisionDetector>(
       m, "OdeCollisionDetector")
       .def(nb::new_(
@@ -88,7 +81,6 @@ void defCollisionDetector(nb::module_& m)
             return dart::collision::OdeCollisionDetector::getStaticType();
           },
           nb::rv_policy::reference_internal);
-#endif
 }
 
 } // namespace dart::python_nb

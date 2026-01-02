@@ -10,7 +10,6 @@ platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 assimp = ">=5.4.3,<6"
 benchmark = ">=1.9.3,<2"
 black = ">=25.1.0,<26"
-bullet-cpp = ">=3.25,<4"
 clang-format = ">=14.0.0,<15"
 cli11 = ">=2.4.2,<3"
 cmake = ">=4.0.2,<5"
@@ -19,13 +18,11 @@ console_bridge = ">=1.0.2,<2"
 doxygen = ">=1.13.2,<2"
 eigen = ">=3.4.0,<4"
 entt = ">=3.14.0,<4"
-fcl = ">=0.7.0,<0.8"
 fmt = ">=11.1.4,<12"
 imgui = ">=1.91.9,<2"
 isort = ">=6.0.1,<7"
 jinja2 = ">=3.1.2"
 libboost-devel = ">=1.86.0,<2"
-libode = ">=0.16.5,<0.17"
 libsdformat = ">=16.0.0,<17"
 myst-parser = "*"
 nanobind = ">=2.9.2"
@@ -75,8 +72,6 @@ if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
   DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
 fi
 DART_BUILD_DART8_VALUE=${DART_BUILD_DART8_OVERRIDE:-ON}
-DART_BUILD_COLLISION_BULLET_VALUE=${DART_BUILD_COLLISION_BULLET_OVERRIDE:-ON}
-DART_BUILD_COLLISION_ODE_VALUE=${DART_BUILD_COLLISION_ODE_OVERRIDE:-ON}
 DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-ON}
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
@@ -126,8 +121,6 @@ cmake \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_DART8=${DART_BUILD_DART8_VALUE} \
-  -DDART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET_VALUE} \
-  -DDART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE_VALUE} \
   -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
   -DDART_BUILD_GUI_RAYLIB=${DART_BUILD_GUI_RAYLIB_VALUE} \
   -DDART_BUILD_EXAMPLES=${DART_BUILD_EXAMPLES_VALUE} \
@@ -1001,8 +994,6 @@ cmake \
     -DDART_BUILD_DARTPY={{ dartpy }} \
     -DDART_BUILD_DART8={{ dartpy }} \
     -DDART_BUILD_GUI=${DART_BUILD_GUI_OVERRIDE:-ON} \
-    -DDART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET_OVERRIDE:-ON} \
-    -DDART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE_OVERRIDE:-ON} \
     -DDART_BUILD_TESTS=${DART_BUILD_TESTS_OVERRIDE:-ON} \
     -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
     -DDART_BUILD_PROFILE=OFF \
@@ -1722,8 +1713,6 @@ channels = ["conda-forge"]
 platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
 [feature.gazebo.activation.env]
-DART_BUILD_COLLISION_BULLET_OVERRIDE = "ON"
-DART_BUILD_COLLISION_ODE_OVERRIDE = "ON"
 DART_BUILD_TESTS_OVERRIDE = "OFF"
 
 [feature.gazebo.dependencies]
@@ -1736,8 +1725,6 @@ libgz-utils = ">=4.0.0"
 libsdformat = ">=16.0.0"
 eigen = ">=3.4.0"
 assimp = ">=5.4.3"
-libode = ">=0.16.2"
-bullet-cpp = ">=3.25"
 
 [feature.gazebo.tasks]
 download-gz = { cmd = """
@@ -1882,10 +1869,8 @@ nanobind = ">=2.4.0"
 cmake = ">=4.0"
 ninja = ">=1.12"
 assimp = ">=5.4.3,<6"
-bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
-fcl = ">=0.7.0,<0.8"
 fmt = ">=11.1.4,<12"
 imgui = ">=1.91.9,<2"
 libboost-devel = ">=1.86.0,<2"
@@ -2010,10 +1995,8 @@ nanobind = ">=2.4.0"
 cmake = ">=4.0"
 ninja = ">=1.12"
 assimp = ">=5.4.3,<6"
-bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
-fcl = ">=0.7.0,<0.8"
 fmt = ">=11.1.4,<12"
 imgui = ">=1.91.9,<2"
 libboost-devel = ">=1.86.0,<2"
@@ -2138,10 +2121,8 @@ nanobind = ">=2.4.0"
 cmake = ">=4.0"
 ninja = ">=1.12"
 assimp = ">=5.4.3,<6"
-bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
-fcl = ">=0.7.0,<0.8"
 fmt = ">=11.1.4,<12"
 imgui = ">=1.91.9,<2"
 libboost-devel = ">=1.86.0,<2"

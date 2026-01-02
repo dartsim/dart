@@ -30,32 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_
-#define DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_
+#ifndef DART_COLLISION_ODE_ODESTUB_HPP_
+#define DART_COLLISION_ODE_ODESTUB_HPP_
 
-#include <dart/collision/dart/DartCollisionGroup.hpp>
+struct dxWorld;
+struct dxBody;
+struct dxGeom;
+struct dxSpace;
 
-#include <dart/collision/ode/OdeStub.hpp>
+using dWorldID = dxWorld*;
+using dBodyID = dxBody*;
+using dGeomID = dxGeom*;
+using dSpaceID = dxSpace*;
 
-namespace dart {
-namespace collision {
+using dVector3 = double[4];
 
-class DART_API OdeCollisionGroup : public DARTCollisionGroup
+struct dContactGeom
 {
-public:
-  friend class OdeCollisionDetector;
-
-  OdeCollisionGroup(const CollisionDetectorPtr& collisionDetector);
-
-  ~OdeCollisionGroup() override;
-
-  dSpaceID getOdeSpaceId() const;
-
-protected:
-  dSpaceID mSpaceId;
+  double pos[3]{0.0, 0.0, 0.0};
+  double normal[3]{0.0, 0.0, 0.0};
+  double depth{0.0};
+  void* g1{nullptr};
+  void* g2{nullptr};
+  int side1{0};
+  int side2{0};
 };
 
-} // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_
+#endif // DART_COLLISION_ODE_ODESTUB_HPP_

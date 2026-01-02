@@ -137,7 +137,8 @@ Current status:
 - Backend-selection APIs are deprecated; legacy detector classes carry
   deprecation notes.
 - Legacy detector adapters now forward to the built-in collision engine for API compatibility.
-- Dependency removal from build configuration, pixi environments, and container images is in progress; adapter headers still include external library headers.
+- Adapter headers now use local stub types instead of external includes.
+- Dependency removal is complete for build and packaging: pixi environments, CMake modules, top-level link lists, and package metadata are cleaned.
 - Examples/tutorials migrated off backend-selection APIs; tests/benchmarks
   suppress deprecated calls.
 - `.skel` collision detector selection is deprecated and ignored (with warning).
@@ -151,11 +152,9 @@ Where to look:
 
 Next focus:
 
-- Remove legacy dependency plumbing from CMake, pixi environments, and container images while keeping adapter APIs.
-- Strip external includes from adapter headers and sources so they compile without optional collision libraries.
-- Remove backend-specific build options and config exports, then clean up guard logic that relies on them.
-- Audit collision-related tests that still use legacy detectors and migrate
-  them to the built-in detector as coverage permits.
+- Audit collision-related tests that still use legacy detector types and migrate them to the built-in detector as coverage permits.
+- Fix failing `pixi run -e gazebo test-gz` cases (COMMON_TEST_collisions_dartsim, COMMON_TEST_detachable_joint_dartsim, COMMON_TEST_joint_features_dartsim, COMMON_TEST_simulation_features_dartsim) and resolve the simulation features segfault.
+- Confirm adapter headers and sources compile without optional collision libraries.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Extend raycast coverage to additional edge cases and future shape types.
 - Keep parity/performance tracking current for legacy backend removal.

@@ -35,7 +35,7 @@
 
 #include <dart/collision/dart/DartCollisionObject.hpp>
 
-#include <ode/ode.h>
+#include <dart/collision/ode/OdeStub.hpp>
 
 namespace dart {
 namespace collision {

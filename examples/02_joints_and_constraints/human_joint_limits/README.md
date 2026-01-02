@@ -11,7 +11,7 @@
 
 ## Notes
 
-- Requires TinyDNN and DART built with both Bullet and ODE collision backends.
+- Requires TinyDNN.
 
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.

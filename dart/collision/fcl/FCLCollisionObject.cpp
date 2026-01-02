@@ -62,6 +62,10 @@ FCLCollisionObject::FCLCollisionObject(
         /*fclCollGeom*/)
   : DARTCollisionObject(collisionDetector, shapeFrame)
 {
+  mFCLCollisionObject
+      = std::make_unique<dart::collision::fcl::CollisionObject>();
+  mFCLCollisionObject->setUserData(this);
+
   if (shapeFrame) {
     const auto* shapeNode
         = dynamic_cast<const dynamics::ShapeNode*>(shapeFrame);

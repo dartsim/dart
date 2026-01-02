@@ -113,7 +113,7 @@ set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSI
 # Already set above
 
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
-set(DART_PKG_EXTERNAL_DEPS "assimp, ccd, eigen3, entt, fcl, octomap")
+set(DART_PKG_EXTERNAL_DEPS "assimp, ccd, eigen3, entt, octomap")
 set_property(GLOBAL PROPERTY DART_PKG_LINK_LIBS "")
 set_property(GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS "")
 set_property(GLOBAL PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS "")
@@ -223,8 +223,6 @@ if(NOT _dart_user_set_build_gui_raylib AND DEFINED DART_BUILD_RAYLIB)
   unset(_dart_build_gui_raylib_value)
 endif()
 unset(_dart_user_set_build_gui_raylib)
-dart_option(DART_BUILD_COLLISION_BULLET "Embed the Bullet collision backend into the core dart target" OFF CATEGORY build)
-dart_option(DART_BUILD_COLLISION_ODE "Embed the ODE collision backend into the core dart target" OFF CATEGORY build)
 dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)
 dart_option(DART_BUILD_TUTORIALS "Build tutorial targets" ON CATEGORY build)
 dart_option(DART_BUILD_TESTS "Build C++ tests" ON CATEGORY build)
@@ -457,7 +455,7 @@ if(MSVC)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
   add_compile_options(/wd4005)
   add_compile_options(/wd4099)
-  add_compile_options(/wd4146)  # for FCL warnings: https://github.com/dartsim/dart/runs/4568423649?check_suite_focus=true#step:5:407
+  add_compile_options(/wd4146)
   add_compile_options(/wd4244)
   add_compile_options(/wd4250)
   add_compile_options(/wd4267)
@@ -501,7 +499,7 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   endif()
   if(GCC_VERSION VERSION_GREATER_EQUAL 13.2.0)
     # GCC 13 currently reports noisy diagnostics in upstream dependencies; silence
-    # them until Eigen/FCL updates remove the false positives.
+    # them until those upstream updates remove the false positives.
     add_compile_options(-Wno-overloaded-virtual -Wno-alloc-size-larger-than -Wno-dangling-pointer)
   endif()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")

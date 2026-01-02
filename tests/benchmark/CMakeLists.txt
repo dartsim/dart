@@ -44,15 +44,6 @@ endif()
 # ==============================================================================
 # Collision Benchmarks
 # ==============================================================================
-if(DART_BUILD_COLLISION_BULLET)
-  add_executable(bm_boxes collision/bm_boxes.cpp)
-  target_link_libraries(bm_boxes
-    dart
-    benchmark::benchmark
-    benchmark::benchmark_main
-  )
-  dart_format_add(collision/bm_boxes.cpp)
-endif()
 
 add_executable(bm_boxes_dart collision/bm_boxes_dart.cpp)
 target_link_libraries(bm_boxes_dart
@@ -101,7 +92,7 @@ add_subdirectory(lcpsolver)
 # They are NOT registered as ctests since they measure performance, not correctness.
 #
 # Run benchmarks manually:
-#   ./build/default/cpp/Release/tests/benchmark/bm_boxes
+#   ./build/default/cpp/Release/tests/benchmark/bm_boxes_dart
 #   ./build/default/cpp/Release/tests/benchmark/bm_kinematics
 #
 # With custom settings:

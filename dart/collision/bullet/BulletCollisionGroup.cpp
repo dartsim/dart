@@ -32,7 +32,7 @@
 
 #include "dart/collision/bullet/BulletCollisionGroup.hpp"
 
-#include "dart/collision/bullet/BulletTypes.hpp"
+#include "dart/collision/bullet/BulletInclude.hpp"
 
 namespace dart {
 namespace collision {

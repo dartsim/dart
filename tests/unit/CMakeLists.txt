@@ -21,20 +21,7 @@ dart_add_test(
   collision/test_DartDistance.cpp)
 
 dart_add_test("unit" UNIT_collision_CollisionResult collision/test_CollisionResult.cpp)
-dart_add_test(
-  "unit"
-  UNIT_collision_ConvexMesh
-  collision/test_ConvexMeshShapeCollision.cpp)
-
 dart_add_test("unit" UNIT_collision_Contact collision/test_Contact.cpp)
-
-if(DART_HAVE_BULLET)
-  dart_add_test("unit" UNIT_collision_BulletContact collision/test_BulletContact.cpp)
-endif()
-
-if(DART_HAVE_ODE)
-  dart_add_test("unit" UNIT_collision_OdeHeightmap collision/test_OdeHeightmap.cpp)
-endif()
 
 dart_add_test(
   "unit" UNIT_collision_FCLCollisionObject collision/test_FCLCollisionObject.cpp)

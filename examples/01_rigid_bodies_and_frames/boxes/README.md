@@ -4,13 +4,9 @@
 
 - Goal: spawn a grid of rigid boxes over a ground plane and visualize them.
 - Concepts/APIs: `dynamics::Skeleton`, `simulation::World`,
-  `collision::BulletCollisionDetector`, `gui::Viewer`.
+  `collision::CollisionDetector`, `gui::Viewer`.
 - Expected output: an OSG viewer with colored boxes falling onto a gray ground.
 - Controls: press space to toggle simulation.
-
-## Notes
-
-- Requires DART built with Bullet collision (`DART_BUILD_COLLISION_BULLET=ON`).
 
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.

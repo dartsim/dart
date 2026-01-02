@@ -6,7 +6,7 @@
 - Phase 1 (architecture proposal): complete
 - Phase 2 (core implementation): in progress
 - Phase 2.5 (default switch and selection deprecation): complete
-- Phase 3 (legacy dependency removal): in progress
+- Phase 3 (legacy dependency removal): complete
 - Raycast MVP runs in DartCollisionEngine for supported primitives; distance MVP covers primitives.
 - Raycast benchmark added for baseline tracking.
 - Core engine implementation files live under `dart/collision/dart/engine`.

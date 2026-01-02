@@ -33,15 +33,110 @@
 #ifndef DART_COLLISION_BULLET_BULLETINCLUDE_HPP_
 #define DART_COLLISION_BULLET_BULLETINCLUDE_HPP_
 
-// clang-format off
-
-// dart/config.hpp must be included before any Bullet headers.
 #include <dart/config.hpp>
 
-#include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
-#include <BulletCollision/Gimpact/btGImpactShape.h>
-#include <btBulletCollisionCommon.h>
+class btVector3
+{
+public:
+  btVector3() = default;
+  btVector3(double x, double y, double z) : mX(x), mY(y), mZ(z) {}
 
-// clang-format on
+  double x() const { return mX; }
+  double y() const { return mY; }
+  double z() const { return mZ; }
+
+private:
+  double mX{0.0};
+  double mY{0.0};
+  double mZ{0.0};
+};
+
+class btMatrix3x3
+{
+public:
+  btMatrix3x3() { setIdentity(); }
+
+  btMatrix3x3(
+      double v00,
+      double v01,
+      double v02,
+      double v10,
+      double v11,
+      double v12,
+      double v20,
+      double v21,
+      double v22)
+  {
+    mData[0][0] = v00;
+    mData[0][1] = v01;
+    mData[0][2] = v02;
+    mData[1][0] = v10;
+    mData[1][1] = v11;
+    mData[1][2] = v12;
+    mData[2][0] = v20;
+    mData[2][1] = v21;
+    mData[2][2] = v22;
+  }
+
+  void setIdentity()
+  {
+    mData[0][0] = 1.0;
+    mData[0][1] = 0.0;
+    mData[0][2] = 0.0;
+    mData[1][0] = 0.0;
+    mData[1][1] = 1.0;
+    mData[1][2] = 0.0;
+    mData[2][0] = 0.0;
+    mData[2][1] = 0.0;
+    mData[2][2] = 1.0;
+  }
+
+private:
+  double mData[3][3]{};
+};
+
+class btTransform
+{
+public:
+  btTransform() = default;
+  btTransform(const btMatrix3x3& basis, const btVector3& origin)
+    : mBasis(basis), mOrigin(origin)
+  {
+  }
+
+  void setOrigin(const btVector3& origin) { mOrigin = origin; }
+  void setBasis(const btMatrix3x3& basis) { mBasis = basis; }
+
+  const btVector3& getOrigin() const { return mOrigin; }
+  const btMatrix3x3& getBasis() const { return mBasis; }
+
+private:
+  btMatrix3x3 mBasis;
+  btVector3 mOrigin;
+};
+
+class btCollisionShape
+{
+public:
+  virtual ~btCollisionShape() = default;
+};
+
+class btCollisionObject
+{
+public:
+  virtual ~btCollisionObject() = default;
+
+  void* getUserPointer() const { return mUserPointer; }
+  void setUserPointer(void* userPointer) { mUserPointer = userPointer; }
+
+private:
+  void* mUserPointer{nullptr};
+};
+
+class btCollisionWorld
+{
+public:
+  virtual ~btCollisionWorld() = default;
+};
 
 #endif // DART_COLLISION_BULLET_BULLETINCLUDE_HPP_

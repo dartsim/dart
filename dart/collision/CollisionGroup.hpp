@@ -403,12 +403,11 @@ protected:
   // Dev note: This was supposed to be std::map rather than std::vector for
   // better search performance. The reason we use std::vector is to get
   // deterministic contact results regardless of the order of CollisionObjects
-  // in this container for FCLCollisionDetector.
+  // in this container for the legacy adapter.
   //
-  // fcl's collision result is dependent on the order of objects in the broad
-  // phase classes. If we use std::map, the orders of element between the
-  // original and copy are not guaranteed to be the same as we copy std::map
-  // (e.g., by world cloning).
+  // The legacy broadphase result depends on the order of objects. If we use
+  // std::map, the element order between the original and copy is not guaranteed
+  // to match (e.g., by world cloning).
 
 private:
   /// This class watches when ShapeFrames get deleted so that they can be safely
