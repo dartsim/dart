@@ -4,11 +4,17 @@
 
 ## Overview
 
-This document covers additional LCP solver methods including Interior Point, Staggering, and specialized methods that don't fit into the main categories of pivoting, projection, or Newton methods.
+This document covers additional LCP solver methods including Interior Point,
+Staggering, and specialized methods that don't fit into the main categories of
+pivoting, projection, or Newton methods.
 
-**All methods in this document are currently not implemented** but documented for future reference.
+Interior point is implemented in DART as `dart::math::InteriorPointSolver`.
+Staggering is implemented as `dart::math::StaggeringSolver`.
+Blocked Jacobi is implemented as `dart::math::BlockedJacobiSolver`.
+MPRGP is implemented as `dart::math::MprgpSolver`.
+Shock propagation is implemented as `dart::math::ShockPropagationSolver`.
 
-## 1. Interior Point Method ❌ (Not Implemented)
+## 1. Interior Point Method ✅ (Implemented)
 
 ### Description
 
@@ -62,6 +68,30 @@ for iter = 1 to max_iter:
   mu = mu / (iter + 1)
 ```
 
+### DART Implementation
+
+```cpp
+#include <dart/math/lcp/other/InteriorPointSolver.hpp>
+
+using namespace dart::math;
+
+LcpProblem problem(
+    A,
+    b,
+    Eigen::VectorXd::Zero(n),
+    Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity()),
+    Eigen::VectorXi::Constant(n, -1));
+
+Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+InteriorPointSolver solver;
+LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 50;
+auto result = solver.solve(problem, x, options);
+```
+
+> Note: DART's implementation targets standard LCPs and delegates boxed or
+> friction-indexed problems to the boxed-capable pivoting solver.
+
 ### Properties
 
 - **Time**: O(n³) per iteration (or O(n) with iterative solver)
@@ -91,7 +121,7 @@ for iter = 1 to max_iter:
 - Problems requiring guaranteed feasibility
 - When computational budget allows
 
-## 2. Staggering Methods ❌ (Not Implemented)
+## 2. Staggering Methods ✅ (Implemented)
 
 ### Description
 
@@ -146,6 +176,19 @@ F = solve_friction(...)
 x_final = newton_method(x=[N, F])
 ```
 
+### DART Implementation
+
+```cpp
+dart::math::StaggeringSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 50;
+options.relaxation = 1.0;  // Optional damping
+solver.solve(problem, x, options);
+```
+
+> Note: DART partitions variables by `findex` (normal indices are `findex < 0`,
+> friction indices are `findex >= 0`) and alternates normal and friction sub-solves.
+
 ### Properties
 
 - **Time**: Depends on sub-solvers
@@ -189,7 +232,7 @@ x_final = newton_method(x=[N, F])
 
 ## 3. Specialized Methods
 
-### 3.1 Shock-Propagation Method ❌ (Not Implemented)
+### 3.1 Shock-Propagation Method ✅ (Implemented)
 
 **Description**: Spatial blocking along gravity direction for fast shock wave propagation.
 
@@ -208,6 +251,29 @@ for layer in layers (bottom to top):
   # Forces propagate to next layer
 ```
 
+### DART Implementation
+
+```cpp
+#include <dart/math/lcp/other/ShockPropagationSolver.hpp>
+
+using namespace dart::math;
+
+LcpProblem problem(A, b, lo, hi, findex);
+Eigen::VectorXd x = Eigen::VectorXd::Zero(b.size());
+
+ShockPropagationSolver solver;
+ShockPropagationSolver::Parameters params;
+params.blockSizes = {3, 3, 3};  // One block per contact (example)
+params.layers = {{0}, {1}, {2}}; // Bottom-to-top ordering
+
+LcpOptions options = solver.getDefaultOptions();
+options.customOptions = &params;
+solver.solve(problem, x, options);
+```
+
+> Note: Layers must cover all blocks. If `layers` is empty, DART uses a single
+> layer containing all blocks (equivalent to an ordered block sweep).
+
 **Properties**:
 
 - Domain: Velocity-based BLCP
@@ -221,7 +287,7 @@ for layer in layers (bottom to top):
 - Gravity-dominated scenes
 - High-fidelity contact propagation
 
-### 3.2 Modified Proportioning with Reduced-Gradient Projections (MPRGP) ❌
+### 3.2 Modified Proportioning with Reduced-Gradient Projections (MPRGP) ✅
 
 **Description**: QP solver method using proportioning and reduced-gradient projections.
 
@@ -250,7 +316,32 @@ while not converged:
   x = x + t * direction
 ```
 
-## 4. Blocked Jacobi ❌ (Not Implemented)
+### DART Implementation
+
+```cpp
+#include <dart/math/lcp/other/MprgpSolver.hpp>
+
+using namespace dart::math;
+
+LcpProblem problem(
+    A,
+    b,
+    Eigen::VectorXd::Zero(n),
+    Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity()),
+    Eigen::VectorXi::Constant(n, -1));
+
+Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+MprgpSolver solver;
+LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 200;
+auto result = solver.solve(problem, x, options);
+```
+
+> Note: DART's implementation targets standard LCPs with symmetric positive
+> definite matrices and delegates boxed or friction-indexed problems to the
+> boxed-capable pivoting solver.
+
+## 4. Blocked Jacobi ✅ (Implemented)
 
 ### Description
 
@@ -266,6 +357,26 @@ for iter = 1 to max_iter:
     x_i^{k+1} = SolveSubLCP(A_{ii}, r_i)
 ```
 
+### DART Implementation
+
+```cpp
+#include <dart/math/lcp/projection/BlockedJacobiSolver.hpp>
+
+using namespace dart::math;
+
+LcpProblem problem(A, b, lo, hi, findex);
+Eigen::VectorXd x = Eigen::VectorXd::Zero(b.size());
+BlockedJacobiSolver solver;
+LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 200;
+auto result = solver.solve(problem, x, options);
+```
+
+> Note: Block partitions follow `findex` by default (contact blocks), or can be
+> set explicitly via `BlockedJacobiSolver::Parameters::blockSizes`.
+> DART uses `DirectSolver` for standard blocks up to 3 variables and falls back
+> to `DantzigSolver` for boxed or larger blocks.
+
 ### Properties
 
 - **Parallelization**: Fully parallel (all blocks independent)
@@ -274,26 +385,31 @@ for iter = 1 to max_iter:
 
 ## Comparison Summary
 
-| Method            | Convergence | Complexity | Robustness | Parallelization |
-| ----------------- | ----------- | ---------- | ---------- | --------------- |
-| Interior Point    | Superlinear | O(n³)      | Very High  | No              |
-| Staggering        | Variable    | Depends    | Medium     | No              |
-| Shock-Propagation | Linear      | O(n)       | Medium     | Limited         |
-| MPRGP             | Monotone    | O(n²)      | High       | No              |
-| Blocked Jacobi    | Linear      | O(n·b³)    | Medium     | Yes             |
+| Method               | Convergence | Complexity | Robustness | Parallelization |
+| -------------------- | ----------- | ---------- | ---------- | --------------- |
+| Interior Point ✅    | Superlinear | O(n³)      | Very High  | No              |
+| Staggering ✅        | Variable    | Depends    | Medium     | No              |
+| Shock-Propagation ✅ | Linear      | O(n)       | Medium     | Limited         |
+| MPRGP ✅             | Monotone    | O(n²)      | High       | No              |
+| Blocked Jacobi ✅    | Linear      | O(n·b³)    | Medium     | Yes             |
 
 ## Implementation Priority
 
+### Implemented in DART
+
+- **Interior Point**: Primal-dual path-following for standard LCPs
+- **Staggering**: Normal/friction block solve for contact-style problems
+- **Blocked Jacobi**: Parallel block updates with per-block LCP solves
+- **MPRGP**: Bound-constrained QP solver for standard SPD LCPs
+- **Shock-Propagation**: Layered block solve for gravity-dominated contact
+
 ### Low Priority (Specialized Use Cases)
 
-- **Staggering**: For specific contact problem structures
-- **Shock-Propagation**: For gravity-dominated scenarios
+- Additional gravity-structured contact methods
 
 ### Very Low Priority (Niche Applications)
 
-- **Interior Point**: When all else fails
-- **MPRGP**: Fluid-specific applications
-- **Blocked Jacobi**: Parallel hardware optimization
+- Additional specialized QP methods
 
 ## When to Use These Methods
 

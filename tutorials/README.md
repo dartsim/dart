@@ -5,6 +5,7 @@ using DART. We designed many hands-on exercises to make the learning
 effective and fun. To follow along with this tutorial, first locate
 the tutorial code in the directory:
 [dart/tutorials](https://github.com/dartsim/dart/blob/main/tutorials).
+For broader example coverage, see the category index in `examples/README.md`.
 For each of the four tutorials, we provide the skeleton code as the starting
 point (e.g. [tutorial_multi_pendulum.cpp]
 (https://github.com/dartsim/dart/blob/main/tutorials/

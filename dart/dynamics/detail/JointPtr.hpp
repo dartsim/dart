@@ -53,7 +53,7 @@ public:
   template <class, class>
   friend class TemplateJointPtr;
 
-  typedef JointT element_type;
+  using element_type = JointT;
 
   /// Default constructor
   TemplateJointPtr() = default;

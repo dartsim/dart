@@ -37,17 +37,11 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 
+#include <array>
 #include <string>
 
 namespace dart {
 namespace dynamics {
-
-//==============================================================================
-FreeJoint::Properties::Properties(const Base::Properties& properties)
-  : Base::Properties(properties)
-{
-  // Do nothing
-}
 
 //==============================================================================
 FreeJoint::~FreeJoint()
@@ -56,16 +50,108 @@ FreeJoint::~FreeJoint()
 }
 
 //==============================================================================
+void FreeJoint::setProperties(const Properties& properties)
+{
+  Base::setProperties(static_cast<const Base::Properties&>(properties));
+  setProperties(static_cast<const UniqueProperties&>(properties));
+}
+
+//==============================================================================
+void FreeJoint::setProperties(const UniqueProperties& properties)
+{
+  setAspectProperties(properties);
+}
+
+//==============================================================================
+void FreeJoint::setAspectProperties(const AspectProperties& properties)
+{
+  setCoordinateChart(properties.mCoordinateChart);
+}
+
+//==============================================================================
 FreeJoint::Properties FreeJoint::getFreeJointProperties() const
 {
-  return getGenericJointProperties();
+  return FreeJoint::Properties(
+      getGenericJointProperties(), getFreeJointAspect()->getProperties());
+}
+
+//==============================================================================
+void FreeJoint::copy(const FreeJoint& otherJoint)
+{
+  if (this == &otherJoint)
+    return;
+
+  setProperties(otherJoint.getFreeJointProperties());
+}
+
+//==============================================================================
+void FreeJoint::copy(const FreeJoint* otherJoint)
+{
+  if (nullptr == otherJoint)
+    return;
+
+  copy(*otherJoint);
+}
+
+//==============================================================================
+FreeJoint& FreeJoint::operator=(const FreeJoint& otherJoint)
+{
+  copy(otherJoint);
+  return *this;
+}
+
+//==============================================================================
+void FreeJoint::setCoordinateChart(CoordinateChart chart)
+{
+  if (mAspectProperties.mCoordinateChart == chart)
+    return;
+
+  const CoordinateChart previousChart = mAspectProperties.mCoordinateChart;
+  const Eigen::Isometry3d transform
+      = convertToTransform(getPositionsStatic(), previousChart);
+
+  mAspectProperties.mCoordinateChart = chart;
+  updateDegreeOfFreedomNames();
+
+  setPositionsStatic(convertToPositions(transform, chart));
+  updateRelativeJacobian(true);
+  Joint::incrementVersion();
+}
+
+//==============================================================================
+FreeJoint::CoordinateChart FreeJoint::getCoordinateChart() const
+{
+  return mAspectProperties.mCoordinateChart;
 }
 
 //==============================================================================
 Eigen::Vector6d FreeJoint::convertToPositions(const Eigen::Isometry3d& _tf)
 {
+  return convertToPositions(_tf, CoordinateChart::EXP_MAP);
+}
+
+//==============================================================================
+Eigen::Vector6d FreeJoint::convertToPositions(
+    const Eigen::Isometry3d& _tf, CoordinateChart chart)
+{
   Eigen::Vector6d x;
-  x.head<3>() = math::logMap(_tf.linear());
+  switch (chart) {
+    case CoordinateChart::EXP_MAP:
+      x.head<3>() = math::logMap(_tf.linear());
+      break;
+    case CoordinateChart::EULER_XYZ:
+      x.head<3>() = math::matrixToEulerXYZ(_tf.linear());
+      break;
+    case CoordinateChart::EULER_ZYX:
+      x.head<3>() = math::matrixToEulerZYX(_tf.linear());
+      break;
+    default:
+      DART_WARN(
+          "Unsupported coordinate chart ({}); returning zero rotation",
+          static_cast<int>(chart));
+      x.head<3>().setZero();
+      break;
+  }
   x.tail<3>() = _tf.translation();
   return x;
 }
@@ -74,12 +160,35 @@ Eigen::Vector6d FreeJoint::convertToPositions(const Eigen::Isometry3d& _tf)
 Eigen::Isometry3d FreeJoint::convertToTransform(
     const Eigen::Vector6d& _positions)
 {
+  return convertToTransform(_positions, CoordinateChart::EXP_MAP);
+}
+
+//==============================================================================
+Eigen::Isometry3d FreeJoint::convertToTransform(
+    const Eigen::Vector6d& _positions, CoordinateChart chart)
+{
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.linear() = math::expMapRot(_positions.head<3>());
+  switch (chart) {
+    case CoordinateChart::EXP_MAP:
+      tf.linear() = math::expMapRot(_positions.head<3>());
+      break;
+    case CoordinateChart::EULER_XYZ:
+      tf.linear() = math::eulerXYZToMatrix(_positions.head<3>());
+      break;
+    case CoordinateChart::EULER_ZYX:
+      tf.linear() = math::eulerZYXToMatrix(_positions.head<3>());
+      break;
+    default:
+      DART_ERROR(
+          "Invalid coordinate chart specified ({})", static_cast<int>(chart));
+      tf.linear().setIdentity();
+      break;
+  }
   tf.translation() = _positions.tail<3>();
   return tf;
 }
 
+//==============================================================================
 //==============================================================================
 void FreeJoint::setTransformOf(
     Joint* joint, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
@@ -163,7 +272,8 @@ void FreeJoint::setRelativeTransform(const Eigen::Isometry3d& newTransform)
 {
   setPositionsStatic(convertToPositions(
       Joint::mAspectProperties.mT_ParentBodyToJoint.inverse() * newTransform
-      * Joint::mAspectProperties.mT_ChildBodyToJoint));
+          * Joint::mAspectProperties.mT_ChildBodyToJoint,
+      getCoordinateChart()));
 }
 
 //==============================================================================
@@ -485,7 +595,8 @@ void FreeJoint::setAngularAcceleration(
 Eigen::Matrix6d FreeJoint::getRelativeJacobianStatic(
     const Eigen::Vector6d& positions) const
 {
-  const Eigen::Isometry3d Q = convertToTransform(positions);
+  const Eigen::Isometry3d Q
+      = convertToTransform(positions, getCoordinateChart());
   const Eigen::Isometry3d T
       = Joint::mAspectProperties.mT_ParentBodyToJoint * Q
         * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
@@ -504,15 +615,16 @@ Eigen::Matrix6d FreeJoint::getRelativeJacobianStatic(
 Eigen::Vector6d FreeJoint::getPositionDifferencesStatic(
     const Eigen::Vector6d& _q2, const Eigen::Vector6d& _q1) const
 {
-  const Eigen::Isometry3d Q1 = convertToTransform(_q1);
-  const Eigen::Isometry3d Q2 = convertToTransform(_q2);
+  const Eigen::Isometry3d Q1 = convertToTransform(_q1, getCoordinateChart());
+  const Eigen::Isometry3d Q2 = convertToTransform(_q2, getCoordinateChart());
 
   Eigen::Vector6d diff = Eigen::Vector6d::Zero();
 
-  const Eigen::Matrix3d rotation1 = Q1.linear();
-  const Eigen::Matrix3d rotationChange = rotation1.transpose() * Q2.linear();
-
-  diff.head<3>() = rotation1 * math::logMap(rotationChange);
+  const Eigen::Matrix3d rotationChange = Q2.linear() * Q1.linear().transpose();
+  Eigen::Isometry3d rotationOnly = Eigen::Isometry3d::Identity();
+  rotationOnly.linear() = rotationChange;
+  diff.head<3>()
+      = convertToPositions(rotationOnly, getCoordinateChart()).head<3>();
   diff.tail<3>() = Q2.translation() - Q1.translation();
 
   return diff;
@@ -526,6 +638,7 @@ FreeJoint::FreeJoint(const Properties& properties)
 
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
+  createFreeJointAspect(properties);
   createGenericJointAspect(properties);
   createJointAspect(properties);
 }
@@ -577,7 +690,7 @@ void FreeJoint::integratePositions(double _dt)
   const Eigen::Isometry3d nextQ
       = parentBodyToJoint.inverse() * nextRelativeTransform * childBodyToJoint;
 
-  setPositionsStatic(convertToPositions(nextQ));
+  setPositionsStatic(convertToPositions(nextQ, getCoordinateChart()));
 }
 
 //==============================================================================
@@ -609,7 +722,8 @@ void FreeJoint::integratePositions(
   const Eigen::Isometry3d& childBodyToJoint
       = Joint::mAspectProperties.mT_ChildBodyToJoint;
 
-  const Eigen::Isometry3d Q0 = convertToTransform(q0Static);
+  const Eigen::Isometry3d Q0
+      = convertToTransform(q0Static, getCoordinateChart());
   const Eigen::Isometry3d relativeTransform0
       = parentBodyToJoint * Q0 * childBodyToJoint.inverse();
 
@@ -626,7 +740,7 @@ void FreeJoint::integratePositions(
   const Eigen::Isometry3d Qnext
       = parentBodyToJoint.inverse() * nextRelativeTransform * childBodyToJoint;
 
-  result = convertToPositions(Qnext);
+  result = convertToPositions(Qnext, getCoordinateChart());
 }
 
 //==============================================================================
@@ -645,12 +759,16 @@ void FreeJoint::updateConstrainedTerms(double timeStep)
 //==============================================================================
 void FreeJoint::updateDegreeOfFreedomNames()
 {
-  if (!mDofs[0]->isNamePreserved())
-    mDofs[0]->setName(Joint::mAspectProperties.mName + "_rot_x", false);
-  if (!mDofs[1]->isNamePreserved())
-    mDofs[1]->setName(Joint::mAspectProperties.mName + "_rot_y", false);
-  if (!mDofs[2]->isNamePreserved())
-    mDofs[2]->setName(Joint::mAspectProperties.mName + "_rot_z", false);
+  std::array<std::string, 3> rotAffixes{"_rot_x", "_rot_y", "_rot_z"};
+
+  if (getCoordinateChart() == CoordinateChart::EULER_ZYX)
+    rotAffixes = {"_rot_z", "_rot_y", "_rot_x"};
+
+  for (std::size_t i = 0; i < rotAffixes.size(); ++i) {
+    if (!mDofs[i]->isNamePreserved())
+      mDofs[i]->setName(Joint::mAspectProperties.mName + rotAffixes[i], false);
+  }
+
   if (!mDofs[3]->isNamePreserved())
     mDofs[3]->setName(Joint::mAspectProperties.mName + "_pos_x", false);
   if (!mDofs[4]->isNamePreserved())
@@ -662,7 +780,7 @@ void FreeJoint::updateDegreeOfFreedomNames()
 //==============================================================================
 void FreeJoint::updateRelativeTransform() const
 {
-  mQ = convertToTransform(getPositionsStatic());
+  mQ = convertToTransform(getPositionsStatic(), getCoordinateChart());
 
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint * mQ
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();

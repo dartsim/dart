@@ -92,8 +92,7 @@ DART now maintains two naming schemes in parallel:
 - **File extensions**: `.hpp` for headers, `.cpp` for sources
 - **File naming**: PascalCase in `dart/` and `python/dartpy/`; snake*case everywhere in `dart8/` and its dependents; legacy `tests/` use `test*` + PascalCase while dart8-era tests stay fully snake_case
 - **Header guards**: `DART_NAMESPACE_CLASSNAME_HPP_`
-- **Braces**: No "cuddled" braces (except namespaces); always use braces for
-  control statements, even for single-line bodies
+- **Braces**: No "cuddled" braces (except namespaces); always wrap control-flow bodies in braces, even for single statements
 - **Documentation**: Doxygen-style comments (`///`)
 
 ### Parameter Naming
@@ -109,6 +108,7 @@ DART now maintains two naming schemes in parallel:
 - Use **camelCase** function names
 - Use **PascalCase** class names
 - No "cuddled" braces (except namespaces)!
+- Always wrap control-flow bodies in braces, even for single statements
 - Header guards must include the library, namespace, and source file names
 
 **Example:**
@@ -204,7 +204,7 @@ private:
 - Use **camelCase** function names
 - Use **PascalCase** class names
 - No "cuddled" braces!
-- Always use braces for control statements, even for single-line bodies
+- Always wrap control-flow bodies in braces, even for single statements
 - Each function is separated by an 80 column line of "=" characters
 
 **Example:**

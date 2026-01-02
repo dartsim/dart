@@ -36,5 +36,6 @@ Describe what you expected and what actually happens.
 
 **Additional Info:**
 
-- For build issues, share verbose build output: `pixi run config` with `DART_VERBOSE=ON`
+- For build issues, share verbose configure/build output (e.g., `DART_VERBOSE=ON` and the full configure command)
+- If this is distro/packaging-specific, include the packaging recipe or a minimal repro (e.g., Docker/chroot)
 - Share gist links for long outputs

@@ -50,12 +50,11 @@ namespace {
 
 using TriMesh = dart::dynamics::ConvexMeshShape::TriMeshType;
 using Vertices = TriMesh::Vertices;
+using Normals = TriMesh::Normals;
 using Triangles = TriMesh::Triangles;
 
 void computeVertexNormals(
-    const Vertices& vertices,
-    const Triangles& triangles,
-    std::vector<Eigen::Vector3d>& normals)
+    const Vertices& vertices, const Triangles& triangles, Normals& normals)
 {
   normals.assign(vertices.size(), Eigen::Vector3d::Zero());
   for (const auto& triangle : triangles) {
@@ -124,7 +123,7 @@ protected:
   ::osg::ref_ptr<::osg::Vec4Array> mColors;
   ::osg::ref_ptr<::osg::DrawElementsUInt> mElements;
 
-  std::vector<Eigen::Vector3d> mComputedNormals;
+  Normals mComputedNormals;
 
   dart::dynamics::ConvexMeshShape* mConvexMeshShape;
   dart::dynamics::VisualAspect* mVisualAspect;
@@ -277,7 +276,7 @@ void ConvexMeshShapeDrawable::refresh(bool firstTime)
       (*mVertices)[i] = eigToOsgVec3((*vertices)[i]);
     setVertexArray(mVertices);
 
-    const std::vector<Eigen::Vector3d>* normals = nullptr;
+    const Normals* normals = nullptr;
     if (mesh && mesh->hasVertexNormals()
         && mesh->getVertexNormals().size() == vertexCount) {
       normals = &mesh->getVertexNormals();

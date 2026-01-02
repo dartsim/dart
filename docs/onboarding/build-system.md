@@ -236,6 +236,7 @@ dart/
   - **System Mode** (`DART_USE_SYSTEM_RAYLIB=ON`): Links against a system-installed `raylib`
   - **Fetch Mode** (`DART_USE_SYSTEM_RAYLIB=OFF`): Fetches Raylib from `https://github.com/raysan5/raylib.git` (defaults to the latest git tag)
   - **Fetch Tag Override**: `DART_RAYLIB_GIT_TAG=<tag>` (only used when fetching)
+- **Note:** In out-of-source example builds, `DART_BUILD_GUI_RAYLIB` may be unset; avoid using it to gate standalone example builds. Prefer guarding only in in-source builds or checking for the `raylib` target.
 
 #### 9. OpenGL
 
@@ -569,9 +570,11 @@ Tutorials are built in `build/.../bin/`:
 
 ### Benchmark Executables (Performance Testing)
 
-- `BM_INTEGRATION_empty`
-- `BM_INTEGRATION_boxes`
-- `BM_INTEGRATION_kinematics`
+- Benchmarks are built in `build/.../bin/` and can be run via pixi:
+  - `pixi run bm boxes`
+  - `pixi run bm kinematics`
+  - `pixi run bm lcp_compare`
+  - `pixi run bm --pixi-help` for more aliases/targets
 
 ---
 
@@ -750,10 +753,11 @@ build/
 - [`cmake/gz_physics_force_vendor_gtest.cmake`](../../cmake/gz_physics_force_vendor_gtest.cmake) - ensures gz-physics uses its vendored GoogleTest headers
 - [`.github/workflows/ci_gz_physics.yml`](../../.github/workflows/ci_gz_physics.yml) - CI entry point for this workflow
 
-**Example (Used in this task):**
+**Suggested (Unverified, Linux example):**
 
 ```bash
-DART_PARALLEL_JOBS=12 pixi run -e gazebo test-gz
+N=$(( ( $(nproc) * 2 ) / 3 ))
+DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 ```
 
 **Fast iteration loop (Suggested (Unverified)):**

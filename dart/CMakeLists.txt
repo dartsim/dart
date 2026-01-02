@@ -22,6 +22,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #   bullet
 # constraint
 # simulation
+# sensor
 # utils
 #   sdf
 #   urdf
@@ -33,7 +34,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # Targets - {dependency targets}, source directories, [external dependency libs]
 #===============================================================================
 # dart - common, math (including math/optimization), lcpsolver, dynamics,
-#        collision (fcl + optional Bullet/ODE), constraint, simulation, utils,
+#        collision (fcl + optional Bullet/ODE), constraint, simulation, sensor, utils,
 #        gui, [assimp, eigen3, fcl, fmt]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
@@ -76,6 +77,7 @@ add_subdirectory(dynamics)
 add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(simulation)
+add_subdirectory(sensor)
 add_subdirectory(utils) # tinyxml2, libsdformat
 add_subdirectory(io)
 add_subdirectory(gui) # osg

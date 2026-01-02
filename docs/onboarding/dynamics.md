@@ -487,6 +487,10 @@ While not in the files we examined, DART provides several concrete Joint types:
 - `PlanarJoint` - 3-DOF planar joint (2 translations + 1 rotation)
 - `EulerJoint`, `QuaternionJoint` - Various 3-DOF rotational representations
 
+BallJoint and FreeJoint generalized positions use a coordinate chart (default:
+exp-map/angle-axis). You can switch to Euler XYZ/ZYX via
+`setCoordinateChart(...)` on each joint.
+
 ## Usage Example (Conceptual)
 
 ```cpp

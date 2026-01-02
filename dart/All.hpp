@@ -44,4 +44,5 @@
 #include <dart/constraint/All.hpp>
 #include <dart/dynamics/All.hpp>
 #include <dart/simulation/All.hpp>
+#include <dart/sensor/All.hpp>
 // clang-format on

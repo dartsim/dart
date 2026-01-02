@@ -47,6 +47,12 @@ class Skeleton;
 
 namespace constraint {
 
+enum class ConstraintPhase
+{
+  Velocity,
+  Position,
+};
+
 /// ConstraintInfo
 struct ConstraintInfo
 {
@@ -70,6 +76,12 @@ struct ConstraintInfo
 
   /// Inverse of time step
   double invTimeStep;
+
+  /// Constraint solve phase
+  ConstraintPhase phase{ConstraintPhase::Velocity};
+
+  /// Whether to skip penetration correction in the velocity phase.
+  bool useSplitImpulse{false};
 };
 
 /// Constraint is a base class of concrete constraints classes

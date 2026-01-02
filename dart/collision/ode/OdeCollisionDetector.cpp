@@ -118,14 +118,10 @@ void eraseHistoryForObject(
   if (!object)
     return;
 
-  cache.erase(
-      std::remove_if(
-          cache.begin(),
-          cache.end(),
-          [object](const OdeCollisionDetector::ContactHistoryItem& item) {
-            return item.pair.first == object || item.pair.second == object;
-          }),
-      cache.end());
+  std::erase_if(
+      cache, [object](const OdeCollisionDetector::ContactHistoryItem& item) {
+        return item.pair.first == object || item.pair.second == object;
+      });
 }
 struct OdeCollisionCallbackData
 {

@@ -136,7 +136,7 @@ ConnectionBody<SignalType>::getSlot() const
 template <typename T>
 struct DefaultCombiner
 {
-  typedef T result_type;
+  using result_type = T;
 
   template <typename InputIterator>
   static T process(InputIterator first, InputIterator last)

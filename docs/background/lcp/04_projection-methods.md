@@ -47,7 +47,7 @@ All specific methods below are specializations of this formula.
 
 Gauss-Seidel style methods update `x_i` in-place, so the sweep order changes the fixed point they approach. A symmetric variant (forward then backward sweep) halves this bias at twice the per-iteration cost; Jacobi has no order dependency because it updates all entries in parallel.
 
-## 1. Jacobi Method ❌ (Not Implemented)
+## 1. Jacobi Method ✅ (Implemented)
 
 ### Splitting
 
@@ -76,6 +76,18 @@ Equivalently: `z = x^k - r ./ diag(A); x^{k+1} = max(0, z)`.
 ✅ Simple to implement
 ❌ Slower convergence than Gauss-Seidel
 ❌ May not converge for some problems
+
+### DART Implementation
+
+```cpp
+dart::math::JacobiSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+
+// Optional: damped Jacobi via relaxation (0 < relaxation <= 2)
+options.relaxation = 1.0;
+
+solver.solve(problem, x, options);
+```
 
 ## 2. Projected Gauss-Seidel (PGS) ✅ (Implemented)
 
@@ -121,6 +133,8 @@ function PGS(A, b, x, max_iter, epsilon):
     `dart::math::PgsSolver::setParameters()`.
   - Use `dart::math::LcpOptions::relaxation` to enable PSOR-style relaxation
     (`1.0` = PGS, `>1` = over-relaxation, `<1` = under-relaxation).
+- **DART support**: `dart::math::NncgSolver` accelerates PGS for boxed LCPs,
+  sharing the same bounds and `findex` handling.
 
 ### Advantages/Disadvantages
 
@@ -214,7 +228,7 @@ If `A_ii <= 0`, the local quadratic is non-convex; clip with the projection abov
 ❌ Requires tuning λ parameter
 ❌ Bad λ can make convergence worse
 
-## 4. Symmetric PSOR ❌ (Not Implemented)
+## 4. Symmetric PSOR ✅ (Implemented)
 
 ### Algorithm
 
@@ -225,6 +239,15 @@ Forward sweep (i = 1 to n) followed by backward sweep (i = n to 1).
 - Reduces sweep-order dependency
 - 2× cost per iteration
 - Better convergence behavior
+
+### DART Implementation
+
+```cpp
+dart::math::SymmetricPsorSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.relaxation = 1.2;  // Optional PSOR-style relaxation
+solver.solve(problem, x, options);
+```
 
 ### Generic projected iteration
 
@@ -238,7 +261,7 @@ for k = 1..N:
 
 Sweep order matters for Gauss-Seidel/PSOR. A symmetric variant performs one forward and one backward sweep to mitigate order bias (useful for PSOR/PGS; not for Jacobi which is already order-free).
 
-## 5. Blocked Gauss-Seidel (BGS) ❌ (Not Implemented, Medium Priority)
+## 5. Blocked Gauss-Seidel (BGS) ✅ (Implemented)
 
 ### Description
 
@@ -267,12 +290,29 @@ for iter = 1 to max_iter:
 
 In code, form the local right-hand side as `b'_i = b_i - (A_ij x_j)_j∈blocks, j≠i`, then solve `A_ii x_i = b'_i` under the per-block bounds.
 
+### DART Implementation
+
+```cpp
+dart::math::BgsSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+
+// Optional explicit block sizes (must sum to n).
+dart::math::BgsSolver::Parameters params;
+params.blockSizes = {3, 3, 3}; // Example: three contact blocks
+options.customOptions = &params;
+
+solver.solve(problem, x, options);
+```
+
 ### Sub-LCP Solvers
 
 - **1D normal**: Direct solve
 - **2D/3D friction**: Direct geometric method
 - **4D pyramid**: Direct or small iterative
 - **General**: Any LCP solver
+
+> Note: DART uses `DirectSolver` for standard blocks up to 3 variables and
+> falls back to `DantzigSolver` for boxed or larger blocks.
 
 For common contact splittings:
 
@@ -333,7 +373,7 @@ x^{k+1} = min(u, max(l, z^k))
 
 For contact problems, `l` and `u` are often functions of the normal impulse (`±μN`), so the projection step should recompute bounds whenever `N` changes.
 
-## 6. Nonsmooth Nonlinear Conjugate Gradient (NNCG) ❌ (Not Implemented)
+## 6. Nonsmooth Nonlinear Conjugate Gradient (NNCG) ✅ (Implemented)
 
 ### Description
 
@@ -361,6 +401,21 @@ function NNCG(A, b, x, max_iter):
     r = r_new
 ```
 
+### DART Implementation
+
+```cpp
+dart::math::NncgSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+
+dart::math::NncgSolver::Parameters params;
+params.pgsIterations = 1;
+params.restartInterval = 10;
+params.restartThreshold = 1.0;
+options.customOptions = &params;
+
+solver.solve(problem, x, options);
+```
+
 ### Properties
 
 - **Time**: O(n) per iteration (same as PGS)
@@ -382,7 +437,7 @@ function NNCG(A, b, x, max_iter):
 - Better accuracy than PGS
 - When PGS converges too slowly
 
-## 7. Subspace Minimization (PGS-SM) ❌ (Not Implemented)
+## 7. Subspace Minimization (PGS-SM) ✅ (Implemented)
 
 ### Description
 
@@ -408,6 +463,19 @@ while not converged:
 
     # Project back
     x_A = min(u_A, max(l_A, x_A))
+```
+
+### DART Implementation
+
+```cpp
+dart::math::SubspaceMinimizationSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+
+dart::math::SubspaceMinimizationSolver::Parameters params;
+params.pgsIterations = 5;
+options.customOptions = &params;
+
+solver.solve(problem, x, options);
 ```
 
 ### Properties
@@ -447,7 +515,7 @@ while not converged:
     if termination reached (e.g., active set unchanged): return x
 ```
 
-## 8. Red-Black Gauss-Seidel ❌ (Not Implemented)
+## 8. Red-Black Gauss-Seidel ✅ (Implemented)
 
 ### Description
 
@@ -471,6 +539,17 @@ for iter = 1 to max_iter:
 
 - **Parallelization**: 2-phase parallel
 - **Convergence**: Between Jacobi and Gauss-Seidel
+
+### DART Implementation
+
+```cpp
+dart::math::RedBlackGaussSeidelSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.relaxation = 1.0;
+solver.solve(problem, x, options);
+```
+
+> Note: DART uses an even/odd index partition as the red/black sets.
 
 ### Use Cases
 
@@ -579,15 +658,16 @@ Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
 
 ## Comparison Table
 
-| Method    | Status           | Parallel | Convergence | Best For              |
-| --------- | ---------------- | -------- | ----------- | --------------------- |
-| Jacobi    | ❌               | Yes      | Slow        | Parallel hardware     |
-| PGS       | ✅ (Implemented) | No       | Linear      | Real-time boxed LCP   |
-| PSOR      | ✅ (Implemented) | No       | Linear      | Real-time with tuning |
-| BGS       | ❌               | No       | Linear      | Contact problems      |
-| NNCG      | ❌               | No       | Superlinear | Large-scale           |
-| PGS-SM    | ❌               | No       | Better      | Medium problems       |
-| Red-Black | ❌               | 2-phase  | Medium      | GPU                   |
+| Method     | Status           | Parallel | Convergence | Best For              |
+| ---------- | ---------------- | -------- | ----------- | --------------------- |
+| Jacobi     | ✅ (Implemented) | Yes      | Slow        | Parallel hardware     |
+| PGS        | ✅ (Implemented) | No       | Linear      | Real-time boxed LCP   |
+| PSOR       | ✅ (Implemented) | No       | Linear      | Real-time with tuning |
+| Symm. PSOR | ✅ (Implemented) | No       | Linear      | Reduced sweep bias    |
+| BGS        | ✅ (Implemented) | No       | Linear      | Contact problems      |
+| NNCG       | ✅ (Implemented) | No       | Superlinear | Large-scale           |
+| PGS-SM     | ✅ (Implemented) | No       | Better      | Medium problems       |
+| Red-Black  | ✅ (Implemented) | 2-phase  | Medium      | GPU                   |
 
 ## Implementation Priority
 
@@ -598,13 +678,13 @@ Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
 
 ### Phase 2 (For Contact Problems)
 
-5. **BGS** - Natural for multi-contact scenarios
-6. **Direct 2D/3D sub-solvers** - For BGS blocks
+5. ✅ **BGS** - Natural for multi-contact scenarios
+6. ✅ **Direct 2D/3D sub-solvers** - For BGS blocks
 
 ### Phase 3 (Advanced)
 
 7. **NNCG** - Better convergence for large systems
-8. **PGS-SM** - Hybrid approach
+8. ✅ **PGS-SM** - Hybrid approach
 
 ## When to Use Projection Methods
 

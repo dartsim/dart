@@ -14,18 +14,18 @@ Smallest repeatable local loop before a full CI run.
 
 Choose a parallelism cap around two-thirds of logical cores, then set `DART_PARALLEL_JOBS` and `CTEST_PARALLEL_LEVEL` to that value (see [building.md](building.md) for details).
 
+Suggested (Unverified, Linux example):
+
+```bash
+N=$(( ( $(nproc) * 2 ) / 3 ))
+```
+
 Lint/format pass (fastest local sanity check).
 
 Suggested (Unverified):
 
 ```bash
 pixi run lint
-```
-
-**Example (Used in this task):**
-
-```bash
-DART_PARALLEL_JOBS=12 pixi run lint
 ```
 
 Targeted build + test (optional, fastest when a single target fails).
@@ -55,13 +55,8 @@ Targeted tests (optional, but recommended before pushing when behavior changes).
 Suggested (Unverified):
 
 ```bash
-DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test
-```
-
-**Example (Used in this task):**
-
-```bash
-DART_PARALLEL_JOBS=12 pixi run test
+N=$(( ( $(nproc) * 2 ) / 3 ))
+DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run test
 ```
 
 Signals to look for:
@@ -73,15 +68,9 @@ Full validation.
 Suggested (Unverified):
 
 ```bash
-DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run test-all
-DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run -e gazebo test-gz
-```
-
-**Example (Used in this task):**
-
-```bash
-DART_PARALLEL_JOBS=12 pixi run test-all
-DART_PARALLEL_JOBS=12 pixi run -e gazebo test-gz
+N=$(( ( $(nproc) * 2 ) / 3 ))
+DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run test-all
+DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 ```
 
 Signals to look for:
@@ -93,6 +82,7 @@ Signals to look for:
 
 - The lint task can take a while on the first run because it configures and formats; rerun if it was interrupted.
 - Linting runs auto-fixers (formatters/codespell), so expect file diffs even when the code is functionally unchanged; check `git status` before committing.
+- `pixi run test-all` runs linting and documentation builds as part of the suite; expect longer runtime and potential formatting diffs, so review changes before committing.
 - `pixi run lint` can rewrite identifiers via codespell; if a spelling or casing is intentional, add it to `.codespellrc` and re-run lint.
 
 ## Next-Time Accelerators
@@ -391,10 +381,16 @@ ctest --output-on-failure  # Only show output for failing tests
 ### Run benchmarks:
 
 ```bash
-./benchmark/integration/bm_empty
-./benchmark/collision/bm_boxes
-./benchmark/dynamics/bm_kinematics
+pixi run bm boxes
+pixi run bm kinematics
+pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE
+pixi run bm --pixi-help
 ```
+
+Note: LCP solver comparisons use the solver-agnostic harness and the
+`BM_LCP_COMPARE` benchmark so all solvers share the same contract and fixtures.
+See `tests/common/lcpsolver` and `tests/benchmark/lcpsolver` for the sources,
+and keep benchmark outputs under the build tree.
 
 ## CMake Integration
 

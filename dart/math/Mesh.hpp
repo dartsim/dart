@@ -34,6 +34,7 @@
 #define DART_MATH_MESH_HPP_
 
 #include <Eigen/Core>
+#include <Eigen/StdVector>
 
 #include <vector>
 
@@ -49,8 +50,8 @@ public:
   using S = S_;
   using Index = std::size_t;
   using Vector3 = Eigen::Matrix<S, 3, 1>;
-  using Vertices = std::vector<Vector3>;
-  using Normals = std::vector<Vector3>;
+  using Vertices = std::vector<Vector3, Eigen::aligned_allocator<Vector3>>;
+  using Normals = std::vector<Vector3, Eigen::aligned_allocator<Vector3>>;
   using Indices = std::vector<Index>;
 
   /// Destructor.

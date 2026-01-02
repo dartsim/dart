@@ -195,6 +195,7 @@ World::World(const WorldConfig& config)
   : mName(config.name),
     mNameMgrForSkeletons("World::Skeleton | " + config.name, "skeleton"),
     mNameMgrForSimpleFrames("World::SimpleFrame | " + config.name, "frame"),
+    mSensorManager("World::Sensor | " + config.name, "sensor"),
     mGravity(0.0, 0.0, -9.81),
     mTimeStep(0.001),
     mTime(0.0),
@@ -318,6 +319,8 @@ void World::reset()
     skel->clearConstraintImpulses();
     skel->setImpulseApplied(false);
   }
+
+  mSensorManager.resetSensors();
 }
 
 //==============================================================================
@@ -343,6 +346,7 @@ void World::step(bool _resetCommand)
 
   mTime += mTimeStep;
   mFrame++;
+  mSensorManager.updateSensors(*this);
 }
 
 //==============================================================================
@@ -377,6 +381,7 @@ const std::string& World::setName(const std::string& _newName)
 
   mNameMgrForSkeletons.setManagerName("World::Skeleton | " + mName);
   mNameMgrForSimpleFrames.setManagerName("World::SimpleFrame | " + mName);
+  mSensorManager.setManagerName("World::Sensor | " + mName);
 
   return mName;
 }
@@ -704,6 +709,66 @@ std::set<dynamics::SimpleFramePtr> World::removeAllSimpleFrames()
   }
 
   return ptrs;
+}
+
+//==============================================================================
+sensor::SensorPtr World::getSensor(std::size_t index) const
+{
+  return mSensorManager.getSensor(index);
+}
+
+//==============================================================================
+sensor::SensorPtr World::getSensor(const std::string& name) const
+{
+  return mSensorManager.getSensor(name);
+}
+
+//==============================================================================
+std::size_t World::getNumSensors() const
+{
+  return mSensorManager.getNumSensors();
+}
+
+//==============================================================================
+std::string World::addSensor(const sensor::SensorPtr& sensor)
+{
+  return mSensorManager.addSensor(sensor);
+}
+
+//==============================================================================
+void World::removeSensor(const sensor::SensorPtr& sensor)
+{
+  mSensorManager.removeSensor(sensor);
+}
+
+//==============================================================================
+std::set<sensor::SensorPtr> World::removeAllSensors()
+{
+  return mSensorManager.removeAllSensors();
+}
+
+//==============================================================================
+bool World::hasSensor(const sensor::SensorPtr& sensor) const
+{
+  return mSensorManager.hasSensor(sensor);
+}
+
+//==============================================================================
+bool World::hasSensor(const std::string& sensorName) const
+{
+  return mSensorManager.hasSensor(sensorName);
+}
+
+//==============================================================================
+sensor::SensorManager& World::getSensorManager()
+{
+  return mSensorManager;
+}
+
+//==============================================================================
+const sensor::SensorManager& World::getSensorManager() const
+{
+  return mSensorManager;
 }
 
 //==============================================================================

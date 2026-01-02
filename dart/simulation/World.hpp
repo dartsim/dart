@@ -57,6 +57,7 @@
 #include <dart/common/Subject.hpp>
 
 #include <dart/Export.hpp>
+#include <dart/sensor/SensorManager.hpp>
 
 #include <Eigen/Dense>
 
@@ -226,6 +227,41 @@ public:
   /// Remove all SimpleFrames in this world, and return a set of shared
   /// pointers to them, in case you want to recycle them
   std::set<dynamics::SimpleFramePtr> removeAllSimpleFrames();
+
+  //--------------------------------------------------------------------------
+  // Sensor Properties
+  //--------------------------------------------------------------------------
+
+  /// Get the indexed sensor
+  sensor::SensorPtr getSensor(std::size_t index) const;
+
+  /// Find a sensor by name
+  sensor::SensorPtr getSensor(const std::string& name) const;
+
+  /// Get the number of sensors
+  std::size_t getNumSensors() const;
+
+  /// Add a sensor to this world
+  std::string addSensor(const sensor::SensorPtr& sensor);
+
+  /// Remove a sensor from this world
+  void removeSensor(const sensor::SensorPtr& sensor);
+
+  /// Remove all sensors in this world, and return a set of shared pointers to
+  /// them, in case you want to recycle them
+  std::set<sensor::SensorPtr> removeAllSensors();
+
+  /// Returns whether this World contains a sensor.
+  bool hasSensor(const sensor::SensorPtr& sensor) const;
+
+  /// Returns whether this World contains a sensor named @c sensorName.
+  bool hasSensor(const std::string& sensorName) const;
+
+  /// Get the sensor manager.
+  sensor::SensorManager& getSensorManager();
+
+  /// Get the sensor manager (const).
+  const sensor::SensorManager& getSensorManager() const;
 
   //--------------------------------------------------------------------------
   // Collision checking
@@ -489,6 +525,9 @@ protected:
 
   /// NameManager for keeping track of Entities
   dart::common::NameManager<dynamics::SimpleFramePtr> mNameMgrForSimpleFrames;
+
+  /// Manager for sensors in this world
+  sensor::SensorManager mSensorManager;
 
   /// The first indeices of each skeleton's dof in mDofs
   ///

@@ -219,7 +219,20 @@ public:
   /// Get the secondary LCP solver
   math::LcpSolverPtr getSecondaryLcpSolver() const;
 
+  /// Enable or disable split impulse position correction.
+  void setSplitImpulseEnabled(bool enabled);
+
+  /// Get whether split impulse position correction is enabled.
+  bool isSplitImpulseEnabled() const;
+
 protected:
+  /// Solve constrained group with the selected phase.
+  void solveConstrainedGroupInternal(
+      const std::vector<ConstraintBasePtr>& constraints, ConstraintPhase phase);
+
+  /// Solve constrained groups for split impulse position correction.
+  void solvePositionConstrainedGroups();
+
   // TODO(JS): Docstring
   virtual void solveConstrainedGroup(ConstrainedGroup& group);
 
@@ -327,6 +340,9 @@ protected:
 
   /// True if the secondary LCP solver was set explicitly by the caller
   bool mSecondaryLcpSolverSetExplicitly{false};
+
+  /// Enable split impulse position correction.
+  bool mSplitImpulseEnabled{false};
 
   /// Cache data for boxed LCP formulation
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> mA;

@@ -260,6 +260,16 @@ private:
   ::osg::ref_ptr<ImGuiHandler> mHandler;
 };
 
+namespace {
+
+void setCurrentContext(ImGuiContext* context)
+{
+  if (context && ImGui::GetCurrentContext() != context)
+    ImGui::SetCurrentContext(context);
+}
+
+} // namespace
+
 //==============================================================================
 ImGuiHandler::ImGuiHandler()
   : mTime{0.0},
@@ -267,10 +277,10 @@ ImGuiHandler::ImGuiHandler()
     mMouseWheel{0.0f},
     mFramebufferScale{1.0f, 1.0f}
 {
-  ImGui::CreateContext();
+  mContext = ImGui::CreateContext();
+  setCurrentContext(mContext);
 
   ImGui::StyleColorsDark();
-
   ImGui_ImplOpenGL2_Init();
 
 #if IMGUI_VERSION_NUM < 19150
@@ -302,7 +312,15 @@ ImGuiHandler::ImGuiHandler()
 //==============================================================================
 ImGuiHandler::~ImGuiHandler()
 {
-  // Do nothing
+  removeAllWidget();
+
+  if (!mContext)
+    return;
+
+  setCurrentContext(mContext);
+  ImGui_ImplOpenGL2_Shutdown();
+  ImGui::DestroyContext(mContext);
+  mContext = nullptr;
 }
 
 //==============================================================================
@@ -351,8 +369,7 @@ void ImGuiHandler::removeWidget(const std::shared_ptr<ImGuiWidget>& widget)
     return;
   }
 
-  mWidgets.erase(
-      std::remove(mWidgets.begin(), mWidgets.end(), widget), mWidgets.end());
+  std::erase(mWidgets, widget);
 }
 
 //==============================================================================
@@ -368,6 +385,7 @@ bool ImGuiHandler::handle(
     ::osg::Object* /*object*/,
     ::osg::NodeVisitor* /*nodeVisitor*/)
 {
+  setCurrentContext(mContext);
   ImGuiIO& io = ImGui::GetIO();
   const bool wantCaptureMouse = io.WantCaptureMouse;
   const bool wantCaptureKeyboard = io.WantCaptureKeyboard;
@@ -524,6 +542,7 @@ bool ImGuiHandler::handle(
 //==============================================================================
 void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
 {
+  setCurrentContext(mContext);
   ImGui_ImplOpenGL2_NewFrame();
 
   auto& io = ImGui::GetIO();
@@ -582,6 +601,7 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
 //==============================================================================
 void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
 {
+  setCurrentContext(mContext);
   for (const auto& widget : mWidgets) {
     if (widget->isVisible())
       widget->render();
