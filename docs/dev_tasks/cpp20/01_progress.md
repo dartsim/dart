@@ -43,8 +43,8 @@ test-gz`) without changing Gazebo code.
 - Phase 3 checks: `pixi run lint`, `pixi run test`, and
   `pixi run -e gazebo test-gz` (all passed; some deprecation warnings emitted
   from gz-physics during test-gz build).
-- Phase 4: run the standard pixi workflows again after Phase 3 merge conflict
-  resolution and address any warnings or regressions before final merge.
-- Phase 4 checks: `pixi run lint`, `pixi run test`, and
-  `pixi run -e gazebo test-gz` (all passed; gz-physics emitted sign-compare
-  warnings from its vendored gtest headers during the test-gz build).
+- Phase 4: rerun the standard pixi workflows and resolve any regressions before
+  finishing the phase.
+- Phase 4 checks: `pixi run test-all` (local run with 2/3 core count passed)
+  and `pixi run -e gazebo test-gz` (passed; sign-compare warnings emitted from
+  gz-physics vendored gtest headers).
