@@ -1528,7 +1528,7 @@ void readJoint(
   // Use an empty string (rather than "world") to indicate that the joint has no
   // parent
   if (joint.parentName == std::string("world")
-      && _bodyNodes.find("world") == _bodyNodes.end())
+      && !_bodyNodes.contains("world"))
     joint.parentName.clear();
 
   if (parent == _bodyNodes.end() && !joint.parentName.empty()) {

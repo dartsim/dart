@@ -8,9 +8,9 @@ container membership cleanups).
 
 Current status:
 
-- Phase 2 (container membership cleanup) is active; see
+- Phase 8 (container membership cleanup) is active; see
   `docs/dev_tasks/cpp20_followups/00_plan.md`.
-- Phases 0-1 are complete (discovery + internal non-owning views).
+- Phases 6-7 are complete (discovery + internal non-owning views).
 - Keep this task independent of the main cpp20 PRs unless instructed.
 
 Required docs:
