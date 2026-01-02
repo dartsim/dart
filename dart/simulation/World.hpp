@@ -99,6 +99,8 @@ struct WorldConfig final
   struct SolverRouting final
   {
     /// Solver responsible for classic Skeletons.
+    ///
+    /// Currently only ClassicSkeleton is supported; other values assert.
     RigidSolverType skeletons = RigidSolverType::ClassicSkeleton;
 
     /// Solver responsible for ECS-backed simulation objects.

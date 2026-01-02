@@ -755,31 +755,16 @@ TEST(World, RevoluteJointConstraintBasics)
 }
 
 //==============================================================================
-TEST(World, SkeletonNotificationsRouteToConfiguredSolver)
+TEST(World, ClassicSolverTracksSkeletonLifecycle)
 {
-  WorldConfig config;
-  config.solverRouting.skeletons = RigidSolverType::EntityComponent;
-  auto world = std::make_shared<SolverTestWorld>(config);
+  auto world = World::create();
   ASSERT_TRUE(world);
 
-  std::vector<std::string> callLog;
-  auto* classicSolver = world->addSolver(
-      std::make_unique<TrackingSolver>(
-          "classic", callLog, RigidSolverType::ClassicSkeleton, true),
-      false);
-  auto* ecsSolver = world->addSolver(
-      std::make_unique<TrackingSolver>(
-          "ecs", callLog, RigidSolverType::EntityComponent, true),
-      false);
-  ASSERT_TRUE(classicSolver);
-  ASSERT_TRUE(ecsSolver);
+  auto* constraintSolver = world->getConstraintSolver();
+  ASSERT_TRUE(constraintSolver);
 
-  const auto ecsIndex = world->getSolverIndex(ecsSolver);
-  ASSERT_LT(ecsIndex, world->getNumSolvers());
-  ASSERT_TRUE(world->moveSolver(ecsIndex, 1));
-
-  callLog.clear();
-  const auto skeleton1 = createThreeLinkRobot(
+  const auto initialCount = constraintSolver->getSkeletons().size();
+  const auto skeleton = createThreeLinkRobot(
       Eigen::Vector3d(1.0, 1.0, 1.0),
       DOF_X,
       Eigen::Vector3d(1.0, 1.0, 1.0),
@@ -788,35 +773,12 @@ TEST(World, SkeletonNotificationsRouteToConfiguredSolver)
       DOF_Z,
       false,
       false);
-  world->addSkeleton(skeleton1);
 
-  const std::vector<std::string> expectedExisting{"ecs.skeleton_added"};
-  EXPECT_EQ(callLog, expectedExisting);
+  world->addSkeleton(skeleton);
+  EXPECT_EQ(constraintSolver->getSkeletons().size(), initialCount + 1u);
 
-  callLog.clear();
-  const auto skeleton2 = createThreeLinkRobot(
-      Eigen::Vector3d(1.0, 1.0, 1.0),
-      DOF_X,
-      Eigen::Vector3d(1.0, 1.0, 1.0),
-      DOF_Y,
-      Eigen::Vector3d(1.0, 1.0, 1.0),
-      DOF_Z,
-      false,
-      false);
-  world->addSkeleton(skeleton2);
-
-  const std::vector<std::string> expectedNew{"ecs.skeleton_added"};
-  EXPECT_EQ(callLog, expectedNew);
-
-  callLog.clear();
-  world->removeSkeleton(skeleton1);
-  world->removeSkeleton(skeleton2);
-
-  const std::vector<std::string> expectedRemoved{
-      "ecs.skeleton_removed",
-      "ecs.skeleton_removed",
-  };
-  EXPECT_EQ(callLog, expectedRemoved);
+  world->removeSkeleton(skeleton);
+  EXPECT_EQ(constraintSolver->getSkeletons().size(), initialCount);
 }
 
 //==============================================================================
@@ -873,33 +835,21 @@ TEST(World, SolverSteppingOrdersEnabledSolvers)
 }
 
 //==============================================================================
-TEST(World, ActiveRigidSolverUsesSkeletonRouting)
+TEST(World, ActiveRigidSolverUsesClassicSolver)
 {
-  WorldConfig config;
-  config.solverRouting.skeletons = RigidSolverType::EntityComponent;
-  auto world = std::make_shared<SolverTestWorld>(config);
+  auto world = std::make_shared<SolverTestWorld>();
   ASSERT_TRUE(world);
 
-  std::vector<std::string> callLog;
-  auto* ecsSolver = world->addSolver(std::make_unique<TrackingSolver>(
-      "ecs", callLog, RigidSolverType::EntityComponent));
-  auto* classicSolver = world->addSolver(std::make_unique<TrackingSolver>(
-      "classic", callLog, RigidSolverType::ClassicSkeleton));
+  auto* active = world->getActiveRigidSolver();
+  ASSERT_NE(active, nullptr);
+  ASSERT_TRUE(active->getRigidSolverType().has_value());
+  EXPECT_EQ(*active->getRigidSolverType(), RigidSolverType::ClassicSkeleton);
 
-  ASSERT_TRUE(ecsSolver);
-  ASSERT_TRUE(classicSolver);
-
-  const auto ecsIndex = world->getSolverIndex(ecsSolver);
-  ASSERT_LT(ecsIndex, world->getNumSolvers());
-  ASSERT_TRUE(world->moveSolver(ecsIndex, 1));
-
-  EXPECT_EQ(world->getActiveRigidSolver(), ecsSolver);
-
-  EXPECT_TRUE(world->setSolverEnabled(ecsSolver, false));
+  EXPECT_TRUE(world->setSolverEnabled(active, false));
   EXPECT_EQ(world->getActiveRigidSolver(), nullptr);
 
-  EXPECT_TRUE(world->setSolverEnabled(ecsSolver, true));
-  EXPECT_EQ(world->getActiveRigidSolver(), ecsSolver);
+  EXPECT_TRUE(world->setSolverEnabled(active, true));
+  EXPECT_EQ(world->getActiveRigidSolver(), active);
 }
 
 //==============================================================================

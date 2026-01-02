@@ -202,11 +202,20 @@ World::World(const WorldConfig& config)
     mFrame(0),
     mRecording(new Recording(mSkeletons)),
     mEcsData(std::make_unique<EcsData>()),
-    mSkeletonSolverType(config.solverRouting.skeletons),
+    mSkeletonSolverType(RigidSolverType::ClassicSkeleton),
     mObjectSolverType(config.solverRouting.objects),
     onNameChanged(mNameChangedSignal)
 {
   mIndices.push_back(0);
+
+  if (config.solverRouting.skeletons != RigidSolverType::ClassicSkeleton) {
+    DART_ERROR(
+        "World '{}' only supports ClassicRigidSolver for Skeletons. "
+        "Requested solver type {}.",
+        mName,
+        static_cast<int>(config.solverRouting.skeletons));
+    DART_ASSERT(false);
+  }
 
   addSolver(std::make_unique<ClassicRigidSolver>());
   addSolver(std::make_unique<RigidSolver>());
@@ -471,22 +480,21 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
 
   auto* skeletonSolver = getSkeletonSolver();
-  if (skeletonSolver) {
-    if (skeletonSolver->supportsSkeletons()) {
-      skeletonSolver->handleSkeletonAdded(*this, _skeleton);
-    } else {
-      DART_WARN(
-          "World '{}' routes Skeletons to solver '{}', but it does not "
-          "support Skeletons.",
-          mName,
-          skeletonSolver->getName());
-    }
-  } else {
-    DART_WARN(
-        "World '{}' routes Skeletons to solver type {}, but no matching "
-        "solver is registered.",
+  if (!skeletonSolver) {
+    DART_ERROR(
+        "World '{}' requires ClassicRigidSolver for Skeletons, but no "
+        "matching solver is registered.",
+        mName);
+    DART_ASSERT(false);
+  } else if (!skeletonSolver->supportsSkeletons()) {
+    DART_ERROR(
+        "World '{}' requires ClassicRigidSolver for Skeletons, but solver "
+        "'{}' does not support Skeletons.",
         mName,
-        static_cast<int>(mSkeletonSolverType));
+        skeletonSolver->getName());
+    DART_ASSERT(false);
+  } else {
+    skeletonSolver->handleSkeletonAdded(*this, _skeleton);
   }
 
   // Update recording
@@ -530,22 +538,21 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 
   // Notify the configured skeleton solver.
   auto* skeletonSolver = getSkeletonSolver();
-  if (skeletonSolver) {
-    if (skeletonSolver->supportsSkeletons()) {
-      skeletonSolver->handleSkeletonRemoved(*this, _skeleton);
-    } else {
-      DART_WARN(
-          "World '{}' routes Skeletons to solver '{}', but it does not "
-          "support Skeletons.",
-          mName,
-          skeletonSolver->getName());
-    }
-  } else {
-    DART_WARN(
-        "World '{}' routes Skeletons to solver type {}, but no matching "
-        "solver is registered.",
+  if (!skeletonSolver) {
+    DART_ERROR(
+        "World '{}' requires ClassicRigidSolver for Skeletons, but no "
+        "matching solver is registered.",
+        mName);
+    DART_ASSERT(false);
+  } else if (!skeletonSolver->supportsSkeletons()) {
+    DART_ERROR(
+        "World '{}' requires ClassicRigidSolver for Skeletons, but solver "
+        "'{}' does not support Skeletons.",
         mName,
-        static_cast<int>(mSkeletonSolverType));
+        skeletonSolver->getName());
+    DART_ASSERT(false);
+  } else {
+    skeletonSolver->handleSkeletonRemoved(*this, _skeleton);
   }
 
   // Remove _skeleton from mSkeletons
@@ -980,6 +987,16 @@ Solver* World::addSolver(std::unique_ptr<Solver> solver, bool enabled)
   auto* solverPtr = mSolvers.back().solver.get();
 
   const auto solverRigidType = solverPtr->getRigidSolverType();
+  if (solverPtr->supportsSkeletons()
+      && (!solverRigidType
+          || *solverRigidType != RigidSolverType::ClassicSkeleton)) {
+    DART_ERROR(
+        "World '{}' requires ClassicRigidSolver for Skeletons, but solver "
+        "'{}' does not advertise the ClassicSkeleton type.",
+        mName,
+        solverPtr->getName());
+    DART_ASSERT(false);
+  }
   if (solverRigidType && *solverRigidType == mSkeletonSolverType
       && getSkeletonSolver() == solverPtr) {
     if (solverPtr->supportsSkeletons()) {
@@ -987,11 +1004,12 @@ Solver* World::addSolver(std::unique_ptr<Solver> solver, bool enabled)
         solverPtr->handleSkeletonAdded(*this, skeleton);
       }
     } else {
-      DART_WARN(
-          "World '{}' routes Skeletons to solver '{}', but it does not "
-          "support Skeletons.",
+      DART_ERROR(
+          "World '{}' requires ClassicRigidSolver for Skeletons, but solver "
+          "'{}' does not support Skeletons.",
           mName,
           solverPtr->getName());
+      DART_ASSERT(false);
     }
   }
 
@@ -1091,12 +1109,14 @@ const Solver* World::getSolver(const std::string& name) const
 //==============================================================================
 Solver* World::getSkeletonSolver()
 {
+  DART_ASSERT(mSkeletonSolverType == RigidSolverType::ClassicSkeleton);
   return getSolver(mSkeletonSolverType);
 }
 
 //==============================================================================
 const Solver* World::getSkeletonSolver() const
 {
+  DART_ASSERT(mSkeletonSolverType == RigidSolverType::ClassicSkeleton);
   return getSolver(mSkeletonSolverType);
 }
 
