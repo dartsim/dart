@@ -48,24 +48,25 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 
 - Formatting checks fail: run the C++ formatting task and re-run CI. Suggested (Unverified): `pixi run lint-cpp`.
 - Codecov patch failures: add targeted coverage for new lines or branches.
+- Example builds fail because sample code references removed formats or enums; update the example to match the current API (e.g., `dart::io::ModelFormat`).
 - Unit test crashes or segfaults: isolate the failing test from job logs, reproduce locally, and add a regression for the edge case.
 - Job logs are missing or return 404: re-run the single job and/or download the run-level logs archive to inspect failures.
 
 ## Task Recap (General)
 
-This task removed legacy functionality, updated release notes for a breaking change, and validated CI across platforms. CI was monitored with the GitHub CLI, and when a platform job failed or logs were missing, only the failed job was re-run and run-level logs were inspected. The emphasis was on using the repo's standard entry points, keeping CI feedback loops tight, and documenting behavior changes clearly.
+This task reorganized the Python examples into the same category layout as the C++ examples and adjusted the Python example runner to resolve nested paths. CI failures were traced to example build errors caused by API drift and fixed by aligning example code with current headers. The emphasis was on using the repo's standard entry points, keeping CI feedback loops tight, and validating changes with the smallest runnable checks.
 
 ## How We Worked (Repeatable Playbook)
 
 - Confirm the issue still reproduces on the current main branch before implementing changes.
 - Sync with the target branch and inspect the diff before making edits.
-- When removing public APIs or formats, update `CHANGELOG.md` under breaking changes.
 - When resuming work, identify the PR associated with the current branch before monitoring CI.
 - Run lint before committing so formatter/codespell changes are captured.
 - Run the smallest local validation first, then expand to full test or CI as needed.
 - Resolve merge conflicts before re-running CI so the PR remains mergeable.
 - When a job fails inside a still-running workflow, pull the job logs directly and fix the smallest failure first.
 - If a single CI job fails, re-run just that job using its databaseId rather than restarting the entire workflow.
+- When example builds fail, update the example code to match the current API surface before re-running CI.
 - If job logs are missing, download the run-level logs archive and scan it for the failure instead of guessing.
 - If coverage gates fail, add targeted tests for new lines before re-running CI.
 - Push each commit and monitor GitHub Actions until all jobs complete.
@@ -74,6 +75,7 @@ This task removed legacy functionality, updated release notes for a breaking cha
 
 - Identify the first failing step in the CI job log, then reproduce locally with the same build toggles.
 - Run the smallest failing test or target, then push and re-run CI.
+- If the failure is in the examples build, fix the first compile error in the example source before re-running CI.
 - If the failure is formatting-related, run the C++ formatter before retrying CI.
 - Success signal: the failing job completes without `-Werror` compile failures or Python aborts.
 
@@ -149,7 +151,7 @@ to keep assertions enabled outside a Debug build.
 
 - When running dartpy tests against an in-tree build, set `PYTHONPATH` and `DARTPY_RUNTIME_DIR` to the build output.
 - If a test requires an optional backend, guard it (skip) or ensure the backend toggle is enabled in the build configuration.
-- When a test depends on randomized input, prefer deterministic generation to keep cross-platform CI stable.
+- If editor or IDE context references a path, verify it exists before making edits or writing guidance.
 - Re-run only the failed CI job (via job databaseId) to keep feedback loops short.
 
 ## Workflow Architecture
