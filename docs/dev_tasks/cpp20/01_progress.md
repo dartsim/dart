@@ -53,4 +53,6 @@
   from gz-physics during test-gz build).
 - Phase 4: rerun the standard pixi workflows and resolve any regressions before
   finishing the phase.
-- Phase 4 checks: `pixi run test-all` (local run with 2/3 core count passed).
+- Phase 4 checks: `pixi run test-all` (local run with 2/3 core count passed)
+  and `pixi run -e gazebo test-gz` (passed; sign-compare warnings emitted from
+  gz-physics vendored gtest headers).
