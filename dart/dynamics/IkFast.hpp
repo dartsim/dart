@@ -42,6 +42,8 @@
 
 #include <dart/dynamics/InverseKinematics.hpp>
 
+#include <span>
+
 namespace dart {
 namespace dynamics {
 
@@ -151,7 +153,7 @@ public:
       const Analytical::Properties& properties = Analytical::Properties());
 
   // Documentation inherited.
-  const std::vector<InverseKinematics::Analytical::Solution>& computeSolutions(
+  std::span<const InverseKinematics::Analytical::Solution> computeSolutions(
       const Eigen::Isometry3d& desiredBodyTf) override;
 
   /// Computes forward kinematics given joint positions where the dimension is
@@ -160,11 +162,11 @@ public:
 
   /// Returns the indices of the DegreeOfFreedoms that are part of the joints
   /// that IkFast solves for.
-  const std::vector<std::size_t>& getDofs() const override;
+  std::span<const std::size_t> getDofs() const override;
 
   /// Returns the indices of the DegreeOfFreedoms that are part of the joints
   /// that IkFast solves but the values should be set by the user in prior.
-  const std::vector<std::size_t>& getFreeDofs() const;
+  std::span<const std::size_t> getFreeDofs() const;
 
   /// Returns true if this IkFast is ready to solve.
   virtual bool isConfigured() const;

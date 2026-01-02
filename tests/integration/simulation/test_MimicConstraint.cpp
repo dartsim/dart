@@ -149,31 +149,33 @@ void retargetMimicJoints(const WorldPtr& world, const std::string& baselineName)
       if (!joint)
         continue;
 
-      auto props = joint->getMimicDofProperties();
+      const auto props = joint->getMimicDofProperties();
       if (props.empty())
         continue;
 
       if (skeleton == baseline) {
-        props.assign(joint->getNumDofs(), {});
-        joint->setMimicJointDofs(props);
+        joint->setMimicJointDofs(
+            std::vector<dart::dynamics::MimicDofProperties>(
+                joint->getNumDofs()));
         joint->setActuatorType(dart::dynamics::Joint::FORCE);
         joint->setUseCouplerConstraint(false);
         continue;
       }
 
       bool updated = false;
-      for (auto& prop : props) {
+      for (std::size_t dofIndex = 0; dofIndex < props.size(); ++dofIndex) {
+        auto prop = props[dofIndex];
         if (prop.mReferenceJoint == nullptr)
           continue;
 
         auto* ref = baseline->getJoint(prop.mReferenceJoint->getName());
         ASSERT_NE(nullptr, ref);
         prop.mReferenceJoint = ref;
+        joint->setMimicJointDof(dofIndex, prop);
         updated = true;
       }
 
       if (updated) {
-        joint->setMimicJointDofs(props);
         joint->setActuatorType(Joint::MIMIC);
         joint->setUseCouplerConstraint(false);
       }

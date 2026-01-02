@@ -37,6 +37,7 @@
 
 #include <dart/Export.hpp>
 
+#include <span>
 #include <unordered_set>
 
 namespace dart {
@@ -181,7 +182,7 @@ public:
   const IKHierarchy& getIKHierarchy() const;
 
   /// Compute the null spaces of each level of the hierarchy
-  const std::vector<Eigen::MatrixXd>& computeNullSpaces() const;
+  std::span<const Eigen::MatrixXd> computeNullSpaces() const;
 
   /// Get the current joint positions of the Skeleton associated with this
   /// IK module.

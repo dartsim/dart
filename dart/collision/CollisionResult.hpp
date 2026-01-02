@@ -37,6 +37,7 @@
 
 #include <dart/Export.hpp>
 
+#include <span>
 #include <unordered_set>
 #include <vector>
 
@@ -67,7 +68,7 @@ public:
   const Contact& getContact(std::size_t index) const;
 
   /// Return contacts
-  const std::vector<Contact>& getContacts() const;
+  std::span<const Contact> getContacts() const;
 
   /// Return the set of BodyNodes that are in collision
   const std::unordered_set<const dynamics::BodyNode*>& getCollidingBodyNodes()

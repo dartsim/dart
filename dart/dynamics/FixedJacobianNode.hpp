@@ -37,6 +37,8 @@
 
 #include <dart/Export.hpp>
 
+#include <span>
+
 namespace dart {
 namespace dynamics {
 
@@ -58,7 +60,7 @@ public:
   std::size_t getDependentGenCoordIndex(std::size_t _arrayIndex) const override;
 
   // Documentation inherited
-  const std::vector<std::size_t>& getDependentGenCoordIndices() const override;
+  std::span<const std::size_t> getDependentGenCoordIndices() const override;
 
   // Documentation inherited
   std::size_t getNumDependentDofs() const override;
@@ -70,10 +72,10 @@ public:
   const DegreeOfFreedom* getDependentDof(std::size_t _index) const override;
 
   // Documentation inherited
-  const std::vector<DegreeOfFreedom*>& getDependentDofs() override;
+  std::span<DegreeOfFreedom* const> getDependentDofs() override;
 
   // Documentation inherited
-  const std::vector<const DegreeOfFreedom*>& getDependentDofs() const override;
+  std::span<const DegreeOfFreedom* const> getDependentDofs() const override;
 
   // Documentation inherited
   const std::vector<const DegreeOfFreedom*> getChainDofs() const override;

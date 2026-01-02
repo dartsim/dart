@@ -2,7 +2,7 @@
 
 ## Status
 
-- Draft: initial plan defined; execution not started.
+- Active: executing phases; Phase 3 in progress.
 
 ## Objective
 
@@ -10,9 +10,10 @@ Adopt C++20 idioms across the codebase with no behavior changes.
 
 ## Guardrails
 
-- No functional changes, no ABI breaks, no new dependencies.
-- Prefer internal-only changes; if public headers are touched, keep signatures
-  stable.
+- No functional changes, no new dependencies.
+- Public API/ABI breaks are acceptable for DART 7 when needed for span
+  migrations, but Gazebo must remain compatible (`pixi run -e gazebo test-gz`
+  passes) without changing Gazebo code.
 - Execute phases sequentially; update `docs/dev_tasks/cpp20/01_progress.md` and
   run pixi checks before starting the next phase.
 - Follow the code-style C++20 guidance: avoid `std::format` until the toolchain
@@ -45,14 +46,14 @@ Adopt C++20 idioms across the codebase with no behavior changes.
   clarity without changing behavior.
 - Replace manual container cleanup with `std::erase_if` where applicable.
 
-## Phase 3 - Additive public header updates
+## Phase 3 - Public API span migrations
 
-- Add overloads or helper types that expose C++20 convenience without removing
-  existing APIs.
-- Preserve ABI by keeping existing exported signatures and layouts intact.
+- Replace const vector-reference getters with `std::span` return types.
+- Remove redundant span helper accessors now covered by the primary getters.
+- Keep behavior unchanged while allowing API/ABI breaks where required.
 
 ## Phase 4 - Consolidation and validation
 
 - Run the standard `pixi run` workflows and resolve any warnings introduced by
-  modernization.
+  modernization, including `pixi run -e gazebo test-gz`.
 - Update docs only if new guidance is needed for future maintainers.

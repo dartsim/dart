@@ -38,6 +38,7 @@
 
 #include <dart/common/Deprecated.hpp>
 
+#include <span>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -112,7 +113,7 @@ public:
   std::vector<BodyNode*>& getBodyNodes() override;
 
   // Documentation inherited
-  const std::vector<const BodyNode*>& getBodyNodes() const override;
+  std::span<const BodyNode* const> getBodyNodes() const override;
 
   /// @copydoc MetaSkeleton::getBodyNodes(const std::string&).
   ///
@@ -194,7 +195,7 @@ public:
   const DegreeOfFreedom* getDof(std::size_t _idx) const override;
 
   // Documentation inherited
-  const std::vector<DegreeOfFreedom*>& getDofs() override;
+  std::span<DegreeOfFreedom* const> getDofs() override;
 
   // Documentation inherited
   std::vector<const DegreeOfFreedom*> getDofs() const override;
