@@ -123,7 +123,8 @@
   relevant docs to describe legacy backends.
 - Legacy detector adapters now forward to the built-in collision engine for API compatibility.
 - Adapter headers now use local stub types, and optional build toggles and find modules are removed.
-- Dependency removal is in progress for legacy backends: build/pixi cleanup is done, remaining work includes trimming legacy detector implementation files and package metadata.
+- Dependency removal is complete for legacy backends: build/pixi cleanup is done, build lists are trimmed, and colcon metadata is updated.
+- Updated collision benchmarks, integration tests, and python world test to use the built-in detector; backend-specific test files now skip for unsupported shapes (heightmap, mesh, capsule, convex mesh).
 - Unit/integration collision tests now run against the built-in detector only, and the primitive contact matrix test was renamed.
 - Added a dartpy binding to toggle built-in raycast and updated python collision tests to use it.
 
@@ -133,8 +134,8 @@
 - Revisit cylinder contact point accuracy and containment normals to re-enable skipped checks.
 - Re-run the focused ctest set and update task docs with new results.
 - Use test failures to drive missing-feature work in the core detector before returning to the example pipeline.
-- Strip legacy detector implementations down to adapter-only aliases and update tests to use the built-in detector.
-- Re-run `pixi run -e gazebo test-gz` after removing legacy detector implementation paths and update task docs with results.
+- Re-run `pixi run -e gazebo test-gz` after the test updates and update task docs with results.
+- Implement missing shape support needed to re-enable skipped tests (heightmap, mesh, capsule, convex mesh).
 - Extend raycast coverage to edge cases and future shape types.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Explore additional distance broadphase pruning and candidate ordering improvements.
