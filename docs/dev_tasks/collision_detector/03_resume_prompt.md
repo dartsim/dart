@@ -122,7 +122,7 @@ Current status:
 - Added plane-aligned nearest point selection for box-plane, sphere-plane, and cylinder-plane distances.
 - Updated ellipsoid-as-sphere core radius to use diameters.
 - Fixed box inside-hit raycast normal/fraction selection.
-- Latest local runs: `pixi run build-tests` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_Distance` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R INTEGRATION_collision_PrimitiveContactMatrix` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R INTEGRATION_simulation_MimicConstraint` passes with `MimicConstraint.TracksReferenceLongRun` skipped.
+- Latest local runs: `pixi run build-tests` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_Distance` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R INTEGRATION_collision_PrimitiveContactMatrix` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R INTEGRATION_simulation_MimicConstraint` passes with `MimicConstraint.TracksReferenceLongRun` skipped; `pixi run -e gazebo test-gz` fails in common collision/joint features with low contact counts and a follow-on crash.
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Added tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
 - Added tilted plane offset coverage for cylinder-plane nearest points.
@@ -138,7 +138,7 @@ Current status:
   deprecation notes.
 - Legacy detector adapters now forward to the built-in collision engine for API compatibility.
 - Adapter headers now use local stub types instead of external includes.
-- Dependency removal is complete for build and packaging: pixi environments, CMake modules, top-level link lists, and package metadata are cleaned.
+- Dependency removal is in progress for legacy backends: build/pixi cleanup is done, remaining work includes trimming legacy detector implementation files and package metadata.
 - Unit/integration collision tests now run against the built-in detector only, and the primitive contact matrix test was renamed.
 - Added a dartpy binding to toggle built-in raycast and updated python collision tests to use it.
 - Updated unit distance expectations to match built-in ellipsoid-as-sphere results.
@@ -160,6 +160,8 @@ Next focus:
 - Decide how to restore long-run mimic tracking coverage (currently skipped) once stability improves.
 - Revisit cylinder contact point accuracy and containment normals to re-enable skipped checks.
 - Re-run the focused ctest set and update task docs with new results.
+- Strip legacy detector implementations down to adapter-only aliases and update tests to use the built-in detector.
+- Re-run `pixi run -e gazebo test-gz` after removing legacy detector implementation paths and update task docs.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Extend raycast coverage to additional edge cases and future shape types.
 - Keep task docs updated after each checkpoint.

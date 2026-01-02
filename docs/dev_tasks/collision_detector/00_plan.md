@@ -6,7 +6,7 @@
 - Phase 1 (architecture proposal): complete
 - Phase 2 (core implementation): in progress
 - Phase 2.5 (default switch and selection deprecation): complete
-- Phase 3 (legacy dependency removal): complete
+- Phase 3 (legacy dependency removal + adapter-only compatibility): in progress
 - Raycast MVP runs in DartCollisionEngine for supported primitives; distance MVP covers primitives.
 - Raycast benchmark added for baseline tracking.
 - Core engine implementation files live under `dart/collision/dart/engine`.
@@ -20,6 +20,7 @@
 - Maintain integration with the constraint solver and simulation pipeline.
 - Keep the existing gazebo integration workflow passing without additional patching.
 - Remove legacy backend dependencies from build configuration, pixi environments, and container images.
+- Keep legacy detector APIs as thin aliases of the built-in detector.
 
 ## Non-goals
 
@@ -47,7 +48,7 @@
 4. Default switch and deprecations: update defaults, deprecate backend
    selection, and migrate examples/docs.
 5. Legacy dependency removal: remove external backend dependencies while
-   preserving API compatibility.
+   keeping compatibility adapters as aliases.
 6. Feature parity: collision, distance, raycast, filtering, contact generation,
    and self-collision semantics.
 7. Performance parity: profiling, targeted optimizations, and benchmark
@@ -79,6 +80,7 @@
 
 - Contact generation differences affecting solver stability.
 - Missing feature coverage (distance, raycast, mesh contact fidelity).
+- Test expectations tied to legacy detector behavior.
 - Performance regressions in broadphase or narrowphase.
 - Standalone packaging and ABI surface complexity.
 - Downstream migration friction.
@@ -87,6 +89,7 @@
 
 - Existing collision tests pass with the new detector as default.
 - Legacy adapter APIs remain available without external dependencies.
+- Compatibility adapters return the built-in detector behavior.
 - Performance meets defined parity thresholds on representative benchmarks.
 - Contact conventions remain consistent with current expectations.
 - Standalone library builds and installs cleanly, and integrates with DART.

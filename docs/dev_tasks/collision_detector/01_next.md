@@ -100,7 +100,7 @@
 - Moved core engine implementation files into `dart/collision/dart/engine` and updated includes to use the engine path.
 - Renamed adapter file names to `DartCollision*` and updated includes to match the new paths.
 - Gated DART raycast behind `DARTCollisionDetector::setRaycastEnabled` to keep the gazebo ray intersection expectations unchanged; DART raycast tests and benchmarks enable it explicitly.
-- Verified `pixi run -e gazebo test-gz` passes after the layout and raycast gating changes.
+- Latest `pixi run -e gazebo test-gz` fails in common collision/joint features tests with low contact counts and a follow-on crash; missing shape support and contact coverage remain.
 - Fixed CI build issues by adding an out-of-line `DARTCollisionDetector` destructor, updating distance filter tests to use shared_ptrs, and formatting the engine file.
 - Fixed plane AABB handling to avoid NaNs and restored single-group distance result ordering to match group insertion order.
 - Added axis-aligned distance paths for box-box, cylinder-box, and parallel cylinder-cylinder cases, plus plane-aligned nearest point selection for box-plane, sphere-plane, and cylinder-plane.
@@ -123,7 +123,7 @@
   relevant docs to describe legacy backends.
 - Legacy detector adapters now forward to the built-in collision engine for API compatibility.
 - Adapter headers now use local stub types, and optional build toggles and find modules are removed.
-- Dependency removal is complete for build and packaging: pixi environments, top-level link lists, and package metadata are cleaned.
+- Dependency removal is in progress for legacy backends: build/pixi cleanup is done, remaining work includes trimming legacy detector implementation files and package metadata.
 - Unit/integration collision tests now run against the built-in detector only, and the primitive contact matrix test was renamed.
 - Added a dartpy binding to toggle built-in raycast and updated python collision tests to use it.
 
@@ -133,6 +133,8 @@
 - Revisit cylinder contact point accuracy and containment normals to re-enable skipped checks.
 - Re-run the focused ctest set and update task docs with new results.
 - Use test failures to drive missing-feature work in the core detector before returning to the example pipeline.
+- Strip legacy detector implementations down to adapter-only aliases and update tests to use the built-in detector.
+- Re-run `pixi run -e gazebo test-gz` after removing legacy detector implementation paths and update task docs with results.
 - Extend raycast coverage to edge cases and future shape types.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Explore additional distance broadphase pruning and candidate ordering improvements.
