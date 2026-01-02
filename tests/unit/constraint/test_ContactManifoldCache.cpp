@@ -236,9 +236,11 @@ TEST(ContactManifoldCache, RetainsPointsAcrossFrames)
   EXPECT_EQ(output.size(), 2u);
   EXPECT_TRUE(hasPoint(output, Eigen::Vector3d(0.0, 0.0, 0.0)));
   EXPECT_TRUE(hasPoint(output, Eigen::Vector3d(0.2, 0.0, 0.0)));
+  const auto rawContacts = std::vector<collision::Contact>(
+      raw.getContacts().begin(), raw.getContacts().end());
   EXPECT_LT(
       churnCount(firstOutput, output),
-      churnCount(firstOutput, raw.getContacts()));
+      churnCount(firstOutput, rawContacts));
 }
 
 TEST(ContactManifoldCache, CapsContactsAndKeepsDeepest)
