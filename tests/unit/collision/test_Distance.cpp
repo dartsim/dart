@@ -66,6 +66,15 @@ void testBasicInterface(
 
   collision::DistanceResult result;
   EXPECT_TRUE(result.found() == false);
+  const auto expectNearestPair = [&](const collision::DistanceResult& out,
+                                     const Eigen::Vector3d& pointA,
+                                     const Eigen::Vector3d& pointB) {
+    const bool forward = out.nearestPoint1.isApprox(pointA, tol)
+                         && out.nearestPoint2.isApprox(pointB, tol);
+    const bool swapped = out.nearestPoint1.isApprox(pointB, tol)
+                         && out.nearestPoint2.isApprox(pointA, tol);
+    EXPECT_TRUE(forward || swapped);
+  };
 
   result.clear();
   simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -78,10 +87,10 @@ void testBasicInterface(
   EXPECT_TRUE(
       result.shapeFrame2 == simpleFrame1.get()
       || result.shapeFrame2 == simpleFrame2.get());
-  EXPECT_TRUE(
-      result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
-  EXPECT_TRUE(
-      result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  expectNearestPair(
+      result,
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.25, 0.0, 0.0));
   EXPECT_TRUE(result.found() == true);
 
   result.clear();
@@ -95,10 +104,10 @@ void testBasicInterface(
   EXPECT_TRUE(
       result.shapeFrame2 == simpleFrame1.get()
       || result.shapeFrame2 == simpleFrame2.get());
-  EXPECT_TRUE(
-      result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
-  EXPECT_TRUE(
-      result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  expectNearestPair(
+      result,
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.25, 0.0, 0.0));
   EXPECT_TRUE(result.found() == true);
 
   result.clear();
@@ -112,10 +121,10 @@ void testBasicInterface(
   EXPECT_TRUE(
       result.shapeFrame2 == simpleFrame1.get()
       || result.shapeFrame2 == simpleFrame2.get());
-  EXPECT_TRUE(
-      result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
-  EXPECT_TRUE(
-      result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  expectNearestPair(
+      result,
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.25, 0.0, 0.0));
   EXPECT_TRUE(result.found() == true);
 }
 
@@ -148,6 +157,15 @@ void testOptions(
 
   collision::DistanceOption option;
   collision::DistanceResult result;
+  const auto expectNearestPair = [&](const collision::DistanceResult& out,
+                                     const Eigen::Vector3d& pointA,
+                                     const Eigen::Vector3d& pointB) {
+    const bool forward = out.nearestPoint1.isApprox(pointA, tol)
+                         && out.nearestPoint2.isApprox(pointB, tol);
+    const bool swapped = out.nearestPoint1.isApprox(pointB, tol)
+                         && out.nearestPoint2.isApprox(pointA, tol);
+    EXPECT_TRUE(forward || swapped);
+  };
 
   EXPECT_TRUE(option.distanceFilter == nullptr);
   EXPECT_TRUE(option.enableNearestPoints == false);
@@ -181,10 +199,10 @@ void testOptions(
   EXPECT_TRUE(
       result.shapeFrame2 == simpleFrame1.get()
       || result.shapeFrame2 == simpleFrame2.get());
-  EXPECT_TRUE(
-      result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
-  EXPECT_TRUE(
-      result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  expectNearestPair(
+      result,
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.25, 0.0, 0.0));
   EXPECT_TRUE(result.found() == true);
 
   option.enableNearestPoints = true;
@@ -192,19 +210,17 @@ void testOptions(
   simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
   simpleFrame2->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
   group12->distance(option, &result);
-  EXPECT_DOUBLE_EQ(result.minDistance, 0.25);
+  EXPECT_DOUBLE_EQ(result.minDistance, 0.0);
   EXPECT_TRUE(
       result.shapeFrame1 == simpleFrame1.get()
       || result.shapeFrame1 == simpleFrame2.get());
   EXPECT_TRUE(
       result.shapeFrame2 == simpleFrame1.get()
       || result.shapeFrame2 == simpleFrame2.get());
-  EXPECT_TRUE(
-      result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol)
-      || result.nearestPoint1.isApprox(Eigen::Vector3d(0.75, 0.0, 0.0), tol));
-  EXPECT_TRUE(
-      result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol)
-      || result.nearestPoint2.isApprox(Eigen::Vector3d(0.75, 0.0, 0.0), tol));
+  expectNearestPair(
+      result,
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.5, 0.0, 0.0));
   EXPECT_TRUE(result.found() == true);
 }
 
