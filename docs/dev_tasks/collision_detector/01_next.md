@@ -122,9 +122,11 @@
 - Migrated examples and tutorials away from backend-selection APIs and updated
   relevant docs to describe legacy backends.
 - Legacy detector adapters now forward to the built-in collision engine for API compatibility.
+- Dependency removal from build configuration, pixi environments, and container images is in progress.
 
 ## Next Actions
 
+- Remove legacy dependency plumbing from CMake, pixi environments, and container images while keeping adapter APIs.
 - Fix failing `pixi run -e gazebo test-gz` cases (COMMON_TEST_collisions_dartsim, COMMON_TEST_detachable_joint_dartsim, COMMON_TEST_joint_features_dartsim, COMMON_TEST_simulation_features_dartsim) and resolve the simulation features segfault.
 - Audit collision-related tests that still select legacy detectors and migrate
   them to the built-in detector when feasible.

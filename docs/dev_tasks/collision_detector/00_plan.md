@@ -5,26 +5,28 @@
 - Phase 0 (research and inventory): complete
 - Phase 1 (architecture proposal): complete
 - Phase 2 (core implementation): in progress
-- Phase 2.5 (default switch and backend-selection deprecation): in progress
+- Phase 2.5 (default switch and selection deprecation): complete
+- Phase 3 (legacy dependency removal): in progress
 - Raycast MVP runs in DartCollisionEngine for supported primitives; distance MVP covers primitives.
 - Raycast benchmark added for baseline tracking.
 - Core engine implementation files live under `dart/collision/dart/engine`.
 
 ## Scope
 
-- Replace reliance on external collision backends with a new or revised in-house detector.
+- Replace reliance on external collision backends with the built-in detector.
 - Preserve current public API behavior for collision, distance, and raycast queries.
 - Keep contact conventions stable (normal direction, penetration depth semantics, filtering).
 - Provide a standalone build and installable library with clear CMake targets.
 - Maintain integration with the constraint solver and simulation pipeline.
 - Keep the existing gazebo integration workflow passing without additional patching.
+- Remove legacy backend dependencies from build configuration, pixi environments, and container images.
 
 ## Non-goals
 
 - No redesign of the constraint solver algorithms beyond required integration hooks.
 - No broad refactor of dynamics or IO APIs unless required for collision coupling.
-- No removal of legacy backends without a staged deprecation path.
 - No new build entry points outside existing pixi workflows.
+- No expansion of non-primitive narrowphase beyond the minimal shapes needed for downstream tests.
 
 ## Decisions
 
@@ -44,17 +46,19 @@
 3. Core implementation: new detector core, adapters, and compatibility layers.
 4. Default switch and deprecations: update defaults, deprecate backend
    selection, and migrate examples/docs.
-5. Feature parity: collision, distance, raycast, filtering, contact generation,
+5. Legacy dependency removal: remove external backend dependencies while
+   preserving API compatibility.
+6. Feature parity: collision, distance, raycast, filtering, contact generation,
    and self-collision semantics.
-6. Performance parity: profiling, targeted optimizations, and benchmark
+7. Performance parity: profiling, targeted optimizations, and benchmark
    coverage.
-7. Migration and dependency removal: downstream guidance and cleanup.
+8. Migration and cleanup: downstream guidance and packaging follow-through.
 
 ## Deprecation and Migration Strategy
 
 - Introduce the new detector behind existing factories and configuration keys.
-- Keep legacy backends available during transition with clear deprecation warnings.
-- Maintain compatibility stubs until the removal milestone is reached.
+- Keep legacy adapters available during transition with clear deprecation warnings.
+- Maintain compatibility stubs while removing external dependencies.
 - Provide a concise migration guide focused on behavior changes and build toggles.
 
 ## Test Plan
@@ -82,6 +86,7 @@
 ## Acceptance Criteria
 
 - Existing collision tests pass with the new detector as default.
+- Legacy adapter APIs remain available without external dependencies.
 - Performance meets defined parity thresholds on representative benchmarks.
 - Contact conventions remain consistent with current expectations.
 - Standalone library builds and installs cleanly, and integrates with DART.

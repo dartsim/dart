@@ -109,6 +109,7 @@
   constraint solver construction.
 - Deprecated backend-selection APIs and added deprecation notes to legacy
   detector classes.
+- Dependency removal from build configuration, pixi environments, and container images is in progress.
 - Updated `.skel` parsing to ignore collision detector selection with a
   deprecation warning.
 - Migrated examples/tutorials away from backend-selection APIs and added

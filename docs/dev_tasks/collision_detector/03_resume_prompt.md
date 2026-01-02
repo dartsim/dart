@@ -137,6 +137,7 @@ Current status:
 - Backend-selection APIs are deprecated; legacy detector classes carry
   deprecation notes.
 - Legacy detector adapters now forward to the built-in collision engine for API compatibility.
+- Dependency removal from build configuration, pixi environments, and container images is in progress.
 - Examples/tutorials migrated off backend-selection APIs; tests/benchmarks
   suppress deprecated calls.
 - `.skel` collision detector selection is deprecated and ignored (with warning).
@@ -150,6 +151,7 @@ Where to look:
 
 Next focus:
 
+- Remove legacy dependency plumbing from CMake, pixi environments, and container images while keeping adapter APIs.
 - Audit collision-related tests that still use legacy detectors and migrate
   them to the built-in detector as coverage permits.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
