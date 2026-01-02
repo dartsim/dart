@@ -10,6 +10,8 @@ Current status:
 
 - Phase 4 (consolidation and validation) is active on `cpp20/phase4`.
 - PR: dartsim/dart#2367 (update as needed).
+- Latest change: remove span-to-vector conversion in
+  `tests/integration/io/test_IkFast.cpp`.
 - Local validation: `pixi run test-all` and `pixi run -e gazebo test-gz` passed;
   gz-physics emits sign-compare warnings from vendored gtest headers.
 

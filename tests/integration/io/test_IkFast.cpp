@@ -166,7 +166,6 @@ TEST(IkFast, LoadWamArmIk)
   EXPECT_TRUE(!solutions.empty());
 
   const auto dofs = ikfast->getDofs();
-  const std::vector<std::size_t> dofIndices(dofs.begin(), dofs.end());
 
   for (const auto& solution : solutions) {
     ASSERT_EQ(solution.mConfig.size(), 6);
@@ -174,7 +173,7 @@ TEST(IkFast, LoadWamArmIk)
     if (solution.mValidity != dynamics::InverseKinematics::Analytical::VALID)
       continue;
 
-    wam->setPositions(dofIndices, solution.mConfig);
+    wam->setPositions(dofs, solution.mConfig);
     Eigen::Isometry3d newTf = ee->getTransform();
     EXPECT_TRUE(equals(targetFrame->getTransform(), newTf, 1e-2));
   }
