@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase 4 in progress: span input consolidation.
+- Phase 5 in progress: string/view cleanup.
 
 ## Goal
 

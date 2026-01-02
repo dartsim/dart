@@ -37,12 +37,13 @@
 
 #include <regex>
 #include <sstream>
+#include <string_view>
 
 #include <cassert>
 
-static bool startsWith(const std::string& _target, const std::string& _prefix)
+static bool startsWith(std::string_view target, std::string_view prefix)
 {
-  return _target.substr(0, _prefix.size()) == _prefix;
+  return target.starts_with(prefix);
 }
 
 namespace dart {
