@@ -43,7 +43,7 @@
 
 namespace dart::simulation {
 
-ClassicRigidSolver::ClassicRigidSolver() : Solver("classic_rigid")
+ClassicRigidSolver::ClassicRigidSolver() : WorldSolver("classic_rigid")
 {
   DART_SUPPRESS_DEPRECATED_BEGIN
   mConstraintSolver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
@@ -67,11 +67,6 @@ bool ClassicRigidSolver::supportsCollision() const
   return true;
 }
 
-bool ClassicRigidSolver::supportsSkeletons() const
-{
-  return true;
-}
-
 void ClassicRigidSolver::setConstraintSolver(
     constraint::UniqueConstraintSolverPtr solver)
 {
@@ -80,9 +75,8 @@ void ClassicRigidSolver::setConstraintSolver(
     return;
   }
 
-  if (mConstraintSolver) {
+  if (mConstraintSolver)
     solver->setFromOtherConstraintSolver(*mConstraintSolver);
-  }
 
   mConstraintSolver = std::move(solver);
   mConstraintSolver->setTimeStep(mTimeStep);
@@ -160,16 +154,14 @@ void ClassicRigidSolver::handleSkeletonRemoved(
 void ClassicRigidSolver::setTimeStep(double timeStep)
 {
   mTimeStep = timeStep;
-  if (mConstraintSolver) {
+  if (mConstraintSolver)
     mConstraintSolver->setTimeStep(timeStep);
-  }
 }
 
 void ClassicRigidSolver::reset(World&)
 {
-  if (mConstraintSolver) {
+  if (mConstraintSolver)
     mConstraintSolver->clearLastCollisionResult();
-  }
 }
 
 void ClassicRigidSolver::step(World& world, bool resetCommand)
@@ -178,9 +170,8 @@ void ClassicRigidSolver::step(World& world, bool resetCommand)
   {
     DART_PROFILE_SCOPED_N("ClassicRigidSolver::step - Integrate velocity");
     world.eachSkeleton([&](dynamics::Skeleton* skel) {
-      if (!skel->isMobile()) {
+      if (!skel->isMobile())
         return true;
-      }
 
       skel->computeForwardDynamics();
       skel->integrateVelocities(mTimeStep);
@@ -196,9 +187,8 @@ void ClassicRigidSolver::step(World& world, bool resetCommand)
 
   // Compute velocity changes given constraint impulses
   world.eachSkeleton([&](dynamics::Skeleton* skel) {
-    if (!skel->isMobile()) {
+    if (!skel->isMobile())
       return true;
-    }
 
     if (skel->isImpulseApplied()) {
       skel->computeImpulseForwardDynamics();

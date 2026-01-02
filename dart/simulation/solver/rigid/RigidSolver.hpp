@@ -33,16 +33,12 @@
 #ifndef DART_SIMULATION_SOLVER_RIGIDSOLVER_HPP_
 #define DART_SIMULATION_SOLVER_RIGIDSOLVER_HPP_
 
-#include "dart/simulation/solver/Solver.hpp"
+#include "dart/simulation/solver/WorldSolver.hpp"
 
 namespace dart::simulation {
 
-/// Rigid solver backed by an ECS registry for new simulation objects
-/// (`simulation::object::Object` derivatives).
-///
-/// Skeletons remain on the legacy pipeline and are handled by
-/// ClassicRigidSolver only.
-class DART_API RigidSolver final : public Solver
+/// Rigid solver backed by an ECS registry for cache-friendly workflows.
+class DART_API RigidSolver final : public WorldSolver
 {
 public:
   RigidSolver();
@@ -54,11 +50,9 @@ public:
   void reset(World& world) override;
   void step(World& world, bool resetCommand) override;
   void sync(World& world) override;
-  void handleEntityAdded(World& world, EcsEntity entity) override;
-  void handleEntityRemoved(World& world, EcsEntity entity) override;
 
 private:
-  void syncRigidBodyStates(World& world);
+  void syncSkeletonStates(World& world);
 };
 
 } // namespace dart::simulation

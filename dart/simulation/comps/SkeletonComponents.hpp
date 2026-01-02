@@ -30,20 +30,28 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_SOLVER_SOLVERTYPES_HPP_
-#define DART_SIMULATION_SOLVER_SOLVERTYPES_HPP_
+#ifndef DART_SIMULATION_COMPS_SKELETONCOMPONENTS_HPP_
+#define DART_SIMULATION_COMPS_SKELETONCOMPONENTS_HPP_
 
-namespace dart::simulation {
+#include <dart/dynamics/Fwd.hpp>
 
-/// Identifies which rigid simulation backend a solver instance targets.
-enum class RigidSolverType
+#include <vector>
+
+namespace dart::simulation::comps {
+
+/// Wraps a classic Skeleton instance so ECS tooling can refer to it.
+struct LegacySkeleton final
 {
-  /// Legacy Skeleton-based constraint solver.
-  ClassicSkeleton,
-  /// Entity-component based rigid solver using entt::registry (ECS-only).
-  EntityComponent,
+  dynamics::SkeletonPtr skeleton;
 };
 
-} // namespace dart::simulation
+/// Kinematic state extracted from a classic Skeleton.
+struct SkeletonState final
+{
+  std::vector<double> positions;
+  std::vector<double> velocities;
+};
 
-#endif // DART_SIMULATION_SOLVER_SOLVERTYPES_HPP_
+} // namespace dart::simulation::comps
+
+#endif // DART_SIMULATION_COMPS_SKELETONCOMPONENTS_HPP_

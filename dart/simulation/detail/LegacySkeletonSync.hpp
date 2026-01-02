@@ -30,25 +30,37 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_DETAIL_RIGIDSOLVERCOMPONENTS_HPP_
-#define DART_SIMULATION_DETAIL_RIGIDSOLVERCOMPONENTS_HPP_
+#ifndef DART_SIMULATION_DETAIL_LEGACYSKELETONSYNC_HPP_
+#define DART_SIMULATION_DETAIL_LEGACYSKELETONSYNC_HPP_
+
+#include <dart/simulation/comps/SkeletonComponents.hpp>
+
+#include <dart/dynamics/Skeleton.hpp>
+
+#include <algorithm>
 
 #include <cstddef>
 
-namespace dart::simulation::detail::comps {
+namespace dart::simulation::detail {
 
-/// Marks an ECS entity as a rigid body owned by the ECS-backed solver.
-struct RigidBodyTag final
+inline void syncLegacySkeletonState(
+    comps::SkeletonState& state, const dynamics::Skeleton& skeleton)
 {
-};
+  const auto dofs = static_cast<std::size_t>(skeleton.getNumDofs());
+  state.positions.assign(dofs, 0.0);
+  state.velocities.assign(dofs, 0.0);
 
-/// Minimal rigid body state tracked by the ECS-backed solver.
-struct RigidBodyState final
-{
-  std::size_t lastSyncedFrame{0};
-  double lastSyncedTime{0.0};
-};
+  const auto& positions = skeleton.getPositions();
+  const auto& velocities = skeleton.getVelocities();
 
-} // namespace dart::simulation::detail::comps
+  const auto positionsCount = static_cast<std::size_t>(positions.size());
+  const auto velocitiesCount = static_cast<std::size_t>(velocities.size());
 
-#endif // DART_SIMULATION_DETAIL_RIGIDSOLVERCOMPONENTS_HPP_
+  const auto copyCount = std::min({dofs, positionsCount, velocitiesCount});
+  std::copy_n(positions.data(), copyCount, state.positions.begin());
+  std::copy_n(velocities.data(), copyCount, state.velocities.begin());
+}
+
+} // namespace dart::simulation::detail
+
+#endif // DART_SIMULATION_DETAIL_LEGACYSKELETONSYNC_HPP_

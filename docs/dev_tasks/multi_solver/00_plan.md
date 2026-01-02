@@ -2,33 +2,29 @@
 
 ## Status
 
-- Completed: PR 00 landed on `main` (multi-solver scaffolding).
-- Completed: follow-up milestone 01 implemented on `feature/multi_solver-next`.
-- Next plan: see `docs/dev_tasks/multi_solver/02_next.md`.
-- Resume prompt: see `docs/dev_tasks/multi_solver/02_resume_prompt.md`.
+- Completed: first PR milestone delivered on `feature/multi_solver`.
+- Next plan: see `docs/dev_tasks/multi_solver/01_next.md`.
 
-## What Exists Today (feature/multi_solver-next)
+## What Exists Today (feature/multi_solver)
 
 - World orchestration and config: `dart/simulation/World.hpp`, `dart/simulation/World.cpp`
-  - `WorldConfig`, `WorldConfig::SolverRouting`, `CollisionDetectorType`,
-    `RigidSolverType`
+  - `WorldConfig`, `CollisionDetectorType`, `SolverSteppingMode`, `RigidSolverType`
+  - Active rigid selection (`setActiveRigidSolver`) and solver stepping modes
   - Solver enable/disable and ordering controls
 - Solver abstraction and implementations:
-  - Solver types: `dart/simulation/solver/SolverTypes.hpp`
-  - Base: `dart/simulation/solver/Solver.hpp`, `dart/simulation/solver/Solver.cpp`
+  - Base: `dart/simulation/solver/WorldSolver.hpp`, `dart/simulation/solver/WorldSolver.cpp`
   - Classic solver wrapper: `dart/simulation/solver/classic_rigid/ClassicRigidSolver.hpp`, `dart/simulation/solver/classic_rigid/ClassicRigidSolver.cpp`
   - ECS-backed rigid scaffold: `dart/simulation/solver/rigid/RigidSolver.hpp`, `dart/simulation/solver/rigid/RigidSolver.cpp`
-- ECS scaffolding:
+- ECS scaffolding and legacy mirroring:
   - Opaque entity handle: `dart/simulation/EcsEntity.hpp`
+  - Legacy skeleton components: `dart/simulation/comps/SkeletonComponents.hpp`
+  - Sync helper: `dart/simulation/detail/LegacySkeletonSync.hpp`
   - ECS access bridge (internal-only): `dart/simulation/detail/WorldEcsAccess.hpp`
-    (registry access + EnTT conversion helpers)
-  - ECS-only rigid components (internal-only): `dart/simulation/detail/RigidSolverComponents.hpp`
   - Object scaffolding: `dart/simulation/object/Object.hpp`,
     `dart/simulation/object/TypeList.hpp` (public), plus internal-only
     `dart/simulation/object/ObjectWith.hpp`
 - Tests:
-  - Solver stepping, routing, enable/disable coverage:
-    `tests/integration/simulation/test_World.cpp`
+  - Solver stepping/scheduling coverage: `tests/integration/simulation/test_World.cpp`
 - Build deps:
   - EnTT added as required dep: `cmake/DARTFindDependencies.cmake`, `dart/CMakeLists.txt`, `package.xml`
 
@@ -37,7 +33,7 @@
 ### Scope
 
 - Preserve classic Skeleton solver behavior and public APIs.
-- Keep multi-solver scheduling in `World`.
+- Keep multi-solver scheduling and active-rigid selection in `World`.
 - Keep ECS registry ownership in `World` and the sync-only `RigidSolver` path.
 - Hide EnTT from installed/public headers as much as possible.
 - Keep test coverage for solver stepping order and world behavior.
@@ -51,36 +47,23 @@
 
 ## Public API Decisions
 
-- `World` exposes config via:
-  - `WorldConfig` (`World::create(WorldConfig)`), including
-    `WorldConfig::SolverRouting` for mapping Skeletons (and reserving an
-    object slot for future ECS object APIs) to solver types, plus
-    `CollisionDetectorType` and `RigidSolverType`.
-- `World` does not expose solver pointers; control is via enable/disable and
-  ordering APIs.
-- `Solver` is the base solver name; `WorldSolver` remains as a compatibility
-  alias for existing code.
-- `RigidSolverType` lives in `dart/simulation/solver/SolverTypes.hpp` so
-  `World.hpp` can forward declare `Solver` without pulling solver internals.
+- `World` exposes config and policy via:
+  - `WorldConfig` (`World::create(WorldConfig)`), `CollisionDetectorType`,
+    `SolverSteppingMode`, `RigidSolverType`.
+- `World` does not expose solver pointers; selection is via enum/policy.
 - `EcsEntity` is the only public ECS handle (opaque value type).
 - EnTT types must not appear in installed headers (see “Internal Design”).
-- Skeletons are handled exclusively by `ClassicRigidSolver` for now; World
-  asserts if a different solver type is requested.
 
 ## Internal Design (Milestone Target)
 
-- World owns solvers as `SolverEntry` and steps all enabled solvers in
-  registration order each frame. Skeletons are routed to a single solver using
-  `WorldConfig::SolverRouting` (fixed to Classic for now); object routing is
-  configured but deferred until ECS object lifecycle APIs exist.
-- Classic solver is the default constraint/collision backend and remains
-  Skeleton-based.
+- World owns solvers as `SolverEntry` and schedules them each step:
+  - `AllEnabledSolvers`: step all enabled solvers in registration order.
+  - `ActiveRigidSolverOnly`: step active rigid solver, step non-rigid solvers,
+    then `sync()` other rigid solvers.
+- Classic solver is the constraint/collision backend and remains Skeleton-based.
 - ECS registry lives in `World::EcsData` (private in `World.cpp`).
-- Classic Skeletons remain on the legacy Aspect/Properties/Composite path and
-  are routed to the solver selected by `WorldConfig::SolverRouting` (default:
-  `ClassicRigidSolver`).
-- `RigidSolver` is ECS-only; it syncs ECS components but does not consume
-  Skeleton data (default object solver via `WorldConfig::SolverRouting`).
+- Legacy skeletons are mirrored into ECS via `LegacySkeleton` +
+  `SkeletonState` and synced by `RigidSolver`.
 - EnTT access is internal-only:
   - `WorldEcsAccess.hpp` and `ObjectWith-impl.hpp` include EnTT but are
     excluded from installed headers and component aggregates.

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/solver/Solver.hpp"
+#include "dart/simulation/solver/WorldSolver.hpp"
 
 #include <dart/constraint/ConstraintSolver.hpp>
 
@@ -50,65 +50,56 @@ const collision::CollisionResult& emptyCollisionResult()
 
 } // namespace
 
-Solver::Solver(std::string name) : mName(std::move(name)) {}
+WorldSolver::WorldSolver(std::string name) : mName(std::move(name)) {}
 
-Solver::~Solver() = default;
+WorldSolver::~WorldSolver() = default;
 
-const std::string& Solver::getName() const
+const std::string& WorldSolver::getName() const
 {
   return mName;
 }
 
-std::optional<RigidSolverType> Solver::getRigidSolverType() const
+std::optional<RigidSolverType> WorldSolver::getRigidSolverType() const
 {
   return std::nullopt;
 }
 
-bool Solver::isRigidSolver() const
+bool WorldSolver::isRigidSolver() const
 {
   return getRigidSolverType().has_value();
 }
 
-bool Solver::supportsConstraints() const
+bool WorldSolver::supportsConstraints() const
 {
   return false;
 }
 
-bool Solver::supportsCollision() const
+bool WorldSolver::supportsCollision() const
 {
   return false;
 }
 
-bool Solver::supportsSkeletons() const
-{
-  return false;
-}
-
-void Solver::reset(World&)
+void WorldSolver::reset(World&)
 {
   // Default no-op
 }
 
-void Solver::sync(World&)
+void WorldSolver::sync(World&)
 {
   // Default no-op
 }
 
-void Solver::handleSkeletonAdded(
+void WorldSolver::handleSkeletonAdded(
     World&, const dynamics::SkeletonPtr& /*skeleton*/)
 {
 }
 
-void Solver::handleSkeletonRemoved(
+void WorldSolver::handleSkeletonRemoved(
     World&, const dynamics::SkeletonPtr& /*skeleton*/)
 {
 }
 
-void Solver::handleEntityAdded(World&, EcsEntity /*entity*/) {}
-
-void Solver::handleEntityRemoved(World&, EcsEntity /*entity*/) {}
-
-void Solver::setConstraintSolver(
+void WorldSolver::setConstraintSolver(
     constraint::UniqueConstraintSolverPtr /*solver*/)
 {
   DART_WARN(
@@ -117,7 +108,7 @@ void Solver::setConstraintSolver(
       mName);
 }
 
-constraint::ConstraintSolver* Solver::getConstraintSolver()
+constraint::ConstraintSolver* WorldSolver::getConstraintSolver()
 {
   DART_WARN(
       "Requested constraint solver from '{}', but it does not manage one.",
@@ -125,7 +116,7 @@ constraint::ConstraintSolver* Solver::getConstraintSolver()
   return nullptr;
 }
 
-const constraint::ConstraintSolver* Solver::getConstraintSolver() const
+const constraint::ConstraintSolver* WorldSolver::getConstraintSolver() const
 {
   DART_WARN(
       "Requested constraint solver from '{}', but it does not manage one.",
@@ -133,7 +124,7 @@ const constraint::ConstraintSolver* Solver::getConstraintSolver() const
   return nullptr;
 }
 
-void Solver::setCollisionDetector(
+void WorldSolver::setCollisionDetector(
     const collision::CollisionDetectorPtr& /*collisionDetector*/)
 {
   DART_WARN(
@@ -142,7 +133,8 @@ void Solver::setCollisionDetector(
       mName);
 }
 
-void Solver::setCollisionDetector(CollisionDetectorType /*collisionDetector*/)
+void WorldSolver::setCollisionDetector(
+    CollisionDetectorType /*collisionDetector*/)
 {
   DART_WARN(
       "Requested to set a collision detector on '{}', but this solver does not "
@@ -150,22 +142,22 @@ void Solver::setCollisionDetector(CollisionDetectorType /*collisionDetector*/)
       mName);
 }
 
-collision::CollisionDetectorPtr Solver::getCollisionDetector()
+collision::CollisionDetectorPtr WorldSolver::getCollisionDetector()
 {
   return nullptr;
 }
 
-collision::ConstCollisionDetectorPtr Solver::getCollisionDetector() const
+collision::ConstCollisionDetectorPtr WorldSolver::getCollisionDetector() const
 {
   return nullptr;
 }
 
-const collision::CollisionResult& Solver::getLastCollisionResult() const
+const collision::CollisionResult& WorldSolver::getLastCollisionResult() const
 {
   return emptyCollisionResult();
 }
 
-bool Solver::checkCollision(
+bool WorldSolver::checkCollision(
     const collision::CollisionOption& /*option*/,
     collision::CollisionResult* /*result*/)
 {
