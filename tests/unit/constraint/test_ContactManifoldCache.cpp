@@ -239,8 +239,7 @@ TEST(ContactManifoldCache, RetainsPointsAcrossFrames)
   const auto rawContacts = std::vector<collision::Contact>(
       raw.getContacts().begin(), raw.getContacts().end());
   EXPECT_LT(
-      churnCount(firstOutput, output),
-      churnCount(firstOutput, rawContacts));
+      churnCount(firstOutput, output), churnCount(firstOutput, rawContacts));
 }
 
 TEST(ContactManifoldCache, CapsContactsAndKeepsDeepest)
