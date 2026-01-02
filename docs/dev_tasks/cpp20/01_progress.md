@@ -46,6 +46,8 @@
 - Phase 3 follow-up: remove span-to-vector conversions in mimic joint handling
   (ConstraintSolver checks, SDF mimic parsing, mimic pendulum example, and
   mimic constraint test).
+- Phase 3 follow-up: add span overloads for `Joint::setActuatorTypes`,
+  `Joint::setMimicJointDofs`, and pointer-based `InverseKinematics::setDofs`.
 - Phase 3 checks: `pixi run lint`, `pixi run test`, and
   `pixi run -e gazebo test-gz` (all passed; some deprecation warnings emitted
   from gz-physics during test-gz build).
