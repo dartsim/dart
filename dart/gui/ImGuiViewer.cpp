@@ -57,7 +57,8 @@ ImGuiViewer::ImGuiViewer(const ::osg::Vec4& clearColor)
 //==============================================================================
 ImGuiViewer::~ImGuiViewer()
 {
-  // Do nothing
+  if (mImGuiHandler)
+    mImGuiHandler->removeAllWidget();
 }
 
 //==============================================================================

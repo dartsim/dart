@@ -18,6 +18,13 @@
 
 **DART** (Dynamic Animation and Robotics Toolkit) is a comprehensive C++ physics engine for robotics simulation, kinematics, dynamics, and control. The **dart_gui** component provides 3D visualization and interactive manipulation capabilities built on OpenSceneGraph (OSG) and Dear ImGui.
 
+### Release & Branch Strategy
+
+- `main`: active development targeting DART 7 (Python-first API).
+- `release-6.16`: maintenance branch for DART 6 (critical fixes only).
+
+See [release-roadmap.md](release-roadmap.md) for the detailed roadmap, compatibility, and deprecation policy.
+
 ### Documentation Principles
 
 **This documentation prioritizes the codebase as the source of truth:**
@@ -47,6 +54,7 @@ This onboarding guide is organized into several focused documents:
 - **[code-style.md](code-style.md)** - Code style conventions for C++, Python, and CMake
 - **[testing.md](testing.md)** - Test suite organization, unit vs integration tests, running tests
 - **[ci-cd.md](ci-cd.md)** - CI/CD workflows, caching strategies, and performance optimization
+- **[release-roadmap.md](release-roadmap.md)** - Release/branch strategy and deprecation policy
 - **[architecture.md](architecture.md)** - Deep dive into DART's simulation core
 - **[dynamics.md](dynamics.md)** - Articulated body system and kinematics
 - **[constraints.md](constraints.md)** - Constraint resolution and collision response

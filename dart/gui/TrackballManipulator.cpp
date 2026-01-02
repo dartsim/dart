@@ -58,10 +58,7 @@ TrackballManipulator::TrackballManipulator(
 }
 
 //==============================================================================
-TrackballManipulator::~TrackballManipulator()
-{
-  // Do nothing
-}
+TrackballManipulator::~TrackballManipulator() = default;
 
 //==============================================================================
 bool TrackballManipulator::performMovementLeftMouseButton(

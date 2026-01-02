@@ -42,7 +42,7 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-typedef std::set<Entity*> EntityPtrSet;
+using EntityPtrSet = std::set<Entity*>;
 
 //==============================================================================
 Entity::Entity(Frame* _refFrame, bool _quiet)

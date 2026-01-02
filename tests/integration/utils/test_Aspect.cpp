@@ -348,10 +348,10 @@ public:
   Properties mProperties;
 };
 
-typedef StatefulAspect<double> DoubleAspect;
-typedef StatefulAspect<float> FloatAspect;
-typedef StatefulAspect<char> CharAspect;
-typedef StatefulAspect<int> IntAspect;
+using DoubleAspect = StatefulAspect<double>;
+using FloatAspect = StatefulAspect<float>;
+using CharAspect = StatefulAspect<char>;
+using IntAspect = StatefulAspect<int>;
 
 class CustomSpecializedComposite
   : public SpecializedForAspect<SpecializedAspect>

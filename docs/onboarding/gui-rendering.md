@@ -1023,6 +1023,11 @@ void MyHandler::update() override {
 - Use RGBA mode when ImGui UI is present
 - Documented in `CameraMode::DEPTH` enum
 
+### ImGui Context Isolation
+
+- Each ImGui handler should keep its own ImGui context.
+- Sharing a global context across multiple viewers can overwrite IO/draw data and lead to missing or mis-sized UI.
+
 ### Shadow Performance
 
 - Shadow rendering can be computationally expensive

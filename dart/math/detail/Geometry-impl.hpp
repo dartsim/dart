@@ -42,16 +42,22 @@ namespace dart {
 namespace math {
 
 //==============================================================================
-template <typename S, typename Index>
+template <typename S, typename Index, typename VertexAllocator>
 std::tuple<
-    std::vector<Eigen::Matrix<S, 3, 1>>,
-    std::vector<Eigen::Matrix<Index, 3, 1>>>
+    std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>,
+    std::vector<
+        Eigen::Matrix<Index, 3, 1>,
+        Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>>
 discardUnusedVertices(
-    const std::vector<Eigen::Matrix<S, 3, 1>>& vertices,
-    const std::vector<Eigen::Matrix<Index, 3, 1>>& triangles)
+    const std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>& vertices,
+    const std::vector<
+        Eigen::Matrix<Index, 3, 1>,
+        Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>& triangles)
 {
-  auto newVertices = std::vector<Eigen::Matrix<S, 3, 1>>();
-  auto newTriangles = std::vector<Eigen::Matrix<Index, 3, 1>>();
+  auto newVertices = std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>();
+  auto newTriangles = std::vector<
+      Eigen::Matrix<Index, 3, 1>,
+      Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>();
   newTriangles.resize(triangles.size());
   auto indexMap = std::unordered_map<Index, Index>();
   auto newIndex = 0;
@@ -77,12 +83,15 @@ discardUnusedVertices(
 }
 
 //==============================================================================
-template <typename S, typename Index>
+template <typename S, typename Index, typename VertexAllocator>
 std::tuple<
-    std::vector<Eigen::Matrix<S, 3, 1>>,
-    std::vector<Eigen::Matrix<Index, 3, 1>>>
+    std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>,
+    std::vector<
+        Eigen::Matrix<Index, 3, 1>,
+        Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>>
 computeConvexHull3D(
-    const std::vector<Eigen::Matrix<S, 3, 1>>& inputVertices, bool optimize)
+    const std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>& inputVertices,
+    bool optimize)
 {
   // Use Eigen API directly - no conversion needed
   std::vector<int> faces;
@@ -90,7 +99,10 @@ computeConvexHull3D(
 
   detail::convexHull3dBuild(inputVertices, faces, numFaces);
 
-  std::vector<Eigen::Matrix<Index, 3, 1>> eigenFaces;
+  std::vector<
+      Eigen::Matrix<Index, 3, 1>,
+      Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>
+      eigenFaces;
   eigenFaces.reserve(numFaces);
 
   for (auto i = 0; i < numFaces; ++i) {
@@ -102,7 +114,8 @@ computeConvexHull3D(
   }
 
   if (optimize)
-    return discardUnusedVertices<S, Index>(inputVertices, eigenFaces);
+    return discardUnusedVertices<S, Index, VertexAllocator>(
+        inputVertices, eigenFaces);
   else
     return std::make_pair(inputVertices, eigenFaces);
 }

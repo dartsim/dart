@@ -15,6 +15,7 @@ void defSupportPolygonVisual(nanobind::module_& m);
 void defDragAndDrop(nanobind::module_& m);
 void defShadowTechnique(nanobind::module_& m);
 void defViewer(nanobind::module_& m);
+void defImGuiApi(nanobind::module_& m);
 void defImGuiWidget(nanobind::module_& m);
 void defImGuiHandler(nanobind::module_& m);
 void defImGuiViewer(nanobind::module_& m);

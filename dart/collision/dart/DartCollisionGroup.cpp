@@ -72,8 +72,7 @@ void DARTCollisionGroup::addCollisionObjectsToEngine(
 void DARTCollisionGroup::removeCollisionObjectFromEngine(
     CollisionObject* object)
 {
-  mCollisionObjects.erase(
-      std::remove(mCollisionObjects.begin(), mCollisionObjects.end(), object));
+  std::erase(mCollisionObjects, object);
 }
 
 //==============================================================================

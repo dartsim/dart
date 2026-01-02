@@ -749,7 +749,10 @@ void MeshShapeGeometry::extractData(bool firstTime)
     }
 
     std::vector<std::size_t> polygon;
-    std::vector<Eigen::Matrix<std::size_t, 3, 1>> triangles;
+    std::vector<
+        Eigen::Matrix<std::size_t, 3, 1>,
+        Eigen::aligned_allocator<Eigen::Matrix<std::size_t, 3, 1>>>
+        triangles;
 
     for (std::size_t i = 0; i < mAiMesh->mNumFaces; ++i) {
       const aiFace& face = mAiMesh->mFaces[i];

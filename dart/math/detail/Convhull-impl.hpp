@@ -723,9 +723,9 @@ inline void convexHull3dBuild(
 // optimized legacy implementation.
 //==============================================================================
 
-template <typename S>
+template <typename S, typename VertexAllocator>
 inline void convexHull3dBuild(
-    const std::vector<Eigen::Matrix<S, 3, 1>>& inVertices,
+    const std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>& inVertices,
     std::vector<int>& outFaces,
     int& numOutputTriangles)
 {

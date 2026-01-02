@@ -1437,7 +1437,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
       _size[1] / (frags[1] - 1),
       _size[2] / (frags[2] - 1));
 
-  typedef std::pair<PointMass::Properties, std::size_t> PointPair;
+  using PointPair = std::pair<PointMass::Properties, std::size_t>;
 
   std::vector<PointPair> corners(nCorners);
 
