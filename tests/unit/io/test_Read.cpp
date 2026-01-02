@@ -59,13 +59,6 @@ TEST(ReadUnit, ReadsSkelSkeletonFromWorldFile)
 }
 
 //==============================================================================
-TEST(ReadUnit, ReturnsNullForVskWorld)
-{
-  const auto world = io::readWorld("dart://sample/vsk/test/empty.vsk");
-  EXPECT_EQ(world, nullptr);
-}
-
-//==============================================================================
 TEST(ReadUnit, ReturnsNullForMjcfSkeleton)
 {
   const auto skeleton = io::readSkeleton("dart://sample/mjcf/openai/ant.xml");

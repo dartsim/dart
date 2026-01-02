@@ -39,7 +39,6 @@
 #include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/PackageResourceRetriever.hpp"
 #include "dart/utils/SkelParser.hpp"
-#include "dart/utils/VskParser.hpp"
 #include "dart/utils/mjcf/MjcfParser.hpp"
 #include "dart/utils/sdf/SdfParser.hpp"
 
@@ -98,8 +97,6 @@ std::optional<ModelFormat> inferFormatFromExtension(const common::Uri& uri)
     return ModelFormat::Urdf;
   if (ext == ".mjcf")
     return ModelFormat::Mjcf;
-  if (ext == ".vsk")
-    return ModelFormat::Vsk;
 
   // Extensions like ".xml" are ambiguous across multiple formats.
   return std::nullopt;
@@ -154,8 +151,6 @@ std::optional<ModelFormat> inferFormatFromXmlRoot(
     return ModelFormat::Urdf;
   if (rootName == "mujoco")
     return ModelFormat::Mjcf;
-  if (rootName == "KinematicModel")
-    return ModelFormat::Vsk;
 
   return std::nullopt;
 }
@@ -264,11 +259,6 @@ simulation::WorldPtr readWorld(
           uri.toString());
       return nullptr;
 #endif
-    case ModelFormat::Vsk:
-      DART_ERROR(
-          "[dart::io::readWorld] VSK does not support world parsing. URI=[{}]",
-          uri.toString());
-      return nullptr;
     case ModelFormat::Auto:
       break;
   }
@@ -327,9 +317,6 @@ dynamics::SkeletonPtr readSkeleton(
                 : utils::SdfParser::RootJointType::Floating;
       return utils::SdfParser::readSkeleton(uri, sdfOptions);
     }
-    case ModelFormat::Vsk:
-      return utils::VskParser::readSkeleton(
-          uri, utils::VskParser::Options(resolved.resourceRetriever));
     case ModelFormat::Urdf:
 #if DART_IO_HAS_URDF
       return readUrdfSkeleton(uri, resolved);
