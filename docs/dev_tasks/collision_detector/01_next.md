@@ -33,9 +33,10 @@
 - Added raycast parallel plane surface-start miss coverage.
 - Added rotated box distance coverage and a rotated plane raycast check.
 - Added rotated plane offset raycast coverage.
+- Added rotated plane offset surface-start raycast coverage.
+- Added rotated plane offset parallel raycast miss coverage.
 - Added rotated plane parallel raycast miss coverage.
 - Added rotated plane parallel surface-start raycast miss coverage.
-- Added rotated plane offset surface-start raycast coverage.
 - Added tangent sphere and parallel plane raycast coverage.
 - Added cylinder-cylinder nearest-point checks and tangent cylinder raycast coverage.
 - Added cylinder cap rim raycast coverage.
