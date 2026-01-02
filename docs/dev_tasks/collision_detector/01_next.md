@@ -122,23 +122,22 @@
 - Migrated examples and tutorials away from backend-selection APIs and updated
   relevant docs to describe legacy backends.
 - Legacy detector adapters now forward to the built-in collision engine for API compatibility.
-- Dependency removal from build configuration, pixi environments, and container images is in progress.
+- Dependency removal from build configuration, pixi environments, and container images is in progress, with adapter headers still referencing external includes.
 
 ## Next Actions
 
 - Remove legacy dependency plumbing from CMake, pixi environments, and container images while keeping adapter APIs.
+- Strip external includes from adapter headers and sources so they compile without optional collision libraries.
+- Remove backend-specific build options and config exports, then update any guard logic that relies on them.
 - Fix failing `pixi run -e gazebo test-gz` cases (COMMON_TEST_collisions_dartsim, COMMON_TEST_detachable_joint_dartsim, COMMON_TEST_joint_features_dartsim, COMMON_TEST_simulation_features_dartsim) and resolve the simulation features segfault.
-- Audit collision-related tests that still select legacy detectors and migrate
-  them to the built-in detector when feasible.
-- Use those tests to drive missing-feature work in the core detector before
-  returning to the example pipeline.
+- Audit collision-related tests that still select legacy detectors and migrate them to the built-in detector when feasible.
+- Use those tests to drive missing-feature work in the core detector before returning to the example pipeline.
 - Extend raycast coverage to edge cases and future shape types.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Explore additional distance broadphase pruning and candidate ordering improvements.
 - Validate build and install paths after the engine layout change.
 - Revisit the raycast enablement default once gazebo expectations change.
-- Audit remaining downstream-facing docs/examples for deprecated backend
-  selection and update as needed.
+- Audit remaining downstream-facing docs/examples for deprecated backend selection and update as needed.
 
 ## Questions and Decisions Needed
 
