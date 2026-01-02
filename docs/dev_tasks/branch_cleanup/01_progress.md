@@ -34,6 +34,11 @@
 - Triaged origin/7/object_pool against origin/main and origin/release-7.0:
   - Single WIP commit adding ObjectPool header + unit test.
   - Decision: preserve for now (no deletion).
+- Reviewed origin/release-7.0 against origin/main:
+  - origin/release-7.0 is behind origin/main and contains many commits not
+    present on origin/main.
+  - Decision: keep for now; remove after all dependent origin/7/* branches
+    are resolved.
 
 ## Triage results (origin/7/*)
 
