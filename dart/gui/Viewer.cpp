@@ -364,7 +364,7 @@ bool Viewer::checkHeadlights() const
 //==============================================================================
 void Viewer::addWorldNode(WorldNode* _newWorldNode, bool _active)
 {
-  if (mWorldNodes.find(_newWorldNode) != mWorldNodes.end())
+  if (mWorldNodes.contains(_newWorldNode))
     return;
 
   mWorldNodes[_newWorldNode] = _active;

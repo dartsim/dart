@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -190,14 +191,14 @@ LcpResult StaggeringSolver::solve(
   Eigen::VectorXi findex_n = Eigen::VectorXi::Constant(nNormal, -1);
   Eigen::VectorXi findex_f = Eigen::VectorXi::Constant(nFriction, -1);
 
-  auto gather = [&](const std::vector<int>& indices, Eigen::VectorXd& out) {
+  auto gather = [&](std::span<const int> indices, Eigen::VectorXd& out) {
     out.resize(static_cast<int>(indices.size()));
     for (int k = 0; k < static_cast<int>(indices.size()); ++k)
       out[k] = x[indices[k]];
   };
 
   auto scatterRelaxedNormal
-      = [&](const std::vector<int>& indices, const Eigen::VectorXd& values) {
+      = [&](std::span<const int> indices, const Eigen::VectorXd& values) {
           for (int k = 0; k < static_cast<int>(indices.size()); ++k) {
             const int idx = indices[k];
             double updated = x[idx] + relaxation * (values[k] - x[idx]);
@@ -209,7 +210,7 @@ LcpResult StaggeringSolver::solve(
           }
         };
 
-  auto scatterRelaxedFriction = [&](const std::vector<int>& indices,
+  auto scatterRelaxedFriction = [&](std::span<const int> indices,
                                     const Eigen::VectorXd& values,
                                     const Eigen::VectorXd& loEff,
                                     const Eigen::VectorXd& hiEff) {

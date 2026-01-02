@@ -39,6 +39,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <span>
 
 namespace dart {
 namespace math {
@@ -46,7 +47,7 @@ namespace math {
 //==============================================================================
 template <typename T>
 static T getVectorObjectIfAvailable(
-    std::size_t _idx, const std::vector<T>& _vec)
+    std::size_t _idx, std::span<const T> _vec)
 {
   // TODO: Should we have an out-of-bounds assertion or throw here?
   if (_idx < _vec.size())
