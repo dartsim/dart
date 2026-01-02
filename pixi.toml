@@ -493,24 +493,7 @@ cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_IN
 py-ex = { cmd = [
   "python",
   "-c",
-  """
-import pathlib
-import runpy
-import sys
-
-root = pathlib.Path("python/examples")
-example = "{{ example }}"
-direct = root / example / "main.py"
-path = direct if direct.is_file() else None
-if path is None:
-    matches = list(root.rglob(f"{example}/main.py"))
-    if matches:
-        path = matches[0]
-if path is None:
-    print(f"Example not found: {example}", file=sys.stderr)
-    sys.exit(1)
-runpy.run_path(str(path), run_name="__main__")
-""",
+  "import pathlib\nimport runpy\nimport sys\n\nroot = pathlib.Path(\"python/examples\")\nexample = \"{{ example }}\"\ndirect = root / example / \"main.py\"\npath = direct if direct.is_file() else None\nif path is None:\n    matches = list(root.rglob(f\"{example}/main.py\"))\n    if matches:\n        path = matches[0]\nif path is None:\n    print(f\"Example not found: {example}\", file=sys.stderr)\n    sys.exit(1)\nrunpy.run_path(str(path), run_name=\"__main__\")",
 ], depends-on = [
   "build-py-dev",
 ], args = [
