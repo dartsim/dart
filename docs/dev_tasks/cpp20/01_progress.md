@@ -40,6 +40,9 @@
   views, package paths, cloneable vectors) and remove redundant span helpers.
   Updated call sites to handle spans (including mimic constraint configuration
   and cloneable vector copies).
+- Phase 3 follow-up: update MetaSkeleton and Skeleton index-based setters/getters
+  to accept `std::span`, removing span-to-vector conversions in IK and
+  dynamics test utilities.
 - Phase 3 checks: `pixi run lint`, `pixi run test`, and
   `pixi run -e gazebo test-gz` (all passed; some deprecation warnings emitted
   from gz-physics during test-gz build).

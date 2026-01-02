@@ -336,13 +336,13 @@ Skeleton::Configuration::Configuration(
 
 //==============================================================================
 Skeleton::Configuration::Configuration(
-    const std::vector<std::size_t>& indices,
+    std::span<const std::size_t> indices,
     const Eigen::VectorXd& positions,
     const Eigen::VectorXd& velocities,
     const Eigen::VectorXd& accelerations,
     const Eigen::VectorXd& forces,
     const Eigen::VectorXd& commands)
-  : mIndices(indices),
+  : mIndices(indices.begin(), indices.end()),
     mPositions(positions),
     mVelocities(velocities),
     mAccelerations(accelerations),
@@ -582,7 +582,7 @@ Skeleton::Configuration Skeleton::getConfiguration(int flags) const
 
 //==============================================================================
 Skeleton::Configuration Skeleton::getConfiguration(
-    const std::vector<std::size_t>& indices, int flags) const
+    std::span<const std::size_t> indices, int flags) const
 {
   Configuration config(indices);
   if (flags == CONFIG_NOTHING)

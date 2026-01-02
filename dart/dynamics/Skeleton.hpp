@@ -108,7 +108,7 @@ public:
         const Eigen::VectorXd& commands = Eigen::VectorXd());
 
     Configuration(
-        const std::vector<std::size_t>& indices,
+        std::span<const std::size_t> indices,
         const Eigen::VectorXd& positions = Eigen::VectorXd(),
         const Eigen::VectorXd& velocities = Eigen::VectorXd(),
         const Eigen::VectorXd& accelerations = Eigen::VectorXd(),
@@ -204,7 +204,7 @@ public:
 
   /// Get the configuration of the specified indices in this Skeleton
   Configuration getConfiguration(
-      const std::vector<std::size_t>& indices, int flags = CONFIG_ALL) const;
+      std::span<const std::size_t> indices, int flags = CONFIG_ALL) const;
 
   /// \}
 
