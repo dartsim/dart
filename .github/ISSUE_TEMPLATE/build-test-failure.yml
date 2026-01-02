@@ -1,0 +1,105 @@
+name: Build/Test Failure (Specific Platform)
+description: Report build or test failures on a specific OS/distro or packaging stack.
+title: "[Build/Test] <short summary>"
+labels:
+  - "priority: low"
+  - "status: help wanted"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. This template is for platform-specific build/test failures.
+        Maintainers may not be able to reproduce or resolve these, especially when caused by
+        downstream packaging or system configuration. Community help and PRs are welcome.
+  - type: checkboxes
+    attributes:
+      label: Before filing
+      options:
+        - label: "I understand this issue is community-supported and may not be resolved by maintainers."
+          required: true
+        - label: "I can provide logs, versions, and reproduction steps."
+          required: true
+        - label: "I am willing to help test or contribute a fix if possible."
+          required: false
+  - type: input
+    attributes:
+      label: OS / Distro
+      placeholder: "e.g. Alt Linux 10.2, Ubuntu 22.04, Fedora 39"
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Kernel / libc (if relevant)
+      placeholder: "e.g. Linux 6.6, glibc 2.38, musl 1.2"
+    validations:
+      required: false
+  - type: input
+    attributes:
+      label: CPU / architecture
+      placeholder: "e.g. x86_64, aarch64"
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: DART version
+      placeholder: "e.g. release tag, commit SHA, or package version"
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Install or build method
+      options:
+        - "pixi (recommended)"
+        - "source build (CMake)"
+        - "system/distro packages"
+        - "conda/mamba"
+        - "vcpkg"
+        - "other"
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Compiler and CMake versions
+      placeholder: "e.g. GCC 13.2, Clang 16, CMake 3.27"
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: "Include the exact configure/build/test commands."
+      placeholder: |
+        1. pixi run ...
+        2. cmake -S ... -B ...
+        3. cmake --build ...
+        4. ctest ...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Failure logs
+      description: "Paste the relevant error output."
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Dependency versions and packaging notes
+      description: "List relevant dependencies and any packaging/build flags that may differ on this platform."
+      placeholder: |
+        - Eigen 3.4.0 (system package, built without ...)
+        - FCL 0.7.0 ...
+        - Gazebo / gz-physics ...
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Workarounds tried
+      placeholder: "Any patches, flags, or dependency changes you tried."
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Additional context
+      placeholder: "Links to similar issues, CI logs, or upstream packaging tickets."
+    validations:
+      required: false

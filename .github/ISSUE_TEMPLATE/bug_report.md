@@ -7,6 +7,7 @@ assignees: ""
 ---
 
 > For questions, use [Discussions](https://github.com/dartsim/dart/discussions) instead.
+> For platform-specific build/test failures, use the [Build/Test Failure template](https://github.com/dartsim/dart/issues/new?template=build-test-failure.yml).
 
 **Before submitting:**
 
