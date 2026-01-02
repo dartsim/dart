@@ -73,6 +73,7 @@
 - Added overlapping sphere-plane distance coverage for negative distance semantics.
 - Added overlapping box-plane distance coverage for negative distance semantics.
 - Added plane offset coverage for sphere distance and raycast queries.
+- Added rotated plane offset coverage for sphere-plane distances.
 - Added plane offset coverage for cylinder-plane distances.
 - Added plane offset coverage for box-plane distances.
 - Added tilted cylinder-plane distance coverage for oblique extent checks.

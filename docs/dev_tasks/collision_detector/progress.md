@@ -6,7 +6,7 @@
 - Phase 2.5 (default switch + deprecation) complete: built-in detector is the
   default, backend-selection APIs are deprecated, and examples/docs are
   migrated.
-- Latest local runs: `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartDistance` pass.
+- Latest local runs: `pixi run build-tests` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartDistance` pass.
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Raycast baseline (Release): Closest 32=1.90us, 128=7.54us, 512=32.0us; AllHits 32=2.18us, 128=8.59us, 512=38.0us.
 - Core data and broadphase scaffolding are in place, with AABB caching.
@@ -61,6 +61,7 @@
 - Distance tests include overlapping sphere-plane coverage for negative distances.
 - Distance tests include overlapping box-plane coverage for negative distances.
 - Distance tests include plane offset coverage for sphere queries; raycast tests include plane offset hits.
+- Distance tests include rotated plane offset coverage for sphere-plane distances.
 - Distance tests include plane offset coverage for cylinder-plane distances.
 - Distance tests include plane offset coverage for box-plane distances.
 - Distance tests include rotated cylinder-plane offset coverage.
@@ -163,6 +164,7 @@
 - Added overlapping sphere-plane distance coverage for negative distance semantics.
 - Added overlapping box-plane distance coverage for negative distance semantics.
 - Added plane offset coverage for sphere distance and raycast queries.
+- Added rotated plane offset coverage for sphere-plane distances.
 - Added plane offset coverage for cylinder-plane distances.
 - Added plane offset coverage for box-plane distances.
 - Added rotated cylinder-plane offset distance coverage.
