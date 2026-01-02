@@ -1,6 +1,16 @@
-# Search all header and source files
-file(GLOB hdrs "*.hpp")
-file(GLOB srcs "*.cpp")
+# Search adapter headers and sources only
+set(hdrs
+  BackwardCompatibility.hpp
+  FCLCollisionDetector.hpp
+  FCLCollisionGroup.hpp
+  FCLCollisionObject.hpp
+)
+set(srcs
+  BackwardCompatibility.cpp
+  FCLCollisionDetector.cpp
+  FCLCollisionGroup.cpp
+  FCLCollisionObject.cpp
+)
 dart_add_core_headers(${hdrs} ${detail_hdrs})
 dart_add_core_sources(${srcs} ${detail_srcs})
 

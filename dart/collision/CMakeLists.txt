@@ -4,9 +4,28 @@ file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 file(GLOB dart_hdrs "dart/*.hpp")
-file(GLOB fcl_hdrs "fcl/*.hpp")
-file(GLOB ode_hdrs "ode/*.hpp")
-file(GLOB bullet_hdrs "bullet/*.hpp")
+set(
+  fcl_hdrs
+  "${CMAKE_CURRENT_SOURCE_DIR}/fcl/BackwardCompatibility.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/fcl/FCLCollisionDetector.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/fcl/FCLCollisionGroup.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/fcl/FCLCollisionObject.hpp"
+)
+set(
+  ode_hdrs
+  "${CMAKE_CURRENT_SOURCE_DIR}/ode/OdeCollisionDetector.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/ode/OdeCollisionGroup.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/ode/OdeCollisionObject.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/ode/OdeStub.hpp"
+)
+set(
+  bullet_hdrs
+  "${CMAKE_CURRENT_SOURCE_DIR}/bullet/BulletCollisionDetector.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/bullet/BulletCollisionGroup.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/bullet/BulletCollisionObject.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/bullet/BulletCollisionShape.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/bullet/BulletInclude.hpp"
+)
 dart_add_core_headers(${hdrs} ${detail_hdrs})
 dart_add_core_sources(${srcs} ${detail_srcs})
 
