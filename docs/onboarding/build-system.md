@@ -236,6 +236,7 @@ dart/
   - **System Mode** (`DART_USE_SYSTEM_RAYLIB=ON`): Links against a system-installed `raylib`
   - **Fetch Mode** (`DART_USE_SYSTEM_RAYLIB=OFF`): Fetches Raylib from `https://github.com/raysan5/raylib.git` (defaults to the latest git tag)
   - **Fetch Tag Override**: `DART_RAYLIB_GIT_TAG=<tag>` (only used when fetching)
+- **Note:** In out-of-source example builds, `DART_BUILD_GUI_RAYLIB` may be unset; avoid using it to gate standalone example builds. Prefer guarding only in in-source builds or checking for the `raylib` target.
 
 #### 9. OpenGL
 

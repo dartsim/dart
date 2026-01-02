@@ -21,6 +21,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - `gh run watch` is blocking and can run for a long time; use a persistent shell and re-run it if your terminal session times out.
   - `gh run view --job <JOB_ID> --log-failed` only works after the job completes; use the REST logs endpoint (or wait) when a run is still in progress.
   - If a PR is not mergeable due to conflicts, CI checks may be blocked or fail early (including AppVeyor); resolve conflicts locally and push before re-running CI.
+  - Example reorganizations can conflict in `examples/CMakeLists.txt`; reconcile any new example entries and keep the category layout aligned before pushing.
   - GitHub Actions API calls can return `HTTP 406` if you omit required headers; include an explicit `Accept` header.
   - `gh api` writes to stdout and does not support `--output`; redirect to a file when you need to search logs.
   - The asserts-enabled CI job uses a custom CMake configure (`CMAKE_BUILD_TYPE=None`) instead of pixi tasks; pass required build toggles explicitly (e.g., Bullet collision).
@@ -29,6 +30,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Bullet-backed raycast tests require Bullet to be built; skip or enable Bullet if the backend is intentionally disabled.
   - `gh pr status --json ...` can error with `Unknown JSON field: ...` if you request unsupported fields; use `gh pr status` (no JSON) or `gh pr view --json ...`.
   - `gh run view --json ...` only accepts supported fields; prefer the `url` field instead of guessing `htmlURL`.
+  - Review comment metadata is not exposed by `gh pr view --json`; Suggested (Unverified): `gh api /repos/<OWNER>/<REPO>/pulls/comments/<COMMENT_ID>`.
   - `gh pr checks` may show duplicate entries when workflows run for both `push` and `pull_request` events; compare the run URLs and focus on the newest one.
   - Newer runs can cancel older ones; confirm the run status/conclusion before spending time on job logs.
   - zsh can produce ``parse error near `}'`` if a `gh ... --jq` expression containing `{ ... }` isn't fully quoted; wrap the whole jq program in single quotes.
@@ -36,13 +38,13 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - CI jobs can sit in the queue for a long time; re-check the run list and wait for the PR run to start before assuming a failure.
   - Wheel publishing workflows may lag behind other jobs and stay queued longer; keep watching the PR run until all workflows complete.
   - Randomized stress tests can diverge across platforms if they rely on library-dependent distributions; prefer deterministic RNG transforms when portability matters.
-  - `check-format` failures usually mean formatting drift; run lint before pushing to keep CI green.
+  - `check-format` failures usually mean formatting drift; run the C++ formatter and commit any diffs before retrying CI. Suggested (Unverified): `pixi run lint-cpp`.
   - Codecov patch failures usually mean new lines or branches are uncovered; add targeted tests and re-run coverage.
   - Codecov patch status can lag until coverage jobs complete; confirm Coverage (Debug) finished before acting.
 
 ## Common CI Failure Modes
 
-- Formatting checks fail: run the C++ formatting task and re-run CI.
+- Formatting checks fail: run the C++ formatting task and re-run CI. Suggested (Unverified): `pixi run lint-cpp`.
 - Codecov patch failures: add targeted coverage for new lines or branches.
 - Unit test crashes or segfaults: isolate the failing test from job logs, reproduce locally, and add a regression for the edge case.
 
