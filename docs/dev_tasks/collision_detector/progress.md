@@ -36,6 +36,7 @@
 - Raycast tests include rotated plane offset parallel surface-start misses.
 - Distance tests include rotated box/cylinder plane cases, and raycast tests include rotated box hits.
 - Raycast tests include rotated cylinder hits.
+- Raycast tests include rotated cylinder inside hits.
 - Raycast tests include rotated cylinder parallel misses.
 - Distance tests include box-plane offset coverage.
 - Distance tests include a group-group distance case to validate pair selection.
@@ -142,6 +143,7 @@
 - Added rotated plane offset parallel surface-start raycast miss coverage.
 - Added rotated box raycast coverage and rotated box/cylinder plane distance checks.
 - Added rotated cylinder raycast coverage.
+- Added rotated cylinder inside-hit raycast coverage.
 - Added rotated cylinder parallel raycast miss coverage.
 - Added box-plane offset distance coverage.
 - Added group-group distance coverage to validate pair selection and nearest points.
