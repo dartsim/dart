@@ -861,6 +861,35 @@ TEST(DartRaycast, RotatedPlaneOffsetParallelMiss)
 }
 
 //==============================================================================
+TEST(DartRaycast, RotatedPlaneOffsetParallelSurfaceStartMiss)
+{
+  auto detector = createRaycastDetector();
+
+  auto frame = SimpleFrame::createShared(Frame::World());
+  const double offset = 1.0;
+  frame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), offset));
+  const Eigen::Matrix3d rotation
+      = Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  frame->setRotation(rotation);
+
+  auto group = detector->createCollisionGroup(frame.get());
+
+  RaycastOption option;
+  RaycastResult result;
+
+  const Eigen::Vector3d normalWorld
+      = (rotation * Eigen::Vector3d::UnitZ()).normalized();
+  const Eigen::Vector3d from = normalWorld * offset;
+  const Eigen::Vector3d to = from + Eigen::Vector3d::UnitY();
+
+  detector->raycast(group.get(), from, to, option, &result);
+  EXPECT_FALSE(result.hasHit());
+  EXPECT_TRUE(result.mRayHits.empty());
+}
+
+//==============================================================================
 TEST(DartRaycast, RotatedPlaneParallelMiss)
 {
   auto detector = createRaycastDetector();

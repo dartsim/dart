@@ -6,7 +6,7 @@
 - Phase 2.5 (default switch + deprecation) complete: built-in detector is the
   default, backend-selection APIs are deprecated, and examples/docs are
   migrated.
-- Latest local runs: `pixi run build-tests` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartDistance` pass.
+- Latest local runs: `pixi run build-tests` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` pass.
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Raycast baseline (Release): Closest 32=1.90us, 128=7.54us, 512=32.0us; AllHits 32=2.18us, 128=8.59us, 512=38.0us.
 - Core data and broadphase scaffolding are in place, with AABB caching.
@@ -33,6 +33,7 @@
 - Raycast tests include rotated plane parallel surface-start misses.
 - Raycast tests include rotated plane offset surface-start hits.
 - Raycast tests include rotated plane offset parallel misses.
+- Raycast tests include rotated plane offset parallel surface-start misses.
 - Distance tests include rotated box/cylinder plane cases, and raycast tests include rotated box hits.
 - Raycast tests include rotated cylinder hits.
 - Raycast tests include rotated cylinder parallel misses.
@@ -138,6 +139,7 @@
 - Added rotated plane parallel surface-start raycast miss coverage.
 - Added rotated plane offset surface-start raycast coverage.
 - Added rotated plane offset parallel raycast miss coverage.
+- Added rotated plane offset parallel surface-start raycast miss coverage.
 - Added rotated box raycast coverage and rotated box/cylinder plane distance checks.
 - Added rotated cylinder raycast coverage.
 - Added rotated cylinder parallel raycast miss coverage.

@@ -35,6 +35,7 @@
 - Added rotated plane offset raycast coverage.
 - Added rotated plane offset surface-start raycast coverage.
 - Added rotated plane offset parallel raycast miss coverage.
+- Added rotated plane offset parallel surface-start raycast miss coverage.
 - Added rotated plane parallel raycast miss coverage.
 - Added rotated plane parallel surface-start raycast miss coverage.
 - Added tangent sphere and parallel plane raycast coverage.
