@@ -113,6 +113,7 @@ DART addresses the need for:
 
 - Want to build, test, or format DART? Start with [building.md](building.md), [testing.md](testing.md), and [contributing.md](contributing.md).
 - Working on Gazebo / gz-physics compatibility? Jump to [build-system.md](build-system.md#gazebo-integration-feature).
+- Working on Python examples or the dartpy example runner? Start with `python/examples/README.md` and `pixi.toml`.
 - Need to understand CI workflows or monitor runs? See [ci-cd.md](ci-cd.md).
 
 <details>
