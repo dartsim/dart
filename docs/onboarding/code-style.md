@@ -56,11 +56,13 @@ bool operator==(const Ptr& other) const = default;
 
 ```cpp
 // Use [[likely]] / [[unlikely]] for hot paths
-if (objects.empty()) [[unlikely]]
+if (objects.empty()) [[unlikely]] {
   return false;
+}
 
-if (!result.isCollision()) [[likely]]
+if (!result.isCollision()) [[likely]] {
   return;
+}
 ```
 
 **When NOT to use C++20 features:**
@@ -225,8 +227,9 @@ namespace example {
 //==============================================================================
 int ExampleClass::exampleInterfaceFunction() const
 {
-  if (mExampleMember)
+  if (mExampleMember) {
     return 3;
+  }
 
   return -1;
 }
@@ -235,8 +238,9 @@ int ExampleClass::exampleInterfaceFunction() const
 int ExampleClass::exampleMethod(int a, int b, int* out) const
 {
   int result = a + b;
-  if (out)
+  if (out) {
     *out = result;
+  }
   return result;
 }
 
