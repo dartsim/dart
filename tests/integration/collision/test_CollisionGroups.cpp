@@ -400,4 +400,4 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
 INSTANTIATE_TEST_SUITE_P(
     CollisionEngine,
     CollisionGroupsTest,
-    testing::Values("dart", "fcl", "bullet", "ode"));
+    testing::Values("dart"));

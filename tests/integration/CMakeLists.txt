@@ -7,8 +7,8 @@ dart_add_test("integration" INTEGRATION_collision_CollisionGroups collision/test
 
 dart_add_test(
   "integration"
-  INTEGRATION_collision_FclPrimitiveContactMatrix
-  collision/test_FclPrimitiveContactMatrix.cpp)
+  INTEGRATION_collision_PrimitiveContactMatrix
+  collision/test_PrimitiveContactMatrix.cpp)
 
 # Additional collision tests
 if(TARGET dart-utils-urdf)

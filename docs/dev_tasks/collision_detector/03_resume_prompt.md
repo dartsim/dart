@@ -139,6 +139,8 @@ Current status:
 - Legacy detector adapters now forward to the built-in collision engine for API compatibility.
 - Adapter headers now use local stub types instead of external includes.
 - Dependency removal is complete for build and packaging: pixi environments, CMake modules, top-level link lists, and package metadata are cleaned.
+- Unit/integration collision tests now run against the built-in detector only, and the primitive contact matrix test was renamed.
+- Added a dartpy binding to toggle built-in raycast and updated python collision tests to use it.
 - Examples/tutorials migrated off backend-selection APIs; tests/benchmarks
   suppress deprecated calls.
 - `.skel` collision detector selection is deprecated and ignored (with warning).
@@ -155,6 +157,7 @@ Next focus:
 - Audit collision-related tests that still use legacy detector types and migrate them to the built-in detector as coverage permits.
 - Fix failing `pixi run -e gazebo test-gz` cases (COMMON_TEST_collisions_dartsim, COMMON_TEST_detachable_joint_dartsim, COMMON_TEST_joint_features_dartsim, COMMON_TEST_simulation_features_dartsim) and resolve the simulation features segfault.
 - Confirm adapter headers and sources compile without optional collision libraries.
+- Decide whether to prune or migrate unbuilt legacy-only tests and benchmarks that still reference removed backends.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Extend raycast coverage to additional edge cases and future shape types.
 - Keep parity/performance tracking current for legacy backend removal.

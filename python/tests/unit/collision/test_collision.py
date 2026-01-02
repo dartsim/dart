@@ -4,17 +4,9 @@ import pytest
 
 
 def _collision_detector_factories():
-    detectors = [("fcl", dart.FCLCollisionDetector)]
-
+    detectors = []
     if hasattr(dart, "DARTCollisionDetector"):
         detectors.append(("dart", dart.DARTCollisionDetector))
-
-    if hasattr(dart, "BulletCollisionDetector"):
-        detectors.append(("bullet", dart.BulletCollisionDetector))
-
-    if hasattr(dart, "OdeCollisionDetector"):
-        detectors.append(("ode", dart.OdeCollisionDetector))
-
     return detectors
 
 
@@ -201,10 +193,11 @@ def test_filter(name, cd_factory):
 
 
 def test_raycast():
-    if not hasattr(dart, "BulletCollisionDetector"):
-        pytest.skip("Bullet collision detector is not available")
+    if not hasattr(dart, "DARTCollisionDetector"):
+        pytest.skip("Built-in collision detector is not available")
 
-    cd = dart.BulletCollisionDetector()
+    cd = dart.DARTCollisionDetector()
+    cd.setRaycastEnabled(True)
 
     simple_frame = dart.SimpleFrame()
     sphere = dart.SphereShape(1)

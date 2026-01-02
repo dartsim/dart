@@ -49,11 +49,7 @@
 #include <iostream>
 #include <string>
 #include <utility>
-#if DART_HAVE_BULLET
-  #include "dart/collision/bullet/All.hpp"
-#endif
 #include "dart/collision/dart/DartCollisionDetector.hpp"
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/RevoluteJointConstraint.hpp"
@@ -410,11 +406,7 @@ TEST(World, ValidatingClones)
 
     // Set non default collision detector
     DART_SUPPRESS_DEPRECATED_BEGIN
-#if DART_HAVE_BULLET
-    worlds.back()->setCollisionDetector(CollisionDetectorType::Bullet);
-#else
     worlds.back()->setCollisionDetector(CollisionDetectorType::Dart);
-#endif
     DART_SUPPRESS_DEPRECATED_END
   }
 
@@ -493,29 +485,6 @@ TEST(World, DefaultWorldUsesBuiltInDetector)
 }
 
 //==============================================================================
-TEST(World, TypedSetterConfiguresFclPrimitive)
-{
-  auto factory = collision::CollisionDetector::getFactory();
-  ASSERT_NE(factory, nullptr);
-
-  if (!factory->canCreate("fcl"))
-    GTEST_SKIP() << "fcl collision detector is not available in this build";
-
-  auto world = World::create();
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  world->setCollisionDetector(CollisionDetectorType::Dart);
-  world->setCollisionDetector(CollisionDetectorType::Fcl);
-  DART_SUPPRESS_DEPRECATED_END
-
-  auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
-      world->getCollisionDetector());
-  ASSERT_TRUE(fclDetector);
-  EXPECT_EQ(
-      fclDetector->getPrimitiveShapeType(),
-      collision::FCLCollisionDetector::PRIMITIVE);
-}
-
-//==============================================================================
 TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
 {
   ScopedCollisionFactoryDisabler disableDart(
@@ -554,40 +523,6 @@ TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
 
   WorldConfig config;
   config.name = "fallback-pref";
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  config.collisionDetector = CollisionDetectorType::Dart;
-  DART_SUPPRESS_DEPRECATED_END
-
-  auto world = World::create(config);
-  ASSERT_TRUE(world->getCollisionDetector());
-  EXPECT_EQ(
-      world->getCollisionDetector()->getType(),
-      collision::DARTCollisionDetector::getStaticType());
-}
-
-//==============================================================================
-TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
-{
-  ScopedCollisionFactoryDisabler disableDart(
-      collision::DARTCollisionDetector::getStaticType(),
-      []() -> collision::CollisionDetectorPtr {
-        return collision::DARTCollisionDetector::create();
-      });
-
-  if (!disableDart.wasDisabled())
-    GTEST_SKIP() << "dart collision detector is not registered in this build";
-
-  ScopedCollisionFactoryDisabler disableFcl(
-      collision::FCLCollisionDetector::getStaticType(),
-      []() -> collision::CollisionDetectorPtr {
-        return collision::FCLCollisionDetector::create();
-      });
-
-  if (!disableFcl.wasDisabled())
-    GTEST_SKIP() << "fcl collision detector is not registered in this build";
-
-  WorldConfig config;
-  config.name = "no-fallback-world";
   DART_SUPPRESS_DEPRECATED_BEGIN
   config.collisionDetector = CollisionDetectorType::Dart;
   DART_SUPPRESS_DEPRECATED_END

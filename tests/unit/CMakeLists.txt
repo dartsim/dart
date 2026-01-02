@@ -23,9 +23,6 @@ dart_add_test(
 dart_add_test("unit" UNIT_collision_CollisionResult collision/test_CollisionResult.cpp)
 dart_add_test("unit" UNIT_collision_Contact collision/test_Contact.cpp)
 
-dart_add_test(
-  "unit" UNIT_collision_FCLCollisionObject collision/test_FCLCollisionObject.cpp)
-
 # ==============================================================================
 # Common Tests
 # ==============================================================================

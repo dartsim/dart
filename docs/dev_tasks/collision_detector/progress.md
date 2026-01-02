@@ -110,6 +110,8 @@
 - Deprecated backend-selection APIs and added deprecation notes to legacy
   detector classes.
 - Dependency removal is complete for build and packaging: pixi environments, CMake modules, top-level link lists, and package metadata are cleaned.
+- Updated unit/integration collision tests to use the built-in detector only, including renaming the primitive contact matrix test.
+- Added a dartpy binding to toggle built-in raycast and updated python collision tests to use it.
 - Updated `.skel` parsing to ignore collision detector selection with a
   deprecation warning.
 - Migrated examples/tutorials away from backend-selection APIs and added

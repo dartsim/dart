@@ -46,12 +46,7 @@
 
 #include <dart/io/Read.hpp>
 
-#if DART_HAVE_BULLET
-  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
-#endif
-#if DART_HAVE_ODE
-  #include <dart/collision/ode/OdeCollisionDetector.hpp>
-#endif
+#include <dart/collision/dart/DartCollisionDetector.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/Joint.hpp>
@@ -96,27 +91,12 @@ Eigen::Vector3d getTranslation(const dart::dynamics::BodyNode* bn)
   return bn->getWorldTransform().translation();
 }
 
-void setCollisionDetector(WorldPtr world, bool useOde)
+void setCollisionDetector(const WorldPtr& world)
 {
-#if DART_HAVE_ODE
-  if (useOde) {
-    DART_SUPPRESS_DEPRECATED_BEGIN
-    world->getConstraintSolver()->setCollisionDetector(
-        dart::collision::OdeCollisionDetector::create());
-    DART_SUPPRESS_DEPRECATED_END
-    return;
-  }
-#else
-  (void)useOde;
-#endif
-#if DART_HAVE_BULLET
   DART_SUPPRESS_DEPRECATED_BEGIN
   world->getConstraintSolver()->setCollisionDetector(
-      dart::collision::BulletCollisionDetector::create());
+      dart::collision::DARTCollisionDetector::create());
   DART_SUPPRESS_DEPRECATED_END
-#else
-  (void)world;
-#endif
 }
 
 void setBoxedSolver(WorldPtr world, bool usePgs)
@@ -202,7 +182,7 @@ TEST(MimicConstraint, PendulumMimicWorldFromSdf)
   ASSERT_TRUE(world);
 
   retargetMimicJoints(world, "pendulum_with_base");
-  setCollisionDetector(world, /*useOde=*/true);
+  setCollisionDetector(world);
   setBoxedSolver(world, /*usePgs=*/false);
 
   const auto baseline = world->getSkeleton("pendulum_with_base");
@@ -293,7 +273,7 @@ TEST(MimicConstraint, FollowersMatchMiddlePendulum)
   ASSERT_TRUE(world);
 
   retargetMimicJoints(world, "pendulum_with_base");
-  setCollisionDetector(world, /*useOde=*/true);
+  setCollisionDetector(world);
   setBoxedSolver(world, /*usePgs=*/false);
 
   const auto baseline = world->getSkeleton("pendulum_with_base");
@@ -420,7 +400,7 @@ TEST(MimicConstraint, FollowersMatchMiddlePendulum)
 }
 
 //==============================================================================
-TEST(MimicConstraint, OdeMimicDoesNotExplode)
+TEST(MimicConstraint, MimicDoesNotExplode)
 {
 #if !DART_HAVE_ODE
   GTEST_SKIP() << "ODE collision is not available in this build";
@@ -437,7 +417,7 @@ TEST(MimicConstraint, OdeMimicDoesNotExplode)
   ASSERT_TRUE(world);
 
   retargetMimicJoints(world, "pendulum_with_base");
-  setCollisionDetector(world, /*useOde=*/true);
+  setCollisionDetector(world);
   setBoxedSolver(world, /*usePgs=*/false);
 
   const auto baseline = world->getSkeleton("pendulum_with_base");
@@ -509,7 +489,7 @@ TEST(MimicConstraint, OdeMimicDoesNotExplode)
 }
 
 //==============================================================================
-TEST(MimicConstraint, OdeTracksReferenceLongRun)
+TEST(MimicConstraint, TracksReferenceLongRun)
 {
 #if !DART_HAVE_ODE
   GTEST_SKIP() << "ODE collision is not available in this build";
@@ -525,7 +505,7 @@ TEST(MimicConstraint, OdeTracksReferenceLongRun)
   WorldPtr world = dart::io::readWorld(Uri(worldUri), options);
   ASSERT_TRUE(world);
 
-  setCollisionDetector(world, /*useOde=*/true);
+  setCollisionDetector(world);
   setBoxedSolver(world, /*usePgs=*/false);
 
   const auto baseline = world->getSkeleton("pendulum_with_base");

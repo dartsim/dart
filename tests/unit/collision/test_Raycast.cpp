@@ -30,14 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/All.hpp"
-
 #include <dart/All.hpp>
 
 #include <gtest/gtest.h>
-#if DART_HAVE_BULLET
-  #include "dart/collision/bullet/All.hpp"
-#endif
 #include "../../helpers/GTestUtils.hpp"
 
 using namespace dart;
@@ -120,12 +115,6 @@ TEST(Raycast, RaycastOptionHonorsPredicate)
 //==============================================================================
 void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
 {
-  if (cd->getType() != "bullet") {
-    DART_WARN(
-        "Aborting test: distance check is not supported by {}.", cd->getType());
-    return;
-  }
-
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
 
   auto shape1 = std::make_shared<SphereShape>(1.0);
@@ -203,27 +192,14 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
 //==============================================================================
 TEST(Raycast, testBasicInterface)
 {
-  auto fcl = FCLCollisionDetector::create();
-  testBasicInterface(fcl);
-
-#if DART_HAVE_BULLET
-  auto bullet = BulletCollisionDetector::create();
-  testBasicInterface(bullet);
-#endif
-
   auto dart = DARTCollisionDetector::create();
+  dart->setRaycastEnabled(true);
   testBasicInterface(dart);
 }
 
 //==============================================================================
 void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 {
-  if (cd->getType() != "bullet") {
-    DART_WARN(
-        "Aborting test: distance check is not supported by {}.", cd->getType());
-    return;
-  }
-
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
   auto shape1 = std::make_shared<SphereShape>(1.0);
   simpleFrame1->setShape(shape1);
@@ -286,27 +262,14 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 //==============================================================================
 TEST(Raycast, testOptions)
 {
-  auto fcl = FCLCollisionDetector::create();
-  testOptions(fcl);
-
-#if DART_HAVE_BULLET
-  auto bullet = BulletCollisionDetector::create();
-  testOptions(bullet);
-#endif
-
   auto dart = DARTCollisionDetector::create();
+  dart->setRaycastEnabled(true);
   testOptions(dart);
 }
 
 //==============================================================================
 void testFilters(const std::shared_ptr<CollisionDetector>& cd)
 {
-  if (cd->getType() != "bullet") {
-    DART_WARN(
-        "Aborting test: distance check is not supported by {}.", cd->getType());
-    return;
-  }
-
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
   auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
@@ -377,10 +340,7 @@ void testFilters(const std::shared_ptr<CollisionDetector>& cd)
 //==============================================================================
 TEST(Raycast, testFilters)
 {
-#if HAVE_BULLET
-  auto bullet = BulletCollisionDetector::create();
-  testFilters(bullet);
-#else
-  GTEST_SKIP() << "Bullet collision detector not available.";
-#endif
+  auto dart = DARTCollisionDetector::create();
+  dart->setRaycastEnabled(true);
+  testFilters(dart);
 }

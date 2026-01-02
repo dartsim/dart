@@ -54,7 +54,14 @@ void defCollisionDetector(nb::module_& m)
           []() -> const std::string& {
             return dart::collision::DARTCollisionDetector::getStaticType();
           },
-          nb::rv_policy::reference_internal);
+          nb::rv_policy::reference_internal)
+      .def(
+          "setRaycastEnabled",
+          &dart::collision::DARTCollisionDetector::setRaycastEnabled,
+          nb::arg("enabled"))
+      .def(
+          "isRaycastEnabled",
+          &dart::collision::DARTCollisionDetector::isRaycastEnabled);
 
   nb::class_<dart::collision::BulletCollisionDetector, CollisionDetector>(
       m, "BulletCollisionDetector")
