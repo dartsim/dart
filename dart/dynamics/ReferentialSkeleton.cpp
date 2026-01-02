@@ -79,7 +79,7 @@ std::size_t ReferentialSkeleton::getNumSkeletons() const noexcept
 //==============================================================================
 bool ReferentialSkeleton::hasSkeleton(const Skeleton* skel) const noexcept
 {
-  return mSkeletons.find(skel) != mSkeletons.end();
+  return mSkeletons.contains(skel);
 }
 
 //==============================================================================

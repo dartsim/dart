@@ -58,6 +58,7 @@
 #include <map>
 #include <sstream>
 #include <stdexcept>
+#include <string_view>
 #include <vector>
 
 #include <cstdint>
@@ -91,7 +92,7 @@ bool isTransparent(const ::osg::Material* material)
   return false;
 }
 
-common::filesystem::path makeTemporaryTexturePath(const std::string& extension)
+common::filesystem::path makeTemporaryTexturePath(std::string_view extension)
 {
   static std::atomic<uint64_t> counter{0};
 
@@ -123,7 +124,7 @@ common::filesystem::path makeTemporaryTexturePath(const std::string& extension)
 }
 
 bool writeTextureFile(
-    const common::filesystem::path& path, const std::string& data)
+    const common::filesystem::path& path, std::string_view data)
 {
   std::ofstream output(path.string(), std::ios::binary);
   output.write(data.data(), static_cast<std::streamsize>(data.size()));
@@ -131,18 +132,19 @@ bool writeTextureFile(
 }
 
 bool resolveTextureUri(
-    const std::string& imagePath,
+    std::string_view imagePath,
     const common::Uri* meshUri,
     common::Uri& resolved)
 {
-  if (resolved.fromString(imagePath))
+  const std::string imagePathString(imagePath);
+  if (resolved.fromString(imagePathString))
     return true;
 
-  if (resolved.fromStringOrPath(imagePath))
+  if (resolved.fromStringOrPath(imagePathString))
     return true;
 
   if (meshUri) {
-    if (resolved.fromRelativeUri(*meshUri, imagePath))
+    if (resolved.fromRelativeUri(*meshUri, imagePathString))
       return true;
   }
 
@@ -150,7 +152,7 @@ bool resolveTextureUri(
 }
 
 std::string materializeTextureImage(
-    const std::string& imagePath,
+    std::string_view imagePath,
     const common::Uri* meshUri,
     const common::ResourceRetrieverPtr& retriever,
     std::vector<std::string>& temporaryFiles)
@@ -189,7 +191,8 @@ std::string materializeTextureImage(
     return "";
   }
 
-  const auto extension = common::filesystem::path(imagePath).extension();
+  const std::string imagePathString(imagePath);
+  const auto extension = common::filesystem::path(imagePathString).extension();
   common::filesystem::path tempPath;
   try {
     tempPath = makeTemporaryTexturePath(extension.string());

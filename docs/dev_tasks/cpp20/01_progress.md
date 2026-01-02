@@ -2,8 +2,8 @@
 
 ## Status
 
-- Current phase: Phase 7 (consolidation and validation)
-- Code changes: Phase 7 in progress.
+- Current phase: Phase 8 (additional C++20 refinements)
+- Code changes: Phase 8 in progress.
 
 ## Phase checklist
 
@@ -14,8 +14,8 @@
 - Phase 4 - Span input consolidation: Complete
 - Phase 5 - String/view cleanup: Complete
 - Phase 6 - Algorithm and ranges cleanup: Complete
-- Phase 7 - Consolidation and validation: In progress
-- Phase 8 - Additional C++20 refinements: Not started
+- Phase 7 - Consolidation and validation: Complete
+- Phase 8 - Additional C++20 refinements: In progress
 - Phase 9 - Wrap-up and documentation: Not started
 
 ## Notes
@@ -63,15 +63,23 @@ test-gz`) without changing Gazebo code.
   in SDF parsing helpers and profiler formatting utilities; update common
   string trimming/splitting helpers and HTTP cache utility helpers to accept
   `std::string_view`; adjust Python bindings to keep accepting `str` inputs.
-- Phase 5 checks: `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run
-test-all` and `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run -e
-gazebo test-gz` (passed; gz-physics emits deprecation warnings).
+- Phase 5 checks: `pixi run test-all` and `pixi run -e gazebo test-gz` with
+  `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42` (passed; gz-physics emits
+  deprecation warnings).
 - Phase 6: replace manual find/find_if uses with `std::ranges::find`,
   `std::ranges::find_if`, and `std::ranges::any_of` in collision groups,
   skeleton queries, sensor manager membership checks, and world skeleton/frame
   lookups.
-- Phase 6 checks: `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run
-  test-all` and `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run -e
-  gazebo test-gz` (passed; gz-physics emits deprecation warnings).
-- Phase 7: consolidation and validation is starting; plan extended with Phase 8
+- Phase 6 checks: `pixi run test-all` and `pixi run -e gazebo test-gz` with
+  `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42` (passed; gz-physics emits
+  deprecation warnings).
+- Phase 7: consolidation and validation completed; plan extended with Phase 8
   refinements and a Phase 9 wrap-up to keep modernization work going.
+- Phase 8: broaden `std::ranges` algorithm usage for membership checks in
+  dynamics, constraints, GUI, collision, and LCP solvers; adopt
+  `std::string_view` in `.cpp`-local mesh helpers for read-only parameters;
+  replace associative-container membership checks with `contains` in common,
+  collision, and dynamics utilities.
+- Phase 8 checks: `pixi run test-all` and `pixi run -e gazebo test-gz` with
+  `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42` (passed; gz-physics emits
+  sign-compare warnings from vendored gtest headers).

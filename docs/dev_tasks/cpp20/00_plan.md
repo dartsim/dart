@@ -2,7 +2,7 @@
 
 ## Status
 
-- Active: executing phases; Phase 7 (consolidation and validation) in progress.
+- Active: executing phases; Phase 8 (additional C++20 refinements) in progress.
 
 ## Objective
 

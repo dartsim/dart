@@ -114,7 +114,7 @@ bool buildBlockData(
     if (frictionIndex < 0) {
       block.findex[r] = -1;
     } else {
-      auto it = std::find(indices.begin(), indices.end(), frictionIndex);
+      auto it = std::ranges::find(indices, frictionIndex);
       if (it == indices.end()) {
         if (message)
           *message = "Block partition must include friction index";

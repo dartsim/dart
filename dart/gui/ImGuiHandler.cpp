@@ -339,7 +339,7 @@ void ImGuiHandler::setCameraCallbacks(::osg::Camera* camera)
 //==============================================================================
 bool ImGuiHandler::hasWidget(const std::shared_ptr<ImGuiWidget>& widget) const
 {
-  return std::find(mWidgets.begin(), mWidgets.end(), widget) != mWidgets.end();
+  return std::ranges::find(mWidgets, widget) != mWidgets.end();
 }
 
 //==============================================================================

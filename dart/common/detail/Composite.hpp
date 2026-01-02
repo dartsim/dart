@@ -139,7 +139,7 @@ constexpr bool Composite::isSpecializedFor()
 template <class T>
 bool Composite::requiresAspect() const
 {
-  return (mRequiredAspects.find(typeid(T)) != mRequiredAspects.end());
+  return mRequiredAspects.contains(typeid(T));
 }
 
 //==============================================================================

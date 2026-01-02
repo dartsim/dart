@@ -2200,8 +2200,7 @@ void Skeleton::constructNewTree()
 void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 {
 #if !defined(NDEBUG)
-  std::vector<BodyNode*>::iterator repeat = std::find(
-      mSkelCache.mBodyNodes.begin(), mSkelCache.mBodyNodes.end(), _newBodyNode);
+  auto repeat = std::ranges::find(mSkelCache.mBodyNodes, _newBodyNode);
   if (repeat != mSkelCache.mBodyNodes.end()) {
     DART_ERROR(
         "Attempting to double-register the BodyNode named [{}] in the Skeleton "
@@ -2342,13 +2341,13 @@ void Skeleton::registerNode(
   if (INVALID_INDEX == _index) {
     // If this Node believes its index is invalid, then it should not exist
     // anywhere in the vector
-    DART_ASSERT(std::find(nodes.begin(), nodes.end(), _newNode) == nodes.end());
+    DART_ASSERT(std::ranges::find(nodes, _newNode) == nodes.end());
 
     nodes.push_back(_newNode);
     _index = nodes.size() - 1;
   }
 
-  DART_ASSERT(std::find(nodes.begin(), nodes.end(), _newNode) != nodes.end());
+  DART_ASSERT(std::ranges::find(nodes, _newNode) != nodes.end());
 }
 
 //==============================================================================
@@ -3887,8 +3886,7 @@ void Skeleton::updateBiasImpulse(
 
   // This skeleton should contain _bodyNode
   DART_ASSERT(
-      std::find(mSoftBodyNodes.begin(), mSoftBodyNodes.end(), _softBodyNode)
-      != mSoftBodyNodes.end());
+      std::ranges::find(mSoftBodyNodes, _softBodyNode) != mSoftBodyNodes.end());
 
 #if !defined(NDEBUG)
   // All the constraint impulse should be zero

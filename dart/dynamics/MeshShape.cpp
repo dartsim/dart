@@ -56,6 +56,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 
@@ -1524,25 +1525,25 @@ aiScene* MeshShape::cloneMesh() const
 //==============================================================================
 namespace {
 
-bool hasColladaExtension(const std::string& path)
+bool hasColladaExtension(std::string_view path)
 {
   const std::size_t extensionIndex = path.find_last_of('.');
-  if (extensionIndex == std::string::npos)
+  if (extensionIndex == std::string_view::npos)
     return false;
 
-  std::string extension = path.substr(extensionIndex);
+  std::string extension(path.substr(extensionIndex));
   std::transform(
       extension.begin(), extension.end(), extension.begin(), ::tolower);
   return extension == ".dae" || extension == ".zae";
 }
 
 bool isColladaResource(
-    const std::string& uri, const common::ResourceRetrieverPtr& retriever)
+    std::string_view uri, const common::ResourceRetrieverPtr& retriever)
 {
   if (hasColladaExtension(uri))
     return true;
 
-  const auto parsedUri = common::Uri::createFromStringOrPath(uri);
+  const auto parsedUri = common::Uri::createFromStringOrPath(std::string(uri));
   if (parsedUri.mScheme.get_value_or("file") == "file" && parsedUri.mPath) {
     if (hasColladaExtension(parsedUri.mPath.get()))
       return true;

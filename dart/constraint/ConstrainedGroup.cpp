@@ -105,8 +105,7 @@ void ConstrainedGroup::removeAllConstraints()
 bool ConstrainedGroup::containConstraint(
     const ConstConstraintBasePtr& _constraint) const
 {
-  return std::find(mConstraints.begin(), mConstraints.end(), _constraint)
-         != mConstraints.end();
+  return std::ranges::find(mConstraints, _constraint) != mConstraints.end();
 }
 
 //==============================================================================

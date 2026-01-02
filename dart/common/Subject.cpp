@@ -60,7 +60,7 @@ void Subject::addObserver(Observer* _observer) const
   if (nullptr == _observer)
     return;
 
-  if (mObservers.find(_observer) != mObservers.end())
+  if (mObservers.contains(_observer))
     return;
 
   mObservers.insert(_observer);
@@ -73,7 +73,7 @@ void Subject::removeObserver(Observer* _observer) const
   if (nullptr == _observer)
     return;
 
-  if (mObservers.find(_observer) == mObservers.end())
+  if (!mObservers.contains(_observer))
     return;
 
   mObservers.erase(_observer);

@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase 7 in progress: consolidation and validation.
+- Phase 8 in progress: additional C++20 refinements.
 
 ## Goal
 
