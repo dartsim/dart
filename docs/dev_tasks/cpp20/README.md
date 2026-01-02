@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase 7 next: consolidation and validation.
+- Phase 7 in progress: consolidation and validation.
 
 ## Goal
 

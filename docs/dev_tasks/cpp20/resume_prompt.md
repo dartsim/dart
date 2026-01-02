@@ -9,7 +9,9 @@ as long as `pixi run -e gazebo test-gz` passes without Gazebo code changes.
 Current status:
 
 - Phase 6 (algorithm and ranges cleanup) is complete on `cpp20/phase6`.
-- Phase 7 (consolidation and validation) is next and not started.
+- Phase 7 (consolidation and validation) is active on `cpp20/phase7`.
+- Plan extends to Phase 8 refinements and Phase 9 wrap-up; see
+  `docs/dev_tasks/cpp20/00_plan.md`.
 - Prior PR: dartsim/dart#2367 (phase 4 spans).
 - Phase 5 branch `cpp20/phase5` is ready but PR is deferred until phase 4 is
   merged.

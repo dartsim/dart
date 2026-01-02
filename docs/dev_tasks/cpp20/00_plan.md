@@ -2,7 +2,7 @@
 
 ## Status
 
-- Active: executing phases; Phase 7 (consolidation and validation) next.
+- Active: executing phases; Phase 7 (consolidation and validation) in progress.
 
 ## Objective
 
@@ -74,5 +74,16 @@ Adopt C++20 idioms across the codebase with no behavior changes.
 
 - Run the standard `pixi run` workflows and resolve any regressions introduced
   by modernization, including `pixi run -e gazebo test-gz`.
+
+## Phase 8 - Additional C++20 refinements
+
+- Replace remaining manual find/find_if loops with `std::ranges` algorithms
+  where they improve clarity.
+- Continue internal-only `std::string_view` adoption for read-only helpers
+  (anonymous namespaces and `.cpp`-local utilities) without changing public
+  APIs.
+
+## Phase 9 - Wrap-up and documentation
+
 - Summarize key design decisions in onboarding and remove
   `docs/dev_tasks/cpp20/` per `docs/dev_tasks/README.md`.
