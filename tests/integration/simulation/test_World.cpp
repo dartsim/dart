@@ -932,65 +932,13 @@ TEST(World, SolverEnableDisableSkipsStepAndSyncOnEnable)
 }
 
 //==============================================================================
-TEST(World, EcsEntityLifecycleNotifiesConfiguredSolver)
-{
-  WorldConfig config;
-  config.solverRouting.objects = RigidSolverType::EntityComponent;
-  auto world = std::make_shared<SolverTestWorld>(config);
-  ASSERT_TRUE(world);
-
-  for (std::size_t i = 0; i < world->getNumSolvers(); ++i) {
-    EXPECT_TRUE(world->setSolverEnabled(i, false));
-  }
-
-  std::vector<std::string> callLog;
-  auto* objectSolver = world->addSolver(std::make_unique<TrackingSolver>(
-      "object", callLog, RigidSolverType::EntityComponent));
-  auto* otherSolver = world->addSolver(std::make_unique<TrackingSolver>(
-      "other", callLog, RigidSolverType::ClassicSkeleton));
-
-  ASSERT_TRUE(objectSolver);
-  ASSERT_TRUE(otherSolver);
-
-  const auto objectIndex = world->getSolverIndex(objectSolver);
-  ASSERT_LT(objectIndex, world->getNumSolvers());
-  ASSERT_TRUE(world->moveSolver(objectIndex, 1));
-
-  ASSERT_TRUE(
-      world->setSolverEnabled(world->getSolverIndex(objectSolver), false));
-  ASSERT_TRUE(
-      world->setSolverEnabled(world->getSolverIndex(otherSolver), false));
-
-  callLog.clear();
-  const auto entity = simulation::detail::WorldEcsAccess::createEntity(*world);
-  EXPECT_FALSE(entity.isNull());
-  EXPECT_TRUE(
-      simulation::detail::WorldEcsAccess::isEntityValid(*world, entity));
-
-  const std::vector<std::string> expectedAdded{"object.entity_added"};
-  EXPECT_EQ(callLog, expectedAdded);
-
-  callLog.clear();
-  EXPECT_TRUE(
-      simulation::detail::WorldEcsAccess::destroyEntity(*world, entity));
-  EXPECT_FALSE(
-      simulation::detail::WorldEcsAccess::isEntityValid(*world, entity));
-
-  const std::vector<std::string> expectedRemoved{"object.entity_removed"};
-  EXPECT_EQ(callLog, expectedRemoved);
-}
-
-//==============================================================================
 TEST(World, RigidSolverSyncsRigidBodyState)
 {
   auto world = World::create();
   ASSERT_TRUE(world);
 
-  const auto entity = simulation::detail::WorldEcsAccess::createEntity(*world);
-  ASSERT_FALSE(entity.isNull());
-
   auto& registry = simulation::detail::WorldEcsAccess::getEntityManager(*world);
-  const auto enttEntity = simulation::detail::WorldEcsAccess::toEntt(entity);
+  const auto enttEntity = registry.create();
   ASSERT_TRUE(registry.valid(enttEntity));
 
   registry.emplace<simulation::detail::comps::RigidBodyTag>(enttEntity);

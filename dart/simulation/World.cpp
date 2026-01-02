@@ -929,80 +929,6 @@ const entt::registry& detail::WorldEcsAccess::getEntityManager(
 }
 
 //==============================================================================
-EcsEntity detail::WorldEcsAccess::createEntity(World& world)
-{
-  if (!world.mEcsData) {
-    DART_WARN(
-        "World '{}' is missing ECS storage; cannot create ECS entity.",
-        world.getName());
-    return EcsEntity();
-  }
-
-  const auto entity = world.mEcsData->entityManager.create();
-  const auto ecsEntity = toEcsEntity(entity);
-
-  auto* objectSolver = world.getObjectSolver();
-  if (objectSolver) {
-    objectSolver->handleEntityAdded(world, ecsEntity);
-  } else {
-    DART_WARN(
-        "World '{}' routes ECS objects to solver type {}, but no matching "
-        "solver is registered.",
-        world.getName(),
-        static_cast<int>(world.mObjectSolverType));
-  }
-
-  return ecsEntity;
-}
-
-//==============================================================================
-bool detail::WorldEcsAccess::destroyEntity(World& world, EcsEntity entity)
-{
-  if (!world.mEcsData) {
-    return false;
-  }
-
-  const auto enttEntity = toEntt(entity);
-  if (enttEntity == entt::null) {
-    return false;
-  }
-
-  auto& registry = world.mEcsData->entityManager;
-  if (!registry.valid(enttEntity)) {
-    return false;
-  }
-
-  auto* objectSolver = world.getObjectSolver();
-  if (objectSolver) {
-    objectSolver->handleEntityRemoved(world, entity);
-  } else {
-    DART_WARN(
-        "World '{}' routes ECS objects to solver type {}, but no matching "
-        "solver is registered.",
-        world.getName(),
-        static_cast<int>(world.mObjectSolverType));
-  }
-
-  registry.destroy(enttEntity);
-  return true;
-}
-
-//==============================================================================
-bool detail::WorldEcsAccess::isEntityValid(const World& world, EcsEntity entity)
-{
-  if (!world.mEcsData) {
-    return false;
-  }
-
-  const auto enttEntity = toEntt(entity);
-  if (enttEntity == entt::null) {
-    return false;
-  }
-
-  return world.mEcsData->entityManager.valid(enttEntity);
-}
-
-//==============================================================================
 entt::entity detail::WorldEcsAccess::toEntt(EcsEntity entity)
 {
   if (entity.isNull()) {
@@ -1066,18 +992,6 @@ Solver* World::addSolver(std::unique_ptr<Solver> solver, bool enabled)
           "support Skeletons.",
           mName,
           solverPtr->getName());
-    }
-  }
-
-  if (solverRigidType && *solverRigidType == mObjectSolverType
-      && getObjectSolver() == solverPtr) {
-    if (mEcsData) {
-      auto& registry = mEcsData->entityManager;
-      auto& entities = registry.storage<entt::entity>();
-      for (const auto entity : entities) {
-        solverPtr->handleEntityAdded(
-            *this, detail::WorldEcsAccess::toEcsEntity(entity));
-      }
     }
   }
 
@@ -1298,7 +1212,6 @@ bool World::moveSolver(std::size_t fromIndex, std::size_t toIndex)
   }
 
   Solver* previousSkeletonSolver = getSkeletonSolver();
-  Solver* previousObjectSolver = getObjectSolver();
 
   if (fromIndex == toIndex) {
     return true;
@@ -1330,25 +1243,6 @@ bool World::moveSolver(std::size_t fromIndex, std::size_t toIndex)
             "support Skeletons.",
             mName,
             currentSkeletonSolver->getName());
-      }
-    }
-  }
-
-  Solver* currentObjectSolver = getObjectSolver();
-  if (currentObjectSolver != previousObjectSolver && mEcsData) {
-    auto& registry = mEcsData->entityManager;
-    auto& entities = registry.storage<entt::entity>();
-    if (previousObjectSolver) {
-      for (const auto entity : entities) {
-        previousObjectSolver->handleEntityRemoved(
-            *this, detail::WorldEcsAccess::toEcsEntity(entity));
-      }
-    }
-
-    if (currentObjectSolver) {
-      for (const auto entity : entities) {
-        currentObjectSolver->handleEntityAdded(
-            *this, detail::WorldEcsAccess::toEcsEntity(entity));
       }
     }
   }

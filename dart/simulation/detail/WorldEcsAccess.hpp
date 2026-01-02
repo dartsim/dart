@@ -48,10 +48,6 @@ struct DART_API WorldEcsAccess final
   static entt::registry& getEntityManager(World& world);
   static const entt::registry& getEntityManager(const World& world);
 
-  static EcsEntity createEntity(World& world);
-  static bool destroyEntity(World& world, EcsEntity entity);
-  static bool isEntityValid(const World& world, EcsEntity entity);
-
   static entt::entity toEntt(EcsEntity entity);
   static EcsEntity toEcsEntity(entt::entity entity);
 };
