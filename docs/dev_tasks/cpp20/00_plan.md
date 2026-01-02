@@ -2,7 +2,7 @@
 
 ## Status
 
-- Active: executing phases; Phase 4 (span input consolidation) in progress.
+- Active: executing phases; Phase 7 (container membership cleanup) in progress.
 
 ## Objective
 
@@ -64,15 +64,25 @@ Adopt C++20 idioms across the codebase with no behavior changes.
 - Convert internal-only read-only string parameters to `std::string_view`.
 - Avoid touching public APIs unless needed for consistency or performance.
 
-## Phase 6 - Algorithm and ranges cleanup
+## Phase 6 - Internal non-owning views
 
-- Replace manual loops with `std::ranges`/algorithm helpers where readability
-  improves without behavior changes.
-- Expand `std::erase_if` usage for container cleanup where applicable.
+- Convert `.cpp`-local helpers and lambdas to accept `std::span` or
+  `std::string_view` where lifetimes are already stable.
+- Keep public APIs unchanged.
 
-## Phase 7 - Consolidation and validation
+## Phase 7 - Container membership cleanup
 
-- Run the standard `pixi run` workflows and resolve any regressions introduced
-  by modernization, including `pixi run -e gazebo test-gz`.
+- Prefer `contains` for associative membership checks.
+- Replace manual `find`/`find_if` loops with `std::ranges` algorithms where
+  clarity improves.
+
+## Phase 8 - Algorithm cleanups
+
+- Use `std::erase`/`std::erase_if` for container cleanup where applicable.
+- Prefer range-based loops over index loops when readable.
+
+## Phase 9 - Validation and wrap-up
+
+- Run `pixi run test-all` and `pixi run -e gazebo test-gz`.
 - Summarize key design decisions in onboarding and remove
   `docs/dev_tasks/cpp20/` per `docs/dev_tasks/README.md`.

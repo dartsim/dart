@@ -2,8 +2,8 @@
 
 ## Status
 
-- Current phase: Phase 4 (span input consolidation)
-- Code changes: Phase 4 in progress.
+- Current phase: Phase 7 (container membership cleanup)
+- Code changes: Phase 7 in progress.
 
 ## Phase checklist
 
@@ -11,10 +11,12 @@
 - Phase 1 - Mechanical no-op cleanup: Complete
 - Phase 2 - Standard library modernization: Complete
 - Phase 3 - Additive public header updates: Complete
-- Phase 4 - Span input consolidation: In progress
-- Phase 5 - String/view cleanup: Not started
-- Phase 6 - Algorithm and ranges cleanup: Not started
-- Phase 7 - Consolidation and validation: Not started
+- Phase 4 - Span input consolidation: Complete
+- Phase 5 - String/view cleanup: Complete
+- Phase 6 - Internal non-owning views: Complete
+- Phase 7 - Container membership cleanup: In progress
+- Phase 8 - Algorithm cleanups: Not started
+- Phase 9 - Validation and wrap-up: Not started
 
 ## Notes
 
@@ -65,3 +67,12 @@
   GUI, SDF, tests, examples, and python bindings to pass spans explicitly.
 - Phase 4 checks: `pixi run test-all` and `pixi run -e gazebo test-gz` passed;
   gz-physics emits sign-compare warnings from vendored gtest headers.
+- Phase 5: internal string utilities, HTTP cache helpers, and SDF parsing
+  helpers now prefer `std::string_view`; broadened `std::ranges` and
+  `contains` usage in core subsystems; validation completed (PR #2371).
+- Phase 6: adopt `std::span` for `.cpp`-local helpers in
+  `dart/math/optimization/Problem.cpp` and lambda indices in
+  `dart/math/lcp/other/StaggeringSolver.cpp`.
+- Phase 7: start replacing associative membership checks with `contains` in
+  `dart/gui/Viewer.cpp`, `dart/dynamics/Linkage.cpp`,
+  `dart/utils/SkelParser.cpp`, and `dart/utils/urdf/urdf_world_parser.cpp`.

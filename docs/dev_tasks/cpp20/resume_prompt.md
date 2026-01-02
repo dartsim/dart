@@ -8,10 +8,13 @@ as long as `pixi run -e gazebo test-gz` passes without Gazebo code changes.
 
 Current status:
 
-- Phase 4 (span input consolidation) is active on `cpp20/phase4`.
-- PR: dartsim/dart#2367 (update as needed).
-- Latest validation: `pixi run test-all` and `pixi run -e gazebo test-gz`
-  passed (gz-physics emits sign-compare warnings from vendored gtest headers).
+- Phase 5 is complete (PR #2371).
+- Phase 6 (internal non-owning views) is complete on `cpp20/followups`.
+- Phase 7 (container membership cleanup) is active on `cpp20/followups`.
+- Plan extends through Phase 9; see `docs/dev_tasks/cpp20/00_plan.md`.
+- Prior PRs: dartsim/dart#2367 (phase 4 spans), dartsim/dart#2371 (phase 5).
+- Latest validation: not run yet for Phase 6/7; run `pixi run test-all` and
+  `pixi run -e gazebo test-gz` before opening a PR.
 
 Required docs:
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase 4 in progress: span input consolidation.
+- Phase 7 in progress: container membership cleanup.
 
 ## Goal
 
