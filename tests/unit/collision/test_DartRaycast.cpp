@@ -973,6 +973,40 @@ TEST(DartRaycast, RotatedBoxHit)
 }
 
 //==============================================================================
+TEST(DartRaycast, RotatedBoxInsideHit)
+{
+  auto detector = createRaycastDetector();
+
+  auto frame = SimpleFrame::createShared(Frame::World());
+  frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+  const Eigen::Matrix3d rotation
+      = Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitZ())
+            .toRotationMatrix();
+  frame->setRotation(rotation);
+
+  auto group = detector->createCollisionGroup(frame.get());
+
+  RaycastOption option;
+  RaycastResult result;
+
+  const double root2 = std::sqrt(2.0);
+  const Eigen::Vector3d axisX = rotation.col(0);
+
+  detector->raycast(
+      group.get(),
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(3.0, 0.0, 0.0),
+      option,
+      &result);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mRayHits.size(), 1u);
+  const auto& hit = result.mRayHits[0];
+  EXPECT_TRUE(equals(hit.mPoint, Eigen::Vector3d(root2, 0.0, 0.0)));
+  EXPECT_TRUE(equals(hit.mNormal, axisX));
+  EXPECT_NEAR(hit.mFraction, root2 / 3.0, kFractionTolerance);
+}
+
+//==============================================================================
 TEST(DartRaycast, RotatedBoxParallelMiss)
 {
   auto detector = createRaycastDetector();
