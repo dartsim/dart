@@ -911,10 +911,10 @@ void applyMimicConstraints(
     if (!joint)
       continue;
 
-    std::vector<dynamics::MimicDofProperties> props(
-        joint->getMimicDofProperties().begin(),
-        joint->getMimicDofProperties().end());
-    props.resize(joint->getNumDofs());
+    const auto existingProps = joint->getMimicDofProperties();
+    std::vector<dynamics::MimicDofProperties> props(joint->getNumDofs());
+    for (std::size_t i = 0; i < existingProps.size() && i < props.size(); ++i)
+      props[i] = existingProps[i];
 
     bool applied = false;
     bool useCoupler = false;
