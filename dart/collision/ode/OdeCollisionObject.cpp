@@ -42,7 +42,7 @@ namespace collision {
 OdeCollisionObject::~OdeCollisionObject() = default;
 
 OdeCollisionObject::OdeCollisionObject(
-    OdeCollisionDetector* collisionDetector,
+    CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame)
   : DARTCollisionObject(collisionDetector, shapeFrame),
     mOdeGeom(nullptr),

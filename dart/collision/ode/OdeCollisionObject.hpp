@@ -57,7 +57,7 @@ public:
 
 protected:
   OdeCollisionObject(
-      OdeCollisionDetector* collisionDetector,
+      CollisionDetector* collisionDetector,
       const dynamics::ShapeFrame* shapeFrame);
 
   OdeCollisionObject& operator=(OdeCollisionObject&& other);
