@@ -2,48 +2,67 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project(dart-examples)
 
-# None GUI examples
-add_subdirectory(hello_world)
-add_subdirectory(speed_test)
+# Getting started examples
+add_subdirectory(00_getting_started/hello_world)
+add_subdirectory(00_getting_started/simple_frames)
 
-# OSG renderer examples
-add_subdirectory(add_delete_skels)
-add_subdirectory(atlas_puppet)
-add_subdirectory(atlas_simbicon)
-add_subdirectory(biped_stand)
-add_subdirectory(box_stacking)
-add_subdirectory(boxes)
-add_subdirectory(coupler_constraint)
-add_subdirectory(drag_and_drop)
-add_subdirectory(empty)
-add_subdirectory(mimic_pendulums)
-add_subdirectory(hardcoded_design)
-add_subdirectory(heightmap)
-add_subdirectory(human_joint_limits)
-add_subdirectory(hybrid_dynamics)
-add_subdirectory(hubo_puppet)
-add_subdirectory(imgui)
-add_subdirectory(lcp_solvers)
-add_subdirectory(free_joint_cases)
-add_subdirectory(joint_constraints)
-add_subdirectory(mixed_chain)
-add_subdirectory(operational_space_control)
-add_subdirectory(polyhedron_visual)
-add_subdirectory(capsule_ground_contact)
+# Rigid bodies and frames examples
+add_subdirectory(01_rigid_bodies_and_frames/boxes)
+add_subdirectory(01_rigid_bodies_and_frames/hardcoded_design)
+add_subdirectory(01_rigid_bodies_and_frames/rigid_cubes)
+
+# Joints and constraints examples
+add_subdirectory(02_joints_and_constraints/coupler_constraint)
+add_subdirectory(02_joints_and_constraints/free_joint_cases)
+add_subdirectory(02_joints_and_constraints/human_joint_limits)
+add_subdirectory(02_joints_and_constraints/joint_constraints)
+add_subdirectory(02_joints_and_constraints/mimic_pendulums)
+add_subdirectory(02_joints_and_constraints/rigid_chain)
+add_subdirectory(02_joints_and_constraints/rigid_loop)
+add_subdirectory(02_joints_and_constraints/lcp_solvers)
+
+# Collisions and contacts examples
+add_subdirectory(03_collisions_and_contacts/box_stacking)
+add_subdirectory(03_collisions_and_contacts/capsule_ground_contact)
+add_subdirectory(03_collisions_and_contacts/heightmap)
+add_subdirectory(03_collisions_and_contacts/rigid_shapes)
+
+# Control and IK examples
+add_subdirectory(04_control_and_ik/atlas_puppet)
+add_subdirectory(04_control_and_ik/atlas_simbicon)
+add_subdirectory(04_control_and_ik/biped_stand)
+add_subdirectory(04_control_and_ik/hubo_puppet)
+add_subdirectory(04_control_and_ik/operational_space_control)
+add_subdirectory(04_control_and_ik/vehicle)
+add_subdirectory(04_control_and_ik/wam_ikfast)
+
+# IO and models examples
+add_subdirectory(05_io_and_models/unified_loading)
+add_subdirectory(05_io_and_models/fetch)
+add_subdirectory(05_io_and_models/g1_puppet)
+
+# Soft and hybrid examples
+add_subdirectory(06_soft_and_hybrid/hybrid_dynamics)
+add_subdirectory(06_soft_and_hybrid/mixed_chain)
+add_subdirectory(06_soft_and_hybrid/soft_bodies)
+
+# Visualization and interaction examples
+add_subdirectory(07_visualization_and_interaction/add_delete_skels)
+add_subdirectory(07_visualization_and_interaction/drag_and_drop)
+add_subdirectory(07_visualization_and_interaction/empty)
+add_subdirectory(07_visualization_and_interaction/imgui)
+add_subdirectory(07_visualization_and_interaction/polyhedron_visual)
+add_subdirectory(07_visualization_and_interaction/raylib)
+add_subdirectory(07_visualization_and_interaction/simulation_event_handler)
+add_subdirectory(07_visualization_and_interaction/tinkertoy)
+
+# Performance and scaling examples
+add_subdirectory(08_performance_and_scaling/headless_simulation)
+add_subdirectory(08_performance_and_scaling/speed_test)
+
+# Integration and tools examples
 if(DART_HAVE_OCTOMAP)
-  add_subdirectory(point_cloud)
+  add_subdirectory(09_integration_and_tools/point_cloud)
 endif()
-add_subdirectory(rigid_chain)
-add_subdirectory(rigid_cubes)
-add_subdirectory(rigid_loop)
-add_subdirectory(rigid_shapes)
-add_subdirectory(simple_frames)
-add_subdirectory(simulation_event_handler)
-add_subdirectory(soft_bodies)
-add_subdirectory(g1_puppet)
-add_subdirectory(tinkertoy)
-add_subdirectory(vehicle)
-add_subdirectory(wam_ikfast)
-
-# MJCF model based examples
-add_subdirectory(fetch)
+add_subdirectory(09_integration_and_tools/csv_logger)
+add_subdirectory(09_integration_and_tools/rerun)
