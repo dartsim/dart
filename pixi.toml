@@ -2242,7 +2242,7 @@ wheel-repair = { depends-on = [
 #==============
 
 [environments]
-default = ["testing", "py-default"]
+default = ["py-default"]
 gazebo = ["gazebo"]
 py312-wheel = ["py312-wheel"]
 py313-wheel = ["py313-wheel"]
