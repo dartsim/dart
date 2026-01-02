@@ -216,7 +216,7 @@ const IKHierarchy& HierarchicalIK::getIKHierarchy() const
 }
 
 //==============================================================================
-const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
+std::span<const Eigen::MatrixXd> HierarchicalIK::computeNullSpaces() const
 {
   bool recompute = false;
   const ConstSkeletonPtr& skel = getSkeleton();
@@ -238,7 +238,7 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
   // indexing and changes in Joint / BodyNode properties.
 
   if (!recompute)
-    return mNullSpaceCache;
+    return std::span<const Eigen::MatrixXd>(mNullSpaceCache);
 
   const IKHierarchy& hierarchy = getIKHierarchy();
 
@@ -268,7 +268,7 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
         continue;
 
       const math::Jacobian& J = ik->computeJacobian();
-      const std::vector<std::size_t>& dofs = ik->getDofs();
+      const auto dofs = ik->getDofs();
 
       mJacCache.setZero();
       std::size_t d = 0;
@@ -292,7 +292,7 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
     }
   }
 
-  return mNullSpaceCache;
+  return std::span<const Eigen::MatrixXd>(mNullSpaceCache);
 }
 
 //==============================================================================
@@ -407,7 +407,7 @@ void HierarchicalIK::Objective::evalGradient(
 
     hik->setPositions(_x);
 
-    const std::vector<Eigen::MatrixXd>& nullspaces = hik->computeNullSpaces();
+    const auto nullspaces = hik->computeNullSpaces();
     if (nullspaces.size() > 0) {
       // Project through the deepest null space
       mGradCache = nullspaces.back() * mGradCache;
@@ -456,7 +456,7 @@ double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x)
       if (!ik->isActive())
         continue;
 
-      const std::vector<std::size_t>& dofs = ik->getDofs();
+      const auto dofs = ik->getDofs();
       Eigen::VectorXd q(dofs.size());
       for (std::size_t k = 0; k < dofs.size(); ++k)
         q[k] = _x[dofs[k]];
@@ -480,7 +480,7 @@ void HierarchicalIK::Constraint::evalGradient(
   const IKHierarchy& hierarchy = hik->getIKHierarchy();
   const SkeletonPtr& skel = hik->getSkeleton();
   const std::size_t nDofs = skel->getNumDofs();
-  const std::vector<Eigen::MatrixXd>& nullspaces = hik->computeNullSpaces();
+  const auto nullspaces = hik->computeNullSpaces();
 
   _grad.setZero();
   for (std::size_t i = 0; i < hierarchy.size(); ++i) {
@@ -494,7 +494,7 @@ void HierarchicalIK::Constraint::evalGradient(
         continue;
 
       // Grab only the dependent coordinates from q
-      const std::vector<std::size_t>& dofs = ik->getDofs();
+      const auto dofs = ik->getDofs();
       Eigen::VectorXd q(dofs.size());
       for (std::size_t k = 0; k < dofs.size(); ++k)
         q[k] = _x[dofs[k]];
@@ -579,7 +579,8 @@ void HierarchicalIK::copyOverSetup(
     newProblem->addIneqConstraint(
         cloneIkFunc(mProblem->getIneqConstraint(i), _otherIK));
 
-  newProblem->getSeeds() = mProblem->getSeeds();
+  const auto seeds = mProblem->getSeeds();
+  newProblem->getSeeds().assign(seeds.begin(), seeds.end());
 }
 
 //==============================================================================

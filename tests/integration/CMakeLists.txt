@@ -169,10 +169,6 @@ if(TARGET dart-utils)
   dart_add_test("integration" INTEGRATION_io_SkelParser io/test_SkelParser.cpp)
   target_link_libraries(INTEGRATION_io_SkelParser dart-utils)
 
-  if(NOT MSVC)
-    dart_add_test("integration" INTEGRATION_io_VskParser io/test_VskParser.cpp)
-    target_link_libraries(INTEGRATION_io_VskParser dart-utils)
-  endif()
 endif()
 
 if(TARGET dart-io)

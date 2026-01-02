@@ -3,7 +3,8 @@
 You are a Codex agent working in `/home/js/dev/dartsim/dart/build_system`.
 
 Goal: modernize the codebase to idiomatic C++20 with no behavior changes.
-Keep public APIs and ABI stable.
+Public API/ABI breaks are acceptable for DART 7 when needed for span migrations,
+as long as `pixi run -e gazebo test-gz` passes without Gazebo code changes.
 
 Required docs:
 
@@ -24,8 +25,9 @@ Workflow:
    changes, behavior changes, or new dependencies.
 4. Skip generated or third-party code unless there is a clear need to update
    it.
-5. Prefer implementation-only refactors. If touching public headers, keep
-   existing signatures and layouts; add overloads only if needed.
+5. Prefer implementation-only refactors. If touching public headers, replace
+   const vector-reference getters with `std::span` where appropriate and remove
+   redundant span helper accessors; expect API/ABI breaks.
 6. Use C++20 features where they improve clarity: `std::span`,
    `std::string_view`, `std::optional`, `std::variant`, `std::ranges`,
    `std::chrono`, `std::erase_if`, `constexpr`, `[[nodiscard]]`,
@@ -37,5 +39,7 @@ Deliverables per phase:
 - Code changes that preserve behavior.
 - Progress update in `docs/dev_tasks/cpp20/01_progress.md`.
 - Brief summary of what changed and what remains.
+- Run `pixi run lint`, `pixi run test`, and `pixi run -e gazebo test-gz` after
+  Phase 3 changes.
 
 If any instructions conflict, ask the user before proceeding.

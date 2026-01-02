@@ -91,9 +91,8 @@ void DragAndDrop::update()
   } else // not moving
   {
     if (BUTTON_PUSH == event) {
-      const std::vector<PickInfo>& picks
-          = mViewer->getDefaultEventHandler()->getButtonPicks(
-              LEFT_MOUSE, BUTTON_PUSH);
+      const auto picks = mViewer->getDefaultEventHandler()->getButtonPicks(
+          LEFT_MOUSE, BUTTON_PUSH);
 
       for (const PickInfo& pick : picks) {
         if (pick.frame == mEntity) {
@@ -324,9 +323,8 @@ void SimpleFrameShapeDnD::update()
     move();
   } else {
     if (BUTTON_PUSH == event) {
-      const std::vector<PickInfo>& picks
-          = mViewer->getDefaultEventHandler()->getButtonPicks(
-              LEFT_MOUSE, BUTTON_PUSH);
+      const auto picks = mViewer->getDefaultEventHandler()->getButtonPicks(
+          LEFT_MOUSE, BUTTON_PUSH);
 
       for (const PickInfo& pick : picks) {
         if (pick.frame == mFrame && pick.shape.get() == mShape) {
@@ -376,7 +374,7 @@ public:
       bool stop_highlighting = false;
 
       if (BUTTON_RELEASE == event || BUTTON_NOTHING == event) {
-        const std::vector<PickInfo>& picks = mEventHandler->getMovePicks();
+        const auto picks = mEventHandler->getMovePicks();
         if (picks.size() > 0) {
           const PickInfo& pick = picks[0];
           if (pick.frame->getParentFrame()
@@ -398,7 +396,7 @@ public:
       if (BUTTON_NOTHING != event && BUTTON_RELEASE != event)
         return;
 
-      const std::vector<PickInfo> picks = mEventHandler->getMovePicks();
+      const auto picks = mEventHandler->getMovePicks();
       if (picks.size() == 0)
         return;
 
@@ -480,9 +478,8 @@ public:
     } else // not moving
     {
       if (BUTTON_PUSH == event) {
-        const std::vector<PickInfo>& picks
-            = mViewer->getDefaultEventHandler()->getButtonPicks(
-                LEFT_MOUSE, BUTTON_PUSH);
+        const auto picks = mViewer->getDefaultEventHandler()->getButtonPicks(
+            LEFT_MOUSE, BUTTON_PUSH);
 
         for (const PickInfo& pick : picks) {
           if (pick.frame->getParentFrame() == mEntity) {
@@ -644,9 +641,8 @@ void BodyNodeDnD::update()
   } else // not moving
   {
     if (BUTTON_PUSH == event) {
-      const std::vector<PickInfo>& picks
-          = mViewer->getDefaultEventHandler()->getButtonPicks(
-              LEFT_MOUSE, BUTTON_PUSH);
+      const auto picks = mViewer->getDefaultEventHandler()->getButtonPicks(
+          LEFT_MOUSE, BUTTON_PUSH);
 
       for (const PickInfo& pick : picks) {
         if (pick.frame->getParentFrame() == mEntity) {

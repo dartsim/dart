@@ -51,6 +51,7 @@
 #include <dart/Export.hpp>
 
 #include <mutex>
+#include <span>
 
 namespace dart {
 namespace dynamics {
@@ -107,7 +108,7 @@ public:
         const Eigen::VectorXd& commands = Eigen::VectorXd());
 
     Configuration(
-        const std::vector<std::size_t>& indices,
+        std::span<const std::size_t> indices,
         const Eigen::VectorXd& positions = Eigen::VectorXd(),
         const Eigen::VectorXd& velocities = Eigen::VectorXd(),
         const Eigen::VectorXd& accelerations = Eigen::VectorXd(),
@@ -203,7 +204,7 @@ public:
 
   /// Get the configuration of the specified indices in this Skeleton
   Configuration getConfiguration(
-      const std::vector<std::size_t>& indices, int flags = CONFIG_ALL) const;
+      std::span<const std::size_t> indices, int flags = CONFIG_ALL) const;
 
   /// \}
 
@@ -364,7 +365,7 @@ public:
   /// Deprecated list getter retained for backward compatibility until
   /// gz-physics migrates.
   DART_DEPRECATED(6.13)
-  const std::vector<const BodyNode*>& getBodyNodes() const override;
+  std::span<const BodyNode* const> getBodyNodes() const override;
 
   /// Get soft body node whose name is _name
   SoftBodyNode* getSoftBodyNode(const std::string& _name);
@@ -395,7 +396,7 @@ public:
       const BodyNode* _bn, bool _warning = true) const override;
 
   /// Get the BodyNodes belonging to a tree in this Skeleton
-  const std::vector<BodyNode*>& getTreeBodyNodes(std::size_t _treeIdx);
+  std::span<BodyNode* const> getTreeBodyNodes(std::size_t _treeIdx);
 
   /// Get the BodyNodes belonging to a tree in this Skeleton
   std::vector<const BodyNode*> getTreeBodyNodes(std::size_t _treeIdx) const;
@@ -462,7 +463,7 @@ public:
   /// Deprecated DOF list getter retained for backward compatibility until
   /// gz-physics migrates.
   DART_DEPRECATED(6.13)
-  const std::vector<DegreeOfFreedom*>& getDofs() override;
+  std::span<DegreeOfFreedom* const> getDofs() override;
 
   /// Deprecated DOF list getter retained for backward compatibility until
   /// gz-physics migrates.
@@ -474,10 +475,10 @@ public:
       const DegreeOfFreedom* _dof, bool _warning = true) const override;
 
   /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
-  const std::vector<DegreeOfFreedom*>& getTreeDofs(std::size_t _treeIdx);
+  std::span<DegreeOfFreedom* const> getTreeDofs(std::size_t _treeIdx);
 
   /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
-  const std::vector<const DegreeOfFreedom*>& getTreeDofs(
+  std::span<const DegreeOfFreedom* const> getTreeDofs(
       std::size_t _treeIdx) const;
 
   /// This function is only meant for debugging purposes. It will verify that
@@ -558,11 +559,11 @@ public:
 
   /// Get a list of the EndEffector indices that correspond to each of the
   /// points in the support polygon.
-  const std::vector<std::size_t>& getSupportIndices() const;
+  std::span<const std::size_t> getSupportIndices() const;
 
   /// Same as getSupportIndices(), but it corresponds to the support polygon of
   /// the specified tree within this Skeleton
-  const std::vector<std::size_t>& getSupportIndices(std::size_t _treeIdx) const;
+  std::span<const std::size_t> getSupportIndices(std::size_t _treeIdx) const;
 
   /// Get the axes that correspond to each component in the support polygon.
   /// These axes are needed in order to map the points on a support polygon

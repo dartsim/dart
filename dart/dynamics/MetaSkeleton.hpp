@@ -47,6 +47,7 @@
 
 #include <Eigen/Dense>
 
+#include <span>
 #include <string>
 #include <vector>
 
@@ -135,7 +136,7 @@ public:
   /// Deprecated BodyNode list getter kept for downstream consumers (e.g.,
   /// gz-physics) until they migrate away from it.
   DART_DEPRECATED(6.13)
-  virtual const std::vector<const BodyNode*>& getBodyNodes() const = 0;
+  virtual std::span<const BodyNode* const> getBodyNodes() const = 0;
 
   /// Returns all the BodyNodes of given name.
   /// @param[in] name The BodyNode name that want to search.
@@ -228,7 +229,7 @@ public:
   /// Deprecated DOF list getter kept for downstream consumers (e.g.,
   /// gz-physics) until they migrate away from it.
   DART_DEPRECATED(6.13)
-  virtual const std::vector<DegreeOfFreedom*>& getDofs() = 0;
+  virtual std::span<DegreeOfFreedom* const> getDofs() = 0;
 
   /// Deprecated DOF list getter kept for downstream consumers (e.g.,
   /// gz-physics) until they migrate away from it.
@@ -259,14 +260,13 @@ public:
 
   /// Set commands for a subset of the generalized coordinates
   void setCommands(
-      const std::vector<std::size_t>& _indices,
-      const Eigen::VectorXd& _commands);
+      std::span<const std::size_t> _indices, const Eigen::VectorXd& _commands);
 
   /// Get commands for all generalized coordinates
   Eigen::VectorXd getCommands() const;
 
   /// Get commands for a subset of the generalized coordinates
-  Eigen::VectorXd getCommands(const std::vector<std::size_t>& _indices) const;
+  Eigen::VectorXd getCommands(std::span<const std::size_t> _indices) const;
 
   /// Set all commands to zero
   void resetCommands();
@@ -288,14 +288,13 @@ public:
 
   /// Set the positions for a subset of the generalized coordinates
   void setPositions(
-      const std::vector<std::size_t>& _indices,
-      const Eigen::VectorXd& _positions);
+      std::span<const std::size_t> _indices, const Eigen::VectorXd& _positions);
 
   /// Get the positions for all generalized coordinates
   Eigen::VectorXd getPositions() const;
 
   /// Get the positions for a subset of the generalized coordinates
-  Eigen::VectorXd getPositions(const std::vector<std::size_t>& _indices) const;
+  Eigen::VectorXd getPositions(std::span<const std::size_t> _indices) const;
 
   /// Set all positions to zero
   void resetPositions();
@@ -308,8 +307,7 @@ public:
 
   /// Set the lower limits for a subset of the generalized coordinates
   void setPositionLowerLimits(
-      const std::vector<std::size_t>& indices,
-      const Eigen::VectorXd& positions);
+      std::span<const std::size_t> indices, const Eigen::VectorXd& positions);
 
   /// Get the lower limit of a generalized coordinate's position
   double getPositionLowerLimit(std::size_t _index) const;
@@ -319,7 +317,7 @@ public:
 
   /// Get the lower limits for a subset of the generalized coordinates
   Eigen::VectorXd getPositionLowerLimits(
-      const std::vector<std::size_t>& indices) const;
+      std::span<const std::size_t> indices) const;
 
   /// Set the upper limit of a generalized coordainte's position
   void setPositionUpperLimit(std::size_t _index, double _position);
@@ -329,8 +327,7 @@ public:
 
   /// Set the upper limits for a subset of the generalized coordinates
   void setPositionUpperLimits(
-      const std::vector<std::size_t>& indices,
-      const Eigen::VectorXd& positions);
+      std::span<const std::size_t> indices, const Eigen::VectorXd& positions);
 
   /// Get the upper limit of a generalized coordinate's position
   double getPositionUpperLimit(std::size_t _index) const;
@@ -340,7 +337,7 @@ public:
 
   /// Get the upper limits for a subset of the generalized coordinates
   Eigen::VectorXd getPositionUpperLimits(
-      const std::vector<std::size_t>& indices) const;
+      std::span<const std::size_t> indices) const;
 
   /// \}
 
@@ -359,14 +356,14 @@ public:
 
   /// Set the velocities of a subset of the generalized coordinates
   void setVelocities(
-      const std::vector<std::size_t>& _indices,
+      std::span<const std::size_t> _indices,
       const Eigen::VectorXd& _velocities);
 
   /// Get the velocities for all generalized coordinates
   Eigen::VectorXd getVelocities() const;
 
   /// Get the velocities for a subset of the generalized coordinates
-  Eigen::VectorXd getVelocities(const std::vector<std::size_t>& _indices) const;
+  Eigen::VectorXd getVelocities(std::span<const std::size_t> _indices) const;
 
   /// Set all velocities to zero
   void resetVelocities();
@@ -380,8 +377,7 @@ public:
   /// Set the lower limits for a subset of the generalized coordinates's
   /// velocity
   void setVelocityLowerLimits(
-      const std::vector<std::size_t>& indices,
-      const Eigen::VectorXd& velocities);
+      std::span<const std::size_t> indices, const Eigen::VectorXd& velocities);
 
   /// Get the lower limit of a generalized coordinate's velocity
   double getVelocityLowerLimit(std::size_t _index);
@@ -392,7 +388,7 @@ public:
   /// Get the lower limits for a subset of the generalized coordinates's
   /// velocity
   Eigen::VectorXd getVelocityLowerLimits(
-      const std::vector<std::size_t>& indices) const;
+      std::span<const std::size_t> indices) const;
 
   /// Set the upper limit of a generalized coordinate's velocity
   void setVelocityUpperLimit(std::size_t _index, double _velocity);
@@ -403,8 +399,7 @@ public:
   /// Set the upper limits for a subset of the generalized coordinates's
   /// velocity
   void setVelocityUpperLimits(
-      const std::vector<std::size_t>& indices,
-      const Eigen::VectorXd& velocities);
+      std::span<const std::size_t> indices, const Eigen::VectorXd& velocities);
 
   /// Get the upper limit of a generalized coordinate's velocity
   double getVelocityUpperLimit(std::size_t _index);
@@ -415,7 +410,7 @@ public:
   /// Get the upper limits for a subset of the generalized coordinates's
   /// velocity
   Eigen::VectorXd getVelocityUpperLimits(
-      const std::vector<std::size_t>& indices) const;
+      std::span<const std::size_t> indices) const;
 
   /// \}
 
@@ -434,15 +429,14 @@ public:
 
   /// Set the accelerations of a subset of the generalized coordinates
   void setAccelerations(
-      const std::vector<std::size_t>& _indices,
+      std::span<const std::size_t> _indices,
       const Eigen::VectorXd& _accelerations);
 
   /// Get the accelerations for all generalized coordinates
   Eigen::VectorXd getAccelerations() const;
 
   /// Get the accelerations for a subset of the generalized coordinates
-  Eigen::VectorXd getAccelerations(
-      const std::vector<std::size_t>& _indices) const;
+  Eigen::VectorXd getAccelerations(std::span<const std::size_t> _indices) const;
 
   /// Set all accelerations to zero
   void resetAccelerations();
@@ -456,7 +450,7 @@ public:
   /// Set the lower limits for a subset of the generalized coordinates's
   /// acceleration
   void setAccelerationLowerLimits(
-      const std::vector<std::size_t>& indices,
+      std::span<const std::size_t> indices,
       const Eigen::VectorXd& accelerations);
 
   /// Get the lower limit of a generalized coordinate's acceleration
@@ -468,7 +462,7 @@ public:
   /// Get the lower limits for a subset of the generalized coordinates's
   /// acceleration
   Eigen::VectorXd getAccelerationLowerLimits(
-      const std::vector<std::size_t>& indices) const;
+      std::span<const std::size_t> indices) const;
 
   /// Set the upper limit of a generalized coordinate's acceleration
   void setAccelerationUpperLimit(std::size_t _index, double _acceleration);
@@ -479,7 +473,7 @@ public:
   /// Set the upper limits for a subset of the generalized coordinates's
   /// acceleration
   void setAccelerationUpperLimits(
-      const std::vector<std::size_t>& indices,
+      std::span<const std::size_t> indices,
       const Eigen::VectorXd& accelerations);
 
   /// Get the upper limit of a generalized coordinate's acceleration
@@ -491,7 +485,7 @@ public:
   /// Get the upper limits for a subset of the generalized coordinates's
   /// acceleration
   Eigen::VectorXd getAccelerationUpperLimits(
-      const std::vector<std::size_t>& indices) const;
+      std::span<const std::size_t> indices) const;
 
   /// \}
 
@@ -510,13 +504,13 @@ public:
 
   /// Set the forces of a subset of the generalized coordinates
   void setForces(
-      const std::vector<std::size_t>& _index, const Eigen::VectorXd& _forces);
+      std::span<const std::size_t> _index, const Eigen::VectorXd& _forces);
 
   /// Get the forces for all generalized coordinates
   Eigen::VectorXd getForces() const;
 
   /// Get the forces for a subset of the generalized coordinates
-  Eigen::VectorXd getForces(const std::vector<std::size_t>& _indices) const;
+  Eigen::VectorXd getForces(std::span<const std::size_t> _indices) const;
 
   /// Set all forces of the generalized coordinates to zero
   void resetGeneralizedForces();
@@ -529,7 +523,7 @@ public:
 
   /// Set the lower limits for a subset of the generalized coordinates's force
   void setForceLowerLimits(
-      const std::vector<std::size_t>& indices, const Eigen::VectorXd& forces);
+      std::span<const std::size_t> indices, const Eigen::VectorXd& forces);
 
   /// Get the lower limit of a generalized coordinate's force
   double getForceLowerLimit(std::size_t _index) const;
@@ -539,7 +533,7 @@ public:
 
   /// Get the lower limits for a subset of the generalized coordinates's force
   Eigen::VectorXd getForceLowerLimits(
-      const std::vector<std::size_t>& indices) const;
+      std::span<const std::size_t> indices) const;
 
   /// Set the upper limit of a generalized coordinate's force
   void setForceUpperLimit(std::size_t _index, double _force);
@@ -549,7 +543,7 @@ public:
 
   /// Set the upper limits for a subset of the generalized coordinates's force
   void setForceUpperLimits(
-      const std::vector<std::size_t>& indices, const Eigen::VectorXd& forces);
+      std::span<const std::size_t> indices, const Eigen::VectorXd& forces);
 
   /// Get the upper limit of a generalized coordinate's force
   double getForceUpperLimit(std::size_t _index) const;
@@ -559,7 +553,7 @@ public:
 
   /// Get the upper limits for a subset of the generalized coordinates's force
   Eigen::VectorXd getForceUpperLimits(
-      const std::vector<std::size_t>& indices) const;
+      std::span<const std::size_t> indices) const;
 
   /// \}
 
@@ -918,6 +912,11 @@ public:
   void setAlpha(double alpha);
 
   /// \{ @name Iterations
+
+  /// Note: For simple iteration without early-exit, prefer span-returning
+  /// accessors (e.g., getBodyNodes()/getDofs() const) with range-for. The
+  /// each*() helpers remain for early-exit and for types that don't expose
+  /// contiguous storage.
 
   /// Iterates all the BodyNodes in this MetaSkeleton and invokes the callback
   /// function.

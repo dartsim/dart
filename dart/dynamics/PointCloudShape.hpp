@@ -106,7 +106,7 @@ public:
 #endif
 
   /// Returns the list of points.
-  const std::vector<Eigen::Vector3d>& getPoints() const;
+  std::span<const Eigen::Vector3d> getPoints() const;
 
   /// Returns the number of points.
   std::size_t getNumPoints() const;
@@ -138,13 +138,18 @@ public:
   ///
   /// The count of colors should be the same with points. It's undefined
   /// behavior, otherwise.
+  void setColors(std::span<const Eigen::Vector4d> colors);
+
+  /// Sets the point cloud colors.
+  ///
+  /// The count of colors should be the same with points. It's undefined
+  /// behavior, otherwise.
   void setColors(const std::vector<
                  Eigen::Vector4d,
                  Eigen::aligned_allocator<Eigen::Vector4d>>& colors);
 
   /// Returns the point cloud colors.
-  const std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d>>&
-  getColors() const;
+  std::span<const Eigen::Vector4d> getColors() const;
 
   /// Sets size of visual object that represents each point.
   void setVisualSize(double size);

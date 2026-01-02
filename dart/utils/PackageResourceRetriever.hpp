@@ -38,6 +38,7 @@
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/ResourceRetriever.hpp>
 
+#include <span>
 #include <unordered_map>
 #include <vector>
 
@@ -105,7 +106,7 @@ private:
   common::ResourceRetrieverPtr mLocalRetriever;
   std::unordered_map<std::string, std::vector<std::string>> mPackageMap;
 
-  const std::vector<std::string>& getPackagePaths(
+  std::span<const std::string> getPackagePaths(
       const std::string& _packageName) const;
   bool resolvePackageUri(
       const common::Uri& _uri,

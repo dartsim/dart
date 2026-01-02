@@ -45,6 +45,7 @@
 #include <assimp/scene.h>
 
 #include <memory>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -251,7 +252,7 @@ public:
 
   /// Returns materials extracted from the mesh (for rendering without Assimp).
   /// This provides an Assimp-free way to access material properties.
-  const std::vector<MeshMaterial>& getMaterials() const;
+  std::span<const MeshMaterial> getMaterials() const;
 
   /// Returns the number of materials in this mesh.
   std::size_t getNumMaterials() const;

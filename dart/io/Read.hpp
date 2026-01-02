@@ -67,8 +67,6 @@ enum class ModelFormat
   /// MJCF format (.xml / <mujoco>).
   Mjcf,
 
-  /// VSK format (.vsk).
-  Vsk,
 };
 
 /// Root joint type used when a model does not explicitly specify its root

@@ -295,8 +295,7 @@ void SupportPolygonVisual::refresh()
     } else {
       // We need to calculate tree COM ourselves, because that is not provided
       // by the API (yet)
-      const std::vector<dart::dynamics::BodyNode*>& bns
-          = skel->getTreeBodyNodes(mTreeIndex);
+      const auto bns = skel->getTreeBodyNodes(mTreeIndex);
 
       double mass = 0.0;
       for (std::size_t i = 0; i < bns.size(); ++i) {

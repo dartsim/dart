@@ -159,9 +159,9 @@ std::vector<Eigen::VectorXd>& Problem::getSeeds()
 }
 
 //==============================================================================
-const std::vector<Eigen::VectorXd>& Problem::getSeeds() const
+std::span<const Eigen::VectorXd> Problem::getSeeds() const
 {
-  return mSeeds;
+  return std::span<const Eigen::VectorXd>(mSeeds);
 }
 
 //==============================================================================

@@ -608,7 +608,7 @@ std::unique_ptr<CloneableVector<T>> CloneableVector<T>::clone() const
 template <typename T>
 void CloneableVector<T>::copy(const CloneableVector<T>& anotherVector)
 {
-  const std::vector<T>& other = anotherVector.getVector();
+  const auto other = anotherVector.getVector();
   mVector.resize(other.size());
 
   for (std::size_t i = 0; i < other.size(); ++i) {
@@ -630,9 +630,9 @@ std::vector<T>& CloneableVector<T>::getVector()
 
 //==============================================================================
 template <typename T>
-const std::vector<T>& CloneableVector<T>::getVector() const
+std::span<const T> CloneableVector<T>::getVector() const
 {
-  return mVector;
+  return std::span<const T>(mVector);
 }
 
 } // namespace common
