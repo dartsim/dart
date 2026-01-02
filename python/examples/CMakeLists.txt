@@ -47,18 +47,17 @@ function(dartpy_add_example example_name) # ARGN for source file
   )
 endfunction()
 
-# Automatically identify all directories in the apps folder
-file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*")
-foreach(child ${children})
-  if(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${child}")
-    if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/${child}/main.py")
-      if(DART_VERBOSE)
-        message(STATUS "Adding Python example: " py_${child})
-      endif()
-      dartpy_add_example(
-        py_example_${child}
-        "${CMAKE_CURRENT_LIST_DIR}/${child}/main.py"
-      )
-    endif()
+# Automatically identify all main.py entries under the examples tree.
+file(GLOB_RECURSE example_sources RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*/main.py")
+list(SORT example_sources)
+foreach(example_source ${example_sources})
+  get_filename_component(example_dir "${example_source}" DIRECTORY)
+  get_filename_component(example_name "${example_dir}" NAME)
+  if(DART_VERBOSE)
+    message(STATUS "Adding Python example: " py_example_${example_name})
   endif()
+  dartpy_add_example(
+    py_example_${example_name}
+    "${CMAKE_CURRENT_LIST_DIR}/${example_source}"
+  )
 endforeach()

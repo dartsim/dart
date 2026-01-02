@@ -490,7 +490,28 @@ cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_IN
   { arg = "build_type", default = "Release" },
 ] }
 
-py-ex = { cmd = "python python/examples/{{ example }}/main.py", depends-on = [
+py-ex = { cmd = [
+  "python",
+  "-c",
+  """
+import pathlib
+import runpy
+import sys
+
+root = pathlib.Path("python/examples")
+example = "{{ example }}"
+direct = root / example / "main.py"
+path = direct if direct.is_file() else None
+if path is None:
+    matches = list(root.rglob(f"{example}/main.py"))
+    if matches:
+        path = matches[0]
+if path is None:
+    print(f"Example not found: {example}", file=sys.stderr)
+    sys.exit(1)
+runpy.run_path(str(path), run_name="__main__")
+""",
+], depends-on = [
   "build-py-dev",
 ], args = [
   { arg = "example", default = "hello_world" },
@@ -824,7 +845,7 @@ ex-hello-world = { depends-on = [
 
 py-atlas-puppet = { cmd = """
     PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PYTHONPATH \
-    python python/examples/atlas_puppet/main.py
+    python python/examples/04_control_and_ik/atlas_puppet/main.py
 """, depends-on = ["build"], env = { BUILD_TYPE = "Release" } }
 
 bm = { cmd = "python scripts/run_cpp_benchmark.py", depends-on = ["config"] }
