@@ -60,6 +60,7 @@ git checkout -b feature/my-awesome-feature
 - Keep legacy files in `dart/` and `python/dartpy/` using PascalCase names, but use snake_case for anything new in `dart8/` and its related test/example directories
 - Add tests for new functionality
 - Update documentation if needed
+- If you use `docs/dev_tasks/<TASK>/` for tracking, keep it updated during work and remove the folder once the task is complete (after adding a brief note to the most relevant `docs/onboarding/*.md`)
 - Commit with clear, descriptive messages
 
 ### 4. Build and Test
