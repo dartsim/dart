@@ -8,7 +8,7 @@ as long as `pixi run -e gazebo test-gz` passes without Gazebo code changes.
 
 Current status:
 
-- Phase 4 (consolidation and validation) is active on `cpp20/phase4`.
+- Phase 4 (consolidation and validation) is complete on `cpp20/phase4`.
 - PR: dartsim/dart#2367 (update as needed).
 - Latest change: remove span-to-vector conversion in
   `tests/integration/io/test_IkFast.cpp`.
