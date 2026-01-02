@@ -157,19 +157,19 @@ void DefaultEventHandler::getNearAndFarPointUnderCursor(
 }
 
 //==============================================================================
-const std::vector<PickInfo>& DefaultEventHandler::getButtonPicks(
+std::span<const PickInfo> DefaultEventHandler::getButtonPicks(
     MouseButton button, MouseButtonEvent event) const
 {
   if (BUTTON_NOTHING == event)
-    return mMovePicks;
+    return std::span<const PickInfo>(mMovePicks);
 
-  return mButtonPicks[button][event];
+  return std::span<const PickInfo>(mButtonPicks[button][event]);
 }
 
 //==============================================================================
-const std::vector<PickInfo>& DefaultEventHandler::getMovePicks() const
+std::span<const PickInfo> DefaultEventHandler::getMovePicks() const
 {
-  return mMovePicks;
+  return std::span<const PickInfo>(mMovePicks);
 }
 
 //==============================================================================

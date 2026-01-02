@@ -44,6 +44,7 @@
 
 #include <array>
 #include <memory>
+#include <span>
 #include <vector>
 
 namespace dart {
@@ -147,12 +148,12 @@ public:
       Eigen::Vector3d& near, Eigen::Vector3d& far, double distance = 1.0) const;
 
   /// Get the most recent picks for the specified button and event type
-  const std::vector<PickInfo>& getButtonPicks(
+  std::span<const PickInfo> getButtonPicks(
       MouseButton button, MouseButtonEvent event) const;
 
   /// Get the most recent picks for a mouse movement (click-and-drag actions do
   /// not qualify as movements)
-  const std::vector<PickInfo>& getMovePicks() const;
+  std::span<const PickInfo> getMovePicks() const;
 
   /// Suppress pick detection for the specified button event
   void suppressButtonPicks(MouseButton button, MouseButtonEvent event);

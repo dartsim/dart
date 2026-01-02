@@ -92,6 +92,13 @@ void PolyhedronVisual::setVertices(std::vector<Eigen::Vector3d>&& vertices)
 }
 
 //==============================================================================
+void PolyhedronVisual::setVertices(std::span<const Eigen::Vector3d> vertices)
+{
+  mVertices.assign(vertices.begin(), vertices.end());
+  mDirty = true;
+}
+
+//==============================================================================
 void PolyhedronVisual::setVertices(
     const Eigen::Ref<const Eigen::MatrixXd>& vertices)
 {
@@ -124,9 +131,9 @@ void PolyhedronVisual::setVertices(
 }
 
 //==============================================================================
-const std::vector<Eigen::Vector3d>& PolyhedronVisual::getVertices() const
+std::span<const Eigen::Vector3d> PolyhedronVisual::getVertices() const
 {
-  return mVertices;
+  return std::span<const Eigen::Vector3d>(mVertices);
 }
 
 //==============================================================================

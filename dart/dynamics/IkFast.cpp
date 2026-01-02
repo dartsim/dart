@@ -250,7 +250,7 @@ IkFast::IkFast(
 }
 
 //==============================================================================
-auto IkFast::getDofs() const -> const std::vector<std::size_t>&
+std::span<const std::size_t> IkFast::getDofs() const
 {
   if (!mConfigured) {
     configure();
@@ -263,13 +263,13 @@ auto IkFast::getDofs() const -> const std::vector<std::size_t>&
     }
   }
 
-  return mDofs;
+  return std::span<const std::size_t>(mDofs);
 }
 
 //==============================================================================
-const std::vector<std::size_t>& IkFast::getFreeDofs() const
+std::span<const std::size_t> IkFast::getFreeDofs() const
 {
-  return mFreeDofs;
+  return std::span<const std::size_t>(mFreeDofs);
 }
 
 //==============================================================================
@@ -385,8 +385,8 @@ void IkFast::configure() const
 }
 
 //==============================================================================
-auto IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
-    -> const std::vector<InverseKinematics::Analytical::Solution>&
+std::span<const InverseKinematics::Analytical::Solution>
+IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
 {
   mSolutions.clear();
 
@@ -398,7 +398,8 @@ auto IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
           "This analytical IK was not able to configure properly, so it will "
           "not be able to compute solutions. Returning an empty list of "
           "solutions.");
-      return mSolutions;
+      return std::span<const InverseKinematics::Analytical::Solution>(
+          mSolutions);
     }
   }
 
@@ -427,7 +428,7 @@ auto IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
         mSolutions);
   }
 
-  return mSolutions;
+  return std::span<const InverseKinematics::Analytical::Solution>(mSolutions);
 }
 
 //==============================================================================

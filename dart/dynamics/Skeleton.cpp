@@ -336,13 +336,13 @@ Skeleton::Configuration::Configuration(
 
 //==============================================================================
 Skeleton::Configuration::Configuration(
-    const std::vector<std::size_t>& indices,
+    std::span<const std::size_t> indices,
     const Eigen::VectorXd& positions,
     const Eigen::VectorXd& velocities,
     const Eigen::VectorXd& accelerations,
     const Eigen::VectorXd& forces,
     const Eigen::VectorXd& commands)
-  : mIndices(indices),
+  : mIndices(indices.begin(), indices.end()),
     mPositions(positions),
     mVelocities(velocities),
     mAccelerations(accelerations),
@@ -582,7 +582,7 @@ Skeleton::Configuration Skeleton::getConfiguration(int flags) const
 
 //==============================================================================
 Skeleton::Configuration Skeleton::getConfiguration(
-    const std::vector<std::size_t>& indices, int flags) const
+    std::span<const std::size_t> indices, int flags) const
 {
   Configuration config(indices);
   if (flags == CONFIG_NOTHING)
@@ -961,7 +961,7 @@ std::vector<BodyNode*>& Skeleton::getBodyNodes()
 }
 
 //==============================================================================
-const std::vector<const BodyNode*>& Skeleton::getBodyNodes() const
+std::span<const BodyNode* const> Skeleton::getBodyNodes() const
 {
   return convertToConstPtrVector<BodyNode>(
       mSkelCache.mBodyNodes, mSkelCache.mConstBodyNodes);
@@ -1064,7 +1064,7 @@ std::size_t Skeleton::getIndexOf(const BodyNode* _bn, bool _warning) const
 }
 
 //==============================================================================
-const std::vector<BodyNode*>& Skeleton::getTreeBodyNodes(std::size_t _treeIdx)
+std::span<BodyNode* const> Skeleton::getTreeBodyNodes(std::size_t _treeIdx)
 {
   if (_treeIdx >= mTreeCache.size()) {
     std::size_t count = mTreeCache.size();
@@ -1078,7 +1078,7 @@ const std::vector<BodyNode*>& Skeleton::getTreeBodyNodes(std::size_t _treeIdx)
     DART_ASSERT(false);
   }
 
-  return mTreeCache[_treeIdx].mBodyNodes;
+  return std::span<BodyNode* const>(mTreeCache[_treeIdx].mBodyNodes);
 }
 
 //==============================================================================
@@ -1200,9 +1200,9 @@ const DegreeOfFreedom* Skeleton::getDof(const std::string& _name) const
 }
 
 //==============================================================================
-const std::vector<DegreeOfFreedom*>& Skeleton::getDofs()
+std::span<DegreeOfFreedom* const> Skeleton::getDofs()
 {
-  return mSkelCache.mDofs;
+  return std::span<DegreeOfFreedom* const>(mSkelCache.mDofs);
 }
 
 //==============================================================================
@@ -1223,13 +1223,13 @@ std::size_t Skeleton::getIndexOf(
 }
 
 //==============================================================================
-const std::vector<DegreeOfFreedom*>& Skeleton::getTreeDofs(std::size_t _treeIdx)
+std::span<DegreeOfFreedom* const> Skeleton::getTreeDofs(std::size_t _treeIdx)
 {
-  return mTreeCache[_treeIdx].mDofs;
+  return std::span<DegreeOfFreedom* const>(mTreeCache[_treeIdx].mDofs);
 }
 
 //==============================================================================
-const std::vector<const DegreeOfFreedom*>& Skeleton::getTreeDofs(
+std::span<const DegreeOfFreedom* const> Skeleton::getTreeDofs(
     std::size_t _treeIdx) const
 {
   return convertToConstPtrVector<DegreeOfFreedom>(
@@ -3584,18 +3584,18 @@ const math::SupportPolygon& Skeleton::getSupportPolygon(
 }
 
 //==============================================================================
-const std::vector<std::size_t>& Skeleton::getSupportIndices() const
+std::span<const std::size_t> Skeleton::getSupportIndices() const
 {
   getSupportPolygon();
-  return mSkelCache.mSupportIndices;
+  return std::span<const std::size_t>(mSkelCache.mSupportIndices);
 }
 
 //==============================================================================
-const std::vector<std::size_t>& Skeleton::getSupportIndices(
+std::span<const std::size_t> Skeleton::getSupportIndices(
     std::size_t _treeIdx) const
 {
   getSupportPolygon(_treeIdx);
-  return mTreeCache[_treeIdx].mSupportIndices;
+  return std::span<const std::size_t>(mTreeCache[_treeIdx].mSupportIndices);
 }
 
 //==============================================================================
