@@ -71,6 +71,7 @@
 #include <algorithm>
 #include <iostream>
 #include <memory>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -195,9 +196,10 @@ void retargetMimicsToBaseline(
 
       if (skeleton == baseline) {
         // Leave the baseline uncoupled so it serves as the reference.
+        std::vector<dart::dynamics::MimicDofProperties> clearedProps(
+            joint->getNumDofs());
         joint->setMimicJointDofs(
-            std::vector<dart::dynamics::MimicDofProperties>(
-                joint->getNumDofs()));
+            std::span<const dart::dynamics::MimicDofProperties>(clearedProps));
         joint->setActuatorType(dart::dynamics::Joint::FORCE);
         joint->setUseCouplerConstraint(false);
         continue;

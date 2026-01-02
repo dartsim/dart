@@ -2,7 +2,7 @@
 
 ## Status
 
-- Active: executing phases; Phase 3 in progress.
+- Active: executing phases; Phase 4 (span input consolidation) in progress.
 
 ## Objective
 
@@ -52,8 +52,27 @@ Adopt C++20 idioms across the codebase with no behavior changes.
 - Remove redundant span helper accessors now covered by the primary getters.
 - Keep behavior unchanged while allowing API/ABI breaks where required.
 
-## Phase 4 - Consolidation and validation
+## Phase 4 - Span input consolidation
 
-- Run the standard `pixi run` workflows and resolve any warnings introduced by
-  modernization, including `pixi run -e gazebo test-gz`.
-- Update docs only if new guidance is needed for future maintainers.
+- Remove redundant `std::vector` overloads where `std::span` covers the same
+  read-only use cases.
+- Update call sites (including python bindings) to pass spans explicitly.
+- Keep move-optimized overloads when ownership transfer matters.
+
+## Phase 5 - String/view cleanup
+
+- Convert internal-only read-only string parameters to `std::string_view`.
+- Avoid touching public APIs unless needed for consistency or performance.
+
+## Phase 6 - Algorithm and ranges cleanup
+
+- Replace manual loops with `std::ranges`/algorithm helpers where readability
+  improves without behavior changes.
+- Expand `std::erase_if` usage for container cleanup where applicable.
+
+## Phase 7 - Consolidation and validation
+
+- Run the standard `pixi run` workflows and resolve any regressions introduced
+  by modernization, including `pixi run -e gazebo test-gz`.
+- Summarize key design decisions in onboarding and remove
+  `docs/dev_tasks/cpp20/` per `docs/dev_tasks/README.md`.
