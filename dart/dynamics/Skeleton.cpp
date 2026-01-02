@@ -993,10 +993,7 @@ std::vector<const BodyNode*> Skeleton::getBodyNodes(
 //==============================================================================
 bool Skeleton::hasBodyNode(const BodyNode* bodyNode) const
 {
-  return std::find(
-             mSkelCache.mBodyNodes.begin(),
-             mSkelCache.mBodyNodes.end(),
-             bodyNode)
+  return std::ranges::find(mSkelCache.mBodyNodes, bodyNode)
          != mSkelCache.mBodyNodes.end();
 }
 
@@ -1151,13 +1148,10 @@ std::vector<const Joint*> Skeleton::getJoints(const std::string& name) const
 //==============================================================================
 bool Skeleton::hasJoint(const Joint* joint) const
 {
-  return std::find_if(
-             mSkelCache.mBodyNodes.begin(),
-             mSkelCache.mBodyNodes.end(),
-             [&joint](const BodyNode* bodyNode) {
-               return bodyNode->getParentJoint() == joint;
-             })
-         != mSkelCache.mBodyNodes.end();
+  return std::ranges::any_of(
+      mSkelCache.mBodyNodes, [&joint](const BodyNode* bodyNode) {
+        return bodyNode->getParentJoint() == joint;
+      });
 }
 
 //==============================================================================

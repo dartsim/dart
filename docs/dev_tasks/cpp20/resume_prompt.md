@@ -8,8 +8,11 @@ as long as `pixi run -e gazebo test-gz` passes without Gazebo code changes.
 
 Current status:
 
-- Phase 5 (string/view cleanup) is active on `cpp20/phase5`.
+- Phase 6 (algorithm and ranges cleanup) is complete on `cpp20/phase6`.
+- Phase 7 (consolidation and validation) is next and not started.
 - Prior PR: dartsim/dart#2367 (phase 4 spans).
+- Phase 5 branch `cpp20/phase5` is ready but PR is deferred until phase 4 is
+  merged.
 - Latest validation: `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run
   test-all` and `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run -e
   gazebo test-gz` (passed; gz-physics emits deprecation warnings).

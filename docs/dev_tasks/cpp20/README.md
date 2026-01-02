@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase 5 in progress: string/view cleanup.
+- Phase 7 next: consolidation and validation.
 
 ## Goal
 

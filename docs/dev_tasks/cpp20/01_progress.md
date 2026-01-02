@@ -2,8 +2,8 @@
 
 ## Status
 
-- Current phase: Phase 5 (string/view cleanup)
-- Code changes: Phase 5 in progress.
+- Current phase: Phase 7 (consolidation and validation)
+- Code changes: Phase 7 not started.
 
 ## Phase checklist
 
@@ -12,8 +12,8 @@
 - Phase 2 - Standard library modernization: Complete
 - Phase 3 - Additive public header updates: Complete
 - Phase 4 - Span input consolidation: Complete
-- Phase 5 - String/view cleanup: In progress
-- Phase 6 - Algorithm and ranges cleanup: Not started
+- Phase 5 - String/view cleanup: Complete
+- Phase 6 - Algorithm and ranges cleanup: Complete
 - Phase 7 - Consolidation and validation: Not started
 
 ## Notes
@@ -62,5 +62,12 @@ test-gz`) without changing Gazebo code.
   string trimming/splitting helpers and HTTP cache utility helpers to accept
   `std::string_view`; adjust Python bindings to keep accepting `str` inputs.
 - Phase 5 checks: `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run
+test-all` and `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run -e
+gazebo test-gz` (passed; gz-physics emits deprecation warnings).
+- Phase 6: replace manual find/find_if uses with `std::ranges::find`,
+  `std::ranges::find_if`, and `std::ranges::any_of` in collision groups,
+  skeleton queries, sensor manager membership checks, and world skeleton/frame
+  lookups.
+- Phase 6 checks: `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run
   test-all` and `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run -e
   gazebo test-gz` (passed; gz-physics emits deprecation warnings).

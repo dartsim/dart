@@ -2,7 +2,7 @@
 
 ## Status
 
-- Active: executing phases; Phase 5 (string/view cleanup) in progress.
+- Active: executing phases; Phase 7 (consolidation and validation) next.
 
 ## Objective
 

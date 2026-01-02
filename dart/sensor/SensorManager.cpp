@@ -108,7 +108,7 @@ std::string SensorManager::addSensor(const SensorPtr& sensor)
     return "";
   }
 
-  if (std::find(mSensors.begin(), mSensors.end(), sensor) != mSensors.end()) {
+  if (std::ranges::find(mSensors, sensor) != mSensors.end()) {
     DART_WARN(
         "Sensor named [{}] is already in the manager.", sensor->getName());
     return sensor->getName();
@@ -135,7 +135,7 @@ void SensorManager::removeSensor(const SensorPtr& sensor)
     return;
   }
 
-  auto it = std::find(mSensors.begin(), mSensors.end(), sensor);
+  auto it = std::ranges::find(mSensors, sensor);
   if (it == mSensors.end()) {
     DART_WARN("Sensor named [{}] is not in the manager.", sensor->getName());
     return;
@@ -168,7 +168,7 @@ std::set<SensorPtr> SensorManager::removeAllSensors()
 //==============================================================================
 bool SensorManager::hasSensor(const SensorPtr& sensor) const
 {
-  return std::find(mSensors.begin(), mSensors.end(), sensor) != mSensors.end();
+  return std::ranges::find(mSensors, sensor) != mSensors.end();
 }
 
 //==============================================================================

@@ -38,6 +38,7 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 
+#include <algorithm>
 #include <span>
 
 namespace dart {
@@ -184,8 +185,7 @@ std::vector<const BodyNode*> ReferentialSkeleton::getBodyNodes(
 //==============================================================================
 bool ReferentialSkeleton::hasBodyNode(const BodyNode* bodyNode) const
 {
-  return std::find(mBodyNodes.begin(), mBodyNodes.end(), bodyNode)
-         != mBodyNodes.end();
+  return std::ranges::find(mBodyNodes, bodyNode) != mBodyNodes.end();
 }
 
 //==============================================================================
@@ -317,7 +317,7 @@ std::vector<const Joint*> ReferentialSkeleton::getJoints(
 //==============================================================================
 bool ReferentialSkeleton::hasJoint(const Joint* joint) const
 {
-  return std::find(mJoints.begin(), mJoints.end(), joint) != mJoints.end();
+  return std::ranges::find(mJoints, joint) != mJoints.end();
 }
 
 //==============================================================================
