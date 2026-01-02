@@ -64,14 +64,15 @@
   `World.hpp` can forward declare `Solver` without pulling solver internals.
 - `EcsEntity` is the only public ECS handle (opaque value type).
 - EnTT types must not appear in installed headers (see “Internal Design”).
+- Skeletons are handled exclusively by `ClassicRigidSolver` for now; World
+  asserts if a different solver type is requested.
 
 ## Internal Design (Milestone Target)
 
 - World owns solvers as `SolverEntry` and steps all enabled solvers in
   registration order each frame. Skeletons are routed to a single solver using
-  `WorldConfig::SolverRouting` (first matching solver in registration order);
-  object routing is configured but deferred until ECS object lifecycle APIs
-  exist.
+  `WorldConfig::SolverRouting` (fixed to Classic for now); object routing is
+  configured but deferred until ECS object lifecycle APIs exist.
 - Classic solver is the default constraint/collision backend and remains
   Skeleton-based.
 - ECS registry lives in `World::EcsData` (private in `World.cpp`).

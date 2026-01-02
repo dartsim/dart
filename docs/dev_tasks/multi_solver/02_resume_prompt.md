@@ -23,6 +23,7 @@ State summary:
 - World routing and solver scheduling live in:
   dart/simulation/World.hpp
   dart/simulation/World.cpp
+- Skeletons are fixed to ClassicRigidSolver; non-classic routing asserts.
 - Solver base and types:
   dart/simulation/solver/Solver.hpp
   dart/simulation/solver/SolverTypes.hpp

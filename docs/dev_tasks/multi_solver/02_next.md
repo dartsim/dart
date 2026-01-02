@@ -8,7 +8,7 @@
 
 - Introduce a minimal public ECS object lifecycle API without exposing EnTT or
   solver pointers, while preserving classic Skeleton behavior (no generic
-  World-level entity creation).
+  World-level entity creation; Skeletons stay on ClassicRigidSolver).
 
 ## Scope
 

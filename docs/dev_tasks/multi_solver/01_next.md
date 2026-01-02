@@ -16,8 +16,8 @@
   helpers; avoid raw ECS entity create/destroy in World.
 - Keep `Solver` entity lifecycle hooks available for future object APIs
   (not wired through World yet).
-- Keep classic Skeleton data on the legacy path and notify only the solver
-  configured by `WorldConfig::SolverRouting` (default: `ClassicRigidSolver`).
+- Keep classic Skeleton data on the legacy path and notify only the
+  `ClassicRigidSolver` (routing is fixed; non-classic config asserts).
 - Keep ECS-backed object routing config in `WorldConfig::SolverRouting`
   (lifecycle wiring deferred).
 - Extend the ECS-backed rigid solver to update ECS-only components (kept in
@@ -26,7 +26,7 @@
 
 ## Progress (Implemented)
 
-- World routes Skeletons to the configured solver types:
+- World routes Skeletons exclusively to the classic solver:
   `dart/simulation/World.hpp`, `dart/simulation/World.cpp`.
 - `detail::WorldEcsAccess` exposes registry access + conversion helpers:
   `dart/simulation/detail/WorldEcsAccess.hpp`, `dart/simulation/World.cpp`.
