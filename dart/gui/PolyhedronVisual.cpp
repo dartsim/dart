@@ -92,13 +92,6 @@ void PolyhedronVisual::setVertices(std::span<const Eigen::Vector3d> vertices)
 }
 
 //==============================================================================
-void PolyhedronVisual::setVertices(std::span<const Eigen::Vector3d> vertices)
-{
-  mVertices.assign(vertices.begin(), vertices.end());
-  mDirty = true;
-}
-
-//==============================================================================
 void PolyhedronVisual::setVertices(
     const Eigen::Ref<const Eigen::MatrixXd>& vertices)
 {

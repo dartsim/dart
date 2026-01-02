@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase 4 complete: consolidation and validation finished.
+- Phase 4 in progress: span input consolidation.
 
 ## Goal
 

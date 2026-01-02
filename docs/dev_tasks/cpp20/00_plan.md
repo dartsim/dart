@@ -2,7 +2,7 @@
 
 ## Status
 
-- Complete: Phase 4 validation finished.
+- Active: executing phases; Phase 4 (span input consolidation) in progress.
 
 ## Objective
 
@@ -54,7 +54,6 @@ Adopt C++20 idioms across the codebase with no behavior changes.
 
 ## Phase 4 - Span input consolidation
 
-<<<<<<< HEAD
 - Remove redundant `std::vector` overloads where `std::span` covers the same
   read-only use cases.
 - Update call sites (including python bindings) to pass spans explicitly.
@@ -77,8 +76,3 @@ Adopt C++20 idioms across the codebase with no behavior changes.
   by modernization, including `pixi run -e gazebo test-gz`.
 - Summarize key design decisions in onboarding and remove
   `docs/dev_tasks/cpp20/` per `docs/dev_tasks/README.md`.
-=======
-- Run the standard `pixi run` workflows and resolve any warnings introduced by
-  modernization, including `pixi run -e gazebo test-gz`.
-- Update docs only if new guidance is needed for future maintainers.
->>>>>>> 6e0d6392b10 (Modernize getters to std::span)
