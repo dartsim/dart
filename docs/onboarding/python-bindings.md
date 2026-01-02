@@ -266,7 +266,8 @@ robot.setForces(forces)
 - `scripts/test_wheel.py` - Test wheel in isolated environment
 - `scripts/verify_version.py` - Verify version consistency
 
-**Examples**: See `python/examples/` for comprehensive usage examples
+**Examples**: See `python/examples/README.md` for the category index and
+`python/examples/` for the full set of examples.
 
 ## Type Stubs
 
@@ -285,5 +286,5 @@ robot.setForces(forces)
 - **Package configuration**: `pyproject.toml`
 - **Build system**: `python/dartpy/CMakeLists.txt`
 - **pixi configuration**: `pixi.toml` (features: `py312-wheel`, `py313-wheel`)
-- **Examples**: `python/examples/`
+- **Examples**: `python/examples/README.md` (index) and `python/examples/`
 - **Developer guide**: `docs/readthedocs/dartpy/developer_guide/build.rst`
