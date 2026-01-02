@@ -353,7 +353,7 @@ public:
       mViewer->switchHeadlights(mGuiHeadlights);
     }
 
-    if (ImGui::CollapsingHeader("Contact Manifold")) {
+    if (ImGui::CollapsingHeader("Contact Manifold Cache")) {
       bool manifoldLeft = mManifoldEnabledLeft;
       bool manifoldRight = mManifoldEnabledRight;
 
@@ -484,7 +484,7 @@ protected:
     if (!solver)
       return;
 
-    solver->setContactManifoldEnabled(enabled);
+    solver->setContactManifoldCacheEnabled(enabled);
   }
 
   std::size_t getManifoldCount(const simulation::WorldPtr& world) const
@@ -554,7 +554,7 @@ int main(int argc, char* argv[])
   populateWorld(worldRight, rightOffset, numBoxes);
 
   if (auto* solver = worldRight->getConstraintSolver())
-    solver->setContactManifoldEnabled(true);
+    solver->setContactManifoldCacheEnabled(true);
 
   // Wrap a WorldNode around it
   osg::ref_ptr<CustomWorldNode> nodeLeft = new CustomWorldNode(worldLeft);

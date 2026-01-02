@@ -450,13 +450,32 @@ void ConstraintSolver::getContactsUsedForConstraints(
   contacts.clear();
 
   if (!mContactManifoldOptions.enabled) {
-    contacts = mCollisionResult.getContacts();
+    contacts.reserve(mCollisionResult.getNumContacts());
+    for (const auto& contact : mCollisionResult.getContacts()) {
+      if (!contact.collisionObject1 || !contact.collisionObject2)
+        continue;
+
+      if (!isContactValid(contact))
+        continue;
+
+      contacts.push_back(contact);
+    }
     return;
   }
 
   contacts.reserve(mPersistentContacts.size());
-  contacts.insert(
-      contacts.end(), mPersistentContacts.begin(), mPersistentContacts.end());
+  for (const auto& contact : mPersistentContacts) {
+    if (!contact.collisionObject1 || !contact.collisionObject2)
+      continue;
+
+    if (!isContactValid(contact))
+      continue;
+
+    if (isSoftContact(contact))
+      continue;
+
+    contacts.push_back(contact);
+  }
 
   for (const auto& contact : mCollisionResult.getContacts()) {
     if (!contact.collisionObject1 || !contact.collisionObject2)
