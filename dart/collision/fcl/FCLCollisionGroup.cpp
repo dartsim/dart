@@ -32,81 +32,22 @@
 
 #include "dart/collision/fcl/FCLCollisionGroup.hpp"
 
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/fcl/FCLCollisionObject.hpp"
-
 namespace dart {
 namespace collision {
 
-//==============================================================================
 FCLCollisionGroup::FCLCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
-  : CollisionGroup(collisionDetector),
-    mBroadPhaseAlg(new dart::collision::fcl::DynamicAABBTreeCollisionManager())
+  : DARTCollisionGroup(collisionDetector)
 {
-  // Do nothing
+  // Do nothing.
 }
 
-//==============================================================================
-void FCLCollisionGroup::initializeEngineData()
-{
-  mBroadPhaseAlg->setup();
-}
-
-//==============================================================================
-void FCLCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
-{
-  auto casted = static_cast<FCLCollisionObject*>(object);
-  mBroadPhaseAlg->registerObject(casted->getFCLCollisionObject());
-
-  initializeEngineData();
-}
-
-//==============================================================================
-void FCLCollisionGroup::addCollisionObjectsToEngine(
-    const std::vector<CollisionObject*>& collObjects)
-{
-  for (auto collObj : collObjects) {
-    auto casted = static_cast<FCLCollisionObject*>(collObj);
-
-    mBroadPhaseAlg->registerObject(casted->getFCLCollisionObject());
-  }
-
-  initializeEngineData();
-}
-
-//==============================================================================
-void FCLCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
-{
-  auto casted = static_cast<FCLCollisionObject*>(object);
-
-  mBroadPhaseAlg->unregisterObject(casted->getFCLCollisionObject());
-
-  initializeEngineData();
-}
-
-//==============================================================================
-void FCLCollisionGroup::removeAllCollisionObjectsFromEngine()
-{
-  mBroadPhaseAlg->clear();
-
-  initializeEngineData();
-}
-
-//==============================================================================
-void FCLCollisionGroup::updateCollisionGroupEngineData()
-{
-  mBroadPhaseAlg->update();
-}
-
-//==============================================================================
 FCLCollisionGroup::FCLCollisionManager*
 FCLCollisionGroup::getFCLCollisionManager()
 {
   return mBroadPhaseAlg.get();
 }
 
-//==============================================================================
 const FCLCollisionGroup::FCLCollisionManager*
 FCLCollisionGroup::getFCLCollisionManager() const
 {

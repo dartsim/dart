@@ -33,16 +33,13 @@
 #ifndef DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_
 #define DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_
 
-#include <dart/collision/CollisionGroup.hpp>
+#include <dart/collision/dart/DartCollisionGroup.hpp>
 #include <dart/collision/fcl/BackwardCompatibility.hpp>
 
 namespace dart {
 namespace collision {
 
-class CollisionObject;
-class FCLCollisionObjectUserData;
-
-class FCLCollisionGroup : public CollisionGroup
+class DART_API FCLCollisionGroup : public DARTCollisionGroup
 {
 public:
   friend class FCLCollisionDetector;
@@ -54,38 +51,15 @@ public:
   FCLCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
   /// Destructor
-  virtual ~FCLCollisionGroup() = default;
+  ~FCLCollisionGroup() override = default;
 
-protected:
-  using CollisionGroup::updateEngineData;
-
-  // Documentation inherited
-  void initializeEngineData() override;
-
-  // Documentation inherited
-  void addCollisionObjectToEngine(CollisionObject* object) override;
-
-  // Documentation inherited
-  void addCollisionObjectsToEngine(
-      const std::vector<CollisionObject*>& collObjects) override;
-
-  // Documentation inherited
-  void removeCollisionObjectFromEngine(CollisionObject* object) override;
-
-  // Documentation inherited
-  void removeAllCollisionObjectsFromEngine() override;
-
-  // Documentation inherited
-  void updateCollisionGroupEngineData() override;
-
-  /// Return FCL collision manager that is also a broad-phase algorithm
+  /// Return collision manager pointer (may be null).
   FCLCollisionManager* getFCLCollisionManager();
 
-  /// Return FCL collision manager that is also a broad-phase algorithm
+  /// Return collision manager pointer (may be null).
   const FCLCollisionManager* getFCLCollisionManager() const;
 
-protected:
-  /// FCL broad-phase algorithm
+private:
   std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
 };
 

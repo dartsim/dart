@@ -106,7 +106,7 @@
 - Added axis-aligned distance paths for box-box, cylinder-box, and parallel cylinder-cylinder cases, plus plane-aligned nearest point selection for box-plane, sphere-plane, and cylinder-plane.
 - Updated ellipsoid-as-sphere core radius to use diameters.
 - Fixed box inside-hit raycast normal/fraction selection.
-- Latest local runs: `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartDistance` pass.
+- Latest local runs: `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartDistance` pass; `pixi run -e gazebo test-gz` fails (COMMON_TEST_collisions_dartsim, COMMON_TEST_detachable_joint_dartsim, COMMON_TEST_joint_features_dartsim, COMMON_TEST_simulation_features_dartsim with a segfault).
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Added tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
 - Added tilted plane offset coverage for cylinder-plane nearest points.
@@ -121,9 +121,11 @@
   deprecated backend-selection APIs.
 - Migrated examples and tutorials away from backend-selection APIs and updated
   relevant docs to describe legacy backends.
+- Legacy detector adapters now forward to the built-in collision engine for API compatibility.
 
 ## Next Actions
 
+- Fix failing `pixi run -e gazebo test-gz` cases (COMMON_TEST_collisions_dartsim, COMMON_TEST_detachable_joint_dartsim, COMMON_TEST_joint_features_dartsim, COMMON_TEST_simulation_features_dartsim) and resolve the simulation features segfault.
 - Audit collision-related tests that still select legacy detectors and migrate
   them to the built-in detector when feasible.
 - Use those tests to drive missing-feature work in the core detector before

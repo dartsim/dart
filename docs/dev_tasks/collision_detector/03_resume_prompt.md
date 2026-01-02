@@ -122,7 +122,7 @@ Current status:
 - Added plane-aligned nearest point selection for box-plane, sphere-plane, and cylinder-plane distances.
 - Updated ellipsoid-as-sphere core radius to use diameters.
 - Fixed box inside-hit raycast normal/fraction selection.
-- Latest local runs: `pixi run build-tests` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` pass.
+- Latest local runs: `pixi run build-tests` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` pass; `pixi run -e gazebo test-gz` fails (COMMON_TEST_collisions_dartsim, COMMON_TEST_detachable_joint_dartsim, COMMON_TEST_joint_features_dartsim, COMMON_TEST_simulation_features_dartsim with a segfault).
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Added tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
 - Added tilted plane offset coverage for cylinder-plane nearest points.
@@ -136,6 +136,7 @@ Current status:
   constraint solver initialization.
 - Backend-selection APIs are deprecated; legacy detector classes carry
   deprecation notes.
+- Legacy detector adapters now forward to the built-in collision engine for API compatibility.
 - Examples/tutorials migrated off backend-selection APIs; tests/benchmarks
   suppress deprecated calls.
 - `.skel` collision detector selection is deprecated and ignored (with warning).

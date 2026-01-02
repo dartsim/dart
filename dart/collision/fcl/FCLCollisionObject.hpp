@@ -33,7 +33,7 @@
 #ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
 #define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
 
-#include <dart/collision/CollisionObject.hpp>
+#include <dart/collision/dart/DartCollisionObject.hpp>
 #include <dart/collision/fcl/BackwardCompatibility.hpp>
 
 #include <dart/Export.hpp>
@@ -43,15 +43,15 @@
 namespace dart {
 namespace collision {
 
-class DART_API FCLCollisionObject : public CollisionObject
+class DART_API FCLCollisionObject : public DARTCollisionObject
 {
 public:
   friend class FCLCollisionDetector;
 
-  /// Return FCL collision object
+  /// Return collision object pointer (may be null).
   dart::collision::fcl::CollisionObject* getFCLCollisionObject();
 
-  /// Return FCL collision object
+  /// Return collision object pointer (may be null).
   const dart::collision::fcl::CollisionObject* getFCLCollisionObject() const;
 
   /// Deterministic key based on the attached ShapeFrame hierarchy.
@@ -72,10 +72,8 @@ protected:
   void updateEngineData() override;
 
 protected:
-  /// FCL collision object
   std::unique_ptr<dart::collision::fcl::CollisionObject> mFCLCollisionObject;
 
-  /// Stable identifier for deterministic ordering.
   std::string mKey;
 };
 

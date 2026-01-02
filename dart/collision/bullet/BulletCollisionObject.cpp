@@ -33,7 +33,6 @@
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 
 #include "dart/collision/bullet/BulletTypes.hpp"
-#include "dart/common/Macros.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 
 namespace dart {
@@ -51,23 +50,22 @@ const btCollisionObject* BulletCollisionObject::getBulletCollisionObject() const
   return mBulletCollisionObject.get();
 }
 
+BulletCollisionObject::~BulletCollisionObject() = default;
+
 //==============================================================================
 BulletCollisionObject::BulletCollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame,
     const dynamics::ConstShapePtr& shape,
     const std::shared_ptr<BulletCollisionShape>& bulletCollisionShape)
-  : CollisionObject(collisionDetector, shapeFrame),
+  : DARTCollisionObject(collisionDetector, shapeFrame),
     mBulletCollisionShape(bulletCollisionShape),
-    mBulletCollisionObject(new btCollisionObject()),
-    mCachedShape(shape)
+    mBulletCollisionObject(nullptr),
+    mCachedShape(shape ? shape
+                       : (shapeFrame ? shapeFrame->getShape()
+                                     : dynamics::ConstShapePtr()))
 {
-  DART_ASSERT(bulletCollisionShape);
-
-  mBulletCollisionObject->setCollisionShape(
-      mBulletCollisionShape->mCollisionShape.get());
-
-  mBulletCollisionObject->setUserPointer(this);
+  // No backend-specific data is created.
 }
 
 //==============================================================================
@@ -85,13 +83,7 @@ void BulletCollisionObject::setCachedShape(const dynamics::ConstShapePtr& shape)
 //==============================================================================
 void BulletCollisionObject::updateEngineData()
 {
-  btTransform worldTransform
-      = convertTransform(mShapeFrame->getWorldTransform());
-
-  if (mBulletCollisionShape->mRelativeTransform)
-    worldTransform *= (*mBulletCollisionShape->mRelativeTransform);
-
-  mBulletCollisionObject->setWorldTransform(worldTransform);
+  DARTCollisionObject::updateEngineData();
 }
 
 } // namespace collision

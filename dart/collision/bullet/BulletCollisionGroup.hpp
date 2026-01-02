@@ -33,13 +33,14 @@
 #ifndef DART_COLLISION_BULLET_BULLETCOLLISIONGROUP_HPP_
 #define DART_COLLISION_BULLET_BULLETCOLLISIONGROUP_HPP_
 
-#include <dart/collision/CollisionGroup.hpp>
-#include <dart/collision/bullet/BulletInclude.hpp>
+#include <dart/collision/dart/DartCollisionGroup.hpp>
+
+class btCollisionWorld;
 
 namespace dart {
 namespace collision {
 
-class DART_API BulletCollisionGroup : public CollisionGroup
+class DART_API BulletCollisionGroup : public DARTCollisionGroup
 {
 public:
   friend class BulletCollisionDetector;
@@ -48,47 +49,15 @@ public:
   BulletCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
   /// Destructor
-  virtual ~BulletCollisionGroup() = default;
+  ~BulletCollisionGroup() override;
 
-protected:
-  // Documentation inherited
-  void initializeEngineData() override;
-
-  // Documentation inherited
-  void addCollisionObjectToEngine(CollisionObject* object) override;
-
-  // Documentation inherited
-  void addCollisionObjectsToEngine(
-      const std::vector<CollisionObject*>& collObjects) override;
-
-  // Documentation inherited
-  void removeCollisionObjectFromEngine(CollisionObject* object) override;
-
-  // Documentation inherited
-  void removeAllCollisionObjectsFromEngine() override;
-
-  // Documentation inherited
-  void updateCollisionGroupEngineData() override;
-
-  /// Return Bullet collision world
+  /// Return collision world pointer (may be null).
   btCollisionWorld* getBulletCollisionWorld();
 
-  /// Return Bullet collision world
+  /// Return collision world pointer (may be null).
   const btCollisionWorld* getBulletCollisionWorld() const;
 
-protected:
-  using CollisionGroup::updateEngineData;
-
-  /// Bullet broad-phase algorithm
-  std::unique_ptr<btBroadphaseInterface> mBulletProadphaseAlg;
-
-  /// Bullet collision configuration
-  std::unique_ptr<btCollisionConfiguration> mBulletCollisionConfiguration;
-
-  /// Bullet collision dispatcher
-  std::unique_ptr<btDispatcher> mBulletDispatcher;
-
-  /// Bullet collision world
+private:
   std::unique_ptr<btCollisionWorld> mBulletCollisionWorld;
 };
 

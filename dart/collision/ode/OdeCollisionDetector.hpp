@@ -33,7 +33,7 @@
 #ifndef DART_COLLISION_ODE_ODECOLLISIONDETECTOR_HPP_
 #define DART_COLLISION_ODE_ODECOLLISIONDETECTOR_HPP_
 
-#include <dart/collision/CollisionDetector.hpp>
+#include <dart/collision/dart/DartCollisionDetector.hpp>
 
 #include <ode/ode.h>
 
@@ -46,21 +46,10 @@
 namespace dart {
 namespace collision {
 
-/// OdeCollisionDetector wraps the ODE collision detector.
-///
-/// The supported collision shape types are sphere, box, capsule, cylinder,
-/// plane, and trimesh.
-///
-/// The detector keeps a short history of contact manifolds per shape pair in
-/// order to stabilize resting configurations (for example, capsules lying on a
-/// plane). This improves parity with Bullet while maintaining ODE as the
-/// narrow-phase backend.
-///
-/// ODE additionally supports ray and heightfiled, but DART doesn't support them
-/// yet.
-/// Deprecated in DART 7; will be removed in DART 8 in favor of the built-in
-/// collision detector.
-class DART_API OdeCollisionDetector : public CollisionDetector
+class OdeCollisionObject;
+class OdeCollisionGroup;
+
+class DART_API OdeCollisionDetector : public DARTCollisionDetector
 {
 public:
   using CollisionDetector::createCollisionGroup;
@@ -77,42 +66,33 @@ public:
 
   static std::shared_ptr<OdeCollisionDetector> create();
 
-  /// Constructor
-  virtual ~OdeCollisionDetector();
+  ~OdeCollisionDetector() override;
 
-  // Documentation inherited
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
       const override;
 
-  // Documentation inherited
   const std::string& getType() const override;
 
-  /// Get collision detector type for this class
   static const std::string& getStaticType();
 
-  // Documentation inherited
   std::unique_ptr<CollisionGroup> createCollisionGroup() override;
 
-  // Documentation inherited
   bool collide(
       CollisionGroup* group,
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr) override;
 
-  // Documentation inherited
   bool collide(
       CollisionGroup* group1,
       CollisionGroup* group2,
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr) override;
 
-  /// @warning Not implemented yet.
   double distance(
       CollisionGroup* group,
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr) override;
 
-  /// @warning Not implemented yet.
   double distance(
       CollisionGroup* group1,
       CollisionGroup* group2,
@@ -120,28 +100,15 @@ public:
       DistanceResult* result = nullptr) override;
 
 protected:
-  /// Constructor
   OdeCollisionDetector();
 
-  // Documentation inherited
   std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
-
-  // Documentation inherited
-  void refreshCollisionObject(CollisionObject* object) override;
 
   dWorldID getOdeWorldId() const;
 
 protected:
-  /// Top-level world for all bodies
   dWorldID mWorldId;
-
-private:
-  dGeomID createOdeCollisionGeometry(const dynamics::ConstShapePtr& shape);
-
-  void clearContactHistoryFor(const CollisionObject* object);
-  void clearContactHistory();
-  void pruneContactHistory(const CollisionResult& result);
 
 private:
   dContactGeom contactCollisions[MAX_COLLIDE_RETURNS];

@@ -32,107 +32,18 @@
 
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
 
-#include "dart/collision/ode/OdeCollisionDetector.hpp"
-#include "dart/collision/ode/OdeCollisionObject.hpp"
-#include "dart/common/Macros.hpp"
-
-#include <memory>
-
 namespace dart {
 namespace collision {
 
-//==============================================================================
 OdeCollisionGroup::OdeCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
-  : CollisionGroup(collisionDetector)
+  : DARTCollisionGroup(collisionDetector), mSpaceId(nullptr)
 {
-  // This uses an internal data structure that records how each geom overlaps
-  // cells in one of several three dimensional grids. Each grid has cubical
-  // cells of side lengths 2i, where i is an integer that ranges from a minimum
-  // to a maximum value. The time required to do intersection testing for n
-  // objects is O(n) (as long as those objects are not clustered together too
-  // closely), as each object can be quickly paired with the objects around it.
-  //
-  // Source:
-  // https://www.ode-wiki.org/wiki/index.php?title=Manual:_Collision_Detection#Space_functions
-  mSpaceId = dHashSpaceCreate(0);
-  DART_ASSERT(mSpaceId);
-  dHashSpaceSetLevels(mSpaceId, -2, 8);
+  // Do nothing.
 }
 
-//==============================================================================
-OdeCollisionGroup::~OdeCollisionGroup()
-{
-  // This is important to call this function before destroy ODE space.
-  removeAllShapeFrames();
+OdeCollisionGroup::~OdeCollisionGroup() = default;
 
-  dSpaceDestroy(mSpaceId);
-}
-
-//==============================================================================
-void OdeCollisionGroup::initializeEngineData()
-{
-  // ODE don't need to anything after a geom is added to the space.
-}
-
-//==============================================================================
-void OdeCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
-{
-  auto casted = static_cast<OdeCollisionObject*>(object);
-  auto geomId = casted->getOdeGeomId();
-  dSpaceAdd(mSpaceId, geomId);
-
-  initializeEngineData();
-}
-
-//==============================================================================
-void OdeCollisionGroup::addCollisionObjectsToEngine(
-    const std::vector<CollisionObject*>& collObjects)
-{
-  for (auto collObj : collObjects) {
-    auto casted = static_cast<OdeCollisionObject*>(collObj);
-    auto geomId = casted->getOdeGeomId();
-    dSpaceAdd(mSpaceId, geomId);
-  }
-
-  initializeEngineData();
-}
-
-//==============================================================================
-void OdeCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
-{
-  if (auto detector = std::static_pointer_cast<OdeCollisionDetector>(
-          getCollisionDetector())) {
-    detector->clearContactHistoryFor(object);
-  }
-
-  auto casted = static_cast<OdeCollisionObject*>(object);
-  auto geomId = casted->getOdeGeomId();
-  dSpaceRemove(mSpaceId, geomId);
-
-  initializeEngineData();
-}
-
-//==============================================================================
-void OdeCollisionGroup::removeAllCollisionObjectsFromEngine()
-{
-  if (auto detector = std::static_pointer_cast<OdeCollisionDetector>(
-          getCollisionDetector())) {
-    detector->clearContactHistory();
-  }
-
-  dSpaceClean(mSpaceId);
-
-  initializeEngineData();
-}
-
-//==============================================================================
-void OdeCollisionGroup::updateCollisionGroupEngineData()
-{
-  // ODE requires nothing for this.
-}
-
-//==============================================================================
 dSpaceID OdeCollisionGroup::getOdeSpaceId() const
 {
   return mSpaceId;

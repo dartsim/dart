@@ -32,13 +32,10 @@
 
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 
-#include "dart/collision/fcl/FCLTypes.hpp"
-#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/dynamics/SoftMeshShape.hpp"
 
 namespace dart {
 namespace collision {
@@ -61,12 +58,10 @@ FCLCollisionObject::getFCLCollisionObject() const
 FCLCollisionObject::FCLCollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame,
-    const std::shared_ptr<dart::collision::fcl::CollisionGeometry>& fclCollGeom)
-  : CollisionObject(collisionDetector, shapeFrame),
-    mFCLCollisionObject(new dart::collision::fcl::CollisionObject(fclCollGeom))
+    const std::shared_ptr<dart::collision::fcl::CollisionGeometry>&
+        /*fclCollGeom*/)
+  : DARTCollisionObject(collisionDetector, shapeFrame)
 {
-  mFCLCollisionObject->setUserData(this);
-
   if (shapeFrame) {
     const auto* shapeNode
         = dynamic_cast<const dynamics::ShapeNode*>(shapeFrame);
@@ -88,46 +83,7 @@ FCLCollisionObject::FCLCollisionObject(
 //==============================================================================
 void FCLCollisionObject::updateEngineData()
 {
-  using dart::dynamics::BodyNode;
-  using dart::dynamics::Shape;
-  using dart::dynamics::SoftMeshShape;
-
-  auto shape = mShapeFrame->getShape().get();
-
-  // Update soft-body's vertices
-  if (shape->getType() == dynamics::SoftMeshShape::getStaticType()) {
-    DART_ASSERT(dynamic_cast<const SoftMeshShape*>(shape));
-    auto softMeshShape = static_cast<const SoftMeshShape*>(shape);
-
-    const_cast<SoftMeshShape*>(softMeshShape)->update();
-    // TODO(JS): update function be called by somewhere out of here.
-
-    const auto triMesh = softMeshShape->getTriMesh();
-    const auto& vertices = triMesh->getVertices();
-    const auto& triangles = triMesh->getTriangles();
-
-    auto collGeom = const_cast<dart::collision::fcl::CollisionGeometry*>(
-        mFCLCollisionObject->collisionGeometry().get());
-    DART_ASSERT(
-        dynamic_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom));
-    auto bvhModel
-        = static_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom);
-
-    bvhModel->beginUpdateModel();
-    for (const auto& triangle : triangles) {
-      dart::collision::fcl::Vector3 fclVertices[3];
-      for (auto j = 0u; j < 3; ++j) {
-        const auto& vertex = vertices[triangle[j]];
-        fclVertices[j]
-            = dart::collision::fcl::Vector3(vertex.x(), vertex.y(), vertex.z());
-      }
-      bvhModel->updateTriangle(fclVertices[0], fclVertices[1], fclVertices[2]);
-    }
-    bvhModel->endUpdateModel();
-  }
-
-  mFCLCollisionObject->setTransform(FCLTypes::convertTransform(getTransform()));
-  mFCLCollisionObject->computeAABB();
+  DARTCollisionObject::updateEngineData();
 }
 
 } // namespace collision

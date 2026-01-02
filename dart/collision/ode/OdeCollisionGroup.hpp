@@ -33,51 +33,25 @@
 #ifndef DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_
 #define DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_
 
-#include <dart/collision/CollisionGroup.hpp>
+#include <dart/collision/dart/DartCollisionGroup.hpp>
 
 #include <ode/ode.h>
 
 namespace dart {
 namespace collision {
 
-class DART_API OdeCollisionGroup : public CollisionGroup
+class DART_API OdeCollisionGroup : public DARTCollisionGroup
 {
 public:
   friend class OdeCollisionDetector;
 
-  /// Constructor
   OdeCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
-  /// Destructor
-  virtual ~OdeCollisionGroup();
+  ~OdeCollisionGroup() override;
 
-protected:
-  using CollisionGroup::updateEngineData;
-
-  // Documentation inherited
-  void initializeEngineData() override;
-
-  // Documentation inherited
-  void addCollisionObjectToEngine(CollisionObject* object) override;
-
-  // Documentation inherited
-  void addCollisionObjectsToEngine(
-      const std::vector<CollisionObject*>& collObjects) override;
-
-  // Documentation inherited
-  void removeCollisionObjectFromEngine(CollisionObject* object) override;
-
-  // Documentation inherited
-  void removeAllCollisionObjectsFromEngine() override;
-
-  // Documentation inherited
-  void updateCollisionGroupEngineData() override;
-
-  /// Returns ODE space id associated with this collision group
   dSpaceID getOdeSpaceId() const;
 
 protected:
-  /// Top-level space for all sub-spaces/collisions
   dSpaceID mSpaceId;
 };
 

@@ -1315,7 +1315,7 @@ static Eigen::Vector3d supportCylinder(
 {
   Eigen::Vector3d dirNorm = dir;
   const double dirNormValue = dirNorm.norm();
-  if (dirNormValue > DART_COLLISION_EPS)
+  if (dirNormValue > kDartCollisionEps)
     dirNorm /= dirNormValue;
   else
     dirNorm = Eigen::Vector3d::UnitX();
@@ -1325,7 +1325,7 @@ static Eigen::Vector3d supportCylinder(
   const double sign = (axisDot >= 0.0) ? 1.0 : -1.0;
   const Eigen::Vector3d radial = dirNorm - axisDot * axis;
   Eigen::Vector3d radialDir = Eigen::Vector3d::Zero();
-  if (radial.squaredNorm() > DART_COLLISION_EPS)
+  if (radial.squaredNorm() > kDartCollisionEps)
     radialDir = radial.normalized();
 
   return T.translation() + sign * halfHeight * axis + radius * radialDir;
@@ -1338,7 +1338,7 @@ static void updateSatAxis(
     const Eigen::Vector3d& centerDelta,
     SatResult& result)
 {
-  if (axis.squaredNorm() < DART_COLLISION_EPS)
+  if (axis.squaredNorm() < kDartCollisionEps)
     return;
 
   const Eigen::Vector3d n = axis.normalized();
@@ -1541,7 +1541,7 @@ static int collideCylinderBox(
   const Eigen::Vector3d halfSize = 0.5 * box_size;
 
   auto testAxis = [&](const Eigen::Vector3d& axis) {
-    if (axis.squaredNorm() < DART_COLLISION_EPS)
+    if (axis.squaredNorm() < kDartCollisionEps)
       return;
     const Eigen::Vector3d n = axis.normalized();
     const double cylExtent
@@ -1613,7 +1613,7 @@ static int collideCylinderCylinder(
   const Eigen::Vector3d axis2 = T2.linear().col(2);
 
   auto testAxis = [&](const Eigen::Vector3d& axis) {
-    if (axis.squaredNorm() < DART_COLLISION_EPS)
+    if (axis.squaredNorm() < kDartCollisionEps)
       return;
     const Eigen::Vector3d n = axis.normalized();
     const double extent1

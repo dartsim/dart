@@ -33,24 +33,32 @@
 #ifndef DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
 #define DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
 
-#include <dart/collision/CollisionObject.hpp>
-#include <dart/collision/bullet/BulletCollisionShape.hpp>
-#include <dart/collision/bullet/BulletInclude.hpp>
+#include <dart/collision/dart/DartCollisionObject.hpp>
 
 namespace dart {
 namespace collision {
 
-class CollisionObject;
+class BulletCollisionShape;
 
-class DART_API BulletCollisionObject : public CollisionObject
+} // namespace collision
+} // namespace dart
+
+class btCollisionObject;
+
+namespace dart {
+namespace collision {
+
+class DART_API BulletCollisionObject : public DARTCollisionObject
 {
 public:
   friend class BulletCollisionDetector;
 
-  /// Return Bullet collision object
+  ~BulletCollisionObject() override;
+
+  /// Return collision object pointer (may be null).
   btCollisionObject* getBulletCollisionObject();
 
-  /// Return Bullet collision object
+  /// Return collision object pointer (may be null).
   const btCollisionObject* getBulletCollisionObject() const;
 
   /// Return the cached shape pointer used for resource management.
@@ -71,13 +79,9 @@ protected:
   void updateEngineData() override;
 
 protected:
-  /// Bullet collision object
   std::shared_ptr<BulletCollisionShape> mBulletCollisionShape;
   std::unique_ptr<btCollisionObject> mBulletCollisionObject;
 
-  /// Cached reference to the Shape belonging to mShapeFrame. This keeps the
-  /// Shape alive long enough for cleanup callbacks that may run after the
-  /// owning ShapeFrame is destroyed.
   dynamics::ConstShapePtr mCachedShape;
 };
 
