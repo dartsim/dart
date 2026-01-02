@@ -31,6 +31,9 @@
   - Single WIP commit adding SoA header + unit test.
   - Decision: delete remote branch.
   - Deleted: origin/7/soa.
+- Triaged origin/7/object_pool against origin/main and origin/release-7.0:
+  - Single WIP commit adding ObjectPool header + unit test.
+  - Decision: preserve for now (no deletion).
 
 ## Triage results (origin/7/*)
 
