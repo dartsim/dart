@@ -17,7 +17,7 @@ def test_collision_detector_change():
 
     assert (
         solver.get_collision_detector().get_type()
-        == dart.FCLCollisionDetector().get_static_type()
+        == dart.DARTCollisionDetector().get_static_type()
     )
 
     solver.set_collision_detector(dart.DARTCollisionDetector())
@@ -26,19 +26,11 @@ def test_collision_detector_change():
         == dart.DARTCollisionDetector().get_static_type()
     )
 
-    if hasattr(dart, "BulletCollisionDetector"):
-        solver.set_collision_detector(dart.BulletCollisionDetector())
-        assert (
-            solver.get_collision_detector().get_type()
-            == dart.BulletCollisionDetector().get_static_type()
-        )
-
-    if hasattr(dart, "OdeCollisionDetector"):
-        solver.set_collision_detector(dart.OdeCollisionDetector())
-        assert (
-            solver.get_collision_detector().get_type()
-            == dart.OdeCollisionDetector().get_static_type()
-        )
+    solver.set_collision_detector(dart.DARTCollisionDetector())
+    assert (
+        solver.get_collision_detector().get_type()
+        == dart.DARTCollisionDetector().get_static_type()
+    )
 
 
 if __name__ == "__main__":

@@ -32,7 +32,7 @@
 
 #include "dart/io/Read.hpp"
 
-#include <dart/collision/ode/OdeCollisionDetector.hpp>
+#include <dart/collision/dart/DartCollisionDetector.hpp>
 
 #include <dart/common/Diagnostics.hpp>
 
@@ -54,7 +54,7 @@ TEST(Issue1624, ContactGrouping)
       = dart::io::readWorld("dart://sample/sdf/test/issue1624_cubes.sdf");
   ASSERT_TRUE(world != nullptr);
   DART_SUPPRESS_DEPRECATED_BEGIN
-  world->setCollisionDetector(OdeCollisionDetector::create());
+  world->setCollisionDetector(DARTCollisionDetector::create());
   DART_SUPPRESS_DEPRECATED_END
   const double dt = 0.001;
   world->setTimeStep(dt);

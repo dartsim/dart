@@ -32,7 +32,7 @@
 
 #include "../../helpers/GTestUtils.hpp"
 #include "../../helpers/dynamics_helpers.hpp"
-#include "dart/collision/ode/OdeCollisionDetector.hpp"
+#include "dart/collision/dart/DartCollisionDetector.hpp"
 #include "dart/common/Diagnostics.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -55,7 +55,7 @@ std::shared_ptr<World> createWorld()
 {
   auto world = simulation::World::create();
   DART_SUPPRESS_DEPRECATED_BEGIN
-  world->setCollisionDetector(collision::OdeCollisionDetector::create());
+  world->setCollisionDetector(collision::DARTCollisionDetector::create());
   DART_SUPPRESS_DEPRECATED_END
   return world;
 }

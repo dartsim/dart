@@ -30,28 +30,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
+#include <dart/simulation/World.hpp>
 
-#if HAVE_BULLET
+#include <dart/collision/dart/DartCollisionDetector.hpp>
 
-  #include <dart/simulation/World.hpp>
+#include <dart/common/Diagnostics.hpp>
 
-  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/CylinderShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/WeldJoint.hpp>
 
-  #include <dart/common/Diagnostics.hpp>
+#include <Eigen/Geometry>
+#include <gtest/gtest.h>
 
-  #include <dart/dynamics/BoxShape.hpp>
-  #include <dart/dynamics/CylinderShape.hpp>
-  #include <dart/dynamics/FreeJoint.hpp>
-  #include <dart/dynamics/Skeleton.hpp>
-  #include <dart/dynamics/WeldJoint.hpp>
+#include <memory>
 
-  #include <Eigen/Geometry>
-  #include <gtest/gtest.h>
-
-  #include <memory>
-
-  #include <cmath>
+#include <cmath>
 
 namespace {
 
@@ -64,7 +60,7 @@ struct RollingResult
 
 RollingResult runRollingTrial()
 {
-  using dart::collision::BulletCollisionDetector;
+  using dart::collision::DARTCollisionDetector;
   using dart::dynamics::BoxShape;
   using dart::dynamics::CollisionAspect;
   using dart::dynamics::CylinderShape;
@@ -75,11 +71,11 @@ RollingResult runRollingTrial()
   using dart::dynamics::WeldJoint;
   using dart::simulation::World;
 
-  auto world = World::create("bullet-cylinder-rolling");
+  auto world = World::create("dart-cylinder-rolling");
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->setTimeStep(0.001);
   DART_SUPPRESS_DEPRECATED_BEGIN
-  world->setCollisionDetector(BulletCollisionDetector::create());
+  world->setCollisionDetector(DARTCollisionDetector::create());
   DART_SUPPRESS_DEPRECATED_END
 
   // Ground plane.
@@ -142,7 +138,7 @@ RollingResult runRollingTrial()
 } // namespace
 
 //==============================================================================
-TEST(BulletCylinderRolling, CylinderRollsUnderTorque)
+TEST(CylinderRolling, CylinderRollsUnderTorque)
 {
   const RollingResult result = runRollingTrial();
 
@@ -150,5 +146,3 @@ TEST(BulletCylinderRolling, CylinderRollsUnderTorque)
   EXPECT_GT(result.angularSpeedY, 0.1);
   EXPECT_GT(result.contactCount, 0u);
 }
-
-#endif // HAVE_BULLET

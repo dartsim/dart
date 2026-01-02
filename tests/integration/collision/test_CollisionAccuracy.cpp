@@ -36,7 +36,7 @@
 
 #include <dart/constraint/ConstraintSolver.hpp>
 
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#include <dart/collision/dart/DartCollisionDetector.hpp>
 
 #include <dart/common/Diagnostics.hpp>
 
@@ -108,7 +108,7 @@ TEST(Issue1184, Accuracy)
           auto world = dart::simulation::World::create("test");
           DART_SUPPRESS_DEPRECATED_BEGIN
           world->setCollisionDetector(
-              dart::collision::BulletCollisionDetector::create());
+              dart::collision::DARTCollisionDetector::create());
           DART_SUPPRESS_DEPRECATED_END
 
           Eigen::Isometry3d tf_object = Eigen::Isometry3d::Identity();

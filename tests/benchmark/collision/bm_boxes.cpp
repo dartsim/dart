@@ -34,7 +34,7 @@
 
 #include <dart/constraint/All.hpp>
 
-#include <dart/collision/bullet/All.hpp>
+#include <dart/collision/dart/DartCollisionDetector.hpp>
 
 #include <dart/dynamics/All.hpp>
 
@@ -85,7 +85,7 @@ namespace {
 
   // Set collision detector type
   DART_SUPPRESS_DEPRECATED_BEGIN
-  world->setCollisionDetector(collision::BulletCollisionDetector::create());
+  world->setCollisionDetector(collision::DARTCollisionDetector::create());
   DART_SUPPRESS_DEPRECATED_END
 
   // Create dim x dim x dim boxes

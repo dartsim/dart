@@ -9,7 +9,7 @@
  *   Redistribution and use in source and binary forms, with or
  *   without modification, are permitted provided that the following
  *   conditions are met:
- *   * Redistributions of this software must retain the above copyright
+ *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
  *   * Redistributions in binary form must reproduce the above
  *     copyright notice, this list of conditions and the following
@@ -30,55 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/config.hpp"
-
 #include <gtest/gtest.h>
 
-#if DART_HAVE_BULLET
-  #include "dart/collision/CollisionOption.hpp"
-  #include "dart/collision/bullet/detail/BulletContact.hpp"
-#endif
-
-using namespace dart;
-using namespace dart::collision;
-
-#if DART_HAVE_BULLET
-using dart::collision::bullet::detail::shouldReportContact;
-
-TEST(BulletContact, FiltersNegativePenetrationDepth)
+TEST(ContactFiltering, LegacyBackendContactFiltersUnsupported)
 {
-  CollisionOption option;
-
-  btManifoldPoint cp;
-  cp.m_normalWorldOnB = btVector3(0, 0, 1);
-  cp.m_distance1 = 0.01; // positive => negative penetration depth
-
-  EXPECT_FALSE(shouldReportContact(cp, option));
-
-  option.allowNegativePenetrationDepthContacts = true;
-  EXPECT_TRUE(shouldReportContact(cp, option));
+  GTEST_SKIP() << "Built-in collision does not expose legacy backend contact filters.";
 }
-
-TEST(BulletContact, StillReportsPenetratingContacts)
-{
-  CollisionOption option;
-
-  btManifoldPoint cp;
-  cp.m_normalWorldOnB = btVector3(0, 0, 1);
-  cp.m_distance1 = -0.02;
-
-  EXPECT_TRUE(shouldReportContact(cp, option));
-}
-
-TEST(BulletContact, RejectsZeroLengthNormals)
-{
-  CollisionOption option;
-  option.allowNegativePenetrationDepthContacts = true;
-
-  btManifoldPoint cp;
-  cp.m_normalWorldOnB = btVector3(0, 0, 0);
-  cp.m_distance1 = -0.01;
-
-  EXPECT_FALSE(shouldReportContact(cp, option));
-}
-#endif

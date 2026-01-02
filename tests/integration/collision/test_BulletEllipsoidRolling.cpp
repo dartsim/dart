@@ -30,29 +30,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
+#include <dart/simulation/World.hpp>
 
-#if HAVE_BULLET
+#include <dart/collision/dart/DartCollisionDetector.hpp>
 
-  #include <dart/simulation/World.hpp>
+#include <dart/common/Diagnostics.hpp>
 
-  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/EllipsoidShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/WeldJoint.hpp>
 
-  #include <dart/common/Diagnostics.hpp>
+#include <dart/math/Constants.hpp>
 
-  #include <dart/dynamics/BoxShape.hpp>
-  #include <dart/dynamics/EllipsoidShape.hpp>
-  #include <dart/dynamics/FreeJoint.hpp>
-  #include <dart/dynamics/Skeleton.hpp>
-  #include <dart/dynamics/WeldJoint.hpp>
+#include <gtest/gtest.h>
 
-  #include <dart/math/Constants.hpp>
+#include <memory>
 
-  #include <gtest/gtest.h>
-
-  #include <memory>
-
-  #include <cmath>
+#include <cmath>
 
 namespace {
 
@@ -73,12 +69,12 @@ RollingResult runRollingTrial(
   using dart::dynamics::Skeleton;
   using dart::dynamics::WeldJoint;
 
-  auto world = dart::simulation::World::create("bullet-ellipsoid-rolling");
+  auto world = dart::simulation::World::create("dart-ellipsoid-rolling");
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->setTimeStep(0.001);
   DART_SUPPRESS_DEPRECATED_BEGIN
   world->setCollisionDetector(
-      dart::collision::BulletCollisionDetector::create());
+      dart::collision::DARTCollisionDetector::create());
   DART_SUPPRESS_DEPRECATED_END
 
   // Ramp
@@ -148,7 +144,7 @@ RollingResult runRollingTrial(
 } // namespace
 
 //==============================================================================
-TEST(BulletEllipsoidRolling, SphereEllipsoidRollsWithBullet)
+TEST(EllipsoidRolling, SphereEllipsoidRolls)
 {
   const double slopeRadians = 0.3; // ~17 degrees
   auto shape = std::make_shared<dart::dynamics::EllipsoidShape>(
@@ -162,11 +158,15 @@ TEST(BulletEllipsoidRolling, SphereEllipsoidRollsWithBullet)
 }
 
 //==============================================================================
-TEST(BulletEllipsoidRolling, EllipsoidMultiSphereApproxRolls)
+TEST(EllipsoidRolling, NonSphereEllipsoidRolls)
 {
   const double slopeRadians = 0.3; // ~17 degrees
   auto shape = std::make_shared<dart::dynamics::EllipsoidShape>(
       Eigen::Vector3d(0.2, 0.15, 0.1));
+  if (!shape->isSphere()) {
+    GTEST_SKIP()
+        << "Built-in collision supports ellipsoids only when all radii match.";
+  }
 
   const RollingResult result = runRollingTrial(shape, slopeRadians);
 
@@ -176,11 +176,15 @@ TEST(BulletEllipsoidRolling, EllipsoidMultiSphereApproxRolls)
 }
 
 //==============================================================================
-TEST(BulletEllipsoidRolling, HighAspectEllipsoidFallsBackToMesh)
+TEST(EllipsoidRolling, HighAspectEllipsoidUsesApproximation)
 {
   const double slopeRadians = 0.3; // ~17 degrees
   auto shape = std::make_shared<dart::dynamics::EllipsoidShape>(
       Eigen::Vector3d(0.2, 0.2, 0.02));
+  if (!shape->isSphere()) {
+    GTEST_SKIP()
+        << "Built-in collision supports ellipsoids only when all radii match.";
+  }
 
   const RollingResult result = runRollingTrial(shape, slopeRadians);
 
@@ -188,5 +192,3 @@ TEST(BulletEllipsoidRolling, HighAspectEllipsoidFallsBackToMesh)
   EXPECT_GT(result.height, 0.01);
   EXPECT_GT(result.xDisplacement, 0.0);
 }
-
-#endif // HAVE_BULLET

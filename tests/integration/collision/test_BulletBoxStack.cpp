@@ -36,7 +36,7 @@
 
 #include <dart/constraint/ConstraintSolver.hpp>
 
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#include <dart/collision/dart/DartCollisionDetector.hpp>
 
 #include <dart/common/Diagnostics.hpp>
 
@@ -87,7 +87,7 @@ std::vector<dynamics::SkeletonPtr> createStack(World& world)
 } // namespace
 
 //==============================================================================
-TEST(Issue867, BulletBoxStackingStaysStable)
+TEST(Issue867, BoxStackingStaysStable)
 {
   auto world = World::create();
   world->setTimeStep(kTimeStep);
@@ -95,7 +95,7 @@ TEST(Issue867, BulletBoxStackingStaysStable)
   auto lcpSolver = std::make_shared<math::DantzigSolver>();
   auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
   DART_SUPPRESS_DEPRECATED_BEGIN
-  solver->setCollisionDetector(collision::BulletCollisionDetector::create());
+  solver->setCollisionDetector(collision::DARTCollisionDetector::create());
   DART_SUPPRESS_DEPRECATED_END
   world->setConstraintSolver(std::move(solver));
 
