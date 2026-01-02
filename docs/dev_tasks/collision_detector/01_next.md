@@ -106,7 +106,7 @@
 - Added axis-aligned distance paths for box-box, cylinder-box, and parallel cylinder-cylinder cases, plus plane-aligned nearest point selection for box-plane, sphere-plane, and cylinder-plane.
 - Updated ellipsoid-as-sphere core radius to use diameters.
 - Fixed box inside-hit raycast normal/fraction selection.
-- Latest local runs: `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartDistance` pass; `pixi run -e gazebo test-gz` fails (COMMON_TEST_collisions_dartsim, COMMON_TEST_detachable_joint_dartsim, COMMON_TEST_joint_features_dartsim, COMMON_TEST_simulation_features_dartsim with a segfault).
+- Latest local runs: `pixi run build-tests` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R 'UNIT_collision_Distance|UNIT_collision_Raycast|INTEGRATION_collision_PrimitiveContactMatrix|INTEGRATION_collision_CollisionGroups|INTEGRATION_simulation_World|INTEGRATION_simulation_MimicConstraint'` fails in `UNIT_collision_Distance`, `INTEGRATION_collision_PrimitiveContactMatrix`, and `INTEGRATION_simulation_MimicConstraint` (raycast and collision groups pass).
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Added tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
 - Added tilted plane offset coverage for cylinder-plane nearest points.
@@ -129,16 +129,16 @@
 
 ## Next Actions
 
-- Fix failing `pixi run -e gazebo test-gz` cases (COMMON_TEST_collisions_dartsim, COMMON_TEST_detachable_joint_dartsim, COMMON_TEST_joint_features_dartsim, COMMON_TEST_simulation_features_dartsim) and resolve the simulation features segfault.
-- Audit collision-related tests that still select legacy detector types and migrate them to the built-in detector when feasible.
-- Use those tests to drive missing-feature work in the core detector before returning to the example pipeline.
-- Decide whether to prune or migrate unbuilt legacy-only tests and benchmarks that still reference removed backends.
+- Merge `origin/main` and resolve any conflicts before continuing with test fixes.
+- Update `UNIT_collision_Distance` expectations to match built-in nearest points and min-distance semantics.
+- Trim or gate unsupported shapes in `INTEGRATION_collision_PrimitiveContactMatrix` to match the built-in primitive set.
+- Adjust `INTEGRATION_simulation_MimicConstraint` tolerances or setup for built-in detector behavior.
+- Re-run the focused ctest set and update task docs with new results.
+- Use test failures to drive missing-feature work in the core detector before returning to the example pipeline.
 - Extend raycast coverage to edge cases and future shape types.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Explore additional distance broadphase pruning and candidate ordering improvements.
-- Validate build and install paths after the engine layout change.
 - Revisit the raycast enablement default once gazebo expectations change.
-- Audit remaining downstream-facing docs/examples for deprecated backend selection and update as needed.
 
 ## Questions and Decisions Needed
 

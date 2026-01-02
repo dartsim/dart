@@ -6,9 +6,9 @@
 - Phase 2.5 (default switch + deprecation) complete: built-in detector is the
   default, backend-selection APIs are deprecated, and examples/docs are
   migrated.
-- Current focus: align collision-related tests to use the built-in detector and
-  close feature gaps they expose before returning to examples.
-- Latest local runs: `pixi run build-tests` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` pass; `pixi run -e gazebo test-gz` fails (COMMON_TEST_collisions_dartsim, COMMON_TEST_detachable_joint_dartsim, COMMON_TEST_joint_features_dartsim, COMMON_TEST_simulation_features_dartsim with a segfault).
+- Current focus: fix failing collision and simulation tests after aligning
+  them to the built-in detector.
+- Latest local runs: `pixi run build-tests` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R 'UNIT_collision_Distance|UNIT_collision_Raycast|INTEGRATION_collision_PrimitiveContactMatrix|INTEGRATION_collision_CollisionGroups|INTEGRATION_simulation_World|INTEGRATION_simulation_MimicConstraint'` fails in `UNIT_collision_Distance`, `INTEGRATION_collision_PrimitiveContactMatrix`, and `INTEGRATION_simulation_MimicConstraint` (raycast and collision groups pass).
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Raycast baseline (Release): Closest 32=1.90us, 128=7.54us, 512=32.0us; AllHits 32=2.18us, 128=8.59us, 512=38.0us.
 - Core data and broadphase scaffolding are in place, with AABB caching.
