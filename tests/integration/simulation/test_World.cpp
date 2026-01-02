@@ -110,53 +110,6 @@ private:
   bool mDisabled{false};
 };
 
-class TrackingSolver final : public WorldSolver
-{
-public:
-  TrackingSolver(
-      std::string name,
-      std::vector<std::string>& callLog,
-      std::optional<RigidSolverType> rigidSolverType = std::nullopt)
-    : WorldSolver(std::move(name)),
-      mCallLog(callLog),
-      mRigidSolverType(std::move(rigidSolverType))
-  {
-  }
-
-  std::optional<RigidSolverType> getRigidSolverType() const override
-  {
-    return mRigidSolverType;
-  }
-
-  void setTimeStep(double) override {}
-
-  void step(World&, bool) override
-  {
-    mCallLog.push_back(mName + ".step");
-  }
-
-  void sync(World&) override
-  {
-    mCallLog.push_back(mName + ".sync");
-  }
-
-private:
-  std::vector<std::string>& mCallLog;
-  std::optional<RigidSolverType> mRigidSolverType;
-};
-
-class SolverTestWorld final : public World
-{
-public:
-  using World::World;
-
-  using World::addSolver;
-  using World::getNumSolvers;
-  using World::getSolverIndex;
-  using World::moveSolver;
-  using World::setSolverEnabled;
-};
-
 } // namespace
 
 //==============================================================================
@@ -699,49 +652,4 @@ TEST(World, RevoluteJointConstraintBasics)
   const Eigen::Vector3d axis2
       = bd2->getTransform().linear() * Eigen::Vector3d::UnitY();
   EXPECT_GT(axis1.normalized().dot(axis2.normalized()), 0.2);
-}
-
-//==============================================================================
-TEST(World, SolverSteppingActiveRigidSolverOnlyOrdersNonRigidAndSync)
-{
-  auto world = std::make_shared<SolverTestWorld>();
-  ASSERT_TRUE(world);
-
-  for (std::size_t i = 0; i < world->getNumSolvers(); ++i)
-    EXPECT_TRUE(world->setSolverEnabled(i, false));
-
-  std::vector<std::string> callLog;
-  auto* nonRigid
-      = world->addSolver(std::make_unique<TrackingSolver>("nonrigid", callLog));
-  auto* mirrorRigid = world->addSolver(std::make_unique<TrackingSolver>(
-      "mirror", callLog, RigidSolverType::EntityComponent));
-  auto* activeRigid = world->addSolver(std::make_unique<TrackingSolver>(
-      "active", callLog, RigidSolverType::ClassicSkeleton));
-
-  ASSERT_TRUE(nonRigid);
-  ASSERT_TRUE(mirrorRigid);
-  ASSERT_TRUE(activeRigid);
-
-  auto moveToIndex = [&](WorldSolver* solver, std::size_t target) {
-    const auto index = world->getSolverIndex(solver);
-    ASSERT_LT(index, world->getNumSolvers());
-    ASSERT_TRUE(world->moveSolver(index, target));
-  };
-
-  moveToIndex(nonRigid, 0);
-  moveToIndex(mirrorRigid, 1);
-  moveToIndex(activeRigid, 2);
-
-  ASSERT_TRUE(world->setActiveRigidSolver(RigidSolverType::ClassicSkeleton));
-  world->setSolverSteppingMode(SolverSteppingMode::ActiveRigidSolverOnly);
-
-  callLog.clear();
-  world->step(false);
-
-  const std::vector<std::string> expected{
-      "active.step",
-      "nonrigid.step",
-      "mirror.sync",
-  };
-  EXPECT_EQ(callLog, expected);
 }
