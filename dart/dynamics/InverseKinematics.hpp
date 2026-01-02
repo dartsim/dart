@@ -262,6 +262,11 @@ public:
   /// Explicitly set which degrees of freedom should be used to solve the IK for
   /// this module.
   template <class DegreeOfFreedomT>
+  void setDofs(std::span<DegreeOfFreedomT* const> _dofs);
+
+  /// Explicitly set which degrees of freedom should be used to solve the IK for
+  /// this module.
+  template <class DegreeOfFreedomT>
   void setDofs(const std::vector<DegreeOfFreedomT*>& _dofs);
 
   /// Explicitly set which degrees of freedom should be used to solve the IK for

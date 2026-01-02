@@ -149,6 +149,7 @@ public:
   /// Set actuator types for each DoF. The first entry is used as the joint-wide
   /// actuator type, and each subsequent entry overrides the joint-wide type
   /// when it differs.
+  void setActuatorTypes(std::span<const ActuatorType> actuatorTypes);
   void setActuatorTypes(const std::vector<ActuatorType>& actuatorTypes);
 
   /// Get actuator type
@@ -179,8 +180,8 @@ public:
   /// Sets the mimic joint properties for a specific DoF of the dependent joint.
   void setMimicJointDof(std::size_t index, const MimicDofProperties& mimicProp);
 
-  /// Sets the mimic joint properties for all DoFs of the dependent joint using
-  /// a vector of MimicDofProperties.
+  /// Sets the mimic joint properties for all DoFs of the dependent joint.
+  void setMimicJointDofs(std::span<const MimicDofProperties> mimicProps);
   void setMimicJointDofs(const std::vector<MimicDofProperties>& mimicProps);
 
   /// Sets the mimic joint properties for specific DoFs of the dependent joint

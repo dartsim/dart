@@ -189,23 +189,23 @@ void retargetMimicsToBaseline(
       if (!joint)
         continue;
 
-      std::vector<dart::dynamics::MimicDofProperties> props(
-          joint->getMimicDofProperties().begin(),
-          joint->getMimicDofProperties().end());
+      const auto props = joint->getMimicDofProperties();
       if (props.empty())
         continue;
 
       if (skeleton == baseline) {
         // Leave the baseline uncoupled so it serves as the reference.
-        props.assign(joint->getNumDofs(), {});
-        joint->setMimicJointDofs(props);
+        joint->setMimicJointDofs(
+            std::vector<dart::dynamics::MimicDofProperties>(
+                joint->getNumDofs()));
         joint->setActuatorType(dart::dynamics::Joint::FORCE);
         joint->setUseCouplerConstraint(false);
         continue;
       }
 
       bool updated = false;
-      for (auto& prop : props) {
+      for (std::size_t dofIndex = 0; dofIndex < props.size(); ++dofIndex) {
+        auto prop = props[dofIndex];
         if (prop.mReferenceJoint == nullptr)
           continue;
 
@@ -214,11 +214,11 @@ void retargetMimicsToBaseline(
           continue;
 
         prop.mReferenceJoint = ref;
+        joint->setMimicJointDof(dofIndex, prop);
         updated = true;
       }
 
       if (updated) {
-        joint->setMimicJointDofs(props);
         joint->setActuatorType(dart::dynamics::Joint::MIMIC);
         joint->setUseCouplerConstraint(false);
       }

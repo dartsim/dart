@@ -40,11 +40,17 @@
   views, package paths, cloneable vectors) and remove redundant span helpers.
   Updated call sites to handle spans (including mimic constraint configuration
   and cloneable vector copies).
+- Phase 3 follow-up: update MetaSkeleton and Skeleton index-based setters/getters
+  to accept `std::span`, removing span-to-vector conversions in IK and
+  dynamics test utilities.
+- Phase 3 follow-up: remove span-to-vector conversions in mimic joint handling
+  (ConstraintSolver checks, SDF mimic parsing, mimic pendulum example, and
+  mimic constraint test).
+- Phase 3 follow-up: add span overloads for `Joint::setActuatorTypes`,
+  `Joint::setMimicJointDofs`, and pointer-based `InverseKinematics::setDofs`.
 - Phase 3 checks: `pixi run lint`, `pixi run test`, and
   `pixi run -e gazebo test-gz` (all passed; some deprecation warnings emitted
   from gz-physics during test-gz build).
-- Phase 4: run the standard pixi workflows again after Phase 3 merge conflict
-  resolution and address any warnings or regressions before final merge.
-- Phase 4 checks: `pixi run lint`, `pixi run test`, and
-  `pixi run -e gazebo test-gz` (all passed; gz-physics emitted sign-compare
-  warnings from its vendored gtest headers during the test-gz build).
+- Phase 4: rerun the standard pixi workflows and resolve any regressions before
+  finishing the phase.
+- Phase 4 checks: `pixi run test-all` (local run with 2/3 core count passed).

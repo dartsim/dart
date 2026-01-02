@@ -703,8 +703,7 @@ void InverseKinematics::GradientMethod::convertJacobianMethodOutputToGradient(
     Eigen::VectorXd& grad, std::span<const std::size_t> dofs)
 {
   const SkeletonPtr& skel = mIK->getNode()->getSkeleton();
-  const std::vector<std::size_t> dofIndices(dofs.begin(), dofs.end());
-  mInitialPositionsCache = skel->getPositions(dofIndices);
+  mInitialPositionsCache = skel->getPositions(dofs);
 
   struct JointIntegrationData
   {
@@ -1167,16 +1166,14 @@ void InverseKinematics::Analytical::computeGradient(
 void InverseKinematics::Analytical::setPositions(const Eigen::VectorXd& _config)
 {
   const auto dofs = getDofs();
-  mIK->getNode()->getSkeleton()->setPositions(
-      std::vector<std::size_t>(dofs.begin(), dofs.end()), _config);
+  mIK->getNode()->getSkeleton()->setPositions(dofs, _config);
 }
 
 //==============================================================================
 Eigen::VectorXd InverseKinematics::Analytical::getPositions() const
 {
   const auto dofs = getDofs();
-  return mIK->getNode()->getSkeleton()->getPositions(
-      std::vector<std::size_t>(dofs.begin(), dofs.end()));
+  return mIK->getNode()->getSkeleton()->getPositions(dofs);
 }
 
 //==============================================================================
