@@ -206,8 +206,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
   if (mLineSegmentShape->checkDataVariance(
           dart::dynamics::Shape::DYNAMIC_ELEMENTS)
       || firstTime) {
-    const common::aligned_vector<Eigen::Vector2i>& connections
-        = mLineSegmentShape->getConnections();
+    const auto connections = mLineSegmentShape->getConnections();
 
     mElements->clear();
     mElements->reserve(2 * connections.size());
@@ -226,8 +225,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
       || mLineSegmentShape->checkDataVariance(
           dart::dynamics::Shape::DYNAMIC_ELEMENTS)
       || firstTime) {
-    const std::vector<Eigen::Vector3d>& vertices
-        = mLineSegmentShape->getVertices();
+    const auto vertices = mLineSegmentShape->getVertices();
 
     if (mVertices->size() != vertices.size())
       mVertices->resize(vertices.size());

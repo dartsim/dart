@@ -128,7 +128,7 @@ TEST(MetaSkeleton, Referential)
     for (std::size_t j = 0; j < skeleton->getNumTrees(); ++j) {
       BranchPtr tree = Branch::create(skeleton->getRootBodyNode(j));
 
-      const std::vector<BodyNode*>& skelBns = skeleton->getTreeBodyNodes(j);
+      const auto skelBns = skeleton->getTreeBodyNodes(j);
       EXPECT_TRUE(tree->getNumBodyNodes() == skelBns.size());
       for (BodyNode* bn : skelBns) {
         EXPECT_FALSE(tree->getIndexOf(bn) == INVALID_INDEX);
@@ -136,7 +136,7 @@ TEST(MetaSkeleton, Referential)
         EXPECT_TRUE(skeleton->hasBodyNode(bn));
       }
 
-      const std::vector<DegreeOfFreedom*>& skelDofs = skeleton->getTreeDofs(j);
+      const auto skelDofs = skeleton->getTreeDofs(j);
       EXPECT_TRUE(tree->getNumDofs() == skelDofs.size());
       for (DegreeOfFreedom* dof : skelDofs) {
         EXPECT_FALSE(tree->getIndexOf(dof) == INVALID_INDEX);

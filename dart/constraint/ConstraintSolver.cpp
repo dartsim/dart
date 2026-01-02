@@ -125,9 +125,9 @@ void ConstraintSolver::addSkeletons(std::span<const SkeletonPtr> skeletons)
 }
 
 //==============================================================================
-const std::vector<SkeletonPtr>& ConstraintSolver::getSkeletons() const
+std::span<const SkeletonPtr> ConstraintSolver::getSkeletons() const
 {
-  return mSkeletons;
+  return std::span<const SkeletonPtr>(mSkeletons);
 }
 
 //==============================================================================
@@ -552,17 +552,20 @@ void ConstraintSolver::updateConstraints()
       }
 
       if (joint->hasActuatorType(dynamics::Joint::MIMIC)) {
-        auto mimicProps = joint->getMimicDofProperties();
-        mimicProps.resize(joint->getNumDofs());
+        const auto mimicProps = joint->getMimicDofProperties();
         const auto dofCount = joint->getNumDofs();
+        const dynamics::MimicDofProperties defaultProp{};
         bool hasValidMimicDof = false;
         bool useCouplerConstraint = false;
         bool allMimicWithReference = true;
         for (std::size_t dofIndex = 0; dofIndex < dofCount; ++dofIndex) {
+          const auto& mimicProp = dofIndex < mimicProps.size()
+                                      ? mimicProps[dofIndex]
+                                      : defaultProp;
           if (joint->getActuatorType(dofIndex) == dynamics::Joint::MIMIC) {
-            if (mimicProps[dofIndex].mReferenceJoint != nullptr) {
+            if (mimicProp.mReferenceJoint != nullptr) {
               hasValidMimicDof = true;
-              if (mimicProps[dofIndex].mConstraintType
+              if (mimicProp.mConstraintType
                   == dynamics::MimicConstraintType::Coupler) {
                 useCouplerConstraint = true;
               }

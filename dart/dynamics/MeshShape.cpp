@@ -1229,9 +1229,9 @@ void MeshShape::setDisplayList(int index)
 }
 
 //==============================================================================
-const std::vector<MeshMaterial>& MeshShape::getMaterials() const
+std::span<const MeshMaterial> MeshShape::getMaterials() const
 {
-  return mMaterials;
+  return std::span<const MeshMaterial>(mMaterials);
 }
 
 //==============================================================================

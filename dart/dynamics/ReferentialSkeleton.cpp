@@ -147,7 +147,7 @@ std::vector<BodyNode*>& ReferentialSkeleton::getBodyNodes()
 }
 
 //==============================================================================
-const std::vector<const BodyNode*>& ReferentialSkeleton::getBodyNodes() const
+std::span<const BodyNode* const> ReferentialSkeleton::getBodyNodes() const
 {
   return convertVector<BodyNodePtr, const BodyNode*>(
       mBodyNodes, mRawConstBodyNodes);
@@ -370,7 +370,7 @@ const DegreeOfFreedom* ReferentialSkeleton::getDof(std::size_t _idx) const
 }
 
 //==============================================================================
-const std::vector<DegreeOfFreedom*>& ReferentialSkeleton::getDofs()
+std::span<DegreeOfFreedom* const> ReferentialSkeleton::getDofs()
 {
   return convertVector<DegreeOfFreedomPtr, DegreeOfFreedom*>(mDofs, mRawDofs);
 }
@@ -460,8 +460,7 @@ void assignJacobian(
     const JacobianNode* _node,
     const JacobianType& _JBodyNode)
 {
-  const std::vector<const DegreeOfFreedom*>& bn_dofs
-      = _node->getDependentDofs();
+  const auto bn_dofs = _node->getDependentDofs();
   std::size_t nDofs = bn_dofs.size();
   for (std::size_t i = 0; i < nDofs; ++i) {
     std::size_t refIndex = _refSkel->getIndexOf(bn_dofs[i], false);
@@ -1043,7 +1042,7 @@ JacType getCOMJacobianTemplate(
         = bn->getMass() * (bn->*getJacFn)(bn->getLocalCOM(), _inCoordinatesOf);
     totalMass += bn->getMass();
 
-    const std::vector<const DegreeOfFreedom*>& dofs = bn->getDependentDofs();
+    const auto dofs = bn->getDependentDofs();
     std::size_t nDofs = dofs.size();
     for (std::size_t i = 0; i < nDofs; ++i) {
       const DegreeOfFreedom* dof = dofs[i];

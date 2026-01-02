@@ -47,6 +47,8 @@
 #include <osg/ShapeDrawable>
 #include <osg/Texture2D>
 
+#include <span>
+
 namespace dart {
 namespace gui {
 
@@ -280,10 +282,8 @@ protected:
 
 //==============================================================================
 bool shouldUseVisualAspectColor(
-    const std::vector<Eigen::Vector3d>& points,
-    const std::vector<
-        Eigen::Vector4d,
-        Eigen::aligned_allocator<Eigen::Vector4d>>& colors,
+    std::span<const Eigen::Vector3d> points,
+    std::span<const Eigen::Vector4d> colors,
     dynamics::PointCloudShape::ColorMode colorMode)
 {
   if (colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR) {

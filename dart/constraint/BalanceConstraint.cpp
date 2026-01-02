@@ -133,7 +133,7 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x)
 
       // Save the indices of the EndEffectors that are closest to the center of
       // mass
-      const std::vector<std::size_t>& indexMap = skel->getSupportIndices();
+      const auto indexMap = skel->getSupportIndices();
       mClosestEndEffector[0] = indexMap[closestIndex1];
       mClosestEndEffector[1] = indexMap[closestIndex2];
 

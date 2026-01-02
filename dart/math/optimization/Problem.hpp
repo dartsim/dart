@@ -39,6 +39,7 @@
 
 #include <Eigen/Dense>
 
+#include <span>
 #include <vector>
 
 #include <cstddef>
@@ -87,7 +88,7 @@ public:
   std::vector<Eigen::VectorXd>& getSeeds();
 
   /// @brief An immutable version of getSeeds()
-  const std::vector<Eigen::VectorXd>& getSeeds() const;
+  std::span<const Eigen::VectorXd> getSeeds() const;
 
   /// @brief Clear the seeds that this Problem currently contains
   void clearAllSeeds();
