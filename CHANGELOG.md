@@ -16,6 +16,7 @@
   - Removed the legacy integration module and moved the optimizer component to `dart-optimization`; optional optimizer plugins and pagmo APIs are removed. ([#2201](https://github.com/dartsim/dart/pull/2201), [#2204](https://github.com/dartsim/dart/pull/2204))
   - Removed build-mode macros from public config headers and prefixed feature macros with `DART_`. ([#2275](https://github.com/dartsim/dart/pull/2275), [#2278](https://github.com/dartsim/dart/pull/2278))
   - Removed deprecated `examples_dart8` and `benchmarks_dart8` directories.
+  - Removed C3D/VSK utilities, parsers, and sample data. ([#2363](https://github.com/dartsim/dart/pull/2363))
   - Dropped the deprecated `docker/dev/v6.15` images; use the maintained v6.16 images instead.
 
 - Minimum Compiler Requirements
