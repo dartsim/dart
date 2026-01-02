@@ -14,6 +14,8 @@
 - Create `dart/ecs` component with `dart::ecs::World` and minimal lifecycle.
 - Port core ECS types from `dart8` (World, Frame, RigidBody, MultiBody, Tags).
 - Add a dedicated CMake target and install headers for `dart/ecs`.
+  - Current state: scaffolding only (minimal World + opaque handles; no entity
+    creation APIs yet).
 
 ## Phase 2: Compatibility Layer
 

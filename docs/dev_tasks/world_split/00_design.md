@@ -2,7 +2,8 @@
 
 ## Status
 
-- Draft: replace the multi-solver approach with two dedicated worlds.
+- In progress: `dart::ecs` scaffolding landed (minimal World + handles, no EnTT
+  exposure).
 
 ## Goals
 
