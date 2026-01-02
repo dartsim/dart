@@ -40,6 +40,7 @@
 - Raycast tests include rotated cylinder parallel misses.
 - Distance tests include box-plane offset coverage.
 - Distance tests include rotated box-plane offset coverage.
+- Distance tests include rotated box-plane offset overlap coverage.
 - Distance tests include a group-group distance case to validate pair selection.
 - Distance tests include diagonal box-box coverage for oblique nearest points.
 - Distance tests include group-group filter coverage for distance queries.
@@ -148,6 +149,7 @@
 - Added rotated cylinder parallel raycast miss coverage.
 - Added box-plane offset distance coverage.
 - Added rotated box-plane offset distance coverage.
+- Added rotated box-plane offset overlap distance coverage.
 - Added group-group distance coverage to validate pair selection and nearest points.
 - Added diagonal box-box distance coverage to validate oblique nearest points.
 - Added group-group distance filter coverage to validate filter application.

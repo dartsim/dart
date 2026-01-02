@@ -69,6 +69,7 @@ Current status:
 - Raycast tests include rotated cylinder parallel misses.
 - Distance tests include box-plane offset coverage.
 - Distance tests include rotated box-plane offset coverage.
+- Distance tests include rotated box-plane offset overlap coverage.
 - Distance tests include a group-group case to validate pair selection and nearest points.
 - Distance tests include diagonal box-box coverage for oblique nearest points.
 - Distance tests include group-group filter coverage for distance queries.
