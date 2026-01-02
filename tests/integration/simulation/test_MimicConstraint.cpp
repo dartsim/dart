@@ -65,6 +65,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -154,9 +155,10 @@ void retargetMimicJoints(const WorldPtr& world, const std::string& baselineName)
         continue;
 
       if (skeleton == baseline) {
+        std::vector<dart::dynamics::MimicDofProperties> clearedProps(
+            joint->getNumDofs());
         joint->setMimicJointDofs(
-            std::vector<dart::dynamics::MimicDofProperties>(
-                joint->getNumDofs()));
+            std::span<const dart::dynamics::MimicDofProperties>(clearedProps));
         joint->setActuatorType(dart::dynamics::Joint::FORCE);
         joint->setUseCouplerConstraint(false);
         continue;

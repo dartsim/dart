@@ -14,6 +14,8 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
+#include <span>
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -103,7 +105,7 @@ void defJoint(nb::module_& m)
       .def(
           "setActuatorTypes",
           [](Joint& self, const std::vector<ActuatorType>& actuatorTypes) {
-            self.setActuatorTypes(actuatorTypes);
+            self.setActuatorTypes(std::span<const ActuatorType>(actuatorTypes));
           },
           nb::arg("actuator_types"))
       .def(
