@@ -2,7 +2,7 @@
 
 ## Status
 
-- Active: executing phases; Phase 3 in progress.
+- Active: executing phases; Phase 4 in progress.
 
 ## Objective
 

@@ -2,16 +2,16 @@
 
 ## Status
 
-- Current phase: Phase 3 (public API span migrations)
-- Code changes: Phase 3 in progress.
+- Current phase: Phase 4 (consolidation and validation)
+- Code changes: Phase 4 in progress.
 
 ## Phase checklist
 
 - Phase 0 - Discovery and guardrails: Complete
 - Phase 1 - Mechanical no-op cleanup: Complete
 - Phase 2 - Standard library modernization: Complete
-- Phase 3 - Additive public header updates: In progress
-- Phase 4 - Consolidation and validation: Not started
+- Phase 3 - Additive public header updates: Complete
+- Phase 4 - Consolidation and validation: In progress
 
 ## Notes
 
@@ -34,7 +34,7 @@
   introduce `std::span` in internal helper functions for pointer vector
   conversions.
 - Phase 2 checks: `pixi run lint`, `pixi run test` (both passed).
-- Phase 3 started: replace const vector-reference getters with `std::span`
+- Phase 3: replace const vector-reference getters with `std::span`
   returns (e.g., collision contacts, point/mesh/line segment accessors,
   Jacobian/MetaSkeleton/Skeleton/IK accessors, constraint solver skeleton
   views, package paths, cloneable vectors) and remove redundant span helpers.
@@ -43,3 +43,8 @@
 - Phase 3 checks: `pixi run lint`, `pixi run test`, and
   `pixi run -e gazebo test-gz` (all passed; some deprecation warnings emitted
   from gz-physics during test-gz build).
+- Phase 4: run the standard pixi workflows again after Phase 3 merge conflict
+  resolution and address any warnings or regressions before final merge.
+- Phase 4 checks: `pixi run lint`, `pixi run test`, and
+  `pixi run -e gazebo test-gz` (all passed; gz-physics emitted sign-compare
+  warnings from its vendored gtest headers during the test-gz build).
