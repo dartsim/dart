@@ -70,7 +70,7 @@ std::size_t FixedJacobianNode::getDependentGenCoordIndex(
 }
 
 //==============================================================================
-const std::vector<std::size_t>& FixedJacobianNode::getDependentGenCoordIndices()
+std::span<const std::size_t> FixedJacobianNode::getDependentGenCoordIndices()
     const
 {
   return mBodyNode->getDependentGenCoordIndices();
@@ -96,13 +96,13 @@ const DegreeOfFreedom* FixedJacobianNode::getDependentDof(
 }
 
 //==============================================================================
-const std::vector<DegreeOfFreedom*>& FixedJacobianNode::getDependentDofs()
+std::span<DegreeOfFreedom* const> FixedJacobianNode::getDependentDofs()
 {
   return mBodyNode->getDependentDofs();
 }
 
 //==============================================================================
-const std::vector<const DegreeOfFreedom*>& FixedJacobianNode::getDependentDofs()
+std::span<const DegreeOfFreedom* const> FixedJacobianNode::getDependentDofs()
     const
 {
   return static_cast<const BodyNode*>(mBodyNode)->getDependentDofs();

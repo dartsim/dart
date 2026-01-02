@@ -38,6 +38,7 @@
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/MimicDofProperties.hpp>
 
+#include <span>
 #include <vector>
 
 namespace dart {
@@ -54,11 +55,11 @@ public:
   /// Constructor that creates a MimicMotorConstraint using the given
   /// MimicDofProperties for each dependent joint's DoF.
   /// @param[in] joint The dependent joint.
-  /// @param[in] mimicDofProperties A vector of MimicDofProperties for each DoF
-  /// of the dependent joint.
+  /// @param[in] mimicDofProperties A span of MimicDofProperties for each DoF of
+  /// the dependent joint.
   explicit MimicMotorConstraint(
       dynamics::Joint* joint,
-      const std::vector<dynamics::MimicDofProperties>& mimicDofProperties);
+      std::span<const dynamics::MimicDofProperties> mimicDofProperties);
 
   /// Destructor
   ~MimicMotorConstraint() override;

@@ -150,7 +150,7 @@ std::string PackageResourceRetriever::getFilePath(const common::Uri& uri)
 DART_SUPPRESS_DEPRECATED_END
 
 //==============================================================================
-const std::vector<std::string>& PackageResourceRetriever::getPackagePaths(
+std::span<const std::string> PackageResourceRetriever::getPackagePaths(
     const std::string& _packageName) const
 {
   static const std::vector<std::string> empty_placeholder;
@@ -158,14 +158,14 @@ const std::vector<std::string>& PackageResourceRetriever::getPackagePaths(
   // Lookup the corresponding package path.
   const auto it = mPackageMap.find(_packageName);
   if (it != std::end(mPackageMap))
-    return it->second;
+    return std::span<const std::string>(it->second);
   else {
     DART_WARN(
         "{}{}{}",
         "Unable to resolvepath to package '",
         _packageName,
         "'. Did you call addPackageDirectory(~) for this package name?\n");
-    return empty_placeholder;
+    return std::span<const std::string>(empty_placeholder);
   }
 }
 

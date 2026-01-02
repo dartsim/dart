@@ -709,8 +709,8 @@ Eigen::Vector3d PointMass::getWorldAcceleration() const
 //==============================================================================
 void PointMass::init()
 {
-  mDependentGenCoordIndices
-      = mParentSoftBodyNode->getDependentGenCoordIndices();
+  const auto indices = mParentSoftBodyNode->getDependentGenCoordIndices();
+  mDependentGenCoordIndices.assign(indices.begin(), indices.end());
 }
 
 //==============================================================================

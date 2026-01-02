@@ -41,6 +41,7 @@
 #include <osg/Geometry>
 #include <osg/LineWidth>
 
+#include <span>
 #include <vector>
 
 namespace dart {
@@ -67,12 +68,15 @@ public:
   /// Sets the vertices by taking ownership of a vector.
   void setVertices(std::vector<Eigen::Vector3d>&& vertices);
 
+  /// Sets the vertices by copying from a contiguous span.
+  void setVertices(std::span<const Eigen::Vector3d> vertices);
+
   /// Sets the vertices from a matrix. The matrix can either be 3xN (each column
   /// is a vertex) or Nx3 (each row is a vertex).
   void setVertices(const Eigen::Ref<const Eigen::MatrixXd>& vertices);
 
   /// Returns the raw vertices that were provided most recently.
-  const std::vector<Eigen::Vector3d>& getVertices() const;
+  std::span<const Eigen::Vector3d> getVertices() const;
 
   /// Removes all vertices and clears the rendered geometry.
   void clear();

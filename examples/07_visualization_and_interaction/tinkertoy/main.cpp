@@ -119,9 +119,8 @@ public:
             dart::gui::LEFT_MOUSE);
 
     if (dart::gui::BUTTON_PUSH == event) {
-      const std::vector<dart::gui::PickInfo>& picks
-          = viewer->getDefaultEventHandler()->getButtonPicks(
-              dart::gui::LEFT_MOUSE, dart::gui::BUTTON_PUSH);
+      const auto picks = viewer->getDefaultEventHandler()->getButtonPicks(
+          dart::gui::LEFT_MOUSE, dart::gui::BUTTON_PUSH);
 
       if (picks.empty())
         return;

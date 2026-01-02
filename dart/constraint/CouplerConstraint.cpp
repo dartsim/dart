@@ -59,10 +59,10 @@ double CouplerConstraint::mConstraintForceMixing = kConstraintForceMixing;
 //==============================================================================
 CouplerConstraint::CouplerConstraint(
     dynamics::Joint* joint,
-    const std::vector<dynamics::MimicDofProperties>& mimicDofProperties)
+    std::span<const dynamics::MimicDofProperties> mimicDofProperties)
   : ConstraintBase(),
     mJoint(joint),
-    mMimicProps(mimicDofProperties),
+    mMimicProps(mimicDofProperties.begin(), mimicDofProperties.end()),
     mBodyNode(joint->getChildBodyNode()),
     mAppliedImpulseIndex(0)
 {

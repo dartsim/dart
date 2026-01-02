@@ -2,17 +2,18 @@
 
 ## Status
 
-- Phase 2 in progress: standard library modernization underway.
+- Phase 3 in progress: public API span migrations underway.
 
 ## Goal
 
-Modernize the codebase to idiomatic C++20 while preserving behavior and public
-APIs.
+Modernize the codebase to idiomatic C++20 while preserving behavior. Public API
+breaks are acceptable for DART 7 if `pixi run -e gazebo test-gz` passes without
+changing Gazebo code.
 
 ## Non-goals
 
 - Behavior changes or algorithmic refactors
-- Public API or ABI breaks
+- Gazebo code changes to accommodate DART API updates
 - New dependencies or build entry points
 
 ## Constraints

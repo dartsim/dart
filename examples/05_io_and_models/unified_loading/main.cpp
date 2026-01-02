@@ -85,8 +85,6 @@ const char* formatToString(dart::io::ModelFormat format)
       return "urdf";
     case dart::io::ModelFormat::Mjcf:
       return "mjcf";
-    case dart::io::ModelFormat::Vsk:
-      return "vsk";
   }
   return "unknown";
 }
@@ -123,10 +121,6 @@ bool parseModelFormat(std::string_view value, dart::io::ModelFormat& format)
   }
   if (lower == "mjcf") {
     format = dart::io::ModelFormat::Mjcf;
-    return true;
-  }
-  if (lower == "vsk") {
-    format = dart::io::ModelFormat::Vsk;
     return true;
   }
   return false;
@@ -166,7 +160,7 @@ void printUsage(const char* argv0)
       << "Options:\n"
       << "  --world <uri>           World URI to load\n"
       << "  --skeleton <uri>        Skeleton URI to load\n"
-      << "  --format <auto|skel|sdf|urdf|mjcf|vsk>\n"
+      << "  --format <auto|skel|sdf|urdf|mjcf>\n"
       << "                          Force the model format for both loads\n"
       << "  --sdf-root-joint <floating|fixed>\n"
       << "                          Default root joint type for SDF models\n"

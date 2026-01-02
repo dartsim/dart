@@ -37,6 +37,8 @@
 
 #include <dart/Export.hpp>
 
+#include <span>
+
 namespace dart {
 namespace dynamics {
 
@@ -135,7 +137,7 @@ public:
   const PointMass* getPointMass(std::size_t _idx) const;
 
   /// Return all the point masses in this SoftBodyNode
-  const std::vector<PointMass*>& getPointMasses() const;
+  std::span<PointMass* const> getPointMasses() const;
 
   /// @brief
   void connectPointMasses(std::size_t _idx1, std::size_t _idx2);

@@ -16,6 +16,7 @@
   - Removed the legacy integration module and moved the optimizer component to `dart-optimization`; optional optimizer plugins and pagmo APIs are removed. ([#2201](https://github.com/dartsim/dart/pull/2201), [#2204](https://github.com/dartsim/dart/pull/2204))
   - Removed build-mode macros from public config headers and prefixed feature macros with `DART_`. ([#2275](https://github.com/dartsim/dart/pull/2275), [#2278](https://github.com/dartsim/dart/pull/2278))
   - Removed deprecated `examples_dart8` and `benchmarks_dart8` directories.
+  - Removed C3D/VSK utilities, parsers, and sample data. ([#2363](https://github.com/dartsim/dart/pull/2363))
   - Dropped the deprecated `docker/dev/v6.15` images; use the maintained v6.16 images instead.
 
 - Minimum Compiler Requirements
@@ -1074,7 +1075,6 @@ This release is mostly a maintenance update, including various CI updates and bu
   - Deprecated `BodyNode::isColliding`; collision sets are moved to `CollisionResult`: [#694](https://github.com/dartsim/dart/pull/694), [#670](https://github.com/dartsim/dart/pull/670), [#668](https://github.com/dartsim/dart/pull/668), [#666](https://github.com/dartsim/dart/issues/666)
 
 - Parsers
-  - Added back VSK parser: [#602](https://github.com/dartsim/dart/pull/602), [#561](https://github.com/dartsim/dart/pull/561), [#254](https://github.com/dartsim/dart/issues/254)
   - Fixed segfault of `SdfParser` when `nullptr` `ResourceRetriever` is passed: [#663](https://github.com/dartsim/dart/pull/663)
 
 - GUI features

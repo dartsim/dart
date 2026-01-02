@@ -42,6 +42,8 @@
 #include <dart/All.hpp>
 #include <dart/io/Read.hpp>
 
+#include <span>
+
 using namespace dart::math;
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -188,7 +190,7 @@ public:
         _newIK, mBaseLinkName, getAnalyticalProperties());
   }
 
-  const std::vector<Solution>& computeSolutions(
+  std::span<const Solution> computeSolutions(
       const Eigen::Isometry3d& _desiredBodyTf) override
   {
     mSolutions.clear();
@@ -201,7 +203,7 @@ public:
         DART_WARN(
             "This analytical IK was not able to configure properly, so it will "
             "not be able to compute solutions");
-        return mSolutions;
+        return {mSolutions.data(), mSolutions.size()};
       }
     }
 
@@ -211,13 +213,13 @@ public:
           "Attempting to perform an IK on a limb that no longer exists [{}]!",
           getMethodName());
       DART_ASSERT(false);
-      return mSolutions;
+      return {mSolutions.data(), mSolutions.size()};
     }
 
     if (nullptr == mWristEnd) {
       DART_ERROR("Attempting to perform IK without a wrist!");
       DART_ASSERT(false);
-      return mSolutions;
+      return {mSolutions.data(), mSolutions.size()};
     }
 
     const std::size_t SP = 0;
@@ -336,15 +338,15 @@ public:
 
     checkSolutionJointLimits();
 
-    return mSolutions;
+    return {mSolutions.data(), mSolutions.size()};
   }
 
-  const std::vector<std::size_t>& getDofs() const override
+  std::span<const std::size_t> getDofs() const override
   {
     if (!configured)
       configure();
 
-    return mDofs;
+    return {mDofs.data(), mDofs.size()};
   }
 
   const double zeroSize = 1e-8;
@@ -465,7 +467,7 @@ public:
         _newIK, mBaseLinkName, getAnalyticalProperties());
   }
 
-  const std::vector<Solution>& computeSolutions(
+  std::span<const Solution> computeSolutions(
       const Eigen::Isometry3d& _desiredBodyTf) override
   {
     mSolutions.clear();
@@ -478,7 +480,7 @@ public:
         DART_WARN(
             "This analytical IK was not able to configure properly, so it will "
             "not be able to compute solutions");
-        return mSolutions;
+        return {mSolutions.data(), mSolutions.size()};
       }
     }
 
@@ -486,7 +488,7 @@ public:
     if (nullptr == base) {
       DART_ERROR("Attempting to perform IK on a limb that no longer exists!");
       DART_ASSERT(false);
-      return mSolutions;
+      return {mSolutions.data(), mSolutions.size()};
     }
 
     double nx, ny, sx, sy, ax, ay, az, px, py, pz;
@@ -577,15 +579,15 @@ public:
 
     checkSolutionJointLimits();
 
-    return mSolutions;
+    return {mSolutions.data(), mSolutions.size()};
   }
 
-  const std::vector<std::size_t>& getDofs() const override
+  std::span<const std::size_t> getDofs() const override
   {
     if (!configured)
       configure();
 
-    return mDofs;
+    return {mDofs.data(), mDofs.size()};
   }
 
   const double zeroSize = 1e-8;

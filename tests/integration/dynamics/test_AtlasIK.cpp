@@ -152,7 +152,7 @@ TEST(AtlasIK, TightBoundsProduceNonZeroError)
       Eigen::Vector6d::Constant(-1e-8), Eigen::Vector6d::Constant(1e-8));
 
   // Compute error manually using the correct DOFs
-  const std::vector<std::size_t>& dofs = ik->getDofs();
+  const auto dofs = ik->getDofs();
   Eigen::VectorXd q(dofs.size());
   for (std::size_t i = 0; i < dofs.size(); ++i)
     q[i] = atlas->getDof(dofs[i])->getPosition();

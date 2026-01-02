@@ -36,6 +36,7 @@
 #include <dart/common/Memory.hpp>
 
 #include <memory>
+#include <span>
 #include <vector>
 
 namespace dart {
@@ -312,7 +313,7 @@ public:
   std::vector<T>& getVector();
 
   /// Get a reference to the std::vector that this class is wrapping
-  const std::vector<T>& getVector() const;
+  std::span<const T> getVector() const;
 
 private:
   /// The std::vector that this class is wrapping

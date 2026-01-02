@@ -88,7 +88,7 @@ public:
   void addSkeletons(std::span<const dynamics::SkeletonPtr> skeletons);
 
   /// Returns all the skeletons added to this ConstraintSolver.
-  const std::vector<dynamics::SkeletonPtr>& getSkeletons() const;
+  std::span<const dynamics::SkeletonPtr> getSkeletons() const;
 
   /// Remove single skeleton
   void removeSkeleton(const dynamics::SkeletonPtr& skeleton);

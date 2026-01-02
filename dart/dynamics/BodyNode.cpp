@@ -116,8 +116,7 @@ static void setNodesFromDataTypeMap(
   while (nodeMap.end() != node_it && dataMap.end() != data_it) {
     if (node_it->first == data_it->first) {
       const std::vector<Node*>& node_vec = node_it->second;
-      const std::vector<std::unique_ptr<DataType>>& data_vec
-          = data_it->second->getVector();
+      const auto& data_vec = data_it->second->getVector();
 
       // TODO(MXG): Should we report if the dimensions are mismatched?
       std::size_t stop = std::min(node_vec.size(), data_vec.size());
@@ -1047,9 +1046,9 @@ std::size_t BodyNode::getDependentGenCoordIndex(std::size_t _arrayIndex) const
 }
 
 //==============================================================================
-const std::vector<std::size_t>& BodyNode::getDependentGenCoordIndices() const
+std::span<const std::size_t> BodyNode::getDependentGenCoordIndices() const
 {
-  return mDependentGenCoordIndices;
+  return std::span<const std::size_t>(mDependentGenCoordIndices);
 }
 
 //==============================================================================
@@ -1073,15 +1072,15 @@ const DegreeOfFreedom* BodyNode::getDependentDof(std::size_t _index) const
 }
 
 //==============================================================================
-const std::vector<DegreeOfFreedom*>& BodyNode::getDependentDofs()
+std::span<DegreeOfFreedom* const> BodyNode::getDependentDofs()
 {
-  return mDependentDofs;
+  return std::span<DegreeOfFreedom* const>(mDependentDofs);
 }
 
 //==============================================================================
-const std::vector<const DegreeOfFreedom*>& BodyNode::getDependentDofs() const
+std::span<const DegreeOfFreedom* const> BodyNode::getDependentDofs() const
 {
-  return mConstDependentDofs;
+  return std::span<const DegreeOfFreedom* const>(mConstDependentDofs);
 }
 
 //==============================================================================

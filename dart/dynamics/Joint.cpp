@@ -268,7 +268,7 @@ void Joint::setActuatorType(std::size_t index, ActuatorType actuatorType)
 }
 
 //==============================================================================
-void Joint::setActuatorTypes(const std::vector<ActuatorType>& actuatorTypes)
+void Joint::setActuatorTypes(std::span<const ActuatorType> actuatorTypes)
 {
   if (actuatorTypes.size() != getNumDofs()) {
     DART_ERROR(
@@ -326,6 +326,13 @@ void Joint::setActuatorTypes(const std::vector<ActuatorType>& actuatorTypes)
   mAspectProperties.mActuatorType = newDefault;
   mAspectProperties.mActuatorTypes = std::move(newOverrides);
   resetCommands();
+}
+
+//==============================================================================
+void Joint::setActuatorTypes(const std::vector<ActuatorType>& actuatorTypes)
+{
+  setActuatorTypes(std::span<const ActuatorType>(
+      actuatorTypes.data(), actuatorTypes.size()));
 }
 
 //==============================================================================
@@ -447,9 +454,16 @@ void Joint::setMimicJointDof(
 }
 
 //==============================================================================
+void Joint::setMimicJointDofs(std::span<const MimicDofProperties> mimicProps)
+{
+  mAspectProperties.mMimicDofProps.assign(mimicProps.begin(), mimicProps.end());
+}
+
+//==============================================================================
 void Joint::setMimicJointDofs(const std::vector<MimicDofProperties>& mimicProps)
 {
-  mAspectProperties.mMimicDofProps = mimicProps;
+  setMimicJointDofs(std::span<const MimicDofProperties>(
+      mimicProps.data(), mimicProps.size()));
 }
 
 //==============================================================================
@@ -482,9 +496,9 @@ double Joint::getMimicOffset(std::size_t index) const
 }
 
 //==============================================================================
-const std::vector<MimicDofProperties>& Joint::getMimicDofProperties() const
+std::span<const MimicDofProperties> Joint::getMimicDofProperties() const
 {
-  return mAspectProperties.mMimicDofProps;
+  return std::span<const MimicDofProperties>(mAspectProperties.mMimicDofProps);
 }
 
 //==============================================================================

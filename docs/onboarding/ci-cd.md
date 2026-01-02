@@ -21,6 +21,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - `gh run watch` is blocking and can run for a long time; use a persistent shell and re-run it if your terminal session times out.
   - `gh run view --job <JOB_ID> --log-failed` only works after the job completes; use the REST logs endpoint (or wait) when a run is still in progress.
   - If a PR is not mergeable due to conflicts, CI checks may be blocked or fail early (including AppVeyor); resolve conflicts locally and push before re-running CI.
+  - Example reorganizations can conflict in `examples/CMakeLists.txt`; reconcile any new example entries and keep the category layout aligned before pushing.
   - GitHub Actions API calls can return `HTTP 406` if you omit required headers; include an explicit `Accept` header.
   - `gh api` writes to stdout and does not support `--output`; redirect to a file when you need to search logs.
   - The asserts-enabled CI job uses a custom CMake configure (`CMAKE_BUILD_TYPE=None`) instead of pixi tasks; pass required build toggles explicitly (e.g., Bullet collision).
@@ -29,6 +30,9 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Bullet-backed raycast tests require Bullet to be built; skip or enable Bullet if the backend is intentionally disabled.
   - `gh pr status --json ...` can error with `Unknown JSON field: ...` if you request unsupported fields; use `gh pr status` (no JSON) or `gh pr view --json ...`.
   - `gh run view --json ...` only accepts supported fields; prefer the `url` field instead of guessing `htmlURL`.
+  - `gh run rerun --job` expects the job `databaseId` (not the numeric ID from the job URL); if `gh run view --json jobs` shows `id: null`, use `databaseId`. Suggested (Unverified): `gh run view <RUN_ID> --json jobs --jq '.jobs[] | {name, databaseId}'`.
+  - Job log endpoints can return `log not found`/404 even after a failure; fall back to the run-level logs archive or re-run the job (see CI Monitoring (API)).
+  - Review comment metadata is not exposed by `gh pr view --json`; Suggested (Unverified): `gh api /repos/<OWNER>/<REPO>/pulls/comments/<COMMENT_ID>`.
   - `gh pr checks` may show duplicate entries when workflows run for both `push` and `pull_request` events; compare the run URLs and focus on the newest one.
   - Newer runs can cancel older ones; confirm the run status/conclusion before spending time on job logs.
   - zsh can produce ``parse error near `}'`` if a `gh ... --jq` expression containing `{ ... }` isn't fully quoted; wrap the whole jq program in single quotes.
@@ -36,19 +40,21 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - CI jobs can sit in the queue for a long time; re-check the run list and wait for the PR run to start before assuming a failure.
   - Wheel publishing workflows may lag behind other jobs and stay queued longer; keep watching the PR run until all workflows complete.
   - Randomized stress tests can diverge across platforms if they rely on library-dependent distributions; prefer deterministic RNG transforms when portability matters.
-  - `check-format` failures usually mean formatting drift; run lint before pushing to keep CI green.
+  - `check-format` failures usually mean formatting drift; run the C++ formatter and commit any diffs before retrying CI. Suggested (Unverified): `pixi run lint-cpp`.
   - Codecov patch failures usually mean new lines or branches are uncovered; add targeted tests and re-run coverage.
   - Codecov patch status can lag until coverage jobs complete; confirm Coverage (Debug) finished before acting.
 
 ## Common CI Failure Modes
 
-- Formatting checks fail: run the C++ formatting task and re-run CI.
+- Formatting checks fail: run the C++ formatting task and re-run CI. Suggested (Unverified): `pixi run lint-cpp`.
 - Codecov patch failures: add targeted coverage for new lines or branches.
+- Example builds fail because sample code references removed formats or enums; update the example to match the current API (e.g., `dart::io::ModelFormat`).
 - Unit test crashes or segfaults: isolate the failing test from job logs, reproduce locally, and add a regression for the edge case.
+- Job logs are missing or return 404: re-run the single job and/or download the run-level logs archive to inspect failures.
 
 ## Task Recap (General)
 
-This task validated the issue state, applied a minimal fix with regression coverage, and ran the standard pixi workflows locally. CI was monitored via GitHub CLI and job logs were retrieved to isolate failures, then fixes were pushed and CI was re-run. The emphasis was on using the repo's standard entry points, keeping formatting and coverage in sync, and keeping CI feedback loops tight.
+This task reorganized the Python examples into the same category layout as the C++ examples and adjusted the Python example runner to resolve nested paths. CI failures were traced to example build errors caused by API drift and fixed by aligning example code with current headers. The emphasis was on using the repo's standard entry points, keeping CI feedback loops tight, and validating changes with the smallest runnable checks.
 
 ## How We Worked (Repeatable Playbook)
 
@@ -59,6 +65,9 @@ This task validated the issue state, applied a minimal fix with regression cover
 - Run the smallest local validation first, then expand to full test or CI as needed.
 - Resolve merge conflicts before re-running CI so the PR remains mergeable.
 - When a job fails inside a still-running workflow, pull the job logs directly and fix the smallest failure first.
+- If a single CI job fails, re-run just that job using its databaseId rather than restarting the entire workflow.
+- When example builds fail, update the example code to match the current API surface before re-running CI.
+- If job logs are missing, download the run-level logs archive and scan it for the failure instead of guessing.
 - If coverage gates fail, add targeted tests for new lines before re-running CI.
 - Push each commit and monitor GitHub Actions until all jobs complete.
 
@@ -66,6 +75,7 @@ This task validated the issue state, applied a minimal fix with regression cover
 
 - Identify the first failing step in the CI job log, then reproduce locally with the same build toggles.
 - Run the smallest failing test or target, then push and re-run CI.
+- If the failure is in the examples build, fix the first compile error in the example source before re-running CI.
 - If the failure is formatting-related, run the C++ formatter before retrying CI.
 - Success signal: the failing job completes without `-Werror` compile failures or Python aborts.
 
@@ -74,6 +84,8 @@ Suggested (Unverified):
 ```bash
 gh run view <RUN_ID> --json status,conclusion,url
 gh run view <RUN_ID> --job <JOB_ID> --log-failed
+gh run view <RUN_ID> --json jobs --jq '.jobs[] | {name, databaseId}'
+gh run rerun <RUN_ID> --job <DATABASE_ID>
 pixi run lint-cpp
 ctest --test-dir <BUILD_DIR> -R <TEST>
 gh api -H "Accept: application/vnd.github+json" /repos/<OWNER>/<REPO>/actions/jobs/<JOB_ID>/logs > /tmp/<JOB_ID>.log
@@ -92,6 +104,8 @@ gh pr checks <PR_NUMBER>
 gh run list --repo <OWNER>/<REPO> --branch <BRANCH> --limit <N>
 gh run watch <RUN_ID> --interval 30 --repo <OWNER>/<REPO>
 gh run view <RUN_ID> --json status,conclusion,updatedAt,url
+gh run view <RUN_ID> --json jobs --jq '.jobs[] | {name, databaseId}'
+gh run rerun <RUN_ID> --job <DATABASE_ID>
 ```
 
 ## CI Monitoring (API)
@@ -116,6 +130,14 @@ for run in data.get("workflow_runs", []):
 PY
 ```
 
+Suggested (Unverified):
+
+```bash
+gh api -H "Accept: application/vnd.github+json" /repos/<OWNER>/<REPO>/actions/runs/<RUN_ID>/logs > /tmp/<RUN_ID>.zip
+unzip -q /tmp/<RUN_ID>.zip -d /tmp/<RUN_ID>
+rg -n "FAILED|SegFault|Exception|\\bError\\b|✗" /tmp/<RUN_ID>
+```
+
 ## Asserts-Enabled CI Build (no -DNDEBUG)
 
 The asserts-enabled job uses a custom CMake configure with `CMAKE_BUILD_TYPE=None`
@@ -129,7 +151,8 @@ to keep assertions enabled outside a Debug build.
 
 - When running dartpy tests against an in-tree build, set `PYTHONPATH` and `DARTPY_RUNTIME_DIR` to the build output.
 - If a test requires an optional backend, guard it (skip) or ensure the backend toggle is enabled in the build configuration.
-- When a test depends on randomized input, prefer deterministic generation to keep cross-platform CI stable.
+- If editor or IDE context references a path, verify it exists before making edits or writing guidance.
+- Re-run only the failed CI job (via job databaseId) to keep feedback loops short.
 
 ## Workflow Architecture
 
