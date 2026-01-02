@@ -6,7 +6,7 @@
 - Phase 2.5 (default switch + deprecation) complete: built-in detector is the
   default, backend-selection APIs are deprecated, and examples/docs are
   migrated.
-- Latest local runs: `pixi run build-tests` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` pass.
+- Latest local runs: `pixi run build-tests` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartDistance` pass.
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Raycast baseline (Release): Closest 32=1.90us, 128=7.54us, 512=32.0us; AllHits 32=2.18us, 128=8.59us, 512=38.0us.
 - Core data and broadphase scaffolding are in place, with AABB caching.
@@ -66,6 +66,7 @@
 - Distance tests include plane offset coverage for cylinder-plane distances.
 - Distance tests include plane offset coverage for box-plane distances.
 - Distance tests include rotated cylinder-plane offset coverage.
+- Distance tests include rotated cylinder-plane offset overlap coverage.
 - Distance tests include a tilted cylinder-plane case for oblique extent coverage.
 - Distance tests include tilted plane overlap coverage for cylinder-plane distances.
 - Distance tests include tilted plane offset overlap coverage for cylinder-plane distances.
@@ -170,6 +171,7 @@
 - Added plane offset coverage for cylinder-plane distances.
 - Added plane offset coverage for box-plane distances.
 - Added rotated cylinder-plane offset distance coverage.
+- Added rotated cylinder-plane offset overlap distance coverage.
 - Added tilted cylinder-plane distance coverage for oblique extent checks.
 - Added tilted cylinder-plane overlap distance coverage.
 - Added tilted plane offset overlap coverage for cylinder-plane distances.

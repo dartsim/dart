@@ -79,6 +79,7 @@
 - Added plane offset coverage for box-plane distances.
 - Added tilted cylinder-plane distance coverage for oblique extent checks.
 - Added rotated cylinder-plane offset distance coverage.
+- Added rotated cylinder-plane offset overlap distance coverage.
 - Added tilted cylinder-plane overlap distance coverage.
 - Added DistanceResult clamping status coverage.
 - Added zero-length raycast coverage.
