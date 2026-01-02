@@ -331,7 +331,8 @@ void Joint::setActuatorTypes(std::span<const ActuatorType> actuatorTypes)
 //==============================================================================
 void Joint::setActuatorTypes(const std::vector<ActuatorType>& actuatorTypes)
 {
-  setActuatorTypes(std::span<const ActuatorType>(actuatorTypes));
+  setActuatorTypes(
+      std::span<const ActuatorType>(actuatorTypes.data(), actuatorTypes.size()));
 }
 
 //==============================================================================
@@ -462,7 +463,8 @@ void Joint::setMimicJointDofs(std::span<const MimicDofProperties> mimicProps)
 //==============================================================================
 void Joint::setMimicJointDofs(const std::vector<MimicDofProperties>& mimicProps)
 {
-  setMimicJointDofs(std::span<const MimicDofProperties>(mimicProps));
+  setMimicJointDofs(std::span<const MimicDofProperties>(
+      mimicProps.data(), mimicProps.size()));
 }
 
 //==============================================================================
