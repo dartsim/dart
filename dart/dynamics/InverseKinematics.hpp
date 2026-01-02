@@ -265,11 +265,6 @@ public:
   void setDofs(std::span<DegreeOfFreedomT* const> _dofs);
 
   /// Explicitly set which degrees of freedom should be used to solve the IK for
-  /// this module.
-  template <class DegreeOfFreedomT>
-  void setDofs(const std::vector<DegreeOfFreedomT*>& _dofs);
-
-  /// Explicitly set which degrees of freedom should be used to solve the IK for
   /// this module. The values in the vector should correspond to the Skeleton
   /// indices of each DOF.
   void setDofs(std::span<const std::size_t> _dofs);

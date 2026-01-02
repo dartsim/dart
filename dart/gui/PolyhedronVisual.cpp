@@ -78,13 +78,6 @@ PolyhedronVisual::PolyhedronVisual()
 }
 
 //==============================================================================
-void PolyhedronVisual::setVertices(const std::vector<Eigen::Vector3d>& vertices)
-{
-  mVertices = vertices;
-  mDirty = true;
-}
-
-//==============================================================================
 void PolyhedronVisual::setVertices(std::vector<Eigen::Vector3d>&& vertices)
 {
   mVertices = std::move(vertices);

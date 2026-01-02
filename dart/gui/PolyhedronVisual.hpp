@@ -60,15 +60,12 @@ public:
   /// and a dark wireframe outline.
   PolyhedronVisual();
 
-  /// Sets the vertices by copying from a standard vector. At least three points
-  /// are required, and four non-coplanar points are required to display a 3D
-  /// hull.
-  void setVertices(const std::vector<Eigen::Vector3d>& vertices);
-
   /// Sets the vertices by taking ownership of a vector.
   void setVertices(std::vector<Eigen::Vector3d>&& vertices);
 
-  /// Sets the vertices by copying from a contiguous span.
+  /// Sets the vertices by copying from a contiguous span. At least three points
+  /// are required, and four non-coplanar points are required to display a 3D
+  /// hull.
   void setVertices(std::span<const Eigen::Vector3d> vertices);
 
   /// Sets the vertices from a matrix. The matrix can either be 3xN (each column

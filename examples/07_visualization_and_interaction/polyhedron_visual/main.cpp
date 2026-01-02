@@ -34,6 +34,7 @@
 
 #include <Eigen/Core>
 
+#include <span>
 #include <vector>
 
 int main()
@@ -60,7 +61,7 @@ int main()
 
   // Attach the polyhedron visual and customize its colors.
   auto polyhedron = new dart::gui::PolyhedronVisual();
-  polyhedron->setVertices(vertices);
+  polyhedron->setVertices(std::span<const Eigen::Vector3d>(vertices));
   polyhedron->setSurfaceColor(Eigen::Vector4d(0.1, 0.8, 0.6, 0.5));
   polyhedron->setWireframeColor(Eigen::Vector4d(0.05, 0.05, 0.05, 1.0));
   viewer.addAttachment(polyhedron);
