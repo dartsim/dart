@@ -119,8 +119,10 @@ Current status:
 - Added tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
 - Added tilted plane offset coverage for cylinder-plane nearest points.
 - Added tilted plane offset coverage for sphere-plane nearest points.
+- Added tilted plane offset overlap coverage for sphere-plane distances.
 - Added tilted plane overlap coverage for sphere-plane distances.
 - Added tilted plane offset coverage for box-plane nearest points.
+- Added tilted plane offset overlap coverage for box-plane distances.
 - Added tilted plane overlap coverage for box-plane distances.
 - Default collision detector switched to the built-in detector in world and
   constraint solver initialization.
