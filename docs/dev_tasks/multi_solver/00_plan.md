@@ -21,13 +21,13 @@
 - ECS scaffolding:
   - Opaque entity handle: `dart/simulation/EcsEntity.hpp`
   - ECS access bridge (internal-only): `dart/simulation/detail/WorldEcsAccess.hpp`
-    (create/destroy/valid + EnTT conversion helpers)
+    (registry access + EnTT conversion helpers)
   - ECS-only rigid components (internal-only): `dart/simulation/detail/RigidSolverComponents.hpp`
   - Object scaffolding: `dart/simulation/object/Object.hpp`,
     `dart/simulation/object/TypeList.hpp` (public), plus internal-only
     `dart/simulation/object/ObjectWith.hpp`
 - Tests:
-  - Solver stepping, routing, enable/disable, ECS lifecycle coverage:
+  - Solver stepping, routing, enable/disable coverage:
     `tests/integration/simulation/test_World.cpp`
 - Build deps:
   - EnTT added as required dep: `cmake/DARTFindDependencies.cmake`, `dart/CMakeLists.txt`, `package.xml`
@@ -53,8 +53,9 @@
 
 - `World` exposes config via:
   - `WorldConfig` (`World::create(WorldConfig)`), including
-    `WorldConfig::SolverRouting` for mapping Skeletons/ECS objects to solver
-    types, plus `CollisionDetectorType` and `RigidSolverType`.
+    `WorldConfig::SolverRouting` for mapping Skeletons (and reserving an
+    object slot for future ECS object APIs) to solver types, plus
+    `CollisionDetectorType` and `RigidSolverType`.
 - `World` does not expose solver pointers; control is via enable/disable and
   ordering APIs.
 - `Solver` is the base solver name; `WorldSolver` remains as a compatibility
@@ -67,10 +68,10 @@
 ## Internal Design (Milestone Target)
 
 - World owns solvers as `SolverEntry` and steps all enabled solvers in
-  registration order each frame. Skeletons and ECS objects are routed to a
-  single solver each using `WorldConfig::SolverRouting` (first matching solver
-  in registration order); that solver provides the rigid backend for World
-  constraint/collision APIs.
+  registration order each frame. Skeletons are routed to a single solver using
+  `WorldConfig::SolverRouting` (first matching solver in registration order);
+  object routing is configured but deferred until ECS object lifecycle APIs
+  exist.
 - Classic solver is the default constraint/collision backend and remains
   Skeleton-based.
 - ECS registry lives in `World::EcsData` (private in `World.cpp`).

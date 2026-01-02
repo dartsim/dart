@@ -35,7 +35,7 @@ State summary:
 - Object scaffolding:
   dart/simulation/object/Object.hpp
   dart/simulation/object/ObjectWith.hpp (internal-only)
-- Tests cover routing and ECS lifecycle:
+- Tests cover routing and solver enable/disable:
   tests/integration/simulation/test_World.cpp
 
 Recent change:

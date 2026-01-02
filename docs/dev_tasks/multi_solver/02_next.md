@@ -7,12 +7,13 @@
 ## Goal
 
 - Introduce a minimal public ECS object lifecycle API without exposing EnTT or
-  solver pointers, while preserving classic Skeleton behavior.
+  solver pointers, while preserving classic Skeleton behavior (no generic
+  World-level entity creation).
 
 ## Scope
 
-- Define World-facing create/destroy hooks for ECS-backed objects that only
-  expose `EcsEntity` or `simulation::object::Object` handles.
+- Define object-specific create/destroy APIs (no generic World entity
+  lifecycle), exposing `simulation::object::Object`-based handles.
 - Keep `entt::registry` access internal via `detail::WorldEcsAccess`.
 - Route ECS object lifecycle events through the configured object solver.
 - Add object-level lifecycle tests (creation, destruction, routing).

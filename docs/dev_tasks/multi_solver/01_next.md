@@ -12,33 +12,31 @@
 
 ## Scope
 
-- Add internal ECS entity lifecycle helpers in `detail::WorldEcsAccess`
-  (create/destroy/valid) so new ECS objects can be registered without exposing
-  EnTT in public headers.
-- Add minimal entity lifecycle hooks on `Solver` using `EcsEntity`, called
-  by World on create/destroy to keep solvers in sync.
+- Keep `detail::WorldEcsAccess` limited to registry access + conversion
+  helpers; avoid raw ECS entity create/destroy in World.
+- Keep `Solver` entity lifecycle hooks available for future object APIs
+  (not wired through World yet).
 - Keep classic Skeleton data on the legacy path and notify only the solver
   configured by `WorldConfig::SolverRouting` (default: `ClassicRigidSolver`).
-- Route ECS-backed simulation objects (`simulation::object::Object` derivatives)
-  to the solver configured by `WorldConfig::SolverRouting` (default:
-  `RigidSolver`).
+- Keep ECS-backed object routing config in `WorldConfig::SolverRouting`
+  (lifecycle wiring deferred).
 - Extend the ECS-backed rigid solver to update ECS-only components (kept in
   `dart/simulation/detail`, not installed), with no Skeleton mirroring.
-- Add integration tests for solver enable/disable and ECS entity lifecycle.
+- Add integration tests for solver enable/disable; ECS lifecycle tests deferred.
 
 ## Progress (Implemented)
 
-- World routes Skeletons and ECS entities to the configured solver types:
+- World routes Skeletons to the configured solver types:
   `dart/simulation/World.hpp`, `dart/simulation/World.cpp`.
-- ECS entity lifecycle helpers added to `detail::WorldEcsAccess`:
+- `detail::WorldEcsAccess` exposes registry access + conversion helpers:
   `dart/simulation/detail/WorldEcsAccess.hpp`, `dart/simulation/World.cpp`.
-- Solver entity hooks added in `dart/simulation/solver/Solver.hpp` and
-  plumbed through World.
+- Solver entity hooks added in `dart/simulation/solver/Solver.hpp`
+  (not yet wired through World).
 - ECS-backed rigid solver updates ECS-only state:
   `dart/simulation/solver/rigid/RigidSolver.hpp`,
   `dart/simulation/solver/rigid/RigidSolver.cpp`,
   `dart/simulation/detail/RigidSolverComponents.hpp`.
-- Tests cover routing, enable/disable, and ECS lifecycle:
+- Tests cover routing and enable/disable:
   `tests/integration/simulation/test_World.cpp`.
 - Solver type enum split into `dart/simulation/solver/SolverTypes.hpp` so
   `World.hpp` can forward declare `Solver`.
