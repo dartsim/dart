@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -126,9 +127,9 @@ bool isContactApproxEqual(
   return lhsPair == rhsPair;
 }
 
-std::vector<Contact> sortedContacts(const std::vector<Contact>& contacts)
+std::vector<Contact> sortedContacts(std::span<const Contact> contacts)
 {
-  std::vector<Contact> sorted = contacts;
+  std::vector<Contact> sorted(contacts.begin(), contacts.end());
   std::sort(sorted.begin(), sorted.end(), contactLess);
   return sorted;
 }
