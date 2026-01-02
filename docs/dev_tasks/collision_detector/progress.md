@@ -6,7 +6,7 @@
 - Phase 2.5 (default switch + deprecation) complete: built-in detector is the
   default, backend-selection APIs are deprecated, and examples/docs are
   migrated.
-- Latest local runs: `pixi run build-tests` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` pass.
+- Latest local runs: `pixi run build-tests` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartDistance` pass.
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Raycast baseline (Release): Closest 32=1.90us, 128=7.54us, 512=32.0us; AllHits 32=2.18us, 128=8.59us, 512=38.0us.
 - Core data and broadphase scaffolding are in place, with AABB caching.
@@ -39,6 +39,7 @@
 - Raycast tests include rotated cylinder inside hits.
 - Raycast tests include rotated cylinder parallel misses.
 - Distance tests include box-plane offset coverage.
+- Distance tests include rotated box-plane offset coverage.
 - Distance tests include a group-group distance case to validate pair selection.
 - Distance tests include diagonal box-box coverage for oblique nearest points.
 - Distance tests include group-group filter coverage for distance queries.
@@ -146,6 +147,7 @@
 - Added rotated cylinder inside-hit raycast coverage.
 - Added rotated cylinder parallel raycast miss coverage.
 - Added box-plane offset distance coverage.
+- Added rotated box-plane offset distance coverage.
 - Added group-group distance coverage to validate pair selection and nearest points.
 - Added diagonal box-box distance coverage to validate oblique nearest points.
 - Added group-group distance filter coverage to validate filter application.

@@ -68,6 +68,7 @@ Current status:
 - Raycast tests include rotated cylinder inside hits.
 - Raycast tests include rotated cylinder parallel misses.
 - Distance tests include box-plane offset coverage.
+- Distance tests include rotated box-plane offset coverage.
 - Distance tests include a group-group case to validate pair selection and nearest points.
 - Distance tests include diagonal box-box coverage for oblique nearest points.
 - Distance tests include group-group filter coverage for distance queries.
@@ -119,7 +120,7 @@ Current status:
 - Added plane-aligned nearest point selection for box-plane, sphere-plane, and cylinder-plane distances.
 - Updated ellipsoid-as-sphere core radius to use diameters.
 - Fixed box inside-hit raycast normal/fraction selection.
-- Latest local runs: `pixi run build-tests` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` pass.
+- Latest local runs: `pixi run build-tests` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartDistance` pass.
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Added tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
 - Added tilted plane offset coverage for cylinder-plane nearest points.

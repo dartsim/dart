@@ -700,6 +700,63 @@ TEST(DartDistance, BoxRotatedPlaneDistance)
 }
 
 //==============================================================================
+TEST(DartDistance, BoxRotatedPlaneOffsetDistance)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+
+  const Eigen::Vector3d boxSize(2.0, 2.0, 2.0);
+  boxFrame->setShape(std::make_shared<BoxShape>(boxSize));
+  const double offset = 1.0;
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), offset));
+
+  const Eigen::Matrix3d rotation
+      = Eigen::AngleAxisd(0.25 * kPi, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  boxFrame->setRotation(rotation);
+  const Eigen::Vector3d center(0.0, 0.0, 3.0);
+  boxFrame->setTranslation(center);
+
+  auto group = detector->createCollisionGroup(boxFrame.get(), planeFrame.get());
+
+  DistanceOption option(true, 0.0, nullptr);
+  DistanceResult result;
+
+  const Eigen::Vector3d normalWorld = Eigen::Vector3d::UnitZ();
+  const Eigen::Vector3d halfSize = 0.5 * boxSize;
+  const double signedDistance = normalWorld.dot(center) - offset;
+  const Eigen::Vector3d axisX = rotation.col(0);
+  const Eigen::Vector3d axisY = rotation.col(1);
+  const Eigen::Vector3d axisZ = rotation.col(2);
+  const double extent
+      = std::abs(normalWorld.dot(axisX)) * halfSize.x()
+        + std::abs(normalWorld.dot(axisY)) * halfSize.y()
+        + std::abs(normalWorld.dot(axisZ)) * halfSize.z();
+  const double expected = std::abs(signedDistance) - extent;
+
+  const Eigen::Vector3d normal
+      = (signedDistance >= 0.0) ? normalWorld : -normalWorld;
+  const Eigen::Vector3d dir = -normal;
+  const double signX = (dir.dot(axisX) >= 0.0) ? 1.0 : -1.0;
+  const double signY = (dir.dot(axisY) >= 0.0) ? 1.0 : -1.0;
+  const double signZ = (dir.dot(axisZ) >= 0.0) ? 1.0 : -1.0;
+  const Eigen::Vector3d expectedPoint1
+      = center + signX * halfSize.x() * axisX
+        + signY * halfSize.y() * axisY + signZ * halfSize.z() * axisZ;
+  const Eigen::Vector3d expectedPoint2 = expectedPoint1 - normal * expected;
+
+  const double distance = group->distance(option, &result);
+  EXPECT_NEAR(distance, expected, kDistanceTol);
+  EXPECT_NEAR(result.minDistance, expected, kDistanceTol);
+  EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.isApprox(expectedPoint1, kDistanceTol));
+  EXPECT_TRUE(result.nearestPoint2.isApprox(expectedPoint2, kDistanceTol));
+}
+
+//==============================================================================
 TEST(DartDistance, BoxTiltedPlaneOffsetNearestPoints)
 {
   auto detector = DARTCollisionDetector::create();

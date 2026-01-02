@@ -51,6 +51,7 @@
 - Added rotated cylinder inside-hit raycast coverage.
 - Added rotated cylinder parallel raycast miss coverage.
 - Added box-plane offset distance coverage.
+- Added rotated box-plane offset distance coverage.
 - Added group-group distance coverage to validate pair selection and nearest points.
 - Added diagonal box-box distance coverage to validate oblique nearest points.
 - Added group-group distance filter coverage to validate filter application.
