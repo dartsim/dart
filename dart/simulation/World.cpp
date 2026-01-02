@@ -321,7 +321,11 @@ void World::step(bool _resetCommand)
       skel->setImpulseApplied(false);
     }
 
-    skel->integratePositions(mTimeStep);
+    if (skel->isPositionImpulseApplied()) {
+      skel->integratePositions(mTimeStep, skel->getPositionVelocityChanges());
+    } else {
+      skel->integratePositions(mTimeStep);
+    }
 
     if (_resetCommand) {
       skel->clearInternalForces();
