@@ -642,7 +642,7 @@ sequenceDiagram
 
 **Key Files**:
 
-- Example: [`examples/hello_world/main.cpp`](examples/hello_world/main.cpp)
+- Example: [`examples/hello_world/main.cpp`](../../examples/hello_world/main.cpp)
 - [`World::step()`](dart/simulation/World.cpp#L356)
 - [`RealTimeWorldNode::refresh()`](dart/gui/RealTimeWorldNode.cpp#L103)
 - [`Viewer::run()`](dart/gui/Viewer.cpp#L462)
@@ -690,7 +690,7 @@ sequenceDiagram
 
 **Key Files**:
 
-- Example: [`examples/atlas_puppet/main.cpp`](examples/atlas_puppet/main.cpp)
+- Example: [`examples/atlas_puppet/main.cpp`](../../examples/atlas_puppet/main.cpp)
 - [`BodyNodeDnD`](dart/gui/DragAndDrop.hpp#L266)
 - [`IK::solve()`](dart/dynamics/IK.cpp#L142)
 - [`Viewer::enableDragAndDrop()`](dart/gui/Viewer.cpp#L189)
@@ -826,7 +826,7 @@ sequenceDiagram
 - Implementation: [`dart/io/Read.cpp`](dart/io/Read.cpp)
 - Internal parser: [`UrdfParser`](dart/utils/urdf/UrdfParser.hpp)
 - Entry point: [`UrdfParser::parseSkeleton()`](dart/utils/urdf/UrdfParser.cpp)
-- Example: [`examples/atlas_puppet/main.cpp`](examples/atlas_puppet/main.cpp)
+- Example: [`examples/atlas_puppet/main.cpp`](../../examples/atlas_puppet/main.cpp)
 - Notes: URDF `<limit>` on `planar` and `floating` joints is interpreted uniformly across all of their DOFs (with warnings), and planar joints derive their plane from the `<axis>` normal.
 
 ---
@@ -866,7 +866,7 @@ sequenceDiagram
 
 **Key Files**:
 
-- Example: [`examples/hello_world/main.py`](examples/hello_world/main.py)
+- Example: [`python/examples/hello_world/main.py`](../../python/examples/hello_world/main.py)
 - [`python/dartpy/`](python/dartpy/) - Bindings implementation
 - [`setup.py`](setup.py) - Build configuration
 
@@ -1270,7 +1270,7 @@ viewer.getImGuiHandler()->addWidget(widget, true);
 - **Main Website**: https://docs.dartsim.org/
 - **API Documentation**: Built with Doxygen (run `pixi run api-docs-cpp`)
 - **Tutorials**: [`tutorials/`](tutorials/)
-- **Examples**: [`examples/`](examples/)
+- **Examples**: [`examples/`](../../examples/)
 
 ### Community
 
