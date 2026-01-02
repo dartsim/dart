@@ -6,6 +6,8 @@
 - Phase 2.5 (default switch + deprecation) complete: built-in detector is the
   default, backend-selection APIs are deprecated, and examples/docs are
   migrated.
+- Current focus: run C++ examples from basic to advanced and close any missing
+  collision feature gaps they reveal.
 - Latest local runs: `pixi run build-tests` and `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_DartRaycast` pass.
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Raycast baseline (Release): Closest 32=1.90us, 128=7.54us, 512=32.0us; AllHits 32=2.18us, 128=8.59us, 512=38.0us.

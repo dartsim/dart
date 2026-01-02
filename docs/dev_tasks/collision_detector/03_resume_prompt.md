@@ -149,6 +149,8 @@ Where to look:
 
 Next focus:
 
+- Run C++ examples starting in `examples/00_getting_started` to find missing
+  collision features and implement them in the core detector.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Extend raycast coverage to additional edge cases and future shape types.
 - Keep parity/performance tracking current for legacy backend removal.

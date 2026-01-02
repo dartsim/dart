@@ -124,6 +124,10 @@
 
 ## Next Actions
 
+- Run the C++ examples starting in `examples/00_getting_started` and note any
+  missing collision features that block example execution.
+- Implement missing collision features in the core detector as they are
+  discovered, moving from basic to advanced examples.
 - Extend raycast coverage to edge cases and future shape types.
 - Expand distance coverage for additional rotated or oblique configurations and refine nearest-point accuracy.
 - Explore additional distance broadphase pruning and candidate ordering improvements.
