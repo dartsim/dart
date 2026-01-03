@@ -8,6 +8,7 @@ RUN apt-get update \
         cloud-image-utils \
         curl \
         openssh-client \
+        python3 \
         qemu-system-x86 \
         xz-utils \
     && rm -rf /var/lib/apt/lists/*

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import os
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -13,10 +14,31 @@ DEFAULT_CPUS = 4
 DEFAULT_MEM = 4096
 DEFAULT_USER = "freebsd"
 DEFAULT_REMOTE_DIR = None
+DEFAULT_BUILD_DIR = "build/freebsd/cpp/Release"
+DEFAULT_TEST_REGEX = "Issue838|ForwardKinematics"
+DEFAULT_PACKAGES = [
+    "assimp",
+    "boost-libs",
+    "cmake",
+    "eigen3",
+    "fcl",
+    "fmt",
+    "gmake",
+    "googletest",
+    "libccd",
+    "ninja",
+    "octomap",
+    "ode",
+    "pkgconf",
+    "spdlog",
+    "tinyxml2",
+    "urdfdom",
+]
 DEFAULT_IMAGE_URL = (
     "https://download.freebsd.org/ftp/snapshots/VM-IMAGES/15.0-STABLE/"
     "amd64/Latest/FreeBSD-15.0-STABLE-amd64.qcow2.xz"
 )
+SSH_OPTIONS = ["-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null"]
 
 
 def run(cmd, check=True, capture=False):
@@ -62,6 +84,11 @@ def container_running(container):
         capture=True,
     )
     return container in (result.stdout or "").splitlines()
+
+
+def ensure_started(args):
+    if not container_running(args.container):
+        start_container(args)
 
 
 def build_image(args):
@@ -131,7 +158,29 @@ def ssh_key_path(vm_dir):
     return Path(vm_dir) / "id_ed25519"
 
 
+def ssh_command(args, command, user=None):
+    vm_dir = vm_dir_path(args.vm_dir)
+    key_path = ssh_key_path(vm_dir)
+    if not key_path.exists():
+        print(f"Missing SSH key at {key_path}. Start the VM first.", file=sys.stderr)
+        sys.exit(1)
+    ssh_user = user or args.user
+    run(
+        [
+            "ssh",
+            *SSH_OPTIONS,
+            "-i",
+            str(key_path),
+            "-p",
+            str(args.ssh_port),
+            f"{ssh_user}@127.0.0.1",
+            command,
+        ]
+    )
+
+
 def shell_vm(args):
+    ensure_started(args)
     vm_dir = vm_dir_path(args.vm_dir)
     key_path = ssh_key_path(vm_dir)
     if not key_path.exists():
@@ -140,6 +189,7 @@ def shell_vm(args):
     run(
         [
             "ssh",
+            *SSH_OPTIONS,
             "-i",
             str(key_path),
             "-p",
@@ -150,6 +200,7 @@ def shell_vm(args):
 
 
 def sync_repo(args):
+    ensure_started(args)
     vm_dir = vm_dir_path(args.vm_dir)
     key_path = ssh_key_path(vm_dir)
     if not key_path.exists():
@@ -175,13 +226,60 @@ def sync_repo(args):
     rsync_cmd.extend(
         [
             "-e",
-            f"ssh -i {key_path} -p {args.ssh_port}",
+            f"ssh {' '.join(SSH_OPTIONS)} -i {key_path} -p {args.ssh_port}",
             f"{repo}/",
             f"{args.user}@127.0.0.1:{remote_dir}/",
         ]
     )
     run(rsync_cmd)
 
+
+def should_skip_bootstrap():
+    value = os.getenv("FREEBSD_VM_SKIP_BOOTSTRAP", "")
+    return value.lower() in {"1", "true", "yes"}
+
+
+def bootstrap_vm(args):
+    ensure_started(args)
+    if should_skip_bootstrap():
+        return
+    packages_env = os.getenv("FREEBSD_VM_PACKAGES")
+    packages = (
+        shlex.split(packages_env)
+        if packages_env
+        else DEFAULT_PACKAGES
+    )
+    package_list = " ".join(packages)
+    command = f"pkg update -f && pkg install -y {package_list}"
+    ssh_command(args, command, user="root")
+
+
+def test_vm(args):
+    ensure_started(args)
+    bootstrap_vm(args)
+    sync_repo(args)
+
+    remote_dir = args.remote_dir or f"/home/{args.user}/dart"
+    build_dir = os.getenv("FREEBSD_VM_BUILD_DIR", DEFAULT_BUILD_DIR)
+    build_type = os.getenv("FREEBSD_VM_BUILD_TYPE", "Release")
+    cmake_args = [
+        f"-DCMAKE_BUILD_TYPE={build_type}",
+        "-DDART_BUILD_DARTPY=OFF",
+        "-DDART_BUILD_GUI_OSG=OFF",
+        "-DDART_USE_SYSTEM_GOOGLETEST=ON",
+        "-DDART_VERBOSE=ON",
+    ]
+    cmake_args.extend(shlex.split(os.getenv("FREEBSD_VM_CMAKE_ARGS", "")))
+    cmake_arg_str = " ".join(cmake_args)
+    test_regex = os.getenv("FREEBSD_VM_TEST_REGEX", DEFAULT_TEST_REGEX)
+
+    command = (
+        f"cd {remote_dir} && "
+        f"cmake -G Ninja -S . -B {build_dir} {cmake_arg_str} && "
+        f"cmake --build {build_dir} --target test_Issue838 test_ForwardKinematics && "
+        f"ctest --test-dir {build_dir} -R '{test_regex}' --output-on-failure"
+    )
+    ssh_command(args, command, user=args.user)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Manage FreeBSD VM via Docker.")
@@ -201,6 +299,8 @@ def parse_args():
     subparsers.add_parser("stop")
     subparsers.add_parser("shell")
     subparsers.add_parser("sync")
+    subparsers.add_parser("bootstrap")
+    subparsers.add_parser("test")
 
     return parser.parse_args()
 
@@ -217,6 +317,10 @@ def main():
         shell_vm(args)
     elif args.command == "sync":
         sync_repo(args)
+    elif args.command == "bootstrap":
+        bootstrap_vm(args)
+    elif args.command == "test":
+        test_vm(args)
 
 
 if __name__ == "__main__":

@@ -48,19 +48,26 @@ def ensure_ssh_key(vm_dir, ssh_key):
 
 def write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img, user):
     pub_key = ssh_key.with_suffix(".pub").read_text().strip()
-    user_data.write_text(
-        "\n".join(
+    lines = [
+        "#cloud-config",
+        "disable_root: false",
+        "users:",
+        "  - name: root",
+        "    ssh-authorized-keys:",
+        f"      - {pub_key}",
+    ]
+    if user != "root":
+        lines.extend(
             [
-                "#cloud-config",
-                "users:",
                 f"  - name: {user}",
                 "    shell: /bin/sh",
+                "    groups: [wheel]",
                 "    ssh-authorized-keys:",
                 f"      - {pub_key}",
-                "",
             ]
         )
-    )
+    lines.append("")
+    user_data.write_text("\n".join(lines))
     meta_data.write_text(
         "\n".join(
             [
