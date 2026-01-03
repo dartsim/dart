@@ -204,7 +204,7 @@ void BulletCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 
 //==============================================================================
 void BulletCollisionGroup::addCollisionObjectsToEngine(
-    const std::vector<CollisionObject*>& collObjects)
+    std::span<CollisionObject* const> collObjects)
 {
   for (auto collObj : collObjects) {
     auto casted = static_cast<BulletCollisionObject*>(collObj);

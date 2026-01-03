@@ -40,6 +40,9 @@
 
 #include <dart/Export.hpp>
 
+#include <span>
+#include <vector>
+
 namespace dart {
 namespace dynamics {
 
@@ -86,13 +89,11 @@ struct DART_API SoftBodyNodeUniqueProperties
   std::vector<Eigen::Vector3i> mFaces;
 
   SoftBodyNodeUniqueProperties(
-      double _Kv = DART_DEFAULT_VERTEX_STIFFNESS,
-      double _Ke = DART_DEFAULT_EDGE_STIFNESS,
-      double _DampCoeff = DART_DEFAULT_DAMPING_COEFF,
-      const std::vector<PointMass::Properties>& _points
-      = std::vector<PointMass::Properties>(),
-      const std::vector<Eigen::Vector3i>& _faces
-      = std::vector<Eigen::Vector3i>());
+      double kv = DART_DEFAULT_VERTEX_STIFFNESS,
+      double ke = DART_DEFAULT_EDGE_STIFNESS,
+      double dampCoeff = DART_DEFAULT_DAMPING_COEFF,
+      std::span<const PointMass::Properties> points = {},
+      std::span<const Eigen::Vector3i> faces = {});
 
   virtual ~SoftBodyNodeUniqueProperties() = default;
 

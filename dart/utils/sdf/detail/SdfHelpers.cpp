@@ -58,22 +58,24 @@ double sanitizeParsedValue(double value)
 
 } // namespace
 
-std::string toLowerCopy(std::string text)
+std::string toLowerCopy(std::string_view text)
 {
-  std::transform(text.begin(), text.end(), text.begin(), [](unsigned char c) {
-    return static_cast<char>(std::tolower(c));
-  });
-  return text;
+  std::string lower(text);
+  std::transform(
+      lower.begin(), lower.end(), lower.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+      });
+  return lower;
 }
 
-std::string trimCopy(const std::string& text)
+std::string trimCopy(std::string_view text)
 {
   const auto start = text.find_first_not_of(" \t\r\n");
-  if (start == std::string::npos)
+  if (start == std::string_view::npos)
     return std::string();
 
   const auto end = text.find_last_not_of(" \t\r\n");
-  return text.substr(start, end - start + 1);
+  return std::string(text.substr(start, end - start + 1));
 }
 
 std::string getElementText(const ElementPtr& element)
@@ -96,8 +98,7 @@ std::string getElementText(const ElementPtr& element)
   return trimCopy(serialized.substr(open + 1, close - open - 1));
 }
 
-std::string getChildElementText(
-    const ElementPtr& parent, const std::string& name)
+std::string getChildElementText(const ElementPtr& parent, std::string_view name)
 {
   if (!parent || name.empty())
     return std::string();
@@ -108,7 +109,7 @@ std::string getChildElementText(
 
 std::string getValueText(
     const ElementPtr& parentElement,
-    const std::string& name,
+    std::string_view name,
     const sdf::ParamPtr& param)
 {
   const auto directText = getChildElementText(parentElement, name);
@@ -133,27 +134,29 @@ std::string getValueText(
 }
 
 sdf::ParamPtr getAttributeParam(
-    const ElementPtr& element, const std::string& attributeName)
+    const ElementPtr& element, std::string_view attributeName)
 {
   if (!element || attributeName.empty())
     return nullptr;
 
-  if (!element->HasAttribute(attributeName))
+  const std::string attributeNameString(attributeName);
+  if (!element->HasAttribute(attributeNameString))
     return nullptr;
 
-  return element->GetAttribute(attributeName);
+  return element->GetAttribute(attributeNameString);
 }
 
 sdf::ParamPtr getChildValueParam(
-    const ElementPtr& parentElement, const std::string& name)
+    const ElementPtr& parentElement, std::string_view name)
 {
   if (!parentElement || name.empty())
     return nullptr;
 
-  if (!parentElement->HasElement(name))
+  const std::string nameString(name);
+  if (!parentElement->HasElement(nameString))
     return nullptr;
 
-  const auto child = parentElement->GetElement(name);
+  const auto child = parentElement->GetElement(nameString);
   if (!child)
     return nullptr;
 
@@ -193,41 +196,43 @@ Eigen::Isometry3d poseToIsometry(const gz::math::Pose3d& pose)
   return transform;
 }
 
-bool hasElement(const ElementPtr& parent, const std::string& name)
+bool hasElement(const ElementPtr& parent, std::string_view name)
 {
-  return parent && !name.empty() && parent->HasElement(name);
+  return parent && !name.empty() && parent->HasElement(std::string(name));
 }
 
-ElementPtr getElement(const ElementPtr& parent, const std::string& name)
+ElementPtr getElement(const ElementPtr& parent, std::string_view name)
 {
   if (!parent || name.empty())
     return nullptr;
 
-  if (!parent->HasElement(name))
+  const std::string nameString(name);
+  if (!parent->HasElement(nameString))
     return nullptr;
 
-  return parent->GetElement(name);
+  return parent->GetElement(nameString);
 }
 
-bool hasAttribute(const ElementPtr& element, const std::string& attributeName)
+bool hasAttribute(const ElementPtr& element, std::string_view attributeName)
 {
   return element && !attributeName.empty()
-         && element->HasAttribute(attributeName);
+         && element->HasAttribute(std::string(attributeName));
 }
 
 std::string getAttributeString(
-    const ElementPtr& element, const std::string& attributeName)
+    const ElementPtr& element, std::string_view attributeName)
 {
   if (!element) {
     DART_ASSERT(false);
     return std::string();
   }
 
-  const auto attribute = getAttributeParam(element, attributeName);
+  const std::string attributeNameString(attributeName);
+  const auto attribute = getAttributeParam(element, attributeNameString);
   if (!attribute) {
     DART_WARN(
         "[SdfParser] Missing attribute [{}] on <{}>.",
-        attributeName,
+        attributeNameString,
         element->GetName());
     return std::string();
   }
@@ -241,7 +246,7 @@ std::string getAttributeString(
   } catch (const std::exception& e) {
     DART_WARN(
         "[SdfParser] Failed to parse attribute [{}] on <{}>: {}",
-        attributeName,
+        attributeNameString,
         element->GetName(),
         e.what());
     return std::string();
@@ -249,7 +254,7 @@ std::string getAttributeString(
 }
 
 std::string getValueString(
-    const ElementPtr& parentElement, const std::string& name)
+    const ElementPtr& parentElement, std::string_view name)
 {
   const auto param = getChildValueParam(parentElement, name);
   if (!param)
@@ -271,7 +276,7 @@ std::string getValueString(
   }
 }
 
-bool getValueBool(const ElementPtr& parentElement, const std::string& name)
+bool getValueBool(const ElementPtr& parentElement, std::string_view name)
 {
   bool value = false;
   if (readScalarParam(getChildValueParam(parentElement, name), value))
@@ -285,7 +290,7 @@ bool getValueBool(const ElementPtr& parentElement, const std::string& name)
 }
 
 unsigned int getValueUInt(
-    const ElementPtr& parentElement, const std::string& name)
+    const ElementPtr& parentElement, std::string_view name)
 {
   unsigned int value = 0u;
   if (readScalarParam(getChildValueParam(parentElement, name), value))
@@ -298,7 +303,7 @@ unsigned int getValueUInt(
   return 0u;
 }
 
-double getValueDouble(const ElementPtr& parentElement, const std::string& name)
+double getValueDouble(const ElementPtr& parentElement, std::string_view name)
 {
   double value = 0.0;
   if (readScalarParam(getChildValueParam(parentElement, name), value))
@@ -312,7 +317,7 @@ double getValueDouble(const ElementPtr& parentElement, const std::string& name)
 }
 
 Eigen::Vector2d getValueVector2d(
-    const ElementPtr& parentElement, const std::string& name)
+    const ElementPtr& parentElement, std::string_view name)
 {
   Eigen::Vector2d result = Eigen::Vector2d::Zero();
   const auto param = getChildValueParam(parentElement, name);
@@ -342,7 +347,7 @@ Eigen::Vector2d getValueVector2d(
 }
 
 Eigen::Vector3d getValueVector3d(
-    const ElementPtr& parentElement, const std::string& name)
+    const ElementPtr& parentElement, std::string_view name)
 {
   Eigen::Vector3d result = Eigen::Vector3d::Zero();
   const auto param = getChildValueParam(parentElement, name);
@@ -372,7 +377,7 @@ Eigen::Vector3d getValueVector3d(
 }
 
 Eigen::Vector3i getValueVector3i(
-    const ElementPtr& parentElement, const std::string& name)
+    const ElementPtr& parentElement, std::string_view name)
 {
   Eigen::Vector3i result = Eigen::Vector3i::Zero();
   const auto param = getChildValueParam(parentElement, name);
@@ -399,7 +404,7 @@ Eigen::Vector3i getValueVector3i(
 }
 
 Eigen::VectorXd getValueVectorXd(
-    const ElementPtr& parentElement, const std::string& name)
+    const ElementPtr& parentElement, std::string_view name)
 {
   const auto param = getChildValueParam(parentElement, name);
   if (!param)
@@ -433,7 +438,7 @@ Eigen::VectorXd getValueVectorXd(
 }
 
 Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
-    const ElementPtr& parentElement, const std::string& name)
+    const ElementPtr& parentElement, std::string_view name)
 {
   const auto param = getChildValueParam(parentElement, name);
   if (!param)
@@ -465,8 +470,11 @@ Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
 }
 
 ElementEnumerator::ElementEnumerator(
-    const ElementPtr& parentElement, const std::string& name)
-  : mParent(parentElement), mName(name), mCurrent(nullptr), mInitialized(false)
+    const ElementPtr& parentElement, std::string_view name)
+  : mParent(parentElement),
+    mName(std::string(name)),
+    mCurrent(nullptr),
+    mInitialized(false)
 {
   // Do nothing
 }

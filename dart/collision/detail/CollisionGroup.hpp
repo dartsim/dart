@@ -56,7 +56,7 @@ void CollisionGroup::addShapeFramesOf(
 //==============================================================================
 template <typename... Others>
 void CollisionGroup::addShapeFramesOf(
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames,
+    std::span<const dynamics::ShapeFrame* const> shapeFrames,
     const Others*... others)
 {
   addShapeFrames(shapeFrames);
@@ -175,7 +175,7 @@ void CollisionGroup::removeShapeFramesOf(
 //==============================================================================
 template <typename... Others>
 void CollisionGroup::removeShapeFramesOf(
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames,
+    std::span<const dynamics::ShapeFrame* const> shapeFrames,
     const Others*... others)
 {
   removeShapeFrames(shapeFrames);
@@ -270,8 +270,7 @@ template <typename... Others>
 bool CollisionGroup::isSubscribedTo(
     const dynamics::BodyNode* bodyNode, const Others*... others)
 {
-  auto it = mBodyNodeSources.find(bodyNode);
-  return (it != mBodyNodeSources.end()) && isSubscribedTo(others...);
+  return mBodyNodeSources.contains(bodyNode) && isSubscribedTo(others...);
 }
 
 //==============================================================================
@@ -279,8 +278,7 @@ template <typename... Others>
 bool CollisionGroup::isSubscribedTo(
     const dynamics::MetaSkeleton* skeleton, const Others*... others)
 {
-  auto it = mSkeletonSources.find(skeleton);
-  return (it != mSkeletonSources.end()) && isSubscribedTo(others...);
+  return mSkeletonSources.contains(skeleton) && isSubscribedTo(others...);
 }
 
 } // namespace collision

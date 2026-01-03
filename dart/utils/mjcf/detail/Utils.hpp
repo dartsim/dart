@@ -42,6 +42,7 @@
 #include <tinyxml2.h>
 
 #include <optional>
+#include <string_view>
 
 namespace dart {
 namespace utils {
@@ -75,7 +76,7 @@ Errors handleInclude(
 
 /// Finds all BodyNodes by name
 std::vector<dynamics::BodyNode*> getBodyNodes(
-    const simulation::World& world, const std::string& name);
+    const simulation::World& world, std::string_view name);
 
 } // namespace detail
 } // namespace MjcfParser

@@ -105,9 +105,10 @@ const UrdfParser::Options& UrdfParser::getOptions() const
 
 //==============================================================================
 void UrdfParser::addPackageDirectory(
-    const std::string& _packageName, const std::string& _packageDirectory)
+    std::string_view _packageName, std::string_view _packageDirectory)
 {
-  mPackageRetriever->addPackageDirectory(_packageName, _packageDirectory);
+  mPackageRetriever->addPackageDirectory(
+      std::string(_packageName), std::string(_packageDirectory));
 }
 
 //==============================================================================
@@ -136,7 +137,7 @@ dynamics::SkeletonPtr UrdfParser::parseSkeleton(const common::Uri& uri)
 
 //==============================================================================
 dynamics::SkeletonPtr UrdfParser::parseSkeletonString(
-    const std::string& urdfString, const common::Uri& baseUri)
+    std::string_view urdfString, const common::Uri& baseUri)
 {
   if (urdfString.empty()) {
     DART_WARN(
@@ -144,14 +145,15 @@ dynamics::SkeletonPtr UrdfParser::parseSkeletonString(
     return nullptr;
   }
 
-  ModelInterfacePtr urdfInterface = urdf::parseURDF(urdfString);
+  const std::string urdfStringCopy(urdfString);
+  ModelInterfacePtr urdfInterface = urdf::parseURDF(urdfStringCopy);
   if (!urdfInterface) {
     DART_WARN("Failed loading URDF.");
     return nullptr;
   }
 
   ParseContext context;
-  context.mTransmissions = parseTransmissions(urdfString);
+  context.mTransmissions = parseTransmissions(urdfStringCopy);
 
   return modelInterfaceToSkeleton(
       urdfInterface.get(),
@@ -176,7 +178,7 @@ simulation::WorldPtr UrdfParser::parseWorld(const common::Uri& uri)
 
 //==============================================================================
 simulation::WorldPtr UrdfParser::parseWorldString(
-    const std::string& urdfString, const common::Uri& baseUri)
+    std::string_view urdfString, const common::Uri& baseUri)
 {
   const common::ResourceRetrieverPtr resourceRetriever
       = getResourceRetriever(mOptions.mResourceRetriever);
@@ -386,7 +388,7 @@ bool UrdfParser::addMimicJointsRecursive(
 
 //==============================================================================
 std::vector<UrdfParser::TransmissionInfo> UrdfParser::parseTransmissions(
-    const std::string& urdfString)
+    std::string_view urdfString)
 {
   std::vector<TransmissionInfo> transmissions;
 
@@ -394,7 +396,7 @@ std::vector<UrdfParser::TransmissionInfo> UrdfParser::parseTransmissions(
     return transmissions;
 
   tinyxml2::XMLDocument doc;
-  const auto parseResult = doc.Parse(urdfString.c_str());
+  const auto parseResult = doc.Parse(urdfString.data(), urdfString.size());
   if (parseResult != tinyxml2::XML_SUCCESS) {
     DART_WARN(
         "[UrdfParser] Failed to parse URDF for transmissions: tinyxml2 error "

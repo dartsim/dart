@@ -3,17 +3,16 @@ You are resuming the C++20 modernization task in
 
 Current state:
 
-- Branch: `cpp20/phase6`
-- PR: https://github.com/dartsim/dart/pull/2373
-- Merge conflicts with `origin/main` were resolved and pushed.
+- Branch: `cpp20/phase9` (based on `main`)
+- Phase 9 PR: https://github.com/dartsim/dart/pull/2380
+- Phase 8 PR: https://github.com/dartsim/dart/pull/2376
+- Phase 7 PR: https://github.com/dartsim/dart/pull/2375
 - CI/merge are handled by the user.
 
 What to do next:
 
-1. Wait for phase 6 to merge.
-2. Create `cpp20/phase7` from `origin/main`.
-3. Execute Phase 7 from `docs/dev_tasks/cpp20/00_plan.md`.
-4. Update `docs/dev_tasks/cpp20/01_progress.md` as you go.
+1. Monitor the phase 9 PR CI/merge.
+2. Start Phase 10 from `docs/dev_tasks/cpp20/00_plan.md` (std::ssize).
 
 Workflow requirements:
 

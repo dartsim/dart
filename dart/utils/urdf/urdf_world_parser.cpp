@@ -93,12 +93,13 @@ Entity::Entity(const urdf::Entity& urdfEntity)
  * @function parseWorldURDF
  */
 std::shared_ptr<World> parseWorldURDF(
-    const std::string& _xml_string,
-    const dart::common::Uri& _baseUri,
+    std::string_view xmlString,
+    const dart::common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
   tinyxml2::XMLDocument xml_doc;
-  const auto result = xml_doc.Parse(&_xml_string.front());
+  const std::string xmlStringCopy(xmlString);
+  const auto result = xml_doc.Parse(xmlStringCopy.c_str());
   if (result != tinyxml2::XML_SUCCESS) {
     DART_WARN(
         "{}{}.",
@@ -173,12 +174,12 @@ std::shared_ptr<World> parseWorldURDF(
         const std::string& fileName = includedFiles.at(string_entity_model);
 
         dart::common::Uri absoluteUri;
-        if (!absoluteUri.fromRelativeUri(_baseUri, fileName)) {
+        if (!absoluteUri.fromRelativeUri(baseUri, fileName)) {
           DART_WARN(
               "[parseWorldURDF] Failed resolving mesh URI '{}' relative to "
               "'{}'. We will return a nullptr.",
               fileName,
-              _baseUri.toString());
+              baseUri.toString());
           return nullptr;
         }
 
