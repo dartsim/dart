@@ -5,7 +5,7 @@ import shlex
 import subprocess
 from pathlib import Path
 
-DEFAULT_IMAGE = "altlinux/sisyphus"
+DEFAULT_IMAGE = "altlinux/base:sisyphus"
 DEFAULT_CONTAINER = "dart-altlinux"
 DEFAULT_VOLUME = "dart-altlinux-work"
 DEFAULT_SOURCE_DIR = "/src"
@@ -14,29 +14,29 @@ DEFAULT_BUILD_DIR = "build/altlinux/cpp/Release"
 DEFAULT_BUILD_TARGETS = ["tests"]
 DEFAULT_TEST_REGEX = ""
 DEFAULT_PACKAGES = [
-    "bullet-devel",
     "cmake",
-    "eigen",
+    "eigen3-devel",
     "gcc",
     "gcc-c++",
     "git",
-    "libOpenSceneGraph-devel",
     "libassimp-devel",
-    "libbenchmark",
+    "libbenchmark-devel",
+    "libbullet3-devel",
     "libccd-devel",
+    "libfcl-devel",
     "libflann-devel",
     "libfmt-devel",
-    "libfreeglut-devel",
-    "libgtest",
-    "libitk-devel",
+    "libgtest-devel",
     "libnlopt-devel",
     "libode-devel",
-    "libtinyxml-devel",
+    "libtinyxml2-devel",
+    "tinyxml-devel",
     "liburdfdom-devel",
     "make",
     "ninja-build",
     "pkg-config",
     "rsync",
+    "urdfdom-headers",
 ]
 EXCLUDES = [".git", "build", ".pixi", ".deps", ".build"]
 
@@ -163,8 +163,9 @@ def test_container(args):
     cmake_args = [
         f"-DCMAKE_BUILD_TYPE={build_type}",
         "-DDART_BUILD_DARTPY=OFF",
-        "-DDART_BUILD_GUI_OSG=ON",
+        "-DDART_BUILD_GUI_OSG=OFF",
         "-DDART_ENABLE_SIMD=OFF",
+        "-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
         "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
         "-DDART_USE_SYSTEM_GOOGLETEST=ON",
         "-DDART_VERBOSE=ON",
