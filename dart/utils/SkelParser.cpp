@@ -509,25 +509,27 @@ simulation::WorldPtr SkelParser::readWorld(
 
 //==============================================================================
 simulation::WorldPtr SkelParser::readWorldXML(
-    const std::string& _xmlString,
-    const common::Uri& _baseUri,
-    const common::ResourceRetrieverPtr& _retriever)
+    std::string_view xmlString,
+    const common::Uri& baseUri,
+    const common::ResourceRetrieverPtr& retriever)
 {
-  const common::ResourceRetrieverPtr retriever = getRetriever(_retriever);
+  const common::ResourceRetrieverPtr resolvedRetriever
+      = getRetriever(retriever);
 
-  tinyxml2::XMLDocument _dartXML;
-  if (_dartXML.Parse(_xmlString.c_str()) != tinyxml2::XML_SUCCESS) {
-    _dartXML.PrintError();
+  tinyxml2::XMLDocument dartXml;
+  const std::string xmlStringCopy(xmlString);
+  if (dartXml.Parse(xmlStringCopy.c_str()) != tinyxml2::XML_SUCCESS) {
+    dartXml.PrintError();
     return nullptr;
   }
 
-  tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(_dartXML);
+  tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(dartXml);
   if (!worldElement) {
     DART_ERROR("[readWorldXML] XML String could not be parsed!");
     return nullptr;
   }
 
-  return ::dart::utils::readWorld(worldElement, _baseUri, retriever);
+  return ::dart::utils::readWorld(worldElement, baseUri, resolvedRetriever);
 }
 
 //==============================================================================

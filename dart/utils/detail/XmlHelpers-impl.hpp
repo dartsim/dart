@@ -52,7 +52,7 @@ std::string toString(const Eigen::Matrix<S, N, 1>& v)
 template <typename S>
 std::string toString(
     const Eigen::Transform<S, 3, Eigen::Isometry>& v,
-    const std::string& rotationType)
+    std::string_view rotationType)
 {
   Eigen::Matrix<S, 3, 1> angles;
   if (rotationType == "intrinsic") {
@@ -75,7 +75,7 @@ std::string toString(
 
 //==============================================================================
 template <std::size_t N>
-Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str)
+Eigen::Matrix<double, N, 1> toVectorNd(std::string_view str)
 {
   const std::vector<std::string> pieces = common::split(common::trim(str));
   const std::size_t sizeToRead = std::min(N, pieces.size());
@@ -116,7 +116,7 @@ Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str)
 //==============================================================================
 template <std::size_t N>
 Eigen::Matrix<double, N, 1> getAttributeVectorNd(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
+    const tinyxml2::XMLElement* element, std::string_view attributeName)
 {
   const std::string val = getAttributeString(element, attributeName);
   return toVectorNd<N>(val);
@@ -125,9 +125,9 @@ Eigen::Matrix<double, N, 1> getAttributeVectorNd(
 //==============================================================================
 template <typename ElementType>
 TemplatedElementEnumerator<ElementType>::TemplatedElementEnumerator(
-    ElementPtr parentElement, const std::string& childElementName)
+    ElementPtr parentElement, std::string_view childElementName)
   : mParentElement(parentElement),
-    mChildElementName(childElementName),
+    mChildElementName(std::string(childElementName)),
     mCurrentElement(nullptr)
 {
   // Do nothing
