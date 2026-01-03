@@ -81,7 +81,7 @@ def ensure_ssh_key(vm_dir, ssh_key):
     run(["ssh-keygen", "-t", "ed25519", "-f", str(ssh_key), "-N", ""])
 
 
-def write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img):
+def write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img, user):
     pub_key = ssh_key.with_suffix(".pub").read_text().strip()
     lines = [
         "#cloud-config",
@@ -89,6 +89,19 @@ def write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img):
         f"  - {pub_key}",
         "users:",
         "  - default",
+    ]
+    if user not in {"default", "freebsd", "root"}:
+        lines.extend(
+            [
+                f"  - name: {user}",
+                "    groups: wheel",
+                "    shell: /bin/sh",
+                "    sudo: ALL=(ALL) NOPASSWD:ALL",
+                "    ssh_authorized_keys:",
+                f"      - {pub_key}",
+            ]
+        )
+    lines += [
         "write_files:",
         "  - path: /root/.ssh/authorized_keys",
         "    owner: root:wheel",
@@ -134,7 +147,8 @@ def main():
     ensure_overlay(image_qcow2, overlay_qcow2)
     resize_overlay(overlay_qcow2, disk_size)
     ensure_ssh_key(vm_dir, ssh_key)
-    write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img)
+    user = os.getenv("FREEBSD_VM_USER", "freebsd")
+    write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img, user)
 
     cmd = ["qemu-system-x86_64"]
     if Path("/dev/kvm").exists():
