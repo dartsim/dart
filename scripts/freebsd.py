@@ -15,13 +15,8 @@ DEFAULT_MEM = 4096
 DEFAULT_USER = "freebsd"
 DEFAULT_REMOTE_DIR = None
 DEFAULT_BUILD_DIR = "build/freebsd/cpp/Release"
-DEFAULT_BUILD_TARGETS = [
-    "test_Issue838",
-    "test_ForwardKinematics",
-    "test_Collision",
-    "test_DartLoader",
-]
-DEFAULT_TEST_REGEX = "^test_(Issue838|ForwardKinematics|Collision|DartLoader)$"
+DEFAULT_BUILD_TARGETS = ["tests"]
+DEFAULT_TEST_REGEX = ""
 DEFAULT_PORTS_PATCH_DIR = "docker/freebsd/ports-patches"
 DEFAULT_PACKAGES = [
     "assimp",
@@ -56,6 +51,16 @@ SSH_OPTIONS = [
     "-o",
     "BatchMode=yes",
 ]
+
+
+def env_default_int(name, fallback):
+    value = os.getenv(name)
+    if not value:
+        return fallback
+    try:
+        return int(value)
+    except ValueError:
+        return fallback
 
 
 def run(cmd, check=True, capture=False):
@@ -382,20 +387,27 @@ def test_vm(args):
     cmake_args.extend(shlex.split(os.getenv("FREEBSD_VM_CMAKE_ARGS", "")))
     cmake_arg_str = " ".join(cmake_args)
     build_targets_env = os.getenv("FREEBSD_VM_BUILD_TARGETS")
-    build_targets = (
-        shlex.split(build_targets_env)
-        if build_targets_env
-        else DEFAULT_BUILD_TARGETS
-    )
+    if build_targets_env:
+        build_targets = shlex.split(build_targets_env)
+        if not build_targets:
+            build_targets = DEFAULT_BUILD_TARGETS
+    else:
+        build_targets = DEFAULT_BUILD_TARGETS
     build_targets_str = " ".join(build_targets)
-    test_regex = os.getenv("FREEBSD_VM_TEST_REGEX", DEFAULT_TEST_REGEX)
-    test_regex_arg = shlex.quote(test_regex)
+    test_regex = os.getenv("FREEBSD_VM_TEST_REGEX", DEFAULT_TEST_REGEX).strip()
+    if test_regex:
+        test_command = (
+            f"ctest --test-dir {build_dir} -R {shlex.quote(test_regex)} "
+            "--output-on-failure"
+        )
+    else:
+        test_command = f"ctest --test-dir {build_dir} --output-on-failure"
 
     command = (
         f"cd {remote_dir} && "
         f"cmake -G Ninja -S . -B {build_dir} {cmake_arg_str} && "
         f"cmake --build {build_dir} --target {build_targets_str} && "
-        f"ctest --test-dir {build_dir} -R {test_regex_arg} --output-on-failure"
+        f"{test_command}"
     )
     ssh_command(args, command, user=args.user)
 
@@ -405,8 +417,16 @@ def parse_args():
     parser.add_argument("--container", default=DEFAULT_CONTAINER, help="Container name.")
     parser.add_argument("--vm-dir", default=str(repo_root() / "build" / "freebsd-vm"))
     parser.add_argument("--ssh-port", type=int, default=DEFAULT_SSH_PORT)
-    parser.add_argument("--cpus", type=int, default=DEFAULT_CPUS)
-    parser.add_argument("--mem", type=int, default=DEFAULT_MEM)
+    parser.add_argument(
+        "--cpus",
+        type=int,
+        default=env_default_int("FREEBSD_VM_CPUS", DEFAULT_CPUS),
+    )
+    parser.add_argument(
+        "--mem",
+        type=int,
+        default=env_default_int("FREEBSD_VM_MEM", DEFAULT_MEM),
+    )
     parser.add_argument("--user", default=DEFAULT_USER)
     parser.add_argument("--image-url", default=DEFAULT_IMAGE_URL)
     parser.add_argument("--remote-dir", default=DEFAULT_REMOTE_DIR)
