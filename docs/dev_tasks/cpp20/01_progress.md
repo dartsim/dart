@@ -93,3 +93,5 @@
 - Phase 8: use `std::erase_if` for line segment connection removal.
 - Phase 8: apply `std::erase_if` for mesh node cleanup in
   `dart/gui/render/MeshShapeNode.cpp`.
+- Phase 8: replace `std::sort` with `std::ranges::sort` in core profiling,
+  dynamics, collision, and geometry utilities.
