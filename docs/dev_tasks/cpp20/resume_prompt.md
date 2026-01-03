@@ -3,8 +3,9 @@ You are resuming the C++20 modernization task in
 
 Current state:
 
-- Branch: `cpp20/phase7` (stacked on `cpp20/phase6`)
-- Phase 6 PR: https://github.com/dartsim/dart/pull/2373
+- Branch: `cpp20/phase7` (based on `main`)
+- Phase 6 PR: https://github.com/dartsim/dart/pull/2373 (merged)
+- Phase 7 PR: https://github.com/dartsim/dart/pull/2375
 - CI/merge are handled by the user.
 - Phase 7 changes so far: span inputs for Group/CollisionGroup/Recording,
   CloneableVector, ReferentialSkeleton helpers, Skeleton setAllMemberObjectData,

@@ -2,8 +2,8 @@
 
 ## Status
 
-- Active branch: `cpp20/phase7` (stacked on `cpp20/phase6`)
-- Phase 6 PR: https://github.com/dartsim/dart/pull/2373 (user monitors CI/merge)
+- Active branch: `cpp20/phase7` (based on `main`)
+- Phase 7 PR: https://github.com/dartsim/dart/pull/2375
 - Phase 7: in progress (span-first read-only inputs)
 
 ## Completed
@@ -11,6 +11,7 @@
 - Phase 3: PR #2365 (merged)
 - Phase 4: PR #2367 (merged)
 - Phase 5: PR #2371 (merged)
+- Phase 6: PR #2373 (merged)
 - Earlier phases were merged prior to this tracker (see git history).
 
 ## Next
