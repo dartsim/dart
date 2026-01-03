@@ -16,7 +16,7 @@
 
 ## Next
 
-- Finish Phase 7 and open a stacked PR from `cpp20/phase7`.
+- Keep the PR up to date with `main` (resolve conflicts and push).
 - Run `pixi run lint` before each commit.
 - Run `pixi run test-all` before opening the phase PR.
 

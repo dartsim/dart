@@ -15,7 +15,7 @@ What to do next:
 
 1. Finish Phase 7 from `docs/dev_tasks/cpp20/00_plan.md`.
 2. Update `docs/dev_tasks/cpp20/01_progress.md` as you go.
-3. Open a stacked PR for phase 7.
+3. Keep PR #2375 current with `main`.
 
 Workflow requirements:
 
