@@ -175,6 +175,9 @@ test-all = { cmd = """
 freebsd-test = { cmd = "python scripts/freebsd.py test" }
 freebsd-shell = { cmd = "python scripts/freebsd.py shell" }
 freebsd-stop = { cmd = "python scripts/freebsd.py stop" }
+altlinux-test = { cmd = "python scripts/altlinux.py test" }
+altlinux-shell = { cmd = "python scripts/altlinux.py shell" }
+altlinux-stop = { cmd = "python scripts/altlinux.py stop" }
 config-coverage = { cmd = """
     cmake \
         -G Ninja \
