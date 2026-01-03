@@ -79,6 +79,8 @@ namespace utils {
  */
 class DartLoader
 {
+  friend struct DartLoaderTestAccess;
+
 public:
   /// \deprecated Deprecated in 6.11. Use RootJointType and Options instead.
   ///
