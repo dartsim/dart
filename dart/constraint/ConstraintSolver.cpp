@@ -396,8 +396,7 @@ bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& skeleton)
 bool ConstraintSolver::containConstraint(
     const ConstConstraintBasePtr& constraint) const
 {
-  return std::find(
-             mManualConstraints.begin(), mManualConstraints.end(), constraint)
+  return std::ranges::find(mManualConstraints, constraint)
          != mManualConstraints.end();
 }
 

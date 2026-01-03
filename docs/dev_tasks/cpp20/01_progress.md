@@ -81,3 +81,5 @@
   caches, referential skeleton membership, and node destructor sets.
 - Phase 7: adopt `std::ranges::find` for membership checks in
   `dart/sensor/SensorManager.cpp` and referential skeleton body/joint queries.
+- Phase 7: apply `std::ranges::find` in world, constraint solver, and
+  constrained group membership checks.

@@ -615,8 +615,7 @@ std::set<dynamics::SkeletonPtr> World::removeAllSkeletons()
 //==============================================================================
 bool World::hasSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const
 {
-  return std::find(mSkeletons.begin(), mSkeletons.end(), skeleton)
-         != mSkeletons.end();
+  return std::ranges::find(mSkeletons, skeleton) != mSkeletons.end();
 }
 
 //==============================================================================
