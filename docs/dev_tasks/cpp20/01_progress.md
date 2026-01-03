@@ -79,3 +79,5 @@
 - Phase 7: use `contains` for membership checks in observer/subject tracking,
   name manager lookups, composite aspect requirements, collision result
   caches, referential skeleton membership, and node destructor sets.
+- Phase 7: adopt `std::ranges::find` for membership checks in
+  `dart/sensor/SensorManager.cpp` and referential skeleton body/joint queries.
