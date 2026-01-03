@@ -22,10 +22,7 @@ void defWeldJoint(nb::module_& m)
           [](const WeldJoint& self) { return self.getWeldJointProperties(); })
       .def(
           "getType",
-          [](const WeldJoint& self) -> const std::string& {
-            return self.getType();
-          },
-          nb::rv_policy::reference_internal)
+          [](const WeldJoint& self) { return std::string(self.getType()); })
       .def(
           "isCyclic",
           [](const WeldJoint& self, std::size_t index) {
@@ -44,10 +41,9 @@ void defWeldJoint(nb::module_& m)
             self.setTransformFromChildBodyNode(tf);
           },
           nb::arg("transform"))
-      .def_static(
-          "getStaticType",
-          []() -> const std::string& { return WeldJoint::getStaticType(); },
-          nb::rv_policy::reference);
+      .def_static("getStaticType", []() {
+        return std::string(WeldJoint::getStaticType());
+      });
 
   registerPolymorphicCaster<dart::dynamics::Joint, WeldJoint>();
 }

@@ -47,6 +47,7 @@
 
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <utility>
 #if DART_HAVE_BULLET
   #include "dart/collision/bullet/All.hpp"
@@ -74,9 +75,9 @@ public:
   using Factory = collision::CollisionDetector::Factory;
   using Creator = Factory::Creator;
 
-  ScopedCollisionFactoryDisabler(std::string key, Creator restorer)
+  ScopedCollisionFactoryDisabler(std::string_view key, Creator restorer)
     : mFactory(collision::CollisionDetector::getFactory()),
-      mKey(std::move(key)),
+      mKey(key),
       mRestorer(std::move(restorer))
   {
     if (!mFactory || !mFactory->canCreate(mKey))
@@ -239,6 +240,28 @@ TEST(World, AddingAndRemovingSkeletons)
 }
 
 //==============================================================================
+TEST(World, RemoveSkeletonAndAllSkeletons)
+{
+  WorldPtr world = World::create();
+
+  SkeletonPtr skeleton1 = Skeleton::create("skeleton1");
+  skeleton1->createJointAndBodyNodePair<RevoluteJoint>();
+
+  SkeletonPtr skeleton2 = Skeleton::create("skeleton2");
+  skeleton2->createJointAndBodyNodePair<RevoluteJoint>();
+
+  world->addSkeleton(skeleton1);
+  world->addSkeleton(skeleton2);
+
+  world->removeSkeleton(skeleton1);
+  EXPECT_FALSE(world->hasSkeleton(skeleton1));
+
+  const auto removed = world->removeAllSkeletons();
+  EXPECT_EQ(removed.size(), 1u);
+  EXPECT_EQ(world->getNumSkeletons(), 0u);
+}
+
+//==============================================================================
 TEST(World, Cloning)
 {
   // Seed random generator for deterministic tests
@@ -378,8 +401,8 @@ TEST(World, ValidatingClones)
       auto originalCD = original->getCollisionDetector();
       auto cloneCD = clones.back()->getCollisionDetector();
 
-      std::string originalCDType = originalCD->getType();
-      std::string cloneCDType = cloneCD->getType();
+      std::string originalCDType{originalCD->getTypeView()};
+      std::string cloneCDType{cloneCD->getTypeView()};
 
       EXPECT_EQ(originalCDType, cloneCDType);
     }
@@ -399,7 +422,7 @@ TEST(World, SetCollisionDetectorByType)
   world->setCollisionDetector(CollisionDetectorType::Dart);
 
   ASSERT_TRUE(world->getCollisionDetector());
-  EXPECT_EQ(world->getCollisionDetector()->getType(), "dart");
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
 }
 
 //==============================================================================
@@ -416,7 +439,7 @@ TEST(World, ConfiguresCollisionDetectorViaConfig)
   config.collisionDetector = CollisionDetectorType::Dart;
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
-  EXPECT_EQ(world->getCollisionDetector()->getType(), "dart");
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
 }
 
 //==============================================================================
@@ -478,7 +501,7 @@ TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
 
   auto current = world->getCollisionDetector();
   ASSERT_TRUE(current);
-  EXPECT_EQ(current->getType(), original->getType());
+  EXPECT_EQ(current->getTypeView(), original->getTypeView());
 }
 
 //==============================================================================
@@ -500,7 +523,7 @@ TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
   EXPECT_EQ(
-      world->getCollisionDetector()->getType(),
+      world->getCollisionDetector()->getTypeView(),
       collision::FCLCollisionDetector::getStaticType());
 }
 
@@ -532,7 +555,7 @@ TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
   EXPECT_EQ(
-      world->getCollisionDetector()->getType(),
+      world->getCollisionDetector()->getTypeView(),
       collision::FCLCollisionDetector::getStaticType());
 }
 

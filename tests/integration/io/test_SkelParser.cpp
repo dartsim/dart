@@ -97,6 +97,32 @@ TEST(SkelParser, DataStructure)
 }
 
 //==============================================================================
+TEST(SkelParser, WorldParentNameClearsWhenMissingBody)
+{
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <world name="world 1">
+    <skeleton name="skel">
+      <body name="link"/>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>link</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+)";
+
+  WorldPtr world = SkelParser::readWorldXML(skelXml);
+  ASSERT_NE(world, nullptr);
+
+  SkeletonPtr skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  ASSERT_NE(skel->getRootBodyNode(), nullptr);
+  EXPECT_EQ(skel->getRootBodyNode()->getName(), "link");
+}
+
+//==============================================================================
 TEST(SkelParser, EmptyWorld)
 {
   WorldPtr world = SkelParser::readWorld("dart://sample/skel/test/empty.skel");

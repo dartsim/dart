@@ -83,7 +83,8 @@ public:
       const override;
 
   // Documentation inherited
-  const std::string& getType() const override;
+  [[deprecated("Use getTypeView() for string_view access.")]] const std::string&
+  getType() const override;
 
   /// Get collision detector type for this class
   static const std::string& getStaticType();

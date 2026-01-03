@@ -52,15 +52,15 @@ EllipsoidShape::~EllipsoidShape()
 }
 
 //==============================================================================
-const std::string& EllipsoidShape::getType() const
+std::string_view EllipsoidShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& EllipsoidShape::getStaticType()
+std::string_view EllipsoidShape::getStaticType()
 {
-  static const std::string type("EllipsoidShape");
+  static constexpr std::string_view type = "EllipsoidShape";
   return type;
 }
 

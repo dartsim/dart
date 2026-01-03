@@ -696,3 +696,35 @@ TEST(LcpComparisonHarness, PenalizedFischerBurmeisterNewtonOnStandardFixtures)
     ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
   }
 }
+
+//==============================================================================
+TEST(LcpComparisonHarness, StaggeringRunsNormalAndFrictionPasses)
+{
+  dart::math::StaggeringSolver solver;
+
+  Eigen::MatrixXd A(2, 2);
+  A << 2.0, 0.0, 0.0, 2.0;
+  Eigen::VectorXd b(2);
+  b << 1.0, 1.0;
+  Eigen::VectorXd lo(2);
+  lo << 0.0, -0.5;
+  Eigen::VectorXd hi(2);
+  hi << 1.0, 0.5;
+  Eigen::VectorXi findex(2);
+  findex << -1, 0;
+
+  dart::math::LcpProblem problem(A, b, lo, hi, findex);
+  Eigen::VectorXd x;
+
+  auto options = solver.getDefaultOptions();
+  options.validateSolution = false;
+  options.warmStart = false;
+  options.maxIterations = 1;
+  options.absoluteTolerance = 1e-12;
+  options.relativeTolerance = 1e-12;
+  options.complementarityTolerance = 1e-12;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(x.size(), 2);
+  EXPECT_NE(result.status, dart::math::LcpSolverStatus::InvalidProblem);
+}

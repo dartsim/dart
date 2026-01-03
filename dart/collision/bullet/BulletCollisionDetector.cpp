@@ -109,7 +109,7 @@ bool isConvex(const math::TriMesh<double>& mesh, float threshold = 0.001f);
 //==============================================================================
 BulletCollisionDetector::Registrar<BulletCollisionDetector>
     BulletCollisionDetector::mRegistrar{
-        BulletCollisionDetector::getStaticType(),
+        std::string(BulletCollisionDetector::getStaticType()),
         []() -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
           return dart::collision::BulletCollisionDetector::create();
         }};

@@ -59,15 +59,15 @@ WeldJoint::~WeldJoint()
 }
 
 //==============================================================================
-const std::string& WeldJoint::getType() const
+std::string_view WeldJoint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& WeldJoint::getStaticType()
+std::string_view WeldJoint::getStaticType()
 {
-  static const std::string name = "WeldJoint";
+  static constexpr std::string_view name = "WeldJoint";
   return name;
 }
 

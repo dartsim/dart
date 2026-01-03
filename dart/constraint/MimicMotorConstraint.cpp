@@ -93,15 +93,15 @@ MimicMotorConstraint::~MimicMotorConstraint()
 }
 
 //==============================================================================
-const std::string& MimicMotorConstraint::getType() const
+std::string_view MimicMotorConstraint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& MimicMotorConstraint::getStaticType()
+std::string_view MimicMotorConstraint::getStaticType()
 {
-  static const std::string name = "MimicMotorConstraint";
+  static constexpr std::string_view name = "MimicMotorConstraint";
   return name;
 }
 

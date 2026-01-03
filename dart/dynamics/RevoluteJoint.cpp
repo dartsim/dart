@@ -101,7 +101,7 @@ RevoluteJoint& RevoluteJoint::operator=(const RevoluteJoint& _otherJoint)
 }
 
 //==============================================================================
-const std::string& RevoluteJoint::getType() const
+std::string_view RevoluteJoint::getType() const
 {
   return getStaticType();
 }
@@ -113,9 +113,9 @@ bool RevoluteJoint::isCyclic(std::size_t _index) const
 }
 
 //==============================================================================
-const std::string& RevoluteJoint::getStaticType()
+std::string_view RevoluteJoint::getStaticType()
 {
-  static const std::string name = "RevoluteJoint";
+  static constexpr std::string_view name = "RevoluteJoint";
   return name;
 }
 

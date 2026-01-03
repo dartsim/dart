@@ -54,15 +54,15 @@ BoxShape::~BoxShape()
 }
 
 //==============================================================================
-const std::string& BoxShape::getType() const
+std::string_view BoxShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& BoxShape::getStaticType()
+std::string_view BoxShape::getStaticType()
 {
-  static const std::string type("BoxShape");
+  static constexpr std::string_view type = "BoxShape";
   return type;
 }
 

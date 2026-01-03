@@ -746,7 +746,7 @@ void World::setCollisionDetector(CollisionDetectorType collisionDetector)
         "current detector '{}'.",
         toCollisionDetectorKey(collisionDetector),
         mName,
-        current ? current->getType() : "unknown");
+        current ? current->getTypeView() : "unknown");
     return;
   }
 

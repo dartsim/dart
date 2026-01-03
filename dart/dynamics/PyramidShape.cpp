@@ -56,15 +56,15 @@ PyramidShape::PyramidShape(double baseWidth, double baseDepth, double height)
 }
 
 //==============================================================================
-const std::string& PyramidShape::getType() const
+std::string_view PyramidShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& PyramidShape::getStaticType()
+std::string_view PyramidShape::getStaticType()
 {
-  static const std::string type("PyramidShape");
+  static constexpr std::string_view type = "PyramidShape";
   return type;
 }
 
