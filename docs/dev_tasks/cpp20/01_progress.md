@@ -6,6 +6,7 @@
 - Active PR: pending (phase 8 not opened yet)
 - Phase 7 PR: https://github.com/dartsim/dart/pull/2375 (updated with empty-span guards)
 - CI monitoring and merge handled by the user.
+- Latest local validation: `pixi run lint`, `pixi run test-all` (passed).
 
 ## Completed
 
@@ -17,7 +18,4 @@
 
 ## Next
 
-- Execute Phase 8 from `00_plan.md` (string_view parsing inputs).
-- Focus on XML/SDF/URDF/Skel helpers and avoid behavioral changes.
-- Run `pixi run lint` before each commit.
-- Run `pixi run test-all` before opening the phase PR.
+- Open the Phase 8 PR (XML/SDF/URDF/Skel helpers now use `std::string_view`).
