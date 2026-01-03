@@ -158,7 +158,7 @@ public:
   /// specify as the package directory will end up replacing the 'package
   /// keyword' and 'package name' components of the URI string.
   void addPackageDirectory(
-      const std::string& packageName, const std::string& packageDirectory);
+      std::string_view packageName, std::string_view packageDirectory);
 
   /// Parse a file to produce a Skeleton
   dynamics::SkeletonPtr parseSkeleton(const common::Uri& uri);

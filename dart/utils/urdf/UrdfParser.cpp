@@ -105,9 +105,10 @@ const UrdfParser::Options& UrdfParser::getOptions() const
 
 //==============================================================================
 void UrdfParser::addPackageDirectory(
-    const std::string& _packageName, const std::string& _packageDirectory)
+    std::string_view _packageName, std::string_view _packageDirectory)
 {
-  mPackageRetriever->addPackageDirectory(_packageName, _packageDirectory);
+  mPackageRetriever->addPackageDirectory(
+      std::string(_packageName), std::string(_packageDirectory));
 }
 
 //==============================================================================
