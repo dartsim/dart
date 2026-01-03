@@ -10,6 +10,8 @@
 #include <nanobind/stl/string_view.h>
 #include <nanobind/trampoline.h>
 
+#include <string>
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -26,13 +28,20 @@ public:
 
   std::string_view getType() const override
   {
-    NB_OVERRIDE_PURE(getType);
+    // Cache the Python string so the view stays valid after the override.
+    nb::detail::ticket nb_ticket(nb_trampoline, "getType", true);
+    mTypeCache
+        = nb::cast<std::string>(nb_trampoline.base().attr(nb_ticket.key)());
+    return mTypeCache;
   }
 
   std::shared_ptr<dart::math::Solver> clone() const override
   {
     NB_OVERRIDE_PURE(clone);
   }
+
+private:
+  mutable std::string mTypeCache;
 };
 
 void defOptimizerSolver(nb::module_& m)
