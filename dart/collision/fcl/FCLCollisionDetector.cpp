@@ -624,7 +624,7 @@ template <class BV>
 //==============================================================================
 FCLCollisionDetector::Registrar<FCLCollisionDetector>
     FCLCollisionDetector::mRegistrar{
-        FCLCollisionDetector::getStaticType(),
+        std::string(FCLCollisionDetector::getStaticType()),
         []() -> std::shared_ptr<FCLCollisionDetector> {
           return FCLCollisionDetector::create();
         }};

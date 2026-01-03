@@ -46,7 +46,7 @@ namespace constraint {
 
 namespace {
 
-const std::string& pgsBoxedLcpType()
+std::string_view pgsBoxedLcpType()
 {
   static constexpr std::string_view type = "PgsBoxedLcpSolver";
   return type;

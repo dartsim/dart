@@ -46,7 +46,7 @@ namespace constraint {
 
 namespace {
 
-const std::string& dantzigBoxedLcpType()
+std::string_view dantzigBoxedLcpType()
 {
   static constexpr std::string_view type = "DantzigBoxedLcpSolver";
   return type;

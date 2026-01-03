@@ -137,7 +137,7 @@ public:
 
   std::string getName() const override
   {
-    return mSolver ? mSolver->getType() : "BoxedLcpSolver";
+    return mSolver ? std::string(mSolver->getType()) : "BoxedLcpSolver";
   }
 
   std::string getCategory() const override

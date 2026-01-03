@@ -69,7 +69,7 @@ void postProcess(
 //==============================================================================
 DARTCollisionDetector::Registrar<DARTCollisionDetector>
     DARTCollisionDetector::mRegistrar{
-        DARTCollisionDetector::getStaticType(),
+        std::string(DARTCollisionDetector::getStaticType()),
         []() -> std::shared_ptr<dart::collision::DARTCollisionDetector> {
           return dart::collision::DARTCollisionDetector::create();
         }};
