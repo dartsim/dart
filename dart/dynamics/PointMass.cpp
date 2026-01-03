@@ -75,30 +75,32 @@ bool PointMass::State::operator==(const PointMass::State& other) const
 
 //==============================================================================
 PointMass::Properties::Properties(
-    const Vector3d& _X0,
-    double _mass,
-    const std::vector<std::size_t>& _connections,
-    const Vector3d& _positionLowerLimits,
-    const Vector3d& _positionUpperLimits,
-    const Vector3d& _velocityLowerLimits,
-    const Vector3d& _velocityUpperLimits,
-    const Vector3d& _accelerationLowerLimits,
-    const Vector3d& _accelerationUpperLimits,
-    const Vector3d& _forceLowerLimits,
-    const Vector3d& _forceUpperLimits)
-  : mX0(_X0),
-    mMass(_mass),
-    mConnectedPointMassIndices(_connections),
-    mPositionLowerLimits(_positionLowerLimits),
-    mPositionUpperLimits(_positionUpperLimits),
-    mVelocityLowerLimits(_velocityLowerLimits),
-    mVelocityUpperLimits(_velocityUpperLimits),
-    mAccelerationLowerLimits(_accelerationLowerLimits),
-    mAccelerationUpperLimits(_accelerationUpperLimits),
-    mForceLowerLimits(_forceLowerLimits),
-    mForceUpperLimits(_forceUpperLimits)
+    const Vector3d& x0,
+    double mass,
+    std::span<const std::size_t> connections,
+    const Vector3d& positionLowerLimits,
+    const Vector3d& positionUpperLimits,
+    const Vector3d& velocityLowerLimits,
+    const Vector3d& velocityUpperLimits,
+    const Vector3d& accelerationLowerLimits,
+    const Vector3d& accelerationUpperLimits,
+    const Vector3d& forceLowerLimits,
+    const Vector3d& forceUpperLimits)
+  : mX0(x0),
+    mMass(mass),
+    mConnectedPointMassIndices(),
+    mPositionLowerLimits(positionLowerLimits),
+    mPositionUpperLimits(positionUpperLimits),
+    mVelocityLowerLimits(velocityLowerLimits),
+    mVelocityUpperLimits(velocityUpperLimits),
+    mAccelerationLowerLimits(accelerationLowerLimits),
+    mAccelerationUpperLimits(accelerationUpperLimits),
+    mForceLowerLimits(forceLowerLimits),
+    mForceUpperLimits(forceUpperLimits)
 {
-  // Do nothing
+  if (!connections.empty()) {
+    mConnectedPointMassIndices.assign(connections.begin(), connections.end());
+  }
 }
 
 //==============================================================================

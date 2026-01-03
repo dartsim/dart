@@ -563,8 +563,8 @@ const MapType& CloneableMap<MapType>::getMap() const
 
 //==============================================================================
 template <typename T>
-CloneableVector<T>::CloneableVector(const std::vector<T>& regularVector)
-  : mVector(regularVector)
+CloneableVector<T>::CloneableVector(std::span<const T> regularVector)
+  : mVector(regularVector.begin(), regularVector.end())
 {
   // Do nothing
 }

@@ -47,6 +47,7 @@
 
 #include <dart/Export.hpp>
 
+#include <span>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -81,8 +82,7 @@ public:
   void addShapeFrame(const dynamics::ShapeFrame* shapeFrame);
 
   /// Add ShapeFrames to this CollisionGroup
-  void addShapeFrames(
-      const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
+  void addShapeFrames(std::span<const dynamics::ShapeFrame* const> shapeFrames);
 
   /// Add a ShapeFrame, and also add ShapeFrames of other various objects.
   ///
@@ -99,7 +99,7 @@ public:
   /// Add ShapeFrames, and also add ShapeFrames of other various objects.
   template <typename... Others>
   void addShapeFramesOf(
-      const std::vector<const dynamics::ShapeFrame*>& shapeFrames,
+      std::span<const dynamics::ShapeFrame* const> shapeFrames,
       const Others*... others);
 
   /// Add ShapeFrames of other CollisionGroup, and also add another ShapeFrames
@@ -155,7 +155,7 @@ public:
 
   /// Remove ShapeFrames from this CollisionGroup
   void removeShapeFrames(
-      const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
+      std::span<const dynamics::ShapeFrame* const> shapeFrames);
 
   /// Remove a ShapeFrame, and also remove ShapeFrames of other various objects.
   ///
@@ -172,7 +172,7 @@ public:
   /// Remove ShapeFrames, and also remove ShapeFrames of other various objects.
   template <typename... Others>
   void removeShapeFramesOf(
-      const std::vector<const dynamics::ShapeFrame*>& shapeFrames,
+      std::span<const dynamics::ShapeFrame* const> shapeFrames,
       const Others*... others);
 
   /// Remove ShapeFrames of other CollisionGroup, and also remove another
@@ -343,7 +343,7 @@ protected:
 
   /// Add CollisionObjects to the collision detection engine
   virtual void addCollisionObjectsToEngine(
-      const std::vector<CollisionObject*>& collObjects)
+      std::span<CollisionObject* const> collObjects)
       = 0;
 
   /// Remove CollisionObject from the collision detection engine
