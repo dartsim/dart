@@ -82,7 +82,7 @@ DART_UTILS_API std::string getValueText(
 template <typename T>
 bool parseScalar(std::string_view text, T& value)
 {
-  std::istringstream stream(std::string(text));
+  std::istringstream stream{std::string(text)};
   stream >> value;
   return !stream.fail();
 }
@@ -107,7 +107,7 @@ inline bool parseScalar<bool>(std::string_view text, bool& value)
 template <typename T>
 std::vector<T> parseArray(std::string_view text)
 {
-  std::istringstream stream(std::string(text));
+  std::istringstream stream{std::string(text)};
   std::vector<T> values;
   T value{};
   while (stream >> value)
