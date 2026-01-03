@@ -2,47 +2,37 @@
 
 ## Status
 
-- Draft.
+- In progress.
 
 ## Phase 0: Cleanup (Done in this branch)
 
 - Revert multi-solver scaffolding and ECS hooks in classic `World`.
 - Restore classic world behavior as the only Skeleton pipeline.
 
-## Phase 1: Introduce ECS World Skeleton
+## Phase 1: Move Next-Gen World (In progress)
 
-- Create `dart/ecs` component with `dart::ecs::World` and minimal lifecycle.
-- Port core ECS types from `dart8` (World, Frame, RigidBody, MultiBody, Tags).
-- Add a dedicated CMake target and install headers for `dart/ecs`.
-  - Current state: scaffolding only (minimal World + opaque handles; no entity
-    creation APIs yet).
+- Move `dart8/` to `dart/simulation/next/`.
+- Rename namespace to `dart::simulation::next`.
+- Update build/test plumbing (`DART_BUILD_SIMULATION_NEXT`, CTest labels,
+  pixi tasks, docs).
 
-## Phase 2: Compatibility Layer
+## Phase 2: Python Binding Split (Planned)
 
-- Keep `dart8` as a thin alias layer:
-  - `namespace dart8 = dart::ecs` for types and functions.
-  - Deprecation notes in `dart8` headers.
-- Maintain existing include paths via forwarding headers for one release.
+- Add `dartpy.simulation_next` module for the new world.
+- Optionally keep `dartpy.dart8` as a temporary alias.
 
-## Phase 3: Python Binding Split
+## Phase 3: Deprecation (Planned)
 
-- Add `dartpy.ecs` module that binds `dart::ecs`.
-- Keep classic bindings unchanged.
-- Provide `dartpy.dart8` as a temporary alias to `dartpy.ecs`.
+- Deprecate classic `dart::simulation::World` in DART7 docs.
+- Provide migration notes for moving to `dart::simulation::next::World`.
 
-## Phase 4: Tests + Docs
+## Phase 4: Promotion (Planned)
 
-- Move ECS tests to `tests_ecs/` or `tests/ecs/` (decide structure).
-- Add new ECS world tests for object lifecycle + stepping.
-- Update onboarding docs with a short note about the split worlds.
-
-## Phase 5: Deprecation + Removal
-
-- Announce deprecation of `dart8` and the alias modules.
-- Remove `dart8` once downstream usage is migrated.
+- Remove classic `dart::simulation::World` in DART8.
+- Promote `dart::simulation::next::World` to `dart::simulation::World`.
 
 ## Open Decisions
 
-- Final namespace choice: `dart::ecs` vs `dart::simulation::ecs`.
-- Test layout for ECS coverage.
-- Timeline for `dart8` removal (major release boundary?).
+- Python module name (`dartpy.simulation_next` vs `dartpy.next`).
+- Timeline to rename `dart8` CMake targets/macros.
+- Deprecation timeline for classic world.

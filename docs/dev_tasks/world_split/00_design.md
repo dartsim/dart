@@ -1,54 +1,41 @@
-# World Split: Classic and ECS Worlds (Design Note)
+# World Split: Classic and Next Worlds (Design Note)
 
 ## Status
 
-- In progress: `dart::ecs` scaffolding landed (minimal World + handles, no EnTT
-  exposure).
+- In progress: moved `dart8` to `dart/simulation/next`, namespace is
+  `dart::simulation::next`, classic `dart::simulation::World` reverted.
 
 ## Goals
 
 - Keep `dart::simulation::World` stable for classic `Skeleton`/`Frame` workflows.
-- Provide a new ECS-first world for new object types without exposing EnTT in
+- Provide a next-gen world in `dart::simulation::next` without exposing EnTT in
   classic headers.
-- Avoid mixing solver backends inside a single world.
+- Avoid multi-solver orchestration inside the classic world.
 
 ## Non-Goals
 
-- No multi-solver orchestration inside a single world.
-- No automatic interop between classic and ECS worlds.
-- No public EnTT exposure in classic `dart/` headers.
+- No mixing classic and next objects in a single world.
+- No public ECS entity creation through the classic world.
+- No full rename of `DART8_*` macros/targets in this phase.
 
 ## Proposed Shape
 
 - **Classic world**
   - `dart::simulation::World` stays as-is (Skeleton/Frame + ConstraintSolver).
-  - Classic solver behavior remains the default and only Skeleton path.
 
-- **ECS world**
-  - New `dart::ecs::World` (preferred) owns the ECS registry and ECS object APIs.
-  - Object handles are opaque IDs + typed wrappers (no `entt::registry` in
-    public headers).
-
-- **Shared internals**
-  - Optional internal `WorldBase` for name/time/step bookkeeping to avoid code
-    duplication, not part of the public API.
+- **Next world**
+  - `dart::simulation::next::World` hosts ECS-backed object types.
+  - Built behind `DART_BUILD_SIMULATION_NEXT` (with `DART_BUILD_DART8` alias).
 
 ## Namespace / Directory Choice
 
-- **Recommendation**: `dart/ecs` with `namespace dart::ecs`.
-  - Stable and descriptive (not versioned).
-  - Allows `dart8` to become a compatibility alias during migration.
-- **Alternative**: `dart/simulation/ecs` if we want to keep all worlds under
-  `simulation`, but it blurs the clean split with classic APIs.
+- `dart/simulation/next` with `namespace dart::simulation::next`.
 
 ## Python Binding Direction
 
-- Add `dartpy.ecs` for ECS world bindings.
-- Keep classic bindings as-is; no default mixing of classic and ECS types.
-- Provide `dartpy.dart8` as a thin compatibility alias during migration.
+- New module `dartpy.simulation_next` (preferred).
+- Optional temporary alias `dartpy.dart8` during migration.
 
 ## Compatibility Notes
 
-- `dart8` should remain a compatibility layer during transition, pointing at
-  `dart::ecs` types without new features.
-- Classic world APIs remain unchanged to protect downstream users.
+- Keep the `dart8` CMake target/macros as a compatibility layer for now.
