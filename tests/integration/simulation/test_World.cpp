@@ -47,6 +47,7 @@
 
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <utility>
 #if DART_HAVE_BULLET
   #include "dart/collision/bullet/All.hpp"
@@ -74,9 +75,9 @@ public:
   using Factory = collision::CollisionDetector::Factory;
   using Creator = Factory::Creator;
 
-  ScopedCollisionFactoryDisabler(std::string key, Creator restorer)
+  ScopedCollisionFactoryDisabler(std::string_view key, Creator restorer)
     : mFactory(collision::CollisionDetector::getFactory()),
-      mKey(std::move(key)),
+      mKey(key),
       mRestorer(std::move(restorer))
   {
     if (!mFactory || !mFactory->canCreate(mKey))
@@ -425,8 +426,8 @@ TEST(World, ValidatingClones)
       auto originalCD = original->getCollisionDetector();
       auto cloneCD = clones.back()->getCollisionDetector();
 
-      std::string originalCDType = originalCD->getType();
-      std::string cloneCDType = cloneCD->getType();
+      std::string originalCDType{originalCD->getType()};
+      std::string cloneCDType{cloneCD->getType()};
 
       EXPECT_EQ(originalCDType, cloneCDType);
     }
