@@ -64,7 +64,7 @@ void FCLCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 
 //==============================================================================
 void FCLCollisionGroup::addCollisionObjectsToEngine(
-    const std::vector<CollisionObject*>& collObjects)
+    std::span<CollisionObject* const> collObjects)
 {
   for (auto collObj : collObjects) {
     auto casted = static_cast<FCLCollisionObject*>(collObj);

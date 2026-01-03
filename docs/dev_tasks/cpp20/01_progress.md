@@ -6,7 +6,7 @@
 - Active PR: https://github.com/dartsim/dart/pull/2376
 - Phase 7 PR: https://github.com/dartsim/dart/pull/2375 (updated with empty-span guards)
 - CI monitoring and merge handled by the user.
-- Latest local validation: `pixi run lint`, `pixi run test-all` (passed).
+- Latest local validation: `pixi run lint` (passed).
 
 ## Completed
 
@@ -19,3 +19,4 @@
 ## Next
 
 - Monitor PR #2376 CI/review feedback (CI/merge handled by the user).
+- Begin Phase 9 (container membership `.contains`) after Phase 8 is complete.

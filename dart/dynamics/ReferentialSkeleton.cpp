@@ -787,7 +787,7 @@ double ReferentialSkeleton::getMass() const noexcept
 //==============================================================================
 template <const Eigen::MatrixXd& (Skeleton::*getMatrix)(std::size_t) const>
 const Eigen::MatrixXd& setMatrixFromSkeletonData(
-    Eigen::MatrixXd& M, const std::vector<const DegreeOfFreedom*>& dofs)
+    Eigen::MatrixXd& M, std::span<const DegreeOfFreedom* const> dofs)
 {
   const std::size_t nDofs = dofs.size();
 
@@ -853,7 +853,7 @@ const Eigen::MatrixXd& ReferentialSkeleton::getInvAugMassMatrix() const
 //==============================================================================
 template <const Eigen::VectorXd& (Skeleton::*getVector)(std::size_t) const>
 const Eigen::VectorXd& setVectorFromSkeletonData(
-    Eigen::VectorXd& V, const std::vector<const DegreeOfFreedom*>& dofs)
+    Eigen::VectorXd& V, std::span<const DegreeOfFreedom* const> dofs)
 {
   const std::size_t nDofs = dofs.size();
 

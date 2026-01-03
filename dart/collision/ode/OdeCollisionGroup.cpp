@@ -87,7 +87,7 @@ void OdeCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 
 //==============================================================================
 void OdeCollisionGroup::addCollisionObjectsToEngine(
-    const std::vector<CollisionObject*>& collObjects)
+    std::span<CollisionObject* const> collObjects)
 {
   for (auto collObj : collObjects) {
     auto casted = static_cast<OdeCollisionObject*>(collObj);

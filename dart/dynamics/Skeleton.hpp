@@ -1087,7 +1087,7 @@ protected:
   std::vector<BodyNode*> extractBodyNodeTree(BodyNode* _bodyNode);
 
   /// Take in and register a subtree of BodyNodes
-  void receiveBodyNodeTree(const std::vector<BodyNode*>& _tree);
+  void receiveBodyNodeTree(std::span<BodyNode* const> tree);
 
   /// Update the computation for total mass
   void updateTotalMass();
