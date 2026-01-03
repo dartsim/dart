@@ -60,7 +60,8 @@ public:
         bool randomizeConstraintOrder = false);
   };
 
-  const std::string& getType() const override;
+  [[deprecated("Use getTypeView() for string_view access.")]] const std::string&
+  getType() const override;
 
   static const std::string& getStaticType();
 

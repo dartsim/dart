@@ -35,6 +35,7 @@
 
 #include <dart/common/Castable.hpp>
 #include <dart/common/Deprecated.hpp>
+#include <dart/common/Diagnostics.hpp>
 
 #include <string>
 #include <string_view>
@@ -50,12 +51,18 @@ public:
   virtual ~BoxedLcpSolver() = default;
 
   /// Note: kept for gz-physics compatibility; prefer getTypeView().
-  virtual const std::string& getType() const = 0;
+  [[deprecated(
+      "Use getTypeView() for string_view access.")]] virtual const std::string&
+  getType() const = 0;
 
+  // TODO(DART 8): Rename getTypeView() to getType() and drop the compatibility
+  // string-returning overload.
+  DART_SUPPRESS_DEPRECATED_BEGIN
   [[nodiscard]] std::string_view getTypeView() const
   {
     return getType();
   }
+  DART_SUPPRESS_DEPRECATED_END
 
   virtual bool solve(
       int n,

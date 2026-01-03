@@ -27,7 +27,7 @@ void defCollisionDetector(nb::module_& m)
       .def(
           "getType",
           [](const CollisionDetector& self) {
-            return std::string(self.getType());
+            return std::string(self.getTypeView());
           })
       .def("createCollisionGroup", [](CollisionDetector& self) {
         return self.createCollisionGroupAsSharedPtr();

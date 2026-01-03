@@ -139,7 +139,7 @@ public:
 
   std::string getName() const override
   {
-    return mSolver ? std::string(mSolver->getType()) : "BoxedLcpSolver";
+    return mSolver ? std::string(mSolver->getTypeView()) : "BoxedLcpSolver";
   }
 
   std::string getCategory() const override

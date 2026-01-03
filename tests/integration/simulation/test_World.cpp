@@ -448,8 +448,8 @@ TEST(World, ValidatingClones)
       auto originalCD = original->getCollisionDetector();
       auto cloneCD = clones.back()->getCollisionDetector();
 
-      std::string originalCDType{originalCD->getType()};
-      std::string cloneCDType{cloneCD->getType()};
+      std::string originalCDType{originalCD->getTypeView()};
+      std::string cloneCDType{cloneCD->getTypeView()};
 
       EXPECT_EQ(originalCDType, cloneCDType);
     }
@@ -469,7 +469,7 @@ TEST(World, SetCollisionDetectorByType)
   world->setCollisionDetector(CollisionDetectorType::Dart);
 
   ASSERT_TRUE(world->getCollisionDetector());
-  EXPECT_EQ(world->getCollisionDetector()->getType(), "dart");
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
 }
 
 //==============================================================================
@@ -486,7 +486,7 @@ TEST(World, ConfiguresCollisionDetectorViaConfig)
   config.collisionDetector = CollisionDetectorType::Dart;
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
-  EXPECT_EQ(world->getCollisionDetector()->getType(), "dart");
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
 }
 
 //==============================================================================
@@ -548,7 +548,7 @@ TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
 
   auto current = world->getCollisionDetector();
   ASSERT_TRUE(current);
-  EXPECT_EQ(current->getType(), original->getType());
+  EXPECT_EQ(current->getTypeView(), original->getTypeView());
 }
 
 //==============================================================================
@@ -570,7 +570,7 @@ TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
   EXPECT_EQ(
-      world->getCollisionDetector()->getType(),
+      world->getCollisionDetector()->getTypeView(),
       collision::FCLCollisionDetector::getStaticType());
 }
 
@@ -602,7 +602,7 @@ TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
   EXPECT_EQ(
-      world->getCollisionDetector()->getType(),
+      world->getCollisionDetector()->getTypeView(),
       collision::FCLCollisionDetector::getStaticType());
 }
 

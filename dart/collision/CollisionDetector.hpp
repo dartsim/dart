@@ -44,6 +44,7 @@
 
 #include <dart/dynamics/Fwd.hpp>
 
+#include <dart/common/Diagnostics.hpp>
 #include <dart/common/Factory.hpp>
 
 #include <dart/Export.hpp>
@@ -94,13 +95,19 @@ public:
 
   /// Return collision detection engine type as a std::string.
   /// Note: kept for gz-physics compatibility; prefer getTypeView().
-  virtual const std::string& getType() const = 0;
+  [[deprecated(
+      "Use getTypeView() for string_view access.")]] virtual const std::string&
+  getType() const = 0;
 
+  // TODO(DART 8): Rename getTypeView() to getType() and drop the compatibility
+  // string-returning overload.
   /// Return collision detection engine type as a std::string_view.
+  DART_SUPPRESS_DEPRECATED_BEGIN
   [[nodiscard]] std::string_view getTypeView() const
   {
     return getType();
   }
+  DART_SUPPRESS_DEPRECATED_END
 
   /// Create a collision group
   virtual std::unique_ptr<CollisionGroup> createCollisionGroup() = 0;
