@@ -83,10 +83,10 @@ public:
       const override;
 
   // Documentation inherited
-  std::string_view getType() const override;
+  const std::string& getType() const override;
 
   /// Get collision detector type for this class
-  static std::string_view getStaticType();
+  static const std::string& getStaticType();
 
   // Documentation inherited
   std::unique_ptr<CollisionGroup> createCollisionGroup() override;

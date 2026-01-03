@@ -51,6 +51,7 @@
 #include <Eigen/Dense>
 
 #include <map>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -91,8 +92,15 @@ public:
   virtual std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
       const = 0;
 
-  /// Return collision detection engine type as a std::string
-  virtual std::string_view getType() const = 0;
+  /// Return collision detection engine type as a std::string.
+  /// Note: kept for gz-physics compatibility; prefer getTypeView().
+  virtual const std::string& getType() const = 0;
+
+  /// Return collision detection engine type as a std::string_view.
+  [[nodiscard]] std::string_view getTypeView() const
+  {
+    return getType();
+  }
 
   /// Create a collision group
   virtual std::unique_ptr<CollisionGroup> createCollisionGroup() = 0;

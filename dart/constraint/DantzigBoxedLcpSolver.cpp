@@ -46,22 +46,22 @@ namespace constraint {
 
 namespace {
 
-std::string_view dantzigBoxedLcpType()
+const std::string& dantzigBoxedLcpType()
 {
-  static constexpr std::string_view type = "DantzigBoxedLcpSolver";
+  static const std::string type = "DantzigBoxedLcpSolver";
   return type;
 }
 
 } // namespace
 
 //==============================================================================
-std::string_view DantzigBoxedLcpSolver::getType() const
+const std::string& DantzigBoxedLcpSolver::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-std::string_view DantzigBoxedLcpSolver::getStaticType()
+const std::string& DantzigBoxedLcpSolver::getStaticType()
 {
   return dantzigBoxedLcpType();
 }

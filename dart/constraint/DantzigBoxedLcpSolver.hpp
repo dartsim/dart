@@ -45,9 +45,9 @@ class DART_API DART_DEPRECATED("8.0") DantzigBoxedLcpSolver
   : public BoxedLcpSolver
 {
 public:
-  std::string_view getType() const override;
+  const std::string& getType() const override;
 
-  static std::string_view getStaticType();
+  static const std::string& getStaticType();
 
   bool solve(
       int n,

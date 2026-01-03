@@ -88,15 +88,15 @@ DARTCollisionDetector::cloneWithoutCollisionObjects() const
 }
 
 //==============================================================================
-std::string_view DARTCollisionDetector::getType() const
+const std::string& DARTCollisionDetector::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-std::string_view DARTCollisionDetector::getStaticType()
+const std::string& DARTCollisionDetector::getStaticType()
 {
-  static constexpr std::string_view type = "dart";
+  static const std::string type = "dart";
   return type;
 }
 

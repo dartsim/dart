@@ -37,6 +37,7 @@
 #include <dart/common/Deprecated.hpp>
 
 #include <string>
+#include <string_view>
 
 namespace dart {
 namespace constraint {
@@ -48,7 +49,13 @@ class DART_DEPRECATED("8.0") BoxedLcpSolver
 public:
   virtual ~BoxedLcpSolver() = default;
 
-  virtual std::string_view getType() const = 0;
+  /// Note: kept for gz-physics compatibility; prefer getTypeView().
+  virtual const std::string& getType() const = 0;
+
+  [[nodiscard]] std::string_view getTypeView() const
+  {
+    return getType();
+  }
 
   virtual bool solve(
       int n,
