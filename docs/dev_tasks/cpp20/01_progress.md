@@ -90,3 +90,4 @@
   world skeleton cleanup paths.
 - Phase 8: convert index/iterator loops to range-based loops in
   `ConstrainedGroup` and `World` skeleton cleanup.
+- Phase 8: use `std::erase_if` for line segment connection removal.
