@@ -38,8 +38,6 @@
 
 #include "dart/gui/ImGuiHandler.hpp"
 
-#include <algorithm>
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/gui/ImGuiWidget.hpp"

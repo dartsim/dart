@@ -46,8 +46,7 @@ namespace math {
 
 //==============================================================================
 template <typename T>
-static T getVectorObjectIfAvailable(
-    std::size_t _idx, std::span<const T> _vec)
+static T getVectorObjectIfAvailable(std::size_t _idx, std::span<const T> _vec)
 {
   // TODO: Should we have an out-of-bounds assertion or throw here?
   if (_idx < _vec.size())

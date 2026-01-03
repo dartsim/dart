@@ -2343,8 +2343,7 @@ void Skeleton::registerNode(
   if (INVALID_INDEX == _index) {
     // If this Node believes its index is invalid, then it should not exist
     // anywhere in the vector
-    DART_ASSERT(
-        std::ranges::find(nodes, _newNode) == nodes.end());
+    DART_ASSERT(std::ranges::find(nodes, _newNode) == nodes.end());
 
     nodes.push_back(_newNode);
     _index = nodes.size() - 1;
@@ -3889,8 +3888,7 @@ void Skeleton::updateBiasImpulse(
 
   // This skeleton should contain _bodyNode
   DART_ASSERT(
-      std::ranges::find(mSoftBodyNodes, _softBodyNode)
-      != mSoftBodyNodes.end());
+      std::ranges::find(mSoftBodyNodes, _softBodyNode) != mSoftBodyNodes.end());
 
 #if !defined(NDEBUG)
   // All the constraint impulse should be zero
