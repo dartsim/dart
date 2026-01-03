@@ -28,7 +28,7 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
-add_library(dart8
+add_library(dart-simulation-experimental
   body/rigid_body.cpp
   common/diagnostics.cpp
   common/exceptions.cpp
@@ -56,27 +56,28 @@ add_library(dart8
 include(dart8_defs)
 include(dart8_dependencies)
 
-target_include_directories(dart8
+target_include_directories(dart-simulation-experimental
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
 )
 
-target_compile_features(dart8 PUBLIC cxx_std_20)
+target_compile_features(dart-simulation-experimental PUBLIC cxx_std_20)
 
-target_link_libraries(dart8
+target_link_libraries(dart-simulation-experimental
   PUBLIC
     Eigen3::Eigen
     EnTT::EnTT
     spdlog::spdlog
 )
 
-target_compile_definitions(dart8
+target_compile_definitions(dart-simulation-experimental
   PUBLIC
     DART_BUILD_SHARED=${DART_BUILD_SHARED_VALUE}
   PRIVATE
     DART_BUILDING_DART8
 )
 
-add_library(dart8::dart8 ALIAS dart8)
+add_library(dart8 ALIAS dart-simulation-experimental)
+add_library(dart8::dart8 ALIAS dart-simulation-experimental)
