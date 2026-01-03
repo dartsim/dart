@@ -412,13 +412,20 @@ def test_vm(args):
         build_targets = DEFAULT_BUILD_TARGETS
     build_targets_str = " ".join(build_targets)
     test_regex = os.getenv("FREEBSD_VM_TEST_REGEX", DEFAULT_TEST_REGEX).strip()
+    exclude_regex = os.getenv("FREEBSD_VM_TEST_EXCLUDE_REGEX", "").strip()
+    extra_ctest_args = shlex.split(os.getenv("FREEBSD_VM_CTEST_ARGS", ""))
+    ctest_args = ["--output-on-failure"]
+    if exclude_regex:
+        ctest_args.extend(["-E", exclude_regex])
+    ctest_args.extend(extra_ctest_args)
+    ctest_arg_str = " ".join(shlex.quote(arg) for arg in ctest_args)
     if test_regex:
         test_command = (
             f"ctest --test-dir {build_dir} -R {shlex.quote(test_regex)} "
-            "--output-on-failure"
+            f"{ctest_arg_str}"
         )
     else:
-        test_command = f"ctest --test-dir {build_dir} --output-on-failure"
+        test_command = f"ctest --test-dir {build_dir} {ctest_arg_str}"
 
     command = (
         f"cd {remote_dir} && "
