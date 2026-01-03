@@ -126,7 +126,7 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
 //==============================================================================
 bool Defaults::hasDefault(std::string_view className) const
 {
-  return mDefaultMap.contains(className);
+  return static_cast<bool>(getDefault(className));
 }
 
 //==============================================================================
