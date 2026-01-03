@@ -37,7 +37,8 @@ jobs:
         env:
           FREEBSD_VM_CPUS: "2"
           FREEBSD_VM_MEM: "4096"
-          FREEBSD_VM_TEST_REGEX: "Issue838|ForwardKinematics"
+          FREEBSD_VM_BUILD_TARGETS: "test_Issue838 test_ForwardKinematics test_Collision test_DartLoader"
+          FREEBSD_VM_TEST_REGEX: "^test_(Issue838|ForwardKinematics|Collision|DartLoader)$"
         run: pixi run freebsd-test
 
       - name: Stop FreeBSD VM

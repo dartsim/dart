@@ -15,7 +15,13 @@ DEFAULT_MEM = 4096
 DEFAULT_USER = "freebsd"
 DEFAULT_REMOTE_DIR = None
 DEFAULT_BUILD_DIR = "build/freebsd/cpp/Release"
-DEFAULT_TEST_REGEX = "Issue838|ForwardKinematics"
+DEFAULT_BUILD_TARGETS = [
+    "test_Issue838",
+    "test_ForwardKinematics",
+    "test_Collision",
+    "test_DartLoader",
+]
+DEFAULT_TEST_REGEX = "^test_(Issue838|ForwardKinematics|Collision|DartLoader)$"
 DEFAULT_PORTS_PATCH_DIR = "docker/freebsd/ports-patches"
 DEFAULT_PACKAGES = [
     "assimp",
@@ -375,13 +381,21 @@ def test_vm(args):
     ]
     cmake_args.extend(shlex.split(os.getenv("FREEBSD_VM_CMAKE_ARGS", "")))
     cmake_arg_str = " ".join(cmake_args)
+    build_targets_env = os.getenv("FREEBSD_VM_BUILD_TARGETS")
+    build_targets = (
+        shlex.split(build_targets_env)
+        if build_targets_env
+        else DEFAULT_BUILD_TARGETS
+    )
+    build_targets_str = " ".join(build_targets)
     test_regex = os.getenv("FREEBSD_VM_TEST_REGEX", DEFAULT_TEST_REGEX)
+    test_regex_arg = shlex.quote(test_regex)
 
     command = (
         f"cd {remote_dir} && "
         f"cmake -G Ninja -S . -B {build_dir} {cmake_arg_str} && "
-        f"cmake --build {build_dir} --target test_Issue838 test_ForwardKinematics && "
-        f"ctest --test-dir {build_dir} -R '{test_regex}' --output-on-failure"
+        f"cmake --build {build_dir} --target {build_targets_str} && "
+        f"ctest --test-dir {build_dir} -R {test_regex_arg} --output-on-failure"
     )
     ssh_command(args, command, user=args.user)
 
