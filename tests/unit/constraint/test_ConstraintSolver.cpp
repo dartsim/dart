@@ -288,6 +288,18 @@ TEST(ConstraintSolver, SecondarySolverUsedWhenPrimaryFails)
 }
 
 //==============================================================================
+TEST(ConstraintSolver, RemoveSkeletonErasesEntry)
+{
+  constraint::ConstraintSolver solver;
+  auto skeleton = dynamics::Skeleton::create("dummy");
+  solver.addSkeleton(skeleton);
+
+  ASSERT_EQ(solver.getSkeletons().size(), 1u);
+  solver.removeSkeleton(skeleton);
+  EXPECT_EQ(solver.getSkeletons().size(), 0u);
+}
+
+//==============================================================================
 TEST(ConstraintSolver, SecondarySolverUsedWhenPrimaryReturnsNan)
 {
   constraint::ConstraintSolver solver;

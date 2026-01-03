@@ -287,6 +287,28 @@ TEST(World, AddingAndRemovingSkeletons)
 }
 
 //==============================================================================
+TEST(World, RemoveSkeletonAndAllSkeletons)
+{
+  WorldPtr world = World::create();
+
+  SkeletonPtr skeleton1 = Skeleton::create("skeleton1");
+  skeleton1->createJointAndBodyNodePair<RevoluteJoint>();
+
+  SkeletonPtr skeleton2 = Skeleton::create("skeleton2");
+  skeleton2->createJointAndBodyNodePair<RevoluteJoint>();
+
+  world->addSkeleton(skeleton1);
+  world->addSkeleton(skeleton2);
+
+  world->removeSkeleton(skeleton1);
+  EXPECT_FALSE(world->hasSkeleton(skeleton1));
+
+  const auto removed = world->removeAllSkeletons();
+  EXPECT_EQ(removed.size(), 1u);
+  EXPECT_EQ(world->getNumSkeletons(), 0u);
+}
+
+//==============================================================================
 TEST(World, Cloning)
 {
   // Seed random generator for deterministic tests
