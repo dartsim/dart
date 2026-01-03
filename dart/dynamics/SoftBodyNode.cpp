@@ -54,18 +54,19 @@ namespace detail {
 
 //==============================================================================
 SoftBodyNodeUniqueProperties::SoftBodyNodeUniqueProperties(
-    double _Kv,
-    double _Ke,
-    double _DampCoeff,
-    const std::vector<PointMass::Properties>& _points,
-    const std::vector<Eigen::Vector3i>& _faces)
-  : mKv(_Kv),
-    mKe(_Ke),
-    mDampCoeff(_DampCoeff),
-    mPointProps(_points),
-    mFaces(_faces)
+    double kv,
+    double ke,
+    double dampCoeff,
+    std::span<const PointMass::Properties> points,
+    std::span<const Eigen::Vector3i> faces)
+  : mKv(kv), mKe(ke), mDampCoeff(dampCoeff), mPointProps(), mFaces()
 {
-  // Do nothing
+  if (!points.empty()) {
+    mPointProps.assign(points.begin(), points.end());
+  }
+  if (!faces.empty()) {
+    mFaces.assign(faces.begin(), faces.end());
+  }
 }
 
 //==============================================================================

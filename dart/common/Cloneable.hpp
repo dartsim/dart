@@ -292,7 +292,7 @@ public:
   CloneableVector() = default;
 
   /// Construct from a regular vector
-  CloneableVector(const std::vector<T>& regularVector);
+  CloneableVector(std::span<const T> regularVector);
 
   /// Construct from a regular vector using move semantics
   CloneableVector(std::vector<T>&& regularVector);

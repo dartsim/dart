@@ -81,7 +81,7 @@ void CollisionGroup::addShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 
 //==============================================================================
 void CollisionGroup::addShapeFrames(
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
+    std::span<const dynamics::ShapeFrame* const> shapeFrames)
 {
   for (const auto& shapeFrame : shapeFrames)
     addShapeFrame(shapeFrame);
@@ -139,7 +139,7 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 
 //==============================================================================
 void CollisionGroup::removeShapeFrames(
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
+    std::span<const dynamics::ShapeFrame* const> shapeFrames)
 {
   for (const auto& shapeFrame : shapeFrames)
     removeShapeFrame(shapeFrame);

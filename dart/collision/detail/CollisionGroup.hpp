@@ -56,7 +56,7 @@ void CollisionGroup::addShapeFramesOf(
 //==============================================================================
 template <typename... Others>
 void CollisionGroup::addShapeFramesOf(
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames,
+    std::span<const dynamics::ShapeFrame* const> shapeFrames,
     const Others*... others)
 {
   addShapeFrames(shapeFrames);
@@ -175,7 +175,7 @@ void CollisionGroup::removeShapeFramesOf(
 //==============================================================================
 template <typename... Others>
 void CollisionGroup::removeShapeFramesOf(
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames,
+    std::span<const dynamics::ShapeFrame* const> shapeFrames,
     const Others*... others)
 {
   removeShapeFrames(shapeFrames);

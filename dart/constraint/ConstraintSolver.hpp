@@ -228,7 +228,7 @@ public:
 protected:
   /// Solve constrained group with the selected phase.
   void solveConstrainedGroupInternal(
-      const std::vector<ConstraintBasePtr>& constraints, ConstraintPhase phase);
+      std::span<const ConstraintBasePtr> constraints, ConstraintPhase phase);
 
   /// Solve constrained groups for split impulse position correction.
   void solvePositionConstrainedGroups();

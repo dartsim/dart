@@ -60,7 +60,7 @@ protected:
 
   // Documentation inherited
   void addCollisionObjectsToEngine(
-      const std::vector<CollisionObject*>& collObjects) override;
+      std::span<CollisionObject* const> collObjects) override;
 
   // Documentation inherited
   void removeCollisionObjectFromEngine(CollisionObject* object) override;

@@ -847,7 +847,7 @@ bool ConstraintSolver::isSplitImpulseEnabled() const
 
 //==============================================================================
 void ConstraintSolver::solveConstrainedGroupInternal(
-    const std::vector<ConstraintBasePtr>& constraints, ConstraintPhase phase)
+    std::span<const ConstraintBasePtr> constraints, ConstraintPhase phase)
 {
   DART_PROFILE_SCOPED;
 

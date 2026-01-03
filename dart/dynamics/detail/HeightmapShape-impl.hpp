@@ -94,9 +94,7 @@ auto HeightmapShape<S>::getScale() const -> const Vector3&
 //==============================================================================
 template <typename S>
 void HeightmapShape<S>::setHeightField(
-    const std::size_t& width,
-    const std::size_t& depth,
-    const std::vector<S>& heights)
+    std::size_t width, std::size_t depth, std::span<const S> heights)
 {
   DART_ASSERT(heights.size() == width * depth);
   if ((width * depth) != heights.size()) {

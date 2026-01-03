@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/Shape.hpp>
 
+#include <span>
+
 namespace dart {
 namespace dynamics {
 
@@ -99,9 +101,7 @@ public:
   /// the minimum height value is -100, the lowest terrain point will be -100,
   /// times the z scale to be applied).
   void setHeightField(
-      const std::size_t& width,
-      const std::size_t& depth,
-      const std::vector<S>& heights);
+      std::size_t width, std::size_t depth, std::span<const S> heights);
 
   /// Sets the height field.
   ///

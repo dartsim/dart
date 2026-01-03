@@ -104,7 +104,7 @@ template <
     std::size_t (Owner::*getNumObjects)() const,
     Object* (Owner::*getObject)(std::size_t),
     void (ObjectBase::*setData)(const Data&)>
-void setAllMemberObjectData(Owner* owner, const std::vector<Data>& data)
+void setAllMemberObjectData(Owner* owner, std::span<const Data> data)
 {
   if (!owner) {
     DART_ERROR(
@@ -2773,9 +2773,9 @@ std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
 }
 
 //==============================================================================
-void Skeleton::receiveBodyNodeTree(const std::vector<BodyNode*>& _tree)
+void Skeleton::receiveBodyNodeTree(std::span<BodyNode* const> tree)
 {
-  for (BodyNode* bn : _tree)
+  for (BodyNode* bn : tree)
     registerBodyNode(bn);
 }
 
