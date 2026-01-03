@@ -413,7 +413,12 @@ def test_vm(args):
     ssh_command(args, command, user=args.user)
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Manage FreeBSD VM via Docker.")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Manage FreeBSD VM via Docker. Syncs the local repo into the VM and "
+            "builds that copy (pkg installs deps only)."
+        )
+    )
     parser.add_argument("--image", default=DEFAULT_IMAGE, help="Docker image tag.")
     parser.add_argument("--container", default=DEFAULT_CONTAINER, help="Container name.")
     parser.add_argument("--vm-dir", default=str(repo_root() / "build" / "freebsd-vm"))
