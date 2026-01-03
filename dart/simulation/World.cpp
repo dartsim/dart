@@ -501,9 +501,7 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
             "skeleton '{}'.",
             mName,
             _skeleton->getName());
-      } else if (
-          mEcsData->skeletonEntities.find(key)
-          == mEcsData->skeletonEntities.end()) {
+      } else if (!mEcsData->skeletonEntities.contains(key)) {
         const auto entity = mEcsData->entityManager.create();
         mEcsData->skeletonEntities.emplace(key, entity);
         mEcsData->entityManager.emplace<comps::LegacySkeleton>(

@@ -137,9 +137,7 @@ bool UnorderedPairs<T>::contains(const T* left, const T* right) const
   if (foundLeft) {
     auto& associatedRights = resultLeft->second;
 
-    const auto resultRight = associatedRights.find(greater);
-    const bool foundRight = (resultRight != associatedRights.end());
-    if (foundRight)
+    if (associatedRights.contains(greater))
       return true;
   }
 
