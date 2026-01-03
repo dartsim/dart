@@ -7,9 +7,10 @@
   default, backend-selection APIs are deprecated, and examples/docs are
   migrated.
 - Current focus: remove legacy detector implementation paths, keep adapter-only compatibility, and stabilize remaining test coverage gaps.
-- Latest local runs: `pixi run build-tests` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_Distance` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R INTEGRATION_collision_PrimitiveContactMatrix` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R INTEGRATION_simulation_MimicConstraint` passes with `MimicConstraint.TracksReferenceLongRun` skipped; `pixi run -e gazebo test-gz` fails in common collision/joint features with low contact counts and a follow-on crash.
+- Latest local runs: `pixi run build-tests` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_Distance` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R INTEGRATION_collision_PrimitiveContactMatrix` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R INTEGRATION_simulation_MimicConstraint` passes with `MimicConstraint.TracksReferenceLongRun` skipped; `pixi run -e gazebo test-gz` fails in `COMMON_TEST_collisions_dartsim`, `COMMON_TEST_detachable_joint_dartsim`, `COMMON_TEST_joint_features_dartsim`, and `COMMON_TEST_simulation_features_dartsim` (segfault), with joint feature velocity mismatches and low contact counts in simulation features.
 - Tests now use the built-in detector; backend-specific test files are replaced with skip stubs where shapes are unsupported (heightmap, mesh, capsule, convex mesh).
 - Re-ran `pixi run build-tests` after fixing adapter CMake file lists; passes.
+- Integration logs warn about unsupported ellipsoid and cone shapes falling back to generated meshes.
 - Fixed adapter CMake file lists to use absolute paths and removed unused collision config flags.
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Raycast baseline (Release): Closest 32=1.90us, 128=7.54us, 512=32.0us; AllHits 32=2.18us, 128=8.59us, 512=38.0us.

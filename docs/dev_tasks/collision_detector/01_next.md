@@ -100,13 +100,13 @@
 - Moved core engine implementation files into `dart/collision/dart/engine` and updated includes to use the engine path.
 - Renamed adapter file names to `DartCollision*` and updated includes to match the new paths.
 - Gated DART raycast behind `DARTCollisionDetector::setRaycastEnabled` to keep the gazebo ray intersection expectations unchanged; DART raycast tests and benchmarks enable it explicitly.
-- Latest `pixi run -e gazebo test-gz` fails in common collision/joint features tests with low contact counts and a follow-on crash; missing shape support and contact coverage remain.
+- Latest `pixi run -e gazebo test-gz` fails in `COMMON_TEST_collisions_dartsim`, `COMMON_TEST_detachable_joint_dartsim`, `COMMON_TEST_joint_features_dartsim`, and `COMMON_TEST_simulation_features_dartsim` (segfault), with joint feature velocity mismatches and low contact counts; missing shape support and contact coverage remain.
 - Fixed CI build issues by adding an out-of-line `DARTCollisionDetector` destructor, updating distance filter tests to use shared_ptrs, and formatting the engine file.
 - Fixed plane AABB handling to avoid NaNs and restored single-group distance result ordering to match group insertion order.
 - Added axis-aligned distance paths for box-box, cylinder-box, and parallel cylinder-cylinder cases, plus plane-aligned nearest point selection for box-plane, sphere-plane, and cylinder-plane.
 - Updated ellipsoid-as-sphere core radius to use diameters.
 - Fixed box inside-hit raycast normal/fraction selection.
-- Latest local runs: `pixi run build-tests` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_Distance` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R INTEGRATION_collision_PrimitiveContactMatrix` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R INTEGRATION_simulation_MimicConstraint` passes with `MimicConstraint.TracksReferenceLongRun` skipped.
+- Latest local runs: `pixi run build-tests` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_collision_Distance` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R INTEGRATION_collision_PrimitiveContactMatrix` passes; `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R INTEGRATION_simulation_MimicConstraint` passes with `MimicConstraint.TracksReferenceLongRun` skipped; `pixi run -e gazebo test-gz` fails in `COMMON_TEST_collisions_dartsim`, `COMMON_TEST_detachable_joint_dartsim`, `COMMON_TEST_joint_features_dartsim`, and `COMMON_TEST_simulation_features_dartsim` (segfault), with joint feature velocity mismatches and low contact counts.
 - Captured raycast benchmark baseline via `pixi run bm bm_raycast_dart -- --benchmark_filter=BM_RaycastDart` (CPU scaling enabled; results may be noisy).
 - Added tilted plane nearest-point coverage for sphere-plane and cylinder-plane distances.
 - Added tilted plane offset coverage for cylinder-plane nearest points.
