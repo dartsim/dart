@@ -13,10 +13,6 @@ endif()
 dart_find_package(fmt)
 dart_check_required_package(fmt "libfmt")
 
-# EnTT
-dart_find_package(EnTT)
-dart_check_required_package(EnTT "EnTT")
-
 # Eigen
 dart_find_package(Eigen3)
 dart_check_required_package(EIGEN3 "eigen3")

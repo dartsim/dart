@@ -87,8 +87,6 @@ msgstr "패키징 현황"
 #~ msgid "Add the DART PPA to your system:"
 #~ msgstr "시스템에 DART PPA를 추가하세요:"
 
-#~ msgid "Install the `libdart8-all-dev-nightly` package:"
-#~ msgstr "`libdart8-all-dev-nightly` 패키지를 설치하세요:"
 
 #~ msgid "macOS"
 #~ msgstr "macOS"

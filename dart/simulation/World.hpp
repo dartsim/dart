@@ -41,7 +41,6 @@
 
 #include <dart/simulation/Fwd.hpp>
 #include <dart/simulation/Recording.hpp>
-#include <dart/simulation/solver/WorldSolver.hpp>
 
 #include <dart/constraint/Fwd.hpp>
 
@@ -61,8 +60,6 @@
 
 #include <Eigen/Dense>
 
-#include <map>
-#include <memory>
 #include <set>
 #include <string>
 #include <utility>
@@ -71,26 +68,13 @@
 namespace dart {
 namespace simulation {
 
-namespace detail {
-struct WorldEcsAccess;
-} // namespace detail
-
 /// Available collision detector backends for a World.
-enum class CollisionDetectorType : int
+enum class CollisionDetectorType
 {
   Dart,
   Fcl,
   Bullet,
   Ode,
-};
-
-/// Controls how World dispatches solver stepping each frame.
-enum class SolverSteppingMode : int
-{
-  /// Step all enabled solvers in registration order.
-  AllEnabledSolvers,
-  /// Step only the active rigid solver, then sync other enabled solvers.
-  ActiveRigidSolverOnly,
 };
 
 /// Configuration bundle used when constructing a World.
@@ -336,21 +320,6 @@ public:
   /// Get recording
   Recording* getRecording();
 
-  /// Sets which rigid solver is considered active.
-  ///
-  /// When SolverSteppingMode::ActiveRigidSolverOnly is selected, only the
-  /// active solver will receive step() calls.
-  bool setActiveRigidSolver(RigidSolverType type);
-
-  /// Returns which rigid solver type is currently active.
-  RigidSolverType getActiveRigidSolverType() const;
-
-  /// Controls how World steps the registered solvers.
-  void setSolverSteppingMode(SolverSteppingMode mode);
-
-  /// Returns the current solver stepping mode.
-  SolverSteppingMode getSolverSteppingMode() const;
-
   /// \{ @name Iterations
 
   /// Iterates all the Skeletons and invokes the callback function.
@@ -416,79 +385,12 @@ public:
   /// \}
 
 protected:
-  friend struct detail::WorldEcsAccess;
-
   /// Register when a Skeleton's name is changed
   void handleSkeletonNameChange(
       const dynamics::ConstMetaSkeletonPtr& _skeleton);
 
   /// Register when a SimpleFrame's name is changed
   void handleSimpleFrameNameChange(const dynamics::Entity* _entity);
-
-  WorldSolver* getConstraintCapableSolver();
-  const WorldSolver* getConstraintCapableSolver() const;
-  WorldSolver* getCollisionCapableSolver();
-  const WorldSolver* getCollisionCapableSolver() const;
-
-  //--------------------------------------------------------------------------
-  // Solver & ECS internals
-  //--------------------------------------------------------------------------
-
-  /// Adds a solver to this world, taking ownership.
-  WorldSolver* addSolver(std::unique_ptr<WorldSolver> solver);
-
-  /// Adds a solver to this world with an initial enabled state.
-  ///
-  /// Disabled solvers still receive structural notifications (e.g., skeleton
-  /// added/removed), but they are skipped when stepping and when resolving
-  /// World APIs that require a solver backend.
-  WorldSolver* addSolver(std::unique_ptr<WorldSolver> solver, bool enabled);
-
-  /// Returns the number of solvers registered with this world.
-  std::size_t getNumSolvers() const;
-
-  /// Returns the indexed solver.
-  WorldSolver* getSolver(std::size_t index);
-
-  /// Returns the indexed solver (const).
-  const WorldSolver* getSolver(std::size_t index) const;
-
-  /// Returns the index of the given solver, or getNumSolvers() if not found.
-  std::size_t getSolverIndex(const WorldSolver* solver) const;
-
-  /// Returns the first rigid solver matching the given type, or nullptr.
-  WorldSolver* getSolver(RigidSolverType type);
-
-  /// Returns the first rigid solver matching the given type, or nullptr.
-  const WorldSolver* getSolver(RigidSolverType type) const;
-
-  /// Returns the first solver with the given name, or nullptr.
-  WorldSolver* getSolver(const std::string& name);
-
-  /// Returns the first solver with the given name, or nullptr.
-  const WorldSolver* getSolver(const std::string& name) const;
-
-  /// Returns the active rigid solver, or nullptr if it is not registered.
-  WorldSolver* getActiveRigidSolver();
-
-  /// Returns the active rigid solver (const), or nullptr if it is not
-  /// registered.
-  const WorldSolver* getActiveRigidSolver() const;
-
-  /// Enables or disables a solver by index.
-  bool setSolverEnabled(std::size_t index, bool enabled);
-
-  /// Returns whether the indexed solver is enabled.
-  bool isSolverEnabled(std::size_t index) const;
-
-  /// Enables or disables a solver by pointer.
-  bool setSolverEnabled(WorldSolver* solver, bool enabled);
-
-  /// Returns whether the given solver is enabled.
-  bool isSolverEnabled(const WorldSolver* solver) const;
-
-  /// Moves a solver within the execution order.
-  bool moveSolver(std::size_t fromIndex, std::size_t toIndex);
 
   /// Name of this World
   std::string mName;
@@ -541,28 +443,11 @@ protected:
   /// Current simulation frame number
   int mFrame;
 
-  /// Recording buffer for baked states
+  /// Constraint solver
+  std::unique_ptr<constraint::ConstraintSolver> mConstraintSolver;
+
+  ///
   Recording* mRecording;
-
-private:
-  struct EcsData;
-  std::unique_ptr<EcsData> mEcsData;
-
-protected:
-  struct SolverEntry final
-  {
-    std::unique_ptr<WorldSolver> solver;
-    bool enabled{true};
-  };
-
-  /// Collection of solvers registered with the world.
-  std::vector<SolverEntry> mSolvers;
-
-  /// Solver stepping policy used by World::step().
-  SolverSteppingMode mSolverSteppingMode{SolverSteppingMode::AllEnabledSolvers};
-
-  /// Which rigid solver is considered active.
-  RigidSolverType mActiveRigidSolverType{RigidSolverType::ClassicSkeleton};
 
   //--------------------------------------------------------------------------
   // Signals

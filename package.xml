@@ -26,7 +26,6 @@
   <depend>bullet</depend>
   <depend>eigen</depend>
   <depend>libfcl-dev</depend>
-  <depend>libentt-dev</depend>
   <depend>liburdfdom-dev</depend>
   <depend>tinyxml2</depend>
   <depend>sdformat</depend>

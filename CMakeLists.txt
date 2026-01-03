@@ -113,7 +113,7 @@ set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSI
 # Already set above
 
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
-set(DART_PKG_EXTERNAL_DEPS "assimp, ccd, eigen3, entt, fcl, octomap")
+set(DART_PKG_EXTERNAL_DEPS "assimp, ccd, eigen3, fcl, octomap")
 set_property(GLOBAL PROPERTY DART_PKG_LINK_LIBS "")
 set_property(GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS "")
 set_property(GLOBAL PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS "")
@@ -175,8 +175,8 @@ endfunction()
 # Build options
 #===============================================================================
 
-# DART 8.0 options
-option(DART8_VERBOSE "Show detailed DART8 dependency information" OFF)
+# Simulation-experimental options
+option(DART_EXPERIMENTAL_VERBOSE "Show detailed simulation-experimental dependency information" OFF)
 
 if(MSVC)
   set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
@@ -269,7 +269,12 @@ dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY syst
 dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
-dart_option(DART_BUILD_DART8 "Build experimental DART8 library" OFF CATEGORY build)
+dart_option(
+  DART_BUILD_SIMULATION_EXPERIMENTAL
+  "Build experimental simulation module (dart::simulation::experimental)"
+  OFF
+  CATEGORY build
+)
 
 dart_configure_compiler_cache()
 
@@ -612,14 +617,8 @@ endif()
 
 add_subdirectory(dart)
 
-if(DART_BUILD_DART8)
-  add_subdirectory(dart8)
-
-  if(MSVC)
-    add_subdirectory(tests_dart8)
-  else()
-    add_subdirectory(tests_dart8 EXCLUDE_FROM_ALL)
-  endif()
+if(DART_BUILD_SIMULATION_EXPERIMENTAL)
+  add_subdirectory(dart/simulation/experimental)
 endif()
 
 set(DART_IN_SOURCE_BUILD TRUE)
@@ -635,10 +634,11 @@ if(TARGET dart)
       add_subdirectory(tests EXCLUDE_FROM_ALL)
     endif()
 
-    if(DART_BUILD_DART8)
-      if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests_dart8/CMakeLists.txt")
-        if(NOT TARGET dart8_tests)
-          add_custom_target(dart8_tests)
+    if(DART_BUILD_SIMULATION_EXPERIMENTAL)
+      if(NOT EXISTS
+         "${CMAKE_CURRENT_SOURCE_DIR}/tests/simulation/experimental/CMakeLists.txt")
+        if(NOT TARGET dart_experimental_tests)
+          add_custom_target(dart_experimental_tests)
         endif()
       endif()
     endif()

@@ -412,6 +412,10 @@ TEST(Signal, ConcurrentUsage)
     }
   });
 
+  while (raiseCount.load(std::memory_order_relaxed) == 0) {
+    std::this_thread::yield();
+  }
+
   std::vector<std::thread> workers;
   workers.reserve(kNumThreads);
   for (int t = 0; t < kNumThreads; ++t) {
