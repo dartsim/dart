@@ -37,6 +37,10 @@
   rely on `tests/benchmark/` for performance coverage.
 - Renamed `atlas_puppet`, `g1_puppet`, and `hubo_puppet` to `ik_atlas`,
   `ik_g1`, and `ik_hubo`.
+- Consolidate humanoid IK into a single `ik_humanoid` example with modular
+  robot implementations for Atlas, G1, and Hubo.
+- Removed `ik_atlas`, `ik_g1`, and `ik_hubo` example directories after
+  consolidation into `ik_humanoid`.
 
 ## Current Suggestions (Pending Decisions)
 
@@ -44,7 +48,6 @@
 
 - `boxes`: redundant with `hello_world`/`rigid_cubes`, README notes experimental,
   and it hard-codes Bullet.
-- `ik_hubo`: overlaps `ik_atlas`/`ik_g1`, large legacy example.
 - `coupler_constraint`: overlaps `mimic_pendulums`; keep the latter.
 - `joint_constraints`: overlaps `biped_stand`; keep the latter.
 - `simulation_event_handler`: very large, overlaps `empty`, `drag_and_drop`,

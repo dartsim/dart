@@ -1,3 +1,5 @@
+#include "g1.hpp"
+
 #include <dart/gui/All.hpp>
 #include <dart/gui/SupportPolygonVisual.hpp>
 
@@ -19,8 +21,6 @@
 #include <dart/All.hpp>
 #include <dart/io/Read.hpp>
 
-#include <CLI/CLI.hpp>
-
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -28,7 +28,6 @@
 #include <vector>
 
 #include <cstddef>
-#include <cstdlib>
 
 using namespace dart::common;
 using namespace dart::dynamics;
@@ -125,15 +124,6 @@ private:
   std::vector<std::shared_ptr<IkHandle>> mHandles;
 };
 
-struct Options
-{
-  std::string packageName = "g1_description";
-  std::string packageUri
-      = "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/"
-        "master/robots/g1_description";
-  std::string robotUri = "package://g1_description/g1_29dof.urdf";
-};
-
 std::optional<std::string> getLastPathSegment(std::string value)
 {
   if (value.empty())
@@ -198,57 +188,27 @@ std::optional<std::string> inferPackageNameFromPackageUri(
   return getLastPathSegment(packageUri);
 }
 
-Options parseCommandLine(int argc, char* argv[])
+void finalizeG1Options(
+    G1Options& options,
+    bool packageNameExplicit,
+    bool packageUriExplicit,
+    bool robotUriExplicit)
 {
-  Options options;
+  if (packageNameExplicit)
+    return;
 
-  CLI::App app(
-      "Download and drive inverse kinematics targets for the Unitree G1 "
-      "humanoid directly from upstream URDF resources.");
-
-  auto* packageUriOpt = app.add_option(
-      "-p,--package-uri",
-      options.packageUri,
-      "ROS package root used to resolve package:// URIs (supports file:// "
-      "and http(s)://).");
-
-  auto* robotUriOpt = app.add_option(
-      "-r,--robot-uri",
-      options.robotUri,
-      "URDF/SDF entry point to load (package://, file://, or http(s)://).");
-
-  auto* packageNameOpt = app.add_option(
-      "--package-name",
-      options.packageName,
-      "Override the ROS package name registered with the package URI.");
-
-  try {
-    app.parse(argc, argv);
-  } catch (const CLI::ParseError& e) {
-    std::exit(app.exit(e));
-  }
-
-  const bool packageNameExplicit = packageNameOpt->count() > 0;
-  const bool packageUriExplicit = packageUriOpt->count() > 0;
-  const bool robotUriExplicit = robotUriOpt->count() > 0;
-
-  if (!packageNameExplicit) {
-    if (robotUriExplicit) {
-      if (auto robotName = inferPackageNameFromRobotUri(options.robotUri))
-        options.packageName = *robotName;
-    } else if (packageUriExplicit) {
-      if (auto packageName = inferPackageNameFromPackageUri(options.packageUri))
-        options.packageName = *packageName;
-    } else if (
-        auto robotName = inferPackageNameFromRobotUri(options.robotUri)) {
+  if (robotUriExplicit) {
+    if (auto robotName = inferPackageNameFromRobotUri(options.robotUri))
       options.packageName = *robotName;
-    }
+  } else if (packageUriExplicit) {
+    if (auto packageName = inferPackageNameFromPackageUri(options.packageUri))
+      options.packageName = *packageName;
+  } else if (auto robotName = inferPackageNameFromRobotUri(options.robotUri)) {
+    options.packageName = *robotName;
   }
-
-  return options;
 }
 
-ResourceRetrieverPtr createResourceRetriever(const Options& options)
+ResourceRetrieverPtr createResourceRetriever(const G1Options& options)
 {
   auto local = std::make_shared<LocalResourceRetriever>();
   auto dartRetriever = std::make_shared<DartResourceRetriever>();
@@ -362,7 +322,7 @@ std::vector<std::shared_ptr<IkHandle>> setupIkHandles(
 }
 
 SkeletonPtr loadG1(
-    const Options& options, const ResourceRetrieverPtr& retriever)
+    const G1Options& options, const ResourceRetrieverPtr& retriever)
 {
   dart::io::ReadOptions readOptions;
   readOptions.resourceRetriever = retriever;
@@ -389,9 +349,8 @@ void enableDragAndDrop(dart::gui::Viewer& viewer, const SkeletonPtr& robot)
 
 } // namespace
 
-int main(int argc, char* argv[])
+int runG1(const G1Options& options)
 {
-  const Options options = parseCommandLine(argc, argv);
   auto retriever = createResourceRetriever(options);
 
   WorldPtr world = World::create();

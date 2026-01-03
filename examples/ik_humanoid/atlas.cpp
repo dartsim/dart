@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "atlas.hpp"
+
 #include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
@@ -43,6 +45,8 @@ using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::utils;
 using namespace dart::math;
+
+namespace {
 
 const double display_elevation = 0.05;
 
@@ -855,7 +859,9 @@ void enableDragAndDrops(dart::gui::Viewer& viewer, const SkeletonPtr& atlas)
   });
 }
 
-int main()
+} // namespace
+
+int runAtlas()
 {
   // Create and configure the physics world
   WorldPtr world = World::create();

@@ -97,7 +97,7 @@ The Python version uses dartpy bindings which have slightly different APIs:
 ## Related Examples
 
 - C++ version: `tutorials/tutorial_wholebody_ik/`
-- Interactive example: `examples/ik_atlas`
+- Interactive example: `examples/ik_humanoid`
 - Test suite: `python/tests/integration/test_atlas_ik.py`
 
 ## References

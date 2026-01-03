@@ -39,10 +39,9 @@
 
 ### 04 Control and IK
 
-- `ik_atlas`
+- `ik_humanoid`
 - `atlas_simbicon`
 - `biped_stand`
-- `ik_hubo`
 - `operational_space_control`
 - `vehicle`
 - `wam_ikfast`
@@ -50,7 +49,6 @@
 ### 05 IO and Models
 
 - `fetch`
-- `ik_g1`
 - `unified_loading`
 
 ### 06 Soft and Hybrid

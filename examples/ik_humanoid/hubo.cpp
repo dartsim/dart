@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "hubo.hpp"
+
 #include "dart/common/Macros.hpp"
 
 #include <dart/config.hpp>
@@ -47,6 +49,8 @@
 using namespace dart::math;
 using namespace dart::dynamics;
 using namespace dart::simulation;
+
+namespace {
 
 class RelaxedPosture : public dart::math::Function
 {
@@ -1398,7 +1402,9 @@ void setupWholeBodySolver(const SkeletonPtr& hubo)
   solver->setNumMaxIterations(5);
 }
 
-int main()
+} // namespace
+
+int runHubo()
 {
   dart::simulation::WorldPtr world(new dart::simulation::World);
 

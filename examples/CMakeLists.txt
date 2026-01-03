@@ -28,10 +28,9 @@ add_subdirectory(heightmap)
 add_subdirectory(rigid_shapes)
 
 # Control and IK examples
-add_subdirectory(ik_atlas)
+add_subdirectory(ik_humanoid)
 add_subdirectory(atlas_simbicon)
 add_subdirectory(biped_stand)
-add_subdirectory(ik_hubo)
 add_subdirectory(operational_space_control)
 add_subdirectory(vehicle)
 add_subdirectory(wam_ikfast)
@@ -39,7 +38,6 @@ add_subdirectory(wam_ikfast)
 # IO and models examples
 add_subdirectory(unified_loading)
 add_subdirectory(fetch)
-add_subdirectory(ik_g1)
 
 # Soft and hybrid examples
 add_subdirectory(hybrid_dynamics)

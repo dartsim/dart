@@ -555,7 +555,7 @@ dart/
 Examples are built in `build/.../bin/`:
 
 - `hello_world` - Basic DART usage
-- `ik_atlas` - Atlas robot control (IK)
+- `ik_humanoid` - Humanoid IK showcase (Atlas/G1/Hubo)
 - `atlas_simbicon` - Atlas robot with Simbicon controller
 - Various other examples...
 
@@ -646,7 +646,7 @@ pixi run check-lint-rst   # Check reStructuredText files
 
 ```bash
 pixi run ex-hello-world  # Run hello_world example
-pixi run ex-ik-atlas # Run ik_atlas example
+pixi run ex-ik-humanoid # Run ik_humanoid example
 pixi run ex-atlas-simbicon # Run atlas_simbicon example
 
 pixi run tu-biped        # Run biped tutorial

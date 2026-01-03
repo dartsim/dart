@@ -619,7 +619,7 @@ def main():
     support_visual = dart.gui.SupportPolygonVisual(atlas, DISPLAY_ELEVATION)
     viewer.addAttachment(support_visual)
 
-    # Add custom instructions for ik_atlas
+    # Add custom instructions for ik_humanoid (Atlas)
     viewer.addInstructionText(
         "Alt + Click:   Try to translate a body without changing its orientation\n"
     )
@@ -695,7 +695,7 @@ def main():
     print("  - Ctrl + Click: Rotate end effectors")
     print()
     print("For full keyboard control, use the C++ version:")
-    print("  build/default/cpp/Release/bin/ik_atlas")
+    print("  build/default/cpp/Release/bin/ik_humanoid --robot atlas")
     print("=" * 70)
     print("\nStarting viewer - Press Ctrl+C to exit or close the window...")
     viewer.run()
