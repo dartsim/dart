@@ -86,15 +86,15 @@ Joint* TranslationalJoint::clone() const
 }
 
 //==============================================================================
-const std::string& TranslationalJoint::getType() const
+std::string_view TranslationalJoint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& TranslationalJoint::getStaticType()
+std::string_view TranslationalJoint::getStaticType()
 {
-  static const std::string name = "TranslationalJoint";
+  static constexpr std::string_view name = "TranslationalJoint";
   return name;
 }
 

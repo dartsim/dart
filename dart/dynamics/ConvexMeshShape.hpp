@@ -56,10 +56,10 @@ public:
   ConvexMeshShape(const Vertices& vertices, const Triangles& triangles);
 
   /// Returns shape type.
-  const std::string& getType() const override;
+  std::string_view getType() const override;
 
   /// Returns static shape type.
-  static const std::string& getStaticType();
+  static std::string_view getStaticType();
 
   /// Returns the underlying convex mesh.
   const std::shared_ptr<TriMeshType>& getMesh() const;

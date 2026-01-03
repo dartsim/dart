@@ -51,15 +51,15 @@ SphereShape::~SphereShape()
 }
 
 //==============================================================================
-const std::string& SphereShape::getType() const
+std::string_view SphereShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& SphereShape::getStaticType()
+std::string_view SphereShape::getStaticType()
 {
-  static const std::string type("SphereShape");
+  static constexpr std::string_view type = "SphereShape";
   return type;
 }
 

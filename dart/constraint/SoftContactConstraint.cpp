@@ -306,15 +306,15 @@ SoftContactConstraint::SoftContactConstraint(
 SoftContactConstraint::~SoftContactConstraint() {}
 
 //==============================================================================
-const std::string& SoftContactConstraint::getType() const
+std::string_view SoftContactConstraint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& SoftContactConstraint::getStaticType()
+std::string_view SoftContactConstraint::getStaticType()
 {
-  static const std::string name = "SoftContactConstraint";
+  static constexpr std::string_view name = "SoftContactConstraint";
   return name;
 }
 

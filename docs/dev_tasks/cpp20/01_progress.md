@@ -10,6 +10,9 @@
 - Phase 8 PR: https://github.com/dartsim/dart/pull/2376 (merged)
 - Phase 7 PR: https://github.com/dartsim/dart/pull/2375 (merged; empty-span guard fix)
 - CI monitoring and merge handled by the user.
+- Phase 11 compatibility: keep `CollisionDetector`/`BoxedLcpSolver` `getType()`
+  returning `const std::string&`; added `getTypeView()` for
+  `std::string_view`.
 - Latest local validation: `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run test-all`; `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run -e gazebo test-gz` (passed).
 
 ## Completed

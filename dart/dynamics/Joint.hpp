@@ -50,6 +50,7 @@
 #include <memory>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace dart {
@@ -137,7 +138,7 @@ public:
   const std::string& getName() const;
 
   /// Gets a string representing the joint type
-  virtual const std::string& getType() const = 0;
+  virtual std::string_view getType() const = 0;
 
   /// Set actuator type. Switching types clears any cached commands so stale
   /// inputs do not leak across actuator modes.

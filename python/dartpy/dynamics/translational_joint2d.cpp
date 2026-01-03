@@ -32,10 +32,9 @@ void defTranslationalJoint2D(nb::module_& m)
           })
       .def(
           "getType",
-          [](const TranslationalJoint2D& self) -> const std::string& {
-            return self.getType();
-          },
-          nb::rv_policy::reference_internal)
+          [](const TranslationalJoint2D& self) {
+            return std::string(self.getType());
+          })
       .def("isCyclic", &TranslationalJoint2D::isCyclic, nb::arg("index"))
       .def(
           "setXYPlane",
@@ -66,12 +65,9 @@ void defTranslationalJoint2D(nb::module_& m)
           nb::arg("trans_axis1"),
           nb::arg("trans_axis2"),
           nb::arg("rename_dofs") = true)
-      .def_static(
-          "getStaticType",
-          []() -> const std::string& {
-            return TranslationalJoint2D::getStaticType();
-          },
-          nb::rv_policy::reference);
+      .def_static("getStaticType", []() {
+        return std::string(TranslationalJoint2D::getStaticType());
+      });
 
   registerPolymorphicCaster<dart::dynamics::Joint, TranslationalJoint2D>();
 }

@@ -61,10 +61,10 @@ public:
   ~HeightmapShape() override = default;
 
   // Documentation inherited.
-  const std::string& getType() const override;
+  std::string_view getType() const override;
 
   /// Returns shape type for this class
-  static const std::string& getStaticType();
+  static std::string_view getStaticType();
 
   /// @copydoc Shape::computeInertia()
   ///

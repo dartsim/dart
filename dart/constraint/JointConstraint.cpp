@@ -68,15 +68,15 @@ JointConstraint::JointConstraint(dynamics::Joint* joint)
 }
 
 //==============================================================================
-const std::string& JointConstraint::getType() const
+std::string_view JointConstraint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& JointConstraint::getStaticType()
+std::string_view JointConstraint::getStaticType()
 {
-  static const std::string name = "JointConstraint";
+  static constexpr std::string_view name = "JointConstraint";
   return name;
 }
 

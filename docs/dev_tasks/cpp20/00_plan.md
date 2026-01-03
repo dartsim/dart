@@ -52,6 +52,9 @@
   `std::string_view` backed by `static constexpr` data.
 - Update the `Castable` macros and type-name implementations consistently.
 - Isolate this phase because it is a broad API signature change.
+- Keep `CollisionDetector`/`BoxedLcpSolver` `getType()` returning
+  `const std::string&` for gz-physics compatibility; add `getTypeView()` for
+  `std::string_view` access.
 
 ### Phase 12: Optimization solver type strings
 

@@ -106,15 +106,15 @@ TranslationalJoint2D& TranslationalJoint2D::operator=(
 }
 
 //==============================================================================
-const std::string& TranslationalJoint2D::getType() const
+std::string_view TranslationalJoint2D::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& TranslationalJoint2D::getStaticType()
+std::string_view TranslationalJoint2D::getStaticType()
 {
-  static const std::string name = "TranslationalJoint2D";
+  static constexpr std::string_view name = "TranslationalJoint2D";
   return name;
 }
 

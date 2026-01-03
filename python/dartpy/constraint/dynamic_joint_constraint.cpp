@@ -80,16 +80,12 @@ void defDynamicJointConstraint(nb::module_& m)
           nb::keep_alive<1, 3>())
       .def(
           "getType",
-          [](const BallJointConstraint& self) -> const std::string& {
-            return self.getType();
-          },
-          nb::rv_policy::reference_internal)
-      .def_static(
-          "getStaticType",
-          []() -> const std::string& {
-            return BallJointConstraint::getStaticType();
-          },
-          nb::rv_policy::reference_internal);
+          [](const BallJointConstraint& self) {
+            return std::string(self.getType());
+          })
+      .def_static("getStaticType", []() {
+        return std::string(BallJointConstraint::getStaticType());
+      });
 
   nb::class_<RevoluteJointConstraint, DynamicJointConstraint>(
       m, "RevoluteJointConstraint")
@@ -128,16 +124,12 @@ void defDynamicJointConstraint(nb::module_& m)
           nb::keep_alive<1, 3>())
       .def(
           "getType",
-          [](const RevoluteJointConstraint& self) -> const std::string& {
-            return self.getType();
-          },
-          nb::rv_policy::reference_internal)
-      .def_static(
-          "getStaticType",
-          []() -> const std::string& {
-            return RevoluteJointConstraint::getStaticType();
-          },
-          nb::rv_policy::reference_internal);
+          [](const RevoluteJointConstraint& self) {
+            return std::string(self.getType());
+          })
+      .def_static("getStaticType", []() {
+        return std::string(RevoluteJointConstraint::getStaticType());
+      });
 
   nb::class_<WeldJointConstraint, DynamicJointConstraint>(
       m, "WeldJointConstraint")
@@ -170,16 +162,12 @@ void defDynamicJointConstraint(nb::module_& m)
           nb::rv_policy::reference_internal)
       .def(
           "getType",
-          [](const WeldJointConstraint& self) -> const std::string& {
-            return self.getType();
-          },
-          nb::rv_policy::reference_internal)
-      .def_static(
-          "getStaticType",
-          []() -> const std::string& {
-            return WeldJointConstraint::getStaticType();
-          },
-          nb::rv_policy::reference_internal);
+          [](const WeldJointConstraint& self) {
+            return std::string(self.getType());
+          })
+      .def_static("getStaticType", []() {
+        return std::string(WeldJointConstraint::getStaticType());
+      });
 }
 
 } // namespace dart::python_nb

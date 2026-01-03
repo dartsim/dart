@@ -49,15 +49,15 @@ PlaneShape::PlaneShape(
 }
 
 //==============================================================================
-const std::string& PlaneShape::getType() const
+std::string_view PlaneShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& PlaneShape::getStaticType()
+std::string_view PlaneShape::getStaticType()
 {
-  static const std::string type("PlaneShape");
+  static constexpr std::string_view type = "PlaneShape";
   return type;
 }
 
