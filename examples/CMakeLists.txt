@@ -29,7 +29,7 @@ add_subdirectory(rigid_shapes)
 
 # Control and IK examples
 add_subdirectory(ik_humanoid)
-add_subdirectory(atlas_simbicon)
+add_subdirectory(control_walking_humanoid)
 add_subdirectory(biped_stand)
 add_subdirectory(operational_space_control)
 add_subdirectory(vehicle)

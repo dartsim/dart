@@ -4,15 +4,15 @@ Gallery
 Built-in Examples
 -----------------
 
-Atlas Simbicon
-~~~~~~~~~~~~~~
+Humanoid Walking Control (Simbicon)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The *Atlas Simbicon* demo simulates `Atlas <http://www.bostondynamics.com/robot_Atlas.html>`_
 humanoid robot controlled by `Simbicon <http://www.cs.ubc.ca/~van/papers/Simbicon.htm>`_,
 which is a simple biped locomotion controller. This demo is a fully 3D
 simulation with articulated dynamics and rigid body collisions. This demo uses
 OpenSceneGraph for 3D rendering and ImGui for 2D on-screen buttons. The source
-code can be found in the `examples/osg/osgAtlasSimbicon <https://github.com/dartsim/dart/tree/b680dfa4dad11eeee4a7d5d1e0d621c9861a70d0/examples/atlas_simbicon>`_
+code can be found in the `examples/control_walking_humanoid <https://github.com/dartsim/dart/tree/main/examples/control_walking_humanoid>`_
 directory.
 
 The controller has three control modes: 'No Control', 'Short-Stride Walking',

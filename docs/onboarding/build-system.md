@@ -556,7 +556,7 @@ Examples are built in `build/.../bin/`:
 
 - `hello_world` - Basic DART usage
 - `ik_humanoid` - Humanoid IK showcase (Atlas/G1/Hubo)
-- `atlas_simbicon` - Atlas robot with Simbicon controller
+- `control_walking_humanoid` - Humanoid walking control (Simbicon)
 - Various other examples...
 
 ### Tutorial Executables
@@ -647,7 +647,7 @@ pixi run check-lint-rst   # Check reStructuredText files
 ```bash
 pixi run ex-hello-world  # Run hello_world example
 pixi run ex-ik-humanoid # Run ik_humanoid example
-pixi run ex-atlas-simbicon # Run atlas_simbicon example
+pixi run ex-control-walking-humanoid # Run control_walking_humanoid example
 
 pixi run tu-biped        # Run biped tutorial
 pixi run tu-collisions   # Run collisions tutorial

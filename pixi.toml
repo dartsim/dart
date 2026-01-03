@@ -814,9 +814,9 @@ ex-ik-humanoid = { depends-on = [
   ] },
 ] }
 
-ex-atlas-simbicon = { depends-on = [
+ex-control-walking-humanoid = { depends-on = [
   { task = "run-cpp-target", args = [
-    "atlas_simbicon",
+    "control_walking_humanoid",
   ] },
 ] }
 

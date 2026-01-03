@@ -18,7 +18,7 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         "target",
         nargs="?",
         default=None,
-        help="CMake target / example binary name (e.g., atlas_simbicon)",
+        help="CMake target / example binary name (e.g., control_walking_humanoid)",
     )
     parser.add_argument(
         "--build-type",
@@ -43,6 +43,13 @@ def _normalize_target(target: str) -> str:
     if target == "raylib_gui":
         print("NOTE: example `raylib_gui` was renamed to `raylib`.", file=sys.stderr)
         return "raylib"
+    if target == "atlas_simbicon":
+        print(
+            "NOTE: example `atlas_simbicon` was renamed to "
+            "`control_walking_humanoid`.",
+            file=sys.stderr,
+        )
+        return "control_walking_humanoid"
     return target
 
 

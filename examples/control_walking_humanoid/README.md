@@ -1,8 +1,8 @@
-# Atlas Simbicon Example
+# Humanoid Walking Control Example
 
 ## Summary
 
-- Goal: run a Simbicon-style controller on the Atlas model.
+- Goal: run a Simbicon-style walking controller on the Atlas model.
 - Concepts/APIs: gait controller, ImGui viewer controls.
 - Expected output: an Atlas model walking in an ImGui-driven OSG viewer.
 - Controls: use the ImGui panel; `--gui-scale` adjusts widget scaling.

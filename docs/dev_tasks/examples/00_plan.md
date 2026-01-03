@@ -42,6 +42,8 @@
 - Removed `ik_atlas`, `ik_g1`, and `ik_hubo` example directories after
   consolidation into `ik_humanoid`.
 - Moved humanoid robot implementations under `examples/ik_humanoid/robots/`.
+- Renamed `atlas_simbicon` to `control_walking_humanoid` to match the
+  feature-first naming pattern.
 
 ## Current Suggestions (Pending Decisions)
 
@@ -58,7 +60,7 @@
 ### Likely Removals (tighten supported scope)
 
 - `wam_ikfast`: huge and specialized; keeping implies full IKFast support.
-- `atlas_simbicon`: large controller stack; niche feature surface.
+- `control_walking_humanoid`: large controller stack; niche feature surface.
 - `lcp_solvers`: large solver diagnostics UI; keep only if this UI is in-scope.
 - `human_joint_limits`: custom constraint implementation; advanced.
 - `free_joint_cases`: advanced validation demo.

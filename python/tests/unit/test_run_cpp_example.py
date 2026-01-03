@@ -25,8 +25,18 @@ def test_normalize_target_deprecates_raylib_gui(run_cpp_example, capsys):
     assert "renamed to `raylib`" in captured.err
 
 
+def test_normalize_target_deprecates_atlas_simbicon(run_cpp_example, capsys):
+    assert (
+        run_cpp_example._normalize_target("atlas_simbicon")
+        == "control_walking_humanoid"
+    )
+    captured = capsys.readouterr()
+    assert "atlas_simbicon" in captured.err
+    assert "control_walking_humanoid" in captured.err
+
+
 def test_normalize_target_passthrough(run_cpp_example, capsys):
-    assert run_cpp_example._normalize_target("atlas_simbicon") == "atlas_simbicon"
+    assert run_cpp_example._normalize_target("ik_humanoid") == "ik_humanoid"
     assert capsys.readouterr().err == ""
 
 
@@ -35,7 +45,11 @@ def test_normalize_target_passthrough(run_cpp_example, capsys):
     [
         ("raylib", "dart_raylib", "raylib"),
         ("dart_raylib", "dart_raylib", "raylib"),
-        ("atlas_simbicon", "atlas_simbicon", "atlas_simbicon"),
+        (
+            "control_walking_humanoid",
+            "control_walking_humanoid",
+            "control_walking_humanoid",
+        ),
     ],
 )
 def test_resolve_build_and_binary(target, build_target, binary_name, run_cpp_example):
@@ -96,4 +110,3 @@ def test_ensure_target_requirements_noop_when_enabled(run_cpp_example, tmp_path,
     monkeypatch.setattr(run_cpp_example.subprocess, "run", fail_run)
 
     run_cpp_example._ensure_target_requirements(tmp_path, "raylib", {"EXAMPLE": "1"})
-

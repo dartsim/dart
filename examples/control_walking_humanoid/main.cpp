@@ -47,7 +47,7 @@
 
 int main(int argc, char* argv[])
 {
-  CLI::App app("Atlas Simbicon example");
+  CLI::App app("Humanoid walking control (Simbicon)");
   double guiScale = 1.0;
   app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
       ->check(CLI::PositiveNumber);
@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
   viewer->realize();
   osgViewer::Viewer::Windows windows;
   viewer->getWindows(windows);
-  windows.front()->setWindowName("Atlas Simbicon");
+  windows.front()->setWindowName("Humanoid Walking (Simbicon)");
 
   // Adjust the viewpoint of the Viewer
   viewer->getCameraManipulator()->setHomePosition(

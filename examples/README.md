@@ -40,7 +40,7 @@
 ### 04 Control and IK
 
 - `ik_humanoid`
-- `atlas_simbicon`
+- `control_walking_humanoid`
 - `biped_stand`
 - `operational_space_control`
 - `vehicle`
