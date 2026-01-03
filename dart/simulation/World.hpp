@@ -274,6 +274,10 @@ public:
   /// World::checkCollision().
   const collision::CollisionResult& getLastCollisionResult() const;
 
+  /// Fill contacts used to build constraints in the last step.
+  void getContactsUsedForConstraints(
+      std::vector<collision::Contact>& contacts) const;
+
   /// Sets the collision detector used by the world's constraint solver.
   void setCollisionDetector(
       const collision::CollisionDetectorPtr& collisionDetector);

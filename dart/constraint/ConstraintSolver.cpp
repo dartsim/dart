@@ -60,11 +60,82 @@
 #include <fmt/ostream.h>
 
 #include <algorithm>
+#include <functional>
+#include <limits>
 
 #include <cmath>
 
 namespace dart {
 namespace constraint {
+
+namespace {
+
+bool isContactValid(const collision::Contact& contact)
+{
+  if (collision::Contact::isZeroNormal(contact.normal)) {
+    // Skip this contact. This is because we assume that a contact with
+    // zero-length normal is invalid.
+    return false;
+  }
+
+  // If penetration depth is negative, then the collision isn't really
+  // happening and the contact point should be ignored.
+  // TODO(MXG): Investigate ways to leverage the proximity information of a
+  //            negative penetration to improve collision handling.
+  if (contact.penetrationDepth < 0.0)
+    return false;
+
+  return true;
+}
+
+struct PairKey
+{
+  collision::CollisionObject* first{nullptr};
+  collision::CollisionObject* second{nullptr};
+};
+
+struct PairKeyLess
+{
+  bool operator()(const PairKey& a, const PairKey& b) const
+  {
+    if (a.first != b.first)
+      return a.first < b.first;
+    return a.second < b.second;
+  }
+};
+
+PairKey makePairKey(
+    collision::CollisionObject* first, collision::CollisionObject* second)
+{
+  if (std::less<collision::CollisionObject*>()(second, first))
+    std::swap(first, second);
+
+  return PairKey{first, second};
+}
+
+bool isNormalWithinThreshold(
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    double normalThreshold,
+    double normalThresholdSquared)
+{
+  const double normASq = a.squaredNorm();
+  const double normBSq = b.squaredNorm();
+  if (normASq <= 0.0 || normBSq <= 0.0)
+    return false;
+
+  const double dot = a.dot(b);
+  if (normalThreshold >= 0.0) {
+    if (dot < 0.0)
+      return false;
+    return dot * dot >= normalThresholdSquared * normASq * normBSq;
+  }
+
+  const double denom = std::sqrt(normASq * normBSq);
+  return dot / denom >= normalThreshold;
+}
+
+} // namespace
 
 using namespace dynamics;
 
@@ -120,6 +191,8 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
   mCollisionGroup->subscribeTo(skeleton);
   mSkeletons.push_back(skeleton);
   mConstrainedGroups.reserve(mSkeletons.size());
+  mContactManifoldCache.reset();
+  mPersistentContacts.clear();
 }
 
 //==============================================================================
@@ -152,6 +225,8 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), skeleton), mSkeletons.end());
   mConstrainedGroups.reserve(mSkeletons.size());
+  mContactManifoldCache.reset();
+  mPersistentContacts.clear();
 }
 
 //==============================================================================
@@ -166,6 +241,8 @@ void ConstraintSolver::removeAllSkeletons()
 {
   mCollisionGroup->removeAllShapeFrames();
   mSkeletons.clear();
+  mContactManifoldCache.reset();
+  mPersistentContacts.clear();
 }
 
 //==============================================================================
@@ -228,6 +305,8 @@ ConstConstraintBasePtr ConstraintSolver::getConstraint(std::size_t index) const
 void ConstraintSolver::clearLastCollisionResult()
 {
   mCollisionResult.clear();
+  mContactManifoldCache.reset();
+  mPersistentContacts.clear();
 }
 
 //==============================================================================
@@ -262,6 +341,9 @@ void ConstraintSolver::setCollisionDetector(
 
   for (const auto& skeleton : mSkeletons)
     mCollisionGroup->addShapeFramesOf(skeleton.get());
+
+  mContactManifoldCache.reset();
+  mPersistentContacts.clear();
 }
 
 //==============================================================================
@@ -302,6 +384,114 @@ const collision::CollisionOption& ConstraintSolver::getCollisionOption() const
 }
 
 //==============================================================================
+void ConstraintSolver::setContactManifoldCacheOptions(
+    const ContactManifoldCacheOptions& options)
+{
+  const bool toggled = (mContactManifoldOptions.enabled != options.enabled);
+  mContactManifoldOptions = options;
+  if (toggled) {
+    mContactManifoldCache.reset();
+    mPersistentContacts.clear();
+  }
+}
+
+//==============================================================================
+const ContactManifoldCacheOptions&
+ConstraintSolver::getContactManifoldCacheOptions() const
+{
+  return mContactManifoldOptions;
+}
+
+//==============================================================================
+void ConstraintSolver::setContactManifoldCacheEnabled(bool enabled)
+{
+  if (mContactManifoldOptions.enabled == enabled)
+    return;
+
+  mContactManifoldOptions.enabled = enabled;
+  mContactManifoldCache.reset();
+  mPersistentContacts.clear();
+}
+
+//==============================================================================
+bool ConstraintSolver::isContactManifoldCacheEnabled() const
+{
+  return mContactManifoldOptions.enabled;
+}
+
+//==============================================================================
+std::size_t ConstraintSolver::getNumPersistentContacts() const
+{
+  return mPersistentContacts.size();
+}
+
+//==============================================================================
+std::size_t ConstraintSolver::getNumContactManifolds() const
+{
+  return mContactManifoldCache.getNumManifolds();
+}
+
+//==============================================================================
+std::size_t ConstraintSolver::getNumContactConstraints() const
+{
+  return mContactConstraints.size();
+}
+
+//==============================================================================
+std::size_t ConstraintSolver::getNumSoftContactConstraints() const
+{
+  return mSoftContactConstraints.size();
+}
+
+//==============================================================================
+void ConstraintSolver::getContactsUsedForConstraints(
+    std::vector<collision::Contact>& contacts) const
+{
+  contacts.clear();
+
+  if (!mContactManifoldOptions.enabled) {
+    contacts.reserve(mCollisionResult.getNumContacts());
+    for (const auto& contact : mCollisionResult.getContacts()) {
+      if (!contact.collisionObject1 || !contact.collisionObject2)
+        continue;
+
+      if (!isContactValid(contact))
+        continue;
+
+      contacts.push_back(contact);
+    }
+    return;
+  }
+
+  contacts.reserve(mPersistentContacts.size());
+  for (const auto& contact : mPersistentContacts) {
+    if (!contact.collisionObject1 || !contact.collisionObject2)
+      continue;
+
+    if (!isContactValid(contact))
+      continue;
+
+    if (isSoftContact(contact))
+      continue;
+
+    contacts.push_back(contact);
+  }
+
+  for (const auto& contact : mCollisionResult.getContacts()) {
+    if (!contact.collisionObject1 || !contact.collisionObject2)
+      continue;
+
+    if (!isContactValid(contact))
+      continue;
+
+    if (!isSoftContact(contact))
+      continue;
+
+    contacts.push_back(contact);
+  }
+}
+
+//==============================================================================
 collision::CollisionResult& ConstraintSolver::getLastCollisionResult()
 {
   return mCollisionResult;
@@ -338,6 +528,9 @@ void ConstraintSolver::solve()
   if (mSplitImpulseEnabled) {
     solvePositionConstrainedGroups();
   }
+
+  // Sync forces back to the raw collision result when cached contacts are used.
+  syncCollisionResultForcesFromManifolds();
 }
 
 //==============================================================================
@@ -358,6 +551,9 @@ void ConstraintSolver::setFromOtherConstraintSolver(
     mSecondaryLcpSolver = other.mSecondaryLcpSolver;
   }
   mSplitImpulseEnabled = other.mSplitImpulseEnabled;
+  mContactManifoldOptions = other.mContactManifoldOptions;
+  mContactManifoldCache.reset();
+  mPersistentContacts.clear();
 }
 
 //==============================================================================
@@ -433,7 +629,11 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   mCollisionResult.clear();
 
-  mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
+  auto collisionOption = mCollisionOption;
+  if (mContactManifoldOptions.enabled)
+    collisionOption.useBackendContactHistory = false;
+
+  mCollisionGroup->collide(collisionOption, &mCollisionResult);
 
   // Destroy previous contact constraints
   mContactConstraints.clear();
@@ -441,75 +641,127 @@ void ConstraintSolver::updateConstraints()
   // Destroy previous soft contact constraints
   mSoftContactConstraints.clear();
 
-  // Create a mapping of contact pairs to the number of contacts between them
-  using ContactPair
-      = std::pair<collision::CollisionObject*, collision::CollisionObject*>;
+  if (mContactManifoldOptions.enabled) {
+    mContactManifoldCache.update(
+        mCollisionResult, mContactManifoldOptions, mPersistentContacts);
+  } else {
+    mPersistentContacts.clear();
+  }
 
-  // Compare contact pairs while ignoring their order in the pair.
-  struct ContactPairCompare
-  {
-    ContactPair getSortedPair(const ContactPair& a) const
-    {
-      if (a.first < a.second)
-        return std::make_pair(a.second, a.first);
-      return a;
-    }
-
-    bool operator()(const ContactPair& a, const ContactPair& b) const
-    {
-      // Sort each pair and then do a lexicographical comparison
-      return getSortedPair(a) < getSortedPair(b);
-    }
-  };
-
-  std::map<ContactPair, size_t, ContactPairCompare> contactPairMap;
   std::vector<collision::Contact*> contacts;
 
-  // Create new contact constraints
-  for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
-    auto& contact = mCollisionResult.getContact(i);
+  auto handleSoftContact = [&](collision::Contact& contact) {
+    if (!isContactValid(contact))
+      return;
 
-    if (collision::Contact::isZeroNormal(contact.normal)) {
-      // Skip this contact. This is because we assume that a contact with
-      // zero-length normal is invalid.
-      continue;
+    if (!isSoftContact(contact))
+      return;
+
+    mSoftContactConstraints.push_back(
+        std::make_shared<SoftContactConstraint>(contact, mTimeStep));
+  };
+
+  auto createContactConstraint
+      = [&](collision::Contact& contact, std::size_t numContacts) {
+          auto contactConstraint = mContactSurfaceHandler->createConstraint(
+              contact, numContacts, mTimeStep);
+          mContactConstraints.push_back(contactConstraint);
+
+          contactConstraint->update();
+
+          if (contactConstraint->isActive())
+            mActiveConstraints.push_back(contactConstraint);
+        };
+
+  for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
+    handleSoftContact(mCollisionResult.getContact(i));
+
+  if (mContactManifoldOptions.enabled) {
+    for (auto& contact : mPersistentContacts) {
+      if (!isContactValid(contact))
+        continue;
+
+      if (isSoftContact(contact))
+        continue;
+
+      contacts.push_back(&contact);
     }
 
-    // If penetration depth is negative, then the collision isn't really
-    // happening and the contact point should be ignored.
-    // TODO(MXG): Investigate ways to leverage the proximity information of a
-    //            negative penetration to improve collision handling.
-    if (contact.penetrationDepth < 0.0)
-      continue;
+    PairKeyLess pairLess;
+    auto pairEqual = [&](const PairKey& a, const PairKey& b) {
+      return !pairLess(a, b) && !pairLess(b, a);
+    };
 
-    if (isSoftContact(contact)) {
-      mSoftContactConstraints.push_back(
-          std::make_shared<SoftContactConstraint>(contact, mTimeStep));
-    } else {
+    std::size_t index = 0u;
+    while (index < contacts.size()) {
+      const auto key = makePairKey(
+          contacts[index]->collisionObject1, contacts[index]->collisionObject2);
+      std::size_t end = index + 1u;
+      while (end < contacts.size()) {
+        const auto nextKey = makePairKey(
+            contacts[end]->collisionObject1, contacts[end]->collisionObject2);
+        if (!pairEqual(nextKey, key))
+          break;
+        ++end;
+      }
+
+      const auto numContacts = end - index;
+      for (std::size_t i = index; i < end; ++i)
+        createContactConstraint(*contacts[i], numContacts);
+
+      index = end;
+    }
+  } else {
+    // Create a mapping of contact pairs to the number of contacts between them
+    using ContactPair
+        = std::pair<collision::CollisionObject*, collision::CollisionObject*>;
+
+    // Compare contact pairs while ignoring their order in the pair.
+    struct ContactPairCompare
+    {
+      ContactPair getSortedPair(const ContactPair& a) const
+      {
+        if (a.first < a.second)
+          return std::make_pair(a.second, a.first);
+        return a;
+      }
+
+      bool operator()(const ContactPair& a, const ContactPair& b) const
+      {
+        // Sort each pair and then do a lexicographical comparison
+        return getSortedPair(a) < getSortedPair(b);
+      }
+    };
+
+    std::map<ContactPair, size_t, ContactPairCompare> contactPairMap;
+
+    auto handleRigidContact = [&](collision::Contact& contact) {
+      if (!isContactValid(contact))
+        return;
+
+      if (isSoftContact(contact))
+        return;
+
       // Increment the count of contacts between the two collision objects
       ++contactPairMap[std::make_pair(
           contact.collisionObject1, contact.collisionObject2)];
 
       contacts.push_back(&contact);
+    };
+
+    for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
+      handleRigidContact(mCollisionResult.getContact(i));
+
+    // Add the new contact constraints to dynamic constraint list
+    for (auto* contact : contacts) {
+      std::size_t numContacts = 1;
+      auto it = contactPairMap.find(
+          std::make_pair(contact->collisionObject1, contact->collisionObject2));
+      if (it != contactPairMap.end())
+        numContacts = it->second;
+
+      createContactConstraint(*contact, numContacts);
     }
-  }
-
-  // Add the new contact constraints to dynamic constraint list
-  for (auto* contact : contacts) {
-    std::size_t numContacts = 1;
-    auto it = contactPairMap.find(
-        std::make_pair(contact->collisionObject1, contact->collisionObject2));
-    if (it != contactPairMap.end())
-      numContacts = it->second;
-
-    auto contactConstraint = mContactSurfaceHandler->createConstraint(
-        *contact, numContacts, mTimeStep);
-    mContactConstraints.push_back(contactConstraint);
-
-    contactConstraint->update();
-
-    if (contactConstraint->isActive())
-      mActiveConstraints.push_back(contactConstraint);
   }
 
   // Add the new soft contact constraints to dynamic constraint list
@@ -725,6 +977,119 @@ void ConstraintSolver::solvePositionConstrainedGroups()
 
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
     mSkeletons[i]->setImpulseApplied(impulseAppliedStates[i]);
+  }
+}
+
+//==============================================================================
+void ConstraintSolver::syncCollisionResultForcesFromManifolds()
+{
+  if (!mContactManifoldOptions.enabled)
+    return;
+
+  if (mPersistentContacts.empty())
+    return;
+
+  struct PersistentEntry
+  {
+    PairKey key;
+    const collision::Contact* contact{nullptr};
+  };
+
+  std::vector<PersistentEntry> entries;
+  entries.reserve(mPersistentContacts.size());
+
+  for (const auto& contact : mPersistentContacts) {
+    if (!contact.collisionObject1 || !contact.collisionObject2)
+      continue;
+
+    PersistentEntry entry;
+    entry.key = makePairKey(contact.collisionObject1, contact.collisionObject2);
+    entry.contact = &contact;
+    entries.push_back(entry);
+  }
+
+  if (entries.empty())
+    return;
+
+  PairKeyLess pairLess;
+  // ContactManifold::update emits contacts sorted by pair and contact order.
+
+  const double positionThresholdSquared
+      = mContactManifoldOptions.positionThreshold
+        * mContactManifoldOptions.positionThreshold;
+  const double normalThreshold = mContactManifoldOptions.normalThreshold;
+  const double normalThresholdSquared = normalThreshold * normalThreshold;
+
+  for (std::size_t i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
+    auto& raw = mCollisionResult.getContact(i);
+    if (!raw.collisionObject1 || !raw.collisionObject2)
+      continue;
+
+    if (!isContactValid(raw))
+      continue;
+
+    if (isSoftContact(raw))
+      continue;
+
+    const auto key = makePairKey(raw.collisionObject1, raw.collisionObject2);
+    auto lower = std::lower_bound(
+        entries.begin(),
+        entries.end(),
+        key,
+        [&](const PersistentEntry& entry, const PairKey& matchKey) {
+          return pairLess(entry.key, matchKey);
+        });
+    auto upper = std::upper_bound(
+        entries.begin(),
+        entries.end(),
+        key,
+        [&](const PairKey& matchKey, const PersistentEntry& entry) {
+          return pairLess(matchKey, entry.key);
+        });
+
+    if (lower == upper)
+      continue;
+
+    const collision::Contact* best = nullptr;
+    bool bestFlipped = false;
+    double bestDistance = std::numeric_limits<double>::infinity();
+
+    for (auto it = lower; it != upper; ++it) {
+      const auto* candidate = it->contact;
+      const bool sameOrder
+          = raw.collisionObject1 == candidate->collisionObject1
+            && raw.collisionObject2 == candidate->collisionObject2;
+      const bool flippedOrder
+          = raw.collisionObject1 == candidate->collisionObject2
+            && raw.collisionObject2 == candidate->collisionObject1;
+
+      if (!sameOrder && !flippedOrder)
+        continue;
+
+      const Eigen::Vector3d delta = raw.point - candidate->point;
+      const double distance = delta.squaredNorm();
+      if (distance > positionThresholdSquared)
+        continue;
+
+      const Eigen::Vector3d candidateNormal
+          = flippedOrder ? -candidate->normal : candidate->normal;
+      if (!isNormalWithinThreshold(
+              raw.normal,
+              candidateNormal,
+              normalThreshold,
+              normalThresholdSquared))
+        continue;
+
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        best = candidate;
+        bestFlipped = flippedOrder;
+      }
+    }
+
+    if (best) {
+      raw.force = bestFlipped ? -best->force : best->force;
+    }
   }
 }
 

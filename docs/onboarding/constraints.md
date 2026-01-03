@@ -142,6 +142,11 @@ solve()
 - Creates `ContactConstraint` objects for each contact
 - Manages `ContactSurfaceHandler` for surface parameters
 - Supports multiple collision detection backends
+- Optional persistent contact manifold support keeps up to 4 contacts per pair
+  for stability; it is disabled by default and uses manifold contacts for
+  constraint construction while leaving `CollisionResult` semantics unchanged.
+  Backend contact history is disabled when the manifold is enabled to avoid
+  double persistence.
 
 **Key Features:**
 

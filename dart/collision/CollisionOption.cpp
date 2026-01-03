@@ -40,11 +40,13 @@ CollisionOption::CollisionOption(
     bool enableContact,
     std::size_t maxNumContacts,
     const std::shared_ptr<CollisionFilter>& collisionFilter,
-    bool allowNegativePenetrationDepthContacts)
+    bool allowNegativePenetrationDepthContacts,
+    bool useBackendContactHistory)
   : enableContact(enableContact),
     maxNumContacts(maxNumContacts),
     allowNegativePenetrationDepthContacts(
         allowNegativePenetrationDepthContacts),
+    useBackendContactHistory(useBackendContactHistory),
     collisionFilter(collisionFilter)
 {
   // Do nothing

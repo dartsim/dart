@@ -818,6 +818,20 @@ const collision::CollisionResult& World::getLastCollisionResult() const
 }
 
 //==============================================================================
+void World::getContactsUsedForConstraints(
+    std::vector<collision::Contact>& contacts) const
+{
+  auto* solver = getConstraintSolver();
+  if (!solver) {
+    DART_WARN("World '{}' does not have a constraint-capable solver.", mName);
+    contacts.clear();
+    return;
+  }
+
+  solver->getContactsUsedForConstraints(contacts);
+}
+
+//==============================================================================
 void World::setCollisionDetector(
     const collision::CollisionDetectorPtr& collisionDetector)
 {
@@ -907,8 +921,9 @@ void World::bake()
     return;
   }
 
-  const auto collisionResult = constraintSolver->getLastCollisionResult();
-  const auto nContacts = static_cast<int>(collisionResult.getNumContacts());
+  std::vector<collision::Contact> constraintContacts;
+  constraintSolver->getContactsUsedForConstraints(constraintContacts);
+  const auto nContacts = static_cast<int>(constraintContacts.size());
   const auto nSkeletons = getNumSkeletons();
 
   Eigen::VectorXd state(getIndex(nSkeletons) + 6 * nContacts);
@@ -919,8 +934,8 @@ void World::bake()
 
   for (auto i = 0; i < nContacts; ++i) {
     auto begin = getIndex(nSkeletons) + i * 6;
-    state.segment(begin, 3) = collisionResult.getContact(i).point;
-    state.segment(begin + 3, 3) = collisionResult.getContact(i).force;
+    state.segment(begin, 3) = constraintContacts[i].point;
+    state.segment(begin + 3, 3) = constraintContacts[i].force;
   }
 
   mRecording->addState(state);

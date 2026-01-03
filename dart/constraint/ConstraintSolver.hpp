@@ -35,6 +35,7 @@
 
 #include <dart/constraint/ConstrainedGroup.hpp>
 #include <dart/constraint/ConstraintBase.hpp>
+#include <dart/constraint/ContactManifoldCache.hpp>
 #include <dart/constraint/Fwd.hpp>
 
 #include <dart/collision/CollisionDetector.hpp>
@@ -176,6 +177,35 @@ public:
   /// ConstraintSolver to generate contact constraints.
   const collision::CollisionOption& getCollisionOption() const;
 
+  /// Set contact manifold cache options used to build persistent contacts.
+  void setContactManifoldCacheOptions(
+      const ContactManifoldCacheOptions& options);
+
+  /// Return contact manifold cache options used to build persistent contacts.
+  const ContactManifoldCacheOptions& getContactManifoldCacheOptions() const;
+
+  /// Enable or disable the contact manifold cache.
+  void setContactManifoldCacheEnabled(bool enabled);
+
+  /// Return true if the contact manifold cache is enabled.
+  bool isContactManifoldCacheEnabled() const;
+
+  /// Return the number of persistent contacts used for constraints.
+  std::size_t getNumPersistentContacts() const;
+
+  /// Return the number of active contact manifolds.
+  std::size_t getNumContactManifolds() const;
+
+  /// Return the number of rigid contact constraints.
+  std::size_t getNumContactConstraints() const;
+
+  /// Return the number of soft contact constraints.
+  std::size_t getNumSoftContactConstraints() const;
+
+  /// Fill contacts used for constraint construction (rigid + soft).
+  void getContactsUsedForConstraints(
+      std::vector<collision::Contact>& contacts) const;
+
   /// Return the last collision checking result
   collision::CollisionResult& getLastCollisionResult();
 
@@ -275,6 +305,9 @@ protected:
   /// Solve constrained groups
   void solveConstrainedGroups();
 
+  /// Sync constraint forces back to raw collision contacts when cached.
+  void syncCollisionResultForcesFromManifolds();
+
   /// Return true if at least one of colliding body is soft body
   bool isSoftContact(const collision::Contact& contact) const;
 
@@ -291,6 +324,15 @@ protected:
 
   /// Last collision checking result
   collision::CollisionResult mCollisionResult;
+
+  /// Persistent contact cache options
+  ContactManifoldCacheOptions mContactManifoldOptions;
+
+  /// Persistent contact cache
+  ContactManifoldCache mContactManifoldCache;
+
+  /// Persistent contacts used for constraint construction
+  std::vector<collision::Contact> mPersistentContacts;
 
   /// Time step
   double mTimeStep;
