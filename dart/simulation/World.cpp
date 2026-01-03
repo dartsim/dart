@@ -598,11 +598,8 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 std::set<dynamics::SkeletonPtr> World::removeAllSkeletons()
 {
   std::set<dynamics::SkeletonPtr> ptrs;
-  for (std::vector<dynamics::SkeletonPtr>::iterator it = mSkeletons.begin(),
-                                                    end = mSkeletons.end();
-       it != end;
-       ++it)
-    ptrs.insert(*it);
+  for (const auto& skeleton : mSkeletons)
+    ptrs.insert(skeleton);
 
   while (getNumSkeletons() > 0)
     removeSkeleton(getSkeleton(0));

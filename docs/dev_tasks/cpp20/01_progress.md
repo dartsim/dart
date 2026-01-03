@@ -88,3 +88,5 @@
   non-body entity set membership in `BodyNode`.
 - Phase 8: replace remove/erase idioms with `std::erase` in constraint and
   world skeleton cleanup paths.
+- Phase 8: convert index/iterator loops to range-based loops in
+  `ConstrainedGroup` and `World` skeleton cleanup.
