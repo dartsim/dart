@@ -100,15 +100,15 @@ EulerJoint& EulerJoint::operator=(const EulerJoint& _otherJoint)
 }
 
 //==============================================================================
-const std::string& EulerJoint::getType() const
+std::string_view EulerJoint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& EulerJoint::getStaticType()
+std::string_view EulerJoint::getStaticType()
 {
-  static const std::string name = "EulerJoint";
+  static constexpr std::string_view name = "EulerJoint";
   return name;
 }
 

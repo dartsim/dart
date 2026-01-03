@@ -48,7 +48,7 @@ class DART_DEPRECATED("8.0") BoxedLcpSolver
 public:
   virtual ~BoxedLcpSolver() = default;
 
-  virtual const std::string& getType() const = 0;
+  virtual std::string_view getType() const = 0;
 
   virtual bool solve(
       int n,

@@ -37,6 +37,8 @@
 
 #include <dart/Export.hpp>
 
+#include <string_view>
+
 #include <cstddef>
 
 namespace dart {
@@ -89,7 +91,7 @@ class DART_API ConstraintBase
 {
 public:
   /// Returns a string representing the constraint type
-  virtual const std::string& getType() const;
+  virtual std::string_view getType() const;
 
   /// Return dimension of this constranit
   std::size_t getDimension() const;

@@ -49,10 +49,10 @@ public:
   PlaneShape(const Eigen::Vector3d& _normal, const Eigen::Vector3d& _point);
 
   // Documentation inherited.
-  const std::string& getType() const override;
+  std::string_view getType() const override;
 
   /// Returns shape type for this class
-  static const std::string& getStaticType();
+  static std::string_view getStaticType();
 
   // Documentation inherited.
   Eigen::Matrix3d computeInertia(double mass) const override;

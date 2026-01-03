@@ -25,10 +25,7 @@ void defShape(nb::module_& m)
   nb::class_<Shape>(m, "Shape")
       .def(
           "getType",
-          [](const Shape& self) -> const std::string& {
-            return self.getType();
-          },
-          nb::rv_policy::reference_internal)
+          [](const Shape& self) { return std::string(self.getType()); })
       .def("computeInertia", &Shape::computeInertia, nb::arg("mass"))
       .def("__repr__", [](const Shape& self) {
         std::vector<std::pair<std::string, std::string>> fields;
@@ -55,10 +52,9 @@ void defShape(nb::module_& m)
           nb::arg("mass"))
       .def_static(
           "getStaticType",
-          []() -> const std::string& {
-            return dart::dynamics::SphereShape::getStaticType();
-          },
-          nb::rv_policy::reference_internal)
+          []() {
+            return std::string(dart::dynamics::SphereShape::getStaticType());
+          })
       .def_static(
           "computeVolumeOf",
           [](double radius) {
@@ -146,12 +142,9 @@ void defShape(nb::module_& m)
       .def(
           "getScale",
           [](const dart::dynamics::MeshShape& self) { return self.getScale(); })
-      .def_static(
-          "getStaticType",
-          []() -> const std::string& {
-            return dart::dynamics::MeshShape::getStaticType();
-          },
-          nb::rv_policy::reference_internal);
+      .def_static("getStaticType", []() {
+        return std::string(dart::dynamics::MeshShape::getStaticType());
+      });
 }
 
 } // namespace dart::python_nb

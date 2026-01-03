@@ -51,6 +51,7 @@
 #include <Eigen/Dense>
 
 #include <map>
+#include <string_view>
 #include <vector>
 
 namespace dart {
@@ -91,7 +92,7 @@ public:
       const = 0;
 
   /// Return collision detection engine type as a std::string
-  virtual const std::string& getType() const = 0;
+  virtual std::string_view getType() const = 0;
 
   /// Create a collision group
   virtual std::unique_ptr<CollisionGroup> createCollisionGroup() = 0;

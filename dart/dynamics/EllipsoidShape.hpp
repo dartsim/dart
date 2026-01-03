@@ -50,10 +50,10 @@ public:
   virtual ~EllipsoidShape();
 
   // Documentation inherited.
-  const std::string& getType() const override;
+  std::string_view getType() const override;
 
   /// Returns shape type for this class
-  static const std::string& getStaticType();
+  static std::string_view getStaticType();
 
   /// @brief Set diameters of this ellipsoid.
   void setDiameters(const Eigen::Vector3d& diameters);

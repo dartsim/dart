@@ -36,6 +36,8 @@
 #include <dart/common/Logging.hpp>
 #include <dart/common/MemoryAllocatorDebugger.hpp>
 
+#include <string>
+
 namespace dart::common {
 
 //==============================================================================
@@ -77,16 +79,16 @@ MemoryAllocatorDebugger<T>::~MemoryAllocatorDebugger()
 
 //==============================================================================
 template <typename T>
-const std::string& MemoryAllocatorDebugger<T>::getStaticType()
+std::string_view MemoryAllocatorDebugger<T>::getStaticType()
 {
   static const std::string type
-      = "MemoryAllocatorDebugger<" + T::getStaticType() + ">";
+      = "MemoryAllocatorDebugger<" + std::string(T::getStaticType()) + ">";
   return type;
 }
 
 //==============================================================================
 template <typename T>
-const std::string& MemoryAllocatorDebugger<T>::getType() const
+std::string_view MemoryAllocatorDebugger<T>::getType() const
 {
   return getStaticType();
 }

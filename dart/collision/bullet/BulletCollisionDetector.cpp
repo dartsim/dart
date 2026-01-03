@@ -136,15 +136,15 @@ BulletCollisionDetector::cloneWithoutCollisionObjects() const
 }
 
 //==============================================================================
-const std::string& BulletCollisionDetector::getType() const
+std::string_view BulletCollisionDetector::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& BulletCollisionDetector::getStaticType()
+std::string_view BulletCollisionDetector::getStaticType()
 {
-  static const std::string type = "bullet";
+  static constexpr std::string_view type = "bullet";
   return type;
 }
 

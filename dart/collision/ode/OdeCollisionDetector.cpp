@@ -187,15 +187,15 @@ OdeCollisionDetector::cloneWithoutCollisionObjects() const
 }
 
 //==============================================================================
-const std::string& OdeCollisionDetector::getType() const
+std::string_view OdeCollisionDetector::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& OdeCollisionDetector::getStaticType()
+std::string_view OdeCollisionDetector::getStaticType()
 {
-  static const std::string type = "ode";
+  static constexpr std::string_view type = "ode";
   return type;
 }
 

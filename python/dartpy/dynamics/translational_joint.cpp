@@ -31,10 +31,9 @@ void defTranslationalJoint(nb::module_& m)
           })
       .def(
           "getType",
-          [](const TranslationalJoint& self) -> const std::string& {
-            return self.getType();
-          },
-          nb::rv_policy::reference_internal)
+          [](const TranslationalJoint& self) {
+            return std::string(self.getType());
+          })
       .def("isCyclic", &TranslationalJoint::isCyclic, nb::arg("index"))
       .def(
           "getRelativeJacobianStatic",
@@ -42,12 +41,9 @@ void defTranslationalJoint(nb::module_& m)
             return self.getRelativeJacobianStatic(positions);
           },
           nb::arg("positions"))
-      .def_static(
-          "getStaticType",
-          []() -> const std::string& {
-            return TranslationalJoint::getStaticType();
-          },
-          nb::rv_policy::reference);
+      .def_static("getStaticType", []() {
+        return std::string(TranslationalJoint::getStaticType());
+      });
 
   registerPolymorphicCaster<dart::dynamics::Joint, TranslationalJoint>();
 }

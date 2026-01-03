@@ -652,15 +652,15 @@ FCLCollisionDetector::cloneWithoutCollisionObjects() const
 }
 
 //==============================================================================
-const std::string& FCLCollisionDetector::getType() const
+std::string_view FCLCollisionDetector::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& FCLCollisionDetector::getStaticType()
+std::string_view FCLCollisionDetector::getStaticType()
 {
-  static const std::string type = "fcl";
+  static constexpr std::string_view type = "fcl";
   return type;
 }
 

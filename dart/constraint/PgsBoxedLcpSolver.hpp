@@ -60,9 +60,9 @@ public:
         bool randomizeConstraintOrder = false);
   };
 
-  const std::string& getType() const override;
+  std::string_view getType() const override;
 
-  static const std::string& getStaticType();
+  static std::string_view getStaticType();
 
   bool solve(
       int n,

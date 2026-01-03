@@ -84,10 +84,10 @@ public:
   TranslationalJoint2D& operator=(const TranslationalJoint2D& otherJoint);
 
   // Documentation inherited
-  const std::string& getType() const override;
+  std::string_view getType() const override;
 
   /// Returns joint type for this class
-  static const std::string& getStaticType();
+  static std::string_view getStaticType();
 
   // Documentation inherited
   bool isCyclic(std::size_t index) const override;

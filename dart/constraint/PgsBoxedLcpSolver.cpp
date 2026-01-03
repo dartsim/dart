@@ -48,7 +48,7 @@ namespace {
 
 const std::string& pgsBoxedLcpType()
 {
-  static const std::string type = "PgsBoxedLcpSolver";
+  static constexpr std::string_view type = "PgsBoxedLcpSolver";
   return type;
 }
 
@@ -71,13 +71,13 @@ PgsBoxedLcpSolver::Option::Option(
 }
 
 //==============================================================================
-const std::string& PgsBoxedLcpSolver::getType() const
+std::string_view PgsBoxedLcpSolver::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& PgsBoxedLcpSolver::getStaticType()
+std::string_view PgsBoxedLcpSolver::getStaticType()
 {
   return pgsBoxedLcpType();
 }

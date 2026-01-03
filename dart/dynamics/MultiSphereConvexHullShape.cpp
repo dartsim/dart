@@ -53,15 +53,15 @@ MultiSphereConvexHullShape::~MultiSphereConvexHullShape()
 }
 
 //==============================================================================
-const std::string& MultiSphereConvexHullShape::getType() const
+std::string_view MultiSphereConvexHullShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& MultiSphereConvexHullShape::getStaticType()
+std::string_view MultiSphereConvexHullShape::getStaticType()
 {
-  static const std::string type("MultiSphereConvexHullShape");
+  static constexpr std::string_view type = "MultiSphereConvexHullShape";
   return type;
 }
 

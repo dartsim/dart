@@ -48,6 +48,7 @@
 #include <Eigen/Dense>
 
 #include <memory>
+#include <string_view>
 
 namespace dart {
 namespace dynamics {
@@ -114,7 +115,7 @@ public:
 
   /// Returns a string representing the shape type
   /// @sa is()
-  virtual const std::string& getType() const = 0;
+  virtual std::string_view getType() const = 0;
 
   /// @brief Get the bounding box of the shape in its local coordinate frame.
   ///        The dimension will be automatically determined by the sub-classes

@@ -75,15 +75,15 @@ LineSegmentShape::LineSegmentShape(
 }
 
 //==============================================================================
-const std::string& LineSegmentShape::getType() const
+std::string_view LineSegmentShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& LineSegmentShape::getStaticType()
+std::string_view LineSegmentShape::getStaticType()
 {
-  static const std::string type("LineSegmentShape");
+  static constexpr std::string_view type = "LineSegmentShape";
   return type;
 }
 

@@ -103,15 +103,15 @@ PlanarJoint& PlanarJoint::operator=(const PlanarJoint& _otherJoint)
 }
 
 //==============================================================================
-const std::string& PlanarJoint::getType() const
+std::string_view PlanarJoint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& PlanarJoint::getStaticType()
+std::string_view PlanarJoint::getStaticType()
 {
-  static const std::string name = "PlanarJoint";
+  static constexpr std::string_view name = "PlanarJoint";
   return name;
 }
 
