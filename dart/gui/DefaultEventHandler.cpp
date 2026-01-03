@@ -416,9 +416,8 @@ void DefaultEventHandler::handleDestructionNotification(
 {
   MouseEventHandler* meh = const_cast<MouseEventHandler*>(
       dynamic_cast<const MouseEventHandler*>(_subject));
-  std::set<MouseEventHandler*>::iterator it = mMouseEventHandlers.find(meh);
-  if (it != mMouseEventHandlers.end())
-    mMouseEventHandlers.erase(it);
+  if (mMouseEventHandlers.contains(meh))
+    mMouseEventHandlers.erase(meh);
 }
 
 } // namespace gui

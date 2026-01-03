@@ -576,9 +576,8 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
   }
 
   if (mParentFrame && !mParentFrame->isWorld()) {
-    FramePtrSet::iterator it = mParentFrame->mChildFrames.find(this);
-    if (it != mParentFrame->mChildFrames.end())
-      mParentFrame->mChildFrames.erase(it);
+    if (mParentFrame->mChildFrames.contains(this))
+      mParentFrame->mChildFrames.erase(this);
   }
 
   if (nullptr == _newParentFrame) {
