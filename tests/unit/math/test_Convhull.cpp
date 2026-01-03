@@ -43,6 +43,27 @@
 using dart::math::detail::convexHull3dBuild;
 
 //==============================================================================
+TEST(ConvhullInternal, SortFloatAndInt)
+{
+  float values[] = {3.0f, 1.0f, 2.0f};
+  float* outValues = nullptr;
+  int indices[] = {0, 0, 0};
+  dart::math::detail::convhull_internal::sortFloat(
+      values, outValues, indices, 3, true);
+
+  EXPECT_FLOAT_EQ(values[0], 3.0f);
+  EXPECT_FLOAT_EQ(values[1], 2.0f);
+  EXPECT_FLOAT_EQ(values[2], 1.0f);
+
+  int ints[] = {3, 1, 2};
+  dart::math::detail::convhull_internal::sortInt(ints, 3);
+
+  EXPECT_EQ(ints[0], 1);
+  EXPECT_EQ(ints[1], 2);
+  EXPECT_EQ(ints[2], 3);
+}
+
+//==============================================================================
 // Typed Test Setup - Test both float and double precision
 //==============================================================================
 template <typename T>

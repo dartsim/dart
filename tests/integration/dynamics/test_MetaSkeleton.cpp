@@ -45,6 +45,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <unordered_set>
 
 using namespace dart;
 using namespace math;
@@ -586,6 +587,23 @@ TEST(MetaSkeleton, Linkage)
   checkForBodyNodes(
       sequenceLinkage6, skel, true, "c3b1", "c3b2", "c3b3", "c4b1");
   checkLinkageJointConsistency(sequenceLinkage6);
+}
+
+//==============================================================================
+TEST(MetaSkeleton, LinkageCriteriaDeduplicatesNodes)
+{
+  SkeletonPtr skel = constructLinkageTestSkeleton();
+
+  Linkage::Criteria criteria;
+  criteria.mTargets.push_back(
+      Linkage::Criteria::Target(skel->getBodyNode("c3b1")));
+  criteria.mTargets.push_back(
+      Linkage::Criteria::Target(skel->getBodyNode("c3b1")));
+
+  const auto nodes = criteria.satisfy();
+  std::unordered_set<BodyNode*> unique(nodes.begin(), nodes.end());
+
+  EXPECT_EQ(nodes.size(), unique.size());
 }
 
 //==============================================================================
