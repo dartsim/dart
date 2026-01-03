@@ -1417,7 +1417,7 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
     mDependentGenCoordIndices.push_back(mParentJoint->getIndexInSkeleton(i));
 
   // Sort
-  std::sort(mDependentGenCoordIndices.begin(), mDependentGenCoordIndices.end());
+  std::ranges::sort(mDependentGenCoordIndices);
 
   mDependentDofs.clear();
   mDependentDofs.reserve(mDependentGenCoordIndices.size());
@@ -1484,8 +1484,7 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
     return;
 
   // Check if it's already accounted for in our Non-BodyNode Entities
-  if (mNonBodyNodeEntities.find(_newChildEntity)
-      != mNonBodyNodeEntities.end()) {
+  if (mNonBodyNodeEntities.contains(_newChildEntity)) {
     DART_WARN(
         "Attempting to add an Entity [{}] as a child Entity of [{}], which is "
         "already its parent.",
@@ -1508,8 +1507,7 @@ void BodyNode::processRemovedEntity(Entity* _oldChildEntity)
   if (JacobianNode* node = dynamic_cast<JacobianNode*>(_oldChildEntity))
     mChildJacobianNodes.erase(node);
 
-  if (std::ranges::find(mNonBodyNodeEntities, _oldChildEntity)
-      != mNonBodyNodeEntities.end())
+  if (mNonBodyNodeEntities.contains(_oldChildEntity))
     mNonBodyNodeEntities.erase(_oldChildEntity);
 }
 

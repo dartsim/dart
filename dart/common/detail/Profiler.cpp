@@ -374,10 +374,8 @@ void Profiler::printNode(
     children.push_back(child.get());
   }
 
-  std::sort(
-      children.begin(),
-      children.end(),
-      [](const ProfileNode* lhs, const ProfileNode* rhs) {
+  std::ranges::sort(
+      children, [](const ProfileNode* lhs, const ProfileNode* rhs) {
         return lhs->inclusiveNs > rhs->inclusiveNs;
       });
 
@@ -454,7 +452,7 @@ void Profiler::printSummary(std::ostream& os)
     const double avgFps
         = (static_cast<double>(frameCount - 1) * 1e9) / frameSumNs;
     std::vector<std::uint64_t> samples = m_frameSamplesNs;
-    std::sort(samples.begin(), samples.end());
+    std::ranges::sort(samples);
     const auto pickIndex = [&](double pct) -> std::size_t {
       if (samples.empty()) {
         return 0;
@@ -483,12 +481,9 @@ void Profiler::printSummary(std::ostream& os)
     }
   }
 
-  std::sort(
-      hotspots.begin(),
-      hotspots.end(),
-      [](const Flattened& lhs, const Flattened& rhs) {
-        return lhs.inclusiveNs > rhs.inclusiveNs;
-      });
+  std::ranges::sort(hotspots, [](const Flattened& lhs, const Flattened& rhs) {
+    return lhs.inclusiveNs > rhs.inclusiveNs;
+  });
 
   const std::size_t hotspotCount = std::min<std::size_t>(hotspots.size(), 10);
 

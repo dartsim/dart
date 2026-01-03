@@ -90,9 +90,7 @@ void ConstrainedGroup::removeConstraint(const ConstraintBasePtr& _constraint)
       containConstraint(_constraint)
       && "Attempted to remove not existing constraint.");
 
-  mConstraints.erase(
-      remove(mConstraints.begin(), mConstraints.end(), _constraint),
-      mConstraints.end());
+  std::erase(mConstraints, _constraint);
 }
 
 //==============================================================================
@@ -113,8 +111,8 @@ std::size_t ConstrainedGroup::getTotalDimension() const
 {
   std::size_t totalDim = 0;
 
-  for (std::size_t i = 0; i < mConstraints.size(); ++i)
-    totalDim += mConstraints[i]->getDimension();
+  for (const auto& constraint : mConstraints)
+    totalDim += constraint->getDimension();
 
   return totalDim;
 }

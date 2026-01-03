@@ -149,8 +149,7 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
       skeleton->getName());
 
   mCollisionGroup->unsubscribeFrom(skeleton.get());
-  mSkeletons.erase(
-      remove(mSkeletons.begin(), mSkeletons.end(), skeleton), mSkeletons.end());
+  std::erase(mSkeletons, skeleton);
   mConstrainedGroups.reserve(mSkeletons.size());
 }
 
@@ -195,9 +194,7 @@ void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
     return;
   }
 
-  mManualConstraints.erase(
-      remove(mManualConstraints.begin(), mManualConstraints.end(), constraint),
-      mManualConstraints.end());
+  std::erase(mManualConstraints, constraint);
 }
 
 //==============================================================================

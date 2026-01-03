@@ -1743,7 +1743,7 @@ SupportPolygon computeConvexHull(
     }
   }
 
-  std::sort(angles.begin(), angles.end(), HullAngleComparison);
+  std::ranges::sort(angles, HullAngleComparison);
 
   if (angles.size() > 1) {
     for (std::size_t i = 0; i < angles.size() - 1; ++i) {

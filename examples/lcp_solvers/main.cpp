@@ -355,7 +355,7 @@ std::vector<int> ComputeFindexBlockSizes(const Eigen::VectorXi& findex)
   sizes.reserve(counts.size());
   for (const auto& entry : counts)
     sizes.push_back(entry.second);
-  std::sort(sizes.begin(), sizes.end());
+  std::ranges::sort(sizes);
   return sizes;
 }
 

@@ -38,6 +38,7 @@
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/math/optimization/GradientDescentSolver.hpp"
 
+#include <algorithm>
 #include <unordered_map>
 
 namespace dart {
@@ -1017,13 +1018,11 @@ std::span<const IK::Analytical::Solution> IK::Analytical::getSolutions(
     return mAnalyticalP.mQualityComparator(s1.mConfig, s2.mConfig, mIK);
   };
 
-  std::sort(
-      mValidSolutionsCache.begin(), mValidSolutionsCache.end(), comparator);
+  std::ranges::sort(mValidSolutionsCache, comparator);
 
-  std::sort(mOutOfReachCache.begin(), mOutOfReachCache.end(), comparator);
+  std::ranges::sort(mOutOfReachCache, comparator);
 
-  std::sort(
-      mLimitViolationCache.begin(), mLimitViolationCache.end(), comparator);
+  std::ranges::sort(mLimitViolationCache, comparator);
 
   mSolutions.clear();
   mSolutions.insert(

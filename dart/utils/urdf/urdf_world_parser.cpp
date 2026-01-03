@@ -163,14 +163,14 @@ std::shared_ptr<World> parseWorldURDF(
       std::string string_entity_model(entity_model);
 
       // Find the model
-      if (includedFiles.find(string_entity_model) == includedFiles.end()) {
+      if (!includedFiles.contains(string_entity_model)) {
         DART_WARN(
             "[parseWorldURDF] Cannot find the model [{}], did you provide the "
             "correct name? We will return a nullptr.\\n",
             string_entity_model);
         return nullptr;
       } else {
-        std::string fileName = includedFiles.find(string_entity_model)->second;
+        const std::string& fileName = includedFiles.at(string_entity_model);
 
         dart::common::Uri absoluteUri;
         if (!absoluteUri.fromRelativeUri(_baseUri, fileName)) {
