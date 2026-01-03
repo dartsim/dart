@@ -79,7 +79,6 @@
 
 - `csv_logger`
 - `point_cloud` (requires OctoMap)
-- `rerun`
 
 ## Build Each Example
 
