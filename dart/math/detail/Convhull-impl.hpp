@@ -415,7 +415,8 @@ inline void convexHull3dBuild(
 
   // Pre-allocate vectors with expected maximum sizes to avoid reallocations
   const int estimatedMaxFaces
-      = std::min(numInputVertices * 2, convhull_internal::kMaxNumFaces);
+      = static_cast<int>(std::min<decltype(numInputVertices)>(
+          numInputVertices * 2, convhull_internal::kMaxNumFaces));
   std::vector<int> triangleVisibilityFlags;
   triangleVisibilityFlags.reserve(estimatedMaxFaces);
   triangleVisibilityFlags.resize(currentTriangleCount);
