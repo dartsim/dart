@@ -91,3 +91,5 @@
 - Phase 8: convert index/iterator loops to range-based loops in
   `ConstrainedGroup` and `World` skeleton cleanup.
 - Phase 8: use `std::erase_if` for line segment connection removal.
+- Phase 8: apply `std::erase_if` for mesh node cleanup in
+  `dart/gui/render/MeshShapeNode.cpp`.

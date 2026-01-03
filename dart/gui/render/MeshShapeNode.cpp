@@ -52,6 +52,7 @@
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <fstream>
@@ -584,13 +585,14 @@ void osgAiNode::clearChildUtilizationFlags()
 //==============================================================================
 void osgAiNode::clearUnusedNodes()
 {
-  for (auto& node_pair : mChildNodes) {
+  std::erase_if(mChildNodes, [&](const auto& node_pair) {
     osgAiNode* node = node_pair.second;
-    if (!node->wasUtilized()) {
-      mChildNodes.erase(node_pair.first);
-      removeChild(node);
-    }
-  }
+    if (node->wasUtilized())
+      return false;
+
+    removeChild(node);
+    return true;
+  });
 }
 
 //==============================================================================
@@ -664,13 +666,14 @@ void MeshShapeGeode::clearChildUtilizationFlags()
 //==============================================================================
 void MeshShapeGeode::clearUnusedMeshes()
 {
-  for (auto& node_pair : mMeshes) {
+  std::erase_if(mMeshes, [&](const auto& node_pair) {
     MeshShapeGeometry* geom = node_pair.second;
-    if (!geom->wasUtilized()) {
-      mMeshes.erase(node_pair.first);
-      removeDrawable(geom);
-    }
-  }
+    if (geom->wasUtilized())
+      return false;
+
+    removeDrawable(geom);
+    return true;
+  });
 }
 
 //==============================================================================
