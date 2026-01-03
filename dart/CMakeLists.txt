@@ -21,7 +21,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #   fcl
 #   bullet
 # constraint
-# ecs
 # simulation
 # sensor
 # utils
@@ -77,7 +76,6 @@ add_subdirectory(optimizer)
 add_subdirectory(dynamics)
 add_subdirectory(collision)
 add_subdirectory(constraint)
-add_subdirectory(ecs)
 add_subdirectory(simulation)
 add_subdirectory(sensor)
 add_subdirectory(utils) # tinyxml2, libsdformat
