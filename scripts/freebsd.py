@@ -4,6 +4,7 @@ import os
 import shlex
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -16,29 +17,40 @@ DEFAULT_USER = "freebsd"
 DEFAULT_REMOTE_DIR = None
 DEFAULT_BUILD_DIR = "build/freebsd/cpp/Release"
 DEFAULT_TEST_REGEX = "Issue838|ForwardKinematics"
+DEFAULT_PORTS_PATCH_DIR = "docker/freebsd/ports-patches"
 DEFAULT_PACKAGES = [
     "assimp",
     "boost-libs",
     "cmake",
-    "eigen3",
+    "eigen",
     "fcl",
-    "fmt",
+    "libfmt",
+    "git",
     "gmake",
     "googletest",
     "libccd",
     "ninja",
     "octomap",
-    "ode",
+    "ode-double",
     "pkgconf",
+    "rsync",
     "spdlog",
     "tinyxml2",
-    "urdfdom",
+    "ros-urdfdom",
+    "ros-urdfdom_headers",
 ]
 DEFAULT_IMAGE_URL = (
     "https://download.freebsd.org/ftp/snapshots/VM-IMAGES/15.0-STABLE/"
-    "amd64/Latest/FreeBSD-15.0-STABLE-amd64.qcow2.xz"
+    "amd64/Latest/FreeBSD-15.0-STABLE-amd64-BASIC-CLOUDINIT-ufs.qcow2.xz"
 )
-SSH_OPTIONS = ["-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null"]
+SSH_OPTIONS = [
+    "-o",
+    "StrictHostKeyChecking=no",
+    "-o",
+    "UserKnownHostsFile=/dev/null",
+    "-o",
+    "BatchMode=yes",
+]
 
 
 def run(cmd, check=True, capture=False):
@@ -57,6 +69,10 @@ def docker_path():
 
 def dockerfile_path():
     return str(repo_root() / "docker" / "freebsd" / "Dockerfile")
+
+
+def ports_patch_dir():
+    return repo_root() / DEFAULT_PORTS_PATCH_DIR
 
 
 def vm_dir_path(default_dir):
@@ -89,6 +105,8 @@ def container_running(container):
 def ensure_started(args):
     if not container_running(args.container):
         start_container(args)
+    wait_for_ssh_key(args)
+    wait_for_ssh(args, user=args.user)
 
 
 def build_image(args):
@@ -111,14 +129,14 @@ def start_container(args):
 
     vm_dir = vm_dir_path(args.vm_dir)
     vm_dir.mkdir(parents=True, exist_ok=True)
+    ensure_ssh_key(args)
 
     if container_running(args.container):
         print(f"Container '{args.container}' already running.")
         return
 
     if container_exists(args.container):
-        run(["docker", "start", args.container])
-        return
+        run(["docker", "rm", "-f", args.container])
 
     cmd = [
         "docker",
@@ -141,6 +159,9 @@ def start_container(args):
         "-e",
         f"FREEBSD_VM_USER={args.user}",
     ]
+    disk_size = os.getenv("FREEBSD_VM_DISK_SIZE")
+    if disk_size:
+        cmd.extend(["-e", f"FREEBSD_VM_DISK_SIZE={disk_size}"])
 
     if Path("/dev/kvm").exists():
         cmd.extend(["--device", "/dev/kvm"])
@@ -158,25 +179,76 @@ def ssh_key_path(vm_dir):
     return Path(vm_dir) / "id_ed25519"
 
 
-def ssh_command(args, command, user=None):
+def ensure_ssh_key(args):
+    vm_dir = vm_dir_path(args.vm_dir)
+    key_path = ssh_key_path(vm_dir)
+    if key_path.exists():
+        return
+    vm_dir.mkdir(parents=True, exist_ok=True)
+    run(["ssh-keygen", "-t", "ed25519", "-f", str(key_path), "-N", ""])
+
+def wait_for_ssh_key(args, timeout=120):
+    vm_dir = vm_dir_path(args.vm_dir)
+    key_path = ssh_key_path(vm_dir)
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if key_path.exists():
+            return
+        time.sleep(2)
+    print(
+        f"Timed out waiting for SSH key at {key_path}.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+
+def wait_for_ssh(args, user, timeout=300):
+    vm_dir = vm_dir_path(args.vm_dir)
+    key_path = ssh_key_path(vm_dir)
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        result = subprocess.run(
+            [
+                "ssh",
+                *SSH_OPTIONS,
+                "-o",
+                "ConnectTimeout=5",
+                "-i",
+                str(key_path),
+                "-p",
+                str(args.ssh_port),
+                f"{user}@127.0.0.1",
+                "true",
+            ],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        if result.returncode == 0:
+            return
+        time.sleep(5)
+    print("Timed out waiting for FreeBSD SSH to become ready.", file=sys.stderr)
+    sys.exit(1)
+
+
+def ssh_command(args, command, user=None, tty=False):
     vm_dir = vm_dir_path(args.vm_dir)
     key_path = ssh_key_path(vm_dir)
     if not key_path.exists():
-        print(f"Missing SSH key at {key_path}. Start the VM first.", file=sys.stderr)
-        sys.exit(1)
+        wait_for_ssh_key(args)
     ssh_user = user or args.user
-    run(
-        [
-            "ssh",
-            *SSH_OPTIONS,
-            "-i",
-            str(key_path),
-            "-p",
-            str(args.ssh_port),
-            f"{ssh_user}@127.0.0.1",
-            command,
-        ]
-    )
+    cmd = [
+        "ssh",
+        *SSH_OPTIONS,
+        "-i",
+        str(key_path),
+        "-p",
+        str(args.ssh_port),
+    ]
+    if tty:
+        cmd.append("-tt")
+    cmd.extend([f"{ssh_user}@127.0.0.1", command])
+    run(cmd)
 
 
 def shell_vm(args):
@@ -184,8 +256,7 @@ def shell_vm(args):
     vm_dir = vm_dir_path(args.vm_dir)
     key_path = ssh_key_path(vm_dir)
     if not key_path.exists():
-        print(f"Missing SSH key at {key_path}. Start the VM first.", file=sys.stderr)
-        sys.exit(1)
+        wait_for_ssh_key(args)
     run(
         [
             "ssh",
@@ -204,8 +275,7 @@ def sync_repo(args):
     vm_dir = vm_dir_path(args.vm_dir)
     key_path = ssh_key_path(vm_dir)
     if not key_path.exists():
-        print(f"Missing SSH key at {key_path}. Start the VM first.", file=sys.stderr)
-        sys.exit(1)
+        wait_for_ssh_key(args)
 
     repo = repo_root()
     remote_dir = args.remote_dir or f"/home/{args.user}/dart"
@@ -234,6 +304,32 @@ def sync_repo(args):
     run(rsync_cmd)
 
 
+def should_apply_ports_patches():
+    value = os.getenv("FREEBSD_VM_APPLY_PORTS_PATCHES", "1")
+    return value.lower() not in {"0", "false", "no"}
+
+
+def apply_ports_patches(args):
+    if not should_apply_ports_patches():
+        return
+    patch_dir = ports_patch_dir()
+    patch_files = sorted(patch_dir.glob("patch-*"))
+    if not patch_files:
+        print(
+            f"No FreeBSD ports patches found under {patch_dir}.",
+            file=sys.stderr,
+        )
+        return
+    remote_dir = args.remote_dir or f"/home/{args.user}/dart"
+    for patch_file in patch_files:
+        rel_path = os.path.relpath(patch_file, repo_root())
+        command = (
+            f"cd {remote_dir} && "
+            f"patch -p0 -N -i {shlex.quote(rel_path)}"
+        )
+        ssh_command(args, command, user=args.user)
+
+
 def should_skip_bootstrap():
     value = os.getenv("FREEBSD_VM_SKIP_BOOTSTRAP", "")
     return value.lower() in {"1", "true", "yes"}
@@ -250,14 +346,23 @@ def bootstrap_vm(args):
         else DEFAULT_PACKAGES
     )
     package_list = " ".join(packages)
-    command = f"pkg update -f && pkg install -y {package_list}"
-    ssh_command(args, command, user="root")
+    root_password = os.getenv("FREEBSD_VM_ROOT_PASSWORD", "freebsd")
+    command = (
+        "ASSUME_ALWAYS_YES=yes pkg update -f && "
+        f"ASSUME_ALWAYS_YES=yes pkg install -y {package_list}"
+    )
+    su_command = (
+        f"printf '%s\\n' {shlex.quote(root_password)} | "
+        f"su -m root -c {shlex.quote(command)}"
+    )
+    ssh_command(args, su_command, user=args.user, tty=True)
 
 
 def test_vm(args):
     ensure_started(args)
     bootstrap_vm(args)
     sync_repo(args)
+    apply_ports_patches(args)
 
     remote_dir = args.remote_dir or f"/home/{args.user}/dart"
     build_dir = os.getenv("FREEBSD_VM_BUILD_DIR", DEFAULT_BUILD_DIR)

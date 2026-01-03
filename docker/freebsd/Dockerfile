@@ -10,6 +10,7 @@ RUN apt-get update \
         openssh-client \
         python3 \
         qemu-system-x86 \
+        qemu-utils \
         xz-utils \
     && rm -rf /var/lib/apt/lists/*
 
