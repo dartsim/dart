@@ -207,14 +207,14 @@ void NameManager<T>::clear()
 template <class T>
 bool NameManager<T>::hasName(const std::string& _name) const
 {
-  return (mMap.find(_name) != mMap.end());
+  return mMap.contains(_name);
 }
 
 //==============================================================================
 template <class T>
 bool NameManager<T>::hasObject(const T& _obj) const
 {
-  return (mReverseMap.find(_obj) != mReverseMap.end());
+  return mReverseMap.contains(_obj);
 }
 
 //==============================================================================

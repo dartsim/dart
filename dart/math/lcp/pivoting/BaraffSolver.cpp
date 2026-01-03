@@ -69,7 +69,7 @@ enum class SetType
 
 void RemoveIndex(std::vector<int>& indices, int idx)
 {
-  const auto it = std::find(indices.begin(), indices.end(), idx);
+  const auto it = std::ranges::find(indices, idx);
   if (it == indices.end())
     return;
 
