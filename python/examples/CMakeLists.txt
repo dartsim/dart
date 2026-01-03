@@ -47,8 +47,8 @@ function(dartpy_add_example example_name) # ARGN for source file
   )
 endfunction()
 
-# Automatically identify all main.py entries under the examples tree.
-file(GLOB_RECURSE example_sources RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*/main.py")
+# Automatically identify main.py entries in top-level example directories.
+file(GLOB example_sources RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*/main.py")
 list(SORT example_sources)
 foreach(example_source ${example_sources})
   get_filename_component(example_dir "${example_source}" DIRECTORY)
