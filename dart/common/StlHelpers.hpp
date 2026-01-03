@@ -37,6 +37,7 @@
 
 #include <dart/common/Memory.hpp>
 
+#include <span>
 #include <vector>
 
 #include <cassert>
@@ -47,8 +48,7 @@ namespace common {
 
 //==============================================================================
 template <typename T>
-static T getVectorObjectIfAvailable(
-    std::size_t index, const std::vector<T>& vec)
+static T getVectorObjectIfAvailable(std::size_t index, std::span<const T> vec)
 {
   DART_ASSERT(index < vec.size());
   if (index < vec.size())

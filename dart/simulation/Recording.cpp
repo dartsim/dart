@@ -46,17 +46,17 @@ namespace dart {
 namespace simulation {
 
 //==============================================================================
-Recording::Recording(const std::vector<dynamics::SkeletonPtr>& _skeletons)
+Recording::Recording(std::span<const dynamics::SkeletonPtr> skeletons)
 {
-  for (std::size_t i = 0; i < _skeletons.size(); i++)
-    mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getNumDofs());
+  for (std::size_t i = 0; i < skeletons.size(); i++)
+    mNumGenCoordsForSkeletons.push_back(skeletons[i]->getNumDofs());
 }
 
 //==============================================================================
-Recording::Recording(const std::vector<int>& _skelDofs)
+Recording::Recording(std::span<const int> skelDofs)
 {
-  for (std::size_t i = 0; i < _skelDofs.size(); i++)
-    mNumGenCoordsForSkeletons.push_back(_skelDofs[i]);
+  for (std::size_t i = 0; i < skelDofs.size(); i++)
+    mNumGenCoordsForSkeletons.push_back(skelDofs[i]);
 }
 
 //==============================================================================
@@ -139,11 +139,11 @@ void Recording::addState(const Eigen::VectorXd& _state)
 
 //==============================================================================
 void Recording::updateNumGenCoords(
-    const std::vector<dynamics::SkeletonPtr>& _skeletons)
+    std::span<const dynamics::SkeletonPtr> skeletons)
 {
   mNumGenCoordsForSkeletons.clear();
-  for (std::size_t i = 0; i < _skeletons.size(); ++i)
-    mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getNumDofs());
+  for (std::size_t i = 0; i < skeletons.size(); ++i)
+    mNumGenCoordsForSkeletons.push_back(skeletons[i]->getNumDofs());
 }
 
 } // namespace simulation

@@ -64,8 +64,8 @@ public:
   SharedLibraryIkFast(
       InverseKinematics* ik,
       const std::string& filePath,
-      const std::vector<std::size_t>& dofMap,
-      const std::vector<std::size_t>& freeDofMap,
+      std::span<const std::size_t> dofMap,
+      std::span<const std::size_t> freeDofMap,
       const std::string& methodName = "IKFast",
       const Analytical::Properties& properties = Analytical::Properties());
 

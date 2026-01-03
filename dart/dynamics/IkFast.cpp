@@ -200,7 +200,7 @@ void convertIkSolutions(
 //==============================================================================
 bool checkDofMapValidity(
     const InverseKinematics* ik,
-    const std::vector<std::size_t>& dofMap,
+    std::span<const std::size_t> dofMap,
     const std::string& dofMapName)
 {
   // dependentDofs are the dependent DOFs of the BodyNode that is associated
@@ -237,16 +237,16 @@ bool checkDofMapValidity(
 //==============================================================================
 IkFast::IkFast(
     InverseKinematics* ik,
-    const std::vector<std::size_t>& dofMap,
-    const std::vector<std::size_t>& freeDofMap,
+    std::span<const std::size_t> dofMap,
+    std::span<const std::size_t> freeDofMap,
     const std::string& methodName,
     const InverseKinematics::Analytical::Properties& properties)
   : Analytical{ik, methodName, properties}, mConfigured{false}
 {
   setExtraDofUtilization(UNUSED);
 
-  mDofs = dofMap;
-  mFreeDofs = freeDofMap;
+  mDofs.assign(dofMap.begin(), dofMap.end());
+  mFreeDofs.assign(freeDofMap.begin(), freeDofMap.end());
 }
 
 //==============================================================================
