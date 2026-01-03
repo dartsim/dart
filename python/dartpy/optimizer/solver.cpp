@@ -7,7 +7,10 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 #include <nanobind/trampoline.h>
+
+#include <string>
 
 namespace nb = nanobind;
 
@@ -23,15 +26,26 @@ public:
     NB_OVERRIDE_PURE(solve);
   }
 
-  std::string getType() const override
+  std::string_view getType() const override
   {
-    NB_OVERRIDE_PURE(getType);
+    // Cache the Python string so the view stays valid after the override.
+    if (!mTypeCacheInitialized) {
+      nb::detail::ticket nb_ticket(nb_trampoline, "getType", true);
+      mTypeCache
+          = nb::cast<std::string>(nb_trampoline.base().attr(nb_ticket.key)());
+      mTypeCacheInitialized = true;
+    }
+    return mTypeCache;
   }
 
   std::shared_ptr<dart::math::Solver> clone() const override
   {
     NB_OVERRIDE_PURE(clone);
   }
+
+private:
+  mutable std::string mTypeCache;
+  mutable bool mTypeCacheInitialized = false;
 };
 
 void defOptimizerSolver(nb::module_& m)

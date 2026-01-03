@@ -40,6 +40,7 @@
 
 #include <iostream>
 #include <span>
+#include <string_view>
 #include <vector>
 
 using namespace Eigen;
@@ -156,9 +157,10 @@ public:
     return false;
   }
 
-  std::string getType() const override
+  std::string_view getType() const override
   {
-    return "FailingSolver";
+    static constexpr std::string_view type = "FailingSolver";
+    return type;
   }
 
   std::shared_ptr<Solver> clone() const override

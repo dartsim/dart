@@ -55,3 +55,9 @@
 - Keep `CollisionDetector`/`BoxedLcpSolver` `getType()` returning
   `const std::string&` for gz-physics compatibility; add `getTypeView()` for
   `std::string_view` access.
+
+### Phase 12: Optimization solver type strings
+
+- Switch `math::optimization::Solver::getType()` to return
+  `std::string_view` for non-owning type identifiers.
+- Update `GradientDescentSolver` and the dartpy trampoline/bindings.
