@@ -149,7 +149,7 @@ def main():
         "-drive",
         f"file={seed_img},media=cdrom,format=raw",
         "-netdev",
-        f"user,id=net0,hostfwd=tcp::{ssh_port}-:22",
+        f"user,id=net0,hostfwd=tcp:0.0.0.0:{ssh_port}-:22",
         "-device",
         "virtio-net-pci,netdev=net0",
         "-display",
