@@ -186,7 +186,7 @@ void ShapeFrameNode::refreshShapeNode(
 
 //==============================================================================
 static void warnAboutUnsuccessfulCast(
-    const std::string& shapeType, const std::string& entityName)
+    std::string_view shapeType, std::string_view entityName)
 {
   DART_WARN(
       "A Shape in '{}' claimed to be a '{}' but it failed to be dynamically "

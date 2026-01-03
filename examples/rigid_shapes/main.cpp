@@ -460,7 +460,7 @@ int main(int argc, char* argv[])
   }
 
   if (const auto detector = myWorld->getCollisionDetector()) {
-    std::cout << "Collision detector: " << detector->getType() << std::endl;
+    std::cout << "Collision detector: " << detector->getTypeView() << std::endl;
   }
 
   auto& collisionOption = myWorld->getConstraintSolver()->getCollisionOption();

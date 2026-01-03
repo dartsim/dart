@@ -89,15 +89,15 @@ HumanArmJointLimitConstraint::HumanArmJointLimitConstraint(
 }
 
 //==============================================================================
-const std::string& HumanArmJointLimitConstraint::getType() const
+std::string_view HumanArmJointLimitConstraint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& HumanArmJointLimitConstraint::getStaticType()
+std::string_view HumanArmJointLimitConstraint::getStaticType()
 {
-  static const std::string name = "HumanArmJointLimitConstraint";
+  static constexpr std::string_view name = "HumanArmJointLimitConstraint";
   return name;
 }
 

@@ -133,15 +133,15 @@ RevoluteJointConstraint::RevoluteJointConstraint(
 RevoluteJointConstraint::~RevoluteJointConstraint() = default;
 
 //==============================================================================
-const std::string& RevoluteJointConstraint::getType() const
+std::string_view RevoluteJointConstraint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& RevoluteJointConstraint::getStaticType()
+std::string_view RevoluteJointConstraint::getStaticType()
 {
-  static const std::string name = "RevoluteJointConstraint";
+  static constexpr std::string_view name = "RevoluteJointConstraint";
   return name;
 }
 

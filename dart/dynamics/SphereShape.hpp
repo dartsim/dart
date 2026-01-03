@@ -48,10 +48,10 @@ public:
   virtual ~SphereShape();
 
   // Documentation inherited.
-  const std::string& getType() const override;
+  std::string_view getType() const override;
 
   /// Returns shape type for this class
-  static const std::string& getStaticType();
+  static std::string_view getStaticType();
 
   /// Set radius of this box.
   void setRadius(double radius);

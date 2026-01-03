@@ -62,7 +62,7 @@ PointCloudShape::PointCloudShape(double visualSize)
 }
 
 //==============================================================================
-const std::string& PointCloudShape::getType() const
+std::string_view PointCloudShape::getType() const
 {
   return getStaticType();
 }
@@ -74,9 +74,9 @@ Eigen::Matrix3d PointCloudShape::computeInertia(double /*mass*/) const
 }
 
 //==============================================================================
-const std::string& PointCloudShape::getStaticType()
+std::string_view PointCloudShape::getStaticType()
 {
-  static const std::string type("PointCloudShape");
+  static constexpr std::string_view type = "PointCloudShape";
   return type;
 }
 

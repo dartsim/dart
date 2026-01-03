@@ -100,15 +100,15 @@ UniversalJoint& UniversalJoint::operator=(const UniversalJoint& _otherJoint)
 }
 
 //==============================================================================
-const std::string& UniversalJoint::getType() const
+std::string_view UniversalJoint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& UniversalJoint::getStaticType()
+std::string_view UniversalJoint::getStaticType()
 {
-  static const std::string name = "UniversalJoint";
+  static constexpr std::string_view name = "UniversalJoint";
   return name;
 }
 

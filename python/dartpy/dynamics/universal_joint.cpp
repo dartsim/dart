@@ -31,10 +31,9 @@ void defUniversalJoint(nb::module_& m)
           })
       .def(
           "getType",
-          [](const UniversalJoint& self) -> const std::string& {
-            return self.getType();
-          },
-          nb::rv_policy::reference_internal)
+          [](const UniversalJoint& self) {
+            return std::string(self.getType());
+          })
       .def("isCyclic", &UniversalJoint::isCyclic, nb::arg("index"))
       .def(
           "setAxis1",
@@ -66,12 +65,9 @@ void defUniversalJoint(nb::module_& m)
             return self.getRelativeJacobianStatic(positions);
           },
           nb::arg("positions"))
-      .def_static(
-          "getStaticType",
-          []() -> const std::string& {
-            return UniversalJoint::getStaticType();
-          },
-          nb::rv_policy::reference);
+      .def_static("getStaticType", []() {
+        return std::string(UniversalJoint::getStaticType());
+      });
 
   registerPolymorphicCaster<dart::dynamics::Joint, UniversalJoint>();
 }

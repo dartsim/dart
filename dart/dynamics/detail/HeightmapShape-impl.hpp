@@ -56,14 +56,14 @@ HeightmapShape<S>::HeightmapShape() : Shape(HEIGHTMAP), mScale(1, 1, 1)
 
 //==============================================================================
 template <typename S>
-const std::string& HeightmapShape<S>::getType() const
+std::string_view HeightmapShape<S>::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
 template <typename S>
-const std::string& HeightmapShape<S>::getStaticType()
+std::string_view HeightmapShape<S>::getStaticType()
 {
   static const std::string type
       = "HeightmapShape (" + std::string(typeid(S).name()) + ")";

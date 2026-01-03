@@ -61,15 +61,15 @@ ConvexMeshShape::ConvexMeshShape(
 }
 
 //==============================================================================
-const std::string& ConvexMeshShape::getType() const
+std::string_view ConvexMeshShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& ConvexMeshShape::getStaticType()
+std::string_view ConvexMeshShape::getStaticType()
 {
-  static const std::string type("ConvexMeshShape");
+  static constexpr std::string_view type = "ConvexMeshShape";
   return type;
 }
 

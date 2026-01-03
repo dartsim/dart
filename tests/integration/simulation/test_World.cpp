@@ -47,6 +47,7 @@
 
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <utility>
 #if DART_HAVE_BULLET
   #include "dart/collision/bullet/All.hpp"
@@ -74,9 +75,9 @@ public:
   using Factory = collision::CollisionDetector::Factory;
   using Creator = Factory::Creator;
 
-  ScopedCollisionFactoryDisabler(std::string key, Creator restorer)
+  ScopedCollisionFactoryDisabler(std::string_view key, Creator restorer)
     : mFactory(collision::CollisionDetector::getFactory()),
-      mKey(std::move(key)),
+      mKey(key),
       mRestorer(std::move(restorer))
   {
     if (!mFactory || !mFactory->canCreate(mKey))
@@ -447,8 +448,8 @@ TEST(World, ValidatingClones)
       auto originalCD = original->getCollisionDetector();
       auto cloneCD = clones.back()->getCollisionDetector();
 
-      std::string originalCDType = originalCD->getType();
-      std::string cloneCDType = cloneCD->getType();
+      std::string originalCDType{originalCD->getTypeView()};
+      std::string cloneCDType{cloneCD->getTypeView()};
 
       EXPECT_EQ(originalCDType, cloneCDType);
     }
@@ -468,7 +469,7 @@ TEST(World, SetCollisionDetectorByType)
   world->setCollisionDetector(CollisionDetectorType::Dart);
 
   ASSERT_TRUE(world->getCollisionDetector());
-  EXPECT_EQ(world->getCollisionDetector()->getType(), "dart");
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
 }
 
 //==============================================================================
@@ -485,7 +486,7 @@ TEST(World, ConfiguresCollisionDetectorViaConfig)
   config.collisionDetector = CollisionDetectorType::Dart;
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
-  EXPECT_EQ(world->getCollisionDetector()->getType(), "dart");
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
 }
 
 //==============================================================================
@@ -547,7 +548,7 @@ TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
 
   auto current = world->getCollisionDetector();
   ASSERT_TRUE(current);
-  EXPECT_EQ(current->getType(), original->getType());
+  EXPECT_EQ(current->getTypeView(), original->getTypeView());
 }
 
 //==============================================================================
@@ -569,7 +570,7 @@ TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
   EXPECT_EQ(
-      world->getCollisionDetector()->getType(),
+      world->getCollisionDetector()->getTypeView(),
       collision::FCLCollisionDetector::getStaticType());
 }
 
@@ -601,7 +602,7 @@ TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
   EXPECT_EQ(
-      world->getCollisionDetector()->getType(),
+      world->getCollisionDetector()->getTypeView(),
       collision::FCLCollisionDetector::getStaticType());
 }
 

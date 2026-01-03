@@ -2,12 +2,18 @@
 
 ## Status
 
-- Active branch: `cpp20/phase10`
-- Active PR (Phase 10): https://github.com/dartsim/dart/pull/2382
+- Active branch: `cpp20/phase11`
+- Active PR (Phase 11): https://github.com/dartsim/dart/pull/2384
+- Phase 10 PR: https://github.com/dartsim/dart/pull/2382
+- Phase 9 PR: https://github.com/dartsim/dart/pull/2380 (merged)
 - Phase 8 PR: https://github.com/dartsim/dart/pull/2376 (merged)
 - Phase 7 PR: https://github.com/dartsim/dart/pull/2375 (merged; empty-span guard fix)
 - CI monitoring and merge handled by the user.
-- Latest local validation: `DART_PARALLEL_JOBS=42 pixi run test-all` (passed).
+- Phase 11 compatibility: keep `CollisionDetector`/`BoxedLcpSolver` `getType()`
+  returning `const std::string&`; added `getTypeView()` for
+  `std::string_view`.
+- Latest local validation: `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run lint`,
+  `... pixi run test-all`, and `... pixi run -e gazebo test-gz` (passed).
 
 ## Completed
 
@@ -23,4 +29,4 @@
 ## Next
 
 - Monitor PR #2382 CI/review feedback (CI/merge handled by the user).
-- Start Phase 11 work now that the Phase 10 PR is open.
+- Monitor PR #2384 CI/review feedback (CI/merge handled by the user).

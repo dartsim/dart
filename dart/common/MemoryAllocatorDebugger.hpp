@@ -37,6 +37,7 @@
 
 #include <iostream>
 #include <mutex>
+#include <string_view>
 #include <unordered_map>
 
 namespace dart::common {
@@ -53,10 +54,10 @@ public:
   ~MemoryAllocatorDebugger();
 
   /// Returns type string.
-  [[nodiscard]] static const std::string& getStaticType();
+  [[nodiscard]] static std::string_view getStaticType();
 
   // Documentation inherited
-  [[nodiscard]] const std::string& getType() const override;
+  [[nodiscard]] std::string_view getType() const override;
 
   // Documentation inherited
   [[nodiscard]] void* allocate(size_t bytes) noexcept override;

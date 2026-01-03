@@ -16,8 +16,9 @@ void defConstraintBase(nb::module_& m)
   nb::class_<ConstraintBase>(m, "ConstraintBase")
       .def(
           "getType",
-          [](const ConstraintBase& self) { return self.getType(); },
-          nb::rv_policy::reference_internal)
+          [](const ConstraintBase& self) {
+            return std::string(self.getType());
+          })
       .def("getDimension", &ConstraintBase::getDimension)
       .def("update", &ConstraintBase::update);
 }

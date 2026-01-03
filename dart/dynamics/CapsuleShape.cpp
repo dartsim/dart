@@ -51,15 +51,15 @@ CapsuleShape::CapsuleShape(double radius, double height)
 }
 
 //==============================================================================
-const std::string& CapsuleShape::getType() const
+std::string_view CapsuleShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& CapsuleShape::getStaticType()
+std::string_view CapsuleShape::getStaticType()
 {
-  static const std::string type("CapsuleShape");
+  static constexpr std::string_view type = "CapsuleShape";
   return type;
 }
 
