@@ -3,23 +3,25 @@ You are resuming the C++20 modernization task in
 
 Current state:
 
-- Branch: `cpp20/phase11`
-- PR (Phase 11): https://github.com/dartsim/dart/pull/2384
-- Phase 10 PR: https://github.com/dartsim/dart/pull/2382
+- Branch: `cpp20/phase12`
+- PR (Phase 12): https://github.com/dartsim/dart/pull/2385
+- Phase 11 PR: https://github.com/dartsim/dart/pull/2384
+- Phase 10 PR: https://github.com/dartsim/dart/pull/2382 (merged)
 - Phase 9 PR: https://github.com/dartsim/dart/pull/2380 (merged)
 - Phase 8 PR: https://github.com/dartsim/dart/pull/2376 (merged)
 - Phase 7 PR: https://github.com/dartsim/dart/pull/2375 (merged; empty-span guard fix)
 - CI/merge are handled by the user.
-- Latest local validation: `DART_PARALLEL_JOBS=42 pixi run test-all` (passed).
+- Latest local validation: `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run test-all`; `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run -e gazebo test-gz` (passed).
 
 What to do next:
 
-1. Monitor PRs #2382 and #2384 for CI/review feedback.
-2. Start the next phase after Phase 11 lands (update `docs/dev_tasks/cpp20/00_plan.md` if a new phase is added).
+1. Monitor PRs #2384 and #2385 for CI/review feedback.
+2. Start the next phase after Phase 12 lands (update `docs/dev_tasks/cpp20/00_plan.md` if a new phase is added).
 3. Keep `docs/dev_tasks/cpp20/01_progress.md` current.
 
 Workflow requirements:
 
 - Run `pixi run lint` before each commit.
-- Run `pixi run test-all` before opening a PR.
+- Run `pixi run test-all` and `pixi run -e gazebo test-gz` before opening a PR (do not modify Gazebo sources).
+- Use `DART_PARALLEL_JOBS` set to 2/3 of `nproc` for builds/tests.
 - Use existing `pixi run ...` entry points only.
