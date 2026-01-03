@@ -175,12 +175,10 @@ void CollisionGroup::removeAllShapeFrames()
 //==============================================================================
 bool CollisionGroup::hasShapeFrame(const dynamics::ShapeFrame* shapeFrame) const
 {
-  return std::ranges::find_if(
-             mObjectInfoList,
-             [&](const std::unique_ptr<ObjectInfo>& info) {
-               return info->mFrame == shapeFrame;
-             })
-         != mObjectInfoList.end();
+  return std::ranges::any_of(
+      mObjectInfoList, [&](const std::unique_ptr<ObjectInfo>& info) {
+        return info->mFrame == shapeFrame;
+      });
 }
 
 //==============================================================================

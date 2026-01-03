@@ -16,22 +16,30 @@ void defString(nb::module_& m)
   m.def("toLower", &dart::common::toLower, nb::arg("str"));
   m.def(
       "trim",
-      &dart::common::trim,
+      [](const std::string& str, const std::string& whitespaces) {
+        return dart::common::trim(str, whitespaces);
+      },
       nb::arg("str"),
       nb::arg("whitespaces") = " \n\r\t");
   m.def(
       "trimLeft",
-      &dart::common::trimLeft,
+      [](const std::string& str, const std::string& whitespaces) {
+        return dart::common::trimLeft(str, whitespaces);
+      },
       nb::arg("str"),
       nb::arg("whitespaces") = " \n\r\t");
   m.def(
       "trimRight",
-      &dart::common::trimRight,
+      [](const std::string& str, const std::string& whitespaces) {
+        return dart::common::trimRight(str, whitespaces);
+      },
       nb::arg("str"),
       nb::arg("whitespaces") = " \n\r\t");
   m.def(
       "split",
-      &dart::common::split,
+      [](const std::string& str, const std::string& delimiters) {
+        return dart::common::split(str, delimiters);
+      },
       nb::arg("str"),
       nb::arg("delimiters") = " \n\r\t");
 }

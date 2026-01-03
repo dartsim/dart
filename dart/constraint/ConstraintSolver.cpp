@@ -368,12 +368,9 @@ bool ConstraintSolver::hasSkeleton(const ConstSkeletonPtr& skeleton) const
       skeleton != nullptr, "Not allowed to insert null pointer skeleton.");
 #endif
 
-  for (const auto& itrSkel : mSkeletons) {
-    if (itrSkel == skeleton)
-      return true;
-  }
-
-  return false;
+  return std::ranges::any_of(mSkeletons, [&](const SkeletonPtr& itrSkel) {
+    return itrSkel == skeleton;
+  });
 }
 
 //==============================================================================
