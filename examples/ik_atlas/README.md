@@ -1,10 +1,10 @@
-# Hubo Puppet Example
+# Atlas IK Example
 
 ## Summary
 
-- Goal: teleoperate the Hubo model with kinematic IK targets.
+- Goal: teleoperate the Atlas model with inverse kinematics targets.
 - Concepts/APIs: whole-body IK, interactive frames, support polygon visual.
-- Expected output: a kinematic Hubo model you can reposition with input.
+- Expected output: a kinematic Atlas model you can reposition with input.
 - Controls: mouse modifiers for drag modes; WASD/QE/FZ for movement.
 
 ## Notes

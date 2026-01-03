@@ -690,7 +690,7 @@ sequenceDiagram
 
 **Key Files**:
 
-- Example: [`examples/atlas_puppet/main.cpp`](../../examples/atlas_puppet/main.cpp)
+- Example: [`examples/ik_atlas/main.cpp`](../../examples/ik_atlas/main.cpp)
 - [`BodyNodeDnD`](dart/gui/DragAndDrop.hpp#L266)
 - [`IK::solve()`](dart/dynamics/IK.cpp#L142)
 - [`Viewer::enableDragAndDrop()`](dart/gui/Viewer.cpp#L189)
@@ -826,7 +826,7 @@ sequenceDiagram
 - Implementation: [`dart/io/Read.cpp`](dart/io/Read.cpp)
 - Internal parser: [`UrdfParser`](dart/utils/urdf/UrdfParser.hpp)
 - Entry point: [`UrdfParser::parseSkeleton()`](dart/utils/urdf/UrdfParser.cpp)
-- Example: [`examples/atlas_puppet/main.cpp`](../../examples/atlas_puppet/main.cpp)
+- Example: [`examples/ik_atlas/main.cpp`](../../examples/ik_atlas/main.cpp)
 - Notes: URDF `<limit>` on `planar` and `floating` joints is interpreted uniformly across all of their DOFs (with warnings), and planar joints derive their plane from the `<axis>` normal.
 
 ---

@@ -203,8 +203,8 @@ Options parseCommandLine(int argc, char* argv[])
   Options options;
 
   CLI::App app(
-      "Download and puppet the Unitree G1 humanoid directly from upstream "
-      "URDF resources.");
+      "Download and drive inverse kinematics targets for the Unitree G1 "
+      "humanoid directly from upstream URDF resources.");
 
   auto* packageUriOpt = app.add_option(
       "-p,--package-uri",

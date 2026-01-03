@@ -30,13 +30,21 @@
    `python/examples/README.md`.
 4. Sanity-check example discovery and runner tasks.
 
+## Decision Log
+
+- Removed `rerun` (placeholder, no sources).
+- Removed `speed_test`; keep `headless_simulation` as the headless example and
+  rely on `tests/benchmark/` for performance coverage.
+- Renamed `atlas_puppet`, `g1_puppet`, and `hubo_puppet` to `ik_atlas`,
+  `ik_g1`, and `ik_hubo`.
+
 ## Current Suggestions (Pending Decisions)
 
 ### Strong Removals (redundant/experimental/placeholder)
 
 - `boxes`: redundant with `hello_world`/`rigid_cubes`, README notes experimental,
   and it hard-codes Bullet.
-- `hubo_puppet`: overlaps `atlas_puppet`/`g1_puppet`, large legacy example.
+- `ik_hubo`: overlaps `ik_atlas`/`ik_g1`, large legacy example.
 - `coupler_constraint`: overlaps `mimic_pendulums`; keep the latter.
 - `joint_constraints`: overlaps `biped_stand`; keep the latter.
 - `simulation_event_handler`: very large, overlaps `empty`, `drag_and_drop`,

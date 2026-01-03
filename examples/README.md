@@ -39,10 +39,10 @@
 
 ### 04 Control and IK
 
-- `atlas_puppet`
+- `ik_atlas`
 - `atlas_simbicon`
 - `biped_stand`
-- `hubo_puppet`
+- `ik_hubo`
 - `operational_space_control`
 - `vehicle`
 - `wam_ikfast`
@@ -50,7 +50,7 @@
 ### 05 IO and Models
 
 - `fetch`
-- `g1_puppet`
+- `ik_g1`
 - `unified_loading`
 
 ### 06 Soft and Hybrid

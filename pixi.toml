@@ -808,9 +808,9 @@ run-cpp-target = { cmd = """
 
 ex = { cmd = "python scripts/run_cpp_example.py", depends-on = ["config"] }
 
-ex-atlas-puppet = { depends-on = [
+ex-ik-atlas = { depends-on = [
   { task = "run-cpp-target", args = [
-    "atlas_puppet",
+    "ik_atlas",
   ] },
 ] }
 

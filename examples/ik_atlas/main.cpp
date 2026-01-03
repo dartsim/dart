@@ -903,7 +903,7 @@ int main()
 
   // Display usage instructions
   std::cout << viewer.getInstructions() << std::endl;
-  std::cout << "\n=== Atlas Puppet Control Instructions ===\n"
+  std::cout << "\n=== Atlas IK Control Instructions ===\n"
             << "Mouse Controls:\n"
             << "  Alt + Click:   Translate body (preserve orientation)\n"
             << "  Ctrl + Click:  Rotate body (preserve position)\n"

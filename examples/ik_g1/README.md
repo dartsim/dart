@@ -1,4 +1,4 @@
-# G1 Puppet Example
+# G1 IK Example
 
 ## Summary
 
@@ -31,5 +31,5 @@ make
 From the build directory:
 
 ```bash
-./g1_puppet
+./ik_g1
 ```
