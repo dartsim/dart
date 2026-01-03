@@ -43,12 +43,29 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <chrono>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 
 using namespace dart;
 using namespace dart::test;
 using dart::common::Uri;
 using dart::utils::UrdfParser;
+
+namespace {
+
+std::filesystem::path makeTempDir(const std::string& tag)
+{
+  const auto stamp
+      = std::chrono::steady_clock::now().time_since_epoch().count();
+  const auto dir = std::filesystem::temp_directory_path()
+                   / (tag + "-" + std::to_string(stamp));
+  std::filesystem::create_directories(dir);
+  return dir;
+}
+
+} // namespace
 
 //==============================================================================
 TEST(UrdfParser, parseSkeleton_NonExistantPathReturnsNull)
@@ -110,6 +127,52 @@ TEST(UrdfParser, parseWorld)
   UrdfParser parser;
   EXPECT_TRUE(
       nullptr != parser.parseWorld("dart://sample/urdf/test/testWorld.urdf"));
+}
+
+//==============================================================================
+TEST(UrdfParser, parseWorld_ResolvesIncludedModel)
+{
+  UrdfParser parser;
+
+  const auto tempDir = makeTempDir("dart-urdf-world");
+  const auto modelPath = tempDir / "model.urdf";
+
+  std::ofstream modelFile(modelPath);
+  ASSERT_TRUE(modelFile.is_open());
+  modelFile << "<robot name=\"model\"><link name=\"link\"/></robot>";
+  modelFile.close();
+
+  const std::string worldXml = R"(
+<world name="world">
+  <include filename="model.urdf" model_name="model1"/>
+  <entity name="entity1" model="model1"/>
+</world>
+)";
+
+  const Uri baseUri = Uri::createFromPath((tempDir / "world.urdf").string());
+  EXPECT_TRUE(parser.parseWorldString(worldXml, baseUri) != nullptr);
+
+  std::filesystem::remove_all(tempDir);
+}
+
+//==============================================================================
+TEST(UrdfParser, parseWorld_MissingIncludeReturnsNull)
+{
+  UrdfParser parser;
+
+  const auto tempDir = makeTempDir("dart-urdf-world-missing");
+
+  const std::string worldXml = R"(
+<world name="world">
+  <include filename="model.urdf" model_name="model1"/>
+  <entity name="entity1" model="missing"/>
+</world>
+)";
+
+  const Uri baseUri = Uri::createFromPath((tempDir / "world.urdf").string());
+  EXPECT_EQ(parser.parseWorldString(worldXml, baseUri), nullptr);
+
+  std::filesystem::remove_all(tempDir);
 }
 
 //==============================================================================

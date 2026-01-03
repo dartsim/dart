@@ -35,6 +35,7 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <Eigen/Core>
@@ -50,6 +51,26 @@ std::pair<SkeletonPtr, BodyNode*> makeBodyNode()
   auto skel = Skeleton::create("s");
   auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
   return {std::move(skel), pair.second};
+}
+
+class TestBodyNode final : public BodyNode
+{
+public:
+  using BodyNode::BodyNode;
+
+  void callProcessNewEntity(Entity* entity)
+  {
+    processNewEntity(entity);
+  }
+
+  friend class Skeleton;
+};
+
+std::pair<SkeletonPtr, TestBodyNode*> makeTestBodyNode()
+{
+  auto skel = Skeleton::create("s");
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint, TestBodyNode>();
+  return {std::move(skel), static_cast<TestBodyNode*>(pair.second)};
 }
 
 TEST(BodyNodeCollisionSignals, FiresOnCreateAndRemove)
@@ -89,6 +110,22 @@ TEST(BodyNodeCollisionSignals, FiresOnCreateAndRemove)
   EXPECT_EQ(added, 1);
   EXPECT_EQ(removed, 1);
   EXPECT_EQ(lastRemoved, lastAdded);
+}
+
+TEST(BodyNodeCollisionSignals, TracksNonBodyNodeEntities)
+{
+  auto [skel, bn] = makeTestBodyNode();
+
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.1));
+  auto* shapeNode = bn->createShapeNodeWith<VisualAspect>(shape);
+  ASSERT_NE(shapeNode, nullptr);
+
+  auto frame = std::make_shared<SimpleFrame>();
+  frame->setParentFrame(bn);
+
+  bn->callProcessNewEntity(frame.get());
+
+  frame->setParentFrame(Frame::World());
 }
 
 TEST(BodyNodeCollisionSignals, FiresOnCollidableToggle)
