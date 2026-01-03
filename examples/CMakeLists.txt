@@ -58,7 +58,6 @@ add_subdirectory(tinkertoy)
 
 # Performance and scaling examples
 add_subdirectory(headless_simulation)
-add_subdirectory(speed_test)
 
 # Integration and tools examples
 if(DART_HAVE_OCTOMAP)

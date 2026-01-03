@@ -73,7 +73,6 @@
 ### 08 Performance and Scaling
 
 - `headless_simulation`
-- `speed_test`
 
 ### 09 Integration and Tools
 

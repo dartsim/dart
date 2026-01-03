@@ -5,6 +5,8 @@
 - In progress: consolidation decisions and feature-scope mapping.
 - Next: confirm keep/drop list, then apply changes in phases.
 - Completed: removed `rerun` placeholder example (no sources).
+- Completed: removed `speed_test`; keep `headless_simulation` as the headless
+  performance-focused example and rely on `tests/benchmark` for benchmarking.
 
 ## Goals
 
@@ -39,7 +41,6 @@
 - `joint_constraints`: overlaps `biped_stand`; keep the latter.
 - `simulation_event_handler`: very large, overlaps `empty`, `drag_and_drop`,
   and `add_delete_skels`.
-- `speed_test`: overlaps `headless_simulation`, not onboarding-focused.
 - `raylib`: experimental backend example.
 
 ### Likely Removals (tighten supported scope)
