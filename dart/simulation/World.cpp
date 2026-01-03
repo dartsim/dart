@@ -434,8 +434,7 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   }
 
   // If mSkeletons already has _skeleton, then we do nothing.
-  if (find(mSkeletons.begin(), mSkeletons.end(), _skeleton)
-      != mSkeletons.end()) {
+  if (std::ranges::find(mSkeletons, _skeleton) != mSkeletons.end()) {
     DART_WARN(
         "Skeleton named [{}] is already in the world.", _skeleton->getName());
     return _skeleton->getName();
@@ -538,8 +537,7 @@ std::set<dynamics::SkeletonPtr> World::removeAllSkeletons()
 //==============================================================================
 bool World::hasSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const
 {
-  return std::find(mSkeletons.begin(), mSkeletons.end(), skeleton)
-         != mSkeletons.end();
+  return std::ranges::find(mSkeletons, skeleton) != mSkeletons.end();
 }
 
 //==============================================================================
@@ -586,8 +584,7 @@ std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
     return "";
   }
 
-  if (find(mSimpleFrames.begin(), mSimpleFrames.end(), _frame)
-      != mSimpleFrames.end()) {
+  if (std::ranges::find(mSimpleFrames, _frame) != mSimpleFrames.end()) {
     DART_WARN(
         "SimpleFrame named [{}] is already in the world.", _frame->getName());
     return _frame->getName();
@@ -615,8 +612,7 @@ void World::removeSimpleFrame(const dynamics::SimpleFramePtr& _frame)
       _frame != nullptr
       && "Attempted to remove nullptr SimpleFrame from world");
 
-  std::vector<dynamics::SimpleFramePtr>::iterator it
-      = find(mSimpleFrames.begin(), mSimpleFrames.end(), _frame);
+  auto it = std::ranges::find(mSimpleFrames, _frame);
 
   if (it == mSimpleFrames.end()) {
     DART_WARN("Frame named [{}] is not in the world.", _frame->getName());

@@ -63,39 +63,45 @@ void toLowerInPlace(std::string& str)
 }
 
 //==============================================================================
-std::string trim(const std::string& str, const std::string& whitespaces)
+std::string trim(std::string_view str, std::string_view whitespaces)
 {
-  return trimRight(trimLeft(str, whitespaces), whitespaces);
+  const auto leftTrimmed = trimLeft(str, whitespaces);
+  return trimRight(leftTrimmed, whitespaces);
 }
 
 //==============================================================================
-std::string trimLeft(const std::string& str, const std::string& whitespaces)
+std::string trimLeft(std::string_view str, std::string_view whitespaces)
 {
-  size_t startpos = str.find_first_not_of(whitespaces);
-  return (startpos == std::string::npos) ? "" : str.substr(startpos);
+  const auto startpos = str.find_first_not_of(whitespaces);
+  if (startpos == std::string_view::npos)
+    return std::string();
+  return std::string(str.substr(startpos));
 }
 
 //==============================================================================
-std::string trimRight(const std::string& str, const std::string& whitespaces)
+std::string trimRight(std::string_view str, std::string_view whitespaces)
 {
-  size_t endpos = str.find_last_not_of(whitespaces);
-  return (endpos == std::string::npos) ? "" : str.substr(0, endpos + 1);
+  const auto endpos = str.find_last_not_of(whitespaces);
+  if (endpos == std::string_view::npos)
+    return std::string();
+  return std::string(str.substr(0, endpos + 1));
 }
 
 //==============================================================================
 std::vector<std::string> split(
-    const std::string& str, const std::string& delimiters)
+    std::string_view str, std::string_view delimiters)
 {
   std::vector<std::string> tokens;
   std::size_t start = str.find_first_not_of(delimiters), end = 0;
 
-  while ((end = str.find_first_of(delimiters, start)) != std::string::npos) {
-    tokens.push_back(str.substr(start, end - start));
+  while ((end = str.find_first_of(delimiters, start))
+         != std::string_view::npos) {
+    tokens.emplace_back(str.substr(start, end - start));
     start = str.find_first_not_of(delimiters, end);
   }
 
-  if (start != std::string::npos) {
-    tokens.push_back(str.substr(start));
+  if (start != std::string_view::npos) {
+    tokens.emplace_back(str.substr(start));
   }
 
   return tokens;

@@ -67,7 +67,7 @@ void Observer::addSubject(const Subject* _subject)
   if (nullptr == _subject)
     return;
 
-  if (mSubjects.find(_subject) != mSubjects.end())
+  if (mSubjects.contains(_subject))
     return;
 
   mSubjects.insert(_subject);
@@ -80,7 +80,7 @@ void Observer::removeSubject(const Subject* _subject)
   if (nullptr == _subject)
     return;
 
-  if (mSubjects.find(_subject) == mSubjects.end())
+  if (!mSubjects.contains(_subject))
     return;
 
   mSubjects.erase(_subject);

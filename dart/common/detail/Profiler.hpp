@@ -91,9 +91,9 @@ private:
 
   ProfileNode* findOrCreateChild(
       ProfileNode& parent, std::string_view label, std::string_view source);
-  static std::string padRight(const std::string& text, std::size_t width);
+  static std::string padRight(std::string_view text, std::size_t width);
   static bool useColor();
-  static std::string colorize(const std::string& text, const char* code);
+  static std::string colorize(std::string_view text, const char* code);
   static const char* heatColor(double pct);
   static std::string formatDurationAligned(std::uint64_t ns);
   static std::string formatFps(double fps);

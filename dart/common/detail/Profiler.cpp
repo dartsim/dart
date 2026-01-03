@@ -293,12 +293,16 @@ std::string Profiler::formatPercent(double pct)
   return oss.str();
 }
 
-std::string Profiler::padRight(const std::string& text, std::size_t width)
+std::string Profiler::padRight(std::string_view text, std::size_t width)
 {
   if (text.size() >= width) {
-    return text;
+    return std::string(text);
   }
-  return text + std::string(width - text.size(), ' ');
+  std::string padded;
+  padded.reserve(width);
+  padded.append(text);
+  padded.append(width - text.size(), ' ');
+  return padded;
 }
 
 bool Profiler::useColor()
@@ -314,12 +318,12 @@ bool Profiler::useColor()
   return (val == "1" || val == "ON" || val == "TRUE" || val == "YES");
 }
 
-std::string Profiler::colorize(const std::string& text, const char* code)
+std::string Profiler::colorize(std::string_view text, const char* code)
 {
   if (!useColor()) {
-    return text;
+    return std::string(text);
   }
-  return std::string(code) + text + "\033[0m";
+  return std::string(code) + std::string(text) + "\033[0m";
 }
 
 const char* Profiler::heatColor(double pct)
