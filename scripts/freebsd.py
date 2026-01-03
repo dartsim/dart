@@ -445,7 +445,15 @@ def test_vm(args):
         f"cmake --build {build_dir} --target {build_targets_str} && "
         f"{test_command}"
     )
-    ssh_command(args, command, user=args.user)
+    try:
+        ssh_command(args, command, user=args.user)
+    except subprocess.CalledProcessError as exc:
+        print(
+            "FreeBSD VM build/test failed; ctest stops on the first failing test "
+            "and returns a non-zero exit status. See the output above for details.",
+            file=sys.stderr,
+        )
+        raise exc
 
 def parse_args():
     parser = argparse.ArgumentParser(
