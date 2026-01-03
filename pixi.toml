@@ -171,6 +171,10 @@ test-all = { cmd = """
     cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target ALL
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
+# freebsd-* tasks rsync the local repo into the FreeBSD VM and build that copy (pkg installs deps only).
+freebsd-test = { cmd = "python scripts/freebsd.py test" }
+freebsd-shell = { cmd = "python scripts/freebsd.py shell" }
+freebsd-stop = { cmd = "python scripts/freebsd.py stop" }
 config-coverage = { cmd = """
     cmake \
         -G Ninja \
