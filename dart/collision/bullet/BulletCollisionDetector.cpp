@@ -875,7 +875,7 @@ void reportRayHits(
   }
 
   if (option.mSortByClosest)
-    std::sort(result.mRayHits.begin(), result.mRayHits.end(), FractionLess());
+    std::ranges::sort(result.mRayHits, FractionLess());
 }
 
 //==============================================================================

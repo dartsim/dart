@@ -91,7 +91,7 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
     if (nullptr == bn)
       continue;
 
-    if (unique_bns.find(bn) != unique_bns.end())
+    if (unique_bns.contains(bn))
       continue;
 
     final_bns.push_back(bn);

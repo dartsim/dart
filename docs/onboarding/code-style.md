@@ -74,7 +74,7 @@ if (!result.isCollision()) [[likely]] {
 **Modernization summary (DART 7):** The codebase now assumes a C++20 baseline,
 so new read-only APIs should prefer non-owning views (`std::span`,
 `std::string_view`) and call sites should avoid temporary containers. Favor
-`std::ranges` algorithms or associative `contains` for membership checks when
+`std::ranges` algorithms, associative `contains`, and `std::erase(_if)` when
 they clarify intent. Keep modernizations behavior-preserving; avoid deep
 algorithm rewrites.
 

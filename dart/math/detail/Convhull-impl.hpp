@@ -212,13 +212,11 @@ inline void sortFloat(
   }
 
   if (descending) {
-    std::sort(data.begin(), data.end(), [](const auto& a, const auto& b) {
-      return a.value > b.value;
-    });
+    std::ranges::sort(
+        data, [](const auto& a, const auto& b) { return a.value > b.value; });
   } else {
-    std::sort(data.begin(), data.end(), [](const auto& a, const auto& b) {
-      return a.value < b.value;
-    });
+    std::ranges::sort(
+        data, [](const auto& a, const auto& b) { return a.value < b.value; });
   }
 
   for (int i = 0; i < len; i++) {
@@ -233,7 +231,7 @@ inline void sortFloat(
 
 inline void sortInt(int* ioVec, int len)
 {
-  std::sort(ioVec, ioVec + len);
+  std::ranges::sort(ioVec, ioVec + len);
 }
 
 } // namespace convhull_internal

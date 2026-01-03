@@ -576,9 +576,7 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   }
 
   // Remove _skeleton from mSkeletons
-  mSkeletons.erase(
-      remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
-      mSkeletons.end());
+  std::erase(mSkeletons, _skeleton);
 
   // Disconnect the name change monitor
   mNameConnectionsForSkeletons[index].disconnect();
@@ -599,11 +597,8 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 std::set<dynamics::SkeletonPtr> World::removeAllSkeletons()
 {
   std::set<dynamics::SkeletonPtr> ptrs;
-  for (std::vector<dynamics::SkeletonPtr>::iterator it = mSkeletons.begin(),
-                                                    end = mSkeletons.end();
-       it != end;
-       ++it)
-    ptrs.insert(*it);
+  for (const auto& skeleton : mSkeletons)
+    ptrs.insert(skeleton);
 
   while (getNumSkeletons() > 0)
     removeSkeleton(getSkeleton(0));
