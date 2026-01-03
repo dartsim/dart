@@ -29,9 +29,12 @@ public:
   std::string_view getType() const override
   {
     // Cache the Python string so the view stays valid after the override.
-    nb::detail::ticket nb_ticket(nb_trampoline, "getType", true);
-    mTypeCache
-        = nb::cast<std::string>(nb_trampoline.base().attr(nb_ticket.key)());
+    if (!mTypeCacheInitialized) {
+      nb::detail::ticket nb_ticket(nb_trampoline, "getType", true);
+      mTypeCache
+          = nb::cast<std::string>(nb_trampoline.base().attr(nb_ticket.key)());
+      mTypeCacheInitialized = true;
+    }
     return mTypeCache;
   }
 
@@ -42,6 +45,7 @@ public:
 
 private:
   mutable std::string mTypeCache;
+  mutable bool mTypeCacheInitialized = false;
 };
 
 void defOptimizerSolver(nb::module_& m)
