@@ -1,14 +1,14 @@
 # Search adapter headers and sources only
 set(hdrs
-  OdeCollisionDetector.hpp
-  OdeCollisionGroup.hpp
-  OdeCollisionObject.hpp
-  OdeStub.hpp
+  "${CMAKE_CURRENT_SOURCE_DIR}/OdeCollisionDetector.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/OdeCollisionGroup.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/OdeCollisionObject.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/OdeStub.hpp"
 )
 set(srcs
-  OdeCollisionDetector.cpp
-  OdeCollisionGroup.cpp
-  OdeCollisionObject.cpp
+  "${CMAKE_CURRENT_SOURCE_DIR}/OdeCollisionDetector.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/OdeCollisionGroup.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/OdeCollisionObject.cpp"
 )
 
 dart_add_core_headers(${hdrs})

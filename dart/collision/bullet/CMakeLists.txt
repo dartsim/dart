@@ -1,16 +1,16 @@
 # Search adapter headers and sources only
 set(hdrs
-  BulletCollisionDetector.hpp
-  BulletCollisionGroup.hpp
-  BulletCollisionObject.hpp
-  BulletCollisionShape.hpp
-  BulletInclude.hpp
+  "${CMAKE_CURRENT_SOURCE_DIR}/BulletCollisionDetector.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/BulletCollisionGroup.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/BulletCollisionObject.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/BulletCollisionShape.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/BulletInclude.hpp"
 )
 set(srcs
-  BulletCollisionDetector.cpp
-  BulletCollisionGroup.cpp
-  BulletCollisionObject.cpp
-  BulletCollisionShape.cpp
+  "${CMAKE_CURRENT_SOURCE_DIR}/BulletCollisionDetector.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/BulletCollisionGroup.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/BulletCollisionObject.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/BulletCollisionShape.cpp"
 )
 
 dart_add_core_headers(${hdrs})

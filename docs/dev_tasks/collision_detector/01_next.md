@@ -125,6 +125,7 @@
 - Adapter headers now use local stub types, and optional build toggles and find modules are removed.
 - Dependency removal is complete for legacy backends: build/pixi cleanup is done, build lists are trimmed, and colcon metadata is updated.
 - Updated collision benchmarks, integration tests, and python world test to use the built-in detector; backend-specific test files now skip for unsupported shapes (heightmap, mesh, capsule, convex mesh).
+- Fixed adapter CMake file lists to use absolute paths; `pixi run build-tests` passes.
 - Unit/integration collision tests now run against the built-in detector only, and the primitive contact matrix test was renamed.
 - Added a dartpy binding to toggle built-in raycast and updated python collision tests to use it.
 

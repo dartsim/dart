@@ -1,15 +1,15 @@
 # Search adapter headers and sources only
 set(hdrs
-  BackwardCompatibility.hpp
-  FCLCollisionDetector.hpp
-  FCLCollisionGroup.hpp
-  FCLCollisionObject.hpp
+  "${CMAKE_CURRENT_SOURCE_DIR}/BackwardCompatibility.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/FCLCollisionDetector.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/FCLCollisionGroup.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/FCLCollisionObject.hpp"
 )
 set(srcs
-  BackwardCompatibility.cpp
-  FCLCollisionDetector.cpp
-  FCLCollisionGroup.cpp
-  FCLCollisionObject.cpp
+  "${CMAKE_CURRENT_SOURCE_DIR}/BackwardCompatibility.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/FCLCollisionDetector.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/FCLCollisionGroup.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/FCLCollisionObject.cpp"
 )
 dart_add_core_headers(${hdrs} ${detail_hdrs})
 dart_add_core_sources(${srcs} ${detail_srcs})
