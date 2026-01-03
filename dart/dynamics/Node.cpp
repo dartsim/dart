@@ -35,6 +35,8 @@
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 
+#include <algorithm>
+
 #define REPORT_INVALID_NODE(func)                                              \
   DART_ERROR(                                                                  \
       "A valid BodyNode pointer is required during construction. "             \
@@ -215,7 +217,7 @@ void Node::attach()
 
     // If this Node believes its index is invalid, then it should not exist
     // anywhere in the vector
-    DART_ASSERT(std::find(nodes.begin(), nodes.end(), this) == nodes.end());
+    DART_ASSERT(std::ranges::find(nodes, this) == nodes.end());
 
     nodes.push_back(this);
     mIndexInBodyNode = nodes.size() - 1;
@@ -223,7 +225,7 @@ void Node::attach()
     destructors.insert(destructor);
   }
 
-  DART_ASSERT(std::find(nodes.begin(), nodes.end(), this) != nodes.end());
+  DART_ASSERT(std::ranges::find(nodes, this) != nodes.end());
   DART_ASSERT(destructors.contains(destructor));
 
   const SkeletonPtr& skel = mBodyNode->getSkeleton();
@@ -280,7 +282,7 @@ void Node::stageForRemoval()
   for (std::size_t i = mIndexInBodyNode; i < nodes.size(); ++i)
     nodes[i]->mIndexInBodyNode = i;
 
-  DART_ASSERT(std::find(nodes.begin(), nodes.end(), this) == nodes.end());
+  DART_ASSERT(std::ranges::find(nodes, this) == nodes.end());
 
   const SkeletonPtr& skel = mBodyNode->getSkeleton();
   if (skel)

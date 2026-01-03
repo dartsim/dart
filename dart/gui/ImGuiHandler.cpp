@@ -38,6 +38,8 @@
 
 #include "dart/gui/ImGuiHandler.hpp"
 
+#include <algorithm>
+
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/gui/ImGuiWidget.hpp"
@@ -339,7 +341,7 @@ void ImGuiHandler::setCameraCallbacks(::osg::Camera* camera)
 //==============================================================================
 bool ImGuiHandler::hasWidget(const std::shared_ptr<ImGuiWidget>& widget) const
 {
-  return std::find(mWidgets.begin(), mWidgets.end(), widget) != mWidgets.end();
+  return std::ranges::find(mWidgets, widget) != mWidgets.end();
 }
 
 //==============================================================================

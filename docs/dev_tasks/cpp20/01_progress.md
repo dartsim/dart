@@ -83,3 +83,6 @@
   `dart/sensor/SensorManager.cpp` and referential skeleton body/joint queries.
 - Phase 7: apply `std::ranges::find` in world, constraint solver, and
   constrained group membership checks.
+- Phase 7: replace remaining `std::find`/`std::find_if` in dynamics, collision,
+  GUI, and LCP solvers with `std::ranges` equivalents; use `contains` for
+  non-body entity set membership in `BodyNode`.
