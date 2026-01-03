@@ -55,7 +55,8 @@ void markSubtreeCacheDirty(entt::registry& registry, entt::entity root)
   std::vector<entt::entity> stack;
   stack.push_back(root);
 
-  auto frameStateView = registry.view<dart::simulation::experimental::comps::FrameState>();
+  auto frameStateView
+      = registry.view<dart::simulation::experimental::comps::FrameState>();
 
   while (!stack.empty()) {
     auto entity = stack.back();
@@ -65,12 +66,16 @@ void markSubtreeCacheDirty(entt::registry& registry, entt::entity root)
       continue;
     }
 
-    if (auto* cache = registry.try_get<dart::simulation::experimental::comps::FrameCache>(entity)) {
+    if (auto* cache
+        = registry.try_get<dart::simulation::experimental::comps::FrameCache>(
+            entity)) {
       cache->needTransformUpdate = true;
     }
 
     for (auto child : frameStateView) {
-      const auto& state = frameStateView.get<dart::simulation::experimental::comps::FrameState>(child);
+      const auto& state
+          = frameStateView
+                .get<dart::simulation::experimental::comps::FrameState>(child);
       if (state.parentFrame == entity) {
         stack.push_back(child);
       }
@@ -264,7 +269,8 @@ Eigen::Matrix4d Frame::getTransformMatrix() const
 Eigen::Isometry3d Frame::getTransform(const Frame& relativeTo) const
 {
   // Both frames must be valid
-  DART_EXPERIMENTAL_THROW_T_IF(!isValid(), InvalidArgumentException, "Invalid this frame");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid this frame");
   DART_EXPERIMENTAL_THROW_T_IF(
       !relativeTo.isValid(),
       InvalidArgumentException,
@@ -306,7 +312,8 @@ Eigen::Isometry3d Frame::getTransform(
     const Frame& to, const Frame& expressedIn) const
 {
   // Validate frames
-  DART_EXPERIMENTAL_THROW_T_IF(!isValid(), InvalidArgumentException, "Invalid this frame");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid this frame");
   DART_EXPERIMENTAL_THROW_T_IF(
       !to.isValid(), InvalidArgumentException, "Invalid 'to' frame");
   DART_EXPERIMENTAL_THROW_T_IF(

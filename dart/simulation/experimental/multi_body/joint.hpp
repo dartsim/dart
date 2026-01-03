@@ -49,11 +49,11 @@ namespace dart::simulation::experimental {
 /// Represents a joint connecting two links in a MultiBody. This is a
 /// lightweight handle to the underlying entity in the ECS registry.
 ///
-/// Unlike traditional OOP physics engines, the experimental stack uses a single generic Joint
-/// class with ECS architecture. All joint type-specific data is stored in
-/// JointComponent in the centralized entt::registry. The handle provides a
-/// unified interface regardless of joint type (revolute, prismatic, ball,
-/// etc.).
+/// Unlike traditional OOP physics engines, the experimental stack uses a single
+/// generic Joint class with ECS architecture. All joint type-specific data is
+/// stored in JointComponent in the centralized entt::registry. The handle
+/// provides a unified interface regardless of joint type (revolute, prismatic,
+/// ball, etc.).
 ///
 /// This design provides:
 /// - No polymorphism overhead (no vtables)

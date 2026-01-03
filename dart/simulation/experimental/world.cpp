@@ -67,9 +67,12 @@ std::size_t countEntities(const entt::registry& registry)
 template <typename Component>
 bool hasEntityWithName(const entt::registry& registry, std::string_view name)
 {
-  auto view = registry.view<Component, dart::simulation::experimental::comps::Name>();
+  auto view
+      = registry.view<Component, dart::simulation::experimental::comps::Name>();
   for (auto entity : view) {
-    const auto& info = view.template get<dart::simulation::experimental::comps::Name>(entity);
+    const auto& info
+        = view.template get<dart::simulation::experimental::comps::Name>(
+            entity);
     if (info.name == name) {
       return true;
     }

@@ -59,7 +59,8 @@ public:
 
   // Get the type name identifier for this component
   // This name is used in the binary format to identify component types
-  // Example: "dart::simulation::experimental::JointComponent" or "mylib::CustomJoint"
+  // Example: "dart::simulation::experimental::JointComponent" or
+  // "mylib::CustomJoint"
   virtual std::string_view getTypeName() const = 0;
 
   // Write component data to binary stream

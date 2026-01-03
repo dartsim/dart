@@ -115,7 +115,9 @@ TEST(MultiBody, LinkReparentThrows)
   auto child
       = robot.addLink("child", {.parentLink = base, .jointName = "joint"});
 
-  EXPECT_THROW(child.setParentFrame(base), dart::simulation::experimental::InvalidOperationException);
+  EXPECT_THROW(
+      child.setParentFrame(base),
+      dart::simulation::experimental::InvalidOperationException);
 }
 
 // Test MultiBody counts (currently empty)
@@ -176,7 +178,8 @@ TEST(MultiBody, SimpleTwoLinkChain)
       "link1",
       {.parentLink = baseLink,
        .jointName = "joint1",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute});
+       .jointType
+       = dart::simulation::experimental::comps::JointType::Revolute});
 
   EXPECT_EQ(robot.getLinkCount(), 2u);
   EXPECT_EQ(robot.getJointCount(), 1u);
@@ -316,7 +319,9 @@ TEST(MultiBody, DesignTimeRestriction)
   EXPECT_TRUE(world.isSimulationMode());
 
   // Attempting to create link should throw
-  EXPECT_THROW(robot.addLink("link2"), dart::simulation::experimental::InvalidArgumentException);
+  EXPECT_THROW(
+      robot.addLink("link2"),
+      dart::simulation::experimental::InvalidArgumentException);
 }
 
 // Test branching kinematic tree (not just serial chain)

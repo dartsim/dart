@@ -71,9 +71,10 @@ enum class ComponentCategory
 ///     DART_EXPERIMENTAL_PROPERTY_COMPONENT(Name);
 ///     std::string name;
 ///   };
-#define DART_EXPERIMENTAL_PROPERTY_COMPONENT(TypeName)                                     \
-  static constexpr ::dart::simulation::experimental::comps::ComponentCategory category                  \
-      = ::dart::simulation::experimental::comps::ComponentCategory::Property;                           \
+#define DART_EXPERIMENTAL_PROPERTY_COMPONENT(TypeName)                         \
+  static constexpr ::dart::simulation::experimental::comps::ComponentCategory  \
+      category                                                                 \
+      = ::dart::simulation::experimental::comps::ComponentCategory::Property;  \
   static constexpr bool serializable = true;                                   \
   [[nodiscard]] static std::string_view getTypeName()                          \
   {                                                                            \
@@ -94,9 +95,10 @@ enum class ComponentCategory
 ///       return std::tuple{&FrameState::parentFrame};
 ///     }
 ///   };
-#define DART_EXPERIMENTAL_STATE_COMPONENT(TypeName)                                        \
-  static constexpr ::dart::simulation::experimental::comps::ComponentCategory category                  \
-      = ::dart::simulation::experimental::comps::ComponentCategory::State;                              \
+#define DART_EXPERIMENTAL_STATE_COMPONENT(TypeName)                            \
+  static constexpr ::dart::simulation::experimental::comps::ComponentCategory  \
+      category                                                                 \
+      = ::dart::simulation::experimental::comps::ComponentCategory::State;     \
   static constexpr bool serializable = true;                                   \
   [[nodiscard]] static std::string_view getTypeName()                          \
   {                                                                            \
@@ -113,9 +115,10 @@ enum class ComponentCategory
 ///     Eigen::Isometry3d worldTransform;
 ///     bool needUpdate = true;
 ///   };
-#define DART_EXPERIMENTAL_CACHE_COMPONENT(TypeName)                                        \
-  static constexpr ::dart::simulation::experimental::comps::ComponentCategory category                  \
-      = ::dart::simulation::experimental::comps::ComponentCategory::Cache;                              \
+#define DART_EXPERIMENTAL_CACHE_COMPONENT(TypeName)                            \
+  static constexpr ::dart::simulation::experimental::comps::ComponentCategory  \
+      category                                                                 \
+      = ::dart::simulation::experimental::comps::ComponentCategory::Cache;     \
   static constexpr bool serializable = false;                                  \
   [[nodiscard]] static std::string_view getTypeName()                          \
   {                                                                            \
@@ -130,9 +133,10 @@ enum class ComponentCategory
 ///   struct FreeFrameTag {
 ///     DART_EXPERIMENTAL_TAG_COMPONENT(FreeFrameTag);
 ///   };
-#define DART_EXPERIMENTAL_TAG_COMPONENT(TypeName)                                          \
-  static constexpr ::dart::simulation::experimental::comps::ComponentCategory category                  \
-      = ::dart::simulation::experimental::comps::ComponentCategory::Tag;                                \
+#define DART_EXPERIMENTAL_TAG_COMPONENT(TypeName)                              \
+  static constexpr ::dart::simulation::experimental::comps::ComponentCategory  \
+      category                                                                 \
+      = ::dart::simulation::experimental::comps::ComponentCategory::Tag;       \
   static constexpr bool serializable = true;                                   \
   [[nodiscard]] static std::string_view getTypeName()                          \
   {                                                                            \

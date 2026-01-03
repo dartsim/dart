@@ -101,26 +101,31 @@ void DART_EXPERIMENTAL_API readString(std::istream& in, std::string& str);
 //==============================================================================
 
 // Write Eigen::Vector3d to binary stream
-void DART_EXPERIMENTAL_API writeVector3d(std::ostream& out, const Eigen::Vector3d& vec);
+void DART_EXPERIMENTAL_API
+writeVector3d(std::ostream& out, const Eigen::Vector3d& vec);
 
 // Read Eigen::Vector3d from binary stream
 void DART_EXPERIMENTAL_API readVector3d(std::istream& in, Eigen::Vector3d& vec);
 
 // Write Eigen::Isometry3d to binary stream
 // Format: 9 doubles for rotation matrix + 3 doubles for translation
-void DART_EXPERIMENTAL_API writeIsometry3d(std::ostream& out, const Eigen::Isometry3d& T);
+void DART_EXPERIMENTAL_API
+writeIsometry3d(std::ostream& out, const Eigen::Isometry3d& T);
 
 // Read Eigen::Isometry3d from binary stream
-void DART_EXPERIMENTAL_API readIsometry3d(std::istream& in, Eigen::Isometry3d& T);
+void DART_EXPERIMENTAL_API
+readIsometry3d(std::istream& in, Eigen::Isometry3d& T);
 
 // Write Eigen::VectorXd to binary stream (size-prefixed)
-void DART_EXPERIMENTAL_API writeVectorXd(std::ostream& out, const Eigen::VectorXd& vec);
+void DART_EXPERIMENTAL_API
+writeVectorXd(std::ostream& out, const Eigen::VectorXd& vec);
 
 // Read Eigen::VectorXd from binary stream
 void DART_EXPERIMENTAL_API readVectorXd(std::istream& in, Eigen::VectorXd& vec);
 
 // Write Eigen::MatrixXd to binary stream (rows/cols prefixed)
-void DART_EXPERIMENTAL_API writeMatrixXd(std::ostream& out, const Eigen::MatrixXd& mat);
+void DART_EXPERIMENTAL_API
+writeMatrixXd(std::ostream& out, const Eigen::MatrixXd& mat);
 
 // Read Eigen::MatrixXd from binary stream
 void DART_EXPERIMENTAL_API readMatrixXd(std::istream& in, Eigen::MatrixXd& mat);

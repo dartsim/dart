@@ -97,7 +97,9 @@ TEST(World, CannotEnterSimulationModeTwice)
   EXPECT_TRUE(world.isSimulationMode());
 
   // Second call should throw
-  EXPECT_THROW(world.enterSimulationMode(), dart::simulation::experimental::InvalidArgumentException);
+  EXPECT_THROW(
+      world.enterSimulationMode(),
+      dart::simulation::experimental::InvalidArgumentException);
 }
 
 // Test baking with empty world
@@ -128,7 +130,8 @@ TEST(World, BakingWithMultibodies)
       "link2",
       {.parentLink = link2,
        .jointName = "joint2",
-       .jointType = dart::simulation::experimental::comps::JointType::Prismatic});
+       .jointType
+       = dart::simulation::experimental::comps::JointType::Prismatic});
 
   // Baking should succeed
   EXPECT_NO_THROW(world.enterSimulationMode());
@@ -148,7 +151,9 @@ TEST(World, UpdateKinematicsRequiresSimulationMode)
   dart::simulation::experimental::World world;
 
   // updateKinematics should throw in design mode
-  EXPECT_THROW(world.updateKinematics(), dart::simulation::experimental::InvalidArgumentException);
+  EXPECT_THROW(
+      world.updateKinematics(),
+      dart::simulation::experimental::InvalidArgumentException);
 
   // After entering simulation mode, should work
   world.enterSimulationMode();

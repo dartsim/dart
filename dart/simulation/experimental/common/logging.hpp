@@ -41,16 +41,17 @@
 #include <string>
 
 #define DART_EXPERIMENTAL_DETAIL_PP_CONCAT_IMPL(a, b) a##b
-#define DART_EXPERIMENTAL_DETAIL_PP_CONCAT(a, b) DART_EXPERIMENTAL_DETAIL_PP_CONCAT_IMPL(a, b)
+#define DART_EXPERIMENTAL_DETAIL_PP_CONCAT(a, b)                               \
+  DART_EXPERIMENTAL_DETAIL_PP_CONCAT_IMPL(a, b)
 #if defined(__COUNTER__)
-  #define DART_EXPERIMENTAL_DETAIL_UNIQUE_NAME(prefix)                                     \
+  #define DART_EXPERIMENTAL_DETAIL_UNIQUE_NAME(prefix)                         \
     DART_EXPERIMENTAL_DETAIL_PP_CONCAT(prefix, __COUNTER__)
 #else
-  #define DART_EXPERIMENTAL_DETAIL_UNIQUE_NAME(prefix)                                     \
+  #define DART_EXPERIMENTAL_DETAIL_UNIQUE_NAME(prefix)                         \
     DART_EXPERIMENTAL_DETAIL_PP_CONCAT(prefix, __LINE__)
 #endif
 
-#define DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IMPL(flag, log_call)                             \
+#define DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IMPL(flag, log_call)                 \
   do {                                                                         \
     static bool flag = false;                                                  \
     if (!flag) {                                                               \
@@ -59,11 +60,13 @@
     }                                                                          \
   } while (false)
 
-#define DART_EXPERIMENTAL_DETAIL_LOG_ONCE(log_call)                                        \
-  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IMPL(                                                  \
-      DART_EXPERIMENTAL_DETAIL_UNIQUE_NAME(_dart_experimental_log_once_flag_), log_call)
+#define DART_EXPERIMENTAL_DETAIL_LOG_ONCE(log_call)                            \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IMPL(                                      \
+      DART_EXPERIMENTAL_DETAIL_UNIQUE_NAME(_dart_experimental_log_once_flag_), \
+      log_call)
 
-#define DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF_IMPL(flag, condition_expr, log_call)          \
+#define DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF_IMPL(                             \
+    flag, condition_expr, log_call)                                            \
   do {                                                                         \
     static bool flag = false;                                                  \
     if (!flag) {                                                               \
@@ -74,9 +77,9 @@
     }                                                                          \
   } while (false)
 
-#define DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(condition_expr, log_call)                     \
-  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF_IMPL(                                               \
-      DART_EXPERIMENTAL_DETAIL_UNIQUE_NAME(_dart_experimental_log_once_flag_),             \
+#define DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(condition_expr, log_call)         \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF_IMPL(                                   \
+      DART_EXPERIMENTAL_DETAIL_UNIQUE_NAME(_dart_experimental_log_once_flag_), \
       condition_expr,                                                          \
       log_call)
 
@@ -318,104 +321,115 @@ inline LogLevel getLogLevel()
 } // namespace dart::simulation::experimental::common
 
 // Logging macros with optional source context
-#define DART_EXPERIMENTAL_TRACE(...)                                                       \
-  ::dart::simulation::experimental::common::detail::log(                                                \
-      ::dart::simulation::experimental::common::LogLevel::Trace,                                        \
+#define DART_EXPERIMENTAL_TRACE(...)                                           \
+  ::dart::simulation::experimental::common::detail::log(                       \
+      ::dart::simulation::experimental::common::LogLevel::Trace,               \
       __FILE__,                                                                \
       __LINE__,                                                                \
       __func__,                                                                \
       __VA_ARGS__)
 
-#define DART_EXPERIMENTAL_DEBUG(...)                                                       \
-  ::dart::simulation::experimental::common::detail::log(                                                \
-      ::dart::simulation::experimental::common::LogLevel::Debug,                                        \
+#define DART_EXPERIMENTAL_DEBUG(...)                                           \
+  ::dart::simulation::experimental::common::detail::log(                       \
+      ::dart::simulation::experimental::common::LogLevel::Debug,               \
       __FILE__,                                                                \
       __LINE__,                                                                \
       __func__,                                                                \
       __VA_ARGS__)
 
-#define DART_EXPERIMENTAL_INFO(...)                                                        \
-  ::dart::simulation::experimental::common::detail::log(                                                \
-      ::dart::simulation::experimental::common::LogLevel::Info,                                         \
+#define DART_EXPERIMENTAL_INFO(...)                                            \
+  ::dart::simulation::experimental::common::detail::log(                       \
+      ::dart::simulation::experimental::common::LogLevel::Info,                \
       __FILE__,                                                                \
       __LINE__,                                                                \
       __func__,                                                                \
       __VA_ARGS__)
 
-#define DART_EXPERIMENTAL_WARN(...)                                                        \
-  ::dart::simulation::experimental::common::detail::log(                                                \
-      ::dart::simulation::experimental::common::LogLevel::Warn,                                         \
+#define DART_EXPERIMENTAL_WARN(...)                                            \
+  ::dart::simulation::experimental::common::detail::log(                       \
+      ::dart::simulation::experimental::common::LogLevel::Warn,                \
       __FILE__,                                                                \
       __LINE__,                                                                \
       __func__,                                                                \
       __VA_ARGS__)
 
-#define DART_EXPERIMENTAL_ERROR(...)                                                       \
-  ::dart::simulation::experimental::common::detail::log(                                                \
-      ::dart::simulation::experimental::common::LogLevel::Error,                                        \
+#define DART_EXPERIMENTAL_ERROR(...)                                           \
+  ::dart::simulation::experimental::common::detail::log(                       \
+      ::dart::simulation::experimental::common::LogLevel::Error,               \
       __FILE__,                                                                \
       __LINE__,                                                                \
       __func__,                                                                \
       __VA_ARGS__)
 
-#define DART_EXPERIMENTAL_CRITICAL(...)                                                    \
-  ::dart::simulation::experimental::common::detail::log(                                                \
-      ::dart::simulation::experimental::common::LogLevel::Critical,                                     \
+#define DART_EXPERIMENTAL_CRITICAL(...)                                        \
+  ::dart::simulation::experimental::common::detail::log(                       \
+      ::dart::simulation::experimental::common::LogLevel::Critical,            \
       __FILE__,                                                                \
       __LINE__,                                                                \
       __func__,                                                                \
       __VA_ARGS__)
 
 // Conditional logging
-#define DART_EXPERIMENTAL_INFO_IF(condition, ...)                                          \
+#define DART_EXPERIMENTAL_INFO_IF(condition, ...)                              \
   do {                                                                         \
     if (condition) {                                                           \
-      DART_EXPERIMENTAL_INFO(__VA_ARGS__);                                                 \
+      DART_EXPERIMENTAL_INFO(__VA_ARGS__);                                     \
     }                                                                          \
   } while (false)
 
-#define DART_EXPERIMENTAL_WARN_IF(condition, ...)                                          \
+#define DART_EXPERIMENTAL_WARN_IF(condition, ...)                              \
   do {                                                                         \
     if (condition) {                                                           \
-      DART_EXPERIMENTAL_WARN(__VA_ARGS__);                                                 \
+      DART_EXPERIMENTAL_WARN(__VA_ARGS__);                                     \
     }                                                                          \
   } while (false)
 
-#define DART_EXPERIMENTAL_ERROR_IF(condition, ...)                                         \
+#define DART_EXPERIMENTAL_ERROR_IF(condition, ...)                             \
   do {                                                                         \
     if (condition) {                                                           \
-      DART_EXPERIMENTAL_ERROR(__VA_ARGS__);                                                \
+      DART_EXPERIMENTAL_ERROR(__VA_ARGS__);                                    \
     }                                                                          \
   } while (false)
 
 // Log once helpers
-#define DART_EXPERIMENTAL_TRACE_ONCE(...) DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_TRACE(__VA_ARGS__))
+#define DART_EXPERIMENTAL_TRACE_ONCE(...)                                      \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_TRACE(__VA_ARGS__))
 
-#define DART_EXPERIMENTAL_TRACE_ONCE_IF(condition, ...)                                    \
-  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(condition, DART_EXPERIMENTAL_TRACE(__VA_ARGS__))
+#define DART_EXPERIMENTAL_TRACE_ONCE_IF(condition, ...)                        \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(                                        \
+      condition, DART_EXPERIMENTAL_TRACE(__VA_ARGS__))
 
-#define DART_EXPERIMENTAL_DEBUG_ONCE(...) DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_DEBUG(__VA_ARGS__))
+#define DART_EXPERIMENTAL_DEBUG_ONCE(...)                                      \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_DEBUG(__VA_ARGS__))
 
-#define DART_EXPERIMENTAL_DEBUG_ONCE_IF(condition, ...)                                    \
-  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(condition, DART_EXPERIMENTAL_DEBUG(__VA_ARGS__))
+#define DART_EXPERIMENTAL_DEBUG_ONCE_IF(condition, ...)                        \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(                                        \
+      condition, DART_EXPERIMENTAL_DEBUG(__VA_ARGS__))
 
-#define DART_EXPERIMENTAL_INFO_ONCE(...) DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_INFO(__VA_ARGS__))
+#define DART_EXPERIMENTAL_INFO_ONCE(...)                                       \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_INFO(__VA_ARGS__))
 
-#define DART_EXPERIMENTAL_INFO_ONCE_IF(condition, ...)                                     \
-  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(condition, DART_EXPERIMENTAL_INFO(__VA_ARGS__))
+#define DART_EXPERIMENTAL_INFO_ONCE_IF(condition, ...)                         \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(                                        \
+      condition, DART_EXPERIMENTAL_INFO(__VA_ARGS__))
 
-#define DART_EXPERIMENTAL_WARN_ONCE(...) DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_WARN(__VA_ARGS__))
+#define DART_EXPERIMENTAL_WARN_ONCE(...)                                       \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_WARN(__VA_ARGS__))
 
-#define DART_EXPERIMENTAL_WARN_ONCE_IF(condition, ...)                                     \
-  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(condition, DART_EXPERIMENTAL_WARN(__VA_ARGS__))
+#define DART_EXPERIMENTAL_WARN_ONCE_IF(condition, ...)                         \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(                                        \
+      condition, DART_EXPERIMENTAL_WARN(__VA_ARGS__))
 
-#define DART_EXPERIMENTAL_ERROR_ONCE(...) DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_ERROR(__VA_ARGS__))
+#define DART_EXPERIMENTAL_ERROR_ONCE(...)                                      \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_ERROR(__VA_ARGS__))
 
-#define DART_EXPERIMENTAL_ERROR_ONCE_IF(condition, ...)                                    \
-  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(condition, DART_EXPERIMENTAL_ERROR(__VA_ARGS__))
+#define DART_EXPERIMENTAL_ERROR_ONCE_IF(condition, ...)                        \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(                                        \
+      condition, DART_EXPERIMENTAL_ERROR(__VA_ARGS__))
 
-#define DART_EXPERIMENTAL_CRITICAL_ONCE(...)                                               \
+#define DART_EXPERIMENTAL_CRITICAL_ONCE(...)                                   \
   DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_CRITICAL(__VA_ARGS__))
 
-#define DART_EXPERIMENTAL_CRITICAL_ONCE_IF(condition, ...)                                 \
-  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(condition, DART_EXPERIMENTAL_CRITICAL(__VA_ARGS__))
+#define DART_EXPERIMENTAL_CRITICAL_ONCE_IF(condition, ...)                     \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(                                        \
+      condition, DART_EXPERIMENTAL_CRITICAL(__VA_ARGS__))

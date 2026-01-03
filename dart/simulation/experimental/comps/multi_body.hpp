@@ -51,8 +51,8 @@ struct MultiBodyTag
 
 /// Component storing MultiBody structure (links, joints)
 ///
-/// Automatically serialized with entity remapping via DART_EXPERIMENTAL_STATE_COMPONENT
-/// macro.
+/// Automatically serialized with entity remapping via
+/// DART_EXPERIMENTAL_STATE_COMPONENT macro.
 /// **Internal Implementation Detail** - Not exposed in public API
 struct MultiBodyStructure
 {

@@ -193,7 +193,8 @@ std::uint32_t readFormatHeader(std::istream& in)
   // Check version compatibility
   if (version > kBinaryFormatVersion) {
     throw std::runtime_error(
-        "Unsupported simulation-experimental binary format version: file version "
+        "Unsupported simulation-experimental binary format version: file "
+        "version "
         + std::to_string(version) + " is newer than supported version "
         + std::to_string(kBinaryFormatVersion));
   }

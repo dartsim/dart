@@ -150,7 +150,9 @@ TEST(Serialization, TwoLinkChain)
   auto joint1_restored = mb_restored->getJoint("joint1");
   ASSERT_TRUE(joint1_restored.has_value());
   EXPECT_EQ(joint1_restored->getName(), "joint1");
-  EXPECT_EQ(joint1_restored->getType(), dart::simulation::experimental::comps::JointType::Revolute);
+  EXPECT_EQ(
+      joint1_restored->getType(),
+      dart::simulation::experimental::comps::JointType::Revolute);
 
   // Verify joint axis
   auto axis = joint1_restored->getAxis();
@@ -391,7 +393,9 @@ TEST(Serialization, ComplexHierarchy)
   // Verify all joints and their properties
   auto shoulder_pan = robot_restored->getJoint("shoulder_pan");
   ASSERT_TRUE(shoulder_pan.has_value());
-  EXPECT_EQ(shoulder_pan->getType(), dart::simulation::experimental::comps::JointType::Revolute);
+  EXPECT_EQ(
+      shoulder_pan->getType(),
+      dart::simulation::experimental::comps::JointType::Revolute);
   auto axis1 = shoulder_pan->getAxis();
   EXPECT_DOUBLE_EQ(axis1[0], 0.0);
   EXPECT_DOUBLE_EQ(axis1[1], 0.0);
@@ -399,7 +403,9 @@ TEST(Serialization, ComplexHierarchy)
 
   auto shoulder_lift = robot_restored->getJoint("shoulder_lift");
   ASSERT_TRUE(shoulder_lift.has_value());
-  EXPECT_EQ(shoulder_lift->getType(), dart::simulation::experimental::comps::JointType::Revolute);
+  EXPECT_EQ(
+      shoulder_lift->getType(),
+      dart::simulation::experimental::comps::JointType::Revolute);
   auto axis2 = shoulder_lift->getAxis();
   EXPECT_DOUBLE_EQ(axis2[0], 0.0);
   EXPECT_DOUBLE_EQ(axis2[1], 1.0);
@@ -407,7 +413,9 @@ TEST(Serialization, ComplexHierarchy)
 
   auto elbow = robot_restored->getJoint("elbow");
   ASSERT_TRUE(elbow.has_value());
-  EXPECT_EQ(elbow->getType(), dart::simulation::experimental::comps::JointType::Revolute);
+  EXPECT_EQ(
+      elbow->getType(),
+      dart::simulation::experimental::comps::JointType::Revolute);
   auto axis3 = elbow->getAxis();
   EXPECT_DOUBLE_EQ(axis3[0], 0.0);
   EXPECT_DOUBLE_EQ(axis3[1], 1.0);
@@ -415,11 +423,15 @@ TEST(Serialization, ComplexHierarchy)
 
   auto wrist_1 = robot_restored->getJoint("wrist_1");
   ASSERT_TRUE(wrist_1.has_value());
-  EXPECT_EQ(wrist_1->getType(), dart::simulation::experimental::comps::JointType::Revolute);
+  EXPECT_EQ(
+      wrist_1->getType(),
+      dart::simulation::experimental::comps::JointType::Revolute);
 
   auto wrist_2 = robot_restored->getJoint("wrist_2");
   ASSERT_TRUE(wrist_2.has_value());
-  EXPECT_EQ(wrist_2->getType(), dart::simulation::experimental::comps::JointType::Revolute);
+  EXPECT_EQ(
+      wrist_2->getType(),
+      dart::simulation::experimental::comps::JointType::Revolute);
   auto axis5 = wrist_2->getAxis();
   EXPECT_DOUBLE_EQ(axis5[0], 0.0);
   EXPECT_DOUBLE_EQ(axis5[1], 0.0);
@@ -427,7 +439,9 @@ TEST(Serialization, ComplexHierarchy)
 
   auto wrist_3 = robot_restored->getJoint("wrist_3");
   ASSERT_TRUE(wrist_3.has_value());
-  EXPECT_EQ(wrist_3->getType(), dart::simulation::experimental::comps::JointType::Revolute);
+  EXPECT_EQ(
+      wrist_3->getType(),
+      dart::simulation::experimental::comps::JointType::Revolute);
   auto axis6 = wrist_3->getAxis();
   EXPECT_DOUBLE_EQ(axis6[0], 0.0);
   EXPECT_DOUBLE_EQ(axis6[1], 1.0);
@@ -488,7 +502,8 @@ TEST(Serialization, EmptyNames)
   dart::simulation::experimental::World world1;
   auto mb = world1.addMultiBody("");
   auto base = mb.addLink("");
-  dart::simulation::experimental::LinkOptions opts{.parentLink = base, .jointName = ""};
+  dart::simulation::experimental::LinkOptions opts{
+      .parentLink = base, .jointName = ""};
   [[maybe_unused]] auto child = mb.addLink("", opts);
 
   std::stringstream ss;
@@ -564,10 +579,14 @@ TEST(Serialization, CacheNotSerialized)
     auto& registry = world.getRegistry();
     auto entity = frame.getEntity();
     ASSERT_TRUE(registry.valid(entity)) << "Entity should be valid";
-    ASSERT_TRUE(registry.all_of<dart::simulation::experimental::comps::FrameCache>(entity))
+    ASSERT_TRUE(
+        registry.all_of<dart::simulation::experimental::comps::FrameCache>(
+            entity))
         << "Entity should have FrameCache component";
 
-    const auto& cache = registry.get<dart::simulation::experimental::comps::FrameCache>(entity);
+    const auto& cache
+        = registry.get<dart::simulation::experimental::comps::FrameCache>(
+            entity);
     EXPECT_FALSE(cache.needTransformUpdate)
         << "Cache should be clean after getTransform()";
   }
@@ -582,36 +601,50 @@ TEST(Serialization, CacheNotSerialized)
 
   // Check the registry directly for the restored FreeFrame
   auto& registry2 = world2.getRegistry();
-  auto view = registry2.view<dart::simulation::experimental::comps::FreeFrameTag>();
+  auto view
+      = registry2.view<dart::simulation::experimental::comps::FreeFrameTag>();
 
   ASSERT_FALSE(view.empty()) << "Should have restored FreeFrame";
 
   auto entity2 = *view.begin();
 
   ASSERT_TRUE(registry2.valid(entity2)) << "Restored entity should be valid";
-  ASSERT_TRUE(registry2.all_of<dart::simulation::experimental::comps::FrameCache>(entity2))
+  ASSERT_TRUE(
+      registry2.all_of<dart::simulation::experimental::comps::FrameCache>(
+          entity2))
       << "Restored entity should have FrameCache component";
 
-  const auto& cache2 = registry2.get<dart::simulation::experimental::comps::FrameCache>(entity2);
+  const auto& cache2
+      = registry2.get<dart::simulation::experimental::comps::FrameCache>(
+          entity2);
 
   // CRITICAL: Cache should be dirty after load (not serialized)
   EXPECT_TRUE(cache2.needTransformUpdate)
       << "Cache should be dirty after load - proves it was not serialized";
 
   // Verify state WAS serialized (parent should be entt::null)
-  ASSERT_TRUE(registry2.all_of<dart::simulation::experimental::comps::FrameState>(entity2))
+  ASSERT_TRUE(
+      registry2.all_of<dart::simulation::experimental::comps::FrameState>(
+          entity2))
       << "Restored entity should have FrameState component";
 
-  const auto& state2 = registry2.get<dart::simulation::experimental::comps::FrameState>(entity2);
+  const auto& state2
+      = registry2.get<dart::simulation::experimental::comps::FrameState>(
+          entity2);
   EXPECT_FALSE(registry2.valid(state2.parentFrame))
       << "State should be serialized correctly (parent should be null)";
 
   // Verify properties WAS serialized (local transform should match)
-  ASSERT_TRUE(registry2.all_of<dart::simulation::experimental::comps::FreeFrameProperties>(entity2))
+  ASSERT_TRUE(
+      registry2
+          .all_of<dart::simulation::experimental::comps::FreeFrameProperties>(
+              entity2))
       << "Restored entity should have FreeFrameProperties component";
 
   const auto& props2
-      = registry2.get<dart::simulation::experimental::comps::FreeFrameProperties>(entity2);
+      = registry2
+            .get<dart::simulation::experimental::comps::FreeFrameProperties>(
+                entity2);
   EXPECT_TRUE(props2.localTransform.isApprox(T1))
       << "Properties should be serialized correctly";
 }
@@ -647,14 +680,17 @@ TEST(Serialization, StateSerializedCorrectly)
 
   // Check that we have 2 FreeFrames
   auto& registry2 = world2.getRegistry();
-  auto view = registry2.view<dart::simulation::experimental::comps::FreeFrameTag>();
+  auto view
+      = registry2.view<dart::simulation::experimental::comps::FreeFrameTag>();
   EXPECT_EQ(std::distance(view.begin(), view.end()), 2)
       << "Should have restored 2 FreeFrames";
 
   // Verify that FrameState components exist
   for (auto entity : view) {
     // All FreeFrames should have FrameState component
-    EXPECT_TRUE(registry2.all_of<dart::simulation::experimental::comps::FrameState>(entity))
+    EXPECT_TRUE(
+        registry2.all_of<dart::simulation::experimental::comps::FrameState>(
+            entity))
         << "All FreeFrames should have FrameState after deserialization";
   }
 
@@ -664,7 +700,9 @@ TEST(Serialization, StateSerializedCorrectly)
   int framesWithoutParent = 0;
 
   for (auto entity : view) {
-    const auto& state = registry2.get<dart::simulation::experimental::comps::FrameState>(entity);
+    const auto& state
+        = registry2.get<dart::simulation::experimental::comps::FrameState>(
+            entity);
     if (registry2.valid(state.parentFrame)) {
       framesWithParent++;
     } else {
@@ -689,7 +727,8 @@ TEST(Serialization, PropertiesSerializedCorrectly)
   auto parent = world.addFreeFrame("parent");
   Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
   offset.translate(Eigen::Vector3d(3.14, 2.71, 1.41));
-  offset.rotate(Eigen::AngleAxisd(dart::simulation::experimental::pi / 4, Eigen::Vector3d(1, 0, 0)));
+  offset.rotate(Eigen::AngleAxisd(
+      dart::simulation::experimental::pi / 4, Eigen::Vector3d(1, 0, 0)));
 
   auto fixed = world.addFixedFrame("fixed", parent, offset);
 
@@ -703,11 +742,15 @@ TEST(Serialization, PropertiesSerializedCorrectly)
 
   // Find the FixedFrame
   auto& registry2 = world2.getRegistry();
-  auto view = registry2.view<dart::simulation::experimental::comps::FixedFrameTag>();
+  auto view
+      = registry2.view<dart::simulation::experimental::comps::FixedFrameTag>();
   EXPECT_FALSE(view.empty()) << "Should have restored FixedFrame";
 
   auto entity = *view.begin();
-  const auto& props = registry2.get<dart::simulation::experimental::comps::FixedFrameProperties>(entity);
+  const auto& props
+      = registry2
+            .get<dart::simulation::experimental::comps::FixedFrameProperties>(
+                entity);
 
   // Properties should match exactly
   EXPECT_TRUE(props.localTransform.isApprox(offset, 1e-10))
@@ -751,9 +794,13 @@ TEST(Serialization, RoundTripConsistency)
 
   std::size_t frameCount = 0;
   for (auto entity : view) {
-    const auto& name = view.get<dart::simulation::experimental::comps::Name>(entity).name;
-    const auto& props = view.get<dart::simulation::experimental::comps::FreeFrameProperties>(entity);
-    const auto& state = view.get<dart::simulation::experimental::comps::FrameState>(entity);
+    const auto& name
+        = view.get<dart::simulation::experimental::comps::Name>(entity).name;
+    const auto& props
+        = view.get<dart::simulation::experimental::comps::FreeFrameProperties>(
+            entity);
+    const auto& state
+        = view.get<dart::simulation::experimental::comps::FrameState>(entity);
 
     if (name == "parent") {
       EXPECT_TRUE(props.localTransform.isApprox(T_parent));
@@ -794,13 +841,19 @@ TEST(Serialization, CloneDeepCopy)
   clone.loadBinary(ss);
 
   auto& cloneReg = clone.getRegistry();
-  auto cloneView
-      = cloneReg.view<dart::simulation::experimental::comps::Name, dart::simulation::experimental::comps::FreeFrameProperties>();
+  auto cloneView = cloneReg.view<
+      dart::simulation::experimental::comps::Name,
+      dart::simulation::experimental::comps::FreeFrameProperties>();
   EXPECT_EQ(std::distance(cloneView.begin(), cloneView.end()), 2);
 
   for (auto entity : cloneView) {
-    auto& props = cloneView.get<dart::simulation::experimental::comps::FreeFrameProperties>(entity);
-    const auto& name = cloneView.get<dart::simulation::experimental::comps::Name>(entity).name;
+    auto& props
+        = cloneView
+              .get<dart::simulation::experimental::comps::FreeFrameProperties>(
+                  entity);
+    const auto& name
+        = cloneView.get<dart::simulation::experimental::comps::Name>(entity)
+              .name;
     if (name == "parent") {
       EXPECT_TRUE(props.localTransform.isApprox(T));
     } else if (name == "child") {
@@ -810,13 +863,17 @@ TEST(Serialization, CloneDeepCopy)
   }
 
   const auto& originalReg = world.getRegistry();
-  auto originalView
-      = originalReg
-            .view<dart::simulation::experimental::comps::Name, dart::simulation::experimental::comps::FreeFrameProperties>();
+  auto originalView = originalReg.view<
+      dart::simulation::experimental::comps::Name,
+      dart::simulation::experimental::comps::FreeFrameProperties>();
   for (auto entity : originalView) {
     const auto& props
-        = originalView.get<dart::simulation::experimental::comps::FreeFrameProperties>(entity);
-    const auto& name = originalView.get<dart::simulation::experimental::comps::Name>(entity).name;
+        = originalView
+              .get<dart::simulation::experimental::comps::FreeFrameProperties>(
+                  entity);
+    const auto& name
+        = originalView.get<dart::simulation::experimental::comps::Name>(entity)
+              .name;
     if (name == "child") {
       EXPECT_TRUE(props.localTransform.isApprox(T_child))
           << "Modifying clone should not affect original world";
@@ -842,7 +899,10 @@ TEST(Serialization, CloneResetCounters)
   auto nextFrame = clone.addFreeFrame();
   auto& cloneReg = clone.getRegistry();
   const auto& nextFrameName
-      = cloneReg.get<dart::simulation::experimental::comps::Name>(nextFrame.getEntity()).name;
+      = cloneReg
+            .get<dart::simulation::experimental::comps::Name>(
+                nextFrame.getEntity())
+            .name;
   EXPECT_EQ(nextFrameName, "free_frame_003");
 
   auto nextMb = clone.addMultiBody("");

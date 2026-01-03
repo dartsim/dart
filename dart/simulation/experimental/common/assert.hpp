@@ -56,8 +56,9 @@
 //   - Returns bool result (same as condition) so it can be used in expressions
 //   - Example: if (!DART_EXPERIMENTAL_VERIFY(file.open())) { handle_error(); }
 //
-// Recommendation: Prefer DART_EXPERIMENTAL_ASSERT for most checks. Only use DART_EXPERIMENTAL_VERIFY
-// when the condition expression has necessary side effects.
+// Recommendation: Prefer DART_EXPERIMENTAL_ASSERT for most checks. Only use
+// DART_EXPERIMENTAL_VERIFY when the condition expression has necessary side
+// effects.
 //===============================================================================
 
 namespace dart::simulation::experimental::common {
@@ -96,17 +97,18 @@ inline void assertionFailed(
 
 // DART_EXPERIMENTAL_ASSERT: Assertion only enabled in debug builds
 #ifndef NDEBUG
-  #define DART_EXPERIMENTAL_ASSERT(condition)                                              \
+  #define DART_EXPERIMENTAL_ASSERT(condition)                                  \
     do {                                                                       \
       if (!(condition)) {                                                      \
-        ::dart::simulation::experimental::common::assertionFailed(#condition);                          \
+        ::dart::simulation::experimental::common::assertionFailed(#condition); \
       }                                                                        \
     } while (false)
 
-  #define DART_EXPERIMENTAL_ASSERT_MSG(condition, message)                                 \
+  #define DART_EXPERIMENTAL_ASSERT_MSG(condition, message)                     \
     do {                                                                       \
       if (!(condition)) {                                                      \
-        ::dart::simulation::experimental::common::assertionFailed(#condition, message);                 \
+        ::dart::simulation::experimental::common::assertionFailed(             \
+            #condition, message);                                              \
       }                                                                        \
     } while (false)
 #else
@@ -114,33 +116,38 @@ inline void assertionFailed(
   #define DART_EXPERIMENTAL_ASSERT_MSG(condition, message) ((void)0)
 #endif
 
-// DART_EXPERIMENTAL_DEBUG_ASSERT: Alias for DART_EXPERIMENTAL_ASSERT (for clarity)
-#define DART_EXPERIMENTAL_DEBUG_ASSERT(condition) DART_EXPERIMENTAL_ASSERT(condition)
-#define DART_EXPERIMENTAL_DEBUG_ASSERT_MSG(condition, message)                             \
+// DART_EXPERIMENTAL_DEBUG_ASSERT: Alias for DART_EXPERIMENTAL_ASSERT (for
+// clarity)
+#define DART_EXPERIMENTAL_DEBUG_ASSERT(condition)                              \
+  DART_EXPERIMENTAL_ASSERT(condition)
+#define DART_EXPERIMENTAL_DEBUG_ASSERT_MSG(condition, message)                 \
   DART_EXPERIMENTAL_ASSERT_MSG(condition, message)
 
 // DART_EXPERIMENTAL_VERIFY: Always evaluates condition in ALL builds
 // Returns the bool result so it can be used in if statements
-#define DART_EXPERIMENTAL_VERIFY(condition)                                                \
+#define DART_EXPERIMENTAL_VERIFY(condition)                                    \
   ([](bool result) {                                                           \
     if (!result) {                                                             \
-      ::dart::simulation::experimental::common::assertionFailed(#condition);                            \
+      ::dart::simulation::experimental::common::assertionFailed(#condition);   \
     }                                                                          \
     return result;                                                             \
   }(static_cast<bool>(condition)))
 
-#define DART_EXPERIMENTAL_VERIFY_MSG(condition, message)                                   \
+#define DART_EXPERIMENTAL_VERIFY_MSG(condition, message)                       \
   ([](bool result) {                                                           \
     if (!result) {                                                             \
-      ::dart::simulation::experimental::common::assertionFailed(#condition, message);                   \
+      ::dart::simulation::experimental::common::assertionFailed(               \
+          #condition, message);                                                \
     }                                                                          \
     return result;                                                             \
   }(static_cast<bool>(condition)))
 
 // DART_EXPERIMENTAL_NOT_REACHED: Mark code that should never be reached
-#define DART_EXPERIMENTAL_NOT_REACHED()                                                    \
-  ::dart::simulation::experimental::common::assertionFailed("Code should not be reached")
+#define DART_EXPERIMENTAL_NOT_REACHED()                                        \
+  ::dart::simulation::experimental::common::assertionFailed(                   \
+      "Code should not be reached")
 
 // DART_EXPERIMENTAL_NOT_IMPLEMENTED: Mark unimplemented functionality
-#define DART_EXPERIMENTAL_NOT_IMPLEMENTED()                                                \
-  ::dart::simulation::experimental::common::assertionFailed("Not yet implemented")
+#define DART_EXPERIMENTAL_NOT_IMPLEMENTED()                                    \
+  ::dart::simulation::experimental::common::assertionFailed(                   \
+      "Not yet implemented")

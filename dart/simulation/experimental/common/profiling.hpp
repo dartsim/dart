@@ -185,21 +185,23 @@ private:
 #if defined(DART_EXPERIMENTAL_ENABLE_PROFILING) && !defined(TRACY_ENABLE)
 // Built-in profiling only
 
-  #define DART_EXPERIMENTAL_PROFILE_SCOPE(name)                                            \
-    ::dart::simulation::experimental::common::ScopedTimer _dart_profile_timer##__LINE__(name)
+  #define DART_EXPERIMENTAL_PROFILE_SCOPE(name)                                \
+    ::dart::simulation::experimental::common::ScopedTimer                      \
+        _dart_profile_timer##__LINE__(name)
 
-  #define DART_EXPERIMENTAL_PROFILE_FUNCTION() DART_EXPERIMENTAL_PROFILE_SCOPE(__PRETTY_FUNCTION__)
+  #define DART_EXPERIMENTAL_PROFILE_FUNCTION()                                 \
+    DART_EXPERIMENTAL_PROFILE_SCOPE(__PRETTY_FUNCTION__)
 
-  #define DART_EXPERIMENTAL_PROFILE_BEGIN(name)                                            \
+  #define DART_EXPERIMENTAL_PROFILE_BEGIN(name)                                \
     auto _dart_profile_start_##name = std::chrono::high_resolution_clock::now()
 
-  #define DART_EXPERIMENTAL_PROFILE_END(name)                                              \
+  #define DART_EXPERIMENTAL_PROFILE_END(name)                                  \
     do {                                                                       \
       auto _dart_profile_end = std::chrono::high_resolution_clock::now();      \
       auto _dart_profile_duration                                              \
           = std::chrono::duration_cast<std::chrono::microseconds>(             \
               _dart_profile_end - _dart_profile_start_##name);                 \
-      ::dart::simulation::experimental::common::ProfileStats::record(                                   \
+      ::dart::simulation::experimental::common::ProfileStats::record(          \
           #name, _dart_profile_duration.count());                              \
     } while (false)
 
@@ -213,19 +215,22 @@ private:
   #define DART_EXPERIMENTAL_PROFILE_FRAME() FrameMark
 
   // For manual begin/end, Tracy uses a different approach
-  #define DART_EXPERIMENTAL_PROFILE_BEGIN(name)                                            \
+  #define DART_EXPERIMENTAL_PROFILE_BEGIN(name)                                \
     [[maybe_unused]] auto _dart_tracy_zone_##name = tracy::ScopedZone(         \
         __LINE__, __FILE__, strlen(__FILE__), #name, strlen(#name))
 
-  #define DART_EXPERIMENTAL_PROFILE_END(name) ((void)0) // Tracy zones end automatically
+  #define DART_EXPERIMENTAL_PROFILE_END(name)                                  \
+    ((void)0) // Tracy zones end automatically
 
   // If both are enabled, also record in built-in profiler
   #ifdef DART_EXPERIMENTAL_ENABLE_PROFILING
-    #define DART_EXPERIMENTAL_PROFILE_SCOPE_DUAL(name)                                     \
+    #define DART_EXPERIMENTAL_PROFILE_SCOPE_DUAL(name)                         \
       ZoneScopedN(name);                                                       \
-      ::dart::simulation::experimental::common::ScopedTimer _dart_profile_timer##__LINE__(name)
+      ::dart::simulation::experimental::common::ScopedTimer                    \
+          _dart_profile_timer##__LINE__(name)
   #else
-    #define DART_EXPERIMENTAL_PROFILE_SCOPE_DUAL(name) DART_EXPERIMENTAL_PROFILE_SCOPE(name)
+    #define DART_EXPERIMENTAL_PROFILE_SCOPE_DUAL(name)                         \
+      DART_EXPERIMENTAL_PROFILE_SCOPE(name)
   #endif
 
 #else

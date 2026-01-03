@@ -34,7 +34,7 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
-#include <dart/simulation/experimental/comps/joint.hpp>     // For JointType
+#include <dart/simulation/experimental/comps/joint.hpp> // For JointType
 #include <dart/simulation/experimental/multi_body/link.hpp> // Need complete type for LinkOptions
 
 #include <Eigen/Core>

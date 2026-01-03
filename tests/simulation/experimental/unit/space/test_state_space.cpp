@@ -123,7 +123,11 @@ TEST(StateSpace, GetVariableNames)
 TEST(StateSpace, GetBounds)
 {
   StateSpace space;
-  space.addVariable("pos", 2, -dart::simulation::experimental::pi, dart::simulation::experimental::pi);
+  space.addVariable(
+      "pos",
+      2,
+      -dart::simulation::experimental::pi,
+      dart::simulation::experimental::pi);
   space.addVariable("vel", 2, -10.0, 10.0);
 
   auto lowerBounds = space.getLowerBounds();

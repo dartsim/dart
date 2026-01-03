@@ -46,5 +46,7 @@
 
 /// Generate a unique identifier with the given prefix
 /// Uses __COUNTER__ to ensure uniqueness across translation units
-/// Example: DART_EXPERIMENTAL_UNIQUE_NAME(my_var) -> my_var0, my_var1, my_var2, ...
-#define DART_EXPERIMENTAL_UNIQUE_NAME(prefix) DART_EXPERIMENTAL_CONCAT(prefix, __COUNTER__)
+/// Example: DART_EXPERIMENTAL_UNIQUE_NAME(my_var) -> my_var0, my_var1, my_var2,
+/// ...
+#define DART_EXPERIMENTAL_UNIQUE_NAME(prefix)                                  \
+  DART_EXPERIMENTAL_CONCAT(prefix, __COUNTER__)

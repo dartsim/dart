@@ -183,7 +183,8 @@ TEST(AutoMapper, IsometryField)
   Transform transform;
   transform.pose.translation() << 1.0, 2.0, 3.0;
   transform.pose.linear()
-      = Eigen::AngleAxisd(dart::simulation::experimental::pi / 4.0, Eigen::Vector3d::UnitZ())
+      = Eigen::AngleAxisd(
+            dart::simulation::experimental::pi / 4.0, Eigen::Vector3d::UnitZ())
             .toRotationMatrix();
   registry.emplace<Transform>(entity, transform);
 
