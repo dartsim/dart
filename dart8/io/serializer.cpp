@@ -154,11 +154,9 @@ void SerializerRegistry::saveAllEntities(
     entities.push_back(entity);
   }
 
-  std::sort(
-      entities.begin(), entities.end(), [](entt::entity lhs, entt::entity rhs) {
-        return static_cast<std::uint32_t>(lhs)
-               < static_cast<std::uint32_t>(rhs);
-      });
+  std::ranges::sort(entities, [](entt::entity lhs, entt::entity rhs) {
+    return static_cast<std::uint32_t>(lhs) < static_cast<std::uint32_t>(rhs);
+  });
 
   // Write entity count
   writePOD(output, entities.size());

@@ -95,5 +95,7 @@
   `dart/gui/render/MeshShapeNode.cpp`.
 - Phase 8: replace `std::sort` with `std::ranges::sort` in core profiling,
   dynamics, collision, and geometry utilities.
+- Phase 8: replace `std::sort` with `std::ranges::sort` in dart8 profiling,
+  serializer ordering, and LCP solver examples.
 - Phase 9: validation pending (`pixi run test-all` and
   `pixi run -e gazebo test-gz`).

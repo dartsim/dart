@@ -89,12 +89,9 @@ void ProfileStats::printSummary()
   }
 
   // Sort by total time (descending)
-  std::sort(
-      sortedEntries.begin(),
-      sortedEntries.end(),
-      [](const Entry& a, const Entry& b) {
-        return a.totalMicroseconds > b.totalMicroseconds;
-      });
+  std::ranges::sort(sortedEntries, [](const Entry& a, const Entry& b) {
+    return a.totalMicroseconds > b.totalMicroseconds;
+  });
 
   // Print header
   std::cout << "\n=== Profiling Summary ===\n\n";
