@@ -41,6 +41,7 @@
 #include <dart/common/Uri.hpp>
 
 #include <string>
+#include <string_view>
 
 namespace dart {
 namespace utils {
@@ -55,7 +56,7 @@ simulation::WorldPtr DART_UTILS_API readWorld(
 
 /// Read World from an xml-formatted string
 simulation::WorldPtr DART_UTILS_API readWorldXML(
-    const std::string& xmlString,
+    std::string_view xmlString,
     const common::Uri& baseUri = "",
     const common::ResourceRetrieverPtr& retriever = nullptr);
 

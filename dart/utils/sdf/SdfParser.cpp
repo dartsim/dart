@@ -142,12 +142,13 @@ private:
   TempResourceMap* mPrevious;
 };
 
-const common::Uri* findOriginalUri(const std::string& filePath)
+const common::Uri* findOriginalUri(std::string_view filePath)
 {
   if (!gCurrentOriginMap || filePath.empty())
     return nullptr;
 
-  const auto it = gCurrentOriginMap->find(filePath);
+  const std::string filePathString(filePath);
+  const auto it = gCurrentOriginMap->find(filePathString);
   if (it == gCurrentOriginMap->end())
     return nullptr;
 
@@ -484,7 +485,7 @@ std::filesystem::path makeTemporaryPath(const common::Uri& uri)
 }
 
 std::filesystem::path writeTemporaryResource(
-    const std::string& data, const common::Uri& uri)
+    std::string_view data, const common::Uri& uri)
 {
   const auto tempPath = makeTemporaryPath(uri);
 
@@ -501,7 +502,7 @@ std::filesystem::path writeTemporaryResource(
 }
 
 std::string resolveWithRetriever(
-    const std::string& requested,
+    std::string_view requested,
     const common::ResourceRetrieverPtr& retriever,
     const std::shared_ptr<std::vector<std::filesystem::path>>& tempFiles,
     const std::shared_ptr<TempResourceMap>& origins)
@@ -509,8 +510,9 @@ std::string resolveWithRetriever(
   if (!retriever)
     return std::string();
 
+  const std::string requestedString(requested);
   common::Uri requestedUri;
-  if (!requestedUri.fromStringOrPath(requested))
+  if (!requestedUri.fromStringOrPath(requestedString))
     return std::string();
 
   if (requestedUri.mScheme.get_value_or("file") == "file"
@@ -529,7 +531,7 @@ std::string resolveWithRetriever(
     const auto tmp = writeTemporaryResource(data, requestedUri);
     tempFiles->push_back(tmp);
     if (origins) {
-      auto uri = common::Uri::createFromStringOrPath(requested);
+      auto uri = common::Uri::createFromStringOrPath(requestedString);
       (*origins)[tmp.string()] = uri;
     }
     return tmp.string();
