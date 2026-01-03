@@ -2,8 +2,8 @@
 
 ## Status
 
-- Current phase: Phase 8 (algorithm cleanups)
-- Code changes: Phase 8 in progress.
+- Current phase: Phase 9 (validation and wrap-up)
+- Code changes: Phase 9 in progress.
 
 ## Phase checklist
 
@@ -15,8 +15,8 @@
 - Phase 5 - String/view cleanup: Complete
 - Phase 6 - Internal non-owning views: Complete
 - Phase 7 - Container membership cleanup: Complete
-- Phase 8 - Algorithm cleanups: In progress
-- Phase 9 - Validation and wrap-up: Not started
+- Phase 8 - Algorithm cleanups: Complete
+- Phase 9 - Validation and wrap-up: In progress
 
 ## Notes
 
@@ -95,3 +95,5 @@
   `dart/gui/render/MeshShapeNode.cpp`.
 - Phase 8: replace `std::sort` with `std::ranges::sort` in core profiling,
   dynamics, collision, and geometry utilities.
+- Phase 9: validation pending (`pixi run test-all` and
+  `pixi run -e gazebo test-gz`).

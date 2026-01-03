@@ -2,7 +2,7 @@
 
 ## Status
 
-- Active: executing phases; Phase 8 (algorithm cleanups) in progress.
+- Active: executing phases; Phase 9 (validation and wrap-up) in progress.
 
 ## Objective
 

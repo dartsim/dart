@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase 8 in progress: algorithm cleanups.
+- Phase 9 in progress: validation and wrap-up.
 
 ## Goal
 
