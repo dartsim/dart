@@ -1,6 +1,18 @@
 name: CI Alt Linux (Docker)
 
 on:
+  push:
+    branches:
+      - "**"
+    paths-ignore:
+      - ".github/workflows/cache_*.yml"
+      - "docker/dev/**"
+  pull_request:
+    branches:
+      - "**"
+    paths-ignore:
+      - ".github/workflows/cache_*.yml"
+      - "docker/dev/**"
   schedule:
     # Run every Monday at 05:00 UTC
     - cron: "0 5 * * 1"
