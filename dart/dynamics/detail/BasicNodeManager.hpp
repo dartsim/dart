@@ -161,7 +161,8 @@ NodeType* BasicNodeManagerForBodyNode::getNode(std::size_t index)
   if (mNodeMap.end() == it)
     return nullptr;
 
-  return static_cast<NodeType*>(getVectorObjectIfAvailable(index, it->second));
+  return static_cast<NodeType*>(
+      getVectorObjectIfAvailable<Node*>(index, it->second));
 }
 
 //==============================================================================
