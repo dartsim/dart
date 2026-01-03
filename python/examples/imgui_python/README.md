@@ -18,7 +18,7 @@ Or, without pixi:
 
 ```bash
 PYTHONPATH=build/<env>/cpp/<build_type>/python \
-python python/examples/07_visualization_and_interaction/imgui_python/main.py
+python python/examples/imgui_python/main.py
 ```
 
 You should see a small ImGui overlay with play/pause and gravity controls rendered on top of the viewer.
