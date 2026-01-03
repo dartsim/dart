@@ -113,7 +113,16 @@ def container_running(container):
 
 
 def ensure_started(args):
-    if not container_running(args.container):
+    key_path = ssh_key_path(vm_dir_path(args.vm_dir))
+    if container_running(args.container):
+        if not key_path.exists():
+            print(
+                "SSH key missing for the running FreeBSD VM; restarting to regenerate it.",
+                file=sys.stderr,
+            )
+            stop_container(args)
+            start_container(args)
+    else:
         start_container(args)
     wait_for_ssh_key(args)
     wait_for_ssh(args, user=args.user)
@@ -237,7 +246,14 @@ def wait_for_ssh(args, user, timeout=300):
         if result.returncode == 0:
             return
         time.sleep(5)
-    print("Timed out waiting for FreeBSD SSH to become ready.", file=sys.stderr)
+    print(
+        (
+            "Timed out waiting for FreeBSD SSH to become ready. "
+            "If the VM was started from another checkout or the SSH key changed, "
+            "run 'pixi run freebsd-stop' to reset it."
+        ),
+        file=sys.stderr,
+    )
     sys.exit(1)
 
 
