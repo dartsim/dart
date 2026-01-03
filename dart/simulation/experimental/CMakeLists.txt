@@ -28,7 +28,10 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
-add_library(dart-simulation-experimental
+set(target_name ${PROJECT_NAME}-simulation-experimental)
+set(component_name simulation-experimental)
+
+add_library(${target_name}
   body/rigid_body.cpp
   common/diagnostics.cpp
   common/exceptions.cpp
@@ -56,25 +59,39 @@ add_library(dart-simulation-experimental
 include(dart_experimental_defs)
 include(dart_experimental_dependencies)
 
-target_include_directories(dart-simulation-experimental
+target_include_directories(${target_name}
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
 )
 
-target_compile_features(dart-simulation-experimental PUBLIC cxx_std_20)
+target_compile_features(${target_name} PUBLIC cxx_std_20)
 
-target_link_libraries(dart-simulation-experimental
+target_link_libraries(${target_name}
   PUBLIC
+    dart
     Eigen3::Eigen
     EnTT::EnTT
     spdlog::spdlog
 )
 
-target_compile_definitions(dart-simulation-experimental
+target_compile_definitions(${target_name}
   PUBLIC
     DART_BUILD_SHARED=${DART_BUILD_SHARED_VALUE}
   PRIVATE
     DART_BUILDING_DART_EXPERIMENTAL
+)
+
+# Component
+add_component(${PROJECT_NAME} ${component_name})
+add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
+add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
+add_component_dependency_packages(${PROJECT_NAME} ${component_name} EnTT Taskflow)
+
+install(
+  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+  DESTINATION include/dart/simulation/experimental
+  COMPONENT headers
+  FILES_MATCHING PATTERN "*.hpp"
 )
