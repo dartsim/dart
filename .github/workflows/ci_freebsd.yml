@@ -1,6 +1,18 @@
 name: CI FreeBSD (VM)
 
 on:
+  push:
+    branches:
+      - "**"
+    paths-ignore:
+      - ".github/workflows/cache_*.yml"
+      - "docker/dev/**"
+  pull_request:
+    branches:
+      - "**"
+    paths-ignore:
+      - ".github/workflows/cache_*.yml"
+      - "docker/dev/**"
   schedule:
     # Run every Monday at 04:00 UTC
     - cron: "0 4 * * 1"
