@@ -2,9 +2,10 @@
 
 ## Status
 
-- Active branch: `cpp20/phase8`
-- Active PR: https://github.com/dartsim/dart/pull/2376
-- Phase 7 PR: https://github.com/dartsim/dart/pull/2375 (updated with empty-span guards)
+- Active branch: `cpp20/phase9` (based on `main`)
+- Active PR: https://github.com/dartsim/dart/pull/2380
+- Phase 8 PR: https://github.com/dartsim/dart/pull/2376
+- Phase 7 PR: https://github.com/dartsim/dart/pull/2375
 - CI monitoring and merge handled by the user.
 - Latest local validation: `pixi run lint`, `pixi run test-all` (passed).
 
@@ -18,5 +19,5 @@
 
 ## Next
 
-- Monitor PR #2376 CI/review feedback (CI/merge handled by the user).
-- Begin Phase 9 (container membership `.contains`) after Phase 8 is complete.
+- Monitor phase 9 CI/merge (handled by the user).
+- Start Phase 10 from `00_plan.md` (std::ssize) when ready.
