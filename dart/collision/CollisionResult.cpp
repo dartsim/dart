@@ -94,13 +94,13 @@ CollisionResult::getCollidingShapeFrames() const
 //==============================================================================
 bool CollisionResult::inCollision(const dynamics::BodyNode* bn) const
 {
-  return (mCollidingBodyNodes.find(bn) != mCollidingBodyNodes.end());
+  return mCollidingBodyNodes.contains(bn);
 }
 
 //==============================================================================
 bool CollisionResult::inCollision(const dynamics::ShapeFrame* frame) const
 {
-  return (mCollidingShapeFrames.find(frame) != mCollidingShapeFrames.end());
+  return mCollidingShapeFrames.contains(frame);
 }
 
 //==============================================================================
