@@ -4,7 +4,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 DEFAULT_IMAGE_URL = (
     "https://download.freebsd.org/ftp/snapshots/VM-IMAGES/15.0-STABLE/"
     "amd64/Latest/FreeBSD-15.0-STABLE-amd64-BASIC-CLOUDINIT-ufs.qcow2.xz"

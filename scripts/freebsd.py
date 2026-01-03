@@ -7,7 +7,6 @@ import sys
 import time
 from pathlib import Path
 
-
 DEFAULT_IMAGE = "dartsim/freebsd-vm:15"
 DEFAULT_CONTAINER = "dart-freebsd-vm"
 DEFAULT_SSH_PORT = 10022
