@@ -626,7 +626,7 @@ pixi run test-all        # Run all tests
 #### Linting Tasks
 
 ```bash
-pixi run lint             # Format code + docs (C++, Dart8, Python, YAML, TOML, MD) and lint RST
+pixi run lint             # Format code + docs (C++, simulation-experimental, Python, YAML, TOML, MD) and lint RST
 pixi run lint-cpp         # Format C++ code only
 pixi run lint-simulation-experimental       # Format simulation-experimental C++ sources
 pixi run lint-py          # Format Python code only
