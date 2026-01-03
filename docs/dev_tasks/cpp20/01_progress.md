@@ -76,3 +76,6 @@
 - Phase 7: start replacing associative membership checks with `contains` in
   `dart/gui/Viewer.cpp`, `dart/dynamics/Linkage.cpp`,
   `dart/utils/SkelParser.cpp`, and `dart/utils/urdf/urdf_world_parser.cpp`.
+- Phase 7: use `contains` for membership checks in observer/subject tracking,
+  name manager lookups, composite aspect requirements, collision result
+  caches, referential skeleton membership, and node destructor sets.

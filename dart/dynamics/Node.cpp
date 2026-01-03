@@ -211,7 +211,7 @@ void Node::attach()
   if (INVALID_INDEX == mIndexInBodyNode) {
     // If the Node was not in the map, then its destructor should not be in the
     // set
-    DART_ASSERT(destructors.find(destructor) == destructors.end());
+    DART_ASSERT(!destructors.contains(destructor));
 
     // If this Node believes its index is invalid, then it should not exist
     // anywhere in the vector
@@ -224,7 +224,7 @@ void Node::attach()
   }
 
   DART_ASSERT(std::find(nodes.begin(), nodes.end(), this) != nodes.end());
-  DART_ASSERT(destructors.find(destructor) != destructors.end());
+  DART_ASSERT(destructors.contains(destructor));
 
   const SkeletonPtr& skel = mBodyNode->getSkeleton();
   if (skel)
@@ -260,7 +260,7 @@ void Node::stageForRemoval()
 
     // If the Node was not in the map, then its destructor should not be in the
     // set
-    DART_ASSERT(destructors.find(destructor) == destructors.end());
+    DART_ASSERT(!destructors.contains(destructor));
     return;
   }
 
