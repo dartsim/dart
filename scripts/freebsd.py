@@ -18,6 +18,7 @@ DEFAULT_BUILD_DIR = "build/freebsd/cpp/Release"
 DEFAULT_BUILD_TARGETS = ["tests"]
 DEFAULT_TEST_REGEX = ""
 DEFAULT_CTEST_TIMEOUT = 1200
+DEFAULT_CTEST_STOP_ON_FAILURE = True
 DEFAULT_PORTS_PATCH_DIR = "docker/freebsd/ports-patches"
 DEFAULT_PACKAGES = [
     "assimp",
@@ -414,13 +415,23 @@ def test_vm(args):
     build_targets_str = " ".join(build_targets)
     test_regex = os.getenv("FREEBSD_VM_TEST_REGEX", DEFAULT_TEST_REGEX).strip()
     exclude_regex = os.getenv("FREEBSD_VM_TEST_EXCLUDE_REGEX", "").strip()
-    ctest_timeout = env_default_int("FREEBSD_VM_CTEST_TIMEOUT", DEFAULT_CTEST_TIMEOUT)
+    ctest_timeout = env_default_int(
+        "FREEBSD_VM_CTEST_TIMEOUT",
+        DEFAULT_CTEST_TIMEOUT,
+    )
+    stop_on_failure_env = os.getenv("FREEBSD_VM_CTEST_STOP_ON_FAILURE")
+    if stop_on_failure_env is None:
+        stop_on_failure = DEFAULT_CTEST_STOP_ON_FAILURE
+    else:
+        stop_on_failure = stop_on_failure_env.lower() not in {"0", "false", "no"}
     extra_ctest_args = shlex.split(os.getenv("FREEBSD_VM_CTEST_ARGS", ""))
     ctest_args = ["--output-on-failure"]
     if exclude_regex:
         ctest_args.extend(["-E", exclude_regex])
     if ctest_timeout > 0:
         ctest_args.extend(["--timeout", str(ctest_timeout)])
+    if stop_on_failure:
+        ctest_args.append("--stop-on-failure")
     ctest_args.extend(extra_ctest_args)
     ctest_arg_str = " ".join(shlex.quote(arg) for arg in ctest_args)
     if test_regex:
@@ -437,7 +448,15 @@ def test_vm(args):
         f"cmake --build {build_dir} --target {build_targets_str} && "
         f"{test_command}"
     )
-    ssh_command(args, command, user=args.user)
+    try:
+        ssh_command(args, command, user=args.user)
+    except subprocess.CalledProcessError as exc:
+        print(
+            "FreeBSD VM build/test failed; ctest stops on the first failing test "
+            "and returns a non-zero exit status. See the output above for details.",
+            file=sys.stderr,
+        )
+        raise exc
 
 def parse_args():
     parser = argparse.ArgumentParser(
