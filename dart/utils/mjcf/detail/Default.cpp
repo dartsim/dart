@@ -124,15 +124,16 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
 }
 
 //==============================================================================
-bool Defaults::hasDefault(const std::string& className) const
+bool Defaults::hasDefault(std::string_view className) const
 {
   return mDefaultMap.contains(className);
 }
 
 //==============================================================================
-const Default* Defaults::getDefault(const std::string& className) const
+const Default* Defaults::getDefault(std::string_view className) const
 {
-  const auto result = mDefaultMap.find(className);
+  const std::string classNameString(className);
+  const auto result = mDefaultMap.find(classNameString);
 
   if (result == mDefaultMap.end()) {
     return nullptr;

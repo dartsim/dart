@@ -7,6 +7,7 @@
 - Phase 8 PR: https://github.com/dartsim/dart/pull/2376
 - Phase 7 PR: https://github.com/dartsim/dart/pull/2375
 - CI monitoring and merge handled by the user.
+- Latest local validation: `pixi run lint`, `pixi run test-all` (passed).
 
 ## Completed
 
