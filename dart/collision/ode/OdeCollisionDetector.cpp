@@ -38,17 +38,9 @@
 #include "dart/collision/ode/OdeTypes.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/CapsuleShape.hpp"
-#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
-#include "dart/dynamics/EllipsoidShape.hpp"
-#include "dart/dynamics/MeshShape.hpp"
-#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
-#include "dart/dynamics/PlaneShape.hpp"
-#include "dart/dynamics/SoftMeshShape.hpp"
-#include "dart/dynamics/SphereShape.hpp"
-
 #include <ode/ode.h>
+#include <vector>
 
 namespace dart {
 namespace collision {
@@ -70,6 +62,11 @@ Contact convertContact(
     OdeCollisionObject* b1,
     OdeCollisionObject* b2,
     const CollisionOption& option);
+
+bool expandBoxCylinderContact(
+    const Contact& baseContact,
+    const CollisionOption& option,
+    CollisionResult& result);
 
 struct OdeCollisionCallbackData
 {
@@ -310,6 +307,14 @@ void reportContacts(
     return;
   }
 
+  if (1 == numContacts) {
+    const auto baseContact = convertContact(contactGeoms[0], b1, b2, option);
+    if (expandBoxCylinderContact(baseContact, option, result))
+      return;
+    result.addContact(baseContact);
+    return;
+  }
+
   for (auto i = 0; i < numContacts; ++i) {
     result.addContact(convertContact(contactGeoms[i], b1, b2, option));
 
@@ -327,16 +332,109 @@ Contact convertContact(
 {
   Contact contact;
 
-  contact.collisionObject1 = b1;
-  contact.collisionObject2 = b2;
+  auto* odeObj1 = static_cast<OdeCollisionObject*>(
+      dGeomGetData(odeContact.g1));
+  auto* odeObj2 = static_cast<OdeCollisionObject*>(
+      dGeomGetData(odeContact.g2));
+  contact.collisionObject1 = odeObj1 ? odeObj1 : b1;
+  contact.collisionObject2 = odeObj2 ? odeObj2 : b2;
 
   if (option.enableContact) {
     contact.point = OdeTypes::convertVector3(odeContact.pos);
     contact.normal = OdeTypes::convertVector3(odeContact.normal);
+    const auto normalNorm = contact.normal.norm();
+    if (normalNorm > 0.0) {
+      contact.normal /= normalNorm;
+    }
     contact.penetrationDepth = odeContact.depth;
   }
 
   return contact;
+}
+
+bool expandBoxCylinderContact(
+    const Contact& baseContact,
+    const CollisionOption& option,
+    CollisionResult& result)
+{
+  if (option.maxNumContacts <= 1)
+    return false;
+
+  const auto* shape1 = baseContact.collisionObject1->getShape().get();
+  const auto* shape2 = baseContact.collisionObject2->getShape().get();
+
+  const auto* cylinderShape = shape1->as<dynamics::CylinderShape>();
+  const auto* boxShape = shape2->as<dynamics::BoxShape>();
+  const collision::CollisionObject* cylinderObj
+      = baseContact.collisionObject1;
+
+  if (!(cylinderShape && boxShape)) {
+    cylinderShape = shape2->as<dynamics::CylinderShape>();
+    boxShape = shape1->as<dynamics::BoxShape>();
+    cylinderObj = baseContact.collisionObject2;
+  }
+
+  if (!(cylinderShape && boxShape))
+    return false;
+
+  const Eigen::Vector3d normal = baseContact.normal;
+  Eigen::Vector3d axis
+      = cylinderObj->getTransform().linear() * Eigen::Vector3d::UnitZ();
+  const double axisNorm = axis.norm();
+  if (axisNorm <= 0.0)
+    return false;
+  axis /= axisNorm;
+
+  const double axisDot = std::abs(axis.dot(normal));
+  std::vector<Contact> contacts;
+
+  if (axisDot < 0.98) {
+    Eigen::Vector3d axisProjection = axis - axis.dot(normal) * normal;
+    if (axisProjection.norm() <= 1e-8)
+      return false;
+    axisProjection.normalize();
+
+    const double offset = 0.5 * cylinderShape->getHeight();
+    Contact contactA = baseContact;
+    contactA.point = baseContact.point + axisProjection * offset;
+    contacts.push_back(contactA);
+
+    Contact contactB = baseContact;
+    contactB.point = baseContact.point - axisProjection * offset;
+    contacts.push_back(contactB);
+  } else {
+    Eigen::Vector3d tangent1 = normal.unitOrthogonal();
+    Eigen::Vector3d tangent2 = normal.cross(tangent1);
+    tangent2.normalize();
+
+    const double offset = cylinderShape->getRadius();
+    Contact contactA = baseContact;
+    contactA.point = baseContact.point + tangent1 * offset;
+    contacts.push_back(contactA);
+
+    Contact contactB = baseContact;
+    contactB.point = baseContact.point - tangent1 * offset;
+    contacts.push_back(contactB);
+
+    Contact contactC = baseContact;
+    contactC.point = baseContact.point + tangent2 * offset;
+    contacts.push_back(contactC);
+
+    Contact contactD = baseContact;
+    contactD.point = baseContact.point - tangent2 * offset;
+    contacts.push_back(contactD);
+  }
+
+  if (contacts.empty())
+    return false;
+
+  for (const auto& contact : contacts) {
+    result.addContact(contact);
+    if (result.getNumContacts() >= option.maxNumContacts)
+      return true;
+  }
+
+  return true;
 }
 
 } // anonymous namespace

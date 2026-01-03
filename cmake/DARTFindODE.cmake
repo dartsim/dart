@@ -6,6 +6,8 @@
 #
 # This file is provided under the "BSD-style" License
 
+set(DART_ODE_HAS_LIBCCD_BOX_CYL 0)
+
 if(NOT DART_USE_SYSTEM_ODE)
   if(TARGET ODE)
     if(NOT TARGET ODE::ODE)
@@ -31,4 +33,32 @@ if(NOT ODE_FOUND AND NOT ode_FOUND)
     )
   endif()
 
+endif()
+
+if(ODE_FOUND OR ode_FOUND OR TARGET ODE::ODE)
+  include(CheckCSourceCompiles)
+
+  set(_dart_ode_includes "")
+  if(TARGET ODE::ODE)
+    get_target_property(_dart_ode_includes ODE::ODE
+      INTERFACE_INCLUDE_DIRECTORIES)
+  endif()
+  if(NOT _dart_ode_includes AND ODE_INCLUDE_DIRS)
+    set(_dart_ode_includes "${ODE_INCLUDE_DIRS}")
+  endif()
+
+  if(_dart_ode_includes)
+    set(CMAKE_REQUIRED_INCLUDES "${_dart_ode_includes}")
+  endif()
+
+  check_c_source_compiles("
+#include <ode/odeconfig.h>
+#ifndef dLIBCCD_BOX_CYL
+#error dLIBCCD_BOX_CYL not defined
+#endif
+int main(void) { return 0; }
+" DART_ODE_HAS_LIBCCD_BOX_CYL)
+
+  unset(CMAKE_REQUIRED_INCLUDES)
+  unset(_dart_ode_includes)
 endif()
