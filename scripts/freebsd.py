@@ -300,6 +300,7 @@ def sync_repo(args):
     rsync_cmd = [
         "rsync",
         "-az",
+        "--delete",
     ]
     for item in excludes:
         rsync_cmd.extend(["--exclude", item])
