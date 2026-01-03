@@ -2,8 +2,9 @@
 
 ## Status
 
-- In progress: moved `dart8` to `dart/simulation/next`, namespace is
-  `dart::simulation::next`, classic `dart::simulation::World` reverted.
+- In progress: moved `dart8` to `dart/simulation/next` and tests to
+  `tests/simulation/next`. Namespace is `dart::simulation::next`, classic
+  `dart::simulation::World` reverted.
 
 ## Goals
 

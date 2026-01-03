@@ -12,6 +12,7 @@
 ## Phase 1: Move Next-Gen World (In progress)
 
 - Move `dart8/` to `dart/simulation/next/`.
+- Move tests to `tests/simulation/next/`.
 - Rename namespace to `dart::simulation::next`.
 - Update build/test plumbing (`DART_BUILD_SIMULATION_NEXT`, CTest labels,
   pixi tasks, docs).
