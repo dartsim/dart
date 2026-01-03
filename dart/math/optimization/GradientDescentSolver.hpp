@@ -51,7 +51,7 @@ namespace math {
 class DART_API GradientDescentSolver : public Solver
 {
 public:
-  static const std::string Type;
+  static constexpr std::string_view Type = "GradientDescentSolver";
 
   struct DART_API UniqueProperties
   {
@@ -135,7 +135,7 @@ public:
   Eigen::VectorXd getLastConfiguration() const;
 
   // Documentation inherited
-  std::string getType() const override;
+  std::string_view getType() const override;
 
   // Documentation inherited
   std::shared_ptr<Solver> clone() const override;

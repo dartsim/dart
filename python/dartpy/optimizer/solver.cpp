@@ -7,6 +7,7 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 #include <nanobind/trampoline.h>
 
 namespace nb = nanobind;
@@ -23,7 +24,7 @@ public:
     NB_OVERRIDE_PURE(solve);
   }
 
-  std::string getType() const override
+  std::string_view getType() const override
   {
     NB_OVERRIDE_PURE(getType);
   }

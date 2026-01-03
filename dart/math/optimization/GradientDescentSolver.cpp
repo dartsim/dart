@@ -43,9 +43,6 @@ namespace dart {
 namespace math {
 
 //==============================================================================
-const std::string GradientDescentSolver::Type = "GradientDescentSolver";
-
-//==============================================================================
 GradientDescentSolver::UniqueProperties::UniqueProperties(
     double _stepMultiplier,
     std::size_t _maxAttempts,
@@ -280,7 +277,7 @@ Eigen::VectorXd GradientDescentSolver::getLastConfiguration() const
 }
 
 //==============================================================================
-std::string GradientDescentSolver::getType() const
+std::string_view GradientDescentSolver::getType() const
 {
   return Type;
 }

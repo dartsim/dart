@@ -52,3 +52,9 @@
   `std::string_view` backed by `static constexpr` data.
 - Update the `Castable` macros and type-name implementations consistently.
 - Isolate this phase because it is a broad API signature change.
+
+### Phase 12: Optimization solver type strings
+
+- Switch `math::optimization::Solver::getType()` to return
+  `std::string_view` for non-owning type identifiers.
+- Update `GradientDescentSolver` and the dartpy trampoline/bindings.
