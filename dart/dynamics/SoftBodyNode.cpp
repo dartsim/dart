@@ -59,13 +59,14 @@ SoftBodyNodeUniqueProperties::SoftBodyNodeUniqueProperties(
     double dampCoeff,
     std::span<const PointMass::Properties> points,
     std::span<const Eigen::Vector3i> faces)
-  : mKv(kv),
-    mKe(ke),
-    mDampCoeff(dampCoeff),
-    mPointProps(points.begin(), points.end()),
-    mFaces(faces.begin(), faces.end())
+  : mKv(kv), mKe(ke), mDampCoeff(dampCoeff), mPointProps(), mFaces()
 {
-  // Do nothing
+  if (!points.empty()) {
+    mPointProps.assign(points.begin(), points.end());
+  }
+  if (!faces.empty()) {
+    mFaces.assign(faces.begin(), faces.end());
+  }
 }
 
 //==============================================================================

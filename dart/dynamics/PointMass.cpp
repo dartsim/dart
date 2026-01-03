@@ -88,7 +88,7 @@ PointMass::Properties::Properties(
     const Vector3d& forceUpperLimits)
   : mX0(x0),
     mMass(mass),
-    mConnectedPointMassIndices(connections.begin(), connections.end()),
+    mConnectedPointMassIndices(),
     mPositionLowerLimits(positionLowerLimits),
     mPositionUpperLimits(positionUpperLimits),
     mVelocityLowerLimits(velocityLowerLimits),
@@ -98,7 +98,9 @@ PointMass::Properties::Properties(
     mForceLowerLimits(forceLowerLimits),
     mForceUpperLimits(forceUpperLimits)
 {
-  // Do nothing
+  if (!connections.empty()) {
+    mConnectedPointMassIndices.assign(connections.begin(), connections.end());
+  }
 }
 
 //==============================================================================
