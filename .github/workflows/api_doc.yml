@@ -22,7 +22,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
   build:

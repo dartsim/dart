@@ -20,6 +20,10 @@ on:
     - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
 jobs:
   build:
     name: ${{ matrix.build_type }}
