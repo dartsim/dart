@@ -83,11 +83,11 @@ algorithm rewrites.
 DART now maintains two naming schemes in parallel:
 
 - **Legacy modules (`dart/`, `python/dartpy/`, `tests/`, etc.)**: Keep the established **PascalCase** names for headers and sources to avoid churn in the long-lived API surface (e.g., `MyClass.hpp`, `MyClass.cpp`).
-- **Next-gen modules (`dart/simulation/next/`, `tests/simulation/next/`, and dependents)**: Use all **snake_case** file names (e.g., `rigid_body.hpp`, `free_joint.cpp`, `test_multi_body.py`). Build-system files such as `CMakeLists.txt` keep their canonical capitalization.
-- **Implementation details**: Continue to use the `-impl` suffix for template implementations, matching the surrounding style (e.g., `MyClass-impl.hpp` in legacy code, `rigid_body-impl.hpp` in simulation/next).
+- **Next-gen modules (`dart/simulation/experimental/`, `tests/simulation/experimental/`, and dependents)**: Use all **snake_case** file names (e.g., `rigid_body.hpp`, `free_joint.cpp`, `test_multi_body.py`). Build-system files such as `CMakeLists.txt` keep their canonical capitalization.
+- **Implementation details**: Continue to use the `-impl` suffix for template implementations, matching the surrounding style (e.g., `MyClass-impl.hpp` in legacy code, `rigid_body-impl.hpp` in simulation/experimental).
 - **Legacy tests (`tests/`)**: Use the `test_` prefix followed by **PascalCase** (e.g., `test_SkeletonState.cpp`) to align with historic targets while still grouping test binaries by prefix.
 
-**Rationale**: We preserve PascalCase in legacy code to minimise disruption for downstream users while making simulation-next code more Pythonic and consistent with modern C++ projects. The `test_` prefix keeps legacy test binaries grouped while allowing PascalCase identifiers, whereas next-gen tests favour fully snake_case names for readability.
+**Rationale**: We preserve PascalCase in legacy code to minimise disruption for downstream users while making simulation-experimental code more Pythonic and consistent with modern C++ projects. The `test_` prefix keeps legacy test binaries grouped while allowing PascalCase identifiers, whereas next-gen tests favour fully snake_case names for readability.
 
 ### Quick Reference
 
@@ -97,7 +97,7 @@ DART now maintains two naming schemes in parallel:
 - **Enum members**: PascalCase (e.g., `enum class Mode { Disabled, Enabled };`)
 - **Member variables**: Prefixed with `m` (e.g., `mExampleMember`)
 - **File extensions**: `.hpp` for headers, `.cpp` for sources
-- **File naming**: PascalCase in `dart/` and `python/dartpy/`; snake*case everywhere in `dart/simulation/next/` and its dependents; legacy `tests/` use `test*` + PascalCase while next-gen tests stay fully snake_case
+- **File naming**: PascalCase in `dart/` and `python/dartpy/`; snake*case everywhere in `dart/simulation/experimental/` and its dependents; legacy `tests/` use `test*` + PascalCase while next-gen tests stay fully snake_case
 - **Header guards**: `DART_NAMESPACE_CLASSNAME_HPP_`
 - **Braces**: No "cuddled" braces (except namespaces); always wrap control-flow bodies in braces, even for single statements
 - **Documentation**: Doxygen-style comments (`///`)

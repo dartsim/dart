@@ -269,19 +269,19 @@ dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY syst
 dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
-if(DEFINED DART_BUILD_DART8 AND NOT DEFINED DART_BUILD_SIMULATION_NEXT)
-  message(WARNING "DART_BUILD_DART8 is deprecated; use DART_BUILD_SIMULATION_NEXT.")
-  set(DART_BUILD_SIMULATION_NEXT ${DART_BUILD_DART8} CACHE BOOL
-      "Build next-generation simulation module (dart::simulation::next)" FORCE)
+if(DEFINED DART_BUILD_DART8 AND NOT DEFINED DART_BUILD_SIMULATION_EXPERIMENTAL)
+  message(WARNING "DART_BUILD_DART8 is deprecated; use DART_BUILD_SIMULATION_EXPERIMENTAL.")
+  set(DART_BUILD_SIMULATION_EXPERIMENTAL ${DART_BUILD_DART8} CACHE BOOL
+      "Build experimental simulation module (dart::simulation::experimental)" FORCE)
 endif()
 dart_option(
-  DART_BUILD_SIMULATION_NEXT
-  "Build next-generation simulation module (dart::simulation::next)"
+  DART_BUILD_SIMULATION_EXPERIMENTAL
+  "Build experimental simulation module (dart::simulation::experimental)"
   OFF
   CATEGORY build
 )
-set(DART_BUILD_DART8 ${DART_BUILD_SIMULATION_NEXT} CACHE BOOL
-    "Deprecated alias for DART_BUILD_SIMULATION_NEXT" FORCE)
+set(DART_BUILD_DART8 ${DART_BUILD_SIMULATION_EXPERIMENTAL} CACHE BOOL
+    "Deprecated alias for DART_BUILD_SIMULATION_EXPERIMENTAL" FORCE)
 
 dart_configure_compiler_cache()
 
@@ -624,8 +624,8 @@ endif()
 
 add_subdirectory(dart)
 
-if(DART_BUILD_SIMULATION_NEXT)
-  add_subdirectory(dart/simulation/next)
+if(DART_BUILD_SIMULATION_EXPERIMENTAL)
+  add_subdirectory(dart/simulation/experimental)
 endif()
 
 set(DART_IN_SOURCE_BUILD TRUE)
@@ -641,9 +641,9 @@ if(TARGET dart)
       add_subdirectory(tests EXCLUDE_FROM_ALL)
     endif()
 
-    if(DART_BUILD_SIMULATION_NEXT)
+    if(DART_BUILD_SIMULATION_EXPERIMENTAL)
       if(NOT EXISTS
-         "${CMAKE_CURRENT_SOURCE_DIR}/tests/simulation/next/CMakeLists.txt")
+         "${CMAKE_CURRENT_SOURCE_DIR}/tests/simulation/experimental/CMakeLists.txt")
         if(NOT TARGET dart8_tests)
           add_custom_target(dart8_tests)
         endif()

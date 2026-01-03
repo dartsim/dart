@@ -396,35 +396,35 @@ def run_unit_tests() -> bool:
     return success
 
 
-def run_simulation_next_tests() -> bool:
-    """Run simulation-next tests (ctest filtered to simulation-next labels)."""
-    print_header("SIMULATION-NEXT TESTS")
+def run_simulation_experimental_tests() -> bool:
+    """Run simulation-experimental tests (ctest filtered to simulation-experimental labels)."""
+    print_header("SIMULATION-EXPERIMENTAL TESTS")
 
-    if "DART_BUILD_SIMULATION_NEXT_OVERRIDE" in os.environ:
+    if "DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE" in os.environ:
         override_enabled = _env_flag_enabled(
-            "DART_BUILD_SIMULATION_NEXT_OVERRIDE", "ON"
+            "DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE", "ON"
         )
     else:
         override_enabled = _env_flag_enabled("DART_BUILD_DART8_OVERRIDE", "ON")
 
     if not override_enabled:
         print_warning(
-            "Skipping simulation-next tests because the build override is OFF"
+            "Skipping simulation-experimental tests because the build override is OFF"
         )
         return True
 
-    cmake_flag = _cmake_option_enabled("DART_BUILD_SIMULATION_NEXT")
+    cmake_flag = _cmake_option_enabled("DART_BUILD_SIMULATION_EXPERIMENTAL")
     if cmake_flag is None:
         cmake_flag = _cmake_option_enabled("DART_BUILD_DART8")
     if cmake_flag is False:
         print_warning(
-            "Skipping simulation-next tests because DART_BUILD_SIMULATION_NEXT is OFF in build"
+            "Skipping simulation-experimental tests because DART_BUILD_SIMULATION_EXPERIMENTAL is OFF in build"
         )
         return True
 
     result, _ = run_command(
-        pixi_command("test-simulation-next", PIXI_DEFAULT_DARTPY),
-        "simulation-next C++ tests",
+        pixi_command("test-simulation-experimental", PIXI_DEFAULT_DARTPY),
+        "simulation-experimental C++ tests",
     )
     return result
 
@@ -525,16 +525,16 @@ def main():
     )
     parser.add_argument("--skip-python", action="store_true", help="Skip Python tests")
     parser.add_argument(
-        "--skip-simulation-next",
-        dest="skip_simulation_next",
+        "--skip-simulation-experimental",
+        dest="skip_simulation_experimental",
         action="store_true",
-        help="Skip simulation-next C++ tests",
+        help="Skip simulation-experimental C++ tests",
     )
     parser.add_argument(
         "--skip-dart8",
-        dest="skip_simulation_next",
+        dest="skip_simulation_experimental",
         action="store_true",
-        help="Skip simulation-next C++ tests (deprecated)",
+        help="Skip simulation-experimental C++ tests (deprecated)",
     )
     parser.add_argument(
         "--skip-debug",
@@ -595,11 +595,11 @@ def main():
     else:
         print_warning("Skipping unit tests")
 
-    # Run simulation-next tests
-    if not args.skip_simulation_next:
-        run_step("Simulation-Next Tests", run_simulation_next_tests)
+    # Run simulation-experimental tests
+    if not args.skip_simulation_experimental:
+        run_step("Simulation-Experimental Tests", run_simulation_experimental_tests)
     else:
-        print_warning("Skipping simulation-next tests")
+        print_warning("Skipping simulation-experimental tests")
 
     # Run Python tests
     if not args.skip_python:

@@ -384,7 +384,7 @@ function(dart8_add_python_module)
 endfunction()
 
 # Utility function to add a DART 8.0 test
-# Automatically adds to CTest with simulation-next label and global test list
+# Automatically adds to CTest with simulation-experimental label and global test list
 #
 # Prerequisites: GTest must be found via dart8_dependencies.cmake
 #
@@ -405,12 +405,12 @@ function(dart8_add_test TEST_NAME TEST_PATH)
       GTest::gtest_main
   )
 
-  # Add to CTest with simulation-next label for easy filtering
+  # Add to CTest with simulation-experimental label for easy filtering
   add_test(NAME ${TEST_NAME} COMMAND $<TARGET_FILE:${TEST_NAME}>)
   set_tests_properties(
     ${TEST_NAME}
     PROPERTIES
-      LABELS "simulation-next"
+      LABELS "simulation-experimental"
   )
   if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.22")
     set_tests_properties(
@@ -437,7 +437,7 @@ function(dart8_add_test TEST_NAME TEST_PATH)
 
   # Set target properties
   set_target_properties(${TEST_NAME} PROPERTIES
-    FOLDER "simulation-next/tests"
+    FOLDER "simulation-experimental/tests"
   )
 
   # Add to global test list
