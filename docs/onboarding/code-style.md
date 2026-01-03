@@ -71,6 +71,13 @@ if (!result.isCollision()) [[likely]] {
 - Don't replace clear index-based loops with complex range expressions
 - Keep SFINAE for Eigen compile-time traits (not proper constexpr)
 
+**C++20 Modernization Notes (DART 7):**
+
+Prefer `std::span` and `std::string_view` for non-owning, read-only views and
+use `contains`, `std::ranges` algorithms, and `std::erase(_if)` where they make
+membership checks or cleanup clearer. Keep refactors no-op and avoid range
+rewrites that obscure control flow or performance characteristics.
+
 ### File Naming Conventions
 
 DART now maintains two naming schemes in parallel:
