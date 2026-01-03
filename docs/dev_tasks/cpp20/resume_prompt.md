@@ -12,7 +12,8 @@ Current status:
 - Phase 6 (internal non-owning views) is complete on `cpp20/phase6`.
 - Phase 7 (container membership cleanup) is complete on `cpp20/phase6`.
 - Phase 8 (algorithm cleanups) is complete on `cpp20/phase6`.
-- Phase 9 (validation and wrap-up) is active on `cpp20/phase6`.
+- Phase 9 (validation and wrap-up) is active on `cpp20/phase6`, with
+  `pixi run test-all` and `pixi run -e gazebo test-gz` completed.
 - Plan extends through Phase 9; see `docs/dev_tasks/cpp20/00_plan.md`.
 - Prior PRs: dartsim/dart#2367 (phase 4 spans), dartsim/dart#2371 (phase 5).
 - Latest validation: not run yet for Phase 6/7; run `pixi run test-all` and

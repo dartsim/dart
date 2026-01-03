@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase 9 in progress: validation and wrap-up.
+- Phase 9 in progress: validation done, wrap-up pending.
 
 ## Goal
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-- Active: executing phases; Phase 9 (validation and wrap-up) in progress.
+- Active: executing phases; Phase 9 (validation done, wrap-up pending).
 
 ## Objective
 

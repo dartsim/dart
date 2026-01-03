@@ -3,7 +3,7 @@
 ## Status
 
 - Current phase: Phase 9 (validation and wrap-up)
-- Code changes: Phase 9 in progress.
+- Code changes: Phase 9 in progress (validation complete).
 
 ## Phase checklist
 
@@ -97,5 +97,6 @@
   dynamics, collision, and geometry utilities.
 - Phase 8: replace `std::sort` with `std::ranges::sort` in dart8 profiling,
   serializer ordering, and LCP solver examples.
-- Phase 9: validation pending (`pixi run test-all` and
-  `pixi run -e gazebo test-gz`).
+- Phase 9: validation complete: `pixi run test-all` and
+  `pixi run -e gazebo test-gz` both passed (gz-physics build emits expected
+  deprecation warnings for legacy getters).
