@@ -51,6 +51,7 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <iterator>
 #include <limits>
 #include <locale>
 #include <optional>
@@ -93,7 +94,7 @@ public:
         base = static_cast<ptrdiff_t>(mPosition);
         break;
       case SEEKTYPE_END:
-        base = static_cast<ptrdiff_t>(mData.size());
+        base = std::ssize(mData);
         break;
       case SEEKTYPE_SET:
         base = 0;

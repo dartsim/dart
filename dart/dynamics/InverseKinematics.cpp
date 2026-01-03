@@ -39,6 +39,7 @@
 #include "dart/math/optimization/GradientDescentSolver.hpp"
 
 #include <algorithm>
+#include <iterator>
 #include <unordered_map>
 
 namespace dart {
@@ -218,7 +219,7 @@ Eigen::Isometry3d InverseKinematics::ErrorMethod::computeDesiredTransform(
 const Eigen::Vector6d& InverseKinematics::ErrorMethod::evalError(
     const Eigen::VectorXd& _q)
 {
-  if (_q.size() != static_cast<int>(mIK->getDofs().size())) {
+  if (_q.size() != std::ssize(mIK->getDofs())) {
     DART_ERROR(
         "Mismatch between joint positions size [{}] and the available degrees "
         "of freedom [{}].\\nSkeleton name: {}\\nBody name: {}\\nMethod name: "
@@ -602,7 +603,7 @@ InverseKinematics::GradientMethod::GradientMethod(
 void InverseKinematics::GradientMethod::evalGradient(
     const Eigen::VectorXd& _q, Eigen::Map<Eigen::VectorXd> _grad)
 {
-  if (_q.size() != static_cast<int>(mIK->getDofs().size())) {
+  if (_q.size() != std::ssize(mIK->getDofs())) {
     DART_ERROR(
         "Mismatch between joint positions size [{}] and the available degrees "
         "of freedom [{}].\\nSkeleton name: {}\\nBody name: {}\\nMethod name: "
@@ -1590,7 +1591,7 @@ const math::Jacobian& InverseKinematics::computeJacobian() const
 
   mJacobian.setZero(6, getDofs().size());
 
-  for (int i = 0; i < static_cast<int>(getDofMap().size()); ++i) {
+  for (Eigen::Index i = 0; i < std::ssize(getDofMap()); ++i) {
     int j = getDofMap()[i];
     if (j >= 0)
       mJacobian.block<6, 1>(0, j) = fullJacobian.block<6, 1>(0, i);
@@ -1608,7 +1609,7 @@ Eigen::VectorXd InverseKinematics::getPositions() const
 //==============================================================================
 void InverseKinematics::setPositions(const Eigen::VectorXd& _q)
 {
-  if (_q.size() != static_cast<int>(mDofs.size())) {
+  if (_q.size() != std::ssize(mDofs)) {
     DART_ERROR(
         "Mismatch between joint positions size [{}] and number of available "
         "degrees of freedom [{}]",

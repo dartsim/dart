@@ -38,6 +38,7 @@
 #include <Eigen/QR>
 
 #include <algorithm>
+#include <iterator>
 #include <limits>
 #include <vector>
 
@@ -102,7 +103,7 @@ LcpResult MinimumMapNewtonSolver::solve(
   const auto& hi = problem.hi;
   const auto& findex = problem.findex;
 
-  const int n = static_cast<int>(b.size());
+  const auto n = std::ssize(b);
   if (n == 0) {
     x.resize(0);
     result.status = LcpSolverStatus::Success;
@@ -190,8 +191,8 @@ LcpResult MinimumMapNewtonSolver::solve(
       dx[idx] = -x[idx];
 
     if (!active.empty()) {
-      const int aSize = static_cast<int>(active.size());
-      const int fSize = static_cast<int>(freeSet.size());
+      const auto aSize = std::ssize(active);
+      const auto fSize = std::ssize(freeSet);
       Eigen::MatrixXd A_AA(aSize, aSize);
       Eigen::MatrixXd A_AF(aSize, fSize);
       Eigen::VectorXd rhs(aSize);

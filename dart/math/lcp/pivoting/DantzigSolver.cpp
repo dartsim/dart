@@ -37,6 +37,7 @@
 #include "dart/math/lcp/pivoting/dantzig/Lcp.hpp"
 
 #include <algorithm>
+#include <iterator>
 #include <limits>
 #include <vector>
 
@@ -69,7 +70,7 @@ LcpResult DantzigSolver::solve(
     return result;
   }
 
-  const int n = static_cast<int>(b.size());
+  const auto n = std::ssize(b);
   if (n == 0) {
     x.resize(0);
     result.status = LcpSolverStatus::Success;
@@ -82,7 +83,7 @@ LcpResult DantzigSolver::solve(
 
   if (x.size() != n)
     x = Eigen::VectorXd::Zero(n);
-  const int nSkip = padding(n);
+  const int nSkip = padding(static_cast<int>(n));
 
   std::vector<double> Adata(n * nSkip, 0.0);
   std::vector<double> xdata(n, 0.0);
@@ -104,7 +105,7 @@ LcpResult DantzigSolver::solve(
   }
 
   const bool success = SolveLCP<double>(
-      n,
+      static_cast<int>(n),
       Adata.data(),
       xdata.data(),
       bdata.data(),
