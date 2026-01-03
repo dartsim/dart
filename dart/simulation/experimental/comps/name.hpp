@@ -40,11 +40,11 @@ namespace dart::simulation::experimental::comps {
 
 /// Name component - stores human-readable identifier for entities
 ///
-/// Uses automatic serialization via DART8_PROPERTY_COMPONENT macro.
+/// Uses automatic serialization via DART_EXPERIMENTAL_PROPERTY_COMPONENT macro.
 /// **Internal Implementation Detail** - Not exposed in public API
 struct Name
 {
-  DART8_PROPERTY_COMPONENT(Name);
+  DART_EXPERIMENTAL_PROPERTY_COMPONENT(Name);
 
   std::string name;
 };

@@ -129,7 +129,7 @@ struct AutoComponentRegistration
 //==============================================================================
 
 // Use this macro in a .cpp file to register a single component
-#define DART8_REGISTER_COMPONENT(ComponentType)                                \
+#define DART_EXPERIMENTAL_REGISTER_COMPONENT(ComponentType)                                \
   namespace {                                                                  \
   struct ComponentType##_Registration                                          \
   {                                                                            \
@@ -143,16 +143,16 @@ struct AutoComponentRegistration
   }
 
 // Use this macro in a .cpp file to register multiple components at once
-#define DART8_REGISTER_COMPONENTS_BEGIN()                                      \
+#define DART_EXPERIMENTAL_REGISTER_COMPONENTS_BEGIN()                                      \
   namespace {                                                                  \
   struct ComponentRegistration                                                 \
   {                                                                            \
     ComponentRegistration()                                                    \
     {
-#define DART8_REGISTER_COMPONENTS_ADD(ComponentType)                           \
+#define DART_EXPERIMENTAL_REGISTER_COMPONENTS_ADD(ComponentType)                           \
   ::dart::simulation::experimental::io::registerCategoryComponent<ComponentType>();
 
-#define DART8_REGISTER_COMPONENTS_END()                                        \
+#define DART_EXPERIMENTAL_REGISTER_COMPONENTS_END()                                        \
   }                                                                            \
   }                                                                            \
   ;                                                                            \

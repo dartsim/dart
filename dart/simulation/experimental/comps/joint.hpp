@@ -172,7 +172,7 @@ struct JointLimits
 /// **Internal Implementation Detail** - Not exposed in public API
 struct Joint
 {
-  DART8_STATE_COMPONENT(Joint);
+  DART_EXPERIMENTAL_STATE_COMPONENT(Joint);
 
   JointType type = JointType::Revolute;
   std::string name;

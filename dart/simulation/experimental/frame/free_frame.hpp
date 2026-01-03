@@ -51,7 +51,7 @@ namespace dart::simulation::experimental {
 /// - Target frames for IK
 ///
 /// DART6 equivalent: SimpleFrame (with modifiable transform)
-class DART8_API FreeFrame : public Frame,
+class DART_EXPERIMENTAL_API FreeFrame : public Frame,
                             public EntityObjectWith<
                                 TagComps<comps::FreeFrameTag>,
                                 ReadOnlyComps<>,

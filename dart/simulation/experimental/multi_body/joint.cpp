@@ -65,7 +65,7 @@ Eigen::Vector3d Joint::getAxis() const
   const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
 
   // Validate joint type - Ball and Free joints don't have axes
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       jointComp.type == comps::JointType::Ball
           || jointComp.type == comps::JointType::Free,
       InvalidArgumentException,
@@ -80,7 +80,7 @@ Eigen::Vector3d Joint::getAxis2() const
   const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
 
   // Validate joint type
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       jointComp.type != comps::JointType::Universal
           && jointComp.type != comps::JointType::Planar,
       InvalidArgumentException,
@@ -95,7 +95,7 @@ double Joint::getPitch() const
   const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
 
   // Validate joint type
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       jointComp.type != comps::JointType::Screw,
       InvalidArgumentException,
       "getPitch() is only valid for Screw joints");

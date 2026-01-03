@@ -111,7 +111,7 @@ void World::clear()
 //==============================================================================
 void World::ensureDesignMode() const
 {
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       m_simulationMode,
       InvalidOperationException,
       "World modifications are not allowed while in simulation mode");
@@ -161,12 +161,12 @@ FixedFrame World::addFixedFrame(
   ensureDesignMode();
   Frame parentFrame = resolveParentFrame(parent);
 
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       name.empty(),
       InvalidArgumentException,
       "FixedFrame requires a non-empty name");
 
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       parentFrame.isWorld(),
       InvalidArgumentException,
       "FixedFrame cannot be attached directly to the world frame");
@@ -242,12 +242,12 @@ Frame World::resolveParentFrame(const Frame& parent) const
     return Frame(entt::null, const_cast<World*>(this));
   }
 
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !parent.isValid(),
       InvalidArgumentException,
       "Parent frame is invalid or has been destroyed");
 
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       parent.getWorld() != this,
       InvalidArgumentException,
       "Parent frame belongs to a different world");
@@ -306,7 +306,7 @@ RigidBody World::addRigidBody(
       = name.empty() ? std::format("rigid_body_{:03d}", m_rigidBodyCounter + 1)
                      : std::string(name);
 
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       hasEntityWithName<comps::RigidBodyTag>(m_registry, candidateName),
       InvalidArgumentException,
       "RigidBody '{}' already exists",
@@ -343,7 +343,7 @@ std::size_t World::getRigidBodyCount() const
 //==============================================================================
 void World::enterSimulationMode()
 {
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       m_simulationMode,
       InvalidArgumentException,
       "World is already in simulation mode");
@@ -357,7 +357,7 @@ void World::enterSimulationMode()
 //==============================================================================
 void World::updateKinematics()
 {
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !m_simulationMode,
       InvalidArgumentException,
       "updateKinematics() requires simulation mode");

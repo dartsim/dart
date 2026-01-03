@@ -40,17 +40,17 @@
 #include <memory>
 #include <string>
 
-#define DART8_DETAIL_PP_CONCAT_IMPL(a, b) a##b
-#define DART8_DETAIL_PP_CONCAT(a, b) DART8_DETAIL_PP_CONCAT_IMPL(a, b)
+#define DART_EXPERIMENTAL_DETAIL_PP_CONCAT_IMPL(a, b) a##b
+#define DART_EXPERIMENTAL_DETAIL_PP_CONCAT(a, b) DART_EXPERIMENTAL_DETAIL_PP_CONCAT_IMPL(a, b)
 #if defined(__COUNTER__)
-  #define DART8_DETAIL_UNIQUE_NAME(prefix)                                     \
-    DART8_DETAIL_PP_CONCAT(prefix, __COUNTER__)
+  #define DART_EXPERIMENTAL_DETAIL_UNIQUE_NAME(prefix)                                     \
+    DART_EXPERIMENTAL_DETAIL_PP_CONCAT(prefix, __COUNTER__)
 #else
-  #define DART8_DETAIL_UNIQUE_NAME(prefix)                                     \
-    DART8_DETAIL_PP_CONCAT(prefix, __LINE__)
+  #define DART_EXPERIMENTAL_DETAIL_UNIQUE_NAME(prefix)                                     \
+    DART_EXPERIMENTAL_DETAIL_PP_CONCAT(prefix, __LINE__)
 #endif
 
-#define DART8_DETAIL_LOG_ONCE_IMPL(flag, log_call)                             \
+#define DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IMPL(flag, log_call)                             \
   do {                                                                         \
     static bool flag = false;                                                  \
     if (!flag) {                                                               \
@@ -59,11 +59,11 @@
     }                                                                          \
   } while (false)
 
-#define DART8_DETAIL_LOG_ONCE(log_call)                                        \
-  DART8_DETAIL_LOG_ONCE_IMPL(                                                  \
-      DART8_DETAIL_UNIQUE_NAME(_dart8_log_once_flag_), log_call)
+#define DART_EXPERIMENTAL_DETAIL_LOG_ONCE(log_call)                                        \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IMPL(                                                  \
+      DART_EXPERIMENTAL_DETAIL_UNIQUE_NAME(_dart_experimental_log_once_flag_), log_call)
 
-#define DART8_DETAIL_LOG_ONCE_IF_IMPL(flag, condition_expr, log_call)          \
+#define DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF_IMPL(flag, condition_expr, log_call)          \
   do {                                                                         \
     static bool flag = false;                                                  \
     if (!flag) {                                                               \
@@ -74,9 +74,9 @@
     }                                                                          \
   } while (false)
 
-#define DART8_DETAIL_LOG_ONCE_IF(condition_expr, log_call)                     \
-  DART8_DETAIL_LOG_ONCE_IF_IMPL(                                               \
-      DART8_DETAIL_UNIQUE_NAME(_dart8_log_once_flag_),                         \
+#define DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(condition_expr, log_call)                     \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF_IMPL(                                               \
+      DART_EXPERIMENTAL_DETAIL_UNIQUE_NAME(_dart_experimental_log_once_flag_),             \
       condition_expr,                                                          \
       log_call)
 
@@ -142,8 +142,8 @@ inline LogLevel fromSpdlogLevel(spdlog::level::level_enum level)
 /// Strip source directory prefix from file path at compile time
 constexpr const char* stripSourceDir(const char* path)
 {
-#ifdef DART8_SOURCE_DIR
-  const char* base = DART8_SOURCE_DIR;
+#ifdef DART_EXPERIMENTAL_SOURCE_DIR
+  const char* base = DART_EXPERIMENTAL_SOURCE_DIR;
   const char* p = path;
   const char* b = base;
 
@@ -187,7 +187,7 @@ public:
     instance()->set_level(level);
   }
 
-  /// Set log level using DART8 LogLevel enum
+  /// Set log level using experimental LogLevel enum
   static void setLevel(LogLevel level)
   {
     instance()->set_level(toSpdlogLevel(level));
@@ -199,7 +199,7 @@ public:
     return instance()->level();
   }
 
-  /// Get current log level as DART8 LogLevel enum
+  /// Get current log level as experimental LogLevel enum
   static LogLevel getLevelEnum()
   {
     return fromSpdlogLevel(instance()->level());
@@ -279,7 +279,7 @@ void log(
 
 } // namespace detail
 
-/// Initialize DART8 logging with default settings
+/// Initialize simulation-experimental logging with default settings
 inline void initializeLogging()
 {
   // Check if logger already exists to make this function idempotent
@@ -299,7 +299,7 @@ inline void initializeLogging()
       __FILE__,
       __LINE__,
       __func__,
-      "DART8 logging initialized");
+      "simulation-experimental logging initialized");
 #endif
 }
 
@@ -318,7 +318,7 @@ inline LogLevel getLogLevel()
 } // namespace dart::simulation::experimental::common
 
 // Logging macros with optional source context
-#define DART8_TRACE(...)                                                       \
+#define DART_EXPERIMENTAL_TRACE(...)                                                       \
   ::dart::simulation::experimental::common::detail::log(                                                \
       ::dart::simulation::experimental::common::LogLevel::Trace,                                        \
       __FILE__,                                                                \
@@ -326,7 +326,7 @@ inline LogLevel getLogLevel()
       __func__,                                                                \
       __VA_ARGS__)
 
-#define DART8_DEBUG(...)                                                       \
+#define DART_EXPERIMENTAL_DEBUG(...)                                                       \
   ::dart::simulation::experimental::common::detail::log(                                                \
       ::dart::simulation::experimental::common::LogLevel::Debug,                                        \
       __FILE__,                                                                \
@@ -334,7 +334,7 @@ inline LogLevel getLogLevel()
       __func__,                                                                \
       __VA_ARGS__)
 
-#define DART8_INFO(...)                                                        \
+#define DART_EXPERIMENTAL_INFO(...)                                                        \
   ::dart::simulation::experimental::common::detail::log(                                                \
       ::dart::simulation::experimental::common::LogLevel::Info,                                         \
       __FILE__,                                                                \
@@ -342,7 +342,7 @@ inline LogLevel getLogLevel()
       __func__,                                                                \
       __VA_ARGS__)
 
-#define DART8_WARN(...)                                                        \
+#define DART_EXPERIMENTAL_WARN(...)                                                        \
   ::dart::simulation::experimental::common::detail::log(                                                \
       ::dart::simulation::experimental::common::LogLevel::Warn,                                         \
       __FILE__,                                                                \
@@ -350,7 +350,7 @@ inline LogLevel getLogLevel()
       __func__,                                                                \
       __VA_ARGS__)
 
-#define DART8_ERROR(...)                                                       \
+#define DART_EXPERIMENTAL_ERROR(...)                                                       \
   ::dart::simulation::experimental::common::detail::log(                                                \
       ::dart::simulation::experimental::common::LogLevel::Error,                                        \
       __FILE__,                                                                \
@@ -358,7 +358,7 @@ inline LogLevel getLogLevel()
       __func__,                                                                \
       __VA_ARGS__)
 
-#define DART8_CRITICAL(...)                                                    \
+#define DART_EXPERIMENTAL_CRITICAL(...)                                                    \
   ::dart::simulation::experimental::common::detail::log(                                                \
       ::dart::simulation::experimental::common::LogLevel::Critical,                                     \
       __FILE__,                                                                \
@@ -367,55 +367,55 @@ inline LogLevel getLogLevel()
       __VA_ARGS__)
 
 // Conditional logging
-#define DART8_INFO_IF(condition, ...)                                          \
+#define DART_EXPERIMENTAL_INFO_IF(condition, ...)                                          \
   do {                                                                         \
     if (condition) {                                                           \
-      DART8_INFO(__VA_ARGS__);                                                 \
+      DART_EXPERIMENTAL_INFO(__VA_ARGS__);                                                 \
     }                                                                          \
   } while (false)
 
-#define DART8_WARN_IF(condition, ...)                                          \
+#define DART_EXPERIMENTAL_WARN_IF(condition, ...)                                          \
   do {                                                                         \
     if (condition) {                                                           \
-      DART8_WARN(__VA_ARGS__);                                                 \
+      DART_EXPERIMENTAL_WARN(__VA_ARGS__);                                                 \
     }                                                                          \
   } while (false)
 
-#define DART8_ERROR_IF(condition, ...)                                         \
+#define DART_EXPERIMENTAL_ERROR_IF(condition, ...)                                         \
   do {                                                                         \
     if (condition) {                                                           \
-      DART8_ERROR(__VA_ARGS__);                                                \
+      DART_EXPERIMENTAL_ERROR(__VA_ARGS__);                                                \
     }                                                                          \
   } while (false)
 
 // Log once helpers
-#define DART8_TRACE_ONCE(...) DART8_DETAIL_LOG_ONCE(DART8_TRACE(__VA_ARGS__))
+#define DART_EXPERIMENTAL_TRACE_ONCE(...) DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_TRACE(__VA_ARGS__))
 
-#define DART8_TRACE_ONCE_IF(condition, ...)                                    \
-  DART8_DETAIL_LOG_ONCE_IF(condition, DART8_TRACE(__VA_ARGS__))
+#define DART_EXPERIMENTAL_TRACE_ONCE_IF(condition, ...)                                    \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(condition, DART_EXPERIMENTAL_TRACE(__VA_ARGS__))
 
-#define DART8_DEBUG_ONCE(...) DART8_DETAIL_LOG_ONCE(DART8_DEBUG(__VA_ARGS__))
+#define DART_EXPERIMENTAL_DEBUG_ONCE(...) DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_DEBUG(__VA_ARGS__))
 
-#define DART8_DEBUG_ONCE_IF(condition, ...)                                    \
-  DART8_DETAIL_LOG_ONCE_IF(condition, DART8_DEBUG(__VA_ARGS__))
+#define DART_EXPERIMENTAL_DEBUG_ONCE_IF(condition, ...)                                    \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(condition, DART_EXPERIMENTAL_DEBUG(__VA_ARGS__))
 
-#define DART8_INFO_ONCE(...) DART8_DETAIL_LOG_ONCE(DART8_INFO(__VA_ARGS__))
+#define DART_EXPERIMENTAL_INFO_ONCE(...) DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_INFO(__VA_ARGS__))
 
-#define DART8_INFO_ONCE_IF(condition, ...)                                     \
-  DART8_DETAIL_LOG_ONCE_IF(condition, DART8_INFO(__VA_ARGS__))
+#define DART_EXPERIMENTAL_INFO_ONCE_IF(condition, ...)                                     \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(condition, DART_EXPERIMENTAL_INFO(__VA_ARGS__))
 
-#define DART8_WARN_ONCE(...) DART8_DETAIL_LOG_ONCE(DART8_WARN(__VA_ARGS__))
+#define DART_EXPERIMENTAL_WARN_ONCE(...) DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_WARN(__VA_ARGS__))
 
-#define DART8_WARN_ONCE_IF(condition, ...)                                     \
-  DART8_DETAIL_LOG_ONCE_IF(condition, DART8_WARN(__VA_ARGS__))
+#define DART_EXPERIMENTAL_WARN_ONCE_IF(condition, ...)                                     \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(condition, DART_EXPERIMENTAL_WARN(__VA_ARGS__))
 
-#define DART8_ERROR_ONCE(...) DART8_DETAIL_LOG_ONCE(DART8_ERROR(__VA_ARGS__))
+#define DART_EXPERIMENTAL_ERROR_ONCE(...) DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_ERROR(__VA_ARGS__))
 
-#define DART8_ERROR_ONCE_IF(condition, ...)                                    \
-  DART8_DETAIL_LOG_ONCE_IF(condition, DART8_ERROR(__VA_ARGS__))
+#define DART_EXPERIMENTAL_ERROR_ONCE_IF(condition, ...)                                    \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(condition, DART_EXPERIMENTAL_ERROR(__VA_ARGS__))
 
-#define DART8_CRITICAL_ONCE(...)                                               \
-  DART8_DETAIL_LOG_ONCE(DART8_CRITICAL(__VA_ARGS__))
+#define DART_EXPERIMENTAL_CRITICAL_ONCE(...)                                               \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE(DART_EXPERIMENTAL_CRITICAL(__VA_ARGS__))
 
-#define DART8_CRITICAL_ONCE_IF(condition, ...)                                 \
-  DART8_DETAIL_LOG_ONCE_IF(condition, DART8_CRITICAL(__VA_ARGS__))
+#define DART_EXPERIMENTAL_CRITICAL_ONCE_IF(condition, ...)                                 \
+  DART_EXPERIMENTAL_DETAIL_LOG_ONCE_IF(condition, DART_EXPERIMENTAL_CRITICAL(__VA_ARGS__))

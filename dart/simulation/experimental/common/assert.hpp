@@ -42,21 +42,21 @@
 // Assertion Macros - Put at top for easy access
 //===============================================================================
 //
-// DART8_ASSERT vs DART8_VERIFY - When to use which?
+// DART_EXPERIMENTAL_ASSERT vs DART_EXPERIMENTAL_VERIFY - When to use which?
 //
-// DART8_ASSERT(condition)
+// DART_EXPERIMENTAL_ASSERT(condition)
 //   - Only active in DEBUG builds (disabled when NDEBUG is defined)
 //   - Use for checking preconditions, postconditions, and invariants
 //   - Should NOT have side effects (condition won't be evaluated in release)
-//   - Example: DART8_ASSERT(index < size);
+//   - Example: DART_EXPERIMENTAL_ASSERT(index < size);
 //
-// DART8_VERIFY(condition)
+// DART_EXPERIMENTAL_VERIFY(condition)
 //   - Always active in ALL builds (debug and release)
 //   - Use when the condition has side effects that must always execute
 //   - Returns bool result (same as condition) so it can be used in expressions
-//   - Example: if (!DART8_VERIFY(file.open())) { handle_error(); }
+//   - Example: if (!DART_EXPERIMENTAL_VERIFY(file.open())) { handle_error(); }
 //
-// Recommendation: Prefer DART8_ASSERT for most checks. Only use DART8_VERIFY
+// Recommendation: Prefer DART_EXPERIMENTAL_ASSERT for most checks. Only use DART_EXPERIMENTAL_VERIFY
 // when the condition expression has necessary side effects.
 //===============================================================================
 
@@ -67,7 +67,7 @@ inline void assertionFailed(
     const char* condition,
     const std::source_location& location = std::source_location::current())
 {
-  std::cerr << "\n[DART8 ASSERTION FAILED]\n"
+  std::cerr << "\n[SIMULATION-EXPERIMENTAL ASSERTION FAILED]\n"
             << "  Condition: " << condition << "\n"
             << "  File: " << location.file_name() << "\n"
             << "  Line: " << location.line() << "\n"
@@ -82,7 +82,7 @@ inline void assertionFailed(
     const char* message,
     const std::source_location& location = std::source_location::current())
 {
-  std::cerr << "\n[DART8 ASSERTION FAILED]\n"
+  std::cerr << "\n[SIMULATION-EXPERIMENTAL ASSERTION FAILED]\n"
             << "  Condition: " << condition << "\n"
             << "  Message: " << message << "\n"
             << "  File: " << location.file_name() << "\n"
@@ -94,34 +94,34 @@ inline void assertionFailed(
 
 } // namespace dart::simulation::experimental::common
 
-// DART8_ASSERT: Assertion only enabled in debug builds
+// DART_EXPERIMENTAL_ASSERT: Assertion only enabled in debug builds
 #ifndef NDEBUG
-  #define DART8_ASSERT(condition)                                              \
+  #define DART_EXPERIMENTAL_ASSERT(condition)                                              \
     do {                                                                       \
       if (!(condition)) {                                                      \
         ::dart::simulation::experimental::common::assertionFailed(#condition);                          \
       }                                                                        \
     } while (false)
 
-  #define DART8_ASSERT_MSG(condition, message)                                 \
+  #define DART_EXPERIMENTAL_ASSERT_MSG(condition, message)                                 \
     do {                                                                       \
       if (!(condition)) {                                                      \
         ::dart::simulation::experimental::common::assertionFailed(#condition, message);                 \
       }                                                                        \
     } while (false)
 #else
-  #define DART8_ASSERT(condition) ((void)0)
-  #define DART8_ASSERT_MSG(condition, message) ((void)0)
+  #define DART_EXPERIMENTAL_ASSERT(condition) ((void)0)
+  #define DART_EXPERIMENTAL_ASSERT_MSG(condition, message) ((void)0)
 #endif
 
-// DART8_DEBUG_ASSERT: Alias for DART8_ASSERT (for clarity)
-#define DART8_DEBUG_ASSERT(condition) DART8_ASSERT(condition)
-#define DART8_DEBUG_ASSERT_MSG(condition, message)                             \
-  DART8_ASSERT_MSG(condition, message)
+// DART_EXPERIMENTAL_DEBUG_ASSERT: Alias for DART_EXPERIMENTAL_ASSERT (for clarity)
+#define DART_EXPERIMENTAL_DEBUG_ASSERT(condition) DART_EXPERIMENTAL_ASSERT(condition)
+#define DART_EXPERIMENTAL_DEBUG_ASSERT_MSG(condition, message)                             \
+  DART_EXPERIMENTAL_ASSERT_MSG(condition, message)
 
-// DART8_VERIFY: Always evaluates condition in ALL builds
+// DART_EXPERIMENTAL_VERIFY: Always evaluates condition in ALL builds
 // Returns the bool result so it can be used in if statements
-#define DART8_VERIFY(condition)                                                \
+#define DART_EXPERIMENTAL_VERIFY(condition)                                                \
   ([](bool result) {                                                           \
     if (!result) {                                                             \
       ::dart::simulation::experimental::common::assertionFailed(#condition);                            \
@@ -129,7 +129,7 @@ inline void assertionFailed(
     return result;                                                             \
   }(static_cast<bool>(condition)))
 
-#define DART8_VERIFY_MSG(condition, message)                                   \
+#define DART_EXPERIMENTAL_VERIFY_MSG(condition, message)                                   \
   ([](bool result) {                                                           \
     if (!result) {                                                             \
       ::dart::simulation::experimental::common::assertionFailed(#condition, message);                   \
@@ -137,10 +137,10 @@ inline void assertionFailed(
     return result;                                                             \
   }(static_cast<bool>(condition)))
 
-// DART8_NOT_REACHED: Mark code that should never be reached
-#define DART8_NOT_REACHED()                                                    \
+// DART_EXPERIMENTAL_NOT_REACHED: Mark code that should never be reached
+#define DART_EXPERIMENTAL_NOT_REACHED()                                                    \
   ::dart::simulation::experimental::common::assertionFailed("Code should not be reached")
 
-// DART8_NOT_IMPLEMENTED: Mark unimplemented functionality
-#define DART8_NOT_IMPLEMENTED()                                                \
+// DART_EXPERIMENTAL_NOT_IMPLEMENTED: Mark unimplemented functionality
+#define DART_EXPERIMENTAL_NOT_IMPLEMENTED()                                                \
   ::dart::simulation::experimental::common::assertionFailed("Not yet implemented")

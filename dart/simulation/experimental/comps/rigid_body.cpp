@@ -36,6 +36,6 @@
 
 namespace dart::simulation::experimental::comps {
 
-DART8_REGISTER_COMPONENT(RigidBodyTag)
+DART_EXPERIMENTAL_REGISTER_COMPONENT(RigidBodyTag)
 
 } // namespace dart::simulation::experimental::comps

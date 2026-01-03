@@ -39,22 +39,22 @@
 namespace dart::simulation::experimental::common {
 
 /// Get compiler information string (e.g., "GCC 15.2.1")
-DART8_API std::string getCompilerInfo();
+DART_EXPERIMENTAL_API std::string getCompilerInfo();
 
 /// Get C++ ABI information (e.g., "libstdc++ 20250808")
-DART8_API std::string getCxxABI();
+DART_EXPERIMENTAL_API std::string getCxxABI();
 
 /// Get C++ standard version (e.g., 202002)
-DART8_API long getCxxStandard();
+DART_EXPERIMENTAL_API long getCxxStandard();
 
 /// Get the path to a shared library by function pointer
-DART8_API std::string getLibraryPath(void* func);
+DART_EXPERIMENTAL_API std::string getLibraryPath(void* func);
 
 /// Print comprehensive runtime diagnostic information to stderr
-DART8_API void printRuntimeInfo();
+DART_EXPERIMENTAL_API void printRuntimeInfo();
 
 /// Print helpful error message for initialization failures
-DART8_API void printErrorHelp(
+DART_EXPERIMENTAL_API void printErrorHelp(
     const std::string& section, const std::string& error);
 
 } // namespace dart::simulation::experimental::common

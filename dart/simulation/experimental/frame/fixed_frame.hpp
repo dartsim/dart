@@ -52,7 +52,7 @@ namespace dart::simulation::experimental {
 /// - End-effector frames
 ///
 /// DART6 equivalent: FixedFrame
-class DART8_API FixedFrame : public Frame,
+class DART_EXPERIMENTAL_API FixedFrame : public Frame,
                              public EntityObjectWith<
                                  TagComps<comps::FixedFrameTag>,
                                  ReadOnlyComps<>,

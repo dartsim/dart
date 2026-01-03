@@ -46,7 +46,7 @@
 
 namespace dart::simulation::experimental {
 
-/// Base exception class for DART8
+/// Base exception class for simulation-experimental
 class Exception : public std::runtime_error
 {
 public:
@@ -95,7 +95,7 @@ private:
     }
 
     return std::format(
-        "\n[DART8 Exception]\n"
+        "\n[SIMULATION-EXPERIMENTAL Exception]\n"
         "  Message:  {}\n"
         "  Location: {}:{} in {}()",
         message,
@@ -168,7 +168,7 @@ using ErrorHandler = void (*)(
 
 /// Set a custom error handler for exception-free mode
 ///
-/// When DART8_DISABLE_EXCEPTIONS is defined, this handler will be called
+/// When DART_EXPERIMENTAL_DISABLE_EXCEPTIONS is defined, this handler will be called
 /// instead of the default behavior (print to stderr + std::terminate).
 ///
 /// @param[in] handler Function pointer to custom handler, or nullptr to reset
@@ -181,12 +181,12 @@ using ErrorHandler = void (*)(
 ///     // Can attempt recovery or exit gracefully
 ///   });
 /// @endcode
-DART8_API void setErrorHandler(ErrorHandler handler);
+DART_EXPERIMENTAL_API void setErrorHandler(ErrorHandler handler);
 
 /// Get the current error handler
 ///
 /// @return Current handler, or nullptr if using default behavior
-DART8_API ErrorHandler getErrorHandler();
+DART_EXPERIMENTAL_API ErrorHandler getErrorHandler();
 
 } // namespace dart::simulation::experimental
 
@@ -194,46 +194,46 @@ DART8_API ErrorHandler getErrorHandler();
 // Exception Handling Macros - CMake Controlled
 //===============================================================================
 //
-// DART8 provides two sets of macros with concise, clear naming:
+// Simulation-experimental provides two sets of macros with concise, clear naming:
 //
 // 1. Default exception type (convenience - shortest):
-//    - DART8_THROW(msg, ...)
+//    - DART_EXPERIMENTAL_THROW(msg, ...)
 //        Throws dart::simulation::experimental::Exception with source location
-//    - DART8_THROW_IF(condition, msg, ...)
+//    - DART_EXPERIMENTAL_THROW_IF(condition, msg, ...)
 //        Throws dart::simulation::experimental::Exception if condition is TRUE
 //
 // 2. Explicit exception type (precision - _T suffix):
-//    - DART8_THROW_T(Type, msg, ...)
+//    - DART_EXPERIMENTAL_THROW_T(Type, msg, ...)
 //        Throws Type with source location
-//    - DART8_THROW_T_IF(condition, Type, msg, ...)
+//    - DART_EXPERIMENTAL_THROW_T_IF(condition, Type, msg, ...)
 //        Throws Type if condition is TRUE
 //
-// Exception-free mode (opt-in via DART8_DISABLE_EXCEPTIONS):
+// Exception-free mode (opt-in via DART_EXPERIMENTAL_DISABLE_EXCEPTIONS):
 //    - Prints error message with source location to stderr
 //    - Calls custom error handler (if set) or std::terminate()
 //    - Suitable for embedded systems, real-time systems, or when
 //    -fno-exceptions
 //
 // Control via CMake:
-//   cmake -DDART8_DISABLE_EXCEPTIONS=ON ...
+//   cmake -DDART_EXPERIMENTAL_DISABLE_EXCEPTIONS=ON ...
 //
 // Examples:
 //   // Default type (quick checks/assertions)
-//   DART8_THROW("Unexpected state");
-//   DART8_THROW_IF(ptr == nullptr, "Null pointer");
-//   DART8_THROW_IF(value < 0, "Value {} must be non-negative", value);
+//   DART_EXPERIMENTAL_THROW("Unexpected state");
+//   DART_EXPERIMENTAL_THROW_IF(ptr == nullptr, "Null pointer");
+//   DART_EXPERIMENTAL_THROW_IF(value < 0, "Value {} must be non-negative", value);
 //
 //   // Explicit type (API validation, specific errors)
-//   DART8_THROW_T(InvalidArgumentException, "Invalid value: {}", value);
-//   DART8_THROW_T_IF(index >= size, OutOfRangeException, "Index {} >= size {}",
+//   DART_EXPERIMENTAL_THROW_T(InvalidArgumentException, "Invalid value: {}", value);
+//   DART_EXPERIMENTAL_THROW_T_IF(index >= size, OutOfRangeException, "Index {} >= size {}",
 //   index, size);
 //
 //===============================================================================
 
-#ifndef DART8_DISABLE_EXCEPTIONS
+#ifndef DART_EXPERIMENTAL_DISABLE_EXCEPTIONS
 
   // Exception mode (DEFAULT): throw exceptions as normal
-  #define DART8_THROW_T(ExceptionType, ...)                                    \
+  #define DART_EXPERIMENTAL_THROW_T(ExceptionType, ...)                                    \
     throw ExceptionType(                                                       \
         ::std::format(__VA_ARGS__), std::source_location::current())
 
@@ -243,12 +243,12 @@ DART8_API ErrorHandler getErrorHandler();
   #include <cstdio>
   #include <cstdlib>
 
-  #define DART8_THROW_T(ExceptionType, ...)                                    \
+  #define DART_EXPERIMENTAL_THROW_T(ExceptionType, ...)                                    \
     do {                                                                       \
       auto loc = std::source_location::current();                              \
       std::fprintf(                                                            \
           stderr,                                                              \
-          "\n[DART8 Fatal Error: %s]\n"                                        \
+          "\n[SIMULATION-EXPERIMENTAL Fatal Error: %s]\n"                      \
           "  Message: %s\n"                                                    \
           "  File: %s:%u\n"                                                    \
           "  Function: %s\n\n",                                                \
@@ -260,19 +260,19 @@ DART8_API ErrorHandler getErrorHandler();
       std::terminate();                                                        \
     } while (false)
 
-#endif // DART8_DISABLE_EXCEPTIONS
+#endif // DART_EXPERIMENTAL_DISABLE_EXCEPTIONS
 
-// DART8_THROW_T_IF: Throw exception if condition is TRUE (explicit type)
+// DART_EXPERIMENTAL_THROW_T_IF: Throw exception if condition is TRUE (explicit type)
 // Supports std::format() style arguments
 //
 // Usage:
-//   DART8_THROW_T_IF(index >= size, OutOfRangeException, "Index {} >= size {}",
-//   index, size) DART8_THROW_T_IF(ptr == nullptr, NullPointerException,
+//   DART_EXPERIMENTAL_THROW_T_IF(index >= size, OutOfRangeException, "Index {} >= size {}",
+//   index, size) DART_EXPERIMENTAL_THROW_T_IF(ptr == nullptr, NullPointerException,
 //   "Pointer is null")
-#define DART8_THROW_T_IF(condition, ExceptionType, ...)                        \
+#define DART_EXPERIMENTAL_THROW_T_IF(condition, ExceptionType, ...)                        \
   do {                                                                         \
     if (condition) {                                                           \
-      DART8_THROW_T(ExceptionType, __VA_ARGS__);                               \
+      DART_EXPERIMENTAL_THROW_T(ExceptionType, __VA_ARGS__);                               \
     }                                                                          \
   } while (false)
 
@@ -280,19 +280,19 @@ DART8_API ErrorHandler getErrorHandler();
 // Default exception type (dart::simulation::experimental::Exception) - Shortest names
 //===============================================================================
 
-// DART8_THROW: Unconditionally throw dart::simulation::experimental::Exception
+// DART_EXPERIMENTAL_THROW: Unconditionally throw dart::simulation::experimental::Exception
 // Supports std::format() style arguments
 //
 // Usage:
-//   DART8_THROW("Unexpected state");
-//   DART8_THROW("Invalid value: {}", value);
-#define DART8_THROW(...) DART8_THROW_T(dart::simulation::experimental::Exception, __VA_ARGS__)
+//   DART_EXPERIMENTAL_THROW("Unexpected state");
+//   DART_EXPERIMENTAL_THROW("Invalid value: {}", value);
+#define DART_EXPERIMENTAL_THROW(...) DART_EXPERIMENTAL_THROW_T(dart::simulation::experimental::Exception, __VA_ARGS__)
 
-// DART8_THROW_IF: Throw dart::simulation::experimental::Exception if condition is TRUE
+// DART_EXPERIMENTAL_THROW_IF: Throw dart::simulation::experimental::Exception if condition is TRUE
 // Supports std::format() style arguments
 //
 // Usage:
-//   DART8_THROW_IF(ptr == nullptr, "Null pointer");
-//   DART8_THROW_IF(value < 0, "Value {} must be non-negative", value);
-#define DART8_THROW_IF(condition, ...)                                         \
-  DART8_THROW_T_IF(condition, dart::simulation::experimental::Exception, __VA_ARGS__)
+//   DART_EXPERIMENTAL_THROW_IF(ptr == nullptr, "Null pointer");
+//   DART_EXPERIMENTAL_THROW_IF(value < 0, "Value {} must be non-negative", value);
+#define DART_EXPERIMENTAL_THROW_IF(condition, ...)                                         \
+  DART_EXPERIMENTAL_THROW_T_IF(condition, dart::simulation::experimental::Exception, __VA_ARGS__)

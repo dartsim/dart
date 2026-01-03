@@ -43,7 +43,7 @@
 namespace dart::simulation::experimental::common {
 
 /// Simple RAII timer for profiling
-class DART8_API ScopedTimer
+class DART_EXPERIMENTAL_API ScopedTimer
 {
 public:
   explicit ScopedTimer(std::string_view name)
@@ -84,7 +84,7 @@ private:
 ///   double elapsed_ms = sw.tock();
 ///   std::cout << "Elapsed: " << elapsed_ms << " ms\n";
 /// @endcode
-class DART8_API Stopwatch
+class DART_EXPERIMENTAL_API Stopwatch
 {
 public:
   Stopwatch() = default;
@@ -129,7 +129,7 @@ private:
 };
 
 /// Profile statistics aggregator
-class DART8_API ProfileStats
+class DART_EXPERIMENTAL_API ProfileStats
 {
 public:
   struct Entry
@@ -168,12 +168,12 @@ private:
 // Profiling Backend Selection
 //===============================================================================
 
-// DART8 supports two profiling backends:
-// 1. Built-in profiling (controlled by DART8_ENABLE_PROFILING)
+// Simulation-experimental supports two profiling backends:
+// 1. Built-in profiling (controlled by DART_EXPERIMENTAL_ENABLE_PROFILING)
 // 2. Tracy Profiler (controlled by TRACY_ENABLE)
 //
 // You can enable one, both, or none:
-// - DART8_ENABLE_PROFILING: Enables built-in lightweight profiling
+// - DART_EXPERIMENTAL_ENABLE_PROFILING: Enables built-in lightweight profiling
 // - TRACY_ENABLE: Enables Tracy profiler integration (requires Tracy library)
 
 #ifdef TRACY_ENABLE
@@ -182,18 +182,18 @@ private:
 
 // Profiling macros
 
-#if defined(DART8_ENABLE_PROFILING) && !defined(TRACY_ENABLE)
+#if defined(DART_EXPERIMENTAL_ENABLE_PROFILING) && !defined(TRACY_ENABLE)
 // Built-in profiling only
 
-  #define DART8_PROFILE_SCOPE(name)                                            \
+  #define DART_EXPERIMENTAL_PROFILE_SCOPE(name)                                            \
     ::dart::simulation::experimental::common::ScopedTimer _dart_profile_timer##__LINE__(name)
 
-  #define DART8_PROFILE_FUNCTION() DART8_PROFILE_SCOPE(__PRETTY_FUNCTION__)
+  #define DART_EXPERIMENTAL_PROFILE_FUNCTION() DART_EXPERIMENTAL_PROFILE_SCOPE(__PRETTY_FUNCTION__)
 
-  #define DART8_PROFILE_BEGIN(name)                                            \
+  #define DART_EXPERIMENTAL_PROFILE_BEGIN(name)                                            \
     auto _dart_profile_start_##name = std::chrono::high_resolution_clock::now()
 
-  #define DART8_PROFILE_END(name)                                              \
+  #define DART_EXPERIMENTAL_PROFILE_END(name)                                              \
     do {                                                                       \
       auto _dart_profile_end = std::chrono::high_resolution_clock::now();      \
       auto _dart_profile_duration                                              \
@@ -203,39 +203,39 @@ private:
           #name, _dart_profile_duration.count());                              \
     } while (false)
 
-  #define DART8_PROFILE_FRAME() ((void)0)
+  #define DART_EXPERIMENTAL_PROFILE_FRAME() ((void)0)
 
 #elif defined(TRACY_ENABLE)
 // Tracy profiling (with or without built-in profiling)
 
-  #define DART8_PROFILE_SCOPE(name) ZoneScopedN(name)
-  #define DART8_PROFILE_FUNCTION() ZoneScoped
-  #define DART8_PROFILE_FRAME() FrameMark
+  #define DART_EXPERIMENTAL_PROFILE_SCOPE(name) ZoneScopedN(name)
+  #define DART_EXPERIMENTAL_PROFILE_FUNCTION() ZoneScoped
+  #define DART_EXPERIMENTAL_PROFILE_FRAME() FrameMark
 
   // For manual begin/end, Tracy uses a different approach
-  #define DART8_PROFILE_BEGIN(name)                                            \
+  #define DART_EXPERIMENTAL_PROFILE_BEGIN(name)                                            \
     [[maybe_unused]] auto _dart_tracy_zone_##name = tracy::ScopedZone(         \
         __LINE__, __FILE__, strlen(__FILE__), #name, strlen(#name))
 
-  #define DART8_PROFILE_END(name) ((void)0) // Tracy zones end automatically
+  #define DART_EXPERIMENTAL_PROFILE_END(name) ((void)0) // Tracy zones end automatically
 
   // If both are enabled, also record in built-in profiler
-  #ifdef DART8_ENABLE_PROFILING
-    #define DART8_PROFILE_SCOPE_DUAL(name)                                     \
+  #ifdef DART_EXPERIMENTAL_ENABLE_PROFILING
+    #define DART_EXPERIMENTAL_PROFILE_SCOPE_DUAL(name)                                     \
       ZoneScopedN(name);                                                       \
       ::dart::simulation::experimental::common::ScopedTimer _dart_profile_timer##__LINE__(name)
   #else
-    #define DART8_PROFILE_SCOPE_DUAL(name) DART8_PROFILE_SCOPE(name)
+    #define DART_EXPERIMENTAL_PROFILE_SCOPE_DUAL(name) DART_EXPERIMENTAL_PROFILE_SCOPE(name)
   #endif
 
 #else
 // No profiling - all no-ops
 
-  #define DART8_PROFILE_SCOPE(name) ((void)0)
-  #define DART8_PROFILE_FUNCTION() ((void)0)
-  #define DART8_PROFILE_BEGIN(name) ((void)0)
-  #define DART8_PROFILE_END(name) ((void)0)
-  #define DART8_PROFILE_FRAME() ((void)0)
-  #define DART8_PROFILE_SCOPE_DUAL(name) ((void)0)
+  #define DART_EXPERIMENTAL_PROFILE_SCOPE(name) ((void)0)
+  #define DART_EXPERIMENTAL_PROFILE_FUNCTION() ((void)0)
+  #define DART_EXPERIMENTAL_PROFILE_BEGIN(name) ((void)0)
+  #define DART_EXPERIMENTAL_PROFILE_END(name) ((void)0)
+  #define DART_EXPERIMENTAL_PROFILE_FRAME() ((void)0)
+  #define DART_EXPERIMENTAL_PROFILE_SCOPE_DUAL(name) ((void)0)
 
 #endif

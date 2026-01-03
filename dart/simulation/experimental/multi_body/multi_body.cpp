@@ -140,7 +140,7 @@ World* MultiBody::getWorld() const
 Link MultiBody::addLink(std::string_view name)
 {
   // Check design mode
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       m_world->isSimulationMode(),
       InvalidArgumentException,
       "Cannot create Link in simulation mode");
@@ -186,7 +186,7 @@ Link MultiBody::addLink(std::string_view name)
 Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
 {
   // Check design mode
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       m_world->isSimulationMode(),
       InvalidArgumentException,
       "Cannot create link in simulation mode. Links must be created in "
@@ -196,7 +196,7 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
   auto& registry = m_world->getRegistry();
   auto parentEntity = options.parentLink.getEntity();
 
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !registry.valid(parentEntity),
       InvalidArgumentException,
       "Parent link is invalid");
@@ -249,7 +249,7 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
   jointComp.name = std::move(actualJointName);
 
   const double axisNorm = options.axis.norm();
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       axisNorm <= 1e-9,
       InvalidArgumentException,
       "Joint axis must be non-zero");

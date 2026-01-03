@@ -33,7 +33,7 @@
 #==============================================================================
 
 # Helper function to find and track dependencies (similar to find_package)
-# Usage: dart8_find_package(
+# Usage: dart_experimental_find_package(
 #          NAME <name>
 #          PACKAGE <package_name>
 #          [REQUIRED]
@@ -44,9 +44,9 @@
 #        )
 #
 # This function wraps find_package() and tracks found/missing dependencies
-# for compact summary reporting. It's used by dart8_dependencies.cmake.
+# for compact summary reporting. It's used by dart_experimental_dependencies.cmake.
 #
-function(dart8_find_package)
+function(dart_experimental_find_package)
   cmake_parse_arguments(
     ARG
     "REQUIRED;QUIET"
@@ -77,8 +77,8 @@ function(dart8_find_package)
 
   # Track dependency status
   if(${found_var})
-    set(DART8_DEPS_FOUND ${DART8_DEPS_FOUND} ${ARG_NAME} CACHE INTERNAL "List of found dependencies")
-    if(DART8_VERBOSE)
+    set(DART_EXPERIMENTAL_DEPS_FOUND ${DART_EXPERIMENTAL_DEPS_FOUND} ${ARG_NAME} CACHE INTERNAL "List of found dependencies")
+    if(DART_EXPERIMENTAL_VERBOSE)
       # Get version if available
       set(version_var "${ARG_PACKAGE}_VERSION")
       if(DEFINED ${version_var})
@@ -93,8 +93,8 @@ function(dart8_find_package)
       set(${ARG_SET_VAR} TRUE CACHE BOOL "${ARG_NAME} available" FORCE)
     endif()
   else()
-    set(DART8_DEPS_MISSING ${DART8_DEPS_MISSING} ${ARG_NAME} CACHE INTERNAL "List of missing dependencies")
-    if(DART8_VERBOSE)
+    set(DART_EXPERIMENTAL_DEPS_MISSING ${DART_EXPERIMENTAL_DEPS_MISSING} ${ARG_NAME} CACHE INTERNAL "List of missing dependencies")
+    if(DART_EXPERIMENTAL_VERBOSE)
       message(STATUS "  ✗ ${ARG_NAME} not found")
     endif()
 
@@ -109,10 +109,10 @@ endfunction()
 # Library Creation Helpers
 #==============================================================================
 
-# Utility function to create a DART 8.0 library with standard settings
+# Utility function to create a simulation-experimental library with standard settings
 #
 # Usage:
-#   dart8_add_library(
+#   dart_experimental_add_library(
 #     NAME <library_name>
 #     SOURCES <source_files...>
 #     HEADERS <header_files...>
@@ -123,7 +123,7 @@ endfunction()
 #     [VERSION <version>]
 #   )
 #
-function(dart8_add_library)
+function(dart_experimental_add_library)
   # Parse arguments
   set(options "")
   set(oneValueArgs
@@ -149,11 +149,11 @@ function(dart8_add_library)
 
   # Validate required arguments
   if(NOT ARG_NAME)
-    message(FATAL_ERROR "dart8_add_library: NAME is required")
+    message(FATAL_ERROR "dart_experimental_add_library: NAME is required")
   endif()
 
   if(NOT ARG_SOURCES)
-    message(FATAL_ERROR "dart8_add_library: SOURCES is required")
+    message(FATAL_ERROR "dart_experimental_add_library: SOURCES is required")
   endif()
 
   # Expand glob patterns in SOURCES
@@ -189,7 +189,7 @@ function(dart8_add_library)
     if(PROJECT_VERSION)
       set(ARG_VERSION ${PROJECT_VERSION})
     else()
-      message(FATAL_ERROR "dart8_add_library: VERSION is required (or set project VERSION)")
+      message(FATAL_ERROR "dart_experimental_add_library: VERSION is required (or set project VERSION)")
     endif()
   endif()
 
@@ -207,7 +207,7 @@ function(dart8_add_library)
 
   # Add compile definition for source directory (used for relative paths in logging)
   target_compile_definitions(${ARG_NAME}
-    PUBLIC DART8_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    PUBLIC DART_EXPERIMENTAL_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
   )
 
   # Include directories - default to parent of current source dir
@@ -257,20 +257,20 @@ function(dart8_add_library)
     )
   endif()
 
-  message(STATUS "${ARG_NAME}: Configured DART 8.0 library")
+  message(STATUS "${ARG_NAME}: Configured simulation-experimental library")
 endfunction()
 
-# Utility function to create a DART 8.0 Python binding module with nanobind
+# Utility function to create a simulation-experimental Python binding module with nanobind
 #
 # Usage:
-#   dart8_add_python_module(
+#   dart_experimental_add_python_module(
 #     NAME <module_name>
 #     SOURCES <source_files...>
 #     [LINK_LIBS <libs...>]
 #     [VERSION <version>]
 #   )
 #
-function(dart8_add_python_module)
+function(dart_experimental_add_python_module)
   # Parse arguments
   set(options "")
   set(oneValueArgs
@@ -292,11 +292,11 @@ function(dart8_add_python_module)
 
   # Validate required arguments
   if(NOT ARG_NAME)
-    message(FATAL_ERROR "dart8_add_python_module: NAME is required")
+    message(FATAL_ERROR "dart_experimental_add_python_module: NAME is required")
   endif()
 
   if(NOT ARG_SOURCES)
-    message(FATAL_ERROR "dart8_add_python_module: SOURCES is required")
+    message(FATAL_ERROR "dart_experimental_add_python_module: SOURCES is required")
   endif()
 
   # Expand glob patterns in SOURCES
@@ -318,7 +318,7 @@ function(dart8_add_python_module)
     if(PROJECT_VERSION)
       set(ARG_VERSION ${PROJECT_VERSION})
     else()
-      message(FATAL_ERROR "dart8_add_python_module: VERSION is required (or set project VERSION)")
+      message(FATAL_ERROR "dart_experimental_add_python_module: VERSION is required (or set project VERSION)")
     endif()
   endif()
 
@@ -380,27 +380,27 @@ function(dart8_add_python_module)
     LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/Release/python"
   )
 
-  message(STATUS "${ARG_NAME}: Configured DART 8.0 Python bindings")
+  message(STATUS "${ARG_NAME}: Configured simulation-experimental Python bindings")
 endfunction()
 
-# Utility function to add a DART 8.0 test
+# Utility function to add a simulation-experimental test
 # Automatically adds to CTest with simulation-experimental label and global test list
 #
-# Prerequisites: GTest must be found via dart8_dependencies.cmake
+# Prerequisites: GTest must be found via dart_experimental_dependencies.cmake
 #
 # Usage:
-#   dart8_add_test(test_name path/to/test.cpp)
+#   dart_experimental_add_test(test_name path/to/test.cpp)
 #
-function(dart8_add_test TEST_NAME TEST_PATH)
-  if(NOT DART8_BUILD_TESTS)
-    message(WARNING "dart8_add_test called but DART8_BUILD_TESTS is FALSE")
+function(dart_experimental_add_test TEST_NAME TEST_PATH)
+  if(NOT DART_EXPERIMENTAL_BUILD_TESTS)
+    message(WARNING "dart_experimental_add_test called but DART_EXPERIMENTAL_BUILD_TESTS is FALSE")
     return()
   endif()
 
   add_executable(${TEST_NAME} ${TEST_PATH})
   target_link_libraries(${TEST_NAME}
     PRIVATE
-      dart8
+      dart-simulation-experimental
       GTest::gtest
       GTest::gtest_main
   )
@@ -417,22 +417,22 @@ function(dart8_add_test TEST_NAME TEST_PATH)
       ${TEST_NAME}
       PROPERTIES
         ENVIRONMENT_MODIFICATION
-          "PATH=path_list_prepend:$<TARGET_FILE_DIR:dart8>"
+          "PATH=path_list_prepend:$<TARGET_FILE_DIR:dart-simulation-experimental>"
     )
   else()
     if(WIN32)
       # Escape the semicolon so CMake does not treat it as a list separator.
-      set(_dart8_test_path_sep "\\;")
+      set(_dart_experimental_test_path_sep "\\;")
     else()
-      set(_dart8_test_path_sep ":")
+      set(_dart_experimental_test_path_sep ":")
     endif()
     set_property(
       TEST ${TEST_NAME}
       PROPERTY
         ENVIRONMENT
-          "PATH=$<TARGET_FILE_DIR:dart8>${_dart8_test_path_sep}$ENV{PATH}"
+          "PATH=$<TARGET_FILE_DIR:dart-simulation-experimental>${_dart_experimental_test_path_sep}$ENV{PATH}"
     )
-    unset(_dart8_test_path_sep)
+    unset(_dart_experimental_test_path_sep)
   endif()
 
   # Set target properties
@@ -441,26 +441,26 @@ function(dart8_add_test TEST_NAME TEST_PATH)
   )
 
   # Add to global test list
-  set(DART8_ALL_TESTS ${DART8_ALL_TESTS} ${TEST_NAME} CACHE INTERNAL "List of all DART8 tests")
+  set(DART_EXPERIMENTAL_ALL_TESTS ${DART_EXPERIMENTAL_ALL_TESTS} ${TEST_NAME} CACHE INTERNAL "List of all simulation-experimental tests")
 endfunction()
 
 # Utility function to register all unit tests in a directory
 # Automatically discovers test_*.cpp files and creates meta target
 #
-# Prerequisites: GTest must be found via dart8_dependencies.cmake
+# Prerequisites: GTest must be found via dart_experimental_dependencies.cmake
 #
 # Usage:
-#   dart8_add_unit_test_dir(common ${CMAKE_CURRENT_SOURCE_DIR}/unit/common)
-#   dart8_add_unit_test_dir(world ${CMAKE_CURRENT_SOURCE_DIR}/unit/world)
+#   dart_experimental_add_unit_test_dir(common ${CMAKE_CURRENT_SOURCE_DIR}/unit/common)
+#   dart_experimental_add_unit_test_dir(world ${CMAKE_CURRENT_SOURCE_DIR}/unit/world)
 #
 # This will:
 #   - Find all test_*.cpp files in the directory
-#   - Register each as a test using dart8_add_test()
-#   - Create a meta target dart8_tests_<module_name>
+#   - Register each as a test using dart_experimental_add_test()
+#   - Create a meta target dart_experimental_tests_<module_name>
 #   - Report number of tests found
 #
-function(dart8_add_unit_test_dir MODULE_NAME MODULE_DIR)
-  if(NOT DART8_BUILD_TESTS)
+function(dart_experimental_add_unit_test_dir MODULE_NAME MODULE_DIR)
+  if(NOT DART_EXPERIMENTAL_BUILD_TESTS)
     return()
   endif()
 
@@ -479,16 +479,16 @@ function(dart8_add_unit_test_dir MODULE_NAME MODULE_DIR)
     get_filename_component(test_name ${test_file} NAME_WE)
 
     # Register the test
-    dart8_add_test(${test_name} ${test_file})
+    dart_experimental_add_test(${test_name} ${test_file})
 
     # Add to this module's test list
     list(APPEND module_test_targets ${test_name})
   endforeach()
 
   # Create meta target for this module
-  add_custom_target(dart8_tests_${MODULE_NAME}
+  add_custom_target(dart_experimental_tests_${MODULE_NAME}
     DEPENDS ${module_test_targets}
-    COMMENT "Building DART8 ${MODULE_NAME} tests"
+    COMMENT "Building simulation-experimental ${MODULE_NAME} tests"
   )
 
   # Report
@@ -496,29 +496,29 @@ function(dart8_add_unit_test_dir MODULE_NAME MODULE_DIR)
   message(STATUS "  - ${MODULE_NAME}: ${num_tests} test(s)")
 endfunction()
 
-# Utility function to add a DART 8.0 benchmark
+# Utility function to add a simulation-experimental benchmark
 #
-# Prerequisites: benchmark must be found via dart8_dependencies.cmake
+# Prerequisites: benchmark must be found via dart_experimental_dependencies.cmake
 #
 # Usage:
-#   dart8_add_benchmark(bm_name path/to/benchmark.cpp)
+#   dart_experimental_add_benchmark(bm_name path/to/benchmark.cpp)
 #
-function(dart8_add_benchmark BENCHMARK_NAME BENCHMARK_PATH)
-  if(NOT DART8_BUILD_BENCHMARKS)
-    message(WARNING "dart8_add_benchmark called but DART8_BUILD_BENCHMARKS is FALSE")
+function(dart_experimental_add_benchmark BENCHMARK_NAME BENCHMARK_PATH)
+  if(NOT DART_EXPERIMENTAL_BUILD_BENCHMARKS)
+    message(WARNING "dart_experimental_add_benchmark called but DART_EXPERIMENTAL_BUILD_BENCHMARKS is FALSE")
     return()
   endif()
 
   add_executable(${BENCHMARK_NAME} ${BENCHMARK_PATH})
   target_link_libraries(${BENCHMARK_NAME}
     PRIVATE
-      dart8
+      dart-simulation-experimental
       benchmark::benchmark
       benchmark::benchmark_main
   )
 
   # Set benchmark properties
   set_target_properties(${BENCHMARK_NAME} PROPERTIES
-    FOLDER "dart8/benchmarks"
+    FOLDER "simulation-experimental/benchmarks"
   )
 endfunction()

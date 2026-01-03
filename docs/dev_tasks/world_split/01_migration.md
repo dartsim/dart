@@ -9,18 +9,18 @@
 - Revert multi-solver scaffolding and ECS hooks in classic `World`.
 - Restore classic world behavior as the only Skeleton pipeline.
 
-## Phase 1: Move Experimental World (In progress)
+## Phase 1: Move Experimental World (Done in this branch)
 
-- Move `dart8/` to `dart/simulation/experimental/`.
+- Move the experimental stack to `dart/simulation/experimental/`.
 - Move tests to `tests/simulation/experimental/`.
 - Rename namespace to `dart::simulation::experimental`.
 - Update build/test plumbing (`DART_BUILD_SIMULATION_EXPERIMENTAL`, CTest labels,
   pixi tasks, docs).
+- Rename CMake helpers/macros to `dart_experimental_*` / `DART_EXPERIMENTAL_*`.
 
 ## Phase 2: Python Binding Split (Planned)
 
 - Add `dartpy.simulation_experimental` module for the new world.
-- Optionally keep `dartpy.dart8` as a temporary alias.
 
 ## Phase 3: Deprecation (Planned)
 
@@ -29,11 +29,10 @@
 
 ## Phase 4: Promotion (Planned)
 
-- Remove classic `dart::simulation::World` in DART8.
+- Remove classic `dart::simulation::World` in DART 8.
 - Promote `dart::simulation::experimental::World` to `dart::simulation::World`.
 
 ## Open Decisions
 
 - Python module name (`dartpy.simulation_experimental` vs `dartpy.next`).
-- Timeline to rename `dart8` CMake targets/macros.
 - Deprecation timeline for classic world.

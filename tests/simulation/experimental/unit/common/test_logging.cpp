@@ -44,9 +44,9 @@ TEST(Logging, Initialization)
   initializeLogging(); // Should not crash on second call
 
   // Basic logging test (just ensure no crashes)
-  DART8_INFO("Info message");
-  DART8_WARN("Warning message");
-  DART8_DEBUG("Debug message");
+  DART_EXPERIMENTAL_INFO("Info message");
+  DART_EXPERIMENTAL_WARN("Warning message");
+  DART_EXPERIMENTAL_DEBUG("Debug message");
 }
 
 // Test conditional logging
@@ -55,8 +55,8 @@ TEST(Logging, ConditionalLogging)
   initializeLogging();
 
   // Test conditional logging
-  DART8_INFO_IF(true, "This should log");
-  DART8_INFO_IF(false, "This should not log");
+  DART_EXPERIMENTAL_INFO_IF(true, "This should log");
+  DART_EXPERIMENTAL_INFO_IF(false, "This should not log");
 }
 
 // Test log once functionality
@@ -66,7 +66,7 @@ TEST(Logging, LogOnce)
 
   // Test log once - should only appear once despite being in a loop
   for (int i = 0; i < 5; ++i) {
-    DART8_WARN_ONCE("This should only appear once");
+    DART_EXPERIMENTAL_WARN_ONCE("This should only appear once");
   }
 }
 
@@ -101,10 +101,10 @@ TEST(Logging, AllLevels)
   initializeLogging();
 
   // Test all log level macros (just ensure no crashes)
-  DART8_TRACE("Trace message");
-  DART8_DEBUG("Debug message");
-  DART8_INFO("Info message");
-  DART8_WARN("Warning message");
-  DART8_ERROR("Error message");
-  DART8_CRITICAL("Critical message");
+  DART_EXPERIMENTAL_TRACE("Trace message");
+  DART_EXPERIMENTAL_DEBUG("Debug message");
+  DART_EXPERIMENTAL_INFO("Info message");
+  DART_EXPERIMENTAL_WARN("Warning message");
+  DART_EXPERIMENTAL_ERROR("Error message");
+  DART_EXPERIMENTAL_CRITICAL("Critical message");
 }

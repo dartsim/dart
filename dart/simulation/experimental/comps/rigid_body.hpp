@@ -38,11 +38,11 @@ namespace dart::simulation::experimental::comps {
 
 /// Tag marking entity as a RigidBody
 ///
-/// Automatically serialized via DART8_TAG_COMPONENT macro.
+/// Automatically serialized via DART_EXPERIMENTAL_TAG_COMPONENT macro.
 /// **Internal Implementation Detail** - Not exposed in public API
 struct RigidBodyTag
 {
-  DART8_TAG_COMPONENT(RigidBodyTag);
+  DART_EXPERIMENTAL_TAG_COMPONENT(RigidBodyTag);
 };
 
 } // namespace dart::simulation::experimental::comps

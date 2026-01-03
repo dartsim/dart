@@ -36,6 +36,6 @@
 
 namespace dart::simulation::experimental::comps {
 
-DART8_REGISTER_COMPONENT(Link)
+DART_EXPERIMENTAL_REGISTER_COMPONENT(Link)
 
 } // namespace dart::simulation::experimental::comps

@@ -29,9 +29,10 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 
 #==============================================================================
-# DART 8.0 Dependency Management
+# Simulation-Experimental Dependency Management
 #==============================================================================
-# This file centralizes all dependency finding for DART 8.0 to avoid
+# This file centralizes all dependency finding for the simulation-experimental
+# module to avoid
 # finding the same package multiple times and to provide clear visibility
 # of all required dependencies.
 #
@@ -39,30 +40,30 @@
 #==============================================================================
 
 # Prevent multiple inclusion
-if(DART8_DEPENDENCIES_INCLUDED)
+if(DART_EXPERIMENTAL_DEPENDENCIES_INCLUDED)
   return()
 endif()
-set(DART8_DEPENDENCIES_INCLUDED TRUE)
+set(DART_EXPERIMENTAL_DEPENDENCIES_INCLUDED TRUE)
 
 # Initialize global lists for dependency tracking
-set(DART8_DEPS_FOUND "" CACHE INTERNAL "List of found dependencies")
-set(DART8_DEPS_MISSING "" CACHE INTERNAL "List of missing dependencies")
+set(DART_EXPERIMENTAL_DEPS_FOUND "" CACHE INTERNAL "List of found dependencies")
+set(DART_EXPERIMENTAL_DEPS_MISSING "" CACHE INTERNAL "List of missing dependencies")
 
-if(DART8_VERBOSE)
+if(DART_EXPERIMENTAL_VERBOSE)
   message(STATUS "==================================")
-  message(STATUS "  DART 8.0 Dependencies (Verbose)")
+  message(STATUS "  Simulation-Experimental Dependencies (Verbose)")
   message(STATUS "==================================")
 endif()
 
 #==============================================================================
 # Core Dependencies (always required)
 #==============================================================================
-if(DART8_VERBOSE)
+if(DART_EXPERIMENTAL_VERBOSE)
   message(STATUS "Finding core dependencies...")
 endif()
 
 # Eigen3 - Linear algebra library
-dart8_find_package(
+dart_experimental_find_package(
   NAME Eigen3
   PACKAGE Eigen3
   VERSION 3.4
@@ -70,7 +71,7 @@ dart8_find_package(
 )
 
 # EnTT - Entity Component System library
-dart8_find_package(
+dart_experimental_find_package(
   NAME EnTT
   PACKAGE EnTT
   VERSION 3.14
@@ -78,14 +79,14 @@ dart8_find_package(
 )
 
 # spdlog - Logging library
-dart8_find_package(
+dart_experimental_find_package(
   NAME spdlog
   PACKAGE spdlog
   REQUIRED
 )
 
 # Taskflow - Parallel task programming library
-dart8_find_package(
+dart_experimental_find_package(
   NAME Taskflow
   PACKAGE Taskflow
   REQUIRED
@@ -94,35 +95,35 @@ dart8_find_package(
 #==============================================================================
 # Testing Dependencies (optional)
 #==============================================================================
-if(DART8_VERBOSE)
+if(DART_EXPERIMENTAL_VERBOSE)
   message(STATUS "Finding testing dependencies...")
 endif()
 
 # GoogleTest - Unit testing framework
-dart8_find_package(
+dart_experimental_find_package(
   NAME GTest
   PACKAGE GTest
   QUIET
-  SET_VAR DART8_BUILD_TESTS
+  SET_VAR DART_EXPERIMENTAL_BUILD_TESTS
 )
 
 # Google Benchmark - Performance benchmarks
-dart8_find_package(
+dart_experimental_find_package(
   NAME benchmark
   PACKAGE benchmark
   QUIET
-  SET_VAR DART8_BUILD_BENCHMARKS
+  SET_VAR DART_EXPERIMENTAL_BUILD_BENCHMARKS
 )
 
 #==============================================================================
 # Python Dependencies (optional)
 #==============================================================================
-if(DART8_VERBOSE)
+if(DART_EXPERIMENTAL_VERBOSE)
   message(STATUS "Finding Python dependencies...")
 endif()
 
 # Python - Required for Python bindings
-dart8_find_package(
+dart_experimental_find_package(
   NAME Python
   PACKAGE Python
   COMPONENTS Interpreter Development
@@ -142,48 +143,48 @@ if(Python_FOUND)
 
   if(NOT nanobind_NOTFOUND)
     list(APPEND CMAKE_PREFIX_PATH "${nanobind_ROOT}")
-    dart8_find_package(
+    dart_experimental_find_package(
       NAME nanobind
       PACKAGE nanobind
       QUIET
-      SET_VAR DART8_BUILD_PYTHON
+      SET_VAR DART_EXPERIMENTAL_BUILD_PYTHON
     )
   else()
-    if(DART8_VERBOSE)
+    if(DART_EXPERIMENTAL_VERBOSE)
       message(STATUS "  ✗ nanobind not found (Python bindings disabled)")
     endif()
-    set(DART8_BUILD_PYTHON FALSE CACHE BOOL "Build DART8 Python bindings" FORCE)
+    set(DART_EXPERIMENTAL_BUILD_PYTHON FALSE CACHE BOOL "Build simulation-experimental Python bindings" FORCE)
   endif()
 else()
-  set(DART8_BUILD_PYTHON FALSE CACHE BOOL "Build DART8 Python bindings" FORCE)
+  set(DART_EXPERIMENTAL_BUILD_PYTHON FALSE CACHE BOOL "Build simulation-experimental Python bindings" FORCE)
 endif()
 
 #==============================================================================
 # Profiling Dependencies (optional)
 #==============================================================================
-if(DART8_VERBOSE)
+if(DART_EXPERIMENTAL_VERBOSE)
   message(STATUS "Finding profiling dependencies...")
 endif()
 
 # Tracy - Frame profiler
-dart8_find_package(
+dart_experimental_find_package(
   NAME Tracy
   PACKAGE Tracy
   QUIET
-  SET_VAR DART8_TRACY_AVAILABLE
+  SET_VAR DART_EXPERIMENTAL_TRACY_AVAILABLE
 )
 
-if(DART8_VERBOSE)
+if(DART_EXPERIMENTAL_VERBOSE)
   message(STATUS "==================================")
 else()
   # Compact summary - use tracked dependency lists
-  list(JOIN DART8_DEPS_FOUND "✓ " _found_str)
-  set(_dart8_summary "DART8: ${_found_str}✓")
+  list(JOIN DART_EXPERIMENTAL_DEPS_FOUND "✓ " _found_str)
+  set(_dart_experimental_summary "simulation-experimental: ${_found_str}✓")
 
-  if(DART8_DEPS_MISSING)
-    list(JOIN DART8_DEPS_MISSING " " _missing_str)
-    set(_dart8_summary "${_dart8_summary} (missing: ${_missing_str})")
+  if(DART_EXPERIMENTAL_DEPS_MISSING)
+    list(JOIN DART_EXPERIMENTAL_DEPS_MISSING " " _missing_str)
+    set(_dart_experimental_summary "${_dart_experimental_summary} (missing: ${_missing_str})")
   endif()
 
-  message(STATUS "${_dart8_summary}")
+  message(STATUS "${_dart_experimental_summary}")
 endif()

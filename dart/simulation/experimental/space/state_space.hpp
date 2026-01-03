@@ -62,7 +62,7 @@ namespace dart::simulation::experimental {
 /// size_t dim = space.getDimension();  // 12
 /// auto bounds = space.getLowerBounds();
 /// ```
-class DART8_API StateSpace
+class DART_EXPERIMENTAL_API StateSpace
 {
 public:
   /// Represents a single variable (or group of variables) in the state vector

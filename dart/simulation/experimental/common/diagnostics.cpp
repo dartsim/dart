@@ -113,7 +113,7 @@ void printRuntimeInfo()
       stderr,
       "\n"
       "╔════════════════════════════════════════════════════════════════╗\n"
-      "║ DART8 Runtime Information                                      ║\n"
+      "║ Simulation-Experimental Runtime Information                     ║\n"
       "╠════════════════════════════════════════════════════════════════╣\n"
       "║ Compiler:     {:<49}║\n"
       "║ C++ ABI:      {:<49}║\n"

@@ -56,7 +56,7 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 // Binary Format Versioning
 //==============================================================================
 
-// DART8 Binary Format Version
+// Simulation-experimental binary format version
 // Increment this when making breaking changes to the binary format
 // Version history:
 //   1: Initial implementation
@@ -91,39 +91,39 @@ void readPOD(std::istream& in, T& value)
 //==============================================================================
 
 // Write std::string to binary stream (length-prefixed)
-void DART8_API writeString(std::ostream& out, std::string_view str);
+void DART_EXPERIMENTAL_API writeString(std::ostream& out, std::string_view str);
 
 // Read std::string from binary stream
-void DART8_API readString(std::istream& in, std::string& str);
+void DART_EXPERIMENTAL_API readString(std::istream& in, std::string& str);
 
 //==============================================================================
 // Eigen Type I/O
 //==============================================================================
 
 // Write Eigen::Vector3d to binary stream
-void DART8_API writeVector3d(std::ostream& out, const Eigen::Vector3d& vec);
+void DART_EXPERIMENTAL_API writeVector3d(std::ostream& out, const Eigen::Vector3d& vec);
 
 // Read Eigen::Vector3d from binary stream
-void DART8_API readVector3d(std::istream& in, Eigen::Vector3d& vec);
+void DART_EXPERIMENTAL_API readVector3d(std::istream& in, Eigen::Vector3d& vec);
 
 // Write Eigen::Isometry3d to binary stream
 // Format: 9 doubles for rotation matrix + 3 doubles for translation
-void DART8_API writeIsometry3d(std::ostream& out, const Eigen::Isometry3d& T);
+void DART_EXPERIMENTAL_API writeIsometry3d(std::ostream& out, const Eigen::Isometry3d& T);
 
 // Read Eigen::Isometry3d from binary stream
-void DART8_API readIsometry3d(std::istream& in, Eigen::Isometry3d& T);
+void DART_EXPERIMENTAL_API readIsometry3d(std::istream& in, Eigen::Isometry3d& T);
 
 // Write Eigen::VectorXd to binary stream (size-prefixed)
-void DART8_API writeVectorXd(std::ostream& out, const Eigen::VectorXd& vec);
+void DART_EXPERIMENTAL_API writeVectorXd(std::ostream& out, const Eigen::VectorXd& vec);
 
 // Read Eigen::VectorXd from binary stream
-void DART8_API readVectorXd(std::istream& in, Eigen::VectorXd& vec);
+void DART_EXPERIMENTAL_API readVectorXd(std::istream& in, Eigen::VectorXd& vec);
 
 // Write Eigen::MatrixXd to binary stream (rows/cols prefixed)
-void DART8_API writeMatrixXd(std::ostream& out, const Eigen::MatrixXd& mat);
+void DART_EXPERIMENTAL_API writeMatrixXd(std::ostream& out, const Eigen::MatrixXd& mat);
 
 // Read Eigen::MatrixXd from binary stream
-void DART8_API readMatrixXd(std::istream& in, Eigen::MatrixXd& mat);
+void DART_EXPERIMENTAL_API readMatrixXd(std::istream& in, Eigen::MatrixXd& mat);
 
 //==============================================================================
 // Container I/O
@@ -164,11 +164,11 @@ void readVector(std::istream& in, std::vector<T>& vec)
 
 // Write format header with version and magic number
 // Magic number: "DRT7" (0x44525437)
-void DART8_API writeFormatHeader(std::ostream& out);
+void DART_EXPERIMENTAL_API writeFormatHeader(std::ostream& out);
 
 // Read and validate format header
 // Returns the format version number
 // Throws std::runtime_error if magic number is invalid or version incompatible
-std::uint32_t DART8_API readFormatHeader(std::istream& in);
+std::uint32_t DART_EXPERIMENTAL_API readFormatHeader(std::istream& in);
 
 } // namespace dart::simulation::experimental::io

@@ -400,12 +400,9 @@ def run_simulation_experimental_tests() -> bool:
     """Run simulation-experimental tests (ctest filtered to simulation-experimental labels)."""
     print_header("SIMULATION-EXPERIMENTAL TESTS")
 
-    if "DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE" in os.environ:
-        override_enabled = _env_flag_enabled(
-            "DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE", "ON"
-        )
-    else:
-        override_enabled = _env_flag_enabled("DART_BUILD_DART8_OVERRIDE", "ON")
+    override_enabled = _env_flag_enabled(
+        "DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE", "ON"
+    )
 
     if not override_enabled:
         print_warning(
@@ -414,8 +411,6 @@ def run_simulation_experimental_tests() -> bool:
         return True
 
     cmake_flag = _cmake_option_enabled("DART_BUILD_SIMULATION_EXPERIMENTAL")
-    if cmake_flag is None:
-        cmake_flag = _cmake_option_enabled("DART_BUILD_DART8")
     if cmake_flag is False:
         print_warning(
             "Skipping simulation-experimental tests because DART_BUILD_SIMULATION_EXPERIMENTAL is OFF in build"
@@ -529,12 +524,6 @@ def main():
         dest="skip_simulation_experimental",
         action="store_true",
         help="Skip simulation-experimental C++ tests",
-    )
-    parser.add_argument(
-        "--skip-dart8",
-        dest="skip_simulation_experimental",
-        action="store_true",
-        help="Skip simulation-experimental C++ tests (deprecated)",
     )
     parser.add_argument(
         "--skip-debug",

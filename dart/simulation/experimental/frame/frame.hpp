@@ -87,7 +87,7 @@ namespace dart::simulation::experimental {
 /// Phase 3: Additional frame types (SimpleFrame, ShapeFrame)
 ///
 /// @see LinkComponent, FrameTag
-class DART8_API Frame
+class DART_EXPERIMENTAL_API Frame
   : public EntityObjectWith<
         TagComps<comps::FrameTag>,
         ReadOnlyComps<>,

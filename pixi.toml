@@ -72,7 +72,7 @@ DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
 if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
   DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
 fi
-DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-${DART_BUILD_DART8_OVERRIDE:-ON}}
+DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
 DART_BUILD_COLLISION_BULLET_VALUE=${DART_BUILD_COLLISION_BULLET_OVERRIDE:-ON}
 DART_BUILD_COLLISION_ODE_VALUE=${DART_BUILD_COLLISION_ODE_OVERRIDE:-ON}
 DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-ON}
@@ -166,7 +166,6 @@ lint-cpp = { cmd = """
 lint-simulation-experimental = { cmd = """
     find dart/simulation/experimental tests/simulation/experimental -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
 """ }
-lint-dart8 = { depends-on = ["lint-simulation-experimental"] }
 
 lint-py = { cmd = """
     black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
@@ -207,7 +206,6 @@ check-lint-cpp = { cmd = """
 check-lint-simulation-experimental = { cmd = """
     find dart/simulation/experimental tests/simulation/experimental -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
 """ }
-check-lint-dart8 = { depends-on = ["check-lint-simulation-experimental"] }
 
 check-lint-py = { cmd = """
     black . --check --extend-exclude '/\\.[^/]+' && isort . --check --skip-glob '.*'
@@ -278,7 +276,7 @@ DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
 if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
   DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
 fi
-DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-${DART_BUILD_DART8_OVERRIDE:-ON}}
+DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
@@ -395,19 +393,10 @@ build-simulation-experimental-tests = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target dart8_tests
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target dart_experimental_tests
 """,
 ], depends-on = [
   { task = "config", args = [
-    "{{ dartpy }}",
-    "{{ build_type }}",
-  ] },
-], args = [
-  { arg = "dartpy", default = "ON" },
-  { arg = "build_type", default = "Release" },
-] }
-build-dart8-tests = { depends-on = [
-  { task = "build-simulation-experimental-tests", args = [
     "{{ dartpy }}",
     "{{ build_type }}",
   ] },
@@ -658,15 +647,6 @@ test-simulation-experimental = { cmd = [
     "{{ build_type }}",
   ] },
   { task = "build-simulation-experimental-tests", args = [
-    "{{ dartpy }}",
-    "{{ build_type }}",
-  ] },
-], args = [
-  { arg = "dartpy", default = "ON" },
-  { arg = "build_type", default = "Release" },
-] }
-test-dart8 = { depends-on = [
-  { task = "test-simulation-experimental", args = [
     "{{ dartpy }}",
     "{{ build_type }}",
   ] },
@@ -1213,7 +1193,7 @@ CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-RelWithDebInfo}
 DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-ON}
-DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-${DART_BUILD_DART8_OVERRIDE:-ON}}
+DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
@@ -1505,19 +1485,10 @@ build-tests = { cmd = """
 
 build-simulation-experimental-tests = { cmd = """
     BUILD_TYPE={{ build_type }}
-    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE --target dart8_tests
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE --target dart_experimental_tests
 """, depends-on = [
   { task = "config", args = [
     "{{ dartpy }}",
-  ] },
-], args = [
-  { arg = "dartpy", default = "ON" },
-  { arg = "build_type", default = "Release" },
-] }
-build-dart8-tests = { depends-on = [
-  { task = "build-simulation-experimental-tests", args = [
-    "{{ dartpy }}",
-    "{{ build_type }}",
   ] },
 ], args = [
   { arg = "dartpy", default = "ON" },
@@ -1598,15 +1569,6 @@ test-simulation-experimental = { cmd = [
     "{{ build_type }}",
   ] },
   { task = "build-simulation-experimental-tests", args = [
-    "{{ dartpy }}",
-    "{{ build_type }}",
-  ] },
-], args = [
-  { arg = "dartpy", default = "ON" },
-  { arg = "build_type", default = "Release" },
-] }
-test-dart8 = { depends-on = [
-  { task = "test-simulation-experimental", args = [
     "{{ dartpy }}",
     "{{ build_type }}",
   ] },

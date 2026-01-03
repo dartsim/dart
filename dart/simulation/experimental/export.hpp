@@ -34,18 +34,18 @@
 
 #include <dart/common/Export.hpp>
 
-#ifndef DART8_API
-  #if defined(DART_BUILDING_DART8)
-    #define DART8_API DART_DLL_EXPORT
+#ifndef DART_EXPERIMENTAL_API
+  #if defined(DART_BUILDING_DART_EXPERIMENTAL)
+    #define DART_EXPERIMENTAL_API DART_DLL_EXPORT
   #else
-    #define DART8_API DART_DLL_IMPORT
+    #define DART_EXPERIMENTAL_API DART_DLL_IMPORT
   #endif
 #endif
 
-#ifndef DART8_LOCAL
+#ifndef DART_EXPERIMENTAL_LOCAL
   #if DART_BUILD_SHARED
-    #define DART8_LOCAL DART_DLL_LOCAL
+    #define DART_EXPERIMENTAL_LOCAL DART_DLL_LOCAL
   #else
-    #define DART8_LOCAL
+    #define DART_EXPERIMENTAL_LOCAL
   #endif
 #endif

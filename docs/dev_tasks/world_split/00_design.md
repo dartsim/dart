@@ -2,7 +2,7 @@
 
 ## Status
 
-- In progress: moved `dart8` to `dart/simulation/experimental` and tests to
+- In progress: moved the experimental stack to `dart/simulation/experimental` and tests to
   `tests/simulation/experimental`. Namespace is `dart::simulation::experimental`, classic
   `dart::simulation::World` reverted.
 
@@ -17,7 +17,7 @@
 
 - No mixing classic and experimental objects in a single world.
 - No public ECS entity creation through the classic world.
-- No full rename of `DART8_*` macros/targets in this phase.
+- No compatibility aliases for removed legacy macros/targets.
 
 ## Proposed Shape
 
@@ -26,7 +26,7 @@
 
 - **Experimental world**
   - `dart::simulation::experimental::World` hosts ECS-backed object types.
-  - Built behind `DART_BUILD_SIMULATION_EXPERIMENTAL` (with `DART_BUILD_DART8` alias).
+  - Built behind `DART_BUILD_SIMULATION_EXPERIMENTAL`.
 
 ## Namespace / Directory Choice
 
@@ -35,8 +35,8 @@
 ## Python Binding Direction
 
 - New module `dartpy.simulation_experimental` (preferred).
-- Optional temporary alias `dartpy.dart8` during migration.
+- No legacy `dartpy` compatibility alias.
 
 ## Compatibility Notes
 
-- Keep the `dart8` CMake target/macros as a compatibility layer for now.
+- Use `DART_EXPERIMENTAL_*` macros and `dart_experimental_*` CMake helpers.

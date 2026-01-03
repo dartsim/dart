@@ -72,7 +72,7 @@ namespace dart::simulation::experimental {
 /// // Write back
 /// mapper.fromVector(registry, vec);
 /// ```
-class DART8_API VectorMapper
+class DART_EXPERIMENTAL_API VectorMapper
 {
 public:
   /// Constructor

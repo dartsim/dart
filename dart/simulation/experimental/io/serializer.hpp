@@ -52,7 +52,7 @@ namespace dart::simulation::experimental::io {
 
 // Abstract interface for component serialization
 // Users can extend this to support custom component types
-class DART8_API ComponentSerializer
+class DART_EXPERIMENTAL_API ComponentSerializer
 {
 public:
   virtual ~ComponentSerializer() = default;
@@ -94,7 +94,7 @@ public:
 //   auto& registry = SerializerRegistry::instance();
 //   registry.registerSerializer(std::make_unique<MyCustomSerializer>());
 //
-class DART8_API SerializerRegistry
+class DART_EXPERIMENTAL_API SerializerRegistry
 {
 public:
   // Get singleton instance

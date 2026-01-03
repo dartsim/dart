@@ -48,7 +48,7 @@
 
 namespace dart::simulation::experimental {
 
-class DART8_API World
+class DART_EXPERIMENTAL_API World
 {
 public:
   World();

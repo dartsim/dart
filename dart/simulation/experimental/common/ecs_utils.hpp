@@ -81,7 +81,7 @@ const T& safeGet(
 {
   const T* component = registry.try_get<T>(entity);
 
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !component,
       InvalidArgumentException,
       "Entity {} is missing component '{}'. This indicates the entity was not "
@@ -103,7 +103,7 @@ T& safeGet(
 {
   T* component = registry.try_get<T>(entity);
 
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !component,
       InvalidArgumentException,
       "Entity {} is missing component '{}'. This indicates the entity was not "

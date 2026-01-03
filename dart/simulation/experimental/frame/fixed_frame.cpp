@@ -50,7 +50,7 @@ FixedFrame::FixedFrame(entt::entity entity, World* world)
   // Validate entity has FixedFrameProperties
 #ifndef NDEBUG
   auto& registry = world->getRegistry();
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !registry.all_of<comps::FixedFrameProperties>(entity),
       InvalidArgumentException,
       "Entity does not have FixedFrameProperties component");

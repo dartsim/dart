@@ -37,14 +37,14 @@
 //==============================================================================
 
 /// Concatenate two tokens
-/// Implementation detail for DART8_CONCAT
-#define DART8_CONCAT_IMPL(a, b) a##b
+/// Implementation detail for DART_EXPERIMENTAL_CONCAT
+#define DART_EXPERIMENTAL_CONCAT_IMPL(a, b) a##b
 
 /// Concatenate two tokens with macro expansion
-/// Example: DART8_CONCAT(foo, __LINE__) -> foo123
-#define DART8_CONCAT(a, b) DART8_CONCAT_IMPL(a, b)
+/// Example: DART_EXPERIMENTAL_CONCAT(foo, __LINE__) -> foo123
+#define DART_EXPERIMENTAL_CONCAT(a, b) DART_EXPERIMENTAL_CONCAT_IMPL(a, b)
 
 /// Generate a unique identifier with the given prefix
 /// Uses __COUNTER__ to ensure uniqueness across translation units
-/// Example: DART8_UNIQUE_NAME(my_var) -> my_var0, my_var1, my_var2, ...
-#define DART8_UNIQUE_NAME(prefix) DART8_CONCAT(prefix, __COUNTER__)
+/// Example: DART_EXPERIMENTAL_UNIQUE_NAME(my_var) -> my_var0, my_var1, my_var2, ...
+#define DART_EXPERIMENTAL_UNIQUE_NAME(prefix) DART_EXPERIMENTAL_CONCAT(prefix, __COUNTER__)

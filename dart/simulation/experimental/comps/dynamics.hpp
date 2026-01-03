@@ -44,7 +44,7 @@ namespace dart::simulation::experimental::comps {
 /// **Internal Implementation Detail** - Not exposed in public API
 struct Transform
 {
-  DART8_PROPERTY_COMPONENT(Transform);
+  DART_EXPERIMENTAL_PROPERTY_COMPONENT(Transform);
 
   Eigen::Vector3d position = Eigen::Vector3d::Zero();
   Eigen::Quaterniond orientation = Eigen::Quaterniond::Identity();
@@ -55,7 +55,7 @@ struct Transform
 /// **Internal Implementation Detail** - Not exposed in public API
 struct Velocity
 {
-  DART8_PROPERTY_COMPONENT(Velocity);
+  DART_EXPERIMENTAL_PROPERTY_COMPONENT(Velocity);
 
   Eigen::Vector3d linear = Eigen::Vector3d::Zero();
   Eigen::Vector3d angular = Eigen::Vector3d::Zero();
@@ -66,7 +66,7 @@ struct Velocity
 /// **Internal Implementation Detail** - Not exposed in public API
 struct MassProperties
 {
-  DART8_PROPERTY_COMPONENT(MassProperties);
+  DART_EXPERIMENTAL_PROPERTY_COMPONENT(MassProperties);
 
   double mass = 1.0;
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
@@ -77,7 +77,7 @@ struct MassProperties
 /// **Internal Implementation Detail** - Not exposed in public API
 struct Force
 {
-  DART8_PROPERTY_COMPONENT(Force);
+  DART_EXPERIMENTAL_PROPERTY_COMPONENT(Force);
 
   Eigen::Vector3d force = Eigen::Vector3d::Zero();
   Eigen::Vector3d torque = Eigen::Vector3d::Zero();

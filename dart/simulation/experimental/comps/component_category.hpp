@@ -68,10 +68,10 @@ enum class ComponentCategory
 ///
 /// Example:
 ///   struct Name {
-///     DART8_PROPERTY_COMPONENT(Name);
+///     DART_EXPERIMENTAL_PROPERTY_COMPONENT(Name);
 ///     std::string name;
 ///   };
-#define DART8_PROPERTY_COMPONENT(TypeName)                                     \
+#define DART_EXPERIMENTAL_PROPERTY_COMPONENT(TypeName)                                     \
   static constexpr ::dart::simulation::experimental::comps::ComponentCategory category                  \
       = ::dart::simulation::experimental::comps::ComponentCategory::Property;                           \
   static constexpr bool serializable = true;                                   \
@@ -87,14 +87,14 @@ enum class ComponentCategory
 ///
 /// Example:
 ///   struct FrameState {
-///     DART8_STATE_COMPONENT(FrameState);
+///     DART_EXPERIMENTAL_STATE_COMPONENT(FrameState);
 ///     entt::entity parentFrame = entt::null;
 ///
 ///     static constexpr auto entityFields() {
 ///       return std::tuple{&FrameState::parentFrame};
 ///     }
 ///   };
-#define DART8_STATE_COMPONENT(TypeName)                                        \
+#define DART_EXPERIMENTAL_STATE_COMPONENT(TypeName)                                        \
   static constexpr ::dart::simulation::experimental::comps::ComponentCategory category                  \
       = ::dart::simulation::experimental::comps::ComponentCategory::State;                              \
   static constexpr bool serializable = true;                                   \
@@ -109,11 +109,11 @@ enum class ComponentCategory
 ///
 /// Example:
 ///   struct FrameCache {
-///     DART8_CACHE_COMPONENT(FrameCache);
+///     DART_EXPERIMENTAL_CACHE_COMPONENT(FrameCache);
 ///     Eigen::Isometry3d worldTransform;
 ///     bool needUpdate = true;
 ///   };
-#define DART8_CACHE_COMPONENT(TypeName)                                        \
+#define DART_EXPERIMENTAL_CACHE_COMPONENT(TypeName)                                        \
   static constexpr ::dart::simulation::experimental::comps::ComponentCategory category                  \
       = ::dart::simulation::experimental::comps::ComponentCategory::Cache;                              \
   static constexpr bool serializable = false;                                  \
@@ -128,9 +128,9 @@ enum class ComponentCategory
 ///
 /// Example:
 ///   struct FreeFrameTag {
-///     DART8_TAG_COMPONENT(FreeFrameTag);
+///     DART_EXPERIMENTAL_TAG_COMPONENT(FreeFrameTag);
 ///   };
-#define DART8_TAG_COMPONENT(TypeName)                                          \
+#define DART_EXPERIMENTAL_TAG_COMPONENT(TypeName)                                          \
   static constexpr ::dart::simulation::experimental::comps::ComponentCategory category                  \
       = ::dart::simulation::experimental::comps::ComponentCategory::Tag;                                \
   static constexpr bool serializable = true;                                   \

@@ -79,7 +79,7 @@ namespace dart::simulation::experimental {
 ///       or the World is destroyed.
 ///
 /// @see Frame
-class DART8_API Link : public Frame
+class DART_EXPERIMENTAL_API Link : public Frame
 {
 public:
   /// Constructor (typically called by MultiBody::addLink)

@@ -39,22 +39,22 @@
 
 namespace dart::simulation::experimental {
 
-/// DART 8.0 version string
+/// Simulation-experimental version string
 constexpr std::string_view version() {
   return "@PROJECT_VERSION@-dev";
 }
 
-/// DART 8.0 major version
+/// Simulation-experimental major version
 constexpr int versionMajor() {
   return @PROJECT_VERSION_MAJOR@;
 }
 
-/// DART 8.0 minor version
+/// Simulation-experimental minor version
 constexpr int versionMinor() {
   return @PROJECT_VERSION_MINOR@;
 }
 
-/// DART 8.0 patch version
+/// Simulation-experimental patch version
 constexpr int versionPatch() {
   return @PROJECT_VERSION_PATCH@;
 }

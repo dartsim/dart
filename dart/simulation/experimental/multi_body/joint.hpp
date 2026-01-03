@@ -49,7 +49,7 @@ namespace dart::simulation::experimental {
 /// Represents a joint connecting two links in a MultiBody. This is a
 /// lightweight handle to the underlying entity in the ECS registry.
 ///
-/// Unlike traditional OOP physics engines, DART8 uses a single generic Joint
+/// Unlike traditional OOP physics engines, the experimental stack uses a single generic Joint
 /// class with ECS architecture. All joint type-specific data is stored in
 /// JointComponent in the centralized entt::registry. The handle provides a
 /// unified interface regardless of joint type (revolute, prismatic, ball,
@@ -77,7 +77,7 @@ namespace dart::simulation::experimental {
 /// @note Joint handles are lightweight (entity ID + pointer) and safe to copy.
 ///       Handles become invalid if the underlying entity is destroyed
 ///       or the World is destroyed.
-class DART8_API Joint
+class DART_EXPERIMENTAL_API Joint
 {
 public:
   /// Constructor (typically called by Link::getParentJoint)

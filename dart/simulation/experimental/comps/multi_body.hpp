@@ -42,21 +42,21 @@ namespace dart::simulation::experimental::comps {
 
 /// Tag marking entity as a MultiBody
 ///
-/// Automatically serialized via DART8_TAG_COMPONENT macro.
+/// Automatically serialized via DART_EXPERIMENTAL_TAG_COMPONENT macro.
 /// **Internal Implementation Detail** - Not exposed in public API
 struct MultiBodyTag
 {
-  DART8_TAG_COMPONENT(MultiBodyTag);
+  DART_EXPERIMENTAL_TAG_COMPONENT(MultiBodyTag);
 };
 
 /// Component storing MultiBody structure (links, joints)
 ///
-/// Automatically serialized with entity remapping via DART8_STATE_COMPONENT
+/// Automatically serialized with entity remapping via DART_EXPERIMENTAL_STATE_COMPONENT
 /// macro.
 /// **Internal Implementation Detail** - Not exposed in public API
 struct MultiBodyStructure
 {
-  DART8_STATE_COMPONENT(MultiBodyStructure);
+  DART_EXPERIMENTAL_STATE_COMPONENT(MultiBodyStructure);
 
   std::vector<entt::entity> links;
   std::vector<entt::entity> joints;

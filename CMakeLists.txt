@@ -175,8 +175,8 @@ endfunction()
 # Build options
 #===============================================================================
 
-# DART 8.0 options
-option(DART8_VERBOSE "Show detailed DART8 dependency information" OFF)
+# Simulation-experimental options
+option(DART_EXPERIMENTAL_VERBOSE "Show detailed simulation-experimental dependency information" OFF)
 
 if(MSVC)
   set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
@@ -269,19 +269,12 @@ dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY syst
 dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
-if(DEFINED DART_BUILD_DART8 AND NOT DEFINED DART_BUILD_SIMULATION_EXPERIMENTAL)
-  message(WARNING "DART_BUILD_DART8 is deprecated; use DART_BUILD_SIMULATION_EXPERIMENTAL.")
-  set(DART_BUILD_SIMULATION_EXPERIMENTAL ${DART_BUILD_DART8} CACHE BOOL
-      "Build experimental simulation module (dart::simulation::experimental)" FORCE)
-endif()
 dart_option(
   DART_BUILD_SIMULATION_EXPERIMENTAL
   "Build experimental simulation module (dart::simulation::experimental)"
   OFF
   CATEGORY build
 )
-set(DART_BUILD_DART8 ${DART_BUILD_SIMULATION_EXPERIMENTAL} CACHE BOOL
-    "Deprecated alias for DART_BUILD_SIMULATION_EXPERIMENTAL" FORCE)
 
 dart_configure_compiler_cache()
 
@@ -644,8 +637,8 @@ if(TARGET dart)
     if(DART_BUILD_SIMULATION_EXPERIMENTAL)
       if(NOT EXISTS
          "${CMAKE_CURRENT_SOURCE_DIR}/tests/simulation/experimental/CMakeLists.txt")
-        if(NOT TARGET dart8_tests)
-          add_custom_target(dart8_tests)
+        if(NOT TARGET dart_experimental_tests)
+          add_custom_target(dart_experimental_tests)
         endif()
       endif()
     endif()

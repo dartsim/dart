@@ -48,19 +48,19 @@ namespace dart::simulation::experimental::comps {
 /// Tag component marking an entity as a Frame
 struct FrameTag
 {
-  DART8_TAG_COMPONENT(FrameTag);
+  DART_EXPERIMENTAL_TAG_COMPONENT(FrameTag);
 };
 
 /// Tag component marking an entity as a FixedFrame
 struct FixedFrameTag
 {
-  DART8_TAG_COMPONENT(FixedFrameTag);
+  DART_EXPERIMENTAL_TAG_COMPONENT(FixedFrameTag);
 };
 
 /// Tag component marking an entity as a FreeFrame
 struct FreeFrameTag
 {
-  DART8_TAG_COMPONENT(FreeFrameTag);
+  DART_EXPERIMENTAL_TAG_COMPONENT(FreeFrameTag);
 };
 
 //==============================================================================
@@ -73,7 +73,7 @@ struct FreeFrameTag
 /// remapping during serialization.
 struct FrameState
 {
-  DART8_STATE_COMPONENT(FrameState);
+  DART_EXPERIMENTAL_STATE_COMPONENT(FrameState);
 
   /// Parent frame entity (entt::null = world frame)
   entt::entity parentFrame = entt::null;
@@ -91,7 +91,7 @@ struct FrameState
 /// Reconstructed automatically after deserialization.
 struct FrameCache
 {
-  DART8_CACHE_COMPONENT(FrameCache);
+  DART_EXPERIMENTAL_CACHE_COMPONENT(FrameCache);
 
   /// Cached world-frame transform
   Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
@@ -103,10 +103,10 @@ struct FrameCache
 /// FixedFrameProperties component
 ///
 /// Stores properties for a frame that is rigidly attached to its parent.
-/// Automatically serialized via DART8_PROPERTY_COMPONENT macro.
+/// Automatically serialized via DART_EXPERIMENTAL_PROPERTY_COMPONENT macro.
 struct FixedFrameProperties
 {
-  DART8_PROPERTY_COMPONENT(FixedFrameProperties);
+  DART_EXPERIMENTAL_PROPERTY_COMPONENT(FixedFrameProperties);
 
   /// Fixed transform offset relative to parent frame (local transform)
   Eigen::Isometry3d localTransform = Eigen::Isometry3d::Identity();
@@ -115,10 +115,10 @@ struct FixedFrameProperties
 /// FreeFrameProperties component
 ///
 /// Stores properties for a frame that can be freely positioned.
-/// Automatically serialized via DART8_PROPERTY_COMPONENT macro.
+/// Automatically serialized via DART_EXPERIMENTAL_PROPERTY_COMPONENT macro.
 struct FreeFrameProperties
 {
-  DART8_PROPERTY_COMPONENT(FreeFrameProperties);
+  DART_EXPERIMENTAL_PROPERTY_COMPONENT(FreeFrameProperties);
 
   /// Transform relative to parent frame (local transform)
   Eigen::Isometry3d localTransform = Eigen::Isometry3d::Identity();

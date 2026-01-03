@@ -53,8 +53,8 @@ add_library(dart-simulation-experimental
   world.cpp
 )
 
-include(dart8_defs)
-include(dart8_dependencies)
+include(dart_experimental_defs)
+include(dart_experimental_dependencies)
 
 target_include_directories(dart-simulation-experimental
   PUBLIC
@@ -76,8 +76,5 @@ target_compile_definitions(dart-simulation-experimental
   PUBLIC
     DART_BUILD_SHARED=${DART_BUILD_SHARED_VALUE}
   PRIVATE
-    DART_BUILDING_DART8
+    DART_BUILDING_DART_EXPERIMENTAL
 )
-
-add_library(dart8 ALIAS dart-simulation-experimental)
-add_library(dart8::dart8 ALIAS dart-simulation-experimental)

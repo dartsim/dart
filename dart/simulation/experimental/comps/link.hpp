@@ -49,7 +49,7 @@ namespace dart::simulation::experimental::comps {
 /// **Internal Implementation Detail** - Not exposed in public API
 struct Link
 {
-  DART8_STATE_COMPONENT(Link);
+  DART_EXPERIMENTAL_STATE_COMPONENT(Link);
 
   std::string name;
 

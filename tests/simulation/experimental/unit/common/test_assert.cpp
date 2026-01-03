@@ -40,24 +40,24 @@ using namespace dart::simulation::experimental::common;
 TEST(Assert, BasicAssertions)
 {
   // These should not fail
-  DART8_ASSERT(true);
-  DART8_ASSERT_MSG(true, "This should pass");
-  DART8_VERIFY(true);
-  DART8_DEBUG_ASSERT(true);
+  DART_EXPERIMENTAL_ASSERT(true);
+  DART_EXPERIMENTAL_ASSERT_MSG(true, "This should pass");
+  DART_EXPERIMENTAL_VERIFY(true);
+  DART_EXPERIMENTAL_DEBUG_ASSERT(true);
 }
 
 // Test VERIFY returns bool
 TEST(Assert, VerifyReturnsBool)
 {
-  // DART8_VERIFY should return the bool value
-  bool result = DART8_VERIFY(true);
+  // DART_EXPERIMENTAL_VERIFY should return the bool value
+  bool result = DART_EXPERIMENTAL_VERIFY(true);
   EXPECT_TRUE(result);
 
   // Can be used in if statements
-  if (DART8_VERIFY(true)) {
+  if (DART_EXPERIMENTAL_VERIFY(true)) {
     // This should execute
     SUCCEED();
   } else {
-    FAIL() << "DART8_VERIFY should return true";
+    FAIL() << "DART_EXPERIMENTAL_VERIFY should return true";
   }
 }

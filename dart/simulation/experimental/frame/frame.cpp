@@ -108,7 +108,7 @@ const Eigen::Isometry3d& Frame::getLocalTransform() const
 //==============================================================================
 Frame Frame::getParentFrame() const
 {
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid frame handle");
 
   // World frame: parent is itself
@@ -118,7 +118,7 @@ Frame Frame::getParentFrame() const
 
   // Get parent from FrameState component (common to all frame types)
   auto* frameState = tryGetReadOnly<comps::FrameState>();
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !frameState,
       InvalidOperationException,
       "Entity does not have FrameState component");
@@ -129,22 +129,22 @@ Frame Frame::getParentFrame() const
 //==============================================================================
 void Frame::setParentFrame(const Frame& parent)
 {
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid frame handle");
 
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !parent.isValid(), InvalidArgumentException, "Invalid parent frame");
 
   // World frame cannot change parent
   if (m_entity == entt::null) {
-    DART8_THROW_T(
+    DART_EXPERIMENTAL_THROW_T(
         InvalidOperationException, "Cannot set parent of world frame");
   }
 
   // Get FrameState component (common to FreeFrame and FixedFrame)
   auto* frameState = tryGetMutable<comps::FrameState>();
 
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !frameState,
       InvalidOperationException,
       "Cannot change parent frame of Link. Links are connected through "
@@ -153,7 +153,7 @@ void Frame::setParentFrame(const Frame& parent)
   if (m_world && m_entity != entt::null) {
     auto& registry = m_world->getRegistry();
     if (registry.valid(m_entity) && registry.all_of<comps::Link>(m_entity)) {
-      DART8_THROW_T(
+      DART_EXPERIMENTAL_THROW_T(
           InvalidOperationException,
           "Cannot change parent frame of Link. Links are connected through "
           "joints in a fixed tree structure.");
@@ -163,13 +163,13 @@ void Frame::setParentFrame(const Frame& parent)
   const auto parentEntity = parent.getEntity();
 
   if (parentEntity != entt::null) {
-    DART8_THROW_T_IF(
+    DART_EXPERIMENTAL_THROW_T_IF(
         m_world != parent.m_world,
         InvalidArgumentException,
         "Parent frame belongs to a different world");
   }
 
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       parentEntity == m_entity,
       InvalidArgumentException,
       "Cannot parent a frame to itself");
@@ -179,7 +179,7 @@ void Frame::setParentFrame(const Frame& parent)
   std::size_t depth = 0;
   while (ancestor.getEntity() != entt::null) {
     if (ancestor.getEntity() == m_entity) {
-      DART8_THROW_T(
+      DART_EXPERIMENTAL_THROW_T(
           InvalidOperationException, "Cannot create cyclic frame hierarchy");
     }
 
@@ -193,7 +193,7 @@ void Frame::setParentFrame(const Frame& parent)
     ancestor = next;
 
     if (++depth > 1024) {
-      DART8_THROW_T(
+      DART_EXPERIMENTAL_THROW_T(
           InvalidOperationException, "Cycle detection depth limit exceeded");
     }
   }
@@ -209,7 +209,7 @@ void Frame::setParentFrame(const Frame& parent)
 //==============================================================================
 const Eigen::Isometry3d& Frame::getTransform() const
 {
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid frame handle");
 
   // World frame: return identity
@@ -221,7 +221,7 @@ const Eigen::Isometry3d& Frame::getTransform() const
   // Frames with lazy evaluation (FreeFrame, FixedFrame) use FrameCache
   // Use getCacheMutable() for cache updates in const method
   auto* cache = getCacheMutable<comps::FrameCache>();
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !cache,
       InvalidOperationException,
       "Entity does not have FrameCache component (expected for "
@@ -264,14 +264,14 @@ Eigen::Matrix4d Frame::getTransformMatrix() const
 Eigen::Isometry3d Frame::getTransform(const Frame& relativeTo) const
 {
   // Both frames must be valid
-  DART8_THROW_T_IF(!isValid(), InvalidArgumentException, "Invalid this frame");
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(!isValid(), InvalidArgumentException, "Invalid this frame");
+  DART_EXPERIMENTAL_THROW_T_IF(
       !relativeTo.isValid(),
       InvalidArgumentException,
       "Invalid 'relativeTo' frame");
 
   // Both frames must be from the same World (or both are world frame)
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       m_world != relativeTo.m_world && m_world != nullptr
           && relativeTo.m_world != nullptr,
       InvalidArgumentException,
@@ -306,10 +306,10 @@ Eigen::Isometry3d Frame::getTransform(
     const Frame& to, const Frame& expressedIn) const
 {
   // Validate frames
-  DART8_THROW_T_IF(!isValid(), InvalidArgumentException, "Invalid this frame");
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(!isValid(), InvalidArgumentException, "Invalid this frame");
+  DART_EXPERIMENTAL_THROW_T_IF(
       !to.isValid(), InvalidArgumentException, "Invalid 'to' frame");
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !expressedIn.isValid(),
       InvalidArgumentException,
       "Invalid expressedIn frame");
@@ -318,11 +318,11 @@ Eigen::Isometry3d Frame::getTransform(
   const bool toIsWorld = to.isWorld();
   const bool coordIsWorld = expressedIn.isWorld();
 
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !toIsWorld && m_world != to.m_world,
       InvalidArgumentException,
       "Frames are from different worlds");
-  DART8_THROW_T_IF(
+  DART_EXPERIMENTAL_THROW_T_IF(
       !coordIsWorld && m_world != expressedIn.m_world,
       InvalidArgumentException,
       "Frames are from different worlds");
