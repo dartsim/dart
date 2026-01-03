@@ -2,7 +2,7 @@
 
 ## Status
 
-- Active: executing phases; Phase 7 (container membership cleanup) in progress.
+- Active: executing phases; Phase 8 (algorithm cleanups) in progress.
 
 ## Objective
 

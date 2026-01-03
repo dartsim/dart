@@ -2,8 +2,8 @@
 
 ## Status
 
-- Current phase: Phase 7 (container membership cleanup)
-- Code changes: Phase 7 in progress.
+- Current phase: Phase 8 (algorithm cleanups)
+- Code changes: Phase 8 in progress.
 
 ## Phase checklist
 
@@ -14,8 +14,8 @@
 - Phase 4 - Span input consolidation: Complete
 - Phase 5 - String/view cleanup: Complete
 - Phase 6 - Internal non-owning views: Complete
-- Phase 7 - Container membership cleanup: In progress
-- Phase 8 - Algorithm cleanups: Not started
+- Phase 7 - Container membership cleanup: Complete
+- Phase 8 - Algorithm cleanups: In progress
 - Phase 9 - Validation and wrap-up: Not started
 
 ## Notes
@@ -86,3 +86,5 @@
 - Phase 7: replace remaining `std::find`/`std::find_if` in dynamics, collision,
   GUI, and LCP solvers with `std::ranges` equivalents; use `contains` for
   non-body entity set membership in `BodyNode`.
+- Phase 8: replace remove/erase idioms with `std::erase` in constraint and
+  world skeleton cleanup paths.

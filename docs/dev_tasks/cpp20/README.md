@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase 7 in progress: container membership cleanup.
+- Phase 8 in progress: algorithm cleanups.
 
 ## Goal
 

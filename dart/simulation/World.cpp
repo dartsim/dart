@@ -577,9 +577,7 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   }
 
   // Remove _skeleton from mSkeletons
-  mSkeletons.erase(
-      remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
-      mSkeletons.end());
+  std::erase(mSkeletons, _skeleton);
 
   // Disconnect the name change monitor
   mNameConnectionsForSkeletons[index].disconnect();
