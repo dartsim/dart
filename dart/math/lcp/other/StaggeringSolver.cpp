@@ -36,6 +36,7 @@
 #include "dart/math/lcp/pivoting/DantzigSolver.hpp"
 
 #include <algorithm>
+#include <iterator>
 #include <limits>
 #include <span>
 #include <string>
@@ -92,7 +93,7 @@ LcpResult StaggeringSolver::solve(
   const auto& hi = problem.hi;
   const auto& findex = problem.findex;
 
-  const int n = static_cast<int>(b.size());
+  const auto n = std::ssize(b);
   if (n == 0) {
     x.resize(0);
     result.status = LcpSolverStatus::Success;
@@ -155,8 +156,8 @@ LcpResult StaggeringSolver::solve(
     return direct.solve(problem, x, directOptions);
   }
 
-  const int nNormal = static_cast<int>(normalIndices.size());
-  const int nFriction = static_cast<int>(frictionIndices.size());
+  const auto nNormal = std::ssize(normalIndices);
+  const auto nFriction = std::ssize(frictionIndices);
 
   Eigen::MatrixXd A_nn(nNormal, nNormal);
   Eigen::MatrixXd A_nf(nNormal, nFriction);
@@ -192,14 +193,14 @@ LcpResult StaggeringSolver::solve(
   Eigen::VectorXi findex_f = Eigen::VectorXi::Constant(nFriction, -1);
 
   auto gather = [&](std::span<const int> indices, Eigen::VectorXd& out) {
-    out.resize(static_cast<int>(indices.size()));
-    for (int k = 0; k < static_cast<int>(indices.size()); ++k)
+    out.resize(std::ssize(indices));
+    for (int k = 0; k < std::ssize(indices); ++k)
       out[k] = x[indices[k]];
   };
 
   auto scatterRelaxedNormal
       = [&](std::span<const int> indices, const Eigen::VectorXd& values) {
-          for (int k = 0; k < static_cast<int>(indices.size()); ++k) {
+          for (int k = 0; k < std::ssize(indices); ++k) {
             const int idx = indices[k];
             double updated = x[idx] + relaxation * (values[k] - x[idx]);
             if (std::isfinite(lo[idx]))
@@ -214,7 +215,7 @@ LcpResult StaggeringSolver::solve(
                                     const Eigen::VectorXd& values,
                                     const Eigen::VectorXd& loEff,
                                     const Eigen::VectorXd& hiEff) {
-    for (int k = 0; k < static_cast<int>(indices.size()); ++k) {
+    for (int k = 0; k < std::ssize(indices); ++k) {
       const int idx = indices[k];
       double updated = x[idx] + relaxation * (values[k] - x[idx]);
       if (std::isfinite(loEff[idx]))

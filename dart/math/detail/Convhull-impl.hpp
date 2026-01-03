@@ -73,6 +73,7 @@
 #include <Eigen/Core>
 
 #include <algorithm>
+#include <iterator>
 #include <limits>
 #include <vector>
 
@@ -242,7 +243,7 @@ inline void convexHull3dBuild(
     std::vector<int>& outFaces,
     int& numOutputTriangles)
 {
-  const int numInputVertices = static_cast<int>(inVertices.size());
+  const auto numInputVertices = std::ssize(inVertices);
 
   if (numInputVertices <= 3) {
     outFaces.clear();

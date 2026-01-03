@@ -37,6 +37,7 @@
 #include "dart/math/lcp/pivoting/dantzig/Misc.hpp"
 
 #include <algorithm>
+#include <iterator>
 #include <limits>
 #include <vector>
 
@@ -84,7 +85,7 @@ LcpResult PgsSolver::solve(
     return result;
   }
 
-  const int n = static_cast<int>(b.size());
+  const auto n = std::ssize(b);
   if (n == 0) {
     x.resize(0);
     result.status = LcpSolverStatus::Success;
