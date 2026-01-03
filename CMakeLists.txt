@@ -269,7 +269,19 @@ dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY syst
 dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
-dart_option(DART_BUILD_DART8 "Build experimental DART8 library" OFF CATEGORY build)
+if(DEFINED DART_BUILD_DART8 AND NOT DEFINED DART_BUILD_SIMULATION_NEXT)
+  message(WARNING "DART_BUILD_DART8 is deprecated; use DART_BUILD_SIMULATION_NEXT.")
+  set(DART_BUILD_SIMULATION_NEXT ${DART_BUILD_DART8} CACHE BOOL
+      "Build next-generation simulation module (dart::simulation::next)" FORCE)
+endif()
+dart_option(
+  DART_BUILD_SIMULATION_NEXT
+  "Build next-generation simulation module (dart::simulation::next)"
+  OFF
+  CATEGORY build
+)
+set(DART_BUILD_DART8 ${DART_BUILD_SIMULATION_NEXT} CACHE BOOL
+    "Deprecated alias for DART_BUILD_SIMULATION_NEXT" FORCE)
 
 dart_configure_compiler_cache()
 
@@ -612,13 +624,13 @@ endif()
 
 add_subdirectory(dart)
 
-if(DART_BUILD_DART8)
-  add_subdirectory(dart8)
+if(DART_BUILD_SIMULATION_NEXT)
+  add_subdirectory(dart/simulation/next)
 
   if(MSVC)
-    add_subdirectory(tests_dart8)
+    add_subdirectory(tests_simulation_next)
   else()
-    add_subdirectory(tests_dart8 EXCLUDE_FROM_ALL)
+    add_subdirectory(tests_simulation_next EXCLUDE_FROM_ALL)
   endif()
 endif()
 
@@ -635,8 +647,9 @@ if(TARGET dart)
       add_subdirectory(tests EXCLUDE_FROM_ALL)
     endif()
 
-    if(DART_BUILD_DART8)
-      if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests_dart8/CMakeLists.txt")
+    if(DART_BUILD_SIMULATION_NEXT)
+      if(NOT EXISTS
+         "${CMAKE_CURRENT_SOURCE_DIR}/tests_simulation_next/CMakeLists.txt")
         if(NOT TARGET dart8_tests)
           add_custom_target(dart8_tests)
         endif()
