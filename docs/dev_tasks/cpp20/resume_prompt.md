@@ -3,18 +3,18 @@ You are resuming the C++20 modernization task in
 
 Current state:
 
-- Branch: `cpp20/phase8`
-- PR: https://github.com/dartsim/dart/pull/2376
-- Phase 7 PR: https://github.com/dartsim/dart/pull/2375 (empty-span guard fix pushed)
+- Branch: `cpp20/phase10`
+- Phase 9 PR: https://github.com/dartsim/dart/pull/2380
+- Phase 8 PR: https://github.com/dartsim/dart/pull/2376 (merged)
+- Phase 7 PR: https://github.com/dartsim/dart/pull/2375 (merged; empty-span guard fix)
 - CI/merge are handled by the user.
+- Latest local validation: `DART_PARALLEL_JOBS=1 pixi run test-all` (passed).
 
 What to do next:
 
-1. Continue Phase 8 from `docs/dev_tasks/cpp20/00_plan.md`.
-2. Convert parsing helpers (XML/SDF/URDF/Skel/MJCF) to `std::string_view`.
-3. Run `pixi run lint`, then `pixi run test-all`.
-4. Update `docs/dev_tasks/cpp20/01_progress.md` and keep PR #2376 current.
-5. Start Phase 9 from `docs/dev_tasks/cpp20/00_plan.md`.
+1. Push `cpp20/phase10` if needed and open the Phase 10 PR.
+2. Update `docs/dev_tasks/cpp20/01_progress.md` and keep PR #2380 current.
+3. Start Phase 11 from `docs/dev_tasks/cpp20/00_plan.md` after Phase 10 PR is open.
 
 Workflow requirements:
 

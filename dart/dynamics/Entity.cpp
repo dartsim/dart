@@ -223,9 +223,8 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
   if (!mAmQuiet && nullptr != mParentFrame && !mParentFrame->isWorld()) {
     // If this entity has a parent Frame, tell that parent that it is losing
     // this child
-    EntityPtrSet::iterator it = mParentFrame->mChildEntities.find(this);
-    if (it != mParentFrame->mChildEntities.end()) {
-      mParentFrame->mChildEntities.erase(it);
+    if (mParentFrame->mChildEntities.contains(this)) {
+      mParentFrame->mChildEntities.erase(this);
       mParentFrame->processRemovedEntity(this);
     }
   }

@@ -39,6 +39,7 @@
 #include "dart/dynamics/JacobianNode.hpp"
 
 #include <algorithm>
+#include <iterator>
 
 namespace dart {
 namespace dynamics {
@@ -85,7 +86,7 @@ static bool checkIndexArrayAgreement(
     const std::string& _fname,
     const std::string& _vname)
 {
-  if (static_cast<int>(_indices.size()) != _values.size()) {
+  if (std::ssize(_indices) != _values.size()) {
     DART_ERROR(
         "Mismatch between _indices size ({}) and {} size ({}) for Skeleton "
         "named [{}] ({}). Nothing will be set!",

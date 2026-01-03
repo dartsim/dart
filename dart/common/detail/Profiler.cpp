@@ -36,6 +36,7 @@
 #include <chrono>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <sstream>
@@ -457,11 +458,12 @@ void Profiler::printSummary(std::ostream& os)
       if (samples.empty()) {
         return 0;
       }
-      const double pos = pct * static_cast<double>(samples.size() - 1);
+      const auto maxIndex = std::ssize(samples) - 1;
+      const double pos = pct * static_cast<double>(maxIndex);
       return static_cast<std::size_t>(std::clamp(
           static_cast<std::ptrdiff_t>(std::lround(pos)),
           static_cast<std::ptrdiff_t>(0),
-          static_cast<std::ptrdiff_t>(samples.size() - 1)));
+          maxIndex));
     };
     const auto bestIdx = pickIndex(0.1);  // 10th percentile (short frames)
     const auto worstIdx = pickIndex(0.9); // 90th percentile (long frames)
