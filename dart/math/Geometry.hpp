@@ -531,12 +531,12 @@ SupportPolygon computeSupportPolgyon(
     const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY());
 
 /// Computes the convex hull of a set of 2D points
-SupportPolygon computeConvexHull(const SupportPolygon& _points);
+DART_API SupportPolygon computeConvexHull(const SupportPolygon& points);
 
 /// Computes the convex hull of a set of 2D points and fills in _originalIndices
 /// with the original index of each entry in the returned SupportPolygon
-SupportPolygon computeConvexHull(
-    std::vector<std::size_t>& _originalIndices, const SupportPolygon& _points);
+DART_API SupportPolygon computeConvexHull(
+    std::vector<std::size_t>& originalIndices, const SupportPolygon& points);
 
 /// Generates a 3D convex hull given vertices and indices.
 ///

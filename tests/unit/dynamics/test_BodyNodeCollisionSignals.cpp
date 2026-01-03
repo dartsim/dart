@@ -56,7 +56,14 @@ std::pair<SkeletonPtr, BodyNode*> makeBodyNode()
 class TestBodyNode final : public BodyNode
 {
 public:
-  using BodyNode::BodyNode;
+  TestBodyNode(
+      BodyNode* parent, Joint* parentJoint, const Properties& properties)
+    : Entity(ConstructFrame),
+      Frame(Frame::World()),
+      BodyNode(parent, parentJoint, properties)
+  {
+    // Do nothing
+  }
 
   void callProcessNewEntity(Entity* entity)
   {
