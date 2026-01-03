@@ -164,7 +164,7 @@ lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 lint-simulation-next = { cmd = """
-    find dart/simulation/next tests_simulation_next -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
+    find dart/simulation/next tests/simulation/next -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
 """ }
 lint-dart8 = { depends-on = ["lint-simulation-next"] }
 
@@ -205,7 +205,7 @@ check-lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 check-lint-simulation-next = { cmd = """
-    find dart/simulation/next tests_simulation_next -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
+    find dart/simulation/next tests/simulation/next -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
 """ }
 check-lint-dart8 = { depends-on = ["check-lint-simulation-next"] }
 

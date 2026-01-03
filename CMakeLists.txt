@@ -626,12 +626,6 @@ add_subdirectory(dart)
 
 if(DART_BUILD_SIMULATION_NEXT)
   add_subdirectory(dart/simulation/next)
-
-  if(MSVC)
-    add_subdirectory(tests_simulation_next)
-  else()
-    add_subdirectory(tests_simulation_next EXCLUDE_FROM_ALL)
-  endif()
 endif()
 
 set(DART_IN_SOURCE_BUILD TRUE)
@@ -649,7 +643,7 @@ if(TARGET dart)
 
     if(DART_BUILD_SIMULATION_NEXT)
       if(NOT EXISTS
-         "${CMAKE_CURRENT_SOURCE_DIR}/tests_simulation_next/CMakeLists.txt")
+         "${CMAKE_CURRENT_SOURCE_DIR}/tests/simulation/next/CMakeLists.txt")
         if(NOT TARGET dart8_tests)
           add_custom_target(dart8_tests)
         endif()

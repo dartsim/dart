@@ -145,6 +145,9 @@ add_subdirectory(common)
 #   they performs correctly as expected
 add_subdirectory(integration)
 add_subdirectory(unit)
+if(DART_BUILD_SIMULATION_NEXT)
+  add_subdirectory(simulation/next)
+endif()
 
 # Print tests
 dart_get_tests(integration_tests "integration")
