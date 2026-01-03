@@ -526,9 +526,9 @@ py-ex-rigid-chain = { depends-on = [
 
 py-ex-rigid-loop = { depends-on = [{ task = "py-ex", args = ["rigid_loop"] }] }
 
-py-ex-biped-stand = { depends-on = [
+py-ex-control-balance-biped = { depends-on = [
   { task = "py-ex", args = [
-    "biped_stand",
+    "control_balance_biped",
   ] },
 ] }
 
@@ -544,9 +544,9 @@ py-ex-drag-and-drop = { depends-on = [
   ] },
 ] }
 
-py-ex-operational-space-control = { depends-on = [
+py-ex-control-operational-space = { depends-on = [
   { task = "py-ex", args = [
-    "operational_space_control",
+    "control_operational_space",
   ] },
 ] }
 
@@ -807,24 +807,6 @@ run-cpp-target = { cmd = """
 ] }
 
 ex = { cmd = "python scripts/run_cpp_example.py", depends-on = ["config"] }
-
-ex-ik-humanoid = { depends-on = [
-  { task = "run-cpp-target", args = [
-    "ik_humanoid",
-  ] },
-] }
-
-ex-control-walking-humanoid = { depends-on = [
-  { task = "run-cpp-target", args = [
-    "control_walking_humanoid",
-  ] },
-] }
-
-ex-hello-world = { depends-on = [
-  { task = "run-cpp-target", args = [
-    "hello_world",
-  ] },
-] }
 
 py-atlas-puppet = { cmd = """
     PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PYTHONPATH \

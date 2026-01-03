@@ -30,10 +30,10 @@ add_subdirectory(rigid_shapes)
 # Control and IK examples
 add_subdirectory(ik_humanoid)
 add_subdirectory(control_walking_humanoid)
-add_subdirectory(biped_stand)
-add_subdirectory(operational_space_control)
-add_subdirectory(vehicle)
-add_subdirectory(wam_ikfast)
+add_subdirectory(control_balance_biped)
+add_subdirectory(control_operational_space)
+add_subdirectory(control_vehicle)
+add_subdirectory(ik_analytic_wam)
 
 # IO and models examples
 add_subdirectory(unified_loading)

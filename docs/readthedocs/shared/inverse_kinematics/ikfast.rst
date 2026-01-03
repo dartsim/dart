@@ -56,7 +56,7 @@ Generating a solver today
    selecting the manipulator and fixing redundant joints. The generator emits a
    single ``ikfastXX.<iktype>.<parameters>.cpp`` file.
 4. Compile that file into a shared library. The simplest approach is to follow
-   the ``examples/wam_ikfast/ikfast/CMakeLists.txt`` template in this
+   the ``examples/ik_analytic_wam/ikfast/CMakeLists.txt`` template in this
    repository, which builds a ``Generated<Name>IkFast`` shared object with the
    ``IKFAST_NO_MAIN`` and ``IKFAST_CLIBRARY`` flags set.
 
@@ -83,7 +83,7 @@ Using IkFast within DART
 * ``tests/integration/io/test_IkFast.cpp`` shows how DART wires a generated WAM
   arm solver into an end-effector IK node, validates version strings, and
   iterates through the returned solutions.
-* The ``examples/wam_ikfast`` sample demonstrates how to load the generated
+* The ``examples/ik_analytic_wam`` sample demonstrates how to load the generated
   solver at runtime, feed solutions back into a skeleton, and visualize the
   result with OSG.
 

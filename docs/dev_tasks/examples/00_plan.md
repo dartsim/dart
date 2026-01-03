@@ -35,6 +35,8 @@
 - Removed `rerun` (placeholder, no sources).
 - Removed `speed_test`; keep `headless_simulation` as the headless example and
   rely on `tests/benchmark/` for performance coverage.
+- Confirmed `speed_test` coverage via
+  `tests/benchmark/dynamics/bm_kinematics.cpp` (BM_Kinematics, BM_Dynamics).
 - Renamed `atlas_puppet`, `g1_puppet`, and `hubo_puppet` to `ik_atlas`,
   `ik_g1`, and `ik_hubo`.
 - Consolidate humanoid IK into a single `ik_humanoid` example with modular
@@ -44,6 +46,11 @@
 - Moved humanoid robot implementations under `examples/ik_humanoid/robots/`.
 - Renamed `atlas_simbicon` to `control_walking_humanoid` to match the
   feature-first naming pattern.
+- Renamed `biped_stand` -> `control_balance_biped`,
+  `operational_space_control` -> `control_operational_space`,
+  `vehicle` -> `control_vehicle`, and `wam_ikfast` -> `ik_analytic_wam`.
+- Removed per-example C++ pixi tasks; use `pixi run ex -- --list` to discover
+  targets and `pixi run ex -- <example>` to run them.
 
 ## Current Suggestions (Pending Decisions)
 
@@ -52,14 +59,14 @@
 - `boxes`: redundant with `hello_world`/`rigid_cubes`, README notes experimental,
   and it hard-codes Bullet.
 - `coupler_constraint`: overlaps `mimic_pendulums`; keep the latter.
-- `joint_constraints`: overlaps `biped_stand`; keep the latter.
+- `joint_constraints`: overlaps `control_balance_biped`; keep the latter.
 - `simulation_event_handler`: very large, overlaps `empty`, `drag_and_drop`,
   and `add_delete_skels`.
 - `raylib`: experimental backend example.
 
 ### Likely Removals (tighten supported scope)
 
-- `wam_ikfast`: huge and specialized; keeping implies full IKFast support.
+- `ik_analytic_wam`: huge and specialized; keeping implies full IKFast support.
 - `control_walking_humanoid`: large controller stack; niche feature surface.
 - `lcp_solvers`: large solver diagnostics UI; keep only if this UI is in-scope.
 - `human_joint_limits`: custom constraint implementation; advanced.

@@ -29,8 +29,8 @@
 ### 04 Control and IK
 
 - `atlas_puppet`
-- `biped_stand`
-- `operational_space_control`
+- `control_balance_biped`
+- `control_operational_space`
 
 ### 07 Visualization and Interaction
 

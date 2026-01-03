@@ -1,4 +1,4 @@
-# Biped Stand Example
+# Biped Balance Control Example
 
 ## Summary
 

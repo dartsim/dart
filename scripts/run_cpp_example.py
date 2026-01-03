@@ -8,6 +8,15 @@ import subprocess
 import sys
 from pathlib import Path
 
+_RENAMED_EXAMPLES = {
+    "atlas_simbicon": "control_walking_humanoid",
+    "biped_stand": "control_balance_biped",
+    "operational_space_control": "control_operational_space",
+    "raylib_gui": "raylib",
+    "vehicle": "control_vehicle",
+    "wam_ikfast": "ik_analytic_wam",
+}
+
 
 def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     parser = argparse.ArgumentParser(
@@ -30,7 +39,16 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         action="store_true",
         help="Show this help for the pixi wrapper.",
     )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="List available examples and exit.",
+    )
     known, unknown = parser.parse_known_args(argv)
+
+    if known.list:
+        _print_example_list()
+        sys.exit(0)
 
     if known.pixi_help or known.target is None:
         parser.print_help()
@@ -40,17 +58,34 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
 
 
 def _normalize_target(target: str) -> str:
-    if target == "raylib_gui":
-        print("NOTE: example `raylib_gui` was renamed to `raylib`.", file=sys.stderr)
-        return "raylib"
-    if target == "atlas_simbicon":
+    renamed = _RENAMED_EXAMPLES.get(target)
+    if renamed:
         print(
-            "NOTE: example `atlas_simbicon` was renamed to "
-            "`control_walking_humanoid`.",
+            f"NOTE: example `{target}` was renamed to `{renamed}`.",
             file=sys.stderr,
         )
-        return "control_walking_humanoid"
+        return renamed
     return target
+
+
+def _list_examples(root: Path = Path("examples")) -> list[str]:
+    if not root.is_dir():
+        return []
+    examples = []
+    for entry in sorted(root.iterdir()):
+        if not entry.is_dir():
+            continue
+        if (entry / "CMakeLists.txt").is_file():
+            examples.append(entry.name)
+    return examples
+
+
+def _print_example_list() -> None:
+    examples = _list_examples()
+    if not examples:
+        print("No examples found.")
+        return
+    print("\n".join(examples))
 
 
 def _resolve_build_and_binary(target: str) -> tuple[str, str]:

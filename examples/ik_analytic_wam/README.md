@@ -1,4 +1,4 @@
-# WAM IKFast Example
+# WAM Analytic IK Example
 
 ## Summary
 

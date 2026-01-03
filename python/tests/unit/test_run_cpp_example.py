@@ -18,26 +18,43 @@ def run_cpp_example():
     return module
 
 
-def test_normalize_target_deprecates_raylib_gui(run_cpp_example, capsys):
-    assert run_cpp_example._normalize_target("raylib_gui") == "raylib"
+@pytest.mark.parametrize(
+    ("old_name", "new_name"),
+    [
+        ("raylib_gui", "raylib"),
+        ("atlas_simbicon", "control_walking_humanoid"),
+        ("biped_stand", "control_balance_biped"),
+        ("operational_space_control", "control_operational_space"),
+        ("vehicle", "control_vehicle"),
+        ("wam_ikfast", "ik_analytic_wam"),
+    ],
+)
+def test_normalize_target_deprecates_renames(
+    run_cpp_example, capsys, old_name, new_name
+):
+    assert run_cpp_example._normalize_target(old_name) == new_name
     captured = capsys.readouterr()
-    assert "raylib_gui" in captured.err
-    assert "renamed to `raylib`" in captured.err
-
-
-def test_normalize_target_deprecates_atlas_simbicon(run_cpp_example, capsys):
-    assert (
-        run_cpp_example._normalize_target("atlas_simbicon")
-        == "control_walking_humanoid"
-    )
-    captured = capsys.readouterr()
-    assert "atlas_simbicon" in captured.err
-    assert "control_walking_humanoid" in captured.err
+    assert old_name in captured.err
+    assert new_name in captured.err
 
 
 def test_normalize_target_passthrough(run_cpp_example, capsys):
-    assert run_cpp_example._normalize_target("ik_humanoid") == "ik_humanoid"
+    assert (
+        run_cpp_example._normalize_target("control_balance_biped")
+        == "control_balance_biped"
+    )
     assert capsys.readouterr().err == ""
+
+
+def test_list_examples_filters_cmake_lists(run_cpp_example, tmp_path):
+    (tmp_path / "alpha").mkdir()
+    (tmp_path / "alpha" / "CMakeLists.txt").write_text("cmake_minimum_required")
+    (tmp_path / "beta").mkdir()
+    (tmp_path / "beta" / "README.md").write_text("not a cmake example")
+    (tmp_path / "gamma").mkdir()
+    (tmp_path / "gamma" / "CMakeLists.txt").write_text("cmake_minimum_required")
+
+    assert run_cpp_example._list_examples(tmp_path) == ["alpha", "gamma"]
 
 
 @pytest.mark.parametrize(

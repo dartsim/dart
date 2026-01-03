@@ -39,12 +39,12 @@
 
 ### 04 Control and IK
 
-- `ik_humanoid`
+- `control_balance_biped`
+- `control_operational_space`
+- `control_vehicle`
 - `control_walking_humanoid`
-- `biped_stand`
-- `operational_space_control`
-- `vehicle`
-- `wam_ikfast`
+- `ik_analytic_wam`
+- `ik_humanoid`
 
 ### 05 IO and Models
 

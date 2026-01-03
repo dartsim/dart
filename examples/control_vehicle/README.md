@@ -1,4 +1,4 @@
-# Vehicle Example
+# Vehicle Control Example
 
 ## Summary
 

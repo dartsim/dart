@@ -645,9 +645,9 @@ pixi run check-lint-rst   # Check reStructuredText files
 #### Example/Tutorial Tasks
 
 ```bash
-pixi run ex-hello-world  # Run hello_world example
-pixi run ex-ik-humanoid # Run ik_humanoid example
-pixi run ex-control-walking-humanoid # Run control_walking_humanoid example
+pixi run ex -- --list                 # List C++ examples
+pixi run ex -- hello_world            # Run hello_world example
+pixi run ex -- control_walking_humanoid # Run control_walking_humanoid example
 
 pixi run tu-biped        # Run biped tutorial
 pixi run tu-collisions   # Run collisions tutorial
@@ -660,7 +660,7 @@ pixi run tu-dominoes     # Run dominoes tutorial
 pixi run py-ex-hello-world      # Python hello world
 pixi run py-ex-rigid-cubes      # Python rigid cubes
 pixi run py-ex-drag-and-drop    # Python drag and drop
-pixi run py-ex-operational-space-control
+pixi run py-ex-control-operational-space
 ```
 
 #### Documentation Tasks
