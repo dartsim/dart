@@ -3,7 +3,7 @@
 ## Status
 
 - Active branch: `cpp20/phase9` (based on `main`)
-- Active PR: pending (phase 9 ready; `pixi run lint`, `pixi run test-all` passed)
+- Active PR: https://github.com/dartsim/dart/pull/2380
 - Phase 8 PR: https://github.com/dartsim/dart/pull/2376
 - Phase 7 PR: https://github.com/dartsim/dart/pull/2375
 - CI monitoring and merge handled by the user.
@@ -18,5 +18,5 @@
 
 ## Next
 
-- Push `cpp20/phase9` to origin.
-- Open the phase 9 PR and add the link here.
+- Monitor phase 9 CI/merge (handled by the user).
+- Start Phase 10 from `00_plan.md` (std::ssize) when ready.

@@ -4,15 +4,15 @@ You are resuming the C++20 modernization task in
 Current state:
 
 - Branch: `cpp20/phase9` (based on `main`)
-- Phase 9 PR: pending (`pixi run lint`, `pixi run test-all` passed)
+- Phase 9 PR: https://github.com/dartsim/dart/pull/2380
 - Phase 8 PR: https://github.com/dartsim/dart/pull/2376
 - Phase 7 PR: https://github.com/dartsim/dart/pull/2375
 - CI/merge are handled by the user.
 
 What to do next:
 
-1. Push `cpp20/phase9` to origin.
-2. Open the phase 9 PR and update `docs/dev_tasks/cpp20/01_progress.md`.
+1. Monitor the phase 9 PR CI/merge.
+2. Start Phase 10 from `docs/dev_tasks/cpp20/00_plan.md` (std::ssize).
 
 Workflow requirements:
 
