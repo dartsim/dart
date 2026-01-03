@@ -191,13 +191,14 @@ Errors handleInclude(
 
 //==============================================================================
 std::vector<dynamics::BodyNode*> getBodyNodes(
-    const simulation::World& world, const std::string& name)
+    const simulation::World& world, std::string_view name)
 {
   std::vector<dynamics::BodyNode*> bodyNodes;
+  const std::string nameString(name);
 
   for (std::size_t i = 0; i < world.getNumSkeletons(); ++i) {
     dynamics::SkeletonPtr skel = world.getSkeleton(i);
-    if (dynamics::BodyNode* bodyNode = skel->getBodyNode(name)) {
+    if (dynamics::BodyNode* bodyNode = skel->getBodyNode(nameString)) {
       bodyNodes.push_back(bodyNode);
     }
   }

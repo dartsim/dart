@@ -43,6 +43,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
 namespace dart {
@@ -79,8 +80,8 @@ private:
 class Defaults
 {
 public:
-  bool hasDefault(const std::string& className) const;
-  const Default* getDefault(const std::string& className) const;
+  bool hasDefault(std::string_view className) const;
+  const Default* getDefault(std::string_view className) const;
   const Default* getRootDefault() const;
 
 private:

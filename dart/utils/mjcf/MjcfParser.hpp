@@ -41,6 +41,7 @@
 #include <dart/common/Uri.hpp>
 
 #include <string>
+#include <string_view>
 
 namespace dart {
 namespace utils {
@@ -60,8 +61,8 @@ struct DART_UTILS_API Options
   /// Constructor
   Options(
       const common::ResourceRetrieverPtr& retrieverOrNullptr = nullptr,
-      const std::string& geomSkeletonNamePrefix = "__geom_skel__",
-      const std::string& siteSkeletonNamePrefix = "__site_skel__");
+      std::string_view geomSkeletonNamePrefix = "__geom_skel__",
+      std::string_view siteSkeletonNamePrefix = "__site_skel__");
 };
 
 /// Reads World from MJCF model file

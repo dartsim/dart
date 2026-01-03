@@ -52,6 +52,7 @@
 
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace urdf {
@@ -157,21 +158,21 @@ public:
   /// specify as the package directory will end up replacing the 'package
   /// keyword' and 'package name' components of the URI string.
   void addPackageDirectory(
-      const std::string& packageName, const std::string& packageDirectory);
+      std::string_view packageName, std::string_view packageDirectory);
 
   /// Parse a file to produce a Skeleton
   dynamics::SkeletonPtr parseSkeleton(const common::Uri& uri);
 
   /// Parse a text string to produce a Skeleton
   dynamics::SkeletonPtr parseSkeletonString(
-      const std::string& urdfString, const common::Uri& baseUri);
+      std::string_view urdfString, const common::Uri& baseUri);
 
   /// Parse a file to produce a World
   dart::simulation::WorldPtr parseWorld(const common::Uri& uri);
 
   /// Parse a text string to produce a World
   dart::simulation::WorldPtr parseWorldString(
-      const std::string& urdfString, const common::Uri& baseUri);
+      std::string_view urdfString, const common::Uri& baseUri);
 
 private:
   using BodyPropPtr = std::shared_ptr<dynamics::BodyNode::Properties>;
@@ -200,7 +201,7 @@ private:
       const urdf::Link* _lk);
 
   static std::vector<TransmissionInfo> parseTransmissions(
-      const std::string& urdfString);
+      std::string_view urdfString);
 
   static void applyTransmissions(
       const std::vector<TransmissionInfo>& transmissions,

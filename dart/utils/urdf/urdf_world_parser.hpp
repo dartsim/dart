@@ -44,6 +44,7 @@
 #include <dart/common/Uri.hpp>
 
 #include <string>
+#include <string_view>
 
 namespace dart {
 namespace utils {
@@ -74,8 +75,8 @@ public:
 };
 
 std::shared_ptr<World> parseWorldURDF(
-    const std::string& xml_string,
-    const dart::common::Uri& _baseUri,
+    std::string_view xmlString,
+    const dart::common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
 } // namespace urdf_parsing
