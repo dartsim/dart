@@ -41,6 +41,7 @@
   robot implementations for Atlas, G1, and Hubo.
 - Removed `ik_atlas`, `ik_g1`, and `ik_hubo` example directories after
   consolidation into `ik_humanoid`.
+- Moved humanoid robot implementations under `examples/ik_humanoid/robots/`.
 
 ## Current Suggestions (Pending Decisions)
 

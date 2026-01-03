@@ -15,7 +15,7 @@ endif()
 find_package(DART 7.0.0 REQUIRED COMPONENTS ${required_components} CONFIG)
 find_package(CLI11 2.4 CONFIG REQUIRED)
 
-file(GLOB srcs "*.cpp" "*.hpp")
+file(GLOB srcs "*.cpp" "*.hpp" "robots/*.cpp" "robots/*.hpp")
 add_executable(${example_name} ${srcs})
 target_link_libraries(${example_name} PUBLIC ${required_libraries})
 target_link_libraries(${example_name} PRIVATE CLI11::CLI11)

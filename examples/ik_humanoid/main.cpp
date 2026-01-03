@@ -1,12 +1,12 @@
+#include "robots/atlas.hpp"
+#include "robots/g1.hpp"
+#include "robots/hubo.hpp"
+
 #include <CLI/CLI.hpp>
 
 #include <iostream>
 #include <string>
 #include <vector>
-
-#include "atlas.hpp"
-#include "g1.hpp"
-#include "hubo.hpp"
 
 namespace {
 
