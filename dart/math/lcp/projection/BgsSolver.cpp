@@ -37,6 +37,7 @@
 #include "dart/math/lcp/pivoting/DirectSolver.hpp"
 
 #include <algorithm>
+#include <iterator>
 #include <limits>
 #include <numeric>
 #include <string>
@@ -88,7 +89,7 @@ bool buildBlockData(
     BlockData& block,
     std::string* message)
 {
-  const int m = static_cast<int>(indices.size());
+  const auto m = std::ssize(indices);
   if (m == 0) {
     if (message)
       *message = "Block size must be positive";
@@ -138,7 +139,7 @@ bool buildBlocks(
     std::vector<BlockData>& blocks,
     std::string* message)
 {
-  const int n = static_cast<int>(b.size());
+  const auto n = std::ssize(b);
   blocks.clear();
   if (n == 0)
     return true;
@@ -261,7 +262,7 @@ LcpResult BgsSolver::solve(
   const auto& hi = problem.hi;
   const auto& findex = problem.findex;
 
-  const int n = static_cast<int>(b.size());
+  const auto n = std::ssize(b);
   if (n == 0) {
     x.resize(0);
     result.status = LcpSolverStatus::Success;
@@ -358,7 +359,7 @@ LcpResult BgsSolver::solve(
     iterationsUsed = iter + 1;
 
     for (const auto& block : blocks) {
-      const int m = static_cast<int>(block.indices.size());
+      const auto m = std::ssize(block.indices);
       Eigen::VectorXd xBlock(m);
       for (int r = 0; r < m; ++r)
         xBlock[r] = x[block.indices[r]];

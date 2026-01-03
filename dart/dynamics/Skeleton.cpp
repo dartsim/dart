@@ -48,6 +48,7 @@
 #include "dart/math/Helpers.hpp"
 
 #include <algorithm>
+#include <iterator>
 #include <queue>
 #include <span>
 #include <string>
@@ -547,8 +548,7 @@ MetaSkeletonPtr Skeleton::cloneMetaSkeleton(const std::string& cloneName) const
 //==============================================================================
 #define SET_CONFIG_VECTOR(V)                                                   \
   if (configuration.m##V.size() > 0) {                                         \
-    if (static_cast<int>(configuration.mIndices.size())                        \
-        != configuration.m##V.size()) {                                        \
+    if (std::ssize(configuration.mIndices) != configuration.m##V.size()) {     \
       DART_ERROR(                                                              \
           "Mismatch in size of vector [{}] "                                   \
           "(expected {} | found {})",                                          \
