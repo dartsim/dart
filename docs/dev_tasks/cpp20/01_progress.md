@@ -2,9 +2,11 @@
 
 ## Status
 
-- Active branch: `cpp20/phase7` (based on `main`)
+- Active branch: `cpp20/phase9` (based on `main`)
+- Active PR: pending (phase 9 not opened yet)
+- Phase 8 PR: https://github.com/dartsim/dart/pull/2376
 - Phase 7 PR: https://github.com/dartsim/dart/pull/2375
-- Phase 7: in progress (span-first read-only inputs)
+- CI monitoring and merge handled by the user.
 
 ## Completed
 
@@ -16,12 +18,6 @@
 
 ## Next
 
-- Keep the PR up to date with `main` (resolve conflicts and push).
+- Execute Phase 9 from `00_plan.md` (container membership `.contains`).
 - Run `pixi run lint` before each commit.
-- Run `pixi run test-all` before opening the phase PR.
-
-## Notes
-
-- Phase 7 updates so far: span inputs for Group/CollisionGroup/Recording,
-  CloneableVector, ReferentialSkeleton helpers, Skeleton setAllMemberObjectData,
-  and IkFast dof map validation.
+- Run `pixi run test-all` before opening the phase 9 PR.
