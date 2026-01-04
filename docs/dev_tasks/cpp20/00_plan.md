@@ -122,3 +122,10 @@
 - Keep owning `std::string` copies only where needed (Assimp C API).
 - Finish remaining resource-retriever configuration helpers (package/schema
   directories, read options) with `std::string_view` inputs.
+
+### Phase 22: Requires/concepts for constraints
+
+- Replace `std::enable_if` constraints in math helpers with C++20 `requires`
+  clauses or concepts.
+- Modernize math/random helper specializations and ODE heightmap overloads to
+  use constrained templates without dummy SFINAE parameters.

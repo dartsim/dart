@@ -36,6 +36,7 @@
 
 #include <dart/dynamics/HeightmapShape.hpp>
 
+#include <concepts>
 #include <type_traits>
 
 namespace dart {
@@ -47,13 +48,13 @@ namespace detail {
 //==============================================================================
 // creates the ODE height field. Only enabled if the height data type is float.
 template <class S>
+  requires std::same_as<S, float>
 void setOdeHeightfieldDetails(
     const dHeightfieldDataID odeHeightfieldId,
     const S* heights,
     const std::size_t& width,
     const std::size_t& height,
-    const Eigen::Matrix<S, 3, 1>& scale,
-    typename std::enable_if<std::is_same<float, S>::value>::type* = 0)
+    const Eigen::Matrix<S, 3, 1>& scale)
 {
   DART_ASSERT(width >= 2);
   DART_ASSERT(height >= 2);
@@ -82,13 +83,13 @@ void setOdeHeightfieldDetails(
 //==============================================================================
 // creates the ODE height field. Only enabled if the height data type is double.
 template <class S>
+  requires std::same_as<S, double>
 void setOdeHeightfieldDetails(
     const dHeightfieldDataID odeHeightfieldId,
     const S* heights,
     const std::size_t& width,
     const std::size_t& height,
-    const Eigen::Matrix<S, 3, 1>& scale,
-    typename std::enable_if<std::is_same<double, S>::value>::type* = 0)
+    const Eigen::Matrix<S, 3, 1>& scale)
 {
   DART_ASSERT(width >= 2);
   DART_ASSERT(height >= 2);
