@@ -127,6 +127,6 @@ Otherwise, prefer using the underlying parser API directly.
 
 ## Notes about Python
 
-The consolidated API is currently for **C++** (`dart::io`). The Python bindings
-(`dartpy`) do not currently expose a matching `dart.io` module; Python tutorials and
-examples should continue to use the existing `dart.utils.*` parsers.
+The consolidated API is primarily for **C++** (`dart::io`). However, the Python bindings
+(`dartpy`) also expose parsers under `dart.io` (e.g. `dart.io.UrdfParser`). The legacy
+`dart.utils.*` parsers are deprecated and should be avoided in new code.

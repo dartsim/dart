@@ -94,9 +94,7 @@ def add_body(chain, parent, name):
 
     # Line up the cylinder with the Joint axis
     tf = dart.math.Isometry3()
-    angles = [math.pi / 2, 0, 0]
-
-    rot = dart.math.eulerXYZToMatrix(angles)
+    rot = dart.math.euler_xyz_to_matrix(angles)
     tf.set_rotation(rot)
 
     shape_node = body.createShapeNode(cylinder)

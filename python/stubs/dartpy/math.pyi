@@ -4,7 +4,7 @@ Bindings for Eigen geometric types.
 from __future__ import annotations
 import numpy
 import typing
-__all__: list[str] = ['AngleAxis', 'Isometry3', 'Quaternion', 'Random', 'eulerXYXToMatrix', 'eulerXYZToMatrix', 'eulerXZXToMatrix', 'eulerXZYToMatrix', 'eulerYXYToMatrix', 'eulerYXZToMatrix', 'eulerYZXToMatrix', 'eulerYZYToMatrix', 'eulerZXYToMatrix', 'eulerZXZToMatrix', 'eulerZYXToMatrix', 'eulerZYZToMatrix', 'expAngular', 'expMap', 'expMapJac', 'expMapRot', 'expToQuat', 'matrixToEulerXYX', 'matrixToEulerXYZ', 'matrixToEulerXZY', 'matrixToEulerYXZ', 'matrixToEulerYZX', 'matrixToEulerZXY', 'matrixToEulerZYX', 'quatToExp', 'verifyRotation', 'verifyTransform']
+__all__: list[str] = ['AngleAxis', 'Isometry3', 'Quaternion', 'Random', 'eulerXYXToMatrix', 'eulerXYZToMatrix', 'eulerXZXToMatrix', 'eulerXZYToMatrix', 'eulerYXYToMatrix', 'eulerYXZToMatrix', 'eulerYZXToMatrix', 'eulerYZYToMatrix', 'eulerZXYToMatrix', 'eulerZXZToMatrix', 'eulerZYXToMatrix', 'eulerZYZToMatrix', 'expAngular', 'expMap', 'expMapJac', 'expMapRot', 'expToQuat', 'matrixToEulerXYX', 'matrixToEulerXYZ', 'matrixToEulerXZY', 'matrixToEulerYXZ', 'matrixToEulerYZX', 'matrixToEulerZXY', 'matrixToEulerZYX', 'quatToExp', 'verifyRotation', 'verifyTransform', 'euler_xyz_to_matrix']
 class AngleAxis:
     """
     Bindings for Eigen::AngleAxis<>.
@@ -227,4 +227,6 @@ def quatToExp(q: Quaternion) -> numpy.ndarray[tuple[typing.Literal[3], typing.Li
 def verifyRotation(R: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[3]], numpy.dtype[numpy.float64]]) -> bool:
     ...
 def verifyTransform(T: Isometry3) -> bool:
+    ...
+def euler_xyz_to_matrix(angle: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]) -> numpy.ndarray[tuple[typing.Literal[3], typing.Literal[3]], numpy.dtype[numpy.float64]]:
     ...

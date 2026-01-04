@@ -85,7 +85,10 @@ def setup_ring(ring: dart.dynamics.Skeleton):
 
     for i in range(1, ring.getNumJoints()):
         joint = ring.getJoint(i)
-        rotation = dart.math.eulerXYZToMatrix([0.0, angle, 0.0])
+    # Rotate the shape
+    rotation = dart.math.euler_xyz_to_matrix([0.0, angle, 0.0])
+    tf = dart.math.Isometry3()
+    tf.set_rotation(rotation)
         rest = dart.dynamics.BallJoint.convertToPositions(rotation)
         for axis in range(3):
             joint.setRestPosition(axis, rest[axis])

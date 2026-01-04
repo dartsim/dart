@@ -304,7 +304,7 @@ def add_body(pendulum: dart.dynamics.Skeleton, parent, name: str):
     cylinder = dart.dynamics.CylinderShape(r, h)
 
     tf = dart.math.Isometry3()
-    rot = dart.math.eulerXYZToMatrix([math.pi / 2.0, 0.0, 0.0])
+    rot = dart.math.euler_xyz_to_matrix([math.pi / 2.0, 0.0, 0.0])
     tf.set_rotation(rot)
 
     shape_node = body.createShapeNode(cylinder)
