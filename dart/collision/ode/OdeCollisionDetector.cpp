@@ -564,10 +564,8 @@ bool expandBoxCylinderContact(
   if (contacts.empty())
     return false;
 
-  const double perContactDepth
-      = baseContact.penetrationDepth / static_cast<double>(contacts.size());
   for (auto& contact : contacts) {
-    contact.penetrationDepth = perContactDepth;
+    contact.penetrationDepth = baseContact.penetrationDepth;
     result.addContact(contact);
     if (result.getNumContacts() >= option.maxNumContacts)
       return true;
