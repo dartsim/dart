@@ -789,7 +789,9 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
       triangles.clear();
       if (!dart::math::detail::triangulateFaceEarClipping(
-              polygon, vertices, triangles)) {
+              std::span<const std::size_t>{polygon},
+              std::span<const Eigen::Vector3d>{vertices},
+              triangles)) {
         const std::size_t v0 = polygon[0];
         for (std::size_t j = 1; j + 1 < polygon.size(); ++j) {
           elements[2]->push_back(v0);
