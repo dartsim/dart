@@ -61,6 +61,7 @@
 
 #include <Eigen/Core>
 
+#include <span>
 #include <vector>
 
 namespace dart::math::detail {
@@ -104,14 +105,13 @@ namespace dart::math::detail {
 /// };
 /// std::vector<int> faces;
 /// int numFaces = 0;
-/// convexHull3dBuild(vertices, faces, numFaces);
+/// convexHull3dBuild(std::span<const Eigen::Vector3d>(vertices), faces,
+/// numFaces);
 /// // Result: 4 faces (tetrahedron), 12 indices total
 /// ```
-template <
-    typename S,
-    typename VertexAllocator = std::allocator<Eigen::Vector3<S>>>
+template <typename S>
 void convexHull3dBuild(
-    const std::vector<Eigen::Vector3<S>, VertexAllocator>& inVertices,
+    std::span<const Eigen::Vector3<S>> inVertices,
     std::vector<int>& outFaces,
     int& numOutFaces);
 
