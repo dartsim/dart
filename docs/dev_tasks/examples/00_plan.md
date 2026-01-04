@@ -53,6 +53,79 @@
   targets and `pixi run ex -- <example>` to run them.
 - Moved `simple_frames` under Rigid Bodies and Frames in the examples index and
   fixed the example render path by attaching visual aspects to the frames.
+- Adopted example naming prefixes by category (e.g., `control_*`, `ik_*`) and
+  will apply the pattern across the remaining sections.
+
+## Naming Prefix Plan
+
+### 00 Getting Started
+
+- `hello_world` (no change)
+
+### 01 Rigid Bodies and Frames
+
+- `simple_frames` -> `frame_hierarchy`
+- `boxes` -> `rigid_boxes`
+- `hardcoded_design` -> `rigid_hardcoded_design`
+- `rigid_cubes` -> `rigid_cubes` (no change)
+
+### 02 Joints and Constraints
+
+- `coupler_constraint` -> `joint_coupler`
+- `free_joint_cases` -> `joint_free_cases`
+- `human_joint_limits` -> `joint_human_limits`
+- `joint_constraints` -> `joint_constraints` (no change)
+- `lcp_solvers` -> `joint_lcp_solvers`
+- `mimic_pendulums` -> `joint_mimic_pendulums`
+- `rigid_chain` -> `joint_chain`
+- `rigid_loop` -> `joint_loop`
+
+### 03 Collisions and Contacts
+
+- `box_stacking` -> `collision_box_stacking`
+- `capsule_ground_contact` -> `collision_capsule_ground_contact`
+- `heightmap` -> `collision_heightmap`
+- `rigid_shapes` -> `collision_rigid_shapes`
+
+### 04 Control and IK
+
+- `control_balance_biped` (no change)
+- `control_operational_space` (no change)
+- `control_vehicle` (no change)
+- `control_walking_humanoid` (no change)
+- `ik_analytic_wam` (no change)
+- `ik_humanoid` (no change)
+
+### 05 IO and Models
+
+- `fetch` -> `model_fetch`
+- `unified_loading` -> `io_unified_loading`
+
+### 06 Soft and Hybrid
+
+- `hybrid_dynamics` (no change)
+- `mixed_chain` -> `hybrid_mixed_chain`
+- `soft_bodies` (no change)
+
+### 07 Visualization and Interaction
+
+- `add_delete_skels` -> `viz_add_delete_skels`
+- `drag_and_drop` -> `viz_drag_and_drop`
+- `empty` -> `viz_empty`
+- `imgui` -> `viz_imgui`
+- `polyhedron_visual` -> `viz_polyhedron_visual`
+- `raylib` -> `viz_raylib`
+- `simulation_event_handler` -> `viz_simulation_event_handler`
+- `tinkertoy` -> `viz_tinkertoy`
+
+### 08 Performance and Scaling
+
+- `headless_simulation` -> `perf_headless_simulation`
+
+### 09 Integration and Tools
+
+- `csv_logger` -> `tool_csv_logger`
+- `point_cloud` -> `tool_point_cloud`
 
 ## Current Suggestions (Pending Decisions)
 

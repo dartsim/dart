@@ -4,11 +4,11 @@ project(dart-examples)
 
 # Getting started examples
 add_subdirectory(hello_world)
-add_subdirectory(simple_frames)
+add_subdirectory(frame_hierarchy)
 
 # Rigid bodies and frames examples
-add_subdirectory(boxes)
-add_subdirectory(hardcoded_design)
+add_subdirectory(rigid_boxes)
+add_subdirectory(rigid_hardcoded_design)
 add_subdirectory(rigid_cubes)
 
 # Joints and constraints examples

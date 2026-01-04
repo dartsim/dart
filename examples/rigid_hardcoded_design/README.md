@@ -1,4 +1,4 @@
-# Hardcoded Design Example
+# Rigid Hardcoded Design Example
 
 ## Summary
 
@@ -23,6 +23,6 @@ From this directory:
 
 Launch the executable from the build directory above:
 
-    $ ./hardcoded_design
+    $ ./rigid_hardcoded_design
 
 Follow the instructions detailed in the console.

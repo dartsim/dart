@@ -1,4 +1,4 @@
-# Boxes Example
+# Rigid Boxes Example
 
 ## Summary
 

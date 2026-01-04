@@ -1,4 +1,4 @@
-# Simple Frames Example
+# Frame Hierarchy Example
 
 ## Summary
 
@@ -25,8 +25,9 @@ Launch the executable from the build directory above:
 
     $ ./{generated_executable}
 
-This example demonstrates how to create and visualize simple frames using the OSG
-renderer in DART. It shows various geometric shapes (boxes, ellipsoids, arrows)
+This example demonstrates how to create and visualize a frame hierarchy using
+the OSG renderer in DART. It shows various geometric shapes (boxes, ellipsoids,
+arrows)
 attached to different coordinate frames with different transformations applied.
 
 Key features demonstrated:

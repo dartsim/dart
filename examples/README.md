@@ -14,9 +14,9 @@
 
 ### 01 Rigid Bodies and Frames
 
-- `simple_frames`
-- `boxes`
-- `hardcoded_design`
+- `frame_hierarchy`
+- `rigid_boxes`
+- `rigid_hardcoded_design`
 - `rigid_cubes`
 
 ### 02 Joints and Constraints
