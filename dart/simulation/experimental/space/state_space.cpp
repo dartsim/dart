@@ -55,11 +55,12 @@ StateSpace& StateSpace::addVariable(
   }
 
   if (lower > upper) {
-    throw std::invalid_argument(std::format(
-        "Variable '{}': lower bound ({}) > upper bound ({})",
-        name,
-        lower,
-        upper));
+    throw std::invalid_argument(
+        std::format(
+            "Variable '{}': lower bound ({}) > upper bound ({})",
+            name,
+            lower,
+            upper));
   }
 
   Variable var;
@@ -77,7 +78,7 @@ StateSpace& StateSpace::addVariable(
 }
 
 StateSpace& StateSpace::addVariables(
-    const std::vector<std::string>& names, double lower, double upper)
+    std::span<const std::string> names, double lower, double upper)
 {
   for (const auto& name : names) {
     addVariable(name, 1, lower, upper);

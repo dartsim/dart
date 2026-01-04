@@ -356,8 +356,9 @@ void CollisionGroup::ShapeFrameObserver::addShapeFrame(
     const dynamics::ShapeFrame* shapeFrame)
 {
   addSubject(shapeFrame);
-  mMap.insert(std::make_pair(
-      static_cast<const common::Subject*>(shapeFrame), shapeFrame));
+  mMap.insert(
+      std::make_pair(
+          static_cast<const common::Subject*>(shapeFrame), shapeFrame));
 }
 
 //==============================================================================

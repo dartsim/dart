@@ -549,8 +549,13 @@ int main(int argc, char* argv[])
   viewer->setCameraManipulator(viewer->getCameraManipulator());
 
   viewer->simulate(true);
-  viewer->getImGuiHandler()->addWidget(std::make_shared<MimicOverlay>(
-      viewer.get(), world, std::move(mimicPairs), worldUri, SolverConfig{}));
+  viewer->getImGuiHandler()->addWidget(
+      std::make_shared<MimicOverlay>(
+          viewer.get(),
+          world,
+          std::move(mimicPairs),
+          worldUri,
+          SolverConfig{}));
 
   if (!viewer->isRealized())
     viewer->realize();

@@ -928,9 +928,9 @@ TEST_F(Collision, testConeCone)
 
 #if DART_HAVE_ODE
   {
-      // SCOPED_TRACE("OdeCollisionDetector");
-      // auto ode = OdeCollisionDetector::create();
-      // testConeCone(ode);
+    // SCOPED_TRACE("OdeCollisionDetector");
+    // auto ode = OdeCollisionDetector::create();
+    // testConeCone(ode);
   }
 #endif
 

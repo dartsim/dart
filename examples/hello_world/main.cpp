@@ -56,8 +56,11 @@ int main()
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(
       std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.3, 0.3, 0.3)));
-  body->setInertia(dynamics::Inertia(
-      1, Eigen::Vector3d::Zero(), shapeNode->getShape()->computeInertia(1.0)));
+  body->setInertia(
+      dynamics::Inertia(
+          1,
+          Eigen::Vector3d::Zero(),
+          shapeNode->getShape()->computeInertia(1.0)));
   shapeNode->getVisualAspect()->setColor(dart::Color::Blue());
 
   // Create ground

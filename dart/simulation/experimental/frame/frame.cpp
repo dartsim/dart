@@ -90,10 +90,10 @@ namespace dart::simulation::experimental {
 //==============================================================================
 Frame::Frame(entt::entity entity, World* world)
   : EntityObjectWith<
-      TagComps<comps::FrameTag>,
-      ReadOnlyComps<>,
-      WriteOnlyComps<>,
-      ReadWriteComps<comps::FrameState, comps::FrameCache>>()
+        TagComps<comps::FrameTag>,
+        ReadOnlyComps<>,
+        WriteOnlyComps<>,
+        ReadWriteComps<comps::FrameState, comps::FrameCache>>()
 {
   // Initialize base EntityObject with entity/world
   // Virtual inheritance requires explicit initialization

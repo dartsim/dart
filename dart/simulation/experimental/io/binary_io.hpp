@@ -38,6 +38,7 @@
 #include <entt/entt.hpp>
 
 #include <iostream>
+#include <span>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -134,9 +135,9 @@ void DART_EXPERIMENTAL_API readMatrixXd(std::istream& in, Eigen::MatrixXd& mat);
 // Container I/O
 //==============================================================================
 
-// Write std::vector of POD types to binary stream (size-prefixed)
+// Write a POD span to binary stream (size-prefixed)
 template <typename T>
-void writeVector(std::ostream& out, const std::vector<T>& vec)
+void writeVector(std::ostream& out, std::span<const T> vec)
 {
   static_assert(
       std::is_trivially_copyable_v<T>,
