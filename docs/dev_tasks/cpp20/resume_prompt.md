@@ -26,7 +26,7 @@ What to do next:
 
 1. Monitor PRs #2384, #2385, #2387, #2390, #2393, #2394, #2397, #2398, and
    #2399 for CI/review feedback.
-2. Start the next phase after Phase 19 lands (update
+2. Start next phase after Phase 19 lands (update
    `docs/dev_tasks/cpp20/00_plan.md` if a new phase is added).
 3. Keep `docs/dev_tasks/cpp20/01_progress.md` current.
 
