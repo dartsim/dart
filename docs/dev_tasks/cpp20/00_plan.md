@@ -104,3 +104,9 @@
   `SharedLibrary` and `SharedLibraryManager`.
 - Avoid extra copies beyond those needed for OS APIs (e.g., null-terminated
   strings).
+
+### Phase 19: Resource retriever string views
+
+- Switch resource-retriever configuration inputs (schema names, package paths,
+  data directories) to `std::string_view`.
+- Keep storage in `std::string` for registries and directory lists.

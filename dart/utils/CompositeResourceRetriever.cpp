@@ -43,32 +43,33 @@ namespace utils {
 
 //==============================================================================
 void CompositeResourceRetriever::addDefaultRetriever(
-    const common::ResourceRetrieverPtr& _resourceRetriever)
+    const common::ResourceRetrieverPtr& resourceRetriever)
 {
-  mDefaultResourceRetrievers.push_back(_resourceRetriever);
+  mDefaultResourceRetrievers.push_back(resourceRetriever);
 }
 
 //==============================================================================
 bool CompositeResourceRetriever::addSchemaRetriever(
-    const std::string& _schema,
-    const common::ResourceRetrieverPtr& _resourceRetriever)
+    std::string_view schema,
+    const common::ResourceRetrieverPtr& resourceRetriever)
 {
-  if (!_resourceRetriever) {
+  if (!resourceRetriever) {
     DART_ERROR(
         "{}", "Received nullptr ResourceRetriever; skipping this entry.\n");
     return false;
   }
 
-  if (_schema.find("://") != std::string::npos) {
+  if (schema.find("://") != std::string_view::npos) {
     DART_ERROR(
         "Schema '{}{}",
-        _schema,
+        schema,
         "' contains '://'. Did you mistakenly include the '://' in the input "
         "of this function?\n");
     return false;
   }
 
-  mResourceRetrievers[_schema].push_back(_resourceRetriever);
+  const std::string schemaString(schema);
+  mResourceRetrievers[schemaString].push_back(resourceRetriever);
   return true;
 }
 

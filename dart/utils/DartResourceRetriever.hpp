@@ -37,6 +37,7 @@
 
 #include <dart/common/ResourceRetriever.hpp>
 
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -89,7 +90,7 @@ public:
   std::string getFilePath(const common::Uri& uri) override;
 
 private:
-  void addDataDirectory(const std::string& packageDirectory);
+  void addDataDirectory(std::string_view dataDirectory);
 
   bool resolveDataUri(const common::Uri& uri, std::string& relativePath) const;
 
