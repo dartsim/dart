@@ -37,6 +37,7 @@ pip install dist/dartpy-*.whl
 ## Critical Architecture Patterns
 
 ### 1. Nanobind Binding Structure
+
 ```cpp
 // Correct: Modern nanobind pattern
 #include <nanobind/nanobind.h>
@@ -55,6 +56,7 @@ NB_MODULE(dartpy, m) {
 ```
 
 ### 2. Memory Management and Lifetime
+
 ```cpp
 // Correct: Smart pointer handling
 .def("createSkeleton", []() {
@@ -68,6 +70,7 @@ NB_MODULE(dartpy, m) {
 ```
 
 ### 3. Eigen Integration
+
 ```cpp
 // Correct: Use nanobind's Eigen integration
 .def("getPositions", &Skeleton::getPositions)  // Automatically handles Eigen->NumPy
@@ -82,6 +85,7 @@ NB_MODULE(dartpy, m) {
 ## When to Modify This Module
 
 ### Add New C++ Class to Python
+
 1. **Include header**: Add `#include <new_class.hpp>`
 2. **Add binding**: Use nanobind syntax in appropriate module file
 3. **Handle constructors**: Bind all relevant constructors
@@ -90,6 +94,7 @@ NB_MODULE(dartpy, m) {
 6. **Update tests**: Add Python tests for new functionality
 
 ### Update for C++ API Changes
+
 1. **Check breaking changes**: Method signatures, class hierarchy
 2. **Update bindings**: Modify nanobind calls to match new API
 3. **Handle deprecated methods**: Maintain backward compatibility if needed
@@ -97,6 +102,7 @@ NB_MODULE(dartpy, m) {
 5. **Update documentation**: Python docstrings and examples
 
 ### Add New Python Module
+
 1. **Create source file**: `python/dartpy/src/new_module.cpp`
 2. **Add to CMake**: Update `python/dartpy/CMakeLists.txt`
 3. **Register module**: Add to `NB_MODULE` declarations
@@ -106,6 +112,7 @@ NB_MODULE(dartpy, m) {
 ## Common Pitfalls to Avoid
 
 ### ❌ Memory Management Errors
+
 ```cpp
 // Wrong: Returning references to temporary objects
 .def("getJoint", [](Skeleton* skel, size_t index) {
@@ -119,6 +126,7 @@ NB_MODULE(dartpy, m) {
 ```
 
 ### ❌ Incorrect Exception Handling
+
 ```cpp
 // Wrong: C++ exceptions not translated
 .def("riskyOperation", [](Object* obj) {
@@ -134,6 +142,7 @@ NB_MODULE(dartpy, m) {
 ```
 
 ### ❌ Type Conversion Issues
+
 ```cpp
 // Wrong: Manual type handling
 .def("setMatrix", [](Skeleton* skel, py::handle obj) {
@@ -150,6 +159,7 @@ NB_MODULE(dartpy, m) {
 ## Nanobind-Specific Features
 
 ### 1. Automatic Eigen Integration
+
 ```cpp
 // Eigen dense matrices/vectors
 .def("getPosition", &Skeleton::getPosition)  // Returns NumPy array
@@ -160,6 +170,7 @@ NB_MODULE(dartpy, m) {
 ```
 
 ### 2. Enum Handling
+
 ```cpp
 // Correct enum binding
 nb::enum_<Joint::Type>(m, "JointType")
@@ -169,6 +180,7 @@ nb::enum_<Joint::Type>(m, "JointType")
 ```
 
 ### 3. STL Container Support
+
 ```cpp
 // Automatic STL to Python list conversion
 .def("getJointNames", &Skeleton::getJointNames)  // Returns list of strings
@@ -180,6 +192,7 @@ nb::enum_<Joint::Type>(m, "JointType")
 ## Testing Requirements
 
 ### Before Submitting Changes:
+
 1. **Python Unit Tests**: `pixi run test --filter python`
 2. **Integration Tests**: `pixi run test --filter integration/python`
 3. **Import Tests**: Verify `import dartpy` works
@@ -187,6 +200,7 @@ nb::enum_<Joint::Type>(m, "JointType")
 5. **Documentation Tests**: Ensure docstrings are accurate
 
 ### Test Categories:
+
 - **Basic functionality**: Import, create objects, call methods
 - **Type conversions**: NumPy/Eigen handling
 - **Error handling**: Python exceptions vs C++ crashes
@@ -196,16 +210,19 @@ nb::enum_<Joint::Type>(m, "JointType")
 ## Integration Points
 
 ### With C++ Modules:
+
 - **API synchronization**: Changes in `dart/` require binding updates
 - **Template instantiation**: Some templates need explicit Python bindings
 - **Aspect system**: Expose Aspect-related functionality
 
 ### With Build System:
+
 - **CMake integration**: Proper linking with DART libraries
 - **Dependency management**: Handle nanobind and Eigen integration
 - **Platform differences**: Windows/Linux/macOS specific issues
 
 ### With Package Distribution:
+
 - **PyPI packaging**: Build wheels for distribution
 - **Conda packaging**: Integration with conda-forge
 - **Development install**: `pip install -e` for development
@@ -213,6 +230,7 @@ nb::enum_<Joint::Type>(m, "JointType")
 ## Performance Considerations
 
 ### 1. Minimize Python/C++ Transitions
+
 ```python
 # Wrong: Many small calls
 for i in range(1000):
@@ -224,6 +242,7 @@ skel.setJointPositions(positions)  # Single C++ call
 ```
 
 ### 2. Use Numpy Arrays Efficiently
+
 ```python
 # Wrong: Unnecessary copying
 positions = skel.getPositions()  # Copies array
@@ -236,6 +255,7 @@ positions[0] = new_value  # Modifies in-place if supported
 ```
 
 ### 3. Memory Concurrency
+
 ```python
 # Wrong: Long-running operation blocks GIL
 result = skel.computationHeavyOperation()  # Blocks all Python threads
@@ -261,4 +281,4 @@ result = skel.computationHeavyOperation nogil=True)  # If supported
 
 ---
 
-*Remember: Python bindings are the primary interface for many DART users. Maintain API consistency and robust error handling.*
+_Remember: Python bindings are the primary interface for many DART users. Maintain API consistency and robust error handling._

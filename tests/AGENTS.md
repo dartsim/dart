@@ -40,6 +40,7 @@ pixi run coverage --report
 ## Test Architecture
 
 ### 1. Test Hierarchy
+
 ```
 tests/
 ├── unit/                    # Isolated component tests
@@ -61,6 +62,7 @@ tests/
 ```
 
 ### 2. Test Naming Conventions
+
 ```cpp
 // Unit test naming: [ModuleName]Test[FeatureName]
 TEST(CollisionTest, BroadPhaseFiltering) {
@@ -81,6 +83,7 @@ BENCHMARK(DynamicsBenchmark, ForwardKinematics) {
 ## Critical Testing Patterns
 
 ### 1. Fixtures and Setup
+
 ```cpp
 // Correct: Use test fixtures for common setup
 class SkeletonTest : public ::testing::Test {
@@ -89,7 +92,7 @@ protected:
         skeleton = Skeleton::create();
         // Add standard test configuration
     }
-    
+
     SkeletonPtr skeleton;
 };
 
@@ -99,35 +102,37 @@ TEST_F(SkeletonTest, JointLimitEnforcement) {
 ```
 
 ### 2. Performance Testing
+
 ```cpp
 // Correct: Benchmark with realistic complexity
 BENCHMARK(DynamicsBenchmark, LargeSkeletonForwardDynamics) {
     auto skeleton = createLargeSkeleton(1000);  // Realistic size
     skeleton->setRandomPositions();
-    
+
     auto start = std::chrono::high_resolution_clock::now();
     skeleton->computeForwardDynamics();
     auto end = std::chrono::high_resolution_clock::now();
-    
+
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     ASSERT_LT(duration.count(), 1000);  // Should complete in < 1ms
 }
 ```
 
 ### 3. Integration Test Patterns
+
 ```cpp
 // Correct: Full workflow testing
 TEST(WorldSimulationIntegrationTest, CompleteSimulationCycle) {
     // Load a complex robot
     auto world = dart::io::readWorld("atlas_puppet/robot.urdf");
     ASSERT_NE(world, nullptr);
-    
+
     // Run simulation for multiple timesteps
     for (int i = 0; i < 1000; ++i) {
         world->step();
         ASSERT_NO_FATAL_FAILURE(world->validateState());
     }
-    
+
     // Verify expected behavior
     EXPECT_GT(world->getTime(), 0.0);
     EXPECT_FALSE(world->hasErrors());
@@ -137,6 +142,7 @@ TEST(WorldSimulationIntegrationTest, CompleteSimulationCycle) {
 ## When to Modify This Module
 
 ### Add New Unit Tests
+
 1. **Create test file** in appropriate `tests/unit/` subdirectory
 2. **Follow naming convention**: `[Module]Test[Feature]`
 3. **Use test fixtures** for common setup
@@ -144,6 +150,7 @@ TEST(WorldSimulationIntegrationTest, CompleteSimulationCycle) {
 5. **Add to CMake**: Update `tests/CMakeLists.txt`
 
 ### Add Integration Tests
+
 1. **Identify user workflow**: Complete end-to-end scenario
 2. **Use real files**: Test with actual URDF/SDF files
 3. **Multiple steps**: Verify complete workflow
@@ -151,6 +158,7 @@ TEST(WorldSimulationIntegrationTest, CompleteSimulationCycle) {
 5. **Cross-platform**: Test on different platforms
 
 ### Add Benchmarks
+
 1. **Focus on bottlenecks**: Critical performance paths
 2. **Use realistic data**: Large skeletons, complex scenes
 3. **Establish baseline**: Current performance levels
@@ -160,6 +168,7 @@ TEST(WorldSimulationIntegrationTest, CompleteSimulationCycle) {
 ## Test Data Management
 
 ### 1. Test Files Organization
+
 ```
 tests/
 ├── data/                   # Test input files
@@ -174,6 +183,7 @@ tests/
 ```
 
 ### 2. Test Data Best Practices
+
 - **Small files**: Fast loading for unit tests
 - **Realistic files**: Complex scenarios for integration tests
 - **Known results**: Analytical solutions when possible
@@ -182,24 +192,27 @@ tests/
 ## Performance Requirements
 
 ### 1. Test Execution Time
+
 - **Unit tests**: Should complete in < 5 minutes total
 - **Integration tests**: Should complete in < 30 minutes total
 - **Benchmarks**: Each benchmark < 1 minute, all < 15 minutes
 - **CI/CD pipeline**: Full test suite < 2 hours
 
 ### 2. Memory Usage
+
 - **Unit tests**: Minimal memory footprint
 - **Integration tests**: Reasonable for scenario complexity
 - **Benchmarks**: Track memory usage alongside performance
 - **No leaks**: AddressSanitizer should pass
 
 ### 3. Performance Regression Detection
+
 ```cpp
 // Correct: Performance baseline testing
 BENCHMARK(DynamicsBenchmark, ForwardKinematicsPerformance) {
     static const double BASELINE_MICROSECONDS = 100.0;
     static const double REGRESSION_THRESHOLD = 1.2; // 20% slowdown
-    
+
     auto duration = measureForwardKinematics(skeleton);
     EXPECT_LT(duration, BASELINE_MICROSECONDS * REGRESSION_THRESHOLD);
 }
@@ -208,6 +221,7 @@ BENCHMARK(DynamicsBenchmark, ForwardKinematicsPerformance) {
 ## Common Pitfalls to Avoid
 
 ### ❌ Brittle Tests
+
 ```cpp
 // Wrong: Hardcoded values that may change
 TEST(SkeletonTest, DefaultPosition) {
@@ -222,6 +236,7 @@ TEST(SkeletonTest, ZeroPositionOnInitialization) {
 ```
 
 ### ❌ Slow Tests
+
 ```cpp
 // Wrong: Large computation in unit test
 TEST(SkeletonTest, LargeScaleDynamics) {
@@ -237,6 +252,7 @@ BENCHMARK(DynamicsBenchmark, LargeScaleDynamics) {
 ```
 
 ### ❌ Platform-Specific Assumptions
+
 ```cpp
 // Wrong: Platform-specific behavior
 TEST(FileIOTest, FilePathHandling) {
@@ -254,12 +270,14 @@ TEST(FileIOTest, FilePathHandling) {
 ## CI/CD Integration
 
 ### 1. GitHub Actions Workflows
+
 - **Continuous testing**: Ubuntu, macOS, Windows
 - **Gazebo integration**: Physics compatibility validation
 - **Performance regression**: Automated benchmark comparisons
 - **Code coverage**: Track test coverage over time
 
 ### 2. Test Matrix Configuration
+
 ```yaml
 # Example test matrix
 strategy:
@@ -277,12 +295,14 @@ strategy:
 ## Quality Assurance
 
 ### 1. Test Coverage Requirements
+
 - **Unit tests**: > 80% line coverage for core modules
 - **Integration tests**: Cover all major user workflows
 - **Python bindings**: 100% API coverage
 - **Error paths**: Test all error handling code
 
 ### 2. Test Reliability
+
 - **Flaky test detection**: Automatic identification and reporting
 - **Test isolation**: No dependencies between tests
 - **Deterministic results**: Same results across runs
@@ -305,4 +325,4 @@ strategy:
 
 ---
 
-*Remember: Tests are DART's quality foundation. Maintain fast, reliable, comprehensive test coverage.*
+_Remember: Tests are DART's quality foundation. Maintain fast, reliable, comprehensive test coverage._

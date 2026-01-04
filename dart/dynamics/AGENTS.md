@@ -5,7 +5,7 @@ This module is the core of DART's physics simulation, implementing Featherstone'
 ## Read First
 
 - **Base Guidelines**: Read `/AGENTS.md` for overall DART patterns
-- **Featherstone Algorithm**: Core implementation in `Skeleton.cpp` 
+- **Featherstone Algorithm**: Core implementation in `Skeleton.cpp`
 - **Performance Critical**: O(n) complexity must be maintained
 - **Aspect System**: Uses `JointAspect`, `BodyNodeAspect` for extensibility
 - **Testing**: Dynamics tests in `tests/unit/dynamics/` and `tests/integration/dynamics/`
@@ -34,13 +34,14 @@ pixi run benchmark --profile dynamics
 ## Critical Architecture Patterns
 
 ### 1. Featherstone Articulated Body Algorithm
+
 The core algorithm is implemented in `Skeleton::computeDynamics()` - **do not modify without deep understanding**.
 
 ```cpp
 // Core algorithm structure (simplified)
 void Skeleton::computeDynamics(double timeStep) {
     computeForwardKinematics();           // O(n) forward pass
-    computeVelocities();                   // O(n) velocity propagation  
+    computeVelocities();                   // O(n) velocity propagation
     computeArticulatedInertia();           // O(n) inertia computation
     computeArticulatedCoriolis();          // O(n) Coriolis forces
     computeExternalForces();               // O(n) external forces
@@ -50,6 +51,7 @@ void Skeleton::computeDynamics(double timeStep) {
 ```
 
 ### 2. Joint Types and DOF Management
+
 ```cpp
 // Correct: Use factory patterns for joint creation
 auto joint = Joint::create<RevoluteJoint>(properties);
@@ -59,6 +61,7 @@ auto joint = new RevoluteJoint(); // Avoid
 ```
 
 ### 3. Frame Hierarchy and Transformations
+
 ```cpp
 // Correct: Use relative transforms efficiently
 Eigen::Isometry3d worldTransform = frame->getWorldTransform();
@@ -70,12 +73,14 @@ Eigen::Isometry3d worldTransform = accumulateTransforms(frame); // Inefficient
 ## Performance Requirements (CRITICAL)
 
 ### 1. O(n) Complexity Must Be Maintained
+
 - **Forward kinematics**: Single pass from root to leaves
 - **Dynamics computation**: No nested loops over joints
 - **Jacobian computation**: Use analytical methods, not numerical
 - **Constraint resolution**: Linear time with respect to DOFs
 
 ### 2. Memory Access Patterns
+
 ```cpp
 // Correct: Cache-friendly access patterns
 for (auto* bodyNode : mBodyNodes) {
@@ -89,6 +94,7 @@ for (size_t i = 0; i < n; ++i) {
 ```
 
 ### 3. Numerical Stability
+
 - **Use appropriate precision**: `double` for dynamics, `float` for visualization
 - **Avoid singular Jacobians**: Check for near-singular configurations
 - **Stable integration**: Use semi-implicit Euler or Runge-Kutta
@@ -96,6 +102,7 @@ for (size_t i = 0; i < n; ++i) {
 ## When to Modify This Module
 
 ### Add New Joint Type
+
 1. **Inherit from appropriate base**: `Joint`, `ZeroDofJoint`, etc.
 2. **Implement required virtual methods**: `updateLocalTransform()`, `getJacobian()`
 3. **Update DOF counting**: Ensure `mNumDofs` is correct
@@ -104,6 +111,7 @@ for (size_t i = 0; i < n; ++i) {
 6. **Documentation**: Update joint type documentation
 
 ### Optimize Performance
+
 1. **Profile first**: Use `pixi run benchmark --profile dynamics`
 2. **Identify hotspots**: Focus on per-frame computations
 3. **Maintain O(n)**: No algorithm that scales worse than linear
@@ -111,6 +119,7 @@ for (size_t i = 0; i < n; ++i) {
 5. **Vectorize when possible**: Use Eigen's SIMD optimizations
 
 ### Fix Dynamics Accuracy Issues
+
 1. **Create minimal test case**: Reproduce with simplest skeleton
 2. **Compare with reference**: Use analytical solutions for simple cases
 3. **Check numerical precision**: Look for accumulated errors
@@ -120,6 +129,7 @@ for (size_t i = 0; i < n; ++i) {
 ## Common Pitfalls to Avoid
 
 ### ❌ Breaking O(n) Complexity
+
 ```cpp
 // Wrong: Nested loops over joints (O(n²))
 for (size_t i = 0; i < mJoints.size(); ++i) {
@@ -135,6 +145,7 @@ for (auto* joint : mJoints) {
 ```
 
 ### ❌ Incorrect DOF Management
+
 ```cpp
 // Wrong: Manual DOF counting
 class MyJoint : public Joint {
@@ -151,6 +162,7 @@ public:
 ```
 
 ### ❌ Frame Transform Errors
+
 ```cpp
 // Wrong: Mixing coordinate frames incorrectly
 Eigen::Vector3d localForce = worldForce;  // Frame mismatch
@@ -162,6 +174,7 @@ Eigen::Vector3d localForce = frame->worldToLocal(worldForce);
 ## Testing Requirements
 
 ### Before Submitting Changes:
+
 1. **Unit Tests**: `pixi run test --filter unit/dynamics`
 2. **Integration Tests**: `pixi run test --filter integration/dynamics`
 3. **Performance Tests**: `pixi run benchmark --filter dynamics`
@@ -169,6 +182,7 @@ Eigen::Vector3d localForce = frame->worldToLocal(worldForce);
 5. **Accuracy Tests**: Compare with analytical solutions
 
 ### Critical Test Categories:
+
 - **Forward kinematics**: Known pose configurations
 - **Dynamics**: Compare with analytical solutions for simple mechanisms
 - **Jacobian**: Verify analytical vs numerical Jacobians
@@ -178,16 +192,19 @@ Eigen::Vector3d localForce = frame->worldToLocal(worldForce);
 ## Integration Points
 
 ### With Collision Module:
+
 - **Contact forces**: `Contact` objects create constraints for dynamics
 - **Collision filtering**: Avoid self-collision within kinematic chains
 - **Body relationships**: `BodyNode` maps to `CollisionObject`
 
 ### With Constraint Module:
+
 - **Joint limits**: Upper/lower bounds create inequality constraints
 - **Contact constraints**: Friction and normal forces from collisions
 - **Solver integration**: Feed constraint matrices to dynamics solver
 
 ### With GUI Module:
+
 - **Real-time visualization**: Update skeleton poses each frame
 - **Debug rendering**: Show forces, velocities, coordinate frames
 - **Interactive manipulation**: Direct joint control in GUI
@@ -195,16 +212,19 @@ Eigen::Vector3d localForce = frame->worldToLocal(worldForce);
 ## Numerical Algorithms Used
 
 ### 1. Featherstone Algorithm Variants
+
 - **Hybrid Dynamics**: Combines articulated body and constraint forces
 - **Forward Dynamics**: Compute accelerations given forces
 - **Inverse Dynamics**: Compute forces given desired accelerations
 
 ### 2. Jacobian Computation
+
 - **Analytical Jacobians**: Closed-form for common joint types
 - **Numerical Jacobians**: Finite differences for complex joints
 - **Time-derivative of Jacobian**: For velocity-level IK
 
 ### 3. Integration Schemes
+
 - **Semi-implicit Euler**: Stable for typical timesteps
 - **Runge-Kutta 4**: Higher accuracy for sensitive systems
 - **Variable timestep**: Adaptive integration for stability
@@ -226,4 +246,4 @@ Eigen::Vector3d localForce = frame->worldToLocal(worldForce);
 
 ---
 
-*Remember: DART dynamics is performance-critical and numerically sensitive. Always benchmark optimizations and verify accuracy with analytical solutions.*
+_Remember: DART dynamics is performance-critical and numerically sensitive. Always benchmark optimizations and verify accuracy with analytical solutions._
