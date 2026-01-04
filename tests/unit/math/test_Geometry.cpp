@@ -38,6 +38,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <span>
 #include <vector>
 
 using namespace dart;
@@ -223,7 +224,8 @@ TEST(Geometry, ComputeConvexHullUsesSortedAngles)
   points.emplace_back(0.0, 1.0);
 
   std::vector<std::size_t> indices;
-  const auto hull = computeConvexHull(indices, points);
+  const auto hull
+      = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
 
   EXPECT_EQ(hull.size(), 4u);
   EXPECT_EQ(indices.size(), 4u);
