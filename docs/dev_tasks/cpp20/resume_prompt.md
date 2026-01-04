@@ -4,8 +4,8 @@ You are resuming the C++20 modernization task in
 Current state:
 
 - Branch: `cpp20/phase17`
-- PR (Phase 17): TBD
-- Phase 16 PR: TBD
+- PR (Phase 17): https://github.com/dartsim/dart/pull/2397
+- Phase 16 PR: https://github.com/dartsim/dart/pull/2394
 - Phase 15 PR: https://github.com/dartsim/dart/pull/2393
 - Phase 14 PR: https://github.com/dartsim/dart/pull/2390
 - Phase 13 PR: https://github.com/dartsim/dart/pull/2387
@@ -22,7 +22,7 @@ Current state:
 
 What to do next:
 
-1. Open the Phase 17 PR and include a concise modernization benefit note.
+1. Monitor PRs #2394 and #2397 for CI/review feedback.
 2. Start Phase 18+ work (update `docs/dev_tasks/cpp20/00_plan.md` as you decide scope).
 3. Keep `docs/dev_tasks/cpp20/01_progress.md` current.
 

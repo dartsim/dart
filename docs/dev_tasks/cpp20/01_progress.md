@@ -3,8 +3,8 @@
 ## Status
 
 - Active branch: `cpp20/phase17`
-- Active PR (Phase 17): TBD
-- Phase 16 PR: TBD
+- Active PR (Phase 17): https://github.com/dartsim/dart/pull/2397
+- Phase 16 PR: https://github.com/dartsim/dart/pull/2394
 - Phase 15 PR: https://github.com/dartsim/dart/pull/2393
 - Phase 14 PR: https://github.com/dartsim/dart/pull/2390
 - Phase 13 PR: https://github.com/dartsim/dart/pull/2387
@@ -36,5 +36,5 @@
 
 ## Next
 
-- Open the Phase 17 PR and include a concise modernization benefit note.
-- Continue with Phase 18+ on a fresh branch after the Phase 17 PR is up.
+- Monitor PRs #2394 and #2397 for CI/review feedback (CI/merge handled by the user).
+- Continue with Phase 18+ on a fresh branch.
