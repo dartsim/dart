@@ -38,6 +38,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
 namespace dart {
@@ -58,7 +59,7 @@ public:
   /// Windows).
   /// @return Pointer to the shared library upon success. Otherwise, returns
   /// nullptr.
-  std::shared_ptr<SharedLibrary> load(const std::string& path);
+  std::shared_ptr<SharedLibrary> load(std::string_view path);
 
 protected:
   friend class Singleton<SharedLibraryManager>;
