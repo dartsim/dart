@@ -74,10 +74,10 @@ public:
       const common::ResourceRetrieverPtr& resourceRetriever);
 
   // Documentation inherited.
-  bool exists(const common::Uri& _uri) override;
+  bool exists(const common::Uri& uri) override;
 
   // Documentation inherited.
-  common::ResourcePtr retrieve(const common::Uri& _uri) override;
+  common::ResourcePtr retrieve(const common::Uri& uri) override;
 
   // Documentation inherited.
   DART_DEPRECATED(7.0)
@@ -85,7 +85,7 @@ public:
 
 private:
   std::vector<common::ResourceRetrieverPtr> getRetrievers(
-      const common::Uri& _uri) const;
+      const common::Uri& uri) const;
 
   std::unordered_map<std::string, std::vector<common::ResourceRetrieverPtr>>
       mResourceRetrievers;

@@ -120,3 +120,5 @@
 
 - Switch `MeshLoader` path/URI inputs to `std::string_view`.
 - Keep owning `std::string` copies only where needed (Assimp C API).
+- Finish remaining resource-retriever configuration helpers (package/schema
+  directories, read options) with `std::string_view` inputs.
