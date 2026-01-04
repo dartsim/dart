@@ -1,7 +1,7 @@
 #include "collision/collision_object.hpp"
 
-#include "dart/collision/CollisionDetector.hpp"
 #include "common/type_casters.hpp"
+#include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 
