@@ -1329,8 +1329,9 @@ void InverseKinematics::useChain()
   }
 
   const auto chainDofs = mNode->getChainDofs();
-  setDofs(std::span<const DegreeOfFreedom* const>(
-      chainDofs.data(), chainDofs.size()));
+  setDofs(
+      std::span<const DegreeOfFreedom* const>(
+          chainDofs.data(), chainDofs.size()));
 }
 
 //==============================================================================

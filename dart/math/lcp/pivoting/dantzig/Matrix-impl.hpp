@@ -169,7 +169,7 @@ int dInvertPDMatrix(
   Scalar* tmp
       = tmpbuf ? (Scalar*)tmpbuf
                : (Scalar*)ALLOCA(
-                   MaxCholesky_size + (nskip + nskip_mul_n) * sizeof(Scalar));
+                     MaxCholesky_size + (nskip + nskip_mul_n) * sizeof(Scalar));
   Scalar* X = (Scalar*)((char*)tmp + MaxCholesky_size);
   Scalar* L = X + nskip;
   memcpy(L, A, nskip_mul_n * sizeof(Scalar));
@@ -199,9 +199,10 @@ int dIsPositiveDefinite(const Scalar* A, int n, void* tmpbuf /*[nskip*(n+1)]*/)
   DART_ASSERT(FactorCholesky_size % sizeof(Scalar) == 0);
   const int nskip = padding(n);
   const int nskip_mul_n = nskip * n;
-  Scalar* tmp = tmpbuf ? (Scalar*)tmpbuf
-                       : (Scalar*)ALLOCA(
-                           FactorCholesky_size + nskip_mul_n * sizeof(Scalar));
+  Scalar* tmp = tmpbuf
+                    ? (Scalar*)tmpbuf
+                    : (Scalar*)ALLOCA(
+                          FactorCholesky_size + nskip_mul_n * sizeof(Scalar));
   Scalar* Acopy = (Scalar*)((char*)tmp + FactorCholesky_size);
   memcpy(Acopy, A, nskip_mul_n * sizeof(Scalar));
   return dFactorCholesky(Acopy, n, tmp);
@@ -317,7 +318,7 @@ void dLDLTAddTL(
 // in an inner loop.
 
 #define _GETA(i, j) (A[i][j])
-//#define _GETA(i,j) (A[(i)*nskip+(j)])
+// #define _GETA(i,j) (A[(i)*nskip+(j)])
 #define GETA(i, j) ((i > j) ? _GETA(i, j) : _GETA(j, i))
 
 template <typename Scalar>

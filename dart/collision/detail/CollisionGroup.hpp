@@ -113,8 +113,10 @@ template <typename... Others>
 void CollisionGroup::subscribeTo(
     const dynamics::ConstBodyNodePtr& bodyNode, const Others&... others)
 {
-  const auto inserted = mBodyNodeSources.insert(BodyNodeSources::value_type(
-      bodyNode.get(), BodyNodeSource(bodyNode.get(), bodyNode->getVersion())));
+  const auto inserted = mBodyNodeSources.insert(
+      BodyNodeSources::value_type(
+          bodyNode.get(),
+          BodyNodeSource(bodyNode.get(), bodyNode->getVersion())));
 
   if (inserted.second) {
     const BodyNodeSources::iterator& entry = inserted.first;
@@ -133,9 +135,11 @@ template <typename... Others>
 void CollisionGroup::subscribeTo(
     const dynamics::ConstMetaSkeletonPtr& metaSkeleton, const Others&... others)
 {
-  const auto inserted = mSkeletonSources.insert(SkeletonSources::value_type(
-      metaSkeleton.get(),
-      SkeletonSource(metaSkeleton, computeMetaSkeletonVersion(*metaSkeleton))));
+  const auto inserted = mSkeletonSources.insert(
+      SkeletonSources::value_type(
+          metaSkeleton.get(),
+          SkeletonSource(
+              metaSkeleton, computeMetaSkeletonVersion(*metaSkeleton))));
 
   if (inserted.second) {
     SkeletonSource& entry = inserted.first->second;
@@ -146,8 +150,9 @@ void CollisionGroup::subscribeTo(
 
       auto& childInfo
           = entry.mChildren
-                .insert(std::make_pair(
-                    bn, SkeletonSource::ChildInfo(bn->getVersion())))
+                .insert(
+                    std::make_pair(
+                        bn, SkeletonSource::ChildInfo(bn->getVersion())))
                 .first->second;
 
       bn->eachShapeNodeWith<dynamics::CollisionAspect>(

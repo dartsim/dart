@@ -294,8 +294,8 @@ AspectWithVersionedProperties<
     DerivedT,
     PropertiesDataT,
     CompositeT,
-    updateProperties>::AspectWithVersionedProperties(const PropertiesData&
-                                                         properties)
+    updateProperties>::
+    AspectWithVersionedProperties(const PropertiesData& properties)
   : BaseT(), mProperties(properties)
 {
   // Do nothing
@@ -313,8 +313,8 @@ void AspectWithVersionedProperties<
     DerivedT,
     PropertiesData,
     CompositeT,
-    updateProperties>::setAspectProperties(const Aspect::Properties&
-                                               someProperties)
+    updateProperties>::
+    setAspectProperties(const Aspect::Properties& someProperties)
 {
   setProperties(static_cast<const Properties&>(someProperties));
 }

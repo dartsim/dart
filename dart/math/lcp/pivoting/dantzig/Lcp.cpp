@@ -143,7 +143,7 @@ rows/columns and manipulate C.
 
 // Define macros BEFORE including headers so they're available
 // LCP debugging (mostly for fast dLCP) - this slows things down a lot
-//#define DEBUG_LCP
+// #define DEBUG_LCP
 
 #define dLCP_FAST // use fast dLCP object
 
@@ -516,7 +516,7 @@ bool SolveLCP(
         if (cmd <= 3)
           break;
       } // for (;;)
-    }   // else
+    } // else
 
     if (s_error) {
       break;

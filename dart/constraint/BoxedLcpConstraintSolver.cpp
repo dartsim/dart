@@ -164,7 +164,7 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver()
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
     BoxedLcpSolverPtr boxedLcpSolver)
   : BoxedLcpConstraintSolver(
-      std::move(boxedLcpSolver), std::make_shared<PgsBoxedLcpSolver>())
+        std::move(boxedLcpSolver), std::make_shared<PgsBoxedLcpSolver>())
 {
   // Do nothing
 }

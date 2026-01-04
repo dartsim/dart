@@ -644,7 +644,8 @@ public:
       const Eigen::VectorXd& q0,
       const Eigen::VectorXd& v,
       double dt,
-      Eigen::VectorXd& result) const = 0;
+      Eigen::VectorXd& result) const
+      = 0;
 
   /// Convenience overload for integratePositions(q0, v, dt, result).
   Eigen::VectorXd integratePositions(
@@ -656,7 +657,8 @@ public:
   /// Return the difference of two generalized coordinates which are measured in
   /// the configuration space of this Skeleton.
   virtual Eigen::VectorXd getPositionDifferences(
-      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const = 0;
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
+      = 0;
 
   /// \}
 
@@ -732,7 +734,8 @@ public:
   /// Get spatial Jacobian of the child BodyNode relative to the parent BodyNode
   /// expressed in the child BodyNode frame
   virtual math::Jacobian getRelativeJacobian(
-      const Eigen::VectorXd& positions) const = 0;
+      const Eigen::VectorXd& positions) const
+      = 0;
 
   /// Get time derivative of spatial Jacobian of the child BodyNode relative to
   /// the parent BodyNode expressed in the child BodyNode frame
