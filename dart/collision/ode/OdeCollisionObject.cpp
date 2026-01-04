@@ -153,9 +153,6 @@ bool probeCylinderCollisionSupport()
 
 bool cylinderCollisionSupported()
 {
-#if defined(__FreeBSD__)
-  return true;
-#endif
   if (!gCylinderCollisionSupportKnown) {
     gCylinderCollisionSupported = probeCylinderCollisionSupport();
     gCylinderCollisionSupportKnown = true;
