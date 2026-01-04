@@ -163,7 +163,7 @@ void defOptimizerSolver(nb::module_& m)
           nb::rv_policy::reference_internal);
 
   m.def(
-      "_getSolverType",
+      "get_solver_type_wrapper",
       [](const Solver* solver) -> std::string_view {
         if (!solver) {
           return "nullptr";

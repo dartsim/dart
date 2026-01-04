@@ -72,9 +72,9 @@ class MyWorldNode(dart.gui.RealTimeWorldNode):
         self.ext_force = np.zeros(3)
         self.ext_force_duration = 0
 
-        self.ext_force_arrow_shape = dart.dynamics.ArrowShape([0, 0, 0], [0, 0, 0])
+        self.ext_force_arrow_shape = dart.ArrowShape([0, 0, 0], [0, 0, 0])
 
-        self.ext_force_simple_frame = dart.dynamics.SimpleFrame()
+        self.ext_force_simple_frame = dart.SimpleFrame()
         self.ext_force_simple_frame.setShape(self.ext_force_arrow_shape)
         self.ext_force_visual = self.ext_force_simple_frame.createVisualAspect()
         self.ext_force_visual.setColor([1.0, 0.0, 0.0])
@@ -152,10 +152,10 @@ class MyWorldNode(dart.gui.RealTimeWorldNode):
             arrow_head = spine.getTransform().translation()
             arrow_tail = arrow_head - self.ext_force / 30
             self.ext_force_arrow_shape.setPositions(arrow_tail, arrow_head)
-            self.ext_force_arrow_shape.setDataVariance(dart.dynamics.Shape.DYNAMIC)
+            self.ext_force_arrow_shape.setDataVariance(dart.Shape.DYNAMIC)
             self.ext_force_visual.show()
         else:
-            self.ext_force_arrow_shape.setDataVariance(dart.dynamics.Shape.STATIC)
+            self.ext_force_arrow_shape.setDataVariance(dart.Shape.STATIC)
             self.ext_force_visual.hide()
 
     def set_external_force(self, force, duration=10):
@@ -167,7 +167,7 @@ class MyWorldNode(dart.gui.RealTimeWorldNode):
 
 
 def main():
-    world = dart.utils.SkelParser.readWorld("dart://sample/skel/fullbody1.skel")
+    world = dart.io.SkelParser.readWorld("dart://sample/skel/fullbody1.skel")
     world.setGravity([0, -9.81, 0])
 
     biped = world.getSkeleton("fullbody1")
