@@ -126,8 +126,9 @@ public:
 
 int main()
 {
-  WorldPtr world = dart::io::readWorld(
+  const dart::common::Uri worldUri = dart::common::Uri::createFromPath(
       dart::config::dataPath("skel/kima/kima_human_edited.skel"));
+  WorldPtr world = dart::io::readWorld(worldUri);
   DART_ASSERT(world != nullptr);
 
   auto skel = world->getSkeleton("human");

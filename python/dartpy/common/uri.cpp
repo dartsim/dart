@@ -5,6 +5,8 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>
 
+#include <string_view>
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -42,7 +44,8 @@ void defUri(nb::module_& m)
              const std::string& base,
              const std::string& relative,
              bool strict) {
-            return self.fromRelativeUri(base, relative, strict);
+            return self.fromRelativeUri(
+                std::string_view{base}, std::string_view{relative}, strict);
           },
           nb::arg("base"),
           nb::arg("relative"),
@@ -61,7 +64,8 @@ void defUri(nb::module_& m)
              const Uri& base,
              const std::string& relative,
              bool strict) {
-            return self.fromRelativeUri(base, relative, strict);
+            return self.fromRelativeUri(
+                base, std::string_view{relative}, strict);
           },
           nb::arg("base"),
           nb::arg("relative"),
@@ -106,7 +110,8 @@ void defUri(nb::module_& m)
           [](const std::string& base,
              const std::string& relative,
              bool strict) {
-            return Uri::createFromRelativeUri(base, relative, strict);
+            return Uri::createFromRelativeUri(
+                std::string_view{base}, std::string_view{relative}, strict);
           },
           nb::arg("base"),
           nb::arg("relative"),
@@ -114,7 +119,8 @@ void defUri(nb::module_& m)
       .def_static(
           "createFromRelativeUri",
           [](const Uri& base, const std::string& relative, bool strict) {
-            return Uri::createFromRelativeUri(base, relative, strict);
+            return Uri::createFromRelativeUri(
+                base, std::string_view{relative}, strict);
           },
           nb::arg("base"),
           nb::arg("relative"),
@@ -136,7 +142,8 @@ void defUri(nb::module_& m)
           [](const std::string& base,
              const std::string& relative,
              bool strict) {
-            return Uri::getRelativeUri(base, relative, strict);
+            return Uri::getRelativeUri(
+                std::string_view{base}, std::string_view{relative}, strict);
           },
           nb::arg("base"),
           nb::arg("relative"),
@@ -144,7 +151,8 @@ void defUri(nb::module_& m)
       .def_static(
           "getRelativeUri",
           [](const Uri& base, const std::string& relative, bool strict) {
-            return Uri::getRelativeUri(base, relative, strict);
+            return Uri::getRelativeUri(
+                base, std::string_view{relative}, strict);
           },
           nb::arg("base"),
           nb::arg("relative"),
