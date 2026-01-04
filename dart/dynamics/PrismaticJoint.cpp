@@ -100,15 +100,15 @@ PrismaticJoint& PrismaticJoint::operator=(const PrismaticJoint& _otherJoint)
 }
 
 //==============================================================================
-const std::string& PrismaticJoint::getType() const
+std::string_view PrismaticJoint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& PrismaticJoint::getStaticType()
+std::string_view PrismaticJoint::getStaticType()
 {
-  static const std::string name = "PrismaticJoint";
+  static constexpr std::string_view name = "PrismaticJoint";
   return name;
 }
 

@@ -45,10 +45,10 @@ public:
   CylinderShape(double _radius, double _height);
 
   // Documentation inherited.
-  const std::string& getType() const override;
+  std::string_view getType() const override;
 
   /// Returns shape type for this class
-  static const std::string& getStaticType();
+  static std::string_view getStaticType();
 
   /// @brief
   double getRadius() const;

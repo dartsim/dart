@@ -70,10 +70,7 @@ void defJoint(nb::module_& m)
           nb::arg("preserve_name") = true)
       .def(
           "getType",
-          [](const Joint& self) -> const std::string& {
-            return self.getType();
-          },
-          nb::rv_policy::reference_internal)
+          [](const Joint& self) { return std::string(self.getType()); })
       .def(
           "__repr__",
           [](const Joint& self) {

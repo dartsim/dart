@@ -77,15 +77,15 @@ JointCoulombFrictionConstraint::JointCoulombFrictionConstraint(
 JointCoulombFrictionConstraint::~JointCoulombFrictionConstraint() {}
 
 //==============================================================================
-const std::string& JointCoulombFrictionConstraint::getType() const
+std::string_view JointCoulombFrictionConstraint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& JointCoulombFrictionConstraint::getStaticType()
+std::string_view JointCoulombFrictionConstraint::getStaticType()
 {
-  static const std::string name = "JointCoulombFrictionConstraint";
+  static constexpr std::string_view name = "JointCoulombFrictionConstraint";
   return name;
 }
 

@@ -159,7 +159,7 @@ struct OdeCollisionCallbackData
 //==============================================================================
 OdeCollisionDetector::Registrar<OdeCollisionDetector>
     OdeCollisionDetector::mRegistrar{
-        OdeCollisionDetector::getStaticType(),
+        std::string(OdeCollisionDetector::getStaticType()),
         []() -> std::shared_ptr<dart::collision::OdeCollisionDetector> {
           return dart::collision::OdeCollisionDetector::create();
         }};

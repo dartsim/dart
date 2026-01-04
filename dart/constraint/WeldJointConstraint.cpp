@@ -100,15 +100,15 @@ WeldJointConstraint::~WeldJointConstraint()
 }
 
 //==============================================================================
-const std::string& WeldJointConstraint::getType() const
+std::string_view WeldJointConstraint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& WeldJointConstraint::getStaticType()
+std::string_view WeldJointConstraint::getStaticType()
 {
-  static const std::string name = "WeldJointConstraint";
+  static constexpr std::string_view name = "WeldJointConstraint";
   return name;
 }
 

@@ -69,15 +69,15 @@ void BallJoint::setAspectProperties(const AspectProperties& properties)
 }
 
 //==============================================================================
-const std::string& BallJoint::getType() const
+std::string_view BallJoint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& BallJoint::getStaticType()
+std::string_view BallJoint::getStaticType()
 {
-  static const std::string name = "BallJoint";
+  static constexpr std::string_view name = "BallJoint";
   return name;
 }
 

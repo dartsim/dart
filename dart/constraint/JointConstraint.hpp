@@ -60,10 +60,10 @@ public:
   ~JointConstraint() override = default;
 
   // Documentation inherited
-  const std::string& getType() const override;
+  std::string_view getType() const override;
 
   /// Returns constraint type for this class.
-  static const std::string& getStaticType();
+  static std::string_view getStaticType();
 
   //----------------------------------------------------------------------------
   // Property settings

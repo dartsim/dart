@@ -507,15 +507,15 @@ void MeshShape::MeshHandle::set(std::shared_ptr<const aiScene> mesh)
 }
 
 //==============================================================================
-const std::string& MeshShape::getType() const
+std::string_view MeshShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& MeshShape::getStaticType()
+std::string_view MeshShape::getStaticType()
 {
-  static const std::string type("MeshShape");
+  static constexpr std::string_view type = "MeshShape";
   return type;
 }
 

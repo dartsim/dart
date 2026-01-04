@@ -1604,11 +1604,11 @@ static bool HullAngleComparison(const HullAngle& a, const HullAngle& b)
 }
 
 //==============================================================================
-SupportPolygon computeConvexHull(const SupportPolygon& _points)
+SupportPolygon computeConvexHull(const SupportPolygon& points)
 {
   std::vector<std::size_t> indices;
-  indices.reserve(_points.size());
-  return computeConvexHull(indices, _points);
+  indices.reserve(points.size());
+  return computeConvexHull(indices, points);
 }
 
 //==============================================================================
@@ -1707,36 +1707,36 @@ static bool isLeftTurn(
 
 //==============================================================================
 SupportPolygon computeConvexHull(
-    std::vector<std::size_t>& _originalIndices, const SupportPolygon& _points)
+    std::vector<std::size_t>& originalIndices, const SupportPolygon& points)
 {
-  _originalIndices.clear();
+  originalIndices.clear();
 
-  if (_points.size() <= 3) {
+  if (points.size() <= 3) {
     // Three or fewer points is already a convex hull
-    for (std::size_t i = 0; i < _points.size(); ++i)
-      _originalIndices.push_back(i);
+    for (std::size_t i = 0; i < points.size(); ++i)
+      originalIndices.push_back(i);
 
-    return _points;
+    return points;
   }
 
   // We'll use "Graham scan" to compute the convex hull in the general case
   std::size_t lowestIndex = static_cast<std::size_t>(-1);
   double lowestY = std::numeric_limits<double>::infinity();
-  for (std::size_t i = 0; i < _points.size(); ++i) {
-    if (_points[i][1] < lowestY) {
+  for (std::size_t i = 0; i < points.size(); ++i) {
+    if (points[i][1] < lowestY) {
       lowestIndex = i;
-      lowestY = _points[i][1];
-    } else if (_points[i][1] == lowestY) {
-      if (_points[i][0] < _points[lowestIndex][0]) {
+      lowestY = points[i][1];
+    } else if (points[i][1] == lowestY) {
+      if (points[i][0] < points[lowestIndex][0]) {
         lowestIndex = i;
       }
     }
   }
 
   std::vector<HullAngle> angles;
-  const Eigen::Vector2d& bottom = _points[lowestIndex];
-  for (std::size_t i = 0; i < _points.size(); ++i) {
-    const Eigen::Vector2d& p = _points[i];
+  const Eigen::Vector2d& bottom = points[lowestIndex];
+  for (std::size_t i = 0; i < points.size(); ++i) {
+    const Eigen::Vector2d& p = points[i];
     if (p != bottom) {
       const Eigen::Vector2d& v = p - bottom;
       angles.push_back(HullAngle(atan2(v[1], v[0]), v.norm(), i));
@@ -1761,20 +1761,20 @@ SupportPolygon computeConvexHull(
   if (angles.size() <= 3) {
     // There were so many repeated points in the given set that we only have
     // three or fewer unique points
-    _originalIndices.reserve(angles.size() + 1);
-    _originalIndices.push_back(lowestIndex);
+    originalIndices.reserve(angles.size() + 1);
+    originalIndices.push_back(lowestIndex);
     for (std::size_t i = 0; i < angles.size(); ++i)
-      _originalIndices.push_back(angles[i].mIndex);
+      originalIndices.push_back(angles[i].mIndex);
 
     SupportPolygon polygon;
-    polygon.reserve(_originalIndices.size());
-    for (std::size_t index : _originalIndices)
-      polygon.push_back(_points[index]);
+    polygon.reserve(originalIndices.size());
+    for (std::size_t index : originalIndices)
+      polygon.push_back(points[index]);
 
     return polygon;
   }
 
-  std::vector<std::size_t>& edge = _originalIndices;
+  std::vector<std::size_t>& edge = originalIndices;
   std::size_t lastIndex = lowestIndex;
   std::size_t secondToLastIndex = angles[0].mIndex;
   edge.reserve(angles.size() + 1);
@@ -1783,9 +1783,9 @@ SupportPolygon computeConvexHull(
 
   for (std::size_t i = 1; i < angles.size(); ++i) {
     std::size_t currentIndex = angles[i].mIndex;
-    const Eigen::Vector2d& p1 = _points[lastIndex];
-    const Eigen::Vector2d& p2 = _points[secondToLastIndex];
-    const Eigen::Vector2d& p3 = _points[currentIndex];
+    const Eigen::Vector2d& p1 = points[lastIndex];
+    const Eigen::Vector2d& p2 = points[secondToLastIndex];
+    const Eigen::Vector2d& p3 = points[currentIndex];
 
     bool leftTurn = isLeftTurn(p1, p2, p3);
 
@@ -1801,19 +1801,19 @@ SupportPolygon computeConvexHull(
     }
   }
 
-  const Eigen::Vector2d& p1 = _points[edge.back()];
-  const Eigen::Vector2d& p2 = _points[angles.back().mIndex];
-  const Eigen::Vector2d& p3 = _points[lowestIndex];
+  const Eigen::Vector2d& p1 = points[edge.back()];
+  const Eigen::Vector2d& p2 = points[angles.back().mIndex];
+  const Eigen::Vector2d& p3 = points[lowestIndex];
   if (isLeftTurn(p1, p2, p3))
     edge.push_back(angles.back().mIndex);
 
   SupportPolygon polygon;
   polygon.reserve(edge.size());
   for (std::size_t index : edge)
-    polygon.push_back(_points[index]);
+    polygon.push_back(points[index]);
 
-  // Note that we do not need to fill in _originalIndices, because "edge" is a
-  // non-const reference to _originalIndices and it has been filled in with the
+  // Note that we do not need to fill in originalIndices, because "edge" is a
+  // non-const reference to originalIndices and it has been filled in with the
   // appropriate values.
   return polygon;
 }

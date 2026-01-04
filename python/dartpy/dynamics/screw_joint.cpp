@@ -27,10 +27,7 @@ void defScrewJoint(nb::module_& m)
   nb::class_<ScrewJoint, dart::dynamics::Joint>(m, "ScrewJoint")
       .def(
           "getType",
-          [](const ScrewJoint& self) -> const std::string& {
-            return self.getType();
-          },
-          nb::rv_policy::reference_internal)
+          [](const ScrewJoint& self) { return std::string(self.getType()); })
       .def("isCyclic", &ScrewJoint::isCyclic, nb::arg("index"))
       .def(
           "setAxis",
@@ -46,10 +43,9 @@ void defScrewJoint(nb::module_& m)
           nb::rv_policy::reference_internal)
       .def("setPitch", &ScrewJoint::setPitch, nb::arg("pitch"))
       .def("getPitch", &ScrewJoint::getPitch)
-      .def_static(
-          "getStaticType",
-          []() -> const std::string& { return ScrewJoint::getStaticType(); },
-          nb::rv_policy::reference);
+      .def_static("getStaticType", []() {
+        return std::string(ScrewJoint::getStaticType());
+      });
 
   registerPolymorphicCaster<dart::dynamics::Joint, ScrewJoint>();
 }

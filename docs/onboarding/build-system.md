@@ -626,9 +626,9 @@ pixi run test-all        # Run all tests
 #### Linting Tasks
 
 ```bash
-pixi run lint             # Format code + docs (C++, Dart8, Python, YAML, TOML, MD) and lint RST
+pixi run lint             # Format code + docs (C++, simulation-experimental, Python, YAML, TOML, MD) and lint RST
 pixi run lint-cpp         # Format C++ code only
-pixi run lint-dart8       # Format DART 8 C++ sources
+pixi run lint-simulation-experimental       # Format simulation-experimental C++ sources
 pixi run lint-py          # Format Python code only
 pixi run lint-yaml        # Format YAML files
 pixi run lint-toml        # Format TOML files
@@ -636,7 +636,7 @@ pixi run lint-md          # Format Markdown files
 pixi run lint-rst         # Lint reStructuredText files
 pixi run check-lint       # Check formatting/linting (CI)
 pixi run check-lint-cpp   # Check C++ formatting
-pixi run check-lint-dart8 # Check DART 8 formatting
+pixi run check-lint-simulation-experimental # Check simulation-experimental formatting
 pixi run check-lint-py    # Check Python formatting
 pixi run check-lint-yaml  # Check YAML formatting
 pixi run check-lint-rst   # Check reStructuredText files
@@ -780,6 +780,7 @@ DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 - **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py` limited to the DART version requirement bump; otherwise this workflow stops catching real compatibility breaks.
 - **gtest header mismatches.** Symptom: link errors like `undefined reference to testing::internal::MakeAndRegisterTestInfo(std::string, ...)` when building gz-physics tests. The `config-gz` task passes `-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_physics_force_vendor_gtest.cmake` to ensure gz-physics compiles against the vendored headers that match its vendored gtest library; keep that behavior.
 - **Deprecation noise is expected.** When gz-physics links the deprecated compatibility targets, CMake may emit deprecation warnings; these are intentional and should be treated as migration pressure for downstreams.
+- **Type-name API compatibility.** `CollisionDetector::getType()` and `BoxedLcpSolver::getType()` return `const std::string&` for gz-physics compatibility; prefer `getTypeView()` in DART code, and keep `test-gz` green before changing signatures.
 - **The gz-physics checkout is ephemeral.** `download-gz` clones into `.deps/gz-physics`, and `patch-gz` writes a `.bak` backup in that directory; both are expected and should remain untracked.
 
 **Dependencies:**

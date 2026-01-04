@@ -51,15 +51,15 @@ ConeShape::ConeShape(double radius, double height)
 }
 
 //==============================================================================
-const std::string& ConeShape::getType() const
+std::string_view ConeShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& ConeShape::getStaticType()
+std::string_view ConeShape::getStaticType()
 {
-  static const std::string type("ConeShape");
+  static constexpr std::string_view type = "ConeShape";
   return type;
 }
 

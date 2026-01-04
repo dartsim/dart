@@ -100,15 +100,15 @@ VoxelGridShape::VoxelGridShape(std::shared_ptr<octomap::OcTree> octree)
 }
 
 //==============================================================================
-const std::string& VoxelGridShape::getType() const
+std::string_view VoxelGridShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& VoxelGridShape::getStaticType()
+std::string_view VoxelGridShape::getStaticType()
 {
-  static const std::string type("VoxelGridShape");
+  static constexpr std::string_view type = "VoxelGridShape";
   return type;
 }
 

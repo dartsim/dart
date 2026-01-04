@@ -59,10 +59,10 @@ public:
   PyramidShape(double baseWidth, double baseDepth, double height);
 
   // Documentation inherited.
-  const std::string& getType() const override;
+  std::string_view getType() const override;
 
   /// Returns shape type string for this shape.
-  static const std::string& getStaticType();
+  static std::string_view getStaticType();
 
   /// Returns the lateral length (algon X-axis) of the base.
   double getBaseWidth() const;

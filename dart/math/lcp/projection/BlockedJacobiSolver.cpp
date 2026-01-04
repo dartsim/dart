@@ -42,6 +42,7 @@
 #include <iterator>
 #include <limits>
 #include <numeric>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -87,7 +88,7 @@ bool buildBlockData(
     const Eigen::VectorXd& lo,
     const Eigen::VectorXd& hi,
     const Eigen::VectorXi& findex,
-    const std::vector<int>& indices,
+    std::span<const int> indices,
     BlockData& block,
     std::string* message)
 {
@@ -98,7 +99,7 @@ bool buildBlockData(
     return false;
   }
 
-  block.indices = indices;
+  block.indices.assign(indices.begin(), indices.end());
   block.A.resize(m, m);
   block.baseB.resize(m);
   block.lo.resize(m);
@@ -172,7 +173,15 @@ bool buildBlocks(
       offset += size;
 
       BlockData block;
-      if (!buildBlockData(A, b, lo, hi, findex, indices, block, message))
+      if (!buildBlockData(
+              A,
+              b,
+              lo,
+              hi,
+              findex,
+              std::span<const int>{indices},
+              block,
+              message))
         return false;
       blocks.push_back(std::move(block));
     }
@@ -212,7 +221,15 @@ bool buildBlocks(
     if (indices.empty())
       continue;
     BlockData block;
-    if (!buildBlockData(A, b, lo, hi, findex, indices, block, message))
+    if (!buildBlockData(
+            A,
+            b,
+            lo,
+            hi,
+            findex,
+            std::span<const int>{indices},
+            block,
+            message))
       return false;
     blocks.push_back(std::move(block));
   }

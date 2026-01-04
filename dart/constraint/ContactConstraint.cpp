@@ -225,15 +225,15 @@ ContactConstraint::ContactConstraint(
 }
 
 //==============================================================================
-const std::string& ContactConstraint::getType() const
+std::string_view ContactConstraint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& ContactConstraint::getStaticType()
+std::string_view ContactConstraint::getStaticType()
 {
-  static const std::string name = "ContactConstraint";
+  static constexpr std::string_view name = "ContactConstraint";
   return name;
 }
 

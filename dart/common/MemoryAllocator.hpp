@@ -40,7 +40,7 @@
 #include <dart/Export.hpp>
 
 #include <iostream>
-#include <string>
+#include <string_view>
 
 #include <cstddef>
 
@@ -60,7 +60,7 @@ public:
   virtual ~MemoryAllocator() = default;
 
   /// Returns type string.
-  [[nodiscard]] virtual const std::string& getType() const = 0;
+  [[nodiscard]] virtual std::string_view getType() const = 0;
 
   /// Allocates @c size bytes of uninitialized storage.
   ///

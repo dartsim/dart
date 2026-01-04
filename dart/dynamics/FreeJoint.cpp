@@ -650,15 +650,15 @@ Joint* FreeJoint::clone() const
 }
 
 //==============================================================================
-const std::string& FreeJoint::getType() const
+std::string_view FreeJoint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& FreeJoint::getStaticType()
+std::string_view FreeJoint::getStaticType()
 {
-  static const std::string name = "FreeJoint";
+  static constexpr std::string_view name = "FreeJoint";
   return name;
 }
 

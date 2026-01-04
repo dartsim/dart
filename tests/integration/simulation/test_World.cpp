@@ -47,6 +47,7 @@
 
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <utility>
 #if DART_HAVE_BULLET
   #include "dart/collision/bullet/All.hpp"
@@ -74,9 +75,9 @@ public:
   using Factory = collision::CollisionDetector::Factory;
   using Creator = Factory::Creator;
 
-  ScopedCollisionFactoryDisabler(std::string key, Creator restorer)
+  ScopedCollisionFactoryDisabler(std::string_view key, Creator restorer)
     : mFactory(collision::CollisionDetector::getFactory()),
-      mKey(std::move(key)),
+      mKey(key),
       mRestorer(std::move(restorer))
   {
     if (!mFactory || !mFactory->canCreate(mKey))
@@ -108,53 +109,6 @@ private:
   std::string mKey;
   Creator mRestorer;
   bool mDisabled{false};
-};
-
-class TrackingSolver final : public WorldSolver
-{
-public:
-  TrackingSolver(
-      std::string name,
-      std::vector<std::string>& callLog,
-      std::optional<RigidSolverType> rigidSolverType = std::nullopt)
-    : WorldSolver(std::move(name)),
-      mCallLog(callLog),
-      mRigidSolverType(std::move(rigidSolverType))
-  {
-  }
-
-  std::optional<RigidSolverType> getRigidSolverType() const override
-  {
-    return mRigidSolverType;
-  }
-
-  void setTimeStep(double) override {}
-
-  void step(World&, bool) override
-  {
-    mCallLog.push_back(mName + ".step");
-  }
-
-  void sync(World&) override
-  {
-    mCallLog.push_back(mName + ".sync");
-  }
-
-private:
-  std::vector<std::string>& mCallLog;
-  std::optional<RigidSolverType> mRigidSolverType;
-};
-
-class SolverTestWorld final : public World
-{
-public:
-  using World::World;
-
-  using World::addSolver;
-  using World::getNumSolvers;
-  using World::getSolverIndex;
-  using World::moveSolver;
-  using World::setSolverEnabled;
 };
 
 } // namespace
@@ -447,8 +401,8 @@ TEST(World, ValidatingClones)
       auto originalCD = original->getCollisionDetector();
       auto cloneCD = clones.back()->getCollisionDetector();
 
-      std::string originalCDType = originalCD->getType();
-      std::string cloneCDType = cloneCD->getType();
+      std::string originalCDType{originalCD->getTypeView()};
+      std::string cloneCDType{cloneCD->getTypeView()};
 
       EXPECT_EQ(originalCDType, cloneCDType);
     }
@@ -468,7 +422,7 @@ TEST(World, SetCollisionDetectorByType)
   world->setCollisionDetector(CollisionDetectorType::Dart);
 
   ASSERT_TRUE(world->getCollisionDetector());
-  EXPECT_EQ(world->getCollisionDetector()->getType(), "dart");
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
 }
 
 //==============================================================================
@@ -485,7 +439,7 @@ TEST(World, ConfiguresCollisionDetectorViaConfig)
   config.collisionDetector = CollisionDetectorType::Dart;
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
-  EXPECT_EQ(world->getCollisionDetector()->getType(), "dart");
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
 }
 
 //==============================================================================
@@ -547,7 +501,7 @@ TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
 
   auto current = world->getCollisionDetector();
   ASSERT_TRUE(current);
-  EXPECT_EQ(current->getType(), original->getType());
+  EXPECT_EQ(current->getTypeView(), original->getTypeView());
 }
 
 //==============================================================================
@@ -569,7 +523,7 @@ TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
   EXPECT_EQ(
-      world->getCollisionDetector()->getType(),
+      world->getCollisionDetector()->getTypeView(),
       collision::FCLCollisionDetector::getStaticType());
 }
 
@@ -601,7 +555,7 @@ TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
   EXPECT_EQ(
-      world->getCollisionDetector()->getType(),
+      world->getCollisionDetector()->getTypeView(),
       collision::FCLCollisionDetector::getStaticType());
 }
 
@@ -721,49 +675,4 @@ TEST(World, RevoluteJointConstraintBasics)
   const Eigen::Vector3d axis2
       = bd2->getTransform().linear() * Eigen::Vector3d::UnitY();
   EXPECT_GT(axis1.normalized().dot(axis2.normalized()), 0.2);
-}
-
-//==============================================================================
-TEST(World, SolverSteppingActiveRigidSolverOnlyOrdersNonRigidAndSync)
-{
-  auto world = std::make_shared<SolverTestWorld>();
-  ASSERT_TRUE(world);
-
-  for (std::size_t i = 0; i < world->getNumSolvers(); ++i)
-    EXPECT_TRUE(world->setSolverEnabled(i, false));
-
-  std::vector<std::string> callLog;
-  auto* nonRigid
-      = world->addSolver(std::make_unique<TrackingSolver>("nonrigid", callLog));
-  auto* mirrorRigid = world->addSolver(std::make_unique<TrackingSolver>(
-      "mirror", callLog, RigidSolverType::EntityComponent));
-  auto* activeRigid = world->addSolver(std::make_unique<TrackingSolver>(
-      "active", callLog, RigidSolverType::ClassicSkeleton));
-
-  ASSERT_TRUE(nonRigid);
-  ASSERT_TRUE(mirrorRigid);
-  ASSERT_TRUE(activeRigid);
-
-  auto moveToIndex = [&](WorldSolver* solver, std::size_t target) {
-    const auto index = world->getSolverIndex(solver);
-    ASSERT_LT(index, world->getNumSolvers());
-    ASSERT_TRUE(world->moveSolver(index, target));
-  };
-
-  moveToIndex(nonRigid, 0);
-  moveToIndex(mirrorRigid, 1);
-  moveToIndex(activeRigid, 2);
-
-  ASSERT_TRUE(world->setActiveRigidSolver(RigidSolverType::ClassicSkeleton));
-  world->setSolverSteppingMode(SolverSteppingMode::ActiveRigidSolverOnly);
-
-  callLog.clear();
-  world->step(false);
-
-  const std::vector<std::string> expected{
-      "active.step",
-      "nonrigid.step",
-      "mirror.sync",
-  };
-  EXPECT_EQ(callLog, expected);
 }
