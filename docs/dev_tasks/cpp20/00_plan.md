@@ -67,3 +67,13 @@
 - Replace read-only `const std::vector<T>&` parameters in utils parsing helpers
   and math mesh/LCP utilities with `std::span<const T>`.
 - Update call sites to pass spans explicitly where needed.
+
+### Phase 14: Geometry helper spans
+
+- Switch geometry helper inputs (support polygons/hulls) to
+  `std::span<const Eigen::Vector2d>`/`std::span<const Eigen::Vector3d>` in
+  `dart/math/Geometry`.
+- Add span-friendly overloads for convex hull helpers in
+  `dart/math/detail/Convhull` and `computeConvexHull3D`, keeping vector returns.
+- Update call sites (Skeleton support polygon, TriMesh convex hull,
+  PolyhedronVisual) and tests.
