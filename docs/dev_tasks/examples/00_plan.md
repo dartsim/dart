@@ -2,8 +2,8 @@
 
 ## Status
 
-- In progress: sanity-check example discovery and runner tasks after removals.
-- Next: review whether any further Python example consolidation is needed.
+- Completed: sanity-checked example discovery after removals.
+- Completed: reviewed Python examples; no further consolidation planned yet.
 - Completed: removed `rerun` placeholder example (no sources).
 - Completed: removed `speed_test`; keep `perf_headless_simulation` as the
   headless
