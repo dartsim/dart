@@ -40,6 +40,7 @@
 #include <boost/pfr.hpp>
 #include <entt/entt.hpp>
 
+#include <span>
 #include <type_traits>
 
 #include <cstddef>
@@ -113,7 +114,7 @@ size_t extractFieldToVector(
 /// Automatically inject scalars from vector into a field
 template <typename Field>
 size_t injectVectorToField(
-    Field& field, const std::vector<double>& vec, size_t offset)
+    Field& field, std::span<const double> vec, size_t offset)
 {
   using FieldType = std::remove_cvref_t<Field>;
   size_t count = 0;
@@ -230,7 +231,7 @@ public:
 
   size_t fromVector(
       entt::registry& registry,
-      const std::vector<double>& vec,
+      std::span<const double> vec,
       size_t offset) override
   {
     auto view = registry.view<Component>();
