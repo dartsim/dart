@@ -38,34 +38,10 @@
 #include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
 
-#include <ode/version.h>
-
-#include <cstdio>
 #include <gtest/gtest.h>
 
 using namespace dart;
 using namespace dynamics;
-
-namespace {
-
-bool isOdeVersionAtLeast(int major, int minor, int patch)
-{
-  int odeMajor = 0;
-  int odeMinor = 0;
-  int odePatch = 0;
-  if (std::sscanf(dODE_VERSION, "%d.%d.%d", &odeMajor, &odeMinor, &odePatch)
-      != 3) {
-    return false;
-  }
-
-  if (odeMajor != major)
-    return odeMajor > major;
-  if (odeMinor != minor)
-    return odeMinor > minor;
-  return odePatch >= patch;
-}
-
-} // namespace
 
 //==============================================================================
 std::shared_ptr<World> createWorld()
@@ -219,11 +195,6 @@ TEST(ForceDependentSlip, BoxSlipVelocity)
 // of the world so it's rolling and slipping.
 TEST(ForceDependentSlip, CylinderSlipVelocity)
 {
-  if (isOdeVersionAtLeast(0, 16, 6)) {
-    GTEST_SKIP() << "Skipping due to unstable ODE box-cylinder contacts ("
-                 << dODE_VERSION << ", see issue #2332).";
-  }
-
   using Eigen::Vector3d;
   const double mass = 2.0;
   const double radius = 0.5;

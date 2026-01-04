@@ -36,12 +36,13 @@
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
 #include "dart/collision/ode/OdeCollisionObject.hpp"
 #include "dart/collision/ode/OdeTypes.hpp"
-
-#include "dart/config.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
+
 #include <ode/ode.h>
+
 #include <vector>
 
 namespace dart {
@@ -352,10 +353,8 @@ Contact convertContact(
 {
   Contact contact;
 
-  auto* odeObj1 = static_cast<OdeCollisionObject*>(
-      dGeomGetData(odeContact.g1));
-  auto* odeObj2 = static_cast<OdeCollisionObject*>(
-      dGeomGetData(odeContact.g2));
+  auto* odeObj1 = static_cast<OdeCollisionObject*>(dGeomGetData(odeContact.g1));
+  auto* odeObj2 = static_cast<OdeCollisionObject*>(dGeomGetData(odeContact.g2));
   contact.collisionObject1 = odeObj1 ? odeObj1 : b1;
   contact.collisionObject2 = odeObj2 ? odeObj2 : b2;
 
@@ -503,8 +502,7 @@ bool expandBoxCylinderContact(
 
   const auto* cylinderShape = shape1->as<dynamics::CylinderShape>();
   const auto* boxShape = shape2->as<dynamics::BoxShape>();
-  const collision::CollisionObject* cylinderObj
-      = baseContact.collisionObject1;
+  const collision::CollisionObject* cylinderObj = baseContact.collisionObject1;
 
   if (!(cylinderShape && boxShape)) {
     cylinderShape = shape2->as<dynamics::CylinderShape>();
@@ -567,8 +565,7 @@ bool expandBoxCylinderContact(
     return false;
 
   const double perContactDepth
-      = baseContact.penetrationDepth
-        / static_cast<double>(contacts.size());
+      = baseContact.penetrationDepth / static_cast<double>(contacts.size());
   for (auto& contact : contacts) {
     contact.penetrationDepth = perContactDepth;
     result.addContact(contact);
