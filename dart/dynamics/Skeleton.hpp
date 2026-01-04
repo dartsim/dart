@@ -352,10 +352,10 @@ public:
   const SoftBodyNode* getSoftBodyNode(std::size_t _idx) const;
 
   // Documentation inherited
-  BodyNode* getBodyNode(const std::string& name) override;
+  BodyNode* getBodyNode(std::string_view name) override;
 
   // Documentation inherited
-  const BodyNode* getBodyNode(const std::string& name) const override;
+  const BodyNode* getBodyNode(std::string_view name) const override;
 
   /// Deprecated list getter retained for backward compatibility until
   /// gz-physics migrates.
@@ -368,25 +368,25 @@ public:
   std::span<const BodyNode* const> getBodyNodes() const override;
 
   /// Get soft body node whose name is _name
-  SoftBodyNode* getSoftBodyNode(const std::string& _name);
+  SoftBodyNode* getSoftBodyNode(std::string_view name);
 
   /// Get const soft body node whose name is _name
-  const SoftBodyNode* getSoftBodyNode(const std::string& _name) const;
+  const SoftBodyNode* getSoftBodyNode(std::string_view name) const;
 
-  /// @copydoc MetaSkeleton::getBodyNodes(const std::string&).
+  /// @copydoc MetaSkeleton::getBodyNodes(std::string_view).
   ///
   /// @note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
   /// So this function returns the single BodyNode of the given name if it
   /// exists.
-  std::vector<BodyNode*> getBodyNodes(const std::string& name) override;
+  std::vector<BodyNode*> getBodyNodes(std::string_view name) override;
 
-  /// @copydoc MetaSkeleton::getBodyNodes(const std::string&).
+  /// @copydoc MetaSkeleton::getBodyNodes(std::string_view).
   ///
   /// @note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
   /// So this function returns the single BodyNode of the given name if it
   /// exists.
   std::vector<const BodyNode*> getBodyNodes(
-      const std::string& name) const override;
+      std::string_view name) const override;
 
   // Documentation inherited
   bool hasBodyNode(const BodyNode* bodyNode) const override;
@@ -411,10 +411,10 @@ public:
   const Joint* getJoint(std::size_t _idx) const override;
 
   // Documentation inherited
-  Joint* getJoint(const std::string& name) override;
+  Joint* getJoint(std::string_view name) override;
 
   // Documentation inherited
-  const Joint* getJoint(const std::string& name) const override;
+  const Joint* getJoint(std::string_view name) const override;
 
   /// Deprecated joint list getter retained for backward compatibility until
   /// gz-physics migrates.
@@ -426,17 +426,17 @@ public:
   DART_DEPRECATED(6.13)
   std::vector<const Joint*> getJoints() const override;
 
-  /// @copydoc MetaSkeleton::getJoints(const std::string&).
+  /// @copydoc MetaSkeleton::getJoints(std::string_view).
   ///
   /// @note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
   /// So this function returns the single Joint of the given name if it exists.
-  std::vector<Joint*> getJoints(const std::string& name) override;
+  std::vector<Joint*> getJoints(std::string_view name) override;
 
-  /// @copydoc MetaSkeleton::getJoints(const std::string&).
+  /// @copydoc MetaSkeleton::getJoints(std::string_view).
   ///
   /// @note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
   /// So this function returns the single Joint of the given name if it exists.
-  std::vector<const Joint*> getJoints(const std::string& name) const override;
+  std::vector<const Joint*> getJoints(std::string_view name) const override;
 
   // Documentation inherited
   bool hasJoint(const Joint* joint) const override;
