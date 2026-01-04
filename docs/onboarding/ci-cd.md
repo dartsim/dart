@@ -35,7 +35,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Review comment metadata is not exposed by `gh pr view --json`; Suggested (Unverified): `gh api /repos/<OWNER>/<REPO>/pulls/comments/<COMMENT_ID>`.
   - `gh pr checks` may show duplicate entries when workflows run for both `push` and `pull_request` events; compare the run URLs and focus on the newest one.
   - Newer runs can cancel older ones; confirm the run status/conclusion before spending time on job logs.
-  - zsh can produce ``parse error near `}'`` if a `gh ... --jq` expression containing `{ ... }` isn't fully quoted; wrap the whole jq program in single quotes.
+- zsh can produce parse errors when jq expressions or backtick characters are not fully quoted; quote `gh ... --jq` programs and use a here-doc or `--body-file` when PR bodies include backticks.
   - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
   - CI jobs can sit in the queue for a long time; re-check the run list and wait for the PR run to start before assuming a failure.
   - Wheel publishing workflows may lag behind other jobs and stay queued longer; keep watching the PR run until all workflows complete.
@@ -54,21 +54,17 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 
 ## Task Recap (General)
 
-This task reorganized the Python examples into the same category layout as the C++ examples and adjusted the Python example runner to resolve nested paths. CI failures were traced to example build errors caused by API drift and fixed by aligning example code with current headers. The emphasis was on using the repo's standard entry points, keeping CI feedback loops tight, and validating changes with the smallest runnable checks.
+This task standardized naming and packaging for the experimental simulation module and ensured it installs cleanly as an optional component. Classic simulation APIs were kept independent of experimental code while the experimental module continues to rely on core DART facilities. A small behavior fix aligned World stepping with classic solver split-impulse cleanup. Changes were validated with lint plus full test and Gazebo integration runs, then monitored in CI.
 
 ## How We Worked (Repeatable Playbook)
 
-- Confirm the issue still reproduces on the current main branch before implementing changes.
 - Sync with the target branch and inspect the diff before making edits.
-- When resuming work, identify the PR associated with the current branch before monitoring CI.
+- Keep legacy/public APIs isolated from experimental modules; verify dependencies flow one way.
+- Update build/CI naming and docs when namespaces or component names change.
 - Run lint before committing so formatter/codespell changes are captured.
-- Run the smallest local validation first, then expand to full test or CI as needed.
+- Run the smallest local validation first, then full test-all and Gazebo workflows when simulation/build changes land.
 - Resolve merge conflicts before re-running CI so the PR remains mergeable.
-- When a job fails inside a still-running workflow, pull the job logs directly and fix the smallest failure first.
-- If a single CI job fails, re-run just that job using its databaseId rather than restarting the entire workflow.
-- When example builds fail, update the example code to match the current API surface before re-running CI.
-- If job logs are missing, download the run-level logs archive and scan it for the failure instead of guessing.
-- If coverage gates fail, add targeted tests for new lines before re-running CI.
+- When review feedback cites behavioral differences, compare against the classic implementation and align or explain the deviation.
 - Push each commit and monitor GitHub Actions until all jobs complete.
 
 ## Fast Iteration Loop
