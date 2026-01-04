@@ -3517,7 +3517,8 @@ static void computeSupportPolygon(
   axis2 = up.normalized().cross(axis1);
 
   std::vector<std::size_t> vertex_indices;
-  polygon = math::computeSupportPolgyon(vertex_indices, geometry, axis1, axis2);
+  polygon = math::computeSupportPolgyon(
+      vertex_indices, std::span<const Eigen::Vector3d>(geometry), axis1, axis2);
 
   ee_indices.reserve(vertex_indices.size());
   for (std::size_t i = 0; i < vertex_indices.size(); ++i)

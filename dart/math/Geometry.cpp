@@ -1556,28 +1556,28 @@ Eigen::Isometry3d computeTransform(
 
 //==============================================================================
 SupportPolygon computeSupportPolgyon(
-    const SupportGeometry& _geometry,
-    const Eigen::Vector3d& _axis1,
-    const Eigen::Vector3d& _axis2)
+    std::span<const Eigen::Vector3d> geometry,
+    const Eigen::Vector3d& axis1,
+    const Eigen::Vector3d& axis2)
 {
   std::vector<std::size_t> indices;
-  indices.reserve(_geometry.size());
-  return computeSupportPolgyon(indices, _geometry, _axis1, _axis2);
+  indices.reserve(geometry.size());
+  return computeSupportPolgyon(indices, geometry, axis1, axis2);
 }
 
 //==============================================================================
 SupportPolygon computeSupportPolgyon(
-    std::vector<std::size_t>& _originalIndices,
-    const SupportGeometry& _geometry,
-    const Eigen::Vector3d& _axis1,
-    const Eigen::Vector3d& _axis2)
+    std::vector<std::size_t>& originalIndices,
+    std::span<const Eigen::Vector3d> geometry,
+    const Eigen::Vector3d& axis1,
+    const Eigen::Vector3d& axis2)
 {
   SupportPolygon polygon;
-  polygon.reserve(_geometry.size());
-  for (const Eigen::Vector3d& v : _geometry)
-    polygon.push_back(Eigen::Vector2d(v.dot(_axis1), v.dot(_axis2)));
+  polygon.reserve(geometry.size());
+  for (const Eigen::Vector3d& v : geometry)
+    polygon.push_back(Eigen::Vector2d(v.dot(axis1), v.dot(axis2)));
 
-  return computeConvexHull(_originalIndices, polygon);
+  return computeConvexHull(originalIndices, polygon);
 }
 
 //==============================================================================
@@ -1604,7 +1604,7 @@ static bool HullAngleComparison(const HullAngle& a, const HullAngle& b)
 }
 
 //==============================================================================
-SupportPolygon computeConvexHull(const SupportPolygon& points)
+SupportPolygon computeConvexHull(std::span<const Eigen::Vector2d> points)
 {
   std::vector<std::size_t> indices;
   indices.reserve(points.size());
@@ -1707,7 +1707,8 @@ static bool isLeftTurn(
 
 //==============================================================================
 SupportPolygon computeConvexHull(
-    std::vector<std::size_t>& originalIndices, const SupportPolygon& points)
+    std::vector<std::size_t>& originalIndices,
+    std::span<const Eigen::Vector2d> points)
 {
   originalIndices.clear();
 
@@ -1716,7 +1717,10 @@ SupportPolygon computeConvexHull(
     for (std::size_t i = 0; i < points.size(); ++i)
       originalIndices.push_back(i);
 
-    return points;
+    SupportPolygon hull;
+    hull.reserve(points.size());
+    hull.insert(hull.end(), points.begin(), points.end());
+    return hull;
   }
 
   // We'll use "Graham scan" to compute the convex hull in the general case

@@ -75,6 +75,7 @@
 #include <algorithm>
 #include <iterator>
 #include <limits>
+#include <span>
 #include <vector>
 
 #include <cassert>
@@ -723,9 +724,9 @@ inline void convexHull3dBuild(
 // optimized legacy implementation.
 //==============================================================================
 
-template <typename S, typename VertexAllocator>
+template <typename S>
 inline void convexHull3dBuild(
-    const std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>& inVertices,
+    std::span<const Eigen::Matrix<S, 3, 1>> inVertices,
     std::vector<int>& outFaces,
     int& numOutputTriangles)
 {
