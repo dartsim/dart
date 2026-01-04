@@ -467,6 +467,8 @@ void stabilizeBoxCylinderContactPoint(Contact& contact)
   const Eigen::Vector3d cylinderCenter
       = cylinderObject->getTransform().translation();
   const double axisDot = std::abs(axis.dot(normal));
+  const bool cylinderIsObject1 = (cylinderObject == contact.collisionObject1);
+  const double directionSign = cylinderIsObject1 ? -1.0 : 1.0;
 
   constexpr double kAxisParallelThreshold = 0.9;
   constexpr double kAxisPerpendicularThreshold = 0.1;
@@ -475,14 +477,14 @@ void stabilizeBoxCylinderContactPoint(Contact& contact)
     Eigen::Vector3d capAxis = axis;
     if (capAxis.dot(normal) < 0.0)
       capAxis = -capAxis;
-    contact.point
-        = cylinderCenter - capAxis * (0.5 * cylinderShape->getHeight());
+    const double halfHeight = 0.5 * cylinderShape->getHeight();
+    contact.point = cylinderCenter + directionSign * capAxis * halfHeight;
     return;
   }
 
   if (axisDot < kAxisPerpendicularThreshold) {
-    contact.point
-        = cylinderCenter - normal * cylinderShape->getRadius();
+    const double radius = cylinderShape->getRadius();
+    contact.point = cylinderCenter + directionSign * normal * radius;
   }
 }
 #endif
