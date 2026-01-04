@@ -28,6 +28,7 @@ def run_cpp_example():
         ("capsule_ground_contact", "collision_capsule_ground_contact"),
         ("fetch", "model_fetch"),
         ("heightmap", "collision_heightmap"),
+        ("mixed_chain", "hybrid_mixed_chain"),
         ("operational_space_control", "control_operational_space"),
         ("rigid_shapes", "collision_rigid_shapes"),
         ("unified_loading", "io_unified_loading"),

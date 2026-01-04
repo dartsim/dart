@@ -41,7 +41,7 @@ add_subdirectory(model_fetch)
 
 # Soft and hybrid examples
 add_subdirectory(hybrid_dynamics)
-add_subdirectory(mixed_chain)
+add_subdirectory(hybrid_mixed_chain)
 add_subdirectory(soft_bodies)
 
 # Visualization and interaction examples

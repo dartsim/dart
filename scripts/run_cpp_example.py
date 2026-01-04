@@ -15,6 +15,7 @@ _RENAMED_EXAMPLES = {
     "capsule_ground_contact": "collision_capsule_ground_contact",
     "heightmap": "collision_heightmap",
     "fetch": "model_fetch",
+    "mixed_chain": "hybrid_mixed_chain",
     "operational_space_control": "control_operational_space",
     "raylib_gui": "raylib",
     "rigid_shapes": "collision_rigid_shapes",

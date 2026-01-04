@@ -1,4 +1,4 @@
-# Mixed Chain Example
+# Hybrid Mixed Chain Example
 
 ## Summary
 
@@ -24,6 +24,6 @@ From this directory:
 
 Launch the executable from the build directory above:
 
-    $ ./mixed_chain
+    $ ./hybrid_mixed_chain
 
 Follow the instructions detailed in the console.

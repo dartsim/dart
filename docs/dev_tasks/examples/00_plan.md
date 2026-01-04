@@ -61,6 +61,7 @@
   matching Python examples (`joint_chain`, `joint_loop`).
 - Renamed collision examples to the `collision_*` prefix.
 - Renamed `fetch` -> `model_fetch` and `unified_loading` -> `io_unified_loading`.
+- Renamed `mixed_chain` -> `hybrid_mixed_chain`.
 
 ## Naming Prefix Plan
 

@@ -54,7 +54,7 @@
 ### 06 Soft and Hybrid
 
 - `hybrid_dynamics`
-- `mixed_chain`
+- `hybrid_mixed_chain`
 - `soft_bodies`
 
 ### 07 Visualization and Interaction
