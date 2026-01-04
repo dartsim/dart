@@ -1,4 +1,4 @@
-# Rigid Loop Example
+# Joint Loop Example
 
 ## Summary
 
@@ -25,7 +25,7 @@ From this directory:
 
 Launch the executable from the build directory above:
 
-    $ ./rigid_loop
+    $ ./joint_loop
 
 ## Controls
 

@@ -12,14 +12,14 @@ add_subdirectory(rigid_hardcoded_design)
 add_subdirectory(rigid_cubes)
 
 # Joints and constraints examples
-add_subdirectory(coupler_constraint)
-add_subdirectory(free_joint_cases)
-add_subdirectory(human_joint_limits)
+add_subdirectory(joint_coupler)
+add_subdirectory(joint_free_cases)
+add_subdirectory(joint_human_limits)
 add_subdirectory(joint_constraints)
-add_subdirectory(mimic_pendulums)
-add_subdirectory(rigid_chain)
-add_subdirectory(rigid_loop)
-add_subdirectory(lcp_solvers)
+add_subdirectory(joint_mimic_pendulums)
+add_subdirectory(joint_chain)
+add_subdirectory(joint_loop)
+add_subdirectory(joint_lcp_solvers)
 
 # Collisions and contacts examples
 add_subdirectory(box_stacking)

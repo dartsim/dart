@@ -1,4 +1,4 @@
-# Mimic Pendulums Example
+# Joint Mimic Pendulums Example
 
 ## Summary
 

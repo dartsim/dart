@@ -55,6 +55,8 @@
   fixed the example render path by attaching visual aspects to the frames.
 - Adopted example naming prefixes by category (e.g., `control_*`, `ik_*`) and
   will apply the pattern across the remaining sections.
+- Renamed joint/constraint examples to the `joint_*` prefix and updated the
+  matching Python examples (`joint_chain`, `joint_loop`).
 
 ## Naming Prefix Plan
 

@@ -518,13 +518,13 @@ py-ex-rigid-cubes = { depends-on = [
   ] },
 ] }
 
-py-ex-rigid-chain = { depends-on = [
+py-ex-joint-chain = { depends-on = [
   { task = "py-ex", args = [
-    "rigid_chain",
+    "joint_chain",
   ] },
 ] }
 
-py-ex-rigid-loop = { depends-on = [{ task = "py-ex", args = ["rigid_loop"] }] }
+py-ex-joint-loop = { depends-on = [{ task = "py-ex", args = ["joint_loop"] }] }
 
 py-ex-control-balance-biped = { depends-on = [
   { task = "py-ex", args = [

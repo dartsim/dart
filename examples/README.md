@@ -21,14 +21,14 @@
 
 ### 02 Joints and Constraints
 
-- `coupler_constraint`
-- `free_joint_cases`
-- `human_joint_limits`
+- `joint_coupler`
+- `joint_free_cases`
+- `joint_human_limits`
 - `joint_constraints`
-- `lcp_solvers`
-- `mimic_pendulums`
-- `rigid_chain`
-- `rigid_loop`
+- `joint_lcp_solvers`
+- `joint_mimic_pendulums`
+- `joint_chain`
+- `joint_loop`
 
 ### 03 Collisions and Contacts
 

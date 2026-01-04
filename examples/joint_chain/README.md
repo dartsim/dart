@@ -1,17 +1,11 @@
-# Human Joint Limits Example
+# Joint Chain Example
 
 ## Summary
 
-- Goal: apply custom joint-limit constraints to a humanoid skeleton.
-- Concepts/APIs: `constraint::ConstraintSolver`, joint limit enforcement,
-  custom joint-limit constraint classes.
-- Expected output: an OSG viewer with a human model constrained at the arms
-  and legs.
+- Goal: simulate a multi-link chain with per-joint damping.
+- Concepts/APIs: `dart::io::readWorld`, `gui::RealTimeWorldNode`, joint damping.
+- Expected output: an OSG viewer with a falling chain that settles under damping.
 - Controls: space toggles simulation.
-
-## Notes
-
-- Requires TinyDNN and DART built with both Bullet and ODE collision backends.
 
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.

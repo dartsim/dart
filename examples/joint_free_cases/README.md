@@ -1,4 +1,4 @@
-# Free Joint Cases Example
+# Joint Free Cases Example
 
 ## Summary
 
@@ -27,9 +27,9 @@ The reference pose can be computed using either:
 Run from a build tree:
 
 ```sh
-./free_joint_cases --gui-scale 1.0
+./joint_free_cases --gui-scale 1.0
 # Use spherical inertia so the constant-twist reference is exact:
-./free_joint_cases --ground-truth constant --spherical-inertia
+./joint_free_cases --ground-truth constant --spherical-inertia
 ```
 
 Controls are available in the ImGui window for toggling simulation, resetting the cases, and running numeric checks (analytic vs. finite-difference Jacobians).

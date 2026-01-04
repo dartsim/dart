@@ -19,8 +19,8 @@
 
 ### 02 Joints and Constraints
 
-- `rigid_chain`
-- `rigid_loop`
+- `joint_chain`
+- `joint_loop`
 
 ### 03 Collisions and Contacts
 

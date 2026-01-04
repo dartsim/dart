@@ -1,4 +1,4 @@
-# Coupler Constraint Example
+# Joint Coupler Constraint Example
 
 ## Summary
 

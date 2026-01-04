@@ -400,7 +400,7 @@ public:
   {
     const int scaleKey = static_cast<int>(std::lround(guiScale * 100.0));
     mWindowLabel
-        = "FreeJoint cases##free_joint_cases_" + std::to_string(scaleKey);
+        = "FreeJoint cases##joint_free_cases_" + std::to_string(scaleKey);
 
     applyInertiaMode();
     applyGroundTruthVisibility();
