@@ -305,8 +305,10 @@ void FreeJoint::setRelativeSpatialVelocity(
   if (getChildBodyNode() == inCoordinatesOf) {
     setRelativeSpatialVelocity(newSpatialVelocity);
   } else {
-    setRelativeSpatialVelocity(math::AdR(
-        inCoordinatesOf->getTransform(getChildBodyNode()), newSpatialVelocity));
+    setRelativeSpatialVelocity(
+        math::AdR(
+            inCoordinatesOf->getTransform(getChildBodyNode()),
+            newSpatialVelocity));
   }
 }
 
@@ -448,9 +450,10 @@ void FreeJoint::setRelativeSpatialAcceleration(
   if (getChildBodyNode() == inCoordinatesOf) {
     setRelativeSpatialAcceleration(newSpatialAcceleration);
   } else {
-    setRelativeSpatialAcceleration(math::AdR(
-        inCoordinatesOf->getTransform(getChildBodyNode()),
-        newSpatialAcceleration));
+    setRelativeSpatialAcceleration(
+        math::AdR(
+            inCoordinatesOf->getTransform(getChildBodyNode()),
+            newSpatialAcceleration));
   }
 }
 
@@ -746,8 +749,9 @@ void FreeJoint::integratePositions(
 //==============================================================================
 void FreeJoint::integrateVelocities(double _dt)
 {
-  setVelocitiesStatic(math::integrateVelocity<math::RealVectorSpace<6>>(
-      getVelocitiesStatic(), getAccelerationsStatic(), _dt));
+  setVelocitiesStatic(
+      math::integrateVelocity<math::RealVectorSpace<6>>(
+          getVelocitiesStatic(), getAccelerationsStatic(), _dt));
 }
 
 //==============================================================================

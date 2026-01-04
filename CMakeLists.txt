@@ -874,7 +874,7 @@ endif()
 
 find_program(
   CLANG_FORMAT_EXECUTABLE
-  NAMES clang-format-14
+  NAMES clang-format-21 clang-format
 )
 
 get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)

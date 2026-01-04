@@ -47,12 +47,13 @@ namespace dart::simulation::experimental::io {
 //==============================================================================
 
 template <typename T>
-requires(!comps::HasComponentCategory<T>) void autoSerialize(
+  requires(!comps::HasComponentCategory<T>)
+void autoSerialize(
     std::ostream& out, const T& value, const EntityMap& entityMap);
 
 template <typename T>
-requires(!comps::HasComponentCategory<T>) void autoDeserialize(
-    std::istream& in, T& value);
+  requires(!comps::HasComponentCategory<T>)
+void autoDeserialize(std::istream& in, T& value);
 
 //==============================================================================
 // Automatic Serialization for TagComponent (empty components)
@@ -276,7 +277,8 @@ void autoDeserialize(std::istream& in, T& component)
 //==============================================================================
 
 template <typename T>
-requires(!comps::HasComponentCategory<T>) void autoSerialize(
+  requires(!comps::HasComponentCategory<T>)
+void autoSerialize(
     std::ostream& out, const T& value, const EntityMap& /*entityMap*/)
 {
   // Use Boost.PFR to serialize nested non-component struct
@@ -305,8 +307,8 @@ requires(!comps::HasComponentCategory<T>) void autoSerialize(
 }
 
 template <typename T>
-requires(!comps::HasComponentCategory<T>) void autoDeserialize(
-    std::istream& in, T& value)
+  requires(!comps::HasComponentCategory<T>)
+void autoDeserialize(std::istream& in, T& value)
 {
   // Use Boost.PFR to deserialize nested non-component struct
   boost::pfr::for_each_field(value, [&](auto& field) {

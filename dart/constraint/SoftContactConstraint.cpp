@@ -75,16 +75,18 @@ SoftContactConstraint::SoftContactConstraint(
     collision::Contact& contact, double timeStep)
   : ConstraintBase(),
     mTimeStep(timeStep),
-    mBodyNode1(const_cast<dynamics::ShapeFrame*>(
-                   contact.collisionObject1->getShapeFrame())
-                   ->asShapeNode()
-                   ->getBodyNodePtr()
-                   .get()),
-    mBodyNode2(const_cast<dynamics::ShapeFrame*>(
-                   contact.collisionObject2->getShapeFrame())
-                   ->asShapeNode()
-                   ->getBodyNodePtr()
-                   .get()),
+    mBodyNode1(
+        const_cast<dynamics::ShapeFrame*>(
+            contact.collisionObject1->getShapeFrame())
+            ->asShapeNode()
+            ->getBodyNodePtr()
+            .get()),
+    mBodyNode2(
+        const_cast<dynamics::ShapeFrame*>(
+            contact.collisionObject2->getShapeFrame())
+            ->asShapeNode()
+            ->getBodyNodePtr()
+            .get()),
     mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
     mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
     mPointMass1(nullptr),

@@ -46,10 +46,15 @@ namespace detail {
 /// Reference:
 /// https://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution
 template <typename T>
-concept UniformIntCompatible = std::same_as < std::remove_cv_t<T>,
-short >
-    || std::
-        same_as<std::remove_cv_t<T>, int> || std::same_as<std::remove_cv_t<T>, long> || std::same_as<std::remove_cv_t<T>, long long> || std::same_as<std::remove_cv_t<T>, unsigned short> || std::same_as<std::remove_cv_t<T>, unsigned int> || std::same_as<std::remove_cv_t<T>, unsigned long> || std::same_as<std::remove_cv_t<T>, unsigned long long>;
+concept UniformIntCompatible
+    = std::same_as<std::remove_cv_t<T>, short>
+      || std::same_as<std::remove_cv_t<T>, int>
+      || std::same_as<std::remove_cv_t<T>, long>
+      || std::same_as<std::remove_cv_t<T>, long long>
+      || std::same_as<std::remove_cv_t<T>, unsigned short>
+      || std::same_as<std::remove_cv_t<T>, unsigned int>
+      || std::same_as<std::remove_cv_t<T>, unsigned long>
+      || std::same_as<std::remove_cv_t<T>, unsigned long long>;
 
 /// Check whether T is derived from Eigen::MatrixBase
 template <typename T>
@@ -79,7 +84,7 @@ struct UniformScalarImpl;
 //==============================================================================
 // Floating-point case
 template <typename S>
-requires std::floating_point<S>
+  requires std::floating_point<S>
 struct UniformScalarImpl<S>
 {
   static S run(S min, S max)
@@ -94,7 +99,7 @@ struct UniformScalarImpl<S>
 //==============================================================================
 // Integer case
 template <typename S>
-requires UniformIntCompatible<S>
+  requires UniformIntCompatible<S>
 struct UniformScalarImpl<S>
 {
   static S run(S min, S max)
@@ -116,7 +121,7 @@ struct UniformMatrixImpl
 //==============================================================================
 // Dynamic matrix case
 template <typename Derived>
-requires EigenMatrix<Derived>
+  requires EigenMatrix<Derived>
 struct UniformMatrixImpl<
     Derived,
     std::enable_if_t<
@@ -143,7 +148,7 @@ struct UniformMatrixImpl<
 //==============================================================================
 // Dynamic vector case
 template <typename Derived>
-requires EigenMatrix<Derived>
+  requires EigenMatrix<Derived>
 struct UniformMatrixImpl<
     Derived,
     std::enable_if_t<
@@ -168,7 +173,7 @@ struct UniformMatrixImpl<
 //==============================================================================
 // Fixed matrix case
 template <typename Derived>
-requires EigenMatrix<Derived>
+  requires EigenMatrix<Derived>
 struct UniformMatrixImpl<
     Derived,
     std::enable_if_t<
@@ -195,7 +200,7 @@ struct UniformMatrixImpl<
 //==============================================================================
 // Fixed vector case
 template <typename Derived>
-requires EigenMatrix<Derived>
+  requires EigenMatrix<Derived>
 struct UniformMatrixImpl<
     Derived,
     std::enable_if_t<
@@ -223,7 +228,7 @@ struct UniformImpl;
 
 //==============================================================================
 template <typename T>
-requires std::is_arithmetic_v<T>
+  requires std::is_arithmetic_v<T>
 struct UniformImpl<T>
 {
   static T run(T min, T max)
@@ -234,7 +239,7 @@ struct UniformImpl<T>
 
 //==============================================================================
 template <typename T>
-requires EigenMatrix<T>
+  requires EigenMatrix<T>
 struct UniformImpl<T>
 {
   static T run(const Eigen::MatrixBase<T>& min, const Eigen::MatrixBase<T>& max)
@@ -250,7 +255,7 @@ struct NormalScalarImpl;
 //==============================================================================
 // Floating-point case
 template <typename S>
-requires std::floating_point<S>
+  requires std::floating_point<S>
 struct NormalScalarImpl<S>
 {
   static S run(S mean, S sigma)
@@ -263,7 +268,7 @@ struct NormalScalarImpl<S>
 //==============================================================================
 // Integer case - rounds normal distribution to nearest integer
 template <typename S>
-requires UniformIntCompatible<S>
+  requires UniformIntCompatible<S>
 struct NormalScalarImpl<S>
 {
   static S run(S mean, S sigma)
@@ -282,7 +287,7 @@ struct NormalImpl;
 
 //==============================================================================
 template <typename T>
-requires std::is_arithmetic_v<T>
+  requires std::is_arithmetic_v<T>
 struct NormalImpl<T>
 {
   static T run(T min, T max)

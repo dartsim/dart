@@ -48,8 +48,9 @@ void ExpectValidSolution(
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  ASSERT_TRUE(detail::computeEffectiveBounds(
-      problem.lo, problem.hi, problem.findex, x, loEff, hiEff, &message))
+  ASSERT_TRUE(
+      detail::computeEffectiveBounds(
+          problem.lo, problem.hi, problem.findex, x, loEff, hiEff, &message))
       << message;
   EXPECT_TRUE(detail::validateSolution(x, w, loEff, hiEff, tol, &message))
       << message;

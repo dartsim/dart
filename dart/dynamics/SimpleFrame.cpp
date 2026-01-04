@@ -250,8 +250,9 @@ void SimpleFrame::setRelativeSpatialAcceleration(
   if (this == _inCoordinatesOf)
     setRelativeSpatialAcceleration(_newSpatialAcceleration);
   else
-    setRelativeSpatialAcceleration(math::AdR(
-        _inCoordinatesOf->getTransform(this), _newSpatialAcceleration));
+    setRelativeSpatialAcceleration(
+        math::AdR(
+            _inCoordinatesOf->getTransform(this), _newSpatialAcceleration));
 }
 
 //==============================================================================

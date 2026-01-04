@@ -195,8 +195,9 @@ public:
       mContactPoints.push_back(contact.point);
     }
 
-    mContactShape->setPoint(std::span<const Eigen::Vector3d>(
-        mContactPoints.data(), mContactPoints.size()));
+    mContactShape->setPoint(
+        std::span<const Eigen::Vector3d>(
+            mContactPoints.data(), mContactPoints.size()));
   }
 
 private:
