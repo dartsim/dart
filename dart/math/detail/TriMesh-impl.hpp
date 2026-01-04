@@ -38,6 +38,8 @@
 
 #include <Eigen/Geometry>
 
+#include <span>
+
 namespace dart {
 namespace math {
 
@@ -223,8 +225,10 @@ std::shared_ptr<TriMesh<S>> TriMesh<S>::generateConvexHull(bool optimize) const
 {
   auto triangles = Triangles();
   auto vertices = Vertices();
+  using VertexAllocator = typename Vertices::allocator_type;
   std::tie(vertices, triangles)
-      = computeConvexHull3D<S, Index>(this->mVertices, optimize);
+      = computeConvexHull3D<S, Index, VertexAllocator>(
+          std::span<const Vector3>(this->mVertices), optimize);
 
   auto mesh = std::make_shared<TriMesh<S>>();
   mesh->setTriangles(vertices, triangles);
