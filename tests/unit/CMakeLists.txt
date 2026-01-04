@@ -175,3 +175,10 @@ if(TARGET dart-io)
   dart_add_test("unit" test_IoRead io/test_Read.cpp)
   target_link_libraries(test_IoRead dart-io)
 endif()
+
+# ==============================================================================
+# Simulation-Experimental Tests
+# ==============================================================================
+if(DART_BUILD_SIMULATION_EXPERIMENTAL)
+  add_subdirectory(simulation/experimental)
+endif()

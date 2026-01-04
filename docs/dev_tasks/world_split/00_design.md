@@ -3,7 +3,8 @@
 ## Status
 
 - In progress: moved the experimental stack to `dart/simulation/experimental` and tests to
-  `tests/simulation/experimental`. Namespace is `dart::simulation::experimental`, classic
+  `tests/unit/simulation/experimental` and `tests/benchmark/simulation/experimental`. Namespace is
+  `dart::simulation::experimental`, classic
   `dart::simulation::World` reverted.
 
 ## Goals
