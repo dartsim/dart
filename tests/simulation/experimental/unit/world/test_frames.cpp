@@ -94,8 +94,9 @@ TEST(FreeFrame, LocalTransform)
   // Set custom transform
   Eigen::Isometry3d T_desired = Eigen::Isometry3d::Identity();
   T_desired.translate(Eigen::Vector3d(1.0, 2.0, 3.0));
-  T_desired.rotate(Eigen::AngleAxisd(
-      dart::simulation::experimental::pi / 4, Eigen::Vector3d::UnitZ()));
+  T_desired.rotate(
+      Eigen::AngleAxisd(
+          dart::simulation::experimental::pi / 4, Eigen::Vector3d::UnitZ()));
 
   frame.setLocalTransform(T_desired);
   Eigen::Isometry3d T_actual = frame.getLocalTransform();
@@ -167,8 +168,9 @@ TEST(FixedFrame, ConstructionWithOffset)
   // Create with custom offset
   Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
   offset.translate(Eigen::Vector3d(1.0, 2.0, 3.0));
-  offset.rotate(Eigen::AngleAxisd(
-      dart::simulation::experimental::pi / 6, Eigen::Vector3d::UnitX()));
+  offset.rotate(
+      Eigen::AngleAxisd(
+          dart::simulation::experimental::pi / 6, Eigen::Vector3d::UnitX()));
 
   auto attached2 = world.addFixedFrame("attached2", parent, offset);
   Eigen::Isometry3d T2 = attached2.getLocalTransform();

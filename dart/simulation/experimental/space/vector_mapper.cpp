@@ -65,10 +65,11 @@ void VectorMapper::toVector(
     const entt::registry& registry, std::vector<double>& output) const
 {
   if (output.size() < m_space.getDimension()) {
-    throw std::invalid_argument(std::format(
-        "Output vector size ({}) < required dimension ({})",
-        output.size(),
-        m_space.getDimension()));
+    throw std::invalid_argument(
+        std::format(
+            "Output vector size ({}) < required dimension ({})",
+            output.size(),
+            m_space.getDimension()));
   }
 
   size_t offset = 0;
@@ -91,10 +92,11 @@ void VectorMapper::toEigen(
     const entt::registry& registry, Eigen::VectorXd& output) const
 {
   if (static_cast<size_t>(output.size()) < m_space.getDimension()) {
-    throw std::invalid_argument(std::format(
-        "Output vector size ({}) < required dimension ({})",
-        output.size(),
-        m_space.getDimension()));
+    throw std::invalid_argument(
+        std::format(
+            "Output vector size ({}) < required dimension ({})",
+            output.size(),
+            m_space.getDimension()));
   }
 
   // Use temporary std::vector for conversion
@@ -111,10 +113,11 @@ void VectorMapper::fromVector(
     entt::registry& registry, const std::vector<double>& vec)
 {
   if (vec.size() < m_space.getDimension()) {
-    throw std::invalid_argument(std::format(
-        "Input vector size ({}) < required dimension ({})",
-        vec.size(),
-        m_space.getDimension()));
+    throw std::invalid_argument(
+        std::format(
+            "Input vector size ({}) < required dimension ({})",
+            vec.size(),
+            m_space.getDimension()));
   }
 
   size_t offset = 0;
@@ -135,10 +138,11 @@ void VectorMapper::fromEigen(
     entt::registry& registry, const Eigen::VectorXd& vec)
 {
   if (static_cast<size_t>(vec.size()) < m_space.getDimension()) {
-    throw std::invalid_argument(std::format(
-        "Input vector size ({}) < required dimension ({})",
-        vec.size(),
-        m_space.getDimension()));
+    throw std::invalid_argument(
+        std::format(
+            "Input vector size ({}) < required dimension ({})",
+            vec.size(),
+            m_space.getDimension()));
   }
 
   // Convert Eigen to std::vector

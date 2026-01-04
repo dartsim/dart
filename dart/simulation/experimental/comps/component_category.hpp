@@ -149,8 +149,7 @@ enum class ComponentCategory
 
 /// Check if a type has component category metadata
 template <typename T>
-concept HasComponentCategory = requires
-{
+concept HasComponentCategory = requires {
   typename std::integral_constant<ComponentCategory, T::category>;
 };
 
@@ -176,9 +175,6 @@ concept IsTagComponent
 
 /// Check if a type has entityFields() method
 template <typename T>
-concept HasEntityFields = requires
-{
-  T::entityFields();
-};
+concept HasEntityFields = requires { T::entityFields(); };
 
 } // namespace dart::simulation::experimental::comps

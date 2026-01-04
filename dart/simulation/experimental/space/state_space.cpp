@@ -55,11 +55,12 @@ StateSpace& StateSpace::addVariable(
   }
 
   if (lower > upper) {
-    throw std::invalid_argument(std::format(
-        "Variable '{}': lower bound ({}) > upper bound ({})",
-        name,
-        lower,
-        upper));
+    throw std::invalid_argument(
+        std::format(
+            "Variable '{}': lower bound ({}) > upper bound ({})",
+            name,
+            lower,
+            upper));
   }
 
   Variable var;

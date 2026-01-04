@@ -60,10 +60,10 @@ size_t extractFieldToVector(
     vec[offset] = static_cast<double>(field);
     count = 1;
   } else if constexpr (
-      std::is_same_v<
-          FieldType,
-          Eigen::
-              Isometry3d> || std::is_base_of_v<Eigen::Transform<double, 3, Eigen::Isometry>, FieldType>) {
+      std::is_same_v<FieldType, Eigen::Isometry3d>
+      || std::is_base_of_v<
+          Eigen::Transform<double, 3, Eigen::Isometry>,
+          FieldType>) {
     // Extract translation (3) + rotation as quaternion (4)
     // Handle early to avoid confusion with other Eigen types
     auto translation = field.translation();
@@ -122,10 +122,10 @@ size_t injectVectorToField(
     field = static_cast<FieldType>(vec[offset]);
     count = 1;
   } else if constexpr (
-      std::is_same_v<
-          FieldType,
-          Eigen::
-              Isometry3d> || std::is_base_of_v<Eigen::Transform<double, 3, Eigen::Isometry>, FieldType>) {
+      std::is_same_v<FieldType, Eigen::Isometry3d>
+      || std::is_base_of_v<
+          Eigen::Transform<double, 3, Eigen::Isometry>,
+          FieldType>) {
     // Handle Isometry3d (before other Eigen types)
     Eigen::Vector3d translation(
         vec[offset + 0], vec[offset + 1], vec[offset + 2]);
