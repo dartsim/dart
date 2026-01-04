@@ -1,7 +1,7 @@
 import dartpy as dart
 
 """
-Displays Contacts between a Robot arm in a GUI as a pointcloud
+Displays contact points between a robot arm and ground as a point cloud.
 
 Demonstrates the following dartpy functionality:
 - Extracting contact points from simulation

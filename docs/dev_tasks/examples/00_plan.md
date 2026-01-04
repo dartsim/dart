@@ -3,7 +3,7 @@
 ## Status
 
 - In progress: sanity-check example discovery and runner tasks after removals.
-- Next: confirm Python example alignment with the updated C++ catalog.
+- Next: review whether any further Python example consolidation is needed.
 - Completed: removed `rerun` placeholder example (no sources).
 - Completed: removed `speed_test`; keep `perf_headless_simulation` as the
   headless
@@ -80,6 +80,8 @@
   or external dependency scope).
 - Kept `control_walking_humanoid` and `ik_analytic_wam` as supported advanced
   examples (documented, user-facing features).
+- Renamed Python `collision_pointcloud` -> `collision_contact_points` for
+  naming clarity.
 - Reviewed example names and category placement against README goals; no further
   renames required.
 
