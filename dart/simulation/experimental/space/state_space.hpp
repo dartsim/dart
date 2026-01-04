@@ -37,6 +37,7 @@
 #include <functional>
 #include <limits>
 #include <optional>
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -98,12 +99,12 @@ public:
 
   /// Add multiple scalar variables with same bounds
   /// Convenience method for adding multiple variables at once
-  /// @param names Vector of variable names
+  /// @param names Variable name views
   /// @param lower Lower bound for all variables
   /// @param upper Upper bound for all variables
   /// @return Reference to this for method chaining
   StateSpace& addVariables(
-      const std::vector<std::string>& names,
+      std::span<const std::string> names,
       double lower = -std::numeric_limits<double>::infinity(),
       double upper = std::numeric_limits<double>::infinity());
 
