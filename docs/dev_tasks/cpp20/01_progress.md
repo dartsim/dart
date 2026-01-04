@@ -2,8 +2,10 @@
 
 ## Status
 
-- Active branch: `cpp20/phase13`
-- Active PR (Phase 13): https://github.com/dartsim/dart/pull/2387
+- Active branch: `cpp20/phase15`
+- Active PR (Phase 15): https://github.com/dartsim/dart/pull/2393
+- Phase 14 PR: https://github.com/dartsim/dart/pull/2390
+- Phase 13 PR: https://github.com/dartsim/dart/pull/2387
 - Phase 12 PR: https://github.com/dartsim/dart/pull/2385
 - Phase 11 PR: https://github.com/dartsim/dart/pull/2384
 - Phase 10 PR: https://github.com/dartsim/dart/pull/2382 (merged)
@@ -32,5 +34,5 @@
 
 ## Next
 
-- Monitor PR #2384, #2385, and #2387 CI/review feedback (CI/merge handled by
-  the user).
+- Monitor PR #2384, #2385, #2387, #2390, and #2393 CI/review feedback (CI/merge
+  handled by the user).
