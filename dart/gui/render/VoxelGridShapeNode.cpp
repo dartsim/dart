@@ -66,10 +66,11 @@ VoxelBoxDrawable::VoxelBoxDrawable(double size, const Eigen::Vector4d& color)
 //==============================================================================
 void VoxelBoxDrawable::updateSize(double size)
 {
-  mShape->setHalfLengths(::osg::Vec3(
-      static_cast<float>(size * 0.5),
-      static_cast<float>(size * 0.5),
-      static_cast<float>(size * 0.5)));
+  mShape->setHalfLengths(
+      ::osg::Vec3(
+          static_cast<float>(size * 0.5),
+          static_cast<float>(size * 0.5),
+          static_cast<float>(size * 0.5)));
   dirtyBound();
   dirtyDisplayList();
 }

@@ -59,15 +59,15 @@ SoftMeshShape::~SoftMeshShape()
 }
 
 //==============================================================================
-const std::string& SoftMeshShape::getType() const
+std::string_view SoftMeshShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& SoftMeshShape::getStaticType()
+std::string_view SoftMeshShape::getStaticType()
 {
-  static const std::string type("SoftMeshShape");
+  static constexpr std::string_view type = "SoftMeshShape";
   return type;
 }
 

@@ -48,6 +48,7 @@
 #include "dart/math/Helpers.hpp"
 
 #include <algorithm>
+#include <iterator>
 #include <queue>
 #include <span>
 #include <string>
@@ -104,7 +105,7 @@ template <
     std::size_t (Owner::*getNumObjects)() const,
     Object* (Owner::*getObject)(std::size_t),
     void (ObjectBase::*setData)(const Data&)>
-void setAllMemberObjectData(Owner* owner, const std::vector<Data>& data)
+void setAllMemberObjectData(Owner* owner, std::span<const Data> data)
 {
   if (!owner) {
     DART_ERROR(
@@ -547,8 +548,7 @@ MetaSkeletonPtr Skeleton::cloneMetaSkeleton(const std::string& cloneName) const
 //==============================================================================
 #define SET_CONFIG_VECTOR(V)                                                   \
   if (configuration.m##V.size() > 0) {                                         \
-    if (static_cast<int>(configuration.mIndices.size())                        \
-        != configuration.m##V.size()) {                                        \
+    if (std::ssize(configuration.mIndices) != configuration.m##V.size()) {     \
       DART_ERROR(                                                              \
           "Mismatch in size of vector [{}] "                                   \
           "(expected {} | found {})",                                          \
@@ -993,10 +993,7 @@ std::vector<const BodyNode*> Skeleton::getBodyNodes(
 //==============================================================================
 bool Skeleton::hasBodyNode(const BodyNode* bodyNode) const
 {
-  return std::find(
-             mSkelCache.mBodyNodes.begin(),
-             mSkelCache.mBodyNodes.end(),
-             bodyNode)
+  return std::ranges::find(mSkelCache.mBodyNodes, bodyNode)
          != mSkelCache.mBodyNodes.end();
 }
 
@@ -1151,13 +1148,10 @@ std::vector<const Joint*> Skeleton::getJoints(const std::string& name) const
 //==============================================================================
 bool Skeleton::hasJoint(const Joint* joint) const
 {
-  return std::find_if(
-             mSkelCache.mBodyNodes.begin(),
-             mSkelCache.mBodyNodes.end(),
-             [&joint](const BodyNode* bodyNode) {
-               return bodyNode->getParentJoint() == joint;
-             })
-         != mSkelCache.mBodyNodes.end();
+  return std::ranges::any_of(
+      mSkelCache.mBodyNodes, [&joint](const BodyNode* bodyNode) {
+        return bodyNode->getParentJoint() == joint;
+      });
 }
 
 //==============================================================================
@@ -2206,8 +2200,7 @@ void Skeleton::constructNewTree()
 void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 {
 #if !defined(NDEBUG)
-  std::vector<BodyNode*>::iterator repeat = std::find(
-      mSkelCache.mBodyNodes.begin(), mSkelCache.mBodyNodes.end(), _newBodyNode);
+  auto repeat = std::ranges::find(mSkelCache.mBodyNodes, _newBodyNode);
   if (repeat != mSkelCache.mBodyNodes.end()) {
     DART_ERROR(
         "Attempting to double-register the BodyNode named [{}] in the Skeleton "
@@ -2348,13 +2341,13 @@ void Skeleton::registerNode(
   if (INVALID_INDEX == _index) {
     // If this Node believes its index is invalid, then it should not exist
     // anywhere in the vector
-    DART_ASSERT(std::find(nodes.begin(), nodes.end(), _newNode) == nodes.end());
+    DART_ASSERT(std::ranges::find(nodes, _newNode) == nodes.end());
 
     nodes.push_back(_newNode);
     _index = nodes.size() - 1;
   }
 
-  DART_ASSERT(std::find(nodes.begin(), nodes.end(), _newNode) != nodes.end());
+  DART_ASSERT(std::ranges::find(nodes, _newNode) != nodes.end());
 }
 
 //==============================================================================
@@ -2780,9 +2773,9 @@ std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
 }
 
 //==============================================================================
-void Skeleton::receiveBodyNodeTree(const std::vector<BodyNode*>& _tree)
+void Skeleton::receiveBodyNodeTree(std::span<BodyNode* const> tree)
 {
-  for (BodyNode* bn : _tree)
+  for (BodyNode* bn : tree)
     registerBodyNode(bn);
 }
 
@@ -3524,7 +3517,8 @@ static void computeSupportPolygon(
   axis2 = up.normalized().cross(axis1);
 
   std::vector<std::size_t> vertex_indices;
-  polygon = math::computeSupportPolgyon(vertex_indices, geometry, axis1, axis2);
+  polygon = math::computeSupportPolgyon(
+      vertex_indices, std::span<const Eigen::Vector3d>(geometry), axis1, axis2);
 
   ee_indices.reserve(vertex_indices.size());
   for (std::size_t i = 0; i < vertex_indices.size(); ++i)
@@ -3893,8 +3887,7 @@ void Skeleton::updateBiasImpulse(
 
   // This skeleton should contain _bodyNode
   DART_ASSERT(
-      std::find(mSoftBodyNodes.begin(), mSoftBodyNodes.end(), _softBodyNode)
-      != mSoftBodyNodes.end());
+      std::ranges::find(mSoftBodyNodes, _softBodyNode) != mSoftBodyNodes.end());
 
 #if !defined(NDEBUG)
   // All the constraint impulse should be zero

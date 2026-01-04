@@ -39,6 +39,7 @@
 
 #include <tinyxml2.h>
 
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -64,7 +65,7 @@ public:
   const Mesh& getMesh(std::size_t index) const;
 
   /// Finds <mesh> element by name
-  const Mesh* getMesh(const std::string& name) const;
+  const Mesh* getMesh(std::string_view name) const;
 
   /// \}
 

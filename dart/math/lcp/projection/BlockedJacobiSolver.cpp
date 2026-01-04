@@ -39,8 +39,10 @@
 #include <Eigen/Dense>
 
 #include <algorithm>
+#include <iterator>
 #include <limits>
 #include <numeric>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -86,18 +88,18 @@ bool buildBlockData(
     const Eigen::VectorXd& lo,
     const Eigen::VectorXd& hi,
     const Eigen::VectorXi& findex,
-    const std::vector<int>& indices,
+    std::span<const int> indices,
     BlockData& block,
     std::string* message)
 {
-  const int m = static_cast<int>(indices.size());
+  const auto m = std::ssize(indices);
   if (m == 0) {
     if (message)
       *message = "Block size must be positive";
     return false;
   }
 
-  block.indices = indices;
+  block.indices.assign(indices.begin(), indices.end());
   block.A.resize(m, m);
   block.baseB.resize(m);
   block.lo.resize(m);
@@ -114,7 +116,7 @@ bool buildBlockData(
     if (frictionIndex < 0) {
       block.findex[r] = -1;
     } else {
-      auto it = std::find(indices.begin(), indices.end(), frictionIndex);
+      auto it = std::ranges::find(indices, frictionIndex);
       if (it == indices.end()) {
         if (message)
           *message = "Block partition must include friction index";
@@ -140,7 +142,7 @@ bool buildBlocks(
     std::vector<BlockData>& blocks,
     std::string* message)
 {
-  const int n = static_cast<int>(b.size());
+  const auto n = std::ssize(b);
   blocks.clear();
   if (n == 0)
     return true;
@@ -171,7 +173,15 @@ bool buildBlocks(
       offset += size;
 
       BlockData block;
-      if (!buildBlockData(A, b, lo, hi, findex, indices, block, message))
+      if (!buildBlockData(
+              A,
+              b,
+              lo,
+              hi,
+              findex,
+              std::span<const int>{indices},
+              block,
+              message))
         return false;
       blocks.push_back(std::move(block));
     }
@@ -211,7 +221,15 @@ bool buildBlocks(
     if (indices.empty())
       continue;
     BlockData block;
-    if (!buildBlockData(A, b, lo, hi, findex, indices, block, message))
+    if (!buildBlockData(
+            A,
+            b,
+            lo,
+            hi,
+            findex,
+            std::span<const int>{indices},
+            block,
+            message))
       return false;
     blocks.push_back(std::move(block));
   }
@@ -264,7 +282,7 @@ LcpResult BlockedJacobiSolver::solve(
     return result;
   }
 
-  const int n = static_cast<int>(b.size());
+  const auto n = std::ssize(b);
   if (n == 0) {
     x.resize(0);
     result.status = LcpSolverStatus::Success;
@@ -358,7 +376,7 @@ LcpResult BlockedJacobiSolver::solve(
     Eigen::VectorXd xNext = x;
 
     for (const auto& block : blocks) {
-      const int m = static_cast<int>(block.indices.size());
+      const auto m = std::ssize(block.indices);
       Eigen::VectorXd xBlock(m);
       for (int r = 0; r < m; ++r)
         xBlock[r] = xPrev[block.indices[r]];

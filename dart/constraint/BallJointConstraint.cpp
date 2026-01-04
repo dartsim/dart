@@ -90,15 +90,15 @@ BallJointConstraint::BallJointConstraint(
 BallJointConstraint::~BallJointConstraint() {}
 
 //==============================================================================
-const std::string& BallJointConstraint::getType() const
+std::string_view BallJointConstraint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& BallJointConstraint::getStaticType()
+std::string_view BallJointConstraint::getStaticType()
 {
-  static const std::string name = "BallJointConstraint";
+  static constexpr std::string_view name = "BallJointConstraint";
   return name;
 }
 

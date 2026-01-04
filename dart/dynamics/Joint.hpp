@@ -50,6 +50,7 @@
 #include <memory>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace dart {
@@ -137,7 +138,7 @@ public:
   const std::string& getName() const;
 
   /// Gets a string representing the joint type
-  virtual const std::string& getType() const = 0;
+  virtual std::string_view getType() const = 0;
 
   /// Set actuator type. Switching types clears any cached commands so stale
   /// inputs do not leak across actuator modes.
@@ -150,7 +151,6 @@ public:
   /// actuator type, and each subsequent entry overrides the joint-wide type
   /// when it differs.
   void setActuatorTypes(std::span<const ActuatorType> actuatorTypes);
-  void setActuatorTypes(const std::vector<ActuatorType>& actuatorTypes);
 
   /// Get actuator type
   ActuatorType getActuatorType() const;
@@ -182,7 +182,6 @@ public:
 
   /// Sets the mimic joint properties for all DoFs of the dependent joint.
   void setMimicJointDofs(std::span<const MimicDofProperties> mimicProps);
-  void setMimicJointDofs(const std::vector<MimicDofProperties>& mimicProps);
 
   /// Sets the mimic joint properties for specific DoFs of the dependent joint
   /// using a map of DoF index and MimicDofProperties.
@@ -645,7 +644,8 @@ public:
       const Eigen::VectorXd& q0,
       const Eigen::VectorXd& v,
       double dt,
-      Eigen::VectorXd& result) const = 0;
+      Eigen::VectorXd& result) const
+      = 0;
 
   /// Convenience overload for integratePositions(q0, v, dt, result).
   Eigen::VectorXd integratePositions(
@@ -657,7 +657,8 @@ public:
   /// Return the difference of two generalized coordinates which are measured in
   /// the configuration space of this Skeleton.
   virtual Eigen::VectorXd getPositionDifferences(
-      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const = 0;
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
+      = 0;
 
   /// \}
 
@@ -733,7 +734,8 @@ public:
   /// Get spatial Jacobian of the child BodyNode relative to the parent BodyNode
   /// expressed in the child BodyNode frame
   virtual math::Jacobian getRelativeJacobian(
-      const Eigen::VectorXd& positions) const = 0;
+      const Eigen::VectorXd& positions) const
+      = 0;
 
   /// Get time derivative of spatial Jacobian of the child BodyNode relative to
   /// the parent BodyNode expressed in the child BodyNode frame

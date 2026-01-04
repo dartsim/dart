@@ -38,6 +38,7 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 
+#include <algorithm>
 #include <span>
 
 namespace dart {
@@ -78,7 +79,7 @@ std::size_t ReferentialSkeleton::getNumSkeletons() const noexcept
 //==============================================================================
 bool ReferentialSkeleton::hasSkeleton(const Skeleton* skel) const noexcept
 {
-  return mSkeletons.find(skel) != mSkeletons.end();
+  return mSkeletons.contains(skel);
 }
 
 //==============================================================================
@@ -184,8 +185,7 @@ std::vector<const BodyNode*> ReferentialSkeleton::getBodyNodes(
 //==============================================================================
 bool ReferentialSkeleton::hasBodyNode(const BodyNode* bodyNode) const
 {
-  return std::find(mBodyNodes.begin(), mBodyNodes.end(), bodyNode)
-         != mBodyNodes.end();
+  return std::ranges::find(mBodyNodes, bodyNode) != mBodyNodes.end();
 }
 
 //==============================================================================
@@ -317,7 +317,7 @@ std::vector<const Joint*> ReferentialSkeleton::getJoints(
 //==============================================================================
 bool ReferentialSkeleton::hasJoint(const Joint* joint) const
 {
-  return std::find(mJoints.begin(), mJoints.end(), joint) != mJoints.end();
+  return std::ranges::find(mJoints, joint) != mJoints.end();
 }
 
 //==============================================================================
@@ -787,7 +787,7 @@ double ReferentialSkeleton::getMass() const noexcept
 //==============================================================================
 template <const Eigen::MatrixXd& (Skeleton::*getMatrix)(std::size_t) const>
 const Eigen::MatrixXd& setMatrixFromSkeletonData(
-    Eigen::MatrixXd& M, const std::vector<const DegreeOfFreedom*>& dofs)
+    Eigen::MatrixXd& M, std::span<const DegreeOfFreedom* const> dofs)
 {
   const std::size_t nDofs = dofs.size();
 
@@ -853,7 +853,7 @@ const Eigen::MatrixXd& ReferentialSkeleton::getInvAugMassMatrix() const
 //==============================================================================
 template <const Eigen::VectorXd& (Skeleton::*getVector)(std::size_t) const>
 const Eigen::VectorXd& setVectorFromSkeletonData(
-    Eigen::VectorXd& V, const std::vector<const DegreeOfFreedom*>& dofs)
+    Eigen::VectorXd& V, std::span<const DegreeOfFreedom* const> dofs)
 {
   const std::size_t nDofs = dofs.size();
 

@@ -90,10 +90,10 @@ public:
   static Eigen::Isometry2d convertToTransform(const Eigen::Vector3d& positions);
 
   // Documentation inherited
-  const std::string& getType() const override;
+  std::string_view getType() const override;
 
   /// Get joint type for this class
-  static const std::string& getStaticType();
+  static std::string_view getStaticType();
 
   // Documentation inherited
   bool isCyclic(std::size_t _index) const override;

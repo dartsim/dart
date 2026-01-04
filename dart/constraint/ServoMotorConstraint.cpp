@@ -76,15 +76,15 @@ ServoMotorConstraint::ServoMotorConstraint(dynamics::Joint* joint)
 ServoMotorConstraint::~ServoMotorConstraint() {}
 
 //==============================================================================
-const std::string& ServoMotorConstraint::getType() const
+std::string_view ServoMotorConstraint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& ServoMotorConstraint::getStaticType()
+std::string_view ServoMotorConstraint::getStaticType()
 {
-  static const std::string name = "ServoMotorConstraint";
+  static constexpr std::string_view name = "ServoMotorConstraint";
   return name;
 }
 

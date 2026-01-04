@@ -52,9 +52,10 @@ const Mesh& Asset::getMesh(std::size_t index) const
 }
 
 //==============================================================================
-const Mesh* Asset::getMesh(const std::string& name) const
+const Mesh* Asset::getMesh(std::string_view name) const
 {
-  const auto result = mMeshMap.find(name);
+  const std::string nameString(name);
+  const auto result = mMeshMap.find(nameString);
   if (result != mMeshMap.end()) {
     return result->second;
   } else {

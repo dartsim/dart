@@ -6,4 +6,4 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(EnTT CONFIG)
+find_package(EnTT 3.14 QUIET CONFIG)

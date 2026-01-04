@@ -82,11 +82,12 @@ std::string toString(char v)
 }
 
 //==============================================================================
-bool toBool(const std::string& str)
+bool toBool(std::string_view str)
 {
-  if (common::toUpper(str) == "TRUE" || str == "1")
+  const std::string upper = common::toUpper(std::string(str));
+  if (upper == "TRUE" || str == "1")
     return true;
-  else if (common::toUpper(str) == "FALSE" || str == "0")
+  else if (upper == "FALSE" || str == "0")
     return false;
   else {
     DART_ERROR("value [{}] is not a valid boolean type. Retuning false.", str);
@@ -95,31 +96,31 @@ bool toBool(const std::string& str)
 }
 
 //==============================================================================
-int toInt(const std::string& str)
+int toInt(std::string_view str)
 {
-  return std::stoi(str);
+  return std::stoi(std::string(str));
 }
 
 //==============================================================================
-unsigned int toUInt(const std::string& str)
+unsigned int toUInt(std::string_view str)
 {
-  return static_cast<unsigned int>(std::stoul(str));
+  return static_cast<unsigned int>(std::stoul(std::string(str)));
 }
 
 //==============================================================================
-float toFloat(const std::string& str)
+float toFloat(std::string_view str)
 {
-  return std::stof(str);
+  return std::stof(std::string(str));
 }
 
 //==============================================================================
-double toDouble(const std::string& str)
+double toDouble(std::string_view str)
 {
-  return std::stod(str);
+  return std::stod(std::string(str));
 }
 
 //==============================================================================
-char toChar(const std::string& str)
+char toChar(std::string_view str)
 {
   if (str.empty()) {
     DART_ERROR("");
@@ -132,7 +133,7 @@ char toChar(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector2d toVector2d(const std::string& str)
+Eigen::Vector2d toVector2d(std::string_view str)
 {
   Eigen::Vector2d ret;
 
@@ -155,7 +156,7 @@ Eigen::Vector2d toVector2d(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector2i toVector2i(const std::string& str)
+Eigen::Vector2i toVector2i(std::string_view str)
 {
   Eigen::Vector2i ret;
 
@@ -178,7 +179,7 @@ Eigen::Vector2i toVector2i(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector3d toVector3d(const std::string& str)
+Eigen::Vector3d toVector3d(std::string_view str)
 {
   Eigen::Vector3d ret;
 
@@ -201,7 +202,7 @@ Eigen::Vector3d toVector3d(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector3i toVector3i(const std::string& str)
+Eigen::Vector3i toVector3i(std::string_view str)
 {
   Eigen::Vector3i ret;
 
@@ -224,7 +225,7 @@ Eigen::Vector3i toVector3i(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector4d toVector4d(const std::string& str)
+Eigen::Vector4d toVector4d(std::string_view str)
 {
   Eigen::Vector4d ret;
 
@@ -247,7 +248,7 @@ Eigen::Vector4d toVector4d(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Vector6d toVector6d(const std::string& str)
+Eigen::Vector6d toVector6d(std::string_view str)
 {
   Eigen::Vector6d ret;
 
@@ -270,7 +271,7 @@ Eigen::Vector6d toVector6d(const std::string& str)
 }
 
 //==============================================================================
-Eigen::VectorXd toVectorXd(const std::string& str)
+Eigen::VectorXd toVectorXd(std::string_view str)
 {
   const std::vector<std::string> pieces = common::split(common::trim(str));
   DART_ASSERT(pieces.size() > 0);
@@ -293,7 +294,7 @@ Eigen::VectorXd toVectorXd(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Isometry3d toIsometry3d(const std::string& str)
+Eigen::Isometry3d toIsometry3d(std::string_view str)
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d elements = Eigen::Vector6d::Zero();
@@ -318,7 +319,7 @@ Eigen::Isometry3d toIsometry3d(const std::string& str)
 }
 
 //==============================================================================
-Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
+Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(std::string_view str)
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d elements = Eigen::Vector6d::Zero();
@@ -347,24 +348,28 @@ Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
 
 //==============================================================================
 std::string getValueString(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string nameString(name);
+  std::string str
+      = parentElement->FirstChildElement(nameString.c_str())->GetText();
 
   return str;
 }
 
 //==============================================================================
 bool getValueBool(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string nameString(name);
+  std::string str
+      = parentElement->FirstChildElement(nameString.c_str())->GetText();
 
   if (common::toUpper(str) == "TRUE" || str == "1")
     return true;
@@ -380,187 +385,216 @@ bool getValueBool(
 
 //==============================================================================
 int getValueInt(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string nameString(name);
+  std::string str
+      = parentElement->FirstChildElement(nameString.c_str())->GetText();
 
   return toInt(str);
 }
 
 //==============================================================================
 unsigned int getValueUInt(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string nameString(name);
+  std::string str
+      = parentElement->FirstChildElement(nameString.c_str())->GetText();
 
   return toUInt(str);
 }
 
 //==============================================================================
 float getValueFloat(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string nameString(name);
+  std::string str
+      = parentElement->FirstChildElement(nameString.c_str())->GetText();
 
   return toFloat(str);
 }
 
 //==============================================================================
 double getValueDouble(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string nameString(name);
+  std::string str
+      = parentElement->FirstChildElement(nameString.c_str())->GetText();
 
   return toDouble(str);
 }
 
 //==============================================================================
 char getValueChar(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string nameString(name);
+  std::string str
+      = parentElement->FirstChildElement(nameString.c_str())->GetText();
 
   return toChar(str);
 }
 
 //==============================================================================
 Eigen::Vector2d getValueVector2d(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string nameString(name);
+  std::string str
+      = parentElement->FirstChildElement(nameString.c_str())->GetText();
 
   return toVector2d(str);
 }
 
 //==============================================================================
 Eigen::Vector3d getValueVector3d(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string nameString(name);
+  std::string str
+      = parentElement->FirstChildElement(nameString.c_str())->GetText();
 
   return toVector3d(str);
 }
 
 //==============================================================================
 Eigen::Vector3i getValueVector3i(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string nameString(name);
+  std::string str
+      = parentElement->FirstChildElement(nameString.c_str())->GetText();
 
   return toVector3i(str);
 }
 
 //==============================================================================
 Eigen::Vector6d getValueVector6d(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string nameString(name);
+  std::string str
+      = parentElement->FirstChildElement(nameString.c_str())->GetText();
 
   return toVector6d(str);
 }
 
 //==============================================================================
 Eigen::VectorXd getValueVectorXd(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string nameString(name);
+  std::string str
+      = parentElement->FirstChildElement(nameString.c_str())->GetText();
 
   return toVectorXd(str);
 }
 
 //==============================================================================
 Eigen::Vector3d getValueVec3(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string nameString(name);
+  std::string str
+      = parentElement->FirstChildElement(nameString.c_str())->GetText();
 
   return toVector3d(str);
 }
 
 //==============================================================================
 Eigen::Isometry3d getValueIsometry3d(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string nameString(name);
+  std::string str
+      = parentElement->FirstChildElement(nameString.c_str())->GetText();
 
   return toIsometry3d(str);
 }
 
 //==============================================================================
 Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string nameString(name);
+  std::string str
+      = parentElement->FirstChildElement(nameString.c_str())->GetText();
 
   return toIsometry3dWithExtrinsicRotation(str);
 }
 
 //==============================================================================
 bool hasElement(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  return parentElement->FirstChildElement(name.c_str()) == nullptr ? false
-                                                                   : true;
+  const std::string nameString(name);
+  return parentElement->FirstChildElement(nameString.c_str()) == nullptr ? false
+                                                                         : true;
 }
 
 //==============================================================================
 const tinyxml2::XMLElement* getElement(
-    const tinyxml2::XMLElement* parentElement, const std::string& name)
+    const tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(!name.empty());
 
-  return parentElement->FirstChildElement(name.c_str());
+  const std::string nameString(name);
+  return parentElement->FirstChildElement(nameString.c_str());
 }
 
 //==============================================================================
 tinyxml2::XMLElement* getElement(
-    tinyxml2::XMLElement* parentElement, const std::string& name)
+    tinyxml2::XMLElement* parentElement, std::string_view name)
 {
   DART_ASSERT(!name.empty());
 
-  return parentElement->FirstChildElement(name.c_str());
+  const std::string nameString(name);
+  return parentElement->FirstChildElement(nameString.c_str());
 }
 
 //==============================================================================
@@ -665,15 +699,16 @@ bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name)
 
 //==============================================================================
 std::string getAttributeString(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
+    const tinyxml2::XMLElement* element, std::string_view attributeName)
 {
-  const char* const result = element->Attribute(attributeName.c_str());
+  const std::string attributeNameString(attributeName);
+  const char* const result = element->Attribute(attributeNameString.c_str());
 
   if (nullptr == result) {
     DART_WARN(
         "[getAttribute] Error in parsing string type attribute [{}] of an "
         "element [{}]. Returning empty string.",
-        attributeName,
+        attributeNameString,
         element->Name());
     return std::string();
   }
@@ -683,16 +718,18 @@ std::string getAttributeString(
 
 //==============================================================================
 bool getAttributeBool(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
+    const tinyxml2::XMLElement* element, std::string_view attributeName)
 {
   bool val = false;
-  const int result = element->QueryBoolAttribute(attributeName.c_str(), &val);
+  const std::string attributeNameString(attributeName);
+  const int result
+      = element->QueryBoolAttribute(attributeNameString.c_str(), &val);
 
   if (result != tinyxml2::XML_SUCCESS) {
     DART_WARN(
         "[getAttribute] Error in parsing bool type attribute [{}] of an "
         "element [{}]. Returning false instead.",
-        attributeName,
+        attributeNameString,
         element->Name());
     return false;
   }
@@ -702,16 +739,18 @@ bool getAttributeBool(
 
 //==============================================================================
 int getAttributeInt(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
+    const tinyxml2::XMLElement* element, std::string_view attributeName)
 {
   int val = 0;
-  const int result = element->QueryIntAttribute(attributeName.c_str(), &val);
+  const std::string attributeNameString(attributeName);
+  const int result
+      = element->QueryIntAttribute(attributeNameString.c_str(), &val);
 
   if (result != tinyxml2::XML_SUCCESS) {
     DART_WARN(
         "[getAttribute] Error in parsing int type attribute [{}] of an element "
         "[{}]. Returning zero instead.",
-        attributeName,
+        attributeNameString,
         element->Name());
     return 0;
   }
@@ -721,18 +760,19 @@ int getAttributeInt(
 
 //==============================================================================
 unsigned int getAttributeUInt(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
+    const tinyxml2::XMLElement* element, std::string_view attributeName)
 {
   unsigned int val = 0u;
+  const std::string attributeNameString(attributeName);
   const int result
-      = element->QueryUnsignedAttribute(attributeName.c_str(), &val);
+      = element->QueryUnsignedAttribute(attributeNameString.c_str(), &val);
 
   if (result != tinyxml2::XML_SUCCESS) {
     DART_WARN(
         "[getAttribute] Error in parsing unsigned int type attribute [{}] of "
         "an "
         "element [{}]. Returning zero instead.",
-        attributeName,
+        attributeNameString,
         element->Name());
     return 0u;
   }
@@ -742,16 +782,18 @@ unsigned int getAttributeUInt(
 
 //==============================================================================
 float getAttributeFloat(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
+    const tinyxml2::XMLElement* element, std::string_view attributeName)
 {
   float val = 0.0f;
-  const int result = element->QueryFloatAttribute(attributeName.c_str(), &val);
+  const std::string attributeNameString(attributeName);
+  const int result
+      = element->QueryFloatAttribute(attributeNameString.c_str(), &val);
 
   if (result != tinyxml2::XML_SUCCESS) {
     DART_WARN(
         "[getAttribute] Error in parsing float type attribute [{}] of an "
         "element [{}]. Returning zero instead.",
-        attributeName,
+        attributeNameString,
         element->Name());
     return 0.0f;
   }
@@ -761,16 +803,18 @@ float getAttributeFloat(
 
 //==============================================================================
 double getAttributeDouble(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
+    const tinyxml2::XMLElement* element, std::string_view attributeName)
 {
   double val = 0.0;
-  const int result = element->QueryDoubleAttribute(attributeName.c_str(), &val);
+  const std::string attributeNameString(attributeName);
+  const int result
+      = element->QueryDoubleAttribute(attributeNameString.c_str(), &val);
 
   if (result != tinyxml2::XML_SUCCESS) {
     DART_WARN(
         "[getAttribute] Error in parsing double type attribute [{}] of an "
         "element [{}]. Returning zero instead.",
-        attributeName,
+        attributeNameString,
         element->Name());
     return 0.0;
   }
@@ -780,7 +824,7 @@ double getAttributeDouble(
 
 //==============================================================================
 char getAttributeChar(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
+    const tinyxml2::XMLElement* element, std::string_view attributeName)
 {
   const std::string val = getAttributeString(element, attributeName);
 
@@ -789,7 +833,7 @@ char getAttributeChar(
 
 //==============================================================================
 Eigen::Vector2i getAttributeVector2i(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
+    const tinyxml2::XMLElement* element, std::string_view attributeName)
 {
   const std::string val = getAttributeString(element, attributeName);
 
@@ -798,7 +842,7 @@ Eigen::Vector2i getAttributeVector2i(
 
 //==============================================================================
 Eigen::Vector2d getAttributeVector2d(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
+    const tinyxml2::XMLElement* element, std::string_view attributeName)
 {
   const std::string val = getAttributeString(element, attributeName);
 
@@ -807,7 +851,7 @@ Eigen::Vector2d getAttributeVector2d(
 
 //==============================================================================
 Eigen::Vector3d getAttributeVector3d(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
+    const tinyxml2::XMLElement* element, std::string_view attributeName)
 {
   const std::string val = getAttributeString(element, attributeName);
 
@@ -816,7 +860,7 @@ Eigen::Vector3d getAttributeVector3d(
 
 //==============================================================================
 Eigen::Vector4d getAttributeVector4d(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
+    const tinyxml2::XMLElement* element, std::string_view attributeName)
 {
   const std::string val = getAttributeString(element, attributeName);
 
@@ -825,7 +869,7 @@ Eigen::Vector4d getAttributeVector4d(
 
 //==============================================================================
 Eigen::Vector6d getAttributeVector6d(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
+    const tinyxml2::XMLElement* element, std::string_view attributeName)
 {
   const std::string val = getAttributeString(element, attributeName);
 
@@ -834,7 +878,7 @@ Eigen::Vector6d getAttributeVector6d(
 
 //==============================================================================
 Eigen::VectorXd getAttributeVectorXd(
-    const tinyxml2::XMLElement* element, const std::string& attributeName)
+    const tinyxml2::XMLElement* element, std::string_view attributeName)
 {
   const std::string val = getAttributeString(element, attributeName);
 

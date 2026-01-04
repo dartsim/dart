@@ -1,53 +1,38 @@
-# C++20 Modernization Progress (01)
+# C++20 Modernization Progress
 
 ## Status
 
-- Current phase: Phase 3 (public API span migrations)
-- Code changes: Phase 3 in progress.
+- Active branch: `cpp20/phase15`
+- Active PR (Phase 15): https://github.com/dartsim/dart/pull/2393
+- Phase 14 PR: https://github.com/dartsim/dart/pull/2390
+- Phase 13 PR: https://github.com/dartsim/dart/pull/2387
+- Phase 12 PR: https://github.com/dartsim/dart/pull/2385
+- Phase 11 PR: https://github.com/dartsim/dart/pull/2384
+- Phase 10 PR: https://github.com/dartsim/dart/pull/2382 (merged)
+- Phase 9 PR: https://github.com/dartsim/dart/pull/2380 (merged)
+- Phase 8 PR: https://github.com/dartsim/dart/pull/2376 (merged)
+- Phase 7 PR: https://github.com/dartsim/dart/pull/2375 (merged; empty-span guard fix)
+- CI monitoring and merge handled by the user.
+- Phase 11 compatibility: keep `CollisionDetector`/`BoxedLcpSolver` `getType()`
+  returning `const std::string&`; added `getTypeView()` for
+  `std::string_view`.
+- Latest local validation: `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run test-all`;
+  `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run -e gazebo test-gz`
+  (passed).
 
-## Phase checklist
+## Completed
 
-- Phase 0 - Discovery and guardrails: Complete
-- Phase 1 - Mechanical no-op cleanup: Complete
-- Phase 2 - Standard library modernization: Complete
-- Phase 3 - Additive public header updates: In progress
-- Phase 4 - Consolidation and validation: Not started
+- Phase 3: PR #2365 (merged)
+- Phase 4: PR #2367 (merged)
+- Phase 5: PR #2371 (merged)
+- Phase 6: PR #2373 (merged)
+- Phase 7: PR #2375 (merged)
+- Phase 8: PR #2376 (merged)
+- Phase 9: PR #2380 (merged)
+- Phase 10: PR #2382 (merged)
+- Earlier phases were merged prior to this tracker (see git history).
 
-## Notes
+## Next
 
-- C++20 is enabled via compile features on core targets; remaining straggler
-  targets were aligned to the project default in Phase 1.
-- Guardrails updated for DART 7: public API/ABI breaks are allowed when needed
-  for span migrations, but Gazebo must stay compatible
-  (`pixi run -e gazebo test-gz`) without changing Gazebo code.
-- Phase 1: aligned remaining non-C++20 compile feature settings on straggler
-  targets; replaced a legacy `NULL` check with `nullptr`, defaulted a trivial
-  destructor in the GUI trackball manipulator, and converted several `typedef`
-  aliases to `using` in GUI, dynamics, utils, and test sources.
-- Converted C-style aliases in `dart/collision/dart/DARTCollide.cpp` to `using`
-  and replaced the local epsilon macro with a `constexpr`.
-- Remaining `NULL` usage is confined to the IKFast header (third-party); keep
-  it unchanged unless we decide to vendor-update it.
-- Remaining `typedef` usage is limited to third-party baselines and IKFast.
-- Phase 1 checks: `pixi run lint`, `pixi run test` (both passed).
-- Phase 2: use `std::erase`/`std::erase_if` for container cleanup and
-  introduce `std::span` in internal helper functions for pointer vector
-  conversions.
-- Phase 2 checks: `pixi run lint`, `pixi run test` (both passed).
-- Phase 3 started: replace const vector-reference getters with `std::span`
-  returns (e.g., collision contacts, point/mesh/line segment accessors,
-  Jacobian/MetaSkeleton/Skeleton/IK accessors, constraint solver skeleton
-  views, package paths, cloneable vectors) and remove redundant span helpers.
-  Updated call sites to handle spans (including mimic constraint configuration
-  and cloneable vector copies).
-- Phase 3 follow-up: update MetaSkeleton and Skeleton index-based setters/getters
-  to accept `std::span`, removing span-to-vector conversions in IK and
-  dynamics test utilities.
-- Phase 3 follow-up: remove span-to-vector conversions in mimic joint handling
-  (ConstraintSolver checks, SDF mimic parsing, mimic pendulum example, and
-  mimic constraint test).
-- Phase 3 follow-up: add span overloads for `Joint::setActuatorTypes`,
-  `Joint::setMimicJointDofs`, and pointer-based `InverseKinematics::setDofs`.
-- Phase 3 checks: `pixi run lint`, `pixi run test`, and
-  `pixi run -e gazebo test-gz` (all passed; some deprecation warnings emitted
-  from gz-physics during test-gz build).
+- Monitor PR #2384, #2385, #2387, #2390, and #2393 CI/review feedback (CI/merge
+  handled by the user).

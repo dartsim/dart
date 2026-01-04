@@ -123,9 +123,7 @@ void Factory<KeyT, BaseT, HeldT, Args...>::unregisterAllCreators()
 template <typename KeyT, typename BaseT, typename HeldT, typename... Args>
 bool Factory<KeyT, BaseT, HeldT, Args...>::canCreate(const KeyT& key)
 {
-  const auto it = mCreatorMap.find(key);
-
-  return (it != mCreatorMap.end());
+  return mCreatorMap.contains(key);
 }
 
 //==============================================================================

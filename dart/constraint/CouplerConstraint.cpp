@@ -81,15 +81,15 @@ CouplerConstraint::~CouplerConstraint()
 }
 
 //==============================================================================
-const std::string& CouplerConstraint::getType() const
+std::string_view CouplerConstraint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& CouplerConstraint::getStaticType()
+std::string_view CouplerConstraint::getStaticType()
 {
-  static const std::string name = "CouplerConstraint";
+  static constexpr std::string_view name = "CouplerConstraint";
   return name;
 }
 

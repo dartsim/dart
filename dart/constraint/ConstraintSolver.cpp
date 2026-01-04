@@ -143,8 +143,11 @@ using namespace dynamics;
 ConstraintSolver::ConstraintSolver()
   : mCollisionDetector(collision::FCLCollisionDetector::create()),
     mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
-    mCollisionOption(collision::CollisionOption(
-        true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
+    mCollisionOption(
+        collision::CollisionOption(
+            true,
+            1000u,
+            std::make_shared<collision::BodyNodeCollisionFilter>())),
     mTimeStep(0.001),
     mContactSurfaceHandler(std::make_shared<DefaultContactSurfaceHandler>()),
     mLcpSolver(std::make_shared<math::DantzigSolver>()),
@@ -222,8 +225,7 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
       skeleton->getName());
 
   mCollisionGroup->unsubscribeFrom(skeleton.get());
-  mSkeletons.erase(
-      remove(mSkeletons.begin(), mSkeletons.end(), skeleton), mSkeletons.end());
+  std::erase(mSkeletons, skeleton);
   mConstrainedGroups.reserve(mSkeletons.size());
   mContactManifoldCache.reset();
   mPersistentContacts.clear();
@@ -272,9 +274,7 @@ void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
     return;
   }
 
-  mManualConstraints.erase(
-      remove(mManualConstraints.begin(), mManualConstraints.end(), constraint),
-      mManualConstraints.end());
+  std::erase(mManualConstraints, constraint);
 }
 
 //==============================================================================
@@ -567,12 +567,9 @@ bool ConstraintSolver::hasSkeleton(const ConstSkeletonPtr& skeleton) const
       skeleton != nullptr, "Not allowed to insert null pointer skeleton.");
 #endif
 
-  for (const auto& itrSkel : mSkeletons) {
-    if (itrSkel == skeleton)
-      return true;
-  }
-
-  return false;
+  return std::ranges::any_of(mSkeletons, [&](const SkeletonPtr& itrSkel) {
+    return itrSkel == skeleton;
+  });
 }
 
 //==============================================================================
@@ -592,8 +589,7 @@ bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& skeleton)
 bool ConstraintSolver::containConstraint(
     const ConstConstraintBasePtr& constraint) const
 {
-  return std::find(
-             mManualConstraints.begin(), mManualConstraints.end(), constraint)
+  return std::ranges::find(mManualConstraints, constraint)
          != mManualConstraints.end();
 }
 
@@ -841,8 +837,9 @@ void ConstraintSolver::updateConstraints()
 
         if (hasValidMimicDof) {
           if (useCouplerConstraint && allMimicWithReference) {
-            mCouplerConstraints.push_back(std::make_shared<CouplerConstraint>(
-                joint, joint->getMimicDofProperties()));
+            mCouplerConstraints.push_back(
+                std::make_shared<CouplerConstraint>(
+                    joint, joint->getMimicDofProperties()));
           } else {
             mMimicMotorConstraints.push_back(
                 std::make_shared<MimicMotorConstraint>(
@@ -1219,7 +1216,7 @@ bool ConstraintSolver::isSplitImpulseEnabled() const
 
 //==============================================================================
 void ConstraintSolver::solveConstrainedGroupInternal(
-    const std::vector<ConstraintBasePtr>& constraints, ConstraintPhase phase)
+    std::span<const ConstraintBasePtr> constraints, ConstraintPhase phase)
 {
   DART_PROFILE_SCOPED;
 

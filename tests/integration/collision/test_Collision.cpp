@@ -527,7 +527,7 @@ void testSphereSphere(
   else
     expectedNormal << 1, 0, 0;
   double tol2 = tol;
-  if (cd->getType() == FCLCollisionDetector::getStaticType()
+  if (cd->getTypeView() == FCLCollisionDetector::getStaticType()
       && static_cast<FCLCollisionDetector*>(cd.get())->getPrimitiveShapeType()
              == FCLCollisionDetector::MESH) {
     tol2 *= 1e+12;
@@ -544,14 +544,14 @@ void testSphereSphere(
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d::Zero());
   result.clear();
-  if (cd->getType() == FCLCollisionDetector::getStaticType()) {
+  if (cd->getTypeView() == FCLCollisionDetector::getStaticType()) {
     EXPECT_FALSE(group->collide(option, &result));
     // FCL is not able to detect collisions when an object completely (strictly)
     // contains the other object (no collisions between the hulls)
   } else {
     EXPECT_TRUE(group->collide(option, &result));
 #if DART_HAVE_BULLET
-    if (cd->getType() == BulletCollisionDetector::getStaticType()) {
+    if (cd->getTypeView() == BulletCollisionDetector::getStaticType()) {
       // Regression guard for Bullet containment case (#876).
       EXPECT_EQ(result.getNumContacts(), 1u);
     } else
@@ -928,9 +928,9 @@ TEST_F(Collision, testConeCone)
 
 #if DART_HAVE_ODE
   {
-      // SCOPED_TRACE("OdeCollisionDetector");
-      // auto ode = OdeCollisionDetector::create();
-      // testConeCone(ode);
+    // SCOPED_TRACE("OdeCollisionDetector");
+    // auto ode = OdeCollisionDetector::create();
+    // testConeCone(ode);
   }
 #endif
 
@@ -1338,7 +1338,7 @@ void testHeightmapBox(
   Vector3 inMiddle(0.0, 0.0, halfHeight * zScale);
   boxFrame->setTranslation(inMiddle.template cast<double>());
   // TODO(JS): Disabled temporarily
-  if (cd->getType() != "bullet") {
+  if (cd->getTypeView() != "bullet") {
     EXPECT_TRUE(group->collide(option, &result));
     EXPECT_GT(result.getNumContacts(), 0u);
   }
@@ -1933,7 +1933,7 @@ TEST_F(Collision, Factory)
   auto bulletDetector = collision::BulletCollisionDetector::create();
   ASSERT_NE(bulletDetector, nullptr);
   collision::CollisionDetector::getFactory()->registerCreator(
-      bulletDetector->getType(),
+      std::string(bulletDetector->getTypeView()),
       []() -> std::shared_ptr<collision::CollisionDetector> {
         return collision::BulletCollisionDetector::create();
       });
@@ -1946,7 +1946,7 @@ TEST_F(Collision, Factory)
   auto odeDetector = collision::OdeCollisionDetector::create();
   ASSERT_NE(odeDetector, nullptr);
   collision::CollisionDetector::getFactory()->registerCreator(
-      odeDetector->getType(),
+      std::string(odeDetector->getTypeView()),
       []() -> std::shared_ptr<collision::CollisionDetector> {
         return collision::OdeCollisionDetector::create();
       });

@@ -1,45 +1,34 @@
-# Resume Prompt - C++20 Modernization
+You are resuming the C++20 modernization task in
+`/home/js/dev/dartsim/dart/build_system`.
 
-You are a Codex agent working in `/home/js/dev/dartsim/dart/build_system`.
+Current state:
 
-Goal: modernize the codebase to idiomatic C++20 with no behavior changes.
-Public API/ABI breaks are acceptable for DART 7 when needed for span migrations,
-as long as `pixi run -e gazebo test-gz` passes without Gazebo code changes.
+- Branch: `cpp20/phase15`
+- PR (Phase 15): https://github.com/dartsim/dart/pull/2393
+- Phase 14 PR: https://github.com/dartsim/dart/pull/2390
+- Phase 13 PR: https://github.com/dartsim/dart/pull/2387
+- Phase 12 PR: https://github.com/dartsim/dart/pull/2385
+- Phase 11 PR: https://github.com/dartsim/dart/pull/2384
+- Phase 10 PR: https://github.com/dartsim/dart/pull/2382 (merged)
+- Phase 9 PR: https://github.com/dartsim/dart/pull/2380 (merged)
+- Phase 8 PR: https://github.com/dartsim/dart/pull/2376 (merged)
+- Phase 7 PR: https://github.com/dartsim/dart/pull/2375 (merged; empty-span guard fix)
+- CI/merge are handled by the user.
+- Latest local validation: `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run test-all`;
+  `DART_PARALLEL_JOBS=42 CTEST_PARALLEL_LEVEL=42 pixi run -e gazebo test-gz`
+  (passed).
 
-Required docs:
+What to do next:
 
-- Read `docs/onboarding/ci-cd.md` and `docs/onboarding/build-system.md`.
-- Read `CONTRIBUTING.md`.
-- Read `docs/dev_tasks/cpp20/README.md`,
-  `docs/dev_tasks/cpp20/00_plan.md`, and
-  `docs/dev_tasks/cpp20/01_progress.md`.
+1. Monitor PRs #2384, #2385, #2387, #2390, and #2393 for CI/review feedback.
+2. Start the next phase after Phase 15 lands (update `docs/dev_tasks/cpp20/00_plan.md` if a new phase is added).
+3. Keep `docs/dev_tasks/cpp20/01_progress.md` current.
 
-Workflow:
+Workflow requirements:
 
-1. Validate or refine the multi-phase plan in
-   `docs/dev_tasks/cpp20/00_plan.md`.
-2. Execute phases sequentially. Do not start the next phase until you update
-   `docs/dev_tasks/cpp20/01_progress.md` and finish the minimal `pixi run`
-   validation for the current phase.
-3. Keep changes no-op: mechanical modernizations only. Avoid algorithmic
-   changes, behavior changes, or new dependencies.
-4. Skip generated or third-party code unless there is a clear need to update
-   it.
-5. Prefer implementation-only refactors. If touching public headers, replace
-   const vector-reference getters with `std::span` where appropriate and remove
-   redundant span helper accessors; expect API/ABI breaks.
-6. Use C++20 features where they improve clarity: `std::span`,
-   `std::string_view`, `std::optional`, `std::variant`, `std::ranges`,
-   `std::chrono`, `std::erase_if`, `constexpr`, `[[nodiscard]]`,
-   `[[maybe_unused]]`.
-7. Use existing tooling (`pixi run ...`). Do not invent new entry points.
-
-Deliverables per phase:
-
-- Code changes that preserve behavior.
-- Progress update in `docs/dev_tasks/cpp20/01_progress.md`.
-- Brief summary of what changed and what remains.
-- Run `pixi run lint`, `pixi run test`, and `pixi run -e gazebo test-gz` after
-  Phase 3 changes.
-
-If any instructions conflict, ask the user before proceeding.
+- Run `pixi run lint` before each commit.
+- Run `pixi run test-all` and `pixi run -e gazebo test-gz` before opening a PR
+  (do not modify Gazebo sources).
+- Use `DART_PARALLEL_JOBS` set to 2/3 of `nproc` for builds/tests (and
+  `CTEST_PARALLEL_LEVEL` for ctest).
+- Use existing `pixi run ...` entry points only.

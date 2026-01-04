@@ -77,13 +77,13 @@ public:
   ~PointCloudShape() override = default;
 
   // Documentation inherited.
-  const std::string& getType() const override;
+  std::string_view getType() const override;
 
   // Documentation inherited.
   Eigen::Matrix3d computeInertia(double mass) const override;
 
   /// Returns shape type for this class
-  static const std::string& getStaticType();
+  static std::string_view getStaticType();
 
   /// Reserves the point list by @c size.
   void reserve(std::size_t size);
@@ -139,14 +139,6 @@ public:
   /// The count of colors should be the same with points. It's undefined
   /// behavior, otherwise.
   void setColors(std::span<const Eigen::Vector4d> colors);
-
-  /// Sets the point cloud colors.
-  ///
-  /// The count of colors should be the same with points. It's undefined
-  /// behavior, otherwise.
-  void setColors(const std::vector<
-                 Eigen::Vector4d,
-                 Eigen::aligned_allocator<Eigen::Vector4d>>& colors);
 
   /// Returns the point cloud colors.
   std::span<const Eigen::Vector4d> getColors() const;

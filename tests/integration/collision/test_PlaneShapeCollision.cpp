@@ -213,8 +213,9 @@ TEST(Issue426, FclThinBoxMeshModeUsesHalfspacePlane)
   auto thinShape = std::make_shared<dart::dynamics::BoxShape>(
       Eigen::Vector3d(0.2, 0.2, thickness));
   thinBody->createShapeNodeWith<dart::dynamics::CollisionAspect>(thinShape)
-      ->setRelativeTranslation(Eigen::Vector3d(
-          0.0, 0.0, 0.5 * thickness)); // place the base on the plane
+      ->setRelativeTranslation(
+          Eigen::Vector3d(
+              0.0, 0.0, 0.5 * thickness)); // place the base on the plane
 
   auto group = detector->createCollisionGroup();
   group->subscribeTo(plane);

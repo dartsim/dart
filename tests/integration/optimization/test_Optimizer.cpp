@@ -192,3 +192,17 @@ TEST(Optimizer, OutStream)
 
   std::remove(outputFile.c_str());
 }
+
+//==============================================================================
+TEST(Optimizer, ConstraintAccessorsReturnStoredConstraints)
+{
+  std::shared_ptr<Problem> prob = std::make_shared<Problem>(2);
+
+  FunctionPtr eq = std::make_shared<SampleConstFunc>(1.0, 0.0);
+  FunctionPtr ineq = std::make_shared<SampleConstFunc>(-1.0, 1.0);
+  prob->addEqConstraint(eq);
+  prob->addIneqConstraint(ineq);
+
+  EXPECT_EQ(prob->getEqConstraint(0), eq);
+  EXPECT_EQ(prob->getIneqConstraint(0), ineq);
+}

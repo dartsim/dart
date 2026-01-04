@@ -39,11 +39,62 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <span>
+#include <string_view>
+#include <vector>
 
 using namespace Eigen;
 using namespace dart;
 using namespace dart::dynamics;
 using namespace dart::test;
+
+namespace {
+
+class DummyAnalyticalSolver final : public InverseKinematics::Analytical
+{
+public:
+  explicit DummyAnalyticalSolver(
+      InverseKinematics* ik, const Properties& properties = Properties())
+    : Analytical(ik, "DummyAnalytical", properties),
+      mDofs(ik->getDofs().begin(), ik->getDofs().end())
+  {
+    // Do nothing
+  }
+
+  std::unique_ptr<GradientMethod> clone(InverseKinematics* newIk) const override
+  {
+    return std::make_unique<DummyAnalyticalSolver>(
+        newIk, getAnalyticalProperties());
+  }
+
+  std::span<const Solution> computeSolutions(const Eigen::Isometry3d&) override
+  {
+    mSolutions.clear();
+    const int dofCount = static_cast<int>(mDofs.size());
+    Eigen::VectorXd config = Eigen::VectorXd::Zero(dofCount);
+    mSolutions.emplace_back(config, VALID);
+
+    config.setConstant(0.1);
+    mSolutions.emplace_back(config, OUT_OF_REACH);
+
+    config.setConstant(-0.1);
+    mSolutions.emplace_back(config, LIMIT_VIOLATED);
+
+    checkSolutionJointLimits();
+
+    return mSolutions;
+  }
+
+  std::span<const std::size_t> getDofs() const override
+  {
+    return mDofs;
+  }
+
+private:
+  std::vector<std::size_t> mDofs;
+};
+
+} // namespace
 
 //==============================================================================
 TEST(InverseKinematics, SolveForFreeJoint)
@@ -106,9 +157,10 @@ public:
     return false;
   }
 
-  std::string getType() const override
+  std::string_view getType() const override
   {
-    return "FailingSolver";
+    static constexpr std::string_view type = "FailingSolver";
+    return type;
   }
 
   std::shared_ptr<Solver> clone() const override
@@ -139,4 +191,21 @@ TEST(InverseKinematics, DoNotApplySolutionOnFailure)
   EXPECT_FALSE(ik->solveAndApply(true));
   EXPECT_FALSE(
       equals(skel->getPositions(), Eigen::VectorXd::Zero(dofs).eval()));
+}
+
+//==============================================================================
+TEST(InverseKinematics, AnalyticalSortsSolutions)
+{
+  SkeletonPtr skel = Skeleton::create();
+  skel->createJointAndBodyNodePair<FreeJoint>();
+
+  std::shared_ptr<InverseKinematics> ik = skel->getBodyNode(0)->getIK(true);
+  ik->setGradientMethod<DummyAnalyticalSolver>();
+
+  auto* analytical = ik->getAnalytical();
+  ASSERT_NE(analytical, nullptr);
+
+  const auto solutions
+      = analytical->getSolutions(Eigen::Isometry3d::Identity());
+  EXPECT_EQ(solutions.size(), 3u);
 }

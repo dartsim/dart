@@ -36,6 +36,7 @@
 #include <chrono>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <sstream>
@@ -293,12 +294,16 @@ std::string Profiler::formatPercent(double pct)
   return oss.str();
 }
 
-std::string Profiler::padRight(const std::string& text, std::size_t width)
+std::string Profiler::padRight(std::string_view text, std::size_t width)
 {
   if (text.size() >= width) {
-    return text;
+    return std::string(text);
   }
-  return text + std::string(width - text.size(), ' ');
+  std::string padded;
+  padded.reserve(width);
+  padded.append(text);
+  padded.append(width - text.size(), ' ');
+  return padded;
 }
 
 bool Profiler::useColor()
@@ -314,12 +319,12 @@ bool Profiler::useColor()
   return (val == "1" || val == "ON" || val == "TRUE" || val == "YES");
 }
 
-std::string Profiler::colorize(const std::string& text, const char* code)
+std::string Profiler::colorize(std::string_view text, const char* code)
 {
   if (!useColor()) {
-    return text;
+    return std::string(text);
   }
-  return std::string(code) + text + "\033[0m";
+  return std::string(code) + std::string(text) + "\033[0m";
 }
 
 const char* Profiler::heatColor(double pct)
@@ -370,10 +375,8 @@ void Profiler::printNode(
     children.push_back(child.get());
   }
 
-  std::sort(
-      children.begin(),
-      children.end(),
-      [](const ProfileNode* lhs, const ProfileNode* rhs) {
+  std::ranges::sort(
+      children, [](const ProfileNode* lhs, const ProfileNode* rhs) {
         return lhs->inclusiveNs > rhs->inclusiveNs;
       });
 
@@ -450,16 +453,17 @@ void Profiler::printSummary(std::ostream& os)
     const double avgFps
         = (static_cast<double>(frameCount - 1) * 1e9) / frameSumNs;
     std::vector<std::uint64_t> samples = m_frameSamplesNs;
-    std::sort(samples.begin(), samples.end());
+    std::ranges::sort(samples);
     const auto pickIndex = [&](double pct) -> std::size_t {
       if (samples.empty()) {
         return 0;
       }
-      const double pos = pct * static_cast<double>(samples.size() - 1);
+      const auto maxIndex = std::ssize(samples) - 1;
+      const double pos = pct * static_cast<double>(maxIndex);
       return static_cast<std::size_t>(std::clamp(
           static_cast<std::ptrdiff_t>(std::lround(pos)),
           static_cast<std::ptrdiff_t>(0),
-          static_cast<std::ptrdiff_t>(samples.size() - 1)));
+          maxIndex));
     };
     const auto bestIdx = pickIndex(0.1);  // 10th percentile (short frames)
     const auto worstIdx = pickIndex(0.9); // 90th percentile (long frames)
@@ -479,12 +483,9 @@ void Profiler::printSummary(std::ostream& os)
     }
   }
 
-  std::sort(
-      hotspots.begin(),
-      hotspots.end(),
-      [](const Flattened& lhs, const Flattened& rhs) {
-        return lhs.inclusiveNs > rhs.inclusiveNs;
-      });
+  std::ranges::sort(hotspots, [](const Flattened& lhs, const Flattened& rhs) {
+    return lhs.inclusiveNs > rhs.inclusiveNs;
+  });
 
   const std::size_t hotspotCount = std::min<std::size_t>(hotspots.size(), 10);
 

@@ -71,15 +71,15 @@ JointLimitConstraint::JointLimitConstraint(dynamics::Joint* joint)
 }
 
 //==============================================================================
-const std::string& JointLimitConstraint::getType() const
+std::string_view JointLimitConstraint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& JointLimitConstraint::getStaticType()
+std::string_view JointLimitConstraint::getStaticType()
 {
-  static const std::string name = "JointLimitConstraint";
+  static constexpr std::string_view name = "JointLimitConstraint";
   return name;
 }
 

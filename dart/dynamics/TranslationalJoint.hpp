@@ -68,10 +68,10 @@ public:
   Properties getTranslationalJointProperties() const;
 
   // Documentation inherited
-  const std::string& getType() const override;
+  std::string_view getType() const override;
 
   /// Get joint type for this class
-  static const std::string& getStaticType();
+  static std::string_view getStaticType();
 
   // Documentation inherited
   bool isCyclic(std::size_t _index) const override;

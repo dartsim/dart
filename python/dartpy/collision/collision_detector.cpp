@@ -26,68 +26,64 @@ void defCollisionDetector(nb::module_& m)
   nb::class_<CollisionDetector>(m, "CollisionDetector")
       .def(
           "getType",
-          [](const CollisionDetector& self) -> const std::string& {
-            return self.getType();
-          },
-          nb::rv_policy::reference_internal)
+          [](const CollisionDetector& self) {
+            return std::string(self.getTypeView());
+          })
       .def("createCollisionGroup", [](CollisionDetector& self) {
         return self.createCollisionGroupAsSharedPtr();
       });
 
   nb::class_<dart::collision::FCLCollisionDetector, CollisionDetector>(
       m, "FCLCollisionDetector")
-      .def(nb::new_(
-          []() -> std::shared_ptr<dart::collision::FCLCollisionDetector> {
-            return dart::collision::FCLCollisionDetector::create();
-          }))
-      .def_static(
-          "getStaticType",
-          []() -> const std::string& {
-            return dart::collision::FCLCollisionDetector::getStaticType();
-          },
-          nb::rv_policy::reference_internal);
+      .def(
+          nb::new_(
+              []() -> std::shared_ptr<dart::collision::FCLCollisionDetector> {
+                return dart::collision::FCLCollisionDetector::create();
+              }))
+      .def_static("getStaticType", []() {
+        return std::string(
+            dart::collision::FCLCollisionDetector::getStaticType());
+      });
 
   nb::class_<dart::collision::DARTCollisionDetector, CollisionDetector>(
       m, "DARTCollisionDetector")
-      .def(nb::new_(
-          []() -> std::shared_ptr<dart::collision::DARTCollisionDetector> {
-            return dart::collision::DARTCollisionDetector::create();
-          }))
-      .def_static(
-          "getStaticType",
-          []() -> const std::string& {
-            return dart::collision::DARTCollisionDetector::getStaticType();
-          },
-          nb::rv_policy::reference_internal);
+      .def(
+          nb::new_(
+              []() -> std::shared_ptr<dart::collision::DARTCollisionDetector> {
+                return dart::collision::DARTCollisionDetector::create();
+              }))
+      .def_static("getStaticType", []() {
+        return std::string(
+            dart::collision::DARTCollisionDetector::getStaticType());
+      });
 
 #if DART_HAVE_BULLET
   nb::class_<dart::collision::BulletCollisionDetector, CollisionDetector>(
       m, "BulletCollisionDetector")
-      .def(nb::new_(
-          []() -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
-            return dart::collision::BulletCollisionDetector::create();
-          }))
-      .def_static(
-          "getStaticType",
-          []() -> const std::string& {
-            return dart::collision::BulletCollisionDetector::getStaticType();
-          },
-          nb::rv_policy::reference_internal);
+      .def(
+          nb::new_(
+              []()
+                  -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
+                return dart::collision::BulletCollisionDetector::create();
+              }))
+      .def_static("getStaticType", []() {
+        return std::string(
+            dart::collision::BulletCollisionDetector::getStaticType());
+      });
 #endif
 
 #if DART_HAVE_ODE
   nb::class_<dart::collision::OdeCollisionDetector, CollisionDetector>(
       m, "OdeCollisionDetector")
-      .def(nb::new_(
-          []() -> std::shared_ptr<dart::collision::OdeCollisionDetector> {
-            return dart::collision::OdeCollisionDetector::create();
-          }))
-      .def_static(
-          "getStaticType",
-          []() -> const std::string& {
-            return dart::collision::OdeCollisionDetector::getStaticType();
-          },
-          nb::rv_policy::reference_internal);
+      .def(
+          nb::new_(
+              []() -> std::shared_ptr<dart::collision::OdeCollisionDetector> {
+                return dart::collision::OdeCollisionDetector::create();
+              }))
+      .def_static("getStaticType", []() {
+        return std::string(
+            dart::collision::OdeCollisionDetector::getStaticType());
+      });
 #endif
 }
 

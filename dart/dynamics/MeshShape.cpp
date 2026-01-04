@@ -51,11 +51,13 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <iterator>
 #include <limits>
 #include <locale>
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 
@@ -92,7 +94,7 @@ public:
         base = static_cast<ptrdiff_t>(mPosition);
         break;
       case SEEKTYPE_END:
-        base = static_cast<ptrdiff_t>(mData.size());
+        base = std::ssize(mData);
         break;
       case SEEKTYPE_SET:
         base = 0;
@@ -505,15 +507,15 @@ void MeshShape::MeshHandle::set(std::shared_ptr<const aiScene> mesh)
 }
 
 //==============================================================================
-const std::string& MeshShape::getType() const
+std::string_view MeshShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& MeshShape::getStaticType()
+std::string_view MeshShape::getStaticType()
 {
-  static const std::string type("MeshShape");
+  static constexpr std::string_view type = "MeshShape";
   return type;
 }
 
@@ -1524,25 +1526,25 @@ aiScene* MeshShape::cloneMesh() const
 //==============================================================================
 namespace {
 
-bool hasColladaExtension(const std::string& path)
+bool hasColladaExtension(std::string_view path)
 {
   const std::size_t extensionIndex = path.find_last_of('.');
-  if (extensionIndex == std::string::npos)
+  if (extensionIndex == std::string_view::npos)
     return false;
 
-  std::string extension = path.substr(extensionIndex);
+  std::string extension(path.substr(extensionIndex));
   std::transform(
       extension.begin(), extension.end(), extension.begin(), ::tolower);
   return extension == ".dae" || extension == ".zae";
 }
 
 bool isColladaResource(
-    const std::string& uri, const common::ResourceRetrieverPtr& retriever)
+    std::string_view uri, const common::ResourceRetrieverPtr& retriever)
 {
   if (hasColladaExtension(uri))
     return true;
 
-  const auto parsedUri = common::Uri::createFromStringOrPath(uri);
+  const auto parsedUri = common::Uri::createFromStringOrPath(std::string(uri));
   if (parsedUri.mScheme.get_value_or("file") == "file" && parsedUri.mPath) {
     if (hasColladaExtension(parsedUri.mPath.get()))
       return true;

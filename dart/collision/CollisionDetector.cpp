@@ -65,7 +65,8 @@ bool CollisionDetector::raycast(
     const RaycastOption& /*option*/,
     RaycastResult* /*result*/)
 {
-  DART_WARN("[CollisionDetector] Raycast is not supported by '{}'", getType());
+  DART_WARN(
+      "[CollisionDetector] Raycast is not supported by '{}'", getTypeView());
   return false;
 }
 

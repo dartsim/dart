@@ -364,7 +364,7 @@ bool Viewer::checkHeadlights() const
 //==============================================================================
 void Viewer::addWorldNode(WorldNode* _newWorldNode, bool _active)
 {
-  if (mWorldNodes.find(_newWorldNode) != mWorldNodes.end())
+  if (mWorldNodes.contains(_newWorldNode))
     return;
 
   mWorldNodes[_newWorldNode] = _active;
@@ -383,12 +383,11 @@ void Viewer::addWorldNode(WorldNode* _newWorldNode, bool _active)
 //==============================================================================
 void Viewer::removeWorldNode(WorldNode* _oldWorldNode)
 {
-  auto it = mWorldNodes.find(_oldWorldNode);
-  if (it == mWorldNodes.end())
+  if (!mWorldNodes.contains(_oldWorldNode))
     return;
 
-  mRootGroup->removeChild(it->first);
-  mWorldNodes.erase(it);
+  mRootGroup->removeChild(_oldWorldNode);
+  mWorldNodes.erase(_oldWorldNode);
 }
 
 //==============================================================================
@@ -436,10 +435,7 @@ void Viewer::addAttachment(ViewerAttachment* _attachment)
 //==============================================================================
 void Viewer::removeAttachment(ViewerAttachment* _attachment)
 {
-  std::unordered_set<ViewerAttachment*>::iterator it
-      = mAttachments.find(_attachment);
-
-  if (it == mAttachments.end())
+  if (!mAttachments.contains(_attachment))
     return;
 
   _attachment->mViewer = nullptr;

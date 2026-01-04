@@ -127,7 +127,7 @@ SpecNode* BodyNodeSpecializedFor<SpecNode>::_getNode(
 #endif // DART_UNITTEST_SPECIALIZED_NODE_ACCESS
 
   return static_cast<SpecNode*>(
-      getVectorObjectIfAvailable(index, mSpecNodeIterator->second));
+      getVectorObjectIfAvailable<Node*>(index, mSpecNodeIterator->second));
 }
 
 //==============================================================================

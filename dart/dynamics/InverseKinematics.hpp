@@ -265,11 +265,6 @@ public:
   void setDofs(std::span<DegreeOfFreedomT* const> _dofs);
 
   /// Explicitly set which degrees of freedom should be used to solve the IK for
-  /// this module.
-  template <class DegreeOfFreedomT>
-  void setDofs(const std::vector<DegreeOfFreedomT*>& _dofs);
-
-  /// Explicitly set which degrees of freedom should be used to solve the IK for
   /// this module. The values in the vector should correspond to the Skeleton
   /// indices of each DOF.
   void setDofs(std::span<const std::size_t> _dofs);
@@ -602,8 +597,8 @@ public:
   virtual ~ErrorMethod() = default;
 
   /// Enable this ErrorMethod to be cloned to a new IK module.
-  virtual std::unique_ptr<ErrorMethod> clone(
-      InverseKinematics* _newIK) const = 0;
+  virtual std::unique_ptr<ErrorMethod> clone(InverseKinematics* _newIK) const
+      = 0;
 
   /// Override this function with your implementation of the error vector
   /// computation. The expectation is that the first three components of the
@@ -843,8 +838,8 @@ public:
   virtual ~GradientMethod() = default;
 
   /// Enable this GradientMethod to be cloned to a new IK module
-  virtual std::unique_ptr<GradientMethod> clone(
-      InverseKinematics* _newIK) const = 0;
+  virtual std::unique_ptr<GradientMethod> clone(InverseKinematics* _newIK) const
+      = 0;
 
   /// Override this function with your implementation of the gradient
   /// computation. The direction that this gradient points in should make the

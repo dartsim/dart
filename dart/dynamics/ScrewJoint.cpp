@@ -101,15 +101,15 @@ ScrewJoint& ScrewJoint::operator=(const ScrewJoint& _otherJoint)
 }
 
 //==============================================================================
-const std::string& ScrewJoint::getType() const
+std::string_view ScrewJoint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& ScrewJoint::getStaticType()
+std::string_view ScrewJoint::getStaticType()
 {
-  static const std::string name = "ScrewJoint";
+  static constexpr std::string_view name = "ScrewJoint";
   return name;
 }
 

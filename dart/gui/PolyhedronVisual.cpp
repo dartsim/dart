@@ -39,6 +39,7 @@
 
 #include <limits>
 #include <set>
+#include <span>
 #include <tuple>
 #include <utility>
 
@@ -75,13 +76,6 @@ PolyhedronVisual::PolyhedronVisual()
     mWireWidth(2.0f)
 {
   initialize();
-}
-
-//==============================================================================
-void PolyhedronVisual::setVertices(const std::vector<Eigen::Vector3d>& vertices)
-{
-  mVertices = vertices;
-  mDirty = true;
 }
 
 //==============================================================================
@@ -303,8 +297,8 @@ void PolyhedronVisual::updateGeometry()
     return;
   }
 
-  auto result
-      = dart::math::computeConvexHull3D<double, std::size_t>(mVertices, true);
+  auto result = dart::math::computeConvexHull3D<double, std::size_t>(
+      std::span<const Eigen::Vector3d>(mVertices), true);
 
   auto hullVertices = std::move(std::get<0>(result));
   auto hullTriangles = std::move(std::get<1>(result));

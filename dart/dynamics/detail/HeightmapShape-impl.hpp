@@ -56,14 +56,14 @@ HeightmapShape<S>::HeightmapShape() : Shape(HEIGHTMAP), mScale(1, 1, 1)
 
 //==============================================================================
 template <typename S>
-const std::string& HeightmapShape<S>::getType() const
+std::string_view HeightmapShape<S>::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
 template <typename S>
-const std::string& HeightmapShape<S>::getStaticType()
+std::string_view HeightmapShape<S>::getStaticType()
 {
   static const std::string type
       = "HeightmapShape (" + std::string(typeid(S).name()) + ")";
@@ -94,9 +94,7 @@ auto HeightmapShape<S>::getScale() const -> const Vector3&
 //==============================================================================
 template <typename S>
 void HeightmapShape<S>::setHeightField(
-    const std::size_t& width,
-    const std::size_t& depth,
-    const std::vector<S>& heights)
+    std::size_t width, std::size_t depth, std::span<const S> heights)
 {
   DART_ASSERT(heights.size() == width * depth);
   if ((width * depth) != heights.size()) {

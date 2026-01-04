@@ -1,29 +1,14 @@
-# C++20 Modernization - Dev Task
+# C++20 Modernization
 
-## Status
+This folder tracks the remaining C++20 modernization work.
 
-- Phase 3 in progress: public API span migrations underway.
+## Files
 
-## Goal
+- `00_plan.md`: Multi-phase plan and scope.
+- `01_progress.md`: Current status and next steps.
+- `resume_prompt.md`: Handoff prompt for a fresh Codex session.
 
-Modernize the codebase to idiomatic C++20 while preserving behavior. Public API
-breaks are acceptable for DART 7 if `pixi run -e gazebo test-gz` passes without
-changing Gazebo code.
+## Completion Rule
 
-## Non-goals
-
-- Behavior changes or algorithmic refactors
-- Gazebo code changes to accommodate DART API updates
-- New dependencies or build entry points
-
-## Constraints
-
-- Use existing tooling (`pixi run ...`) and follow `CONTRIBUTING.md`.
-- Keep changes mechanical and reviewable; prefer internal-only refactors.
-- Update progress and plan docs after each phase.
-
-## Documents
-
-- Plan: `docs/dev_tasks/cpp20/00_plan.md`
-- Progress: `docs/dev_tasks/cpp20/01_progress.md`
-- Resume prompt: `docs/dev_tasks/cpp20/resume_prompt.md`
+When all phases are complete, summarize the key decisions in the most relevant
+`docs/onboarding/` file (keep it brief) and remove this entire folder.

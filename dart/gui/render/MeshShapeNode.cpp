@@ -52,12 +52,14 @@
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <fstream>
 #include <map>
 #include <sstream>
 #include <stdexcept>
+#include <string_view>
 #include <vector>
 
 #include <cstdint>
@@ -91,7 +93,7 @@ bool isTransparent(const ::osg::Material* material)
   return false;
 }
 
-common::filesystem::path makeTemporaryTexturePath(const std::string& extension)
+common::filesystem::path makeTemporaryTexturePath(std::string_view extension)
 {
   static std::atomic<uint64_t> counter{0};
 
@@ -123,7 +125,7 @@ common::filesystem::path makeTemporaryTexturePath(const std::string& extension)
 }
 
 bool writeTextureFile(
-    const common::filesystem::path& path, const std::string& data)
+    const common::filesystem::path& path, std::string_view data)
 {
   std::ofstream output(path.string(), std::ios::binary);
   output.write(data.data(), static_cast<std::streamsize>(data.size()));
@@ -131,18 +133,19 @@ bool writeTextureFile(
 }
 
 bool resolveTextureUri(
-    const std::string& imagePath,
+    std::string_view imagePath,
     const common::Uri* meshUri,
     common::Uri& resolved)
 {
-  if (resolved.fromString(imagePath))
+  const std::string imagePathString(imagePath);
+  if (resolved.fromString(imagePathString))
     return true;
 
-  if (resolved.fromStringOrPath(imagePath))
+  if (resolved.fromStringOrPath(imagePathString))
     return true;
 
   if (meshUri) {
-    if (resolved.fromRelativeUri(*meshUri, imagePath))
+    if (resolved.fromRelativeUri(*meshUri, imagePathString))
       return true;
   }
 
@@ -150,7 +153,7 @@ bool resolveTextureUri(
 }
 
 std::string materializeTextureImage(
-    const std::string& imagePath,
+    std::string_view imagePath,
     const common::Uri* meshUri,
     const common::ResourceRetrieverPtr& retriever,
     std::vector<std::string>& temporaryFiles)
@@ -189,7 +192,8 @@ std::string materializeTextureImage(
     return "";
   }
 
-  const auto extension = common::filesystem::path(imagePath).extension();
+  const std::string imagePathString(imagePath);
+  const auto extension = common::filesystem::path(imagePathString).extension();
   common::filesystem::path tempPath;
   try {
     tempPath = makeTemporaryTexturePath(extension.string());
@@ -584,13 +588,14 @@ void osgAiNode::clearChildUtilizationFlags()
 //==============================================================================
 void osgAiNode::clearUnusedNodes()
 {
-  for (auto& node_pair : mChildNodes) {
+  std::erase_if(mChildNodes, [&](const auto& node_pair) {
     osgAiNode* node = node_pair.second;
-    if (!node->wasUtilized()) {
-      mChildNodes.erase(node_pair.first);
-      removeChild(node);
-    }
-  }
+    if (node->wasUtilized())
+      return false;
+
+    removeChild(node);
+    return true;
+  });
 }
 
 //==============================================================================
@@ -664,13 +669,14 @@ void MeshShapeGeode::clearChildUtilizationFlags()
 //==============================================================================
 void MeshShapeGeode::clearUnusedMeshes()
 {
-  for (auto& node_pair : mMeshes) {
+  std::erase_if(mMeshes, [&](const auto& node_pair) {
     MeshShapeGeometry* geom = node_pair.second;
-    if (!geom->wasUtilized()) {
-      mMeshes.erase(node_pair.first);
-      removeDrawable(geom);
-    }
-  }
+    if (geom->wasUtilized())
+      return false;
+
+    removeDrawable(geom);
+    return true;
+  });
 }
 
 //==============================================================================
@@ -783,7 +789,9 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
       triangles.clear();
       if (!dart::math::detail::triangulateFaceEarClipping(
-              polygon, vertices, triangles)) {
+              std::span<const std::size_t>{polygon},
+              std::span<const Eigen::Vector3d>{vertices},
+              triangles)) {
         const std::size_t v0 = polygon[0];
         for (std::size_t j = 1; j + 1 < polygon.size(); ++j) {
           elements[2]->push_back(v0);

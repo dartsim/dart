@@ -39,6 +39,7 @@
 #include <iomanip>
 #include <memory>
 #include <sstream>
+#include <string_view>
 #include <utility>
 
 #include <cstdint>
@@ -54,7 +55,7 @@ namespace utils {
 
 namespace {
 
-std::string sanitizeFileName(const std::string& name)
+std::string sanitizeFileName(std::string_view name)
 {
   if (name.empty())
     return "resource";
@@ -75,7 +76,7 @@ std::string sanitizeFileName(const std::string& name)
   return sanitized;
 }
 
-std::string computeHash(const std::string& input)
+std::string computeHash(std::string_view input)
 {
   std::uint64_t hash = 1469598103934665603ULL; // FNV-1a offset basis
   for (unsigned char c : input) {

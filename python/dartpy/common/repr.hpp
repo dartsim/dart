@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -17,6 +18,11 @@ inline std::string repr_string(const std::string& value)
 {
   nb::object repr_obj = nb::repr(nb::cast(value));
   return nb::cast<std::string>(repr_obj);
+}
+
+inline std::string repr_string(std::string_view value)
+{
+  return repr_string(std::string(value));
 }
 
 inline std::string repr_bool(bool value)

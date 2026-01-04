@@ -48,7 +48,8 @@ class CollisionObject;
 struct DART_API DistanceFilter
 {
   virtual bool needDistance(
-      const CollisionObject* object1, const CollisionObject* object2) const = 0;
+      const CollisionObject* object1, const CollisionObject* object2) const
+      = 0;
 };
 
 struct DART_API BodyNodeDistanceFilter : DistanceFilter

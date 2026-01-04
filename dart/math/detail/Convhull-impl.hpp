@@ -73,7 +73,9 @@
 #include <Eigen/Core>
 
 #include <algorithm>
+#include <iterator>
 #include <limits>
+#include <span>
 #include <vector>
 
 #include <cassert>
@@ -212,13 +214,11 @@ inline void sortFloat(
   }
 
   if (descending) {
-    std::sort(data.begin(), data.end(), [](const auto& a, const auto& b) {
-      return a.value > b.value;
-    });
+    std::ranges::sort(
+        data, [](const auto& a, const auto& b) { return a.value > b.value; });
   } else {
-    std::sort(data.begin(), data.end(), [](const auto& a, const auto& b) {
-      return a.value < b.value;
-    });
+    std::ranges::sort(
+        data, [](const auto& a, const auto& b) { return a.value < b.value; });
   }
 
   for (int i = 0; i < len; i++) {
@@ -233,7 +233,7 @@ inline void sortFloat(
 
 inline void sortInt(int* ioVec, int len)
 {
-  std::sort(ioVec, ioVec + len);
+  std::ranges::sort(ioVec, ioVec + len);
 }
 
 } // namespace convhull_internal
@@ -244,7 +244,7 @@ inline void convexHull3dBuild(
     std::vector<int>& outFaces,
     int& numOutputTriangles)
 {
-  const int numInputVertices = static_cast<int>(inVertices.size());
+  const auto numInputVertices = std::ssize(inVertices);
 
   if (numInputVertices <= 3) {
     outFaces.clear();
@@ -416,7 +416,8 @@ inline void convexHull3dBuild(
 
   // Pre-allocate vectors with expected maximum sizes to avoid reallocations
   const int estimatedMaxFaces
-      = std::min(numInputVertices * 2, convhull_internal::kMaxNumFaces);
+      = static_cast<int>(std::min<decltype(numInputVertices)>(
+          numInputVertices * 2, convhull_internal::kMaxNumFaces));
   std::vector<int> triangleVisibilityFlags;
   triangleVisibilityFlags.reserve(estimatedMaxFaces);
   triangleVisibilityFlags.resize(currentTriangleCount);
@@ -723,9 +724,9 @@ inline void convexHull3dBuild(
 // optimized legacy implementation.
 //==============================================================================
 
-template <typename S, typename VertexAllocator>
+template <typename S>
 inline void convexHull3dBuild(
-    const std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>& inVertices,
+    std::span<const Eigen::Matrix<S, 3, 1>> inVertices,
     std::vector<int>& outFaces,
     int& numOutputTriangles)
 {

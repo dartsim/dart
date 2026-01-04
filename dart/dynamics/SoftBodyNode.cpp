@@ -54,18 +54,19 @@ namespace detail {
 
 //==============================================================================
 SoftBodyNodeUniqueProperties::SoftBodyNodeUniqueProperties(
-    double _Kv,
-    double _Ke,
-    double _DampCoeff,
-    const std::vector<PointMass::Properties>& _points,
-    const std::vector<Eigen::Vector3i>& _faces)
-  : mKv(_Kv),
-    mKe(_Ke),
-    mDampCoeff(_DampCoeff),
-    mPointProps(_points),
-    mFaces(_faces)
+    double kv,
+    double ke,
+    double dampCoeff,
+    std::span<const PointMass::Properties> points,
+    std::span<const Eigen::Vector3i> faces)
+  : mKv(kv), mKe(ke), mDampCoeff(dampCoeff), mPointProps(), mFaces()
 {
-  // Do nothing
+  if (!points.empty()) {
+    mPointProps.assign(points.begin(), points.end());
+  }
+  if (!faces.empty()) {
+    mFaces.assign(faces.begin(), faces.end());
+  }
 }
 
 //==============================================================================
@@ -2552,8 +2553,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
       const double y = 0.5 * srho * ctheta;
       const double z = 0.5 * crho;
 
-      properties.addPointMass(PointMass::Properties(
-          Eigen::Vector3d(x * _size(0), y * _size(1), z * _size(2)), mass));
+      properties.addPointMass(
+          PointMass::Properties(
+              Eigen::Vector3d(x * _size(0), y * _size(1), z * _size(2)), mass));
     }
   }
   // bottom
@@ -2725,8 +2727,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
       const double x = stheta;
       const double y = ctheta;
 
-      properties.addPointMass(PointMass::Properties(
-          Eigen::Vector3d(x * radius, y * radius, z * _height), mass));
+      properties.addPointMass(
+          PointMass::Properties(
+              Eigen::Vector3d(x * radius, y * radius, z * _height), mass));
     }
   }
 
@@ -2744,8 +2747,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
       const double x = stheta;
       const double y = ctheta;
 
-      properties.addPointMass(PointMass::Properties(
-          Eigen::Vector3d(x * _radius, y * _radius, z * _height), mass));
+      properties.addPointMass(
+          PointMass::Properties(
+              Eigen::Vector3d(x * _radius, y * _radius, z * _height), mass));
     }
   }
 
@@ -2763,8 +2767,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
       const double x = stheta;
       const double y = ctheta;
 
-      properties.addPointMass(PointMass::Properties(
-          Eigen::Vector3d(x * radius, y * radius, z * _height), mass));
+      properties.addPointMass(
+          PointMass::Properties(
+              Eigen::Vector3d(x * radius, y * radius, z * _height), mass));
     }
   }
 
@@ -2868,35 +2873,39 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
       meshIdx1 = (i + 0) * _nSlices + j;
       meshIdx2 = (i + 1) * _nSlices + j;
       meshIdx3 = (i + 0) * _nSlices + j + 1;
-      properties.addFace(Eigen::Vector3i(
-          nConePointMass + meshIdx1,
-          nConePointMass + meshIdx2,
-          nConePointMass + meshIdx3));
+      properties.addFace(
+          Eigen::Vector3i(
+              nConePointMass + meshIdx1,
+              nConePointMass + meshIdx2,
+              nConePointMass + meshIdx3));
 
       meshIdx1 = (i + 0) * _nSlices + j + 1;
       meshIdx2 = (i + 1) * _nSlices + j;
       meshIdx3 = (i + 1) * _nSlices + j + 1;
-      properties.addFace(Eigen::Vector3i(
-          nConePointMass + meshIdx1,
-          nConePointMass + meshIdx2,
-          nConePointMass + meshIdx3));
+      properties.addFace(
+          Eigen::Vector3i(
+              nConePointMass + meshIdx1,
+              nConePointMass + meshIdx2,
+              nConePointMass + meshIdx3));
     }
 
     meshIdx1 = (i + 0) * _nSlices + _nSlices - 1;
     meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;
     meshIdx3 = (i + 0) * _nSlices + 0;
-    properties.addFace(Eigen::Vector3i(
-        nConePointMass + meshIdx1,
-        nConePointMass + meshIdx2,
-        nConePointMass + meshIdx3));
+    properties.addFace(
+        Eigen::Vector3i(
+            nConePointMass + meshIdx1,
+            nConePointMass + meshIdx2,
+            nConePointMass + meshIdx3));
 
     meshIdx1 = (i + 0) * _nSlices + 0;
     meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;
     meshIdx3 = (i + 1) * _nSlices + 0;
-    properties.addFace(Eigen::Vector3i(
-        nConePointMass + meshIdx1,
-        nConePointMass + meshIdx2,
-        nConePointMass + meshIdx3));
+    properties.addFace(
+        Eigen::Vector3i(
+            nConePointMass + meshIdx1,
+            nConePointMass + meshIdx2,
+            nConePointMass + meshIdx3));
   }
 
   // middle
@@ -2905,35 +2914,39 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
       meshIdx1 = (i + 0) * _nSlices + j;
       meshIdx2 = (i + 1) * _nSlices + j;
       meshIdx3 = (i + 0) * _nSlices + j + 1;
-      properties.addFace(Eigen::Vector3i(
-          nTopPointMasses + meshIdx1,
-          nTopPointMasses + meshIdx2,
-          nTopPointMasses + meshIdx3));
+      properties.addFace(
+          Eigen::Vector3i(
+              nTopPointMasses + meshIdx1,
+              nTopPointMasses + meshIdx2,
+              nTopPointMasses + meshIdx3));
 
       meshIdx1 = (i + 0) * _nSlices + j + 1;
       meshIdx2 = (i + 1) * _nSlices + j;
       meshIdx3 = (i + 1) * _nSlices + j + 1;
-      properties.addFace(Eigen::Vector3i(
-          nTopPointMasses + meshIdx1,
-          nTopPointMasses + meshIdx2,
-          nTopPointMasses + meshIdx3));
+      properties.addFace(
+          Eigen::Vector3i(
+              nTopPointMasses + meshIdx1,
+              nTopPointMasses + meshIdx2,
+              nTopPointMasses + meshIdx3));
     }
 
     meshIdx1 = (i + 0) * _nSlices;
     meshIdx2 = (i + 0) * _nSlices + _nSlices - 1;
     meshIdx3 = (i + 1) * _nSlices;
-    properties.addFace(Eigen::Vector3i(
-        nTopPointMasses + meshIdx1,
-        nTopPointMasses + meshIdx2,
-        nTopPointMasses + meshIdx3));
+    properties.addFace(
+        Eigen::Vector3i(
+            nTopPointMasses + meshIdx1,
+            nTopPointMasses + meshIdx2,
+            nTopPointMasses + meshIdx3));
 
     meshIdx1 = (i + 0) * _nSlices + _nSlices - 1;
     meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;
     meshIdx3 = (i + 1) * _nSlices + 0;
-    properties.addFace(Eigen::Vector3i(
-        nTopPointMasses + meshIdx1,
-        nTopPointMasses + meshIdx2,
-        nTopPointMasses + meshIdx3));
+    properties.addFace(
+        Eigen::Vector3i(
+            nTopPointMasses + meshIdx1,
+            nTopPointMasses + meshIdx2,
+            nTopPointMasses + meshIdx3));
   }
 
   // bottom
@@ -2942,51 +2955,57 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
       meshIdx1 = (i + 0) * _nSlices + j;
       meshIdx2 = (i + 1) * _nSlices + j;
       meshIdx3 = (i + 0) * _nSlices + j + 1;
-      properties.addFace(Eigen::Vector3i(
-          nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
-          nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
-          nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
+      properties.addFace(
+          Eigen::Vector3i(
+              nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
+              nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
+              nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
 
       meshIdx1 = (i + 0) * _nSlices + j + 1;
       meshIdx2 = (i + 1) * _nSlices + j;
       meshIdx3 = (i + 1) * _nSlices + j + 1;
-      properties.addFace(Eigen::Vector3i(
-          nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
-          nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
-          nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
+      properties.addFace(
+          Eigen::Vector3i(
+              nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
+              nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
+              nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
     }
 
     meshIdx1 = (i + 0) * _nSlices + _nSlices - 1;
     meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;
     meshIdx3 = (i + 0) * _nSlices + 0;
-    properties.addFace(Eigen::Vector3i(
-        nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
-        nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
-        nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
+    properties.addFace(
+        Eigen::Vector3i(
+            nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
+            nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
+            nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
 
     meshIdx1 = (i + 0) * _nSlices + 0;
     meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;
     meshIdx3 = (i + 1) * _nSlices + 0;
-    properties.addFace(Eigen::Vector3i(
-        nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
-        nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
-        nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
+    properties.addFace(
+        Eigen::Vector3i(
+            nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
+            nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
+            nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
   }
   meshIdx1 = 1;
   for (std::size_t i = 0; i < _nSlices - 1; i++) {
     meshIdx2 = i + 2;
     meshIdx3 = i + 3;
-    properties.addFace(Eigen::Vector3i(
-        nTotalMasses - meshIdx1,
-        nTotalMasses - meshIdx2,
-        nTotalMasses - meshIdx3));
+    properties.addFace(
+        Eigen::Vector3i(
+            nTotalMasses - meshIdx1,
+            nTotalMasses - meshIdx2,
+            nTotalMasses - meshIdx3));
   }
   meshIdx2 = _nSlices + 1;
   meshIdx3 = 2;
-  properties.addFace(Eigen::Vector3i(
-      nTotalMasses - meshIdx1,
-      nTotalMasses - meshIdx2,
-      nTotalMasses - meshIdx3));
+  properties.addFace(
+      Eigen::Vector3i(
+          nTotalMasses - meshIdx1,
+          nTotalMasses - meshIdx2,
+          nTotalMasses - meshIdx3));
 
   return properties;
 }

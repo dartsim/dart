@@ -39,6 +39,7 @@
 
 #include <Eigen/Dense>
 
+#include <span>
 #include <vector>
 
 namespace dart {
@@ -119,25 +120,24 @@ public:
     Eigen::Vector3d mForceUpperLimits; // Currently unused
 
     Properties(
-        const Eigen::Vector3d& _X0 = Eigen::Vector3d::Zero(),
-        double _mass = 0.0005,
-        const std::vector<std::size_t>& _connections
-        = std::vector<std::size_t>(),
-        const Eigen::Vector3d& _positionLowerLimits
+        const Eigen::Vector3d& x0 = Eigen::Vector3d::Zero(),
+        double mass = 0.0005,
+        std::span<const std::size_t> connections = {},
+        const Eigen::Vector3d& positionLowerLimits
         = Eigen::Vector3d::Constant(-math::inf),
-        const Eigen::Vector3d& _positionUpperLimits
+        const Eigen::Vector3d& positionUpperLimits
         = Eigen::Vector3d::Constant(math::inf),
-        const Eigen::Vector3d& _velocityLowerLimits
+        const Eigen::Vector3d& velocityLowerLimits
         = Eigen::Vector3d::Constant(-math::inf),
-        const Eigen::Vector3d& _velocityUpperLimits
+        const Eigen::Vector3d& velocityUpperLimits
         = Eigen::Vector3d::Constant(math::inf),
-        const Eigen::Vector3d& _accelerationLowerLimits
+        const Eigen::Vector3d& accelerationLowerLimits
         = Eigen::Vector3d::Constant(-math::inf),
-        const Eigen::Vector3d& _accelerationUpperLimits
+        const Eigen::Vector3d& accelerationUpperLimits
         = Eigen::Vector3d::Constant(math::inf),
-        const Eigen::Vector3d& _forceLowerLimits
+        const Eigen::Vector3d& forceLowerLimits
         = Eigen::Vector3d::Constant(-math::inf),
-        const Eigen::Vector3d& _forceUpperLimits
+        const Eigen::Vector3d& forceUpperLimits
         = Eigen::Vector3d::Constant(math::inf));
 
     void setRestingPosition(const Eigen::Vector3d& _x);

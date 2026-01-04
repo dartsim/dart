@@ -739,18 +739,18 @@ simulation::WorldPtr createWorld(
 //==============================================================================
 Options::Options(
     const common::ResourceRetrieverPtr& retrieverOrNullptr,
-    const std::string& geomSkeletonNamePrefix,
-    const std::string& siteSkeletonNamePrefix)
+    std::string_view geomSkeletonNamePrefix,
+    std::string_view siteSkeletonNamePrefix)
   : mRetriever(retrieverOrNullptr),
-    mGeomSkeletonNamePrefix(geomSkeletonNamePrefix),
-    mSiteSkeletonNamePrefix(siteSkeletonNamePrefix)
+    mGeomSkeletonNamePrefix(std::string(geomSkeletonNamePrefix)),
+    mSiteSkeletonNamePrefix(std::string(siteSkeletonNamePrefix))
 {
   // Do nothing
 }
 
 //==============================================================================
 dynamics::BodyNode* getUniqueBodyOrNull(
-    const simulation::World& world, const std::string& name)
+    const simulation::World& world, std::string_view name)
 {
   const auto& bodyNodes = detail::getBodyNodes(world, name);
 

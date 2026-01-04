@@ -35,6 +35,8 @@
 #include "dart/common/Logging.hpp"
 #include "dart/math/Geometry.hpp"
 
+#include <algorithm>
+
 namespace dart {
 namespace dynamics {
 
@@ -73,15 +75,15 @@ LineSegmentShape::LineSegmentShape(
 }
 
 //==============================================================================
-const std::string& LineSegmentShape::getType() const
+std::string_view LineSegmentShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& LineSegmentShape::getStaticType()
+std::string_view LineSegmentShape::getStaticType()
 {
-  static const std::string type("LineSegmentShape");
+  static constexpr std::string_view type = "LineSegmentShape";
   return type;
 }
 
@@ -245,17 +247,12 @@ void LineSegmentShape::removeConnection(
     std::size_t _vertexIdx1, std::size_t _vertexIdx2)
 {
   // Search through all connections to remove any that match the request
-  common::aligned_vector<Eigen::Vector2i>::iterator it = mConnections.begin();
-  while (it != mConnections.end()) {
-    const Eigen::Vector2i c = (*it);
-    if ((c[0] == (int)_vertexIdx1 && c[1] == (int)_vertexIdx2)
-        || (c[0] == (int)_vertexIdx2 && c[1] == (int)_vertexIdx1)) {
-      // Erase this iterator, but not before stepping it forward to the next
-      // iterator in the sequence.
-      mConnections.erase(it++);
-    } else
-      ++it;
-  }
+  std::erase_if(mConnections, [&](const Eigen::Vector2i& connection) {
+    return (connection[0] == static_cast<int>(_vertexIdx1)
+            && connection[1] == static_cast<int>(_vertexIdx2))
+           || (connection[0] == static_cast<int>(_vertexIdx2)
+               && connection[1] == static_cast<int>(_vertexIdx1));
+  });
 }
 
 //==============================================================================

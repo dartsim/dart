@@ -63,10 +63,10 @@ public:
   ~VoxelGridShape() override = default;
 
   // Documentation inherited.
-  const std::string& getType() const override;
+  std::string_view getType() const override;
 
   /// Returns shape type for this class
-  static const std::string& getStaticType();
+  static std::string_view getStaticType();
 
   /// Sets octree.
   void setOctree(std::shared_ptr<octomap::OcTree> octree);

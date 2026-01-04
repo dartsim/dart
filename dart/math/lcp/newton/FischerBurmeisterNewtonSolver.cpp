@@ -38,6 +38,7 @@
 #include <Eigen/QR>
 
 #include <algorithm>
+#include <iterator>
 #include <limits>
 
 namespace dart::math {
@@ -125,7 +126,7 @@ LcpResult FischerBurmeisterNewtonSolver::solve(
   const auto& hi = problem.hi;
   const auto& findex = problem.findex;
 
-  const int n = static_cast<int>(b.size());
+  const auto n = std::ssize(b);
   if (n == 0) {
     x.resize(0);
     result.status = LcpSolverStatus::Success;

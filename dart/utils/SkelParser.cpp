@@ -78,6 +78,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -226,7 +227,7 @@ SkelBodyNode readSoftBodyNode(
 
 dynamics::ShapePtr readShape(
     tinyxml2::XMLElement* shapeElement,
-    const std::string& bodyName,
+    std::string_view bodyName,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
@@ -244,57 +245,57 @@ void readJoint(
 JointPropPtr readRevoluteJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readPrismaticJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readScrewJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readUniversalJoint(
     tinyxml2::XMLElement* _universalJointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readBallJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readEulerJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readTranslationalJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readTranslationalJoint2D(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readPlanarJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readFreeJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readWeldJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 common::ResourceRetrieverPtr getRetriever(
     const common::ResourceRetrieverPtr& _retriever);
@@ -302,7 +303,7 @@ common::ResourceRetrieverPtr getRetriever(
 dynamics::ShapeNode* readShapeNode(
     dynamics::BodyNode* bodyNode,
     tinyxml2::XMLElement* shapeNodeEle,
-    const std::string& shapeNodeName,
+    std::string_view shapeNodeName,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
@@ -372,7 +373,7 @@ SkelBodyNode readSoftBodyNode(
 
 dynamics::ShapePtr readShape(
     tinyxml2::XMLElement* vizEle,
-    const std::string& bodyName,
+    std::string_view bodyName,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
@@ -387,17 +388,17 @@ void readJoint(
     JointToIndex& _lookup);
 
 void getDofAttributeIfItExists(
-    const std::string& _attribute,
+    std::string_view _attribute,
     double* _value,
-    const std::string& _element_type,
+    std::string_view _element_type,
     const tinyxml2::XMLElement* _xmlElement,
-    const std::string& _jointName,
+    std::string_view _jointName,
     std::size_t _index);
 
 void setDofLimitAttributes(
     tinyxml2::XMLElement* _dofElement,
-    const std::string& _element_type,
-    const std::string& _jointName,
+    std::string_view _element_type,
+    std::string_view _jointName,
     std::size_t _index,
     double* lower,
     double* upper,
@@ -408,7 +409,7 @@ void readAllDegreesOfFreedom(
     tinyxml2::XMLElement* _jointElement,
     PropertyType& _properties,
     SkelJoint& _joint,
-    const std::string& _jointName,
+    std::string_view _jointName,
     std::size_t _numDofs);
 
 template <typename PropertyType>
@@ -416,7 +417,7 @@ void readDegreeOfFreedom(
     tinyxml2::XMLElement* _dofElement,
     PropertyType& properties,
     SkelJoint& joint,
-    const std::string& jointName,
+    std::string_view jointName,
     std::size_t numDofs);
 
 template <typename PropertyType>
@@ -424,56 +425,56 @@ void readJointDynamicsAndLimit(
     tinyxml2::XMLElement* _jointElement,
     PropertyType& _properties,
     SkelJoint& _joint,
-    const std::string& _name,
+    std::string_view _name,
     std::size_t _numAxis);
 
 JointPropPtr readWeldJoint(
-    tinyxml2::XMLElement* _jointElement, SkelJoint& _joint, const std::string&);
+    tinyxml2::XMLElement* _jointElement, SkelJoint& _joint, std::string_view);
 
 JointPropPtr readRevoluteJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readPrismaticJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readScrewJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readUniversalJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readBallJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readEulerJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readTranslationalJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readPlanarJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 JointPropPtr readFreeJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name);
+    std::string_view _name);
 
 common::ResourceRetrieverPtr getRetriever(
     const common::ResourceRetrieverPtr& _retriever);
@@ -509,25 +510,27 @@ simulation::WorldPtr SkelParser::readWorld(
 
 //==============================================================================
 simulation::WorldPtr SkelParser::readWorldXML(
-    const std::string& _xmlString,
-    const common::Uri& _baseUri,
-    const common::ResourceRetrieverPtr& _retriever)
+    std::string_view xmlString,
+    const common::Uri& baseUri,
+    const common::ResourceRetrieverPtr& retriever)
 {
-  const common::ResourceRetrieverPtr retriever = getRetriever(_retriever);
+  const common::ResourceRetrieverPtr resolvedRetriever
+      = getRetriever(retriever);
 
-  tinyxml2::XMLDocument _dartXML;
-  if (_dartXML.Parse(_xmlString.c_str()) != tinyxml2::XML_SUCCESS) {
-    _dartXML.PrintError();
+  tinyxml2::XMLDocument dartXml;
+  const std::string xmlStringCopy(xmlString);
+  if (dartXml.Parse(xmlStringCopy.c_str()) != tinyxml2::XML_SUCCESS) {
+    dartXml.PrintError();
     return nullptr;
   }
 
-  tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(_dartXML);
+  tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(dartXml);
   if (!worldElement) {
     DART_ERROR("[readWorldXML] XML String could not be parsed!");
     return nullptr;
   }
 
-  return ::dart::utils::readWorld(worldElement, _baseUri, retriever);
+  return ::dart::utils::readWorld(worldElement, baseUri, resolvedRetriever);
 }
 
 //==============================================================================
@@ -582,14 +585,14 @@ namespace {
 dynamics::ShapeNode* readShapeNode(
     dynamics::BodyNode* bodyNode,
     tinyxml2::XMLElement* shapeNodeEle,
-    const std::string& shapeNodeName,
+    std::string_view shapeNodeName,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
   DART_ASSERT(bodyNode);
 
   auto shape = readShape(shapeNodeEle, bodyNode->getName(), baseUri, retriever);
-  auto shapeNode = bodyNode->createShapeNode(shape, shapeNodeName);
+  auto shapeNode = bodyNode->createShapeNode(shape, std::string(shapeNodeName));
 
   // Transformation
   if (hasElement(shapeNodeEle, "transformation")) {
@@ -1308,7 +1311,7 @@ SkelBodyNode readSoftBodyNode(
 //==============================================================================
 dynamics::ShapePtr readShape(
     tinyxml2::XMLElement* vizEle,
-    const std::string& bodyName,
+    std::string_view bodyName,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
@@ -1527,8 +1530,7 @@ void readJoint(
 
   // Use an empty string (rather than "world") to indicate that the joint has no
   // parent
-  if (joint.parentName == std::string("world")
-      && _bodyNodes.find("world") == _bodyNodes.end())
+  if (joint.parentName == std::string("world") && !_bodyNodes.contains("world"))
     joint.parentName.clear();
 
   if (parent == _bodyNodes.end() && !joint.parentName.empty()) {
@@ -1620,15 +1622,16 @@ void readJoint(
 
 //==============================================================================
 void getDofAttributeIfItExists(
-    const std::string& _attribute,
+    std::string_view _attribute,
     double* _value,
-    const std::string& _element_type,
+    std::string_view _element_type,
     const tinyxml2::XMLElement* _xmlElement,
-    const std::string& _jointName,
+    std::string_view _jointName,
     std::size_t _index)
 {
+  const std::string attributeName(_attribute);
   DART_ERROR_IF(
-      _xmlElement->QueryDoubleAttribute(_attribute.c_str(), _value)
+      _xmlElement->QueryDoubleAttribute(attributeName.c_str(), _value)
           == tinyxml2::XML_WRONG_ATTRIBUTE_TYPE,
       "[getDofAttributeIfItExists] Invalid type for [{}] attribute of [{}] "
       "element in the [{}] dof of Joint [{}].",
@@ -1641,8 +1644,8 @@ void getDofAttributeIfItExists(
 //==============================================================================
 void setDofLimitAttributes(
     tinyxml2::XMLElement* _dofElement,
-    const std::string& _element_type,
-    const std::string& _jointName,
+    std::string_view _element_type,
+    std::string_view _jointName,
     std::size_t _index,
     double* lower,
     double* upper,
@@ -1696,7 +1699,7 @@ struct DofProxy
       PropertyType& properties,
       SkelJoint& joint,
       std::size_t _index,
-      const std::string& jointName)
+      std::string_view jointName)
     : index(_index),
       valid(true),
 
@@ -1742,7 +1745,7 @@ void readAllDegreesOfFreedom(
     tinyxml2::XMLElement* _jointElement,
     PropertyType& _properties,
     SkelJoint& _joint,
-    const std::string& _jointName,
+    std::string_view _jointName,
     std::size_t _numDofs)
 {
   if (_joint.position.size() < (int)_numDofs) {
@@ -1777,7 +1780,7 @@ void readDegreeOfFreedom(
     tinyxml2::XMLElement* _dofElement,
     PropertyType& properties,
     SkelJoint& joint,
-    const std::string& jointName,
+    std::string_view jointName,
     std::size_t numDofs)
 {
   int localIndex = -1;
@@ -1888,7 +1891,7 @@ void readJointDynamicsAndLimit(
     tinyxml2::XMLElement* _jointElement,
     PropertyType& _properties,
     SkelJoint& _joint,
-    const std::string& _name,
+    std::string_view _name,
     std::size_t _numAxis)
 {
   // TODO(MXG): Consider printing warnings for these tags that recommends using
@@ -1974,7 +1977,7 @@ void readJointDynamicsAndLimit(
 JointPropPtr readWeldJoint(
     tinyxml2::XMLElement* /*_jointElement*/,
     SkelJoint& /*_joint*/,
-    const std::string&)
+    std::string_view)
 {
   return dynamics::WeldJoint::Properties::createShared();
 }
@@ -1983,7 +1986,7 @@ JointPropPtr readWeldJoint(
 JointPropPtr readRevoluteJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name)
+    std::string_view _name)
 {
   DART_ASSERT(_jointElement != nullptr);
 
@@ -2038,7 +2041,7 @@ JointPropPtr readRevoluteJoint(
 JointPropPtr readPrismaticJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name)
+    std::string_view _name)
 {
   DART_ASSERT(_jointElement != nullptr);
 
@@ -2093,7 +2096,7 @@ JointPropPtr readPrismaticJoint(
 JointPropPtr readScrewJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name)
+    std::string_view _name)
 {
   DART_ASSERT(_jointElement != nullptr);
 
@@ -2153,7 +2156,7 @@ JointPropPtr readScrewJoint(
 JointPropPtr readUniversalJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name)
+    std::string_view _name)
 {
   DART_ASSERT(_jointElement != nullptr);
 
@@ -2218,7 +2221,7 @@ JointPropPtr readUniversalJoint(
 JointPropPtr readBallJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name)
+    std::string_view _name)
 {
   DART_ASSERT(_jointElement != nullptr);
 
@@ -2249,7 +2252,7 @@ JointPropPtr readBallJoint(
 JointPropPtr readEulerJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name)
+    std::string_view _name)
 {
   DART_ASSERT(_jointElement != nullptr);
 
@@ -2299,7 +2302,7 @@ JointPropPtr readEulerJoint(
 JointPropPtr readTranslationalJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name)
+    std::string_view _name)
 {
   DART_ASSERT(_jointElement != nullptr);
 
@@ -2334,7 +2337,7 @@ JointPropPtr readTranslationalJoint(
 JointPropPtr readTranslationalJoint2D(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name)
+    std::string_view _name)
 {
   DART_ASSERT(_jointElement != nullptr);
 
@@ -2408,7 +2411,7 @@ JointPropPtr readTranslationalJoint2D(
 JointPropPtr readPlanarJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name)
+    std::string_view _name)
 {
   DART_ASSERT(_jointElement != nullptr);
 
@@ -2484,7 +2487,7 @@ JointPropPtr readPlanarJoint(
 JointPropPtr readFreeJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
-    const std::string& _name)
+    std::string_view _name)
 {
   DART_ASSERT(_jointElement != nullptr);
 

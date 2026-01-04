@@ -34,6 +34,8 @@
 
 #include "dart/collision/CollisionObject.hpp"
 
+#include <algorithm>
+
 namespace dart {
 namespace collision {
 
@@ -54,15 +56,14 @@ void DARTCollisionGroup::initializeEngineData()
 //==============================================================================
 void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 {
-  if (std::find(mCollisionObjects.begin(), mCollisionObjects.end(), object)
-      == mCollisionObjects.end()) {
+  if (std::ranges::find(mCollisionObjects, object) == mCollisionObjects.end()) {
     mCollisionObjects.push_back(object);
   }
 }
 
 //==============================================================================
 void DARTCollisionGroup::addCollisionObjectsToEngine(
-    const std::vector<CollisionObject*>& collObjects)
+    std::span<CollisionObject* const> collObjects)
 {
   for (auto collObject : collObjects)
     addCollisionObjectToEngine(collObject);

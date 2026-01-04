@@ -36,6 +36,7 @@
 #include <dart/Export.hpp>
 
 #include <array>
+#include <span>
 
 #define IKFAST_HAS_LIBRARY
 #include "dart/dynamics/ikfast.h"
@@ -147,8 +148,8 @@ public:
   /// @param[in] properties Properties of InverseKinematics::Analytical.
   IkFast(
       InverseKinematics* ik,
-      const std::vector<std::size_t>& dofMap,
-      const std::vector<std::size_t>& freeDofMap,
+      std::span<const std::size_t> dofMap,
+      std::span<const std::size_t> freeDofMap,
       const std::string& methodName = "IKFast",
       const Analytical::Properties& properties = Analytical::Properties());
 

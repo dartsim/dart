@@ -305,8 +305,10 @@ void FreeJoint::setRelativeSpatialVelocity(
   if (getChildBodyNode() == inCoordinatesOf) {
     setRelativeSpatialVelocity(newSpatialVelocity);
   } else {
-    setRelativeSpatialVelocity(math::AdR(
-        inCoordinatesOf->getTransform(getChildBodyNode()), newSpatialVelocity));
+    setRelativeSpatialVelocity(
+        math::AdR(
+            inCoordinatesOf->getTransform(getChildBodyNode()),
+            newSpatialVelocity));
   }
 }
 
@@ -448,9 +450,10 @@ void FreeJoint::setRelativeSpatialAcceleration(
   if (getChildBodyNode() == inCoordinatesOf) {
     setRelativeSpatialAcceleration(newSpatialAcceleration);
   } else {
-    setRelativeSpatialAcceleration(math::AdR(
-        inCoordinatesOf->getTransform(getChildBodyNode()),
-        newSpatialAcceleration));
+    setRelativeSpatialAcceleration(
+        math::AdR(
+            inCoordinatesOf->getTransform(getChildBodyNode()),
+            newSpatialAcceleration));
   }
 }
 
@@ -650,15 +653,15 @@ Joint* FreeJoint::clone() const
 }
 
 //==============================================================================
-const std::string& FreeJoint::getType() const
+std::string_view FreeJoint::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& FreeJoint::getStaticType()
+std::string_view FreeJoint::getStaticType()
 {
-  static const std::string name = "FreeJoint";
+  static constexpr std::string_view name = "FreeJoint";
   return name;
 }
 
@@ -746,8 +749,9 @@ void FreeJoint::integratePositions(
 //==============================================================================
 void FreeJoint::integrateVelocities(double _dt)
 {
-  setVelocitiesStatic(math::integrateVelocity<math::RealVectorSpace<6>>(
-      getVelocitiesStatic(), getAccelerationsStatic(), _dt));
+  setVelocitiesStatic(
+      math::integrateVelocity<math::RealVectorSpace<6>>(
+          getVelocitiesStatic(), getAccelerationsStatic(), _dt));
 }
 
 //==============================================================================

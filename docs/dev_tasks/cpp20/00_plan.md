@@ -1,59 +1,86 @@
-# C++20 Modernization Plan (00)
+# C++20 Modernization Plan (Phase 7+)
 
 ## Status
 
-- Active: executing phases; Phase 3 in progress.
+- Phases 1-6 are complete or in review. This plan covers the next phases.
 
-## Objective
+## Goals
 
-Adopt C++20 idioms across the codebase with no behavior changes.
+- Modernize the C++ API surface to idiomatic C++20 with no behavior changes.
+- Remove unnecessary allocations and conversions introduced by pre-C++20 APIs.
+- Keep changes mechanical and easy to review.
 
-## Guardrails
+## Constraints
 
-- No functional changes, no new dependencies.
-- Public API/ABI breaks are acceptable for DART 7 when needed for span
-  migrations, but Gazebo must remain compatible (`pixi run -e gazebo test-gz`
-  passes) without changing Gazebo code.
-- Execute phases sequentially; update `docs/dev_tasks/cpp20/01_progress.md` and
-  run pixi checks before starting the next phase.
-- Follow the code-style C++20 guidance: avoid `std::format` until the toolchain
-  baseline supports it, avoid overly complex ranges rewrites, and keep SFINAE
-  where Eigen compile-time traits require it.
-- Skip generated or third-party code unless there is a clear need to update it.
+- Use existing pixi entry points only (`pixi run ...`).
+- Run `pixi run lint` before each commit.
+- Keep documentation short and remove this folder when the task is complete.
+- API changes are acceptable for DART 7 as long as `pixi run -e gazebo test-gz`
+  passes without changes to Gazebo code.
 
-## Phase 0 - Discovery and guardrails
+## Phases
 
-- Confirm C++20 is the default standard across all targets.
-- Establish modernization rules and identify safe refactor areas.
-- Record scope and readiness in `docs/dev_tasks/cpp20/01_progress.md`.
+### Phase 7: Span-first read-only inputs
 
-## Phase 1 - Mechanical no-op cleanup
+- Replace read-only `const std::vector<T>&` parameters with
+  `std::span<const T>` where the callee only iterates.
+- Remove redundant vector overloads when the span variant fully covers usage.
+- Apply to core collections in dynamics, collision, and simulation modules.
 
-- Replace legacy constructs with clearer equivalents (`nullptr`, `using`,
-  `override`, `= default`, `= delete`) where behavior is unchanged.
-- Add `[[nodiscard]]` or `[[maybe_unused]]` annotations for correctness
-  signals.
-- Convert internal macro constants to `constexpr` when no ABI impact exists.
-- Align any remaining non-C++20 target compile feature settings with the
-  project default.
+### Phase 8: String-view parsing inputs
 
-## Phase 2 - Standard library modernization (internal only)
+- Switch parsing and lookup functions that only read input strings to
+  `std::string_view` (no storage of the view).
+- Focus on XML/SDF/URDF/MJCF utilities and URI/path parsing helpers.
+- Keep getters that return stored names as `const std::string&`.
 
-- Use C++20 types (`std::span`, `std::string_view`, `std::optional`,
-  `std::variant`, `std::array`, `std::chrono`) in implementation code where
-  lifetimes are already stable.
-- Prefer range-based for loops and `std::ranges` algorithms when it improves
-  clarity without changing behavior.
-- Replace manual container cleanup with `std::erase_if` where applicable.
+### Phase 9: C++20 container membership
 
-## Phase 3 - Public API span migrations
+- Replace membership checks like `find(...) != end()` with `.contains(...)`
+  where the iterator is not otherwise needed.
+- Apply to maps/sets across dynamics, simulation, GUI, and utils.
 
-- Replace const vector-reference getters with `std::span` return types.
-- Remove redundant span helper accessors now covered by the primary getters.
-- Keep behavior unchanged while allowing API/ABI breaks where required.
+### Phase 10: Signed sizes with `std::ssize`
 
-## Phase 4 - Consolidation and validation
+- Replace repeated `static_cast<int>(vec.size())` and similar patterns with
+  `std::ssize(vec)` when the size is used as a signed value.
+- Keep explicit casts when APIs require `int`.
 
-- Run the standard `pixi run` workflows and resolve any warnings introduced by
-  modernization, including `pixi run -e gazebo test-gz`.
-- Update docs only if new guidance is needed for future maintainers.
+### Phase 11: Type-name string views
+
+- Convert `getType()`/`getStaticType()` families to return
+  `std::string_view` backed by `static constexpr` data.
+- Update the `Castable` macros and type-name implementations consistently.
+- Isolate this phase because it is a broad API signature change.
+- Keep `CollisionDetector`/`BoxedLcpSolver` `getType()` returning
+  `const std::string&` for gz-physics compatibility; add `getTypeView()` for
+  `std::string_view` access.
+
+### Phase 12: Optimization solver type strings
+
+- Switch `math::optimization::Solver::getType()` to return
+  `std::string_view` for non-owning type identifiers.
+- Update `GradientDescentSolver` and the dartpy trampoline/bindings.
+
+### Phase 13: Span helper inputs
+
+- Replace read-only `const std::vector<T>&` parameters in utils parsing helpers
+  and math mesh/LCP utilities with `std::span<const T>`.
+- Update call sites to pass spans explicitly where needed.
+
+### Phase 14: Geometry helper spans
+
+- Switch geometry helper inputs (support polygons/hulls) to
+  `std::span<const Eigen::Vector2d>`/`std::span<const Eigen::Vector3d>` in
+  `dart/math/Geometry`.
+- Add span-friendly overloads for convex hull helpers in
+  `dart/math/detail/Convhull` and `computeConvexHull3D`, keeping vector returns.
+- Update call sites (Skeleton support polygon, TriMesh convex hull,
+  PolyhedronVisual) and tests.
+
+### Phase 15: Simulation experimental spans
+
+- Replace read-only `const std::vector<double>&` inputs in simulation
+  experimental mappers with `std::span<const double>`.
+- Switch `StateSpace::addVariables` to `std::span<const std::string>`.
+- Update binary I/O helpers and tests to pass spans explicitly.

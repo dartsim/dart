@@ -40,6 +40,8 @@
 #include "dart/math/lcp/pivoting/DantzigSolver.hpp"
 #include "dart/math/lcp/projection/PgsSolver.hpp"
 
+#include <iterator>
+
 DART_SUPPRESS_DEPRECATED_BEGIN
 
 namespace dart {
@@ -92,7 +94,7 @@ public:
       return result;
     }
 
-    const auto n = static_cast<int>(problem.b.size());
+    const auto n = std::ssize(problem.b);
     if (n <= 0) {
       x.resize(0);
       result.status = math::LcpSolverStatus::Success;
@@ -106,7 +108,7 @@ public:
       return result;
     }
 
-    const int nSkip = math::padding(n);
+    const int nSkip = math::padding(static_cast<int>(n));
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
         paddedA(n, nSkip);
     paddedA.setZero();
@@ -137,7 +139,7 @@ public:
 
   std::string getName() const override
   {
-    return mSolver ? mSolver->getType() : "BoxedLcpSolver";
+    return mSolver ? std::string(mSolver->getTypeView()) : "BoxedLcpSolver";
   }
 
   std::string getCategory() const override
@@ -162,7 +164,7 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver()
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
     BoxedLcpSolverPtr boxedLcpSolver)
   : BoxedLcpConstraintSolver(
-      std::move(boxedLcpSolver), std::make_shared<PgsBoxedLcpSolver>())
+        std::move(boxedLcpSolver), std::make_shared<PgsBoxedLcpSolver>())
 {
   // Do nothing
 }

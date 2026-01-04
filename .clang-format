@@ -7,7 +7,6 @@ AlignAfterOpenBracket: AlwaysBreak
 AlignEscapedNewlines: Right
 AlignOperands: true
 AlignTrailingComments: true
-SpacesBeforeTrailingComments: 2
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortBlocksOnASingleLine: false
 AllowShortCaseLabelsOnASingleLine: false
@@ -68,9 +67,9 @@ IncludeCategories:
   # DART library headers (with angle brackets) - ordered from high-level to low-level
   - Regex: '^<dart\/config\.hpp>$' # config first
     Priority: 10
-  - Regex: '^<dart8\/fwd\.hpp>$' # dart8 forward declarations first
+  - Regex: '^<dart\/simulation\/experimental\/fwd\.hpp>$' # simulation-experimental forward declarations
     Priority: 11
-  - Regex: '^<dart8\/.*\.h(pp)?>$' # other dart8 headers
+  - Regex: '^<dart\/simulation\/experimental\/.*\.h(pp)?>$' # other simulation-experimental headers
     Priority: 12
   - Regex: '^<dart\/test\/.*\.h(pp)?>$' # test utilities
     Priority: 20

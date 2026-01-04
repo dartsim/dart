@@ -73,9 +73,11 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <span>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <unordered_map>
 #include <vector>
@@ -140,12 +142,13 @@ private:
   TempResourceMap* mPrevious;
 };
 
-const common::Uri* findOriginalUri(const std::string& filePath)
+const common::Uri* findOriginalUri(std::string_view filePath)
 {
   if (!gCurrentOriginMap || filePath.empty())
     return nullptr;
 
-  const auto it = gCurrentOriginMap->find(filePath);
+  const std::string filePathString(filePath);
+  const auto it = gCurrentOriginMap->find(filePathString);
   if (it == gCurrentOriginMap->end())
     return nullptr;
 
@@ -311,7 +314,7 @@ dynamics::ShapePtr readShape(
 dynamics::ShapeNode* readShapeNode(
     dynamics::BodyNode* bodyNode,
     const ElementPtr& shapeNodeEle,
-    const std::string& shapeNodeName,
+    std::string_view shapeNodeName,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
@@ -349,32 +352,32 @@ SDFJoint readJoint(
 dart::dynamics::WeldJoint::Properties readWeldJoint(
     const ElementPtr& jointElement,
     const Eigen::Isometry3d& parentModelFrame,
-    const std::string& name);
+    std::string_view name);
 
 dynamics::RevoluteJoint::Properties readRevoluteJoint(
     const ElementPtr& revoluteJointElement,
     const Eigen::Isometry3d& parentModelFrame,
-    const std::string& name);
+    std::string_view name);
 
 dynamics::PrismaticJoint::Properties readPrismaticJoint(
     const ElementPtr& jointElement,
     const Eigen::Isometry3d& parentModelFrame,
-    const std::string& name);
+    std::string_view name);
 
 dynamics::ScrewJoint::Properties readScrewJoint(
     const ElementPtr& jointElement,
     const Eigen::Isometry3d& parentModelFrame,
-    const std::string& name);
+    std::string_view name);
 
 dynamics::UniversalJoint::Properties readUniversalJoint(
     const ElementPtr& jointElement,
     const Eigen::Isometry3d& parentModelFrame,
-    const std::string& name);
+    std::string_view name);
 
 dynamics::BallJoint::Properties readBallJoint(
     const ElementPtr& jointElement,
     const Eigen::Isometry3d& parentModelFrame,
-    const std::string& name);
+    std::string_view name);
 
 std::string describeSdformatError(const sdf::Error& error)
 {
@@ -392,26 +395,24 @@ std::string describeSdformatError(const sdf::Error& error)
   return stream.str();
 }
 
-bool isMissingUriError(const std::string& message, std::string& uriValue)
+bool isMissingUriError(std::string_view message, std::string& uriValue)
 {
-  static const std::string needle = "Unable to find uri[";
+  static constexpr std::string_view needle = "Unable to find uri[";
   const auto start = message.find(needle);
-  if (start == std::string::npos)
+  if (start == std::string_view::npos)
     return false;
 
   const auto uriStart = start + needle.size();
   const auto uriEnd = message.find(']', uriStart);
-  if (uriEnd == std::string::npos)
+  if (uriEnd == std::string_view::npos)
     return false;
 
-  uriValue = message.substr(uriStart, uriEnd - uriStart);
+  uriValue = std::string(message.substr(uriStart, uriEnd - uriStart));
   return true;
 }
 
 void logSdformatErrors(
-    const sdf::Errors& errors,
-    const common::Uri& uri,
-    const std::string& context)
+    const sdf::Errors& errors, const common::Uri& uri, std::string_view context)
 {
   if (errors.empty())
     return;
@@ -484,7 +485,7 @@ std::filesystem::path makeTemporaryPath(const common::Uri& uri)
 }
 
 std::filesystem::path writeTemporaryResource(
-    const std::string& data, const common::Uri& uri)
+    std::string_view data, const common::Uri& uri)
 {
   const auto tempPath = makeTemporaryPath(uri);
 
@@ -501,7 +502,7 @@ std::filesystem::path writeTemporaryResource(
 }
 
 std::string resolveWithRetriever(
-    const std::string& requested,
+    std::string_view requested,
     const common::ResourceRetrieverPtr& retriever,
     const std::shared_ptr<std::vector<std::filesystem::path>>& tempFiles,
     const std::shared_ptr<TempResourceMap>& origins)
@@ -509,8 +510,9 @@ std::string resolveWithRetriever(
   if (!retriever)
     return std::string();
 
+  const std::string requestedString(requested);
   common::Uri requestedUri;
-  if (!requestedUri.fromStringOrPath(requested))
+  if (!requestedUri.fromStringOrPath(requestedString))
     return std::string();
 
   if (requestedUri.mScheme.get_value_or("file") == "file"
@@ -529,7 +531,7 @@ std::string resolveWithRetriever(
     const auto tmp = writeTemporaryResource(data, requestedUri);
     tempFiles->push_back(tmp);
     if (origins) {
-      auto uri = common::Uri::createFromStringOrPath(requested);
+      auto uri = common::Uri::createFromStringOrPath(requestedString);
       (*origins)[tmp.string()] = uri;
     }
     return tmp.string();
@@ -542,12 +544,12 @@ std::string resolveWithRetriever(
   }
 }
 
-bool hasUriScheme(const std::string& candidate)
+bool hasUriScheme(std::string_view candidate)
 {
-  return candidate.find("://") != std::string::npos;
+  return candidate.find("://") != std::string_view::npos;
 }
 
-bool isWindowsAbsolutePath(const std::string& path)
+bool isWindowsAbsolutePath(std::string_view path)
 {
 #ifdef _WIN32
   return path.size() > 1 && path[1] == ':'
@@ -558,7 +560,7 @@ bool isWindowsAbsolutePath(const std::string& path)
 #endif
 }
 
-bool requiresBaseUriResolution(const std::string& requested)
+bool requiresBaseUriResolution(std::string_view requested)
 {
   if (requested.empty())
     return false;
@@ -576,19 +578,20 @@ bool requiresBaseUriResolution(const std::string& requested)
 }
 
 std::string resolveRequestedUri(
-    const std::string& requested, const common::Uri& baseUri)
+    std::string_view requested, const common::Uri& baseUri)
 {
   if (!requiresBaseUriResolution(requested))
-    return requested;
+    return std::string(requested);
 
   if (!baseUri.mPath)
-    return requested;
+    return std::string(requested);
 
-  const auto merged = common::Uri::getRelativeUri(baseUri, requested);
+  const auto merged
+      = common::Uri::getRelativeUri(baseUri, std::string(requested));
   if (!merged.empty())
     return merged;
 
-  return requested;
+  return std::string(requested);
 }
 
 void cleanupTemporaryResources(
@@ -949,7 +952,8 @@ void applyMimicConstraints(
     if (!applied)
       continue;
 
-    joint->setMimicJointDofs(props);
+    joint->setMimicJointDofs(
+        std::span<const dynamics::MimicDofProperties>(props));
     joint->setActuatorType(dynamics::Joint::MIMIC);
     joint->setUseCouplerConstraint(useCoupler);
   }
@@ -1305,7 +1309,7 @@ dynamics::ShapePtr readShape(
 dynamics::ShapeNode* readShapeNode(
     dynamics::BodyNode* bodyNode,
     const ElementPtr& shapeNodeEle,
-    const std::string& shapeNodeName,
+    std::string_view shapeNodeName,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
@@ -1636,10 +1640,10 @@ SDFJoint readJoint(
 }
 
 static void reportMissingElement(
-    const std::string& functionName,
-    const std::string& elementName,
-    const std::string& objectType,
-    const std::string& objectName)
+    std::string_view functionName,
+    std::string_view elementName,
+    std::string_view objectType,
+    std::string_view objectName)
 {
   DART_ERROR(
       "Missing element {} for {} named {}",
@@ -1740,7 +1744,7 @@ static bool readAxisElement(
 dart::dynamics::WeldJoint::Properties readWeldJoint(
     const ElementPtr& /*_jointElement*/,
     const Eigen::Isometry3d&,
-    const std::string&)
+    std::string_view)
 {
   return dynamics::WeldJoint::Properties();
 }
@@ -1748,7 +1752,7 @@ dart::dynamics::WeldJoint::Properties readWeldJoint(
 dynamics::RevoluteJoint::Properties readRevoluteJoint(
     const ElementPtr& _revoluteJointElement,
     const Eigen::Isometry3d& _parentModelFrame,
-    const std::string& _name)
+    std::string_view _name)
 {
   DART_ASSERT(_revoluteJointElement != nullptr);
 
@@ -1781,7 +1785,7 @@ dynamics::RevoluteJoint::Properties readRevoluteJoint(
 dynamics::PrismaticJoint::Properties readPrismaticJoint(
     const ElementPtr& _jointElement,
     const Eigen::Isometry3d& _parentModelFrame,
-    const std::string& _name)
+    std::string_view _name)
 {
   DART_ASSERT(_jointElement != nullptr);
 
@@ -1814,7 +1818,7 @@ dynamics::PrismaticJoint::Properties readPrismaticJoint(
 dynamics::ScrewJoint::Properties readScrewJoint(
     const ElementPtr& _jointElement,
     const Eigen::Isometry3d& _parentModelFrame,
-    const std::string& _name)
+    std::string_view _name)
 {
   DART_ASSERT(_jointElement != nullptr);
 
@@ -1853,7 +1857,7 @@ dynamics::ScrewJoint::Properties readScrewJoint(
 dynamics::UniversalJoint::Properties readUniversalJoint(
     const ElementPtr& _jointElement,
     const Eigen::Isometry3d& _parentModelFrame,
-    const std::string& _name)
+    std::string_view _name)
 {
   DART_ASSERT(_jointElement != nullptr);
 
@@ -1910,7 +1914,7 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
 dynamics::BallJoint::Properties readBallJoint(
     const ElementPtr& /*_jointElement*/,
     const Eigen::Isometry3d&,
-    const std::string&)
+    std::string_view)
 {
   return dynamics::BallJoint::Properties();
 }

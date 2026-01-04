@@ -35,12 +35,34 @@
 #include <gtest/gtest.h>
 
 #include <set>
+#include <span>
 #include <unordered_set>
 #include <vector>
 
 #include <cmath>
 
 using dart::math::detail::convexHull3dBuild;
+
+//==============================================================================
+TEST(ConvhullInternal, SortFloatAndInt)
+{
+  float values[] = {3.0f, 1.0f, 2.0f};
+  float* outValues = nullptr;
+  int indices[] = {0, 0, 0};
+  dart::math::detail::convhull_internal::sortFloat(
+      values, outValues, indices, 3, true);
+
+  EXPECT_FLOAT_EQ(values[0], 3.0f);
+  EXPECT_FLOAT_EQ(values[1], 2.0f);
+  EXPECT_FLOAT_EQ(values[2], 1.0f);
+
+  int ints[] = {3, 1, 2};
+  dart::math::detail::convhull_internal::sortInt(ints, 3);
+
+  EXPECT_EQ(ints[0], 1);
+  EXPECT_EQ(ints[1], 2);
+  EXPECT_EQ(ints[2], 3);
+}
 
 //==============================================================================
 // Typed Test Setup - Test both float and double precision
@@ -67,7 +89,7 @@ TYPED_TEST(ConvexHullTest, EmptyInput)
   std::vector<int> faces;
   int numFaces = 0;
 
-  convexHull3dBuild(vertices, faces, numFaces);
+  convexHull3dBuild(std::span<const Vector3>(vertices), faces, numFaces);
 
   EXPECT_EQ(numFaces, 0);
   EXPECT_TRUE(faces.empty());
@@ -87,7 +109,7 @@ TYPED_TEST(ConvexHullTest, TooFewVertices)
   std::vector<int> faces;
   int numFaces = 0;
 
-  convexHull3dBuild(vertices, faces, numFaces);
+  convexHull3dBuild(std::span<const Vector3>(vertices), faces, numFaces);
 
   EXPECT_EQ(numFaces, 0);
   EXPECT_TRUE(faces.empty());
@@ -107,7 +129,7 @@ TYPED_TEST(ConvexHullTest, Tetrahedron)
 
   std::vector<int> faces;
   int numFaces = 0;
-  convexHull3dBuild(vertices, faces, numFaces);
+  convexHull3dBuild(std::span<const Vector3>(vertices), faces, numFaces);
 
   // A tetrahedron should have exactly 4 triangular faces
   ASSERT_EQ(numFaces, 4) << "Tetrahedron must have exactly 4 faces";
@@ -141,7 +163,7 @@ TYPED_TEST(ConvexHullTest, Cube)
 
   std::vector<int> faces;
   int numFaces = 0;
-  convexHull3dBuild(vertices, faces, numFaces);
+  convexHull3dBuild(std::span<const Vector3>(vertices), faces, numFaces);
 
   // A cube has 6 square faces, each split into 2 triangles = 12 faces
   ASSERT_EQ(numFaces, 12) << "Cube must have exactly 12 triangular faces";
@@ -179,7 +201,7 @@ TYPED_TEST(ConvexHullTest, CubeWithInternalPoint)
 
   std::vector<int> faces;
   int numFaces = 0;
-  convexHull3dBuild(vertices, faces, numFaces);
+  convexHull3dBuild(std::span<const Vector3>(vertices), faces, numFaces);
 
   // Should produce cube hull (12 faces) or slightly more if noise perturbs
   // internal point For double precision: exactly 12 faces For float precision:
@@ -213,7 +235,7 @@ TYPED_TEST(ConvexHullTest, Octahedron)
 
   std::vector<int> faces;
   int numFaces = 0;
-  convexHull3dBuild(vertices, faces, numFaces);
+  convexHull3dBuild(std::span<const Vector3>(vertices), faces, numFaces);
 
   // An octahedron has exactly 8 triangular faces
   ASSERT_EQ(numFaces, 8) << "Octahedron must have exactly 8 faces";
@@ -249,7 +271,7 @@ TYPED_TEST(ConvexHullTest, CoplanarPoints)
   std::vector<int> faces;
   int numFaces = 0;
 
-  convexHull3dBuild(vertices, faces, numFaces);
+  convexHull3dBuild(std::span<const Vector3>(vertices), faces, numFaces);
 
   // Should handle degenerate case gracefully (may succeed or fail)
   // At minimum, should not crash or produce invalid results
@@ -277,7 +299,7 @@ TYPED_TEST(ConvexHullTest, DuplicateVertices)
   std::vector<int> faces;
   int numFaces = 0;
 
-  convexHull3dBuild(vertices, faces, numFaces);
+  convexHull3dBuild(std::span<const Vector3>(vertices), faces, numFaces);
 
   // Implementation adds noise to avoid degeneracy, so duplicates become
   // slightly different points. Should produce valid hull (4-6 faces)
@@ -307,7 +329,7 @@ TYPED_TEST(ConvexHullTest, AllFaceIndicesValid)
   std::vector<int> faces;
   int numFaces = 0;
 
-  convexHull3dBuild(vertices, faces, numFaces);
+  convexHull3dBuild(std::span<const Vector3>(vertices), faces, numFaces);
 
   // All face indices must be valid
   for (const auto& idx : faces) {
@@ -336,7 +358,7 @@ TYPED_TEST(ConvexHullTest, AllFacesAreTriangles)
   std::vector<int> faces;
   int numFaces = 0;
 
-  convexHull3dBuild(vertices, faces, numFaces);
+  convexHull3dBuild(std::span<const Vector3>(vertices), faces, numFaces);
 
   // Number of indices must be exactly 3 * numFaces
   EXPECT_EQ(faces.size(), static_cast<size_t>(numFaces * 3))
@@ -365,7 +387,7 @@ TYPED_TEST(ConvexHullTest, NoInternalVertices)
   std::vector<int> faces;
   int numFaces = 0;
 
-  convexHull3dBuild(vertices, faces, numFaces);
+  convexHull3dBuild(std::span<const Vector3>(vertices), faces, numFaces);
 
   // The internal point (vertex 8) should NOT appear in any face
   // (unless noise perturbation pushes it outside, which is less likely with
@@ -402,7 +424,7 @@ TYPED_TEST(ConvexHullTest, ConsistentWindingOrder)
   std::vector<int> faces;
   int numFaces = 0;
 
-  convexHull3dBuild(vertices, faces, numFaces);
+  convexHull3dBuild(std::span<const Vector3>(vertices), faces, numFaces);
 
   // Compute centroid
   Vector3 centroid = Vector3::Zero();

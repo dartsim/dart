@@ -62,7 +62,7 @@ PointCloudShape::PointCloudShape(double visualSize)
 }
 
 //==============================================================================
-const std::string& PointCloudShape::getType() const
+std::string_view PointCloudShape::getType() const
 {
   return getStaticType();
 }
@@ -74,9 +74,9 @@ Eigen::Matrix3d PointCloudShape::computeInertia(double /*mass*/) const
 }
 
 //==============================================================================
-const std::string& PointCloudShape::getStaticType()
+std::string_view PointCloudShape::getStaticType()
 {
-  static const std::string type("PointCloudShape");
+  static constexpr std::string_view type = "PointCloudShape";
   return type;
 }
 
@@ -199,15 +199,6 @@ Eigen::Vector4d PointCloudShape::getOverallColor() const
       "Returning the first color in the color array.");
 
   return mColors[0];
-}
-
-//==============================================================================
-void PointCloudShape::setColors(
-    const std::vector<
-        Eigen::Vector4d,
-        Eigen::aligned_allocator<Eigen::Vector4d>>& colors)
-{
-  mColors = colors;
 }
 
 //==============================================================================

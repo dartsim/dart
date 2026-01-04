@@ -49,15 +49,15 @@ CylinderShape::CylinderShape(double _radius, double _height)
 }
 
 //==============================================================================
-const std::string& CylinderShape::getType() const
+std::string_view CylinderShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& CylinderShape::getStaticType()
+std::string_view CylinderShape::getStaticType()
 {
-  static const std::string type("CylinderShape");
+  static constexpr std::string_view type = "CylinderShape";
   return type;
 }
 

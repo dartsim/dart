@@ -36,6 +36,7 @@
 #include <dart/Export.hpp>
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace dart::common {
@@ -54,19 +55,19 @@ DART_API void toLowerInPlace(std::string& str);
 
 /// Trims both sides of string
 DART_API std::string trim(
-    const std::string& str, const std::string& whitespaces = " \n\r\t");
+    std::string_view str, std::string_view whitespaces = " \n\r\t");
 
 /// Trims left side of string
 DART_API std::string trimLeft(
-    const std::string& str, const std::string& whitespaces = " \n\r\t");
+    std::string_view str, std::string_view whitespaces = " \n\r\t");
 
 /// Trims right side of string
 DART_API std::string trimRight(
-    const std::string& str, const std::string& whitespaces = " \n\r\t");
+    std::string_view str, std::string_view whitespaces = " \n\r\t");
 
 /// Splits string given delimiters
 DART_API std::vector<std::string> split(
-    const std::string& str, const std::string& delimiters = " \n\r\t");
+    std::string_view str, std::string_view delimiters = " \n\r\t");
 
 } // namespace dart::common
 

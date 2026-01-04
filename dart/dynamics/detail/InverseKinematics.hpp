@@ -77,13 +77,6 @@ void InverseKinematics::setDofs(std::span<DegreeOfFreedomT* const> _dofs)
   setDofs(indices);
 }
 
-//==============================================================================
-template <class DegreeOfFreedomT>
-void InverseKinematics::setDofs(const std::vector<DegreeOfFreedomT*>& _dofs)
-{
-  setDofs(std::span<DegreeOfFreedomT* const>(_dofs.data(), _dofs.size()));
-}
-
 } // namespace dynamics
 } // namespace dart
 

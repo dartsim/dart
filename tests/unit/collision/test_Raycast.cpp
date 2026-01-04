@@ -120,9 +120,10 @@ TEST(Raycast, RaycastOptionHonorsPredicate)
 //==============================================================================
 void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
 {
-  if (cd->getType() != "bullet") {
+  if (cd->getTypeView() != "bullet") {
     DART_WARN(
-        "Aborting test: distance check is not supported by {}.", cd->getType());
+        "Aborting test: distance check is not supported by {}.",
+        cd->getTypeView());
     return;
   }
 
@@ -218,9 +219,10 @@ TEST(Raycast, testBasicInterface)
 //==============================================================================
 void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 {
-  if (cd->getType() != "bullet") {
+  if (cd->getTypeView() != "bullet") {
     DART_WARN(
-        "Aborting test: distance check is not supported by {}.", cd->getType());
+        "Aborting test: distance check is not supported by {}.",
+        cd->getTypeView());
     return;
   }
 
@@ -301,9 +303,10 @@ TEST(Raycast, testOptions)
 //==============================================================================
 void testFilters(const std::shared_ptr<CollisionDetector>& cd)
 {
-  if (cd->getType() != "bullet") {
+  if (cd->getTypeView() != "bullet") {
     DART_WARN(
-        "Aborting test: distance check is not supported by {}.", cd->getType());
+        "Aborting test: distance check is not supported by {}.",
+        cd->getTypeView());
     return;
   }
 

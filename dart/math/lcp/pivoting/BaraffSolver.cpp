@@ -38,6 +38,7 @@
 #include <Eigen/Dense>
 
 #include <algorithm>
+#include <iterator>
 #include <limits>
 #include <string>
 #include <vector>
@@ -69,7 +70,7 @@ enum class SetType
 
 void RemoveIndex(std::vector<int>& indices, int idx)
 {
-  const auto it = std::find(indices.begin(), indices.end(), idx);
+  const auto it = std::ranges::find(indices, idx);
   if (it == indices.end())
     return;
 
@@ -112,7 +113,7 @@ LcpResult BaraffSolver::solve(
     return result;
   }
 
-  const int n = static_cast<int>(b.size());
+  const auto n = std::ssize(b);
   if (n == 0) {
     x.resize(0);
     result.status = LcpSolverStatus::Success;
@@ -214,7 +215,7 @@ LcpResult BaraffSolver::solve(
       deltaX[entering] = 1.0;
 
       if (!activeSet.empty()) {
-        const int m = static_cast<int>(activeSet.size());
+        const auto m = std::ssize(activeSet);
         Eigen::MatrixXd A_aa(m, m);
         Eigen::VectorXd A_aj(m);
         for (int r = 0; r < m; ++r) {

@@ -630,10 +630,8 @@ bool CompositeIK::addModule(const std::shared_ptr<InverseKinematics>& _ik)
     return false; // Should we print a warning message here, or is the return
                   // value sufficient?
 
-  ModuleSet::iterator it = mModuleSet.find(_ik);
-
   // We already have this module
-  if (it != mModuleSet.end())
+  if (mModuleSet.contains(_ik))
     return true;
 
   mModuleSet.insert(_ik);

@@ -137,13 +137,13 @@ public:                                                                        \
   inline NodeName* get##NodeName(std::size_t index)                            \
   {                                                                            \
     return static_cast<NodeName*>(                                             \
-        getVectorObjectIfAvailable(index, it->second));                        \
+        getVectorObjectIfAvailable<dart::dynamics::Node*>(index, it->second)); \
   }                                                                            \
                                                                                \
   inline const NodeName* get##NodeName(std::size_t index) const                \
   {                                                                            \
     return static_cast<const NodeName*>(                                       \
-        getVectorObjectIfAvailable(index, it->second));                        \
+        getVectorObjectIfAvailable<dart::dynamics::Node*>(index, it->second)); \
   }
 
 //==============================================================================
@@ -185,13 +185,13 @@ public:                                                                        \
   NodeName* BodyNodeType ::get##NodeName(std::size_t index)                    \
   {                                                                            \
     return static_cast<NodeName*>(                                             \
-        getVectorObjectIfAvailable(index, it->second));                        \
+        getVectorObjectIfAvailable<dart::dynamics::Node*>(index, it->second)); \
   }                                                                            \
                                                                                \
   const NodeName* BodyNodeType ::get##NodeName(std::size_t index) const        \
   {                                                                            \
     return static_cast<const NodeName*>(                                       \
-        getVectorObjectIfAvailable(index, it->second));                        \
+        getVectorObjectIfAvailable<dart::dynamics::Node*>(index, it->second)); \
   }
 
 //==============================================================================
@@ -329,26 +329,30 @@ public:                                                                        \
   inline NodeName* get##NodeName(std::size_t index)                            \
   {                                                                            \
     return static_cast<NodeName*>(                                             \
-        getVectorObjectIfAvailable(index, skelIt->second));                    \
+        getVectorObjectIfAvailable<dart::dynamics::Node*>(                     \
+            index, skelIt->second));                                           \
   }                                                                            \
   inline NodeName* get##NodeName(std::size_t treeIndex, std::size_t nodeIndex) \
   {                                                                            \
     DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, get##NodeName);            \
     return static_cast<NodeName*>(                                             \
-        getVectorObjectIfAvailable(nodeIndex, treeIts[treeIndex]->second));    \
+        getVectorObjectIfAvailable<dart::dynamics::Node*>(                     \
+            nodeIndex, treeIts[treeIndex]->second));                           \
   }                                                                            \
                                                                                \
   inline const NodeName* get##NodeName(std::size_t index) const                \
   {                                                                            \
     return static_cast<const NodeName*>(                                       \
-        getVectorObjectIfAvailable(index, skelIt->second));                    \
+        getVectorObjectIfAvailable<dart::dynamics::Node*>(                     \
+            index, skelIt->second));                                           \
   }                                                                            \
   inline const NodeName* get##NodeName(                                        \
       std::size_t treeIndex, std::size_t nodeIndex) const                      \
   {                                                                            \
     DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, get##NodeName);            \
     return static_cast<const NodeName*>(                                       \
-        getVectorObjectIfAvailable(nodeIndex, treeIts[treeIndex]->second));    \
+        getVectorObjectIfAvailable<dart::dynamics::Node*>(                     \
+            nodeIndex, treeIts[treeIndex]->second));                           \
   }                                                                            \
                                                                                \
   inline NodeName* get##NodeName(const std::string& name)                      \
@@ -428,27 +432,31 @@ public:                                                                        \
   NodeName* SkeletonType ::get##NodeName(std::size_t index)                    \
   {                                                                            \
     return static_cast<NodeName*>(                                             \
-        getVectorObjectIfAvailable(index, skelIt->second));                    \
+        getVectorObjectIfAvailable<dart::dynamics::Node*>(                     \
+            index, skelIt->second));                                           \
   }                                                                            \
   NodeName* SkeletonType ::get##NodeName(                                      \
       std::size_t treeIndex, std::size_t nodeIndex)                            \
   {                                                                            \
     DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, get##NodeName);            \
     return static_cast<NodeName*>(                                             \
-        getVectorObjectIfAvailable(nodeIndex, treeIts[treeIndex]->second));    \
+        getVectorObjectIfAvailable<dart::dynamics::Node*>(                     \
+            nodeIndex, treeIts[treeIndex]->second));                           \
   }                                                                            \
                                                                                \
   const NodeName* SkeletonType ::get##NodeName(std::size_t index) const        \
   {                                                                            \
     return static_cast<const NodeName*>(                                       \
-        getVectorObjectIfAvailable(index, skelIt->second));                    \
+        getVectorObjectIfAvailable<dart::dynamics::Node*>(                     \
+            index, skelIt->second));                                           \
   }                                                                            \
   const NodeName* SkeletonType ::get##NodeName(                                \
       std::size_t treeIndex, std::size_t nodeIndex) const                      \
   {                                                                            \
     DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, get##NodeName);            \
     return static_cast<const NodeName*>(                                       \
-        getVectorObjectIfAvailable(nodeIndex, treeIts[treeIndex]->second));    \
+        getVectorObjectIfAvailable<dart::dynamics::Node*>(                     \
+            nodeIndex, treeIts[treeIndex]->second));                           \
   }                                                                            \
                                                                                \
   NodeName* SkeletonType ::get##NodeName(const std::string& name)              \

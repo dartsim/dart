@@ -885,8 +885,7 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
 {
   DART_ASSERT(_body != nullptr);
 
-  if (std::find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _body)
-      != mChildBodyNodes.end()) {
+  if (std::ranges::find(mChildBodyNodes, _body) != mChildBodyNodes.end()) {
     DART_WARN(
         "Attempting to add a BodyNode '{}' as a child BodyNode of '{}', which "
         "is already its parent.",
@@ -1418,7 +1417,7 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
     mDependentGenCoordIndices.push_back(mParentJoint->getIndexInSkeleton(i));
 
   // Sort
-  std::sort(mDependentGenCoordIndices.begin(), mDependentGenCoordIndices.end());
+  std::ranges::sort(mDependentGenCoordIndices);
 
   mDependentDofs.clear();
   mDependentDofs.reserve(mDependentGenCoordIndices.size());
@@ -1480,13 +1479,12 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
 
   // Check if it's a child BodyNode (if not, then it's just some other arbitrary
   // type of Entity)
-  if (std::find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _newChildEntity)
+  if (std::ranges::find(mChildBodyNodes, _newChildEntity)
       != mChildBodyNodes.end())
     return;
 
   // Check if it's already accounted for in our Non-BodyNode Entities
-  if (mNonBodyNodeEntities.find(_newChildEntity)
-      != mNonBodyNodeEntities.end()) {
+  if (mNonBodyNodeEntities.contains(_newChildEntity)) {
     DART_WARN(
         "Attempting to add an Entity [{}] as a child Entity of [{}], which is "
         "already its parent.",
@@ -1502,19 +1500,14 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
 //==============================================================================
 void BodyNode::processRemovedEntity(Entity* _oldChildEntity)
 {
-  std::vector<BodyNode*>::iterator it = std::find(
-      mChildBodyNodes.begin(), mChildBodyNodes.end(), _oldChildEntity);
+  auto it = std::ranges::find(mChildBodyNodes, _oldChildEntity);
   if (it != mChildBodyNodes.end())
     mChildBodyNodes.erase(it);
 
   if (JacobianNode* node = dynamic_cast<JacobianNode*>(_oldChildEntity))
     mChildJacobianNodes.erase(node);
 
-  if (std::find(
-          mNonBodyNodeEntities.begin(),
-          mNonBodyNodeEntities.end(),
-          _oldChildEntity)
-      != mNonBodyNodeEntities.end())
+  if (mNonBodyNodeEntities.contains(_oldChildEntity))
     mNonBodyNodeEntities.erase(_oldChildEntity);
 }
 

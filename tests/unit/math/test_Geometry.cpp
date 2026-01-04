@@ -38,6 +38,8 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <span>
+#include <vector>
 
 using namespace dart;
 using namespace dart::math;
@@ -210,6 +212,23 @@ void testEulerAngles(const Eigen::Vector3d& angle)
   EXPECT_TRUE(math::verifyRotation(mat2));
   EXPECT_TRUE(equals(mat1, mat2));
   // EXPECT_TRUE(equals(mat1, eulerZYZToMatrix(matrixToEulerZYZ(mat1))));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeConvexHullUsesSortedAngles)
+{
+  SupportPolygon points;
+  points.emplace_back(0.0, 0.0);
+  points.emplace_back(1.0, 0.0);
+  points.emplace_back(1.0, 1.0);
+  points.emplace_back(0.0, 1.0);
+
+  std::vector<std::size_t> indices;
+  const auto hull
+      = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
+
+  EXPECT_EQ(hull.size(), 4u);
+  EXPECT_EQ(indices.size(), 4u);
 }
 
 //==============================================================================

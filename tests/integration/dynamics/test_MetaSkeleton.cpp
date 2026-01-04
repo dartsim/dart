@@ -45,6 +45,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <unordered_set>
 
 using namespace dart;
 using namespace math;
@@ -396,8 +397,9 @@ TEST(MetaSkeleton, Linkage)
   criteria.mTargets.clear();
   criteria.mStart = skel->getBodyNode("c3b1");
   criteria.mStart.mPolicy = Linkage::Criteria::UPSTREAM;
-  criteria.mTargets.push_back(Linkage::Criteria::Target(
-      skel->getBodyNode("c3b1(1)"), Linkage::Criteria::UPSTREAM));
+  criteria.mTargets.push_back(
+      Linkage::Criteria::Target(
+          skel->getBodyNode("c3b1(1)"), Linkage::Criteria::UPSTREAM));
 
   LinkagePtr combinedTreeBases = Linkage::create(criteria, "combinedTreeBases");
   checkForBodyNodes(
@@ -426,8 +428,9 @@ TEST(MetaSkeleton, Linkage)
 
   SkeletonPtr skel2 = skel->getBodyNode(0)->copyAs("skel2");
   criteria.mTargets.clear();
-  criteria.mTargets.push_back(Linkage::Criteria::Target(
-      skel2->getBodyNode("c3b1"), Linkage::Criteria::UPSTREAM));
+  criteria.mTargets.push_back(
+      Linkage::Criteria::Target(
+          skel2->getBodyNode("c3b1"), Linkage::Criteria::UPSTREAM));
   LinkagePtr combinedSkelBases = Linkage::create(criteria, "combinedSkelBases");
   std::size_t count = 0;
   count += checkForBodyNodes(
@@ -586,6 +589,23 @@ TEST(MetaSkeleton, Linkage)
   checkForBodyNodes(
       sequenceLinkage6, skel, true, "c3b1", "c3b2", "c3b3", "c4b1");
   checkLinkageJointConsistency(sequenceLinkage6);
+}
+
+//==============================================================================
+TEST(MetaSkeleton, LinkageCriteriaDeduplicatesNodes)
+{
+  SkeletonPtr skel = constructLinkageTestSkeleton();
+
+  Linkage::Criteria criteria;
+  criteria.mTargets.push_back(
+      Linkage::Criteria::Target(skel->getBodyNode("c3b1")));
+  criteria.mTargets.push_back(
+      Linkage::Criteria::Target(skel->getBodyNode("c3b1")));
+
+  const auto nodes = criteria.satisfy();
+  std::unordered_set<BodyNode*> unique(nodes.begin(), nodes.end());
+
+  EXPECT_EQ(nodes.size(), unique.size());
 }
 
 //==============================================================================

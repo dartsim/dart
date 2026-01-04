@@ -7,12 +7,9 @@ name: dart-codeql-config
 
 paths:
   - "dart/**"
-  - "dart8/**"
   - "python/**"
   - "tests/**"
-  - "tests_dart8/**"
   - "examples/**"
-  - "examples_dart8/**"
   - "tutorials/**"
   - "docs/**"
 

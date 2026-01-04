@@ -78,13 +78,13 @@ public:
   RevoluteJoint& operator=(const RevoluteJoint& _otherJoint);
 
   // Documentation inherited
-  const std::string& getType() const override;
+  std::string_view getType() const override;
 
   // Documentation inherited
   bool isCyclic(std::size_t _index) const override;
 
   /// Get joint type for this class
-  static const std::string& getStaticType();
+  static std::string_view getStaticType();
 
   ///
   void setAxis(const Eigen::Vector3d& _axis);

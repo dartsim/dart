@@ -38,6 +38,7 @@
 #include <Eigen/Dense>
 
 #include <algorithm>
+#include <iterator>
 #include <limits>
 #include <string>
 #include <vector>
@@ -86,7 +87,7 @@ LcpResult DirectSolver::solve(
     return result;
   }
 
-  const int n = static_cast<int>(b.size());
+  const auto n = std::ssize(b);
   if (n == 0) {
     x.resize(0);
     result.status = LcpSolverStatus::Success;
@@ -117,7 +118,7 @@ LcpResult DirectSolver::solve(
     return fallback.solve(problem, x, options);
   }
 
-  const int totalMasks = 1 << n;
+  const int totalMasks = 1 << static_cast<int>(n);
   bool found = false;
   int iterationsUsed = 0;
   Eigen::VectorXd candidate = Eigen::VectorXd::Zero(n);
@@ -134,7 +135,7 @@ LcpResult DirectSolver::solve(
 
     candidate.setZero();
     if (!active.empty()) {
-      const int m = static_cast<int>(active.size());
+      const auto m = std::ssize(active);
       Eigen::MatrixXd Aaa(m, m);
       Eigen::VectorXd bb(m);
 

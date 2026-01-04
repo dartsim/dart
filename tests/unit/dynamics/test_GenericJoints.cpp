@@ -51,9 +51,9 @@ using namespace dart::math;
 //  virtual ~ZeroDofJointTest() {}
 
 //  /// Gets a string representing the joint type
-//  const std::string& getType() const override { return getStaticType(); }
+//  std::string_view getType() const override { return getStaticType(); }
 
-//  const std::string& getStaticType() const
+//  std::string_view getStaticType() const
 //  {
 //    static const std::string name = "TestWeldJoint";
 //    return name;
@@ -95,14 +95,14 @@ public:
   virtual ~SingleDofJointTest() {}
 
   /// Gets a string representing the joint type
-  const std::string& getType() const override
+  std::string_view getType() const override
   {
     return getStaticType();
   }
 
-  const std::string& getStaticType() const
+  std::string_view getStaticType() const
   {
-    static const std::string name = "TestSingleDofJoint";
+    static constexpr std::string_view name = "TestSingleDofJoint";
     return name;
   }
 
@@ -150,14 +150,14 @@ public:
   virtual ~MultiDofJointTest() {}
 
   /// Gets a string representing the joint type
-  const std::string& getType() const override
+  std::string_view getType() const override
   {
     return getStaticType();
   }
 
-  const std::string& getStaticType() const
+  std::string_view getStaticType() const
   {
-    static const std::string name = "TestMultiDofJoint";
+    static constexpr std::string_view name = "TestMultiDofJoint";
     return name;
   }
 
@@ -205,14 +205,14 @@ public:
   virtual ~SO3JointTest() {}
 
   /// Gets a string representing the joint type
-  const std::string& getType() const override
+  std::string_view getType() const override
   {
     return getStaticType();
   }
 
-  const std::string& getStaticType() const
+  std::string_view getStaticType() const
   {
-    static const std::string name = "TestMultiDofJoint";
+    static constexpr std::string_view name = "TestMultiDofJoint";
     return name;
   }
 

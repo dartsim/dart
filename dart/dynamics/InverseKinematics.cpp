@@ -38,6 +38,8 @@
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/math/optimization/GradientDescentSolver.hpp"
 
+#include <algorithm>
+#include <iterator>
 #include <unordered_map>
 
 namespace dart {
@@ -217,7 +219,7 @@ Eigen::Isometry3d InverseKinematics::ErrorMethod::computeDesiredTransform(
 const Eigen::Vector6d& InverseKinematics::ErrorMethod::evalError(
     const Eigen::VectorXd& _q)
 {
-  if (_q.size() != static_cast<int>(mIK->getDofs().size())) {
+  if (_q.size() != std::ssize(mIK->getDofs())) {
     DART_ERROR(
         "Mismatch between joint positions size [{}] and the available degrees "
         "of freedom [{}].\\nSkeleton name: {}\\nBody name: {}\\nMethod name: "
@@ -601,7 +603,7 @@ InverseKinematics::GradientMethod::GradientMethod(
 void InverseKinematics::GradientMethod::evalGradient(
     const Eigen::VectorXd& _q, Eigen::Map<Eigen::VectorXd> _grad)
 {
-  if (_q.size() != static_cast<int>(mIK->getDofs().size())) {
+  if (_q.size() != std::ssize(mIK->getDofs())) {
     DART_ERROR(
         "Mismatch between joint positions size [{}] and the available degrees "
         "of freedom [{}].\\nSkeleton name: {}\\nBody name: {}\\nMethod name: "
@@ -703,7 +705,8 @@ void InverseKinematics::GradientMethod::convertJacobianMethodOutputToGradient(
     Eigen::VectorXd& grad, std::span<const std::size_t> dofs)
 {
   const SkeletonPtr& skel = mIK->getNode()->getSkeleton();
-  mInitialPositionsCache = skel->getPositions(dofs);
+  const std::vector<std::size_t> dofIndices(dofs.begin(), dofs.end());
+  mInitialPositionsCache = skel->getPositions(dofIndices);
 
   struct JointIntegrationData
   {
@@ -1016,13 +1019,11 @@ std::span<const IK::Analytical::Solution> IK::Analytical::getSolutions(
     return mAnalyticalP.mQualityComparator(s1.mConfig, s2.mConfig, mIK);
   };
 
-  std::sort(
-      mValidSolutionsCache.begin(), mValidSolutionsCache.end(), comparator);
+  std::ranges::sort(mValidSolutionsCache, comparator);
 
-  std::sort(mOutOfReachCache.begin(), mOutOfReachCache.end(), comparator);
+  std::ranges::sort(mOutOfReachCache, comparator);
 
-  std::sort(
-      mLimitViolationCache.begin(), mLimitViolationCache.end(), comparator);
+  std::ranges::sort(mLimitViolationCache, comparator);
 
   mSolutions.clear();
   mSolutions.insert(
@@ -1327,7 +1328,10 @@ void InverseKinematics::useChain()
     return;
   }
 
-  setDofs(mNode->getChainDofs());
+  const auto chainDofs = mNode->getChainDofs();
+  setDofs(
+      std::span<const DegreeOfFreedom* const>(
+          chainDofs.data(), chainDofs.size()));
 }
 
 //==============================================================================
@@ -1588,7 +1592,7 @@ const math::Jacobian& InverseKinematics::computeJacobian() const
 
   mJacobian.setZero(6, getDofs().size());
 
-  for (int i = 0; i < static_cast<int>(getDofMap().size()); ++i) {
+  for (Eigen::Index i = 0; i < std::ssize(getDofMap()); ++i) {
     int j = getDofMap()[i];
     if (j >= 0)
       mJacobian.block<6, 1>(0, j) = fullJacobian.block<6, 1>(0, i);
@@ -1606,7 +1610,7 @@ Eigen::VectorXd InverseKinematics::getPositions() const
 //==============================================================================
 void InverseKinematics::setPositions(const Eigen::VectorXd& _q)
 {
-  if (_q.size() != static_cast<int>(mDofs.size())) {
+  if (_q.size() != std::ssize(mDofs)) {
     DART_ERROR(
         "Mismatch between joint positions size [{}] and number of available "
         "degrees of freedom [{}]",

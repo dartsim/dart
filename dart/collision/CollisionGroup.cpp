@@ -38,6 +38,8 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
+#include <algorithm>
+
 #include <cassert>
 #include <cstdint>
 
@@ -79,7 +81,7 @@ void CollisionGroup::addShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 
 //==============================================================================
 void CollisionGroup::addShapeFrames(
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
+    std::span<const dynamics::ShapeFrame* const> shapeFrames)
 {
   for (const auto& shapeFrame : shapeFrames)
     addShapeFrame(shapeFrame);
@@ -103,10 +105,8 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
   if (!shapeFrame)
     return;
 
-  const auto search = std::find_if(
-      mObjectInfoList.begin(),
-      mObjectInfoList.end(),
-      [&](const std::unique_ptr<ObjectInfo>& info) {
+  const auto search = std::ranges::find_if(
+      mObjectInfoList, [&](const std::unique_ptr<ObjectInfo>& info) {
         return info->mFrame == shapeFrame;
       });
 
@@ -139,7 +139,7 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 
 //==============================================================================
 void CollisionGroup::removeShapeFrames(
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
+    std::span<const dynamics::ShapeFrame* const> shapeFrames)
 {
   for (const auto& shapeFrame : shapeFrames)
     removeShapeFrame(shapeFrame);
@@ -175,13 +175,10 @@ void CollisionGroup::removeAllShapeFrames()
 //==============================================================================
 bool CollisionGroup::hasShapeFrame(const dynamics::ShapeFrame* shapeFrame) const
 {
-  return std::find_if(
-             mObjectInfoList.begin(),
-             mObjectInfoList.end(),
-             [&](const std::unique_ptr<ObjectInfo>& info) {
-               return info->mFrame == shapeFrame;
-             })
-         != mObjectInfoList.end();
+  return std::ranges::any_of(
+      mObjectInfoList, [&](const std::unique_ptr<ObjectInfo>& info) {
+        return info->mFrame == shapeFrame;
+      });
 }
 
 //==============================================================================
@@ -286,10 +283,8 @@ void CollisionGroup::update()
 void CollisionGroup::removeDeletedShapeFrames()
 {
   for (auto shapeFrame : mObserver.mDeletedFrames) {
-    const auto search = std::find_if(
-        mObjectInfoList.begin(),
-        mObjectInfoList.end(),
-        [&](const std::unique_ptr<ObjectInfo>& info) {
+    const auto search = std::ranges::find_if(
+        mObjectInfoList, [&](const std::unique_ptr<ObjectInfo>& info) {
           return info->mFrame == shapeFrame;
         });
 
@@ -361,8 +356,9 @@ void CollisionGroup::ShapeFrameObserver::addShapeFrame(
     const dynamics::ShapeFrame* shapeFrame)
 {
   addSubject(shapeFrame);
-  mMap.insert(std::make_pair(
-      static_cast<const common::Subject*>(shapeFrame), shapeFrame));
+  mMap.insert(
+      std::make_pair(
+          static_cast<const common::Subject*>(shapeFrame), shapeFrame));
 }
 
 //==============================================================================
@@ -403,10 +399,8 @@ auto CollisionGroup::addShapeFrameImpl(
   if (!shapeFrame)
     return nullptr;
 
-  auto it = std::find_if(
-      mObjectInfoList.begin(),
-      mObjectInfoList.end(),
-      [&](const std::unique_ptr<ObjectInfo>& info) {
+  auto it = std::ranges::find_if(
+      mObjectInfoList, [&](const std::unique_ptr<ObjectInfo>& info) {
         return info->mFrame == shapeFrame;
       });
 
@@ -445,10 +439,8 @@ void CollisionGroup::removeShapeFrameInternal(
   if (!shapeFrame)
     return;
 
-  const auto search = std::find_if(
-      mObjectInfoList.begin(),
-      mObjectInfoList.end(),
-      [&](const std::unique_ptr<ObjectInfo>& info) {
+  const auto search = std::ranges::find_if(
+      mObjectInfoList, [&](const std::unique_ptr<ObjectInfo>& info) {
         return info->mFrame == shapeFrame;
       });
 
