@@ -86,6 +86,9 @@ imgui.ini
 # Temporary directory for dependencies
 .deps/
 
+# Language server and editor cache
+.cache/
+
 # Gazebo physics plugins
 /libgz-physics-*.so
 
@@ -101,3 +104,4 @@ dist/
 
 # ImGui configuration
 imgui.ini
+.cache/

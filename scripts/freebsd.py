@@ -16,11 +16,9 @@ DEFAULT_USER = "freebsd"
 DEFAULT_REMOTE_DIR = None
 DEFAULT_BUILD_DIR = "build/freebsd/cpp/Release"
 DEFAULT_BUILD_TARGETS = ["tests"]
-DEFAULT_BUILD_PARALLEL_LEVEL = 1
 DEFAULT_TEST_REGEX = ""
 DEFAULT_CTEST_TIMEOUT = 1200
 DEFAULT_CTEST_STOP_ON_FAILURE = True
-DEFAULT_SWAP_SIZE = "2G"
 DEFAULT_PORTS_PATCH_DIR = "docker/freebsd/ports-patches"
 DEFAULT_PACKAGES = [
     "assimp",
@@ -54,6 +52,12 @@ SSH_OPTIONS = [
     "UserKnownHostsFile=/dev/null",
     "-o",
     "BatchMode=yes",
+    "-o",
+    "IdentitiesOnly=yes",
+    "-o",
+    "ServerAliveInterval=30",
+    "-o",
+    "ServerAliveCountMax=6",
 ]
 
 
@@ -71,11 +75,6 @@ def run(cmd, check=True, capture=False):
     if capture:
         return subprocess.run(cmd, check=check, text=True, capture_output=True)
     return subprocess.run(cmd, check=check)
-
-
-def should_use_kvm():
-    value = os.getenv("FREEBSD_VM_USE_KVM", "1")
-    return value.lower() not in {"0", "false", "no"}
 
 
 def repo_root():
@@ -192,12 +191,7 @@ def start_container(args):
         cmd.extend(["-e", f"FREEBSD_VM_DISK_SIZE={disk_size}"])
 
     if Path("/dev/kvm").exists():
-        if should_use_kvm():
-            cmd.extend(["--device", "/dev/kvm"])
-
-    use_kvm = os.getenv("FREEBSD_VM_USE_KVM")
-    if use_kvm is not None:
-        cmd.extend(["-e", f"FREEBSD_VM_USE_KVM={use_kvm}"])
+        cmd.extend(["--device", "/dev/kvm"])
 
     cmd.append(args.image)
     run(cmd)
@@ -387,25 +381,11 @@ def bootstrap_vm(args):
         else DEFAULT_PACKAGES
     )
     package_list = " ".join(packages)
-    swap_size = os.getenv("FREEBSD_VM_SWAP_SIZE", DEFAULT_SWAP_SIZE).strip()
-    swap_command = ""
-    if swap_size and swap_size != "0":
-        swap_size_arg = shlex.quote(swap_size)
-        swap_command = (
-            "if ! swapctl -l | grep -q /swapfile; then "
-            f"truncate -s {swap_size_arg} /swapfile && "
-            "chmod 600 /swapfile && "
-            "swap_dev=$(mdconfig -a -t vnode -f /swapfile) && "
-            "swapon /dev/${swap_dev}; "
-            "fi"
-        )
     root_password = os.getenv("FREEBSD_VM_ROOT_PASSWORD", "freebsd")
     command = (
         "ASSUME_ALWAYS_YES=yes pkg update -f && "
         f"ASSUME_ALWAYS_YES=yes pkg install -y {package_list}"
     )
-    if swap_command:
-        command = f"{command} && {swap_command}"
     su_command = (
         f"printf '%s\\n' {shlex.quote(root_password)} | "
         f"su -m root -c {shlex.quote(command)}"
@@ -439,26 +419,20 @@ def test_vm(args):
     else:
         build_targets = DEFAULT_BUILD_TARGETS
     build_targets_str = " ".join(build_targets)
-    build_parallel_level = env_default_int(
-        "FREEBSD_VM_BUILD_PARALLEL_LEVEL",
-        DEFAULT_BUILD_PARALLEL_LEVEL,
-    )
-    build_parallel_arg = ""
-    if build_parallel_level > 0:
-        build_parallel_arg = f" --parallel {build_parallel_level}"
+    build_parallel = env_default_int("FREEBSD_VM_BUILD_PARALLEL_LEVEL", 0)
     test_regex = os.getenv("FREEBSD_VM_TEST_REGEX", DEFAULT_TEST_REGEX).strip()
     exclude_regex = os.getenv("FREEBSD_VM_TEST_EXCLUDE_REGEX", "").strip()
     ctest_timeout = env_default_int(
         "FREEBSD_VM_CTEST_TIMEOUT",
         DEFAULT_CTEST_TIMEOUT,
     )
-    stop_on_failure_env = os.getenv("FREEBSD_VM_CTEST_STOP_ON_FAILURE")
-    if stop_on_failure_env is None:
-        stop_on_failure = DEFAULT_CTEST_STOP_ON_FAILURE
-    else:
-        stop_on_failure = stop_on_failure_env.lower() not in {"0", "false", "no"}
+    ctest_parallel = env_default_int("FREEBSD_VM_CTEST_PARALLEL_LEVEL", 0)
+    stop_on_failure = os.getenv("FREEBSD_VM_CTEST_STOP_ON_FAILURE", "1").lower()
+    stop_on_failure = stop_on_failure not in {"0", "false", "no"}
     extra_ctest_args = shlex.split(os.getenv("FREEBSD_VM_CTEST_ARGS", ""))
     ctest_args = ["--output-on-failure"]
+    if ctest_parallel > 0:
+        ctest_args.extend(["-j", str(ctest_parallel)])
     if exclude_regex:
         ctest_args.extend(["-E", exclude_regex])
     if ctest_timeout > 0:
@@ -475,11 +449,14 @@ def test_vm(args):
     else:
         test_command = f"ctest --test-dir {build_dir} {ctest_arg_str}"
 
+    build_command = f"cmake --build {build_dir} --target {build_targets_str}"
+    if build_parallel > 0:
+        build_command += f" --parallel {build_parallel}"
+
     command = (
         f"cd {remote_dir} && "
         f"cmake -G Ninja -S . -B {build_dir} {cmake_arg_str} && "
-        f"cmake --build {build_dir} --target {build_targets_str}"
-        f"{build_parallel_arg} && "
+        f"{build_command} && "
         f"{test_command}"
     )
     try:
