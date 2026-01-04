@@ -122,10 +122,8 @@ inline void dMULTIPLY0_331(double* A, const double* B, const double* C)
   dMULTIPLYOP0_331(A, =, B, C)
 }
 
-inline void dMULTIPLY1_331(double* A, const double* B, const double* C)
-{
-  dMULTIPLYOP1_331(A, =, B, C)
-}
+inline void dMULTIPLY1_331(double* A, const double* B, const double* C){
+    dMULTIPLYOP1_331(A, =, B, C)}
 
 #define dRecip(x) (1.0 / (x))
 

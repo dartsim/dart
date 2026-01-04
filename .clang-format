@@ -7,7 +7,6 @@ AlignAfterOpenBracket: AlwaysBreak
 AlignEscapedNewlines: Right
 AlignOperands: true
 AlignTrailingComments: true
-SpacesBeforeTrailingComments: 2
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortBlocksOnASingleLine: false
 AllowShortCaseLabelsOnASingleLine: false

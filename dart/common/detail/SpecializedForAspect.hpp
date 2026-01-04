@@ -51,8 +51,9 @@ SpecializedForAspect<SpecAspect>::SpecializedForAspect()
 {
   mSpecAspectIterator
       = mAspectMap
-            .insert(std::make_pair<std::type_index, std::unique_ptr<Aspect>>(
-                typeid(SpecAspect), nullptr))
+            .insert(
+                std::make_pair<std::type_index, std::unique_ptr<Aspect>>(
+                    typeid(SpecAspect), nullptr))
             .first;
 }
 

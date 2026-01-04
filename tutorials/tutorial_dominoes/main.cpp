@@ -282,8 +282,9 @@ SkeletonPtr createDomino()
       = domino->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
 
   // Create a shape for the domino
-  std::shared_ptr<BoxShape> box(new BoxShape(Eigen::Vector3d(
-      default_domino_depth, default_domino_width, default_domino_height)));
+  std::shared_ptr<BoxShape> box(new BoxShape(
+      Eigen::Vector3d(
+          default_domino_depth, default_domino_width, default_domino_height)));
   body->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
 
   // Set up inertia for the domino
