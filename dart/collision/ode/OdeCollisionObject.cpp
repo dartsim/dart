@@ -125,11 +125,7 @@ bool probeCylinderCollisionSupport()
         = dCollide(cylinder1, cylinder2, 4, contacts, sizeof(contacts[0]));
 
     cylinderCylinderOk = hasAlignedContactNormal(
-        contacts,
-        numContacts,
-        0,
-        kMinAxisAlignment,
-        kMaxOtherAlignment);
+        contacts, numContacts, 0, kMinAxisAlignment, kMaxOtherAlignment);
 
     dGeomDestroy(cylinder1);
     dGeomDestroy(cylinder2);
@@ -147,11 +143,7 @@ bool probeCylinderCollisionSupport()
         = dCollide(cylinder, plane, 4, contacts, sizeof(contacts[0]));
 
     cylinderPlaneOk = hasAlignedContactNormal(
-        contacts,
-        numContacts,
-        2,
-        kMinAxisAlignment,
-        kMaxOtherAlignment);
+        contacts, numContacts, 2, kMinAxisAlignment, kMaxOtherAlignment);
 
     dGeomDestroy(cylinder);
     dGeomDestroy(plane);
@@ -163,8 +155,7 @@ bool probeCylinderCollisionSupport()
     dGeomID plane = dCreatePlane(0, 0.0, 0.0, 1.0, 0.0);
     dQuaternion rotation;
 
-    dQFromAxisAndAngle(
-        rotation, 1.0, 0.0, 0.0, math::constantsd::half_pi());
+    dQFromAxisAndAngle(rotation, 1.0, 0.0, 0.0, math::constantsd::half_pi());
 
     dGeomSetQuaternion(cylinder, rotation);
     dGeomSetPosition(cylinder, 0.0, 0.0, 0.5);
@@ -174,11 +165,7 @@ bool probeCylinderCollisionSupport()
         = dCollide(cylinder, plane, 4, contacts, sizeof(contacts[0]));
 
     cylinderPlaneRotatedOk = hasAlignedContactNormal(
-        contacts,
-        numContacts,
-        2,
-        kMinAxisAlignment,
-        kMaxOtherAlignment);
+        contacts, numContacts, 2, kMinAxisAlignment, kMaxOtherAlignment);
 
     dGeomDestroy(cylinder);
     dGeomDestroy(plane);
