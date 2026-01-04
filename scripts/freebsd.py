@@ -419,8 +419,11 @@ def test_vm(args):
         "FREEBSD_VM_CTEST_TIMEOUT",
         DEFAULT_CTEST_TIMEOUT,
     )
-    stop_on_failure = os.getenv("FREEBSD_VM_CTEST_STOP_ON_FAILURE", "1").lower()
-    stop_on_failure = stop_on_failure not in {"0", "false", "no"}
+    stop_on_failure_env = os.getenv("FREEBSD_VM_CTEST_STOP_ON_FAILURE")
+    if stop_on_failure_env is None:
+        stop_on_failure = DEFAULT_CTEST_STOP_ON_FAILURE
+    else:
+        stop_on_failure = stop_on_failure_env.lower() not in {"0", "false", "no"}
     extra_ctest_args = shlex.split(os.getenv("FREEBSD_VM_CTEST_ARGS", ""))
     ctest_args = ["--output-on-failure"]
     if exclude_regex:
