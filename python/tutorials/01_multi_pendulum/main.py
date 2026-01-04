@@ -63,7 +63,7 @@ def _to_vector(values: Tuple[float, float, float]) -> np.ndarray:
 
 
 class Controller:
-    def __init__(self, pendulum: dart.dynamics.Skeleton, world: dart.simulation.World):
+    def __init__(self, pendulum: dart.dynamics.Skeleton, world: dart.World):
         self.pendulum = pendulum
         self.world = world
         self.ball_constraint = None
@@ -327,7 +327,7 @@ def main():
 
     pendulum.getDof(1).setPosition(math.radians(120.0))
 
-    world = dart.simulation.World()
+    world = dart.World()
     world.addSkeleton(pendulum)
 
     controller = Controller(pendulum, world)

@@ -132,7 +132,7 @@ def main():
     # starts to swing right away
     chain.setPosition(1, 120 * math.pi / 180.0)
 
-    world = dart.simulation.World()
+    world = dart.World()
     world.addSkeleton(chain)
 
     node = MyWorldNode(world)

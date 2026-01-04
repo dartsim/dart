@@ -215,7 +215,7 @@ class Controller:
 class DominoEventHandler(dart.gui.GUIEventHandler):
     def __init__(
         self,
-        world: dart.simulation.World,
+        world: dart.World,
         controller: Controller,
     ):
         super().__init__()
@@ -345,7 +345,7 @@ class DominoEventHandler(dart.gui.GUIEventHandler):
 class CustomWorldNode(dart.gui.RealTimeWorldNode):
     def __init__(
         self,
-        world: dart.simulation.World,
+        world: dart.World,
         handler: DominoEventHandler,
     ):
         super().__init__(world)
@@ -398,7 +398,7 @@ def create_floor() -> dart.dynamics.Skeleton:
 
 def create_manipulator() -> dart.dynamics.Skeleton:
     # snippet:py-dominoes-lesson2a-loader-start
-    parser = dart.utils.UrdfParser()
+    parser = dart.io.UrdfParser()
     # snippet:py-dominoes-lesson2a-loader-end
     # snippet:py-dominoes-lesson2a-parse-start
     manipulator = parser.parseSkeleton(
@@ -430,7 +430,7 @@ def main():
     floor = create_floor()
     manipulator = create_manipulator()
 
-    world = dart.simulation.World()
+    world = dart.World()
     world.addSkeleton(domino)
     world.addSkeleton(floor)
     world.addSkeleton(manipulator)

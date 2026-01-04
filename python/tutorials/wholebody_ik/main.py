@@ -37,7 +37,7 @@ def parse_args():
 
 
 def load_atlas_robot():
-    parser = dart.utils.UrdfParser()
+    parser = dart.io.UrdfParser()
     atlas = parser.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
 
     if not atlas:
@@ -104,7 +104,7 @@ def run_headless_demo(world, atlas, left_hand, right_hand):
 
 
 def build_world(atlas):
-    world = dart.simulation.World()
+    world = dart.World()
     world.setGravity([0.0, -9.81, 0.0])
     world.addSkeleton(atlas)
     return world

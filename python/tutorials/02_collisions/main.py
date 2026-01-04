@@ -98,7 +98,7 @@ def setup_ring(ring: dart.dynamics.Skeleton):
 class CollisionsEventHandler(dart.gui.GUIEventHandler):
     def __init__(
         self,
-        world: dart.simulation.World,
+        world: dart.World,
         ball: dart.dynamics.Skeleton,
         soft_body: dart.dynamics.Skeleton,
         hybrid_body: dart.dynamics.Skeleton,
@@ -369,7 +369,7 @@ def create_wall() -> dart.dynamics.Skeleton:
 
 
 def main():
-    world = dart.simulation.World()
+    world = dart.World()
     world.addSkeleton(create_ground())
     world.addSkeleton(create_wall())
 
