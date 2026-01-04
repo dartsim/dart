@@ -38,6 +38,7 @@
 #include <Eigen/Core>
 
 #include <algorithm>
+
 #include <cmath>
 
 namespace dart {
@@ -83,8 +84,7 @@ OdeCylinderMesh::OdeCylinderMesh(
     double height,
     int slices,
     int stacks)
-  : OdeGeom(parent),
-    mOdeTriMeshDataId(nullptr)
+  : OdeGeom(parent), mOdeTriMeshDataId(nullptr)
 {
   buildMesh(radius, height, slices, stacks);
 
@@ -149,12 +149,10 @@ void OdeCylinderMesh::buildMesh(
   const Eigen::Vector3d centerTop(0.0, 0.0, zTop);
 
   for (int i = 0; i < slices; ++i) {
-    const Eigen::Vector3d p1(
-        radius * sinCache[i], radius * cosCache[i], zBase);
+    const Eigen::Vector3d p1(radius * sinCache[i], radius * cosCache[i], zBase);
     const Eigen::Vector3d p2(
         radius * sinCache[i + 1], radius * cosCache[i + 1], zBase);
-    const Eigen::Vector3d p3(
-        radius * sinCache[i], radius * cosCache[i], zTop);
+    const Eigen::Vector3d p3(radius * sinCache[i], radius * cosCache[i], zTop);
     const Eigen::Vector3d p4(
         radius * sinCache[i + 1], radius * cosCache[i + 1], zTop);
 
@@ -163,8 +161,7 @@ void OdeCylinderMesh::buildMesh(
 
     for (int j = 0; j < stacks; ++j) {
       const double zLow = zBase + height * static_cast<double>(j) / stacks;
-      const double zHigh
-          = zBase + height * static_cast<double>(j + 1) / stacks;
+      const double zHigh = zBase + height * static_cast<double>(j + 1) / stacks;
 
       const Eigen::Vector3d s1(
           radius * sinCache[i], radius * cosCache[i], zLow);
