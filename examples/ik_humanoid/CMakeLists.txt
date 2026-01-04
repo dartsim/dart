@@ -8,7 +8,16 @@ set(required_components utils-urdf gui io)
 set(required_libraries dart dart-io dart-utils-urdf dart-gui)
 
 if(DART_IN_SOURCE_BUILD)
-  dart_build_example_in_source(${example_name} LINK_LIBRARIES ${required_libraries})
+  file(GLOB srcs "*.cpp" "*.hpp" "robots/*.cpp" "robots/*.hpp")
+  add_executable(${example_name} ${srcs})
+  target_link_libraries(${example_name} ${required_libraries})
+  set_target_properties(
+    ${example_name}
+    PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
+  )
+  dart_format_add(${srcs})
+  dart_add_example(${example_name})
   return()
 endif()
 
