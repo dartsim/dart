@@ -36,6 +36,7 @@
 #include <dart/Export.hpp>
 
 #include <string>
+#include <string_view>
 
 namespace dart {
 namespace common {
@@ -105,108 +106,106 @@ struct DART_API Uri final
   /// Constructor
   Uri() = default;
 
-  /// Constructor that takes a URI or local path. Internally, this is equivalent
-  /// to calling fromStringOrPath(_input) after default constructor.
+  /// Constructors that take a URI or local path. Internally, this is
+  /// equivalent to calling fromStringOrPath(input) after default constructor.
   ///
-  /// We don't declare this constructor as explicit in order to allow implicit
-  /// conversion from string so that you can pass in string parameter to a
-  /// function that takes Uri.
-  Uri(const std::string& _input);
+  /// We don't declare these constructors as explicit in order to allow
+  /// implicit conversion from string-like values so that you can pass string
+  /// parameters to functions that take Uri.
+  Uri(std::string_view input);
 
-  /// Constructor that takes a URI or local path as const char*. The behavior is
-  /// identical to Uri(const std::string&).
-  Uri(const char* _input);
+  /// Constructor that takes a URI or local path as std::string. The behavior
+  /// is identical to Uri(std::string_view).
+  Uri(const std::string& input);
+
+  /// Constructor that takes a URI or local path as const char*. The behavior
+  /// is identical to Uri(std::string_view).
+  Uri(const char* input);
 
   /// Clear the URI by reset()ing all components.
   void clear();
 
   /// Parse a URI from a string; return success. All the components will be
   /// cleared on failure.
-  bool fromString(const std::string& _input);
+  bool fromString(std::string_view input);
 
   /// Parse a local path (i.e. URI with no schema) from a string; return
   /// success. Note that the input path should be absolute path. All the
   /// components will be cleared on failure.
-  bool fromPath(const std::string& _path);
+  bool fromPath(std::string_view path);
 
   /// Parse a URI or local path (i.e. URI with no schema) from a string; return
   /// success. We assume that any string without a scheme is a path. All the
   /// components will be cleared on failure.
-  bool fromStringOrPath(const std::string& _input);
+  bool fromStringOrPath(std::string_view input);
 
   /// Resolve a relative path reference; return success. All the components will
   /// be cleared on failure.
   bool fromRelativeUri(
-      const std::string& _base,
-      const std::string& _relative,
-      bool _strict = false);
+      std::string_view base, std::string_view relative, bool strict = false);
 
   /// Resolve a relative path reference; return success. All the components will
   /// be cleared on failure.
   bool fromRelativeUri(
-      const char* _base, const char* _relative, bool _strict = false);
+      const char* base, const char* relative, bool strict = false);
 
   /// Resolve a relative path reference; return success. All the components will
   /// be cleared on failure.
   bool fromRelativeUri(
-      const Uri& _base, const std::string& _relative, bool _strict = false);
+      const Uri& base, std::string_view relative, bool strict = false);
 
   /// Resolve a relative path reference; return success. All the components will
   /// be cleared on failure.
   bool fromRelativeUri(
-      const Uri& _base, const char* _relative, bool _strict = false);
+      const Uri& base, const char* relative, bool strict = false);
 
   /// Resolve a relative path reference; return success. All the components will
   /// be cleared on failure.
   bool fromRelativeUri(
-      const Uri& _base, const Uri& _relative, bool _strict = false);
+      const Uri& base, const Uri& relative, bool strict = false);
 
   /// Combine the parts of the URI into a string.
   std::string toString() const;
 
   /// Create URI from a string; return an empty URI on failure.
-  static Uri createFromString(const std::string& _input);
+  static Uri createFromString(std::string_view input);
 
   /// Create file URI from a string; return an empty URI on failure.
-  static Uri createFromPath(const std::string& _path);
+  static Uri createFromPath(std::string_view path);
 
   /// Create general URI or file URI from a string; return an empty URI on
   /// failure.
-  static Uri createFromStringOrPath(const std::string& _input);
+  static Uri createFromStringOrPath(std::string_view input);
 
   /// Create URI resolving a relative path reference; return an empty URI on
   /// failure.
   static Uri createFromRelativeUri(
-      const std::string& _base,
-      const std::string& _relative,
-      bool _strict = false);
+      std::string_view base, std::string_view relative, bool strict = false);
 
   /// Create URI resolving a relative path reference; return an empty URI on
   /// failure.
   static Uri createFromRelativeUri(
-      const Uri& _base, const std::string& _relative, bool _strict = false);
+      const Uri& base, std::string_view relative, bool strict = false);
 
   /// Create URI resolving a relative path reference; return an empty URI on
   /// failure.
   static Uri createFromRelativeUri(
-      const Uri& _base, const Uri& _relative, bool _strict = false);
+      const Uri& base, const Uri& relative, bool strict = false);
 
   /// Parse a URI from a string; return an empty string on failure.
-  static std::string getUri(const std::string& _input);
+  static std::string getUri(std::string_view input);
 
   /// Resolve a relative path reference; return an empty string on failure.
   static std::string getRelativeUri(
-      const std::string& _base,
-      const std::string& _relative,
-      bool _strict = false);
+      std::string_view base, std::string_view relative, bool strict = false);
 
   /// Resolve a relative path reference; return an empty string on failure.
   static std::string getRelativeUri(
-      const Uri& _base, const std::string& _relative, bool _strict = false);
+      const Uri& base, std::string_view relative, bool strict = false);
 
   /// Resolve a relative path reference; return an empty string on failure.
   static std::string getRelativeUri(
-      const Uri& _base, const Uri& _relative, bool _strict = false);
+      const Uri& base, const Uri& relative, bool strict = false);
 
   /// Get the path component of the URI as a string.
   std::string getPath() const;
@@ -219,10 +218,10 @@ struct DART_API Uri final
 
 private:
   /// Implement section 5.2.3 of RFC 3986.
-  static std::string mergePaths(const Uri& _base, const Uri& _relative);
+  static std::string mergePaths(const Uri& base, const Uri& relative);
 
   /// Implement section 5.2.4 of RFC 3986.
-  static std::string removeDotSegments(const std::string& _path);
+  static std::string removeDotSegments(const std::string& path);
 };
 
 } // namespace common

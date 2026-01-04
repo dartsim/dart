@@ -586,8 +586,7 @@ std::string resolveRequestedUri(
   if (!baseUri.mPath)
     return std::string(requested);
 
-  const auto merged
-      = common::Uri::getRelativeUri(baseUri, std::string(requested));
+  const auto merged = common::Uri::getRelativeUri(baseUri, requested);
   if (!merged.empty())
     return merged;
 

@@ -974,7 +974,8 @@ dynamics::ShapePtr UrdfParser::createShape(
       urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get())) {
     // Resolve relative URIs.
     common::Uri relativeUri, absoluteUri;
-    if (!absoluteUri.fromRelativeUri(_baseUri, mesh->filename)) {
+    if (!absoluteUri.fromRelativeUri(
+            _baseUri, std::string_view{mesh->filename})) {
       DART_WARN(
           "Failed resolving mesh URI '{}' relative to '{}'.",
           mesh->filename,

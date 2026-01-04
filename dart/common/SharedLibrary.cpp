@@ -56,7 +56,7 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-std::shared_ptr<SharedLibrary> SharedLibrary::create(const std::string& path)
+std::shared_ptr<SharedLibrary> SharedLibrary::create(std::string_view path)
 {
   return detail::SharedLibraryManager::getSingleton().load(path);
 }
@@ -107,15 +107,16 @@ bool SharedLibrary::isValid() const
 }
 
 //==============================================================================
-void* SharedLibrary::getSymbol(const std::string& symbolName) const
+void* SharedLibrary::getSymbol(std::string_view symbolName) const
 {
   if (!isValid())
     return nullptr;
 
-  auto symbol = DYNLIB_GETSYM(mInstance, symbolName.c_str());
+  const std::string symbolNameString(symbolName);
+  auto symbol = DYNLIB_GETSYM(mInstance, symbolNameString.c_str());
 
   if (!symbol) {
-    DART_WARN("Failed to load a symbol '{}'.", symbolName);
+    DART_WARN("Failed to load a symbol '{}'.", symbolNameString);
     return nullptr;
   }
 

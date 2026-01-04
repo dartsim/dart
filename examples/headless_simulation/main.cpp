@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
 
   dart::math::Random::setSeed(options.seed);
 
-  auto world = dart::io::readWorld(options.worldUri);
+  auto world = dart::io::readWorld(dart::common::Uri(options.worldUri));
   if (!world) {
     std::cerr << "Failed to read world from '" << options.worldUri << "'.\n";
     return 1;

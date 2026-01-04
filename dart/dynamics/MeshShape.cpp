@@ -1410,7 +1410,8 @@ void MeshShape::extractMaterialsFromScene(
           bool resolved = false;
           if (meshUri.mPath) {
             common::Uri resolvedUri;
-            if (resolvedUri.fromRelativeUri(meshUri, imagePathString)) {
+            if (resolvedUri.fromRelativeUri(
+                    meshUri, std::string_view{imagePathString})) {
               material.textureImagePaths.emplace_back(resolvedUri.toString());
               resolved = true;
             }
