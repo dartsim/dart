@@ -72,8 +72,9 @@ dart::dynamics::SkeletonPtr createWam()
   dart::io::ReadOptions options;
   options.addPackageDirectory(
       "herb_description", dart::config::dataPath("urdf/wam"));
-  dart::dynamics::SkeletonPtr wam = dart::io::readSkeleton(
-      dart::config::dataPath("urdf/wam/wam.urdf"), options);
+  const dart::common::Uri wamUri = dart::common::Uri::createFromPath(
+      dart::config::dataPath("urdf/wam/wam.urdf"));
+  dart::dynamics::SkeletonPtr wam = dart::io::readSkeleton(wamUri, options);
 
   return wam;
 }

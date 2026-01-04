@@ -92,3 +92,9 @@
 - Enable heterogeneous lookup in `common::NameManager` and accept
   `std::string_view` for lookup helpers.
 - Update call sites and docs to match the new signatures.
+
+### Phase 17: Uri string-view inputs
+
+- Switch `common::Uri` parsing/merging helpers to accept `std::string_view`
+  for read-only inputs.
+- Keep `const char*` overloads for compatibility where appropriate.

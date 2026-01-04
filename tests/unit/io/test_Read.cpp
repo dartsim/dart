@@ -104,7 +104,8 @@ TEST(ReadUnit, ReadsSdfWorldWithFixedRootWhenRequested)
 //==============================================================================
 TEST(ReadUnit, ReadsUrdfWithPackageDirectories)
 {
-  const auto wamUri = config::dataPath("urdf/wam/wam.urdf");
+  const common::Uri wamUri
+      = common::Uri::createFromPath(config::dataPath("urdf/wam/wam.urdf"));
   const auto wamPackageDir = config::dataPath("urdf/wam");
 
   io::ReadOptions options;
