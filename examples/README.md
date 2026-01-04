@@ -70,12 +70,12 @@
 
 ### 08 Performance and Scaling
 
-- `headless_simulation`
+- `perf_headless_simulation`
 
 ### 09 Integration and Tools
 
-- `csv_logger`
-- `point_cloud` (requires OctoMap)
+- `tool_csv_logger`
+- `tool_point_cloud` (requires OctoMap)
 
 ## Build Each Example
 

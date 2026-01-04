@@ -55,10 +55,10 @@ add_subdirectory(viz_simulation_event_handler)
 add_subdirectory(viz_tinkertoy)
 
 # Performance and scaling examples
-add_subdirectory(headless_simulation)
+add_subdirectory(perf_headless_simulation)
 
 # Integration and tools examples
 if(DART_HAVE_OCTOMAP)
-  add_subdirectory(point_cloud)
+  add_subdirectory(tool_point_cloud)
 endif()
-add_subdirectory(csv_logger)
+add_subdirectory(tool_csv_logger)

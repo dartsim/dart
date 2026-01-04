@@ -2,12 +2,13 @@
 
 ## Status
 
-- In progress: apply naming prefixes to remaining example categories and merge
-  the Python hello world variants.
-- Next: rename IO/Models, Soft/Hybrid, Visualization, Performance, and Tools
-  examples, then merge the Python hello world examples and update runners.
+- In progress: finish performance/tools renames and align remaining Python
+  examples.
+- Next: merge the Python hello world examples and update Python example
+  runners/docs.
 - Completed: removed `rerun` placeholder example (no sources).
-- Completed: removed `speed_test`; keep `headless_simulation` as the headless
+- Completed: removed `speed_test`; keep `perf_headless_simulation` as the
+  headless
   performance-focused example and rely on `tests/benchmark` for benchmarking.
 
 ## Goals
@@ -35,7 +36,8 @@
 ## Decision Log
 
 - Removed `rerun` (placeholder, no sources).
-- Removed `speed_test`; keep `headless_simulation` as the headless example and
+- Removed `speed_test`; keep `perf_headless_simulation` as the headless example
+  and
   rely on `tests/benchmark/` for performance coverage.
 - Confirmed `speed_test` coverage via
   `tests/benchmark/dynamics/bm_kinematics.cpp` (BM_Kinematics, BM_Dynamics).
@@ -64,6 +66,8 @@
 - Renamed `mixed_chain` -> `hybrid_mixed_chain`.
 - Renamed visualization and interaction examples to the `viz_*` prefix.
 - Renamed Python visualization examples to `viz_drag_and_drop` and `viz_imgui`.
+- Renamed `headless_simulation` -> `perf_headless_simulation`.
+- Renamed `csv_logger` -> `tool_csv_logger` and `point_cloud` -> `tool_point_cloud`.
 
 ## Naming Prefix Plan
 
@@ -157,7 +161,7 @@
 - `joint_human_limits`: custom constraint implementation; advanced.
 - `joint_free_cases`: advanced validation demo.
 - `viz_tinkertoy`: large interactive builder.
-- `point_cloud`: OctoMap-dependent; keep only if that integration is in-scope.
+- `tool_point_cloud`: OctoMap-dependent; keep only if that integration is in-scope.
 
 ### Python Merge
 
