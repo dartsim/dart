@@ -772,7 +772,8 @@ TEST_F(Collision, testCylinderCylinder)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testCylinderCylinder(fcl_mesh_fcl);
 
-#if HAVE_ODE
+#if HAVE_ODE && !defined(__FreeBSD__)
+  // FreeBSD's ode-double package misses cylinder-cylinder contacts.
   auto ode = OdeCollisionDetector::create();
   testCylinderCylinder(ode);
 #endif
