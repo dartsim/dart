@@ -115,3 +115,8 @@
 
 - Convert `NameManager` name, pattern, and rename inputs to `std::string_view`.
 - Preserve `std::string` storage for the managed name maps.
+
+### Phase 21: MeshLoader string views
+
+- Switch `MeshLoader` path/URI inputs to `std::string_view`.
+- Keep owning `std::string` copies only where needed (Assimp C API).
