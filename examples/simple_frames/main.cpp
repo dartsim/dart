@@ -36,11 +36,24 @@
 
 using namespace dart::dynamics;
 using namespace dart::gui;
-using namespace dart::gui;
 
 int main()
 {
   dart::simulation::WorldPtr myWorld(new dart::simulation::World);
+
+  auto attachBox = [](SimpleFrame* frame,
+                      const Eigen::Vector3d& size,
+                      const Eigen::Vector3d& color) {
+    frame->setShape(std::make_shared<BoxShape>(size));
+    frame->getVisualAspect(true)->setColor(color);
+  };
+
+  auto attachEllipsoid = [](SimpleFrame* frame,
+                            const Eigen::Vector3d& size,
+                            const Eigen::Vector3d& color) {
+    frame->setShape(std::make_shared<EllipsoidShape>(size));
+    frame->getVisualAspect(true)->setColor(color);
+  };
 
   Eigen::Isometry3d tf1(Eigen::Isometry3d::Identity());
   tf1.translate(Eigen::Vector3d(0.1, -0.1, 0));
@@ -55,41 +68,51 @@ int main()
   tf3.rotate(
       Eigen::AngleAxisd(dart::math::toRadian(60.0), Eigen::Vector3d(0, 1, 0)));
 
-  SimpleFramePtr F1(new SimpleFrame(Frame::World(), "F1", tf1));
-  F1->setShape(
-      std::shared_ptr<Shape>(new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02))));
-  SimpleFrame F2(F1.get(), "F2", tf2);
-  F2.setShape(
-      std::shared_ptr<Shape>(new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02))));
-  SimpleFrame F3(&F2, "F3", tf3);
-  F3.setShape(
-      std::shared_ptr<Shape>(new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02))));
+  const Eigen::Vector3d box_size(0.05, 0.05, 0.02);
+  auto F1 = std::make_shared<SimpleFrame>(Frame::World(), "F1", tf1);
+  attachBox(F1.get(), box_size, Eigen::Vector3d(0.9, 0.2, 0.2));
+  auto F2 = std::make_shared<SimpleFrame>(F1.get(), "F2", tf2);
+  attachBox(F2.get(), box_size, Eigen::Vector3d(0.2, 0.9, 0.2));
+  auto F3 = std::make_shared<SimpleFrame>(F2.get(), "F3", tf3);
+  attachBox(F3.get(), box_size, Eigen::Vector3d(0.2, 0.2, 0.9));
 
   // Note: Adding a Frame to the world will also cause all Entities that descend
   // from that Frame to be rendered.
   myWorld->addSimpleFrame(F1);
 
-  SimpleFramePtr A(new SimpleFrame(Frame::World(), "A"));
-  A->setShape(std::shared_ptr<Shape>(
-      new EllipsoidShape(Eigen::Vector3d(0.02, 0.02, 0.02))));
-  SimpleFrame A1(A.get(), "A1", F1->getTransform(A.get()));
-  A1.setShape(std::shared_ptr<Shape>(
-      new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))));
-  SimpleFrame A2(A.get(), "A2", F2.getTransform(A.get()));
-  A2.setShape(std::shared_ptr<Shape>(
-      new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))));
-  SimpleFrame A3(A.get(), "A3", F3.getTransform(A.get()));
-  A3.setShape(std::shared_ptr<Shape>(
-      new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))));
+  auto A = std::make_shared<SimpleFrame>(Frame::World(), "A");
+  attachEllipsoid(
+      A.get(),
+      Eigen::Vector3d(0.02, 0.02, 0.02),
+      Eigen::Vector3d(0.9, 0.9, 0.1));
+  auto A1
+      = std::make_shared<SimpleFrame>(A.get(), "A1", F1->getTransform(A.get()));
+  attachEllipsoid(
+      A1.get(),
+      Eigen::Vector3d(0.01, 0.01, 0.01),
+      Eigen::Vector3d(0.9, 0.7, 0.1));
+  auto A2
+      = std::make_shared<SimpleFrame>(A.get(), "A2", F2->getTransform(A.get()));
+  attachEllipsoid(
+      A2.get(),
+      Eigen::Vector3d(0.01, 0.01, 0.01),
+      Eigen::Vector3d(0.7, 0.9, 0.1));
+  auto A3
+      = std::make_shared<SimpleFrame>(A.get(), "A3", F3->getTransform(A.get()));
+  attachEllipsoid(
+      A3.get(),
+      Eigen::Vector3d(0.01, 0.01, 0.01),
+      Eigen::Vector3d(0.7, 0.7, 0.9));
 
   myWorld->addSimpleFrame(A);
 
-  SimpleFramePtr arrow(new SimpleFrame(Frame::World(), "arrow"));
-  arrow->setShape(std::shared_ptr<Shape>(new ArrowShape(
+  auto arrow = std::make_shared<SimpleFrame>(Frame::World(), "arrow");
+  arrow->setShape(std::make_shared<ArrowShape>(
       Eigen::Vector3d(0.1, -0.1, 0.0),
       Eigen::Vector3d(0.1, 0.0, 0.0),
       ArrowShape::Properties(0.002, 1.8),
-      Eigen::Vector4d(1.0, 0.5, 0.5, 1.0))));
+      Eigen::Vector4d(1.0, 0.5, 0.5, 1.0)));
+  arrow->getVisualAspect(true)->setColor(Eigen::Vector3d(1.0, 0.5, 0.5));
   myWorld->addSimpleFrame(arrow);
 
   // CAREFUL: For a Frame that gets added to the world to be

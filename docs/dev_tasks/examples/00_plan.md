@@ -51,6 +51,8 @@
   `vehicle` -> `control_vehicle`, and `wam_ikfast` -> `ik_analytic_wam`.
 - Removed per-example C++ pixi tasks; use `pixi run ex -- --list` to discover
   targets and `pixi run ex -- <example>` to run them.
+- Moved `simple_frames` under Rigid Bodies and Frames in the examples index and
+  fixed the example render path by attaching visual aspects to the frames.
 
 ## Current Suggestions (Pending Decisions)
 

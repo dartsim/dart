@@ -11,10 +11,10 @@
 ### 00 Getting Started
 
 - `hello_world`
-- `simple_frames`
 
 ### 01 Rigid Bodies and Frames
 
+- `simple_frames`
 - `boxes`
 - `hardcoded_design`
 - `rigid_cubes`
