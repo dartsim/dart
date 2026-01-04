@@ -51,6 +51,7 @@
 #include <Eigen/Geometry>
 
 #include <map>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -204,7 +205,7 @@ private:
       std::string_view urdfString);
 
   static void applyTransmissions(
-      const std::vector<TransmissionInfo>& transmissions,
+      std::span<const TransmissionInfo> transmissions,
       const urdf::ModelInterface* model,
       dynamics::SkeletonPtr skel);
 

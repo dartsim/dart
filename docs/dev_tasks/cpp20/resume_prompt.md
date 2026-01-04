@@ -26,6 +26,8 @@ What to do next:
 Workflow requirements:
 
 - Run `pixi run lint` before each commit.
-- Run `pixi run test-all` and `pixi run -e gazebo test-gz` before opening a PR (do not modify Gazebo sources).
-- Use `DART_PARALLEL_JOBS` set to 2/3 of `nproc` for builds/tests.
+- Run `pixi run test-all` and `pixi run -e gazebo test-gz` before opening a PR
+  (do not modify Gazebo sources).
+- Use `DART_PARALLEL_JOBS` set to 2/3 of `nproc` for builds/tests (and
+  `CTEST_PARALLEL_LEVEL` for ctest).
 - Use existing `pixi run ...` entry points only.

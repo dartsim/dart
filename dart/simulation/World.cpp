@@ -46,34 +46,18 @@
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/common/String.hpp"
+#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
-#include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/simulation/detail/LegacySkeletonSync.hpp"
-#include "dart/simulation/detail/WorldEcsAccess.hpp"
-#include "dart/simulation/solver/classic_rigid/ClassicRigidSolver.hpp"
-#include "dart/simulation/solver/rigid/RigidSolver.hpp"
 
-#include <algorithm>
 #include <iostream>
-#include <limits>
-#include <memory>
 #include <string>
-#include <type_traits>
-#include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include <cmath>
 
 namespace dart {
 namespace simulation {
-
-struct World::EcsData final
-{
-  entt::registry entityManager;
-  std::unordered_map<const dynamics::Skeleton*, entt::entity> skeletonEntities;
-};
 
 namespace {
 
@@ -198,18 +182,17 @@ World::World(const WorldConfig& config)
     mTime(0.0),
     mFrame(0),
     mRecording(new Recording(mSkeletons)),
-    mEcsData(std::make_unique<EcsData>()),
     onNameChanged(mNameChangedSignal)
 {
   mIndices.push_back(0);
 
-  addSolver(std::make_unique<ClassicRigidSolver>());
-  addSolver(std::make_unique<RigidSolver>());
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
+  DART_SUPPRESS_DEPRECATED_END
+  setConstraintSolver(std::move(solver));
 
-  if (auto* collisionSolver = getCollisionCapableSolver()) {
-    if (auto detector = resolveCollisionDetector(config))
-      collisionSolver->setCollisionDetector(detector);
-  }
+  if (auto detector = resolveCollisionDetector(config))
+    setCollisionDetector(detector);
 }
 
 //==============================================================================
@@ -229,17 +212,12 @@ WorldPtr World::clone() const
 {
   WorldPtr worldClone = World::create(mName);
 
-  worldClone->setSolverSteppingMode(mSolverSteppingMode);
-  worldClone->setActiveRigidSolver(mActiveRigidSolverType);
-
   worldClone->setGravity(mGravity);
   worldClone->setTimeStep(mTimeStep);
 
-  if (auto* constraintSolver = getConstraintSolver()) {
-    auto cd = constraintSolver->getCollisionDetector();
-    if (cd) {
-      worldClone->setCollisionDetector(cd->cloneWithoutCollisionObjects());
-    }
+  auto cd = getConstraintSolver()->getCollisionDetector();
+  if (cd) {
+    worldClone->setCollisionDetector(cd->cloneWithoutCollisionObjects());
   }
 
   // Clone and add each Skeleton
@@ -282,8 +260,8 @@ void World::setTimeStep(double _timeStep)
   }
 
   mTimeStep = _timeStep;
-  for (auto& entry : mSolvers)
-    entry.solver->setTimeStep(_timeStep);
+  DART_ASSERT(mConstraintSolver);
+  mConstraintSolver->setTimeStep(_timeStep);
   for (auto& skel : mSkeletons)
     skel->setTimeStep(_timeStep);
 }
@@ -300,8 +278,8 @@ void World::reset()
   mTime = 0.0;
   mFrame = 0;
   mRecording->clear();
-  for (auto& entry : mSolvers)
-    entry.solver->reset(*this);
+  mConstraintSolver->clearLastCollisionResult();
+
   for (auto& skel : mSkeletons) {
     skel->clearConstraintImpulses();
     skel->setImpulseApplied(false);
@@ -315,58 +293,47 @@ void World::step(bool _resetCommand)
 {
   DART_PROFILE_FRAME;
 
-  std::size_t steppedSolvers = 0;
-
-  if (mSolverSteppingMode == SolverSteppingMode::ActiveRigidSolverOnly) {
-    auto* activeSolver = getActiveRigidSolver();
-    if (activeSolver && isSolverEnabled(activeSolver)
-        && activeSolver->isRigidSolver()) {
-      activeSolver->step(*this, _resetCommand);
-      ++steppedSolvers;
-
-      std::vector<WorldSolver*> solversToSync;
-
-      for (auto& entry : mSolvers) {
-        if (!entry.enabled)
-          continue;
-
-        auto* solver = entry.solver.get();
-        if (!solver || solver == activeSolver)
-          continue;
-
-        if (solver->isRigidSolver()) {
-          solversToSync.push_back(solver);
-          continue;
-        }
-
-        solver->step(*this, _resetCommand);
-        ++steppedSolvers;
-      }
-
-      for (auto* solver : solversToSync)
-        solver->sync(*this);
-    } else {
-      DART_WARN(
-          "World '{}' is configured for ActiveRigidSolverOnly stepping, but "
-          "the active solver is not available/enabled. Falling back to "
-          "stepping all enabled solvers.",
-          mName);
-    }
-  }
-
-  if (steppedSolvers == 0) {
-    for (auto& entry : mSolvers) {
-      if (!entry.enabled)
+  // Integrate velocity for unconstrained skeletons
+  {
+    DART_PROFILE_SCOPED_N("World::step - Integrate velocity");
+    for (auto& skel : mSkeletons) {
+      if (!skel->isMobile())
         continue;
-      entry.solver->step(*this, _resetCommand);
-      ++steppedSolvers;
+
+      skel->computeForwardDynamics();
+      skel->integrateVelocities(mTimeStep);
     }
   }
 
-  if (steppedSolvers == 0) {
-    DART_WARN(
-        "World '{}' has no enabled solvers. Skipping simulation step.", mName);
-    return;
+  // Detect activated constraints and compute constraint impulses
+  {
+    DART_PROFILE_SCOPED_N("World::step - Solve constraints");
+    mConstraintSolver->solve();
+  }
+
+  // Compute velocity changes given constraint impulses
+  for (auto& skel : mSkeletons) {
+    if (!skel->isMobile())
+      continue;
+
+    if (skel->isImpulseApplied()) {
+      skel->computeImpulseForwardDynamics();
+      skel->setImpulseApplied(false);
+    }
+
+    if (skel->isPositionImpulseApplied()) {
+      skel->integratePositions(mTimeStep, skel->getPositionVelocityChanges());
+      skel->setPositionImpulseApplied(false);
+      skel->clearPositionVelocityChanges();
+    } else {
+      skel->integratePositions(mTimeStep);
+    }
+
+    if (_resetCommand) {
+      skel->clearInternalForces();
+      skel->clearExternalForces();
+      skel->resetCommands();
+    }
   }
 
   mTime += mTimeStep;
@@ -491,35 +458,7 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   _skeleton->setGravity(mGravity);
 
   mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
-
-  {
-    const auto* key = _skeleton.get();
-    if (key) {
-      if (!mEcsData) {
-        DART_WARN(
-            "World '{}' is missing ECS storage; skipping entity creation for "
-            "skeleton '{}'.",
-            mName,
-            _skeleton->getName());
-      } else if (!mEcsData->skeletonEntities.contains(key)) {
-        const auto entity = mEcsData->entityManager.create();
-        mEcsData->skeletonEntities.emplace(key, entity);
-        mEcsData->entityManager.emplace<comps::LegacySkeleton>(
-            entity, _skeleton);
-        auto& state
-            = mEcsData->entityManager.emplace<comps::SkeletonState>(entity);
-        detail::syncLegacySkeletonState(state, *_skeleton);
-      } else {
-        DART_WARN(
-            "Skeleton '{}' already has an ECS entity in world '{}'.",
-            _skeleton->getName(),
-            mName);
-      }
-    }
-  }
-
-  for (auto& entry : mSolvers)
-    entry.solver->handleSkeletonAdded(*this, _skeleton);
+  mConstraintSolver->addSkeleton(_skeleton);
 
   // Update recording
   mRecording->updateNumGenCoords(mSkeletons);
@@ -558,20 +497,8 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
     mIndices[i] = mIndices[i + 1] - _skeleton->getNumDofs();
   mIndices.pop_back();
 
-  // Notify solvers.
-  for (auto& entry : mSolvers)
-    entry.solver->handleSkeletonRemoved(*this, _skeleton);
-
-  {
-    const auto* key = _skeleton.get();
-    if (mEcsData) {
-      const auto it = mEcsData->skeletonEntities.find(key);
-      if (it != mEcsData->skeletonEntities.end()) {
-        mEcsData->entityManager.destroy(it->second);
-        mEcsData->skeletonEntities.erase(it);
-      }
-    }
-  }
+  // Remove _skeleton from constraint handler.
+  mConstraintSolver->removeSkeleton(_skeleton);
 
   // Remove _skeleton from mSkeletons
   std::erase(mSkeletons, _skeleton);
@@ -788,26 +715,13 @@ bool World::checkCollision(
     const collision::CollisionOption& option,
     collision::CollisionResult* result)
 {
-  auto* solver = getCollisionCapableSolver();
-  if (!solver) {
-    DART_WARN("World '{}' does not have a collision-capable solver.", mName);
-    return false;
-  }
-
-  return solver->checkCollision(option, result);
+  return mConstraintSolver->getCollisionGroup()->collide(option, result);
 }
 
 //==============================================================================
 const collision::CollisionResult& World::getLastCollisionResult() const
 {
-  auto* solver = getCollisionCapableSolver();
-  if (!solver) {
-    DART_WARN("World '{}' does not have a collision-capable solver.", mName);
-    static const collision::CollisionResult emptyResult;
-    return emptyResult;
-  }
-
-  return solver->getLastCollisionResult();
+  return mConstraintSolver->getLastCollisionResult();
 }
 
 //==============================================================================
@@ -820,16 +734,7 @@ void World::setCollisionDetector(
     return;
   }
 
-  auto* solver = getCollisionCapableSolver();
-  if (!solver) {
-    DART_WARN(
-        "World '{}' does not have a collision-capable solver. Ignoring "
-        "collision detector assignment.",
-        mName);
-    return;
-  }
-
-  solver->setCollisionDetector(collisionDetector);
+  mConstraintSolver->setCollisionDetector(collisionDetector);
 }
 
 //==============================================================================
@@ -837,8 +742,7 @@ void World::setCollisionDetector(CollisionDetectorType collisionDetector)
 {
   auto detector = tryCreateCollisionDetector(collisionDetector);
   if (!detector) {
-    auto* solver = getCollisionCapableSolver();
-    auto current = solver ? solver->getCollisionDetector() : nullptr;
+    auto current = mConstraintSolver->getCollisionDetector();
     DART_WARN(
         "Collision detector '{}' is not available for world '{}'. Keeping the "
         "current detector '{}'.",
@@ -854,53 +758,46 @@ void World::setCollisionDetector(CollisionDetectorType collisionDetector)
 //==============================================================================
 collision::CollisionDetectorPtr World::getCollisionDetector()
 {
-  auto* solver = getCollisionCapableSolver();
-  return solver ? solver->getCollisionDetector() : nullptr;
+  return mConstraintSolver->getCollisionDetector();
 }
 
 //==============================================================================
 collision::ConstCollisionDetectorPtr World::getCollisionDetector() const
 {
-  auto* solver = getCollisionCapableSolver();
-  return solver ? solver->getCollisionDetector() : nullptr;
+  return mConstraintSolver->getCollisionDetector();
 }
 
 //==============================================================================
 void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
 {
-  auto* constraintSolver = getConstraintCapableSolver();
-  if (!constraintSolver) {
-    DART_ERROR("No constraint-capable solver has been registered.");
+  if (!solver) {
+    DART_WARN("nullptr for constraint solver is not allowed. Doing nothing.");
     return;
   }
 
-  constraintSolver->setConstraintSolver(std::move(solver));
+  if (mConstraintSolver)
+    solver->setFromOtherConstraintSolver(*mConstraintSolver);
+
+  mConstraintSolver = std::move(solver);
+  mConstraintSolver->setTimeStep(mTimeStep);
 }
 
 //==============================================================================
 constraint::ConstraintSolver* World::getConstraintSolver()
 {
-  auto* solver = getConstraintCapableSolver();
-  return solver ? solver->getConstraintSolver() : nullptr;
+  return mConstraintSolver.get();
 }
 
 //==============================================================================
 const constraint::ConstraintSolver* World::getConstraintSolver() const
 {
-  auto* solver = getConstraintCapableSolver();
-  return solver ? solver->getConstraintSolver() : nullptr;
+  return mConstraintSolver.get();
 }
 
 //==============================================================================
 void World::bake()
 {
-  const auto* constraintSolver = getConstraintSolver();
-  if (!constraintSolver) {
-    DART_WARN("Cannot bake state because no constraint-capable solver exists.");
-    return;
-  }
-
-  const auto collisionResult = constraintSolver->getLastCollisionResult();
+  const auto collisionResult = getConstraintSolver()->getLastCollisionResult();
   const auto nContacts = static_cast<int>(collisionResult.getNumContacts());
   const auto nSkeletons = getNumSkeletons();
 
@@ -923,362 +820,6 @@ void World::bake()
 Recording* World::getRecording()
 {
   return mRecording;
-}
-
-//==============================================================================
-entt::registry& detail::WorldEcsAccess::getEntityManager(World& world)
-{
-  DART_ASSERT(world.mEcsData);
-  return world.mEcsData->entityManager;
-}
-
-//==============================================================================
-const entt::registry& detail::WorldEcsAccess::getEntityManager(
-    const World& world)
-{
-  DART_ASSERT(world.mEcsData);
-  return world.mEcsData->entityManager;
-}
-
-//==============================================================================
-EcsEntity detail::WorldEcsAccess::getSkeletonEntity(
-    const World& world, const dynamics::Skeleton* skeleton)
-{
-  if (!skeleton || !world.mEcsData)
-    return EcsEntity();
-
-  const auto it = world.mEcsData->skeletonEntities.find(skeleton);
-  if (it == world.mEcsData->skeletonEntities.end())
-    return EcsEntity();
-
-  return toEcsEntity(it->second);
-}
-
-//==============================================================================
-EcsEntity detail::WorldEcsAccess::getSkeletonEntity(
-    const World& world, const dynamics::SkeletonPtr& skeleton)
-{
-  return getSkeletonEntity(world, skeleton.get());
-}
-
-//==============================================================================
-entt::entity detail::WorldEcsAccess::toEntt(EcsEntity entity)
-{
-  if (entity.isNull())
-    return entt::null;
-
-  using underlying = std::underlying_type_t<entt::entity>;
-  const auto maxValue = static_cast<EcsEntity::ValueType>(
-      std::numeric_limits<underlying>::max());
-
-  if (entity.value() > maxValue) {
-    DART_ASSERT(
-        false && "EcsEntity value does not fit in entt::entity storage.");
-    return entt::null;
-  }
-
-  return static_cast<entt::entity>(static_cast<underlying>(entity.value()));
-}
-
-//==============================================================================
-EcsEntity detail::WorldEcsAccess::toEcsEntity(entt::entity entity)
-{
-  using underlying = std::underlying_type_t<entt::entity>;
-  return EcsEntity{
-      static_cast<EcsEntity::ValueType>(static_cast<underlying>(entity))};
-}
-
-//==============================================================================
-WorldSolver* World::addSolver(std::unique_ptr<WorldSolver> solver)
-{
-  return addSolver(std::move(solver), true);
-}
-
-//==============================================================================
-WorldSolver* World::addSolver(std::unique_ptr<WorldSolver> solver, bool enabled)
-{
-  if (!solver) {
-    DART_WARN("Attempted to add a null solver to world '{}'.", mName);
-    return nullptr;
-  }
-
-  solver->setTimeStep(mTimeStep);
-  mSolvers.emplace_back(SolverEntry{std::move(solver), enabled});
-  auto* solverPtr = mSolvers.back().solver.get();
-
-  // Ensure the solver is aware of any skeletons that were already present.
-  for (auto& skeleton : mSkeletons)
-    solverPtr->handleSkeletonAdded(*this, skeleton);
-
-  if (enabled)
-    solverPtr->sync(*this);
-
-  return solverPtr;
-}
-
-//==============================================================================
-std::size_t World::getNumSolvers() const
-{
-  return mSolvers.size();
-}
-
-//==============================================================================
-WorldSolver* World::getSolver(std::size_t index)
-{
-  if (index >= mSolvers.size())
-    return nullptr;
-  return mSolvers[index].solver.get();
-}
-
-//==============================================================================
-const WorldSolver* World::getSolver(std::size_t index) const
-{
-  if (index >= mSolvers.size())
-    return nullptr;
-  return mSolvers[index].solver.get();
-}
-
-//==============================================================================
-std::size_t World::getSolverIndex(const WorldSolver* solver) const
-{
-  if (!solver)
-    return mSolvers.size();
-
-  for (std::size_t index = 0; index < mSolvers.size(); ++index) {
-    if (mSolvers[index].solver.get() == solver)
-      return index;
-  }
-
-  return mSolvers.size();
-}
-
-//==============================================================================
-WorldSolver* World::getSolver(RigidSolverType type)
-{
-  for (auto& entry : mSolvers) {
-    const auto rigidType = entry.solver->getRigidSolverType();
-    if (rigidType && *rigidType == type)
-      return entry.solver.get();
-  }
-  return nullptr;
-}
-
-//==============================================================================
-const WorldSolver* World::getSolver(RigidSolverType type) const
-{
-  for (const auto& entry : mSolvers) {
-    const auto rigidType = entry.solver->getRigidSolverType();
-    if (rigidType && *rigidType == type)
-      return entry.solver.get();
-  }
-  return nullptr;
-}
-
-//==============================================================================
-WorldSolver* World::getSolver(const std::string& name)
-{
-  for (auto& entry : mSolvers) {
-    if (entry.solver->getName() == name)
-      return entry.solver.get();
-  }
-  return nullptr;
-}
-
-//==============================================================================
-const WorldSolver* World::getSolver(const std::string& name) const
-{
-  for (const auto& entry : mSolvers) {
-    if (entry.solver->getName() == name)
-      return entry.solver.get();
-  }
-  return nullptr;
-}
-
-//==============================================================================
-bool World::setActiveRigidSolver(RigidSolverType type)
-{
-  if (!getSolver(type)) {
-    DART_WARN(
-        "Attempted to set active solver to type {}, but no matching solver is "
-        "registered in world '{}'.",
-        static_cast<int>(type),
-        mName);
-    return false;
-  }
-
-  mActiveRigidSolverType = type;
-  return true;
-}
-
-//==============================================================================
-RigidSolverType World::getActiveRigidSolverType() const
-{
-  return mActiveRigidSolverType;
-}
-
-//==============================================================================
-WorldSolver* World::getActiveRigidSolver()
-{
-  return getSolver(mActiveRigidSolverType);
-}
-
-//==============================================================================
-const WorldSolver* World::getActiveRigidSolver() const
-{
-  return getSolver(mActiveRigidSolverType);
-}
-
-//==============================================================================
-void World::setSolverSteppingMode(SolverSteppingMode mode)
-{
-  mSolverSteppingMode = mode;
-}
-
-//==============================================================================
-SolverSteppingMode World::getSolverSteppingMode() const
-{
-  return mSolverSteppingMode;
-}
-
-//==============================================================================
-bool World::setSolverEnabled(std::size_t index, bool enabled)
-{
-  if (index >= mSolvers.size())
-    return false;
-
-  auto& entry = mSolvers[index];
-  if (entry.enabled == enabled)
-    return true;
-
-  entry.enabled = enabled;
-  if (enabled)
-    entry.solver->sync(*this);
-
-  return true;
-}
-
-//==============================================================================
-bool World::isSolverEnabled(std::size_t index) const
-{
-  if (index >= mSolvers.size())
-    return false;
-
-  return mSolvers[index].enabled;
-}
-
-//==============================================================================
-bool World::setSolverEnabled(WorldSolver* solver, bool enabled)
-{
-  if (!solver)
-    return false;
-
-  for (std::size_t i = 0; i < mSolvers.size(); ++i) {
-    if (mSolvers[i].solver.get() == solver)
-      return setSolverEnabled(i, enabled);
-  }
-
-  return false;
-}
-
-//==============================================================================
-bool World::isSolverEnabled(const WorldSolver* solver) const
-{
-  if (!solver)
-    return false;
-
-  for (const auto& entry : mSolvers) {
-    if (entry.solver.get() == solver)
-      return entry.enabled;
-  }
-
-  return false;
-}
-
-//==============================================================================
-bool World::moveSolver(std::size_t fromIndex, std::size_t toIndex)
-{
-  if (fromIndex >= mSolvers.size() || toIndex >= mSolvers.size())
-    return false;
-
-  if (fromIndex == toIndex)
-    return true;
-
-  auto begin = mSolvers.begin();
-  if (fromIndex < toIndex) {
-    std::rotate(begin + fromIndex, begin + fromIndex + 1, begin + toIndex + 1);
-  } else {
-    std::rotate(begin + toIndex, begin + fromIndex, begin + fromIndex + 1);
-  }
-
-  return true;
-}
-
-//==============================================================================
-WorldSolver* World::getConstraintCapableSolver()
-{
-  if (auto* activeSolver = getActiveRigidSolver()) {
-    if (isSolverEnabled(activeSolver) && activeSolver->supportsConstraints())
-      return activeSolver;
-  }
-
-  for (auto& entry : mSolvers) {
-    if (!entry.enabled)
-      continue;
-    if (entry.solver->supportsConstraints())
-      return entry.solver.get();
-  }
-  return nullptr;
-}
-
-//==============================================================================
-const WorldSolver* World::getConstraintCapableSolver() const
-{
-  if (const auto* activeSolver = getActiveRigidSolver()) {
-    if (isSolverEnabled(activeSolver) && activeSolver->supportsConstraints())
-      return activeSolver;
-  }
-
-  for (const auto& entry : mSolvers) {
-    if (!entry.enabled)
-      continue;
-    if (entry.solver->supportsConstraints())
-      return entry.solver.get();
-  }
-  return nullptr;
-}
-
-//==============================================================================
-WorldSolver* World::getCollisionCapableSolver()
-{
-  if (auto* activeSolver = getActiveRigidSolver()) {
-    if (isSolverEnabled(activeSolver) && activeSolver->supportsCollision())
-      return activeSolver;
-  }
-
-  for (auto& entry : mSolvers) {
-    if (!entry.enabled)
-      continue;
-    if (entry.solver->supportsCollision())
-      return entry.solver.get();
-  }
-  return nullptr;
-}
-
-//==============================================================================
-const WorldSolver* World::getCollisionCapableSolver() const
-{
-  if (const auto* activeSolver = getActiveRigidSolver()) {
-    if (isSolverEnabled(activeSolver) && activeSolver->supportsCollision())
-      return activeSolver;
-  }
-
-  for (const auto& entry : mSolvers) {
-    if (!entry.enabled)
-      continue;
-    if (entry.solver->supportsCollision())
-      return entry.solver.get();
-  }
-  return nullptr;
 }
 
 //==============================================================================
