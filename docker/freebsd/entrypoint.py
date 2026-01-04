@@ -101,14 +101,8 @@ def write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img, user):
                 f"      - {pub_key}",
             ]
         )
-    lines += [
-        "write_files:",
-        "  - path: /root/.ssh/authorized_keys",
-        "    owner: root:wheel",
-        "    permissions: '0600'",
-        "    content: |",
-        f"      {pub_key}",
-    ]
+    # Avoid root authorized_keys here because nuageinit does not create
+    # parent directories and fails when /root/.ssh is missing.
     lines.append("")
     user_data.write_text("\n".join(lines))
     meta_data.write_text(

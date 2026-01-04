@@ -36,6 +36,7 @@
 #include "dart/collision/ode/detail/OdeBox.hpp"
 #include "dart/collision/ode/detail/OdeCapsule.hpp"
 #include "dart/collision/ode/detail/OdeCylinder.hpp"
+#include "dart/collision/ode/detail/OdeCylinderMesh.hpp"
 #include "dart/collision/ode/detail/OdeHeightmap.hpp"
 #include "dart/collision/ode/detail/OdeMesh.hpp"
 #include "dart/collision/ode/detail/OdePlane.hpp"
@@ -55,8 +56,112 @@
 
 #include <ode/ode.h>
 
+#include <cmath>
+
 namespace dart {
 namespace collision {
+
+namespace {
+
+bool gCylinderCollisionSupportKnown = false;
+bool gCylinderCollisionSupported = true;
+
+bool hasAlignedContactNormal(
+    const dContactGeom* contacts,
+    int numContacts,
+    int axis,
+    double minAxisAlignment,
+    double maxOtherAlignment)
+{
+  for (auto i = 0; i < numContacts; ++i) {
+    const double nx = contacts[i].normal[0];
+    const double ny = contacts[i].normal[1];
+    const double nz = contacts[i].normal[2];
+
+    if (!std::isfinite(nx) || !std::isfinite(ny) || !std::isfinite(nz))
+      continue;
+
+    const double absX = std::abs(nx);
+    const double absY = std::abs(ny);
+    const double absZ = std::abs(nz);
+
+    double absAxis = 0.0;
+    double maxOther = 0.0;
+    if (axis == 0) {
+      absAxis = absX;
+      maxOther = absY > absZ ? absY : absZ;
+    } else if (axis == 1) {
+      absAxis = absY;
+      maxOther = absX > absZ ? absX : absZ;
+    } else {
+      absAxis = absZ;
+      maxOther = absX > absY ? absX : absY;
+    }
+
+    if (absAxis >= minAxisAlignment && maxOther <= maxOtherAlignment)
+      return true;
+  }
+
+  return false;
+}
+
+// Some ODE builds report cylinder contacts with incorrect normals.
+bool probeCylinderCollisionSupport()
+{
+  constexpr double kMinAxisAlignment = 0.9;
+  constexpr double kMaxOtherAlignment = 0.2;
+
+  bool cylinderCylinderOk = false;
+  {
+    dGeomID cylinder1 = dCreateCylinder(0, 1.0, 1.0);
+    dGeomID cylinder2 = dCreateCylinder(0, 0.5, 1.0);
+
+    dGeomSetPosition(cylinder1, 0.0, 0.0, 0.0);
+    dGeomSetPosition(cylinder2, 0.75, 0.0, 0.0);
+
+    dContactGeom contacts[4];
+    const int numContacts
+        = dCollide(cylinder1, cylinder2, 4, contacts, sizeof(contacts[0]));
+
+    cylinderCylinderOk = hasAlignedContactNormal(
+        contacts, numContacts, 0, kMinAxisAlignment, kMaxOtherAlignment);
+
+    dGeomDestroy(cylinder1);
+    dGeomDestroy(cylinder2);
+  }
+
+  bool cylinderPlaneOk = false;
+  {
+    dGeomID cylinder = dCreateCylinder(0, 1.0, 1.0);
+    dGeomID plane = dCreatePlane(0, 0.0, 0.0, 1.0, 0.0);
+
+    dGeomSetPosition(cylinder, 0.0, 0.0, 0.4);
+
+    dContactGeom contacts[4];
+    const int numContacts
+        = dCollide(cylinder, plane, 4, contacts, sizeof(contacts[0]));
+
+    cylinderPlaneOk = hasAlignedContactNormal(
+        contacts, numContacts, 2, kMinAxisAlignment, kMaxOtherAlignment);
+
+    dGeomDestroy(cylinder);
+    dGeomDestroy(plane);
+  }
+
+  return cylinderCylinderOk && cylinderPlaneOk;
+}
+
+bool cylinderCollisionSupported()
+{
+  if (!gCylinderCollisionSupportKnown) {
+    gCylinderCollisionSupported = probeCylinderCollisionSupport();
+    gCylinderCollisionSupportKnown = true;
+  }
+
+  return gCylinderCollisionSupported;
+}
+
+} // namespace
 
 //==============================================================================
 static detail::OdeGeom* createOdeGeom(
@@ -202,7 +307,12 @@ detail::OdeGeom* createOdeGeom(
     const auto radius = cylinder->getRadius();
     const auto height = cylinder->getHeight();
 
-    geom = new detail::OdeCylinder(collObj, radius, height);
+    if (cylinderCollisionSupported())
+      geom = new detail::OdeCylinder(collObj, radius, height);
+    else
+      // TODO(JS): Replace the trimesh fallback once ODE cylinder contacts are
+      // reliable across ports.
+      geom = new detail::OdeCylinderMesh(collObj, radius, height);
   } else if (const auto plane = shape->as<PlaneShape>()) {
     const Eigen::Vector3d normal = plane->getNormal();
     const double offset = plane->getOffset();
