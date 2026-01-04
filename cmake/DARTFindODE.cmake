@@ -39,6 +39,7 @@ if(NOT _dart_use_internal_ode)
 endif()
 
 if(ODE_FOUND OR ode_FOUND OR TARGET ODE::ODE)
+  set(_dart_ode_has_libccd_box_cyl 0)
   set(_dart_ode_defs "")
   if(TARGET ODE::ODE)
     get_target_property(_dart_ode_defs ODE::ODE
@@ -50,12 +51,12 @@ if(ODE_FOUND OR ode_FOUND OR TARGET ODE::ODE)
 
   foreach(_dart_ode_def ${_dart_ode_defs})
     if(_dart_ode_def MATCHES "dLIBCCD_BOX_CYL")
-      set(DART_ODE_HAS_LIBCCD_BOX_CYL 1)
+      set(_dart_ode_has_libccd_box_cyl 1)
       break()
     endif()
   endforeach()
 
-  if(NOT DART_ODE_HAS_LIBCCD_BOX_CYL)
+  if(NOT _dart_ode_has_libccd_box_cyl)
     include(CheckCSourceCompiles)
 
     set(_dart_ode_includes "")
@@ -77,12 +78,21 @@ if(ODE_FOUND OR ode_FOUND OR TARGET ODE::ODE)
 #error dLIBCCD_BOX_CYL not defined
 #endif
 int main(void) { return 0; }
-" DART_ODE_HAS_LIBCCD_BOX_CYL)
+" _dart_ode_has_libccd_box_cyl_macro)
 
     unset(CMAKE_REQUIRED_INCLUDES)
     unset(_dart_ode_includes)
+
+    if(_dart_ode_has_libccd_box_cyl_macro)
+      set(_dart_ode_has_libccd_box_cyl 1)
+    endif()
+
+    unset(_dart_ode_has_libccd_box_cyl_macro)
   endif()
 
+  set(DART_ODE_HAS_LIBCCD_BOX_CYL ${_dart_ode_has_libccd_box_cyl}
+    CACHE INTERNAL "Whether ODE supports libccd box-cylinder contacts" FORCE)
+  unset(_dart_ode_has_libccd_box_cyl)
   unset(_dart_ode_defs)
 endif()
 

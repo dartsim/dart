@@ -36,6 +36,7 @@
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
 #include "dart/collision/ode/OdeCollisionObject.hpp"
 #include "dart/collision/ode/OdeTypes.hpp"
+
 #include "dart/config.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
@@ -565,7 +566,11 @@ bool expandBoxCylinderContact(
   if (contacts.empty())
     return false;
 
-  for (const auto& contact : contacts) {
+  const double perContactDepth
+      = baseContact.penetrationDepth
+        / static_cast<double>(contacts.size());
+  for (auto& contact : contacts) {
+    contact.penetrationDepth = perContactDepth;
     result.addContact(contact);
     if (result.getNumContacts() >= option.maxNumContacts)
       return true;
