@@ -11,8 +11,6 @@ add_subdirectory(rigid_hardcoded_design)
 add_subdirectory(rigid_cubes)
 
 # Joints and constraints examples
-add_subdirectory(joint_free_cases)
-add_subdirectory(joint_human_limits)
 add_subdirectory(joint_mimic_pendulums)
 add_subdirectory(joint_chain)
 add_subdirectory(joint_loop)
@@ -46,14 +44,9 @@ add_subdirectory(viz_drag_and_drop)
 add_subdirectory(viz_empty)
 add_subdirectory(viz_imgui)
 add_subdirectory(viz_polyhedron_visual)
-add_subdirectory(viz_tinkertoy)
-if(DART_HAVE_OCTOMAP)
-  add_subdirectory(viz_point_cloud)
-endif()
 
 # Performance and scaling examples
 add_subdirectory(perf_headless_simulation)
 
 # Integration and tools examples
 add_subdirectory(tool_csv_logger)
-add_subdirectory(tool_lcp_solvers)

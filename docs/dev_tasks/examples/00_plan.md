@@ -2,9 +2,8 @@
 
 ## Status
 
-- In progress: review keep/drop candidates after the naming pass.
-- Next: confirm the keep/drop list for removal candidates and apply removals or
-  merges.
+- In progress: sanity-check example discovery and runner tasks after removals.
+- Next: confirm Python example alignment with the updated C++ catalog.
 - Completed: removed `rerun` placeholder example (no sources).
 - Completed: removed `speed_test`; keep `perf_headless_simulation` as the
   headless
@@ -75,6 +74,14 @@
 - Removed `rigid_boxes`, `joint_coupler`, `joint_constraints`, and
   `viz_simulation_event_handler`.
 - Removed `viz_raylib`.
+- Removed `joint_free_cases` and `joint_human_limits` (advanced validation and
+  custom constraint demos).
+- Removed `tool_lcp_solvers`, `viz_tinkertoy`, and `viz_point_cloud` (large UI
+  or external dependency scope).
+- Kept `control_walking_humanoid` and `ik_analytic_wam` as supported advanced
+  examples (documented, user-facing features).
+- Reviewed example names and category placement against README goals; no further
+  renames required.
 
 ## Naming Prefix Plan
 
@@ -90,8 +97,6 @@
 
 ### 02 Joints and Constraints
 
-- `free_joint_cases` -> `joint_free_cases`
-- `human_joint_limits` -> `joint_human_limits`
 - `mimic_pendulums` -> `joint_mimic_pendulums`
 - `rigid_chain` -> `joint_chain`
 - `rigid_loop` -> `joint_loop`
@@ -130,8 +135,6 @@
 - `empty` -> `viz_empty`
 - `imgui` -> `viz_imgui`
 - `polyhedron_visual` -> `viz_polyhedron_visual`
-- `tinkertoy` -> `viz_tinkertoy`
-- `point_cloud` -> `viz_point_cloud`
 
 ### 08 Performance and Scaling
 
@@ -140,7 +143,6 @@
 ### 09 Integration and Tools
 
 - `csv_logger` -> `tool_csv_logger`
-- `lcp_solvers` -> `tool_lcp_solvers`
 
 ## Current Suggestions (Pending Decisions)
 
@@ -150,11 +152,4 @@ None (all strong removal candidates applied).
 
 ### Likely Removals (tighten supported scope)
 
-- `ik_analytic_wam`: huge and specialized; keeping implies full IKFast support.
-- `control_walking_humanoid`: large controller stack; niche feature surface.
-- `tool_lcp_solvers`: large solver diagnostics UI; keep only if this UI is
-  in-scope.
-- `joint_human_limits`: custom constraint implementation; advanced.
-- `joint_free_cases`: advanced validation demo.
-- `viz_tinkertoy`: large interactive builder.
-- `viz_point_cloud`: OctoMap-dependent; keep only if that integration is in-scope.
+None (remaining examples are in-scope).

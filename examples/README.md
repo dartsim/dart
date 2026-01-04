@@ -20,8 +20,6 @@
 
 ### 02 Joints and Constraints
 
-- `joint_free_cases`
-- `joint_human_limits`
 - `joint_mimic_pendulums`
 - `joint_chain`
 - `joint_loop`
@@ -60,8 +58,6 @@
 - `viz_empty`
 - `viz_imgui`
 - `viz_polyhedron_visual`
-- `viz_tinkertoy`
-- `viz_point_cloud` (requires OctoMap)
 
 ### 08 Performance and Scaling
 
@@ -70,7 +66,6 @@
 ### 09 Integration and Tools
 
 - `tool_csv_logger`
-- `tool_lcp_solvers`
 
 ## Build Each Example
 
