@@ -36,6 +36,7 @@
 #include "dart/collision/ode/detail/OdeBox.hpp"
 #include "dart/collision/ode/detail/OdeCapsule.hpp"
 #include "dart/collision/ode/detail/OdeCylinder.hpp"
+#include "dart/collision/ode/detail/OdeCylinderMesh.hpp"
 #include "dart/collision/ode/detail/OdeHeightmap.hpp"
 #include "dart/collision/ode/detail/OdeMesh.hpp"
 #include "dart/collision/ode/detail/OdePlane.hpp"
@@ -57,6 +58,42 @@
 
 namespace dart {
 namespace collision {
+
+namespace {
+
+bool gCylinderCollisionSupportKnown = false;
+bool gCylinderCollisionSupported = true;
+
+// Some ODE builds do not report cylinder-cylinder contacts.
+bool probeCylinderCollisionSupport()
+{
+  dGeomID cylinder1 = dCreateCylinder(0, 1.0, 1.0);
+  dGeomID cylinder2 = dCreateCylinder(0, 0.5, 1.0);
+
+  dGeomSetPosition(cylinder1, 0.0, 0.0, 0.0);
+  dGeomSetPosition(cylinder2, 0.75, 0.0, 0.0);
+
+  dContactGeom contacts[4];
+  const int numContacts
+      = dCollide(cylinder1, cylinder2, 4, contacts, sizeof(contacts[0]));
+
+  dGeomDestroy(cylinder1);
+  dGeomDestroy(cylinder2);
+
+  return numContacts > 0;
+}
+
+bool cylinderCollisionSupported()
+{
+  if (!gCylinderCollisionSupportKnown) {
+    gCylinderCollisionSupported = probeCylinderCollisionSupport();
+    gCylinderCollisionSupportKnown = true;
+  }
+
+  return gCylinderCollisionSupported;
+}
+
+} // namespace
 
 //==============================================================================
 static detail::OdeGeom* createOdeGeom(
@@ -202,7 +239,12 @@ detail::OdeGeom* createOdeGeom(
     const auto radius = cylinder->getRadius();
     const auto height = cylinder->getHeight();
 
-    geom = new detail::OdeCylinder(collObj, radius, height);
+    if (cylinderCollisionSupported())
+      geom = new detail::OdeCylinder(collObj, radius, height);
+    else
+      // TODO(JS): Replace the trimesh fallback once ODE cylinder contacts are
+      // reliable across ports.
+      geom = new detail::OdeCylinderMesh(collObj, radius, height);
   } else if (const auto plane = shape->as<PlaneShape>()) {
     const Eigen::Vector3d normal = plane->getNormal();
     const double offset = plane->getOffset();
