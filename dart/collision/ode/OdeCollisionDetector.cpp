@@ -528,9 +528,11 @@ bool expandBoxCylinderContact(
     Eigen::Vector3d axisProjection = axis - axis.dot(normal) * normal;
     if (axisProjection.norm() <= 1e-8)
       return false;
+
+    const double projectionLength = axisProjection.norm();
+    const double offset = 0.5 * cylinderShape->getHeight() * projectionLength;
     axisProjection.normalize();
 
-    const double offset = 0.5 * cylinderShape->getHeight();
     Contact contactA = baseContact;
     contactA.point = baseContact.point + axisProjection * offset;
     contacts.push_back(contactA);
