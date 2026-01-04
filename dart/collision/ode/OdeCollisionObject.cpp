@@ -53,8 +53,11 @@
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
+#include "dart/math/Constants.hpp"
 
 #include <ode/ode.h>
+
+#include <cmath>
 
 namespace dart {
 namespace collision {
@@ -64,23 +67,124 @@ namespace {
 bool gCylinderCollisionSupportKnown = false;
 bool gCylinderCollisionSupported = true;
 
-// Some ODE builds do not report cylinder-cylinder contacts.
+bool hasAlignedContactNormal(
+    const dContactGeom* contacts,
+    int numContacts,
+    int axis,
+    double minAxisAlignment,
+    double maxOtherAlignment)
+{
+  for (auto i = 0; i < numContacts; ++i) {
+    const double nx = contacts[i].normal[0];
+    const double ny = contacts[i].normal[1];
+    const double nz = contacts[i].normal[2];
+
+    if (!std::isfinite(nx) || !std::isfinite(ny) || !std::isfinite(nz))
+      continue;
+
+    const double absX = std::abs(nx);
+    const double absY = std::abs(ny);
+    const double absZ = std::abs(nz);
+
+    double absAxis = 0.0;
+    double maxOther = 0.0;
+    if (axis == 0) {
+      absAxis = absX;
+      maxOther = absY > absZ ? absY : absZ;
+    } else if (axis == 1) {
+      absAxis = absY;
+      maxOther = absX > absZ ? absX : absZ;
+    } else {
+      absAxis = absZ;
+      maxOther = absX > absY ? absX : absY;
+    }
+
+    if (absAxis >= minAxisAlignment && maxOther <= maxOtherAlignment)
+      return true;
+  }
+
+  return false;
+}
+
+// Some ODE builds report cylinder contacts with incorrect normals.
 bool probeCylinderCollisionSupport()
 {
-  dGeomID cylinder1 = dCreateCylinder(0, 1.0, 1.0);
-  dGeomID cylinder2 = dCreateCylinder(0, 0.5, 1.0);
+  constexpr double kMinAxisAlignment = 0.9;
+  constexpr double kMaxOtherAlignment = 0.2;
 
-  dGeomSetPosition(cylinder1, 0.0, 0.0, 0.0);
-  dGeomSetPosition(cylinder2, 0.75, 0.0, 0.0);
+  bool cylinderCylinderOk = false;
+  {
+    dGeomID cylinder1 = dCreateCylinder(0, 1.0, 1.0);
+    dGeomID cylinder2 = dCreateCylinder(0, 0.5, 1.0);
 
-  dContactGeom contacts[4];
-  const int numContacts
-      = dCollide(cylinder1, cylinder2, 4, contacts, sizeof(contacts[0]));
+    dGeomSetPosition(cylinder1, 0.0, 0.0, 0.0);
+    dGeomSetPosition(cylinder2, 0.75, 0.0, 0.0);
 
-  dGeomDestroy(cylinder1);
-  dGeomDestroy(cylinder2);
+    dContactGeom contacts[4];
+    const int numContacts
+        = dCollide(cylinder1, cylinder2, 4, contacts, sizeof(contacts[0]));
 
-  return numContacts > 0;
+    cylinderCylinderOk = hasAlignedContactNormal(
+        contacts,
+        numContacts,
+        0,
+        kMinAxisAlignment,
+        kMaxOtherAlignment);
+
+    dGeomDestroy(cylinder1);
+    dGeomDestroy(cylinder2);
+  }
+
+  bool cylinderPlaneOk = false;
+  {
+    dGeomID cylinder = dCreateCylinder(0, 1.0, 1.0);
+    dGeomID plane = dCreatePlane(0, 0.0, 0.0, 1.0, 0.0);
+
+    dGeomSetPosition(cylinder, 0.0, 0.0, 0.4);
+
+    dContactGeom contacts[4];
+    const int numContacts
+        = dCollide(cylinder, plane, 4, contacts, sizeof(contacts[0]));
+
+    cylinderPlaneOk = hasAlignedContactNormal(
+        contacts,
+        numContacts,
+        2,
+        kMinAxisAlignment,
+        kMaxOtherAlignment);
+
+    dGeomDestroy(cylinder);
+    dGeomDestroy(plane);
+  }
+
+  bool cylinderPlaneRotatedOk = false;
+  {
+    dGeomID cylinder = dCreateCylinder(0, 1.0, 1.0);
+    dGeomID plane = dCreatePlane(0, 0.0, 0.0, 1.0, 0.0);
+    dQuaternion rotation;
+
+    dQFromAxisAndAngle(
+        rotation, 1.0, 0.0, 0.0, math::constantsd::half_pi());
+
+    dGeomSetQuaternion(cylinder, rotation);
+    dGeomSetPosition(cylinder, 0.0, 0.0, 0.5);
+
+    dContactGeom contacts[4];
+    const int numContacts
+        = dCollide(cylinder, plane, 4, contacts, sizeof(contacts[0]));
+
+    cylinderPlaneRotatedOk = hasAlignedContactNormal(
+        contacts,
+        numContacts,
+        2,
+        kMinAxisAlignment,
+        kMaxOtherAlignment);
+
+    dGeomDestroy(cylinder);
+    dGeomDestroy(plane);
+  }
+
+  return cylinderCylinderOk && cylinderPlaneOk && cylinderPlaneRotatedOk;
 }
 
 bool cylinderCollisionSupported()

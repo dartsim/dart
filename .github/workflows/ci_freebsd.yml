@@ -41,10 +41,8 @@ jobs:
         env:
           FREEBSD_VM_CPUS: "2"
           FREEBSD_VM_MEM: "4096"
+          FREEBSD_VM_BUILD_PARALLEL_LEVEL: "1"
           FREEBSD_VM_CTEST_TIMEOUT: "2400"
-          # TODO(JS): Re-enable once FreeBSD ForceDependentSlip tolerances
-          # are stabilized.
-          FREEBSD_VM_TEST_EXCLUDE_REGEX: "test_ForceDependentSlip"
         run: pixi run freebsd-test
 
       - name: Stop FreeBSD VM

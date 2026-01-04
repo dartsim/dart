@@ -52,6 +52,12 @@ SSH_OPTIONS = [
     "UserKnownHostsFile=/dev/null",
     "-o",
     "BatchMode=yes",
+    "-o",
+    "IdentitiesOnly=yes",
+    "-o",
+    "ServerAliveInterval=30",
+    "-o",
+    "ServerAliveCountMax=6",
 ]
 
 
@@ -413,16 +419,20 @@ def test_vm(args):
     else:
         build_targets = DEFAULT_BUILD_TARGETS
     build_targets_str = " ".join(build_targets)
+    build_parallel = env_default_int("FREEBSD_VM_BUILD_PARALLEL_LEVEL", 0)
     test_regex = os.getenv("FREEBSD_VM_TEST_REGEX", DEFAULT_TEST_REGEX).strip()
     exclude_regex = os.getenv("FREEBSD_VM_TEST_EXCLUDE_REGEX", "").strip()
     ctest_timeout = env_default_int(
         "FREEBSD_VM_CTEST_TIMEOUT",
         DEFAULT_CTEST_TIMEOUT,
     )
+    ctest_parallel = env_default_int("FREEBSD_VM_CTEST_PARALLEL_LEVEL", 0)
     stop_on_failure = os.getenv("FREEBSD_VM_CTEST_STOP_ON_FAILURE", "1").lower()
     stop_on_failure = stop_on_failure not in {"0", "false", "no"}
     extra_ctest_args = shlex.split(os.getenv("FREEBSD_VM_CTEST_ARGS", ""))
     ctest_args = ["--output-on-failure"]
+    if ctest_parallel > 0:
+        ctest_args.extend(["-j", str(ctest_parallel)])
     if exclude_regex:
         ctest_args.extend(["-E", exclude_regex])
     if ctest_timeout > 0:
@@ -439,10 +449,14 @@ def test_vm(args):
     else:
         test_command = f"ctest --test-dir {build_dir} {ctest_arg_str}"
 
+    build_command = f"cmake --build {build_dir} --target {build_targets_str}"
+    if build_parallel > 0:
+        build_command += f" --parallel {build_parallel}"
+
     command = (
         f"cd {remote_dir} && "
         f"cmake -G Ninja -S . -B {build_dir} {cmake_arg_str} && "
-        f"cmake --build {build_dir} --target {build_targets_str} && "
+        f"{build_command} && "
         f"{test_command}"
     )
     try:
