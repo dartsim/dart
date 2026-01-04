@@ -91,13 +91,15 @@ public:
   /// @brief Create a clone of this CollisionDetector. All the properties will
   /// be copied over, but not collision objects.
   virtual std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
-      const = 0;
+      const
+      = 0;
 
   /// Return collision detection engine type as a std::string.
   /// Note: kept for gz-physics compatibility; prefer getTypeView().
   [[deprecated(
       "Use getTypeView() for string_view access.")]] virtual const std::string&
-  getType() const = 0;
+  getType() const
+      = 0;
 
   // TODO(DART 8): Rename getTypeView() to getType() and drop the compatibility
   // string-returning overload.

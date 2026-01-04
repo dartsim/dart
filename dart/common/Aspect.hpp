@@ -165,11 +165,11 @@ protected:
   ClassName(const ClassName&) = delete;                                        \
   inline ClassName(const PropertiesData& properties = PropertiesData())        \
     : AspectWithVersionedProperties<                                           \
-        Base,                                                                  \
-        Derived,                                                               \
-        PropertiesData,                                                        \
-        CompositeType,                                                         \
-        UpdatePropertiesMacro>(properties)                                     \
+          Base,                                                                \
+          Derived,                                                             \
+          PropertiesData,                                                      \
+          CompositeType,                                                       \
+          UpdatePropertiesMacro>(properties)                                   \
   {                                                                            \
   }
 

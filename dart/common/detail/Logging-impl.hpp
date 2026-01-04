@@ -89,9 +89,8 @@ auto normalize(T&& arg)
   if constexpr (std::is_pointer_v<Decayed>) {
     using Pointee = std::remove_cv_t<std::remove_pointer_t<Decayed>>;
     if constexpr (
-        !std::is_same_v<
-            Pointee,
-            char> && !std::is_same_v<Pointee, signed char> && !std::is_same_v<Pointee, unsigned char>) {
+        !std::is_same_v<Pointee, char> && !std::is_same_v<Pointee, signed char>
+        && !std::is_same_v<Pointee, unsigned char>) {
       return fmt::ptr(arg);
     } else {
       return std::forward<T>(arg);
@@ -101,9 +100,8 @@ auto normalize(T&& arg)
         = std::remove_reference_t<decltype(std::declval<Decayed&>().get())>;
     using Pointee = std::remove_cv_t<std::remove_pointer_t<RawPointer>>;
     if constexpr (
-        !std::is_same_v<
-            Pointee,
-            char> && !std::is_same_v<Pointee, signed char> && !std::is_same_v<Pointee, unsigned char>) {
+        !std::is_same_v<Pointee, char> && !std::is_same_v<Pointee, signed char>
+        && !std::is_same_v<Pointee, unsigned char>) {
       return fmt::ptr(arg.get());
     } else {
       return std::forward<T>(arg);

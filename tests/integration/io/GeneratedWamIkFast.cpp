@@ -3961,8 +3961,9 @@ public:
                                                                      + (((-1.0)
                                                                          * (1.0)
                                                                          * pp)));
-                                                              if (IKabs(evalcond
-                                                                            [0])
+                                                              if (IKabs(
+                                                                      evalcond
+                                                                          [0])
                                                                       > IKFAST_EVALCOND_THRESH
                                                                   || IKabs(
                                                                          evalcond
@@ -4233,17 +4234,21 @@ public:
                                                                      * x730)));
                                                           if (IKabs(evalcond[0])
                                                                   > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [1])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [1])
                                                                      > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [2])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [2])
                                                                      > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [3])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [3])
                                                                      > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [4])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [4])
                                                                      > IKFAST_EVALCOND_THRESH) {
                                                             continue;
                                                           }
@@ -4660,8 +4665,9 @@ public:
                                                                              6.28318530717959)))))
                                                                      + (IKabs(
                                                                          pz)));
-                                                              if (IKabs(evalcond
-                                                                            [0])
+                                                              if (IKabs(
+                                                                      evalcond
+                                                                          [0])
                                                                   < 0.0000010000000000) {
                                                                 bgotonextstatement
                                                                     = false;
@@ -10078,8 +10084,9 @@ public:
                                                           evalcond[1] = pz;
                                                           if (IKabs(evalcond[0])
                                                                   < 0.0000010000000000
-                                                              && IKabs(evalcond
-                                                                           [1])
+                                                              && IKabs(
+                                                                     evalcond
+                                                                         [1])
                                                                      < 0.0000010000000000) {
                                                             bgotonextstatement
                                                                 = false;
@@ -11794,17 +11801,21 @@ public:
                                                                      * x1189)));
                                                           if (IKabs(evalcond[0])
                                                                   > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [1])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [1])
                                                                      > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [2])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [2])
                                                                      > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [3])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [3])
                                                                      > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [4])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [4])
                                                                      > IKFAST_EVALCOND_THRESH) {
                                                             continue;
                                                           }
@@ -12318,8 +12329,9 @@ public:
                                                           evalcond[1] = pz;
                                                           if (IKabs(evalcond[0])
                                                                   < 0.0000010000000000
-                                                              && IKabs(evalcond
-                                                                           [1])
+                                                              && IKabs(
+                                                                     evalcond
+                                                                         [1])
                                                                      < 0.0000010000000000) {
                                                             bgotonextstatement
                                                                 = false;
@@ -14962,8 +14974,9 @@ public:
                                                                      + (((-1.0)
                                                                          * (1.0)
                                                                          * pp)));
-                                                              if (IKabs(evalcond
-                                                                            [0])
+                                                              if (IKabs(
+                                                                      evalcond
+                                                                          [0])
                                                                       < 0.0000010000000000
                                                                   && IKabs(
                                                                          evalcond
@@ -16676,8 +16689,9 @@ public:
                                                                               (-3.14159265358979)
                                                                               + j8)))),
                                                                          6.28318530717959)));
-                                                              if (IKabs(evalcond
-                                                                            [0])
+                                                              if (IKabs(
+                                                                      evalcond
+                                                                          [0])
                                                                   < 0.0000010000000000) {
                                                                 bgotonextstatement
                                                                     = false;
@@ -19684,8 +19698,9 @@ public:
                                                                          * pp))
                                                                      + (((-0.09)
                                                                          * x1528)));
-                                                              if (IKabs(evalcond
-                                                                            [0])
+                                                              if (IKabs(
+                                                                      evalcond
+                                                                          [0])
                                                                       > IKFAST_EVALCOND_THRESH
                                                                   || IKabs(
                                                                          evalcond
@@ -19927,17 +19942,21 @@ public:
                                                                      * x1551)));
                                                           if (IKabs(evalcond[0])
                                                                   > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [1])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [1])
                                                                      > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [2])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [2])
                                                                      > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [3])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [3])
                                                                      > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [4])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [4])
                                                                      > IKFAST_EVALCOND_THRESH) {
                                                             continue;
                                                           }
@@ -20291,8 +20310,9 @@ public:
                                                                               (-1.5707963267949)
                                                                               + j8)))),
                                                                          6.28318530717959)));
-                                                              if (IKabs(evalcond
-                                                                            [0])
+                                                              if (IKabs(
+                                                                      evalcond
+                                                                          [0])
                                                                   < 0.0000010000000000) {
                                                                 bgotonextstatement
                                                                     = false;
@@ -33165,26 +33185,33 @@ public:
                                                                      * x358)));
                                                           if (IKabs(evalcond[0])
                                                                   > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [1])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [1])
                                                                      > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [2])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [2])
                                                                      > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [3])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [3])
                                                                      > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [4])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [4])
                                                                      > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [5])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [5])
                                                                      > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [6])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [6])
                                                                      > IKFAST_EVALCOND_THRESH
-                                                              || IKabs(evalcond
-                                                                           [7])
+                                                              || IKabs(
+                                                                     evalcond
+                                                                         [7])
                                                                      > IKFAST_EVALCOND_THRESH) {
                                                             continue;
                                                           }

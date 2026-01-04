@@ -69,16 +69,17 @@ inline std::vector<LcpFixture> getStandardBoxedFixtures()
     const Eigen::Vector2d xStar(0.5, 0.25);
     const Eigen::Vector2d b = A * xStar;
 
-    fixtures.push_back(LcpFixture{
-        "standard_2d_spd",
-        dart::math::LcpProblem(
-            A,
-            b,
-            Eigen::Vector2d::Zero(),
-            Eigen::Vector2d::Constant(kInf),
-            Eigen::Vector2i::Constant(-1)),
-        xStar,
-        LcpFixtureKind::Standard});
+    fixtures.push_back(
+        LcpFixture{
+            "standard_2d_spd",
+            dart::math::LcpProblem(
+                A,
+                b,
+                Eigen::Vector2d::Zero(),
+                Eigen::Vector2d::Constant(kInf),
+                Eigen::Vector2i::Constant(-1)),
+            xStar,
+            LcpFixtureKind::Standard});
   }
 
   {
@@ -94,11 +95,12 @@ inline std::vector<LcpFixture> getStandardBoxedFixtures()
     w << 0.0, -0.3;
     const Eigen::Vector2d b = A * xStar - w;
 
-    fixtures.push_back(LcpFixture{
-        "boxed_active_upper",
-        dart::math::LcpProblem(A, b, lo, hi, Eigen::Vector2i::Constant(-1)),
-        xStar,
-        LcpFixtureKind::Boxed});
+    fixtures.push_back(
+        LcpFixture{
+            "boxed_active_upper",
+            dart::math::LcpProblem(A, b, lo, hi, Eigen::Vector2i::Constant(-1)),
+            xStar,
+            LcpFixtureKind::Boxed});
   }
 
   {
@@ -114,11 +116,12 @@ inline std::vector<LcpFixture> getStandardBoxedFixtures()
     w << -0.1, 0.2, 0.0;
     const Eigen::Vector3d b = A * xStar - w;
 
-    fixtures.push_back(LcpFixture{
-        "boxed_mixed_bounds",
-        dart::math::LcpProblem(A, b, lo, hi, Eigen::Vector3i::Constant(-1)),
-        xStar,
-        LcpFixtureKind::Boxed});
+    fixtures.push_back(
+        LcpFixture{
+            "boxed_mixed_bounds",
+            dart::math::LcpProblem(A, b, lo, hi, Eigen::Vector3i::Constant(-1)),
+            xStar,
+            LcpFixtureKind::Boxed});
   }
 
   return fixtures;
@@ -144,11 +147,12 @@ inline std::vector<LcpFixture> getFrictionIndexFixtures()
     Eigen::Vector3i findex;
     findex << -1, 0, 0;
 
-    fixtures.push_back(LcpFixture{
-        "findex_single_contact_interior",
-        dart::math::LcpProblem(A, b, lo, hi, findex),
-        xStar,
-        LcpFixtureKind::BoxedFriction});
+    fixtures.push_back(
+        LcpFixture{
+            "findex_single_contact_interior",
+            dart::math::LcpProblem(A, b, lo, hi, findex),
+            xStar,
+            LcpFixtureKind::BoxedFriction});
   }
 
   {
@@ -166,11 +170,12 @@ inline std::vector<LcpFixture> getFrictionIndexFixtures()
     Eigen::Vector3i findex;
     findex << -1, 0, 0;
 
-    fixtures.push_back(LcpFixture{
-        "findex_single_contact_at_bounds",
-        dart::math::LcpProblem(A, b, lo, hi, findex),
-        xStar,
-        LcpFixtureKind::BoxedFriction});
+    fixtures.push_back(
+        LcpFixture{
+            "findex_single_contact_at_bounds",
+            dart::math::LcpProblem(A, b, lo, hi, findex),
+            xStar,
+            LcpFixtureKind::BoxedFriction});
   }
 
   {
@@ -212,11 +217,12 @@ inline std::vector<LcpFixture> getFrictionIndexFixtures()
     hi[5] = mu2;
     findex[5] = 3;
 
-    fixtures.push_back(LcpFixture{
-        "findex_two_contacts_mixed",
-        dart::math::LcpProblem(A, b, lo, hi, findex),
-        xStar,
-        LcpFixtureKind::BoxedFriction});
+    fixtures.push_back(
+        LcpFixture{
+            "findex_two_contacts_mixed",
+            dart::math::LcpProblem(A, b, lo, hi, findex),
+            xStar,
+            LcpFixtureKind::BoxedFriction});
   }
 
   return fixtures;

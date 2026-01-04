@@ -79,7 +79,8 @@ public:
   virtual size_t toVector(
       const entt::registry& registry,
       std::vector<double>& vec,
-      size_t offset) const = 0;
+      size_t offset) const
+      = 0;
 
   /// Write vector data back to components
   /// @param registry ECS registry to modify
@@ -145,7 +146,7 @@ class FieldMapper : public ComponentMapper
 public:
   /// Constructor
   /// @param fieldPtr Pointer to member variable in component
-  FieldMapper(Field Component::*fieldPtr) : m_fieldPtr(fieldPtr) {}
+  FieldMapper(Field Component::* fieldPtr) : m_fieldPtr(fieldPtr) {}
 
   size_t toVector(
       const entt::registry& registry,
@@ -219,7 +220,7 @@ public:
   }
 
 private:
-  Field Component::*m_fieldPtr;
+  Field Component::* m_fieldPtr;
 };
 
 } // namespace dart::simulation::experimental

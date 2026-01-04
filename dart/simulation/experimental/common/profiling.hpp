@@ -187,7 +187,7 @@ private:
 
   #define DART_EXPERIMENTAL_PROFILE_SCOPE(name)                                \
     ::dart::simulation::experimental::common::ScopedTimer                      \
-        _dart_profile_timer##__LINE__(name)
+    _dart_profile_timer##__LINE__(name)
 
   #define DART_EXPERIMENTAL_PROFILE_FUNCTION()                                 \
     DART_EXPERIMENTAL_PROFILE_SCOPE(__PRETTY_FUNCTION__)
@@ -227,7 +227,7 @@ private:
     #define DART_EXPERIMENTAL_PROFILE_SCOPE_DUAL(name)                         \
       ZoneScopedN(name);                                                       \
       ::dart::simulation::experimental::common::ScopedTimer                    \
-          _dart_profile_timer##__LINE__(name)
+      _dart_profile_timer##__LINE__(name)
   #else
     #define DART_EXPERIMENTAL_PROFILE_SCOPE_DUAL(name)                         \
       DART_EXPERIMENTAL_PROFILE_SCOPE(name)

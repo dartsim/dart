@@ -805,17 +805,18 @@ int main(int argc, char* argv[])
   grid->setNumCells(20);
   viewer->addAttachment(grid);
 
-  viewer->getImGuiHandler()->addWidget(std::make_shared<FreeJointCasesWidget>(
-      viewer,
-      grid,
-      world,
-      cases,
-      numericDt,
-      simulationDt,
-      groundTruthModel,
-      sphericalInertia,
-      torqueFreeSubsteps,
-      guiScale));
+  viewer->getImGuiHandler()->addWidget(
+      std::make_shared<FreeJointCasesWidget>(
+          viewer,
+          grid,
+          world,
+          cases,
+          numericDt,
+          simulationDt,
+          groundTruthModel,
+          sphericalInertia,
+          torqueFreeSubsteps,
+          guiScale));
 
   viewer->setUpViewInWindow(0, 0, 1280, 720);
   viewer->getCameraManipulator()->setHomePosition(

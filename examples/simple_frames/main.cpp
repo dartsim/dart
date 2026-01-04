@@ -70,26 +70,31 @@ int main()
   myWorld->addSimpleFrame(F1);
 
   SimpleFramePtr A(new SimpleFrame(Frame::World(), "A"));
-  A->setShape(std::shared_ptr<Shape>(
-      new EllipsoidShape(Eigen::Vector3d(0.02, 0.02, 0.02))));
+  A->setShape(
+      std::shared_ptr<Shape>(
+          new EllipsoidShape(Eigen::Vector3d(0.02, 0.02, 0.02))));
   SimpleFrame A1(A.get(), "A1", F1->getTransform(A.get()));
-  A1.setShape(std::shared_ptr<Shape>(
-      new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))));
+  A1.setShape(
+      std::shared_ptr<Shape>(
+          new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))));
   SimpleFrame A2(A.get(), "A2", F2.getTransform(A.get()));
-  A2.setShape(std::shared_ptr<Shape>(
-      new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))));
+  A2.setShape(
+      std::shared_ptr<Shape>(
+          new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))));
   SimpleFrame A3(A.get(), "A3", F3.getTransform(A.get()));
-  A3.setShape(std::shared_ptr<Shape>(
-      new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))));
+  A3.setShape(
+      std::shared_ptr<Shape>(
+          new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))));
 
   myWorld->addSimpleFrame(A);
 
   SimpleFramePtr arrow(new SimpleFrame(Frame::World(), "arrow"));
-  arrow->setShape(std::shared_ptr<Shape>(new ArrowShape(
-      Eigen::Vector3d(0.1, -0.1, 0.0),
-      Eigen::Vector3d(0.1, 0.0, 0.0),
-      ArrowShape::Properties(0.002, 1.8),
-      Eigen::Vector4d(1.0, 0.5, 0.5, 1.0))));
+  arrow->setShape(
+      std::shared_ptr<Shape>(new ArrowShape(
+          Eigen::Vector3d(0.1, -0.1, 0.0),
+          Eigen::Vector3d(0.1, 0.0, 0.0),
+          ArrowShape::Properties(0.002, 1.8),
+          Eigen::Vector4d(1.0, 0.5, 0.5, 1.0))));
   myWorld->addSimpleFrame(arrow);
 
   // CAREFUL: For a Frame that gets added to the world to be

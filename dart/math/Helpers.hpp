@@ -269,9 +269,8 @@ isApprox(const T& lhs, const T& rhs, double abs_tol = 0.0, double rel_tol = 0.0)
 
 template <typename DerivedA, typename DerivedB>
 inline std::enable_if_t<
-    std::is_floating_point_v<
-        typename DerivedA::
-            Scalar> && std::is_floating_point_v<typename DerivedB::Scalar>,
+    std::is_floating_point_v<typename DerivedA::Scalar>
+        && std::is_floating_point_v<typename DerivedB::Scalar>,
     bool>
 isApprox(
     const Eigen::MatrixBase<DerivedA>& lhs,
@@ -294,9 +293,10 @@ isApprox(
 
 template <typename DerivedA, typename DerivedB>
 inline std::enable_if_t<
-    std::is_arithmetic_v<
-        typename DerivedA::
-            Scalar> && std::is_arithmetic_v<typename DerivedB::Scalar> && (!std::is_floating_point_v<typename DerivedA::Scalar> || !std::is_floating_point_v<typename DerivedB::Scalar>),
+    std::is_arithmetic_v<typename DerivedA::Scalar>
+        && std::is_arithmetic_v<typename DerivedB::Scalar>
+        && (!std::is_floating_point_v<typename DerivedA::Scalar>
+            || !std::is_floating_point_v<typename DerivedB::Scalar>),
     bool>
 isApprox(
     const Eigen::MatrixBase<DerivedA>& lhs,

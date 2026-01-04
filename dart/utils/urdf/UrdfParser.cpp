@@ -853,11 +853,12 @@ bool UrdfParser::createDartNodeProperties(
     J << _lk->inertial->ixx, _lk->inertial->ixy, _lk->inertial->ixz,
         _lk->inertial->ixy, _lk->inertial->iyy, _lk->inertial->iyz,
         _lk->inertial->ixz, _lk->inertial->iyz, _lk->inertial->izz;
-    Eigen::Matrix3d R(Eigen::Quaterniond(
-        origin.rotation.w,
-        origin.rotation.x,
-        origin.rotation.y,
-        origin.rotation.z));
+    Eigen::Matrix3d R(
+        Eigen::Quaterniond(
+            origin.rotation.w,
+            origin.rotation.x,
+            origin.rotation.y,
+            origin.rotation.z));
     J = R * J * R.transpose();
 
     node.mInertia.setMoment(

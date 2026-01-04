@@ -68,8 +68,10 @@ TEST(LCPTestProblems, randomIllFormedGeneration)
   for (size_t i = 0; i < problems.size(); ++i) {
     EXPECT_EQ(problems[i].dimension, dimensions[i]);
     EXPECT_FALSE(problems[i].isWellFormed());
-    EXPECT_TRUE(dart::test::hasIssue(
-        problems[i].issues, dart::test::LCPProblemIssue::NotPositiveDefinite));
+    EXPECT_TRUE(
+        dart::test::hasIssue(
+            problems[i].issues,
+            dart::test::LCPProblemIssue::NotPositiveDefinite));
 
     // Check that matrix is symmetric
     EXPECT_TRUE(problems[i].A.isApprox(problems[i].A.transpose(), 1e-10));

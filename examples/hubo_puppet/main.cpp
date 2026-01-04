@@ -308,12 +308,13 @@ public:
       double theta1 = atan2(ks1, kc1);
       testQ(WP) = theta1;
 
-      Eigen::Quaterniond Rlower = Eigen::Quaterniond(Eigen::AngleAxisd(
-                                      testQ(EP), Eigen::Vector3d::UnitY()))
-                                  * Eigen::Quaterniond(Eigen::AngleAxisd(
-                                      testQ(WY), Eigen::Vector3d::UnitZ()))
-                                  * Eigen::Quaterniond(Eigen::AngleAxisd(
-                                      testQ(WP), Eigen::Vector3d::UnitY()));
+      Eigen::Quaterniond Rlower
+          = Eigen::Quaterniond(
+                Eigen::AngleAxisd(testQ(EP), Eigen::Vector3d::UnitY()))
+            * Eigen::Quaterniond(
+                Eigen::AngleAxisd(testQ(WY), Eigen::Vector3d::UnitZ()))
+            * Eigen::Quaterniond(
+                Eigen::AngleAxisd(testQ(WP), Eigen::Vector3d::UnitY()));
 
       Eigen::Matrix3d Rupper = B.rotation() * Rlower.inverse().matrix();
 
