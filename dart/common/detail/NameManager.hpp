@@ -147,17 +147,16 @@ bool NameManager<T>::addName(const std::string& _name, const T& _obj)
 
 //==============================================================================
 template <class T>
-bool NameManager<T>::removeName(const std::string& _name)
+bool NameManager<T>::removeName(std::string_view name)
 {
   DART_ASSERT(mReverseMap.size() == mMap.size());
 
-  typename std::map<std::string, T>::iterator it = mMap.find(_name);
+  auto it = mMap.find(name);
 
   if (it == mMap.end())
     return false;
 
-  typename std::map<T, std::string>::iterator rit
-      = mReverseMap.find(it->second);
+  auto rit = mReverseMap.find(it->second);
 
   if (rit != mReverseMap.end())
     mReverseMap.erase(rit);
@@ -178,7 +177,7 @@ bool NameManager<T>::removeObject(const T& _obj)
   if (rit == mReverseMap.end())
     return false;
 
-  typename std::map<std::string, T>::iterator it = mMap.find(rit->second);
+  auto it = mMap.find(rit->second);
   if (it != mMap.end())
     mMap.erase(it);
 
@@ -205,9 +204,9 @@ void NameManager<T>::clear()
 
 //==============================================================================
 template <class T>
-bool NameManager<T>::hasName(const std::string& _name) const
+bool NameManager<T>::hasName(std::string_view name) const
 {
-  return mMap.contains(_name);
+  return mMap.contains(name);
 }
 
 //==============================================================================
@@ -226,9 +225,9 @@ std::size_t NameManager<T>::getCount() const
 
 //==============================================================================
 template <class T>
-T NameManager<T>::getObject(const std::string& _name) const
+T NameManager<T>::getObject(std::string_view name) const
 {
-  typename std::map<std::string, T>::const_iterator result = mMap.find(_name);
+  auto result = mMap.find(name);
 
   if (result != mMap.end())
     return result->second;
