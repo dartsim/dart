@@ -287,7 +287,8 @@ dynamics::SkeletonPtr UrdfParser::modelInterfaceToSkeleton(
   const std::vector<TransmissionInfo> empty;
   const auto& transmissions
       = (context != nullptr) ? context->mTransmissions : empty;
-  applyTransmissions(transmissions, model, skeleton);
+  applyTransmissions(
+      std::span<const TransmissionInfo>{transmissions}, model, skeleton);
 
   return skeleton;
 }
@@ -481,7 +482,7 @@ std::vector<UrdfParser::TransmissionInfo> UrdfParser::parseTransmissions(
 
 //==============================================================================
 void UrdfParser::applyTransmissions(
-    const std::vector<TransmissionInfo>& transmissions,
+    std::span<const TransmissionInfo> transmissions,
     const urdf::ModelInterface* model,
     dynamics::SkeletonPtr skel)
 {
