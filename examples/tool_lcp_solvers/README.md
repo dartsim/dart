@@ -1,4 +1,4 @@
-# Joint LCP Solvers (ImGui)
+# LCP Solvers Dashboard Example
 
 This example provides an ImGui-based dashboard for exploring DART's LCP solvers.
 It presents toy through real-world inspired LCP scenarios, exposes shared solver
@@ -43,14 +43,14 @@ comparisons consistent.
 ```bash
 # From the repo root
 pixi run config
-cmake --build build/default/cpp/Release --target joint_lcp_solvers
-build/default/cpp/Release/bin/joint_lcp_solvers
+cmake --build build/default/cpp/Release --target tool_lcp_solvers
+build/default/cpp/Release/bin/tool_lcp_solvers
 ```
 
 Optional:
 
 ```bash
-build/default/cpp/Release/bin/joint_lcp_solvers --gui-scale 1.2
+build/default/cpp/Release/bin/tool_lcp_solvers --gui-scale 1.2
 ```
 
 The window size scales with `--gui-scale` to keep the widgets readable.

@@ -21,6 +21,8 @@ _RENAMED_EXAMPLES = {
     "headless_simulation": "perf_headless_simulation",
     "hybrid_dynamics": "control_actuator_modes",
     "imgui": "viz_imgui",
+    "joint_lcp_solvers": "tool_lcp_solvers",
+    "lcp_solvers": "tool_lcp_solvers",
     "mixed_chain": "hybrid_mixed_chain",
     "operational_space_control": "control_operational_space",
     "polyhedron_visual": "viz_polyhedron_visual",

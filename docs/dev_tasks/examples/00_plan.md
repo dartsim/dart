@@ -71,6 +71,7 @@
   `--gui` flag.
 - Renamed Python `atlas_puppet` -> `ik_atlas`.
 - Moved `hybrid_dynamics` to Control and renamed it to `control_actuator_modes`.
+- Moved `joint_lcp_solvers` to Tools and renamed it to `tool_lcp_solvers`.
 
 ## Naming Prefix Plan
 
@@ -91,7 +92,6 @@
 - `free_joint_cases` -> `joint_free_cases`
 - `human_joint_limits` -> `joint_human_limits`
 - `joint_constraints` -> `joint_constraints` (no change)
-- `lcp_solvers` -> `joint_lcp_solvers`
 - `mimic_pendulums` -> `joint_mimic_pendulums`
 - `rigid_chain` -> `joint_chain`
 - `rigid_loop` -> `joint_loop`
@@ -141,6 +141,7 @@
 ### 09 Integration and Tools
 
 - `csv_logger` -> `tool_csv_logger`
+- `lcp_solvers` -> `tool_lcp_solvers`
 - `point_cloud` -> `tool_point_cloud`
 
 ## Current Suggestions (Pending Decisions)
@@ -159,7 +160,7 @@
 
 - `ik_analytic_wam`: huge and specialized; keeping implies full IKFast support.
 - `control_walking_humanoid`: large controller stack; niche feature surface.
-- `joint_lcp_solvers`: large solver diagnostics UI; keep only if this UI is
+- `tool_lcp_solvers`: large solver diagnostics UI; keep only if this UI is
   in-scope.
 - `joint_human_limits`: custom constraint implementation; advanced.
 - `joint_free_cases`: advanced validation demo.

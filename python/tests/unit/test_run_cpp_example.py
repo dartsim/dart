@@ -34,6 +34,8 @@ def run_cpp_example():
         ("heightmap", "collision_heightmap"),
         ("hybrid_dynamics", "control_actuator_modes"),
         ("imgui", "viz_imgui"),
+        ("joint_lcp_solvers", "tool_lcp_solvers"),
+        ("lcp_solvers", "tool_lcp_solvers"),
         ("mixed_chain", "hybrid_mixed_chain"),
         ("operational_space_control", "control_operational_space"),
         ("point_cloud", "tool_point_cloud"),

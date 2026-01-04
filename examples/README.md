@@ -25,7 +25,6 @@
 - `joint_free_cases`
 - `joint_human_limits`
 - `joint_constraints`
-- `joint_lcp_solvers`
 - `joint_mimic_pendulums`
 - `joint_chain`
 - `joint_loop`
@@ -75,6 +74,7 @@
 ### 09 Integration and Tools
 
 - `tool_csv_logger`
+- `tool_lcp_solvers`
 - `tool_point_cloud` (requires OctoMap)
 
 ## Build Each Example
