@@ -52,13 +52,13 @@ add_subdirectory(viz_polyhedron_visual)
 add_subdirectory(viz_raylib)
 add_subdirectory(viz_simulation_event_handler)
 add_subdirectory(viz_tinkertoy)
+if(DART_HAVE_OCTOMAP)
+  add_subdirectory(viz_point_cloud)
+endif()
 
 # Performance and scaling examples
 add_subdirectory(perf_headless_simulation)
 
 # Integration and tools examples
-if(DART_HAVE_OCTOMAP)
-  add_subdirectory(tool_point_cloud)
-endif()
 add_subdirectory(tool_csv_logger)
 add_subdirectory(tool_lcp_solvers)

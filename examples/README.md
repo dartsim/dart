@@ -66,6 +66,7 @@
 - `viz_raylib`
 - `viz_simulation_event_handler`
 - `viz_tinkertoy`
+- `viz_point_cloud` (requires OctoMap)
 
 ### 08 Performance and Scaling
 
@@ -75,7 +76,6 @@
 
 - `tool_csv_logger`
 - `tool_lcp_solvers`
-- `tool_point_cloud` (requires OctoMap)
 
 ## Build Each Example
 

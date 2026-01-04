@@ -66,7 +66,7 @@
 - Renamed visualization and interaction examples to the `viz_*` prefix.
 - Renamed Python visualization examples to `viz_drag_and_drop` and `viz_imgui`.
 - Renamed `headless_simulation` -> `perf_headless_simulation`.
-- Renamed `csv_logger` -> `tool_csv_logger` and `point_cloud` -> `tool_point_cloud`.
+- Renamed `csv_logger` -> `tool_csv_logger` and `point_cloud` -> `viz_point_cloud`.
 - Merged Python `hello_world` and `hello_world_gui` into one example with a
   `--gui` flag.
 - Renamed Python `atlas_puppet` -> `ik_atlas`.
@@ -133,6 +133,7 @@
 - `raylib` -> `viz_raylib`
 - `simulation_event_handler` -> `viz_simulation_event_handler`
 - `tinkertoy` -> `viz_tinkertoy`
+- `point_cloud` -> `viz_point_cloud`
 
 ### 08 Performance and Scaling
 
@@ -142,7 +143,6 @@
 
 - `csv_logger` -> `tool_csv_logger`
 - `lcp_solvers` -> `tool_lcp_solvers`
-- `point_cloud` -> `tool_point_cloud`
 
 ## Current Suggestions (Pending Decisions)
 
@@ -165,4 +165,4 @@
 - `joint_human_limits`: custom constraint implementation; advanced.
 - `joint_free_cases`: advanced validation demo.
 - `viz_tinkertoy`: large interactive builder.
-- `tool_point_cloud`: OctoMap-dependent; keep only if that integration is in-scope.
+- `viz_point_cloud`: OctoMap-dependent; keep only if that integration is in-scope.

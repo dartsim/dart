@@ -1,4 +1,4 @@
-# Point Cloud Example
+# Point Cloud Visualization Example
 
 ## Summary
 
