@@ -101,14 +101,6 @@ def write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img, user):
                 f"      - {pub_key}",
             ]
         )
-    lines += [
-        "write_files:",
-        "  - path: /root/.ssh/authorized_keys",
-        "    owner: root:wheel",
-        "    permissions: '0600'",
-        "    content: |",
-        f"      {pub_key}",
-    ]
     lines.append("")
     user_data.write_text("\n".join(lines))
     meta_data.write_text(
@@ -132,6 +124,7 @@ def main():
     mem = getenv_int("FREEBSD_VM_MEM", 4096)
     disk_size = os.getenv("FREEBSD_VM_DISK_SIZE", DEFAULT_DISK_SIZE)
     serial_log = os.getenv("FREEBSD_VM_SERIAL_LOG", str(vm_dir / "serial.log"))
+    use_kvm = os.getenv("FREEBSD_VM_USE_KVM", "1").lower() not in {"0", "false", "no"}
 
     vm_dir.mkdir(parents=True, exist_ok=True)
 
@@ -151,7 +144,7 @@ def main():
     write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img, user)
 
     cmd = ["qemu-system-x86_64"]
-    if Path("/dev/kvm").exists():
+    if use_kvm and Path("/dev/kvm").exists():
         cmd.append("-enable-kvm")
     cmd += [
         "-m",
