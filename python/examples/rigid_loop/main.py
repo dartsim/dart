@@ -14,7 +14,7 @@ class MyWorldNode(dart.gui.RealTimeWorldNode):
 
 
 def main():
-    world = dart.utils.SkelParser.readWorld("dart://sample/skel/chain.skel")
+    world = dart.io.SkelParser.readWorld("dart://sample/skel/chain.skel")
     world.setGravity([0, -9.81, 0])
     world.setTimeStep(1.0 / 2000)
 
@@ -41,7 +41,7 @@ def main():
 
     offset = [0, 0.025, 0]
     joint_pos = bd1.getTransform().multiply(offset)
-    constraint = dart.constraint.BallJointConstraint(bd1, bd2, joint_pos)
+    constraint = dart.BallJointConstraint(bd1, bd2, joint_pos)
     constraint_solver = world.getConstraintSolver()
     constraint_solver.addConstraint(constraint)
 

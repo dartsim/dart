@@ -9,6 +9,7 @@ This file is a pointer board for agents working in this repository. Keep it conc
 - Coding standards, formatting, and contribution flow are in `CONTRIBUTING.md`.
 - Feature‑specific notes belong beside the code (e.g., README in the component directory) or in `docs/`.
 - Unified model loading API (`dart::io`) is documented in `docs/onboarding/io-parsing.md`.
+- Python bindings (`dartpy`) guidance is in `docs/onboarding/python-bindings.md`.
 
 ## Daily Reminders
 

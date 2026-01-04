@@ -14,8 +14,8 @@ class HelloWorldNode(dart.gui.RealTimeWorldNode):
 
         tf = self.ee.getTransform()
         tf.pretranslate(self.ee_offset)
-        self.target = dart.dynamics.SimpleFrame(
-            dart.dynamics.Frame.World(), "target", tf
+        self.target = dart.SimpleFrame(
+            dart.Frame.World(), "target", tf
         )
 
     def customPreStep(self):
@@ -53,9 +53,9 @@ class HelloWorldNode(dart.gui.RealTimeWorldNode):
 
 
 def main():
-    world = dart.simulation.World()
+    world = dart.World()
 
-    urdfParser = dart.utils.UrdfParser()
+    urdfParser = dart.io.UrdfParser()
     kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     ground = urdfParser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf")
     world.addSkeleton(kr5)
