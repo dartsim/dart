@@ -161,6 +161,16 @@ void defOptimizerSolver(nb::module_& m)
           "getResultFileName",
           &Solver::getResultFileName,
           nb::rv_policy::reference_internal);
+
+  m.def(
+      "_getSolverType",
+      [](const Solver* solver) -> std::string_view {
+        if (!solver) {
+          return "nullptr";
+        }
+        return solver->getType();
+      },
+      nb::arg("solver"));
 }
 
 } // namespace dart::python_nb
