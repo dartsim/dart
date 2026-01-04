@@ -107,11 +107,12 @@ int main()
   myWorld->addSimpleFrame(A);
 
   auto arrow = std::make_shared<SimpleFrame>(Frame::World(), "arrow");
-  arrow->setShape(std::make_shared<ArrowShape>(
-      Eigen::Vector3d(0.1, -0.1, 0.0),
-      Eigen::Vector3d(0.1, 0.0, 0.0),
-      ArrowShape::Properties(0.002, 1.8),
-      Eigen::Vector4d(1.0, 0.5, 0.5, 1.0)));
+  arrow->setShape(
+      std::make_shared<ArrowShape>(
+          Eigen::Vector3d(0.1, -0.1, 0.0),
+          Eigen::Vector3d(0.1, 0.0, 0.0),
+          ArrowShape::Properties(0.002, 1.8),
+          Eigen::Vector4d(1.0, 0.5, 0.5, 1.0)));
   arrow->getVisualAspect(true)->setColor(Eigen::Vector3d(1.0, 0.5, 0.5));
   myWorld->addSimpleFrame(arrow);
 
