@@ -2,7 +2,7 @@
 
 ## Status
 
-- In progress: finalize Python alignment after the naming pass.
+- In progress: review keep/drop candidates after the naming pass.
 - Next: confirm the keep/drop list for removal candidates and apply removals or
   merges.
 - Completed: removed `rerun` placeholder example (no sources).
