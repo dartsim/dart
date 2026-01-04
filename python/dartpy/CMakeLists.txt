@@ -137,6 +137,8 @@ set(dartpy_headers
   dynamics/inverse_kinematics.hpp
   dynamics/skeleton.hpp
   collision/module.hpp
+  collision/collision_object.hpp
+  collision/contact.hpp
   collision/collision_option.hpp
   collision/collision_result.hpp
   collision/raycast.hpp
@@ -146,6 +148,7 @@ set(dartpy_headers
   simulation/world.hpp
   simulation/constraint_solver.hpp
   constraint/module.hpp
+  constraint/contact_manifold_cache_options.hpp
   constraint/constraint_base.hpp
   constraint/dynamic_joint_constraint.hpp
   constraint/joint_constraint.hpp
@@ -213,6 +216,8 @@ set(dartpy_sources
   dynamics/inverse_kinematics.cpp
   dynamics/skeleton.cpp
   collision/module.cpp
+  collision/collision_object.cpp
+  collision/contact.cpp
   collision/collision_option.cpp
   collision/collision_result.cpp
   collision/raycast.cpp
@@ -222,6 +227,7 @@ set(dartpy_sources
   simulation/world.cpp
   simulation/constraint_solver.cpp
   constraint/module.cpp
+  constraint/contact_manifold_cache_options.cpp
   constraint/constraint_base.cpp
   constraint/dynamic_joint_constraint.cpp
   constraint/joint_constraint.cpp

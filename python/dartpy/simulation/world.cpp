@@ -5,6 +5,7 @@
 #include "common/type_casters.hpp"
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
+#include "dart/collision/Contact.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -179,6 +180,13 @@ void defWorld(nb::module_& m)
             return self.getLastCollisionResult();
           },
           nb::rv_policy::reference_internal)
+      .def(
+          "getContactsUsedForConstraints",
+          [](const World& self) {
+            std::vector<dart::collision::Contact> contacts;
+            self.getContactsUsedForConstraints(contacts);
+            return contacts;
+          })
       .def("reset", &World::reset)
       .def(
           "step",

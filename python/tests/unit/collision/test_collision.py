@@ -54,6 +54,9 @@ def collision_groups_tester(cd):
     assert not group.collide()
 
     option = dart.CollisionOption()
+    assert option.use_backend_contact_history is True
+    option.use_backend_contact_history = False
+    assert option.use_backend_contact_history is False
 
     result = group.collide_result(option)
     assert not result.is_collision()

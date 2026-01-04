@@ -80,5 +80,44 @@ def test_revolute_joint_constraint():
     assert np.dot(axis1, axis2) > 0.2
 
 
+def test_contact_manifold_cache_options():
+    world = dart.World("world")
+    solver = world.get_constraint_solver()
+
+    options = dart.ContactManifoldCacheOptions()
+    options.enabled = True
+    options.max_points_per_pair = 2
+    options.max_pairs = 8
+    options.max_separation_frames = 1
+    options.position_threshold = 1e-3
+    options.normal_threshold = 0.9
+    options.depth_epsilon = 1e-5
+
+    solver.set_contact_manifold_cache_options(options)
+    assert solver.is_contact_manifold_cache_enabled()
+
+    readback = solver.get_contact_manifold_cache_options()
+    assert readback.enabled is True
+    assert readback.max_points_per_pair == 2
+    assert readback.max_pairs == 8
+    assert readback.max_separation_frames == 1
+    assert readback.position_threshold == pytest.approx(1e-3)
+    assert readback.normal_threshold == pytest.approx(0.9)
+    assert readback.depth_epsilon == pytest.approx(1e-5)
+
+    assert solver.get_num_persistent_contacts() == 0
+    assert solver.get_num_contact_manifolds() == 0
+    assert solver.get_num_contact_constraints() == 0
+    assert solver.get_num_soft_contact_constraints() == 0
+    assert solver.get_contacts_used_for_constraints() == []
+
+    contact = dart.Contact()
+    contact.point = np.array([0.0, 0.0, 0.0])
+    contact.normal = np.array([0.0, 1.0, 0.0])
+    contact.force = np.array([0.0, 0.0, 0.0])
+    contact.penetration_depth = 0.1
+    assert dart.Contact.is_non_zero_normal(np.array([0.0, 1.0, 0.0]))
+
+
 if __name__ == "__main__":
     pytest.main()

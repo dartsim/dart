@@ -41,5 +41,11 @@ def test_collision_detector_change():
         )
 
 
+def test_contacts_used_for_constraints():
+    world = dart.World("world")
+    contacts = world.get_contacts_used_for_constraints()
+    assert isinstance(contacts, list)
+
+
 if __name__ == "__main__":
     pytest.main()

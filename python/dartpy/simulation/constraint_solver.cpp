@@ -4,9 +4,11 @@
 #include "collision/collision_option.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/ContactManifoldCache.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/vector.h>
 
 namespace nb = nanobind;
 
@@ -35,6 +37,39 @@ void defConstraintSolver(nb::module_& m)
             return self.getCollisionOption();
           },
           nb::rv_policy::reference_internal)
+      .def(
+          "setContactManifoldCacheOptions",
+          &ConstraintSolver::setContactManifoldCacheOptions,
+          nb::arg("options"))
+      .def(
+          "getContactManifoldCacheOptions",
+          [](const ConstraintSolver& self) {
+            return self.getContactManifoldCacheOptions();
+          })
+      .def(
+          "setContactManifoldCacheEnabled",
+          &ConstraintSolver::setContactManifoldCacheEnabled,
+          nb::arg("enabled"))
+      .def(
+          "isContactManifoldCacheEnabled",
+          &ConstraintSolver::isContactManifoldCacheEnabled)
+      .def(
+          "getNumPersistentContacts",
+          &ConstraintSolver::getNumPersistentContacts)
+      .def("getNumContactManifolds", &ConstraintSolver::getNumContactManifolds)
+      .def(
+          "getNumContactConstraints",
+          &ConstraintSolver::getNumContactConstraints)
+      .def(
+          "getNumSoftContactConstraints",
+          &ConstraintSolver::getNumSoftContactConstraints)
+      .def(
+          "getContactsUsedForConstraints",
+          [](const ConstraintSolver& self) {
+            std::vector<dart::collision::Contact> contacts;
+            self.getContactsUsedForConstraints(contacts);
+            return contacts;
+          })
       .def(
           "addConstraint",
           [](ConstraintSolver& self,

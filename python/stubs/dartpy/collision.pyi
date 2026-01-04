@@ -181,6 +181,7 @@ class CollisionOption:
     collisionFilter: CollisionFilter
     enableContact: bool
     maxNumContacts: int
+    useBackendContactHistory: bool
     @typing.overload
     def __init__(self) -> None:
         ...
@@ -195,6 +196,9 @@ class CollisionOption:
         ...
     @typing.overload
     def __init__(self, enableContact: bool, maxNumContacts: int, collisionFilter: CollisionFilter, allowNegativePenetrationDepthContacts: bool) -> None:
+        ...
+    @typing.overload
+    def __init__(self, enableContact: bool, maxNumContacts: int, collisionFilter: CollisionFilter, allowNegativePenetrationDepthContacts: bool, useBackendContactHistory: bool) -> None:
         ...
 class CollisionResult:
     def __init__(self) -> None:

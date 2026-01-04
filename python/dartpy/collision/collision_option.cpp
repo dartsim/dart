@@ -43,16 +43,21 @@ void defCollisionOption(nb::module_& m)
               bool,
               std::size_t,
               const std::shared_ptr<CollisionFilter>&,
+              bool,
               bool>(),
           nb::arg("enable_contact") = true,
           nb::arg("max_num_contacts") = 1000u,
           nb::arg("collision_filter") = nullptr,
-          nb::arg("allow_negative_penetration_depth_contacts") = false)
+          nb::arg("allow_negative_penetration_depth_contacts") = false,
+          nb::arg("use_backend_contact_history") = true)
       .def_rw("enableContact", &CollisionOption::enableContact)
       .def_rw("maxNumContacts", &CollisionOption::maxNumContacts)
       .def_rw(
           "allowNegativePenetrationDepthContacts",
           &CollisionOption::allowNegativePenetrationDepthContacts)
+      .def_rw(
+          "useBackendContactHistory",
+          &CollisionOption::useBackendContactHistory)
       .def_rw("collisionFilter", &CollisionOption::collisionFilter)
       .def("__repr__", [](const CollisionOption& self) {
         std::vector<std::pair<std::string, std::string>> fields;
@@ -62,6 +67,9 @@ void defCollisionOption(nb::module_& m)
         fields.emplace_back(
             "allow_negative_penetration_depth_contacts",
             repr_bool(self.allowNegativePenetrationDepthContacts));
+        fields.emplace_back(
+            "use_backend_contact_history",
+            repr_bool(self.useBackendContactHistory));
         fields.emplace_back(
             "has_filter", self.collisionFilter ? "True" : "False");
         return format_repr("CollisionOption", fields);
