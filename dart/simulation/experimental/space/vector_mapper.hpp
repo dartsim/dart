@@ -40,6 +40,7 @@
 #include <entt/entt.hpp>
 
 #include <memory>
+#include <span>
 #include <vector>
 
 namespace dart::simulation::experimental {
@@ -70,7 +71,7 @@ namespace dart::simulation::experimental {
 /// vec[0] += 0.1;
 ///
 /// // Write back
-/// mapper.fromVector(registry, vec);
+/// mapper.fromVector(registry, std::span<const double>(vec));
 /// ```
 class DART_EXPERIMENTAL_API VectorMapper
 {
@@ -113,8 +114,8 @@ public:
 
   /// Write vector to ECS state
   /// @param registry ECS registry to modify
-  /// @param vec Input vector
-  void fromVector(entt::registry& registry, const std::vector<double>& vec);
+  /// @param vec Input vector view
+  void fromVector(entt::registry& registry, std::span<const double> vec);
 
   /// Write Eigen vector to ECS state
   /// @param registry ECS registry to modify
