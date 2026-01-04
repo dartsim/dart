@@ -8,49 +8,49 @@ platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 
 [dependencies]
 assimp = ">=5.4.3,<6"
-benchmark = ">=1.9.3,<2"
-black = ">=25.1.0,<26"
+benchmark = ">=1.9.4,<2"
+black = ">=25.12.0,<26"
 bullet-cpp = ">=3.25,<4"
 clang-format = ">=21.1.7,<22"
-cli11 = ">=2.4.2,<3"
-cmake = ">=4.0.2,<5"
+cli11 = ">=2.6.0,<3"
+cmake = ">=4.2.1,<5"
 codespell = ">=2.4.1,<3"
 console_bridge = ">=1.0.2,<2"
 doxygen = ">=1.13.2,<2"
 eigen = ">=3.4.0,<4"
-entt = ">=3.14.0,<4"
+entt = ">=3.16.0,<4"
 fcl = ">=0.7.0,<0.8"
-fmt = ">=11.1.4,<12"
+fmt = ">=11.2.0,<13"
 gtest = ">=1.17.0,<2"
-imgui = ">=1.91.9,<2"
-isort = ">=6.0.1,<7"
-jinja2 = ">=3.1.2"
-libboost-devel = ">=1.86.0,<2"
-libode = ">=0.16.5,<0.17"
+imgui = ">=1.92.3,<2"
+isort = ">=7.0.0,<8"
+jinja2 = ">=3.1.6,<4"
+libboost-devel = ">=1.88.0,<2"
+libode = ">=0.16.6,<0.17"
 libsdformat = ">=16.0.0,<17"
-myst-parser = "*"
-nanobind = ">=2.9.2"
-ninja = ">=1.12.1,<2"
-numpy = ">=2.2.5,<3"
+myst-parser = ">=4.0.1,<5"
+nanobind = ">=2.10.2,<3"
+ninja = ">=1.13.2,<2"
+numpy = ">=2.4.0,<3"
 octomap = ">=1.10.0,<2"
 openscenegraph = ">=3.6.5,<4"
-pip = ">=25.1.1,<26"
-pipx = ">=1.7.1,<2"
+pip = ">=25.3,<26"
+pipx = ">=1.8.0,<2"
 pkg-config = ">=0.29.2,<0.30"
-prettier = ">=3.4.2,<4"
-pytest = ">=8.3.5,<9"
-scikit-build-core = ">=0.10"
-sccache = ">=0.8.1,<0.9"
-setuptools = ">=80.1.0,<81"
+prettier = ">=3.7.4,<4"
+pytest = ">=9.0.2,<10"
+scikit-build-core = ">=0.11.6,<0.12"
+sccache = ">=0.12.0,<0.13"
+setuptools = ">=80.9.0,<81"
 spdlog = ">=1.15.3,<2"
-sphinx = "*"
-sphinx-lint = "*"
-sphinx-copybutton = "*"
-sphinx-intl = "*"
-sphinx-tabs = "*"
-sphinx_rtd_theme = "*"
-taplo = ">=0.9.3,<1"
-taskflow = ">=3.10.0,<4"
+sphinx = ">=8.2.3,<9"
+sphinx-lint = ">=1.0.2,<2"
+sphinx-copybutton = ">=0.5.2,<0.6"
+sphinx-intl = ">=2.3.2,<3"
+sphinx-tabs = ">=3.4.1,<4"
+sphinx_rtd_theme = ">=3.0.2,<4"
+taplo = ">=0.10.0,<0.11"
+taskflow = ">=4.0.0,<5"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
 
@@ -1274,21 +1274,21 @@ ctest \
 
 [target.linux-64.dependencies]
 lcov = ">=1.16,<2"
-mesalib = ">=24"
-libglvnd = ">=1.7"
-libgl-devel = ">=1.7"
-libglu = ">=9.0"
-tracy-profiler-client = ">=0.11.1,<0.12"
+mesalib = ">=25.0.5,<26"
+libglvnd = ">=1.7.0,<2"
+libgl-devel = ">=1.7.0,<2"
+libglu = ">=9.0.3,<10"
+tracy-profiler-client = ">=0.12.2,<0.13"
 tracy-profiler-gui = ">=0.11.1,<0.12"
-vulkan-headers = ">=1.2,<2"
+vulkan-headers = ">=1.3.231.1,<2"
 
 ################################################################################
 # osx-64
 ################################################################################
 
 [target.osx-64.dependencies]
-git = ">=2.40.0"
-tracy-profiler-client = ">=0.11.1,<0.12"
+git = ">=2.52.0,<3"
+tracy-profiler-client = ">=0.12.2,<0.13"
 tracy-profiler-gui = ">=0.11.1,<0.12"
 
 [target.osx-64.tasks]
@@ -1328,8 +1328,8 @@ install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on =
 ################################################################################
 
 [target.osx-arm64.dependencies]
-git = ">=2.40.0"
-tracy-profiler-client = ">=0.11.1,<0.12"
+git = ">=2.52.0,<3"
+tracy-profiler-client = ">=0.12.2,<0.13"
 tracy-profiler-gui = ">=0.11.1,<0.12"
 
 [target.osx-arm64.tasks]
@@ -1371,8 +1371,8 @@ install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on =
 [target.win-64.dependencies]
 # Note: Vulkan packages are not available in conda-forge for Windows
 # System imgui that requires Vulkan will automatically fallback to fetching imgui from GitHub
-tracy-profiler-client = ">=0.11.1,<0.12"
-tracy-profiler-gui = ">=0.11.1,<0.12"
+tracy-profiler-client = ">=0.12.2,<0.13"
+tracy-profiler-gui = ">=0.12.2,<0.13"
 
 [target.win-64.tasks]
 # Note: DART_MSVC_FORCE_RELEASE_RUNTIME defaults to ON, which forces /MD for all
@@ -1727,17 +1727,17 @@ DART_BUILD_COLLISION_BULLET_OVERRIDE = "ON"
 DART_BUILD_COLLISION_ODE_OVERRIDE = "ON"
 
 [feature.gazebo.dependencies]
-git = ">=1"
-libgz-cmake = ">=5.0.0"
-libgz-plugin = ">=4.0.0"
-libgz-math = ">=9.0.0"
-libgz-common = ">=7.0.0"
-libgz-utils = ">=4.0.0"
-libsdformat = ">=16.0.0"
-eigen = ">=3.4.0"
-assimp = ">=5.4.3"
-libode = ">=0.16.2"
-bullet-cpp = ">=3.25"
+git = ">=2.52.0,<3"
+libgz-cmake = ">=5.0.0,<6"
+libgz-plugin = ">=4.0.0,<5"
+libgz-math = ">=9.0.0,<10"
+libgz-common = ">=7.0.0,<8"
+libgz-utils = ">=4.0.0,<5"
+libsdformat = ">=16.0.0,<17"
+eigen = ">=3.4.0,<4"
+assimp = ">=5.4.3,<6"
+libode = ">=0.16.6,<0.17"
+bullet-cpp = ">=3.25,<4"
 
 [feature.gazebo.tasks]
 download-gz = { cmd = """
@@ -1867,45 +1867,45 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
 [feature.py312-wheel.dependencies]
 python = "3.12.*"
-pip = ">=25"
-scikit-build-core = ">=0.10"
-nanobind = ">=2.4.0"
-cmake = ">=4.0"
-ninja = ">=1.12"
+pip = ">=25.3,<26"
+scikit-build-core = ">=0.11.6,<0.12"
+nanobind = ">=2.10.2,<3"
+cmake = ">=4.2.1,<5"
+ninja = ">=1.13.2,<2"
 assimp = ">=5.4.3,<6"
 bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fcl = ">=0.7.0,<0.8"
-fmt = ">=11.1.4,<12"
-imgui = ">=1.91.9,<2"
-libboost-devel = ">=1.86.0,<2"
+fmt = ">=12.0.0,<13"
+imgui = ">=1.92.3,<2"
+libboost-devel = ">=1.88.0,<2"
 octomap = ">=1.10.0,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
-numpy = ">=2"
+numpy = ">=2.4.0,<3"
 # Testing and publishing
-uv = ">=0.5"
-twine = ">=6.0"
+uv = ">=0.9.21,<0.10"
+twine = ">=6.2.0,<7"
 
 [feature.py312-wheel.target.linux-64.dependencies]
 openscenegraph = ">=3.6.5,<4"
-auditwheel = ">=6.0"
-patchelf = ">=0.17"
-mesalib = ">=24"
-libglvnd = ">=1.7"
+auditwheel = ">=6.5.1,<7"
+patchelf = ">=0.17.2,<0.18"
+mesalib = ">=25.0.5,<26"
+libglvnd = ">=1.7.0,<2"
 
 [feature.py312-wheel.target.osx-64.dependencies]
 openscenegraph = ">=3.6.5,<4"
-delocate = ">=0.11.0"
+delocate = ">=0.13.0,<0.14"
 
 [feature.py312-wheel.target.osx-arm64.dependencies]
 openscenegraph = ">=3.6.5,<4"
-delocate = ">=0.11.0"
+delocate = ">=0.13.0,<0.14"
 
 [feature.py312-wheel.target.win-64.dependencies]
 openscenegraph = ">=3.6.5,<4"
-delvewheel = ">=1.8.1"
+delvewheel = ">=1.11.2,<2"
 
 [feature.py312-wheel.target.linux-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }
@@ -1995,33 +1995,33 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
 [feature.py313-wheel.dependencies]
 python = "3.13.*"
-pip = ">=25"
-scikit-build-core = ">=0.10"
-nanobind = ">=2.4.0"
-cmake = ">=4.0"
-ninja = ">=1.12"
+pip = ">=25.3,<26"
+scikit-build-core = ">=0.11.6,<0.12"
+nanobind = ">=2.10.2,<3"
+cmake = ">=4.2.1,<5"
+ninja = ">=1.13.2,<2"
 assimp = ">=5.4.3,<6"
 bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fcl = ">=0.7.0,<0.8"
-fmt = ">=11.1.4,<12"
-imgui = ">=1.91.9,<2"
-libboost-devel = ">=1.86.0,<2"
+fmt = ">=12.0.0,<13"
+imgui = ">=1.92.3,<2"
+libboost-devel = ">=1.88.0,<2"
 octomap = ">=1.10.0,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
-numpy = ">=2"
+numpy = ">=2.4.0,<3"
 # Testing and publishing
-uv = ">=0.5"
-twine = ">=6.0"
+uv = ">=0.9.21,<0.10"
+twine = ">=6.2.0,<7"
 
 [feature.py313-wheel.target.linux-64.dependencies]
 openscenegraph = ">=3.6.5,<4"
-auditwheel = ">=6.0"
-patchelf = ">=0.17"
-mesalib = ">=24"
-libglvnd = ">=1.7"
+auditwheel = ">=6.5.1,<7"
+patchelf = ">=0.17.2,<0.18"
+mesalib = ">=25.0.5,<26"
+libglvnd = ">=1.7.0,<2"
 
 [feature.py313-wheel.target.linux-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }
@@ -2035,7 +2035,7 @@ wheel-repair = { depends-on = [
 
 [feature.py313-wheel.target.osx-64.dependencies]
 openscenegraph = ">=3.6.5,<4"
-delocate = ">=0.11.0"
+delocate = ">=0.13.0,<0.14"
 
 [feature.py313-wheel.target.osx-64.tasks]
 wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
@@ -2050,7 +2050,7 @@ wheel-repair = { depends-on = [
 
 [feature.py313-wheel.target.win-64.dependencies]
 openscenegraph = ">=3.6.5,<4"
-delvewheel = ">=1.8.1"
+delvewheel = ">=1.11.2,<2"
 
 [feature.py313-wheel.target.win-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }
@@ -2100,7 +2100,7 @@ wheel-publish = { depends-on = [
 
 [feature.py313-wheel.target.osx-arm64.dependencies]
 openscenegraph = ">=3.6.5,<4"
-delocate = ">=0.11.0"
+delocate = ">=0.13.0,<0.14"
 
 [feature.py313-wheel.target.osx-arm64.tasks]
 wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
@@ -2123,33 +2123,33 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
 [feature.py314-wheel.dependencies]
 python = "3.14.*"
-pip = ">=25"
-scikit-build-core = ">=0.10"
-nanobind = ">=2.4.0"
-cmake = ">=4.0"
-ninja = ">=1.12"
+pip = ">=25.3,<26"
+scikit-build-core = ">=0.11.6,<0.12"
+nanobind = ">=2.10.2,<3"
+cmake = ">=4.2.1,<5"
+ninja = ">=1.13.2,<2"
 assimp = ">=5.4.3,<6"
 bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fcl = ">=0.7.0,<0.8"
-fmt = ">=11.1.4,<12"
-imgui = ">=1.91.9,<2"
-libboost-devel = ">=1.86.0,<2"
+fmt = ">=12.0.0,<13"
+imgui = ">=1.92.3,<2"
+libboost-devel = ">=1.88.0,<2"
 octomap = ">=1.10.0,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
-numpy = ">=2"
+numpy = ">=2.4.0,<3"
 # Testing and publishing
-uv = ">=0.5"
-twine = ">=6.0"
+uv = ">=0.9.21,<0.10"
+twine = ">=6.2.0,<7"
 
 [feature.py314-wheel.target.linux-64.dependencies]
 openscenegraph = ">=3.6.5,<4"
-auditwheel = ">=6.0"
-patchelf = ">=0.17"
-mesalib = ">=24"
-libglvnd = ">=1.7"
+auditwheel = ">=6.5.1,<7"
+patchelf = ">=0.17.2,<0.18"
+mesalib = ">=25.0.5,<26"
+libglvnd = ">=1.7.0,<2"
 
 [feature.py314-wheel.target.linux-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }
@@ -2163,15 +2163,15 @@ wheel-repair = { depends-on = [
 
 [feature.py314-wheel.target.osx-64.dependencies]
 openscenegraph = ">=3.6.5,<4"
-delocate = ">=0.11.0"
+delocate = ">=0.13.0,<0.14"
 
 [feature.py314-wheel.target.osx-arm64.dependencies]
 openscenegraph = ">=3.6.5,<4"
-delocate = ">=0.11.0"
+delocate = ">=0.13.0,<0.14"
 
 [feature.py314-wheel.target.win-64.dependencies]
 openscenegraph = ">=3.6.5,<4"
-delvewheel = ">=1.8.1"
+delvewheel = ">=1.11.2,<2"
 
 [feature.py314-wheel.target.win-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }
