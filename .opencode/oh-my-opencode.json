@@ -1,0 +1,72 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+  
+  // DART-specific agent configurations
+  "agents": {
+    "oracle": {
+      "model": "openai/gpt-5.2",
+      "context": "Robotics simulation architecture expert. Specializes in physics engines, template metaprogramming, and performance optimization for DART (Dynamic Animation and Robotics Toolkit)."
+    },
+    "librarian": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "context": "Robotics domain expert. Finds implementations in ROS, Gazebo, Drake, MuJoCo, and other robotics frameworks. Expert in URDF, SDF, MJCF formats and physics simulation patterns."
+    },
+    "explore": {
+      "model": "opencode/grok-code",
+      "context": "Fast codebase exploration for DART repository. Expert at navigating complex C++ template metaprogramming, Aspect system patterns, and cross-language C++/Python bindings."
+    },
+    "frontend-ui-ux-engineer": {
+      "model": "google/gemini-3-pro-high",
+      "context": "Creates beautiful documentation and tutorials for DART robotics toolkit. Expert at explaining complex physics concepts through visual examples."
+    }
+  },
+  
+  // Critical for DART development
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command", 
+            "command": "pixi run lint --check $FILE",
+            "description": "Check code quality after file changes"
+          },
+          {
+            "type": "command",
+            "command": "pixi run test --related $FILE",
+            "description": "Run relevant tests for changed files"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "physics|dynamics|collision",
+        "hooks": [
+          {
+            "type": "message",
+            "message": "Remember to run `pixi run -e gazebo test-gz` for physics-breaking changes",
+            "description": "Remind about Gazebo integration testing"
+          }
+        ]
+      }
+    ]
+  },
+  
+  // DART-specific settings
+  "google_auth": false,
+  "ralph_loop": { 
+    "enabled": true, 
+    "default_max_iterations": 50 
+  },
+  
+  // Disable noisy features for focused development
+  "disabled_hooks": ["startup-toast"],
+  
+  // Performance optimization for large codebase
+  "context_window_monitor": {
+    "enabled": true,
+    "warning_threshold": 0.7
+  }
+}
