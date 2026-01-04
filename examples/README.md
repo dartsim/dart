@@ -15,16 +15,13 @@
 ### 01 Rigid Bodies and Frames
 
 - `frame_hierarchy`
-- `rigid_boxes`
 - `rigid_hardcoded_design`
 - `rigid_cubes`
 
 ### 02 Joints and Constraints
 
-- `joint_coupler`
 - `joint_free_cases`
 - `joint_human_limits`
-- `joint_constraints`
 - `joint_mimic_pendulums`
 - `joint_chain`
 - `joint_loop`
@@ -63,8 +60,6 @@
 - `viz_empty`
 - `viz_imgui`
 - `viz_polyhedron_visual`
-- `viz_raylib`
-- `viz_simulation_event_handler`
 - `viz_tinkertoy`
 - `viz_point_cloud` (requires OctoMap)
 

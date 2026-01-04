@@ -72,6 +72,9 @@
 - Renamed Python `atlas_puppet` -> `ik_atlas`.
 - Moved `hybrid_dynamics` to Control and renamed it to `control_actuator_modes`.
 - Moved `joint_lcp_solvers` to Tools and renamed it to `tool_lcp_solvers`.
+- Removed `rigid_boxes`, `joint_coupler`, `joint_constraints`, and
+  `viz_simulation_event_handler`.
+- Removed `viz_raylib`.
 
 ## Naming Prefix Plan
 
@@ -82,16 +85,13 @@
 ### 01 Rigid Bodies and Frames
 
 - `simple_frames` -> `frame_hierarchy`
-- `boxes` -> `rigid_boxes`
 - `hardcoded_design` -> `rigid_hardcoded_design`
 - `rigid_cubes` -> `rigid_cubes` (no change)
 
 ### 02 Joints and Constraints
 
-- `coupler_constraint` -> `joint_coupler`
 - `free_joint_cases` -> `joint_free_cases`
 - `human_joint_limits` -> `joint_human_limits`
-- `joint_constraints` -> `joint_constraints` (no change)
 - `mimic_pendulums` -> `joint_mimic_pendulums`
 - `rigid_chain` -> `joint_chain`
 - `rigid_loop` -> `joint_loop`
@@ -130,8 +130,6 @@
 - `empty` -> `viz_empty`
 - `imgui` -> `viz_imgui`
 - `polyhedron_visual` -> `viz_polyhedron_visual`
-- `raylib` -> `viz_raylib`
-- `simulation_event_handler` -> `viz_simulation_event_handler`
 - `tinkertoy` -> `viz_tinkertoy`
 - `point_cloud` -> `viz_point_cloud`
 
@@ -148,13 +146,7 @@
 
 ### Strong Removals (redundant/experimental/placeholder)
 
-- `rigid_boxes`: redundant with `hello_world`/`rigid_cubes`, README notes
-  experimental, and it hard-codes Bullet.
-- `joint_coupler`: overlaps `joint_mimic_pendulums`; keep the latter.
-- `joint_constraints`: overlaps `control_balance_biped`; keep the latter.
-- `viz_simulation_event_handler`: very large, overlaps `viz_empty`,
-  `viz_drag_and_drop`, and `viz_add_delete_skels`.
-- `viz_raylib`: experimental backend example.
+None (all strong removal candidates applied).
 
 ### Likely Removals (tighten supported scope)
 

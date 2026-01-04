@@ -27,10 +27,7 @@ _RENAMED_EXAMPLES = {
     "operational_space_control": "control_operational_space",
     "polyhedron_visual": "viz_polyhedron_visual",
     "point_cloud": "viz_point_cloud",
-    "raylib": "viz_raylib",
-    "raylib_gui": "viz_raylib",
     "rigid_shapes": "collision_rigid_shapes",
-    "simulation_event_handler": "viz_simulation_event_handler",
     "csv_logger": "tool_csv_logger",
     "tinkertoy": "viz_tinkertoy",
     "tool_point_cloud": "viz_point_cloud",
@@ -111,56 +108,7 @@ def _print_example_list() -> None:
 
 
 def _resolve_build_and_binary(target: str) -> tuple[str, str]:
-    if target in {"viz_raylib", "dart_viz_raylib", "raylib", "dart_raylib"}:
-        return "dart_viz_raylib", "viz_raylib"
     return target, target
-
-
-def _cmake_cache_bool(build_dir: Path, option: str) -> bool | None:
-    cache_path = build_dir / "CMakeCache.txt"
-    if not cache_path.is_file():
-        return None
-
-    needle = f"{option}:BOOL="
-    with cache_path.open("r", encoding="utf-8", errors="ignore") as cache:
-        for line in cache:
-            if not line.startswith(needle):
-                continue
-            value = line.strip().split("=", maxsplit=1)[-1].upper()
-            if value in {"ON", "TRUE", "1"}:
-                return True
-            if value in {"OFF", "FALSE", "0"}:
-                return False
-            return None
-    return None
-
-
-def _ensure_target_requirements(
-    build_dir: Path, target: str, env: dict[str, str]
-) -> None:
-    if target not in {"viz_raylib", "dart_viz_raylib", "raylib", "dart_raylib"}:
-        return
-
-    enabled = _cmake_cache_bool(build_dir, "DART_BUILD_GUI_RAYLIB")
-    if enabled:
-        return
-
-    print(
-        "Enabling experimental Raylib backend (DART_BUILD_GUI_RAYLIB=ON) for this build...",
-        file=sys.stderr,
-    )
-    subprocess.run(
-        [
-            "cmake",
-            "-S",
-            ".",
-            "-B",
-            str(build_dir),
-            "-DDART_BUILD_GUI_RAYLIB=ON",
-        ],
-        check=True,
-        env=env,
-    )
 
 
 def ensure_build_exists(build_dir: Path, build_type: str) -> None:
@@ -187,8 +135,6 @@ def run(target: str, build_type: str, run_args: list[str]) -> int:
     env = os.environ.copy()
     env["BUILD_TYPE"] = build_type
     env["CMAKE_BUILD_DIR"] = str(build_dir)
-
-    _ensure_target_requirements(build_dir, build_target, env)
 
     subprocess.run(
         [
