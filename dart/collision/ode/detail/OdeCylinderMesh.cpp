@@ -156,8 +156,8 @@ void OdeCylinderMesh::buildMesh(
     const Eigen::Vector3d p4(
         radius * sinCache[i + 1], radius * cosCache[i + 1], zTop);
 
-    appendTriangle(centerBottom, p2, p1, mVertices, mNormals, mIndices);
-    appendTriangle(centerTop, p3, p4, mVertices, mNormals, mIndices);
+    appendTriangle(centerBottom, p1, p2, mVertices, mNormals, mIndices);
+    appendTriangle(centerTop, p4, p3, mVertices, mNormals, mIndices);
 
     for (int j = 0; j < stacks; ++j) {
       const double zLow = zBase + height * static_cast<double>(j) / stacks;
@@ -172,8 +172,8 @@ void OdeCylinderMesh::buildMesh(
       const Eigen::Vector3d s4(
           radius * sinCache[i + 1], radius * cosCache[i + 1], zHigh);
 
-      appendTriangle(s1, s2, s3, mVertices, mNormals, mIndices);
-      appendTriangle(s2, s4, s3, mVertices, mNormals, mIndices);
+      appendTriangle(s1, s3, s2, mVertices, mNormals, mIndices);
+      appendTriangle(s2, s3, s4, mVertices, mNormals, mIndices);
     }
   }
 }
