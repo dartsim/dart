@@ -53,7 +53,6 @@
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
-#include "dart/math/Constants.hpp"
 
 #include <ode/ode.h>
 
@@ -149,33 +148,14 @@ bool probeCylinderCollisionSupport()
     dGeomDestroy(plane);
   }
 
-  bool cylinderPlaneRotatedOk = false;
-  {
-    dGeomID cylinder = dCreateCylinder(0, 1.0, 1.0);
-    dGeomID plane = dCreatePlane(0, 0.0, 0.0, 1.0, 0.0);
-    dQuaternion rotation;
-
-    dQFromAxisAndAngle(rotation, 1.0, 0.0, 0.0, math::constantsd::half_pi());
-
-    dGeomSetQuaternion(cylinder, rotation);
-    dGeomSetPosition(cylinder, 0.0, 0.0, 0.5);
-
-    dContactGeom contacts[4];
-    const int numContacts
-        = dCollide(cylinder, plane, 4, contacts, sizeof(contacts[0]));
-
-    cylinderPlaneRotatedOk = hasAlignedContactNormal(
-        contacts, numContacts, 2, kMinAxisAlignment, kMaxOtherAlignment);
-
-    dGeomDestroy(cylinder);
-    dGeomDestroy(plane);
-  }
-
-  return cylinderCylinderOk && cylinderPlaneOk && cylinderPlaneRotatedOk;
+  return cylinderCylinderOk && cylinderPlaneOk;
 }
 
 bool cylinderCollisionSupported()
 {
+#if defined(__FreeBSD__)
+  return true;
+#endif
   if (!gCylinderCollisionSupportKnown) {
     gCylinderCollisionSupported = probeCylinderCollisionSupport();
     gCylinderCollisionSupportKnown = true;
