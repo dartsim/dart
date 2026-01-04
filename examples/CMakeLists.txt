@@ -36,8 +36,8 @@ add_subdirectory(control_vehicle)
 add_subdirectory(ik_analytic_wam)
 
 # IO and models examples
-add_subdirectory(unified_loading)
-add_subdirectory(fetch)
+add_subdirectory(io_unified_loading)
+add_subdirectory(model_fetch)
 
 # Soft and hybrid examples
 add_subdirectory(hybrid_dynamics)

@@ -60,6 +60,7 @@
 - Renamed joint/constraint examples to the `joint_*` prefix and updated the
   matching Python examples (`joint_chain`, `joint_loop`).
 - Renamed collision examples to the `collision_*` prefix.
+- Renamed `fetch` -> `model_fetch` and `unified_loading` -> `io_unified_loading`.
 
 ## Naming Prefix Plan
 

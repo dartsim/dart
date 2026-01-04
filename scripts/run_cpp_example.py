@@ -14,9 +14,11 @@ _RENAMED_EXAMPLES = {
     "box_stacking": "collision_box_stacking",
     "capsule_ground_contact": "collision_capsule_ground_contact",
     "heightmap": "collision_heightmap",
+    "fetch": "model_fetch",
     "operational_space_control": "control_operational_space",
     "raylib_gui": "raylib",
     "rigid_shapes": "collision_rigid_shapes",
+    "unified_loading": "io_unified_loading",
     "vehicle": "control_vehicle",
     "wam_ikfast": "ik_analytic_wam",
 }
