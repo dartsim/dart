@@ -188,26 +188,6 @@ std::optional<std::string> inferPackageNameFromPackageUri(
   return getLastPathSegment(packageUri);
 }
 
-void finalizeG1Options(
-    G1Options& options,
-    bool packageNameExplicit,
-    bool packageUriExplicit,
-    bool robotUriExplicit)
-{
-  if (packageNameExplicit)
-    return;
-
-  if (robotUriExplicit) {
-    if (auto robotName = inferPackageNameFromRobotUri(options.robotUri))
-      options.packageName = *robotName;
-  } else if (packageUriExplicit) {
-    if (auto packageName = inferPackageNameFromPackageUri(options.packageUri))
-      options.packageName = *packageName;
-  } else if (auto robotName = inferPackageNameFromRobotUri(options.robotUri)) {
-    options.packageName = *robotName;
-  }
-}
-
 ResourceRetrieverPtr createResourceRetriever(const G1Options& options)
 {
   auto local = std::make_shared<LocalResourceRetriever>();
@@ -348,6 +328,26 @@ void enableDragAndDrop(dart::gui::Viewer& viewer, const SkeletonPtr& robot)
 }
 
 } // namespace
+
+void finalizeG1Options(
+    G1Options& options,
+    bool packageNameExplicit,
+    bool packageUriExplicit,
+    bool robotUriExplicit)
+{
+  if (packageNameExplicit)
+    return;
+
+  if (robotUriExplicit) {
+    if (auto robotName = inferPackageNameFromRobotUri(options.robotUri))
+      options.packageName = *robotName;
+  } else if (packageUriExplicit) {
+    if (auto packageName = inferPackageNameFromPackageUri(options.packageUri))
+      options.packageName = *packageName;
+  } else if (auto robotName = inferPackageNameFromRobotUri(options.robotUri)) {
+    options.packageName = *robotName;
+  }
+}
 
 int runG1(const G1Options& options)
 {

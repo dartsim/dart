@@ -1473,4 +1473,5 @@ int runHubo()
   viewer.setCameraManipulator(viewer.getCameraManipulator());
 
   viewer.run();
+  return 0;
 }
