@@ -41,6 +41,7 @@
 #include <entt/entt.hpp>
 #include <gtest/gtest.h>
 
+#include <span>
 using namespace dart::simulation::experimental;
 using namespace dart::simulation::experimental::space;
 using namespace dart::simulation::experimental::comps;
@@ -240,7 +241,7 @@ TEST(AutoMapper, RoundTripMultipleFields)
   vec1[3] = 40.0;
 
   // Inject back
-  mapper.fromVector(registry, vec1);
+  mapper.fromVector(registry, std::span<const double>(vec1));
 
   // Verify
   const auto& modified = registry.get<JointState>(entity);
@@ -281,7 +282,7 @@ TEST(AutoMapper, NestedStructs)
   vec[0] = 10.0;
   vec[1] = 20.0;
   vec[2] = 30.0;
-  mapper.fromVector(registry, vec);
+  mapper.fromVector(registry, std::span<const double>(vec));
 
   // Verify
   const auto& modified = registry.get<NestedData>(entity);

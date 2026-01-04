@@ -35,6 +35,9 @@
 
 #include <gtest/gtest.h>
 
+#include <span>
+#include <vector>
+
 #include <cmath>
 
 using namespace dart::simulation::experimental;
@@ -96,7 +99,8 @@ TEST(StateSpace, MethodChaining)
 TEST(StateSpace, AddMultipleScalarsHelper)
 {
   StateSpace space;
-  space.addVariables({"x", "y", "z"}, -1.0, 1.0);
+  const std::vector<std::string> names = {"x", "y", "z"};
+  space.addVariables(std::span<const std::string>(names), -1.0, 1.0);
 
   EXPECT_EQ(space.getDimension(), 3);
   EXPECT_EQ(space.getNumVariables(), 3);

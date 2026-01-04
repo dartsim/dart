@@ -36,6 +36,7 @@
 #include <entt/entt.hpp>
 
 #include <functional>
+#include <span>
 #include <vector>
 
 namespace dart::simulation::experimental {
@@ -87,7 +88,7 @@ public:
   /// @param offset Starting offset in input vector
   /// @return Number of elements read
   virtual size_t fromVector(
-      entt::registry& registry, const std::vector<double>& vec, size_t offset)
+      entt::registry& registry, std::span<const double> vec, size_t offset)
       = 0;
 
   /// Get dimension (number of scalars) this mapper handles
@@ -120,7 +121,7 @@ public:
 
   size_t fromVector(
       entt::registry& registry,
-      const std::vector<double>& vec,
+      std::span<const double> vec,
       size_t offset) override
   {
     m_setValue(registry, vec[offset]);
@@ -181,7 +182,7 @@ public:
 
   size_t fromVector(
       entt::registry& registry,
-      const std::vector<double>& vec,
+      std::span<const double> vec,
       size_t offset) override
   {
     auto view = registry.view<Component>();

@@ -110,7 +110,7 @@ void VectorMapper::toEigen(
 }
 
 void VectorMapper::fromVector(
-    entt::registry& registry, const std::vector<double>& vec)
+    entt::registry& registry, std::span<const double> vec)
 {
   if (vec.size() < m_space.getDimension()) {
     throw std::invalid_argument(
@@ -151,7 +151,7 @@ void VectorMapper::fromEigen(
     temp[i] = vec[i];
   }
 
-  fromVector(registry, temp);
+  fromVector(registry, std::span<const double>(temp));
 }
 
 void VectorMapper::addMapper(

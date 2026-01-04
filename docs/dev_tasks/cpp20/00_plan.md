@@ -77,3 +77,10 @@
   `dart/math/detail/Convhull` and `computeConvexHull3D`, keeping vector returns.
 - Update call sites (Skeleton support polygon, TriMesh convex hull,
   PolyhedronVisual) and tests.
+
+### Phase 15: Simulation experimental spans
+
+- Replace read-only `const std::vector<double>&` inputs in simulation
+  experimental mappers with `std::span<const double>`.
+- Switch `StateSpace::addVariables` to `std::span<const std::string>`.
+- Update binary I/O helpers and tests to pass spans explicitly.
