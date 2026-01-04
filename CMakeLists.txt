@@ -636,7 +636,7 @@ if(TARGET dart)
 
     if(DART_BUILD_SIMULATION_EXPERIMENTAL)
       if(NOT EXISTS
-         "${CMAKE_CURRENT_SOURCE_DIR}/tests/simulation/experimental/CMakeLists.txt")
+         "${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/simulation/experimental/CMakeLists.txt")
         if(NOT TARGET dart_experimental_tests)
           add_custom_target(dart_experimental_tests)
         endif()
@@ -890,7 +890,7 @@ endif()
 
 find_program(
   CLANG_FORMAT_EXECUTABLE
-  NAMES clang-format-14
+  NAMES clang-format-21 clang-format
 )
 
 get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)

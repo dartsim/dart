@@ -40,6 +40,7 @@
 #include <boost/pfr.hpp>
 #include <entt/entt.hpp>
 
+#include <span>
 #include <type_traits>
 
 #include <cstddef>
@@ -60,10 +61,10 @@ size_t extractFieldToVector(
     vec[offset] = static_cast<double>(field);
     count = 1;
   } else if constexpr (
-      std::is_same_v<
-          FieldType,
-          Eigen::
-              Isometry3d> || std::is_base_of_v<Eigen::Transform<double, 3, Eigen::Isometry>, FieldType>) {
+      std::is_same_v<FieldType, Eigen::Isometry3d>
+      || std::is_base_of_v<
+          Eigen::Transform<double, 3, Eigen::Isometry>,
+          FieldType>) {
     // Extract translation (3) + rotation as quaternion (4)
     // Handle early to avoid confusion with other Eigen types
     auto translation = field.translation();
@@ -113,7 +114,7 @@ size_t extractFieldToVector(
 /// Automatically inject scalars from vector into a field
 template <typename Field>
 size_t injectVectorToField(
-    Field& field, const std::vector<double>& vec, size_t offset)
+    Field& field, std::span<const double> vec, size_t offset)
 {
   using FieldType = std::remove_cvref_t<Field>;
   size_t count = 0;
@@ -122,10 +123,10 @@ size_t injectVectorToField(
     field = static_cast<FieldType>(vec[offset]);
     count = 1;
   } else if constexpr (
-      std::is_same_v<
-          FieldType,
-          Eigen::
-              Isometry3d> || std::is_base_of_v<Eigen::Transform<double, 3, Eigen::Isometry>, FieldType>) {
+      std::is_same_v<FieldType, Eigen::Isometry3d>
+      || std::is_base_of_v<
+          Eigen::Transform<double, 3, Eigen::Isometry>,
+          FieldType>) {
     // Handle Isometry3d (before other Eigen types)
     Eigen::Vector3d translation(
         vec[offset + 0], vec[offset + 1], vec[offset + 2]);
@@ -230,7 +231,7 @@ public:
 
   size_t fromVector(
       entt::registry& registry,
-      const std::vector<double>& vec,
+      std::span<const double> vec,
       size_t offset) override
   {
     auto view = registry.view<Component>();

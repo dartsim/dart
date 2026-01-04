@@ -36,6 +36,7 @@
 #include <entt/entt.hpp>
 
 #include <functional>
+#include <span>
 #include <vector>
 
 namespace dart::simulation::experimental {
@@ -78,7 +79,8 @@ public:
   virtual size_t toVector(
       const entt::registry& registry,
       std::vector<double>& vec,
-      size_t offset) const = 0;
+      size_t offset) const
+      = 0;
 
   /// Write vector data back to components
   /// @param registry ECS registry to modify
@@ -86,7 +88,7 @@ public:
   /// @param offset Starting offset in input vector
   /// @return Number of elements read
   virtual size_t fromVector(
-      entt::registry& registry, const std::vector<double>& vec, size_t offset)
+      entt::registry& registry, std::span<const double> vec, size_t offset)
       = 0;
 
   /// Get dimension (number of scalars) this mapper handles
@@ -119,7 +121,7 @@ public:
 
   size_t fromVector(
       entt::registry& registry,
-      const std::vector<double>& vec,
+      std::span<const double> vec,
       size_t offset) override
   {
     m_setValue(registry, vec[offset]);
@@ -144,7 +146,7 @@ class FieldMapper : public ComponentMapper
 public:
   /// Constructor
   /// @param fieldPtr Pointer to member variable in component
-  FieldMapper(Field Component::*fieldPtr) : m_fieldPtr(fieldPtr) {}
+  FieldMapper(Field Component::* fieldPtr) : m_fieldPtr(fieldPtr) {}
 
   size_t toVector(
       const entt::registry& registry,
@@ -180,7 +182,7 @@ public:
 
   size_t fromVector(
       entt::registry& registry,
-      const std::vector<double>& vec,
+      std::span<const double> vec,
       size_t offset) override
   {
     auto view = registry.view<Component>();
@@ -218,7 +220,7 @@ public:
   }
 
 private:
-  Field Component::*m_fieldPtr;
+  Field Component::* m_fieldPtr;
 };
 
 } // namespace dart::simulation::experimental

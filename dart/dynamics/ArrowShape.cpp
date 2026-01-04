@@ -57,7 +57,7 @@ ArrowShape::Properties::Properties(
 //==============================================================================
 ArrowShape::ArrowShape()
   : MeshShape(
-      Eigen::Vector3d::Ones(), std::make_shared<math::TriMesh<double>>()),
+        Eigen::Vector3d::Ones(), std::make_shared<math::TriMesh<double>>()),
     mResolution(10)
 {
 }
@@ -70,7 +70,7 @@ ArrowShape::ArrowShape(
     const Eigen::Vector4d& _color,
     std::size_t _resolution)
   : MeshShape(
-      Eigen::Vector3d::Ones(), std::make_shared<math::TriMesh<double>>()),
+        Eigen::Vector3d::Ones(), std::make_shared<math::TriMesh<double>>()),
     mTail(_tail),
     mHead(_head),
     mProperties(_properties),
@@ -205,17 +205,18 @@ void ArrowShape::configureArrow(
   if (mProperties.mDoubleArrow) {
     // Tail cone vertices
     for (std::size_t i = 0; i < resolution; ++i) {
-      double theta = (double)(i) / (double)(resolution)*2.0 * pi;
+      double theta = (double)(i) / (double)(resolution) * 2.0 * pi;
       double x = mProperties.mRadius * cos(theta);
       double y = mProperties.mRadius * sin(theta);
 
       // Back of tail cone (at tip)
       mTriMesh->addVertex(Eigen::Vector3d(x, y, tailTipZ));
       // Base of tail cone
-      mTriMesh->addVertex(Eigen::Vector3d(
-          x * mProperties.mHeadRadiusScale,
-          y * mProperties.mHeadRadiusScale,
-          tailBaseZ));
+      mTriMesh->addVertex(
+          Eigen::Vector3d(
+              x * mProperties.mHeadRadiusScale,
+              y * mProperties.mHeadRadiusScale,
+              tailBaseZ));
     }
     // Tail tip vertex
     mTriMesh->addVertex(Eigen::Vector3d(0, 0, tailTipZ));
@@ -225,20 +226,23 @@ void ArrowShape::configureArrow(
       std::size_t next = (i + 1) % resolution;
 
       // Back face triangles
-      mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
-          vertexOffset + 2 * i,
-          vertexOffset + 2 * i + 1,
-          vertexOffset + 2 * next + 1));
-      mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
-          vertexOffset + 2 * i,
-          vertexOffset + 2 * next + 1,
-          vertexOffset + 2 * next));
+      mTriMesh->addTriangle(
+          math::TriMesh<double>::Triangle(
+              vertexOffset + 2 * i,
+              vertexOffset + 2 * i + 1,
+              vertexOffset + 2 * next + 1));
+      mTriMesh->addTriangle(
+          math::TriMesh<double>::Triangle(
+              vertexOffset + 2 * i,
+              vertexOffset + 2 * next + 1,
+              vertexOffset + 2 * next));
 
       // Cone tip triangles
-      mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
-          vertexOffset + 2 * i + 1,
-          vertexOffset + 2 * resolution,
-          vertexOffset + 2 * next + 1));
+      mTriMesh->addTriangle(
+          math::TriMesh<double>::Triangle(
+              vertexOffset + 2 * i + 1,
+              vertexOffset + 2 * resolution,
+              vertexOffset + 2 * next + 1));
     }
 
     vertexOffset += tailVertices;
@@ -246,7 +250,7 @@ void ArrowShape::configureArrow(
 
   // Generate body (cylinder)
   for (std::size_t i = 0; i < resolution; ++i) {
-    double theta = (double)(i) / (double)(resolution)*2.0 * pi;
+    double theta = (double)(i) / (double)(resolution) * 2.0 * pi;
     double x = mProperties.mRadius * cos(theta);
     double y = mProperties.mRadius * sin(theta);
 
@@ -258,31 +262,34 @@ void ArrowShape::configureArrow(
   for (std::size_t i = 0; i < resolution; ++i) {
     std::size_t next = (i + 1) % resolution;
 
-    mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
-        vertexOffset + 2 * i,
-        vertexOffset + 2 * next + 1,
-        vertexOffset + 2 * i + 1));
-    mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
-        vertexOffset + 2 * i,
-        vertexOffset + 2 * next,
-        vertexOffset + 2 * next + 1));
+    mTriMesh->addTriangle(
+        math::TriMesh<double>::Triangle(
+            vertexOffset + 2 * i,
+            vertexOffset + 2 * next + 1,
+            vertexOffset + 2 * i + 1));
+    mTriMesh->addTriangle(
+        math::TriMesh<double>::Triangle(
+            vertexOffset + 2 * i,
+            vertexOffset + 2 * next,
+            vertexOffset + 2 * next + 1));
   }
 
   vertexOffset += bodyVertices;
 
   // Generate head (cone)
   for (std::size_t i = 0; i < resolution; ++i) {
-    double theta = (double)(i) / (double)(resolution)*2.0 * pi;
+    double theta = (double)(i) / (double)(resolution) * 2.0 * pi;
     double x = mProperties.mRadius * cos(theta);
     double y = mProperties.mRadius * sin(theta);
 
     // Back of head cone
     mTriMesh->addVertex(Eigen::Vector3d(x, y, headBaseZ));
     // Head widened base
-    mTriMesh->addVertex(Eigen::Vector3d(
-        x * mProperties.mHeadRadiusScale,
-        y * mProperties.mHeadRadiusScale,
-        headBaseZ));
+    mTriMesh->addVertex(
+        Eigen::Vector3d(
+            x * mProperties.mHeadRadiusScale,
+            y * mProperties.mHeadRadiusScale,
+            headBaseZ));
   }
   // Head tip vertex
   mTriMesh->addVertex(Eigen::Vector3d(0, 0, headTipZ));
@@ -292,20 +299,23 @@ void ArrowShape::configureArrow(
     std::size_t next = (i + 1) % resolution;
 
     // Back face triangles
-    mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
-        vertexOffset + 2 * i,
-        vertexOffset + 2 * next + 1,
-        vertexOffset + 2 * i + 1));
-    mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
-        vertexOffset + 2 * i,
-        vertexOffset + 2 * next,
-        vertexOffset + 2 * next + 1));
+    mTriMesh->addTriangle(
+        math::TriMesh<double>::Triangle(
+            vertexOffset + 2 * i,
+            vertexOffset + 2 * next + 1,
+            vertexOffset + 2 * i + 1));
+    mTriMesh->addTriangle(
+        math::TriMesh<double>::Triangle(
+            vertexOffset + 2 * i,
+            vertexOffset + 2 * next,
+            vertexOffset + 2 * next + 1));
 
     // Cone tip triangles
-    mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
-        vertexOffset + 2 * i + 1,
-        vertexOffset + 2 * next + 1,
-        vertexOffset + 2 * resolution));
+    mTriMesh->addTriangle(
+        math::TriMesh<double>::Triangle(
+            vertexOffset + 2 * i + 1,
+            vertexOffset + 2 * next + 1,
+            vertexOffset + 2 * resolution));
   }
 
   // Apply transformation to orient arrow from tail to head

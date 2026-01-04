@@ -39,8 +39,24 @@
 # Dependencies are organized by category and found only once.
 #==============================================================================
 
+function(dart_experimental_enable_benchmark_target)
+  if(NOT DART_EXPERIMENTAL_BUILD_BENCHMARKS AND TARGET benchmark::benchmark)
+    if(DART_EXPERIMENTAL_DEPS_MISSING)
+      list(REMOVE_ITEM DART_EXPERIMENTAL_DEPS_MISSING benchmark)
+      set(DART_EXPERIMENTAL_DEPS_MISSING "${DART_EXPERIMENTAL_DEPS_MISSING}" CACHE INTERNAL "List of missing dependencies")
+    endif()
+    list(APPEND DART_EXPERIMENTAL_DEPS_FOUND benchmark)
+    set(DART_EXPERIMENTAL_DEPS_FOUND "${DART_EXPERIMENTAL_DEPS_FOUND}" CACHE INTERNAL "List of found dependencies")
+    set(DART_EXPERIMENTAL_BUILD_BENCHMARKS TRUE CACHE BOOL "benchmark available" FORCE)
+    if(DART_EXPERIMENTAL_VERBOSE)
+      message(STATUS "  ✓ benchmark (target already available)")
+    endif()
+  endif()
+endfunction()
+
 # Prevent multiple inclusion
 if(DART_EXPERIMENTAL_DEPENDENCIES_INCLUDED)
+  dart_experimental_enable_benchmark_target()
   return()
 endif()
 set(DART_EXPERIMENTAL_DEPENDENCIES_INCLUDED TRUE)
@@ -114,6 +130,7 @@ dart_experimental_find_package(
   QUIET
   SET_VAR DART_EXPERIMENTAL_BUILD_BENCHMARKS
 )
+dart_experimental_enable_benchmark_target()
 
 #==============================================================================
 # Python Dependencies (optional)

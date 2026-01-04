@@ -101,7 +101,7 @@ const BodyNode* ReferentialSkeleton::getBodyNode(std::size_t _idx) const
 }
 
 //==============================================================================
-BodyNode* ReferentialSkeleton::getBodyNode(const std::string& name)
+BodyNode* ReferentialSkeleton::getBodyNode(std::string_view name)
 {
   BodyNode* bodyNodeFound = nullptr;
 
@@ -125,7 +125,7 @@ BodyNode* ReferentialSkeleton::getBodyNode(const std::string& name)
 }
 
 //==============================================================================
-const BodyNode* ReferentialSkeleton::getBodyNode(const std::string& name) const
+const BodyNode* ReferentialSkeleton::getBodyNode(std::string_view name) const
 {
   return const_cast<ReferentialSkeleton*>(this)->getBodyNode(name);
 }
@@ -155,8 +155,7 @@ std::span<const BodyNode* const> ReferentialSkeleton::getBodyNodes() const
 }
 
 //==============================================================================
-std::vector<BodyNode*> ReferentialSkeleton::getBodyNodes(
-    const std::string& name)
+std::vector<BodyNode*> ReferentialSkeleton::getBodyNodes(std::string_view name)
 {
   std::vector<BodyNode*> bodyNodes;
 
@@ -170,7 +169,7 @@ std::vector<BodyNode*> ReferentialSkeleton::getBodyNodes(
 
 //==============================================================================
 std::vector<const BodyNode*> ReferentialSkeleton::getBodyNodes(
-    const std::string& name) const
+    std::string_view name) const
 {
   std::vector<const BodyNode*> bodyNodes;
 
@@ -238,7 +237,7 @@ const Joint* ReferentialSkeleton::getJoint(std::size_t _idx) const
 }
 
 //==============================================================================
-Joint* ReferentialSkeleton::getJoint(const std::string& name)
+Joint* ReferentialSkeleton::getJoint(std::string_view name)
 {
   Joint* jointFound = nullptr;
 
@@ -261,7 +260,7 @@ Joint* ReferentialSkeleton::getJoint(const std::string& name)
 }
 
 //==============================================================================
-const Joint* ReferentialSkeleton::getJoint(const std::string& name) const
+const Joint* ReferentialSkeleton::getJoint(std::string_view name) const
 {
   return const_cast<ReferentialSkeleton*>(this)->getJoint(name);
 }
@@ -288,7 +287,7 @@ std::vector<const Joint*> ReferentialSkeleton::getJoints() const
 
 //==============================================================================
 //==============================================================================
-std::vector<Joint*> ReferentialSkeleton::getJoints(const std::string& name)
+std::vector<Joint*> ReferentialSkeleton::getJoints(std::string_view name)
 {
   std::vector<Joint*> joints;
 
@@ -302,7 +301,7 @@ std::vector<Joint*> ReferentialSkeleton::getJoints(const std::string& name)
 
 //==============================================================================
 std::vector<const Joint*> ReferentialSkeleton::getJoints(
-    const std::string& name) const
+    std::string_view name) const
 {
   std::vector<const Joint*> joints;
 

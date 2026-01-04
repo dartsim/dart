@@ -327,7 +327,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
     // Generate vertices
     for (std::size_t j = 0; j < 2; ++j) {
       for (std::size_t i = 0; i < resolution; ++i) {
-        double theta = (double)(i) / (double)(resolution)*2 * pi;
+        double theta = (double)(i) / (double)(resolution) * 2 * pi;
 
         // Inner ring vertices
         double x = 0;
@@ -346,7 +346,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
     // Add back face vertices (duplicate of front, for proper rendering)
     for (std::size_t j = 0; j < 2; ++j) {
       for (std::size_t i = 0; i < resolution; ++i) {
-        double theta = (double)(i) / (double)(resolution)*2 * pi;
+        double theta = (double)(i) / (double)(resolution) * 2 * pi;
 
         // Inner ring vertices (back)
         double x = 0;
@@ -365,36 +365,46 @@ void InteractiveFrame::createStandardVisualizationShapes(
     // Generate triangles
     for (std::size_t i = 0; i < H; ++i) {
       // Front faces
-      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
-          8 * i, 8 * i + 2, (i + 1 < H) ? 8 * i + 6 : 2));
+      triMesh->addTriangle(
+          dart::math::TriMesh<double>::Triangle(
+              8 * i, 8 * i + 2, (i + 1 < H) ? 8 * i + 6 : 2));
 
-      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
-          8 * i, (i + 1 < H) ? 8 * i + 6 : 2, (i + 1 < H) ? 8 * i + 4 : 0));
+      triMesh->addTriangle(
+          dart::math::TriMesh<double>::Triangle(
+              8 * i, (i + 1 < H) ? 8 * i + 6 : 2, (i + 1 < H) ? 8 * i + 4 : 0));
 
-      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
-          8 * i + 5, 8 * i + 7, (i + 1 < H) ? 8 * i + 11 : 3));
+      triMesh->addTriangle(
+          dart::math::TriMesh<double>::Triangle(
+              8 * i + 5, 8 * i + 7, (i + 1 < H) ? 8 * i + 11 : 3));
 
-      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
-          8 * i + 5,
-          (i + 1 < H) ? 8 * i + 11 : 3,
-          (i + 1 < H) ? 8 * i + 9 : 1));
+      triMesh->addTriangle(
+          dart::math::TriMesh<double>::Triangle(
+              8 * i + 5,
+              (i + 1 < H) ? 8 * i + 11 : 3,
+              (i + 1 < H) ? 8 * i + 9 : 1));
 
       // Back faces
-      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
-          8 * i + R, (i + 1 < H) ? 8 * i + 6 + R : 2 + R, 8 * i + 2 + R));
+      triMesh->addTriangle(
+          dart::math::TriMesh<double>::Triangle(
+              8 * i + R, (i + 1 < H) ? 8 * i + 6 + R : 2 + R, 8 * i + 2 + R));
 
-      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
-          8 * i + R,
-          (i + 1 < H) ? 8 * i + 4 + R : 0,
-          (i + 1 < H) ? 8 * i + 6 + R : 2));
+      triMesh->addTriangle(
+          dart::math::TriMesh<double>::Triangle(
+              8 * i + R,
+              (i + 1 < H) ? 8 * i + 4 + R : 0,
+              (i + 1 < H) ? 8 * i + 6 + R : 2));
 
-      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
-          8 * i + 5 + R, (i + 1 < H) ? 8 * i + 11 + R : 3 + R, 8 * i + 7 + R));
+      triMesh->addTriangle(
+          dart::math::TriMesh<double>::Triangle(
+              8 * i + 5 + R,
+              (i + 1 < H) ? 8 * i + 11 + R : 3 + R,
+              8 * i + 7 + R));
 
-      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
-          8 * i + 5 + R,
-          (i + 1 < H) ? 8 * i + 9 + R : 1 + R,
-          (i + 1 < H) ? 8 * i + 11 + R : 3 + R));
+      triMesh->addTriangle(
+          dart::math::TriMesh<double>::Triangle(
+              8 * i + 5 + R,
+              (i + 1 < H) ? 8 * i + 9 + R : 1 + R,
+              (i + 1 < H) ? 8 * i + 11 + R : 3 + R));
     }
 
     std::shared_ptr<dart::dynamics::MeshShape> shape(

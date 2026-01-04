@@ -397,8 +397,9 @@ TEST(MetaSkeleton, Linkage)
   criteria.mTargets.clear();
   criteria.mStart = skel->getBodyNode("c3b1");
   criteria.mStart.mPolicy = Linkage::Criteria::UPSTREAM;
-  criteria.mTargets.push_back(Linkage::Criteria::Target(
-      skel->getBodyNode("c3b1(1)"), Linkage::Criteria::UPSTREAM));
+  criteria.mTargets.push_back(
+      Linkage::Criteria::Target(
+          skel->getBodyNode("c3b1(1)"), Linkage::Criteria::UPSTREAM));
 
   LinkagePtr combinedTreeBases = Linkage::create(criteria, "combinedTreeBases");
   checkForBodyNodes(
@@ -427,8 +428,9 @@ TEST(MetaSkeleton, Linkage)
 
   SkeletonPtr skel2 = skel->getBodyNode(0)->copyAs("skel2");
   criteria.mTargets.clear();
-  criteria.mTargets.push_back(Linkage::Criteria::Target(
-      skel2->getBodyNode("c3b1"), Linkage::Criteria::UPSTREAM));
+  criteria.mTargets.push_back(
+      Linkage::Criteria::Target(
+          skel2->getBodyNode("c3b1"), Linkage::Criteria::UPSTREAM));
   LinkagePtr combinedSkelBases = Linkage::create(criteria, "combinedSkelBases");
   std::size_t count = 0;
   count += checkForBodyNodes(

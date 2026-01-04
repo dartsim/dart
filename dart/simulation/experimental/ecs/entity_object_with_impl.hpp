@@ -48,9 +48,8 @@ EntityObjectWith<Tags, ReadOnly, WriteOnly, ReadWrite>::getReadOnly() const
 {
   // Can read from ReadOnly or ReadWrite components
   static_assert(
-      Contains_v<
-          Component,
-          ReadOnlyList> || Contains_v<Component, ReadWriteList>,
+      Contains_v<Component, ReadOnlyList>
+          || Contains_v<Component, ReadWriteList>,
       "Component not declared in ReadOnlyComps<> or ReadWriteComps<> for "
       "this class. "
       "Add it to one of these lists.");
@@ -69,9 +68,8 @@ Component& EntityObjectWith<Tags, ReadOnly, WriteOnly, ReadWrite>::getMutable()
 {
   // Can write to WriteOnly or ReadWrite components
   static_assert(
-      Contains_v<
-          Component,
-          WriteOnlyList> || Contains_v<Component, ReadWriteList>,
+      Contains_v<Component, WriteOnlyList>
+          || Contains_v<Component, ReadWriteList>,
       "Component not declared in WriteOnlyComps<> or ReadWriteComps<> for "
       "this class. "
       "Add it to one of these lists or use getReadOnly().");
@@ -91,9 +89,8 @@ EntityObjectWith<Tags, ReadOnly, WriteOnly, ReadWrite>::tryGetReadOnly() const
 {
   // Can read from ReadOnly or ReadWrite components
   static_assert(
-      Contains_v<
-          Component,
-          ReadOnlyList> || Contains_v<Component, ReadWriteList>,
+      Contains_v<Component, ReadOnlyList>
+          || Contains_v<Component, ReadWriteList>,
       "Component not declared in ReadOnlyComps<> or ReadWriteComps<> for "
       "this class. "
       "Add it to one of these lists.");
@@ -113,9 +110,8 @@ EntityObjectWith<Tags, ReadOnly, WriteOnly, ReadWrite>::tryGetMutable()
 {
   // Can write to WriteOnly or ReadWrite components
   static_assert(
-      Contains_v<
-          Component,
-          WriteOnlyList> || Contains_v<Component, ReadWriteList>,
+      Contains_v<Component, WriteOnlyList>
+          || Contains_v<Component, ReadWriteList>,
       "Component not declared in WriteOnlyComps<> or ReadWriteComps<> for "
       "this class. "
       "Add it to one of these lists or use tryGetReadOnly().");

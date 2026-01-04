@@ -37,6 +37,7 @@
 #include <entt/entt.hpp>
 #include <gtest/gtest.h>
 
+#include <span>
 using namespace dart::simulation::experimental;
 
 // Test component
@@ -71,7 +72,7 @@ public:
 
   size_t fromVector(
       entt::registry& registry,
-      const std::vector<double>& vec,
+      std::span<const double> vec,
       size_t offset) override
   {
     auto view = registry.view<Position>();
@@ -167,7 +168,7 @@ TEST(VectorMapper, RoundTripWithPositionMapper)
   }
 
   // Write back
-  mapper.fromVector(registry, vec2);
+  mapper.fromVector(registry, std::span<const double>(vec2));
 
   // Verify modifications - all values should be 10x original
   const auto& pos1 = registry.get<Position>(entity1);
@@ -335,7 +336,9 @@ TEST(VectorMapper, InputVectorTooSmall)
   entt::registry registry;
   std::vector<double> tooSmall(3); // Should be at least 5
 
-  EXPECT_THROW(mapper.fromVector(registry, tooSmall), std::invalid_argument);
+  EXPECT_THROW(
+      mapper.fromVector(registry, std::span<const double>(tooSmall)),
+      std::invalid_argument);
 }
 
 TEST(VectorMapper, NoMapperFillsZeros)

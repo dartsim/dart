@@ -109,7 +109,8 @@ public:
 
   /// Clone this HierarchicalIK module
   virtual std::shared_ptr<HierarchicalIK> clone(
-      const SkeletonPtr& _newSkel) const = 0;
+      const SkeletonPtr& _newSkel) const
+      = 0;
 
   /// This class should be inherited by math::Function classes that have a
   /// dependency on the HierarchicalIK module that they belong to. If you
@@ -123,7 +124,8 @@ public:
   public:
     /// Enable this function to be cloned to a new IK module.
     virtual math::FunctionPtr clone(
-        const std::shared_ptr<HierarchicalIK>& _newIK) const = 0;
+        const std::shared_ptr<HierarchicalIK>& _newIK) const
+        = 0;
 
     /// Virtual destructor
     virtual ~Function() = default;

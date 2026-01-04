@@ -50,7 +50,7 @@ namespace dart::simulation::experimental::io {
 //==============================================================================
 
 template <typename T>
-requires comps::HasComponentCategory<T>
+  requires comps::HasComponentCategory<T>
 class CategoryComponentSerializer : public TypedComponentSerializer<T>
 {
 public:
@@ -98,7 +98,7 @@ protected:
 //==============================================================================
 
 template <typename T>
-requires comps::HasComponentCategory<T>
+  requires comps::HasComponentCategory<T>
 void registerCategoryComponent()
 {
   if constexpr (T::serializable) {
