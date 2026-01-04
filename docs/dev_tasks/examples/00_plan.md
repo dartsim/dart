@@ -2,10 +2,9 @@
 
 ## Status
 
-- In progress: finish performance/tools renames and align remaining Python
-  examples.
-- Next: merge the Python hello world examples and update Python example
-  runners/docs.
+- In progress: finalize Python alignment after the naming pass.
+- Next: confirm the keep/drop list for removal candidates and apply removals or
+  merges.
 - Completed: removed `rerun` placeholder example (no sources).
 - Completed: removed `speed_test`; keep `perf_headless_simulation` as the
   headless
@@ -68,6 +67,9 @@
 - Renamed Python visualization examples to `viz_drag_and_drop` and `viz_imgui`.
 - Renamed `headless_simulation` -> `perf_headless_simulation`.
 - Renamed `csv_logger` -> `tool_csv_logger` and `point_cloud` -> `tool_point_cloud`.
+- Merged Python `hello_world` and `hello_world_gui` into one example with a
+  `--gui` flag.
+- Renamed Python `atlas_puppet` -> `ik_atlas`.
 
 ## Naming Prefix Plan
 
@@ -162,8 +164,3 @@
 - `joint_free_cases`: advanced validation demo.
 - `viz_tinkertoy`: large interactive builder.
 - `tool_point_cloud`: OctoMap-dependent; keep only if that integration is in-scope.
-
-### Python Merge
-
-- Merge `python/examples/hello_world` and `python/examples/hello_world_gui`
-  into one example with a GUI flag.

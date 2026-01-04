@@ -493,7 +493,7 @@ cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_IN
 py-ex = { cmd = [
   "python",
   "-c",
-  "import pathlib\nimport runpy\nimport sys\n\nroot = pathlib.Path(\"python/examples\")\nexample = \"{{ example }}\"\npath = root / example / \"main.py\"\nif not path.is_file():\n    print(f\"Example not found: {example}\", file=sys.stderr)\n    sys.exit(1)\nrunpy.run_path(str(path), run_name=\"__main__\")",
+  "import pathlib\nimport runpy\nimport sys\n\nroot = pathlib.Path(\"python/examples\")\nexample = \"{{ example }}\"\npath = root / example / \"main.py\"\nif not path.is_file():\n    print(f\"Example not found: {example}\", file=sys.stderr)\n    sys.exit(1)\nsys.argv = [str(path), *sys.argv[1:]]\nrunpy.run_path(str(path), run_name=\"__main__\")",
 ], depends-on = [
   "build-py-dev",
 ], args = [
@@ -503,12 +503,6 @@ py-ex = { cmd = [
 py-ex-hello-world = { depends-on = [
   { task = "py-ex", args = [
     "hello_world",
-  ] },
-] }
-
-py-ex-hello-world-gui = { depends-on = [
-  { task = "py-ex", args = [
-    "hello_world_gui",
   ] },
 ] }
 
@@ -601,11 +595,7 @@ py-tu-biped-fi = { depends-on = [
   ] },
 ] }
 
-py-ex-atlas-puppet = { depends-on = [
-  { task = "py-ex", args = [
-    "atlas_puppet",
-  ] },
-] }
+py-ex-ik-atlas = { depends-on = [{ task = "py-ex", args = ["ik_atlas"] }] }
 
 test = { cmd = [
   "bash",
@@ -808,9 +798,9 @@ run-cpp-target = { cmd = """
 
 ex = { cmd = "python scripts/run_cpp_example.py", depends-on = ["config"] }
 
-py-atlas-puppet = { cmd = """
+py-ik-atlas = { cmd = """
     PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PYTHONPATH \
-    python python/examples/atlas_puppet/main.py
+    python python/examples/ik_atlas/main.py
 """, depends-on = ["build"], env = { BUILD_TYPE = "Release" } }
 
 bm = { cmd = "python scripts/run_cpp_benchmark.py", depends-on = ["config"] }

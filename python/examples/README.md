@@ -10,8 +10,7 @@
 
 ### 00 Getting Started
 
-- `hello_world`
-- `hello_world_gui`
+- `hello_world` (use `--gui` to launch the viewer)
 
 ### 01 Rigid Bodies and Frames
 
@@ -28,7 +27,7 @@
 
 ### 04 Control and IK
 
-- `atlas_puppet`
+- `ik_atlas`
 - `control_balance_biped`
 - `control_operational_space`
 
@@ -45,8 +44,11 @@ documented in `docs/onboarding/building.md` when available.
 For example:
 
     $ pixi run py-ex hello_world
+    $ pixi run py-ex hello_world -- --gui
 
 Or, without pixi:
 
     $ PYTHONPATH=build/<env>/cpp/<build_type>/python \
       python python/examples/hello_world/main.py
+    $ PYTHONPATH=build/<env>/cpp/<build_type>/python \
+      python python/examples/hello_world/main.py --gui
