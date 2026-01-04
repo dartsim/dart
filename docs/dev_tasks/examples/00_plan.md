@@ -62,6 +62,8 @@
 - Renamed collision examples to the `collision_*` prefix.
 - Renamed `fetch` -> `model_fetch` and `unified_loading` -> `io_unified_loading`.
 - Renamed `mixed_chain` -> `hybrid_mixed_chain`.
+- Renamed visualization and interaction examples to the `viz_*` prefix.
+- Renamed Python visualization examples to `viz_drag_and_drop` and `viz_imgui`.
 
 ## Naming Prefix Plan
 
@@ -138,22 +140,23 @@
 
 ### Strong Removals (redundant/experimental/placeholder)
 
-- `boxes`: redundant with `hello_world`/`rigid_cubes`, README notes experimental,
-  and it hard-codes Bullet.
-- `coupler_constraint`: overlaps `mimic_pendulums`; keep the latter.
+- `rigid_boxes`: redundant with `hello_world`/`rigid_cubes`, README notes
+  experimental, and it hard-codes Bullet.
+- `joint_coupler`: overlaps `joint_mimic_pendulums`; keep the latter.
 - `joint_constraints`: overlaps `control_balance_biped`; keep the latter.
-- `simulation_event_handler`: very large, overlaps `empty`, `drag_and_drop`,
-  and `add_delete_skels`.
-- `raylib`: experimental backend example.
+- `viz_simulation_event_handler`: very large, overlaps `viz_empty`,
+  `viz_drag_and_drop`, and `viz_add_delete_skels`.
+- `viz_raylib`: experimental backend example.
 
 ### Likely Removals (tighten supported scope)
 
 - `ik_analytic_wam`: huge and specialized; keeping implies full IKFast support.
 - `control_walking_humanoid`: large controller stack; niche feature surface.
-- `lcp_solvers`: large solver diagnostics UI; keep only if this UI is in-scope.
-- `human_joint_limits`: custom constraint implementation; advanced.
-- `free_joint_cases`: advanced validation demo.
-- `tinkertoy`: large interactive builder.
+- `joint_lcp_solvers`: large solver diagnostics UI; keep only if this UI is
+  in-scope.
+- `joint_human_limits`: custom constraint implementation; advanced.
+- `joint_free_cases`: advanced validation demo.
+- `viz_tinkertoy`: large interactive builder.
 - `point_cloud`: OctoMap-dependent; keep only if that integration is in-scope.
 
 ### Python Merge

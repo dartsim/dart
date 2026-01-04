@@ -538,9 +538,9 @@ py-ex-collision-pointcloud = { depends-on = [
   ] },
 ] }
 
-py-ex-drag-and-drop = { depends-on = [
+py-ex-viz-drag-and-drop = { depends-on = [
   { task = "py-ex", args = [
-    "drag_and_drop",
+    "viz_drag_and_drop",
   ] },
 ] }
 

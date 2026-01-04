@@ -11,14 +11,14 @@ drive the UI from Python code while DART owns the Dear ImGui rendering loop.
 ## Run
 
 ```bash
-pixi run py-ex imgui_python
+pixi run py-ex viz_imgui
 ```
 
 Or, without pixi:
 
 ```bash
 PYTHONPATH=build/<env>/cpp/<build_type>/python \
-python python/examples/imgui_python/main.py
+python python/examples/viz_imgui/main.py
 ```
 
 You should see a small ImGui overlay with play/pause and gravity controls rendered on top of the viewer.

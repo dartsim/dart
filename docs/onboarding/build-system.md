@@ -659,7 +659,7 @@ pixi run tu-dominoes     # Run dominoes tutorial
 ```bash
 pixi run py-ex-hello-world      # Python hello world
 pixi run py-ex-rigid-cubes      # Python rigid cubes
-pixi run py-ex-drag-and-drop    # Python drag and drop
+pixi run py-ex-viz-drag-and-drop # Python drag and drop
 pixi run py-ex-control-operational-space
 ```
 

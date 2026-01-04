@@ -34,8 +34,8 @@
 
 ### 07 Visualization and Interaction
 
-- `drag_and_drop`
-- `imgui_python`
+- `viz_drag_and_drop`
+- `viz_imgui`
 
 ## Run Examples
 

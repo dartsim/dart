@@ -59,14 +59,14 @@
 
 ### 07 Visualization and Interaction
 
-- `add_delete_skels`
-- `drag_and_drop`
-- `empty`
-- `imgui`
-- `polyhedron_visual`
-- `raylib`
-- `simulation_event_handler`
-- `tinkertoy`
+- `viz_add_delete_skels`
+- `viz_drag_and_drop`
+- `viz_empty`
+- `viz_imgui`
+- `viz_polyhedron_visual`
+- `viz_raylib`
+- `viz_simulation_event_handler`
+- `viz_tinkertoy`
 
 ### 08 Performance and Scaling
 

@@ -21,16 +21,24 @@ def run_cpp_example():
 @pytest.mark.parametrize(
     ("old_name", "new_name"),
     [
-        ("raylib_gui", "raylib"),
+        ("add_delete_skels", "viz_add_delete_skels"),
         ("atlas_simbicon", "control_walking_humanoid"),
         ("biped_stand", "control_balance_biped"),
         ("box_stacking", "collision_box_stacking"),
         ("capsule_ground_contact", "collision_capsule_ground_contact"),
+        ("drag_and_drop", "viz_drag_and_drop"),
+        ("empty", "viz_empty"),
         ("fetch", "model_fetch"),
         ("heightmap", "collision_heightmap"),
+        ("imgui", "viz_imgui"),
         ("mixed_chain", "hybrid_mixed_chain"),
         ("operational_space_control", "control_operational_space"),
+        ("polyhedron_visual", "viz_polyhedron_visual"),
+        ("raylib", "viz_raylib"),
+        ("raylib_gui", "viz_raylib"),
         ("rigid_shapes", "collision_rigid_shapes"),
+        ("simulation_event_handler", "viz_simulation_event_handler"),
+        ("tinkertoy", "viz_tinkertoy"),
         ("unified_loading", "io_unified_loading"),
         ("vehicle", "control_vehicle"),
         ("wam_ikfast", "ik_analytic_wam"),
@@ -67,8 +75,10 @@ def test_list_examples_filters_cmake_lists(run_cpp_example, tmp_path):
 @pytest.mark.parametrize(
     ("target", "build_target", "binary_name"),
     [
-        ("raylib", "dart_raylib", "raylib"),
-        ("dart_raylib", "dart_raylib", "raylib"),
+        ("viz_raylib", "dart_viz_raylib", "viz_raylib"),
+        ("dart_viz_raylib", "dart_viz_raylib", "viz_raylib"),
+        ("raylib", "dart_viz_raylib", "viz_raylib"),
+        ("dart_raylib", "dart_viz_raylib", "viz_raylib"),
         (
             "control_walking_humanoid",
             "control_walking_humanoid",
@@ -113,7 +123,7 @@ def test_ensure_target_requirements_enables_raylib(run_cpp_example, tmp_path, mo
     monkeypatch.setattr(run_cpp_example.subprocess, "run", fake_run)
 
     env = {"EXAMPLE": "1"}
-    run_cpp_example._ensure_target_requirements(tmp_path, "raylib", env)
+    run_cpp_example._ensure_target_requirements(tmp_path, "viz_raylib", env)
 
     assert len(calls) == 1
     cmd, args, kwargs = calls[0]
@@ -133,4 +143,6 @@ def test_ensure_target_requirements_noop_when_enabled(run_cpp_example, tmp_path,
 
     monkeypatch.setattr(run_cpp_example.subprocess, "run", fail_run)
 
-    run_cpp_example._ensure_target_requirements(tmp_path, "raylib", {"EXAMPLE": "1"})
+    run_cpp_example._ensure_target_requirements(
+        tmp_path, "viz_raylib", {"EXAMPLE": "1"}
+    )

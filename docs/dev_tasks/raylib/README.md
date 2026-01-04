@@ -2,7 +2,7 @@
 
 ## Current status
 
-- `DART_BUILD_GUI_RAYLIB` exists and builds the `examples/raylib` smoke example.
+- `DART_BUILD_GUI_RAYLIB` exists and builds the `examples/viz_raylib` smoke example.
 - The shipped GUI library (`dart-gui`) is still the OpenSceneGraph (OSG) backend and its public headers expose OSG types.
 
 ## Goal

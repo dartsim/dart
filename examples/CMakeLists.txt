@@ -45,14 +45,14 @@ add_subdirectory(hybrid_mixed_chain)
 add_subdirectory(soft_bodies)
 
 # Visualization and interaction examples
-add_subdirectory(add_delete_skels)
-add_subdirectory(drag_and_drop)
-add_subdirectory(empty)
-add_subdirectory(imgui)
-add_subdirectory(polyhedron_visual)
-add_subdirectory(raylib)
-add_subdirectory(simulation_event_handler)
-add_subdirectory(tinkertoy)
+add_subdirectory(viz_add_delete_skels)
+add_subdirectory(viz_drag_and_drop)
+add_subdirectory(viz_empty)
+add_subdirectory(viz_imgui)
+add_subdirectory(viz_polyhedron_visual)
+add_subdirectory(viz_raylib)
+add_subdirectory(viz_simulation_event_handler)
+add_subdirectory(viz_tinkertoy)
 
 # Performance and scaling examples
 add_subdirectory(headless_simulation)

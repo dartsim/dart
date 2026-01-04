@@ -9,16 +9,24 @@ import sys
 from pathlib import Path
 
 _RENAMED_EXAMPLES = {
+    "add_delete_skels": "viz_add_delete_skels",
     "atlas_simbicon": "control_walking_humanoid",
     "biped_stand": "control_balance_biped",
     "box_stacking": "collision_box_stacking",
     "capsule_ground_contact": "collision_capsule_ground_contact",
-    "heightmap": "collision_heightmap",
+    "drag_and_drop": "viz_drag_and_drop",
+    "empty": "viz_empty",
     "fetch": "model_fetch",
+    "heightmap": "collision_heightmap",
+    "imgui": "viz_imgui",
     "mixed_chain": "hybrid_mixed_chain",
     "operational_space_control": "control_operational_space",
-    "raylib_gui": "raylib",
+    "polyhedron_visual": "viz_polyhedron_visual",
+    "raylib": "viz_raylib",
+    "raylib_gui": "viz_raylib",
     "rigid_shapes": "collision_rigid_shapes",
+    "simulation_event_handler": "viz_simulation_event_handler",
+    "tinkertoy": "viz_tinkertoy",
     "unified_loading": "io_unified_loading",
     "vehicle": "control_vehicle",
     "wam_ikfast": "ik_analytic_wam",
@@ -96,8 +104,8 @@ def _print_example_list() -> None:
 
 
 def _resolve_build_and_binary(target: str) -> tuple[str, str]:
-    if target in {"raylib", "dart_raylib"}:
-        return "dart_raylib", "raylib"
+    if target in {"viz_raylib", "dart_viz_raylib", "raylib", "dart_raylib"}:
+        return "dart_viz_raylib", "viz_raylib"
     return target, target
 
 
@@ -123,7 +131,7 @@ def _cmake_cache_bool(build_dir: Path, option: str) -> bool | None:
 def _ensure_target_requirements(
     build_dir: Path, target: str, env: dict[str, str]
 ) -> None:
-    if target not in {"raylib", "dart_raylib"}:
+    if target not in {"viz_raylib", "dart_viz_raylib", "raylib", "dart_raylib"}:
         return
 
     enabled = _cmake_cache_bool(build_dir, "DART_BUILD_GUI_RAYLIB")
