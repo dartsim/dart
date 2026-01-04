@@ -292,10 +292,10 @@ class TeleoperationWorld(dart.gui.RealTimeWorldNode):
                 translation -= elevation_step * up
 
             if self.move_components["Q"]:
-                rot_matrix = dart.eulerXYZToMatrix([0, 0, rotational_step])
+                rot_matrix = dart.euler_xyz_to_matrix([0, 0, rotational_step])
                 rotation.set_rotation(rot_matrix)
             if self.move_components["E"]:
-                rot_matrix = dart.eulerXYZToMatrix([0, 0, -rotational_step])
+                rot_matrix = dart.euler_xyz_to_matrix([0, 0, -rotational_step])
                 rotation.set_rotation(rot_matrix)
 
             # Build new transform
@@ -398,7 +398,7 @@ def setup_end_effectors(atlas):
     # ----- LEFT HAND -----
     tf_hand = dart.Isometry3()
     tf_hand.set_translation([0.0009, 0.1254, 0.012])
-    rot_matrix = dart.eulerXYZToMatrix([0, 0, 90.0 * np.pi / 180.0])
+    rot_matrix = dart.euler_xyz_to_matrix([0, 0, 90.0 * np.pi / 180.0])
     tf_hand.set_rotation(rot_matrix)
 
     l_hand = atlas.getBodyNode("l_hand").createEndEffector("l_hand")
