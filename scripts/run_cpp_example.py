@@ -19,6 +19,7 @@ _RENAMED_EXAMPLES = {
     "fetch": "model_fetch",
     "heightmap": "collision_heightmap",
     "headless_simulation": "perf_headless_simulation",
+    "hybrid_dynamics": "control_actuator_modes",
     "imgui": "viz_imgui",
     "mixed_chain": "hybrid_mixed_chain",
     "operational_space_control": "control_operational_space",

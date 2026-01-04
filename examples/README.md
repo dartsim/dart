@@ -40,6 +40,7 @@
 ### 04 Control and IK
 
 - `control_balance_biped`
+- `control_actuator_modes`
 - `control_operational_space`
 - `control_vehicle`
 - `control_walking_humanoid`
@@ -53,7 +54,6 @@
 
 ### 06 Soft and Hybrid
 
-- `hybrid_dynamics`
 - `hybrid_mixed_chain`
 - `soft_bodies`
 

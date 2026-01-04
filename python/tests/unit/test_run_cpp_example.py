@@ -32,6 +32,7 @@ def run_cpp_example():
         ("fetch", "model_fetch"),
         ("headless_simulation", "perf_headless_simulation"),
         ("heightmap", "collision_heightmap"),
+        ("hybrid_dynamics", "control_actuator_modes"),
         ("imgui", "viz_imgui"),
         ("mixed_chain", "hybrid_mixed_chain"),
         ("operational_space_control", "control_operational_space"),

@@ -1,4 +1,4 @@
-# Hybrid Dynamics Example
+# Control Actuator Modes Example
 
 ## Summary
 

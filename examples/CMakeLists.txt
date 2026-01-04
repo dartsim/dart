@@ -31,6 +31,7 @@ add_subdirectory(collision_rigid_shapes)
 add_subdirectory(ik_humanoid)
 add_subdirectory(control_walking_humanoid)
 add_subdirectory(control_balance_biped)
+add_subdirectory(control_actuator_modes)
 add_subdirectory(control_operational_space)
 add_subdirectory(control_vehicle)
 add_subdirectory(ik_analytic_wam)
@@ -40,7 +41,6 @@ add_subdirectory(io_unified_loading)
 add_subdirectory(model_fetch)
 
 # Soft and hybrid examples
-add_subdirectory(hybrid_dynamics)
 add_subdirectory(hybrid_mixed_chain)
 add_subdirectory(soft_bodies)
 

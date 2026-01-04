@@ -70,6 +70,7 @@
 - Merged Python `hello_world` and `hello_world_gui` into one example with a
   `--gui` flag.
 - Renamed Python `atlas_puppet` -> `ik_atlas`.
+- Moved `hybrid_dynamics` to Control and renamed it to `control_actuator_modes`.
 
 ## Naming Prefix Plan
 
@@ -105,6 +106,7 @@
 ### 04 Control and IK
 
 - `control_balance_biped` (no change)
+- `hybrid_dynamics` -> `control_actuator_modes`
 - `control_operational_space` (no change)
 - `control_vehicle` (no change)
 - `control_walking_humanoid` (no change)
@@ -118,7 +120,6 @@
 
 ### 06 Soft and Hybrid
 
-- `hybrid_dynamics` (no change)
 - `mixed_chain` -> `hybrid_mixed_chain`
 - `soft_bodies` (no change)
 
