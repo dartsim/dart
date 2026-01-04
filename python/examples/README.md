@@ -3,7 +3,7 @@
 ## Overview
 
 - Examples live flat under `python/examples/` for simpler discovery and tooling.
-- Categories below mirror the C++ examples layout; not every category has a Python example yet.
+- Categories below mirror the C++ examples layout; empty sections are listed for consistency.
 - Tutorials remain in `python/tutorials/`.
 
 ## Categories (Ordered)
@@ -27,14 +27,30 @@
 
 ### 04 Control and IK
 
-- `ik_atlas`
 - `control_balance_biped`
 - `control_operational_space`
+- `ik_humanoid` (Atlas-only)
+
+### 05 IO and Models
+
+- (No Python examples yet.)
+
+### 06 Soft and Hybrid
+
+- (No Python examples yet.)
 
 ### 07 Visualization and Interaction
 
 - `viz_drag_and_drop`
 - `viz_imgui`
+
+### 08 Performance and Scaling
+
+- (No Python examples yet.)
+
+### 09 Integration and Tools
+
+- (No Python examples yet.)
 
 ## Run Examples
 

@@ -595,7 +595,11 @@ py-tu-biped-fi = { depends-on = [
   ] },
 ] }
 
-py-ex-ik-atlas = { depends-on = [{ task = "py-ex", args = ["ik_atlas"] }] }
+py-ex-ik-humanoid = { depends-on = [
+  { task = "py-ex", args = [
+    "ik_humanoid",
+  ] },
+] }
 
 test = { cmd = [
   "bash",
@@ -798,9 +802,9 @@ run-cpp-target = { cmd = """
 
 ex = { cmd = "python scripts/run_cpp_example.py", depends-on = ["config"] }
 
-py-ik-atlas = { cmd = """
+py-ik-humanoid = { cmd = """
     PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PYTHONPATH \
-    python python/examples/ik_atlas/main.py
+    python python/examples/ik_humanoid/main.py
 """, depends-on = ["build"], env = { BUILD_TYPE = "Release" } }
 
 bm = { cmd = "python scripts/run_cpp_benchmark.py", depends-on = ["config"] }

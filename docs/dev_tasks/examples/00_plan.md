@@ -68,7 +68,7 @@
 - Renamed `csv_logger` -> `tool_csv_logger` and `point_cloud` -> `viz_point_cloud`.
 - Merged Python `hello_world` and `hello_world_gui` into one example with a
   `--gui` flag.
-- Renamed Python `atlas_puppet` -> `ik_atlas`.
+- Renamed Python `atlas_puppet` -> `ik_humanoid` (Atlas-only for now).
 - Moved `hybrid_dynamics` to Control and renamed it to `control_actuator_modes`.
 - Moved `joint_lcp_solvers` to Tools and renamed it to `tool_lcp_solvers`.
 - Removed `rigid_boxes`, `joint_coupler`, `joint_constraints`, and
