@@ -32,5 +32,5 @@
 
 ## Next
 
-- Monitor PR #2385 CI/review feedback (CI/merge handled by the user).
-- Monitor PR #2387 CI/review feedback (CI/merge handled by the user).
+- Monitor PR #2384, #2385, and #2387 CI/review feedback (CI/merge handled by
+  the user).

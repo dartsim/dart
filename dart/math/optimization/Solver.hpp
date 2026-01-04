@@ -39,6 +39,7 @@
 
 #include <iostream>
 #include <memory>
+#include <string_view>
 
 namespace dart {
 namespace math {
@@ -109,7 +110,7 @@ public:
   virtual bool solve() = 0;
 
   /// Get the type (implementation) of this Solver
-  virtual std::string getType() const = 0;
+  virtual std::string_view getType() const = 0;
 
   /// Create an identical clone of this Solver
   virtual std::shared_ptr<Solver> clone() const = 0;
