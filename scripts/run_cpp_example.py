@@ -11,8 +11,12 @@ from pathlib import Path
 _RENAMED_EXAMPLES = {
     "atlas_simbicon": "control_walking_humanoid",
     "biped_stand": "control_balance_biped",
+    "box_stacking": "collision_box_stacking",
+    "capsule_ground_contact": "collision_capsule_ground_contact",
+    "heightmap": "collision_heightmap",
     "operational_space_control": "control_operational_space",
     "raylib_gui": "raylib",
+    "rigid_shapes": "collision_rigid_shapes",
     "vehicle": "control_vehicle",
     "wam_ikfast": "ik_analytic_wam",
 }

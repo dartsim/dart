@@ -1,4 +1,4 @@
-# Rigid Shapes Example
+# Collision Rigid Shapes Example
 
 ## Summary
 

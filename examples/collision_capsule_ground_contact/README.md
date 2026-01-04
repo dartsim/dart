@@ -1,16 +1,15 @@
-# Box Stacking Example
+# Collision Capsule Ground Contact Example
 
 ## Summary
 
-- Goal: stack boxes and explore solver choices and gravity settings.
-- Concepts/APIs: `constraint::ConstraintSolver`, ImGui viewer controls.
-- Expected output: an ImGui-driven OSG viewer with stacked boxes on a ground
-  plane.
-- Controls: use the ImGui panel; q/Q and arrow keys log test messages.
+- Goal: observe capsule-plane contact behavior with persistent manifolds.
+- Concepts/APIs: `collision::OdeCollisionDetector`, `dynamics::CapsuleShape`.
+- Expected output: a capsule resting on an infinite plane with a visible ground.
+- Controls: h/v reset pose; space clears velocities.
 
 ## Notes
 
-- Use `--gui-scale` to scale the ImGui widgets.
+- Requires DART built with ODE collision (`DART_BUILD_COLLISION_ODE=ON`).
 
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.

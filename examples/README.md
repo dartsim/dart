@@ -32,10 +32,10 @@
 
 ### 03 Collisions and Contacts
 
-- `box_stacking`
-- `capsule_ground_contact`
-- `heightmap`
-- `rigid_shapes`
+- `collision_box_stacking`
+- `collision_capsule_ground_contact`
+- `collision_heightmap`
+- `collision_rigid_shapes`
 
 ### 04 Control and IK
 

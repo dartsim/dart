@@ -2,8 +2,10 @@
 
 ## Status
 
-- In progress: consolidation decisions and feature-scope mapping.
-- Next: confirm keep/drop list, then apply changes in phases.
+- In progress: apply naming prefixes to remaining example categories and merge
+  the Python hello world variants.
+- Next: rename IO/Models, Soft/Hybrid, Visualization, Performance, and Tools
+  examples, then merge the Python hello world examples and update runners.
 - Completed: removed `rerun` placeholder example (no sources).
 - Completed: removed `speed_test`; keep `headless_simulation` as the headless
   performance-focused example and rely on `tests/benchmark` for benchmarking.
@@ -57,6 +59,7 @@
   will apply the pattern across the remaining sections.
 - Renamed joint/constraint examples to the `joint_*` prefix and updated the
   matching Python examples (`joint_chain`, `joint_loop`).
+- Renamed collision examples to the `collision_*` prefix.
 
 ## Naming Prefix Plan
 

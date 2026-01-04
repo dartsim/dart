@@ -532,9 +532,9 @@ py-ex-control-balance-biped = { depends-on = [
   ] },
 ] }
 
-py-ex-contacts-pointcloud = { depends-on = [
+py-ex-collision-pointcloud = { depends-on = [
   { task = "py-ex", args = [
-    "contacts_pointcloud",
+    "collision_pointcloud",
   ] },
 ] }
 

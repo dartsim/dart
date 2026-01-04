@@ -191,7 +191,8 @@ int main()
 {
 #if !DART_HAVE_ODE
   DART_ERROR(
-      "capsule_ground_contact requires DART to be built with ODE support.\n");
+      "collision_capsule_ground_contact requires DART to be built with ODE "
+      "support.\n");
   return 1;
 #endif
 

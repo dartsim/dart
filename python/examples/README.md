@@ -24,7 +24,7 @@
 
 ### 03 Collisions and Contacts
 
-- `contacts_pointcloud`
+- `collision_pointcloud`
 
 ### 04 Control and IK
 

@@ -1,4 +1,4 @@
-# Heightmap Example
+# Collision Heightmap Example
 
 ## Summary
 

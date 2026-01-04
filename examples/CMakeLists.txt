@@ -22,10 +22,10 @@ add_subdirectory(joint_loop)
 add_subdirectory(joint_lcp_solvers)
 
 # Collisions and contacts examples
-add_subdirectory(box_stacking)
-add_subdirectory(capsule_ground_contact)
-add_subdirectory(heightmap)
-add_subdirectory(rigid_shapes)
+add_subdirectory(collision_box_stacking)
+add_subdirectory(collision_capsule_ground_contact)
+add_subdirectory(collision_heightmap)
+add_subdirectory(collision_rigid_shapes)
 
 # Control and IK examples
 add_subdirectory(ik_humanoid)
