@@ -82,10 +82,7 @@ def setup_ring(ring: dart.dynamics.Skeleton):
 
     for i in range(1, ring.getNumJoints()):
         joint = ring.getJoint(i)
-    # Rotate the shape
-    rotation = dart.math.euler_xyz_to_matrix([0.0, angle, 0.0])
-    tf = dart.math.Isometry3()
-    tf.set_rotation(rotation)
+        rotation = dart.math.euler_xyz_to_matrix([0.0, angle, 0.0])
         rest = dart.dynamics.BallJoint.convertToPositions(rotation)
         for axis in range(3):
             joint.setRestPosition(axis, rest[axis])
@@ -180,9 +177,11 @@ class CollisionsEventHandler(dart.gui.GUIEventHandler):
         speed = default_start_v
         angular_speed = default_start_w
         if self.randomize:
-            angle = self.rng.uniform(0.0, 1.0) * (
-                maximum_launch_angle - minimum_launch_angle
-            ) + minimum_launch_angle
+            angle = (
+                self.rng.uniform(0.0, 1.0)
+                * (maximum_launch_angle - minimum_launch_angle)
+                + minimum_launch_angle
+            )
             speed = self.rng.uniform(minimum_start_v, maximum_start_v)
             angular_speed = self.rng.uniform(-maximum_start_w, maximum_start_w)
 
@@ -191,9 +190,7 @@ class CollisionsEventHandler(dart.gui.GUIEventHandler):
         center.setClassicDerivatives(linear, angular)
 
         ref = dart.dynamics.SimpleFrame(center, "root_reference")
-        ref.setRelativeTransform(
-            obj.getBodyNode(0).getTransform(center)
-        )
+        ref.setRelativeTransform(obj.getBodyNode(0).getTransform(center))
         obj.getJoint(0).setVelocities(ref.getSpatialVelocity())
 
     def add_ring(self, ring: dart.dynamics.Skeleton):
@@ -396,9 +393,7 @@ def main():
     viewer.addInstructionText("'5': toss a rigid ring")
     viewer.addInstructionText("'d': delete the oldest object")
     viewer.addInstructionText("'r': toggle randomness")
-    viewer.addInstructionText(
-        "Warning: let objects settle before tossing a new one."
-    )
+    viewer.addInstructionText("Warning: let objects settle before tossing a new one.")
     print(viewer.getInstructions())
 
     grid = dart.gui.GridVisual()
