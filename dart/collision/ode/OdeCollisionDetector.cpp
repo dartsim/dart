@@ -36,6 +36,7 @@
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
 #include "dart/collision/ode/OdeCollisionObject.hpp"
 #include "dart/collision/ode/OdeTypes.hpp"
+#include "dart/config.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -62,6 +63,11 @@ Contact convertContact(
     OdeCollisionObject* b1,
     OdeCollisionObject* b2,
     const CollisionOption& option);
+
+#if DART_ODE_HAS_LIBCCD_BOX_CYL
+void alignBoxCylinderNormal(Contact& contact);
+void stabilizeBoxCylinderContactPoint(Contact& contact);
+#endif
 
 bool expandBoxCylinderContact(
     const Contact& baseContact,
@@ -302,13 +308,26 @@ void reportContacts(
   // For binary check, return after adding the first contact point to the result
   // without the checkings of repeatidity and co-linearity.
   if (1u == option.maxNumContacts) {
-    result.addContact(convertContact(contactGeoms[0], b1, b2, option));
+    auto contact = convertContact(contactGeoms[0], b1, b2, option);
+#if DART_ODE_HAS_LIBCCD_BOX_CYL
+    if (option.enableContact) {
+      alignBoxCylinderNormal(contact);
+      stabilizeBoxCylinderContactPoint(contact);
+    }
+#endif
+    result.addContact(contact);
 
     return;
   }
 
   if (1 == numContacts) {
-    const auto baseContact = convertContact(contactGeoms[0], b1, b2, option);
+    auto baseContact = convertContact(contactGeoms[0], b1, b2, option);
+#if DART_ODE_HAS_LIBCCD_BOX_CYL
+    if (option.enableContact) {
+      alignBoxCylinderNormal(baseContact);
+      stabilizeBoxCylinderContactPoint(baseContact);
+    }
+#endif
     if (expandBoxCylinderContact(baseContact, option, result))
       return;
     result.addContact(baseContact);
@@ -351,6 +370,122 @@ Contact convertContact(
 
   return contact;
 }
+
+#if DART_ODE_HAS_LIBCCD_BOX_CYL
+void alignBoxCylinderNormal(Contact& contact)
+{
+  const auto* shape1 = contact.collisionObject1->getShape().get();
+  const auto* shape2 = contact.collisionObject2->getShape().get();
+
+  const auto* boxShape = shape1->as<dynamics::BoxShape>();
+  const auto* cylinderShape = shape2->as<dynamics::CylinderShape>();
+  const collision::CollisionObject* boxObject = contact.collisionObject1;
+
+  if (!(boxShape && cylinderShape)) {
+    boxShape = shape2->as<dynamics::BoxShape>();
+    cylinderShape = shape1->as<dynamics::CylinderShape>();
+    boxObject = contact.collisionObject2;
+  }
+
+  if (!(boxShape && cylinderShape))
+    return;
+
+  Eigen::Vector3d normal = contact.normal;
+  const double normalNorm = normal.norm();
+  if (normalNorm <= 0.0)
+    return;
+  normal /= normalNorm;
+
+  const Eigen::Matrix3d boxRotation = boxObject->getTransform().linear();
+  double maxAbsDot = -1.0;
+  Eigen::Vector3d bestAxis = Eigen::Vector3d::Zero();
+  for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {
+    const Eigen::Vector3d axis = boxRotation.col(axisIndex);
+    const double absDot = std::abs(axis.dot(normal));
+    if (absDot > maxAbsDot) {
+      maxAbsDot = absDot;
+      bestAxis = axis;
+    }
+  }
+
+  constexpr double kNormalSnapThreshold = 0.9;
+  if (maxAbsDot < kNormalSnapThreshold)
+    return;
+
+  if (bestAxis.dot(normal) < 0.0)
+    bestAxis = -bestAxis;
+
+  contact.normal = bestAxis;
+}
+
+void stabilizeBoxCylinderContactPoint(Contact& contact)
+{
+  const auto* shape1 = contact.collisionObject1->getShape().get();
+  const auto* shape2 = contact.collisionObject2->getShape().get();
+
+  const auto* cylinderShape = shape1->as<dynamics::CylinderShape>();
+  const auto* boxShape = shape2->as<dynamics::BoxShape>();
+  const collision::CollisionObject* cylinderObject = contact.collisionObject1;
+  const collision::CollisionObject* boxObject = contact.collisionObject2;
+
+  if (!(cylinderShape && boxShape)) {
+    cylinderShape = shape2->as<dynamics::CylinderShape>();
+    boxShape = shape1->as<dynamics::BoxShape>();
+    cylinderObject = contact.collisionObject2;
+    boxObject = contact.collisionObject1;
+  }
+
+  if (!(cylinderShape && boxShape))
+    return;
+
+  Eigen::Vector3d normal = contact.normal;
+  const double normalNorm = normal.norm();
+  if (normalNorm <= 0.0)
+    return;
+  normal /= normalNorm;
+
+  Eigen::Vector3d axis
+      = cylinderObject->getTransform().linear() * Eigen::Vector3d::UnitZ();
+  const double axisNorm = axis.norm();
+  if (axisNorm <= 0.0)
+    return;
+  axis /= axisNorm;
+
+  const Eigen::Matrix3d boxRotation = boxObject->getTransform().linear();
+  double maxAbsDot = -1.0;
+  for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {
+    const Eigen::Vector3d boxAxis = boxRotation.col(axisIndex);
+    const double absDot = std::abs(boxAxis.dot(normal));
+    if (absDot > maxAbsDot)
+      maxAbsDot = absDot;
+  }
+
+  constexpr double kFaceContactThreshold = 0.9;
+  if (maxAbsDot < kFaceContactThreshold)
+    return;
+
+  const Eigen::Vector3d cylinderCenter
+      = cylinderObject->getTransform().translation();
+  const double axisDot = std::abs(axis.dot(normal));
+
+  constexpr double kAxisParallelThreshold = 0.9;
+  constexpr double kAxisPerpendicularThreshold = 0.1;
+
+  if (axisDot > kAxisParallelThreshold) {
+    Eigen::Vector3d capAxis = axis;
+    if (capAxis.dot(normal) < 0.0)
+      capAxis = -capAxis;
+    contact.point
+        = cylinderCenter - capAxis * (0.5 * cylinderShape->getHeight());
+    return;
+  }
+
+  if (axisDot < kAxisPerpendicularThreshold) {
+    contact.point
+        = cylinderCenter - normal * cylinderShape->getRadius();
+  }
+}
+#endif
 
 bool expandBoxCylinderContact(
     const Contact& baseContact,
