@@ -44,6 +44,8 @@
 
 #include <tinyxml2.h>
 
+#include <span>
+
 namespace dart {
 namespace utils {
 namespace MjcfParser {
@@ -135,7 +137,7 @@ private:
 
 private:
   Inertial computeInertialFromGeoms(
-      const std::vector<Geom>& geoms, const Compiler& compiler);
+      std::span<const Geom> geoms, const Compiler& compiler);
 
   BodyAttributes mAttributes;
 

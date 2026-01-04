@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <span>
 #include <utility>
 
 #include <cmath>
@@ -59,7 +60,7 @@ inline double cross(
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 }
 
-inline double polygonArea2(const std::vector<ProjectedPoint>& points)
+inline double polygonArea2(std::span<const ProjectedPoint> points)
 {
   const std::size_t count = points.size();
   double area2 = 0.0;
@@ -75,11 +76,10 @@ template <
     typename Index,
     typename Vector3,
     typename Triangle,
-    typename VertexAllocator,
     typename TriangleAllocator>
 bool triangulateFaceEarClipping(
-    const std::vector<Index>& face,
-    const std::vector<Vector3, VertexAllocator>& vertices,
+    std::span<const Index> face,
+    std::span<const Vector3> vertices,
     std::vector<Triangle, TriangleAllocator>& triangles)
 {
   triangles.clear();
@@ -159,7 +159,7 @@ bool triangulateFaceEarClipping(
   const double eps = std::max(
       1e-12, std::numeric_limits<double>::epsilon() * scale * scale * 100.0);
 
-  const double area2 = polygonArea2(projected);
+  const double area2 = polygonArea2(std::span<const ProjectedPoint>{projected});
   if (std::abs(area2) <= eps) {
     return false;
   }
@@ -403,7 +403,10 @@ typename PolygonMesh<S>::TriMeshType PolygonMesh<S>::triangulate() const
       continue;
     }
     triangles.clear();
-    if (!detail::triangulateFaceEarClipping(face, this->mVertices, triangles)) {
+    if (!detail::triangulateFaceEarClipping(
+            std::span<const Index>{face},
+            std::span<const Vector3>{this->mVertices},
+            triangles)) {
       const Index v0 = face[0];
       for (std::size_t i = 1; i + 1 < face.size(); ++i) {
         triMesh.addTriangle(v0, face[i], face[i + 1]);

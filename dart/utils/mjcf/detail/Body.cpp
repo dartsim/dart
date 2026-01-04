@@ -190,7 +190,8 @@ Errors Body::compile(const Compiler& compiler)
     }
 
     if (!mGeoms.empty()) {
-      mInertial = computeInertialFromGeoms(mGeoms, compiler);
+      mInertial
+          = computeInertialFromGeoms(std::span<const Geom>{mGeoms}, compiler);
     }
   }
 
@@ -383,7 +384,7 @@ const Eigen::Isometry3d& Body::getWorldTransform() const
 
 //==============================================================================
 Inertial Body::computeInertialFromGeoms(
-    const std::vector<Geom>& geoms, const Compiler& compiler)
+    std::span<const Geom> geoms, const Compiler& compiler)
 {
   Inertial inertial;
 
