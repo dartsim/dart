@@ -39,6 +39,7 @@
 
 #include <limits>
 #include <set>
+#include <span>
 #include <tuple>
 #include <utility>
 
@@ -296,8 +297,8 @@ void PolyhedronVisual::updateGeometry()
     return;
   }
 
-  auto result
-      = dart::math::computeConvexHull3D<double, std::size_t>(mVertices, true);
+  auto result = dart::math::computeConvexHull3D<double, std::size_t>(
+      std::span<const Eigen::Vector3d>(mVertices), true);
 
   auto hullVertices = std::move(std::get<0>(result));
   auto hullTriangles = std::move(std::get<1>(result));

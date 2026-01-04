@@ -49,7 +49,7 @@ std::tuple<
         Eigen::Matrix<Index, 3, 1>,
         Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>>
 discardUnusedVertices(
-    const std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>& vertices,
+    std::span<const Eigen::Matrix<S, 3, 1>> vertices,
     const std::vector<
         Eigen::Matrix<Index, 3, 1>,
         Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>& triangles)
@@ -90,8 +90,7 @@ std::tuple<
         Eigen::Matrix<Index, 3, 1>,
         Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>>
 computeConvexHull3D(
-    const std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>& inputVertices,
-    bool optimize)
+    std::span<const Eigen::Matrix<S, 3, 1>> inputVertices, bool optimize)
 {
   // Use Eigen API directly - no conversion needed
   std::vector<int> faces;
@@ -116,8 +115,28 @@ computeConvexHull3D(
   if (optimize)
     return discardUnusedVertices<S, Index, VertexAllocator>(
         inputVertices, eigenFaces);
-  else
-    return std::make_pair(inputVertices, eigenFaces);
+
+  std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator> verticesCopy;
+  verticesCopy.reserve(inputVertices.size());
+  verticesCopy.insert(
+      verticesCopy.end(), inputVertices.begin(), inputVertices.end());
+
+  return std::make_pair(std::move(verticesCopy), std::move(eigenFaces));
+}
+
+//==============================================================================
+template <typename S, typename Index, typename VertexAllocator>
+std::tuple<
+    std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>,
+    std::vector<
+        Eigen::Matrix<Index, 3, 1>,
+        Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>>
+computeConvexHull3D(
+    const std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>& inputVertices,
+    bool optimize)
+{
+  return computeConvexHull3D<S, Index, VertexAllocator>(
+      std::span<const Eigen::Matrix<S, 3, 1>>(inputVertices), optimize);
 }
 
 } // namespace math

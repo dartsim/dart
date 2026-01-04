@@ -43,6 +43,8 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
+#include <span>
+
 namespace dart {
 namespace math {
 
@@ -513,30 +515,53 @@ using SupportPolygon = common::aligned_vector<Eigen::Vector2d>;
 
 /// Project the support geometry points onto a plane with the given axes
 /// and then compute their convex hull, which will take the form of a polgyon.
-/// _axis1 and _axis2 must both have unit length for this function to work
+/// axis1 and axis2 must both have unit length for this function to work
 /// correctly.
 SupportPolygon computeSupportPolgyon(
-    const SupportGeometry& _geometry,
-    const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
-    const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY());
+    std::span<const Eigen::Vector3d> geometry,
+    const Eigen::Vector3d& axis1 = Eigen::Vector3d::UnitX(),
+    const Eigen::Vector3d& axis2 = Eigen::Vector3d::UnitY());
 
 /// Same as computeSupportPolgyon, except you can pass in a
 /// std::vector<std::size_t> which will have the same size as the returned
 /// SupportPolygon, and each entry will contain the original index of each point
 /// in the SupportPolygon
 SupportPolygon computeSupportPolgyon(
-    std::vector<std::size_t>& _originalIndices,
-    const SupportGeometry& _geometry,
-    const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
-    const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY());
+    std::vector<std::size_t>& originalIndices,
+    std::span<const Eigen::Vector3d> geometry,
+    const Eigen::Vector3d& axis1 = Eigen::Vector3d::UnitX(),
+    const Eigen::Vector3d& axis2 = Eigen::Vector3d::UnitY());
 
 /// Computes the convex hull of a set of 2D points
-DART_API SupportPolygon computeConvexHull(const SupportPolygon& points);
+DART_API SupportPolygon
+computeConvexHull(std::span<const Eigen::Vector2d> points);
 
-/// Computes the convex hull of a set of 2D points and fills in _originalIndices
+/// Computes the convex hull of a set of 2D points and fills in originalIndices
 /// with the original index of each entry in the returned SupportPolygon
 DART_API SupportPolygon computeConvexHull(
-    std::vector<std::size_t>& originalIndices, const SupportPolygon& points);
+    std::vector<std::size_t>& originalIndices,
+    std::span<const Eigen::Vector2d> points);
+
+/// Generates a 3D convex hull given vertices and indices.
+///
+/// @tparam S: The scalar type of the vertices.
+/// @tparam Index: The index type of the triangles.
+/// @param[in] vertices: The given vertices to generate a convex hull from.
+/// @param[in] optimize: (Optional) Whether to discard vertices that are not
+/// referred to in the resulted convex hull. The resulted indices will be
+/// updated accordingly.
+/// @return A tuple of the vertices and indices of the resulted convex hull.
+template <
+    typename S = double,
+    typename Index = std::size_t,
+    typename VertexAllocator = std::allocator<Eigen::Matrix<S, 3, 1>>>
+std::tuple<
+    std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>,
+    std::vector<
+        Eigen::Matrix<Index, 3, 1>,
+        Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>>
+computeConvexHull3D(
+    std::span<const Eigen::Matrix<S, 3, 1>> vertices, bool optimize = true);
 
 /// Generates a 3D convex hull given vertices and indices.
 ///

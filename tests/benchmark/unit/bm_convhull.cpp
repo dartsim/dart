@@ -35,6 +35,7 @@
 #include <Eigen/Geometry>
 #include <benchmark/benchmark.h>
 
+#include <span>
 #include <random>
 
 using dart::math::detail::convexHull3dBuild;
@@ -59,6 +60,12 @@ std::vector<Eigen::Matrix<S, 3, 1>> generateRandomPoints(
   return vertices;
 }
 
+template <typename T>
+std::span<const T> asSpan(const std::vector<T>& values)
+{
+  return std::span<const T>(values);
+}
+
 //==============================================================================
 // Benchmark: Cube (8 points) - Float
 //==============================================================================
@@ -77,7 +84,7 @@ static void BM_ConvexHull_Cube_Float(benchmark::State& state)
   for (auto _ : state) {
     std::vector<int> faces;
     int numFaces = 0;
-    convexHull3dBuild(vertices, faces, numFaces);
+    convexHull3dBuild(asSpan(vertices), faces, numFaces);
     benchmark::DoNotOptimize(faces.data());
     benchmark::DoNotOptimize(numFaces);
   }
@@ -102,7 +109,7 @@ static void BM_ConvexHull_Cube_Double(benchmark::State& state)
   for (auto _ : state) {
     std::vector<int> faces;
     int numFaces = 0;
-    convexHull3dBuild(vertices, faces, numFaces);
+    convexHull3dBuild(asSpan(vertices), faces, numFaces);
     benchmark::DoNotOptimize(faces.data());
     benchmark::DoNotOptimize(numFaces);
   }
@@ -119,7 +126,7 @@ static void BM_ConvexHull_Random50_Float(benchmark::State& state)
   for (auto _ : state) {
     std::vector<int> faces;
     int numFaces = 0;
-    convexHull3dBuild(vertices, faces, numFaces);
+    convexHull3dBuild(asSpan(vertices), faces, numFaces);
     benchmark::DoNotOptimize(faces.data());
     benchmark::DoNotOptimize(numFaces);
   }
@@ -136,7 +143,7 @@ static void BM_ConvexHull_Random50_Double(benchmark::State& state)
   for (auto _ : state) {
     std::vector<int> faces;
     int numFaces = 0;
-    convexHull3dBuild(vertices, faces, numFaces);
+    convexHull3dBuild(asSpan(vertices), faces, numFaces);
     benchmark::DoNotOptimize(faces.data());
     benchmark::DoNotOptimize(numFaces);
   }
@@ -153,7 +160,7 @@ static void BM_ConvexHull_Random200_Float(benchmark::State& state)
   for (auto _ : state) {
     std::vector<int> faces;
     int numFaces = 0;
-    convexHull3dBuild(vertices, faces, numFaces);
+    convexHull3dBuild(asSpan(vertices), faces, numFaces);
     benchmark::DoNotOptimize(faces.data());
     benchmark::DoNotOptimize(numFaces);
   }
@@ -170,7 +177,7 @@ static void BM_ConvexHull_Random200_Double(benchmark::State& state)
   for (auto _ : state) {
     std::vector<int> faces;
     int numFaces = 0;
-    convexHull3dBuild(vertices, faces, numFaces);
+    convexHull3dBuild(asSpan(vertices), faces, numFaces);
     benchmark::DoNotOptimize(faces.data());
     benchmark::DoNotOptimize(numFaces);
   }
@@ -187,7 +194,7 @@ static void BM_ConvexHull_Random1000_Float(benchmark::State& state)
   for (auto _ : state) {
     std::vector<int> faces;
     int numFaces = 0;
-    convexHull3dBuild(vertices, faces, numFaces);
+    convexHull3dBuild(asSpan(vertices), faces, numFaces);
     benchmark::DoNotOptimize(faces.data());
     benchmark::DoNotOptimize(numFaces);
   }
@@ -204,7 +211,7 @@ static void BM_ConvexHull_Random1000_Double(benchmark::State& state)
   for (auto _ : state) {
     std::vector<int> faces;
     int numFaces = 0;
-    convexHull3dBuild(vertices, faces, numFaces);
+    convexHull3dBuild(asSpan(vertices), faces, numFaces);
     benchmark::DoNotOptimize(faces.data());
     benchmark::DoNotOptimize(numFaces);
   }
