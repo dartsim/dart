@@ -111,3 +111,8 @@
 - Switch resource-retriever configuration inputs (schema names, package paths,
   data directories) to `std::string_view`.
 - Keep storage in `std::string` for registries and directory lists.
+
+### Phase 20: NameManager string views
+
+- Convert `NameManager` name, pattern, and rename inputs to `std::string_view`.
+- Preserve `std::string` storage for the managed name maps.
