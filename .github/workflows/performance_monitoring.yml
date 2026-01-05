@@ -1,0 +1,331 @@
+name: Performance Monitoring and Regression Detection
+
+on:
+  schedule:
+    # Run daily at 3 AM UTC (after modernization runs)
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      benchmark_filter:
+        description: 'Benchmark filter (bm_*, all)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - bm_boxes
+          - bm_kinematics
+          - bm_lcpsolver
+      baseline_branch:
+        description: 'Baseline branch for comparison'
+        required: false
+        default: 'main'
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+
+jobs:
+  benchmark:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    
+    outputs:
+      has_regressions: ${{ steps.analysis.outputs.has_regressions }}
+      regression_count: ${{ steps.analysis.outputs.regression_count }}
+      improvement_count: ${{ steps.analysis.outputs.improvement_count }}
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.3
+        with:
+          cache: true
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: 2
+
+      - name: Setup compiler cache
+        uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
+
+      - name: Configure environment
+        uses: ./.github/actions/configure-compiler-cache
+
+      - name: Configure build
+        run: |
+          pixi run config --build_type Release
+
+      - name: Build benchmarks
+        run: |
+          pixi run -- bash -lc "
+            set -e
+            echo 'Building benchmarks...'
+            cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/Release \
+              --target bm_boxes bm_kinematics \
+              -j$(nproc)
+            echo 'Build complete'
+          "
+
+      - name: Run current benchmarks
+        run: |
+          FILTER="${{ github.event.inputs.benchmark_filter || 'all' }}"
+          echo "Running benchmarks with filter: $FILTER"
+          
+          # Set benchmark parameters for consistent results
+          export OMP_NUM_THREADS=1
+          export BENCHMARK_MIN_TIME=0.5
+          export BENCHMARK_REPETITIONS=5
+          
+          mkdir -p benchmark_results
+          
+          case "$FILTER" in
+            "all")
+              BENCHMARKS="bm_boxes bm_kinematics"
+              ;;
+            *)
+              BENCHMARKS="$FILTER"
+              ;;
+          esac
+          
+          for benchmark in $BENCHMARKS; do
+            if [ -f "build/$PIXI_ENVIRONMENT_NAME/cpp/Release/tests/benchmark/$benchmark" ]; then
+              echo "Running $benchmark..."
+              build/$PIXI_ENVIRONMENT_NAME/cpp/Release/tests/benchmark/$benchmark \
+                --benchmark_min_time=$BENCHMARK_MIN_TIME \
+                --benchmark_repetitions=$BENCHMARK_REPETITIONS \
+                --benchmark_format=json \
+                --benchmark_out="benchmark_results/${benchmark}_current.json"
+            else
+              echo "Benchmark $benchmark not found, skipping"
+            fi
+          done
+          
+          echo "Current benchmarks completed"
+
+      - name: Get baseline branch benchmarks
+        run: |
+          BASE_BRANCH="${{ github.event.inputs.baseline_branch || 'main' }}"
+          echo "Using baseline branch: $BASE_BRANCH"
+          
+          # Stash current changes and checkout baseline
+          git stash push -m "current_changes"
+          git checkout "$BASE_BRANCH"
+          
+          # Rebuild benchmarks for baseline
+          pixi run config --build_type Release
+          pixi run -- bash -lc "
+            set -e
+            cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/Release \
+              --target bm_boxes bm_kinematics \
+              -j$(nproc)
+          "
+          
+          # Run baseline benchmarks
+          mkdir -p baseline_results
+          export OMP_NUM_THREADS=1
+          export BENCHMARK_MIN_TIME=0.5
+          export BENCHMARK_REPETITIONS=5
+          
+          case "${{ github.event.inputs.benchmark_filter || 'all' }}" in
+            "all")
+              BASELINE_BENCHMARKS="bm_boxes bm_kinematics"
+              ;;
+            *)
+              BASELINE_BENCHMARKS="${{ github.event.inputs.benchmark_filter || 'all' }}"
+              ;;
+          esac
+          
+          for benchmark in $BASELINE_BENCHMARKS; do
+            if [ -f "build/$PIXI_ENVIRONMENT_NAME/cpp/Release/tests/benchmark/$benchmark" ]; then
+              echo "Running baseline $benchmark..."
+              build/$PIXI_ENVIRONMENT_NAME/cpp/Release/tests/benchmark/$benchmark \
+                --benchmark_min_time=$BENCHMARK_MIN_TIME \
+                --benchmark_repetitions=$BENCHMARK_REPETITIONS \
+                --benchmark_format=json \
+                --benchmark_out="baseline_results/${benchmark}_baseline.json"
+            fi
+          done
+          
+          # Return to current branch and restore changes
+          git checkout -
+          git stash pop
+
+      - name: Analyze performance changes
+        id: analysis
+        run: |
+          # Python script to analyze benchmark results
+          python3 << 'PYTHON_EOF'
+          import json
+          import os
+          from pathlib import Path
+          
+          def analyze_benchmark(benchmark_name):
+              current_file = f"benchmark_results/{benchmark_name}_current.json"
+              baseline_file = f"baseline_results/{benchmark_name}_baseline.json"
+              
+              if not os.path.exists(current_file) or not os.path.exists(baseline_file):
+                  return None, None, []
+              
+              with open(current_file) as f:
+                  current_data = json.load(f)
+              with open(baseline_file) as f:
+                  baseline_data = json.load(f)
+              
+              # Create benchmark lookup dictionaries
+              current_benchmarks = {b['name']: b for b in current_data['benchmarks']}
+              baseline_benchmarks = {b['name']: b for b in baseline_data['benchmarks']}
+              
+              regressions = []
+              improvements = []
+              
+              for name in current_benchmarks:
+                  if name in baseline_benchmarks:
+                      current = current_benchmarks[name]
+                      baseline = baseline_benchmarks[name]
+                      
+                      # Compare mean times
+                      current_time = current.get('real_time', current.get('cpu_time', 0))
+                      baseline_time = baseline.get('real_time', baseline.get('cpu_time', 0))
+                      
+                      if baseline_time > 0:
+                          change_percent = ((current_time - baseline_time) / baseline_time) * 100
+                          
+                          # Significant regression: >5% slower
+                          if change_percent > 5.0:
+                              regressions.append({
+                                  'name': name,
+                                  'baseline_time': baseline_time,
+                                  'current_time': current_time,
+                                  'change_percent': change_percent
+                              })
+                          # Significant improvement: >10% faster
+                          elif change_percent < -10.0:
+                              improvements.append({
+                                  'name': name,
+                                  'baseline_time': baseline_time,
+                                  'current_time': current_time,
+                                  'change_percent': change_percent
+                              })
+              
+              return len(regressions), len(improvements), regressions + improvements
+          
+          total_regressions = 0
+          total_improvements = 0
+          all_changes = []
+          
+          # Analyze all benchmark files
+          benchmark_files = []
+          for file in os.listdir("benchmark_results"):
+              if file.endswith("_current.json"):
+                  benchmark_files.append(file.replace("_current.json", ""))
+          
+          for benchmark in benchmark_files:
+              regressions, improvements, changes = analyze_benchmark(benchmark)
+              if regressions is not None:
+                  total_regressions += regressions
+                  total_improvements += improvements
+                  all_changes.extend(changes)
+          
+          # Output results
+          has_regressions = total_regressions > 0
+          print(f"has_regressions={has_regressions}")
+          print(f"regression_count={total_regressions}")
+          print(f"improvement_count={total_improvements}")
+          
+          # Save detailed report
+          report = {
+              'summary': {
+                  'total_regressions': total_regressions,
+                  'total_improvements': total_improvements,
+                  'has_regressions': has_regressions
+              },
+              'changes': all_changes
+          }
+          
+          with open('performance_report.json', 'w') as f:
+              json.dump(report, f, indent=2)
+          
+          print("Performance analysis complete")
+          PYTHON_EOF
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ github.run_id }}
+          path: |
+            benchmark_results/
+            baseline_results/
+            performance_report.json
+          retention-days: 30
+
+      - name: Create performance report
+        if: steps.analysis.outputs.has_regressions == 'true'
+        run: |
+          cat > performance_report.md << 'EOF'
+          # 📊 Performance Regression Report
+          
+          ## Summary
+          - **Regressions Found**: ${{ steps.analysis.outputs.regression_count }}
+          - **Improvements**: ${{ steps.analysis.outputs.improvement_count }}
+          - **Status**: ⚠️ **ATTENTION REQUIRED**
+          
+          ## Performance Changes
+          
+          EOF
+          
+          python3 -c "
+          import json
+          with open('performance_report.json', 'r') as f:
+              report = json.load(f)
+          
+          for change in report['changes']:
+              change_type = '🔴 REGRESSION' if change['change_percent'] > 0 else '🟢 IMPROVEMENT'
+              print(f'### {change_type}')
+              print(f'**Benchmark**: {change[\"name\"]}')
+              print(f'**Baseline**: {change[\"baseline_time\"]:.3f} ns')
+              print(f'**Current**: {change[\"current_time\"]:.3f} ns')
+              print(f'**Change**: {change[\"change_percent\"]:+.1f}%')
+              print()
+          " >> performance_report.md
+
+      - name: Create issue for regressions
+        if: steps.analysis.outputs.has_regressions == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('performance_report.md', 'utf8');
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `📊 Performance Regression Detected - Run ${context.run.id}`,
+              body: report,
+              labels: ['performance', 'regression', 'automation']
+            });
+
+  notify:
+    name: Performance Notifications
+    runs-on: ubuntu-latest
+    needs: benchmark
+    if: needs.benchmark.outputs.has_regressions == 'true'
+    
+    steps:
+      - name: Notify team
+        run: |
+          echo "🚨 Performance regressions detected!"
+          echo "Regressions: ${{ needs.benchmark.outputs.regression_count }}"
+          echo "Improvements: ${{ needs.benchmark.outputs.improvement_count }}"
+          echo "Check the issue created by this run for details."
