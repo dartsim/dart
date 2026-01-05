@@ -77,8 +77,6 @@ target_link_libraries(${target_name}
 )
 
 target_compile_definitions(${target_name}
-  PUBLIC
-    DART_BUILD_SHARED=${DART_BUILD_SHARED_VALUE}
   PRIVATE
     DART_BUILDING_DART_EXPERIMENTAL
 )
