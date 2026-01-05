@@ -5,7 +5,7 @@ Current state:
 
 - Branch: `cpp20/phase23`
 - PR (Phase 23): https://github.com/dartsim/dart/pull/2404
-- Phase 22 PR: https://github.com/dartsim/dart/pull/2403
+- Phase 22 PR: https://github.com/dartsim/dart/pull/2403 (merged)
 - Phase 21 PR: https://github.com/dartsim/dart/pull/2401
 - Phase 20 PR: https://github.com/dartsim/dart/pull/2400
 - Phase 19 PR: https://github.com/dartsim/dart/pull/2399
