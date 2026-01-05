@@ -57,17 +57,18 @@ PackageResourceRetriever::PackageResourceRetriever(
 
 //==============================================================================
 void PackageResourceRetriever::addPackageDirectory(
-    const std::string& _packageName, const std::string& _packageDirectory)
+    std::string_view packageName, std::string_view packageDirectory)
 {
   // Strip a trailing slash.
   std::string normalizedPackageDirectory;
-  if (!_packageDirectory.empty() && _packageDirectory.back() == '/')
+  if (!packageDirectory.empty() && packageDirectory.back() == '/') {
     normalizedPackageDirectory
-        = _packageDirectory.substr(0, _packageDirectory.size() - 1);
-  else
-    normalizedPackageDirectory = _packageDirectory;
+        = std::string(packageDirectory.substr(0, packageDirectory.size() - 1));
+  } else
+    normalizedPackageDirectory = std::string(packageDirectory);
 
-  mPackageMap[_packageName].push_back(normalizedPackageDirectory);
+  const std::string packageNameString(packageName);
+  mPackageMap[packageNameString].push_back(normalizedPackageDirectory);
 }
 
 //==============================================================================
