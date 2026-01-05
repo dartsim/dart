@@ -40,31 +40,11 @@
 #include "dart/math/Random.hpp"
 
 #include <gtest/gtest.h>
-#include <ode/version.h>
-
-#include <cstdio>
 
 using namespace dart;
 using namespace dynamics;
 
 namespace {
-
-bool isOdeVersionAtLeast(int major, int minor, int patch)
-{
-  int odeMajor = 0;
-  int odeMinor = 0;
-  int odePatch = 0;
-  if (std::sscanf(dODE_VERSION, "%d.%d.%d", &odeMajor, &odeMinor, &odePatch)
-      != 3) {
-    return false;
-  }
-
-  if (odeMajor != major)
-    return odeMajor > major;
-  if (odeMinor != minor)
-    return odeMinor > minor;
-  return odePatch >= patch;
-}
 
 } // namespace
 
