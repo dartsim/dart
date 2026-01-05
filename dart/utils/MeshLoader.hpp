@@ -52,6 +52,7 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include <cassert>
 #include <cctype>
@@ -91,7 +92,7 @@ public:
   /// @param[in] retriever Optional resource retriever for loading from URIs
   /// @return A unique pointer to the loaded mesh, or nullptr if loading fails
   [[nodiscard]] std::unique_ptr<Mesh> load(
-      const std::string& filepath,
+      std::string_view filepath,
       const common::ResourceRetrieverPtr& retriever = nullptr);
 
   /// Loads a polygon mesh from a file using Assimp.
@@ -102,7 +103,7 @@ public:
   /// @return A unique pointer to the loaded polygon mesh, or nullptr if loading
   /// fails
   [[nodiscard]] std::unique_ptr<PolygonMesh> loadPolygonMesh(
-      const std::string& filepath,
+      std::string_view filepath,
       const common::ResourceRetrieverPtr& retriever = nullptr);
 
 private:
@@ -121,8 +122,7 @@ private:
 
   /// Loads an aiScene using Assimp with the given filepath and retriever.
   static aiScenePtr loadScene(
-      const std::string& filepath,
-      const common::ResourceRetrieverPtr& retriever);
+      std::string_view filepath, const common::ResourceRetrieverPtr& retriever);
 };
 
 using MeshLoaderf = MeshLoader<float>;
@@ -147,7 +147,7 @@ namespace utils {
 //==============================================================================
 template <typename S>
 std::unique_ptr<typename MeshLoader<S>::Mesh> MeshLoader<S>::load(
-    const std::string& filepath, const common::ResourceRetrieverPtr& retriever)
+    std::string_view filepath, const common::ResourceRetrieverPtr& retriever)
 {
   auto polygonMesh = loadPolygonMesh(filepath, retriever);
   if (!polygonMesh) {
@@ -162,7 +162,7 @@ std::unique_ptr<typename MeshLoader<S>::Mesh> MeshLoader<S>::load(
 template <typename S>
 std::unique_ptr<typename MeshLoader<S>::PolygonMesh>
 MeshLoader<S>::loadPolygonMesh(
-    const std::string& filepath, const common::ResourceRetrieverPtr& retriever)
+    std::string_view filepath, const common::ResourceRetrieverPtr& retriever)
 {
   // Load the scene and return nullptr if it fails
   aiScenePtr scene = loadScene(filepath, retriever);
@@ -252,24 +252,25 @@ MeshLoader<S>::loadPolygonMesh(
 //==============================================================================
 template <typename S>
 typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
-    const std::string& filepath, const common::ResourceRetrieverPtr& retriever)
+    std::string_view filepath, const common::ResourceRetrieverPtr& retriever)
 {
-  auto hasColladaExtension = [](const std::string& path) -> bool {
+  auto hasColladaExtension = [](std::string_view path) -> bool {
     const std::size_t extensionIndex = path.find_last_of('.');
-    if (extensionIndex == std::string::npos)
+    if (extensionIndex == std::string_view::npos)
       return false;
 
-    std::string extension = path.substr(extensionIndex);
+    std::string extension(path.substr(extensionIndex));
     std::transform(
         extension.begin(), extension.end(), extension.begin(), ::tolower);
     return extension == ".dae" || extension == ".zae";
   };
 
-  auto isColladaResource = [&](const std::string& uri) -> bool {
+  auto isColladaResource = [&](std::string_view uri) -> bool {
     if (hasColladaExtension(uri))
       return true;
 
-    const auto parsedUri = common::Uri::createFromStringOrPath(uri);
+    const std::string uriString(uri);
+    const auto parsedUri = common::Uri::createFromStringOrPath(uriString);
     if (parsedUri.mScheme.get_value_or("file") == "file" && parsedUri.mPath) {
       if (hasColladaExtension(parsedUri.mPath.get()))
         return true;
@@ -296,7 +297,8 @@ typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
            || mixed != std::string::npos;
   };
 
-  const bool isCollada = isColladaResource(filepath);
+  const std::string filepathString(filepath);
+  const bool isCollada = isColladaResource(filepathString);
 
   // Remove points and lines from the import
   aiPropertyStore* propertyStore = aiCreatePropertyStore();
@@ -328,7 +330,7 @@ typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
 
   // Import the file with post-processing flags (keep polygons intact).
   const aiScene* scene = aiImportFileExWithProperties(
-      filepath.c_str(),
+      filepathString.c_str(),
       aiProcess_GenNormals | aiProcess_JoinIdenticalVertices
           | aiProcess_SortByPType | aiProcess_OptimizeMeshes,
       retriever ? &fileIO : nullptr,
@@ -337,7 +339,8 @@ typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
   // If loading failed, clean up and return
   if (!scene) {
     DART_WARN(
-        "[MeshLoader::loadScene] Failed to import mesh from: {}", filepath);
+        "[MeshLoader::loadScene] Failed to import mesh from: {}",
+        filepathString);
     DART_WARN("  Assimp error: {}", aiGetErrorString());
     aiReleasePropertyStore(propertyStore);
     return nullptr;

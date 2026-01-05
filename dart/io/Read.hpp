@@ -44,6 +44,7 @@
 
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace dart {
@@ -104,9 +105,10 @@ struct DART_IO_API ReadOptions
 
   /// Add a package directory for resolving package:// URIs in URDF files.
   void addPackageDirectory(
-      const std::string& packageName, const std::string& packageDirectory)
+      std::string_view packageName, std::string_view packageDirectory)
   {
-    urdfPackageDirectories[packageName].push_back(packageDirectory);
+    urdfPackageDirectories[std::string(packageName)].push_back(
+        std::string(packageDirectory));
   }
 };
 
