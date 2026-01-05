@@ -15,7 +15,7 @@ mcp:
   dart-docs:
     command: python3
     args: ["-m", "http.server", "8000"]
-    working_dir: "/home/js/dev/dartsim/dart/refactor/docs/_build/html"
+    working_dir: "${DART_BUILD_DIR}/docs/_build/html"
     description: "Local DART documentation server"
 ```
 
