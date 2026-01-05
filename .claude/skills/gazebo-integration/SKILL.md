@@ -14,23 +14,27 @@ mcp:
 # Gazebo Integration Skill
 
 ## Purpose
+
 Specialized skill for DART and Gazebo physics integration, focusing on compatibility validation, physics breaking changes, and maintaining consistency between the two simulation ecosystems.
 
 ## When to Use This Skill
 
 ### Physics Compatibility Testing
+
 - Validate DART physics changes don't break Gazebo integration
 - Test contact and collision behavior consistency
 - Verify constraint solver compatibility
 - Check joint limit enforcement
 
 ### Model Integration
+
 - Convert URDF models for Gazebo-specific features
 - Validate SDF models work with both DART and Gazebo
 - Debug physics discrepancies between engines
 - Optimize models for both simulation environments
 
 ### Continuous Integration
+
 - Run automated `test-gz` workflows
 - Validate physics breaking changes automatically
 - Test across multiple Gazebo versions
@@ -62,33 +66,37 @@ pixi run -e gazebo test-gz --benchmark    # Gazebo benchmarks
 ## DART-Gazebo Interface
 
 ### 1. Physics Engine Bridge
+
 DART provides physics engine implementation for Gazebo through:
+
 - **GazeboPhysicsPlugin**: DART physics in Gazebo ecosystem
 - **Compatibility layer**: Maps Gazebo API calls to DART implementations
 - **SDF/URDF handling**: Shared model loading between systems
 
 ### 2. Data Structure Mapping
-| Gazebo Concept | DART Equivalent | Notes |
-|------------------|------------------|---------|
-| Model | Skeleton | Robot representation |
-| Link | BodyNode | Rigid body |
-| Joint | Joint | Kinematic constraints |
-| Collision | CollisionObject | Collision geometry |
-| World | World | Complete simulation scene |
+
+| Gazebo Concept | DART Equivalent | Notes                     |
+| -------------- | --------------- | ------------------------- |
+| Model          | Skeleton        | Robot representation      |
+| Link           | BodyNode        | Rigid body                |
+| Joint          | Joint           | Kinematic constraints     |
+| Collision      | CollisionObject | Collision geometry        |
+| World          | World           | Complete simulation scene |
 
 ## Physics Integration Patterns
 
 ### 1. Joint Type Compatibility
+
 ```xml
 <!-- URDF compatible with both DART and Gazebo -->
 <joint name="arm_joint" type="revolute">
   <parent link="base"/>
   <child link="arm"/>
   <axis xyz="0 0 1"/>
-  
+
   <!-- DART-specific limits -->
   <dynamics damping="0.1"/>
-  
+
   <!-- Gazebo-specific physics -->
   <gazebo reference="arm_joint">
     <physics>
@@ -105,6 +113,7 @@ DART provides physics engine implementation for Gazebo through:
 ```
 
 ### 2. Contact and Collision Consistency
+
 ```xml
 <!-- Ensure collision parameters work in both engines -->
 <gazebo reference="base_link">
@@ -112,7 +121,7 @@ DART provides physics engine implementation for Gazebo through:
     <geometry>
       <box size="1 1 1"/>
     </geometry>
-    
+
     <!-- DART collision properties -->
     <surface>
       <friction>
@@ -127,12 +136,13 @@ DART provides physics engine implementation for Gazebo through:
 ```
 
 ### 3. Material Property Mapping
+
 ```xml
 <!-- Visual material compatibility -->
 <material name="blue_material">
   <!-- Standard URDF visual properties -->
   <color rgba="0 0 1 1"/>
-  
+
   <!-- Gazebo-specific rendering -->
   <gazebo reference="blue_material">
     <script>
@@ -145,6 +155,7 @@ DART provides physics engine implementation for Gazebo through:
 ## Testing and Validation
 
 ### 1. Physics Breaking Changes Test
+
 ```bash
 # Automated test workflow
 pixi run -e gazebo test-gz --physics-breaking
@@ -158,6 +169,7 @@ pixi run -e gazebo test-gz --physics-breaking
 ```
 
 ### 2. Model Compatibility Validation
+
 ```cpp
 // Test model loads in both systems
 class ModelCompatibilityTest : public ::testing::Test {
@@ -166,12 +178,12 @@ protected:
         // Load model in DART
         dartWorld = dart::io::readWorld("test_robot.urdf");
         ASSERT_NE(dartWorld, nullptr);
-        
+
         // Load model in Gazebo
         gazeboWorld = loadGazeboWorld("test_robot.urdf");
         ASSERT_NE(gazeboWorld, nullptr);
     }
-    
+
     void comparePhysicsProperties() {
         // Compare joint limits, masses, inertia
         compareJointProperties();
@@ -182,20 +194,21 @@ protected:
 ```
 
 ### 3. Performance Comparison Tests
+
 ```cpp
 // Benchmark DART vs Gazebo physics
 BENCHMARK(PhysicsComparison, ForwardDynamics) {
     auto dartSkeleton = createBenchmarkSkeleton();
     auto gazeboWorld = createGazeboEquivalent();
-    
+
     // Benchmark DART
     auto dartTime = benchmarkDARTForwardDynamics(dartSkeleton);
-    
+
     // Benchmark Gazebo with DART physics
     auto gazeboTime = benchmarkGazeboDynamics(gazeboWorld);
-    
+
     // Results should be comparable (within 10%)
-    EXPECT_LT(std::abs(dartTime - gazeboTime), 
+    EXPECT_LT(std::abs(dartTime - gazeboTime),
               std::max(dartTime, gazeboTime) * 0.1);
 }
 ```
@@ -203,6 +216,7 @@ BENCHMARK(PhysicsComparison, ForwardDynamics) {
 ## Common Integration Issues
 
 ### ❌ Physics Parameter Mismatches
+
 ```xml
 <!-- Wrong: Incompatible physics parameters -->
 <gazebo reference="joint">
@@ -227,6 +241,7 @@ BENCHMARK(PhysicsComparison, ForwardDynamics) {
 ```
 
 ### ❌ Joint Limit Inconsistencies
+
 ```xml
 <!-- Wrong: Different limits in different places -->
 <joint limit="0 1.57" type="revolute"/>  <!-- URDF limits -->
@@ -257,6 +272,7 @@ BENCHMARK(PhysicsComparison, ForwardDynamics) {
 ## Validation Workflows
 
 ### 1. Continuous Integration Testing
+
 ```yaml
 # GitHub Actions workflow for Gazebo integration
 name: DART-Gazebo Integration Tests
@@ -267,18 +283,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y gazebo11 libgazebo11-dev
-          
+
       - name: Build DART
         run: pixi run build --config DART_BUILD_GAZEBO=ON
-        
+
       - name: Run integration tests
         run: pixi run -e gazebo test-gz
-        
+
       - name: Upload results
         uses: actions/upload-artifact@v2
         with:
@@ -287,6 +303,7 @@ jobs:
 ```
 
 ### 2. Local Development Testing
+
 ```bash
 # Quick development cycle
 # 1. Make changes to DART physics
@@ -303,6 +320,7 @@ gazebo --verbose --physics-engine dart test_world.sdf
 ## Performance Monitoring
 
 ### 1. Physics Benchmark Comparison
+
 ```bash
 # Run comparative benchmarks
 pixi run benchmark --filter physics-comparison
@@ -315,23 +333,24 @@ CollisionDetect, 8.4, 8.2, -2.4, PASS
 ```
 
 ### 2. Memory Usage Tracking
+
 ```cpp
 // Monitor memory in long simulations
 class MemoryMonitor {
 private:
     size_t baselineMemory;
     size_t peakMemory;
-    
+
 public:
     void startMonitoring() {
         baselineMemory = getCurrentMemoryUsage();
         peakMemory = baselineMemory;
     }
-    
+
     void checkMemory() {
         size_t current = getCurrentMemoryUsage();
         peakMemory = std::max(peakMemory, current);
-        
+
         if (current > baselineMemory * 1.5) {  // 50% increase threshold
             std::cerr << "Memory usage spike: " << current << " bytes\n";
         }
@@ -342,18 +361,21 @@ public:
 ## Success Criteria
 
 ### Integration Compatibility
+
 - [ ] All DART physics features work in Gazebo
 - [ ] No physics breaking changes in CI/CD
 - [ ] Performance within 10% of baseline
 - [ ] Consistent behavior across versions
 
 ### Model Compatibility
+
 - [ ] URDF models load identically in both systems
 - [ ] SDF models work across both ecosystems
 - [ ] Material properties preserved correctly
 - [ ] Joint limits enforced consistently
 
 ### Validation and Testing
+
 - [ ] Automated `test-gz` passes consistently
 - [ ] Physics breaking changes detected automatically
 - [ ] Performance regressions caught in CI
@@ -375,4 +397,4 @@ public:
 
 ---
 
-*Gazebo integration ensures DART physics work correctly in the broader robotics simulation ecosystem. Maintain compatibility and consistent behavior.*
+_Gazebo integration ensures DART physics work correctly in the broader robotics simulation ecosystem. Maintain compatibility and consistent behavior._
