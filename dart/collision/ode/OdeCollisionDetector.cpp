@@ -366,8 +366,6 @@ Contact convertContact(
       contact.normal /= normalNorm;
     }
     contact.penetrationDepth = odeContact.depth;
-
-    const double normalNorm = contact.normal.norm();
     if (normalNorm > Contact::getNormalEpsilon())
       contact.normal /= normalNorm;
   }
