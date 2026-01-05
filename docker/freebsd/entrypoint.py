@@ -110,11 +110,7 @@ def write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img, user):
             ]
         )
 
-    """For root user, also add SSH key to authorized_keys.
 
-This avoids SSH connection issues when user runs as root,
-since nuageinit doesn't create /root/.ssh parent directories.
-"""
     lines.append("")
     user_data.write_text("\n".join(lines))
     meta_data.write_text(
