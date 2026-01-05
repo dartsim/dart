@@ -84,3 +84,11 @@
   experimental mappers with `std::span<const double>`.
 - Switch `StateSpace::addVariables` to `std::span<const std::string>`.
 - Update binary I/O helpers and tests to pass spans explicitly.
+
+### Phase 16: Name lookup string views
+
+- Switch dynamics name lookup APIs to `std::string_view` for read-only queries
+  (`MetaSkeleton`/`Skeleton`/`ReferentialSkeleton` name-based accessors).
+- Enable heterogeneous lookup in `common::NameManager` and accept
+  `std::string_view` for lookup helpers.
+- Update call sites and docs to match the new signatures.

@@ -33,8 +33,10 @@
 #ifndef DART_COMMON_NAMEMANAGER_HPP_
 #define DART_COMMON_NAMEMANAGER_HPP_
 
+#include <functional>
 #include <map>
 #include <string>
+#include <string_view>
 
 namespace dart {
 namespace common {
@@ -92,7 +94,7 @@ public:
   bool addName(const std::string& _name, const T& _obj);
 
   /// Remove an object from the Manager based on its name
-  bool removeName(const std::string& _name);
+  bool removeName(std::string_view name);
 
   /// Remove an object from the Manager based on reverse lookup
   bool removeObject(const T& _obj);
@@ -105,7 +107,7 @@ public:
   void clear();
 
   /// Return true if the name is contained
-  bool hasName(const std::string& _name) const;
+  bool hasName(std::string_view name) const;
 
   /// Return true if the object is contained
   bool hasObject(const T& _obj) const;
@@ -118,7 +120,7 @@ public:
   ///   Name of the requested object
   /// @return
   ///   The object if it exists, or nullptr if it does not exist
-  T getObject(const std::string& _name) const;
+  T getObject(std::string_view name) const;
 
   /// Use a reverse lookup to get the name that the manager has _obj listed
   /// under. Returns an empty string if it is not in the list.
@@ -153,7 +155,7 @@ protected:
   std::string mManagerName;
 
   /// Map of objects that have been added to the NameManager
-  std::map<std::string, T> mMap;
+  std::map<std::string, T, std::less<>> mMap;
 
   /// Reverse map of objects that have been added to the NameManager
   std::map<T, std::string> mReverseMap;

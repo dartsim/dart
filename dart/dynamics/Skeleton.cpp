@@ -920,27 +920,27 @@ const SoftBodyNode* Skeleton::getSoftBodyNode(std::size_t _idx) const
 }
 
 //==============================================================================
-BodyNode* Skeleton::getBodyNode(const std::string& _name)
+BodyNode* Skeleton::getBodyNode(std::string_view name)
 {
-  return mNameMgrForBodyNodes.getObject(_name);
+  return mNameMgrForBodyNodes.getObject(name);
 }
 
 //==============================================================================
-const BodyNode* Skeleton::getBodyNode(const std::string& _name) const
+const BodyNode* Skeleton::getBodyNode(std::string_view name) const
 {
-  return mNameMgrForBodyNodes.getObject(_name);
+  return mNameMgrForBodyNodes.getObject(name);
 }
 
 //==============================================================================
-SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name)
+SoftBodyNode* Skeleton::getSoftBodyNode(std::string_view name)
 {
-  return mNameMgrForSoftBodyNodes.getObject(_name);
+  return mNameMgrForSoftBodyNodes.getObject(name);
 }
 
 //==============================================================================
-const SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
+const SoftBodyNode* Skeleton::getSoftBodyNode(std::string_view name) const
 {
-  return mNameMgrForSoftBodyNodes.getObject(_name);
+  return mNameMgrForSoftBodyNodes.getObject(name);
 }
 
 //==============================================================================
@@ -968,7 +968,7 @@ std::span<const BodyNode* const> Skeleton::getBodyNodes() const
 }
 
 //==============================================================================
-std::vector<BodyNode*> Skeleton::getBodyNodes(const std::string& name)
+std::vector<BodyNode*> Skeleton::getBodyNodes(std::string_view name)
 {
   auto bodyNode = getBodyNode(name);
 
@@ -979,8 +979,7 @@ std::vector<BodyNode*> Skeleton::getBodyNodes(const std::string& name)
 }
 
 //==============================================================================
-std::vector<const BodyNode*> Skeleton::getBodyNodes(
-    const std::string& name) const
+std::vector<const BodyNode*> Skeleton::getBodyNodes(std::string_view name) const
 {
   const auto bodyNode = getBodyNode(name);
 
@@ -1111,20 +1110,20 @@ const Joint* Skeleton::getJoint(std::size_t _idx) const
 }
 
 //==============================================================================
-Joint* Skeleton::getJoint(const std::string& name)
+Joint* Skeleton::getJoint(std::string_view name)
 {
   return mNameMgrForJoints.getObject(name);
 }
 
 //==============================================================================
-const Joint* Skeleton::getJoint(const std::string& name) const
+const Joint* Skeleton::getJoint(std::string_view name) const
 {
   return mNameMgrForJoints.getObject(name);
 }
 
 //==============================================================================
 //==============================================================================
-std::vector<Joint*> Skeleton::getJoints(const std::string& name)
+std::vector<Joint*> Skeleton::getJoints(std::string_view name)
 {
   auto joint = getJoint(name);
 
@@ -1135,7 +1134,7 @@ std::vector<Joint*> Skeleton::getJoints(const std::string& name)
 }
 
 //==============================================================================
-std::vector<const Joint*> Skeleton::getJoints(const std::string& name) const
+std::vector<const Joint*> Skeleton::getJoints(std::string_view name) const
 {
   const auto joint = getJoint(name);
 
