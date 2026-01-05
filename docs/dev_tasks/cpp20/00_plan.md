@@ -91,10 +91,28 @@
   (`MetaSkeleton`/`Skeleton`/`ReferentialSkeleton` name-based accessors).
 - Enable heterogeneous lookup in `common::NameManager` and accept
   `std::string_view` for lookup helpers.
-- Update call sites and docs to match the new signatures.
-<<<<<<< HEAD
+- Update call sites and docs to match new signatures.
+
 ### Phase 17: Uri string-view inputs
 
 - Switch `common::Uri` parsing/merging helpers to accept `std::string_view`
   for read-only inputs.
 - Keep `const char*` overloads for compatibility where appropriate.
+
+### Phase 18: Shared library string views
+
+- Use `std::string_view` for shared-library path and symbol inputs in
+  `SharedLibrary` and `SharedLibraryManager`.
+- Avoid extra copies beyond those needed for OS APIs (e.g., null-terminated
+  strings).
+
+### Phase 19: Resource retriever string views
+
+- Switch resource-retriever configuration inputs (schema names, package paths,
+  data directories) to `std::string_view`.
+- Keep storage in `std::string` for registries and directory lists.
+
+### Phase 20: NameManager string views
+
+- Convert `NameManager` name, pattern, and rename inputs to `std::string_view`.
+- Preserve `std::string` storage for the managed name maps.

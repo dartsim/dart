@@ -160,14 +160,15 @@ std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
 DART_SUPPRESS_DEPRECATED_END
 
 //==============================================================================
-void DartResourceRetriever::addDataDirectory(const std::string& dataDirectory)
+void DartResourceRetriever::addDataDirectory(std::string_view dataDirectory)
 {
   // Strip a trailing slash.
   std::string normalizedDataDirectory;
   if (!dataDirectory.empty() && dataDirectory.back() == '/') {
-    normalizedDataDirectory = dataDirectory.substr(0, dataDirectory.size() - 1);
+    normalizedDataDirectory
+        = std::string(dataDirectory.substr(0, dataDirectory.size() - 1));
   } else {
-    normalizedDataDirectory = dataDirectory;
+    normalizedDataDirectory = std::string(dataDirectory);
   }
 
   mDataDirectories.push_back(normalizedDataDirectory);
