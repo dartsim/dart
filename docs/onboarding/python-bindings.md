@@ -219,8 +219,8 @@ pixi run -e py313-wheel wheel-upload
 ```python
 import dartpy as dart
 
-world = dart.simulation.World()
-parser = dart.utils.UrdfParser()
+world = dart.World()
+parser = dart.io.UrdfParser()
 robot = parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
 world.addSkeleton(robot)
 
@@ -240,7 +240,7 @@ class MyWorldNode(dart.gui.RealTimeWorldNode):
         # Log data after physics step
         pass
 
-world = dart.simulation.World()
+world = dart.World()
 node = MyWorldNode(world)
 
 viewer = dart.gui.Viewer()

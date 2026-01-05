@@ -85,7 +85,7 @@ def setup_ring(ring: dart.dynamics.Skeleton):
 
     for i in range(1, ring.getNumJoints()):
         joint = ring.getJoint(i)
-        rotation = dart.math.eulerXYZToMatrix([0.0, angle, 0.0])
+        rotation = dart.math.euler_xyz_to_matrix([0.0, angle, 0.0])
         rest = dart.dynamics.BallJoint.convertToPositions(rotation)
         for axis in range(3):
             joint.setRestPosition(axis, rest[axis])
@@ -101,7 +101,7 @@ def setup_ring(ring: dart.dynamics.Skeleton):
 class CollisionsEventHandler(dart.gui.GUIEventHandler):
     def __init__(
         self,
-        world: dart.simulation.World,
+        world: dart.World,
         ball: dart.dynamics.Skeleton,
         soft_body: dart.dynamics.Skeleton,
         hybrid_body: dart.dynamics.Skeleton,
@@ -518,7 +518,7 @@ def create_wall() -> dart.dynamics.Skeleton:
 
 
 def main():
-    world = dart.simulation.World()
+    world = dart.World()
     world.addSkeleton(create_ground())
     world.addSkeleton(create_wall())
 

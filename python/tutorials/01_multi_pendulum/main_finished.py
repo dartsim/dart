@@ -66,7 +66,7 @@ class Controller:
     """Owns the runtime state and interactions for the tutorial."""
 
     def __init__(
-        self, pendulum: dart.dynamics.Skeleton, world: dart.simulation.World
+        self, pendulum: dart.dynamics.Skeleton, world: dart.World
     ):
         self.pendulum = pendulum
         self.world = world
@@ -308,7 +308,7 @@ class CustomWorldNode(dart.gui.RealTimeWorldNode):
     """Call the controller before each physics step."""
 
     def __init__(
-        self, world: dart.simulation.World, controller: Controller
+        self, world: dart.World, controller: Controller
     ):
         super().__init__(world)
         self.controller = controller
@@ -380,7 +380,7 @@ def add_body(pendulum: dart.dynamics.Skeleton, parent, name: str):
     cylinder = dart.dynamics.CylinderShape(r, h)
 
     tf = dart.math.Isometry3()
-    rot = dart.math.eulerXYZToMatrix([math.pi / 2.0, 0.0, 0.0])
+    rot = dart.math.euler_xyz_to_matrix([math.pi / 2.0, 0.0, 0.0])
     tf.set_rotation(rot)
 
     shape_node = body.createShapeNode(cylinder)
@@ -404,7 +404,7 @@ def main():
 
     pendulum.getDof(1).setPosition(math.radians(120.0))
 
-    world = dart.simulation.World()
+    world = dart.World()
     world.addSkeleton(pendulum)
 
     controller = Controller(pendulum, world)

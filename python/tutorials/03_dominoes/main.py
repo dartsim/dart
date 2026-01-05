@@ -88,7 +88,7 @@ class Controller:
 class DominoEventHandler(dart.gui.GUIEventHandler):
     def __init__(
         self,
-        world: dart.simulation.World,
+        world: dart.World,
         controller: Controller,
     ):
         super().__init__()
@@ -161,7 +161,7 @@ class DominoEventHandler(dart.gui.GUIEventHandler):
 class CustomWorldNode(dart.gui.RealTimeWorldNode):
     def __init__(
         self,
-        world: dart.simulation.World,
+        world: dart.World,
         handler: DominoEventHandler,
     ):
         super().__init__(world)
@@ -222,7 +222,7 @@ def main():
     floor = create_floor()
     manipulator = create_manipulator()
 
-    world = dart.simulation.World()
+    world = dart.World()
     world.addSkeleton(domino)
     world.addSkeleton(floor)
     world.addSkeleton(manipulator)
