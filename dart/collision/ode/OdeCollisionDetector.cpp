@@ -330,8 +330,10 @@ void reportContacts(
       stabilizeBoxCylinderContactPoint(baseContact);
     }
 #endif
+#if DART_ODE_HAS_LIBCCD_BOX_CYL
     if (expandBoxCylinderContact(baseContact, option, result))
       return;
+#endif
     result.addContact(baseContact);
     return;
   }
