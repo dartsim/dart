@@ -61,12 +61,77 @@
     "default_max_iterations": 50 
   },
   
+  // Enhanced quality gates and automation
+  "quality_gates": {
+    "enabled": true,
+    "component_aware_testing": true,
+    "performance_regression_detection": true,
+    "python_binding_automated_checks": true,
+    "gazebo_integration_triggers": true,
+    "memory_usage_monitoring": true,
+    "automated_baseline_management": true
+  },
+  
+  // Multi-agent orchestration configuration
+  "agent_orchestration": {
+    "enabled": true,
+    "max_parallel_tasks": 6,
+    "task_timeout_seconds": 300,
+    "context_sharing": {
+      "enabled": true,
+      "compression": "gzip",
+      "max_context_per_agent": 150000,
+      "retention_minutes": 60
+    },
+    "coordination_server": {
+      "enabled": true,
+      "port": 8009,
+      "auto_discovery": true
+    }
+  },
+  
+  // Advanced agent coordination
+  "agent_coordination": {
+    "model_selection": {
+      "smart_routing": true,
+      "fallback_chain": ["gpt-5.2", "claude-sonnet-4-5", "grok-code"],
+      "task_type_heuristics": true
+    },
+    "task_distribution": {
+      "load_balancing": true,
+      "resource_aware": true,
+      "dependency_resolution": true
+    }
+  },
+  
+  // Performance intelligence integration
+  "performance_intelligence": {
+    "enabled": true,
+    "real_time_monitoring": true,
+    "regression_detection": {
+      "statistical_analysis": true,
+      "adaptive_thresholds": true,
+      "alert_channels": ["console", "file", "webhook"]
+    },
+    "baseline_management": {
+      "automated_capture": true,
+      "version_tracking": true,
+      "cross_platform_comparison": true
+    },
+    "optimization_suggestions": {
+      "machine_learning": true,
+      "pattern_recognition": true,
+      "impact_prediction": true
+    }
+  },
+  
   // Disable noisy features for focused development
   "disabled_hooks": ["startup-toast"],
   
   // Performance optimization for large codebase
   "context_window_monitor": {
     "enabled": true,
-    "warning_threshold": 0.7
+    "warning_threshold": 0.7,
+    "aggressive_compaction": true
   }
 }
