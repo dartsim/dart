@@ -262,7 +262,13 @@ bool OdeCollisionDetector::collide(
 
   OdeCollisionCallbackData data(option, result);
   data.contactGeoms = contactCollisions;
-  data.history = &mContactHistory;
+  if (option.useBackendContactHistory) {
+    data.history = &mContactHistory;
+  } else {
+    if (!mContactHistory.empty())
+      mContactHistory.clear();
+    data.history = nullptr;
+  }
 
   dSpaceCollide2(
       reinterpret_cast<dGeomID>(odeGroup1->getOdeSpaceId()),
@@ -270,7 +276,7 @@ bool OdeCollisionDetector::collide(
       &data,
       CollisionCallback);
 
-  if (result) {
+  if (result && option.useBackendContactHistory) {
     pruneContactHistory(*result);
   }
 
