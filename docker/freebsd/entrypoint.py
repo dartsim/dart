@@ -101,9 +101,14 @@ def write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img, user):
                 f"      - {pub_key}",
             ]
         )
-    else:
-        # For root user, also add SSH key to authorized_keys
-        lines.append(f"      - {pub_key}")
+    elif user == "root":
+        lines.extend(
+            [
+                "  - name: root",
+                "    ssh_authorized_keys:",
+                f"      - {pub_key}",
+            ]
+        )
 
     """For root user, also add SSH key to authorized_keys.
 
