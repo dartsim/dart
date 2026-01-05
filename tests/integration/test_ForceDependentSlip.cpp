@@ -32,7 +32,6 @@
 
 #include "TestHelpers.hpp"
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
-#include "dart/config.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/math/Geometry.hpp"
@@ -43,10 +42,6 @@
 
 using namespace dart;
 using namespace dynamics;
-
-namespace {
-
-} // namespace
 
 //==============================================================================
 std::shared_ptr<World> createWorld()
