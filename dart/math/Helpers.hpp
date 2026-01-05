@@ -36,6 +36,7 @@
 // Standard Libraries
 #include <array>
 #include <bit>
+#include <concepts>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -203,16 +204,15 @@ inline bool valueEqualFloating(Float lhs, Float rhs)
 } // namespace detail
 
 template <typename T>
-inline std::enable_if_t<std::is_floating_point_v<T>, bool> valueEqual(
-    const T& lhs, const T& rhs)
+  requires std::floating_point<T>
+inline bool valueEqual(const T& lhs, const T& rhs)
 {
   return detail::valueEqualFloating(lhs, rhs);
 }
 
 template <typename T>
-inline std::
-    enable_if_t<std::is_arithmetic_v<T> && !std::is_floating_point_v<T>, bool>
-    valueEqual(const T& lhs, const T& rhs)
+  requires std::integral<T>
+inline bool valueEqual(const T& lhs, const T& rhs)
 {
   return lhs == rhs;
 }
@@ -240,7 +240,8 @@ inline bool isEqual(const T& lhs, const T& rhs)
 }
 
 template <typename T>
-inline std::enable_if_t<std::is_floating_point_v<T>, bool> isApprox(
+  requires std::floating_point<T>
+inline bool isApprox(
     const T& lhs,
     const T& rhs,
     const T& abs_tol = defaultAbsTolerance<T>(),
@@ -258,21 +259,18 @@ inline std::enable_if_t<std::is_floating_point_v<T>, bool> isApprox(
 }
 
 template <typename T>
-inline std::enable_if_t<
-    std::is_arithmetic_v<T> && !std::is_floating_point_v<T>,
-    bool>
-isApprox(const T& lhs, const T& rhs, double abs_tol = 0.0, double rel_tol = 0.0)
+  requires std::integral<T>
+inline bool isApprox(
+    const T& lhs, const T& rhs, double abs_tol = 0.0, double rel_tol = 0.0)
 {
   return isApprox(
       static_cast<double>(lhs), static_cast<double>(rhs), abs_tol, rel_tol);
 }
 
 template <typename DerivedA, typename DerivedB>
-inline std::enable_if_t<
-    std::is_floating_point_v<typename DerivedA::Scalar>
-        && std::is_floating_point_v<typename DerivedB::Scalar>,
-    bool>
-isApprox(
+  requires std::floating_point<typename DerivedA::Scalar>
+           && std::floating_point<typename DerivedB::Scalar>
+inline bool isApprox(
     const Eigen::MatrixBase<DerivedA>& lhs,
     const Eigen::MatrixBase<DerivedB>& rhs,
     const typename DerivedA::Scalar abs_tol
@@ -292,13 +290,13 @@ isApprox(
 }
 
 template <typename DerivedA, typename DerivedB>
-inline std::enable_if_t<
-    std::is_arithmetic_v<typename DerivedA::Scalar>
-        && std::is_arithmetic_v<typename DerivedB::Scalar>
-        && (!std::is_floating_point_v<typename DerivedA::Scalar>
-            || !std::is_floating_point_v<typename DerivedB::Scalar>),
-    bool>
-isApprox(
+  requires(
+      std::is_arithmetic_v<typename DerivedA::Scalar>
+      && std::is_arithmetic_v<typename DerivedB::Scalar>
+      && !(
+          std::floating_point<typename DerivedA::Scalar>
+          && std::floating_point<typename DerivedB::Scalar>))
+inline bool isApprox(
     const Eigen::MatrixBase<DerivedA>& lhs,
     const Eigen::MatrixBase<DerivedB>& rhs,
     const std::common_type_t<
@@ -330,8 +328,8 @@ isApprox(
 }
 
 template <typename T>
-inline std::enable_if_t<std::is_floating_point_v<T>, bool> isZero(
-    const T& value, const T& abs_tol = defaultAbsTolerance<T>())
+  requires std::floating_point<T>
+inline bool isZero(const T& value, const T& abs_tol = defaultAbsTolerance<T>())
 {
   if (std::isnan(value))
     return false;
@@ -340,20 +338,18 @@ inline std::enable_if_t<std::is_floating_point_v<T>, bool> isZero(
 }
 
 template <typename T>
-inline std::
-    enable_if_t<std::is_arithmetic_v<T> && !std::is_floating_point_v<T>, bool>
-    isZero(const T& value)
+  requires std::integral<T>
+inline bool isZero(const T& value)
 {
   return value == T{0};
 }
 
 template <typename Derived>
-inline std::
-    enable_if_t<std::is_floating_point_v<typename Derived::Scalar>, bool>
-    isZero(
-        const Eigen::MatrixBase<Derived>& values,
-        const typename Derived::Scalar abs_tol
-        = defaultAbsTolerance<typename Derived::Scalar>())
+  requires std::floating_point<typename Derived::Scalar>
+inline bool isZero(
+    const Eigen::MatrixBase<Derived>& values,
+    const typename Derived::Scalar abs_tol
+    = defaultAbsTolerance<typename Derived::Scalar>())
 {
   if (values.size() == 0)
     return true;

@@ -112,7 +112,7 @@ struct UniformScalarImpl<S>
 };
 
 //==============================================================================
-template <typename Derived, typename Enable = void>
+template <typename Derived>
 struct UniformMatrixImpl
 {
   // Define nothing
@@ -121,12 +121,10 @@ struct UniformMatrixImpl
 //==============================================================================
 // Dynamic matrix case
 template <typename Derived>
-  requires EigenMatrix<Derived>
-struct UniformMatrixImpl<
-    Derived,
-    std::enable_if_t<
-        !Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime == Eigen::Dynamic>>
+  requires(
+      EigenMatrix<Derived> && (Derived::IsVectorAtCompileTime == 0)
+      && (Derived::SizeAtCompileTime == Eigen::Dynamic))
+struct UniformMatrixImpl<Derived>
 {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
@@ -148,12 +146,10 @@ struct UniformMatrixImpl<
 //==============================================================================
 // Dynamic vector case
 template <typename Derived>
-  requires EigenMatrix<Derived>
-struct UniformMatrixImpl<
-    Derived,
-    std::enable_if_t<
-        Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime == Eigen::Dynamic>>
+  requires(
+      EigenMatrix<Derived> && (Derived::IsVectorAtCompileTime != 0)
+      && (Derived::SizeAtCompileTime == Eigen::Dynamic))
+struct UniformMatrixImpl<Derived>
 {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
@@ -173,12 +169,10 @@ struct UniformMatrixImpl<
 //==============================================================================
 // Fixed matrix case
 template <typename Derived>
-  requires EigenMatrix<Derived>
-struct UniformMatrixImpl<
-    Derived,
-    std::enable_if_t<
-        !Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime != Eigen::Dynamic>>
+  requires(
+      EigenMatrix<Derived> && (Derived::IsVectorAtCompileTime == 0)
+      && (Derived::SizeAtCompileTime != Eigen::Dynamic))
+struct UniformMatrixImpl<Derived>
 {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
@@ -200,12 +194,10 @@ struct UniformMatrixImpl<
 //==============================================================================
 // Fixed vector case
 template <typename Derived>
-  requires EigenMatrix<Derived>
-struct UniformMatrixImpl<
-    Derived,
-    std::enable_if_t<
-        Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime != Eigen::Dynamic>>
+  requires(
+      EigenMatrix<Derived> && (Derived::IsVectorAtCompileTime != 0)
+      && (Derived::SizeAtCompileTime != Eigen::Dynamic))
+struct UniformMatrixImpl<Derived>
 {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
