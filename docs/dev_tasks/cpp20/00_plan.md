@@ -130,3 +130,12 @@
   clauses or concepts.
 - Modernize math/random helper specializations and ODE heightmap overloads to
   use constrained templates without dummy SFINAE parameters.
+
+### Phase 23: String-view for world/sensor/optimization names
+
+- Switch `WorldConfig`/`World` name inputs and name lookups to
+  `std::string_view`.
+- Update sensor naming APIs (`Sensor`, `SensorManager`) to accept
+  `std::string_view`.
+- Convert optimization `Function`/`Solver` naming and result-file inputs to
+  `std::string_view`.

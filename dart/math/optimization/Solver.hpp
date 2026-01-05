@@ -39,6 +39,7 @@
 
 #include <iostream>
 #include <memory>
+#include <string>
 #include <string_view>
 
 namespace dart {
@@ -88,13 +89,13 @@ public:
     std::string mResultFile;
 
     Properties(
-        std::shared_ptr<Problem> _problem = nullptr,
-        double _tolerance = 1e-9,
-        std::size_t _numMaxIterations = 500,
-        std::size_t _iterationsPerPrint = 0,
-        std::ostream* _ostream = &std::cout,
-        bool _printFinalResult = false,
-        const std::string& _resultFile = "");
+        std::shared_ptr<Problem> problem = nullptr,
+        double tolerance = 1e-9,
+        std::size_t numMaxIterations = 500,
+        std::size_t iterationsPerPrint = 0,
+        std::ostream* ostream = &std::cout,
+        bool printFinalResult = false,
+        std::string_view resultFile = "");
   };
 
   /// Default Constructor
@@ -169,7 +170,7 @@ public:
 
   /// Set the name of the file that results should be printed to. Use an empty
   /// string to indicate that results should not be printed to a file.
-  virtual void setResultFileName(const std::string& _resultFile);
+  virtual void setResultFileName(std::string_view resultFile);
 
   /// Get the name of the file that results should be printed to. An empty
   /// string indicates that results should not be printed to a file.

@@ -3,8 +3,9 @@ You are resuming the C++20 modernization task in
 
 Current state:
 
-- Branch: `cpp20/phase22`
-- PR (Phase 22): https://github.com/dartsim/dart/pull/2403
+- Branch: `cpp20/phase23`
+- PR (Phase 23): https://github.com/dartsim/dart/pull/2404
+- Phase 22 PR: https://github.com/dartsim/dart/pull/2403 (merged)
 - Phase 21 PR: https://github.com/dartsim/dart/pull/2401
 - Phase 20 PR: https://github.com/dartsim/dart/pull/2400
 - Phase 19 PR: https://github.com/dartsim/dart/pull/2399
@@ -27,8 +28,8 @@ Current state:
 
 What to do next:
 
-1. Monitor PRs #2394, #2397, #2398, #2399, #2400, #2401, and #2403 for CI/review feedback.
-2. Start the next phase after Phase 22 lands (update `docs/dev_tasks/cpp20/00_plan.md` if a new phase is added).
+1. Monitor PRs #2394, #2397, #2398, #2399, #2400, #2401, #2403, and #2404 for CI/review feedback.
+2. Start the next phase after Phase 23 lands (update `docs/dev_tasks/cpp20/00_plan.md` if a new phase is added).
 3. Keep `docs/dev_tasks/cpp20/01_progress.md` current.
 
 Workflow requirements:
