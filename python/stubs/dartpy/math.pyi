@@ -410,6 +410,13 @@ def matrixToEulerXYZ(
 ) -> numpy.ndarray[
     tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]
 ]: ...
+def matrix_to_euler_xyz(
+    R: numpy.ndarray[
+        tuple[typing.Literal[3], typing.Literal[3]], numpy.dtype[numpy.float64]
+    ],
+) -> numpy.ndarray[
+    tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]
+]: ...
 def matrixToEulerXZY(
     R: numpy.ndarray[
         tuple[typing.Literal[3], typing.Literal[3]], numpy.dtype[numpy.float64]
@@ -463,3 +470,12 @@ def euler_xyz_to_matrix(
 ) -> numpy.ndarray[
     tuple[typing.Literal[3], typing.Literal[3]], numpy.dtype[numpy.float64]
 ]: ...
+
+
+def matrix_to_euler_xyz(
+    R: numpy.ndarray[
+        tuple[typing.Literal[3], typing.Literal[3]], numpy.dtype[numpy.float64]
+    ],
+) -> numpy.ndarray[
+        tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]
+    ]: ...
