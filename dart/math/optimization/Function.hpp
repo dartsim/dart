@@ -39,6 +39,8 @@
 
 #include <functional>
 #include <memory>
+#include <string>
+#include <string_view>
 #include <vector>
 
 namespace dart {
@@ -48,13 +50,13 @@ class DART_API Function
 {
 public:
   /// Constructor
-  explicit Function(const std::string& _name = "function");
+  explicit Function(std::string_view name = "function");
 
   /// Destructor
   virtual ~Function();
 
   /// Sets the name of this Function
-  virtual void setName(const std::string& newName);
+  virtual void setName(std::string_view newName);
 
   /// Returns the name of this Function
   const std::string& getName() const;
@@ -101,7 +103,7 @@ class DART_API ModularFunction : public Function
 {
 public:
   /// Constructor
-  explicit ModularFunction(const std::string& _name = "modular_function");
+  explicit ModularFunction(std::string_view name = "modular_function");
 
   /// Destructor
   ~ModularFunction() override;
@@ -160,7 +162,7 @@ class DART_API NullFunction : public Function
 {
 public:
   /// Constructor
-  explicit NullFunction(const std::string& _name = "null_function");
+  explicit NullFunction(std::string_view name = "null_function");
 
   /// Destructor
   ~NullFunction() override;

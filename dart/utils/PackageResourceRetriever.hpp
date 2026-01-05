@@ -94,10 +94,10 @@ public:
       std::string_view packageName, std::string_view packageDirectory);
 
   // Documentation inherited.
-  bool exists(const common::Uri& _uri) override;
+  bool exists(const common::Uri& uri) override;
 
   // Documentation inherited.
-  common::ResourcePtr retrieve(const common::Uri& _uri) override;
+  common::ResourcePtr retrieve(const common::Uri& uri) override;
 
   // Documentation inherited.
   DART_DEPRECATED(7.0)
@@ -108,11 +108,11 @@ private:
   std::unordered_map<std::string, std::vector<std::string>> mPackageMap;
 
   std::span<const std::string> getPackagePaths(
-      const std::string& _packageName) const;
+      std::string_view packageName) const;
   bool resolvePackageUri(
-      const common::Uri& _uri,
-      std::string& _packageName,
-      std::string& _relativePath) const;
+      const common::Uri& uri,
+      std::string& packageName,
+      std::string& relativePath) const;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 

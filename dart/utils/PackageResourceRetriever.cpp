@@ -60,22 +60,22 @@ void PackageResourceRetriever::addPackageDirectory(
     std::string_view packageName, std::string_view packageDirectory)
 {
   // Strip a trailing slash.
-  std::string normalizedPackageDirectory;
-  if (!packageDirectory.empty() && packageDirectory.back() == '/') {
-    normalizedPackageDirectory
-        = std::string(packageDirectory.substr(0, packageDirectory.size() - 1));
-  } else
-    normalizedPackageDirectory = std::string(packageDirectory);
+  std::string_view normalizedPackageDirectory = packageDirectory;
+  if (!normalizedPackageDirectory.empty()
+      && normalizedPackageDirectory.back() == '/') {
+    normalizedPackageDirectory = normalizedPackageDirectory.substr(
+        0, normalizedPackageDirectory.size() - 1);
+  }
 
-  const std::string packageNameString(packageName);
-  mPackageMap[packageNameString].push_back(normalizedPackageDirectory);
+  mPackageMap[std::string(packageName)].push_back(
+      std::string(normalizedPackageDirectory));
 }
 
 //==============================================================================
-bool PackageResourceRetriever::exists(const common::Uri& _uri)
+bool PackageResourceRetriever::exists(const common::Uri& uri)
 {
   std::string packageName, relativePath;
-  if (!resolvePackageUri(_uri, packageName, relativePath))
+  if (!resolvePackageUri(uri, packageName, relativePath))
     return false;
 
   for (const std::string& packagePath : getPackagePaths(packageName)) {
@@ -97,10 +97,10 @@ bool PackageResourceRetriever::exists(const common::Uri& _uri)
 }
 
 //==============================================================================
-common::ResourcePtr PackageResourceRetriever::retrieve(const common::Uri& _uri)
+common::ResourcePtr PackageResourceRetriever::retrieve(const common::Uri& uri)
 {
   std::string packageName, relativePath;
-  if (!resolvePackageUri(_uri, packageName, relativePath))
+  if (!resolvePackageUri(uri, packageName, relativePath))
     return nullptr;
 
   for (const std::string& packagePath : getPackagePaths(packageName)) {
@@ -152,19 +152,20 @@ DART_SUPPRESS_DEPRECATED_END
 
 //==============================================================================
 std::span<const std::string> PackageResourceRetriever::getPackagePaths(
-    const std::string& _packageName) const
+    std::string_view packageName) const
 {
   static const std::vector<std::string> empty_placeholder;
+  const std::string packageNameString(packageName);
 
   // Lookup the corresponding package path.
-  const auto it = mPackageMap.find(_packageName);
+  const auto it = mPackageMap.find(packageNameString);
   if (it != std::end(mPackageMap))
     return std::span<const std::string>(it->second);
   else {
     DART_WARN(
         "{}{}{}",
         "Unable to resolvepath to package '",
-        _packageName,
+        packageNameString,
         "'. Did you call addPackageDirectory(~) for this package name?\n");
     return std::span<const std::string>(empty_placeholder);
   }
@@ -172,28 +173,26 @@ std::span<const std::string> PackageResourceRetriever::getPackagePaths(
 
 //==============================================================================
 bool PackageResourceRetriever::resolvePackageUri(
-    const common::Uri& _uri,
-    std::string& _packageName,
-    std::string& _relativePath) const
+    const common::Uri& uri,
+    std::string& packageName,
+    std::string& relativePath) const
 {
-  if (_uri.mScheme.get_value_or("file") != "package")
+  if (uri.mScheme.get_value_or("file") != "package")
     return false;
 
-  if (!_uri.mAuthority) {
+  if (!uri.mAuthority) {
     DART_WARN(
-        "{}{}'.", "Failed extracting package name from URI '", _uri.toString());
+        "{}{}'.", "Failed extracting package name from URI '", uri.toString());
     return false;
   }
-  _packageName = *_uri.mAuthority;
+  packageName = *uri.mAuthority;
 
-  if (!_uri.mPath) {
+  if (!uri.mPath) {
     DART_WARN(
-        "{}{}'.",
-        "Failed extracting relative path from URI '",
-        _uri.toString());
+        "{}{}'.", "Failed extracting relative path from URI '", uri.toString());
     return false;
   }
-  _relativePath = _uri.mPath.get_value_or("");
+  relativePath = uri.mPath.get_value_or("");
 
   return true;
 }

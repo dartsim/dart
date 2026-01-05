@@ -74,24 +74,23 @@ bool CompositeResourceRetriever::addSchemaRetriever(
 }
 
 //==============================================================================
-bool CompositeResourceRetriever::exists(const common::Uri& _uri)
+bool CompositeResourceRetriever::exists(const common::Uri& uri)
 {
   for (const common::ResourceRetrieverPtr& resourceRetriever :
-       getRetrievers(_uri)) {
-    if (resourceRetriever->exists(_uri))
+       getRetrievers(uri)) {
+    if (resourceRetriever->exists(uri))
       return true;
   }
   return false;
 }
 
 //==============================================================================
-common::ResourcePtr CompositeResourceRetriever::retrieve(
-    const common::Uri& _uri)
+common::ResourcePtr CompositeResourceRetriever::retrieve(const common::Uri& uri)
 {
   const std::vector<common::ResourceRetrieverPtr>& retrievers
-      = getRetrievers(_uri);
+      = getRetrievers(uri);
   for (const common::ResourceRetrieverPtr& resourceRetriever : retrievers) {
-    if (common::ResourcePtr resource = resourceRetriever->retrieve(_uri))
+    if (common::ResourcePtr resource = resourceRetriever->retrieve(uri))
       return resource;
   }
 
@@ -99,7 +98,7 @@ common::ResourcePtr CompositeResourceRetriever::retrieve(
       "{}{}' (tried {}).",
       "All ResourceRetrievers registered for this schema failed to retrieve "
       "the URI '",
-      _uri.toString(),
+      uri.toString(),
       retrievers.size());
 
   return nullptr;
@@ -121,9 +120,9 @@ DART_SUPPRESS_DEPRECATED_END
 
 //==============================================================================
 std::vector<common::ResourceRetrieverPtr>
-CompositeResourceRetriever::getRetrievers(const common::Uri& _uri) const
+CompositeResourceRetriever::getRetrievers(const common::Uri& uri) const
 {
-  const std::string schema = _uri.mScheme.get_value_or("file");
+  const std::string schema = uri.mScheme.get_value_or("file");
 
   std::vector<common::ResourceRetrieverPtr> retrievers;
 
@@ -143,7 +142,7 @@ CompositeResourceRetriever::getRetrievers(const common::Uri& _uri) const
       "There are no resource retrievers registered for the schema '",
       schema,
       "' that is necessary to retrieve URI '",
-      _uri.toString());
+      uri.toString());
 
   return retrievers;
 }

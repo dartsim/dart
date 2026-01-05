@@ -61,7 +61,7 @@ Sensor::Sensor(const Properties& properties)
 }
 
 //==============================================================================
-const std::string& Sensor::setName(const std::string& name)
+const std::string& Sensor::setName(std::string_view name)
 {
   if (name == mProperties.name)
     return mProperties.name;

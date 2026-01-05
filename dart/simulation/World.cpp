@@ -157,7 +157,7 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
 } // namespace
 
 //==============================================================================
-std::shared_ptr<World> World::create(const std::string& name)
+std::shared_ptr<World> World::create(std::string_view name)
 {
   return std::make_shared<World>(name);
 }
@@ -169,7 +169,7 @@ std::shared_ptr<World> World::create(const WorldConfig& config)
 }
 
 //==============================================================================
-World::World(const std::string& _name) : World(WorldConfig(_name)) {}
+World::World(std::string_view name) : World(WorldConfig(name)) {}
 
 //==============================================================================
 World::World(const WorldConfig& config)
@@ -360,13 +360,13 @@ int World::getSimFrames() const
 }
 
 //==============================================================================
-const std::string& World::setName(const std::string& _newName)
+const std::string& World::setName(std::string_view newName)
 {
-  if (_newName == mName)
+  if (newName == mName)
     return mName;
 
   const std::string oldName = mName;
-  mName = _newName;
+  mName = newName;
 
   mNameChangedSignal.raise(oldName, mName);
 
@@ -416,9 +416,9 @@ dynamics::SkeletonPtr World::getSkeleton(std::size_t _index) const
 }
 
 //==============================================================================
-dynamics::SkeletonPtr World::getSkeleton(const std::string& _name) const
+dynamics::SkeletonPtr World::getSkeleton(std::string_view name) const
 {
-  return mNameMgrForSkeletons.getObject(_name);
+  return mNameMgrForSkeletons.getObject(std::string(name));
 }
 
 //==============================================================================
@@ -538,9 +538,9 @@ bool World::hasSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const
 }
 
 //==============================================================================
-bool World::hasSkeleton(const std::string& skeletonName) const
+bool World::hasSkeleton(std::string_view skeletonName) const
 {
-  return mNameMgrForSkeletons.hasName(skeletonName);
+  return mNameMgrForSkeletons.hasName(std::string(skeletonName));
 }
 
 //==============================================================================
@@ -559,9 +559,9 @@ dynamics::SimpleFramePtr World::getSimpleFrame(std::size_t _index) const
 }
 
 //==============================================================================
-dynamics::SimpleFramePtr World::getSimpleFrame(const std::string& _name) const
+dynamics::SimpleFramePtr World::getSimpleFrame(std::string_view name) const
 {
-  return mNameMgrForSimpleFrames.getObject(_name);
+  return mNameMgrForSimpleFrames.getObject(std::string(name));
 }
 
 //==============================================================================
@@ -657,7 +657,7 @@ sensor::SensorPtr World::getSensor(std::size_t index) const
 }
 
 //==============================================================================
-sensor::SensorPtr World::getSensor(const std::string& name) const
+sensor::SensorPtr World::getSensor(std::string_view name) const
 {
   return mSensorManager.getSensor(name);
 }
@@ -693,7 +693,7 @@ bool World::hasSensor(const sensor::SensorPtr& sensor) const
 }
 
 //==============================================================================
-bool World::hasSensor(const std::string& sensorName) const
+bool World::hasSensor(std::string_view sensorName) const
 {
   return mSensorManager.hasSensor(sensorName);
 }
