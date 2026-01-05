@@ -48,9 +48,9 @@ namespace common {
 //==============================================================================
 template <class T>
 NameManager<T>::NameManager(
-    const std::string& _managerName, const std::string& _defaultName)
-  : mManagerName(_managerName),
-    mDefaultName(_defaultName),
+    std::string_view managerName, std::string_view defaultName)
+  : mManagerName(managerName),
+    mDefaultName(defaultName),
     mNameBeforeNumber(true),
     mPrefix(""),
     mInfix("("),
@@ -61,12 +61,13 @@ NameManager<T>::NameManager(
 
 //==============================================================================
 template <class T>
-bool NameManager<T>::setPattern(const std::string& _newPattern)
+bool NameManager<T>::setPattern(std::string_view newPattern)
 {
-  std::size_t name_start = _newPattern.find("%s");
-  std::size_t number_start = _newPattern.find("%d");
+  std::size_t name_start = newPattern.find("%s");
+  std::size_t number_start = newPattern.find("%d");
 
-  if (name_start == std::string::npos || number_start == std::string::npos)
+  if (name_start == std::string_view::npos
+      || number_start == std::string_view::npos)
     return false;
 
   if (name_start < number_start)
@@ -77,35 +78,36 @@ bool NameManager<T>::setPattern(const std::string& _newPattern)
   std::size_t prefix_end = std::min(name_start, number_start);
   std::size_t infix_end = std::max(name_start, number_start);
 
-  mPrefix = _newPattern.substr(0, prefix_end);
-  mInfix = _newPattern.substr(prefix_end + 2, infix_end - prefix_end - 2);
-  mAffix = _newPattern.substr(infix_end + 2);
+  mPrefix = std::string(newPattern.substr(0, prefix_end));
+  mInfix = std::string(
+      newPattern.substr(prefix_end + 2, infix_end - prefix_end - 2));
+  mAffix = std::string(newPattern.substr(infix_end + 2));
 
   return true;
 }
 
 //==============================================================================
 template <class T>
-std::string NameManager<T>::issueNewName(const std::string& _name) const
+std::string NameManager<T>::issueNewName(std::string_view name) const
 {
-  if (!hasName(_name))
-    return _name;
+  if (!hasName(name))
+    return std::string(name);
 
   int count = 1;
   std::string newName;
   do {
     std::stringstream ss;
     if (mNameBeforeNumber)
-      ss << mPrefix << _name << mInfix << count++ << mAffix;
+      ss << mPrefix << name << mInfix << count++ << mAffix;
     else
-      ss << mPrefix << count++ << mInfix << _name << mAffix;
+      ss << mPrefix << count++ << mInfix << name << mAffix;
     newName = ss.str();
   } while (hasName(newName));
 
   DART_INFO(
       "({}) The name [{}] is a duplicate, so it has been renamed to [{}]",
       mManagerName,
-      _name,
+      name,
       newName);
 
   return newName;
@@ -114,31 +116,33 @@ std::string NameManager<T>::issueNewName(const std::string& _name) const
 //==============================================================================
 template <class T>
 std::string NameManager<T>::issueNewNameAndAdd(
-    const std::string& _name, const T& _obj)
+    std::string_view name, const T& obj)
 {
-  const std::string& checkEmpty = _name.empty() ? mDefaultName : _name;
-  const std::string& newName = issueNewName(checkEmpty);
-  addName(newName, _obj);
+  const std::string_view checkEmpty
+      = name.empty() ? std::string_view(mDefaultName) : name;
+  const std::string newName = issueNewName(checkEmpty);
+  addName(newName, obj);
 
   return newName;
 }
 
 //==============================================================================
 template <class T>
-bool NameManager<T>::addName(const std::string& _name, const T& _obj)
+bool NameManager<T>::addName(std::string_view name, const T& obj)
 {
-  if (_name.empty()) {
+  if (name.empty()) {
     DART_WARN("({}) Empty name is not allowed!", mManagerName);
     return false;
   }
 
-  if (hasName(_name)) {
-    DART_WARN("({}) The name [{}] already exists!", mManagerName, _name);
+  if (hasName(name)) {
+    DART_WARN("({}) The name [{}] already exists!", mManagerName, name);
     return false;
   }
 
-  mMap.insert(std::pair<std::string, T>(_name, _obj));
-  mReverseMap.insert(std::pair<T, std::string>(_obj, _name));
+  const std::string nameString(name);
+  mMap.insert(std::pair<std::string, T>(nameString, obj));
+  mReverseMap.insert(std::pair<T, std::string>(obj, nameString));
 
   DART_ASSERT(mReverseMap.size() == mMap.size());
 
@@ -147,17 +151,16 @@ bool NameManager<T>::addName(const std::string& _name, const T& _obj)
 
 //==============================================================================
 template <class T>
-bool NameManager<T>::removeName(const std::string& _name)
+bool NameManager<T>::removeName(std::string_view name)
 {
   DART_ASSERT(mReverseMap.size() == mMap.size());
 
-  typename std::map<std::string, T>::iterator it = mMap.find(_name);
+  auto it = mMap.find(name);
 
   if (it == mMap.end())
     return false;
 
-  typename std::map<T, std::string>::iterator rit
-      = mReverseMap.find(it->second);
+  auto rit = mReverseMap.find(it->second);
 
   if (rit != mReverseMap.end())
     mReverseMap.erase(rit);
@@ -169,16 +172,16 @@ bool NameManager<T>::removeName(const std::string& _name)
 
 //==============================================================================
 template <class T>
-bool NameManager<T>::removeObject(const T& _obj)
+bool NameManager<T>::removeObject(const T& obj)
 {
   DART_ASSERT(mReverseMap.size() == mMap.size());
 
-  typename std::map<T, std::string>::iterator rit = mReverseMap.find(_obj);
+  typename std::map<T, std::string>::iterator rit = mReverseMap.find(obj);
 
   if (rit == mReverseMap.end())
     return false;
 
-  typename std::map<std::string, T>::iterator it = mMap.find(rit->second);
+  auto it = mMap.find(rit->second);
   if (it != mMap.end())
     mMap.erase(it);
 
@@ -189,10 +192,10 @@ bool NameManager<T>::removeObject(const T& _obj)
 
 //==============================================================================
 template <class T>
-void NameManager<T>::removeEntries(const std::string& _name, const T& _obj)
+void NameManager<T>::removeEntries(std::string_view name, const T& obj)
 {
-  removeObject(_obj);
-  removeName(_name);
+  removeObject(obj);
+  removeName(name);
 }
 
 //==============================================================================
@@ -205,16 +208,16 @@ void NameManager<T>::clear()
 
 //==============================================================================
 template <class T>
-bool NameManager<T>::hasName(const std::string& _name) const
+bool NameManager<T>::hasName(std::string_view name) const
 {
-  return mMap.contains(_name);
+  return mMap.contains(name);
 }
 
 //==============================================================================
 template <class T>
-bool NameManager<T>::hasObject(const T& _obj) const
+bool NameManager<T>::hasObject(const T& obj) const
 {
-  return mReverseMap.contains(_obj);
+  return mReverseMap.contains(obj);
 }
 
 //==============================================================================
@@ -226,9 +229,9 @@ std::size_t NameManager<T>::getCount() const
 
 //==============================================================================
 template <class T>
-T NameManager<T>::getObject(const std::string& _name) const
+T NameManager<T>::getObject(std::string_view name) const
 {
-  typename std::map<std::string, T>::const_iterator result = mMap.find(_name);
+  auto result = mMap.find(name);
 
   if (result != mMap.end())
     return result->second;
@@ -238,12 +241,12 @@ T NameManager<T>::getObject(const std::string& _name) const
 
 //==============================================================================
 template <class T>
-std::string NameManager<T>::getName(const T& _obj) const
+std::string NameManager<T>::getName(const T& obj) const
 {
   DART_ASSERT(mReverseMap.size() == mMap.size());
 
   typename std::map<T, std::string>::const_iterator result
-      = mReverseMap.find(_obj);
+      = mReverseMap.find(obj);
 
   if (result != mReverseMap.end())
     return result->second;
@@ -254,26 +257,26 @@ std::string NameManager<T>::getName(const T& _obj) const
 //==============================================================================
 template <class T>
 std::string NameManager<T>::changeObjectName(
-    const T& _obj, const std::string& _newName)
+    const T& obj, std::string_view newName)
 {
   DART_ASSERT(mReverseMap.size() == mMap.size());
 
-  typename std::map<T, std::string>::iterator rit = mReverseMap.find(_obj);
+  typename std::map<T, std::string>::iterator rit = mReverseMap.find(obj);
   if (rit == mReverseMap.end())
-    return _newName;
+    return std::string(newName);
 
-  if (rit->second == _newName)
+  if (rit->second == newName)
     return rit->second;
 
   removeName(rit->second);
-  return issueNewNameAndAdd(_newName, _obj);
+  return issueNewNameAndAdd(newName, obj);
 }
 
 //==============================================================================
 template <class T>
-void NameManager<T>::setDefaultName(const std::string& _defaultName)
+void NameManager<T>::setDefaultName(std::string_view defaultName)
 {
-  mDefaultName = _defaultName;
+  mDefaultName = std::string(defaultName);
 }
 
 //==============================================================================
@@ -285,9 +288,9 @@ const std::string& NameManager<T>::getDefaultName() const
 
 //==============================================================================
 template <class T>
-void NameManager<T>::setManagerName(const std::string& _managerName)
+void NameManager<T>::setManagerName(std::string_view managerName)
 {
-  mManagerName = _managerName;
+  mManagerName = std::string(managerName);
 }
 
 //==============================================================================

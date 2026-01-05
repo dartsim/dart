@@ -440,7 +440,7 @@ TEST(SdfParser, ParsingSDFFiles)
   const auto numSteps = 10u;
 
   // Create a list of sdf files to test with where the sdf files contains World
-  std::vector<std::string> worldFiles;
+  std::vector<common::Uri> worldFiles;
   worldFiles.push_back("dart://sample/sdf/benchmark.world");
   worldFiles.push_back("dart://sample/sdf/double_pendulum.world");
   worldFiles.push_back("dart://sample/sdf/double_pendulum_with_base.world");
@@ -485,8 +485,8 @@ TEST(SdfParser, ParsingSDFFiles)
 //==============================================================================
 TEST(SdfParser, ReadMaterial)
 {
-  std::string sdf_filename = "dart://sample/sdf/quad.sdf";
-  SkeletonPtr skeleton = SdfParser::readSkeleton(sdf_filename);
+  const common::Uri sdfUri("dart://sample/sdf/quad.sdf");
+  SkeletonPtr skeleton = SdfParser::readSkeleton(sdfUri);
   EXPECT_TRUE(nullptr != skeleton);
   auto bodyNode = skeleton->getBodyNode(0);
 
@@ -562,7 +562,8 @@ f 1 3 4
 TEST(SdfParser, WarnsOnMissingInertialBlock)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();
-  const std::string modelUri = "memory://pkg/models/missing_inertial/model.sdf";
+  const common::Uri modelUri("memory://pkg/models/missing_inertial/model.sdf");
+  const std::string modelUriString = modelUri.toString();
 
   const std::string modelSdf = R"(
 <?xml version="1.0" ?>
@@ -579,7 +580,7 @@ TEST(SdfParser, WarnsOnMissingInertialBlock)
 </sdf>
 )";
 
-  retriever->add(modelUri, modelSdf);
+  retriever->add(modelUriString, modelSdf);
 
   LogCapture capture;
   SdfParser::Options options;
@@ -602,7 +603,8 @@ TEST(SdfParser, WarnsOnMissingInertialBlock)
 TEST(SdfParser, WarnsOnTinyMassAndDefaultsInertia)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();
-  const std::string modelUri = "memory://pkg/models/tiny_mass/model.sdf";
+  const common::Uri modelUri("memory://pkg/models/tiny_mass/model.sdf");
+  const std::string modelUriString = modelUri.toString();
   const double tinyMass = 1e-14;
   const double clampedMass = 1e-9; // matches parser clamp
 
@@ -625,7 +627,7 @@ TEST(SdfParser, WarnsOnTinyMassAndDefaultsInertia)
 </sdf>
 )";
 
-  retriever->add(modelUri, modelSdf);
+  retriever->add(modelUriString, modelSdf);
 
   LogCapture capture;
   SdfParser::Options options;

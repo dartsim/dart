@@ -104,7 +104,7 @@ public:
   // Compare dynamics terms in equations of motion such as mass matrix, mass
   // inverse matrix, Coriolis force vector, gravity force vector, and external
   // force vector.
-  void compareEquationsOfMotion(const std::string& _fileName);
+  void compareEquationsOfMotion(const std::string& fileName);
 
 protected:
   // Sets up the test fixture.
@@ -225,7 +225,7 @@ MatrixXd SoftDynamicsTest::getAugMassMatrix(dynamics::SkeletonPtr _skel)
 }
 
 //==============================================================================
-void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
+void SoftDynamicsTest::compareEquationsOfMotion(const std::string& fileName)
 {
   using namespace std;
   using namespace Eigen;
@@ -257,7 +257,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = dart::io::readWorld(_fileName);
+  myWorld = dart::io::readWorld(common::Uri(fileName));
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i) {

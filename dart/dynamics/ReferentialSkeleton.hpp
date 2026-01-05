@@ -93,21 +93,21 @@ public:
   // Documentation inherited
   const BodyNode* getBodyNode(std::size_t _idx) const override;
 
-  /// @copydoc MetaSkeleton::getBodyNode(const std::string&).
+  /// @copydoc MetaSkeleton::getBodyNode(std::string_view).
   ///
   /// @note ReferentialSkeleton can contain multiple BodyNodes with the same
   /// name when this ReferentialSkeleton contains BodyNodes from multiple
   /// Skeletons. In this case, this function returns the first one, which is
   /// implementation dependent, and prints a warning.
-  BodyNode* getBodyNode(const std::string& name) override;
+  BodyNode* getBodyNode(std::string_view name) override;
 
-  /// @copydoc MetaSkeleton::getBodyNode(const std::string&).
+  /// @copydoc MetaSkeleton::getBodyNode(std::string_view).
   ///
   /// @note ReferentialSkeleton can contain multiple BodyNodes with the same
   /// name when this ReferentialSkeleton contains BodyNodes from multiple
   /// Skeletons. In this case, this function returns the first one, which is
   /// implementation dependent, and prints a warning.
-  const BodyNode* getBodyNode(const std::string& name) const override;
+  const BodyNode* getBodyNode(std::string_view name) const override;
 
   // Documentation inherited
   std::vector<BodyNode*>& getBodyNodes() override;
@@ -115,18 +115,18 @@ public:
   // Documentation inherited
   std::span<const BodyNode* const> getBodyNodes() const override;
 
-  /// @copydoc MetaSkeleton::getBodyNodes(const std::string&).
+  /// @copydoc MetaSkeleton::getBodyNodes(std::string_view).
   ///
   /// @note ReferentialSkeleton can contain multiple BodyNodes with the same
   /// name when ReferentialSkeleton contains BodyNodes from multiple Skeletons.
-  std::vector<BodyNode*> getBodyNodes(const std::string& name) override;
+  std::vector<BodyNode*> getBodyNodes(std::string_view name) override;
 
-  /// @copydoc MetaSkeleton::getBodyNodes(const std::string&).
+  /// @copydoc MetaSkeleton::getBodyNodes(std::string_view).
   ///
   /// @note ReferentialSkeleton can contain multiple BodyNodes with the same
   /// name when ReferentialSkeleton contains BodyNodes from multiple Skeletons.
   std::vector<const BodyNode*> getBodyNodes(
-      const std::string& name) const override;
+      std::string_view name) const override;
 
   // Documentation inherited
   bool hasBodyNode(const BodyNode* bodyNode) const override;
@@ -144,21 +144,21 @@ public:
   // Documentation inherited
   const Joint* getJoint(std::size_t _idx) const override;
 
-  /// @copydoc MetaSkeleton::getJoint(const std::string&).
+  /// @copydoc MetaSkeleton::getJoint(std::string_view).
   ///
   /// @note ReferentialSkeleton can contain multiple Joints with the same
   /// name when this ReferentialSkeleton contains Joints from multiple
   /// Skeletons. In this case, this function returns the first one, which is
   /// implementation dependent, and prints a warning.
-  Joint* getJoint(const std::string& name) override;
+  Joint* getJoint(std::string_view name) override;
 
-  /// @copydoc MetaSkeleton::getJoint(const std::string&).
+  /// @copydoc MetaSkeleton::getJoint(std::string_view).
   ///
   /// @note ReferentialSkeleton can contain multiple Joints with the same
   /// name when this ReferentialSkeleton contains Joints from multiple
   /// Skeletons. In this case, this function returns the first one, which is
   /// implementation dependent, and prints a warning.
-  const Joint* getJoint(const std::string& name) const override;
+  const Joint* getJoint(std::string_view name) const override;
 
   // Documentation inherited
   std::vector<Joint*> getJoints() override;
@@ -166,17 +166,17 @@ public:
   // Documentation inherited
   std::vector<const Joint*> getJoints() const override;
 
-  /// @copydoc MetaSkeleton::getJoints(const std::string&).
+  /// @copydoc MetaSkeleton::getJoints(std::string_view).
   ///
   /// @note ReferentialSkeleton can contain multiple Joints with the same
   /// name when ReferentialSkeleton contains Joints from multiple Skeletons.
-  std::vector<Joint*> getJoints(const std::string& name) override;
+  std::vector<Joint*> getJoints(std::string_view name) override;
 
-  /// @copydoc MetaSkeleton::getJoints(const std::string&).
+  /// @copydoc MetaSkeleton::getJoints(std::string_view).
   ///
   /// @note ReferentialSkeleton can contain multiple Joints with the same
   /// name when ReferentialSkeleton contains Joints from multiple Skeletons.
-  std::vector<const Joint*> getJoints(const std::string& name) const override;
+  std::vector<const Joint*> getJoints(std::string_view name) const override;
 
   // Documentation inherited
   bool hasJoint(const Joint* joint) const override;

@@ -1121,8 +1121,9 @@ SkeletonPtr createHubo()
   dart::io::ReadOptions options;
   options.addPackageDirectory(
       "drchubo", dart::config::dataPath("urdf/drchubo"));
-  SkeletonPtr hubo = dart::io::readSkeleton(
-      dart::config::dataPath("urdf/drchubo/drchubo.urdf"), options);
+  const dart::common::Uri huboUri = dart::common::Uri::createFromPath(
+      dart::config::dataPath("urdf/drchubo/drchubo.urdf"));
+  SkeletonPtr hubo = dart::io::readSkeleton(huboUri, options);
 
   for (std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i) {
     BodyNode* bn = hubo->getBodyNode(i);

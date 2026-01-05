@@ -105,10 +105,9 @@ const UrdfParser::Options& UrdfParser::getOptions() const
 
 //==============================================================================
 void UrdfParser::addPackageDirectory(
-    std::string_view _packageName, std::string_view _packageDirectory)
+    std::string_view packageName, std::string_view packageDirectory)
 {
-  mPackageRetriever->addPackageDirectory(
-      std::string(_packageName), std::string(_packageDirectory));
+  mPackageRetriever->addPackageDirectory(packageName, packageDirectory);
 }
 
 //==============================================================================
@@ -974,7 +973,8 @@ dynamics::ShapePtr UrdfParser::createShape(
       urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get())) {
     // Resolve relative URIs.
     common::Uri relativeUri, absoluteUri;
-    if (!absoluteUri.fromRelativeUri(_baseUri, mesh->filename)) {
+    if (!absoluteUri.fromRelativeUri(
+            _baseUri, std::string_view{mesh->filename})) {
       DART_WARN(
           "Failed resolving mesh URI '{}' relative to '{}'.",
           mesh->filename,

@@ -79,6 +79,9 @@ endif()
 # Component Benchmarks (organized in subdirectories)
 # ==============================================================================
 add_subdirectory(lcpsolver)
+if(DART_BUILD_SIMULATION_EXPERIMENTAL)
+  add_subdirectory(simulation/experimental)
+endif()
 
 # ==============================================================================
 # Note: Benchmarks are standalone executables for performance measurement.

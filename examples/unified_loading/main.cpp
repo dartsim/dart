@@ -273,7 +273,8 @@ int main(int argc, char* argv[])
   bool ok = true;
 
   if (options.loadWorld) {
-    auto world = dart::io::readWorld(options.worldUri, readOptions);
+    const dart::common::Uri worldUri(options.worldUri);
+    auto world = dart::io::readWorld(worldUri, readOptions);
     if (!world) {
       std::cerr << "Failed to read world from '" << options.worldUri << "'.\n";
       ok = false;
@@ -284,7 +285,8 @@ int main(int argc, char* argv[])
   }
 
   if (options.loadSkeleton) {
-    auto skeleton = dart::io::readSkeleton(options.skeletonUri, readOptions);
+    const dart::common::Uri skeletonUri(options.skeletonUri);
+    auto skeleton = dart::io::readSkeleton(skeletonUri, readOptions);
     if (!skeleton) {
       std::cerr << "Failed to read skeleton from '" << options.skeletonUri
                 << "'.\n";

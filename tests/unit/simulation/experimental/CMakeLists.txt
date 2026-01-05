@@ -29,7 +29,7 @@ set(DART_EXPERIMENTAL_ALL_TESTS "" CACHE INTERNAL "List of all simulation-experi
 # Unit Tests
 #==============================================================================
 # To add a new test module:
-#   1. Create a directory under unit/ (e.g., unit/math/)
+#   1. Create a directory under this folder (e.g., common/)
 #   2. Add test_*.cpp files to the directory
 #   3. Call dart_experimental_add_unit_test_dir() below
 
@@ -37,11 +37,11 @@ message(STATUS "simulation-experimental: Configuring unit tests...")
 
 if(DART_EXPERIMENTAL_BUILD_TESTS)
   # Register all unit test directories
-  dart_experimental_add_unit_test_dir(common ${CMAKE_CURRENT_SOURCE_DIR}/unit/common)
-  dart_experimental_add_unit_test_dir(world ${CMAKE_CURRENT_SOURCE_DIR}/unit/world)
-  dart_experimental_add_unit_test_dir(frame ${CMAKE_CURRENT_SOURCE_DIR}/unit/frame)
-  dart_experimental_add_unit_test_dir(multibody ${CMAKE_CURRENT_SOURCE_DIR}/unit/multibody)
-  dart_experimental_add_unit_test_dir(space ${CMAKE_CURRENT_SOURCE_DIR}/unit/space)
+  dart_experimental_add_unit_test_dir(common ${CMAKE_CURRENT_SOURCE_DIR}/common)
+  dart_experimental_add_unit_test_dir(world ${CMAKE_CURRENT_SOURCE_DIR}/world)
+  dart_experimental_add_unit_test_dir(frame ${CMAKE_CURRENT_SOURCE_DIR}/frame)
+  dart_experimental_add_unit_test_dir(multi_body ${CMAKE_CURRENT_SOURCE_DIR}/multi_body)
+  dart_experimental_add_unit_test_dir(space ${CMAKE_CURRENT_SOURCE_DIR}/space)
 
   # Create meta target for all unit tests
   add_custom_target(dart_experimental_tests

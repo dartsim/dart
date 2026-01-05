@@ -392,6 +392,17 @@ Note: LCP solver comparisons use the solver-agnostic harness and the
 See `tests/common/lcpsolver` and `tests/benchmark/lcpsolver` for the sources,
 and keep benchmark outputs under the build tree.
 
+### Manual Python Testing
+
+For faster iteration on Python bindings without full rebuilding:
+
+```bash
+# Point PYTHONPATH to the build artifacts (adjust path as needed)
+PYTHONPATH=build/default/cpp/Release/python pytest python/tests/unit/optimizer/
+```
+
+This avoids the overhead of the full `pixi run test-py` task but requires the bindings to be already built (e.g., via `pixi run build-py-dev`).
+
 ## CMake Integration
 
 The test suite uses custom CMake functions defined in `/tests/CMakeLists.txt`:

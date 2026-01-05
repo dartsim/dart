@@ -62,6 +62,7 @@
 
 #include <set>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -87,7 +88,10 @@ struct WorldConfig final
   CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
 
   WorldConfig() = default;
-  explicit WorldConfig(std::string worldName) : name(std::move(worldName)) {}
+  explicit WorldConfig(std::string_view worldName)
+    : name(std::string(worldName))
+  {
+  }
 };
 
 /// class World
@@ -107,13 +111,13 @@ public:
   //--------------------------------------------------------------------------
 
   /// Creates a World
-  static std::shared_ptr<World> create(const std::string& name = "world");
+  static std::shared_ptr<World> create(std::string_view name = "world");
 
   /// Creates a World using a configuration bundle.
   static std::shared_ptr<World> create(const WorldConfig& config);
 
   /// Constructor
-  World(const std::string& _name = "world");
+  World(std::string_view name = "world");
 
   /// Constructor with configuration bundle
   explicit World(const WorldConfig& config);
@@ -130,7 +134,7 @@ public:
   //--------------------------------------------------------------------------
 
   /// Set the name of this World
-  const std::string& setName(const std::string& _newName);
+  const std::string& setName(std::string_view newName);
 
   /// Get the name of this World
   const std::string& getName() const;
@@ -158,9 +162,9 @@ public:
   dynamics::SkeletonPtr getSkeleton(std::size_t _index) const;
 
   /// Find a Skeleton by name
-  /// @param[in] _name The name of the Skeleton you are looking for.
+  /// @param[in] name The name of the Skeleton you are looking for.
   /// @return If the skeleton does not exist then return nullptr.
-  dynamics::SkeletonPtr getSkeleton(const std::string& _name) const;
+  dynamics::SkeletonPtr getSkeleton(std::string_view name) const;
 
   /// Get the number of skeletons
   std::size_t getNumSkeletons() const;
@@ -179,7 +183,7 @@ public:
   bool hasSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const;
 
   /// Returns whether this World contains a Skeleton named @c skeletonName.
-  bool hasSkeleton(const std::string& skeletonName) const;
+  bool hasSkeleton(std::string_view skeletonName) const;
 
   /// Get the dof index for the indexed skeleton
   int getIndex(int _index) const;
@@ -188,7 +192,7 @@ public:
   dynamics::SimpleFramePtr getSimpleFrame(std::size_t _index) const;
 
   /// Find an Entity by name
-  dynamics::SimpleFramePtr getSimpleFrame(const std::string& _name) const;
+  dynamics::SimpleFramePtr getSimpleFrame(std::string_view name) const;
 
   /// Get the number of Entities
   std::size_t getNumSimpleFrames() const;
@@ -211,7 +215,7 @@ public:
   sensor::SensorPtr getSensor(std::size_t index) const;
 
   /// Find a sensor by name
-  sensor::SensorPtr getSensor(const std::string& name) const;
+  sensor::SensorPtr getSensor(std::string_view name) const;
 
   /// Get the number of sensors
   std::size_t getNumSensors() const;
@@ -230,7 +234,7 @@ public:
   bool hasSensor(const sensor::SensorPtr& sensor) const;
 
   /// Returns whether this World contains a sensor named @c sensorName.
-  bool hasSensor(const std::string& sensorName) const;
+  bool hasSensor(std::string_view sensorName) const;
 
   /// Get the sensor manager.
   sensor::SensorManager& getSensorManager();

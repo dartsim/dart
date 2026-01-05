@@ -39,20 +39,20 @@ namespace math {
 
 //==============================================================================
 Solver::Properties::Properties(
-    std::shared_ptr<Problem> _problem,
-    double _tolerance,
-    std::size_t _numMaxIterations,
-    std::size_t _iterationsPerPrint,
-    std::ostream* _ostream,
-    bool _printFinalResult,
-    const std::string& _resultFile)
-  : mProblem(_problem),
-    mTolerance(_tolerance),
-    mNumMaxIterations(_numMaxIterations),
-    mIterationsPerPrint(_iterationsPerPrint),
-    mOutStream(_ostream),
-    mPrintFinalResult(_printFinalResult),
-    mResultFile(_resultFile)
+    std::shared_ptr<Problem> problem,
+    double tolerance,
+    std::size_t numMaxIterations,
+    std::size_t iterationsPerPrint,
+    std::ostream* ostream,
+    bool printFinalResult,
+    std::string_view resultFile)
+  : mProblem(std::move(problem)),
+    mTolerance(tolerance),
+    mNumMaxIterations(numMaxIterations),
+    mIterationsPerPrint(iterationsPerPrint),
+    mOutStream(ostream),
+    mPrintFinalResult(printFinalResult),
+    mResultFile(resultFile)
 {
   // Do nothing
 }
@@ -175,9 +175,9 @@ bool Solver::getPrintFinalResult() const
 }
 
 //==============================================================================
-void Solver::setResultFileName(const std::string& _resultFile)
+void Solver::setResultFileName(std::string_view resultFile)
 {
-  mProperties.mResultFile = _resultFile;
+  mProperties.mResultFile = resultFile;
 }
 
 //==============================================================================

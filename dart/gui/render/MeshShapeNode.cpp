@@ -145,7 +145,7 @@ bool resolveTextureUri(
     return true;
 
   if (meshUri) {
-    if (resolved.fromRelativeUri(*meshUri, imagePathString))
+    if (resolved.fromRelativeUri(*meshUri, std::string_view{imagePathString}))
       return true;
   }
 

@@ -33,8 +33,10 @@
 #ifndef DART_COMMON_NAMEMANAGER_HPP_
 #define DART_COMMON_NAMEMANAGER_HPP_
 
+#include <functional>
 #include <map>
 #include <string>
+#include <string_view>
 
 namespace dart {
 namespace common {
@@ -63,8 +65,8 @@ class NameManager
 public:
   /// Constructor
   NameManager(
-      const std::string& _managerName = "default",
-      const std::string& _defaultName = "default");
+      std::string_view managerName = "default",
+      std::string_view defaultName = "default");
 
   /// Destructor
   virtual ~NameManager() = default;
@@ -78,64 +80,64 @@ public:
   /// "%s(%d)" : name -> name(1) -> name(2)
   /// "%d-%s" : name -> 1-name -> 2-name
   ///
-  /// returns false if the pattern was invalid (i.e. did not contain b
-  /// oth %s and %d)
-  bool setPattern(const std::string& _newPattern);
+  /// returns false if the pattern was invalid (i.e. did not contain both %s and
+  /// %d)
+  bool setPattern(std::string_view newPattern);
 
   /// Issue new unique combined name of given base name and number suffix
-  std::string issueNewName(const std::string& _name) const;
+  std::string issueNewName(std::string_view name) const;
 
   /// Call issueNewName() and add the result to the map
-  std::string issueNewNameAndAdd(const std::string& _name, const T& _obj);
+  std::string issueNewNameAndAdd(std::string_view name, const T& obj);
 
   /// Add an object to the map
-  bool addName(const std::string& _name, const T& _obj);
+  bool addName(std::string_view name, const T& obj);
 
   /// Remove an object from the Manager based on its name
-  bool removeName(const std::string& _name);
+  bool removeName(std::string_view name);
 
   /// Remove an object from the Manager based on reverse lookup
-  bool removeObject(const T& _obj);
+  bool removeObject(const T& obj);
 
-  /// Remove _name using the forward lookup and _obj using the reverse lookup.
-  /// This will allow you to add _obj under the name _name without any conflicts
-  void removeEntries(const std::string& _name, const T& _obj);
+  /// Remove name using the forward lookup and obj using the reverse lookup.
+  /// This will allow you to add obj under the same name without conflicts.
+  void removeEntries(std::string_view name, const T& obj);
 
   /// Clear all the objects
   void clear();
 
   /// Return true if the name is contained
-  bool hasName(const std::string& _name) const;
+  bool hasName(std::string_view name) const;
 
   /// Return true if the object is contained
-  bool hasObject(const T& _obj) const;
+  bool hasObject(const T& obj) const;
 
   /// Get the number of the objects currently stored by the NameManager
   std::size_t getCount() const;
 
   /// Get object by given name
-  /// @param[in] _name
+  /// @param[in] name
   ///   Name of the requested object
   /// @return
   ///   The object if it exists, or nullptr if it does not exist
-  T getObject(const std::string& _name) const;
+  T getObject(std::string_view name) const;
 
-  /// Use a reverse lookup to get the name that the manager has _obj listed
+  /// Use a reverse lookup to get the name that the manager has obj listed
   /// under. Returns an empty string if it is not in the list.
-  std::string getName(const T& _obj) const;
+  std::string getName(const T& obj) const;
 
   /// Change the name of a currently held object. This will do nothing if the
-  /// object is already using _newName or if the object is not held by this
+  /// object is already using newName or if the object is not held by this
   /// NameManager.
   ///
   /// If the object is held, its new name is returned (which might
-  /// be different than _newName if there was a duplicate naming conflict). If
+  /// be different than newName if there was a duplicate naming conflict). If
   /// the object is not held, an empty string will be returned.
-  std::string changeObjectName(const T& _obj, const std::string& _newName);
+  std::string changeObjectName(const T& obj, std::string_view newName);
 
   /// Set the name that will be provided to objects passed in with an empty
   /// string for a name
-  void setDefaultName(const std::string& _defaultName);
+  void setDefaultName(std::string_view defaultName);
 
   /// Get the name that will be provided to objects passed in with an empty
   /// string for a name
@@ -143,7 +145,7 @@ public:
 
   /// Set the name of this NameManager so that it can be printed in error
   /// reports
-  void setManagerName(const std::string& _managerName);
+  void setManagerName(std::string_view managerName);
 
   /// Get the name of this NameManager
   const std::string& getManagerName() const;
@@ -153,7 +155,7 @@ protected:
   std::string mManagerName;
 
   /// Map of objects that have been added to the NameManager
-  std::map<std::string, T> mMap;
+  std::map<std::string, T, std::less<>> mMap;
 
   /// Reverse map of objects that have been added to the NameManager
   std::map<T, std::string> mReverseMap;

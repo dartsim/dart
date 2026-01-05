@@ -48,6 +48,7 @@
 #include <Eigen/Geometry>
 
 #include <string>
+#include <string_view>
 
 namespace dart {
 namespace sensor {
@@ -83,7 +84,7 @@ public:
   virtual ~Sensor() override = default;
 
   /// Set the name for this sensor.
-  const std::string& setName(const std::string& name);
+  const std::string& setName(std::string_view name);
 
   /// Get the current sensor name.
   const std::string& getName() const;

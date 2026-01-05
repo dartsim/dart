@@ -366,7 +366,8 @@ SkeletonPtr loadG1(
 {
   dart::io::ReadOptions readOptions;
   readOptions.resourceRetriever = retriever;
-  SkeletonPtr robot = dart::io::readSkeleton(options.robotUri, readOptions);
+  const dart::common::Uri robotUri(options.robotUri);
+  SkeletonPtr robot = dart::io::readSkeleton(robotUri, readOptions);
   if (!robot) {
     std::cerr << "Failed to load robot from '" << options.robotUri << "'.\n";
     return nullptr;
