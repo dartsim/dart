@@ -101,4 +101,3 @@ dist/
 
 # ImGui configuration
 imgui.ini
-.cache/
