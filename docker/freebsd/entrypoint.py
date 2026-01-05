@@ -101,8 +101,15 @@ def write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img, user):
                 f"      - {pub_key}",
             ]
         )
-    # Avoid root authorized_keys here because nuageinit does not create
-    # parent directories and fails when /root/.ssh is missing.
+    else:
+        # For root user, also add SSH key to authorized_keys
+        lines.append(f"      - {pub_key}")
+
+    """For root user, also add SSH key to authorized_keys.
+
+This avoids SSH connection issues when user runs as root,
+since nuageinit doesn't create /root/.ssh parent directories.
+"""
     lines.append("")
     user_data.write_text("\n".join(lines))
     meta_data.write_text(
