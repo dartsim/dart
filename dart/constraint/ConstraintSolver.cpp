@@ -143,11 +143,8 @@ using namespace dynamics;
 ConstraintSolver::ConstraintSolver()
   : mCollisionDetector(collision::FCLCollisionDetector::create()),
     mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
-    mCollisionOption(
-        collision::CollisionOption(
-            true,
-            1000u,
-            std::make_shared<collision::BodyNodeCollisionFilter>())),
+    mCollisionOption(collision::CollisionOption(
+        true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
     mTimeStep(0.001),
     mContactSurfaceHandler(std::make_shared<DefaultContactSurfaceHandler>()),
     mLcpSolver(std::make_shared<math::DantzigSolver>()),
@@ -837,9 +834,8 @@ void ConstraintSolver::updateConstraints()
 
         if (hasValidMimicDof) {
           if (useCouplerConstraint && allMimicWithReference) {
-            mCouplerConstraints.push_back(
-                std::make_shared<CouplerConstraint>(
-                    joint, joint->getMimicDofProperties()));
+            mCouplerConstraints.push_back(std::make_shared<CouplerConstraint>(
+                joint, joint->getMimicDofProperties()));
           } else {
             mMimicMotorConstraints.push_back(
                 std::make_shared<MimicMotorConstraint>(
@@ -994,6 +990,7 @@ void ConstraintSolver::syncCollisionResultForcesFromManifolds()
   {
     PairKey key;
     const collision::Contact* contact{nullptr};
+    bool used{false}; // Track if cached contact already assigned
   };
 
   std::vector<PersistentEntry> entries;
@@ -1067,6 +1064,10 @@ void ConstraintSolver::syncCollisionResultForcesFromManifolds()
       if (!sameOrder && !flippedOrder)
         continue;
 
+      // Skip cached contacts that have already been assigned to a raw contact
+      if (candidate->used)
+        continue;
+
       const Eigen::Vector3d delta = raw.point - candidate->point;
       const double distance = delta.squaredNorm();
       if (distance > positionThresholdSquared)
@@ -1090,6 +1091,13 @@ void ConstraintSolver::syncCollisionResultForcesFromManifolds()
 
     if (best) {
       raw.force = bestFlipped ? -best->force : best->force;
+      // Mark this cached contact as used to prevent force duplication
+      for (auto it = lower; it != upper; ++it) {
+        if (it->contact == best) {
+          const_cast<PersistentEntry&>(*it).used = true;
+          break;
+        }
+      }
     }
   }
 }
