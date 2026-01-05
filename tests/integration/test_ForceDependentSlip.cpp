@@ -31,8 +31,8 @@
  */
 
 #include "TestHelpers.hpp"
-#include "dart/config.hpp"
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
+#include "dart/config.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/math/Geometry.hpp"
@@ -220,13 +220,6 @@ TEST(ForceDependentSlip, BoxSlipVelocity)
 // of the world so it's rolling and slipping.
 TEST(ForceDependentSlip, CylinderSlipVelocity)
 {
-#if !DART_ODE_HAS_LIBCCD_BOX_CYL
-  if (isOdeVersionAtLeast(0, 16, 6)) {
-    GTEST_SKIP() << "Skipping due to unstable ODE box-cylinder contacts ("
-                 << dODE_VERSION << ", see issue #2332).";
-  }
-#endif
-
   using Eigen::Vector3d;
   const double mass = 2.0;
   const double radius = 0.5;
