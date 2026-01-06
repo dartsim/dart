@@ -104,9 +104,10 @@ def write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img, user):
     elif user == "root":
         lines.extend(
             [
-                "  - name: root",
-                "    ssh_authorized_keys:",
-                f"      - {pub_key}",
+                "write_files:",
+                "  - path: /root/.ssh/authorized_keys",
+                f"    content: {pub_key}",
+                "    permissions: '0600'",
             ]
         )
 
