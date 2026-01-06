@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build and run a C++ example with optional runtime arguments."""
+
 from __future__ import annotations
 
 import argparse
@@ -21,10 +22,17 @@ _RENAMED_EXAMPLES = {
     "headless_simulation": "perf_headless_simulation",
     "hybrid_dynamics": "control_actuator_modes",
     "imgui": "viz_imgui",
+    "joint_mimic_pendulums": "joint_mimic_pendulums",
+    "joint_loop": "joint_loop",
+    "joint_chain": "joint_chain",
     "mixed_chain": "hybrid_mixed_chain",
     "operational_space_control": "control_operational_space",
     "polyhedron_visual": "viz_polyhedron_visual",
     "rigid_shapes": "collision_rigid_shapes",
+    "rigid_hardcoded_design": "rigid_hardcoded_design",
+    "rigid_cubes": "rigid_cubes",
+    "frame_hierarchy": "frame_hierarchy",
+    "soft_bodies": "soft_bodies",
     "csv_logger": "tool_csv_logger",
     "unified_loading": "io_unified_loading",
     "vehicle": "control_vehicle",
