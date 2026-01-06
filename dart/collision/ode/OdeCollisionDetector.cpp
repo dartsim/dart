@@ -362,6 +362,10 @@ Contact convertContact(
     contact.point = OdeTypes::convertVector3(odeContact.pos);
     contact.normal = OdeTypes::convertVector3(odeContact.normal);
     contact.penetrationDepth = odeContact.depth;
+
+    const double normalNorm = contact.normal.norm();
+    if (normalNorm > Contact::getNormalEpsilon())
+      contact.normal /= normalNorm;
   }
 
   return contact;
