@@ -1065,7 +1065,7 @@ void ConstraintSolver::syncCollisionResultForcesFromManifolds()
         continue;
 
       // Skip cached contacts that have already been assigned to a raw contact
-      if (candidate->used)
+      if (it->used)
         continue;
 
       const Eigen::Vector3d delta = raw.point - candidate->point;
