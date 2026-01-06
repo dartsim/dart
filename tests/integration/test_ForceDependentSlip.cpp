@@ -33,6 +33,7 @@
 #include "TestHelpers.hpp"
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
 #include "dart/config.hpp"
+#include <ode/ode.h>
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/math/Geometry.hpp"
@@ -198,7 +199,7 @@ TEST(ForceDependentSlip, CylinderSlipVelocity)
 {
   using Eigen::Vector3d;
 
-#ifndef DART_ODE_HAS_LIBCCD_BOX_CYL
+#if !DART_ODE_HAS_LIBCCD_BOX_CYL
   GTEST_SKIP() << "Skipping test because ODE was built without libccd "
                   "box-cylinder support ("
                << dODE_VERSION << ", see issue #2332).";
