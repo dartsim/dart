@@ -11,7 +11,7 @@ class MyWorldNode(dart.gui.RealTimeWorldNode):
 
 
 def main():
-    world = dart.utils.SkelParser.readWorld("dart://sample/skel/chain.skel")
+    world = dart.io.SkelParser.readWorld("dart://sample/skel/chain.skel")
     world.setGravity([0, -9.81, 0])
 
     chain = world.getSkeleton(0)
@@ -20,7 +20,7 @@ def main():
     # Set initial pose
     init_pose = np.zeros(dof)
     for i in range(dof):
-        init_pose[i] = dart.math.Random.uniform(-0.5, 0.5)
+        init_pose[i] = dart.Random.uniform(-0.5, 0.5)
     chain.setPositions(init_pose)
 
     # Set joint dampings

@@ -43,54 +43,54 @@ namespace utils {
 
 //==============================================================================
 void CompositeResourceRetriever::addDefaultRetriever(
-    const common::ResourceRetrieverPtr& _resourceRetriever)
+    const common::ResourceRetrieverPtr& resourceRetriever)
 {
-  mDefaultResourceRetrievers.push_back(_resourceRetriever);
+  mDefaultResourceRetrievers.push_back(resourceRetriever);
 }
 
 //==============================================================================
 bool CompositeResourceRetriever::addSchemaRetriever(
-    const std::string& _schema,
-    const common::ResourceRetrieverPtr& _resourceRetriever)
+    std::string_view schema,
+    const common::ResourceRetrieverPtr& resourceRetriever)
 {
-  if (!_resourceRetriever) {
+  if (!resourceRetriever) {
     DART_ERROR(
         "{}", "Received nullptr ResourceRetriever; skipping this entry.\n");
     return false;
   }
 
-  if (_schema.find("://") != std::string::npos) {
+  if (schema.find("://") != std::string_view::npos) {
     DART_ERROR(
         "Schema '{}{}",
-        _schema,
+        schema,
         "' contains '://'. Did you mistakenly include the '://' in the input "
         "of this function?\n");
     return false;
   }
 
-  mResourceRetrievers[_schema].push_back(_resourceRetriever);
+  const std::string schemaString(schema);
+  mResourceRetrievers[schemaString].push_back(resourceRetriever);
   return true;
 }
 
 //==============================================================================
-bool CompositeResourceRetriever::exists(const common::Uri& _uri)
+bool CompositeResourceRetriever::exists(const common::Uri& uri)
 {
   for (const common::ResourceRetrieverPtr& resourceRetriever :
-       getRetrievers(_uri)) {
-    if (resourceRetriever->exists(_uri))
+       getRetrievers(uri)) {
+    if (resourceRetriever->exists(uri))
       return true;
   }
   return false;
 }
 
 //==============================================================================
-common::ResourcePtr CompositeResourceRetriever::retrieve(
-    const common::Uri& _uri)
+common::ResourcePtr CompositeResourceRetriever::retrieve(const common::Uri& uri)
 {
   const std::vector<common::ResourceRetrieverPtr>& retrievers
-      = getRetrievers(_uri);
+      = getRetrievers(uri);
   for (const common::ResourceRetrieverPtr& resourceRetriever : retrievers) {
-    if (common::ResourcePtr resource = resourceRetriever->retrieve(_uri))
+    if (common::ResourcePtr resource = resourceRetriever->retrieve(uri))
       return resource;
   }
 
@@ -98,7 +98,7 @@ common::ResourcePtr CompositeResourceRetriever::retrieve(
       "{}{}' (tried {}).",
       "All ResourceRetrievers registered for this schema failed to retrieve "
       "the URI '",
-      _uri.toString(),
+      uri.toString(),
       retrievers.size());
 
   return nullptr;
@@ -120,9 +120,9 @@ DART_SUPPRESS_DEPRECATED_END
 
 //==============================================================================
 std::vector<common::ResourceRetrieverPtr>
-CompositeResourceRetriever::getRetrievers(const common::Uri& _uri) const
+CompositeResourceRetriever::getRetrievers(const common::Uri& uri) const
 {
-  const std::string schema = _uri.mScheme.get_value_or("file");
+  const std::string schema = uri.mScheme.get_value_or("file");
 
   std::vector<common::ResourceRetrieverPtr> retrievers;
 
@@ -142,7 +142,7 @@ CompositeResourceRetriever::getRetrievers(const common::Uri& _uri) const
       "There are no resource retrievers registered for the schema '",
       schema,
       "' that is necessary to retrieve URI '",
-      _uri.toString());
+      uri.toString());
 
   return retrievers;
 }

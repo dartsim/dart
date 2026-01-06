@@ -174,7 +174,7 @@ std::shared_ptr<World> parseWorldURDF(
         const std::string& fileName = includedFiles.at(string_entity_model);
 
         dart::common::Uri absoluteUri;
-        if (!absoluteUri.fromRelativeUri(baseUri, fileName)) {
+        if (!absoluteUri.fromRelativeUri(baseUri, std::string_view{fileName})) {
           DART_WARN(
               "[parseWorldURDF] Failed resolving mesh URI '{}' relative to "
               "'{}'. We will return a nullptr.",

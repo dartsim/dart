@@ -31,7 +31,7 @@ def test_basic_functionality():
         import dartpy as dart
 
         # Test creating a world
-        world = dart.simulation.World()
+        world = dart.World()
         print(f"✓ Created World: {world}")
 
         # Test creating a skeleton

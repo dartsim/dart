@@ -54,12 +54,19 @@ DART_SUPPRESS_DEPRECATED_BEGIN
 
 namespace {
 
-std::string fileUri(std::string_view relative)
+Uri fileUri(std::string_view relative)
 {
-  return std::string(FILE_SCHEME) + dart::config::dataPath(relative);
+  const std::string fileUriString
+      = std::string(FILE_SCHEME) + dart::config::dataPath(relative);
+  return Uri::createFromString(fileUriString);
 }
 
-std::string localPath(std::string_view relative)
+Uri localPath(std::string_view relative)
+{
+  return Uri::createFromPath(dart::config::dataPath(relative));
+}
+
+std::string localPathString(std::string_view relative)
 {
   return dart::config::dataPath(relative);
 }
@@ -119,7 +126,7 @@ TEST(LocalResourceRetriever, getFilePath_FileUriDoesExists_ReturnsPath)
   LocalResourceRetriever retriever;
   EXPECT_EQ(
       retriever.getFilePath(fileUri("skel/cube.skel")),
-      localPath("skel/cube.skel"));
+      localPathString("skel/cube.skel"));
 }
 
 TEST(LocalResourceRetriever, getFilePath_PathDoesExists_ReturnsPath)
@@ -127,7 +134,7 @@ TEST(LocalResourceRetriever, getFilePath_PathDoesExists_ReturnsPath)
   LocalResourceRetriever retriever;
   EXPECT_EQ(
       retriever.getFilePath(localPath("skel/cube.skel")),
-      localPath("skel/cube.skel"));
+      localPathString("skel/cube.skel"));
 }
 
 TEST(LocalResourceRetriever, retrieve_UnsupportedUri_ReturnsNull)

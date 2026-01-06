@@ -42,6 +42,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace dart {
@@ -51,18 +52,18 @@ class DART_API SensorManager
 {
 public:
   explicit SensorManager(
-      const std::string& managerName = "SensorManager",
-      const std::string& defaultName = "sensor");
+      std::string_view managerName = "SensorManager",
+      std::string_view defaultName = "sensor");
   ~SensorManager();
 
   /// Set the NameManager label used in diagnostics.
-  void setManagerName(const std::string& name);
+  void setManagerName(std::string_view name);
 
   /// Get the NameManager label used in diagnostics.
   const std::string& getManagerName() const;
 
   /// Set the default name used for unnamed sensors.
-  void setDefaultName(const std::string& defaultName);
+  void setDefaultName(std::string_view defaultName);
 
   /// Get the default name used for unnamed sensors.
   const std::string& getDefaultName() const;
@@ -71,7 +72,7 @@ public:
   SensorPtr getSensor(std::size_t index) const;
 
   /// Find a sensor by name.
-  SensorPtr getSensor(const std::string& name) const;
+  SensorPtr getSensor(std::string_view name) const;
 
   /// Get the number of sensors.
   std::size_t getNumSensors() const;
@@ -89,7 +90,7 @@ public:
   bool hasSensor(const SensorPtr& sensor) const;
 
   /// Returns whether this manager contains a sensor by name.
-  bool hasSensor(const std::string& name) const;
+  bool hasSensor(std::string_view name) const;
 
   /// Update all sensors using the current world state.
   void updateSensors(const simulation::World& world);

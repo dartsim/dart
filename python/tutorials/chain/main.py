@@ -96,7 +96,7 @@ def add_body(chain, parent, name):
     tf = dart.math.Isometry3()
     angles = [math.pi / 2, 0, 0]
 
-    rot = dart.math.eulerXYZToMatrix(angles)
+    rot = dart.math.euler_xyz_to_matrix(angles)
     tf.set_rotation(rot)
 
     shape_node = body.createShapeNode(cylinder)
@@ -134,7 +134,7 @@ def main():
     # starts to swing right away
     chain.setPosition(1, 120 * math.pi / 180.0)
 
-    world = dart.simulation.World()
+    world = dart.World()
     world.addSkeleton(chain)
 
     node = MyWorldNode(world)

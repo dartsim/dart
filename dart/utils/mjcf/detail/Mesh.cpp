@@ -96,8 +96,9 @@ Errors Mesh::compile(const Compiler& compiler)
   Errors errors;
 
   mRetriever = compiler.getResourceRetriever();
+  const std::string meshPath = compiler.getMeshDir() + "/" + mFile;
   mMeshUri = common::Uri::createFromRelativeUri(
-      compiler.getBaseUri(), compiler.getMeshDir() + "/" + mFile);
+      compiler.getBaseUri(), std::string_view{meshPath});
 
   return errors;
 }

@@ -84,13 +84,16 @@ dynamics::ShapePtr readMeshShape(
   const Eigen::Vector3d scale = hasElement(meshElement, "scale")
                                     ? getValueVector3d(meshElement, "scale")
                                     : Eigen::Vector3d::Ones();
-  const std::string meshUri = common::Uri::getRelativeUri(baseUri, uri);
+  const common::Uri meshUri
+      = common::Uri::createFromRelativeUri(baseUri, std::string_view{uri});
+  const std::string meshUriString = meshUri.toString();
 
   DART_SUPPRESS_DEPRECATED_BEGIN
-  const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, retriever);
+  const aiScene* model
+      = dynamics::MeshShape::loadMesh(meshUriString, retriever);
   DART_SUPPRESS_DEPRECATED_END
   if (!model) {
-    DART_WARN("Failed to load mesh model [{}].", meshUri);
+    DART_WARN("Failed to load mesh model [{}].", meshUriString);
     return nullptr;
   }
 

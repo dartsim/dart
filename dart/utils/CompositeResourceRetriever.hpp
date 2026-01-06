@@ -38,6 +38,7 @@
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/ResourceRetriever.hpp>
 
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -61,22 +62,22 @@ public:
   /// multiple times. In that case, the ResourceRetrievers will be queried
   /// in the same order in which they were added.
   void addDefaultRetriever(
-      const common::ResourceRetrieverPtr& _resourceRetriever);
+      const common::ResourceRetrieverPtr& resourceRetriever);
 
-  /// @brief Add a default @ref ResourceRetriever for @a _schema
+  /// @brief Add a default @ref ResourceRetriever for @a schema
   /// This @ref ResourceRetriever will be called after URIs that match the
   /// specified schema. This method may be called multiple times. In that
   /// case, the ResourceRetrievers will be queried in the same order in which
   /// they were added.
   bool addSchemaRetriever(
-      const std::string& _schema,
-      const common::ResourceRetrieverPtr& _resourceRetriever);
+      std::string_view schema,
+      const common::ResourceRetrieverPtr& resourceRetriever);
 
   // Documentation inherited.
-  bool exists(const common::Uri& _uri) override;
+  bool exists(const common::Uri& uri) override;
 
   // Documentation inherited.
-  common::ResourcePtr retrieve(const common::Uri& _uri) override;
+  common::ResourcePtr retrieve(const common::Uri& uri) override;
 
   // Documentation inherited.
   DART_DEPRECATED(7.0)
@@ -84,7 +85,7 @@ public:
 
 private:
   std::vector<common::ResourceRetrieverPtr> getRetrievers(
-      const common::Uri& _uri) const;
+      const common::Uri& uri) const;
 
   std::unordered_map<std::string, std::vector<common::ResourceRetrieverPtr>>
       mResourceRetrievers;

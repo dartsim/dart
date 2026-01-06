@@ -37,7 +37,7 @@ void defSkelParser(nb::module_& m)
       [](const std::string& xml,
          const std::string& base,
          const common::ResourceRetrieverPtr& retriever) {
-        return SkelParser::readWorldXML(xml, base, retriever);
+        return SkelParser::readWorldXML(xml, common::Uri(base), retriever);
       },
       nb::arg("xml_string"),
       nb::arg("base_uri") = "",

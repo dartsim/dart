@@ -43,8 +43,8 @@ namespace sensor {
 
 //==============================================================================
 SensorManager::SensorManager(
-    const std::string& managerName, const std::string& defaultName)
-  : mNameManager(managerName, defaultName)
+    std::string_view managerName, std::string_view defaultName)
+  : mNameManager(std::string(managerName), std::string(defaultName))
 {
 }
 
@@ -56,9 +56,9 @@ SensorManager::~SensorManager()
 }
 
 //==============================================================================
-void SensorManager::setManagerName(const std::string& name)
+void SensorManager::setManagerName(std::string_view name)
 {
-  mNameManager.setManagerName(name);
+  mNameManager.setManagerName(std::string(name));
 }
 
 //==============================================================================
@@ -68,9 +68,9 @@ const std::string& SensorManager::getManagerName() const
 }
 
 //==============================================================================
-void SensorManager::setDefaultName(const std::string& defaultName)
+void SensorManager::setDefaultName(std::string_view defaultName)
 {
-  mNameManager.setDefaultName(defaultName);
+  mNameManager.setDefaultName(std::string(defaultName));
 }
 
 //==============================================================================
@@ -89,9 +89,9 @@ SensorPtr SensorManager::getSensor(std::size_t index) const
 }
 
 //==============================================================================
-SensorPtr SensorManager::getSensor(const std::string& name) const
+SensorPtr SensorManager::getSensor(std::string_view name) const
 {
-  return mNameManager.getObject(name);
+  return mNameManager.getObject(std::string(name));
 }
 
 //==============================================================================
@@ -172,9 +172,9 @@ bool SensorManager::hasSensor(const SensorPtr& sensor) const
 }
 
 //==============================================================================
-bool SensorManager::hasSensor(const std::string& name) const
+bool SensorManager::hasSensor(std::string_view name) const
 {
-  return mNameManager.hasName(name);
+  return mNameManager.hasName(std::string(name));
 }
 
 //==============================================================================

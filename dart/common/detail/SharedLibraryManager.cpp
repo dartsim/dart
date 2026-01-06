@@ -45,21 +45,22 @@ namespace common {
 namespace detail {
 
 //==============================================================================
-std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
-    const std::string& path)
+std::shared_ptr<SharedLibrary> SharedLibraryManager::load(std::string_view path)
 {
+  const std::string pathString(path);
+
   // Check if the given path exits
-  const bool exists = std::ifstream(path).good();
+  const bool exists = std::ifstream(pathString).good();
   if (!exists) {
     DART_WARN(
         "Failed to load the shared library '{}'. The file doesn't exist. "
         "Returning nullptr.",
-        path.c_str());
+        pathString.c_str());
     return nullptr;
   }
 
   // Convert the given path to the canonical path
-  const auto canonicalPath = common::filesystem::canonical(path).string();
+  const auto canonicalPath = common::filesystem::canonical(pathString).string();
 
   const auto iter = mSharedLibraries.find(canonicalPath);
 

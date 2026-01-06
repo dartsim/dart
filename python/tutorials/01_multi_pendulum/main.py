@@ -63,7 +63,7 @@ def _to_vector(values: Tuple[float, float, float]) -> np.ndarray:
 
 
 class Controller:
-    def __init__(self, pendulum: dart.dynamics.Skeleton, world: dart.simulation.World):
+    def __init__(self, pendulum: dart.dynamics.Skeleton, world: dart.World):
         self.pendulum = pendulum
         self.world = world
         self.ball_constraint = None
@@ -304,7 +304,7 @@ def add_body(pendulum: dart.dynamics.Skeleton, parent, name: str):
     cylinder = dart.dynamics.CylinderShape(r, h)
 
     tf = dart.math.Isometry3()
-    rot = dart.math.eulerXYZToMatrix([math.pi / 2.0, 0.0, 0.0])
+    rot = dart.math.euler_xyz_to_matrix([math.pi / 2.0, 0.0, 0.0])
     tf.set_rotation(rot)
 
     shape_node = body.createShapeNode(cylinder)
@@ -327,7 +327,7 @@ def main():
 
     pendulum.getDof(1).setPosition(math.radians(120.0))
 
-    world = dart.simulation.World()
+    world = dart.World()
     world.addSkeleton(pendulum)
 
     controller = Controller(pendulum, world)

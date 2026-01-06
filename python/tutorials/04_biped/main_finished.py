@@ -166,7 +166,7 @@ class Controller:
 
 
 class BipedEventHandler(dart.gui.GUIEventHandler):
-    def __init__(self, world: dart.simulation.World, controller: Controller):
+    def __init__(self, world: dart.World, controller: Controller):
         super().__init__()
         self.world = world
         self.controller = controller
@@ -427,7 +427,7 @@ def main():
     balanced_pose = solve_ik(biped)
     biped.setPositions(balanced_pose)
 
-    world = dart.simulation.World()
+    world = dart.World()
     world.setGravity([0.0, -9.81, 0.0])
     world.addSkeleton(floor)
     world.addSkeleton(biped)

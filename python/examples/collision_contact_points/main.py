@@ -22,8 +22,8 @@ class ContactVisualizingNode(dart.gui.RealTimeWorldNode):
         """
         Input:
         ------
-        world : the dart.simulation.World object to visualize
-        pointCloudShape : dart.dynamics.PointCloudShape to set contacts in
+        world : the dart.World object to visualize
+        pointCloudShape : dart.PointCloudShape to set contacts in
                           before each display refresh
         """
         super(ContactVisualizingNode, self).__init__(world)
@@ -40,7 +40,7 @@ class ContactVisualizingNode(dart.gui.RealTimeWorldNode):
 
 
 def setAlpha(skeleton, alphaValue):
-    """setAlpha(skeleton : dartpy.dynamics.Skeleton, alphaValue : float) -> None
+    """setAlpha(skeleton : dartpy.Skeleton, alphaValue : float) -> None
 
     sets the transparency (alpha) value for each body node of the skeleton,
     assuming that the VisualAspect is contained within the first ShapeNode
@@ -55,7 +55,7 @@ def setAlpha(skeleton, alphaValue):
 
 
 def main():
-    world = dart.simulation.World()
+    world = dart.World()
 
     # load KR5 robot and ground plane, set transparent:
     urdfParser = dart.utils.UrdfParser()
@@ -69,15 +69,15 @@ def main():
     world.setGravity([0, -9.81, 0])
 
     # add point cloud shape for visualizing contacts
-    pointCloudShape = dart.dynamics.PointCloudShape(0.02)
+    pointCloudShape = dart.PointCloudShape(0.02)
 
     # Since contact points may change during execution, dynamic data variance
     # is assumed for the pointcloud of contacts. Otherwise, OSG will not render
     # the new points.
-    pointCloudShape.setDataVariance(dart.dynamics.Shape.DataVariance.DYNAMIC)
+    pointCloudShape.setDataVariance(dart.Shape.DataVariance.DYNAMIC)
 
-    pointCloudSimpleFrame = dart.dynamics.SimpleFrame(
-        dart.dynamics.Frame.World(), "ContactsVisualization"
+    pointCloudSimpleFrame = dart.SimpleFrame(
+        dart.Frame.World(), "ContactsVisualization"
     )
     pointCloudSimpleFrame.setShape(pointCloudShape)
     pcVisualAspect = pointCloudSimpleFrame.createVisualAspect()

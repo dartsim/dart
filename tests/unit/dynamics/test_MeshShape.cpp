@@ -246,12 +246,14 @@ double readColladaUnitScale(const std::string& path)
 TEST(MeshShapeTest, CloneCreatesIndependentScene)
 {
   const std::string filePath = dart::config::dataPath("skel/kima/l-foot.dae");
-  const std::string fileUri = common::Uri::createFromPath(filePath).toString();
-  ASSERT_FALSE(fileUri.empty());
+  const common::Uri fileUri = common::Uri::createFromPath(filePath);
+  const std::string fileUriString = fileUri.toString();
+  ASSERT_FALSE(fileUriString.empty());
 
   auto retriever = std::make_shared<common::LocalResourceRetriever>();
   DART_SUPPRESS_DEPRECATED_BEGIN
-  const aiScene* scene = dynamics::MeshShape::loadMesh(fileUri, retriever);
+  const aiScene* scene
+      = dynamics::MeshShape::loadMesh(fileUriString, retriever);
   DART_SUPPRESS_DEPRECATED_END
   ASSERT_NE(scene, nullptr);
 
@@ -366,12 +368,14 @@ TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
 TEST(MeshShapeTest, PolygonMeshPreservesQuadFaces)
 {
   const std::string filePath = dart::config::dataPath("obj/Quad.obj");
-  const std::string fileUri = common::Uri::createFromPath(filePath).toString();
-  ASSERT_FALSE(fileUri.empty());
+  const common::Uri fileUri = common::Uri::createFromPath(filePath);
+  const std::string fileUriString = fileUri.toString();
+  ASSERT_FALSE(fileUriString.empty());
 
   auto retriever = std::make_shared<common::LocalResourceRetriever>();
   DART_SUPPRESS_DEPRECATED_BEGIN
-  const aiScene* scene = dynamics::MeshShape::loadMesh(fileUri, retriever);
+  const aiScene* scene
+      = dynamics::MeshShape::loadMesh(fileUriString, retriever);
   DART_SUPPRESS_DEPRECATED_END
   ASSERT_NE(scene, nullptr);
 

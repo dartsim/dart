@@ -38,6 +38,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 #if DART_OS_LINUX
 
@@ -103,7 +104,7 @@ public:
   /// "/path/../to/yourfile".
   /// @return Pointer to the created SharedLibrary upon success in loading.
   /// Otherwise, returns nullptr.
-  static std::shared_ptr<SharedLibrary> create(const std::string& path);
+  static std::shared_ptr<SharedLibrary> create(std::string_view path);
 
   /// Constructs from a path to the shared library.
   ///
@@ -134,7 +135,7 @@ public:
   ///
   /// You have to reinterpret_cast the return value to the appropriate type to
   /// make use of the void* returned by this function.
-  void* getSymbol(const std::string& symbolName) const;
+  void* getSymbol(std::string_view symbolName) const;
 
 protected:
   friend class detail::SharedLibraryManager;

@@ -178,7 +178,7 @@ int main(int argc, char* argv[])
   if (parseResult == ParseResult::Error)
     return 1;
 
-  auto world = dart::io::readWorld(options.worldUri);
+  auto world = dart::io::readWorld(dart::common::Uri(options.worldUri));
   if (!world) {
     std::cerr << "Failed to read world from '" << options.worldUri << "'.\n";
     return 1;

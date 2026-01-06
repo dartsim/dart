@@ -254,7 +254,7 @@ class TeleoperationWorld(dart.gui.RealTimeWorldNode):
             # Get current root transform
             free_joint = self.atlas.getJoint(0)
             old_tf = free_joint.getRelativeTransform()
-            new_tf = dart.math.Isometry3.Identity()
+            new_tf = dart.Isometry3.Identity()
 
             # Get forward and left directions from current orientation
             forward = old_tf.rotation()[:, 0]
@@ -276,7 +276,7 @@ class TeleoperationWorld(dart.gui.RealTimeWorldNode):
 
             # Apply movements
             translation = np.zeros(3)
-            rotation = dart.math.Isometry3.Identity()
+            rotation = dart.Isometry3.Identity()
 
             if self.move_components["W"]:
                 translation += linear_step * forward
@@ -292,10 +292,10 @@ class TeleoperationWorld(dart.gui.RealTimeWorldNode):
                 translation -= elevation_step * up
 
             if self.move_components["Q"]:
-                rot_matrix = dart.math.eulerXYZToMatrix([0, 0, rotational_step])
+                rot_matrix = dart.euler_xyz_to_matrix([0, 0, rotational_step])
                 rotation.set_rotation(rot_matrix)
             if self.move_components["E"]:
-                rot_matrix = dart.math.eulerXYZToMatrix([0, 0, -rotational_step])
+                rot_matrix = dart.euler_xyz_to_matrix([0, 0, -rotational_step])
                 rotation.set_rotation(rot_matrix)
 
             # Build new transform
@@ -303,7 +303,7 @@ class TeleoperationWorld(dart.gui.RealTimeWorldNode):
             new_tf.set_rotation(rotation.rotation() @ old_tf.rotation())
 
             # Apply to free joint – FreeJoint stores rotation first, translation last
-            positions = dart.dynamics.FreeJoint.convertToPositions(new_tf)
+            positions = dart.FreeJoint.convertToPositions(new_tf)
             free_joint.setPositions(np.asarray(positions).reshape(-1))
 
         # Solve IK
@@ -313,19 +313,19 @@ class TeleoperationWorld(dart.gui.RealTimeWorldNode):
 
 def create_ground():
     """Create a ground plane for the robot to stand on."""
-    ground = dart.dynamics.Skeleton("ground")
+    ground = dart.Skeleton("ground")
     thickness = 0.01
 
     # Create weld joint and body node
     joint, bn = ground.createWeldJointAndBodyNodePair()
 
     # Set the joint transform
-    tf = dart.math.Isometry3()
+    tf = dart.Isometry3()
     tf.set_translation([0, 0, -thickness / 2.0])
     joint.setTransformFromParentBodyNode(tf)
 
     # Create ground visual
-    ground_shape = dart.dynamics.BoxShape([10, 10, thickness])
+    ground_shape = dart.BoxShape([10, 10, thickness])
     shape_node = bn.createShapeNode(ground_shape)
     visual = shape_node.createVisualAspect()
     visual.setColor([0.2, 0.2, 1.0, 1.0])
@@ -337,14 +337,14 @@ def create_ground():
 
 def create_atlas():
     """Load the Atlas robot model."""
-    urdf = dart.utils.UrdfParser()
+    urdf = dart.io.UrdfParser()
     atlas = urdf.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
 
     # Add a box to the root body for visualization
     scale = 0.25
-    box_shape = dart.dynamics.BoxShape([scale * 1.0, scale * 1.0, scale * 0.5])
+    box_shape = dart.BoxShape([scale * 1.0, scale * 1.0, scale * 0.5])
 
-    tf = dart.math.Isometry3()
+    tf = dart.Isometry3()
     tf.set_translation([0.0, 0.0, 0.1])
 
     shape_node = atlas.getBodyNode(0).createShapeNode(box_shape)
@@ -396,9 +396,9 @@ def setup_end_effectors(atlas):
     angular_bounds = np.full(3, 1e-8)
 
     # ----- LEFT HAND -----
-    tf_hand = dart.math.Isometry3()
+    tf_hand = dart.Isometry3()
     tf_hand.set_translation([0.0009, 0.1254, 0.012])
-    rot_matrix = dart.math.eulerXYZToMatrix([0, 0, 90.0 * np.pi / 180.0])
+    rot_matrix = dart.euler_xyz_to_matrix([0, 0, 90.0 * np.pi / 180.0])
     tf_hand.set_rotation(rot_matrix)
 
     l_hand = atlas.getBodyNode("l_hand").createEndEffector("l_hand")
@@ -406,9 +406,9 @@ def setup_end_effectors(atlas):
 
     # Create interactive target with larger size for visibility
     lh_target = dart.gui.InteractiveFrame(
-        dart.dynamics.Frame.World(),
+        dart.Frame.World(),
         "lh_target",
-        dart.math.Isometry3.Identity(),
+        dart.Isometry3.Identity(),
         0.25,  # size_scale - make it bigger for visibility
         3.0,  # thickness_scale
     )
@@ -435,9 +435,9 @@ def setup_end_effectors(atlas):
     r_hand.setDefaultRelativeTransform(tf_hand, True)
 
     rh_target = dart.gui.InteractiveFrame(
-        dart.dynamics.Frame.World(),
+        dart.Frame.World(),
         "rh_target",
-        dart.math.Isometry3.Identity(),
+        dart.Isometry3.Identity(),
         0.25,
         3.0,
     )
@@ -462,7 +462,7 @@ def setup_end_effectors(atlas):
     support.append(np.array([sup_neg_x, sup_pos_y, 0.0]))
 
     # Foot transform
-    tf_foot = dart.math.Isometry3()
+    tf_foot = dart.Isometry3()
     tf_foot.set_translation([0.186, 0.0, -0.08])
 
     # Constrain feet to ground
@@ -475,9 +475,9 @@ def setup_end_effectors(atlas):
     l_foot.setRelativeTransform(tf_foot)
 
     lf_target = dart.gui.InteractiveFrame(
-        dart.dynamics.Frame.World(),
+        dart.Frame.World(),
         "lf_target",
-        dart.math.Isometry3.Identity(),
+        dart.Isometry3.Identity(),
         0.25,
         3.0,
     )
@@ -498,9 +498,9 @@ def setup_end_effectors(atlas):
     r_foot.setRelativeTransform(tf_foot)
 
     rf_target = dart.gui.InteractiveFrame(
-        dart.dynamics.Frame.World(),
+        dart.Frame.World(),
         "rf_target",
-        dart.math.Isometry3.Identity(),
+        dart.Isometry3.Identity(),
         0.25,
         3.0,
     )
@@ -552,7 +552,7 @@ def main():
     print()
 
     # Create world
-    world = dart.simulation.World()
+    world = dart.World()
 
     # Create and add Atlas
     atlas = create_atlas()

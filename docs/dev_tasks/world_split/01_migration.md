@@ -12,7 +12,7 @@
 ## Phase 1: Move Experimental World (Done in this branch)
 
 - Move the experimental stack to `dart/simulation/experimental/`.
-- Move tests to `tests/simulation/experimental/`.
+- Move tests to `tests/unit/simulation/experimental/` and `tests/benchmark/simulation/experimental/`.
 - Rename namespace to `dart::simulation::experimental`.
 - Update build/test plumbing (`DART_BUILD_SIMULATION_EXPERIMENTAL`, CTest labels,
   pixi tasks, docs).

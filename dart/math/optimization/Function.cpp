@@ -38,7 +38,7 @@ namespace dart {
 namespace math {
 
 //==============================================================================
-Function::Function(const std::string& _name) : mName(_name)
+Function::Function(std::string_view name) : mName(name)
 {
   // Do nothing
 }
@@ -50,9 +50,9 @@ Function::~Function()
 }
 
 //==============================================================================
-void Function::setName(const std::string& _newName)
+void Function::setName(std::string_view newName)
 {
-  mName = _newName;
+  mName = newName;
 }
 
 //==============================================================================
@@ -90,7 +90,7 @@ void Function::evalHessian(
 }
 
 //==============================================================================
-ModularFunction::ModularFunction(const std::string& _name) : Function(_name)
+ModularFunction::ModularFunction(std::string_view name) : Function(name)
 {
   clearCostFunction();
   clearGradientFunction();
@@ -174,7 +174,7 @@ void ModularFunction::clearHessianFunction()
 }
 
 //==============================================================================
-NullFunction::NullFunction(const std::string& _name) : Function(_name)
+NullFunction::NullFunction(std::string_view name) : Function(name)
 {
   // Do nothing
 }

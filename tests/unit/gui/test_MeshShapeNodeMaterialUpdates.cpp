@@ -118,14 +118,14 @@ TEST(MeshShapeNodeTest, UpdatesMaterialOnColorChange)
 TEST(MeshShapeNodeTest, TessellatesConcavePolygons)
 {
   const std::string filePath = dart::config::dataPath("obj/Concave.obj");
-  const std::string fileUri
-      = dart::common::Uri::createFromPath(filePath).toString();
-  ASSERT_FALSE(fileUri.empty());
+  const dart::common::Uri fileUri = dart::common::Uri::createFromPath(filePath);
+  const std::string fileUriString = fileUri.toString();
+  ASSERT_FALSE(fileUriString.empty());
 
   auto retriever = std::make_shared<dart::common::LocalResourceRetriever>();
   DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* scene
-      = dart::dynamics::MeshShape::loadMesh(fileUri, retriever);
+      = dart::dynamics::MeshShape::loadMesh(fileUriString, retriever);
   DART_SUPPRESS_DEPRECATED_END
   ASSERT_NE(scene, nullptr);
 
