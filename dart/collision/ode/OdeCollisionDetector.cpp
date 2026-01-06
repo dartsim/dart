@@ -69,12 +69,12 @@ Contact convertContact(
 #if DART_ODE_HAS_LIBCCD_BOX_CYL
 void alignBoxCylinderNormal(Contact& contact);
 void stabilizeBoxCylinderContactPoint(Contact& contact);
-#endif
 
 bool expandBoxCylinderContact(
     const Contact& baseContact,
     const CollisionOption& option,
     CollisionResult& result);
+#endif
 
 struct OdeCollisionCallbackData
 {
@@ -329,8 +329,7 @@ void reportContacts(
       alignBoxCylinderNormal(baseContact);
       stabilizeBoxCylinderContactPoint(baseContact);
     }
-#endif
-#if DART_ODE_HAS_LIBCCD_BOX_CYL
+
     if (expandBoxCylinderContact(baseContact, option, result))
       return;
 #endif
@@ -487,7 +486,8 @@ void stabilizeBoxCylinderContactPoint(Contact& contact)
 }
 #endif
 
-[[maybe_unused]] bool expandBoxCylinderContact(
+#if DART_ODE_HAS_LIBCCD_BOX_CYL
+bool expandBoxCylinderContact(
     const Contact& baseContact,
     const CollisionOption& option,
     CollisionResult& result)
@@ -574,6 +574,7 @@ void stabilizeBoxCylinderContactPoint(Contact& contact)
 
   return true;
 }
+#endif
 
 } // anonymous namespace
 
