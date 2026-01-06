@@ -33,7 +33,6 @@
 #include "TestHelpers.hpp"
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
 #include "dart/config.hpp"
-#include <ode/ode.h>
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/math/Geometry.hpp"
@@ -41,6 +40,7 @@
 #include "dart/math/Random.hpp"
 
 #include <gtest/gtest.h>
+#include <ode/ode.h>
 
 using namespace dart;
 using namespace dynamics;
