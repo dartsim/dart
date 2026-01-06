@@ -102,9 +102,8 @@ void Collision::unrotatedTest(
       coll1_transform, dart::collision::fcl::Vector3(0, 0, 0));
   coll2_transform.setIdentity();
 
-/.*/{.*coll2_transform.setIdentity();.*/{.*coll2_transform.setIdentity();.*/}/a#if DART_ODE_HAS_LIBCCD_BOX_CYL
- coll2_transform.setIdentity();
-#endif/
+  // Let's drop box2 until it collide with box1
+  do {
     position[_idxAxis] = pos;
     dart::collision::fcl::setTranslation(coll2_transform, position);
 
