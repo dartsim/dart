@@ -487,7 +487,7 @@ void stabilizeBoxCylinderContactPoint(Contact& contact)
 }
 #endif
 
-bool [[maybe_unused]] bool expandBoxCylinderContact(
+[[maybe_unused]] bool expandBoxCylinderContact(
     const Contact& baseContact,
     const CollisionOption& option,
     CollisionResult& result)
