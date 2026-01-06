@@ -328,11 +328,9 @@ void reportContacts(
     if (option.enableContact) {
       alignBoxCylinderNormal(baseContact);
       stabilizeBoxCylinderContactPoint(baseContact);
+      if (expandBoxCylinderContact(baseContact, option, result))
+        return;
     }
-
-    if (option.enableContact
-        && expandBoxCylinderContact(baseContact, option, result))
-      return;
 #endif
     result.addContact(baseContact);
     return;
