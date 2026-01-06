@@ -514,7 +514,25 @@ bool expandBoxCylinderContact(
   if (!(cylinderShape && boxShape))
     return false;
 
+  const collision::CollisionObject* boxObj = (shape1->as<dynamics::BoxShape>())
+                                                 ? baseContact.collisionObject1
+                                                 : baseContact.collisionObject2;
+
+  // Only expand if normal is face-aligned (same threshold as
+  // alignBoxCylinderNormal)
   const Eigen::Vector3d normal = baseContact.normal;
+  const Eigen::Matrix3d boxRotation = boxObj->getTransform().linear();
+  double maxAbsDot = -1.0;
+  for (int i = 0; i < 3; ++i) {
+    const double absDot = std::abs(boxRotation.col(i).dot(normal));
+    if (absDot > maxAbsDot)
+      maxAbsDot = absDot;
+  }
+
+  constexpr double kNormalSnapThreshold = 0.9;
+  if (maxAbsDot < kNormalSnapThreshold)
+    return false;
+
   Eigen::Vector3d axis
       = cylinderObj->getTransform().linear() * Eigen::Vector3d::UnitZ();
   const double axisNorm = axis.norm();
