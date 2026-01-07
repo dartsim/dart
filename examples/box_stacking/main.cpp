@@ -246,6 +246,7 @@ public:
       mLeftOffset(leftOffset),
       mRightOffset(rightOffset),
       mNumBoxes(numBoxes),
+      mGuiNumBoxes(static_cast<int>(numBoxes)),
       mGuiGravity(true),
       mGravity(true),
       mGuiHeadlights(true),
@@ -370,7 +371,10 @@ public:
         applyContactManifoldSetting(mWorldRight, mManifoldEnabledRight);
       }
 
+      ImGui::SliderInt("Stack Height", &mGuiNumBoxes, 1, 30);
+
       if (ImGui::Button("Reset stacks")) {
+        mNumBoxes = static_cast<std::size_t>(mGuiNumBoxes);
         populateWorld(mWorldLeft, mLeftOffset, mNumBoxes);
         populateWorld(mWorldRight, mRightOffset, mNumBoxes);
         applyContactManifoldSetting(mWorldLeft, mManifoldEnabledLeft);
@@ -525,6 +529,7 @@ protected:
   Eigen::Vector3d mLeftOffset;
   Eigen::Vector3d mRightOffset;
   std::size_t mNumBoxes;
+  int mGuiNumBoxes;
   bool mGuiGravity;
   bool mGravity;
   bool mGuiHeadlights;
@@ -545,7 +550,7 @@ int main(int argc, char* argv[])
 
   const Eigen::Vector3d leftOffset(-3.0, 0.0, 0.0);
   const Eigen::Vector3d rightOffset(3.0, 0.0, 0.0);
-  constexpr std::size_t numBoxes = 5u;
+  constexpr std::size_t numBoxes = 10u;
 
   simulation::WorldPtr worldLeft = simulation::World::create();
   simulation::WorldPtr worldRight = simulation::World::create();
@@ -567,9 +572,8 @@ int main(int argc, char* argv[])
   viewer->addWorldNode(nodeRight);
 
   // Add control widget for atlas
-  viewer->getImGuiHandler()->addWidget(
-      std::make_shared<TestWidget>(
-          viewer, worldLeft, worldRight, leftOffset, rightOffset, numBoxes));
+  viewer->getImGuiHandler()->addWidget(std::make_shared<TestWidget>(
+      viewer, worldLeft, worldRight, leftOffset, rightOffset, numBoxes));
 
   // Pass in the custom event handler
   viewer->addEventHandler(new CustomEventHandler);
