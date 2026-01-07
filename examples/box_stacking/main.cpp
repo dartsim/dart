@@ -572,8 +572,9 @@ int main(int argc, char* argv[])
   viewer->addWorldNode(nodeRight);
 
   // Add control widget for atlas
-  viewer->getImGuiHandler()->addWidget(std::make_shared<TestWidget>(
-      viewer, worldLeft, worldRight, leftOffset, rightOffset, numBoxes));
+  viewer->getImGuiHandler()->addWidget(
+      std::make_shared<TestWidget>(
+          viewer, worldLeft, worldRight, leftOffset, rightOffset, numBoxes));
 
   // Pass in the custom event handler
   viewer->addEventHandler(new CustomEventHandler);
