@@ -2,6 +2,21 @@
 
 ## DART 6
 
+### [DART 6.16.4 (2026-01-06)](https://github.com/dartsim/dart/milestone/89?closed=1)
+
+* Physics
+  * Fix ODE box-cylinder contact stability with libccd: [#2389](https://github.com/dartsim/dart/pull/2389)
+  * Fix ODE cylinder mesh fallback on FreeBSD: [#2388](https://github.com/dartsim/dart/pull/2388)
+
+* Parsers
+  * Fix URDF shape parsing on FreeBSD: [#2379](https://github.com/dartsim/dart/pull/2379)
+
+* Tooling and Docs
+  * Add Alt Linux repro tasks: [#2381](https://github.com/dartsim/dart/pull/2381)
+  * Add FreeBSD VM repro patches: [#2374](https://github.com/dartsim/dart/pull/2374)
+  * Update pixi lockfile: [#2377](https://github.com/dartsim/dart/pull/2377)
+  * Fix cache Docker CI for release-6.16: [#2362](https://github.com/dartsim/dart/pull/2362)
+
 ### [DART 6.16.3 (2025-12-31)](https://github.com/dartsim/dart/milestone/88?closed=1)
 
 * Collision
@@ -1720,6 +1735,7 @@ This release is mostly a maintenance update, including various CI updates and bu
 1. Added abstract CollisionDetector interface allowing for multiple different collision detector implementations.
 1. Created math namespace
 1. Added System class as base class to Skeleton and Joint
+1. URDF loader: Removed ability to load nonstandard URDF files with an object tag
 1. URDF loader: Removed ability to load nonstandard URDF files with an object tag
 1. Added support for multiple shapes per BodyNode
 1. Made urdfdom a dependency instead of including it in the DART source
