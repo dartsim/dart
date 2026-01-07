@@ -311,6 +311,9 @@ protected:
   /// Return true if at least one of colliding body is soft body
   bool isSoftContact(const collision::Contact& contact) const;
 
+  /// Return true if the collision object is still registered in the group
+  bool isCollisionObjectValid(const collision::CollisionObject* object) const;
+
   using CollisionDetector = collision::CollisionDetector;
 
   /// Collision detector

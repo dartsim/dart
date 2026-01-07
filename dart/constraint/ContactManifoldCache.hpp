@@ -35,6 +35,7 @@
 
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/Contact.hpp>
+#include <dart/collision/Fwd.hpp>
 
 #include <dart/Export.hpp>
 
@@ -68,6 +69,13 @@ public:
       const collision::CollisionResult& rawContacts,
       const ContactManifoldCacheOptions& options,
       std::vector<collision::Contact>& outputContacts);
+
+  /// Remove all manifolds that reference the given collision object.
+  /// Call this when a collision object is removed from the world.
+  void invalidateCollisionObject(const collision::CollisionObject* object);
+
+  /// Remove manifolds whose collision objects are no longer in the group.
+  void purgeInvalidManifolds(const collision::CollisionGroup* group);
 
   std::size_t getNumManifolds() const;
   std::uint32_t getFrameCounter() const;

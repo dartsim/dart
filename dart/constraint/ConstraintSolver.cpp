@@ -639,6 +639,7 @@ void ConstraintSolver::updateConstraints()
   mSoftContactConstraints.clear();
 
   if (mContactManifoldOptions.enabled) {
+    mContactManifoldCache.purgeInvalidManifolds(mCollisionGroup.get());
     mContactManifoldCache.update(
         mCollisionResult, mContactManifoldOptions, mPersistentContacts);
   } else {
@@ -1117,6 +1118,20 @@ bool ConstraintSolver::isSoftContact(const collision::Contact& contact) const
       = dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode2.get()) != nullptr;
 
   return bodyNode1IsSoft || bodyNode2IsSoft;
+}
+
+//==============================================================================
+bool ConstraintSolver::isCollisionObjectValid(
+    const collision::CollisionObject* object) const
+{
+  if (!object)
+    return false;
+
+  const auto* shapeFrame = object->getShapeFrame();
+  if (!shapeFrame)
+    return false;
+
+  return mCollisionGroup->hasShapeFrame(shapeFrame);
 }
 
 //==============================================================================

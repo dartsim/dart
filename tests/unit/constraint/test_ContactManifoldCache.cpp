@@ -294,3 +294,68 @@ TEST(ContactManifoldCache, PrunesStalePairs)
   EXPECT_EQ(cache.getNumManifolds(), 0u);
   EXPECT_TRUE(output.empty());
 }
+
+TEST(ContactManifoldCache, InvalidateCollisionObject)
+{
+  constraint::ContactManifoldCache cache;
+  constraint::ContactManifoldCacheOptions options;
+  options.enabled = true;
+  options.maxSeparationFrames = 10u;
+
+  TestCollisionObjects objects;
+
+  TestCollisionResult raw;
+  raw.addContactRaw(
+      makeContact(&objects.objA, &objects.objB, Eigen::Vector3d::Zero(), 0.1));
+
+  std::vector<collision::Contact> output;
+  cache.update(raw, options, output);
+  EXPECT_EQ(cache.getNumManifolds(), 1u);
+  ASSERT_EQ(output.size(), 1u);
+
+  cache.invalidateCollisionObject(&objects.objA);
+
+  EXPECT_EQ(cache.getNumManifolds(), 0u);
+
+  raw.clearRaw();
+  cache.update(raw, options, output);
+  EXPECT_TRUE(output.empty());
+}
+
+TEST(ContactManifoldCache, InvalidateCollisionObjectPartial)
+{
+  constraint::ContactManifoldCache cache;
+  constraint::ContactManifoldCacheOptions options;
+  options.enabled = true;
+  options.maxSeparationFrames = 10u;
+
+  DummyCollisionDetector detector;
+  dynamics::SimpleFrame frameA, frameB, frameC;
+  DummyCollisionObject objA(&detector, &frameA);
+  DummyCollisionObject objB(&detector, &frameB);
+  DummyCollisionObject objC(&detector, &frameC);
+
+  const auto shape
+      = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  frameA.setShape(shape);
+  frameB.setShape(shape);
+  frameC.setShape(shape);
+
+  TestCollisionResult raw;
+  raw.addContactRaw(makeContact(&objA, &objB, Eigen::Vector3d(1, 0, 0), 0.1));
+  raw.addContactRaw(makeContact(&objB, &objC, Eigen::Vector3d(2, 0, 0), 0.1));
+
+  std::vector<collision::Contact> output;
+  cache.update(raw, options, output);
+  EXPECT_EQ(cache.getNumManifolds(), 2u);
+  ASSERT_EQ(output.size(), 2u);
+
+  cache.invalidateCollisionObject(&objA);
+
+  EXPECT_EQ(cache.getNumManifolds(), 1u);
+
+  raw.clearRaw();
+  cache.update(raw, options, output);
+  ASSERT_EQ(output.size(), 1u);
+  EXPECT_TRUE(hasPoint(output, Eigen::Vector3d(2, 0, 0)));
+}

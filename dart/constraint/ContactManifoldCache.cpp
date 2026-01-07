@@ -32,6 +32,9 @@
 
 #include "dart/constraint/ContactManifoldCache.hpp"
 
+#include "dart/collision/CollisionGroup.hpp"
+#include "dart/collision/CollisionObject.hpp"
+
 #include <algorithm>
 #include <iterator>
 #include <limits>
@@ -367,6 +370,35 @@ void ContactManifoldCache::reset()
   mOutputRanges.clear();
   mOutputScratch.clear();
   mFrameCounter = 0u;
+}
+
+//=============================================================================
+void ContactManifoldCache::invalidateCollisionObject(
+    const collision::CollisionObject* object)
+{
+  if (!object)
+    return;
+
+  std::erase_if(mManifolds, [object](const Manifold& m) {
+    return m.pair.first == object || m.pair.second == object;
+  });
+}
+
+//=============================================================================
+void ContactManifoldCache::purgeInvalidManifolds(
+    const collision::CollisionGroup* group)
+{
+  if (!group) {
+    mManifolds.clear();
+    return;
+  }
+
+  std::erase_if(mManifolds, [group](const Manifold& m) {
+    const auto* sf1 = m.pair.first ? m.pair.first->getShapeFrame() : nullptr;
+    const auto* sf2 = m.pair.second ? m.pair.second->getShapeFrame() : nullptr;
+    return !sf1 || !sf2 || !group->hasShapeFrame(sf1)
+           || !group->hasShapeFrame(sf2);
+  });
 }
 
 //=============================================================================
