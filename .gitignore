@@ -67,6 +67,9 @@ data/screencap/*
 # Temporary directory for dependencies
 .deps/
 
+# Language server and editor cache
+.cache/
+
 # Python distribution artifacts
 dist/
 *.egg-info
