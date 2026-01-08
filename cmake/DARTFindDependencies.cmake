@@ -76,11 +76,21 @@ option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
 mark_as_advanced(DART_SKIP_spdlog)
 dart_find_package(spdlog)
 
-if(NOT DART_USE_SYSTEM_ODE OR NOT DART_USE_SYSTEM_BULLET)
+# Only fetch ODE/Bullet if the corresponding collision module is enabled
+# and system libraries are not being used.
+set(_dart_need_fetch_content OFF)
+if(DART_BUILD_COLLISION_ODE AND NOT DART_USE_SYSTEM_ODE)
+  set(_dart_need_fetch_content ON)
+endif()
+if(DART_BUILD_COLLISION_BULLET AND NOT DART_USE_SYSTEM_BULLET)
+  set(_dart_need_fetch_content ON)
+endif()
+if(_dart_need_fetch_content)
   include(FetchContent)
 endif()
+unset(_dart_need_fetch_content)
 
-if(NOT DART_USE_SYSTEM_ODE)
+if(DART_BUILD_COLLISION_ODE AND NOT DART_USE_SYSTEM_ODE)
   # Match Ubuntu/conda-forge libode settings (libccd enabled, box-cylinder disabled).
   set(_dart_build_shared_libs "${BUILD_SHARED_LIBS}")
   set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
@@ -107,7 +117,7 @@ if(NOT DART_USE_SYSTEM_ODE)
   unset(_dart_build_shared_libs)
 endif()
 
-if(NOT DART_USE_SYSTEM_BULLET)
+if(DART_BUILD_COLLISION_BULLET AND NOT DART_USE_SYSTEM_BULLET)
   # Match conda-forge Bullet float64 build flags.
   set(_dart_build_shared_libs "${BUILD_SHARED_LIBS}")
   set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
