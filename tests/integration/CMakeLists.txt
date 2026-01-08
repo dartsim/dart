@@ -280,10 +280,14 @@ dart_build_tests(
   LINK_LIBRARIES dart
   SOURCES
     utils/test_Aspect.cpp
-    utils/test_Concurrency.cpp
     utils/test_Frames.cpp
     utils/test_Signal.cpp
 )
+
+if(TARGET dart-utils)
+  dart_add_test("integration" INTEGRATION_utils_Concurrency utils/test_Concurrency.cpp)
+  target_link_libraries(INTEGRATION_utils_Concurrency dart-utils)
+endif()
 
 dart_add_test("integration" INTEGRATION_utils_LocalResourceRetriever utils/test_LocalResourceRetriever.cpp)
 dart_add_test("integration" INTEGRATION_utils_Subscriptions utils/test_Subscriptions.cpp)
