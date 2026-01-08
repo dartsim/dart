@@ -13,8 +13,8 @@
 
 cmake_minimum_required(VERSION 3.22.1)
 
-# Include dart_experimental utility functions (must come first to define dart_experimental_find_package)
-include(dart_experimental_defs)
+# Include DART utility functions
+include(dart_defs)
 
 # Include dependency finding (makes GTest available)
 include(dart_experimental_dependencies)

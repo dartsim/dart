@@ -2,8 +2,8 @@
 #
 # Uses the dart_experimental_* CMake helpers.
 
-# Include dart_experimental utility functions (must come first to define dart_experimental_find_package)
-include(dart_experimental_defs)
+# Include DART utility functions
+include(dart_defs)
 
 # Include dependency finding (makes benchmark available)
 include(dart_experimental_dependencies)
