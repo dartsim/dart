@@ -379,8 +379,8 @@ void ContactManifoldCache::invalidateCollisionObject(
   if (!object)
     return;
 
-  std::erase_if(mManifolds, [object](const Manifold& m) {
-    return m.pair.first == object || m.pair.second == object;
+  std::erase_if(mManifolds, [object](const auto& entry) {
+    return entry.first.first == object || entry.first.second == object;
   });
 }
 
@@ -393,9 +393,10 @@ void ContactManifoldCache::purgeInvalidManifolds(
     return;
   }
 
-  std::erase_if(mManifolds, [group](const Manifold& m) {
-    const auto* sf1 = m.pair.first ? m.pair.first->getShapeFrame() : nullptr;
-    const auto* sf2 = m.pair.second ? m.pair.second->getShapeFrame() : nullptr;
+  std::erase_if(mManifolds, [group](const auto& entry) {
+    const auto& key = entry.first;
+    const auto* sf1 = key.first ? key.first->getShapeFrame() : nullptr;
+    const auto* sf2 = key.second ? key.second->getShapeFrame() : nullptr;
     return !sf1 || !sf2 || !group->hasShapeFrame(sf1)
            || !group->hasShapeFrame(sf2);
   });
@@ -422,7 +423,7 @@ void ContactManifoldCache::update(
 
   ++mFrameCounter;
 
-  for (auto& patch : mManifolds) {
+  for (auto& [key, patch] : mManifolds) {
     if (patch.framesSinceSeen < std::numeric_limits<std::uint16_t>::max())
       ++patch.framesSinceSeen;
   }
@@ -448,15 +449,12 @@ void ContactManifoldCache::update(
   const double normalThreshold = options.normalThreshold;
   const double normalThresholdSquared = normalThreshold * normalThreshold;
 
-  PairKeyLess pairLess;
-  auto pairEqual = [&](const PairKey& a, const PairKey& b) {
-    return !pairLess(a, b) && !pairLess(b, a);
-  };
-  auto rawEntryLess = [&](const RawEntry& a, const RawEntry& b) {
-    if (pairLess(a.key, b.key))
-      return true;
-    if (pairLess(b.key, a.key))
-      return false;
+  PairKeyEqual pairEqual;
+  auto rawEntryLess = [](const RawEntry& a, const RawEntry& b) {
+    if (a.key.first != b.key.first)
+      return a.key.first < b.key.first;
+    if (a.key.second != b.key.second)
+      return a.key.second < b.key.second;
     return contactLess(*a.contact, *b.contact);
   };
 
@@ -641,57 +639,21 @@ void ContactManifoldCache::update(
 
   outputContacts.reserve(reserveCount);
 
-  std::size_t outputIndex = 0u;
-  std::size_t patchIndex = 0u;
-
-  while (outputIndex < mOutputRanges.size() || patchIndex < mManifolds.size()) {
-    if (patchIndex >= mManifolds.size()) {
-      const auto& output = mOutputRanges[outputIndex++];
-      outputContacts.insert(
-          outputContacts.end(),
-          mOutputScratch.begin() + output.start,
-          mOutputScratch.begin() + output.start + output.count);
-      continue;
-    }
-
-    if (outputIndex >= mOutputRanges.size()) {
-      const auto& patch = mManifolds[patchIndex++];
-      if (patch.count == 0u)
-        continue;
-      const auto outputCount = std::min<std::size_t>(patch.count, maxPoints);
-      for (std::size_t i = 0u; i < outputCount; ++i)
-        outputContacts.push_back(patch.points[i].contact);
-      continue;
-    }
-
-    const auto& outputKey = mOutputRanges[outputIndex].key;
-    const auto& patchKey = mManifolds[patchIndex].pair;
-
-    if (pairLess(outputKey, patchKey)) {
-      const auto& output = mOutputRanges[outputIndex++];
-      outputContacts.insert(
-          outputContacts.end(),
-          mOutputScratch.begin() + output.start,
-          mOutputScratch.begin() + output.start + output.count);
-      continue;
-    }
-
-    if (pairLess(patchKey, outputKey)) {
-      const auto& patch = mManifolds[patchIndex++];
-      if (patch.count == 0u)
-        continue;
-      const auto outputCount = std::min<std::size_t>(patch.count, maxPoints);
-      for (std::size_t i = 0u; i < outputCount; ++i)
-        outputContacts.push_back(patch.points[i].contact);
-      continue;
-    }
-
-    const auto& output = mOutputRanges[outputIndex++];
+  for (const auto& output : mOutputRanges) {
     outputContacts.insert(
         outputContacts.end(),
         mOutputScratch.begin() + output.start,
         mOutputScratch.begin() + output.start + output.count);
-    ++patchIndex;
+  }
+
+  for (const auto& [key, patch] : mManifolds) {
+    if (patch.lastUpdateFrame == mFrameCounter)
+      continue;
+    if (patch.count == 0u)
+      continue;
+    const auto outputCount = std::min<std::size_t>(patch.count, maxPoints);
+    for (std::size_t i = 0u; i < outputCount; ++i)
+      outputContacts.push_back(patch.points[i].contact);
   }
 }
 
@@ -721,42 +683,26 @@ ContactManifoldCache::PairKey ContactManifoldCache::makePairKey(
 ContactManifoldCache::Manifold* ContactManifoldCache::findOrCreateManifold(
     const PairKey& key, const ContactManifoldCacheOptions& options)
 {
-  auto it = std::lower_bound(
-      mManifolds.begin(),
-      mManifolds.end(),
-      key,
-      [](const Manifold& patch, const PairKey& searchKey) {
-        PairKeyLess less;
-        return less(patch.pair, searchKey);
-      });
-
-  if (it != mManifolds.end() && it->pair.first == key.first
-      && it->pair.second == key.second) {
-    return &(*it);
+  auto it = mManifolds.find(key);
+  if (it != mManifolds.end()) {
+    return &(it->second);
   }
 
   if (options.maxPairs > 0u && mManifolds.size() >= options.maxPairs)
     return nullptr;
 
-  Manifold patch;
-  patch.pair = key;
-
-  it = mManifolds.insert(it, patch);
-  return &(*it);
+  auto [insertIt, inserted] = mManifolds.emplace(key, Manifold{});
+  insertIt->second.pair = key;
+  return &(insertIt->second);
 }
 
 //=============================================================================
 void ContactManifoldCache::pruneStaleManifolds(
     const ContactManifoldCacheOptions& options)
 {
-  mManifolds.erase(
-      std::remove_if(
-          mManifolds.begin(),
-          mManifolds.end(),
-          [&](const Manifold& patch) {
-            return patch.framesSinceSeen > options.maxSeparationFrames;
-          }),
-      mManifolds.end());
+  std::erase_if(mManifolds, [&](const auto& entry) {
+    return entry.second.framesSinceSeen > options.maxSeparationFrames;
+  });
 }
 
 } // namespace constraint

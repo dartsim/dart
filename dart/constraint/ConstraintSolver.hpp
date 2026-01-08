@@ -185,9 +185,10 @@ public:
   const ContactManifoldCacheOptions& getContactManifoldCacheOptions() const;
 
   /// Enable or disable the contact manifold cache.
+  /// Disabling is only recommended for debugging/comparison purposes.
   void setContactManifoldCacheEnabled(bool enabled);
 
-  /// Return true if the contact manifold cache is enabled.
+  /// Return true if the contact manifold cache is enabled (default: true).
   bool isContactManifoldCacheEnabled() const;
 
   /// Return the number of persistent contacts used for constraints.

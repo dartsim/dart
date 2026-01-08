@@ -40,6 +40,8 @@
 #include <dart/Export.hpp>
 
 #include <array>
+#include <functional>
+#include <unordered_map>
 #include <vector>
 
 #include <cstdint>
@@ -49,12 +51,28 @@ namespace constraint {
 
 struct DART_API ContactManifoldCacheOptions
 {
-  bool enabled{false};
+  /// Whether contact manifold caching is enabled. Default is true.
+  /// Disabling is only recommended for debugging/comparison purposes.
+  /// Contact manifolds provide stable contacts, solver warm-starting,
+  /// and consistent friction - disabling them degrades simulation quality.
+  bool enabled{true};
+
+  /// Maximum contact points to retain per collision pair. Default is 4.
   std::size_t maxPointsPerPair{4u};
+
+  /// Maximum number of collision pairs to cache. 0 means unlimited.
   std::size_t maxPairs{0u};
+
+  /// Frames without contact before a manifold is pruned. Default is 4.
   std::size_t maxSeparationFrames{4u};
+
+  /// Distance threshold for matching contacts across frames.
   double positionThreshold{1e-4};
+
+  /// Dot product threshold for matching contact normals (0.99 ≈ 8°).
   double normalThreshold{0.99};
+
+  /// Minimum penetration depth to consider a contact valid.
   double depthEpsilon{1e-6};
 };
 
@@ -95,13 +113,23 @@ private:
     collision::CollisionObject* second{nullptr};
   };
 
-  struct PairKeyLess
+  struct PairKeyHash
   {
-    bool operator()(const PairKey& a, const PairKey& b) const
+    std::size_t operator()(const PairKey& key) const noexcept
     {
-      if (a.first != b.first)
-        return a.first < b.first;
-      return a.second < b.second;
+      auto h1 = std::hash<std::uintptr_t>{}(
+          reinterpret_cast<std::uintptr_t>(key.first));
+      auto h2 = std::hash<std::uintptr_t>{}(
+          reinterpret_cast<std::uintptr_t>(key.second));
+      return h1 ^ (h2 << 1);
+    }
+  };
+
+  struct PairKeyEqual
+  {
+    bool operator()(const PairKey& a, const PairKey& b) const noexcept
+    {
+      return a.first == b.first && a.second == b.second;
     }
   };
 
@@ -135,7 +163,7 @@ private:
 
   void pruneStaleManifolds(const ContactManifoldCacheOptions& options);
 
-  std::vector<Manifold> mManifolds;
+  std::unordered_map<PairKey, Manifold, PairKeyHash, PairKeyEqual> mManifolds;
   std::vector<RawEntry> mRawEntries;
   std::vector<OutputRange> mOutputRanges;
   std::vector<collision::Contact> mOutputScratch;
