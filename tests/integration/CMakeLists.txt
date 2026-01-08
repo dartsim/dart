@@ -284,7 +284,7 @@ dart_build_tests(
     utils/test_Signal.cpp
 )
 
-if(TARGET dart-utils)
+if(DART_ENABLE_SDFORMAT)
   dart_add_test("integration" INTEGRATION_utils_Concurrency utils/test_Concurrency.cpp)
   target_link_libraries(INTEGRATION_utils_Concurrency dart-utils)
 endif()
