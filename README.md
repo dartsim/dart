@@ -83,23 +83,23 @@ int main() {
 
 ### Python (Recommended)
 
-| Method | Command |
-|--------|---------|
-| **uv** (preferred) | `uv add dartpy` |
-| **pip** | `pip install dartpy` |
-| **pixi** | `pixi add dartpy` |
-| **conda** | `conda install -c conda-forge dartpy` |
+| Method             | Command                               |
+| ------------------ | ------------------------------------- |
+| **uv** (preferred) | `uv add dartpy`                       |
+| **pip**            | `pip install dartpy`                  |
+| **pixi**           | `pixi add dartpy`                     |
+| **conda**          | `conda install -c conda-forge dartpy` |
 
 ### C++
 
-| Platform | Command |
-|----------|---------|
+| Platform                         | Command                                                              |
+| -------------------------------- | -------------------------------------------------------------------- |
 | **Cross-platform** (recommended) | `pixi add dartsim-cpp` or `conda install -c conda-forge dartsim-cpp` |
-| Ubuntu | `sudo apt install libdart-all-dev` |
-| Arch Linux | `yay -S libdart` |
-| FreeBSD | `pkg install dartsim` |
-| macOS | `brew install dartsim` |
-| Windows | `vcpkg install dartsim:x64-windows` |
+| Ubuntu                           | `sudo apt install libdart-all-dev`                                   |
+| Arch Linux                       | `yay -S libdart`                                                     |
+| FreeBSD                          | `pkg install dartsim`                                                |
+| macOS                            | `brew install dartsim`                                               |
+| Windows                          | `vcpkg install dartsim:x64-windows`                                  |
 
 [All distributions →](https://repology.org/project/dart-sim/versions)
 
