@@ -158,8 +158,7 @@ def sync_repo(args):
     work_dir = shlex.quote(args.work_dir)
     src_dir = shlex.quote(args.source_dir)
     command = (
-        f"mkdir -p {work_dir} && "
-        f"rsync -az --delete {excludes} {src_dir}/ {work_dir}/"
+        f"mkdir -p {work_dir} && rsync -az --delete {excludes} {src_dir}/ {work_dir}/"
     )
     exec_in_container(args, command)
 
@@ -175,6 +174,7 @@ def test_container(args):
         f"-DCMAKE_BUILD_TYPE={build_type}",
         "-DDART_BUILD_DARTPY=OFF",
         "-DDART_BUILD_GUI_OSG=ON",
+        "-DDART_ENABLE_SDFORMAT=OFF",
         "-DDART_ENABLE_SIMD=OFF",
         "-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
         "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
