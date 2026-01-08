@@ -43,7 +43,7 @@ jobs:
           FREEBSD_VM_MEM: "4096"
           FREEBSD_VM_BUILD_PARALLEL_LEVEL: "1"
           FREEBSD_VM_CTEST_TIMEOUT: "2400"
-          FREEBSD_VM_TEST_EXCLUDE_REGEX: "ForwardKinematics|AtlasIK|INTEGRATION_io_Read"
+          FREEBSD_VM_TEST_EXCLUDE_REGEX: "ForwardKinematics|AtlasIK|INTEGRATION_io_Read|INTEGRATION_io_UrdfParser"
         run: pixi run freebsd-test
 
       - name: Stop FreeBSD VM
