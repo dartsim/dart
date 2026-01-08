@@ -1710,6 +1710,41 @@ function(dart_build_tests)
     endif()
     add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
 
+    # Set up library paths for tests to find shared libraries at runtime.
+    # Use the platform-appropriate environment variable for library loading.
+    if(WIN32)
+      set(_dart_lib_path_var "PATH")
+    elseif(APPLE)
+      set(_dart_lib_path_var "DYLD_LIBRARY_PATH")
+    else()
+      set(_dart_lib_path_var "LD_LIBRARY_PATH")
+    endif()
+
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.22")
+      set(_dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>")
+      list(APPEND _dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>")
+      set_tests_properties(
+        ${target_name}
+        PROPERTIES
+          ENVIRONMENT_MODIFICATION "${_dart_env_mods}"
+      )
+    else()
+      if(WIN32)
+        set(_dart_test_path_sep "\\;")
+      else()
+        set(_dart_test_path_sep ":")
+      endif()
+      set(_dart_lib_paths "$<TARGET_FILE_DIR:dart>${_dart_test_path_sep}$<TARGET_FILE_DIR:GTest::gtest>")
+      set_property(
+        TEST ${target_name}
+        PROPERTY
+          ENVIRONMENT
+          "${_dart_lib_path_var}=${_dart_lib_paths}${_dart_test_path_sep}$ENV{${_dart_lib_path_var}}"
+      )
+      unset(_dart_test_path_sep)
+    endif()
+    unset(_dart_lib_path_var)
+
     # Include directories
     target_include_directories(
       ${target_name} PRIVATE ${_ARG_INCLUDE_DIRS}
