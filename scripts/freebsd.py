@@ -407,7 +407,7 @@ def test_vm(args):
     cmake_args = [
         f"-DCMAKE_BUILD_TYPE={build_type}",
         "-DDART_BUILD_DARTPY=OFF",
-        "-DDART_BUILD_GUI_OSG=OFF",
+        "-DDART_BUILD_GUI=OFF",
         "-DDART_ENABLE_SDFORMAT=OFF",
         "-DDART_USE_SYSTEM_GOOGLETEST=ON",
         "-DDART_VERBOSE=ON",
