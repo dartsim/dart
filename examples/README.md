@@ -34,6 +34,7 @@
 
 - `box_stacking`
 - `capsule_ground_contact`
+- `contact_manifold`
 - `heightmap`
 - `rigid_shapes`
 

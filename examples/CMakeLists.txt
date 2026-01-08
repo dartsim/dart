@@ -24,6 +24,7 @@ add_subdirectory(lcp_solvers)
 # Collisions and contacts examples
 add_subdirectory(box_stacking)
 add_subdirectory(capsule_ground_contact)
+add_subdirectory(contact_manifold)
 add_subdirectory(heightmap)
 add_subdirectory(rigid_shapes)
 
