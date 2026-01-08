@@ -32,6 +32,7 @@
 
 #include "../../helpers/GTestUtils.hpp"
 #include "dart/simulation/World.hpp"
+#include "dart/utils/sdf/SdfParser.hpp"
 
 #include <gtest/gtest.h>
 
