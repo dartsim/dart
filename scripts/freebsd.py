@@ -367,7 +367,7 @@ def apply_ports_patches(args):
     remote_dir = args.remote_dir or f"/home/{args.user}/dart"
     for patch_file in patch_files:
         rel_path = os.path.relpath(patch_file, repo_root())
-        command = f"cd {remote_dir} && " f"patch -p0 -N -i {shlex.quote(rel_path)}"
+        command = f"cd {remote_dir} && patch -p0 -N -i {shlex.quote(rel_path)}"
         ssh_command(args, command, user=args.user)
 
 
@@ -408,6 +408,7 @@ def test_vm(args):
         f"-DCMAKE_BUILD_TYPE={build_type}",
         "-DDART_BUILD_DARTPY=OFF",
         "-DDART_BUILD_GUI_OSG=OFF",
+        "-DDART_ENABLE_SDFORMAT=OFF",
         "-DDART_USE_SYSTEM_GOOGLETEST=ON",
         "-DDART_VERBOSE=ON",
     ]
@@ -445,8 +446,7 @@ def test_vm(args):
     ctest_arg_str = " ".join(shlex.quote(arg) for arg in ctest_args)
     if test_regex:
         test_command = (
-            f"ctest --test-dir {build_dir} -R {shlex.quote(test_regex)} "
-            f"{ctest_arg_str}"
+            f"ctest --test-dir {build_dir} -R {shlex.quote(test_regex)} {ctest_arg_str}"
         )
     else:
         test_command = f"ctest --test-dir {build_dir} {ctest_arg_str}"
