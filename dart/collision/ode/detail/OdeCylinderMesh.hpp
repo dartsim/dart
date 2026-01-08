@@ -30,24 +30,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_URDF_DARTLOADER_HPP_
-#define DART_UTILS_URDF_DARTLOADER_HPP_
+#ifndef DART_COLLISION_ODE_DETAIL_ODECYLINDERMESH_HPP_
+#define DART_COLLISION_ODE_DETAIL_ODECYLINDERMESH_HPP_
 
-#include <dart/utils/urdf/UrdfParser.hpp>
+#include <dart/collision/ode/detail/OdeGeom.hpp>
 
-#include <dart/common/Deprecated.hpp>
+#include <ode/ode.h>
 
-namespace dart::utils {
+#include <vector>
 
-// Deprecated compatibility shim for the URDF parser.
-class DART_DEPRECATED(7.0) DartLoader : public UrdfParser
+namespace dart {
+namespace collision {
+namespace detail {
+
+class OdeCylinderMesh : public OdeGeom
 {
-  friend struct DartLoaderTestAccess;
-
 public:
-  using UrdfParser::UrdfParser;
+  /// Constructor
+  OdeCylinderMesh(
+      const OdeCollisionObject* parent,
+      double radius,
+      double height,
+      int slices = 16,
+      int stacks = 16);
+
+  /// Destructor
+  virtual ~OdeCylinderMesh();
+
+  // Documentation inherited
+  void updateEngineData() override;
+
+private:
+  void buildMesh(double radius, double height, int slices, int stacks);
+
+private:
+  /// Array of vertex values.
+  std::vector<double> mVertices;
+
+  /// Array of normals values.
+  std::vector<double> mNormals;
+
+  /// Array of index values.
+  std::vector<int> mIndices;
+
+  /// ODE trimesh data.
+  dTriMeshDataID mOdeTriMeshDataId;
 };
 
-} // namespace dart::utils
+} // namespace detail
+} // namespace collision
+} // namespace dart
 
-#endif // DART_UTILS_URDF_DARTLOADER_HPP_
+#endif // DART_COLLISION_ODE_DETAIL_ODECYLINDERMESH_HPP_

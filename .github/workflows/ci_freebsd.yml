@@ -1,0 +1,50 @@
+name: CI FreeBSD (VM)
+
+on:
+  push:
+    branches:
+      - "**"
+    paths-ignore:
+      - ".github/workflows/cache_*.yml"
+      - "docker/dev/**"
+  pull_request:
+    branches:
+      - "**"
+    paths-ignore:
+      - ".github/workflows/cache_*.yml"
+      - "docker/dev/**"
+  schedule:
+    # Run every Monday at 04:00 UTC
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
+jobs:
+  freebsd:
+    name: FreeBSD repro (VM)
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.1
+        with:
+          cache: true
+
+      - name: Run FreeBSD repro tests
+        env:
+          FREEBSD_VM_CPUS: "2"
+          FREEBSD_VM_MEM: "4096"
+          FREEBSD_VM_BUILD_PARALLEL_LEVEL: "1"
+          FREEBSD_VM_CTEST_TIMEOUT: "2400"
+        run: pixi run freebsd-test
+
+      - name: Stop FreeBSD VM
+        if: always()
+        run: pixi run freebsd-stop
