@@ -700,6 +700,14 @@ test-capsule-ground-contact = { cmd = """
   { arg = "dartpy", default = "ON" },
 ] }
 
+# freebsd-* tasks rsync the local repo into the FreeBSD VM and build that copy (pkg installs deps only).
+freebsd-test = { cmd = "python scripts/freebsd.py test", env = { FREEBSD_VM_BUILD_PARALLEL_LEVEL = "1", FREEBSD_VM_CTEST_TIMEOUT = "2400" } }
+freebsd-shell = { cmd = "python scripts/freebsd.py shell" }
+freebsd-stop = { cmd = "python scripts/freebsd.py stop" }
+altlinux-test = { cmd = "python scripts/altlinux.py test" }
+altlinux-shell = { cmd = "python scripts/altlinux.py shell" }
+altlinux-stop = { cmd = "python scripts/altlinux.py stop" }
+
 config-coverage = { cmd = [
   "bash",
   "-lc",
