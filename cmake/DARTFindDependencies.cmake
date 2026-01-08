@@ -90,6 +90,9 @@ if(NOT DART_USE_SYSTEM_ODE)
   set(ODE_WITH_LIBCCD_BOX_CYL OFF CACHE BOOL "" FORCE)
   set(ODE_WITH_DEMOS OFF CACHE BOOL "" FORCE)
   set(ODE_WITH_TESTS OFF CACHE BOOL "" FORCE)
+  # ODE 0.16.6 uses cmake_minimum_required(VERSION 2.8) which is incompatible
+  # with CMake 4.0+. Set CMAKE_POLICY_VERSION_MINIMUM to allow building.
+  set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
   FetchContent_Declare(ode
     URL https://bitbucket.org/odedevs/ode/downloads/ode-0.16.6.tar.gz
     URL_HASH SHA256=c91a28c6ff2650284784a79c726a380d6afec87ecf7a35c32a6be0c5b74513e8
