@@ -135,7 +135,7 @@ void OdeCylinderMesh::buildMesh(
 
   const double zBase = -0.5 * height;
   const double zTop = 0.5 * height;
-  const double twoPi = 2.0 * math::constantsd::pi();
+  const double twoPi = math::two_pi;
 
   std::vector<double> sinCache(slices + 1);
   std::vector<double> cosCache(slices + 1);
