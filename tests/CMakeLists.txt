@@ -75,40 +75,43 @@ function(dart_add_test test_type target_name) # ARGN for source files
   target_link_libraries(${target_name} dart GTest::gtest GTest::gtest_main)
 
   # Set up library paths for tests to find shared libraries at runtime.
-  # Use the platform-appropriate environment variable for library loading.
-  if(WIN32)
-    set(_dart_lib_path_var "PATH")
-  elseif(APPLE)
-    set(_dart_lib_path_var "DYLD_LIBRARY_PATH")
-  else()
-    set(_dart_lib_path_var "LD_LIBRARY_PATH")
-  endif()
-
-  if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.22")
-    set(_dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>")
-    list(APPEND _dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>")
-    set_tests_properties(
-      ${target_name}
-      PROPERTIES
-        ENVIRONMENT_MODIFICATION "${_dart_env_mods}"
-    )
-  else()
+  # - Windows: Use PATH (required for DLL loading)
+  # - Linux: Use LD_LIBRARY_PATH (required for .so loading)
+  # - macOS: Skip - CMake's RPATH handling works correctly, and DYLD_LIBRARY_PATH
+  #          is stripped by System Integrity Protection (SIP) causing test hangs
+  if(NOT APPLE)
     if(WIN32)
-      # Escape the semicolon so CMake does not treat it as a list separator.
-      set(_dart_test_path_sep "\\;")
+      set(_dart_lib_path_var "PATH")
     else()
-      set(_dart_test_path_sep ":")
+      set(_dart_lib_path_var "LD_LIBRARY_PATH")
     endif()
-    set(_dart_lib_paths "$<TARGET_FILE_DIR:dart>${_dart_test_path_sep}$<TARGET_FILE_DIR:GTest::gtest>")
-    set_property(
-      TEST ${target_name}
-      PROPERTY
-        ENVIRONMENT
-        "${_dart_lib_path_var}=${_dart_lib_paths}${_dart_test_path_sep}$ENV{${_dart_lib_path_var}}"
-    )
-    unset(_dart_test_path_sep)
+
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.22")
+      set(_dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>")
+      list(APPEND _dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>")
+      set_tests_properties(
+        ${target_name}
+        PROPERTIES
+          ENVIRONMENT_MODIFICATION "${_dart_env_mods}"
+      )
+    else()
+      if(WIN32)
+        # Escape the semicolon so CMake does not treat it as a list separator.
+        set(_dart_test_path_sep "\\;")
+      else()
+        set(_dart_test_path_sep ":")
+      endif()
+      set(_dart_lib_paths "$<TARGET_FILE_DIR:dart>${_dart_test_path_sep}$<TARGET_FILE_DIR:GTest::gtest>")
+      set_property(
+        TEST ${target_name}
+        PROPERTY
+          ENVIRONMENT
+          "${_dart_lib_path_var}=${_dart_lib_paths}${_dart_test_path_sep}$ENV{${_dart_lib_path_var}}"
+      )
+      unset(_dart_test_path_sep)
+    endif()
+    unset(_dart_lib_path_var)
   endif()
-  unset(_dart_lib_path_var)
   dart_format_add(${sources})
 
 endfunction()
