@@ -519,6 +519,13 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
     # them until Eigen/FCL updates remove the false positives.
     add_compile_options(-Wno-overloaded-virtual -Wno-alloc-size-larger-than -Wno-dangling-pointer)
   endif()
+  if(GCC_VERSION VERSION_GREATER_EQUAL 15.0)
+    # TODO(GCC15): Remove once upstream dependencies (octomap, fcl) stop using
+    # <ciso646>, which is deprecated in C++20. GCC 15 emits a #warning that our
+    # -Werror=cpp flag treats as an error.
+    # Tracking: octomap uses <ciso646> in OcTreeKey.h; fcl pulls it in transitively.
+    add_compile_options(-Wno-error=cpp)
+  endif()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
   if(DART_FAST_DEBUG)
