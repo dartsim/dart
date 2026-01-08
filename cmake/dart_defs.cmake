@@ -2229,6 +2229,21 @@ function(dart_add_simulation_test TEST_NAME TEST_PATH)
     unset(_dart_lib_path_var)
   endif()
 
+  # Set output directory - must match the directory where other tests are built
+  # to ensure ctest can find executables on multi-config generators (MSVC)
+  if(CMAKE_CONFIGURATION_TYPES)
+    foreach(_dart_cfg IN LISTS CMAKE_CONFIGURATION_TYPES)
+      string(TOUPPER "${_dart_cfg}" _dart_cfg_upper)
+      set_target_properties(${TEST_NAME} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY_${_dart_cfg_upper} "${DART_BINARY_DIR}/bin/${_dart_cfg}"
+      )
+    endforeach()
+  else()
+    set_target_properties(${TEST_NAME} PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
+    )
+  endif()
+
   # Set target properties
   set_target_properties(${TEST_NAME} PROPERTIES
     FOLDER "${ARG_LABEL}/tests"
