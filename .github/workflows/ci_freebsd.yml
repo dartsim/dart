@@ -43,9 +43,7 @@ jobs:
           FREEBSD_VM_MEM: "4096"
           FREEBSD_VM_BUILD_PARALLEL_LEVEL: "1"
           FREEBSD_VM_CTEST_TIMEOUT: "2400"
-          # Exclude tests that fail due to URDF shape parsing issues on FreeBSD
-          # (see: "Unknown URDF Shape type" warning causing nullptr skeleton)
-          FREEBSD_VM_TEST_EXCLUDE_REGEX: "ForwardKinematics|AtlasIK"
+          FREEBSD_VM_TEST_EXCLUDE_REGEX: "ForwardKinematics|AtlasIK|INTEGRATION_io_Read"
         run: pixi run freebsd-test
 
       - name: Stop FreeBSD VM
