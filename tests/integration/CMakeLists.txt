@@ -124,8 +124,10 @@ if(TARGET dart-utils AND TARGET dart-io)
   dart_add_test("integration" INTEGRATION_dynamics_Joints dynamics/test_Joints.cpp)
   target_link_libraries(INTEGRATION_dynamics_Joints dart-io)
 
-  dart_add_test("integration" INTEGRATION_dynamics_JointForceTorque dynamics/test_JointForceTorque.cpp)
-  target_link_libraries(INTEGRATION_dynamics_JointForceTorque dart-io)
+  if(DART_ENABLE_SDFORMAT)
+    dart_add_test("integration" INTEGRATION_dynamics_JointForceTorque dynamics/test_JointForceTorque.cpp)
+    target_link_libraries(INTEGRATION_dynamics_JointForceTorque dart-io)
+  endif()
 
   dart_add_test("integration" INTEGRATION_dynamics_Skeleton dynamics/test_Skeleton.cpp)
   target_link_libraries(INTEGRATION_dynamics_Skeleton dart-io)
@@ -136,12 +138,14 @@ if(TARGET dart-utils AND TARGET dart-io)
   dart_add_test("integration" INTEGRATION_dynamics_SoftDynamics dynamics/test_SoftDynamics.cpp)
   target_link_libraries(INTEGRATION_dynamics_SoftDynamics dart-io)
 
-  # Additional dynamics tests
-  dart_add_test("integration" INTEGRATION_dynamics_ServoJointLimits dynamics/test_ServoJointLimits.cpp)
-  target_link_libraries(INTEGRATION_dynamics_ServoJointLimits dart-io)
+  # Additional dynamics tests requiring SDF support
+  if(DART_ENABLE_SDFORMAT)
+    dart_add_test("integration" INTEGRATION_dynamics_ServoJointLimits dynamics/test_ServoJointLimits.cpp)
+    target_link_libraries(INTEGRATION_dynamics_ServoJointLimits dart-io)
 
-  dart_add_test("integration" INTEGRATION_dynamics_UniversalJointLimits dynamics/test_UniversalJointLimits.cpp)
-  target_link_libraries(INTEGRATION_dynamics_UniversalJointLimits dart-io)
+    dart_add_test("integration" INTEGRATION_dynamics_UniversalJointLimits dynamics/test_UniversalJointLimits.cpp)
+    target_link_libraries(INTEGRATION_dynamics_UniversalJointLimits dart-io)
+  endif()
 
   if(TARGET dart-utils-urdf)
     dart_add_test("integration" INTEGRATION_dynamics_ForwardKinematics dynamics/test_ForwardKinematics.cpp)
