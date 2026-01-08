@@ -56,7 +56,15 @@ def repo_root():
 
 def container_exists(container):
     result = run(
-        ["docker", "ps", "-a", "--filter", f"name={container}", "--format", "{{.Names}}"],
+        [
+            "docker",
+            "ps",
+            "-a",
+            "--filter",
+            f"name={container}",
+            "--format",
+            "{{.Names}}",
+        ],
         check=False,
         capture=True,
     )
@@ -192,9 +200,7 @@ def test_container(args):
             f"-R {shlex.quote(test_regex)} --output-on-failure"
         )
     else:
-        test_command = (
-            f"ctest --test-dir {shlex.quote(build_dir)} --output-on-failure"
-        )
+        test_command = f"ctest --test-dir {shlex.quote(build_dir)} --output-on-failure"
 
     command = (
         f"cd {shlex.quote(args.work_dir)} && "

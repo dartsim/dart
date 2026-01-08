@@ -104,7 +104,15 @@ def image_exists(image):
 
 def container_exists(container):
     result = run(
-        ["docker", "ps", "-a", "--filter", f"name={container}", "--format", "{{.Names}}"],
+        [
+            "docker",
+            "ps",
+            "-a",
+            "--filter",
+            f"name={container}",
+            "--format",
+            "{{.Names}}",
+        ],
         check=False,
         capture=True,
     )
@@ -213,6 +221,7 @@ def ensure_ssh_key(args):
         return
     vm_dir.mkdir(parents=True, exist_ok=True)
     run(["ssh-keygen", "-t", "ed25519", "-f", str(key_path), "-N", ""])
+
 
 def wait_for_ssh_key(args, timeout=120):
     vm_dir = vm_dir_path(args.vm_dir)
@@ -358,10 +367,7 @@ def apply_ports_patches(args):
     remote_dir = args.remote_dir or f"/home/{args.user}/dart"
     for patch_file in patch_files:
         rel_path = os.path.relpath(patch_file, repo_root())
-        command = (
-            f"cd {remote_dir} && "
-            f"patch -p0 -N -i {shlex.quote(rel_path)}"
-        )
+        command = f"cd {remote_dir} && " f"patch -p0 -N -i {shlex.quote(rel_path)}"
         ssh_command(args, command, user=args.user)
 
 
@@ -375,11 +381,7 @@ def bootstrap_vm(args):
     if should_skip_bootstrap():
         return
     packages_env = os.getenv("FREEBSD_VM_PACKAGES")
-    packages = (
-        shlex.split(packages_env)
-        if packages_env
-        else DEFAULT_PACKAGES
-    )
+    packages = shlex.split(packages_env) if packages_env else DEFAULT_PACKAGES
     package_list = " ".join(packages)
     root_password = os.getenv("FREEBSD_VM_ROOT_PASSWORD", "freebsd")
     command = (
@@ -469,6 +471,7 @@ def test_vm(args):
         )
         raise exc
 
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description=(
@@ -477,7 +480,9 @@ def parse_args():
         )
     )
     parser.add_argument("--image", default=DEFAULT_IMAGE, help="Docker image tag.")
-    parser.add_argument("--container", default=DEFAULT_CONTAINER, help="Container name.")
+    parser.add_argument(
+        "--container", default=DEFAULT_CONTAINER, help="Container name."
+    )
     parser.add_argument("--vm-dir", default=str(repo_root() / "build" / "freebsd-vm"))
     parser.add_argument("--ssh-port", type=int, default=DEFAULT_SSH_PORT)
     parser.add_argument(
