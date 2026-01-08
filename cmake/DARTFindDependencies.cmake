@@ -96,6 +96,8 @@ if(NOT DART_USE_SYSTEM_ODE)
   FetchContent_Declare(ode
     URL https://bitbucket.org/odedevs/ode/downloads/ode-0.16.6.tar.gz
     URL_HASH SHA256=c91a28c6ff2650284784a79c726a380d6afec87ecf7a35c32a6be0c5b74513e8
+    EXCLUDE_FROM_ALL
+    SYSTEM
   )
   FetchContent_MakeAvailable(ode)
   set(DART_ODE_SOURCE_DIR "${ode_SOURCE_DIR}" CACHE INTERNAL "ODE source dir.")
