@@ -3,10 +3,11 @@
 ## Summary
 
 - Goal: stack boxes and explore solver choices and gravity settings.
-- Concepts/APIs: `constraint::ConstraintSolver`, ImGui viewer controls.
-- Expected output: an ImGui-driven OSG viewer with stacked boxes on a ground
-  plane.
-- Controls: use the ImGui panel; q/Q and arrow keys log test messages.
+- Concepts/APIs: `constraint::ConstraintSolver`, ImGui viewer controls, `ContactManifoldCache`.
+- Expected output: an ImGui-driven OSG viewer with two stacked boxes side-by-side.
+  - Left stack: Legacy collision handling (may jitter).
+  - Right stack: Persistent contact manifold (more stable).
+- Controls: use the ImGui panel to toggle manifolds, adjust stack height, and reset.
 
 ## Notes
 
