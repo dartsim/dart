@@ -31,6 +31,7 @@
  */
 
 #include "../../helpers/GTestUtils.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/sdf/SdfParser.hpp"
 
