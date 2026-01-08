@@ -113,6 +113,15 @@ if(DART_BUILD_COLLISION_ODE AND NOT DART_USE_SYSTEM_ODE)
   set(DART_ODE_SOURCE_DIR "${ode_SOURCE_DIR}" CACHE INTERNAL "ODE source dir.")
   set(DART_ODE_BINARY_DIR "${ode_BINARY_DIR}" CACHE INTERNAL "ODE binary dir.")
 
+  # Wire fetched ODE into find_package flow by creating ODE::ODE alias target
+  # and setting ODE_FOUND so dart_find_package(ODE) succeeds.
+  if(NOT TARGET ODE::ODE AND TARGET ODE)
+    add_library(ODE::ODE ALIAS ODE)
+  endif()
+  set(ODE_FOUND TRUE CACHE BOOL "ODE found via FetchContent" FORCE)
+  set(ODE_LIBRARIES ODE::ODE CACHE STRING "ODE libraries" FORCE)
+  set(ODE_INCLUDE_DIRS "${ode_SOURCE_DIR}/include;${ode_BINARY_DIR}/include" CACHE STRING "ODE include dirs" FORCE)
+
   set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
   unset(_dart_build_shared_libs)
 endif()
@@ -142,6 +151,19 @@ if(DART_BUILD_COLLISION_BULLET AND NOT DART_USE_SYSTEM_BULLET)
   FetchContent_MakeAvailable(bullet)
   set(DART_BULLET_SOURCE_DIR "${bullet_SOURCE_DIR}" CACHE INTERNAL "Bullet source dir.")
   set(DART_BULLET_BINARY_DIR "${bullet_BINARY_DIR}" CACHE INTERNAL "Bullet binary dir.")
+
+  # Wire fetched Bullet into find_package flow by setting Bullet_FOUND and
+  # BULLET_* variables so dart_find_package(Bullet) succeeds.
+  set(Bullet_FOUND TRUE CACHE BOOL "Bullet found via FetchContent" FORCE)
+  set(BULLET_FOUND TRUE CACHE BOOL "Bullet found via FetchContent" FORCE)
+  set(BULLET_INCLUDE_DIRS "${bullet_SOURCE_DIR}/src" CACHE STRING "Bullet include dirs" FORCE)
+  # Bullet builds BulletCollision, BulletDynamics, BulletSoftBody, LinearMath targets
+  set(BULLET_LIBRARIES
+    BulletCollision
+    BulletDynamics
+    BulletSoftBody
+    LinearMath
+    CACHE STRING "Bullet libraries" FORCE)
 
   set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
   unset(_dart_build_shared_libs)
