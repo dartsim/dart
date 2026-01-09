@@ -56,7 +56,7 @@ add_library(${target_name}
   world.cpp
 )
 
-include(dart_experimental_defs)
+include(dart_defs)
 include(dart_experimental_dependencies)
 
 target_include_directories(${target_name}
