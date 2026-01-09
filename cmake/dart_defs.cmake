@@ -1713,9 +1713,16 @@ function(dart_build_tests)
     # Set up library paths for tests to find shared libraries at runtime.
     # - Windows: Use PATH (required for DLL loading)
     # - Linux: Use LD_LIBRARY_PATH (required for .so loading)
-    # - macOS: Skip - CMake's RPATH handling works correctly, and DYLD_LIBRARY_PATH
-    #          is stripped by System Integrity Protection (SIP) causing test hangs
-    if(NOT APPLE)
+    # - macOS: Set BUILD_RPATH explicitly to ensure the test finds the correct
+    #          libraries. DYLD_LIBRARY_PATH is stripped by SIP so we cannot use it.
+    if(APPLE)
+      # Explicitly set BUILD_RPATH to include the dart library directory.
+      # This ensures tests find the correct Debug/Release libraries.
+      set_target_properties(${target_name} PROPERTIES
+        BUILD_RPATH "$<TARGET_FILE_DIR:dart>"
+      )
+    else()
+      # Windows and Linux need environment variables for library paths
       if(WIN32)
         set(_dart_lib_path_var "PATH")
       else()
@@ -2184,9 +2191,21 @@ function(dart_add_simulation_test TEST_NAME TEST_PATH)
   # Set up library paths for tests to find shared libraries at runtime.
   # - Windows: Use PATH (required for DLL loading)
   # - Linux: Use LD_LIBRARY_PATH (required for .so loading)
-  # - macOS: Skip - CMake's RPATH handling works correctly, and DYLD_LIBRARY_PATH
-  #          is stripped by System Integrity Protection (SIP) causing test hangs
-  if(NOT APPLE)
+  # - macOS: Set BUILD_RPATH explicitly to ensure the test finds the correct
+  #          libraries. DYLD_LIBRARY_PATH is stripped by SIP so we cannot use it.
+  if(APPLE)
+    # Explicitly set BUILD_RPATH to include library directories.
+    # This ensures tests find the correct Debug/Release libraries.
+    set(_rpath_dirs "$<TARGET_FILE_DIR:${ARG_LIBRARY}>")
+    if(TARGET dart)
+      list(APPEND _rpath_dirs "$<TARGET_FILE_DIR:dart>")
+    endif()
+    set_target_properties(${TEST_NAME} PROPERTIES
+      BUILD_RPATH "${_rpath_dirs}"
+    )
+    unset(_rpath_dirs)
+  else()
+    # Windows and Linux need environment variables for library paths
     if(WIN32)
       set(_dart_lib_path_var "PATH")
     else()
