@@ -36,8 +36,10 @@ enable_testing()
 message(STATUS "simulation-experimental: Configuring unit tests...")
 
 if(DART_EXPERIMENTAL_BUILD_TESTS)
-  # Capture DART_ALL_TESTS before adding our tests
-  set(_dart_tests_before ${DART_ALL_TESTS})
+  # Reset DART_ALL_TESTS to avoid accumulating tests across reconfigurations.
+  # This cache variable is populated by dart_add_simulation_test() and persists
+  # between CMake runs, which would cause the meta target to have stale entries.
+  set(DART_ALL_TESTS "" CACHE INTERNAL "List of all tests" FORCE)
 
   # Register all unit test directories
   dart_experimental_add_unit_test_dir(common ${CMAKE_CURRENT_SOURCE_DIR}/common)
@@ -46,19 +48,14 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
   dart_experimental_add_unit_test_dir(multi_body ${CMAKE_CURRENT_SOURCE_DIR}/multi_body)
   dart_experimental_add_unit_test_dir(space ${CMAKE_CURRENT_SOURCE_DIR}/space)
 
-  # Calculate which tests were added by this module
-  set(_dart_experimental_tests ${DART_ALL_TESTS})
-  if(_dart_tests_before)
-    list(REMOVE_ITEM _dart_experimental_tests ${_dart_tests_before})
-  endif()
-
   # Create meta target for all unit tests
+  # DART_ALL_TESTS now contains only the tests added by this module
   add_custom_target(dart_experimental_tests
-    DEPENDS ${_dart_experimental_tests}
+    DEPENDS ${DART_ALL_TESTS}
     COMMENT "Building all simulation-experimental unit tests"
   )
 
-  list(LENGTH _dart_experimental_tests num_tests)
+  list(LENGTH DART_ALL_TESTS num_tests)
   message(STATUS "simulation-experimental: Total ${num_tests} unit test(s)")
 else()
   message(STATUS "simulation-experimental: Unit tests disabled (GTest not found)")
