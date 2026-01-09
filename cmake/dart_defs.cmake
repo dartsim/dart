@@ -2360,7 +2360,7 @@ function(dart_add_simulation_benchmark BENCHMARK_NAME BENCHMARK_PATH)
     set(ARG_LABEL "simulation-experimental")
   endif()
 
-  if(NOT DART_BUILD_BENCHMARKS)
+  if(NOT DART_EXPERIMENTAL_BUILD_BENCHMARKS)
     return()
   endif()
 
