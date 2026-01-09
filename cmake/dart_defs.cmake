@@ -1793,19 +1793,30 @@ endfunction()
 #          [VERSION <version>]
 #          [COMPONENTS <components...>]
 #          [SET_VAR <variable_name>]
+#          [PREFIX <prefix>]  # Variable prefix (default: DART_EXPERIMENTAL)
 #        )
 #
 # This function wraps find_package() and tracks found/missing dependencies
 # for compact summary reporting.
+#
+# Variables used (with PREFIX=DART_EXPERIMENTAL):
+#   - ${PREFIX}_DEPS_FOUND: List of found dependencies
+#   - ${PREFIX}_DEPS_MISSING: List of missing dependencies
+#   - ${PREFIX}_VERBOSE: Enable verbose output
 #-------------------------------------------------------------------------------
 function(dart_find_dependency)
   cmake_parse_arguments(
     ARG
     "REQUIRED;QUIET"
-    "NAME;PACKAGE;VERSION;SET_VAR"
+    "NAME;PACKAGE;VERSION;SET_VAR;PREFIX"
     "COMPONENTS"
     ${ARGN}
   )
+
+  # Default prefix for simulation-experimental compatibility
+  if(NOT ARG_PREFIX)
+    set(ARG_PREFIX "DART_EXPERIMENTAL")
+  endif()
 
   # Build find_package arguments
   set(find_args ${ARG_PACKAGE})
@@ -1827,10 +1838,14 @@ function(dart_find_dependency)
   # Check if found (using standard CMake convention)
   set(found_var "${ARG_PACKAGE}_FOUND")
 
-  # Track dependency status
+  # Track dependency status using the specified prefix
+  set(_deps_found_var "${ARG_PREFIX}_DEPS_FOUND")
+  set(_deps_missing_var "${ARG_PREFIX}_DEPS_MISSING")
+  set(_verbose_var "${ARG_PREFIX}_VERBOSE")
+
   if(${found_var})
-    set(DART_DEPS_FOUND ${DART_DEPS_FOUND} ${ARG_NAME} CACHE INTERNAL "List of found dependencies")
-    if(DART_VERBOSE)
+    set(${_deps_found_var} ${${_deps_found_var}} ${ARG_NAME} CACHE INTERNAL "List of found dependencies")
+    if(${_verbose_var})
       # Get version if available
       set(version_var "${ARG_PACKAGE}_VERSION")
       if(DEFINED ${version_var})
@@ -1845,8 +1860,8 @@ function(dart_find_dependency)
       set(${ARG_SET_VAR} TRUE CACHE BOOL "${ARG_NAME} available" FORCE)
     endif()
   else()
-    set(DART_DEPS_MISSING ${DART_DEPS_MISSING} ${ARG_NAME} CACHE INTERNAL "List of missing dependencies")
-    if(DART_VERBOSE)
+    set(${_deps_missing_var} ${${_deps_missing_var}} ${ARG_NAME} CACHE INTERNAL "List of missing dependencies")
+    if(${_verbose_var})
       message(STATUS "  ✗ ${ARG_NAME} not found")
     endif()
 
@@ -1857,7 +1872,7 @@ function(dart_find_dependency)
   endif()
 endfunction()
 
-# Backward compatibility alias
+# Backward compatibility alias - uses DART_EXPERIMENTAL prefix by default
 macro(dart_experimental_find_package)
   dart_find_dependency(${ARGN})
 endmacro()
