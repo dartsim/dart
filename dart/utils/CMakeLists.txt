@@ -22,6 +22,10 @@ if(DART_ENABLE_SDFORMAT)
       "missing. Please install the CMake config package that exports this "
       "target.")
   endif()
+else()
+  # Clear cached DART_HAVE_SDFORMAT to prevent stale values from previous
+  # configurations where SDF was enabled
+  set(DART_HAVE_SDFORMAT FALSE CACHE BOOL "Whether sdformat is available" FORCE)
 endif()
 
 find_package(CURL)
