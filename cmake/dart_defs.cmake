@@ -1975,8 +1975,12 @@ function(dart_create_library)
   target_compile_features(${ARG_NAME} PUBLIC cxx_std_20)
 
   # Add compile definition for source directory (used for relative paths in logging)
+  # Include both DART_SOURCE_DIR and DART_EXPERIMENTAL_SOURCE_DIR for compatibility
+  # with the experimental logging helper in dart/simulation/experimental/common/logging.hpp
   target_compile_definitions(${ARG_NAME}
-    PUBLIC DART_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    PUBLIC
+      DART_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+      DART_EXPERIMENTAL_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
   )
 
   # Include directories - default to parent of current source dir
