@@ -164,6 +164,10 @@ if(DART_BUILD_COLLISION_BULLET AND NOT DART_USE_SYSTEM_BULLET)
     BulletSoftBody
     LinearMath
     CACHE STRING "Bullet libraries" FORCE)
+  # Pre-set BT_USE_DOUBLE_PRECISION since we built Bullet with USE_DOUBLE_PRECISION=ON.
+  # This avoids the check_cxx_source_compiles probe in dart/collision/bullet which
+  # would fail at configure time because the Bullet targets aren't built yet.
+  set(BT_USE_DOUBLE_PRECISION TRUE CACHE BOOL "Bullet double precision (FetchContent)" FORCE)
 
   set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
   unset(_dart_build_shared_libs)

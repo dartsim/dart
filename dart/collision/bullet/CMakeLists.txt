@@ -29,23 +29,28 @@ endif()
 # define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
 # any Bullet headers. This is a workaround for the fact that Bullet does not
 # add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
-include(CheckCXXSourceCompiles)
-set(CMAKE_REQUIRED_FLAGS "-w")
-set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
-set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
-set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
-check_cxx_source_compiles(
-  "
-  #include <btBulletCollisionCommon.h>
-  int main()
-  {
-    btVector3 v(0., 0., 1.);
-    btStaticPlaneShape planeShape(v, 0.);
-    return 0;
-  }
-  "
-  BT_USE_DOUBLE_PRECISION
-)
+#
+# Skip the probe if BT_USE_DOUBLE_PRECISION is already set (e.g., from
+# FetchContent in DARTFindDependencies.cmake where we know the precision).
+if(NOT DEFINED BT_USE_DOUBLE_PRECISION)
+  include(CheckCXXSourceCompiles)
+  set(CMAKE_REQUIRED_FLAGS "-w")
+  set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
+  set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
+  set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
+  check_cxx_source_compiles(
+    "
+    #include <btBulletCollisionCommon.h>
+    int main()
+    {
+      btVector3 v(0., 0., 1.);
+      btStaticPlaneShape planeShape(v, 0.);
+      return 0;
+    }
+    "
+    BT_USE_DOUBLE_PRECISION
+  )
+endif()
 
 if(DART_VERBOSE)
   if(BT_USE_DOUBLE_PRECISION)
