@@ -8,17 +8,21 @@ endif()
 
 message(STATUS "Configuring dart/collision/bullet (DART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET})")
 
-# Bullet. Force MODULE mode to use the FindBullet.cmake file distributed with
-# CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
-# with Bullet, which uses relative paths and may break transitive dependencies.
-dart_find_package(Bullet)
+# Skip find_package when Bullet was already provided via FetchContent
+# (BULLET_FOUND and BULLET_LIBRARIES already set in DARTFindDependencies.cmake)
 if(NOT BULLET_FOUND)
-  message(
-    FATAL_ERROR
-    "DART_BUILD_COLLISION_BULLET is ON but Bullet was not found. "
-    "Please install libbullet-dev (>= 3.25) or disable "
-    "DART_BUILD_COLLISION_BULLET."
-  )
+  # Bullet. Force MODULE mode to use the FindBullet.cmake file distributed with
+  # CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
+  # with Bullet, which uses relative paths and may break transitive dependencies.
+  dart_find_package(Bullet)
+  if(NOT BULLET_FOUND)
+    message(
+      FATAL_ERROR
+      "DART_BUILD_COLLISION_BULLET is ON but Bullet was not found. "
+      "Please install libbullet-dev (>= 3.25) or disable "
+      "DART_BUILD_COLLISION_BULLET."
+    )
+  endif()
 endif()
 
 # Test whether Bullet was built with double precision. If so, we need to
