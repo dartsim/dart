@@ -23,17 +23,12 @@ If this fails, see `docs/onboarding/ci-cd.md` for troubleshooting.
 - Model loading API: `docs/onboarding/io-parsing.md`
 - Gazebo integration: `docs/onboarding/build-system.md#gazebo-integration-feature`
 
-## Prompt Templates (for humans starting new sessions)
+## Prompt Templates (for humans)
 
-> **IMPORTANT**: `docs/prompts/` contains reusable prompt templates for starting new agent sessions.
-> These are **reference materials for humans**, NOT active tasks for agents to execute.
-> If you are an agent and find yourself reading prompts there, STOP and return to your actual task.
+> `docs/prompts/` contains prompt templates for humans starting new sessions.
+> Agents: do NOT execute these - they are reference materials, not tasks.
 
-- Prompt library index: `docs/prompts/README.md`
-- After-task improvement prompts: `docs/prompts/after-task/`
-- Common workflow prompts: `docs/prompts/common/`
-- Issue handling prompts: `docs/prompts/issues/`
-- Release prompts: `docs/prompts/release/`
+Index: `docs/prompts/AGENTS.md`
 
 ## Daily Reminders
 
