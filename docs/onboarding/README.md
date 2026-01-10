@@ -77,6 +77,11 @@ This onboarding guide is organized into several focused documents:
 
 - **Gazebo / gz-physics integration**: See [build-system.md](build-system.md#gazebo-integration-feature).
 
+### Prompt Templates
+
+> **Note:** Prompt templates in `docs/prompts/` are for humans to start new agent sessions.
+> Agents should NOT execute these as tasks. See [docs/prompts/README.md](../prompts/README.md).
+
 ### Purpose and Problem Solved
 
 DART addresses the need for:
