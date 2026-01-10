@@ -1,5 +1,13 @@
 # DART Core Architecture Analysis
 
+## Start here next time
+
+- Modifying dynamics/kinematics? Start with [Dynamics Layer](#3-dynamics-layer-dartdynamics)
+- Working on collision? See [Collision Detection Layer](#2-collision-detection-layer-dartcollision)
+- Adding constraints? Check [Constraint Layer](#4-constraint-layer-dartconstraint)
+- Understanding simulation loop? Read [Complete Simulation Pipeline](#complete-simulation-pipeline)
+- Key command: `pixi run test-all`
+
 ## Overview
 
 DART (Dynamic Animation and Robotics Toolkit) is a comprehensive physics simulation library for robotics and computer animation. It provides accurate and stable simulation of articulated rigid body systems using **generalized coordinates** and **Featherstone's Articulated Body Algorithm**.

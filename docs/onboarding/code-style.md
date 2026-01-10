@@ -1,5 +1,13 @@
 # Code Style Guide
 
+## Start here next time
+
+- Format all code: `pixi run lint`
+- Quick conventions: 2-space indent, camelCase functions, PascalCase classes
+- C++ headers: `.hpp`, sources: `.cpp`, member vars prefixed with `m`
+- Python bindings: snake_case functions (PEP 8), PascalCase classes
+- See [Quick Reference](#quick-reference) for the full summary
+
 This document describes the code style conventions used in the DART project.
 
 ## Table of Contents
@@ -335,6 +343,14 @@ cd build/
 make check-format  # Check without modifying
 make format        # Apply formatting
 ```
+
+## Signals to Look For
+
+| Command             | Success                                   | Failure                          |
+| ------------------- | ----------------------------------------- | -------------------------------- |
+| `pixi run lint`     | No errors, check `git status` for changes | Error messages in output         |
+| `make check-format` | "All files formatted correctly"           | List of files needing formatting |
+| `make format`       | Files reformatted silently                | N/A (always succeeds)            |
 
 ## See Also
 
