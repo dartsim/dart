@@ -25,10 +25,10 @@ If this fails, see `docs/onboarding/ci-cd.md` for troubleshooting.
 
 ## Prompt Templates (for humans)
 
-> `docs/prompts/` contains prompt templates for humans starting new sessions.
+> [`docs/prompts/`](docs/prompts/AGENTS.md) contains prompt templates for humans starting new sessions.
 > Agents: do NOT execute these - they are reference materials, not tasks.
 
-Index: `docs/prompts/AGENTS.md`
+Index: [`docs/prompts/AGENTS.md`](docs/prompts/AGENTS.md)
 
 ## Daily Reminders
 
