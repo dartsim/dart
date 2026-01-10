@@ -111,7 +111,6 @@ def write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img, user):
             ]
         )
 
-
     lines.append("")
     user_data.write_text("\n".join(lines))
     meta_data.write_text(
