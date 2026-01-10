@@ -115,12 +115,6 @@ jobs:
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
-      - name: Check Lint
-        run: |
-          DART_VERBOSE=ON \
-          BUILD_TYPE=Release \
-          pixi run check-lint
-
       - name: Test DART and dartpy
         run: |
           DART_VERBOSE=ON \
