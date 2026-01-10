@@ -8,40 +8,49 @@ endif()
 
 message(STATUS "Configuring dart/collision/bullet (DART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET})")
 
-# Bullet. Force MODULE mode to use the FindBullet.cmake file distributed with
-# CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
-# with Bullet, which uses relative paths and may break transitive dependencies.
-dart_find_package(Bullet)
+# Skip find_package when Bullet was already provided via FetchContent
+# (BULLET_FOUND and BULLET_LIBRARIES already set in DARTFindDependencies.cmake)
 if(NOT BULLET_FOUND)
-  message(
-    FATAL_ERROR
-    "DART_BUILD_COLLISION_BULLET is ON but Bullet was not found. "
-    "Please install libbullet-dev (>= 3.25) or disable "
-    "DART_BUILD_COLLISION_BULLET."
-  )
+  # Bullet. Force MODULE mode to use the FindBullet.cmake file distributed with
+  # CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
+  # with Bullet, which uses relative paths and may break transitive dependencies.
+  dart_find_package(Bullet)
+  if(NOT BULLET_FOUND)
+    message(
+      FATAL_ERROR
+      "DART_BUILD_COLLISION_BULLET is ON but Bullet was not found. "
+      "Please install libbullet-dev (>= 3.25) or disable "
+      "DART_BUILD_COLLISION_BULLET."
+    )
+  endif()
 endif()
 
 # Test whether Bullet was built with double precision. If so, we need to
 # define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
 # any Bullet headers. This is a workaround for the fact that Bullet does not
 # add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
-include(CheckCXXSourceCompiles)
-set(CMAKE_REQUIRED_FLAGS "-w")
-set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
-set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
-set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
-check_cxx_source_compiles(
-  "
-  #include <btBulletCollisionCommon.h>
-  int main()
-  {
-    btVector3 v(0., 0., 1.);
-    btStaticPlaneShape planeShape(v, 0.);
-    return 0;
-  }
-  "
-  BT_USE_DOUBLE_PRECISION
-)
+#
+# Skip the probe if BT_USE_DOUBLE_PRECISION is already set (e.g., from
+# FetchContent in DARTFindDependencies.cmake where we know the precision).
+if(NOT DEFINED BT_USE_DOUBLE_PRECISION)
+  include(CheckCXXSourceCompiles)
+  set(CMAKE_REQUIRED_FLAGS "-w")
+  set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
+  set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
+  set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
+  check_cxx_source_compiles(
+    "
+    #include <btBulletCollisionCommon.h>
+    int main()
+    {
+      btVector3 v(0., 0., 1.);
+      btStaticPlaneShape planeShape(v, 0.);
+      return 0;
+    }
+    "
+    BT_USE_DOUBLE_PRECISION
+  )
+endif()
 
 if(DART_VERBOSE)
   if(BT_USE_DOUBLE_PRECISION)

@@ -40,7 +40,10 @@
 #include "dart/utils/PackageResourceRetriever.hpp"
 #include "dart/utils/SkelParser.hpp"
 #include "dart/utils/mjcf/MjcfParser.hpp"
-#include "dart/utils/sdf/SdfParser.hpp"
+
+#if DART_HAS_SDFORMAT
+  #include "dart/utils/sdf/SdfParser.hpp"
+#endif
 
 #if DART_IO_HAS_URDF
   #include "dart/utils/urdf/UrdfParser.hpp"
@@ -238,7 +241,9 @@ simulation::WorldPtr readWorld(
   switch (format) {
     case ModelFormat::Skel:
       return utils::SkelParser::readWorld(uri, resolved.resourceRetriever);
-    case ModelFormat::Sdf: {
+    case ModelFormat::Sdf:
+#if DART_HAS_SDFORMAT
+    {
       auto sdfOptions = utils::SdfParser::Options(resolved.resourceRetriever);
       sdfOptions.mDefaultRootJointType
           = (resolved.sdfDefaultRootJointType == RootJointType::Fixed)
@@ -246,6 +251,13 @@ simulation::WorldPtr readWorld(
                 : utils::SdfParser::RootJointType::Floating;
       return utils::SdfParser::readWorld(uri, sdfOptions);
     }
+#else
+      DART_ERROR(
+          "[dart::io::readWorld] SDF support is not available. Build with "
+          "DART_ENABLE_SDFORMAT=ON to read SDF files. URI=[{}]",
+          uri.toString());
+      return nullptr;
+#endif
     case ModelFormat::Mjcf:
       return utils::MjcfParser::readWorld(
           uri, utils::MjcfParser::Options(resolved.resourceRetriever));
@@ -309,7 +321,9 @@ dynamics::SkeletonPtr readSkeleton(
 
       return utils::SkelParser::readSkeleton(uri, resolved.resourceRetriever);
     }
-    case ModelFormat::Sdf: {
+    case ModelFormat::Sdf:
+#if DART_HAS_SDFORMAT
+    {
       auto sdfOptions = utils::SdfParser::Options(resolved.resourceRetriever);
       sdfOptions.mDefaultRootJointType
           = (resolved.sdfDefaultRootJointType == RootJointType::Fixed)
@@ -317,6 +331,13 @@ dynamics::SkeletonPtr readSkeleton(
                 : utils::SdfParser::RootJointType::Floating;
       return utils::SdfParser::readSkeleton(uri, sdfOptions);
     }
+#else
+      DART_ERROR(
+          "[dart::io::readSkeleton] SDF support is not available. Build with "
+          "DART_ENABLE_SDFORMAT=ON to read SDF files. URI=[{}]",
+          uri.toString());
+      return nullptr;
+#endif
     case ModelFormat::Urdf:
 #if DART_IO_HAS_URDF
       return readUrdfSkeleton(uri, resolved);

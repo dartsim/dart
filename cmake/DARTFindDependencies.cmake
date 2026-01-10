@@ -76,6 +76,131 @@ option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
 mark_as_advanced(DART_SKIP_spdlog)
 dart_find_package(spdlog)
 
+# Only fetch ODE/Bullet if the corresponding collision module is enabled
+# and system libraries are not being used.
+set(_dart_need_fetch_content OFF)
+if(DART_BUILD_COLLISION_ODE AND NOT DART_USE_SYSTEM_ODE)
+  set(_dart_need_fetch_content ON)
+endif()
+if(DART_BUILD_COLLISION_BULLET AND NOT DART_USE_SYSTEM_BULLET)
+  set(_dart_need_fetch_content ON)
+endif()
+if(_dart_need_fetch_content)
+  include(FetchContent)
+endif()
+unset(_dart_need_fetch_content)
+
+if(DART_BUILD_COLLISION_ODE AND NOT DART_USE_SYSTEM_ODE)
+  # Match Ubuntu/conda-forge libode settings (libccd enabled, box-cylinder disabled).
+  set(_dart_build_shared_libs "${BUILD_SHARED_LIBS}")
+  set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+
+  set(ODE_WITH_LIBCCD ON CACHE BOOL "" FORCE)
+  set(ODE_WITH_LIBCCD_SYSTEM ON CACHE BOOL "" FORCE)
+  set(ODE_WITH_LIBCCD_BOX_CYL OFF CACHE BOOL "" FORCE)
+  set(ODE_WITH_DEMOS OFF CACHE BOOL "" FORCE)
+  set(ODE_WITH_TESTS OFF CACHE BOOL "" FORCE)
+  # ODE 0.16.6 uses cmake_minimum_required(VERSION 2.8) which is incompatible
+  # with CMake 4.0+. Temporarily set CMAKE_POLICY_VERSION_MINIMUM for ODE only.
+  set(_dart_old_policy_min "${CMAKE_POLICY_VERSION_MINIMUM}")
+  set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
+  FetchContent_Declare(ode
+    URL https://bitbucket.org/odedevs/ode/downloads/ode-0.16.6.tar.gz
+    URL_HASH SHA256=c91a28c6ff2650284784a79c726a380d6afec87ecf7a35c32a6be0c5b74513e8
+    EXCLUDE_FROM_ALL
+    SYSTEM
+  )
+  FetchContent_MakeAvailable(ode)
+  # Restore CMAKE_POLICY_VERSION_MINIMUM
+  if(_dart_old_policy_min)
+    set(CMAKE_POLICY_VERSION_MINIMUM "${_dart_old_policy_min}" CACHE STRING "" FORCE)
+  else()
+    unset(CMAKE_POLICY_VERSION_MINIMUM CACHE)
+  endif()
+  unset(_dart_old_policy_min)
+  set(DART_ODE_SOURCE_DIR "${ode_SOURCE_DIR}" CACHE INTERNAL "ODE source dir.")
+  set(DART_ODE_BINARY_DIR "${ode_BINARY_DIR}" CACHE INTERNAL "ODE binary dir.")
+
+  # Wire fetched ODE into find_package flow by creating ODE::ODE alias target
+  # and setting ODE_FOUND so dart_find_package(ODE) succeeds.
+  if(NOT TARGET ODE::ODE AND TARGET ODE)
+    add_library(ODE::ODE ALIAS ODE)
+  endif()
+  set(ODE_FOUND TRUE CACHE BOOL "ODE found via FetchContent" FORCE)
+  set(ODE_LIBRARIES ODE::ODE CACHE STRING "ODE libraries" FORCE)
+  set(ODE_INCLUDE_DIRS "${ode_SOURCE_DIR}/include;${ode_BINARY_DIR}/include" CACHE STRING "ODE include dirs" FORCE)
+
+  set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
+  unset(_dart_build_shared_libs)
+elseif(DART_BUILD_COLLISION_ODE)
+  # Using system ODE - clear any stale FetchContent cache values so dart_find_package runs fresh
+  unset(ODE_FOUND CACHE)
+  unset(ODE_LIBRARIES CACHE)
+  unset(ODE_INCLUDE_DIRS CACHE)
+  unset(DART_ODE_SOURCE_DIR CACHE)
+  unset(DART_ODE_BINARY_DIR CACHE)
+endif()
+
+if(DART_BUILD_COLLISION_BULLET AND NOT DART_USE_SYSTEM_BULLET)
+  # Match conda-forge Bullet float64 build flags.
+  set(_dart_build_shared_libs "${BUILD_SHARED_LIBS}")
+  set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+
+  set(USE_DOUBLE_PRECISION ON CACHE BOOL "" FORCE)
+  set(BULLET2_MULTITHREADING ON CACHE BOOL "" FORCE)
+  set(BUILD_BULLET_ROBOTICS_GUI_EXTRA OFF CACHE BOOL "" FORCE)
+  set(BUILD_BULLET_ROBOTICS_EXTRA OFF CACHE BOOL "" FORCE)
+  set(BUILD_GIMPACTUTILS_EXTRA OFF CACHE BOOL "" FORCE)
+  set(BUILD_CPU_DEMOS OFF CACHE BOOL "" FORCE)
+  set(BUILD_BULLET2_DEMOS OFF CACHE BOOL "" FORCE)
+  set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+  set(BUILD_OPENGL3_DEMOS OFF CACHE BOOL "" FORCE)
+  set(BUILD_PYBULLET OFF CACHE BOOL "" FORCE)
+  set(BUILD_PYBULLET_NUMPY OFF CACHE BOOL "" FORCE)
+  set(INSTALL_LIBS ON CACHE BOOL "" FORCE)
+  set(INSTALL_EXTRA_LIBS ON CACHE BOOL "" FORCE)
+  FetchContent_Declare(bullet
+    URL https://github.com/bulletphysics/bullet3/archive/refs/tags/3.25.tar.gz
+    URL_HASH SHA256=c45afb6399e3f68036ddb641c6bf6f552bf332d5ab6be62f7e6c54eda05ceb77
+  )
+  FetchContent_MakeAvailable(bullet)
+  set(DART_BULLET_SOURCE_DIR "${bullet_SOURCE_DIR}" CACHE INTERNAL "Bullet source dir.")
+  set(DART_BULLET_BINARY_DIR "${bullet_BINARY_DIR}" CACHE INTERNAL "Bullet binary dir.")
+
+  # Wire fetched Bullet into find_package flow by setting Bullet_FOUND and
+  # BULLET_* variables so dart_find_package(Bullet) succeeds.
+  set(Bullet_FOUND TRUE CACHE BOOL "Bullet found via FetchContent" FORCE)
+  set(BULLET_FOUND TRUE CACHE BOOL "Bullet found via FetchContent" FORCE)
+  set(BULLET_INCLUDE_DIRS "${bullet_SOURCE_DIR}/src" CACHE STRING "Bullet include dirs" FORCE)
+  set(BULLET_INCLUDE_DIR "${bullet_SOURCE_DIR}/src" CACHE STRING "Bullet include dir" FORCE)
+  # Bullet builds BulletCollision, BulletDynamics, BulletSoftBody, LinearMath targets
+  set(BULLET_LIBRARIES
+    BulletCollision
+    BulletDynamics
+    BulletSoftBody
+    LinearMath
+    CACHE STRING "Bullet libraries" FORCE)
+  # Pre-set BT_USE_DOUBLE_PRECISION since we built Bullet with USE_DOUBLE_PRECISION=ON.
+  # This avoids the check_cxx_source_compiles probe in dart/collision/bullet which
+  # would fail at configure time because the Bullet targets aren't built yet.
+  set(BT_USE_DOUBLE_PRECISION TRUE CACHE BOOL "Bullet double precision (FetchContent)" FORCE)
+
+  set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
+  unset(_dart_build_shared_libs)
+elseif(DART_BUILD_COLLISION_BULLET)
+  # Using system Bullet - clear any stale FetchContent cache values so dart_find_package
+  # and the precision probe run fresh
+  unset(Bullet_FOUND CACHE)
+  unset(BULLET_FOUND CACHE)
+  unset(BULLET_INCLUDE_DIRS CACHE)
+  unset(BULLET_INCLUDE_DIR CACHE)
+  unset(BULLET_LIBRARIES CACHE)
+  unset(DART_BULLET_SOURCE_DIR CACHE)
+  unset(DART_BULLET_BINARY_DIR CACHE)
+  # Clear BT_USE_DOUBLE_PRECISION so the probe in dart/collision/bullet runs
+  unset(BT_USE_DOUBLE_PRECISION CACHE)
+endif()
+
 #--------------------
 # GUI dependencies
 #--------------------

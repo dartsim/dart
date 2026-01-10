@@ -6,13 +6,17 @@ endif()
 
 message(STATUS "Configuring dart/collision/ode (DART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE})")
 
-dart_find_package(ODE)
-if(NOT ODE_FOUND)
-  message(
-    FATAL_ERROR
-    "DART_BUILD_COLLISION_ODE is ON but ODE (>= 0.13) was not found. "
-    "Please install libode-dev or disable DART_BUILD_COLLISION_ODE."
-  )
+# Skip find_package when ODE was already provided via FetchContent
+# (ODE_FOUND and ODE::ODE target already set in DARTFindDependencies.cmake)
+if(NOT ODE_FOUND OR NOT TARGET ODE::ODE)
+  dart_find_package(ODE)
+  if(NOT ODE_FOUND)
+    message(
+      FATAL_ERROR
+      "DART_BUILD_COLLISION_ODE is ON but ODE (>= 0.13) was not found. "
+      "Please install libode-dev or disable DART_BUILD_COLLISION_ODE."
+    )
+  endif()
 endif()
 set(DART_HAVE_ODE TRUE CACHE BOOL "Check if ODE found." FORCE)
 set(_dart_ode_public_link ${ODE_LIBRARIES})

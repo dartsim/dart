@@ -124,8 +124,10 @@ if(TARGET dart-utils AND TARGET dart-io)
   dart_add_test("integration" INTEGRATION_dynamics_Joints dynamics/test_Joints.cpp)
   target_link_libraries(INTEGRATION_dynamics_Joints dart-io)
 
-  dart_add_test("integration" INTEGRATION_dynamics_JointForceTorque dynamics/test_JointForceTorque.cpp)
-  target_link_libraries(INTEGRATION_dynamics_JointForceTorque dart-io)
+  if(DART_ENABLE_SDFORMAT)
+    dart_add_test("integration" INTEGRATION_dynamics_JointForceTorque dynamics/test_JointForceTorque.cpp)
+    target_link_libraries(INTEGRATION_dynamics_JointForceTorque dart-io)
+  endif()
 
   dart_add_test("integration" INTEGRATION_dynamics_Skeleton dynamics/test_Skeleton.cpp)
   target_link_libraries(INTEGRATION_dynamics_Skeleton dart-io)
@@ -136,12 +138,14 @@ if(TARGET dart-utils AND TARGET dart-io)
   dart_add_test("integration" INTEGRATION_dynamics_SoftDynamics dynamics/test_SoftDynamics.cpp)
   target_link_libraries(INTEGRATION_dynamics_SoftDynamics dart-io)
 
-  # Additional dynamics tests
-  dart_add_test("integration" INTEGRATION_dynamics_ServoJointLimits dynamics/test_ServoJointLimits.cpp)
-  target_link_libraries(INTEGRATION_dynamics_ServoJointLimits dart-io)
+  # Additional dynamics tests requiring SDF support
+  if(DART_ENABLE_SDFORMAT)
+    dart_add_test("integration" INTEGRATION_dynamics_ServoJointLimits dynamics/test_ServoJointLimits.cpp)
+    target_link_libraries(INTEGRATION_dynamics_ServoJointLimits dart-io)
 
-  dart_add_test("integration" INTEGRATION_dynamics_UniversalJointLimits dynamics/test_UniversalJointLimits.cpp)
-  target_link_libraries(INTEGRATION_dynamics_UniversalJointLimits dart-io)
+    dart_add_test("integration" INTEGRATION_dynamics_UniversalJointLimits dynamics/test_UniversalJointLimits.cpp)
+    target_link_libraries(INTEGRATION_dynamics_UniversalJointLimits dart-io)
+  endif()
 
   if(TARGET dart-utils-urdf)
     dart_add_test("integration" INTEGRATION_dynamics_ForwardKinematics dynamics/test_ForwardKinematics.cpp)
@@ -163,8 +167,10 @@ if(TARGET dart-utils)
   dart_add_test("integration" INTEGRATION_io_MjcfParser io/test_MjcfParser.cpp)
   target_link_libraries(INTEGRATION_io_MjcfParser dart-utils)
 
-  dart_add_test("integration" INTEGRATION_io_SdfParser io/test_SdfParser.cpp)
-  target_link_libraries(INTEGRATION_io_SdfParser dart-utils)
+  if(DART_ENABLE_SDFORMAT)
+    dart_add_test("integration" INTEGRATION_io_SdfParser io/test_SdfParser.cpp)
+    target_link_libraries(INTEGRATION_io_SdfParser dart-utils)
+  endif()
 
   dart_add_test("integration" INTEGRATION_io_SkelParser io/test_SkelParser.cpp)
   target_link_libraries(INTEGRATION_io_SkelParser dart-utils)
@@ -280,10 +286,14 @@ dart_build_tests(
   LINK_LIBRARIES dart
   SOURCES
     utils/test_Aspect.cpp
-    utils/test_Concurrency.cpp
     utils/test_Frames.cpp
     utils/test_Signal.cpp
 )
+
+if(DART_ENABLE_SDFORMAT)
+  dart_add_test("integration" INTEGRATION_utils_Concurrency utils/test_Concurrency.cpp)
+  target_link_libraries(INTEGRATION_utils_Concurrency dart-utils)
+endif()
 
 dart_add_test("integration" INTEGRATION_utils_LocalResourceRetriever utils/test_LocalResourceRetriever.cpp)
 dart_add_test("integration" INTEGRATION_utils_Subscriptions utils/test_Subscriptions.cpp)

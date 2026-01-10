@@ -1051,7 +1051,7 @@ void ConstraintSolver::solveConstrainedGroupInternal(
           "unbounded values: {}. We're setting it zero for safety. Consider "
           "using a more robust secondary solver. If this happens even with a "
           "secondary solver, please report this as a bug.",
-          fmt::streamed(mX.transpose()));
+          mX.transpose());
     } else {
       DART_ERROR(
           "[ConstraintSolver] Primary LCP solver failed to find a solution. "

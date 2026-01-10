@@ -176,6 +176,9 @@ else()
   target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=0)
 endif()
 
+# Boost gdb helper scripts embed inline asm that breaks GCC with our flags.
+target_compile_definitions(dart PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
+
 # octomap settings
 if(TARGET octomap)
   target_link_libraries(dart PUBLIC octomap)

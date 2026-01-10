@@ -2,22 +2,30 @@
 dart_find_package(tinyxml2)
 dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
 
-dart_find_package(sdformat)
-dart_check_optional_package(SDFORMAT "dart-utils" "sdformat" "16.0.0")
-if(NOT DART_HAVE_SDFORMAT)
-  message(
-    FATAL_ERROR
-    "libsdformat (>= 16.0.0) is required for dart-utils. Please install it or "
-    "set CMAKE_PREFIX_PATH so CMake can find sdformat-config.cmake.")
-endif()
-if(TARGET sdformat::sdformat)
-  set_property(TARGET sdformat::sdformat PROPERTY IMPORTED_GLOBAL TRUE)
+# sdformat is optional when DART_ENABLE_SDFORMAT=OFF (e.g., Alt Linux)
+if(DART_ENABLE_SDFORMAT)
+  dart_find_package(sdformat)
+  dart_check_optional_package(SDFORMAT "dart-utils" "sdformat" "16.0.0")
+  if(NOT DART_HAVE_SDFORMAT)
+    message(
+      FATAL_ERROR
+      "libsdformat (>= 16.0.0) is required for dart-utils. Please install it or "
+      "set CMAKE_PREFIX_PATH so CMake can find sdformat-config.cmake. "
+      "Alternatively, set DART_ENABLE_SDFORMAT=OFF to build without sdformat support.")
+  endif()
+  if(TARGET sdformat::sdformat)
+    set_property(TARGET sdformat::sdformat PROPERTY IMPORTED_GLOBAL TRUE)
+  else()
+    message(
+      FATAL_ERROR
+      "libsdformat was found but the sdformat::sdformat imported target is "
+      "missing. Please install the CMake config package that exports this "
+      "target.")
+  endif()
 else()
-  message(
-    FATAL_ERROR
-    "libsdformat was found but the sdformat::sdformat imported target is "
-    "missing. Please install the CMake config package that exports this "
-    "target.")
+  # Clear cached DART_HAVE_SDFORMAT to prevent stale values from previous
+  # configurations where SDF was enabled
+  set(DART_HAVE_SDFORMAT FALSE CACHE BOOL "Whether sdformat is available" FORCE)
 endif()
 
 find_package(CURL)
@@ -39,7 +47,9 @@ endfunction(dart_add_utils_sources)
 
 # Add subdirectories
 add_subdirectory(mjcf)
-add_subdirectory(sdf)
+if(DART_ENABLE_SDFORMAT)
+  add_subdirectory(sdf)
+endif()
 
 get_property(dart_utils_headers GLOBAL PROPERTY DART_UTILS_HEADERS)
 get_property(dart_utils_sources GLOBAL PROPERTY DART_UTILS_SOURCES)
@@ -50,7 +60,13 @@ set(component_name utils)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs} ${dart_utils_headers} ${dart_utils_sources})
-target_link_libraries(${target_name} PUBLIC dart tinyxml2::tinyxml2 sdformat::sdformat)
+target_link_libraries(${target_name} PUBLIC dart tinyxml2::tinyxml2)
+if(DART_ENABLE_SDFORMAT)
+  target_link_libraries(${target_name} PUBLIC sdformat::sdformat)
+  target_compile_definitions(${target_name} PUBLIC DART_HAS_SDFORMAT=1)
+else()
+  target_compile_definitions(${target_name} PUBLIC DART_HAS_SDFORMAT=0)
+endif()
 
 if(HAVE_CURL)
   target_include_directories(${target_name} PRIVATE ${CURL_INCLUDE_DIRS})
@@ -75,8 +91,10 @@ set(
   header_names
   ${header_names}
   mjcf/All.hpp
-  sdf/All.hpp
 )
+if(DART_ENABLE_SDFORMAT)
+  list(APPEND header_names "sdf/All.hpp")
+endif()
 dart_generate_component_headers(
   COMPONENT_NAME utils
   TARGET_DIR "dart/utils/"

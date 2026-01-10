@@ -268,7 +268,17 @@ dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF CAT
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
+dart_option(DART_USE_SYSTEM_ODE
+  "Use system-installed ODE instead of fetching from Bitbucket (set OFF only when system ODE is unavailable)" ON CATEGORY system)
+dart_option(DART_USE_SYSTEM_BULLET
+  "Use system-installed Bullet instead of fetching from GitHub (set OFF only when system Bullet is unavailable)" ON CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
+dart_option(
+  DART_ENABLE_SDFORMAT
+  "Enable sdformat support in dart-utils (disable on platforms without sdformat)"
+  ON
+  CATEGORY build
+)
 dart_option(
   DART_BUILD_SIMULATION_EXPERIMENTAL
   "Build experimental simulation module (dart::simulation::experimental)"
