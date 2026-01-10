@@ -20,7 +20,7 @@ Known info (fill what you know; leave the rest blank)
 - Extra constraints: <bullets>
 
 
-We need to resume an unfinished task in `dartsim/dart`. Prior chat history is NOT available. Use the current repo state + GitHub metadata as the source of truth; do not assume what was previously intended.
+We need to resume an unfinished task in `dartsim/dart`. Prior session history is NOT available. Use the current repo state + GitHub metadata as the source of truth; do not assume what was previously intended.
 
 Goal
 - Safely reconstruct what was in progress, identify the target issue/PR, and continue to completion using the repo's standard workflows (`pixi run ...`).

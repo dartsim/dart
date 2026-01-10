@@ -12,7 +12,7 @@ Do NOT execute unless a human pastes this into a new session.
 
 ```text
 Resuming Task
-We need to resume unfinished work in `dartsim/dart` on the CURRENT branch. Prior chat history is NOT available. Use the current repo state as the source of truth; do not assume what was previously intended.
+We need to resume unfinished work in `dartsim/dart` on the CURRENT branch. Prior session history is NOT available. Use the current repo state as the source of truth; do not assume what was previously intended.
 
 Known info
 - Branch: infer via `git branch --show-current` (do not switch branches unless needed and explained)

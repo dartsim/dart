@@ -13,7 +13,7 @@ Do NOT execute unless a human pastes this into a new session.
 ```text
 # After Finishing a Task - Initial Prompt Improvement
 
-We have just completed a task together in this same chat thread, and it is now finished (no further product/code changes are needed). Based on the full context, propose the best initial prompt that would have produced equal or better results than the prompts used here. Then update the prompt library at `docs/prompts/` to capture that improved prompt as a reusable template (add, improve, remove, or reorganize prompts as needed).
+We have just completed a task together in this session, and it is now finished (no further product/code changes are needed). Based on the full context, propose the best initial prompt that would have produced equal or better results than the prompts used here. Then update the prompt library at `docs/prompts/` to capture that improved prompt as a reusable template (add, improve, remove, or reorganize prompts as needed).
 
 Rules
 - Only change prompt templates and category README indexes in `docs/prompts/`.

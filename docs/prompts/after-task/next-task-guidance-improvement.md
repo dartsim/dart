@@ -13,11 +13,11 @@ Do NOT execute unless a human pastes this into a new session.
 ```text
 # After Finishing a Task
 
-We have just completed a task together in this same chat thread, and it is now finished (no further product/code changes are needed). Now do a "next-task guidance improvement" pass: update repo documentation and guidance so a fresh agent run on a future task will be faster and less error-prone, based ONLY on what we actually learned in this thread.
+We have just completed a task together in this session, and it is now finished (no further product/code changes are needed). Now do a "next-task guidance improvement" pass: update repo documentation and guidance so a fresh agent run on a future task will be faster and less error-prone, based ONLY on what we actually learned in this session.
 
 ## Scope (Hard Rules)
 
-- Source of truth is this chat thread + current repo contents. If something isn't explicitly evidenced, treat it as unknown.
+- Source of truth is this session + current repo contents. If something isn't explicitly evidenced, treat it as unknown.
 - Do NOT resume work on the completed task and do NOT change product/code for it; docs/guidance only.
 - Prefer existing workflows/entry points; use `pixi run ...` when that's what the repo uses.
 - Keep `AGENTS.md` concise (pointers only). Place details in `docs/` or the relevant component README.

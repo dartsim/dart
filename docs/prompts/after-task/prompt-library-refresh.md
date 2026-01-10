@@ -13,7 +13,7 @@ Do NOT execute unless a human pastes this into a new session.
 ```text
 # After Finishing a Task - Prompt Library Refresh
 
-We have just completed a task together in this same chat thread, and it is now finished (no further product/code changes are needed). Now review the prompt library at `docs/prompts/` and add, revise, or remove prompt templates so future agent tasks are faster and less error-prone.
+We have just completed a task together in this session, and it is now finished (no further product/code changes are needed). Now review the prompt library at `docs/prompts/` and add, revise, or remove prompt templates so future agent tasks are faster and less error-prone.
 
 Scope (hard rules)
 - Only change prompt templates and category README indexes in `docs/prompts/`.
