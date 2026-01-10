@@ -37,9 +37,11 @@
 #include <dart/utils/PackageResourceRetriever.hpp>
 #include <dart/utils/urdf/Export.hpp>
 
+#include <dart/simulation/Fwd.hpp>
 #include <dart/simulation/World.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/Joint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
@@ -65,17 +67,6 @@ class Vector3;
 } // namespace urdf
 
 namespace dart {
-
-namespace dynamics {
-class Skeleton;
-class BodyNode;
-class Joint;
-class Shape;
-} // namespace dynamics
-namespace simulation {
-class World;
-}
-
 namespace utils {
 
 /// Parser for URDF files.

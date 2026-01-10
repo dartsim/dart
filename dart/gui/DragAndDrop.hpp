@@ -36,8 +36,10 @@
 #include "DefaultEventHandler.hpp"
 
 #include <dart/gui/Export.hpp>
+#include <dart/gui/Fwd.hpp>
 
 #include <dart/dynamics/Entity.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/Shape.hpp>
 
 #include <dart/common/sub_ptr.hpp>
@@ -47,15 +49,7 @@
 #include <functional>
 
 namespace dart {
-
-namespace dynamics {
-class SimpleFrame;
-} // namespace dynamics
-
 namespace gui {
-
-class Viewer;
-class InteractiveFrame;
 
 /// DragAndDrop is a class that facilitates enabling various kinds of dart
 /// Entities to be dragged and dropped in an dart::gui environment

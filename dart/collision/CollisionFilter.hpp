@@ -33,20 +33,17 @@
 #ifndef DART_COLLISION_COLLISIONFILTER_HPP_
 #define DART_COLLISION_COLLISIONFILTER_HPP_
 
+#include <dart/collision/Fwd.hpp>
 #include <dart/collision/detail/UnorderedPairs.hpp>
+
+#include <dart/dynamics/Fwd.hpp>
 
 #include <dart/common/Deprecated.hpp>
 
 #include <dart/Export.hpp>
+
 namespace dart {
-
-namespace dynamics {
-class BodyNode;
-} // namespace dynamics
-
 namespace collision {
-
-class CollisionObject;
 
 class DART_API CollisionFilter
 {

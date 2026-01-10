@@ -36,6 +36,7 @@
 #include <dart/config.hpp>
 
 #include <dart/gui/Export.hpp>
+#include <dart/gui/Fwd.hpp>
 
 #include <dart/dynamics/Fwd.hpp>
 
@@ -45,19 +46,7 @@
 #include <memory>
 
 namespace dart {
-namespace dynamics {
-class ShapeFrame;
-class Entity;
-class Shape;
-} // namespace dynamics
-
 namespace gui {
-
-namespace render {
-class ShapeNode;
-} // namespace render
-
-class WorldNode;
 
 class DART_GUI_API ShapeFrameNode : public ::osg::MatrixTransform
 {

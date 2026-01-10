@@ -33,17 +33,14 @@
 #ifndef DART_COLLISION_DISTANCEFILTER_HPP_
 #define DART_COLLISION_DISTANCEFILTER_HPP_
 
+#include <dart/collision/Fwd.hpp>
+
+#include <dart/dynamics/Fwd.hpp>
+
 #include <dart/Export.hpp>
 
 namespace dart {
-
-namespace dynamics {
-class BodyNode;
-} // namespace dynamics
-
 namespace collision {
-
-class CollisionObject;
 
 struct DART_API DistanceFilter
 {

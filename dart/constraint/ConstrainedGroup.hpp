@@ -38,6 +38,8 @@
 #include <dart/constraint/ConstraintBase.hpp>
 #include <dart/constraint/Fwd.hpp>
 
+#include <dart/dynamics/Fwd.hpp>
+
 #include <dart/Export.hpp>
 
 #include <Eigen/Dense>
@@ -46,16 +48,9 @@
 #include <vector>
 
 namespace dart {
-
-namespace dynamics {
-class Skeleton;
-} // namespace dynamics
-
 namespace constraint {
 
 struct ConstraintInfo;
-class ConstraintBase;
-class ConstraintSolver;
 
 /// ConstrainedGroup is a group of skeletons that interact each other with
 /// constraints

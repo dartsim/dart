@@ -39,6 +39,7 @@
 #ifndef DART_SIMULATION_RECORDING_HPP_
 #define DART_SIMULATION_RECORDING_HPP_
 
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <dart/Export.hpp>
@@ -49,11 +50,6 @@
 #include <vector>
 
 namespace dart {
-
-namespace dynamics {
-class Skeleton;
-} // namespace dynamics
-
 namespace simulation {
 
 /// @brief class Recording

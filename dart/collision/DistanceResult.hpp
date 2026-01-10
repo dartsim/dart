@@ -33,16 +33,13 @@
 #ifndef DART_COLLISION_DISTANCE_RESULT_HPP_
 #define DART_COLLISION_DISTANCE_RESULT_HPP_
 
+#include <dart/dynamics/Fwd.hpp>
+
 #include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 
 namespace dart {
-
-namespace dynamics {
-class ShapeFrame;
-} // namespace dynamics
-
 namespace collision {
 
 struct DART_API DistanceResult

@@ -34,7 +34,12 @@
 #define DART_GUI_WORLDNODE_HPP_
 
 #include <dart/gui/Export.hpp>
+#include <dart/gui/Fwd.hpp>
 #include <dart/gui/ShapeFrameNode.hpp>
+
+#include <dart/simulation/Fwd.hpp>
+
+#include <dart/dynamics/Fwd.hpp>
 
 #include <osg/Group>
 #include <osgShadow/ShadowTechnique>
@@ -44,23 +49,7 @@
 #include <unordered_map>
 
 namespace dart {
-
-namespace simulation {
-class World;
-} // namespace simulation
-
-namespace dynamics {
-class Frame;
-class Entity;
-class ShapeFrame;
-} // namespace dynamics
-
 namespace gui {
-
-class FrameNode;
-class ShapeFrameNode;
-class EntityNode;
-class Viewer;
 
 /// WorldNode class encapsulates a World to be displayed in OpenSceneGraph
 class DART_GUI_API WorldNode : public ::osg::Group

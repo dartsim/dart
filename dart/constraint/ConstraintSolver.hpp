@@ -39,6 +39,8 @@
 
 #include <dart/collision/CollisionDetector.hpp>
 
+#include <dart/dynamics/Fwd.hpp>
+
 #include <dart/math/lcp/LcpSolver.hpp>
 
 #include <dart/common/Deprecated.hpp>
@@ -51,12 +53,6 @@
 #include <vector>
 
 namespace dart {
-
-namespace dynamics {
-class Skeleton;
-class ShapeNodeCollisionObject;
-} // namespace dynamics
-
 namespace constraint {
 
 /// ConstraintSolver manages constraints and computes constraint impulses

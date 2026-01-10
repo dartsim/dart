@@ -35,6 +35,8 @@
 
 #include <dart/collision/Contact.hpp>
 
+#include <dart/dynamics/Fwd.hpp>
+
 #include <dart/Export.hpp>
 
 #include <span>
@@ -42,14 +44,6 @@
 #include <vector>
 
 namespace dart {
-
-namespace dynamics {
-
-class BodyNode;
-class ShapeFrame;
-
-} // namespace dynamics
-
 namespace collision {
 
 class DART_API CollisionResult
