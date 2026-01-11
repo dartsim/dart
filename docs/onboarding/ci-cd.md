@@ -41,6 +41,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Wheel publishing workflows may lag behind other jobs and stay queued longer; keep watching the PR run until all workflows complete.
   - Randomized stress tests can diverge across platforms if they rely on library-dependent distributions; prefer deterministic RNG transforms when portability matters.
   - `check-format` failures usually mean formatting drift; run the C++ formatter and commit any diffs before retrying CI. Suggested (Unverified): `pixi run lint-cpp`.
+  - Local lint may fail if `clang-format-14` is missing from the pixi environment; this is an environment setup issue, not a code issue. CI will still validate correctly.
   - Codecov patch failures usually mean new lines or branches are uncovered; add targeted tests and re-run coverage.
   - Codecov patch status can lag until coverage jobs complete; confirm Coverage (Debug) finished before acting.
 
@@ -154,13 +155,16 @@ to keep assertions enabled outside a Debug build.
 
 ### Core CI Workflows
 
-| Workflow             | Purpose               | Platforms      | Trigger              |
-| -------------------- | --------------------- | -------------- | -------------------- |
-| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | PR, push, schedule   |
-| `ci_macos.yml`       | Build, test           | macOS          | PR, push, schedule   |
-| `ci_windows.yml`     | Build, test           | Windows        | PR, push, schedule   |
-| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | PR, push, schedule   |
-| `publish_dartpy.yml` | Python wheels         | Multi-platform | Push, schedule, tags |
+| Workflow             | Purpose               | Platforms      | Trigger            | Doc-only skip |
+| -------------------- | --------------------- | -------------- | ------------------ | ------------- |
+| `ci_lint.yml`        | Lint (formatting)     | Ubuntu         | PR, push           | No            |
+| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | PR, push, schedule | Yes           |
+| `ci_macos.yml`       | Build, test           | macOS          | PR, push, schedule | Yes           |
+| `ci_windows.yml`     | Build, test           | Windows        | PR, push, schedule | Yes           |
+| `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | PR, push, schedule | Yes           |
+| `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | PR, push, schedule | Yes           |
+| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | PR, push, schedule | Yes           |
+| `publish_dartpy.yml` | Python wheels         | Multi-platform | Push, schedule     | Yes           |
 
 ### Design Principles
 
@@ -340,24 +344,28 @@ generates or deploys the API references, so doc validation happens locally:
 
 ## Lint Check Strategy
 
-**Centralized approach:** Linting is deterministic and platform-independent, so running it once is sufficient.
+**Dedicated workflow:** Linting is deterministic and platform-independent, so it runs once in a dedicated `ci_lint.yml` workflow.
 
-**Implementation** (see `ci_ubuntu.yml`):
+**Key design:**
+
+- `ci_lint.yml` runs on ALL changes (including doc-only changes) to catch formatting issues early
+- Platform-specific CI jobs (`ci_freebsd.yml`, `ci_altlinux.yml`, etc.) skip on doc-only changes to save resources
+- Lint is removed from platform-specific workflows since it's covered by the dedicated job
+
+**Doc-only skip patterns** (used by platform CI, NOT by lint CI):
 
 ```yaml
-- name: Check Lint
-  if: matrix.build_type == 'Release'
-  run: |
-    DART_VERBOSE=ON \
-    BUILD_TYPE=Release \
-    pixi run check-lint
+paths-ignore:
+  - "docs/**"
+  - ".readthedocs.yml"
+  - "tutorials/**"
+  - "**/*.md"
+  - "**/*.rst"
+  - "**/*.po"
+  - "**/*.pot"
 ```
 
-**Behavior:**
-
-- Only runs on Ubuntu Release build
-- Removed from macOS and Windows workflows
-- Savings: 12-25 minutes per PR
+**Savings:** 12-25 minutes per PR on platform jobs for doc-only changes
 
 ## Testing Strategy
 
@@ -559,10 +567,11 @@ Notes:
 
 ### When Modifying Workflows
 
-1. **Test in a branch first** before merging to main
-2. **Monitor impact** on CI times for next 5-10 PRs
-3. **Document changes** in workflow comments
-4. **Maintain backward compatibility** where possible
+1. **Validate YAML syntax** before pushing. Suggested (Unverified): `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/<file>.yml')); print('valid')"`
+2. **Test in a branch first** before merging to main
+3. **Monitor impact** on CI times for next 5-10 PRs
+4. **Document changes** in workflow comments
+5. **Maintain backward compatibility** where possible
 
 ### When Adding Dependencies
 
