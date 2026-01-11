@@ -13,7 +13,6 @@ Style guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 | -------------------------------------------------------------------------- | ------------------------------ |
 | [common/new-task-core.md](common/new-task-core.md)                         | Full new task template         |
 | [common/resume-task.md](common/resume-task.md)                             | Continue previous session      |
-| [common/resume-benchmark-reports.md](common/resume-benchmark-reports.md)   | Resume benchmark reports work  |
 | [common/ci-failure-fix.md](common/ci-failure-fix.md)                       | Fix failing CI                 |
 | [common/docs-update.md](common/docs-update.md)                             | Docs-only changes              |
 | [common/mechanical-refactor.md](common/mechanical-refactor.md)             | Behavior-preserving transforms |

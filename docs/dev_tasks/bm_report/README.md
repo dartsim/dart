@@ -25,3 +25,4 @@
 
 - Local wrapper: `pixi run bm-report`.
 - CI workflows: see the benchmark report workflows under `.github/workflows/`.
+- Resume prompt: `docs/dev_tasks/bm_report/resume-prompt.md`.
