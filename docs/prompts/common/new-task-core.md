@@ -19,6 +19,7 @@ Task
 Workflow
 - Read `AGENTS.md`, `CONTRIBUTING.md`, `docs/onboarding/`.
 - Create branch from latest `origin/main` (e.g., `fix/<topic>`, `feature/<topic>`).
+- For complex multi-session tasks: create `docs/dev_tasks/<TASK>/` for notes.
 - Keep a short task plan (3-6 steps).
 - Prefer small, focused commits.
 

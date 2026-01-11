@@ -33,6 +33,7 @@ Step 1: Recon (no changes yet)
 
 Step 2: Reconstruct intent
 - From branch name, commits, diffs, TODO/FIXME notes, issue/PR description.
+- Check `docs/dev_tasks/<TASK>/` if this is a tracked multi-session task.
 - Map "done" vs "remaining".
 
 Step 3: Plan and continue
