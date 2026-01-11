@@ -7,12 +7,26 @@ on:
     paths-ignore:
       - ".github/workflows/cache_*.yml"
       - "docker/dev/**"
+      - "docs/**"
+      - ".readthedocs.yml"
+      - "tutorials/**"
+      - "**/*.md"
+      - "**/*.rst"
+      - "**/*.po"
+      - "**/*.pot"
   pull_request:
     branches:
       - "**"
     paths-ignore:
       - ".github/workflows/cache_*.yml"
       - "docker/dev/**"
+      - "docs/**"
+      - ".readthedocs.yml"
+      - "tutorials/**"
+      - "**/*.md"
+      - "**/*.rst"
+      - "**/*.po"
+      - "**/*.pot"
   schedule:
     # Run every Monday at 05:00 UTC
     - cron: "0 5 * * 1"
