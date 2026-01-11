@@ -29,7 +29,6 @@ Step 1: Recon (no changes yet)
 - `git diff --stat`, `git stash list`
 - `gh pr list --head "$(git branch --show-current)"`, `gh pr status`
 - If issue/PR unknown, search: `gh pr list --search "<keywords>"`, `gh issue list --search "<keywords>"`
-- Check `docs/dev_tasks/<TASK>/` for notes or resume prompt.
 - If goal unclear, STOP and ask.
 
 Step 2: Reconstruct intent
@@ -40,7 +39,6 @@ Step 3: Plan and continue
 - Propose 3-6 step plan.
 - Implement with minimal scope.
 - Add/revise tests as needed.
-- Update `docs/dev_tasks/<TASK>/` if it exists.
 
 Step 4: Verify
 - `pixi run test` (quick), `pixi run test-all` (final).

@@ -29,7 +29,6 @@ Workflow
 - Keep changes concise and reusable; avoid task-specific IDs or temporary examples.
 - If adding commands, label them as suggested/unverified unless you ran them.
 - Update any indexes or references that point to the changed docs.
-- If the change is large, keep a short plan in `docs/dev_tasks/<TASK_NAME>/` and update it as you go.
 - Commit, push, and open a PR if requested.
 
 Output
