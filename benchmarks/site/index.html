@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DART Benchmark Trends</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&family=Space+Grotesk:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="glow"></div>
+    <main class="frame">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">DART Benchmarks</p>
+          <h1>Performance, tracked over time</h1>
+          <p class="sub">
+            Reports are committed from local runs on stable hardware. Select a
+            benchmark, runner, and case to explore trends.
+          </p>
+        </div>
+        <div class="meta">
+          <div class="chip">
+            Updated <span id="updatedAt">--</span>
+          </div>
+          <div class="chip">
+            Reports <span id="reportCount">--</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="controls">
+        <label>
+          Benchmark
+          <select id="benchmarkSelect"></select>
+        </label>
+        <label>
+          Runner
+          <select id="runnerSelect"></select>
+        </label>
+        <label>
+          Case
+          <select id="caseSelect"></select>
+        </label>
+      </section>
+
+      <section class="stats">
+        <div class="stat">
+          <div class="stat-label">Latest</div>
+          <div class="stat-value" id="latestValue">--</div>
+          <div class="stat-sub" id="latestMeta">--</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Change</div>
+          <div class="stat-value" id="deltaValue">--</div>
+          <div class="stat-sub" id="deltaMeta">--</div>
+        </div>
+      </section>
+
+      <section class="chart-card">
+        <canvas id="benchmarkChart" height="120"></canvas>
+      </section>
+
+      <footer class="footer">
+        <span>Data source: committed JSON reports.</span>
+        <span id="emptyState" class="muted"></span>
+      </footer>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+    <script src="site.js"></script>
+  </body>
+</html>

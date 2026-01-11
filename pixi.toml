@@ -838,6 +838,7 @@ py-atlas-puppet = { cmd = """
 """, depends-on = ["build"], env = { BUILD_TYPE = "Release" } }
 
 bm = { cmd = "python scripts/run_cpp_benchmark.py", depends-on = ["config"] }
+bm-report = { cmd = "python scripts/run_cpp_benchmark.py --report", depends-on = ["config"] }
 
 test-joints = { cmd = [
   "bash",

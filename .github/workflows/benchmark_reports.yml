@@ -1,0 +1,52 @@
+name: Benchmark Reports
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/reports/**"
+
+jobs:
+  compare:
+    name: Compare Reports
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Collect report files
+        id: reports
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "${{ github.base_ref }}"
+          base_ref="origin/${{ github.base_ref }}"
+          git diff --name-only --diff-filter=AM "$base_ref"...HEAD -- benchmarks/reports > /tmp/benchmark_reports.txt
+          if [ -s /tmp/benchmark_reports.txt ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "base_ref=$base_ref" >> "$GITHUB_OUTPUT"
+
+      - name: Compare reports
+        if: steps.reports.outputs.found == 'true'
+        run: |
+          python scripts/benchmark_report_compare.py \
+            --base-ref "${{ steps.reports.outputs.base_ref }}" \
+            --report-list /tmp/benchmark_reports.txt \
+            --output /tmp/benchmark_report.md
+          cat /tmp/benchmark_report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment on PR
+        if: steps.reports.outputs.found == 'true' && github.event.pull_request.head.repo.fork == false
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-file: /tmp/benchmark_report.md
+          edit-mode: replace
+          body-includes: "<!-- dart-benchmark-report -->"

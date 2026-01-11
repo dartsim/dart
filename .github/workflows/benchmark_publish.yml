@@ -1,0 +1,34 @@
+name: Benchmark Dashboard
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "benchmarks/reports/**"
+      - "benchmarks/site/**"
+      - "scripts/benchmark_report_site.py"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Publish Dashboard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Generate dashboard data
+        run: |
+          python scripts/benchmark_report_site.py \
+            --reports-dir benchmarks/reports \
+            --output benchmarks/site/data.json
+
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: benchmarks/site
+          force_orphan: true

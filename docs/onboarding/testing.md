@@ -385,12 +385,17 @@ pixi run bm boxes
 pixi run bm kinematics
 pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE
 pixi run bm --pixi-help
+pixi run bm-report boxes
+pixi run bm-report lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE
 ```
 
 > **Note:** LCP solver comparisons use the solver-agnostic harness and the
 > `BM_LCP_COMPARE` benchmark so all solvers share the same contract and fixtures.
 > See `tests/common/lcpsolver` and `tests/benchmark/lcpsolver` for the sources,
-> and keep benchmark outputs under the build tree.
+> and keep ad hoc benchmark outputs under the build tree. Use `bm-report` when
+> you intend to commit JSON reports under `benchmarks/reports/` for CI
+> comparison; set `DART_BENCH_RUNNER_ID` to a stable non-sensitive label
+> (hostnames and executable paths are scrubbed).
 
 ### Manual Python Testing
 
