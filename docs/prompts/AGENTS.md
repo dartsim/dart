@@ -9,24 +9,21 @@ Style guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Common
 
-| Prompt                                                                     | Purpose                        |
-| -------------------------------------------------------------------------- | ------------------------------ |
-| [common/new-task-core.md](common/new-task-core.md)                         | Full new task template         |
-| [common/resume-task.md](common/resume-task.md)                             | Continue previous session      |
-| [common/ci-failure-fix.md](common/ci-failure-fix.md)                       | Fix failing CI                 |
-| [common/docs-update.md](common/docs-update.md)                             | Docs-only changes              |
-| [common/mechanical-refactor.md](common/mechanical-refactor.md)             | Behavior-preserving transforms |
-| [common/agent-workflow-automation.md](common/agent-workflow-automation.md) | Automation-first principles    |
+| Prompt                                                         | Purpose                        |
+| -------------------------------------------------------------- | ------------------------------ |
+| [common/new-task-core.md](common/new-task-core.md)             | Full new task template         |
+| [common/resume-task.md](common/resume-task.md)                 | Continue previous session      |
+| [common/ci-failure-fix.md](common/ci-failure-fix.md)           | Fix failing CI                 |
+| [common/docs-update.md](common/docs-update.md)                 | Docs-only changes              |
+| [common/mechanical-refactor.md](common/mechanical-refactor.md) | Behavior-preserving transforms |
 
 ## Branch & PR
 
-| Prompt                                                             | Purpose                       |
-| ------------------------------------------------------------------ | ----------------------------- |
-| [common/branch-cleanup.md](common/branch-cleanup.md)               | Analyze/delete stale branches |
-| [common/pre-pr-branch-cleanup.md](common/pre-pr-branch-cleanup.md) | Clean branch before PR        |
-| [common/pr-title-description.md](common/pr-title-description.md)   | Generate PR metadata          |
-| [common/pr-review-feedback.md](common/pr-review-feedback.md)       | Address review comments       |
-| [common/pr-merge-and-cleanup.md](common/pr-merge-and-cleanup.md)   | Monitor CI and merge          |
+| Prompt                                                           | Purpose                       |
+| ---------------------------------------------------------------- | ----------------------------- |
+| [common/branch-cleanup.md](common/branch-cleanup.md)             | Analyze/delete stale branches |
+| [common/pr-review-feedback.md](common/pr-review-feedback.md)     | Address review comments       |
+| [common/pr-merge-and-cleanup.md](common/pr-merge-and-cleanup.md) | Monitor CI and merge          |
 
 ## Issues
 
@@ -49,8 +46,7 @@ Style guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 Run after completing a session to capture learnings.
 
-| Prompt                                                                                       | Purpose                   |
-| -------------------------------------------------------------------------------------------- | ------------------------- |
-| [after-task/next-task-guidance-improvement.md](after-task/next-task-guidance-improvement.md) | Update `docs/onboarding/` |
-| [after-task/prompt-library-refresh.md](after-task/prompt-library-refresh.md)                 | Update `docs/prompts/`    |
-| [after-task/initial-prompt-improvement.md](after-task/initial-prompt-improvement.md)         | Improve starting prompt   |
+| Prompt                                                         | Purpose                   |
+| -------------------------------------------------------------- | ------------------------- |
+| [after-task/improve-docs.md](after-task/improve-docs.md)       | Update `docs/onboarding/` |
+| [after-task/improve-prompts.md](after-task/improve-prompts.md) | Update `docs/prompts/`    |
