@@ -20,21 +20,19 @@ Style guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Branch & PR
 
-| Prompt                                                             | Purpose                      |
-| ------------------------------------------------------------------ | ---------------------------- |
-| [common/branch-cleanup.md](common/branch-cleanup.md)               | Analyze stale branches       |
-| [common/branch-cleanup-action.md](common/branch-cleanup-action.md) | Delete/rebase stale branches |
-| [common/pre-pr-branch-cleanup.md](common/pre-pr-branch-cleanup.md) | Clean branch before PR       |
-| [common/pr-title-description.md](common/pr-title-description.md)   | Generate PR metadata         |
-| [common/pr-review-feedback.md](common/pr-review-feedback.md)       | Address review comments      |
-| [common/pr-merge-and-cleanup.md](common/pr-merge-and-cleanup.md)   | Monitor CI and merge         |
+| Prompt                                                             | Purpose                       |
+| ------------------------------------------------------------------ | ----------------------------- |
+| [common/branch-cleanup.md](common/branch-cleanup.md)               | Analyze/delete stale branches |
+| [common/pre-pr-branch-cleanup.md](common/pre-pr-branch-cleanup.md) | Clean branch before PR        |
+| [common/pr-title-description.md](common/pr-title-description.md)   | Generate PR metadata          |
+| [common/pr-review-feedback.md](common/pr-review-feedback.md)       | Address review comments       |
+| [common/pr-merge-and-cleanup.md](common/pr-merge-and-cleanup.md)   | Monitor CI and merge          |
 
 ## Issues
 
 | Prompt                                                 | Purpose                 |
 | ------------------------------------------------------ | ----------------------- |
 | [issues/new.md](issues/new.md)                         | Resolve an issue        |
-| [issues/resume.md](issues/resume.md)                   | Continue issue work     |
 | [issues/discussion.md](issues/discussion.md)           | Triage / validity check |
 | [issues/closing-message.md](issues/closing-message.md) | Generate closing reply  |
 
@@ -44,8 +42,7 @@ Style guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 | ---------------------------------------------------------- | ----------------------------- |
 | [release/packaging-branch.md](release/packaging-branch.md) | Create release packaging PR   |
 | [release/backport-pr.md](release/backport-pr.md)           | Cherry-pick to release branch |
-| [release/branch-ci-fix.md](release/branch-ci-fix.md)       | Fix CI on existing PR         |
-| [release/branch-ci-fix-pr.md](release/branch-ci-fix-pr.md) | New PR to fix release CI      |
+| [release/branch-ci-fix.md](release/branch-ci-fix.md)       | Fix CI on release branch      |
 | [release/merge-into-main.md](release/merge-into-main.md)   | Merge release branch to main  |
 
 ## After-Task

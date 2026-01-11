@@ -1,4 +1,4 @@
-# Release Branch Merge Into Main Prompt
+# DART: Merge Release Branch Into Main
 
 <!--
 CRITICAL: FOR AGENTS READING THIS FILE

@@ -1,4 +1,4 @@
-# Issue Discussion Prompt
+# DART: Issue Triage
 
 <!--
 CRITICAL: FOR AGENTS READING THIS FILE

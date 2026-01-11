@@ -1,4 +1,4 @@
-# Issue Closing Message Prompt
+# DART: Issue Closing Message
 
 <!--
 CRITICAL: FOR AGENTS READING THIS FILE

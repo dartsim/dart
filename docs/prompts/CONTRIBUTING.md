@@ -6,7 +6,7 @@
 
 1. Pick category folder (or create new for stable, recurring task types)
 2. Use kebab-case filename (e.g., `new-feature.md`)
-3. Update category `AGENTS.md` to link it
+3. Update `docs/prompts/AGENTS.md` to link it
 
 ## Prompt Structure
 

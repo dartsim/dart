@@ -1,11 +1,9 @@
-# Release Branch CI Fix Prompt
+# DART: Release Branch CI Fix
 
 <!--
 CRITICAL: FOR AGENTS READING THIS FILE
-=======================================
 This is a PROMPT TEMPLATE, not an active task.
 Do NOT execute unless a human pastes this into a new session.
-=======================================
 -->
 
 ## Prompt
@@ -14,23 +12,24 @@ Do NOT execute unless a human pastes this into a new session.
 # DART: Release Branch CI Fix
 
 Context
-- PR: <PR_URL>
 - Release branch: <RELEASE_BRANCH>
 - Release version: <RELEASE_VERSION>
-- Failing CI job: <CI_JOB_URL>
-- Notes: <optional>
+- Failing run: <RUN_URL_OR_ID>
+- Existing PR: <PR_URL or "create new">
+- Milestone: <MILESTONE_NAME or blank>
 
 Workflow
-- Continue working on the current branch unless told otherwise.
-- Read `AGENTS.md` and `CONTRIBUTING.md` (and `docs/onboarding/ci-cd.md` if present).
-- Identify why the failure was not caught earlier; decide whether release-branch workflows need updates.
-- Apply minimal fixes for <CI_JOB_URL>.
-- Prefer fixes already in origin/main to reduce merge conflicts when this release branch merges back.
-- If adding a new CI job, add a short note on why it is needed.
-- Commit and push with `git push`, then monitor CI with `gh run watch <RUN_ID> --interval 30` until green.
+- If existing PR: continue on that branch. If "create new": branch from latest <RELEASE_BRANCH>.
+- Read `AGENTS.md`, `CONTRIBUTING.md`, `docs/onboarding/ci-cd.md`.
+- Inspect failures: `gh run view <RUN_ID> --log-failed` or `gh run view <RUN_ID> --job <JOB_ID> --log`.
+- Apply minimal fixes; prefer fixes already in `origin/main` to reduce merge conflicts.
+- Identify why failure wasn't caught earlier; update workflows if needed.
+- Commit and push.
+- If new PR needed: `gh pr create` into <RELEASE_BRANCH>, set milestone.
+- Monitor CI: `gh run watch <RUN_ID> --interval 30` until green.
 
 Output
-- Root cause and why it was not caught.
-- Workflow changes (if any) and rationale.
+- Root cause and why not caught earlier.
 - Fix summary and CI status.
+- PR URL (if created).
 ```

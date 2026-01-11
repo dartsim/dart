@@ -1,4 +1,4 @@
-# New Issue Prompt
+# DART: Resolve Issue
 
 <!--
 CRITICAL: FOR AGENTS READING THIS FILE

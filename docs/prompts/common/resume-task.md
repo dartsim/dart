@@ -2,64 +2,57 @@
 
 <!--
 CRITICAL: FOR AGENTS READING THIS FILE
-=======================================
 This is a PROMPT TEMPLATE, not an active task.
 Do NOT execute unless a human pastes this into a new session.
-=======================================
 -->
 
 ## Prompt
 
 ```text
-Resuming Task
-We need to resume unfinished work in `dartsim/dart` on the CURRENT branch. Prior session history is NOT available. Use the current repo state as the source of truth; do not assume what was previously intended.
+# DART: Resume Task
 
-Known info
-- Branch: infer via `git branch --show-current` (do not switch branches unless needed and explained)
-- Goal hint (optional): <1 sentence or leave blank>
-- Extra constraints (optional): <bullets or leave blank>
+We need to resume unfinished work in `dartsim/dart`. Prior session history is NOT available. Use repo state + GitHub metadata as the source of truth.
 
-Safety/constraints
-- Do not discard work: no `git reset --hard`, no `git clean -fdx`, no dropping stashes unless you explain and I explicitly confirm.
-- Work in the correct directory (confirm with `git rev-parse --show-toplevel`).
-- Follow repo conventions (`CONTRIBUTING.md`, onboarding docs, `AGENTS.md` pointers).
-- Use repo entry points (`pixi run ...`); don't invent new ones.
+Known info (fill what you know; leave blank if unknown)
+- Branch: <BRANCH or "infer from current">
+- Issue/PR: <URL or # or blank>
+- Goal hint: <1 sentence or blank>
+- Constraints: <bullets or blank>
 
-Step 1: Recon (no code changes yet)
-- Collect and summarize:
-  - `git status -sb`
-  - `git branch -vv`
-  - `git remote -v`
-  - `git log -20 --oneline --decorate`
-  - `git diff --stat` (and `git diff` if needed)
-  - `git stash list`
-- Check whether this branch already has a PR:
-  - `gh pr list --head "$(git branch --show-current)"`
-  - `gh pr status`
+Safety
+- No destructive git commands (`reset --hard`, `clean -fdx`, dropping stashes) without confirmation.
+- Confirm repo root with `git rev-parse --show-toplevel`.
+- Follow `AGENTS.md`, `CONTRIBUTING.md`, `docs/onboarding/`.
 
-Step 2: Reconstruct intent (from repo state)
-- Infer the intended goal from:
-  - branch name + commit messages
-  - diff contents and touched subsystems
-  - TODO/FIXME notes in changed files
-  - any repo notes/docs that look like WIP guidance
-  - `docs/dev_tasks/<TASK_NAME>/` notes and any resume prompt file
-- If you cannot confidently infer the goal/acceptance criteria, STOP and ask me for:
-  - intended outcome, constraints, and whether a PR should exist.
+Step 1: Recon (no changes yet)
+- `git status -sb`, `git branch -vv`, `git log -10 --oneline --decorate`
+- `git diff --stat`, `git stash list`
+- `gh pr list --head "$(git branch --show-current)"`, `gh pr status`
+- If issue/PR unknown, search: `gh pr list --search "<keywords>"`, `gh issue list --search "<keywords>"`
+- Check `docs/dev_tasks/<TASK>/` for notes or resume prompt.
+- If goal unclear, STOP and ask.
+
+Step 2: Reconstruct intent
+- From branch name, commits, diffs, TODO/FIXME notes, issue/PR description.
+- Map "done" vs "remaining".
 
 Step 3: Plan and continue
-- Propose a short plan (3-6 steps) to finish the remaining work.
-- Implement remaining changes with minimal scope.
-- Add/revise unit tests when behavior changes.
-- If `docs/dev_tasks/<TASK_NAME>/` exists, update plan/progress there and refresh the resume prompt file so a fresh agent can continue.
-- Run the standard `pixi run ...` checks appropriate for the change (per repo docs), then lint before committing.
+- Propose 3-6 step plan.
+- Implement with minimal scope.
+- Add/revise tests as needed.
+- Update `docs/dev_tasks/<TASK>/` if it exists.
 
-Step 4: Git + CI loop (if we're pushing)
+Step 4: Verify
+- `pixi run test` (quick), `pixi run test-all` (final).
+- `pixi run lint` before committing.
+
+Step 5: Git + CI
 - Keep commits focused.
-- Sync with latest `origin/main` per repo convention, push with upstream tracking (`git push -u origin HEAD`).
-- Create/update a PR with `gh pr create` or `gh pr edit` if needed, then monitor CI (`gh run list ...`, `gh run watch <id> --interval 30`) and fix failures until green.
+- Sync with `origin/main`, push with `git push -u origin HEAD`.
+- Create/update PR with `gh pr create` or `gh pr edit`.
+- Monitor CI: `gh run watch <id> --interval 30`, fix failures until green.
 
-Reporting expectations
-- After recon: summarize branch, uncommitted changes, stashes, and inferred goal (or ask me to clarify).
-- After finishing: summarize changes, files touched, commands run, and PR link (if any).
+Output
+- After recon: branch, changes, stashes, inferred goal.
+- After done: summary, files touched, PR link.
 ```
