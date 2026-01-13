@@ -129,7 +129,7 @@ TEST(Issue1683, ServoJointRecoversFromPositionLimits)
       bodyNode->addExtTorque(Eigen::Vector3d(0.0, 0.0, holdTorque));
       world->step();
       if (firstMovementStep == 0
-        && joint->getPosition(0) < posUpperBound - 1e-6) {
+          && joint->getPosition(0) < posUpperBound - 1e-6) {
         firstMovementStep = i + 1;
       }
     }
@@ -156,7 +156,7 @@ TEST(Issue1683, ServoJointRecoversFromPositionLimits)
       bodyNode->addExtTorque(Eigen::Vector3d(0.0, 0.0, holdTorque));
       world->step();
       if (firstMovementStep == 0
-        && joint->getPosition(0) > posLowerBound + 1e-6) {
+          && joint->getPosition(0) > posLowerBound + 1e-6) {
         firstMovementStep = i + 1;
       }
     }
