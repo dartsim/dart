@@ -87,8 +87,10 @@ TEST(Issue1683, ServoJointRecoversFromPositionLimits)
 {
   const double posLowerBound = -0.75;
   const double posUpperBound = +0.85;
-  const double velDesired = 1.0;
-  const double velRecover = -0.05;
+  const double velDesiredToUb = 1.0;
+  const double velDesiredToLb = -1.0;
+  const double velRecoverFromUb = -0.05;
+  const double velRecoverFromLb = 0.05;
 
   auto skel = dart::utils::SdfParser::readSkeleton(
       "dart://sample/sdf/test/test_issue1683.model");
@@ -109,30 +111,59 @@ TEST(Issue1683, ServoJointRecoversFromPositionLimits)
   EXPECT_DOUBLE_EQ(0, joint->getPosition(0));
   EXPECT_DOUBLE_EQ(0, joint->getVelocity(0));
 
-  // Drive the joint to the upper position limit.
-  for (std::size_t i = 0; i < 1000; ++i) {
-    joint->setCommand(0, velDesired);
-    world->step();
-  }
-
-  EXPECT_NEAR(posUpperBound, joint->getPosition(0), 1e-6);
-
-  // Reverse the command and expect the joint to recover from the limit.
-  std::size_t firstMovementStep = 0;
-  const double holdTorque = 5.0;
-  for (std::size_t i = 0; i < 100; ++i) {
-    joint->setCommand(0, velRecover);
-    skel->clearExternalForces();
-    bodyNode->addExtTorque(Eigen::Vector3d(0.0, 0.0, holdTorque));
-    world->step();
-    if (firstMovementStep == 0
-        && joint->getPosition(0) < posUpperBound - 1e-6) {
-      firstMovementStep = i + 1;
+  {
+    // Drive the joint to the upper position limit.
+    for (std::size_t i = 0; i < 1000; ++i) {
+      joint->setCommand(0, velDesiredToUb);
+      world->step();
     }
+
+    EXPECT_NEAR(posUpperBound, joint->getPosition(0), 1e-6);
+
+    // Reverse the command and expect the joint to recover from the limit.
+    std::size_t firstMovementStep = 0;
+    const double holdTorque = 5.0;
+    for (std::size_t i = 0; i < 100; ++i) {
+      joint->setCommand(0, velRecoverFromUb);
+      skel->clearExternalForces();
+      bodyNode->addExtTorque(Eigen::Vector3d(0.0, 0.0, holdTorque));
+      world->step();
+      if (firstMovementStep == 0
+        && joint->getPosition(0) < posUpperBound - 1e-6) {
+        firstMovementStep = i + 1;
+      }
+    }
+
+    EXPECT_GT(firstMovementStep, 0u);
+    EXPECT_LT(joint->getPosition(0), posUpperBound - 1e-3);
   }
 
-  EXPECT_GT(firstMovementStep, 0u);
-  EXPECT_LT(joint->getPosition(0), posUpperBound - 1e-3);
+  {
+    // Drive the joint to the lower position limit.
+    for (std::size_t i = 0; i < 2000; ++i) {
+      joint->setCommand(0, velDesiredToLb);
+      world->step();
+    }
+
+    EXPECT_NEAR(posLowerBound, joint->getPosition(0), 1e-6);
+
+    // Reverse the command and expect the joint to recover from the limit.
+    std::size_t firstMovementStep = 0;
+    const double holdTorque = -5;
+    for (std::size_t i = 0; i < 100; ++i) {
+      joint->setCommand(0, velRecoverFromLb);
+      skel->clearExternalForces();
+      bodyNode->addExtTorque(Eigen::Vector3d(0.0, 0.0, holdTorque));
+      world->step();
+      if (firstMovementStep == 0
+        && joint->getPosition(0) > posLowerBound + 1e-6) {
+        firstMovementStep = i + 1;
+      }
+    }
+
+    EXPECT_GT(firstMovementStep, 0u);
+    EXPECT_GT(joint->getPosition(0), posLowerBound + 1e-3);
+  }
 }
 
 //========================================================================================
