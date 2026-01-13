@@ -311,10 +311,12 @@ void JointConstraint::update()
             && ((atUpperLimit && servoCommand < 0.0)
                 || (atLowerLimit && servoCommand > 0.0))
             && !processServoVelocityLimits;
-      const bool relaxLowerVelocityBound
-          = processServoVelocityLimits && atUpperLimit && servoCommand < 0.0;
-      const bool relaxUpperVelocityBound
-          = processServoVelocityLimits && atLowerLimit && servoCommand > 0.0;
+      const bool relaxVelocityBoundsForServoRecovery
+          = processServoVelocityLimits
+            && ((atUpperLimit && servoCommand < 0.0)
+                || (atLowerLimit && servoCommand > 0.0));
+      const bool relaxLowerVelocityBound = relaxVelocityBoundsForServoRecovery;
+      const bool relaxUpperVelocityBound = relaxVelocityBoundsForServoRecovery;
 
       if (!skipVelocityLimitsForServoRecovery) {
         // Check lower velocity bound
