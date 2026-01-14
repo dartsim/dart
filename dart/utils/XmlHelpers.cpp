@@ -40,6 +40,7 @@
 #include <fmt/format.h>
 
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 
 namespace dart {
@@ -376,15 +377,46 @@ Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
 }
 
 //==============================================================================
+// Helper function to safely get text from a child element
+// Throws std::runtime_error if the child element is missing or has no text
+static std::string getChildElementText(
+    const tinyxml2::XMLElement* parentElement,
+    const std::string& childName)
+{
+  const tinyxml2::XMLElement* childElement
+      = parentElement->FirstChildElement(childName.c_str());
+  if (childElement == nullptr) {
+    const std::string parentName
+        = parentElement->Name() ? parentElement->Name() : "unknown";
+    dterr << "Child element [" << childName << "] not found in parent element ["
+          << parentName << "]" << std::endl;
+    throw std::runtime_error(
+        "Child element [" + childName + "] not found in parent element ["
+        + parentName + "]");
+  }
+
+  const char* text = childElement->GetText();
+  if (text == nullptr) {
+    const std::string parentName
+        = parentElement->Name() ? parentElement->Name() : "unknown";
+    dterr << "Child element [" << childName << "] in parent [" << parentName
+          << "] has no text content" << std::endl;
+    throw std::runtime_error(
+        "Child element [" + childName + "] in parent [" + parentName
+        + "] has no text content");
+  }
+
+  return std::string(text);
+}
+
+//==============================================================================
 std::string getValueString(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
-
-  return str;
+  return getChildElementText(parentElement, name);
 }
 
 //==============================================================================
@@ -394,15 +426,15 @@ bool getValueBool(
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+  const std::string str = getChildElementText(parentElement, name);
 
   if (common::toUpper(str) == "TRUE" || str == "1")
     return true;
   else if (common::toUpper(str) == "FALSE" || str == "0")
     return false;
   else {
-    std::cerr << "value [" << str << "] is not a valid boolean type. "
-              << "Returning false." << std::endl;
+    dterr << "value [" << str << "] is not a valid boolean type. "
+          << "Returning false." << std::endl;
     DART_ASSERT(0);
     return false;
   }
@@ -415,9 +447,7 @@ int getValueInt(
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
-
-  return toInt(str);
+  return toInt(getChildElementText(parentElement, name));
 }
 
 //==============================================================================
@@ -427,9 +457,7 @@ unsigned int getValueUInt(
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
-
-  return toUInt(str);
+  return toUInt(getChildElementText(parentElement, name));
 }
 
 //==============================================================================
@@ -439,9 +467,7 @@ float getValueFloat(
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
-
-  return toFloat(str);
+  return toFloat(getChildElementText(parentElement, name));
 }
 
 //==============================================================================
@@ -451,9 +477,7 @@ double getValueDouble(
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
-
-  return toDouble(str);
+  return toDouble(getChildElementText(parentElement, name));
 }
 
 //==============================================================================
@@ -463,9 +487,7 @@ char getValueChar(
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
-
-  return toChar(str);
+  return toChar(getChildElementText(parentElement, name));
 }
 
 //==============================================================================
@@ -475,9 +497,7 @@ Eigen::Vector2d getValueVector2d(
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
-
-  return toVector2d(str);
+  return toVector2d(getChildElementText(parentElement, name));
 }
 
 //==============================================================================
@@ -487,9 +507,7 @@ Eigen::Vector3d getValueVector3d(
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
-
-  return toVector3d(str);
+  return toVector3d(getChildElementText(parentElement, name));
 }
 
 //==============================================================================
@@ -499,9 +517,7 @@ Eigen::Vector3i getValueVector3i(
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
-
-  return toVector3i(str);
+  return toVector3i(getChildElementText(parentElement, name));
 }
 
 //==============================================================================
@@ -511,9 +527,7 @@ Eigen::Vector6d getValueVector6d(
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
-
-  return toVector6d(str);
+  return toVector6d(getChildElementText(parentElement, name));
 }
 
 //==============================================================================
@@ -523,9 +537,7 @@ Eigen::VectorXd getValueVectorXd(
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
-
-  return toVectorXd(str);
+  return toVectorXd(getChildElementText(parentElement, name));
 }
 
 //==============================================================================
@@ -535,9 +547,7 @@ Eigen::Vector3d getValueVec3(
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
-
-  return toVector3d(str);
+  return toVector3d(getChildElementText(parentElement, name));
 }
 
 //==============================================================================
@@ -547,9 +557,7 @@ Eigen::Isometry3d getValueIsometry3d(
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
-
-  return toIsometry3d(str);
+  return toIsometry3d(getChildElementText(parentElement, name));
 }
 
 //==============================================================================
@@ -559,9 +567,7 @@ Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
-
-  return toIsometry3dWithExtrinsicRotation(str);
+  return toIsometry3dWithExtrinsicRotation(getChildElementText(parentElement, name));
 }
 
 //==============================================================================
