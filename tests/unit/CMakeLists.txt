@@ -173,6 +173,9 @@ endif()
 if(TARGET dart-utils)
   dart_add_test("unit" test_MeshLoader utils/test_MeshLoader.cpp)
   target_link_libraries(test_MeshLoader dart-utils)
+
+  dart_add_test("unit" test_XmlHelpers utils/test_XmlHelpers.cpp)
+  target_link_libraries(test_XmlHelpers dart-utils)
 endif()
 
 if(TARGET dart-io)
