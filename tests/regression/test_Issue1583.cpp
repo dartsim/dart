@@ -211,3 +211,84 @@ TEST(Issue1683, ServoJointRespectsVelocityLimitsAwayFromBounds)
     EXPECT_GE(joint->getVelocity(0), -velLimit - 1e-6);
   }
 }
+
+//==============================================================================
+TEST(Issue2422, ServoJointRecoversFromPositionLimitsWithVelocityLimits)
+{
+  const double posLowerBound = -0.75;
+  const double posUpperBound = +0.85;
+  const double velDesiredToUb = 1.0;
+  const double velDesiredToLb = -1.0;
+  const double velRecoverFromUb = -0.05;
+  const double velRecoverFromLb = 0.05;
+
+  auto skel = dart::utils::SdfParser::readSkeleton(
+      "dart://sample/sdf/test/test_issue1683.model");
+  ASSERT_NE(skel, nullptr);
+
+  auto world = dart::simulation::World::create();
+  world->addSkeleton(skel);
+  ASSERT_EQ(world->getNumSkeletons(), 1);
+
+  auto* joint = skel->getJoint("j1");
+  joint->setPositionLowerLimit(0, posLowerBound);
+  joint->setPositionUpperLimit(0, posUpperBound);
+  joint->setLimitEnforcement(true);
+  joint->setActuatorType(dart::dynamics::Joint::SERVO);
+  joint->setVelocityUpperLimit(0, 10.0);
+  auto* bodyNode = skel->getBodyNode("bar");
+  ASSERT_NE(bodyNode, nullptr);
+
+  EXPECT_DOUBLE_EQ(0, joint->getPosition(0));
+  EXPECT_DOUBLE_EQ(0, joint->getVelocity(0));
+
+  {
+    for (std::size_t i = 0; i < 1000; ++i) {
+      joint->setCommand(0, velDesiredToUb);
+      world->step();
+    }
+
+    EXPECT_NEAR(posUpperBound, joint->getPosition(0), 1e-6);
+
+    std::size_t firstMovementStep = 0;
+    const double holdTorque = 5.0;
+    for (std::size_t i = 0; i < 100; ++i) {
+      joint->setCommand(0, velRecoverFromUb);
+      skel->clearExternalForces();
+      bodyNode->addExtTorque(Eigen::Vector3d(0.0, 0.0, holdTorque));
+      world->step();
+      if (firstMovementStep == 0
+          && joint->getPosition(0) < posUpperBound - 1e-6) {
+        firstMovementStep = i + 1;
+      }
+    }
+
+    EXPECT_GT(firstMovementStep, 0u);
+    EXPECT_LT(joint->getPosition(0), posUpperBound - 1e-3);
+  }
+
+  {
+    for (std::size_t i = 0; i < 2000; ++i) {
+      joint->setCommand(0, velDesiredToLb);
+      world->step();
+    }
+
+    EXPECT_NEAR(posLowerBound, joint->getPosition(0), 1e-6);
+
+    std::size_t firstMovementStep = 0;
+    const double holdTorque = -5;
+    for (std::size_t i = 0; i < 100; ++i) {
+      joint->setCommand(0, velRecoverFromLb);
+      skel->clearExternalForces();
+      bodyNode->addExtTorque(Eigen::Vector3d(0.0, 0.0, holdTorque));
+      world->step();
+      if (firstMovementStep == 0
+          && joint->getPosition(0) > posLowerBound + 1e-6) {
+        firstMovementStep = i + 1;
+      }
+    }
+
+    EXPECT_GT(firstMovementStep, 0u);
+    EXPECT_GT(joint->getPosition(0), posLowerBound + 1e-3);
+  }
+}
