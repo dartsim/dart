@@ -380,8 +380,7 @@ Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
 // Helper function to safely get text from a child element
 // Throws std::runtime_error if the child element is missing or has no text
 static std::string getChildElementText(
-    const tinyxml2::XMLElement* parentElement,
-    const std::string& childName)
+    const tinyxml2::XMLElement* parentElement, const std::string& childName)
 {
   const tinyxml2::XMLElement* childElement
       = parentElement->FirstChildElement(childName.c_str());
@@ -567,7 +566,8 @@ Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
   DART_ASSERT(parentElement != nullptr);
   DART_ASSERT(!name.empty());
 
-  return toIsometry3dWithExtrinsicRotation(getChildElementText(parentElement, name));
+  return toIsometry3dWithExtrinsicRotation(
+      getChildElementText(parentElement, name));
 }
 
 //==============================================================================
