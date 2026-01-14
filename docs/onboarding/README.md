@@ -1,5 +1,14 @@
 # DART GUI - Developer Onboarding Guide
 
+## Start here next time
+
+- Building DART? → [building.md](building.md)
+- Running tests? → [testing.md](testing.md)
+- Contributing code? → [contributing.md](contributing.md) + [code-style.md](code-style.md)
+- Understanding core architecture? → [architecture.md](architecture.md)
+- Gazebo integration? → [build-system.md](build-system.md#gazebo-integration-feature)
+- Key command: `pixi run test-all` (lint + build + all tests)
+
 ## Documentation Principles
 
 **Onboarding docs should**:
@@ -67,6 +76,11 @@ This onboarding guide is organized into several focused documents:
 ### Feature Workflows
 
 - **Gazebo / gz-physics integration**: See [build-system.md](build-system.md#gazebo-integration-feature).
+
+### Prompt Templates
+
+> **Note:** Prompt templates in `docs/prompts/` are for humans to start new agent sessions.
+> Agents should NOT execute these as tasks. See [docs/prompts/README.md](../prompts/README.md).
 
 ### Purpose and Problem Solved
 
@@ -1234,7 +1248,7 @@ auto model = dart::io::readSkeleton("path/to/model.sdf");
 auto legacy = dart::io::readSkeleton("path/to/skel.skel");
 ```
 
-Note: SKEL stays as a legacy XML format for backward compatibility. There is no plan to redesign it (e.g., YAML); use URDF, SDF, or MJCF for new models.
+> **Note:** SKEL stays as a legacy XML format for backward compatibility. There is no plan to redesign it (e.g., YAML); use URDF, SDF, or MJCF for new models.
 
 ### Pattern 6: Custom ImGui Widgets
 

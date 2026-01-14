@@ -330,6 +330,15 @@ cmake --build . --target dartpy
 
 For more details on Python bindings architecture, see [python-bindings.md](python-bindings.md).
 
+## Signals to Look For
+
+| Command           | Success                                    | Failure                            |
+| ----------------- | ------------------------------------------ | ---------------------------------- |
+| `pixi run config` | "Configuring done" with no CMake errors    | CMake error messages in output     |
+| `pixi run build`  | "Build finished" or exit code 0            | Compiler errors, linker errors     |
+| `pixi run test`   | "100% tests passed" or all tests green     | Test failure summary with count    |
+| `cmake --build .` | No errors, successful compilation messages | Error messages with file:line info |
+
 ## See Also
 
 - [build-system.md](build-system.md) - Deep dive into DART's CMake architecture

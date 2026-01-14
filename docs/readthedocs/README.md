@@ -125,8 +125,8 @@ docs/readthedocs/
 ├── _static/                         # Static assets (images, CSS)
 └── locales/                         # Translations (Korean, etc.)
 
-Note: Developer documentation (build guides, contribution guidelines, code style)
-has been consolidated to docs/onboarding/ for better maintenance and LLM accessibility.
+> **Note:** Developer documentation (build guides, contribution guidelines, code style)
+> has been consolidated to docs/onboarding/ for better maintenance and LLM accessibility.
 ```
 
 ## Contributing

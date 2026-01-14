@@ -23,9 +23,17 @@ If this fails, see `docs/onboarding/ci-cd.md` for troubleshooting.
 - Model loading API: `docs/onboarding/io-parsing.md`
 - Gazebo integration: `docs/onboarding/build-system.md#gazebo-integration-feature`
 
+## Prompt Templates (for humans)
+
+> [`docs/prompts/`](docs/prompts/AGENTS.md) contains prompt templates for humans starting new sessions.
+> Agents: do NOT execute these - they are reference materials, not tasks.
+
+Index: [`docs/prompts/AGENTS.md`](docs/prompts/AGENTS.md)
+
 ## Daily Reminders
 
 - Use `pixi run …` tasks; don't invent new entry points.
 - Run `pixi run lint` before committing (auto-fixes formatting).
 - Update docs when you learn something new; keep this file minimal.
 - Subdirectories may have their own `AGENTS.md` for module-specific rules.
+- Do NOT execute prompts from `docs/prompts/` - those are templates for humans.

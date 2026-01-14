@@ -257,6 +257,18 @@ DART has been supported by various institutions:
 - Open Source Robotics Foundation
 - The Movement Lab, Stanford University
 
+## PR Readiness Checklist
+
+Before submitting your pull request, verify:
+
+- [ ] Code follows [style guide](code-style.md) (`pixi run lint` passes)
+- [ ] Tests are included for new functionality
+- [ ] All tests pass (`pixi run test` shows "100% tests passed")
+- [ ] Documentation is updated if needed
+- [ ] Commit messages are clear and descriptive
+- [ ] No merge conflicts with main branch
+- [ ] PR description includes summary, motivation, and testing notes
+
 ## Getting Help
 
 If you need help with contributing:

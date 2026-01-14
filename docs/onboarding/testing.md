@@ -192,7 +192,7 @@ Unit tests focus on testing **individual classes or functions in isolation**. Th
 
 ### Regression Tests (Migrated)
 
-**Note:** The `tests/regression/` directory has been **completely removed**. All issue-based regression tests have been renamed with descriptive names and placed in appropriate unit/ or integration/ directories.
+> **Note:** The `tests/regression/` directory has been **completely removed**. All issue-based regression tests have been renamed with descriptive names and placed in appropriate unit/ or integration/ directories.
 
 Previously, all issue-based regression tests lived in a separate `tests/regression/` directory with names like `test_Issue1234.cpp`. They have now been:
 
@@ -387,10 +387,10 @@ pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE
 pixi run bm --pixi-help
 ```
 
-Note: LCP solver comparisons use the solver-agnostic harness and the
-`BM_LCP_COMPARE` benchmark so all solvers share the same contract and fixtures.
-See `tests/common/lcpsolver` and `tests/benchmark/lcpsolver` for the sources,
-and keep benchmark outputs under the build tree.
+> **Note:** LCP solver comparisons use the solver-agnostic harness and the
+> `BM_LCP_COMPARE` benchmark so all solvers share the same contract and fixtures.
+> See `tests/common/lcpsolver` and `tests/benchmark/lcpsolver` for the sources,
+> and keep benchmark outputs under the build tree.
 
 ### Manual Python Testing
 
