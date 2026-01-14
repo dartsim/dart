@@ -26,7 +26,6 @@ jobs:
   freebsd:
     name: FreeBSD repro (VM)
     runs-on: ubuntu-latest
-    continue-on-error: true
     timeout-minutes: 120
     steps:
       - name: Checkout
