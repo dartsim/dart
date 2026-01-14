@@ -34,9 +34,10 @@
 
 #include <gtest/gtest.h>
 
-#include <cmath>
 #include <stdexcept>
 #include <string>
+
+#include <cmath>
 
 using namespace dart::utils;
 
