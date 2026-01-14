@@ -54,6 +54,30 @@ git pull upstream main
 git checkout -b feature/my-awesome-feature
 ```
 
+### Bug Fix Workflow (Two PRs Required)
+
+**Bug fixes must be applied to both `release-6.16` AND `main` branches** to ensure fixes are available in both DART 6 and DART 7.
+
+1. **Fix on release branch first**:
+   ```bash
+   git checkout release-6.16
+   git pull upstream release-6.16
+   git checkout -b fix/issue-XXXX-description-6.16
+   # Make your fix, commit, and push
+   # Create PR targeting release-6.16 with title: "Fix: description (DART 6.16)"
+   ```
+
+2. **Cherry-pick to main** (or reapply if conflicts):
+   ```bash
+   git checkout main
+   git pull upstream main
+   git checkout -b fix/issue-XXXX-description-main
+   git cherry-pick <commit-hash>  # Or manually reapply if conflicts
+   # Push and create PR targeting main with title: "Fix: description (DART 7)"
+   ```
+
+**PR Title Convention**: Use version numbers ("DART 6.16", "DART 7") rather than branch names for clarity.
+
 ### 3. Make Your Changes
 
 - Write code following the [code style guide](code-style.md)

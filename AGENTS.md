@@ -19,6 +19,7 @@ If this fails, see `docs/onboarding/ci-cd.md` for troubleshooting.
 - Architecture overview: `docs/onboarding/README.md`
 - CI/CD and failure recovery: `docs/onboarding/ci-cd.md`
 - Contribution workflow: `CONTRIBUTING.md`
+- Bug fixes: require PRs to BOTH `release-6.16` AND `main` branches. See `docs/onboarding/contributing.md`.
 - Python bindings: `docs/onboarding/python-bindings.md`
 - Model loading API: `docs/onboarding/io-parsing.md`
 - Gazebo integration: `docs/onboarding/build-system.md#gazebo-integration-feature`

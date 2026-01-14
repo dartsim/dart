@@ -263,6 +263,30 @@ int ExampleClass::exampleMethod(int a, int b, int* out) const
 } // namespace dart
 ```
 
+### Exception Handling
+
+**Never swallow exceptions silently.** When catching exceptions for logging, always re-throw to propagate the error:
+
+```cpp
+// CORRECT: Log and re-throw
+try {
+  value = std::stod(str);
+} catch (const std::exception& e) {
+  DART_ERROR("Failed to parse '{}': {}", str, e.what());
+  throw;  // Re-throw to propagate the error
+}
+
+// WRONG: Silently swallow the exception
+try {
+  value = std::stod(str);
+} catch (const std::exception& e) {
+  DART_ERROR("Failed to parse '{}': {}", str, e.what());
+  // Missing throw! Execution continues with uninitialized data
+}
+```
+
+**Rationale**: Silently swallowing exceptions can lead to subtle bugs where code continues with uninitialized or partial data. Always propagate errors to the caller so they can handle them appropriately.
+
 ### Smart Pointers
 
 These guidelines are based on [Herb Sutter's article](https://herbsutter.com/2013/06/05/gotw-91-solution-smart-pointer-parameters/). Consider looking at the full article for details.

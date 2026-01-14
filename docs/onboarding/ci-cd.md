@@ -21,6 +21,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - `gh run watch` is blocking and can run for a long time; use a persistent shell and re-run it if your terminal session times out.
   - `gh run view --job <JOB_ID> --log-failed` only works after the job completes; use the REST logs endpoint (or wait) when a run is still in progress.
   - If a PR is not mergeable due to conflicts, CI checks may be blocked or fail early (including AppVeyor); resolve conflicts locally and push before re-running CI.
+  - FreeBSD VM tests can take over 1 hour to complete; this is expected, not a sign of failure.
   - Example reorganizations can conflict in `examples/CMakeLists.txt`; reconcile any new example entries and keep the category layout aligned before pushing.
   - GitHub Actions API calls can return `HTTP 406` if you omit required headers; include an explicit `Accept` header.
   - `gh api` writes to stdout and does not support `--output`; redirect to a file when you need to search logs.
@@ -52,6 +53,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 - Example builds fail because sample code references removed formats or enums; update the example to match the current API (e.g., `dart::io::ModelFormat`).
 - Unit test crashes or segfaults: isolate the failing test from job logs, reproduce locally, and add a regression for the edge case.
 - Job logs are missing or return 404: re-run the single job and/or download the run-level logs archive to inspect failures.
+- Infrastructure failures (runner connectivity lost, self-hosted runner issues): re-run only the failed jobs with `gh run rerun <RUN_ID> --failed`.
 
 ## Task Recap (General)
 
