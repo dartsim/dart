@@ -28,16 +28,17 @@
  */
 
 // Unit tests for XmlHelpers parsing functions
-// See: https://github.com/dartsim/dart/issues/2423
+// See: https://github.com/dartsim/dart/issues/2423 (toVector* parsing)
+// See: https://github.com/dartsim/dart/issues/2425 (getValue* null pointer)
 
 #include <dart/utils/XmlHelpers.hpp>
 
 #include <gtest/gtest.h>
-
-#include <stdexcept>
-#include <string>
+#include <tinyxml2.h>
 
 #include <cmath>
+#include <stdexcept>
+#include <string>
 
 using namespace dart::utils;
 
@@ -191,4 +192,209 @@ TEST(XmlHelpers, ValidBoolParsing)
   EXPECT_FALSE(toBool("false"));
   EXPECT_FALSE(toBool("FALSE"));
   EXPECT_FALSE(toBool("0"));
+}
+
+//==============================================================================
+// Tests for getValue* functions with missing child element - Issue #2425
+// These tests verify that proper exceptions are thrown instead of SIGSEGV
+//==============================================================================
+
+TEST(XmlHelpers, GetValueBoolWithExistingChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("flag");
+  child->SetText("true");
+  root->InsertEndChild(child);
+
+  EXPECT_TRUE(getValueBool(root, "flag"));
+}
+
+TEST(XmlHelpers, GetValueBoolWithMissingChildThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("existing_child");
+  child->SetText("true");
+  root->InsertEndChild(child);
+
+  EXPECT_THROW(getValueBool(root, "missing_child"), std::runtime_error);
+}
+
+TEST(XmlHelpers, GetValueStringWithMissingChildThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  EXPECT_THROW(getValueString(root, "missing"), std::runtime_error);
+}
+
+TEST(XmlHelpers, GetValueIntWithMissingChildThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  EXPECT_THROW(getValueInt(root, "missing"), std::runtime_error);
+}
+
+TEST(XmlHelpers, GetValueDoubleWithMissingChildThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  EXPECT_THROW(getValueDouble(root, "missing"), std::runtime_error);
+}
+
+TEST(XmlHelpers, GetValueVector3dWithMissingChildThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  EXPECT_THROW(getValueVector3d(root, "missing"), std::runtime_error);
+}
+
+TEST(XmlHelpers, GetValueWithEmptyElementThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("empty");
+  root->InsertEndChild(child);
+
+  EXPECT_THROW(getValueString(root, "empty"), std::runtime_error);
+}
+
+TEST(XmlHelpers, GetValueIntWithValidChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("count");
+  child->SetText("42");
+  root->InsertEndChild(child);
+
+  EXPECT_EQ(getValueInt(root, "count"), 42);
+}
+
+TEST(XmlHelpers, GetValueDoubleWithValidChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("value");
+  child->SetText("3.14159");
+  root->InsertEndChild(child);
+
+  EXPECT_DOUBLE_EQ(getValueDouble(root, "value"), 3.14159);
+}
+
+TEST(XmlHelpers, GetValueVector3dWithValidChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("pos");
+  child->SetText("1.0 2.0 3.0");
+  root->InsertEndChild(child);
+
+  const Eigen::Vector3d result = getValueVector3d(root, "pos");
+  EXPECT_DOUBLE_EQ(result[0], 1.0);
+  EXPECT_DOUBLE_EQ(result[1], 2.0);
+  EXPECT_DOUBLE_EQ(result[2], 3.0);
+}
+
+TEST(XmlHelpers, HasElementReturnsTrueForExisting)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("child");
+  root->InsertEndChild(child);
+
+  EXPECT_TRUE(hasElement(root, "child"));
+}
+
+TEST(XmlHelpers, HasElementReturnsFalseForMissing)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  EXPECT_FALSE(hasElement(root, "missing"));
+}
+
+TEST(XmlHelpers, GetValueUIntWithMissingChildThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  EXPECT_THROW(getValueUInt(root, "missing"), std::runtime_error);
+}
+
+TEST(XmlHelpers, GetValueFloatWithMissingChildThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  EXPECT_THROW(getValueFloat(root, "missing"), std::runtime_error);
+}
+
+TEST(XmlHelpers, GetValueCharWithMissingChildThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  EXPECT_THROW(getValueChar(root, "missing"), std::runtime_error);
+}
+
+TEST(XmlHelpers, GetValueVector2dWithMissingChildThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  EXPECT_THROW(getValueVector2d(root, "missing"), std::runtime_error);
+}
+
+TEST(XmlHelpers, GetValueVector6dWithMissingChildThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  EXPECT_THROW(getValueVector6d(root, "missing"), std::runtime_error);
+}
+
+TEST(XmlHelpers, GetValueVectorXdWithMissingChildThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  EXPECT_THROW(getValueVectorXd(root, "missing"), std::runtime_error);
+}
+
+TEST(XmlHelpers, GetValueIsometry3dWithMissingChildThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  EXPECT_THROW(getValueIsometry3d(root, "missing"), std::runtime_error);
 }
