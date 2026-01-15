@@ -26,6 +26,7 @@ Fix
 - Add/adjust tests if the failure indicates a bug.
 - If formatting fails: `pixi run lint`.
 - If coverage fails: add tests for uncovered lines.
+- If infrastructure failure (runner lost): `gh run rerun <RUN_ID> --failed`.
 
 CI loop
 - Commit and push.
