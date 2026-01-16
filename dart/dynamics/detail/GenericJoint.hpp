@@ -1577,7 +1577,9 @@ void GenericJoint<ConfigSpaceT>::setDampingCoefficients(
   }
 
   DART_WARN_IF(
-      (!dampingCoefficients.array().isFinite() || dampingCoefficients.array() < 0.0).any(),
+      (!dampingCoefficients.array().isFinite()
+       || dampingCoefficients.array() < 0.0)
+          .any(),
       "[GenericJoint] Invalid damping coefficient(s) in [{}] for joint [{}]. "
       "Damping must be non-negative and finite (negative damping adds energy). "
       "Clamping to 0.",
