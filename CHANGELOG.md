@@ -4,6 +4,10 @@
 
 ### [DART 6.16.5 (TBD)](https://github.com/dartsim/dart/milestone/90?closed=1)
 
+* Constraint
+
+  * Validate contact surface parameters to prevent LCP solver crashes: [#2435](https://github.com/dartsim/dart/pull/2435)
+
 * Dynamics
 
   * Validate SphereShape radius to prevent assertion failures with NaN/Inf/non-positive values: [#2441](https://github.com/dartsim/dart/pull/2441)

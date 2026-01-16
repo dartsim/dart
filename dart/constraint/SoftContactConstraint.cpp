@@ -43,6 +43,7 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/external/odelcpsolver/lcp.h"
 
+#include <cmath>
 #include <iostream>
 
 #define DART_EPSILON 1e-6
@@ -860,7 +861,16 @@ double SoftContactConstraint::computeFrictionCoefficient(
     return DART_DEFAULT_FRICTION_COEFF;
   }
 
-  return dynamicAspect->getFrictionCoeff();
+  const double coeff = dynamicAspect->getFrictionCoeff();
+  if (!std::isfinite(coeff) || coeff < 0.0) {
+    dtwarn << "[ContactConstraint] Invalid friction coefficient (" << coeff
+           << ") from ShapeNode [" << shapeNode->getName()
+           << "]. Friction must be non-negative and finite. Using default "
+           << "value (" << DART_DEFAULT_FRICTION_COEFF << ").\n";
+    return DART_DEFAULT_FRICTION_COEFF;
+  }
+
+  return coeff;
 }
 
 //==============================================================================
@@ -879,7 +889,16 @@ double SoftContactConstraint::computeRestitutionCoefficient(
     return DART_DEFAULT_RESTITUTION_COEFF;
   }
 
-  return dynamicAspect->getRestitutionCoeff();
+  const double coeff = dynamicAspect->getRestitutionCoeff();
+  if (!std::isfinite(coeff) || coeff < 0.0 || coeff > 1.0) {
+    dtwarn << "[ContactConstraint] Invalid restitution coefficient (" << coeff
+           << ") from ShapeNode [" << shapeNode->getName()
+           << "]. Restitution must be in range [0, 1] and finite. Using "
+           << "default value (" << DART_DEFAULT_RESTITUTION_COEFF << ").\n";
+    return DART_DEFAULT_RESTITUTION_COEFF;
+  }
+
+  return coeff;
 }
 
 //==============================================================================
