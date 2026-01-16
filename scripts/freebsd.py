@@ -198,10 +198,17 @@ def start_container(args):
     if disk_size:
         cmd.extend(["-e", f"FREEBSD_VM_DISK_SIZE={disk_size}"])
 
-    if Path("/dev/kvm").exists():
-        cmd.extend(["--device", "/dev/kvm"])
+    kvm_path = Path("/dev/kvm")
+    if kvm_path.exists():
+        print("KVM detected on host, passing --device /dev/kvm to Docker")
+        kvm_gid = kvm_path.stat().st_gid
+        print(f"KVM device group ID: {kvm_gid}")
+        cmd.extend(["--device", "/dev/kvm", "--group-add", str(kvm_gid)])
+    else:
+        print("KVM not detected on host (/dev/kvm does not exist)")
 
     cmd.append(args.image)
+    print(f"Docker command: {' '.join(cmd)}")
     run(cmd)
 
 

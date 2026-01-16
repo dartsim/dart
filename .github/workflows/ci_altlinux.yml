@@ -40,7 +40,6 @@ jobs:
   altlinux:
     name: Alt Linux repro (Docker)
     runs-on: ubuntu-24.04
-    continue-on-error: true
     timeout-minutes: 120
     steps:
       - name: Checkout
