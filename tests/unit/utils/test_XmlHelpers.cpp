@@ -399,3 +399,236 @@ TEST(XmlHelpers, GetValueIsometry3dWithMissingChildThrows)
 
   EXPECT_THROW(getValueIsometry3d(root, "missing"), std::runtime_error);
 }
+
+//==============================================================================
+// Additional valid-case tests for comprehensive coverage
+//==============================================================================
+
+TEST(XmlHelpers, GetValueStringWithValidChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("name");
+  child->SetText("hello world");
+  root->InsertEndChild(child);
+
+  EXPECT_EQ(getValueString(root, "name"), "hello world");
+}
+
+TEST(XmlHelpers, GetValueUIntWithValidChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("count");
+  child->SetText("42");
+  root->InsertEndChild(child);
+
+  EXPECT_EQ(getValueUInt(root, "count"), 42u);
+}
+
+TEST(XmlHelpers, GetValueFloatWithValidChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("value");
+  child->SetText("3.14");
+  root->InsertEndChild(child);
+
+  EXPECT_FLOAT_EQ(getValueFloat(root, "value"), 3.14f);
+}
+
+TEST(XmlHelpers, GetValueCharWithValidChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("letter");
+  child->SetText("A");
+  root->InsertEndChild(child);
+
+  EXPECT_EQ(getValueChar(root, "letter"), 'A');
+}
+
+TEST(XmlHelpers, GetValueVector2dWithValidChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("pos");
+  child->SetText("1.5 2.5");
+  root->InsertEndChild(child);
+
+  const Eigen::Vector2d result = getValueVector2d(root, "pos");
+  EXPECT_DOUBLE_EQ(result[0], 1.5);
+  EXPECT_DOUBLE_EQ(result[1], 2.5);
+}
+
+TEST(XmlHelpers, GetValueVector3iWithMissingChildThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  EXPECT_THROW(getValueVector3i(root, "missing"), std::runtime_error);
+}
+
+TEST(XmlHelpers, GetValueVector3iWithValidChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("pos");
+  child->SetText("1 2 3");
+  root->InsertEndChild(child);
+
+  const Eigen::Vector3i result = getValueVector3i(root, "pos");
+  EXPECT_EQ(result[0], 1);
+  EXPECT_EQ(result[1], 2);
+  EXPECT_EQ(result[2], 3);
+}
+
+TEST(XmlHelpers, GetValueVector6dWithValidChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("vec");
+  child->SetText("1.0 2.0 3.0 4.0 5.0 6.0");
+  root->InsertEndChild(child);
+
+  const Eigen::Vector6d result = getValueVector6d(root, "vec");
+  EXPECT_DOUBLE_EQ(result[0], 1.0);
+  EXPECT_DOUBLE_EQ(result[1], 2.0);
+  EXPECT_DOUBLE_EQ(result[2], 3.0);
+  EXPECT_DOUBLE_EQ(result[3], 4.0);
+  EXPECT_DOUBLE_EQ(result[4], 5.0);
+  EXPECT_DOUBLE_EQ(result[5], 6.0);
+}
+
+TEST(XmlHelpers, GetValueVectorXdWithValidChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("vec");
+  child->SetText("1.0 2.0 3.0 4.0");
+  root->InsertEndChild(child);
+
+  const Eigen::VectorXd result = getValueVectorXd(root, "vec");
+  ASSERT_EQ(result.size(), 4);
+  EXPECT_DOUBLE_EQ(result[0], 1.0);
+  EXPECT_DOUBLE_EQ(result[1], 2.0);
+  EXPECT_DOUBLE_EQ(result[2], 3.0);
+  EXPECT_DOUBLE_EQ(result[3], 4.0);
+}
+
+TEST(XmlHelpers, GetValueVec3WithMissingChildThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  EXPECT_THROW(getValueVec3(root, "missing"), std::runtime_error);
+}
+
+TEST(XmlHelpers, GetValueVec3WithValidChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("pos");
+  child->SetText("1.0 2.0 3.0");
+  root->InsertEndChild(child);
+
+  const Eigen::Vector3d result = getValueVec3(root, "pos");
+  EXPECT_DOUBLE_EQ(result[0], 1.0);
+  EXPECT_DOUBLE_EQ(result[1], 2.0);
+  EXPECT_DOUBLE_EQ(result[2], 3.0);
+}
+
+TEST(XmlHelpers, GetValueIsometry3dWithValidChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("transform");
+  child->SetText("1.0 2.0 3.0 0.0 0.0 0.0");
+  root->InsertEndChild(child);
+
+  const Eigen::Isometry3d result = getValueIsometry3d(root, "transform");
+  EXPECT_DOUBLE_EQ(result.translation()[0], 1.0);
+  EXPECT_DOUBLE_EQ(result.translation()[1], 2.0);
+  EXPECT_DOUBLE_EQ(result.translation()[2], 3.0);
+}
+
+TEST(XmlHelpers, GetValueIsometry3dWithExtrinsicRotationMissingChildThrows)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  EXPECT_THROW(
+      getValueIsometry3dWithExtrinsicRotation(root, "missing"),
+      std::runtime_error);
+}
+
+TEST(XmlHelpers, GetValueIsometry3dWithExtrinsicRotationValidChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("transform");
+  child->SetText("1.0 2.0 3.0 0.0 0.0 0.0");
+  root->InsertEndChild(child);
+
+  const Eigen::Isometry3d result
+      = getValueIsometry3dWithExtrinsicRotation(root, "transform");
+  EXPECT_DOUBLE_EQ(result.translation()[0], 1.0);
+  EXPECT_DOUBLE_EQ(result.translation()[1], 2.0);
+  EXPECT_DOUBLE_EQ(result.translation()[2], 3.0);
+}
+
+TEST(XmlHelpers, GetValueBoolFalseValue)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("flag");
+  child->SetText("false");
+  root->InsertEndChild(child);
+
+  EXPECT_FALSE(getValueBool(root, "flag"));
+}
+
+TEST(XmlHelpers, GetValueBoolNumericValues)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* trueChild = doc.NewElement("trueFlag");
+  trueChild->SetText("1");
+  root->InsertEndChild(trueChild);
+
+  tinyxml2::XMLElement* falseChild = doc.NewElement("falseFlag");
+  falseChild->SetText("0");
+  root->InsertEndChild(falseChild);
+
+  EXPECT_TRUE(getValueBool(root, "trueFlag"));
+  EXPECT_FALSE(getValueBool(root, "falseFlag"));
+}
