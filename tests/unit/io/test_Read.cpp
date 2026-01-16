@@ -41,13 +41,6 @@
 
 using namespace dart;
 
-namespace {
-
-const char* kSingleBodySdfWorld
-    = "dart://sample/sdf/test/single_bodynode_skeleton.world";
-
-} // namespace
-
 //==============================================================================
 TEST(ReadUnit, ReadsSkelSkeletonFromWorldFile)
 {
@@ -63,6 +56,15 @@ TEST(ReadUnit, ReturnsNullForMjcfSkeleton)
 {
   const auto skeleton = io::readSkeleton("dart://sample/mjcf/openai/ant.xml");
   EXPECT_EQ(skeleton, nullptr);
+}
+
+#if DART_HAVE_SDFORMAT
+
+namespace {
+
+const char* kSingleBodySdfWorld
+    = "dart://sample/sdf/test/single_bodynode_skeleton.world";
+
 }
 
 //==============================================================================
@@ -99,6 +101,7 @@ TEST(ReadUnit, ReadsSdfWorldWithFixedRootWhenRequested)
 
   EXPECT_NE(dynamic_cast<dynamics::WeldJoint*>(skeleton->getJoint(0)), nullptr);
 }
+#endif // DART_HAVE_SDFORMAT
 
 #if DART_IO_HAS_URDF
 //==============================================================================
