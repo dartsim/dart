@@ -36,9 +36,10 @@
 #include <gtest/gtest.h>
 #include <tinyxml2.h>
 
-#include <cmath>
 #include <stdexcept>
 #include <string>
+
+#include <cmath>
 
 using namespace dart::utils;
 
