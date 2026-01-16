@@ -1461,7 +1461,13 @@ void GenericJoint<ConfigSpaceT>::setSpringStiffness(size_t index, double k)
     return;
   }
 
-  DART_ASSERT(k >= 0.0);
+  DART_WARN_IF(
+      k < 0.0,
+      "[GenericJoint] Negative spring stiffness ({}) set for joint [{}]. "
+      "Spring stiffness must be non-negative. Clamping to 0.",
+      k,
+      this->getName());
+  k = std::max(0.0, k);
 
   GenericJoint_SET_IF_DIFFERENT(mSpringStiffnesses[index], k);
 }
@@ -1531,7 +1537,14 @@ void GenericJoint<ConfigSpaceT>::setDampingCoefficient(size_t index, double d)
     return;
   }
 
-  DART_ASSERT(d >= 0.0);
+  DART_WARN_IF(
+      d < 0.0,
+      "[GenericJoint] Negative damping coefficient ({}) set for joint [{}]. "
+      "Damping must be non-negative (negative damping adds energy). "
+      "Clamping to 0.",
+      d,
+      this->getName());
+  d = std::max(0.0, d);
 
   GenericJoint_SET_IF_DIFFERENT(mDampingCoefficients[index], d);
 }
@@ -1559,9 +1572,16 @@ void GenericJoint<ConfigSpaceT>::setDampingCoefficients(
     return;
   }
 
-  DART_ASSERT((dampingCoefficients.array() >= 0.0).all());
+  DART_WARN_IF(
+      (dampingCoefficients.array() < 0.0).any(),
+      "[GenericJoint] Negative damping coefficient(s) in [{}] for joint [{}]. "
+      "Damping must be non-negative (negative damping adds energy). "
+      "Clamping to 0.",
+      dampingCoefficients.transpose(),
+      this->getName());
+  const Eigen::VectorXd clamped = dampingCoefficients.cwiseMax(0.0);
 
-  GenericJoint_SET_IF_DIFFERENT(mDampingCoefficients, dampingCoefficients);
+  GenericJoint_SET_IF_DIFFERENT(mDampingCoefficients, clamped);
 }
 
 //==============================================================================
@@ -1581,7 +1601,13 @@ void GenericJoint<ConfigSpaceT>::setCoulombFriction(
     return;
   }
 
-  DART_ASSERT(friction >= 0.0);
+  DART_WARN_IF(
+      friction < 0.0,
+      "[GenericJoint] Negative Coulomb friction ({}) set for joint [{}]. "
+      "Friction must be non-negative. Clamping to 0.",
+      friction,
+      this->getName());
+  friction = std::max(0.0, friction);
 
   GenericJoint_SET_IF_DIFFERENT(mFrictions[index], friction);
 }
@@ -1607,9 +1633,15 @@ void GenericJoint<ConfigSpaceT>::setFrictions(const Eigen::VectorXd& frictions)
     return;
   }
 
-  DART_ASSERT((frictions.array() >= 0.0).all());
+  DART_WARN_IF(
+      (frictions.array() < 0.0).any(),
+      "[GenericJoint] Negative Coulomb friction(s) in [{}] for joint [{}]. "
+      "Friction must be non-negative. Clamping to 0.",
+      frictions.transpose(),
+      this->getName());
+  const Eigen::VectorXd clamped = frictions.cwiseMax(0.0);
 
-  GenericJoint_SET_IF_DIFFERENT(mFrictions, frictions);
+  GenericJoint_SET_IF_DIFFERENT(mFrictions, clamped);
 }
 
 //==============================================================================
