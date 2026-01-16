@@ -59,6 +59,7 @@ git checkout -b feature/my-awesome-feature
 **Bug fixes must be applied to both `release-6.16` AND `main` branches** to ensure fixes are available in both DART 6 and DART 7.
 
 1. **Fix on release branch first**:
+
    ```bash
    git checkout release-6.16
    git pull upstream release-6.16
