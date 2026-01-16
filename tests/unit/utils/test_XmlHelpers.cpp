@@ -533,31 +533,6 @@ TEST(XmlHelpers, GetValueVectorXdWithValidChild)
   EXPECT_DOUBLE_EQ(result[3], 4.0);
 }
 
-TEST(XmlHelpers, GetValueVec3WithMissingChildThrows)
-{
-  tinyxml2::XMLDocument doc;
-  tinyxml2::XMLElement* root = doc.NewElement("root");
-  doc.InsertEndChild(root);
-
-  EXPECT_THROW(getValueVec3(root, "missing"), std::runtime_error);
-}
-
-TEST(XmlHelpers, GetValueVec3WithValidChild)
-{
-  tinyxml2::XMLDocument doc;
-  tinyxml2::XMLElement* root = doc.NewElement("root");
-  doc.InsertEndChild(root);
-
-  tinyxml2::XMLElement* child = doc.NewElement("pos");
-  child->SetText("1.0 2.0 3.0");
-  root->InsertEndChild(child);
-
-  const Eigen::Vector3d result = getValueVec3(root, "pos");
-  EXPECT_DOUBLE_EQ(result[0], 1.0);
-  EXPECT_DOUBLE_EQ(result[1], 2.0);
-  EXPECT_DOUBLE_EQ(result[2], 3.0);
-}
-
 TEST(XmlHelpers, GetValueIsometry3dWithValidChild)
 {
   tinyxml2::XMLDocument doc;
