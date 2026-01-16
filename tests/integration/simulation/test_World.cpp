@@ -695,6 +695,8 @@ TEST(World, GetIndexBoundsCheck)
   EXPECT_EQ(world->getIndex(1), 1);
   EXPECT_EQ(world->getIndex(2), 2);
 
+#ifdef NDEBUG
   EXPECT_EQ(world->getIndex(-1), -1);
   EXPECT_EQ(world->getIndex(100), -1);
+#endif
 }
