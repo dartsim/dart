@@ -455,7 +455,15 @@ double SoftBodyNode::getEdgeSpringStiffness() const
 //==============================================================================
 void SoftBodyNode::setDampingCoefficient(double _damp)
 {
-  DART_ASSERT(_damp >= 0.0);
+  DART_WARN_IF(
+      !std::isfinite(_damp) || _damp < 0.0,
+      "[SoftBodyNode] Invalid damping coefficient ({}) set for soft body "
+      "[{}]. Damping must be non-negative and finite. Clamping to 0.",
+      _damp,
+      this->getName());
+  if (!std::isfinite(_damp) || _damp < 0.0) {
+    _damp = 0.0;
+  }
 
   if (_damp == mAspectProperties.mDampCoeff)
     return;
