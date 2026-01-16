@@ -214,20 +214,17 @@ double DefaultContactSurfaceHandler::computeFrictionCoefficient(
   }
 
   const double coeff = dynamicAspect->getFrictionCoeff();
+  const bool invalid = !std::isfinite(coeff) || coeff < 0.0;
 
-  // Validate for NaN/Inf/negative values (fixes gz-physics#841)
-  if (!std::isfinite(coeff) || coeff < 0.0) {
-    DART_WARN(
-        "[ContactConstraint] Invalid friction coefficient ({}) from "
-        "ShapeNode [{}]. Friction must be non-negative and finite. "
-        "Using default value ({}).",
-        coeff,
-        shapeNode->getName(),
-        DART_DEFAULT_FRICTION_COEFF);
-    return DART_DEFAULT_FRICTION_COEFF;
-  }
+  DART_WARN_IF(
+      invalid,
+      "[ContactConstraint] Invalid friction coefficient ({}) from ShapeNode "
+      "[{}]. Friction must be non-negative and finite. Using default ({}).",
+      coeff,
+      shapeNode->getName(),
+      DART_DEFAULT_FRICTION_COEFF);
 
-  return coeff;
+  return invalid ? DART_DEFAULT_FRICTION_COEFF : coeff;
 }
 
 //==============================================================================
@@ -248,19 +245,18 @@ double DefaultContactSurfaceHandler::computePrimaryFrictionCoefficient(
   }
 
   const double coeff = dynamicAspect->getPrimaryFrictionCoeff();
+  const bool invalid = !std::isfinite(coeff) || coeff < 0.0;
 
-  if (!std::isfinite(coeff) || coeff < 0.0) {
-    DART_WARN(
-        "[ContactConstraint] Invalid primary friction coefficient ({}) from "
-        "ShapeNode [{}]. Friction must be non-negative and finite. "
-        "Using default value ({}).",
-        coeff,
-        shapeNode->getName(),
-        DART_DEFAULT_FRICTION_COEFF);
-    return DART_DEFAULT_FRICTION_COEFF;
-  }
+  DART_WARN_IF(
+      invalid,
+      "[ContactConstraint] Invalid primary friction coefficient ({}) from "
+      "ShapeNode [{}]. Friction must be non-negative and finite. Using "
+      "default ({}).",
+      coeff,
+      shapeNode->getName(),
+      DART_DEFAULT_FRICTION_COEFF);
 
-  return coeff;
+  return invalid ? DART_DEFAULT_FRICTION_COEFF : coeff;
 }
 
 //==============================================================================

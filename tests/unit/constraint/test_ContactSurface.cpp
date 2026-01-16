@@ -297,7 +297,8 @@ TEST(ContactSurface, BothBodiesNaNFrictionUseDefault)
   auto params = handler.createParams(result.getContact(0), 1);
 
   EXPECT_TRUE(std::isfinite(params.mPrimaryFrictionCoeff));
-  EXPECT_DOUBLE_EQ(params.mPrimaryFrictionCoeff, DART_DEFAULT_FRICTION_COEFF);
+  EXPECT_DOUBLE_EQ(
+      params.mPrimaryFrictionCoeff, constraint::DART_DEFAULT_FRICTION_COEFF);
 }
 
 //==============================================================================
@@ -428,7 +429,8 @@ TEST(ContactSurface, BothBodiesNaNRestitutionUseDefault)
   auto params = handler.createParams(result.getContact(0), 1);
 
   EXPECT_TRUE(std::isfinite(params.mRestitutionCoeff));
-  EXPECT_DOUBLE_EQ(params.mRestitutionCoeff, DART_DEFAULT_RESTITUTION_COEFF);
+  EXPECT_DOUBLE_EQ(
+      params.mRestitutionCoeff, constraint::DART_DEFAULT_RESTITUTION_COEFF);
 }
 
 //==============================================================================
