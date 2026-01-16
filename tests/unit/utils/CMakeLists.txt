@@ -5,7 +5,7 @@ if(TARGET dart-utils)
     TYPE unit
     COMPONENT_NAME utils
     TARGET_PREFIX UNIT_utils
-    LINK_LIBRARIES dart-utils tinyxml2::tinyxml2
+    LINK_LIBRARIES dart-utils
     GLOB_SOURCES
   )
 endif()
