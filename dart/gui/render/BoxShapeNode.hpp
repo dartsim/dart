@@ -35,16 +35,12 @@
 
 #include <dart/gui/render/ShapeNode.hpp>
 
+#include <dart/dynamics/Fwd.hpp>
+
 #include <osg/MatrixTransform>
 
 namespace dart {
-
-namespace dynamics {
-class BoxShape;
-} // namespace dynamics
-
 namespace gui {
-
 namespace render {
 
 class BoxShapeGeode;

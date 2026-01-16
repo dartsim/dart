@@ -35,12 +35,9 @@
 
 #include <dart/utils/Export.hpp>
 
+#include <dart/simulation/Fwd.hpp>
+
 namespace dart {
-
-namespace simulation {
-class Recording;
-} // namespace simulation
-
 namespace utils {
 
 /// @brief class FileInfoWorld
