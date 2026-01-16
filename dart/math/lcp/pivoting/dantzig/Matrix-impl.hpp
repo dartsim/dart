@@ -58,6 +58,8 @@
 #include "dart/common/Macros.hpp"
 #include "dart/math/lcp/pivoting/dantzig/Common.hpp"
 
+#include <vector>
+
 namespace dart::math {
 
 template <typename Scalar>
@@ -87,8 +89,15 @@ int dFactorCholesky(Scalar* A, int n, void* tmpbuf /*[n]*/)
   DART_ASSERT(n > 0 && A);
   bool failure = false;
   const int nskip = padding(n);
-  Scalar* recip
-      = tmpbuf ? (Scalar*)tmpbuf : (Scalar*)ALLOCA(n * sizeof(Scalar));
+  // Use heap allocation instead of alloca() to avoid stack corruption on arm64
+  std::vector<Scalar> recip_storage;
+  Scalar* recip;
+  if (tmpbuf) {
+    recip = static_cast<Scalar*>(tmpbuf);
+  } else {
+    recip_storage.resize(n);
+    recip = recip_storage.data();
+  }
   Scalar* aa = A;
   for (int i = 0; i < n; aa += nskip, ++i) {
     Scalar* cc = aa;
@@ -126,7 +135,14 @@ void dSolveCholesky(const Scalar* L, Scalar* b, int n, void* tmpbuf /*[n]*/)
 {
   DART_ASSERT(n > 0 && L && b);
   const int nskip = padding(n);
-  Scalar* y = tmpbuf ? (Scalar*)tmpbuf : (Scalar*)ALLOCA(n * sizeof(Scalar));
+  std::vector<Scalar> y_storage;
+  Scalar* y;
+  if (tmpbuf) {
+    y = static_cast<Scalar*>(tmpbuf);
+  } else {
+    y_storage.resize(n);
+    y = y_storage.data();
+  }
   {
     const Scalar* ll = L;
     for (int i = 0; i < n; ll += nskip, ++i) {
@@ -166,11 +182,18 @@ int dInvertPDMatrix(
   DART_ASSERT(MaxCholesky_size % sizeof(Scalar) == 0);
   const int nskip = padding(n);
   const int nskip_mul_n = nskip * n;
-  Scalar* tmp
-      = tmpbuf ? (Scalar*)tmpbuf
-               : (Scalar*)ALLOCA(
-                     MaxCholesky_size + (nskip + nskip_mul_n) * sizeof(Scalar));
-  Scalar* X = (Scalar*)((char*)tmp + MaxCholesky_size);
+  // Compute sizes in Scalar units for proper alignment on ARM64
+  const size_t MaxCholesky_scalars = MaxCholesky_size / sizeof(Scalar);
+  const size_t total_scalars = MaxCholesky_scalars + nskip + nskip_mul_n;
+  std::vector<Scalar> tmp_storage;
+  Scalar* tmp;
+  if (tmpbuf) {
+    tmp = static_cast<Scalar*>(tmpbuf);
+  } else {
+    tmp_storage.resize(total_scalars);
+    tmp = tmp_storage.data();
+  }
+  Scalar* X = tmp + MaxCholesky_scalars;
   Scalar* L = X + nskip;
   memcpy(L, A, nskip_mul_n * sizeof(Scalar));
   if (dFactorCholesky(L, n, tmp)) {
@@ -199,11 +222,17 @@ int dIsPositiveDefinite(const Scalar* A, int n, void* tmpbuf /*[nskip*(n+1)]*/)
   DART_ASSERT(FactorCholesky_size % sizeof(Scalar) == 0);
   const int nskip = padding(n);
   const int nskip_mul_n = nskip * n;
-  Scalar* tmp = tmpbuf
-                    ? (Scalar*)tmpbuf
-                    : (Scalar*)ALLOCA(
-                          FactorCholesky_size + nskip_mul_n * sizeof(Scalar));
-  Scalar* Acopy = (Scalar*)((char*)tmp + FactorCholesky_size);
+  const size_t FactorCholesky_scalars = FactorCholesky_size / sizeof(Scalar);
+  const size_t total_scalars = FactorCholesky_scalars + nskip_mul_n;
+  std::vector<Scalar> tmp_storage;
+  Scalar* tmp;
+  if (tmpbuf) {
+    tmp = static_cast<Scalar*>(tmpbuf);
+  } else {
+    tmp_storage.resize(total_scalars);
+    tmp = tmp_storage.data();
+  }
+  Scalar* Acopy = tmp + FactorCholesky_scalars;
   memcpy(Acopy, A, nskip_mul_n * sizeof(Scalar));
   return dFactorCholesky(Acopy, n, tmp);
 }
@@ -236,8 +265,14 @@ void dLDLTAddTL(
 
   if (n < 2)
     return;
-  Scalar* W1 = tmpbuf ? (Scalar*)tmpbuf
-                      : (Scalar*)ALLOCA((2 * nskip) * sizeof(Scalar));
+  std::vector<Scalar> W_storage;
+  Scalar* W1;
+  if (tmpbuf) {
+    W1 = static_cast<Scalar*>(tmpbuf);
+  } else {
+    W_storage.resize(2 * nskip);
+    W1 = W_storage.data();
+  }
   Scalar* W2 = W1 + nskip;
   const Scalar sqrtHalf
       = ScalarTraits<Scalar>::reciprocalSqrt(static_cast<Scalar>(2));
@@ -346,11 +381,18 @@ void dLDLTRemove(
   } else {
     size_t LDLTAddTL_size = dEstimateLDLTAddTLTmpbufSize<Scalar>(nskip);
     DART_ASSERT(LDLTAddTL_size % sizeof(Scalar) == 0);
-    Scalar* tmp = tmpbuf
-                      ? (Scalar*)tmpbuf
-                      : (Scalar*)ALLOCA(LDLTAddTL_size + n2 * sizeof(Scalar));
+    const size_t LDLTAddTL_scalars = LDLTAddTL_size / sizeof(Scalar);
+    const size_t total_scalars = LDLTAddTL_scalars + n2;
+    std::vector<Scalar> tmp_storage;
+    Scalar* tmp;
+    if (tmpbuf) {
+      tmp = static_cast<Scalar*>(tmpbuf);
+    } else {
+      tmp_storage.resize(total_scalars);
+      tmp = tmp_storage.data();
+    }
     if (r == 0) {
-      Scalar* a = (Scalar*)((char*)tmp + LDLTAddTL_size);
+      Scalar* a = tmp + LDLTAddTL_scalars;
       const int p_0 = p[0];
       for (int i = 0; i < n2; ++i) {
         a[i] = -GETA(p[i], p_0);
@@ -358,7 +400,7 @@ void dLDLTRemove(
       a[0] += static_cast<Scalar>(1.0);
       dLDLTAddTL(L, d, a, n2, nskip, tmp);
     } else {
-      Scalar* t = (Scalar*)((char*)tmp + LDLTAddTL_size);
+      Scalar* t = tmp + LDLTAddTL_scalars;
       {
         Scalar* Lcurr = L + r * nskip;
         for (int i = 0; i < r; ++Lcurr, ++i) {

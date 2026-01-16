@@ -48,7 +48,11 @@ TEST(Read, AutoDetectsSkelWorld)
 TEST(Read, AutoDetectsSdfWorld)
 {
   const auto world = io::readWorld("dart://sample/sdf/empty.world");
+#if DART_HAS_SDFORMAT
   ASSERT_NE(world, nullptr);
+#else
+  EXPECT_EQ(world, nullptr);
+#endif
 }
 
 //==============================================================================

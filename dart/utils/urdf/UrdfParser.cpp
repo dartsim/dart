@@ -949,63 +949,70 @@ dynamics::ShapePtr UrdfParser::createShape(
     const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   dynamics::ShapePtr shape;
-
-  // Sphere
-  if (urdf::Sphere* sphere
-      = dynamic_cast<urdf::Sphere*>(_vizOrCol->geometry.get())) {
-    shape = dynamics::ShapePtr(new dynamics::SphereShape(sphere->radius));
-  }
-  // Box
-  else if (
-      urdf::Box* box = dynamic_cast<urdf::Box*>(_vizOrCol->geometry.get())) {
-    shape = dynamics::ShapePtr(new dynamics::BoxShape(
-        Eigen::Vector3d(box->dim.x, box->dim.y, box->dim.z)));
-  }
-  // Cylinder
-  else if (
-      urdf::Cylinder* cylinder
-      = dynamic_cast<urdf::Cylinder*>(_vizOrCol->geometry.get())) {
-    shape = dynamics::ShapePtr(
-        new dynamics::CylinderShape(cylinder->radius, cylinder->length));
-  }
-  // Mesh
-  else if (
-      urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get())) {
-    // Resolve relative URIs.
-    common::Uri relativeUri, absoluteUri;
-    if (!absoluteUri.fromRelativeUri(
-            _baseUri, std::string_view{mesh->filename})) {
-      DART_WARN(
-          "Failed resolving mesh URI '{}' relative to '{}'.",
-          mesh->filename,
-          _baseUri.toString());
-      return nullptr;
-    }
-
-    // Load the mesh.
-    const std::string resolvedUri = absoluteUri.toString();
-
-    auto loader = std::make_unique<utils::MeshLoaderd>();
-    auto triMeshUnique = loader->load(resolvedUri, _resourceRetriever);
-
-    if (!triMeshUnique)
-      return nullptr;
-
-    std::shared_ptr<math::TriMesh<double>> triMesh(std::move(triMeshUnique));
-
-    const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
-    shape = std::make_shared<dynamics::MeshShape>(
-        scale,
-        std::move(triMesh),
-        common::Uri(resolvedUri),
-        _resourceRetriever);
-  }
-  // Unknown geometry type
-  else {
-    DART_WARN(
-        "Unknown URDF Shape type (we only know of Sphere, Box, Cylinder, and "
-        "Mesh). We are returning a nullptr.");
+  const auto* geometry = _vizOrCol->geometry.get();
+  if (!geometry) {
+    DART_WARN("URDF geometry is null. We are returning a nullptr.");
     return nullptr;
+  }
+
+  // Use geometry->type enum instead of dynamic_cast for FreeBSD compatibility.
+  // dynamic_cast can fail across shared library boundaries on FreeBSD due to
+  // RTTI issues.
+  switch (geometry->type) {
+    case urdf::Geometry::SPHERE: {
+      const auto* sphere = static_cast<const urdf::Sphere*>(geometry);
+      shape = std::make_shared<dynamics::SphereShape>(sphere->radius);
+      break;
+    }
+    case urdf::Geometry::BOX: {
+      const auto* box = static_cast<const urdf::Box*>(geometry);
+      shape = std::make_shared<dynamics::BoxShape>(
+          Eigen::Vector3d(box->dim.x, box->dim.y, box->dim.z));
+      break;
+    }
+    case urdf::Geometry::CYLINDER: {
+      const auto* cylinder = static_cast<const urdf::Cylinder*>(geometry);
+      shape = std::make_shared<dynamics::CylinderShape>(
+          cylinder->radius, cylinder->length);
+      break;
+    }
+    case urdf::Geometry::MESH: {
+      const auto* mesh = static_cast<const urdf::Mesh*>(geometry);
+      // Resolve relative URIs.
+      common::Uri absoluteUri;
+      if (!absoluteUri.fromRelativeUri(
+              _baseUri, std::string_view{mesh->filename})) {
+        DART_WARN(
+            "Failed resolving mesh URI '{}' relative to '{}'.",
+            mesh->filename,
+            _baseUri.toString());
+        return nullptr;
+      }
+
+      // Load the mesh.
+      const std::string resolvedUri = absoluteUri.toString();
+
+      auto loader = std::make_unique<utils::MeshLoaderd>();
+      auto triMeshUnique = loader->load(resolvedUri, _resourceRetriever);
+
+      if (!triMeshUnique)
+        return nullptr;
+
+      std::shared_ptr<math::TriMesh<double>> triMesh(std::move(triMeshUnique));
+
+      const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
+      shape = std::make_shared<dynamics::MeshShape>(
+          scale,
+          std::move(triMesh),
+          common::Uri(resolvedUri),
+          _resourceRetriever);
+      break;
+    }
+    default:
+      DART_WARN(
+          "Unknown URDF Shape type (we only know of Sphere, Box, Cylinder, "
+          "and Mesh). We are returning a nullptr.");
+      return nullptr;
   }
 
   return shape;

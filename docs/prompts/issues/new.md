@@ -32,6 +32,7 @@ Workflow
    - Push: `git push -u origin HEAD`.
    - Create PR: `gh pr create`.
    - CI loop: `gh run watch <id> --interval 30`, fix failures until green.
+   - Bug fixes: require PRs to BOTH `release-6.16` AND `main`. See `docs/onboarding/contributing.md`.
 
 Rules
 - Confirm repo root: `git rev-parse --show-toplevel`.
