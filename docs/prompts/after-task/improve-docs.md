@@ -32,7 +32,18 @@ Where to update
 Rules
 - No ephemeral IDs (branches, PRs, commits, usernames).
 - Unverified commands must be labeled "Suggested (Unverified)".
-- Prefer condensing over appending.
+- Write general patterns, not task-specific chronicles.
+- 1-3 sentences per topic is ideal; avoid detailed symptom lists.
+- Code examples only when the fix pattern is non-obvious.
+
+Improvement modes (pick what fits)
+- **Add**: New pattern not yet documented.
+- **Remove**: Outdated, redundant, or obsolete content.
+- **Consolidate**: Merge scattered related content.
+- **Restructure**: Improve organization or navigation.
+- **Condense**: Shorten verbose sections.
+
+Bias toward removal/consolidation over adding.
 
 Output
 - Summary of changes.

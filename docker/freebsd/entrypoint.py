@@ -153,8 +153,47 @@ def main():
     write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img, user)
 
     cmd = ["qemu-system-x86_64"]
-    if Path("/dev/kvm").exists():
-        cmd.append("-enable-kvm")
+    kvm_path = Path("/dev/kvm")
+    print(
+        f"Checking KVM: /dev/kvm exists={kvm_path.exists()}",
+        file=sys.stderr,
+        flush=True,
+    )
+    kvm_usable = False
+    if kvm_path.exists():
+        # Check if we can actually access KVM
+        try:
+            kvm_readable = os.access("/dev/kvm", os.R_OK)
+            kvm_writable = os.access("/dev/kvm", os.W_OK)
+            print(
+                f"KVM permissions: readable={kvm_readable}, writable={kvm_writable}",
+                file=sys.stderr,
+                flush=True,
+            )
+            kvm_usable = kvm_readable and kvm_writable
+        except Exception as e:
+            print(f"KVM access check failed: {e}", file=sys.stderr, flush=True)
+
+    # Use Penryn CPU model (SSE4.1, no SSE4.2/AVX) for maximum compatibility.
+    # GitHub Actions runs in nested virtualization which can cause issues
+    # with certain SIMD instructions even when KVM is enabled.
+    # Westmere (SSE4.2) still caused SIGILL in some tests, so we use Penryn.
+    # See: https://gitlab.com/qemu-project/qemu/-/issues/361
+    if kvm_usable:
+        print(
+            "KVM available - using Penryn CPU for nested virt compatibility",
+            file=sys.stderr,
+            flush=True,
+        )
+        cmd.extend(["-enable-kvm", "-cpu", "Penryn"])
+    else:
+        print(
+            "KVM not available - using Penryn CPU with TCG emulation",
+            file=sys.stderr,
+            flush=True,
+        )
+        cmd.extend(["-cpu", "Penryn"])
+    print(f"QEMU command: {' '.join(cmd[:10])}...", file=sys.stderr, flush=True)
     cmd += [
         "-m",
         str(mem),

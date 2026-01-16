@@ -270,11 +270,13 @@ if(TARGET dart-utils AND TARGET dart-io)
   dart_add_test("integration" INTEGRATION_simulation_Issue410 simulation/test_Issue410.cpp)
   target_link_libraries(INTEGRATION_simulation_Issue410 dart-io)
 
-  dart_add_test("integration" INTEGRATION_simulation_MomentumConservation simulation/test_MomentumConservation.cpp)
-  target_link_libraries(INTEGRATION_simulation_MomentumConservation dart-io)
+  if(DART_ENABLE_SDFORMAT)
+    dart_add_test("integration" INTEGRATION_simulation_MomentumConservation simulation/test_MomentumConservation.cpp)
+    target_link_libraries(INTEGRATION_simulation_MomentumConservation dart-io)
 
-  dart_add_test("integration" INTEGRATION_simulation_MimicConstraint simulation/test_MimicConstraint.cpp)
-  target_link_libraries(INTEGRATION_simulation_MimicConstraint dart-io)
+    dart_add_test("integration" INTEGRATION_simulation_MimicConstraint simulation/test_MimicConstraint.cpp)
+    target_link_libraries(INTEGRATION_simulation_MimicConstraint dart-io)
+  endif()
 endif()
 
 # ==============================================================================
