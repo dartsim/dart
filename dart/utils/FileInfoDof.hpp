@@ -35,16 +35,13 @@
 
 #include <dart/utils/Export.hpp>
 
+#include <dart/dynamics/Fwd.hpp>
+
 #include <Eigen/Dense>
 
 #include <vector>
 
 namespace dart {
-
-namespace dynamics {
-class Skeleton;
-} // namespace dynamics
-
 namespace utils {
 
 /// @brief class FileInfoDof

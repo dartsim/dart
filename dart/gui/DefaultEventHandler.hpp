@@ -34,6 +34,9 @@
 #define DART_GUI_DEFAULTEVENTHANDLER_HPP_
 
 #include <dart/gui/Export.hpp>
+#include <dart/gui/Fwd.hpp>
+
+#include <dart/dynamics/Fwd.hpp>
 
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Observer.hpp>
@@ -48,13 +51,6 @@
 #include <vector>
 
 namespace dart {
-
-namespace dynamics {
-class Shape;
-class ShapeFrame;
-class Entity;
-} // namespace dynamics
-
 namespace gui {
 
 struct PickInfo

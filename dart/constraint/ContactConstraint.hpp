@@ -38,15 +38,11 @@
 
 #include <dart/collision/CollisionDetector.hpp>
 
+#include <dart/dynamics/Fwd.hpp>
+
 #include <dart/math/MathTypes.hpp>
 
 namespace dart {
-
-namespace dynamics {
-class BodyNode;
-class Skeleton;
-} // namespace dynamics
-
 namespace constraint {
 
 /// ContactConstraint represents a contact constraint between two bodies

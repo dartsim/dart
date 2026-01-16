@@ -36,8 +36,13 @@
 #include <dart/gui/CameraMode.hpp>
 #include <dart/gui/DefaultEventHandler.hpp>
 #include <dart/gui/Export.hpp>
+#include <dart/gui/Fwd.hpp>
 #include <dart/gui/WorldNode.hpp>
 #include <dart/gui/detail/CameraModeCallback.hpp>
+
+#include <dart/simulation/Fwd.hpp>
+
+#include <dart/dynamics/Fwd.hpp>
 
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Subject.hpp>
@@ -51,34 +56,11 @@
 #include <unordered_set>
 
 namespace dart {
-
-namespace simulation {
-class World;
-} // namespace simulation
-
-namespace dynamics {
-class Entity;
-class SimpleFrame;
-class Shape;
-class BodyNode;
-} // namespace dynamics
-
 namespace gui {
 
 namespace detail {
 class CameraModeCallback;
 } // namespace detail
-
-class WorldNode;
-class DefaultEventHandler;
-class DragAndDrop;
-class SimpleFrameDnD;
-class SimpleFrameShapeDnD;
-class InteractiveFrame;
-class InteractiveFrameDnD;
-class BodyNodeDnD;
-class Viewer;
-class SaveScreen;
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class DART_GUI_API ViewerAttachment : public virtual ::osg::Group
