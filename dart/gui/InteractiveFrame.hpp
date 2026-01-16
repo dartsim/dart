@@ -34,18 +34,13 @@
 #define DART_GUI_INTERACTIVEFRAME_HPP_
 
 #include <dart/gui/Export.hpp>
+#include <dart/gui/Fwd.hpp>
 
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 
 namespace dart {
-
-namespace dynamics {
-class MeshShape;
-} // namespace dynamics
-
 namespace gui {
-
-class InteractiveFrame;
 
 class DART_GUI_API InteractiveTool : public dart::dynamics::SimpleFrame
 {

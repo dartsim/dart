@@ -110,6 +110,7 @@ class TemplatedJacobianNode;
 class TranslationalJoint;
 class TranslationalJoint2D;
 class UniversalJoint;
+class VisualAspect;
 class VoxelGridShape;
 class WeldJoint;
 class ZeroDofJoint;

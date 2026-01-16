@@ -11,10 +11,10 @@
  *   conditions are met:
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -30,20 +30,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_FWD_HPP_
-#define DART_SIMULATION_FWD_HPP_
-
-#include <dart/common/SmartPointer.hpp>
+#ifndef DART_GUI_FWD_HPP_
+#define DART_GUI_FWD_HPP_
 
 namespace dart {
-namespace simulation {
+namespace gui {
 
-class Recording;
-class World;
+class BodyNodeDnD;
+class DefaultEventHandler;
+class DragAndDrop;
+class EntityNode;
+class FrameNode;
+class GridVisual;
+class ImGuiHandler;
+class ImGuiViewer;
+class ImGuiWidget;
+class InteractiveFrame;
+class InteractiveFrameDnD;
+class MouseEventHandler;
+class RealTimeWorldNode;
+class SaveScreen;
+class ShapeFrameNode;
+class SimpleFrameDnD;
+class SimpleFrameShapeDnD;
+class SupportPolygonVisual;
+class Viewer;
+class ViewerAttachment;
+class WorldNode;
 
-DART_COMMON_DECLARE_SHARED_WEAK(World)
+namespace render {
 
-} // namespace simulation
+class ShapeNode;
+
+} // namespace render
+
+} // namespace gui
 } // namespace dart
 
-#endif // DART_SIMULATION_FWD_HPP_
+#endif // DART_GUI_FWD_HPP_

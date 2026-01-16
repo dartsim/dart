@@ -34,27 +34,16 @@
 #define DART_GUI_RENDER_SHAPEGEODE_HPP_
 
 #include <dart/gui/Export.hpp>
+#include <dart/gui/Fwd.hpp>
+
+#include <dart/dynamics/Fwd.hpp>
 
 #include <osg/Node>
 
 #include <memory>
 
 namespace dart {
-
-namespace dynamics {
-class Shape;
-class ShapeFrame;
-class SimpleFrame;
-class VisualAspect;
-} // namespace dynamics
-
 namespace gui {
-
-class Node;
-class Group;
-class EntityNode;
-class ShapeFrameNode;
-
 namespace render {
 
 class DART_GUI_API ShapeNode
