@@ -59,11 +59,11 @@ class SphinxTabsTablist(nodes.container):
 def visit(translator, node):
     # Borrowed from `sphinx-inline-tabs`
     attrs = node.attributes.copy()
-    attrs.pop("classes")
-    attrs.pop("ids")
-    attrs.pop("names")
-    attrs.pop("dupnames")
-    attrs.pop("backrefs")
+    attrs.pop("classes", None)
+    attrs.pop("ids", None)
+    attrs.pop("names", None)
+    attrs.pop("dupnames", None)
+    attrs.pop("backrefs", None)
     text = translator.starttag(node, node.tagname, **attrs)
     translator.body.append(text.strip())
 
@@ -341,7 +341,8 @@ def update_context(app, pagename, templatename, context, doctree):
             filtered_scripts = []
             for script in context["script_files"]:
                 if any(
-                    path.suffix == ".js" and _matches_script(path, script) for path in paths
+                    path.suffix == ".js" and _matches_script(path, script)
+                    for path in paths
                 ):
                     continue
                 filtered_scripts.append(script)
