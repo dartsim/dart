@@ -15,6 +15,25 @@ The best way to contribute is by [opening a GitHub pull request](https://help.gi
 
 **Don't worry about perfection!** Feel free to post work-in-progress versions to get feedback and start the discussion.
 
+## Copyright Headers
+
+All source files should include a copyright header. We use the year of first publication (2011) following [FSFE REUSE best practices](https://reuse.software/faq/#years-copyright):
+
+```cpp
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   ...
+ */
+```
+
+**Important**: Do NOT update the year when modifying files. The year represents the first publication date of the project, not the last modification. This follows industry best practice (used by Google, curl, Gazebo, etc.) and eliminates unnecessary maintenance.
+
 ## Before Submitting a PR
 
 - [ ] Code follows the [DART style guide](docs/onboarding/code-style.md)

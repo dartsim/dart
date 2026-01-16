@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2025, The DART development contributors
+# Copyright (c) 2011, The DART development contributors
 #
 # Baseline ODE LCP Solver Library
 # This is the original ODE implementation used as ground truth for testing
