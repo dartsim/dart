@@ -411,4 +411,7 @@ TEST(World, GetIndexBoundsCheck)
   EXPECT_EQ(world->getIndex(0), 0);
   EXPECT_EQ(world->getIndex(1), 1);
   EXPECT_EQ(world->getIndex(2), 2);
+
+  EXPECT_EQ(world->getIndex(-1), -1);
+  EXPECT_EQ(world->getIndex(100), -1);
 }
