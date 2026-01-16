@@ -303,3 +303,184 @@ TEST(GenericJoint, RejectsNonFiniteInputs)
       "");
 }
 #endif
+
+//==============================================================================
+// Test that negative physics parameters are clamped to zero with a warning
+// (rather than crashing via assertion). This is important for robustness when
+// loading models with invalid parameters (e.g., negative damping in SDF files).
+//==============================================================================
+TEST(GenericJoint, NegativeDampingClampedToZero)
+{
+  SingleDofJointTest joint;
+
+  // Set negative damping - should be clamped to 0
+  joint.setDampingCoefficient(0, -5.0);
+  EXPECT_EQ(joint.getDampingCoefficient(0), 0.0);
+
+  // Positive damping should work normally
+  joint.setDampingCoefficient(0, 10.0);
+  EXPECT_EQ(joint.getDampingCoefficient(0), 10.0);
+
+  // Zero damping should work
+  joint.setDampingCoefficient(0, 0.0);
+  EXPECT_EQ(joint.getDampingCoefficient(0), 0.0);
+}
+
+//==============================================================================
+TEST(GenericJoint, NegativeDampingCoefficientsVectorClampedToZero)
+{
+  MultiDofJointTest joint;
+  const auto ndofs = static_cast<Eigen::Index>(joint.getNumDofs());
+
+  // Set vector with some negative values - they should be clamped to 0
+  Eigen::VectorXd dampings = Eigen::VectorXd::Zero(ndofs);
+  dampings[0] = -1.0;
+  dampings[1] = 5.0;
+  dampings[2] = -10.0;
+  dampings[3] = 0.0;
+  dampings[4] = 3.0;
+  dampings[5] = -0.5;
+
+  joint.setDampingCoefficients(dampings);
+
+  EXPECT_EQ(joint.getDampingCoefficient(0), 0.0); // Was -1.0
+  EXPECT_EQ(joint.getDampingCoefficient(1), 5.0);
+  EXPECT_EQ(joint.getDampingCoefficient(2), 0.0); // Was -10.0
+  EXPECT_EQ(joint.getDampingCoefficient(3), 0.0);
+  EXPECT_EQ(joint.getDampingCoefficient(4), 3.0);
+  EXPECT_EQ(joint.getDampingCoefficient(5), 0.0); // Was -0.5
+}
+
+//==============================================================================
+TEST(GenericJoint, NegativeFrictionClampedToZero)
+{
+  SingleDofJointTest joint;
+
+  // Set negative friction - should be clamped to 0
+  joint.setCoulombFriction(0, -2.0);
+  EXPECT_EQ(joint.getCoulombFriction(0), 0.0);
+
+  // Positive friction should work normally
+  joint.setCoulombFriction(0, 1.5);
+  EXPECT_EQ(joint.getCoulombFriction(0), 1.5);
+}
+
+//==============================================================================
+TEST(GenericJoint, NegativeFrictionsVectorClampedToZero)
+{
+  MultiDofJointTest joint;
+  const auto ndofs = static_cast<Eigen::Index>(joint.getNumDofs());
+
+  Eigen::VectorXd frictions = Eigen::VectorXd::Zero(ndofs);
+  frictions[0] = -0.5;
+  frictions[1] = 1.0;
+  frictions[2] = -3.0;
+
+  joint.setFrictions(frictions);
+
+  EXPECT_EQ(joint.getCoulombFriction(0), 0.0); // Was -0.5
+  EXPECT_EQ(joint.getCoulombFriction(1), 1.0);
+  EXPECT_EQ(joint.getCoulombFriction(2), 0.0); // Was -3.0
+}
+
+//==============================================================================
+TEST(GenericJoint, NegativeSpringStiffnessClampedToZero)
+{
+  SingleDofJointTest joint;
+
+  // Set negative spring stiffness - should be clamped to 0
+  joint.setSpringStiffness(0, -100.0);
+  EXPECT_EQ(joint.getSpringStiffness(0), 0.0);
+
+  // Positive stiffness should work normally
+  joint.setSpringStiffness(0, 50.0);
+  EXPECT_EQ(joint.getSpringStiffness(0), 50.0);
+}
+
+//==============================================================================
+// Test that NaN and Inf physics parameters are clamped to zero with a warning.
+// This preserves the invariant from the original DART_ASSERT(d >= 0.0) which
+// would reject NaN (since NaN >= 0.0 is false).
+//==============================================================================
+TEST(GenericJoint, NaNDampingClampedToZero)
+{
+  SingleDofJointTest joint;
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+
+  // NaN damping should be clamped to 0
+  joint.setDampingCoefficient(0, nan);
+  EXPECT_EQ(joint.getDampingCoefficient(0), 0.0);
+
+  // +Inf damping should be clamped to 0
+  joint.setDampingCoefficient(0, inf);
+  EXPECT_EQ(joint.getDampingCoefficient(0), 0.0);
+
+  // -Inf damping should be clamped to 0
+  joint.setDampingCoefficient(0, -inf);
+  EXPECT_EQ(joint.getDampingCoefficient(0), 0.0);
+
+  // Valid value should still work
+  joint.setDampingCoefficient(0, 5.0);
+  EXPECT_EQ(joint.getDampingCoefficient(0), 5.0);
+}
+
+//==============================================================================
+TEST(GenericJoint, NaNDampingVectorClampedToZero)
+{
+  MultiDofJointTest joint;
+  const auto ndofs = static_cast<Eigen::Index>(joint.getNumDofs());
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+
+  Eigen::VectorXd dampings = Eigen::VectorXd::Zero(ndofs);
+  dampings[0] = nan;
+  dampings[1] = 5.0;
+  dampings[2] = inf;
+  dampings[3] = -inf;
+  dampings[4] = 3.0;
+  dampings[5] = -1.0;
+
+  joint.setDampingCoefficients(dampings);
+
+  EXPECT_EQ(joint.getDampingCoefficient(0), 0.0); // Was NaN
+  EXPECT_EQ(joint.getDampingCoefficient(1), 5.0);
+  EXPECT_EQ(joint.getDampingCoefficient(2), 0.0); // Was +Inf
+  EXPECT_EQ(joint.getDampingCoefficient(3), 0.0); // Was -Inf
+  EXPECT_EQ(joint.getDampingCoefficient(4), 3.0);
+  EXPECT_EQ(joint.getDampingCoefficient(5), 0.0); // Was -1.0
+}
+
+//==============================================================================
+TEST(GenericJoint, NaNFrictionClampedToZero)
+{
+  SingleDofJointTest joint;
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+
+  joint.setCoulombFriction(0, nan);
+  EXPECT_EQ(joint.getCoulombFriction(0), 0.0);
+
+  joint.setCoulombFriction(0, inf);
+  EXPECT_EQ(joint.getCoulombFriction(0), 0.0);
+
+  joint.setCoulombFriction(0, -inf);
+  EXPECT_EQ(joint.getCoulombFriction(0), 0.0);
+}
+
+//==============================================================================
+TEST(GenericJoint, NaNSpringStiffnessClampedToZero)
+{
+  SingleDofJointTest joint;
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+
+  joint.setSpringStiffness(0, nan);
+  EXPECT_EQ(joint.getSpringStiffness(0), 0.0);
+
+  joint.setSpringStiffness(0, inf);
+  EXPECT_EQ(joint.getSpringStiffness(0), 0.0);
+
+  joint.setSpringStiffness(0, -inf);
+  EXPECT_EQ(joint.getSpringStiffness(0), 0.0);
+}
