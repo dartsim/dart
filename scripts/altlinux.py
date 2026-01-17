@@ -159,8 +159,19 @@ def sync_repo(args):
     excludes = " ".join(f"--exclude {shlex.quote(item)}" for item in EXCLUDES)
     work_dir = shlex.quote(args.work_dir)
     src_dir = shlex.quote(args.source_dir)
+    # Debug: show what's in source and work directories before sync
+    debug_command = (
+        f"echo '=== Source dir contents ({args.source_dir}):' && "
+        f"ls -la {src_dir} 2>&1 | head -20 || echo 'Source dir empty or not accessible' && "
+        f"echo '=== Checking CMakeLists.txt:' && "
+        f"ls -la {src_dir}/CMakeLists.txt 2>&1 || echo 'CMakeLists.txt not found in source'"
+    )
+    exec_in_container(args, debug_command)
+    # Clear stale work directory before syncing (self-hosted runners may have old data)
     command = (
-        f"mkdir -p {work_dir} && rsync -az --delete {excludes} {src_dir}/ {work_dir}/"
+        f"rm -rf {work_dir} && mkdir -p {work_dir} && "
+        f"rsync -az --delete {excludes} {src_dir}/ {work_dir}/ && "
+        f"echo '=== Work dir after sync:' && ls -la {work_dir} | head -10"
     )
     exec_in_container(args, command)
 
