@@ -128,8 +128,11 @@ def container_running(container):
     return container in (result.stdout or "").splitlines()
 
 
-def ensure_started(args, _state={"started": False}):
-    if _state["started"]:
+_ensure_started_state = {"started": False}
+
+
+def ensure_started(args):
+    if _ensure_started_state["started"]:
         if not container_running(args.container):
             start_container(args)
             wait_for_ssh_key(args)
@@ -138,7 +141,7 @@ def ensure_started(args, _state={"started": False}):
     start_container(args)
     wait_for_ssh_key(args)
     wait_for_ssh(args, user=args.user)
-    _state["started"] = True
+    _ensure_started_state["started"] = True
 
 
 def build_image(args):

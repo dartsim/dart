@@ -73,12 +73,16 @@ jobs:
             echo "available=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Skip if KVM unavailable
+      - name: Fail if KVM unavailable
         if: steps.kvm.outputs.available != 'true'
         run: |
-          echo "::warning::Skipping FreeBSD tests - KVM not available on this runner"
+          echo "::error::FreeBSD tests require KVM - not available on this runner"
           echo "FreeBSD VM requires KVM acceleration for reasonable performance."
           echo "Self-hosted runners need KVM device access configured."
+          echo ""
+          echo "This job fails rather than passing without running tests."
+          echo "Use a self-hosted runner with KVM support or skip this workflow."
+          exit 1
 
       - name: Run FreeBSD repro tests
         if: steps.kvm.outputs.available == 'true'

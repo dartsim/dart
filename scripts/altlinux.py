@@ -79,13 +79,16 @@ def container_running(container):
     return container in (result.stdout or "").splitlines()
 
 
-def ensure_started(args, _state={"started": False}):
-    if _state["started"]:
+_ensure_started_state = {"started": False}
+
+
+def ensure_started(args):
+    if _ensure_started_state["started"]:
         if not container_running(args.container):
             start_container(args)
         return
     start_container(args)
-    _state["started"] = True
+    _ensure_started_state["started"] = True
 
 
 def start_container(args):
