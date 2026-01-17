@@ -105,7 +105,7 @@ int main() {
 
 ## Documentation
 
-**User Documentation**: [English](https://dart.readthedocs.io/) | [한국어](https://dart-ko.readthedocs.io/) | [DeepWiki Overview](https://deepwiki.com/dartsim/dart)
+**User Documentation**: [English](https://dart.readthedocs.io/) | [한국어](https://dart-ko.readthedocs.io/) | [DeepWiki Overview](https://deepwiki.com/dartsim/dart) | [NotebookLM](https://notebooklm.google.com/notebook/c0cfc8ce-17ae-415a-a615-44c4342f0da6)
 
 ### Developer Resources
 
