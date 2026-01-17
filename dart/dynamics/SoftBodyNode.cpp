@@ -41,6 +41,8 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/math/Helpers.hpp"
 
+#include <fmt/format.h>
+
 #include <map>
 #include <string>
 #include <vector>
@@ -330,17 +332,18 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
     if (softShape)
       softShape->_buildMesh();
   } else {
+    std::string shapeNodeList;
+    for (std::size_t i = 0; i < getNumShapeNodes(); ++i) {
+      shapeNodeList += fmt::format("- {}) {}\n", i, getShapeNode(i)->getName());
+    }
     DART_WARN(
         "The ShapeNode containing the SoftMeshShape for the SoftBodyNode named "
         "[{}] ({}) has been removed. The soft body features for this "
-        "SoftBodyNode cannot be used unless you recreate the SoftMeshShape.",
+        "SoftBodyNode cannot be used unless you recreate the SoftMeshShape.\n"
+        "ShapeNodes:\n{}",
         getName(),
-        this);
-
-    std::cout << "ShapeNodes: " << std::endl;
-    for (std::size_t i = 0; i < getNumShapeNodes(); ++i) {
-      std::cout << "- " << i << ") " << getShapeNode(i)->getName() << std::endl;
-    }
+        fmt::ptr(this),
+        shapeNodeList);
   }
 
   incrementVersion();

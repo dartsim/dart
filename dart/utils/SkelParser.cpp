@@ -545,8 +545,7 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   try {
     openXMLFile(dartFile, uri, retriever);
   } catch (std::exception const& e) {
-    std::cout << "LoadFile [" << uri.toString() << "] Fails: " << e.what()
-              << std::endl;
+    DART_ERROR("LoadFile [{}] Fails: {}", uri.toString(), e.what());
     return nullptr;
   }
 

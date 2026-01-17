@@ -35,7 +35,7 @@
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 
-#include <iostream>
+#include <fmt/format.h>
 
 #include <cassert>
 
@@ -70,15 +70,17 @@ void VersionCounter::setVersionDependentObject(VersionCounter* dependent)
   VersionCounter* next = dependent;
   do {
     if (next == this) {
-      DART_ERROR(
-          "Attempting to create a circular version dependency with the "
-          "following loop:");
+      std::string loopDescription;
       next = dependent;
       while (next != this) {
-        std::cerr << " -- " << next << "\n";
+        loopDescription += fmt::format(" -- {}\n", fmt::ptr(next));
         next = next->mDependent;
       }
-      std::cerr << " -- " << this << "\n";
+      loopDescription += fmt::format(" -- {}\n", fmt::ptr(this));
+      DART_ERROR(
+          "Attempting to create a circular version dependency with the "
+          "following loop:\n{}",
+          loopDescription);
       DART_ASSERT(false);
       return;
     }

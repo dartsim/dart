@@ -33,6 +33,8 @@
 #ifndef DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_
 #define DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_
 
+#include "dart/common/Macros.hpp"
+
 #include <cmath>
 
 /* some macros */
@@ -288,7 +290,7 @@ inline int tri_tri_intersect(
     DART_SET(res[0], U2);
     edge_tri_intersect(U0, U1, du0, du1, res[1]);
   } else {
-    std::cerr << "contact error" << std::endl;
+    DART_ASSERT(false && "contact error: unexpected geometry configuration");
   }
 
   if (dv0dv1 > 0) {
@@ -310,7 +312,7 @@ inline int tri_tri_intersect(
     DART_SET(res[2], V2);
     edge_tri_intersect(V0, V1, dv0, dv1, res[3]);
   } else {
-    std::cerr << "contact error" << std::endl;
+    DART_ASSERT(false && "contact error: unexpected geometry configuration");
   }
 
   for (int i = 3; i > 0; i--)
