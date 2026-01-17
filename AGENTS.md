@@ -54,7 +54,7 @@ Use `/dart-*` commands for consistent, context-aware workflows:
 | `/dart-review-pr`     | Review or address PR feedback       |
 | `/dart-docs-update`   | Update documentation                |
 
-Commands are defined in `.claude/commands/` (works with Claude Code, and similar tools).
+Commands are defined in `.claude/commands/` (synced to `.opencode/command/`).
 
 ## Skills (On-Demand Knowledge)
 
@@ -66,7 +66,7 @@ Skills provide domain-specific knowledge loaded when needed:
 | `dart-test`       | Writing tests, debugging failures              |
 | `dart-contribute` | PR workflow, code review, dual-PR for bugfixes |
 
-Skills are in `.claude/skills/` (works with both Claude Code and OpenCode).
+Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 
 ## Key Rules
 
@@ -90,8 +90,8 @@ Skills are in `.claude/skills/` (works with both Claude Code and OpenCode).
 | --------------- | -------------------------- | -------------------- | ----------------- |
 | **Claude Code** | `CLAUDE.md` -> `AGENTS.md` | `.claude/commands/`  | `.claude/skills/` |
 | **OpenCode**    | `AGENTS.md`                | `.opencode/command/` | `.claude/skills/` |
+| **Codex**       | `AGENTS.md`                | `~/.codex/prompts/`  | `.codex/skills/`  |
 | **Gemini CLI**  | `GEMINI.md` -> `AGENTS.md` | Read manually        | Read manually     |
-| **Codex**       | `AGENTS.md`                | Read manually        | Read manually     |
 
 ## Prompt Templates (Reference)
 
