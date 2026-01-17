@@ -41,7 +41,6 @@ jobs:
     name: FreeBSD repro (VM)
     runs-on: [self-hosted, dartsim]
     timeout-minutes: 120
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v6
