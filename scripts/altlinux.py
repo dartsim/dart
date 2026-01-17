@@ -157,10 +157,32 @@ def sync_repo(args):
     excludes = " ".join(f"--exclude {shlex.quote(item)}" for item in EXCLUDES)
     work_dir = shlex.quote(args.work_dir)
     src_dir = shlex.quote(args.source_dir)
+
+    # Diagnostic: verify source mount is accessible
+    diag_command = (
+        f"echo '=== Source mount diagnostics ===' && "
+        f"echo 'Checking {src_dir}:' && "
+        f"ls -la {src_dir}/ 2>&1 | head -20 && "
+        f"echo 'CMakeLists.txt check:' && "
+        f"ls -la {src_dir}/CMakeLists.txt 2>&1 || echo 'CMakeLists.txt not found in source' && "
+        f"echo '================================'"
+    )
+    exec_in_container(args, diag_command)
+
     command = (
-        f"mkdir -p {work_dir} && rsync -az --delete {excludes} {src_dir}/ {work_dir}/"
+        f"mkdir -p {work_dir} && rsync -av --delete {excludes} {src_dir}/ {work_dir}/"
     )
     exec_in_container(args, command)
+
+    # Verify sync completed
+    verify_command = (
+        f"echo '=== Sync verification ===' && "
+        f"ls -la {work_dir}/ | head -20 && "
+        f"echo 'CMakeLists.txt check:' && "
+        f"ls -la {work_dir}/CMakeLists.txt 2>&1 || echo 'CMakeLists.txt not found after sync' && "
+        f"echo '========================='"
+    )
+    exec_in_container(args, verify_command)
 
 
 def test_container(args):

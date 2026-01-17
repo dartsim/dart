@@ -51,6 +51,33 @@ jobs:
           cache: true
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          # Verify KVM is available
+          echo "=== KVM Diagnostics ==="
+          echo "CPU virtualization support:"
+          egrep -c '(vmx|svm)' /proc/cpuinfo || echo "No VMX/SVM support found"
+          echo "KVM device:"
+          ls -la /dev/kvm 2>/dev/null || echo "/dev/kvm does not exist"
+          echo "KVM modules:"
+          lsmod | grep kvm || echo "No KVM modules loaded"
+          echo "KVM access test:"
+          if [ -e /dev/kvm ]; then
+            if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
+              echo "KVM is accessible"
+            else
+              echo "KVM exists but not accessible, trying to fix permissions..."
+              sudo chmod 666 /dev/kvm
+              ls -la /dev/kvm
+            fi
+          else
+            echo "KVM not available on this runner"
+          fi
+          echo "======================="
+
       - name: Run FreeBSD repro tests
         env:
           FREEBSD_VM_CPUS: "2"
@@ -60,7 +87,17 @@ jobs:
           # Skip tests that require SDF support or crash in QEMU nested virtualization.
           # See PR #2419 for details on each exclusion.
           FREEBSD_VM_TEST_EXCLUDE_REGEX: "ForwardKinematics|AtlasIK|INTEGRATION_io_Read|INTEGRATION_io_UrdfParser|INTEGRATION_io_UrdfMaterialParsing|INTEGRATION_io_IkFast|INTEGRATION_simulation_MomentumConservation|INTEGRATION_simulation_MimicConstraint|UNIT_constraint_BalanceConstraint|test_IoRead"
-        run: pixi run freebsd-test
+        run: |
+          pixi run freebsd-test &
+          TEST_PID=$!
+          # Wait for Docker container to start
+          sleep 10
+          # Show Docker container logs to verify QEMU startup and KVM detection
+          echo "=== Docker Container Logs (QEMU Startup) ==="
+          docker logs dart-freebsd-vm 2>&1 | head -50 || true
+          echo "=============================================="
+          # Wait for the test to complete
+          wait $TEST_PID
 
       - name: Show Docker container logs
         if: always()
