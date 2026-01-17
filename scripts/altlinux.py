@@ -97,55 +97,13 @@ def ensure_started(args):
 
 
 def start_container(args):
-    # Always remove existing container to ensure fresh mount with current checkout.
+    # Always force-remove any existing container to ensure fresh mount.
     # Self-hosted runners may persist containers between jobs with stale mounts.
-    print(
-        f"[start_container] Checking for existing container: {args.container}",
-        flush=True,
-    )
-
-    # Debug: Show raw docker ps output
-    result = run(
-        [
-            "docker",
-            "ps",
-            "-a",
-            "--filter",
-            f"name={args.container}",
-            "--format",
-            "{{.Names}}",
-        ],
-        check=False,
-        capture=True,
-    )
-    print(f"[start_container] docker ps -a output: '{result.stdout}'", flush=True)
-
-    exists = container_exists(args.container)
-    print(f"[start_container] container_exists returned: {exists}", flush=True)
-
-    if exists:
-        print(
-            f"[start_container] Removing existing container '{args.container}'...",
-            flush=True,
-        )
-        run(["docker", "rm", "-f", args.container])
-    else:
-        print(
-            f"[start_container] No existing container found, proceeding...", flush=True
-        )
-
+    # Use --force to avoid errors if container doesn't exist.
+    run(["docker", "rm", "-f", args.container], check=False)
     run(["docker", "volume", "create", args.volume], check=False)
 
     host_repo_path = repo_root()
-    print(f"[start_container] Script __file__: {Path(__file__).resolve()}", flush=True)
-    print(f"[start_container] Host repo path: {host_repo_path}", flush=True)
-    print(
-        f"[start_container] CMakeLists.txt exists: {(host_repo_path / 'CMakeLists.txt').exists()}",
-        flush=True,
-    )
-    print(f"[start_container] Host repo contents:", flush=True)
-    run(["ls", "-la", str(host_repo_path)])
-
     cmd = [
         "docker",
         "run",
@@ -161,11 +119,7 @@ def start_container(args):
         "-lc",
         "sleep infinity",
     ]
-    print(f"[start_container] Docker run command: {' '.join(cmd)}", flush=True)
     run(cmd)
-
-    print("[start_container] Verifying container source mount...", flush=True)
-    run(["docker", "exec", args.container, "ls", "-la", args.source_dir])
 
 
 def stop_container(args):
@@ -212,14 +166,10 @@ def sync_repo(args):
     excludes = " ".join(f"--exclude {shlex.quote(item)}" for item in EXCLUDES)
     work_dir = shlex.quote(args.work_dir)
     src_dir = shlex.quote(args.source_dir)
-    print(f"[sync_repo] Syncing from {src_dir} to {work_dir}...", flush=True)
-    print(f"[sync_repo] Checking container source before rsync:", flush=True)
-    exec_in_container(args, f"ls -la {src_dir}/")
     command = (
-        f"mkdir -p {work_dir} && rsync -av --delete {excludes} {src_dir}/ {work_dir}/"
+        f"mkdir -p {work_dir} && rsync -az --delete {excludes} {src_dir}/ {work_dir}/"
     )
     exec_in_container(args, command)
-    print("[sync_repo] Sync complete.", flush=True)
 
 
 def test_container(args):
