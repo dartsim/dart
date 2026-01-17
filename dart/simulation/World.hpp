@@ -185,7 +185,13 @@ public:
   /// Returns whether this World contains a Skeleton named @c skeletonName.
   bool hasSkeleton(std::string_view skeletonName) const;
 
-  /// Get the dof index for the indexed skeleton
+  /// Get the cumulative DOF index for the indexed skeleton.
+  ///
+  /// \param[in] _index Index in range [0, getNumSkeletons()]. Index 0 returns
+  ///   the start DOF of the first skeleton (always 0). Index getNumSkeletons()
+  ///   returns the total number of DOFs across all skeletons.
+  /// \return The cumulative DOF index, or -1 if \p _index is out of range.
+  ///   An error is logged and DART_ASSERT is triggered for invalid indices.
   int getIndex(int _index) const;
 
   /// Get the indexed Entity
