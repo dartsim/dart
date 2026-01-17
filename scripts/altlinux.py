@@ -38,7 +38,6 @@ DEFAULT_PACKAGES = [
     "make",
     "ninja-build",
     "pkg-config",
-    "rsync",
     "urdfdom-headers",
 ]
 EXCLUDES = [".git", "build", ".pixi", ".deps", ".build"]
@@ -90,16 +89,14 @@ def ensure_started(args, _state={"started": False}):
 
 
 def start_container(args):
-    # Always force-remove any existing container to ensure fresh mount.
-    # Self-hosted runners may persist containers between jobs with stale mounts.
-    # Use --force to avoid errors if container doesn't exist.
+    # Always force-remove any existing container to ensure fresh start.
+    # Self-hosted runners may persist containers between jobs.
     run(["docker", "rm", "-f", args.container], check=False)
     run(["docker", "volume", "create", args.volume], check=False)
 
-    host_repo_path = repo_root()
-    print(f"=== Host repo path: {host_repo_path}")
-    print(f"=== Host repo exists: {host_repo_path.exists()}")
-    print(f"=== CMakeLists.txt exists: {(host_repo_path / 'CMakeLists.txt').exists()}")
+    # Start container without source bind mount - we'll use docker cp instead.
+    # This avoids Docker-in-Docker path resolution issues on self-hosted runners
+    # where the script runs inside a container but Docker daemon is on the host.
     cmd = [
         "docker",
         "run",
@@ -108,14 +105,11 @@ def start_container(args):
         args.container,
         "-v",
         f"{args.volume}:/work",
-        "-v",
-        f"{host_repo_path}:{args.source_dir}:ro",
         args.image,
         "/bin/sh",
         "-lc",
         "sleep infinity",
     ]
-    print(f"=== Docker command: {' '.join(str(c) for c in cmd)}")
     run(cmd)
 
 
@@ -159,25 +153,30 @@ def bootstrap_container(args):
 
 
 def sync_repo(args):
+    """Copy repo to container using tar pipe (avoids DinD bind mount issues)."""
     ensure_started(args)
-    excludes = " ".join(f"--exclude {shlex.quote(item)}" for item in EXCLUDES)
-    work_dir = shlex.quote(args.work_dir)
-    src_dir = shlex.quote(args.source_dir)
-    # Debug: show what's in source and work directories before sync
-    debug_command = (
-        f"echo '=== Source dir contents ({args.source_dir}):' && "
-        f"ls -la {src_dir} 2>&1 | head -20 || echo 'Source dir empty or not accessible' && "
-        f"echo '=== Checking CMakeLists.txt:' && "
-        f"ls -la {src_dir}/CMakeLists.txt 2>&1 || echo 'CMakeLists.txt not found in source'"
+    host_repo = repo_root()
+    work_dir = args.work_dir
+
+    exec_in_container(
+        args, f"rm -rf {shlex.quote(work_dir)} && mkdir -p {shlex.quote(work_dir)}"
     )
-    exec_in_container(args, debug_command)
-    # Clear stale work directory before syncing (self-hosted runners may have old data)
-    command = (
-        f"rm -rf {work_dir} && mkdir -p {work_dir} && "
-        f"rsync -az --delete {excludes} {src_dir}/ {work_dir}/ && "
-        f"echo '=== Work dir after sync:' && ls -la {work_dir} | head -10"
-    )
-    exec_in_container(args, command)
+
+    exclude_args = []
+    for item in EXCLUDES:
+        exclude_args.extend(["--exclude", item])
+
+    tar_cmd = ["tar", "-c", "-C", str(host_repo)] + exclude_args + ["."]
+    docker_cmd = ["docker", "exec", "-i", args.container, "tar", "-x", "-C", work_dir]
+
+    tar_proc = subprocess.Popen(tar_cmd, stdout=subprocess.PIPE)
+    docker_proc = subprocess.Popen(docker_cmd, stdin=tar_proc.stdout)
+    if tar_proc.stdout:
+        tar_proc.stdout.close()
+    docker_proc.communicate()
+
+    if docker_proc.returncode != 0:
+        raise subprocess.CalledProcessError(docker_proc.returncode, docker_cmd)
 
 
 def test_container(args):
