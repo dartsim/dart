@@ -9,7 +9,7 @@ This document tracks the progress of migrating DART's error handling to the mode
 | Phase                  | Status      | Progress |
 | ---------------------- | ----------- | -------- |
 | Phase 1: Foundation    | Complete    | 100%     |
-| Phase 2: API Boundary  | Not Started | 0%       |
+| Phase 2: API Boundary  | In Progress | 75%      |
 | Phase 3: Core Modules  | Not Started | 0%       |
 | Phase 4: I/O & Parsers | Not Started | 0%       |
 | Phase 5: Documentation | Not Started | 0%       |
@@ -18,47 +18,56 @@ This document tracks the progress of migrating DART's error handling to the mode
 
 ### Deliverables
 
-| Item                                | Status | Notes                                    |
-| ----------------------------------- | ------ | ---------------------------------------- |
-| `dart/common/Exception.hpp`         | Done   | Exception hierarchy                      |
-| `dart/common/Exception.cpp`         | Done   | Error handler impl                       |
-| `dart/common/Result.hpp`            | Done   | Result<T,E> type                         |
-| `docs/onboarding/error-handling.md` | Done   | User guidelines                          |
-| Unit tests                          | TODO   | Need test_Exception.cpp, test_Result.cpp |
-| CMakeLists.txt update               | TODO   | Add new files to build                   |
+| Item                                | Status | Notes                              |
+| ----------------------------------- | ------ | ---------------------------------- |
+| `dart/common/Exception.hpp`         | Done   | Exception hierarchy                |
+| `dart/common/Exception.cpp`         | Done   | Error handler impl                 |
+| `dart/common/Result.hpp`            | Done   | Result<T,E> type                   |
+| `docs/onboarding/error-handling.md` | Done   | User guidelines                    |
+| Unit tests                          | Done   | test_Exception.cpp, test_Result.cpp |
+| CMakeLists.txt update               | Done   | Added to tests/unit/CMakeLists.txt |
 
 ## Phase 2: API Boundary Hardening
 
 ### Console Output Removal
 
-| File                                        | std::cout/cerr Count | Status                 |
-| ------------------------------------------- | -------------------- | ---------------------- |
-| `dart/constraint/ConstraintSolver.cpp`      | 35                   | Pending                |
-| `dart/constraint/SoftContactConstraint.cpp` | 21                   | Pending (commented)    |
-| `dart/dynamics/EulerJoint.cpp`              | 6                    | Pending                |
-| `dart/utils/urdf/urdf_world_parser.cpp`     | 5                    | Pending                |
-| `dart/constraint/JointLimitConstraint.cpp`  | 5                    | Pending                |
-| `dart/common/Stopwatch.cpp`                 | 4                    | Keep (print functions) |
-| `dart/dynamics/SoftBodyNode.cpp`            | 2                    | Pending                |
-| `dart/common/VersionCounter.cpp`            | 2                    | Pending                |
+| File                                        | std::cout/cerr Count | Status                   |
+| ------------------------------------------- | -------------------- | ------------------------ |
+| `dart/constraint/ConstraintSolver.cpp`      | 35                   | Pending (debug output)   |
+| `dart/constraint/SoftContactConstraint.cpp` | 21                   | OK (all commented out)   |
+| `dart/dynamics/EulerJoint.cpp`              | 6                    | OK (wrapped in NDEBUG)   |
+| `dart/utils/urdf/urdf_world_parser.cpp`     | 5                    | Pending (uses debug flag)|
+| `dart/constraint/JointLimitConstraint.cpp`  | 5                    | OK (wrapped in NDEBUG)   |
+| `dart/common/Stopwatch.cpp`                 | 4                    | Keep (print functions)   |
+| `dart/dynamics/SoftBodyNode.cpp`            | 2                    | Done → DART_WARN         |
+| `dart/common/VersionCounter.cpp`            | 2                    | Done → DART_ERROR        |
+| `dart/utils/SkelParser.cpp`                 | 1                    | Done → DART_ERROR        |
+| `dart/collision/fcl/tri_tri_intersection_test.hpp` | 2           | Done → DART_ASSERT       |
 
 ### [[nodiscard]] Additions
 
-| Module                  | Function Count | Status  |
-| ----------------------- | -------------- | ------- |
-| `dynamics/Skeleton.hpp` | ~15            | Pending |
-| `dynamics/BodyNode.hpp` | ~10            | Pending |
-| `simulation/World.hpp`  | ~5             | Pending |
-| Parser entry points     | ~10            | Pending |
+| Module                           | Function Count | Status |
+| -------------------------------- | -------------- | ------ |
+| `dynamics/Skeleton.hpp`          | 2              | Done   |
+| `dynamics/InverseKinematics.hpp` | 1              | Done   |
+| `dynamics/Group.hpp`             | 3              | Done   |
+| `dynamics/Chain.hpp`             | 3              | Done   |
+| `dynamics/Branch.hpp`            | 1              | Done   |
+| `dynamics/Linkage.hpp`           | 1              | Done   |
+| `simulation/World.hpp`           | 3              | Done   |
+| Parser entry points              | ~10            | Pending|
 
 ### Exception Additions
 
-| API                                    | Change                     | Status  |
-| -------------------------------------- | -------------------------- | ------- |
-| `World::addSkeleton(nullptr)`          | Throw NullPointerException | Pending |
-| `Skeleton::getBodyNode(invalid_index)` | Throw OutOfRangeException  | Pending |
-| `Skeleton::getJoint(invalid_index)`    | Throw OutOfRangeException  | Pending |
-| `Skeleton::getDof(invalid_index)`      | Throw OutOfRangeException  | Pending |
+| API                                    | Change                     | Status                        |
+| -------------------------------------- | -------------------------- | ----------------------------- |
+| `World::addSkeleton(nullptr)`          | Throw NullPointerException | Deferred (breaking change)    |
+| `Skeleton::getBodyNode(invalid_index)` | Throw OutOfRangeException  | Deferred (breaking change)    |
+| `Skeleton::getJoint(invalid_index)`    | Throw OutOfRangeException  | Deferred (breaking change)    |
+| `Skeleton::getDof(invalid_index)`      | Throw OutOfRangeException  | Deferred (breaking change)    |
+
+**Note**: Exception additions are deferred as they are breaking changes that require
+discussion and deprecation warnings before implementation.
 
 ## Phase 3: Core Module Migration
 
@@ -129,8 +138,8 @@ This document tracks the progress of migrating DART's error handling to the mode
 
 | Test Category                        | Status  |
 | ------------------------------------ | ------- |
-| Exception unit tests                 | TODO    |
-| Result unit tests                    | TODO    |
+| Exception unit tests                 | Done    |
+| Result unit tests                    | Done    |
 | Integration tests for new exceptions | Pending |
 | Exception-free mode tests            | Pending |
 
