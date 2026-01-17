@@ -38,8 +38,9 @@
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
 
-#include <cmath>
 #include <utility>
+
+#include <cmath>
 
 namespace dart {
 namespace constraint {

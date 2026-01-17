@@ -43,8 +43,9 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/external/odelcpsolver/lcp.h"
 
-#include <cmath>
 #include <iostream>
+
+#include <cmath>
 
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0

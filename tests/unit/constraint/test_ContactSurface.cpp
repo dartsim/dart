@@ -5,11 +5,6 @@
  * This file is provided under the BSD-style License.
  */
 
-#include <gtest/gtest.h>
-
-#include <limits>
-#include <cmath>
-
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
@@ -19,6 +14,12 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+
+#include <gtest/gtest.h>
+
+#include <limits>
+
+#include <cmath>
 
 using namespace dart;
 using namespace dart::dynamics;
@@ -91,7 +92,7 @@ CollisionSetup createCollidingBoxes(
   return setup;
 }
 
-}  // namespace
+} // namespace
 
 //==============================================================================
 // Friction Coefficient Validation Tests
