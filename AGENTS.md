@@ -25,20 +25,21 @@ If this fails, see `docs/onboarding/ci-cd.md` for troubleshooting.
 
 ## Context Loading (IMPORTANT)
 
-**Agents MUST load relevant docs before starting work.** Don't assume context is available.
+**Agents MUST load relevant docs before starting work.** Use `@file` syntax to auto-load context:
 
-| Task Type       | Required Reading                                               |
-| --------------- | -------------------------------------------------------------- |
-| **Any task**    | This file (`AGENTS.md`)                                        |
-| Building        | `docs/onboarding/building.md`                                  |
-| Testing         | `docs/onboarding/testing.md`                                   |
-| Contributing    | `docs/onboarding/contributing.md`, `CONTRIBUTING.md`           |
-| Code style      | `docs/onboarding/code-style.md`                                |
-| Architecture    | `docs/onboarding/architecture.md`, `docs/onboarding/README.md` |
-| CI/CD issues    | `docs/onboarding/ci-cd.md`                                     |
-| Python bindings | `docs/onboarding/python-bindings.md`                           |
-| Model loading   | `docs/onboarding/io-parsing.md`                                |
-| Build system    | `docs/onboarding/build-system.md`                              |
+| Task Type       | Load These Files                                            |
+| --------------- | ----------------------------------------------------------- |
+| **Any task**    | This file (auto-loaded)                                     |
+| Building        | @docs/onboarding/building.md                                |
+| Testing         | @docs/onboarding/testing.md                                 |
+| Contributing    | @docs/onboarding/contributing.md @CONTRIBUTING.md           |
+| Code style      | @docs/onboarding/code-style.md                              |
+| Architecture    | @docs/onboarding/architecture.md @docs/onboarding/README.md |
+| CI/CD issues    | @docs/onboarding/ci-cd.md                                   |
+| Python bindings | @docs/onboarding/python-bindings.md                         |
+| Model loading   | @docs/onboarding/io-parsing.md                              |
+| Build system    | @docs/onboarding/build-system.md                            |
+| AI tools        | @docs/onboarding/ai-tools.md                                |
 
 ## Slash Commands
 

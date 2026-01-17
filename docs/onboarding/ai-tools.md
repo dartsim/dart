@@ -47,7 +47,37 @@ This document tracks AI coding assistant compatibility with DART's documentation
 | **Skill naming**              | `dart-` prefix (e.g., `dart-build`)                            |
 | **No tool-specific language** | Use generic terms; avoid "Claude will..." or "Codex should..." |
 | **Placeholders**              | Use `$ARGUMENTS`, `$1`, `$2` for command args                  |
-| **File references**           | Use `@file` syntax in commands                                 |
+| **File references**           | Use `@file` syntax for auto-loading context                    |
+
+### @file Import Syntax
+
+The `@path/to/file` syntax tells agents to automatically load referenced files into context.
+
+**Usage in AGENTS.md**:
+
+```markdown
+| Task Type | Load These Files             |
+| --------- | ---------------------------- |
+| Building  | @docs/onboarding/building.md |
+```
+
+**Usage in commands/skills**:
+
+```markdown
+@AGENTS.md
+@docs/onboarding/contributing.md
+
+## Workflow
+
+...
+```
+
+**Notes**:
+
+- Paths are relative to repository root
+- Imports are NOT evaluated inside code blocks (use backticks to escape)
+- Recursive imports are supported (imported files can import other files)
+- Use `@~/.claude/file.md` for home directory references
 
 ### File Ownership
 
