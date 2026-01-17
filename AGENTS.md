@@ -2,10 +2,21 @@
 
 This file is a pointer board for agents working in this repository. Keep it concise and expand other documents instead.
 
-## Quick Validation
+## Project Overview
+
+**WHAT**: C++20 physics engine for robotics simulation with Python bindings (dartpy)
+**WHY**: Research-grade dynamics for robotics, animation, and machine learning
+**HOW**: Build/test with `pixi run` tasks; format with `pixi run lint` before commits
+
+## Quick Commands
 
 ```bash
-pixi run test-all   # Lint + build + all tests (fails fast)
+pixi run test-all       # Lint + build + all tests (fails fast)
+pixi run lint           # Format code/docs (auto-fixes)
+pixi run build          # Build C++ and Python
+pixi run test-unit      # Unit tests only (faster)
+pixi run test-py        # Python tests only
+pixi run check-lint     # Check formatting without fixing
 ```
 
 Success: "All tests passed!"

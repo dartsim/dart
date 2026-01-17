@@ -226,6 +226,33 @@ When verifying compatibility:
 
 ---
 
+## Personal Preferences (CLAUDE.local.md)
+
+Contributors can create personal instruction files that are gitignored:
+
+| File                  | Scope        | Purpose                               |
+| --------------------- | ------------ | ------------------------------------- |
+| `CLAUDE.local.md`     | Project root | Project-specific personal preferences |
+| `~/.claude/CLAUDE.md` | All projects | Global personal preferences           |
+
+**Example `CLAUDE.local.md`**:
+
+```markdown
+# Personal Preferences
+
+- I prefer verbose explanations
+- Always show full file paths in responses
+- Use tabs, not spaces (personal editor setting)
+```
+
+**Notes**:
+
+- These files are NOT checked into git
+- Use for IDE preferences, debug verbosity, personal aliases
+- Project settings in `AGENTS.md` take precedence for shared conventions
+
+---
+
 ## Known Limitations
 
 - **No cross-tool command sharing**: Claude Code and OpenCode read different directories
