@@ -200,7 +200,7 @@ public:
   };
 
   /// Create a Linkage with the given Criteria
-  static LinkagePtr create(
+  [[nodiscard]] static LinkagePtr create(
       const Criteria& _criteria, const std::string& _name = "Linkage");
 
   /// Creates and returns a clone of this Linkage.

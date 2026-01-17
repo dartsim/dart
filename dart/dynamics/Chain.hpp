@@ -89,17 +89,17 @@ public:
   };
 
   /// Create a Chain given some Chain::Criteria
-  static ChainPtr create(
+  [[nodiscard]] static ChainPtr create(
       const Chain::Criteria& _criteria, const std::string& _name = "Chain");
 
   /// Create a Chain given a start and a target BodyNode. Note that whichever
   /// BodyNode is upstream of the other will be excluded from the Chain.
-  static ChainPtr create(
+  [[nodiscard]] static ChainPtr create(
       BodyNode* _start, BodyNode* _target, const std::string& _name = "Chain");
 
   /// Create a Chain given a start and a target BodyNode. In this version, both
   /// BodyNodes will be included in the Chain that gets created.
-  static ChainPtr create(
+  [[nodiscard]] static ChainPtr create(
       BodyNode* _start,
       BodyNode* _target,
       IncludeUpstreamParentJointTag,

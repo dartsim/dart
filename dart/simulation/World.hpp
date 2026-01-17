@@ -104,17 +104,18 @@ public:
 
   /// Creates World as shared_ptr
   template <typename... Args>
-  static WorldPtr create(Args&&... args);
+  [[nodiscard]] static WorldPtr create(Args&&... args);
 
   //--------------------------------------------------------------------------
   // Constructor and Destructor
   //--------------------------------------------------------------------------
 
   /// Creates a World
-  static std::shared_ptr<World> create(std::string_view name = "world");
+  [[nodiscard]] static std::shared_ptr<World> create(
+      std::string_view name = "world");
 
   /// Creates a World using a configuration bundle.
-  static std::shared_ptr<World> create(const WorldConfig& config);
+  [[nodiscard]] static std::shared_ptr<World> create(const WorldConfig& config);
 
   /// Constructor
   World(std::string_view name = "world");

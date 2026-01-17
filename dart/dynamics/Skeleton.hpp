@@ -146,10 +146,12 @@ public:
   //----------------------------------------------------------------------------
 
   /// Create a new Skeleton inside of a shared_ptr
-  static SkeletonPtr create(const std::string& _name = "Skeleton");
+  [[nodiscard]] static SkeletonPtr create(
+      const std::string& _name = "Skeleton");
 
   /// Create a new Skeleton inside of a shared_ptr
-  static SkeletonPtr create(const AspectPropertiesData& properties);
+  [[nodiscard]] static SkeletonPtr create(
+      const AspectPropertiesData& properties);
 
   /// Get the shared_ptr that manages this Skeleton
   SkeletonPtr getPtr();

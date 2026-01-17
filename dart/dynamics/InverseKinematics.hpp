@@ -81,7 +81,7 @@ class DART_API InverseKinematics : public common::Subject
 {
 public:
   /// Create an InverseKinematics module for a specified node
-  static InverseKinematicsPtr create(JacobianNode* _node);
+  [[nodiscard]] static InverseKinematicsPtr create(JacobianNode* _node);
 
   /// Copying is not allowed
   InverseKinematics(const InverseKinematics&) = delete;
