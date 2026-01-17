@@ -36,12 +36,14 @@ dart_add_test(
 set(common_unit_sources
   common/test_CAllocator.cpp
   common/test_Composite.cpp
+  common/test_Exception.cpp
   common/test_Factory.cpp
   common/test_FreeListAllocator.cpp
   common/test_Logging.cpp
   common/test_MemoryManager.cpp
   common/test_PoolAllocator.cpp
   common/test_Resource.cpp
+  common/test_Result.cpp
   common/test_StlAllocator.cpp
   common/test_Stopwatch.cpp
   common/test_SubjectObserver.cpp
