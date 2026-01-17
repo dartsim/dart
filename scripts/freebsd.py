@@ -243,7 +243,7 @@ def wait_for_ssh_key(args, timeout=120):
     sys.exit(1)
 
 
-def wait_for_ssh(args, user, timeout=300):
+def wait_for_ssh(args, user, timeout=600):
     vm_dir = vm_dir_path(args.vm_dir)
     key_path = ssh_key_path(vm_dir)
     deadline = time.time() + timeout
