@@ -32,7 +32,24 @@ pixi run test-all
 
 # Push and create PR
 git push -u origin HEAD
-gh pr create --draft
+gh pr create --draft --milestone "DART 7.0"
+```
+
+## Milestones (Required)
+
+Always set a milestone when creating PRs:
+
+| Target Branch  | Milestone                     |
+| -------------- | ----------------------------- |
+| `main`         | `DART 7.0` (or next major)    |
+| `release-6.16` | `DART 6.16.x` (current patch) |
+
+```bash
+# Set milestone on existing PR
+gh pr edit <PR#> --milestone "DART 7.0"
+
+# List available milestones
+gh api repos/dartsim/dart/milestones --jq '.[] | .title'
 ```
 
 ## CRITICAL: Bug Fix Dual-PR
@@ -47,6 +64,28 @@ Steps:
 1. Fix on `main` first
 2. Cherry-pick to `release-6.16`
 3. Create separate PRs for each
+
+## CHANGELOG (After PR Created)
+
+After creating a PR, check if CHANGELOG.md needs updating:
+
+| Change Type                      | Update CHANGELOG?                    |
+| -------------------------------- | ------------------------------------ |
+| Bug fixes                        | ✅ Yes                               |
+| New features                     | ✅ Yes                               |
+| Breaking changes                 | ✅ Yes (in Breaking Changes section) |
+| Documentation improvements       | ✅ Yes (in Tooling and Docs)         |
+| CI/tooling changes               | ✅ Yes (in Tooling and Docs)         |
+| Refactoring (no behavior change) | ⚠️ Maybe (if significant)            |
+| Dependency bumps                 | ⚠️ Maybe (if user-facing)            |
+| Typo fixes                       | ❌ No                                |
+
+Format: `- Description. ([#PR](https://github.com/dartsim/dart/pull/PR))`
+
+```bash
+# Example entry in CHANGELOG.md under appropriate section:
+- Added AI-native documentation with AGENTS.md and module-specific guides. ([#2446](https://github.com/dartsim/dart/pull/2446))
+```
 
 ## Code Review
 
