@@ -38,6 +38,7 @@
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <dart/common/ResourceRetriever.hpp>
+#include <dart/common/Result.hpp>
 #include <dart/common/Uri.hpp>
 
 #include <dart/io/Export.hpp>
@@ -118,6 +119,15 @@ readWorld(const common::Uri& uri, const ReadOptions& options = ReadOptions());
 
 /// Read Skeleton from a model file.
 dynamics::SkeletonPtr DART_IO_API readSkeleton(
+    const common::Uri& uri, const ReadOptions& options = ReadOptions());
+
+/// Try to read World from a model file, returning Result instead of nullptr.
+common::Result<simulation::WorldPtr, common::Error> DART_IO_API tryReadWorld(
+    const common::Uri& uri, const ReadOptions& options = ReadOptions());
+
+/// Try to read Skeleton from a model file, returning Result instead of nullptr.
+common::Result<dynamics::SkeletonPtr, common::Error> DART_IO_API
+tryReadSkeleton(
     const common::Uri& uri, const ReadOptions& options = ReadOptions());
 
 } // namespace io
