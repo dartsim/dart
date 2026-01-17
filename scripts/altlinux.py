@@ -99,12 +99,40 @@ def ensure_started(args):
 def start_container(args):
     # Always remove existing container to ensure fresh mount with current checkout.
     # Self-hosted runners may persist containers between jobs with stale mounts.
-    if container_exists(args.container):
+    print(
+        f"[start_container] Checking for existing container: {args.container}",
+        flush=True,
+    )
+
+    # Debug: Show raw docker ps output
+    result = run(
+        [
+            "docker",
+            "ps",
+            "-a",
+            "--filter",
+            f"name={args.container}",
+            "--format",
+            "{{.Names}}",
+        ],
+        check=False,
+        capture=True,
+    )
+    print(f"[start_container] docker ps -a output: '{result.stdout}'", flush=True)
+
+    exists = container_exists(args.container)
+    print(f"[start_container] container_exists returned: {exists}", flush=True)
+
+    if exists:
         print(
-            f"Removing existing container '{args.container}' to refresh mount...",
+            f"[start_container] Removing existing container '{args.container}'...",
             flush=True,
         )
         run(["docker", "rm", "-f", args.container])
+    else:
+        print(
+            f"[start_container] No existing container found, proceeding...", flush=True
+        )
 
     run(["docker", "volume", "create", args.volume], check=False)
 
