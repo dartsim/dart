@@ -106,8 +106,15 @@ def start_container(args):
     run(["docker", "volume", "create", args.volume], check=False)
 
     host_repo_path = repo_root()
+    print(f"Script __file__: {Path(__file__).resolve()}")
     print(f"Host repo path: {host_repo_path}")
+    print(f"Host repo exists: {host_repo_path.exists()}")
+    print(f"CMakeLists.txt exists: {(host_repo_path / 'CMakeLists.txt').exists()}")
     print(f"Container source mount: {args.source_dir}")
+
+    # Verify host path contents BEFORE docker
+    print("Host repo contents:")
+    run(["ls", "-la", str(host_repo_path)])
 
     cmd = [
         "docker",
@@ -127,8 +134,7 @@ def start_container(args):
     print(f"Docker run command: {' '.join(cmd)}")
     run(cmd)
 
-    # Verify mount contents
-    print("Verifying source mount...")
+    print("Verifying container source mount...")
     run(["docker", "exec", args.container, "ls", "-la", args.source_dir])
 
 
