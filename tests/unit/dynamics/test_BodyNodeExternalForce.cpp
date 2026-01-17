@@ -34,8 +34,9 @@
 
 #include <gtest/gtest.h>
 
-#include <cmath>
 #include <limits>
+
+#include <cmath>
 
 using namespace dart;
 using namespace dart::dynamics;
@@ -91,8 +92,7 @@ TEST(BodyNodeExternalForce, AddExtForceWithInf)
   Eigen::Vector6d originalFext = body->getExternalForceLocal();
 
   // Create a force vector with Inf
-  Eigen::Vector3d infForce(
-      std::numeric_limits<double>::infinity(), 2.0, 3.0);
+  Eigen::Vector3d infForce(std::numeric_limits<double>::infinity(), 2.0, 3.0);
   Eigen::Vector3d offset = Eigen::Vector3d::Zero();
 
   // Apply Inf force - should be ignored
@@ -177,8 +177,7 @@ TEST(BodyNodeExternalForce, AddExtTorqueWithInf)
   Eigen::Vector6d originalFext = body->getExternalForceLocal();
 
   // Create a torque vector with negative infinity
-  Eigen::Vector3d infTorque(
-      -std::numeric_limits<double>::infinity(), 2.0, 3.0);
+  Eigen::Vector3d infTorque(-std::numeric_limits<double>::infinity(), 2.0, 3.0);
 
   // Apply Inf torque - should be ignored
   body->addExtTorque(infTorque, true);
