@@ -413,7 +413,13 @@ TEST(World, GetIndexBoundsCheck)
   EXPECT_EQ(world->getIndex(2), 2);
 
 #ifdef NDEBUG
+  // Release mode: DART_ASSERT doesn't abort, so we can test return values
   EXPECT_EQ(world->getIndex(-1), -1);
   EXPECT_EQ(world->getIndex(100), -1);
+#else
+  // Debug mode: DART_ASSERT(false) aborts, so use death tests to verify
+  // the error handling code path is exercised (improves coverage)
+  EXPECT_DEATH(world->getIndex(-1), "");
+  EXPECT_DEATH(world->getIndex(100), "");
 #endif
 }
