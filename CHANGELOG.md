@@ -12,6 +12,7 @@
   * Fix URDF shape parsing on FreeBSD: [#2379](https://github.com/dartsim/dart/pull/2379)
 
 * Tooling and Docs
+  * Simplify copyright headers to first publication year (REUSE compliance): [#2439](https://github.com/dartsim/dart/pull/2439)
   * Add Alt Linux repro tasks: [#2381](https://github.com/dartsim/dart/pull/2381)
   * Add FreeBSD VM repro patches: [#2374](https://github.com/dartsim/dart/pull/2374)
   * Update pixi lockfile: [#2377](https://github.com/dartsim/dart/pull/2377)
