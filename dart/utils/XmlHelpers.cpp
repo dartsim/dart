@@ -389,13 +389,12 @@ static std::string getChildElementText(
         = parentDescription.empty()
               ? (parentElement->Name() ? parentElement->Name() : "unknown")
               : std::string(parentDescription);
-    DART_ERROR(
+    const auto msg = fmt::format(
         "Child element [{}] not found in parent element [{}]",
         childName,
         parentName);
-    throw std::runtime_error(
-        "Child element [" + childName + "] not found in parent element ["
-        + parentName + "]");
+    DART_ERROR("{}", msg);
+    throw std::runtime_error(msg);
   }
 
   const char* text = childElement->GetText();
@@ -404,13 +403,12 @@ static std::string getChildElementText(
         = parentDescription.empty()
               ? (parentElement->Name() ? parentElement->Name() : "unknown")
               : std::string(parentDescription);
-    DART_ERROR(
+    const auto msg = fmt::format(
         "Child element [{}] in parent [{}] has no text content",
         childName,
         parentName);
-    throw std::runtime_error(
-        "Child element [" + childName + "] in parent [" + parentName
-        + "] has no text content");
+    DART_ERROR("{}", msg);
+    throw std::runtime_error(msg);
   }
 
   return std::string(text);
