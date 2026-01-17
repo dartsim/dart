@@ -80,7 +80,7 @@ protected:
 
 private:
   /// Radius of this Sphere
-  double mRadius;
+  double mRadius{1.0};
 };
 
 } // namespace dynamics
