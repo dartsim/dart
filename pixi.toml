@@ -221,6 +221,13 @@ check-lint-spell = { cmd = "codespell --config .codespellrc" }
 
 check-docs-policy = { cmd = ["python", "scripts/check_docs_policy.py"] }
 
+sync-ai-commands = { cmd = ["python", "scripts/sync_ai_commands.py"] }
+check-ai-commands = { cmd = [
+  "python",
+  "scripts/sync_ai_commands.py",
+  "--check",
+] }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-simulation-experimental",

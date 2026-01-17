@@ -7,12 +7,12 @@ This document tracks AI coding assistant compatibility with DART's documentation
 
 ## For Collaborators: Tool Selection
 
-| Tool            | Best For                                | Limitations                      |
-| --------------- | --------------------------------------- | -------------------------------- |
-| **Claude Code** | Full workflow automation, complex tasks | Requires Anthropic subscription  |
-| **OpenCode**    | Multi-model flexibility, open source    | Commands require separate config |
-| **Gemini CLI**  | Quick queries, large context            | No command/skill support         |
-| **Codex**       | Code generation, OpenAI integration     | No command/skill support         |
+| Tool            | Best For                                | Limitations                     |
+| --------------- | --------------------------------------- | ------------------------------- |
+| **Claude Code** | Full workflow automation, complex tasks | Requires Anthropic subscription |
+| **OpenCode**    | Multi-model flexibility, open source    | Commands require separate sync  |
+| **Codex**       | Full workflow automation, OpenAI native | Requires OpenAI subscription    |
+| **Gemini CLI**  | Quick queries, large context            | No command/skill support        |
 
 ### Quick Start by Tool
 
@@ -20,8 +20,8 @@ This document tracks AI coding assistant compatibility with DART's documentation
 | --------------- | ---------------------------------------------------------------------------- |
 | **Claude Code** | `CLAUDE.md` auto-loaded; use `/dart-*` commands                              |
 | **OpenCode**    | `AGENTS.md` auto-loaded; use `/dart-*` commands; skills in `.claude/skills/` |
+| **Codex**       | `AGENTS.md` auto-loaded; use `$dart-*` skills in `.codex/skills/`            |
 | **Gemini CLI**  | Read `GEMINI.md` or `AGENTS.md`; copy prompts from `docs/prompts/`           |
-| **Codex**       | Read `AGENTS.md`; copy prompts from `docs/prompts/`                          |
 
 ---
 
@@ -31,8 +31,8 @@ This document tracks AI coding assistant compatibility with DART's documentation
 | --------------- | -------------------------- | -------------------- | ----------------- |
 | **Claude Code** | `CLAUDE.md` -> `AGENTS.md` | `.claude/commands/`  | `.claude/skills/` |
 | **OpenCode**    | `AGENTS.md`                | `.opencode/command/` | `.claude/skills/` |
+| **Codex**       | `AGENTS.md`                | `~/.codex/prompts/`  | `.codex/skills/`  |
 | **Gemini CLI**  | `GEMINI.md` -> `AGENTS.md` | Manual               | Manual            |
-| **Codex**       | `AGENTS.md`                | Manual               | Manual            |
 
 ---
 
@@ -81,15 +81,16 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 
 ### File Ownership
 
-| File/Directory                | Purpose              | When to Update                              |
-| ----------------------------- | -------------------- | ------------------------------------------- |
-| `AGENTS.md`                   | Primary instructions | When workflows change                       |
-| `CLAUDE.md`, `GEMINI.md`      | Redirects only       | Rarely (keep minimal)                       |
-| `.claude/commands/`           | Claude Code commands | When adding workflows                       |
-| `.opencode/command/`          | OpenCode commands    | Mirror `.claude/commands/` changes          |
-| `.claude/skills/`             | Shared skills        | When adding domain knowledge                |
-| `docs/prompts/`               | Fallback templates   | When adding workflows for non-command tools |
-| `docs/onboarding/ai-tools.md` | This file            | When tool compatibility changes             |
+| File/Directory                | Purpose              | When to Update                     |
+| ----------------------------- | -------------------- | ---------------------------------- |
+| `AGENTS.md`                   | Primary instructions | When workflows change              |
+| `CLAUDE.md`, `GEMINI.md`      | Redirects only       | Rarely (keep minimal)              |
+| `.claude/commands/`           | Claude Code commands | When adding workflows              |
+| `.opencode/command/`          | OpenCode commands    | Auto-synced from `.claude/`        |
+| `.claude/skills/`             | Claude/OpenCode      | When adding domain knowledge       |
+| `.codex/skills/`              | Codex skills         | Auto-synced from `.claude/skills/` |
+| `docs/prompts/`               | Fallback templates   | For non-command tools              |
+| `docs/onboarding/ai-tools.md` | This file            | When tool compatibility changes    |
 
 ### Adding a New Command
 
@@ -112,7 +113,7 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
    2. Step two
    ```
 
-2. Copy to `.opencode/command/dart-<name>.md` (required for OpenCode)
+2. Sync to OpenCode: `pixi run sync-ai-commands`
 
 3. Update `docs/prompts/AGENTS.md` command table
 
@@ -139,15 +140,34 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
    See: `docs/onboarding/relevant-doc.md`
    ```
 
-2. Update `AGENTS.md` skills table
+2. Sync to Codex: `pixi run sync-ai-commands`
 
-### Keeping Commands in Sync
+3. Update `AGENTS.md` skills table
 
-Commands exist in both `.claude/commands/` and `.opencode/command/` because tools don't share directories. When updating:
+### Keeping Commands and Skills in Sync
 
-1. Edit `.claude/commands/dart-<name>.md`
-2. Copy changes to `.opencode/command/dart-<name>.md`
-3. Verify both match
+Commands and skills exist in multiple directories because tools don't share paths.
+The `.claude/` directory is the **source of truth**.
+
+**Automated sync**:
+
+```bash
+pixi run sync-ai-commands   # Sync commands + skills to all tool directories
+pixi run check-ai-commands  # Check if in sync (CI mode, no changes)
+```
+
+**What gets synced**:
+
+| Source              | Target               | Purpose           |
+| ------------------- | -------------------- | ----------------- |
+| `.claude/commands/` | `.opencode/command/` | OpenCode commands |
+| `.claude/skills/`   | `.codex/skills/`     | Codex skills      |
+
+**Manual workflow** (if not using sync script):
+
+1. Edit files in `.claude/` directory
+2. Copy changes to corresponding tool directories
+3. Verify all match
 
 ### Review Cadence
 
@@ -210,33 +230,40 @@ Commands exist in both `.claude/commands/` and `.opencode/command/` because tool
 
 ### OpenAI Codex
 
-**Tested Version**: Codex (Jan 2025)
+**Tested Version**: Codex CLI 0.87.x (Jan 2025)
 
-| Feature      | Location    | Status                 |
-| ------------ | ----------- | ---------------------- |
-| Instructions | `AGENTS.md` | ✅ Primary entry point |
-| Commands     | N/A         | ❌ No native support   |
-| Skills       | N/A         | ❌ No native support   |
+| Feature      | Location                   | Status                        |
+| ------------ | -------------------------- | ----------------------------- |
+| Instructions | `AGENTS.md`                | ✅ Primary entry point        |
+| Skills       | `.codex/skills/*/SKILL.md` | ✅ `$dart-*` skills available |
+| Prompts      | `~/.codex/prompts/*.md`    | ✅ User-only (not repo-level) |
 
 **Notes**:
 
-- `AGENTS.md` is the standard for Codex
-- No slash command support; use `docs/prompts/` templates manually
+- `AGENTS.md` is the standard for Codex (same as Claude Code convention)
+- Supports subdirectory `AGENTS.md` files (walks from root to CWD)
+- Skills use `$skill-name` syntax (e.g., `$dart-build`)
+- Custom prompts are user-specific (`~/.codex/prompts/`), not shared via repo
+- Full documentation: https://developers.openai.com/codex/
 
 ---
 
 ## Directory Structure
 
 ```
-.claude/
+.claude/                   # SOURCE OF TRUTH
 ├── commands/              # Claude Code commands
 │   └── dart-*.md
-└── skills/                # Shared skills (Claude + OpenCode)
+└── skills/                # Claude + OpenCode skills
     └── dart-*/SKILL.md
 
-.opencode/
-└── command/               # OpenCode commands (mirrors .claude/commands/)
+.opencode/                 # Auto-synced from .claude/
+└── command/               # OpenCode commands
     └── dart-*.md
+
+.codex/                    # Auto-synced from .claude/
+└── skills/                # Codex skills
+    └── dart-*/SKILL.md
 
 docs/prompts/              # Fallback templates (for tools without commands)
 └── *.md
