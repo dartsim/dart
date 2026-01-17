@@ -528,6 +528,15 @@ void PointMass::integrateVelocities(double _dt)
 //==============================================================================
 void PointMass::addExtForce(const Eigen::Vector3d& _force, bool _isForceLocal)
 {
+  if (math::isNan(_force) || math::isInf(_force)) {
+    DART_WARN(
+        "[PointMass::addExtForce] Invalid value (NaN or Inf) detected in force "
+        "vector for point mass in body [{}]. The force is ignored to prevent "
+        "simulation instability.",
+        mParentSoftBodyNode ? mParentSoftBodyNode->getName() : "unknown");
+    return;
+  }
+
   if (_isForceLocal) {
     mFext += _force;
   } else {

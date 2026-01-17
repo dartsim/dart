@@ -1228,6 +1228,24 @@ void BodyNode::addExtForce(
     bool _isForceLocal,
     bool _isOffsetLocal)
 {
+  if (math::isNan(_force) || math::isInf(_force)) {
+    DART_WARN(
+        "[BodyNode::addExtForce] Invalid value (NaN or Inf) detected in force "
+        "vector for body [{}]. The force is ignored to prevent simulation "
+        "instability.",
+        getName());
+    return;
+  }
+
+  if (math::isNan(_offset) || math::isInf(_offset)) {
+    DART_WARN(
+        "[BodyNode::addExtForce] Invalid value (NaN or Inf) detected in offset "
+        "vector for body [{}]. The force is ignored to prevent simulation "
+        "instability.",
+        getName());
+    return;
+  }
+
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d F = Eigen::Vector6d::Zero();
   const Eigen::Isometry3d& W = getWorldTransform();
@@ -1254,6 +1272,24 @@ void BodyNode::setExtForce(
     bool _isForceLocal,
     bool _isOffsetLocal)
 {
+  if (math::isNan(_force) || math::isInf(_force)) {
+    DART_WARN(
+        "[BodyNode::setExtForce] Invalid value (NaN or Inf) detected in force "
+        "vector for body [{}]. The force is ignored to prevent simulation "
+        "instability.",
+        getName());
+    return;
+  }
+
+  if (math::isNan(_offset) || math::isInf(_offset)) {
+    DART_WARN(
+        "[BodyNode::setExtForce] Invalid value (NaN or Inf) detected in offset "
+        "vector for body [{}]. The force is ignored to prevent simulation "
+        "instability.",
+        getName());
+    return;
+  }
+
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d F = Eigen::Vector6d::Zero();
   const Eigen::Isometry3d& W = getWorldTransform();
@@ -1276,6 +1312,15 @@ void BodyNode::setExtForce(
 //==============================================================================
 void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
 {
+  if (math::isNan(_torque) || math::isInf(_torque)) {
+    DART_WARN(
+        "[BodyNode::addExtTorque] Invalid value (NaN or Inf) detected in "
+        "torque vector for body [{}]. The torque is ignored to prevent "
+        "simulation instability.",
+        getName());
+    return;
+  }
+
   if (_isLocal)
     mAspectState.mFext.head<3>() += _torque;
   else
@@ -1288,6 +1333,15 @@ void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
 //==============================================================================
 void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
 {
+  if (math::isNan(_torque) || math::isInf(_torque)) {
+    DART_WARN(
+        "[BodyNode::setExtTorque] Invalid value (NaN or Inf) detected in "
+        "torque vector for body [{}]. The torque is ignored to prevent "
+        "simulation instability.",
+        getName());
+    return;
+  }
+
   if (_isLocal)
     mAspectState.mFext.head<3>() = _torque;
   else
