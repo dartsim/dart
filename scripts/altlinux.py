@@ -167,10 +167,12 @@ def sync_repo(args):
     excludes = " ".join(f"--exclude {shlex.quote(item)}" for item in EXCLUDES)
     work_dir = shlex.quote(args.work_dir)
     src_dir = shlex.quote(args.source_dir)
+    print(f"Syncing from {src_dir} to {work_dir}...")
     command = (
-        f"mkdir -p {work_dir} && rsync -az --delete {excludes} {src_dir}/ {work_dir}/"
+        f"mkdir -p {work_dir} && rsync -av --delete {excludes} {src_dir}/ {work_dir}/"
     )
     exec_in_container(args, command)
+    print("Sync complete.")
 
 
 def test_container(args):
