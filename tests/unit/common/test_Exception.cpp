@@ -42,7 +42,8 @@ TEST(Exception, BasicException)
     throw Exception("Test error message");
   } catch (const Exception& e) {
     EXPECT_EQ(e.message(), "Test error message");
-    EXPECT_NE(std::string(e.what()).find("Test error message"), std::string::npos);
+    EXPECT_NE(
+        std::string(e.what()).find("Test error message"), std::string::npos);
   }
 }
 
@@ -99,7 +100,8 @@ TEST(Exception, FileNotFoundException)
 
 TEST(Exception, ParseException)
 {
-  EXPECT_THROW({ DART_THROW_T(ParseException, "Parse error"); }, ParseException);
+  EXPECT_THROW(
+      { DART_THROW_T(ParseException, "Parse error"); }, ParseException);
 }
 
 TEST(Exception, ThrowIfConditionTrue)
@@ -119,7 +121,10 @@ TEST(Exception, ThrowTypedIfConditionTrue)
   int index = 10;
   int size = 5;
   EXPECT_THROW(
-      { DART_THROW_T_IF(index >= size, OutOfRangeException, "Index out of range"); },
+      {
+        DART_THROW_T_IF(
+            index >= size, OutOfRangeException, "Index out of range");
+      },
       OutOfRangeException);
 }
 
@@ -127,8 +132,9 @@ TEST(Exception, NoThrowTypedIfConditionFalse)
 {
   int index = 2;
   int size = 5;
-  EXPECT_NO_THROW(
-      { DART_THROW_T_IF(index >= size, OutOfRangeException, "Index out of range"); });
+  EXPECT_NO_THROW({
+    DART_THROW_T_IF(index >= size, OutOfRangeException, "Index out of range");
+  });
 }
 
 TEST(Exception, ExceptionInheritsFromRuntimeError)
@@ -148,7 +154,8 @@ TEST(Exception, SourceLocationIncluded)
     throw Exception("Test");
   } catch (const Exception& e) {
     EXPECT_GT(e.location().line(), 0);
-    EXPECT_NE(std::string(e.location().file_name()).find("test_Exception.cpp"),
-              std::string::npos);
+    EXPECT_NE(
+        std::string(e.location().file_name()).find("test_Exception.cpp"),
+        std::string::npos);
   }
 }
