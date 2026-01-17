@@ -51,41 +51,43 @@ jobs:
           cache: true
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
-      - name: Check KVM availability
-        id: kvm
+      - name: Check runner requirements (KVM and Docker)
+        id: prereqs
         run: |
-          # Try to set up KVM permissions (GitHub-hosted runners support this)
-          if sudo -n true 2>/dev/null; then
-            echo "Passwordless sudo available, configuring KVM..."
-            echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-            sudo udevadm control --reload-rules
-            sudo udevadm trigger --name-match=kvm
+          FAILED=false
+
+          echo "=== Docker Diagnostics ==="
+          if docker info > /dev/null 2>&1; then
+            echo "Docker is accessible"
+            echo "docker_available=true" >> $GITHUB_OUTPUT
+          else
+            echo "::error::Docker not accessible - check socket permissions"
+            echo "docker_available=false" >> $GITHUB_OUTPUT
+            FAILED=true
           fi
-          # Check if KVM is accessible
+
+          echo ""
           echo "=== KVM Diagnostics ==="
           egrep -c '(vmx|svm)' /proc/cpuinfo || echo "No VMX/SVM support found"
           ls -la /dev/kvm 2>/dev/null || echo "/dev/kvm does not exist"
           if [ -e /dev/kvm ] && [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
             echo "KVM is accessible"
-            echo "available=true" >> $GITHUB_OUTPUT
+            echo "kvm_available=true" >> $GITHUB_OUTPUT
           else
-            echo "KVM not accessible - FreeBSD VM requires KVM for reasonable performance"
-            echo "available=false" >> $GITHUB_OUTPUT
+            echo "::error::KVM not accessible"
+            echo "kvm_available=false" >> $GITHUB_OUTPUT
+            FAILED=true
           fi
 
-      - name: Fail if KVM unavailable
-        if: steps.kvm.outputs.available != 'true'
-        run: |
-          echo "::error::FreeBSD tests require KVM - not available on this runner"
-          echo "FreeBSD VM requires KVM acceleration for reasonable performance."
-          echo "Self-hosted runners need KVM device access configured."
-          echo ""
-          echo "This job fails rather than passing without running tests."
-          echo "Use a self-hosted runner with KVM support or skip this workflow."
-          exit 1
+          if [ "$FAILED" = "true" ]; then
+            echo ""
+            echo "::error::FreeBSD CI requires both Docker and KVM"
+            echo "Self-hosted runner setup: https://gist.github.com/jslee02/c0a6b0e4af18e4ecb2f2e8fb5b715f78"
+            exit 1
+          fi
 
       - name: Run FreeBSD repro tests
-        if: steps.kvm.outputs.available == 'true'
+        if: steps.prereqs.outputs.kvm_available == 'true' && steps.prereqs.outputs.docker_available == 'true'
         env:
           FREEBSD_VM_CPUS: "2"
           FREEBSD_VM_MEM: "4096"
@@ -107,12 +109,12 @@ jobs:
           wait $TEST_PID
 
       - name: Show Docker container logs
-        if: always() && steps.kvm.outputs.available == 'true'
+        if: always() && steps.prereqs.outputs.kvm_available == 'true' && steps.prereqs.outputs.docker_available == 'true'
         run: |
           echo "=== Full Docker Container Logs ==="
           docker logs dart-freebsd-vm 2>&1 || true
           echo "==================================="
 
       - name: Stop FreeBSD VM
-        if: always() && steps.kvm.outputs.available == 'true'
+        if: always() && steps.prereqs.outputs.kvm_available == 'true' && steps.prereqs.outputs.docker_available == 'true'
         run: pixi run freebsd-stop
