@@ -80,20 +80,13 @@ def container_running(container):
     return container in (result.stdout or "").splitlines()
 
 
-# Track whether we've already started the container in this process
-_container_started = False
-
-
-def ensure_started(args):
-    global _container_started
-    if _container_started:
-        # Already started in this session, just verify it's running
+def ensure_started(args, _state={"started": False}):
+    if _state["started"]:
         if not container_running(args.container):
             start_container(args)
         return
-    # First call in this process - always restart to ensure fresh mount
     start_container(args)
-    _container_started = True
+    _state["started"] = True
 
 
 def start_container(args):
