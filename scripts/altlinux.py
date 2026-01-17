@@ -100,20 +100,22 @@ def start_container(args):
     # Always remove existing container to ensure fresh mount with current checkout.
     # Self-hosted runners may persist containers between jobs with stale mounts.
     if container_exists(args.container):
-        print(f"Removing existing container '{args.container}' to refresh mount...")
+        print(
+            f"Removing existing container '{args.container}' to refresh mount...",
+            flush=True,
+        )
         run(["docker", "rm", "-f", args.container])
 
     run(["docker", "volume", "create", args.volume], check=False)
 
     host_repo_path = repo_root()
-    print(f"Script __file__: {Path(__file__).resolve()}")
-    print(f"Host repo path: {host_repo_path}")
-    print(f"Host repo exists: {host_repo_path.exists()}")
-    print(f"CMakeLists.txt exists: {(host_repo_path / 'CMakeLists.txt').exists()}")
-    print(f"Container source mount: {args.source_dir}")
-
-    # Verify host path contents BEFORE docker
-    print("Host repo contents:")
+    print(f"[start_container] Script __file__: {Path(__file__).resolve()}", flush=True)
+    print(f"[start_container] Host repo path: {host_repo_path}", flush=True)
+    print(
+        f"[start_container] CMakeLists.txt exists: {(host_repo_path / 'CMakeLists.txt').exists()}",
+        flush=True,
+    )
+    print(f"[start_container] Host repo contents:", flush=True)
     run(["ls", "-la", str(host_repo_path)])
 
     cmd = [
@@ -131,10 +133,10 @@ def start_container(args):
         "-lc",
         "sleep infinity",
     ]
-    print(f"Docker run command: {' '.join(cmd)}")
+    print(f"[start_container] Docker run command: {' '.join(cmd)}", flush=True)
     run(cmd)
 
-    print("Verifying container source mount...")
+    print("[start_container] Verifying container source mount...", flush=True)
     run(["docker", "exec", args.container, "ls", "-la", args.source_dir])
 
 
@@ -182,12 +184,14 @@ def sync_repo(args):
     excludes = " ".join(f"--exclude {shlex.quote(item)}" for item in EXCLUDES)
     work_dir = shlex.quote(args.work_dir)
     src_dir = shlex.quote(args.source_dir)
-    print(f"Syncing from {src_dir} to {work_dir}...")
+    print(f"[sync_repo] Syncing from {src_dir} to {work_dir}...", flush=True)
+    print(f"[sync_repo] Checking container source before rsync:", flush=True)
+    exec_in_container(args, f"ls -la {src_dir}/")
     command = (
         f"mkdir -p {work_dir} && rsync -av --delete {excludes} {src_dir}/ {work_dir}/"
     )
     exec_in_container(args, command)
-    print("Sync complete.")
+    print("[sync_repo] Sync complete.", flush=True)
 
 
 def test_container(args):
