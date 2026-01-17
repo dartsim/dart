@@ -10,6 +10,7 @@
   <a href="https://github.com/dartsim/dart/actions/workflows/ci_windows.yml"><img src="https://github.com/dartsim/dart/actions/workflows/ci_windows.yml/badge.svg" alt="CI Windows"></a>
   <br>
   <a href="https://dart.readthedocs.io/en/latest/?badge=latest"><img src="https://readthedocs.org/projects/dart/badge/?version=latest" alt="Documentation Status"></a>
+  <a href="https://deepwiki.com/dartsim/dart"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
   <a href="https://codecov.io/gh/dartsim/dart"><img src="https://codecov.io/gh/dartsim/dart/branch/main/graph/badge.svg" alt="codecov"></a>
   <a href="https://app.codacy.com/gh/dartsim/dart/dashboard?utm_source=github.com&utm_medium=referral&utm_content=dartsim/dart&utm_campaign=Badge_Grade"><img src="https://app.codacy.com/project/badge/Grade/2d95a9b951be4b73a71097670ec351e8" alt="Codacy Badge"></a>
   <br>
@@ -105,7 +106,8 @@ int main() {
 
 ## Documentation
 
-**User Documentation**: [English](https://dart.readthedocs.io/) | [한국어](https://dart-ko.readthedocs.io/) | [DeepWiki Overview](https://deepwiki.com/dartsim/dart) | [NotebookLM](https://notebooklm.google.com/notebook/c0cfc8ce-17ae-415a-a615-44c4342f0da6)
+**Static Docs**: [English](https://dart.readthedocs.io/) | [한국어](https://dart-ko.readthedocs.io/)
+**AI Docs**: [DeepWiki](https://deepwiki.com/dartsim/dart) | [NotebookLM](https://notebooklm.google.com/notebook/c0cfc8ce-17ae-415a-a615-44c4342f0da6)
 
 ### Developer Resources
 
