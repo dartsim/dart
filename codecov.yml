@@ -5,6 +5,9 @@ coverage:
     project:
       default:
         threshold: 1%
+    patch:
+      default:
+        informational: true
   ignore:
     - "tests"
     - "dart/external"

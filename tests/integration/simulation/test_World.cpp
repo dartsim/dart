@@ -676,3 +676,33 @@ TEST(World, RevoluteJointConstraintBasics)
       = bd2->getTransform().linear() * Eigen::Vector3d::UnitY();
   EXPECT_GT(axis1.normalized().dot(axis2.normalized()), 0.2);
 }
+
+//==============================================================================
+// Regression test for https://github.com/dartsim/dart/issues/2426
+TEST(World, GetIndexBoundsCheck)
+{
+  auto world = World::create();
+
+  auto skel1 = Skeleton::create("skel1");
+  skel1->createJointAndBodyNodePair<RevoluteJoint>();
+  world->addSkeleton(skel1);
+
+  auto skel2 = Skeleton::create("skel2");
+  skel2->createJointAndBodyNodePair<RevoluteJoint>();
+  world->addSkeleton(skel2);
+
+  EXPECT_EQ(world->getIndex(0), 0);
+  EXPECT_EQ(world->getIndex(1), 1);
+  EXPECT_EQ(world->getIndex(2), 2);
+
+#ifdef NDEBUG
+  // Release mode: DART_ASSERT doesn't abort, so we can test return values
+  EXPECT_EQ(world->getIndex(-1), -1);
+  EXPECT_EQ(world->getIndex(100), -1);
+#else
+  // Debug mode: DART_ASSERT(false) aborts, so use death tests to verify
+  // the error handling code path is exercised (improves coverage)
+  EXPECT_DEATH(world->getIndex(-1), "");
+  EXPECT_DEATH(world->getIndex(100), "");
+#endif
+}
