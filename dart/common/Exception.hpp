@@ -34,8 +34,9 @@
 
 #include <dart/common/Export.hpp>
 
+#include <fmt/format.h>
+
 #include <exception>
-#include <format>
 #include <source_location>
 #include <stdexcept>
 #include <string>
@@ -59,7 +60,7 @@ namespace dart::common {
 /// @code
 /// if (index >= size) {
 ///     throw dart::common::OutOfRangeException(
-///         std::format("Index {} out of range [0, {})", index, size));
+///         fmt::format("Index {} out of range [0, {})", index, size));
 /// }
 /// @endcode
 ///
@@ -116,7 +117,7 @@ private:
       funcName = func.substr(start, paren - start);
     }
 
-    return std::format(
+    return fmt::format(
         "\n[DART Exception]\n"
         "  Message:  {}\n"
         "  Location: {}:{} in {}()",
@@ -245,7 +246,7 @@ DART_DLL_EXPORT ErrorHandler getErrorHandler();
 // - DART_THROW_T(Type, msg, ...): Throw specific exception Type
 // - DART_THROW_T_IF(cond, Type, msg, ...): Throw Type if condition is TRUE
 //
-// All message arguments support std::format() style formatting.
+// All message arguments support fmt::format() style formatting.
 //
 // Examples:
 //   DART_THROW("Unexpected state");
@@ -261,7 +262,7 @@ DART_DLL_EXPORT ErrorHandler getErrorHandler();
 
   #define DART_THROW_T(ExceptionType, ...)                                     \
     throw ExceptionType(                                                       \
-        std::format(__VA_ARGS__), std::source_location::current())
+        fmt::format(__VA_ARGS__), std::source_location::current())
 
 #else
 
@@ -275,7 +276,7 @@ DART_DLL_EXPORT ErrorHandler getErrorHandler();
       auto loc = std::source_location::current();                              \
       auto handler = ::dart::common::getErrorHandler();                        \
       if (handler) {                                                           \
-        handler(#ExceptionType, std::format(__VA_ARGS__).c_str(), loc);        \
+        handler(#ExceptionType, fmt::format(__VA_ARGS__).c_str(), loc);        \
       } else {                                                                 \
         std::fprintf(                                                          \
             stderr,                                                            \
@@ -284,7 +285,7 @@ DART_DLL_EXPORT ErrorHandler getErrorHandler();
             "  File: %s:%u\n"                                                  \
             "  Function: %s\n\n",                                              \
             #ExceptionType,                                                    \
-            std::format(__VA_ARGS__).c_str(),                                  \
+            fmt::format(__VA_ARGS__).c_str(),                                  \
             loc.file_name(),                                                   \
             loc.line(),                                                        \
             loc.function_name());                                              \
@@ -295,7 +296,7 @@ DART_DLL_EXPORT ErrorHandler getErrorHandler();
 #endif // DART_DISABLE_EXCEPTIONS
 
 /// @brief Throw exception of ExceptionType if condition is TRUE.
-/// @note Supports std::format() style message arguments.
+/// @note Supports fmt::format() style message arguments.
 #define DART_THROW_T_IF(condition, ExceptionType, ...)                         \
   do {                                                                         \
     if (condition) {                                                           \
@@ -304,10 +305,10 @@ DART_DLL_EXPORT ErrorHandler getErrorHandler();
   } while (false)
 
 /// @brief Unconditionally throw dart::common::Exception.
-/// @note Supports std::format() style message arguments.
+/// @note Supports fmt::format() style message arguments.
 #define DART_THROW(...) DART_THROW_T(::dart::common::Exception, __VA_ARGS__)
 
 /// @brief Throw dart::common::Exception if condition is TRUE.
-/// @note Supports std::format() style message arguments.
+/// @note Supports fmt::format() style message arguments.
 #define DART_THROW_IF(condition, ...)                                          \
   DART_THROW_T_IF(condition, ::dart::common::Exception, __VA_ARGS__)
