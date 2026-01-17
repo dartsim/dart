@@ -51,39 +51,37 @@ jobs:
           cache: true
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
-      - name: Enable KVM (best-effort, may skip on self-hosted runners)
-        continue-on-error: true
+      - name: Check KVM availability
+        id: kvm
         run: |
-          # Try to set up KVM permissions. This may fail on self-hosted runners
-          # that require sudo password. The freebsd.py script will detect KVM
-          # availability and use it if accessible.
+          # Try to set up KVM permissions (GitHub-hosted runners support this)
           if sudo -n true 2>/dev/null; then
             echo "Passwordless sudo available, configuring KVM..."
             echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
             sudo udevadm control --reload-rules
             sudo udevadm trigger --name-match=kvm
-          else
-            echo "Passwordless sudo not available, skipping KVM udev setup"
           fi
-          # Verify KVM status
+          # Check if KVM is accessible
           echo "=== KVM Diagnostics ==="
-          echo "CPU virtualization support:"
           egrep -c '(vmx|svm)' /proc/cpuinfo || echo "No VMX/SVM support found"
-          echo "KVM device:"
           ls -la /dev/kvm 2>/dev/null || echo "/dev/kvm does not exist"
-          echo "KVM access test:"
-          if [ -e /dev/kvm ]; then
-            if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
-              echo "KVM is accessible"
-            else
-              echo "KVM exists but not accessible - VM will run in emulation mode"
-            fi
+          if [ -e /dev/kvm ] && [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
+            echo "KVM is accessible"
+            echo "available=true" >> $GITHUB_OUTPUT
           else
-            echo "KVM not available - VM will run in emulation mode (slower)"
+            echo "KVM not accessible - FreeBSD VM requires KVM for reasonable performance"
+            echo "available=false" >> $GITHUB_OUTPUT
           fi
-          echo "======================="
+
+      - name: Skip if KVM unavailable
+        if: steps.kvm.outputs.available != 'true'
+        run: |
+          echo "::warning::Skipping FreeBSD tests - KVM not available on this runner"
+          echo "FreeBSD VM requires KVM acceleration for reasonable performance."
+          echo "Self-hosted runners need KVM device access configured."
 
       - name: Run FreeBSD repro tests
+        if: steps.kvm.outputs.available == 'true'
         env:
           FREEBSD_VM_CPUS: "2"
           FREEBSD_VM_MEM: "4096"
@@ -105,12 +103,12 @@ jobs:
           wait $TEST_PID
 
       - name: Show Docker container logs
-        if: always()
+        if: always() && steps.kvm.outputs.available == 'true'
         run: |
           echo "=== Full Docker Container Logs ==="
           docker logs dart-freebsd-vm 2>&1 || true
           echo "==================================="
 
       - name: Stop FreeBSD VM
-        if: always()
+        if: always() && steps.kvm.outputs.available == 'true'
         run: pixi run freebsd-stop
