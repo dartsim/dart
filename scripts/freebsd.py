@@ -129,17 +129,8 @@ def container_running(container):
 
 
 def ensure_started(args):
-    key_path = ssh_key_path(vm_dir_path(args.vm_dir))
-    if container_running(args.container):
-        if not key_path.exists():
-            print(
-                "SSH key missing for the running FreeBSD VM; restarting to regenerate it.",
-                file=sys.stderr,
-            )
-            stop_container(args)
-            start_container(args)
-    else:
-        start_container(args)
+    # Always restart container to ensure fresh state with current SSH key
+    start_container(args)
     wait_for_ssh_key(args)
     wait_for_ssh(args, user=args.user)
 

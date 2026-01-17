@@ -81,8 +81,8 @@ def container_running(container):
 
 
 def ensure_started(args):
-    if not container_running(args.container):
-        start_container(args)
+    # Always restart container to ensure fresh mount with current checkout
+    start_container(args)
 
 
 def start_container(args):
