@@ -4,6 +4,10 @@
 
 ### [DART 6.16.5 (TBD)](https://github.com/dartsim/dart/milestone/90?closed=1)
 
+* Dynamics
+
+  * Validate SphereShape radius to prevent assertion failures with NaN/Inf/non-positive values: [#????](https://github.com/dartsim/dart/pull/????)
+
 * Parsers
   * Fix null pointer dereference in XmlHelpers getValue* functions: [#2429](https://github.com/dartsim/dart/pull/2429)
 
