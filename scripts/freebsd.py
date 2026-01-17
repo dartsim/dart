@@ -166,11 +166,10 @@ def start_container(args):
     vm_dir.mkdir(parents=True, exist_ok=True)
     ensure_ssh_key(args)
 
-    if container_running(args.container):
-        print(f"Container '{args.container}' already running.")
-        return
-
+    # Always remove existing container to ensure fresh state with current SSH key.
+    # Self-hosted runners may persist containers between jobs with stale keys.
     if container_exists(args.container):
+        print(f"Removing existing container '{args.container}' to refresh state...")
         run(["docker", "rm", "-f", args.container])
 
     cmd = [
