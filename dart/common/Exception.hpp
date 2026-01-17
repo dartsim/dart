@@ -207,8 +207,9 @@ using ErrorHandler = void (*)(
 
 /// @brief Set a custom error handler for exception-free mode.
 ///
-/// When DART_DISABLE_EXCEPTIONS is defined, this handler will be called
-/// instead of the default behavior (print to stderr + std::terminate).
+/// When DART_DISABLE_EXCEPTIONS is defined, this handler is called BEFORE
+/// std::terminate(). Use it for custom logging or cleanup. The handler cannot
+/// prevent termination - DART_THROW always terminates in exception-free mode.
 ///
 /// @param[in] handler Function pointer to custom handler, or nullptr to reset.
 ///
@@ -218,7 +219,7 @@ using ErrorHandler = void (*)(
 /// loc) {
 ///     myLogger.fatal("{} at {}:{}: {}", type, loc.file_name(), loc.line(),
 ///     msg);
-///     // Can attempt recovery or exit gracefully
+///     // Log to telemetry, flush buffers, etc. before terminate
 /// });
 /// @endcode
 DART_DLL_EXPORT void setErrorHandler(ErrorHandler handler);
@@ -266,7 +267,9 @@ DART_DLL_EXPORT ErrorHandler getErrorHandler();
 
 #else
 
-// Exception-free mode: print error and terminate (or call custom handler)
+// Exception-free mode: log error, call handler if set, then terminate.
+// The handler is for logging/cleanup before termination, not for continuation.
+// DART_THROW is always [[noreturn]] - it either throws or terminates.
 
   #include <cstdio>
   #include <cstdlib>
@@ -274,23 +277,23 @@ DART_DLL_EXPORT ErrorHandler getErrorHandler();
   #define DART_THROW_T(ExceptionType, ...)                                     \
     do {                                                                       \
       auto loc = std::source_location::current();                              \
+      auto msg = fmt::format(__VA_ARGS__);                                     \
       auto handler = ::dart::common::getErrorHandler();                        \
       if (handler) {                                                           \
-        handler(#ExceptionType, fmt::format(__VA_ARGS__).c_str(), loc);        \
-      } else {                                                                 \
-        std::fprintf(                                                          \
-            stderr,                                                            \
-            "\n[DART Fatal Error: %s]\n"                                       \
-            "  Message: %s\n"                                                  \
-            "  File: %s:%u\n"                                                  \
-            "  Function: %s\n\n",                                              \
-            #ExceptionType,                                                    \
-            fmt::format(__VA_ARGS__).c_str(),                                  \
-            loc.file_name(),                                                   \
-            loc.line(),                                                        \
-            loc.function_name());                                              \
-        std::terminate();                                                      \
+        handler(#ExceptionType, msg.c_str(), loc);                             \
       }                                                                        \
+      std::fprintf(                                                            \
+          stderr,                                                              \
+          "\n[DART Fatal Error: %s]\n"                                         \
+          "  Message: %s\n"                                                    \
+          "  File: %s:%u\n"                                                    \
+          "  Function: %s\n\n",                                                \
+          #ExceptionType,                                                      \
+          msg.c_str(),                                                         \
+          loc.file_name(),                                                     \
+          loc.line(),                                                          \
+          loc.function_name());                                                \
+      std::terminate();                                                        \
     } while (false)
 
 #endif // DART_DISABLE_EXCEPTIONS
