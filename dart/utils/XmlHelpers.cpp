@@ -387,22 +387,24 @@ static std::string getChildElementText(
   if (childElement == nullptr) {
     const std::string parentName
         = parentElement->Name() ? parentElement->Name() : "unknown";
-    dterr << "Child element [" << childName << "] not found in parent element ["
-          << parentName << "]" << std::endl;
-    throw std::runtime_error(
-        "Child element [" + childName + "] not found in parent element ["
-        + parentName + "]");
+    const auto msg = fmt::format(
+        "Child element [{}] not found in parent element [{}]",
+        childName,
+        parentName);
+    dterr << msg << std::endl;
+    throw std::runtime_error(msg);
   }
 
   const char* text = childElement->GetText();
   if (text == nullptr) {
     const std::string parentName
         = parentElement->Name() ? parentElement->Name() : "unknown";
-    dterr << "Child element [" << childName << "] in parent [" << parentName
-          << "] has no text content" << std::endl;
-    throw std::runtime_error(
-        "Child element [" + childName + "] in parent [" + parentName
-        + "] has no text content");
+    const auto msg = fmt::format(
+        "Child element [{}] in parent [{}] has no text content",
+        childName,
+        parentName);
+    dterr << msg << std::endl;
+    throw std::runtime_error(msg);
   }
 
   return std::string(text);
