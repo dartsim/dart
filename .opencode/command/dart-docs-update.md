@@ -1,3 +1,8 @@
+---
+description: Update documentation (no code changes)
+agent: build
+---
+
 Update documentation: $ARGUMENTS
 
 ## Required Reading

@@ -1,3 +1,8 @@
+---
+description: Start new feature/bugfix/refactor in DART
+agent: build
+---
+
 Start a new task in DART: $ARGUMENTS
 
 ## Required Reading

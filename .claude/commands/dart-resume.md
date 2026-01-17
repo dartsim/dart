@@ -1,3 +1,8 @@
+---
+description: Continue work from previous session
+agent: build
+---
+
 Resume unfinished work: $ARGUMENTS
 
 ## Required Reading

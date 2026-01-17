@@ -1,3 +1,8 @@
+---
+description: Debug and fix failing CI checks
+agent: build
+---
+
 Fix CI failure: $ARGUMENTS
 
 ## Required Reading

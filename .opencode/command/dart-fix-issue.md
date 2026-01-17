@@ -1,3 +1,8 @@
+---
+description: Resolve a GitHub issue with proper fix and test
+agent: build
+---
+
 Fix GitHub issue: $ARGUMENTS
 
 ## Required Reading
