@@ -420,6 +420,12 @@ bool World::hasSkeleton(const std::string& skeletonName) const
 //==============================================================================
 int World::getIndex(int _index) const
 {
+  if (_index < 0 || static_cast<std::size_t>(_index) >= mIndices.size()) {
+    dterr << "[World::getIndex] Index [" << _index << "] is out of range. "
+          << "Valid range is [0, " << mIndices.size() << ").\n";
+    DART_ASSERT(false);
+    return -1;
+  }
   return mIndices[_index];
 }
 
