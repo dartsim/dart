@@ -128,11 +128,21 @@ def container_running(container):
     return container in (result.stdout or "").splitlines()
 
 
+_container_started = False
+
+
 def ensure_started(args):
-    # Always restart container to ensure fresh state with current SSH key
+    global _container_started
+    if _container_started:
+        if not container_running(args.container):
+            start_container(args)
+            wait_for_ssh_key(args)
+            wait_for_ssh(args, user=args.user)
+        return
     start_container(args)
     wait_for_ssh_key(args)
     wait_for_ssh(args, user=args.user)
+    _container_started = True
 
 
 def build_image(args):
