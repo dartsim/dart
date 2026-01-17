@@ -1,8 +1,3 @@
----
-description: Review PR or address review feedback
-agent: build
----
-
 Review or respond to PR: $ARGUMENTS
 
 ## Required Reading

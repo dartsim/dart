@@ -112,7 +112,7 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
    2. Step two
    ```
 
-2. Copy to `.opencode/command/dart-<name>.md` (required for OpenCode)
+2. Sync to OpenCode: `pixi run sync-ai-commands`
 
 3. Update `docs/prompts/AGENTS.md` command table
 
@@ -143,7 +143,16 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 
 ### Keeping Commands in Sync
 
-Commands exist in both `.claude/commands/` and `.opencode/command/` because tools don't share directories. When updating:
+Commands exist in both `.claude/commands/` and `.opencode/command/` because tools don't share directories.
+
+**Automated sync**:
+
+```bash
+pixi run sync-ai-commands   # Sync .claude/commands/ → .opencode/command/
+pixi run check-ai-commands  # Check if in sync (CI mode, no changes)
+```
+
+**Manual workflow** (if not using sync script):
 
 1. Edit `.claude/commands/dart-<name>.md`
 2. Copy changes to `.opencode/command/dart-<name>.md`

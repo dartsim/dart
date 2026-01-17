@@ -1,12 +1,8 @@
----
-description: Start new feature/bugfix/refactor in DART
-agent: build
----
-
 Start a new task in DART: $ARGUMENTS
 
 ## Required Reading
 
+Read these files first:
 @AGENTS.md
 @docs/onboarding/building.md
 @docs/onboarding/contributing.md
@@ -14,7 +10,7 @@ Start a new task in DART: $ARGUMENTS
 
 ## Workflow
 
-1. **Understand** - Parse: goal, constraints, type (feature|bugfix|refactor|docs)
+1. **Understand the task** - Parse: goal, constraints, type (feature|bugfix|refactor|docs)
 2. **Setup** - Create branch from `origin/main`: `feature/<topic>`, `fix/<topic>`, etc.
 3. **Implement** - Keep commits focused, follow code style
 4. **Verify** - `pixi run lint` then `pixi run test-all`
