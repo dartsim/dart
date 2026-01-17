@@ -435,3 +435,92 @@ TEST_F(SoftDynamicsTest, compareEquationsOfMotion)
   //    compareEquationsOfMotion(getList()[i]);
   //  }
 }
+
+//==============================================================================
+// Test that negative damping coefficient is clamped to zero with a warning
+// (rather than crashing via assertion). This ensures robustness when loading
+// models with invalid parameters.
+//==============================================================================
+TEST(SoftBodyNode, NegativeDampingClampedToZero)
+{
+  using namespace dart::dynamics;
+  using namespace dart::io;
+
+  // Load a skeleton with soft body nodes
+  auto world
+      = readWorld(common::Uri("dart://sample/skel/test/test_drop_box.skel"));
+  ASSERT_TRUE(world != nullptr);
+
+  SkeletonPtr skel = nullptr;
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    if (world->getSkeleton(i)->getNumSoftBodyNodes() > 0) {
+      skel = world->getSkeleton(i);
+      break;
+    }
+  }
+  ASSERT_TRUE(skel != nullptr);
+  ASSERT_GT(skel->getNumSoftBodyNodes(), 0);
+
+  SoftBodyNode* sbn = skel->getSoftBodyNode(0);
+  ASSERT_TRUE(sbn != nullptr);
+
+  // Set negative damping - should be clamped to 0
+  sbn->setDampingCoefficient(-5.0);
+  EXPECT_EQ(sbn->getDampingCoefficient(), 0.0);
+
+  // Positive damping should work normally
+  sbn->setDampingCoefficient(10.0);
+  EXPECT_EQ(sbn->getDampingCoefficient(), 10.0);
+
+  // Zero damping should work
+  sbn->setDampingCoefficient(0.0);
+  EXPECT_EQ(sbn->getDampingCoefficient(), 0.0);
+}
+
+//==============================================================================
+// Test that NaN and Inf damping coefficients are clamped to zero with a
+// warning. This preserves the invariant from the original DART_ASSERT(d >= 0.0)
+// which would reject NaN (since NaN >= 0.0 is false).
+//==============================================================================
+TEST(SoftBodyNode, NaNDampingClampedToZero)
+{
+  using namespace dart::dynamics;
+  using namespace dart::io;
+
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+
+  // Load a skeleton with soft body nodes
+  auto world
+      = readWorld(common::Uri("dart://sample/skel/test/test_drop_box.skel"));
+  ASSERT_TRUE(world != nullptr);
+
+  SkeletonPtr skel = nullptr;
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    if (world->getSkeleton(i)->getNumSoftBodyNodes() > 0) {
+      skel = world->getSkeleton(i);
+      break;
+    }
+  }
+  ASSERT_TRUE(skel != nullptr);
+  ASSERT_GT(skel->getNumSoftBodyNodes(), 0);
+
+  SoftBodyNode* sbn = skel->getSoftBodyNode(0);
+  ASSERT_TRUE(sbn != nullptr);
+
+  // NaN damping should be clamped to 0
+  sbn->setDampingCoefficient(nan);
+  EXPECT_EQ(sbn->getDampingCoefficient(), 0.0);
+
+  // +Inf damping should be clamped to 0
+  sbn->setDampingCoefficient(inf);
+  EXPECT_EQ(sbn->getDampingCoefficient(), 0.0);
+
+  // -Inf damping should be clamped to 0
+  sbn->setDampingCoefficient(-inf);
+  EXPECT_EQ(sbn->getDampingCoefficient(), 0.0);
+
+  // Valid value should still work
+  sbn->setDampingCoefficient(5.0);
+  EXPECT_EQ(sbn->getDampingCoefficient(), 5.0);
+}
