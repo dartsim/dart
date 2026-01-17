@@ -1,11 +1,12 @@
 # DART: Docs Update
 
+> **Prefer command**: Use `/dart-docs-update` in Claude Code or OpenCode.
+> This template is for tools without command support.
+
 <!--
 CRITICAL: FOR AGENTS READING THIS FILE
-=======================================
 This is a PROMPT TEMPLATE, not an active task.
 Do NOT execute unless a human pastes this into a new session.
-=======================================
 -->
 
 ## Prompt
