@@ -2,6 +2,11 @@
 
 ## DART 6
 
+### [DART 6.16.5 (TBD)](https://github.com/dartsim/dart/milestone/90?closed=1)
+
+* Parsers
+  * Fix null pointer dereference in XmlHelpers getValue* functions: [#2429](https://github.com/dartsim/dart/pull/2429)
+
 ### [DART 6.16.4 (2026-01-06)](https://github.com/dartsim/dart/milestone/89?closed=1)
 
 * Physics
