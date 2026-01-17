@@ -105,6 +105,10 @@ def start_container(args):
 
     run(["docker", "volume", "create", args.volume], check=False)
 
+    host_repo_path = repo_root()
+    print(f"Host repo path: {host_repo_path}")
+    print(f"Container source mount: {args.source_dir}")
+
     cmd = [
         "docker",
         "run",
@@ -114,13 +118,18 @@ def start_container(args):
         "-v",
         f"{args.volume}:/work",
         "-v",
-        f"{repo_root()}:{args.source_dir}:ro",
+        f"{host_repo_path}:{args.source_dir}:ro",
         args.image,
         "/bin/sh",
         "-lc",
         "sleep infinity",
     ]
+    print(f"Docker run command: {' '.join(cmd)}")
     run(cmd)
+
+    # Verify mount contents
+    print("Verifying source mount...")
+    run(["docker", "exec", args.container, "ls", "-la", args.source_dir])
 
 
 def stop_container(args):
