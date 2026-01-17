@@ -97,6 +97,9 @@ def start_container(args):
     run(["docker", "volume", "create", args.volume], check=False)
 
     host_repo_path = repo_root()
+    print(f"=== Host repo path: {host_repo_path}")
+    print(f"=== Host repo exists: {host_repo_path.exists()}")
+    print(f"=== CMakeLists.txt exists: {(host_repo_path / 'CMakeLists.txt').exists()}")
     cmd = [
         "docker",
         "run",
@@ -112,6 +115,7 @@ def start_container(args):
         "-lc",
         "sleep infinity",
     ]
+    print(f"=== Docker command: {' '.join(str(c) for c in cmd)}")
     run(cmd)
 
 
