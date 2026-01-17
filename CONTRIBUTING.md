@@ -291,3 +291,22 @@ target_link_libraries("${PROJECT_NAME}"
 enable_testing()
 add_subdirectory(tests)
 ```
+
+## Copyright Headers
+
+All source files should include a copyright header. We use the year of first publication (2011) following [FSFE REUSE best practices](https://reuse.software/faq/#years-copyright):
+
+```cpp
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   ...
+ */
+```
+
+**Important**: Do NOT update the year when modifying files. The year represents the first publication date of the project, not the last modification. This follows industry best practice (used by Google, curl, Gazebo, etc.) and eliminates unnecessary maintenance.

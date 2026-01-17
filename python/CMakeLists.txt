@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2025, The DART development contributors
+# Copyright (c) 2011, The DART development contributors
 # All rights reserved.
 
 if(NOT DART_BUILD_DARTPY)
