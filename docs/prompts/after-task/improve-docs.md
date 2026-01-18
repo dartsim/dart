@@ -43,27 +43,29 @@ STOP if ALL are true:
 ### Decision Tree: Where Does This Go?
 
 ```
+
 Is this about a SPECIFIC module (dart/dynamics, dart/collision, etc.)?
 ├─ YES → Check module's AGENTS.md first
-│        ├─ Add if it's a key pattern, gotcha, or testing tip
-│        └─ Point to docs/onboarding/*.md for detailed explanation
+│ ├─ Add if it's a key pattern, gotcha, or testing tip
+│ └─ Point to docs/onboarding/_.md for detailed explanation
 │
 └─ NO → Is this a cross-cutting concern (build, test, CI, workflow)?
-        ├─ YES → docs/onboarding/*.md
-        │        ├─ building.md - Build issues, dependencies
-        │        ├─ testing.md - Test patterns, debugging
-        │        ├─ ci-cd.md - CI failures, timeouts, caching
-        │        ├─ contributing.md - PR workflow, review process
-        │        └─ code-style.md - Formatting, conventions
-        │
-        └─ Is this a repeatable workflow that agents should follow?
-                ├─ YES → Consider:
-                │        ├─ .claude/commands/ - New slash command
-                │        ├─ .claude/skills/ - Domain knowledge bundle
-                │        └─ docs/prompts/ - Prompt template
-                │
-                └─ NO → Probably skip (see Skip If above)
-```
+├─ YES → docs/onboarding/_.md
+│ ├─ building.md - Build issues, dependencies
+│ ├─ testing.md - Test patterns, debugging
+│ ├─ ci-cd.md - CI failures, timeouts, caching
+│ ├─ contributing.md - PR workflow, review process
+│ └─ code-style.md - Formatting, conventions
+│
+└─ Is this a repeatable workflow that agents should follow?
+├─ YES → Consider:
+│ ├─ .claude/commands/ - New slash command
+│ ├─ .claude/skills/ - Domain knowledge bundle
+│ └─ docs/prompts/ - Prompt template
+│
+└─ NO → Probably skip (see Skip If above)
+
+````
 
 ### Documentation Locations Quick Reference
 
@@ -76,7 +78,7 @@ Is this about a SPECIFIC module (dart/dynamics, dart/collision, etc.)?
 | `docs/onboarding/*.md` | Detailed developer guides | Workflows, architecture, deep dives |
 | `.claude/commands/` | Slash commands | New repeatable workflows |
 | `.claude/skills/` | On-demand knowledge | Domain expertise bundles |
-| `docs/prompts/` | Prompt templates | Session-starting prompts |
+| `docs/prompts/` | Prompt templates | Session-starting prompts (follow `docs/prompts/CONTRIBUTING.md`, update index) |
 
 > **Note**: Multiple AI tools use synced folders (`.claude/`, `.opencode/`, `.codex/`).
 > See root `AGENTS.md` → "Tool Compatibility" for the full mapping.
@@ -98,11 +100,12 @@ find . -name "AGENTS.md" -type f
 
 # Search for existing coverage
 grep -r "your keyword" docs/ .claude/ --include="*.md"
-```
+````
 
 ## Step 4: Apply Changes
 
 ### Improvement Modes (pick what fits)
+
 - **Verify**: Confirm existing docs still accurate
 - **Add**: New pattern not yet documented (last resort)
 - **Update**: Enhance existing section with new insight
@@ -113,6 +116,7 @@ grep -r "your keyword" docs/ .claude/ --include="*.md"
 **Bias**: Update/remove/consolidate >> Add new content
 
 ### Quality Rules
+
 - No ephemeral IDs (branches, PRs, commits, usernames)
 - Write general patterns, not task-specific chronicles
 - 1-3 sentences per topic is ideal
@@ -121,13 +125,18 @@ grep -r "your keyword" docs/ .claude/ --include="*.md"
 - Check if code changes invalidated existing docs
 
 ### AGENTS.md Style
+
 Keep concise: Overview, Key Concepts, Code Patterns, Testing, See Also.
 For detailed content, point to `docs/onboarding/*.md`.
 
 ## Output
 
 Provide:
+
 1. Summary of learnings captured
 2. Files modified (or "No changes needed" with reason)
 3. Any follow-up recommendations
+
+```
+
 ```
