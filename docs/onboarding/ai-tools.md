@@ -321,8 +321,39 @@ When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter rev
 - If the feedback is valid, implement the fix silently
 - If the feedback is incorrect, ignore it (maintainers will dismiss if needed)
 - **Do consider re-triggering the review** after pushing the fix (e.g., comment `@codex review` for Codex) to verify the fix is correct
+- **Resolve the review thread** after addressing the feedback (see below)
 
 This avoids noisy bot-to-bot conversations while still leveraging automated verification.
+
+### Resolving Review Threads via CLI
+
+After addressing review feedback, resolve the conversation thread using the GitHub GraphQL API:
+
+```bash
+# 1. Find the thread ID for review comments on a PR
+gh api graphql -f query='
+  query {
+    repository(owner: "dartsim", name: "dart") {
+      pullRequest(number: PR_NUMBER) {
+        reviewThreads(first: 20) {
+          nodes { id isResolved path line }
+        }
+      }
+    }
+  }
+'
+
+# 2. Resolve a specific thread
+gh api graphql -f query='
+  mutation {
+    resolveReviewThread(input: {threadId: "PRRT_xxxx"}) {
+      thread { isResolved }
+    }
+  }
+'
+```
+
+**Note**: This marks the conversation as resolved without adding noise to the PR history.
 
 ---
 
