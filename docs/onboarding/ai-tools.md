@@ -310,6 +310,62 @@ Contributors can create personal instruction files that are gitignored:
 
 ---
 
+## Handling Automated Reviews
+
+When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter review comments from other AI systems (e.g., Codex bot, GitHub Copilot).
+
+**Guidance for AI agents addressing automated reviews**:
+
+- **Do NOT reply directly to AI-generated review comments** - the code change is the response
+- Address the feedback in code, then push the fix
+- If the feedback is valid, implement the fix silently
+- If the feedback is incorrect, ignore it (maintainers will dismiss if needed)
+- **Follow the review-fix loop** (see workflow below)
+
+This avoids noisy bot-to-bot conversations while still leveraging automated verification.
+
+### Review-Fix Loop Workflow
+
+After pushing a fix for review feedback:
+
+1. **Re-trigger the review**: Comment `@codex review` (or equivalent for other AI reviewers)
+2. **Monitor for results**: Watch for either:
+   - New review comments (issues found) → address them and repeat from step 1
+   - "No issues" response (e.g., "Didn't find any major issues") → proceed to step 3
+3. **Resolve all threads**: Use the GraphQL API below to mark conversations resolved
+4. **Done**: PR is ready for human review
+
+```bash
+# Monitor PR for new comments (poll until AI review responds)
+gh api repos/OWNER/REPO/issues/PR_NUMBER/comments --jq '.[-1].body' | head -5
+
+# Check for unresolved review threads
+gh api graphql -f query='
+  query {
+    repository(owner: "dartsim", name: "dart") {
+      pullRequest(number: PR_NUMBER) {
+        reviewThreads(first: 20) {
+          nodes { id isResolved path line }
+        }
+      }
+    }
+  }
+'
+
+# Resolve a specific thread
+gh api graphql -f query='
+  mutation {
+    resolveReviewThread(input: {threadId: "PRRT_xxxx"}) {
+      thread { isResolved }
+    }
+  }
+'
+```
+
+**Note**: This marks conversations as resolved without adding noise to the PR history.
+
+---
+
 ## Known Limitations
 
 - **No cross-tool command sharing**: Claude Code and OpenCode read different directories
