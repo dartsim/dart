@@ -105,6 +105,9 @@ dart_add_test("unit" UNIT_dynamics_ConeShape dynamics/test_ConeShape.cpp)
 dart_add_test("unit" UNIT_dynamics_CylinderShape dynamics/test_CylinderShape.cpp)
 dart_add_test("unit" UNIT_dynamics_EllipsoidShape dynamics/test_EllipsoidShape.cpp)
 dart_add_test("unit" UNIT_dynamics_PlaneShape dynamics/test_PlaneShape.cpp)
+dart_add_test("unit" UNIT_dynamics_EndEffector dynamics/test_EndEffector.cpp)
+dart_add_test("unit" UNIT_dynamics_Marker dynamics/test_Marker.cpp)
+dart_add_test("unit" UNIT_dynamics_PointMass dynamics/test_PointMass.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
