@@ -119,6 +119,11 @@ git push origin feature/my-awesome-feature
 # Create a pull request on GitHub
 ```
 
+Use the PR template in `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone for the target branch:
+
+- `main`: `DART 7.0` (or the next major milestone)
+- `release-6.16`: `DART 6.16.x` (current patch line)
+
 ## Testing Requirements
 
 All contributions must include appropriate tests:
@@ -171,6 +176,8 @@ Your PR description should include:
 4. **Testing**: How was this tested?
 5. **Breaking Changes**: Any API changes?
 6. **Related Issues**: Link to relevant issues
+
+Also set the milestone to match the target branch (see above).
 
 ### Review Checklist
 

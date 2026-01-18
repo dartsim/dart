@@ -35,6 +35,8 @@ git push -u origin HEAD
 gh pr create --draft --milestone "DART 7.0"
 ```
 
+Use `.github/PULL_REQUEST_TEMPLATE.md` and ensure the PR description covers Summary, Motivation, Changes, Testing, Breaking Changes, and Related Issues.
+
 ## Milestones (Required)
 
 Always set a milestone when creating PRs:
@@ -61,8 +63,8 @@ Bug fixes require PRs to **BOTH** branches:
 
 Steps:
 
-1. Fix on `main` first
-2. Cherry-pick to `release-6.16`
+1. Fix on `release-6.16` first
+2. Cherry-pick to `main`
 3. Create separate PRs for each
 
 ## CHANGELOG (After PR Created)
