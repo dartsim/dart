@@ -169,8 +169,8 @@ to keep assertions enabled outside a Debug build.
 | `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | PR, push, schedule | Yes           |
 | `ci_macos.yml`       | Build, test           | macOS          | PR, push, schedule | Yes           |
 | `ci_windows.yml`     | Build, test           | Windows        | PR, push, schedule | Yes           |
-| `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | PR, push, schedule | Yes           |
-| `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | PR, push, schedule | Yes           |
+| `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual   | N/A           |
+| `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | Schedule, manual   | N/A           |
 | `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | PR, push, schedule | Yes           |
 | `publish_dartpy.yml` | Python wheels         | Multi-platform | Push, schedule     | Yes           |
 
@@ -357,7 +357,7 @@ generates or deploys the API references, so doc validation happens locally:
 **Key design:**
 
 - `ci_lint.yml` runs on ALL changes (including doc-only changes) to catch formatting issues early
-- Platform-specific CI jobs (`ci_freebsd.yml`, `ci_altlinux.yml`, etc.) skip on doc-only changes to save resources
+- FreeBSD and Alt Linux CI (`ci_freebsd.yml`, `ci_altlinux.yml`) run on schedule/manual only to reduce maintenance burden
 - Lint is removed from platform-specific workflows since it's covered by the dedicated job
 
 **Doc-only skip patterns** (used by platform CI, NOT by lint CI):
