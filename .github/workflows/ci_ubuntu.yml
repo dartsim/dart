@@ -6,32 +6,11 @@ on:
   push:
     branches:
       - "**"
-    paths-ignore:
-      - ".github/workflows/cache_*.yml"
-      - "docker/dev/**"
-      - "docs/**"
-      - ".readthedocs.yml"
-      - "tutorials/**"
-      - "**/*.md"
-      - "**/*.rst"
-      - "**/*.po"
-      - "**/*.pot"
   pull_request:
     branches:
       - "**"
-    paths-ignore:
-      - ".github/workflows/cache_*.yml"
-      - "docker/dev/**"
-      - "docs/**"
-      - ".readthedocs.yml"
-      - "tutorials/**"
-      - "**/*.md"
-      - "**/*.rst"
-      - "**/*.po"
-      - "**/*.pot"
   schedule:
-    # Cron syntax: [minute hour day_of_the_month month day_of_the_week]
-    - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
+    - cron: "0 2 * * 0,3"
   workflow_dispatch:
 
 concurrency:
@@ -39,8 +18,32 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'schedule' && github.ref != 'refs/heads/main' }}
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - '**'
+              - '!.github/workflows/cache_*.yml'
+              - '!docker/dev/**'
+              - '!docs/**'
+              - '!.readthedocs.yml'
+              - '!tutorials/**'
+              - '!**/*.md'
+              - '!**/*.rst'
+              - '!**/*.po'
+              - '!**/*.pot'
+
   coverage:
-    if: github.event_name != 'workflow_dispatch'
+    needs: changes
+    # Skip for workflow_dispatch; bypass changes gate for schedule (no file-change payload)
+    if: github.event_name != 'workflow_dispatch' && (github.event_name == 'schedule' || needs.changes.outputs.code == 'true')
     name: Coverage (Debug)
     runs-on: ubuntu-latest
     env:
@@ -87,6 +90,8 @@ jobs:
           fail_ci_if_error: false
 
   build-release:
+    needs: changes
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Release Tests
     runs-on: ubuntu-latest
     env:
@@ -134,11 +139,12 @@ jobs:
           pixi run install
 
   build-debug:
+    needs: changes
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Debug Tests
     runs-on: ubuntu-latest
     env:
       DART_PARALLEL_JOBS: 8
-    # Run Debug builds on every push/PR so regressions are caught before landing on main
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -170,9 +176,9 @@ jobs:
           DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
           pixi run test-all
 
-  # Catch compile failures when assertions are enabled but we're not in a Debug
-  # build type (e.g., downstream builds that drop -DNDEBUG in Release).
   build-asserts:
+    needs: changes
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Asserts enabled (no -DNDEBUG)
     runs-on: ubuntu-latest
     env:
