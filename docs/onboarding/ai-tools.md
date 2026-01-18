@@ -113,7 +113,7 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
    2. Step two
    ```
 
-2. Sync to OpenCode: `pixi run sync-ai-commands`
+2. Sync to OpenCode: `pixi run lint` (includes `sync-ai-commands`)
 
 3. Update `docs/prompts/AGENTS.md` command table
 
@@ -140,7 +140,7 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
    See: `docs/onboarding/relevant-doc.md`
    ```
 
-2. Sync to Codex: `pixi run sync-ai-commands`
+2. Sync to Codex: `pixi run lint` (includes `sync-ai-commands`)
 
 3. Update `AGENTS.md` skills table
 
@@ -149,9 +149,10 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 Commands and skills exist in multiple directories because tools don't share paths.
 The `.claude/` directory is the **source of truth**.
 
-**Automated sync**:
+**Automated sync** (included in `pixi run lint`):
 
 ```bash
+pixi run lint               # Includes sync-ai-commands (recommended)
 pixi run sync-ai-commands   # Sync commands + skills to all tool directories
 pixi run check-ai-commands  # Check if in sync (CI mode, no changes)
 ```
