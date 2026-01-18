@@ -39,6 +39,11 @@ Improvement modes (pick what fits)
 
 Bias toward verification/removal/consolidation over adding.
 
+Skip if
+- Test-only changes with no new patterns or gotchas.
+- Routine bug fixes that don't change documented behavior.
+- Changes already covered by existing docs (verify, don't duplicate).
+
 Rules
 - No ephemeral IDs (branches, PRs, commits, usernames).
 - Unverified commands must be labeled "Suggested (Unverified)".
