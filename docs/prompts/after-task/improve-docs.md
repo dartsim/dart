@@ -36,6 +36,7 @@ STOP if ALL are true:
 | API usage pattern | "Use Skeleton::create(), not constructor" | Module `AGENTS.md` + `docs/onboarding/*.md` |
 | Repeatable workflow | "Dual-PR for bugfixes" | `.claude/commands/` or skill |
 | Tool/command tip | "gh run watch for CI monitoring" | Skill or `docs/onboarding/*.md` |
+| Process improvement | "This template needs better X" | This file (`improve-docs.md`) |
 
 ## Step 2: Locate Target Documentation
 
@@ -76,6 +77,9 @@ Is this about a SPECIFIC module (dart/dynamics, dart/collision, etc.)?
 | `.claude/commands/` | Slash commands | New repeatable workflows |
 | `.claude/skills/` | On-demand knowledge | Domain expertise bundles |
 | `docs/prompts/` | Prompt templates | Session-starting prompts |
+
+**Meta-improvement**: If this template itself is missing guidance or has unclear routing,
+update `docs/prompts/after-task/improve-docs.md` directly. The process should improve itself.
 
 ## Step 3: Search Before Adding
 
