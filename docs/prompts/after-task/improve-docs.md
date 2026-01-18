@@ -78,6 +78,9 @@ Is this about a SPECIFIC module (dart/dynamics, dart/collision, etc.)?
 | `.claude/skills/` | On-demand knowledge | Domain expertise bundles |
 | `docs/prompts/` | Prompt templates | Session-starting prompts |
 
+> **Note**: Multiple AI tools use synced folders (`.claude/`, `.opencode/`, `.codex/`).
+> See root `AGENTS.md` → "Tool Compatibility" for the full mapping.
+
 **Meta-improvement**: If this template itself is missing guidance or has unclear routing,
 update `docs/prompts/after-task/improve-docs.md` directly. The process should improve itself.
 
