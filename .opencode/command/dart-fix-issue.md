@@ -17,6 +17,7 @@ Fix GitHub issue: $ARGUMENTS
 3. Fix with minimal changes + add regression test
 4. `pixi run test-all && pixi run lint`
 5. `git push -u origin HEAD && gh pr create`
+6. **Before PR**: If task used `docs/dev_tasks/<task>/`, remove the folder (include in this PR, not after merge)
 
 ## CRITICAL: Dual-PR for Bug Fixes
 

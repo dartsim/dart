@@ -23,11 +23,15 @@ Documentation for development tasks in DART.
 - ❌ Avoid hardcoded lists (file lists, dependency versions) that become outdated
 - ❌ Avoid full history - focus on current state
 
-**When task is completed**:
+## Task Completion Checklist (MANDATORY)
 
-1. **Add brief section** to existing `docs/onboarding/` file (e.g., add to constraints.md, not new file)
-2. **Remove the entire task folder** from `docs/dev_tasks/`
-3. **Keep onboarding docs concise** - too many docs make them hard to use effectively
+**When task is completed, agents MUST:**
+
+- [ ] **Add brief section** to existing `docs/onboarding/` file (e.g., add to constraints.md, not new file)
+- [ ] **Remove the entire task folder** from `docs/dev_tasks/` — Include in the same PR that completes the task, NOT a follow-up PR
+- [ ] **Keep onboarding docs concise** - too many docs make them hard to use effectively
+
+> **WARNING**: Leaving stale `docs/dev_tasks/<task>/` folders after PR merge is a compliance violation. The folder is working documentation, not permanent documentation.
 
 **Onboarding docs must stay lean**:
 

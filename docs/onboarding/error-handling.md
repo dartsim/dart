@@ -172,4 +172,4 @@ DART_THROW_T_IF(index >= mBodyNodes.size(), OutOfRangeException,
     "Index {} out of range [0, {})", index, mBodyNodes.size());
 ```
 
-See [docs/dev_tasks/error_handling/PLAN.md](../dev_tasks/error_handling/PLAN.md) for the full migration plan.
+Migration status: DART now treats programmer errors with typed exceptions and expected failures with `Result<T, E>`, replacing legacy log-and-return patterns. The source of truth is the implementation in `dart/common/` and the updated call sites across IO and parsing modules. Keep new work aligned with this dual strategy and avoid introducing new logging-only error paths.

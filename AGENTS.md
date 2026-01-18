@@ -40,6 +40,7 @@ If this fails, see `docs/onboarding/ci-cd.md` for troubleshooting.
 | Model loading   | @docs/onboarding/io-parsing.md                              |
 | Build system    | @docs/onboarding/build-system.md                            |
 | AI tools        | @docs/onboarding/ai-tools.md                                |
+| Dev tasks       | @docs/dev_tasks/README.md (cleanup rules when task done)    |
 
 ## Slash Commands
 
@@ -83,6 +84,7 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 - [ ] `pixi run lint` — Format code/docs (run even for docs-only changes)
 - [ ] `pixi run build` — If C++/Python code changed
 - [ ] `pixi run test-unit` — If behavior could be affected
+- [ ] **Dev task cleanup** — If task used `docs/dev_tasks/<task>/`, remove folder in this PR (not after merge)
 
 Shortcut: `pixi run test-all` runs lint + build + all tests.
 
