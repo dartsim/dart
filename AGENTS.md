@@ -40,7 +40,7 @@ If this fails, see `docs/onboarding/ci-cd.md` for troubleshooting.
 | Model loading   | @docs/onboarding/io-parsing.md                              |
 | Build system    | @docs/onboarding/build-system.md                            |
 | AI tools        | @docs/onboarding/ai-tools.md                                |
-| Dev tasks       | @docs/dev_tasks/README.md (cleanup rules when task done)    |
+| Dev tasks       | @docs/dev_tasks/README.md (when to create, cleanup rules)   |
 
 ## Slash Commands
 
@@ -72,6 +72,7 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 ## Key Rules
 
 - **Bug fixes**: Require PRs to BOTH `release-6.16` AND `main` branches. See `docs/onboarding/contributing.md`.
+- **Multi-phase tasks**: Create `docs/dev_tasks/<task>/` for tracking. See `docs/dev_tasks/README.md` for criteria.
 - **Commands**: Use `pixi run ...` tasks; don't invent new entry points.
 - **Formatting**: Run `pixi run lint` before committing (auto-fixes).
 - **PRs**: Use `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone (`DART 7.0` for `main`, `DART 6.16.x` for `release-6.16`).
