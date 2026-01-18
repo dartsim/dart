@@ -34,6 +34,7 @@
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
@@ -41,6 +42,8 @@
 #include <fmt/ostream.h>
 
 #include <utility>
+
+#include <cmath>
 
 namespace dart {
 namespace constraint {
@@ -210,7 +213,18 @@ double DefaultContactSurfaceHandler::computeFrictionCoefficient(
     return DART_DEFAULT_FRICTION_COEFF;
   }
 
-  return dynamicAspect->getFrictionCoeff();
+  const double coeff = dynamicAspect->getFrictionCoeff();
+  const bool invalid = !std::isfinite(coeff) || coeff < 0.0;
+
+  DART_WARN_IF(
+      invalid,
+      "[ContactConstraint] Invalid friction coefficient ({}) from ShapeNode "
+      "[{}]. Friction must be non-negative and finite. Using default ({}).",
+      coeff,
+      shapeNode->getName(),
+      DART_DEFAULT_FRICTION_COEFF);
+
+  return invalid ? DART_DEFAULT_FRICTION_COEFF : coeff;
 }
 
 //==============================================================================
@@ -230,7 +244,19 @@ double DefaultContactSurfaceHandler::computePrimaryFrictionCoefficient(
     return DART_DEFAULT_FRICTION_COEFF;
   }
 
-  return dynamicAspect->getPrimaryFrictionCoeff();
+  const double coeff = dynamicAspect->getPrimaryFrictionCoeff();
+  const bool invalid = !std::isfinite(coeff) || coeff < 0.0;
+
+  DART_WARN_IF(
+      invalid,
+      "[ContactConstraint] Invalid primary friction coefficient ({}) from "
+      "ShapeNode [{}]. Friction must be non-negative and finite. Using "
+      "default ({}).",
+      coeff,
+      shapeNode->getName(),
+      DART_DEFAULT_FRICTION_COEFF);
+
+  return invalid ? DART_DEFAULT_FRICTION_COEFF : coeff;
 }
 
 //==============================================================================
@@ -250,7 +276,20 @@ double DefaultContactSurfaceHandler::computeSecondaryFrictionCoefficient(
     return DART_DEFAULT_FRICTION_COEFF;
   }
 
-  return dynamicAspect->getSecondaryFrictionCoeff();
+  const double coeff = dynamicAspect->getSecondaryFrictionCoeff();
+
+  if (!std::isfinite(coeff) || coeff < 0.0) {
+    DART_WARN(
+        "[ContactConstraint] Invalid secondary friction coefficient ({}) from "
+        "ShapeNode [{}]. Friction must be non-negative and finite. "
+        "Using default value ({}).",
+        coeff,
+        shapeNode->getName(),
+        DART_DEFAULT_FRICTION_COEFF);
+    return DART_DEFAULT_FRICTION_COEFF;
+  }
+
+  return coeff;
 }
 
 //==============================================================================
@@ -270,10 +309,19 @@ double DefaultContactSurfaceHandler::computePrimarySlipCompliance(
     return DART_DEFAULT_SLIP_COMPLIANCE;
   }
 
-  double slipCompliance = dynamicAspect->getPrimarySlipCompliance();
-  if (slipCompliance < 0) {
+  const double slipCompliance = dynamicAspect->getPrimarySlipCompliance();
+
+  if (!std::isfinite(slipCompliance) || slipCompliance < 0.0) {
+    DART_WARN(
+        "[ContactConstraint] Invalid primary slip compliance ({}) from "
+        "ShapeNode [{}]. Slip compliance must be non-negative and finite. "
+        "Using default value ({}).",
+        slipCompliance,
+        shapeNode->getName(),
+        DART_DEFAULT_SLIP_COMPLIANCE);
     return DART_DEFAULT_SLIP_COMPLIANCE;
   }
+
   return slipCompliance;
 }
 
@@ -294,10 +342,19 @@ double DefaultContactSurfaceHandler::computeSecondarySlipCompliance(
     return DART_DEFAULT_SLIP_COMPLIANCE;
   }
 
-  double slipCompliance = dynamicAspect->getSecondarySlipCompliance();
-  if (slipCompliance < 0) {
+  const double slipCompliance = dynamicAspect->getSecondarySlipCompliance();
+
+  if (!std::isfinite(slipCompliance) || slipCompliance < 0.0) {
+    DART_WARN(
+        "[ContactConstraint] Invalid secondary slip compliance ({}) from "
+        "ShapeNode [{}]. Slip compliance must be non-negative and finite. "
+        "Using default value ({}).",
+        slipCompliance,
+        shapeNode->getName(),
+        DART_DEFAULT_SLIP_COMPLIANCE);
     return DART_DEFAULT_SLIP_COMPLIANCE;
   }
+
   return slipCompliance;
 }
 
@@ -346,7 +403,20 @@ double DefaultContactSurfaceHandler::computeRestitutionCoefficient(
     return DART_DEFAULT_RESTITUTION_COEFF;
   }
 
-  return dynamicAspect->getRestitutionCoeff();
+  const double coeff = dynamicAspect->getRestitutionCoeff();
+
+  if (!std::isfinite(coeff) || coeff < 0.0 || coeff > 1.0) {
+    DART_WARN(
+        "[ContactConstraint] Invalid restitution coefficient ({}) from "
+        "ShapeNode [{}]. Restitution must be in range [0, 1] and finite. "
+        "Using default value ({}).",
+        coeff,
+        shapeNode->getName(),
+        DART_DEFAULT_RESTITUTION_COEFF);
+    return DART_DEFAULT_RESTITUTION_COEFF;
+  }
+
+  return coeff;
 }
 
 } // namespace constraint

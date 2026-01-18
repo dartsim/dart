@@ -46,6 +46,8 @@
 
 #include <iostream>
 
+#include <cmath>
+
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0
 #define DART_ERP 0.01
@@ -868,7 +870,20 @@ double SoftContactConstraint::computeFrictionCoefficient(
     return DART_DEFAULT_FRICTION_COEFF;
   }
 
-  return dynamicAspect->getFrictionCoeff();
+  const double coeff = dynamicAspect->getFrictionCoeff();
+
+  if (!std::isfinite(coeff) || coeff < 0.0) {
+    DART_WARN(
+        "[SoftContactConstraint] Invalid friction coefficient ({}) from "
+        "ShapeNode [{}]. Friction must be non-negative and finite. "
+        "Using default value ({}).",
+        coeff,
+        shapeNode->getName(),
+        DART_DEFAULT_FRICTION_COEFF);
+    return DART_DEFAULT_FRICTION_COEFF;
+  }
+
+  return coeff;
 }
 
 //==============================================================================
@@ -888,7 +903,20 @@ double SoftContactConstraint::computeRestitutionCoefficient(
     return DART_DEFAULT_RESTITUTION_COEFF;
   }
 
-  return dynamicAspect->getRestitutionCoeff();
+  const double coeff = dynamicAspect->getRestitutionCoeff();
+
+  if (!std::isfinite(coeff) || coeff < 0.0 || coeff > 1.0) {
+    DART_WARN(
+        "[SoftContactConstraint] Invalid restitution coefficient ({}) from "
+        "ShapeNode [{}]. Restitution must be in range [0, 1] and finite. "
+        "Using default value ({}).",
+        coeff,
+        shapeNode->getName(),
+        DART_DEFAULT_RESTITUTION_COEFF);
+    return DART_DEFAULT_RESTITUTION_COEFF;
+  }
+
+  return coeff;
 }
 
 //==============================================================================
