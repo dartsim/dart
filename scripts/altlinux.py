@@ -177,7 +177,10 @@ def sync_repo(args):
     if tar_proc.stdout:
         tar_proc.stdout.close()
     docker_proc.communicate()
+    tar_proc.wait()
 
+    if tar_proc.returncode != 0:
+        raise subprocess.CalledProcessError(tar_proc.returncode, tar_cmd)
     if docker_proc.returncode != 0:
         raise subprocess.CalledProcessError(docker_proc.returncode, docker_cmd)
 
