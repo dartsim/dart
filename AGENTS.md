@@ -75,6 +75,18 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 - **Formatting**: Run `pixi run lint` before committing (auto-fixes).
 - **Subdirectories**: May have their own `AGENTS.md` for module-specific rules.
 
+## Pre-Commit Checklist (MANDATORY)
+
+**STOP before every `git commit`. Verify:**
+
+- [ ] `pixi run lint` — Format code/docs (run even for docs-only changes)
+- [ ] `pixi run build` — If C++/Python code changed
+- [ ] `pixi run test-unit` — If behavior could be affected
+
+Shortcut: `pixi run test-all` runs lint + build + all tests.
+
+**Why this exists**: Agents often skip these steps when focused on the task. CI will catch issues, but fixing post-push wastes time. Run checks locally first.
+
 ## Tool Compatibility
 
 > **Note**: Tool compatibility assumptions below are based on testing as of Jan 2025.

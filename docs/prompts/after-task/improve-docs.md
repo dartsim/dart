@@ -37,6 +37,13 @@ STOP if ALL are true:
 | Repeatable workflow | "Dual-PR for bugfixes" | `.claude/commands/` or skill |
 | Tool/command tip | "gh run watch for CI monitoring" | Skill or `docs/onboarding/*.md` |
 | Process improvement | "This template needs better X" | This file (`improve-docs.md`) |
+| Agent compliance failure | "Agent skipped lint despite docs saying to" | Improve doc prominence/structure (see Note) |
+
+> **Note on Agent Compliance Failures**: When an agent fails to follow documented rules,
+> the issue is usually **visibility**, not missing content. Fix by: (1) moving the rule
+> to a more prominent location (e.g., checklist section), (2) using scannable formatting
+> (checkboxes, bold headers), or (3) adding to a "MANDATORY" section. For systematic
+> analysis, use `docs/prompts/after-task/audit-agent-compliance.md`.
 
 ## Step 2: Locate Target Documentation
 
