@@ -20,6 +20,7 @@ Read these files first:
 3. **Implement** - Keep commits focused, follow code style
 4. **Verify** - Run `pixi run lint` before committing, then `pixi run test-all`
 5. **PR** - `git push -u origin HEAD` then `gh pr create --draft --milestone "DART 7.0"` (use `DART 6.16.x` for release-6.16); follow `.github/PULL_REQUEST_TEMPLATE.md`
+6. **Cleanup** - Before PR: if task used `docs/dev_tasks/<task>/`, remove the folder (include in this PR, not after merge)
 
 ## Type-Specific
 
