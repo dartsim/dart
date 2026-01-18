@@ -9,13 +9,12 @@ on:
   schedule:
     - cron: 0 5 * * SAT # Runs at 05:00, on every Staturday
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'schedule' && github.ref != 'refs/heads/main' }}
-
 jobs:
   pixi-update:
     name: Maintenance | Update pixi.lock (${{ matrix.base }})
+    concurrency:
+      group: ${{ github.workflow }}-${{ matrix.base }}
+      cancel-in-progress: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
