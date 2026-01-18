@@ -528,6 +528,8 @@ const Eigen::VectorXd& g = skeleton->getGravityForces();
 
 **Design Decision:** MeshShape internally uses `dart::math::TriMesh<double>` for mesh representation instead of Assimp's `aiScene*`. This decouples mesh data from the loading library (Assimp), enabling format-agnostic mesh handling. The deprecated `aiScene*` API is maintained for backward compatibility via lazy on-demand conversion and is scheduled for removal in DART 8.0. For OSG rendering, materials/textures are accessed through `getMaterials()` (Assimp-free), while scene graph hierarchy uses the deprecated `getMesh()` (acceptable since TriMesh doesn't include scene graph structure). See `dart/dynamics/MeshShape.hpp` and `dart/utils/MeshLoader.hpp` for implementation.
 
+**PolygonMesh:** `dart::math::PolygonMesh<S>` stores variable-length polygon faces (quads, n-gons) and provides deterministic triangulation via ear clipping. This preserves original mesh topology for rendering/export while collision backends use the triangulated `TriMesh`. See `dart/math/PolygonMesh.hpp`.
+
 ## Summary
 
 The DART dynamics module provides a comprehensive framework for:
