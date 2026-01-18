@@ -43,7 +43,7 @@ jobs:
 
   build_wheels:
     needs: changes
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Wheels | ${{ matrix.os }} Py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     defaults:
