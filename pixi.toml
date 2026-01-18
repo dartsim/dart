@@ -194,6 +194,7 @@ lint = { depends-on = [
   "lint-toml",
   "lint-md",
   "lint-rst",
+  "sync-ai-commands",
 ] }
 
 # Check formatting without modifying files (used in CI)
@@ -236,6 +237,7 @@ check-lint = { depends-on = [
   "check-lint-rst",
   "check-lint-spell",
   "check-docs-policy",
+  "check-ai-commands",
 ] }
 
 build = { cmd = [
