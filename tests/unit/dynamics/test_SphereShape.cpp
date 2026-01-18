@@ -106,12 +106,12 @@ TEST(SphereShapeValidation, ConstructorWithInvalidRadiusDoesNotCrash)
   std::shared_ptr<SphereShape> sphere;
 
   EXPECT_NO_THROW(
-      sphere
-      = std::make_shared<SphereShape>(std::numeric_limits<double>::quiet_NaN()));
+      sphere = std::make_shared<SphereShape>(
+          std::numeric_limits<double>::quiet_NaN()));
 
   EXPECT_NO_THROW(
-      sphere = std::make_shared<SphereShape>(
-          std::numeric_limits<double>::infinity()));
+      sphere
+      = std::make_shared<SphereShape>(std::numeric_limits<double>::infinity()));
 
   EXPECT_NO_THROW(sphere = std::make_shared<SphereShape>(-1.0));
 
