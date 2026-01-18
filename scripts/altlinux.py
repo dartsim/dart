@@ -38,7 +38,6 @@ DEFAULT_PACKAGES = [
     "make",
     "ninja-build",
     "pkg-config",
-    "rsync",
     "urdfdom-headers",
 ]
 EXCLUDES = [".git", "build", ".pixi", ".deps", ".build"]
@@ -80,21 +79,27 @@ def container_running(container):
     return container in (result.stdout or "").splitlines()
 
 
+_ensure_started_state = {"started": False}
+
+
 def ensure_started(args):
-    if not container_running(args.container):
-        start_container(args)
+    if _ensure_started_state["started"]:
+        if not container_running(args.container):
+            start_container(args)
+        return
+    start_container(args)
+    _ensure_started_state["started"] = True
 
 
 def start_container(args):
-    if container_running(args.container):
-        print(f"Container '{args.container}' already running.")
-        return
-
-    if container_exists(args.container):
-        run(["docker", "rm", "-f", args.container])
-
+    # Always force-remove any existing container to ensure fresh start.
+    # Self-hosted runners may persist containers between jobs.
+    run(["docker", "rm", "-f", args.container], check=False)
     run(["docker", "volume", "create", args.volume], check=False)
 
+    # Start container without source bind mount - we'll use docker cp instead.
+    # This avoids Docker-in-Docker path resolution issues on self-hosted runners
+    # where the script runs inside a container but Docker daemon is on the host.
     cmd = [
         "docker",
         "run",
@@ -103,8 +108,6 @@ def start_container(args):
         args.container,
         "-v",
         f"{args.volume}:/work",
-        "-v",
-        f"{repo_root()}:{args.source_dir}:ro",
         args.image,
         "/bin/sh",
         "-lc",
@@ -153,14 +156,33 @@ def bootstrap_container(args):
 
 
 def sync_repo(args):
+    """Copy repo to container using tar pipe (avoids DinD bind mount issues)."""
     ensure_started(args)
-    excludes = " ".join(f"--exclude {shlex.quote(item)}" for item in EXCLUDES)
-    work_dir = shlex.quote(args.work_dir)
-    src_dir = shlex.quote(args.source_dir)
-    command = (
-        f"mkdir -p {work_dir} && rsync -az --delete {excludes} {src_dir}/ {work_dir}/"
+    host_repo = repo_root()
+    work_dir = args.work_dir
+
+    exec_in_container(
+        args, f"rm -rf {shlex.quote(work_dir)} && mkdir -p {shlex.quote(work_dir)}"
     )
-    exec_in_container(args, command)
+
+    exclude_args = []
+    for item in EXCLUDES:
+        exclude_args.extend(["--exclude", item])
+
+    tar_cmd = ["tar", "-c", "-C", str(host_repo)] + exclude_args + ["."]
+    docker_cmd = ["docker", "exec", "-i", args.container, "tar", "-x", "-C", work_dir]
+
+    tar_proc = subprocess.Popen(tar_cmd, stdout=subprocess.PIPE)
+    docker_proc = subprocess.Popen(docker_cmd, stdin=tar_proc.stdout)
+    if tar_proc.stdout:
+        tar_proc.stdout.close()
+    docker_proc.communicate()
+    tar_proc.wait()
+
+    if tar_proc.returncode != 0:
+        raise subprocess.CalledProcessError(tar_proc.returncode, tar_cmd)
+    if docker_proc.returncode != 0:
+        raise subprocess.CalledProcessError(docker_proc.returncode, docker_cmd)
 
 
 def test_container(args):

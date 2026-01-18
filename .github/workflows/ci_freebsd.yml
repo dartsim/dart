@@ -1,91 +1,70 @@
 name: CI FreeBSD (VM)
 
 on:
-  push:
-    branches:
-      - "**"
-    paths-ignore:
-      - ".github/workflows/cache_*.yml"
-      - "docker/dev/**"
-      - "docs/**"
-      - ".readthedocs.yml"
-      - "tutorials/**"
-      - "**/*.md"
-      - "**/*.rst"
-      - "**/*.po"
-      - "**/*.pot"
-  pull_request:
-    branches:
-      - "**"
-    paths-ignore:
-      - ".github/workflows/cache_*.yml"
-      - "docker/dev/**"
-      - "docs/**"
-      - ".readthedocs.yml"
-      - "tutorials/**"
-      - "**/*.md"
-      - "**/*.rst"
-      - "**/*.po"
-      - "**/*.pot"
   schedule:
-    # Run every Monday at 04:00 UTC
     - cron: "0 4 * * 1"
   workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'schedule' && github.ref != 'refs/heads/main' }}
 
 jobs:
   freebsd:
     name: FreeBSD repro (VM)
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, dartsim]
     timeout-minutes: 120
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup pixi
-        uses: prefix-dev/setup-pixi@v0.9.1
+        uses: prefix-dev/setup-pixi@v0.9.3
         with:
           cache: true
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
-      - name: Enable KVM
+      - name: Check runner requirements (KVM and Docker)
+        id: prereqs
         run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-          # Verify KVM is available
-          echo "=== KVM Diagnostics ==="
-          echo "CPU virtualization support:"
-          egrep -c '(vmx|svm)' /proc/cpuinfo || echo "No VMX/SVM support found"
-          echo "KVM device:"
-          ls -la /dev/kvm 2>/dev/null || echo "/dev/kvm does not exist"
-          echo "KVM modules:"
-          lsmod | grep kvm || echo "No KVM modules loaded"
-          echo "KVM access test:"
-          if [ -e /dev/kvm ]; then
-            if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
-              echo "KVM is accessible"
-            else
-              echo "KVM exists but not accessible, trying to fix permissions..."
-              sudo chmod 666 /dev/kvm
-              ls -la /dev/kvm
-            fi
+          FAILED=false
+
+          echo "=== Docker Diagnostics ==="
+          if docker info > /dev/null 2>&1; then
+            echo "Docker is accessible"
+            echo "docker_available=true" >> $GITHUB_OUTPUT
           else
-            echo "KVM not available on this runner"
+            echo "::error::Docker not accessible - check socket permissions"
+            echo "docker_available=false" >> $GITHUB_OUTPUT
+            FAILED=true
           fi
-          echo "======================="
+
+          echo ""
+          echo "=== KVM Diagnostics ==="
+          egrep -c '(vmx|svm)' /proc/cpuinfo || echo "No VMX/SVM support found"
+          ls -la /dev/kvm 2>/dev/null || echo "/dev/kvm does not exist"
+          if [ -e /dev/kvm ] && [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
+            echo "KVM is accessible"
+            echo "kvm_available=true" >> $GITHUB_OUTPUT
+          else
+            echo "::error::KVM not accessible"
+            echo "kvm_available=false" >> $GITHUB_OUTPUT
+            FAILED=true
+          fi
+
+          if [ "$FAILED" = "true" ]; then
+            echo ""
+            echo "::error::FreeBSD CI requires both Docker and KVM"
+            echo "Self-hosted runner setup: https://gist.github.com/jslee02/c0a6b0e4af18e4ecb2f2e8fb5b715f78"
+            exit 1
+          fi
 
       - name: Run FreeBSD repro tests
+        if: steps.prereqs.outputs.kvm_available == 'true' && steps.prereqs.outputs.docker_available == 'true'
         env:
           FREEBSD_VM_CPUS: "2"
           FREEBSD_VM_MEM: "4096"
           FREEBSD_VM_BUILD_PARALLEL_LEVEL: "1"
           FREEBSD_VM_CTEST_TIMEOUT: "2400"
-          # Skip BalanceConstraint test due to SIGILL in QEMU nested virtualization.
-          # The test passes on native FreeBSD and all other platforms. See PR #2414.
-          FREEBSD_VM_TEST_EXCLUDE_REGEX: "BalanceConstraint"
+          # Skip tests that require SDF support or crash in QEMU nested virtualization.
+          # See PR #2419 for details on each exclusion.
+          FREEBSD_VM_TEST_EXCLUDE_REGEX: "ForwardKinematics|AtlasIK|INTEGRATION_io_Read|INTEGRATION_io_UrdfParser|INTEGRATION_io_UrdfMaterialParsing|INTEGRATION_io_IkFast|INTEGRATION_simulation_MomentumConservation|INTEGRATION_simulation_MimicConstraint|UNIT_constraint_BalanceConstraint|test_IoRead"
         run: |
           pixi run freebsd-test &
           TEST_PID=$!
@@ -99,12 +78,12 @@ jobs:
           wait $TEST_PID
 
       - name: Show Docker container logs
-        if: always()
+        if: always() && steps.prereqs.outputs.kvm_available == 'true' && steps.prereqs.outputs.docker_available == 'true'
         run: |
           echo "=== Full Docker Container Logs ==="
           docker logs dart-freebsd-vm 2>&1 || true
           echo "==================================="
 
       - name: Stop FreeBSD VM
-        if: always()
+        if: always() && steps.prereqs.outputs.kvm_available == 'true' && steps.prereqs.outputs.docker_available == 'true'
         run: pixi run freebsd-stop

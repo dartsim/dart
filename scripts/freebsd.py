@@ -128,20 +128,20 @@ def container_running(container):
     return container in (result.stdout or "").splitlines()
 
 
+_ensure_started_state = {"started": False}
+
+
 def ensure_started(args):
-    key_path = ssh_key_path(vm_dir_path(args.vm_dir))
-    if container_running(args.container):
-        if not key_path.exists():
-            print(
-                "SSH key missing for the running FreeBSD VM; restarting to regenerate it.",
-                file=sys.stderr,
-            )
-            stop_container(args)
+    if _ensure_started_state["started"]:
+        if not container_running(args.container):
             start_container(args)
-    else:
-        start_container(args)
+            wait_for_ssh_key(args)
+            wait_for_ssh(args, user=args.user)
+        return
+    start_container(args)
     wait_for_ssh_key(args)
     wait_for_ssh(args, user=args.user)
+    _ensure_started_state["started"] = True
 
 
 def build_image(args):
@@ -166,12 +166,9 @@ def start_container(args):
     vm_dir.mkdir(parents=True, exist_ok=True)
     ensure_ssh_key(args)
 
-    if container_running(args.container):
-        print(f"Container '{args.container}' already running.")
-        return
-
-    if container_exists(args.container):
-        run(["docker", "rm", "-f", args.container])
+    # Always force-remove any existing container to ensure fresh state.
+    # Use --force to avoid errors if container doesn't exist.
+    run(["docker", "rm", "-f", args.container], check=False)
 
     cmd = [
         "docker",
@@ -245,7 +242,7 @@ def wait_for_ssh_key(args, timeout=120):
     sys.exit(1)
 
 
-def wait_for_ssh(args, user, timeout=300):
+def wait_for_ssh(args, user, timeout=600):
     vm_dir = vm_dir_path(args.vm_dir)
     key_path = ssh_key_path(vm_dir)
     deadline = time.time() + timeout
