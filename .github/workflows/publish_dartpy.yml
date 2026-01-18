@@ -6,30 +6,10 @@ name: Publish dartpy
     branches:
       - "**"
     tags:
-      - "v*.*.*" # Trigger on version tags (e.g., v7.0.0, v7.0.1)
-    paths-ignore:
-      - ".github/workflows/cache_*.yml"
-      - "docker/dev/**"
-      - "docs/**"
-      - ".readthedocs.yml"
-      - "tutorials/**"
-      - "**/*.md"
-      - "**/*.rst"
-      - "**/*.po"
-      - "**/*.pot"
+      - "v*.*.*"
   pull_request:
     branches:
       - "**"
-    paths-ignore:
-      - ".github/workflows/cache_*.yml"
-      - "docker/dev/**"
-      - "docs/**"
-      - ".readthedocs.yml"
-      - "tutorials/**"
-      - "**/*.md"
-      - "**/*.rst"
-      - "**/*.po"
-      - "**/*.pot"
   schedule:
     - cron: "0 10 * * 0,3"
   workflow_dispatch:
@@ -39,7 +19,31 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'schedule' && github.ref != 'refs/heads/main' }}
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - '**'
+              - '!.github/workflows/cache_*.yml'
+              - '!docker/dev/**'
+              - '!docs/**'
+              - '!.readthedocs.yml'
+              - '!tutorials/**'
+              - '!**/*.md'
+              - '!**/*.rst'
+              - '!**/*.po'
+              - '!**/*.pot'
+
   build_wheels:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     name: Wheels | ${{ matrix.os }} Py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     defaults:

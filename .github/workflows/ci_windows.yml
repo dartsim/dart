@@ -6,32 +6,11 @@ on:
   push:
     branches:
       - "**"
-    paths-ignore:
-      - ".github/workflows/cache_*.yml"
-      - "docker/dev/**"
-      - "docs/**"
-      - ".readthedocs.yml"
-      - "tutorials/**"
-      - "**/*.md"
-      - "**/*.rst"
-      - "**/*.po"
-      - "**/*.pot"
   pull_request:
     branches:
       - "**"
-    paths-ignore:
-      - ".github/workflows/cache_*.yml"
-      - "docker/dev/**"
-      - "docs/**"
-      - ".readthedocs.yml"
-      - "tutorials/**"
-      - "**/*.md"
-      - "**/*.rst"
-      - "**/*.po"
-      - "**/*.pot"
   schedule:
-    # Cron syntax: [minute hour day_of_the_month month day_of_the_week]
-    - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
+    - cron: "0 2 * * 0,3"
   workflow_dispatch:
 
 concurrency:
@@ -39,7 +18,31 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'schedule' && github.ref != 'refs/heads/main' }}
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - '**'
+              - '!.github/workflows/cache_*.yml'
+              - '!docker/dev/**'
+              - '!docs/**'
+              - '!.readthedocs.yml'
+              - '!tutorials/**'
+              - '!**/*.md'
+              - '!**/*.rst'
+              - '!**/*.po'
+              - '!**/*.pot'
+
   build:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     name: Tests (${{ matrix.build_type }})
     runs-on: windows-latest
     strategy:
