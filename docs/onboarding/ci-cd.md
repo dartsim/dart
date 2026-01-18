@@ -187,6 +187,26 @@ to keep assertions enabled outside a Debug build.
 - Compilation caching (sccache) reduces build time by 50-70%
 - Path filtering prevents unnecessary workflow runs
 - Conditional execution skips non-essential jobs on PRs
+- Concurrency groups cancel superseded runs (see below)
+
+**Concurrency configuration:**
+
+All CI workflows use concurrency groups to cancel in-progress jobs when new commits are pushed to the same branch, with exceptions:
+
+- **main branch**: Never cancelled (ensure full test coverage)
+- **scheduled jobs**: Never cancelled (ensure periodic validation completes)
+
+```yaml
+# Standard pattern for push/PR-triggered workflows
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' && github.ref != 'refs/heads/main' }}
+
+# For workflows with matrix that push to fixed branches (e.g., update_lockfiles)
+concurrency:
+  group: ${{ github.workflow }}-${{ matrix.base }}
+  cancel-in-progress: false  # Queue instead of cancel/race
+```
 
 **Maintain full test coverage:**
 
