@@ -42,6 +42,7 @@
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Diagnostics.hpp"
+#include "dart/common/Exception.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
@@ -430,10 +431,10 @@ std::size_t World::getNumSkeletons() const
 //==============================================================================
 std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 {
-  if (nullptr == _skeleton) {
-    DART_WARN("Attempting to add a nullptr Skeleton to the world!");
-    return "";
-  }
+  DART_THROW_T_IF(
+      _skeleton == nullptr,
+      common::NullPointerException,
+      "Cannot add nullptr Skeleton to the world");
 
   // If mSkeletons already has _skeleton, then we do nothing.
   if (std::ranges::find(mSkeletons, _skeleton) != mSkeletons.end()) {
@@ -469,14 +470,10 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 //==============================================================================
 void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 {
-  DART_ASSERT(
-      _skeleton != nullptr
-      && "Attempted to remove nullptr Skeleton from world");
-
-  if (nullptr == _skeleton) {
-    DART_WARN("Attempting to remove a nullptr Skeleton from the world!");
-    return;
-  }
+  DART_THROW_T_IF(
+      _skeleton == nullptr,
+      common::NullPointerException,
+      "Cannot remove nullptr Skeleton from the world");
 
   // Find index of _skeleton in mSkeleton.
   std::size_t index = 0;
@@ -581,13 +578,10 @@ std::size_t World::getNumSimpleFrames() const
 //==============================================================================
 std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 {
-  DART_ASSERT(
-      _frame != nullptr && "Attempted to add nullptr SimpleFrame to world");
-
-  if (nullptr == _frame) {
-    DART_WARN("Attempting to add a nullptr SimpleFrame to the world!");
-    return "";
-  }
+  DART_THROW_T_IF(
+      _frame == nullptr,
+      common::NullPointerException,
+      "Cannot add nullptr SimpleFrame to the world");
 
   if (std::ranges::find(mSimpleFrames, _frame) != mSimpleFrames.end()) {
     DART_WARN(
@@ -613,9 +607,10 @@ std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 //==============================================================================
 void World::removeSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 {
-  DART_ASSERT(
-      _frame != nullptr
-      && "Attempted to remove nullptr SimpleFrame from world");
+  DART_THROW_T_IF(
+      _frame == nullptr,
+      common::NullPointerException,
+      "Cannot remove nullptr SimpleFrame from the world");
 
   auto it = std::ranges::find(mSimpleFrames, _frame);
 
@@ -778,10 +773,10 @@ collision::ConstCollisionDetectorPtr World::getCollisionDetector() const
 //==============================================================================
 void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
 {
-  if (!solver) {
-    DART_WARN("nullptr for constraint solver is not allowed. Doing nothing.");
-    return;
-  }
+  DART_THROW_T_IF(
+      !solver,
+      common::NullPointerException,
+      "Cannot set nullptr as constraint solver");
 
   if (mConstraintSolver)
     solver->setFromOtherConstraintSolver(*mConstraintSolver);

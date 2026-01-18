@@ -34,6 +34,7 @@
 
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Logging.hpp"
+#include "dart/common/Result.hpp"
 #include "dart/common/String.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
@@ -362,6 +363,34 @@ dynamics::SkeletonPtr readSkeleton(
       "[dart::io::readSkeleton] Unsupported model format for URI [{}]",
       uri.toString());
   return nullptr;
+}
+
+//==============================================================================
+common::Result<simulation::WorldPtr, common::Error> tryReadWorld(
+    const common::Uri& uri, const ReadOptions& options)
+{
+  auto world = readWorld(uri, options);
+  if (world) {
+    return common::Result<simulation::WorldPtr, common::Error>::ok(
+        std::move(world));
+  }
+  return common::Result<simulation::WorldPtr, common::Error>::err(
+      common::Error(
+          fmt::format("Failed to load world from '{}'", uri.toString())));
+}
+
+//==============================================================================
+common::Result<dynamics::SkeletonPtr, common::Error> tryReadSkeleton(
+    const common::Uri& uri, const ReadOptions& options)
+{
+  auto skeleton = readSkeleton(uri, options);
+  if (skeleton) {
+    return common::Result<dynamics::SkeletonPtr, common::Error>::ok(
+        std::move(skeleton));
+  }
+  return common::Result<dynamics::SkeletonPtr, common::Error>::err(
+      common::Error(
+          fmt::format("Failed to load skeleton from '{}'", uri.toString())));
 }
 
 } // namespace io

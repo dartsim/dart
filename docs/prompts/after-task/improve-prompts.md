@@ -19,15 +19,16 @@ Scope
 - No product/code changes.
 
 Actions
-1. Propose a better starting prompt for this type of task (if applicable).
-2. Add, tighten, merge, or remove prompts as needed.
-3. Update `docs/prompts/AGENTS.md` index if files change.
+1. Verify existing prompts are still accurate after workflow/tool changes.
+2. Propose a better starting prompt for this type of task (if applicable).
+3. Add, tighten, merge, or remove prompts as needed.
+4. Update `docs/prompts/AGENTS.md` index if files change.
 
 Rules
 - Keep prompts short, task-scoped, reusable.
 - Use `<PLACEHOLDER>` format.
 - No ephemeral IDs (branches, PRs, commits, usernames).
-- Prefer merging/tightening over adding new prompts.
+- Prefer verification/merging/tightening over adding new prompts.
 
 Output
 - Summary of changes with rationale.
