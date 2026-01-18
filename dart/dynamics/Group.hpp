@@ -49,7 +49,7 @@ public:
   /// parent Joint of each BodyNode will also be added to the Group. If
   /// includeDofs is true, then the parent DegreesOfFreedom of each BodyNode
   /// will also be added to the Group.
-  static GroupPtr create(
+  [[nodiscard]] static GroupPtr create(
       const std::string& name = "Group",
       std::span<BodyNode* const> bodyNodes = {},
       bool includeJoints = true,
@@ -59,14 +59,14 @@ public:
   /// true, then the child BodyNode of each DegreeOfFreedom will also be added
   /// to the Group. If includeJoints is true, then the Joint of each
   /// DegreeOfFreedom will also be added to the Group.
-  static GroupPtr create(
+  [[nodiscard]] static GroupPtr create(
       const std::string& name,
       std::span<DegreeOfFreedom* const> dofs,
       bool includeBodyNodes = true,
       bool includeJoints = true);
 
   /// Create a Group that mimics the given MetaSkeleton
-  static GroupPtr create(
+  [[nodiscard]] static GroupPtr create(
       const std::string& _name, const MetaSkeletonPtr& _metaSkeleton);
 
   /// Destructor

@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/Skeleton.hpp"
 
+#include "dart/common/Exception.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/StlHelpers.hpp"
@@ -855,17 +856,18 @@ BodyNode* Skeleton::getRootBodyNode(std::size_t _treeIdx)
     return mTreeCache[_treeIdx].mBodyNodes[0];
 
   if (mTreeCache.size() == 0) {
-    DART_ERROR("Requested a root BodyNode from a Skeleton with no BodyNodes!");
-    DART_ASSERT(false);
-  } else {
-    DART_ERROR(
-        "Requested invalid root BodyNode index ({})! Must be less than {}.",
-        _treeIdx,
-        mTreeCache.size());
-    DART_ASSERT(false);
+    DART_THROW_T(
+        common::OutOfRangeException,
+        "Requested a root BodyNode from Skeleton '{}' with no BodyNodes",
+        getName());
   }
 
-  return nullptr;
+  DART_THROW_T(
+      common::OutOfRangeException,
+      "Tree index {} out of range [0, {}) for Skeleton '{}'",
+      _treeIdx,
+      mTreeCache.size(),
+      getName());
 }
 
 //==============================================================================

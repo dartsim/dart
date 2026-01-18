@@ -69,7 +69,7 @@ public:
   };
 
   /// Create a Branch
-  static BranchPtr create(
+  [[nodiscard]] static BranchPtr create(
       const Branch::Criteria& _criteria, const std::string& _name = "Branch");
 
   /// Creates and returns a clone of this Branch.
