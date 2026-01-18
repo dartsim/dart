@@ -114,11 +114,12 @@ In this mode:
 
 ```cpp
 dart::common::setErrorHandler([](const char* type, const char* msg, auto loc) {
-    // Log to your system
+    // Log to your system before terminate
     myLogger.fatal("[{}] {} at {}:{}", type, msg, loc.file_name(), loc.line());
 
-    // Optionally attempt recovery or controlled shutdown
-    gracefulShutdown();
+    // Flush buffers, send telemetry, etc.
+    // Note: Handler cannot prevent termination - it's called BEFORE std::terminate()
+    flushLogs();
 });
 ```
 
