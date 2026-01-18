@@ -44,6 +44,12 @@ Release notes are available in
 `GitHub Releases <https://github.com/dartsim/dart/releases>`_ and the
 `CHANGELOG <https://github.com/dartsim/dart/blob/main/CHANGELOG.md>`_.
 
+Project Stats
+-------------
+
+Track GitHub interest over time with
+`Star History <https://star-history.com/#dartsim/dart&type=date&legend=top-left>`_.
+
 Social Media
 ------------
 

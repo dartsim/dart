@@ -56,8 +56,16 @@ DART has been utilized in research areas such as:
   Computation, Computer Graphics Forum (Eurographics), and ACM Transactions on
   Graphics (presented at SIGGRAPH Asia).
 
-As of November 2025, DART has over 1,000 stars on GitHub and nearly 300 forks,
-and it continues to be cited hundreds of times in the research community.
+Project Activity
+----------------
+
+Star growth over time is tracked on
+`Star History <https://star-history.com/#dartsim/dart&type=date&legend=top-left>`_.
+
+.. image:: https://api.star-history.com/svg?repos=dartsim/dart&type=Date
+   :alt: GitHub star history for dartsim/dart
+   :target: https://star-history.com/#dartsim/dart&type=date&legend=top-left
+   :width: 700
 
 More research papers cited DART can be found at `Google Scholar`_.
 
