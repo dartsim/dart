@@ -196,6 +196,14 @@ endif()
 if(TARGET dart-io)
   dart_add_test("unit" test_IoRead io/test_Read.cpp)
   target_link_libraries(test_IoRead dart-io)
+
+  dart_add_test("unit" UNIT_io_UrdfParser_Errors io/test_UrdfParser_Errors.cpp)
+  target_link_libraries(UNIT_io_UrdfParser_Errors dart-io)
+
+  if(DART_ENABLE_SDFORMAT)
+    dart_add_test("unit" UNIT_io_SdfParser_Errors io/test_SdfParser_Errors.cpp)
+    target_link_libraries(UNIT_io_SdfParser_Errors dart-io)
+  endif()
 endif()
 
 # ==============================================================================
