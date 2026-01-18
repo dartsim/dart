@@ -1223,12 +1223,12 @@ const Eigen::Vector6d& BodyNode::getBodyVelocityChange() const
 
 //==============================================================================
 void BodyNode::addExtForce(
-    const Eigen::Vector3d& _force,
-    const Eigen::Vector3d& _offset,
-    bool _isForceLocal,
-    bool _isOffsetLocal)
+    const Eigen::Vector3d& force,
+    const Eigen::Vector3d& offset,
+    bool isForceLocal,
+    bool isOffsetLocal)
 {
-  if (math::isNan(_force) || math::isInf(_force)) {
+  if (math::isNan(force) || math::isInf(force)) {
     DART_WARN(
         "[BodyNode::addExtForce] Invalid value (NaN or Inf) detected in force "
         "vector for body [{}]. The force is ignored to prevent simulation "
@@ -1237,7 +1237,7 @@ void BodyNode::addExtForce(
     return;
   }
 
-  if (math::isNan(_offset) || math::isInf(_offset)) {
+  if (math::isNan(offset) || math::isInf(offset)) {
     DART_WARN(
         "[BodyNode::addExtForce] Invalid value (NaN or Inf) detected in offset "
         "vector for body [{}]. The force is ignored to prevent simulation "
@@ -1250,15 +1250,15 @@ void BodyNode::addExtForce(
   Eigen::Vector6d F = Eigen::Vector6d::Zero();
   const Eigen::Isometry3d& W = getWorldTransform();
 
-  if (_isOffsetLocal)
-    T.translation() = _offset;
+  if (isOffsetLocal)
+    T.translation() = offset;
   else
-    T.translation() = W.inverse() * _offset;
+    T.translation() = W.inverse() * offset;
 
-  if (_isForceLocal)
-    F.tail<3>() = _force;
+  if (isForceLocal)
+    F.tail<3>() = force;
   else
-    F.tail<3>() = W.linear().transpose() * _force;
+    F.tail<3>() = W.linear().transpose() * force;
 
   mAspectState.mFext += math::dAdInvT(T, F);
 
@@ -1267,12 +1267,12 @@ void BodyNode::addExtForce(
 
 //==============================================================================
 void BodyNode::setExtForce(
-    const Eigen::Vector3d& _force,
-    const Eigen::Vector3d& _offset,
-    bool _isForceLocal,
-    bool _isOffsetLocal)
+    const Eigen::Vector3d& force,
+    const Eigen::Vector3d& offset,
+    bool isForceLocal,
+    bool isOffsetLocal)
 {
-  if (math::isNan(_force) || math::isInf(_force)) {
+  if (math::isNan(force) || math::isInf(force)) {
     DART_WARN(
         "[BodyNode::setExtForce] Invalid value (NaN or Inf) detected in force "
         "vector for body [{}]. The force is ignored to prevent simulation "
@@ -1281,7 +1281,7 @@ void BodyNode::setExtForce(
     return;
   }
 
-  if (math::isNan(_offset) || math::isInf(_offset)) {
+  if (math::isNan(offset) || math::isInf(offset)) {
     DART_WARN(
         "[BodyNode::setExtForce] Invalid value (NaN or Inf) detected in offset "
         "vector for body [{}]. The force is ignored to prevent simulation "
@@ -1294,15 +1294,15 @@ void BodyNode::setExtForce(
   Eigen::Vector6d F = Eigen::Vector6d::Zero();
   const Eigen::Isometry3d& W = getWorldTransform();
 
-  if (_isOffsetLocal)
-    T.translation() = _offset;
+  if (isOffsetLocal)
+    T.translation() = offset;
   else
-    T.translation() = W.inverse() * _offset;
+    T.translation() = W.inverse() * offset;
 
-  if (_isForceLocal)
-    F.tail<3>() = _force;
+  if (isForceLocal)
+    F.tail<3>() = force;
   else
-    F.tail<3>() = W.linear().transpose() * _force;
+    F.tail<3>() = W.linear().transpose() * force;
 
   mAspectState.mFext = math::dAdInvT(T, F);
 
@@ -1310,9 +1310,9 @@ void BodyNode::setExtForce(
 }
 
 //==============================================================================
-void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
+void BodyNode::addExtTorque(const Eigen::Vector3d& torque, bool isLocal)
 {
-  if (math::isNan(_torque) || math::isInf(_torque)) {
+  if (math::isNan(torque) || math::isInf(torque)) {
     DART_WARN(
         "[BodyNode::addExtTorque] Invalid value (NaN or Inf) detected in "
         "torque vector for body [{}]. The torque is ignored to prevent "
@@ -1321,19 +1321,19 @@ void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
     return;
   }
 
-  if (_isLocal)
-    mAspectState.mFext.head<3>() += _torque;
+  if (isLocal)
+    mAspectState.mFext.head<3>() += torque;
   else
     mAspectState.mFext.head<3>()
-        += getWorldTransform().linear().transpose() * _torque;
+        += getWorldTransform().linear().transpose() * torque;
 
   SKEL_SET_FLAGS(mExternalForces);
 }
 
 //==============================================================================
-void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
+void BodyNode::setExtTorque(const Eigen::Vector3d& torque, bool isLocal)
 {
-  if (math::isNan(_torque) || math::isInf(_torque)) {
+  if (math::isNan(torque) || math::isInf(torque)) {
     DART_WARN(
         "[BodyNode::setExtTorque] Invalid value (NaN or Inf) detected in "
         "torque vector for body [{}]. The torque is ignored to prevent "
@@ -1342,11 +1342,11 @@ void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
     return;
   }
 
-  if (_isLocal)
-    mAspectState.mFext.head<3>() = _torque;
+  if (isLocal)
+    mAspectState.mFext.head<3>() = torque;
   else
     mAspectState.mFext.head<3>()
-        = getWorldTransform().linear().transpose() * _torque;
+        = getWorldTransform().linear().transpose() * torque;
 
   SKEL_SET_FLAGS(mExternalForces);
 }
