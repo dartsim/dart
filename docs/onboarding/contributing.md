@@ -110,6 +110,8 @@ pixi run lint
 cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/Release --target format
 ```
 
+Rule of thumb: run `pixi run lint` before committing so auto-fixes are captured.
+
 ### 6. Push and Create Pull Request
 
 ```bash

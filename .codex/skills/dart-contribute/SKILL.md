@@ -35,6 +35,8 @@ git push -u origin HEAD
 gh pr create --draft --milestone "DART 7.0"
 ```
 
+Rule of thumb: run `pixi run lint` before committing so auto-fixes are included.
+
 Use `.github/PULL_REQUEST_TEMPLATE.md` and ensure the PR description covers Summary, Motivation, Changes, Testing, Breaking Changes, and Related Issues.
 
 ## Milestones (Required)
