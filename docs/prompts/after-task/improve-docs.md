@@ -76,7 +76,7 @@ Is this about a SPECIFIC module (dart/dynamics, dart/collision, etc.)?
 | `docs/onboarding/*.md` | Detailed developer guides | Workflows, architecture, deep dives |
 | `.claude/commands/` | Slash commands | New repeatable workflows |
 | `.claude/skills/` | On-demand knowledge | Domain expertise bundles |
-| `docs/prompts/` | Prompt templates | Session-starting prompts |
+| `docs/prompts/` | Prompt templates | Session-starting prompts (follow `docs/prompts/CONTRIBUTING.md`, update index) |
 
 > **Note**: Multiple AI tools use synced folders (`.claude/`, `.opencode/`, `.codex/`).
 > See root `AGENTS.md` → "Tool Compatibility" for the full mapping.
