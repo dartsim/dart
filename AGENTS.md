@@ -40,6 +40,7 @@ If this fails, see `docs/onboarding/ci-cd.md` for troubleshooting.
 | Model loading   | @docs/onboarding/io-parsing.md                              |
 | Build system    | @docs/onboarding/build-system.md                            |
 | AI tools        | @docs/onboarding/ai-tools.md                                |
+| PR reviews      | @docs/onboarding/ai-tools.md (AI review handling rules)     |
 | Dev tasks       | @docs/dev_tasks/README.md (when to create, cleanup rules)   |
 
 ## Slash Commands
