@@ -73,6 +73,7 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 - **Bug fixes**: Require PRs to BOTH `release-6.16` AND `main` branches. See `docs/onboarding/contributing.md`.
 - **Commands**: Use `pixi run ...` tasks; don't invent new entry points.
 - **Formatting**: Run `pixi run lint` before committing (auto-fixes).
+- **PRs**: Use `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone (`DART 7.0` for `main`, `DART 6.16.x` for `release-6.16`).
 - **Subdirectories**: May have their own `AGENTS.md` for module-specific rules.
 
 ## Pre-Commit Checklist (MANDATORY)
