@@ -316,12 +316,13 @@ When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter rev
 
 **Guidance for AI agents addressing automated reviews**:
 
-- **Do NOT reply to AI-generated review comments** - the code change is the response
+- **Do NOT reply directly to AI-generated review comments** - the code change is the response
 - Address the feedback in code, then push the fix
 - If the feedback is valid, implement the fix silently
 - If the feedback is incorrect, ignore it (maintainers will dismiss if needed)
+- **Do consider re-triggering the review** after pushing the fix (e.g., comment `@codex review` for Codex) to verify the fix is correct
 
-This avoids noisy bot-to-bot conversations that clutter PR history.
+This avoids noisy bot-to-bot conversations while still leveraging automated verification.
 
 ---
 
