@@ -27,6 +27,10 @@ gh pr view $1 --comments
 
 Apply minimal fixes, verify, push.
 
-## AI-Generated Reviews
+## AI-Generated Reviews (Codex, Copilot, etc.)
 
-See `docs/onboarding/ai-tools.md` § "Handling Automated Reviews" — do NOT reply directly.
+1. Push fix silently (no reply)
+2. Resolve thread via GraphQL (see ai-tools.md)
+3. Re-trigger: `gh pr comment $1 --body "@codex review"`
+
+Full details: `docs/onboarding/ai-tools.md` § "Handling Automated Reviews"

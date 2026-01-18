@@ -326,20 +326,21 @@ This avoids noisy bot-to-bot conversations while still leveraging automated veri
 
 ### Review-Fix Loop Workflow
 
-After pushing a fix for review feedback:
+After identifying an AI-generated review comment to address:
 
-1. **Re-trigger the review**: Comment `@codex review` (or equivalent for other AI reviewers)
-2. **Monitor for results**: Watch for either:
-   - New review comments (issues found) → address them and repeat from step 1
-   - "No issues" response (e.g., "Didn't find any major issues") → proceed to step 3
-3. **Resolve all threads**: Use the GraphQL API below to mark conversations resolved
-4. **Done**: PR is ready for human review
+1. **Push the fix** silently (no reply to the comment)
+2. **Resolve the thread immediately** using GraphQL (see commands below)
+3. **Re-trigger the review**: `gh pr comment <PR> --body "@codex review"`
+4. **Monitor for results**:
+   - New review comments → repeat from step 1
+   - "No issues" or 👍 reaction → done, PR is ready for human review
+
+**Agents MUST resolve threads automatically after pushing fixes.** This keeps the PR clean.
+
+### GraphQL Commands for Thread Resolution
 
 ```bash
-# Monitor PR for new comments (poll until AI review responds)
-gh api repos/OWNER/REPO/issues/PR_NUMBER/comments --jq '.[-1].body' | head -5
-
-# Check for unresolved review threads
+# List unresolved threads (get thread IDs)
 gh api graphql -f query='
   query {
     repository(owner: "dartsim", name: "dart") {
@@ -350,9 +351,9 @@ gh api graphql -f query='
       }
     }
   }
-'
+' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)'
 
-# Resolve a specific thread
+# Resolve a thread by ID
 gh api graphql -f query='
   mutation {
     resolveReviewThread(input: {threadId: "PRRT_xxxx"}) {
@@ -360,9 +361,12 @@ gh api graphql -f query='
     }
   }
 '
+
+# One-liner: resolve all unresolved threads for a PR
+PR=2458; gh api graphql -f query="query { repository(owner: \"dartsim\", name: \"dart\") { pullRequest(number: $PR) { reviewThreads(first: 50) { nodes { id isResolved } } } } }" --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | .id' | while read -r tid; do gh api graphql -f query="mutation { resolveReviewThread(input: {threadId: \"$tid\"}) { thread { isResolved } } }" > /dev/null && echo "Resolved: $tid"; done
 ```
 
-**Note**: This marks conversations as resolved without adding noise to the PR history.
+**Why resolve immediately**: Clicking "Resolve conversation" in the UI adds no comment noise. The code change is the response—the resolved thread shows the fix was acknowledged.
 
 ---
 
