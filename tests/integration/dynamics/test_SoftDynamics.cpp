@@ -43,6 +43,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <string>
 #include <vector>
 
