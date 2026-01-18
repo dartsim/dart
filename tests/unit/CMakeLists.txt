@@ -80,6 +80,8 @@ dart_add_test(
 # Dynamics Tests
 # ==============================================================================
 dart_add_test("unit" UNIT_dynamics_GenericJoints dynamics/test_GenericJoints.cpp)
+dart_add_test(
+  "unit" UNIT_dynamics_BodyNodeExternalForce dynamics/test_BodyNodeExternalForce.cpp)
 dart_add_test("unit" UNIT_dynamics_Inertia dynamics/test_Inertia.cpp)
 dart_add_test("unit" UNIT_dynamics_ScrewJoint dynamics/test_ScrewJoint.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeNodePtr dynamics/test_ShapeNodePtr.cpp)

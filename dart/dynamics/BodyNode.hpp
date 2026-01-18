@@ -738,27 +738,27 @@ public:
   /// application and the force in local coordinates are stored in mContacts.
   /// When conversion is needed, make sure the transformations are available.
   void addExtForce(
-      const Eigen::Vector3d& _force,
-      const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
-      bool _isForceLocal = false,
-      bool _isOffsetLocal = true);
+      const Eigen::Vector3d& force,
+      const Eigen::Vector3d& offset = Eigen::Vector3d::Zero(),
+      bool isForceLocal = false,
+      bool isOffsetLocal = true);
 
   /// Set Applying linear Cartesian forces to this node.
   void setExtForce(
-      const Eigen::Vector3d& _force,
-      const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
-      bool _isForceLocal = false,
-      bool _isOffsetLocal = true);
+      const Eigen::Vector3d& force,
+      const Eigen::Vector3d& offset = Eigen::Vector3d::Zero(),
+      bool isForceLocal = false,
+      bool isOffsetLocal = true);
 
   /// Add applying Cartesian torque to the node.
   ///
   /// The torque in local coordinates is accumulated in mExtTorqueBody.
-  void addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal = false);
+  void addExtTorque(const Eigen::Vector3d& torque, bool isLocal = false);
 
   /// Set applying Cartesian torque to the node.
   ///
   /// The torque in local coordinates is accumulated in mExtTorqueBody.
-  void setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal = false);
+  void setExtTorque(const Eigen::Vector3d& torque, bool isLocal = false);
 
   /// Clean up structures that store external forces: mContacts, mFext,
   /// mExtForceBody and mExtTorqueBody.
