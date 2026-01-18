@@ -13,8 +13,8 @@ jobs:
   pixi-update:
     name: Maintenance | Update pixi.lock (${{ matrix.base }})
     concurrency:
-      group: ${{ github.workflow }}-${{ matrix.base }}-${{ github.event_name }}
-      cancel-in-progress: ${{ github.event_name != 'schedule' }}
+      group: ${{ github.workflow }}-${{ matrix.base }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     strategy:
       matrix:
