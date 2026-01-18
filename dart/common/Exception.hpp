@@ -36,6 +36,7 @@
 
 #include <fmt/format.h>
 
+#include <algorithm>
 #include <exception>
 #include <source_location>
 #include <stdexcept>
