@@ -23,7 +23,7 @@
 ## Breaking Changes
 
 - [ ] None
-- 
+-
 
 <!-- If breaking changes exist, describe impact and migration steps. -->
 
