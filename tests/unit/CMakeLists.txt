@@ -100,6 +100,11 @@ dart_add_test(
   "unit" UNIT_dynamics_BodyNodeCollisionSignals dynamics/test_BodyNodeCollisionSignals.cpp)
 dart_add_test("unit" UNIT_dynamics_VisualAspect dynamics/test_VisualAspect.cpp)
 dart_add_test("unit" UNIT_dynamics_WeldJointMerge dynamics/test_WeldJointMerge.cpp)
+dart_add_test("unit" UNIT_dynamics_CapsuleShape dynamics/test_CapsuleShape.cpp)
+dart_add_test("unit" UNIT_dynamics_ConeShape dynamics/test_ConeShape.cpp)
+dart_add_test("unit" UNIT_dynamics_CylinderShape dynamics/test_CylinderShape.cpp)
+dart_add_test("unit" UNIT_dynamics_EllipsoidShape dynamics/test_EllipsoidShape.cpp)
+dart_add_test("unit" UNIT_dynamics_PlaneShape dynamics/test_PlaneShape.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
@@ -189,6 +194,12 @@ if(TARGET dart-io)
   dart_add_test("unit" test_IoRead io/test_Read.cpp)
   target_link_libraries(test_IoRead dart-io)
 endif()
+
+# ==============================================================================
+# Sensor Tests
+# ==============================================================================
+dart_add_test("unit" UNIT_sensor_Sensor sensor/test_Sensor.cpp)
+dart_add_test("unit" UNIT_sensor_SensorManager sensor/test_SensorManager.cpp)
 
 # ==============================================================================
 # Simulation-Experimental Tests

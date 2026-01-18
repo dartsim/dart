@@ -1,17 +1,38 @@
 # Reference: https://github.com/codecov/support/wiki/Codecov-Yaml
+#
+# Test Coverage Audit Task: docs/dev_tasks/test-coverage/
+# Targets: 85% overall, 90% for core modules
 
 coverage:
   status:
     project:
       default:
-        threshold: 1%
+        target: 80% # Phase 2 target (increase to 85% after Phase 2)
+        threshold: 2% # Allow 2% fluctuation
     patch:
       default:
-        informational: true
+        target: 80% # Require new code to meet standard
+        # informational: true  # Remove after Phase 2 complete
+
   ignore:
+    # Correct exclusions (keep):
     - "tests"
     - "dart/external"
+
+    # GUI - hard to test in CI without headless rendering
+    # BACKLOG: Revisit when headless CI is feasible (see docs/dev_tasks/test-coverage/03-backlog.md)
     - "dart/gui"
+
+    # Generated/config files:
+    - "dart/config.hpp"
+
+    # Experimental APIs under heavy development
+    # BACKLOG: Test when APIs stabilize (see docs/dev_tasks/test-coverage/03-backlog.md)
+    - "dart/simulation/experimental/**"
+
+    # Deprecated code scheduled for removal:
+    - "**/SmartPointer.hpp"
 
 comment:
   layout: "diff, flags, files"
+  require_changes: true
