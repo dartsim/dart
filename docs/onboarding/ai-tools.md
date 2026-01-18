@@ -310,6 +310,21 @@ Contributors can create personal instruction files that are gitignored:
 
 ---
 
+## Handling Automated Reviews
+
+When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter review comments from other AI systems (e.g., Codex bot, GitHub Copilot).
+
+**Guidance for AI agents addressing automated reviews**:
+
+- **Do NOT reply to AI-generated review comments** - the code change is the response
+- Address the feedback in code, then push the fix
+- If the feedback is valid, implement the fix silently
+- If the feedback is incorrect, ignore it (maintainers will dismiss if needed)
+
+This avoids noisy bot-to-bot conversations that clutter PR history.
+
+---
+
 ## Known Limitations
 
 - **No cross-tool command sharing**: Claude Code and OpenCode read different directories
