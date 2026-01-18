@@ -42,7 +42,7 @@ jobs:
 
   build-release:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Release Tests (arm64)
     runs-on: macos-latest
     steps:
@@ -83,7 +83,7 @@ jobs:
 
   build-debug:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Debug Tests (arm64)
     runs-on: macos-latest
     steps:

@@ -42,7 +42,7 @@ jobs:
 
   build:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Tests (${{ matrix.build_type }})
     runs-on: windows-latest
     strategy:

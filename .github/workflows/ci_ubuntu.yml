@@ -42,7 +42,8 @@ jobs:
 
   coverage:
     needs: changes
-    if: github.event_name != 'workflow_dispatch' && needs.changes.outputs.code == 'true'
+    # Skip for workflow_dispatch; bypass changes gate for schedule (no file-change payload)
+    if: github.event_name != 'workflow_dispatch' && (github.event_name == 'schedule' || needs.changes.outputs.code == 'true')
     name: Coverage (Debug)
     runs-on: ubuntu-latest
     env:
@@ -90,7 +91,7 @@ jobs:
 
   build-release:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Release Tests
     runs-on: ubuntu-latest
     env:
@@ -139,7 +140,7 @@ jobs:
 
   build-debug:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Debug Tests
     runs-on: ubuntu-latest
     env:
@@ -177,7 +178,7 @@ jobs:
 
   build-asserts:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Asserts enabled (no -DNDEBUG)
     runs-on: ubuntu-latest
     env:

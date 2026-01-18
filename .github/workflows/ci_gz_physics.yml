@@ -42,7 +42,7 @@ jobs:
 
   test_gazebo:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: GZ Physics Tests
     runs-on: ubuntu-latest
     env:
