@@ -40,6 +40,8 @@
 
 #include <utility>
 
+#include <cmath>
+
 namespace dart {
 namespace constraint {
 
@@ -208,7 +210,16 @@ double DefaultContactSurfaceHandler::computeFrictionCoefficient(
     return DART_DEFAULT_FRICTION_COEFF;
   }
 
-  return dynamicAspect->getFrictionCoeff();
+  const double coeff = dynamicAspect->getFrictionCoeff();
+  if (!std::isfinite(coeff) || coeff < 0.0) {
+    dtwarn << "[ContactConstraint] Invalid friction coefficient (" << coeff
+           << ") from ShapeNode [" << shapeNode->getName()
+           << "]. Friction must be non-negative and finite. Using default "
+           << "value (" << DART_DEFAULT_FRICTION_COEFF << ").\n";
+    return DART_DEFAULT_FRICTION_COEFF;
+  }
+
+  return coeff;
 }
 
 //==============================================================================
@@ -228,7 +239,16 @@ double DefaultContactSurfaceHandler::computePrimaryFrictionCoefficient(
     return DART_DEFAULT_FRICTION_COEFF;
   }
 
-  return dynamicAspect->getPrimaryFrictionCoeff();
+  const double coeff = dynamicAspect->getPrimaryFrictionCoeff();
+  if (!std::isfinite(coeff) || coeff < 0.0) {
+    dtwarn << "[ContactConstraint] Invalid primary friction coefficient ("
+           << coeff << ") from ShapeNode [" << shapeNode->getName()
+           << "]. Friction must be non-negative and finite. Using default "
+           << "value (" << DART_DEFAULT_FRICTION_COEFF << ").\n";
+    return DART_DEFAULT_FRICTION_COEFF;
+  }
+
+  return coeff;
 }
 
 //==============================================================================
@@ -248,7 +268,16 @@ double DefaultContactSurfaceHandler::computeSecondaryFrictionCoefficient(
     return DART_DEFAULT_FRICTION_COEFF;
   }
 
-  return dynamicAspect->getSecondaryFrictionCoeff();
+  const double coeff = dynamicAspect->getSecondaryFrictionCoeff();
+  if (!std::isfinite(coeff) || coeff < 0.0) {
+    dtwarn << "[ContactConstraint] Invalid secondary friction coefficient ("
+           << coeff << ") from ShapeNode [" << shapeNode->getName()
+           << "]. Friction must be non-negative and finite. Using default "
+           << "value (" << DART_DEFAULT_FRICTION_COEFF << ").\n";
+    return DART_DEFAULT_FRICTION_COEFF;
+  }
+
+  return coeff;
 }
 
 //==============================================================================
@@ -267,8 +296,12 @@ double DefaultContactSurfaceHandler::computePrimarySlipCompliance(
     return DART_DEFAULT_SLIP_COMPLIANCE;
   }
 
-  double slipCompliance = dynamicAspect->getPrimarySlipCompliance();
-  if (slipCompliance < 0) {
+  const double slipCompliance = dynamicAspect->getPrimarySlipCompliance();
+  if (!std::isfinite(slipCompliance) || slipCompliance < 0.0) {
+    dtwarn << "[ContactConstraint] Invalid primary slip compliance ("
+           << slipCompliance << ") from ShapeNode [" << shapeNode->getName()
+           << "]. Slip compliance must be non-negative and finite. Using "
+           << "default value (" << DART_DEFAULT_SLIP_COMPLIANCE << ").\n";
     return DART_DEFAULT_SLIP_COMPLIANCE;
   }
   return slipCompliance;
@@ -291,8 +324,12 @@ double DefaultContactSurfaceHandler::computeSecondarySlipCompliance(
     return DART_DEFAULT_SLIP_COMPLIANCE;
   }
 
-  double slipCompliance = dynamicAspect->getSecondarySlipCompliance();
-  if (slipCompliance < 0) {
+  const double slipCompliance = dynamicAspect->getSecondarySlipCompliance();
+  if (!std::isfinite(slipCompliance) || slipCompliance < 0.0) {
+    dtwarn << "[ContactConstraint] Invalid secondary slip compliance ("
+           << slipCompliance << ") from ShapeNode [" << shapeNode->getName()
+           << "]. Slip compliance must be non-negative and finite. Using "
+           << "default value (" << DART_DEFAULT_SLIP_COMPLIANCE << ").\n";
     return DART_DEFAULT_SLIP_COMPLIANCE;
   }
   return slipCompliance;
@@ -341,7 +378,16 @@ double DefaultContactSurfaceHandler::computeRestitutionCoefficient(
     return DART_DEFAULT_RESTITUTION_COEFF;
   }
 
-  return dynamicAspect->getRestitutionCoeff();
+  const double coeff = dynamicAspect->getRestitutionCoeff();
+  if (!std::isfinite(coeff) || coeff < 0.0 || coeff > 1.0) {
+    dtwarn << "[ContactConstraint] Invalid restitution coefficient (" << coeff
+           << ") from ShapeNode [" << shapeNode->getName()
+           << "]. Restitution must be in range [0, 1] and finite. Using "
+           << "default value (" << DART_DEFAULT_RESTITUTION_COEFF << ").\n";
+    return DART_DEFAULT_RESTITUTION_COEFF;
+  }
+
+  return coeff;
 }
 
 } // namespace constraint
