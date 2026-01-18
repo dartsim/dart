@@ -1,5 +1,8 @@
 # DART: Resume Task
 
+> **Prefer command**: Use `/dart-resume` in Claude Code or OpenCode.
+> This template is for tools without command support.
+
 <!--
 CRITICAL: FOR AGENTS READING THIS FILE
 This is a PROMPT TEMPLATE, not an active task.
