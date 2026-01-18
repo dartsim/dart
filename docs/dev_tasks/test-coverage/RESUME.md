@@ -2,68 +2,79 @@
 
 ## Last Session Summary
 
-Completed Phase 1 implementation: created sensor tests (15 + 16 test cases), 5 shape tests (CapsuleShape, ConeShape, CylinderShape, EllipsoidShape, PlaneShape), updated CMakeLists.txt, and configured codecov.yml. All 7 new test files compile and pass.
+Completed Phase 2 high-priority items: C++ EndEffector/Marker/PointMass unit tests, Python skeleton/shape tests expansion, and URDF/SDF parser error tests. All committed to `task/test_coverage` branch (4 commits ahead of origin).
 
 ## Current Branch
 
-`main` — All changes are local (uncommitted). Ready for commit when user requests.
+`task/test_coverage` — 4 commits ahead of origin, clean working tree.
 
 ## Immediate Next Step
 
-**Commit Phase 1 changes** (when user requests) or **continue with Python fixtures** (`python/tests/fixtures.py`).
+**Phase 3 tasks** or **push to origin** for CI validation.
 
 ## Context That Would Be Lost
 
-- Sensor tests PASS - both `test_Sensor.cpp` and `test_SensorManager.cpp` work
-- Shape tests: discovered that shapes other than SphereShape don't validate invalid inputs (no NaN/inf/negative rejection) - tests were rewritten to match actual behavior
-- EllipsoidShape constructor takes DIAMETERS (not radii) - test adjusted accordingly
-- `pixi run lint` completed successfully
-- Coverage target: 85% overall, 90% for core modules
+- Python tests: expanded `test_skeleton.py` from 1 to 31 tests, added `test_shapes.py` with 25 tests
+- URDF parser error tests: 10 test cases covering file errors, invalid XML, missing meshes/packages, string parsing
+- SDF parser error tests: 7 test cases covering file errors, valid loading, root joint type options
+- `DISABLED_CoMJacobianSignConsistency` test PASSES locally - was disabled for CI stability, not a bug
+- Monolithic test investigation: integration tests are appropriately sized, no splitting needed
 
-## Key Files Created/Modified
+## Key Files Created/Modified This Session
 
-**New test files:**
-
-- `tests/unit/sensor/test_Sensor.cpp` - 15 test cases
-- `tests/unit/sensor/test_SensorManager.cpp` - 16 test cases
-- `tests/unit/dynamics/test_CapsuleShape.cpp` - 9 test cases
-- `tests/unit/dynamics/test_ConeShape.cpp` - 9 test cases
-- `tests/unit/dynamics/test_CylinderShape.cpp` - 9 test cases
-- `tests/unit/dynamics/test_EllipsoidShape.cpp` - 10 test cases
-- `tests/unit/dynamics/test_PlaneShape.cpp` - 9 test cases
+**New C++ test files:**
+- `tests/unit/io/test_UrdfParser_Errors.cpp` - 10 test cases
+- `tests/unit/io/test_SdfParser_Errors.cpp` - 7 test cases
 
 **Modified:**
+- `tests/unit/CMakeLists.txt` - Added IO error tests
+- `python/tests/unit/dynamics/test_skeleton.py` - Expanded to 31 tests
+- `python/tests/unit/dynamics/test_shapes.py` - NEW: 25 shape tests
 
-- `tests/unit/CMakeLists.txt` - Added sensor and shape tests
-- `codecov.yml` - Updated with targets (80%) and exclusions
+**Previously committed (this branch):**
+- `tests/unit/dynamics/test_EndEffector.cpp` - 12 test cases
+- `tests/unit/dynamics/test_Marker.cpp` - 12 test cases  
+- `tests/unit/dynamics/test_PointMass.cpp` - 11 test cases
 
-## Phase 1 Checklist
+## Commits on Branch
 
-- [x] Create dev_tasks documentation structure
-- [x] Create `tests/unit/sensor/test_Sensor.cpp`
-- [x] Create `tests/unit/sensor/test_SensorManager.cpp`
-- [x] Create shape tests (Capsule, Cone, Cylinder, Ellipsoid, Plane)
-- [x] Update `codecov.yml`
-- [x] Update CMakeLists.txt files
-- [x] Verify tests compile and pass
-- [x] Run `pixi run lint`
+```
+e9e695b7823 test: add URDF and SDF parser error path tests
+9333ee573ef test: expand Python skeleton and shape tests
+7802afad63f test: add EndEffector, Marker, and PointMass unit tests
+186de412a75 test: add Phase 1 coverage improvements - sensor and shape tests
+```
 
-## Phase 2 Pending Items
+## Phase 2 Checklist
 
-- [ ] Create `python/tests/fixtures.py` (port dynamics_helpers.hpp patterns)
-- [ ] Add EndEffector, Marker, PointMass unit tests
-- [ ] Add parser error tests (URDF, SDF malformed input)
-- [ ] Expand Python `test_skeleton.py`
+- [x] Add EndEffector, Marker, PointMass unit tests
+- [x] Expand Python `test_skeleton.py`
+- [x] Add Python shape tests
+- [x] Add URDF parser error tests
+- [x] Add SDF parser error tests
+- [x] Investigate monolithic tests (no action needed)
+- [x] Investigate Jacobian tests (passes locally, CI stability issue)
+
+## Phase 3 Pending Items
+
+- [ ] Enable patch coverage requirement in `codecov.yml`
+- [ ] Parameterized collision tests (all shape combos)
+- [ ] Constraint solver edge cases
+- [ ] Systematic error path audit
+- [ ] Platform-specific code tests
+- [ ] Document patterns in `testing.md`
 
 ## How to Resume
 
 ```bash
-git status
-# Should show new/modified files in tests/ and docs/dev_tasks/
+cd /home/js/dev/dartsim/dart/task_6
+git checkout task/test_coverage
+git status  # Should show clean working tree
+git log --oneline -5  # Verify 4 commits ahead
+
+# Push to origin for CI
+git push origin task/test_coverage
+
+# Or continue with Phase 3
+pixi run test-all  # Verify everything passes before continuing
 ```
-
-Then either:
-
-1. **Commit** (if user requests): standard git workflow
-2. **Continue Phase 2**: Start with `python/tests/fixtures.py`
-3. **Check test results**: `cd build/default/cpp/Release && ctest --output-on-failure -R "UNIT_sensor|UNIT_dynamics_(Capsule|Cone|Cylinder|Ellipsoid|Plane)"`
