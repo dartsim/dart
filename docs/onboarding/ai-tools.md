@@ -320,17 +320,26 @@ When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter rev
 - Address the feedback in code, then push the fix
 - If the feedback is valid, implement the fix silently
 - If the feedback is incorrect, ignore it (maintainers will dismiss if needed)
-- **Do consider re-triggering the review** after pushing the fix (e.g., comment `@codex review` for Codex) to verify the fix is correct
-- **Resolve the review thread** after addressing the feedback (see below)
+- **Follow the review-fix loop** (see workflow below)
 
 This avoids noisy bot-to-bot conversations while still leveraging automated verification.
 
-### Resolving Review Threads via CLI
+### Review-Fix Loop Workflow
 
-After addressing review feedback, resolve the conversation thread using the GitHub GraphQL API:
+After pushing a fix for review feedback:
+
+1. **Re-trigger the review**: Comment `@codex review` (or equivalent for other AI reviewers)
+2. **Monitor for results**: Watch for either:
+   - New review comments (issues found) → address them and repeat from step 1
+   - "No issues" response (e.g., "Didn't find any major issues") → proceed to step 3
+3. **Resolve all threads**: Use the GraphQL API below to mark conversations resolved
+4. **Done**: PR is ready for human review
 
 ```bash
-# 1. Find the thread ID for review comments on a PR
+# Monitor PR for new comments (poll until AI review responds)
+gh api repos/OWNER/REPO/issues/PR_NUMBER/comments --jq '.[-1].body' | head -5
+
+# Check for unresolved review threads
 gh api graphql -f query='
   query {
     repository(owner: "dartsim", name: "dart") {
@@ -343,7 +352,7 @@ gh api graphql -f query='
   }
 '
 
-# 2. Resolve a specific thread
+# Resolve a specific thread
 gh api graphql -f query='
   mutation {
     resolveReviewThread(input: {threadId: "PRRT_xxxx"}) {
@@ -353,7 +362,7 @@ gh api graphql -f query='
 '
 ```
 
-**Note**: This marks the conversation as resolved without adding noise to the PR history.
+**Note**: This marks conversations as resolved without adding noise to the PR history.
 
 ---
 
