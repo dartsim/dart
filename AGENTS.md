@@ -73,7 +73,20 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 - **Bug fixes**: Require PRs to BOTH `release-6.16` AND `main` branches. See `docs/onboarding/contributing.md`.
 - **Commands**: Use `pixi run ...` tasks; don't invent new entry points.
 - **Formatting**: Run `pixi run lint` before committing (auto-fixes).
+- **PRs**: Use `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone (`DART 7.0` for `main`, `DART 6.16.x` for `release-6.16`).
 - **Subdirectories**: May have their own `AGENTS.md` for module-specific rules.
+
+## Pre-Commit Checklist (MANDATORY)
+
+**STOP before every `git commit`. Verify:**
+
+- [ ] `pixi run lint` — Format code/docs (run even for docs-only changes)
+- [ ] `pixi run build` — If C++/Python code changed
+- [ ] `pixi run test-unit` — If behavior could be affected
+
+Shortcut: `pixi run test-all` runs lint + build + all tests.
+
+**Why this exists**: Agents often skip these steps when focused on the task. CI will catch issues, but fixing post-push wastes time. Run checks locally first.
 
 ## Tool Compatibility
 

@@ -37,33 +37,42 @@ STOP if ALL are true:
 | Repeatable workflow | "Dual-PR for bugfixes" | `.claude/commands/` or skill |
 | Tool/command tip | "gh run watch for CI monitoring" | Skill or `docs/onboarding/*.md` |
 | Process improvement | "This template needs better X" | This file (`improve-docs.md`) |
+| Agent compliance failure | "Agent skipped lint despite docs saying to" | Improve doc prominence/structure (see Note) |
+
+> **Note on Agent Compliance Failures**: When an agent fails to follow documented rules,
+> the issue is usually **visibility**, not missing content. Fix by: (1) moving the rule
+> to a more prominent location (e.g., checklist section), (2) using scannable formatting
+> (checkboxes, bold headers), or (3) adding to a "MANDATORY" section. For systematic
+> analysis, use `docs/prompts/after-task/audit-agent-compliance.md`.
 
 ## Step 2: Locate Target Documentation
 
 ### Decision Tree: Where Does This Go?
 
 ```
+
 Is this about a SPECIFIC module (dart/dynamics, dart/collision, etc.)?
 ├─ YES → Check module's AGENTS.md first
-│        ├─ Add if it's a key pattern, gotcha, or testing tip
-│        └─ Point to docs/onboarding/*.md for detailed explanation
+│ ├─ Add if it's a key pattern, gotcha, or testing tip
+│ └─ Point to docs/onboarding/_.md for detailed explanation
 │
 └─ NO → Is this a cross-cutting concern (build, test, CI, workflow)?
-        ├─ YES → docs/onboarding/*.md
-        │        ├─ building.md - Build issues, dependencies
-        │        ├─ testing.md - Test patterns, debugging
-        │        ├─ ci-cd.md - CI failures, timeouts, caching
-        │        ├─ contributing.md - PR workflow, review process
-        │        └─ code-style.md - Formatting, conventions
-        │
-        └─ Is this a repeatable workflow that agents should follow?
-                ├─ YES → Consider:
-                │        ├─ .claude/commands/ - New slash command
-                │        ├─ .claude/skills/ - Domain knowledge bundle
-                │        └─ docs/prompts/ - Prompt template
-                │
-                └─ NO → Probably skip (see Skip If above)
-```
+├─ YES → docs/onboarding/_.md
+│ ├─ building.md - Build issues, dependencies
+│ ├─ testing.md - Test patterns, debugging
+│ ├─ ci-cd.md - CI failures, timeouts, caching
+│ ├─ contributing.md - PR workflow, review process
+│ └─ code-style.md - Formatting, conventions
+│
+└─ Is this a repeatable workflow that agents should follow?
+├─ YES → Consider:
+│ ├─ .claude/commands/ - New slash command
+│ ├─ .claude/skills/ - Domain knowledge bundle
+│ └─ docs/prompts/ - Prompt template
+│
+└─ NO → Probably skip (see Skip If above)
+
+````
 
 ### Documentation Locations Quick Reference
 
@@ -76,7 +85,7 @@ Is this about a SPECIFIC module (dart/dynamics, dart/collision, etc.)?
 | `docs/onboarding/*.md` | Detailed developer guides | Workflows, architecture, deep dives |
 | `.claude/commands/` | Slash commands | New repeatable workflows |
 | `.claude/skills/` | On-demand knowledge | Domain expertise bundles |
-| `docs/prompts/` | Prompt templates | Session-starting prompts |
+| `docs/prompts/` | Prompt templates | Session-starting prompts (follow `docs/prompts/CONTRIBUTING.md`, update index) |
 
 > **Note**: Multiple AI tools use synced folders (`.claude/`, `.opencode/`, `.codex/`).
 > See root `AGENTS.md` → "Tool Compatibility" for the full mapping.
@@ -98,11 +107,12 @@ find . -name "AGENTS.md" -type f
 
 # Search for existing coverage
 grep -r "your keyword" docs/ .claude/ --include="*.md"
-```
+````
 
 ## Step 4: Apply Changes
 
 ### Improvement Modes (pick what fits)
+
 - **Verify**: Confirm existing docs still accurate
 - **Add**: New pattern not yet documented (last resort)
 - **Update**: Enhance existing section with new insight
@@ -113,6 +123,7 @@ grep -r "your keyword" docs/ .claude/ --include="*.md"
 **Bias**: Update/remove/consolidate >> Add new content
 
 ### Quality Rules
+
 - No ephemeral IDs (branches, PRs, commits, usernames)
 - Write general patterns, not task-specific chronicles
 - 1-3 sentences per topic is ideal
@@ -121,13 +132,18 @@ grep -r "your keyword" docs/ .claude/ --include="*.md"
 - Check if code changes invalidated existing docs
 
 ### AGENTS.md Style
+
 Keep concise: Overview, Key Concepts, Code Patterns, Testing, See Also.
 For detailed content, point to `docs/onboarding/*.md`.
 
 ## Output
 
 Provide:
+
 1. Summary of learnings captured
 2. Files modified (or "No changes needed" with reason)
 3. Any follow-up recommendations
+
+```
+
 ```

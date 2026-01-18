@@ -24,19 +24,19 @@ Works with: Claude Code (`.claude/`), OpenCode (`.opencode/`).
 
 These templates don't have slash command equivalents. Use them manually:
 
-| Prompt                                                           | Purpose                        |
-| ---------------------------------------------------------------- | ------------------------------ |
-| [common/mechanical-refactor.md](common/mechanical-refactor.md)   | Behavior-preserving transforms |
-| [common/branch-cleanup.md](common/branch-cleanup.md)             | Analyze/delete stale branches  |
-| [common/pr-merge-and-cleanup.md](common/pr-merge-and-cleanup.md) | Monitor CI and merge           |
-| [issues/discussion.md](issues/discussion.md)                     | Triage / validity check        |
-| [issues/closing-message.md](issues/closing-message.md)           | Generate closing reply         |
-| [release/packaging-branch.md](release/packaging-branch.md)       | Create release packaging PR    |
-| [release/backport-pr.md](release/backport-pr.md)                 | Cherry-pick to release branch  |
-| [release/branch-ci-fix.md](release/branch-ci-fix.md)             | Fix CI on release branch       |
-| [release/merge-into-main.md](release/merge-into-main.md)         | Merge release branch to main   |
-| [after-task/improve-docs.md](after-task/improve-docs.md)         | Capture learnings → route to correct docs |
-| [after-task/improve-prompts.md](after-task/improve-prompts.md)   | Update `docs/prompts/`         |
+| Prompt                                                                       | Purpose                                   |
+| ---------------------------------------------------------------------------- | ----------------------------------------- |
+| [common/mechanical-refactor.md](common/mechanical-refactor.md)               | Behavior-preserving transforms            |
+| [common/branch-cleanup.md](common/branch-cleanup.md)                         | Analyze/delete stale branches             |
+| [common/pr-merge-and-cleanup.md](common/pr-merge-and-cleanup.md)             | Monitor CI and merge                      |
+| [issues/discussion.md](issues/discussion.md)                                 | Triage / validity check                   |
+| [issues/closing-message.md](issues/closing-message.md)                       | Generate closing reply                    |
+| [release/packaging-branch.md](release/packaging-branch.md)                   | Create release packaging PR               |
+| [release/backport-pr.md](release/backport-pr.md)                             | Cherry-pick to release branch             |
+| [release/branch-ci-fix.md](release/branch-ci-fix.md)                         | Fix CI on release branch                  |
+| [release/merge-into-main.md](release/merge-into-main.md)                     | Merge release branch to main              |
+| [after-task/improve-docs.md](after-task/improve-docs.md)                     | Capture learnings → route to correct docs |
+| [after-task/audit-agent-compliance.md](after-task/audit-agent-compliance.md) | Analyze agent rule violations → fix docs  |
 
 ---
 

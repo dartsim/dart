@@ -30,6 +30,7 @@ Workflow
 - Keep changes concise and reusable; avoid task-specific IDs or temporary examples.
 - If adding commands, label them as suggested/unverified unless you ran them.
 - Update any indexes or references that point to the changed docs.
+- Use `.github/PULL_REQUEST_TEMPLATE.md` for the PR body and set the milestone (`DART 7.0` for `main`, `DART 6.16.x` for `release-6.16`).
 - Commit, push, and open a PR if requested.
 
 Output
