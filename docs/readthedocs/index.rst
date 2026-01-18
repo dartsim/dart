@@ -24,11 +24,25 @@ stability, which are achieved through the use of generalized coordinates to
 represent articulated rigid body systems and the application of Featherstone's
 Articulated Body Algorithm to compute motion dynamics.
 
-Updates
--------
+AI Docs (Experimental)
+----------------------
 
-* 2025-11-09: DART version 6.16.0 released. See :doc:`overview` and :doc:`dart/cpp_api_reference` for links to the API reference.
-* 2022-12-31: DART version 6.13.0 released.
+The official documentation is the source of truth. If you want AI-assisted
+Q&A and summaries, try:
+
+* `DeepWiki <https://deepwiki.com/dartsim/dart>`_
+* `NotebookLM <https://notebooklm.google.com/notebook/c0cfc8ce-17ae-415a-a615-44c4342f0da6>`_
+
+These tools are experimental and may be incomplete or occasionally outdated.
+
+News and Announcements
+----------------------
+
+For updates and announcements, see the
+`GitHub Discussions Announcements category <https://github.com/dartsim/dart/discussions/categories/announcements>`_.
+Release notes are available in
+`GitHub Releases <https://github.com/dartsim/dart/releases>`_ and the
+`CHANGELOG <https://github.com/dartsim/dart/blob/main/CHANGELOG.md>`_.
 
 Social Media
 ------------

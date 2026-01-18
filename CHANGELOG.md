@@ -42,6 +42,7 @@
   - Pixi tasks and helper scripts now guard optional targets (dartpy, GUI examples) automatically, detect missing generator targets before invoking `cmake --build`, and expose `DART_BUILD_*_OVERRIDE` environment hooks so CI and local workflows can toggle bindings/apps without editing `pixi.toml`.
 
 - Tooling and Docs
+  - Added AI-native documentation architecture with AGENTS.md, module-specific guides, slash commands, and command sync automation. ([#2446](https://github.com/dartsim/dart/pull/2446), [#2447](https://github.com/dartsim/dart/pull/2447), [#2448](https://github.com/dartsim/dart/pull/2448), [#2449](https://github.com/dartsim/dart/pull/2449))
   - Simplified copyright headers to first publication year (REUSE compliance). ([#2438](https://github.com/dartsim/dart/pull/2438))
   - CI workflow optimizations, caching, and scheduling controls (including compiler cache guards). ([#2055](https://github.com/dartsim/dart/pull/2055), [#2079](https://github.com/dartsim/dart/pull/2079), [#2135](https://github.com/dartsim/dart/pull/2135), [#2160](https://github.com/dartsim/dart/pull/2160), [#2165](https://github.com/dartsim/dart/pull/2165), [#2192](https://github.com/dartsim/dart/pull/2192), [#2313](https://github.com/dartsim/dart/pull/2313), [#2129](https://github.com/dartsim/dart/pull/2129), [#2265](https://github.com/dartsim/dart/pull/2265), [#2267](https://github.com/dartsim/dart/pull/2267), [#2180](https://github.com/dartsim/dart/pull/2180))
   - CodeQL scope updates and coverage workflow fixes. ([#2121](https://github.com/dartsim/dart/pull/2121), [#2128](https://github.com/dartsim/dart/pull/2128), [#2144](https://github.com/dartsim/dart/pull/2144), [#2147](https://github.com/dartsim/dart/pull/2147), [#2197](https://github.com/dartsim/dart/pull/2197), [#2198](https://github.com/dartsim/dart/pull/2198))
@@ -71,7 +72,7 @@
   - Added LCP documentation. ([#2240](https://github.com/dartsim/dart/pull/2240))
 
 - IO and Parsing
-  - Fix null pointer dereference in XmlHelpers getValue* functions when child element is missing. ([#2428](https://github.com/dartsim/dart/pull/2428))
+  - Fix null pointer dereference in XmlHelpers getValue\* functions when child element is missing. ([#2428](https://github.com/dartsim/dart/pull/2428))
   - Unified model loading under `dart::io` and added HTTP retriever support. ([#2316](https://github.com/dartsim/dart/pull/2316), [#2138](https://github.com/dartsim/dart/pull/2138), [#604](https://github.com/dartsim/dart/issues/604))
   - SDF/URDF parsing improvements: libsdformat integration, SDF mimic metadata, SDF joint limits, tiny inertial handling, URDF multi-DoF limits, and transmission coupling. ([#2154](https://github.com/dartsim/dart/pull/2154), [#2254](https://github.com/dartsim/dart/pull/2254), [#2232](https://github.com/dartsim/dart/pull/2232), [#2284](https://github.com/dartsim/dart/pull/2284), [#2233](https://github.com/dartsim/dart/pull/2233), [#2281](https://github.com/dartsim/dart/pull/2281), [#264](https://github.com/dartsim/dart/issues/264))
   - Parser naming cleanup: renamed `DartLoader` to `UrdfParser` and standardized parser variable names. ([#2269](https://github.com/dartsim/dart/pull/2269), [#2270](https://github.com/dartsim/dart/pull/2270))

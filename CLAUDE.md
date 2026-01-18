@@ -1,5 +1,5 @@
 # Claude Instructions
 
-**READ AGENTS.md FIRST.** All project guidelines, build commands, and conventions are documented there.
+**Read [`AGENTS.md`](AGENTS.md) first.** It is the single source of truth for all AI agents.
 
-This file exists only to redirect Claude Code to the canonical instructions in [AGENTS.md](AGENTS.md).
+This file exists for Claude Code compatibility. All instructions are in AGENTS.md.
