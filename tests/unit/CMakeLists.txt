@@ -2,5 +2,6 @@
 
 add_subdirectory(common)
 add_subdirectory(collision)
+add_subdirectory(dynamics)
 add_subdirectory(math)
 add_subdirectory(utils)
