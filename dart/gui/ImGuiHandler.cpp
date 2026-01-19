@@ -262,6 +262,37 @@ private:
 
 namespace {
 
+constexpr float kDefaultFontSize = 13.0f;
+
+void rebuildDefaultFont(float fontScale, float framebufferScale)
+{
+  if (!std::isfinite(fontScale) || fontScale <= 0.0f) {
+    return;
+  }
+
+  if (!std::isfinite(framebufferScale) || framebufferScale <= 0.0f) {
+    framebufferScale = 1.0f;
+  }
+
+  ImGuiIO& io = ImGui::GetIO();
+
+  ImGui_ImplOpenGL2_DestroyDeviceObjects();
+
+  io.Fonts->Clear();
+
+  ImFontConfig config;
+  config.SizePixels = kDefaultFontSize * fontScale * framebufferScale;
+  config.OversampleH = 2;
+  config.OversampleV = 2;
+  io.Fonts->AddFontDefault(&config);
+
+  io.Fonts->Build();
+
+  ImGui_ImplOpenGL2_CreateDeviceObjects();
+
+  io.FontGlobalScale = 1.0f / framebufferScale;
+}
+
 void setCurrentContext(ImGuiContext* context)
 {
   if (context && ImGui::GetCurrentContext() != context)
@@ -334,6 +365,18 @@ void ImGuiHandler::setCameraCallbacks(::osg::Camera* camera)
 
   ImGuiNewFrameCallback* preDrawCallback = new ImGuiNewFrameCallback(this);
   camera->setPreDrawCallback(preDrawCallback);
+}
+
+//==============================================================================
+void ImGuiHandler::setFontScale(float scale)
+{
+  if (!std::isfinite(scale) || scale <= 0.0f) {
+    return;
+  }
+
+  mFontScale = scale;
+  mUseFontScale = true;
+  mFontScaleDirty = true;
 }
 
 //==============================================================================
@@ -579,6 +622,17 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
   io.DisplaySize = displaySize;
   io.DisplayFramebufferScale = framebufferScale;
   mFramebufferScale = {framebufferScale.x, framebufferScale.y};
+
+  if (mUseFontScale) {
+    const float pixelScale = std::max(framebufferScale.x, framebufferScale.y);
+    const bool scaleChanged
+        = std::abs(pixelScale - mLastFontFramebufferScale) > 1e-3f;
+    if (mFontScaleDirty || scaleChanged) {
+      rebuildDefaultFont(mFontScale, pixelScale);
+      mLastFontFramebufferScale = pixelScale;
+      mFontScaleDirty = false;
+    }
+  }
 
   const auto currentTime
       = renderInfo.getView()->getFrameStamp()->getSimulationTime();
