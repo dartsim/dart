@@ -18,27 +18,25 @@
 
 ---
 
-## Completed Components (181 tests)
+## Completed Components (213 tests)
 
-| Component                        | Files                                 | Tests            | Notes                                     |
-| -------------------------------- | ------------------------------------- | ---------------- | ----------------------------------------- |
-| ContactPoint, ContactManifold    | types.hpp/.cpp                        | 21               | Core contact representation               |
-| CollisionResult, CollisionOption | types.hpp/.cpp                        | (included above) | Result aggregation                        |
-| Aabb                             | aabb.hpp/.cpp                         | 26               | Axis-aligned bounding box                 |
-| SphereShape                      | shapes/shape.hpp/.cpp                 | 15               | Standalone sphere (with Capsule/Cylinder) |
-| BoxShape                         | shapes/shape.hpp/.cpp                 | (included above) | Standalone box                            |
-| CapsuleShape                     | shapes/shape.hpp/.cpp                 | (included above) | Standalone capsule                        |
-| CylinderShape                    | shapes/shape.hpp/.cpp                 | (included above) | Standalone cylinder                       |
-| Sphere-sphere                    | narrow_phase/sphere_sphere.hpp/.cpp   | 17               | Narrow-phase                              |
-| Box-box (SAT)                    | narrow_phase/box_box.hpp/.cpp         | 18               | Separating Axis Theorem                   |
-| Sphere-box                       | narrow_phase/sphere_box.hpp/.cpp      | 19               | Mixed pair                                |
-| Capsule-capsule                  | narrow_phase/capsule_capsule.hpp/.cpp | 5                | Capsule collision                         |
-| Capsule-sphere                   | narrow_phase/capsule_sphere.hpp/.cpp  | 4                | Capsule-sphere pair                       |
-| Capsule-box                      | narrow_phase/capsule_box.hpp/.cpp     | 5                | Capsule-box pair                          |
-| BruteForceBroadPhase             | broad_phase/brute_force.hpp/.cpp      | 15               | O(n^2) broad-phase                        |
-| CollisionObject                  | collision_object.hpp/.cpp             | 10               | Shape + transform wrapper                 |
-| NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp    | 7                | Shape-type dispatch                       |
-| CollisionWorld                   | collision_world.hpp/.cpp              | 8                | Standalone collision detection            |
+| Component                        | Files                                   | Tests | Notes                           |
+| -------------------------------- | --------------------------------------- | ----- | ------------------------------- |
+| ContactPoint, ContactManifold    | types.hpp/.cpp                          | 21    | Core contact representation     |
+| CollisionResult, CollisionOption | types.hpp/.cpp                          | -     | (included above)                |
+| Aabb                             | aabb.hpp/.cpp                           | 26    | Axis-aligned bounding box       |
+| All Shapes                       | shapes/shape.hpp/.cpp                   | 15    | Sphere, Box, Capsule, Cylinder, Plane |
+| Sphere-sphere                    | narrow_phase/sphere_sphere.hpp/.cpp     | 17    | Narrow-phase                    |
+| Box-box (SAT)                    | narrow_phase/box_box.hpp/.cpp           | 18    | Separating Axis Theorem         |
+| Sphere-box                       | narrow_phase/sphere_box.hpp/.cpp        | 19    | Mixed pair                      |
+| Capsule collision                | narrow_phase/capsule_*.hpp/.cpp         | 14    | All capsule pairs               |
+| Cylinder collision               | narrow_phase/cylinder_collision.hpp/.cpp| 18    | All cylinder pairs              |
+| Plane collision                  | narrow_phase/plane_sphere.hpp/.cpp      | 11    | All plane pairs                 |
+| Distance queries                 | narrow_phase/distance.hpp/.cpp          | 14    | 6 shape pairs                   |
+| BruteForceBroadPhase             | broad_phase/brute_force.hpp/.cpp        | 15    | O(n²) broad-phase               |
+| CollisionObject                  | collision_object.hpp/.cpp               | 10    | Shape + transform wrapper       |
+| NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp      | 7     | Shape-type dispatch             |
+| CollisionWorld                   | collision_world.hpp/.cpp                | 8     | Standalone collision detection  |
 
 ---
 
@@ -53,28 +51,33 @@
 | PlaneShape    | **Complete**   | 11      | Infinite half-space                                  |
 | MeshShape     | Pending        | Pending | Triangle mesh                                        |
 
-### Priority 2: Shape Pairs
+### Priority 2: Shape Pairs ✅ COMPLETE (all primitive pairs)
 
 | Pair              | Status       | Tests | Notes                        |
 | ----------------- | ------------ | ----- | ---------------------------- |
-| Capsule-capsule   | **Complete** | 5     | Common in robotics           |
-| Capsule-sphere    | **Complete** | 4     | Simple extension             |
-| Capsule-box       | **Complete** | 5     | Sampling-based closest point |
-| Plane-sphere      | **Complete** | 4     | Ground contact               |
-| Plane-box         | **Complete** | 3     | Ground contact               |
-| Plane-capsule     | **Complete** | 4     | Ground contact               |
-| Cylinder-cylinder | Pending      |       |                              |
-| Cylinder-sphere   | Pending      |       |                              |
-| Cylinder-box      | Pending      |       |                              |
+| Capsule-capsule   | **Complete** | 14    | Common in robotics           |
+| Capsule-sphere    | **Complete** | -     | Included in capsule tests    |
+| Capsule-box       | **Complete** | -     | Included in capsule tests    |
+| Plane-sphere      | **Complete** | 11    | Ground contact               |
+| Plane-box         | **Complete** | -     | Included in plane tests      |
+| Plane-capsule     | **Complete** | -     | Included in plane tests      |
+| Cylinder-cylinder | **Complete** | 18    | Full cylinder support        |
+| Cylinder-sphere   | **Complete** | -     | Included in cylinder tests   |
+| Cylinder-box      | **Complete** | -     | Included in cylinder tests   |
+| Cylinder-capsule  | **Complete** | -     | Included in cylinder tests   |
+| Cylinder-plane    | **Complete** | -     | Included in cylinder tests   |
 | Mesh-primitive    | Pending      |       | GJK/EPA based                |
 
-### Priority 3: Distance Queries
+### Priority 3: Distance Queries ✅ COMPLETE (6 pairs)
 
-| Query Type        | Status  | Notes                             |
-| ----------------- | ------- | --------------------------------- |
-| Signed distance   | Pending | Negative inside, positive outside |
-| Closest points    | Pending | Points on each shape              |
-| Penetration depth | Pending | Already have via contacts         |
+| Query Type           | Status       | Notes                    |
+| -------------------- | ------------ | ------------------------ |
+| Sphere-sphere dist   | **Complete** | 14 tests total           |
+| Sphere-box dist      | **Complete** | Included in distance     |
+| Box-box dist         | **Complete** | Included in distance     |
+| Capsule-capsule dist | **Complete** | Included in distance     |
+| Capsule-sphere dist  | **Complete** | Included in distance     |
+| Capsule-box dist     | **Complete** | Included in distance     |
 
 ### Priority 4: Raycast
 
