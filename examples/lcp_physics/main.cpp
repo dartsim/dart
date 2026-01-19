@@ -53,6 +53,29 @@ using namespace dart::constraint;
 
 namespace {
 
+void loadScaledFont(float scale)
+{
+  if (scale <= 0.0f || !std::isfinite(scale))
+    return;
+
+  ImGuiIO& io = ImGui::GetIO();
+
+  io.Fonts->Clear();
+
+  constexpr float kDefaultFontSize = 13.0f;
+  float scaledSize = kDefaultFontSize * scale;
+
+  ImFontConfig config;
+  config.SizePixels = scaledSize;
+  config.OversampleH = 2;
+  config.OversampleV = 2;
+  io.Fonts->AddFontDefault(&config);
+
+  io.Fonts->Build();
+
+  io.FontGlobalScale = 1.0f;
+}
+
 constexpr int kMaxHistorySize = 120;
 
 enum class Scenario
@@ -921,6 +944,7 @@ int main(int argc, char* argv[])
 
   ImGuiViewer viewer;
   viewer.setImGuiScale(static_cast<float>(guiScale));
+  loadScaledFont(static_cast<float>(guiScale));
   auto shadow = WorldNode::createDefaultShadowTechnique(&viewer);
   osg::ref_ptr<LcpPhysicsWorldNode> worldNode
       = new LcpPhysicsWorldNode(world, shadow);
