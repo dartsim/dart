@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_INVERSEKINEMATICS_HPP_
 #define DART_DYNAMICS_INVERSEKINEMATICS_HPP_
 
-#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/JacobianNode.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/math/Geometry.hpp>
 #include <dart/math/optimization/Function.hpp>
@@ -45,7 +45,7 @@
 #include <dart/common/Subject.hpp>
 #include <dart/common/sub_ptr.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/SVD>
 

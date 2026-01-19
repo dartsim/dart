@@ -41,7 +41,7 @@
 #include <dart/common/Result.hpp>
 #include <dart/common/Uri.hpp>
 
-#include <dart/io/Export.hpp>
+#include <dart/io/export.hpp>
 
 #include <map>
 #include <string>

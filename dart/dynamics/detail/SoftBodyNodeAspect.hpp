@@ -38,7 +38,7 @@
 
 #include <dart/common/RequiresAspect.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <span>
 #include <vector>

@@ -34,7 +34,7 @@
 
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 using namespace dart;
 using namespace dart::dynamics;

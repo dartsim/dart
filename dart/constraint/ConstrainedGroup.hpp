@@ -36,11 +36,11 @@
 #include <dart/config.hpp>
 
 #include <dart/constraint/ConstraintBase.hpp>
-#include <dart/constraint/Fwd.hpp>
+#include <dart/constraint/fwd.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/fwd.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Dense>
 

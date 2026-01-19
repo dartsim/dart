@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/MimicDofProperties.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>

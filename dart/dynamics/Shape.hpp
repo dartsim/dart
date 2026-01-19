@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_SHAPE_HPP_
 #define DART_DYNAMICS_SHAPE_HPP_
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/math/Geometry.hpp>
 
@@ -43,7 +43,7 @@
 #include <dart/common/Subject.hpp>
 #include <dart/common/VersionCounter.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Dense>
 

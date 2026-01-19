@@ -36,7 +36,7 @@
 #include <dart/common/FreeListAllocator.hpp>
 #include <dart/common/PoolAllocator.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <iostream>
 #include <memory>

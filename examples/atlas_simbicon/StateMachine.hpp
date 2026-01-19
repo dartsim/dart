@@ -33,7 +33,7 @@
 #ifndef EXAMPLES_ATLASSIMBICON_STATEMACHINE_HPP_
 #define EXAMPLES_ATLASSIMBICON_STATEMACHINE_HPP_
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <Eigen/Dense>
 

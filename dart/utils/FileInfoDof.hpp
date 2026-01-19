@@ -33,9 +33,9 @@
 #ifndef DART_UTILS_FILEINFODOF_HPP_
 #define DART_UTILS_FILEINFODOF_HPP_
 
-#include <dart/utils/Export.hpp>
+#include <dart/utils/export.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <Eigen/Dense>
 

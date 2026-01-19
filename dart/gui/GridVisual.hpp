@@ -33,11 +33,11 @@
 #ifndef DART_GUI_GRIDVISUAL_HPP_
 #define DART_GUI_GRIDVISUAL_HPP_
 
-#include <dart/gui/Export.hpp>
 #include <dart/gui/ShapeFrameNode.hpp>
 #include <dart/gui/Viewer.hpp>
+#include <dart/gui/export.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <osg/Geode>
 #include <osg/LineWidth>

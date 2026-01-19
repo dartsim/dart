@@ -37,13 +37,13 @@
 
 #include <dart/dynamics/EndEffector.hpp>
 #include <dart/dynamics/Frame.hpp>
-#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/Inertia.hpp>
 #include <dart/dynamics/Marker.hpp>
 #include <dart/dynamics/Node.hpp>
 #include <dart/dynamics/SpecializedNodeManager.hpp>
 #include <dart/dynamics/TemplatedJacobianNode.hpp>
 #include <dart/dynamics/detail/BodyNodeAspect.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/math/Geometry.hpp>
 
@@ -51,7 +51,7 @@
 #include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/Signal.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>

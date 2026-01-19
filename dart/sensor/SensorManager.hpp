@@ -36,7 +36,7 @@
 #include <dart/common/NameManager.hpp>
 #include <dart/common/Signal.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 #include <dart/sensor/Sensor.hpp>
 
 #include <map>

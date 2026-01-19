@@ -33,7 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_BODY_HPP_
 #define DART_UTILS_MJCF_DETAIL_BODY_HPP_
 
-#include <dart/utils/Export.hpp>
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/BodyAttributes.hpp>
 #include <dart/utils/mjcf/detail/Compiler.hpp>
 #include <dart/utils/mjcf/detail/Error.hpp>

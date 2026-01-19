@@ -32,20 +32,17 @@
 
 #pragma once
 
-#include <dart/common/Export.hpp>
-
-#ifndef DART_API
-  #if defined(DART_BUILDING_DART)
-    #define DART_API DART_DLL_EXPORT
-  #else
-    #define DART_API DART_DLL_IMPORT
-  #endif
-#endif
-
-#ifndef DART_LOCAL
-  #if DART_BUILD_SHARED
-    #define DART_LOCAL DART_DLL_LOCAL
-  #else
-    #define DART_LOCAL
-  #endif
-#endif
+// clang-format off
+#include <dart/config.hpp>
+#include <dart/export.hpp>
+#include <dart/common/All.hpp>
+#include <dart/math/All.hpp>
+#define DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
+#include <dart/optimizer/all.hpp>
+#undef DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
+#include <dart/collision/All.hpp>
+#include <dart/constraint/All.hpp>
+#include <dart/dynamics/All.hpp>
+#include <dart/simulation/All.hpp>
+#include <dart/sensor/All.hpp>
+// clang-format on

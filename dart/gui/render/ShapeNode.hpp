@@ -33,10 +33,10 @@
 #ifndef DART_GUI_RENDER_SHAPEGEODE_HPP_
 #define DART_GUI_RENDER_SHAPEGEODE_HPP_
 
-#include <dart/gui/Export.hpp>
-#include <dart/gui/Fwd.hpp>
+#include <dart/gui/export.hpp>
+#include <dart/gui/fwd.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <osg/Node>
 

@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/GenericJoint.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <string>
 

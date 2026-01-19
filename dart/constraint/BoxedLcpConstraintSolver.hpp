@@ -34,9 +34,9 @@
 #define DART_CONSTRAINT_BOXEDLCPCONSTRAINTSOLVER_HPP_
 
 #include <dart/constraint/ConstraintSolver.hpp>
-#include <dart/constraint/Fwd.hpp>
+#include <dart/constraint/fwd.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 namespace dart {
 namespace constraint {

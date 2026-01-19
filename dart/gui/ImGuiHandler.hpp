@@ -39,7 +39,7 @@
 #ifndef DART_GUI_IMGUIHANDLER_HPP_
 #define DART_GUI_IMGUIHANDLER_HPP_
 
-#include <dart/gui/Export.hpp>
+#include <dart/gui/export.hpp>
 
 #include <osg/GraphicsContext>
 #include <osgGA/GUIActionAdapter>

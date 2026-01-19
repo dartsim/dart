@@ -33,8 +33,8 @@
 #ifndef DART_GUI_REALTIMEWORLDNODE_HPP_
 #define DART_GUI_REALTIMEWORLDNODE_HPP_
 
-#include <dart/gui/Export.hpp>
 #include <dart/gui/WorldNode.hpp>
+#include <dart/gui/export.hpp>
 
 #include <osg/Timer>
 

@@ -38,16 +38,16 @@
 #include <dart/collision/Contact.hpp>
 #include <dart/collision/DistanceOption.hpp>
 #include <dart/collision/DistanceResult.hpp>
-#include <dart/collision/Fwd.hpp>
 #include <dart/collision/RaycastOption.hpp>
 #include <dart/collision/RaycastResult.hpp>
+#include <dart/collision/fwd.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/Diagnostics.hpp>
 #include <dart/common/Factory.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Dense>
 

@@ -35,15 +35,15 @@
 
 #include <dart/utils/CompositeResourceRetriever.hpp>
 #include <dart/utils/PackageResourceRetriever.hpp>
-#include <dart/utils/urdf/Export.hpp>
+#include <dart/utils/urdf/export.hpp>
 
-#include <dart/simulation/Fwd.hpp>
 #include <dart/simulation/World.hpp>
+#include <dart/simulation/fwd.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
-#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/Joint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/LocalResourceRetriever.hpp>
 #include <dart/common/ResourceRetriever.hpp>

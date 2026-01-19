@@ -11,7 +11,6 @@
 #include <dart/gui/CameraMode.hpp>
 #include <dart/gui/DefaultEventHandler.hpp>
 #include <dart/gui/DragAndDrop.hpp>
-#include <dart/gui/Export.hpp>
 #include <dart/gui/GridVisual.hpp>
 #include <dart/gui/ImGuiHandler.hpp>
 #include <dart/gui/ImGuiViewer.hpp>
@@ -25,3 +24,4 @@
 #include <dart/gui/TrackballManipulator.hpp>
 #include <dart/gui/Viewer.hpp>
 #include <dart/gui/WorldNode.hpp>
+#include <dart/gui/export.hpp>

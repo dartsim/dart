@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_REFERENTIALSKELETON_HPP_
 #define DART_DYNAMICS_REFERENTIALSKELETON_HPP_
 
-#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/MetaSkeleton.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/Deprecated.hpp>
 

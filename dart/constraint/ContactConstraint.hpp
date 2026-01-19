@@ -38,7 +38,7 @@
 
 #include <dart/collision/CollisionDetector.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/math/MathTypes.hpp>
 

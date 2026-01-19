@@ -35,8 +35,8 @@
 
 #pragma message(                                                               \
     "This header has been deprecated in DART 7.0. "                            \
-    "Please include dart/simulation/Fwd.hpp instead.")
+    "Please include dart/simulation/fwd.hpp instead.")
 
-#include <dart/simulation/Fwd.hpp>
+#include <dart/simulation/fwd.hpp>
 
 #endif // DART_SIMULATION_SMARTPOINTER_HPP_

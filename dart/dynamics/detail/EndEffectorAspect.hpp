@@ -37,7 +37,7 @@
 
 #include <dart/common/SpecializedForAspect.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Geometry>
 

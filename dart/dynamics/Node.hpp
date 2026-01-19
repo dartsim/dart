@@ -33,14 +33,14 @@
 #ifndef DART_DYNAMICS_NODE_HPP_
 #define DART_DYNAMICS_NODE_HPP_
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/Cloneable.hpp>
 #include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/Subject.hpp>
 #include <dart/common/VersionCounter.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <memory>
 

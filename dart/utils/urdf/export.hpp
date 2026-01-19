@@ -32,20 +32,20 @@
 
 #pragma once
 
-#include <dart/common/Export.hpp>
+#include <dart/common/export.hpp>
 
-#ifndef DART_OPTIMIZER_NLOPT_API
-  #if defined(DART_BUILDING_DART_OPTIMIZER_NLOPT)
-    #define DART_OPTIMIZER_NLOPT_API DART_DLL_EXPORT
+#ifndef DART_UTILS_URDF_API
+  #if defined(DART_BUILDING_DART_UTILS_URDF)
+    #define DART_UTILS_URDF_API DART_DLL_EXPORT
   #else
-    #define DART_OPTIMIZER_NLOPT_API DART_DLL_IMPORT
+    #define DART_UTILS_URDF_API DART_DLL_IMPORT
   #endif
 #endif
 
-#ifndef DART_OPTIMIZER_NLOPT_LOCAL
+#ifndef DART_UTILS_URDF_LOCAL
   #if DART_BUILD_SHARED
-    #define DART_OPTIMIZER_NLOPT_LOCAL DART_DLL_LOCAL
+    #define DART_UTILS_URDF_LOCAL DART_DLL_LOCAL
   #else
-    #define DART_OPTIMIZER_NLOPT_LOCAL
+    #define DART_UTILS_URDF_LOCAL
   #endif
 #endif

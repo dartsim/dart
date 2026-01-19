@@ -33,11 +33,11 @@
 #ifndef DART_GUI_INTERACTIVEFRAME_HPP_
 #define DART_GUI_INTERACTIVEFRAME_HPP_
 
-#include <dart/gui/Export.hpp>
-#include <dart/gui/Fwd.hpp>
+#include <dart/gui/export.hpp>
+#include <dart/gui/fwd.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 namespace dart {
 namespace gui {

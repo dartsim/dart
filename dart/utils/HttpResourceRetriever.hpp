@@ -33,7 +33,7 @@
 #ifndef DART_UTILS_HTTPRESOURCERETRIEVER_HPP_
 #define DART_UTILS_HTTPRESOURCERETRIEVER_HPP_
 
-#include <dart/utils/Export.hpp>
+#include <dart/utils/export.hpp>
 
 #include <dart/common/Filesystem.hpp>
 #include <dart/common/LocalResourceRetriever.hpp>

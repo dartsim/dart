@@ -33,7 +33,7 @@
 #ifndef EXAMPLES_HUMANJOINTLIMITS_HUMANLEGJOINTLIMITCONSTRAINT_HPP_
 #define EXAMPLES_HUMANJOINTLIMITS_HUMANLEGJOINTLIMITCONSTRAINT_HPP_
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <tiny_dnn/tiny_dnn.h>
 

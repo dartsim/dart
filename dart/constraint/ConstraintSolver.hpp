@@ -35,17 +35,17 @@
 
 #include <dart/constraint/ConstrainedGroup.hpp>
 #include <dart/constraint/ConstraintBase.hpp>
-#include <dart/constraint/Fwd.hpp>
+#include <dart/constraint/fwd.hpp>
 
 #include <dart/collision/CollisionDetector.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/math/lcp/LcpSolver.hpp>
 
 #include <dart/common/Deprecated.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Dense>
 

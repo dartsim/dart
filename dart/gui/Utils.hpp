@@ -33,7 +33,7 @@
 #ifndef DART_GUI_UTILS_HPP_
 #define DART_GUI_UTILS_HPP_
 
-#include <dart/gui/Export.hpp>
+#include <dart/gui/export.hpp>
 
 #include <Eigen/Geometry>
 #include <osg/Camera>

@@ -33,7 +33,7 @@
 #ifndef DART_UTILS_XMLHELPERS_HPP_
 #define DART_UTILS_XMLHELPERS_HPP_
 
-#include <dart/utils/Export.hpp>
+#include <dart/utils/export.hpp>
 
 #include <dart/math/Geometry.hpp>
 #include <dart/math/MathTypes.hpp>

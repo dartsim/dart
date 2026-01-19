@@ -35,12 +35,12 @@
 
 #include "DefaultEventHandler.hpp"
 
-#include <dart/gui/Export.hpp>
-#include <dart/gui/Fwd.hpp>
+#include <dart/gui/export.hpp>
+#include <dart/gui/fwd.hpp>
 
 #include <dart/dynamics/Entity.hpp>
-#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/Shape.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/sub_ptr.hpp>
 

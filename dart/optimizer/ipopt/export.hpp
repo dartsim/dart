@@ -32,20 +32,20 @@
 
 #pragma once
 
-#include <dart/common/Export.hpp>
+#include <dart/common/export.hpp>
 
-#ifndef DART_GUI_API
-  #if defined(DART_BUILDING_DART_GUI)
-    #define DART_GUI_API DART_DLL_EXPORT
+#ifndef DART_OPTIMIZER_IPOPT_API
+  #if defined(DART_BUILDING_DART_OPTIMIZER_IPOPT)
+    #define DART_OPTIMIZER_IPOPT_API DART_DLL_EXPORT
   #else
-    #define DART_GUI_API DART_DLL_IMPORT
+    #define DART_OPTIMIZER_IPOPT_API DART_DLL_IMPORT
   #endif
 #endif
 
-#ifndef DART_GUI_LOCAL
+#ifndef DART_OPTIMIZER_IPOPT_LOCAL
   #if DART_BUILD_SHARED
-    #define DART_GUI_LOCAL DART_DLL_LOCAL
+    #define DART_OPTIMIZER_IPOPT_LOCAL DART_DLL_LOCAL
   #else
-    #define DART_GUI_LOCAL
+    #define DART_OPTIMIZER_IPOPT_LOCAL
   #endif
 #endif

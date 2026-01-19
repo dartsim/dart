@@ -35,7 +35,7 @@
 
 #include <dart/math/MathTypes.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <array>
 

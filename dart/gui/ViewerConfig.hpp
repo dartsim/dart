@@ -33,7 +33,7 @@
 #ifndef DART_GUI_VIEWERCONFIG_HPP_
 #define DART_GUI_VIEWERCONFIG_HPP_
 
-#include <dart/gui/Export.hpp>
+#include <dart/gui/export.hpp>
 
 #include <osg/Vec4>
 

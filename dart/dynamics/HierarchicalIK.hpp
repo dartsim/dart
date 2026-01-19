@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/InverseKinematics.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <span>
 #include <unordered_set>

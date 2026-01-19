@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <dart/common/Export.hpp>
+#include <dart/common/export.hpp>
 
 #include <fmt/format.h>
 

@@ -35,8 +35,8 @@
 
 #pragma message(                                                               \
     "This header has been deprecated in DART 7.0. "                            \
-    "Please include dart/constraint/Fwd.hpp instead.")
+    "Please include dart/constraint/fwd.hpp instead.")
 
-#include <dart/constraint/Fwd.hpp>
+#include <dart/constraint/fwd.hpp>
 
 #endif // DART_CONSTRAINT_SMARTPOINTER_HPP_

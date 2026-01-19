@@ -1,6 +1,6 @@
 # Alias headers for backward compatibility
 set(hdrs
-  All.hpp
+  all.hpp
   Function.hpp
   GradientDescentSolver.hpp
   Problem.hpp

@@ -35,8 +35,8 @@
 
 #include <dart/constraint/ConstraintBase.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/MimicDofProperties.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <span>
 #include <vector>

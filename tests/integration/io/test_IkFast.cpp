@@ -34,7 +34,7 @@
 
 #include <dart/config.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 #include <dart/io/Read.hpp>
 
 #include <gtest/gtest.h>

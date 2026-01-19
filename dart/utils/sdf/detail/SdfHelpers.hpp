@@ -35,7 +35,7 @@
 
 #include <dart/config.hpp>
 
-#include <dart/utils/Export.hpp>
+#include <dart/utils/export.hpp>
 
 #include <dart/common/Logging.hpp>
 #include <dart/common/Macros.hpp>

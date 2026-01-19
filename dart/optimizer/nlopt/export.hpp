@@ -32,17 +32,20 @@
 
 #pragma once
 
-// clang-format off
-#include <dart/config.hpp>
-#include <dart/Export.hpp>
-#include <dart/common/All.hpp>
-#include <dart/math/All.hpp>
-#define DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
-#include <dart/optimizer/All.hpp>
-#undef DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
-#include <dart/collision/All.hpp>
-#include <dart/constraint/All.hpp>
-#include <dart/dynamics/All.hpp>
-#include <dart/simulation/All.hpp>
-#include <dart/sensor/All.hpp>
-// clang-format on
+#include <dart/common/export.hpp>
+
+#ifndef DART_OPTIMIZER_NLOPT_API
+  #if defined(DART_BUILDING_DART_OPTIMIZER_NLOPT)
+    #define DART_OPTIMIZER_NLOPT_API DART_DLL_EXPORT
+  #else
+    #define DART_OPTIMIZER_NLOPT_API DART_DLL_IMPORT
+  #endif
+#endif
+
+#ifndef DART_OPTIMIZER_NLOPT_LOCAL
+  #if DART_BUILD_SHARED
+    #define DART_OPTIMIZER_NLOPT_LOCAL DART_DLL_LOCAL
+  #else
+    #define DART_OPTIMIZER_NLOPT_LOCAL
+  #endif
+#endif

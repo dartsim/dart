@@ -42,7 +42,7 @@
 #include <dart/common/Signal.hpp>
 #include <dart/common/SpecializedForAspect.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Dense>
 

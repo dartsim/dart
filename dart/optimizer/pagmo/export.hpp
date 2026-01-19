@@ -32,20 +32,20 @@
 
 #pragma once
 
-#include <dart/common/Export.hpp>
+#include <dart/common/export.hpp>
 
-#ifndef DART_IO_API
-  #if defined(DART_BUILDING_DART_IO)
-    #define DART_IO_API DART_DLL_EXPORT
+#ifndef DART_OPTIMIZER_PAGMO_API
+  #if defined(DART_BUILDING_DART_OPTIMIZER_PAGMO)
+    #define DART_OPTIMIZER_PAGMO_API DART_DLL_EXPORT
   #else
-    #define DART_IO_API DART_DLL_IMPORT
+    #define DART_OPTIMIZER_PAGMO_API DART_DLL_IMPORT
   #endif
 #endif
 
-#ifndef DART_IO_LOCAL
+#ifndef DART_OPTIMIZER_PAGMO_LOCAL
   #if DART_BUILD_SHARED
-    #define DART_IO_LOCAL DART_DLL_LOCAL
+    #define DART_OPTIMIZER_PAGMO_LOCAL DART_DLL_LOCAL
   #else
-    #define DART_IO_LOCAL
+    #define DART_OPTIMIZER_PAGMO_LOCAL
   #endif
 #endif

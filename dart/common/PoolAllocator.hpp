@@ -36,7 +36,7 @@
 #include <dart/common/MemoryAllocator.hpp>
 #include <dart/common/MemoryAllocatorDebugger.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <array>
 #include <mutex>

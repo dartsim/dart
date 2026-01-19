@@ -39,23 +39,23 @@
 #ifndef DART_SIMULATION_WORLD_HPP_
 #define DART_SIMULATION_WORLD_HPP_
 
-#include <dart/simulation/Fwd.hpp>
 #include <dart/simulation/Recording.hpp>
+#include <dart/simulation/fwd.hpp>
 
-#include <dart/constraint/Fwd.hpp>
+#include <dart/constraint/fwd.hpp>
 
 #include <dart/collision/CollisionOption.hpp>
-#include <dart/collision/Fwd.hpp>
+#include <dart/collision/fwd.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/NameManager.hpp>
 #include <dart/common/SmartPointer.hpp>
 #include <dart/common/Subject.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 #include <dart/sensor/SensorManager.hpp>
 
 #include <Eigen/Dense>

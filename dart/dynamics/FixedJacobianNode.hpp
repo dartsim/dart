@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/detail/FixedJacobianNode.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <span>
 

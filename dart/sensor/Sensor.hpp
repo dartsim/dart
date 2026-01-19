@@ -33,17 +33,17 @@
 #ifndef DART_SENSOR_SENSOR_HPP_
 #define DART_SENSOR_SENSOR_HPP_
 
-#include <dart/simulation/Fwd.hpp>
+#include <dart/simulation/fwd.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
 #include <dart/common/sub_ptr.hpp>
 
-#include <dart/Export.hpp>
-#include <dart/sensor/Fwd.hpp>
+#include <dart/export.hpp>
+#include <dart/sensor/fwd.hpp>
 
 #include <Eigen/Geometry>
 

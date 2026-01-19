@@ -33,14 +33,14 @@
 #ifndef DART_DYNAMICS_ENTITY_HPP_
 #define DART_DYNAMICS_ENTITY_HPP_
 
-#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/Shape.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/Composite.hpp>
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Core>
 

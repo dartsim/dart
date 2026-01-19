@@ -34,7 +34,7 @@
 #define DART_GUI_MOUSEEVENTHANDLER_HPP_
 
 #include <dart/gui/DefaultEventHandler.hpp>
-#include <dart/gui/Export.hpp>
+#include <dart/gui/export.hpp>
 
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Observer.hpp>

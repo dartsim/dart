@@ -35,10 +35,10 @@
 
 #include <dart/constraint/ConstraintBase.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/MimicDofProperties.hpp>
+#include <dart/dynamics/fwd.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <span>
 #include <vector>

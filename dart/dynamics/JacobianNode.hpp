@@ -34,10 +34,10 @@
 #define DART_DYNAMICS_JACOBIANNODE_HPP_
 
 #include <dart/dynamics/Frame.hpp>
-#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/Node.hpp>
+#include <dart/dynamics/fwd.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <memory>
 #include <span>

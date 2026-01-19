@@ -33,8 +33,8 @@
 #ifndef DART_GUI_POLYHEDRONVISUAL_HPP_
 #define DART_GUI_POLYHEDRONVISUAL_HPP_
 
-#include <dart/gui/Export.hpp>
 #include <dart/gui/Viewer.hpp>
+#include <dart/gui/export.hpp>
 
 #include <Eigen/Core>
 #include <osg/Geode>

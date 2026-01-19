@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_OBSERVER_HPP_
 #define DART_COMMON_OBSERVER_HPP_
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <set>
 

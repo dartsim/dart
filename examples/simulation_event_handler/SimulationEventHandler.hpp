@@ -35,7 +35,7 @@
 
 #include <dart/gui/All.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <osgGA/GUIEventHandler>
 

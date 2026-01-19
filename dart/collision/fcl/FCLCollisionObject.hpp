@@ -36,7 +36,7 @@
 #include <dart/collision/CollisionObject.hpp>
 #include <dart/collision/fcl/BackwardCompatibility.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <string>
 

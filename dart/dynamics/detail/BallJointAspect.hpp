@@ -36,7 +36,7 @@
 #include <dart/dynamics/GenericJoint.hpp>
 #include <dart/dynamics/detail/JointCoordinateChart.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 namespace dart {
 namespace dynamics {

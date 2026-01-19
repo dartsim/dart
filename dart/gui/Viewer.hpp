@@ -35,15 +35,15 @@
 
 #include <dart/gui/CameraMode.hpp>
 #include <dart/gui/DefaultEventHandler.hpp>
-#include <dart/gui/Export.hpp>
-#include <dart/gui/Fwd.hpp>
 #include <dart/gui/ViewerConfig.hpp>
 #include <dart/gui/WorldNode.hpp>
 #include <dart/gui/detail/CameraModeCallback.hpp>
+#include <dart/gui/export.hpp>
+#include <dart/gui/fwd.hpp>
 
-#include <dart/simulation/Fwd.hpp>
+#include <dart/simulation/fwd.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Subject.hpp>

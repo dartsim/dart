@@ -34,7 +34,7 @@
 #define DART_GUI_DETAIL_CAMERAMODECALLBACK_HPP_
 
 #include <dart/gui/CameraMode.hpp>
-#include <dart/gui/Export.hpp>
+#include <dart/gui/export.hpp>
 
 #include <osg/NodeCallback>
 

@@ -36,7 +36,7 @@
 #include <dart/dynamics/GenericJoint.hpp>
 #include <dart/dynamics/detail/PlanarJointAspect.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Dense>
 

@@ -33,13 +33,13 @@
 #ifndef DART_CONSTRAINT_CONTACTSURFACE_HPP_
 #define DART_CONSTRAINT_CONTACTSURFACE_HPP_
 
-#include <dart/constraint/Fwd.hpp>
+#include <dart/constraint/fwd.hpp>
 
 #include <dart/collision/Contact.hpp>
 
 #include <dart/dynamics/ShapeNode.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Core>
 

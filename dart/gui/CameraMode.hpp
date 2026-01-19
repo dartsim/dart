@@ -33,7 +33,7 @@
 #ifndef DART_GUI_CAMERAMODE_HPP_
 #define DART_GUI_CAMERAMODE_HPP_
 
-#include <dart/gui/Export.hpp>
+#include <dart/gui/export.hpp>
 
 #include <string>
 

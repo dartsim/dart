@@ -43,7 +43,7 @@
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Dense>
 
