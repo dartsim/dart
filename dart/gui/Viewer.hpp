@@ -125,6 +125,11 @@ public:
 
   /// Capture current frame to raw pixel buffer (RGBA, row-major,
   /// bottom-to-top). Returns empty vector if capture fails.
+  ///
+  /// @note This method is designed for headless mode which uses single
+  /// buffering. For windowed (double-buffered) mode, use captureScreen()
+  /// instead, which captures via a draw callback before the buffer swap.
+  ///
   /// @param[out] outWidth  Receives image width if non-null
   /// @param[out] outHeight Receives image height if non-null
   [[nodiscard]] std::vector<uint8_t> captureBuffer(

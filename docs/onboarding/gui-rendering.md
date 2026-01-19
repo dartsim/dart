@@ -572,9 +572,9 @@ if (viewer->isHeadless()) {
 
 | Field                 | Type            | Description                              |
 | --------------------- | --------------- | ---------------------------------------- |
-| `mode`                | `RenderingMode` | `kWindow` (default) or `kHeadless`       |
-| `width`               | `int`           | Viewport width (default: 640)            |
-| `height`              | `int`           | Viewport height (default: 480)           |
+| `mode`                | `RenderingMode` | `Window` (default) or `Headless`         |
+| `width`               | `int`           | Viewport width (default: 1024)           |
+| `height`              | `int`           | Viewport height (default: 768)           |
 | `useSoftwareRenderer` | `bool`          | OSMesa placeholder (not yet implemented) |
 
 ### CI Integration
