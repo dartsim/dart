@@ -44,9 +44,6 @@ Choose Your Path
      - Architecture deep-dive, build system, contribution workflow.
        `Developer Guide <https://github.com/dartsim/dart/blob/main/docs/onboarding/README.md>`_
 
-Not sure if DART is right for you? See :doc:`community/comparison` for how DART
-compares to other simulators.
-
 AI Docs (Experimental)
 ----------------------
 
@@ -163,5 +160,4 @@ If you use DART in an academic publication, please consider citing this
    :caption: Community
 
    community/who_uses_dart
-   community/comparison
    license
