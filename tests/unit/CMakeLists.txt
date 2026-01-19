@@ -39,6 +39,8 @@ dart_add_test("unit" UNIT_collision_RaycastOption collision/test_RaycastOption.c
 # ==============================================================================
 set(common_unit_sources
   common/test_CAllocator.cpp
+  common/test_Castable.cpp
+  common/test_Cloneable.cpp
   common/test_Composite.cpp
   common/test_Exception.cpp
   common/test_Factory.cpp
