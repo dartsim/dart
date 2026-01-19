@@ -206,35 +206,43 @@ void JointConstraint::update()
   mActive.setConstant(false);
 
   for (int i = 0; i < dof; ++i) {
-    // Check for invalid limits (lower > upper) and skip this DOF if so.
-    // This can happen from malformed model files (e.g., SDF with swapped
-    // limits). See: https://github.com/gazebosim/gz-physics/issues/846
-    if (positionLowerLimits[i] > positionUpperLimits[i]) {
+    // Check for invalid limits (lower > upper). When invalid, skip only that
+    // specific limit enforcement but keep other constraints (e.g., servo motor)
+    // active. See: https://github.com/gazebosim/gz-physics/issues/846
+    const bool hasValidPositionLimits
+        = positionLowerLimits[i] <= positionUpperLimits[i];
+    const bool hasValidVelocityLimits
+        = velocityLowerLimits[i] <= velocityUpperLimits[i];
+
+    if (!hasValidPositionLimits) {
       DART_WARN(
           "Joint '{}' DOF {} has invalid position limits: lower ({}) > upper "
-          "({}). Skipping limit enforcement for this DOF.",
+          "({}). Skipping position limit enforcement for this DOF.",
           mJoint->getName(),
           i,
           positionLowerLimits[i],
           positionUpperLimits[i]);
-      continue;
     }
-    if (velocityLowerLimits[i] > velocityUpperLimits[i]) {
+    if (!hasValidVelocityLimits) {
       DART_WARN(
           "Joint '{}' DOF {} has invalid velocity limits: lower ({}) > upper "
-          "({}). Skipping limit enforcement for this DOF.",
+          "({}). Skipping velocity limit enforcement for this DOF.",
           mJoint->getName(),
           i,
           velocityLowerLimits[i],
           velocityUpperLimits[i]);
-      continue;
     }
 
-    // Velocity limits due to position limits
+    // Velocity limits due to position limits. When position limits are invalid,
+    // treat as unbounded (no position-derived velocity constraints).
     const double vel_to_pos_lb
-        = (positionLowerLimits[i] - positions[i]) / timeStep;
+        = hasValidPositionLimits
+              ? (positionLowerLimits[i] - positions[i]) / timeStep
+              : negInf;
     const double vel_to_pos_ub
-        = (positionUpperLimits[i] - positions[i]) / timeStep;
+        = hasValidPositionLimits
+              ? (positionUpperLimits[i] - positions[i]) / timeStep
+              : inf;
 
     // Joint position and velocity constraint check
     if (mJoint->areLimitsEnforced()) {
@@ -242,7 +250,7 @@ void JointConstraint::update()
       const double B1 = A1 + mErrorAllowance;
       const double A2 = positions[i] - positionUpperLimits[i];
       const double B2 = A2 - mErrorAllowance;
-      if (B1 < 0) {
+      if (hasValidPositionLimits && B1 < 0) {
         // The current position is lower than the lower bound.
         //
         //    pos            LB                               UB
@@ -279,7 +287,7 @@ void JointConstraint::update()
 
         ++mDim;
         continue;
-      } else if (0 < B2) {
+      } else if (hasValidPositionLimits && 0 < B2) {
         // The current position is greater than the upper bound.
         //
         //    LB                               UB            pos
@@ -343,8 +351,12 @@ void JointConstraint::update()
           = processServoVelocityLimits && atLowerLimit && servoCommand > 0.0;
 
       if (!skipVelocityLimitsForServoRecovery) {
-        // Check lower velocity bound
-        const double vel_lb = std::max(velocityLowerLimits[i], vel_to_pos_lb);
+        // Check lower velocity bound. When velocity limits are invalid, use
+        // only position-derived velocity constraints.
+        const double vel_lb
+            = hasValidVelocityLimits
+                  ? std::max(velocityLowerLimits[i], vel_to_pos_lb)
+                  : vel_to_pos_lb;
         const double vel_lb_error = velocities[i] - vel_lb;
         if (vel_lb_error < 0.0) {
           if (!relaxLowerVelocityBound) {
@@ -364,8 +376,12 @@ void JointConstraint::update()
           }
         }
 
-        // Check upper velocity bound
-        const double vel_ub = std::min(velocityUpperLimits[i], vel_to_pos_ub);
+        // Check upper velocity bound. When velocity limits are invalid, use
+        // only position-derived velocity constraints.
+        const double vel_ub
+            = hasValidVelocityLimits
+                  ? std::min(velocityUpperLimits[i], vel_to_pos_ub)
+                  : vel_to_pos_ub;
         const double vel_ub_error = velocities[i] - vel_ub;
         if (vel_ub_error > 0.0) {
           if (!relaxUpperVelocityBound) {
@@ -390,13 +406,13 @@ void JointConstraint::update()
     // Servo motor constraint check
     if (mJoint->getActuatorType(static_cast<std::size_t>(i))
         == dynamics::Joint::SERVO) {
-      // The desired velocity shouldn't be out of the velocity limits
-      double desired_velocity = math::clip(
-          mJoint->getCommand(static_cast<std::size_t>(i)),
-          velocityLowerLimits[i],
-          velocityUpperLimits[i]);
+      double desired_velocity = mJoint->getCommand(static_cast<std::size_t>(i));
 
-      // The next position shouldn't be out of the position limits
+      // Clip to velocity limits (when valid) and position-derived limits
+      if (hasValidVelocityLimits) {
+        desired_velocity = math::clip(
+            desired_velocity, velocityLowerLimits[i], velocityUpperLimits[i]);
+      }
       desired_velocity
           = math::clip(desired_velocity, vel_to_pos_lb, vel_to_pos_ub);
 
