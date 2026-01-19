@@ -229,12 +229,14 @@ void JointConstraint::update()
 
     // Velocity limits due to position limits. When position limits are invalid,
     // treat as unbounded (no position-derived velocity constraints).
-    const double vel_to_pos_lb = hasValidPositionLimits
-        ? (positionLowerLimits[i] - positions[i]) / timeStep
-        : -static_cast<double>(dInfinity);
-    const double vel_to_pos_ub = hasValidPositionLimits
-        ? (positionUpperLimits[i] - positions[i]) / timeStep
-        : static_cast<double>(dInfinity);
+    const double vel_to_pos_lb
+        = hasValidPositionLimits
+              ? (positionLowerLimits[i] - positions[i]) / timeStep
+              : -static_cast<double>(dInfinity);
+    const double vel_to_pos_ub
+        = hasValidPositionLimits
+              ? (positionUpperLimits[i] - positions[i]) / timeStep
+              : static_cast<double>(dInfinity);
 
     // Joint position and velocity constraint check
     if (mJoint->areLimitsEnforced()) {
@@ -349,9 +351,9 @@ void JointConstraint::update()
       if (!skipVelocityLimitsForServoRecovery) {
         // Check lower velocity bound. When velocity limits are invalid, use
         // only position-derived velocity constraints.
-        const double vel_lb = hasValidVelocityLimits
-            ? std::max(velocityLowerLimits[i], vel_to_pos_lb)
-            : vel_to_pos_lb;
+        const double vel_lb = hasValidVelocityLimits ? std::max(
+                                  velocityLowerLimits[i], vel_to_pos_lb)
+                                                     : vel_to_pos_lb;
         const double vel_lb_error = velocities[i] - vel_lb;
         if (vel_lb_error < 0.0) {
           if (!relaxLowerVelocityBound) {
@@ -373,9 +375,9 @@ void JointConstraint::update()
 
         // Check upper velocity bound. When velocity limits are invalid, use
         // only position-derived velocity constraints.
-        const double vel_ub = hasValidVelocityLimits
-            ? std::min(velocityUpperLimits[i], vel_to_pos_ub)
-            : vel_to_pos_ub;
+        const double vel_ub = hasValidVelocityLimits ? std::min(
+                                  velocityUpperLimits[i], vel_to_pos_ub)
+                                                     : vel_to_pos_ub;
         const double vel_ub_error = velocities[i] - vel_ub;
         if (vel_ub_error > 0.0) {
           if (!relaxUpperVelocityBound) {
