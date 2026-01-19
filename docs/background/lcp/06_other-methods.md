@@ -1,6 +1,10 @@
 # Other LCP Solver Methods
 
-**Navigation**: [← Newton Methods](05_newton-methods.md) | [Selection Guide →](07_selection-guide.md)
+> **Attribution**: This content is derived from "Contact Handling for Articulated
+> Rigid Bodies Using LCP" by Jie Tan, Kristin Siu, and C. Karen Liu.
+> The original PDF is preserved at [`docs/lcp.pdf`](../../lcp.pdf).
+
+**Navigation**: [← Newton Methods](05_newton-methods.md) | [Index](../README.md) | [Selection Guide →](07_selection-guide.md)
 
 ## Overview
 
@@ -22,51 +26,41 @@ Iterative method based on Kojima mapping that solves a relaxed complementarity p
 
 ### Problem Reformulation
 
-Instead of `x^T(Ax - b) = 0`, solve:
+Instead of $x^T(Ax - b) = 0$, solve:
 
-```
-x^T(Ax - b) = mu  (relaxed complementarity)
-where mu > 0 is a small parameter
-```
+$$x^T(Ax - b) = \mu \quad \text{(relaxed complementarity)}$$
+
+where $\mu > 0$ is a small parameter.
 
 ### Kojima Mapping
 
-```
-F(x, y, mu) = [ Ax - y - b    ]
-              [ X*Y*e - mu*e  ]
-```
+$$F(x, y, \mu) = \begin{bmatrix} Ax - y - b \\ XYe - \mu e \end{bmatrix}$$
 
 where:
 
-- X = diag(x), Y = diag(y)
-- e = vector of ones
-- mu = centering parameter
+- $X = \text{diag}(x)$, $Y = \text{diag}(y)$
+- $e$ = vector of ones
+- $\mu$ = centering parameter
 
 ### Algorithm
 
-```
-Initialize: x > 0, y > 0
-for iter = 1 to max_iter:
-  # Compute centering parameter
-  mu = sigma * x^T * y / n
-  where 0 < sigma < 1
+Initialize: $x > 0$, $y > 0$
 
-  # Solve Newton equation for Kojima mapping
-  [ A    -I  ] [ Δx ] = - [ Ax - y - b    ]
-  [ Y     X  ] [ Δy ]     [ X*Y*e - mu*e  ]
+For iter $= 1$ to max_iter:
 
-  # Line search for step length
-  t_x = max{t | x + t*Δx >= (1-alpha)*x}
-  t_y = max{t | y + t*Δy >= (1-alpha)*y}
-  t = min(t_x, t_y)
+1. Compute centering parameter: $\mu = \sigma \cdot x^T y / n$ where $0 < \sigma < 1$
 
-  # Update
-  x = x + t*Δx
-  y = y + t*Δy
+2. Solve Newton equation for Kojima mapping:
+   $$\begin{bmatrix} A & -I \\ Y & X \end{bmatrix} \begin{bmatrix} \Delta x \\ \Delta y \end{bmatrix} = -\begin{bmatrix} Ax - y - b \\ XYe - \mu e \end{bmatrix}$$
 
-  # Reduce mu toward 0
-  mu = mu / (iter + 1)
-```
+3. Line search for step length:
+   $$t_x = \max\{t \mid x + t\Delta x \geq (1-\alpha)x\}$$
+   $$t_y = \max\{t \mid y + t\Delta y \geq (1-\alpha)y\}$$
+   $$t = \min(t_x, t_y)$$
+
+4. Update: $x = x + t\Delta x$, $y = y + t\Delta y$
+
+5. Reduce $\mu$ toward 0: $\mu = \mu / (\text{iter} + 1)$
 
 ### DART Implementation
 
@@ -94,23 +88,23 @@ auto result = solver.solve(problem, x, options);
 
 ### Properties
 
-- **Time**: O(n³) per iteration (or O(n) with iterative solver)
-- **Storage**: O(n²) (or O(n) with iterative solver)
+- **Time**: $O(n^3)$ per iteration (or $O(n)$ with iterative solver)
+- **Storage**: $O(n^2)$ (or $O(n)$ with iterative solver)
 - **Convergence**: Superlinear
 - **Matrix Requirements**: None (very general)
 
 ### Parameters
 
-- **sigma** (centering): 0 < sigma < 1 (typically 0.1-0.5)
-- **alpha** (step control): 0 < alpha < 1 (typically 0.99)
+- **$\sigma$** (centering): $0 < \sigma < 1$ (typically 0.1-0.5)
+- **$\alpha$** (step control): $0 < \alpha < 1$ (typically 0.99)
 
 ### Advantages/Disadvantages
 
 ✅ Very robust - works for general LCPs
-✅ Guaranteed interior iterates (x, y > 0)
+✅ Guaranteed interior iterates ($x, y > 0$)
 ✅ Theoretically well-founded (central path)
 ✅ Handles ill-conditioned problems
-❌ O(n³) cost per iteration (expensive)
+❌ $O(n^3)$ cost per iteration (expensive)
 ❌ More complex than projection methods
 ❌ Requires careful parameter tuning
 
@@ -129,36 +123,33 @@ Partitions LCP into coupled sub-problems and solves them iteratively until conve
 
 ### Typical Partition for Contact Problems
 
-```
 Variables partitioned into:
-  N - Normal forces
-  F - Friction forces
-  S - Slack variables
+
+- $N$ - Normal forces
+- $F$ - Friction forces
+- $S$ - Slack variables
 
 Coupled LCPs:
-  A_NN * N + A_NF * F + A_NS * S = b_N
-  A_FN * N + A_FF * F + A_FS * S = b_F
-  A_SN * N + A_SF * F + A_SS * S = b_S
-```
+$$A_{NN} N + A_{NF} F + A_{NS} S = b_N$$
+$$A_{FN} N + A_{FF} F + A_{FS} S = b_F$$
+$$A_{SN} N + A_{SF} F + A_{SS} S = b_S$$
 
 ### Algorithm
 
-```
-Initialize: N, F, S
-for iter = 1 to max_iter:
-  # Solve for normal forces (keeping F, S fixed)
-  N = solve_LCP(A_NN, b_N - A_NF*F - A_NS*S)
+Initialize: $N$, $F$, $S$
 
-  # Solve for friction forces (keeping N, S fixed)
-  F = solve_QP(A_FF, b_F - A_FN*N - A_FS*S, bounds=[-mu*N, mu*N])
+For iter $= 1$ to max_iter:
 
-  # Solve for slack variables (keeping N, F fixed)
-  S = solve_LCP(A_SS, b_S - A_SN*N - A_SF*F)
+1. Solve for normal forces (keeping $F$, $S$ fixed):
+   $$N = \text{solve\_LCP}(A_{NN}, b_N - A_{NF}F - A_{NS}S)$$
 
-  # Check convergence
-  if ||change|| < epsilon:
-    break
-```
+2. Solve for friction forces (keeping $N$, $S$ fixed):
+   $$F = \text{solve\_QP}(A_{FF}, b_F - A_{FN}N - A_{FS}S, \text{bounds}=[-\mu N, \mu N])$$
+
+3. Solve for slack variables (keeping $N$, $F$ fixed):
+   $$S = \text{solve\_LCP}(A_{SS}, b_S - A_{SN}N - A_{SF}F)$$
+
+4. Check convergence: if $\|\text{change}\| < \epsilon$, break.
 
 ### Semi-Staggering
 
@@ -212,14 +203,11 @@ solver.solve(problem, x, options);
 
 ### Implementation notes for contact/friction
 
-- Split variables into normal impulses `x_N`, friction impulses `x_F`, and (optionally) slack `x_S`.
-- Normal subproblem often has a symmetric PSD matrix `A_NN` → can be solved by QP or PCG and produces `x_N`.
-- Friction subproblem is a BLCP with bounds `|x_F| ≤ μ x_N`; when `A_FF` is symmetric PSD it is equivalent to the QP
+- Split variables into normal impulses $x_N$, friction impulses $x_F$, and (optionally) slack $x_S$.
+- Normal subproblem often has a symmetric PSD matrix $A_{NN}$ → can be solved by QP or PCG and produces $x_N$.
+- Friction subproblem is a BLCP with bounds $|x_F| \leq \mu x_N$; when $A_{FF}$ is symmetric PSD it is equivalent to the QP:
 
-  ```
-  minimize 0.5 x_F^T A_FF x_F + c_F^T x_F
-  subject to x_F ≥ 0,  c_N - e^T x_F ≥ 0
-  ```
+$$\min_{x_F} \frac{1}{2} x_F^T A_{FF} x_F + c_F^T x_F \quad \text{subject to } x_F \geq 0, \; c_N - e^T x_F \geq 0$$
 
 - Iterate: solve normal → update bounds for friction → solve friction (QP or small LCP) → repeat until fixed point. A single pass can also be used to warm-start Newton or PGS.
 
@@ -385,13 +373,13 @@ auto result = solver.solve(problem, x, options);
 
 ## Comparison Summary
 
-| Method               | Convergence | Complexity | Robustness | Parallelization |
-| -------------------- | ----------- | ---------- | ---------- | --------------- |
-| Interior Point ✅    | Superlinear | O(n³)      | Very High  | No              |
-| Staggering ✅        | Variable    | Depends    | Medium     | No              |
-| Shock-Propagation ✅ | Linear      | O(n)       | Medium     | Limited         |
-| MPRGP ✅             | Monotone    | O(n²)      | High       | No              |
-| Blocked Jacobi ✅    | Linear      | O(n·b³)    | Medium     | Yes             |
+| Method               | Convergence | Complexity       | Robustness | Parallelization |
+| -------------------- | ----------- | ---------------- | ---------- | --------------- |
+| Interior Point ✅    | Superlinear | $O(n^3)$         | Very High  | No              |
+| Staggering ✅        | Variable    | Depends          | Medium     | No              |
+| Shock-Propagation ✅ | Linear      | $O(n)$           | Medium     | Limited         |
+| MPRGP ✅             | Monotone    | $O(n^2)$         | High       | No              |
+| Blocked Jacobi ✅    | Linear      | $O(n \cdot b^3)$ | Medium     | Yes             |
 
 ## Implementation Priority
 
@@ -455,12 +443,9 @@ auto result = solver.solve(problem, x, options);
 
 ### QP Solvers for Symmetric PD Matrices
 
-When A is symmetric PD, LCP can be reformulated as QP:
+When $A$ is symmetric PD, LCP can be reformulated as QP:
 
-```
-minimize: 0.5 * x^T * A * x + x^T * b
-subject to: x >= 0
-```
+$$\min_x \frac{1}{2} x^T A x + x^T b \quad \text{subject to } x \geq 0$$
 
 **Available Solvers**:
 
@@ -487,11 +472,9 @@ class QPSolverWrapper {
 
 ### Multigrid Methods
 
-Potential for O(n) convergence with multilevel hierarchy:
+Potential for $O(n)$ convergence with multilevel hierarchy:
 
-```
-Coarse grid -> Medium grid -> Fine grid
-```
+$$\text{Coarse grid} \to \text{Medium grid} \to \text{Fine grid}$$
 
 **Benefits**:
 

@@ -4,6 +4,10 @@
 
 This document provides a comprehensive analysis of the constraint subsystem in the DART (Dynamic Animation and Robotics Toolkit) simulation library. The legacy `dart/integration` module was removed in DART 7; time integration now runs inside `dart::simulation::World::step()` using a built-in semi-implicit Euler scheme.
 
+> **Theory Reference**: For the mathematical foundations of LCP-based contact handling,
+> see [`docs/background/lcp/`](../background/lcp/) — derived from Jie Tan, Kristin Siu,
+> and C. Karen Liu's paper on contact handling for articulated rigid bodies.
+
 ---
 
 ## Directory Structure
