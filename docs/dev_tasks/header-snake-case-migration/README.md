@@ -9,7 +9,7 @@ Migrate DART header files from PascalCase to snake_case naming convention.
 
 ## Current Status
 
-**Phase**: COMPLETE - Awaiting PR Review
+**Phase**: IN REVIEW - Awaiting CI
 
 | Phase      | Description                                     | Status    |
 | ---------- | ----------------------------------------------- | --------- |
@@ -17,6 +17,7 @@ Migrate DART header files from PascalCase to snake_case naming convention.
 | Phase 2a   | dart/common structural renames                  | COMMITTED |
 | Phase 2b-h | All remaining modules                           | COMMITTED |
 | Phase 3    | Verification, lint, tests                       | PASSED    |
+| Phase 4    | Compatibility fixes (Codex review feedback)     | COMMITTED |
 
 ### Summary
 
