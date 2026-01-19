@@ -36,7 +36,48 @@
 
 # Run with custom resolution
 ./rigid_cubes --headless --frames 50 --out ./output/ --width 1920 --height 1080
+
+# Deterministic run with specific seed
+./rigid_cubes --headless --frames 100 --out ./output/ --seed 12345
 ```
+
+### Creating Video from Frames
+
+Use ffmpeg to convert captured PNG frames to video:
+
+```bash
+# Basic MP4 (H.264)
+ffmpeg -framerate 30 -i output/frame_%06d.png -c:v libx264 -pix_fmt yuv420p output.mp4
+
+# High quality with CRF (lower = better quality, 18-23 recommended)
+ffmpeg -framerate 60 -i output/frame_%06d.png -c:v libx264 -crf 18 -pix_fmt yuv420p output.mp4
+
+# GIF (for documentation)
+ffmpeg -framerate 30 -i output/frame_%06d.png -vf "fps=15,scale=480:-1" output.gif
+```
+
+### Performance Notes
+
+**Headless rendering** uses OSG's pbuffer backend, which requires a GPU with
+OpenGL support. Performance characteristics:
+
+| Mode           | Typical FPS | Use Case               |
+| -------------- | ----------- | ---------------------- |
+| Interactive    | 60          | Development, debugging |
+| Headless (GPU) | 100-500+    | CI, batch rendering    |
+
+**Tips for faster batch rendering:**
+
+- Use `--width`/`--height` to reduce resolution when high quality isn't needed
+- Omit `--out` if you only need simulation validation (no PNG I/O overhead)
+- Use `--seed` for deterministic comparisons between runs
+
+**CI considerations:**
+
+- Headless mode requires a display server or virtual framebuffer (Xvfb)
+- CI jobs use `xvfb-run` wrapper (see `.github/workflows/ci_ubuntu.yml`)
+- For true software rendering (no GPU), OSMesa support is planned but not yet
+  implemented
 
 ## Build Instructions
 
