@@ -17,7 +17,7 @@ Do NOT execute unless a human pastes this into a new session.
 Goal
 - Update documentation in dartsim/dart with no product code changes.
 
-Inputs
+Context
 - Docs scope: <FILES_OR_TOPICS>
 - Audience: <users|developers|contributors|mixed>
 - Target branch: <TARGET_BRANCH or origin/main>

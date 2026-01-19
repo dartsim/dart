@@ -37,6 +37,7 @@
 #include <dart/gui/DefaultEventHandler.hpp>
 #include <dart/gui/Export.hpp>
 #include <dart/gui/Fwd.hpp>
+#include <dart/gui/ViewerConfig.hpp>
 #include <dart/gui/WorldNode.hpp>
 #include <dart/gui/detail/CameraModeCallback.hpp>
 
@@ -54,6 +55,9 @@
 #include <map>
 #include <memory>
 #include <unordered_set>
+#include <vector>
+
+#include <cstdint>
 
 namespace dart {
 namespace gui {
@@ -106,8 +110,30 @@ public:
   /// default event handler.
   Viewer(const ::osg::Vec4& clearColor = ::osg::Vec4(0.9, 0.9, 0.9, 1.0));
 
+  /// Constructor with configuration bundle. Supports headless mode.
+  explicit Viewer(const ViewerConfig& config);
+
   /// Destructor
   virtual ~Viewer();
+
+  /// Returns true if this viewer is in headless (offscreen) mode.
+  [[nodiscard]] bool isHeadless() const;
+
+  /// Factory method to create a Viewer with the given configuration.
+  [[nodiscard]] static std::shared_ptr<Viewer> create(
+      const ViewerConfig& config);
+
+  /// Capture current frame to raw pixel buffer (RGBA, row-major,
+  /// bottom-to-top). Returns empty vector if capture fails.
+  ///
+  /// @note This method is designed for headless mode which uses single
+  /// buffering. For windowed (double-buffered) mode, use captureScreen()
+  /// instead, which captures via a draw callback before the buffer swap.
+  ///
+  /// @param[out] outWidth  Receives image width if non-null
+  /// @param[out] outHeight Receives image height if non-null
+  [[nodiscard]] std::vector<uint8_t> captureBuffer(
+      int* outWidth = nullptr, int* outHeight = nullptr);
 
   /// Capture the current screen in a png file. The filename argument should
   /// include the full path for the file.
@@ -390,6 +416,9 @@ protected:
 private:
   /// Callback to control the camera mode
   ::osg::ref_ptr<detail::CameraModeCallback> mCameraModeCallback;
+
+  /// Whether this viewer is in headless mode
+  bool mHeadless = false;
 };
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
