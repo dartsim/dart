@@ -303,6 +303,52 @@ bool Viewer::isHeadless() const
 }
 
 //==============================================================================
+std::shared_ptr<Viewer> Viewer::create(const ViewerConfig& config)
+{
+  return std::make_shared<Viewer>(config);
+}
+
+//==============================================================================
+std::vector<uint8_t> Viewer::captureBuffer(int* outWidth, int* outHeight)
+{
+  const auto* camera = getCamera();
+  if (!camera) {
+    return {};
+  }
+
+  const auto* vp = camera->getViewport();
+  if (!vp) {
+    return {};
+  }
+
+  const int width = static_cast<int>(vp->width());
+  const int height = static_cast<int>(vp->height());
+
+  if (outWidth)
+    *outWidth = width;
+  if (outHeight)
+    *outHeight = height;
+
+  ::osg::ref_ptr<::osg::Image> image = new ::osg::Image;
+  image->readPixels(
+      static_cast<int>(vp->x()),
+      static_cast<int>(vp->y()),
+      width,
+      height,
+      GL_RGBA,
+      GL_UNSIGNED_BYTE);
+
+  const unsigned char* data = image->data();
+  if (!data) {
+    return {};
+  }
+
+  const std::size_t byteCount
+      = static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4;
+  return std::vector<uint8_t>(data, data + byteCount);
+}
+
+//==============================================================================
 Viewer::~Viewer()
 {
   std::unordered_set<ViewerAttachment*>::iterator it = mAttachments.begin(),

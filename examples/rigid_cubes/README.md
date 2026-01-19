@@ -24,6 +24,7 @@
 --out <dir>       Output directory for captured frames
 --width <n>       Viewport width (default: 640)
 --height <n>      Viewport height (default: 480)
+--seed <n>        Random seed for determinism (default: 42)
 -h, --help        Show help
 ```
 

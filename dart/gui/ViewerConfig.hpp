@@ -59,6 +59,10 @@ struct DART_GUI_API ViewerConfig final
   /// MSAA samples (0 = disabled, recommended for determinism in headless mode)
   int msaaSamples = 0;
 
+  /// Use software renderer (OSMesa) for deterministic output.
+  /// Only applies when mode == Headless. Requires OSMesa at build time.
+  bool useSoftwareRenderer = false;
+
   ::osg::Vec4 clearColor = ::osg::Vec4(0.9f, 0.9f, 0.9f, 1.0f);
 
   ViewerConfig() = default;

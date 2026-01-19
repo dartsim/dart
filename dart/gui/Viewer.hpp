@@ -55,6 +55,9 @@
 #include <map>
 #include <memory>
 #include <unordered_set>
+#include <vector>
+
+#include <cstdint>
 
 namespace dart {
 namespace gui {
@@ -115,6 +118,17 @@ public:
 
   /// Returns true if this viewer is in headless (offscreen) mode.
   [[nodiscard]] bool isHeadless() const;
+
+  /// Factory method to create a Viewer with the given configuration.
+  [[nodiscard]] static std::shared_ptr<Viewer> create(
+      const ViewerConfig& config);
+
+  /// Capture current frame to raw pixel buffer (RGBA, row-major,
+  /// bottom-to-top). Returns empty vector if capture fails.
+  /// @param[out] outWidth  Receives image width if non-null
+  /// @param[out] outHeight Receives image height if non-null
+  [[nodiscard]] std::vector<uint8_t> captureBuffer(
+      int* outWidth = nullptr, int* outHeight = nullptr);
 
   /// Capture the current screen in a png file. The filename argument should
   /// include the full path for the file.

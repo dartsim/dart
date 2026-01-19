@@ -59,10 +59,11 @@ namespace {
 struct Options
 {
   bool headless = false;
-  int frames = -1; // -1 = interactive (unlimited)
+  int frames = -1;
   std::string outDir;
   int width = 640;
   int height = 480;
+  unsigned int seed = 42;
   bool help = false;
 };
 
@@ -78,6 +79,7 @@ void printUsage(const char* argv0)
       << "  --out <dir>       Output directory for captured frames\n"
       << "  --width <n>       Viewport width (default: 640)\n"
       << "  --height <n>      Viewport height (default: 480)\n"
+      << "  --seed <n>        Random seed for determinism (default: 42)\n"
       << "  -h, --help        Show this help\n\n"
       << "Interactive controls (when not headless):\n"
       << "  space bar: simulation on/off\n"
@@ -98,6 +100,22 @@ bool parseInt(std::string_view value, int& output)
     return false;
 
   output = static_cast<int>(result);
+  return true;
+}
+
+//==============================================================================
+bool parseUint(std::string_view value, unsigned int& output)
+{
+  if (value.empty())
+    return false;
+
+  char* end = nullptr;
+  const unsigned long result
+      = std::strtoul(std::string(value).c_str(), &end, 10);
+  if (!end || *end != '\0')
+    return false;
+
+  output = static_cast<unsigned int>(result);
   return true;
 }
 
@@ -151,6 +169,15 @@ ParseResult parseArgs(int argc, char* argv[], Options& options)
     if (arg == "--height" && i + 1 < argc) {
       if (!parseInt(argv[++i], options.height) || options.height <= 0) {
         std::cerr << "Invalid height: " << argv[i] << "\n";
+        printUsage(argv[0]);
+        return ParseResult::Error;
+      }
+      continue;
+    }
+
+    if (arg == "--seed" && i + 1 < argc) {
+      if (!parseUint(argv[++i], options.seed)) {
+        std::cerr << "Invalid seed: " << argv[i] << "\n";
         printUsage(argv[0]);
         return ParseResult::Error;
       }
@@ -335,10 +362,10 @@ int main(int argc, char* argv[])
       ::osg::Vec3(0.0f, 0.0f, 1.0f));
   viewer.setCameraManipulator(viewer.getCameraManipulator());
 
-  // Headless mode: run for specified frames and capture output
   if (options.headless) {
+    std::srand(options.seed);
     std::cout << "Running in headless mode for " << options.frames
-              << " frames\n";
+              << " frames (seed: " << options.seed << ")\n";
     if (!options.outDir.empty()) {
       std::cout << "Saving frames to: " << options.outDir << "\n";
     }
