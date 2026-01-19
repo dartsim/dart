@@ -52,9 +52,7 @@ public:
 
 protected:
   friend class Singleton<SimpleSingleton>;
-  SimpleSingleton() : mValue(42)
-  {
-  }
+  SimpleSingleton() : mValue(42) {}
 
 private:
   int mValue;
@@ -98,9 +96,7 @@ public:
 
 protected:
   friend class Singleton<CountedSingleton>;
-  CountedSingleton() : mInstanceId(++sConstructionCount)
-  {
-  }
+  CountedSingleton() : mInstanceId(++sConstructionCount) {}
 
 private:
   int mInstanceId;
@@ -173,7 +169,8 @@ TEST(Singleton, WithConstructorArguments)
 TEST(Singleton, SubsequentCallsIgnoreArguments)
 {
   // Get the existing singleton (arguments should be ignored)
-  ConfiguredSingleton& singleton = ConfiguredSingleton::getSingleton(999, "ignored");
+  ConfiguredSingleton& singleton
+      = ConfiguredSingleton::getSingleton(999, "ignored");
 
   EXPECT_NE(singleton.getInitialValue(), 999);
   EXPECT_NE(singleton.getName(), "ignored");

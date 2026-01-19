@@ -233,9 +233,8 @@ TEST(Signal, SlotRegister)
   SlotRegister<Signal<void(int)>> reg(signal);
 
   int receivedValue = 0;
-  Connection conn = reg.connect([&receivedValue](int val) {
-    receivedValue = val;
-  });
+  Connection conn
+      = reg.connect([&receivedValue](int val) { receivedValue = val; });
 
   EXPECT_TRUE(conn.isConnected());
   EXPECT_EQ(signal.getNumConnections(), 1u);
@@ -260,7 +259,9 @@ TEST(Signal, ConnectMovedSlot)
   Signal<void()> signal;
   int callCount = 0;
 
-  auto slot = [&callCount]() { ++callCount; };
+  auto slot = [&callCount]() {
+    ++callCount;
+  };
   signal.connect(std::move(slot));
 
   signal.raise();
