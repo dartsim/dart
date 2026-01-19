@@ -250,7 +250,7 @@ Viewer::Viewer(const ViewerConfig& config)
     traits->width = config.width;
     traits->height = config.height;
     traits->windowDecoration = false;
-    traits->doubleBuffer = true;
+    traits->doubleBuffer = false;
     traits->pbuffer = true;
     traits->samples = config.msaaSamples;
     traits->readDISPLAY();
