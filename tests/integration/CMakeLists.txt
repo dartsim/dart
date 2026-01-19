@@ -24,6 +24,11 @@ dart_add_test(
   "integration"
   INTEGRATION_collision_FclPrimitiveContactMatrixFcl
   collision/test_FclPrimitiveContactMatrixFcl.cpp)
+# Suppress <ciso646> deprecation warning from octomap headers (GCC 15+)
+# This file directly includes <fcl/fcl.h> which pulls in octomap's OcTreeKey.h
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15)
+  target_compile_options(INTEGRATION_collision_FclPrimitiveContactMatrixFcl PRIVATE -Wno-cpp)
+endif()
 
 # Additional collision tests
 if(TARGET dart-utils-urdf)
