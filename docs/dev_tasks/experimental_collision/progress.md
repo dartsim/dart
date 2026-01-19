@@ -1,7 +1,7 @@
 # Experimental Collision Module - Progress Tracker
 
 > **Last Updated**: 2026-01-19
-> **Current Phase**: Phase 1 - COMPLETE
+> **Current Phase**: Phase 2 - IN PROGRESS
 
 ## Status Summary
 
@@ -9,7 +9,7 @@
 |-------|--------|----------|
 | Phase 0: Design & Harness | **Complete** | 100% |
 | Phase 1: Build Module | **Complete** | 100% |
-| Phase 2: Integrate Backend | Not Started | 0% |
+| Phase 2: Integrate Backend | **In Progress** | 50% |
 | Phase 3: Default (DART 7) | Not Started | 0% |
 | Phase 4: Remove External (DART 8) | Not Started | 0% |
 
@@ -29,7 +29,7 @@
 
 ## Phase 1: Build Module (COMPLETE)
 
-All 134 tests passing across 8 test files.
+134 tests passing across 8 test files.
 
 | Task | Description | Status | Tests |
 |------|-------------|--------|-------|
@@ -42,7 +42,41 @@ All 134 tests passing across 8 test files.
 | 1.7 | BruteForceBroadPhase | Complete | 15 |
 | 1.8 | CollisionObject wrapper | Complete | 10 |
 
-### Module Structure (Final)
+---
+
+## Phase 2: Integrate Backend (IN PROGRESS)
+
+149 tests passing across 10 test files.
+
+| Task | Description | Status | Tests |
+|------|-------------|--------|-------|
+| 2.1 | NarrowPhase dispatcher | Complete | 7 |
+| 2.2 | CollisionWorld class | Complete | 8 |
+| 2.3 | Integration with DART API | Pending | - |
+
+### New Components
+
+```
+dart/collision/experimental/
+├── narrow_phase/
+│   └── narrow_phase.hpp/.cpp    # Shape-type dispatch to narrow-phase algorithms
+└── collision_world.hpp/.cpp     # Standalone collision detection world
+
+tests/unit/collision/experimental/
+├── test_narrow_phase.cpp        # 7 tests
+└── test_collision_world.cpp     # 8 tests
+```
+
+### CollisionWorld Features
+- Object add/remove/update with automatic AABB tracking
+- Broad-phase filtering via BruteForceBroadPhase
+- Narrow-phase dispatch via NarrowPhase::collide()
+- Direct pair collision testing
+- Mixed shape support (sphere-sphere, box-box, sphere-box)
+
+---
+
+## Module Structure (Current)
 
 ```
 dart/collision/experimental/
@@ -52,25 +86,17 @@ dart/collision/experimental/
 ├── types.hpp/.cpp              # ContactPoint, ContactManifold, CollisionResult, CollisionOption
 ├── aabb.hpp/.cpp               # Axis-aligned bounding box
 ├── collision_object.hpp/.cpp   # Shape + Transform wrapper
+├── collision_world.hpp/.cpp    # Standalone collision detection
 ├── shapes/
 │   └── shape.hpp/.cpp          # SphereShape, BoxShape
 ├── narrow_phase/
+│   ├── narrow_phase.hpp/.cpp   # Shape-type dispatch
 │   ├── sphere_sphere.hpp/.cpp  # Sphere-sphere detection
 │   ├── box_box.hpp/.cpp        # Box-box SAT detection
 │   └── sphere_box.hpp/.cpp     # Sphere-box detection
 └── broad_phase/
     ├── broad_phase.hpp         # BroadPhase interface
     └── brute_force.hpp/.cpp    # O(n^2) broad-phase
-
-tests/unit/collision/experimental/
-├── test_types.cpp              # 21 tests
-├── test_aabb.cpp               # 26 tests
-├── test_shapes.cpp             # 8 tests
-├── test_sphere_sphere.cpp      # 17 tests
-├── test_box_box.cpp            # 18 tests
-├── test_sphere_box.cpp         # 19 tests
-├── test_brute_force.cpp        # 15 tests
-└── test_collision_object.cpp   # 10 tests
 ```
 
 ---
@@ -85,7 +111,9 @@ pixi run cmake -B build -DDART_BUILD_COLLISION_EXPERIMENTAL=ON -DDART_BUILD_TEST
 cmake --build build --target dart_collision_experimental_tests
 
 # Run all tests
-for t in test_types test_aabb test_shapes test_sphere_sphere test_brute_force test_box_box test_sphere_box test_collision_object; do
+for t in test_types test_aabb test_shapes test_sphere_sphere test_brute_force \
+         test_box_box test_sphere_box test_collision_object test_narrow_phase \
+         test_collision_world; do
   ./build/bin/$t
 done
 ```
@@ -104,20 +132,21 @@ done
 | 2026-01-19 | Use PascalCase for abbreviations (Aabb) | Codebase convention |
 | 2026-01-19 | BoxShape stores full extents internally | API takes half-extents for compatibility |
 | 2026-01-19 | Public min/max fields in Aabb | Direct access, consistent with other tests |
+| 2026-01-19 | CollisionWorld as standalone API | Simpler than full CollisionDetector integration |
 
 ---
 
-## Phase 2: Integrate Backend (NEXT)
+## Phase 2.3: Integration with DART API (NEXT)
 
 ### Goals
-- Wire experimental module as opt-in backend
-- Implement CollisionDetector interface
+- Wire experimental module as opt-in CollisionDetector backend
+- Support dynamics::ShapeFrame integration
 - Pass existing collision integration tests
 
 ### Pending Tasks
 - [ ] Create ExperimentalCollisionDetector class
-- [ ] Implement CollisionGroup integration
-- [ ] Wire to existing collision detection API
+- [ ] Implement CollisionGroup adapter
+- [ ] Shape type mapping from dynamics::Shape
 - [ ] Add integration tests
 
 ---
