@@ -8,6 +8,18 @@
 
 DART should ultimately rely on a single, fully built-in collision detection implementation that we can iterate on indefinitely, eliminating external collision-detection backend dependencies.
 
+## ⚠️ CRITICAL: Performance Goal
+
+**The experimental collision module MUST be faster than existing backends (FCL, Bullet, ODE) while maintaining equal or better accuracy and feature parity.**
+
+This is the primary success metric. All benchmarks must:
+1. **Compare against existing engines** - Every benchmark should include FCL, Bullet, and ODE results for the same scenario
+2. **Demonstrate performance wins** - We only ship when we're faster
+3. **Verify accuracy parity** - Same or better contact quality (position, normal, depth accuracy)
+4. **Match feature coverage** - Support all shape pairs that existing backends support
+
+If we can't beat existing backends in performance, there's no point in building this module.
+
 ## Quick Links
 
 - [Design Document](./design.md) - API design, architecture decisions
