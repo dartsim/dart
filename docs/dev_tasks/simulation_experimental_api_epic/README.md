@@ -30,7 +30,7 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 | `io/`           | Binary serialization                   | Complete              |
 | `common/`       | Logging, profiling, exceptions         | Complete              |
 | `ecs/`          | EntityObject template infrastructure   | Complete              |
-| `body/`         | RigidBody (placeholder)                | Placeholder only      |
+| `body/`         | RigidBody handle with physics props    | Complete              |
 
 ### Public Headers & Entrypoints
 
@@ -39,7 +39,7 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 | `world.hpp`                 | Main user entry point      | Stable           |
 | `multi_body/multi_body.hpp` | Robot/skeleton creation    | Stable           |
 | `multi_body/link.hpp`       | Link creation + options    | Stable           |
-| `multi_body/joint.hpp`      | Joint handle class         | Read-only access |
+| `multi_body/joint.hpp`      | Joint handle class         | Full state access |
 | `frame/frame.hpp`           | Frame base class           | Stable           |
 | `frame/free_frame.hpp`      | Free transform frames      | Stable           |
 | `space/state_space.hpp`     | Optimization state mapping | Stable           |
@@ -77,8 +77,9 @@ forward kinematics calculations (computing link transforms from joint positions)
 | `test_serialization.cpp` | Good     | Save/load worlds                                  |
 | `test_frames.cpp`        | Basic    | Frame operations                                  |
 | `test_state_space.cpp`   | Basic    | StateSpace API                                    |
-| `test_joint.cpp`         | **Good** | 15 tests: types, axis, parent/child, copy, chain  |
+| `test_joint.cpp`         | **Good** | 41 tests: types, DOF, state accessors, limits  |
 | `test_link.cpp`          | **Good** | 14 tests: name, parent joint, frame, copy, chains |
+| `test_rigid_body.cpp`    | **Good** | 14 tests: mass, inertia, pose, velocity, forces   |
 | `bm_ecs_safety.cpp`      | Basic    | ECS access benchmark                              |
 
 **Examples**: None exist for experimental API
@@ -402,7 +403,9 @@ forward kinematics calculations (computing link transforms from joint positions)
 - [ ] Lifetime docs complete
 - [ ] Design mode guards complete
 - [x] All joint types implemented (data model complete, kinematics is Phase 5)
-- [ ] RigidBody implemented
+- [x] Joint state accessors (position, velocity, acceleration, torque) - 41 tests
+- [x] Joint limits accessors (position lower/upper, velocity, effort)
+- [x] RigidBody implemented (mass, inertia, pose, velocity, forces) - 14 tests
 
 ### Phase 2: Python Bindings (Target: Week 6-9)
 
