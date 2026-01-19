@@ -11,6 +11,7 @@
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 
 // Projection methods
+#include <dart/math/lcp/projection/ApgdSolver.hpp>
 #include <dart/math/lcp/projection/BgsSolver.hpp>
 #include <dart/math/lcp/projection/BlockedJacobiSolver.hpp>
 #include <dart/math/lcp/projection/JacobiSolver.hpp>
