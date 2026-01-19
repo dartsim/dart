@@ -1,6 +1,6 @@
 # Experimental Built-in Collision Detection Module
 
-> **Epic Status**: Phase 0 - Design & Planning
+> **Epic Status**: Standalone Library Development
 > **Last Updated**: 2026-01-19
 > **Location**: `dart/collision/experimental/`
 
@@ -14,26 +14,41 @@ DART should ultimately rely on a single, fully built-in collision detection impl
 - [Phase Plan](./phases.md) - Detailed phase breakdown with deliverables
 - [Progress Tracker](./progress.md) - Current status and completed tasks
 
-## Current Phase
+## Current Status
 
-**Phase 0: Design & Harness** (In Progress)
+**Standalone Library Development** (Active)
 
-- [x] Research existing patterns (FCL, terminology, manifolds)
-- [x] Design core data structures
-- [ ] Create module skeleton
-- [ ] Implement test harness
-- [ ] Implement benchmark harness
+The module is being developed as a **standalone collision library** first, before DART API integration. Integration is deferred until feature parity with existing backends.
+
+### What's Built (149 tests passing)
+
+- Core types: ContactPoint, ContactManifold, CollisionResult, CollisionOption
+- Shapes: SphereShape, BoxShape
+- Narrow-phase: sphere-sphere, box-box (SAT), sphere-box
+- Broad-phase: BruteForceBroadPhase
+- CollisionObject wrapper
+- NarrowPhase dispatcher
+- CollisionWorld (standalone collision detection)
+
+### What's Next
+
+1. **More shapes**: Capsule, Cylinder, Plane, Mesh
+2. **Distance queries**: Signed distance, closest points
+3. **Raycast support**
+4. **Comprehensive benchmarks**
+5. **Visual verification GUI** (rerun or raylib)
 
 ## Key Design Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Namespace | `dart::collision::experimental` | Follows simulation/experimental pattern |
-| File naming | snake_case | Matches experimental convention |
-| Normal convention | From object2 to object1 | Matches existing DART convention |
-| Contact representation | Extensible manifold-based | Supports rigid/deformable/cloth/codimensional |
-| Broad-phase | Start with brute-force, extensible interface | Simple first, optimize later |
-| Determinism | Bit-exact when possible | Required for reproducible simulation |
+| Decision               | Choice                                       | Rationale                                     |
+| ---------------------- | -------------------------------------------- | --------------------------------------------- |
+| Namespace              | `dart::collision::experimental`              | Follows simulation/experimental pattern       |
+| File naming            | snake_case                                   | Matches experimental convention               |
+| Normal convention      | From object2 to object1                      | Matches existing DART convention              |
+| Contact representation | Extensible manifold-based                    | Supports rigid/deformable/cloth/codimensional |
+| Broad-phase            | Start with brute-force, extensible interface | Simple first, optimize later                  |
+| Determinism            | Bit-exact when possible                      | Required for reproducible simulation          |
+| Development approach   | Standalone library first                     | Defer DART integration until feature parity   |
 
 ## Directory Structure
 
@@ -42,47 +57,52 @@ dart/collision/experimental/
 ├── CMakeLists.txt
 ├── export.hpp
 ├── fwd.hpp
-├── types.hpp              # Contact, CollisionResult, CollisionOption
-├── aabb.hpp/.cpp          # Axis-Aligned Bounding Box
+├── types.hpp/.cpp          # ContactPoint, ContactManifold, CollisionResult, CollisionOption
+├── aabb.hpp/.cpp           # Axis-aligned bounding box
 ├── collision_object.hpp/.cpp
-├── collision_group.hpp/.cpp
+├── collision_world.hpp/.cpp  # Standalone collision detection
+├── shapes/
+│   └── shape.hpp/.cpp      # SphereShape, BoxShape
 ├── narrow_phase/
-│   ├── narrow_phase.hpp   # Dispatch interface
+│   ├── narrow_phase.hpp/.cpp  # Shape-type dispatch
 │   ├── sphere_sphere.hpp/.cpp
 │   ├── box_box.hpp/.cpp
 │   └── sphere_box.hpp/.cpp
-├── broad_phase/
-│   ├── broad_phase.hpp    # Interface
-│   └── brute_force.hpp/.cpp
-└── shapes/
-    ├── shape.hpp          # Standalone shape representations
-    ├── sphere.hpp/.cpp
-    └── box.hpp/.cpp
+└── broad_phase/
+    ├── broad_phase.hpp     # Interface
+    └── brute_force.hpp/.cpp
+```
+
+## Build & Test
+
+```bash
+# Configure with experimental collision
+pixi run cmake -B build -DDART_BUILD_COLLISION_EXPERIMENTAL=ON -DDART_BUILD_TESTS=ON
+
+# Build all experimental tests
+cmake --build build --target dart_collision_experimental_tests
+
+# Run all tests (149 tests across 10 files)
+for t in test_types test_aabb test_shapes test_sphere_sphere test_brute_force \
+         test_box_box test_sphere_box test_collision_object test_narrow_phase \
+         test_collision_world; do
+  ./build/bin/$t
+done
 ```
 
 ## Success Criteria
 
-### Phase 0 Complete When:
-- [ ] Module skeleton builds with `pixi run build`
-- [ ] Test harness runs sphere-sphere correctness tests
-- [ ] Benchmark harness measures sphere-sphere performance
-- [ ] CI integration works on Linux/macOS/Windows
+### Standalone Library Complete When:
 
-### Phase 1 Complete When:
-- [ ] All primitive narrow-phase tests pass (sphere, box)
-- [ ] Brute-force broad-phase works
-- [ ] Performance baselines established
+- [ ] All primitive shapes: Sphere, Box, Capsule, Cylinder, Plane
+- [ ] Mesh-primitive collision
+- [ ] Distance queries (signed distance, closest points)
+- [ ] Raycast support
+- [ ] Comprehensive benchmarks established
+- [ ] Visual verification tool working
 
-### Phase 2 Complete When:
+### DART Integration (Deferred):
+
 - [ ] Wired as additional backend (opt-in)
 - [ ] Passes existing collision integration tests
 - [ ] Documentation complete
-
-### Phase 3 Complete When (DART 7):
-- [ ] Default backend
-- [ ] Performance competitive with current backends
-- [ ] All common shape pairs supported
-
-### Phase 4 Complete When (DART 8):
-- [ ] External backends removed from default distribution
-- [ ] Migration guide published

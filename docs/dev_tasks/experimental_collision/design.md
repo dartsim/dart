@@ -26,14 +26,14 @@
 
 ### Naming Conventions
 
-| Convention | Example |
-|------------|---------|
-| Files | `snake_case.hpp`, `snake_case.cpp` |
-| Classes | `PascalCase` (e.g., `CollisionObject`) |
-| Abbreviations | `PascalCase` (e.g., `Aabb` not `AABB`) |
-| Functions | `camelCase` (e.g., `getTransform()`) |
-| Member variables | `snake_case_` with trailing underscore |
-| Constants | `kPascalCase` (e.g., `kDefaultMaxContacts`) |
+| Convention       | Example                                     |
+| ---------------- | ------------------------------------------- |
+| Files            | `snake_case.hpp`, `snake_case.cpp`          |
+| Classes          | `PascalCase` (e.g., `CollisionObject`)      |
+| Abbreviations    | `PascalCase` (e.g., `Aabb` not `AABB`)      |
+| Functions        | `camelCase` (e.g., `getTransform()`)        |
+| Member variables | `snake_case_` with trailing underscore      |
+| Constants        | `kPascalCase` (e.g., `kDefaultMaxContacts`) |
 
 ---
 
@@ -53,26 +53,26 @@ namespace dart::collision::experimental {
 struct ContactPoint {
   /// Contact position in world frame
   Eigen::Vector3d position;
-  
+
   /// Contact normal (from object2 to object1) in world frame
   Eigen::Vector3d normal;
-  
+
   /// Penetration depth (positive = overlapping)
   double depth;
-  
+
   /// Pointers to colliding objects (may be nullptr for standalone tests)
   const CollisionObject* object1 = nullptr;
   const CollisionObject* object2 = nullptr;
-  
+
   /// Feature identification for mesh contacts (-1 = not applicable)
   int featureIndex1 = -1;
   int featureIndex2 = -1;
-  
+
   // === Static Utilities ===
-  
+
   /// Epsilon for zero-normal detection
   static constexpr double kNormalEpsilon = 1e-6;
-  
+
   /// Check if normal is effectively zero (degenerate contact)
   [[nodiscard]] static bool isZeroNormal(const Eigen::Vector3d& n) {
     return n.squaredNorm() < kNormalEpsilon * kNormalEpsilon;
@@ -107,28 +107,28 @@ enum class ContactType {
 class ContactManifold {
 public:
   ContactManifold() = default;
-  
+
   /// Add a contact point to this manifold
   void addContact(const ContactPoint& contact);
-  
+
   /// Clear all contacts
   void clear();
-  
+
   // === Accessors ===
-  
+
   [[nodiscard]] std::size_t numContacts() const { return contacts_.size(); }
   [[nodiscard]] bool hasContacts() const { return !contacts_.empty(); }
   [[nodiscard]] const ContactPoint& getContact(std::size_t i) const;
   [[nodiscard]] std::span<const ContactPoint> getContacts() const;
-  
+
   /// Get the contact type (inferred from contact geometry)
   [[nodiscard]] ContactType getType() const { return type_; }
   void setType(ContactType type) { type_ = type; }
-  
+
   /// Get shared normal (for Face/Edge contacts, contacts share a normal)
   /// Returns zero vector if contacts have different normals.
   [[nodiscard]] Eigen::Vector3d getSharedNormal() const;
-  
+
   /// Get the colliding objects
   [[nodiscard]] const CollisionObject* getObject1() const { return object1_; }
   [[nodiscard]] const CollisionObject* getObject2() const { return object2_; }
@@ -156,43 +156,43 @@ namespace dart::collision::experimental {
 class CollisionResult {
 public:
   CollisionResult() = default;
-  
+
   // === Modification ===
-  
+
   /// Add a contact point (creates implicit single-point manifold)
   void addContact(const ContactPoint& contact);
-  
+
   /// Add a complete manifold
   void addManifold(ContactManifold manifold);
-  
+
   /// Clear all results
   void clear();
-  
+
   // === Query ===
-  
+
   /// Check if any collision occurred
   [[nodiscard]] bool isCollision() const { return !manifolds_.empty(); }
   [[nodiscard]] explicit operator bool() const { return isCollision(); }
-  
+
   /// Get total contact count across all manifolds
   [[nodiscard]] std::size_t numContacts() const;
-  
+
   /// Get number of manifolds
   [[nodiscard]] std::size_t numManifolds() const { return manifolds_.size(); }
-  
+
   // === Access ===
-  
+
   /// Manifold-based access (recommended)
   [[nodiscard]] const ContactManifold& getManifold(std::size_t i) const;
   [[nodiscard]] std::span<const ContactManifold> getManifolds() const;
-  
+
   /// Flat contact access (for compatibility)
   /// Note: This is less efficient as it iterates all manifolds.
   [[nodiscard]] const ContactPoint& getContact(std::size_t i) const;
 
 private:
   std::vector<ContactManifold> manifolds_;
-  
+
   // Cached flat view (lazily computed)
   mutable std::vector<const ContactPoint*> flat_contacts_cache_;
   mutable bool flat_cache_valid_ = false;
@@ -213,24 +213,24 @@ struct CollisionOption {
   /// Whether to compute contact details (point, normal, depth).
   /// If false, only boolean collision result is computed (faster).
   bool enableContact = true;
-  
+
   /// Maximum number of contacts to detect.
   /// Query terminates early once this limit is reached.
   /// Set to 1 for binary collision check.
   /// Set to 0 to short-circuit (returns false immediately).
   std::size_t maxNumContacts = 1000;
-  
+
   /// Collision filter (optional).
   /// If set, pairs where filter->ignoresCollision() returns true are skipped.
   // CollisionFilter* filter = nullptr;  // Phase 2
-  
+
   // === Factory Methods ===
-  
+
   /// Create option for binary collision check (fastest)
   [[nodiscard]] static CollisionOption binaryCheck() {
     return {.enableContact = false, .maxNumContacts = 1};
   }
-  
+
   /// Create option for full contact computation
   [[nodiscard]] static CollisionOption fullContacts(std::size_t max = 1000) {
     return {.enableContact = true, .maxNumContacts = max};
@@ -250,40 +250,40 @@ class Aabb {
 public:
   Aabb() : min_(Eigen::Vector3d::Zero()), max_(Eigen::Vector3d::Zero()) {}
   Aabb(const Eigen::Vector3d& min, const Eigen::Vector3d& max);
-  
+
   // === Query ===
-  
+
   /// Check if this AABB overlaps with another
   [[nodiscard]] bool overlaps(const Aabb& other) const;
-  
+
   /// Check if this AABB contains a point
   [[nodiscard]] bool contains(const Eigen::Vector3d& point) const;
-  
+
   /// Get center point
   [[nodiscard]] Eigen::Vector3d center() const;
-  
+
   /// Get half-extents
   [[nodiscard]] Eigen::Vector3d halfExtents() const;
-  
+
   /// Get volume
   [[nodiscard]] double volume() const;
-  
+
   // === Modification ===
-  
+
   /// Merge with another AABB (this becomes the union)
   void merge(const Aabb& other);
-  
+
   /// Expand by margin in all directions
   void expand(double margin);
-  
+
   // === Factory ===
-  
+
   /// Create AABB for a sphere at origin
   [[nodiscard]] static Aabb forSphere(double radius);
-  
+
   /// Create AABB for a box at origin
   [[nodiscard]] static Aabb forBox(const Eigen::Vector3d& halfExtents);
-  
+
   /// Transform a local AABB to world frame
   [[nodiscard]] static Aabb transformed(
       const Aabb& local,
@@ -411,22 +411,22 @@ namespace dart::collision::experimental {
 class BroadPhase {
 public:
   virtual ~BroadPhase() = default;
-  
+
   /// Add an object to the broad-phase structure
   virtual void add(CollisionObject* object) = 0;
-  
+
   /// Remove an object from the broad-phase structure
   virtual void remove(CollisionObject* object) = 0;
-  
+
   /// Update an object's position (call after transform change)
   virtual void update(CollisionObject* object) = 0;
-  
+
   /// Remove all objects
   virtual void clear() = 0;
-  
+
   /// Get number of objects
   [[nodiscard]] virtual std::size_t size() const = 0;
-  
+
   /// Compute potentially colliding pairs.
   /// Pairs are returned in deterministic order.
   [[nodiscard]] virtual std::vector<std::pair<CollisionObject*, CollisionObject*>>
@@ -444,7 +444,7 @@ public:
   void update(CollisionObject* object) override;
   void clear() override;
   [[nodiscard]] std::size_t size() const override;
-  
+
   [[nodiscard]] std::vector<std::pair<CollisionObject*, CollisionObject*>>
   computePotentialPairs() const override;
 
@@ -467,13 +467,13 @@ private:
 
 ### Implementation Strategy
 
-| Requirement | Implementation |
-|-------------|----------------|
-| Ordered iteration | Use `std::vector` for all collections |
+| Requirement              | Implementation                                      |
+| ------------------------ | --------------------------------------------------- |
+| Ordered iteration        | Use `std::vector` for all collections               |
 | Consistent pair ordering | Always order pairs by pointer: `(min_ptr, max_ptr)` |
-| Stable contact order | Add contacts in deterministic narrow-phase order |
-| No hash iteration | Avoid `unordered_map/set` in hot paths |
-| Floating-point care | Use consistent operations, avoid reassociation |
+| Stable contact order     | Add contacts in deterministic narrow-phase order    |
+| No hash iteration        | Avoid `unordered_map/set` in hot paths              |
+| Floating-point care      | Use consistent operations, avoid reassociation      |
 
 ### Utility Function
 
@@ -519,10 +519,10 @@ enum class ShapeType {
 class Shape {
 public:
   virtual ~Shape() = default;
-  
+
   [[nodiscard]] virtual ShapeType getType() const = 0;
   [[nodiscard]] virtual Aabb computeLocalAabb() const = 0;
-  
+
   // For future: signed distance function
   // [[nodiscard]] virtual double signedDistance(const Eigen::Vector3d& point) const;
 };
@@ -530,10 +530,10 @@ public:
 class SphereShape : public Shape {
 public:
   explicit SphereShape(double radius) : radius_(radius) {}
-  
+
   [[nodiscard]] ShapeType getType() const override { return ShapeType::Sphere; }
   [[nodiscard]] Aabb computeLocalAabb() const override;
-  
+
   [[nodiscard]] double getRadius() const { return radius_; }
 
 private:
@@ -543,10 +543,10 @@ private:
 class BoxShape : public Shape {
 public:
   explicit BoxShape(const Eigen::Vector3d& halfExtents) : halfExtents_(halfExtents) {}
-  
+
   [[nodiscard]] ShapeType getType() const override { return ShapeType::Box; }
   [[nodiscard]] Aabb computeLocalAabb() const override;
-  
+
   [[nodiscard]] const Eigen::Vector3d& getHalfExtents() const { return halfExtents_; }
 
 private:
@@ -583,7 +583,7 @@ struct FaceContact {
 struct ParametricContact {
   // Curve parameter or (u,v) surface parameters
   Eigen::Vector2d param1, param2;
-  
+
   // Differential geometry information
   Eigen::Matrix2d firstFundamentalForm;
   Eigen::Matrix2d secondFundamentalForm;
