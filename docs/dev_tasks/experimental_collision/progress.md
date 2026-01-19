@@ -5,16 +5,16 @@
 
 ## Status Summary
 
-| Phase                     | Status          | Progress |
-| ------------------------- | --------------- | -------- |
-| Core Types & Primitives   | **Complete**    | 100%     |
-| Standalone CollisionWorld | **Complete**    | 100%     |
-| Additional Shapes         | **In Progress** | 75%      |
-| Distance Queries          | Not Started     | 0%       |
-| Raycast Support           | Not Started     | 0%       |
-| Benchmarks                | Not Started     | 0%       |
-| Visual Verification       | Not Started     | 0%       |
-| DART Integration          | **Deferred**    | -        |
+| Phase                     | Status       | Progress |
+| ------------------------- | ------------ | -------- |
+| Core Types & Primitives   | **Complete** | 100%     |
+| Standalone CollisionWorld | **Complete** | 100%     |
+| Additional Shapes         | **Complete** | 100%     |
+| Distance Queries          | **Complete** | 100%     |
+| Comparative Benchmarks    | **Complete** | 100%     |
+| Raycast Support           | Not Started  | 0%       |
+| Visual Verification       | Not Started  | 0%       |
+| DART Integration          | **Deferred** | -        |
 
 ---
 
@@ -86,14 +86,18 @@
 | Ray-plane   | Pending |       |
 | Ray-mesh    | Pending |       |
 
-### Priority 5: Benchmarks
+### Priority 5: Benchmarks ✅ COMPLETE
 
-Create `tests/benchmark/collision/experimental/`:
+**Comparative benchmarks created:** `tests/benchmark/collision/bm_comparative.cpp`
 
-- Narrow-phase timing (per shape pair)
-- Broad-phase scaling (N objects)
-- Memory usage
-- Comparison with existing backends (without naming them)
+| Shape Pair      | Experimental | FCL          | Bullet       | ODE          | Speedup |
+| --------------- | ------------ | ------------ | ------------ | ------------ | ------- |
+| Sphere-Sphere   | **41 ns**    | 774-1107 ns  | 411-586 ns   | 991-1002 ns  | **10x** |
+| Box-Box         | **210 ns**   | 2429-2486 ns | 1094-1147 ns | 2210-2226 ns | **5x**  |
+| Capsule-Capsule | **41 ns**    | 242 ns       | 440 ns       | 1381-1382 ns | **6x**  |
+| Distance        | **7 ns**     | 286-288 ns   | N/A          | N/A          | **40x** |
+
+**Accuracy verification:** PASSED
 
 ### Priority 6: Visual Verification
 

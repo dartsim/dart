@@ -75,7 +75,7 @@ Eigen::Isometry3d randomTransformWithRotation(double posRange)
   return tf;
 }
 
-}
+} // namespace
 
 static void BM_SphereSphereCollision(benchmark::State& state)
 {
@@ -148,7 +148,8 @@ static void BM_CylinderCylinderCollision(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(collideCylinders(c1, tf1, c2, tf2, result, option));
+    benchmark::DoNotOptimize(
+        collideCylinders(c1, tf1, c2, tf2, result, option));
   }
 }
 BENCHMARK(BM_CylinderCylinderCollision);
@@ -414,7 +415,12 @@ static void BM_BatchDistanceQueries(benchmark::State& state)
         DistanceResult result;
         DistanceOption option;
         totalDist += distanceSphereSphere(
-            spheres[i], transforms[i], spheres[j], transforms[j], result, option);
+            spheres[i],
+            transforms[i],
+            spheres[j],
+            transforms[j],
+            result,
+            option);
       }
     }
     benchmark::DoNotOptimize(totalDist);

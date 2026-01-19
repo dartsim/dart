@@ -13,6 +13,7 @@ DART should ultimately rely on a single, fully built-in collision detection impl
 **The experimental collision module MUST be faster than existing backends (FCL, Bullet, ODE) while maintaining equal or better accuracy and feature parity.**
 
 This is the primary success metric. All benchmarks must:
+
 1. **Compare against existing engines** - Every benchmark should include FCL, Bullet, and ODE results for the same scenario
 2. **Demonstrate performance wins** - We only ship when we're faster
 3. **Verify accuracy parity** - Same or better contact quality (position, normal, depth accuracy)
