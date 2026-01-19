@@ -9,20 +9,23 @@ Migrate DART header files from PascalCase to snake_case naming convention.
 
 ## Current Status
 
-**Phase**: Phase 2 (Structural Renames) - IN PROGRESS
+**Phase**: COMPLETE - Awaiting PR Review
 
-| Phase    | Description                                              | Status      |
-| -------- | -------------------------------------------------------- | ----------- |
-| Phase 1  | DART 7 additions (All.hpp, Export.hpp, Fwd.hpp)          | COMMITTED   |
-| Phase 2a | dart/common structural renames                           | COMMITTED   |
-| Phase 2b | dart/math structural renames                             | IN PROGRESS |
-| Phase 2c | dart/collision structural renames                        | IN PROGRESS |
-| Phase 2d | dart/constraint structural renames                       | IN PROGRESS |
-| Phase 2e | dart/dynamics structural renames                         | IN PROGRESS |
-| Phase 2f | dart/gui structural renames                              | IN PROGRESS |
-| Phase 2g | dart/utils structural renames                            | IN PROGRESS |
-| Phase 2h | Other modules (sensor, simulation, optimizer, lcpsolver) | IN PROGRESS |
-| Phase 3  | Verification, lint, tests, commit                        | PENDING     |
+| Phase    | Description                                     | Status    |
+| -------- | ----------------------------------------------- | --------- |
+| Phase 1  | DART 7 additions (All.hpp, Export.hpp, Fwd.hpp) | COMMITTED |
+| Phase 2a | dart/common structural renames                  | COMMITTED |
+| Phase 2b-h | All remaining modules                         | COMMITTED |
+| Phase 3  | Verification, lint, tests                       | PASSED    |
+
+### Summary
+- **~325 header files renamed** (structural changes only)
+- **All tests passing** (143/143)
+- **Lint passing**
+- **PR updated** with comprehensive description
+
+### Cleanup
+Per AGENTS.md, delete this folder (`docs/dev_tasks/header-snake-case-migration/`) when PR is merged.
 
 ## Key Files
 
