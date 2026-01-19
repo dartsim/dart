@@ -2,66 +2,84 @@
 
 ## Last Session Summary
 
-Completed comprehensive joint type testing:
+Major Phase 1 progress:
 
-- Added 12 new tests for Ball, Free, Universal, Planar, Screw joint types
-- Verified all joint types work correctly at data model level
-- Total: 27 tests in test_joint.cpp, 14 tests in test_link.cpp
-- All 12 simulation-experimental test binaries pass
-
-**Key Discovery**: All joint types were already implemented at the data model level.
-The `getDOF()` returns correct values, position vectors are initialized to correct size.
-"TODO" in comments refers to kinematics calculations (Phase 5), not data structures.
+1. **All joint types verified** - Data model complete for all 8 types (Fixed, Revolute, Prismatic, Screw, Universal, Ball, Planar, Free)
+2. **Joint state accessors added** - getDOF, getPosition/setPosition, getVelocity/setVelocity, getAcceleration/setAcceleration, getTorque/setTorque
+3. **Comprehensive tests** - 37 tests in test_joint.cpp, 14 tests in test_link.cpp
+4. **RigidBody audited** - Confirmed placeholder status, needs mass/inertia/pose/velocity
 
 ## Current Branch
 
-`feature/sim_exp` - Uncommitted changes:
+`feature/sim_exp` - 3 commits ahead of main:
+```
+f71761582c9 feat(simulation-experimental): Add Joint state accessors
+bf298c8e657 test(simulation-experimental): Add comprehensive tests for all joint types
+18c2b37807a feat(simulation-experimental): Add epic plan and fill empty test files
+```
 
-- `tests/unit/simulation/experimental/multi_body/test_joint.cpp` (new tests added)
-- `docs/dev_tasks/simulation_experimental_api_epic/README.md` (status updated)
-- `docs/dev_tasks/simulation_experimental_api_epic/RESUME.md` (this file)
+## Immediate Next Steps
 
-## Immediate Next Step
+1. **Push branch for review** or continue Phase 1 work
+2. **RigidBody implementation** (if continuing):
+   - Add mass, inertia properties to RigidBodyOptions
+   - Add pose (position, orientation) accessors
+   - Add velocity (linear, angular) accessors
+   - Add tests for RigidBody
 
-**Commit current work**, then continue with remaining Phase 1 tasks:
+## What's Complete
 
-- Naming consistency audit
-- Exception review
-- RigidBody implementation
+### Phase 0 (Ground-Truth)
+- [x] Epic document created
+- [x] test_joint.cpp: 37 tests
+- [x] test_link.cpp: 14 tests  
+- [x] All joint types tested
+- [ ] Hello world example (deferred)
 
-## Context That Would Be Lost
+### Phase 1 (API Cleanup) - Partial
+- [x] All joint types data model complete
+- [x] Joint state accessors (position/velocity/acceleration/torque)
+- [x] Error handling for size mismatches
+- [ ] RigidBody implementation (placeholder only)
+- [ ] Naming audit
+- [ ] Exception hierarchy review
 
-- All joint types (Fixed, Revolute, Prismatic, Screw, Universal, Ball, Planar, Free) are complete at data level
-- Classic DART uses exponential map (3D vector) not quaternions for Ball joint state
-- Kinematics calculations (forward kinematics from joint positions) are Phase 5 work
-- The Joint handle class is missing `getPosition()`/`setPosition()` methods (marked TODO in header)
+## Key Discoveries
 
-## Key Files
+1. **All joint types already work** - The `getDOF()` switch statement and `addLink()` initialization handle all types correctly
+2. **"TODO" means kinematics** - Not data model. Forward kinematics (computing transforms from joint positions) is Phase 5
+3. **Classic DART uses exponential map** - Ball joint stores 3D axis-angle vector, not 4D quaternion
+4. **RigidBody is minimal** - Just getName() and Frame inheritance, no physics properties yet
 
-1. `dart/simulation/experimental/comps/joint.hpp` - JointType enum, Joint component
-2. `dart/simulation/experimental/multi_body/multi_body.cpp` - Joint creation (lines 260-265)
-3. `tests/unit/simulation/experimental/multi_body/test_joint.cpp` - Comprehensive tests
+## Test Count Summary
+
+| Test File        | # Tests | Coverage                                              |
+| ---------------- | ------- | ----------------------------------------------------- |
+| `test_joint.cpp` | 37      | All types, DOF, axis, state accessors, error handling |
+| `test_link.cpp`  | 14      | name, parent joint, frame, copy, chains               |
 
 ## How to Resume
 
 ```bash
 git checkout feature/sim_exp
-git status && git log -3 --oneline
+git log -3 --oneline  # Verify commits
 pixi run build-simulation-experimental-tests
 ctest -L simulation-experimental --test-dir build/default/cpp/Release
 ```
 
+## Files Modified This Session
+
+```
+dart/simulation/experimental/multi_body/joint.hpp  # +51 lines (state accessors)
+dart/simulation/experimental/multi_body/joint.cpp  # +87 lines (implementations)
+tests/unit/simulation/experimental/multi_body/test_joint.cpp  # +468 lines total
+docs/dev_tasks/simulation_experimental_api_epic/README.md  # Status updates
+docs/dev_tasks/simulation_experimental_api_epic/RESUME.md  # This file
+```
+
 ## Remaining Phase 1 Tasks
 
-- [ ] Naming consistency audit (snake_case per code-style.md)
-- [ ] Exception review (InvalidArgumentException, InvalidOperationException hierarchy)
-- [ ] Add `getPosition()`/`setPosition()` to Joint handle class
-- [ ] Implement RigidBody properly (currently placeholder)
-- [ ] Add design mode guards to all mutating methods
-
-## Test Count Summary
-
-| Test File        | # Tests | Coverage                                   |
-| ---------------- | ------- | ------------------------------------------ |
-| `test_joint.cpp` | 27      | All 8 joint types, DOF, chains, copy, axis |
-| `test_link.cpp`  | 14      | name, parent joint, frame, copy, chains    |
+- [ ] RigidBody: Add mass, inertia, pose, velocity properties
+- [ ] Naming audit for snake_case consistency
+- [ ] Exception hierarchy review
+- [ ] Add joint limits accessors to Joint handle
