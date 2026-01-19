@@ -39,6 +39,8 @@
 #include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/VersionCounter.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace dynamics {
 
@@ -47,7 +49,7 @@ namespace dynamics {
 /// its relative transform is set. However, classes that inherit the FixedFrame
 /// class may alter its relative transform or change what its parent Frame is.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class FixedFrame
+class DART_API FixedFrame
   : public virtual Frame,
     public virtual common::VersionCounter,
     public common::EmbedProperties<FixedFrame, detail::FixedFrameProperties>

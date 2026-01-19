@@ -8,6 +8,8 @@
 #include <dart/dynamics/Frame.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 
+#include <dart/math/Constants.hpp>
+
 #include <gtest/gtest.h>
 
 using namespace dart;
@@ -151,7 +153,7 @@ TEST(SimpleFrameTest, SetRelativeRotation)
   auto frame = SimpleFrame::createShared();
 
   Eigen::Matrix3d rotation;
-  rotation = Eigen::AngleAxisd(M_PI / 4.0, Eigen::Vector3d::UnitZ());
+  rotation = Eigen::AngleAxisd(math::pi / 4.0, Eigen::Vector3d::UnitZ());
 
   frame->setRelativeRotation(rotation);
 

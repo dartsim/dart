@@ -42,8 +42,9 @@
 namespace dart {
 namespace dynamics {
 
-class FixedJacobianNode : public detail::FixedJacobianNodeCompositeBase,
-                          public AccessoryNode<FixedJacobianNode>
+class DART_API FixedJacobianNode
+  : public detail::FixedJacobianNodeCompositeBase,
+    public AccessoryNode<FixedJacobianNode>
 {
 public:
   /// Set the current relative transform of this Fixed Frame
