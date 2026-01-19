@@ -53,18 +53,13 @@ multiple simulators for different purposes.
 Other Simulators
 ----------------
 
-Here are some other physics simulators commonly used in robotics research.
-Each has its own strengths and design philosophy:
+Here are some other physics simulators commonly used in robotics research:
 
-* `MuJoCo <https://mujoco.org/>`_ — High-performance physics with
-  optimization-friendly design
-* `Drake <https://drake.mit.edu/>`_ — Model-based design with strong
-  optimization and planning tools
-* `PyBullet <https://pybullet.org/>`_ — Python-first interface to Bullet
-  physics, popular in ML/RL
-* `Isaac Sim <https://developer.nvidia.com/isaac-sim>`_ — NVIDIA platform
-  with GPU acceleration for large-scale simulation
-* `ODE <https://www.ode.org/>`_ — Established open-source physics engine
+* `MuJoCo <https://mujoco.org/>`_
+* `Drake <https://drake.mit.edu/>`_
+* `PyBullet <https://pybullet.org/>`_
+* `Isaac Sim <https://developer.nvidia.com/isaac-sim>`_
+* `ODE <https://www.ode.org/>`_
 
 We encourage you to evaluate multiple options for your specific needs.
 
