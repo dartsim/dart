@@ -78,10 +78,10 @@ public:
 };
 
 //==============================================================================
-class DART_API EndEffector final : public common::EmbedPropertiesOnTopOf<
-                                       EndEffector,
-                                       detail::EndEffectorProperties,
-                                       detail::EndEffectorCompositeBase>
+class EndEffector final : public common::EmbedPropertiesOnTopOf<
+                              EndEffector,
+                              detail::EndEffectorProperties,
+                              detail::EndEffectorCompositeBase>
 {
 public:
   friend class Skeleton;
@@ -116,10 +116,10 @@ public:
   Properties getEndEffectorProperties() const;
 
   /// Copy the State and Properties of another EndEffector
-  void copy(const EndEffector& _otherEndEffector);
+  DART_API void copy(const EndEffector& _otherEndEffector);
 
   /// Copy the State and Properties of another EndEffector
-  void copy(const EndEffector* _otherEndEffector);
+  DART_API void copy(const EndEffector* _otherEndEffector);
 
   /// Copy the State and Properties of another EndEffector
   EndEffector& operator=(const EndEffector& _otherEndEffector);
@@ -128,13 +128,13 @@ public:
   /// transform of this EndEffector will be set to _newDefaultTf the next time
   /// resetRelativeTransform() is called. If _useNow is set to true, then
   /// resetRelativeTransform() will be called at the end of this function.
-  void setDefaultRelativeTransform(
+  DART_API void setDefaultRelativeTransform(
       const Eigen::Isometry3d& _newDefaultTf, bool _useNow = false);
 
   /// Set the current relative transform of this EndEffector to the default
   /// relative transform of this EndEffector. The default relative transform can
   /// be set with setDefaultRelativeTransform()
-  void resetRelativeTransform();
+  DART_API void resetRelativeTransform();
 
   DART_BAKE_SPECIALIZED_ASPECT(Support)
 
