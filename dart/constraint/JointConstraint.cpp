@@ -206,8 +206,29 @@ void JointConstraint::update()
   mActive.setConstant(false);
 
   for (int i = 0; i < dof; ++i) {
-    DART_ASSERT(positionLowerLimits[i] <= positionUpperLimits[i]);
-    DART_ASSERT(velocityLowerLimits[i] <= velocityUpperLimits[i]);
+    // Check for invalid limits (lower > upper) and skip this DOF if so.
+    // This can happen from malformed model files (e.g., SDF with swapped
+    // limits). See: https://github.com/gazebosim/gz-physics/issues/846
+    if (positionLowerLimits[i] > positionUpperLimits[i]) {
+      DART_WARN(
+          "Joint '{}' DOF {} has invalid position limits: lower ({}) > upper "
+          "({}). Skipping limit enforcement for this DOF.",
+          mJoint->getName(),
+          i,
+          positionLowerLimits[i],
+          positionUpperLimits[i]);
+      continue;
+    }
+    if (velocityLowerLimits[i] > velocityUpperLimits[i]) {
+      DART_WARN(
+          "Joint '{}' DOF {} has invalid velocity limits: lower ({}) > upper "
+          "({}). Skipping limit enforcement for this DOF.",
+          mJoint->getName(),
+          i,
+          velocityLowerLimits[i],
+          velocityUpperLimits[i]);
+      continue;
+    }
 
     // Velocity limits due to position limits
     const double vel_to_pos_lb
