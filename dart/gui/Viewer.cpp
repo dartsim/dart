@@ -40,6 +40,7 @@
 #include "dart/gui/DragAndDrop.hpp"
 #include "dart/gui/TrackballManipulator.hpp"
 #include "dart/gui/Utils.hpp"
+#include "dart/gui/ViewerConfig.hpp"
 #include "dart/gui/WorldNode.hpp"
 #include "dart/gui/detail/CameraModeCallback.hpp"
 #include "dart/simulation/World.hpp"
@@ -220,6 +221,85 @@ Viewer::Viewer(const ::osg::Vec4& clearColor)
   mCameraModeCallback = new detail::CameraModeCallback;
   mCameraModeCallback->setCameraMode(CameraMode::RGBA);
   mRootGroup->addUpdateCallback(mCameraModeCallback);
+}
+
+//==============================================================================
+Viewer::Viewer(const ViewerConfig& config)
+  : mImageSequenceNum(0),
+    mImageDigits(0),
+    mRecording(false),
+    mRootGroup(new ::osg::Group),
+    mLightGroup(new ::osg::Group),
+    mLight1(new ::osg::Light),
+    mLightSource1(new ::osg::LightSource),
+    mLight2(new ::osg::Light),
+    mLightSource2(new ::osg::LightSource),
+    mUpwards(::osg::Vec3(0, 0, 1)),
+    mOver(::osg::Vec3(0, 1, 0)),
+    mSimulating(false),
+    mAllowSimulation(true),
+    mHeadlights(true),
+    mHeadless(config.mode == RenderingMode::Headless)
+{
+  // Set up offscreen pbuffer context for headless mode
+  if (mHeadless) {
+    ::osg::ref_ptr<::osg::GraphicsContext::Traits> traits
+        = new ::osg::GraphicsContext::Traits;
+    traits->x = 0;
+    traits->y = 0;
+    traits->width = config.width;
+    traits->height = config.height;
+    traits->windowDecoration = false;
+    traits->doubleBuffer = true;
+    traits->pbuffer = true;
+    traits->samples = config.msaaSamples;
+    traits->readDISPLAY();
+    traits->setUndefinedScreenDetailsToDefaultScreen();
+
+    ::osg::ref_ptr<::osg::GraphicsContext> gc
+        = ::osg::GraphicsContext::createGraphicsContext(traits.get());
+
+    if (!gc.valid()) {
+      DART_WARN(
+          "Failed to create pbuffer graphics context for headless mode. "
+          "Falling back to default context.");
+    } else {
+      getCamera()->setGraphicsContext(gc.get());
+      getCamera()->setViewport(0, 0, config.width, config.height);
+      getCamera()->setProjectionMatrixAsPerspective(
+          45.0,
+          static_cast<double>(config.width)
+              / static_cast<double>(config.height),
+          0.1,
+          1000.0);
+    }
+  }
+
+  setCameraManipulator(new TrackballManipulator);
+  addInstructionText("Left-click:   Interaction\n");
+  addInstructionText("Right-click:  Rotate view\n");
+  addInstructionText("Middle-click: Translate view\n");
+  addInstructionText("Wheel Scroll: Zoom in/out\n");
+
+  mDefaultEventHandler = new DefaultEventHandler(this);
+
+  setSceneData(mRootGroup);
+  addEventHandler(mDefaultEventHandler);
+  setupDefaultLights();
+  getCamera()->setClearColor(config.clearColor);
+
+  getCamera()->setFinalDrawCallback(new SaveScreen(this));
+
+  // Settings for camera mode (RGBA/Depth)
+  mCameraModeCallback = new detail::CameraModeCallback;
+  mCameraModeCallback->setCameraMode(CameraMode::RGBA);
+  mRootGroup->addUpdateCallback(mCameraModeCallback);
+}
+
+//==============================================================================
+bool Viewer::isHeadless() const
+{
+  return mHeadless;
 }
 
 //==============================================================================

@@ -37,6 +37,7 @@
 #include <dart/gui/DefaultEventHandler.hpp>
 #include <dart/gui/Export.hpp>
 #include <dart/gui/Fwd.hpp>
+#include <dart/gui/ViewerConfig.hpp>
 #include <dart/gui/WorldNode.hpp>
 #include <dart/gui/detail/CameraModeCallback.hpp>
 
@@ -106,8 +107,14 @@ public:
   /// default event handler.
   Viewer(const ::osg::Vec4& clearColor = ::osg::Vec4(0.9, 0.9, 0.9, 1.0));
 
+  /// Constructor with configuration bundle. Supports headless mode.
+  explicit Viewer(const ViewerConfig& config);
+
   /// Destructor
   virtual ~Viewer();
+
+  /// Returns true if this viewer is in headless (offscreen) mode.
+  [[nodiscard]] bool isHeadless() const;
 
   /// Capture the current screen in a png file. The filename argument should
   /// include the full path for the file.
@@ -390,6 +397,9 @@ protected:
 private:
   /// Callback to control the camera mode
   ::osg::ref_ptr<detail::CameraModeCallback> mCameraModeCallback;
+
+  /// Whether this viewer is in headless mode
+  bool mHeadless = false;
 };
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
