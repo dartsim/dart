@@ -311,13 +311,27 @@ std::shared_ptr<Viewer> Viewer::create(const ViewerConfig& config)
 //==============================================================================
 std::vector<uint8_t> Viewer::captureBuffer(int* outWidth, int* outHeight)
 {
-  const auto* camera = getCamera();
+  auto* camera = getCamera();
   if (!camera) {
     return {};
   }
 
   const auto* vp = camera->getViewport();
   if (!vp) {
+    return {};
+  }
+
+  // Ensure the graphics context is current before reading pixels.
+  // After frame() OSG may release the context, so we must reacquire it.
+  auto* gc = camera->getGraphicsContext();
+  if (!gc) {
+    DART_WARN("No graphics context available for pixel readback");
+    return {};
+  }
+
+  // Make context current for this thread
+  if (!gc->makeCurrent()) {
+    DART_WARN("Failed to make graphics context current for pixel readback");
     return {};
   }
 
@@ -337,6 +351,9 @@ std::vector<uint8_t> Viewer::captureBuffer(int* outWidth, int* outHeight)
       height,
       GL_RGBA,
       GL_UNSIGNED_BYTE);
+
+  // Release the context
+  gc->releaseContext();
 
   const unsigned char* data = image->data();
   if (!data) {
