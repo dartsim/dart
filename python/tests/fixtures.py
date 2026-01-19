@@ -205,7 +205,6 @@ def create_n_link_robot(
     parent_node = body1
 
     for i in range(1, n):
-        link_name = f"link{i + 1}"
         joint_name = f"joint{i + 1}"
 
         joint, body = add_1dof_joint(

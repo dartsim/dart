@@ -75,6 +75,7 @@ dart_add_test(
   "unit" UNIT_constraint_BalanceConstraint constraint/test_BalanceConstraint.cpp)
 dart_add_test(
   "unit" UNIT_constraint_ContactSurface constraint/test_ContactSurface.cpp)
+dart_add_test("unit" UNIT_constraint_JointConstraints constraint/test_JointConstraints.cpp)
 
 # ==============================================================================
 # Dynamics Tests

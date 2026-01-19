@@ -23,17 +23,20 @@ Completed Phase 2 high-priority items: C++ EndEffector/Marker/PointMass unit tes
 ## Key Files Created/Modified This Session
 
 **New C++ test files:**
+
 - `tests/unit/io/test_UrdfParser_Errors.cpp` - 10 test cases
 - `tests/unit/io/test_SdfParser_Errors.cpp` - 7 test cases
 
 **Modified:**
+
 - `tests/unit/CMakeLists.txt` - Added IO error tests
 - `python/tests/unit/dynamics/test_skeleton.py` - Expanded to 31 tests
 - `python/tests/unit/dynamics/test_shapes.py` - NEW: 25 shape tests
 
 **Previously committed (this branch):**
+
 - `tests/unit/dynamics/test_EndEffector.cpp` - 12 test cases
-- `tests/unit/dynamics/test_Marker.cpp` - 12 test cases  
+- `tests/unit/dynamics/test_Marker.cpp` - 12 test cases
 - `tests/unit/dynamics/test_PointMass.cpp` - 11 test cases
 
 ## Commits on Branch
