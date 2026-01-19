@@ -2,6 +2,21 @@
 
 > **Last Updated**: 2026-01-19
 
+## ⚠️ CRITICAL: Performance Requirement
+
+**This module MUST outperform existing collision backends (FCL, Bullet, ODE).**
+
+All benchmarks must include comparative results against:
+- **FCL** (current default) - `fcl::collide()`, `fcl::distance()`
+- **Bullet** - `btCollisionWorld`, `btGjkPairDetector`
+- **ODE** - `dCollide()`, `dSpaceCollide()`
+
+**If we cannot demonstrate performance wins with equal accuracy, this module should not ship.**
+
+See [design.md](./design.md) for detailed performance requirements.
+
+---
+
 ## Strategy Change: Standalone Library First
 
 **Previous plan**: Build module → Integrate as backend → Make default → Remove external
@@ -89,11 +104,35 @@ Remove External (DART 8)
 
 ### Success Criteria
 
-- [ ] All primitive shape pairs implemented
-- [ ] Distance queries for all shape pairs
+- [x] All primitive shape pairs implemented (25 combinations complete)
+- [x] Distance queries for core shape pairs (6 pairs)
 - [ ] Raycast against all shapes
-- [ ] Benchmark suite with baseline numbers
+- [x] Benchmark suite with baseline numbers
+- [ ] **Comparative benchmarks against FCL, Bullet, ODE** ← CRITICAL
 - [ ] Visual verification tool functional
+
+### Benchmark Requirements (NOT YET DONE)
+
+**Current benchmarks only measure our implementation in isolation.**
+
+**Required comparative benchmarks:**
+
+| Benchmark Type | Our Implementation | Must Compare Against |
+|----------------|-------------------|---------------------|
+| Sphere-sphere collision | ✓ ~55ns | FCL, Bullet, ODE |
+| Box-box collision | ✓ ~320ns | FCL, Bullet, ODE |
+| Capsule-capsule collision | ✓ ~78ns | FCL, Bullet, ODE |
+| Cylinder collision | ✓ ~75ns | FCL, Bullet, ODE |
+| Distance queries | ✓ 12-170ns | FCL, Bullet |
+| Broad-phase N objects | ✓ O(N²) | FCL BroadPhaseManager, Bullet btDbvt |
+| Full world collision | ✓ | FCL, Bullet, ODE world collision |
+
+**Accuracy verification required:**
+- Contact position accuracy vs FCL/Bullet/ODE
+- Contact normal accuracy vs FCL/Bullet/ODE
+- Penetration depth accuracy vs FCL/Bullet/ODE
+
+**TODO: Create `bm_comparative.cpp` that benchmarks against existing backends.**
 
 ---
 
