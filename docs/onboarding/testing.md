@@ -508,6 +508,18 @@ using namespace Eigen;  // For Eigen types in test code
 target_link_libraries(bm_yourtest dart-utils benchmark::benchmark)
 ```
 
+### Windows DLL Export Issues in Tests
+
+**Problem:** New tests call methods that aren't exported from Windows DLLs, causing linker errors like "unresolved external symbol" on Windows CI.
+
+**Solution:** Add `DART_API` exports to the methods being tested:
+
+- For regular classes: Add `DART_API` at class level in the header
+- For CRTP template classes (e.g., `FixedJacobianNode`): Add `DART_API` to individual methods, NOT class level (class-level causes MSVC C2512)
+- If a class already has class-level `DART_API`, do NOT add method-level (causes MSVC C2487)
+
+**Pattern:** When adding tests that call new public APIs, verify Windows CI passes or add exports proactively.
+
 ### Using Deprecated Headers
 
 **Problem:** Warnings treated as errors when using deprecated aggregate headers.
