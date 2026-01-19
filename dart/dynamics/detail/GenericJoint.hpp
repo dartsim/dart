@@ -318,6 +318,15 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
   if (index >= getNumDofs())
     GenericJoint_REPORT_OUT_OF_RANGE(setCommand, index);
 
+  // Validate command is finite to prevent NaN/Inf from propagating through
+  // the simulation and causing assertion failures (gz-physics#845)
+  if (!std::isfinite(command)) {
+    dtwarn << "[GenericJoint::setCommand] Non-finite command (" << command
+           << ") passed for Joint [" << this->getName() << "] DOF [" << index
+           << "]. Command ignored.\n";
+    return;
+  }
+
   switch (Joint::mAspectProperties.mActuatorType) {
     case Joint::FORCE:
       this->mAspectState.mCommands[index] = math::clip(
