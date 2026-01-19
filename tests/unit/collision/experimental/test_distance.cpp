@@ -1,0 +1,264 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <dart/collision/experimental/narrow_phase/distance.hpp>
+#include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
+#include <dart/collision/experimental/collision_object.hpp>
+#include <dart/collision/experimental/shapes/shape.hpp>
+
+#include <gtest/gtest.h>
+
+using namespace dart::collision::experimental;
+
+TEST(DistanceSphereSphere, Separated)
+{
+  SphereShape s1(1.0);
+  SphereShape s2(1.0);
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(5.0, 0, 0);
+
+  DistanceResult result;
+  double dist = distanceSphereSphere(s1, tf1, s2, tf2, result);
+
+  EXPECT_NEAR(dist, 3.0, 1e-6);
+  EXPECT_NEAR(result.pointOnObject1.x(), 1.0, 1e-6);
+  EXPECT_NEAR(result.pointOnObject2.x(), 4.0, 1e-6);
+}
+
+TEST(DistanceSphereSphere, Touching)
+{
+  SphereShape s1(1.0);
+  SphereShape s2(1.0);
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(2.0, 0, 0);
+
+  DistanceResult result;
+  double dist = distanceSphereSphere(s1, tf1, s2, tf2, result);
+
+  EXPECT_NEAR(dist, 0.0, 1e-6);
+}
+
+TEST(DistanceSphereSphere, Penetrating)
+{
+  SphereShape s1(1.0);
+  SphereShape s2(1.0);
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(1.0, 0, 0);
+
+  DistanceResult result;
+  double dist = distanceSphereSphere(s1, tf1, s2, tf2, result);
+
+  EXPECT_NEAR(dist, -1.0, 1e-6);
+}
+
+TEST(DistanceSphereBox, Separated)
+{
+  SphereShape sphere(1.0);
+  BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
+
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+  tfBox.translation() = Eigen::Vector3d(3.0, 0, 0);
+
+  DistanceResult result;
+  double dist = distanceSphereBox(sphere, tfSphere, box, tfBox, result);
+
+  EXPECT_NEAR(dist, 1.5, 1e-6);
+}
+
+TEST(DistanceSphereBox, Touching)
+{
+  SphereShape sphere(1.0);
+  BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
+
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+  tfBox.translation() = Eigen::Vector3d(1.5, 0, 0);
+
+  DistanceResult result;
+  double dist = distanceSphereBox(sphere, tfSphere, box, tfBox, result);
+
+  EXPECT_NEAR(dist, 0.0, 1e-6);
+}
+
+TEST(DistanceSphereBox, Penetrating)
+{
+  SphereShape sphere(1.0);
+  BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
+
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+  tfBox.translation() = Eigen::Vector3d(1.0, 0, 0);
+
+  DistanceResult result;
+  double dist = distanceSphereBox(sphere, tfSphere, box, tfBox, result);
+
+  EXPECT_LT(dist, 0.0);
+}
+
+TEST(DistanceBoxBox, Separated)
+{
+  BoxShape b1(Eigen::Vector3d(0.5, 0.5, 0.5));
+  BoxShape b2(Eigen::Vector3d(0.5, 0.5, 0.5));
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(3.0, 0, 0);
+
+  DistanceResult result;
+  double dist = distanceBoxBox(b1, tf1, b2, tf2, result);
+
+  EXPECT_NEAR(dist, 2.0, 1e-6);
+}
+
+TEST(DistanceCapsuleCapsule, Separated)
+{
+  CapsuleShape c1(0.5, 2.0);
+  CapsuleShape c2(0.5, 2.0);
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(3.0, 0, 0);
+
+  DistanceResult result;
+  double dist = distanceCapsuleCapsule(c1, tf1, c2, tf2, result);
+
+  EXPECT_NEAR(dist, 2.0, 1e-6);
+}
+
+TEST(DistanceCapsuleCapsule, Parallel)
+{
+  CapsuleShape c1(0.5, 2.0);
+  CapsuleShape c2(0.5, 2.0);
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(2.0, 0, 0);
+
+  DistanceResult result;
+  double dist = distanceCapsuleCapsule(c1, tf1, c2, tf2, result);
+
+  EXPECT_NEAR(dist, 1.0, 1e-6);
+}
+
+TEST(DistanceCapsuleSphere, Separated)
+{
+  CapsuleShape capsule(0.5, 2.0);
+  SphereShape sphere(0.5);
+
+  Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  tfSphere.translation() = Eigen::Vector3d(3.0, 0, 0);
+
+  DistanceResult result;
+  double dist = distanceCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
+
+  EXPECT_NEAR(dist, 2.0, 1e-6);
+}
+
+TEST(DistanceCapsuleBox, Separated)
+{
+  CapsuleShape capsule(0.5, 2.0);
+  BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
+
+  Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+  tfBox.translation() = Eigen::Vector3d(3.0, 0, 0);
+
+  DistanceResult result;
+  double dist = distanceCapsuleBox(capsule, tfCapsule, box, tfBox, result);
+
+  EXPECT_NEAR(dist, 2.0, 1e-6);
+}
+
+TEST(NarrowPhaseDistance, IsDistanceSupported)
+{
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Sphere, ShapeType::Sphere));
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Box, ShapeType::Box));
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Sphere, ShapeType::Box));
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Box, ShapeType::Sphere));
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Capsule, ShapeType::Capsule));
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Capsule, ShapeType::Sphere));
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Sphere, ShapeType::Capsule));
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Capsule, ShapeType::Box));
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Box, ShapeType::Capsule));
+  EXPECT_FALSE(NarrowPhase::isDistanceSupported(ShapeType::Plane, ShapeType::Sphere));
+  EXPECT_FALSE(NarrowPhase::isDistanceSupported(ShapeType::Cylinder, ShapeType::Box));
+}
+
+TEST(NarrowPhaseDistance, SphereSphere)
+{
+  auto s1 = std::make_shared<SphereShape>(1.0);
+  auto s2 = std::make_shared<SphereShape>(1.0);
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(5.0, 0, 0);
+
+  CollisionObject obj1(s1, tf1);
+  CollisionObject obj2(s2, tf2);
+
+  DistanceOption option;
+  DistanceResult result;
+
+  double dist = NarrowPhase::distance(obj1, obj2, option, result);
+
+  EXPECT_NEAR(dist, 3.0, 1e-6);
+  EXPECT_EQ(result.object1, &obj1);
+  EXPECT_EQ(result.object2, &obj2);
+}
+
+TEST(NarrowPhaseDistance, BoxSphere)
+{
+  auto b = std::make_shared<BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5));
+  auto s = std::make_shared<SphereShape>(1.0);
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(3.0, 0, 0);
+
+  CollisionObject obj1(b, tf1);
+  CollisionObject obj2(s, tf2);
+
+  DistanceOption option;
+  DistanceResult result;
+
+  double dist = NarrowPhase::distance(obj1, obj2, option, result);
+
+  EXPECT_NEAR(dist, 1.5, 1e-6);
+}

@@ -1,0 +1,444 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <dart/collision/experimental/narrow_phase/distance.hpp>
+
+#include <dart/collision/experimental/shapes/shape.hpp>
+
+#include <algorithm>
+#include <cmath>
+
+namespace dart::collision::experimental {
+
+namespace {
+
+struct SegmentClosestResult
+{
+  Eigen::Vector3d point1;
+  Eigen::Vector3d point2;
+  double distSq;
+};
+
+SegmentClosestResult closestPointsBetweenSegments(
+    const Eigen::Vector3d& p1,
+    const Eigen::Vector3d& q1,
+    const Eigen::Vector3d& p2,
+    const Eigen::Vector3d& q2)
+{
+  const Eigen::Vector3d d1 = q1 - p1;
+  const Eigen::Vector3d d2 = q2 - p2;
+  const Eigen::Vector3d r = p1 - p2;
+
+  const double a = d1.squaredNorm();
+  const double e = d2.squaredNorm();
+  const double f = d2.dot(r);
+
+  double s = 0.0;
+  double t = 0.0;
+
+  constexpr double eps = 1e-10;
+
+  if (a <= eps && e <= eps) {
+    s = t = 0.0;
+  } else if (a <= eps) {
+    s = 0.0;
+    t = std::clamp(f / e, 0.0, 1.0);
+  } else {
+    const double c = d1.dot(r);
+    if (e <= eps) {
+      t = 0.0;
+      s = std::clamp(-c / a, 0.0, 1.0);
+    } else {
+      const double b = d1.dot(d2);
+      const double denom = a * e - b * b;
+
+      if (denom != 0.0) {
+        s = std::clamp((b * f - c * e) / denom, 0.0, 1.0);
+      } else {
+        s = 0.0;
+      }
+
+      t = (b * s + f) / e;
+
+      if (t < 0.0) {
+        t = 0.0;
+        s = std::clamp(-c / a, 0.0, 1.0);
+      } else if (t > 1.0) {
+        t = 1.0;
+        s = std::clamp((b - c) / a, 0.0, 1.0);
+      }
+    }
+  }
+
+  SegmentClosestResult res;
+  res.point1 = p1 + d1 * s;
+  res.point2 = p2 + d2 * t;
+  res.distSq = (res.point1 - res.point2).squaredNorm();
+  return res;
+}
+
+Eigen::Vector3d closestPointOnBox(
+    const Eigen::Vector3d& point, const Eigen::Vector3d& halfExtents)
+{
+  return Eigen::Vector3d(
+      std::clamp(point.x(), -halfExtents.x(), halfExtents.x()),
+      std::clamp(point.y(), -halfExtents.y(), halfExtents.y()),
+      std::clamp(point.z(), -halfExtents.z(), halfExtents.z()));
+}
+
+}
+
+double distanceSphereSphere(
+    const SphereShape& sphere1,
+    const Eigen::Isometry3d& transform1,
+    const SphereShape& sphere2,
+    const Eigen::Isometry3d& transform2,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  const Eigen::Vector3d center1 = transform1.translation();
+  const Eigen::Vector3d center2 = transform2.translation();
+  const double r1 = sphere1.getRadius();
+  const double r2 = sphere2.getRadius();
+
+  const Eigen::Vector3d diff = center2 - center1;
+  const double centerDist = diff.norm();
+  const double dist = centerDist - r1 - r2;
+
+  if (dist > option.upperBound) {
+    result.distance = dist;
+    return dist;
+  }
+
+  result.distance = dist;
+
+  if (option.enableNearestPoints) {
+    if (centerDist > 1e-10) {
+      const Eigen::Vector3d dir = diff / centerDist;
+      result.pointOnObject1 = center1 + dir * r1;
+      result.pointOnObject2 = center2 - dir * r2;
+      result.normal = dir;
+    } else {
+      result.pointOnObject1 = center1 + Eigen::Vector3d(r1, 0, 0);
+      result.pointOnObject2 = center2 - Eigen::Vector3d(r2, 0, 0);
+      result.normal = Eigen::Vector3d::UnitX();
+    }
+  }
+
+  return dist;
+}
+
+double distanceSphereBox(
+    const SphereShape& sphere,
+    const Eigen::Isometry3d& sphereTransform,
+    const BoxShape& box,
+    const Eigen::Isometry3d& boxTransform,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  const double sphereRadius = sphere.getRadius();
+  const Eigen::Vector3d& boxHalf = box.getHalfExtents();
+
+  const Eigen::Isometry3d boxInv = boxTransform.inverse();
+  const Eigen::Vector3d sphereCenterLocal = boxInv * sphereTransform.translation();
+
+  const Eigen::Vector3d closestOnBoxLocal = closestPointOnBox(sphereCenterLocal, boxHalf);
+  const Eigen::Vector3d diffLocal = sphereCenterLocal - closestOnBoxLocal;
+  const double distToSurface = diffLocal.norm();
+  const double dist = distToSurface - sphereRadius;
+
+  if (dist > option.upperBound) {
+    result.distance = dist;
+    return dist;
+  }
+
+  result.distance = dist;
+
+  if (option.enableNearestPoints) {
+    Eigen::Vector3d normalLocal;
+    if (distToSurface > 1e-10) {
+      normalLocal = diffLocal / distToSurface;
+    } else {
+      normalLocal = Eigen::Vector3d::UnitX();
+    }
+
+    result.pointOnObject2 = boxTransform * closestOnBoxLocal;
+    result.pointOnObject1 =
+        sphereTransform.translation() - (boxTransform.rotation() * normalLocal) * sphereRadius;
+    result.normal = boxTransform.rotation() * normalLocal;
+  }
+
+  return dist;
+}
+
+double distanceBoxBox(
+    const BoxShape& box1,
+    const Eigen::Isometry3d& transform1,
+    const BoxShape& box2,
+    const Eigen::Isometry3d& transform2,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  const Eigen::Vector3d& half1 = box1.getHalfExtents();
+  const Eigen::Vector3d& half2 = box2.getHalfExtents();
+
+  const Eigen::Isometry3d inv1 = transform1.inverse();
+  const Eigen::Isometry3d box2In1 = inv1 * transform2;
+
+  double minDist = std::numeric_limits<double>::max();
+  Eigen::Vector3d bestPoint1Local, bestPoint2Local;
+
+  for (int i = 0; i < 8; ++i) {
+    const Eigen::Vector3d corner2Local(
+        (i & 1) ? half2.x() : -half2.x(),
+        (i & 2) ? half2.y() : -half2.y(),
+        (i & 4) ? half2.z() : -half2.z());
+
+    const Eigen::Vector3d corner2In1 = box2In1 * corner2Local;
+    const Eigen::Vector3d closest1 = closestPointOnBox(corner2In1, half1);
+    const double d = (corner2In1 - closest1).norm();
+
+    if (d < minDist) {
+      minDist = d;
+      bestPoint1Local = closest1;
+      bestPoint2Local = corner2Local;
+    }
+  }
+
+  const Eigen::Isometry3d inv2 = transform2.inverse();
+  const Eigen::Isometry3d box1In2 = inv2 * transform1;
+
+  for (int i = 0; i < 8; ++i) {
+    const Eigen::Vector3d corner1Local(
+        (i & 1) ? half1.x() : -half1.x(),
+        (i & 2) ? half1.y() : -half1.y(),
+        (i & 4) ? half1.z() : -half1.z());
+
+    const Eigen::Vector3d corner1In2 = box1In2 * corner1Local;
+    const Eigen::Vector3d closest2 = closestPointOnBox(corner1In2, half2);
+    const double d = (corner1In2 - closest2).norm();
+
+    if (d < minDist) {
+      minDist = d;
+      bestPoint1Local = corner1Local;
+      bestPoint2Local = closest2;
+    }
+  }
+
+  result.distance = minDist;
+
+  if (minDist > option.upperBound) {
+    return minDist;
+  }
+
+  if (option.enableNearestPoints) {
+    result.pointOnObject1 = transform1 * bestPoint1Local;
+    result.pointOnObject2 = transform2 * bestPoint2Local;
+
+    const Eigen::Vector3d diff = result.pointOnObject2 - result.pointOnObject1;
+    if (diff.squaredNorm() > 1e-10) {
+      result.normal = diff.normalized();
+    } else {
+      result.normal = Eigen::Vector3d::UnitX();
+    }
+  }
+
+  return minDist;
+}
+
+double distanceCapsuleCapsule(
+    const CapsuleShape& capsule1,
+    const Eigen::Isometry3d& transform1,
+    const CapsuleShape& capsule2,
+    const Eigen::Isometry3d& transform2,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  const double r1 = capsule1.getRadius();
+  const double h1 = capsule1.getHeight() * 0.5;
+  const double r2 = capsule2.getRadius();
+  const double h2 = capsule2.getHeight() * 0.5;
+
+  const Eigen::Vector3d axis1 = transform1.rotation().col(2);
+  const Eigen::Vector3d axis2 = transform2.rotation().col(2);
+  const Eigen::Vector3d center1 = transform1.translation();
+  const Eigen::Vector3d center2 = transform2.translation();
+
+  const Eigen::Vector3d top1 = center1 + axis1 * h1;
+  const Eigen::Vector3d bot1 = center1 - axis1 * h1;
+  const Eigen::Vector3d top2 = center2 + axis2 * h2;
+  const Eigen::Vector3d bot2 = center2 - axis2 * h2;
+
+  auto closest = closestPointsBetweenSegments(bot1, top1, bot2, top2);
+
+  const double axisDist = std::sqrt(closest.distSq);
+  const double dist = axisDist - r1 - r2;
+
+  if (dist > option.upperBound) {
+    result.distance = dist;
+    return dist;
+  }
+
+  result.distance = dist;
+
+  if (option.enableNearestPoints) {
+    Eigen::Vector3d dir;
+    if (axisDist > 1e-10) {
+      dir = (closest.point2 - closest.point1) / axisDist;
+    } else {
+      dir = axis1.cross(axis2);
+      if (dir.squaredNorm() < 1e-10) {
+        dir = Eigen::Vector3d::UnitX();
+      }
+      dir.normalize();
+    }
+
+    result.pointOnObject1 = closest.point1 + dir * r1;
+    result.pointOnObject2 = closest.point2 - dir * r2;
+    result.normal = dir;
+  }
+
+  return dist;
+}
+
+double distanceCapsuleSphere(
+    const CapsuleShape& capsule,
+    const Eigen::Isometry3d& capsuleTransform,
+    const SphereShape& sphere,
+    const Eigen::Isometry3d& sphereTransform,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  const double capRadius = capsule.getRadius();
+  const double capHalfHeight = capsule.getHeight() * 0.5;
+  const double sphereRadius = sphere.getRadius();
+
+  const Eigen::Vector3d capAxis = capsuleTransform.rotation().col(2);
+  const Eigen::Vector3d capCenter = capsuleTransform.translation();
+  const Eigen::Vector3d sphereCenter = sphereTransform.translation();
+
+  const Eigen::Vector3d toSphere = sphereCenter - capCenter;
+  const double proj = toSphere.dot(capAxis);
+  const double clampedProj = std::clamp(proj, -capHalfHeight, capHalfHeight);
+  const Eigen::Vector3d closestOnAxis = capCenter + capAxis * clampedProj;
+
+  const Eigen::Vector3d diff = sphereCenter - closestOnAxis;
+  const double axisDist = diff.norm();
+  const double dist = axisDist - capRadius - sphereRadius;
+
+  if (dist > option.upperBound) {
+    result.distance = dist;
+    return dist;
+  }
+
+  result.distance = dist;
+
+  if (option.enableNearestPoints) {
+    Eigen::Vector3d dir;
+    if (axisDist > 1e-10) {
+      dir = diff / axisDist;
+    } else {
+      dir = Eigen::Vector3d::UnitX();
+    }
+
+    result.pointOnObject1 = closestOnAxis + dir * capRadius;
+    result.pointOnObject2 = sphereCenter - dir * sphereRadius;
+    result.normal = dir;
+  }
+
+  return dist;
+}
+
+double distanceCapsuleBox(
+    const CapsuleShape& capsule,
+    const Eigen::Isometry3d& capsuleTransform,
+    const BoxShape& box,
+    const Eigen::Isometry3d& boxTransform,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  const double capRadius = capsule.getRadius();
+  const double capHalfHeight = capsule.getHeight() * 0.5;
+  const Eigen::Vector3d& boxHalf = box.getHalfExtents();
+
+  const Eigen::Vector3d capAxis = capsuleTransform.rotation().col(2);
+  const Eigen::Vector3d capCenter = capsuleTransform.translation();
+  const Eigen::Vector3d capTop = capCenter + capAxis * capHalfHeight;
+  const Eigen::Vector3d capBot = capCenter - capAxis * capHalfHeight;
+
+  const Eigen::Isometry3d boxInv = boxTransform.inverse();
+  const Eigen::Vector3d topLocal = boxInv * capTop;
+  const Eigen::Vector3d botLocal = boxInv * capBot;
+
+  double minDist = std::numeric_limits<double>::max();
+  Eigen::Vector3d bestCapsulePoint, bestBoxPoint;
+
+  constexpr int numSamples = 5;
+  for (int i = 0; i < numSamples; ++i) {
+    const double t = static_cast<double>(i) / (numSamples - 1);
+    const Eigen::Vector3d axisPointLocal = botLocal + (topLocal - botLocal) * t;
+    const Eigen::Vector3d closestOnBox = closestPointOnBox(axisPointLocal, boxHalf);
+    const double d = (axisPointLocal - closestOnBox).norm();
+
+    if (d < minDist) {
+      minDist = d;
+      bestCapsulePoint = axisPointLocal;
+      bestBoxPoint = closestOnBox;
+    }
+  }
+
+  const double dist = minDist - capRadius;
+
+  if (dist > option.upperBound) {
+    result.distance = dist;
+    return dist;
+  }
+
+  result.distance = dist;
+
+  if (option.enableNearestPoints) {
+    Eigen::Vector3d dirLocal = bestCapsulePoint - bestBoxPoint;
+    if (dirLocal.squaredNorm() > 1e-10) {
+      dirLocal.normalize();
+    } else {
+      dirLocal = Eigen::Vector3d::UnitX();
+    }
+
+    result.pointOnObject2 = boxTransform * bestBoxPoint;
+    result.pointOnObject1 = boxTransform * (bestCapsulePoint - dirLocal * capRadius);
+    result.normal = boxTransform.rotation() * dirLocal;
+  }
+
+  return dist;
+}
+
+}

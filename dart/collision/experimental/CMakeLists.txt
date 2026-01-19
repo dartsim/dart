@@ -38,7 +38,13 @@ add_library(${target_name}
   collision_object.cpp
   collision_world.cpp
   narrow_phase/box_box.cpp
+  narrow_phase/capsule_box.cpp
+  narrow_phase/capsule_capsule.cpp
+  narrow_phase/capsule_sphere.cpp
+  narrow_phase/cylinder_collision.cpp
+  narrow_phase/distance.cpp
   narrow_phase/narrow_phase.cpp
+  narrow_phase/plane_sphere.cpp
   narrow_phase/sphere_box.cpp
   narrow_phase/sphere_sphere.cpp
   shapes/shape.cpp

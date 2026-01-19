@@ -112,6 +112,22 @@ Aabb Aabb::forBox(const Eigen::Vector3d& halfExtents)
   return Aabb(-halfExtents, halfExtents);
 }
 
+Aabb Aabb::forCapsule(double radius, double height)
+{
+  const double halfHeight = height * 0.5 + radius;
+  return Aabb(
+      Eigen::Vector3d(-radius, -radius, -halfHeight),
+      Eigen::Vector3d(radius, radius, halfHeight));
+}
+
+Aabb Aabb::forCylinder(double radius, double height)
+{
+  const double halfHeight = height * 0.5;
+  return Aabb(
+      Eigen::Vector3d(-radius, -radius, -halfHeight),
+      Eigen::Vector3d(radius, radius, halfHeight));
+}
+
 Aabb Aabb::transformed(const Aabb& local, const Eigen::Isometry3d& transform)
 {
   const Eigen::Vector3d localCenter = local.center();

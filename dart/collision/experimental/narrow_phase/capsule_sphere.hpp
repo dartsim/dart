@@ -33,39 +33,22 @@
 #pragma once
 
 #include <dart/collision/experimental/export.hpp>
+#include <dart/collision/experimental/types.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 namespace dart::collision::experimental {
 
-class DART_COLLISION_EXPERIMENTAL_API Aabb
-{
-public:
-  Aabb();
-  Aabb(const Eigen::Vector3d& min, const Eigen::Vector3d& max);
+class CapsuleShape;
+class SphereShape;
 
-  [[nodiscard]] bool overlaps(const Aabb& other) const;
-  [[nodiscard]] bool contains(const Eigen::Vector3d& point) const;
-  [[nodiscard]] bool contains(const Aabb& other) const;
-
-  [[nodiscard]] Eigen::Vector3d center() const;
-  [[nodiscard]] Eigen::Vector3d halfExtents() const;
-  [[nodiscard]] Eigen::Vector3d extents() const;
-  [[nodiscard]] double volume() const;
-
-  void merge(const Aabb& other);
-  void expand(double margin);
-
-  [[nodiscard]] static Aabb forSphere(double radius);
-  [[nodiscard]] static Aabb forBox(const Eigen::Vector3d& halfExtents);
-  [[nodiscard]] static Aabb forCapsule(double radius, double height);
-  [[nodiscard]] static Aabb forCylinder(double radius, double height);
-  [[nodiscard]] static Aabb transformed(
-      const Aabb& local, const Eigen::Isometry3d& transform);
-
-  Eigen::Vector3d min;
-  Eigen::Vector3d max;
-};
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool collideCapsuleSphere(
+    const CapsuleShape& capsule,
+    const Eigen::Isometry3d& capsuleTransform,
+    const SphereShape& sphere,
+    const Eigen::Isometry3d& sphereTransform,
+    CollisionResult& result,
+    const CollisionOption& option = CollisionOption());
 
 }
