@@ -27,18 +27,20 @@
 
 - `Aspect`, `AspectWithVersion`, `EmbeddedAspect`, `ProxyAspect`, `RequiresAspect`, `SpecializedForAspect`
 - `Castable`, `ClassWithVirtualBase`, `Cloneable`, `CompositeJoiner`
-- `Diagnostics`, `Filesystem`, `LocalResourceRetriever`, `ResourceRetriever`
+- `Diagnostics`, `LocalResourceRetriever`, `ResourceRetriever`
 - `LockableReference`, `MemoryAllocator`, `MemoryAllocatorDebugger`
-- `NameManager`, `Observer`, `Subject`, `Signal`
+- `Observer`, `Subject`, `Signal`
 - `SharedLibrary`, `Singleton`, `VersionCounter`
 - `Metaprogramming`, `StlHelpers`, `Virtual`, `sub_ptr`
 
+**Recently tested**: ~~`NameManager`~~ ✅, ~~`Filesystem`~~ (just a namespace alias)
+
 **Quick wins** (simple utilities):
 
-1. `Filesystem` - Path manipulation, easy to test
-2. `NameManager` - Name generation/uniqueness
-3. `Singleton` - Template singleton pattern
-4. `VersionCounter` - Simple counter class
+1. ~~`NameManager` - Name generation/uniqueness~~ ✅ DONE (20 tests)
+2. `Singleton` - Template singleton pattern
+3. `VersionCounter` - Simple counter class
+4. `Filesystem` - Just a namespace alias, skip
 
 **Complex but important**:
 
@@ -143,22 +145,22 @@ Only 8 headers, 2 integration tests exist. Low ROI.
 
 Tests that would add coverage with minimal effort:
 
-| Class                       | Module     | Effort | Impact | Notes                    |
-| --------------------------- | ---------- | ------ | ------ | ------------------------ |
-| `Filesystem`                | common     | Low    | Medium | Path utilities           |
-| `NameManager`               | common     | Low    | Low    | Name generation          |
-| `Singleton`                 | common     | Low    | Low    | Template pattern         |
-| `CollisionFilter`           | collision  | Medium | High   | Already partially tested |
-| `ConstraintBase` edge cases | constraint | Medium | High   | Error paths              |
-| Parser error handling       | utils      | Medium | Medium | Malformed input          |
+| Class                       | Module     | Effort | Impact | Status |
+| --------------------------- | ---------- | ------ | ------ | ------ |
+| `NameManager`               | common     | Low    | Low    | ✅ DONE |
+| `Singleton`                 | common     | Low    | Low    | Next |
+| `Signal/Observer`           | common     | Medium | Medium | Priority |
+| `CollisionFilter`           | collision  | Medium | High   | Expand existing |
+| `ConstraintBase` edge cases | constraint | Medium | High   | Error paths |
+| Parser error handling       | utils      | Medium | Medium | Malformed input |
 
 ## Recommended Test Implementation Order
 
 ### Phase 1: Infrastructure & Quick Wins (1-2 days)
 
-1. Fix coverage reporting (DONE)
-2. Add `test_Filesystem.cpp`
-3. Add `test_NameManager.cpp`
+1. ~~Fix coverage reporting~~ ✅ DONE
+2. ~~Add `test_NameManager.cpp`~~ ✅ DONE (20 tests)
+3. Add `test_Singleton.cpp`
 4. Expand CollisionFilter tests
 
 ### Phase 2: Core Systems (1 week)
