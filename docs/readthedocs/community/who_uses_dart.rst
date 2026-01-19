@@ -20,14 +20,21 @@ including:
   lightweight wrapper over DART simulator for fast and flexible robot
   simulations.
 
+Origins and Contributors
+------------------------
+
+DART was created at Georgia Tech's Graphics Lab and Humanoid Robotics Lab, with
+major contributions from researchers at the University of Washington and the
+Open Source Robotics Foundation. See the full
+`contributor list <https://github.com/dartsim/dart/blob/main/docs/onboarding/contributing.md#contributors>`_
+for acknowledgments.
+
 Research
 --------
 
-DART has been used in various research domains, including robotics,
-biomechanics, computer graphics, animation, and physics-based simulation.
-Notable institutions, universities, or companies that have used DART in their
-research include Georgia Tech, Oxford University, MIT, Disney Research, and
-Toyota Research Institute.
+DART has been cited in `500+ research papers <https://scholar.google.com/scholar?cites=3727458449064418084>`_
+across robotics, computer graphics, and machine learning, including venues such as
+ICRA, IROS, RSS, SIGGRAPH, NeurIPS, and ICML.
 
 DART has been utilized in research areas such as:
 

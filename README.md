@@ -39,6 +39,25 @@ dynamics.
 - **Cross-platform** — Linux, macOS, Windows with Python bindings included
 - **Battle-tested** — Powers [Gazebo](https://gazebosim.org), research labs, and production systems worldwide
 
+## Who is DART for?
+
+DART is designed for **researchers and engineers** who need accurate, stable physics simulation with full access to internal dynamics quantities.
+
+### Primary Users
+
+| User Type                 | Use Case                                                  | Get Started                                                                       |
+| ------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **Robotics Researchers**  | Control synthesis, motion planning, algorithm development | [Tutorials](https://dart.readthedocs.io/en/latest/topics/index.html)              |
+| **ML/RL Practitioners**   | Training environments, sim-to-real transfer               | [Python Quick Start](#quick-start)                                                |
+| **Graduate Students**     | Thesis work, academic projects, coursework                | [Examples](https://dart.readthedocs.io/en/latest/dartpy/user_guide/examples.html) |
+| **Animation Researchers** | Physics-based character animation, biomechanics           | [Gallery](https://dart.readthedocs.io/en/latest/gallery.html)                     |
+
+### Key Differentiator
+
+Unlike black-box simulators, DART exposes internal dynamics quantities (Jacobians, mass matrices, Coriolis forces, constraint forces), enabling research in control, optimization, and system identification.
+
+DART has been cited in [500+ research papers](https://scholar.google.com/scholar?cites=3727458449064418084).
+
 ## Quick Start
 
 **Python**

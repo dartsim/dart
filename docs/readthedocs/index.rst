@@ -24,6 +24,29 @@ stability, which are achieved through the use of generalized coordinates to
 represent articulated rigid body systems and the application of Featherstone's
 Articulated Body Algorithm to compute motion dynamics.
 
+Choose Your Path
+----------------
+
+.. list-table::
+   :widths: 25 75
+   :header-rows: 0
+
+   * - **Python Users**
+     - Quick start with ``pip install dartpy``. Ideal for ML/RL, rapid prototyping, and research.
+       :doc:`Installation <dartpy/user_guide/installation>` · :doc:`Examples <dartpy/user_guide/examples>` · :doc:`API Reference <dartpy/python_api_reference>`
+   * - **C++ Users**
+     - Maximum performance for production systems. Integrates with ROS, Gazebo, and custom pipelines.
+       :doc:`Installation <dart/user_guide/installation>` · :doc:`Migration Guide <dart/user_guide/migration_guide>` · :doc:`API Reference <dart/cpp_api_reference>`
+   * - **Researchers**
+     - Understand the physics: dynamics, constraints, collision.
+       :doc:`Key Topics <topics/index>` · :doc:`Who Uses DART <community/who_uses_dart>`
+   * - **Contributors**
+     - Architecture deep-dive, build system, contribution workflow.
+       `Developer Guide <https://github.com/dartsim/dart/blob/main/docs/onboarding/README.md>`_
+
+Not sure if DART is right for you? See :doc:`community/comparison` for how DART
+compares to other simulators.
+
 AI Docs (Experimental)
 ----------------------
 
@@ -140,4 +163,5 @@ If you use DART in an academic publication, please consider citing this
    :caption: Community
 
    community/who_uses_dart
+   community/comparison
    license
