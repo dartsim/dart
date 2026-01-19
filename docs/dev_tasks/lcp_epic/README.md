@@ -88,10 +88,10 @@ Tests all 19 LCP solvers with 5 test cases:
 
 ### 4.1 Implemented Solvers
 
-| Priority | Solver                      | Source                     | Status                  |
-| -------- | --------------------------- | -------------------------- | ----------------------- |
-| **P1**   | APGD (Nesterov-Accelerated) | Chrono, Mazhar ToG 2015    | :white_check_mark: Done |
-| **P1**   | TGS (Temporal Gauss-Seidel) | PhysX/Isaac Gym            | :white_check_mark: Done |
+| Priority | Solver                      | Source                  | Status                  |
+| -------- | --------------------------- | ----------------------- | ----------------------- |
+| **P1**   | APGD (Nesterov-Accelerated) | Chrono, Mazhar ToG 2015 | :white_check_mark: Done |
+| **P1**   | TGS (Temporal Gauss-Seidel) | PhysX/Isaac Gym         | :white_check_mark: Done |
 
 ### 4.2 Future Solver Candidates
 

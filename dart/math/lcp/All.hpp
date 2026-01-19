@@ -28,8 +28,10 @@
 #include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
 
 // Other methods
+#include <dart/math/lcp/other/AdmmSolver.hpp>
 #include <dart/math/lcp/other/InteriorPointSolver.hpp>
 #include <dart/math/lcp/other/MprgpSolver.hpp>
+#include <dart/math/lcp/other/SapSolver.hpp>
 #include <dart/math/lcp/other/ShockPropagationSolver.hpp>
 #include <dart/math/lcp/other/StaggeringSolver.hpp>
 
