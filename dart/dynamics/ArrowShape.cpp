@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ArrowShape.hpp"
-
+#include "dart/dynamics/arrow_shape.hpp"
 #include "dart/math/Constants.hpp"
 
 namespace dart {

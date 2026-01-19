@@ -34,12 +34,12 @@
 
 #include "dart/common/Logging.hpp"
 #include "dart/config.hpp"
-#include "dart/dynamics/FreeJoint.hpp"
-#include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/free_joint.hpp"
+#include "dart/dynamics/inverse_kinematics.hpp"
 #include "dart/math/optimization/Function.hpp"
-#include "dart/math/optimization/GradientDescentSolver.hpp"
 #include "dart/math/optimization/Problem.hpp"
+#include "dart/math/optimization/gradient_descent_solver.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

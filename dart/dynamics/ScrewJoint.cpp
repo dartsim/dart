@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ScrewJoint.hpp"
-
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/screw_joint.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 

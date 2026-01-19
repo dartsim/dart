@@ -30,13 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/SupportPolygonVisual.hpp"
-
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/simple_frame.hpp"
+#include "dart/dynamics/sphere_shape.hpp"
+#include "dart/gui/support_polygon_visual.hpp"
 #include "dart/math/Helpers.hpp"
 
 namespace dart {

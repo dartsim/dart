@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/ode/detail/OdeCylinderMesh.hpp"
-
+#include "dart/collision/ode/detail/ode_cylinder_mesh.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
 

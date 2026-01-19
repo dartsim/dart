@@ -56,7 +56,7 @@
 #pragma once
 
 #include "dart/common/Macros.hpp"
-#include "dart/math/lcp/LcpUtils.hpp"
+#include "dart/math/lcp/lcp_utils.hpp"
 
 #include <Eigen/Core>
 

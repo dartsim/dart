@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/sensor/SensorManager.hpp"
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/sensor/sensor_manager.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <algorithm>

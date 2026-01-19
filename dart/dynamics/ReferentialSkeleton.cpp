@@ -30,13 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ReferentialSkeleton.hpp"
-
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Joint.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/referential_skeleton.hpp"
+#include "dart/dynamics/soft_body_node.hpp"
 
 #include <algorithm>
 #include <span>

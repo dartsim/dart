@@ -30,12 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PyramidShape.hpp"
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/CylinderShape.hpp"
-#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/cylinder_shape.hpp"
+#include "dart/dynamics/pyramid_shape.hpp"
+#include "dart/dynamics/sphere_shape.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <cmath>

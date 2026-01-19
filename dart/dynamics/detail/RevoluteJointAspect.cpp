@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/revolute_joint.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -32,14 +32,14 @@
 
 #include <dart/simulation/World.hpp>
 
-#include <dart/collision/CollisionObject.hpp>
-#include <dart/collision/CollisionResult.hpp>
+#include <dart/collision/collision_object.hpp>
+#include <dart/collision/collision_result.hpp>
 
-#include <dart/dynamics/BodyNode.hpp>
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
-#include <dart/dynamics/WeldJoint.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
 #include <dart/io/Read.hpp>
 

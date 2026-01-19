@@ -36,8 +36,8 @@
 #include <dart/utils/mjcf/detail/Compiler.hpp>
 #include <dart/utils/mjcf/detail/Default.hpp>
 #include <dart/utils/mjcf/detail/Error.hpp>
-#include <dart/utils/mjcf/detail/GeomAttributes.hpp>
 #include <dart/utils/mjcf/detail/Types.hpp>
+#include <dart/utils/mjcf/detail/geom_attributes.hpp>
 
 #include <tinyxml2.h>
 

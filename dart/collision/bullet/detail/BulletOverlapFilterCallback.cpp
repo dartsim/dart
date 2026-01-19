@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
-
-#include "dart/collision/CollisionFilter.hpp"
-#include "dart/collision/bullet/BulletCollisionGroup.hpp"
-#include "dart/collision/bullet/BulletCollisionObject.hpp"
+#include "dart/collision/bullet/bullet_collision_group.hpp"
+#include "dart/collision/bullet/bullet_collision_object.hpp"
+#include "dart/collision/bullet/detail/bullet_overlap_filter_callback.hpp"
+#include "dart/collision/collision_filter.hpp"
 #include "dart/common/Macros.hpp"
 
 namespace dart {

@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lcp/projection/RedBlackGaussSeidelSolver.hpp"
-
-#include "dart/math/lcp/LcpValidation.hpp"
+#include "dart/math/lcp/lcp_validation.hpp"
+#include "dart/math/lcp/projection/red_black_gauss_seidel_solver.hpp"
 
 #include <algorithm>
 #include <iterator>

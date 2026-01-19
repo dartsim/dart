@@ -30,15 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLCollisionObject.hpp"
-
 #include "dart/collision/fcl/FCLTypes.hpp"
+#include "dart/collision/fcl/fcl_collision_object.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
-#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/shape_frame.hpp"
+#include "dart/dynamics/shape_node.hpp"
+#include "dart/dynamics/soft_mesh_shape.hpp"
 
 namespace dart {
 namespace collision {

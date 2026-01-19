@@ -34,17 +34,17 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/dart/dart_collision_detector.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/constraint/ConstraintSolver.hpp"
-#include "dart/dynamics/BodyNode.hpp"
+#include "dart/constraint/constraint_solver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/body_node.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/SkelParser.hpp"
+#include "dart/utils/skel_parser.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

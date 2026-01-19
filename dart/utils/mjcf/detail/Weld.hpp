@@ -35,7 +35,7 @@
 
 #include <dart/utils/mjcf/detail/Default.hpp>
 #include <dart/utils/mjcf/detail/Error.hpp>
-#include <dart/utils/mjcf/detail/WeldAttributes.hpp>
+#include <dart/utils/mjcf/detail/weld_attributes.hpp>
 
 #include <tinyxml2.h>
 

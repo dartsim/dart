@@ -30,12 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/ConstrainedGroup.hpp"
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/constraint/ConstraintBase.hpp"
-#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/constrained_group.hpp"
+#include "dart/constraint/constraint_base.hpp"
+#include "dart/constraint/constraint_solver.hpp"
 
 #include <algorithm>
 #include <iostream>

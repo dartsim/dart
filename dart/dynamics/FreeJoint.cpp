@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/FreeJoint.hpp"
-
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/free_joint.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 

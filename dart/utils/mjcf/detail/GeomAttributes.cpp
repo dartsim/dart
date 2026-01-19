@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/mjcf/detail/GeomAttributes.hpp"
-
-#include "dart/utils/XmlHelpers.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
+#include "dart/utils/mjcf/detail/geom_attributes.hpp"
+#include "dart/utils/xml_helpers.hpp"
 
 namespace dart {
 namespace utils {

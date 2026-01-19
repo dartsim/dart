@@ -30,15 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SoftBodyNode.hpp"
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/Joint.hpp"
-#include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/point_mass.hpp"
+#include "dart/dynamics/soft_body_node.hpp"
+#include "dart/dynamics/soft_mesh_shape.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <fmt/format.h>

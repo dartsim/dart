@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/ConfigurationSpace.hpp"
+#include "dart/math/configuration_space.hpp"
 
 namespace dart {
 namespace math {

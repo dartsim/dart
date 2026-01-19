@@ -44,19 +44,19 @@
 
 #include <dart/constraint/fwd.hpp>
 
-#include <dart/collision/CollisionOption.hpp>
+#include <dart/collision/collision_option.hpp>
 #include <dart/collision/fwd.hpp>
 
-#include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/fwd.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 
 #include <dart/common/Subject.hpp>
 #include <dart/common/name_manager.hpp>
 #include <dart/common/smart_pointer.hpp>
 
 #include <dart/export.hpp>
-#include <dart/sensor/SensorManager.hpp>
+#include <dart/sensor/sensor_manager.hpp>
 
 #include <Eigen/Dense>
 

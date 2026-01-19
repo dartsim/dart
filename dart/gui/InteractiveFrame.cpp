@@ -30,12 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/InteractiveFrame.hpp"
-
 #include "dart/common/Logging.hpp"
-#include "dart/dynamics/ArrowShape.hpp"
-#include "dart/dynamics/LineSegmentShape.hpp"
-#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/arrow_shape.hpp"
+#include "dart/dynamics/line_segment_shape.hpp"
+#include "dart/dynamics/mesh_shape.hpp"
+#include "dart/gui/interactive_frame.hpp"
 
 namespace dart {
 namespace gui {

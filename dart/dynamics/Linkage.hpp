@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_LINKAGE_HPP_
 #define DART_DYNAMICS_LINKAGE_HPP_
 
-#include <dart/dynamics/ReferentialSkeleton.hpp>
+#include <dart/dynamics/referential_skeleton.hpp>
 
 #include <dart/export.hpp>
 

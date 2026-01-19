@@ -31,7 +31,7 @@
 // See: https://github.com/dartsim/dart/issues/2423 (toVector* parsing)
 // See: https://github.com/dartsim/dart/issues/2425 (getValue* null pointer)
 
-#include <dart/utils/XmlHelpers.hpp>
+#include <dart/utils/xml_helpers.hpp>
 
 #include <gtest/gtest.h>
 #include <tinyxml2.h>

@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/FixedFrame.hpp"
-
 #include "dart/common/Macros.hpp"
+#include "dart/dynamics/fixed_frame.hpp"
 
 namespace dart {
 namespace dynamics {

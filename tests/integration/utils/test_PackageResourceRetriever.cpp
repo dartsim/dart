@@ -33,7 +33,7 @@
 #include "../../helpers/common_helpers.hpp"
 #include "dart/common/Diagnostics.hpp"
 #include "dart/config.hpp"
-#include "dart/utils/PackageResourceRetriever.hpp"
+#include "dart/utils/package_resource_retriever.hpp"
 
 #include <gtest/gtest.h>
 

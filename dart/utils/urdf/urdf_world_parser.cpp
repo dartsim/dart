@@ -37,7 +37,7 @@
 #include "dart/utils/urdf/urdf_world_parser.hpp"
 
 #include "dart/common/Logging.hpp"
-#include "dart/utils/urdf/IncludeUrdf.hpp"
+#include "dart/utils/urdf/include_urdf.hpp"
 
 #include <tinyxml2.h>
 

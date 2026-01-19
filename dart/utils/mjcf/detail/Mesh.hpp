@@ -35,9 +35,9 @@
 
 #include <dart/utils/mjcf/detail/Compiler.hpp>
 #include <dart/utils/mjcf/detail/Error.hpp>
-#include <dart/utils/mjcf/detail/MeshAttributes.hpp>
+#include <dart/utils/mjcf/detail/mesh_attributes.hpp>
 
-#include <dart/dynamics/MeshShape.hpp>
+#include <dart/dynamics/mesh_shape.hpp>
 
 #include <tinyxml2.h>
 

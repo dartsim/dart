@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/PolyhedronVisual.hpp"
-
 #include "dart/common/Logging.hpp"
+#include "dart/gui/polyhedron_visual.hpp"
 #include "dart/math/Geometry.hpp"
 
 #include <osg/StateSet>

@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lcp/projection/JacobiSolver.hpp"
-
-#include "dart/math/lcp/LcpValidation.hpp"
+#include "dart/math/lcp/lcp_validation.hpp"
+#include "dart/math/lcp/projection/jacobi_solver.hpp"
 
 #include <algorithm>
 #include <iterator>

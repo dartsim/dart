@@ -8,9 +8,9 @@
  * Benchmarks for the math::LcpSolver implementations (Dantzig, PGS).
  */
 
-#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
-#include <dart/math/lcp/pivoting/LemkeSolver.hpp>
-#include <dart/math/lcp/projection/PgsSolver.hpp>
+#include <dart/math/lcp/pivoting/dantzig_solver.hpp>
+#include <dart/math/lcp/pivoting/lemke_solver.hpp>
+#include <dart/math/lcp/projection/pgs_solver.hpp>
 
 #include <Eigen/Dense>
 #include <benchmark/benchmark.h>

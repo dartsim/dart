@@ -1,7 +1,7 @@
 #include "dynamics/translational_joint.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/dynamics/TranslationalJoint.hpp"
+#include "dart/dynamics/translational_joint.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

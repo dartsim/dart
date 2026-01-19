@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/PolygonMesh.hpp"
+#include "dart/math/polygon_mesh.hpp"
 
 namespace dart {
 namespace math {

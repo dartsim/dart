@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/FixedJacobianNode.hpp"
-
-#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/fixed_jacobian_node.hpp"
 
 namespace dart {
 namespace dynamics {

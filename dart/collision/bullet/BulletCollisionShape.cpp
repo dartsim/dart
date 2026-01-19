@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/BulletCollisionShape.hpp"
+#include "dart/collision/bullet/bullet_collision_shape.hpp"
 
 namespace dart {
 namespace collision {

@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/detail/AssimpInputResourceAdaptor.hpp"
-
 #include "dart/common/Diagnostics.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/dynamics/detail/assimp_input_resource_adaptor.hpp"
 
 #include <assimp/IOStream.hpp>
 

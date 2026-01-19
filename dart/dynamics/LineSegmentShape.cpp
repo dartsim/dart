@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/LineSegmentShape.hpp"
-
 #include "dart/common/Logging.hpp"
+#include "dart/dynamics/line_segment_shape.hpp"
 #include "dart/math/Geometry.hpp"
 
 #include <algorithm>

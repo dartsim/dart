@@ -30,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/ConstraintSolver.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/constraint/constraint_solver.hpp"
 #include "dart/dynamics/Group.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/free_joint.hpp"
 #include "dart/simulation/World.hpp"
 
-#include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 
 #include <dart/common/String.hpp>
 

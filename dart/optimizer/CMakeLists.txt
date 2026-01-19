@@ -2,7 +2,7 @@
 set(hdrs
   all.hpp
   Function.hpp
-  GradientDescentSolver.hpp
+  gradient_descent_solver.hpp
   Problem.hpp
   Solver.hpp
 )

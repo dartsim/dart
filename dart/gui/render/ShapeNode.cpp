@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/render/ShapeNode.hpp"
-
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/gui/ShapeFrameNode.hpp"
+#include "dart/dynamics/simple_frame.hpp"
+#include "dart/gui/render/shape_node.hpp"
+#include "dart/gui/shape_frame_node.hpp"
 
 namespace dart {
 namespace gui {

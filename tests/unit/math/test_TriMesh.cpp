@@ -31,7 +31,7 @@
  */
 
 #include "../../helpers/GTestUtils.hpp"
-#include "dart/math/TriMesh.hpp"
+#include "dart/math/tri_mesh.hpp"
 
 #include <gtest/gtest.h>
 

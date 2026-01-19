@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/Marker.hpp"
 
-#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/body_node.hpp"
 
 namespace dart {
 namespace dynamics {

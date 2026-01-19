@@ -8,9 +8,9 @@
  * Stress and regression coverage for the math::LcpSolver implementations.
  */
 
-#include <dart/math/lcp/LcpValidation.hpp>
-#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
-#include <dart/math/lcp/projection/PgsSolver.hpp>
+#include <dart/math/lcp/lcp_validation.hpp>
+#include <dart/math/lcp/pivoting/dantzig_solver.hpp>
+#include <dart/math/lcp/projection/pgs_solver.hpp>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

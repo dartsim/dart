@@ -32,12 +32,12 @@
 
 #include "dart/collision/dart/DARTCollide.hpp"
 
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/CylinderShape.hpp"
-#include "dart/dynamics/EllipsoidShape.hpp"
-#include "dart/dynamics/SphereShape.hpp"
+#include "dart/collision/collision_object.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/cylinder_shape.hpp"
+#include "dart/dynamics/ellipsoid_shape.hpp"
+#include "dart/dynamics/sphere_shape.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <memory>

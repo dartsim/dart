@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/TranslationalJoint.hpp"
-
 #include "dart/common/Macros.hpp"
+#include "dart/dynamics/translational_joint.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 

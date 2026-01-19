@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/BallJoint.hpp"
+#include "dart/dynamics/ball_joint.hpp"
 
 namespace dart {
 namespace dynamics {

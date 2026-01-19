@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lcp/projection/NncgSolver.hpp"
-
-#include "dart/math/lcp/LcpValidation.hpp"
-#include "dart/math/lcp/projection/PgsSolver.hpp"
+#include "dart/math/lcp/lcp_validation.hpp"
+#include "dart/math/lcp/projection/nncg_solver.hpp"
+#include "dart/math/lcp/projection/pgs_solver.hpp"
 
 #include <algorithm>
 #include <iterator>

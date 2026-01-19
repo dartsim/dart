@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
-
 #include "dart/common/Logging.hpp"
-#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/multi_sphere_convex_hull_shape.hpp"
 #include "dart/math/Helpers.hpp"
 
 namespace dart {

@@ -1,7 +1,7 @@
 #include "dynamics/free_joint.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/free_joint.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/render/BoxShapeNode.hpp"
-
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 #include "dart/gui/Utils.hpp"
+#include "dart/gui/render/box_shape_node.hpp"
 
 #include <osg/CullFace>
 #include <osg/Depth>

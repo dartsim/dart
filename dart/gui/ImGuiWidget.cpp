@@ -36,9 +36,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/ImGuiWidget.hpp"
-
-#include "dart/gui/IncludeImGui.hpp"
+#include "dart/gui/im_gui_widget.hpp"
+#include "dart/gui/include_im_gui.hpp"
 
 namespace dart {
 namespace gui {

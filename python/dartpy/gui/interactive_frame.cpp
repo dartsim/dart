@@ -1,7 +1,7 @@
 #include "common/type_casters.hpp"
 #include "gui/gui.hpp"
 
-#include <dart/gui/InteractiveFrame.hpp>
+#include <dart/gui/interactive_frame.hpp>
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

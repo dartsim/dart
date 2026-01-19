@@ -6,12 +6,12 @@
  */
 
 #include "dart/common/Diagnostics.hpp"
-#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
-#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
-#include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/constraint/boxed_lcp_constraint_solver.hpp"
+#include "dart/constraint/dantzig_boxed_lcp_solver.hpp"
+#include "dart/constraint/pgs_boxed_lcp_solver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
-#include "dart/math/lcp/projection/PgsSolver.hpp"
+#include "dart/math/lcp/pivoting/dantzig_solver.hpp"
+#include "dart/math/lcp/projection/pgs_solver.hpp"
 
 #include <gtest/gtest.h>
 

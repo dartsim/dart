@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/ode/OdeCollisionGroup.hpp"
-
-#include "dart/collision/ode/OdeCollisionDetector.hpp"
-#include "dart/collision/ode/OdeCollisionObject.hpp"
+#include "dart/collision/ode/ode_collision_detector.hpp"
+#include "dart/collision/ode/ode_collision_group.hpp"
+#include "dart/collision/ode/ode_collision_object.hpp"
 #include "dart/common/Macros.hpp"
 
 #include <memory>

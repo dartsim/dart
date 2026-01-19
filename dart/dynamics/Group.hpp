@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dynamics/ReferentialSkeleton.hpp>
+#include <dart/dynamics/referential_skeleton.hpp>
 
 #include <dart/export.hpp>
 

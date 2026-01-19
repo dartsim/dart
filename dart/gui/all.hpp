@@ -8,20 +8,20 @@
 
 #pragma once
 
-#include <dart/gui/CameraMode.hpp>
-#include <dart/gui/DefaultEventHandler.hpp>
-#include <dart/gui/DragAndDrop.hpp>
-#include <dart/gui/GridVisual.hpp>
-#include <dart/gui/ImGuiHandler.hpp>
-#include <dart/gui/ImGuiViewer.hpp>
-#include <dart/gui/ImGuiWidget.hpp>
-#include <dart/gui/InteractiveFrame.hpp>
-#include <dart/gui/MouseEventHandler.hpp>
-#include <dart/gui/PolyhedronVisual.hpp>
-#include <dart/gui/RealTimeWorldNode.hpp>
-#include <dart/gui/ShapeFrameNode.hpp>
-#include <dart/gui/SupportPolygonVisual.hpp>
-#include <dart/gui/TrackballManipulator.hpp>
 #include <dart/gui/Viewer.hpp>
-#include <dart/gui/WorldNode.hpp>
+#include <dart/gui/camera_mode.hpp>
+#include <dart/gui/default_event_handler.hpp>
+#include <dart/gui/drag_and_drop.hpp>
 #include <dart/gui/export.hpp>
+#include <dart/gui/grid_visual.hpp>
+#include <dart/gui/im_gui_handler.hpp>
+#include <dart/gui/im_gui_viewer.hpp>
+#include <dart/gui/im_gui_widget.hpp>
+#include <dart/gui/interactive_frame.hpp>
+#include <dart/gui/mouse_event_handler.hpp>
+#include <dart/gui/polyhedron_visual.hpp>
+#include <dart/gui/real_time_world_node.hpp>
+#include <dart/gui/shape_frame_node.hpp>
+#include <dart/gui/support_polygon_visual.hpp>
+#include <dart/gui/trackball_manipulator.hpp>
+#include <dart/gui/world_node.hpp>

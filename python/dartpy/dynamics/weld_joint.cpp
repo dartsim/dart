@@ -1,7 +1,7 @@
 #include "dynamics/weld_joint.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/dynamics/WeldJoint.hpp"
+#include "dart/dynamics/weld_joint.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

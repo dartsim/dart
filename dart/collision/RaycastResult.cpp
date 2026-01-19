@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/RaycastResult.hpp"
+#include "dart/collision/raycast_result.hpp"
 
 namespace dart {
 namespace collision {

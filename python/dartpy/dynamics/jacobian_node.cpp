@@ -1,9 +1,9 @@
 #include "dynamics/jacobian_node.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/dynamics/DegreeOfFreedom.hpp"
-#include "dart/dynamics/InverseKinematics.hpp"
-#include "dart/dynamics/JacobianNode.hpp"
+#include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/inverse_kinematics.hpp"
+#include "dart/dynamics/jacobian_node.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

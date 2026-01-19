@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/CompositeResourceRetriever.hpp"
-
 #include "dart/common/Diagnostics.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Uri.hpp"
+#include "dart/utils/composite_resource_retriever.hpp"
 
 #include <iostream>
 

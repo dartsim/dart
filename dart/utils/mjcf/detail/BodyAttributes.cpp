@@ -30,12 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/mjcf/detail/BodyAttributes.hpp"
-
 #include "dart/common/Macros.hpp"
-#include "dart/utils/XmlHelpers.hpp"
 #include "dart/utils/mjcf/detail/Size.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
+#include "dart/utils/mjcf/detail/body_attributes.hpp"
+#include "dart/utils/xml_helpers.hpp"
 
 namespace dart {
 namespace utils {

@@ -1,7 +1,7 @@
 #include "collision/collision_result.hpp"
 
 #include "common/repr.hpp"
-#include "dart/collision/CollisionResult.hpp"
+#include "dart/collision/collision_result.hpp"
 
 #include <nanobind/nanobind.h>
 

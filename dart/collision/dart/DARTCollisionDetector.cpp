@@ -30,18 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
-
-#include "dart/collision/CollisionFilter.hpp"
-#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/collision_filter.hpp"
+#include "dart/collision/collision_object.hpp"
 #include "dart/collision/dart/DARTCollide.hpp"
-#include "dart/collision/dart/DARTCollisionGroup.hpp"
-#include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/collision/dart/dart_collision_detector.hpp"
+#include "dart/collision/dart/dart_collision_group.hpp"
+#include "dart/collision/dart/dart_collision_object.hpp"
 #include "dart/common/Logging.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/EllipsoidShape.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
-#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/ellipsoid_shape.hpp"
+#include "dart/dynamics/shape_frame.hpp"
+#include "dart/dynamics/sphere_shape.hpp"
 
 namespace dart {
 namespace collision {

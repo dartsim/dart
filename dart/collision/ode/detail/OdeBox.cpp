@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/ode/detail/OdeBox.hpp"
-
-#include "dart/dynamics/BoxShape.hpp"
+#include "dart/collision/ode/detail/ode_box.hpp"
+#include "dart/dynamics/box_shape.hpp"
 
 namespace dart {
 namespace collision {

@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/DegreeOfFreedom.hpp"
-
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/degree_of_freedom.hpp"
 
 namespace dart {
 namespace dynamics {

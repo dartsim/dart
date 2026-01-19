@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SimpleFrame.hpp"
-
 #include "dart/common/Logging.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 #include "dart/math/Geometry.hpp"
 
 namespace dart {

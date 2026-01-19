@@ -30,12 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/render/PointCloudShapeNode.hpp"
-
-#include "dart/dynamics/PointCloudShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/gui/ShapeFrameNode.hpp"
+#include "dart/dynamics/point_cloud_shape.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 #include "dart/gui/Utils.hpp"
+#include "dart/gui/render/point_cloud_shape_node.hpp"
+#include "dart/gui/shape_frame_node.hpp"
 
 #include <osg/Billboard>
 #include <osg/CullFace>

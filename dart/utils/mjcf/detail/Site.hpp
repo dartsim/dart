@@ -37,7 +37,7 @@
 #include <dart/utils/mjcf/detail/Error.hpp>
 #include <dart/utils/mjcf/detail/Types.hpp>
 
-#include <dart/math/MathTypes.hpp>
+#include <dart/math/math_types.hpp>
 
 #include <tinyxml2.h>
 

@@ -33,11 +33,11 @@
 #ifndef DART_DYNAMICS_FWD_HPP_
 #define DART_DYNAMICS_FWD_HPP_
 
-#include <dart/dynamics/detail/BodyNodePtr.hpp>
-#include <dart/dynamics/detail/DegreeOfFreedomPtr.hpp>
-#include <dart/dynamics/detail/InverseKinematicsPtr.hpp>
-#include <dart/dynamics/detail/JointPtr.hpp>
-#include <dart/dynamics/detail/NodePtr.hpp>
+#include <dart/dynamics/detail/body_node_ptr.hpp>
+#include <dart/dynamics/detail/degree_of_freedom_ptr.hpp>
+#include <dart/dynamics/detail/inverse_kinematics_ptr.hpp>
+#include <dart/dynamics/detail/joint_ptr.hpp>
+#include <dart/dynamics/detail/node_ptr.hpp>
 
 #include <dart/common/smart_pointer.hpp>
 

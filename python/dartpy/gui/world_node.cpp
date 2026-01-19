@@ -1,9 +1,9 @@
 #include "gui/gui.hpp"
 #include "gui/utils.hpp"
 
-#include <dart/gui/RealTimeWorldNode.hpp>
 #include <dart/gui/Viewer.hpp>
-#include <dart/gui/WorldNode.hpp>
+#include <dart/gui/real_time_world_node.hpp>
+#include <dart/gui/world_node.hpp>
 
 #include <dart/simulation/World.hpp>
 

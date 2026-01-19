@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lcp/LcpSolver.hpp"
+#include "dart/math/lcp/lcp_solver.hpp"
 
 #include <limits>
 

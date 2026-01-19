@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/TrackballManipulator.hpp"
+#include "dart/gui/trackball_manipulator.hpp"
 
 #include <osg/Version>
 

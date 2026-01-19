@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lcp/projection/BgsSolver.hpp"
-
-#include "dart/math/lcp/LcpValidation.hpp"
-#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
-#include "dart/math/lcp/pivoting/DirectSolver.hpp"
+#include "dart/math/lcp/lcp_validation.hpp"
+#include "dart/math/lcp/pivoting/dantzig_solver.hpp"
+#include "dart/math/lcp/pivoting/direct_solver.hpp"
+#include "dart/math/lcp/projection/bgs_solver.hpp"
 
 #include <algorithm>
 #include <iterator>

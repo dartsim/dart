@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/DynamicJointConstraint.hpp"
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/constraint/dynamic_joint_constraint.hpp"
 
 #include <cassert>
 

@@ -32,12 +32,12 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include "dart/constraint/ConstraintSolver.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/constraint/constraint_solver.hpp"
 #include "dart/dynamics/Inertia.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/dynamics/WeldJoint.hpp"
+#include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/free_joint.hpp"
+#include "dart/dynamics/weld_joint.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>

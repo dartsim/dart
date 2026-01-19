@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/ode/detail/OdeCapsule.hpp"
-
-#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/collision/ode/detail/ode_capsule.hpp"
+#include "dart/dynamics/capsule_shape.hpp"
 
 namespace dart {
 namespace collision {

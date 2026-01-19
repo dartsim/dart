@@ -1,6 +1,6 @@
 #include "constraint/constraint_base.hpp"
 
-#include "dart/constraint/ConstraintBase.hpp"
+#include "dart/constraint/constraint_base.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>

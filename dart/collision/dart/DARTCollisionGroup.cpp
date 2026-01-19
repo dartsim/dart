@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/DARTCollisionGroup.hpp"
-
-#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/collision_object.hpp"
+#include "dart/collision/dart/dart_collision_group.hpp"
 
 #include <algorithm>
 

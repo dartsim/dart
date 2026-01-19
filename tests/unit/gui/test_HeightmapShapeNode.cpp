@@ -1,6 +1,6 @@
 // Copyright (c) 2011, The DART development contributors
 
-#include <dart/gui/render/detail/HeightmapShapeGeometry.hpp>
+#include <dart/gui/render/detail/heightmap_shape_geometry.hpp>
 
 #include <gtest/gtest.h>
 

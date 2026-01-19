@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SharedLibraryIkFast.hpp"
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/shared_library.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/shared_library_ik_fast.hpp"
 
 #include <sstream>
 

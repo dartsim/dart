@@ -30,19 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/render/MeshShapeNode.hpp"
-
 #include "dart/common/Diagnostics.hpp"
 #include "dart/common/Filesystem.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Uri.hpp"
-#include "dart/dynamics/InvalidIndex.hpp"
-#include "dart/dynamics/MeshMaterial.hpp"
-#include "dart/dynamics/MeshShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/invalid_index.hpp"
+#include "dart/dynamics/mesh_material.hpp"
+#include "dart/dynamics/mesh_shape.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 #include "dart/gui/Utils.hpp"
-#include "dart/math/PolygonMesh.hpp"
+#include "dart/gui/render/mesh_shape_node.hpp"
+#include "dart/math/polygon_mesh.hpp"
 
 #include <assimp/scene.h>
 #include <osg/CullFace>

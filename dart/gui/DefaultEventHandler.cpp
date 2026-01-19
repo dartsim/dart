@@ -30,15 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/DefaultEventHandler.hpp"
-
 #include "dart/dynamics/Entity.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
-#include "dart/gui/MouseEventHandler.hpp"
-#include "dart/gui/ShapeFrameNode.hpp"
+#include "dart/dynamics/shape_frame.hpp"
 #include "dart/gui/Utils.hpp"
 #include "dart/gui/Viewer.hpp"
-#include "dart/gui/render/ShapeNode.hpp"
+#include "dart/gui/default_event_handler.hpp"
+#include "dart/gui/mouse_event_handler.hpp"
+#include "dart/gui/render/shape_node.hpp"
+#include "dart/gui/shape_frame_node.hpp"
 
 #include <osgGA/GUIEventAdapter>
 

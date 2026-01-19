@@ -33,7 +33,7 @@
 #include "dart/dynamics/Chain.hpp"
 
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/free_joint.hpp"
 
 namespace dart {
 namespace dynamics {

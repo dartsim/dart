@@ -32,7 +32,7 @@
 
 #include "dart/common/Diagnostics.hpp"
 #include "dart/config.hpp"
-#include "dart/utils/DartResourceRetriever.hpp"
+#include "dart/utils/dart_resource_retriever.hpp"
 
 #include <gtest/gtest.h>
 

@@ -31,7 +31,7 @@
  */
 
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/TranslationalJoint2D.hpp"
+#include "dart/dynamics/translational_joint2_d.hpp"
 
 namespace dart {
 namespace dynamics {

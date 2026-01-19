@@ -33,8 +33,8 @@
 #include "helpers/GTestUtils.hpp"
 
 #include "dart/common/Stopwatch.hpp"
-#include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/revolute_joint.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/simulation/World.hpp"

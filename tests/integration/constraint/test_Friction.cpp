@@ -36,7 +36,7 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"

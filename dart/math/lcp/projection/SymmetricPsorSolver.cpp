@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lcp/projection/SymmetricPsorSolver.hpp"
-
-#include "dart/math/lcp/LcpValidation.hpp"
+#include "dart/math/lcp/lcp_validation.hpp"
+#include "dart/math/lcp/projection/symmetric_psor_solver.hpp"
 
 #include <algorithm>
 #include <iterator>

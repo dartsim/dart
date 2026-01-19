@@ -35,7 +35,7 @@
 
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
-#include "dart/math/MathTypes.hpp"
+#include "dart/math/math_types.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

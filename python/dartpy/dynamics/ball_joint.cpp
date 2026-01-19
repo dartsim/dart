@@ -1,7 +1,7 @@
 #include "dynamics/ball_joint.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/dynamics/BallJoint.hpp"
+#include "dart/dynamics/ball_joint.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

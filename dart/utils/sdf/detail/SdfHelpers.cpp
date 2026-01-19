@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/sdf/detail/SdfHelpers.hpp"
+#include "dart/utils/sdf/detail/sdf_helpers.hpp"
 
 #include <dart/common/Uri.hpp>
 

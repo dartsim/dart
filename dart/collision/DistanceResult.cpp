@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/DistanceResult.hpp"
+#include "dart/collision/distance_result.hpp"
 
 #define DART_DEFAULT_MIN_DISTANCE (0.0)
 #define DART_DEFAULT_UNCLAMPED_MIN_DISTANCE (0.0)

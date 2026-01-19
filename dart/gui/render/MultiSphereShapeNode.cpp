@@ -30,12 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/render/MultiSphereShapeNode.hpp"
-
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/multi_sphere_convex_hull_shape.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 #include "dart/gui/Utils.hpp"
+#include "dart/gui/render/multi_sphere_shape_node.hpp"
 #include "dart/math/Icosphere.hpp"
 
 #include <osg/CullFace>

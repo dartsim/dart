@@ -54,8 +54,8 @@
 #include <Eigen/Dense>
 // Local Headers
 #include <dart/math/Constants.hpp>
-#include <dart/math/MathTypes.hpp>
 #include <dart/math/Random.hpp>
+#include <dart/math/math_types.hpp>
 
 namespace dart {
 namespace math {

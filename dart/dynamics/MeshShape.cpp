@@ -30,8 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/MeshShape.hpp"
-
 #include "dart/common/Diagnostics.hpp"
 #include "dart/common/Filesystem.hpp"
 #include "dart/common/Logging.hpp"
@@ -39,9 +37,10 @@
 #include "dart/common/Uri.hpp"
 #include "dart/common/local_resource_retriever.hpp"
 #include "dart/config.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/MeshMaterial.hpp"
-#include "dart/dynamics/detail/AssimpInputResourceAdaptor.hpp"
+#include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/detail/assimp_input_resource_adaptor.hpp"
+#include "dart/dynamics/mesh_material.hpp"
+#include "dart/dynamics/mesh_shape.hpp"
 
 #include <assimp/Importer.hpp>
 #include <assimp/cexport.h>

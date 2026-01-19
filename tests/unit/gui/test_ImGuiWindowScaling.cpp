@@ -24,7 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/IncludeImGui.hpp>
+#include <dart/gui/include_im_gui.hpp>
 
 #include <gtest/gtest.h>
 

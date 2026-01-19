@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lcp/other/MprgpSolver.hpp"
-
-#include "dart/math/lcp/LcpValidation.hpp"
-#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
+#include "dart/math/lcp/lcp_validation.hpp"
+#include "dart/math/lcp/other/mprgp_solver.hpp"
+#include "dart/math/lcp/pivoting/dantzig_solver.hpp"
 
 #include <Eigen/Cholesky>
 #include <Eigen/Dense>

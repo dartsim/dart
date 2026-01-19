@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/UniversalJoint.hpp"
-
 #include "dart/common/Macros.hpp"
+#include "dart/dynamics/universal_joint.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 

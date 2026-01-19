@@ -24,11 +24,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/ShapeFrameNode.hpp>
-#include <dart/gui/render/PlaneShapeNode.hpp>
+#include <dart/gui/render/plane_shape_node.hpp>
+#include <dart/gui/shape_frame_node.hpp>
 
-#include <dart/dynamics/PlaneShape.hpp>
-#include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/plane_shape.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 
 #include <gtest/gtest.h>
 #include <osg/ref_ptr>

@@ -30,12 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/XmlHelpers.hpp"
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/local_resource_retriever.hpp"
 #include "dart/math/Geometry.hpp"
+#include "dart/utils/xml_helpers.hpp"
 
 #include <fmt/format.h>
 

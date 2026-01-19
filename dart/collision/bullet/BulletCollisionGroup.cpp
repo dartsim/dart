@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/BulletCollisionGroup.hpp"
-
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/bullet/BulletCollisionObject.hpp"
-#include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
+#include "dart/collision/bullet/bullet_collision_group.hpp"
+#include "dart/collision/bullet/bullet_collision_object.hpp"
+#include "dart/collision/bullet/detail/bullet_collision_dispatcher.hpp"
+#include "dart/collision/collision_object.hpp"
 
 #include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 

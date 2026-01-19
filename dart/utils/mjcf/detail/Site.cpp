@@ -33,9 +33,9 @@
 #include "dart/utils/mjcf/detail/Site.hpp"
 
 #include "dart/common/Macros.hpp"
-#include "dart/utils/XmlHelpers.hpp"
 #include "dart/utils/mjcf/detail/Body.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
+#include "dart/utils/xml_helpers.hpp"
 
 namespace dart {
 namespace utils {

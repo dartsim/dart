@@ -30,18 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/BodyNode.hpp"
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/stl_helpers.hpp"
 #include "dart/dynamics/Chain.hpp"
-#include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Marker.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/end_effector.hpp"
+#include "dart/dynamics/soft_body_node.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <algorithm>

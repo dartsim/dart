@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/UniversalJoint.hpp"
+#include "dart/dynamics/universal_joint.hpp"
 
 namespace dart {
 namespace dynamics {

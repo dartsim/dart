@@ -7,10 +7,10 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include "dart/constraint/ConstraintSolver.hpp"
-#include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/constraint_solver.hpp"
+#include "dart/constraint/contact_surface.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/math/lcp/LcpSolver.hpp"
+#include "dart/math/lcp/lcp_solver.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>

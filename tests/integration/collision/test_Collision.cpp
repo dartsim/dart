@@ -49,7 +49,7 @@
 #endif
 #include "helpers/dynamics_helpers.hpp"
 
-#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/constraint_solver.hpp"
 #include "dart/io/Read.hpp"
 #include "dart/simulation/All.hpp"
 #include "dart/utils/All.hpp"

@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/IkFast.hpp"
+#include "dart/dynamics/ikfast.h"
 
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/DegreeOfFreedom.hpp"
-#include "dart/dynamics/RevoluteJoint.hpp"
-#include "dart/dynamics/ikfast.h"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/ik_fast.hpp"
+#include "dart/dynamics/revolute_joint.hpp"
 
 namespace dart {
 namespace dynamics {

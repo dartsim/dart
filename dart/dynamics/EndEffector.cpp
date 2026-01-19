@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/EndEffector.hpp"
-
 #include "dart/common/Logging.hpp"
-#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/end_effector.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -33,8 +33,8 @@
 #include "dart/common/Macros.hpp"
 
 #include <dart/gui/All.hpp>
-#include <dart/gui/ImGuiHandler.hpp>
-#include <dart/gui/IncludeImGui.hpp>
+#include <dart/gui/im_gui_handler.hpp>
+#include <dart/gui/include_im_gui.hpp>
 
 #include <dart/utils/All.hpp>
 

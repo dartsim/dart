@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/EulerJoint.hpp"
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/euler_joint.hpp"
 #include "dart/math/Geometry.hpp"
 
 #include <string>

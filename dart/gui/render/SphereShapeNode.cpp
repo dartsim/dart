@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/render/SphereShapeNode.hpp"
-
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/simple_frame.hpp"
+#include "dart/dynamics/sphere_shape.hpp"
 #include "dart/gui/Utils.hpp"
+#include "dart/gui/render/sphere_shape_node.hpp"
 
 #include <osg/BlendFunc>
 #include <osg/CullFace>

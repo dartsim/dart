@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PointCloudShape.hpp"
-
 #include "dart/common/Logging.hpp"
+#include "dart/dynamics/point_cloud_shape.hpp"
 
 namespace dart {
 namespace dynamics {

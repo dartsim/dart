@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ConvexMeshShape.hpp"
-
-#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/convex_mesh_shape.hpp"
 
 #include <limits>
 

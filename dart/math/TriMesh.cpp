@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/TriMesh.hpp"
+#include "dart/math/tri_mesh.hpp"
 
 namespace dart {
 namespace math {

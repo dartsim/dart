@@ -30,12 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/render/PyramidShapeNode.hpp"
-
-#include "dart/dynamics/PyramidShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/gui/ShapeFrameNode.hpp"
+#include "dart/dynamics/pyramid_shape.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 #include "dart/gui/Utils.hpp"
+#include "dart/gui/render/pyramid_shape_node.hpp"
+#include "dart/gui/shape_frame_node.hpp"
 
 #include <osg/CullFace>
 #include <osg/Depth>

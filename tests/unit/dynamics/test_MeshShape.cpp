@@ -3,11 +3,11 @@
 #include "dart/common/Uri.hpp"
 #include "dart/common/local_resource_retriever.hpp"
 #include "dart/config.hpp"
-#include "dart/dynamics/ArrowShape.hpp"
-#include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
-#include "dart/dynamics/MeshShape.hpp"
-#include "dart/math/TriMesh.hpp"
-#include "dart/utils/MeshLoader.hpp"
+#include "dart/dynamics/arrow_shape.hpp"
+#include "dart/dynamics/assimp_input_resource_adaptor.hpp"
+#include "dart/dynamics/mesh_shape.hpp"
+#include "dart/math/tri_mesh.hpp"
+#include "dart/utils/mesh_loader.hpp"
 
 #include <Eigen/Core>
 #include <assimp/cimport.h>

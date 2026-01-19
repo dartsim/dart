@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/render/EllipsoidShapeNode.hpp"
-
-#include "dart/dynamics/EllipsoidShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/ellipsoid_shape.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 #include "dart/gui/Utils.hpp"
+#include "dart/gui/render/ellipsoid_shape_node.hpp"
 
 #include <osg/CullFace>
 #include <osg/Depth>

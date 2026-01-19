@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/BalanceConstraint.hpp"
-
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/EndEffector.hpp"
+#include "dart/constraint/balance_constraint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/end_effector.hpp"
 
 namespace dart {
 namespace constraint {

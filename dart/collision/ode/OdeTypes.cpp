@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/ode/OdeTypes.hpp"
+#include "dart/collision/ode/ode_types.hpp"
 
 namespace dart {
 namespace collision {

@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/CylinderShape.hpp"
-
 #include "dart/common/Macros.hpp"
+#include "dart/dynamics/cylinder_shape.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <cmath>

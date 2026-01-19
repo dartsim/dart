@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/EulerJoint.hpp"
+#include "dart/dynamics/euler_joint.hpp"
 
 namespace dart {
 namespace dynamics {

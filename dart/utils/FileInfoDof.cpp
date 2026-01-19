@@ -30,13 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/FileInfoDof.hpp"
-
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/degree_of_freedom.hpp"
 #include "dart/simulation/Recording.hpp"
+#include "dart/utils/file_info_dof.hpp"
 
 #include <fstream>
 #include <string>

@@ -38,17 +38,17 @@
 
 #include "dart/simulation/World.hpp"
 
-#include "dart/collision/CollisionDetector.hpp"
-#include "dart/collision/CollisionGroup.hpp"
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/collision/collision_detector.hpp"
+#include "dart/collision/collision_group.hpp"
+#include "dart/collision/fcl/fcl_collision_detector.hpp"
 #include "dart/common/Diagnostics.hpp"
 #include "dart/common/Exception.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/common/String.hpp"
-#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
-#include "dart/constraint/ConstrainedGroup.hpp"
+#include "dart/constraint/boxed_lcp_constraint_solver.hpp"
+#include "dart/constraint/constrained_group.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <iostream>

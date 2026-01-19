@@ -30,17 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/SoftContactConstraint.hpp"
-
-#include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
+#include "dart/collision/collision_object.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/PointMass.hpp"
+#include "dart/constraint/soft_contact_constraint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/point_mass.hpp"
+#include "dart/dynamics/soft_body_node.hpp"
+#include "dart/dynamics/soft_mesh_shape.hpp"
 #include "dart/math/Constants.hpp"
 #include "dart/math/Helpers.hpp"
 

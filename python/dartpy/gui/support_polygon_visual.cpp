@@ -3,7 +3,7 @@
 #include "common/type_casters.hpp"
 #include "gui/utils.hpp"
 
-#include <dart/gui/SupportPolygonVisual.hpp>
+#include <dart/gui/support_polygon_visual.hpp>
 
 #include <dart/dynamics/Skeleton.hpp>
 

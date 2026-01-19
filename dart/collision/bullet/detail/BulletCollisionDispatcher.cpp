@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
-
-#include "dart/collision/bullet/BulletCollisionObject.hpp"
+#include "dart/collision/bullet/bullet_collision_object.hpp"
+#include "dart/collision/bullet/detail/bullet_collision_dispatcher.hpp"
 
 namespace dart {
 namespace collision {

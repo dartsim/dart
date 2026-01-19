@@ -33,13 +33,13 @@
 #ifndef DART_GUI_VIEWER_HPP_
 #define DART_GUI_VIEWER_HPP_
 
-#include <dart/gui/CameraMode.hpp>
-#include <dart/gui/DefaultEventHandler.hpp>
-#include <dart/gui/ViewerConfig.hpp>
-#include <dart/gui/WorldNode.hpp>
-#include <dart/gui/detail/CameraModeCallback.hpp>
+#include <dart/gui/camera_mode.hpp>
+#include <dart/gui/default_event_handler.hpp>
+#include <dart/gui/detail/camera_mode_callback.hpp>
 #include <dart/gui/export.hpp>
 #include <dart/gui/fwd.hpp>
+#include <dart/gui/viewer_config.hpp>
+#include <dart/gui/world_node.hpp>
 
 #include <dart/simulation/fwd.hpp>
 

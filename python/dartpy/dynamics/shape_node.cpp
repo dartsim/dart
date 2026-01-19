@@ -2,8 +2,8 @@
 
 #include "common/repr.hpp"
 #include "common/type_casters.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/shape_node.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

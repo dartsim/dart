@@ -30,12 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
-
 #include "dart/common/Diagnostics.hpp"
-#include "dart/math/lcp/LcpTypes.hpp"
-#include "dart/math/lcp/LcpUtils.hpp"
-#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
+#include "dart/constraint/dantzig_boxed_lcp_solver.hpp"
+#include "dart/math/lcp/lcp_types.hpp"
+#include "dart/math/lcp/lcp_utils.hpp"
+#include "dart/math/lcp/pivoting/dantzig_solver.hpp"
 
 #include <Eigen/Core>
 

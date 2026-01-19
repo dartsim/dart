@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/Entity.hpp>
 
-#include <dart/math/MathTypes.hpp>
+#include <dart/math/math_types.hpp>
 
 #include <dart/export.hpp>
 

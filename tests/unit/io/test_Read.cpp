@@ -34,8 +34,8 @@
 
 #include <dart/config.hpp>
 
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/WeldJoint.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
 #include <gtest/gtest.h>
 

@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/ode/detail/OdeCylinder.hpp"
-
-#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/collision/ode/detail/ode_cylinder.hpp"
+#include "dart/dynamics/cylinder_shape.hpp"
 
 namespace dart {
 namespace collision {

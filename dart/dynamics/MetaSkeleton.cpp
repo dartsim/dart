@@ -30,13 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/MetaSkeleton.hpp"
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/DegreeOfFreedom.hpp"
-#include "dart/dynamics/JacobianNode.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/jacobian_node.hpp"
+#include "dart/dynamics/meta_skeleton.hpp"
 
 #include <algorithm>
 #include <iterator>

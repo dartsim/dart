@@ -33,7 +33,7 @@
 #ifndef DART_TESTS_LCPTESTFIXTURES_HPP_
 #define DART_TESTS_LCPTESTFIXTURES_HPP_
 
-#include <dart/math/lcp/LcpTypes.hpp>
+#include <dart/math/lcp/lcp_types.hpp>
 
 #include <Eigen/Core>
 

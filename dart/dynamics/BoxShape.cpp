@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/BoxShape.hpp"
-
 #include "dart/common/Macros.hpp"
+#include "dart/dynamics/box_shape.hpp"
 
 #include <cmath>
 

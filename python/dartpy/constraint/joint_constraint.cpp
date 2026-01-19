@@ -1,7 +1,7 @@
 #include "constraint/joint_constraint.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/constraint/JointConstraint.hpp"
+#include "dart/constraint/joint_constraint.hpp"
 #include "dart/dynamics/Joint.hpp"
 
 #include <nanobind/nanobind.h>

@@ -34,7 +34,7 @@
 #define DART_TEST_SHAREDLIBRARYWAMIKFAST_HPP_
 
 #include "dart/common/shared_library.hpp"
-#include "dart/dynamics/IkFast.hpp"
+#include "dart/dynamics/ik_fast.hpp"
 
 class SharedLibraryWamIkFast : public dart::dynamics::IkFast
 {

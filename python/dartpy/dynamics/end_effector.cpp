@@ -1,8 +1,8 @@
 #include "dynamics/end_effector.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/dynamics/EndEffector.hpp"
-#include "dart/dynamics/InverseKinematics.hpp"
+#include "dart/dynamics/end_effector.hpp"
+#include "dart/dynamics/inverse_kinematics.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

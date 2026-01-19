@@ -30,13 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/JointCoulombFrictionConstraint.hpp"
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/BodyNode.hpp"
+#include "dart/constraint/joint_coulomb_friction_constraint.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/body_node.hpp"
 
 #include <iostream>
 

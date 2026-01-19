@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/ImGuiViewer.hpp"
-
-#include "dart/gui/ImGuiHandler.hpp"
-#include "dart/gui/ImGuiWidget.hpp"
+#include "dart/gui/im_gui_handler.hpp"
+#include "dart/gui/im_gui_viewer.hpp"
+#include "dart/gui/im_gui_widget.hpp"
 
 #include <algorithm>
 

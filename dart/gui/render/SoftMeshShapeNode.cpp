@@ -30,13 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/render/SoftMeshShapeNode.hpp"
-
-#include "dart/dynamics/PointMass.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/point_mass.hpp"
+#include "dart/dynamics/simple_frame.hpp"
+#include "dart/dynamics/soft_body_node.hpp"
+#include "dart/dynamics/soft_mesh_shape.hpp"
 #include "dart/gui/Utils.hpp"
+#include "dart/gui/render/soft_mesh_shape_node.hpp"
 
 #include <osg/CullFace>
 #include <osg/Depth>

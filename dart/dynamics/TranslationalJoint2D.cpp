@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/TranslationalJoint2D.hpp"
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/translational_joint2_d.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lcp/LcpTypes.hpp"
+#include "dart/math/lcp/lcp_types.hpp"
 
 namespace dart {
 namespace math {

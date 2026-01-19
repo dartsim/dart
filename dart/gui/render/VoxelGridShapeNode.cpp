@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/render/VoxelGridShapeNode.hpp"
+#include "dart/gui/render/voxel_grid_shape_node.hpp"
 
 #if DART_HAVE_OCTOMAP
 
-  #include "dart/dynamics/SimpleFrame.hpp"
-  #include "dart/dynamics/VoxelGridShape.hpp"
+  #include "dart/dynamics/simple_frame.hpp"
+  #include "dart/dynamics/voxel_grid_shape.hpp"
   #include "dart/gui/Utils.hpp"
 
   #include <osg/CullFace>

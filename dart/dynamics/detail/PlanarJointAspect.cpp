@@ -31,7 +31,7 @@
  */
 
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/planar_joint.hpp"
 
 namespace dart {
 namespace dynamics {

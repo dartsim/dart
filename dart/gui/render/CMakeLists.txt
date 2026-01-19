@@ -22,10 +22,10 @@ install(
 )
 
 dart_format_add(
-  detail/HeightmapShapeGeometry.hpp
-  HeightmapShapeNode.hpp
-  PointCloudShapeNode.hpp
+  detail/heightmap_shape_geometry.hpp
+  heightmap_shape_node.hpp
+  point_cloud_shape_node.hpp
   PointCloudShapeNode.cpp
-  VoxelGridShapeNode.hpp
+  voxel_grid_shape_node.hpp
   VoxelGridShapeNode.cpp
 )

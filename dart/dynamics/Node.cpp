@@ -33,7 +33,7 @@
 #include "dart/dynamics/Node.hpp"
 
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/body_node.hpp"
 
 #include <algorithm>
 

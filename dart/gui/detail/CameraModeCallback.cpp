@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/detail/CameraModeCallback.hpp"
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/gui/Utils.hpp"
+#include "dart/gui/detail/camera_mode_callback.hpp"
 
 #include <osg/Geode>
 #include <osg/Texture2D>

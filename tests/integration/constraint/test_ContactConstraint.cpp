@@ -35,8 +35,8 @@
 #include "dart/common/All.hpp"
 #include "dart/constraint/All.hpp"
 #include "dart/dynamics/All.hpp"
-#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
-#include "dart/math/lcp/projection/PgsSolver.hpp"
+#include "dart/math/lcp/pivoting/dantzig_solver.hpp"
+#include "dart/math/lcp/projection/pgs_solver.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>

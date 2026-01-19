@@ -30,13 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/InverseKinematics.hpp"
-
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/DegreeOfFreedom.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/math/optimization/GradientDescentSolver.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/inverse_kinematics.hpp"
+#include "dart/dynamics/simple_frame.hpp"
+#include "dart/math/optimization/gradient_descent_solver.hpp"
 
 #include <algorithm>
 #include <iterator>

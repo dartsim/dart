@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/collision_option.hpp"
 
 namespace dart {
 namespace collision {

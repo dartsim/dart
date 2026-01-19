@@ -30,27 +30,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/ode/OdeCollisionDetector.hpp"
-
-#include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/Contact.hpp"
-#include "dart/collision/ode/OdeCollisionGroup.hpp"
-#include "dart/collision/ode/OdeCollisionObject.hpp"
-#include "dart/collision/ode/OdeTypes.hpp"
+#include "dart/collision/collision_filter.hpp"
+#include "dart/collision/ode/ode_collision_detector.hpp"
+#include "dart/collision/ode/ode_collision_group.hpp"
+#include "dart/collision/ode/ode_collision_object.hpp"
+#include "dart/collision/ode/ode_types.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/CapsuleShape.hpp"
-#include "dart/dynamics/ConeShape.hpp"
-#include "dart/dynamics/CylinderShape.hpp"
-#include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/Frame.hpp"
-#include "dart/dynamics/MeshShape.hpp"
-#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
-#include "dart/dynamics/PlaneShape.hpp"
-#include "dart/dynamics/ShapeNode.hpp"
-#include "dart/dynamics/SoftMeshShape.hpp"
-#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/capsule_shape.hpp"
+#include "dart/dynamics/cone_shape.hpp"
+#include "dart/dynamics/cylinder_shape.hpp"
+#include "dart/dynamics/ellipsoid_shape.hpp"
+#include "dart/dynamics/mesh_shape.hpp"
+#include "dart/dynamics/multi_sphere_convex_hull_shape.hpp"
+#include "dart/dynamics/plane_shape.hpp"
+#include "dart/dynamics/shape_node.hpp"
+#include "dart/dynamics/soft_mesh_shape.hpp"
+#include "dart/dynamics/sphere_shape.hpp"
 
 #include <ode/ode.h>
 

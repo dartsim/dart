@@ -30,20 +30,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/mjcf/MjcfParser.hpp"
-
 #include "dart/collision/All.hpp"
 #include "dart/common/All.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/config.hpp"
 #include "dart/constraint/All.hpp"
 #include "dart/dynamics/All.hpp"
-#include "dart/utils/CompositeResourceRetriever.hpp"
-#include "dart/utils/DartResourceRetriever.hpp"
-#include "dart/utils/XmlHelpers.hpp"
-#include "dart/utils/mjcf/detail/MujocoModel.hpp"
+#include "dart/utils/composite_resource_retriever.hpp"
+#include "dart/utils/dart_resource_retriever.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
 #include "dart/utils/mjcf/detail/Worldbody.hpp"
+#include "dart/utils/mjcf/detail/mujoco_model.hpp"
+#include "dart/utils/mjcf/mjcf_parser.hpp"
+#include "dart/utils/xml_helpers.hpp"
 
 #include <Eigen/Dense>
 

@@ -6,7 +6,7 @@
 #include "dart/common/Uri.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <Eigen/Dense>

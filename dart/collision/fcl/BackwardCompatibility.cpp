@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/BackwardCompatibility.hpp"
+#include "dart/collision/fcl/backward_compatibility.hpp"
 
 namespace dart {
 namespace collision {

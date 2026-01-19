@@ -33,16 +33,16 @@
 #ifndef DART_DYNAMICS_SKELETON_HPP_
 #define DART_DYNAMICS_SKELETON_HPP_
 
-#include <dart/dynamics/EndEffector.hpp>
-#include <dart/dynamics/HierarchicalIK.hpp>
 #include <dart/dynamics/Joint.hpp>
 #include <dart/dynamics/Marker.hpp>
-#include <dart/dynamics/MetaSkeleton.hpp>
-#include <dart/dynamics/ShapeNode.hpp>
-#include <dart/dynamics/SpecializedNodeManager.hpp>
-#include <dart/dynamics/detail/BodyNodeAspect.hpp>
-#include <dart/dynamics/detail/SkeletonAspect.hpp>
+#include <dart/dynamics/detail/body_node_aspect.hpp>
+#include <dart/dynamics/detail/skeleton_aspect.hpp>
+#include <dart/dynamics/end_effector.hpp>
 #include <dart/dynamics/fwd.hpp>
+#include <dart/dynamics/hierarchical_ik.hpp>
+#include <dart/dynamics/meta_skeleton.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/specialized_node_manager.hpp>
 
 #include <dart/common/Deprecated.hpp>
 #include <dart/common/name_manager.hpp>

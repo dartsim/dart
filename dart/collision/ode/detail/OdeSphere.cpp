@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/ode/detail/OdeSphere.hpp"
-
-#include "dart/dynamics/SphereShape.hpp"
+#include "dart/collision/ode/detail/ode_sphere.hpp"
+#include "dart/dynamics/sphere_shape.hpp"
 
 namespace dart {
 namespace collision {

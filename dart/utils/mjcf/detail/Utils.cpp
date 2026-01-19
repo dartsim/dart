@@ -33,9 +33,9 @@
 #include "dart/utils/mjcf/detail/Utils.hpp"
 
 #include "dart/common/Macros.hpp"
-#include "dart/utils/CompositeResourceRetriever.hpp"
-#include "dart/utils/DartResourceRetriever.hpp"
-#include "dart/utils/XmlHelpers.hpp"
+#include "dart/utils/composite_resource_retriever.hpp"
+#include "dart/utils/dart_resource_retriever.hpp"
+#include "dart/utils/xml_helpers.hpp"
 
 namespace dart {
 namespace utils {

@@ -30,12 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/render/LineSegmentShapeNode.hpp"
-
-#include "dart/dynamics/LineSegmentShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/gui/ShapeFrameNode.hpp"
+#include "dart/dynamics/line_segment_shape.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 #include "dart/gui/Utils.hpp"
+#include "dart/gui/render/line_segment_shape_node.hpp"
+#include "dart/gui/shape_frame_node.hpp"
 
 #include <osg/CullFace>
 #include <osg/Depth>

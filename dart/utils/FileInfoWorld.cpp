@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/FileInfoWorld.hpp"
-
 #include "dart/simulation/Recording.hpp"
+#include "dart/utils/file_info_world.hpp"
 
 #include <fstream>
 #include <string>

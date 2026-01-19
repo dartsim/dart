@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/WeldJointConstraint.hpp"
-
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/BodyNode.hpp"
+#include "dart/constraint/weld_joint_constraint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/body_node.hpp"
 #include "dart/math/Constants.hpp"
 
 namespace dart {

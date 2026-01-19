@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/ode/detail/OdeMesh.hpp"
-
-#include "dart/dynamics/MeshShape.hpp"
+#include "dart/collision/ode/detail/ode_mesh.hpp"
+#include "dart/dynamics/mesh_shape.hpp"
 
 namespace dart {
 namespace collision {

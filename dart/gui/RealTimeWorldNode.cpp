@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/RealTimeWorldNode.hpp"
-
 #include "dart/common/Logging.hpp"
+#include "dart/gui/real_time_world_node.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <algorithm>

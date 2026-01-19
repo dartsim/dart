@@ -30,14 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/ContactSurface.hpp"
-
-#include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
+#include "dart/collision/collision_object.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/constraint/ContactConstraint.hpp"
-#include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/contact_constraint.hpp"
+#include "dart/constraint/contact_surface.hpp"
 
 #include <fmt/ostream.h>
 

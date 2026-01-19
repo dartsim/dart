@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/ode/detail/OdeGeom.hpp"
-
-#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/collision/ode/detail/ode_geom.hpp"
+#include "dart/dynamics/plane_shape.hpp"
 
 namespace dart {
 namespace collision {

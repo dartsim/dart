@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/ConstraintBase.hpp"
-
+#include "dart/constraint/constraint_base.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {

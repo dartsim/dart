@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/render/CylinderShapeNode.hpp"
-
-#include "dart/dynamics/CylinderShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/cylinder_shape.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 #include "dart/gui/Utils.hpp"
+#include "dart/gui/render/cylinder_shape_node.hpp"
 
 #include <osg/CullFace>
 #include <osg/Depth>

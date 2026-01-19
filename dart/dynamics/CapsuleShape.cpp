@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/CapsuleShape.hpp"
-
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/CylinderShape.hpp"
-#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/capsule_shape.hpp"
+#include "dart/dynamics/cylinder_shape.hpp"
+#include "dart/dynamics/sphere_shape.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <cmath>

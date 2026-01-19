@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SphereShape.hpp"
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/dynamics/sphere_shape.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <cmath>

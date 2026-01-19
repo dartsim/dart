@@ -30,15 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/sdf/detail/GeometryParsers.hpp"
-
 #include "dart/common/Diagnostics.hpp"
 #include "dart/common/Uri.hpp"
+#include "dart/utils/sdf/detail/geometry_parsers.hpp"
 
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/CylinderShape.hpp>
-#include <dart/dynamics/MeshShape.hpp>
-#include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/cylinder_shape.hpp>
+#include <dart/dynamics/mesh_shape.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 
 namespace dart::utils::SdfParser::detail {
 

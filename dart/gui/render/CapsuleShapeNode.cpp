@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/render/CapsuleShapeNode.hpp"
-
-#include "dart/dynamics/CapsuleShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/capsule_shape.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 #include "dart/gui/Utils.hpp"
+#include "dart/gui/render/capsule_shape_node.hpp"
 
 #include <osg/CullFace>
 #include <osg/Depth>

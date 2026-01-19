@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/VoxelGridShape.hpp"
+#include "dart/dynamics/voxel_grid_shape.hpp"
 
 #if DART_HAVE_OCTOMAP
 

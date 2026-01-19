@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lcp/other/StaggeringSolver.hpp"
-
-#include "dart/math/lcp/LcpValidation.hpp"
-#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
+#include "dart/math/lcp/lcp_validation.hpp"
+#include "dart/math/lcp/other/staggering_solver.hpp"
+#include "dart/math/lcp/pivoting/dantzig_solver.hpp"
 
 #include <algorithm>
 #include <iterator>
