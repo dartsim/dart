@@ -2,74 +2,75 @@
 
 ## Last Session Summary
 
-Completed Phase 3 tasks: constraint solver edge cases (BallJoint/WeldJoint tests), systematic error path audit (Problem.cpp tests), platform-specific code tests (Uri Windows path parsing), and updated codecov.yml to 85% targets. PR #2462 is open and CI is running.
+Added comprehensive unit tests for dynamics (DegreeOfFreedom, MetaSkeleton, Linkage), collision (CollisionGroup), and simulation (World). All 95 unit tests pass locally. PR #2462 updated with 4 new commits. CI running.
 
 ## Current Branch
 
-`task/test_coverage` — 7 commits ahead of origin, clean working tree.
+`task/test_coverage` — Up to date with origin, clean working tree.
 
 ## PR Status
 
 **PR #2462**: https://github.com/dartsim/dart/pull/2462
 
-CI has infrastructure failures (`actions/checkout@v6` uses unsupported `node24`) but code tests are passing locally. The infrastructure issue is unrelated to our changes.
+Latest commit: `63a110984dc` - "test: add comprehensive unit tests for simulation::World"
+CI: 21 jobs passed, 21 pending, 0 failed (as of last check)
 
 ## Immediate Next Step
 
-Wait for CI results. If code tests pass, PR is ready for review.
+Wait for CI Coverage (Debug) jobs to complete and check codecov report. If coverage meets 85% target, PR is ready for review.
 
 ## Context That Would Be Lost
 
-- Capsule NOT supported by FCL primitive collision mode - FCL falls back to sphere
-- Problem.cpp had no tests - now has 13 tests covering constraint access, bounds, seeds
-- Uri Windows-style file URIs (`file:///C:/path`) parse correctly on all platforms
-- Background agents found: Bullet collision fallback untested, distance queries return 0.0
+- World API: No `hasSimpleFrame()`, `getCollisionGroup()`, `setRecording()`/`isRecording()` methods
+- MetaSkeleton: Complex template-based interface requires careful API usage
+- Linkage: Criteria and expansion policies are key abstractions for creating chains/trees
+- All 95 unit tests pass locally, 908 total test cases in unit tests
 
-## Key Files Created/Modified This Session
+## Key Files Created This Session
 
 **New C++ test files:**
 
-- `tests/unit/constraint/test_JointConstraints.cpp` - 8 tests (BallJointConstraint, WeldJointConstraint)
-- `tests/unit/math/optimization/test_Problem.cpp` - 13 tests (error paths, constraint management)
+- `tests/unit/dynamics/test_DegreeOfFreedom.cpp` - 24 tests
+- `tests/unit/dynamics/test_MetaSkeleton.cpp` - 31 tests
+- `tests/unit/dynamics/test_Linkage.cpp` - 25 tests
+- `tests/unit/collision/test_CollisionGroup.cpp` - 12 new tests added
+- `tests/unit/simulation/test_World.cpp` - 26 tests
 
-**Modified:**
-
-- `tests/unit/CMakeLists.txt` - Added constraint and Problem tests
-- `tests/unit/common/test_Uri.cpp` - Added Windows-style URI parsing test
-- `docs/onboarding/testing.md` - Updated directory structure
-- `codecov.yml` - Increased targets to 85%
-- `python/tests/fixtures.py` - Fixed unused variable (PR review)
-- `python/tests/unit/dynamics/test_skeleton.py` - Fixed unused import (PR review)
-
-## Commits on Branch
+## Recent Commits on Branch
 
 ```
-6b4ba8da0ce test: add optimization Problem tests and Uri Windows path tests
-4b54ad04ff9 fix: address PR review comments and add constraint tests
-d0d21ebeb38 config: increase coverage targets to 85% for Phase 3
-e072ba8c217 docs: update test coverage RESUME.md with Phase 2 progress
-e9e695b7823 test: add URDF and SDF parser error path tests
-9333ee573ef test: expand Python skeleton and shape tests
-7802afad63f test: add EndEffector, Marker, and PointMass unit tests
-186de412a75 test: add Phase 1 coverage improvements - sensor and shape tests
+63a110984dc test: add comprehensive unit tests for simulation::World
+9d2111fba83 test: add comprehensive unit tests for Linkage and ReferentialSkeleton
+72f8950e1f2 test: add comprehensive unit tests for DegreeOfFreedom, MetaSkeleton, and CollisionGroup
+474da41756c test: add comprehensive unit tests for motor constraints, frames, groups, and joints
+...earlier commits for Phase 1-2...
 ```
 
-## Phase 3 Checklist
+## Phase 3 Checklist (All Complete)
 
 - [x] Enable patch coverage requirement in `codecov.yml` (85% targets)
 - [x] Constraint solver edge cases (BallJoint/WeldJoint tests)
 - [x] Systematic error path audit (Problem.cpp tests)
 - [x] Platform-specific code tests (Uri Windows paths)
 - [x] Document patterns in `testing.md` (directory structure)
-- [x] Parameterized collision tests - Capsule NOT supported by FCL primitive
+- [x] DegreeOfFreedom tests (24 tests)
+- [x] MetaSkeleton tests (31 tests)
+- [x] Linkage tests (25 tests)
+- [x] CollisionGroup tests (12 tests)
+- [x] World tests (26 tests)
 
-## Backlog Items Identified
+## Test Summary
 
-From background agent exploration:
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| test_DegreeOfFreedom.cpp | 24 | ✅ |
+| test_MetaSkeleton.cpp | 31 | ✅ |
+| test_Linkage.cpp | 25 | ✅ |
+| test_CollisionGroup.cpp | 12 | ✅ |
+| test_World.cpp | 26 | ✅ |
+| + All previous Phase 1-2 tests | 100+ | ✅ |
 
-1. **Bullet collision fallback** - Empty ConvexMesh falls back to sphere (untested)
-2. **Bullet distance queries** - Returns 0.0 with warning (untested)
-3. **MeshShape loading failures** - Multiple nullptr return paths
+**Total unit test cases**: 908
 
 ## How to Resume
 
