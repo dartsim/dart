@@ -20,6 +20,7 @@
 #include <dart/math/lcp/projection/RedBlackGaussSeidelSolver.hpp>
 #include <dart/math/lcp/projection/SubspaceMinimizationSolver.hpp>
 #include <dart/math/lcp/projection/SymmetricPsorSolver.hpp>
+#include <dart/math/lcp/projection/TgsSolver.hpp>
 
 // Newton methods
 #include <dart/math/lcp/newton/FischerBurmeisterNewtonSolver.hpp>

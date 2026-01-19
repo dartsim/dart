@@ -95,6 +95,7 @@ std::vector<SolverTestCase> createAllSolvers()
        true,
        true});
   solvers.push_back({"Apgd", std::make_unique<ApgdSolver>(), true, true, true});
+  solvers.push_back({"Tgs", std::make_unique<TgsSolver>(), true, true, true});
 
   solvers.push_back(
       {"MinimumMapNewton",
