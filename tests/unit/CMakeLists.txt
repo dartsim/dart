@@ -45,6 +45,7 @@ set(common_unit_sources
   common/test_FreeListAllocator.cpp
   common/test_Logging.cpp
   common/test_MemoryManager.cpp
+  common/test_NameManager.cpp
   common/test_PoolAllocator.cpp
   common/test_Resource.cpp
   common/test_Result.cpp
