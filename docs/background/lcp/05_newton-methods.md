@@ -1,6 +1,10 @@
 # Newton Methods for LCP
 
-**Navigation**: [← Projection Methods](04_projection-methods.md) | [Other Methods →](06_other-methods.md)
+> **Attribution**: This content is derived from "Contact Handling for Articulated
+> Rigid Bodies Using LCP" by Jie Tan, Kristin Siu, and C. Karen Liu.
+> The original PDF is preserved at [`docs/lcp.pdf`](../../lcp.pdf).
+
+**Navigation**: [← Projection Methods](04_projection-methods.md) | [Index](../README.md) | [Other Methods →](06_other-methods.md)
 
 ## Overview
 
@@ -14,43 +18,35 @@ future reference.
 
 All Newton methods follow this pattern:
 
-```
-1. Reformulate LCP as H(x) = 0 (nonsmooth equation)
-2. Compute generalized Newton direction: J*Δx = -H(x)
-3. Line search for step length t
-4. Update: x^{k+1} = max(0, x^k + t*Δx^k)
+1. Reformulate LCP as $H(x) = 0$ (nonsmooth equation)
+2. Compute generalized Newton direction: $J \Delta x = -H(x)$
+3. Line search for step length $t$
+4. Update: $x^{k+1} = \max(0, x^k + t \Delta x^k)$
 5. Repeat until convergence
-```
 
 ## 1. Minimum Map Newton Method ✅ (Implemented)
 
 ### Reformulation
 
-```
-H(x) = min(x, Ax - b) = 0
-```
+$$H(x) = \min(x, Ax - b) = 0$$
 
 ### B-Derivative (Generalized Jacobian)
 
-```
 Partition indices into:
-  A = {i | y_i = (Ax-b)_i < x_i}  (active set)
-  F = {i | y_i = (Ax-b)_i >= x_i}  (free set)
+
+- $\mathcal{A} = \{i \mid y_i = (Ax-b)_i < x_i\}$ (active set)
+- $\mathcal{F} = \{i \mid y_i = (Ax-b)_i \geq x_i\}$ (free set)
 
 Then:
-  JH = [ A_AA ]  (block for active set)
-       [ I_FF ]  (identity for free set)
-```
+$$J_H = \begin{bmatrix} A_{\mathcal{A}\mathcal{A}} \\ I_{\mathcal{F}\mathcal{F}} \end{bmatrix}$$
 
 ### Newton Equation
 
-```
 Reduced system (only for active set):
-  A_AA * Δx_A = -H_A
+$$A_{\mathcal{A}\mathcal{A}} \Delta x_{\mathcal{A}} = -H_{\mathcal{A}}$$
 
 For free set:
-  Δx_F = -H_F = -x_F  (directly set to zero)
-```
+$$\Delta x_{\mathcal{F}} = -H_{\mathcal{F}} = -x_{\mathcal{F}} \quad \text{(directly set to zero)}$$
 
 ### DART Implementation
 
@@ -97,10 +93,10 @@ while not converged:
 
 ### Properties
 
-- **Time**: O(n³) with direct solver, O(n) with iterative
-- **Storage**: O(n²) with direct solver, O(n) with iterative
+- **Time**: $O(n^3)$ with direct solver, $O(n)$ with iterative
+- **Storage**: $O(n^2)$ with direct solver, $O(n)$ with iterative
 - **Convergence**: Superlinear to quadratic
-- **Matrix Requirements**: A_AA should be non-singular
+- **Matrix Requirements**: $A_{\mathcal{A}\mathcal{A}}$ should be non-singular
 
 ### Advantages/Disadvantages
 
@@ -115,11 +111,10 @@ while not converged:
 
 ### Reformulation
 
-```
 For each component:
-  phi_FB(x_i, y_i) = sqrt(x_i² + y_i²) - x_i - y_i = 0
-where y_i = (Ax - b)_i
-```
+$$\phi_{\text{FB}}(x_i, y_i) = \sqrt{x_i^2 + y_i^2} - x_i - y_i = 0$$
+
+where $y_i = (Ax - b)_i$.
 
 ### DART Implementation
 
@@ -143,23 +138,20 @@ solver.solve(problem, x, options);
 
 ### Generalized Jacobian
 
-```
-For (x_i, y_i) != (0, 0):
-  p_i = x_i / sqrt(x_i² + y_i²) - 1
-  q_i = y_i / sqrt(x_i² + y_i²) - 1
+For $(x_i, y_i) \neq (0, 0)$:
+$$p_i = \frac{x_i}{\sqrt{x_i^2 + y_i^2}} - 1$$
+$$q_i = \frac{y_i}{\sqrt{x_i^2 + y_i^2}} - 1$$
 
-JF = diag(p) + diag(q)*A
+$$J_F = \text{diag}(p) + \text{diag}(q) \cdot A$$
 
-For (x_i, y_i) = (0, 0):
-  Can choose any (a_i, b_i) with ||(a_i, b_i)|| <= 1
-```
+For $(x_i, y_i) = (0, 0)$: Can choose any $(a_i, b_i)$ with $\|(a_i, b_i)\| \leq 1$.
 
 ### Strategies for Singularity
 
-1. **Random**: Pick random (a, b) in unit circle
-2. **Perturbation**: Use epsilon instead of exact 0
-3. **Finite Difference**: Approximate with (F(x+h\*p) - F(x))/h
-4. **Analytic**: Use (a, b) = (0, 0) or (-1/sqrt(2), -1/sqrt(2))
+1. **Random**: Pick random $(a, b)$ in unit circle
+2. **Perturbation**: Use $\epsilon$ instead of exact 0
+3. **Finite Difference**: Approximate with $(F(x+hp) - F(x))/h$
+4. **Analytic**: Use $(a, b) = (0, 0)$ or $(-1/\sqrt{2}, -1/\sqrt{2})$
 
 ### Algorithm Pseudocode
 
@@ -185,10 +177,10 @@ while not converged:
 
 ### Properties
 
-- **Time**: O(n³) or O(n) per iteration
-- **Storage**: O(n²) or O(n)
+- **Time**: $O(n^3)$ or $O(n)$ per iteration
+- **Storage**: $O(n^2)$ or $O(n)$
 - **Convergence**: Superlinear to quadratic
-- **Smoothness**: Nonsmooth only at (0,0)
+- **Smoothness**: Nonsmooth only at $(0,0)$
 
 ### Advantages/Disadvantages
 
@@ -202,17 +194,15 @@ while not converged:
 
 ### Reformulation
 
-```
-phi_lambda(x, y) = lambda * phi_FB(x, y) - (1-lambda) * max(x,0) * max(y,0)
-```
+$$\phi_\lambda(x, y) = \lambda \cdot \phi_{\text{FB}}(x, y) - (1-\lambda) \cdot \max(x,0) \cdot \max(y,0)$$
 
-where 0 < lambda <= 1
+where $0 < \lambda \leq 1$.
 
-### Effect of lambda Parameter
+### Effect of $\lambda$ Parameter
 
-- **lambda = 1**: Standard Fischer-Burmeister
-- **lambda < 1**: More penalty on complementarity
-- **lambda ~ 0.5**: Good balance (typical)
+- **$\lambda = 1$**: Standard Fischer-Burmeister
+- **$\lambda < 1$**: More penalty on complementarity
+- **$\lambda \approx 0.5$**: Good balance (typical)
 
 ### DART Implementation
 
@@ -229,34 +219,31 @@ auto result = solver.solve(problem, x, options);
 
 ### Generalized Jacobian
 
-```
-Combines Fischer-Burmeister Jacobian with penalty term:
+Combines Fischer-Burmeister Jacobian with penalty term.
 
-For x_i > 0, y_i > 0:
-  p_i = lambda * (x_i/||z_i|| - 1) - (1-lambda) * y_i
-  q_i = lambda * (y_i/||z_i|| - 1) - (1-lambda) * x_i
-  where z_i = sqrt(x_i² + y_i²)
+For $x_i > 0$, $y_i > 0$:
+$$p_i = \lambda \left(\frac{x_i}{\|z_i\|} - 1\right) - (1-\lambda) y_i$$
+$$q_i = \lambda \left(\frac{y_i}{\|z_i\|} - 1\right) - (1-\lambda) x_i$$
 
-For x_i = 0 or y_i = 0 (but not both zero):
-  Special formulas apply
+where $z_i = \sqrt{x_i^2 + y_i^2}$.
 
-For x_i = y_i = 0:
-  Use choices similar to standard FB
-```
+For $x_i = 0$ or $y_i = 0$ (but not both zero): Special formulas apply.
+
+For $x_i = y_i = 0$: Use choices similar to standard FB.
 
 ### Properties
 
-- **Time**: O(n³) or O(n) per iteration
-- **Storage**: O(n²) or O(n)
+- **Time**: $O(n^3)$ or $O(n)$ per iteration
+- **Storage**: $O(n^2)$ or $O(n)$
 - **Convergence**: Similar to Fischer-Burmeister
-- **Tuning**: lambda parameter affects convergence
+- **Tuning**: $\lambda$ parameter affects convergence
 
 ### Advantages/Disadvantages
 
 ✅ Additional tuning parameter
 ✅ Can improve convergence for some problems
 ❌ More complex Jacobian
-❌ Requires tuning lambda
+❌ Requires tuning $\lambda$
 
 ## Supporting Methods
 
@@ -264,30 +251,21 @@ For x_i = y_i = 0:
 
 Essential for globalizing Newton methods.
 
-```
-function line_search(x, Δx, H):
-  # Parameters
-  alpha = 1e-4  # Sufficient decrease
-  beta = 0.5    # Step reduction
-  t = 1.0       # Initial step
+**Parameters**:
 
-  # Current merit function
-  phi_0 = 0.5 * ||H(x)||²
-  phi_prime_0 = H(x)^T * JH * Δx  # Directional derivative
+- $\alpha = 10^{-4}$ (sufficient decrease)
+- $\beta = 0.5$ (step reduction)
+- $t = 1.0$ (initial step)
 
-  # Back-tracking
-  while t > epsilon:
-    x_new = max(0, x + t*Δx)
-    phi_t = 0.5 * ||H(x_new)||²
+**Current merit function**:
+$$\phi_0 = \frac{1}{2} \|H(x)\|^2$$
+$$\phi'_0 = H(x)^T J_H \Delta x \quad \text{(directional derivative)}$$
 
-    # Armijo condition
-    if phi_t <= phi_0 + alpha * t * phi_prime_0:
-      return t
+**Back-tracking**: While $t > \epsilon$:
+$$x_{\text{new}} = \max(0, x + t \Delta x)$$
+$$\phi_t = \frac{1}{2} \|H(x_{\text{new}})\|^2$$
 
-    t = beta * t
-
-  return t
-```
+**Armijo condition**: If $\phi_t \leq \phi_0 + \alpha \cdot t \cdot \phi'_0$, return $t$; otherwise $t = \beta \cdot t$.
 
 ### Nonsmooth Gradient Descent (Warm Start)
 
@@ -317,37 +295,33 @@ function gradient_descent(x, max_iter):
 
 Newton equation can be solved with iterative methods:
 
-**For Symmetric Systems (Minimum Map):**
+**For Symmetric Systems (Minimum Map)**:
 
-```
 Use PCG (Preconditioned Conjugate Gradient):
-  - Requires A_AA to be symmetric PD
-  - Incomplete Cholesky preconditioner
-  - Tolerance: ||r|| < gamma * ||H||
-```
 
-**For General Systems (Fischer-Burmeister):**
+- Requires $A_{\mathcal{A}\mathcal{A}}$ to be symmetric PD
+- Incomplete Cholesky preconditioner
+- Tolerance: $\|r\| < \gamma \|H\|$
 
-```
+**For General Systems (Fischer-Burmeister)**:
+
 Use GMRES (Generalized Minimal Residual):
-  - Works for any non-singular matrix
-  - Higher storage than PCG
-  - Tolerance: ||r|| < gamma * ||H||
-```
+
+- Works for any non-singular matrix
+- Higher storage than PCG
+- Tolerance: $\|r\| < \gamma \|H\|$
 
 ### Merit Functions
 
 All Newton methods use natural merit function:
 
-```
-phi(x) = 0.5 * ||H(x)||²
-```
+$$\phi(x) = \frac{1}{2} \|H(x)\|^2$$
 
 Properties:
 
-- phi(x) >= 0
-- phi(x) = 0 iff x is solution
-- Descent direction: ∇phi = JH^T \* H
+- $\phi(x) \geq 0$
+- $\phi(x) = 0$ iff $x$ is solution
+- Descent direction: $\nabla\phi = J_H^T H$
 
 ## Comparison Table
 
@@ -423,16 +397,16 @@ Properties:
 
 ### Convergence Monitoring
 
-- Absolute: ||H|| < 1e-8
-- Relative: ||H^{k+1}|| / ||H^k|| < 1e-6
+- Absolute: $\|H\| < 10^{-8}$
+- Relative: $\|H^{k+1}\| / \|H^k\| < 10^{-6}$
 - Maximum iterations: 20-50
 - Detect stagnation and divergence
 
 ### Subsystem Solver Tolerance
 
 - Don't need exact Newton direction
-- Use ||r|| < 0.1 \* ||H|| for descent
-- Tighten tolerance as H → 0
+- Use $\|r\| < 0.1 \|H\|$ for descent
+- Tighten tolerance as $H \to 0$
 
 ### Fallback Strategy
 

@@ -35,6 +35,7 @@ If this fails, see `docs/onboarding/ci-cd.md` for troubleshooting.
 | Contributing    | @docs/onboarding/contributing.md @CONTRIBUTING.md           |
 | Code style      | @docs/onboarding/code-style.md                              |
 | Architecture    | @docs/onboarding/architecture.md @docs/onboarding/README.md |
+| Theory (math)   | @docs/background/dynamics/ @docs/background/lcp/            |
 | CI/CD issues    | @docs/onboarding/ci-cd.md                                   |
 | Python bindings | @docs/onboarding/python-bindings.md                         |
 | Model loading   | @docs/onboarding/io-parsing.md                              |

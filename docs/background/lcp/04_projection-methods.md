@@ -1,72 +1,67 @@
 # Projection/Sweeping Methods for LCP
 
-**Navigation**: [← Pivoting Methods](03_pivoting-methods.md) | [Newton Methods →](05_newton-methods.md)
+> **Attribution**: This content is derived from "Contact Handling for Articulated
+> Rigid Bodies Using LCP" by Jie Tan, Kristin Siu, and C. Karen Liu.
+> The original PDF is preserved at [`docs/lcp.pdf`](../../lcp.pdf).
+
+**Navigation**: [← Pivoting Methods](03_pivoting-methods.md) | [Index](../README.md) | [Newton Methods →](05_newton-methods.md)
 
 ## Overview
 
-Projection methods (also called sweeping or splitting methods) are iterative solvers based on matrix splitting A = M - N. They are the most popular methods for real-time physics simulation due to their low O(n) per-iteration cost.
+Projection methods (also called sweeping or splitting methods) are iterative solvers based on matrix splitting $A = M - N$. They are the most popular methods for real-time physics simulation due to their low $O(n)$ per-iteration cost.
 
 ## Core Concept: Matrix Splitting
 
 All projection methods use:
 
-```
-A = M - N  (matrix splitting)
-Mx^{k+1} = Nx^k + b  (fixed-point iteration)
-x^{k+1} = max(0, M^{-1}(Nx^k + b))  (projection onto positive orthant)
-```
+$$A = M - N \quad \text{(matrix splitting)}$$
+$$Mx^{k+1} = Nx^k + b \quad \text{(fixed-point iteration)}$$
+$$x^{k+1} = \max(0, M^{-1}(Nx^k + b)) \quad \text{(projection onto positive orthant)}$$
 
-The split is chosen so that `M` is cheap to invert (non-zero diagonal is mandatory; diagonal dominance or triangular structure helps). If `M` is a Q-matrix (its LCP is always solvable), then any fixed point of this iteration is also a solution of the original LCP.
+The split is chosen so that $M$ is cheap to invert (non-zero diagonal is mandatory; diagonal dominance or triangular structure helps). If $M$ is a Q-matrix (its LCP is always solvable), then any fixed point of this iteration is also a solution of the original LCP.
 
 ### Derivation sketch
 
 Start from the LCP:
 
-```
-Ax - b ≥ 0,   x ≥ 0,   xᵀ(Ax - b) = 0
-```
+$$Ax - b \geq 0, \quad x \geq 0, \quad x^T(Ax - b) = 0$$
 
-Split `A = M - N` and treat the iteration as a fixed point:
+Split $A = M - N$ and treat the iteration as a fixed point:
 
-```
-Mx^{k+1} - Nx^k - b ≥ 0
-x^{k+1} ≥ 0
-(x^{k+1})ᵀ(Mx^{k+1} - Nx^k - b) = 0
-```
+$$Mx^{k+1} - Nx^k - b \geq 0$$
+$$x^{k+1} \geq 0$$
+$$(x^{k+1})^T(Mx^{k+1} - Nx^k - b) = 0$$
 
-For splittings where `M` is easy to invert, the complementarity subproblem has the closed form
+For splittings where $M$ is easy to invert, the complementarity subproblem has the closed form:
 
-```
-z^k = M^{-1}(Nx^k + b)
-x^{k+1} = max(0, z^k)
-```
+$$z^k = M^{-1}(Nx^k + b)$$
+$$x^{k+1} = \max(0, z^k)$$
 
 All specific methods below are specializations of this formula.
 
 ### Sweep order and symmetry
 
-Gauss-Seidel style methods update `x_i` in-place, so the sweep order changes the fixed point they approach. A symmetric variant (forward then backward sweep) halves this bias at twice the per-iteration cost; Jacobi has no order dependency because it updates all entries in parallel.
+Gauss-Seidel style methods update $x_i$ in-place, so the sweep order changes the fixed point they approach. A symmetric variant (forward then backward sweep) halves this bias at twice the per-iteration cost; Jacobi has no order dependency because it updates all entries in parallel.
 
 ## 1. Jacobi Method ✅ (Implemented)
 
 ### Splitting
 
-- M = D (diagonal of A)
-- N = D - A
+- $M = D$ (diagonal of $A$)
+- $N = D - A$
 
 ### Update Rule
 
-```
-x_i^{k+1} = max(0, x_i^{k} - r_i / A_{ii})  for all i in parallel
-where r = Ax^k - b
-```
+$$x_i^{k+1} = \max(0, x_i^{k} - r_i / A_{ii}) \quad \text{for all } i \text{ in parallel}$$
 
-Equivalently: `z = x^k - r ./ diag(A); x^{k+1} = max(0, z)`.
+where $r = Ax^k - b$.
+
+Equivalently: $z = x^k - r \oslash \text{diag}(A)$; $x^{k+1} = \max(0, z)$.
 
 ### Properties
 
-- **Time**: O(n) per iteration
-- **Storage**: O(n)
+- **Time**: $O(n)$ per iteration
+- **Storage**: $O(n)$
 - **Convergence**: Linear (if converges)
 - **Parallelization**: Fully parallel
 
@@ -93,18 +88,16 @@ solver.solve(problem, x, options);
 
 ### Splitting
 
-- M = D + L (diagonal + lower triangular)
-- N = -U (negative upper triangular)
+- $M = D + L$ (diagonal + lower triangular)
+- $N = -U$ (negative upper triangular)
 
 ### Update Rule
 
-```
-for i = 1 to n:   # forward sweep
-  r_i = -b_i
-      + sum_{j < i} A_{ij} * x_j^{k+1}   # uses freshly updated values
-      + sum_{j >= i} A_{ij} * x_j^{k}
-  x_i^{k+1} = max(0, x_i^{k} - r_i / A_{ii})
-```
+For $i = 1$ to $n$ (forward sweep):
+$$r_i = -b_i + \sum_{j < i} A_{ij} x_j^{k+1} + \sum_{j \geq i} A_{ij} x_j^{k}$$
+$$x_i^{k+1} = \max(0, x_i^{k} - r_i / A_{ii})$$
+
+The first sum uses freshly updated values.
 
 ### Pseudocode
 
@@ -123,8 +116,8 @@ function PGS(A, b, x, max_iter, epsilon):
 
 ### Properties
 
-- **Time**: O(nk) per iteration (k = max non-zeros per row)
-- **Storage**: O(n)
+- **Time**: $O(nk)$ per iteration ($k$ = max non-zeros per row)
+- **Storage**: $O(n)$
 - **Convergence**: Linear for symmetric PSD
 - **Parallelization**: Sequential
 - **DART support**: `dart::math::PgsSolver` implements both standard and boxed
@@ -138,7 +131,7 @@ function PGS(A, b, x, max_iter, epsilon):
 
 ### Advantages/Disadvantages
 
-✅ Fast O(n) iterations
+✅ Fast $O(n)$ iterations
 ✅ Low memory footprint
 ✅ Works well for contact problems
 ✅ In-place updates
@@ -159,31 +152,27 @@ function PGS(A, b, x, max_iter, epsilon):
 
 ### Splitting
 
-- M = (D + λL)/λ
-- N = ((1-λ)D - λU)/λ
+- $M = (D + \lambda L)/\lambda$
+- $N = ((1-\lambda)D - \lambda U)/\lambda$
 
 ### Update Rule
 
-```
-for i = 1 to n:
-  r_i = -b_i
-      + sum_{j < i} A_{ij} * x_j^{k+1}
-      + sum_{j >= i} A_{ij} * x_j^{k}
+For $i = 1$ to $n$:
+$$r_i = -b_i + \sum_{j < i} A_{ij} x_j^{k+1} + \sum_{j \geq i} A_{ij} x_j^{k}$$
 
-  # Coordinate-wise relaxation step
-  tau_star   = -r_i / A_{ii}            # minimizer of local quadratic
-  tau_lambda = -λ * r_i / A_{ii}        # relaxed step
-  x_i^{k+1} = max(0, x_i^{k} + tau_lambda)
-```
+Coordinate-wise relaxation step:
+$$\tau^* = -r_i / A_{ii} \quad \text{(minimizer of local quadratic)}$$
+$$\tau_\lambda = -\lambda \cdot r_i / A_{ii} \quad \text{(relaxed step)}$$
+$$x_i^{k+1} = \max(0, x_i^{k} + \tau_\lambda)$$
 
-Derived by using `A = L + D + U` with the splitting `M = (D + λL)/λ` and `N = ((1-λ)D - λU)/λ`, so the residual is scaled before projecting. `λ` can be seen as a relaxation of `Ax - b`.
+Derived by using $A = L + D + U$ with the splitting $M = (D + \lambda L)/\lambda$ and $N = ((1-\lambda)D - \lambda U)/\lambda$, so the residual is scaled before projecting. $\lambda$ can be seen as a relaxation of $Ax - b$.
 
-### Relaxation Parameter λ
+### Relaxation Parameter $\lambda$
 
-- **λ = 1**: Reduces to PGS
-- **0 < λ < 1**: Under-relaxation (more stable)
-- **1 < λ < 2**: Over-relaxation (faster convergence)
-- **Typical**: λ = 1.2 to 1.5
+- **$\lambda = 1$**: Reduces to PGS
+- **$0 < \lambda < 1$**: Under-relaxation (more stable)
+- **$1 < \lambda < 2$**: Over-relaxation (faster convergence)
+- **Typical**: $\lambda = 1.2$ to $1.5$
 
 ### DART Configuration
 
@@ -197,47 +186,43 @@ solver.solve(problem, x, options);
 
 ### Coordinate-descent view
 
-For symmetric `A`, PGS/PSOR are equivalent to coordinate descent on the quadratic objective
+For symmetric $A$, PGS/PSOR are equivalent to coordinate descent on the quadratic objective:
 
-```
-f(x) = 0.5 xᵀ A x - bᵀ x
-```
+$$f(x) = \frac{1}{2} x^T A x - b^T x$$
 
-Updating coordinate `i` minimizes the 1D polynomial
+Updating coordinate $i$ minimizes the 1D polynomial:
 
-```
-g_i(tau) = 0.5 A_ii tau² + r_i tau + const
-tau_star  = -r_i / A_ii           # minimizer
-tau_lambda = -λ r_i / A_ii        # relaxed minimizer (PSOR)
-x_i^{k+1} = max(0, x_i^k + tau_lambda)
-```
+$$g_i(\tau) = \frac{1}{2} A_{ii} \tau^2 + r_i \tau + \text{const}$$
+$$\tau^* = -r_i / A_{ii} \quad \text{(minimizer)}$$
+$$\tau_\lambda = -\lambda r_i / A_{ii} \quad \text{(relaxed minimizer, PSOR)}$$
+$$x_i^{k+1} = \max(0, x_i^k + \tau_\lambda)$$
 
-If `A_ii <= 0`, the local quadratic is non-convex; clip with the projection above and consider regularizing the diagonal to keep the method stable.
+If $A_{ii} \leq 0$, the local quadratic is non-convex; clip with the projection above and consider regularizing the diagonal to keep the method stable.
 
 ### Properties
 
-- **Time**: O(nk) per iteration
-- **Storage**: O(n)
-- **Convergence**: Can be faster than PGS with good λ
+- **Time**: $O(nk)$ per iteration
+- **Storage**: $O(n)$
+- **Convergence**: Can be faster than PGS with good $\lambda$
 - **Parallelization**: Sequential
 
 ### Advantages/Disadvantages
 
-✅ Faster convergence than PGS with good λ
+✅ Faster convergence than PGS with good $\lambda$
 ✅ Same computational cost as PGS
-❌ Requires tuning λ parameter
-❌ Bad λ can make convergence worse
+❌ Requires tuning $\lambda$ parameter
+❌ Bad $\lambda$ can make convergence worse
 
 ## 4. Symmetric PSOR ✅ (Implemented)
 
 ### Algorithm
 
-Forward sweep (i = 1 to n) followed by backward sweep (i = n to 1).
+Forward sweep ($i = 1$ to $n$) followed by backward sweep ($i = n$ to $1$).
 
 ### Properties
 
 - Reduces sweep-order dependency
-- 2× cost per iteration
+- $2\times$ cost per iteration
 - Better convergence behavior
 
 ### DART Implementation
@@ -253,11 +238,9 @@ solver.solve(problem, x, options);
 
 A simple implementation shared by Jacobi/PGS/PSOR:
 
-```
-for k = 1..N:
-  z = M^{-1}(N x + b)
-  x = max(0, z)          # or box projection for BLCP
-```
+For $k = 1, \ldots, N$:
+$$z = M^{-1}(Nx + b)$$
+$$x = \max(0, z) \quad \text{(or box projection for BLCP)}$$
 
 Sweep order matters for Gauss-Seidel/PSOR. A symmetric variant performs one forward and one backward sweep to mitigate order bias (useful for PSOR/PGS; not for Jacobi which is already order-free).
 
@@ -269,12 +252,11 @@ Applies Gauss-Seidel to blocks of variables rather than individual variables. Al
 
 ### Block Structure for Contact Problems
 
-```
-Block i contains variables for contact point i:
-  - Normal impulse x_n,i
-  - Tangential impulses x_t1,i, x_t2,i (or 4 for pyramid)
-  - Slack variable β_i (for friction cone)
-```
+Block $i$ contains variables for contact point $i$:
+
+- Normal impulse $x_{n,i}$
+- Tangential impulses $x_{t1,i}$, $x_{t2,i}$ (or 4 for pyramid)
+- Slack variable $\beta_i$ (for friction cone)
 
 ### Algorithm
 
@@ -288,7 +270,7 @@ for iter = 1 to max_iter:
     x_i = SolveSubLCP(A_{ii}, r_i, bounds_i)
 ```
 
-In code, form the local right-hand side as `b'_i = b_i - (A_ij x_j)_j∈blocks, j≠i`, then solve `A_ii x_i = b'_i` under the per-block bounds.
+In code, form the local right-hand side as $b'_i = b_i - (A_{ij} x_j)_{j \in \text{blocks}, j \neq i}$, then solve $A_{ii} x_i = b'_i$ under the per-block bounds.
 
 ### DART Implementation
 
@@ -316,13 +298,13 @@ solver.solve(problem, x, options);
 
 For common contact splittings:
 
-- Normal sub-block: 1D projection (`x_n = max(0, x_n - r_n / A_nn)`).
+- Normal sub-block: 1D projection ($x_n = \max(0, x_n - r_n / A_{nn})$).
 - Friction sub-block: 2D/4D problem; if the reduced matrix is symmetric PSD, solve with a tiny PCG or a direct enumerator.
 
 ### Properties
 
-- **Time**: O(n·b³) per iteration (b = block size)
-- **Storage**: O(n)
+- **Time**: $O(n \cdot b^3)$ per iteration ($b$ = block size)
+- **Storage**: $O(n)$
 - **Convergence**: Linear
 - **Block size**: Typically 1-6 variables
 
@@ -351,14 +333,12 @@ For common contact splittings:
 
 ### Staggered normal/friction solve (contact-specific)
 
-When contacts are split into normal (`x_N`) and friction (`x_F`) variables (plus optional slack):
+When contacts are split into normal ($x_N$) and friction ($x_F$) variables (plus optional slack):
 
-```
-# repeat until fixed point
-solve normal LCP:      x_N = PGS/PSOR/PCG on A_NN, with x_F held fixed
-update friction bounds: |x_F| ≤ μ x_N
-solve friction subproblem: small LCP or QP on A_FF, with x_N fixed
-```
+1. Solve normal LCP: $x_N$ via PGS/PSOR/PCG on $A_{NN}$, with $x_F$ held fixed
+2. Update friction bounds: $|x_F| \leq \mu x_N$
+3. Solve friction subproblem: small LCP or QP on $A_{FF}$, with $x_N$ fixed
+4. Repeat until fixed point
 
 Normal blocks are often symmetric PSD, making the normal step amenable to QP/PCG; the friction block can be treated as a cone-constrained QP. One sweep already gives a useful warm start for higher-accuracy methods.
 
@@ -366,12 +346,10 @@ Normal blocks are often symmetric PSD, making the normal step amenable to QP/PCG
 
 Use the same splitting but project onto bounds:
 
-```
-z^k = M^{-1}(N x^k + b)
-x^{k+1} = min(u, max(l, z^k))
-```
+$$z^k = M^{-1}(Nx^k + b)$$
+$$x^{k+1} = \min(u, \max(l, z^k))$$
 
-For contact problems, `l` and `u` are often functions of the normal impulse (`±μN`), so the projection step should recompute bounds whenever `N` changes.
+For contact problems, $l$ and $u$ are often functions of the normal impulse ($\pm\mu N$), so the projection step should recompute bounds whenever $N$ changes.
 
 ## 6. Nonsmooth Nonlinear Conjugate Gradient (NNCG) ✅ (Implemented)
 
@@ -401,6 +379,8 @@ function NNCG(A, b, x, max_iter):
     r = r_new
 ```
 
+The beta formula is $\beta = \|r_{\text{new}}\|^2 / \|r\|^2$ (Fletcher-Reeves).
+
 ### DART Implementation
 
 ```cpp
@@ -418,8 +398,8 @@ solver.solve(problem, x, options);
 
 ### Properties
 
-- **Time**: O(n) per iteration (same as PGS)
-- **Storage**: O(n) (need to store p vector)
+- **Time**: $O(n)$ per iteration (same as PGS)
+- **Storage**: $O(n)$ (need to store $p$ vector)
 - **Convergence**: Linear to superlinear (empirically)
 - **Restart**: Every 10-20 iterations
 
@@ -480,8 +460,8 @@ solver.solve(problem, x, options);
 
 ### Properties
 
-- **Time**: O(n) for PGS + O(|A|³) for subspace
-- **Storage**: O(n)
+- **Time**: $O(n)$ for PGS + $O(|\mathcal{A}|^3)$ for subspace
+- **Storage**: $O(n)$
 - **Convergence**: Better than pure PGS
 
 ### Use Cases
@@ -492,8 +472,9 @@ solver.solve(problem, x, options);
 
 ### Full algorithm (from Silcowitz et al.)
 
+Input: $k_{\text{pgs}}$ (PGS warm-start iterations), $k_{\text{sm}}$ (subspace iterations), $l$, $u$
+
 ```
-input: k_pgs (PGS warm-start iterations), k_sm (subspace iterations), l, u
 while not converged:
   x = run PGS for at least k_pgs iterations
   if termination reached: return x
@@ -514,6 +495,8 @@ while not converged:
 
     if termination reached (e.g., active set unchanged): return x
 ```
+
+The partition sets are $\mathcal{L} = \{ i \mid x_i = l_i \}$, $\mathcal{U} = \{ i \mid x_i = u_i \}$, $\mathcal{A} = \text{others}$.
 
 ## 8. Red-Black Gauss-Seidel ✅ (Implemented)
 
@@ -561,40 +544,30 @@ solver.solve(problem, x, options);
 
 ### Absolute Convergence
 
-```
-||Ax - b|| < epsilon_abs
-```
+$$\|Ax - b\| < \epsilon_{\text{abs}}$$
 
-Typical: epsilon_abs = 1e-6
+Typical: $\epsilon_{\text{abs}} = 10^{-6}$
 
 ### Relative Convergence
 
-```
-||x^{k+1} - x^k|| / ||x^k|| < epsilon_rel
-```
+$$\|x^{k+1} - x^k\| / \|x^k\| < \epsilon_{\text{rel}}$$
 
-Typical: epsilon_rel = 1e-4
+Typical: $\epsilon_{\text{rel}} = 10^{-4}$
 
 ### Complementarity
 
-```
-||x ⊙ (Ax - b)|| < epsilon_comp
-```
+$$\|x \odot (Ax - b)\| < \epsilon_{\text{comp}}$$
 
-where ⊙ is element-wise product
+where $\odot$ is element-wise product.
 
 ### Infinity Norm (Cheap) and Divergence Check
 
-```
-delta_k = max_i |x_i^k|
-rho_k   = max(delta_k, delta_{k-1})
+$$\delta_k = \max_i |x_i^k|$$
+$$\rho_k = \max(\delta_k, \delta_{k-1})$$
 
-# divergence detection
-if delta_k > gamma: stop (diverging), where gamma is a user cap
+**Divergence detection**: If $\delta_k > \gamma$, stop (diverging), where $\gamma$ is a user cap.
 
-# contraction
-if |delta_k - delta_{k-1}| / max(1, delta_{k-1}) < epsilon_rel: converged
-```
+**Contraction**: If $|\delta_k - \delta_{k-1}| / \max(1, \delta_{k-1}) < \epsilon_{\text{rel}}$, converged.
 
 The infinity norm can be accumulated during the sweep with no extra passes.
 
@@ -622,39 +595,29 @@ This uses only per-iteration maxima; no vector norms are required.
 
 ### Maximum Iterations
 
-```
-iter >= max_iter
-```
+$$\text{iter} \geq \text{max\_iter}$$
 
-Typical: 50-100 for real-time, 1000+ for accuracy
+Typical: 50-100 for real-time, 1000+ for accuracy.
 
 ## Merit Functions
 
 ### QP Formulation
 
-```
-phi(x) = 0.5 * x^T * A * x + x^T * b
-```
+$$\phi(x) = \frac{1}{2} x^T A x + x^T b$$
 
-### Modified for x=0 Safety
+### Modified for $x = 0$ Safety
 
-```
-phi(x) = ||x ⊙ (Ax - b)||
-```
+$$\phi(x) = \|x \odot (Ax - b)\|$$
 
 ### Infinity Norm (Cheap to Compute)
 
-```
-phi(x) = max_i |x_i|
-```
+$$\phi(x) = \max_i |x_i|$$
 
 ### Complementarity Merit
 
-```
-theta_compl(x) = x^T (Ax - b)
-```
+$$\theta_{\text{compl}}(x) = x^T (Ax - b)$$
 
-Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
+Use only when $x \geq 0$; also ensure $Ax - b \geq 0$ when $x = 0$.
 
 ## Comparison Table
 
@@ -690,8 +653,8 @@ Use only when `x >= 0`; also ensure `Ax - b >= 0` when `x = 0`.
 
 ### Advantages
 
-✅ O(n) per-iteration cost
-✅ Low memory O(n)
+✅ $O(n)$ per-iteration cost
+✅ Low memory $O(n)$
 ✅ Simple to implement
 ✅ Matrix-free possible
 ✅ Predictable performance
