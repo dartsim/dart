@@ -62,11 +62,13 @@ forward kinematics calculations (computing link transforms from joint positions)
 
 ### Python Bindings Status
 
-**Current**: Completely missing
+**Current**: Core implementation complete (Phase 2)
 
-- No `dartpy.simulation_experimental` module exists
-- CMake option `DART_EXPERIMENTAL_BUILD_PYTHON` is disabled
-- No binding source files in `python/dartpy/simulation/experimental/`
+- `dartpy.simulation_experimental` module exists and is functional
+- Bound classes: World, MultiBody, Link, Joint, Frame, FreeFrame, FixedFrame, RigidBody
+- Bound enums: JointType
+- Python tests: 10 tests in `python/tests/unit/simulation_experimental/`
+- StateSpace bindings: Deferred (medium priority)
 
 ### Tests & Examples
 
@@ -82,7 +84,9 @@ forward kinematics calculations (computing link transforms from joint positions)
 | `test_rigid_body.cpp`    | **Good** | 14 tests: mass, inertia, pose, velocity, forces   |
 | `bm_ecs_safety.cpp`      | Basic    | ECS access benchmark                              |
 
-**Examples**: None exist for experimental API
+**Python Tests**: `python/tests/unit/simulation_experimental/test_experimental_world.py` (10 tests)
+
+**Examples**: `examples/simulation_experimental_hello_world/` (C++ example)
 
 ---
 
@@ -408,14 +412,17 @@ forward kinematics calculations (computing link transforms from joint positions)
 - [x] Joint limits accessors (position lower/upper, velocity, effort)
 - [x] RigidBody implemented (mass, inertia, pose, velocity, forces) - 14 tests
 
-### Phase 2: Python Bindings (Target: Week 6-9)
+### Phase 2: Python Bindings (Target: Week 6-9) ✅ CORE COMPLETE
 
-- [ ] Module structure created
-- [ ] World bound
-- [ ] MultiBody/Link/Joint bound
-- [ ] Frame classes bound
-- [ ] StateSpace bound
-- [ ] Python tests passing
+- [x] Module structure created (`python/dartpy/simulation_experimental/`)
+- [x] World bound with all methods
+- [x] MultiBody/Link/Joint bound
+- [x] Frame classes bound (Frame, FreeFrame, FixedFrame)
+- [x] RigidBody bound
+- [x] JointType enum bound
+- [x] Python tests passing (10 tests)
+- [ ] StateSpace bound (deferred - medium priority)
+- [ ] Python docstrings (deferred - medium priority)
 
 ### Phase 3: Testing (Target: Week 10-12)
 

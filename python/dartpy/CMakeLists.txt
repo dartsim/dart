@@ -150,6 +150,12 @@ set(dartpy_headers
   constraint/dynamic_joint_constraint.hpp
   constraint/joint_constraint.hpp
   constraint/joint_coulomb_friction_constraint.hpp
+  simulation_experimental/module.hpp
+  simulation_experimental/joint_type.hpp
+  simulation_experimental/frame.hpp
+  simulation_experimental/world.hpp
+  simulation_experimental/multi_body.hpp
+  simulation_experimental/rigid_body.hpp
 )
 
 set(dartpy_sources
@@ -226,6 +232,12 @@ set(dartpy_sources
   constraint/dynamic_joint_constraint.cpp
   constraint/joint_constraint.cpp
   constraint/joint_coulomb_friction_constraint.cpp
+  simulation_experimental/module.cpp
+  simulation_experimental/joint_type.cpp
+  simulation_experimental/frame.cpp
+  simulation_experimental/world.cpp
+  simulation_experimental/multi_body.cpp
+  simulation_experimental/rigid_body.cpp
 )
 
 set(dartpy_gui_headers
@@ -294,6 +306,7 @@ set(dartpy_libraries
   dart
   dart-utils
   dart-utils-urdf
+  dart-simulation-experimental
 )
 foreach(lib ${dartpy_libraries})
   if(TARGET ${lib})

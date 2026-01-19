@@ -2,35 +2,27 @@
 
 ## Last Session Summary
 
-**Phase 0 and Phase 1 COMPLETE!**
+**Phase 2 (Python Bindings) CORE COMPLETE!**
 
-1. **Joint limits accessors** committed
-2. **Hello world example** created (`examples/simulation_experimental_hello_world/`)
-3. **Naming audit** complete - all APIs follow code-style.md conventions
-4. **Exception hierarchy** reviewed - `InvalidOperationException` for design mode violations
-5. **Lifetime docs** added to all handle classes (Frame, FreeFrame, FixedFrame, RigidBody)
-6. **Design mode guards** verified - World and MultiBody::addLink check simulation mode
+1. Created `python/dartpy/simulation_experimental/` module structure
+2. Bound all core classes: World, MultiBody, Link, Joint, Frame, FreeFrame, FixedFrame, RigidBody
+3. Bound JointType enum
+4. Created 10 Python tests - all passing
+5. Integrated with dartpy build system (CMakeLists.txt updated)
 
 ## Current Branch
 
-`feature/sim_exp` - 10 commits ahead of main:
+`feature/sim_exp` - commits ahead of main with Phase 0, 1, and 2 work:
 
-```
-0c57ff9d0b4 feat(simulation-experimental): Complete Phase 0 and Phase 1
-43b548bff91 docs(simulation-experimental): Update progress tracker and RESUME.md
-c1c0df2d2a9 feat(simulation-experimental): Add Joint limits accessors
-ec286d3c45f feat(simulation-experimental): Implement RigidBody physics properties
-3516429230a docs(simulation-experimental): Update RESUME.md with session progress
-f71761582c9 feat(simulation-experimental): Add Joint state accessors
-bf298c8e657 test(simulation-experimental): Add comprehensive tests for all joint types
-18c2b37807a feat(simulation-experimental): Add epic plan and fill empty test files
-```
+- Phase 0/1: C++ API cleanup, tests, documentation
+- Phase 2: Python bindings for simulation_experimental
 
-Working tree is clean. All 13 simulation-experimental tests pass.
+Working tree has uncommitted changes for Phase 2 Python bindings.
 
 ## What's Complete
 
 ### Phase 0 (Ground-Truth) ✅ COMPLETE
+
 - [x] Epic document created
 - [x] test_joint.cpp: 41 tests
 - [x] test_link.cpp: 14 tests
@@ -39,42 +31,92 @@ Working tree is clean. All 13 simulation-experimental tests pass.
 - [x] Hello world example created
 
 ### Phase 1 (API Cleanup) ✅ COMPLETE
+
 - [x] All joint types data model complete
 - [x] Joint state accessors (position/velocity/acceleration/torque)
-- [x] Joint limits accessors (position lower/upper, velocity, effort)
-- [x] RigidBody full implementation (mass, inertia, pose, velocity, forces)
-- [x] Naming audit (camelCase methods, PascalCase classes, snake_case files)
-- [x] Exception hierarchy review (InvalidOperationException for mode violations)
-- [x] Lifetime docs in Doxygen (all handle classes)
-- [x] Design mode guards (World and MultiBody check simulation mode)
+- [x] Joint limits accessors
+- [x] RigidBody full implementation
+- [x] Naming audit, exception review, lifetime docs
 
-## Next Phase: Python Bindings (Phase 2)
+### Phase 2 (Python Bindings) ✅ CORE COMPLETE
 
-Ready to start Phase 2 if desired:
-- Create `python/dartpy/simulation/experimental/` directory
-- Create `module.cpp` for submodule registration
-- Bind World, MultiBody, Link, Joint, RigidBody classes
-- Add Python docstrings and examples
-- Enable `DART_EXPERIMENTAL_BUILD_PYTHON` in CI
+- [x] Module structure: `python/dartpy/simulation_experimental/`
+- [x] World bound with all methods
+- [x] MultiBody, Link, Joint bound
+- [x] Frame, FreeFrame, FixedFrame bound
+- [x] RigidBody bound
+- [x] JointType enum bound
+- [x] Python tests: 10 tests passing
+- [ ] StateSpace bindings (deferred - medium priority)
+- [ ] Python docstrings (deferred - medium priority)
 
 ## Test Summary
 
-| Test File             | # Tests | Coverage                                       |
-| --------------------- | ------- | ---------------------------------------------- |
-| `test_joint.cpp`      | 41      | All types, DOF, state accessors, limits        |
-| `test_link.cpp`       | 14      | name, parent joint, frame, copy, chains        |
-| `test_rigid_body.cpp` | 14      | mass, inertia, pose, velocity, forces          |
+| Test Type   | # Tests | Status   |
+| ----------- | ------- | -------- |
+| C++ Unit    | 69+     | All pass |
+| Python Unit | 10      | All pass |
 
-Total: 69 tests for handles + existing world/frame/serialization tests = 13 test binaries all passing
+## Next Steps
+
+1. **Commit Phase 2 changes** - Python bindings ready for commit
+2. **Push and create PR** - If desired
+3. **Phase 3 (Testing)** - Increase coverage, golden tests
+4. **StateSpace bindings** - Medium priority, can be done later
+
+## Files Changed (Phase 2)
+
+New files:
+
+- `python/dartpy/simulation_experimental/` (6 .hpp + 6 .cpp files)
+- `python/tests/unit/simulation_experimental/test_experimental_world.py`
+
+Modified files:
+
+- `python/dartpy/CMakeLists.txt` (added sources and dart-simulation-experimental link)
+- `python/dartpy/dartpy.cpp` (added simulation_experimental submodule)
 
 ## How to Resume
 
 ```bash
 git checkout feature/sim_exp
 git status && git log -3 --oneline
-pixi run build-simulation-experimental-tests
+
+# Verify everything works:
+pixi run build
 ctest -L simulation-experimental --test-dir build/default/cpp/Release
-./build/default/cpp/Release/bin/simulation_experimental_hello_world  # Run example
+pixi run pytest python/tests/unit/simulation_experimental/ -v
+
+# If ready to commit:
+git add -A
+git commit -m "feat(simulation-experimental): Add Python bindings for core classes"
 ```
 
-Ready for: Push to create PR, or proceed to Phase 2 (Python bindings)
+## Python Usage Example
+
+```python
+import dartpy as dart
+import numpy as np
+
+exp = dart.simulation_experimental
+
+# Create world and robot
+world = exp.World()
+robot = world.add_multi_body("robot")
+
+# Add links with joints
+root = robot.add_link("base")
+arm = robot.add_link_with_joint("arm", root, "shoulder",
+    exp.JointType.Revolute, np.array([0, 0, 1]))
+
+# Access joint
+joint = arm.get_parent_joint()
+print(f"Joint DOF: {joint.get_dof()}")
+joint.set_position(np.array([1.0]))
+
+# Create rigid body
+box = world.add_rigid_body("box")
+print(f"Mass: {box.get_mass()}")
+```
+
+Ready for: Commit, push, or continue to Phase 3 (testing strategy)
