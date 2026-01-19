@@ -161,6 +161,19 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
   return nullptr;
 }
 
+std::string_view toLcpSolverName(LcpSolverType type)
+{
+  switch (type) {
+    case LcpSolverType::Dantzig:
+      return "Dantzig";
+    case LcpSolverType::Pgs:
+      return "PGS";
+    case LcpSolverType::Lemke:
+      return "Lemke";
+  }
+  return "Unknown";
+}
+
 math::LcpSolverPtr createLcpSolver(LcpSolverType type)
 {
   switch (type) {
@@ -203,6 +216,14 @@ std::unique_ptr<constraint::ConstraintSolver> createConstraintSolver(
     if (config.secondaryLcpSolver.has_value()) {
       auto secondaryBoxed
           = createBoxedLcpSolver(config.secondaryLcpSolver.value());
+      if (!secondaryBoxed) {
+        DART_WARN(
+            "Secondary LCP solver '{}' is not compatible with boxed primary "
+            "solver '{}'. Secondary solver will be ignored. Consider using "
+            "Dantzig or PGS as secondary, or use Lemke as the primary solver.",
+            toLcpSolverName(config.secondaryLcpSolver.value()),
+            toLcpSolverName(config.primaryLcpSolver));
+      }
       return std::make_unique<constraint::BoxedLcpConstraintSolver>(
           std::move(primaryBoxed), std::move(secondaryBoxed));
     }

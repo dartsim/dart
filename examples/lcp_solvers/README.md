@@ -55,6 +55,33 @@ build/default/cpp/Release/bin/lcp_solvers --gui-scale 1.2
 
 The window size scales with `--gui-scale` to keep the widgets readable.
 
+## Command-Line Options
+
+```
+--gui-scale <n>   Scale factor for ImGui widgets (default: 1.0)
+--headless        Run benchmark without display window
+--runs <n>        Runs per solver in headless benchmark (default: 10)
+--frames <n>      Number of frames to render (reserved for future use)
+--out <dir>       Output directory for results (reserved for future use)
+--width <n>       Viewport width (default: 1280)
+--height <n>      Viewport height (default: 720)
+```
+
+## Headless Mode
+
+Run all solvers against all scenarios in batch mode for CI or benchmarking:
+
+```bash
+# Quick benchmark (3 runs per solver)
+./lcp_solvers --headless --runs 3
+
+# Full benchmark (default 10 runs)
+./lcp_solvers --headless
+```
+
+Output includes per-solver metrics: status, iterations, residual, complementarity,
+contract validation, and average runtime in milliseconds.
+
 ## Reference Key
 
 - Lemke1965: Lemke (1965) Bimatrix equilibrium points and mathematical programming

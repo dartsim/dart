@@ -50,6 +50,8 @@
 
 #include <algorithm>
 #include <chrono>
+#include <iomanip>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <numeric>
@@ -1815,13 +1817,105 @@ private:
 
 } // namespace
 
+void runHeadlessBenchmark(int runs)
+{
+  auto examples = BuildExamples();
+  auto solvers = BuildSolvers();
+
+  dart::math::LcpOptions options;
+  options.maxIterations = 100;
+  options.absoluteTolerance = 1e-6;
+  options.relativeTolerance = 1e-4;
+  options.complementarityTolerance = 1e-6;
+
+  std::cout << "Running LCP solver benchmark (" << runs
+            << " runs per solver)\n";
+  std::cout << std::string(80, '=') << "\n\n";
+
+  for (const auto& example : examples) {
+    std::cout << "Example: " << example.label << "\n";
+    std::cout << "  Type: "
+              << (example.hasFindex ? "Boxed + friction"
+                                    : (example.isBoxed ? "Boxed" : "Standard"))
+              << ", Dimension: " << example.problem.b.size() << "\n\n";
+
+    std::cout << std::left << std::setw(28) << "Solver" << std::setw(12)
+              << "Status" << std::setw(8) << "Iters" << std::setw(14)
+              << "Residual" << std::setw(14) << "Compl" << std::setw(10)
+              << "Contract" << std::setw(12) << "Avg(ms)"
+              << "\n";
+    std::cout << std::string(98, '-') << "\n";
+
+    for (const auto& solverInfo : solvers) {
+      auto solver = CreateSolver(solverInfo.type);
+      if (!solver)
+        continue;
+
+      const int n = static_cast<int>(example.problem.b.size());
+      if (n <= 0)
+        continue;
+
+      Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+      dart::math::LcpResult result;
+      double totalMs = 0.0;
+
+      bool valid = true;
+      for (int i = 0; i < runs && valid; ++i) {
+        x = Eigen::VectorXd::Zero(n);
+        const auto start = std::chrono::steady_clock::now();
+        result = solver->solve(example.problem, x, options);
+        const auto end = std::chrono::steady_clock::now();
+        totalMs
+            += std::chrono::duration<double, std::milli>(end - start).count();
+
+        if (!x.allFinite()) {
+          valid = false;
+        }
+      }
+
+      const double avgMs = totalMs / static_cast<double>(runs);
+      auto check = CheckSolution(example.problem, x, options);
+
+      std::cout << std::left << std::setw(28) << solverInfo.name
+                << std::setw(12) << dart::math::toString(result.status)
+                << std::setw(8) << result.iterations << std::scientific
+                << std::setprecision(2) << std::setw(14) << check.residual
+                << std::setw(14) << check.complementarity << std::setw(10)
+                << (check.ok ? "OK" : "FAIL") << std::fixed
+                << std::setprecision(3) << std::setw(12) << avgMs << "\n";
+    }
+    std::cout << "\n";
+  }
+}
+
 int main(int argc, char* argv[])
 {
   CLI::App app("LCP solvers");
   double guiScale = 1.0;
+  bool headless = false;
+  int frames = -1;
+  std::string outDir;
+  int width = 1280;
+  int height = 720;
+  int runs = 10;
+
   app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
       ->check(CLI::PositiveNumber);
+  app.add_flag("--headless", headless, "Run without display window");
+  app.add_option("--frames", frames, "Number of frames to render (headless)");
+  app.add_option("--out", outDir, "Output directory for captured frames");
+  app.add_option("--width", width, "Viewport width")
+      ->check(CLI::PositiveNumber);
+  app.add_option("--height", height, "Viewport height")
+      ->check(CLI::PositiveNumber);
+  app.add_option("--runs", runs, "Runs per solver in headless benchmark")
+      ->check(CLI::PositiveNumber);
   CLI11_PARSE(app, argc, argv);
+
+  if (headless) {
+    runHeadlessBenchmark(runs);
+    return EXIT_SUCCESS;
+  }
 
   dart::simulation::WorldPtr world
       = dart::simulation::World::create("lcp_solvers_world");
@@ -1849,5 +1943,5 @@ int main(int argc, char* argv[])
   viewer->setCameraManipulator(viewer->getCameraManipulator());
   viewer->run();
 
-  return 0;
+  return EXIT_SUCCESS;
 }
