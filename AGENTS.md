@@ -88,6 +88,7 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 - [ ] `pixi run lint` — Format code/docs (run even for docs-only changes)
 - [ ] `pixi run build` — If C++/Python code changed
 - [ ] `pixi run test-unit` — If behavior could be affected
+- [ ] **CHANGELOG.md** — Update if adding features, fixing bugs, or making breaking changes
 - [ ] **Dev task cleanup** — If task used `docs/dev_tasks/<task>/`, remove folder in this PR (not after merge)
 
 Shortcut: `pixi run test-all` runs lint + build + all tests.
