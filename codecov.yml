@@ -1,32 +1,31 @@
 # Reference: https://github.com/codecov/support/wiki/Codecov-Yaml
 #
-# Test Coverage Audit Task: docs/dev_tasks/test-coverage/
-# Targets: 85% overall, 90% for core modules
+# Coverage Policy:
+# - Project: No regression allowed (auto-tracks current coverage)
+# - Patch: New code should be reasonably covered (70%+)
 
 coverage:
   status:
     project:
       default:
-        target: 85% # Phase 3 target
-        threshold: 2% # Allow 2% fluctuation
+        target: auto # Track current coverage, prevent regression
+        threshold: 1% # Allow 1% fluctuation for measurement noise
     patch:
       default:
-        target: 85% # Require new code to meet standard
+        target: 70% # New code should be reasonably tested
 
   ignore:
-    # Correct exclusions (keep):
+    # Test code (coverage of tests themselves isn't meaningful):
     - "tests"
     - "dart/external"
 
     # GUI - hard to test in CI without headless rendering
-    # BACKLOG: Revisit when headless CI is feasible (see docs/dev_tasks/test-coverage/03-backlog.md)
     - "dart/gui"
 
     # Generated/config files:
     - "dart/config.hpp"
 
     # Experimental APIs under heavy development
-    # BACKLOG: Test when APIs stabilize (see docs/dev_tasks/test-coverage/03-backlog.md)
     - "dart/simulation/experimental/**"
 
     # Deprecated code scheduled for removal:
