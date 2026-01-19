@@ -224,6 +224,11 @@ dart_add_test("unit" UNIT_sensor_Sensor sensor/test_Sensor.cpp)
 dart_add_test("unit" UNIT_sensor_SensorManager sensor/test_SensorManager.cpp)
 
 # ==============================================================================
+# Simulation Tests
+# ==============================================================================
+dart_add_test("unit" UNIT_simulation_World simulation/test_World.cpp)
+
+# ==============================================================================
 # Simulation-Experimental Tests
 # ==============================================================================
 if(DART_BUILD_SIMULATION_EXPERIMENTAL)
