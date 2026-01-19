@@ -190,12 +190,12 @@ TEST(Issue2470, EqualSphereCollisionMultipleAxes)
   option.enableContact = true;
   collision::CollisionResult result;
 
-  std::vector<Eigen::Vector3d> directions = {
-      Eigen::Vector3d::UnitX(),
-      Eigen::Vector3d::UnitY(),
-      Eigen::Vector3d::UnitZ(),
-      Eigen::Vector3d(1, 1, 0).normalized(),
-      Eigen::Vector3d(1, 1, 1).normalized()};
+  std::vector<Eigen::Vector3d> directions
+      = {Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitZ(),
+         Eigen::Vector3d(1, 1, 0).normalized(),
+         Eigen::Vector3d(1, 1, 1).normalized()};
 
   for (const auto& dir : directions) {
     const double tol = 1e-12;
@@ -211,10 +211,8 @@ TEST(Issue2470, EqualSphereCollisionMultipleAxes)
     if (result.getNumContacts() > 0) {
       const auto& contact = result.getContact(0);
 
-      EXPECT_FALSE(contact.point.hasNaN())
-          << "Direction: " << dir.transpose();
-      EXPECT_FALSE(contact.normal.hasNaN())
-          << "Direction: " << dir.transpose();
+      EXPECT_FALSE(contact.point.hasNaN()) << "Direction: " << dir.transpose();
+      EXPECT_FALSE(contact.normal.hasNaN()) << "Direction: " << dir.transpose();
     }
   }
 }
