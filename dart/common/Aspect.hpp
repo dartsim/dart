@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_ASPECT_HPP_
 #define DART_COMMON_ASPECT_HPP_
 
-#include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Cloneable.hpp>
-#include <dart/common/detail/NoOp.hpp>
+#include <dart/common/class_with_virtual_base.hpp>
+#include <dart/common/detail/no_op.hpp>
 
 #include <dart/export.hpp>
 

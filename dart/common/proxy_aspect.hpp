@@ -30,68 +30,64 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_
-#define DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_
+#ifndef DART_COMMON_PROXYASPECT_HPP_
+#define DART_COMMON_PROXYASPECT_HPP_
 
-#include <dart/common/MemoryAllocator.hpp>
+#include <dart/common/detail/proxy_aspect.hpp>
 
-namespace dart::common {
-
-//==============================================================================
-template <typename T>
-T* MemoryAllocator::allocateAs(size_t n) noexcept
-{
-  return static_cast<T*>(allocate(n * sizeof(T)));
-}
+namespace dart {
+namespace common {
 
 //==============================================================================
-template <typename T, typename... Args>
-T* MemoryAllocator::construct(Args&&... args) noexcept
+template <class CompositeT, typename StateT>
+using ProxyStateAspect = detail::ProxyStateAspect<
+    common::CompositeTrackingAspect<CompositeT>,
+    CompositeT,
+    StateT>;
+
+//==============================================================================
+template <class CompositeT, typename PropertiesT>
+using ProxyPropertiesAspect = detail::ProxyPropertiesAspect<
+    common::CompositeTrackingAspect<CompositeT>,
+    CompositeT,
+    PropertiesT>;
+
+//==============================================================================
+template <class CompositeT, typename StateT, typename PropertiesT>
+class ProxyStateAndPropertiesAspect : public detail::ProxyPropertiesAspect<
+                                          ProxyStateAspect<CompositeT, StateT>,
+                                          CompositeT,
+                                          PropertiesT>
 {
-  // Allocate new memory for a new object (without calling the constructor)
-  void* object = allocate(sizeof(T));
-  if (!object) {
-    return nullptr;
+public:
+  using State = StateT;
+  using Properties = PropertiesT;
+  using CompositeType = CompositeT;
+
+  using AspectStateImpl = ProxyStateAspect<CompositeType, State>;
+  using AspectPropertiesImpl = detail::
+      ProxyPropertiesAspect<AspectStateImpl, CompositeType, Properties>;
+
+  using Base = AspectPropertiesImpl;
+
+  virtual ~ProxyStateAndPropertiesAspect() = default;
+
+  // Forwarding constructor
+  template <typename... Args>
+  ProxyStateAndPropertiesAspect(Args&&... args)
+    : Base(std::forward<Args>(args)...)
+  {
+    // Do nothing
   }
 
-  // Call constructor. Return nullptr if failed.
-  try {
-    new (object) T(std::forward<Args>(args)...);
-  } catch (...) {
-    deallocate(object, sizeof(T));
-    return nullptr;
+  // Documentation inherited
+  std::unique_ptr<Aspect> cloneAspect() const override
+  {
+    return std::make_unique<ProxyStateAndPropertiesAspect>();
   }
+};
 
-  return reinterpret_cast<T*>(object);
-}
+} // namespace common
+} // namespace dart
 
-//==============================================================================
-template <typename T, typename... Args>
-T* MemoryAllocator::constructAt(void* pointer, Args&&... args)
-{
-  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
-      T(std::forward<Args>(args)...);
-}
-
-//==============================================================================
-template <typename T, typename... Args>
-T* MemoryAllocator::constructAt(T* pointer, Args&&... args)
-{
-  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
-      T(std::forward<Args>(args)...);
-}
-
-//==============================================================================
-template <typename T>
-void MemoryAllocator::destroy(T* object) noexcept
-{
-  if (!object) {
-    return;
-  }
-  object->~T();
-  deallocate(object, sizeof(T));
-}
-
-} // namespace dart::common
-
-#endif // DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_
+#endif // DART_COMMON_PROXYASPECT_HPP_

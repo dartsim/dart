@@ -36,9 +36,9 @@
 #include <dart/gui/DefaultEventHandler.hpp>
 #include <dart/gui/export.hpp>
 
-#include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Observer.hpp>
 #include <dart/common/Subject.hpp>
+#include <dart/common/class_with_virtual_base.hpp>
 
 namespace dart {
 namespace gui {

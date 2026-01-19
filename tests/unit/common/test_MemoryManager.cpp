@@ -32,7 +32,7 @@
 
 #include "../../helpers/GTestUtils.hpp"
 
-#include <dart/common/MemoryManager.hpp>
+#include <dart/common/memory_manager.hpp>
 
 #include <gtest/gtest.h>
 

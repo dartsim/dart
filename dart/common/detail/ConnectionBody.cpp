@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/detail/ConnectionBody.hpp"
+#include "dart/common/detail/connection_body.hpp"
 
 namespace dart {
 namespace common {

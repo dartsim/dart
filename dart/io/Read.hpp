@@ -37,9 +37,9 @@
 
 #include <dart/dynamics/Skeleton.hpp>
 
-#include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Result.hpp>
 #include <dart/common/Uri.hpp>
+#include <dart/common/resource_retriever.hpp>
 
 #include <dart/io/export.hpp>
 

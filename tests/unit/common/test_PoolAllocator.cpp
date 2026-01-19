@@ -32,7 +32,7 @@
 
 #include "../../helpers/GTestUtils.hpp"
 
-#include <dart/common/PoolAllocator.hpp>
+#include <dart/common/pool_allocator.hpp>
 
 #include <gtest/gtest.h>
 

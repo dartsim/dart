@@ -34,7 +34,7 @@
 #define DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_
 
 #include <dart/common/Resource.hpp>
-#include <dart/common/ResourceRetriever.hpp>
+#include <dart/common/resource_retriever.hpp>
 
 #include <dart/export.hpp>
 

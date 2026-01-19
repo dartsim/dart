@@ -34,7 +34,7 @@
 #define DART_COMMON_DETAIL_CLONEABLE_HPP_
 
 #include <dart/common/Cloneable.hpp>
-#include <dart/common/StlHelpers.hpp>
+#include <dart/common/stl_helpers.hpp>
 
 namespace dart {
 namespace common {

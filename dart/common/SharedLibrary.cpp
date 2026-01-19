@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/SharedLibrary.hpp"
-
 #include "dart/common/Logging.hpp"
-#include "dart/common/detail/SharedLibraryManager.hpp"
+#include "dart/common/detail/shared_library_manager.hpp"
+#include "dart/common/shared_library.hpp"
 
 #if DART_OS_LINUX || DART_OS_MACOS
 

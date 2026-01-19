@@ -45,8 +45,8 @@
 #include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/Deprecated.hpp>
-#include <dart/common/NameManager.hpp>
-#include <dart/common/VersionCounter.hpp>
+#include <dart/common/name_manager.hpp>
+#include <dart/common/version_counter.hpp>
 
 #include <dart/export.hpp>
 

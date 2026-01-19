@@ -34,7 +34,7 @@
 
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/common/StlHelpers.hpp"
+#include "dart/common/stl_helpers.hpp"
 #include "dart/dynamics/Chain.hpp"
 #include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/Joint.hpp"

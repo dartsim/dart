@@ -34,9 +34,9 @@
 #define DART_DYNAMICS_DETAIL_SKELETONASPECT_HPP_
 
 #include <dart/common/Composite.hpp>
-#include <dart/common/EmbeddedAspect.hpp>
-#include <dart/common/ProxyAspect.hpp>
-#include <dart/common/RequiresAspect.hpp>
+#include <dart/common/embedded_aspect.hpp>
+#include <dart/common/proxy_aspect.hpp>
+#include <dart/common/requires_aspect.hpp>
 
 #include <Eigen/Core>
 

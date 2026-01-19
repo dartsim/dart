@@ -14,29 +14,29 @@ This document analyzes the DART 6 → DART 8 header file naming transition and p
 
 All of these are **DART 7 additions** (verified not present in `release-6.16`), making them safe for immediate snake_case migration:
 
-| Old Name (PascalCase)               | New Name (snake_case)               |
-| ----------------------------------- | ----------------------------------- |
-| `dart/All.hpp`                      | `dart/all.hpp`                      |
-| `dart/Export.hpp`                   | `dart/export.hpp`                   |
-| `dart/collision/Fwd.hpp`            | `dart/collision/fwd.hpp`            |
-| `dart/common/Export.hpp`            | `dart/common/export.hpp`            |
-| `dart/constraint/Fwd.hpp`           | `dart/constraint/fwd.hpp`           |
-| `dart/dynamics/Fwd.hpp`             | `dart/dynamics/fwd.hpp`             |
-| `dart/gui/All.hpp`                  | `dart/gui/all.hpp`                  |
-| `dart/gui/Export.hpp`               | `dart/gui/export.hpp`               |
-| `dart/gui/Fwd.hpp`                  | `dart/gui/fwd.hpp`                  |
-| `dart/io/Export.hpp`                | `dart/io/export.hpp`                |
-| `dart/lcpsolver/All.hpp`            | `dart/lcpsolver/all.hpp`            |
-| `dart/math/lcp/All.hpp`             | `dart/math/lcp/all.hpp`             |
-| `dart/optimizer/All.hpp`            | `dart/optimizer/all.hpp`            |
-| `dart/optimizer/ipopt/Export.hpp`   | `dart/optimizer/ipopt/export.hpp`   |
-| `dart/optimizer/nlopt/Export.hpp`   | `dart/optimizer/nlopt/export.hpp`   |
-| `dart/optimizer/pagmo/Export.hpp`   | `dart/optimizer/pagmo/export.hpp`   |
-| `dart/sensor/Fwd.hpp`               | `dart/sensor/fwd.hpp`               |
-| `dart/simulation/Fwd.hpp`           | `dart/simulation/fwd.hpp`           |
-| `dart/utils/Export.hpp`             | `dart/utils/export.hpp`             |
-| `dart/utils/Fwd.hpp`                | `dart/utils/fwd.hpp`                |
-| `dart/utils/urdf/Export.hpp`        | `dart/utils/urdf/export.hpp`        |
+| Old Name (PascalCase)             | New Name (snake_case)             |
+| --------------------------------- | --------------------------------- |
+| `dart/All.hpp`                    | `dart/all.hpp`                    |
+| `dart/Export.hpp`                 | `dart/export.hpp`                 |
+| `dart/collision/Fwd.hpp`          | `dart/collision/fwd.hpp`          |
+| `dart/common/Export.hpp`          | `dart/common/export.hpp`          |
+| `dart/constraint/Fwd.hpp`         | `dart/constraint/fwd.hpp`         |
+| `dart/dynamics/Fwd.hpp`           | `dart/dynamics/fwd.hpp`           |
+| `dart/gui/All.hpp`                | `dart/gui/all.hpp`                |
+| `dart/gui/Export.hpp`             | `dart/gui/export.hpp`             |
+| `dart/gui/Fwd.hpp`                | `dart/gui/fwd.hpp`                |
+| `dart/io/Export.hpp`              | `dart/io/export.hpp`              |
+| `dart/lcpsolver/All.hpp`          | `dart/lcpsolver/all.hpp`          |
+| `dart/math/lcp/All.hpp`           | `dart/math/lcp/all.hpp`           |
+| `dart/optimizer/All.hpp`          | `dart/optimizer/all.hpp`          |
+| `dart/optimizer/ipopt/Export.hpp` | `dart/optimizer/ipopt/export.hpp` |
+| `dart/optimizer/nlopt/Export.hpp` | `dart/optimizer/nlopt/export.hpp` |
+| `dart/optimizer/pagmo/Export.hpp` | `dart/optimizer/pagmo/export.hpp` |
+| `dart/sensor/Fwd.hpp`             | `dart/sensor/fwd.hpp`             |
+| `dart/simulation/Fwd.hpp`         | `dart/simulation/fwd.hpp`         |
+| `dart/utils/Export.hpp`           | `dart/utils/export.hpp`           |
+| `dart/utils/Fwd.hpp`              | `dart/utils/fwd.hpp`              |
+| `dart/utils/urdf/Export.hpp`      | `dart/utils/urdf/export.hpp`      |
 
 ### Changes Made
 

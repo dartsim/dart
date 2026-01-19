@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/MemoryAllocator.hpp"
-
 #include "dart/common/CAllocator.hpp"
 #include "dart/common/Logging.hpp"
+#include "dart/common/memory_allocator.hpp"
 
 namespace dart::common {
 

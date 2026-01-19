@@ -117,6 +117,6 @@ public:
 
 } // namespace dart::common
 
-#include <dart/common/detail/MemoryAllocator-impl.hpp>
+#include <dart/common/detail/memory_allocator-impl.hpp>
 
 #endif // DART_COMMON_MEMORYALLOCATOR_HPP_

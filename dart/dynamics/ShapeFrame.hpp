@@ -38,9 +38,9 @@
 #include <dart/dynamics/TemplatedJacobianNode.hpp>
 #include <dart/dynamics/detail/ShapeFrameAspect.hpp>
 
-#include <dart/common/AspectWithVersion.hpp>
 #include <dart/common/Signal.hpp>
-#include <dart/common/SpecializedForAspect.hpp>
+#include <dart/common/aspect_with_version.hpp>
+#include <dart/common/specialized_for_aspect.hpp>
 
 #include <dart/export.hpp>
 

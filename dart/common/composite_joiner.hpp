@@ -155,6 +155,6 @@ public:
 } // namespace common
 } // namespace dart
 
-#include <dart/common/detail/CompositeJoiner.hpp>
+#include <dart/common/detail/composite_joiner.hpp>
 
 #endif // DART_COMMON_COMPOSITEJOINER_HPP_

@@ -37,7 +37,7 @@
 
 #include <dart/math/Helpers.hpp>
 
-#include <dart/common/AspectWithVersion.hpp>
+#include <dart/common/aspect_with_version.hpp>
 
 namespace dart {
 namespace dynamics {

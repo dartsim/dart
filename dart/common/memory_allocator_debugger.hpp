@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_
 #define DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_
 
-#include <dart/common/MemoryAllocator.hpp>
+#include <dart/common/memory_allocator.hpp>
 
 #include <iostream>
 #include <mutex>
@@ -94,6 +94,6 @@ private:
 
 } // namespace dart::common
 
-#include <dart/common/detail/MemoryAllocatorDebugger-impl.hpp>
+#include <dart/common/detail/memory_allocator_debugger-impl.hpp>
 
 #endif // DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_

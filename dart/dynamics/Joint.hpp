@@ -40,9 +40,9 @@
 
 #include <dart/math/MathTypes.hpp>
 
-#include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/Subject.hpp>
-#include <dart/common/VersionCounter.hpp>
+#include <dart/common/embedded_aspect.hpp>
+#include <dart/common/version_counter.hpp>
 
 #include <dart/export.hpp>
 

@@ -32,7 +32,7 @@
 
 #include "../../helpers/GTestUtils.hpp"
 
-#include <dart/common/StlAllocator.hpp>
+#include <dart/common/stl_allocator.hpp>
 
 #include <gtest/gtest.h>
 

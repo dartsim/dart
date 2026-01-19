@@ -13,8 +13,8 @@
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
 
-#include <dart/common/LocalResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
+#include <dart/common/local_resource_retriever.hpp>
 
 #include <dart/all.hpp>
 #include <dart/io/Read.hpp>

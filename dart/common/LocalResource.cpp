@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "LocalResource.hpp"
-
 #include "dart/common/Logging.hpp"
+#include "local_resource.hpp"
 
 #include <iostream>
 #include <limits>

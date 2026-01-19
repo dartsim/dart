@@ -35,8 +35,8 @@
 
 #include <dart/utils/export.hpp>
 
-#include <dart/common/ClassWithVirtualBase.hpp>
-#include <dart/common/ResourceRetriever.hpp>
+#include <dart/common/class_with_virtual_base.hpp>
+#include <dart/common/resource_retriever.hpp>
 
 #include <string_view>
 #include <unordered_map>

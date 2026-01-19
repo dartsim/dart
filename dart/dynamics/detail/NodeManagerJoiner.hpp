@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/NodeManagerJoiner.hpp>
 
-#include <dart/common/detail/TemplateJoinerDispatchMacro.hpp>
+#include <dart/common/detail/template_joiner_dispatch_macro.hpp>
 
 namespace dart {
 namespace dynamics {

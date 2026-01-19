@@ -32,11 +32,11 @@
 
 #include "dart/utils/sdf/SdfParser.hpp"
 
-#include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
+#include "dart/common/local_resource_retriever.hpp"
+#include "dart/common/resource_retriever.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"

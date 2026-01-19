@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/CompositeNode.hpp>
 
-#include <dart/common/SpecializedForAspect.hpp>
+#include <dart/common/specialized_for_aspect.hpp>
 
 #include <dart/export.hpp>
 

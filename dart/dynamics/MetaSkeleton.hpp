@@ -39,9 +39,9 @@
 #include <dart/math/Geometry.hpp>
 
 #include <dart/common/Deprecated.hpp>
-#include <dart/common/LockableReference.hpp>
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
+#include <dart/common/lockable_reference.hpp>
 
 #include <dart/export.hpp>
 

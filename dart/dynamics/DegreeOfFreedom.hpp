@@ -35,8 +35,8 @@
 
 #include <dart/dynamics/fwd.hpp>
 
-#include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Subject.hpp>
+#include <dart/common/class_with_virtual_base.hpp>
 
 #include <dart/export.hpp>
 

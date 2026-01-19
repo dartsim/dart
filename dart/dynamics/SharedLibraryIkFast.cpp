@@ -33,7 +33,7 @@
 #include "dart/dynamics/SharedLibraryIkFast.hpp"
 
 #include "dart/common/Logging.hpp"
-#include "dart/common/SharedLibrary.hpp"
+#include "dart/common/shared_library.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <sstream>

@@ -39,7 +39,7 @@
 #include <dart/math/MathTypes.hpp>
 
 #include <dart/common/Logging.hpp>
-#include <dart/common/ResourceRetriever.hpp>
+#include <dart/common/resource_retriever.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>

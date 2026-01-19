@@ -35,7 +35,7 @@
 
 #include <dart/utils/export.hpp>
 
-#include <dart/common/ResourceRetriever.hpp>
+#include <dart/common/resource_retriever.hpp>
 
 #include <string_view>
 #include <unordered_map>

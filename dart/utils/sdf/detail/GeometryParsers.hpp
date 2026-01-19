@@ -37,7 +37,7 @@
 
 #include <dart/dynamics/Shape.hpp>
 
-#include <dart/common/ResourceRetriever.hpp>
+#include <dart/common/resource_retriever.hpp>
 
 namespace dart::utils::SdfParser::detail {
 

@@ -38,10 +38,10 @@
 #include <dart/math/Geometry.hpp>
 
 #include <dart/common/Castable.hpp>
-#include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
-#include <dart/common/VersionCounter.hpp>
+#include <dart/common/class_with_virtual_base.hpp>
+#include <dart/common/version_counter.hpp>
 
 #include <dart/export.hpp>
 

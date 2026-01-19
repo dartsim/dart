@@ -30,10 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/VersionCounter.hpp"
-
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/version_counter.hpp"
 
 #include <fmt/format.h>
 

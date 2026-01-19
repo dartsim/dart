@@ -37,7 +37,7 @@
 
 #include <dart/dynamics/Node.hpp>
 
-#include <dart/common/StlHelpers.hpp>
+#include <dart/common/stl_helpers.hpp>
 
 #include <cassert>
 

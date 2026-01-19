@@ -33,8 +33,8 @@
 #ifndef DART_COMMON_DETAIL_COMPOSITEJOINER_HPP_
 #define DART_COMMON_DETAIL_COMPOSITEJOINER_HPP_
 
-#include <dart/common/CompositeJoiner.hpp>
-#include <dart/common/detail/TemplateJoinerDispatchMacro.hpp>
+#include <dart/common/composite_joiner.hpp>
+#include <dart/common/detail/template_joiner_dispatch_macro.hpp>
 
 namespace dart {
 namespace common {

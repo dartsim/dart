@@ -31,7 +31,7 @@
  */
 
 #include <dart/common/Logging.hpp>
-#include <dart/common/StlAllocator.hpp>
+#include <dart/common/stl_allocator.hpp>
 
 namespace dart::common {
 

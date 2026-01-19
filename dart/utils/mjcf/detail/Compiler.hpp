@@ -38,8 +38,8 @@
 #include <dart/utils/mjcf/detail/Types.hpp>
 
 #include <dart/common/Platform.hpp>
-#include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
+#include <dart/common/resource_retriever.hpp>
 
 #include <Eigen/Core>
 #include <tinyxml2.h>

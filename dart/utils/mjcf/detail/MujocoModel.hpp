@@ -43,8 +43,8 @@
 #include <dart/utils/mjcf/detail/Size.hpp>
 #include <dart/utils/mjcf/detail/Worldbody.hpp>
 
-#include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
+#include <dart/common/resource_retriever.hpp>
 
 #include <tinyxml2.h>
 

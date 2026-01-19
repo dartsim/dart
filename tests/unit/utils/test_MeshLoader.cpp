@@ -11,7 +11,7 @@
 #include <dart/utils/DartResourceRetriever.hpp>
 #include <dart/utils/MeshLoader.hpp>
 
-#include <dart/common/LocalResourceRetriever.hpp>
+#include <dart/common/local_resource_retriever.hpp>
 
 #include <assimp/cimport.h>
 #include <assimp/postprocess.h>

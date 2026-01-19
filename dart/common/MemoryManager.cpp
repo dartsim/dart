@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/MemoryManager.hpp"
-
 #include "dart/common/Macros.hpp"
+#include "dart/common/memory_manager.hpp"
 
 namespace dart::common {
 

@@ -45,9 +45,9 @@
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/fwd.hpp>
 
-#include <dart/common/LocalResourceRetriever.hpp>
-#include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
+#include <dart/common/local_resource_retriever.hpp>
+#include <dart/common/resource_retriever.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>

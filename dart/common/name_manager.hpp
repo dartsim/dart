@@ -181,6 +181,6 @@ protected:
 } // namespace common
 } // namespace dart
 
-#include <dart/common/detail/NameManager.hpp>
+#include <dart/common/detail/name_manager.hpp>
 
 #endif // DART_COMMON_NAMEMANAGER_HPP_

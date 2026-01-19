@@ -33,8 +33,8 @@
 #ifndef DART_COMMON_COMPOSITE_HPP_
 #define DART_COMMON_COMPOSITE_HPP_
 
-#include <dart/common/ClassWithVirtualBase.hpp>
-#include <dart/common/detail/CompositeData.hpp>
+#include <dart/common/class_with_virtual_base.hpp>
+#include <dart/common/detail/composite_data.hpp>
 
 #include <dart/export.hpp>
 

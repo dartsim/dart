@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/IkFast.hpp>
 
-#include <dart/common/SharedLibrary.hpp>
+#include <dart/common/shared_library.hpp>
 
 namespace dart {
 namespace dynamics {

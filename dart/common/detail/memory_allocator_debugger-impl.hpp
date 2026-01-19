@@ -34,7 +34,7 @@
 #define DART_COMMON_DETAIL_MEMORYALLOCATORDEBUGGER_IMPL_HPP_
 
 #include <dart/common/Logging.hpp>
-#include <dart/common/MemoryAllocatorDebugger.hpp>
+#include <dart/common/memory_allocator_debugger.hpp>
 
 #include <string>
 

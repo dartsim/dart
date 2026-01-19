@@ -37,9 +37,9 @@
 
 #include <dart/dynamics/Node.hpp>
 
-#include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Empty.hpp>
-#include <dart/common/NameManager.hpp>
+#include <dart/common/class_with_virtual_base.hpp>
+#include <dart/common/name_manager.hpp>
 
 #include <map>
 #include <typeindex>

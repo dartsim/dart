@@ -39,7 +39,7 @@
 #include <dart/math/PolygonMesh.hpp>
 #include <dart/math/TriMesh.hpp>
 
-#include <dart/common/ResourceRetriever.hpp>
+#include <dart/common/resource_retriever.hpp>
 
 #include <assimp/cimport.h>
 #include <assimp/scene.h>

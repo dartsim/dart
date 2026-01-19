@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_SIGNAL_HPP_
 #define DART_COMMON_SIGNAL_HPP_
 
-#include <dart/common/detail/ConnectionBody.hpp>
+#include <dart/common/detail/connection_body.hpp>
 
 #include <dart/export.hpp>
 

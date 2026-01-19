@@ -33,7 +33,7 @@
 #ifndef DART_TEST_SHAREDLIBRARYWAMIKFAST_HPP_
 #define DART_TEST_SHAREDLIBRARYWAMIKFAST_HPP_
 
-#include "dart/common/SharedLibrary.hpp"
+#include "dart/common/shared_library.hpp"
 #include "dart/dynamics/IkFast.hpp"
 
 class SharedLibraryWamIkFast : public dart::dynamics::IkFast

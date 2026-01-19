@@ -30,49 +30,50 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCALRESOURCE_HPP_
-#define DART_COMMON_LOCALRESOURCE_HPP_
+#ifndef DART_COMMON_REQUIRESASPECT_HPP_
+#define DART_COMMON_REQUIRESASPECT_HPP_
 
-#include <dart/common/ClassWithVirtualBase.hpp>
-#include <dart/common/Resource.hpp>
-
-#include <dart/export.hpp>
+#include <dart/common/class_with_virtual_base.hpp>
+#include <dart/common/specialized_for_aspect.hpp>
 
 namespace dart {
 namespace common {
 
+//==============================================================================
+/// RequiresAspect allows classes that inherit Composite to know which Aspects
+/// are required for their operation. This guarantees that there is no way for
+/// a required Aspect do not get unexpectedly removed from their composite.
+///
+/// Required Aspects are also automatically specialized for.
+template <class... OtherRequiredAspects>
+class RequiresAspect
+{
+};
+
+//==============================================================================
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class DART_API LocalResource : public virtual Resource
+template <class ReqAspect>
+class RequiresAspect<ReqAspect> : public virtual SpecializedForAspect<ReqAspect>
 {
 public:
-  explicit LocalResource(const std::string& _path);
-  virtual ~LocalResource();
-
-  LocalResource(const LocalResource& _other) = delete;
-  LocalResource& operator=(const LocalResource& _other) = delete;
-
-  /// Returns true if the resource is open and in a valid state.
-  bool isGood() const;
-
-  // Documentation inherited.
-  std::size_t getSize() override;
-
-  // Documentation inherited.
-  std::size_t tell() override;
-
-  // Documentation inherited.
-  bool seek(ptrdiff_t _origin, SeekType _mode) override;
-
-  // Documentation inherited.
-  std::size_t read(
-      void* _buffer, std::size_t _size, std::size_t _count) override;
-
-private:
-  std::FILE* mFile;
+  /// Default constructor. This is where the base Composite is informed that
+  /// the Aspect type is required.
+  RequiresAspect();
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
+
+//==============================================================================
+template <class ReqAspect1, class... OtherReqAspects>
+class RequiresAspect<ReqAspect1, OtherReqAspects...>
+  : public CompositeJoiner<
+        Virtual<RequiresAspect<ReqAspect1>>,
+        Virtual<RequiresAspect<OtherReqAspects...>>>
+{
+};
 
 } // namespace common
 } // namespace dart
 
-#endif // ifndef DART_COMMON_LOCALRESOURCE_HPP_
+#include <dart/common/detail/requires_aspect.hpp>
+
+#endif // DART_COMMON_REQUIRESASPECT_HPP_

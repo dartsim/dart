@@ -36,7 +36,7 @@
 #include "dart/common/Macros.hpp"
 
 #include <dart/common/Logging.hpp>
-#include <dart/common/NameManager.hpp>
+#include <dart/common/name_manager.hpp>
 
 #include <sstream>
 

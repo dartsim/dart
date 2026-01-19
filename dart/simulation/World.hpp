@@ -51,9 +51,9 @@
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/fwd.hpp>
 
-#include <dart/common/NameManager.hpp>
-#include <dart/common/SmartPointer.hpp>
 #include <dart/common/Subject.hpp>
+#include <dart/common/name_manager.hpp>
+#include <dart/common/smart_pointer.hpp>
 
 #include <dart/export.hpp>
 #include <dart/sensor/SensorManager.hpp>

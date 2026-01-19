@@ -37,8 +37,8 @@
 
 #include <dart/simulation/World.hpp>
 
-#include <dart/common/LocalResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
+#include <dart/common/local_resource_retriever.hpp>
 
 #include <string>
 #include <string_view>

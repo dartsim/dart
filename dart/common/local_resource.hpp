@@ -30,22 +30,49 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_REQUIRESASPECT_HPP_
-#define DART_COMMON_DETAIL_REQUIRESASPECT_HPP_
+#ifndef DART_COMMON_LOCALRESOURCE_HPP_
+#define DART_COMMON_LOCALRESOURCE_HPP_
 
-#include <dart/common/RequiresAspect.hpp>
+#include <dart/common/Resource.hpp>
+#include <dart/common/class_with_virtual_base.hpp>
+
+#include <dart/export.hpp>
 
 namespace dart {
 namespace common {
 
-//==============================================================================
-template <class ReqAspect>
-RequiresAspect<ReqAspect>::RequiresAspect()
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
+class DART_API LocalResource : public virtual Resource
 {
-  Composite::mRequiredAspects.insert(typeid(ReqAspect));
-}
+public:
+  explicit LocalResource(const std::string& _path);
+  virtual ~LocalResource();
+
+  LocalResource(const LocalResource& _other) = delete;
+  LocalResource& operator=(const LocalResource& _other) = delete;
+
+  /// Returns true if the resource is open and in a valid state.
+  bool isGood() const;
+
+  // Documentation inherited.
+  std::size_t getSize() override;
+
+  // Documentation inherited.
+  std::size_t tell() override;
+
+  // Documentation inherited.
+  bool seek(ptrdiff_t _origin, SeekType _mode) override;
+
+  // Documentation inherited.
+  std::size_t read(
+      void* _buffer, std::size_t _size, std::size_t _count) override;
+
+private:
+  std::FILE* mFile;
+};
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_REQUIRESASPECT_HPP_
+#endif // ifndef DART_COMMON_LOCALRESOURCE_HPP_

@@ -40,8 +40,8 @@
 
 #include <dart/common/Diagnostics.hpp>
 #include <dart/common/Resource.hpp>
-#include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
+#include <dart/common/resource_retriever.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/cfileio.h>

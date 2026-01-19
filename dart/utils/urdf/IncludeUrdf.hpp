@@ -34,7 +34,7 @@
 
 // clang-format off
 
-#include <dart/common/IncludeWindows.hpp>
+#include <dart/common/include_windows.hpp>
 
 #include <cstdint>
 

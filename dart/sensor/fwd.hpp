@@ -33,7 +33,7 @@
 #ifndef DART_SENSOR_FWD_HPP_
 #define DART_SENSOR_FWD_HPP_
 
-#include <dart/common/SmartPointer.hpp>
+#include <dart/common/smart_pointer.hpp>
 
 namespace dart {
 namespace sensor {

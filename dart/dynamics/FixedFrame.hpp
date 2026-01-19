@@ -36,8 +36,8 @@
 #include <dart/dynamics/Frame.hpp>
 #include <dart/dynamics/detail/FixedFrameAspect.hpp>
 
-#include <dart/common/EmbeddedAspect.hpp>
-#include <dart/common/VersionCounter.hpp>
+#include <dart/common/embedded_aspect.hpp>
+#include <dart/common/version_counter.hpp>
 
 namespace dart {
 namespace dynamics {

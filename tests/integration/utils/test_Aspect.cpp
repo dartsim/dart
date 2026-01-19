@@ -37,9 +37,9 @@
 
 #include "../../helpers/GTestUtils.hpp"
 #include "dart/common/Composite.hpp"
-#include "dart/common/EmbeddedAspect.hpp"
-#include "dart/common/SpecializedForAspect.hpp"
 #include "dart/common/Subject.hpp"
+#include "dart/common/embedded_aspect.hpp"
+#include "dart/common/specialized_for_aspect.hpp"
 #include "dart/common/sub_ptr.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/BoxShape.hpp"

@@ -39,7 +39,7 @@
 #include <dart/dynamics/detail/JointPtr.hpp>
 #include <dart/dynamics/detail/NodePtr.hpp>
 
-#include <dart/common/SmartPointer.hpp>
+#include <dart/common/smart_pointer.hpp>
 
 namespace dart {
 namespace dynamics {

@@ -32,10 +32,10 @@
 
 #include "dart/io/Read.hpp"
 
-#include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Result.hpp"
 #include "dart/common/String.hpp"
+#include "dart/common/local_resource_retriever.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/PackageResourceRetriever.hpp"

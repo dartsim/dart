@@ -36,7 +36,7 @@
 #include "dart/common/Macros.hpp"
 
 #include <dart/common/Aspect.hpp>
-#include <dart/common/StlHelpers.hpp>
+#include <dart/common/stl_helpers.hpp>
 
 namespace dart {
 namespace common {

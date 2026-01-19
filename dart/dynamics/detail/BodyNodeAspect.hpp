@@ -37,8 +37,8 @@
 #include <dart/dynamics/Inertia.hpp>
 #include <dart/dynamics/Node.hpp>
 
-#include <dart/common/EmbeddedAspect.hpp>
-#include <dart/common/ProxyAspect.hpp>
+#include <dart/common/embedded_aspect.hpp>
+#include <dart/common/proxy_aspect.hpp>
 
 #include <dart/export.hpp>
 

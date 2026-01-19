@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/fwd.hpp>
 
-#include <dart/common/EmbeddedAspect.hpp>
+#include <dart/common/embedded_aspect.hpp>
 
 #include <dart/export.hpp>
 
