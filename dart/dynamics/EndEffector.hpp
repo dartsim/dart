@@ -128,13 +128,13 @@ public:
   /// transform of this EndEffector will be set to _newDefaultTf the next time
   /// resetRelativeTransform() is called. If _useNow is set to true, then
   /// resetRelativeTransform() will be called at the end of this function.
-  DART_API void setDefaultRelativeTransform(
+  void setDefaultRelativeTransform(
       const Eigen::Isometry3d& _newDefaultTf, bool _useNow = false);
 
   /// Set the current relative transform of this EndEffector to the default
   /// relative transform of this EndEffector. The default relative transform can
   /// be set with setDefaultRelativeTransform()
-  DART_API void resetRelativeTransform();
+  void resetRelativeTransform();
 
   DART_BAKE_SPECIALIZED_ASPECT(Support)
 

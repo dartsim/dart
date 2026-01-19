@@ -48,8 +48,7 @@ class DART_API FixedJacobianNode
 {
 public:
   /// Set the current relative transform of this Fixed Frame
-  DART_API void setRelativeTransform(
-      const Eigen::Isometry3d& newRelativeTf) override;
+  void setRelativeTransform(const Eigen::Isometry3d& newRelativeTf) override;
 
   // Documentation inherited
   bool dependsOn(std::size_t _genCoordIndex) const override;
