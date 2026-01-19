@@ -35,6 +35,7 @@ If this fails, see `docs/onboarding/ci-cd.md` for troubleshooting.
 | Contributing    | @docs/onboarding/contributing.md @CONTRIBUTING.md           |
 | Code style      | @docs/onboarding/code-style.md                              |
 | Architecture    | @docs/onboarding/architecture.md @docs/onboarding/README.md |
+| Theory (math)   | @docs/background/dynamics/ @docs/background/lcp/            |
 | CI/CD issues    | @docs/onboarding/ci-cd.md                                   |
 | Python bindings | @docs/onboarding/python-bindings.md                         |
 | Model loading   | @docs/onboarding/io-parsing.md                              |
@@ -87,6 +88,7 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 - [ ] `pixi run lint` — Format code/docs (run even for docs-only changes)
 - [ ] `pixi run build` — If C++/Python code changed
 - [ ] `pixi run test-unit` — If behavior could be affected
+- [ ] **CHANGELOG.md** — Update if adding features, fixing bugs, or making breaking changes
 - [ ] **Dev task cleanup** — If task used `docs/dev_tasks/<task>/`, remove folder in this PR (not after merge)
 
 Shortcut: `pixi run test-all` runs lint + build + all tests.

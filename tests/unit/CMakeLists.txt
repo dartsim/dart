@@ -88,6 +88,7 @@ dart_add_test("unit" UNIT_dynamics_ShapeNodePtr dynamics/test_ShapeNodePtr.cpp)
 dart_add_test("unit" UNIT_dynamics_MeshShape dynamics/test_MeshShape.cpp)
 dart_add_test("unit" UNIT_dynamics_HeightmapShape dynamics/test_HeightmapShape.cpp)
 dart_add_test("unit" UNIT_dynamics_SphereShape dynamics/test_SphereShape.cpp)
+dart_add_test("unit" UNIT_dynamics_JointCommand dynamics/test_JointCommand.cpp)
 dart_add_test("unit" UNIT_dynamics_ConvexMeshShape dynamics/test_ConvexMeshShape.cpp)
 dart_add_test("unit" UNIT_dynamics_BodyNodeDerivatives dynamics/test_BodyNodeDerivatives.cpp)
 dart_add_test(
@@ -155,6 +156,9 @@ if(TARGET dart-gui)
   dart_add_test("unit" UNIT_gui_HeightmapShapeNode gui/test_HeightmapShapeNode.cpp)
   dart_add_test(
     "unit" UNIT_gui_ImGuiWindowScaling gui/test_ImGuiWindowScaling.cpp)
+  dart_add_test(
+    "unit" UNIT_gui_HeadlessViewer gui/test_HeadlessViewer.cpp)
+  target_link_libraries(UNIT_gui_HeadlessViewer dart-gui)
   # System ImGui builds can depend on SDL3, which is not available in ASAN CI.
   if(NOT (DART_ENABLE_ASAN AND DART_USE_SYSTEM_IMGUI))
     dart_add_test(
