@@ -41,6 +41,7 @@
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 
 #include <gtest/gtest.h>
 
@@ -169,4 +170,84 @@ TEST(CollisionResultTests, ClearRemovesContactsAndCollisionSets)
   EXPECT_FALSE(result.inCollision(shapeB));
   EXPECT_TRUE(result.getCollidingBodyNodes().empty());
   EXPECT_TRUE(result.getCollidingShapeFrames().empty());
+}
+
+//==============================================================================
+// Regression test for issue #2470: DARTCollisionDetector sphere-sphere
+// collision contact memory corruption. Accessing Contact.point with isApprox()
+// should not cause a segfault.
+// https://github.com/dartsim/dart/issues/2470
+TEST(CollisionResultTests, SphereSphereContactPointAccessible)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  // Create two sphere skeletons
+  auto skeleton1 = Skeleton::create("sphere1");
+  skeleton1->createJointAndBodyNodePair<FreeJoint>();
+  auto* body1 = skeleton1->getBodyNode(0);
+  body1->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<SphereShape>(1.0));
+
+  auto skeleton2 = Skeleton::create("sphere2");
+  skeleton2->createJointAndBodyNodePair<FreeJoint>();
+  auto* body2 = skeleton2->getBodyNode(0);
+  body2->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<SphereShape>(0.5));
+
+  // Create collision group
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(body1->getShapeNode(0));
+  group->addShapeFrame(body2->getShapeNode(0));
+
+  CollisionOption option;
+  option.enableContact = true;
+  CollisionResult result;
+
+  // Test point contact scenario (spheres nearly touching)
+  constexpr double tol = 1e-12;
+  // Sphere 1 at origin (radius 1.0)
+  // Sphere 2 at x = 1.5 - tol (radius 0.5)
+  // Sum of radii = 1.5, so spheres are just barely overlapping
+  skeleton1->getJoint(0)->setPositions(Eigen::Vector6d::Zero());
+  Eigen::Vector6d pos2 = Eigen::Vector6d::Zero();
+  pos2[3] = 1.5 - tol; // translation x
+  skeleton2->getJoint(0)->setPositions(pos2);
+
+  result.clear();
+  bool collided = group->collide(option, &result);
+
+  if (result.getNumContacts() > 0) {
+    const auto& contact = result.getContact(0);
+
+    // This operation previously crashed with SIGSEGV due to memory corruption
+    // Accessing contact.point should not crash
+    EXPECT_TRUE(contact.point.allFinite());
+
+    // Verify contact.point values are accessible via isApprox
+    // The expected contact point is approximately at x=1.0 (on sphere1's
+    // surface)
+    Eigen::Vector3d expectedPoint = Eigen::Vector3d::UnitX();
+    bool pointAccessible = contact.point.isApprox(expectedPoint, 0.1);
+    // We don't assert exact position, just that accessing it doesn't crash
+    (void)pointAccessible;
+
+    // Also verify normal is accessible
+    EXPECT_TRUE(contact.normal.allFinite());
+  }
+
+  // Test overlapping scenario (spheres interpenetrating)
+  pos2[3] = 1.0; // Spheres overlap by 0.5 units
+  skeleton2->getJoint(0)->setPositions(pos2);
+
+  result.clear();
+  collided = group->collide(option, &result);
+  EXPECT_TRUE(collided);
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  {
+    const auto& contact = result.getContact(0);
+    EXPECT_TRUE(contact.point.allFinite());
+    EXPECT_TRUE(contact.normal.allFinite());
+    EXPECT_GT(contact.penetrationDepth, 0.0);
+  }
 }
