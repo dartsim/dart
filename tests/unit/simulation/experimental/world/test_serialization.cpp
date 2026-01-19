@@ -909,3 +909,167 @@ TEST(Serialization, CloneResetCounters)
   auto nextMb = clone.addMultiBody("");
   EXPECT_EQ(nextMb.getName(), "multibody_002");
 }
+
+//==============================================================================
+// Golden/Stability Tests - Format Regression Detection
+//==============================================================================
+
+TEST(SerializationGolden, DeterministicOutput)
+{
+  auto createWorld = []() {
+    dart::simulation::experimental::World world;
+    auto robot = world.addMultiBody("test_robot");
+    auto base = robot.addLink("base");
+    robot.addLink(
+        "link1",
+        {.parentLink = base,
+         .jointName = "joint1",
+         .jointType
+         = dart::simulation::experimental::comps::JointType::Revolute,
+         .axis = {0, 0, 1}});
+    return world;
+  };
+
+  auto world1 = createWorld();
+  auto world2 = createWorld();
+
+  std::stringstream ss1, ss2;
+  world1.saveBinary(ss1);
+  world2.saveBinary(ss2);
+
+  EXPECT_EQ(ss1.str(), ss2.str())
+      << "Identical worlds must produce identical binary output";
+}
+
+TEST(SerializationGolden, FormatVersionPresent)
+{
+  dart::simulation::experimental::World world;
+  world.addMultiBody("robot");
+
+  std::stringstream ss;
+  world.saveBinary(ss);
+
+  std::string data = ss.str();
+  ASSERT_GE(data.size(), sizeof(std::uint32_t))
+      << "Binary output must contain at least the version header";
+
+  std::uint32_t version;
+  std::memcpy(&version, data.data(), sizeof(version));
+  EXPECT_EQ(version, 1u) << "Current format version should be 1";
+}
+
+TEST(SerializationGolden, MinimumWorldSize)
+{
+  dart::simulation::experimental::World emptyWorld;
+
+  std::stringstream ss;
+  emptyWorld.saveBinary(ss);
+
+  std::string data = ss.str();
+  EXPECT_GE(data.size(), 4u) << "Even empty world must have version header";
+  EXPECT_LE(data.size(), 1024u) << "Empty world should be compact (< 1KB)";
+}
+
+TEST(SerializationGolden, LargeWorldStressTest)
+{
+  dart::simulation::experimental::World world;
+
+  for (int r = 0; r < 100; ++r) {
+    auto robot = world.addMultiBody("robot_" + std::to_string(r));
+    auto prev = robot.addLink("base");
+    for (int l = 1; l < 7; ++l) {
+      prev = robot.addLink(
+          "link_" + std::to_string(l),
+          {.parentLink = prev,
+           .jointName = "joint_" + std::to_string(l),
+           .jointType
+           = dart::simulation::experimental::comps::JointType::Revolute,
+           .axis = {0, 0, 1}});
+    }
+  }
+
+  std::stringstream ss;
+  world.saveBinary(ss);
+
+  dart::simulation::experimental::World restored;
+  restored.loadBinary(ss);
+
+  EXPECT_EQ(restored.getMultiBodyCount(), 100u);
+  auto robot50 = restored.getMultiBody("robot_50");
+  ASSERT_TRUE(robot50.has_value());
+  EXPECT_EQ(robot50->getLinkCount(), 7u);
+  EXPECT_EQ(robot50->getJointCount(), 6u);
+}
+
+TEST(SerializationGolden, AllJointTypesRoundTrip)
+{
+  dart::simulation::experimental::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  using JT = dart::simulation::experimental::comps::JointType;
+
+  auto l1 = robot.addLink(
+      "l1",
+      {.parentLink = base, .jointName = "j_fixed", .jointType = JT::Fixed});
+  auto l2 = robot.addLink(
+      "l2",
+      {.parentLink = l1,
+       .jointName = "j_revolute",
+       .jointType = JT::Revolute,
+       .axis = {1, 0, 0}});
+  auto l3 = robot.addLink(
+      "l3",
+      {.parentLink = l2,
+       .jointName = "j_prismatic",
+       .jointType = JT::Prismatic,
+       .axis = {0, 1, 0}});
+  auto l4 = robot.addLink(
+      "l4",
+      {.parentLink = l3,
+       .jointName = "j_screw",
+       .jointType = JT::Screw,
+       .axis = {0, 0, 1}});
+  auto l5 = robot.addLink(
+      "l5",
+      {.parentLink = l4,
+       .jointName = "j_universal",
+       .jointType = JT::Universal,
+       .axis = {1, 0, 0}});
+  auto l6 = robot.addLink(
+      "l6", {.parentLink = l5, .jointName = "j_ball", .jointType = JT::Ball});
+  auto l7 = robot.addLink(
+      "l7",
+      {.parentLink = l6,
+       .jointName = "j_planar",
+       .jointType = JT::Planar,
+       .axis = {0, 0, 1}});
+  [[maybe_unused]] auto l8 = robot.addLink(
+      "l8", {.parentLink = l7, .jointName = "j_free", .jointType = JT::Free});
+
+  std::stringstream ss;
+  world.saveBinary(ss);
+
+  dart::simulation::experimental::World restored;
+  restored.loadBinary(ss);
+
+  auto restoredRobot = restored.getMultiBody("robot");
+  ASSERT_TRUE(restoredRobot.has_value());
+  EXPECT_EQ(restoredRobot->getJointCount(), 8u);
+
+  auto checkJoint = [&](const std::string& name, JT expectedType) {
+    auto joint = restoredRobot->getJoint(name);
+    ASSERT_TRUE(joint.has_value()) << "Joint " << name << " not found";
+    EXPECT_EQ(joint->getType(), expectedType)
+        << "Joint " << name << " has wrong type";
+  };
+
+  checkJoint("j_fixed", JT::Fixed);
+  checkJoint("j_revolute", JT::Revolute);
+  checkJoint("j_prismatic", JT::Prismatic);
+  checkJoint("j_screw", JT::Screw);
+  checkJoint("j_universal", JT::Universal);
+  checkJoint("j_ball", JT::Ball);
+  checkJoint("j_planar", JT::Planar);
+  checkJoint("j_free", JT::Free);
+}

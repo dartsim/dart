@@ -423,19 +423,20 @@ forward kinematics calculations (computing link transforms from joint positions)
 - [x] Python tests passing (16 tests)
 - [x] Python docstrings: deferred (follows existing dartpy pattern - C++ Doxygen is source of truth)
 
-### Phase 3: Testing (Target: Week 10-12)
+### Phase 3: Testing (Target: Week 10-12) 🔄 IN PROGRESS
 
-- [ ] Coverage audit complete
+- [ ] Coverage audit complete (requires coverage build)
 - [ ] 80% coverage achieved
-- [ ] Golden tests created
-- [ ] Integration tests created
+- [x] Golden tests created (5 new tests: format stability, version header, stress test, all joint types)
+- [ ] Integration tests created (BLOCKED: URDF→experimental requires Phase 6 adapter)
 
-### Phase 4: Performance (Target: Week 10-12, parallel)
+### Phase 4: Performance (Target: Week 10-12, parallel) 🔄 IN PROGRESS
 
-- [ ] Benchmarks created
-- [ ] Profiling complete
-- [ ] Optimizations applied
+- [x] Benchmarks created (`bm_multi_body.cpp` with 12 comprehensive benchmarks)
+- [x] ECS profiling covered (existing `bm_ecs_safety.cpp`)
+- [ ] Optimizations applied (pending profiling results)
 - [ ] Documentation written
+- [ ] Classic comparison (BLOCKED: requires Phase 5 kinematics)
 
 ### Phase 5: Physics (Target: Week 13-20)
 

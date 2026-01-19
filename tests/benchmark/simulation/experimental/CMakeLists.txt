@@ -13,4 +13,8 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
     bm_ecs_safety
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_ecs_safety.cpp
   )
+  dart_experimental_add_benchmark(
+    bm_multi_body
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_multi_body.cpp
+  )
 endif()
