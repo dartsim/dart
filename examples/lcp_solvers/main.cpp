@@ -34,6 +34,7 @@
 #include <dart/gui/ImGuiViewer.hpp>
 #include <dart/gui/ImGuiWidget.hpp>
 #include <dart/gui/IncludeImGui.hpp>
+#include <dart/gui/ViewerConfig.hpp>
 
 #include <dart/simulation/World.hpp>
 
@@ -50,6 +51,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -1898,9 +1900,56 @@ BenchmarkResult runSolverBenchmark(
   return result;
 }
 
-int runHeadlessBenchmark(
-    const std::string& exampleFilter, const std::string& solverFilter, int runs)
+} // namespace
+
+int runHeadlessWithRendering(
+    const std::string& exampleFilter,
+    const std::string& solverFilter,
+    int runs,
+    int frames,
+    const std::string& outDir,
+    int width,
+    int height)
 {
+  namespace fs = std::filesystem;
+
+  if (!outDir.empty()) {
+    std::error_code ec;
+    fs::create_directories(outDir, ec);
+    if (ec) {
+      std::cerr << "Failed to create output directory: " << ec.message()
+                << "\n";
+      return EXIT_FAILURE;
+    }
+  }
+
+  dart::simulation::WorldPtr world
+      = dart::simulation::World::create("lcp_solvers_world");
+  AddReferenceScene(world);
+
+  dart::gui::Viewer viewer(dart::gui::ViewerConfig::headless(width, height));
+  auto shadow = dart::gui::WorldNode::createDefaultShadowTechnique(&viewer);
+  osg::ref_ptr<dart::gui::WorldNode> worldNode
+      = new dart::gui::WorldNode(world, shadow);
+  viewer.addWorldNode(worldNode);
+
+  viewer.getCameraManipulator()->setHomePosition(
+      ::osg::Vec3(3.5f, 3.0f, 2.5f),
+      ::osg::Vec3(0.0f, 0.0f, 0.0f),
+      ::osg::Vec3(0.0f, 0.0f, 1.0f));
+  viewer.setCameraManipulator(viewer.getCameraManipulator());
+
+  if (!outDir.empty()) {
+    viewer.record(outDir, "frame_", false, 6);
+  }
+
+  std::cout << "Headless mode: " << width << "x" << height << ", " << frames
+            << " frames\n";
+  if (!outDir.empty()) {
+    std::cout << "Saving frames to: " << outDir << "\n";
+  }
+  std::cout << "\n";
+
   auto examples = BuildExamples();
   auto solvers = BuildSolvers();
 
@@ -1910,17 +1959,12 @@ int runHeadlessBenchmark(
   options.relativeTolerance = 1e-4;
   options.complementarityTolerance = 1e-6;
 
-  std::vector<BenchmarkResult> allResults;
   int totalTests = 0;
   int passedTests = 0;
+  std::vector<BenchmarkResult> allResults;
 
-  std::cout << "LCP Solver Benchmark\n";
-  std::cout << "Runs per test: " << runs << "\n";
-  if (!exampleFilter.empty())
-    std::cout << "Example filter: " << exampleFilter << "\n";
-  if (!solverFilter.empty())
-    std::cout << "Solver filter: " << solverFilter << "\n";
-  std::cout << std::string(80, '=') << "\n\n";
+  int frameCount = 0;
+  const int framesPerTest = std::max(1, frames / 10);
 
   for (const auto& example : examples) {
     if (!exampleFilter.empty()
@@ -1929,17 +1973,6 @@ int runHeadlessBenchmark(
     }
 
     std::cout << "Example: " << example.label << "\n";
-    std::cout << "  Type: "
-              << (example.hasFindex ? "Boxed + friction"
-                                    : (example.isBoxed ? "Boxed" : "Standard"))
-              << ", Dim: " << example.problem.b.size() << "\n";
-
-    std::cout << std::left << std::setw(28) << "  Solver" << std::setw(14)
-              << "Pass/Total" << std::setw(14) << "MaxResidual" << std::setw(14)
-              << "MaxCompl" << std::setw(10) << "Status" << std::setw(10)
-              << "Avg(ms)"
-              << "\n";
-    std::cout << "  " << std::string(88, '-') << "\n";
 
     for (const auto& solverInfo : solvers) {
       if (!solverFilter.empty()
@@ -1949,43 +1982,47 @@ int runHeadlessBenchmark(
 
       auto result = runSolverBenchmark(example, solverInfo, runs, options);
       allResults.push_back(result);
-
       ++totalTests;
       if (result.allPassed)
         ++passedTests;
 
-      std::string passRate = std::to_string(result.passedRuns) + "/"
-                             + std::to_string(result.totalRuns);
+      std::cout << "  " << std::left << std::setw(26) << solverInfo.name
+                << (result.allPassed ? "PASS" : "FAIL") << " ("
+                << result.passedRuns << "/" << result.totalRuns << ")\n";
 
-      std::cout << std::left << "  " << std::setw(26) << solverInfo.name
-                << std::setw(14) << passRate << std::scientific
-                << std::setprecision(2) << std::setw(14) << result.maxResidual
-                << std::setw(14) << result.maxComplementarity << std::setw(10)
-                << (result.allPassed ? "PASS" : "FAIL") << std::fixed
-                << std::setprecision(3) << std::setw(10) << result.avgMs
-                << "\n";
+      for (int f = 0; f < framesPerTest && frameCount < frames;
+           ++f, ++frameCount) {
+        viewer.frame();
+      }
     }
     std::cout << "\n";
   }
 
-  std::cout << std::string(80, '=') << "\n";
-  std::cout << "Summary: " << passedTests << "/" << totalTests
-            << " solver-example combinations passed all " << runs << " runs\n";
+  while (frameCount < frames) {
+    viewer.frame();
+    ++frameCount;
+  }
+
+  std::cout << "==============================================================="
+               "=================\n";
+  std::cout << "Summary: " << passedTests << "/" << totalTests << " passed, "
+            << frameCount << " frames rendered\n";
+
+  if (!outDir.empty()) {
+    std::cout << "Frames saved to: " << outDir << "\n";
+  }
 
   if (passedTests < totalTests) {
-    std::cout << "\nFailed combinations:\n";
+    std::cout << "\nFailed:\n";
     for (const auto& r : allResults) {
       if (!r.allPassed) {
-        std::cout << "  - " << r.solverName << " on " << r.exampleName << " ("
-                  << r.passedRuns << "/" << r.totalRuns << " passed)\n";
+        std::cout << "  - " << r.solverName << " on " << r.exampleName << "\n";
       }
     }
   }
 
   return (passedTests == totalTests) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
-
-} // namespace
 
 int main(int argc, char* argv[])
 {
@@ -1996,6 +2033,10 @@ int main(int argc, char* argv[])
   std::string exampleFilter;
   std::string solverFilter;
   int runs = 100;
+  int frames = 100;
+  std::string outDir;
+  int width = 1280;
+  int height = 720;
 
   app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
       ->check(CLI::PositiveNumber);
@@ -2007,6 +2048,13 @@ int main(int argc, char* argv[])
   app.add_option(
          "--runs", runs, "Runs per solver (default: 100 for long horizon)")
       ->check(CLI::PositiveNumber);
+  app.add_option("--frames", frames, "Number of frames to render")
+      ->check(CLI::PositiveNumber);
+  app.add_option("--out", outDir, "Output directory for captured frames");
+  app.add_option("--width", width, "Viewport width")
+      ->check(CLI::PositiveNumber);
+  app.add_option("--height", height, "Viewport height")
+      ->check(CLI::PositiveNumber);
   CLI11_PARSE(app, argc, argv);
 
   if (listMode) {
@@ -2015,7 +2063,8 @@ int main(int argc, char* argv[])
   }
 
   if (headless) {
-    return runHeadlessBenchmark(exampleFilter, solverFilter, runs);
+    return runHeadlessWithRendering(
+        exampleFilter, solverFilter, runs, frames, outDir, width, height);
   }
 
   dart::simulation::WorldPtr world

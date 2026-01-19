@@ -59,32 +59,50 @@ The window size scales with `--gui-scale` to keep the widgets readable.
 
 ```
 --gui-scale <n>   Scale factor for ImGui widgets (default: 1.0)
---headless        Run benchmark without display window
+--headless        Run benchmark with headless 3D rendering
 --list            List available examples and solvers
 --example <name>  Filter examples by name substring
 --solver <name>   Filter solvers by name substring
 --runs <n>        Runs per solver (default: 100 for long horizon testing)
+--frames <n>      Number of frames to render (default: 100)
+--out <dir>       Output directory for captured frame images
+--width <n>       Viewport width (default: 1280)
+--height <n>      Viewport height (default: 720)
 ```
 
 ## Headless Mode
 
-Run solvers against scenarios in batch mode for CI or benchmarking:
+Run solvers against scenarios with headless 3D rendering and frame capture:
 
 ```bash
 # List available examples and solvers
 ./lcp_solvers --list
 
-# Run specific example with specific solver (100 runs for long horizon)
-./lcp_solvers --headless --example "friction" --solver "Dantzig"
+# Run with frame capture for visual verification
+./lcp_solvers --headless --frames 100 --out ./output
 
-# Run all solvers on a single example
-./lcp_solvers --headless --example "2x2"
+# Run specific example with specific solver
+./lcp_solvers --headless --example "friction" --solver "Dantzig" --out ./output
 
-# Quick smoke test (10 runs)
-./lcp_solvers --headless --runs 10
+# Full benchmark: all examples, 100 runs each, 500 frames
+./lcp_solvers --headless --runs 100 --frames 500 --out ./output
 
-# Full long-horizon verification (default 100 runs)
-./lcp_solvers --headless
+# Quick smoke test (10 runs, 20 frames)
+./lcp_solvers --headless --runs 10 --frames 20
+```
+
+### Frame Capture
+
+When `--out <dir>` is specified, PNG frames are saved as `frame_000000.png`,
+`frame_000001.png`, etc. The 3D scene shows:
+
+- Ground plane with coordinate axes (RGB = XYZ)
+- Static reference scene for visual verification
+
+Use ffmpeg to create a video from captured frames:
+
+```bash
+ffmpeg -framerate 30 -i output/frame_%06d.png -c:v libx264 -pix_fmt yuv420p output.mp4
 ```
 
 ### Output Format
@@ -92,10 +110,7 @@ Run solvers against scenarios in batch mode for CI or benchmarking:
 Each solver-example combination reports:
 
 - **Pass/Total**: Number of runs that passed contract check
-- **MaxResidual**: Maximum residual across all runs
-- **MaxCompl**: Maximum complementarity violation across all runs
 - **Status**: PASS if all runs passed, FAIL otherwise
-- **Avg(ms)**: Average solve time in milliseconds
 
 ### Exit Codes
 
