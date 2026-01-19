@@ -13,33 +13,39 @@ git log -5 --oneline
 ## Current State (as of Jan 2026)
 
 **Phases completed:**
+
 - ✅ Phase 0: Initial assessment
 - ✅ Phase 1: Enabled 3 disabled tests (1 remains for Phase 2 experimental)
 - ✅ Phase 2: Fixed coverage infrastructure (lcov + codecov.yml)
 - ✅ Phase 3: Created coverage gap analysis (`02-coverage-gaps.md`)
 - 🔄 Phase 4: Test implementation (in progress)
 
-**Tests added so far:**
+**Tests added so far (67 total new tests):**
+
 - `tests/unit/common/test_NameManager.cpp` (20 tests)
 - `tests/unit/common/test_Singleton.cpp` (8 tests)
 - `tests/unit/common/test_Signal.cpp` (18 tests)
 - `tests/unit/common/test_VersionCounter.cpp` (6 tests)
+- `tests/unit/common/test_SubjectObserver.cpp` (expanded: +15 tests, total 18)
 
 ## Immediate Next Step
 
 **Continue Phase 4: Add more quick-win tests from the prioritized list.**
 
-| Priority | Class | File to Create | Estimated Tests | Status |
-|----------|-------|----------------|-----------------|--------|
-| 1 | `Singleton` | `tests/unit/common/test_Singleton.cpp` | 5-8 | ✅ DONE |
-| 2 | `Signal/Observer` | `tests/unit/common/test_Signal.cpp` | 10-15 | ✅ DONE |
-| 3 | `CollisionFilter` | Expand `tests/unit/collision/test_CollisionFilter.cpp` | +5-10 | Next |
-| 4 | `Aspect` system | `tests/unit/common/test_Aspect.cpp` | 15-20 | Pending |
-| 5 | Constraint edge cases | Expand existing constraint tests | +10-15 | Pending |
+| Priority | Class                 | File to Create                                         | Estimated Tests | Status  |
+| -------- | --------------------- | ------------------------------------------------------ | --------------- | ------- |
+| 1        | `Singleton`           | `tests/unit/common/test_Singleton.cpp`                 | 5-8             | ✅ DONE |
+| 2        | `Signal/Observer`     | `tests/unit/common/test_Signal.cpp`                    | 10-15           | ✅ DONE |
+| 3        | `VersionCounter`      | `tests/unit/common/test_VersionCounter.cpp`            | 6               | ✅ DONE |
+| 4        | `sub_ptr`             | Expanded `tests/unit/common/test_SubjectObserver.cpp`  | +15             | ✅ DONE |
+| 5        | `CollisionFilter`     | Expand `tests/unit/collision/test_CollisionFilter.cpp` | +5-10           | Next    |
+| 6        | `Aspect` system       | `tests/unit/common/test_Aspect.cpp`                    | 15-20           | Pending |
+| 7        | Constraint edge cases | Expand existing constraint tests                       | +10-15          | Pending |
 
 ## How to Add a New Test
 
 1. **Create test file** following existing patterns:
+
    ```cpp
    #include <dart/common/NewClass.hpp>
    #include <gtest/gtest.h>
@@ -51,6 +57,7 @@ git log -5 --oneline
    - For other modules: Use `dart_add_test()` macro
 
 3. **Build and run**:
+
    ```bash
    pixi run build
    cmake --build build/default/cpp/Release --target UNIT_common_NewClass
@@ -64,13 +71,13 @@ git log -5 --oneline
 
 ## Key Files to Know
 
-| File | Purpose |
-|------|---------|
-| `codecov.yml` | Coverage configuration (components, exclusions, targets) |
-| `pixi.toml:789` | Coverage report generation (lcov filters) |
-| `tests/unit/CMakeLists.txt` | Test registration |
-| `tests/helpers/GTestUtils.hpp` | Eigen comparison macros |
-| `02-coverage-gaps.md` | Detailed gap analysis with priorities |
+| File                           | Purpose                                                  |
+| ------------------------------ | -------------------------------------------------------- |
+| `codecov.yml`                  | Coverage configuration (components, exclusions, targets) |
+| `pixi.toml:789`                | Coverage report generation (lcov filters)                |
+| `tests/unit/CMakeLists.txt`    | Test registration                                        |
+| `tests/helpers/GTestUtils.hpp` | Eigen comparison macros                                  |
+| `02-coverage-gaps.md`          | Detailed gap analysis with priorities                    |
 
 ## Important Context
 
@@ -90,13 +97,13 @@ git log -5 --oneline
 
 ## Module Coverage Ratios (pre-improvement)
 
-| Module | Ratio | Notes |
-|--------|-------|-------|
-| common | 0.15 | 37 untested headers - HIGH priority |
-| utils | 0.15 | Parser support mostly tested |
-| dynamics | 0.30 | Largest module |
-| collision | 0.30 | Multiple backends |
-| constraint | 0.34 | Solver edge cases need work |
+| Module     | Ratio | Notes                               |
+| ---------- | ----- | ----------------------------------- |
+| common     | 0.15  | 37 untested headers - HIGH priority |
+| utils      | 0.15  | Parser support mostly tested        |
+| dynamics   | 0.30  | Largest module                      |
+| collision  | 0.30  | Multiple backends                   |
+| constraint | 0.34  | Solver edge cases need work         |
 
 ## Verification Before Committing
 

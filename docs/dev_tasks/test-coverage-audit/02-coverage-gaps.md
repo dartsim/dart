@@ -29,9 +29,9 @@
 - `Castable`, `ClassWithVirtualBase`, `Cloneable`, `CompositeJoiner`
 - `Diagnostics`, `LocalResourceRetriever`, `ResourceRetriever`
 - `LockableReference`, `MemoryAllocator`, `MemoryAllocatorDebugger`
-- `Observer`, `Subject`, `Signal`
-- `SharedLibrary`, `Singleton`, `VersionCounter`
-- `Metaprogramming`, `StlHelpers`, `Virtual`, `sub_ptr`
+- ~~`Observer`, `Subject`, `Signal`~~ ✅ DONE
+- ~~`SharedLibrary`, `Singleton`, `VersionCounter`~~ ✅ Singleton/VersionCounter DONE
+- `Metaprogramming`, `StlHelpers`, `Virtual`, ~~`sub_ptr`~~ ✅ DONE
 
 **Recently tested**: ~~`NameManager`~~ ✅, ~~`Filesystem`~~ (just a namespace alias)
 
@@ -45,7 +45,7 @@
 **Complex but important**:
 
 1. `Aspect` system - Core architecture, needs comprehensive tests
-2. `Signal/Observer/Subject` - Event system
+2. ~~`Signal/Observer/Subject` - Event system~~ ✅ DONE (Signal: 18 tests, SubjectObserver: 18 tests)
 
 ### 2. dart/dynamics/ — Largest Module
 
@@ -145,14 +145,15 @@ Only 8 headers, 2 integration tests exist. Low ROI.
 
 Tests that would add coverage with minimal effort:
 
-| Class                       | Module     | Effort | Impact | Status |
-| --------------------------- | ---------- | ------ | ------ | ------ |
-| `NameManager`               | common     | Low    | Low    | ✅ DONE |
-| `Singleton`                 | common     | Low    | Low    | ✅ DONE |
-| `Signal/Observer`           | common     | Medium | Medium | ✅ DONE |
-| `VersionCounter`            | common     | Low    | Low    | ✅ DONE |
+| Class                       | Module     | Effort | Impact | Status          |
+| --------------------------- | ---------- | ------ | ------ | --------------- |
+| `NameManager`               | common     | Low    | Low    | ✅ DONE         |
+| `Singleton`                 | common     | Low    | Low    | ✅ DONE         |
+| `Signal/Observer`           | common     | Medium | Medium | ✅ DONE         |
+| `VersionCounter`            | common     | Low    | Low    | ✅ DONE         |
+| `sub_ptr`                   | common     | Low    | Low    | ✅ DONE         |
 | `CollisionFilter`           | collision  | Medium | High   | Expand existing |
-| `ConstraintBase` edge cases | constraint | Medium | High   | Error paths |
+| `ConstraintBase` edge cases | constraint | Medium | High   | Error paths     |
 | Parser error handling       | utils      | Medium | Medium | Malformed input |
 
 ## Recommended Test Implementation Order
@@ -163,7 +164,9 @@ Tests that would add coverage with minimal effort:
 2. ~~Add `test_NameManager.cpp`~~ ✅ DONE (20 tests)
 3. ~~Add `test_Singleton.cpp`~~ ✅ DONE (8 tests)
 4. ~~Add `test_Signal.cpp`~~ ✅ DONE (18 tests)
-5. Expand CollisionFilter tests
+5. ~~Add `test_VersionCounter.cpp`~~ ✅ DONE (6 tests)
+6. ~~Expand `test_SubjectObserver.cpp`~~ ✅ DONE (15 new tests, total 18)
+7. Expand CollisionFilter tests
 
 ### Phase 2: Core Systems (1 week)
 
