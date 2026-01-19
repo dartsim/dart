@@ -28,22 +28,24 @@
 
 **This module MUST outperform existing collision backends (FCL, Bullet, ODE) to justify its existence.**
 
-| Requirement | Description |
-|-------------|-------------|
+| Requirement                    | Description                                                       |
+| ------------------------------ | ----------------------------------------------------------------- |
 | **Faster than FCL/Bullet/ODE** | Every narrow-phase algorithm must beat or match existing backends |
-| **Equal or better accuracy** | Contact position, normal, and depth must be as accurate or better |
-| **Feature parity** | Support all shape pairs that existing backends support |
-| **Comparative benchmarks** | All benchmarks must include FCL, Bullet, ODE results side-by-side |
+| **Equal or better accuracy**   | Contact position, normal, and depth must be as accurate or better |
+| **Feature parity**             | Support all shape pairs that existing backends support            |
+| **Comparative benchmarks**     | All benchmarks must include FCL, Bullet, ODE results side-by-side |
 
 **Benchmark Requirements:**
+
 - Single-pair collision: Compare against `fcl::collide()`, `btCollisionWorld::contactPairTest()`, `dCollide()`
 - Distance queries: Compare against `fcl::distance()`, Bullet GJK, ODE distance
 - Broad-phase: Compare against FCL's `BroadPhaseCollisionManager`, Bullet's `btDbvtBroadphase`
 - Full world collision: Compare CollisionWorld vs FCL/Bullet/ODE world collision
 
 **Accuracy Verification:**
+
 - Contact positions must match within 1e-6 tolerance
-- Contact normals must match within 1e-6 tolerance  
+- Contact normals must match within 1e-6 tolerance
 - Penetration depth must match within 1e-6 tolerance
 - Number of contacts should be comparable (may differ due to algorithm differences)
 
