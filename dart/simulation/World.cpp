@@ -50,6 +50,8 @@
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/lcp/pivoting/DantzigSolver.hpp"
 #include "dart/math/lcp/pivoting/LemkeSolver.hpp"
@@ -176,9 +178,40 @@ math::LcpSolverPtr createLcpSolver(LcpSolverType type)
   return std::make_shared<math::DantzigSolver>();
 }
 
+DART_SUPPRESS_DEPRECATED_BEGIN
+constraint::BoxedLcpSolverPtr createBoxedLcpSolver(LcpSolverType type)
+{
+  switch (type) {
+    case LcpSolverType::Dantzig:
+      return std::make_shared<constraint::DantzigBoxedLcpSolver>();
+    case LcpSolverType::Pgs:
+      return std::make_shared<constraint::PgsBoxedLcpSolver>();
+    case LcpSolverType::Lemke:
+      return nullptr;
+  }
+  return nullptr;
+}
+DART_SUPPRESS_DEPRECATED_END
+
 std::unique_ptr<constraint::ConstraintSolver> createConstraintSolver(
     const WorldConfig& config)
 {
+  auto primaryBoxed = createBoxedLcpSolver(config.primaryLcpSolver);
+
+  if (primaryBoxed) {
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    if (config.secondaryLcpSolver.has_value()) {
+      auto secondaryBoxed
+          = createBoxedLcpSolver(config.secondaryLcpSolver.value());
+      return std::make_unique<constraint::BoxedLcpConstraintSolver>(
+          std::move(primaryBoxed), std::move(secondaryBoxed));
+    }
+    auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>(
+        std::move(primaryBoxed), nullptr);
+    DART_SUPPRESS_DEPRECATED_END
+    return solver;
+  }
+
   auto primary = createLcpSolver(config.primaryLcpSolver);
 
   if (config.secondaryLcpSolver.has_value()) {
