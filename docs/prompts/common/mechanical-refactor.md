@@ -2,10 +2,8 @@
 
 <!--
 CRITICAL: FOR AGENTS READING THIS FILE
-=======================================
 This is a PROMPT TEMPLATE, not an active task.
 Do NOT execute unless a human pastes this into a new session.
-=======================================
 -->
 
 ## Prompt
@@ -16,7 +14,7 @@ Do NOT execute unless a human pastes this into a new session.
 Goal
 - Perform a mechanical refactor or modernization with no behavior change.
 
-Inputs
+Context
 - Scope: <FILES_OR_AREAS>
 - Target branch: <TARGET_BRANCH or origin/main>
 - Standard or API target (optional): <CXX_STANDARD or API_TARGET>
