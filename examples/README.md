@@ -25,7 +25,6 @@
 - `free_joint_cases`
 - `human_joint_limits`
 - `joint_constraints`
-- `lcp_solvers`
 - `mimic_pendulums`
 - `rigid_chain`
 - `rigid_loop`
@@ -35,6 +34,7 @@
 - `box_stacking`
 - `capsule_ground_contact`
 - `heightmap`
+- `lcp_physics`
 - `rigid_shapes`
 
 ### 04 Control and IK
@@ -78,6 +78,7 @@
 ### 09 Integration and Tools
 
 - `csv_logger`
+- `lcp_solvers` (LCP solver benchmark dashboard)
 - `point_cloud` (requires OctoMap)
 - `rerun`
 

@@ -19,7 +19,6 @@ add_subdirectory(joint_constraints)
 add_subdirectory(mimic_pendulums)
 add_subdirectory(rigid_chain)
 add_subdirectory(rigid_loop)
-add_subdirectory(lcp_solvers)
 
 # Collisions and contacts examples
 add_subdirectory(box_stacking)
@@ -66,4 +65,5 @@ if(DART_HAVE_OCTOMAP)
   add_subdirectory(point_cloud)
 endif()
 add_subdirectory(csv_logger)
+add_subdirectory(lcp_solvers)
 add_subdirectory(rerun)
