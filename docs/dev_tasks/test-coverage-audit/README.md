@@ -4,9 +4,9 @@
 
 - [x] Phase 0: Initial assessment and branch setup
 - [x] Phase 1: Enable valid disabled tests (3 of 4 enabled)
-- [ ] Phase 2: Fix coverage infrastructure (lcov filters, codecov.yml)
-- [ ] Phase 3: Identify and prioritize coverage gaps
-- [ ] Phase 4: Implement high-value tests
+- [x] Phase 2: Fix coverage infrastructure (lcov filters, codecov.yml)
+- [x] Phase 3: Identify and prioritize coverage gaps (see `02-coverage-gaps.md`)
+- [ ] Phase 4: Implement high-value tests (in progress - NameManager done)
 - [ ] Phase 5: Establish ongoing coverage standards
 
 ## Goal

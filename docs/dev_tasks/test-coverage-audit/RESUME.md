@@ -2,34 +2,40 @@
 
 ## Last Session Summary
 
-Completed comprehensive analysis of DART's test coverage infrastructure. Identified critical issue: coverage.info is polluted with third-party headers from `.pixi/envs/`. Created detailed README.md with findings, phases, and prioritized action plan.
+Completed Phase 2 (coverage infrastructure fixes) and started Phase 4 (test implementation). Added comprehensive NameManager unit tests (20 tests) as a quick-win example. Created detailed coverage gap analysis identifying under-tested modules and prioritized test candidates.
 
 ## Current Branch
 
-`task/test_coverage` — has uncommitted changes:
+`task/test_coverage` — clean, pushed to remote
 
-- `codecov.yml`: Removed `dart/external` from ignore (2 lines deleted)
-- `tests/integration/dynamics/test_Joints.cpp`: Enabled CoMJacobianSignConsistency test
-- `tests/integration/simulation/test_Issue410.cpp`: Enabled 2 tests
-- `docs/dev_tasks/test-coverage-audit/`: Created README.md, RESUME.md, DISABLED_TESTS.md
+Latest commits:
+- `92d245c165a` test: add NameManager unit tests and coverage gap analysis
+- `55c26ac7827` test: improve coverage infrastructure and enable valid disabled tests
 
 ## Immediate Next Step
 
-**Fix the lcov filter in `pixi.toml` (line 789)** to exclude `.pixi/*` paths from coverage.info. This is blocking accurate coverage measurement.
+**Continue adding quick-win tests.** Top candidates from `02-coverage-gaps.md`:
+1. `test_Singleton.cpp` - Template singleton pattern (simple)
+2. Expand `CollisionFilter` tests - Already partially tested
+3. `test_Signal.cpp` / `test_Observer.cpp` - Event system (important)
 
 ## Context That Would Be Lost
 
-- The `coverage.info` file in the repo root is INVALID - contains only third-party headers, zero DART source
-- Coverage infrastructure uses lcov (not gcovr) for CI uploads to Codecov
-- 3 disabled tests were already enabled; 1 remains disabled (HierarchicalTransforms) pending Phase 2 experimental feature
-- Current "67%" Codecov number may be inflated by third-party code inclusion
+- Coverage.info was polluted with third-party headers; fixed by adding `*/.pixi/*` to lcov filter
+- NameManager returns `newName` (not empty string) when object not found in `changeObjectName()`
+- The `common_unit_sources` list in `tests/unit/CMakeLists.txt` is where common tests are added
+- Module coverage ratios: common (0.15), utils (0.15), dynamics (0.30), collision (0.30)
 
 ## How to Resume
 
 ```bash
 git checkout task/test_coverage
-# Verify state:
 git status && git log -3 --oneline
 ```
 
-Then: Fix `pixi.toml` coverage-report task to add `'*/.pixi/*'` to lcov --remove filters (around line 802-803).
+Then: Pick next test from `02-coverage-gaps.md` Quick Win candidates and implement.
+
+## Files Created This Session
+
+- `docs/dev_tasks/test-coverage-audit/02-coverage-gaps.md` - Coverage gap analysis
+- `tests/unit/common/test_NameManager.cpp` - 20 unit tests for NameManager
