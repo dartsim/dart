@@ -46,16 +46,19 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 
 ### Joint Type Implementation Status
 
-| Joint Type | DOF | Status      |
-| ---------- | --- | ----------- |
-| Revolute   | 1   | Implemented |
-| Prismatic  | 1   | Implemented |
-| Fixed      | 0   | Implemented |
-| Screw      | 1   | TODO        |
-| Universal  | 2   | TODO        |
-| Ball       | 3   | TODO        |
-| Planar     | 3   | TODO        |
-| Free       | 6   | TODO        |
+| Joint Type | DOF | Data Model | Kinematics | Tests |
+| ---------- | --- | ---------- | ---------- | ----- |
+| Revolute   | 1   | ✅         | TODO       | ✅    |
+| Prismatic  | 1   | ✅         | TODO       | ✅    |
+| Fixed      | 0   | ✅         | N/A        | ✅    |
+| Screw      | 1   | ✅         | TODO       | ✅    |
+| Universal  | 2   | ✅         | TODO       | ✅    |
+| Ball       | 3   | ✅         | TODO       | ✅    |
+| Planar     | 3   | ✅         | TODO       | ✅    |
+| Free       | 6   | ✅         | TODO       | ✅    |
+
+**Note**: All joint types are fully supported at the data model level. "Kinematics TODO" refers to
+forward kinematics calculations (computing link transforms from joint positions), which is Phase 5 work.
 
 ### Python Bindings Status
 
@@ -386,10 +389,9 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 ### Phase 0: Ground-Truth (Target: Week 1-2)
 
 - [x] Epic document created
-- [x] `test_joint.cpp` implemented (15 tests)
+- [x] `test_joint.cpp` implemented (27 tests total)
 - [x] `test_link.cpp` implemented (14 tests)
-- [x] `JointType::Fixed` tested (already implemented in codebase)
-- [ ] `JointType::Ball` implemented
+- [x] All joint types tested (Fixed, Revolute, Prismatic, Screw, Universal, Ball, Planar, Free)
 - [x] Doxygen comments reviewed (already present in public headers)
 - [ ] Hello world example created
 
@@ -399,7 +401,7 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 - [ ] Exception review complete
 - [ ] Lifetime docs complete
 - [ ] Design mode guards complete
-- [ ] All joint types implemented
+- [x] All joint types implemented (data model complete, kinematics is Phase 5)
 - [ ] RigidBody implemented
 
 ### Phase 2: Python Bindings (Target: Week 6-9)

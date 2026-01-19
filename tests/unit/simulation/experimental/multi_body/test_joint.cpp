@@ -338,3 +338,252 @@ TEST(Joint, HandleFromDifferentPaths)
   ASSERT_TRUE(joint2.has_value());
   EXPECT_EQ(joint1.getEntity(), joint2->getEntity());
 }
+
+//==============================================================================
+// All Joint Types - Type and DOF Verification
+//==============================================================================
+
+TEST(Joint, GetTypeBall)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "ball_joint",
+       .jointType = dse::comps::JointType::Ball});
+
+  auto joint = link1.getParentJoint();
+  EXPECT_EQ(joint.getType(), dse::comps::JointType::Ball);
+}
+
+TEST(Joint, BallJointThreeDOF)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "ball",
+       .jointType = dse::comps::JointType::Ball});
+
+  EXPECT_EQ(robot.getDOFCount(), 3u);
+}
+
+TEST(Joint, GetTypeFree)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "free_joint",
+       .jointType = dse::comps::JointType::Free});
+
+  auto joint = link1.getParentJoint();
+  EXPECT_EQ(joint.getType(), dse::comps::JointType::Free);
+}
+
+TEST(Joint, FreeJointSixDOF)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "free",
+       .jointType = dse::comps::JointType::Free});
+
+  EXPECT_EQ(robot.getDOFCount(), 6u);
+}
+
+TEST(Joint, GetTypeUniversal)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "universal_joint",
+       .jointType = dse::comps::JointType::Universal});
+
+  auto joint = link1.getParentJoint();
+  EXPECT_EQ(joint.getType(), dse::comps::JointType::Universal);
+}
+
+TEST(Joint, UniversalJointTwoDOF)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "universal",
+       .jointType = dse::comps::JointType::Universal});
+
+  EXPECT_EQ(robot.getDOFCount(), 2u);
+}
+
+TEST(Joint, GetTypePlanar)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "planar_joint",
+       .jointType = dse::comps::JointType::Planar});
+
+  auto joint = link1.getParentJoint();
+  EXPECT_EQ(joint.getType(), dse::comps::JointType::Planar);
+}
+
+TEST(Joint, PlanarJointThreeDOF)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "planar",
+       .jointType = dse::comps::JointType::Planar});
+
+  EXPECT_EQ(robot.getDOFCount(), 3u);
+}
+
+TEST(Joint, GetTypeScrew)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "screw_joint",
+       .jointType = dse::comps::JointType::Screw});
+
+  auto joint = link1.getParentJoint();
+  EXPECT_EQ(joint.getType(), dse::comps::JointType::Screw);
+}
+
+TEST(Joint, ScrewJointOneDOF)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "screw",
+       .jointType = dse::comps::JointType::Screw});
+
+  EXPECT_EQ(robot.getDOFCount(), 1u);
+}
+
+//==============================================================================
+// Mixed Joint Type Chain - DOF Accumulation
+//==============================================================================
+
+TEST(Joint, MixedJointTypesDOFAccumulation)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "free",
+       .jointType = dse::comps::JointType::Free});
+
+  auto link2 = robot.addLink(
+      "link2",
+      {.parentLink = link1,
+       .jointName = "ball",
+       .jointType = dse::comps::JointType::Ball});
+
+  auto link3 = robot.addLink(
+      "link3",
+      {.parentLink = link2,
+       .jointName = "revolute",
+       .jointType = dse::comps::JointType::Revolute});
+
+  auto link4 = robot.addLink(
+      "link4",
+      {.parentLink = link3,
+       .jointName = "fixed",
+       .jointType = dse::comps::JointType::Fixed});
+
+  EXPECT_EQ(robot.getDOFCount(), 10u);
+}
+
+TEST(Joint, AllJointTypesInOneRobot)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto l1 = robot.addLink(
+      "l1",
+      {.parentLink = base,
+       .jointName = "j_fixed",
+       .jointType = dse::comps::JointType::Fixed});
+
+  auto l2 = robot.addLink(
+      "l2",
+      {.parentLink = l1,
+       .jointName = "j_revolute",
+       .jointType = dse::comps::JointType::Revolute});
+
+  auto l3 = robot.addLink(
+      "l3",
+      {.parentLink = l2,
+       .jointName = "j_prismatic",
+       .jointType = dse::comps::JointType::Prismatic});
+
+  auto l4 = robot.addLink(
+      "l4",
+      {.parentLink = l3,
+       .jointName = "j_screw",
+       .jointType = dse::comps::JointType::Screw});
+
+  auto l5 = robot.addLink(
+      "l5",
+      {.parentLink = l4,
+       .jointName = "j_universal",
+       .jointType = dse::comps::JointType::Universal});
+
+  auto l6 = robot.addLink(
+      "l6",
+      {.parentLink = l5,
+       .jointName = "j_ball",
+       .jointType = dse::comps::JointType::Ball});
+
+  auto l7 = robot.addLink(
+      "l7",
+      {.parentLink = l6,
+       .jointName = "j_planar",
+       .jointType = dse::comps::JointType::Planar});
+
+  auto l8 = robot.addLink(
+      "l8",
+      {.parentLink = l7,
+       .jointName = "j_free",
+       .jointType = dse::comps::JointType::Free});
+
+  EXPECT_EQ(robot.getJointCount(), 8u);
+  EXPECT_EQ(robot.getDOFCount(), 17u);
+}
