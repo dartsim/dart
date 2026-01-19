@@ -282,10 +282,17 @@ TEST(CouplerConstraint, DifferentFromMimicMotor)
 // MimicDofProperties Tests
 //==============================================================================
 
-TEST(MimicDofProperties, DefaultValues)
+TEST(MimicDofProperties, DefaultValuesWithNullReference)
 {
-  MimicDofProperties props{};
+  // Explicitly initialize all fields including mReferenceJoint to avoid UB
+  MimicDofProperties props;
+  props.mReferenceJoint = nullptr;
+  props.mReferenceDofIndex = 0;
+  props.mMultiplier = 1.0;
+  props.mOffset = 0.0;
+  props.mConstraintType = MimicConstraintType::Motor;
 
+  EXPECT_EQ(props.mReferenceJoint, nullptr);
   EXPECT_EQ(props.mReferenceDofIndex, 0u);
   EXPECT_DOUBLE_EQ(props.mMultiplier, 1.0);
   EXPECT_DOUBLE_EQ(props.mOffset, 0.0);
