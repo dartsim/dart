@@ -168,8 +168,11 @@ SkeletonPtr createGround()
   tf.translation().y() = -thickness / 2.0;
   body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
-  shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.3);
-  shapeNode->getDynamicsAspect()->setFrictionCoeff(0.8);
+  auto* dynamics = shapeNode->getDynamicsAspect();
+  dynamics->setRestitutionCoeff(0.3);
+  dynamics->setFrictionCoeff(0.8);
+  dynamics->setPrimarySlipCompliance(0.0);
+  dynamics->setSecondarySlipCompliance(0.0);
 
   return ground;
 }
@@ -201,8 +204,11 @@ SkeletonPtr createBox(
   tf.translation() = position;
   body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
-  shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.3);
-  shapeNode->getDynamicsAspect()->setFrictionCoeff(0.8);
+  auto* dynamics = shapeNode->getDynamicsAspect();
+  dynamics->setRestitutionCoeff(0.3);
+  dynamics->setFrictionCoeff(0.8);
+  dynamics->setPrimarySlipCompliance(0.0);
+  dynamics->setSecondarySlipCompliance(0.0);
 
   return box;
 }
@@ -234,8 +240,11 @@ SkeletonPtr createSphere(
   tf.translation() = position;
   body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
-  shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.5);
-  shapeNode->getDynamicsAspect()->setFrictionCoeff(0.6);
+  auto* dynamics = shapeNode->getDynamicsAspect();
+  dynamics->setRestitutionCoeff(0.5);
+  dynamics->setFrictionCoeff(0.6);
+  dynamics->setPrimarySlipCompliance(0.0);
+  dynamics->setSecondarySlipCompliance(0.0);
 
   return sphere;
 }
@@ -398,7 +407,10 @@ WorldPtr createInclinedPlaneScenario()
   rampTf.linear() = rampRotation.toRotationMatrix();
   rampBody->getParentJoint()->setTransformFromParentBodyNode(rampTf);
 
-  rampNode->getDynamicsAspect()->setFrictionCoeff(0.5);
+  auto* rampDynamics = rampNode->getDynamicsAspect();
+  rampDynamics->setFrictionCoeff(0.5);
+  rampDynamics->setPrimarySlipCompliance(0.0);
+  rampDynamics->setSecondarySlipCompliance(0.0);
   world->addSkeleton(ramp);
 
   double boxSize = 0.2;
@@ -918,9 +930,7 @@ int main(int argc, char* argv[])
       std::make_shared<LcpPhysicsWidget>(
           &viewer, worldNode, scenarioIdx, solverIdx));
 
-  const int windowWidth = static_cast<int>(1280 * guiScale);
-  const int windowHeight = static_cast<int>(720 * guiScale);
-  viewer.setUpViewInWindow(100, 100, windowWidth, windowHeight);
+  viewer.setUpViewInWindow(100, 100, 1280, 720);
 
   viewer.getCameraManipulator()->setHomePosition(
       ::osg::Vec3(3.0f, 2.0f, 3.0f),
