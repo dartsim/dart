@@ -148,8 +148,8 @@ Tests that would add coverage with minimal effort:
 | Class                       | Module     | Effort | Impact | Status |
 | --------------------------- | ---------- | ------ | ------ | ------ |
 | `NameManager`               | common     | Low    | Low    | ✅ DONE |
-| `Singleton`                 | common     | Low    | Low    | Next |
-| `Signal/Observer`           | common     | Medium | Medium | Priority |
+| `Singleton`                 | common     | Low    | Low    | ✅ DONE |
+| `Signal/Observer`           | common     | Medium | Medium | ✅ DONE |
 | `CollisionFilter`           | collision  | Medium | High   | Expand existing |
 | `ConstraintBase` edge cases | constraint | Medium | High   | Error paths |
 | Parser error handling       | utils      | Medium | Medium | Malformed input |
@@ -160,8 +160,9 @@ Tests that would add coverage with minimal effort:
 
 1. ~~Fix coverage reporting~~ ✅ DONE
 2. ~~Add `test_NameManager.cpp`~~ ✅ DONE (20 tests)
-3. Add `test_Singleton.cpp`
-4. Expand CollisionFilter tests
+3. ~~Add `test_Singleton.cpp`~~ ✅ DONE (8 tests)
+4. ~~Add `test_Signal.cpp`~~ ✅ DONE (18 tests)
+5. Expand CollisionFilter tests
 
 ### Phase 2: Core Systems (1 week)
 

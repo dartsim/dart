@@ -49,6 +49,8 @@ set(common_unit_sources
   common/test_PoolAllocator.cpp
   common/test_Resource.cpp
   common/test_Result.cpp
+  common/test_Signal.cpp
+  common/test_Singleton.cpp
   common/test_StlAllocator.cpp
   common/test_Stopwatch.cpp
   common/test_SubjectObserver.cpp

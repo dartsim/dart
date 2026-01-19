@@ -21,31 +21,32 @@ git log -5 --oneline
 
 **Tests added so far:**
 - `tests/unit/common/test_NameManager.cpp` (20 tests)
+- `tests/unit/common/test_Singleton.cpp` (8 tests)
+- `tests/unit/common/test_Signal.cpp` (18 tests)
 
 ## Immediate Next Step
 
-**Add more quick-win tests from the prioritized list.**
+**Continue Phase 4: Add more quick-win tests from the prioritized list.**
 
-Pick ONE of these and implement:
-
-| Priority | Class | File to Create | Estimated Tests |
-|----------|-------|----------------|-----------------|
-| 1 | `Singleton` | `tests/unit/common/test_Singleton.cpp` | 5-8 |
-| 2 | `Signal/Observer` | `tests/unit/common/test_Signal.cpp` | 10-15 |
-| 3 | `CollisionFilter` | Expand `tests/unit/collision/test_CollisionFilter.cpp` | +5-10 |
+| Priority | Class | File to Create | Estimated Tests | Status |
+|----------|-------|----------------|-----------------|--------|
+| 1 | `Singleton` | `tests/unit/common/test_Singleton.cpp` | 5-8 | ✅ DONE |
+| 2 | `Signal/Observer` | `tests/unit/common/test_Signal.cpp` | 10-15 | ✅ DONE |
+| 3 | `CollisionFilter` | Expand `tests/unit/collision/test_CollisionFilter.cpp` | +5-10 | Next |
+| 4 | `Aspect` system | `tests/unit/common/test_Aspect.cpp` | 15-20 | Pending |
+| 5 | Constraint edge cases | Expand existing constraint tests | +10-15 | Pending |
 
 ## How to Add a New Test
 
 1. **Create test file** following existing patterns:
    ```cpp
-   // tests/unit/common/test_NewClass.cpp
    #include <dart/common/NewClass.hpp>
    #include <gtest/gtest.h>
    // ... tests using TEST() or TEST_F() macros
    ```
 
 2. **Add to CMakeLists.txt** (`tests/unit/CMakeLists.txt`):
-   - For common module: Add to `common_unit_sources` list (around line 40-56)
+   - For common module: Add to `common_unit_sources` list (around line 40-58)
    - For other modules: Use `dart_add_test()` macro
 
 3. **Build and run**:
@@ -57,7 +58,7 @@ Pick ONE of these and implement:
 
 4. **Verify all tests pass**:
    ```bash
-   pixi run test-unit
+   pixi run test
    ```
 
 ## Key Files to Know
@@ -72,7 +73,7 @@ Pick ONE of these and implement:
 
 ## Important Context
 
-1. **Coverage.info filter**: We added `*/.pixi/*` to lcov `--remove` to exclude third-party headers. Without this, coverage was polluted with Eigen/assimp/etc.
+1. **Coverage.info filter**: We added `*/.pixi/*` to lcov `--remove` to exclude third-party headers.
 
 2. **codecov.yml changes**:
    - Added per-module components for visibility
@@ -84,7 +85,7 @@ Pick ONE of these and implement:
 
 4. **CMake pattern for common tests**: Add to `common_unit_sources` list, NOT via `dart_add_test()`
 
-5. **NameManager quirk**: `changeObjectName()` returns `newName` (not empty string) when object not found
+5. **Known failing test**: `test_frame - Frame.HierarchicalTransforms` in simulation-experimental is expected to fail (requires Phase 2 implementation)
 
 ## Module Coverage Ratios (pre-improvement)
 
@@ -96,20 +97,12 @@ Pick ONE of these and implement:
 | collision | 0.30 | Multiple backends |
 | constraint | 0.34 | Solver edge cases need work |
 
-## Commits on This Branch
-
-```
-11905d689e8 docs: update test coverage audit status and resume instructions
-92d245c165a test: add NameManager unit tests and coverage gap analysis
-55c26ac7827 test: improve coverage infrastructure and enable valid disabled tests
-```
-
 ## Verification Before Committing
 
 ```bash
 pixi run lint          # Format code
 pixi run build         # Ensure it compiles
-pixi run test-unit     # Run unit tests (or specific test)
+pixi run test          # Run all tests
 git add <files>
 git commit -m "test: add <ClassName> unit tests"
 git push origin task/test_coverage

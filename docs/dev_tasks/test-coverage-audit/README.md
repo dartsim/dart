@@ -52,6 +52,8 @@ See `02-coverage-gaps.md` for detailed analysis. Summary:
 | Test File | Tests | Coverage |
 |-----------|-------|----------|
 | `test_NameManager.cpp` | 20 | `dart::common::NameManager` |
+| `test_Singleton.cpp` | 8 | `dart::common::Singleton` |
+| `test_Signal.cpp` | 18 | `dart::common::Signal`, `Connection`, `ScopedConnection`, `SlotRegister` |
 
 ## What's Next
 
