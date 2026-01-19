@@ -23,6 +23,7 @@ git log -5 --oneline
 - `tests/unit/common/test_NameManager.cpp` (20 tests)
 - `tests/unit/common/test_Singleton.cpp` (8 tests)
 - `tests/unit/common/test_Signal.cpp` (18 tests)
+- `tests/unit/common/test_VersionCounter.cpp` (6 tests)
 
 ## Immediate Next Step
 

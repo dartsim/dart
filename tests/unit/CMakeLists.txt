@@ -56,6 +56,7 @@ set(common_unit_sources
   common/test_SubjectObserver.cpp
   common/test_String.cpp
   common/test_Uri.cpp
+  common/test_VersionCounter.cpp
 )
 
 if(DART_BUILD_PROFILE AND DART_PROFILE_ENABLE_TEXT)

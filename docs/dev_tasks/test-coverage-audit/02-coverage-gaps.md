@@ -150,6 +150,7 @@ Tests that would add coverage with minimal effort:
 | `NameManager`               | common     | Low    | Low    | ✅ DONE |
 | `Singleton`                 | common     | Low    | Low    | ✅ DONE |
 | `Signal/Observer`           | common     | Medium | Medium | ✅ DONE |
+| `VersionCounter`            | common     | Low    | Low    | ✅ DONE |
 | `CollisionFilter`           | collision  | Medium | High   | Expand existing |
 | `ConstraintBase` edge cases | constraint | Medium | High   | Error paths |
 | Parser error handling       | utils      | Medium | Medium | Malformed input |
