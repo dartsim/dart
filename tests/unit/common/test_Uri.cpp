@@ -245,6 +245,26 @@ TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
   }
 }
 
+TEST(UriHelpers, fromString_WindowsStyleFileUri_ParsesCorrectly)
+{
+  Uri uri;
+
+  ASSERT_TRUE(uri.fromString("file:///C:/Users/name/model.urdf"));
+  ASSERT_TRUE(uri.mScheme);
+  ASSERT_TRUE(uri.mAuthority);
+  ASSERT_TRUE(uri.mPath);
+  EXPECT_FALSE(uri.mQuery);
+  EXPECT_FALSE(uri.mFragment);
+  EXPECT_EQ("file", *uri.mScheme);
+  EXPECT_EQ("", *uri.mAuthority);
+  EXPECT_EQ("/C:/Users/name/model.urdf", *uri.mPath);
+
+  ASSERT_TRUE(uri.fromString("file:///D:/projects/dart/data/sdf/model.sdf"));
+  EXPECT_EQ("file", *uri.mScheme);
+  EXPECT_EQ("", *uri.mAuthority);
+  EXPECT_EQ("/D:/projects/dart/data/sdf/model.sdf", *uri.mPath);
+}
+
 TEST(UriHelpers, getRelativeUri)
 {
   std::vector<std::pair<std::string, std::string>> testPairs = {

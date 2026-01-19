@@ -139,6 +139,9 @@ if(TARGET dart)
   target_link_libraries(UNIT_math_Convhull dart)
 endif()
 
+# Optimization tests
+dart_add_test("unit" UNIT_math_optimization_Problem math/optimization/test_Problem.cpp)
+
 # Math LCP tests
 dart_build_tests(
   TYPE unit
