@@ -1,94 +1,111 @@
 # Resume: Simulation Experimental API Epic
 
-## Last Session Summary
+## Quick Status
 
-**Phase 2 (Python Bindings) COMPLETE!**
+**Phases 0, 1, 2 COMPLETE. Ready for Phase 3 (Testing) or Phase 4 (Performance).**
 
-Added StateSpace bindings and additional Python tests. Phase 2 is now fully complete.
+| Phase | Status | Description |
+|-------|--------|-------------|
+| 0 | ✅ Complete | Ground-truth: tests, docs, example |
+| 1 | ✅ Complete | API cleanup: all joint types, state accessors, RigidBody |
+| 2 | ✅ Complete | Python bindings: all classes + StateSpace |
+| 3 | ⏳ Next | Testing strategy: coverage audit, golden tests |
+| 4 | ⏳ Next | Performance: benchmarks (can run parallel with 3) |
+| 5 | Future | Physics integration: `World::step()` |
+| 6 | Future | Migration story |
 
 ## Current Branch
 
-`feature/sim_exp` - contains Phase 0, 1, and 2 work.
+```
+Branch: feature/sim_exp
+Status: 2 commits ahead of origin (unpushed)
+Working tree: clean
+```
 
-Latest commits:
-- Phase 0/1: C++ API cleanup, tests, documentation
-- Phase 2: Python bindings for simulation_experimental (core classes + StateSpace)
+**Unpushed commits:**
+```
+cd33d970ef9 feat(simulation-experimental): Add StateSpace Python bindings
+6c1e872348c feat(simulation-experimental): Add Python bindings for core classes
+```
 
-Working tree has uncommitted changes for StateSpace bindings.
+## Immediate Next Step
 
-## What's Complete
+**Choose one:**
 
-### Phase 0 (Ground-Truth) ✅ COMPLETE
-
-- [x] Epic document created
-- [x] test_joint.cpp: 41 tests
-- [x] test_link.cpp: 14 tests
-- [x] test_rigid_body.cpp: 14 tests
-- [x] All joint types tested
-- [x] Hello world example created
-
-### Phase 1 (API Cleanup) ✅ COMPLETE
-
-- [x] All joint types data model complete
-- [x] Joint state accessors (position/velocity/acceleration/torque)
-- [x] Joint limits accessors
-- [x] RigidBody full implementation
-- [x] Naming audit, exception review, lifetime docs
-
-### Phase 2 (Python Bindings) ✅ COMPLETE
-
-- [x] Module structure: `python/dartpy/simulation_experimental/`
-- [x] World bound with all methods
-- [x] MultiBody, Link, Joint bound
-- [x] Frame, FreeFrame, FixedFrame bound
-- [x] RigidBody bound
-- [x] JointType enum bound
-- [x] StateSpace + StateSpaceVariable bound
-- [x] Python tests: 16 tests passing
-- [x] Python docstrings: deferred (follows existing dartpy pattern)
-
-## Test Summary
-
-| Test Type   | # Tests | Status   |
-| ----------- | ------- | -------- |
-| C++ Unit    | 69+     | All pass |
-| Python Unit | 16      | All pass |
-
-## Next Steps
-
-1. **Commit StateSpace bindings** - Ready for commit
-2. **Push and create PR** - Ship Phases 0-2
-3. **Phase 3 (Testing)** - Increase coverage, golden tests
-4. **Phase 4 (Performance)** - Benchmarks (can run parallel with Phase 3)
-
-## Files Changed (Phase 2 - StateSpace additions)
-
-New files:
-- `python/dartpy/simulation_experimental/state_space.hpp`
-- `python/dartpy/simulation_experimental/state_space.cpp`
-
-Modified files:
-- `python/dartpy/simulation_experimental/module.cpp` (added defStateSpace)
-- `python/dartpy/CMakeLists.txt` (added state_space files)
-- `python/tests/unit/simulation_experimental/test_experimental_world.py` (6 new tests)
+1. **Push and create PR** for Phases 0-2 (ship what's done)
+2. **Continue to Phase 3** (testing coverage audit)
+3. **Continue to Phase 4** (benchmarks - can run parallel with Phase 3)
 
 ## How to Resume
 
 ```bash
+# 1. Checkout and verify branch state
 git checkout feature/sim_exp
-git status && git log -3 --oneline
+git status
+git log --oneline -5
 
-# Verify everything works:
+# 2. Verify tests pass
 pixi run build
 ctest -L simulation-experimental --test-dir build/default/cpp/Release
 pixi run pytest python/tests/unit/simulation_experimental/ -v
 
-# Commit StateSpace bindings:
-git add -A
-git commit -m "feat(simulation-experimental): Add StateSpace Python bindings"
+# 3. Choose next action:
+# Option A: Push and create PR
+git push origin feature/sim_exp
+gh pr create --title "feat(simulation-experimental): Python bindings for core classes" --body "..."
+
+# Option B: Start Phase 3 (Testing)
+# See README.md Phase 3 tasks
+
+# Option C: Start Phase 4 (Performance)
+# See README.md Phase 4 tasks
 ```
 
-## Python Usage Example
+## What Was Built
+
+### C++ (Phases 0-1)
+
+| Component | Tests | Location |
+|-----------|-------|----------|
+| Joint (all 8 types) | 41 | `tests/unit/simulation/experimental/test_joint.cpp` |
+| Link | 14 | `tests/unit/simulation/experimental/test_link.cpp` |
+| RigidBody | 14 | `tests/unit/simulation/experimental/test_rigid_body.cpp` |
+| Hello World Example | - | `examples/simulation_experimental_hello_world/` |
+
+### Python Bindings (Phase 2)
+
+| Class | File |
+|-------|------|
+| World | `python/dartpy/simulation_experimental/world.cpp` |
+| MultiBody, Link, Joint | `python/dartpy/simulation_experimental/multi_body.cpp` |
+| Frame, FreeFrame, FixedFrame | `python/dartpy/simulation_experimental/frame.cpp` |
+| RigidBody | `python/dartpy/simulation_experimental/rigid_body.cpp` |
+| StateSpace, StateSpaceVariable | `python/dartpy/simulation_experimental/state_space.cpp` |
+| JointType enum | `python/dartpy/simulation_experimental/joint_type.cpp` |
+
+**Python tests:** 16 tests in `python/tests/unit/simulation_experimental/test_experimental_world.py`
+
+## Test Verification Commands
+
+```bash
+# C++ tests (13 test binaries, ~70 tests)
+ctest -L simulation-experimental --test-dir build/default/cpp/Release
+
+# Python tests (16 tests)
+pixi run pytest python/tests/unit/simulation_experimental/ -v
+
+# Full validation
+pixi run test-all
+```
+
+## Key Design Decisions
+
+1. **Binding function naming**: Used `Exp` prefix (e.g., `defExpFrame`, `defExpJoint`) to avoid conflicts with existing `dynamics/frame.cpp` bindings
+2. **LinkOptions workaround**: Exposed `add_link_with_joint()` Python method instead of `LinkOptions` struct (couldn't be default-constructed)
+3. **Python docstrings**: Deferred - follows existing dartpy pattern where C++ Doxygen is source of truth
+4. **StateSpace**: Full binding including Variable struct with all properties
+
+## Python API Example
 
 ```python
 import dartpy as dart
@@ -105,21 +122,40 @@ root = robot.add_link("base")
 arm = robot.add_link_with_joint("arm", root, "shoulder",
     exp.JointType.Revolute, np.array([0, 0, 1]))
 
-# Access joint
+# Access joint state
 joint = arm.get_parent_joint()
-print(f"Joint DOF: {joint.get_dof()}")
 joint.set_position(np.array([1.0]))
-
-# Create rigid body
-box = world.add_rigid_body("box")
-print(f"Mass: {box.get_mass()}")
+print(f"Position: {joint.get_position()}")
 
 # StateSpace for optimization
 space = exp.StateSpace()
 space.add_variable("joint_pos", 6, -3.14, 3.14)
-space.add_variable("joint_vel", 6, -10.0, 10.0)
 space.finalize()
-print(f"State dimension: {space.get_dimension()}")  # 12
+print(f"Dimension: {space.get_dimension()}")  # 6
 ```
 
-Ready for: Commit, push, or continue to Phase 3/4
+## Phase 3 Tasks (Testing Strategy)
+
+From README.md:
+- [ ] Audit test coverage with `gcov`/`lcov`
+- [ ] Write missing unit tests to reach 80% coverage
+- [ ] Create serialization golden tests (known-good binary files)
+- [ ] Add integration test: load URDF then convert to experimental
+- [ ] Benchmark test: create 1000-body world, serialize, deserialize
+
+## Phase 4 Tasks (Performance)
+
+From README.md:
+- [ ] Create benchmark: MultiBody creation (100, 1000, 10000 bodies)
+- [ ] Create benchmark: Frame transform computation
+- [ ] Create benchmark: StateSpace extraction/injection
+- [ ] Profile ECS component access patterns
+- [ ] Compare kinematics performance vs classic `Skeleton`
+
+## Related Files
+
+- **Epic tracker**: `docs/dev_tasks/simulation_experimental_api_epic/README.md`
+- **C++ source**: `dart/simulation/experimental/`
+- **Python bindings**: `python/dartpy/simulation_experimental/`
+- **Python tests**: `python/tests/unit/simulation_experimental/`
+- **C++ tests**: `tests/unit/simulation/experimental/`
