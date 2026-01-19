@@ -200,3 +200,10 @@ endif()
 if(DART_BUILD_SIMULATION_EXPERIMENTAL)
   add_subdirectory(simulation/experimental)
 endif()
+
+# ==============================================================================
+# Collision-Experimental Tests
+# ==============================================================================
+if(DART_BUILD_COLLISION_EXPERIMENTAL)
+  add_subdirectory(collision/experimental)
+endif()
