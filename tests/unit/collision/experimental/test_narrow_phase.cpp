@@ -65,7 +65,13 @@ TEST(NarrowPhase, IsSupported)
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Capsule, ShapeType::Cylinder));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Cylinder, ShapeType::Plane));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Plane, ShapeType::Cylinder));
-  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Sphere));
+
+  // Convex and Mesh types are supported via GJK
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Convex, ShapeType::Convex));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Convex, ShapeType::Sphere));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Mesh));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Sphere));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Convex));
 }
 
 TEST(NarrowPhase, SphereSphere_Colliding)

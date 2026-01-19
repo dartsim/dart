@@ -36,6 +36,7 @@
 #include <dart/collision/experimental/narrow_phase/capsule_box.hpp>
 #include <dart/collision/experimental/narrow_phase/capsule_capsule.hpp>
 #include <dart/collision/experimental/narrow_phase/capsule_sphere.hpp>
+#include <dart/collision/experimental/narrow_phase/convex_convex.hpp>
 #include <dart/collision/experimental/narrow_phase/cylinder_collision.hpp>
 #include <dart/collision/experimental/narrow_phase/distance.hpp>
 #include <dart/collision/experimental/narrow_phase/plane_sphere.hpp>
@@ -211,6 +212,11 @@ bool NarrowPhase::collide(
     return collideCylinderPlane(*c, tf2, *p, tf1, result, option);
   }
 
+  if (type1 == ShapeType::Convex || type1 == ShapeType::Mesh
+      || type2 == ShapeType::Convex || type2 == ShapeType::Mesh) {
+    return collideConvexConvex(*shape1, tf1, *shape2, tf2, result, option);
+  }
+
   return false;
 }
 
@@ -266,6 +272,10 @@ bool NarrowPhase::isSupported(ShapeType type1, ShapeType type2)
   }
   if ((type1 == ShapeType::Cylinder && type2 == ShapeType::Plane)
       || (type1 == ShapeType::Plane && type2 == ShapeType::Cylinder)) {
+    return true;
+  }
+  if (type1 == ShapeType::Convex || type1 == ShapeType::Mesh
+      || type2 == ShapeType::Convex || type2 == ShapeType::Mesh) {
     return true;
   }
   return false;

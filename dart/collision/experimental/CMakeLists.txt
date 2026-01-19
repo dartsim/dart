@@ -41,6 +41,7 @@ add_library(${target_name}
   narrow_phase/capsule_box.cpp
   narrow_phase/capsule_capsule.cpp
   narrow_phase/capsule_sphere.cpp
+  narrow_phase/convex_convex.cpp
   narrow_phase/cylinder_collision.cpp
   narrow_phase/distance.cpp
   narrow_phase/gjk.cpp
