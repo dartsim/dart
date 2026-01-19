@@ -36,7 +36,9 @@ add_library(${target_name}
   aabb.cpp
   broad_phase/brute_force.cpp
   collision_object.cpp
+  collision_world.cpp
   narrow_phase/box_box.cpp
+  narrow_phase/narrow_phase.cpp
   narrow_phase/sphere_box.cpp
   narrow_phase/sphere_sphere.cpp
   shapes/shape.cpp
