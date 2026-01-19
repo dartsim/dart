@@ -189,9 +189,31 @@ public:
   /// @throws InvalidArgumentException if size mismatch
   void setTorque(const Eigen::VectorXd& torque);
 
+  /// Get lower position limits
+  [[nodiscard]] Eigen::VectorXd getPositionLowerLimits() const;
+
+  /// Set lower position limits
+  void setPositionLowerLimits(const Eigen::VectorXd& limits);
+
+  /// Get upper position limits
+  [[nodiscard]] Eigen::VectorXd getPositionUpperLimits() const;
+
+  /// Set upper position limits
+  void setPositionUpperLimits(const Eigen::VectorXd& limits);
+
+  /// Get velocity limits (symmetric)
+  [[nodiscard]] Eigen::VectorXd getVelocityLimits() const;
+
+  /// Set velocity limits (symmetric)
+  void setVelocityLimits(const Eigen::VectorXd& limits);
+
+  /// Get effort/torque limits
+  [[nodiscard]] Eigen::VectorXd getEffortLimits() const;
+
+  /// Set effort/torque limits
+  void setEffortLimits(const Eigen::VectorXd& limits);
+
   // TODO: Add methods for:
-  // - Getting/setting joint limits
-  // - Getting/setting effort limits
   // - Computing joint transforms
 
 private:

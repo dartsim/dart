@@ -216,4 +216,60 @@ void Joint::setTorque(const Eigen::VectorXd& torque)
   jointComp.torque = torque;
 }
 
+//==============================================================================
+Eigen::VectorXd Joint::getPositionLowerLimits() const
+{
+  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  return jointComp.limits.lower;
+}
+
+//==============================================================================
+void Joint::setPositionLowerLimits(const Eigen::VectorXd& limits)
+{
+  auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  jointComp.limits.lower = limits;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getPositionUpperLimits() const
+{
+  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  return jointComp.limits.upper;
+}
+
+//==============================================================================
+void Joint::setPositionUpperLimits(const Eigen::VectorXd& limits)
+{
+  auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  jointComp.limits.upper = limits;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getVelocityLimits() const
+{
+  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  return jointComp.limits.velocity;
+}
+
+//==============================================================================
+void Joint::setVelocityLimits(const Eigen::VectorXd& limits)
+{
+  auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  jointComp.limits.velocity = limits;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getEffortLimits() const
+{
+  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  return jointComp.limits.effort;
+}
+
+//==============================================================================
+void Joint::setEffortLimits(const Eigen::VectorXd& limits)
+{
+  auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  jointComp.limits.effort = limits;
+}
+
 } // namespace dart::simulation::experimental

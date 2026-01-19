@@ -806,3 +806,104 @@ TEST(Joint, FixedJointHasZeroSizeState)
   EXPECT_EQ(joint.getAcceleration().size(), 0);
   EXPECT_EQ(joint.getTorque().size(), 0);
 }
+
+//==============================================================================
+// Joint Limits Tests
+//==============================================================================
+
+TEST(Joint, GetSetPositionLimits)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto l1 = robot.addLink(
+      "l1",
+      {.parentLink = base,
+       .jointName = "revolute",
+       .jointType = dse::comps::JointType::Revolute});
+
+  auto joint = l1.getParentJoint();
+
+  Eigen::VectorXd lower(1);
+  lower << -M_PI;
+  Eigen::VectorXd upper(1);
+  upper << M_PI;
+
+  joint.setPositionLowerLimits(lower);
+  joint.setPositionUpperLimits(upper);
+
+  EXPECT_TRUE(joint.getPositionLowerLimits().isApprox(lower));
+  EXPECT_TRUE(joint.getPositionUpperLimits().isApprox(upper));
+}
+
+TEST(Joint, GetSetVelocityLimits)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto l1 = robot.addLink(
+      "l1",
+      {.parentLink = base,
+       .jointName = "revolute",
+       .jointType = dse::comps::JointType::Revolute});
+
+  auto joint = l1.getParentJoint();
+
+  Eigen::VectorXd velLimits(1);
+  velLimits << 10.0;
+
+  joint.setVelocityLimits(velLimits);
+
+  EXPECT_TRUE(joint.getVelocityLimits().isApprox(velLimits));
+}
+
+TEST(Joint, GetSetEffortLimits)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto l1 = robot.addLink(
+      "l1",
+      {.parentLink = base,
+       .jointName = "revolute",
+       .jointType = dse::comps::JointType::Revolute});
+
+  auto joint = l1.getParentJoint();
+
+  Eigen::VectorXd effortLimits(1);
+  effortLimits << 100.0;
+
+  joint.setEffortLimits(effortLimits);
+
+  EXPECT_TRUE(joint.getEffortLimits().isApprox(effortLimits));
+}
+
+TEST(Joint, MultiDOFLimits)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto l1 = robot.addLink(
+      "l1",
+      {.parentLink = base,
+       .jointName = "free",
+       .jointType = dse::comps::JointType::Free});
+
+  auto joint = l1.getParentJoint();
+  EXPECT_EQ(joint.getDOF(), 6u);
+
+  Eigen::VectorXd lower(6);
+  lower << -1, -1, -1, -M_PI, -M_PI, -M_PI;
+  Eigen::VectorXd upper(6);
+  upper << 1, 1, 1, M_PI, M_PI, M_PI;
+
+  joint.setPositionLowerLimits(lower);
+  joint.setPositionUpperLimits(upper);
+
+  EXPECT_TRUE(joint.getPositionLowerLimits().isApprox(lower));
+  EXPECT_TRUE(joint.getPositionUpperLimits().isApprox(upper));
+}
