@@ -49,17 +49,22 @@ See `02-coverage-gaps.md` for detailed analysis. Summary:
 
 ### Phase 4: Tests Added (In Progress)
 
-| Test File                    | Tests | Coverage                                                                 |
-| ---------------------------- | ----- | ------------------------------------------------------------------------ |
-| `test_NameManager.cpp`       | 20    | `dart::common::NameManager`                                              |
-| `test_Singleton.cpp`         | 8     | `dart::common::Singleton`                                                |
-| `test_Signal.cpp`            | 18    | `dart::common::Signal`, `Connection`, `ScopedConnection`, `SlotRegister` |
-| `test_VersionCounter.cpp`    | 6     | `dart::common::VersionCounter`                                           |
-| `test_SubjectObserver.cpp`\* | 15    | `dart::common::Observer`, `Subject`, `sub_ptr`                           |
+| Test File                       | Tests | Coverage                                                                 |
+| ------------------------------- | ----- | ------------------------------------------------------------------------ |
+| `test_NameManager.cpp`          | 20    | `dart::common::NameManager`                                              |
+| `test_Singleton.cpp`            | 8     | `dart::common::Singleton`                                                |
+| `test_Signal.cpp`               | 18    | `dart::common::Signal`, `Connection`, `ScopedConnection`, `SlotRegister` |
+| `test_VersionCounter.cpp`       | 6     | `dart::common::VersionCounter`                                           |
+| `test_SubjectObserver.cpp`\*    | 15    | `dart::common::Observer`, `Subject`, `sub_ptr`                           |
+| `test_Castable.cpp`             | 10    | `dart::common::Castable`, `DART_STRING_TYPE` macro                       |
+| `test_Cloneable.cpp`            | 13    | `dart::common::MakeCloneable`                                            |
+| `test_Aspect.cpp`               | 24    | `dart::common::Aspect`, `AspectWithState`, `AspectWithVersionedProperties` |
+| `test_LocalResourceRetriever.cpp` | 15  | `dart::common::LocalResourceRetriever`                                   |
+| `test_LockableReference.cpp`    | 14    | `dart::common::SingleLockableReference`, `MultiLockableReference`        |
 
 \*Expanded existing test file (was 3 tests, now 18 tests)
 
-**Total new tests this task: 67**
+**Total new tests this task: 143**
 
 ## What's Next
 
@@ -68,8 +73,8 @@ See `02-coverage-gaps.md` for detailed analysis. Summary:
 Top candidates:
 
 1. Expand `test_CollisionFilter.cpp` - Already partially tested
-2. `test_Composite.cpp` - Core architecture (Aspect system)
-3. Parser error handling tests
+2. Parser error handling tests
+3. Constraint solver edge cases
 
 ## Test Suite Structure
 

@@ -20,13 +20,18 @@ git log -5 --oneline
 - ✅ Phase 3: Created coverage gap analysis (`02-coverage-gaps.md`)
 - 🔄 Phase 4: Test implementation (in progress)
 
-**Tests added so far (67 total new tests):**
+**Tests added so far (143 total new tests):**
 
 - `tests/unit/common/test_NameManager.cpp` (20 tests)
 - `tests/unit/common/test_Singleton.cpp` (8 tests)
 - `tests/unit/common/test_Signal.cpp` (18 tests)
 - `tests/unit/common/test_VersionCounter.cpp` (6 tests)
 - `tests/unit/common/test_SubjectObserver.cpp` (expanded: +15 tests, total 18)
+- `tests/unit/common/test_Castable.cpp` (10 tests)
+- `tests/unit/common/test_Cloneable.cpp` (13 tests)
+- `tests/unit/common/test_Aspect.cpp` (24 tests)
+- `tests/unit/common/test_LocalResourceRetriever.cpp` (15 tests)
+- `tests/unit/common/test_LockableReference.cpp` (14 tests)
 
 ## Immediate Next Step
 
@@ -38,9 +43,13 @@ git log -5 --oneline
 | 2        | `Signal/Observer`     | `tests/unit/common/test_Signal.cpp`                    | 10-15           | ✅ DONE |
 | 3        | `VersionCounter`      | `tests/unit/common/test_VersionCounter.cpp`            | 6               | ✅ DONE |
 | 4        | `sub_ptr`             | Expanded `tests/unit/common/test_SubjectObserver.cpp`  | +15             | ✅ DONE |
-| 5        | `CollisionFilter`     | Expand `tests/unit/collision/test_CollisionFilter.cpp` | +5-10           | Next    |
-| 6        | `Aspect` system       | `tests/unit/common/test_Aspect.cpp`                    | 15-20           | Pending |
-| 7        | Constraint edge cases | Expand existing constraint tests                       | +10-15          | Pending |
+| 5        | `Castable`            | `tests/unit/common/test_Castable.cpp`                  | 10              | ✅ DONE |
+| 6        | `Cloneable`           | `tests/unit/common/test_Cloneable.cpp`                 | 13              | ✅ DONE |
+| 7        | `Aspect` system       | `tests/unit/common/test_Aspect.cpp`                    | 24              | ✅ DONE |
+| 8        | `LocalResourceRetriever` | `tests/unit/common/test_LocalResourceRetriever.cpp` | 15              | ✅ DONE |
+| 9        | `LockableReference`   | `tests/unit/common/test_LockableReference.cpp`         | 14              | ✅ DONE |
+| 10       | `CollisionFilter`     | Expand `tests/unit/collision/test_CollisionFilter.cpp` | +5-10           | Next    |
+| 11       | Constraint edge cases | Expand existing constraint tests                       | +10-15          | Pending |
 
 ## How to Add a New Test
 
@@ -53,7 +62,7 @@ git log -5 --oneline
    ```
 
 2. **Add to CMakeLists.txt** (`tests/unit/CMakeLists.txt`):
-   - For common module: Add to `common_unit_sources` list (around line 40-58)
+   - For common module: Add to `common_unit_sources` list (around line 40-65)
    - For other modules: Use `dart_add_test()` macro
 
 3. **Build and run**:

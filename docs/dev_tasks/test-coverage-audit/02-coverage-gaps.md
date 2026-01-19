@@ -25,10 +25,10 @@
 
 **Untested classes** (no dedicated test file):
 
-- `Aspect`, `AspectWithVersion`, `EmbeddedAspect`, `ProxyAspect`, `RequiresAspect`, `SpecializedForAspect`
-- `Castable`, `ClassWithVirtualBase`, `Cloneable`, `CompositeJoiner`
-- `Diagnostics`, `LocalResourceRetriever`, `ResourceRetriever`
-- `LockableReference`, `MemoryAllocator`, `MemoryAllocatorDebugger`
+- ~~`Aspect`, `AspectWithVersion`~~, `EmbeddedAspect`, `ProxyAspect`, `RequiresAspect`, `SpecializedForAspect` ✅ Aspect/AspectWithVersion DONE
+- ~~`Castable`~~, `ClassWithVirtualBase`, ~~`Cloneable`~~, `CompositeJoiner` ✅ Castable/Cloneable DONE
+- `Diagnostics`, ~~`LocalResourceRetriever`~~, `ResourceRetriever` ✅ LocalResourceRetriever DONE
+- ~~`LockableReference`~~, `MemoryAllocator`, `MemoryAllocatorDebugger` ✅ LockableReference DONE
 - ~~`Observer`, `Subject`, `Signal`~~ ✅ DONE
 - ~~`SharedLibrary`, `Singleton`, `VersionCounter`~~ ✅ Singleton/VersionCounter DONE
 - `Metaprogramming`, `StlHelpers`, `Virtual`, ~~`sub_ptr`~~ ✅ DONE
@@ -152,6 +152,9 @@ Tests that would add coverage with minimal effort:
 | `Signal/Observer`           | common     | Medium | Medium | ✅ DONE         |
 | `VersionCounter`            | common     | Low    | Low    | ✅ DONE         |
 | `sub_ptr`                   | common     | Low    | Low    | ✅ DONE         |
+| `Aspect/AspectWithVersion`  | common     | Medium | High   | ✅ DONE         |
+| `LocalResourceRetriever`    | common     | Low    | Medium | ✅ DONE         |
+| `LockableReference`         | common     | Medium | Medium | ✅ DONE         |
 | `CollisionFilter`           | collision  | Medium | High   | Expand existing |
 | `ConstraintBase` edge cases | constraint | Medium | High   | Error paths     |
 | Parser error handling       | utils      | Medium | Medium | Malformed input |
@@ -166,7 +169,10 @@ Tests that would add coverage with minimal effort:
 4. ~~Add `test_Signal.cpp`~~ ✅ DONE (18 tests)
 5. ~~Add `test_VersionCounter.cpp`~~ ✅ DONE (6 tests)
 6. ~~Expand `test_SubjectObserver.cpp`~~ ✅ DONE (15 new tests, total 18)
-7. Expand CollisionFilter tests
+7. ~~Add `test_Aspect.cpp`~~ ✅ DONE (24 tests)
+8. ~~Add `test_LocalResourceRetriever.cpp`~~ ✅ DONE (15 tests)
+9. ~~Add `test_LockableReference.cpp`~~ ✅ DONE (14 tests)
+10. Expand CollisionFilter tests
 
 ### Phase 2: Core Systems (1 week)
 

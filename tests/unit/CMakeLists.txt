@@ -38,6 +38,7 @@ dart_add_test("unit" UNIT_collision_RaycastOption collision/test_RaycastOption.c
 # Common Tests
 # ==============================================================================
 set(common_unit_sources
+  common/test_Aspect.cpp
   common/test_CAllocator.cpp
   common/test_Castable.cpp
   common/test_Cloneable.cpp
@@ -45,6 +46,8 @@ set(common_unit_sources
   common/test_Exception.cpp
   common/test_Factory.cpp
   common/test_FreeListAllocator.cpp
+  common/test_LocalResourceRetriever.cpp
+  common/test_LockableReference.cpp
   common/test_Logging.cpp
   common/test_MemoryManager.cpp
   common/test_NameManager.cpp
