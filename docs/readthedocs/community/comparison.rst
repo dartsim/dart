@@ -59,6 +59,8 @@ Here are some other physics simulators commonly used in robotics research:
 * `Drake <https://drake.mit.edu/>`_
 * `PyBullet <https://pybullet.org/>`_
 * `Isaac Sim <https://developer.nvidia.com/isaac-sim>`_
+* `NVIDIA Newton <https://developer.nvidia.com/newton>`_
+* `Genesis <https://genesis-world.readthedocs.io/>`_
 * `ODE <https://www.ode.org/>`_
 
 We encourage you to evaluate multiple options for your specific needs.

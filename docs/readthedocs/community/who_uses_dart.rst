@@ -32,7 +32,7 @@ for acknowledgments.
 Research
 --------
 
-DART has been cited in `500+ research papers <https://scholar.google.com/scholar?cites=3727458449064418084>`_
+DART has been cited in `370+ research papers <https://scholar.google.com/scholar?cites=3727458449064418084>`_
 across robotics, computer graphics, and machine learning, including venues such as
 ICRA, IROS, RSS, SIGGRAPH, NeurIPS, and ICML.
 
