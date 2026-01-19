@@ -47,7 +47,7 @@
 #include "dart/simulation/World.hpp"
 #include "dart/utils/dart_resource_retriever.hpp"
 #include "dart/utils/mesh_loader.hpp"
-#include "dart/utils/urdf/BackwardCompatibility.hpp"
+#include "dart/utils/urdf/backward_compatibility.hpp"
 #include "dart/utils/urdf/include_urdf.hpp"
 #include "dart/utils/urdf/urdf_parser.hpp"
 #include "dart/utils/urdf/urdf_world_parser.hpp"

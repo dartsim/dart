@@ -37,7 +37,7 @@
 
 #pragma once
 
-#include <dart/utils/urdf/BackwardCompatibility.hpp>
+#include <dart/utils/urdf/backward_compatibility.hpp>
 #include <dart/utils/urdf/include_urdf.hpp>
 
 #include <dart/common/Uri.hpp>
