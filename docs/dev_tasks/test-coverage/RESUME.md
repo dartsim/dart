@@ -61,14 +61,14 @@ Wait for CI Coverage (Debug) jobs to complete and check codecov report. If cover
 
 ## Test Summary
 
-| Test File | Tests | Status |
-|-----------|-------|--------|
-| test_DegreeOfFreedom.cpp | 24 | ✅ |
-| test_MetaSkeleton.cpp | 31 | ✅ |
-| test_Linkage.cpp | 25 | ✅ |
-| test_CollisionGroup.cpp | 12 | ✅ |
-| test_World.cpp | 26 | ✅ |
-| + All previous Phase 1-2 tests | 100+ | ✅ |
+| Test File                      | Tests | Status |
+| ------------------------------ | ----- | ------ |
+| test_DegreeOfFreedom.cpp       | 24    | ✅     |
+| test_MetaSkeleton.cpp          | 31    | ✅     |
+| test_Linkage.cpp               | 25    | ✅     |
+| test_CollisionGroup.cpp        | 12    | ✅     |
+| test_World.cpp                 | 26    | ✅     |
+| + All previous Phase 1-2 tests | 100+  | ✅     |
 
 **Total unit test cases**: 908
 

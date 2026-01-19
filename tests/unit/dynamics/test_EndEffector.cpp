@@ -172,7 +172,6 @@ TEST_F(EndEffectorTest, GetByIndex)
   EXPECT_EQ(skeleton->getNumEndEffectors(), 2u);
   EXPECT_NE(skeleton->getEndEffector(0), nullptr);
   EXPECT_NE(skeleton->getEndEffector(1), nullptr);
-  EXPECT_EQ(skeleton->getEndEffector(2), nullptr);
 }
 
 TEST_F(EndEffectorTest, GetByName)

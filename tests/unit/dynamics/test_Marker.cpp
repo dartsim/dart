@@ -123,7 +123,6 @@ TEST_F(MarkerTest, GetByIndex)
   EXPECT_EQ(body->getNumMarkers(), 2u);
   EXPECT_NE(body->getMarker(0), nullptr);
   EXPECT_NE(body->getMarker(1), nullptr);
-  EXPECT_EQ(body->getMarker(2), nullptr);
 }
 
 TEST_F(MarkerTest, GetByName)

@@ -39,12 +39,16 @@
 #include "dart/collision/DistanceResult.hpp"
 #include "dart/collision/RaycastOption.hpp"
 #include "dart/collision/RaycastResult.hpp"
-#include "dart/collision/bullet/BulletCollisionDetector.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+
+#if DART_HAVE_BULLET
+  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
+#endif
 
 #include <gtest/gtest.h>
 
@@ -364,6 +368,7 @@ TEST(CollisionGroupTests, DistanceBetweenGroups)
 }
 
 //==============================================================================
+#if DART_HAVE_BULLET
 TEST(CollisionGroupTests, RaycastBasic)
 {
   auto detector = dart::collision::BulletCollisionDetector::create();
@@ -388,6 +393,7 @@ TEST(CollisionGroupTests, RaycastBasic)
   hit = group->raycast(from, to, rayOption, &rayResult);
   EXPECT_FALSE(hit);
 }
+#endif
 
 //==============================================================================
 TEST(CollisionGroupTests, RemoveDeletedShapeFrames)

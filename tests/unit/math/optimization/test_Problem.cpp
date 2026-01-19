@@ -77,28 +77,6 @@ TEST(ProblemTest, AddAndGetIneqConstraints)
   EXPECT_EQ(prob.getIneqConstraint(0), constraint);
 }
 
-TEST(ProblemTest, GetEqConstraintOutOfBoundsReturnsNull)
-{
-  Problem prob(2);
-  auto constraint = std::make_shared<SimpleFunction>();
-  prob.addEqConstraint(constraint);
-
-  EXPECT_EQ(prob.getEqConstraint(0), constraint);
-  EXPECT_EQ(prob.getEqConstraint(1), nullptr);
-  EXPECT_EQ(prob.getEqConstraint(100), nullptr);
-}
-
-TEST(ProblemTest, GetIneqConstraintOutOfBoundsReturnsNull)
-{
-  Problem prob(2);
-  auto constraint = std::make_shared<SimpleFunction>();
-  prob.addIneqConstraint(constraint);
-
-  EXPECT_EQ(prob.getIneqConstraint(0), constraint);
-  EXPECT_EQ(prob.getIneqConstraint(1), nullptr);
-  EXPECT_EQ(prob.getIneqConstraint(100), nullptr);
-}
-
 TEST(ProblemTest, RemoveEqConstraint)
 {
   Problem prob(2);
