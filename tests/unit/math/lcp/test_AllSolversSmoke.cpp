@@ -134,6 +134,12 @@ std::vector<SolverTestCase> createAllSolvers()
       {"Staggering", std::make_unique<StaggeringSolver>(), true, true, true});
   solvers.push_back({"Admm", std::make_unique<AdmmSolver>(), true, true, true});
   solvers.push_back({"Sap", std::make_unique<SapSolver>(), true, true, true});
+  solvers.push_back(
+      {"BoxedSemiSmoothNewton",
+       std::make_unique<BoxedSemiSmoothNewtonSolver>(),
+       true,
+       true,
+       true});
 
   return solvers;
 }

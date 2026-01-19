@@ -88,34 +88,39 @@ Tests all 19 LCP solvers with 5 test cases:
 
 ### 4.1 Implemented Solvers
 
-| Priority | Solver                      | Source                  | Status                  |
-| -------- | --------------------------- | ----------------------- | ----------------------- |
-| **P1**   | APGD (Nesterov-Accelerated) | Chrono, Mazhar ToG 2015 | :white_check_mark: Done |
-| **P1**   | TGS (Temporal Gauss-Seidel) | PhysX/Isaac Gym         | :white_check_mark: Done |
+| Priority | Solver                      | Source                     | Status                  |
+| -------- | --------------------------- | -------------------------- | ----------------------- |
+| **P1**   | APGD (Nesterov-Accelerated) | Chrono, Mazhar ToG 2015    | :white_check_mark: Done |
+| **P1**   | TGS (Temporal Gauss-Seidel) | PhysX/Isaac Gym            | :white_check_mark: Done |
+| **P2**   | ADMM with Adaptive rho      | Pinocchio, Carpentier 2024 | :white_check_mark: Done |
+| **P2**   | SAP (Semi-Analytic Primal)  | Drake v1.5+, Castro 2022   | :white_check_mark: Done |
 
 ### 4.2 Future Solver Candidates
 
-| Priority | Solver                      | Source                     | Use Case                     | Complexity |
-| -------- | --------------------------- | -------------------------- | ---------------------------- | ---------- |
-| **P2**   | ADMM with Adaptive rho      | Pinocchio, Carpentier 2024 | Rigid+compliant              | Medium     |
-| **P2**   | SAP (Semi-Analytic Primal)  | Drake v1.5+, Castro 2022   | Global convergence           | Medium     |
-| **P3**   | IPC (Incremental Potential) | SIGGRAPH 2020              | Guaranteed intersection-free | High       |
-| **P3**   | Semi-Smooth Newton          | Research                   | High accuracy                | Medium     |
+| Priority | Solver                      | Source        | Use Case                     | Complexity |
+| -------- | --------------------------- | ------------- | ---------------------------- | ---------- |
+| **P3**   | IPC (Incremental Potential) | SIGGRAPH 2020 | Guaranteed intersection-free | High       |
 
-### 4.3 Runtime Solver Switching
+### 4.3 Implemented P3 Solvers
+
+| Priority | Solver                   | Source   | Status                  |
+| -------- | ------------------------ | -------- | ----------------------- |
+| **P3**   | Boxed Semi-Smooth Newton | Research | :white_check_mark: Done |
+
+### 4.4 Runtime Solver Switching
 
 ```cpp
 // TODO: World::setLcpSolver() for post-creation changes
 // Requires ConstraintSolver hot-swap capability
 ```
 
-### 4.4 Benchmark Infrastructure
+### 4.5 Benchmark Infrastructure
 
 - Performance profiles (Dolan-More)
 - CI regression detection
 - Problem Factory scaling tests
 
-### 4.5 Documentation Expansion
+### 4.6 Documentation Expansion
 
 - Expand `docs/background/lcp/` as educational resource
 - Add pseudocode for future solvers
@@ -145,7 +150,7 @@ pixi run test-all                # Full test suite
 
 ## References
 
-- `dart/math/lcp/` - LCP solver implementations (21 solvers)
+- `dart/math/lcp/` - LCP solver implementations (24 solvers)
 - `docs/background/lcp/` - Theory and algorithm documentation
 - `examples/lcp_solvers/` - Interactive demo
 - `tests/unit/math/lcp/` - Existing unit tests

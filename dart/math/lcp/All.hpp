@@ -23,6 +23,7 @@
 #include <dart/math/lcp/projection/TgsSolver.hpp>
 
 // Newton methods
+#include <dart/math/lcp/newton/BoxedSemiSmoothNewtonSolver.hpp>
 #include <dart/math/lcp/newton/FischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
 #include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
