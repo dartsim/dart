@@ -62,13 +62,12 @@ forward kinematics calculations (computing link transforms from joint positions)
 
 ### Python Bindings Status
 
-**Current**: Core implementation complete (Phase 2)
+**Current**: Phase 2 complete
 
 - `dartpy.simulation_experimental` module exists and is functional
-- Bound classes: World, MultiBody, Link, Joint, Frame, FreeFrame, FixedFrame, RigidBody
+- Bound classes: World, MultiBody, Link, Joint, Frame, FreeFrame, FixedFrame, RigidBody, StateSpace, StateSpaceVariable
 - Bound enums: JointType
-- Python tests: 10 tests in `python/tests/unit/simulation_experimental/`
-- StateSpace bindings: Deferred (medium priority)
+- Python tests: 16 tests in `python/tests/unit/simulation_experimental/`
 
 ### Tests & Examples
 
@@ -412,7 +411,7 @@ forward kinematics calculations (computing link transforms from joint positions)
 - [x] Joint limits accessors (position lower/upper, velocity, effort)
 - [x] RigidBody implemented (mass, inertia, pose, velocity, forces) - 14 tests
 
-### Phase 2: Python Bindings (Target: Week 6-9) ✅ CORE COMPLETE
+### Phase 2: Python Bindings (Target: Week 6-9) ✅ COMPLETE
 
 - [x] Module structure created (`python/dartpy/simulation_experimental/`)
 - [x] World bound with all methods
@@ -420,9 +419,9 @@ forward kinematics calculations (computing link transforms from joint positions)
 - [x] Frame classes bound (Frame, FreeFrame, FixedFrame)
 - [x] RigidBody bound
 - [x] JointType enum bound
-- [x] Python tests passing (10 tests)
-- [ ] StateSpace bound (deferred - medium priority)
-- [ ] Python docstrings (deferred - medium priority)
+- [x] StateSpace bound with Variable struct
+- [x] Python tests passing (16 tests)
+- [x] Python docstrings: deferred (follows existing dartpy pattern - C++ Doxygen is source of truth)
 
 ### Phase 3: Testing (Target: Week 10-12)
 

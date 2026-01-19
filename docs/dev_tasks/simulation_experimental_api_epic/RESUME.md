@@ -2,22 +2,19 @@
 
 ## Last Session Summary
 
-**Phase 2 (Python Bindings) CORE COMPLETE!**
+**Phase 2 (Python Bindings) COMPLETE!**
 
-1. Created `python/dartpy/simulation_experimental/` module structure
-2. Bound all core classes: World, MultiBody, Link, Joint, Frame, FreeFrame, FixedFrame, RigidBody
-3. Bound JointType enum
-4. Created 10 Python tests - all passing
-5. Integrated with dartpy build system (CMakeLists.txt updated)
+Added StateSpace bindings and additional Python tests. Phase 2 is now fully complete.
 
 ## Current Branch
 
-`feature/sim_exp` - commits ahead of main with Phase 0, 1, and 2 work:
+`feature/sim_exp` - contains Phase 0, 1, and 2 work.
 
+Latest commits:
 - Phase 0/1: C++ API cleanup, tests, documentation
-- Phase 2: Python bindings for simulation_experimental
+- Phase 2: Python bindings for simulation_experimental (core classes + StateSpace)
 
-Working tree has uncommitted changes for Phase 2 Python bindings.
+Working tree has uncommitted changes for StateSpace bindings.
 
 ## What's Complete
 
@@ -38,7 +35,7 @@ Working tree has uncommitted changes for Phase 2 Python bindings.
 - [x] RigidBody full implementation
 - [x] Naming audit, exception review, lifetime docs
 
-### Phase 2 (Python Bindings) ✅ CORE COMPLETE
+### Phase 2 (Python Bindings) ✅ COMPLETE
 
 - [x] Module structure: `python/dartpy/simulation_experimental/`
 - [x] World bound with all methods
@@ -46,35 +43,34 @@ Working tree has uncommitted changes for Phase 2 Python bindings.
 - [x] Frame, FreeFrame, FixedFrame bound
 - [x] RigidBody bound
 - [x] JointType enum bound
-- [x] Python tests: 10 tests passing
-- [ ] StateSpace bindings (deferred - medium priority)
-- [ ] Python docstrings (deferred - medium priority)
+- [x] StateSpace + StateSpaceVariable bound
+- [x] Python tests: 16 tests passing
+- [x] Python docstrings: deferred (follows existing dartpy pattern)
 
 ## Test Summary
 
 | Test Type   | # Tests | Status   |
 | ----------- | ------- | -------- |
 | C++ Unit    | 69+     | All pass |
-| Python Unit | 10      | All pass |
+| Python Unit | 16      | All pass |
 
 ## Next Steps
 
-1. **Commit Phase 2 changes** - Python bindings ready for commit
-2. **Push and create PR** - If desired
+1. **Commit StateSpace bindings** - Ready for commit
+2. **Push and create PR** - Ship Phases 0-2
 3. **Phase 3 (Testing)** - Increase coverage, golden tests
-4. **StateSpace bindings** - Medium priority, can be done later
+4. **Phase 4 (Performance)** - Benchmarks (can run parallel with Phase 3)
 
-## Files Changed (Phase 2)
+## Files Changed (Phase 2 - StateSpace additions)
 
 New files:
-
-- `python/dartpy/simulation_experimental/` (6 .hpp + 6 .cpp files)
-- `python/tests/unit/simulation_experimental/test_experimental_world.py`
+- `python/dartpy/simulation_experimental/state_space.hpp`
+- `python/dartpy/simulation_experimental/state_space.cpp`
 
 Modified files:
-
-- `python/dartpy/CMakeLists.txt` (added sources and dart-simulation-experimental link)
-- `python/dartpy/dartpy.cpp` (added simulation_experimental submodule)
+- `python/dartpy/simulation_experimental/module.cpp` (added defStateSpace)
+- `python/dartpy/CMakeLists.txt` (added state_space files)
+- `python/tests/unit/simulation_experimental/test_experimental_world.py` (6 new tests)
 
 ## How to Resume
 
@@ -87,9 +83,9 @@ pixi run build
 ctest -L simulation-experimental --test-dir build/default/cpp/Release
 pixi run pytest python/tests/unit/simulation_experimental/ -v
 
-# If ready to commit:
+# Commit StateSpace bindings:
 git add -A
-git commit -m "feat(simulation-experimental): Add Python bindings for core classes"
+git commit -m "feat(simulation-experimental): Add StateSpace Python bindings"
 ```
 
 ## Python Usage Example
@@ -117,6 +113,13 @@ joint.set_position(np.array([1.0]))
 # Create rigid body
 box = world.add_rigid_body("box")
 print(f"Mass: {box.get_mass()}")
+
+# StateSpace for optimization
+space = exp.StateSpace()
+space.add_variable("joint_pos", 6, -3.14, 3.14)
+space.add_variable("joint_vel", 6, -10.0, 10.0)
+space.finalize()
+print(f"State dimension: {space.get_dimension()}")  # 12
 ```
 
-Ready for: Commit, push, or continue to Phase 3 (testing strategy)
+Ready for: Commit, push, or continue to Phase 3/4

@@ -156,6 +156,7 @@ set(dartpy_headers
   simulation_experimental/world.hpp
   simulation_experimental/multi_body.hpp
   simulation_experimental/rigid_body.hpp
+  simulation_experimental/state_space.hpp
 )
 
 set(dartpy_sources
@@ -238,6 +239,7 @@ set(dartpy_sources
   simulation_experimental/world.cpp
   simulation_experimental/multi_body.cpp
   simulation_experimental/rigid_body.cpp
+  simulation_experimental/state_space.cpp
 )
 
 set(dartpy_gui_headers

@@ -155,5 +155,80 @@ def test_get_multibody():
     assert result_none is None
 
 
+def test_state_space_creation():
+    exp = dart.simulation_experimental
+    space = exp.StateSpace()
+    assert not space.is_finalized()
+    assert space.get_dimension() == 0
+    assert space.get_num_variables() == 0
+
+
+def test_state_space_add_variable():
+    exp = dart.simulation_experimental
+    space = exp.StateSpace()
+    space.add_variable("joint_pos", 6, -3.14, 3.14)
+    space.add_variable("joint_vel", 6, -10.0, 10.0)
+
+    assert space.get_num_variables() == 2
+    assert space.get_dimension() == 12
+    assert space.has_variable("joint_pos")
+    assert space.has_variable("joint_vel")
+    assert not space.has_variable("nonexistent")
+
+
+def test_state_space_finalize():
+    exp = dart.simulation_experimental
+    space = exp.StateSpace()
+    space.add_variable("x", 3)
+    space.finalize()
+
+    assert space.is_finalized()
+
+
+def test_state_space_bounds():
+    exp = dart.simulation_experimental
+    space = exp.StateSpace()
+    space.add_variable("pos", 2, -1.0, 1.0)
+    space.add_variable("vel", 2, -5.0, 5.0)
+    space.finalize()
+
+    lower = space.get_lower_bounds()
+    upper = space.get_upper_bounds()
+
+    assert len(lower) == 4
+    assert len(upper) == 4
+    assert np.allclose(lower, [-1.0, -1.0, -5.0, -5.0])
+    assert np.allclose(upper, [1.0, 1.0, 5.0, 5.0])
+
+
+def test_state_space_get_variable():
+    exp = dart.simulation_experimental
+    space = exp.StateSpace()
+    space.add_variable("q", 3, -3.14, 3.14)
+    space.finalize()
+
+    var = space.get_variable("q")
+    assert var is not None
+    assert var.name == "q"
+    assert var.dimension == 3
+    assert var.start_index == 0
+    assert np.isclose(var.lower_bound, -3.14)
+    assert np.isclose(var.upper_bound, 3.14)
+
+    none_var = space.get_variable("nonexistent")
+    assert none_var is None
+
+
+def test_state_space_variable_names():
+    exp = dart.simulation_experimental
+    space = exp.StateSpace()
+    space.add_variable("a", 1)
+    space.add_variable("b", 2)
+    space.add_variable("c", 3)
+
+    names = space.get_variable_names()
+    assert names == ["a", "b", "c"]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
