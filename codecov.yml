@@ -7,12 +7,11 @@ coverage:
   status:
     project:
       default:
-        target: 80% # Phase 2 target (increase to 85% after Phase 2)
+        target: 85% # Phase 3 target
         threshold: 2% # Allow 2% fluctuation
     patch:
       default:
-        target: 80% # Require new code to meet standard
-        # informational: true  # Remove after Phase 2 complete
+        target: 85% # Require new code to meet standard
 
   ignore:
     # Correct exclusions (keep):
