@@ -322,10 +322,10 @@ void JointConstraint::update()
       const double servoCommand
           = isServo ? mJoint->getCommand(static_cast<std::size_t>(i)) : 0.0;
       const bool atLowerLimit
-          = mJoint->areLimitsEnforced()
+          = hasValidPositionLimits && mJoint->areLimitsEnforced()
             && positions[i] <= positionLowerLimits[i] + mErrorAllowance;
       const bool atUpperLimit
-          = mJoint->areLimitsEnforced()
+          = hasValidPositionLimits && mJoint->areLimitsEnforced()
             && positions[i] >= positionUpperLimits[i] - mErrorAllowance;
       const bool servoHasFiniteLowerLimit
           = isServo
