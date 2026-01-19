@@ -1,13 +1,13 @@
 # LCP Epic: Dynamics-Agnostic LCP API + Solvers
 
-## Status: Phase 2 In Progress
+## Status: Phase 3 Complete
 
-| Phase       | Description                           | Status                 |
-| ----------- | ------------------------------------- | ---------------------- |
-| Phase 1     | Solver Selection API + Demo Stability | :white_check_mark: PR #2464 |
-| **Phase 2** | Test Infrastructure + Problem Factory | :construction: Current |
-| Phase 3     | Demo Enhancements + Python Bindings   | :clipboard: Planned    |
-| Phase 4     | Future Solvers, Benchmarks, Docs      | :clipboard: Stub       |
+| Phase   | Description                           | Status                      |
+| ------- | ------------------------------------- | --------------------------- |
+| Phase 1 | Solver Selection API + Demo Stability | :white_check_mark: PR #2464 |
+| Phase 2 | Test Infrastructure + Problem Factory | :white_check_mark: Complete |
+| Phase 3 | Python Bindings                       | :white_check_mark: Complete |
+| Phase 4 | Future Solvers, Benchmarks, Docs      | :clipboard: Stub            |
 
 ---
 
@@ -29,7 +29,7 @@
 Following PR #2462 patterns:
 
 - [x] Create `tests/common/lcpsolver/LcpProblemFactory.hpp` - Unified problem generation
-- [x] `tests/unit/math/lcp/test_AllSolversSmoke.cpp` - Every solver basic test  
+- [x] `tests/unit/math/lcp/test_AllSolversSmoke.cpp` - Every solver basic test
 - [ ] Extend `test_LcpEdgeCases.cpp` - n=1, singular matrices (optional)
 - [ ] Update `LcpTestFixtures.hpp` to use factory (optional refactor)
 
@@ -38,8 +38,9 @@ Following PR #2462 patterns:
 **New file**: `tests/common/lcpsolver/LcpProblemFactory.hpp`
 
 **Categories implemented**:
+
 - Standard, Boxed, BoxedFriction
-- Edge cases: empty(), trivial1d(), trivial1dAtLowerBound()  
+- Edge cases: empty(), trivial1d(), trivial1dAtLowerBound()
 - Well-conditioned: standard2dSpd(), boxed2dActiveUpper()
 - Ill-conditioned: illConditioned3d()
 - Contact scenarios: singleContactFriction()
@@ -49,6 +50,7 @@ Following PR #2462 patterns:
 **New file**: `tests/unit/math/lcp/test_AllSolversSmoke.cpp`
 
 Tests all 19 LCP solvers with 5 test cases:
+
 - EmptyProblemSucceeds
 - Trivial1dDoesNotCrash
 - Standard2dDoesNotCrash
@@ -63,19 +65,22 @@ Tests all 19 LCP solvers with 5 test cases:
 
 ---
 
-## Phase 3: Demo + Python (PLANNED)
+## Phase 3: Python Bindings (COMPLETE ✅)
 
-### Goals
+### Completed
+
+- [x] `LcpSolverType` enum bound to Python
+- [x] `CollisionDetectorType` enum bound to Python
+- [x] `WorldConfig` struct with solver selection fields
+- [x] `World.create(config)` factory method
+- [x] Python tests in `python/tests/unit/simulation/test_world.py`
+
+### Deferred to Phase 4
 
 - Additional demo scenarios using Problem Factory
 - Convergence visualization for iterative solvers
-- `dartpy` bindings for `LcpSolverType`
 - Refactor demo to use shared Problem Factory
-
-### Lower Priority Items
-
 - Performance history export (CSV)
-- Solver comparison overlay mode
 
 ---
 
