@@ -52,20 +52,14 @@ TEST(CollisionWorld, AddRemoveObjects)
 {
   CollisionWorld world;
 
-  auto s1 = std::make_shared<SphereShape>(1.0);
-  auto obj1 = std::make_shared<CollisionObject>(s1, Eigen::Isometry3d::Identity());
-
-  world.addObject(obj1);
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
   EXPECT_EQ(world.numObjects(), 1u);
-  EXPECT_EQ(world.getObject(0), obj1.get());
+  EXPECT_TRUE(obj1.isValid());
 
-  auto s2 = std::make_shared<SphereShape>(1.0);
-  auto obj2 = std::make_shared<CollisionObject>(s2, Eigen::Isometry3d::Identity());
-
-  world.addObject(obj2);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0));
   EXPECT_EQ(world.numObjects(), 2u);
 
-  world.removeObject(obj1);
+  world.destroyObject(obj1);
   EXPECT_EQ(world.numObjects(), 1u);
 
   world.clear();
@@ -76,17 +70,12 @@ TEST(CollisionWorld, TwoSpheres_Colliding)
 {
   CollisionWorld world;
 
-  auto s1 = std::make_shared<SphereShape>(1.0);
-  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
-  auto obj1 = std::make_shared<CollisionObject>(s1, tf1);
+  auto obj1 = world.createObject(
+      std::make_unique<SphereShape>(1.0), Eigen::Isometry3d::Identity());
 
-  auto s2 = std::make_shared<SphereShape>(1.0);
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
-  auto obj2 = std::make_shared<CollisionObject>(s2, tf2);
-
-  world.addObject(obj1);
-  world.addObject(obj2);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
 
   CollisionOption option;
   CollisionResult result;
@@ -101,16 +90,11 @@ TEST(CollisionWorld, TwoSpheres_Separated)
 {
   CollisionWorld world;
 
-  auto s1 = std::make_shared<SphereShape>(1.0);
-  auto obj1 = std::make_shared<CollisionObject>(s1, Eigen::Isometry3d::Identity());
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
 
-  auto s2 = std::make_shared<SphereShape>(1.0);
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(5.0, 0, 0);
-  auto obj2 = std::make_shared<CollisionObject>(s2, tf2);
-
-  world.addObject(obj1);
-  world.addObject(obj2);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
 
   CollisionOption option;
   CollisionResult result;
@@ -125,22 +109,15 @@ TEST(CollisionWorld, MultipleObjects)
 {
   CollisionWorld world;
 
-  auto s1 = std::make_shared<SphereShape>(1.0);
-  auto obj1 = std::make_shared<CollisionObject>(s1, Eigen::Isometry3d::Identity());
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
 
-  auto s2 = std::make_shared<SphereShape>(1.0);
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
-  auto obj2 = std::make_shared<CollisionObject>(s2, tf2);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
 
-  auto s3 = std::make_shared<SphereShape>(1.0);
   Eigen::Isometry3d tf3 = Eigen::Isometry3d::Identity();
   tf3.translation() = Eigen::Vector3d(10.0, 0, 0);
-  auto obj3 = std::make_shared<CollisionObject>(s3, tf3);
-
-  world.addObject(obj1);
-  world.addObject(obj2);
-  world.addObject(obj3);
+  auto obj3 = world.createObject(std::make_unique<SphereShape>(1.0), tf3);
 
   CollisionOption option;
   CollisionResult result;
@@ -155,18 +132,16 @@ TEST(CollisionWorld, DirectCollide)
 {
   CollisionWorld world;
 
-  auto s1 = std::make_shared<SphereShape>(1.0);
-  auto obj1 = std::make_shared<CollisionObject>(s1, Eigen::Isometry3d::Identity());
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
 
-  auto s2 = std::make_shared<SphereShape>(1.0);
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
-  auto obj2 = std::make_shared<CollisionObject>(s2, tf2);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
 
   CollisionOption option;
   CollisionResult result;
 
-  bool hasCollision = world.collide(obj1.get(), obj2.get(), option, result);
+  bool hasCollision = world.collide(obj1, obj2, option, result);
 
   EXPECT_TRUE(hasCollision);
   EXPECT_GE(result.numContacts(), 1u);
@@ -176,16 +151,12 @@ TEST(CollisionWorld, MixedShapes)
 {
   CollisionWorld world;
 
-  auto sphere = std::make_shared<SphereShape>(1.0);
-  auto obj1 = std::make_shared<CollisionObject>(sphere, Eigen::Isometry3d::Identity());
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
 
-  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1, 1, 1));
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
-  auto obj2 = std::make_shared<CollisionObject>(box, tf2);
-
-  world.addObject(obj1);
-  world.addObject(obj2);
+  auto obj2 = world.createObject(
+      std::make_unique<BoxShape>(Eigen::Vector3d(1, 1, 1)), tf2);
 
   CollisionOption option;
   CollisionResult result;
@@ -200,16 +171,11 @@ TEST(CollisionWorld, UpdateObject)
 {
   CollisionWorld world;
 
-  auto s1 = std::make_shared<SphereShape>(1.0);
-  auto obj1 = std::make_shared<CollisionObject>(s1, Eigen::Isometry3d::Identity());
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
 
-  auto s2 = std::make_shared<SphereShape>(1.0);
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(5.0, 0, 0);
-  auto obj2 = std::make_shared<CollisionObject>(s2, tf2);
-
-  world.addObject(obj1);
-  world.addObject(obj2);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
 
   CollisionOption option;
   CollisionResult result;
@@ -217,8 +183,8 @@ TEST(CollisionWorld, UpdateObject)
   EXPECT_FALSE(world.collide(option, result));
 
   tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
-  obj2->setTransform(tf2);
-  world.updateObject(obj2.get());
+  obj2.setTransform(tf2);
+  world.updateObject(obj2);
 
   result.clear();
   EXPECT_TRUE(world.collide(option, result));

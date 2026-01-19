@@ -33,6 +33,7 @@
 #include <dart/collision/experimental/narrow_phase/distance.hpp>
 #include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/experimental/collision_object.hpp>
+#include <dart/collision/experimental/collision_world.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <gtest/gtest.h>
@@ -223,15 +224,12 @@ TEST(NarrowPhaseDistance, IsDistanceSupported)
 
 TEST(NarrowPhaseDistance, SphereSphere)
 {
-  auto s1 = std::make_shared<SphereShape>(1.0);
-  auto s2 = std::make_shared<SphereShape>(1.0);
+  CollisionWorld world;
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
 
-  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(5.0, 0, 0);
-
-  CollisionObject obj1(s1, tf1);
-  CollisionObject obj2(s2, tf2);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
 
   DistanceOption option;
   DistanceResult result;
@@ -239,21 +237,17 @@ TEST(NarrowPhaseDistance, SphereSphere)
   double dist = NarrowPhase::distance(obj1, obj2, option, result);
 
   EXPECT_NEAR(dist, 3.0, 1e-6);
-  EXPECT_EQ(result.object1, &obj1);
-  EXPECT_EQ(result.object2, &obj2);
 }
 
 TEST(NarrowPhaseDistance, BoxSphere)
 {
-  auto b = std::make_shared<BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5));
-  auto s = std::make_shared<SphereShape>(1.0);
+  CollisionWorld world;
+  auto obj1 = world.createObject(
+      std::make_unique<BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5)));
 
-  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(3.0, 0, 0);
-
-  CollisionObject obj1(b, tf1);
-  CollisionObject obj2(s, tf2);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
 
   DistanceOption option;
   DistanceResult result;

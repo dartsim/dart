@@ -12,13 +12,14 @@
 | Additional Shapes         | **Complete** | 100%     |
 | Distance Queries          | **Complete** | 100%     |
 | Comparative Benchmarks    | **Complete** | 100%     |
-| Raycast Support           | Not Started  | 0%       |
+| Raycast Support           | **Complete** | 100%     |
+| ECS Refactoring           | **Complete** | 100%     |
 | Visual Verification       | Not Started  | 0%       |
 | DART Integration          | **Deferred** | -        |
 
 ---
 
-## Completed Components (213 tests)
+## Completed Components (239 tests)
 
 | Component                        | Files                                   | Tests | Notes                           |
 | -------------------------------- | --------------------------------------- | ----- | ------------------------------- |
@@ -33,8 +34,9 @@
 | Cylinder collision               | narrow_phase/cylinder_collision.hpp/.cpp| 18    | All cylinder pairs              |
 | Plane collision                  | narrow_phase/plane_sphere.hpp/.cpp      | 11    | All plane pairs                 |
 | Distance queries                 | narrow_phase/distance.hpp/.cpp          | 14    | 6 shape pairs                   |
+| Raycast                          | narrow_phase/raycast.hpp/.cpp           | 24    | All 5 shape types               |
 | BruteForceBroadPhase             | broad_phase/brute_force.hpp/.cpp        | 15    | O(n²) broad-phase               |
-| CollisionObject                  | collision_object.hpp/.cpp               | 10    | Shape + transform wrapper       |
+| CollisionObject                  | collision_object.hpp/.cpp               | 12    | Lightweight ECS handle          |
 | NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp      | 7     | Shape-type dispatch             |
 | CollisionWorld                   | collision_world.hpp/.cpp                | 8     | Standalone collision detection  |
 
@@ -79,15 +81,20 @@
 | Capsule-sphere dist  | **Complete** | Included in distance     |
 | Capsule-box dist     | **Complete** | Included in distance     |
 
-### Priority 4: Raycast
+### Priority 4: Raycast ✅ COMPLETE (5 primitives)
 
-| Feature     | Status  | Notes |
-| ----------- | ------- | ----- |
-| Ray-sphere  | Pending |       |
-| Ray-box     | Pending |       |
-| Ray-capsule | Pending |       |
-| Ray-plane   | Pending |       |
-| Ray-mesh    | Pending |       |
+| Feature      | Status       | Tests | Notes                    |
+| ------------ | ------------ | ----- | ------------------------ |
+| Ray-sphere   | **Complete** | 5     | Hit/miss, inside, max dist |
+| Ray-box      | **Complete** | 5     | All faces, rotated       |
+| Ray-capsule  | **Complete** | 3     | Cylindrical + spherical caps |
+| Ray-cylinder | **Complete** | 4     | Curved surface + caps    |
+| Ray-plane    | **Complete** | 6     | Backface culling, offset |
+| Ray-mesh     | Pending      | -     | Future: GJK/EPA based    |
+
+**CollisionWorld raycast API:**
+- `raycast(ray, option, result)` - Returns closest hit
+- `raycastAll(ray, option, results)` - Returns all hits sorted by distance
 
 ### Priority 5: Benchmarks ✅ COMPLETE
 
@@ -102,7 +109,26 @@
 
 **Accuracy verification:** PASSED
 
-### Priority 6: Visual Verification
+### Priority 6: ECS Refactoring (Next)
+
+**Goal:** Adopt ECS pattern from `dart/simulation/experimental` for better data locality.
+
+Current architecture uses `shared_ptr<CollisionObject>`. Target architecture:
+
+| Current                  | Target (ECS)                              |
+| ------------------------ | ----------------------------------------- |
+| `shared_ptr<CollisionObject>` | Lightweight handle (entity ID + world ptr) |
+| Shape* owned by object   | ShapeComponent in registry                |
+| Transform in object      | TransformComponent in registry            |
+| AABB in object           | AabbComponent in registry                 |
+| `std::vector<shared_ptr>` | `entt::registry`                         |
+
+**Benefits:**
+- Better cache locality for iteration
+- Copyable handles (no pointer ownership issues)
+- Consistent with simulation/experimental pattern
+
+### Priority 7: Visual Verification
 
 Options:
 
@@ -125,17 +151,22 @@ dart/collision/experimental/
 ├── CMakeLists.txt              # Build configuration
 ├── export.hpp                  # DLL export macros
 ├── fwd.hpp                     # Forward declarations
-├── types.hpp/.cpp              # ContactPoint, ContactManifold, CollisionResult, CollisionOption
+├── types.hpp/.cpp              # ContactPoint, Ray, RaycastResult, etc.
 ├── aabb.hpp/.cpp               # Axis-aligned bounding box
 ├── collision_object.hpp/.cpp   # Shape + Transform wrapper
 ├── collision_world.hpp/.cpp    # Standalone collision detection
 ├── shapes/
-│   └── shape.hpp/.cpp          # SphereShape, BoxShape (+ more to come)
+│   └── shape.hpp/.cpp          # All primitive shapes
 ├── narrow_phase/
 │   ├── narrow_phase.hpp/.cpp   # Shape-type dispatch
 │   ├── sphere_sphere.hpp/.cpp  # Sphere-sphere detection
 │   ├── box_box.hpp/.cpp        # Box-box SAT detection
-│   └── sphere_box.hpp/.cpp     # Sphere-box detection
+│   ├── sphere_box.hpp/.cpp     # Sphere-box detection
+│   ├── capsule_*.hpp/.cpp      # Capsule collision pairs
+│   ├── cylinder_collision.hpp/.cpp  # Cylinder collision pairs
+│   ├── plane_sphere.hpp/.cpp   # Plane collision pairs
+│   ├── distance.hpp/.cpp       # Distance queries
+│   └── raycast.hpp/.cpp        # Ray-shape intersections
 └── broad_phase/
     ├── broad_phase.hpp         # BroadPhase interface
     └── brute_force.hpp/.cpp    # O(n^2) broad-phase

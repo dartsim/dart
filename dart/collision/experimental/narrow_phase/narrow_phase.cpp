@@ -39,6 +39,7 @@
 #include <dart/collision/experimental/narrow_phase/cylinder_collision.hpp>
 #include <dart/collision/experimental/narrow_phase/distance.hpp>
 #include <dart/collision/experimental/narrow_phase/plane_sphere.hpp>
+#include <dart/collision/experimental/narrow_phase/raycast.hpp>
 #include <dart/collision/experimental/narrow_phase/sphere_box.hpp>
 #include <dart/collision/experimental/narrow_phase/sphere_sphere.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
@@ -382,6 +383,80 @@ bool NarrowPhase::isDistanceSupported(ShapeType type1, ShapeType type2)
     return true;
   }
   return false;
+}
+
+bool NarrowPhase::raycast(
+    const Ray& ray,
+    const CollisionObject& object,
+    const RaycastOption& option,
+    RaycastResult& result)
+{
+  const Shape* shape = object.getShape();
+  if (!shape) {
+    return false;
+  }
+
+  ShapeType type = shape->getType();
+  const Eigen::Isometry3d& transform = object.getTransform();
+
+  switch (type) {
+    case ShapeType::Sphere: {
+      const auto* s = static_cast<const SphereShape*>(shape);
+      bool hit = raycastSphere(ray, *s, transform, option, result);
+      if (hit) {
+        result.object = &object;
+      }
+      return hit;
+    }
+    case ShapeType::Box: {
+      const auto* b = static_cast<const BoxShape*>(shape);
+      bool hit = raycastBox(ray, *b, transform, option, result);
+      if (hit) {
+        result.object = &object;
+      }
+      return hit;
+    }
+    case ShapeType::Capsule: {
+      const auto* c = static_cast<const CapsuleShape*>(shape);
+      bool hit = raycastCapsule(ray, *c, transform, option, result);
+      if (hit) {
+        result.object = &object;
+      }
+      return hit;
+    }
+    case ShapeType::Cylinder: {
+      const auto* c = static_cast<const CylinderShape*>(shape);
+      bool hit = raycastCylinder(ray, *c, transform, option, result);
+      if (hit) {
+        result.object = &object;
+      }
+      return hit;
+    }
+    case ShapeType::Plane: {
+      const auto* p = static_cast<const PlaneShape*>(shape);
+      bool hit = raycastPlane(ray, *p, transform, option, result);
+      if (hit) {
+        result.object = &object;
+      }
+      return hit;
+    }
+    default:
+      return false;
+  }
+}
+
+bool NarrowPhase::isRaycastSupported(ShapeType type)
+{
+  switch (type) {
+    case ShapeType::Sphere:
+    case ShapeType::Box:
+    case ShapeType::Capsule:
+    case ShapeType::Cylinder:
+    case ShapeType::Plane:
+      return true;
+    default:
+      return false;
+  }
 }
 
 }

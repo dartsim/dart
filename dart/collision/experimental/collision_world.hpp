@@ -37,6 +37,8 @@
 #include <dart/collision/experimental/export.hpp>
 #include <dart/collision/experimental/types.hpp>
 
+#include <entt/entt.hpp>
+
 #include <memory>
 #include <vector>
 
@@ -46,30 +48,57 @@ class DART_COLLISION_EXPERIMENTAL_API CollisionWorld
 {
 public:
   CollisionWorld();
+  ~CollisionWorld();
 
-  void addObject(std::shared_ptr<CollisionObject> object);
-  void removeObject(std::shared_ptr<CollisionObject> object);
-  void removeObject(std::size_t objectId);
+  CollisionWorld(const CollisionWorld&) = delete;
+  CollisionWorld& operator=(const CollisionWorld&) = delete;
+  CollisionWorld(CollisionWorld&&) = default;
+  CollisionWorld& operator=(CollisionWorld&&) = default;
 
-  void updateObject(CollisionObject* object);
+  CollisionObject createObject(
+      std::unique_ptr<Shape> shape,
+      const Eigen::Isometry3d& transform = Eigen::Isometry3d::Identity());
+
+  void destroyObject(CollisionObject object);
+
+  void updateObject(CollisionObject object);
 
   [[nodiscard]] std::size_t numObjects() const;
-  [[nodiscard]] CollisionObject* getObject(std::size_t index);
-  [[nodiscard]] const CollisionObject* getObject(std::size_t index) const;
+  [[nodiscard]] CollisionObject getObject(std::size_t index);
 
   bool collide(const CollisionOption& option, CollisionResult& result);
 
   bool collide(
-      CollisionObject* obj1,
-      CollisionObject* obj2,
+      CollisionObject obj1,
+      CollisionObject obj2,
       const CollisionOption& option,
       CollisionResult& result);
 
+  bool raycast(
+      const Ray& ray,
+      const RaycastOption& option,
+      RaycastResult& result);
+
+  bool raycastAll(
+      const Ray& ray,
+      const RaycastOption& option,
+      std::vector<RaycastResult>& results);
+
   void clear();
 
+  [[nodiscard]] entt::registry& getRegistry()
+  {
+    return m_registry;
+  }
+
+  [[nodiscard]] const entt::registry& getRegistry() const
+  {
+    return m_registry;
+  }
+
 private:
-  std::vector<std::shared_ptr<CollisionObject>> objects_;
-  BruteForceBroadPhase broadPhase_;
+  entt::registry m_registry;
+  BruteForceBroadPhase m_broadPhase;
 };
 
-}
+} // namespace dart::collision::experimental

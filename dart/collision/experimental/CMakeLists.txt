@@ -45,6 +45,7 @@ add_library(${target_name}
   narrow_phase/distance.cpp
   narrow_phase/narrow_phase.cpp
   narrow_phase/plane_sphere.cpp
+  narrow_phase/raycast.cpp
   narrow_phase/sphere_box.cpp
   narrow_phase/sphere_sphere.cpp
   shapes/shape.cpp
@@ -52,6 +53,7 @@ add_library(${target_name}
 )
 
 include(dart_defs)
+include(dart_experimental_dependencies)
 
 target_include_directories(${target_name}
   PUBLIC
@@ -65,6 +67,7 @@ target_compile_features(${target_name} PUBLIC cxx_std_20)
 target_link_libraries(${target_name}
   PUBLIC
     Eigen3::Eigen
+    EnTT::EnTT
 )
 
 target_compile_definitions(${target_name}
@@ -75,6 +78,7 @@ target_compile_definitions(${target_name}
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
+add_component_dependency_packages(${PROJECT_NAME} ${component_name} EnTT)
 
 install(
   DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/

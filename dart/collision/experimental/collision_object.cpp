@@ -32,59 +32,100 @@
 
 #include <dart/collision/experimental/collision_object.hpp>
 
+#include <dart/collision/experimental/collision_world.hpp>
+#include <dart/collision/experimental/comps/collision_object.hpp>
+
 namespace dart::collision::experimental {
 
-std::size_t CollisionObject::nextId_ = 0;
-
-CollisionObject::CollisionObject(
-    std::shared_ptr<Shape> shape, const Eigen::Isometry3d& transform)
-    : shape_(std::move(shape)), transform_(transform), id_(nextId_++)
+CollisionObject::CollisionObject(entt::entity entity, CollisionWorld* world)
+  : m_entity(entity), m_world(world)
 {
 }
 
 const Shape* CollisionObject::getShape() const
 {
-  return shape_.get();
+  if (!isValid()) {
+    return nullptr;
+  }
+  auto& registry = m_world->getRegistry();
+  auto* shapeComp = registry.try_get<comps::ShapeComponent>(m_entity);
+  return shapeComp ? shapeComp->shape.get() : nullptr;
 }
 
-std::shared_ptr<Shape> CollisionObject::getShapePtr() const
+ShapeType CollisionObject::getShapeType() const
 {
-  return shape_;
+  const auto* shape = getShape();
+  return shape ? shape->getType() : ShapeType::Sphere;
 }
 
 const Eigen::Isometry3d& CollisionObject::getTransform() const
 {
-  return transform_;
+  static const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  if (!isValid()) {
+    return identity;
+  }
+  auto& registry = m_world->getRegistry();
+  auto* transformComp = registry.try_get<comps::TransformComponent>(m_entity);
+  return transformComp ? transformComp->transform : identity;
 }
 
 void CollisionObject::setTransform(const Eigen::Isometry3d& transform)
 {
-  transform_ = transform;
+  if (!isValid()) {
+    return;
+  }
+  auto& registry = m_world->getRegistry();
+  auto* transformComp = registry.try_get<comps::TransformComponent>(m_entity);
+  if (transformComp) {
+    transformComp->transform = transform;
+  }
+  auto* aabbComp = registry.try_get<comps::AabbComponent>(m_entity);
+  if (aabbComp) {
+    aabbComp->dirty = true;
+  }
 }
 
 Aabb CollisionObject::computeAabb() const
 {
-  if (!shape_) {
+  if (!isValid()) {
     return Aabb();
   }
-
-  Aabb localAabb = shape_->computeLocalAabb();
-  return Aabb::transformed(localAabb, transform_);
-}
-
-std::size_t CollisionObject::getId() const
-{
-  return id_;
+  const auto* shape = getShape();
+  if (!shape) {
+    return Aabb();
+  }
+  Aabb localAabb = shape->computeLocalAabb();
+  return Aabb::transformed(localAabb, getTransform());
 }
 
 void CollisionObject::setUserData(void* data)
 {
-  userData_ = data;
+  if (!isValid()) {
+    return;
+  }
+  auto& registry = m_world->getRegistry();
+  auto* userDataComp = registry.try_get<comps::UserDataComponent>(m_entity);
+  if (userDataComp) {
+    userDataComp->userData = data;
+  }
 }
 
 void* CollisionObject::getUserData() const
 {
-  return userData_;
+  if (!isValid()) {
+    return nullptr;
+  }
+  auto& registry = m_world->getRegistry();
+  auto* userDataComp = registry.try_get<comps::UserDataComponent>(m_entity);
+  return userDataComp ? userDataComp->userData : nullptr;
 }
 
+bool CollisionObject::isValid() const
+{
+  if (m_entity == entt::null || m_world == nullptr) {
+    return false;
+  }
+  return m_world->getRegistry().valid(m_entity);
 }
+
+} // namespace dart::collision::experimental
