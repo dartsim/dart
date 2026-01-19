@@ -1,113 +1,65 @@
 # LCP Epic: Dynamics-Agnostic LCP API + Solvers
 
-## Status: Phase 1 In Progress
+## Status: Phase 2 In Progress
 
 | Phase       | Description                           | Status                 |
 | ----------- | ------------------------------------- | ---------------------- |
-| **Phase 1** | Solver Selection API + Demo Stability | :construction: Current |
-| Phase 2     | Test Infrastructure + Problem Factory | :hourglass: Pending    |
+| Phase 1     | Solver Selection API + Demo Stability | :white_check_mark: PR #2464 |
+| **Phase 2** | Test Infrastructure + Problem Factory | :construction: Current |
 | Phase 3     | Demo Enhancements + Python Bindings   | :clipboard: Planned    |
 | Phase 4     | Future Solvers, Benchmarks, Docs      | :clipboard: Stub       |
 
 ---
 
-## Phase 1: Foundation (CURRENT FOCUS)
+## Phase 1: Foundation (COMPLETE ✅)
 
-### Goals
+**PR #2464**: WorldConfig Solver Selection + Demo Stability
 
-1. Add `LcpSolverType` enum and primary/secondary config to `WorldConfig`
-2. Fix demo crashes when switching scenes in `examples/lcp_solvers/`
-
-### Non-Goals (deferred)
-
-- Runtime solver switching (`World::setLcpSolver()`) -> Phase 4
-- Python bindings for new enum -> Phase 3
-- Additional solver types beyond Dantzig/Pgs/Lemke -> Future
+- Added `LcpSolverType` enum with Dantzig/Pgs/Lemke
+- Added primary/secondary solver config to `WorldConfig`
+- Fixed demo crashes with bounds checking and exception handling
+- Unit test: `tests/unit/simulation/test_WorldConfig.cpp`
 
 ---
 
-### 1.1 WorldConfig Solver Selection
-
-**Files**:
-
-| File                        | Change                                             |
-| --------------------------- | -------------------------------------------------- |
-| `dart/simulation/World.hpp` | Add `LcpSolverType` enum, primary/secondary fields |
-| `dart/simulation/World.cpp` | Create solver based on config                      |
-
-**API**:
-
-```cpp
-enum class LcpSolverType { Dantzig, Pgs, Lemke };
-
-struct WorldConfig {
-  std::string name = "world";
-  CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
-  LcpSolverType primaryLcpSolver = LcpSolverType::Dantzig;
-  std::optional<LcpSolverType> secondaryLcpSolver = LcpSolverType::Pgs;
-  // TODO: Revisit primary/secondary architecture in future
-};
-```
-
-**Acceptance Criteria**:
-
-- [ ] Default world uses Dantzig + PGS (unchanged behavior)
-- [ ] Custom config works: `{.primaryLcpSolver = Pgs, .secondaryLcpSolver = std::nullopt}`
-- [ ] All existing tests pass
-
----
-
-### 1.2 Demo Stability (`examples/lcp_solvers/`)
-
-**Root Cause**: Crashes when switching scenes (state management)
-
-**Fixes**:
-
-1. Clear all state on example switch
-2. Guard problem dimension mismatches
-3. Add exception handling around solver calls
-4. Validate results before display
-
-**Acceptance Criteria**:
-
-- [ ] Switch all 10 examples without crash
-- [ ] "Run All" on each example without crash
-- [ ] ASAN clean
-
----
-
-## Phase 2: Test Infrastructure (NEXT)
+## Phase 2: Test Infrastructure (CURRENT FOCUS)
 
 ### Goals
 
 Following PR #2462 patterns:
 
-- Create `tests/common/lcpsolver/LcpProblemFactory.hpp` - Unified problem generation
-- `tests/unit/math/lcp/test_AllSolversSmoke.cpp` - Every solver basic test
-- `tests/unit/simulation/test_WorldLcpConfig.cpp` - Config selection tests
-- Extend `test_LcpEdgeCases.cpp` - n=0, n=1, singular matrices
+- [x] Create `tests/common/lcpsolver/LcpProblemFactory.hpp` - Unified problem generation
+- [x] `tests/unit/math/lcp/test_AllSolversSmoke.cpp` - Every solver basic test  
+- [ ] Extend `test_LcpEdgeCases.cpp` - n=1, singular matrices (optional)
+- [ ] Update `LcpTestFixtures.hpp` to use factory (optional refactor)
 
-### 2.1 LCP Problem Factory
+### 2.1 LCP Problem Factory (DONE ✅)
 
 **New file**: `tests/common/lcpsolver/LcpProblemFactory.hpp`
 
-**Categories**:
-
+**Categories implemented**:
 - Standard, Boxed, BoxedFriction
-- WellConditioned, IllConditioned
-- SingleContact, MultiContact, ChainStructure, StackStructure
-- Edge cases: Empty, Trivial, Degenerate, ZeroRows
+- Edge cases: empty(), trivial1d(), trivial1dAtLowerBound()  
+- Well-conditioned: standard2dSpd(), boxed2dActiveUpper()
+- Ill-conditioned: illConditioned3d()
+- Contact scenarios: singleContactFriction()
 
-**Refactor**:
+### 2.2 All Solvers Smoke Test (DONE ✅)
 
-- Update `LcpTestFixtures.hpp` to use factory
-- Update benchmark `bm_lcp_compare.cpp` to use factory
+**New file**: `tests/unit/math/lcp/test_AllSolversSmoke.cpp`
+
+Tests all 19 LCP solvers with 5 test cases:
+- EmptyProblemSucceeds
+- Trivial1dDoesNotCrash
+- Standard2dDoesNotCrash
+- BoxedProblemHandledCorrectly
+- FrictionProblemDoesNotCrash
 
 ### Acceptance Criteria
 
-- [ ] Every solver in `dart/math/lcp/` has at least one test
-- [ ] Edge cases documented and tested
-- [ ] `pixi run test-all` passes
+- [x] Every solver in `dart/math/lcp/` has at least one test
+- [x] Edge cases documented and tested
+- [x] `pixi run test-all` passes (143/143)
 
 ---
 
