@@ -151,4 +151,114 @@ double PlaneShape::getOffset() const
   return offset_;
 }
 
+ConvexShape::ConvexShape(std::vector<Eigen::Vector3d> vertices)
+    : vertices_(std::move(vertices))
+{
+}
+
+ShapeType ConvexShape::getType() const
+{
+  return ShapeType::Convex;
+}
+
+Aabb ConvexShape::computeLocalAabb() const
+{
+  if (vertices_.empty()) {
+    return Aabb(Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
+  }
+
+  Eigen::Vector3d min = vertices_[0];
+  Eigen::Vector3d max = vertices_[0];
+
+  for (size_t i = 1; i < vertices_.size(); ++i) {
+    min = min.cwiseMin(vertices_[i]);
+    max = max.cwiseMax(vertices_[i]);
+  }
+
+  return Aabb(min, max);
+}
+
+const std::vector<Eigen::Vector3d>& ConvexShape::getVertices() const
+{
+  return vertices_;
+}
+
+Eigen::Vector3d ConvexShape::support(const Eigen::Vector3d& direction) const
+{
+  if (vertices_.empty()) {
+    return Eigen::Vector3d::Zero();
+  }
+
+  double maxDot = vertices_[0].dot(direction);
+  size_t maxIndex = 0;
+
+  for (size_t i = 1; i < vertices_.size(); ++i) {
+    const double dot = vertices_[i].dot(direction);
+    if (dot > maxDot) {
+      maxDot = dot;
+      maxIndex = i;
+    }
+  }
+
+  return vertices_[maxIndex];
+}
+
+MeshShape::MeshShape(
+    std::vector<Eigen::Vector3d> vertices, std::vector<Triangle> triangles)
+    : vertices_(std::move(vertices)), triangles_(std::move(triangles))
+{
+}
+
+ShapeType MeshShape::getType() const
+{
+  return ShapeType::Mesh;
+}
+
+Aabb MeshShape::computeLocalAabb() const
+{
+  if (vertices_.empty()) {
+    return Aabb(Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
+  }
+
+  Eigen::Vector3d min = vertices_[0];
+  Eigen::Vector3d max = vertices_[0];
+
+  for (size_t i = 1; i < vertices_.size(); ++i) {
+    min = min.cwiseMin(vertices_[i]);
+    max = max.cwiseMax(vertices_[i]);
+  }
+
+  return Aabb(min, max);
+}
+
+const std::vector<Eigen::Vector3d>& MeshShape::getVertices() const
+{
+  return vertices_;
+}
+
+const std::vector<MeshShape::Triangle>& MeshShape::getTriangles() const
+{
+  return triangles_;
+}
+
+Eigen::Vector3d MeshShape::support(const Eigen::Vector3d& direction) const
+{
+  if (vertices_.empty()) {
+    return Eigen::Vector3d::Zero();
+  }
+
+  double maxDot = vertices_[0].dot(direction);
+  size_t maxIndex = 0;
+
+  for (size_t i = 1; i < vertices_.size(); ++i) {
+    const double dot = vertices_[i].dot(direction);
+    if (dot > maxDot) {
+      maxDot = dot;
+      maxIndex = i;
+    }
+  }
+
+  return vertices_[maxIndex];
+}
+
 }

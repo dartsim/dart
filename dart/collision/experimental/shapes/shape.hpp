@@ -35,6 +35,8 @@
 #include <dart/collision/experimental/aabb.hpp>
 #include <dart/collision/experimental/export.hpp>
 
+#include <vector>
+
 namespace dart::collision::experimental {
 
 enum class ShapeType
@@ -134,6 +136,47 @@ public:
 private:
   Eigen::Vector3d normal_;
   double offset_;
+};
+
+/// Convex shape defined by a set of vertices (convex hull)
+class DART_COLLISION_EXPERIMENTAL_API ConvexShape : public Shape
+{
+public:
+  explicit ConvexShape(std::vector<Eigen::Vector3d> vertices);
+
+  [[nodiscard]] ShapeType getType() const override;
+  [[nodiscard]] Aabb computeLocalAabb() const override;
+
+  [[nodiscard]] const std::vector<Eigen::Vector3d>& getVertices() const;
+
+  /// Returns the support point in the given direction (furthest vertex)
+  [[nodiscard]] Eigen::Vector3d support(const Eigen::Vector3d& direction) const;
+
+private:
+  std::vector<Eigen::Vector3d> vertices_;
+};
+
+/// Triangle mesh shape defined by vertices and triangle indices
+class DART_COLLISION_EXPERIMENTAL_API MeshShape : public Shape
+{
+public:
+  using Triangle = Eigen::Vector3i;  // indices into vertices array
+
+  MeshShape(
+      std::vector<Eigen::Vector3d> vertices, std::vector<Triangle> triangles);
+
+  [[nodiscard]] ShapeType getType() const override;
+  [[nodiscard]] Aabb computeLocalAabb() const override;
+
+  [[nodiscard]] const std::vector<Eigen::Vector3d>& getVertices() const;
+  [[nodiscard]] const std::vector<Triangle>& getTriangles() const;
+
+  /// Returns the support point in the given direction (furthest vertex)
+  [[nodiscard]] Eigen::Vector3d support(const Eigen::Vector3d& direction) const;
+
+private:
+  std::vector<Eigen::Vector3d> vertices_;
+  std::vector<Triangle> triangles_;
 };
 
 }

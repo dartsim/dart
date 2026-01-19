@@ -43,6 +43,7 @@ add_library(${target_name}
   narrow_phase/capsule_sphere.cpp
   narrow_phase/cylinder_collision.cpp
   narrow_phase/distance.cpp
+  narrow_phase/gjk.cpp
   narrow_phase/narrow_phase.cpp
   narrow_phase/plane_sphere.cpp
   narrow_phase/raycast.cpp

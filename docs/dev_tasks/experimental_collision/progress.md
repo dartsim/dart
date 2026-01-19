@@ -14,19 +14,22 @@
 | Comparative Benchmarks    | **Complete** | 100%     |
 | Raycast Support           | **Complete** | 100%     |
 | ECS Refactoring           | **Complete** | 100%     |
+| GJK/EPA Algorithm         | **Complete** | 100%     |
+| Convex/Mesh Shapes        | **Complete** | 100%     |
 | Visual Verification       | Not Started  | 0%       |
 | DART Integration          | **Deferred** | -        |
 
 ---
 
-## Completed Components (239 tests)
+## Completed Components (263 tests)
 
 | Component                        | Files                                   | Tests | Notes                           |
 | -------------------------------- | --------------------------------------- | ----- | ------------------------------- |
 | ContactPoint, ContactManifold    | types.hpp/.cpp                          | 21    | Core contact representation     |
 | CollisionResult, CollisionOption | types.hpp/.cpp                          | -     | (included above)                |
 | Aabb                             | aabb.hpp/.cpp                           | 26    | Axis-aligned bounding box       |
-| All Shapes                       | shapes/shape.hpp/.cpp                   | 15    | Sphere, Box, Capsule, Cylinder, Plane |
+| All Shapes                       | shapes/shape.hpp/.cpp                   | 24    | Sphere, Box, Capsule, Cylinder, Plane, Convex, Mesh |
+| GJK/EPA Algorithm                | narrow_phase/gjk.hpp/.cpp               | 15    | Generic convex collision detection |
 | Sphere-sphere                    | narrow_phase/sphere_sphere.hpp/.cpp     | 17    | Narrow-phase                    |
 | Box-box (SAT)                    | narrow_phase/box_box.hpp/.cpp           | 18    | Separating Axis Theorem         |
 | Sphere-box                       | narrow_phase/sphere_box.hpp/.cpp        | 19    | Mixed pair                      |
@@ -51,7 +54,8 @@
 | CapsuleShape  | **Complete**   | 14      | Sphere-swept line segment                            |
 | CylinderShape | **Complete**   | 3       | Axis-aligned cylinder (shape only, no collision yet) |
 | PlaneShape    | **Complete**   | 11      | Infinite half-space                                  |
-| MeshShape     | Pending        | Pending | Triangle mesh                                        |
+| ConvexShape   | **Complete**   | 5       | Vertex-based convex hull with support function       |
+| MeshShape     | **Complete**   | 4       | Triangle mesh with support function                  |
 
 ### Priority 2: Shape Pairs ✅ COMPLETE (all primitive pairs)
 
