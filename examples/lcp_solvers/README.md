@@ -60,27 +60,53 @@ The window size scales with `--gui-scale` to keep the widgets readable.
 ```
 --gui-scale <n>   Scale factor for ImGui widgets (default: 1.0)
 --headless        Run benchmark without display window
---runs <n>        Runs per solver in headless benchmark (default: 10)
---frames <n>      Number of frames to render (reserved for future use)
---out <dir>       Output directory for results (reserved for future use)
---width <n>       Viewport width (default: 1280)
---height <n>      Viewport height (default: 720)
+--list            List available examples and solvers
+--example <name>  Filter examples by name substring
+--solver <name>   Filter solvers by name substring
+--runs <n>        Runs per solver (default: 100 for long horizon testing)
 ```
 
 ## Headless Mode
 
-Run all solvers against all scenarios in batch mode for CI or benchmarking:
+Run solvers against scenarios in batch mode for CI or benchmarking:
 
 ```bash
-# Quick benchmark (3 runs per solver)
-./lcp_solvers --headless --runs 3
+# List available examples and solvers
+./lcp_solvers --list
 
-# Full benchmark (default 10 runs)
+# Run specific example with specific solver (100 runs for long horizon)
+./lcp_solvers --headless --example "friction" --solver "Dantzig"
+
+# Run all solvers on a single example
+./lcp_solvers --headless --example "2x2"
+
+# Quick smoke test (10 runs)
+./lcp_solvers --headless --runs 10
+
+# Full long-horizon verification (default 100 runs)
 ./lcp_solvers --headless
 ```
 
-Output includes per-solver metrics: status, iterations, residual, complementarity,
-contract validation, and average runtime in milliseconds.
+### Output Format
+
+Each solver-example combination reports:
+
+- **Pass/Total**: Number of runs that passed contract check
+- **MaxResidual**: Maximum residual across all runs
+- **MaxCompl**: Maximum complementarity violation across all runs
+- **Status**: PASS if all runs passed, FAIL otherwise
+- **Avg(ms)**: Average solve time in milliseconds
+
+### Exit Codes
+
+- `0`: All solver-example combinations passed all runs
+- `1`: At least one combination had failures (for CI integration)
+
+### Long Horizon Testing
+
+The default 100 runs per solver ensures consistent behavior over time. Some
+iterative solvers (Jacobi, Red-Black GS) may fail on ill-conditioned problems
+like "Near-singular standard LCP" - this is expected and documented.
 
 ## Reference Key
 

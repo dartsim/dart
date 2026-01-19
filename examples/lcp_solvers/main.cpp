@@ -1815,9 +1815,91 @@ private:
   dart::math::LcpOptions mOptions;
 };
 
-} // namespace
+void listAvailable()
+{
+  auto examples = BuildExamples();
+  auto solvers = BuildSolvers();
 
-void runHeadlessBenchmark(int runs)
+  std::cout << "Available examples:\n";
+  for (size_t i = 0; i < examples.size(); ++i) {
+    std::cout << "  " << std::setw(2) << i << ": " << examples[i].label << "\n";
+  }
+
+  std::cout << "\nAvailable solvers:\n";
+  for (size_t i = 0; i < solvers.size(); ++i) {
+    std::cout << "  " << std::setw(2) << i << ": " << solvers[i].name << "\n";
+  }
+}
+
+struct BenchmarkResult
+{
+  std::string exampleName;
+  std::string solverName;
+  int totalRuns{0};
+  int passedRuns{0};
+  double avgMs{0.0};
+  double maxResidual{0.0};
+  double maxComplementarity{0.0};
+  bool allPassed{true};
+};
+
+BenchmarkResult runSolverBenchmark(
+    const ExampleCase& example,
+    const SolverInfo& solverInfo,
+    int runs,
+    const dart::math::LcpOptions& options)
+{
+  BenchmarkResult result;
+  result.exampleName = example.label;
+  result.solverName = solverInfo.name;
+  result.totalRuns = runs;
+
+  auto solver = CreateSolver(solverInfo.type);
+  if (!solver) {
+    result.allPassed = false;
+    return result;
+  }
+
+  const int n = static_cast<int>(example.problem.b.size());
+  if (n <= 0) {
+    result.allPassed = false;
+    return result;
+  }
+
+  double totalMs = 0.0;
+  int passed = 0;
+
+  for (int i = 0; i < runs; ++i) {
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+    const auto start = std::chrono::steady_clock::now();
+    solver->solve(example.problem, x, options);
+    const auto end = std::chrono::steady_clock::now();
+    totalMs += std::chrono::duration<double, std::milli>(end - start).count();
+
+    if (!x.allFinite()) {
+      result.allPassed = false;
+      continue;
+    }
+
+    auto check = CheckSolution(example.problem, x, options);
+    result.maxResidual = std::max(result.maxResidual, check.residual);
+    result.maxComplementarity
+        = std::max(result.maxComplementarity, check.complementarity);
+
+    if (check.ok) {
+      ++passed;
+    } else {
+      result.allPassed = false;
+    }
+  }
+
+  result.passedRuns = passed;
+  result.avgMs = totalMs / static_cast<double>(runs);
+  return result;
+}
+
+int runHeadlessBenchmark(
+    const std::string& exampleFilter, const std::string& solverFilter, int runs)
 {
   auto examples = BuildExamples();
   auto solvers = BuildSolvers();
@@ -1828,93 +1910,112 @@ void runHeadlessBenchmark(int runs)
   options.relativeTolerance = 1e-4;
   options.complementarityTolerance = 1e-6;
 
-  std::cout << "Running LCP solver benchmark (" << runs
-            << " runs per solver)\n";
+  std::vector<BenchmarkResult> allResults;
+  int totalTests = 0;
+  int passedTests = 0;
+
+  std::cout << "LCP Solver Benchmark\n";
+  std::cout << "Runs per test: " << runs << "\n";
+  if (!exampleFilter.empty())
+    std::cout << "Example filter: " << exampleFilter << "\n";
+  if (!solverFilter.empty())
+    std::cout << "Solver filter: " << solverFilter << "\n";
   std::cout << std::string(80, '=') << "\n\n";
 
   for (const auto& example : examples) {
+    if (!exampleFilter.empty()
+        && example.label.find(exampleFilter) == std::string::npos) {
+      continue;
+    }
+
     std::cout << "Example: " << example.label << "\n";
     std::cout << "  Type: "
               << (example.hasFindex ? "Boxed + friction"
                                     : (example.isBoxed ? "Boxed" : "Standard"))
-              << ", Dimension: " << example.problem.b.size() << "\n\n";
+              << ", Dim: " << example.problem.b.size() << "\n";
 
-    std::cout << std::left << std::setw(28) << "Solver" << std::setw(12)
-              << "Status" << std::setw(8) << "Iters" << std::setw(14)
-              << "Residual" << std::setw(14) << "Compl" << std::setw(10)
-              << "Contract" << std::setw(12) << "Avg(ms)"
+    std::cout << std::left << std::setw(28) << "  Solver" << std::setw(14)
+              << "Pass/Total" << std::setw(14) << "MaxResidual" << std::setw(14)
+              << "MaxCompl" << std::setw(10) << "Status" << std::setw(10)
+              << "Avg(ms)"
               << "\n";
-    std::cout << std::string(98, '-') << "\n";
+    std::cout << "  " << std::string(88, '-') << "\n";
 
     for (const auto& solverInfo : solvers) {
-      auto solver = CreateSolver(solverInfo.type);
-      if (!solver)
+      if (!solverFilter.empty()
+          && solverInfo.name.find(solverFilter) == std::string::npos) {
         continue;
-
-      const int n = static_cast<int>(example.problem.b.size());
-      if (n <= 0)
-        continue;
-
-      Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
-      dart::math::LcpResult result;
-      double totalMs = 0.0;
-
-      bool valid = true;
-      for (int i = 0; i < runs && valid; ++i) {
-        x = Eigen::VectorXd::Zero(n);
-        const auto start = std::chrono::steady_clock::now();
-        result = solver->solve(example.problem, x, options);
-        const auto end = std::chrono::steady_clock::now();
-        totalMs
-            += std::chrono::duration<double, std::milli>(end - start).count();
-
-        if (!x.allFinite()) {
-          valid = false;
-        }
       }
 
-      const double avgMs = totalMs / static_cast<double>(runs);
-      auto check = CheckSolution(example.problem, x, options);
+      auto result = runSolverBenchmark(example, solverInfo, runs, options);
+      allResults.push_back(result);
 
-      std::cout << std::left << std::setw(28) << solverInfo.name
-                << std::setw(12) << dart::math::toString(result.status)
-                << std::setw(8) << result.iterations << std::scientific
-                << std::setprecision(2) << std::setw(14) << check.residual
-                << std::setw(14) << check.complementarity << std::setw(10)
-                << (check.ok ? "OK" : "FAIL") << std::fixed
-                << std::setprecision(3) << std::setw(12) << avgMs << "\n";
+      ++totalTests;
+      if (result.allPassed)
+        ++passedTests;
+
+      std::string passRate = std::to_string(result.passedRuns) + "/"
+                             + std::to_string(result.totalRuns);
+
+      std::cout << std::left << "  " << std::setw(26) << solverInfo.name
+                << std::setw(14) << passRate << std::scientific
+                << std::setprecision(2) << std::setw(14) << result.maxResidual
+                << std::setw(14) << result.maxComplementarity << std::setw(10)
+                << (result.allPassed ? "PASS" : "FAIL") << std::fixed
+                << std::setprecision(3) << std::setw(10) << result.avgMs
+                << "\n";
     }
     std::cout << "\n";
   }
+
+  std::cout << std::string(80, '=') << "\n";
+  std::cout << "Summary: " << passedTests << "/" << totalTests
+            << " solver-example combinations passed all " << runs << " runs\n";
+
+  if (passedTests < totalTests) {
+    std::cout << "\nFailed combinations:\n";
+    for (const auto& r : allResults) {
+      if (!r.allPassed) {
+        std::cout << "  - " << r.solverName << " on " << r.exampleName << " ("
+                  << r.passedRuns << "/" << r.totalRuns << " passed)\n";
+      }
+    }
+  }
+
+  return (passedTests == totalTests) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
+
+} // namespace
 
 int main(int argc, char* argv[])
 {
   CLI::App app("LCP solvers");
   double guiScale = 1.0;
   bool headless = false;
-  int frames = -1;
-  std::string outDir;
-  int width = 1280;
-  int height = 720;
-  int runs = 10;
+  bool listMode = false;
+  std::string exampleFilter;
+  std::string solverFilter;
+  int runs = 100;
 
   app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
       ->check(CLI::PositiveNumber);
-  app.add_flag("--headless", headless, "Run without display window");
-  app.add_option("--frames", frames, "Number of frames to render (headless)");
-  app.add_option("--out", outDir, "Output directory for captured frames");
-  app.add_option("--width", width, "Viewport width")
-      ->check(CLI::PositiveNumber);
-  app.add_option("--height", height, "Viewport height")
-      ->check(CLI::PositiveNumber);
-  app.add_option("--runs", runs, "Runs per solver in headless benchmark")
+  app.add_flag("--headless", headless, "Run benchmark without display window");
+  app.add_flag("--list", listMode, "List available examples and solvers");
+  app.add_option(
+      "--example", exampleFilter, "Filter examples by name substring");
+  app.add_option("--solver", solverFilter, "Filter solvers by name substring");
+  app.add_option(
+         "--runs", runs, "Runs per solver (default: 100 for long horizon)")
       ->check(CLI::PositiveNumber);
   CLI11_PARSE(app, argc, argv);
 
-  if (headless) {
-    runHeadlessBenchmark(runs);
+  if (listMode) {
+    listAvailable();
     return EXIT_SUCCESS;
+  }
+
+  if (headless) {
+    return runHeadlessBenchmark(exampleFilter, solverFilter, runs);
   }
 
   dart::simulation::WorldPtr world
