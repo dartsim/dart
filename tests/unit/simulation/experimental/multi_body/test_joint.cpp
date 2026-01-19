@@ -587,3 +587,222 @@ TEST(Joint, AllJointTypesInOneRobot)
   EXPECT_EQ(robot.getJointCount(), 8u);
   EXPECT_EQ(robot.getDOFCount(), 17u);
 }
+
+//==============================================================================
+// Joint State Accessors (Position, Velocity, Acceleration, Torque)
+//==============================================================================
+
+TEST(Joint, GetDOF)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto l1 = robot.addLink(
+      "l1",
+      {.parentLink = base,
+       .jointName = "revolute",
+       .jointType = dse::comps::JointType::Revolute});
+
+  auto joint = l1.getParentJoint();
+  EXPECT_EQ(joint.getDOF(), 1u);
+}
+
+TEST(Joint, GetSetPositionRevolute)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto l1 = robot.addLink(
+      "l1",
+      {.parentLink = base,
+       .jointName = "revolute",
+       .jointType = dse::comps::JointType::Revolute});
+
+  auto joint = l1.getParentJoint();
+
+  Eigen::VectorXd pos = joint.getPosition();
+  EXPECT_EQ(pos.size(), 1);
+  EXPECT_DOUBLE_EQ(pos(0), 0.0);
+
+  Eigen::VectorXd newPos(1);
+  newPos << 1.5;
+  joint.setPosition(newPos);
+
+  pos = joint.getPosition();
+  EXPECT_DOUBLE_EQ(pos(0), 1.5);
+}
+
+TEST(Joint, GetSetPositionBall)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto l1 = robot.addLink(
+      "l1",
+      {.parentLink = base,
+       .jointName = "ball",
+       .jointType = dse::comps::JointType::Ball});
+
+  auto joint = l1.getParentJoint();
+
+  Eigen::VectorXd pos = joint.getPosition();
+  EXPECT_EQ(pos.size(), 3);
+
+  Eigen::VectorXd newPos(3);
+  newPos << 0.1, 0.2, 0.3;
+  joint.setPosition(newPos);
+
+  pos = joint.getPosition();
+  EXPECT_DOUBLE_EQ(pos(0), 0.1);
+  EXPECT_DOUBLE_EQ(pos(1), 0.2);
+  EXPECT_DOUBLE_EQ(pos(2), 0.3);
+}
+
+TEST(Joint, GetSetPositionFree)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto l1 = robot.addLink(
+      "l1",
+      {.parentLink = base,
+       .jointName = "free",
+       .jointType = dse::comps::JointType::Free});
+
+  auto joint = l1.getParentJoint();
+
+  Eigen::VectorXd pos = joint.getPosition();
+  EXPECT_EQ(pos.size(), 6);
+
+  Eigen::VectorXd newPos(6);
+  newPos << 0.1, 0.2, 0.3, 1.0, 2.0, 3.0;
+  joint.setPosition(newPos);
+
+  pos = joint.getPosition();
+  for (int i = 0; i < 6; ++i) {
+    EXPECT_DOUBLE_EQ(pos(i), newPos(i));
+  }
+}
+
+TEST(Joint, GetSetVelocity)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto l1 = robot.addLink(
+      "l1",
+      {.parentLink = base,
+       .jointName = "revolute",
+       .jointType = dse::comps::JointType::Revolute});
+
+  auto joint = l1.getParentJoint();
+
+  Eigen::VectorXd vel = joint.getVelocity();
+  EXPECT_EQ(vel.size(), 1);
+  EXPECT_DOUBLE_EQ(vel(0), 0.0);
+
+  Eigen::VectorXd newVel(1);
+  newVel << 2.5;
+  joint.setVelocity(newVel);
+
+  vel = joint.getVelocity();
+  EXPECT_DOUBLE_EQ(vel(0), 2.5);
+}
+
+TEST(Joint, GetSetAcceleration)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto l1 = robot.addLink(
+      "l1",
+      {.parentLink = base,
+       .jointName = "revolute",
+       .jointType = dse::comps::JointType::Revolute});
+
+  auto joint = l1.getParentJoint();
+
+  Eigen::VectorXd acc = joint.getAcceleration();
+  EXPECT_EQ(acc.size(), 1);
+  EXPECT_DOUBLE_EQ(acc(0), 0.0);
+
+  Eigen::VectorXd newAcc(1);
+  newAcc << 9.8;
+  joint.setAcceleration(newAcc);
+
+  acc = joint.getAcceleration();
+  EXPECT_DOUBLE_EQ(acc(0), 9.8);
+}
+
+TEST(Joint, GetSetTorque)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto l1 = robot.addLink(
+      "l1",
+      {.parentLink = base,
+       .jointName = "revolute",
+       .jointType = dse::comps::JointType::Revolute});
+
+  auto joint = l1.getParentJoint();
+
+  Eigen::VectorXd torque = joint.getTorque();
+  EXPECT_EQ(torque.size(), 1);
+  EXPECT_DOUBLE_EQ(torque(0), 0.0);
+
+  Eigen::VectorXd newTorque(1);
+  newTorque << 100.0;
+  joint.setTorque(newTorque);
+
+  torque = joint.getTorque();
+  EXPECT_DOUBLE_EQ(torque(0), 100.0);
+}
+
+TEST(Joint, SetPositionSizeMismatchThrows)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto l1 = robot.addLink(
+      "l1",
+      {.parentLink = base,
+       .jointName = "revolute",
+       .jointType = dse::comps::JointType::Revolute});
+
+  auto joint = l1.getParentJoint();
+
+  Eigen::VectorXd wrongSize(3);
+  wrongSize << 1.0, 2.0, 3.0;
+
+  EXPECT_THROW(joint.setPosition(wrongSize), dse::InvalidArgumentException);
+}
+
+TEST(Joint, FixedJointHasZeroSizeState)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto l1 = robot.addLink(
+      "l1",
+      {.parentLink = base,
+       .jointName = "fixed",
+       .jointType = dse::comps::JointType::Fixed});
+
+  auto joint = l1.getParentJoint();
+
+  EXPECT_EQ(joint.getDOF(), 0u);
+  EXPECT_EQ(joint.getPosition().size(), 0);
+  EXPECT_EQ(joint.getVelocity().size(), 0);
+  EXPECT_EQ(joint.getAcceleration().size(), 0);
+  EXPECT_EQ(joint.getTorque().size(), 0);
+}

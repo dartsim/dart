@@ -129,4 +129,91 @@ bool Joint::isValid() const
   return m_world->getRegistry().valid(m_entity);
 }
 
+//==============================================================================
+std::size_t Joint::getDOF() const
+{
+  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  return jointComp.getDOF();
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getPosition() const
+{
+  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  return jointComp.position;
+}
+
+//==============================================================================
+void Joint::setPosition(const Eigen::VectorXd& position)
+{
+  auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      static_cast<std::size_t>(position.size()) != jointComp.getDOF(),
+      InvalidArgumentException,
+      "Position vector size mismatch: expected {}, got {}",
+      jointComp.getDOF(),
+      position.size());
+  jointComp.position = position;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getVelocity() const
+{
+  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  return jointComp.velocity;
+}
+
+//==============================================================================
+void Joint::setVelocity(const Eigen::VectorXd& velocity)
+{
+  auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      static_cast<std::size_t>(velocity.size()) != jointComp.getDOF(),
+      InvalidArgumentException,
+      "Velocity vector size mismatch: expected {}, got {}",
+      jointComp.getDOF(),
+      velocity.size());
+  jointComp.velocity = velocity;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getAcceleration() const
+{
+  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  return jointComp.acceleration;
+}
+
+//==============================================================================
+void Joint::setAcceleration(const Eigen::VectorXd& acceleration)
+{
+  auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      static_cast<std::size_t>(acceleration.size()) != jointComp.getDOF(),
+      InvalidArgumentException,
+      "Acceleration vector size mismatch: expected {}, got {}",
+      jointComp.getDOF(),
+      acceleration.size());
+  jointComp.acceleration = acceleration;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getTorque() const
+{
+  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  return jointComp.torque;
+}
+
+//==============================================================================
+void Joint::setTorque(const Eigen::VectorXd& torque)
+{
+  auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      static_cast<std::size_t>(torque.size()) != jointComp.getDOF(),
+      InvalidArgumentException,
+      "Torque vector size mismatch: expected {}, got {}",
+      jointComp.getDOF(),
+      torque.size());
+  jointComp.torque = torque;
+}
+
 } // namespace dart::simulation::experimental

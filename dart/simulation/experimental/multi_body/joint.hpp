@@ -139,8 +139,57 @@ public:
   /// @return True if the entity is valid
   [[nodiscard]] bool isValid() const;
 
+  /// Get the number of degrees of freedom for this joint
+  ///
+  /// @return DOF count (0 for Fixed, 1 for Revolute/Prismatic/Screw,
+  ///         2 for Universal, 3 for Ball/Planar, 6 for Free)
+  [[nodiscard]] std::size_t getDOF() const;
+
+  /// Get joint position (generalized coordinates)
+  ///
+  /// @return Position vector (size = DOF)
+  [[nodiscard]] Eigen::VectorXd getPosition() const;
+
+  /// Set joint position (generalized coordinates)
+  ///
+  /// @param position Position vector (size must equal DOF)
+  /// @throws InvalidArgumentException if size mismatch
+  void setPosition(const Eigen::VectorXd& position);
+
+  /// Get joint velocity (generalized velocities)
+  ///
+  /// @return Velocity vector (size = DOF)
+  [[nodiscard]] Eigen::VectorXd getVelocity() const;
+
+  /// Set joint velocity (generalized velocities)
+  ///
+  /// @param velocity Velocity vector (size must equal DOF)
+  /// @throws InvalidArgumentException if size mismatch
+  void setVelocity(const Eigen::VectorXd& velocity);
+
+  /// Get joint acceleration (generalized accelerations)
+  ///
+  /// @return Acceleration vector (size = DOF)
+  [[nodiscard]] Eigen::VectorXd getAcceleration() const;
+
+  /// Set joint acceleration (generalized accelerations)
+  ///
+  /// @param acceleration Acceleration vector (size must equal DOF)
+  /// @throws InvalidArgumentException if size mismatch
+  void setAcceleration(const Eigen::VectorXd& acceleration);
+
+  /// Get joint torque/force (generalized forces)
+  ///
+  /// @return Torque vector (size = DOF)
+  [[nodiscard]] Eigen::VectorXd getTorque() const;
+
+  /// Set joint torque/force (generalized forces)
+  ///
+  /// @param torque Torque vector (size must equal DOF)
+  /// @throws InvalidArgumentException if size mismatch
+  void setTorque(const Eigen::VectorXd& torque);
+
   // TODO: Add methods for:
-  // - Getting/setting position, velocity, acceleration
   // - Getting/setting joint limits
   // - Getting/setting effort limits
   // - Computing joint transforms
