@@ -116,9 +116,27 @@ Tests all 19 LCP solvers with 5 test cases:
 
 ### 4.5 Benchmark Infrastructure
 
-- Performance profiles (Dolan-More)
-- CI regression detection
-- Problem Factory scaling tests
+- [x] Performance profiles (Dolan-More) - `scripts/lcp_performance_profile.py`
+- [ ] CI regression detection
+- [ ] Problem Factory scaling tests
+
+#### Performance Profile Results
+
+Run with: `pixi run python scripts/lcp_performance_profile.py --run`
+
+Results saved to `docs/background/lcp/figures/`:
+
+- `performance_profile_standard.csv` - Standard LCP problems
+- `performance_profile_boxed.csv` - Boxed constraint problems
+- `performance_profile_frictionindex.csv` - Friction contact problems
+
+**Key findings** (n=12,24,48,96):
+
+| Category      | Top Performers                  |
+| ------------- | ------------------------------- |
+| Standard      | Direct, PGS, TGS, SAP           |
+| Boxed         | TGS, PGS, Jacobi, SymmetricPsor |
+| FrictionIndex | PGS, TGS, SAP, ADMM             |
 
 ### 4.6 Documentation Expansion
 
