@@ -34,15 +34,15 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 
 ### Public Headers & Entrypoints
 
-| Header                      | Purpose                    | Status           |
-| --------------------------- | -------------------------- | ---------------- |
-| `world.hpp`                 | Main user entry point      | Stable           |
-| `multi_body/multi_body.hpp` | Robot/skeleton creation    | Stable           |
-| `multi_body/link.hpp`       | Link creation + options    | Stable           |
+| Header                      | Purpose                    | Status            |
+| --------------------------- | -------------------------- | ----------------- |
+| `world.hpp`                 | Main user entry point      | Stable            |
+| `multi_body/multi_body.hpp` | Robot/skeleton creation    | Stable            |
+| `multi_body/link.hpp`       | Link creation + options    | Stable            |
 | `multi_body/joint.hpp`      | Joint handle class         | Full state access |
-| `frame/frame.hpp`           | Frame base class           | Stable           |
-| `frame/free_frame.hpp`      | Free transform frames      | Stable           |
-| `space/state_space.hpp`     | Optimization state mapping | Stable           |
+| `frame/frame.hpp`           | Frame base class           | Stable            |
+| `frame/free_frame.hpp`      | Free transform frames      | Stable            |
+| `space/state_space.hpp`     | Optimization state mapping | Stable            |
 
 ### Joint Type Implementation Status
 
@@ -77,7 +77,7 @@ forward kinematics calculations (computing link transforms from joint positions)
 | `test_serialization.cpp` | Good     | Save/load worlds                                  |
 | `test_frames.cpp`        | Basic    | Frame operations                                  |
 | `test_state_space.cpp`   | Basic    | StateSpace API                                    |
-| `test_joint.cpp`         | **Good** | 41 tests: types, DOF, state accessors, limits  |
+| `test_joint.cpp`         | **Good** | 41 tests: types, DOF, state accessors, limits     |
 | `test_link.cpp`          | **Good** | 14 tests: name, parent joint, frame, copy, chains |
 | `test_rigid_body.cpp`    | **Good** | 14 tests: mass, inertia, pose, velocity, forces   |
 | `bm_ecs_safety.cpp`      | Basic    | ECS access benchmark                              |
@@ -387,21 +387,22 @@ forward kinematics calculations (computing link transforms from joint positions)
 
 ## Progress Tracker
 
-### Phase 0: Ground-Truth (Target: Week 1-2)
+### Phase 0: Ground-Truth (Target: Week 1-2) ✅ COMPLETE
 
 - [x] Epic document created
-- [x] `test_joint.cpp` implemented (27 tests total)
+- [x] `test_joint.cpp` implemented (41 tests total)
 - [x] `test_link.cpp` implemented (14 tests)
+- [x] `test_rigid_body.cpp` implemented (14 tests)
 - [x] All joint types tested (Fixed, Revolute, Prismatic, Screw, Universal, Ball, Planar, Free)
 - [x] Doxygen comments reviewed (already present in public headers)
-- [ ] Hello world example created
+- [x] Hello world example created (`examples/simulation_experimental_hello_world/`)
 
-### Phase 1: API Cleanup (Target: Week 3-5)
+### Phase 1: API Cleanup (Target: Week 3-5) ✅ COMPLETE
 
-- [ ] Naming audit complete
-- [ ] Exception review complete
-- [ ] Lifetime docs complete
-- [ ] Design mode guards complete
+- [x] Naming audit complete (camelCase methods, PascalCase classes, snake_case files)
+- [x] Exception review complete (InvalidOperationException for mode violations)
+- [x] Lifetime docs complete (all handle classes have @note about invalidation)
+- [x] Design mode guards complete (World and MultiBody check simulation mode)
 - [x] All joint types implemented (data model complete, kinematics is Phase 5)
 - [x] Joint state accessors (position, velocity, acceleration, torque) - 41 tests
 - [x] Joint limits accessors (position lower/upper, velocity, effort)

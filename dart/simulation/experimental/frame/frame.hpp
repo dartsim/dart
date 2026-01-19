@@ -86,6 +86,10 @@ namespace dart::simulation::experimental {
 /// Phase 2: Velocity/Acceleration (Future - after dynamics)
 /// Phase 3: Additional frame types (SimpleFrame, ShapeFrame)
 ///
+/// @note Handles are lightweight (entity ID + pointer) and safe to copy.
+///       Handles become invalid if the underlying entity is destroyed
+///       or the World is destroyed.
+///
 /// @see LinkComponent, FrameTag
 class DART_EXPERIMENTAL_API Frame
   : public EntityObjectWith<

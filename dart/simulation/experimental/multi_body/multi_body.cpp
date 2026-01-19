@@ -142,7 +142,7 @@ Link MultiBody::addLink(std::string_view name)
   // Check design mode
   DART_EXPERIMENTAL_THROW_T_IF(
       m_world->isSimulationMode(),
-      InvalidArgumentException,
+      InvalidOperationException,
       "Cannot create Link in simulation mode");
 
   // Auto-generate name if not provided
@@ -188,7 +188,7 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
   // Check design mode
   DART_EXPERIMENTAL_THROW_T_IF(
       m_world->isSimulationMode(),
-      InvalidArgumentException,
+      InvalidOperationException,
       "Cannot create link in simulation mode. Links must be created in "
       "design mode.");
 

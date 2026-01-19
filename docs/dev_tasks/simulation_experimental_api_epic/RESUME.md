@@ -3,6 +3,7 @@
 ## Last Session Summary
 
 Phase 1 nearly complete - all major implementations done:
+
 1. **Joint state accessors** - getDOF, get/set for position, velocity, acceleration, torque
 2. **Joint limits accessors** - get/set for position lower/upper, velocity, effort limits
 3. **RigidBody full implementation** - mass, inertia, pose, velocity, force/torque accumulation
@@ -26,6 +27,7 @@ Working tree is clean.
 ## Immediate Next Steps
 
 **Phase 1 remaining tasks** (cleanup, not implementation):
+
 1. **Naming audit** - Check all public APIs for snake_case consistency per code-style.md
 2. **Exception hierarchy review** - Verify consistent use of InvalidArgumentException, InvalidOperationException, etc.
 3. **Lifetime docs** - Add Doxygen comments explaining handle lifetime rules
@@ -57,23 +59,23 @@ Working tree is clean.
 
 ## Test Count Summary
 
-| Test File             | # Tests | Coverage                                       |
-| --------------------- | ------- | ---------------------------------------------- |
-| `test_joint.cpp`      | 41      | All types, DOF, state accessors, limits        |
-| `test_link.cpp`       | 14      | name, parent joint, frame, copy, chains        |
-| `test_rigid_body.cpp` | 14      | mass, inertia, pose, velocity, forces          |
+| Test File             | # Tests | Coverage                                |
+| --------------------- | ------- | --------------------------------------- |
+| `test_joint.cpp`      | 41      | All types, DOF, state accessors, limits |
+| `test_link.cpp`       | 14      | name, parent joint, frame, copy, chains |
+| `test_rigid_body.cpp` | 14      | mass, inertia, pose, velocity, forces   |
 
 Total: 69 tests for handles + existing world/frame/serialization tests
 
 ## Key Files Reference
 
-| File                                              | Purpose                           |
-| ------------------------------------------------- | --------------------------------- |
-| `dart/simulation/experimental/world.hpp`          | Main entry point                  |
-| `dart/simulation/experimental/multi_body/joint.hpp/cpp` | Joint handle (state + limits) |
-| `dart/simulation/experimental/body/rigid_body.hpp/cpp`  | RigidBody handle (physics)   |
-| `dart/simulation/experimental/comps/joint.hpp`    | JointType enum, Joint component   |
-| `dart/simulation/experimental/comps/dynamics.hpp` | Transform, Velocity, MassProperties, Force |
+| File                                                    | Purpose                                    |
+| ------------------------------------------------------- | ------------------------------------------ |
+| `dart/simulation/experimental/world.hpp`                | Main entry point                           |
+| `dart/simulation/experimental/multi_body/joint.hpp/cpp` | Joint handle (state + limits)              |
+| `dart/simulation/experimental/body/rigid_body.hpp/cpp`  | RigidBody handle (physics)                 |
+| `dart/simulation/experimental/comps/joint.hpp`          | JointType enum, Joint component            |
+| `dart/simulation/experimental/comps/dynamics.hpp`       | Transform, Velocity, MassProperties, Force |
 
 ## How to Resume
 

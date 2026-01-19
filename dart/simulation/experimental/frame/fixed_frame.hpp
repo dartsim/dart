@@ -52,6 +52,10 @@ namespace dart::simulation::experimental {
 /// - End-effector frames
 ///
 /// DART6 equivalent: FixedFrame
+///
+/// @note Handles are lightweight (entity ID + pointer) and safe to copy.
+///       Handles become invalid if the underlying entity is destroyed
+///       or the World is destroyed.
 class DART_EXPERIMENTAL_API FixedFrame
   : public Frame,
     public EntityObjectWith<

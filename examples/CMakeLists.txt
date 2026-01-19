@@ -5,6 +5,7 @@ project(dart-examples)
 # Getting started examples
 add_subdirectory(hello_world)
 add_subdirectory(simple_frames)
+add_subdirectory(simulation_experimental_hello_world)
 
 # Rigid bodies and frames examples
 add_subdirectory(boxes)

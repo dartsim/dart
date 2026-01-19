@@ -63,8 +63,9 @@ namespace dart::simulation::experimental {
 /// - Force application
 /// - Collision detection integration
 ///
-/// @note RigidBody objects are owned by World and accessed via handles.
-///       The underlying data is stored in the World's ECS registry.
+/// @note Handles are lightweight (entity ID + pointer) and safe to copy.
+///       Handles become invalid if the underlying entity is destroyed
+///       or the World is destroyed.
 class DART_EXPERIMENTAL_API RigidBody : public Frame
 {
 public:

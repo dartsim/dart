@@ -51,6 +51,10 @@ namespace dart::simulation::experimental {
 /// - Target frames for IK
 ///
 /// DART6 equivalent: SimpleFrame (with modifiable transform)
+///
+/// @note Handles are lightweight (entity ID + pointer) and safe to copy.
+///       Handles become invalid if the underlying entity is destroyed
+///       or the World is destroyed.
 class DART_EXPERIMENTAL_API FreeFrame
   : public Frame,
     public EntityObjectWith<

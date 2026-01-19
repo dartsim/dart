@@ -321,7 +321,7 @@ TEST(MultiBody, DesignTimeRestriction)
   // Attempting to create link should throw
   EXPECT_THROW(
       robot.addLink("link2"),
-      dart::simulation::experimental::InvalidArgumentException);
+      dart::simulation::experimental::InvalidOperationException);
 }
 
 // Test branching kinematic tree (not just serial chain)
