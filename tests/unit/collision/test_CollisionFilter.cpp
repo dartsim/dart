@@ -1,0 +1,330 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <dart/collision/CollisionFilter.hpp>
+#include <dart/collision/CollisionGroup.hpp>
+#include <dart/collision/CollisionOption.hpp>
+#include <dart/collision/CollisionResult.hpp>
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
+
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/RevoluteJoint.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+
+#include <gtest/gtest.h>
+
+using namespace dart;
+using namespace dart::collision;
+using namespace dart::dynamics;
+
+namespace {
+
+class AlwaysIgnoreFilter : public CollisionFilter
+{
+public:
+  bool ignoresCollision(
+      const CollisionObject* /*object1*/,
+      const CollisionObject* /*object2*/) const override
+  {
+    return true;
+  }
+};
+
+class NeverIgnoreFilter : public CollisionFilter
+{
+public:
+  bool ignoresCollision(
+      const CollisionObject* /*object1*/,
+      const CollisionObject* /*object2*/) const override
+  {
+    return false;
+  }
+};
+
+SkeletonPtr createSkeleton(const std::string& name)
+{
+  auto skel = Skeleton::create(name);
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0)));
+  return skel;
+}
+
+} // namespace
+
+TEST(CompositeCollisionFilter, EmptyFilterAllowsAll)
+{
+  CompositeCollisionFilter composite;
+  EXPECT_FALSE(composite.ignoresCollision(nullptr, nullptr));
+}
+
+TEST(CompositeCollisionFilter, AddAndRemoveFilter)
+{
+  CompositeCollisionFilter composite;
+  AlwaysIgnoreFilter ignoreFilter;
+
+  composite.addCollisionFilter(&ignoreFilter);
+  EXPECT_TRUE(composite.ignoresCollision(nullptr, nullptr));
+
+  composite.removeCollisionFilter(&ignoreFilter);
+  EXPECT_FALSE(composite.ignoresCollision(nullptr, nullptr));
+}
+
+TEST(CompositeCollisionFilter, MultipleFilters)
+{
+  CompositeCollisionFilter composite;
+  NeverIgnoreFilter neverIgnore;
+  AlwaysIgnoreFilter alwaysIgnore;
+
+  composite.addCollisionFilter(&neverIgnore);
+  EXPECT_FALSE(composite.ignoresCollision(nullptr, nullptr));
+
+  composite.addCollisionFilter(&alwaysIgnore);
+  EXPECT_TRUE(composite.ignoresCollision(nullptr, nullptr));
+}
+
+TEST(CompositeCollisionFilter, RemoveAllFilters)
+{
+  CompositeCollisionFilter composite;
+  AlwaysIgnoreFilter filter1;
+  AlwaysIgnoreFilter filter2;
+
+  composite.addCollisionFilter(&filter1);
+  composite.addCollisionFilter(&filter2);
+  EXPECT_TRUE(composite.ignoresCollision(nullptr, nullptr));
+
+  composite.removeAllCollisionFilters();
+  EXPECT_FALSE(composite.ignoresCollision(nullptr, nullptr));
+}
+
+TEST(CompositeCollisionFilter, AddNullptrDoesNothing)
+{
+  CompositeCollisionFilter composite;
+
+  // Adding nullptr should not crash or change behavior
+  composite.addCollisionFilter(nullptr);
+  EXPECT_FALSE(composite.ignoresCollision(nullptr, nullptr));
+}
+
+// Test BodyNodeCollisionFilter through actual collision detection
+// since we cannot directly access CollisionObject pointers
+TEST(BodyNodeCollisionFilter, BlacklistPairThroughCollision)
+{
+  auto skel1 = createSkeleton("skel1");
+  auto skel2 = createSkeleton("skel2");
+  auto body1 = skel1->getBodyNode(0);
+  auto body2 = skel2->getBodyNode(0);
+
+  // Position skeletons to overlap
+  skel1->getJoint(0)->setPosition(0, 0.0);
+  skel2->getJoint(0)->setPosition(0, 0.5); // Overlap with offset
+
+  auto detector = DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(body1->getShapeNode(0));
+  group->addShapeFrame(body2->getShapeNode(0));
+
+  CollisionOption option;
+  CollisionResult result;
+
+  // Initially should collide (overlapping boxes)
+  EXPECT_TRUE(group->collide(option, &result));
+
+  // Add filter with blacklist
+  auto filter = std::make_shared<BodyNodeCollisionFilter>();
+  filter->addBodyNodePairToBlackList(body1, body2);
+  option.collisionFilter = filter;
+
+  result.clear();
+  EXPECT_FALSE(group->collide(option, &result));
+
+  // Remove from blacklist
+  filter->removeBodyNodePairFromBlackList(body1, body2);
+
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+}
+
+TEST(BodyNodeCollisionFilter, RemoveAllFromBlacklistThroughCollision)
+{
+  auto skel1 = createSkeleton("skel1");
+  auto skel2 = createSkeleton("skel2");
+  auto body1 = skel1->getBodyNode(0);
+  auto body2 = skel2->getBodyNode(0);
+
+  // Position skeletons to overlap
+  skel1->getJoint(0)->setPosition(0, 0.0);
+  skel2->getJoint(0)->setPosition(0, 0.5);
+
+  auto detector = DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(body1->getShapeNode(0));
+  group->addShapeFrame(body2->getShapeNode(0));
+
+  auto filter = std::make_shared<BodyNodeCollisionFilter>();
+  filter->addBodyNodePairToBlackList(body1, body2);
+
+  CollisionOption option;
+  option.collisionFilter = filter;
+  CollisionResult result;
+
+  EXPECT_FALSE(group->collide(option, &result));
+
+  filter->removeAllBodyNodePairsFromBlackList();
+
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+}
+
+TEST(BodyNodeCollisionFilter, AdjacentBodiesIgnored)
+{
+  auto skel = Skeleton::create("chain");
+
+  // Create parent body
+  auto pair1 = skel->createJointAndBodyNodePair<FreeJoint>(nullptr);
+  pair1.second->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0)));
+
+  // Create child body connected by revolute joint
+  BodyNode::Properties props;
+  props.mName = "child";
+  RevoluteJoint::Properties jointProps;
+  jointProps.mT_ParentBodyToJoint.translation() = Eigen::Vector3d(0.5, 0, 0);
+  auto pair2 = skel->createJointAndBodyNodePair<RevoluteJoint>(
+      pair1.second, jointProps, props);
+  pair2.second->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0)));
+
+  // By default, self-collision is disabled, so no collision expected
+  auto detector = DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(pair1.second->getShapeNode(0));
+  group->addShapeFrame(pair2.second->getShapeNode(0));
+
+  auto filter = std::make_shared<BodyNodeCollisionFilter>();
+  CollisionOption option;
+  option.collisionFilter = filter;
+  CollisionResult result;
+
+  // Adjacent bodies should be ignored by default (self-collision disabled)
+  EXPECT_FALSE(group->collide(option, &result));
+
+  // Enable self-collision but not adjacent check
+  skel->enableSelfCollisionCheck();
+  skel->disableAdjacentBodyCheck();
+
+  result.clear();
+  EXPECT_FALSE(group->collide(option, &result));
+
+  // Enable adjacent body check - now they should collide
+  skel->enableAdjacentBodyCheck();
+
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+}
+
+TEST(BodyNodeCollisionFilter, NonCollidableBodyIgnored)
+{
+  auto skel1 = createSkeleton("skel1");
+  auto skel2 = createSkeleton("skel2");
+  auto body1 = skel1->getBodyNode(0);
+  auto body2 = skel2->getBodyNode(0);
+
+  // Position skeletons to overlap
+  skel1->getJoint(0)->setPosition(0, 0.0);
+  skel2->getJoint(0)->setPosition(0, 0.5);
+
+  auto detector = DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(body1->getShapeNode(0));
+  group->addShapeFrame(body2->getShapeNode(0));
+
+  auto filter = std::make_shared<BodyNodeCollisionFilter>();
+  CollisionOption option;
+  option.collisionFilter = filter;
+  CollisionResult result;
+
+  // Initially should collide
+  EXPECT_TRUE(group->collide(option, &result));
+
+  // Make one body non-collidable
+  body1->setCollidable(false);
+
+  result.clear();
+  EXPECT_FALSE(group->collide(option, &result));
+
+  // Restore collidability
+  body1->setCollidable(true);
+
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+}
+
+TEST(BodyNodeCollisionFilter, ImmobileSkeletonsIgnored)
+{
+  auto skel1 = createSkeleton("skel1");
+  auto skel2 = createSkeleton("skel2");
+  auto body1 = skel1->getBodyNode(0);
+  auto body2 = skel2->getBodyNode(0);
+
+  // Position skeletons to overlap
+  skel1->getJoint(0)->setPosition(0, 0.0);
+  skel2->getJoint(0)->setPosition(0, 0.5);
+
+  auto detector = DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(body1->getShapeNode(0));
+  group->addShapeFrame(body2->getShapeNode(0));
+
+  auto filter = std::make_shared<BodyNodeCollisionFilter>();
+  CollisionOption option;
+  option.collisionFilter = filter;
+  CollisionResult result;
+
+  // Initially should collide
+  EXPECT_TRUE(group->collide(option, &result));
+
+  // Make both skeletons immobile
+  skel1->setMobile(false);
+  skel2->setMobile(false);
+
+  result.clear();
+  EXPECT_FALSE(group->collide(option, &result));
+
+  // Make one mobile again
+  skel1->setMobile(true);
+
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+}

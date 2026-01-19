@@ -29,6 +29,10 @@ endif()
 
 dart_add_test(
   "unit" UNIT_collision_FCLCollisionObject collision/test_FCLCollisionObject.cpp)
+dart_add_test("unit" UNIT_collision_CollisionOption collision/test_CollisionOption.cpp)
+dart_add_test("unit" UNIT_collision_CollisionFilter collision/test_CollisionFilter.cpp)
+dart_add_test("unit" UNIT_collision_DistanceOption collision/test_DistanceOption.cpp)
+dart_add_test("unit" UNIT_collision_RaycastOption collision/test_RaycastOption.cpp)
 
 # ==============================================================================
 # Common Tests
@@ -77,6 +81,8 @@ dart_add_test(
   "unit" UNIT_constraint_ContactSurface constraint/test_ContactSurface.cpp)
 dart_add_test("unit" UNIT_constraint_JointConstraints constraint/test_JointConstraints.cpp)
 dart_add_test("unit" UNIT_constraint_MotorConstraints constraint/test_MotorConstraints.cpp)
+dart_add_test("unit" UNIT_constraint_WeldJointConstraint constraint/test_WeldJointConstraint.cpp)
+dart_add_test("unit" UNIT_constraint_BallJointConstraint constraint/test_BallJointConstraint.cpp)
 
 # ==============================================================================
 # Dynamics Tests
