@@ -53,6 +53,134 @@ std::string RigidBody::getName() const
   return "";
 }
 
-// getEntity() and isValid() inherited from Frame
+//==============================================================================
+double RigidBody::getMass() const
+{
+  const auto& massProps
+      = getWorld()->getRegistry().get<comps::MassProperties>(getEntity());
+  return massProps.mass;
+}
+
+//==============================================================================
+void RigidBody::setMass(double mass)
+{
+  auto& massProps
+      = getWorld()->getRegistry().get<comps::MassProperties>(getEntity());
+  massProps.mass = mass;
+}
+
+//==============================================================================
+Eigen::Matrix3d RigidBody::getInertia() const
+{
+  const auto& massProps
+      = getWorld()->getRegistry().get<comps::MassProperties>(getEntity());
+  return massProps.inertia;
+}
+
+//==============================================================================
+void RigidBody::setInertia(const Eigen::Matrix3d& inertia)
+{
+  auto& massProps
+      = getWorld()->getRegistry().get<comps::MassProperties>(getEntity());
+  massProps.inertia = inertia;
+}
+
+//==============================================================================
+Eigen::Vector3d RigidBody::getPosition() const
+{
+  const auto& transform
+      = getWorld()->getRegistry().get<comps::Transform>(getEntity());
+  return transform.position;
+}
+
+//==============================================================================
+void RigidBody::setPosition(const Eigen::Vector3d& position)
+{
+  auto& transform
+      = getWorld()->getRegistry().get<comps::Transform>(getEntity());
+  transform.position = position;
+}
+
+//==============================================================================
+Eigen::Quaterniond RigidBody::getOrientation() const
+{
+  const auto& transform
+      = getWorld()->getRegistry().get<comps::Transform>(getEntity());
+  return transform.orientation;
+}
+
+//==============================================================================
+void RigidBody::setOrientation(const Eigen::Quaterniond& orientation)
+{
+  auto& transform
+      = getWorld()->getRegistry().get<comps::Transform>(getEntity());
+  transform.orientation = orientation;
+}
+
+//==============================================================================
+Eigen::Vector3d RigidBody::getLinearVelocity() const
+{
+  const auto& velocity
+      = getWorld()->getRegistry().get<comps::Velocity>(getEntity());
+  return velocity.linear;
+}
+
+//==============================================================================
+void RigidBody::setLinearVelocity(const Eigen::Vector3d& velocity)
+{
+  auto& vel = getWorld()->getRegistry().get<comps::Velocity>(getEntity());
+  vel.linear = velocity;
+}
+
+//==============================================================================
+Eigen::Vector3d RigidBody::getAngularVelocity() const
+{
+  const auto& velocity
+      = getWorld()->getRegistry().get<comps::Velocity>(getEntity());
+  return velocity.angular;
+}
+
+//==============================================================================
+void RigidBody::setAngularVelocity(const Eigen::Vector3d& velocity)
+{
+  auto& vel = getWorld()->getRegistry().get<comps::Velocity>(getEntity());
+  vel.angular = velocity;
+}
+
+//==============================================================================
+Eigen::Vector3d RigidBody::getForce() const
+{
+  const auto& force = getWorld()->getRegistry().get<comps::Force>(getEntity());
+  return force.force;
+}
+
+//==============================================================================
+void RigidBody::addForce(const Eigen::Vector3d& force)
+{
+  auto& f = getWorld()->getRegistry().get<comps::Force>(getEntity());
+  f.force += force;
+}
+
+//==============================================================================
+Eigen::Vector3d RigidBody::getTorque() const
+{
+  const auto& force = getWorld()->getRegistry().get<comps::Force>(getEntity());
+  return force.torque;
+}
+
+//==============================================================================
+void RigidBody::addTorque(const Eigen::Vector3d& torque)
+{
+  auto& f = getWorld()->getRegistry().get<comps::Force>(getEntity());
+  f.torque += torque;
+}
+
+//==============================================================================
+void RigidBody::clearForces()
+{
+  auto& force = getWorld()->getRegistry().get<comps::Force>(getEntity());
+  force.force.setZero();
+  force.torque.setZero();
+}
 
 } // namespace dart::simulation::experimental

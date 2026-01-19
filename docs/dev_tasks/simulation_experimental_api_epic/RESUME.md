@@ -12,6 +12,7 @@ Major Phase 1 progress:
 ## Current Branch
 
 `feature/sim_exp` - 3 commits ahead of main:
+
 ```
 f71761582c9 feat(simulation-experimental): Add Joint state accessors
 bf298c8e657 test(simulation-experimental): Add comprehensive tests for all joint types
@@ -30,13 +31,15 @@ bf298c8e657 test(simulation-experimental): Add comprehensive tests for all joint
 ## What's Complete
 
 ### Phase 0 (Ground-Truth)
+
 - [x] Epic document created
 - [x] test_joint.cpp: 37 tests
-- [x] test_link.cpp: 14 tests  
+- [x] test_link.cpp: 14 tests
 - [x] All joint types tested
 - [ ] Hello world example (deferred)
 
 ### Phase 1 (API Cleanup) - Partial
+
 - [x] All joint types data model complete
 - [x] Joint state accessors (position/velocity/acceleration/torque)
 - [x] Error handling for size mismatches

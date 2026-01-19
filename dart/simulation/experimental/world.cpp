@@ -302,7 +302,6 @@ std::size_t World::getMultiBodyCount() const
 RigidBody World::addRigidBody(
     std::string_view name, const RigidBodyOptions& options)
 {
-  (void)options; // Placeholder for future use
   ensureDesignMode();
 
   std::string candidateName
@@ -328,6 +327,21 @@ RigidBody World::addRigidBody(
       actualName);
 
   m_registry.emplace<comps::RigidBodyTag>(entity);
+
+  auto& transform = m_registry.emplace<comps::Transform>(entity);
+  transform.position = options.position;
+  transform.orientation = options.orientation;
+
+  auto& velocity = m_registry.emplace<comps::Velocity>(entity);
+  velocity.linear = options.linearVelocity;
+  velocity.angular = options.angularVelocity;
+
+  auto& massProps = m_registry.emplace<comps::MassProperties>(entity);
+  massProps.mass = options.mass;
+  massProps.inertia = options.inertia;
+
+  m_registry.emplace<comps::Force>(entity);
+
   return RigidBody(entity, this);
 }
 

@@ -37,6 +37,8 @@
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
 #include <string>
@@ -74,12 +76,56 @@ public:
 
   // Note: getEntity(), getWorld(), isValid() inherited from Frame
 
-  // TODO: Add methods for:
-  // - Getting/setting pose
-  // - Getting/setting velocity
-  // - Applying forces/torques
-  // - Accessing collision shapes
-  // - Enabling/disabling physics
+  /// Get the mass of the rigid body
+  [[nodiscard]] double getMass() const;
+
+  /// Set the mass of the rigid body
+  void setMass(double mass);
+
+  /// Get the inertia matrix (3x3)
+  [[nodiscard]] Eigen::Matrix3d getInertia() const;
+
+  /// Set the inertia matrix (3x3)
+  void setInertia(const Eigen::Matrix3d& inertia);
+
+  /// Get the position (world frame)
+  [[nodiscard]] Eigen::Vector3d getPosition() const;
+
+  /// Set the position (world frame)
+  void setPosition(const Eigen::Vector3d& position);
+
+  /// Get the orientation as quaternion
+  [[nodiscard]] Eigen::Quaterniond getOrientation() const;
+
+  /// Set the orientation from quaternion
+  void setOrientation(const Eigen::Quaterniond& orientation);
+
+  /// Get the linear velocity (world frame)
+  [[nodiscard]] Eigen::Vector3d getLinearVelocity() const;
+
+  /// Set the linear velocity (world frame)
+  void setLinearVelocity(const Eigen::Vector3d& velocity);
+
+  /// Get the angular velocity (world frame)
+  [[nodiscard]] Eigen::Vector3d getAngularVelocity() const;
+
+  /// Set the angular velocity (world frame)
+  void setAngularVelocity(const Eigen::Vector3d& velocity);
+
+  /// Get the accumulated force
+  [[nodiscard]] Eigen::Vector3d getForce() const;
+
+  /// Add force (accumulates until cleared)
+  void addForce(const Eigen::Vector3d& force);
+
+  /// Get the accumulated torque
+  [[nodiscard]] Eigen::Vector3d getTorque() const;
+
+  /// Add torque (accumulates until cleared)
+  void addTorque(const Eigen::Vector3d& torque);
+
+  /// Clear accumulated forces and torques
+  void clearForces();
 };
 
 } // namespace dart::simulation::experimental

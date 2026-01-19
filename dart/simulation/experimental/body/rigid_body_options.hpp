@@ -32,6 +32,9 @@
 
 #pragma once
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
 namespace dart::simulation::experimental {
 
 /// Options for creating a RigidBody
@@ -41,9 +44,14 @@ namespace dart::simulation::experimental {
 /// a RigidBody is a single solid object with 6 DOFs (position and orientation).
 struct RigidBodyOptions
 {
-  // TODO: Add physics properties (mass, inertia, shape, etc.)
-  // TODO: Add initial pose (position, orientation)
-  // TODO: Add initial velocity (linear, angular)
+  double mass = 1.0;
+  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
+
+  Eigen::Vector3d position = Eigen::Vector3d::Zero();
+  Eigen::Quaterniond orientation = Eigen::Quaterniond::Identity();
+
+  Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+  Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
 };
 
 } // namespace dart::simulation::experimental
