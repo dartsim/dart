@@ -40,7 +40,7 @@
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 
-#include <dart/math/lcp/All.hpp>
+#include <dart/math/lcp/all.hpp>
 #include <dart/math/lcp/lcp_validation.hpp>
 
 #include <CLI/CLI.hpp>

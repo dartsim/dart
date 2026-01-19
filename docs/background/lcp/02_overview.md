@@ -53,7 +53,7 @@ dart/math/lcp/
 ├── LcpTypes.hpp/cpp            # LcpProblem, LcpOptions, LcpResult, status codes
 ├── LcpSolver.hpp/cpp           # LcpSolver interface
 ├── LcpValidation.hpp           # Shared residual/KKT validation utilities
-├── All.hpp                     # Convenience umbrella header
+├── all.hpp                     # Convenience umbrella header
 │
 ├── pivoting/
 │   ├── BaraffSolver.hpp/cpp    # Incremental pivoting (SPD/PSD)
@@ -91,7 +91,7 @@ convention and the friction-index (`findex`) interpretation.
    `LcpOptions::customOptions` (see `PgsSolver::Parameters`).
 3. Add unit tests under `tests/unit/math/lcp` (optionally benchmarks under
    `tests/benchmark/lcpsolver`).
-4. Add the header to `dart/math/lcp/All.hpp` if it should be part of the
+4. Add the header to `dart/math/lcp/all.hpp` if it should be part of the
    public API.
 
 ### Usage Examples

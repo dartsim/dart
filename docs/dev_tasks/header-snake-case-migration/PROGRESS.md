@@ -12,6 +12,7 @@ All structural renames have been completed and pushed. PR ready for review.
 - **Commits**: 3 (Phase 1, Phase 2a, Phase 2b-h)
 
 ### Cleanup Note
+
 Per AGENTS.md, remove `docs/dev_tasks/header-snake-case-migration/` folder when PR is merged.
 
 ---

@@ -11,20 +11,22 @@ Migrate DART header files from PascalCase to snake_case naming convention.
 
 **Phase**: COMPLETE - Awaiting PR Review
 
-| Phase    | Description                                     | Status    |
-| -------- | ----------------------------------------------- | --------- |
-| Phase 1  | DART 7 additions (All.hpp, Export.hpp, Fwd.hpp) | COMMITTED |
-| Phase 2a | dart/common structural renames                  | COMMITTED |
-| Phase 2b-h | All remaining modules                         | COMMITTED |
-| Phase 3  | Verification, lint, tests                       | PASSED    |
+| Phase      | Description                                     | Status    |
+| ---------- | ----------------------------------------------- | --------- |
+| Phase 1    | DART 7 additions (All.hpp, Export.hpp, Fwd.hpp) | COMMITTED |
+| Phase 2a   | dart/common structural renames                  | COMMITTED |
+| Phase 2b-h | All remaining modules                           | COMMITTED |
+| Phase 3    | Verification, lint, tests                       | PASSED    |
 
 ### Summary
+
 - **~325 header files renamed** (structural changes only)
 - **All tests passing** (143/143)
 - **Lint passing**
 - **PR updated** with comprehensive description
 
 ### Cleanup
+
 Per AGENTS.md, delete this folder (`docs/dev_tasks/header-snake-case-migration/`) when PR is merged.
 
 ## Key Files
