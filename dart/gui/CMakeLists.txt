@@ -83,7 +83,7 @@ dart_generate_component_headers(
 # Install (includes gui.hpp for component compatibility,
 # and generated PascalCase headers for case compatibility)
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp ${CMAKE_CURRENT_BINARY_DIR}/All.hpp
   DESTINATION include/dart/gui
   COMPONENT headers
 )
