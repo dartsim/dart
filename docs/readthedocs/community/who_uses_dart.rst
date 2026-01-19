@@ -23,11 +23,8 @@ including:
 Research
 --------
 
-DART has been used in various research domains, including robotics,
-biomechanics, computer graphics, animation, and physics-based simulation.
-Notable institutions, universities, or companies that have used DART in their
-research include Georgia Tech, Oxford University, MIT, Disney Research, and
-Toyota Research Institute.
+DART has been cited in `370+ research papers <https://scholar.google.com/scholar?cites=3727458449064418084>`_
+across robotics, biomechanics, computer graphics, animation, and machine learning.
 
 DART has been utilized in research areas such as:
 
