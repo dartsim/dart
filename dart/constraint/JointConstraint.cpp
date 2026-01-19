@@ -231,10 +231,10 @@ void JointConstraint::update()
     // treat as unbounded (no position-derived velocity constraints).
     const double vel_to_pos_lb = hasValidPositionLimits
         ? (positionLowerLimits[i] - positions[i]) / timeStep
-        : negInf;
+        : -static_cast<double>(dInfinity);
     const double vel_to_pos_ub = hasValidPositionLimits
         ? (positionUpperLimits[i] - positions[i]) / timeStep
-        : inf;
+        : static_cast<double>(dInfinity);
 
     // Joint position and velocity constraint check
     if (mJoint->areLimitsEnforced()) {
