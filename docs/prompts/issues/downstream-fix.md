@@ -9,6 +9,7 @@ Do NOT execute unless a human pastes this into a new session.
 ## When to Use
 
 Issues reported in downstream projects (gz-physics, gazebo, gz-sim) that trace back to DART behavior:
+
 - Crashes/assertions in DART code triggered by downstream usage
 - NaN/Inf propagation through DART APIs
 - Missing input validation in DART that downstream relies on
