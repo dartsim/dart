@@ -376,4 +376,111 @@ bool raycastPlane(
   return true;
 }
 
+namespace {
+
+constexpr double kMeshEpsilon = 1e-10;
+
+bool rayTriangleMollerTrumbore(
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& dir,
+    const Eigen::Vector3d& v0,
+    const Eigen::Vector3d& v1,
+    const Eigen::Vector3d& v2,
+    double& t,
+    double& u,
+    double& v,
+    bool backfaceCulling)
+{
+  const Eigen::Vector3d edge1 = v1 - v0;
+  const Eigen::Vector3d edge2 = v2 - v0;
+
+  const Eigen::Vector3d h = dir.cross(edge2);
+  const double a = edge1.dot(h);
+
+  if (backfaceCulling) {
+    if (a < kMeshEpsilon) {
+      return false;
+    }
+  } else {
+    if (std::abs(a) < kMeshEpsilon) {
+      return false;
+    }
+  }
+
+  const double f = 1.0 / a;
+  const Eigen::Vector3d s = origin - v0;
+  u = f * s.dot(h);
+
+  if (u < 0.0 || u > 1.0) {
+    return false;
+  }
+
+  const Eigen::Vector3d q = s.cross(edge1);
+  v = f * dir.dot(q);
+
+  if (v < 0.0 || u + v > 1.0) {
+    return false;
+  }
+
+  t = f * edge2.dot(q);
+
+  return t > kMeshEpsilon;
+}
+
+}
+
+bool raycastMesh(
+    const Ray& ray,
+    const MeshShape& mesh,
+    const Eigen::Isometry3d& meshTransform,
+    const RaycastOption& option,
+    RaycastResult& result)
+{
+  result.clear();
+
+  const Eigen::Isometry3d invTransform = meshTransform.inverse();
+  const Eigen::Vector3d localOrigin = invTransform * ray.origin;
+  const Eigen::Vector3d localDir = invTransform.rotation() * ray.direction;
+
+  const auto& vertices = mesh.getVertices();
+  const auto& triangles = mesh.getTriangles();
+
+  double maxDist = std::min(ray.maxDistance, option.maxDistance);
+  double bestT = std::numeric_limits<double>::max();
+  Eigen::Vector3d bestNormal = Eigen::Vector3d::UnitZ();
+
+  for (const auto& tri : triangles) {
+    const Eigen::Vector3d& v0 = vertices[static_cast<std::size_t>(tri[0])];
+    const Eigen::Vector3d& v1 = vertices[static_cast<std::size_t>(tri[1])];
+    const Eigen::Vector3d& v2 = vertices[static_cast<std::size_t>(tri[2])];
+
+    double t, u, v;
+    if (rayTriangleMollerTrumbore(
+            localOrigin, localDir, v0, v1, v2, t, u, v, option.backfaceCulling))
+    {
+      if (t > 0.0 && t < bestT && t <= maxDist) {
+        bestT = t;
+        const Eigen::Vector3d edge1 = v1 - v0;
+        const Eigen::Vector3d edge2 = v2 - v0;
+        bestNormal = edge1.cross(edge2).normalized();
+      }
+    }
+  }
+
+  if (bestT >= std::numeric_limits<double>::max() || bestT > maxDist) {
+    return false;
+  }
+
+  result.hit = true;
+  result.distance = bestT;
+  result.point = ray.pointAt(bestT);
+  result.normal = meshTransform.rotation() * bestNormal;
+
+  if (result.normal.dot(ray.direction) > 0.0) {
+    result.normal = -result.normal;
+  }
+
+  return true;
+}
+
 }

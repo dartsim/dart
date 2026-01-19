@@ -450,6 +450,14 @@ bool NarrowPhase::raycast(
       }
       return hit;
     }
+    case ShapeType::Mesh: {
+      const auto* m = static_cast<const MeshShape*>(shape);
+      bool hit = raycastMesh(ray, *m, transform, option, result);
+      if (hit) {
+        result.object = &object;
+      }
+      return hit;
+    }
     default:
       return false;
   }
@@ -463,6 +471,7 @@ bool NarrowPhase::isRaycastSupported(ShapeType type)
     case ShapeType::Capsule:
     case ShapeType::Cylinder:
     case ShapeType::Plane:
+    case ShapeType::Mesh:
       return true;
     default:
       return false;

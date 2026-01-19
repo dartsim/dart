@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/experimental/narrow_phase/raycast.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
 #include <dart/collision/experimental/types.hpp>
@@ -435,4 +436,149 @@ TEST(Raycast, Determinism)
     EXPECT_EQ(results[i].normal.y(), results[0].normal.y());
     EXPECT_EQ(results[i].normal.z(), results[0].normal.z());
   }
+}
+
+std::vector<Eigen::Vector3d> makeCubeVertices(double halfExtent)
+{
+  double h = halfExtent;
+  return {
+      {-h, -h, -h},
+      {h, -h, -h},
+      {h, h, -h},
+      {-h, h, -h},
+      {-h, -h, h},
+      {h, -h, h},
+      {h, h, h},
+      {-h, h, h}};
+}
+
+std::vector<MeshShape::Triangle> makeCubeTriangles()
+{
+  return {
+      {0, 2, 1}, {0, 3, 2},
+      {4, 5, 6}, {4, 6, 7},
+      {0, 1, 5}, {0, 5, 4},
+      {2, 3, 7}, {2, 7, 6},
+      {0, 4, 7}, {0, 7, 3},
+      {1, 2, 6}, {1, 6, 5}};
+}
+
+TEST(RaycastMesh, Miss)
+{
+  MeshShape mesh(makeCubeVertices(1.0), makeCubeTriangles());
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(0, 5, 0), Eigen::Vector3d(0, 1, 0));
+  RaycastOption option;
+  option.backfaceCulling = false;
+  RaycastResult result;
+
+  bool hit = raycastMesh(ray, mesh, transform, option, result);
+
+  EXPECT_FALSE(hit) << "distance=" << result.distance
+                    << " point=(" << result.point.x() << "," << result.point.y()
+                    << "," << result.point.z() << ")";
+}
+
+TEST(RaycastMesh, HitFrontFace)
+{
+  MeshShape mesh(makeCubeVertices(1.0), makeCubeTriangles());
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(-5, 0, 0), Eigen::Vector3d(1, 0, 0));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastMesh(ray, mesh, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_NEAR(result.distance, 4.0, 1e-10);
+  EXPECT_NEAR(result.point.x(), -1.0, 1e-10);
+  EXPECT_NEAR(std::abs(result.normal.x()), 1.0, 1e-10);
+}
+
+TEST(RaycastMesh, HitTopFace)
+{
+  MeshShape mesh(makeCubeVertices(1.0), makeCubeTriangles());
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(0, 0, 5), Eigen::Vector3d(0, 0, -1));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastMesh(ray, mesh, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_NEAR(result.distance, 4.0, 1e-10);
+  EXPECT_NEAR(result.point.z(), 1.0, 1e-10);
+  EXPECT_NEAR(std::abs(result.normal.z()), 1.0, 1e-10);
+}
+
+TEST(RaycastMesh, TransformedMesh)
+{
+  MeshShape mesh(makeCubeVertices(1.0), makeCubeTriangles());
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(0, 0, 5);
+
+  Ray ray(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 1));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastMesh(ray, mesh, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_NEAR(result.distance, 4.0, 1e-10);
+  EXPECT_NEAR(result.point.z(), 4.0, 1e-10);
+}
+
+TEST(RaycastMesh, MaxDistanceRespected)
+{
+  MeshShape mesh(makeCubeVertices(1.0), makeCubeTriangles());
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(-5, 0, 0), Eigen::Vector3d(1, 0, 0));
+  RaycastOption option;
+  option.maxDistance = 2.0;
+  RaycastResult result;
+
+  bool hit = raycastMesh(ray, mesh, transform, option, result);
+
+  EXPECT_FALSE(hit);
+}
+
+TEST(RaycastMesh, BackfaceCullingHitsCorrectFace)
+{
+  MeshShape mesh(makeCubeVertices(1.0), makeCubeTriangles());
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(-5, 0, 0), Eigen::Vector3d(1, 0, 0));
+  RaycastOption option;
+  option.backfaceCulling = true;
+  RaycastResult result;
+
+  bool hit = raycastMesh(ray, mesh, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_NEAR(result.distance, 4.0, 1e-10);
+  EXPECT_NEAR(result.point.x(), -1.0, 1e-10);
+}
+
+TEST(RaycastMesh, BackfaceCullingFromInside)
+{
+  MeshShape mesh(makeCubeVertices(1.0), makeCubeTriangles());
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0));
+  RaycastOption option;
+  option.backfaceCulling = true;
+  RaycastResult result;
+
+  bool hit = raycastMesh(ray, mesh, transform, option, result);
+
+  EXPECT_FALSE(hit);
+}
+
+TEST(RaycastMesh, NarrowPhaseSupported)
+{
+  EXPECT_TRUE(NarrowPhase::isRaycastSupported(ShapeType::Mesh));
 }

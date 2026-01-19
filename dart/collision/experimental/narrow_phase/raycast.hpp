@@ -76,4 +76,11 @@ namespace dart::collision::experimental {
     const RaycastOption& option,
     RaycastResult& result);
 
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool raycastMesh(
+    const Ray& ray,
+    const MeshShape& mesh,
+    const Eigen::Isometry3d& meshTransform,
+    const RaycastOption& option,
+    RaycastResult& result);
+
 }
