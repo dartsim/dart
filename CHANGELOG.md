@@ -6,6 +6,8 @@
 
 * Constraint
 
+  * Fix crash when joint limits are invalid (lower > upper) by emitting a warning and skipping limit enforcement: [gz-physics#846](https://github.com/gazebosim/gz-physics/issues/846)
+
   * Validate contact surface parameters to prevent LCP solver crashes: [#2435](https://github.com/dartsim/dart/pull/2435)
 
 * Dynamics
