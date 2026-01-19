@@ -183,3 +183,139 @@ TEST(CylinderShape, Polymorphism)
   auto aabb = cylinder->computeLocalAabb();
   EXPECT_DOUBLE_EQ(aabb.halfExtents().z(), 2.0);
 }
+
+TEST(ConvexShape, Construction)
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+
+  ConvexShape convex(vertices);
+
+  EXPECT_EQ(convex.getType(), ShapeType::Convex);
+  EXPECT_EQ(convex.getVertices().size(), 6u);
+}
+
+TEST(ConvexShape, ComputeLocalAabb)
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {2, 0, 0}, {-1, 0, 0}, {0, 3, 0}, {0, -1, 0}, {0, 0, 4}, {0, 0, -1}};
+
+  ConvexShape convex(vertices);
+
+  auto aabb = convex.computeLocalAabb();
+
+  EXPECT_EQ(aabb.min, Eigen::Vector3d(-1, -1, -1));
+  EXPECT_EQ(aabb.max, Eigen::Vector3d(2, 3, 4));
+}
+
+TEST(ConvexShape, SupportFunction)
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+
+  ConvexShape convex(vertices);
+
+  EXPECT_EQ(convex.support(Eigen::Vector3d(1, 0, 0)), Eigen::Vector3d(1, 0, 0));
+  EXPECT_EQ(convex.support(Eigen::Vector3d(-1, 0, 0)), Eigen::Vector3d(-1, 0, 0));
+  EXPECT_EQ(convex.support(Eigen::Vector3d(0, 1, 0)), Eigen::Vector3d(0, 1, 0));
+  EXPECT_EQ(convex.support(Eigen::Vector3d(0, 0, 1)), Eigen::Vector3d(0, 0, 1));
+}
+
+TEST(ConvexShape, SupportDiagonalDirection)
+{
+  std::vector<Eigen::Vector3d> vertices = {{1, 1, 1}, {-1, -1, -1}};
+
+  ConvexShape convex(vertices);
+
+  EXPECT_EQ(
+      convex.support(Eigen::Vector3d(1, 1, 1).normalized()),
+      Eigen::Vector3d(1, 1, 1));
+  EXPECT_EQ(
+      convex.support(Eigen::Vector3d(-1, -1, -1).normalized()),
+      Eigen::Vector3d(-1, -1, -1));
+}
+
+TEST(ConvexShape, EmptyVertices)
+{
+  ConvexShape convex({});
+
+  auto aabb = convex.computeLocalAabb();
+  EXPECT_EQ(aabb.min, Eigen::Vector3d::Zero());
+  EXPECT_EQ(aabb.max, Eigen::Vector3d::Zero());
+
+  EXPECT_EQ(convex.support(Eigen::Vector3d(1, 0, 0)), Eigen::Vector3d::Zero());
+}
+
+TEST(MeshShape, Construction)
+{
+  std::vector<Eigen::Vector3d> vertices = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}};
+  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}};
+
+  MeshShape mesh(vertices, triangles);
+
+  EXPECT_EQ(mesh.getType(), ShapeType::Mesh);
+  EXPECT_EQ(mesh.getVertices().size(), 3u);
+  EXPECT_EQ(mesh.getTriangles().size(), 1u);
+}
+
+TEST(MeshShape, ComputeLocalAabb)
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {0, 0, 0}, {2, 0, 0}, {0, 3, 0}, {0, 0, 4}};
+  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}, {0, 1, 3}};
+
+  MeshShape mesh(vertices, triangles);
+
+  auto aabb = mesh.computeLocalAabb();
+
+  EXPECT_EQ(aabb.min, Eigen::Vector3d(0, 0, 0));
+  EXPECT_EQ(aabb.max, Eigen::Vector3d(2, 3, 4));
+}
+
+TEST(MeshShape, SupportFunction)
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+  std::vector<MeshShape::Triangle> triangles = {
+      {0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+
+  MeshShape mesh(vertices, triangles);
+
+  EXPECT_EQ(mesh.support(Eigen::Vector3d(1, 0, 0)), Eigen::Vector3d(1, 0, 0));
+  EXPECT_EQ(mesh.support(Eigen::Vector3d(-1, 0, 0)), Eigen::Vector3d(-1, 0, 0));
+  EXPECT_EQ(mesh.support(Eigen::Vector3d(0, 1, 0)), Eigen::Vector3d(0, 1, 0));
+  EXPECT_EQ(mesh.support(Eigen::Vector3d(0, 0, 1)), Eigen::Vector3d(0, 0, 1));
+}
+
+TEST(MeshShape, UnitCube)
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {0, 0, 0},
+      {1, 0, 0},
+      {1, 1, 0},
+      {0, 1, 0},
+      {0, 0, 1},
+      {1, 0, 1},
+      {1, 1, 1},
+      {0, 1, 1}};
+  std::vector<MeshShape::Triangle> triangles = {
+      {0, 1, 2},
+      {0, 2, 3},
+      {4, 6, 5},
+      {4, 7, 6},
+      {0, 5, 1},
+      {0, 4, 5},
+      {2, 6, 7},
+      {2, 7, 3},
+      {0, 7, 4},
+      {0, 3, 7},
+      {1, 5, 6},
+      {1, 6, 2}};
+
+  MeshShape mesh(vertices, triangles);
+
+  auto aabb = mesh.computeLocalAabb();
+  EXPECT_EQ(aabb.min, Eigen::Vector3d(0, 0, 0));
+  EXPECT_EQ(aabb.max, Eigen::Vector3d(1, 1, 1));
+  EXPECT_DOUBLE_EQ(aabb.volume(), 1.0);
+}
