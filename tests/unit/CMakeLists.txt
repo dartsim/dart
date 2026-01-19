@@ -155,6 +155,9 @@ if(TARGET dart-gui)
   dart_add_test("unit" UNIT_gui_HeightmapShapeNode gui/test_HeightmapShapeNode.cpp)
   dart_add_test(
     "unit" UNIT_gui_ImGuiWindowScaling gui/test_ImGuiWindowScaling.cpp)
+  dart_add_test(
+    "unit" UNIT_gui_HeadlessViewer gui/test_HeadlessViewer.cpp)
+  target_link_libraries(UNIT_gui_HeadlessViewer dart-gui)
   # System ImGui builds can depend on SDL3, which is not available in ASAN CI.
   if(NOT (DART_ENABLE_ASAN AND DART_USE_SYSTEM_IMGUI))
     dart_add_test(
