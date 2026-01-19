@@ -191,6 +191,11 @@ if(TARGET dart-io)
 endif()
 
 # ==============================================================================
+# Simulation Tests
+# ==============================================================================
+dart_add_test("unit" UNIT_simulation_WorldConfig simulation/test_WorldConfig.cpp)
+
+# ==============================================================================
 # Simulation-Experimental Tests
 # ==============================================================================
 if(DART_BUILD_SIMULATION_EXPERIMENTAL)
