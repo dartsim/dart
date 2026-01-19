@@ -24,7 +24,6 @@
 --out <dir>       Output directory for captured frames
 --width <n>       Viewport width (default: 640)
 --height <n>      Viewport height (default: 480)
---seed <n>        Random seed for determinism (default: 42)
 -h, --help        Show help
 ```
 
@@ -36,9 +35,6 @@
 
 # Run with custom resolution
 ./rigid_cubes --headless --frames 50 --out ./output/ --width 1920 --height 1080
-
-# Deterministic run with specific seed
-./rigid_cubes --headless --frames 100 --out ./output/ --seed 12345
 ```
 
 ### Creating Video from Frames
