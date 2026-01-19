@@ -31,6 +31,7 @@
  */
 
 #include <dart/collision/experimental/collision_object.hpp>
+#include <dart/collision/experimental/collision_world.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <gtest/gtest.h>
@@ -39,32 +40,33 @@ using namespace dart::collision::experimental;
 
 TEST(CollisionObject, Construction)
 {
-  auto sphere = std::make_shared<SphereShape>(1.0);
+  CollisionWorld world;
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(1, 2, 3);
 
-  CollisionObject obj(sphere, transform);
+  auto obj = world.createObject(std::make_unique<SphereShape>(1.0), transform);
 
-  EXPECT_EQ(obj.getShape(), sphere.get());
-  EXPECT_EQ(obj.getShapePtr(), sphere);
+  EXPECT_TRUE(obj.isValid());
+  EXPECT_NE(obj.getShape(), nullptr);
+  EXPECT_EQ(obj.getShapeType(), ShapeType::Sphere);
   EXPECT_TRUE(obj.getTransform().isApprox(transform));
 }
 
-TEST(CollisionObject, UniqueIds)
+TEST(CollisionObject, UniqueEntities)
 {
-  auto sphere1 = std::make_shared<SphereShape>(1.0);
-  auto sphere2 = std::make_shared<SphereShape>(2.0);
+  CollisionWorld world;
 
-  CollisionObject obj1(sphere1, Eigen::Isometry3d::Identity());
-  CollisionObject obj2(sphere2, Eigen::Isometry3d::Identity());
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(2.0));
 
-  EXPECT_NE(obj1.getId(), obj2.getId());
+  EXPECT_NE(obj1.getEntity(), obj2.getEntity());
+  EXPECT_NE(obj1, obj2);
 }
 
 TEST(CollisionObject, SetTransform)
 {
-  auto sphere = std::make_shared<SphereShape>(1.0);
-  CollisionObject obj(sphere, Eigen::Isometry3d::Identity());
+  CollisionWorld world;
+  auto obj = world.createObject(std::make_unique<SphereShape>(1.0));
 
   Eigen::Isometry3d newTransform = Eigen::Isometry3d::Identity();
   newTransform.translation() = Eigen::Vector3d(5, 6, 7);
@@ -76,11 +78,11 @@ TEST(CollisionObject, SetTransform)
 
 TEST(CollisionObject, ComputeAabb_Sphere)
 {
-  auto sphere = std::make_shared<SphereShape>(1.0);
+  CollisionWorld world;
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(10, 0, 0);
 
-  CollisionObject obj(sphere, transform);
+  auto obj = world.createObject(std::make_unique<SphereShape>(1.0), transform);
 
   Aabb aabb = obj.computeAabb();
 
@@ -94,10 +96,8 @@ TEST(CollisionObject, ComputeAabb_Sphere)
 
 TEST(CollisionObject, ComputeAabb_Box)
 {
-  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1, 2, 3));
-  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-
-  CollisionObject obj(box, transform);
+  CollisionWorld world;
+  auto obj = world.createObject(std::make_unique<BoxShape>(Eigen::Vector3d(1, 2, 3)));
 
   Aabb aabb = obj.computeAabb();
 
@@ -111,11 +111,12 @@ TEST(CollisionObject, ComputeAabb_Box)
 
 TEST(CollisionObject, ComputeAabb_RotatedBox)
 {
-  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1, 0.5, 0.5));
+  CollisionWorld world;
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ()));
 
-  CollisionObject obj(box, transform);
+  auto obj = world.createObject(
+      std::make_unique<BoxShape>(Eigen::Vector3d(1, 0.5, 0.5)), transform);
 
   Aabb aabb = obj.computeAabb();
 
@@ -127,8 +128,8 @@ TEST(CollisionObject, ComputeAabb_RotatedBox)
 
 TEST(CollisionObject, UserData)
 {
-  auto sphere = std::make_shared<SphereShape>(1.0);
-  CollisionObject obj(sphere, Eigen::Isometry3d::Identity());
+  CollisionWorld world;
+  auto obj = world.createObject(std::make_unique<SphereShape>(1.0));
 
   EXPECT_EQ(obj.getUserData(), nullptr);
 
@@ -139,12 +140,13 @@ TEST(CollisionObject, UserData)
   EXPECT_EQ(*static_cast<int*>(obj.getUserData()), 42);
 }
 
-TEST(CollisionObject, NullShape)
+TEST(CollisionObject, InvalidHandle)
 {
-  CollisionObject obj(nullptr, Eigen::Isometry3d::Identity());
+  CollisionObject obj;
 
+  EXPECT_FALSE(obj.isValid());
   EXPECT_EQ(obj.getShape(), nullptr);
-  EXPECT_EQ(obj.getShapePtr(), nullptr);
+  EXPECT_EQ(obj.getWorld(), nullptr);
 
   Aabb aabb = obj.computeAabb();
   EXPECT_TRUE(aabb.min.isApprox(Eigen::Vector3d::Zero()));
@@ -153,8 +155,8 @@ TEST(CollisionObject, NullShape)
 
 TEST(CollisionObject, AabbUpdatesWithTransform)
 {
-  auto sphere = std::make_shared<SphereShape>(1.0);
-  CollisionObject obj(sphere, Eigen::Isometry3d::Identity());
+  CollisionWorld world;
+  auto obj = world.createObject(std::make_unique<SphereShape>(1.0));
 
   Aabb aabb1 = obj.computeAabb();
   EXPECT_NEAR(aabb1.center().x(), 0.0, 1e-10);
@@ -167,15 +169,39 @@ TEST(CollisionObject, AabbUpdatesWithTransform)
   EXPECT_NEAR(aabb2.center().x(), 100.0, 1e-10);
 }
 
-TEST(CollisionObject, SharedShapeOwnership)
+TEST(CollisionObject, HandleCopyable)
 {
-  auto sphere = std::make_shared<SphereShape>(1.0);
-  EXPECT_EQ(sphere.use_count(), 1);
+  CollisionWorld world;
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
 
-  {
-    CollisionObject obj(sphere, Eigen::Isometry3d::Identity());
-    EXPECT_EQ(sphere.use_count(), 2);
-  }
+  CollisionObject obj2 = obj1;
 
-  EXPECT_EQ(sphere.use_count(), 1);
+  EXPECT_EQ(obj1.getEntity(), obj2.getEntity());
+  EXPECT_EQ(obj1.getWorld(), obj2.getWorld());
+  EXPECT_EQ(obj1, obj2);
+}
+
+TEST(CollisionObject, HandleInvalidatedAfterDestroy)
+{
+  CollisionWorld world;
+  auto obj = world.createObject(std::make_unique<SphereShape>(1.0));
+
+  EXPECT_TRUE(obj.isValid());
+  EXPECT_EQ(world.numObjects(), 1u);
+
+  world.destroyObject(obj);
+
+  EXPECT_FALSE(obj.isValid());
+  EXPECT_EQ(world.numObjects(), 0u);
+}
+
+TEST(CollisionObject, Comparison)
+{
+  CollisionWorld world;
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0));
+
+  EXPECT_EQ(obj1, obj1);
+  EXPECT_NE(obj1, obj2);
+  EXPECT_TRUE(obj1 < obj2 || obj2 < obj1);
 }

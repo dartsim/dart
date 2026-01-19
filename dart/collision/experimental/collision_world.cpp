@@ -32,69 +32,89 @@
 
 #include <dart/collision/experimental/collision_world.hpp>
 
+#include <dart/collision/experimental/comps/collision_object.hpp>
 #include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
 
 #include <algorithm>
+#include <limits>
 
 namespace dart::collision::experimental {
 
 CollisionWorld::CollisionWorld() = default;
+CollisionWorld::~CollisionWorld() = default;
 
-void CollisionWorld::addObject(std::shared_ptr<CollisionObject> object)
+CollisionObject CollisionWorld::createObject(
+    std::unique_ptr<Shape> shape,
+    const Eigen::Isometry3d& transform)
 {
-  if (!object) {
+  if (!shape) {
+    return CollisionObject();
+  }
+
+  auto entity = m_registry.create();
+
+  m_registry.emplace<comps::CollisionObjectTag>(entity);
+  m_registry.emplace<comps::ShapeComponent>(entity, std::move(shape));
+  m_registry.emplace<comps::TransformComponent>(entity, transform);
+  m_registry.emplace<comps::AabbComponent>(entity);
+  m_registry.emplace<comps::UserDataComponent>(entity);
+
+  CollisionObject obj(entity, this);
+  Aabb aabb = obj.computeAabb();
+
+  auto& aabbComp = m_registry.get<comps::AabbComponent>(entity);
+  aabbComp.aabb = aabb;
+  aabbComp.dirty = false;
+
+  m_broadPhase.add(static_cast<std::size_t>(entity), aabb);
+
+  return obj;
+}
+
+void CollisionWorld::destroyObject(CollisionObject object)
+{
+  if (!object.isValid() || object.getWorld() != this) {
     return;
   }
-  objects_.push_back(object);
-  broadPhase_.add(object->getId(), object->computeAabb());
+
+  auto entity = object.getEntity();
+  m_broadPhase.remove(static_cast<std::size_t>(entity));
+  m_registry.destroy(entity);
 }
 
-void CollisionWorld::removeObject(std::shared_ptr<CollisionObject> object)
+void CollisionWorld::updateObject(CollisionObject object)
 {
-  if (!object) {
+  if (!object.isValid() || object.getWorld() != this) {
     return;
   }
-  removeObject(object->getId());
-}
 
-void CollisionWorld::removeObject(std::size_t objectId)
-{
-  auto it = std::find_if(objects_.begin(), objects_.end(), [objectId](const auto& obj) {
-    return obj->getId() == objectId;
-  });
+  auto entity = object.getEntity();
+  auto* aabbComp = m_registry.try_get<comps::AabbComponent>(entity);
 
-  if (it != objects_.end()) {
-    broadPhase_.remove(objectId);
-    objects_.erase(it);
-  }
-}
-
-void CollisionWorld::updateObject(CollisionObject* object)
-{
-  if (object) {
-    broadPhase_.update(object->getId(), object->computeAabb());
+  if (aabbComp && aabbComp->dirty) {
+    Aabb aabb = object.computeAabb();
+    aabbComp->aabb = aabb;
+    aabbComp->dirty = false;
+    m_broadPhase.update(static_cast<std::size_t>(entity), aabb);
   }
 }
 
 std::size_t CollisionWorld::numObjects() const
 {
-  return objects_.size();
+  return m_registry.view<comps::CollisionObjectTag>().size();
 }
 
-CollisionObject* CollisionWorld::getObject(std::size_t index)
+CollisionObject CollisionWorld::getObject(std::size_t index)
 {
-  if (index >= objects_.size()) {
-    return nullptr;
+  auto view = m_registry.view<comps::CollisionObjectTag>();
+  std::size_t i = 0;
+  for (auto entity : view) {
+    if (i == index) {
+      return CollisionObject(entity, this);
+    }
+    ++i;
   }
-  return objects_[index].get();
-}
-
-const CollisionObject* CollisionWorld::getObject(std::size_t index) const
-{
-  if (index >= objects_.size()) {
-    return nullptr;
-  }
-  return objects_[index].get();
+  return CollisionObject();
 }
 
 bool CollisionWorld::collide(const CollisionOption& option, CollisionResult& result)
@@ -102,22 +122,20 @@ bool CollisionWorld::collide(const CollisionOption& option, CollisionResult& res
   result.clear();
   bool hasCollision = false;
 
-  std::unordered_map<std::size_t, CollisionObject*> idToObject;
-  for (auto& obj : objects_) {
-    idToObject[obj->getId()] = obj.get();
-  }
-
-  auto pairs = broadPhase_.queryPairs();
+  auto pairs = m_broadPhase.queryPairs();
 
   for (const auto& pair : pairs) {
-    auto it1 = idToObject.find(pair.first);
-    auto it2 = idToObject.find(pair.second);
+    auto entity1 = static_cast<entt::entity>(pair.first);
+    auto entity2 = static_cast<entt::entity>(pair.second);
 
-    if (it1 == idToObject.end() || it2 == idToObject.end()) {
+    if (!m_registry.valid(entity1) || !m_registry.valid(entity2)) {
       continue;
     }
 
-    if (NarrowPhase::collide(*it1->second, *it2->second, option, result)) {
+    CollisionObject obj1(entity1, this);
+    CollisionObject obj2(entity2, this);
+
+    if (NarrowPhase::collide(obj1, obj2, option, result)) {
       hasCollision = true;
       if (option.enableContact == false
           || (option.maxNumContacts > 0 && result.numContacts() >= option.maxNumContacts)) {
@@ -130,21 +148,74 @@ bool CollisionWorld::collide(const CollisionOption& option, CollisionResult& res
 }
 
 bool CollisionWorld::collide(
-    CollisionObject* obj1,
-    CollisionObject* obj2,
+    CollisionObject obj1,
+    CollisionObject obj2,
     const CollisionOption& option,
     CollisionResult& result)
 {
-  if (!obj1 || !obj2) {
+  if (!obj1.isValid() || !obj2.isValid()) {
     return false;
   }
-  return NarrowPhase::collide(*obj1, *obj2, option, result);
+  return NarrowPhase::collide(obj1, obj2, option, result);
+}
+
+bool CollisionWorld::raycast(
+    const Ray& ray,
+    const RaycastOption& option,
+    RaycastResult& result)
+{
+  result.clear();
+
+  RaycastResult closestResult;
+  double closestDistance = std::numeric_limits<double>::max();
+
+  auto view = m_registry.view<comps::CollisionObjectTag>();
+  for (auto entity : view) {
+    CollisionObject obj(entity, this);
+    RaycastResult tempResult;
+    if (NarrowPhase::raycast(ray, obj, option, tempResult)) {
+      if (tempResult.distance < closestDistance) {
+        closestDistance = tempResult.distance;
+        closestResult = tempResult;
+      }
+    }
+  }
+
+  if (closestResult.hit) {
+    result = closestResult;
+    return true;
+  }
+
+  return false;
+}
+
+bool CollisionWorld::raycastAll(
+    const Ray& ray,
+    const RaycastOption& option,
+    std::vector<RaycastResult>& results)
+{
+  results.clear();
+
+  auto view = m_registry.view<comps::CollisionObjectTag>();
+  for (auto entity : view) {
+    CollisionObject obj(entity, this);
+    RaycastResult tempResult;
+    if (NarrowPhase::raycast(ray, obj, option, tempResult)) {
+      results.push_back(tempResult);
+    }
+  }
+
+  std::sort(results.begin(), results.end(), [](const RaycastResult& a, const RaycastResult& b) {
+    return a.distance < b.distance;
+  });
+
+  return !results.empty();
 }
 
 void CollisionWorld::clear()
 {
-  broadPhase_.clear();
-  objects_.clear();
+  m_broadPhase.clear();
+  m_registry.clear();
 }
 
-}
+} // namespace dart::collision::experimental

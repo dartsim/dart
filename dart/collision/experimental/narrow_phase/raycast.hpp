@@ -32,78 +32,48 @@
 
 #pragma once
 
-#include <dart/collision/experimental/aabb.hpp>
 #include <dart/collision/experimental/export.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
+#include <dart/collision/experimental/types.hpp>
 
+#include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <entt/entt.hpp>
-
-#include <cstddef>
 
 namespace dart::collision::experimental {
 
-class CollisionWorld;
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool raycastSphere(
+    const Ray& ray,
+    const SphereShape& sphere,
+    const Eigen::Isometry3d& sphereTransform,
+    const RaycastOption& option,
+    RaycastResult& result);
 
-/// Lightweight handle to a collision entity in the ECS registry.
-/// Data (shape, transform, AABB) is stored in CollisionWorld's registry.
-/// This handle is cheap to copy (entity ID + pointer).
-class DART_COLLISION_EXPERIMENTAL_API CollisionObject
-{
-public:
-  CollisionObject() = default;
-  CollisionObject(entt::entity entity, CollisionWorld* world);
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool raycastBox(
+    const Ray& ray,
+    const BoxShape& box,
+    const Eigen::Isometry3d& boxTransform,
+    const RaycastOption& option,
+    RaycastResult& result);
 
-  CollisionObject(const CollisionObject&) = default;
-  CollisionObject& operator=(const CollisionObject&) = default;
-  CollisionObject(CollisionObject&&) = default;
-  CollisionObject& operator=(CollisionObject&&) = default;
-  ~CollisionObject() = default;
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool raycastCapsule(
+    const Ray& ray,
+    const CapsuleShape& capsule,
+    const Eigen::Isometry3d& capsuleTransform,
+    const RaycastOption& option,
+    RaycastResult& result);
 
-  [[nodiscard]] const Shape* getShape() const;
-  [[nodiscard]] ShapeType getShapeType() const;
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool raycastCylinder(
+    const Ray& ray,
+    const CylinderShape& cylinder,
+    const Eigen::Isometry3d& cylinderTransform,
+    const RaycastOption& option,
+    RaycastResult& result);
 
-  [[nodiscard]] const Eigen::Isometry3d& getTransform() const;
-  void setTransform(const Eigen::Isometry3d& transform);
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool raycastPlane(
+    const Ray& ray,
+    const PlaneShape& plane,
+    const Eigen::Isometry3d& planeTransform,
+    const RaycastOption& option,
+    RaycastResult& result);
 
-  [[nodiscard]] Aabb computeAabb() const;
-
-  void setUserData(void* data);
-  [[nodiscard]] void* getUserData() const;
-
-  [[nodiscard]] bool isValid() const;
-
-  [[nodiscard]] entt::entity getEntity() const
-  {
-    return m_entity;
-  }
-
-  [[nodiscard]] CollisionWorld* getWorld() const
-  {
-    return m_world;
-  }
-
-  bool operator==(const CollisionObject& other) const
-  {
-    return m_entity == other.m_entity && m_world == other.m_world;
-  }
-
-  bool operator!=(const CollisionObject& other) const
-  {
-    return !(*this == other);
-  }
-
-  bool operator<(const CollisionObject& other) const
-  {
-    if (m_world != other.m_world) {
-      return m_world < other.m_world;
-    }
-    return m_entity < other.m_entity;
-  }
-
-private:
-  entt::entity m_entity{entt::null};
-  CollisionWorld* m_world{nullptr};
-};
-
-} // namespace dart::collision::experimental
+}

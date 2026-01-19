@@ -200,4 +200,74 @@ struct DART_COLLISION_EXPERIMENTAL_API DistanceOption
   }
 };
 
+struct DART_COLLISION_EXPERIMENTAL_API Ray
+{
+  Eigen::Vector3d origin = Eigen::Vector3d::Zero();
+
+  Eigen::Vector3d direction = Eigen::Vector3d::UnitZ();
+
+  double maxDistance = std::numeric_limits<double>::max();
+
+  Ray() = default;
+
+  Ray(
+      const Eigen::Vector3d& origin,
+      const Eigen::Vector3d& direction,
+      double maxDistance = std::numeric_limits<double>::max())
+    : origin(origin),
+      direction(direction.normalized()),
+      maxDistance(maxDistance)
+  {
+  }
+
+  [[nodiscard]] Eigen::Vector3d pointAt(double t) const
+  {
+    return origin + t * direction;
+  }
+};
+
+struct DART_COLLISION_EXPERIMENTAL_API RaycastResult
+{
+  bool hit = false;
+
+  double distance = std::numeric_limits<double>::max();
+
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+
+  const CollisionObject* object = nullptr;
+
+  [[nodiscard]] bool isHit() const
+  {
+    return hit;
+  }
+
+  void clear()
+  {
+    hit = false;
+    distance = std::numeric_limits<double>::max();
+    point = Eigen::Vector3d::Zero();
+    normal = Eigen::Vector3d::UnitZ();
+    object = nullptr;
+  }
+};
+
+struct DART_COLLISION_EXPERIMENTAL_API RaycastOption
+{
+  double maxDistance = std::numeric_limits<double>::max();
+
+  bool backfaceCulling = true;
+
+  [[nodiscard]] static RaycastOption unlimited()
+  {
+    return {std::numeric_limits<double>::max(), true};
+  }
+
+  [[nodiscard]] static RaycastOption withMaxDistance(double maxDist)
+  {
+    return {maxDist, true};
+  }
+};
+
 }

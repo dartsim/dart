@@ -32,38 +32,55 @@
 
 #pragma once
 
-#include <dart/collision/experimental/collision_object.hpp>
-#include <dart/collision/experimental/export.hpp>
-#include <dart/collision/experimental/types.hpp>
+#include <dart/collision/experimental/aabb.hpp>
+#include <dart/collision/experimental/shapes/shape.hpp>
 
-namespace dart::collision::experimental {
+#include <Eigen/Geometry>
 
-class DART_COLLISION_EXPERIMENTAL_API NarrowPhase
+#include <memory>
+#include <variant>
+
+namespace dart::collision::experimental::comps {
+
+struct CollisionObjectTag
 {
-public:
-  static bool collide(
-      const CollisionObject& obj1,
-      const CollisionObject& obj2,
-      const CollisionOption& option,
-      CollisionResult& result);
+};
 
-  static double distance(
-      const CollisionObject& obj1,
-      const CollisionObject& obj2,
-      const DistanceOption& option,
-      DistanceResult& result);
+struct ShapeComponent
+{
+  std::unique_ptr<Shape> shape;
 
-  static bool isSupported(ShapeType type1, ShapeType type2);
+  ShapeComponent() = default;
+  explicit ShapeComponent(std::unique_ptr<Shape> s) : shape(std::move(s))
+  {
+  }
 
-  static bool isDistanceSupported(ShapeType type1, ShapeType type2);
+  ShapeComponent(ShapeComponent&&) = default;
+  ShapeComponent& operator=(ShapeComponent&&) = default;
 
-  static bool raycast(
-      const Ray& ray,
-      const CollisionObject& object,
-      const RaycastOption& option,
-      RaycastResult& result);
+  ShapeComponent(const ShapeComponent&) = delete;
+  ShapeComponent& operator=(const ShapeComponent&) = delete;
+};
 
-  static bool isRaycastSupported(ShapeType type);
+struct TransformComponent
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+};
+
+struct AabbComponent
+{
+  Aabb aabb;
+  bool dirty = true;
+};
+
+struct BroadPhaseComponent
+{
+  std::size_t broadPhaseId = 0;
+};
+
+struct UserDataComponent
+{
+  void* userData = nullptr;
 };
 
 }

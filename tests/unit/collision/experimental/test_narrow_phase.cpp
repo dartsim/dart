@@ -31,6 +31,7 @@
  */
 
 #include <dart/collision/experimental/collision_object.hpp>
+#include <dart/collision/experimental/collision_world.hpp>
 #include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
 
@@ -69,15 +70,12 @@ TEST(NarrowPhase, IsSupported)
 
 TEST(NarrowPhase, SphereSphere_Colliding)
 {
-  auto s1 = std::make_shared<SphereShape>(1.0);
-  auto s2 = std::make_shared<SphereShape>(1.0);
+  CollisionWorld world;
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
 
-  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
-
-  CollisionObject obj1(s1, tf1);
-  CollisionObject obj2(s2, tf2);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
 
   CollisionOption option;
   CollisionResult result;
@@ -90,15 +88,12 @@ TEST(NarrowPhase, SphereSphere_Colliding)
 
 TEST(NarrowPhase, SphereSphere_Separated)
 {
-  auto s1 = std::make_shared<SphereShape>(1.0);
-  auto s2 = std::make_shared<SphereShape>(1.0);
+  CollisionWorld world;
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
 
-  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(3.0, 0, 0);
-
-  CollisionObject obj1(s1, tf1);
-  CollisionObject obj2(s2, tf2);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
 
   CollisionOption option;
   CollisionResult result;
@@ -111,15 +106,14 @@ TEST(NarrowPhase, SphereSphere_Separated)
 
 TEST(NarrowPhase, BoxBox_Colliding)
 {
-  auto b1 = std::make_shared<BoxShape>(Eigen::Vector3d(1, 1, 1));
-  auto b2 = std::make_shared<BoxShape>(Eigen::Vector3d(1, 1, 1));
+  CollisionWorld world;
+  auto obj1 = world.createObject(
+      std::make_unique<BoxShape>(Eigen::Vector3d(1, 1, 1)));
 
-  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
-
-  CollisionObject obj1(b1, tf1);
-  CollisionObject obj2(b2, tf2);
+  auto obj2 = world.createObject(
+      std::make_unique<BoxShape>(Eigen::Vector3d(1, 1, 1)), tf2);
 
   CollisionOption option;
   CollisionResult result;
@@ -132,15 +126,13 @@ TEST(NarrowPhase, BoxBox_Colliding)
 
 TEST(NarrowPhase, SphereBox_Colliding)
 {
-  auto s = std::make_shared<SphereShape>(1.0);
-  auto b = std::make_shared<BoxShape>(Eigen::Vector3d(1, 1, 1));
+  CollisionWorld world;
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
 
-  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
-
-  CollisionObject obj1(s, tf1);
-  CollisionObject obj2(b, tf2);
+  auto obj2 = world.createObject(
+      std::make_unique<BoxShape>(Eigen::Vector3d(1, 1, 1)), tf2);
 
   CollisionOption option;
   CollisionResult result;
@@ -153,15 +145,13 @@ TEST(NarrowPhase, SphereBox_Colliding)
 
 TEST(NarrowPhase, BoxSphere_Colliding)
 {
-  auto b = std::make_shared<BoxShape>(Eigen::Vector3d(1, 1, 1));
-  auto s = std::make_shared<SphereShape>(1.0);
+  CollisionWorld world;
+  auto obj1 = world.createObject(
+      std::make_unique<BoxShape>(Eigen::Vector3d(1, 1, 1)));
 
-  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
-
-  CollisionObject obj1(b, tf1);
-  CollisionObject obj2(s, tf2);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
 
   CollisionOption option;
   CollisionResult result;
@@ -174,11 +164,11 @@ TEST(NarrowPhase, BoxSphere_Colliding)
   EXPECT_NEAR(result.getContact(0).normal.x(), -1.0, 0.01);
 }
 
-TEST(NarrowPhase, NullShape_NoCollision)
+TEST(NarrowPhase, InvalidHandle_NoCollision)
 {
-  CollisionObject obj1(nullptr, Eigen::Isometry3d::Identity());
-  auto s = std::make_shared<SphereShape>(1.0);
-  CollisionObject obj2(s, Eigen::Isometry3d::Identity());
+  CollisionWorld world;
+  CollisionObject obj1;
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0));
 
   CollisionOption option;
   CollisionResult result;
