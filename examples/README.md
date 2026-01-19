@@ -78,7 +78,6 @@
 ### 09 Integration and Tools
 
 - `csv_logger`
-- `lcp_solvers` (LCP solver benchmark dashboard)
 - `point_cloud` (requires OctoMap)
 - `rerun`
 
