@@ -33,9 +33,17 @@
 #include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
 
 #include <dart/collision/experimental/narrow_phase/box_box.hpp>
+#include <dart/collision/experimental/narrow_phase/capsule_box.hpp>
+#include <dart/collision/experimental/narrow_phase/capsule_capsule.hpp>
+#include <dart/collision/experimental/narrow_phase/capsule_sphere.hpp>
+#include <dart/collision/experimental/narrow_phase/cylinder_collision.hpp>
+#include <dart/collision/experimental/narrow_phase/distance.hpp>
+#include <dart/collision/experimental/narrow_phase/plane_sphere.hpp>
 #include <dart/collision/experimental/narrow_phase/sphere_box.hpp>
 #include <dart/collision/experimental/narrow_phase/sphere_sphere.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
+
+#include <limits>
 
 namespace dart::collision::experimental {
 
@@ -82,6 +90,126 @@ bool NarrowPhase::collide(
     return collideSphereBox(*s, tf2, *b, tf1, result, option);
   }
 
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Capsule) {
+    const auto* c1 = static_cast<const CapsuleShape*>(shape1);
+    const auto* c2 = static_cast<const CapsuleShape*>(shape2);
+    return collideCapsules(*c1, tf1, *c2, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Sphere) {
+    const auto* c = static_cast<const CapsuleShape*>(shape1);
+    const auto* s = static_cast<const SphereShape*>(shape2);
+    return collideCapsuleSphere(*c, tf1, *s, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Sphere && type2 == ShapeType::Capsule) {
+    const auto* s = static_cast<const SphereShape*>(shape1);
+    const auto* c = static_cast<const CapsuleShape*>(shape2);
+    return collideCapsuleSphere(*c, tf2, *s, tf1, result, option);
+  }
+
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Box) {
+    const auto* c = static_cast<const CapsuleShape*>(shape1);
+    const auto* b = static_cast<const BoxShape*>(shape2);
+    return collideCapsuleBox(*c, tf1, *b, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Box && type2 == ShapeType::Capsule) {
+    const auto* b = static_cast<const BoxShape*>(shape1);
+    const auto* c = static_cast<const CapsuleShape*>(shape2);
+    return collideCapsuleBox(*c, tf2, *b, tf1, result, option);
+  }
+
+  if (type1 == ShapeType::Plane && type2 == ShapeType::Sphere) {
+    const auto* p = static_cast<const PlaneShape*>(shape1);
+    const auto* s = static_cast<const SphereShape*>(shape2);
+    return collidePlaneSphere(*p, tf1, *s, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Sphere && type2 == ShapeType::Plane) {
+    const auto* s = static_cast<const SphereShape*>(shape1);
+    const auto* p = static_cast<const PlaneShape*>(shape2);
+    return collidePlaneSphere(*p, tf2, *s, tf1, result, option);
+  }
+
+  if (type1 == ShapeType::Plane && type2 == ShapeType::Box) {
+    const auto* p = static_cast<const PlaneShape*>(shape1);
+    const auto* b = static_cast<const BoxShape*>(shape2);
+    return collidePlaneBox(*p, tf1, *b, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Box && type2 == ShapeType::Plane) {
+    const auto* b = static_cast<const BoxShape*>(shape1);
+    const auto* p = static_cast<const PlaneShape*>(shape2);
+    return collidePlaneBox(*p, tf2, *b, tf1, result, option);
+  }
+
+  if (type1 == ShapeType::Plane && type2 == ShapeType::Capsule) {
+    const auto* p = static_cast<const PlaneShape*>(shape1);
+    const auto* c = static_cast<const CapsuleShape*>(shape2);
+    return collidePlaneCapsule(*p, tf1, *c, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Plane) {
+    const auto* c = static_cast<const CapsuleShape*>(shape1);
+    const auto* p = static_cast<const PlaneShape*>(shape2);
+    return collidePlaneCapsule(*p, tf2, *c, tf1, result, option);
+  }
+
+  if (type1 == ShapeType::Cylinder && type2 == ShapeType::Cylinder) {
+    const auto* c1 = static_cast<const CylinderShape*>(shape1);
+    const auto* c2 = static_cast<const CylinderShape*>(shape2);
+    return collideCylinders(*c1, tf1, *c2, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Cylinder && type2 == ShapeType::Sphere) {
+    const auto* c = static_cast<const CylinderShape*>(shape1);
+    const auto* s = static_cast<const SphereShape*>(shape2);
+    return collideCylinderSphere(*c, tf1, *s, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Sphere && type2 == ShapeType::Cylinder) {
+    const auto* s = static_cast<const SphereShape*>(shape1);
+    const auto* c = static_cast<const CylinderShape*>(shape2);
+    return collideCylinderSphere(*c, tf2, *s, tf1, result, option);
+  }
+
+  if (type1 == ShapeType::Cylinder && type2 == ShapeType::Box) {
+    const auto* c = static_cast<const CylinderShape*>(shape1);
+    const auto* b = static_cast<const BoxShape*>(shape2);
+    return collideCylinderBox(*c, tf1, *b, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Box && type2 == ShapeType::Cylinder) {
+    const auto* b = static_cast<const BoxShape*>(shape1);
+    const auto* c = static_cast<const CylinderShape*>(shape2);
+    return collideCylinderBox(*c, tf2, *b, tf1, result, option);
+  }
+
+  if (type1 == ShapeType::Cylinder && type2 == ShapeType::Capsule) {
+    const auto* cyl = static_cast<const CylinderShape*>(shape1);
+    const auto* cap = static_cast<const CapsuleShape*>(shape2);
+    return collideCylinderCapsule(*cyl, tf1, *cap, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Cylinder) {
+    const auto* cap = static_cast<const CapsuleShape*>(shape1);
+    const auto* cyl = static_cast<const CylinderShape*>(shape2);
+    return collideCylinderCapsule(*cyl, tf2, *cap, tf1, result, option);
+  }
+
+  if (type1 == ShapeType::Cylinder && type2 == ShapeType::Plane) {
+    const auto* c = static_cast<const CylinderShape*>(shape1);
+    const auto* p = static_cast<const PlaneShape*>(shape2);
+    return collideCylinderPlane(*c, tf1, *p, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Plane && type2 == ShapeType::Cylinder) {
+    const auto* p = static_cast<const PlaneShape*>(shape1);
+    const auto* c = static_cast<const CylinderShape*>(shape2);
+    return collideCylinderPlane(*c, tf2, *p, tf1, result, option);
+  }
+
   return false;
 }
 
@@ -95,6 +223,162 @@ bool NarrowPhase::isSupported(ShapeType type1, ShapeType type2)
   }
   if ((type1 == ShapeType::Sphere && type2 == ShapeType::Box)
       || (type1 == ShapeType::Box && type2 == ShapeType::Sphere)) {
+    return true;
+  }
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Capsule) {
+    return true;
+  }
+  if ((type1 == ShapeType::Capsule && type2 == ShapeType::Sphere)
+      || (type1 == ShapeType::Sphere && type2 == ShapeType::Capsule)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Capsule && type2 == ShapeType::Box)
+      || (type1 == ShapeType::Box && type2 == ShapeType::Capsule)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Plane && type2 == ShapeType::Sphere)
+      || (type1 == ShapeType::Sphere && type2 == ShapeType::Plane)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Plane && type2 == ShapeType::Box)
+      || (type1 == ShapeType::Box && type2 == ShapeType::Plane)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Plane && type2 == ShapeType::Capsule)
+      || (type1 == ShapeType::Capsule && type2 == ShapeType::Plane)) {
+    return true;
+  }
+  if (type1 == ShapeType::Cylinder && type2 == ShapeType::Cylinder) {
+    return true;
+  }
+  if ((type1 == ShapeType::Cylinder && type2 == ShapeType::Sphere)
+      || (type1 == ShapeType::Sphere && type2 == ShapeType::Cylinder)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Cylinder && type2 == ShapeType::Box)
+      || (type1 == ShapeType::Box && type2 == ShapeType::Cylinder)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Cylinder && type2 == ShapeType::Capsule)
+      || (type1 == ShapeType::Capsule && type2 == ShapeType::Cylinder)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Cylinder && type2 == ShapeType::Plane)
+      || (type1 == ShapeType::Plane && type2 == ShapeType::Cylinder)) {
+    return true;
+  }
+  return false;
+}
+
+double NarrowPhase::distance(
+    const CollisionObject& obj1,
+    const CollisionObject& obj2,
+    const DistanceOption& option,
+    DistanceResult& result)
+{
+  const Shape* shape1 = obj1.getShape();
+  const Shape* shape2 = obj2.getShape();
+
+  if (!shape1 || !shape2) {
+    return std::numeric_limits<double>::max();
+  }
+
+  ShapeType type1 = shape1->getType();
+  ShapeType type2 = shape2->getType();
+
+  const Eigen::Isometry3d& tf1 = obj1.getTransform();
+  const Eigen::Isometry3d& tf2 = obj2.getTransform();
+
+  result.object1 = &obj1;
+  result.object2 = &obj2;
+
+  if (type1 == ShapeType::Sphere && type2 == ShapeType::Sphere) {
+    const auto* s1 = static_cast<const SphereShape*>(shape1);
+    const auto* s2 = static_cast<const SphereShape*>(shape2);
+    return distanceSphereSphere(*s1, tf1, *s2, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Sphere && type2 == ShapeType::Box) {
+    const auto* s = static_cast<const SphereShape*>(shape1);
+    const auto* b = static_cast<const BoxShape*>(shape2);
+    return distanceSphereBox(*s, tf1, *b, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Box && type2 == ShapeType::Sphere) {
+    const auto* b = static_cast<const BoxShape*>(shape1);
+    const auto* s = static_cast<const SphereShape*>(shape2);
+    double d = distanceSphereBox(*s, tf2, *b, tf1, result, option);
+    std::swap(result.pointOnObject1, result.pointOnObject2);
+    result.normal = -result.normal;
+    return d;
+  }
+
+  if (type1 == ShapeType::Box && type2 == ShapeType::Box) {
+    const auto* b1 = static_cast<const BoxShape*>(shape1);
+    const auto* b2 = static_cast<const BoxShape*>(shape2);
+    return distanceBoxBox(*b1, tf1, *b2, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Capsule) {
+    const auto* c1 = static_cast<const CapsuleShape*>(shape1);
+    const auto* c2 = static_cast<const CapsuleShape*>(shape2);
+    return distanceCapsuleCapsule(*c1, tf1, *c2, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Sphere) {
+    const auto* c = static_cast<const CapsuleShape*>(shape1);
+    const auto* s = static_cast<const SphereShape*>(shape2);
+    return distanceCapsuleSphere(*c, tf1, *s, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Sphere && type2 == ShapeType::Capsule) {
+    const auto* s = static_cast<const SphereShape*>(shape1);
+    const auto* c = static_cast<const CapsuleShape*>(shape2);
+    double d = distanceCapsuleSphere(*c, tf2, *s, tf1, result, option);
+    std::swap(result.pointOnObject1, result.pointOnObject2);
+    result.normal = -result.normal;
+    return d;
+  }
+
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Box) {
+    const auto* c = static_cast<const CapsuleShape*>(shape1);
+    const auto* b = static_cast<const BoxShape*>(shape2);
+    return distanceCapsuleBox(*c, tf1, *b, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Box && type2 == ShapeType::Capsule) {
+    const auto* b = static_cast<const BoxShape*>(shape1);
+    const auto* c = static_cast<const CapsuleShape*>(shape2);
+    double d = distanceCapsuleBox(*c, tf2, *b, tf1, result, option);
+    std::swap(result.pointOnObject1, result.pointOnObject2);
+    result.normal = -result.normal;
+    return d;
+  }
+
+  return std::numeric_limits<double>::max();
+}
+
+bool NarrowPhase::isDistanceSupported(ShapeType type1, ShapeType type2)
+{
+  if (type1 == ShapeType::Sphere && type2 == ShapeType::Sphere) {
+    return true;
+  }
+  if (type1 == ShapeType::Box && type2 == ShapeType::Box) {
+    return true;
+  }
+  if ((type1 == ShapeType::Sphere && type2 == ShapeType::Box)
+      || (type1 == ShapeType::Box && type2 == ShapeType::Sphere)) {
+    return true;
+  }
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Capsule) {
+    return true;
+  }
+  if ((type1 == ShapeType::Capsule && type2 == ShapeType::Sphere)
+      || (type1 == ShapeType::Sphere && type2 == ShapeType::Capsule)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Capsule && type2 == ShapeType::Box)
+      || (type1 == ShapeType::Box && type2 == ShapeType::Capsule)) {
     return true;
   }
   return false;

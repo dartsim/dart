@@ -115,3 +115,71 @@ TEST(ShapeType, EnumValues)
   EXPECT_NE(ShapeType::Capsule, ShapeType::Cylinder);
   EXPECT_NE(ShapeType::Cylinder, ShapeType::Mesh);
 }
+
+TEST(CapsuleShape, Construction)
+{
+  CapsuleShape capsule(0.5, 2.0);
+
+  EXPECT_EQ(capsule.getType(), ShapeType::Capsule);
+  EXPECT_DOUBLE_EQ(capsule.getRadius(), 0.5);
+  EXPECT_DOUBLE_EQ(capsule.getHeight(), 2.0);
+}
+
+TEST(CapsuleShape, ComputeLocalAabb)
+{
+  CapsuleShape capsule(0.5, 2.0);
+
+  auto aabb = capsule.computeLocalAabb();
+
+  EXPECT_EQ(aabb.min, Eigen::Vector3d(-0.5, -0.5, -1.5));
+  EXPECT_EQ(aabb.max, Eigen::Vector3d(0.5, 0.5, 1.5));
+}
+
+TEST(CapsuleShape, ZeroHeight)
+{
+  CapsuleShape capsule(1.0, 0.0);
+
+  auto aabb = capsule.computeLocalAabb();
+
+  EXPECT_EQ(aabb.min, Eigen::Vector3d(-1, -1, -1));
+  EXPECT_EQ(aabb.max, Eigen::Vector3d(1, 1, 1));
+}
+
+TEST(CapsuleShape, Polymorphism)
+{
+  std::unique_ptr<Shape> capsule = std::make_unique<CapsuleShape>(0.5, 2.0);
+
+  EXPECT_EQ(capsule->getType(), ShapeType::Capsule);
+
+  auto aabb = capsule->computeLocalAabb();
+  EXPECT_DOUBLE_EQ(aabb.halfExtents().z(), 1.5);
+}
+
+TEST(CylinderShape, Construction)
+{
+  CylinderShape cylinder(0.5, 2.0);
+
+  EXPECT_EQ(cylinder.getType(), ShapeType::Cylinder);
+  EXPECT_DOUBLE_EQ(cylinder.getRadius(), 0.5);
+  EXPECT_DOUBLE_EQ(cylinder.getHeight(), 2.0);
+}
+
+TEST(CylinderShape, ComputeLocalAabb)
+{
+  CylinderShape cylinder(0.5, 2.0);
+
+  auto aabb = cylinder.computeLocalAabb();
+
+  EXPECT_EQ(aabb.min, Eigen::Vector3d(-0.5, -0.5, -1.0));
+  EXPECT_EQ(aabb.max, Eigen::Vector3d(0.5, 0.5, 1.0));
+}
+
+TEST(CylinderShape, Polymorphism)
+{
+  std::unique_ptr<Shape> cylinder = std::make_unique<CylinderShape>(1.0, 4.0);
+
+  EXPECT_EQ(cylinder->getType(), ShapeType::Cylinder);
+
+  auto aabb = cylinder->computeLocalAabb();
+  EXPECT_DOUBLE_EQ(aabb.halfExtents().z(), 2.0);
+}

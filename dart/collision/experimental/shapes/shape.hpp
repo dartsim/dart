@@ -88,4 +88,52 @@ private:
   Eigen::Vector3d halfExtents_;
 };
 
+class DART_COLLISION_EXPERIMENTAL_API CapsuleShape : public Shape
+{
+public:
+  CapsuleShape(double radius, double height);
+
+  [[nodiscard]] ShapeType getType() const override;
+  [[nodiscard]] Aabb computeLocalAabb() const override;
+
+  [[nodiscard]] double getRadius() const;
+  [[nodiscard]] double getHeight() const;
+
+private:
+  double radius_;
+  double height_;
+};
+
+class DART_COLLISION_EXPERIMENTAL_API CylinderShape : public Shape
+{
+public:
+  CylinderShape(double radius, double height);
+
+  [[nodiscard]] ShapeType getType() const override;
+  [[nodiscard]] Aabb computeLocalAabb() const override;
+
+  [[nodiscard]] double getRadius() const;
+  [[nodiscard]] double getHeight() const;
+
+private:
+  double radius_;
+  double height_;
+};
+
+class DART_COLLISION_EXPERIMENTAL_API PlaneShape : public Shape
+{
+public:
+  PlaneShape(const Eigen::Vector3d& normal, double offset);
+
+  [[nodiscard]] ShapeType getType() const override;
+  [[nodiscard]] Aabb computeLocalAabb() const override;
+
+  [[nodiscard]] const Eigen::Vector3d& getNormal() const;
+  [[nodiscard]] double getOffset() const;
+
+private:
+  Eigen::Vector3d normal_;
+  double offset_;
+};
+
 }

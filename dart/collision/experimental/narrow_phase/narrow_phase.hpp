@@ -47,7 +47,15 @@ public:
       const CollisionOption& option,
       CollisionResult& result);
 
+  static double distance(
+      const CollisionObject& obj1,
+      const CollisionObject& obj2,
+      const DistanceOption& option,
+      DistanceResult& result);
+
   static bool isSupported(ShapeType type1, ShapeType type2);
+
+  static bool isDistanceSupported(ShapeType type1, ShapeType type2);
 };
 
 }

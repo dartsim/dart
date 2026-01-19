@@ -155,4 +155,49 @@ struct DART_COLLISION_EXPERIMENTAL_API CollisionOption
   }
 };
 
+struct DART_COLLISION_EXPERIMENTAL_API DistanceResult
+{
+  double distance = std::numeric_limits<double>::max();
+
+  Eigen::Vector3d pointOnObject1 = Eigen::Vector3d::Zero();
+  Eigen::Vector3d pointOnObject2 = Eigen::Vector3d::Zero();
+
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+
+  const CollisionObject* object1 = nullptr;
+  const CollisionObject* object2 = nullptr;
+
+  [[nodiscard]] bool isValid() const
+  {
+    return distance < std::numeric_limits<double>::max();
+  }
+
+  void clear()
+  {
+    distance = std::numeric_limits<double>::max();
+    pointOnObject1 = Eigen::Vector3d::Zero();
+    pointOnObject2 = Eigen::Vector3d::Zero();
+    normal = Eigen::Vector3d::UnitZ();
+    object1 = nullptr;
+    object2 = nullptr;
+  }
+};
+
+struct DART_COLLISION_EXPERIMENTAL_API DistanceOption
+{
+  double upperBound = std::numeric_limits<double>::max();
+
+  bool enableNearestPoints = true;
+
+  [[nodiscard]] static DistanceOption unlimited()
+  {
+    return {std::numeric_limits<double>::max(), true};
+  }
+
+  [[nodiscard]] static DistanceOption withUpperBound(double bound)
+  {
+    return {bound, true};
+  }
+};
+
 }

@@ -33,39 +33,57 @@
 #pragma once
 
 #include <dart/collision/experimental/export.hpp>
+#include <dart/collision/experimental/types.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 namespace dart::collision::experimental {
 
-class DART_COLLISION_EXPERIMENTAL_API Aabb
-{
-public:
-  Aabb();
-  Aabb(const Eigen::Vector3d& min, const Eigen::Vector3d& max);
+class BoxShape;
+class CapsuleShape;
+class CylinderShape;
+class PlaneShape;
+class SphereShape;
 
-  [[nodiscard]] bool overlaps(const Aabb& other) const;
-  [[nodiscard]] bool contains(const Eigen::Vector3d& point) const;
-  [[nodiscard]] bool contains(const Aabb& other) const;
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool collideCylinders(
+    const CylinderShape& cyl1,
+    const Eigen::Isometry3d& transform1,
+    const CylinderShape& cyl2,
+    const Eigen::Isometry3d& transform2,
+    CollisionResult& result,
+    const CollisionOption& option = CollisionOption());
 
-  [[nodiscard]] Eigen::Vector3d center() const;
-  [[nodiscard]] Eigen::Vector3d halfExtents() const;
-  [[nodiscard]] Eigen::Vector3d extents() const;
-  [[nodiscard]] double volume() const;
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool collideCylinderSphere(
+    const CylinderShape& cylinder,
+    const Eigen::Isometry3d& cylinderTransform,
+    const SphereShape& sphere,
+    const Eigen::Isometry3d& sphereTransform,
+    CollisionResult& result,
+    const CollisionOption& option = CollisionOption());
 
-  void merge(const Aabb& other);
-  void expand(double margin);
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool collideCylinderBox(
+    const CylinderShape& cylinder,
+    const Eigen::Isometry3d& cylinderTransform,
+    const BoxShape& box,
+    const Eigen::Isometry3d& boxTransform,
+    CollisionResult& result,
+    const CollisionOption& option = CollisionOption());
 
-  [[nodiscard]] static Aabb forSphere(double radius);
-  [[nodiscard]] static Aabb forBox(const Eigen::Vector3d& halfExtents);
-  [[nodiscard]] static Aabb forCapsule(double radius, double height);
-  [[nodiscard]] static Aabb forCylinder(double radius, double height);
-  [[nodiscard]] static Aabb transformed(
-      const Aabb& local, const Eigen::Isometry3d& transform);
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool collideCylinderCapsule(
+    const CylinderShape& cylinder,
+    const Eigen::Isometry3d& cylinderTransform,
+    const CapsuleShape& capsule,
+    const Eigen::Isometry3d& capsuleTransform,
+    CollisionResult& result,
+    const CollisionOption& option = CollisionOption());
 
-  Eigen::Vector3d min;
-  Eigen::Vector3d max;
-};
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool collideCylinderPlane(
+    const CylinderShape& cylinder,
+    const Eigen::Isometry3d& cylinderTransform,
+    const PlaneShape& plane,
+    const Eigen::Isometry3d& planeTransform,
+    CollisionResult& result,
+    const CollisionOption& option = CollisionOption());
 
 }

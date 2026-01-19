@@ -32,6 +32,8 @@
 
 #include <dart/collision/experimental/shapes/shape.hpp>
 
+#include <limits>
+
 namespace dart::collision::experimental {
 
 SphereShape::SphereShape(double radius) : radius_(radius)
@@ -70,6 +72,83 @@ Aabb BoxShape::computeLocalAabb() const
 const Eigen::Vector3d& BoxShape::getHalfExtents() const
 {
   return halfExtents_;
+}
+
+CapsuleShape::CapsuleShape(double radius, double height)
+    : radius_(radius), height_(height)
+{
+}
+
+ShapeType CapsuleShape::getType() const
+{
+  return ShapeType::Capsule;
+}
+
+Aabb CapsuleShape::computeLocalAabb() const
+{
+  return Aabb::forCapsule(radius_, height_);
+}
+
+double CapsuleShape::getRadius() const
+{
+  return radius_;
+}
+
+double CapsuleShape::getHeight() const
+{
+  return height_;
+}
+
+CylinderShape::CylinderShape(double radius, double height)
+    : radius_(radius), height_(height)
+{
+}
+
+ShapeType CylinderShape::getType() const
+{
+  return ShapeType::Cylinder;
+}
+
+Aabb CylinderShape::computeLocalAabb() const
+{
+  return Aabb::forCylinder(radius_, height_);
+}
+
+double CylinderShape::getRadius() const
+{
+  return radius_;
+}
+
+double CylinderShape::getHeight() const
+{
+  return height_;
+}
+
+PlaneShape::PlaneShape(const Eigen::Vector3d& normal, double offset)
+    : normal_(normal.normalized()), offset_(offset)
+{
+}
+
+ShapeType PlaneShape::getType() const
+{
+  return ShapeType::Plane;
+}
+
+Aabb PlaneShape::computeLocalAabb() const
+{
+  constexpr double inf = std::numeric_limits<double>::infinity();
+  return Aabb(
+      Eigen::Vector3d(-inf, -inf, -inf), Eigen::Vector3d(inf, inf, inf));
+}
+
+const Eigen::Vector3d& PlaneShape::getNormal() const
+{
+  return normal_;
+}
+
+double PlaneShape::getOffset() const
+{
+  return offset_;
 }
 
 }
