@@ -71,7 +71,7 @@ public:
   virtual void setRelativeTransform(const Eigen::Isometry3d& transform);
 
   // Documentation inherited
-  DART_API const Eigen::Isometry3d& getRelativeTransform() const override;
+  const Eigen::Isometry3d& getRelativeTransform() const override;
 
   /// Always returns a zero vector
   const Eigen::Vector6d& getRelativeSpatialVelocity() const override;
