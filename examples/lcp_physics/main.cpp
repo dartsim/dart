@@ -31,11 +31,14 @@
  */
 
 #include <dart/gui/All.hpp>
+#include <dart/gui/IncludeImGui.hpp>
 
 #include <dart/All.hpp>
 
 #include <CLI/CLI.hpp>
 
+#include <chrono>
+#include <deque>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
@@ -50,6 +53,8 @@ using namespace dart::constraint;
 
 namespace {
 
+constexpr int kMaxHistorySize = 120;
+
 enum class Scenario
 {
   MassRatio,
@@ -59,9 +64,23 @@ enum class Scenario
   InclinedPlane
 };
 
+enum class SolverType
+{
+  Dantzig,
+  Pgs
+};
+
 struct ScenarioInfo
 {
   Scenario type;
+  std::string name;
+  std::string description;
+  std::string explanation;
+};
+
+struct SolverInfo
+{
+  SolverType type;
   std::string name;
   std::string description;
 };
@@ -70,20 +89,64 @@ std::vector<ScenarioInfo> GetScenarios()
 {
   return {
       {Scenario::MassRatio,
-       "mass_ratio",
-       "Heavy box (1000kg) on light box (1kg) - tests solver stability"},
+       "Mass Ratio (1000:1)",
+       "Heavy box on light box",
+       "Tests solver stability with extreme mass ratios.\n\n"
+       "A 1000kg box sits on a 1kg box. Poor solvers exhibit:\n"
+       "- Jittering or vibration\n"
+       "- Light box sinking into ground\n"
+       "- Numerical instability\n\n"
+       "Reference: SimBenchmark, Silcowitz et al. 2009"},
       {Scenario::BoxStack,
-       "box_stack",
-       "Pyramid of boxes - tests shock propagation"},
+       "Box Pyramid",
+       "Stacked box pyramid",
+       "Tests shock propagation through contact graph.\n\n"
+       "A pyramid of boxes must maintain stable stacking.\n"
+       "Challenges:\n"
+       "- Multiple simultaneous contacts\n"
+       "- Load distribution through stack\n"
+       "- Sensitivity to solver order\n\n"
+       "Reference: Guendelman et al. 2003"},
       {Scenario::BallDrop,
-       "ball_drop",
-       "Many balls dropping - tests many-contact performance"},
+       "Ball Drop (75 balls)",
+       "Many balls dropping",
+       "Tests many-contact performance and stability.\n\n"
+       "75 balls drop and settle. Challenges:\n"
+       "- O(n²) potential contacts\n"
+       "- Solver iteration scaling\n"
+       "- Contact graph complexity\n\n"
+       "Reference: SimBenchmark '666 balls'"},
       {Scenario::Dominos,
-       "dominos",
-       "Domino chain reaction - tests impulse propagation"},
+       "Domino Chain",
+       "Sequential domino toppling",
+       "Tests impulse propagation accuracy.\n\n"
+       "First domino is tilted to start chain reaction.\n"
+       "Challenges:\n"
+       "- Sequential impulse transfer\n"
+       "- Timing accuracy\n"
+       "- Energy conservation\n\n"
+       "Reference: Classic benchmark"},
       {Scenario::InclinedPlane,
-       "inclined_plane",
-       "Block on slope - tests friction model accuracy"}};
+       "Inclined Plane",
+       "Block sliding on ramp",
+       "Tests friction model accuracy.\n\n"
+       "A block slides down a 23° ramp (angle > arctan(μ)).\n"
+       "Verifies:\n"
+       "- Coulomb friction cone\n"
+       "- Sliding vs sticking transition\n"
+       "- Friction coefficient accuracy\n\n"
+       "Reference: Stewart & Trinkle 1996"}};
+}
+
+std::vector<SolverInfo> GetSolvers()
+{
+  return {
+      {SolverType::Dantzig,
+       "Dantzig",
+       "Pivoting method, exact for well-posed problems"},
+      {SolverType::Pgs,
+       "PGS (Projected Gauss-Seidel)",
+       "Iterative method, fast but approximate"}};
 }
 
 SkeletonPtr createGround()
@@ -99,6 +162,7 @@ SkeletonPtr createGround()
       VisualAspect,
       CollisionAspect,
       DynamicsAspect>(shape);
+  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.8, 0.8, 0.8));
 
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation().y() = -thickness / 2.0;
@@ -373,6 +437,305 @@ WorldPtr createScenario(Scenario scenario)
   return createMassRatioScenario();
 }
 
+void applySolver(WorldPtr world, SolverType solverType)
+{
+  auto* solver = world->getConstraintSolver();
+  if (!solver)
+    return;
+
+  switch (solverType) {
+    case SolverType::Dantzig:
+      solver->setLcpSolver(std::make_shared<dart::math::DantzigSolver>());
+      break;
+    case SolverType::Pgs:
+      solver->setLcpSolver(std::make_shared<dart::math::PgsSolver>());
+      break;
+  }
+}
+
+class LcpPhysicsWorldNode : public RealTimeWorldNode
+{
+public:
+  LcpPhysicsWorldNode(
+      const WorldPtr& world,
+      const osg::ref_ptr<osgShadow::ShadowTechnique>& shadower)
+    : RealTimeWorldNode(world, shadower),
+      mStepTime(0.0),
+      mContactCount(0),
+      mStepCount(0)
+  {
+  }
+
+  void customPreStep() override
+  {
+    mStepStart = std::chrono::high_resolution_clock::now();
+  }
+
+  void customPostStep() override
+  {
+    auto end = std::chrono::high_resolution_clock::now();
+    mStepTime
+        = std::chrono::duration<double, std::milli>(end - mStepStart).count();
+
+    auto* solver = mWorld->getConstraintSolver();
+    if (solver) {
+      mContactCount = solver->getLastCollisionResult().getNumContacts();
+    }
+    ++mStepCount;
+  }
+
+  double getStepTimeMs() const
+  {
+    return mStepTime;
+  }
+  std::size_t getContactCount() const
+  {
+    return mContactCount;
+  }
+  std::size_t getStepCount() const
+  {
+    return mStepCount;
+  }
+  void resetStepCount()
+  {
+    mStepCount = 0;
+  }
+
+private:
+  std::chrono::high_resolution_clock::time_point mStepStart;
+  double mStepTime;
+  std::size_t mContactCount;
+  std::size_t mStepCount;
+};
+
+class LcpPhysicsWidget : public ImGuiWidget
+{
+public:
+  LcpPhysicsWidget(
+      ImGuiViewer* viewer,
+      osg::ref_ptr<LcpPhysicsWorldNode> worldNode,
+      int initialScenario,
+      int initialSolver)
+    : mViewer(viewer),
+      mWorldNode(worldNode),
+      mWorld(worldNode->getWorld()),
+      mScenarios(GetScenarios()),
+      mSolvers(GetSolvers()),
+      mCurrentScenario(initialScenario),
+      mCurrentSolver(initialSolver),
+      mTimeStep(1000),
+      mFrameCount(0),
+      mLastFrameTime(std::chrono::high_resolution_clock::now())
+  {
+    mTimeStep = static_cast<int>(1.0 / mWorld->getTimeStep());
+  }
+
+  void render() override
+  {
+    updateFps();
+
+    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(340, 600), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowBgAlpha(0.85f);
+
+    if (!ImGui::Begin("LCP Physics Control")) {
+      ImGui::End();
+      return;
+    }
+
+    renderSimulationControl();
+    renderScenarioSection();
+    renderSolverSection();
+    renderParameterSection();
+    renderPerformanceSection();
+    renderExplanationSection();
+
+    ImGui::End();
+  }
+
+private:
+  void updateFps()
+  {
+    ++mFrameCount;
+    auto now = std::chrono::high_resolution_clock::now();
+    double elapsed
+        = std::chrono::duration<double>(now - mLastFrameTime).count();
+    if (elapsed >= 0.5) {
+      mFps = mFrameCount / elapsed;
+      mFrameCount = 0;
+      mLastFrameTime = now;
+    }
+
+    double stepTime = mWorldNode->getStepTimeMs();
+    mStepTimeHistory.push_back(static_cast<float>(stepTime));
+    if (mStepTimeHistory.size() > kMaxHistorySize) {
+      mStepTimeHistory.pop_front();
+    }
+  }
+
+  void renderSimulationControl()
+  {
+    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
+      bool simulating = mViewer->isSimulating();
+
+      if (ImGui::Button(simulating ? "Pause" : "Play", ImVec2(70, 0))) {
+        mViewer->simulate(!simulating);
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Step", ImVec2(70, 0))) {
+        if (simulating)
+          mViewer->simulate(false);
+        mWorld->step();
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Reset", ImVec2(70, 0))) {
+        resetScenario();
+      }
+
+      ImGui::Text("Time: %.3f s", mWorld->getTime());
+      ImGui::Text(
+          "Steps: %zu (%.1f steps/frame)",
+          mWorldNode->getStepCount(),
+          mWorldNode->getStepCount() / std::max(1.0, mWorld->getTime() * 60.0));
+    }
+  }
+
+  void renderScenarioSection()
+  {
+    if (ImGui::CollapsingHeader("Scenario", ImGuiTreeNodeFlags_DefaultOpen)) {
+      int prevScenario = mCurrentScenario;
+
+      for (int i = 0; i < static_cast<int>(mScenarios.size()); ++i) {
+        if (ImGui::RadioButton(
+                mScenarios[i].name.c_str(), &mCurrentScenario, i)) {
+          if (prevScenario != mCurrentScenario) {
+            switchScenario(static_cast<Scenario>(mCurrentScenario));
+          }
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("%s", mScenarios[i].description.c_str());
+        }
+      }
+    }
+  }
+
+  void renderSolverSection()
+  {
+    if (ImGui::CollapsingHeader("LCP Solver", ImGuiTreeNodeFlags_DefaultOpen)) {
+      int prevSolver = mCurrentSolver;
+
+      for (int i = 0; i < static_cast<int>(mSolvers.size()); ++i) {
+        if (ImGui::RadioButton(mSolvers[i].name.c_str(), &mCurrentSolver, i)) {
+          if (prevSolver != mCurrentSolver) {
+            applySolver(mWorld, mSolvers[mCurrentSolver].type);
+          }
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("%s", mSolvers[i].description.c_str());
+        }
+      }
+    }
+  }
+
+  void renderParameterSection()
+  {
+    if (ImGui::CollapsingHeader("Parameters", ImGuiTreeNodeFlags_DefaultOpen)) {
+      if (ImGui::SliderInt("Timestep (Hz)", &mTimeStep, 100, 2000)) {
+        mWorld->setTimeStep(1.0 / mTimeStep);
+      }
+
+      Eigen::Vector3d g = mWorld->getGravity();
+      float gravity = static_cast<float>(-g.y());
+      if (ImGui::SliderFloat("Gravity (m/s²)", &gravity, 0.0f, 20.0f)) {
+        mWorld->setGravity(Eigen::Vector3d(0, -gravity, 0));
+      }
+    }
+  }
+
+  void renderPerformanceSection()
+  {
+    if (ImGui::CollapsingHeader(
+            "Performance", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::Text("Render FPS: %.1f", mFps);
+      ImGui::Text("Contacts: %zu", mWorldNode->getContactCount());
+      ImGui::Text("Bodies: %zu", mWorld->getNumSkeletons());
+
+      if (!mStepTimeHistory.empty()) {
+        std::vector<float> history(
+            mStepTimeHistory.begin(), mStepTimeHistory.end());
+        float maxTime
+            = *std::max_element(history.begin(), history.end()) * 1.2f;
+        maxTime = std::max(maxTime, 1.0f);
+
+        ImGui::Text("Step time (ms):");
+        ImGui::PlotLines(
+            "##steptime",
+            history.data(),
+            static_cast<int>(history.size()),
+            0,
+            nullptr,
+            0.0f,
+            maxTime,
+            ImVec2(300, 60));
+
+        float avgTime = 0.0f;
+        for (float t : history)
+          avgTime += t;
+        avgTime /= static_cast<float>(history.size());
+        ImGui::Text("Avg: %.2f ms, Max: %.2f ms", avgTime, maxTime / 1.2f);
+      }
+    }
+  }
+
+  void renderExplanationSection()
+  {
+    if (ImGui::CollapsingHeader("About This Scenario")) {
+      ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 310);
+      ImGui::TextUnformatted(mScenarios[mCurrentScenario].explanation.c_str());
+      ImGui::PopTextWrapPos();
+    }
+  }
+
+  void resetScenario()
+  {
+    switchScenario(static_cast<Scenario>(mCurrentScenario));
+  }
+
+  void switchScenario(Scenario scenario)
+  {
+    bool wasSimulating = mViewer->isSimulating();
+    mViewer->simulate(false);
+
+    auto newWorld = createScenario(scenario);
+    newWorld->setTimeStep(1.0 / mTimeStep);
+    applySolver(newWorld, mSolvers[mCurrentSolver].type);
+
+    mWorld = newWorld;
+    mWorldNode->setWorld(newWorld);
+    mWorldNode->resetStepCount();
+    mStepTimeHistory.clear();
+
+    if (wasSimulating) {
+      mViewer->simulate(true);
+    }
+  }
+
+  ImGuiViewer* mViewer;
+  osg::ref_ptr<LcpPhysicsWorldNode> mWorldNode;
+  WorldPtr mWorld;
+
+  std::vector<ScenarioInfo> mScenarios;
+  std::vector<SolverInfo> mSolvers;
+  int mCurrentScenario;
+  int mCurrentSolver;
+  int mTimeStep;
+
+  double mFps{0.0};
+  int mFrameCount;
+  std::chrono::high_resolution_clock::time_point mLastFrameTime;
+  std::deque<float> mStepTimeHistory;
+};
+
 void listScenarios()
 {
   std::cout << "Available scenarios:\n";
@@ -381,17 +744,51 @@ void listScenarios()
   }
 }
 
-Scenario parseScenario(const std::string& name)
+void listSolvers()
 {
-  for (const auto& s : GetScenarios()) {
-    if (s.name == name)
-      return s.type;
+  std::cout << "\nAvailable solvers:\n";
+  for (const auto& s : GetSolvers()) {
+    std::cout << "  " << s.name << ": " << s.description << "\n";
   }
-  return Scenario::MassRatio;
+}
+
+int parseScenario(const std::string& name)
+{
+  auto scenarios = GetScenarios();
+  for (int i = 0; i < static_cast<int>(scenarios.size()); ++i) {
+    std::string lowerName = scenarios[i].name;
+    std::transform(
+        lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+    std::string lowerInput = name;
+    std::transform(
+        lowerInput.begin(), lowerInput.end(), lowerInput.begin(), ::tolower);
+    if (lowerName.find(lowerInput) != std::string::npos) {
+      return i;
+    }
+  }
+  return 0;
+}
+
+int parseSolver(const std::string& name)
+{
+  auto solvers = GetSolvers();
+  for (int i = 0; i < static_cast<int>(solvers.size()); ++i) {
+    std::string lowerName = solvers[i].name;
+    std::transform(
+        lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+    std::string lowerInput = name;
+    std::transform(
+        lowerInput.begin(), lowerInput.end(), lowerInput.begin(), ::tolower);
+    if (lowerName.find(lowerInput) != std::string::npos) {
+      return i;
+    }
+  }
+  return 0;
 }
 
 int runHeadless(
-    Scenario scenario,
+    int scenarioIdx,
+    int solverIdx,
     int frames,
     const std::string& outDir,
     int width,
@@ -409,13 +806,17 @@ int runHeadless(
     }
   }
 
-  auto world = createScenario(scenario);
+  auto scenarios = GetScenarios();
+  auto solvers = GetSolvers();
+
+  auto world = createScenario(scenarios[scenarioIdx].type);
   world->setTimeStep(1.0 / 1000.0);
+  applySolver(world, solvers[solverIdx].type);
 
   Viewer viewer(ViewerConfig::headless(width, height));
   auto shadow = WorldNode::createDefaultShadowTechnique(&viewer);
-  osg::ref_ptr<RealTimeWorldNode> worldNode
-      = new RealTimeWorldNode(world, shadow);
+  osg::ref_ptr<LcpPhysicsWorldNode> worldNode
+      = new LcpPhysicsWorldNode(world, shadow);
   viewer.addWorldNode(worldNode);
 
   viewer.getCameraManipulator()->setHomePosition(
@@ -428,23 +829,28 @@ int runHeadless(
     viewer.record(outDir, "frame_", false, 6);
   }
 
-  std::cout << "Running scenario: " << static_cast<int>(scenario) << "\n";
+  std::cout << "Scenario: " << scenarios[scenarioIdx].name << "\n";
+  std::cout << "Solver: " << solvers[solverIdx].name << "\n";
   std::cout << "Frames: " << frames << ", Size: " << width << "x" << height
             << "\n";
   if (!outDir.empty()) {
-    std::cout << "Saving to: " << outDir << "\n";
+    std::cout << "Output: " << outDir << "\n";
   }
 
   viewer.simulate(true);
 
-  double simTime = 0.0;
+  double totalStepTime = 0.0;
   for (int i = 0; i < frames; ++i) {
     viewer.frame();
-    simTime = world->getTime();
+    totalStepTime += worldNode->getStepTimeMs();
   }
 
-  std::cout << "Completed " << frames << " frames, sim time: " << std::fixed
-            << std::setprecision(2) << simTime << "s\n";
+  std::cout << "Completed " << frames << " frames\n";
+  std::cout << "Sim time: " << std::fixed << std::setprecision(2)
+            << world->getTime() << "s\n";
+  std::cout << "Avg step: " << std::setprecision(3) << totalStepTime / frames
+            << " ms\n";
+  std::cout << "Contacts (final): " << worldNode->getContactCount() << "\n";
 
   return EXIT_SUCCESS;
 }
@@ -453,10 +859,12 @@ int runHeadless(
 
 int main(int argc, char* argv[])
 {
-  CLI::App app("LCP Physics - Challenging simulation scenarios");
+  CLI::App app(
+      "LCP Physics - Challenging simulation scenarios with solver comparison");
   bool headless = false;
   bool listMode = false;
-  std::string scenarioName = "mass_ratio";
+  std::string scenarioName = "mass";
+  std::string solverName = "dantzig";
   int frames = 300;
   std::string outDir;
   int width = 1280;
@@ -464,9 +872,10 @@ int main(int argc, char* argv[])
   double guiScale = 1.0;
 
   app.add_flag("--headless", headless, "Run without display window");
-  app.add_flag("--list", listMode, "List available scenarios");
+  app.add_flag("--list", listMode, "List available scenarios and solvers");
   app.add_option(
-      "--scenario", scenarioName, "Scenario to run (default: mass_ratio)");
+      "--scenario", scenarioName, "Scenario (mass/box/ball/domino/incline)");
+  app.add_option("--solver", solverName, "Solver (dantzig/pgs)");
   app.add_option("--frames", frames, "Number of frames")
       ->check(CLI::PositiveNumber);
   app.add_option("--out", outDir, "Output directory for frame capture");
@@ -480,24 +889,34 @@ int main(int argc, char* argv[])
 
   if (listMode) {
     listScenarios();
+    listSolvers();
     return EXIT_SUCCESS;
   }
 
-  Scenario scenario = parseScenario(scenarioName);
+  int scenarioIdx = parseScenario(scenarioName);
+  int solverIdx = parseSolver(solverName);
 
   if (headless) {
-    return runHeadless(scenario, frames, outDir, width, height);
+    return runHeadless(scenarioIdx, solverIdx, frames, outDir, width, height);
   }
 
-  auto world = createScenario(scenario);
+  auto scenarios = GetScenarios();
+  auto solvers = GetSolvers();
+
+  auto world = createScenario(scenarios[scenarioIdx].type);
   world->setTimeStep(1.0 / 1000.0);
+  applySolver(world, solvers[solverIdx].type);
 
   ImGuiViewer viewer;
   viewer.setImGuiScale(static_cast<float>(guiScale));
   auto shadow = WorldNode::createDefaultShadowTechnique(&viewer);
-  osg::ref_ptr<RealTimeWorldNode> worldNode
-      = new RealTimeWorldNode(world, shadow);
+  osg::ref_ptr<LcpPhysicsWorldNode> worldNode
+      = new LcpPhysicsWorldNode(world, shadow);
   viewer.addWorldNode(worldNode);
+
+  viewer.getImGuiHandler()->addWidget(
+      std::make_shared<LcpPhysicsWidget>(
+          &viewer, worldNode, scenarioIdx, solverIdx));
 
   const int windowWidth = static_cast<int>(1280 * guiScale);
   const int windowHeight = static_cast<int>(720 * guiScale);
@@ -510,7 +929,8 @@ int main(int argc, char* argv[])
   viewer.setCameraManipulator(viewer.getCameraManipulator());
 
   std::cout << "LCP Physics Example\n";
-  std::cout << "Scenario: " << scenarioName << "\n";
+  std::cout << "Scenario: " << scenarios[scenarioIdx].name << "\n";
+  std::cout << "Solver: " << solvers[solverIdx].name << "\n";
   std::cout << "Press SPACE to start/stop simulation\n";
 
   return viewer.run();
