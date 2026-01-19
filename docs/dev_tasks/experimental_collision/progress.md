@@ -1,82 +1,117 @@
 # Experimental Collision Module - Progress Tracker
 
 > **Last Updated**: 2026-01-19
-> **Current Phase**: Phase 2 - IN PROGRESS
+> **Current Focus**: Standalone Library Development
 
 ## Status Summary
 
-| Phase | Status | Progress |
-|-------|--------|----------|
-| Phase 0: Design & Harness | **Complete** | 100% |
-| Phase 1: Build Module | **Complete** | 100% |
-| Phase 2: Integrate Backend | **In Progress** | 50% |
-| Phase 3: Default (DART 7) | Not Started | 0% |
-| Phase 4: Remove External (DART 8) | Not Started | 0% |
+| Phase                     | Status          | Progress |
+| ------------------------- | --------------- | -------- |
+| Core Types & Primitives   | **Complete**    | 100%     |
+| Standalone CollisionWorld | **Complete**    | 100%     |
+| Additional Shapes         | **In Progress** | 75%      |
+| Distance Queries          | Not Started     | 0%       |
+| Raycast Support           | Not Started     | 0%       |
+| Benchmarks                | Not Started     | 0%       |
+| Visual Verification       | Not Started     | 0%       |
+| DART Integration          | **Deferred**    | -        |
 
 ---
 
-## Phase 0: Design & Harness (COMPLETE)
+## Completed Components (181 tests)
 
-- [x] **0.1.1** Research existing codebase patterns
-- [x] **0.1.2** Research collision detection best practices
-- [x] **0.1.3** Design core data structures
-- [x] **0.1.4** Create epic documentation
-- [x] **0.2** Create module skeleton
-- [x] **0.3** Create test harness
-- [x] **0.4** Create benchmark harness (Aabb benchmark)
-
----
-
-## Phase 1: Build Module (COMPLETE)
-
-134 tests passing across 8 test files.
-
-| Task | Description | Status | Tests |
-|------|-------------|--------|-------|
-| 1.1 | ContactPoint + CollisionResult | Complete | 21 |
-| 1.2 | Aabb implementation | Complete | 26 |
-| 1.3 | Standalone Shape classes (Sphere, Box) | Complete | 8 |
-| 1.4 | Sphere-sphere narrow-phase | Complete | 17 |
-| 1.5 | Box-box narrow-phase (SAT) | Complete | 18 |
-| 1.6 | Sphere-box narrow-phase | Complete | 19 |
-| 1.7 | BruteForceBroadPhase | Complete | 15 |
-| 1.8 | CollisionObject wrapper | Complete | 10 |
+| Component                        | Files                                 | Tests            | Notes                                     |
+| -------------------------------- | ------------------------------------- | ---------------- | ----------------------------------------- |
+| ContactPoint, ContactManifold    | types.hpp/.cpp                        | 21               | Core contact representation               |
+| CollisionResult, CollisionOption | types.hpp/.cpp                        | (included above) | Result aggregation                        |
+| Aabb                             | aabb.hpp/.cpp                         | 26               | Axis-aligned bounding box                 |
+| SphereShape                      | shapes/shape.hpp/.cpp                 | 15               | Standalone sphere (with Capsule/Cylinder) |
+| BoxShape                         | shapes/shape.hpp/.cpp                 | (included above) | Standalone box                            |
+| CapsuleShape                     | shapes/shape.hpp/.cpp                 | (included above) | Standalone capsule                        |
+| CylinderShape                    | shapes/shape.hpp/.cpp                 | (included above) | Standalone cylinder                       |
+| Sphere-sphere                    | narrow_phase/sphere_sphere.hpp/.cpp   | 17               | Narrow-phase                              |
+| Box-box (SAT)                    | narrow_phase/box_box.hpp/.cpp         | 18               | Separating Axis Theorem                   |
+| Sphere-box                       | narrow_phase/sphere_box.hpp/.cpp      | 19               | Mixed pair                                |
+| Capsule-capsule                  | narrow_phase/capsule_capsule.hpp/.cpp | 5                | Capsule collision                         |
+| Capsule-sphere                   | narrow_phase/capsule_sphere.hpp/.cpp  | 4                | Capsule-sphere pair                       |
+| Capsule-box                      | narrow_phase/capsule_box.hpp/.cpp     | 5                | Capsule-box pair                          |
+| BruteForceBroadPhase             | broad_phase/brute_force.hpp/.cpp      | 15               | O(n^2) broad-phase                        |
+| CollisionObject                  | collision_object.hpp/.cpp             | 10               | Shape + transform wrapper                 |
+| NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp    | 7                | Shape-type dispatch                       |
+| CollisionWorld                   | collision_world.hpp/.cpp              | 8                | Standalone collision detection            |
 
 ---
 
-## Phase 2: Integrate Backend (IN PROGRESS)
+## Next Steps
 
-149 tests passing across 10 test files.
+### Priority 1: More Shapes
 
-| Task | Description | Status | Tests |
-|------|-------------|--------|-------|
-| 2.1 | NarrowPhase dispatcher | Complete | 7 |
-| 2.2 | CollisionWorld class | Complete | 8 |
-| 2.3 | Integration with DART API | Pending | - |
+| Shape         | Implementation | Tests   | Notes                                                |
+| ------------- | -------------- | ------- | ---------------------------------------------------- |
+| CapsuleShape  | **Complete**   | 14      | Sphere-swept line segment                            |
+| CylinderShape | **Complete**   | 3       | Axis-aligned cylinder (shape only, no collision yet) |
+| PlaneShape    | **Complete**   | 11      | Infinite half-space                                  |
+| MeshShape     | Pending        | Pending | Triangle mesh                                        |
 
-### New Components
+### Priority 2: Shape Pairs
 
-```
-dart/collision/experimental/
-├── narrow_phase/
-│   └── narrow_phase.hpp/.cpp    # Shape-type dispatch to narrow-phase algorithms
-└── collision_world.hpp/.cpp     # Standalone collision detection world
+| Pair              | Status       | Tests | Notes                        |
+| ----------------- | ------------ | ----- | ---------------------------- |
+| Capsule-capsule   | **Complete** | 5     | Common in robotics           |
+| Capsule-sphere    | **Complete** | 4     | Simple extension             |
+| Capsule-box       | **Complete** | 5     | Sampling-based closest point |
+| Plane-sphere      | **Complete** | 4     | Ground contact               |
+| Plane-box         | **Complete** | 3     | Ground contact               |
+| Plane-capsule     | **Complete** | 4     | Ground contact               |
+| Cylinder-cylinder | Pending      |       |                              |
+| Cylinder-sphere   | Pending      |       |                              |
+| Cylinder-box      | Pending      |       |                              |
+| Mesh-primitive    | Pending      |       | GJK/EPA based                |
 
-tests/unit/collision/experimental/
-├── test_narrow_phase.cpp        # 7 tests
-└── test_collision_world.cpp     # 8 tests
-```
+### Priority 3: Distance Queries
 
-### CollisionWorld Features
-- Object add/remove/update with automatic AABB tracking
-- Broad-phase filtering via BruteForceBroadPhase
-- Narrow-phase dispatch via NarrowPhase::collide()
-- Direct pair collision testing
-- Mixed shape support (sphere-sphere, box-box, sphere-box)
+| Query Type        | Status  | Notes                             |
+| ----------------- | ------- | --------------------------------- |
+| Signed distance   | Pending | Negative inside, positive outside |
+| Closest points    | Pending | Points on each shape              |
+| Penetration depth | Pending | Already have via contacts         |
+
+### Priority 4: Raycast
+
+| Feature     | Status  | Notes |
+| ----------- | ------- | ----- |
+| Ray-sphere  | Pending |       |
+| Ray-box     | Pending |       |
+| Ray-capsule | Pending |       |
+| Ray-plane   | Pending |       |
+| Ray-mesh    | Pending |       |
+
+### Priority 5: Benchmarks
+
+Create `tests/benchmark/collision/experimental/`:
+
+- Narrow-phase timing (per shape pair)
+- Broad-phase scaling (N objects)
+- Memory usage
+- Comparison with existing backends (without naming them)
+
+### Priority 6: Visual Verification
+
+Options:
+
+- **rerun** - Python-based, good for debugging
+- **raylib** - Simple C library, minimal deps
+
+Features needed:
+
+- Render shapes with transforms
+- Visualize contact points and normals
+- Show AABBs
+- Step-through collision pairs
 
 ---
 
-## Module Structure (Current)
+## Module Structure
 
 ```
 dart/collision/experimental/
@@ -88,7 +123,7 @@ dart/collision/experimental/
 ├── collision_object.hpp/.cpp   # Shape + Transform wrapper
 ├── collision_world.hpp/.cpp    # Standalone collision detection
 ├── shapes/
-│   └── shape.hpp/.cpp          # SphereShape, BoxShape
+│   └── shape.hpp/.cpp          # SphereShape, BoxShape (+ more to come)
 ├── narrow_phase/
 │   ├── narrow_phase.hpp/.cpp   # Shape-type dispatch
 │   ├── sphere_sphere.hpp/.cpp  # Sphere-sphere detection
@@ -122,35 +157,20 @@ done
 
 ## Decisions Log
 
-| Date | Decision | Rationale |
-|------|----------|-----------|
-| 2026-01-19 | Use `dart::collision::experimental` namespace | Matches simulation/experimental pattern |
-| 2026-01-19 | Keep DART's normal convention (obj2 -> obj1) | Backward compatibility |
-| 2026-01-19 | Design manifold-based contacts | Future extensibility for deformable/cloth |
-| 2026-01-19 | Start with brute-force broad-phase | Simple first, optimize later |
-| 2026-01-19 | Standalone shapes (no dynamics dep) | Enables pure collision testing |
-| 2026-01-19 | Use PascalCase for abbreviations (Aabb) | Codebase convention |
-| 2026-01-19 | BoxShape stores full extents internally | API takes half-extents for compatibility |
-| 2026-01-19 | Public min/max fields in Aabb | Direct access, consistent with other tests |
-| 2026-01-19 | CollisionWorld as standalone API | Simpler than full CollisionDetector integration |
-
----
-
-## Phase 2.3: Integration with DART API (NEXT)
-
-### Goals
-- Wire experimental module as opt-in CollisionDetector backend
-- Support dynamics::ShapeFrame integration
-- Pass existing collision integration tests
-
-### Pending Tasks
-- [ ] Create ExperimentalCollisionDetector class
-- [ ] Implement CollisionGroup adapter
-- [ ] Shape type mapping from dynamics::Shape
-- [ ] Add integration tests
+| Date       | Decision                                      | Rationale                                        |
+| ---------- | --------------------------------------------- | ------------------------------------------------ |
+| 2026-01-19 | Defer DART integration                        | Build standalone library to feature parity first |
+| 2026-01-19 | Use `dart::collision::experimental` namespace | Matches simulation/experimental pattern          |
+| 2026-01-19 | Keep DART's normal convention (obj2 -> obj1)  | Backward compatibility                           |
+| 2026-01-19 | Design manifold-based contacts                | Future extensibility for deformable/cloth        |
+| 2026-01-19 | Start with brute-force broad-phase            | Simple first, optimize later                     |
+| 2026-01-19 | Standalone shapes (no dynamics dep)           | Enables pure collision testing                   |
+| 2026-01-19 | Use PascalCase for abbreviations (Aabb)       | Codebase convention                              |
+| 2026-01-19 | BoxShape stores full extents internally       | API takes half-extents for compatibility         |
+| 2026-01-19 | CollisionWorld as standalone API              | Simpler than full CollisionDetector integration  |
 
 ---
 
 ## Blockers
 
-*None currently*
+_None currently_

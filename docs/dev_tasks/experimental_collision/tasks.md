@@ -13,6 +13,7 @@ These are small, reviewable increments ordered by dependency.
 **Goal**: Minimal buildable module structure
 
 **Files**:
+
 ```
 dart/collision/experimental/
 ├── CMakeLists.txt
@@ -21,6 +22,7 @@ dart/collision/experimental/
 ```
 
 **Acceptance Criteria**:
+
 - [ ] `pixi run build` succeeds
 - [ ] Module is compiled (even if empty)
 - [ ] Export macros defined correctly
@@ -34,6 +36,7 @@ dart/collision/experimental/
 **Goal**: Core contact data structures with tests
 
 **Files**:
+
 ```
 dart/collision/experimental/
 ├── types.hpp
@@ -47,6 +50,7 @@ tests/unit/collision/experimental/
 ```
 
 **Acceptance Criteria**:
+
 - [ ] ContactPoint struct with all fields
 - [ ] CollisionResult with add/clear/query methods
 - [ ] Unit tests for all methods
@@ -61,6 +65,7 @@ tests/unit/collision/experimental/
 **Goal**: Axis-aligned bounding box with tests and benchmark
 
 **Files**:
+
 ```
 dart/collision/experimental/
 ├── aabb.hpp
@@ -75,6 +80,7 @@ tests/benchmark/collision/experimental/
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Aabb class with overlaps(), contains(), merge(), expand()
 - [ ] Factory methods: forSphere(), forBox(), transformed()
 - [ ] Unit tests for all methods including edge cases
@@ -90,6 +96,7 @@ tests/benchmark/collision/experimental/
 **Goal**: Sphere and Box shapes without dynamics dependency
 
 **Files**:
+
 ```
 dart/collision/experimental/
 └── shapes/
@@ -104,6 +111,7 @@ tests/unit/collision/experimental/
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Shape base class with getType(), computeLocalAabb()
 - [ ] SphereShape with radius
 - [ ] BoxShape with halfExtents
@@ -119,6 +127,7 @@ tests/unit/collision/experimental/
 **Goal**: First narrow-phase algorithm with comprehensive tests
 
 **Files**:
+
 ```
 dart/collision/experimental/
 └── narrow_phase/
@@ -134,6 +143,7 @@ tests/benchmark/collision/experimental/
 ```
 
 **Acceptance Criteria**:
+
 - [ ] collideSphereSphere() function
 - [ ] Correct contact point, normal, depth
 - [ ] Edge cases: touching, concentric, separated
@@ -142,6 +152,7 @@ tests/benchmark/collision/experimental/
 - [ ] Tests pass
 
 **Test Cases**:
+
 ```
 1. Separated spheres → no collision
 2. Touching spheres → depth = 0
@@ -159,6 +170,7 @@ tests/benchmark/collision/experimental/
 **Goal**: Simple O(n^2) broad-phase for small object counts
 
 **Files**:
+
 ```
 dart/collision/experimental/
 └── broad_phase/
@@ -174,6 +186,7 @@ tests/benchmark/collision/experimental/
 ```
 
 **Acceptance Criteria**:
+
 - [ ] BroadPhase interface
 - [ ] BruteForceBroadPhase implementation
 - [ ] Deterministic pair ordering
@@ -190,6 +203,7 @@ tests/benchmark/collision/experimental/
 **Goal**: Most complex primitive narrow-phase
 
 **Files**:
+
 ```
 dart/collision/experimental/
 └── narrow_phase/
@@ -204,6 +218,7 @@ tests/benchmark/collision/experimental/
 ```
 
 **Acceptance Criteria**:
+
 - [ ] collideBoxBox() using Separating Axis Theorem
 - [ ] Correct contact points for face/edge/vertex contacts
 - [ ] Edge cases: touching faces, edge-edge, aligned boxes
@@ -212,6 +227,7 @@ tests/benchmark/collision/experimental/
 - [ ] Tests pass
 
 **Test Cases**:
+
 ```
 1. Separated boxes → no collision
 2. Face-face contact → multiple contacts, shared normal
@@ -230,6 +246,7 @@ tests/benchmark/collision/experimental/
 **Goal**: Mixed-shape narrow-phase
 
 **Files**:
+
 ```
 dart/collision/experimental/
 └── narrow_phase/
@@ -244,6 +261,7 @@ tests/benchmark/collision/experimental/
 ```
 
 **Acceptance Criteria**:
+
 - [ ] collideSphereBox() function
 - [ ] Handles sphere vs face, edge, vertex
 - [ ] Correct contact geometry
@@ -252,6 +270,7 @@ tests/benchmark/collision/experimental/
 - [ ] Tests pass
 
 **Test Cases**:
+
 ```
 1. Sphere outside box → no collision
 2. Sphere touching box face → single contact
@@ -269,6 +288,7 @@ tests/benchmark/collision/experimental/
 **Goal**: Object that combines shape + transform
 
 **Files**:
+
 ```
 dart/collision/experimental/
 ├── collision_object.hpp
@@ -279,6 +299,7 @@ tests/unit/collision/experimental/
 ```
 
 **Acceptance Criteria**:
+
 - [ ] CollisionObject holds Shape + Transform
 - [ ] Caches world-space AABB
 - [ ] updateAabb() method
@@ -294,6 +315,7 @@ tests/unit/collision/experimental/
 **Goal**: Wire everything together, document baselines
 
 **Files**:
+
 ```
 dart/collision/experimental/
 ├── collision_group.hpp    # Simple group for testing
@@ -307,6 +329,7 @@ docs/dev_tasks/experimental_collision/
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Simple CollisionGroup that orchestrates broad+narrow phase
 - [ ] End-to-end test with multiple objects
 - [ ] Performance baselines documented
@@ -319,19 +342,19 @@ docs/dev_tasks/experimental_collision/
 
 ## Summary
 
-| Task | Description | Hours | Dependencies |
-|------|-------------|-------|--------------|
-| 1 | Module skeleton | 2 | None |
-| 2 | ContactPoint, CollisionResult | 3 | Task 1 |
-| 3 | Aabb | 3 | Task 1 |
-| 4 | Shape classes | 3 | Task 3 |
-| 5 | Sphere-sphere collision | 4 | Tasks 2, 4 |
-| 6 | Brute-force broad-phase | 4 | Tasks 3, 9 |
-| 7 | Box-box collision (SAT) | 8 | Tasks 2, 4 |
-| 8 | Sphere-box collision | 4 | Tasks 5, 7 |
-| 9 | CollisionObject wrapper | 3 | Tasks 3, 4 |
-| 10 | Integration + baselines | 4 | All above |
-| **Total** | | **38** | |
+| Task      | Description                   | Hours  | Dependencies |
+| --------- | ----------------------------- | ------ | ------------ |
+| 1         | Module skeleton               | 2      | None         |
+| 2         | ContactPoint, CollisionResult | 3      | Task 1       |
+| 3         | Aabb                          | 3      | Task 1       |
+| 4         | Shape classes                 | 3      | Task 3       |
+| 5         | Sphere-sphere collision       | 4      | Tasks 2, 4   |
+| 6         | Brute-force broad-phase       | 4      | Tasks 3, 9   |
+| 7         | Box-box collision (SAT)       | 8      | Tasks 2, 4   |
+| 8         | Sphere-box collision          | 4      | Tasks 5, 7   |
+| 9         | CollisionObject wrapper       | 3      | Tasks 3, 4   |
+| 10        | Integration + baselines       | 4      | All above    |
+| **Total** |                               | **38** |              |
 
 ## Dependency Graph
 
