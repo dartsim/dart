@@ -115,6 +115,7 @@ dart_add_test("unit" UNIT_dynamics_Group dynamics/test_Group.cpp)
 dart_add_test("unit" UNIT_dynamics_Joints dynamics/test_Joints.cpp)
 dart_add_test("unit" UNIT_dynamics_DegreeOfFreedom dynamics/test_DegreeOfFreedom.cpp)
 dart_add_test("unit" UNIT_dynamics_MetaSkeleton dynamics/test_MetaSkeleton.cpp)
+dart_add_test("unit" UNIT_dynamics_Linkage dynamics/test_Linkage.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
