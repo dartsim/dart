@@ -25,6 +25,7 @@ add_subdirectory(lcp_solvers)
 add_subdirectory(box_stacking)
 add_subdirectory(capsule_ground_contact)
 add_subdirectory(heightmap)
+add_subdirectory(lcp_physics)
 add_subdirectory(rigid_shapes)
 
 # Control and IK examples
