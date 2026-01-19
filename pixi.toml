@@ -801,6 +801,7 @@ lcov \
 && lcov \
     --remove coverage.info \
     '/usr/*' \
+    '*/.pixi/*' \
     '*/.deps/*' \
     '*/tests/*' \
     '*/examples/*' \
