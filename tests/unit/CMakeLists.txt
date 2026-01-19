@@ -76,6 +76,7 @@ dart_add_test(
 dart_add_test(
   "unit" UNIT_constraint_ContactSurface constraint/test_ContactSurface.cpp)
 dart_add_test("unit" UNIT_constraint_JointConstraints constraint/test_JointConstraints.cpp)
+dart_add_test("unit" UNIT_constraint_MotorConstraints constraint/test_MotorConstraints.cpp)
 
 # ==============================================================================
 # Dynamics Tests
@@ -109,6 +110,9 @@ dart_add_test("unit" UNIT_dynamics_PlaneShape dynamics/test_PlaneShape.cpp)
 dart_add_test("unit" UNIT_dynamics_EndEffector dynamics/test_EndEffector.cpp)
 dart_add_test("unit" UNIT_dynamics_Marker dynamics/test_Marker.cpp)
 dart_add_test("unit" UNIT_dynamics_PointMass dynamics/test_PointMass.cpp)
+dart_add_test("unit" UNIT_dynamics_Frame dynamics/test_Frame.cpp)
+dart_add_test("unit" UNIT_dynamics_Group dynamics/test_Group.cpp)
+dart_add_test("unit" UNIT_dynamics_Joints dynamics/test_Joints.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
