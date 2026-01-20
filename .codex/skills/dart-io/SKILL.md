@@ -1,3 +1,8 @@
+<!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
+<!-- Source: .claude/skills/dart-io/SKILL.md -->
+<!-- Sync script: scripts/sync_ai_commands.py -->
+<!-- Run `pixi run sync-ai-commands` to update -->
+
 ---
 name: dart-io
 description: DART model loading - URDF, SDF, MJCF, SKEL parsers and dart::io unified API

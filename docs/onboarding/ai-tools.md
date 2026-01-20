@@ -215,7 +215,7 @@ Skills work across multiple AI tools through automatic syncing:
 
 #### Acknowledgment
 
-The SKILL.md format is inspired by [OpenSkills](https://github.com/anthropics/openskills) (Apache 2.0).
+The SKILL.md format is inspired by [OpenSkills](https://github.com/numman-ali/openskills) (Apache 2.0).
 DART skills are original content under BSD 2-Clause license.
 
 ### Keeping Commands and Skills in Sync

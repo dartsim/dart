@@ -1,3 +1,8 @@
+<!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
+<!-- Source: .claude/commands/dart-fix-ci.md -->
+<!-- Sync script: scripts/sync_ai_commands.py -->
+<!-- Run `pixi run sync-ai-commands` to update -->
+
 ---
 description: Debug and fix failing CI checks
 agent: build
