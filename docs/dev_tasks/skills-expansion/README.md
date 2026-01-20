@@ -13,61 +13,61 @@ Expand DART's AI agent skill system with useful external skills from Anthropic m
 
 ### DART-Specific Skills (Implemented)
 
-| Skill | Purpose | Source |
-|-------|---------|--------|
-| `dart-build` | Build system, CMake, pixi | Custom |
-| `dart-test` | Testing patterns, CI validation | Custom |
-| `dart-contribute` | PR workflow, dual-branch bugfixes | Custom |
-| `dart-ci` | CI/CD troubleshooting, GitHub Actions | Custom |
-| `dart-io` | Model loading (URDF/SDF/MJCF/SKEL) | Custom |
-| `dart-python` | Python bindings (dartpy) | Custom |
+| Skill             | Purpose                               | Source |
+| ----------------- | ------------------------------------- | ------ |
+| `dart-build`      | Build system, CMake, pixi             | Custom |
+| `dart-test`       | Testing patterns, CI validation       | Custom |
+| `dart-contribute` | PR workflow, dual-branch bugfixes     | Custom |
+| `dart-ci`         | CI/CD troubleshooting, GitHub Actions | Custom |
+| `dart-io`         | Model loading (URDF/SDF/MJCF/SKEL)    | Custom |
+| `dart-python`     | Python bindings (dartpy)              | Custom |
 
 ### Utility Skills (Not Installed - Available on Demand)
 
-| Skill | Purpose | How to Install |
-|-------|---------|----------------|
+| Skill           | Purpose                       | How to Install                             |
+| --------------- | ----------------------------- | ------------------------------------------ |
 | `skill-creator` | Guide for creating new skills | `npx openskills install anthropics/skills` |
 
 ### Global Skills (User's Environment)
 
-| Skill | Purpose |
-|-------|---------|
-| `git-master` | Atomic commits, rebasing |
-| `ultrawork` | Parallel agent orchestration |
-| `frontend-ui-ux` | UI/UX design |
+| Skill            | Purpose                      |
+| ---------------- | ---------------------------- |
+| `git-master`     | Atomic commits, rebasing     |
+| `ultrawork`      | Parallel agent orchestration |
+| `frontend-ui-ux` | UI/UX design                 |
 
 ## Future Candidates (Phase 2)
 
 ### High Priority — Likely Useful
 
-| Skill | Why | Effort |
-|-------|-----|--------|
-| `open-source-maintainer` | Issue triage, PR review automation | Need to create or find source |
-| `mcp-builder` | If DART exposes MCP tools | `npx openskills install anthropics/skills` |
+| Skill                    | Why                                | Effort                                     |
+| ------------------------ | ---------------------------------- | ------------------------------------------ |
+| `open-source-maintainer` | Issue triage, PR review automation | Need to create or find source              |
+| `mcp-builder`            | If DART exposes MCP tools          | `npx openskills install anthropics/skills` |
 
 ### Medium Priority — Situational
 
-| Skill | Why |
-|-------|-----|
-| `doc-coauthoring` | For major documentation efforts |
-| `webapp-testing` | If DART adds web-based visualization |
+| Skill             | Why                                  |
+| ----------------- | ------------------------------------ |
+| `doc-coauthoring` | For major documentation efforts      |
+| `webapp-testing`  | If DART adds web-based visualization |
 
 ### Low Priority — Not Relevant
 
-| Skill | Why Skip |
-|-------|----------|
-| `pdf`, `docx`, `pptx`, `xlsx` | DART is C++/Python, not document processing |
-| `algorithmic-art`, `canvas-design` | Not relevant to physics engine |
-| `brand-guidelines`, `internal-comms` | Anthropic-specific |
-| `slack-gif-creator` | Not relevant |
+| Skill                                | Why Skip                                    |
+| ------------------------------------ | ------------------------------------------- |
+| `pdf`, `docx`, `pptx`, `xlsx`        | DART is C++/Python, not document processing |
+| `algorithmic-art`, `canvas-design`   | Not relevant to physics engine              |
+| `brand-guidelines`, `internal-comms` | Anthropic-specific                          |
+| `slack-gif-creator`                  | Not relevant                                |
 
 ## Custom Skills to Create (Future)
 
-| Skill | Purpose | Source Docs |
-|-------|---------|-------------|
-| `dart-dynamics` | Articulated bodies, joints, kinematics | `docs/background/dynamics/` |
-| `dart-collision` | Collision backends (FCL, Bullet, ODE) | Architecture docs |
-| `dart-architecture` | Core architecture deep dive | `docs/onboarding/architecture.md` |
+| Skill               | Purpose                                | Source Docs                       |
+| ------------------- | -------------------------------------- | --------------------------------- |
+| `dart-dynamics`     | Articulated bodies, joints, kinematics | `docs/background/dynamics/`       |
+| `dart-collision`    | Collision backends (FCL, Bullet, ODE)  | Architecture docs                 |
+| `dart-architecture` | Core architecture deep dive            | `docs/onboarding/architecture.md` |
 
 ## Key Decisions
 

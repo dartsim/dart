@@ -11,6 +11,7 @@ Working directory — no branch created (documentation task)
 ## Immediate Next Step
 
 No immediate action needed. This task is paused at Phase 1 completion. Resume when:
+
 - Need to create additional DART-specific skills
 - Want to evaluate `open-source-maintainer` for issue/PR automation
 - DART adds MCP server functionality (then import `mcp-builder`)
