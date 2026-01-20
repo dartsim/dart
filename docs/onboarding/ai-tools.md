@@ -200,6 +200,24 @@ For module details: `<module>/AGENTS.md`
 - `path/to/tests`
 ```
 
+#### Creating New Skills
+
+To add a new DART-specific skill:
+
+1. Create skill directory and file:
+
+   ```bash
+   mkdir -p .claude/skills/dart-<name>
+   # Create SKILL.md following the template above
+   ```
+
+2. Sync to all tool directories:
+   ```bash
+   pixi run lint  # Includes sync-ai-commands
+   ```
+
+**Skill candidates** (create when needed): `dart-dynamics` (articulated bodies), `dart-collision` (collision backends), `dart-architecture` (core design).
+
 #### Cross-Agent Compatibility
 
 Skills work across multiple AI tools through automatic syncing:
