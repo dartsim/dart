@@ -91,6 +91,7 @@ The module is being developed as a **standalone collision library** first, befor
 2. **P0 - Compound shapes**
 3. **P0 - Parallel narrowphase**
 4. **P1 - DART backend integration**
+5. **P1 - Visual verification CI** (enable VSG build + headless test in CI)
 
 See [gap_analysis.md](./gap_analysis.md) for full priority roadmap.
 

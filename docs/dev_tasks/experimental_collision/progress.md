@@ -17,7 +17,7 @@
 | GJK/EPA Algorithm          | **Complete** | 100%     |
 | Convex/Mesh Shapes         | **Complete** | 100%     |
 | Continuous Collision (CCD) | **Complete** | 100%     |
-| Visual Verification        | **Complete** | 100%     |
+| Visual Verification        | **Partial**  | 70%      |
 | DART Integration           | **Deferred** | -        |
 
 ---
@@ -226,11 +226,13 @@ bool NarrowPhase::sphereCast(start, end, radius, target, option, result);
 bool NarrowPhase::isSphereCastSupported(ShapeType type);
 ```
 
-### Priority 8: Visual Verification — ✅ COMPLETE (Using VSG)
+### Priority 8: Visual Verification — PARTIAL (Code Complete, Integration Incomplete)
 
 **Implementation**: `dart/gui/vsg/` module with `examples/collision_viz/`
 
-| Feature                         | Status       | Notes                                     |
+#### Feature Implementation Status
+
+| Feature                         | Code Status  | Notes                                     |
 | ------------------------------- | ------------ | ----------------------------------------- |
 | Primitive shapes                | **Complete** | Sphere, Box, Capsule, Cylinder, Plane     |
 | Convex/Mesh shapes              | **Complete** | Via GeometryBuilders                      |
@@ -244,7 +246,25 @@ bool NarrowPhase::isSphereCastSupported(ShapeType type);
 | Headless rendering              | **Complete** | `SimpleViewer::headless()` + PPM export   |
 | Interactive windowed mode       | **Complete** | Mouse rotation/zoom, close to exit        |
 
-**Key APIs:**
+#### Integration Gaps (Blocking "Complete" Status)
+
+| Gap                           | Status      | Impact                                              |
+| ----------------------------- | ----------- | --------------------------------------------------- |
+| `DART_BUILD_GUI_VSG=OFF`      | **Blocker** | Disabled by default; developers can't easily use it |
+| No CI integration             | **Blocker** | Not tested in CI; regressions undetected            |
+| No unit tests                 | **Blocker** | No automated verification of VSG code               |
+| Vulkan dependency             | Risk        | May not work on all systems (needs GPU/drivers)     |
+| Not verified on all platforms | Risk        | Only tested manually on Linux                       |
+
+#### Next Steps for Visualization
+
+1. **P0: Add CI smoke test** — Build `collision_viz` with `DART_BUILD_GUI_VSG=ON` on at least one CI platform
+2. **P0: Enable by default OR document clearly** — Either enable VSG in default build, or add clear docs on how to enable
+3. **P1: Add headless CI verification** — Run `collision_viz --headless` in CI and verify output image
+4. **P2: Add unit tests** — Test GeometryBuilders and CollisionSceneBuilder APIs
+5. **P2: Cross-platform verification** — Test on macOS and Windows (if Vulkan available)
+
+#### Key APIs (Reference)
 
 ```cpp
 // CollisionSceneBuilder
@@ -264,15 +284,23 @@ createGrid(size, spacing, color);        // Ground grid
 createAxes(length);                      // RGB XYZ axes
 ```
 
-**Example usage:**
+#### Build Instructions
 
 ```bash
-# Interactive mode
+# Enable VSG GUI (OFF by default)
+pixi run cmake -B build \
+  -DDART_BUILD_GUI_VSG=ON \
+  -DDART_BUILD_COLLISION_EXPERIMENTAL=ON
+
+# Build collision_viz example
+cmake --build build --target collision_viz
+
+# Run interactive mode
 ./build/default/cpp/Release/bin/collision_viz
 
-# Headless mode (CI verification)
+# Run headless mode (CI verification)
 ./build/default/cpp/Release/bin/collision_viz --headless
-# Outputs: collision_viz_headless.ppm
+# Outputs: collision_viz.ppm
 ```
 
 ---
