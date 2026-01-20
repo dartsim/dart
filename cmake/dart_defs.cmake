@@ -962,7 +962,8 @@ function(install_component_exports package_name)
     foreach(dependent_package IN LISTS dependency_package)
       set(find_pkg_name "Find${dependent_package}.cmake")
       set(find_pkg_path "")
-      set(dart_find_pkg_name "DARTFind${dependent_package}.cmake")
+      string(TOLOWER "${dependent_package}" dependent_package_lower)
+      set(dart_find_pkg_name "dart_find_${dependent_package_lower}.cmake")
       set(dart_find_pkg_path "")
       foreach(module_path IN LISTS CMAKE_MODULE_PATH)
         set(find_pkg_path_candidate "${module_path}/${find_pkg_name}")
@@ -1293,12 +1294,13 @@ endmacro()
 #===============================================================================
 
 #-------------------------------------------------------------------------------
-# Find a DART package using DARTFind<name>.cmake
+# Find a DART package using dart_find_<name>.cmake
 # Usage:
 #   dart_find_package(<package_name>)
 #-------------------------------------------------------------------------------
 macro(dart_find_package _name)
-  include(DARTFind${_name})
+  string(TOLOWER "${_name}" _name_lower)
+  include(dart_find_${_name_lower})
 endmacro()
 
 #===============================================================================

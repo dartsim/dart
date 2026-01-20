@@ -7,7 +7,7 @@ endif()
 message(STATUS "Configuring dart/collision/ode (DART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE})")
 
 # Skip find_package when ODE was already provided via FetchContent
-# (ODE_FOUND and ODE::ODE target already set in DARTFindDependencies.cmake)
+# (ODE_FOUND and ODE::ODE target already set in dart_find_dependencies.cmake)
 if(NOT ODE_FOUND OR NOT TARGET ODE::ODE)
   dart_find_package(ODE)
   if(NOT ODE_FOUND)
