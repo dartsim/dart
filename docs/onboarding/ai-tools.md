@@ -256,6 +256,12 @@ pixi run check-ai-commands  # Check if in sync (CI mode, no changes)
 | `.claude/commands/` | `.opencode/command/` | OpenCode commands |
 | `.claude/skills/`   | `.codex/skills/`     | Codex skills      |
 
+**Sync details**:
+
+- Synced files get an auto-generated header (placed AFTER frontmatter to preserve tool parsing)
+- Target directories (`.codex/`, `.opencode/`) are excluded from prettier to prevent re-sync loops
+- Edit source files only; synced files are overwritten on each sync
+
 **Manual workflow** (if not using sync script):
 
 1. Edit files in `.claude/` directory
