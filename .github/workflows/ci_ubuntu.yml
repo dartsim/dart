@@ -100,6 +100,12 @@ jobs:
           BUILD_TYPE=${{ matrix.build_type }} \
           pixi run test-all
 
+      - name: Test with AddressSanitizer
+        if: matrix.build_type == 'Release'
+        run: |
+          DART_VERBOSE=ON \
+          pixi run test-asan
+
       - name: Install
         run: |
           DART_VERBOSE=ON \
