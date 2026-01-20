@@ -398,6 +398,13 @@ data/          # mesh/convex fixtures used by multiple benchmarks
 - CCD: sphere-cast, capsule-cast, conservative advancement
 - World/broad-phase: N-body scaling with mixed scenes
 
+**Current status (2026-01-19):**
+
+- Scaffolded directory layout and shared fixtures
+- Comparative narrow-phase benchmark added (`comparative/bm_narrow_phase.cpp`)
+- Comparative distance benchmark added (`comparative/bm_distance.cpp`)
+- Comparative raycast benchmark added (`comparative/bm_raycast.cpp`, experimental vs Bullet)
+
 **Acceptance criteria**:
 
 - Baseline runs are reproducible and use shared fixtures/options

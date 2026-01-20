@@ -117,6 +117,10 @@ Remove External (DART 8)
 Baseline numbers from `bm_comparative.cpp`. These will be re-measured after the
 structured suite is in place.
 
+Structured suite progress (2026-01-19): comparative narrow-phase, distance, and
+raycast benchmarks are now in `tests/benchmark/collision/comparative/` (raycast
+currently compares experimental vs Bullet only).
+
 **Narrow-phase performance comparison (lower is better):**
 
 | Shape Pair      | Experimental   | FCL          | Bullet       | ODE          | Speedup vs Best      |
