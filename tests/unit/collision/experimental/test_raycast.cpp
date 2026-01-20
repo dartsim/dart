@@ -582,3 +582,114 @@ TEST(RaycastMesh, NarrowPhaseSupported)
 {
   EXPECT_TRUE(NarrowPhase::isRaycastSupported(ShapeType::Mesh));
 }
+
+std::vector<Eigen::Vector3d> makeOctahedronVertices(double scale)
+{
+  return {
+      {scale, 0, 0},
+      {-scale, 0, 0},
+      {0, scale, 0},
+      {0, -scale, 0},
+      {0, 0, scale},
+      {0, 0, -scale}};
+}
+
+TEST(RaycastConvex, Miss)
+{
+  ConvexShape convex(makeOctahedronVertices(1.0));
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(5, 5, 0), Eigen::Vector3d(0, 0, 1));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastConvex(ray, convex, transform, option, result);
+
+  EXPECT_FALSE(hit);
+}
+
+TEST(RaycastConvex, HitFromOutside)
+{
+  ConvexShape convex(makeOctahedronVertices(1.0));
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(-5, 0, 0), Eigen::Vector3d(1, 0, 0));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastConvex(ray, convex, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.distance, 3.9);
+  EXPECT_LT(result.distance, 4.1);
+  EXPECT_NEAR(result.point.x(), -1.0, 0.1);
+}
+
+TEST(RaycastConvex, HitFromOrigin)
+{
+  ConvexShape convex(makeOctahedronVertices(1.0));
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(0, 0, 5);
+
+  Ray ray(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 1));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastConvex(ray, convex, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.distance, 3.9);
+  EXPECT_LT(result.distance, 4.1);
+}
+
+TEST(RaycastConvex, TransformedConvex)
+{
+  ConvexShape convex(makeCubeVertices(1.0));
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(5, 0, 0);
+
+  Ray ray(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastConvex(ray, convex, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.distance, 3.9);
+  EXPECT_LT(result.distance, 4.1);
+}
+
+TEST(RaycastConvex, MaxDistanceRespected)
+{
+  ConvexShape convex(makeOctahedronVertices(1.0));
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(10, 0, 0);
+
+  Ray ray(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0));
+  RaycastOption option = RaycastOption::withMaxDistance(5.0);
+  RaycastResult result;
+
+  bool hit = raycastConvex(ray, convex, transform, option, result);
+
+  EXPECT_FALSE(hit);
+}
+
+TEST(RaycastConvex, RayStartsInside)
+{
+  ConvexShape convex(makeCubeVertices(2.0));
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastConvex(ray, convex, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_NEAR(result.distance, 0.0, 1e-6);
+}
+
+TEST(RaycastConvex, NarrowPhaseSupported)
+{
+  EXPECT_TRUE(NarrowPhase::isRaycastSupported(ShapeType::Convex));
+}

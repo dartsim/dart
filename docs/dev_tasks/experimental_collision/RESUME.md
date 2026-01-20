@@ -2,9 +2,9 @@
 
 ## Current State (2026-01-19)
 
-**Branch**: `feature/new_coll` — uncommitted changes for GJK-based distance
+**Branch**: `feature/new_coll` — uncommitted changes for ray-convex
 
-**Tests**: 285 passing across 17 test files
+**Tests**: 292 passing across 17 test files
 
 **Performance**: VALIDATED — 5-40x faster than FCL/Bullet/ODE in narrow-phase
 
@@ -34,6 +34,7 @@
 | **GJK-based Convex/Mesh Collision** | ✅ | 10 tests |
 | **Ray-Mesh Intersection** | ✅ | 8 tests (Moller-Trumbore) |
 | **GJK-based Distance (Convex/Mesh)** | ✅ | 4 tests |
+| **Ray-Convex Intersection** | ✅ | 7 tests (GJK-based binary search) |
 | Comparative benchmarks vs FCL/Bullet/ODE | ✅ | `bm_comparative.cpp` |
 | Accuracy verification | ✅ | Matches FCL within tolerance |
 
@@ -74,7 +75,8 @@ CollisionObject (handle) = entt::entity + CollisionWorld*
 | ~~GJK-based mesh-primitive collision~~ | ~~Medium~~ | ✅ DONE — `collideConvexConvex()` via GJK |
 | ~~Ray-mesh intersection~~ | ~~Medium~~ | ✅ DONE — Moller-Trumbore algorithm |
 | ~~Distance for Convex/Mesh~~ | ~~Medium~~ | ✅ DONE — `distanceConvexConvex()` via GJK |
-| Ray-convex intersection | Medium | Use support function for ConvexShape |
+| ~~Ray-convex intersection~~ | ~~Medium~~ | ✅ DONE — GJK-based point-in-convex + binary search |
+| Continuous Collision Detection (CCD) | Medium | Swept sphere/capsule, conservative advancement |
 | Visual verification tool | Low | Raylib available in DART, needs visualizer |
 | Optimized broad-phase | Low | BVH or spatial hash (current is O(N²)) |
 | DART integration | Deferred | Wait for feature parity |
@@ -133,9 +135,10 @@ for t in bin/test_*; do $t 2>&1 | tail -1; done
 
 ## Suggested Next Steps
 
-1. **Ray-convex intersection** — Use ConvexShape::support() for raycast
-   - Use GJK-based ray-convex intersection
-   - Add to `NarrowPhase::raycast()` dispatcher
+1. **Continuous Collision Detection (CCD)** — Prevent tunneling
+   - Swept sphere/capsule for character controllers
+   - Conservative advancement for general convex pairs
+   - GJK-based time-of-impact
 
 2. **BVH broad-phase** — Reference FCL for spatial acceleration
    - Replace brute-force O(N²) with BVH
@@ -147,7 +150,8 @@ for t in bin/test_*; do $t 2>&1 | tail -1; done
 ## Commit History (Recent)
 
 ```
-<pending>    feat(collision): add GJK-based distance for Convex/Mesh shapes
+<pending>    feat(collision): add raycast support for ConvexShape
+33713feba83 feat(collision): add GJK-based distance for Convex/Mesh shapes
 df120cf8143 feat(collision): add raycast support for MeshShape
 ca999c52db4 feat(collision): wire GJK into NarrowPhase for convex/mesh collision
 c31920a83bc feat(collision): add ConvexShape, MeshShape, and GJK/EPA algorithm

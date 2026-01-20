@@ -32,6 +32,8 @@
 
 #include <dart/collision/experimental/narrow_phase/raycast.hpp>
 
+#include <dart/collision/experimental/narrow_phase/gjk.hpp>
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -479,6 +481,146 @@ bool raycastMesh(
   if (result.normal.dot(ray.direction) > 0.0) {
     result.normal = -result.normal;
   }
+
+  return true;
+}
+
+namespace {
+
+bool isPointInConvex(
+    const Eigen::Vector3d& point,
+    const ConvexShape& convex,
+    const Eigen::Isometry3d& transform)
+{
+  auto pointSupport = [&point](const Eigen::Vector3d&) { return point; };
+
+  auto convexSupport = [&convex, transform](const Eigen::Vector3d& dir) {
+    Eigen::Vector3d localDir = transform.linear().transpose() * dir;
+    return transform * convex.support(localDir);
+  };
+
+  Eigen::Vector3d initialDir = point - transform.translation();
+  if (initialDir.squaredNorm() < 1e-10) {
+    initialDir = Eigen::Vector3d::UnitX();
+  }
+
+  return Gjk::intersect(pointSupport, convexSupport, initialDir);
+}
+
+double computeBoundingRadius(const ConvexShape& convex)
+{
+  double maxRadiusSq = 0.0;
+  for (const auto& v : convex.getVertices()) {
+    maxRadiusSq = std::max(maxRadiusSq, v.squaredNorm());
+  }
+  return std::sqrt(maxRadiusSq);
+}
+
+}
+
+bool raycastConvex(
+    const Ray& ray,
+    const ConvexShape& convex,
+    const Eigen::Isometry3d& convexTransform,
+    const RaycastOption& option,
+    RaycastResult& result)
+{
+  result.clear();
+
+  const double maxDist = std::min(ray.maxDistance, option.maxDistance);
+
+  if (isPointInConvex(ray.origin, convex, convexTransform)) {
+    result.hit = true;
+    result.distance = 0.0;
+    result.point = ray.origin;
+    result.normal = -ray.direction.normalized();
+    return true;
+  }
+
+  const Eigen::Vector3d center = convexTransform.translation();
+  const double boundingRadius = computeBoundingRadius(convex);
+
+  const Eigen::Vector3d oc = ray.origin - center;
+  const double a = ray.direction.squaredNorm();
+  const double b = 2.0 * oc.dot(ray.direction);
+  const double c = oc.squaredNorm() - boundingRadius * boundingRadius;
+
+  double t0, t1;
+  if (solveQuadratic(a, b, c, t0, t1) < 0.0) {
+    return false;
+  }
+
+  if (t1 < 0.0 || t0 > maxDist) {
+    return false;
+  }
+
+  double lo = std::max(0.0, t0);
+  double hi = std::min(maxDist, t1);
+
+  if (!isPointInConvex(ray.pointAt(hi), convex, convexTransform)) {
+    bool foundEntry = false;
+    constexpr int kCoarseSteps = 16;
+    double step = (hi - lo) / kCoarseSteps;
+    for (int i = 1; i <= kCoarseSteps; ++i) {
+      double t = lo + i * step;
+      if (isPointInConvex(ray.pointAt(t), convex, convexTransform)) {
+        hi = t;
+        lo = t - step;
+        foundEntry = true;
+        break;
+      }
+    }
+    if (!foundEntry) {
+      return false;
+    }
+  }
+
+  constexpr int kBinarySearchIterations = 32;
+  for (int i = 0; i < kBinarySearchIterations; ++i) {
+    double mid = (lo + hi) * 0.5;
+    if (isPointInConvex(ray.pointAt(mid), convex, convexTransform)) {
+      hi = mid;
+    } else {
+      lo = mid;
+    }
+  }
+
+  double hitT = hi;
+  if (hitT > maxDist) {
+    return false;
+  }
+
+  result.hit = true;
+  result.distance = hitT;
+  result.point = ray.pointAt(hitT);
+
+  const Eigen::Isometry3d invTransform = convexTransform.inverse();
+  const Eigen::Vector3d localPoint = invTransform * result.point;
+
+  Eigen::Vector3d bestNormal = -ray.direction.normalized();
+  double bestDot = -std::numeric_limits<double>::max();
+
+  constexpr int kNormalSamples = 6;
+  const Eigen::Vector3d directions[kNormalSamples] = {
+      Eigen::Vector3d::UnitX(),  -Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitY(),  -Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ(),  -Eigen::Vector3d::UnitZ()};
+
+  for (const auto& dir : directions) {
+    Eigen::Vector3d support = convex.support(dir);
+    Eigen::Vector3d toPoint = localPoint - support;
+    double dot = toPoint.dot(dir);
+    if (dot > bestDot) {
+      bestDot = dot;
+      bestNormal = convexTransform.rotation() * dir;
+    }
+  }
+
+  if (bestNormal.dot(ray.direction) > 0.0) {
+    bestNormal = -bestNormal;
+  }
+
+  result.normal = bestNormal;
 
   return true;
 }

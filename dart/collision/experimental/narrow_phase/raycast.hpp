@@ -83,4 +83,11 @@ namespace dart::collision::experimental {
     const RaycastOption& option,
     RaycastResult& result);
 
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool raycastConvex(
+    const Ray& ray,
+    const ConvexShape& convex,
+    const Eigen::Isometry3d& convexTransform,
+    const RaycastOption& option,
+    RaycastResult& result);
+
 }

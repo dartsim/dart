@@ -467,6 +467,14 @@ bool NarrowPhase::raycast(
       }
       return hit;
     }
+    case ShapeType::Convex: {
+      const auto* c = static_cast<const ConvexShape*>(shape);
+      bool hit = raycastConvex(ray, *c, transform, option, result);
+      if (hit) {
+        result.object = &object;
+      }
+      return hit;
+    }
     default:
       return false;
   }
@@ -481,6 +489,7 @@ bool NarrowPhase::isRaycastSupported(ShapeType type)
     case ShapeType::Cylinder:
     case ShapeType::Plane:
     case ShapeType::Mesh:
+    case ShapeType::Convex:
       return true;
     default:
       return false;

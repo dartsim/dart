@@ -21,7 +21,7 @@
 
 ---
 
-## Completed Components (285 tests)
+## Completed Components (292 tests)
 
 | Component                        | Files                                   | Tests | Notes                           |
 | -------------------------------- | --------------------------------------- | ----- | ------------------------------- |
@@ -37,7 +37,7 @@
 | Cylinder collision               | narrow_phase/cylinder_collision.hpp/.cpp| 18    | All cylinder pairs              |
 | Plane collision                  | narrow_phase/plane_sphere.hpp/.cpp      | 11    | All plane pairs                 |
 | Distance queries                 | narrow_phase/distance.hpp/.cpp          | 18    | 6 primitive pairs + Convex/Mesh |
-| Raycast                          | narrow_phase/raycast.hpp/.cpp           | 32    | 6 shape types incl. Mesh        |
+| Raycast                          | narrow_phase/raycast.hpp/.cpp           | 39    | 7 shape types incl. Mesh/Convex |
 | BruteForceBroadPhase             | broad_phase/brute_force.hpp/.cpp        | 15    | O(n²) broad-phase               |
 | CollisionObject                  | collision_object.hpp/.cpp               | 12    | Lightweight ECS handle          |
 | NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp      | 7     | Shape-type dispatch             |
@@ -88,7 +88,7 @@
 | Convex-Mesh dist     | **Complete** | GJK-based                |
 | Mesh-Mesh dist       | **Complete** | GJK-based                |
 
-### Priority 4: Raycast ✅ COMPLETE (6 shapes)
+### Priority 4: Raycast ✅ COMPLETE (7 shapes)
 
 | Feature      | Status       | Tests | Notes                    |
 | ------------ | ------------ | ----- | ------------------------ |
@@ -98,6 +98,7 @@
 | Ray-cylinder | **Complete** | 4     | Curved surface + caps    |
 | Ray-plane    | **Complete** | 6     | Backface culling, offset |
 | Ray-mesh     | **Complete** | 8     | Moller-Trumbore algorithm |
+| Ray-convex   | **Complete** | 7     | GJK-based binary search  |
 
 **CollisionWorld raycast API:**
 - `raycast(ray, option, result)` - Returns closest hit
@@ -135,7 +136,39 @@ Current architecture uses `shared_ptr<CollisionObject>`. Target architecture:
 - Copyable handles (no pointer ownership issues)
 - Consistent with simulation/experimental pattern
 
-### Priority 7: Visual Verification
+### Priority 7: Continuous Collision Detection (CCD)
+
+CCD prevents fast-moving objects from tunneling through thin obstacles.
+
+| Algorithm | Use Case | Complexity |
+|-----------|----------|------------|
+| Swept sphere/capsule | Character controllers, projectiles | O(1) per pair |
+| Conservative advancement | General convex pairs | O(k) iterations |
+| Time-of-impact (TOI) | GJK-based, precise | O(k) GJK queries |
+
+**Phases:**
+1. **Swept primitives** — Sphere, capsule swept volumes (sphere-cast, capsule-cast)
+2. **Conservative advancement** — Iteratively advance time until contact
+3. **GJK-based TOI** — Precise time-of-impact for convex pairs
+
+**API sketch:**
+```cpp
+struct CcdOption {
+  double timeStep = 1.0;
+  double tolerance = 1e-4;
+  int maxIterations = 32;
+};
+
+struct CcdResult {
+  bool hit = false;
+  double timeOfImpact = 1.0;
+  ContactPoint contact;
+};
+
+bool ccdQuery(obj1, vel1, obj2, vel2, CcdOption, CcdResult&);
+```
+
+### Priority 8: Visual Verification
 
 Options:
 
