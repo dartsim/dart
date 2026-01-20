@@ -349,7 +349,8 @@ TEST(Link, PrismaticJointTranslatesLink)
   link1.getParentJoint().setPosition(pos);
 
   const auto& localTf = link1.getLocalTransform();
-  EXPECT_TRUE(localTf.translation().isApprox(Eigen::Vector3d(1.5, 0, 0), 1e-10));
+  EXPECT_TRUE(
+      localTf.translation().isApprox(Eigen::Vector3d(1.5, 0, 0), 1e-10));
   EXPECT_TRUE(localTf.rotation().isApprox(Eigen::Matrix3d::Identity()));
 }
 

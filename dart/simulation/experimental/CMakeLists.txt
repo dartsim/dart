@@ -34,6 +34,10 @@ set(component_name simulation-experimental)
 add_library(${target_name}
   body/rigid_body.cpp
   common/diagnostics.cpp
+  compute/compute_graph.cpp
+  compute/compute_node.cpp
+  compute/sequential_executor.cpp
+  compute/taskflow_executor.cpp
   kinematics/joint_transform.cpp
   common/exceptions.cpp
   common/profiling.cpp
@@ -75,6 +79,7 @@ target_link_libraries(${target_name}
     Eigen3::Eigen
     EnTT::EnTT
     spdlog::spdlog
+    Taskflow::Taskflow
 )
 
 target_compile_definitions(${target_name}
