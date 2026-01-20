@@ -43,6 +43,30 @@
 - [x] Added graph rebuild triggers for skeleton/time step/solver changes
 - [x] Added unit tests for WorldStepGraph integration and batching
 
+## Performance Comparison (2026-01-19)
+
+Command:
+
+```bash
+pixi run bm bm_compute_graph -- --benchmark_min_time=0.1s --benchmark_format=json
+```
+
+Context: host `mark26`, 32 CPUs @ 5300 MHz, build `release`, benchmark lib
+`v1.9.4`.
+
+Selected results (real_time):
+
+- Linear graph 256 nodes: Sequential 30.8 us, Taskflow 238.9 us (0.13x).
+- Parallel graph 64 nodes: Sequential 37.9 us, Taskflow 249.8 us (0.15x).
+- Thread scaling (32-parallel graph): 1 thread 41.7 us, 2 threads 43.7 us
+  (0.95x), 4 threads 48.6 us (0.86x), 8 threads 71.7 us (0.58x).
+
+Notes:
+
+- These microbenchmarks emphasize scheduling overhead; Taskflow is slower for
+  small per-node work. Real-world step graphs with heavier node work may
+  benefit, but batching remains important to reduce overhead.
+
 ## Next Steps (Phase 3)
 
 1. **GPU Acceleration**
