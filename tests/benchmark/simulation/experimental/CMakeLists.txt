@@ -17,4 +17,8 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
     bm_multi_body
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_multi_body.cpp
   )
+  dart_experimental_add_benchmark(
+    bm_compute_graph
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_compute_graph.cpp
+  )
 endif()
