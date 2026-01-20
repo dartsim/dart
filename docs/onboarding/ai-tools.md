@@ -413,11 +413,32 @@ Contributors can create personal instruction files that are gitignored:
 
 When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter review comments from other AI systems (e.g., Codex bot, GitHub Copilot).
 
+### Detecting AI-Generated Reviews
+
+**Bot usernames always end with `[bot]`:**
+
+- `chatgpt-codex-connector[bot]` — Codex automated reviews
+- `github-actions[bot]` — GitHub Actions automated comments
+- `copilot[bot]` — GitHub Copilot suggestions
+
+**If the reviewer username ends in `[bot]`, it is an AI-generated review.**
+
+### Rules for AI Agents (CRITICAL)
+
+**NEVER reply to AI-generated review comments. This means:**
+
+- ❌ **NO** `gh pr comment` commands responding to bot feedback
+- ❌ **NO** PR comment replies acknowledging or addressing bot feedback
+- ❌ **NO** comments like "Addressed the Codex review feedback"
+- ✅ **YES** Push the code fix silently
+- ✅ **YES** Re-trigger review with `@codex review` after pushing
+
+**The code change IS the response. No acknowledgment needed.**
+
 **Guidance for AI agents addressing automated reviews**:
 
-- **Do NOT reply directly to AI-generated review comments** - the code change is the response
-- Address the feedback in code, then push the fix
-- If the feedback is valid, implement the fix silently
+- Address the feedback in code, then push the fix silently
+- If the feedback is valid, implement the fix without commenting
 - If the feedback is incorrect, ignore it (maintainers will dismiss if needed)
 - **Follow the review-fix loop** (see workflow below)
 

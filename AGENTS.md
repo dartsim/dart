@@ -75,7 +75,7 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 
 - **Bug fixes**: Require PRs to BOTH `release-6.16` AND `main` branches. See `docs/onboarding/contributing.md`.
 - **Multi-phase tasks**: Create `docs/dev_tasks/<task>/` for tracking. See `docs/dev_tasks/README.md` for criteria.
-- **AI reviews**: Do NOT reply to AI-generated review comments (Codex, Copilot). Push fix, then `@codex review`. See `docs/onboarding/ai-tools.md`.
+- **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]}`, `github-actions[bot]`, `copilot[bot]`). No `gh pr comment`, no PR comment replies. Just push the fix silently, then re-trigger with `@codex review`. See `docs/onboarding/ai-tools.md`.
 - **Commands**: Use `pixi run ...` tasks; don't invent new entry points.
 - **Formatting**: Run `pixi run lint` before committing (auto-fixes).
 - **PRs**: Use `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone (`DART 7.0` for `main`, `DART 6.16.x` for `release-6.16`).

@@ -23,7 +23,7 @@ Context
 
 Workflow
 - Start at repo root; read `AGENTS.md`, `CONTRIBUTING.md`, and relevant `docs/onboarding/**`.
-- **AI-generated reviews** (Codex, Copilot, etc.): Do NOT reply directly. Push fix, then `@codex review`. See `docs/onboarding/ai-tools.md`.
+- **AI-generated reviews** (usernames ending in `[bot]}` like `chatgpt-codex-connector[bot]`): NEVER reply via `gh pr comment` or any comment. Push fix silently, then `@codex review`. See `docs/onboarding/ai-tools.md`.
 - Pull review context via `gh pr view <PR_NUMBER> --comments` and/or the comment links.
 - If you need inline comment metadata or to resolve a review thread, use the comment URL with `gh api /repos/<OWNER>/<REPO>/pulls/comments/<COMMENT_ID>`; if thread IDs are required, use GraphQL.
 - For each requested change, confirm intent and scope; ask if unclear.
