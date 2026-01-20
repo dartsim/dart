@@ -80,6 +80,26 @@ if(DART_BUILD_COLLISION_EXPERIMENTAL)
     benchmark::benchmark
   )
   dart_format_add(collision/comparative/bm_narrow_phase.cpp)
+  add_executable(
+    bm_comparative_distance
+    collision/comparative/bm_distance.cpp
+  )
+  target_link_libraries(bm_comparative_distance
+    dart
+    dart-collision-experimental
+    benchmark::benchmark
+  )
+  dart_format_add(collision/comparative/bm_distance.cpp)
+  add_executable(
+    bm_comparative_raycast
+    collision/comparative/bm_raycast.cpp
+  )
+  target_link_libraries(bm_comparative_raycast
+    dart
+    dart-collision-experimental
+    benchmark::benchmark
+  )
+  dart_format_add(collision/comparative/bm_raycast.cpp)
   dart_format_add(collision/fixtures/shape_factories.hpp)
   dart_format_add(collision/fixtures/scene_builders.hpp)
 endif()
