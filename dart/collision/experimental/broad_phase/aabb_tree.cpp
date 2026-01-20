@@ -33,9 +33,10 @@
 #include <dart/collision/experimental/broad_phase/aabb_tree.hpp>
 
 #include <algorithm>
+#include <stack>
+
 #include <cassert>
 #include <cmath>
-#include <stack>
 
 namespace dart::collision::experimental {
 
@@ -198,7 +199,7 @@ void AabbTreeBroadPhase::insertLeaf(std::size_t leafIndex)
     return;
   }
 
-  const Aabb& leafAabb = nodes_[leafIndex].fatAabb;
+  const Aabb leafAabb = nodes_[leafIndex].fatAabb;
   std::size_t siblingIndex = findBestSibling(leafAabb);
 
   std::size_t oldParent = nodes_[siblingIndex].parent;
@@ -238,8 +239,9 @@ void AabbTreeBroadPhase::removeLeaf(std::size_t leafIndex)
 
   std::size_t parent = nodes_[leafIndex].parent;
   std::size_t grandParent = nodes_[parent].parent;
-  std::size_t sibling =
-      (nodes_[parent].left == leafIndex) ? nodes_[parent].right : nodes_[parent].left;
+  std::size_t sibling = (nodes_[parent].left == leafIndex)
+                            ? nodes_[parent].right
+                            : nodes_[parent].left;
 
   if (grandParent != kNullNode) {
     if (nodes_[grandParent].left == parent) {
@@ -272,7 +274,8 @@ std::size_t AabbTreeBroadPhase::findBestSibling(const Aabb& aabb) const
 
     double costLeft;
     if (nodes_[left].isLeaf()) {
-      costLeft = surfaceArea(combine(aabb, nodes_[left].fatAabb)) + inheritanceCost;
+      costLeft
+          = surfaceArea(combine(aabb, nodes_[left].fatAabb)) + inheritanceCost;
     } else {
       double oldArea = surfaceArea(nodes_[left].fatAabb);
       double newArea = surfaceArea(combine(aabb, nodes_[left].fatAabb));
@@ -281,7 +284,8 @@ std::size_t AabbTreeBroadPhase::findBestSibling(const Aabb& aabb) const
 
     double costRight;
     if (nodes_[right].isLeaf()) {
-      costRight = surfaceArea(combine(aabb, nodes_[right].fatAabb)) + inheritanceCost;
+      costRight
+          = surfaceArea(combine(aabb, nodes_[right].fatAabb)) + inheritanceCost;
     } else {
       double oldArea = surfaceArea(nodes_[right].fatAabb);
       double newArea = surfaceArea(combine(aabb, nodes_[right].fatAabb));
@@ -309,9 +313,10 @@ void AabbTreeBroadPhase::rebalance(std::size_t nodeIndex)
     assert(left != kNullNode);
     assert(right != kNullNode);
 
-    nodes_[nodeIndex].height =
-        1 + std::max(nodes_[left].height, nodes_[right].height);
-    nodes_[nodeIndex].fatAabb = combine(nodes_[left].fatAabb, nodes_[right].fatAabb);
+    nodes_[nodeIndex].height
+        = 1 + std::max(nodes_[left].height, nodes_[right].height);
+    nodes_[nodeIndex].fatAabb
+        = combine(nodes_[left].fatAabb, nodes_[right].fatAabb);
 
     nodeIndex = nodes_[nodeIndex].parent;
   }
@@ -471,8 +476,9 @@ void AabbTreeBroadPhase::queryPairsRecursive(
     return;
   }
 
-  if (nodes_[nodeB].isLeaf() ||
-      (!nodes_[nodeA].isLeaf() && nodes_[nodeA].height > nodes_[nodeB].height)) {
+  if (nodes_[nodeB].isLeaf()
+      || (!nodes_[nodeA].isLeaf()
+          && nodes_[nodeA].height > nodes_[nodeB].height)) {
     queryPairsRecursive(nodes_[nodeA].left, nodeB, pairs);
     queryPairsRecursive(nodes_[nodeA].right, nodeB, pairs);
   } else {
@@ -556,8 +562,8 @@ bool AabbTreeBroadPhase::validateStructure(std::size_t nodeIndex) const
     return false;
   }
 
-  std::size_t expectedHeight =
-      1 + std::max(nodes_[node.left].height, nodes_[node.right].height);
+  std::size_t expectedHeight
+      = 1 + std::max(nodes_[node.left].height, nodes_[node.right].height);
   if (node.height != expectedHeight) {
     return false;
   }
@@ -565,4 +571,4 @@ bool AabbTreeBroadPhase::validateStructure(std::size_t nodeIndex) const
   return validateStructure(node.left) && validateStructure(node.right);
 }
 
-}  // namespace dart::collision::experimental
+} // namespace dart::collision::experimental
