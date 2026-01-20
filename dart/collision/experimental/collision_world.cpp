@@ -269,6 +269,63 @@ bool CollisionWorld::sphereCastAll(
   return !results.empty();
 }
 
+bool CollisionWorld::capsuleCast(
+    const Eigen::Isometry3d& capsuleStart,
+    const Eigen::Isometry3d& capsuleEnd,
+    const CapsuleShape& capsule,
+    const CcdOption& option,
+    CcdResult& result)
+{
+  result = CcdResult();
+
+  CcdResult closestResult;
+  double closestToi = std::numeric_limits<double>::max();
+
+  auto view = m_registry.view<comps::CollisionObjectTag>();
+  for (auto entity : view) {
+    CollisionObject obj(entity, this);
+    CcdResult tempResult;
+    if (NarrowPhase::capsuleCast(capsuleStart, capsuleEnd, capsule, obj, option, tempResult)) {
+      if (tempResult.timeOfImpact < closestToi) {
+        closestToi = tempResult.timeOfImpact;
+        closestResult = tempResult;
+      }
+    }
+  }
+
+  if (closestResult.hit) {
+    result = closestResult;
+    return true;
+  }
+
+  return false;
+}
+
+bool CollisionWorld::capsuleCastAll(
+    const Eigen::Isometry3d& capsuleStart,
+    const Eigen::Isometry3d& capsuleEnd,
+    const CapsuleShape& capsule,
+    const CcdOption& option,
+    std::vector<CcdResult>& results)
+{
+  results.clear();
+
+  auto view = m_registry.view<comps::CollisionObjectTag>();
+  for (auto entity : view) {
+    CollisionObject obj(entity, this);
+    CcdResult tempResult;
+    if (NarrowPhase::capsuleCast(capsuleStart, capsuleEnd, capsule, obj, option, tempResult)) {
+      results.push_back(tempResult);
+    }
+  }
+
+  std::sort(results.begin(), results.end(), [](const CcdResult& a, const CcdResult& b) {
+    return a.timeOfImpact < b.timeOfImpact;
+  });
+
+  return !results.empty();
+}
+
 void CollisionWorld::clear()
 {
   m_broadPhase.clear();

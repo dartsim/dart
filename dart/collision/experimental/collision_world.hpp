@@ -98,6 +98,20 @@ public:
       const CcdOption& option,
       std::vector<CcdResult>& results);
 
+  bool capsuleCast(
+      const Eigen::Isometry3d& capsuleStart,
+      const Eigen::Isometry3d& capsuleEnd,
+      const CapsuleShape& capsule,
+      const CcdOption& option,
+      CcdResult& result);
+
+  bool capsuleCastAll(
+      const Eigen::Isometry3d& capsuleStart,
+      const Eigen::Isometry3d& capsuleEnd,
+      const CapsuleShape& capsule,
+      const CcdOption& option,
+      std::vector<CcdResult>& results);
+
   void clear();
 
   [[nodiscard]] entt::registry& getRegistry()

@@ -76,6 +76,16 @@ public:
       CcdResult& result);
 
   static bool isSphereCastSupported(ShapeType type);
+
+  static bool capsuleCast(
+      const Eigen::Isometry3d& capsuleStart,
+      const Eigen::Isometry3d& capsuleEnd,
+      const CapsuleShape& capsule,
+      const CollisionObject& target,
+      const CcdOption& option,
+      CcdResult& result);
+
+  static bool isCapsuleCastSupported(ShapeType type);
 };
 
 }

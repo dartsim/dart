@@ -1077,3 +1077,63 @@ TEST(NarrowPhaseSphereCast, IsSphereCastSupported)
   EXPECT_TRUE(NarrowPhase::isSphereCastSupported(ShapeType::Convex));
   EXPECT_FALSE(NarrowPhase::isSphereCastSupported(ShapeType::Mesh));
 }
+
+//==============================================================================
+// NarrowPhase capsule-cast dispatcher tests
+//==============================================================================
+
+TEST(NarrowPhaseCapsuleCast, SphereTarget)
+{
+  CollisionWorld world;
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0, 0, 5);
+  auto target = world.createObject(
+      std::make_unique<SphereShape>(1.0), tf);
+
+  CapsuleShape capsule(0.5, 2.0);
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(0, 0, 10);
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = NarrowPhase::capsuleCast(capsuleStart, capsuleEnd, capsule, target, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_EQ(*result.object, target);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 1.0);
+}
+
+TEST(NarrowPhaseCapsuleCast, BoxTarget)
+{
+  CollisionWorld world;
+  auto target = world.createObject(
+      std::make_unique<BoxShape>(Eigen::Vector3d(2, 2, 2)));
+
+  CapsuleShape capsule(0.5, 2.0);
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  capsuleStart.translation() = Eigen::Vector3d(0, 0, -5);
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(0, 0, 5);
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = NarrowPhase::capsuleCast(capsuleStart, capsuleEnd, capsule, target, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_EQ(*result.object, target);
+}
+
+TEST(NarrowPhaseCapsuleCast, IsCapsuleCastSupported)
+{
+  EXPECT_TRUE(NarrowPhase::isCapsuleCastSupported(ShapeType::Sphere));
+  EXPECT_TRUE(NarrowPhase::isCapsuleCastSupported(ShapeType::Box));
+  EXPECT_TRUE(NarrowPhase::isCapsuleCastSupported(ShapeType::Capsule));
+  EXPECT_TRUE(NarrowPhase::isCapsuleCastSupported(ShapeType::Plane));
+  EXPECT_FALSE(NarrowPhase::isCapsuleCastSupported(ShapeType::Cylinder));
+  EXPECT_FALSE(NarrowPhase::isCapsuleCastSupported(ShapeType::Convex));
+  EXPECT_FALSE(NarrowPhase::isCapsuleCastSupported(ShapeType::Mesh));
+}

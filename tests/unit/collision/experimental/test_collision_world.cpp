@@ -320,3 +320,106 @@ TEST(CollisionWorldSphereCast, MixedShapes)
     EXPECT_LE(results[i - 1].timeOfImpact, results[i].timeOfImpact);
   }
 }
+
+//==============================================================================
+// CollisionWorld CapsuleCast tests
+//==============================================================================
+
+TEST(CollisionWorldCapsuleCast, NoHit)
+{
+  CollisionWorld world;
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(10, 0, 0);
+  world.createObject(std::make_unique<SphereShape>(1.0), tf);
+
+  CapsuleShape capsule(0.5, 2.0);
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(0, 0, 10);
+
+  CcdOption option;
+  CcdResult result;
+
+  EXPECT_FALSE(world.capsuleCast(capsuleStart, capsuleEnd, capsule, option, result));
+  EXPECT_FALSE(result.hit);
+}
+
+TEST(CollisionWorldCapsuleCast, SingleHit)
+{
+  CollisionWorld world;
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0, 0, 5);
+  auto target = world.createObject(std::make_unique<SphereShape>(1.0), tf);
+
+  CapsuleShape capsule(0.5, 2.0);
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(0, 0, 10);
+
+  CcdOption option;
+  CcdResult result;
+
+  EXPECT_TRUE(world.capsuleCast(capsuleStart, capsuleEnd, capsule, option, result));
+  EXPECT_TRUE(result.hit);
+  EXPECT_NE(result.object, nullptr);
+  EXPECT_EQ(*result.object, target);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 1.0);
+}
+
+TEST(CollisionWorldCapsuleCast, ClosestHit)
+{
+  CollisionWorld world;
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  tf1.translation() = Eigen::Vector3d(0, 0, 4);
+  auto near = world.createObject(std::make_unique<SphereShape>(1.0), tf1);
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(0, 0, 8);
+  world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+
+  CapsuleShape capsule(0.5, 2.0);
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(0, 0, 15);
+
+  CcdOption option;
+  CcdResult result;
+
+  EXPECT_TRUE(world.capsuleCast(capsuleStart, capsuleEnd, capsule, option, result));
+  EXPECT_NE(result.object, nullptr);
+  EXPECT_EQ(*result.object, near);
+}
+
+TEST(CollisionWorldCapsuleCast, CapsuleCastAll)
+{
+  CollisionWorld world;
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  tf1.translation() = Eigen::Vector3d(0, 0, 4);
+  world.createObject(std::make_unique<SphereShape>(1.0), tf1);
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(0, 0, 8);
+  world.createObject(std::make_unique<BoxShape>(Eigen::Vector3d(2, 2, 2)), tf2);
+
+  Eigen::Isometry3d tf3 = Eigen::Isometry3d::Identity();
+  tf3.translation() = Eigen::Vector3d(10, 0, 0);
+  world.createObject(std::make_unique<SphereShape>(1.0), tf3);
+
+  CapsuleShape capsule(0.3, 1.5);
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(0, 0, 15);
+
+  CcdOption option;
+  std::vector<CcdResult> results;
+
+  EXPECT_TRUE(world.capsuleCastAll(capsuleStart, capsuleEnd, capsule, option, results));
+  EXPECT_EQ(results.size(), 2u);
+
+  EXPECT_LT(results[0].timeOfImpact, results[1].timeOfImpact);
+}

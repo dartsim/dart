@@ -582,4 +582,71 @@ bool NarrowPhase::isSphereCastSupported(ShapeType type)
   }
 }
 
+bool NarrowPhase::capsuleCast(
+    const Eigen::Isometry3d& capsuleStart,
+    const Eigen::Isometry3d& capsuleEnd,
+    const CapsuleShape& capsule,
+    const CollisionObject& target,
+    const CcdOption& option,
+    CcdResult& result)
+{
+  const Shape* shape = target.getShape();
+  if (!shape) {
+    return false;
+  }
+
+  ShapeType type = shape->getType();
+  const Eigen::Isometry3d& transform = target.getTransform();
+
+  switch (type) {
+    case ShapeType::Sphere: {
+      const auto* s = static_cast<const SphereShape*>(shape);
+      bool hit = capsuleCastSphere(capsuleStart, capsuleEnd, capsule, *s, transform, option, result);
+      if (hit) {
+        result.object = &target;
+      }
+      return hit;
+    }
+    case ShapeType::Box: {
+      const auto* b = static_cast<const BoxShape*>(shape);
+      bool hit = capsuleCastBox(capsuleStart, capsuleEnd, capsule, *b, transform, option, result);
+      if (hit) {
+        result.object = &target;
+      }
+      return hit;
+    }
+    case ShapeType::Capsule: {
+      const auto* c = static_cast<const CapsuleShape*>(shape);
+      bool hit = capsuleCastCapsule(capsuleStart, capsuleEnd, capsule, *c, transform, option, result);
+      if (hit) {
+        result.object = &target;
+      }
+      return hit;
+    }
+    case ShapeType::Plane: {
+      const auto* p = static_cast<const PlaneShape*>(shape);
+      bool hit = capsuleCastPlane(capsuleStart, capsuleEnd, capsule, *p, transform, option, result);
+      if (hit) {
+        result.object = &target;
+      }
+      return hit;
+    }
+    default:
+      return false;
+  }
+}
+
+bool NarrowPhase::isCapsuleCastSupported(ShapeType type)
+{
+  switch (type) {
+    case ShapeType::Sphere:
+    case ShapeType::Box:
+    case ShapeType::Capsule:
+    case ShapeType::Plane:
+      return true;
+    default:
+      return false;
+  }
+}
+
 }
