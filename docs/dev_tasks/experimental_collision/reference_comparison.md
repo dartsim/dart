@@ -30,7 +30,7 @@
 - Goal: rigid body dynamics with built-in collision in a C API.
 - Design: geom types + space-based broadphase; triangle mesh via OPCODE or GIMPACT; convex via libccd.
 - Strengths: simple integration; multiple broadphase "spaces"; straightforward primitives.
-- Gaps: no general distance query API; limited CCD; slower recent development.
+- Gaps: no general distance query API; no general continuous collision/time of impact API; slower recent development.
 
 ### libccd (convex-only algorithms)
 
@@ -38,7 +38,7 @@
 - Design: GJK intersection/separation + EPA penetration; MPR intersection/penetration.
 - Strengths: small, portable, easy to embed; MPR reference implementation.
 - Gaps: no broadphase, no mesh or concave shapes, no raycast, no general distance.
-- Caution: reported to have algorithmic bugs/edge cases in practice; treat as a reference, not a drop-in.
+- Caution: not battle-tested across all edge cases; community reports note algorithmic bugs; treat as a reference, not a drop-in.
 
 ## Feature comparison (from local source trees)
 
@@ -61,6 +61,8 @@
 | Bullet  | DBVT broadphase, pair cache, persistent manifolds  | World step builds/updates pairs, narrowphase over cached pairs | Strong temporal coherence; margins trade accuracy for stability             |
 | ODE     | Spaces (hash, SAP, quadtree)                       | dSpaceCollide over a space each step                           | Simple batch API; performance depends on space choice                       |
 | libccd  | None                                               | Single convex pair at a time                                   | Pure narrowphase; no scene or batch layer                                   |
+
+Batch here means many pairwise queries per frame; none of these expose a dedicated SIMD batch API, so throughput depends on per-call overhead and data layout.
 
 ### Convex-only reference (libccd)
 
@@ -131,6 +133,7 @@
 - Keep narrowphase specialized and fast for primitives, but retain a robust GJK/EPA path for convex and mesh.
 - Keep a clean support-function interface (libccd style) to enable custom convex shapes and fast experimentation.
 - Make batch query performance a first-class goal: stable IDs, cached pairs/manifolds, and benchmarks reporting queries/sec for scene-scale sweeps.
+- Provide explicit batched query entry points (collideAll, distanceAll, raycastAll) to amortize overhead and enable parallelization/structure-of-arrays layouts.
 - If porting or adapting libccd logic, add exhaustive unit tests (edge cases, degeneracies, iteration limits) to validate every algorithm path.
 - Add persistent manifold caching and contact reduction options to match Bullet stability while keeping exact geometry modes for accuracy.
 - Make determinism a first-class option (stable ordering, fixed tolerances, reproducible queries) while still enabling fast paths.
