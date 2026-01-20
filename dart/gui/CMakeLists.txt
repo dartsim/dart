@@ -37,6 +37,7 @@ set(dart_gui_hdrs ${hdrs} ${detail_hdrs})
 set(dart_gui_srcs ${srcs} ${detail_srcs})
 
 add_subdirectory(render)
+add_subdirectory(vsg)
 
 file(GLOB render_hdrs "render/*.hpp")
 
