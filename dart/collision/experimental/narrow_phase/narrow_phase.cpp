@@ -50,19 +50,23 @@
 namespace dart::collision::experimental {
 
 bool NarrowPhase::collide(
-    const Shape* shape1,
-    const Eigen::Isometry3d& tf1,
-    const Shape* shape2,
-    const Eigen::Isometry3d& tf2,
+    const CollisionObject& obj1,
+    const CollisionObject& obj2,
     const CollisionOption& option,
     CollisionResult& result)
 {
+  const Shape* shape1 = obj1.getShape();
+  const Shape* shape2 = obj2.getShape();
+
   if (!shape1 || !shape2) {
     return false;
   }
 
   ShapeType type1 = shape1->getType();
   ShapeType type2 = shape2->getType();
+
+  const Eigen::Isometry3d& tf1 = obj1.getTransform();
+  const Eigen::Isometry3d& tf2 = obj2.getTransform();
 
   if (type1 == ShapeType::Sphere && type2 == ShapeType::Sphere) {
     const auto* s1 = static_cast<const SphereShape*>(shape1);
@@ -214,21 +218,6 @@ bool NarrowPhase::collide(
   }
 
   return false;
-}
-
-bool NarrowPhase::collide(
-    const CollisionObject& obj1,
-    const CollisionObject& obj2,
-    const CollisionOption& option,
-    CollisionResult& result)
-{
-  return collide(
-      obj1.getShape(),
-      obj1.getTransform(),
-      obj2.getShape(),
-      obj2.getTransform(),
-      option,
-      result);
 }
 
 bool NarrowPhase::isSupported(ShapeType type1, ShapeType type2)

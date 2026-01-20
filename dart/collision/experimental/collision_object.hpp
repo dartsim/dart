@@ -34,7 +34,6 @@
 
 #include <dart/collision/experimental/aabb.hpp>
 #include <dart/collision/experimental/export.hpp>
-#include <dart/collision/experimental/fwd.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <Eigen/Geometry>
@@ -63,8 +62,6 @@ public:
 
   [[nodiscard]] const Shape* getShape() const;
   [[nodiscard]] ShapeType getShapeType() const;
-
-  [[nodiscard]] ObjectId getObjectId() const;
 
   [[nodiscard]] const Eigen::Isometry3d& getTransform() const;
   void setTransform(const Eigen::Isometry3d& transform);

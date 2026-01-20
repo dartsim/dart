@@ -51,13 +51,6 @@ CollisionWorld::CollisionWorld(BroadPhaseType broadPhaseType)
 
 CollisionWorld::~CollisionWorld() = default;
 
-void CollisionWorld::reserveObjects(std::size_t count)
-{
-  m_registry.reserve(count);
-  m_batchStorage.reserve(count);
-  m_entitiesById.reserve(count + 1);
-}
-
 std::unique_ptr<BroadPhase> CollisionWorld::createBroadPhase(
     BroadPhaseType type)
 {
@@ -74,46 +67,6 @@ std::unique_ptr<BroadPhase> CollisionWorld::createBroadPhase(
   return std::make_unique<AabbTreeBroadPhase>();
 }
 
-void CollisionWorld::rebuildBatchStorage()
-{
-  auto view = m_registry.view<
-      comps::CollisionObjectTag,
-      comps::ObjectIdComponent,
-      comps::ShapeComponent,
-      comps::TransformComponent,
-      comps::AabbComponent>();
-
-  m_batchStorage.clear();
-  m_batchStorage.reserve(view.size());
-  m_batchStorage.resetIndex(m_nextObjectId);
-
-  for (auto entity : view) {
-    auto& idComp = view.get<comps::ObjectIdComponent>(entity);
-    auto& shapeComp = view.get<comps::ShapeComponent>(entity);
-    auto& transformComp = view.get<comps::TransformComponent>(entity);
-    auto& aabbComp = view.get<comps::AabbComponent>(entity);
-
-    const auto index = m_batchStorage.ids.size();
-    m_batchStorage.ids.push_back(idComp.id);
-    m_batchStorage.shapes.push_back(shapeComp.shape.get());
-    m_batchStorage.transforms.push_back(transformComp.transform);
-    m_batchStorage.aabbs.push_back(aabbComp.aabb);
-
-    std::uint8_t flags = kBatchEnabled;
-    if (aabbComp.dirty) {
-      flags |= kBatchDirty;
-    }
-    m_batchStorage.flags.push_back(flags);
-
-    if (idComp.id >= m_batchStorage.idToIndex.size()) {
-      m_batchStorage.idToIndex.resize(idComp.id + 1, kInvalidBatchIndex);
-    }
-    m_batchStorage.idToIndex[idComp.id] = index;
-  }
-
-  m_batchDirty = false;
-}
-
 CollisionObject CollisionWorld::createObject(
     std::unique_ptr<Shape> shape, const Eigen::Isometry3d& transform)
 {
@@ -122,13 +75,6 @@ CollisionObject CollisionWorld::createObject(
   }
 
   auto entity = m_registry.create();
-
-  ObjectId id = m_nextObjectId++;
-  m_registry.emplace<comps::ObjectIdComponent>(entity, id);
-  if (id >= m_entitiesById.size()) {
-    m_entitiesById.resize(id + 1, entt::null);
-  }
-  m_entitiesById[id] = entity;
 
   m_registry.emplace<comps::CollisionObjectTag>(entity);
   m_registry.emplace<comps::ShapeComponent>(entity, std::move(shape));
@@ -143,9 +89,7 @@ CollisionObject CollisionWorld::createObject(
   aabbComp.aabb = aabb;
   aabbComp.dirty = false;
 
-  m_broadPhase->add(id, aabb);
-
-  m_batchDirty = true;
+  m_broadPhase->add(static_cast<std::size_t>(entity), aabb);
 
   return obj;
 }
@@ -157,17 +101,8 @@ void CollisionWorld::destroyObject(CollisionObject object)
   }
 
   auto entity = object.getEntity();
-  auto* idComp = m_registry.try_get<comps::ObjectIdComponent>(entity);
-  if (idComp) {
-    m_broadPhase->remove(idComp->id);
-    if (idComp->id < m_entitiesById.size()) {
-      m_entitiesById[idComp->id] = entt::null;
-    }
-  } else {
-    m_broadPhase->remove(static_cast<std::size_t>(entity));
-  }
+  m_broadPhase->remove(static_cast<std::size_t>(entity));
   m_registry.destroy(entity);
-  m_batchDirty = true;
 }
 
 void CollisionWorld::updateObject(CollisionObject object)
@@ -178,18 +113,12 @@ void CollisionWorld::updateObject(CollisionObject object)
 
   auto entity = object.getEntity();
   auto* aabbComp = m_registry.try_get<comps::AabbComponent>(entity);
-  auto* idComp = m_registry.try_get<comps::ObjectIdComponent>(entity);
 
   if (aabbComp && aabbComp->dirty) {
     Aabb aabb = object.computeAabb();
     aabbComp->aabb = aabb;
     aabbComp->dirty = false;
-    if (idComp) {
-      m_broadPhase->update(idComp->id, aabb);
-    } else {
-      m_broadPhase->update(static_cast<std::size_t>(entity), aabb);
-    }
-    m_batchDirty = true;
+    m_broadPhase->update(static_cast<std::size_t>(entity), aabb);
   }
 }
 
@@ -225,23 +154,14 @@ std::size_t CollisionWorld::updateAll(
   auto view = m_registry.view<comps::CollisionObjectTag>();
   for (auto entity : view) {
     auto* aabbComp = m_registry.try_get<comps::AabbComponent>(entity);
-    auto* idComp = m_registry.try_get<comps::ObjectIdComponent>(entity);
     if (aabbComp && aabbComp->dirty) {
       CollisionObject obj(entity, this);
       Aabb aabb = obj.computeAabb();
       aabbComp->aabb = aabb;
       aabbComp->dirty = false;
-      if (idComp) {
-        m_broadPhase->update(idComp->id, aabb);
-      } else {
-        m_broadPhase->update(static_cast<std::size_t>(entity), aabb);
-      }
+      m_broadPhase->update(static_cast<std::size_t>(entity), aabb);
       ++updated;
     }
-  }
-
-  if (updated > 0) {
-    m_batchDirty = true;
   }
 
   if (stats) {
@@ -298,11 +218,6 @@ bool CollisionWorld::collideAll(
   result.clear();
   bool hasCollision = false;
 
-  if (m_batchDirty) {
-    rebuildBatchStorage();
-  }
-  const BatchView view = m_batchStorage.view();
-
   if (stats) {
     stats->numObjects = snapshot.numObjects;
     stats->numPairs = snapshot.pairs.size();
@@ -314,28 +229,21 @@ bool CollisionWorld::collideAll(
   }
 
   for (const auto& pair : snapshot.pairs) {
-    const auto index1 = view.indexFor(pair.first);
-    const auto index2 = view.indexFor(pair.second);
+    auto entity1 = static_cast<entt::entity>(pair.first);
+    auto entity2 = static_cast<entt::entity>(pair.second);
 
-    if (index1 == kInvalidBatchIndex || index2 == kInvalidBatchIndex) {
+    if (!m_registry.valid(entity1) || !m_registry.valid(entity2)) {
       continue;
     }
 
-    const Shape* shape1 = view.shapes[index1];
-    const Shape* shape2 = view.shapes[index2];
-
-    if (!shape1 || !shape2) {
-      continue;
-    }
-
-    const auto& tf1 = view.transforms[index1];
-    const auto& tf2 = view.transforms[index2];
+    CollisionObject obj1(entity1, this);
+    CollisionObject obj2(entity2, this);
 
     if (stats) {
       ++stats->numPairsTested;
     }
 
-    if (NarrowPhase::collide(shape1, tf1, shape2, tf2, option, result)) {
+    if (NarrowPhase::collide(obj1, obj2, option, result)) {
       hasCollision = true;
       if (option.enableContact == false
           || (option.maxNumContacts > 0
@@ -369,9 +277,33 @@ bool CollisionWorld::collideAll(
 bool CollisionWorld::collide(
     const CollisionOption& option, CollisionResult& result)
 {
-  BatchSettings settings;
-  BroadPhaseSnapshot snapshot = buildBroadPhaseSnapshot(settings);
-  return collideAll(snapshot, option, result, settings, nullptr);
+  result.clear();
+  bool hasCollision = false;
+
+  auto pairs = m_broadPhase->queryPairs();
+
+  for (const auto& pair : pairs) {
+    auto entity1 = static_cast<entt::entity>(pair.first);
+    auto entity2 = static_cast<entt::entity>(pair.second);
+
+    if (!m_registry.valid(entity1) || !m_registry.valid(entity2)) {
+      continue;
+    }
+
+    CollisionObject obj1(entity1, this);
+    CollisionObject obj2(entity2, this);
+
+    if (NarrowPhase::collide(obj1, obj2, option, result)) {
+      hasCollision = true;
+      if (option.enableContact == false
+          || (option.maxNumContacts > 0
+              && result.numContacts() >= option.maxNumContacts)) {
+        break;
+      }
+    }
+  }
+
+  return hasCollision;
 }
 
 bool CollisionWorld::collide(
@@ -566,10 +498,6 @@ void CollisionWorld::clear()
 {
   m_broadPhase->clear();
   m_registry.clear();
-  m_entitiesById.clear();
-  m_batchStorage.clear();
-  m_nextObjectId = 1;
-  m_batchDirty = true;
 }
 
 } // namespace dart::collision::experimental

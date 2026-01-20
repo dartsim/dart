@@ -537,13 +537,13 @@ static void BM_NBody_Experimental(benchmark::State& state)
   rng.seed(42);
 
   CollisionWorld world;
-  std::vector<std::shared_ptr<CollisionObject>> objects;
+  std::vector<CollisionObject> objects;
+  objects.reserve(n);
 
   for (int i = 0; i < n; ++i) {
-    auto shape = std::make_shared<SphereShape>(0.5);
-    auto obj = std::make_shared<CollisionObject>(shape, randomTransform(10.0));
-    objects.push_back(obj);
-    world.addObject(obj);
+    auto shape = std::make_unique<SphereShape>(0.5);
+    objects.push_back(
+        world.createObject(std::move(shape), randomTransform(10.0)));
   }
 
   for (auto _ : state) {

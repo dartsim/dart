@@ -34,11 +34,7 @@
 
 #include <dart/collision/experimental/export.hpp>
 
-#include <cstddef>
-
 namespace dart::collision::experimental {
-
-using ObjectId = std::size_t;
 
 struct ContactPoint;
 class ContactManifold;
@@ -76,7 +72,5 @@ struct BatchTimings;
 struct BatchStats;
 struct BatchOutput;
 struct BroadPhaseSnapshot;
-struct BatchStorage;
-struct BatchView;
 
 } // namespace dart::collision::experimental
