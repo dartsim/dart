@@ -11,6 +11,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Gazebo / gz-physics workflow: [build-system.md](build-system.md#gazebo-integration-feature)
   - PR template checklist: [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)
   - Asserts-enabled CI build (no `-DNDEBUG`): see [Asserts-Enabled CI Build](#asserts-enabled-ci-build-no--dndebug)
+  - ASAN testing (memory errors): `pixi run test-asan` (runs in CI for `release-6.16`)
   - CI monitoring commands: see [CI Monitoring (CLI)](#ci-monitoring-cli) and [CI Monitoring (API)](#ci-monitoring-api)
   - Common CI failure fixes: see [Common CI Failure Modes](#common-ci-failure-modes)
 - Fast CI fail-fast loop:
