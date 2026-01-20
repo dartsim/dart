@@ -258,11 +258,11 @@ FCL's BV flexibility is powerful but adds significant template complexity. For e
 
 **Question**: Should the collision library have special support for articulated bodies (robots)?
 
-| Feature | FCL | Bullet | Coal/HPP-FCL | Drake | DART Pattern |
-|---------|-----|--------|--------------|-------|--------------|
-| Self-collision filtering | ❌ | partial | ✅ | ✅ | Higher-level |
-| Adjacent link filtering | ❌ | ❌ | ✅ | ✅ | `BodyNodeCollisionFilter` |
-| Kinematic chain awareness | ❌ | btMultiBody | ✅ | ✅ | `dynamics` layer |
+| Feature                   | FCL | Bullet      | Coal/HPP-FCL | Drake | DART Pattern              |
+| ------------------------- | --- | ----------- | ------------ | ----- | ------------------------- |
+| Self-collision filtering  | ❌  | partial     | ✅           | ✅    | Higher-level              |
+| Adjacent link filtering   | ❌  | ❌          | ✅           | ✅    | `BodyNodeCollisionFilter` |
+| Kinematic chain awareness | ❌  | btMultiBody | ✅           | ✅    | `dynamics` layer          |
 
 **Assessment**: Articulated body support is typically a **physics engine concern**, not collision library.
 
@@ -272,6 +272,7 @@ FCL's BV flexibility is powerful but adds significant template complexity. For e
 - **Drake**: Handles at SceneGraph level with collision filter groups
 
 **Recommendation**: **Not needed in experimental collision module**
+
 - Keep collision library generic (shapes, queries, filtering by ID/group)
 - DART's existing `BodyNodeCollisionFilter` pattern works well
 - If needed, add generic "pair blacklist" or "group-based filtering" (already planned)
@@ -283,32 +284,37 @@ FCL's BV flexibility is powerful but adds significant template complexity. For e
 
 **Question**: Should experimental collision provide gradients for optimization?
 
-| Feature | FCL | Bullet | MuJoCo | Warp | DiffCo | Experimental |
-|---------|-----|--------|--------|------|--------|--------------|
-| Distance gradients | ❌ | partial | ✅ | ✅ | ✅ | partial (SDF) |
-| Penetration gradients | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ |
-| Contact point Jacobians | ❌ | ❌ | ✅ | ✅ | partial | ❌ |
-| Smoothed/randomized | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Feature                 | FCL | Bullet  | MuJoCo | Warp | DiffCo  | Experimental  |
+| ----------------------- | --- | ------- | ------ | ---- | ------- | ------------- |
+| Distance gradients      | ❌  | partial | ✅     | ✅   | ✅      | partial (SDF) |
+| Penetration gradients   | ❌  | ❌      | ✅     | ✅   | ✅      | ❌            |
+| Contact point Jacobians | ❌  | ❌      | ✅     | ✅   | partial | ❌            |
+| Smoothed/randomized     | ❌  | ❌      | ❌     | ❌   | ✅      | ❌            |
 
 **Current State in Experimental**:
+
 - SDF shapes provide distance + gradient queries (via `SignedDistanceField`)
 - GJK/EPA witness points can derive gradients (not explicitly exposed)
 - No explicit gradient API for primitives
 
 **Key References**:
+
 - Montaut 2022: Randomized smoothing for stable gradients near feature switches
 - Macklin 2020: SDF contact with local optimization
 - MuJoCo: Analytical derivatives for all contacts
 
 **Use Cases**:
+
 - Trajectory optimization (CHOMP, TrajOpt)
 - Differentiable simulation for learning
 - Gradient-based motion planning
 
 **Recommendation**: **Medium priority, phased approach**
+
 1. **Phase 1**: Expose GJK/EPA witness-point-based gradients explicitly (low effort)
 2. **Phase 2**: Add gradient API to distance queries: `distanceWithGradient()`
 3. **Phase 3**: Consider smoothed collision (Montaut-style) for optimization stability
+
 - Priority: **P2** (useful for research, not blocking integration)
 
 ---
@@ -317,25 +323,28 @@ FCL's BV flexibility is powerful but adds significant template complexity. For e
 
 **Question**: Beyond CCD (first impact), should we support full swept volume queries?
 
-| Feature | Experimental | FCL | Bullet | Parry |
-|---------|-------------|-----|--------|-------|
-| Sphere cast | ✅ | ✅ | ✅ | ✅ |
-| Capsule cast | ✅ | partial | ✅ | ✅ |
-| Box cast | ❌ | partial | ✅ | ✅ |
-| General convex cast | ❌ | ✅ | ✅ | ✅ |
-| Full swept volume | ❌ | ❌ | ❌ | ❌ |
-| Conservative advancement | ✅ | ✅ | ✅ | partial |
+| Feature                  | Experimental | FCL     | Bullet | Parry   |
+| ------------------------ | ------------ | ------- | ------ | ------- |
+| Sphere cast              | ✅           | ✅      | ✅     | ✅      |
+| Capsule cast             | ✅           | partial | ✅     | ✅      |
+| Box cast                 | ❌           | partial | ✅     | ✅      |
+| General convex cast      | ❌           | ✅      | ✅     | ✅      |
+| Full swept volume        | ❌           | ❌      | ❌     | ❌      |
+| Conservative advancement | ✅           | ✅      | ✅     | partial |
 
 **Swept Volume vs CCD**:
-- **CCD**: Find *first* time of impact (what we have)
-- **Swept Volume**: The *entire* volume traced by motion (more expensive)
+
+- **CCD**: Find _first_ time of impact (what we have)
+- **Swept Volume**: The _entire_ volume traced by motion (more expensive)
 
 **Implementation Approaches**:
+
 - Minkowski sum of shape + motion path (exact but expensive)
 - Sampling-based approximation (practical)
 - Conservative advancement (iterative, what we have)
 
 **Use Cases**:
+
 - Path planning: Check entire trajectory at once
 - Safety verification: Prove no collision over motion
 - Manufacturing: Tool path verification
@@ -343,6 +352,7 @@ FCL's BV flexibility is powerful but adds significant template complexity. For e
 **Assessment**: Full swept volume is rarely needed; CCD + dense sampling usually sufficient.
 
 **Recommendation**: **Low priority**
+
 - Current sphere/capsule cast covers most robotics needs
 - Add box cast and general convex cast (P2)
 - Full swept volume: defer unless specific use case arises
@@ -354,30 +364,34 @@ FCL's BV flexibility is powerful but adds significant template complexity. For e
 
 **Question**: Should experimental collision include convex decomposition?
 
-| Tool | Type | Quality | Speed | Integration |
-|------|------|---------|-------|-------------|
-| **V-HACD** | Volumetric | Good | Medium | Standalone library |
-| **CoACD** | Recent | Better | Medium | Standalone library |
-| **HACD** | Original | Fair | Fast | Legacy |
-| **Bullet** | btConvexDecomposition | Fair | Fast | Integrated |
-| **trimesh** | Python wrapper | Varies | Varies | V-HACD backend |
+| Tool        | Type                  | Quality | Speed  | Integration        |
+| ----------- | --------------------- | ------- | ------ | ------------------ |
+| **V-HACD**  | Volumetric            | Good    | Medium | Standalone library |
+| **CoACD**   | Recent                | Better  | Medium | Standalone library |
+| **HACD**    | Original              | Fair    | Fast   | Legacy             |
+| **Bullet**  | btConvexDecomposition | Fair    | Fast   | Integrated         |
+| **trimesh** | Python wrapper        | Varies  | Varies | V-HACD backend     |
 
 **How It's Used**:
+
 1. **Preprocessing**: Decompose mesh offline, store convex pieces
 2. **Runtime**: Use compound shape or multiple collision objects
 3. **Trade-off**: More pieces = better fit but more collision pairs
 
 **Current State**:
+
 - Experimental collision has `ConvexShape` and `MeshShape`
 - No built-in decomposition
 - Can use external tools (V-HACD, CoACD) and load result as compound
 
 **Alternatives**:
+
 - Use original mesh with BVH traversal (FCL approach)
 - SDF-based collision for complex shapes
 - Point cloud sampling
 
 **Recommendation**: **Keep external, add compound shape support**
+
 - Convex decomposition is a **preprocessing tool**, not runtime collision
 - Many good standalone tools exist (V-HACD, CoACD)
 - **Critical**: Add compound shape support (already in P0 gaps)
@@ -388,15 +402,15 @@ FCL's BV flexibility is powerful but adds significant template complexity. For e
 
 ### 7.5 Summary: Special Features Priority
 
-| Feature | Priority | Rationale |
-|---------|----------|-----------|
-| Articulated body filtering | N/A | Handled at DART dynamics layer |
-| Compound shapes | **P0** | Required to use decomposed meshes |
-| Distance gradients (explicit) | **P2** | Useful for optimization research |
-| Box/convex shape cast | **P2** | Complete CCD coverage |
-| Smoothed differentiable collision | **P3** | Research feature |
-| Full swept volume | **P3** | Rarely needed; CCD sufficient |
-| Built-in convex decomposition | **P3** | Use external tools |
+| Feature                           | Priority | Rationale                         |
+| --------------------------------- | -------- | --------------------------------- |
+| Articulated body filtering        | N/A      | Handled at DART dynamics layer    |
+| Compound shapes                   | **P0**   | Required to use decomposed meshes |
+| Distance gradients (explicit)     | **P2**   | Useful for optimization research  |
+| Box/convex shape cast             | **P2**   | Complete CCD coverage             |
+| Smoothed differentiable collision | **P3**   | Research feature                  |
+| Full swept volume                 | **P3**   | Rarely needed; CCD sufficient     |
+| Built-in convex decomposition     | **P3**   | Use external tools                |
 
 ---
 

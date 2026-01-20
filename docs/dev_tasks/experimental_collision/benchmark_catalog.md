@@ -55,16 +55,16 @@ Recorded (partial), Baseline only, TBA.
 
 Status labels: Implemented, Partial, TBA.
 
-| Area                                   | Status      | Notes / Next test                                                          |
-| -------------------------------------- | ----------- | -------------------------------------------------------------------------- |
-| Contact manifold invariants            | Partial     | `isTypeCompatible()` covered; add deterministic reduction test.            |
-| Broadphase determinism (pair ordering) | Implemented | Deterministic ordering tests in `test_*` broadphase suites.                |
-| CollisionWorld ordering                | Implemented | `raycastAll` + `collideAll` ordering and repeatability tests added.        |
-| Distance edge cases / scale sweeps     | Partial     | Sphere-sphere scale sweep + grazing gap + thin box coverage added.         |
-| Raycast edge cases                     | Partial     | Grazing sphere + thin slab + near-parallel plane added; inside-origin TBD. |
-| CCD shape casts                        | Implemented | Extensive sphere/capsule cast coverage in `test_ccd.cpp`.                  |
-| SDF fields + gradients                 | Implemented | Dense SDF/TSDF/ESDF + Voxblox optional comparisons.                        |
-| Cross-backend correctness              | Partial     | Collision/distance covered; add raycast cross-backend checks.              |
+| Area                                   | Status      | Notes / Next test                                                                      |
+| -------------------------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| Contact manifold invariants            | Partial     | `isTypeCompatible()` covered; add deterministic reduction test.                        |
+| Broadphase determinism (pair ordering) | Implemented | Deterministic ordering tests in `test_*` broadphase suites.                            |
+| CollisionWorld ordering                | Implemented | `raycastAll` + `collideAll` ordering and repeatability tests added.                    |
+| Distance edge cases / scale sweeps     | Partial     | Sphere-sphere scale sweep + grazing gap + thin box coverage added.                     |
+| Raycast edge cases                     | Partial     | Grazing sphere + thin slab + near-parallel plane + inside-box added; other shapes TBD. |
+| CCD shape casts                        | Implemented | Extensive sphere/capsule cast coverage in `test_ccd.cpp`.                              |
+| SDF fields + gradients                 | Implemented | Dense SDF/TSDF/ESDF + Voxblox optional comparisons.                                    |
+| Cross-backend correctness              | Partial     | Collision/distance covered; add raycast cross-backend checks.                          |
 
 ### Library-provided benchmarks and demos
 
@@ -129,7 +129,7 @@ Status labels: Implemented, Partial, TBA.
 
 ## Priority next steps (testing + benchmarking)
 
-1. Finish remaining distance/raycast edge-case regimes (inside-origin, thin-feature degenerates).
+1. Finish remaining distance/raycast edge-case regimes (inside-origin for other shapes, thin-feature degenerates).
 2. Add cross-backend raycast consistency tests (where supported).
 3. Implement heightfield/terrain and compound/aggregate benchmark scenarios.
 4. Extend shape-cast benchmarks beyond sphere/capsule and add thread-scaling runs.
