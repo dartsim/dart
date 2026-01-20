@@ -2,6 +2,10 @@
 description: Start new feature/bugfix/refactor in DART
 agent: build
 ---
+<!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
+<!-- Source: .claude/commands/dart-new-task.md -->
+<!-- Sync script: scripts/sync_ai_commands.py -->
+<!-- Run `pixi run sync-ai-commands` to update -->
 
 Start a new task in DART: $ARGUMENTS
 
