@@ -50,6 +50,23 @@
 
 ---
 
+## Gap Analysis
+
+See **[gap_analysis.md](./gap_analysis.md)** for a comprehensive comparison against FCL, Bullet, and ODE, including:
+
+- Shape support matrix (73% coverage)
+- Query type coverage (collision 95%, distance 65%, raycast 100%, CCD 70%)
+- Broad-phase and narrow-phase algorithm comparison
+- Advanced feature gaps (collision filtering, compound shapes, parallelization)
+- Priority roadmap for reaching feature parity
+
+**Critical gaps blocking integration:**
+
+1. No collision filtering (groups/masks)
+2. No compound shapes
+3. No parallel narrowphase
+4. Not yet wired as DART CollisionDetector backend
+
 ## Next Steps
 
 ### Priority 1: More Shapes

@@ -31,6 +31,7 @@ If we can't beat existing backends in performance, there's no point in building 
 - [ECS Data Layout](./ecs_data_layout.md) - Batch-friendly data layout and interface notes
 - [ReactPhysics3D ECS Review](./reactphysics3d_ecs_review.md) - ECS data layout and pipeline notes
 - [Reference Comparison](./reference_comparison.md) - FCL/Bullet/ODE feature and algorithm comparison
+- [Gap Analysis](./gap_analysis.md) - Implementation gaps vs reference backends (priority roadmap)
 - [Conventions](./conventions.md) - Normal/sign conventions and adapter rules
 - [Contact Manifolds](./contact_manifolds.md) - Contact representation notes
 - [SDF + Gradients](./sdf_and_gradients.md) - SDF survey and gradient guidance
