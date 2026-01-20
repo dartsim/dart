@@ -199,14 +199,19 @@ void AabbTreeBroadPhase::insertLeaf(std::size_t leafIndex)
     return;
   }
 
-  const Aabb& leafAabb = nodes_[leafIndex].fatAabb;
+  // Copy the AABB value before any operation that might reallocate nodes_.
+  // findBestSibling() is safe (const), but allocateNode() may call
+  // nodes_.emplace_back() which invalidates references.
+  const Aabb leafAabb = nodes_[leafIndex].fatAabb;
   std::size_t siblingIndex = findBestSibling(leafAabb);
 
+  // Copy sibling's AABB and parent before allocateNode() which may reallocate.
+  const Aabb siblingAabb = nodes_[siblingIndex].fatAabb;
   std::size_t oldParent = nodes_[siblingIndex].parent;
   std::size_t newParent = allocateNode();
 
   nodes_[newParent].parent = oldParent;
-  nodes_[newParent].fatAabb = combine(leafAabb, nodes_[siblingIndex].fatAabb);
+  nodes_[newParent].fatAabb = combine(leafAabb, siblingAabb);
   nodes_[newParent].height = nodes_[siblingIndex].height + 1;
 
   if (oldParent != kNullNode) {
