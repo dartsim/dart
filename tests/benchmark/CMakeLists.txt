@@ -141,6 +141,7 @@ if(DART_BUILD_COLLISION_EXPERIMENTAL)
   dart_format_add(collision/scenarios/bm_mesh_heavy.cpp)
   dart_format_add(collision/fixtures/shape_factories.hpp)
   dart_format_add(collision/fixtures/scene_builders.hpp)
+  dart_format_add(collision/fixtures/edge_cases.hpp)
 endif()
 
 # ==============================================================================

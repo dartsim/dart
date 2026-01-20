@@ -34,6 +34,7 @@
 
 #include <dart/collision/CollisionGroup.hpp>
 #include <dart/collision/CollisionOption.hpp>
+#include <dart/collision/DistanceOption.hpp>
 
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/Shape.hpp>
@@ -42,6 +43,7 @@
 
 #include <Eigen/Geometry>
 
+#include <limits>
 #include <memory>
 
 namespace dart::benchmark::collision {
@@ -76,10 +78,24 @@ inline void AddSkeletonToGroup(
 }
 
 inline collision::CollisionOption MakeCollisionOption(
-    std::size_t max_contacts = 1000)
+    std::size_t max_contacts = 1000,
+    bool enable_contacts = true,
+    bool allow_negative_penetration = false)
 {
   collision::CollisionOption option;
+  option.enableContact = enable_contacts;
   option.maxNumContacts = max_contacts;
+  option.allowNegativePenetrationDepthContacts = allow_negative_penetration;
+  return option;
+}
+
+inline collision::DistanceOption MakeDistanceOption(
+    bool enable_nearest_points = true,
+    double distance_lower_bound = -std::numeric_limits<double>::infinity())
+{
+  collision::DistanceOption option;
+  option.enableNearestPoints = enable_nearest_points;
+  option.distanceLowerBound = distance_lower_bound;
   return option;
 }
 
