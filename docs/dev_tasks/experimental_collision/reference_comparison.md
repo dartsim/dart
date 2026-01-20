@@ -7,6 +7,7 @@
 - ODE: `/home/js/dev/physics/ODE` (commit bcfb66cd, 2024-01-14; 0 commits in last 12 months)
 - libccd: `/home/js/dev/physics/libccd` (commit 7931e76, 2018-12-22; 0 commits in last 12 months)
 - Sources used: README files plus public headers and source trees in each repo.
+- External curated list: https://github.com/jslee02/awesome-collision-detection (library catalog, not exhaustive).
 - This is a snapshot. Refresh before release or external publication.
 
 ## High-level goals and positioning
@@ -109,6 +110,40 @@ Batch here means many pairwise queries per frame; none of these expose a dedicat
 - ODE: analytic primitives plus libccd for convex (GJK/EPA); triangle mesh via OPCODE or GIMPACT; ray-mesh in collision_trimesh_ray.
 - libccd: GJK/EPA + MPR only, convex-only, driven by user-defined support functions.
 
+## Wider ecosystem snapshot (awesome-collision-detection)
+
+These are not in the local repos but are listed as active in the curated list.
+Features are incomplete in that list, so treat this as a lead list to verify.
+
+| Library          | Focus                  | Notes for DART                                                             |
+| ---------------- | ---------------------- | -------------------------------------------------------------------------- |
+| HPP-FCL          | 3D collision/proximity | Fork of FCL with explicit shapes list, distance, and "security margins"    |
+| ReactPhysics3D   | 3D physics engine      | Collision engine can be used standalone; worth checking for batch patterns |
+| Parry (dimforge) | 3D collision/proximity | Rust library used by Rapier; likely has broadphase/narrowphase separation  |
+| ncollide         | 3D collision/proximity | Older Rust library; may have legacy algorithms worth comparing             |
+| collision-rs     | 3D collision           | Rust crate; feature list not specified in the curated list                 |
+| OpenGJK          | Convex-only            | GJK-only reference; good for cross-validation of GJK edge cases            |
+| BEPUphysics      | 3D physics engine      | C# engine; potential ideas for batch throughput and cache layout           |
+| JitterPhysics    | 3D physics engine      | C# engine; may have simpler collision pipelines to compare                 |
+| qu3e             | 3D physics engine      | Minimal engine; good for reviewing simplified contact generation           |
+| tinyc2           | 2D only                | Not directly relevant to DART 3D but useful for 2D algorithm ideas         |
+
+Inactive but still relevant for mesh collision history:
+
+- GIMPACT (mesh collision, used by ODE/Bullet)
+- OPCODE (legacy BVH; used by ODE)
+- SOLID, ColDet (older references for mesh collision)
+
+Related mesh processing tools listed:
+
+- bounding-mesh (mesh approximation, convex decomposition)
+- cinolib, libigl (mesh processing utilities)
+
+Benchmarks and references listed:
+
+- colbench / collision-detection-benchmark (HPP-FCL focused)
+- spatial-collision-datastructures (broadphase data structure benchmark)
+
 ## Performance notes (architecture-informed, not benchmarked here)
 
 - FCL: strong for mesh-heavy scenes and accurate distance/CCD, but generic templates and BVH traversal add overhead for simple primitives.
@@ -135,6 +170,7 @@ Batch here means many pairwise queries per frame; none of these expose a dedicat
 - Make batch query performance a first-class goal: stable IDs, cached pairs/manifolds, and benchmarks reporting queries/sec for scene-scale sweeps.
 - Provide explicit batched query entry points (collideAll, distanceAll, raycastAll) to amortize overhead and enable parallelization/structure-of-arrays layouts.
 - If porting or adapting libccd logic, add exhaustive unit tests (edge cases, degeneracies, iteration limits) to validate every algorithm path.
+- Consider a "security margin" mode (HPP-FCL style) alongside exact geometry mode for stability vs accuracy tradeoffs.
 - Add persistent manifold caching and contact reduction options to match Bullet stability while keeping exact geometry modes for accuracy.
 - Make determinism a first-class option (stable ordering, fixed tolerances, reproducible queries) while still enabling fast paths.
 - Invest in mesh robustness: edge and vertex welding, triangle adjacency hints, and BVH refit for moving meshes.
