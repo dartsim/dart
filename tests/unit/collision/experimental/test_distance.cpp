@@ -316,6 +316,8 @@ TEST(NarrowPhaseDistance, ConvexIntersecting)
   auto obj1 = world.createObject(
       std::make_unique<ConvexShape>(makeOctahedronVertices(1.0)));
 
+  // Place octahedron 2 at (1,0,0). Its leftmost vertex will be at origin,
+  // which is inside octahedron 1. The shapes clearly intersect.
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(1.0, 0, 0);
   auto obj2 = world.createObject(
@@ -326,6 +328,34 @@ TEST(NarrowPhaseDistance, ConvexIntersecting)
 
   double dist = NarrowPhase::distance(obj1, obj2, option, result);
 
+  // For intersecting shapes, distance is negative (penetration depth).
+  // The vertex (0,0,0) of octahedron 2 is inside octahedron 1.
+  // Octahedron 1's faces have equation |x|+|y|+|z|=1, so the penetration
+  // depth is approximately 1.0.
+  EXPECT_LT(dist, 0.0);  // Negative distance = penetration
+  EXPECT_GT(dist, -2.0); // Reasonable bound on penetration depth
+}
+
+TEST(NarrowPhaseDistance, ConvexTouching)
+{
+  CollisionWorld world;
+
+  auto obj1 = world.createObject(
+      std::make_unique<ConvexShape>(makeOctahedronVertices(1.0)));
+
+  // Place octahedron 2 at (2,0,0) so its leftmost vertex at (1,0,0)
+  // exactly touches octahedron 1's rightmost vertex at (1,0,0).
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(2.0, 0, 0);
+  auto obj2 = world.createObject(
+      std::make_unique<ConvexShape>(makeOctahedronVertices(1.0)), tf2);
+
+  DistanceOption option;
+  DistanceResult result;
+
+  double dist = NarrowPhase::distance(obj1, obj2, option, result);
+
+  // Shapes just touch at a single point - distance should be ~0
   EXPECT_NEAR(dist, 0.0, 1e-6);
 }
 
