@@ -46,6 +46,7 @@ run, and keep the most recent results at the top.
 
 | Date       | Commit      | Summary                             | Notes                                              |
 | ---------- | ----------- | ----------------------------------- | -------------------------------------------------- |
+| 2026-01-20 | 7bc79f0dd6b | RP3D-aligned pipeline breakdown try | Segfault in AABB tree; partial JSON (dirty tree).  |
 | 2026-01-20 | f315999cdfe | Raycast batch + comparative raycast | SweepAndPrune; 500 rays; 1k/2k objects             |
 | 2026-01-19 | TBD         | Baseline results (pre-structure)    |                                                    |
 | 2026-01-19 | b1f6e5e     | Comparative + scenarios runs        | Distance/mixed underperform; raycast blocked then. |
@@ -118,6 +119,10 @@ BM_Scenario_PipelineBreakdown_Sparse_Experimental/10000: aabb_ns=509226.0 broadp
 ## Run 2026-01-20 — Pipeline breakdown (RP3D-aligned) [FAILED]
 
 - **Status**: segfault in `AabbTreeBroadPhase::combine()` during object creation.
-- **Command**: `bm_scenarios_pipeline_breakdown --benchmark_filter="PipelineBreakdown_RP3D_.*"`
-- **Raw Output**: `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-19_1k.json` (partial)
+- **Command**:
+  - `build/default/cpp/Release/bin/bm_scenarios_pipeline_breakdown --benchmark_filter="PipelineBreakdown_RP3D_.*" --benchmark_format=json --benchmark_min_time=0.05s`
+- **Raw Output**:
+  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-19_1k.json` (partial)
+  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_004159.json` (partial; JSON truncated before benchmarks)
+- **Notes**: Dirty working tree due to parallel agents; crash persists.
 - **Next**: rerun once the AABB tree crash is resolved.

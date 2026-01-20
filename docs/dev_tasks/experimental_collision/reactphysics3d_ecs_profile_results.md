@@ -42,12 +42,19 @@ children in the profiler report.
 Run DART pipeline breakdown with RP3D-aligned scenarios:
 
 ```bash
-./tests/benchmark/bm_scenarios_pipeline_breakdown \
-  --benchmark_filter="PipelineBreakdown_RP3D_.*"
+build/default/cpp/Release/bin/bm_scenarios_pipeline_breakdown \
+  --benchmark_filter="PipelineBreakdown_RP3D_.*" \
+  --benchmark_format=json \
+  --benchmark_min_time=0.05s
 ```
 
-Result: `bm_scenarios_pipeline_breakdown` segfaults on RP3D filters. See
-`benchmark_results.md` (Run 2026-01-20 — Pipeline breakdown [RP3D-aligned]).
+Result: `bm_scenarios_pipeline_breakdown` still segfaults on RP3D filters as of
+2026-01-20. Partial JSON outputs are in:
+
+- `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-19_1k.json`
+- `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_004159.json`
+
+See `benchmark_results.md` for the failure log.
 
 ## Notes
 
