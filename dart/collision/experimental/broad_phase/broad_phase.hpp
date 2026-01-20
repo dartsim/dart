@@ -66,7 +66,8 @@ public:
     out = queryPairs();
   }
 
-  virtual void build(std::span<const std::size_t> ids, std::span<const Aabb> aabbs)
+  virtual void build(
+      std::span<const std::size_t> ids, std::span<const Aabb> aabbs)
   {
     clear();
     const std::size_t n = std::min(ids.size(), aabbs.size());
