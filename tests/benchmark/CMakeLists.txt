@@ -61,6 +61,15 @@ if(DART_BUILD_COLLISION_EXPERIMENTAL)
     benchmark::benchmark
   )
   dart_format_add(collision/bm_experimental.cpp)
+  add_executable(
+    bm_experimental_ccd
+    collision/experimental/bm_ccd.cpp
+  )
+  target_link_libraries(bm_experimental_ccd
+    dart-collision-experimental
+    benchmark::benchmark
+  )
+  dart_format_add(collision/experimental/bm_ccd.cpp)
 
   add_executable(bm_comparative collision/bm_comparative.cpp)
   target_link_libraries(bm_comparative
