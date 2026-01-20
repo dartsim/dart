@@ -132,6 +132,12 @@ std::optional<Joint> MultiBody::getJoint(std::string_view name) const
 }
 
 //==============================================================================
+entt::entity MultiBody::getEntity() const
+{
+  return m_entity;
+}
+
+//==============================================================================
 World* MultiBody::getWorld() const
 {
   return m_world;
