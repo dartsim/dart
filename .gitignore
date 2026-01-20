@@ -110,3 +110,6 @@ imgui.ini
 
 # Profiling logs
 profiling/*.txt
+
+# Generated testing images
+*.png

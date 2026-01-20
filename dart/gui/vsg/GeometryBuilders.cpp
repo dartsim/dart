@@ -40,6 +40,15 @@ namespace dart::gui::vsg {
 
 namespace {
 
+::vsg::ref_ptr<::vsg::Builder> getSharedBuilder()
+{
+  static ::vsg::ref_ptr<::vsg::Builder> builder;
+  if (!builder) {
+    builder = ::vsg::Builder::create();
+  }
+  return builder;
+}
+
 ::vsg::GeometryInfo makeGeometryInfo(const GeometryOptions& options)
 {
   ::vsg::GeometryInfo info;
@@ -54,6 +63,7 @@ namespace {
 ::vsg::StateInfo makeStateInfo(const GeometryOptions& options)
 {
   ::vsg::StateInfo info;
+  info.lighting = true;
   info.wireframe = options.wireframe;
   info.two_sided = options.twoSided;
   return info;
@@ -64,7 +74,7 @@ namespace {
 ::vsg::ref_ptr<::vsg::Node> createSphere(
     double radius, const GeometryOptions& options)
 {
-  auto builder = ::vsg::Builder::create();
+  auto builder = getSharedBuilder();
   auto geomInfo = makeGeometryInfo(options);
   auto stateInfo = makeStateInfo(options);
 
@@ -79,7 +89,7 @@ namespace {
 ::vsg::ref_ptr<::vsg::Node> createBox(
     const Eigen::Vector3d& size, const GeometryOptions& options)
 {
-  auto builder = ::vsg::Builder::create();
+  auto builder = getSharedBuilder();
   auto geomInfo = makeGeometryInfo(options);
   auto stateInfo = makeStateInfo(options);
 
@@ -94,7 +104,7 @@ namespace {
 ::vsg::ref_ptr<::vsg::Node> createCapsule(
     double radius, double height, const GeometryOptions& options)
 {
-  auto builder = ::vsg::Builder::create();
+  auto builder = getSharedBuilder();
   auto geomInfo = makeGeometryInfo(options);
   auto stateInfo = makeStateInfo(options);
 
@@ -109,7 +119,7 @@ namespace {
 ::vsg::ref_ptr<::vsg::Node> createCylinder(
     double radius, double height, const GeometryOptions& options)
 {
-  auto builder = ::vsg::Builder::create();
+  auto builder = getSharedBuilder();
   auto geomInfo = makeGeometryInfo(options);
   auto stateInfo = makeStateInfo(options);
 
@@ -124,7 +134,7 @@ namespace {
 ::vsg::ref_ptr<::vsg::Node> createCone(
     double radius, double height, const GeometryOptions& options)
 {
-  auto builder = ::vsg::Builder::create();
+  auto builder = getSharedBuilder();
   auto geomInfo = makeGeometryInfo(options);
   auto stateInfo = makeStateInfo(options);
 
@@ -139,7 +149,7 @@ namespace {
 ::vsg::ref_ptr<::vsg::Node> createPlane(
     double width, double height, const GeometryOptions& options)
 {
-  auto builder = ::vsg::Builder::create();
+  auto builder = getSharedBuilder();
   auto geomInfo = makeGeometryInfo(options);
   auto stateInfo = makeStateInfo(options);
 

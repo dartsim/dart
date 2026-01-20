@@ -17,7 +17,7 @@
 | GJK/EPA Algorithm          | **Complete**    | 100%     |
 | Convex/Mesh Shapes         | **Complete**    | 100%     |
 | Continuous Collision (CCD) | **Complete**    | 100%     |
-| Visual Verification        | Not Started     | 0%       |
+| Visual Verification        | **Complete**    | 100%     |
 | DART Integration           | **Deferred**    | -        |
 
 ---
@@ -210,19 +210,54 @@ bool NarrowPhase::sphereCast(start, end, radius, target, option, result);
 bool NarrowPhase::isSphereCastSupported(ShapeType type);
 ```
 
-### Priority 8: Visual Verification
+### Priority 8: Visual Verification — ✅ COMPLETE (Using VSG)
 
-Options:
+**Implementation**: `dart/gui/vsg/` module with `examples/collision_viz/`
 
-- **rerun** - Python-based, good for debugging
-- **raylib** - Simple C library, minimal deps
+| Feature                          | Status       | Notes                                       |
+| -------------------------------- | ------------ | ------------------------------------------- |
+| Primitive shapes                 | **Complete** | Sphere, Box, Capsule, Cylinder, Plane       |
+| Convex/Mesh shapes               | **Complete** | Via GeometryBuilders                        |
+| Contact points                   | **Complete** | Red spheres with configurable size          |
+| Contact normals                  | **Complete** | Yellow arrows with configurable length      |
+| AABB wireframes                  | **Complete** | `createWireframeBox()` + `addAabb()`        |
+| Distance query visualization     | **Complete** | `addDistanceResult()` - points + line       |
+| Raycast visualization            | **Complete** | `addRaycast()` - ray + hit point + normal   |
+| Sphere-cast / CCD visualization  | **Complete** | `addSphereCast()` - trajectory + hit        |
+| Grid and coordinate axes         | **Complete** | `addGrid()` + `addAxes()`                   |
+| Headless rendering               | **Complete** | `SimpleViewer::headless()` + PPM export     |
+| Interactive windowed mode        | **Complete** | Mouse rotation/zoom, close to exit          |
 
-Features needed:
+**Key APIs:**
 
-- Render shapes with transforms
-- Visualize contact points and normals
-- Show AABBs
-- Step-through collision pairs
+```cpp
+// CollisionSceneBuilder
+builder.addObject(obj, color);           // Render collision object
+builder.addContacts(result, normalLen);  // Contact points + normals
+builder.addAabb(aabb, color);            // AABB wireframe
+builder.addDistanceResult(result);       // Distance query visualization
+builder.addRaycast(ray, hit);            // Raycast visualization
+builder.addSphereCast(start, end, r);    // CCD visualization
+
+// DebugDraw helpers
+createWireframeBox(min, max, color);     // AABB edges
+createLine(start, end, color);           // Single line
+createArrow(start, dir, len, color);     // Arrow with cone head
+createPoint(pos, size, color);           // Sphere marker
+createGrid(size, spacing, color);        // Ground grid
+createAxes(length);                      // RGB XYZ axes
+```
+
+**Example usage:**
+
+```bash
+# Interactive mode
+./build/default/cpp/Release/bin/collision_viz
+
+# Headless mode (CI verification)
+./build/default/cpp/Release/bin/collision_viz --headless
+# Outputs: collision_viz_headless.ppm
+```
 
 ---
 

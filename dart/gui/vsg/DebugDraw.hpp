@@ -82,4 +82,9 @@ DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createGrid(
     double spacing = 1.0,
     const Eigen::Vector4d& color = colors::Gray);
 
+DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createWireframeBox(
+    const Eigen::Vector3d& min,
+    const Eigen::Vector3d& max,
+    const Eigen::Vector4d& color = colors::Yellow);
+
 } // namespace dart::gui::vsg

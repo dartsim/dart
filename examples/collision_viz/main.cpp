@@ -33,6 +33,7 @@
 #include <dart/gui/vsg/CollisionSceneBuilder.hpp>
 #include <dart/gui/vsg/SimpleViewer.hpp>
 
+#include <dart/collision/experimental/aabb.hpp>
 #include <dart/collision/experimental/collision_object.hpp>
 #include <dart/collision/experimental/collision_world.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
@@ -40,7 +41,7 @@
 
 #include <iostream>
 
-int main()
+int main(int argc, char** argv)
 {
   namespace collision = dart::collision::experimental;
   namespace vsg = dart::gui::vsg;
@@ -101,19 +102,114 @@ int main()
       0.2,
       nullptr);
 
-  std::cout << "Starting VSG viewer...\n";
-  std::cout << "Use mouse to rotate/zoom, close window to exit.\n\n";
+  std::cout << "\n--- AABB Visualization ---\n";
+  collision::Aabb boxAabb
+      = collision::Aabb::forBox(Eigen::Vector3d(0.25, 0.25, 0.25));
+  collision::Aabb worldAabb = collision::Aabb::transformed(
+      boxAabb,
+      Eigen::Translation3d(-1.5, 0.0, 0.0) * Eigen::Isometry3d::Identity());
+  builder.addAabb(worldAabb, vsg::colors::Orange);
+  std::cout << "Added AABB for box at (-1.5, 0, 0)\n";
 
-  vsg::SimpleViewer viewer(1280, 720, "DART Collision Visualization");
-  viewer.addGrid(6.0, 1.0);
-  viewer.addAxes(1.0);
-  viewer.setScene(builder.build());
-  viewer.lookAt(
-      Eigen::Vector3d(5.0, 5.0, 4.0),
-      Eigen::Vector3d(0.0, 0.0, 0.0),
-      Eigen::Vector3d::UnitZ());
+  collision::Aabb sphereAabb = collision::Aabb::forSphere(0.4);
+  collision::Aabb worldSphereAabb = collision::Aabb::transformed(
+      sphereAabb,
+      Eigen::Translation3d(0.0, 0.0, 0.0) * Eigen::Isometry3d::Identity());
+  builder.addAabb(worldSphereAabb, vsg::colors::Orange);
+  std::cout << "Added AABB for sphere at origin\n";
 
-  viewer.run();
+  std::cout << "\n--- Distance Query Visualization ---\n";
+  collision::DistanceResult distResult;
+  distResult.distance = 1.0;
+  distResult.pointOnObject1 = Eigen::Vector3d(-1.5, 0.5, 0.25);
+  distResult.pointOnObject2 = Eigen::Vector3d(0.0, 0.5, 0.4);
+  distResult.normal
+      = (distResult.pointOnObject2 - distResult.pointOnObject1).normalized();
+  builder.addDistanceResult(distResult);
+  std::cout
+      << "Added distance visualization between box and sphere (top edge)\n";
+
+  std::cout << "\n--- Raycast Visualization ---\n";
+  collision::Ray ray(
+      Eigen::Vector3d(-3.0, -1.5, 1.0),
+      Eigen::Vector3d(1.0, 0.3, -0.2).normalized(),
+      10.0);
+  collision::RaycastResult rayHit;
+  rayHit.hit = true;
+  rayHit.distance = 1.8;
+  rayHit.point = Eigen::Vector3d(-1.25, -0.9, 0.64);
+  rayHit.normal = Eigen::Vector3d(-1.0, 0.0, 0.0).normalized();
+  builder.addRaycast(ray, &rayHit);
+  std::cout << "Added raycast from (-3, -1.5, 1) hitting box\n";
+
+  collision::Ray missRay(
+      Eigen::Vector3d(2.0, 2.0, 1.0),
+      Eigen::Vector3d(0.0, 1.0, 0.0).normalized(),
+      3.0);
+  builder.addRaycast(missRay, nullptr, vsg::colors::Gray);
+  std::cout << "Added raycast that misses (gray)\n";
+
+  auto scene = builder.build();
+  if (auto group = scene.cast<::vsg::Group>()) {
+    std::cout << "Built scene with " << group->children.size() << " children"
+              << std::endl;
+  } else {
+    std::cout << "Built scene (not a group)" << std::endl;
+  }
+
+  ::vsg::ComputeBounds computeBounds;
+  scene->accept(computeBounds);
+  auto& bounds = computeBounds.bounds;
+  std::cout << "Scene bounds: min(" << bounds.min.x << ", " << bounds.min.y
+            << ", " << bounds.min.z << ") max(" << bounds.max.x << ", "
+            << bounds.max.y << ", " << bounds.max.z << ")" << std::endl;
+
+  bool headlessMode = false;
+  for (int i = 1; i < argc; ++i) {
+    if (std::string(argv[i]) == "--headless") {
+      headlessMode = true;
+    }
+  }
+
+  if (headlessMode) {
+    std::cout << "\nRunning in headless mode...\n";
+
+    auto viewer = vsg::SimpleViewer::headless(1280, 720);
+    viewer.setScene(scene);
+    viewer.addGrid(6.0, 1.0);
+    viewer.addAxes(1.0);
+    viewer.lookAt(
+        Eigen::Vector3d(5.0, 5.0, 4.0),
+        Eigen::Vector3d(0.0, 0.0, 0.0),
+        Eigen::Vector3d::UnitZ());
+
+    viewer.run();
+
+    if (viewer.saveScreenshot("collision_viz_headless.ppm")) {
+      std::cout << "Screenshot saved to collision_viz_headless.ppm\n";
+    } else {
+      std::cerr << "Failed to save screenshot\n";
+    }
+
+    auto buffer = viewer.captureBuffer();
+    std::cout << "Captured buffer: " << buffer.size() << " bytes (" << 1280
+              << "x" << 720 << " RGBA)\n";
+  } else {
+    std::cout << "\nStarting VSG viewer...\n";
+    std::cout << "Use mouse to rotate/zoom, close window to exit.\n";
+    std::cout << "(Run with --headless for headless mode)\n\n";
+
+    vsg::SimpleViewer viewer(1280, 720, "DART Collision Visualization");
+    viewer.setScene(scene);
+    viewer.addGrid(6.0, 1.0);
+    viewer.addAxes(1.0);
+    viewer.lookAt(
+        Eigen::Vector3d(5.0, 5.0, 4.0),
+        Eigen::Vector3d(0.0, 0.0, 0.0),
+        Eigen::Vector3d::UnitZ());
+
+    viewer.run();
+  }
 
   std::cout << "Done.\n";
   return 0;

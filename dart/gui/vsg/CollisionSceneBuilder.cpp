@@ -36,6 +36,7 @@
 #include "dart/gui/vsg/DebugDraw.hpp"
 #include "dart/gui/vsg/GeometryBuilders.hpp"
 
+#include <dart/collision/experimental/aabb.hpp>
 #include <dart/collision/experimental/collision_object.hpp>
 #include <dart/collision/experimental/types.hpp>
 
@@ -114,6 +115,47 @@ void CollisionSceneBuilder::addSphereCast(
       Eigen::Translation3d(endPos) * Eigen::Isometry3d::Identity());
   endTransform->addChild(endSphere);
   m_nodes.push_back(endTransform);
+}
+
+void CollisionSceneBuilder::addAabb(
+    const collision::experimental::Aabb& aabb, const Eigen::Vector4d& color)
+{
+  m_nodes.push_back(createWireframeBox(aabb.min, aabb.max, color));
+}
+
+void CollisionSceneBuilder::addDistanceResult(
+    const collision::experimental::DistanceResult& result,
+    const Eigen::Vector4d& lineColor,
+    const Eigen::Vector4d& pointColor)
+{
+  if (!result.isValid()) {
+    return;
+  }
+
+  m_nodes.push_back(
+      createLine(result.pointOnObject1, result.pointOnObject2, lineColor));
+  m_nodes.push_back(createPoint(result.pointOnObject1, 0.02, pointColor));
+  m_nodes.push_back(createPoint(result.pointOnObject2, 0.02, pointColor));
+}
+
+void CollisionSceneBuilder::addRaycast(
+    const collision::experimental::Ray& ray,
+    const collision::experimental::RaycastResult* hit,
+    const Eigen::Vector4d& rayColor,
+    const Eigen::Vector4d& hitColor)
+{
+  Eigen::Vector3d endPoint = ray.pointAt(ray.maxDistance);
+  if (hit && hit->hit) {
+    endPoint = hit->point;
+  }
+
+  m_nodes.push_back(createLine(ray.origin, endPoint, rayColor));
+  m_nodes.push_back(createPoint(ray.origin, 0.02, rayColor));
+
+  if (hit && hit->hit) {
+    m_nodes.push_back(createPoint(hit->point, 0.03, hitColor));
+    m_nodes.push_back(createArrow(hit->point, hit->normal, 0.15, hitColor));
+  }
 }
 
 ::vsg::ref_ptr<::vsg::Node> CollisionSceneBuilder::build()

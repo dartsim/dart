@@ -36,8 +36,63 @@
 #include "dart/gui/vsg/GeometryBuilders.hpp"
 
 #include <vsg/utils/Builder.h>
+#include <vsg/utils/GraphicsPipelineConfigurator.h>
+#include <vsg/utils/ShaderSet.h>
 
 namespace dart::gui::vsg {
+
+namespace {
+
+::vsg::ref_ptr<::vsg::ShaderSet> getLineShaderSet()
+{
+  static ::vsg::ref_ptr<::vsg::ShaderSet> shaderSet;
+  if (!shaderSet) {
+    shaderSet = ::vsg::createFlatShadedShaderSet();
+  }
+  return shaderSet;
+}
+
+::vsg::ref_ptr<::vsg::Node> createLineGeometry(
+    const ::vsg::ref_ptr<::vsg::vec3Array>& vertices,
+    const ::vsg::ref_ptr<::vsg::vec4Array>& vertexColors)
+{
+  auto shaderSet = getLineShaderSet();
+
+  auto config = ::vsg::GraphicsPipelineConfigurator::create(shaderSet);
+
+  auto inputAssembly
+      = ::vsg::InputAssemblyState::create(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
+  config->pipelineStates.push_back(inputAssembly);
+
+  auto normals = ::vsg::vec3Array::create(vertices->size());
+  for (size_t i = 0; i < vertices->size(); ++i) {
+    (*normals)[i].set(0.0f, 0.0f, 1.0f);
+  }
+
+  ::vsg::DataList vertexArrays;
+  config->assignArray(
+      vertexArrays, "vsg_Vertex", VK_VERTEX_INPUT_RATE_VERTEX, vertices);
+  config->assignArray(
+      vertexArrays, "vsg_Normal", VK_VERTEX_INPUT_RATE_VERTEX, normals);
+  config->assignArray(
+      vertexArrays, "vsg_Color", VK_VERTEX_INPUT_RATE_VERTEX, vertexColors);
+
+  config->init();
+
+  auto stateGroup = ::vsg::StateGroup::create();
+  config->copyTo(stateGroup);
+
+  auto vertexDraw = ::vsg::VertexDraw::create();
+  vertexDraw->assignArrays(vertexArrays);
+  vertexDraw->vertexCount = static_cast<uint32_t>(vertices->size());
+  vertexDraw->instanceCount = 1;
+
+  stateGroup->addChild(vertexDraw);
+
+  return stateGroup;
+}
+
+} // namespace
 
 ::vsg::ref_ptr<::vsg::Node> createPoint(
     const Eigen::Vector3d& position, double size, const Eigen::Vector4d& color)
@@ -63,22 +118,17 @@ namespace dart::gui::vsg {
       static_cast<float>(end.y()),
       static_cast<float>(end.z()));
 
-  auto colors = ::vsg::vec4Array::create(2);
-  (*colors)[0].set(
+  ::vsg::vec4 vsgColor(
       static_cast<float>(color.x()),
       static_cast<float>(color.y()),
       static_cast<float>(color.z()),
       static_cast<float>(color.w()));
-  (*colors)[1] = (*colors)[0];
 
-  auto drawCommands = ::vsg::Commands::create();
-  drawCommands->addChild(
-      ::vsg::BindVertexBuffers::create(0, ::vsg::DataList{vertices, colors}));
-  drawCommands->addChild(::vsg::Draw::create(2, 1, 0, 0));
+  auto colors = ::vsg::vec4Array::create(2);
+  (*colors)[0] = vsgColor;
+  (*colors)[1] = vsgColor;
 
-  auto stateGroup = createStateGroup(MaterialOptions{color, false, false});
-  stateGroup->addChild(drawCommands);
-  return stateGroup;
+  return createLineGeometry(vertices, colors);
 }
 
 ::vsg::ref_ptr<::vsg::Node> createArrow(
@@ -165,15 +215,7 @@ namespace dart::gui::vsg {
     (*colors)[i * 2 + 1] = vsgColor;
   }
 
-  auto drawCommands = ::vsg::Commands::create();
-  drawCommands->addChild(
-      ::vsg::BindVertexBuffers::create(0, ::vsg::DataList{vertices, colors}));
-  drawCommands->addChild(
-      ::vsg::Draw::create(static_cast<uint32_t>(starts.size() * 2), 1, 0, 0));
-
-  auto stateGroup = createStateGroup(MaterialOptions{color, false, false});
-  stateGroup->addChild(drawCommands);
-  return stateGroup;
+  return createLineGeometry(vertices, colors);
 }
 
 ::vsg::ref_ptr<::vsg::Node> createArrows(
@@ -226,6 +268,58 @@ namespace dart::gui::vsg {
     starts.push_back(Eigen::Vector3d(-halfSize, offset, 0));
     ends.push_back(Eigen::Vector3d(halfSize, offset, 0));
   }
+
+  return createLines(starts, ends, color);
+}
+
+::vsg::ref_ptr<::vsg::Node> createWireframeBox(
+    const Eigen::Vector3d& min,
+    const Eigen::Vector3d& max,
+    const Eigen::Vector4d& color)
+{
+  // 8 corners of the box
+  Eigen::Vector3d c000(min.x(), min.y(), min.z());
+  Eigen::Vector3d c001(min.x(), min.y(), max.z());
+  Eigen::Vector3d c010(min.x(), max.y(), min.z());
+  Eigen::Vector3d c011(min.x(), max.y(), max.z());
+  Eigen::Vector3d c100(max.x(), min.y(), min.z());
+  Eigen::Vector3d c101(max.x(), min.y(), max.z());
+  Eigen::Vector3d c110(max.x(), max.y(), min.z());
+  Eigen::Vector3d c111(max.x(), max.y(), max.z());
+
+  // 12 edges of the box
+  std::vector<Eigen::Vector3d> starts;
+  std::vector<Eigen::Vector3d> ends;
+
+  // Bottom face edges (z = min)
+  starts.push_back(c000);
+  ends.push_back(c100);
+  starts.push_back(c100);
+  ends.push_back(c110);
+  starts.push_back(c110);
+  ends.push_back(c010);
+  starts.push_back(c010);
+  ends.push_back(c000);
+
+  // Top face edges (z = max)
+  starts.push_back(c001);
+  ends.push_back(c101);
+  starts.push_back(c101);
+  ends.push_back(c111);
+  starts.push_back(c111);
+  ends.push_back(c011);
+  starts.push_back(c011);
+  ends.push_back(c001);
+
+  // Vertical edges connecting top and bottom
+  starts.push_back(c000);
+  ends.push_back(c001);
+  starts.push_back(c100);
+  ends.push_back(c101);
+  starts.push_back(c110);
+  ends.push_back(c111);
+  starts.push_back(c010);
+  ends.push_back(c011);
 
   return createLines(starts, ends, color);
 }

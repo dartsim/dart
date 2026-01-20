@@ -42,9 +42,13 @@
 #include <vector>
 
 namespace dart::collision::experimental {
+class Aabb;
 class CollisionObject;
 class CollisionResult;
 struct CcdResult;
+struct DistanceResult;
+struct Ray;
+struct RaycastResult;
 } // namespace dart::collision::experimental
 
 namespace dart::gui::vsg {
@@ -69,6 +73,21 @@ public:
       const Eigen::Vector3d& end,
       double radius,
       const collision::experimental::CcdResult* hit = nullptr);
+
+  void addAabb(
+      const collision::experimental::Aabb& aabb,
+      const Eigen::Vector4d& color = colors::Yellow);
+
+  void addDistanceResult(
+      const collision::experimental::DistanceResult& result,
+      const Eigen::Vector4d& lineColor = colors::Cyan,
+      const Eigen::Vector4d& pointColor = colors::Magenta);
+
+  void addRaycast(
+      const collision::experimental::Ray& ray,
+      const collision::experimental::RaycastResult* hit = nullptr,
+      const Eigen::Vector4d& rayColor = colors::Cyan,
+      const Eigen::Vector4d& hitColor = colors::Red);
 
   ::vsg::ref_ptr<::vsg::Node> build();
 
