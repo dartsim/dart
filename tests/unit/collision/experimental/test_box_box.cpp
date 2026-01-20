@@ -288,7 +288,12 @@ TEST(BoxBox, MaxContactsRespected)
   t2.translation() = Eigen::Vector3d(1.5, 0, 0);
 
   bool collided = collideBoxes(
-      Eigen::Vector3d(1, 1, 1), t1, Eigen::Vector3d(1, 1, 1), t2, result, option);
+      Eigen::Vector3d(1, 1, 1),
+      t1,
+      Eigen::Vector3d(1, 1, 1),
+      t2,
+      result,
+      option);
 
   EXPECT_FALSE(collided);
   EXPECT_EQ(result.numContacts(), 0);
@@ -348,7 +353,11 @@ TEST(BoxBox, Determinism)
     t2.translation() = Eigen::Vector3d(1.5, 0.5, 0.25);
 
     bool collided = collideBoxes(
-        Eigen::Vector3d(1.1, 0.9, 1.2), t1, Eigen::Vector3d(0.8, 1.3, 1.0), t2, result);
+        Eigen::Vector3d(1.1, 0.9, 1.2),
+        t1,
+        Eigen::Vector3d(0.8, 1.3, 1.0),
+        t2,
+        result);
 
     EXPECT_TRUE(collided);
     ASSERT_EQ(result.numContacts(), 1);

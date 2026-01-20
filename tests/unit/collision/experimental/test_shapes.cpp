@@ -96,7 +96,8 @@ TEST(BoxShape, CubeAabb)
 TEST(Shape, Polymorphism)
 {
   std::unique_ptr<Shape> sphere = std::make_unique<SphereShape>(1.0);
-  std::unique_ptr<Shape> box = std::make_unique<BoxShape>(Eigen::Vector3d(1, 1, 1));
+  std::unique_ptr<Shape> box
+      = std::make_unique<BoxShape>(Eigen::Vector3d(1, 1, 1));
 
   EXPECT_EQ(sphere->getType(), ShapeType::Sphere);
   EXPECT_EQ(box->getType(), ShapeType::Box);
@@ -186,8 +187,8 @@ TEST(CylinderShape, Polymorphism)
 
 TEST(ConvexShape, Construction)
 {
-  std::vector<Eigen::Vector3d> vertices = {
-      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
 
   ConvexShape convex(vertices);
 
@@ -197,8 +198,8 @@ TEST(ConvexShape, Construction)
 
 TEST(ConvexShape, ComputeLocalAabb)
 {
-  std::vector<Eigen::Vector3d> vertices = {
-      {2, 0, 0}, {-1, 0, 0}, {0, 3, 0}, {0, -1, 0}, {0, 0, 4}, {0, 0, -1}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{2, 0, 0}, {-1, 0, 0}, {0, 3, 0}, {0, -1, 0}, {0, 0, 4}, {0, 0, -1}};
 
   ConvexShape convex(vertices);
 
@@ -210,13 +211,14 @@ TEST(ConvexShape, ComputeLocalAabb)
 
 TEST(ConvexShape, SupportFunction)
 {
-  std::vector<Eigen::Vector3d> vertices = {
-      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
 
   ConvexShape convex(vertices);
 
   EXPECT_EQ(convex.support(Eigen::Vector3d(1, 0, 0)), Eigen::Vector3d(1, 0, 0));
-  EXPECT_EQ(convex.support(Eigen::Vector3d(-1, 0, 0)), Eigen::Vector3d(-1, 0, 0));
+  EXPECT_EQ(
+      convex.support(Eigen::Vector3d(-1, 0, 0)), Eigen::Vector3d(-1, 0, 0));
   EXPECT_EQ(convex.support(Eigen::Vector3d(0, 1, 0)), Eigen::Vector3d(0, 1, 0));
   EXPECT_EQ(convex.support(Eigen::Vector3d(0, 0, 1)), Eigen::Vector3d(0, 0, 1));
 }
@@ -260,8 +262,8 @@ TEST(MeshShape, Construction)
 
 TEST(MeshShape, ComputeLocalAabb)
 {
-  std::vector<Eigen::Vector3d> vertices = {
-      {0, 0, 0}, {2, 0, 0}, {0, 3, 0}, {0, 0, 4}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{0, 0, 0}, {2, 0, 0}, {0, 3, 0}, {0, 0, 4}};
   std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}, {0, 1, 3}};
 
   MeshShape mesh(vertices, triangles);
@@ -274,10 +276,10 @@ TEST(MeshShape, ComputeLocalAabb)
 
 TEST(MeshShape, SupportFunction)
 {
-  std::vector<Eigen::Vector3d> vertices = {
-      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
-  std::vector<MeshShape::Triangle> triangles = {
-      {0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+  std::vector<MeshShape::Triangle> triangles
+      = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
 
   MeshShape mesh(vertices, triangles);
 
@@ -289,28 +291,28 @@ TEST(MeshShape, SupportFunction)
 
 TEST(MeshShape, UnitCube)
 {
-  std::vector<Eigen::Vector3d> vertices = {
-      {0, 0, 0},
-      {1, 0, 0},
-      {1, 1, 0},
-      {0, 1, 0},
-      {0, 0, 1},
-      {1, 0, 1},
-      {1, 1, 1},
-      {0, 1, 1}};
-  std::vector<MeshShape::Triangle> triangles = {
-      {0, 1, 2},
-      {0, 2, 3},
-      {4, 6, 5},
-      {4, 7, 6},
-      {0, 5, 1},
-      {0, 4, 5},
-      {2, 6, 7},
-      {2, 7, 3},
-      {0, 7, 4},
-      {0, 3, 7},
-      {1, 5, 6},
-      {1, 6, 2}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{0, 0, 0},
+         {1, 0, 0},
+         {1, 1, 0},
+         {0, 1, 0},
+         {0, 0, 1},
+         {1, 0, 1},
+         {1, 1, 1},
+         {0, 1, 1}};
+  std::vector<MeshShape::Triangle> triangles
+      = {{0, 1, 2},
+         {0, 2, 3},
+         {4, 6, 5},
+         {4, 7, 6},
+         {0, 5, 1},
+         {0, 4, 5},
+         {2, 6, 7},
+         {2, 7, 3},
+         {0, 7, 4},
+         {0, 3, 7},
+         {1, 5, 6},
+         {1, 6, 2}};
 
   MeshShape mesh(vertices, triangles);
 

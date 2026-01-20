@@ -267,8 +267,7 @@ TEST(SweepAndPruneBroadPhase, ManyObjects)
     double z = dist(rng);
     bp.add(
         i,
-        Aabb(
-            Eigen::Vector3d(x, y, z), Eigen::Vector3d(x + 1, y + 1, z + 1)));
+        Aabb(Eigen::Vector3d(x, y, z), Eigen::Vector3d(x + 1, y + 1, z + 1)));
   }
 
   EXPECT_EQ(bp.size(), numObjects);
@@ -312,8 +311,7 @@ TEST(SweepAndPruneBroadPhase, ConsistentWithBruteForce)
     double x = dist(rng);
     double y = dist(rng);
     double z = dist(rng);
-    Aabb aabb(
-        Eigen::Vector3d(x, y, z), Eigen::Vector3d(x + 2, y + 2, z + 2));
+    Aabb aabb(Eigen::Vector3d(x, y, z), Eigen::Vector3d(x + 2, y + 2, z + 2));
 
     sap.add(i, aabb);
     brute.add(i, aabb);
@@ -343,8 +341,7 @@ TEST(SweepAndPruneBroadPhase, QueryOverlappingConsistent)
     double x = dist(rng);
     double y = dist(rng);
     double z = dist(rng);
-    Aabb aabb(
-        Eigen::Vector3d(x, y, z), Eigen::Vector3d(x + 1, y + 1, z + 1));
+    Aabb aabb(Eigen::Vector3d(x, y, z), Eigen::Vector3d(x + 1, y + 1, z + 1));
 
     sap.add(i, aabb);
     brute.add(i, aabb);

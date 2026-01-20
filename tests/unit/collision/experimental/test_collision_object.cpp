@@ -97,7 +97,8 @@ TEST(CollisionObject, ComputeAabb_Sphere)
 TEST(CollisionObject, ComputeAabb_Box)
 {
   CollisionWorld world;
-  auto obj = world.createObject(std::make_unique<BoxShape>(Eigen::Vector3d(1, 2, 3)));
+  auto obj = world.createObject(
+      std::make_unique<BoxShape>(Eigen::Vector3d(1, 2, 3)));
 
   Aabb aabb = obj.computeAabb();
 

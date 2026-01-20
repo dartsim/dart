@@ -18,6 +18,28 @@ message(STATUS "collision-experimental: Configuring unit tests...")
 if(DART_BUILD_TESTS AND TARGET GTest::gtest)
   set(COLLISION_EXPERIMENTAL_TESTS "" CACHE INTERNAL "" FORCE)
 
+  set(DART_EXPERIMENTAL_VOXBLOX_ROOT "" CACHE PATH "Path to Voxblox for experimental collision tests")
+  if(DART_EXPERIMENTAL_VOXBLOX_ROOT)
+    find_path(VOXBLOX_INCLUDE_DIR
+      NAMES voxblox/core/esdf_map.h
+      PATHS
+        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}
+        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}/voxblox/include
+        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}/include
+    )
+    find_library(VOXBLOX_LIBRARY
+      NAMES voxblox
+      PATHS
+        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}/lib
+        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}/build
+        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}/devel/lib
+    )
+  endif()
+  set(VOXBLOX_FOUND FALSE)
+  if(VOXBLOX_INCLUDE_DIR AND VOXBLOX_LIBRARY)
+    set(VOXBLOX_FOUND TRUE)
+  endif()
+
   file(GLOB test_files "${CMAKE_CURRENT_SOURCE_DIR}/test_*.cpp")
   if(NOT DART_TESTS_LIBCCD_FOUND)
     list(FILTER test_files EXCLUDE REGEX "test_libccd_.*\\.cpp$")
@@ -38,6 +60,11 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
     endif()
     if(test_name STREQUAL "test_reference_backends")
       target_link_libraries(${test_name} PRIVATE dart)
+    endif()
+    if(test_name STREQUAL "test_sdf_compare" AND VOXBLOX_FOUND)
+      target_include_directories(${test_name} PRIVATE ${VOXBLOX_INCLUDE_DIR})
+      target_link_libraries(${test_name} PRIVATE ${VOXBLOX_LIBRARY})
+      target_compile_definitions(${test_name} PRIVATE DART_EXPERIMENTAL_HAVE_VOXBLOX=1)
     endif()
 
     add_test(NAME ${test_name} COMMAND ${test_name})

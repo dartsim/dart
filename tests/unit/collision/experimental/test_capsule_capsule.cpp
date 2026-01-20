@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/collision/experimental/narrow_phase/capsule_box.hpp>
 #include <dart/collision/experimental/narrow_phase/capsule_capsule.hpp>
 #include <dart/collision/experimental/narrow_phase/capsule_sphere.hpp>
-#include <dart/collision/experimental/narrow_phase/capsule_box.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <gtest/gtest.h>
@@ -96,8 +96,8 @@ TEST(CapsuleCapsule, Perpendicular)
 
   Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
-  tf2.linear() =
-      Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  tf2.linear() = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY())
+                     .toRotationMatrix();
   tf2.translation() = Eigen::Vector3d(0.8, 0, 0);
 
   CollisionResult result;
@@ -133,7 +133,8 @@ TEST(CapsuleSphere, NoCollision)
   tfSphere.translation() = Eigen::Vector3d(3.0, 0, 0);
 
   CollisionResult result;
-  bool collided = collideCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
+  bool collided
+      = collideCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
 
   EXPECT_FALSE(collided);
   EXPECT_EQ(result.numContacts(), 0u);
@@ -149,7 +150,8 @@ TEST(CapsuleSphere, SphereAtMiddle)
   tfSphere.translation() = Eigen::Vector3d(0.8, 0, 0);
 
   CollisionResult result;
-  bool collided = collideCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
+  bool collided
+      = collideCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
 
   EXPECT_TRUE(collided);
   EXPECT_EQ(result.numContacts(), 1u);
@@ -166,7 +168,8 @@ TEST(CapsuleSphere, SphereAtTop)
   tfSphere.translation() = Eigen::Vector3d(0, 0, 1.8);
 
   CollisionResult result;
-  bool collided = collideCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
+  bool collided
+      = collideCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
 
   EXPECT_TRUE(collided);
   EXPECT_EQ(result.numContacts(), 1u);
@@ -182,7 +185,8 @@ TEST(CapsuleSphere, SphereAtBottom)
   tfSphere.translation() = Eigen::Vector3d(0, 0, -1.5);
 
   CollisionResult result;
-  bool collided = collideCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
+  bool collided
+      = collideCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
 
   EXPECT_TRUE(collided);
   EXPECT_EQ(result.numContacts(), 1u);
@@ -257,8 +261,8 @@ TEST(CapsuleBox, RotatedCapsule)
   BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
 
   Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
-  tfCapsule.linear() =
-      Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  tfCapsule.linear() = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY())
+                           .toRotationMatrix();
   tfCapsule.translation() = Eigen::Vector3d(0.6, 0, 0);
   Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
 

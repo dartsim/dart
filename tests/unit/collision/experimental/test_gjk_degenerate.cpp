@@ -30,7 +30,7 @@ SupportFunction makeSegmentSupport(
   };
 }
 
-}  // namespace
+} // namespace
 
 TEST(GjkDegenerate, LineSegmentsSeparated)
 {
@@ -42,8 +42,8 @@ TEST(GjkDegenerate, LineSegmentsSeparated)
   auto supportA = makeSegmentSupport(a0, a1);
   auto supportB = makeSegmentSupport(b0, b1);
 
-  const GjkResult result =
-      Gjk::query(supportA, supportB, Eigen::Vector3d(0.0, 1.0, 0.0));
+  const GjkResult result
+      = Gjk::query(supportA, supportB, Eigen::Vector3d(0.0, 1.0, 0.0));
 
   EXPECT_FALSE(result.intersecting);
   EXPECT_NEAR(result.distance, 2.0, kTol);
@@ -63,9 +63,10 @@ TEST(GjkDegenerate, LineSegmentsIntersecting)
   auto supportA = makeSegmentSupport(a0, a1);
   auto supportB = makeSegmentSupport(b0, b1);
 
-  const GjkResult result =
-      Gjk::query(supportA, supportB, Eigen::Vector3d(1.0, 0.0, 0.0));
+  const GjkResult result
+      = Gjk::query(supportA, supportB, Eigen::Vector3d(1.0, 0.0, 0.0));
 
   EXPECT_TRUE(result.intersecting);
-  EXPECT_TRUE(Gjk::intersect(supportA, supportB, Eigen::Vector3d(1.0, 0.0, 0.0)));
+  EXPECT_TRUE(
+      Gjk::intersect(supportA, supportB, Eigen::Vector3d(1.0, 0.0, 0.0)));
 }

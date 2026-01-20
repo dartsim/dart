@@ -37,8 +37,7 @@
 
 using namespace dart::collision::experimental;
 
-SupportFunction makeSphereSupport(
-    const Eigen::Vector3d& center, double radius)
+SupportFunction makeSphereSupport(const Eigen::Vector3d& center, double radius)
 {
   return [center, radius](const Eigen::Vector3d& dir) -> Eigen::Vector3d {
     double len = dir.norm();
@@ -63,7 +62,9 @@ SupportFunction makeBoxSupport(
 
 SupportFunction makeConvexSupport(const ConvexShape& convex)
 {
-  return [&convex](const Eigen::Vector3d& dir) { return convex.support(dir); };
+  return [&convex](const Eigen::Vector3d& dir) {
+    return convex.support(dir);
+  };
 }
 
 TEST(Gjk, SpheresIntersecting)
@@ -95,18 +96,20 @@ TEST(Gjk, SpheresJustTouching)
 
 TEST(Gjk, BoxesIntersecting)
 {
-  auto supportA = makeBoxSupport(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
-  auto supportB =
-      makeBoxSupport(Eigen::Vector3d(1.5, 0, 0), Eigen::Vector3d::Ones());
+  auto supportA
+      = makeBoxSupport(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
+  auto supportB
+      = makeBoxSupport(Eigen::Vector3d(1.5, 0, 0), Eigen::Vector3d::Ones());
 
   EXPECT_TRUE(Gjk::intersect(supportA, supportB));
 }
 
 TEST(Gjk, BoxesSeparated)
 {
-  auto supportA = makeBoxSupport(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
-  auto supportB =
-      makeBoxSupport(Eigen::Vector3d(3.0, 0, 0), Eigen::Vector3d::Ones());
+  auto supportA
+      = makeBoxSupport(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
+  auto supportB
+      = makeBoxSupport(Eigen::Vector3d(3.0, 0, 0), Eigen::Vector3d::Ones());
 
   EXPECT_FALSE(Gjk::intersect(supportA, supportB));
 }
@@ -114,8 +117,8 @@ TEST(Gjk, BoxesSeparated)
 TEST(Gjk, SphereBoxIntersecting)
 {
   auto supportA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
-  auto supportB =
-      makeBoxSupport(Eigen::Vector3d(1.4, 0, 0), Eigen::Vector3d(0.5, 0.5, 0.5));
+  auto supportB = makeBoxSupport(
+      Eigen::Vector3d(1.4, 0, 0), Eigen::Vector3d(0.5, 0.5, 0.5));
 
   EXPECT_TRUE(Gjk::intersect(supportA, supportB));
 }
@@ -123,8 +126,8 @@ TEST(Gjk, SphereBoxIntersecting)
 TEST(Gjk, SphereBoxTouching)
 {
   auto supportA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
-  auto supportB =
-      makeBoxSupport(Eigen::Vector3d(1.5, 0, 0), Eigen::Vector3d(0.5, 0.5, 0.5));
+  auto supportB = makeBoxSupport(
+      Eigen::Vector3d(1.5, 0, 0), Eigen::Vector3d(0.5, 0.5, 0.5));
 
   EXPECT_FALSE(Gjk::intersect(supportA, supportB));
 }
@@ -132,20 +135,25 @@ TEST(Gjk, SphereBoxTouching)
 TEST(Gjk, SphereBoxSeparated)
 {
   auto supportA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
-  auto supportB =
-      makeBoxSupport(Eigen::Vector3d(3.0, 0, 0), Eigen::Vector3d(0.5, 0.5, 0.5));
+  auto supportB = makeBoxSupport(
+      Eigen::Vector3d(3.0, 0, 0), Eigen::Vector3d(0.5, 0.5, 0.5));
 
   EXPECT_FALSE(Gjk::intersect(supportA, supportB));
 }
 
 TEST(Gjk, ConvexConvexIntersecting)
 {
-  std::vector<Eigen::Vector3d> verticesA = {
-      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+  std::vector<Eigen::Vector3d> verticesA
+      = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
   ConvexShape convexA(verticesA);
 
-  std::vector<Eigen::Vector3d> verticesB = {
-      {1.5, 0, 0}, {0.5, 0, 0}, {1, 0.5, 0}, {1, -0.5, 0}, {1, 0, 0.5}, {1, 0, -0.5}};
+  std::vector<Eigen::Vector3d> verticesB
+      = {{1.5, 0, 0},
+         {0.5, 0, 0},
+         {1, 0.5, 0},
+         {1, -0.5, 0},
+         {1, 0, 0.5},
+         {1, 0, -0.5}};
   ConvexShape convexB(verticesB);
 
   auto supportA = makeConvexSupport(convexA);
@@ -156,12 +164,17 @@ TEST(Gjk, ConvexConvexIntersecting)
 
 TEST(Gjk, ConvexConvexSeparated)
 {
-  std::vector<Eigen::Vector3d> verticesA = {
-      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+  std::vector<Eigen::Vector3d> verticesA
+      = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
   ConvexShape convexA(verticesA);
 
-  std::vector<Eigen::Vector3d> verticesB = {
-      {3.5, 0, 0}, {2.5, 0, 0}, {3, 0.5, 0}, {3, -0.5, 0}, {3, 0, 0.5}, {3, 0, -0.5}};
+  std::vector<Eigen::Vector3d> verticesB
+      = {{3.5, 0, 0},
+         {2.5, 0, 0},
+         {3, 0.5, 0},
+         {3, -0.5, 0},
+         {3, 0, 0.5},
+         {3, 0, -0.5}};
   ConvexShape convexB(verticesB);
 
   auto supportA = makeConvexSupport(convexA);
@@ -188,18 +201,20 @@ TEST(Gjk, OneContainsOther)
 
 TEST(Gjk, DiagonalSeparation)
 {
-  auto supportA = makeBoxSupport(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
-  auto supportB = makeBoxSupport(
-      Eigen::Vector3d(3.0, 3.0, 3.0), Eigen::Vector3d::Ones());
+  auto supportA
+      = makeBoxSupport(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
+  auto supportB
+      = makeBoxSupport(Eigen::Vector3d(3.0, 3.0, 3.0), Eigen::Vector3d::Ones());
 
   EXPECT_FALSE(Gjk::intersect(supportA, supportB));
 }
 
 TEST(Gjk, DiagonalIntersection)
 {
-  auto supportA = makeBoxSupport(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
-  auto supportB = makeBoxSupport(
-      Eigen::Vector3d(1.5, 1.5, 1.5), Eigen::Vector3d::Ones());
+  auto supportA
+      = makeBoxSupport(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
+  auto supportB
+      = makeBoxSupport(Eigen::Vector3d(1.5, 1.5, 1.5), Eigen::Vector3d::Ones());
 
   EXPECT_TRUE(Gjk::intersect(supportA, supportB));
 }

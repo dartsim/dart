@@ -43,9 +43,7 @@ TEST(SphereSphere, Separated)
   CollisionResult result;
 
   bool collided = collideSpheres(
-      Eigen::Vector3d(0, 0, 0), 1.0,
-      Eigen::Vector3d(3, 0, 0), 1.0,
-      result);
+      Eigen::Vector3d(0, 0, 0), 1.0, Eigen::Vector3d(3, 0, 0), 1.0, result);
 
   EXPECT_FALSE(collided);
   EXPECT_EQ(result.numContacts(), 0);
@@ -56,9 +54,7 @@ TEST(SphereSphere, Touching)
   CollisionResult result;
 
   bool collided = collideSpheres(
-      Eigen::Vector3d(0, 0, 0), 1.0,
-      Eigen::Vector3d(2, 0, 0), 1.0,
-      result);
+      Eigen::Vector3d(0, 0, 0), 1.0, Eigen::Vector3d(2, 0, 0), 1.0, result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -73,9 +69,7 @@ TEST(SphereSphere, Overlapping)
   CollisionResult result;
 
   bool collided = collideSpheres(
-      Eigen::Vector3d(0, 0, 0), 1.0,
-      Eigen::Vector3d(1.5, 0, 0), 1.0,
-      result);
+      Eigen::Vector3d(0, 0, 0), 1.0, Eigen::Vector3d(1.5, 0, 0), 1.0, result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -92,9 +86,7 @@ TEST(SphereSphere, DeeplyPenetrating)
   CollisionResult result;
 
   bool collided = collideSpheres(
-      Eigen::Vector3d(0, 0, 0), 1.0,
-      Eigen::Vector3d(0.5, 0, 0), 1.0,
-      result);
+      Eigen::Vector3d(0, 0, 0), 1.0, Eigen::Vector3d(0.5, 0, 0), 1.0, result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -108,9 +100,7 @@ TEST(SphereSphere, Concentric)
   CollisionResult result;
 
   bool collided = collideSpheres(
-      Eigen::Vector3d(0, 0, 0), 1.0,
-      Eigen::Vector3d(0, 0, 0), 1.0,
-      result);
+      Eigen::Vector3d(0, 0, 0), 1.0, Eigen::Vector3d(0, 0, 0), 1.0, result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -125,9 +115,7 @@ TEST(SphereSphere, DifferentRadii)
   CollisionResult result;
 
   bool collided = collideSpheres(
-      Eigen::Vector3d(0, 0, 0), 2.0,
-      Eigen::Vector3d(2.5, 0, 0), 1.0,
-      result);
+      Eigen::Vector3d(0, 0, 0), 2.0, Eigen::Vector3d(2.5, 0, 0), 1.0, result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -141,8 +129,10 @@ TEST(SphereSphere, SmallSpheres)
   CollisionResult result;
 
   bool collided = collideSpheres(
-      Eigen::Vector3d(0, 0, 0), 0.001,
-      Eigen::Vector3d(0.0015, 0, 0), 0.001,
+      Eigen::Vector3d(0, 0, 0),
+      0.001,
+      Eigen::Vector3d(0.0015, 0, 0),
+      0.001,
       result);
 
   EXPECT_TRUE(collided);
@@ -157,8 +147,10 @@ TEST(SphereSphere, LargeSpheres)
   CollisionResult result;
 
   bool collided = collideSpheres(
-      Eigen::Vector3d(0, 0, 0), 1000.0,
-      Eigen::Vector3d(1500, 0, 0), 1000.0,
+      Eigen::Vector3d(0, 0, 0),
+      1000.0,
+      Eigen::Vector3d(1500, 0, 0),
+      1000.0,
       result);
 
   EXPECT_TRUE(collided);
@@ -173,9 +165,7 @@ TEST(SphereSphere, AlongYAxis)
   CollisionResult result;
 
   bool collided = collideSpheres(
-      Eigen::Vector3d(0, 0, 0), 1.0,
-      Eigen::Vector3d(0, 1.5, 0), 1.0,
-      result);
+      Eigen::Vector3d(0, 0, 0), 1.0, Eigen::Vector3d(0, 1.5, 0), 1.0, result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -191,9 +181,7 @@ TEST(SphereSphere, AlongZAxis)
   CollisionResult result;
 
   bool collided = collideSpheres(
-      Eigen::Vector3d(0, 0, 0), 1.0,
-      Eigen::Vector3d(0, 0, 1.5), 1.0,
-      result);
+      Eigen::Vector3d(0, 0, 0), 1.0, Eigen::Vector3d(0, 0, 1.5), 1.0, result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -212,8 +200,10 @@ TEST(SphereSphere, DiagonalDirection)
   const double component = dist / std::sqrt(3.0);
 
   bool collided = collideSpheres(
-      Eigen::Vector3d(0, 0, 0), 1.0,
-      Eigen::Vector3d(component, component, component), 1.0,
+      Eigen::Vector3d(0, 0, 0),
+      1.0,
+      Eigen::Vector3d(component, component, component),
+      1.0,
       result);
 
   EXPECT_TRUE(collided);
@@ -235,8 +225,10 @@ TEST(SphereSphere, MaxContactsRespected)
   option.maxNumContacts = 0;
 
   bool collided = collideSpheres(
-      Eigen::Vector3d(0, 0, 0), 1.0,
-      Eigen::Vector3d(1.5, 0, 0), 1.0,
+      Eigen::Vector3d(0, 0, 0),
+      1.0,
+      Eigen::Vector3d(1.5, 0, 0),
+      1.0,
       result,
       option);
 
@@ -249,9 +241,7 @@ TEST(SphereSphere, NormalDirectionDartConvention)
   CollisionResult result;
 
   bool collided = collideSpheres(
-      Eigen::Vector3d(0, 0, 0), 1.0,
-      Eigen::Vector3d(1.5, 0, 0), 1.0,
-      result);
+      Eigen::Vector3d(0, 0, 0), 1.0, Eigen::Vector3d(1.5, 0, 0), 1.0, result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -271,7 +261,8 @@ TEST(SphereSphere, UsingShapeObjects)
 
   CollisionResult result;
 
-  bool collided = collideSpheres(sphere1, transform1, sphere2, transform2, result);
+  bool collided
+      = collideSpheres(sphere1, transform1, sphere2, transform2, result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -292,7 +283,8 @@ TEST(SphereSphere, ShapeObjectsWithRotation)
 
   CollisionResult result;
 
-  bool collided = collideSpheres(sphere1, transform1, sphere2, transform2, result);
+  bool collided
+      = collideSpheres(sphere1, transform1, sphere2, transform2, result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -307,8 +299,10 @@ TEST(SphereSphere, Determinism)
     CollisionResult result;
 
     bool collided = collideSpheres(
-        Eigen::Vector3d(0.123456789, 0.987654321, 0.111222333), 1.5,
-        Eigen::Vector3d(1.5, 0.5, 0.25), 1.0,
+        Eigen::Vector3d(0.123456789, 0.987654321, 0.111222333),
+        1.5,
+        Eigen::Vector3d(1.5, 0.5, 0.25),
+        1.0,
         result);
 
     EXPECT_TRUE(collided);
@@ -332,9 +326,7 @@ TEST(SphereSphere, NegativeDirection)
   CollisionResult result;
 
   bool collided = collideSpheres(
-      Eigen::Vector3d(0, 0, 0), 1.0,
-      Eigen::Vector3d(-1.5, 0, 0), 1.0,
-      result);
+      Eigen::Vector3d(0, 0, 0), 1.0, Eigen::Vector3d(-1.5, 0, 0), 1.0, result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);

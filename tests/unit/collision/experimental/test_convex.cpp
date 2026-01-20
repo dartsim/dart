@@ -77,8 +77,8 @@ TEST(ConvexCollision, ConvexConvexIntersecting)
   CollisionOption option;
   option.maxNumContacts = 1;
 
-  bool collides =
-      collideConvexConvex(*octahedron1, tf1, *octahedron2, tf2, result, option);
+  bool collides = collideConvexConvex(
+      *octahedron1, tf1, *octahedron2, tf2, result, option);
 
   EXPECT_TRUE(collides);
   EXPECT_GE(result.numContacts(), 1u);
@@ -96,8 +96,8 @@ TEST(ConvexCollision, ConvexConvexSeparated)
   CollisionResult result;
   CollisionOption option;
 
-  bool collides =
-      collideConvexConvex(*octahedron1, tf1, *octahedron2, tf2, result, option);
+  bool collides = collideConvexConvex(
+      *octahedron1, tf1, *octahedron2, tf2, result, option);
 
   EXPECT_FALSE(collides);
 }
@@ -115,8 +115,8 @@ TEST(ConvexCollision, ConvexSphereIntersecting)
   CollisionOption option;
   option.maxNumContacts = 1;
 
-  bool collides =
-      collideConvexConvex(*octahedron, tf1, *sphere, tf2, result, option);
+  bool collides
+      = collideConvexConvex(*octahedron, tf1, *sphere, tf2, result, option);
 
   EXPECT_TRUE(collides);
 }
@@ -134,8 +134,8 @@ TEST(ConvexCollision, ConvexBoxIntersecting)
   CollisionOption option;
   option.maxNumContacts = 1;
 
-  bool collides =
-      collideConvexConvex(*octahedron, tf1, *box, tf2, result, option);
+  bool collides
+      = collideConvexConvex(*octahedron, tf1, *box, tf2, result, option);
 
   EXPECT_TRUE(collides);
 }
@@ -143,19 +143,19 @@ TEST(ConvexCollision, ConvexBoxIntersecting)
 TEST(ConvexCollision, MeshMeshIntersecting)
 {
   std::vector<Eigen::Vector3d> vertices1 = makeCubeVertices();
-  std::vector<MeshShape::Triangle> triangles1 = {
-      {0, 1, 2},
-      {0, 2, 3},
-      {4, 6, 5},
-      {4, 7, 6},
-      {0, 5, 1},
-      {0, 4, 5},
-      {2, 6, 7},
-      {2, 7, 3},
-      {0, 7, 4},
-      {0, 3, 7},
-      {1, 5, 6},
-      {1, 6, 2}};
+  std::vector<MeshShape::Triangle> triangles1
+      = {{0, 1, 2},
+         {0, 2, 3},
+         {4, 6, 5},
+         {4, 7, 6},
+         {0, 5, 1},
+         {0, 4, 5},
+         {2, 6, 7},
+         {2, 7, 3},
+         {0, 7, 4},
+         {0, 3, 7},
+         {1, 5, 6},
+         {1, 6, 2}};
 
   auto mesh1 = std::make_unique<MeshShape>(vertices1, triangles1);
   auto mesh2 = std::make_unique<MeshShape>(vertices1, triangles1);
@@ -176,11 +176,8 @@ TEST(ConvexCollision, MeshMeshIntersecting)
 TEST(ConvexCollision, MeshMeshSeparated)
 {
   std::vector<Eigen::Vector3d> vertices1 = makeCubeVertices();
-  std::vector<MeshShape::Triangle> triangles1 = {
-      {0, 1, 2},
-      {0, 2, 3},
-      {4, 6, 5},
-      {4, 7, 6}};
+  std::vector<MeshShape::Triangle> triangles1
+      = {{0, 1, 2}, {0, 2, 3}, {4, 6, 5}, {4, 7, 6}};
 
   auto mesh1 = std::make_unique<MeshShape>(vertices1, triangles1);
   auto mesh2 = std::make_unique<MeshShape>(vertices1, triangles1);
@@ -237,8 +234,8 @@ TEST(ConvexCollision, RotatedConvex)
 
   Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
-  tf2.linear() =
-      Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  tf2.linear() = Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitZ())
+                     .toRotationMatrix();
   tf2.translation() = Eigen::Vector3d(1.0, 0, 0);
 
   CollisionResult result;

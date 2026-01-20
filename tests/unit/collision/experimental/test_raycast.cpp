@@ -416,13 +416,16 @@ TEST(Raycast, Determinism)
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(1.23456, 2.34567, 3.45678);
 
-  Ray ray(Eigen::Vector3d(0.1, 0.2, 0.3), Eigen::Vector3d(0.5, 0.6, 0.7).normalized());
+  Ray ray(
+      Eigen::Vector3d(0.1, 0.2, 0.3),
+      Eigen::Vector3d(0.5, 0.6, 0.7).normalized());
   RaycastOption option;
 
   std::vector<RaycastResult> results;
   for (int i = 0; i < 100; ++i) {
     RaycastResult result;
-    [[maybe_unused]] bool hit = raycastSphere(ray, sphere, transform, option, result);
+    [[maybe_unused]] bool hit
+        = raycastSphere(ray, sphere, transform, option, result);
     results.push_back(result);
   }
 
@@ -455,12 +458,18 @@ std::vector<Eigen::Vector3d> makeCubeVertices(double halfExtent)
 std::vector<MeshShape::Triangle> makeCubeTriangles()
 {
   return {
-      {0, 2, 1}, {0, 3, 2},
-      {4, 5, 6}, {4, 6, 7},
-      {0, 1, 5}, {0, 5, 4},
-      {2, 3, 7}, {2, 7, 6},
-      {0, 4, 7}, {0, 7, 3},
-      {1, 2, 6}, {1, 6, 5}};
+      {0, 2, 1},
+      {0, 3, 2},
+      {4, 5, 6},
+      {4, 6, 7},
+      {0, 1, 5},
+      {0, 5, 4},
+      {2, 3, 7},
+      {2, 7, 6},
+      {0, 4, 7},
+      {0, 7, 3},
+      {1, 2, 6},
+      {1, 6, 5}};
 }
 
 TEST(RaycastMesh, Miss)
@@ -475,9 +484,9 @@ TEST(RaycastMesh, Miss)
 
   bool hit = raycastMesh(ray, mesh, transform, option, result);
 
-  EXPECT_FALSE(hit) << "distance=" << result.distance
-                    << " point=(" << result.point.x() << "," << result.point.y()
-                    << "," << result.point.z() << ")";
+  EXPECT_FALSE(hit) << "distance=" << result.distance << " point=("
+                    << result.point.x() << "," << result.point.y() << ","
+                    << result.point.z() << ")";
 }
 
 TEST(RaycastMesh, HitFrontFace)

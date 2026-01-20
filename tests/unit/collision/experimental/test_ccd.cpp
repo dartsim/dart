@@ -58,7 +58,8 @@ TEST(SphereCastSphere, Miss)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastSphere(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastSphere(start, end, radius, target, transform, option, result);
 
   EXPECT_FALSE(hit);
   EXPECT_FALSE(result.isHit());
@@ -77,7 +78,8 @@ TEST(SphereCastSphere, DirectHit)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastSphere(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastSphere(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_TRUE(result.isHit());
@@ -98,7 +100,8 @@ TEST(SphereCastSphere, StartingInside)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastSphere(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastSphere(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-6);
@@ -117,7 +120,8 @@ TEST(SphereCastSphere, GrazingHit)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastSphere(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastSphere(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -137,7 +141,8 @@ TEST(SphereCastSphere, JustMissing)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastSphere(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastSphere(start, end, radius, target, transform, option, result);
 
   EXPECT_FALSE(hit);
 }
@@ -154,7 +159,8 @@ TEST(SphereCastSphere, StationarySweep)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastSphere(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastSphere(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-6);
@@ -176,7 +182,8 @@ TEST(SphereCastBox, Miss)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastBox(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastBox(start, end, radius, target, transform, option, result);
 
   EXPECT_FALSE(hit);
 }
@@ -193,7 +200,8 @@ TEST(SphereCastBox, HitFrontFace)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastBox(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastBox(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -213,7 +221,8 @@ TEST(SphereCastBox, HitSideFace)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastBox(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastBox(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_NEAR(result.normal.x(), -1.0, 1e-6);
@@ -231,7 +240,8 @@ TEST(SphereCastBox, StartingInside)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastBox(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastBox(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-6);
@@ -250,7 +260,8 @@ TEST(SphereCastBox, RotatedBox)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastBox(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastBox(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -270,7 +281,8 @@ TEST(SphereCastBox, TranslatedBox)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastBox(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastBox(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_NEAR(result.timeOfImpact, 0.55, 1e-6);
@@ -292,7 +304,8 @@ TEST(SphereCastCapsule, Miss)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastCapsule(start, end, radius, target, transform, option, result);
+  bool hit = sphereCastCapsule(
+      start, end, radius, target, transform, option, result);
 
   EXPECT_FALSE(hit);
 }
@@ -309,7 +322,8 @@ TEST(SphereCastCapsule, HitCylindricalPart)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastCapsule(start, end, radius, target, transform, option, result);
+  bool hit = sphereCastCapsule(
+      start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -329,7 +343,8 @@ TEST(SphereCastCapsule, HitSphericalCap)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastCapsule(start, end, radius, target, transform, option, result);
+  bool hit = sphereCastCapsule(
+      start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -350,7 +365,8 @@ TEST(SphereCastCapsule, TranslatedCapsule)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastCapsule(start, end, radius, target, transform, option, result);
+  bool hit = sphereCastCapsule(
+      start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -370,7 +386,8 @@ TEST(SphereCastCapsule, RotatedCapsule)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastCapsule(start, end, radius, target, transform, option, result);
+  bool hit = sphereCastCapsule(
+      start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -393,7 +410,8 @@ TEST(SphereCastPlane, Miss_ParallelMotion)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastPlane(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastPlane(start, end, radius, target, transform, option, result);
 
   EXPECT_FALSE(hit);
 }
@@ -410,7 +428,8 @@ TEST(SphereCastPlane, Miss_MovingAway)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastPlane(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastPlane(start, end, radius, target, transform, option, result);
 
   EXPECT_FALSE(hit);
 }
@@ -427,7 +446,8 @@ TEST(SphereCastPlane, HitFromAbove)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastPlane(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastPlane(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_NEAR(result.timeOfImpact, 0.45, 1e-6);
@@ -447,7 +467,8 @@ TEST(SphereCastPlane, StartingBelow)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastPlane(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastPlane(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-6);
@@ -465,7 +486,8 @@ TEST(SphereCastPlane, PlaneWithOffset)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastPlane(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastPlane(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_NEAR(result.timeOfImpact, 0.75, 1e-6);
@@ -485,7 +507,8 @@ TEST(SphereCastPlane, TransformedPlane)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastPlane(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastPlane(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_NEAR(result.timeOfImpact, 0.65, 1e-6);
@@ -505,7 +528,8 @@ TEST(SphereCastPlane, RotatedPlane)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastPlane(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastPlane(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -528,7 +552,8 @@ TEST(SphereCastCylinder, Miss)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastCylinder(start, end, radius, target, transform, option, result);
+  bool hit = sphereCastCylinder(
+      start, end, radius, target, transform, option, result);
 
   EXPECT_FALSE(hit);
 }
@@ -545,7 +570,8 @@ TEST(SphereCastCylinder, HitCurvedSurface)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastCylinder(start, end, radius, target, transform, option, result);
+  bool hit = sphereCastCylinder(
+      start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -565,7 +591,8 @@ TEST(SphereCastCylinder, HitTopCap)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastCylinder(start, end, radius, target, transform, option, result);
+  bool hit = sphereCastCylinder(
+      start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -585,7 +612,8 @@ TEST(SphereCastCylinder, HitBottomCap)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastCylinder(start, end, radius, target, transform, option, result);
+  bool hit = sphereCastCylinder(
+      start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -599,8 +627,8 @@ TEST(SphereCastCylinder, HitBottomCap)
 
 TEST(SphereCastConvex, Miss)
 {
-  std::vector<Eigen::Vector3d> vertices = {
-      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
   ConvexShape target(vertices);
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
 
@@ -611,15 +639,16 @@ TEST(SphereCastConvex, Miss)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastConvex(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastConvex(start, end, radius, target, transform, option, result);
 
   EXPECT_FALSE(hit);
 }
 
 TEST(SphereCastConvex, DirectHit)
 {
-  std::vector<Eigen::Vector3d> vertices = {
-      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
   ConvexShape target(vertices);
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
 
@@ -630,7 +659,8 @@ TEST(SphereCastConvex, DirectHit)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastConvex(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastConvex(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.3);
@@ -639,8 +669,8 @@ TEST(SphereCastConvex, DirectHit)
 
 TEST(SphereCastConvex, TranslatedTarget)
 {
-  std::vector<Eigen::Vector3d> vertices = {
-      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
   ConvexShape target(vertices);
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(0, 0, 5);
@@ -652,7 +682,8 @@ TEST(SphereCastConvex, TranslatedTarget)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastConvex(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastConvex(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.3);
@@ -665,9 +696,10 @@ TEST(SphereCastConvex, TranslatedTarget)
 
 TEST(SphereCastMesh, Miss)
 {
-  std::vector<Eigen::Vector3d> vertices = {
-      {0, 0, 0}, {2, 0, 0}, {1, 2, 0}, {1, 1, 2}};
-  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{0, 0, 0}, {2, 0, 0}, {1, 2, 0}, {1, 1, 2}};
+  std::vector<MeshShape::Triangle> triangles
+      = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
   MeshShape target(vertices, triangles);
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
 
@@ -678,16 +710,18 @@ TEST(SphereCastMesh, Miss)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastMesh(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastMesh(start, end, radius, target, transform, option, result);
 
   EXPECT_FALSE(hit);
 }
 
 TEST(SphereCastMesh, DirectHit)
 {
-  std::vector<Eigen::Vector3d> vertices = {
-      {-1, -1, -1}, {1, -1, -1}, {0, 1, -1}, {0, 0, 1}};
-  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{-1, -1, -1}, {1, -1, -1}, {0, 1, -1}, {0, 0, 1}};
+  std::vector<MeshShape::Triangle> triangles
+      = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
   MeshShape target(vertices, triangles);
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
 
@@ -698,7 +732,8 @@ TEST(SphereCastMesh, DirectHit)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastMesh(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastMesh(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -707,9 +742,10 @@ TEST(SphereCastMesh, DirectHit)
 
 TEST(SphereCastMesh, TranslatedTarget)
 {
-  std::vector<Eigen::Vector3d> vertices = {
-      {0, 0, 0}, {2, 0, 0}, {1, 2, 0}, {1, 1, 2}};
-  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{0, 0, 0}, {2, 0, 0}, {1, 2, 0}, {1, 1, 2}};
+  std::vector<MeshShape::Triangle> triangles
+      = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
   MeshShape target(vertices, triangles);
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(0, 0, 5);
@@ -721,7 +757,8 @@ TEST(SphereCastMesh, TranslatedTarget)
   CcdOption option;
   CcdResult result;
 
-  bool hit = sphereCastMesh(start, end, radius, target, transform, option, result);
+  bool hit
+      = sphereCastMesh(start, end, radius, target, transform, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.3);
@@ -746,7 +783,14 @@ TEST(CapsuleCastSphere, Miss)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastSphere(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastSphere(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_FALSE(hit);
 }
@@ -766,7 +810,14 @@ TEST(CapsuleCastSphere, DirectHit)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastSphere(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastSphere(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -787,7 +838,14 @@ TEST(CapsuleCastSphere, RotatingCapsule)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastSphere(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastSphere(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -812,7 +870,14 @@ TEST(CapsuleCastBox, Miss)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastBox(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastBox(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_FALSE(hit);
 }
@@ -831,7 +896,14 @@ TEST(CapsuleCastBox, DirectHit)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastBox(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastBox(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -856,7 +928,14 @@ TEST(CapsuleCastCapsule, Miss)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastCapsule(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastCapsule(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_FALSE(hit);
 }
@@ -875,7 +954,14 @@ TEST(CapsuleCastCapsule, DirectHit)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastCapsule(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastCapsule(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -900,7 +986,14 @@ TEST(CapsuleCastPlane, Miss)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastPlane(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastPlane(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_FALSE(hit);
 }
@@ -919,7 +1012,14 @@ TEST(CapsuleCastPlane, DirectHit)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastPlane(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastPlane(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -943,7 +1043,14 @@ TEST(CapsuleCastPlane, TiltedCapsule)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastPlane(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastPlane(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -968,7 +1075,14 @@ TEST(CapsuleCastCylinder, Miss)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastCylinder(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastCylinder(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_FALSE(hit);
 }
@@ -987,7 +1101,14 @@ TEST(CapsuleCastCylinder, DirectHit)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastCylinder(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastCylinder(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -1001,9 +1122,15 @@ TEST(CapsuleCastCylinder, DirectHit)
 TEST(CapsuleCastConvex, Miss)
 {
   CapsuleShape capsule(0.5, 2.0);
-  std::vector<Eigen::Vector3d> vertices = {
-      {-1, -1, -1}, {1, -1, -1}, {1, 1, -1}, {-1, 1, -1},
-      {-1, -1, 1}, {1, -1, 1}, {1, 1, 1}, {-1, 1, 1}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{-1, -1, -1},
+         {1, -1, -1},
+         {1, 1, -1},
+         {-1, 1, -1},
+         {-1, -1, 1},
+         {1, -1, 1},
+         {1, 1, 1},
+         {-1, 1, 1}};
   ConvexShape target(vertices);
   Eigen::Isometry3d targetTransform = Eigen::Isometry3d::Identity();
 
@@ -1015,7 +1142,14 @@ TEST(CapsuleCastConvex, Miss)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastConvex(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastConvex(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_FALSE(hit);
 }
@@ -1023,9 +1157,15 @@ TEST(CapsuleCastConvex, Miss)
 TEST(CapsuleCastConvex, DirectHit)
 {
   CapsuleShape capsule(0.5, 2.0);
-  std::vector<Eigen::Vector3d> vertices = {
-      {-1, -1, -1}, {1, -1, -1}, {1, 1, -1}, {-1, 1, -1},
-      {-1, -1, 1}, {1, -1, 1}, {1, 1, 1}, {-1, 1, 1}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{-1, -1, -1},
+         {1, -1, -1},
+         {1, 1, -1},
+         {-1, 1, -1},
+         {-1, -1, 1},
+         {1, -1, 1},
+         {1, 1, 1},
+         {-1, 1, 1}};
   ConvexShape target(vertices);
   Eigen::Isometry3d targetTransform = Eigen::Isometry3d::Identity();
 
@@ -1037,7 +1177,14 @@ TEST(CapsuleCastConvex, DirectHit)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastConvex(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastConvex(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -1051,9 +1198,10 @@ TEST(CapsuleCastConvex, DirectHit)
 TEST(CapsuleCastMesh, Miss)
 {
   CapsuleShape capsule(0.5, 2.0);
-  std::vector<Eigen::Vector3d> vertices = {
-      {0, 0, 0}, {2, 0, 0}, {1, 2, 0}, {1, 1, 2}};
-  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{0, 0, 0}, {2, 0, 0}, {1, 2, 0}, {1, 1, 2}};
+  std::vector<MeshShape::Triangle> triangles
+      = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
   MeshShape target(vertices, triangles);
   Eigen::Isometry3d targetTransform = Eigen::Isometry3d::Identity();
 
@@ -1065,7 +1213,14 @@ TEST(CapsuleCastMesh, Miss)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastMesh(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastMesh(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_FALSE(hit);
 }
@@ -1073,9 +1228,10 @@ TEST(CapsuleCastMesh, Miss)
 TEST(CapsuleCastMesh, DirectHit)
 {
   CapsuleShape capsule(0.25, 1.0);
-  std::vector<Eigen::Vector3d> vertices = {
-      {0, 0, 0}, {2, 0, 0}, {1, 2, 0}, {1, 1, 2}};
-  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{0, 0, 0}, {2, 0, 0}, {1, 2, 0}, {1, 1, 2}};
+  std::vector<MeshShape::Triangle> triangles
+      = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
   MeshShape target(vertices, triangles);
   Eigen::Isometry3d targetTransform = Eigen::Isometry3d::Identity();
   targetTransform.translation() = Eigen::Vector3d(0, 0, 5);
@@ -1088,7 +1244,14 @@ TEST(CapsuleCastMesh, DirectHit)
   CcdOption option;
   CcdResult result;
 
-  bool hit = capsuleCastMesh(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+  bool hit = capsuleCastMesh(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
@@ -1128,7 +1291,14 @@ TEST(ConservativeAdvancement, Miss)
   CcdOption option;
   CcdResult result;
 
-  bool hit = conservativeAdvancement(shapeA, transformAStart, transformAEnd, shapeB, transformB, option, result);
+  bool hit = conservativeAdvancement(
+      shapeA,
+      transformAStart,
+      transformAEnd,
+      shapeB,
+      transformB,
+      option,
+      result);
 
   EXPECT_FALSE(hit);
 }
@@ -1148,7 +1318,14 @@ TEST(ConservativeAdvancement, DirectHit)
   CcdOption option;
   CcdResult result;
 
-  bool hit = conservativeAdvancement(shapeA, transformAStart, transformAEnd, shapeB, transformB, option, result);
+  bool hit = conservativeAdvancement(
+      shapeA,
+      transformAStart,
+      transformAEnd,
+      shapeB,
+      transformB,
+      option,
+      result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.3);
@@ -1170,7 +1347,14 @@ TEST(ConservativeAdvancement, StartingInContact)
   CcdOption option;
   CcdResult result;
 
-  bool hit = conservativeAdvancement(shapeA, transformAStart, transformAEnd, shapeB, transformB, option, result);
+  bool hit = conservativeAdvancement(
+      shapeA,
+      transformAStart,
+      transformAEnd,
+      shapeB,
+      transformB,
+      option,
+      result);
 
   EXPECT_TRUE(hit);
   EXPECT_NEAR(result.timeOfImpact, 0.0, 0.1);
@@ -1193,7 +1377,14 @@ TEST(ConservativeAdvancement, RotatingShape)
   CcdOption option;
   CcdResult result;
 
-  bool hit = conservativeAdvancement(shapeA, transformAStart, transformAEnd, shapeB, transformB, option, result);
+  bool hit = conservativeAdvancement(
+      shapeA,
+      transformAStart,
+      transformAEnd,
+      shapeB,
+      transformB,
+      option,
+      result);
 
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.5);
@@ -1219,7 +1410,8 @@ TEST(SphereCast, Determinism)
   std::vector<CcdResult> results;
   for (int i = 0; i < 100; ++i) {
     CcdResult result;
-    [[maybe_unused]] bool hit = sphereCastSphere(start, end, radius, target, transform, option, result);
+    [[maybe_unused]] bool hit = sphereCastSphere(
+        start, end, radius, target, transform, option, result);
     results.push_back(result);
   }
 
@@ -1244,8 +1436,8 @@ TEST(NarrowPhaseSphereCast, SphereTarget)
   CollisionWorld world;
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(0, 0, 5);
-  auto target = world.createObject(
-      std::make_unique<SphereShape>(1.0), transform);
+  auto target
+      = world.createObject(std::make_unique<SphereShape>(1.0), transform);
 
   Eigen::Vector3d start(0, 0, 0);
   Eigen::Vector3d end(0, 0, 10);
@@ -1254,7 +1446,8 @@ TEST(NarrowPhaseSphereCast, SphereTarget)
   CcdOption option;
   CcdResult result;
 
-  bool hit = NarrowPhase::sphereCast(start, end, radius, target, option, result);
+  bool hit
+      = NarrowPhase::sphereCast(start, end, radius, target, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_EQ(result.object, &target);
@@ -1275,7 +1468,8 @@ TEST(NarrowPhaseSphereCast, BoxTarget)
   CcdOption option;
   CcdResult result;
 
-  bool hit = NarrowPhase::sphereCast(start, end, radius, target, option, result);
+  bool hit
+      = NarrowPhase::sphereCast(start, end, radius, target, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_EQ(result.object, &target);
@@ -1301,8 +1495,7 @@ TEST(NarrowPhaseCapsuleCast, SphereTarget)
   CollisionWorld world;
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = Eigen::Vector3d(0, 0, 5);
-  auto target = world.createObject(
-      std::make_unique<SphereShape>(1.0), tf);
+  auto target = world.createObject(std::make_unique<SphereShape>(1.0), tf);
 
   CapsuleShape capsule(0.5, 2.0);
   Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
@@ -1312,7 +1505,8 @@ TEST(NarrowPhaseCapsuleCast, SphereTarget)
   CcdOption option;
   CcdResult result;
 
-  bool hit = NarrowPhase::capsuleCast(capsuleStart, capsuleEnd, capsule, target, option, result);
+  bool hit = NarrowPhase::capsuleCast(
+      capsuleStart, capsuleEnd, capsule, target, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_EQ(*result.object, target);
@@ -1335,7 +1529,8 @@ TEST(NarrowPhaseCapsuleCast, BoxTarget)
   CcdOption option;
   CcdResult result;
 
-  bool hit = NarrowPhase::capsuleCast(capsuleStart, capsuleEnd, capsule, target, option, result);
+  bool hit = NarrowPhase::capsuleCast(
+      capsuleStart, capsuleEnd, capsule, target, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_EQ(*result.object, target);
@@ -1344,8 +1539,7 @@ TEST(NarrowPhaseCapsuleCast, BoxTarget)
 TEST(NarrowPhaseCapsuleCast, CylinderTarget)
 {
   CollisionWorld world;
-  auto target = world.createObject(
-      std::make_unique<CylinderShape>(1.0, 2.0));
+  auto target = world.createObject(std::make_unique<CylinderShape>(1.0, 2.0));
 
   CapsuleShape capsule(0.5, 2.0);
   Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
@@ -1356,13 +1550,12 @@ TEST(NarrowPhaseCapsuleCast, CylinderTarget)
   CcdOption option;
   CcdResult result;
 
-  bool hit = NarrowPhase::capsuleCast(capsuleStart, capsuleEnd, capsule, target, option, result);
+  bool hit = NarrowPhase::capsuleCast(
+      capsuleStart, capsuleEnd, capsule, target, option, result);
 
   EXPECT_TRUE(hit);
   EXPECT_EQ(*result.object, target);
 }
-
-
 
 TEST(NarrowPhaseCapsuleCast, IsCapsuleCastSupported)
 {

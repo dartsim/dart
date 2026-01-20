@@ -56,13 +56,16 @@ TEST(NarrowPhase, IsSupported)
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Box, ShapeType::Plane));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Plane, ShapeType::Capsule));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Capsule, ShapeType::Plane));
-  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Cylinder, ShapeType::Cylinder));
+  EXPECT_TRUE(
+      NarrowPhase::isSupported(ShapeType::Cylinder, ShapeType::Cylinder));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Cylinder, ShapeType::Sphere));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Cylinder));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Cylinder, ShapeType::Box));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Box, ShapeType::Cylinder));
-  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Cylinder, ShapeType::Capsule));
-  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Capsule, ShapeType::Cylinder));
+  EXPECT_TRUE(
+      NarrowPhase::isSupported(ShapeType::Cylinder, ShapeType::Capsule));
+  EXPECT_TRUE(
+      NarrowPhase::isSupported(ShapeType::Capsule, ShapeType::Cylinder));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Cylinder, ShapeType::Plane));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Plane, ShapeType::Cylinder));
 

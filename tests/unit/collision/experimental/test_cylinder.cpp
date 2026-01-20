@@ -92,8 +92,8 @@ TEST(CylinderCylinder, Perpendicular)
 
   Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
-  tf2.linear() =
-      Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  tf2.linear() = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY())
+                     .toRotationMatrix();
   tf2.translation() = Eigen::Vector3d(0.8, 0, 0);
 
   CollisionResult result;
@@ -113,8 +113,8 @@ TEST(CylinderSphere, NoCollision)
   tfSphere.translation() = Eigen::Vector3d(3.0, 0, 0);
 
   CollisionResult result;
-  bool collided =
-      collideCylinderSphere(cylinder, tfCylinder, sphere, tfSphere, result);
+  bool collided
+      = collideCylinderSphere(cylinder, tfCylinder, sphere, tfSphere, result);
 
   EXPECT_FALSE(collided);
   EXPECT_EQ(result.numContacts(), 0u);
@@ -130,8 +130,8 @@ TEST(CylinderSphere, SphereAtSide)
   tfSphere.translation() = Eigen::Vector3d(0.8, 0, 0);
 
   CollisionResult result;
-  bool collided =
-      collideCylinderSphere(cylinder, tfCylinder, sphere, tfSphere, result);
+  bool collided
+      = collideCylinderSphere(cylinder, tfCylinder, sphere, tfSphere, result);
 
   EXPECT_TRUE(collided);
   EXPECT_EQ(result.numContacts(), 1u);
@@ -148,8 +148,8 @@ TEST(CylinderSphere, SphereAtTop)
   tfSphere.translation() = Eigen::Vector3d(0, 0, 1.3);
 
   CollisionResult result;
-  bool collided =
-      collideCylinderSphere(cylinder, tfCylinder, sphere, tfSphere, result);
+  bool collided
+      = collideCylinderSphere(cylinder, tfCylinder, sphere, tfSphere, result);
 
   EXPECT_TRUE(collided);
   EXPECT_EQ(result.numContacts(), 1u);
@@ -165,8 +165,8 @@ TEST(CylinderSphere, SphereAtTopEdge)
   tfSphere.translation() = Eigen::Vector3d(0.5, 0, 1.2);
 
   CollisionResult result;
-  bool collided =
-      collideCylinderSphere(cylinder, tfCylinder, sphere, tfSphere, result);
+  bool collided
+      = collideCylinderSphere(cylinder, tfCylinder, sphere, tfSphere, result);
 
   EXPECT_TRUE(collided);
   EXPECT_EQ(result.numContacts(), 1u);
@@ -230,8 +230,8 @@ TEST(CylinderCapsule, NoCollision)
   tfCapsule.translation() = Eigen::Vector3d(3.0, 0, 0);
 
   CollisionResult result;
-  bool collided =
-      collideCylinderCapsule(cylinder, tfCylinder, capsule, tfCapsule, result);
+  bool collided = collideCylinderCapsule(
+      cylinder, tfCylinder, capsule, tfCapsule, result);
 
   EXPECT_FALSE(collided);
   EXPECT_EQ(result.numContacts(), 0u);
@@ -247,8 +247,8 @@ TEST(CylinderCapsule, ParallelOverlap)
   tfCapsule.translation() = Eigen::Vector3d(0.8, 0, 0);
 
   CollisionResult result;
-  bool collided =
-      collideCylinderCapsule(cylinder, tfCylinder, capsule, tfCapsule, result);
+  bool collided = collideCylinderCapsule(
+      cylinder, tfCylinder, capsule, tfCapsule, result);
 
   EXPECT_TRUE(collided);
   EXPECT_GE(result.numContacts(), 1u);
@@ -264,8 +264,8 @@ TEST(CylinderCapsule, CapsuleOnTop)
   tfCapsule.translation() = Eigen::Vector3d(0, 0, 1.5);
 
   CollisionResult result;
-  bool collided =
-      collideCylinderCapsule(cylinder, tfCylinder, capsule, tfCapsule, result);
+  bool collided = collideCylinderCapsule(
+      cylinder, tfCylinder, capsule, tfCapsule, result);
 
   EXPECT_TRUE(collided);
   EXPECT_GE(result.numContacts(), 1u);
@@ -281,8 +281,8 @@ TEST(CylinderPlane, NoCollision)
   Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
 
   CollisionResult result;
-  bool collided =
-      collideCylinderPlane(cylinder, tfCylinder, plane, tfPlane, result);
+  bool collided
+      = collideCylinderPlane(cylinder, tfCylinder, plane, tfPlane, result);
 
   EXPECT_FALSE(collided);
   EXPECT_EQ(result.numContacts(), 0u);
@@ -298,8 +298,8 @@ TEST(CylinderPlane, CylinderStandingOnPlane)
   Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
 
   CollisionResult result;
-  bool collided =
-      collideCylinderPlane(cylinder, tfCylinder, plane, tfPlane, result);
+  bool collided
+      = collideCylinderPlane(cylinder, tfCylinder, plane, tfPlane, result);
 
   EXPECT_TRUE(collided);
   EXPECT_GE(result.numContacts(), 1u);
@@ -311,14 +311,14 @@ TEST(CylinderPlane, CylinderLyingOnPlane)
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
 
   Eigen::Isometry3d tfCylinder = Eigen::Isometry3d::Identity();
-  tfCylinder.linear() =
-      Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  tfCylinder.linear() = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY())
+                            .toRotationMatrix();
   tfCylinder.translation() = Eigen::Vector3d(0, 0, 0.4);
   Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
 
   CollisionResult result;
-  bool collided =
-      collideCylinderPlane(cylinder, tfCylinder, plane, tfPlane, result);
+  bool collided
+      = collideCylinderPlane(cylinder, tfCylinder, plane, tfPlane, result);
 
   EXPECT_TRUE(collided);
   EXPECT_GE(result.numContacts(), 1u);
@@ -330,14 +330,14 @@ TEST(CylinderPlane, CylinderTiltedOnPlane)
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
 
   Eigen::Isometry3d tfCylinder = Eigen::Isometry3d::Identity();
-  tfCylinder.linear() =
-      Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  tfCylinder.linear() = Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitY())
+                            .toRotationMatrix();
   tfCylinder.translation() = Eigen::Vector3d(0, 0, 0.5);
   Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
 
   CollisionResult result;
-  bool collided =
-      collideCylinderPlane(cylinder, tfCylinder, plane, tfPlane, result);
+  bool collided
+      = collideCylinderPlane(cylinder, tfCylinder, plane, tfPlane, result);
 
   EXPECT_TRUE(collided);
   EXPECT_GE(result.numContacts(), 1u);

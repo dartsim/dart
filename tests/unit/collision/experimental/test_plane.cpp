@@ -144,8 +144,8 @@ TEST(PlaneBox, RotatedBox)
 
   Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
-  tfBox.linear() =
-      Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  tfBox.linear() = Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitY())
+                       .toRotationMatrix();
   tfBox.translation() = Eigen::Vector3d(0, 0, 1.0);
 
   CollisionResult result;
@@ -165,7 +165,8 @@ TEST(PlaneCapsule, NoCollision)
   tfCapsule.translation() = Eigen::Vector3d(0, 0, 2.0);
 
   CollisionResult result;
-  bool collided = collidePlaneCapsule(plane, tfPlane, capsule, tfCapsule, result);
+  bool collided
+      = collidePlaneCapsule(plane, tfPlane, capsule, tfCapsule, result);
 
   EXPECT_FALSE(collided);
   EXPECT_EQ(result.numContacts(), 0u);
@@ -181,7 +182,8 @@ TEST(PlaneCapsule, Standing)
   tfCapsule.translation() = Eigen::Vector3d(0, 0, 1.3);
 
   CollisionResult result;
-  bool collided = collidePlaneCapsule(plane, tfPlane, capsule, tfCapsule, result);
+  bool collided
+      = collidePlaneCapsule(plane, tfPlane, capsule, tfCapsule, result);
 
   EXPECT_TRUE(collided);
   EXPECT_EQ(result.numContacts(), 1u);
@@ -195,12 +197,13 @@ TEST(PlaneCapsule, Lying)
 
   Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
-  tfCapsule.linear() =
-      Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  tfCapsule.linear() = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY())
+                           .toRotationMatrix();
   tfCapsule.translation() = Eigen::Vector3d(0, 0, 0.3);
 
   CollisionResult result;
-  bool collided = collidePlaneCapsule(plane, tfPlane, capsule, tfCapsule, result);
+  bool collided
+      = collidePlaneCapsule(plane, tfPlane, capsule, tfCapsule, result);
 
   EXPECT_TRUE(collided);
   EXPECT_EQ(result.numContacts(), 1u);

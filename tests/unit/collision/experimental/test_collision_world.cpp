@@ -299,8 +299,7 @@ TEST(CollisionWorldSphereCast, MixedShapes)
 
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(0, 0, 6);
-  world.createObject(
-      std::make_unique<BoxShape>(Eigen::Vector3d(2, 2, 2)), tf2);
+  world.createObject(std::make_unique<BoxShape>(Eigen::Vector3d(2, 2, 2)), tf2);
 
   Eigen::Isometry3d tf3 = Eigen::Isometry3d::Identity();
   tf3.translation() = Eigen::Vector3d(0, 0, 10);
@@ -341,7 +340,8 @@ TEST(CollisionWorldCapsuleCast, NoHit)
   CcdOption option;
   CcdResult result;
 
-  EXPECT_FALSE(world.capsuleCast(capsuleStart, capsuleEnd, capsule, option, result));
+  EXPECT_FALSE(
+      world.capsuleCast(capsuleStart, capsuleEnd, capsule, option, result));
   EXPECT_FALSE(result.hit);
 }
 
@@ -361,7 +361,8 @@ TEST(CollisionWorldCapsuleCast, SingleHit)
   CcdOption option;
   CcdResult result;
 
-  EXPECT_TRUE(world.capsuleCast(capsuleStart, capsuleEnd, capsule, option, result));
+  EXPECT_TRUE(
+      world.capsuleCast(capsuleStart, capsuleEnd, capsule, option, result));
   EXPECT_TRUE(result.hit);
   EXPECT_NE(result.object, nullptr);
   EXPECT_EQ(*result.object, target);
@@ -389,7 +390,8 @@ TEST(CollisionWorldCapsuleCast, ClosestHit)
   CcdOption option;
   CcdResult result;
 
-  EXPECT_TRUE(world.capsuleCast(capsuleStart, capsuleEnd, capsule, option, result));
+  EXPECT_TRUE(
+      world.capsuleCast(capsuleStart, capsuleEnd, capsule, option, result));
   EXPECT_NE(result.object, nullptr);
   EXPECT_EQ(*result.object, near);
 }
@@ -418,7 +420,8 @@ TEST(CollisionWorldCapsuleCast, CapsuleCastAll)
   CcdOption option;
   std::vector<CcdResult> results;
 
-  EXPECT_TRUE(world.capsuleCastAll(capsuleStart, capsuleEnd, capsule, option, results));
+  EXPECT_TRUE(
+      world.capsuleCastAll(capsuleStart, capsuleEnd, capsule, option, results));
   EXPECT_EQ(results.size(), 2u);
 
   EXPECT_LT(results[0].timeOfImpact, results[1].timeOfImpact);

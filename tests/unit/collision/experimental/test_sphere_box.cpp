@@ -45,7 +45,11 @@ TEST(SphereBox, Separated_AlongX)
   Eigen::Isometry3d boxTransform = Eigen::Isometry3d::Identity();
 
   bool collided = collideSphereBox(
-      Eigen::Vector3d(5, 0, 0), 1.0, Eigen::Vector3d(1, 1, 1), boxTransform, result);
+      Eigen::Vector3d(5, 0, 0),
+      1.0,
+      Eigen::Vector3d(1, 1, 1),
+      boxTransform,
+      result);
 
   EXPECT_FALSE(collided);
   EXPECT_EQ(result.numContacts(), 0);
@@ -58,7 +62,11 @@ TEST(SphereBox, Separated_AlongY)
   Eigen::Isometry3d boxTransform = Eigen::Isometry3d::Identity();
 
   bool collided = collideSphereBox(
-      Eigen::Vector3d(0, 5, 0), 1.0, Eigen::Vector3d(1, 1, 1), boxTransform, result);
+      Eigen::Vector3d(0, 5, 0),
+      1.0,
+      Eigen::Vector3d(1, 1, 1),
+      boxTransform,
+      result);
 
   EXPECT_FALSE(collided);
   EXPECT_EQ(result.numContacts(), 0);
@@ -71,7 +79,11 @@ TEST(SphereBox, Separated_AlongZ)
   Eigen::Isometry3d boxTransform = Eigen::Isometry3d::Identity();
 
   bool collided = collideSphereBox(
-      Eigen::Vector3d(0, 0, 5), 1.0, Eigen::Vector3d(1, 1, 1), boxTransform, result);
+      Eigen::Vector3d(0, 0, 5),
+      1.0,
+      Eigen::Vector3d(1, 1, 1),
+      boxTransform,
+      result);
 
   EXPECT_FALSE(collided);
   EXPECT_EQ(result.numContacts(), 0);
@@ -84,7 +96,11 @@ TEST(SphereBox, Touching_FaceX)
   Eigen::Isometry3d boxTransform = Eigen::Isometry3d::Identity();
 
   bool collided = collideSphereBox(
-      Eigen::Vector3d(2, 0, 0), 1.0, Eigen::Vector3d(1, 1, 1), boxTransform, result);
+      Eigen::Vector3d(2, 0, 0),
+      1.0,
+      Eigen::Vector3d(1, 1, 1),
+      boxTransform,
+      result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -98,7 +114,11 @@ TEST(SphereBox, Overlapping_FaceX)
   Eigen::Isometry3d boxTransform = Eigen::Isometry3d::Identity();
 
   bool collided = collideSphereBox(
-      Eigen::Vector3d(1.5, 0, 0), 1.0, Eigen::Vector3d(1, 1, 1), boxTransform, result);
+      Eigen::Vector3d(1.5, 0, 0),
+      1.0,
+      Eigen::Vector3d(1, 1, 1),
+      boxTransform,
+      result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -112,7 +132,11 @@ TEST(SphereBox, Overlapping_FaceY)
   Eigen::Isometry3d boxTransform = Eigen::Isometry3d::Identity();
 
   bool collided = collideSphereBox(
-      Eigen::Vector3d(0, 1.5, 0), 1.0, Eigen::Vector3d(1, 1, 1), boxTransform, result);
+      Eigen::Vector3d(0, 1.5, 0),
+      1.0,
+      Eigen::Vector3d(1, 1, 1),
+      boxTransform,
+      result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -126,7 +150,11 @@ TEST(SphereBox, Overlapping_FaceZ)
   Eigen::Isometry3d boxTransform = Eigen::Isometry3d::Identity();
 
   bool collided = collideSphereBox(
-      Eigen::Vector3d(0, 0, 1.5), 1.0, Eigen::Vector3d(1, 1, 1), boxTransform, result);
+      Eigen::Vector3d(0, 0, 1.5),
+      1.0,
+      Eigen::Vector3d(1, 1, 1),
+      boxTransform,
+      result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -140,7 +168,11 @@ TEST(SphereBox, SphereCenterInsideBox)
   Eigen::Isometry3d boxTransform = Eigen::Isometry3d::Identity();
 
   bool collided = collideSphereBox(
-      Eigen::Vector3d(0, 0, 0), 0.5, Eigen::Vector3d(1, 1, 1), boxTransform, result);
+      Eigen::Vector3d(0, 0, 0),
+      0.5,
+      Eigen::Vector3d(1, 1, 1),
+      boxTransform,
+      result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -154,7 +186,11 @@ TEST(SphereBox, SphereCenterAtBoxCenter)
   Eigen::Isometry3d boxTransform = Eigen::Isometry3d::Identity();
 
   bool collided = collideSphereBox(
-      Eigen::Vector3d(0, 0, 0), 1.0, Eigen::Vector3d(1, 1, 1), boxTransform, result);
+      Eigen::Vector3d(0, 0, 0),
+      1.0,
+      Eigen::Vector3d(1, 1, 1),
+      boxTransform,
+      result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -235,7 +271,11 @@ TEST(SphereBox, TranslatedBox)
   boxTransform.translation() = Eigen::Vector3d(5, 0, 0);
 
   bool collided = collideSphereBox(
-      Eigen::Vector3d(6.5, 0, 0), 1.0, Eigen::Vector3d(1, 1, 1), boxTransform, result);
+      Eigen::Vector3d(6.5, 0, 0),
+      1.0,
+      Eigen::Vector3d(1, 1, 1),
+      boxTransform,
+      result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -249,7 +289,11 @@ TEST(SphereBox, DifferentSizes)
   Eigen::Isometry3d boxTransform = Eigen::Isometry3d::Identity();
 
   bool collided = collideSphereBox(
-      Eigen::Vector3d(3, 0, 0), 2.0, Eigen::Vector3d(2, 1, 1), boxTransform, result);
+      Eigen::Vector3d(3, 0, 0),
+      2.0,
+      Eigen::Vector3d(2, 1, 1),
+      boxTransform,
+      result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -324,7 +368,8 @@ TEST(SphereBox, UsingShapeObjects)
 
   CollisionResult result;
 
-  bool collided = collideSphereBox(sphere, sphereTransform, box, boxTransform, result);
+  bool collided
+      = collideSphereBox(sphere, sphereTransform, box, boxTransform, result);
 
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
@@ -339,7 +384,8 @@ TEST(SphereBox, Determinism)
     CollisionResult result;
 
     Eigen::Isometry3d boxTransform = Eigen::Isometry3d::Identity();
-    boxTransform.rotate(Eigen::AngleAxisd(0.123, Eigen::Vector3d(1, 2, 3).normalized()));
+    boxTransform.rotate(
+        Eigen::AngleAxisd(0.123, Eigen::Vector3d(1, 2, 3).normalized()));
     boxTransform.translation() = Eigen::Vector3d(0.5, 0.3, 0.2);
 
     bool collided = collideSphereBox(

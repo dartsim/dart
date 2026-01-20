@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/experimental/narrow_phase/distance.hpp>
-#include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/experimental/collision_object.hpp>
 #include <dart/collision/experimental/collision_world.hpp>
+#include <dart/collision/experimental/narrow_phase/distance.hpp>
+#include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <gtest/gtest.h>
@@ -187,7 +187,8 @@ TEST(DistanceCapsuleSphere, Separated)
   tfSphere.translation() = Eigen::Vector3d(3.0, 0, 0);
 
   DistanceResult result;
-  double dist = distanceCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
+  double dist
+      = distanceCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
 
   EXPECT_NEAR(dist, 2.0, 1e-6);
 }
@@ -209,17 +210,27 @@ TEST(DistanceCapsuleBox, Separated)
 
 TEST(NarrowPhaseDistance, IsDistanceSupported)
 {
-  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Sphere, ShapeType::Sphere));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Sphere, ShapeType::Sphere));
   EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Box, ShapeType::Box));
-  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Sphere, ShapeType::Box));
-  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Box, ShapeType::Sphere));
-  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Capsule, ShapeType::Capsule));
-  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Capsule, ShapeType::Sphere));
-  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Sphere, ShapeType::Capsule));
-  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Capsule, ShapeType::Box));
-  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Box, ShapeType::Capsule));
-  EXPECT_FALSE(NarrowPhase::isDistanceSupported(ShapeType::Plane, ShapeType::Sphere));
-  EXPECT_FALSE(NarrowPhase::isDistanceSupported(ShapeType::Cylinder, ShapeType::Box));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Sphere, ShapeType::Box));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Box, ShapeType::Sphere));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Capsule, ShapeType::Capsule));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Capsule, ShapeType::Sphere));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Sphere, ShapeType::Capsule));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Capsule, ShapeType::Box));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Box, ShapeType::Capsule));
+  EXPECT_FALSE(
+      NarrowPhase::isDistanceSupported(ShapeType::Plane, ShapeType::Sphere));
+  EXPECT_FALSE(
+      NarrowPhase::isDistanceSupported(ShapeType::Cylinder, ShapeType::Box));
 }
 
 TEST(NarrowPhaseDistance, SphereSphere)
@@ -361,10 +372,12 @@ TEST(NarrowPhaseDistance, ConvexTouching)
 
 TEST(NarrowPhaseDistance, IsDistanceSupportedConvex)
 {
-  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Convex, ShapeType::Convex));
-  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Convex, ShapeType::Sphere));
-  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Mesh, ShapeType::Mesh));
-  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Mesh, ShapeType::Convex));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Convex, ShapeType::Convex));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Convex, ShapeType::Sphere));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Mesh, ShapeType::Mesh));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Mesh, ShapeType::Convex));
 }
-
-

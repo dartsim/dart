@@ -270,9 +270,12 @@ TEST(AabbTreeBroadPhase, FatAabbOptimization)
 
   bp.add(0, Aabb(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 1, 1)));
 
-  bp.update(0, Aabb(Eigen::Vector3d(0.1, 0.1, 0.1), Eigen::Vector3d(1.1, 1.1, 1.1)));
-  bp.update(0, Aabb(Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(1.2, 1.2, 1.2)));
-  bp.update(0, Aabb(Eigen::Vector3d(0.3, 0.3, 0.3), Eigen::Vector3d(1.3, 1.3, 1.3)));
+  bp.update(
+      0, Aabb(Eigen::Vector3d(0.1, 0.1, 0.1), Eigen::Vector3d(1.1, 1.1, 1.1)));
+  bp.update(
+      0, Aabb(Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(1.2, 1.2, 1.2)));
+  bp.update(
+      0, Aabb(Eigen::Vector3d(0.3, 0.3, 0.3), Eigen::Vector3d(1.3, 1.3, 1.3)));
 
   EXPECT_EQ(bp.size(), 1);
   EXPECT_TRUE(bp.validate());
@@ -305,9 +308,9 @@ TEST(AabbTreeBroadPhase, ManyObjects)
     double x = dist(rng);
     double y = dist(rng);
     double z = dist(rng);
-    bp.add(i, Aabb(
-        Eigen::Vector3d(x, y, z),
-        Eigen::Vector3d(x + 1, y + 1, z + 1)));
+    bp.add(
+        i,
+        Aabb(Eigen::Vector3d(x, y, z), Eigen::Vector3d(x + 1, y + 1, z + 1)));
   }
 
   EXPECT_EQ(bp.size(), numObjects);
@@ -322,9 +325,11 @@ TEST(AabbTreeBroadPhase, RemoveMultiple)
   AabbTreeBroadPhase bp;
 
   for (int i = 0; i < 10; ++i) {
-    bp.add(i, Aabb(
-        Eigen::Vector3d(i * 2.0, 0, 0),
-        Eigen::Vector3d(i * 2.0 + 1, 1, 1)));
+    bp.add(
+        i,
+        Aabb(
+            Eigen::Vector3d(i * 2.0, 0, 0),
+            Eigen::Vector3d(i * 2.0 + 1, 1, 1)));
   }
 
   EXPECT_EQ(bp.size(), 10);
@@ -351,9 +356,7 @@ TEST(AabbTreeBroadPhase, ConsistentWithBruteForce)
     double x = dist(rng);
     double y = dist(rng);
     double z = dist(rng);
-    Aabb aabb(
-        Eigen::Vector3d(x, y, z),
-        Eigen::Vector3d(x + 2, y + 2, z + 2));
+    Aabb aabb(Eigen::Vector3d(x, y, z), Eigen::Vector3d(x + 2, y + 2, z + 2));
 
     tree.add(i, aabb);
     brute.add(i, aabb);
@@ -383,9 +386,7 @@ TEST(AabbTreeBroadPhase, QueryOverlappingConsistent)
     double x = dist(rng);
     double y = dist(rng);
     double z = dist(rng);
-    Aabb aabb(
-        Eigen::Vector3d(x, y, z),
-        Eigen::Vector3d(x + 1, y + 1, z + 1));
+    Aabb aabb(Eigen::Vector3d(x, y, z), Eigen::Vector3d(x + 1, y + 1, z + 1));
 
     tree.add(i, aabb);
     brute.add(i, aabb);

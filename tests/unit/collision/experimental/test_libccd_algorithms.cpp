@@ -12,7 +12,6 @@
 #include <dart/collision/experimental/narrow_phase/mpr.hpp>
 
 #include <ccd/ccd.h>
-
 #include <gtest/gtest.h>
 
 #include <cmath>
@@ -62,9 +61,12 @@ void supportBox(const void* obj, const ccd_vec3_t* dir, ccd_vec3_t* vec)
 {
   const auto* box = static_cast<const LibccdBox*>(obj);
   Eigen::Vector3d point = box->center;
-  point.x() += (dir->v[0] >= 0.0) ? box->halfExtents.x() : -box->halfExtents.x();
-  point.y() += (dir->v[1] >= 0.0) ? box->halfExtents.y() : -box->halfExtents.y();
-  point.z() += (dir->v[2] >= 0.0) ? box->halfExtents.z() : -box->halfExtents.z();
+  point.x()
+      += (dir->v[0] >= 0.0) ? box->halfExtents.x() : -box->halfExtents.x();
+  point.y()
+      += (dir->v[1] >= 0.0) ? box->halfExtents.y() : -box->halfExtents.y();
+  point.z()
+      += (dir->v[2] >= 0.0) ? box->halfExtents.z() : -box->halfExtents.z();
   toCcdVec3(vec, point);
 }
 
@@ -102,8 +104,12 @@ SupportFunction makeBoxSupport(
   };
 }
 
-void configureCcd(ccd_t& ccd, ccd_support_fn support1, ccd_support_fn support2,
-    ccd_center_fn center1, ccd_center_fn center2)
+void configureCcd(
+    ccd_t& ccd,
+    ccd_support_fn support1,
+    ccd_support_fn support2,
+    ccd_center_fn center1,
+    ccd_center_fn center2)
 {
   CCD_INIT(&ccd);
   ccd.support1 = support1;
@@ -116,16 +122,14 @@ void configureCcd(ccd_t& ccd, ccd_support_fn support1, ccd_support_fn support2,
 }
 
 void expectVectorNear(
-    const Eigen::Vector3d& actual,
-    const Eigen::Vector3d& expected,
-    double tol)
+    const Eigen::Vector3d& actual, const Eigen::Vector3d& expected, double tol)
 {
   EXPECT_NEAR(actual.x(), expected.x(), tol);
   EXPECT_NEAR(actual.y(), expected.y(), tol);
   EXPECT_NEAR(actual.z(), expected.z(), tol);
 }
 
-}  // namespace
+} // namespace
 
 TEST(GjkLibccd, SphereSphereSeparationDistance)
 {
@@ -159,7 +163,8 @@ TEST(GjkLibccd, SphereSphereEpaOrMprMatchesLibccd)
   auto supportA = makeSphereSupport(sphereA.center, sphereA.radius);
   auto supportB = makeSphereSupport(sphereB.center, sphereB.radius);
 
-  GjkResult gjk = Gjk::query(supportA, supportB, sphereB.center - sphereA.center);
+  GjkResult gjk
+      = Gjk::query(supportA, supportB, sphereB.center - sphereA.center);
   ASSERT_TRUE(gjk.intersecting);
 
   // Try EPA first, fall back to MPR if simplex is incomplete
@@ -175,8 +180,8 @@ TEST(GjkLibccd, SphereSphereEpaOrMprMatchesLibccd)
     ourPos = 0.5 * (epa.pointOnA + epa.pointOnB);
   } else {
     // MPR fallback (matches production pattern in convex_convex.cpp)
-    MprResult mpr = Mpr::penetration(
-        supportA, supportB, sphereA.center, sphereB.center);
+    MprResult mpr
+        = Mpr::penetration(supportA, supportB, sphereA.center, sphereB.center);
     ASSERT_TRUE(mpr.success) << "Both EPA and MPR failed";
     ourDepth = mpr.depth;
     ourNormal = mpr.normal.normalized();
@@ -195,7 +200,8 @@ TEST(GjkLibccd, SphereSphereEpaOrMprMatchesLibccd)
   double depth = 0.0;
   ccd_vec3_t dir;
   ccd_vec3_t pos;
-  const int ret = ccdGJKPenetration(&sphereA, &sphereB, &ccd, &depth, &dir, &pos);
+  const int ret
+      = ccdGJKPenetration(&sphereA, &sphereB, &ccd, &depth, &dir, &pos);
   ASSERT_EQ(ret, 0);
 
   EXPECT_NEAR(ourDepth, depth, 1e-3);
@@ -214,8 +220,8 @@ TEST(GjkLibccd, SphereSphereMprMatchesLibccd)
   auto supportA = makeSphereSupport(sphereA.center, sphereA.radius);
   auto supportB = makeSphereSupport(sphereB.center, sphereB.radius);
 
-  MprResult mpr = Mpr::penetration(
-      supportA, supportB, sphereA.center, sphereB.center);
+  MprResult mpr
+      = Mpr::penetration(supportA, supportB, sphereA.center, sphereB.center);
   ASSERT_TRUE(mpr.success);
   const double expectedDepth = sphereA.radius + sphereB.radius
                                - (sphereB.center - sphereA.center).norm();
@@ -228,7 +234,8 @@ TEST(GjkLibccd, SphereSphereMprMatchesLibccd)
   double depth = 0.0;
   ccd_vec3_t dir;
   ccd_vec3_t pos;
-  const int ret = ccdMPRPenetration(&sphereA, &sphereB, &ccd, &depth, &dir, &pos);
+  const int ret
+      = ccdMPRPenetration(&sphereA, &sphereB, &ccd, &depth, &dir, &pos);
   ASSERT_EQ(ret, 0);
 
   EXPECT_NEAR(mpr.depth, depth, 1e-4);
@@ -241,8 +248,10 @@ TEST(GjkLibccd, SphereSphereMprMatchesLibccd)
 
 TEST(GjkLibccd, BoxBoxIntersectMatchesLibccd)
 {
-  LibccdBox boxA{Eigen::Vector3d(0.0, 0.0, 0.0), Eigen::Vector3d(1.0, 1.0, 1.0)};
-  LibccdBox boxB{Eigen::Vector3d(1.2, 0.5, 0.0), Eigen::Vector3d(1.0, 1.0, 1.0)};
+  LibccdBox boxA{
+      Eigen::Vector3d(0.0, 0.0, 0.0), Eigen::Vector3d(1.0, 1.0, 1.0)};
+  LibccdBox boxB{
+      Eigen::Vector3d(1.2, 0.5, 0.0), Eigen::Vector3d(1.0, 1.0, 1.0)};
 
   auto supportA = makeBoxSupport(boxA.center, boxA.halfExtents);
   auto supportB = makeBoxSupport(boxB.center, boxB.halfExtents);

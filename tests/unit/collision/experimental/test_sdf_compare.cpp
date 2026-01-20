@@ -8,17 +8,16 @@
  * This file is provided under the following "BSD-style" License
  */
 
-#include <gtest/gtest.h>
-
 #include <dart/collision/experimental/narrow_phase/distance.hpp>
 #include <dart/collision/experimental/sdf/dense_sdf_field.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
 
-#if DART_EXPERIMENTAL_HAVE_ESDF_MAP
-#include <dart/collision/experimental/sdf/esdf_map_field.hpp>
-#include <voxblox/core/common.h>
-#include <voxblox/core/esdf_map.h>
-#include <voxblox/core/layer.h>
+#include <gtest/gtest.h>
+
+#ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
+  #include <voxblox/core/common.h>
+  #include <voxblox/core/esdf_map.h>
+  #include <voxblox/core/layer.h>
 #endif
 
 #include <memory>
@@ -57,9 +56,9 @@ std::shared_ptr<dart::collision::experimental::DenseSdfField> buildDenseField()
   for (int z = 0; z < kDim; ++z) {
     for (int y = 0; y < kDim; ++y) {
       for (int x = 0; x < kDim; ++x) {
-        const Eigen::Vector3d pos =
-            gridOrigin()
-            + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) * kVoxelSize);
+        const Eigen::Vector3d pos
+            = gridOrigin()
+              + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) * kVoxelSize);
         field->setDistance(Eigen::Vector3i(x, y, z), sphereDistance(pos));
         field->setObserved(Eigen::Vector3i(x, y, z), true);
       }
@@ -83,8 +82,8 @@ std::vector<Eigen::Vector3d> makeQueryPoints(std::size_t count)
   return points;
 }
 
-#if DART_EXPERIMENTAL_HAVE_ESDF_MAP
-std::shared_ptr<voxblox::EsdfMap> buildEsdfMap()
+#ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
+std::shared_ptr<voxblox::EsdfMap> buildVoxbloxMap()
 {
   constexpr int kVoxelsPerSide = 16;
   auto layer = std::make_shared<voxblox::Layer<voxblox::EsdfVoxel>>(
@@ -93,9 +92,9 @@ std::shared_ptr<voxblox::EsdfMap> buildEsdfMap()
   for (int z = 0; z < kDim; ++z) {
     for (int y = 0; y < kDim; ++y) {
       for (int x = 0; x < kDim; ++x) {
-        const Eigen::Vector3d pos =
-            gridOrigin()
-            + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) * kVoxelSize);
+        const Eigen::Vector3d pos
+            = gridOrigin()
+              + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) * kVoxelSize);
         const double dist = sphereDistance(pos);
 
         const voxblox::GlobalIndex global(x, y, z);
@@ -116,7 +115,7 @@ std::shared_ptr<voxblox::EsdfMap> buildEsdfMap()
 }
 #endif
 
-}  // namespace
+} // namespace
 
 TEST(SdfDenseField, MatchesAnalyticDistance)
 {
@@ -135,8 +134,7 @@ TEST(SdfDenseField, MatchesAnalyticDistance)
     EXPECT_NEAR(dist, expected, kDistTol);
 
     if (grad.squaredNorm() > 1e-12) {
-      const Eigen::Vector3d analytic_grad =
-          (point - gridCenter()).normalized();
+      const Eigen::Vector3d analytic_grad = (point - gridCenter()).normalized();
       const double dot = grad.normalized().dot(analytic_grad);
       EXPECT_GT(dot, 0.9);
     }
@@ -158,35 +156,31 @@ TEST(SdfDistance, SphereVsSdf)
 
   DistanceResult result;
   DistanceOption option;
-  const double dist =
-      distanceSphereSdf(sphere, sphere_tf, sdf, sdf_tf, result, option);
+  const double dist
+      = distanceSphereSdf(sphere, sphere_tf, sdf, sdf_tf, result, option);
 
-  const double expected =
-      sphereDistance(sphere_tf.translation()) - sphere.getRadius();
+  const double expected
+      = sphereDistance(sphere_tf.translation()) - sphere.getRadius();
   EXPECT_NEAR(dist, expected, kDistTol);
 }
 
-#if DART_EXPERIMENTAL_HAVE_ESDF_MAP
-TEST(SdfDenseField, MatchesEsdfMap)
+#ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
+TEST(SdfDenseField, MatchesVoxbloxEsdf)
 {
-  using dart::collision::experimental::SdfQueryOptions;
-  using dart::collision::experimental::EsdfMapField;
-
   auto dense = buildDenseField();
-  auto map = buildEsdfMap();
-  EsdfMapField map_field(map);
+  auto map = buildVoxbloxMap();
 
-  SdfQueryOptions options;
+  dart::collision::experimental::SdfQueryOptions options;
   options.interpolate = true;
   options.requireObserved = true;
 
   const auto points = makeQueryPoints(64);
   for (const auto& point : points) {
     double dense_dist = 0.0;
-    double map_dist = 0.0;
+    double vox_dist = 0.0;
     ASSERT_TRUE(dense->distance(point, &dense_dist, options));
-    ASSERT_TRUE(map_field.distance(point, &map_dist, options));
-    EXPECT_NEAR(dense_dist, map_dist, 5e-3);
+    ASSERT_TRUE(map->getDistanceAtPosition(point, true, &vox_dist));
+    EXPECT_NEAR(dense_dist, vox_dist, 5e-3);
   }
 }
 #endif

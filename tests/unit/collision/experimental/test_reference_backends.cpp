@@ -8,23 +8,23 @@
  * This file is provided under the following "BSD-style" License
  */
 
-#include <gtest/gtest.h>
-
+#include <dart/collision/CollisionDetector.hpp>
 #include <dart/collision/experimental/narrow_phase/gjk.hpp>
 #include <dart/collision/experimental/narrow_phase/mpr.hpp>
-
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
-#include <dart/collision/CollisionDetector.hpp>
+
+#include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/SphereShape.hpp>
-#include <dart/dynamics/BoxShape.hpp>
+
+#include <gtest/gtest.h>
 
 #if DART_HAVE_BULLET
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
+  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #endif
 
 #if DART_HAVE_ODE
-#include <dart/collision/ode/OdeCollisionDetector.hpp>
+  #include <dart/collision/ode/OdeCollisionDetector.hpp>
 #endif
 
 using dart::collision::experimental::Gjk;
@@ -60,121 +60,138 @@ SupportFunction makeBoxSupport(
   };
 }
 
-struct BackendResult {
+struct BackendResult
+{
   bool colliding = false;
   double distance = 0.0;
   double penetration = 0.0;
 };
 
 BackendResult queryFCL(
-    const Eigen::Vector3d& pos1, const dart::dynamics::ShapePtr& shape1,
-    const Eigen::Vector3d& pos2, const dart::dynamics::ShapePtr& shape2)
+    const Eigen::Vector3d& pos1,
+    const dart::dynamics::ShapePtr& shape1,
+    const Eigen::Vector3d& pos2,
+    const dart::dynamics::ShapePtr& shape2)
 {
   auto cd = dart::collision::FCLCollisionDetector::create();
-  
-  auto frame1 = dart::dynamics::SimpleFrame::createShared(dart::dynamics::Frame::World());
-  auto frame2 = dart::dynamics::SimpleFrame::createShared(dart::dynamics::Frame::World());
+
+  auto frame1 = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World());
+  auto frame2 = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World());
   frame1->setShape(shape1);
   frame2->setShape(shape2);
   frame1->setTranslation(pos1);
   frame2->setTranslation(pos2);
-  
+
   auto group = cd->createCollisionGroup(frame1.get(), frame2.get());
-  
+
   BackendResult result;
-  
+
   dart::collision::CollisionOption collOpt;
   collOpt.maxNumContacts = 1;
   dart::collision::CollisionResult collResult;
   result.colliding = group->collide(collOpt, &collResult);
-  
+
   if (result.colliding && collResult.getNumContacts() > 0) {
     result.penetration = collResult.getContact(0).penetrationDepth;
   }
-  
+
   dart::collision::DistanceOption distOpt;
   distOpt.enableNearestPoints = true;
   dart::collision::DistanceResult distResult;
   cd->distance(group.get(), distOpt, &distResult);
-  
+
   if (distResult.found()) {
     result.distance = distResult.minDistance;
   }
-  
+
   return result;
 }
 
 #if DART_HAVE_BULLET
 BackendResult queryBullet(
-    const Eigen::Vector3d& pos1, const dart::dynamics::ShapePtr& shape1,
-    const Eigen::Vector3d& pos2, const dart::dynamics::ShapePtr& shape2)
+    const Eigen::Vector3d& pos1,
+    const dart::dynamics::ShapePtr& shape1,
+    const Eigen::Vector3d& pos2,
+    const dart::dynamics::ShapePtr& shape2)
 {
   auto cd = dart::collision::BulletCollisionDetector::create();
-  
-  auto frame1 = dart::dynamics::SimpleFrame::createShared(dart::dynamics::Frame::World());
-  auto frame2 = dart::dynamics::SimpleFrame::createShared(dart::dynamics::Frame::World());
+
+  auto frame1 = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World());
+  auto frame2 = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World());
   frame1->setShape(shape1);
   frame2->setShape(shape2);
   frame1->setTranslation(pos1);
   frame2->setTranslation(pos2);
-  
+
   auto group = cd->createCollisionGroup(frame1.get(), frame2.get());
-  
+
   BackendResult result;
-  
+
   dart::collision::CollisionOption collOpt;
   collOpt.maxNumContacts = 1;
   dart::collision::CollisionResult collResult;
   result.colliding = group->collide(collOpt, &collResult);
-  
+
   if (result.colliding && collResult.getNumContacts() > 0) {
     result.penetration = collResult.getContact(0).penetrationDepth;
   }
-  
+
   return result;
 }
 #endif
 
 #if DART_HAVE_ODE
 BackendResult queryODE(
-    const Eigen::Vector3d& pos1, const dart::dynamics::ShapePtr& shape1,
-    const Eigen::Vector3d& pos2, const dart::dynamics::ShapePtr& shape2)
+    const Eigen::Vector3d& pos1,
+    const dart::dynamics::ShapePtr& shape1,
+    const Eigen::Vector3d& pos2,
+    const dart::dynamics::ShapePtr& shape2)
 {
   auto cd = dart::collision::OdeCollisionDetector::create();
-  
-  auto frame1 = dart::dynamics::SimpleFrame::createShared(dart::dynamics::Frame::World());
-  auto frame2 = dart::dynamics::SimpleFrame::createShared(dart::dynamics::Frame::World());
+
+  auto frame1 = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World());
+  auto frame2 = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World());
   frame1->setShape(shape1);
   frame2->setShape(shape2);
   frame1->setTranslation(pos1);
   frame2->setTranslation(pos2);
-  
+
   auto group = cd->createCollisionGroup(frame1.get(), frame2.get());
-  
+
   BackendResult result;
-  
+
   dart::collision::CollisionOption collOpt;
   collOpt.maxNumContacts = 1;
   dart::collision::CollisionResult collResult;
   result.colliding = group->collide(collOpt, &collResult);
-  
+
   if (result.colliding && collResult.getNumContacts() > 0) {
     result.penetration = collResult.getContact(0).penetrationDepth;
   }
-  
+
   return result;
 }
 #endif
 
-}  // namespace
+} // namespace
 
-class ReferenceBackends : public ::testing::Test {
+class ReferenceBackends : public ::testing::Test
+{
 protected:
-  void SetUp() override {
+  void SetUp() override
+  {
     sphere1_ = std::make_shared<dart::dynamics::SphereShape>(1.0);
     sphere2_ = std::make_shared<dart::dynamics::SphereShape>(1.0);
-    box1_ = std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0));
-    box2_ = std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0));
+    box1_ = std::make_shared<dart::dynamics::BoxShape>(
+        Eigen::Vector3d(2.0, 2.0, 2.0));
+    box2_ = std::make_shared<dart::dynamics::BoxShape>(
+        Eigen::Vector3d(2.0, 2.0, 2.0));
   }
 
   dart::dynamics::ShapePtr sphere1_, sphere2_;
@@ -189,12 +206,12 @@ TEST_F(ReferenceBackends, SphereSphereIntersecting)
 
   auto supportA = makeSphereSupport(pos1, r1);
   auto supportB = makeSphereSupport(pos2, r2);
-  
+
   EXPECT_TRUE(Gjk::intersect(supportA, supportB, pos2 - pos1));
 
   MprResult mpr = Mpr::penetration(supportA, supportB, pos1, pos2);
   ASSERT_TRUE(mpr.success);
-  
+
   const double expectedDepth = r1 + r2 - (pos2 - pos1).norm();
   EXPECT_NEAR(mpr.depth, expectedDepth, kTol);
 
@@ -223,10 +240,10 @@ TEST_F(ReferenceBackends, SphereSphereSeparated)
 
   auto supportA = makeSphereSupport(pos1, r1);
   auto supportB = makeSphereSupport(pos2, r2);
-  
+
   GjkResult gjk = Gjk::query(supportA, supportB, pos2 - pos1);
   EXPECT_FALSE(gjk.intersecting);
-  
+
   const double expectedDist = (pos2 - pos1).norm() - r1 - r2;
   EXPECT_NEAR(gjk.distance, expectedDist, kTol);
 
@@ -253,7 +270,7 @@ TEST_F(ReferenceBackends, BoxBoxIntersecting)
 
   auto supportA = makeBoxSupport(pos1, halfExt);
   auto supportB = makeBoxSupport(pos2, halfExt);
-  
+
   EXPECT_TRUE(Gjk::intersect(supportA, supportB, pos2 - pos1));
 
   auto fcl = queryFCL(pos1, box1_, pos2, box2_);
@@ -278,10 +295,10 @@ TEST_F(ReferenceBackends, BoxBoxSeparated)
 
   auto supportA = makeBoxSupport(pos1, halfExt);
   auto supportB = makeBoxSupport(pos2, halfExt);
-  
+
   GjkResult gjk = Gjk::query(supportA, supportB, pos2 - pos1);
   EXPECT_FALSE(gjk.intersecting);
-  
+
   const double expectedDist = (pos2 - pos1).norm() - 2.0;
   EXPECT_NEAR(gjk.distance, expectedDist, kTol);
 
@@ -308,7 +325,7 @@ TEST_F(ReferenceBackends, SphereBoxIntersecting)
 
   auto supportA = makeSphereSupport(spherePos, 1.0);
   auto supportB = makeBoxSupport(boxPos, boxHalf);
-  
+
   EXPECT_TRUE(Gjk::intersect(supportA, supportB, boxPos - spherePos));
 
   auto fcl = queryFCL(spherePos, sphere1_, boxPos, box1_);
@@ -333,10 +350,10 @@ TEST_F(ReferenceBackends, SphereBoxSeparated)
 
   auto supportA = makeSphereSupport(spherePos, 1.0);
   auto supportB = makeBoxSupport(boxPos, boxHalf);
-  
+
   GjkResult gjk = Gjk::query(supportA, supportB, boxPos - spherePos);
   EXPECT_FALSE(gjk.intersecting);
-  
+
   const double expectedDist = (boxPos.x() - boxHalf.x()) - 1.0;
   EXPECT_NEAR(gjk.distance, expectedDist, kTol);
 
@@ -363,12 +380,12 @@ TEST_F(ReferenceBackends, DeepPenetration)
 
   auto supportA = makeSphereSupport(pos1, r1);
   auto supportB = makeSphereSupport(pos2, r2);
-  
+
   EXPECT_TRUE(Gjk::intersect(supportA, supportB, pos2 - pos1));
 
   MprResult mpr = Mpr::penetration(supportA, supportB, pos1, pos2);
   ASSERT_TRUE(mpr.success);
-  
+
   const double expectedDepth = r1 + r2 - (pos2 - pos1).norm();
   EXPECT_NEAR(mpr.depth, expectedDepth, kTol);
 
@@ -390,7 +407,7 @@ TEST_F(ReferenceBackends, SmallGap)
 
   auto supportA = makeSphereSupport(pos1, 1.0);
   auto supportB = makeSphereSupport(pos2, 1.0);
-  
+
   GjkResult gjk = Gjk::query(supportA, supportB, pos2 - pos1);
   EXPECT_FALSE(gjk.intersecting);
   EXPECT_NEAR(gjk.distance, 0.001, kTol);
@@ -407,7 +424,7 @@ TEST_F(ReferenceBackends, SmallOverlap)
 
   auto supportA = makeSphereSupport(pos1, 1.0);
   auto supportB = makeSphereSupport(pos2, 1.0);
-  
+
   EXPECT_TRUE(Gjk::intersect(supportA, supportB, pos2 - pos1));
 
   MprResult mpr = Mpr::penetration(supportA, supportB, pos1, pos2);
@@ -427,10 +444,10 @@ TEST_F(ReferenceBackends, LargeScale)
 
   auto supportA = makeSphereSupport(pos1, r1);
   auto supportB = makeSphereSupport(pos2, r2);
-  
+
   GjkResult gjk = Gjk::query(supportA, supportB, pos2 - pos1);
   EXPECT_FALSE(gjk.intersecting);
-  
+
   const double expectedDist = (pos2 - pos1).norm() - r1 - r2;
   EXPECT_NEAR(gjk.distance, expectedDist, kTol);
 
@@ -449,10 +466,10 @@ TEST_F(ReferenceBackends, SmallScale)
 
   auto supportA = makeSphereSupport(pos1, r1);
   auto supportB = makeSphereSupport(pos2, r2);
-  
+
   GjkResult gjk = Gjk::query(supportA, supportB, pos2 - pos1);
   EXPECT_FALSE(gjk.intersecting);
-  
+
   const double expectedDist = (pos2 - pos1).norm() - r1 - r2;
   EXPECT_NEAR(gjk.distance, expectedDist, 1e-6);
 
@@ -462,4 +479,3 @@ TEST_F(ReferenceBackends, SmallScale)
   EXPECT_FALSE(fcl.colliding);
   EXPECT_NEAR(fcl.distance, expectedDist, 1e-5);
 }
-
