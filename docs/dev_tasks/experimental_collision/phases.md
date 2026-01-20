@@ -77,20 +77,20 @@ Remove External (DART 8)
 
 ### In Progress
 
-| Component                | Status      | Priority |
-| ------------------------ | ----------- | -------- |
-| CapsuleShape             | Not started | High     |
-| CylinderShape            | Not started | High     |
-| PlaneShape               | Not started | High     |
-| Capsule collision pairs  | Not started | High     |
-| Cylinder collision pairs | Not started | High     |
-| Plane collision pairs    | Not started | High     |
-| Distance queries         | Not started | High     |
-| Raycast support          | Not started | Medium   |
-| MeshShape                | Not started | Medium   |
-| Mesh-primitive collision | Not started | Medium   |
-| Benchmark suite          | Not started | Medium   |
-| Visual verification GUI  | Not started | Medium   |
+| Component                    | Status      | Priority |
+| ---------------------------- | ----------- | -------- |
+| CapsuleShape                 | Not started | High     |
+| CylinderShape                | Not started | High     |
+| PlaneShape                   | Not started | High     |
+| Capsule collision pairs      | Not started | High     |
+| Cylinder collision pairs     | Not started | High     |
+| Plane collision pairs        | Not started | High     |
+| Distance queries             | Not started | High     |
+| Raycast support              | Not started | Medium   |
+| MeshShape                    | Not started | Medium   |
+| Mesh-primitive collision     | Not started | Medium   |
+| Benchmark suite (structured) | In progress | Medium   |
+| Visual verification GUI      | Not started | Medium   |
 
 ### Shape Pair Matrix (Target)
 
@@ -108,11 +108,14 @@ Remove External (DART 8)
 - [x] All primitive shape pairs implemented (25 combinations complete)
 - [x] Distance queries for core shape pairs (6 pairs)
 - [ ] Raycast against all shapes
-- [x] Benchmark suite with baseline numbers
-- [x] **Comparative benchmarks against FCL, Bullet, ODE** ✓ COMPLETE
+- [x] Baseline comparative benchmarks for a subset (`bm_comparative.cpp`)
+- [ ] Structured benchmark suite (comparative + scenarios + fixtures)
 - [ ] Visual verification tool functional
 
-### Benchmark Results (Comparative)
+### Benchmark Results (Baseline, pre-structured suite)
+
+Baseline numbers from `bm_comparative.cpp`. These will be re-measured after the
+structured suite is in place.
 
 **Narrow-phase performance comparison (lower is better):**
 

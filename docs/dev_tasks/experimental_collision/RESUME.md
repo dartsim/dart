@@ -2,41 +2,41 @@
 
 ## Current State (2026-01-19)
 
-**Branch**: `feature/new_coll` — uncommitted changes for ray-convex
+**Branch**: `feature/new_coll` — uncommitted benchmark scaffolding + comparative narrow-phase
 
 **Tests**: 292 passing across 17 test files
 
-**Performance**: VALIDATED — 5-40x faster than FCL/Bullet/ODE in narrow-phase
+**Performance**: Baseline validated — 5-40x faster on subset; structured suite in progress
 
 ## What's Complete
 
-| Component                                                    | Status | Notes                             |
-| ------------------------------------------------------------ | ------ | --------------------------------- |
-| Core types (ContactPoint, Manifold, Result, Ray)             | ✅     | 21 tests                          |
-| Aabb                                                         | ✅     | 26 tests                          |
-| Shapes (Sphere, Box, Capsule, Cylinder, Plane, Convex, Mesh) | ✅     | 24 tests                          |
-| Sphere-sphere collision                                      | ✅     | 17 tests                          |
-| Box-box collision (SAT)                                      | ✅     | 18 tests                          |
-| Sphere-box collision                                         | ✅     | 19 tests                          |
-| Capsule collision (all pairs)                                | ✅     | 14 tests                          |
-| Cylinder collision (all pairs)                               | ✅     | 18 tests                          |
-| Plane collision (all pairs)                                  | ✅     | 11 tests                          |
-| Distance queries (6 pairs + Convex/Mesh)                     | ✅     | 18 tests                          |
-| Raycast (6 shapes incl. Mesh)                                | ✅     | 32 tests                          |
-| Brute-force broad-phase                                      | ✅     | 15 tests                          |
-| CollisionObject (ECS handle)                                 | ✅     | 12 tests                          |
-| NarrowPhase dispatcher                                       | ✅     | 7 tests                           |
-| CollisionWorld (ECS-based)                                   | ✅     | 8 tests                           |
-| ECS Refactoring                                              | ✅     | Handle-based API                  |
-| **GJK/EPA Algorithm**                                        | ✅     | 15 tests                          |
-| **ConvexShape**                                              | ✅     | 5 tests                           |
-| **MeshShape**                                                | ✅     | 4 tests                           |
-| **GJK-based Convex/Mesh Collision**                          | ✅     | 10 tests                          |
-| **Ray-Mesh Intersection**                                    | ✅     | 8 tests (Moller-Trumbore)         |
-| **GJK-based Distance (Convex/Mesh)**                         | ✅     | 4 tests                           |
-| **Ray-Convex Intersection**                                  | ✅     | 7 tests (GJK-based binary search) |
-| Comparative benchmarks vs FCL/Bullet/ODE                     | ✅     | `bm_comparative.cpp`              |
-| Accuracy verification                                        | ✅     | Matches FCL within tolerance      |
+| Component                                                    | Status | Notes                                   |
+| ------------------------------------------------------------ | ------ | --------------------------------------- |
+| Core types (ContactPoint, Manifold, Result, Ray)             | ✅     | 21 tests                                |
+| Aabb                                                         | ✅     | 26 tests                                |
+| Shapes (Sphere, Box, Capsule, Cylinder, Plane, Convex, Mesh) | ✅     | 24 tests                                |
+| Sphere-sphere collision                                      | ✅     | 17 tests                                |
+| Box-box collision (SAT)                                      | ✅     | 18 tests                                |
+| Sphere-box collision                                         | ✅     | 19 tests                                |
+| Capsule collision (all pairs)                                | ✅     | 14 tests                                |
+| Cylinder collision (all pairs)                               | ✅     | 18 tests                                |
+| Plane collision (all pairs)                                  | ✅     | 11 tests                                |
+| Distance queries (6 pairs + Convex/Mesh)                     | ✅     | 18 tests                                |
+| Raycast (6 shapes incl. Mesh)                                | ✅     | 32 tests                                |
+| Brute-force broad-phase                                      | ✅     | 15 tests                                |
+| CollisionObject (ECS handle)                                 | ✅     | 12 tests                                |
+| NarrowPhase dispatcher                                       | ✅     | 7 tests                                 |
+| CollisionWorld (ECS-based)                                   | ✅     | 8 tests                                 |
+| ECS Refactoring                                              | ✅     | Handle-based API                        |
+| **GJK/EPA Algorithm**                                        | ✅     | 15 tests                                |
+| **ConvexShape**                                              | ✅     | 5 tests                                 |
+| **MeshShape**                                                | ✅     | 4 tests                                 |
+| **GJK-based Convex/Mesh Collision**                          | ✅     | 10 tests                                |
+| **Ray-Mesh Intersection**                                    | ✅     | 8 tests (Moller-Trumbore)               |
+| **GJK-based Distance (Convex/Mesh)**                         | ✅     | 4 tests                                 |
+| **Ray-Convex Intersection**                                  | ✅     | 7 tests (GJK-based binary search)       |
+| Comparative benchmarks vs FCL/Bullet/ODE                     | ✅     | Baseline subset in `bm_comparative.cpp` |
+| Accuracy verification                                        | ✅     | Matches FCL within tolerance            |
 
 ## ECS Architecture
 
@@ -68,6 +68,8 @@ CollisionObject (handle) = entt::entity + CollisionWorld*
 | Capsule-Capsule | **41 ns**    | 242 ns (FCL)     | **6x**  |
 | Distance        | **7 ns**     | 288 ns (FCL)     | **40x** |
 
+Baseline only; re-measure after the structured benchmark suite is in place.
+
 ## What's NOT Done
 
 | Component                              | Priority   | Notes                                               |
@@ -76,6 +78,7 @@ CollisionObject (handle) = entt::entity + CollisionWorld*
 | ~~Ray-mesh intersection~~              | ~~Medium~~ | ✅ DONE — Moller-Trumbore algorithm                 |
 | ~~Distance for Convex/Mesh~~           | ~~Medium~~ | ✅ DONE — `distanceConvexConvex()` via GJK          |
 | ~~Ray-convex intersection~~            | ~~Medium~~ | ✅ DONE — GJK-based point-in-convex + binary search |
+| Structured benchmark suite             | High       | Comparative + scenarios + fixtures                  |
 | Continuous Collision Detection (CCD)   | Medium     | Swept sphere/capsule, conservative advancement      |
 | Visual verification tool               | Low        | Raylib available in DART, needs visualizer          |
 | Optimized broad-phase                  | Low        | BVH or spatial hash (current is O(N²))              |

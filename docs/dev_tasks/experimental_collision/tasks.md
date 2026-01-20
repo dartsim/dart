@@ -372,8 +372,37 @@ Task 1 (skeleton)
                    Task 6 (broad) ──► Task 7 (box-box)┘
                          │
                          ▼
-                   Task 10 (integration)
+Task 10 (integration)
 ```
+
+## Benchmark Suite Plan (Phase 5)
+
+**Goal**: Structured, comparable benchmarks vs FCL/Bullet/ODE with complete
+coverage and shared fixtures.
+
+**Proposed layout** (under `tests/benchmark/collision/`):
+
+```
+experimental/  # microbenchmarks (narrow phase, distance, raycast, CCD)
+comparative/   # side-by-side vs FCL/Bullet/ODE
+scenarios/     # world and broad-phase scaling, mixed scenes
+fixtures/      # shared shape + scene builders, fixed RNG seeds
+data/          # mesh/convex fixtures used by multiple benchmarks
+```
+
+**Benchmark coverage**:
+
+- Narrow-phase: all primitive pairs + convex/mesh where supported
+- Distance: same matrix with separated/touching/penetrating regimes
+- Raycast: per shape with hit/miss/grazing and backface culling toggles
+- CCD: sphere-cast, capsule-cast, conservative advancement
+- World/broad-phase: N-body scaling with mixed scenes
+
+**Acceptance criteria**:
+
+- Baseline runs are reproducible and use shared fixtures/options
+- Comparative benchmarks include FCL, Bullet, and ODE where supported
+- Google Benchmark JSON output is captured for regression tracking
 
 ---
 

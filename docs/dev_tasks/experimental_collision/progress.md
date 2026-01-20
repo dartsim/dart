@@ -5,20 +5,20 @@
 
 ## Status Summary
 
-| Phase                      | Status       | Progress |
-| -------------------------- | ------------ | -------- |
-| Core Types & Primitives    | **Complete** | 100%     |
-| Standalone CollisionWorld  | **Complete** | 100%     |
-| Additional Shapes          | **Complete** | 100%     |
-| Distance Queries           | **Complete** | 100%     |
-| Comparative Benchmarks     | **Complete** | 100%     |
-| Raycast Support            | **Complete** | 100%     |
-| ECS Refactoring            | **Complete** | 100%     |
-| GJK/EPA Algorithm          | **Complete** | 100%     |
-| Convex/Mesh Shapes         | **Complete** | 100%     |
-| Continuous Collision (CCD) | **Complete** | 100%     |
-| Visual Verification        | Not Started  | 0%       |
-| DART Integration           | **Deferred** | -        |
+| Phase                      | Status          | Progress |
+| -------------------------- | --------------- | -------- |
+| Core Types & Primitives    | **Complete**    | 100%     |
+| Standalone CollisionWorld  | **Complete**    | 100%     |
+| Additional Shapes          | **Complete**    | 100%     |
+| Distance Queries           | **Complete**    | 100%     |
+| Comparative Benchmarks     | **In Progress** | 50%      |
+| Raycast Support            | **Complete**    | 100%     |
+| ECS Refactoring            | **Complete**    | 100%     |
+| GJK/EPA Algorithm          | **Complete**    | 100%     |
+| Convex/Mesh Shapes         | **Complete**    | 100%     |
+| Continuous Collision (CCD) | **Complete**    | 100%     |
+| Visual Verification        | Not Started     | 0%       |
+| DART Integration           | **Deferred**    | -        |
 
 ---
 
@@ -107,9 +107,43 @@
 - `raycast(ray, option, result)` - Returns closest hit
 - `raycastAll(ray, option, results)` - Returns all hits sorted by distance
 
-### Priority 5: Benchmarks ✅ COMPLETE
+### Priority 5: Benchmarks (structured suite) — In Progress
 
-**Comparative benchmarks created:** `tests/benchmark/collision/bm_comparative.cpp`
+Baseline benchmarks exist:
+
+- `tests/benchmark/collision/bm_experimental.cpp` (experimental-only microbenchmarks)
+- `tests/benchmark/collision/bm_comparative.cpp` (comparative subset vs FCL/Bullet/ODE)
+
+Structured suite progress:
+
+- Scaffolded `tests/benchmark/collision/{experimental,comparative,scenarios,fixtures,data}`
+- Added shared fixtures in `tests/benchmark/collision/fixtures/`
+- Added comparative narrow-phase benchmark in `tests/benchmark/collision/comparative/bm_narrow_phase.cpp`
+
+Planned restructure and coverage before calling this complete:
+
+1. Directory layout in `tests/benchmark/collision/`:
+   - `experimental/` microbenchmarks (narrow phase, distance, raycast, CCD)
+   - `comparative/` side-by-side vs FCL/Bullet/ODE
+   - `scenarios/` world and broad-phase scaling/mixed scenes
+   - `fixtures/` shared shape and scene builders with fixed RNG seeds
+   - `data/` meshes/convex fixtures used by multiple benchmarks
+2. Coverage matrix:
+   - Narrow phase: all primitive pairs + convex/mesh where supported
+   - Distance: same matrix with separated/touching/penetrating regimes
+   - Raycast: per shape with hit/miss/grazing and backface culling on/off
+   - CCD: sphere-cast, capsule-cast, conservative advancement
+   - World/broad-phase: N-body scaling with mixed scenes
+3. Fairness and determinism:
+   - Pre-create shapes/groups outside timed loops
+   - Match options (contacts, tolerances) across backends
+   - Fixed seeds and shared fixtures for identical inputs
+4. Metrics and gates:
+   - Report ns/query, throughput, and scaling
+   - Record accuracy deltas (contact point/normal/depth) out-of-band
+   - Experimental must meet or beat best backend per supported case
+
+Baseline results (pre-structured suite):
 
 | Shape Pair      | Experimental | FCL          | Bullet       | ODE          | Speedup |
 | --------------- | ------------ | ------------ | ------------ | ------------ | ------- |
@@ -118,7 +152,7 @@
 | Capsule-Capsule | **41 ns**    | 242 ns       | 440 ns       | 1381-1382 ns | **6x**  |
 | Distance        | **7 ns**     | 286-288 ns   | N/A          | N/A          | **40x** |
 
-**Accuracy verification:** PASSED
+Baseline accuracy verification: PASSED
 
 ### Priority 6: ECS Refactoring (Next)
 
