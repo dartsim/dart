@@ -237,6 +237,21 @@ TEST(DistanceCapsuleCapsule, Parallel)
   EXPECT_NEAR(dist, 1.0, 1e-6);
 }
 
+TEST(DistanceCapsuleCapsule, ZeroHeight)
+{
+  CapsuleShape c1(0.5, 0.0);
+  CapsuleShape c2(0.75, 0.0);
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(3.0, 0, 0);
+
+  DistanceResult result;
+  double dist = distanceCapsuleCapsule(c1, tf1, c2, tf2, result);
+
+  EXPECT_NEAR(dist, 1.75, 1e-6);
+}
+
 TEST(DistanceCapsuleSphere, Separated)
 {
   CapsuleShape capsule(0.5, 2.0);
@@ -251,6 +266,22 @@ TEST(DistanceCapsuleSphere, Separated)
       = distanceCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
 
   EXPECT_NEAR(dist, 2.0, 1e-6);
+}
+
+TEST(DistanceCapsuleSphere, ZeroHeight)
+{
+  CapsuleShape capsule(0.5, 0.0);
+  SphereShape sphere(0.25);
+
+  Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  tfSphere.translation() = Eigen::Vector3d(2.0, 0, 0);
+
+  DistanceResult result;
+  double dist
+      = distanceCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
+
+  EXPECT_NEAR(dist, 1.25, 1e-6);
 }
 
 TEST(DistanceCapsuleBox, Separated)
@@ -326,6 +357,26 @@ TEST(NarrowPhaseDistance, BoxSphere)
   double dist = NarrowPhase::distance(obj1, obj2, option, result);
 
   EXPECT_NEAR(dist, 1.5, 1e-6);
+}
+
+TEST(NarrowPhaseDistance, CylinderBoxThinHeight)
+{
+  CollisionWorld world;
+
+  Eigen::Isometry3d tfCylinder = Eigen::Isometry3d::Identity();
+  tfCylinder.translation() = Eigen::Vector3d(2.0, 0, 0);
+  auto obj1 = world.createObject(
+      std::make_unique<CylinderShape>(0.5, 1e-3), tfCylinder);
+
+  auto obj2 = world.createObject(
+      std::make_unique<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+
+  DistanceOption option;
+  DistanceResult result;
+
+  double dist = NarrowPhase::distance(obj1, obj2, option, result);
+
+  EXPECT_NEAR(dist, 0.5, 1e-5);
 }
 
 std::vector<Eigen::Vector3d> makeOctahedronVertices(double scale = 1.0)
