@@ -1,6 +1,6 @@
 # Resume: Experimental Collision Module
 
-## Current State (2026-01-19)
+## Current State (2026-01-20)
 
 **Branch**: `feature/new_coll` — mixed primitives + batched raycast + mesh-heavy scenarios + CCD microbench added; local uncommitted unrelated changes present
 
@@ -8,7 +8,7 @@
 
 **Performance**: Baseline validated — 5-40x faster on subset; structured suite complete with edge-case/scale sweeps and cross-backend checks added; results log created
 
-**New in this session**: Added edge-case + scale sweep benchmarks, cross-backend integration test, and `benchmark_results.md`.
+**New in this session**: Added edge-case + scale sweep benchmarks, cross-backend integration test, and `benchmark_results.md`; added batch API scaffolding + pipeline breakdown benchmark; captured ReactPhysics3D 10k profiling summary.
 
 ## What's Complete
 

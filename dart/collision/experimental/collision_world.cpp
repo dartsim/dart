@@ -117,6 +117,85 @@ CollisionObject CollisionWorld::getObject(std::size_t index)
   return CollisionObject();
 }
 
+std::size_t CollisionWorld::updateAll()
+{
+  std::size_t updated = 0;
+  auto view = m_registry.view<comps::CollisionObjectTag>();
+  for (auto entity : view) {
+    auto* aabbComp = m_registry.try_get<comps::AabbComponent>(entity);
+    if (aabbComp && aabbComp->dirty) {
+      CollisionObject obj(entity, this);
+      Aabb aabb = obj.computeAabb();
+      aabbComp->aabb = aabb;
+      aabbComp->dirty = false;
+      m_broadPhase.update(static_cast<std::size_t>(entity), aabb);
+      ++updated;
+    }
+  }
+  return updated;
+}
+
+BroadPhaseSnapshot CollisionWorld::buildBroadPhaseSnapshot() const
+{
+  BroadPhaseSnapshot snapshot;
+  snapshot.pairs = m_broadPhase.queryPairs();
+  snapshot.numObjects = m_broadPhase.size();
+  return snapshot;
+}
+
+bool CollisionWorld::collideAll(
+    const BroadPhaseSnapshot& snapshot,
+    const CollisionOption& option,
+    CollisionResult& result,
+    BatchStats* stats)
+{
+  result.clear();
+  bool hasCollision = false;
+
+  if (stats) {
+    stats->numObjects = snapshot.numObjects;
+    stats->numPairs = snapshot.pairs.size();
+    stats->numPairsTested = 0;
+    stats->numContacts = 0;
+    stats->pairBytes = snapshot.pairs.size() * sizeof(BroadPhasePair);
+    stats->contactBytes = 0;
+    stats->tempBytes = stats->pairBytes;
+  }
+
+  for (const auto& pair : snapshot.pairs) {
+    auto entity1 = static_cast<entt::entity>(pair.first);
+    auto entity2 = static_cast<entt::entity>(pair.second);
+
+    if (!m_registry.valid(entity1) || !m_registry.valid(entity2)) {
+      continue;
+    }
+
+    CollisionObject obj1(entity1, this);
+    CollisionObject obj2(entity2, this);
+
+    if (stats) {
+      ++stats->numPairsTested;
+    }
+
+    if (NarrowPhase::collide(obj1, obj2, option, result)) {
+      hasCollision = true;
+      if (option.enableContact == false
+          || (option.maxNumContacts > 0
+              && result.numContacts() >= option.maxNumContacts)) {
+        break;
+      }
+    }
+  }
+
+  if (stats) {
+    stats->numContacts = result.numContacts();
+    stats->contactBytes = result.numContacts() * sizeof(ContactPoint);
+    stats->tempBytes = stats->pairBytes + stats->contactBytes;
+  }
+
+  return hasCollision;
+}
+
 bool CollisionWorld::collide(const CollisionOption& option, CollisionResult& result)
 {
   result.clear();

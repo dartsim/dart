@@ -32,30 +32,71 @@
 
 #pragma once
 
+#include <dart/collision/experimental/broad_phase/broad_phase.hpp>
 #include <dart/collision/experimental/export.hpp>
+
+#include <cstddef>
+#include <cstdint>
+#include <vector>
 
 namespace dart::collision::experimental {
 
-struct ContactPoint;
-class ContactManifold;
-class CollisionResult;
-struct CollisionOption;
+struct DART_COLLISION_EXPERIMENTAL_API BatchSettings
+{
+  int maxThreads = 1;
+  bool deterministic = true;
+};
 
-class Aabb;
+struct DART_COLLISION_EXPERIMENTAL_API BatchTimings
+{
+  std::uint64_t aabbUpdateNs = 0;
+  std::uint64_t broadPhaseNs = 0;
+  std::uint64_t narrowPhaseNs = 0;
+  std::uint64_t mergeNs = 0;
 
-class Shape;
-class SphereShape;
-class BoxShape;
+  void clear()
+  {
+    aabbUpdateNs = 0;
+    broadPhaseNs = 0;
+    narrowPhaseNs = 0;
+    mergeNs = 0;
+  }
+};
 
-class CollisionObject;
-class CollisionGroup;
+struct DART_COLLISION_EXPERIMENTAL_API BatchStats
+{
+  std::size_t numObjects = 0;
+  std::size_t numPairs = 0;
+  std::size_t numPairsTested = 0;
+  std::size_t numContacts = 0;
+  std::size_t pairBytes = 0;
+  std::size_t contactBytes = 0;
+  std::size_t tempBytes = 0;
+  BatchTimings timings;
 
-class BroadPhase;
-class BruteForceBroadPhase;
+  void clear()
+  {
+    numObjects = 0;
+    numPairs = 0;
+    numPairsTested = 0;
+    numContacts = 0;
+    pairBytes = 0;
+    contactBytes = 0;
+    tempBytes = 0;
+    timings.clear();
+  }
+};
 
-struct BatchSettings;
-struct BatchTimings;
-struct BatchStats;
-struct BroadPhaseSnapshot;
+struct DART_COLLISION_EXPERIMENTAL_API BroadPhaseSnapshot
+{
+  std::vector<BroadPhasePair> pairs;
+  std::size_t numObjects = 0;
 
-}
+  void clear()
+  {
+    pairs.clear();
+    numObjects = 0;
+  }
+};
+
+} // namespace dart::collision::experimental

@@ -36,6 +36,7 @@
 
 #include <algorithm>
 #include <array>
+
 #include <cstddef>
 
 namespace dart::benchmark::collision {

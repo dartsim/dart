@@ -37,7 +37,8 @@
 - tinyc2: `/home/js/dev/physics/tinyheaders/` examples (2D); external tests at https://github.com/sro5h/tinyc2-tests.
 - ReactPhysics3D: `/home/js/dev/physics/reactphysics3d/testbed/` scenes.
 - ODE: `/home/js/dev/physics/ODE/ode/demo/` and unit tests in `/home/js/dev/physics/ODE/tests/`.
-- FCL/libccd/OpenGJK: no dedicated benchmarks; use unit tests and example programs for microbench cases.
+- libccd: `/home/js/dev/physics/libccd/src/testsuites/bench.c`, `bench2.c` (GJK/EPA/MPR microbenches; box/cyl/convex cases).
+- FCL/OpenGJK: no dedicated benchmarks; use unit tests and example programs for microbench cases.
 
 ### Dedicated benchmark suites and datasets
 
@@ -48,8 +49,16 @@
   - Quick runs: `exp/continuous_ellipsoids/ellipsoids_quick_benchmark.py`, `exp/shapenet/shapenet_quick_benchmark.py`
   - Large runs: `ellipsoids_benchmark.sh`, ShapeNet subset via `exp/shapenet/generate_subshapenet.py`
 - spatial-collision-datastructures: `/home/js/dev/physics/spatial-collision-datastructures` (broadphase data structure benchmark).
+- GJK++ / Collision Detection Accelerated (Montaut 2022-2023): benchmarks built on colbench + collision-detection-benchmark (ellipsoids, ShapeNet convex meshes).
 - YCB dataset (used by colbench).
 - ShapeNetCore.v2 (used by collision-detection-benchmark).
+
+### Paper and article microbench sources (curated list)
+
+- Triangle-triangle intersection tests (Moller 1997; Devillers 2006) for mesh-mesh edge cases.
+- PolyDepth (2012) for penetration depth stress cases in convex-convex pairs.
+- SDF contact (Macklin 2020) for gradient stability and SDF query regressions.
+- CCD papers (Tang 2009/2013, Brochu 2012) for controlled advancement scenarios.
 
 ## Benchmark taxonomy (organize new cases by category)
 
@@ -65,6 +74,7 @@
 | Broadphase scaling          | 1k/10k objects, dense vs sparse             | broadphase + collision     | spatial-collision-datastructures, DART     | Report pairs/sec + update cost                         |
 | Contact stability           | Box stacking, aggregates, frictional stacks | contacts, manifold quality | qu3e demo, Bullet/ODE demos, BEPU demos    | Track contact count, stability, and solver convergence |
 | 2D sanity checks (optional) | Simple 2D convex pairs and time of impact   | collision, time of impact  | tinyc2, ncollide2d                         | Useful for algorithm regression tests                  |
+| Gradient consistency        | Convex pairs with analytic gradients        | distance + gradient        | GJK/EPA, SDF papers                        | Validate gradient direction and sign near feature switches |
 
 ## Per-query, per-shape case checklist
 
@@ -98,7 +108,7 @@ Each entry includes performance-oriented cases, most frequently used cases, and 
 | Capsule-capsule              | 50k pairs                        | Robot limb clearance                    | Parallel axes, endpoints aligned, near-zero length capsule   |
 | Cylinder-cylinder            | 50k pairs                        | Mechanical parts clearance              | Parallel axes with tiny gap, cap-edge closest points         |
 | Plane-primitive              | 10k objects                      | Distance to ground/terrain              | Large offset, near-parallel orientation                      |
-| Convex-convex (hulls)        | 20k convex pairs                 | Proxy clearance for mesh models         | Non-unique closest points, degenerate faces                  |
+| Convex-convex (hulls)        | 20k convex pairs                 | Proxy clearance for mesh models         | Non-unique closest points, degenerate faces, gradient flips  |
 | Mesh-primitive               | 10k primitive vs static mesh     | Obstacle distance fields                | Closest point on vertex/edge, degenerate triangles           |
 | Mesh-mesh                    | 5k pairs                         | Rare but needed for generality          | Multiple equally closest points, overlapping meshes          |
 | Heightfield-primitive        | 10k pairs                        | Terrain clearance                       | High-frequency heightfield, large scales                     |

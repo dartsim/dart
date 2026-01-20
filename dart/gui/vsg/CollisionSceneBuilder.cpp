@@ -134,8 +134,8 @@ void CollisionSceneBuilder::addDistanceResult(
 
   m_nodes.push_back(
       createLine(result.pointOnObject1, result.pointOnObject2, lineColor));
-  m_nodes.push_back(createPoint(result.pointOnObject1, 0.02, pointColor));
-  m_nodes.push_back(createPoint(result.pointOnObject2, 0.02, pointColor));
+  m_nodes.push_back(createPoint(result.pointOnObject1, 0.04, pointColor));
+  m_nodes.push_back(createPoint(result.pointOnObject2, 0.04, pointColor));
 }
 
 void CollisionSceneBuilder::addRaycast(
@@ -150,11 +150,11 @@ void CollisionSceneBuilder::addRaycast(
   }
 
   m_nodes.push_back(createLine(ray.origin, endPoint, rayColor));
-  m_nodes.push_back(createPoint(ray.origin, 0.02, rayColor));
+  m_nodes.push_back(createPoint(ray.origin, 0.03, rayColor));
 
   if (hit && hit->hit) {
-    m_nodes.push_back(createPoint(hit->point, 0.03, hitColor));
-    m_nodes.push_back(createArrow(hit->point, hit->normal, 0.15, hitColor));
+    m_nodes.push_back(createPoint(hit->point, 0.05, hitColor));
+    m_nodes.push_back(createArrow(hit->point, hit->normal, 0.2, hitColor));
   }
 }
 

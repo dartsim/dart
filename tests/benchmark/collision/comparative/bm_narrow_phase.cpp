@@ -1066,16 +1066,16 @@ BENCHMARK(BM_NarrowPhase_PlaneCapsule_ODE);
 namespace edge_case_bench {
 
 using dart::benchmark::collision::EdgeCase;
-using dart::benchmark::collision::PairKind;
+using dart::benchmark::collision::MakeBoxBoxTransforms;
 using dart::benchmark::collision::MakeBoxSpec;
-using dart::benchmark::collision::MakeCapsuleSpec;
-using dart::benchmark::collision::MakeSphereSpec;
 using dart::benchmark::collision::MakeCapsuleBoxTransforms;
 using dart::benchmark::collision::MakeCapsuleCapsuleTransforms;
+using dart::benchmark::collision::MakeCapsuleSpec;
 using dart::benchmark::collision::MakeCapsuleSphereTransforms;
-using dart::benchmark::collision::MakeBoxBoxTransforms;
 using dart::benchmark::collision::MakeSphereBoxTransforms;
+using dart::benchmark::collision::MakeSphereSpec;
 using dart::benchmark::collision::MakeSphereSphereTransforms;
+using dart::benchmark::collision::PairKind;
 using dart::benchmark::collision::ScaleFromIndex;
 
 void AddScaleArgs(benchmark::internal::Benchmark* bench)
@@ -1111,8 +1111,8 @@ void RunNarrowPhaseCaseExperimental(
     case PairKind::kBoxBox: {
       BoxShape b1(boxSpec.halfExtents);
       BoxShape b2(boxSpec.halfExtents);
-      const auto tfs
-          = MakeBoxBoxTransforms(boxSpec.halfExtents, boxSpec.halfExtents, edge);
+      const auto tfs = MakeBoxBoxTransforms(
+          boxSpec.halfExtents, boxSpec.halfExtents, edge);
 
       for (auto _ : state) {
         result.clear();
@@ -1137,8 +1137,8 @@ void RunNarrowPhaseCaseExperimental(
     case PairKind::kSphereBox: {
       SphereShape sphere(sphereSpec.radius);
       BoxShape box(boxSpec.halfExtents);
-      const auto tfs
-          = MakeSphereBoxTransforms(sphereSpec.radius, boxSpec.halfExtents, edge);
+      const auto tfs = MakeSphereBoxTransforms(
+          sphereSpec.radius, boxSpec.halfExtents, edge);
 
       for (auto _ : state) {
         result.clear();
@@ -1190,23 +1190,21 @@ void RunNarrowPhaseCaseDetector(
 
   switch (pair) {
     case PairKind::kSphereSphere: {
-      auto shape1 = std::make_shared<dart::dynamics::SphereShape>(
-          sphereSpec.radius);
-      auto shape2 = std::make_shared<dart::dynamics::SphereShape>(
-          sphereSpec.radius);
+      auto shape1
+          = std::make_shared<dart::dynamics::SphereShape>(sphereSpec.radius);
+      auto shape2
+          = std::make_shared<dart::dynamics::SphereShape>(sphereSpec.radius);
       const auto tfs = MakeSphereSphereTransforms(
           sphereSpec.radius, sphereSpec.radius, edge);
-      RunDetectorBenchmark(
-          state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
+      RunDetectorBenchmark(state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
       return;
     }
     case PairKind::kBoxBox: {
       auto shape1 = std::make_shared<dart::dynamics::BoxShape>(boxSpec.size);
       auto shape2 = std::make_shared<dart::dynamics::BoxShape>(boxSpec.size);
-      const auto tfs
-          = MakeBoxBoxTransforms(boxSpec.halfExtents, boxSpec.halfExtents, edge);
-      RunDetectorBenchmark(
-          state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
+      const auto tfs = MakeBoxBoxTransforms(
+          boxSpec.halfExtents, boxSpec.halfExtents, edge);
+      RunDetectorBenchmark(state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
       return;
     }
     case PairKind::kCapsuleCapsule: {
@@ -1216,29 +1214,26 @@ void RunNarrowPhaseCaseDetector(
           capsuleSpec.radius, capsuleSpec.height);
       const auto tfs = MakeCapsuleCapsuleTransforms(
           capsuleSpec.radius, capsuleSpec.radius, edge);
-      RunDetectorBenchmark(
-          state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
+      RunDetectorBenchmark(state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
       return;
     }
     case PairKind::kSphereBox: {
-      auto shape1 = std::make_shared<dart::dynamics::SphereShape>(
-          sphereSpec.radius);
+      auto shape1
+          = std::make_shared<dart::dynamics::SphereShape>(sphereSpec.radius);
       auto shape2 = std::make_shared<dart::dynamics::BoxShape>(boxSpec.size);
-      const auto tfs
-          = MakeSphereBoxTransforms(sphereSpec.radius, boxSpec.halfExtents, edge);
-      RunDetectorBenchmark(
-          state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
+      const auto tfs = MakeSphereBoxTransforms(
+          sphereSpec.radius, boxSpec.halfExtents, edge);
+      RunDetectorBenchmark(state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
       return;
     }
     case PairKind::kCapsuleSphere: {
       auto shape1 = std::make_shared<dart::dynamics::CapsuleShape>(
           capsuleSpec.radius, capsuleSpec.height);
-      auto shape2 = std::make_shared<dart::dynamics::SphereShape>(
-          sphereSpec.radius);
+      auto shape2
+          = std::make_shared<dart::dynamics::SphereShape>(sphereSpec.radius);
       const auto tfs = MakeCapsuleSphereTransforms(
           capsuleSpec.radius, sphereSpec.radius, edge);
-      RunDetectorBenchmark(
-          state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
+      RunDetectorBenchmark(state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
       return;
     }
     case PairKind::kCapsuleBox: {
@@ -1247,8 +1242,7 @@ void RunNarrowPhaseCaseDetector(
       auto shape2 = std::make_shared<dart::dynamics::BoxShape>(boxSpec.size);
       const auto tfs = MakeCapsuleBoxTransforms(
           capsuleSpec.radius, boxSpec.halfExtents, edge);
-      RunDetectorBenchmark(
-          state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
+      RunDetectorBenchmark(state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
       return;
     }
   }

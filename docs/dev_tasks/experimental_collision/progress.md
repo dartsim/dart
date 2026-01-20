@@ -124,6 +124,7 @@ Structured suite updates:
 - Added mixed primitives scenario benchmark in `tests/benchmark/collision/scenarios/bm_mixed_primitives.cpp` (dense/sparse; experimental vs FCL/Bullet/ODE)
 - Added batched raycast scenario in `tests/benchmark/collision/scenarios/bm_raycast_batch.cpp` (experimental vs Bullet)
 - Added mesh-heavy scenario in `tests/benchmark/collision/scenarios/bm_mesh_heavy.cpp` (experimental vs FCL/Bullet)
+- Added pipeline breakdown scenario in `tests/benchmark/collision/scenarios/bm_pipeline_breakdown.cpp` (AABB update + broadphase + narrowphase timing for 1k/10k)
 - Added experimental CCD microbench in `tests/benchmark/collision/experimental/bm_ccd.cpp`
 - Added edge-case + scale sweep coverage for comparative narrow-phase and distance (touching, deep penetration, grazing, thin features; 1e-3, 1, 1e3)
 - Added fairness-aligned distance options (nearest points + no early exit) across backends

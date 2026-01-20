@@ -26,7 +26,8 @@ if(DART_IN_SOURCE_BUILD)
 endif()
 
 find_package(DART 7.0.0 REQUIRED CONFIG)
+find_package(CLI11 2.4 CONFIG REQUIRED)
 
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})
-target_link_libraries(${example_name} PUBLIC ${required_libraries})
+target_link_libraries(${example_name} PUBLIC ${required_libraries} CLI11::CLI11)

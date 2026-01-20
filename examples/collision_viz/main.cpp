@@ -41,10 +41,60 @@
 
 #include <iostream>
 
+void printHelp()
+{
+  std::cout << R"(
+DART Collision Visualization Example
+=====================================
+
+Usage: collision_viz [OPTIONS]
+
+Options:
+  --headless        Run in headless mode (saves screenshot)
+  -o, --output FILE Output filename (default: collision_viz.ppm)
+  -W, --width N     Window/image width (default: 1280)
+  -H, --height N    Window/image height (default: 720)
+  -h, --help        Show this help message
+
+Features Demonstrated:
+  - Primitive shapes: Box, Sphere, Capsule, Cylinder
+  - Contact points (red) and normals (yellow arrows)
+  - AABB wireframes (orange outlines)
+  - Distance queries (magenta points + cyan line)
+  - Raycasts (cyan ray + red hit point)
+  - Sphere-cast / CCD trajectories (cyan wireframe spheres)
+  - Ground grid and RGB coordinate axes
+
+Controls (windowed mode):
+  Left mouse: Rotate | Right mouse: Pan | Scroll: Zoom
+)";
+}
+
 int main(int argc, char** argv)
 {
   namespace collision = dart::collision::experimental;
   namespace vsg = dart::gui::vsg;
+
+  bool headlessMode = false;
+  std::string outputFile = "collision_viz.ppm";
+  int width = 1280;
+  int height = 720;
+
+  for (int i = 1; i < argc; ++i) {
+    std::string arg = argv[i];
+    if (arg == "--headless") {
+      headlessMode = true;
+    } else if ((arg == "-o" || arg == "--output") && i + 1 < argc) {
+      outputFile = argv[++i];
+    } else if ((arg == "-W" || arg == "--width") && i + 1 < argc) {
+      width = std::stoi(argv[++i]);
+    } else if ((arg == "-H" || arg == "--height") && i + 1 < argc) {
+      height = std::stoi(argv[++i]);
+    } else if (arg == "-h" || arg == "--help") {
+      printHelp();
+      return 0;
+    }
+  }
 
   std::cout << "DART Collision Visualization Example\n";
   std::cout << "=====================================\n\n";
@@ -72,9 +122,9 @@ int main(int argc, char** argv)
       Eigen::Translation3d(3.0, 0.0, 0.0) * Eigen::Isometry3d::Identity());
 
   auto collidingSphere
-      = world.createObject(std::make_unique<collision::SphereShape>(0.5));
+      = world.createObject(std::make_unique<collision::SphereShape>(0.35));
   collidingSphere.setTransform(
-      Eigen::Translation3d(0.3, 0.0, 0.0) * Eigen::Isometry3d::Identity());
+      Eigen::Translation3d(0.0, 0.6, 0.0) * Eigen::Isometry3d::Identity());
 
   collision::CollisionResult result;
   collision::CollisionOption option;
@@ -94,7 +144,11 @@ int main(int argc, char** argv)
   builder.addObject(cylinder, vsg::colors::Cyan);
   builder.addObject(collidingSphere, vsg::colors::Magenta);
 
-  builder.addContacts(result, 0.2, 0.03);
+  builder.addContacts(result, 0.3, 0.05);
+  if (result.numContacts() > 0) {
+    std::cout << "Contact visualization: " << result.numContacts()
+              << " contact point(s) with 0.3m normal arrows\n";
+  }
 
   builder.addSphereCast(
       Eigen::Vector3d(-3.0, 2.0, 0.5),
@@ -103,31 +157,51 @@ int main(int argc, char** argv)
       nullptr);
 
   std::cout << "\n--- AABB Visualization ---\n";
+
   collision::Aabb boxAabb
-      = collision::Aabb::forBox(Eigen::Vector3d(0.25, 0.25, 0.25));
-  collision::Aabb worldAabb = collision::Aabb::transformed(
+      = collision::Aabb::forBox(Eigen::Vector3d(0.5, 0.5, 0.5));
+  collision::Aabb worldBoxAabb = collision::Aabb::transformed(
       boxAabb,
       Eigen::Translation3d(-1.5, 0.0, 0.0) * Eigen::Isometry3d::Identity());
-  builder.addAabb(worldAabb, vsg::colors::Orange);
-  std::cout << "Added AABB for box at (-1.5, 0, 0)\n";
+  builder.addAabb(worldBoxAabb, vsg::colors::Orange);
+  std::cout << "Added AABB for box at (-1.5, 0, 0): ["
+            << worldBoxAabb.min.transpose() << "] to ["
+            << worldBoxAabb.max.transpose() << "]\n";
 
   collision::Aabb sphereAabb = collision::Aabb::forSphere(0.4);
   collision::Aabb worldSphereAabb = collision::Aabb::transformed(
       sphereAabb,
       Eigen::Translation3d(0.0, 0.0, 0.0) * Eigen::Isometry3d::Identity());
-  builder.addAabb(worldSphereAabb, vsg::colors::Orange);
-  std::cout << "Added AABB for sphere at origin\n";
+  builder.addAabb(worldSphereAabb, vsg::colors::Yellow);
+  std::cout << "Added AABB for green sphere at origin\n";
+
+  collision::Aabb capsuleAabb = collision::Aabb::forCapsule(0.3, 0.8);
+  collision::Aabb worldCapsuleAabb = collision::Aabb::transformed(
+      capsuleAabb,
+      Eigen::Translation3d(1.5, 0.0, 0.0) * Eigen::Isometry3d::Identity());
+  builder.addAabb(worldCapsuleAabb, vsg::colors::Orange);
+  std::cout << "Added AABB for capsule at (1.5, 0, 0)\n";
+
+  collision::Aabb cylinderAabb = collision::Aabb::forCylinder(0.35, 0.7);
+  collision::Aabb worldCylinderAabb = collision::Aabb::transformed(
+      cylinderAabb,
+      Eigen::Translation3d(3.0, 0.0, 0.0) * Eigen::Isometry3d::Identity());
+  builder.addAabb(worldCylinderAabb, vsg::colors::Orange);
+  std::cout << "Added AABB for cylinder at (3.0, 0, 0)\n";
 
   std::cout << "\n--- Distance Query Visualization ---\n";
   collision::DistanceResult distResult;
   distResult.distance = 1.0;
-  distResult.pointOnObject1 = Eigen::Vector3d(-1.5, 0.5, 0.25);
-  distResult.pointOnObject2 = Eigen::Vector3d(0.0, 0.5, 0.4);
+  distResult.pointOnObject1 = Eigen::Vector3d(-1.0, 0.8, 0.8);
+  distResult.pointOnObject2 = Eigen::Vector3d(0.4, 0.8, 0.6);
   distResult.normal
       = (distResult.pointOnObject2 - distResult.pointOnObject1).normalized();
   builder.addDistanceResult(distResult);
-  std::cout
-      << "Added distance visualization between box and sphere (top edge)\n";
+  std::cout << "Added distance visualization:\n";
+  std::cout << "  Point 1: " << distResult.pointOnObject1.transpose() << "\n";
+  std::cout << "  Point 2: " << distResult.pointOnObject2.transpose() << "\n";
+  std::cout << "  Distance: " << distResult.distance
+            << " (valid: " << distResult.isValid() << ")\n";
 
   std::cout << "\n--- Raycast Visualization ---\n";
   collision::Ray ray(
@@ -164,48 +238,43 @@ int main(int argc, char** argv)
             << ", " << bounds.min.z << ") max(" << bounds.max.x << ", "
             << bounds.max.y << ", " << bounds.max.z << ")" << std::endl;
 
-  bool headlessMode = false;
-  for (int i = 1; i < argc; ++i) {
-    if (std::string(argv[i]) == "--headless") {
-      headlessMode = true;
-    }
-  }
-
   if (headlessMode) {
-    std::cout << "\nRunning in headless mode...\n";
+    std::cout << "\nRunning in headless mode (" << width << "x" << height
+              << ")...\n";
 
-    auto viewer = vsg::SimpleViewer::headless(1280, 720);
+    auto viewer = vsg::SimpleViewer::headless(width, height);
     viewer.setScene(scene);
     viewer.addGrid(6.0, 1.0);
     viewer.addAxes(1.0);
     viewer.lookAt(
-        Eigen::Vector3d(5.0, 5.0, 4.0),
-        Eigen::Vector3d(0.0, 0.0, 0.0),
+        Eigen::Vector3d(6.0, -4.0, 3.0),
+        Eigen::Vector3d(0.5, 0.0, 0.0),
         Eigen::Vector3d::UnitZ());
 
     viewer.run();
 
-    if (viewer.saveScreenshot("collision_viz_headless.ppm")) {
-      std::cout << "Screenshot saved to collision_viz_headless.ppm\n";
+    if (viewer.saveScreenshot(outputFile)) {
+      std::cout << "Screenshot saved to " << outputFile << "\n";
     } else {
       std::cerr << "Failed to save screenshot\n";
     }
 
     auto buffer = viewer.captureBuffer();
-    std::cout << "Captured buffer: " << buffer.size() << " bytes (" << 1280
-              << "x" << 720 << " RGBA)\n";
+    std::cout << "Captured buffer: " << buffer.size() << " bytes (" << width
+              << "x" << height << " RGBA)\n";
   } else {
-    std::cout << "\nStarting VSG viewer...\n";
+    std::cout << "\nStarting VSG viewer (" << width << "x" << height
+              << ")...\n";
     std::cout << "Use mouse to rotate/zoom, close window to exit.\n";
     std::cout << "(Run with --headless for headless mode)\n\n";
 
-    vsg::SimpleViewer viewer(1280, 720, "DART Collision Visualization");
+    vsg::SimpleViewer viewer(width, height, "DART Collision Visualization");
     viewer.setScene(scene);
     viewer.addGrid(6.0, 1.0);
     viewer.addAxes(1.0);
     viewer.lookAt(
-        Eigen::Vector3d(5.0, 5.0, 4.0),
-        Eigen::Vector3d(0.0, 0.0, 0.0),
+        Eigen::Vector3d(6.0, -4.0, 3.0),
+        Eigen::Vector3d(0.5, 0.0, 0.0),
         Eigen::Vector3d::UnitZ());
 
     viewer.run();

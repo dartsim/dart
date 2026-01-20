@@ -72,28 +72,29 @@ inline dynamics::SkeletonPtr CreateSingleShapeSkeleton(
 }
 
 inline void AddSkeletonToGroup(
-    collision::CollisionGroup* group, const dynamics::SkeletonPtr& skeleton)
+    ::dart::collision::CollisionGroup* group,
+    const dynamics::SkeletonPtr& skeleton)
 {
   group->addShapeFramesOf(skeleton.get());
 }
 
-inline collision::CollisionOption MakeCollisionOption(
+inline ::dart::collision::CollisionOption MakeCollisionOption(
     std::size_t max_contacts = 1000,
     bool enable_contacts = true,
     bool allow_negative_penetration = false)
 {
-  collision::CollisionOption option;
+  ::dart::collision::CollisionOption option;
   option.enableContact = enable_contacts;
   option.maxNumContacts = max_contacts;
   option.allowNegativePenetrationDepthContacts = allow_negative_penetration;
   return option;
 }
 
-inline collision::DistanceOption MakeDistanceOption(
+inline ::dart::collision::DistanceOption MakeDistanceOption(
     bool enable_nearest_points = true,
     double distance_lower_bound = -std::numeric_limits<double>::infinity())
 {
-  collision::DistanceOption option;
+  ::dart::collision::DistanceOption option;
   option.enableNearestPoints = enable_nearest_points;
   option.distanceLowerBound = distance_lower_bound;
   return option;

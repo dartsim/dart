@@ -16,6 +16,7 @@
 - collision-rs: `/home/js/dev/physics/collision-rs` (commit 29090c4, 2021-10-08; 0 commits in last 12 months)
 - qu3e: `/home/js/dev/physics/qu3e` (commit 1f519c9, 2021-05-08; 0 commits in last 12 months)
 - tinyc2 (cute_c2): `/home/js/dev/physics/tinyheaders` (commit af97c17, 2026-01-07; 8 commits in last 12 months)
+- Legacy/inactive references (not cloned locally): ColDet, GIMPACT, OPCODE, SOLID, OZCollide.
 - Sources used: README files plus public headers and source trees in each repo.
 - Benchmark suites: `/home/js/dev/physics/colbench` (commit e09ed36, 2023-07-03), `/home/js/dev/physics/collision-detection-benchmark` (commit 4073887, 2022-07-07), `/home/js/dev/physics/spatial-collision-datastructures` (commit 3b993fb, 2018-03-05).
 - External curated list: /home/js/dev/physics/awesome-collision-detection (commit effd3f8) from https://github.com/jslee02/awesome-collision-detection (library catalog, not exhaustive).
@@ -50,7 +51,7 @@
 - Design: GJK intersection/separation + EPA penetration; MPR intersection/penetration.
 - Strengths: small, portable, easy to embed; MPR reference implementation.
 - Gaps: no broadphase, no mesh or concave shapes, no raycast, no general distance.
-- Caution: not battle-tested across all edge cases; community reports note algorithmic bugs; treat as a reference, not a drop-in.
+- Caution: not battle-tested across all edge cases; known algorithmic bugs reported in the wild. Treat as a reference, not a drop-in, and add exhaustive unit tests when porting (cover degeneracies and every algorithm path).
 
 ### Coal (HPP-FCL fork of FCL)
 
@@ -163,24 +164,24 @@ Legend: Y = supported, N = not supported, P = partial or user-managed.
 
 ### Batch query support (data structures and throughput)
 
-| Library        | Batch-friendly structures                          | Typical batch usage                                            | Notes                                                                       |
-| -------------- | -------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| FCL            | Dynamic AABB tree managers, SaP/SSaP, spatial hash | Register objects once, update transforms, query many pairs     | Designed for group queries; BVH traversal overhead can dominate tiny scenes |
-| Bullet         | DBVT broadphase, pair cache, persistent manifolds  | World step builds/updates pairs, narrowphase over cached pairs | Strong temporal coherence; margins trade accuracy for stability             |
-| ODE            | Spaces (hash, SAP, quadtree)                       | dSpaceCollide over a space each step                           | Simple batch API; performance depends on space choice                       |
-| libccd         | None                                               | Single convex pair at a time                                   | Pure narrowphase; no scene or batch layer                                   |
-| Coal           | Dynamic AABB tree managers, SaP/SSaP, spatial hash | Register objects once, update transforms, query many pairs     | ComputeCollision caches solver for repeated pair queries                    |
-| ReactPhysics3D | Dynamic AABB tree                                  | World step builds/updates pairs                                | Discrete pipeline; contact persistence managed by engine                    |
-| Parry          | BVH partitioning utilities                         | User-managed BVH queries                                       | Broadphase orchestration is external (e.g., in Rapier)                      |
-| OpenGJK        | None                                               | Single convex pair at a time                                   | Distance-only GJK kernel                                                    |
-| BEPUphysics1   | Dynamic hierarchy, sort-and-sweep, brute           | World step builds/updates pairs                                | Internal multithreading, query accelerators                                 |
-| JitterPhysics  | SAP, persistent SAP, brute                         | World step builds/updates pairs                                | Persistent SAP favors temporal coherence                                    |
-| ncollide       | Dynamic BVH                                        | Pipeline manages pairs                                         | Broadphase is integrated into the pipeline/world                            |
-| collision-rs   | DBVT, sweep and prune                              | User-managed batch queries                                     | Provides data structures; no full world manager                             |
-| qu3e           | Dynamic AABB tree                                  | World step builds/updates pairs                                | Minimal engine; batch performance tied to simple data layout                |
-| tinyc2         | None                                               | Single pair at a time                                          | Narrowphase-only 2D library                                                 |
+| Library        | Batch-friendly structures                          | Batch optimizations                                      | Notes                                                                       |
+| -------------- | -------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------- |
+| FCL            | Dynamic AABB tree managers, SaP/SSaP, spatial hash | Manager-level pair enumeration                           | Designed for group queries; BVH traversal overhead can dominate tiny scenes |
+| Bullet         | DBVT broadphase, pair cache                        | Persistent manifolds, pair cache reuse                   | Strong temporal coherence; margins trade accuracy for stability             |
+| ODE            | Spaces (hash, SAP, quadtree)                       | Space hierarchy + callback-based pair traversal          | Simple batch API; performance depends on space choice                       |
+| libccd         | None                                               | None                                                     | Pure narrowphase; no scene or batch layer                                   |
+| Coal           | Dynamic AABB tree managers, SaP/SSaP, spatial hash | ComputeCollision caches per-pair solver state            | Strong batch usage; security margins influence throughput                   |
+| ReactPhysics3D | Dynamic AABB tree                                  | Persistent manifolds, broadphase incremental updates     | Discrete pipeline; contact persistence managed by engine                    |
+| Parry          | BVH partitioning utilities                         | User-managed pair pipeline (Rapier provides caching)     | Broadphase orchestration is external (e.g., in Rapier)                      |
+| OpenGJK        | None                                               | None                                                     | Distance-only GJK kernel                                                    |
+| BEPUphysics1   | Dynamic hierarchy, sort-and-sweep, brute           | Multithreaded pipeline + manifold refresh                | Internal multithreading, query accelerators                                 |
+| JitterPhysics  | SAP, persistent SAP, brute                         | Persistent SAP + manifold caching                        | Persistent SAP favors temporal coherence                                    |
+| ncollide       | Dynamic BVH                                        | Pipeline caches contact manifolds                        | Broadphase is integrated into the pipeline/world                            |
+| collision-rs   | DBVT, sweep and prune                              | User-managed batch caching                               | Provides data structures; no full world manager                             |
+| qu3e           | Dynamic AABB tree                                  | Minimal caching; simple pair updates                     | Minimal engine; batch performance tied to simple data layout                |
+| tinyc2         | None                                               | None                                                     | Narrowphase-only 2D library                                                 |
 
-Batch here means many pairwise queries per frame; none of these expose a dedicated SIMD batch API, so throughput depends on per-call overhead and data layout.
+Batch here means many pairwise queries per frame. None of these expose a dedicated SIMD batch API, so throughput depends on per-call overhead, data layout, and how much temporal coherence is captured (pair caches, persistent manifolds).
 
 ### Convex-only reference (libccd)
 
@@ -274,25 +275,28 @@ Legend: Y = supported, N = not supported, P = limited or 2D-only.
 
 ## Conventions and Terminology
 
+See `conventions.md` for the full DART normalization rules and adapter mapping,
+and `contact_manifolds.md` for manifold representation guidance.
+
 ### Normal direction and distance sign
 
 | Library        | Normal convention                          | Penetration sign                    | Signed distance support      | Notes                                                                 |
 | -------------- | ------------------------------------------ | ----------------------------------- | ---------------------------- | --------------------------------------------------------------------- |
-| DART           | normal points from bodyNode2 to bodyNode1  | penetrationDepth positive           | yes (DistanceResult)         | Signed distance is negative when penetrating                          |
+| DART           | normal points from bodyNode2 to bodyNode1  | penetrationDepth positive           | yes (DistanceResult)         | Signed distance is negative when penetrating; distance normals should align with point2 - point1 |
 | FCL            | normal points from o1 to o2                | penetration_depth positive          | yes (enable_signed_distance) | DistanceResult is positive when separated; negative if signed enabled |
 | Coal           | normal points from o1 to o2                | penetration_depth positive          | yes                          | Signed distance used to define normal/witness points                  |
 | Bullet         | normalWorldOnB points from B to A          | distance1 negative when penetrating | yes (distance1)              | If B is treated as object2, normal aligns with object2->object1       |
 | ODE            | normal points into body1                   | depth positive                      | no                           | Equivalent to object2->object1 if g1 is object1                       |
 | Parry          | normal1 points from shape1 to shape2       | dist negative when penetrating      | yes (dist)                   | Explicit signed distance in Contact                                   |
 | ReactPhysics3D | normal from body1 to body2                 | penetrationDepth positive           | no                           | Discrete collision only                                               |
-| libccd         | direction is separation/penetration vector | penetration depth positive          | partial                      | Provides penetration depth + direction; no signed distance API        |
+| libccd         | direction is translation to move obj2 out  | penetration depth positive          | partial                      | Direction must be flipped to match DART contact normal; no distance API |
 | OpenGJK        | N/A (distance-only)                        | N/A                                 | no                           | Returns minimum distance (0 if intersecting)                          |
 
 ### Contact representations and manifolds
 
 | Library        | Contact representation              | Manifold behavior                                 |
 | -------------- | ----------------------------------- | ------------------------------------------------- |
-| DART           | Contact points (Contact struct)     | No explicit manifold; returns list                |
+| DART           | Contact points + ContactManifold    | Legacy backend returns flat list; experimental has manifold container but minimal reduction |
 | FCL            | Contact points (pos, normal, depth) | No explicit manifold; returns list                |
 | Coal           | Contact points + ContactPatch       | Supports patches (polygonal contact regions)      |
 | Bullet         | Persistent manifolds of points      | Up to 4 points per manifold, cached across frames |
@@ -323,6 +327,7 @@ Edge-edge and face-face interactions are typically represented via a multi-point
 
 - DART Contact defines the normal from bodyNode2 to bodyNode1, with positive penetration depth (see `dart/collision/Contact.hpp`).
 - DART DistanceResult uses signed distance; negative means penetration (see `dart/collision/DistanceResult.hpp`).
+- Experimental distance helpers currently mix normal conventions (object1->object2 vs object2->object1). Standardize on pointOnObject2 - pointOnObject1 and add regression tests.
 - Provide adapter helpers when using libraries with opposite normal conventions (FCL/Coal/Parry/React) or signed depth (Bullet/Parry).
 - Keep terminology consistent: signed distance is positive when separated, penetration depth is positive overlap.
 - For BEPUphysics1, JitterPhysics, ncollide, collision-rs, qu3e, and tinyc2, normal/sign conventions are not clearly documented; verify in code before adapter work.
@@ -358,6 +363,8 @@ correctness for the same inputs.
 
 ## SDF and Gradient-Based Queries
 
+See `sdf_and_gradients.md` for a focused SDF + gradient survey and integration targets.
+
 ### SDF support (observed)
 
 | Library                                       | SDF or voxel support            | Notes                                                                       |
@@ -381,6 +388,7 @@ correctness for the same inputs.
 - For convex shapes, gradients are well-defined almost everywhere but can be non-unique at edges/vertices; return a stable normal with tie-breaking.
 - Penetration gradients should align with the penetration direction (EPA or conservative advancement) and be consistent with the signed distance convention.
 - Differentiable collision detection (randomized smoothing, Montaut 2022) can stabilize gradients near feature switches.
+- When only convex shapes are present, the signed distance gradient should equal the normalized vector (pointOnObject2 - pointOnObject1); expose this explicitly to avoid recomputation in optimizers.
 
 ## Wider ecosystem snapshot (awesome-collision-detection)
 
@@ -392,10 +400,11 @@ The curated list is not exhaustive; additional candidates may exist outside this
 
 ### Legacy/inactive references (still useful)
 
-- ColDet, SOLID: older mesh collision references.
-- GIMPACT: dynamic triangle mesh collision (used by ODE/Bullet).
-- OPCODE: legacy BVH/trimesh backend (used by ODE).
-- OZCollide: legacy collision library.
+- ColDet: early triangle-mesh collision library; useful for legacy mesh contact heuristics.
+- SOLID: classic convex/mesh collision stack (GJK + BVH), still a reference for API design.
+- GIMPACT: dynamic triangle mesh collision (used by ODE/Bullet), BVH-based with triangle-triangle tests.
+- OPCODE: legacy BVH/trimesh backend (used by ODE); optimized AABB trees and temporal coherence.
+- OZCollide: legacy collision library with broadphase + narrowphase components.
 
 ### Mesh processing and decomposition references
 

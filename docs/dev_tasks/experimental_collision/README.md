@@ -30,6 +30,9 @@ If we can't beat existing backends in performance, there's no point in building 
 - [Parallelization Plan](./parallelization_plan.md) - Multi-core batch collision roadmap
 - [ReactPhysics3D ECS Review](./reactphysics3d_ecs_review.md) - ECS data layout and pipeline notes
 - [Reference Comparison](./reference_comparison.md) - FCL/Bullet/ODE feature and algorithm comparison
+- [Conventions](./conventions.md) - Normal/sign conventions and adapter rules
+- [Contact Manifolds](./contact_manifolds.md) - Contact representation notes
+- [SDF + Gradients](./sdf_and_gradients.md) - SDF survey and gradient guidance
 - [Benchmark Catalog](./benchmark_catalog.md) - Surveyed benchmark cases and datasets
 - [Benchmark Results](./benchmark_results.md) - Latest structured suite results and gates
 

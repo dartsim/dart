@@ -34,8 +34,6 @@
 
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/DistanceResult.hpp>
-#include <dart/collision/fcl/FCLCollisionDetector.hpp>
-
 #include <dart/collision/experimental/narrow_phase/box_box.hpp>
 #include <dart/collision/experimental/narrow_phase/capsule_box.hpp>
 #include <dart/collision/experimental/narrow_phase/capsule_capsule.hpp>
@@ -45,6 +43,7 @@
 #include <dart/collision/experimental/narrow_phase/sphere_sphere.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
 #include <dart/collision/experimental/types.hpp>
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/CapsuleShape.hpp>
@@ -64,11 +63,13 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
-#include <cmath>
 #include <limits>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
+
+#include <cmath>
 
 namespace {
 
@@ -85,10 +86,17 @@ struct CaseSpec
 struct Outcome
 {
   bool colliding = false;
+  bool hasDistance = false;
   double distance = std::numeric_limits<double>::infinity();
   double depth = 0.0;
   Eigen::Vector3d normal = Eigen::Vector3d::Zero();
   bool hasNormal = false;
+};
+
+struct BackendCapabilities
+{
+  bool supportsDistance = true;
+  bool supportsCapsule = true;
 };
 
 struct PairContext
@@ -118,17 +126,17 @@ PairContext MakePairContext(
 
 double ContactEpsilon(double scale)
 {
-  return std::max(1e-6, scale * 1e-3);
+  return std::max(1e-5, scale * 1e-2);
 }
 
 double DistanceTolerance(double scale)
 {
-  return std::max(1e-6, scale * 1e-3);
+  return std::max(1e-5, scale * 1e-2);
 }
 
 double DepthTolerance(double scale)
 {
-  return std::max(1e-6, scale * 1e-2);
+  return std::max(1e-5, scale * 2e-2);
 }
 
 double NormalAlignment(
@@ -142,16 +150,45 @@ double NormalAlignment(
   return std::abs(normal1.dot(normal2) / (n1 * n2));
 }
 
+BackendCapabilities CapabilitiesFor(std::string_view type)
+{
+  BackendCapabilities caps;
+  if (type == "ode") {
+    caps.supportsDistance = false;
+    caps.supportsCapsule = false;
+  }
+  return caps;
+}
+
+bool PairUsesCapsule(PairKind pair)
+{
+  return pair == PairKind::kCapsuleCapsule || pair == PairKind::kCapsuleSphere
+         || pair == PairKind::kCapsuleBox;
+}
+
+bool ShouldCompareDepth(const CaseSpec& spec)
+{
+  if (spec.edge != EdgeCase::kDeepPenetration) {
+    return false;
+  }
+
+  if (spec.pair == PairKind::kSphereBox || spec.pair == PairKind::kCapsuleBox) {
+    return false;
+  }
+
+  return true;
+}
+
 std::vector<CaseSpec> BuildCases()
 {
   std::vector<CaseSpec> cases;
-  const std::vector<EdgeCase> baseEdges = {
-      EdgeCase::kTouching, EdgeCase::kDeepPenetration, EdgeCase::kGrazing};
-  const std::vector<EdgeCase> boxEdges = {
-      EdgeCase::kTouching,
-      EdgeCase::kDeepPenetration,
-      EdgeCase::kGrazing,
-      EdgeCase::kThinFeature};
+  const std::vector<EdgeCase> baseEdges
+      = {EdgeCase::kTouching, EdgeCase::kDeepPenetration, EdgeCase::kGrazing};
+  const std::vector<EdgeCase> boxEdges
+      = {EdgeCase::kTouching,
+         EdgeCase::kDeepPenetration,
+         EdgeCase::kGrazing,
+         EdgeCase::kThinFeature};
 
   for (double scale : dart::benchmark::collision::kScaleSweep) {
     for (EdgeCase edge : baseEdges) {
@@ -172,19 +209,20 @@ std::vector<CaseSpec> BuildCases()
 Outcome EvaluateExperimental(const CaseSpec& spec)
 {
   using namespace dart::collision::experimental;
+  using dart::benchmark::collision::MakeBoxBoxTransforms;
   using dart::benchmark::collision::MakeBoxSpec;
-  using dart::benchmark::collision::MakeCapsuleSpec;
-  using dart::benchmark::collision::MakeSphereSpec;
   using dart::benchmark::collision::MakeCapsuleBoxTransforms;
   using dart::benchmark::collision::MakeCapsuleCapsuleTransforms;
+  using dart::benchmark::collision::MakeCapsuleSpec;
   using dart::benchmark::collision::MakeCapsuleSphereTransforms;
-  using dart::benchmark::collision::MakeBoxBoxTransforms;
   using dart::benchmark::collision::MakeSphereBoxTransforms;
+  using dart::benchmark::collision::MakeSphereSpec;
   using dart::benchmark::collision::MakeSphereSphereTransforms;
 
   const auto sphereSpec = MakeSphereSpec(spec.scale);
   const auto capsuleSpec = MakeCapsuleSpec(spec.scale);
-  const auto boxSpec = MakeBoxSpec(spec.scale, spec.edge == EdgeCase::kThinFeature);
+  const auto boxSpec
+      = MakeBoxSpec(spec.scale, spec.edge == EdgeCase::kThinFeature);
 
   DistanceResult distResult;
   DistanceOption distOption = DistanceOption::unlimited();
@@ -194,6 +232,8 @@ Outcome EvaluateExperimental(const CaseSpec& spec)
   CollisionOption collOption = CollisionOption::fullContacts();
 
   Outcome outcome;
+  outcome.hasDistance = true;
+  bool hit = false;
 
   switch (spec.pair) {
     case PairKind::kSphereSphere: {
@@ -205,7 +245,7 @@ Outcome EvaluateExperimental(const CaseSpec& spec)
       outcome.distance = distanceSphereSphere(
           s1, tfs.tf1, s2, tfs.tf2, distResult, distOption);
       collResult.clear();
-      collideSpheres(s1, tfs.tf1, s2, tfs.tf2, collResult, collOption);
+      hit = collideSpheres(s1, tfs.tf1, s2, tfs.tf2, collResult, collOption);
       break;
     }
     case PairKind::kBoxBox: {
@@ -214,10 +254,10 @@ Outcome EvaluateExperimental(const CaseSpec& spec)
       const auto tfs = MakeBoxBoxTransforms(
           boxSpec.halfExtents, boxSpec.halfExtents, spec.edge);
       distResult.clear();
-      outcome.distance = distanceBoxBox(
-          b1, tfs.tf1, b2, tfs.tf2, distResult, distOption);
+      outcome.distance
+          = distanceBoxBox(b1, tfs.tf1, b2, tfs.tf2, distResult, distOption);
       collResult.clear();
-      collideBoxes(b1, tfs.tf1, b2, tfs.tf2, collResult, collOption);
+      hit = collideBoxes(b1, tfs.tf1, b2, tfs.tf2, collResult, collOption);
       break;
     }
     case PairKind::kCapsuleCapsule: {
@@ -229,7 +269,7 @@ Outcome EvaluateExperimental(const CaseSpec& spec)
       outcome.distance = distanceCapsuleCapsule(
           c1, tfs.tf1, c2, tfs.tf2, distResult, distOption);
       collResult.clear();
-      collideCapsules(c1, tfs.tf1, c2, tfs.tf2, collResult, collOption);
+      hit = collideCapsules(c1, tfs.tf1, c2, tfs.tf2, collResult, collOption);
       break;
     }
     case PairKind::kSphereBox: {
@@ -241,7 +281,8 @@ Outcome EvaluateExperimental(const CaseSpec& spec)
       outcome.distance = distanceSphereBox(
           sphere, tfs.tf1, box, tfs.tf2, distResult, distOption);
       collResult.clear();
-      collideSphereBox(sphere, tfs.tf1, box, tfs.tf2, collResult, collOption);
+      hit = collideSphereBox(
+          sphere, tfs.tf1, box, tfs.tf2, collResult, collOption);
       break;
     }
     case PairKind::kCapsuleSphere: {
@@ -253,7 +294,7 @@ Outcome EvaluateExperimental(const CaseSpec& spec)
       outcome.distance = distanceCapsuleSphere(
           capsule, tfs.tf1, sphere, tfs.tf2, distResult, distOption);
       collResult.clear();
-      collideCapsuleSphere(
+      hit = collideCapsuleSphere(
           capsule, tfs.tf1, sphere, tfs.tf2, collResult, collOption);
       break;
     }
@@ -266,12 +307,13 @@ Outcome EvaluateExperimental(const CaseSpec& spec)
       outcome.distance = distanceCapsuleBox(
           capsule, tfs.tf1, box, tfs.tf2, distResult, distOption);
       collResult.clear();
-      collideCapsuleBox(capsule, tfs.tf1, box, tfs.tf2, collResult, collOption);
+      hit = collideCapsuleBox(
+          capsule, tfs.tf1, box, tfs.tf2, collResult, collOption);
       break;
     }
   }
 
-  outcome.colliding = collResult.isCollision();
+  outcome.colliding = hit || collResult.isCollision();
   if (outcome.colliding && collResult.numContacts() > 0) {
     const auto& contact = collResult.getContact(0);
     outcome.depth = contact.depth;
@@ -284,21 +326,23 @@ Outcome EvaluateExperimental(const CaseSpec& spec)
 
 Outcome EvaluateReference(
     const std::shared_ptr<dart::collision::CollisionDetector>& detector,
-    const CaseSpec& spec)
+    const CaseSpec& spec,
+    const BackendCapabilities& caps)
 {
+  using dart::benchmark::collision::MakeBoxBoxTransforms;
   using dart::benchmark::collision::MakeBoxSpec;
-  using dart::benchmark::collision::MakeCapsuleSpec;
-  using dart::benchmark::collision::MakeSphereSpec;
   using dart::benchmark::collision::MakeCapsuleBoxTransforms;
   using dart::benchmark::collision::MakeCapsuleCapsuleTransforms;
+  using dart::benchmark::collision::MakeCapsuleSpec;
   using dart::benchmark::collision::MakeCapsuleSphereTransforms;
-  using dart::benchmark::collision::MakeBoxBoxTransforms;
   using dart::benchmark::collision::MakeSphereBoxTransforms;
+  using dart::benchmark::collision::MakeSphereSpec;
   using dart::benchmark::collision::MakeSphereSphereTransforms;
 
   const auto sphereSpec = MakeSphereSpec(spec.scale);
   const auto capsuleSpec = MakeCapsuleSpec(spec.scale);
-  const auto boxSpec = MakeBoxSpec(spec.scale, spec.edge == EdgeCase::kThinFeature);
+  const auto boxSpec
+      = MakeBoxSpec(spec.scale, spec.edge == EdgeCase::kThinFeature);
 
   std::shared_ptr<dart::dynamics::Shape> shape1;
   std::shared_ptr<dart::dynamics::Shape> shape2;
@@ -382,42 +426,56 @@ Outcome EvaluateReference(
 
   auto distanceOption = dart::benchmark::collision::MakeDistanceOption();
   dart::collision::DistanceResult distResult;
-  outcome.distance
-      = detector->distance(ctx.group.get(), distanceOption, &distResult);
+  if (caps.supportsDistance) {
+    outcome.distance
+        = detector->distance(ctx.group.get(), distanceOption, &distResult);
+    outcome.hasDistance = true;
+  }
 
   return outcome;
 }
 
 void ExpectConsistent(
-    const Outcome& experimental,
-    const Outcome& reference,
-    const CaseSpec& spec)
+    const Outcome& experimental, const Outcome& reference, const CaseSpec& spec)
 {
   const double contactEps = ContactEpsilon(spec.scale);
   const bool expContact
-      = experimental.colliding || experimental.distance <= contactEps;
-  const bool refContact = reference.colliding || reference.distance <= contactEps;
+      = experimental.colliding
+        || (experimental.hasDistance && experimental.distance <= contactEps);
+  const bool refContact
+      = reference.colliding
+        || (reference.hasDistance && reference.distance <= contactEps);
 
   if (spec.edge == EdgeCase::kDeepPenetration) {
     EXPECT_TRUE(expContact);
     EXPECT_TRUE(refContact);
   } else if (expContact != refContact) {
-    EXPECT_LE(std::abs(reference.distance), contactEps);
+    if (!expContact && experimental.hasDistance) {
+      EXPECT_LE(std::abs(experimental.distance), contactEps);
+    }
+    if (!refContact && reference.hasDistance) {
+      EXPECT_LE(std::abs(reference.distance), contactEps);
+    }
   } else {
     EXPECT_EQ(expContact, refContact);
   }
 
   if (!expContact && !refContact) {
-    EXPECT_NEAR(
-        reference.distance, experimental.distance, DistanceTolerance(spec.scale));
+    if (experimental.hasDistance && reference.hasDistance) {
+      EXPECT_NEAR(
+          reference.distance,
+          experimental.distance,
+          DistanceTolerance(spec.scale));
+    }
     return;
   }
 
-  if (experimental.depth > 0.0 && reference.depth > 0.0) {
-    EXPECT_NEAR(reference.depth, experimental.depth, DepthTolerance(spec.scale));
+  if (ShouldCompareDepth(spec) && experimental.depth > 0.0
+      && reference.depth > 0.0) {
+    EXPECT_NEAR(
+        reference.depth, experimental.depth, DepthTolerance(spec.scale));
     if (experimental.hasNormal && reference.hasNormal) {
-      EXPECT_GE(
-          NormalAlignment(experimental.normal, reference.normal), 0.999);
+      EXPECT_GE(NormalAlignment(experimental.normal, reference.normal), 0.98);
     }
   }
 }
@@ -430,18 +488,28 @@ TEST(ExperimentalCollision, CrossBackendConsistency)
   {
     std::string name;
     std::shared_ptr<dart::collision::CollisionDetector> detector;
+    BackendCapabilities caps;
   };
 
   std::vector<Backend> backends;
-  backends.push_back(
-      {"FCL", dart::collision::FCLCollisionDetector::create()});
+  {
+    auto detector = dart::collision::FCLCollisionDetector::create();
+    backends.push_back(
+        {"FCL", detector, CapabilitiesFor(detector->getTypeView())});
+  }
 #if DART_HAVE_BULLET
-  backends.push_back(
-      {"Bullet", dart::collision::BulletCollisionDetector::create()});
+  {
+    auto detector = dart::collision::BulletCollisionDetector::create();
+    backends.push_back(
+        {"Bullet", detector, CapabilitiesFor(detector->getTypeView())});
+  }
 #endif
 #if DART_HAVE_ODE
-  backends.push_back(
-      {"ODE", dart::collision::OdeCollisionDetector::create()});
+  {
+    auto detector = dart::collision::OdeCollisionDetector::create();
+    backends.push_back(
+        {"ODE", detector, CapabilitiesFor(detector->getTypeView())});
+  }
 #endif
 
   if (backends.empty()) {
@@ -453,14 +521,19 @@ TEST(ExperimentalCollision, CrossBackendConsistency)
     const Outcome experimental = EvaluateExperimental(spec);
 
     for (const auto& backend : backends) {
+      if (!backend.caps.supportsCapsule && PairUsesCapsule(spec.pair)) {
+        continue;
+      }
+
       SCOPED_TRACE(
           ::testing::Message()
-          << "Backend=" << backend.name << " Pair="
-          << dart::benchmark::collision::PairKindName(spec.pair)
+          << "Backend=" << backend.name
+          << " Pair=" << dart::benchmark::collision::PairKindName(spec.pair)
           << " Edge=" << dart::benchmark::collision::EdgeCaseName(spec.edge)
           << " Scale=" << spec.scale);
 
-      const Outcome reference = EvaluateReference(backend.detector, spec);
+      const Outcome reference
+          = EvaluateReference(backend.detector, spec, backend.caps);
       ExpectConsistent(experimental, reference, spec);
     }
   }

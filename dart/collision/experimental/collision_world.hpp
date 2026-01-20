@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/collision/experimental/broad_phase/brute_force.hpp>
+#include <dart/collision/experimental/batch.hpp>
 #include <dart/collision/experimental/collision_object.hpp>
 #include <dart/collision/experimental/export.hpp>
 #include <dart/collision/experimental/types.hpp>
@@ -65,6 +66,16 @@ public:
 
   [[nodiscard]] std::size_t numObjects() const;
   [[nodiscard]] CollisionObject getObject(std::size_t index);
+
+  [[nodiscard]] std::size_t updateAll();
+
+  [[nodiscard]] BroadPhaseSnapshot buildBroadPhaseSnapshot() const;
+
+  bool collideAll(
+      const BroadPhaseSnapshot& snapshot,
+      const CollisionOption& option,
+      CollisionResult& result,
+      BatchStats* stats = nullptr);
 
   bool collide(const CollisionOption& option, CollisionResult& result);
 
