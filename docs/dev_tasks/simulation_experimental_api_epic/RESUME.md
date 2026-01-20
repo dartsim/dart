@@ -2,7 +2,7 @@
 
 ## Quick Status
 
-**Phases 0-2 COMPLETE. Phases 3-4 IN PROGRESS. Phase 5.1 (FK) COMPLETE. Compute Graph COMPLETE. Phase 5.2 (Dynamics) IN PROGRESS.**
+**Phase 5.2 (Dynamics) COMPLETE. Phase 5.5 (step()) COMPLETE (without collision/constraints).**
 
 | Phase | Status         | Description                                              |
 | ----- | -------------- | -------------------------------------------------------- |
@@ -13,75 +13,78 @@
 | 4     | 🔄 In Progress | Performance: benchmarks done, profiling pending          |
 | 5.1   | ✅ Complete    | Forward Kinematics: joint transforms + Link integration  |
 | CG    | ✅ Complete    | Compute Graph: Taskflow integration for parallel exec    |
-| 5.2   | 🔄 In Progress | Forward Dynamics: ABA algorithm implementation           |
-| 5.3-5 | Pending        | Collision, Constraints, step()                           |
+| 5.2   | ✅ Complete    | Forward Dynamics: ABA algorithm with CoM + external forces |
+| 5.5   | ✅ Complete    | World::step(): Physics simulation with semi-implicit Euler |
+| 5.3-4 | Deferred       | Collision + Constraints: Complex integration deferred    |
 | 6     | Future         | Migration story                                          |
 
 ## Current Branch
 
 ```
 Branch: feature/sim_exp
-Status: Clean (all changes committed)
-Last commit: 1b5c4c457d0 test(simulation-experimental): Add classic DART validation test
+Status: Clean (pending commit)
 ```
 
 ## Last Session Summary
 
-Completed ABA velocity pass, integration tests, and classic DART validation:
+Completed Phase 5.2 (Dynamics) and Phase 5.5 (step()):
 
-1. **Added `computeVelocities()` method** implementing ABA Pass 1:
-   - Computes link spatial velocities: `v[i] = Xup[i] * v[parent[i]] + S * qd`
-   - Computes Coriolis/partial accelerations: `c[i] = v × (S * qd)`
+1. **Added CoM offset to MassProperties**
+   - `localCOM` field in `comps/dynamics.hpp`
+   - ABA now correctly uses CoM for spatial inertia and gravity torques
 
-2. **Added 5 new integration tests** (8 total tests now):
-   - `SimplePendulumAcceleration` - Single link with revolute joint
-   - `TwoLinkChain` - 2-DOF serial chain
-   - `PrismaticJoint` - Vertical slider under gravity
-   - `ComputeAllMultiBodies` - Multiple robots processed
-   - `ValidateAgainstClassicDART` - Comparison with classic DART ABA
+2. **Enabled exact validation against classic DART**
+   - `ValidateAgainstClassicDART` test now uses 1e-10 tolerance
+   - Experimental API produces identical accelerations to classic DART
 
-3. **All tests passing**: 8 tests in `test_forward_dynamics`
+3. **Added external force support**
+   - `externalForce` and `externalTorque` fields in Link component
+   - `Link::addExternalForce()`, `setExternalForce()`, `clearExternalForces()`
+   - ABA includes external forces in bias force computation
 
-## Commits This Session
+4. **Implemented World::step()**
+   - Semi-implicit Euler integration (velocity then position)
+   - Configurable gravity, timeStep
+   - Time and frame tracking
+   - Automatic force clearing
 
-```
-1b5c4c457d0 test(simulation-experimental): Add classic DART validation test
-0a800861c5a docs(simulation-experimental): Update RESUME.md with velocity pass progress
-218939daf45 feat(simulation-experimental): Add ABA velocity pass and integration tests
-```
-
-## Dynamics Tests Status
+## Test Status
 
 | Test File                   | Tests | Status |
 | --------------------------- | ----- | ------ |
 | `test_spatial_math.cpp`     | 15    | ✅     |
 | `test_motion_subspace.cpp`  | 24    | ✅     |
 | `test_articulated_body.cpp` | 9     | ✅     |
-| `test_forward_dynamics.cpp` | 8     | ✅     |
-| **Total**                   | 56    | ✅     |
+| `test_forward_dynamics.cpp` | 9     | ✅     |
+| `test_world.cpp`            | 12    | ✅     |
+| **Total**                   | 69    | ✅     |
+
+New tests added:
+- `ExternalForces` - Validates external force integration
+- `StepRequiresSimulationMode` - Mode check
+- `StepAdvancesTime` - Time/frame tracking
+- `FreeFallDynamics` - Physics correctness
+- `ExternalForceIntegration` - Force integration correctness
 
 ## Immediate Next Steps
 
-1. **Add CoM offset support** - Current implementation assumes CoM at joint origin
-2. **Numerical validation** - Enable exact match checks once CoM is handled
-3. **External forces** - Add support for applied forces beyond gravity
+1. **Commit current changes** - CoM, external forces, step()
+2. **Run full test suite** - Ensure no regressions
+3. **Phase 5.3-5.4 (Collision/Constraints)** - Complex, deferred for now
 
 ## How to Resume
 
 ```bash
 git checkout feature/sim_exp
-git status  # Should be clean
-git log -5 --oneline
+git status && git log -5 --oneline
 
-# Verify tests
+# Build and test
 pixi run cmake --build build/default/cpp/Release --target dart-simulation-experimental
 ./build/default/cpp/Release/bin/test_forward_dynamics
-./build/default/cpp/Release/bin/test_spatial_math
-./build/default/cpp/Release/bin/test_motion_subspace
-./build/default/cpp/Release/bin/test_articulated_body
+./build/default/cpp/Release/bin/test_world
 ```
 
-## Phase 5.2 Deliverables Status
+## Phase 5 Deliverables Status
 
 | Component               | Status | Location                            |
 | ----------------------- | ------ | ----------------------------------- |
@@ -89,23 +92,21 @@ pixi run cmake --build build/default/cpp/Release --target dart-simulation-experi
 | Motion subspace (S)     | ✅     | `dynamics/motion_subspace.hpp/cpp`  |
 | ABA data structures     | ✅     | `dynamics/articulated_body.hpp/cpp` |
 | ForwardDynamicsSystem   | ✅     | `dynamics/forward_dynamics.hpp/cpp` |
-| Unit tests (48)         | ✅     | `tests/.../dynamics/test_*.cpp`     |
-| Velocity pass           | ✅     | `computeVelocities()` implemented   |
-| Integration tests       | ✅     | 5 tests for various configurations  |
-| Classic DART validation | ✅     | Comparison test added               |
+| CoM offset support      | ✅     | `comps/dynamics.hpp` (MassProperties)|
+| External forces         | ✅     | `comps/link.hpp`, `multi_body/link.cpp` |
+| World::step()           | ✅     | `world.hpp/cpp`                     |
+| Collision integration   | Deferred | Requires adapter to classic collision |
+| Constraint integration  | Deferred | Requires adapter to classic solver |
 
 ## Known Limitations
 
-1. **No CoM offset**: Mass is assumed at joint origin, limiting gravity torque accuracy
-2. **No external forces**: Only gravity is applied, no contact/applied forces
+1. **No collision detection**: Requires adapting classic `dart::collision` to ECS
+2. **No constraint solving**: Requires adapting classic `dart::constraint` to ECS
 3. **Fixed base only**: Root link cannot have velocity/acceleration
 
 ## Related Files
 
 - **Epic tracker**: `docs/dev_tasks/simulation_experimental_api_epic/README.md`
 - **Phase 5 design**: `docs/dev_tasks/simulation_experimental_api_epic/phase5_physics_design.md`
-- **Compute graph design**: `docs/dev_tasks/simulation_experimental_api_epic/compute_graph_design.md`
-- **C++ source**: `dart/simulation/experimental/`
 - **Dynamics module**: `dart/simulation/experimental/dynamics/`
-- **Tests**: `tests/unit/simulation/experimental/dynamics/`
-- **Classic DART ABA reference**: `dart/dynamics/Skeleton.cpp:3675`
+- **Tests**: `tests/unit/simulation/experimental/`

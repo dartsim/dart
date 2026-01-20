@@ -92,7 +92,7 @@ void ForwardDynamicsSystem::computeArticulatedInertias(
     auto& linkData = m_workspace.getLinkData(idx);
 
     linkData.articulatedInertia = makeSpatialInertia(
-        linkComp.mass.mass, Eigen::Vector3d::Zero(), linkComp.mass.inertia);
+        linkComp.mass.mass, linkComp.mass.localCOM, linkComp.mass.inertia);
 
     for (const auto childJointEntity : linkComp.childJoints) {
       const auto& childJoint = registry.get<comps::Joint>(childJointEntity);
@@ -143,9 +143,6 @@ void ForwardDynamicsSystem::computeBiasForces(
       = registry.get<comps::MultiBodyStructure>(multiBody.getEntity());
   const std::size_t numLinks = mbComp.links.size();
 
-  const Eigen::Vector6d gravityForce
-      = makeSpatialForce(Eigen::Vector3d::Zero(), m_config.gravity);
-
   for (std::size_t i = numLinks; i > 0; --i) {
     const std::size_t idx = i - 1;
     const auto linkEntity = mbComp.links[idx];
@@ -158,9 +155,19 @@ void ForwardDynamicsSystem::computeBiasForces(
 
     linkData.biasForce = spatialCrossStar(V, Ia * V);
 
-    const Eigen::Vector6d gravityInLink
-        = transformSpatialForceInverse(linkTransforms[idx], gravityForce);
-    linkData.biasForce -= linkComp.mass.mass * gravityInLink;
+    const Eigen::Vector3d gravityInLink
+        = linkTransforms[idx].linear().transpose() * m_config.gravity;
+    const Eigen::Vector3d gravityForce = linkComp.mass.mass * gravityInLink;
+    const Eigen::Vector3d gravityTorque
+        = linkComp.mass.localCOM.cross(gravityForce);
+    linkData.biasForce -= makeSpatialForce(gravityTorque, gravityForce);
+
+    const Eigen::Vector3d extForceInLink
+        = linkTransforms[idx].linear().transpose() * linkComp.externalForce;
+    const Eigen::Vector3d extTorqueInLink
+        = linkTransforms[idx].linear().transpose() * linkComp.externalTorque
+          + linkComp.mass.localCOM.cross(extForceInLink);
+    linkData.biasForce -= makeSpatialForce(extTorqueInLink, extForceInLink);
 
     for (const auto childJointEntity : linkComp.childJoints) {
       const auto& childJoint = registry.get<comps::Joint>(childJointEntity);

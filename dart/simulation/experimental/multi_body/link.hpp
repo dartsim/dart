@@ -119,12 +119,24 @@ public:
   /// @return World-frame transformation (updated by forward kinematics)
   [[nodiscard]] const Eigen::Isometry3d& getWorldTransform() const;
 
-  // TODO: Add methods for:
-  // - Accessing mass properties
-  // - Getting child joints
-  // - Accessing collision shapes
+  [[nodiscard]] double getMass() const;
+  void setMass(double mass);
 
-  // Note: getEntity(), getWorld(), isValid() inherited from Frame
+  [[nodiscard]] const Eigen::Vector3d& getLocalCOM() const;
+  void setLocalCOM(const Eigen::Vector3d& com);
+
+  [[nodiscard]] const Eigen::Matrix3d& getInertia() const;
+  void setInertia(const Eigen::Matrix3d& inertia);
+
+  [[nodiscard]] Eigen::Vector3d getExternalForce() const;
+  void addExternalForce(const Eigen::Vector3d& force);
+  void setExternalForce(const Eigen::Vector3d& force);
+
+  [[nodiscard]] Eigen::Vector3d getExternalTorque() const;
+  void addExternalTorque(const Eigen::Vector3d& torque);
+  void setExternalTorque(const Eigen::Vector3d& torque);
+
+  void clearExternalForces();
 };
 
 } // namespace dart::simulation::experimental

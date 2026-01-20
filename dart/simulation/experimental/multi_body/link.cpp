@@ -86,4 +86,101 @@ const Eigen::Isometry3d& Link::getWorldTransform() const
   return Frame::getTransform();
 }
 
+//==============================================================================
+double Link::getMass() const
+{
+  const auto& linkComp
+      = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  return linkComp.mass.mass;
+}
+
+//==============================================================================
+void Link::setMass(double mass)
+{
+  auto& linkComp = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  linkComp.mass.mass = mass;
+}
+
+//==============================================================================
+const Eigen::Vector3d& Link::getLocalCOM() const
+{
+  const auto& linkComp
+      = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  return linkComp.mass.localCOM;
+}
+
+//==============================================================================
+void Link::setLocalCOM(const Eigen::Vector3d& com)
+{
+  auto& linkComp = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  linkComp.mass.localCOM = com;
+}
+
+//==============================================================================
+const Eigen::Matrix3d& Link::getInertia() const
+{
+  const auto& linkComp
+      = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  return linkComp.mass.inertia;
+}
+
+//==============================================================================
+void Link::setInertia(const Eigen::Matrix3d& inertia)
+{
+  auto& linkComp = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  linkComp.mass.inertia = inertia;
+}
+
+//==============================================================================
+Eigen::Vector3d Link::getExternalForce() const
+{
+  const auto& linkComp
+      = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  return linkComp.externalForce;
+}
+
+//==============================================================================
+void Link::addExternalForce(const Eigen::Vector3d& force)
+{
+  auto& linkComp = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  linkComp.externalForce += force;
+}
+
+//==============================================================================
+void Link::setExternalForce(const Eigen::Vector3d& force)
+{
+  auto& linkComp = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  linkComp.externalForce = force;
+}
+
+//==============================================================================
+Eigen::Vector3d Link::getExternalTorque() const
+{
+  const auto& linkComp
+      = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  return linkComp.externalTorque;
+}
+
+//==============================================================================
+void Link::addExternalTorque(const Eigen::Vector3d& torque)
+{
+  auto& linkComp = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  linkComp.externalTorque += torque;
+}
+
+//==============================================================================
+void Link::setExternalTorque(const Eigen::Vector3d& torque)
+{
+  auto& linkComp = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  linkComp.externalTorque = torque;
+}
+
+//==============================================================================
+void Link::clearExternalForces()
+{
+  auto& linkComp = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  linkComp.externalForce.setZero();
+  linkComp.externalTorque.setZero();
+}
+
 } // namespace dart::simulation::experimental

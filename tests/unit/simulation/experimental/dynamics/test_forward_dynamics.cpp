@@ -352,4 +352,44 @@ TEST(ForwardDynamics, ValidateAgainstClassicDART)
   EXPECT_TRUE(std::isfinite(classicAccel2));
   EXPECT_TRUE(std::isfinite(expAccel1));
   EXPECT_TRUE(std::isfinite(expAccel2));
+
+  constexpr double tolerance = 1e-10;
+  EXPECT_NEAR(expAccel1, classicAccel1, tolerance);
+  EXPECT_NEAR(expAccel2, classicAccel2, tolerance);
+}
+
+TEST(ForwardDynamics, ExternalForces)
+{
+  dse::World world;
+
+  exp_dynamics::ForwardDynamicsConfig fdConfig;
+  fdConfig.gravity = Eigen::Vector3d::Zero();
+  exp_dynamics::ForwardDynamicsSystem fds(fdConfig);
+
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto link = robot.addLink(
+      "link",
+      {.parentLink = base,
+       .jointName = "joint",
+       .jointType = dse::comps::JointType::Prismatic,
+       .axis = Eigen::Vector3d::UnitZ()});
+
+  constexpr double mass = 2.0;
+  link.setMass(mass);
+
+  constexpr double appliedForce = 10.0;
+  link.setExternalForce(Eigen::Vector3d(0, 0, appliedForce));
+
+  world.enterSimulationMode();
+  world.updateKinematics();
+
+  fds.compute(world, robot);
+
+  auto accel = link.getParentJoint().getAcceleration();
+  ASSERT_EQ(accel.size(), 1);
+  EXPECT_NEAR(accel(0), appliedForce / mass, 1e-10);
+
+  link.clearExternalForces();
+  EXPECT_TRUE(link.getExternalForce().isZero());
 }

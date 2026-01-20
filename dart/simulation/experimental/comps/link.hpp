@@ -65,6 +65,9 @@ struct Link
   mutable Eigen::Isometry3d localTransformCache = Eigen::Isometry3d::Identity();
   mutable bool needLocalTransformUpdate = true;
 
+  Eigen::Vector3d externalForce = Eigen::Vector3d::Zero();
+  Eigen::Vector3d externalTorque = Eigen::Vector3d::Zero();
+
   static constexpr auto entityFields()
   {
     return std::make_tuple(&Link::parentJoint, &Link::childJoints);

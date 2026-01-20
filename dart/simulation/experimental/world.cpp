@@ -36,6 +36,7 @@
 #include "dart/simulation/experimental/common/ecs_utils.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/dynamics/forward_dynamics.hpp"
 #include "dart/simulation/experimental/frame/fixed_frame.hpp"
 #include "dart/simulation/experimental/frame/frame.hpp"
 #include "dart/simulation/experimental/frame/free_frame.hpp"
@@ -381,17 +382,66 @@ void World::updateKinematics()
 
   auto cacheView = m_registry.view<comps::FrameTag, comps::FrameCache>();
 
-  // Mark caches dirty
   for (auto entity : cacheView) {
     auto& cache = cacheView.get<comps::FrameCache>(entity);
     cache.needTransformUpdate = true;
   }
 
-  // Recompute world transforms
   for (auto entity : cacheView) {
     Frame frame(entity, this);
     (void)frame.getTransform();
   }
+}
+
+//==============================================================================
+void World::step(bool clearForces)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !m_simulationMode,
+      InvalidArgumentException,
+      "step() requires simulation mode");
+
+  updateKinematics();
+
+  dynamics::ForwardDynamicsConfig fdConfig;
+  fdConfig.gravity = m_gravity;
+  fdConfig.timeStep = m_timeStep;
+  dynamics::ForwardDynamicsSystem fds(fdConfig);
+
+  auto mbView = m_registry.view<comps::MultiBodyStructure>();
+  for (auto mbEntity : mbView) {
+    MultiBody mb(mbEntity, this);
+
+    fds.compute(*this, mb);
+
+    const auto& mbComp = m_registry.get<comps::MultiBodyStructure>(mbEntity);
+    for (auto linkEntity : mbComp.links) {
+      auto& linkComp = m_registry.get<comps::Link>(linkEntity);
+      if (linkComp.parentJoint == entt::null)
+        continue;
+
+      auto& jointComp = m_registry.get<comps::Joint>(linkComp.parentJoint);
+      const std::size_t dof = jointComp.getDOF();
+
+      for (std::size_t i = 0; i < dof; ++i) {
+        jointComp.velocity(i) += jointComp.acceleration(i) * m_timeStep;
+        jointComp.position(i) += jointComp.velocity(i) * m_timeStep;
+      }
+
+      linkComp.needLocalTransformUpdate = true;
+    }
+
+    if (clearForces) {
+      for (auto linkEntity : mbComp.links) {
+        auto& linkComp = m_registry.get<comps::Link>(linkEntity);
+        linkComp.externalForce.setZero();
+        linkComp.externalTorque.setZero();
+      }
+    }
+  }
+
+  m_time += m_timeStep;
+  m_frame++;
 }
 
 //==============================================================================

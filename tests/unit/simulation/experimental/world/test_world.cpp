@@ -159,3 +159,112 @@ TEST(World, UpdateKinematicsRequiresSimulationMode)
   world.enterSimulationMode();
   EXPECT_NO_THROW(world.updateKinematics());
 }
+
+TEST(World, StepRequiresSimulationMode)
+{
+  dart::simulation::experimental::World world;
+
+  EXPECT_THROW(
+      world.step(),
+      dart::simulation::experimental::InvalidArgumentException);
+
+  world.enterSimulationMode();
+  EXPECT_NO_THROW(world.step());
+}
+
+TEST(World, StepAdvancesTime)
+{
+  dart::simulation::experimental::World world;
+  world.setTimeStep(0.01);
+  world.enterSimulationMode();
+
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+
+  world.step();
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.01);
+  EXPECT_EQ(world.getFrame(), 1u);
+
+  world.step();
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.02);
+  EXPECT_EQ(world.getFrame(), 2u);
+}
+
+TEST(World, FreeFallDynamics)
+{
+  namespace dse = dart::simulation::experimental;
+
+  dse::World world;
+  world.setGravity(Eigen::Vector3d(0, 0, -10.0));
+  world.setTimeStep(0.001);
+
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto slider = robot.addLink(
+      "slider",
+      {.parentLink = base,
+       .jointName = "joint",
+       .jointType = dse::comps::JointType::Prismatic,
+       .axis = Eigen::Vector3d::UnitZ()});
+
+  slider.setMass(1.0);
+
+  world.enterSimulationMode();
+
+  constexpr int numSteps = 100;
+  constexpr double dt = 0.001;
+  constexpr double g = 10.0;
+
+  for (int i = 0; i < numSteps; ++i) {
+    world.step();
+  }
+
+  double t = numSteps * dt;
+  double expectedVel = -g * t;
+  double expectedPos = -0.5 * g * t * t;
+
+  auto joint = slider.getParentJoint();
+  double actualVel = joint.getVelocity()(0);
+  double actualPos = joint.getPosition()(0);
+
+  EXPECT_NEAR(actualVel, expectedVel, 0.01);
+  EXPECT_NEAR(actualPos, expectedPos, 0.001);
+}
+
+TEST(World, ExternalForceIntegration)
+{
+  namespace dse = dart::simulation::experimental;
+
+  dse::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.001);
+
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto slider = robot.addLink(
+      "slider",
+      {.parentLink = base,
+       .jointName = "joint",
+       .jointType = dse::comps::JointType::Prismatic,
+       .axis = Eigen::Vector3d::UnitX()});
+
+  constexpr double mass = 2.0;
+  constexpr double force = 10.0;
+  slider.setMass(mass);
+
+  world.enterSimulationMode();
+
+  for (int i = 0; i < 100; ++i) {
+    slider.addExternalForce(Eigen::Vector3d(force, 0, 0));
+    world.step();
+  }
+
+  double t = 100 * 0.001;
+  double expectedAccel = force / mass;
+  double expectedVel = expectedAccel * t;
+  double expectedPos = 0.5 * expectedAccel * t * t;
+
+  auto joint = slider.getParentJoint();
+  EXPECT_NEAR(joint.getVelocity()(0), expectedVel, 0.01);
+  EXPECT_NEAR(joint.getPosition()(0), expectedPos, 0.001);
+}

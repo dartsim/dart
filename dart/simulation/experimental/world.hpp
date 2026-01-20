@@ -99,6 +99,40 @@ public:
   void enterSimulationMode();
   void updateKinematics();
 
+  void step(bool clearForces = true);
+
+  [[nodiscard]] double getTimeStep() const
+  {
+    return m_timeStep;
+  }
+  void setTimeStep(double dt)
+  {
+    m_timeStep = dt;
+  }
+
+  [[nodiscard]] const Eigen::Vector3d& getGravity() const
+  {
+    return m_gravity;
+  }
+  void setGravity(const Eigen::Vector3d& gravity)
+  {
+    m_gravity = gravity;
+  }
+
+  [[nodiscard]] double getTime() const
+  {
+    return m_time;
+  }
+  void setTime(double time)
+  {
+    m_time = time;
+  }
+
+  [[nodiscard]] std::size_t getFrame() const
+  {
+    return m_frame;
+  }
+
   //--------------------------------------------------------------------------
   // Registry access
   //--------------------------------------------------------------------------
@@ -147,6 +181,11 @@ private:
   std::size_t m_rigidBodyCounter{0};
   std::size_t m_linkCounter{0};
   std::size_t m_jointCounter{0};
+
+  double m_timeStep{0.001};
+  double m_time{0.0};
+  std::size_t m_frame{0};
+  Eigen::Vector3d m_gravity{0.0, 0.0, -9.81};
 };
 
 } // namespace dart::simulation::experimental
