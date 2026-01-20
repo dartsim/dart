@@ -9,7 +9,9 @@
  */
 
 #include <dart/collision/experimental/narrow_phase/distance.hpp>
+#include <dart/collision/experimental/sdf/dense_esdf_field.hpp>
 #include <dart/collision/experimental/sdf/dense_sdf_field.hpp>
+#include <dart/collision/experimental/sdf/dense_tsdf_field.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <gtest/gtest.h>
@@ -20,6 +22,7 @@
   #include <voxblox/core/layer.h>
 #endif
 
+#include <algorithm>
 #include <memory>
 #include <random>
 #include <vector>
@@ -30,6 +33,8 @@ constexpr double kVoxelSize = 0.1;
 constexpr int kDim = 32;
 constexpr double kRadius = 0.8;
 constexpr double kDistTol = 2.0 * kVoxelSize;
+constexpr double kEsdfTol = 2.5 * kVoxelSize;
+constexpr double kTruncation = 0.3;
 
 Eigen::Vector3d gridOrigin()
 {
@@ -61,6 +66,30 @@ std::shared_ptr<dart::collision::experimental::DenseSdfField> buildDenseField()
               + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) * kVoxelSize);
         field->setDistance(Eigen::Vector3i(x, y, z), sphereDistance(pos));
         field->setObserved(Eigen::Vector3i(x, y, z), true);
+      }
+    }
+  }
+
+  return field;
+}
+
+std::shared_ptr<dart::collision::experimental::DenseTsdfField> buildDenseTsdf()
+{
+  using dart::collision::experimental::DenseTsdfField;
+  const Eigen::Vector3i dims(kDim, kDim, kDim);
+  auto field = std::make_shared<DenseTsdfField>(
+      gridOrigin(), dims, kVoxelSize, kTruncation, 2.0);
+
+  for (int z = 0; z < kDim; ++z) {
+    for (int y = 0; y < kDim; ++y) {
+      for (int x = 0; x < kDim; ++x) {
+        const Eigen::Vector3d pos
+            = gridOrigin()
+              + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) * kVoxelSize);
+        const double dist = sphereDistance(pos);
+        const double clamped = std::clamp(dist, -kTruncation, kTruncation);
+        field->setDistance(Eigen::Vector3i(x, y, z), clamped);
+        field->setWeight(Eigen::Vector3i(x, y, z), 1.0);
       }
     }
   }
@@ -162,6 +191,33 @@ TEST(SdfDistance, SphereVsSdf)
   const double expected
       = sphereDistance(sphere_tf.translation()) - sphere.getRadius();
   EXPECT_NEAR(dist, expected, kDistTol);
+}
+
+TEST(EsdfDenseField, BuildsFromTsdf)
+{
+  using dart::collision::experimental::DenseEsdfField;
+  using dart::collision::experimental::EsdfBuildOptions;
+
+  auto tsdf = buildDenseTsdf();
+  DenseEsdfField esdf(tsdf->origin(), tsdf->dims(), kVoxelSize, 2.0);
+
+  EsdfBuildOptions options;
+  options.surfaceDistance = 0.5 * kVoxelSize;
+  options.maxDistance = 2.0;
+  options.minWeight = 1e-6;
+  options.useDiagonalNeighbors = true;
+  ASSERT_TRUE(esdf.buildFromTsdf(*tsdf, options));
+
+  dart::collision::experimental::SdfQueryOptions query;
+  query.interpolate = true;
+  query.requireObserved = true;
+
+  const auto points = makeQueryPoints(64);
+  for (const auto& point : points) {
+    double dist = 0.0;
+    ASSERT_TRUE(esdf.distance(point, &dist, query));
+    EXPECT_NEAR(dist, sphereDistance(point), kEsdfTol);
+  }
 }
 
 #ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
