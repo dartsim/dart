@@ -35,6 +35,7 @@
 #include <dart/collision/experimental/aabb.hpp>
 #include <dart/collision/experimental/export.hpp>
 
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -59,6 +60,29 @@ public:
       const Aabb& aabb) const
       = 0;
   [[nodiscard]] virtual std::size_t size() const = 0;
+
+  virtual void queryPairs(std::vector<BroadPhasePair>& out) const
+  {
+    out = queryPairs();
+  }
+
+  virtual void build(std::span<const std::size_t> ids, std::span<const Aabb> aabbs)
+  {
+    clear();
+    const std::size_t n = std::min(ids.size(), aabbs.size());
+    for (std::size_t i = 0; i < n; ++i) {
+      add(ids[i], aabbs[i]);
+    }
+  }
+
+  virtual void updateRange(
+      std::span<const std::size_t> ids, std::span<const Aabb> aabbs)
+  {
+    const std::size_t n = std::min(ids.size(), aabbs.size());
+    for (std::size_t i = 0; i < n; ++i) {
+      update(ids[i], aabbs[i]);
+    }
+  }
 };
 
 } // namespace dart::collision::experimental

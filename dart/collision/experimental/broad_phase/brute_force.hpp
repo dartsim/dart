@@ -53,6 +53,10 @@ public:
       const Aabb& aabb) const override;
   [[nodiscard]] std::size_t size() const override;
 
+  using BroadPhase::queryPairs;
+  using BroadPhase::build;
+  using BroadPhase::updateRange;
+
 private:
   std::unordered_map<std::size_t, Aabb> objects_;
   std::vector<std::size_t> orderedIds_;

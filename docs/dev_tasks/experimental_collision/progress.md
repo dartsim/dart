@@ -348,17 +348,20 @@ references.
 
 **Status**: Fixed (2026-01-20)
 
-### Priority 2: Bulk API Interfaces (ECS Phase 1)
+### Priority 2: Bulk API Interfaces (ECS Phase 1) ✅ DONE
 
-Add batch-friendly methods to `BroadPhase` interface:
+Added batch-friendly methods to `BroadPhase` interface:
 
 ```cpp
-build(const std::span<const Aabb>& aabbs);
-updateRange(const std::span<const ObjectId>& ids, const std::span<const Aabb>& aabbs);
-queryPairs(std::vector<BroadPhasePair>& out);  // caller-owned storage
+void queryPairs(std::vector<BroadPhasePair>& out) const;  // caller-owned storage
+void build(std::span<const std::size_t> ids, std::span<const Aabb> aabbs);
+void updateRange(std::span<const std::size_t> ids, std::span<const Aabb> aabbs);
 ```
 
-**Status**: Not started
+**Implementation**: Default implementations in base class with `using` declarations
+in derived classes (AabbTree, BruteForce, SpatialHash, SweepAndPrune).
+
+**Status**: Complete (2026-01-20)
 
 ### Priority 3: Parallel Broadphase (Phase 4 - Optional)
 

@@ -402,3 +402,62 @@ TEST(AabbTreeBroadPhase, QueryOverlappingConsistent)
 
   EXPECT_EQ(treeResults, bruteResults);
 }
+
+TEST(AabbTreeBroadPhase, BulkBuild)
+{
+  std::vector<std::size_t> ids = {10, 20, 30};
+  std::vector<Aabb> aabbs = {
+      Aabb(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(2, 2, 2)),
+      Aabb(Eigen::Vector3d(1, 1, 1), Eigen::Vector3d(3, 3, 3)),
+      Aabb(Eigen::Vector3d(10, 10, 10), Eigen::Vector3d(11, 11, 11)),
+  };
+
+  AabbTreeBroadPhase bp;
+  bp.build(ids, aabbs);
+
+  EXPECT_EQ(bp.size(), 3);
+
+  auto pairs = bp.queryPairs();
+  ASSERT_EQ(pairs.size(), 1);
+  EXPECT_EQ(pairs[0].first, 10);
+  EXPECT_EQ(pairs[0].second, 20);
+  EXPECT_TRUE(bp.validate());
+}
+
+TEST(AabbTreeBroadPhase, BulkUpdateRange)
+{
+  AabbTreeBroadPhase bp;
+
+  bp.add(0, Aabb(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 1, 1)));
+  bp.add(1, Aabb(Eigen::Vector3d(10, 10, 10), Eigen::Vector3d(11, 11, 11)));
+  bp.add(2, Aabb(Eigen::Vector3d(20, 20, 20), Eigen::Vector3d(21, 21, 21)));
+
+  EXPECT_TRUE(bp.queryPairs().empty());
+
+  std::vector<std::size_t> ids = {1, 2};
+  std::vector<Aabb> aabbs = {
+      Aabb(Eigen::Vector3d(0.5, 0.5, 0.5), Eigen::Vector3d(1.5, 1.5, 1.5)),
+      Aabb(Eigen::Vector3d(0.8, 0.8, 0.8), Eigen::Vector3d(1.8, 1.8, 1.8)),
+  };
+
+  bp.updateRange(ids, aabbs);
+
+  auto pairs = bp.queryPairs();
+  EXPECT_EQ(pairs.size(), 3);
+  EXPECT_TRUE(bp.validate());
+}
+
+TEST(AabbTreeBroadPhase, QueryPairsWithOutput)
+{
+  AabbTreeBroadPhase bp;
+
+  bp.add(0, Aabb(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(2, 2, 2)));
+  bp.add(1, Aabb(Eigen::Vector3d(1, 1, 1), Eigen::Vector3d(3, 3, 3)));
+
+  std::vector<BroadPhasePair> out;
+  bp.queryPairs(out);
+
+  ASSERT_EQ(out.size(), 1);
+  EXPECT_EQ(out[0].first, 0);
+  EXPECT_EQ(out[0].second, 1);
+}
