@@ -79,6 +79,11 @@ public:
   [[nodiscard]] BroadPhaseSnapshot buildBroadPhaseSnapshot(
       const BatchSettings& settings) const;
 
+  void buildBroadPhaseSnapshot(BroadPhaseSnapshot& out) const;
+
+  void buildBroadPhaseSnapshot(
+      BroadPhaseSnapshot& out, const BatchSettings& settings) const;
+
   bool collideAll(
       const BroadPhaseSnapshot& snapshot,
       const CollisionOption& option,

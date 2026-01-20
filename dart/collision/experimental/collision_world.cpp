@@ -182,19 +182,31 @@ BroadPhaseSnapshot CollisionWorld::buildBroadPhaseSnapshot(
     const BatchSettings& settings) const
 {
   BroadPhaseSnapshot snapshot;
-  snapshot.pairs = m_broadPhase->queryPairs();
-  snapshot.numObjects = m_broadPhase->size();
+  buildBroadPhaseSnapshot(snapshot, settings);
+  return snapshot;
+}
 
-  if (settings.deterministic && snapshot.pairs.size() > 1) {
-    for (auto& pair : snapshot.pairs) {
+void CollisionWorld::buildBroadPhaseSnapshot(BroadPhaseSnapshot& out) const
+{
+  BatchSettings settings;
+  buildBroadPhaseSnapshot(out, settings);
+}
+
+void CollisionWorld::buildBroadPhaseSnapshot(
+    BroadPhaseSnapshot& out, const BatchSettings& settings) const
+{
+  out.pairs.clear();
+  m_broadPhase->queryPairs(out.pairs);
+  out.numObjects = m_broadPhase->size();
+
+  if (settings.deterministic && out.pairs.size() > 1) {
+    for (auto& pair : out.pairs) {
       if (pair.second < pair.first) {
         std::swap(pair.first, pair.second);
       }
     }
-    std::sort(snapshot.pairs.begin(), snapshot.pairs.end());
+    std::sort(out.pairs.begin(), out.pairs.end());
   }
-
-  return snapshot;
 }
 
 bool CollisionWorld::collideAll(
