@@ -63,8 +63,10 @@ enum class BroadPhaseType
 };
 
 struct BatchSettings;
+struct BatchScratch;
 struct BatchTimings;
 struct BatchStats;
+struct BatchOutput;
 struct BroadPhaseSnapshot;
 
 }

@@ -34,6 +34,7 @@
 
 #include <dart/collision/experimental/broad_phase/broad_phase.hpp>
 #include <dart/collision/experimental/export.hpp>
+#include <dart/collision/experimental/types.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -45,6 +46,13 @@ struct DART_COLLISION_EXPERIMENTAL_API BatchSettings
 {
   int maxThreads = 1;
   bool deterministic = true;
+  bool collectStats = false;
+  std::size_t grainSize = 256;
+};
+
+struct DART_COLLISION_EXPERIMENTAL_API BatchScratch
+{
+  void reset() {}
 };
 
 struct DART_COLLISION_EXPERIMENTAL_API BatchTimings
@@ -66,6 +74,7 @@ struct DART_COLLISION_EXPERIMENTAL_API BatchTimings
 struct DART_COLLISION_EXPERIMENTAL_API BatchStats
 {
   std::size_t numObjects = 0;
+  std::size_t numAabbUpdates = 0;
   std::size_t numPairs = 0;
   std::size_t numPairsTested = 0;
   std::size_t numContacts = 0;
@@ -77,6 +86,7 @@ struct DART_COLLISION_EXPERIMENTAL_API BatchStats
   void clear()
   {
     numObjects = 0;
+    numAabbUpdates = 0;
     numPairs = 0;
     numPairsTested = 0;
     numContacts = 0;
@@ -84,6 +94,18 @@ struct DART_COLLISION_EXPERIMENTAL_API BatchStats
     contactBytes = 0;
     tempBytes = 0;
     timings.clear();
+  }
+};
+
+struct DART_COLLISION_EXPERIMENTAL_API BatchOutput
+{
+  CollisionResult result;
+  std::vector<BroadPhasePair> pairs;
+
+  void clear()
+  {
+    result.clear();
+    pairs.clear();
   }
 };
 

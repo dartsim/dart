@@ -71,12 +71,33 @@ public:
 
   [[nodiscard]] std::size_t updateAll();
 
+  [[nodiscard]] std::size_t updateAll(
+      const BatchSettings& settings,
+      BatchStats* stats = nullptr);
+
   [[nodiscard]] BroadPhaseSnapshot buildBroadPhaseSnapshot() const;
+
+  [[nodiscard]] BroadPhaseSnapshot buildBroadPhaseSnapshot(
+      const BatchSettings& settings) const;
 
   bool collideAll(
       const BroadPhaseSnapshot& snapshot,
       const CollisionOption& option,
       CollisionResult& result,
+      BatchStats* stats = nullptr);
+
+  bool collideAll(
+      const BroadPhaseSnapshot& snapshot,
+      const CollisionOption& option,
+      CollisionResult& result,
+      const BatchSettings& settings,
+      BatchStats* stats = nullptr);
+
+  bool collideAll(
+      const BroadPhaseSnapshot& snapshot,
+      const CollisionOption& option,
+      BatchOutput& out,
+      const BatchSettings& settings = BatchSettings(),
       BatchStats* stats = nullptr);
 
   bool collide(const CollisionOption& option, CollisionResult& result);

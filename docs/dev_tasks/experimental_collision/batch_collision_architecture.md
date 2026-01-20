@@ -60,7 +60,7 @@ struct BatchScratch {
 
 struct BatchOutput {
   CollisionResult result;
-  std::vector<CollisionPair> pairs;  // (id1,id2) aligned with result manifolds
+  std::vector<BroadPhasePair> pairs;  // (id1,id2) aligned with result manifolds
 };
 
 class CollisionWorld {
@@ -68,14 +68,13 @@ public:
   std::size_t updateAll(const BatchSettings& settings,
                         BatchStats* stats = nullptr);
 
-  BroadPhaseSnapshot buildBroadPhaseSnapshot(const BatchSettings& settings,
-                                             BatchStats* stats = nullptr) const;
+  BroadPhaseSnapshot buildBroadPhaseSnapshot(const BatchSettings& settings) const;
 
   void collideAll(const BroadPhaseSnapshot& snapshot,
                   const CollisionOption& option,
                   BatchOutput& out,
-                  BatchStats* stats = nullptr,
-                  const BatchSettings& settings = {});
+                  const BatchSettings& settings = {},
+                  BatchStats* stats = nullptr);
 };
 ```
 

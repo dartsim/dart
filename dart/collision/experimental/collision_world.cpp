@@ -39,6 +39,8 @@
 #include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
 
 #include <algorithm>
+
+#include <algorithm>
 #include <limits>
 
 namespace dart::collision::experimental {
@@ -140,6 +142,15 @@ CollisionObject CollisionWorld::getObject(std::size_t index)
 
 std::size_t CollisionWorld::updateAll()
 {
+  BatchSettings settings;
+  return updateAll(settings, nullptr);
+}
+
+std::size_t CollisionWorld::updateAll(
+    const BatchSettings& settings,
+    BatchStats* stats)
+{
+  (void)settings;
   std::size_t updated = 0;
   auto view = m_registry.view<comps::CollisionObjectTag>();
   for (auto entity : view) {
@@ -153,14 +164,37 @@ std::size_t CollisionWorld::updateAll()
       ++updated;
     }
   }
+
+  if (stats) {
+    stats->numObjects = numObjects();
+    stats->numAabbUpdates = updated;
+  }
+
   return updated;
 }
 
 BroadPhaseSnapshot CollisionWorld::buildBroadPhaseSnapshot() const
 {
+  BatchSettings settings;
+  return buildBroadPhaseSnapshot(settings);
+}
+
+BroadPhaseSnapshot CollisionWorld::buildBroadPhaseSnapshot(
+    const BatchSettings& settings) const
+{
   BroadPhaseSnapshot snapshot;
   snapshot.pairs = m_broadPhase->queryPairs();
   snapshot.numObjects = m_broadPhase->size();
+
+  if (settings.deterministic && snapshot.pairs.size() > 1) {
+    for (auto& pair : snapshot.pairs) {
+      if (pair.second < pair.first) {
+        std::swap(pair.first, pair.second);
+      }
+    }
+    std::sort(snapshot.pairs.begin(), snapshot.pairs.end());
+  }
+
   return snapshot;
 }
 
@@ -170,6 +204,18 @@ bool CollisionWorld::collideAll(
     CollisionResult& result,
     BatchStats* stats)
 {
+  BatchSettings settings;
+  return collideAll(snapshot, option, result, settings, stats);
+}
+
+bool CollisionWorld::collideAll(
+    const BroadPhaseSnapshot& snapshot,
+    const CollisionOption& option,
+    CollisionResult& result,
+    const BatchSettings& settings,
+    BatchStats* stats)
+{
+  (void)settings;
   result.clear();
   bool hasCollision = false;
 
@@ -215,6 +261,18 @@ bool CollisionWorld::collideAll(
   }
 
   return hasCollision;
+}
+
+bool CollisionWorld::collideAll(
+    const BroadPhaseSnapshot& snapshot,
+    const CollisionOption& option,
+    BatchOutput& out,
+    const BatchSettings& settings,
+    BatchStats* stats)
+{
+  out.clear();
+  out.pairs = snapshot.pairs;
+  return collideAll(snapshot, option, out.result, settings, stats);
 }
 
 bool CollisionWorld::collide(const CollisionOption& option, CollisionResult& result)
