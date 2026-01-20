@@ -1341,6 +1341,29 @@ TEST(NarrowPhaseCapsuleCast, BoxTarget)
   EXPECT_EQ(*result.object, target);
 }
 
+TEST(NarrowPhaseCapsuleCast, CylinderTarget)
+{
+  CollisionWorld world;
+  auto target = world.createObject(
+      std::make_unique<CylinderShape>(1.0, 2.0));
+
+  CapsuleShape capsule(0.5, 2.0);
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  capsuleStart.translation() = Eigen::Vector3d(-5, 0, 0);
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(5, 0, 0);
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = NarrowPhase::capsuleCast(capsuleStart, capsuleEnd, capsule, target, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_EQ(*result.object, target);
+}
+
+
+
 TEST(NarrowPhaseCapsuleCast, IsCapsuleCastSupported)
 {
   EXPECT_TRUE(NarrowPhase::isCapsuleCastSupported(ShapeType::Sphere));
