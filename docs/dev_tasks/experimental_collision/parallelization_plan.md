@@ -62,6 +62,13 @@ API sketch (draft, subject to change):
 struct BatchSettings {
   int maxThreads = 1;
   bool deterministic = true;
+  bool collectStats = false;
+  std::size_t grainSize = 256;
+};
+
+struct BatchOutput {
+  CollisionResult result;
+  std::vector<BroadPhasePair> pairs;
 };
 
 struct BroadPhaseSnapshot {
@@ -78,11 +85,13 @@ struct BatchStats {
 
 class CollisionWorld {
 public:
-  std::size_t updateAll();
-  BroadPhaseSnapshot buildBroadPhaseSnapshot() const;
+  std::size_t updateAll(const BatchSettings& settings,
+                        BatchStats* stats = nullptr);
+  BroadPhaseSnapshot buildBroadPhaseSnapshot(const BatchSettings& settings) const;
   void collideAll(const BroadPhaseSnapshot& snapshot,
                   const CollisionOption& option,
-                  CollisionResult& out,
+                  BatchOutput& out,
+                  const BatchSettings& settings,
                   BatchStats* stats = nullptr);
 };
 ```
