@@ -58,8 +58,6 @@ public:
   CollisionWorld(CollisionWorld&&) = default;
   CollisionWorld& operator=(CollisionWorld&&) = default;
 
-  void reserveObjects(std::size_t count);
-
   CollisionObject createObject(
       std::unique_ptr<Shape> shape,
       const Eigen::Isometry3d& transform = Eigen::Isometry3d::Identity());
@@ -80,6 +78,11 @@ public:
 
   [[nodiscard]] BroadPhaseSnapshot buildBroadPhaseSnapshot(
       const BatchSettings& settings) const;
+
+  void buildBroadPhaseSnapshot(BroadPhaseSnapshot& out) const;
+
+  void buildBroadPhaseSnapshot(
+      BroadPhaseSnapshot& out, const BatchSettings& settings) const;
 
   bool collideAll(
       const BroadPhaseSnapshot& snapshot,
@@ -173,17 +176,11 @@ public:
   }
 
 private:
-  void rebuildBatchStorage();
-
   static std::unique_ptr<BroadPhase> createBroadPhase(BroadPhaseType type);
 
   entt::registry m_registry;
   BroadPhaseType m_broadPhaseType;
   std::unique_ptr<BroadPhase> m_broadPhase;
-  ObjectId m_nextObjectId = 1;
-  std::vector<entt::entity> m_entitiesById;
-  BatchStorage m_batchStorage;
-  bool m_batchDirty = true;
 };
 
 } // namespace dart::collision::experimental

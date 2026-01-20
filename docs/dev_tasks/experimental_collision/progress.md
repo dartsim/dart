@@ -1,25 +1,24 @@
 # Experimental Collision Module - Progress Tracker
 
 > **Last Updated**: 2026-01-20
-> **Current Focus**: ECS batch performance
+> **Current Focus**: Standalone Library Development
 
 ## Status Summary
 
-| Phase                      | Status          | Progress |
-| -------------------------- | --------------- | -------- |
-| Core Types & Primitives    | **Complete**    | 100%     |
-| Standalone CollisionWorld  | **Complete**    | 100%     |
-| Additional Shapes          | **Complete**    | 100%     |
-| Distance Queries           | **Complete**    | 100%     |
-| Comparative Benchmarks     | **Complete**    | 100%     |
-| Raycast Support            | **Complete**    | 100%     |
-| ECS Refactoring            | **Complete**    | 100%     |
-| ECS Batch Optimization     | **In Progress** | 40%      |
-| GJK/EPA Algorithm          | **Complete**    | 100%     |
-| Convex/Mesh Shapes         | **Complete**    | 100%     |
-| Continuous Collision (CCD) | **Complete**    | 100%     |
-| Visual Verification        | **Complete**    | 100%     |
-| DART Integration           | **Deferred**    | -        |
+| Phase                      | Status       | Progress |
+| -------------------------- | ------------ | -------- |
+| Core Types & Primitives    | **Complete** | 100%     |
+| Standalone CollisionWorld  | **Complete** | 100%     |
+| Additional Shapes          | **Complete** | 100%     |
+| Distance Queries           | **Complete** | 100%     |
+| Comparative Benchmarks     | **Partial**  | 90%      |
+| Raycast Support            | **Complete** | 100%     |
+| ECS Refactoring            | **Complete** | 100%     |
+| GJK/EPA Algorithm          | **Complete** | 100%     |
+| Convex/Mesh Shapes         | **Complete** | 100%     |
+| Continuous Collision (CCD) | **Complete** | 100%     |
+| Visual Verification        | **Complete** | 100%     |
+| DART Integration           | **Deferred** | -        |
 
 ---
 
@@ -159,41 +158,28 @@ Structured suite coverage (complete):
    - Cross-backend correctness checks via integration tests
    - Experimental must meet or beat best backend per supported case
 
-Baseline results (pre-structured suite):
+Baseline and structured results are consolidated in
+`docs/dev_tasks/experimental_collision/benchmark_results.md`.
 
-| Shape Pair      | Experimental | FCL          | Bullet       | ODE          | Speedup |
-| --------------- | ------------ | ------------ | ------------ | ------------ | ------- |
-| Sphere-Sphere   | **41 ns**    | 774-1107 ns  | 411-586 ns   | 991-1002 ns  | **10x** |
-| Box-Box         | **210 ns**   | 2429-2486 ns | 1094-1147 ns | 2210-2226 ns | **5x**  |
-| Capsule-Capsule | **41 ns**    | 242 ns       | 440 ns       | 1381-1382 ns | **6x**  |
-| Distance        | **7 ns**     | 286-288 ns   | N/A          | N/A          | **40x** |
+### Priority 6: ECS Refactoring (Next)
 
-Baseline accuracy verification: PASSED
+**Goal:** Adopt ECS pattern from `dart/simulation/experimental` for better data locality.
 
-### Priority 6: ECS Batch Optimization (Current)
+Current architecture uses `shared_ptr<CollisionObject>`. Target architecture:
 
-**Goal:** Eliminate per-pair ECS lookup overhead and align hot data into a
-batch-friendly SoA layout for 10k+ objects.
+| Current                       | Target (ECS)                               |
+| ----------------------------- | ------------------------------------------ |
+| `shared_ptr<CollisionObject>` | Lightweight handle (entity ID + world ptr) |
+| Shape\* owned by object       | ShapeComponent in registry                 |
+| Transform in object           | TransformComponent in registry             |
+| AABB in object                | AabbComponent in registry                  |
+| `std::vector<shared_ptr>`     | `entt::registry`                           |
 
-Current architecture already uses `entt`, but the batch path still
-constructs `CollisionObject` handles per pair and performs registry lookups
-inside the tight loop. The new goal is to keep ECS ownership while caching
-hot data in contiguous arrays and using stable object ids for ordering.
+**Benefits:**
 
-Target changes (Phase 1):
-
-| Current                      | Target                                      |
-| ---------------------------- | ------------------------------------------- |
-| Entity id used in broadphase | Stable `ObjectId` (monotonic, never reused) |
-| Per-pair `CollisionObject`   | `BatchView` with SoA arrays                 |
-| Registry lookup per pair     | Direct array access by `ObjectId`           |
-| Pair ordering by entity      | Deterministic `(id1, id2)` ordering         |
-
-Follow-on (Phase 2+):
-
-- Pair/manifold cache for temporal coherence.
-- Thread-local scratch to avoid allocations.
-- Parallel narrowphase with deterministic merge.
+- Better cache locality for iteration
+- Copyable handles (no pointer ownership issues)
+- Consistent with simulation/experimental pattern
 
 ### Priority 7: Continuous Collision Detection (CCD) ✅ COMPLETE
 
@@ -345,6 +331,53 @@ done
 
 ---
 
+## Broad-Phase Next Steps
+
+### Priority 1: Fix AabbTree Crash (Blocking) ✅ FIXED
+
+**Issue**: Segfault in `AabbTreeBroadPhase::combine()` during object creation.
+Blocks RP3D-aligned pipeline breakdown benchmarks with AabbTree.
+
+**Root cause**: Dangling reference after vector reallocation. In `insertLeaf()`,
+a reference to `nodes_[leafIndex].fatAabb` was stored, then `allocateNode()` was
+called which could trigger `nodes_.emplace_back()` and reallocate the vector,
+invalidating the reference.
+
+**Fix**: Copy AABB values before calling `allocateNode()` instead of storing
+references.
+
+**Status**: Fixed (2026-01-20)
+
+### Priority 2: Bulk API Interfaces (ECS Phase 1) ✅ DONE
+
+Added batch-friendly methods to `BroadPhase` interface:
+
+```cpp
+void queryPairs(std::vector<BroadPhasePair>& out) const;  // caller-owned storage
+void build(std::span<const std::size_t> ids, std::span<const Aabb> aabbs);
+void updateRange(std::span<const std::size_t> ids, std::span<const Aabb> aabbs);
+```
+
+**Implementation**: Default implementations in base class with `using` declarations
+in derived classes (AabbTree, BruteForce, SpatialHash, SweepAndPrune).
+
+**Status**: Complete (2026-01-20)
+
+### Priority 3: Parallel Broadphase (Phase 4 - Optional)
+
+- Parallel AABB recompute and fat-AABB update
+- Optional bulk rebuild path for large scene edits
+- Exit criteria: Broadphase update scales for large object counts
+
+**Status**: Deferred - Phase 3 (Parallel Narrowphase) should come first per parallelization plan.
+See `parallelization_plan.md` for the full roadmap.
+
+---
+
 ## Blockers
 
-_None currently_
+- ~~**AabbTree segfault**: Crash in `combine()` during object creation.~~ **FIXED** (2026-01-20)
+- `bm_comparative.cpp` fails to build due to CollisionWorld API drift
+  (`CollisionWorld::addObject` removed; `CollisionObject` ctor mismatch).
+- `bm_comparative_narrow_phase` capsule-related accuracy checks invalid because
+  CapsuleShape falls back to a tiny sphere in the experimental adapter.

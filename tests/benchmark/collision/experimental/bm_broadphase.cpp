@@ -405,4 +405,85 @@ BENCHMARK(BM_AabbTree_QueryOverlapping)->Arg(100)->Arg(1000)->Arg(10000);
 BENCHMARK(BM_SweepAndPrune_QueryOverlapping)->Arg(100)->Arg(1000)->Arg(10000);
 BENCHMARK(BM_SpatialHash_QueryOverlapping)->Arg(100)->Arg(1000)->Arg(10000);
 
+static void BM_AabbTree_QueryPairs_ReusableBuffer(benchmark::State& state)
+{
+  const int numObjects = state.range(0);
+  auto objects = generateObjects(numObjects, 100.0, 2.0, 42);
+
+  AabbTreeBroadPhase bp;
+  populateBroadPhase(bp, objects);
+
+  std::vector<BroadPhasePair> pairs;
+  pairs.reserve(numObjects * 10);
+
+  for (auto _ : state) {
+    bp.queryPairs(pairs);
+    benchmark::DoNotOptimize(pairs.data());
+  }
+
+  state.SetItemsProcessed(state.iterations() * numObjects);
+}
+
+static void BM_AabbTree_Build_Bulk(benchmark::State& state)
+{
+  const int numObjects = state.range(0);
+  auto objects = generateObjects(numObjects, 100.0, 2.0, 42);
+
+  std::vector<std::size_t> ids;
+  std::vector<Aabb> aabbs;
+  ids.reserve(numObjects);
+  aabbs.reserve(numObjects);
+  for (const auto& obj : objects) {
+    ids.push_back(obj.id);
+    aabbs.push_back(obj.aabb);
+  }
+
+  for (auto _ : state) {
+    AabbTreeBroadPhase bp;
+    bp.build(ids, aabbs);
+    benchmark::DoNotOptimize(bp);
+  }
+
+  state.SetItemsProcessed(state.iterations() * numObjects);
+}
+
+static void BM_AabbTree_UpdateRange_Bulk(benchmark::State& state)
+{
+  const int numObjects = state.range(0);
+  auto objects = generateObjects(numObjects, 100.0, 2.0, 42);
+
+  AabbTreeBroadPhase bp;
+  populateBroadPhase(bp, objects);
+
+  std::vector<std::size_t> ids;
+  std::vector<Aabb> aabbs;
+  ids.reserve(numObjects);
+  aabbs.reserve(numObjects);
+
+  std::mt19937 rng(123);
+  std::uniform_real_distribution<double> offsetDist(-0.5, 0.5);
+
+  for (auto _ : state) {
+    ids.clear();
+    aabbs.clear();
+    for (const auto& obj : objects) {
+      Eigen::Vector3d offset(offsetDist(rng), offsetDist(rng), offsetDist(rng));
+      ids.push_back(obj.id);
+      aabbs.emplace_back(obj.aabb.min + offset, obj.aabb.max + offset);
+    }
+    bp.updateRange(ids, aabbs);
+  }
+
+  state.SetItemsProcessed(state.iterations() * numObjects);
+}
+
+BENCHMARK(BM_AabbTree_QueryPairs_ReusableBuffer)
+    ->Arg(10)
+    ->Arg(50)
+    ->Arg(100)
+    ->Arg(500)
+    ->Arg(1000);
+BENCHMARK(BM_AabbTree_Build_Bulk)->Arg(10)->Arg(100)->Arg(1000);
+BENCHMARK(BM_AabbTree_UpdateRange_Bulk)->Arg(10)->Arg(100)->Arg(1000);
+
 BENCHMARK_MAIN();

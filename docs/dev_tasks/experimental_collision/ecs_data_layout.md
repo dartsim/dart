@@ -1,7 +1,7 @@
 # ECS Data Layout and Batch-Friendly Interfaces
 
-Status: in progress
-Last updated: 2026-01-20
+Status: draft
+Last updated: 2026-01-19
 
 ## Purpose
 
@@ -59,13 +59,6 @@ bulk queries.
   data (GJK/SAT state) when possible.
 - Keep a per-pair manifold cache keyed by `(id1, id2)` or `PairId`.
 
-## Implementation status (Phase 1)
-
-- Batch cache sync on updateObject/updateAll (no rebuild on transform-only changes).
-- Stable ObjectId component and deterministic pair ordering (implemented; needs validation).
-- BatchStorage/BatchView SoA cache for shapes/transforms/AABBs (implemented).
-- Narrowphase overload for shape + transform to avoid per-pair handles (implemented).
-
 ## Phased adoption plan
 
 1. Phase 1: Stable ids + deterministic ordering
@@ -81,8 +74,8 @@ bulk queries.
    - Persist overlap pairs and reuse contact manifolds for temporal coherence.
    - Add invalidation rules on shape/transform changes.
 5. Phase 5: Evidence-based tuning
-   - Use the captured RP3D-aligned pipeline breakdown as a baseline.
-   - Re-run after Phase 1 changes once benchmark ownership is clear.
+   - Run RP3D-aligned pipeline breakdown after AABB tree crash is fixed.
+   - Compare stage ratios and adjust data layout as needed (no benchmark edits here).
 
 ## API/interface changes (draft)
 

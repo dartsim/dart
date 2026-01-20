@@ -57,16 +57,6 @@ ShapeType CollisionObject::getShapeType() const
   return shape ? shape->getType() : ShapeType::Sphere;
 }
 
-ObjectId CollisionObject::getObjectId() const
-{
-  if (!isValid()) {
-    return 0;
-  }
-  auto& registry = m_world->getRegistry();
-  auto* idComp = registry.try_get<comps::ObjectIdComponent>(m_entity);
-  return idComp ? idComp->id : 0;
-}
-
 const Eigen::Isometry3d& CollisionObject::getTransform() const
 {
   static const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
