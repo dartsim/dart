@@ -660,6 +660,75 @@ TEST(SphereCastConvex, TranslatedTarget)
 }
 
 //==============================================================================
+// Sphere-cast Mesh tests
+//==============================================================================
+
+TEST(SphereCastMesh, Miss)
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {0, 0, 0}, {2, 0, 0}, {1, 2, 0}, {1, 1, 2}};
+  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+  MeshShape target(vertices, triangles);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Eigen::Vector3d start(10, 0, 0);
+  Eigen::Vector3d end(10, 0, 10);
+  double radius = 0.25;
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = sphereCastMesh(start, end, radius, target, transform, option, result);
+
+  EXPECT_FALSE(hit);
+}
+
+TEST(SphereCastMesh, DirectHit)
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {-1, -1, -1}, {1, -1, -1}, {0, 1, -1}, {0, 0, 1}};
+  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+  MeshShape target(vertices, triangles);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Eigen::Vector3d start(-5, 0, 0);
+  Eigen::Vector3d end(5, 0, 0);
+  double radius = 0.25;
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = sphereCastMesh(start, end, radius, target, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 1.0);
+}
+
+TEST(SphereCastMesh, TranslatedTarget)
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {0, 0, 0}, {2, 0, 0}, {1, 2, 0}, {1, 1, 2}};
+  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+  MeshShape target(vertices, triangles);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(0, 0, 5);
+
+  Eigen::Vector3d start(1, 1, 0);
+  Eigen::Vector3d end(1, 1, 10);
+  double radius = 0.25;
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = sphereCastMesh(start, end, radius, target, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.timeOfImpact, 0.3);
+  EXPECT_LT(result.timeOfImpact, 0.6);
+}
+
+//==============================================================================
 // Capsule-cast Sphere tests
 //==============================================================================
 
@@ -1075,7 +1144,7 @@ TEST(NarrowPhaseSphereCast, IsSphereCastSupported)
   EXPECT_TRUE(NarrowPhase::isSphereCastSupported(ShapeType::Cylinder));
   EXPECT_TRUE(NarrowPhase::isSphereCastSupported(ShapeType::Plane));
   EXPECT_TRUE(NarrowPhase::isSphereCastSupported(ShapeType::Convex));
-  EXPECT_FALSE(NarrowPhase::isSphereCastSupported(ShapeType::Mesh));
+  EXPECT_TRUE(NarrowPhase::isSphereCastSupported(ShapeType::Mesh));
 }
 
 //==============================================================================

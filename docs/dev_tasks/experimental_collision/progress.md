@@ -22,7 +22,7 @@
 
 ---
 
-## Completed Components (341 tests)
+## Completed Components (356 tests)
 
 | Component                        | Files                                    | Tests | Notes                                               |
 | -------------------------------- | ---------------------------------------- | ----- | --------------------------------------------------- |
@@ -39,7 +39,7 @@
 | Plane collision                  | narrow_phase/plane_sphere.hpp/.cpp       | 11    | All plane pairs                                     |
 | Distance queries                 | narrow_phase/distance.hpp/.cpp           | 18    | 6 primitive pairs + Convex/Mesh                     |
 | Raycast                          | narrow_phase/raycast.hpp/.cpp            | 39    | 7 shape types incl. Mesh/Convex                     |
-| CCD (sphere/capsule cast)        | narrow_phase/ccd.hpp/.cpp                | 49    | Swept volume + conservative advancement             |
+| CCD (sphere/capsule cast)        | narrow_phase/ccd.hpp/.cpp                | 55    | Swept volume + conservative advancement             |
 | BruteForceBroadPhase             | broad_phase/brute_force.hpp/.cpp         | 15    | O(n²) broad-phase                                   |
 | CollisionObject                  | collision_object.hpp/.cpp                | 12    | Lightweight ECS handle                              |
 | NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp       | 7     | Shape-type dispatch                                 |
@@ -144,9 +144,9 @@ Current architecture uses `shared_ptr<CollisionObject>`. Target architecture:
 
 CCD prevents fast-moving objects from tunneling through thin obstacles.
 
-| Algorithm                    | Status       | Tests | Notes                                         |
-| ---------------------------- | ------------ | ----- | --------------------------------------------- |
-| Sphere-cast (all primitives) | **Complete** | 34    | Sphere, Box, Capsule, Cylinder, Plane, Convex |
+| Algorithm                    | Status       | Tests | Notes                                              |
+| ---------------------------- | ------------ | ----- | -------------------------------------------------- |
+| Sphere-cast (all primitives) | **Complete** | 37    | Sphere, Box, Capsule, Cylinder, Plane, Convex, Mesh |
 | Capsule-cast                 | **Complete** | 10    | Sphere, Box, Capsule, Plane                   |
 | Conservative advancement     | **Complete** | 4     | General convex-convex via GJK                 |
 | NarrowPhase dispatcher       | **Complete** | 3     | `sphereCast()`, `isSphereCastSupported()`     |
@@ -155,7 +155,7 @@ CCD prevents fast-moving objects from tunneling through thin obstacles.
 
 ```cpp
 // Sphere-cast functions (sweep sphere against static target)
-bool sphereCastSphere/Box/Capsule/Cylinder/Plane/Convex(...);
+bool sphereCastSphere/Box/Capsule/Cylinder/Plane/Convex/Mesh(...);
 
 // Capsule-cast functions (sweep capsule against static target)
 bool capsuleCastSphere/Box/Capsule/Plane(...);

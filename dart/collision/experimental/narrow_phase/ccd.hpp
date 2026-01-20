@@ -95,6 +95,15 @@ namespace dart::collision::experimental {
     const CcdOption& option,
     CcdResult& result);
 
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool sphereCastMesh(
+    const Eigen::Vector3d& sphereStart,
+    const Eigen::Vector3d& sphereEnd,
+    double sphereRadius,
+    const MeshShape& target,
+    const Eigen::Isometry3d& targetTransform,
+    const CcdOption& option,
+    CcdResult& result);
+
 [[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool capsuleCastSphere(
     const Eigen::Isometry3d& capsuleStart,
     const Eigen::Isometry3d& capsuleEnd,

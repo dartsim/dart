@@ -513,6 +513,90 @@ bool sphereCastConvex(
   return false;
 }
 
+bool sphereCastMesh(
+    const Eigen::Vector3d& sphereStart,
+    const Eigen::Vector3d& sphereEnd,
+    double sphereRadius,
+    const MeshShape& target,
+    const Eigen::Isometry3d& targetTransform,
+    const CcdOption& option,
+    CcdResult& result)
+{
+  result.clear();
+
+  double motionBound = (sphereEnd - sphereStart).norm();
+  if (motionBound < option.tolerance) {
+    motionBound = option.tolerance;
+  }
+
+  double t = 0.0;
+
+  Eigen::Vector3d initialDir = targetTransform.translation() - sphereStart;
+  if (initialDir.squaredNorm() < kEpsilon) {
+    initialDir = Eigen::Vector3d::UnitX();
+  }
+
+  for (int iter = 0; iter < option.maxIterations; ++iter) {
+    Eigen::Vector3d currentCenter = sphereStart + t * (sphereEnd - sphereStart);
+
+    auto supportA = [&](const Eigen::Vector3d& dir) {
+      return currentCenter + sphereRadius * dir.normalized();
+    };
+    auto supportB = [&](const Eigen::Vector3d& dir) {
+      return targetTransform * target.support(targetTransform.rotation().transpose() * dir);
+    };
+
+    GjkResult gjkResult = Gjk::query(supportA, supportB, initialDir);
+
+    if (gjkResult.intersecting) {
+      result.hit = true;
+      result.timeOfImpact = t;
+      Eigen::Vector3d pointB = supportB(Eigen::Vector3d::UnitX());
+      result.point = pointB;
+      result.normal = (currentCenter - pointB).normalized();
+      if (result.normal.squaredNorm() < kEpsilon) {
+        result.normal = Eigen::Vector3d::UnitZ();
+      }
+      return true;
+    }
+
+    Eigen::Vector3d sepAxis = gjkResult.separationAxis;
+    if (sepAxis.squaredNorm() < kEpsilon) {
+      sepAxis = Eigen::Vector3d::UnitX();
+    }
+    sepAxis.normalize();
+
+    Eigen::Vector3d pointA = supportA(sepAxis);
+    Eigen::Vector3d pointB = supportB(-sepAxis);
+    double distance = (pointB - pointA).dot(sepAxis);
+
+    if (distance < 0.0) {
+      distance = -distance;
+      sepAxis = -sepAxis;
+      std::swap(pointA, pointB);
+    }
+
+    if (distance < option.tolerance) {
+      result.hit = true;
+      result.timeOfImpact = t;
+      result.point = pointB;
+      result.normal = sepAxis;
+      return true;
+    }
+
+    double dt = distance / motionBound;
+    t += dt;
+
+    if (t > 1.0) {
+      return false;
+    }
+
+    initialDir = sepAxis;
+  }
+
+  return false;
+}
+
 namespace {
 
 Eigen::Vector3d getCapsuleEndpoint(

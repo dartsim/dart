@@ -562,6 +562,14 @@ bool NarrowPhase::sphereCast(
       }
       return hit;
     }
+    case ShapeType::Mesh: {
+      const auto* m = static_cast<const MeshShape*>(shape);
+      bool hit = sphereCastMesh(sphereStart, sphereEnd, sphereRadius, *m, transform, option, result);
+      if (hit) {
+        result.object = &target;
+      }
+      return hit;
+    }
     default:
       return false;
   }
@@ -576,6 +584,7 @@ bool NarrowPhase::isSphereCastSupported(ShapeType type)
     case ShapeType::Cylinder:
     case ShapeType::Plane:
     case ShapeType::Convex:
+    case ShapeType::Mesh:
       return true;
     default:
       return false;
