@@ -438,11 +438,21 @@ forward kinematics calculations (computing link transforms from joint positions)
 - [ ] Documentation written
 - [ ] Classic comparison (BLOCKED: requires Phase 5 kinematics)
 
-### Phase 5: Physics (Target: Week 13-20)
+### Phase 5: Physics (Target: Week 13-20) 🔄 IN PROGRESS
 
-- [ ] Pipeline designed
-- [ ] Kinematics system done
-- [ ] Dynamics system done
+#### Phase 5.1: Forward Kinematics ✅ COMPLETE
+
+- [x] Joint transform functions (`kinematics/joint_transform.hpp/cpp`)
+- [x] All 8 joint types supported: Fixed, Revolute, Prismatic, Screw, Universal, Ball, Planar, Free
+- [x] Link::getLocalTransform() integrated with joint positions
+- [x] Cache invalidation on joint position changes
+- [x] 74 unit tests for joint transforms (`test_joint_transform.cpp`)
+- [x] 5 FK integration tests in `test_link.cpp`
+
+#### Phase 5.2-5: Remaining (Pending)
+
+- [ ] Pipeline designed (design doc created: `phase5_physics_design.md`)
+- [ ] Dynamics system (ABA algorithm)
 - [ ] Collision integrated
 - [ ] Constraints integrated
 - [ ] `step()` working

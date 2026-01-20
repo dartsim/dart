@@ -2,7 +2,7 @@
 
 ## Quick Status
 
-**Phases 0, 1, 2 COMPLETE. Phase 3 & 4 IN PROGRESS.**
+**Phases 0, 1, 2 COMPLETE. Phase 3, 4 IN PROGRESS. Phase 5.1 (FK) COMPLETE.**
 
 | Phase | Status         | Description                                              |
 | ----- | -------------- | -------------------------------------------------------- |
@@ -11,62 +11,46 @@
 | 2     | ✅ Complete    | Python bindings: all classes + StateSpace                |
 | 3     | 🔄 In Progress | Testing strategy: golden tests done, coverage pending    |
 | 4     | 🔄 In Progress | Performance: benchmarks done, profiling pending          |
-| 5     | Future         | Physics integration: `World::step()`                     |
+| 5.1   | ✅ Complete    | Forward Kinematics: joint transforms + Link integration  |
+| 5.2-5 | Pending        | Forward Dynamics, Collision, Constraints, step()         |
 | 6     | Future         | Migration story                                          |
 
 ## Current Branch
 
 ```
 Branch: feature/sim_exp
-Status: Up to date with origin (previously pushed)
-Working tree: Modified (uncommitted Phase 3/4 work)
+Status: Ahead of origin by 4 commits (unpushed)
+Working tree: Clean (after commit)
 ```
 
 ## Last Session Summary
 
-Added Phase 3 & 4 deliverables:
+Implemented Phase 5.1 (Forward Kinematics):
 
-- **Golden tests**: 5 new tests in `test_serialization.cpp` (format stability, deterministic output, large world stress test)
-- **Benchmarks**: New `bm_multi_body.cpp` with comprehensive benchmarks for MultiBody creation, serialization, Frame transforms, StateSpace operations, and joint state access
+1. **Joint Transform Functions** (`kinematics/joint_transform.hpp/cpp`)
+   - All 8 joint types: Fixed, Revolute, Prismatic, Screw, Universal, Ball, Planar, Free
+   - `computeJointTransform()` generic dispatch function
+   - 74 unit tests in `test_joint_transform.cpp`
+
+2. **Link Integration**
+   - `Link::getLocalTransform()` now computes from parent joint position
+   - `Joint::setPosition()` invalidates Link's transform caches
+   - Added `localTransformCache` + `needLocalTransformUpdate` to Link component
+   - 5 new FK integration tests in `test_link.cpp`
 
 ## Immediate Next Step
 
-1. **Commit and push** Phase 3/4 progress
-2. **Run coverage audit** (`pixi run coverage-report`) to identify gaps
-3. **Complete remaining Phase 3 task**: URDF → experimental integration test
+1. **Push commits** to origin
+2. **Start Phase 5.2**: Forward Dynamics (ABA algorithm)
+3. Create `dynamics/` directory with spatial math utilities
 
-## What Was Added This Session
+## Commits Made This Session
 
-### Phase 3: Testing (Partial)
-
-| Item                  | Status | Location                                                                |
-| --------------------- | ------ | ----------------------------------------------------------------------- |
-| Golden tests          | ✅     | `tests/unit/simulation/experimental/world/test_serialization.cpp`       |
-| Format stability test | ✅     | `SerializationGolden::DeterministicOutput`                              |
-| Version header test   | ✅     | `SerializationGolden::FormatVersionPresent`                             |
-| Large world stress    | ✅     | `SerializationGolden::LargeWorldStressTest` (100 robots × 7 links)      |
-| All joint types test  | ✅     | `SerializationGolden::AllJointTypesRoundTrip`                           |
-| Coverage audit        | ⏳     | Pending: run `pixi run coverage-report`                                 |
-| URDF integration test | ⏳     | Pending: load URDF → convert to experimental                            |
-
-### Phase 4: Performance (Partial)
-
-| Benchmark              | Args                  | Location                                                         |
-| ---------------------- | --------------------- | ---------------------------------------------------------------- |
-| BM_CreateMultiBodies   | 100, 1000, 10000      | `tests/benchmark/simulation/experimental/bm_multi_body.cpp`      |
-| BM_CreateLinkChain     | 10, 50, 100, 500      | Same file                                                        |
-| BM_CreateBranchingTree | 3, 5, 7, 10 (depth)   | Same file                                                        |
-| BM_SerializeWorld      | 10, 100, 1000 robots  | Same file                                                        |
-| BM_DeserializeWorld    | 10, 100, 1000 robots  | Same file                                                        |
-| BM_SerializeRoundTrip  | 10, 100, 1000 robots  | Same file                                                        |
-| BM_JointStateAccess    | 10, 50, 100, 500      | Same file                                                        |
-| BM_FrameChainTransform | 10, 50, 100, 500      | Same file                                                        |
-| BM_FrameTransformUpdate| 10, 100, 1000         | Same file                                                        |
-| BM_StateSpaceCreate    | 10, 100, 1000         | Same file                                                        |
-| BM_StateSpaceGetBounds | 10, 100, 1000         | Same file                                                        |
-| BM_StateSpaceVariableLookup | 10, 100, 1000    | Same file                                                        |
-| ECS profiling          | ⏳                    | Pending: detailed component access profiling                     |
-| Classic comparison     | ⏳                    | Pending: compare vs `Skeleton::computeForwardKinematics`         |
+```
+6718661e500 feat(simulation-experimental): Implement Phase 5.1 forward kinematics (joint transforms)
+f7eb0ae4aa1 feat(simulation-experimental): Integrate Link transforms with joint kinematics
+f8b20589838 docs(simulation-experimental): Add Phase 5 physics integration design
+```
 
 ## How to Resume
 
@@ -74,30 +58,23 @@ Added Phase 3 & 4 deliverables:
 # 1. Checkout and verify branch state
 git checkout feature/sim_exp
 git status
-git diff --stat
+git log -5 --oneline
 
-# 2. Verify tests pass (should all pass)
+# 2. Verify tests pass (should all pass - 14 C++ tests)
 pixi run build
 ctest -L simulation-experimental --test-dir build/default/cpp/Release
-pixi run pytest python/tests/unit/simulation_experimental/ -v
 
-# 3. Commit Phase 3/4 progress
-git add tests/benchmark/simulation/experimental/bm_multi_body.cpp
-git add tests/benchmark/simulation/experimental/CMakeLists.txt
-git add tests/unit/simulation/experimental/world/test_serialization.cpp
-git commit -m "feat(simulation-experimental): Add benchmarks and golden tests (Phase 3/4)"
+# 3. Push to origin
+git push origin feature/sim_exp
 
-# 4. Run coverage audit
-pixi run config-coverage && pixi run coverage-report
-
-# 5. Run benchmarks
-./build/default/cpp/Release/tests/benchmark/simulation/experimental/bm_multi_body
+# 4. Continue to Phase 5.2 (Forward Dynamics)
+# Create dynamics/ directory and implement ABA algorithm
 ```
 
 ## Test Verification Commands
 
 ```bash
-# C++ tests (13 test binaries)
+# C++ tests (14 test binaries including new kinematics tests)
 ctest -L simulation-experimental --test-dir build/default/cpp/Release
 
 # Python tests (16 tests)
@@ -105,33 +82,33 @@ pixi run pytest python/tests/unit/simulation_experimental/ -v
 
 # Full validation
 pixi run test-all
-
-# Run benchmarks
-./build/default/cpp/Release/tests/benchmark/simulation/experimental/bm_multi_body --benchmark_min_time=0.5s
 ```
 
-## Remaining Phase 3 Tasks
+## Phase 5.1 Deliverables (COMPLETE)
 
-- [ ] Audit test coverage → Coverage build was started but takes 30+ minutes. Check with:
-  ```bash
-  pgrep -f 'ninja|cmake_build' || pixi run coverage-report
-  ```
-- [ ] Write missing unit tests to reach 80% coverage (after coverage report)
-- [x] Integration test: BLOCKED - requires Phase 6 adapter (classic→experimental conversion)
+| Component | Status | Location |
+|-----------|--------|----------|
+| Joint transform functions | ✅ | `dart/simulation/experimental/kinematics/joint_transform.hpp/cpp` |
+| Unit tests (74 tests) | ✅ | `tests/unit/simulation/experimental/kinematics/test_joint_transform.cpp` |
+| Link integration | ✅ | `dart/simulation/experimental/multi_body/link.cpp` |
+| Cache invalidation | ✅ | `dart/simulation/experimental/multi_body/joint.cpp` |
+| FK integration tests (5) | ✅ | `tests/unit/simulation/experimental/multi_body/test_link.cpp` |
 
-**Note**: The URDF→experimental integration test requires a conversion adapter that will be built in Phase 6. For now, the golden tests provide comprehensive serialization coverage.
+## Phase 5.2 Next Steps (Forward Dynamics)
 
-## Remaining Phase 4 Tasks
+Based on `phase5_physics_design.md`:
 
-- [x] Profile ECS component access patterns → Covered by existing `bm_ecs_safety.cpp`
-- [x] Classic comparison → BLOCKED - requires Phase 5 kinematics implementation
-- [ ] Document performance characteristics (after running benchmarks)
+1. Create `dart/simulation/experimental/dynamics/` directory
+2. Implement spatial math utilities (SE3, spatial inertia)
+3. Implement ABA algorithm following Featherstone
+4. Add `World::computeForwardDynamics()` method
+
+Key reference: `dart/dynamics/Skeleton.cpp` (classic DART ABA implementation)
 
 ## Related Files
 
 - **Epic tracker**: `docs/dev_tasks/simulation_experimental_api_epic/README.md`
+- **Phase 5 design**: `docs/dev_tasks/simulation_experimental_api_epic/phase5_physics_design.md`
 - **C++ source**: `dart/simulation/experimental/`
-- **Python bindings**: `python/dartpy/simulation_experimental/`
-- **Python tests**: `python/tests/unit/simulation_experimental/`
-- **C++ tests**: `tests/unit/simulation/experimental/`
-- **Benchmarks**: `tests/benchmark/simulation/experimental/`
+- **Kinematics**: `dart/simulation/experimental/kinematics/`
+- **Tests**: `tests/unit/simulation/experimental/`

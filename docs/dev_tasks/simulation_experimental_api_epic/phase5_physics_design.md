@@ -89,7 +89,7 @@ const Eigen::Isometry3d& Link::getLocalTransform() const {
         // Root link: identity or base offset
         return m_baseOffset;
     }
-    
+
     // Compute joint transform from current position
     return kinematics::computeJointTransform(
         joint->getType(),
@@ -108,7 +108,7 @@ For simulation efficiency, provide a batch update:
 ```cpp
 void World::updateKinematics() {
     // Already exists but needs enhancement
-    
+
     // 1. Mark all link caches dirty
     // 2. Optionally: pre-compute all transforms in topological order
     //    (more cache-friendly than lazy evaluation during traversal)
@@ -138,10 +138,10 @@ TEST(Kinematics, TwoLinkArm) {
     auto robot = world.addMultiBody("robot");
     auto base = robot.addLink("base");
     auto link1 = robot.addLink("link1", {.parentLink=base, .jointType=Revolute, .axis={0,0,1}});
-    
+
     // Set joint to 90°
     link1.getParentJoint()->setPosition({M_PI/2});
-    
+
     // Verify world transform
     auto T = link1.getTransform();
     // ... verify rotation matches expectation
@@ -180,7 +180,7 @@ class ForwardDynamicsSystem {
 public:
     /// Compute joint accelerations for a MultiBody
     void compute(World& world, MultiBody& mb);
-    
+
 private:
     // Temporary storage (reused across calls)
     std::vector<Eigen::Matrix6d> articulatedInertias;
@@ -260,22 +260,22 @@ The main simulation loop:
 void World::step(double dt) {
     // 1. Update kinematics (FK)
     updateKinematics();
-    
+
     // 2. Apply external forces (gravity, user forces)
     applyGravity();
-    
+
     // 3. Compute forward dynamics (ABA)
     computeForwardDynamics();
-    
+
     // 4. Detect collisions
     auto collisions = detectCollisions();
-    
+
     // 5. Solve constraints (contacts, limits)
     solveConstraints(collisions, dt);
-    
+
     // 6. Integrate state (semi-implicit Euler)
     integrateState(dt);
-    
+
     // 7. Clear force accumulators
     clearForces();
 }
@@ -330,15 +330,15 @@ dart/simulation/experimental/
 
 ## Timeline
 
-| Task | Estimated Duration |
-|------|-------------------|
-| 5.1 Forward Kinematics | 2 weeks |
-| 5.2 Forward Dynamics | 3 weeks |
-| 5.3 Collision Integration | 1 week |
-| 5.4 Constraint Integration | 1 week |
-| 5.5 World::step() | 1 week |
-| Testing & Validation | 2 weeks |
-| **Total** | **10 weeks** |
+| Task                       | Estimated Duration |
+| -------------------------- | ------------------ |
+| 5.1 Forward Kinematics     | 2 weeks            |
+| 5.2 Forward Dynamics       | 3 weeks            |
+| 5.3 Collision Integration  | 1 week             |
+| 5.4 Constraint Integration | 1 week             |
+| 5.5 World::step()          | 1 week             |
+| Testing & Validation       | 2 weeks            |
+| **Total**                  | **10 weeks**       |
 
 ---
 
