@@ -1,7 +1,7 @@
 # ReactPhysics3D ECS Investigation Plan
 
-Status: in progress
-Last updated: 2026-01-19
+Status: in progress (profiling baselines captured; DART comparison pending)
+Last updated: 2026-01-20
 
 ## Purpose
 
@@ -34,6 +34,14 @@ These notes are from the local ReactPhysics3D checkout at
 
 These observations confirm the ECS + SoA approach and a dynamic AABB tree
 strategy, but do not yet prove performance characteristics.
+
+## Investigation phases
+
+1. Phase A: Code review of ECS data layout and collision pipeline (done).
+2. Phase B: Profiling baselines for dense/sparse spheres (done).
+3. Phase C: Profiling for mixed shapes + moved objects (pending).
+4. Phase D: DART comparison on matched scenarios (blocked: AABB tree crash).
+5. Phase E: Translate findings into DART ECS data layout plan (pending).
 
 ## Step-by-step profiling plan
 
@@ -68,9 +76,12 @@ strategy, but do not yet prove performance characteristics.
 
 ## Immediate next steps
 
-1. Use `rp3d_profile_driver.cpp` to capture dense/sparse baselines for 1k/10k.
-2. Record results in `reactphysics3d_ecs_profile_results.md` and attach raw logs.
-3. Compare against matched DART pipeline breakdown scenarios.
+1. Extend profiling to mixed shapes and moved objects (driver changes only after
+   benchmark ownership is clear).
+2. Wait for the DART AABB tree crash to be resolved before running the
+   RP3D-aligned pipeline breakdown benchmark (no benchmark code edits here).
+3. Once DART results are available, compare stage ratios and update the
+   ECS data layout plan in `ecs_data_layout.md`.
 
 ## Driver usage (example)
 

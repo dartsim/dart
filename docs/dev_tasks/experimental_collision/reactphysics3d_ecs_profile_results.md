@@ -46,8 +46,8 @@ Run DART pipeline breakdown with RP3D-aligned scenarios:
   --benchmark_filter="PipelineBreakdown_RP3D_.*"
 ```
 
-Result: `bm_scenarios_pipeline_breakdown` segfaults on RP3D filters (and
-baseline filters). See `benchmark_results.md` for the failure log.
+Result: `bm_scenarios_pipeline_breakdown` segfaults on RP3D filters. See
+`benchmark_results.md` (Run 2026-01-20 — Pipeline breakdown [RP3D-aligned]).
 
 ## Notes
 

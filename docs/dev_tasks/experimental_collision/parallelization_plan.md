@@ -160,7 +160,9 @@ Exit criteria:
 
 ## Immediate Next Steps
 
-1. Capture baseline JSON for `bm_scenarios_pipeline_breakdown` and store in
-   benchmark results workflow.
-2. Add memory/allocation counters to BatchStats (pairs, contacts, temp bytes).
-3. Define batch results format (pair-indexed vs manifold-indexed).
+1. Run RP3D-aligned pipeline breakdown once the AABB tree crash is resolved
+   (dense/sparse sphere-only, 1k/10k).
+2. Compare RP3D profiler baselines against DART results and log in
+   `benchmark_results.md`.
+3. Implement ECS-friendly data layout changes described in
+   `ecs_data_layout.md` (SoA cache + stable ids + batch view).

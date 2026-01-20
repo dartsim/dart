@@ -114,3 +114,10 @@ BM_Scenario_PipelineBreakdown_Dense_Experimental/10000: aabb_ns=526647.0 broadph
 BM_Scenario_PipelineBreakdown_Sparse_Experimental/1000: aabb_ns=57942.34951456311 broadphase_ns=6258597.95145631 narrowphase_ns=393491.23300970875 merge_ns=426.9611650485437 pairs=841.0 contacts=427.0
 BM_Scenario_PipelineBreakdown_Sparse_Experimental/10000: aabb_ns=509226.0 broadphase_ns=648132646.0 narrowphase_ns=2234726435.0 merge_ns=32116.0 pairs=82932.0 contacts=41125.0
 ```
+
+## Run 2026-01-20 — Pipeline breakdown (RP3D-aligned) [FAILED]
+
+- **Status**: segfault in `AabbTreeBroadPhase::combine()` during object creation.
+- **Command**: `bm_scenarios_pipeline_breakdown --benchmark_filter="PipelineBreakdown_RP3D_.*"`
+- **Raw Output**: `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-19_1k.json` (partial)
+- **Next**: rerun once the AABB tree crash is resolved.
