@@ -9,6 +9,7 @@
     - See [Compatibility Policy](docs/onboarding/compatibility-policy.md) for details
   - Renamed `RootJointType` enum values to PascalCase (`Floating`, `Fixed`) across `dart::utils::SdfParser`, `dart::utils::UrdfParser` (formerly `DartLoader`), and their dartpy bindings to align with the code-style guidelines.
   - Renamed component meta headers to `All.hpp` and added the `dart/all.hpp` umbrella header; deprecated `<component>.hpp`/`all.hpp` headers now forward to `All.hpp`. ([#2047](https://github.com/dartsim/dart/pull/2047), [#2070](https://github.com/dartsim/dart/pull/2070), [#2084](https://github.com/dartsim/dart/pull/2084), [#2166](https://github.com/dartsim/dart/pull/2166))
+  - Renamed installed C++ headers to snake_case; PascalCase compatibility wrappers are generated with deprecation warnings for legacy includes. ([#2475](https://github.com/dartsim/dart/pull/2475))
   - Removed all GLUT code and converted GLUT examples to OSG. ([#2044](https://github.com/dartsim/dart/pull/2044))
   - Renamed the OpenSceneGraph GUI component/target to `gui`/`dart-gui` (previously `gui-osg`/`dart-gui-osg`) and replaced the `DART_BUILD_GUI_OSG` toggle with `DART_BUILD_GUI`. ([#2209](https://github.com/dartsim/dart/pull/2209), [#2257](https://github.com/dartsim/dart/pull/2257))
   - Renamed `DartLoader` to `UrdfParser` and standardized parser naming in model-loading APIs. ([#2269](https://github.com/dartsim/dart/pull/2269), [#2270](https://github.com/dartsim/dart/pull/2270))

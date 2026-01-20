@@ -25,11 +25,11 @@ Validation: see the `Validation` section.
 
 The CMake compat header logic resides in `cmake/dart_defs.cmake`:
 
-| Function                              | Purpose                                                                  |
-| ------------------------------------- | ------------------------------------------------------------------------ |
-| `dart_generate_case_compat_headers()` | Generates PascalCase wrapper headers for snake_case source files         |
-| `dart_install_compat_headers()`       | Installs generated compat headers preserving directory structure         |
-| `dart_generate_component_headers()`   | Generates component umbrellas plus PascalCase wrappers for snake_case    |
+| Function                              | Purpose                                                               |
+| ------------------------------------- | --------------------------------------------------------------------- |
+| `dart_generate_case_compat_headers()` | Generates PascalCase wrapper headers for snake_case source files      |
+| `dart_install_compat_headers()`       | Installs generated compat headers preserving directory structure      |
+| `dart_generate_component_headers()`   | Generates component umbrellas plus PascalCase wrappers for snake_case |
 
 ### How It Works
 
@@ -134,7 +134,7 @@ On case-insensitive filesystems (macOS default, Windows), `World.hpp` and `world
 
 ## 6. Validation
 
-- Run `pixi run -e gazebo test-gz` after each large batch of renames.
+- `pixi run -e gazebo test-gz` (passed).
 
 ## References
 

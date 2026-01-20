@@ -1028,6 +1028,8 @@ function(dart_snake_to_pascal output_var input_string)
       set(capitalized_word "IO")
     elseif(word_lower STREQUAL "impl")
       set(capitalized_word "IMPL")
+    elseif(word_lower STREQUAL "lcpsolver")
+      set(capitalized_word "LcpSolver")
     elseif(word_lower STREQUAL "callocator")
       set(capitalized_word "CAllocator")
     else()
@@ -1314,12 +1316,26 @@ macro(dart_generate_component_headers)
 
   # Automatically generate PascalCase compatibility headers if SOURCE_HEADERS provided
   if(DART_GCH_SOURCE_HEADERS)
-    dart_generate_case_compat_headers(
-      HEADERS ${DART_GCH_SOURCE_HEADERS}
-      OUTPUT_DIR "${DART_GCH_OUTPUT_DIR}"
-      COMPONENT_PATH "${DART_GCH_TARGET_DIR}"
-      RELATIVE_TO "${CMAKE_CURRENT_SOURCE_DIR}"
-    )
+    set(filtered_source_headers)
+    foreach(header IN LISTS DART_GCH_SOURCE_HEADERS)
+      file(RELATIVE_PATH rel_path "${CMAKE_CURRENT_SOURCE_DIR}" "${header}")
+      get_filename_component(rel_dir "${rel_path}" DIRECTORY)
+      get_filename_component(header_name "${header}" NAME)
+      string(TOLOWER "${header_name}" header_name_lower)
+      if(header_name_lower STREQUAL "all.hpp" AND rel_dir STREQUAL "")
+        continue()
+      endif()
+      list(APPEND filtered_source_headers "${header}")
+    endforeach()
+
+    if(filtered_source_headers)
+      dart_generate_case_compat_headers(
+        HEADERS ${filtered_source_headers}
+        OUTPUT_DIR "${DART_GCH_OUTPUT_DIR}"
+        COMPONENT_PATH "${DART_GCH_TARGET_DIR}"
+        RELATIVE_TO "${CMAKE_CURRENT_SOURCE_DIR}"
+      )
+    endif()
   endif()
 endmacro()
 
