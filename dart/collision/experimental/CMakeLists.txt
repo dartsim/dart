@@ -86,31 +86,6 @@ target_compile_definitions(${target_name}
     DART_BUILDING_COLLISION_EXPERIMENTAL
 )
 
-set(DART_EXPERIMENTAL_ESDF_MAP_ROOT "" CACHE PATH "Path to an ESDF map backend source or install")
-if(DART_EXPERIMENTAL_ESDF_MAP_ROOT)
-  find_path(ESDF_MAP_INCLUDE_DIR
-    NAMES voxblox/core/esdf_map.h
-    PATHS
-      ${DART_EXPERIMENTAL_ESDF_MAP_ROOT}
-      ${DART_EXPERIMENTAL_ESDF_MAP_ROOT}/voxblox/include
-      ${DART_EXPERIMENTAL_ESDF_MAP_ROOT}/include
-  )
-  find_library(ESDF_MAP_LIBRARY
-    NAMES voxblox
-    PATHS
-      ${DART_EXPERIMENTAL_ESDF_MAP_ROOT}/lib
-      ${DART_EXPERIMENTAL_ESDF_MAP_ROOT}/build
-      ${DART_EXPERIMENTAL_ESDF_MAP_ROOT}/devel/lib
-  )
-
-  if(ESDF_MAP_INCLUDE_DIR AND ESDF_MAP_LIBRARY)
-    target_sources(${target_name} PRIVATE sdf/esdf_map_field.cpp)
-    target_include_directories(${target_name} PUBLIC ${ESDF_MAP_INCLUDE_DIR})
-    target_link_libraries(${target_name} PUBLIC ${ESDF_MAP_LIBRARY})
-    target_compile_definitions(${target_name} PUBLIC DART_EXPERIMENTAL_HAVE_ESDF_MAP)
-  endif()
-endif()
-
 # Benchmarks (optional)
 dart_experimental_add_benchmark(
   bm_collision_experimental_sdf_compare
@@ -118,6 +93,32 @@ dart_experimental_add_benchmark(
   LIBRARY ${target_name}
   LABEL collision-experimental
 )
+
+if(TARGET bm_collision_experimental_sdf_compare)
+  set(DART_EXPERIMENTAL_VOXBLOX_ROOT "" CACHE PATH "Path to Voxblox for experimental collision benchmarks")
+  if(DART_EXPERIMENTAL_VOXBLOX_ROOT)
+    find_path(VOXBLOX_INCLUDE_DIR
+      NAMES voxblox/core/esdf_map.h
+      PATHS
+        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}
+        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}/voxblox/include
+        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}/include
+    )
+    find_library(VOXBLOX_LIBRARY
+      NAMES voxblox
+      PATHS
+        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}/lib
+        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}/build
+        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}/devel/lib
+    )
+  endif()
+
+  if(VOXBLOX_INCLUDE_DIR AND VOXBLOX_LIBRARY)
+    target_include_directories(bm_collision_experimental_sdf_compare PRIVATE ${VOXBLOX_INCLUDE_DIR})
+    target_link_libraries(bm_collision_experimental_sdf_compare PRIVATE ${VOXBLOX_LIBRARY})
+    target_compile_definitions(bm_collision_experimental_sdf_compare PRIVATE DART_EXPERIMENTAL_HAVE_VOXBLOX=1)
+  endif()
+endif()
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
