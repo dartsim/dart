@@ -32,9 +32,9 @@
 
 #include "dart/gui/render/warning_shape_node.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/dynamics/Entity.hpp"
-#include "dart/dynamics/Shape.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/dynamics/entity.hpp"
+#include "dart/dynamics/shape.hpp"
 #include "dart/gui/shape_frame_node.hpp"
 
 namespace dart {

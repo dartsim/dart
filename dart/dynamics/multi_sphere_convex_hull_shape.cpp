@@ -32,9 +32,9 @@
 
 #include "dart/dynamics/multi_sphere_convex_hull_shape.hpp"
 
-#include "dart/common/Logging.hpp"
+#include "dart/common/logging.hpp"
 #include "dart/dynamics/box_shape.hpp"
-#include "dart/math/Helpers.hpp"
+#include "dart/math/helpers.hpp"
 
 namespace dart {
 namespace dynamics {

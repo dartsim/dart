@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Observer.hpp"
-#include "dart/common/Subject.hpp"
+#include "dart/common/observer.hpp"
+#include "dart/common/subject.hpp"
 
 #include <gtest/gtest.h>
 

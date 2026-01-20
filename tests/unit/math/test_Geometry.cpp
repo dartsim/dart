@@ -32,8 +32,8 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include "dart/math/Geometry.hpp"
-#include "dart/math/Helpers.hpp"
+#include "dart/math/geometry.hpp"
+#include "dart/math/helpers.hpp"
 
 #include <gtest/gtest.h>
 

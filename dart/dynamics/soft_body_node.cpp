@@ -32,14 +32,14 @@
 
 #include "dart/dynamics/soft_body_node.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/Joint.hpp"
-#include "dart/dynamics/Shape.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/dynamics/joint.hpp"
 #include "dart/dynamics/point_mass.hpp"
+#include "dart/dynamics/shape.hpp"
+#include "dart/dynamics/skeleton.hpp"
 #include "dart/dynamics/soft_mesh_shape.hpp"
-#include "dart/math/Helpers.hpp"
+#include "dart/math/helpers.hpp"
 
 #include <fmt/format.h>
 

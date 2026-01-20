@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_MESHSHAPE_HPP_
 #define DART_DYNAMICS_MESHSHAPE_HPP_
 
-#include <dart/dynamics/Shape.hpp>
 #include <dart/dynamics/mesh_material.hpp>
+#include <dart/dynamics/shape.hpp>
 
 #include <dart/math/polygon_mesh.hpp>
 #include <dart/math/tri_mesh.hpp>

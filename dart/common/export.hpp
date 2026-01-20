@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <dart/common/Platform.hpp>
+#include <dart/common/platform.hpp>
 
 #ifndef DART_SYMBOL_EXPORT
   #if DART_OS_WINDOWS

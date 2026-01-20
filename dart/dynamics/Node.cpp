@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Node.hpp"
+#include "dart/dynamics/node.hpp"
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 
 #include <algorithm>

@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_FIXEDFRAME_HPP_
 #define DART_DYNAMICS_FIXEDFRAME_HPP_
 
-#include <dart/dynamics/Frame.hpp>
 #include <dart/dynamics/detail/fixed_frame_aspect.hpp>
+#include <dart/dynamics/frame.hpp>
 
 #include <dart/common/embedded_aspect.hpp>
 #include <dart/common/version_counter.hpp>

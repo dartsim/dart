@@ -32,9 +32,9 @@
 
 #include "dart/sensor/sensor_manager.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <algorithm>
 

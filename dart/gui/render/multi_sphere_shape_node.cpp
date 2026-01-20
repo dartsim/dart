@@ -32,11 +32,11 @@
 
 #include "dart/gui/render/multi_sphere_shape_node.hpp"
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/multi_sphere_convex_hull_shape.hpp"
 #include "dart/dynamics/simple_frame.hpp"
-#include "dart/gui/Utils.hpp"
-#include "dart/math/Icosphere.hpp"
+#include "dart/gui/utils.hpp"
+#include "dart/math/icosphere.hpp"
 
 #include <osg/CullFace>
 #include <osg/Depth>

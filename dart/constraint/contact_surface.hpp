@@ -35,7 +35,7 @@
 
 #include <dart/constraint/fwd.hpp>
 
-#include <dart/collision/Contact.hpp>
+#include <dart/collision/contact.hpp>
 
 #include <dart/dynamics/shape_node.hpp>
 

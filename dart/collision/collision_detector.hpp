@@ -33,9 +33,9 @@
 #ifndef DART_COLLISION_COLLISIONDETECTOR_HPP_
 #define DART_COLLISION_COLLISIONDETECTOR_HPP_
 
-#include <dart/collision/Contact.hpp>
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
+#include <dart/collision/contact.hpp>
 #include <dart/collision/distance_option.hpp>
 #include <dart/collision/distance_result.hpp>
 #include <dart/collision/fwd.hpp>
@@ -44,8 +44,8 @@
 
 #include <dart/dynamics/fwd.hpp>
 
-#include <dart/common/Diagnostics.hpp>
-#include <dart/common/Factory.hpp>
+#include <dart/common/diagnostics.hpp>
+#include <dart/common/factory.hpp>
 
 #include <dart/Export.hpp>
 

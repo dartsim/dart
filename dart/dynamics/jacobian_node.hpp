@@ -33,9 +33,9 @@
 #ifndef DART_DYNAMICS_JACOBIANNODE_HPP_
 #define DART_DYNAMICS_JACOBIANNODE_HPP_
 
-#include <dart/dynamics/Frame.hpp>
-#include <dart/dynamics/Node.hpp>
+#include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/fwd.hpp>
+#include <dart/dynamics/node.hpp>
 
 #include <dart/Export.hpp>
 

@@ -32,7 +32,7 @@
 
 #include "dart/utils/mjcf/detail/geom_attributes.hpp"
 
-#include "dart/utils/mjcf/detail/Utils.hpp"
+#include "dart/utils/mjcf/detail/utils.hpp"
 #include "dart/utils/xml_helpers.hpp"
 
 namespace dart {

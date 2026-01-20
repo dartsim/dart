@@ -32,9 +32,9 @@
 
 #include "dart/utils/dart_resource_retriever.hpp"
 
-#include "dart/common/Diagnostics.hpp"
-#include "dart/common/Logging.hpp"
+#include "dart/common/diagnostics.hpp"
 #include "dart/common/local_resource_retriever.hpp"
+#include "dart/common/logging.hpp"
 #include "dart/config.hpp"
 
 #include <fstream>

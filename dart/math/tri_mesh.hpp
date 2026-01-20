@@ -33,7 +33,7 @@
 #ifndef DART_MATH_TRIMESH_HPP_
 #define DART_MATH_TRIMESH_HPP_
 
-#include <dart/math/Mesh.hpp>
+#include <dart/math/mesh.hpp>
 
 #include <dart/Export.hpp>
 

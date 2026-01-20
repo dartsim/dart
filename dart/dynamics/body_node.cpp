@@ -32,17 +32,17 @@
 
 #include "dart/dynamics/body_node.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/common/stl_helpers.hpp"
-#include "dart/dynamics/Chain.hpp"
-#include "dart/dynamics/Joint.hpp"
-#include "dart/dynamics/Marker.hpp"
-#include "dart/dynamics/Shape.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/chain.hpp"
 #include "dart/dynamics/end_effector.hpp"
+#include "dart/dynamics/joint.hpp"
+#include "dart/dynamics/marker.hpp"
+#include "dart/dynamics/shape.hpp"
+#include "dart/dynamics/skeleton.hpp"
 #include "dart/dynamics/soft_body_node.hpp"
-#include "dart/math/Helpers.hpp"
+#include "dart/math/helpers.hpp"
 
 #include <algorithm>
 #include <string>

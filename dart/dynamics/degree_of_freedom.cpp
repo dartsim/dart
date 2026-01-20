@@ -32,8 +32,8 @@
 
 #include "dart/dynamics/degree_of_freedom.hpp"
 
-#include "dart/dynamics/Joint.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/joint.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
 namespace dart {
 namespace dynamics {

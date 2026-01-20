@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
 #include <Eigen/Core>
 #include <gtest/gtest.h>

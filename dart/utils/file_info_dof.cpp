@@ -32,11 +32,11 @@
 
 #include "dart/utils/file_info_dof.hpp"
 
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/Joint.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/degree_of_freedom.hpp"
-#include "dart/simulation/Recording.hpp"
+#include "dart/dynamics/joint.hpp"
+#include "dart/dynamics/skeleton.hpp"
+#include "dart/simulation/recording.hpp"
 
 #include <fstream>
 #include <string>

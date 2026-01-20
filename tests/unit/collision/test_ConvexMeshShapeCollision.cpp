@@ -33,12 +33,12 @@
 #include "dart/collision/fcl/fcl_collision_detector.hpp"
 #include "dart/collision/fcl/fcl_collision_object.hpp"
 #include "dart/config.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/convex_mesh_shape.hpp"
 #include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/simple_frame.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>

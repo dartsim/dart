@@ -33,9 +33,9 @@
 #ifndef DART_DYNAMICS_DETAIL_BODYNODEASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_BODYNODEASPECT_HPP_
 
-#include <dart/dynamics/Entity.hpp>
-#include <dart/dynamics/Inertia.hpp>
-#include <dart/dynamics/Node.hpp>
+#include <dart/dynamics/entity.hpp>
+#include <dart/dynamics/inertia.hpp>
+#include <dart/dynamics/node.hpp>
 
 #include <dart/common/embedded_aspect.hpp>
 #include <dart/common/proxy_aspect.hpp>

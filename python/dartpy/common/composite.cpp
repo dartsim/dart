@@ -1,6 +1,6 @@
 #include "common/composite.hpp"
 
-#include "dart/common/Composite.hpp"
+#include "dart/common/composite.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

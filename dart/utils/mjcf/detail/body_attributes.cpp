@@ -32,9 +32,9 @@
 
 #include "dart/utils/mjcf/detail/body_attributes.hpp"
 
-#include "dart/common/Macros.hpp"
-#include "dart/utils/mjcf/detail/Size.hpp"
-#include "dart/utils/mjcf/detail/Utils.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/utils/mjcf/detail/size.hpp"
+#include "dart/utils/mjcf/detail/utils.hpp"
 #include "dart/utils/xml_helpers.hpp"
 
 namespace dart {

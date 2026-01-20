@@ -32,10 +32,10 @@
 
 #include "dart/constraint/contact_surface.hpp"
 
-#include "dart/collision/Contact.hpp"
 #include "dart/collision/collision_object.hpp"
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/collision/contact.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/constraint/contact_constraint.hpp"
 
 #include <fmt/ostream.h>

@@ -36,7 +36,7 @@
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/dynamics/planar_joint.hpp"
 #include "dart/dynamics/weld_joint.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/simulation/world.hpp"
 #include "dart/utils/urdf/urdf_parser.hpp"
 
 #include <Eigen/Core>

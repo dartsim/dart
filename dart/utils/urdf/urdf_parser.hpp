@@ -37,17 +37,17 @@
 #include <dart/utils/package_resource_retriever.hpp>
 #include <dart/utils/urdf/export.hpp>
 
-#include <dart/simulation/World.hpp>
 #include <dart/simulation/fwd.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/dynamics/Joint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/fwd.hpp>
+#include <dart/dynamics/joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
-#include <dart/common/Uri.hpp>
 #include <dart/common/local_resource_retriever.hpp>
 #include <dart/common/resource_retriever.hpp>
+#include <dart/common/uri.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>

@@ -33,11 +33,11 @@
 #ifndef DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
 #define DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
 #include <dart/collision/fcl/backward_compatibility.hpp>
 
-#include <dart/math/Constants.hpp>
+#include <dart/math/constants.hpp>
 
 #include <cmath>
 

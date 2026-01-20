@@ -33,9 +33,9 @@
 #ifndef DART_COLLISION_BULLET_DETAIL_BULLETCONTACT_HPP_
 #define DART_COLLISION_BULLET_DETAIL_BULLETCONTACT_HPP_
 
-#include "dart/collision/Contact.hpp"
 #include "dart/collision/bullet/bullet_include.hpp"
 #include "dart/collision/collision_option.hpp"
+#include "dart/collision/contact.hpp"
 
 namespace dart::collision::bullet::detail {
 

@@ -33,9 +33,9 @@
 #ifndef DART_DYNAMICS_DETAIL_GenericJointASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_GenericJointASPECT_HPP_
 
-#include <dart/dynamics/Joint.hpp>
+#include <dart/dynamics/joint.hpp>
 
-#include <dart/math/Helpers.hpp>
+#include <dart/math/helpers.hpp>
 
 #include <dart/common/aspect_with_version.hpp>
 

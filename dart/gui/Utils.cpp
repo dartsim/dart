@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/Utils.hpp"
+#include "dart/gui/utils.hpp"
 
 #include <osg/Geode>
 #include <osg/Geometry>

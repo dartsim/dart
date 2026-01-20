@@ -1,6 +1,6 @@
 #include "common/resource_retriever.hpp"
 
-#include "dart/common/Diagnostics.hpp"
+#include "dart/common/diagnostics.hpp"
 #include "dart/common/local_resource_retriever.hpp"
 #include "dart/common/resource_retriever.hpp"
 

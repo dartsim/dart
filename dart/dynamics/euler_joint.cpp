@@ -32,10 +32,10 @@
 
 #include "dart/dynamics/euler_joint.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/degree_of_freedom.hpp"
-#include "dart/math/Geometry.hpp"
+#include "dart/math/geometry.hpp"
 
 #include <string>
 

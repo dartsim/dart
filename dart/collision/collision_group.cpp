@@ -34,9 +34,9 @@
 
 #include "dart/collision/collision_detector.hpp"
 #include "dart/collision/collision_object.hpp"
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
 #include <algorithm>
 

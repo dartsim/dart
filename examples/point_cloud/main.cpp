@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
 #include <dart/gui/all.hpp>
 #include <dart/gui/im_gui_handler.hpp>
@@ -40,7 +40,7 @@
 #include <dart/utils/urdf/All.hpp>
 
 #include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/io/read.hpp>
 
 #include <CLI/CLI.hpp>
 

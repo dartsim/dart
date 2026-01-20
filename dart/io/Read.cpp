@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/io/Read.hpp"
+#include "dart/io/read.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/common/Result.hpp"
-#include "dart/common/String.hpp"
 #include "dart/common/local_resource_retriever.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/result.hpp"
+#include "dart/common/string.hpp"
 #include "dart/utils/composite_resource_retriever.hpp"
 #include "dart/utils/dart_resource_retriever.hpp"
 #include "dart/utils/mjcf/mjcf_parser.hpp"

@@ -43,7 +43,7 @@
 
 #include <dart/dynamics/fwd.hpp>
 
-#include <dart/common/Observer.hpp>
+#include <dart/common/observer.hpp>
 
 #include <dart/Export.hpp>
 

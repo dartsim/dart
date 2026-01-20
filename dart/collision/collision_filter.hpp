@@ -38,7 +38,7 @@
 
 #include <dart/dynamics/fwd.hpp>
 
-#include <dart/common/Deprecated.hpp>
+#include <dart/common/deprecated.hpp>
 
 #include <dart/Export.hpp>
 

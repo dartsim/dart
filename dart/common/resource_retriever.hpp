@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_RESOURCERETRIEVER_HPP_
 #define DART_COMMON_RESOURCERETRIEVER_HPP_
 
-#include <dart/common/Deprecated.hpp>
-#include <dart/common/Resource.hpp>
-#include <dart/common/Uri.hpp>
+#include <dart/common/deprecated.hpp>
+#include <dart/common/resource.hpp>
+#include <dart/common/uri.hpp>
 
 #include <dart/Export.hpp>
 

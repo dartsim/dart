@@ -34,7 +34,7 @@
 #include <dart/collision/fcl/fcl_collision_detector.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
-#include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 
 #include <Eigen/Core>

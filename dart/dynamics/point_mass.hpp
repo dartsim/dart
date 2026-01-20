@@ -33,9 +33,9 @@
 #ifndef DART_DYNAMICS_POINTMASS_HPP_
 #define DART_DYNAMICS_POINTMASS_HPP_
 
-#include <dart/dynamics/Entity.hpp>
+#include <dart/dynamics/entity.hpp>
 
-#include <dart/math/Helpers.hpp>
+#include <dart/math/helpers.hpp>
 
 #include <Eigen/Dense>
 

@@ -38,10 +38,10 @@
 #include <dart/math/polygon_mesh.hpp>
 #include <dart/math/tri_mesh.hpp>
 
-#include <dart/common/Diagnostics.hpp>
-#include <dart/common/Resource.hpp>
-#include <dart/common/Uri.hpp>
+#include <dart/common/diagnostics.hpp>
+#include <dart/common/resource.hpp>
 #include <dart/common/resource_retriever.hpp>
+#include <dart/common/uri.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/cfileio.h>
@@ -137,7 +137,7 @@ using MeshLoaderd = MeshLoader<double>;
 //
 //==============================================================================
 
-#include <dart/common/Logging.hpp>
+#include <dart/common/logging.hpp>
 
 #include <filesystem>
 

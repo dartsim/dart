@@ -33,7 +33,7 @@
 #ifndef DART_COLLISION_COLLISIONRESULT_HPP_
 #define DART_COLLISION_COLLISIONRESULT_HPP_
 
-#include <dart/collision/Contact.hpp>
+#include <dart/collision/contact.hpp>
 
 #include <dart/dynamics/fwd.hpp>
 

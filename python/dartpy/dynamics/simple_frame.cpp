@@ -3,8 +3,8 @@
 #include "common/eigen_utils.hpp"
 #include "common/repr.hpp"
 #include "common/type_casters.hpp"
-#include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/frame.hpp"
 #include "dart/dynamics/simple_frame.hpp"
 
 #include <nanobind/eigen/dense.h>

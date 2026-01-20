@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/heightmap_shape.hpp>
 
-#include <dart/common/Logging.hpp>
+#include <dart/common/logging.hpp>
 
 #include <algorithm>
 #include <limits>

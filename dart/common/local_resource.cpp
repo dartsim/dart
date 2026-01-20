@@ -32,7 +32,7 @@
 
 #include "local_resource.hpp"
 
-#include "dart/common/Logging.hpp"
+#include "dart/common/logging.hpp"
 
 #include <iostream>
 #include <limits>

@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/sensor/Sensor.hpp"
+#include "dart/sensor/sensor.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/dynamics/Frame.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/dynamics/frame.hpp"
 
 #include <cmath>
 

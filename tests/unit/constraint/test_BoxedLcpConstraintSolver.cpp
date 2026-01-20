@@ -5,11 +5,11 @@
  * This file is provided under the BSD-style License.
  */
 
-#include "dart/common/Diagnostics.hpp"
+#include "dart/common/diagnostics.hpp"
 #include "dart/constraint/boxed_lcp_constraint_solver.hpp"
 #include "dart/constraint/dantzig_boxed_lcp_solver.hpp"
 #include "dart/constraint/pgs_boxed_lcp_solver.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/skeleton.hpp"
 #include "dart/math/lcp/pivoting/dantzig_solver.hpp"
 #include "dart/math/lcp/projection/pgs_solver.hpp"
 

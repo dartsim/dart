@@ -35,7 +35,7 @@
 
 #include <dart/utils/xml_helpers.hpp>
 
-#include <dart/common/String.hpp>
+#include <dart/common/string.hpp>
 
 namespace dart::utils {
 

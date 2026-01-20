@@ -35,13 +35,13 @@
 #include "helpers/dynamics_helpers.hpp"
 
 #include "dart/collision/All.hpp"
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
-#include "dart/io/Read.hpp"
-#include "dart/math/Geometry.hpp"
-#include "dart/math/Random.hpp"
+#include "dart/dynamics/skeleton.hpp"
+#include "dart/io/read.hpp"
+#include "dart/math/geometry.hpp"
+#include "dart/math/random.hpp"
 
 #include <gtest/gtest.h>
 
@@ -59,7 +59,7 @@
 #include "dart/constraint/revolute_joint_constraint.hpp"
 #include "dart/math/lcp/pivoting/dantzig_solver.hpp"
 #include "dart/math/lcp/projection/pgs_solver.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/simulation/world.hpp"
 
 using namespace dart;
 using namespace math;

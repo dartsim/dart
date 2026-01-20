@@ -33,7 +33,7 @@
 #include "TerminalCondition.hpp"
 
 #include "State.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
 // Macro for functions not implemented yet
 #define NOT_YET(FUNCTION)                                                      \

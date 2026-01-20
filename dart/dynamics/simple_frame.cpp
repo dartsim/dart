@@ -32,8 +32,8 @@
 
 #include "dart/dynamics/simple_frame.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/math/Geometry.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/math/geometry.hpp"
 
 namespace dart {
 namespace dynamics {

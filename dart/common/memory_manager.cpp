@@ -32,7 +32,7 @@
 
 #include "dart/common/memory_manager.hpp"
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
 namespace dart::common {
 

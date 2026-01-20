@@ -35,7 +35,7 @@
 
 #include <dart/utils/urdf/urdf_parser.hpp>
 
-#include <dart/common/Deprecated.hpp>
+#include <dart/common/deprecated.hpp>
 
 namespace dart::utils {
 

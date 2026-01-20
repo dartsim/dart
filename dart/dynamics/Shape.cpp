@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/shape.hpp"
 
-#include "dart/common/Logging.hpp"
+#include "dart/common/logging.hpp"
 
 #define PRIMITIVE_MAGIC_NUMBER 1000
 

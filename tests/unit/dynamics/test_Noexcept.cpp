@@ -1,6 +1,6 @@
-#include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/referential_skeleton.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
 #include <gtest/gtest.h>
 

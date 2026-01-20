@@ -32,7 +32,7 @@
 
 #include "dart/gui/render/shape_node.hpp"
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/simple_frame.hpp"
 #include "dart/gui/shape_frame_node.hpp"
 

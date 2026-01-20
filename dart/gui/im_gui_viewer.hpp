@@ -33,9 +33,9 @@
 #ifndef DART_GUI_IMGUIVIEWER_HPP_
 #define DART_GUI_IMGUIVIEWER_HPP_
 
-#include <dart/gui/Viewer.hpp>
 #include <dart/gui/export.hpp>
 #include <dart/gui/im_gui_handler.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <memory>
 

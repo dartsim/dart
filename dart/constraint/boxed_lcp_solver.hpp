@@ -33,9 +33,9 @@
 #ifndef DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_
 #define DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_
 
-#include <dart/common/Castable.hpp>
-#include <dart/common/Deprecated.hpp>
-#include <dart/common/Diagnostics.hpp>
+#include <dart/common/castable.hpp>
+#include <dart/common/deprecated.hpp>
+#include <dart/common/diagnostics.hpp>
 
 #include <string>
 #include <string_view>

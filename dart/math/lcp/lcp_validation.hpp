@@ -34,7 +34,7 @@
 
 #include <dart/math/lcp/lcp_types.hpp>
 
-#include <dart/common/Macros.hpp>
+#include <dart/common/macros.hpp>
 
 #include <Eigen/Core>
 

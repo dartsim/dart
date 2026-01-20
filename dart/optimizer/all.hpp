@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <dart/common/Deprecated.hpp>
+#include <dart/common/deprecated.hpp>
 
 #ifndef DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
   #pragma message("dart/optimizer/all.hpp is deprecated; include "

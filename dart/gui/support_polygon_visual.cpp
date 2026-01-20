@@ -32,12 +32,12 @@
 
 #include "dart/gui/support_polygon_visual.hpp"
 
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/simple_frame.hpp"
+#include "dart/dynamics/skeleton.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
-#include "dart/math/Helpers.hpp"
+#include "dart/math/helpers.hpp"
 
 namespace dart {
 namespace gui {

@@ -33,7 +33,7 @@
 #include "dart/collision/distance_filter.hpp"
 
 #include "dart/collision/collision_object.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 
 namespace dart {

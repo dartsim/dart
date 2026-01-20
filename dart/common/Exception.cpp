@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/Exception.hpp>
+#include <dart/common/exception.hpp>
 
 namespace dart::common {
 

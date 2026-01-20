@@ -32,8 +32,8 @@
 
 #include "dart/common/version_counter.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/macros.hpp"
 
 #include <fmt/format.h>
 

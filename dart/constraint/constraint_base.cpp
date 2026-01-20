@@ -32,7 +32,7 @@
 
 #include "dart/constraint/constraint_base.hpp"
 
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
 namespace dart {
 namespace constraint {

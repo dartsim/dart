@@ -36,7 +36,7 @@
 #include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/meta_skeleton.hpp>
 
-#include <dart/common/Deprecated.hpp>
+#include <dart/common/deprecated.hpp>
 
 #include <span>
 #include <unordered_map>

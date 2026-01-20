@@ -33,8 +33,8 @@
 #ifndef DART_UTILS_MJCF_DETAIL_BODYATTRIBUTES_HPP_
 #define DART_UTILS_MJCF_DETAIL_BODYATTRIBUTES_HPP_
 
-#include <dart/utils/mjcf/detail/Error.hpp>
-#include <dart/utils/mjcf/detail/Inertial.hpp>
+#include <dart/utils/mjcf/detail/error.hpp>
+#include <dart/utils/mjcf/detail/inertial.hpp>
 
 #include <dart/math/math_types.hpp>
 

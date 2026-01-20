@@ -30,27 +30,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/Viewer.hpp>
 #include <dart/gui/grid_visual.hpp>
 #include <dart/gui/im_gui_handler.hpp>
 #include <dart/gui/im_gui_viewer.hpp>
 #include <dart/gui/im_gui_widget.hpp>
 #include <dart/gui/include_im_gui.hpp>
 #include <dart/gui/real_time_world_node.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/dynamics/Inertia.hpp>
-#include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/inertia.hpp>
 #include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/simple_frame.hpp>
+#include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
-#include <dart/math/Constants.hpp>
+#include <dart/math/constants.hpp>
 
 #include <CLI/CLI.hpp>
 #include <Eigen/Dense>

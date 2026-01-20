@@ -32,7 +32,7 @@
 
 #include "dart/gui/interactive_frame.hpp"
 
-#include "dart/common/Logging.hpp"
+#include "dart/common/logging.hpp"
 #include "dart/dynamics/arrow_shape.hpp"
 #include "dart/dynamics/line_segment_shape.hpp"
 #include "dart/dynamics/mesh_shape.hpp"

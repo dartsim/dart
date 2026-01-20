@@ -33,11 +33,11 @@
 #ifndef DART_SENSOR_SENSORMANAGER_HPP_
 #define DART_SENSOR_SENSORMANAGER_HPP_
 
-#include <dart/common/Signal.hpp>
 #include <dart/common/name_manager.hpp>
+#include <dart/common/signal.hpp>
 
 #include <dart/Export.hpp>
-#include <dart/sensor/Sensor.hpp>
+#include <dart/sensor/sensor.hpp>
 
 #include <map>
 #include <set>

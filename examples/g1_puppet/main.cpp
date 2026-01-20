@@ -6,18 +6,18 @@
 #include <dart/utils/http_resource_retriever.hpp>
 #include <dart/utils/package_resource_retriever.hpp>
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
-#include <dart/common/Uri.hpp>
 #include <dart/common/local_resource_retriever.hpp>
+#include <dart/common/uri.hpp>
 
 #include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/io/read.hpp>
 
 #include <CLI/CLI.hpp>
 

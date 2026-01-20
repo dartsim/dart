@@ -37,7 +37,7 @@
 #include <dart/dynamics/detail/end_effector_aspect.hpp>
 #include <dart/dynamics/fixed_jacobian_node.hpp>
 
-#include <dart/common/Aspect.hpp>
+#include <dart/common/aspect.hpp>
 #include <dart/common/aspect_with_version.hpp>
 #include <dart/common/specialized_for_aspect.hpp>
 

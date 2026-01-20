@@ -32,8 +32,8 @@
 
 #include "dart/gui/real_time_world_node.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <algorithm>
 

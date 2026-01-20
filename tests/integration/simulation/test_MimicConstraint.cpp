@@ -36,7 +36,7 @@
 
 #include <dart/config.hpp>
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
 #include <dart/constraint/constraint_solver.hpp>
 #include <dart/constraint/mimic_motor_constraint.hpp>
@@ -44,7 +44,7 @@
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 #include <dart/math/lcp/projection/pgs_solver.hpp>
 
-#include <dart/io/Read.hpp>
+#include <dart/io/read.hpp>
 
 #if DART_HAVE_BULLET
   #include <dart/collision/bullet/bullet_collision_detector.hpp>
@@ -53,13 +53,13 @@
   #include <dart/collision/ode/ode_collision_detector.hpp>
 #endif
 
-#include <dart/dynamics/Joint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
-#include <dart/math/Constants.hpp>
+#include <dart/math/constants.hpp>
 
-#include <dart/common/Uri.hpp>
+#include <dart/common/uri.hpp>
 
 #include <Eigen/Core>
 #include <gtest/gtest.h>

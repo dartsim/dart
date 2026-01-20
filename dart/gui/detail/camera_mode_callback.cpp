@@ -32,9 +32,9 @@
 
 #include "dart/gui/detail/camera_mode_callback.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
-#include "dart/gui/Utils.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/gui/utils.hpp"
 
 #include <osg/Geode>
 #include <osg/Texture2D>

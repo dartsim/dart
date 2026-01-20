@@ -32,12 +32,12 @@
 
 #include "dart/dynamics/mesh_shape.hpp"
 
-#include "dart/common/Diagnostics.hpp"
-#include "dart/common/Filesystem.hpp"
-#include "dart/common/Logging.hpp"
-#include "dart/common/Resource.hpp"
-#include "dart/common/Uri.hpp"
+#include "dart/common/diagnostics.hpp"
+#include "dart/common/filesystem.hpp"
 #include "dart/common/local_resource_retriever.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/resource.hpp"
+#include "dart/common/uri.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/detail/assimp_input_resource_adaptor.hpp"

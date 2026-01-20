@@ -34,7 +34,7 @@
 
 #include "dart/dynamics/plane_shape.hpp"
 #include "dart/dynamics/simple_frame.hpp"
-#include "dart/gui/Utils.hpp"
+#include "dart/gui/utils.hpp"
 
 #include <osg/CullFace>
 #include <osg/Depth>

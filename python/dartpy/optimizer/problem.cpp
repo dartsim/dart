@@ -1,8 +1,8 @@
 #include "optimizer/problem.hpp"
 
 #include "common/eigen_utils.hpp"
-#include "dart/common/Diagnostics.hpp"
-#include "dart/math/optimization/Problem.hpp"
+#include "dart/common/diagnostics.hpp"
+#include "dart/math/optimization/problem.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

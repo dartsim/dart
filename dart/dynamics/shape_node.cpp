@@ -33,7 +33,7 @@
 #include "dart/dynamics/shape_node.hpp"
 
 #include "dart/dynamics/body_node.hpp"
-#include "dart/math/Geometry.hpp"
+#include "dart/math/geometry.hpp"
 
 namespace dart {
 namespace dynamics {

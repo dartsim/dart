@@ -33,12 +33,12 @@
 #ifndef DART_DYNAMICS_DETAIL_BASICNODEMANAGER_HPP_
 #define DART_DYNAMICS_DETAIL_BASICNODEMANAGER_HPP_
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
-#include <dart/dynamics/Node.hpp>
+#include <dart/dynamics/node.hpp>
 
-#include <dart/common/Empty.hpp>
 #include <dart/common/class_with_virtual_base.hpp>
+#include <dart/common/empty.hpp>
 #include <dart/common/name_manager.hpp>
 
 #include <map>

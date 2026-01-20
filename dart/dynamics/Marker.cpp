@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Marker.hpp"
+#include "dart/dynamics/marker.hpp"
 
 #include "dart/dynamics/body_node.hpp"
 

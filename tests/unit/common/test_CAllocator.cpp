@@ -32,7 +32,7 @@
 
 #include "../../helpers/GTestUtils.hpp"
 
-#include <dart/common/CAllocator.hpp>
+#include <dart/common/callocator.hpp>
 
 #include <gtest/gtest.h>
 

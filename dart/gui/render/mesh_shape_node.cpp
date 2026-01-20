@@ -32,16 +32,16 @@
 
 #include "dart/gui/render/mesh_shape_node.hpp"
 
-#include "dart/common/Diagnostics.hpp"
-#include "dart/common/Filesystem.hpp"
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
-#include "dart/common/Uri.hpp"
+#include "dart/common/diagnostics.hpp"
+#include "dart/common/filesystem.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/common/uri.hpp"
 #include "dart/dynamics/invalid_index.hpp"
 #include "dart/dynamics/mesh_material.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/dynamics/simple_frame.hpp"
-#include "dart/gui/Utils.hpp"
+#include "dart/gui/utils.hpp"
 #include "dart/math/polygon_mesh.hpp"
 
 #include <assimp/scene.h>

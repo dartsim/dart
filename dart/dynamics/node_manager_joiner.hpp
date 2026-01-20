@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_NODEMANAGERJOINER_HPP_
 #define DART_DYNAMICS_NODEMANAGERJOINER_HPP_
 
-#include <dart/common/Empty.hpp>
+#include <dart/common/empty.hpp>
 
 #include <string>
 

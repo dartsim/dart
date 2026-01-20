@@ -33,8 +33,8 @@
 #ifndef DART_UTILS_MJCF_DETAIL_GEOMATTRIBUTES_HPP_
 #define DART_UTILS_MJCF_DETAIL_GEOMATTRIBUTES_HPP_
 
-#include <dart/utils/mjcf/detail/Error.hpp>
-#include <dart/utils/mjcf/detail/Types.hpp>
+#include <dart/utils/mjcf/detail/error.hpp>
+#include <dart/utils/mjcf/detail/types.hpp>
 
 #include <dart/math/math_types.hpp>
 

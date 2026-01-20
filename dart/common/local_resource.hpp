@@ -33,8 +33,8 @@
 #ifndef DART_COMMON_LOCALRESOURCE_HPP_
 #define DART_COMMON_LOCALRESOURCE_HPP_
 
-#include <dart/common/Resource.hpp>
 #include <dart/common/class_with_virtual_base.hpp>
+#include <dart/common/resource.hpp>
 
 #include <dart/Export.hpp>
 

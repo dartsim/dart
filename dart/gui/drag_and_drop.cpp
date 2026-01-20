@@ -32,16 +32,16 @@
 
 #include "dart/gui/drag_and_drop.hpp"
 
-#include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/joint.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/dynamics/simple_frame.hpp"
-#include "dart/gui/Viewer.hpp"
 #include "dart/gui/default_event_handler.hpp"
 #include "dart/gui/interactive_frame.hpp"
 #include "dart/gui/mouse_event_handler.hpp"
-#include "dart/math/Helpers.hpp"
+#include "dart/gui/viewer.hpp"
+#include "dart/math/helpers.hpp"
 
 #include <span>
 

@@ -4,9 +4,9 @@
 
 #include <nanobind/nanobind.h>
 
-#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/frame.hpp"
 #include "dart/dynamics/jacobian_node.hpp"
-#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/joint.hpp"
 #include "dart/dynamics/meta_skeleton.hpp"
 #include "dart/dynamics/shape_frame.hpp"
 

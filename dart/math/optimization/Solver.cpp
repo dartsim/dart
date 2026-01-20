@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/optimization/Solver.hpp"
+#include "dart/math/optimization/solver.hpp"
 
-#include "dart/math/optimization/Problem.hpp"
+#include "dart/math/optimization/problem.hpp"
 
 namespace dart {
 namespace math {

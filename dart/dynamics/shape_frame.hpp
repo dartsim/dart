@@ -38,8 +38,8 @@
 #include <dart/dynamics/fixed_frame.hpp>
 #include <dart/dynamics/templated_jacobian_node.hpp>
 
-#include <dart/common/Signal.hpp>
 #include <dart/common/aspect_with_version.hpp>
+#include <dart/common/signal.hpp>
 #include <dart/common/specialized_for_aspect.hpp>
 
 #include <dart/Export.hpp>

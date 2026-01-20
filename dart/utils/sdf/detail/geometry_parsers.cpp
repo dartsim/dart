@@ -32,8 +32,8 @@
 
 #include "dart/utils/sdf/detail/geometry_parsers.hpp"
 
-#include "dart/common/Diagnostics.hpp"
-#include "dart/common/Uri.hpp"
+#include "dart/common/diagnostics.hpp"
+#include "dart/common/uri.hpp"
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>

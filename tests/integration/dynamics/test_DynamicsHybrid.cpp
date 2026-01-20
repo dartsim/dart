@@ -1,10 +1,10 @@
 #include "helpers/dynamics_helpers.hpp"
 
 #include "DynamicsTestFixture.hpp"
-#include "dart/dynamics/Inertia.hpp"
-#include "dart/io/Read.hpp"
-#include "dart/math/Random.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/dynamics/inertia.hpp"
+#include "dart/io/read.hpp"
+#include "dart/math/random.hpp"
+#include "dart/simulation/world.hpp"
 
 using namespace dart;
 using namespace simulation;

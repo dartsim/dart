@@ -34,17 +34,17 @@
 #define DART_UTILS_MJCF_DETAIL_MUJOCOMODEL_HPP_
 
 #include <dart/utils/export.hpp>
-#include <dart/utils/mjcf/detail/Asset.hpp>
-#include <dart/utils/mjcf/detail/Compiler.hpp>
-#include <dart/utils/mjcf/detail/Default.hpp>
-#include <dart/utils/mjcf/detail/Equality.hpp>
-#include <dart/utils/mjcf/detail/Error.hpp>
-#include <dart/utils/mjcf/detail/Option.hpp>
-#include <dart/utils/mjcf/detail/Size.hpp>
-#include <dart/utils/mjcf/detail/Worldbody.hpp>
+#include <dart/utils/mjcf/detail/asset.hpp>
+#include <dart/utils/mjcf/detail/compiler.hpp>
+#include <dart/utils/mjcf/detail/default.hpp>
+#include <dart/utils/mjcf/detail/equality.hpp>
+#include <dart/utils/mjcf/detail/error.hpp>
+#include <dart/utils/mjcf/detail/option.hpp>
+#include <dart/utils/mjcf/detail/size.hpp>
+#include <dart/utils/mjcf/detail/worldbody.hpp>
 
-#include <dart/common/Uri.hpp>
 #include <dart/common/resource_retriever.hpp>
+#include <dart/common/uri.hpp>
 
 #include <tinyxml2.h>
 

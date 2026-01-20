@@ -33,8 +33,8 @@
 #include "dart/math/lcp/projection/pgs_solver.hpp"
 
 #include "dart/math/lcp/lcp_validation.hpp"
-#include "dart/math/lcp/pivoting/dantzig/Common.hpp"
-#include "dart/math/lcp/pivoting/dantzig/Misc.hpp"
+#include "dart/math/lcp/pivoting/dantzig/common.hpp"
+#include "dart/math/lcp/pivoting/dantzig/misc.hpp"
 
 #include <algorithm>
 #include <iterator>

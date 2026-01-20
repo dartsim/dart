@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_HPP_
 
-#include <dart/dynamics/Node.hpp>
+#include <dart/dynamics/node.hpp>
 
 #include <dart/Export.hpp>
 

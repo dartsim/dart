@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Aspect.hpp"
+#include "dart/common/aspect.hpp"
 
-#include "dart/common/Logging.hpp"
+#include "dart/common/logging.hpp"
 
 #include <iostream>
 #include <string>

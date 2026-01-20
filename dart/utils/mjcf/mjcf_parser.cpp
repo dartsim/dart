@@ -34,15 +34,15 @@
 
 #include "dart/collision/All.hpp"
 #include "dart/common/All.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/config.hpp"
 #include "dart/constraint/All.hpp"
 #include "dart/dynamics/All.hpp"
 #include "dart/utils/composite_resource_retriever.hpp"
 #include "dart/utils/dart_resource_retriever.hpp"
-#include "dart/utils/mjcf/detail/Utils.hpp"
-#include "dart/utils/mjcf/detail/Worldbody.hpp"
 #include "dart/utils/mjcf/detail/mujoco_model.hpp"
+#include "dart/utils/mjcf/detail/utils.hpp"
+#include "dart/utils/mjcf/detail/worldbody.hpp"
 #include "dart/utils/xml_helpers.hpp"
 
 #include <Eigen/Dense>

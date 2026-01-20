@@ -36,11 +36,11 @@
 #include "dart/collision/collision_group.hpp"
 #include "dart/collision/fcl/fcl_collision_detector.hpp"
 #include "dart/constraint/contact_surface.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/shape_node.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
 #include <gtest/gtest.h>
 

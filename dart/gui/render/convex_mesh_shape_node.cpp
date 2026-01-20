@@ -34,8 +34,8 @@
 
 #include "dart/dynamics/convex_mesh_shape.hpp"
 #include "dart/dynamics/simple_frame.hpp"
-#include "dart/gui/Utils.hpp"
 #include "dart/gui/shape_frame_node.hpp"
+#include "dart/gui/utils.hpp"
 
 #include <osg/CullFace>
 #include <osg/Depth>

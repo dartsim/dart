@@ -33,9 +33,9 @@
 #ifndef DART_GUI_GRIDVISUAL_HPP_
 #define DART_GUI_GRIDVISUAL_HPP_
 
-#include <dart/gui/Viewer.hpp>
 #include <dart/gui/export.hpp>
 #include <dart/gui/shape_frame_node.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <dart/dynamics/fwd.hpp>
 

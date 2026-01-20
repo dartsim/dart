@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/math/lcp/pivoting/dantzig/Matrix.hpp>
+#include <dart/math/lcp/pivoting/dantzig/matrix.hpp>
 
 #include <Eigen/Dense>
 #include <benchmark/benchmark.h>

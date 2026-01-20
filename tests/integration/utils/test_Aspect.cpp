@@ -36,11 +36,11 @@
 #define DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
 
 #include "../../helpers/GTestUtils.hpp"
-#include "dart/common/Composite.hpp"
-#include "dart/common/Subject.hpp"
+#include "dart/common/composite.hpp"
 #include "dart/common/embedded_aspect.hpp"
 #include "dart/common/specialized_for_aspect.hpp"
 #include "dart/common/sub_ptr.hpp"
+#include "dart/common/subject.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/euler_joint.hpp"

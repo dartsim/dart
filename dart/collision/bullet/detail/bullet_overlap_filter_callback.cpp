@@ -35,7 +35,7 @@
 #include "dart/collision/bullet/bullet_collision_group.hpp"
 #include "dart/collision/bullet/bullet_collision_object.hpp"
 #include "dart/collision/collision_filter.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
 namespace dart {
 namespace collision {

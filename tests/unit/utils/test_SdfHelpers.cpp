@@ -5,8 +5,8 @@
 
 #include <dart/dynamics/sphere_shape.hpp>
 
-#include <dart/common/Uri.hpp>
 #include <dart/common/local_resource_retriever.hpp>
+#include <dart/common/uri.hpp>
 
 #include <gtest/gtest.h>
 

@@ -32,8 +32,8 @@
 
 #include "dart/common/memory_allocator.hpp"
 
-#include "dart/common/CAllocator.hpp"
-#include "dart/common/Logging.hpp"
+#include "dart/common/callocator.hpp"
+#include "dart/common/logging.hpp"
 
 namespace dart::common {
 

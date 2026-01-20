@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Diagnostics.hpp"
+#include "dart/common/diagnostics.hpp"
 #include "dart/config.hpp"
 #include "dart/utils/dart_resource_retriever.hpp"
 

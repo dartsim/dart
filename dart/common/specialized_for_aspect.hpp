@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_SPECIALIZEDFORASPECT_HPP_
 #define DART_COMMON_SPECIALIZEDFORASPECT_HPP_
 
-#include <dart/common/Composite.hpp>
-#include <dart/common/Virtual.hpp>
+#include <dart/common/composite.hpp>
 #include <dart/common/composite_joiner.hpp>
+#include <dart/common/virtual.hpp>
 
 namespace dart {
 namespace common {

@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/mjcf/detail/Body.hpp"
+#include "dart/utils/mjcf/detail/body.hpp"
 
-#include "dart/common/Macros.hpp"
-#include "dart/utils/mjcf/detail/Compiler.hpp"
-#include "dart/utils/mjcf/detail/Size.hpp"
-#include "dart/utils/mjcf/detail/Types.hpp"
-#include "dart/utils/mjcf/detail/Utils.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/utils/mjcf/detail/compiler.hpp"
+#include "dart/utils/mjcf/detail/size.hpp"
+#include "dart/utils/mjcf/detail/types.hpp"
+#include "dart/utils/mjcf/detail/utils.hpp"
 #include "dart/utils/xml_helpers.hpp"
 
 namespace dart {

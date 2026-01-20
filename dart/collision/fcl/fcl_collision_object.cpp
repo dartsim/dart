@@ -32,12 +32,12 @@
 
 #include "dart/collision/fcl/fcl_collision_object.hpp"
 
-#include "dart/collision/fcl/FCLTypes.hpp"
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/collision/fcl/fcl_types.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/shape_frame.hpp"
 #include "dart/dynamics/shape_node.hpp"
+#include "dart/dynamics/skeleton.hpp"
 #include "dart/dynamics/soft_mesh_shape.hpp"
 
 namespace dart {

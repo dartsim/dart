@@ -32,8 +32,8 @@
 
 #include "dart/gui/polyhedron_visual.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/math/Geometry.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/math/geometry.hpp"
 
 #include <osg/StateSet>
 

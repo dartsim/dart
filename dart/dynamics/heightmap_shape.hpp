@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_HEIGHTMAPSHAPE_HPP_
 #define DART_DYNAMICS_HEIGHTMAPSHAPE_HPP_
 
-#include <dart/dynamics/Shape.hpp>
+#include <dart/dynamics/shape.hpp>
 
 #include <span>
 

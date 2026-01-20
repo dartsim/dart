@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/arrow_shape.hpp"
 
-#include "dart/math/Constants.hpp"
+#include "dart/math/constants.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -35,7 +35,7 @@
 
 #include "dart/utils/sdf/detail/sdf_helpers.hpp"
 
-#include <dart/dynamics/Shape.hpp>
+#include <dart/dynamics/shape.hpp>
 
 #include <dart/common/resource_retriever.hpp>
 

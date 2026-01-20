@@ -2,7 +2,7 @@
 
 #include "common/type_casters.hpp"
 #include "dart/constraint/joint_coulomb_friction_constraint.hpp"
-#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/joint.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

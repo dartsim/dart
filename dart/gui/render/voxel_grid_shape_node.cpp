@@ -36,7 +36,7 @@
 
   #include "dart/dynamics/simple_frame.hpp"
   #include "dart/dynamics/voxel_grid_shape.hpp"
-  #include "dart/gui/Utils.hpp"
+  #include "dart/gui/utils.hpp"
 
   #include <osg/CullFace>
   #include <osg/Depth>

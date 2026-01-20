@@ -7,7 +7,7 @@
 
 #include <dart/math/optimization/gradient_descent_solver.hpp>
 
-#include <dart/common/Deprecated.hpp>
+#include <dart/common/deprecated.hpp>
 
 namespace dart {
 namespace optimizer {

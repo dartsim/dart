@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <dart/gui/Viewer.hpp>
 #include <dart/gui/camera_mode.hpp>
 #include <dart/gui/default_event_handler.hpp>
 #include <dart/gui/drag_and_drop.hpp>
@@ -24,4 +23,5 @@
 #include <dart/gui/shape_frame_node.hpp>
 #include <dart/gui/support_polygon_visual.hpp>
 #include <dart/gui/trackball_manipulator.hpp>
+#include <dart/gui/viewer.hpp>
 #include <dart/gui/world_node.hpp>

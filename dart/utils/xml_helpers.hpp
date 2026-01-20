@@ -35,10 +35,10 @@
 
 #include <dart/utils/export.hpp>
 
-#include <dart/math/Geometry.hpp>
+#include <dart/math/geometry.hpp>
 #include <dart/math/math_types.hpp>
 
-#include <dart/common/Logging.hpp>
+#include <dart/common/logging.hpp>
 #include <dart/common/resource_retriever.hpp>
 
 #include <Eigen/Dense>

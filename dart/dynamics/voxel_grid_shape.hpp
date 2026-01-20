@@ -39,8 +39,8 @@
 
   #include <dart/collision/fcl/backward_compatibility.hpp>
 
-  #include <dart/dynamics/Frame.hpp>
-  #include <dart/dynamics/Shape.hpp>
+  #include <dart/dynamics/frame.hpp>
+  #include <dart/dynamics/shape.hpp>
 
   #include <octomap/octomap.h>
 

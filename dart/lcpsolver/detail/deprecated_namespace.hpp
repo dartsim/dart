@@ -1,7 +1,7 @@
 #ifndef DART_LCPSOLVER_DETAIL_DEPRECATEDNAMESPACE_HPP_
 #define DART_LCPSOLVER_DETAIL_DEPRECATEDNAMESPACE_HPP_
 
-#include "dart/common/Deprecated.hpp"
+#include "dart/common/deprecated.hpp"
 
 #if !defined(DART_LCPSOLVER_SUPPRESS_DEPRECATED_HEADER_WARNING)
   #if defined(_MSC_VER)

@@ -34,7 +34,7 @@
 
 #include "dart/collision/ode/ode_collision_detector.hpp"
 #include "dart/collision/ode/ode_collision_object.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
 #include <memory>
 

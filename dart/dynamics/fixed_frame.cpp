@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/fixed_frame.hpp"
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
 namespace dart {
 namespace dynamics {

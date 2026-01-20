@@ -31,15 +31,15 @@
  */
 
 #include "dart/constraint/constraint_solver.hpp"
-#include "dart/dynamics/Group.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/free_joint.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/dynamics/group.hpp"
+#include "dart/dynamics/skeleton.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <dart/dynamics/sphere_shape.hpp>
 
-#include <dart/common/String.hpp>
+#include <dart/common/string.hpp>
 
 #include <gtest/gtest.h>
 

@@ -33,8 +33,8 @@
 #ifndef DART_COMMON_COMPOSITEJOINER_HPP_
 #define DART_COMMON_COMPOSITEJOINER_HPP_
 
-#include <dart/common/Composite.hpp>
-#include <dart/common/Empty.hpp>
+#include <dart/common/composite.hpp>
+#include <dart/common/empty.hpp>
 
 namespace dart {
 namespace common {

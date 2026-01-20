@@ -32,7 +32,7 @@
 
 #include "../../helpers/GTestUtils.hpp"
 
-#include <dart/math/Random.hpp>
+#include <dart/math/random.hpp>
 
 #include <gtest/gtest.h>
 

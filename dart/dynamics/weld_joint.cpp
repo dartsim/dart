@@ -32,12 +32,12 @@
 
 #include "dart/dynamics/weld_joint.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/common/logging.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/fixed_frame.hpp"
-#include "dart/math/Geometry.hpp"
-#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/skeleton.hpp"
+#include "dart/math/geometry.hpp"
+#include "dart/math/helpers.hpp"
 
 #include <string>
 #include <vector>

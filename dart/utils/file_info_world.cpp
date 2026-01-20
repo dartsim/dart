@@ -32,7 +32,7 @@
 
 #include "dart/utils/file_info_world.hpp"
 
-#include "dart/simulation/Recording.hpp"
+#include "dart/simulation/recording.hpp"
 
 #include <fstream>
 #include <string>

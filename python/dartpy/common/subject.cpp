@@ -1,6 +1,6 @@
 #include "common/subject.hpp"
 
-#include "dart/common/Subject.hpp"
+#include "dart/common/subject.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

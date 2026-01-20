@@ -1,6 +1,6 @@
 #include "common/logging.hpp"
 
-#include "dart/common/Logging.hpp"
+#include "dart/common/logging.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>

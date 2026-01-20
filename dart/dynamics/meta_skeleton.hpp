@@ -33,15 +33,15 @@
 #ifndef DART_DYNAMICS_METASKELETON_HPP_
 #define DART_DYNAMICS_METASKELETON_HPP_
 
-#include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/invalid_index.hpp>
 
-#include <dart/math/Geometry.hpp>
+#include <dart/math/geometry.hpp>
 
-#include <dart/common/Deprecated.hpp>
-#include <dart/common/Signal.hpp>
-#include <dart/common/Subject.hpp>
+#include <dart/common/deprecated.hpp>
 #include <dart/common/lockable_reference.hpp>
+#include <dart/common/signal.hpp>
+#include <dart/common/subject.hpp>
 
 #include <dart/Export.hpp>
 

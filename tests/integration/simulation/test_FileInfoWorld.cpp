@@ -32,12 +32,12 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
-#include "dart/io/Read.hpp"
-#include "dart/math/Geometry.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/dynamics/skeleton.hpp"
+#include "dart/io/read.hpp"
+#include "dart/math/geometry.hpp"
+#include "dart/simulation/world.hpp"
 #include "dart/utils/file_info_world.hpp"
 
 #include <gtest/gtest.h>

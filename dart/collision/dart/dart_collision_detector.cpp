@@ -34,10 +34,10 @@
 
 #include "dart/collision/collision_filter.hpp"
 #include "dart/collision/collision_object.hpp"
-#include "dart/collision/dart/DARTCollide.hpp"
+#include "dart/collision/dart/dart_collide.hpp"
 #include "dart/collision/dart/dart_collision_group.hpp"
 #include "dart/collision/dart/dart_collision_object.hpp"
-#include "dart/common/Logging.hpp"
+#include "dart/common/logging.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/ellipsoid_shape.hpp"
 #include "dart/dynamics/shape_frame.hpp"

@@ -33,7 +33,7 @@
 #ifndef DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_
 #define DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
 #include <cmath>
 

@@ -33,7 +33,7 @@
 #include "dart/collision/collision_result.hpp"
 
 #include "dart/collision/collision_object.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/shape_frame.hpp"
 #include "dart/dynamics/shape_node.hpp"

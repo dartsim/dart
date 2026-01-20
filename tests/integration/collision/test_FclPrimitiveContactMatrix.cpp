@@ -33,11 +33,11 @@
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/fcl/fcl_collision_detector.hpp>
 
-#include <dart/dynamics/Frame.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/cone_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
+#include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/plane_shape.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/sphere_shape.hpp>

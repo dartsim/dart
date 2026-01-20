@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_DETAIL_EMBEDDEDASPECT_HPP_
 #define DART_COMMON_DETAIL_EMBEDDEDASPECT_HPP_
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
-#include <dart/common/Aspect.hpp>
+#include <dart/common/aspect.hpp>
 #include <dart/common/stl_helpers.hpp>
 
 namespace dart {

@@ -38,9 +38,9 @@
 
 #include <dart/dynamics/fwd.hpp>
 
-#include <dart/common/Observer.hpp>
-#include <dart/common/Subject.hpp>
 #include <dart/common/class_with_virtual_base.hpp>
+#include <dart/common/observer.hpp>
+#include <dart/common/subject.hpp>
 
 #include <Eigen/Core>
 #include <osgGA/GUIEventHandler>

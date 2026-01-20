@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/mjcf/detail/Compiler.hpp"
+#include "dart/utils/mjcf/detail/compiler.hpp"
 
 #include "dart/utils/xml_helpers.hpp"
 

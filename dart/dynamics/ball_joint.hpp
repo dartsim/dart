@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/detail/ball_joint_aspect.hpp>
 
-#include <dart/math/Geometry.hpp>
+#include <dart/math/geometry.hpp>
 
 #include <dart/Export.hpp>
 

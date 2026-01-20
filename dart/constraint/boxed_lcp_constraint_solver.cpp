@@ -32,8 +32,8 @@
 
 #include "dart/constraint/boxed_lcp_constraint_solver.hpp"
 
-#include "dart/common/Diagnostics.hpp"
-#include "dart/common/Logging.hpp"
+#include "dart/common/diagnostics.hpp"
+#include "dart/common/logging.hpp"
 #include "dart/constraint/dantzig_boxed_lcp_solver.hpp"
 #include "dart/constraint/pgs_boxed_lcp_solver.hpp"
 #include "dart/math/lcp/lcp_utils.hpp"

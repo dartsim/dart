@@ -32,9 +32,9 @@
 
 #include "dart/constraint/balance_constraint.hpp"
 
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/end_effector.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
 namespace dart {
 namespace constraint {

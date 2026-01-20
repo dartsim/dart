@@ -38,9 +38,9 @@
 #include <dart/gui/export.hpp>
 #include <dart/gui/fwd.hpp>
 
-#include <dart/dynamics/Entity.hpp>
-#include <dart/dynamics/Shape.hpp>
+#include <dart/dynamics/entity.hpp>
 #include <dart/dynamics/fwd.hpp>
+#include <dart/dynamics/shape.hpp>
 
 #include <dart/common/sub_ptr.hpp>
 

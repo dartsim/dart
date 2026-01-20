@@ -32,8 +32,8 @@
 
 #include "dart/collision/ode/detail/ode_cylinder_mesh.hpp"
 
-#include "dart/common/Macros.hpp"
-#include "dart/math/Helpers.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/math/helpers.hpp"
 
 #include <Eigen/Core>
 

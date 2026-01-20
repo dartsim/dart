@@ -34,7 +34,7 @@
 
 #include "dart/dynamics/simple_frame.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
-#include "dart/gui/Utils.hpp"
+#include "dart/gui/utils.hpp"
 
 #include <osg/BlendFunc>
 #include <osg/CullFace>

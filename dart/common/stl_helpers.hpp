@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_STLHELPERS_HPP_
 #define DART_COMMON_STLHELPERS_HPP_
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
-#include <dart/common/Memory.hpp>
+#include <dart/common/memory.hpp>
 
 #include <span>
 #include <vector>

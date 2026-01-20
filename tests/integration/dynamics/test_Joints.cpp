@@ -35,7 +35,6 @@
 #include "helpers/dynamics_helpers.hpp"
 
 #include "dart/constraint/coupler_constraint.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/ball_joint.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/euler_joint.hpp"
@@ -46,14 +45,15 @@
 #include "dart/dynamics/prismatic_joint.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/screw_joint.hpp"
+#include "dart/dynamics/skeleton.hpp"
 #include "dart/dynamics/translational_joint.hpp"
 #include "dart/dynamics/translational_joint2_d.hpp"
 #include "dart/dynamics/universal_joint.hpp"
 #include "dart/dynamics/weld_joint.hpp"
-#include "dart/io/Read.hpp"
-#include "dart/math/Geometry.hpp"
-#include "dart/math/Helpers.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/io/read.hpp"
+#include "dart/math/geometry.hpp"
+#include "dart/math/helpers.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <gtest/gtest.h>
 

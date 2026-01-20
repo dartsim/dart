@@ -32,11 +32,11 @@
 
 #include "dart/dynamics/pyramid_shape.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/cylinder_shape.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
-#include "dart/math/Helpers.hpp"
+#include "dart/math/helpers.hpp"
 
 #include <cmath>
 

@@ -1,6 +1,6 @@
 #include "utils/urdf_parser.hpp"
 
-#include "dart/dynamics/Inertia.hpp"
+#include "dart/dynamics/inertia.hpp"
 #include "dart/utils/urdf/urdf_parser.hpp"
 
 #include <nanobind/nanobind.h>

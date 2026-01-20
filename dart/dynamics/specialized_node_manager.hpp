@@ -36,7 +36,7 @@
 #include <dart/dynamics/detail/basic_node_manager.hpp>
 #include <dart/dynamics/node_manager_joiner.hpp>
 
-#include <dart/common/Virtual.hpp>
+#include <dart/common/virtual.hpp>
 
 namespace dart {
 namespace dynamics {

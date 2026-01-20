@@ -32,8 +32,8 @@
 
 #include "dart/dynamics/meta_skeleton.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/degree_of_freedom.hpp"
 #include "dart/dynamics/jacobian_node.hpp"

@@ -32,11 +32,11 @@
 
 #include "dart/dynamics/hierarchical_ik.hpp"
 
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/degree_of_freedom.hpp"
 #include "dart/dynamics/end_effector.hpp"
+#include "dart/dynamics/skeleton.hpp"
 #include "dart/math/optimization/gradient_descent_solver.hpp"
 
 namespace dart {

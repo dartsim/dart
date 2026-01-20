@@ -33,7 +33,7 @@
 #include "dart/collision/bullet/bullet_collision_object.hpp"
 
 #include "dart/collision/bullet/bullet_types.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/shape_frame.hpp"
 
 namespace dart {

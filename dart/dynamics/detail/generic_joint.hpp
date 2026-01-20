@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_GenericJoint_HPP_
 #define DART_DYNAMICS_DETAIL_GenericJoint_HPP_
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
 #include <dart/config.hpp>
 
@@ -41,8 +41,8 @@
 #include <dart/dynamics/degree_of_freedom.hpp>
 #include <dart/dynamics/generic_joint.hpp>
 
-#include <dart/math/Helpers.hpp>
 #include <dart/math/configuration_space.hpp>
+#include <dart/math/helpers.hpp>
 
 #include <sstream>
 

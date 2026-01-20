@@ -2,9 +2,9 @@
 
 #include "common/eigen_utils.hpp"
 #include "common/repr.hpp"
-#include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
+#include "dart/dynamics/shape.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
 #include "dart/math/tri_mesh.hpp"
 

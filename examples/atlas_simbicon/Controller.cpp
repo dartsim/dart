@@ -35,7 +35,7 @@
 #include "State.hpp"
 #include "StateMachine.hpp"
 #include "TerminalCondition.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
 using namespace std;
 

@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/ik_fast.hpp"
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/degree_of_freedom.hpp"
 #include "dart/dynamics/ikfast.h"

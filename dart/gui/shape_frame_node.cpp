@@ -32,7 +32,6 @@
 
 #include "dart/gui/shape_frame_node.hpp"
 
-#include "dart/gui/Utils.hpp"
 #include "dart/gui/render/box_shape_node.hpp"
 #include "dart/gui/render/capsule_shape_node.hpp"
 #include "dart/gui/render/cone_shape_node.hpp"
@@ -48,6 +47,7 @@
 #include "dart/gui/render/shape_node.hpp"
 #include "dart/gui/render/soft_mesh_shape_node.hpp"
 #include "dart/gui/render/sphere_shape_node.hpp"
+#include "dart/gui/utils.hpp"
 
 #include <osg/Geode>
 #include <osg/Group>
@@ -55,14 +55,14 @@
 #if DART_HAVE_OCTOMAP
   #include "dart/gui/render/voxel_grid_shape_node.hpp"
 #endif
-#include "dart/dynamics/Entity.hpp"
-#include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/capsule_shape.hpp"
 #include "dart/dynamics/cone_shape.hpp"
 #include "dart/dynamics/convex_mesh_shape.hpp"
 #include "dart/dynamics/cylinder_shape.hpp"
 #include "dart/dynamics/ellipsoid_shape.hpp"
+#include "dart/dynamics/entity.hpp"
+#include "dart/dynamics/frame.hpp"
 #include "dart/dynamics/line_segment_shape.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/dynamics/multi_sphere_convex_hull_shape.hpp"

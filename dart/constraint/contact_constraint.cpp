@@ -33,12 +33,12 @@
 #include "dart/constraint/contact_constraint.hpp"
 
 #include "dart/collision/collision_object.hpp"
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
-#include "dart/math/Constants.hpp"
-#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/skeleton.hpp"
+#include "dart/math/constants.hpp"
+#include "dart/math/helpers.hpp"
 
 #include <iostream>
 

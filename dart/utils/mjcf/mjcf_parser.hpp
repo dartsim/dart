@@ -35,10 +35,10 @@
 
 #include <dart/utils/export.hpp>
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/common/Uri.hpp>
 #include <dart/common/local_resource_retriever.hpp>
+#include <dart/common/uri.hpp>
 
 #include <string>
 #include <string_view>

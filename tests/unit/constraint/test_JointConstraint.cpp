@@ -33,8 +33,8 @@
 #include "../../helpers/GTestUtils.hpp"
 #include "dart/constraint/JointConstraint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
-#include "dart/dynamics/Skeleton.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/dynamics/skeleton.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <gtest/gtest.h>
 

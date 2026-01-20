@@ -32,20 +32,20 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include "dart/common/Resource.hpp"
-#include "dart/common/Uri.hpp"
+#include "dart/common/resource.hpp"
 #include "dart/common/resource_retriever.hpp"
+#include "dart/common/uri.hpp"
 #include "dart/config.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/dynamics/planar_joint.hpp"
 #include "dart/dynamics/prismatic_joint.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/screw_joint.hpp"
+#include "dart/dynamics/skeleton.hpp"
 #include "dart/dynamics/soft_body_node.hpp"
 #include "dart/dynamics/universal_joint.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/simulation/world.hpp"
 #include "dart/utils/sdf/sdf_parser.hpp"
 
 #include <gtest/gtest.h>

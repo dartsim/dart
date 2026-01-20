@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/detail/free_joint_aspect.hpp>
 
-#include <dart/common/Deprecated.hpp>
+#include <dart/common/deprecated.hpp>
 
 #include <dart/Export.hpp>
 

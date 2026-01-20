@@ -32,7 +32,7 @@
 
 #include "dart/constraint/dantzig_boxed_lcp_solver.hpp"
 
-#include "dart/common/Diagnostics.hpp"
+#include "dart/common/diagnostics.hpp"
 #include "dart/math/lcp/lcp_types.hpp"
 #include "dart/math/lcp/lcp_utils.hpp"
 #include "dart/math/lcp/pivoting/dantzig_solver.hpp"

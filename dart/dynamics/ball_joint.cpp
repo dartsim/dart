@@ -32,10 +32,10 @@
 
 #include "dart/dynamics/ball_joint.hpp"
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/degree_of_freedom.hpp"
-#include "dart/math/Geometry.hpp"
-#include "dart/math/Helpers.hpp"
+#include "dart/math/geometry.hpp"
+#include "dart/math/helpers.hpp"
 
 #include <array>
 #include <string>

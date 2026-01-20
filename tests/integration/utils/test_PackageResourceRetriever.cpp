@@ -31,7 +31,7 @@
  */
 
 #include "../../helpers/common_helpers.hpp"
-#include "dart/common/Diagnostics.hpp"
+#include "dart/common/diagnostics.hpp"
 #include "dart/config.hpp"
 #include "dart/utils/package_resource_retriever.hpp"
 

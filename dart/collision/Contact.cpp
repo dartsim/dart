@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/Contact.hpp"
+#include "dart/collision/contact.hpp"
 
 #include "dart/collision/collision_object.hpp"
 #include "dart/dynamics/body_node.hpp"

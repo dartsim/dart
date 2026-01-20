@@ -32,13 +32,13 @@
 
 #include "../../helpers/GTestUtils.hpp"
 #include "dart/constraint/balance_constraint.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/end_effector.hpp"
 #include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/hierarchical_ik.hpp"
 #include "dart/dynamics/prismatic_joint.hpp"
-#include "dart/math/Geometry.hpp"
+#include "dart/dynamics/skeleton.hpp"
+#include "dart/math/geometry.hpp"
 
 #include <gtest/gtest.h>
 

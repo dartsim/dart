@@ -33,8 +33,8 @@
 #ifndef DART_COMMON_SHAREDLIBRARY_HPP_
 #define DART_COMMON_SHAREDLIBRARY_HPP_
 
-#include <dart/common/Filesystem.hpp>
-#include <dart/common/Platform.hpp>
+#include <dart/common/filesystem.hpp>
+#include <dart/common/platform.hpp>
 
 #include <memory>
 #include <string>

@@ -33,13 +33,13 @@
 #ifndef DART_GUI_RENDER_HEIGHTMAPSHAPENODE_HPP_
 #define DART_GUI_RENDER_HEIGHTMAPSHAPENODE_HPP_
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
 #include <dart/config.hpp>
 
-#include <dart/gui/Utils.hpp>
 #include <dart/gui/render/detail/heightmap_shape_geometry.hpp>
 #include <dart/gui/render/shape_node.hpp>
+#include <dart/gui/utils.hpp>
 
 #include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/simple_frame.hpp>

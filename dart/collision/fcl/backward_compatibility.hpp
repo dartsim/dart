@@ -35,7 +35,7 @@
 
 #include <dart/config.hpp>
 
-#include <dart/common/Diagnostics.hpp>
+#include <dart/common/diagnostics.hpp>
 
 #include <dart/Export.hpp>
 

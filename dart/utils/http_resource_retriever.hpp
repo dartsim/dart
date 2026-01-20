@@ -35,7 +35,7 @@
 
 #include <dart/utils/export.hpp>
 
-#include <dart/common/Filesystem.hpp>
+#include <dart/common/filesystem.hpp>
 #include <dart/common/local_resource_retriever.hpp>
 #include <dart/common/resource_retriever.hpp>
 

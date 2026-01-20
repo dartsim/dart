@@ -32,7 +32,7 @@
 
 #include "../../helpers/GTestUtils.hpp"
 #include "dart/dynamics/body_node.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/simulation/world.hpp"
 #include "dart/utils/sdf/sdf_parser.hpp"
 
 #include <gtest/gtest.h>

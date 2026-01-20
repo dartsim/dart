@@ -32,7 +32,7 @@
 
 #include "dart/utils/mjcf/detail/joint_attributes.hpp"
 
-#include "dart/utils/mjcf/detail/Body.hpp"
+#include "dart/utils/mjcf/detail/body.hpp"
 #include "dart/utils/xml_helpers.hpp"
 
 namespace dart {

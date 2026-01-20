@@ -32,7 +32,7 @@
 
 #include "../../helpers/GTestUtils.hpp"
 
-#include <dart/common/Logging.hpp>
+#include <dart/common/logging.hpp>
 // For version macros
 #include <dart/config.hpp>
 

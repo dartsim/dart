@@ -34,8 +34,8 @@
 
 #if DART_HAVE_OCTOMAP
 
-  #include "dart/common/Logging.hpp"
-  #include "dart/math/Helpers.hpp"
+  #include "dart/common/logging.hpp"
+  #include "dart/math/helpers.hpp"
 
 namespace dart {
 namespace dynamics {

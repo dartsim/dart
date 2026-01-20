@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/mjcf/detail/Error.hpp"
+#include "dart/utils/mjcf/detail/error.hpp"
 
 namespace dart {
 namespace utils {

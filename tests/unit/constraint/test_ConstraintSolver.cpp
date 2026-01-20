@@ -9,9 +9,9 @@
 
 #include "dart/constraint/constraint_solver.hpp"
 #include "dart/constraint/contact_surface.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/skeleton.hpp"
 #include "dart/math/lcp/lcp_solver.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <gtest/gtest.h>
 

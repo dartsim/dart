@@ -33,10 +33,10 @@
 #ifndef DART_DYNAMICS_SHAPENODE_HPP_
 #define DART_DYNAMICS_SHAPENODE_HPP_
 
-#include <dart/dynamics/Inertia.hpp>
 #include <dart/dynamics/detail/shape_node.hpp>
+#include <dart/dynamics/inertia.hpp>
 
-#include <dart/common/Signal.hpp>
+#include <dart/common/signal.hpp>
 
 #include <dart/Export.hpp>
 

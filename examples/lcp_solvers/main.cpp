@@ -35,7 +35,7 @@
 #include <dart/gui/im_gui_widget.hpp>
 #include <dart/gui/include_im_gui.hpp>
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/simple_frame.hpp>

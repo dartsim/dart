@@ -1,8 +1,8 @@
 #include "optimizer/solver.hpp"
 
-#include "dart/common/Diagnostics.hpp"
-#include "dart/math/optimization/Problem.hpp"
-#include "dart/math/optimization/Solver.hpp"
+#include "dart/common/diagnostics.hpp"
+#include "dart/math/optimization/problem.hpp"
+#include "dart/math/optimization/solver.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

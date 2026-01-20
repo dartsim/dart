@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include "dart/common/Macros.hpp"
-#include "dart/math/lcp/pivoting/dantzig/Common.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/math/lcp/pivoting/dantzig/common.hpp"
 
 #include <Eigen/Core>
 

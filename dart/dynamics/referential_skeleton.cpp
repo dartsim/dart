@@ -32,10 +32,10 @@
 
 #include "dart/dynamics/referential_skeleton.hpp"
 
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/Joint.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/joint.hpp"
 #include "dart/dynamics/soft_body_node.hpp"
 
 #include <algorithm>

@@ -35,11 +35,11 @@
 
 #include <dart/utils/export.hpp>
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
-#include <dart/common/Deprecated.hpp>
+#include <dart/common/deprecated.hpp>
 #include <dart/common/resource_retriever.hpp>
 
 namespace dart {

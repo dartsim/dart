@@ -43,7 +43,7 @@
 
 #include <dart/math/lcp/lcp_solver.hpp>
 
-#include <dart/common/Deprecated.hpp>
+#include <dart/common/deprecated.hpp>
 
 #include <dart/Export.hpp>
 

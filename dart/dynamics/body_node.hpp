@@ -35,21 +35,21 @@
 
 #include <dart/config.hpp>
 
-#include <dart/dynamics/Frame.hpp>
-#include <dart/dynamics/Inertia.hpp>
-#include <dart/dynamics/Marker.hpp>
-#include <dart/dynamics/Node.hpp>
 #include <dart/dynamics/detail/body_node_aspect.hpp>
 #include <dart/dynamics/end_effector.hpp>
+#include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/fwd.hpp>
+#include <dart/dynamics/inertia.hpp>
+#include <dart/dynamics/marker.hpp>
+#include <dart/dynamics/node.hpp>
 #include <dart/dynamics/specialized_node_manager.hpp>
 #include <dart/dynamics/templated_jacobian_node.hpp>
 
-#include <dart/math/Geometry.hpp>
+#include <dart/math/geometry.hpp>
 
-#include <dart/common/Deprecated.hpp>
-#include <dart/common/Signal.hpp>
+#include <dart/common/deprecated.hpp>
 #include <dart/common/embedded_aspect.hpp>
+#include <dart/common/signal.hpp>
 
 #include <dart/Export.hpp>
 

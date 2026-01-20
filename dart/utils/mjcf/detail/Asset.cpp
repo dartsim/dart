@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/mjcf/detail/Asset.hpp"
+#include "dart/utils/mjcf/detail/asset.hpp"
 
 #include "dart/utils/xml_helpers.hpp"
 

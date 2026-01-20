@@ -36,9 +36,9 @@
 
 #include <dart/dynamics/All.hpp>
 
-#include <dart/math/Random.hpp>
+#include <dart/math/random.hpp>
 
-#include <dart/io/Read.hpp>
+#include <dart/io/read.hpp>
 
 #include <benchmark/benchmark.h>
 

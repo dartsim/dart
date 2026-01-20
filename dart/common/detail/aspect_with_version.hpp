@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_DETAIL_ASPECTWITHVERSION_HPP_
 #define DART_COMMON_DETAIL_ASPECTWITHVERSION_HPP_
 
-#include <dart/common/Aspect.hpp>
+#include <dart/common/aspect.hpp>
 #include <dart/common/stl_helpers.hpp>
 
 namespace dart {

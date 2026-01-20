@@ -34,10 +34,10 @@
 
 #include "dart/All.hpp"
 #include "dart/config.hpp"
-#include "dart/math/Constants.hpp"
-#include "dart/math/Helpers.hpp"
+#include "dart/math/constants.hpp"
+#include "dart/math/helpers.hpp"
 
-#include <dart/io/Read.hpp>
+#include <dart/io/read.hpp>
 
 #include <gtest/gtest.h>
 

@@ -32,7 +32,7 @@
 
 #include "dart/utils/sdf/detail/sdf_helpers.hpp"
 
-#include <dart/common/Uri.hpp>
+#include <dart/common/uri.hpp>
 
 #include <cmath>
 

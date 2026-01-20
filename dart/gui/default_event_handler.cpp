@@ -32,13 +32,13 @@
 
 #include "dart/gui/default_event_handler.hpp"
 
-#include "dart/dynamics/Entity.hpp"
+#include "dart/dynamics/entity.hpp"
 #include "dart/dynamics/shape_frame.hpp"
-#include "dart/gui/Utils.hpp"
-#include "dart/gui/Viewer.hpp"
 #include "dart/gui/mouse_event_handler.hpp"
 #include "dart/gui/render/shape_node.hpp"
 #include "dart/gui/shape_frame_node.hpp"
+#include "dart/gui/utils.hpp"
+#include "dart/gui/viewer.hpp"
 
 #include <osgGA/GUIEventAdapter>
 

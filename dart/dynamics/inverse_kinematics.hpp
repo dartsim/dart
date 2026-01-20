@@ -36,14 +36,14 @@
 #include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/jacobian_node.hpp>
 
-#include <dart/math/Geometry.hpp>
-#include <dart/math/optimization/Function.hpp>
-#include <dart/math/optimization/Problem.hpp>
-#include <dart/math/optimization/Solver.hpp>
+#include <dart/math/geometry.hpp>
+#include <dart/math/optimization/function.hpp>
+#include <dart/math/optimization/problem.hpp>
+#include <dart/math/optimization/solver.hpp>
 
-#include <dart/common/Signal.hpp>
-#include <dart/common/Subject.hpp>
+#include <dart/common/signal.hpp>
 #include <dart/common/sub_ptr.hpp>
+#include <dart/common/subject.hpp>
 
 #include <dart/Export.hpp>
 

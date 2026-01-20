@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dynamics/Inertia.hpp>
+#include <dart/dynamics/inertia.hpp>
 
-#include <dart/math/Geometry.hpp>
-#include <dart/math/Random.hpp>
+#include <dart/math/geometry.hpp>
+#include <dart/math/random.hpp>
 
 #include <gtest/gtest.h>
 

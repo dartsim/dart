@@ -36,8 +36,8 @@
 #include "dart/collision/collision_option.hpp"
 #include "dart/collision/collision_result.hpp"
 #include "dart/collision/dart/dart_collision_detector.hpp"
-#include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/shape.hpp"
 #include "dart/dynamics/simple_frame.hpp"
 
 #include <gtest/gtest.h>

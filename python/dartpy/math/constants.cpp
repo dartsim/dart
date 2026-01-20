@@ -32,7 +32,7 @@
 
 #include "math/constants.hpp"
 
-#include "dart/math/Constants.hpp"
+#include "dart/math/constants.hpp"
 
 #include <nanobind/nanobind.h>
 
