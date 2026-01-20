@@ -1,10 +1,11 @@
-# Reference Collision Libraries: FCL, Bullet, ODE
+# Reference Collision Libraries: FCL, Bullet, ODE, libccd
 
 ## Scope and sources (local snapshot)
 
 - FCL: `/home/js/dev/physics/fcl` (commit 83a2ed2, 2026-01-15; 5 commits in last 12 months)
 - Bullet: `/home/js/dev/physics/bullet3` (commit 63c4d67e3, 2025-10-21; 5 commits in last 12 months)
 - ODE: `/home/js/dev/physics/ODE` (commit bcfb66cd, 2024-01-14; 0 commits in last 12 months)
+- libccd: `/home/js/dev/physics/libccd` (commit 7931e76, 2018-12-22; 0 commits in last 12 months)
 - Sources used: README files plus public headers and source trees in each repo.
 - This is a snapshot. Refresh before release or external publication.
 
@@ -31,6 +32,13 @@
 - Strengths: simple integration; multiple broadphase "spaces"; straightforward primitives.
 - Gaps: no general distance query API; limited CCD; slower recent development.
 
+### libccd (convex-only algorithms)
+
+- Goal: minimal C library for convex-convex queries using support functions.
+- Design: GJK intersection/separation + EPA penetration; MPR intersection/penetration.
+- Strengths: small, portable, easy to embed; MPR reference implementation.
+- Gaps: no broadphase, no mesh or concave shapes, no raycast, no general distance.
+
 ## Feature comparison (from local source trees)
 
 ### Query types
@@ -43,6 +51,19 @@
 | Raycast                                     | N   | Y      | Y   | FCL has no public ray API found; ODE uses ray geom       |
 | Continuous collision (CCD / time of impact) | Y   | Y      | N   | FCL continuousCollide; Bullet convex sweep / convex cast |
 | Broadphase group queries                    | Y   | Y      | Y   | FCL managers; Bullet broadphase; ODE spaces              |
+
+### Convex-only reference (libccd)
+
+| Capability                | libccd | Notes                                       |
+| ------------------------- | ------ | ------------------------------------------- |
+| Intersect (GJK)           | Y      | `ccdGJKIntersect`                           |
+| Penetration (EPA)         | Y      | `ccdGJKPenetration`                         |
+| Intersect (MPR)           | Y      | `ccdMPRIntersect`                           |
+| Penetration (MPR)         | Y      | `ccdMPRPenetration`                         |
+| Separation vector         | Y      | `ccdGJKSeparate` (for intersecting objects) |
+| Distance / closest points | N      | No explicit distance query                  |
+| Raycast                   | N      |                                             |
+| Broadphase                | N      |                                             |
 
 ### Shape types (core)
 
@@ -74,6 +95,7 @@
 - FCL: GJK and EPA (internal or libccd), specialized primitive solvers (sphere-sphere, box-box SAT, sphere-box, etc); mesh and mesh-mesh via BVH with multiple BV types (AABB, OBB, RSS, OBBRSS, kDOP, kIOS).
 - Bullet: GJK/EPA (btGjkPairDetector, btGjkEpa), MPR (btMprPenetration), polyhedral contact clipping, specialized box-box; persistent manifolds; mesh via BvhTriangleMeshShape (static concave) and GImpact (dynamic concave).
 - ODE: analytic primitives plus libccd for convex (GJK/EPA); triangle mesh via OPCODE or GIMPACT; ray-mesh in collision_trimesh_ray.
+- libccd: GJK/EPA + MPR only, convex-only, driven by user-defined support functions.
 
 ## Performance notes (architecture-informed, not benchmarked here)
 
@@ -83,11 +105,12 @@
 
 ## Dev activity snapshot (local repos)
 
-| Library | Last commit (date) | Last commit summary                       | Commits last 12 months |
-| ------- | ------------------ | ----------------------------------------- | ---------------------- |
-| FCL     | 2026-01-15         | Feat: Check for local gtest first         | 5                      |
-| Bullet  | 2025-10-21         | add pyproject.toml                        | 5                      |
-| ODE     | 2024-01-14         | Cosmetic: Commentary spelling corrections | 0                      |
+| Library | Last commit (date) | Last commit summary                                                                               | Commits last 12 months |
+| ------- | ------------------ | ------------------------------------------------------------------------------------------------- | ---------------------- |
+| FCL     | 2026-01-15         | Feat: Check for local gtest first                                                                 | 5                      |
+| Bullet  | 2025-10-21         | add pyproject.toml                                                                                | 5                      |
+| ODE     | 2024-01-14         | Cosmetic: Commentary spelling corrections                                                         | 0                      |
+| libccd  | 2018-12-22         | Fixed division by zero in the computation of a direction vector in ccdMPRPenetration. (fixes #49) | 0                      |
 
 ## Takeaways and recommendations for DART experimental collision
 
@@ -95,6 +118,7 @@
 - Provide a complete query set: collision + contacts, signed distance + closest points, raycast, and CCD (sweep + time of impact) for all shapes.
 - Offer multiple broadphase strategies (dynamic AABB tree, sweep and prune, spatial hash) with a clear default and deterministic ordering.
 - Keep narrowphase specialized and fast for primitives, but retain a robust GJK/EPA path for convex and mesh.
+- Keep a clean support-function interface (libccd style) to enable custom convex shapes and fast experimentation.
 - Add persistent manifold caching and contact reduction options to match Bullet stability while keeping exact geometry modes for accuracy.
 - Make determinism a first-class option (stable ordering, fixed tolerances, reproducible queries) while still enabling fast paths.
 - Invest in mesh robustness: edge and vertex welding, triangle adjacency hints, and BVH refit for moving meshes.
