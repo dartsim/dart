@@ -38,6 +38,7 @@
 - Design: GJK intersection/separation + EPA penetration; MPR intersection/penetration.
 - Strengths: small, portable, easy to embed; MPR reference implementation.
 - Gaps: no broadphase, no mesh or concave shapes, no raycast, no general distance.
+- Caution: reported to have algorithmic bugs/edge cases in practice; treat as a reference, not a drop-in.
 
 ## Feature comparison (from local source trees)
 
@@ -130,6 +131,7 @@
 - Keep narrowphase specialized and fast for primitives, but retain a robust GJK/EPA path for convex and mesh.
 - Keep a clean support-function interface (libccd style) to enable custom convex shapes and fast experimentation.
 - Make batch query performance a first-class goal: stable IDs, cached pairs/manifolds, and benchmarks reporting queries/sec for scene-scale sweeps.
+- If porting or adapting libccd logic, add exhaustive unit tests (edge cases, degeneracies, iteration limits) to validate every algorithm path.
 - Add persistent manifold caching and contact reduction options to match Bullet stability while keeping exact geometry modes for accuracy.
 - Make determinism a first-class option (stable ordering, fixed tolerances, reproducible queries) while still enabling fast paths.
 - Invest in mesh robustness: edge and vertex welding, triangle adjacency hints, and BVH refit for moving meshes.
