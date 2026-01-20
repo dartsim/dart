@@ -30,6 +30,16 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_G
   target_compile_options(INTEGRATION_collision_FclPrimitiveContactMatrixFcl PRIVATE -Wno-cpp)
 endif()
 
+if(DART_BUILD_COLLISION_EXPERIMENTAL)
+  dart_add_test(
+    "integration"
+    INTEGRATION_collision_ExperimentalBackendConsistency
+    collision/test_ExperimentalBackendConsistency.cpp)
+  target_link_libraries(
+    INTEGRATION_collision_ExperimentalBackendConsistency
+    dart-collision-experimental)
+endif()
+
 # Additional collision tests
 if(TARGET dart-utils-urdf)
   dart_add_test("integration" INTEGRATION_collision_SelfCollisionFiltering collision/test_SelfCollisionFiltering.cpp)
