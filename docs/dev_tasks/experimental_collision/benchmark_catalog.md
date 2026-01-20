@@ -38,7 +38,7 @@ Recorded (partial), Baseline only, TBA.
 
 | Suite / Case                      | Benchmarks                                                      | Backends                     | Results status                     |
 | --------------------------------- | --------------------------------------------------------------- | ---------------------------- | ---------------------------------- |
-| Comparative narrow-phase (sweep)  | `tests/benchmark/collision/comparative/bm_narrow_phase.cpp`     | Experimental/FCL/Bullet/ODE  | Recorded (capsule fallback issues) |
+| Comparative narrow-phase (sweep)  | `tests/benchmark/collision/comparative/bm_narrow_phase.cpp`     | Experimental/FCL/Bullet/ODE  | Recorded (cylinder-box mismatch)   |
 | Comparative distance (sweep)      | `tests/benchmark/collision/comparative/bm_distance.cpp`         | Experimental/FCL/Bullet/ODE  | Recorded (Bullet/ODE warnings)     |
 | Comparative raycast (single)      | `tests/benchmark/collision/comparative/bm_raycast.cpp`          | Experimental/Bullet          | Recorded                           |
 | Mixed primitives (dense/sparse)   | `tests/benchmark/collision/scenarios/bm_mixed_primitives.cpp`   | Experimental/FCL/Bullet/ODE  | Recorded                           |
@@ -48,7 +48,7 @@ Recorded (partial), Baseline only, TBA.
 | CCD microbench                    | `tests/benchmark/collision/experimental/bm_ccd.cpp`             | Experimental                 | TBA                                |
 | libccd microbench                 | `tests/benchmark/collision/experimental/bm_libccd.cpp`          | DART/libccd                  | Recorded                           |
 | Baseline microbench               | `tests/benchmark/collision/bm_experimental.cpp`                 | Experimental                 | Baseline only (historical)         |
-| Baseline comparative              | `tests/benchmark/collision/bm_comparative.cpp`                  | Experimental/FCL/Bullet/ODE  | Historical; build broken (API)     |
+| Baseline comparative              | `tests/benchmark/collision/bm_comparative.cpp`                  | Experimental/FCL/Bullet/ODE  | Recorded (build fixed; depth warn) |
 | SDF compare                       | `dart/collision/experimental/benchmarks/bm_sdf_compare.cpp`     | Experimental (+ Voxblox opt) | TBA                                |
 
 ## Unit test coverage status
@@ -59,8 +59,8 @@ Status labels: Implemented, Partial, TBA.
 | -------------------------------------- | ----------- | ---------------------------------------------------------------- |
 | Contact manifold invariants            | Partial     | `isTypeCompatible()` covered; add deterministic reduction test.  |
 | Broadphase determinism (pair ordering) | Implemented | Deterministic ordering tests in `test_*` broadphase suites.      |
-| CollisionWorld ordering                | Partial     | `raycastAll` ordering + repeatability covered; `collideAll` TBD. |
-| Distance edge cases / scale sweeps     | Partial     | Add unit tests for 1e-3/1/1e3 regimes + thin features.           |
+| CollisionWorld ordering                | Implemented | `raycastAll` + `collideAll` ordering and repeatability tests added. |
+| Distance edge cases / scale sweeps     | Partial     | Sphere-sphere scale sweep added; thin features + grazing cases TBD. |
 | Raycast edge cases                     | Partial     | Add near-parallel/inside-origin + ordering tests at world level. |
 | CCD shape casts                        | Implemented | Extensive sphere/capsule cast coverage in `test_ccd.cpp`.        |
 | SDF fields + gradients                 | Implemented | Dense SDF/TSDF/ESDF + Voxblox optional comparisons.              |
@@ -129,11 +129,10 @@ Status labels: Implemented, Partial, TBA.
 
 ## Priority next steps (testing + benchmarking)
 
-1. Add `CollisionWorld::collideAll` ordering + repeatability tests.
-2. Add unit tests for distance/raycast edge-case regimes (grazing, thin features, extreme scales).
-3. Add cross-backend raycast consistency tests (where supported).
-4. Implement heightfield/terrain and compound/aggregate benchmark scenarios.
-5. Extend shape-cast benchmarks beyond sphere/capsule and add thread-scaling runs.
+1. Add unit tests for distance/raycast edge-case regimes (grazing, thin features, extreme scales).
+2. Add cross-backend raycast consistency tests (where supported).
+3. Implement heightfield/terrain and compound/aggregate benchmark scenarios.
+4. Extend shape-cast benchmarks beyond sphere/capsule and add thread-scaling runs.
 
 ## Per-query, per-shape case checklist
 

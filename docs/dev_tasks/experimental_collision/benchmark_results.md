@@ -149,6 +149,7 @@ Summary (valid cases only):
 
 Baseline numbers from `bm_comparative.cpp` before the structured suite. Keep
 these for historical context; current results are in the summary table above.
+A rerun of `bm_comparative` is captured in the 2026-01-20 entry above.
 
 **Narrow-phase performance comparison (lower is better):**
 
@@ -176,7 +177,7 @@ these for historical context; current results are in the summary table above.
 
 ## Run 2026-01-20 — libccd microbench
 
-- **Branch / Commit**: `feature/new_coll` / `1fac7c64227`
+- **Branch / Commit**: `feature/new_coll` / `e1b474aeb80`
 - **Build**: `Release` (build/default/cpp/Release)
 - **CPU**: 13th Gen Intel(R) Core(TM) i9-13950HX
 - **OS**: Ubuntu 25.10
@@ -185,16 +186,16 @@ these for historical context; current results are in the summary table above.
   - libccd from pixi env (`.pixi/envs/default`), since the local libccd CMakeLists target name collides with the already-imported `ccd` target.
   - `--benchmark_min_time=0.05s`.
 - **Command**:
-  - `pixi run bm bm_experimental_libccd -- --benchmark_min_time=0.05s --benchmark_format=json --benchmark_out=docs/dev_tasks/experimental_collision/results/bm_experimental_libccd_2026-01-20_012403.json`
+  - `build/default/cpp/Release/bin/bm_experimental_libccd --benchmark_min_time=0.05s --benchmark_out=build/default/cpp/Release/benchmarks/bm_experimental_libccd_20260120_025817.json --benchmark_out_format=json`
 - **Raw Output**:
-  - `docs/dev_tasks/experimental_collision/results/bm_experimental_libccd_2026-01-20_012403.json`
+  - `build/default/cpp/Release/benchmarks/bm_experimental_libccd_20260120_025817.json`
 
 Summary (speedup = libccd time / experimental time):
 
-- GJK sphere-sphere: 0.46x (experimental 2.16x slower).
-- GJK+EPA sphere-sphere: 12,763x (experimental faster).
-- MPR sphere-sphere: 0.88x (experimental 1.14x slower).
-- GJK box-box: 0.53x (experimental 1.88x slower).
+- GJK sphere-sphere: 0.71x (experimental ~1.4x slower).
+- GJK+EPA sphere-sphere: 14,186x (experimental faster).
+- MPR sphere-sphere: 1.03x (experimental ~3% faster).
+- GJK box-box: 0.51x (experimental ~2.0x slower).
 
 ## Run 2026-01-20 — Raycast comparative + batch scenarios
 

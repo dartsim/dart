@@ -377,7 +377,7 @@ See `parallelization_plan.md` for the full roadmap.
 ## Blockers
 
 - ~~**AabbTree segfault**: Crash in `combine()` during object creation.~~ **FIXED** (2026-01-20)
-- `bm_comparative.cpp` fails to build due to CollisionWorld API drift
-  (`CollisionWorld::addObject` removed; `CollisionObject` ctor mismatch).
-- `bm_comparative_narrow_phase` capsule-related accuracy checks invalid because
-  CapsuleShape falls back to a tiny sphere in the experimental adapter.
+- `bm_comparative_narrow_phase` accuracy mismatch for Cylinder-Box (Experimental
+  reports no collision, FCL reports collision).
+- `bm_comparative` accuracy warns on box-box depth (expected ~0.2, got ~1.2);
+  needs consistency check vs FCL contact depth interpretation.
