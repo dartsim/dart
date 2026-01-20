@@ -38,6 +38,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <array>
 #include <functional>
 
 namespace dart::collision::experimental {
@@ -52,10 +53,13 @@ struct DART_COLLISION_EXPERIMENTAL_API GjkResult
   Eigen::Vector3d closestPointA = Eigen::Vector3d::Zero();
   Eigen::Vector3d closestPointB = Eigen::Vector3d::Zero();
   Eigen::Vector3d separationAxis = Eigen::Vector3d::Zero();
+  std::array<Eigen::Vector3d, 4> simplex = {};
+  int simplexSize = 0;
 };
 
 struct DART_COLLISION_EXPERIMENTAL_API EpaResult
 {
+  bool success = false;
   double depth = 0.0;
   Eigen::Vector3d normal = Eigen::Vector3d::Zero();
   Eigen::Vector3d pointOnA = Eigen::Vector3d::Zero();

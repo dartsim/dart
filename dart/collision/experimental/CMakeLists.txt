@@ -34,6 +34,7 @@ set(component_name collision-experimental)
 # Source files - start minimal, add as we implement
 add_library(${target_name}
   aabb.cpp
+  broad_phase/aabb_tree.cpp
   broad_phase/brute_force.cpp
   collision_object.cpp
   collision_world.cpp

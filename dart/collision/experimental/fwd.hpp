@@ -51,6 +51,7 @@ class CollisionObject;
 class CollisionGroup;
 
 class BroadPhase;
+class AabbTreeBroadPhase;
 class BruteForceBroadPhase;
 
 struct BatchSettings;
