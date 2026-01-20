@@ -48,6 +48,7 @@ strategy, but do not yet prove performance characteristics.
    - Static/moving ratio: 90/10 to test incremental updates.
 
 3. **Collect profiler reports**
+   - Use the driver in `docs/dev_tasks/experimental_collision/rp3d_profile_driver.cpp`.
    - Use `PhysicsWorld::getProfiler()` and `Profiler::addFileDestination()`.
    - Warm up for N frames; call `Profiler::reset()` before measurement.
    - Capture `Profiler::printReport()` after M frames.

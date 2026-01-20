@@ -7,6 +7,7 @@ Last updated: 2026-01-19
 
 - Repo: `/home/js/dev/physics/reactphysics3d`
 - Build: `build_profile` with `IS_RP3D_PROFILING_ENABLED`
+- Driver: `docs/dev_tasks/experimental_collision/rp3d_profile_driver.cpp`
 - Shapes: spheres only (radius 0.5)
 - Velocities: zero (static positions, dynamic bodies)
 - Steps: warmup 1, measure 2 (10k) or 3 (1k)
