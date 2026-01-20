@@ -191,6 +191,51 @@ TEST(CollisionWorld, UpdateObject)
 }
 
 //==============================================================================
+// CollisionWorld Raycast tests
+//==============================================================================
+
+TEST(CollisionWorldRaycast, RaycastAllOrderingAndRepeatability)
+{
+  CollisionWorld world;
+
+  Eigen::Isometry3d tfFar = Eigen::Isometry3d::Identity();
+  tfFar.translation() = Eigen::Vector3d(6, 0, 0);
+  world.createObject(std::make_unique<SphereShape>(1.0), tfFar);
+
+  Eigen::Isometry3d tfNear = Eigen::Isometry3d::Identity();
+  tfNear.translation() = Eigen::Vector3d(3, 0, 0);
+  world.createObject(std::make_unique<SphereShape>(1.0), tfNear);
+
+  Eigen::Isometry3d tfMiss = Eigen::Isometry3d::Identity();
+  tfMiss.translation() = Eigen::Vector3d(0, 5, 0);
+  world.createObject(std::make_unique<SphereShape>(1.0), tfMiss);
+
+  Ray ray(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0));
+  RaycastOption option;
+
+  std::vector<RaycastResult> results;
+  ASSERT_TRUE(world.raycastAll(ray, option, results));
+  ASSERT_EQ(results.size(), 2u);
+
+  EXPECT_LT(results[0].distance, results[1].distance);
+  EXPECT_NEAR(results[0].distance, 2.0, 1e-10);
+  EXPECT_NEAR(results[1].distance, 5.0, 1e-10);
+
+  for (int i = 0; i < 5; ++i) {
+    std::vector<RaycastResult> repeat;
+    ASSERT_TRUE(world.raycastAll(ray, option, repeat));
+    ASSERT_EQ(repeat.size(), results.size());
+    for (std::size_t j = 0; j < repeat.size(); ++j) {
+      EXPECT_EQ(repeat[j].hit, results[j].hit);
+      EXPECT_NEAR(repeat[j].distance, results[j].distance, 1e-10);
+      EXPECT_NEAR(repeat[j].point.x(), results[j].point.x(), 1e-10);
+      EXPECT_NEAR(repeat[j].point.y(), results[j].point.y(), 1e-10);
+      EXPECT_NEAR(repeat[j].point.z(), results[j].point.z(), 1e-10);
+    }
+  }
+}
+
+//==============================================================================
 // CollisionWorld SphereCast tests
 //==============================================================================
 
