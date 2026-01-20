@@ -461,3 +461,31 @@ TEST(AabbTreeBroadPhase, QueryPairsWithOutput)
   EXPECT_EQ(out[0].first, 0);
   EXPECT_EQ(out[0].second, 1);
 }
+
+TEST(AabbTreeBroadPhase, QueryPairsFiltered)
+{
+  AabbTreeBroadPhase bp;
+
+  bp.add(0, Aabb(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(3, 3, 3)));
+  bp.add(1, Aabb(Eigen::Vector3d(1, 1, 1), Eigen::Vector3d(4, 4, 4)));
+  bp.add(2, Aabb(Eigen::Vector3d(2, 2, 2), Eigen::Vector3d(5, 5, 5)));
+
+  auto allPairs = bp.queryPairs();
+  EXPECT_EQ(allPairs.size(), 3);
+
+  std::vector<BroadPhasePair> filtered;
+  bp.queryPairsFiltered(filtered, [](std::size_t id1, std::size_t id2) {
+    return id1 == 0 || id2 == 0;
+  });
+
+  EXPECT_EQ(filtered.size(), 2);
+  for (const auto& pair : filtered) {
+    EXPECT_TRUE(pair.first == 0 || pair.second == 0);
+  }
+
+  filtered.clear();
+  bp.queryPairsFiltered(filtered, [](std::size_t, std::size_t) {
+    return false;
+  });
+  EXPECT_TRUE(filtered.empty());
+}

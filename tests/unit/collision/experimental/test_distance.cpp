@@ -87,6 +87,32 @@ TEST(DistanceSphereSphere, Penetrating)
   EXPECT_NEAR(dist, -1.0, 1e-6);
 }
 
+TEST(DistanceSphereSphere, ScaleRegimes)
+{
+  const double scales[] = {1e-3, 1.0, 1e3};
+
+  for (double scale : scales) {
+    SphereShape s1(scale);
+    SphereShape s2(scale);
+
+    Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+    Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+    tf2.translation() = Eigen::Vector3d(3.0 * scale, 0, 0);
+
+    DistanceResult result;
+    double dist = distanceSphereSphere(s1, tf1, s2, tf2, result);
+
+    double tol = 1e-6;
+    if (scale > 1.0) {
+      tol = 1e-6 * scale;
+    }
+
+    EXPECT_NEAR(dist, scale, tol);
+    EXPECT_NEAR(result.pointOnObject1.x(), scale, tol);
+    EXPECT_NEAR(result.pointOnObject2.x(), 2.0 * scale, tol);
+  }
+}
+
 TEST(DistanceSphereBox, Separated)
 {
   SphereShape sphere(1.0);

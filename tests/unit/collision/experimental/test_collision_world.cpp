@@ -35,6 +35,8 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+
 using namespace dart::collision::experimental;
 
 TEST(CollisionWorld, EmptyWorld)
@@ -188,6 +190,121 @@ TEST(CollisionWorld, UpdateObject)
 
   result.clear();
   EXPECT_TRUE(world.collide(option, result));
+}
+
+//==============================================================================
+// CollisionWorld CollideAll tests
+//==============================================================================
+
+TEST(CollisionWorld, CollideAllOrderingAndRepeatability)
+{
+  CollisionWorld world;
+  const double radius = 1.0;
+
+  Eigen::Isometry3d tf0 = Eigen::Isometry3d::Identity();
+  tf0.translation() = Eigen::Vector3d(3.0, 0, 0);
+  auto obj0 = world.createObject(std::make_unique<SphereShape>(radius), tf0);
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  tf1.translation() = Eigen::Vector3d(0.0, 0, 0);
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(radius), tf1);
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(radius), tf2);
+
+  const std::size_t id0 = static_cast<std::size_t>(obj0.getEntity());
+  const std::size_t id1 = static_cast<std::size_t>(obj1.getEntity());
+  const std::size_t id2 = static_cast<std::size_t>(obj2.getEntity());
+
+  std::vector<BroadPhasePair> expectedPairs;
+  expectedPairs.emplace_back(std::min(id0, id2), std::max(id0, id2));
+  expectedPairs.emplace_back(std::min(id1, id2), std::max(id1, id2));
+  std::sort(expectedPairs.begin(), expectedPairs.end());
+
+  CollisionOption option;
+
+  auto snapshot = world.buildBroadPhaseSnapshot();
+  ASSERT_EQ(snapshot.pairs.size(), expectedPairs.size());
+  EXPECT_EQ(snapshot.pairs, expectedPairs);
+
+  CollisionResult baseline;
+  ASSERT_TRUE(world.collideAll(snapshot, option, baseline));
+  ASSERT_EQ(baseline.numContacts(), snapshot.pairs.size());
+  ASSERT_EQ(baseline.numManifolds(), snapshot.pairs.size());
+
+  auto getCenter = [&](std::size_t id) -> Eigen::Vector3d {
+    if (id == id0) {
+      return tf0.translation();
+    }
+    if (id == id1) {
+      return tf1.translation();
+    }
+    return tf2.translation();
+  };
+
+  struct ExpectedContact
+  {
+    Eigen::Vector3d point = Eigen::Vector3d::Zero();
+    Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+    double depth = 0.0;
+  };
+
+  std::vector<ExpectedContact> expectedContacts;
+  expectedContacts.reserve(snapshot.pairs.size());
+  for (const auto& pair : snapshot.pairs) {
+    const Eigen::Vector3d c1 = getCenter(pair.first);
+    const Eigen::Vector3d c2 = getCenter(pair.second);
+    const Eigen::Vector3d diff = c2 - c1;
+    const double dist = diff.norm();
+    const double penetration = 2.0 * radius - dist;
+
+    ExpectedContact expected;
+    if (dist < 1e-10) {
+      expected.normal = Eigen::Vector3d::UnitZ();
+      expected.point = c1;
+    } else {
+      expected.normal = -diff / dist;
+      expected.point = c1 + expected.normal * (-radius + penetration * 0.5);
+    }
+    expected.depth = penetration;
+    expectedContacts.push_back(expected);
+  }
+
+  for (std::size_t i = 0; i < expectedContacts.size(); ++i) {
+    const auto& contact = baseline.getContact(i);
+    const auto& expected = expectedContacts[i];
+
+    EXPECT_NEAR(contact.position.x(), expected.point.x(), 1e-10);
+    EXPECT_NEAR(contact.position.y(), expected.point.y(), 1e-10);
+    EXPECT_NEAR(contact.position.z(), expected.point.z(), 1e-10);
+    EXPECT_NEAR(contact.normal.x(), expected.normal.x(), 1e-10);
+    EXPECT_NEAR(contact.normal.y(), expected.normal.y(), 1e-10);
+    EXPECT_NEAR(contact.normal.z(), expected.normal.z(), 1e-10);
+    EXPECT_NEAR(contact.depth, expected.depth, 1e-10);
+  }
+
+  for (int iteration = 0; iteration < 5; ++iteration) {
+    auto repeatSnapshot = world.buildBroadPhaseSnapshot();
+    EXPECT_EQ(repeatSnapshot.pairs, snapshot.pairs);
+
+    CollisionResult repeat;
+    ASSERT_TRUE(world.collideAll(repeatSnapshot, option, repeat));
+    ASSERT_EQ(repeat.numContacts(), baseline.numContacts());
+    ASSERT_EQ(repeat.numManifolds(), baseline.numManifolds());
+
+    for (std::size_t i = 0; i < repeat.numContacts(); ++i) {
+      const auto& baseContact = baseline.getContact(i);
+      const auto& repeatContact = repeat.getContact(i);
+      EXPECT_NEAR(repeatContact.position.x(), baseContact.position.x(), 1e-10);
+      EXPECT_NEAR(repeatContact.position.y(), baseContact.position.y(), 1e-10);
+      EXPECT_NEAR(repeatContact.position.z(), baseContact.position.z(), 1e-10);
+      EXPECT_NEAR(repeatContact.normal.x(), baseContact.normal.x(), 1e-10);
+      EXPECT_NEAR(repeatContact.normal.y(), baseContact.normal.y(), 1e-10);
+      EXPECT_NEAR(repeatContact.normal.z(), baseContact.normal.z(), 1e-10);
+      EXPECT_NEAR(repeatContact.depth, baseContact.depth, 1e-10);
+    }
+  }
 }
 
 //==============================================================================
@@ -470,4 +587,60 @@ TEST(CollisionWorldCapsuleCast, CapsuleCastAll)
   EXPECT_EQ(results.size(), 2u);
 
   EXPECT_LT(results[0].timeOfImpact, results[1].timeOfImpact);
+}
+
+//==============================================================================
+// Reusable Buffer API tests
+//==============================================================================
+
+TEST(CollisionWorldBroadPhase, BuildSnapshotReusableBuffer)
+{
+  CollisionWorld world;
+
+  world.createObject(
+      std::make_unique<SphereShape>(1.0), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
+  world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+
+  Eigen::Isometry3d tf3 = Eigen::Isometry3d::Identity();
+  tf3.translation() = Eigen::Vector3d(10, 0, 0);
+  world.createObject(std::make_unique<SphereShape>(1.0), tf3);
+
+  BroadPhaseSnapshot snapshot;
+  world.buildBroadPhaseSnapshot(snapshot);
+
+  EXPECT_EQ(snapshot.numObjects, 3u);
+  EXPECT_EQ(snapshot.pairs.size(), 1u);
+
+  std::size_t oldCapacity = snapshot.pairs.capacity();
+
+  world.buildBroadPhaseSnapshot(snapshot);
+
+  EXPECT_EQ(snapshot.pairs.capacity(), oldCapacity);
+  EXPECT_EQ(snapshot.pairs.size(), 1u);
+}
+
+TEST(CollisionWorldBroadPhase, BuildSnapshotWithSettingsReusableBuffer)
+{
+  CollisionWorld world;
+
+  world.createObject(
+      std::make_unique<SphereShape>(1.0), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
+  world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+
+  BatchSettings settings;
+  settings.deterministic = true;
+
+  BroadPhaseSnapshot snapshot;
+  world.buildBroadPhaseSnapshot(snapshot, settings);
+
+  EXPECT_EQ(snapshot.numObjects, 2u);
+  EXPECT_EQ(snapshot.pairs.size(), 1u);
+  EXPECT_EQ(snapshot.pairs[0].first, 0u);
+  EXPECT_LT(snapshot.pairs[0].first, snapshot.pairs[0].second);
 }
