@@ -31,10 +31,10 @@
  */
 
 #include <dart/collision/experimental/narrow_phase/plane_sphere.hpp>
-
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <algorithm>
+
 #include <cmath>
 
 namespace dart::collision::experimental {
@@ -51,10 +51,10 @@ bool collidePlaneSphere(
     return false;
   }
 
-  const Eigen::Vector3d worldNormal =
-      planeTransform.rotation() * plane.getNormal();
-  const Eigen::Vector3d planePoint =
-      planeTransform.translation() + worldNormal * plane.getOffset();
+  const Eigen::Vector3d worldNormal
+      = planeTransform.rotation() * plane.getNormal();
+  const Eigen::Vector3d planePoint
+      = planeTransform.translation() + worldNormal * plane.getOffset();
 
   const Eigen::Vector3d sphereCenter = sphereTransform.translation();
   const double radius = sphere.getRadius();
@@ -90,10 +90,10 @@ bool collidePlaneBox(
     return false;
   }
 
-  const Eigen::Vector3d worldNormal =
-      planeTransform.rotation() * plane.getNormal();
-  const Eigen::Vector3d planePoint =
-      planeTransform.translation() + worldNormal * plane.getOffset();
+  const Eigen::Vector3d worldNormal
+      = planeTransform.rotation() * plane.getNormal();
+  const Eigen::Vector3d planePoint
+      = planeTransform.translation() + worldNormal * plane.getOffset();
 
   const Eigen::Vector3d& halfExtents = box.getHalfExtents();
 
@@ -120,7 +120,8 @@ bool collidePlaneBox(
   }
 
   const double penetration = -minDist;
-  const Eigen::Vector3d contactPoint = deepestCorner + worldNormal * (penetration * 0.5);
+  const Eigen::Vector3d contactPoint
+      = deepestCorner + worldNormal * (penetration * 0.5);
 
   ContactPoint contact;
   contact.position = contactPoint;
@@ -144,10 +145,10 @@ bool collidePlaneCapsule(
     return false;
   }
 
-  const Eigen::Vector3d worldNormal =
-      planeTransform.rotation() * plane.getNormal();
-  const Eigen::Vector3d planePoint =
-      planeTransform.translation() + worldNormal * plane.getOffset();
+  const Eigen::Vector3d worldNormal
+      = planeTransform.rotation() * plane.getNormal();
+  const Eigen::Vector3d planePoint
+      = planeTransform.translation() + worldNormal * plane.getOffset();
 
   const double radius = capsule.getRadius();
   const double halfHeight = capsule.getHeight() * 0.5;
@@ -176,8 +177,8 @@ bool collidePlaneCapsule(
   }
 
   const double penetration = radius - minDist;
-  const Eigen::Vector3d contactPoint =
-      *closestEndpoint - worldNormal * (minDist - penetration * 0.5);
+  const Eigen::Vector3d contactPoint
+      = *closestEndpoint - worldNormal * (minDist - penetration * 0.5);
 
   ContactPoint contact;
   contact.position = contactPoint;
@@ -189,4 +190,4 @@ bool collidePlaneCapsule(
   return true;
 }
 
-}
+} // namespace dart::collision::experimental

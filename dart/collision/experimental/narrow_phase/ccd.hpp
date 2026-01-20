@@ -176,4 +176,4 @@ namespace dart::collision::experimental {
     const CcdOption& option,
     CcdResult& result);
 
-}
+} // namespace dart::collision::experimental

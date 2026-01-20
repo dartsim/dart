@@ -121,7 +121,7 @@ private:
   struct ObjectEntry
   {
     Aabb aabb;
-    std::vector<CellCoord> cells;  // Cells this object occupies
+    std::vector<CellCoord> cells; // Cells this object occupies
   };
 
   /// Compute the cell coordinate for a point
@@ -137,7 +137,7 @@ private:
   void removeFromGrid(std::size_t id, const std::vector<CellCoord>& cells);
 
   double cellSize_;
-  double inverseCellSize_;  // Cached 1.0 / cellSize for performance
+  double inverseCellSize_; // Cached 1.0 / cellSize for performance
 
   /// Main object storage: id -> (aabb, cells)
   std::unordered_map<std::size_t, ObjectEntry> objects_;
@@ -153,4 +153,4 @@ private:
   void rebuildOrderedIds();
 };
 
-}  // namespace dart::collision::experimental
+} // namespace dart::collision::experimental

@@ -31,7 +31,6 @@
  */
 
 #include <dart/collision/experimental/collision_object.hpp>
-
 #include <dart/collision/experimental/collision_world.hpp>
 #include <dart/collision/experimental/comps/collision_object.hpp>
 

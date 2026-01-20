@@ -51,4 +51,4 @@ class CapsuleShape;
     CollisionResult& result,
     const CollisionOption& option = CollisionOption());
 
-}
+} // namespace dart::collision::experimental

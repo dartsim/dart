@@ -30,8 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
-
 #include <dart/collision/experimental/narrow_phase/box_box.hpp>
 #include <dart/collision/experimental/narrow_phase/capsule_box.hpp>
 #include <dart/collision/experimental/narrow_phase/capsule_capsule.hpp>
@@ -40,6 +38,7 @@
 #include <dart/collision/experimental/narrow_phase/convex_convex.hpp>
 #include <dart/collision/experimental/narrow_phase/cylinder_collision.hpp>
 #include <dart/collision/experimental/narrow_phase/distance.hpp>
+#include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/experimental/narrow_phase/plane_sphere.hpp>
 #include <dart/collision/experimental/narrow_phase/raycast.hpp>
 #include <dart/collision/experimental/narrow_phase/sphere_box.hpp>
@@ -554,7 +553,8 @@ bool NarrowPhase::sphereCast(
   switch (type) {
     case ShapeType::Sphere: {
       const auto* s = static_cast<const SphereShape*>(shape);
-      bool hit = sphereCastSphere(sphereStart, sphereEnd, sphereRadius, *s, transform, option, result);
+      bool hit = sphereCastSphere(
+          sphereStart, sphereEnd, sphereRadius, *s, transform, option, result);
       if (hit) {
         result.object = &target;
       }
@@ -562,7 +562,8 @@ bool NarrowPhase::sphereCast(
     }
     case ShapeType::Box: {
       const auto* b = static_cast<const BoxShape*>(shape);
-      bool hit = sphereCastBox(sphereStart, sphereEnd, sphereRadius, *b, transform, option, result);
+      bool hit = sphereCastBox(
+          sphereStart, sphereEnd, sphereRadius, *b, transform, option, result);
       if (hit) {
         result.object = &target;
       }
@@ -570,7 +571,8 @@ bool NarrowPhase::sphereCast(
     }
     case ShapeType::Capsule: {
       const auto* c = static_cast<const CapsuleShape*>(shape);
-      bool hit = sphereCastCapsule(sphereStart, sphereEnd, sphereRadius, *c, transform, option, result);
+      bool hit = sphereCastCapsule(
+          sphereStart, sphereEnd, sphereRadius, *c, transform, option, result);
       if (hit) {
         result.object = &target;
       }
@@ -578,7 +580,8 @@ bool NarrowPhase::sphereCast(
     }
     case ShapeType::Cylinder: {
       const auto* c = static_cast<const CylinderShape*>(shape);
-      bool hit = sphereCastCylinder(sphereStart, sphereEnd, sphereRadius, *c, transform, option, result);
+      bool hit = sphereCastCylinder(
+          sphereStart, sphereEnd, sphereRadius, *c, transform, option, result);
       if (hit) {
         result.object = &target;
       }
@@ -586,7 +589,8 @@ bool NarrowPhase::sphereCast(
     }
     case ShapeType::Plane: {
       const auto* p = static_cast<const PlaneShape*>(shape);
-      bool hit = sphereCastPlane(sphereStart, sphereEnd, sphereRadius, *p, transform, option, result);
+      bool hit = sphereCastPlane(
+          sphereStart, sphereEnd, sphereRadius, *p, transform, option, result);
       if (hit) {
         result.object = &target;
       }
@@ -594,7 +598,8 @@ bool NarrowPhase::sphereCast(
     }
     case ShapeType::Convex: {
       const auto* c = static_cast<const ConvexShape*>(shape);
-      bool hit = sphereCastConvex(sphereStart, sphereEnd, sphereRadius, *c, transform, option, result);
+      bool hit = sphereCastConvex(
+          sphereStart, sphereEnd, sphereRadius, *c, transform, option, result);
       if (hit) {
         result.object = &target;
       }
@@ -602,7 +607,8 @@ bool NarrowPhase::sphereCast(
     }
     case ShapeType::Mesh: {
       const auto* m = static_cast<const MeshShape*>(shape);
-      bool hit = sphereCastMesh(sphereStart, sphereEnd, sphereRadius, *m, transform, option, result);
+      bool hit = sphereCastMesh(
+          sphereStart, sphereEnd, sphereRadius, *m, transform, option, result);
       if (hit) {
         result.object = &target;
       }
@@ -648,7 +654,8 @@ bool NarrowPhase::capsuleCast(
   switch (type) {
     case ShapeType::Sphere: {
       const auto* s = static_cast<const SphereShape*>(shape);
-      bool hit = capsuleCastSphere(capsuleStart, capsuleEnd, capsule, *s, transform, option, result);
+      bool hit = capsuleCastSphere(
+          capsuleStart, capsuleEnd, capsule, *s, transform, option, result);
       if (hit) {
         result.object = &target;
       }
@@ -656,7 +663,8 @@ bool NarrowPhase::capsuleCast(
     }
     case ShapeType::Box: {
       const auto* b = static_cast<const BoxShape*>(shape);
-      bool hit = capsuleCastBox(capsuleStart, capsuleEnd, capsule, *b, transform, option, result);
+      bool hit = capsuleCastBox(
+          capsuleStart, capsuleEnd, capsule, *b, transform, option, result);
       if (hit) {
         result.object = &target;
       }
@@ -664,7 +672,8 @@ bool NarrowPhase::capsuleCast(
     }
     case ShapeType::Capsule: {
       const auto* c = static_cast<const CapsuleShape*>(shape);
-      bool hit = capsuleCastCapsule(capsuleStart, capsuleEnd, capsule, *c, transform, option, result);
+      bool hit = capsuleCastCapsule(
+          capsuleStart, capsuleEnd, capsule, *c, transform, option, result);
       if (hit) {
         result.object = &target;
       }
@@ -672,7 +681,8 @@ bool NarrowPhase::capsuleCast(
     }
     case ShapeType::Plane: {
       const auto* p = static_cast<const PlaneShape*>(shape);
-      bool hit = capsuleCastPlane(capsuleStart, capsuleEnd, capsule, *p, transform, option, result);
+      bool hit = capsuleCastPlane(
+          capsuleStart, capsuleEnd, capsule, *p, transform, option, result);
       if (hit) {
         result.object = &target;
       }
@@ -680,7 +690,8 @@ bool NarrowPhase::capsuleCast(
     }
     case ShapeType::Cylinder: {
       const auto* c = static_cast<const CylinderShape*>(shape);
-      bool hit = capsuleCastCylinder(capsuleStart, capsuleEnd, capsule, *c, transform, option, result);
+      bool hit = capsuleCastCylinder(
+          capsuleStart, capsuleEnd, capsule, *c, transform, option, result);
       if (hit) {
         result.object = &target;
       }
@@ -688,7 +699,8 @@ bool NarrowPhase::capsuleCast(
     }
     case ShapeType::Convex: {
       const auto* c = static_cast<const ConvexShape*>(shape);
-      bool hit = capsuleCastConvex(capsuleStart, capsuleEnd, capsule, *c, transform, option, result);
+      bool hit = capsuleCastConvex(
+          capsuleStart, capsuleEnd, capsule, *c, transform, option, result);
       if (hit) {
         result.object = &target;
       }
@@ -696,7 +708,8 @@ bool NarrowPhase::capsuleCast(
     }
     case ShapeType::Mesh: {
       const auto* m = static_cast<const MeshShape*>(shape);
-      bool hit = capsuleCastMesh(capsuleStart, capsuleEnd, capsule, *m, transform, option, result);
+      bool hit = capsuleCastMesh(
+          capsuleStart, capsuleEnd, capsule, *m, transform, option, result);
       if (hit) {
         result.object = &target;
       }
@@ -723,4 +736,4 @@ bool NarrowPhase::isCapsuleCastSupported(ShapeType type)
   }
 }
 
-}
+} // namespace dart::collision::experimental

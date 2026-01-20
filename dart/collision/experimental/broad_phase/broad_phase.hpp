@@ -35,9 +35,10 @@
 #include <dart/collision/experimental/aabb.hpp>
 #include <dart/collision/experimental/export.hpp>
 
-#include <cstddef>
 #include <utility>
 #include <vector>
+
+#include <cstddef>
 
 namespace dart::collision::experimental {
 
@@ -54,8 +55,10 @@ public:
   virtual void remove(std::size_t id) = 0;
 
   [[nodiscard]] virtual std::vector<BroadPhasePair> queryPairs() const = 0;
-  [[nodiscard]] virtual std::vector<std::size_t> queryOverlapping(const Aabb& aabb) const = 0;
+  [[nodiscard]] virtual std::vector<std::size_t> queryOverlapping(
+      const Aabb& aabb) const
+      = 0;
   [[nodiscard]] virtual std::size_t size() const = 0;
 };
 
-}
+} // namespace dart::collision::experimental

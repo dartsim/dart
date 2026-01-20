@@ -49,7 +49,8 @@ public:
   void remove(std::size_t id) override;
 
   [[nodiscard]] std::vector<BroadPhasePair> queryPairs() const override;
-  [[nodiscard]] std::vector<std::size_t> queryOverlapping(const Aabb& aabb) const override;
+  [[nodiscard]] std::vector<std::size_t> queryOverlapping(
+      const Aabb& aabb) const override;
   [[nodiscard]] std::size_t size() const override;
 
 private:
@@ -59,4 +60,4 @@ private:
   void rebuildOrderedIds();
 };
 
-}
+} // namespace dart::collision::experimental

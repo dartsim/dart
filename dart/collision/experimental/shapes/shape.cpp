@@ -36,9 +36,7 @@
 
 namespace dart::collision::experimental {
 
-SphereShape::SphereShape(double radius) : radius_(radius)
-{
-}
+SphereShape::SphereShape(double radius) : radius_(radius) {}
 
 ShapeType SphereShape::getType() const
 {
@@ -55,7 +53,8 @@ double SphereShape::getRadius() const
   return radius_;
 }
 
-BoxShape::BoxShape(const Eigen::Vector3d& halfExtents) : halfExtents_(halfExtents)
+BoxShape::BoxShape(const Eigen::Vector3d& halfExtents)
+  : halfExtents_(halfExtents)
 {
 }
 
@@ -75,7 +74,7 @@ const Eigen::Vector3d& BoxShape::getHalfExtents() const
 }
 
 CapsuleShape::CapsuleShape(double radius, double height)
-    : radius_(radius), height_(height)
+  : radius_(radius), height_(height)
 {
 }
 
@@ -100,7 +99,7 @@ double CapsuleShape::getHeight() const
 }
 
 CylinderShape::CylinderShape(double radius, double height)
-    : radius_(radius), height_(height)
+  : radius_(radius), height_(height)
 {
 }
 
@@ -125,7 +124,7 @@ double CylinderShape::getHeight() const
 }
 
 PlaneShape::PlaneShape(const Eigen::Vector3d& normal, double offset)
-    : normal_(normal.normalized()), offset_(offset)
+  : normal_(normal.normalized()), offset_(offset)
 {
 }
 
@@ -152,7 +151,7 @@ double PlaneShape::getOffset() const
 }
 
 ConvexShape::ConvexShape(std::vector<Eigen::Vector3d> vertices)
-    : vertices_(std::move(vertices))
+  : vertices_(std::move(vertices))
 {
 }
 
@@ -205,7 +204,7 @@ Eigen::Vector3d ConvexShape::support(const Eigen::Vector3d& direction) const
 
 MeshShape::MeshShape(
     std::vector<Eigen::Vector3d> vertices, std::vector<Triangle> triangles)
-    : vertices_(std::move(vertices)), triangles_(std::move(triangles))
+  : vertices_(std::move(vertices)), triangles_(std::move(triangles))
 {
 }
 
@@ -284,4 +283,4 @@ const SignedDistanceField* SdfShape::getField() const
   return field_.get();
 }
 
-}
+} // namespace dart::collision::experimental

@@ -31,10 +31,10 @@
  */
 
 #include <dart/collision/experimental/narrow_phase/capsule_sphere.hpp>
-
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <algorithm>
+
 #include <cmath>
 
 namespace dart::collision::experimental {
@@ -53,12 +53,12 @@ Eigen::Vector3d closestPointOnSegment(
     return segmentStart;
   }
 
-  const double t =
-      std::clamp((point - segmentStart).dot(segment) / segmentLengthSq, 0.0, 1.0);
+  const double t = std::clamp(
+      (point - segmentStart).dot(segment) / segmentLengthSq, 0.0, 1.0);
   return segmentStart + segment * t;
 }
 
-}
+} // namespace
 
 bool collideCapsuleSphere(
     const CapsuleShape& capsule,
@@ -83,8 +83,8 @@ bool collideCapsuleSphere(
   const Eigen::Vector3d bottom = capsuleTransform * localBottom;
   const Eigen::Vector3d sphereCenter = sphereTransform.translation();
 
-  const Eigen::Vector3d closestOnCapsule =
-      closestPointOnSegment(sphereCenter, bottom, top);
+  const Eigen::Vector3d closestOnCapsule
+      = closestPointOnSegment(sphereCenter, bottom, top);
 
   const Eigen::Vector3d diff = sphereCenter - closestOnCapsule;
   const double distSquared = diff.squaredNorm();
@@ -104,8 +104,8 @@ bool collideCapsuleSphere(
     normal = -diff / dist;
   }
 
-  const Eigen::Vector3d contactPoint =
-      closestOnCapsule + (-normal) * (capsuleRadius - penetration * 0.5);
+  const Eigen::Vector3d contactPoint
+      = closestOnCapsule + (-normal) * (capsuleRadius - penetration * 0.5);
 
   ContactPoint contact;
   contact.position = contactPoint;
@@ -117,4 +117,4 @@ bool collideCapsuleSphere(
   return true;
 }
 
-}
+} // namespace dart::collision::experimental

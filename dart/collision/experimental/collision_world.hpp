@@ -72,8 +72,7 @@ public:
   [[nodiscard]] std::size_t updateAll();
 
   [[nodiscard]] std::size_t updateAll(
-      const BatchSettings& settings,
-      BatchStats* stats = nullptr);
+      const BatchSettings& settings, BatchStats* stats = nullptr);
 
   [[nodiscard]] BroadPhaseSnapshot buildBroadPhaseSnapshot() const;
 
@@ -109,9 +108,7 @@ public:
       CollisionResult& result);
 
   bool raycast(
-      const Ray& ray,
-      const RaycastOption& option,
-      RaycastResult& result);
+      const Ray& ray, const RaycastOption& option, RaycastResult& result);
 
   bool raycastAll(
       const Ray& ray,

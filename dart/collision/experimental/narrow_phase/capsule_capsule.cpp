@@ -31,10 +31,10 @@
  */
 
 #include <dart/collision/experimental/narrow_phase/capsule_capsule.hpp>
-
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <algorithm>
+
 #include <cmath>
 
 namespace dart::collision::experimental {
@@ -106,7 +106,7 @@ SegmentClosestPointResult closestPointsBetweenSegments(
   return result;
 }
 
-}
+} // namespace
 
 bool collideCapsules(
     const CapsuleShape& capsule1,
@@ -152,8 +152,8 @@ bool collideCapsules(
     normal = (closest.point1 - closest.point2) / dist;
   }
 
-  const Eigen::Vector3d contactPoint =
-      closest.point2 + normal * (radius2 - penetration * 0.5);
+  const Eigen::Vector3d contactPoint
+      = closest.point2 + normal * (radius2 - penetration * 0.5);
 
   ContactPoint contact;
   contact.position = contactPoint;
@@ -165,4 +165,4 @@ bool collideCapsules(
   return true;
 }
 
-}
+} // namespace dart::collision::experimental

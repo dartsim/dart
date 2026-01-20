@@ -39,9 +39,10 @@
 
 #include <Eigen/Core>
 
-#include <cstddef>
 #include <span>
 #include <vector>
+
+#include <cstddef>
 
 namespace dart::collision::experimental {
 
@@ -147,8 +148,7 @@ struct DART_COLLISION_EXPERIMENTAL_API Ray
 
   Ray() = default;
 
-  Ray(
-      const Eigen::Vector3d& origin,
+  Ray(const Eigen::Vector3d& origin,
       const Eigen::Vector3d& direction,
       double maxDistance = std::numeric_limits<double>::max())
     : origin(origin),
@@ -251,4 +251,4 @@ struct DART_COLLISION_EXPERIMENTAL_API CcdOption
   }
 };
 
-}
+} // namespace dart::collision::experimental

@@ -31,10 +31,10 @@
  */
 
 #include <dart/collision/experimental/narrow_phase/capsule_box.hpp>
-
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <algorithm>
+
 #include <cmath>
 
 namespace dart::collision::experimental {
@@ -72,8 +72,8 @@ Eigen::Vector3d closestPointOnSegmentInBoxSpace(
   for (int i = 0; i <= numSamples; ++i) {
     const double t = static_cast<double>(i) / numSamples;
     const Eigen::Vector3d pointOnSegment = segmentStart + segment * t;
-    const Eigen::Vector3d pointOnBox =
-        closestPointOnBox(pointOnSegment, halfExtents);
+    const Eigen::Vector3d pointOnBox
+        = closestPointOnBox(pointOnSegment, halfExtents);
     const double distSq = (pointOnSegment - pointOnBox).squaredNorm();
 
     if (distSq < bestDistSq) {
@@ -87,7 +87,7 @@ Eigen::Vector3d closestPointOnSegmentInBoxSpace(
   return bestOnBox;
 }
 
-}
+} // namespace
 
 bool collideCapsuleBox(
     const CapsuleShape& capsule,
@@ -116,8 +116,8 @@ bool collideCapsuleBox(
   const Eigen::Vector3d boxBottom = boxInverse * worldBottom;
 
   Eigen::Vector3d closestOnSegment;
-  const Eigen::Vector3d closestOnBox =
-      closestPointOnSegmentInBoxSpace(boxBottom, boxTop, halfExtents, closestOnSegment);
+  const Eigen::Vector3d closestOnBox = closestPointOnSegmentInBoxSpace(
+      boxBottom, boxTop, halfExtents, closestOnSegment);
 
   const Eigen::Vector3d diff = closestOnSegment - closestOnBox;
   const double distSquared = diff.squaredNorm();
@@ -144,11 +144,10 @@ bool collideCapsuleBox(
     normalLocal = diff / dist;
   }
 
-  const Eigen::Vector3d normalWorld =
-      boxTransform.rotation() * normalLocal;
+  const Eigen::Vector3d normalWorld = boxTransform.rotation() * normalLocal;
 
-  const Eigen::Vector3d contactWorld =
-      boxTransform * closestOnBox + normalWorld * (penetration * 0.5);
+  const Eigen::Vector3d contactWorld
+      = boxTransform * closestOnBox + normalWorld * (penetration * 0.5);
 
   ContactPoint contact;
   contact.position = contactWorld;
@@ -160,4 +159,4 @@ bool collideCapsuleBox(
   return true;
 }
 
-}
+} // namespace dart::collision::experimental

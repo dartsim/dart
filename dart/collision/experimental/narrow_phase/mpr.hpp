@@ -68,4 +68,4 @@ public:
       const Eigen::Vector3d& centerB);
 };
 
-}  // namespace dart::collision::experimental
+} // namespace dart::collision::experimental

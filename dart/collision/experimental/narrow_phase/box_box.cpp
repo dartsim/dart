@@ -31,10 +31,10 @@
  */
 
 #include <dart/collision/experimental/narrow_phase/box_box.hpp>
-
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <array>
+
 #include <cmath>
 
 namespace dart::collision::experimental {
@@ -122,7 +122,7 @@ Eigen::Vector3d computeContactPoint(
   return (point1 + point2) * 0.5;
 }
 
-}
+} // namespace
 
 bool collideBoxes(
     const Eigen::Vector3d& halfExtents1,
@@ -145,10 +145,10 @@ bool collideBoxes(
   SatResult best;
   int axisIndex = 0;
 
-  std::array<Eigen::Vector3d, 3> axes1 = {
-      rotation1.col(0), rotation1.col(1), rotation1.col(2)};
-  std::array<Eigen::Vector3d, 3> axes2 = {
-      rotation2.col(0), rotation2.col(1), rotation2.col(2)};
+  std::array<Eigen::Vector3d, 3> axes1
+      = {rotation1.col(0), rotation1.col(1), rotation1.col(2)};
+  std::array<Eigen::Vector3d, 3> axes2
+      = {rotation2.col(0), rotation2.col(1), rotation2.col(2)};
 
   for (int i = 0; i < 3; ++i) {
     if (!testAxis(
@@ -201,7 +201,13 @@ bool collideBoxes(
   }
 
   Eigen::Vector3d contactPoint = computeContactPoint(
-      center1, halfExtents1, rotation1, center2, halfExtents2, rotation2, normal);
+      center1,
+      halfExtents1,
+      rotation1,
+      center2,
+      halfExtents2,
+      rotation2,
+      normal);
 
   ContactPoint contact;
   contact.position = contactPoint;
@@ -230,4 +236,4 @@ bool collideBoxes(
       option);
 }
 
-}
+} // namespace dart::collision::experimental

@@ -37,8 +37,9 @@
 #include <dart/collision/experimental/fwd.hpp>
 
 #include <array>
-#include <cstddef>
 #include <span>
+
+#include <cstddef>
 
 namespace dart::collision::experimental {
 

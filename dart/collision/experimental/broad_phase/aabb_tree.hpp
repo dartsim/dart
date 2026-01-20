@@ -45,7 +45,8 @@ namespace dart::collision::experimental {
 class DART_COLLISION_EXPERIMENTAL_API AabbTreeBroadPhase : public BroadPhase
 {
 public:
-  static constexpr std::size_t kNullNode = std::numeric_limits<std::size_t>::max();
+  static constexpr std::size_t kNullNode
+      = std::numeric_limits<std::size_t>::max();
   static constexpr double kDefaultFatAabbMargin = 0.1;
 
   explicit AabbTreeBroadPhase(double fatAabbMargin = kDefaultFatAabbMargin);
@@ -60,8 +61,14 @@ public:
       const Aabb& aabb) const override;
   [[nodiscard]] std::size_t size() const override;
 
-  [[nodiscard]] double getFatAabbMargin() const { return fatAabbMargin_; }
-  void setFatAabbMargin(double margin) { fatAabbMargin_ = margin; }
+  [[nodiscard]] double getFatAabbMargin() const
+  {
+    return fatAabbMargin_;
+  }
+  void setFatAabbMargin(double margin)
+  {
+    fatAabbMargin_ = margin;
+  }
   [[nodiscard]] std::size_t getHeight() const;
   [[nodiscard]] bool validate() const;
 
@@ -76,7 +83,10 @@ private:
     std::size_t objectId = kNullNode;
     std::size_t height = 0;
 
-    [[nodiscard]] bool isLeaf() const { return left == kNullNode; }
+    [[nodiscard]] bool isLeaf() const
+    {
+      return left == kNullNode;
+    }
   };
 
   std::vector<Node> nodes_;
@@ -110,4 +120,4 @@ private:
   [[nodiscard]] bool validateStructure(std::size_t nodeIndex) const;
 };
 
-}  // namespace dart::collision::experimental
+} // namespace dart::collision::experimental

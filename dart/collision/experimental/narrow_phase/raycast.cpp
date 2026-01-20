@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/collision/experimental/narrow_phase/gjk.hpp>
 #include <dart/collision/experimental/narrow_phase/raycast.hpp>
 
-#include <dart/collision/experimental/narrow_phase/gjk.hpp>
-
 #include <algorithm>
-#include <cmath>
 #include <limits>
+
+#include <cmath>
 
 namespace dart::collision::experimental {
 
@@ -64,7 +64,7 @@ double solveQuadratic(double a, double b, double c, double& t0, double& t1)
   return discriminant;
 }
 
-}
+} // namespace
 
 bool raycastSphere(
     const Ray& ray,
@@ -312,7 +312,8 @@ bool raycastCylinder(
       double t = (capZ - localOrigin.z()) / localDir.z();
       if (t >= 0.0 && t < bestT) {
         Eigen::Vector3d hitPoint = localOrigin + t * localDir;
-        double distSq = hitPoint.x() * hitPoint.x() + hitPoint.y() * hitPoint.y();
+        double distSq
+            = hitPoint.x() * hitPoint.x() + hitPoint.y() * hitPoint.y();
         if (distSq <= radius * radius) {
           bestT = t;
           bestNormal = (capZ > 0.0) ? Eigen::Vector3d(0, 0, 1)
@@ -344,10 +345,10 @@ bool raycastPlane(
 {
   result.clear();
 
-  const Eigen::Vector3d worldNormal =
-      planeTransform.rotation() * plane.getNormal();
-  const Eigen::Vector3d worldPoint =
-      planeTransform.translation() + plane.getOffset() * worldNormal;
+  const Eigen::Vector3d worldNormal
+      = planeTransform.rotation() * plane.getNormal();
+  const Eigen::Vector3d worldPoint
+      = planeTransform.translation() + plane.getOffset() * worldNormal;
 
   double denom = worldNormal.dot(ray.direction);
 
@@ -429,7 +430,7 @@ bool rayTriangleMollerTrumbore(
   return t > kMeshEpsilon;
 }
 
-}
+} // namespace
 
 bool raycastMesh(
     const Ray& ray,
@@ -458,8 +459,15 @@ bool raycastMesh(
 
     double t, u, v;
     if (rayTriangleMollerTrumbore(
-            localOrigin, localDir, v0, v1, v2, t, u, v, option.backfaceCulling))
-    {
+            localOrigin,
+            localDir,
+            v0,
+            v1,
+            v2,
+            t,
+            u,
+            v,
+            option.backfaceCulling)) {
       if (t > 0.0 && t < bestT && t <= maxDist) {
         bestT = t;
         const Eigen::Vector3d edge1 = v1 - v0;
@@ -492,7 +500,9 @@ bool isPointInConvex(
     const ConvexShape& convex,
     const Eigen::Isometry3d& transform)
 {
-  auto pointSupport = [&point](const Eigen::Vector3d&) { return point; };
+  auto pointSupport = [&point](const Eigen::Vector3d&) {
+    return point;
+  };
 
   auto convexSupport = [&convex, transform](const Eigen::Vector3d& dir) {
     Eigen::Vector3d localDir = transform.linear().transpose() * dir;
@@ -516,7 +526,7 @@ double computeBoundingRadius(const ConvexShape& convex)
   return std::sqrt(maxRadiusSq);
 }
 
-}
+} // namespace
 
 bool raycastConvex(
     const Ray& ray,
@@ -601,10 +611,13 @@ bool raycastConvex(
   double bestDot = -std::numeric_limits<double>::max();
 
   constexpr int kNormalSamples = 6;
-  const Eigen::Vector3d directions[kNormalSamples] = {
-      Eigen::Vector3d::UnitX(),  -Eigen::Vector3d::UnitX(),
-      Eigen::Vector3d::UnitY(),  -Eigen::Vector3d::UnitY(),
-      Eigen::Vector3d::UnitZ(),  -Eigen::Vector3d::UnitZ()};
+  const Eigen::Vector3d directions[kNormalSamples]
+      = {Eigen::Vector3d::UnitX(),
+         -Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY(),
+         -Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitZ(),
+         -Eigen::Vector3d::UnitZ()};
 
   for (const auto& dir : directions) {
     Eigen::Vector3d support = convex.support(dir);
@@ -625,4 +638,4 @@ bool raycastConvex(
   return true;
 }
 
-}
+} // namespace dart::collision::experimental

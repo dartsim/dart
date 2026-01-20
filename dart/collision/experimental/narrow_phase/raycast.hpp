@@ -90,4 +90,4 @@ namespace dart::collision::experimental {
     const RaycastOption& option,
     RaycastResult& result);
 
-}
+} // namespace dart::collision::experimental

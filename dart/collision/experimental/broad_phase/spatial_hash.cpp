@@ -33,6 +33,7 @@
 #include <dart/collision/experimental/broad_phase/spatial_hash.hpp>
 
 #include <algorithm>
+
 #include <cmath>
 
 namespace dart::collision::experimental {
@@ -194,16 +195,17 @@ SpatialHashBroadPhase::CellCoord SpatialHashBroadPhase::computeCell(
       static_cast<int>(std::floor(point.z() * inverseCellSize_))};
 }
 
-std::vector<SpatialHashBroadPhase::CellCoord> SpatialHashBroadPhase::computeCells(
-    const Aabb& aabb) const
+std::vector<SpatialHashBroadPhase::CellCoord>
+SpatialHashBroadPhase::computeCells(const Aabb& aabb) const
 {
   CellCoord minCell = computeCell(aabb.min);
   CellCoord maxCell = computeCell(aabb.max);
 
   std::vector<CellCoord> cells;
-  cells.reserve(static_cast<std::size_t>(
-      (maxCell[0] - minCell[0] + 1) * (maxCell[1] - minCell[1] + 1)
-      * (maxCell[2] - minCell[2] + 1)));
+  cells.reserve(
+      static_cast<std::size_t>(
+          (maxCell[0] - minCell[0] + 1) * (maxCell[1] - minCell[1] + 1)
+          * (maxCell[2] - minCell[2] + 1)));
 
   for (int x = minCell[0]; x <= maxCell[0]; ++x) {
     for (int y = minCell[1]; y <= maxCell[1]; ++y) {
@@ -217,8 +219,7 @@ std::vector<SpatialHashBroadPhase::CellCoord> SpatialHashBroadPhase::computeCell
 }
 
 void SpatialHashBroadPhase::addToGrid(
-    std::size_t id,
-    const std::vector<CellCoord>& cells)
+    std::size_t id, const std::vector<CellCoord>& cells)
 {
   for (const auto& cell : cells) {
     grid_[cell].insert(id);
@@ -226,8 +227,7 @@ void SpatialHashBroadPhase::addToGrid(
 }
 
 void SpatialHashBroadPhase::removeFromGrid(
-    std::size_t id,
-    const std::vector<CellCoord>& cells)
+    std::size_t id, const std::vector<CellCoord>& cells)
 {
   for (const auto& cell : cells) {
     auto it = grid_.find(cell);
@@ -252,4 +252,4 @@ void SpatialHashBroadPhase::rebuildOrderedIds()
   std::sort(orderedIds_.begin(), orderedIds_.end());
 }
 
-}  // namespace dart::collision::experimental
+} // namespace dart::collision::experimental

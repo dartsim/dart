@@ -83,7 +83,8 @@ std::vector<BroadPhasePair> BruteForceBroadPhase::queryPairs() const
   return pairs;
 }
 
-std::vector<std::size_t> BruteForceBroadPhase::queryOverlapping(const Aabb& aabb) const
+std::vector<std::size_t> BruteForceBroadPhase::queryOverlapping(
+    const Aabb& aabb) const
 {
   std::vector<std::size_t> result;
 
@@ -113,4 +114,4 @@ void BruteForceBroadPhase::rebuildOrderedIds()
   std::sort(orderedIds_.begin(), orderedIds_.end());
 }
 
-}
+} // namespace dart::collision::experimental

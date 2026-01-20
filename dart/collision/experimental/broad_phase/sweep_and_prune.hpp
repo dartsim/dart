@@ -44,7 +44,8 @@ namespace dart::collision::experimental {
 /// Optimal for mostly-static scenes with incremental updates.
 /// Uses 3-axis overlap test with sorted endpoints for O(n + k) queries
 /// where k is the number of overlapping pairs.
-class DART_COLLISION_EXPERIMENTAL_API SweepAndPruneBroadPhase : public BroadPhase
+class DART_COLLISION_EXPERIMENTAL_API SweepAndPruneBroadPhase
+  : public BroadPhase
 {
 public:
   SweepAndPruneBroadPhase() = default;
@@ -64,7 +65,7 @@ private:
   {
     double value;
     std::size_t objectId;
-    bool isMin;  // true = start of interval, false = end
+    bool isMin; // true = start of interval, false = end
 
     bool operator<(const Endpoint& other) const
     {
@@ -80,14 +81,12 @@ private:
   };
 
   std::unordered_map<std::size_t, Aabb> objects_;
-  mutable std::vector<Endpoint> endpoints_[3];  // X, Y, Z axes
+  mutable std::vector<Endpoint> endpoints_[3]; // X, Y, Z axes
   mutable bool dirty_ = false;
 
   void rebuildEndpoints() const;
   [[nodiscard]] bool overlapsOnAxis(
-      std::size_t id1,
-      std::size_t id2,
-      int axis) const;
+      std::size_t id1, std::size_t id2, int axis) const;
 };
 
-}  // namespace dart::collision::experimental
+} // namespace dart::collision::experimental

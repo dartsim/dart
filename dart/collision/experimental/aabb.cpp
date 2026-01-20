@@ -33,16 +33,15 @@
 #include <dart/collision/experimental/aabb.hpp>
 
 #include <algorithm>
+
 #include <cmath>
 
 namespace dart::collision::experimental {
 
-Aabb::Aabb() : min(Eigen::Vector3d::Zero()), max(Eigen::Vector3d::Zero())
-{
-}
+Aabb::Aabb() : min(Eigen::Vector3d::Zero()), max(Eigen::Vector3d::Zero()) {}
 
 Aabb::Aabb(const Eigen::Vector3d& min, const Eigen::Vector3d& max)
-    : min(min), max(max)
+  : min(min), max(max)
 {
 }
 
@@ -141,4 +140,4 @@ Aabb Aabb::transformed(const Aabb& local, const Eigen::Isometry3d& transform)
   return Aabb(worldCenter - worldHalfExtents, worldCenter + worldHalfExtents);
 }
 
-}
+} // namespace dart::collision::experimental

@@ -31,12 +31,12 @@
  */
 
 #include <dart/collision/experimental/narrow_phase/cylinder_collision.hpp>
-
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <algorithm>
-#include <cmath>
 #include <limits>
+
+#include <cmath>
 
 namespace dart::collision::experimental {
 
@@ -107,7 +107,7 @@ SegmentClosestResult closestPointsBetweenSegments(
   return result;
 }
 
-}
+} // namespace
 
 bool collideCylinders(
     const CylinderShape& cyl1,
@@ -157,8 +157,8 @@ bool collideCylinders(
     normal = (closest.point1 - closest.point2) / dist;
   }
 
-  const Eigen::Vector3d contactPoint =
-      closest.point2 + normal * (r2 - penetration * 0.5);
+  const Eigen::Vector3d contactPoint
+      = closest.point2 + normal * (r2 - penetration * 0.5);
 
   ContactPoint contact;
   contact.position = contactPoint;
@@ -186,19 +186,19 @@ bool collideCylinderSphere(
   const double sphereRadius = sphere.getRadius();
 
   const Eigen::Isometry3d cylInv = cylinderTransform.inverse();
-  const Eigen::Vector3d sphereCenterLocal =
-      cylInv * sphereTransform.translation();
+  const Eigen::Vector3d sphereCenterLocal
+      = cylInv * sphereTransform.translation();
 
-  const double clampedZ =
-      std::clamp(sphereCenterLocal.z(), -cylHalfHeight, cylHalfHeight);
+  const double clampedZ
+      = std::clamp(sphereCenterLocal.z(), -cylHalfHeight, cylHalfHeight);
 
   Eigen::Vector3d closestLocal;
-  const double lateralDistSq =
-      sphereCenterLocal.x() * sphereCenterLocal.x() +
-      sphereCenterLocal.y() * sphereCenterLocal.y();
+  const double lateralDistSq = sphereCenterLocal.x() * sphereCenterLocal.x()
+                               + sphereCenterLocal.y() * sphereCenterLocal.y();
 
   if (lateralDistSq <= cylRadius * cylRadius) {
-    closestLocal = Eigen::Vector3d(sphereCenterLocal.x(), sphereCenterLocal.y(), clampedZ);
+    closestLocal = Eigen::Vector3d(
+        sphereCenterLocal.x(), sphereCenterLocal.y(), clampedZ);
   } else {
     const double lateralDist = std::sqrt(lateralDistSq);
     const double scale = cylRadius / lateralDist;
@@ -219,8 +219,8 @@ bool collideCylinderSphere(
   Eigen::Vector3d normalLocal;
   if (dist < 1e-10) {
     if (std::abs(sphereCenterLocal.z()) > cylHalfHeight - 1e-6) {
-      normalLocal =
-          Eigen::Vector3d(0, 0, sphereCenterLocal.z() > 0 ? 1.0 : -1.0);
+      normalLocal
+          = Eigen::Vector3d(0, 0, sphereCenterLocal.z() > 0 ? 1.0 : -1.0);
     } else {
       normalLocal = Eigen::Vector3d(1, 0, 0);
     }
@@ -228,11 +228,11 @@ bool collideCylinderSphere(
     normalLocal = diff / dist;
   }
 
-  const Eigen::Vector3d normalWorld =
-      cylinderTransform.rotation() * normalLocal;
+  const Eigen::Vector3d normalWorld
+      = cylinderTransform.rotation() * normalLocal;
   const Eigen::Vector3d closestWorld = cylinderTransform * closestLocal;
-  const Eigen::Vector3d contactPoint =
-      closestWorld + normalWorld * (penetration * 0.5);
+  const Eigen::Vector3d contactPoint
+      = closestWorld + normalWorld * (penetration * 0.5);
 
   ContactPoint contact;
   contact.position = contactPoint;
@@ -275,13 +275,12 @@ bool collideCylinderBox(
 
     const Eigen::Vector3d cornerInCyl = boxInCyl * localCorner;
 
-    const double lateralDistSq =
-        cornerInCyl.x() * cornerInCyl.x() + cornerInCyl.y() * cornerInCyl.y();
+    const double lateralDistSq
+        = cornerInCyl.x() * cornerInCyl.x() + cornerInCyl.y() * cornerInCyl.y();
     const double lateralDist = std::sqrt(lateralDistSq);
 
     const double lateralPen = cylRadius - lateralDist;
-    const double axialPen =
-        cylHalfHeight - std::abs(cornerInCyl.z());
+    const double axialPen = cylHalfHeight - std::abs(cornerInCyl.z());
 
     if (lateralPen > 0.0 && axialPen > 0.0) {
       foundCollision = true;
@@ -293,15 +292,15 @@ bool collideCylinderBox(
         penetration = lateralPen;
         if (lateralDist > 1e-10) {
           normalLocal = Eigen::Vector3d(
-              -cornerInCyl.x() / lateralDist, -cornerInCyl.y() / lateralDist,
+              -cornerInCyl.x() / lateralDist,
+              -cornerInCyl.y() / lateralDist,
               0);
         } else {
           normalLocal = Eigen::Vector3d(-1, 0, 0);
         }
       } else {
         penetration = axialPen;
-        normalLocal =
-            Eigen::Vector3d(0, 0, cornerInCyl.z() > 0 ? -1.0 : 1.0);
+        normalLocal = Eigen::Vector3d(0, 0, cornerInCyl.z() > 0 ? -1.0 : 1.0);
       }
 
       if (penetration > maxPenetration) {
@@ -316,11 +315,9 @@ bool collideCylinderBox(
     return false;
   }
 
-  const Eigen::Vector3d normalWorld =
-      cylinderTransform.rotation() * bestNormal;
-  const Eigen::Vector3d contactWorld =
-      cylinderTransform * bestContactPoint +
-      normalWorld * (maxPenetration * 0.5);
+  const Eigen::Vector3d normalWorld = cylinderTransform.rotation() * bestNormal;
+  const Eigen::Vector3d contactWorld = cylinderTransform * bestContactPoint
+                                       + normalWorld * (maxPenetration * 0.5);
 
   ContactPoint contact;
   contact.position = contactWorld;
@@ -363,8 +360,8 @@ bool collideCylinderCapsule(
   bool foundCollision = false;
 
   auto checkCapsuleEndpoint = [&](const Eigen::Vector3d& capEndLocal) {
-    const double lateralDistSq =
-        capEndLocal.x() * capEndLocal.x() + capEndLocal.y() * capEndLocal.y();
+    const double lateralDistSq
+        = capEndLocal.x() * capEndLocal.x() + capEndLocal.y() * capEndLocal.y();
     const double lateralDist = std::sqrt(lateralDistSq);
 
     Eigen::Vector3d closestOnCyl;
@@ -377,25 +374,30 @@ bool collideCylinderCapsule(
         if (lateralPen < axialPen && lateralDist > 1e-10) {
           closestOnCyl = Eigen::Vector3d(
               capEndLocal.x() * cylRadius / lateralDist,
-              capEndLocal.y() * cylRadius / lateralDist, capEndLocal.z());
+              capEndLocal.y() * cylRadius / lateralDist,
+              capEndLocal.z());
         } else {
           double cappedZ = capEndLocal.z() > 0 ? cylHalfHeight : -cylHalfHeight;
-          closestOnCyl = Eigen::Vector3d(capEndLocal.x(), capEndLocal.y(), cappedZ);
+          closestOnCyl
+              = Eigen::Vector3d(capEndLocal.x(), capEndLocal.y(), cappedZ);
         }
       } else {
         closestOnCyl = Eigen::Vector3d(
             capEndLocal.x() * cylRadius / lateralDist,
-            capEndLocal.y() * cylRadius / lateralDist, capEndLocal.z());
+            capEndLocal.y() * cylRadius / lateralDist,
+            capEndLocal.z());
       }
     } else {
-      double cappedZ =
-          std::clamp(capEndLocal.z(), -cylHalfHeight, cylHalfHeight);
+      double cappedZ
+          = std::clamp(capEndLocal.z(), -cylHalfHeight, cylHalfHeight);
       if (lateralDist <= cylRadius) {
-        closestOnCyl = Eigen::Vector3d(capEndLocal.x(), capEndLocal.y(), cappedZ);
+        closestOnCyl
+            = Eigen::Vector3d(capEndLocal.x(), capEndLocal.y(), cappedZ);
       } else {
         closestOnCyl = Eigen::Vector3d(
             capEndLocal.x() * cylRadius / lateralDist,
-            capEndLocal.y() * cylRadius / lateralDist, cappedZ);
+            capEndLocal.y() * cylRadius / lateralDist,
+            cappedZ);
       }
     }
 
@@ -424,10 +426,10 @@ bool collideCylinderCapsule(
     normalLocal.normalize();
   }
 
-  const Eigen::Vector3d normalWorld =
-      cylinderTransform.rotation() * normalLocal;
-  const Eigen::Vector3d contactWorld =
-      cylinderTransform * bestCylPoint + normalWorld * (bestPenetration * 0.5);
+  const Eigen::Vector3d normalWorld
+      = cylinderTransform.rotation() * normalLocal;
+  const Eigen::Vector3d contactWorld = cylinderTransform * bestCylPoint
+                                       + normalWorld * (bestPenetration * 0.5);
 
   ContactPoint contact;
   contact.position = contactWorld;
@@ -453,10 +455,10 @@ bool collideCylinderPlane(
   const double cylRadius = cylinder.getRadius();
   const double cylHalfHeight = cylinder.getHeight() * 0.5;
 
-  const Eigen::Vector3d worldNormal =
-      planeTransform.rotation() * plane.getNormal();
-  const Eigen::Vector3d planePoint =
-      planeTransform.translation() + worldNormal * plane.getOffset();
+  const Eigen::Vector3d worldNormal
+      = planeTransform.rotation() * plane.getNormal();
+  const Eigen::Vector3d planePoint
+      = planeTransform.translation() + worldNormal * plane.getOffset();
 
   const Eigen::Vector3d cylAxis = cylinderTransform.rotation().col(2);
   const Eigen::Vector3d cylCenter = cylinderTransform.translation();
@@ -465,8 +467,8 @@ bool collideCylinderPlane(
   const Eigen::Vector3d cylBot = cylCenter - cylAxis * cylHalfHeight;
 
   const double dotAxis = cylAxis.dot(worldNormal);
-  const Eigen::Vector3d radialDir =
-      (worldNormal - cylAxis * dotAxis).normalized();
+  const Eigen::Vector3d radialDir
+      = (worldNormal - cylAxis * dotAxis).normalized();
 
   Eigen::Vector3d deepestPoint;
   if (radialDir.squaredNorm() < 1e-10) {
@@ -491,8 +493,8 @@ bool collideCylinderPlane(
   }
 
   const double penetration = -signedDist;
-  const Eigen::Vector3d contactPoint =
-      deepestPoint + worldNormal * (penetration * 0.5);
+  const Eigen::Vector3d contactPoint
+      = deepestPoint + worldNormal * (penetration * 0.5);
 
   ContactPoint contact;
   contact.position = contactPoint;
@@ -503,4 +505,4 @@ bool collideCylinderPlane(
   return true;
 }
 
-}
+} // namespace dart::collision::experimental

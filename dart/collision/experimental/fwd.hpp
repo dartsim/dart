@@ -73,4 +73,4 @@ struct BatchStats;
 struct BatchOutput;
 struct BroadPhaseSnapshot;
 
-}
+} // namespace dart::collision::experimental

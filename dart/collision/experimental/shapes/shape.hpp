@@ -163,7 +163,7 @@ private:
 class DART_COLLISION_EXPERIMENTAL_API MeshShape : public Shape
 {
 public:
-  using Triangle = Eigen::Vector3i;  // indices into vertices array
+  using Triangle = Eigen::Vector3i; // indices into vertices array
 
   MeshShape(
       std::vector<Eigen::Vector3d> vertices, std::vector<Triangle> triangles);
@@ -197,4 +197,4 @@ private:
   std::shared_ptr<const SignedDistanceField> field_;
 };
 
-}
+} // namespace dart::collision::experimental

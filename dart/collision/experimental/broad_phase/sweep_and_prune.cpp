@@ -149,9 +149,7 @@ void SweepAndPruneBroadPhase::rebuildEndpoints() const
 }
 
 bool SweepAndPruneBroadPhase::overlapsOnAxis(
-    std::size_t id1,
-    std::size_t id2,
-    int axis) const
+    std::size_t id1, std::size_t id2, int axis) const
 {
   auto it1 = objects_.find(id1);
   auto it2 = objects_.find(id2);
@@ -165,4 +163,4 @@ bool SweepAndPruneBroadPhase::overlapsOnAxis(
   return a.min[axis] <= b.max[axis] && b.min[axis] <= a.max[axis];
 }
 
-}  // namespace dart::collision::experimental
+} // namespace dart::collision::experimental

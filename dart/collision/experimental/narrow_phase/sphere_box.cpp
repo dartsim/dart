@@ -31,10 +31,10 @@
  */
 
 #include <dart/collision/experimental/narrow_phase/sphere_box.hpp>
-
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <algorithm>
+
 #include <cmath>
 
 namespace dart::collision::experimental {
@@ -54,12 +54,12 @@ bool collideSphereBox(
   Eigen::Vector3d localSphereCenter = boxTransform.inverse() * sphereCenter;
 
   Eigen::Vector3d closestPointLocal;
-  closestPointLocal.x()
-      = std::clamp(localSphereCenter.x(), -boxHalfExtents.x(), boxHalfExtents.x());
-  closestPointLocal.y()
-      = std::clamp(localSphereCenter.y(), -boxHalfExtents.y(), boxHalfExtents.y());
-  closestPointLocal.z()
-      = std::clamp(localSphereCenter.z(), -boxHalfExtents.z(), boxHalfExtents.z());
+  closestPointLocal.x() = std::clamp(
+      localSphereCenter.x(), -boxHalfExtents.x(), boxHalfExtents.x());
+  closestPointLocal.y() = std::clamp(
+      localSphereCenter.y(), -boxHalfExtents.y(), boxHalfExtents.y());
+  closestPointLocal.z() = std::clamp(
+      localSphereCenter.z(), -boxHalfExtents.z(), boxHalfExtents.z());
 
   Eigen::Vector3d diff = localSphereCenter - closestPointLocal;
   double distSquared = diff.squaredNorm();
@@ -97,9 +97,9 @@ bool collideSphereBox(
     penetration = sphereRadius + minDist;
 
     Eigen::Vector3d localContactPoint = localSphereCenter;
-    localContactPoint[minAxis]
-        = (localSphereCenter[minAxis] >= 0) ? boxHalfExtents[minAxis]
-                                            : -boxHalfExtents[minAxis];
+    localContactPoint[minAxis] = (localSphereCenter[minAxis] >= 0)
+                                     ? boxHalfExtents[minAxis]
+                                     : -boxHalfExtents[minAxis];
     contactPoint = boxTransform * localContactPoint;
   } else {
     double dist = std::sqrt(distSquared);
@@ -140,4 +140,4 @@ bool collideSphereBox(
       option);
 }
 
-}
+} // namespace dart::collision::experimental

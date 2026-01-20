@@ -36,14 +36,15 @@
 
 #include <Eigen/Core>
 
-#include <cstdint>
 #include <limits>
 #include <vector>
+
+#include <cstdint>
 
 namespace dart::collision::experimental {
 
 class DART_COLLISION_EXPERIMENTAL_API DenseSdfField final
-    : public SignedDistanceField
+  : public SignedDistanceField
 {
 public:
   DenseSdfField(
@@ -100,4 +101,4 @@ private:
   std::vector<std::uint8_t> observed_;
 };
 
-}  // namespace dart::collision::experimental
+} // namespace dart::collision::experimental

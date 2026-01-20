@@ -31,10 +31,10 @@
  */
 
 #include <dart/collision/experimental/narrow_phase/distance.hpp>
-
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <algorithm>
+
 #include <cmath>
 
 namespace dart::collision::experimental {
@@ -130,7 +130,8 @@ bool querySdfDistanceAndGradient(
 
   Eigen::Vector3d gradientField = Eigen::Vector3d::Zero();
   const Eigen::Vector3d pointField = sdfInverse * pointWorld;
-  if (!field->distanceAndGradient(pointField, distance, &gradientField, options)) {
+  if (!field->distanceAndGradient(
+          pointField, distance, &gradientField, options)) {
     return false;
   }
 
@@ -138,7 +139,7 @@ bool querySdfDistanceAndGradient(
   return true;
 }
 
-}
+} // namespace
 
 double distanceSphereSphere(
     const SphereShape& sphere1,
@@ -192,9 +193,11 @@ double distanceSphereBox(
   const Eigen::Vector3d& boxHalf = box.getHalfExtents();
 
   const Eigen::Isometry3d boxInv = boxTransform.inverse();
-  const Eigen::Vector3d sphereCenterLocal = boxInv * sphereTransform.translation();
+  const Eigen::Vector3d sphereCenterLocal
+      = boxInv * sphereTransform.translation();
 
-  const Eigen::Vector3d closestOnBoxLocal = closestPointOnBox(sphereCenterLocal, boxHalf);
+  const Eigen::Vector3d closestOnBoxLocal
+      = closestPointOnBox(sphereCenterLocal, boxHalf);
   const Eigen::Vector3d diffLocal = sphereCenterLocal - closestOnBoxLocal;
   const double distToSurface = diffLocal.norm();
   const double dist = distToSurface - sphereRadius;
@@ -215,8 +218,9 @@ double distanceSphereBox(
     }
 
     result.pointOnObject2 = boxTransform * closestOnBoxLocal;
-    result.pointOnObject1 =
-        sphereTransform.translation() - (boxTransform.rotation() * normalLocal) * sphereRadius;
+    result.pointOnObject1
+        = sphereTransform.translation()
+          - (boxTransform.rotation() * normalLocal) * sphereRadius;
     result.normal = boxTransform.rotation() * normalLocal;
   }
 
@@ -429,7 +433,8 @@ double distanceCapsuleBox(
   for (int i = 0; i < numSamples; ++i) {
     const double t = static_cast<double>(i) / (numSamples - 1);
     const Eigen::Vector3d axisPointLocal = botLocal + (topLocal - botLocal) * t;
-    const Eigen::Vector3d closestOnBox = closestPointOnBox(axisPointLocal, boxHalf);
+    const Eigen::Vector3d closestOnBox
+        = closestPointOnBox(axisPointLocal, boxHalf);
     const double d = (axisPointLocal - closestOnBox).norm();
 
     if (d < minDist) {
@@ -457,7 +462,8 @@ double distanceCapsuleBox(
     }
 
     result.pointOnObject2 = boxTransform * bestBoxPoint;
-    result.pointOnObject1 = boxTransform * (bestCapsulePoint - dirLocal * capRadius);
+    result.pointOnObject1
+        = boxTransform * (bestCapsulePoint - dirLocal * capRadius);
     result.normal = boxTransform.rotation() * dirLocal;
   }
 
@@ -557,8 +563,8 @@ double distanceCapsuleSdf(
   query_options.maxDistance = option.upperBound + radius;
 
   const double voxel_size = std::max(field->voxelSize(), 1e-6);
-  const int raw_samples =
-      static_cast<int>(std::ceil(capsule.getHeight() / voxel_size)) + 1;
+  const int raw_samples
+      = static_cast<int>(std::ceil(capsule.getHeight() / voxel_size)) + 1;
   const int num_samples = std::clamp(raw_samples, 2, 32);
 
   bool found = false;
@@ -568,7 +574,8 @@ double distanceCapsuleSdf(
   Eigen::Vector3d best_gradient = Eigen::Vector3d::Zero();
 
   for (int i = 0; i < num_samples; ++i) {
-    const double t = (num_samples == 1) ? 0.5 : static_cast<double>(i) / (num_samples - 1);
+    const double t
+        = (num_samples == 1) ? 0.5 : static_cast<double>(i) / (num_samples - 1);
     const Eigen::Vector3d axis_point = bottom + (top - bottom) * t;
 
     double field_distance = 0.0;
@@ -624,4 +631,4 @@ double distanceCapsuleSdf(
   return best_dist;
 }
 
-}
+} // namespace dart::collision::experimental

@@ -68,4 +68,4 @@ public:
   Eigen::Vector3d max;
 };
 
-}
+} // namespace dart::collision::experimental

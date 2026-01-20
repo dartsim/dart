@@ -30,16 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/experimental/collision_world.hpp>
-
 #include <dart/collision/experimental/broad_phase/aabb_tree.hpp>
 #include <dart/collision/experimental/broad_phase/brute_force.hpp>
 #include <dart/collision/experimental/broad_phase/spatial_hash.hpp>
 #include <dart/collision/experimental/broad_phase/sweep_and_prune.hpp>
+#include <dart/collision/experimental/collision_world.hpp>
 #include <dart/collision/experimental/comps/collision_object.hpp>
 #include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
-
-#include <algorithm>
 
 #include <algorithm>
 #include <limits>
@@ -47,14 +44,15 @@
 namespace dart::collision::experimental {
 
 CollisionWorld::CollisionWorld(BroadPhaseType broadPhaseType)
-  : m_broadPhaseType(broadPhaseType)
-  , m_broadPhase(createBroadPhase(broadPhaseType))
+  : m_broadPhaseType(broadPhaseType),
+    m_broadPhase(createBroadPhase(broadPhaseType))
 {
 }
 
 CollisionWorld::~CollisionWorld() = default;
 
-std::unique_ptr<BroadPhase> CollisionWorld::createBroadPhase(BroadPhaseType type)
+std::unique_ptr<BroadPhase> CollisionWorld::createBroadPhase(
+    BroadPhaseType type)
 {
   switch (type) {
     case BroadPhaseType::BruteForce:
@@ -70,8 +68,7 @@ std::unique_ptr<BroadPhase> CollisionWorld::createBroadPhase(BroadPhaseType type
 }
 
 CollisionObject CollisionWorld::createObject(
-    std::unique_ptr<Shape> shape,
-    const Eigen::Isometry3d& transform)
+    std::unique_ptr<Shape> shape, const Eigen::Isometry3d& transform)
 {
   if (!shape) {
     return CollisionObject();
@@ -150,8 +147,7 @@ std::size_t CollisionWorld::updateAll()
 }
 
 std::size_t CollisionWorld::updateAll(
-    const BatchSettings& settings,
-    BatchStats* stats)
+    const BatchSettings& settings, BatchStats* stats)
 {
   (void)settings;
   std::size_t updated = 0;
@@ -278,7 +274,8 @@ bool CollisionWorld::collideAll(
   return collideAll(snapshot, option, out.result, settings, stats);
 }
 
-bool CollisionWorld::collide(const CollisionOption& option, CollisionResult& result)
+bool CollisionWorld::collide(
+    const CollisionOption& option, CollisionResult& result)
 {
   result.clear();
   bool hasCollision = false;
@@ -299,7 +296,8 @@ bool CollisionWorld::collide(const CollisionOption& option, CollisionResult& res
     if (NarrowPhase::collide(obj1, obj2, option, result)) {
       hasCollision = true;
       if (option.enableContact == false
-          || (option.maxNumContacts > 0 && result.numContacts() >= option.maxNumContacts)) {
+          || (option.maxNumContacts > 0
+              && result.numContacts() >= option.maxNumContacts)) {
         break;
       }
     }
@@ -321,9 +319,7 @@ bool CollisionWorld::collide(
 }
 
 bool CollisionWorld::raycast(
-    const Ray& ray,
-    const RaycastOption& option,
-    RaycastResult& result)
+    const Ray& ray, const RaycastOption& option, RaycastResult& result)
 {
   result.clear();
 
@@ -366,9 +362,12 @@ bool CollisionWorld::raycastAll(
     }
   }
 
-  std::sort(results.begin(), results.end(), [](const RaycastResult& a, const RaycastResult& b) {
-    return a.distance < b.distance;
-  });
+  std::sort(
+      results.begin(),
+      results.end(),
+      [](const RaycastResult& a, const RaycastResult& b) {
+        return a.distance < b.distance;
+      });
 
   return !results.empty();
 }
@@ -423,9 +422,12 @@ bool CollisionWorld::sphereCastAll(
     }
   }
 
-  std::sort(results.begin(), results.end(), [](const CcdResult& a, const CcdResult& b) {
-    return a.timeOfImpact < b.timeOfImpact;
-  });
+  std::sort(
+      results.begin(),
+      results.end(),
+      [](const CcdResult& a, const CcdResult& b) {
+        return a.timeOfImpact < b.timeOfImpact;
+      });
 
   return !results.empty();
 }
@@ -446,7 +448,8 @@ bool CollisionWorld::capsuleCast(
   for (auto entity : view) {
     CollisionObject obj(entity, this);
     CcdResult tempResult;
-    if (NarrowPhase::capsuleCast(capsuleStart, capsuleEnd, capsule, obj, option, tempResult)) {
+    if (NarrowPhase::capsuleCast(
+            capsuleStart, capsuleEnd, capsule, obj, option, tempResult)) {
       if (tempResult.timeOfImpact < closestToi) {
         closestToi = tempResult.timeOfImpact;
         closestResult = tempResult;
@@ -475,14 +478,18 @@ bool CollisionWorld::capsuleCastAll(
   for (auto entity : view) {
     CollisionObject obj(entity, this);
     CcdResult tempResult;
-    if (NarrowPhase::capsuleCast(capsuleStart, capsuleEnd, capsule, obj, option, tempResult)) {
+    if (NarrowPhase::capsuleCast(
+            capsuleStart, capsuleEnd, capsule, obj, option, tempResult)) {
       results.push_back(tempResult);
     }
   }
 
-  std::sort(results.begin(), results.end(), [](const CcdResult& a, const CcdResult& b) {
-    return a.timeOfImpact < b.timeOfImpact;
-  });
+  std::sort(
+      results.begin(),
+      results.end(),
+      [](const CcdResult& a, const CcdResult& b) {
+        return a.timeOfImpact < b.timeOfImpact;
+      });
 
   return !results.empty();
 }

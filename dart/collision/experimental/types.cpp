@@ -117,4 +117,4 @@ void CollisionResult::updateFlatCache() const
   flatCacheValid_ = true;
 }
 
-}
+} // namespace dart::collision::experimental

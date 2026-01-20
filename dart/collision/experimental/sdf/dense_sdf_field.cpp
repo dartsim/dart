@@ -33,8 +33,9 @@
 #include <dart/collision/experimental/sdf/dense_sdf_field.hpp>
 
 #include <algorithm>
-#include <cmath>
 #include <limits>
+
+#include <cmath>
 
 namespace dart::collision::experimental {
 
@@ -48,10 +49,9 @@ DenseSdfField::DenseSdfField(
     voxel_size_(voxel_size),
     max_distance_(max_distance)
 {
-  const std::size_t size =
-      static_cast<std::size_t>(dims_.x())
-      * static_cast<std::size_t>(dims_.y())
-      * static_cast<std::size_t>(dims_.z());
+  const std::size_t size = static_cast<std::size_t>(dims_.x())
+                           * static_cast<std::size_t>(dims_.y())
+                           * static_cast<std::size_t>(dims_.z());
   distances_.assign(size, max_distance_);
   observed_.assign(size, 0);
 }
@@ -175,8 +175,7 @@ void DenseSdfField::batchDistanceAndGradient(
 
 Aabb DenseSdfField::localAabb() const
 {
-  const Eigen::Vector3d extents =
-      dims_.cast<double>() * voxel_size_;
+  const Eigen::Vector3d extents = dims_.cast<double>() * voxel_size_;
   return Aabb(origin_, origin_ + extents);
 }
 
@@ -192,17 +191,16 @@ double DenseSdfField::maxDistance() const
 
 bool DenseSdfField::isValidIndex(const Eigen::Vector3i& index) const
 {
-  return (index.array() >= 0).all()
-      && (index.array() < dims_.array()).all();
+  return (index.array() >= 0).all() && (index.array() < dims_.array()).all();
 }
 
 std::size_t DenseSdfField::toLinear(const Eigen::Vector3i& index) const
 {
   return static_cast<std::size_t>(index.x())
-      + static_cast<std::size_t>(dims_.x())
-          * (static_cast<std::size_t>(index.y())
-             + static_cast<std::size_t>(dims_.y())
-                 * static_cast<std::size_t>(index.z()));
+         + static_cast<std::size_t>(dims_.x())
+               * (static_cast<std::size_t>(index.y())
+                  + static_cast<std::size_t>(dims_.y())
+                        * static_cast<std::size_t>(index.z()));
 }
 
 bool DenseSdfField::sampleDistance(
@@ -219,8 +217,7 @@ bool DenseSdfField::sampleDistance(
   const Eigen::Vector3d local = (point_F - origin_) / voxel_size_;
 
   if (!interpolate) {
-    Eigen::Vector3i index =
-        (local.array() + 0.5).floor().cast<int>();
+    Eigen::Vector3i index = (local.array() + 0.5).floor().cast<int>();
     if (!isValidIndex(index)) {
       return false;
     }
@@ -249,8 +246,7 @@ bool DenseSdfField::sampleDistance(
   for (int dz = 0; dz <= 1; ++dz) {
     for (int dy = 0; dy <= 1; ++dy) {
       for (int dx = 0; dx <= 1; ++dx) {
-        const Eigen::Vector3i idx =
-            base_index + Eigen::Vector3i(dx, dy, dz);
+        const Eigen::Vector3i idx = base_index + Eigen::Vector3i(dx, dy, dz);
         if (require_observed && !observed_[toLinear(idx)]) {
           return false;
         }
@@ -263,14 +259,10 @@ bool DenseSdfField::sampleDistance(
   const double wy = frac.y();
   const double wz = frac.z();
 
-  const double c00 =
-      samples[0][0][0] * (1.0 - wx) + samples[1][0][0] * wx;
-  const double c10 =
-      samples[0][1][0] * (1.0 - wx) + samples[1][1][0] * wx;
-  const double c01 =
-      samples[0][0][1] * (1.0 - wx) + samples[1][0][1] * wx;
-  const double c11 =
-      samples[0][1][1] * (1.0 - wx) + samples[1][1][1] * wx;
+  const double c00 = samples[0][0][0] * (1.0 - wx) + samples[1][0][0] * wx;
+  const double c10 = samples[0][1][0] * (1.0 - wx) + samples[1][1][0] * wx;
+  const double c01 = samples[0][0][1] * (1.0 - wx) + samples[1][0][1] * wx;
+  const double c11 = samples[0][1][1] * (1.0 - wx) + samples[1][1][1] * wx;
   const double c0 = c00 * (1.0 - wy) + c10 * wy;
   const double c1 = c01 * (1.0 - wy) + c11 * wy;
   const double dist = c0 * (1.0 - wz) + c1 * wz;
@@ -281,4 +273,4 @@ bool DenseSdfField::sampleDistance(
   return dist <= max_distance;
 }
 
-}  // namespace dart::collision::experimental
+} // namespace dart::collision::experimental

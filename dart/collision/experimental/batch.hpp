@@ -36,9 +36,10 @@
 #include <dart/collision/experimental/export.hpp>
 #include <dart/collision/experimental/types.hpp>
 
+#include <vector>
+
 #include <cstddef>
 #include <cstdint>
-#include <vector>
 
 namespace dart::collision::experimental {
 

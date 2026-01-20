@@ -111,4 +111,4 @@ class SdfShape;
     DistanceResult& result,
     const DistanceOption& option = DistanceOption());
 
-}
+} // namespace dart::collision::experimental

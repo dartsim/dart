@@ -8,23 +8,23 @@
  * This file is provided under the following "BSD-style" License
  */
 
-#include <benchmark/benchmark.h>
-
 #include <dart/collision/experimental/narrow_phase/distance.hpp>
 #include <dart/collision/experimental/sdf/dense_sdf_field.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
 
-#if DART_EXPERIMENTAL_HAVE_ESDF_MAP
-#include <dart/collision/experimental/sdf/esdf_map_field.hpp>
-#include <voxblox/core/common.h>
-#include <voxblox/core/esdf_map.h>
-#include <voxblox/core/layer.h>
+#include <benchmark/benchmark.h>
+
+#ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
+  #include <voxblox/core/common.h>
+  #include <voxblox/core/esdf_map.h>
+  #include <voxblox/core/layer.h>
 #endif
 
-#include <cstdint>
 #include <memory>
 #include <random>
 #include <vector>
+
+#include <cstdint>
 
 namespace {
 
@@ -48,8 +48,7 @@ double sphereDistance(const Eigen::Vector3d& point)
   return (point - gridCenter()).norm() - kRadius;
 }
 
-std::shared_ptr<dart::collision::experimental::DenseSdfField>
-buildDenseField()
+std::shared_ptr<dart::collision::experimental::DenseSdfField> buildDenseField()
 {
   using dart::collision::experimental::DenseSdfField;
   const Eigen::Vector3i dims(kDim, kDim, kDim);
@@ -58,9 +57,9 @@ buildDenseField()
   for (int z = 0; z < kDim; ++z) {
     for (int y = 0; y < kDim; ++y) {
       for (int x = 0; x < kDim; ++x) {
-        const Eigen::Vector3d pos =
-            gridOrigin()
-            + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) * kVoxelSize);
+        const Eigen::Vector3d pos
+            = gridOrigin()
+              + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) * kVoxelSize);
         field->setDistance(Eigen::Vector3i(x, y, z), sphereDistance(pos));
         field->setObserved(Eigen::Vector3i(x, y, z), true);
       }
@@ -84,8 +83,8 @@ std::vector<Eigen::Vector3d> buildQueryPoints(std::size_t count)
   return points;
 }
 
-#if DART_EXPERIMENTAL_HAVE_ESDF_MAP
-std::shared_ptr<voxblox::EsdfMap> buildEsdfMap()
+#ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
+std::shared_ptr<voxblox::EsdfMap> buildVoxbloxMap()
 {
   constexpr int kVoxelsPerSide = 16;
   auto layer = std::make_shared<voxblox::Layer<voxblox::EsdfVoxel>>(
@@ -94,9 +93,9 @@ std::shared_ptr<voxblox::EsdfMap> buildEsdfMap()
   for (int z = 0; z < kDim; ++z) {
     for (int y = 0; y < kDim; ++y) {
       for (int x = 0; x < kDim; ++x) {
-        const Eigen::Vector3d pos =
-            gridOrigin()
-            + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) * kVoxelSize);
+        const Eigen::Vector3d pos
+            = gridOrigin()
+              + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) * kVoxelSize);
         const double dist = sphereDistance(pos);
 
         const voxblox::GlobalIndex global(x, y, z);
@@ -117,7 +116,7 @@ std::shared_ptr<voxblox::EsdfMap> buildEsdfMap()
 }
 #endif
 
-}  // namespace
+} // namespace
 
 static void BM_DenseSdfDistance(benchmark::State& state)
 {
@@ -149,8 +148,8 @@ static void BM_DenseSphereVsSdfDistance(benchmark::State& state)
   using namespace dart::collision::experimental;
 
   static auto field = buildDenseField();
-  static auto base_ptr =
-      std::static_pointer_cast<const SignedDistanceField>(field);
+  static auto base_ptr
+      = std::static_pointer_cast<const SignedDistanceField>(field);
   static SdfShape sdf(base_ptr);
   static SphereShape sphere(0.2);
   static Eigen::Isometry3d sdf_tf = Eigen::Isometry3d::Identity();
@@ -164,8 +163,7 @@ static void BM_DenseSphereVsSdfDistance(benchmark::State& state)
       Eigen::Isometry3d sphere_tf = Eigen::Isometry3d::Identity();
       sphere_tf.translation() = point;
       DistanceResult result;
-      sum += distanceSphereSdf(
-          sphere, sphere_tf, sdf, sdf_tf, result, option);
+      sum += distanceSphereSdf(sphere, sphere_tf, sdf, sdf_tf, result, option);
     }
     benchmark::DoNotOptimize(sum);
   }
@@ -176,22 +174,17 @@ static void BM_DenseSphereVsSdfDistance(benchmark::State& state)
 
 BENCHMARK(BM_DenseSphereVsSdfDistance)->Arg(1024)->Arg(4096)->Arg(16384);
 
-#if DART_EXPERIMENTAL_HAVE_ESDF_MAP
-static void BM_EsdfMapDistance(benchmark::State& state)
+#ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
+static void BM_VoxbloxDistance(benchmark::State& state)
 {
-  static auto map = buildEsdfMap();
-  static dart::collision::experimental::EsdfMapField field(map);
+  static auto map = buildVoxbloxMap();
   auto points = buildQueryPoints(static_cast<std::size_t>(state.range(0)));
-
-  dart::collision::experimental::SdfQueryOptions options;
-  options.interpolate = true;
-  options.requireObserved = true;
 
   for (auto _ : state) {
     double sum = 0.0;
     for (const auto& point : points) {
       double dist = 0.0;
-      field.distance(point, &dist, options);
+      map->getDistanceAtPosition(point, true, &dist);
       sum += dist;
     }
     benchmark::DoNotOptimize(sum);
@@ -201,38 +194,5 @@ static void BM_EsdfMapDistance(benchmark::State& state)
       state.iterations() * static_cast<std::uint64_t>(points.size()));
 }
 
-BENCHMARK(BM_EsdfMapDistance)->Arg(1024)->Arg(4096)->Arg(16384);
-
-static void BM_EsdfMapSphereVsSdfDistance(benchmark::State& state)
-{
-  using namespace dart::collision::experimental;
-
-  static auto map = buildEsdfMap();
-  static auto field_ptr = std::make_shared<EsdfMapField>(map);
-  static auto base_ptr =
-      std::static_pointer_cast<const SignedDistanceField>(field_ptr);
-  static SdfShape sdf(base_ptr);
-  static SphereShape sphere(0.2);
-  static Eigen::Isometry3d sdf_tf = Eigen::Isometry3d::Identity();
-
-  auto points = buildQueryPoints(static_cast<std::size_t>(state.range(0)));
-
-  DistanceOption option;
-  for (auto _ : state) {
-    double sum = 0.0;
-    for (const auto& point : points) {
-      Eigen::Isometry3d sphere_tf = Eigen::Isometry3d::Identity();
-      sphere_tf.translation() = point;
-      DistanceResult result;
-      sum += distanceSphereSdf(
-          sphere, sphere_tf, sdf, sdf_tf, result, option);
-    }
-    benchmark::DoNotOptimize(sum);
-  }
-
-  state.SetItemsProcessed(
-      state.iterations() * static_cast<std::uint64_t>(points.size()));
-}
-
-BENCHMARK(BM_EsdfMapSphereVsSdfDistance)->Arg(1024)->Arg(4096)->Arg(16384);
+BENCHMARK(BM_VoxbloxDistance)->Arg(1024)->Arg(4096)->Arg(16384);
 #endif

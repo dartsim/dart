@@ -199,7 +199,7 @@ void AabbTreeBroadPhase::insertLeaf(std::size_t leafIndex)
     return;
   }
 
-  const Aabb leafAabb = nodes_[leafIndex].fatAabb;
+  const Aabb& leafAabb = nodes_[leafIndex].fatAabb;
   std::size_t siblingIndex = findBestSibling(leafAabb);
 
   std::size_t oldParent = nodes_[siblingIndex].parent;

@@ -37,9 +37,10 @@
 
 #include <Eigen/Core>
 
-#include <cstdint>
 #include <limits>
 #include <span>
+
+#include <cstdint>
 
 namespace dart::collision::experimental {
 
@@ -65,24 +66,27 @@ public:
   virtual bool distance(
       const Eigen::Vector3d& point_F,
       double* distance,
-      const SdfQueryOptions& options) const = 0;
+      const SdfQueryOptions& options) const
+      = 0;
 
   virtual bool distanceAndGradient(
       const Eigen::Vector3d& point_F,
       double* distance,
       Eigen::Vector3d* gradient,
-      const SdfQueryOptions& options) const = 0;
+      const SdfQueryOptions& options) const
+      = 0;
 
   virtual void batchDistanceAndGradient(
       std::span<const Eigen::Vector3d> points_F,
       std::span<double> distances,
       std::span<Eigen::Vector3d> gradients,
       std::span<std::uint8_t> observed,
-      const SdfQueryOptions& options) const = 0;
+      const SdfQueryOptions& options) const
+      = 0;
 
   [[nodiscard]] virtual Aabb localAabb() const = 0;
   [[nodiscard]] virtual double voxelSize() const = 0;
   [[nodiscard]] virtual double maxDistance() const = 0;
 };
 
-}  // namespace dart::collision::experimental
+} // namespace dart::collision::experimental

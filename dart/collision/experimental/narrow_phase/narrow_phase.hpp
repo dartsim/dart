@@ -88,4 +88,4 @@ public:
   static bool isCapsuleCastSupported(ShapeType type);
 };
 
-}
+} // namespace dart::collision::experimental

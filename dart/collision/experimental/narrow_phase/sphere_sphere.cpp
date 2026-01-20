@@ -31,7 +31,6 @@
  */
 
 #include <dart/collision/experimental/narrow_phase/sphere_sphere.hpp>
-
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <cmath>
@@ -99,4 +98,4 @@ bool collideSpheres(
       option);
 }
 
-}
+} // namespace dart::collision::experimental

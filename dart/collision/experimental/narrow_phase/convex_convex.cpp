@@ -31,12 +31,12 @@
  */
 
 #include <dart/collision/experimental/narrow_phase/convex_convex.hpp>
-
 #include <dart/collision/experimental/narrow_phase/mpr.hpp>
 
-#include <cmath>
 #include <limits>
 #include <vector>
+
+#include <cmath>
 
 namespace dart::collision::experimental {
 
@@ -78,7 +78,8 @@ SupportFunction makeBoxSupportFunction(
     const BoxShape& shape, const Eigen::Isometry3d& transform)
 {
   Eigen::Vector3d halfExtents = shape.getHalfExtents();
-  return [halfExtents, transform](const Eigen::Vector3d& dir) -> Eigen::Vector3d {
+  return [halfExtents,
+          transform](const Eigen::Vector3d& dir) -> Eigen::Vector3d {
     Eigen::Vector3d localDir = transform.linear().transpose() * dir;
     Eigen::Vector3d localSupport;
     localSupport.x() = (localDir.x() >= 0) ? halfExtents.x() : -halfExtents.x();
@@ -101,9 +102,9 @@ SupportFunction makeCapsuleSupportFunction(
       return transform * Eigen::Vector3d(radius, 0, halfHeight);
     }
     Eigen::Vector3d dirNorm = localDir / len;
-    Eigen::Vector3d axisPoint =
-        (dirNorm.z() >= 0) ? Eigen::Vector3d(0, 0, halfHeight)
-                           : Eigen::Vector3d(0, 0, -halfHeight);
+    Eigen::Vector3d axisPoint = (dirNorm.z() >= 0)
+                                    ? Eigen::Vector3d(0, 0, halfHeight)
+                                    : Eigen::Vector3d(0, 0, -halfHeight);
     Eigen::Vector3d localSupport = axisPoint + radius * dirNorm;
     return transform * localSupport;
   };
@@ -118,8 +119,8 @@ SupportFunction makeCylinderSupportFunction(
              const Eigen::Vector3d& dir) -> Eigen::Vector3d {
     Eigen::Vector3d localDir = transform.linear().transpose() * dir;
     Eigen::Vector3d localSupport;
-    double xyLen = std::sqrt(localDir.x() * localDir.x()
-                             + localDir.y() * localDir.y());
+    double xyLen
+        = std::sqrt(localDir.x() * localDir.x() + localDir.y() * localDir.y());
     if (xyLen < 1e-10) {
       localSupport.x() = radius;
       localSupport.y() = 0;
@@ -157,7 +158,9 @@ SupportFunction makeSupportFunction(
       return makeMeshSupportFunction(
           static_cast<const MeshShape&>(shape), transform);
     default:
-      return [](const Eigen::Vector3d&) { return Eigen::Vector3d::Zero(); };
+      return [](const Eigen::Vector3d&) {
+        return Eigen::Vector3d::Zero();
+      };
   }
 }
 
@@ -197,7 +200,7 @@ Eigen::Vector3d computeShapeCenter(
   }
 }
 
-}  // namespace
+} // namespace
 
 bool collideConvexConvex(
     const Shape& shape1,
@@ -239,7 +242,8 @@ bool collideConvexConvex(
   } else {
     const Eigen::Vector3d centerA = computeShapeCenter(shape1, tf1);
     const Eigen::Vector3d centerB = computeShapeCenter(shape2, tf2);
-    MprResult mprResult = Mpr::penetration(supportA, supportB, centerA, centerB);
+    MprResult mprResult
+        = Mpr::penetration(supportA, supportB, centerA, centerB);
     if (mprResult.success) {
       penetrationDepth = mprResult.depth;
       contactNormal = -mprResult.normal;
@@ -296,8 +300,8 @@ double distanceConvexConvex(
       result.pointOnObject1 = gjkResult.closestPointA;
       result.pointOnObject2 = gjkResult.closestPointB;
       if (gjkResult.distance > 1e-12) {
-        result.normal =
-            (gjkResult.closestPointB - gjkResult.closestPointA).normalized();
+        result.normal
+            = (gjkResult.closestPointB - gjkResult.closestPointA).normalized();
       } else {
         result.normal = Eigen::Vector3d::UnitX();
       }
@@ -321,7 +325,8 @@ double distanceConvexConvex(
   } else {
     const Eigen::Vector3d centerA = computeShapeCenter(shape1, tf1);
     const Eigen::Vector3d centerB = computeShapeCenter(shape2, tf2);
-    MprResult mprResult = Mpr::penetration(supportA, supportB, centerA, centerB);
+    MprResult mprResult
+        = Mpr::penetration(supportA, supportB, centerA, centerB);
     if (mprResult.success) {
       depth = mprResult.depth;
       pointA = mprResult.pointOnA;
@@ -344,4 +349,4 @@ double distanceConvexConvex(
   return -depth;
 }
 
-}  // namespace dart::collision::experimental
+} // namespace dart::collision::experimental

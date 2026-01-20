@@ -51,9 +51,7 @@ struct ShapeComponent
   std::unique_ptr<Shape> shape;
 
   ShapeComponent() = default;
-  explicit ShapeComponent(std::unique_ptr<Shape> s) : shape(std::move(s))
-  {
-  }
+  explicit ShapeComponent(std::unique_ptr<Shape> s) : shape(std::move(s)) {}
 
   ShapeComponent(ShapeComponent&&) = default;
   ShapeComponent& operator=(ShapeComponent&&) = default;
@@ -83,4 +81,4 @@ struct UserDataComponent
   void* userData = nullptr;
 };
 
-}
+} // namespace dart::collision::experimental::comps

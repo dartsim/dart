@@ -106,8 +106,8 @@ void ContactManifold::addContact(const ContactPoint& contact)
       }
     }
 
-    const Eigen::Vector3d normal = selectReductionNormal(
-        contact, contacts_, numContacts_);
+    const Eigen::Vector3d normal
+        = selectReductionNormal(contact, contacts_, numContacts_);
 
     double bestScore = std::numeric_limits<double>::lowest();
     double bestDepthSum = std::numeric_limits<double>::lowest();
@@ -129,7 +129,8 @@ void ContactManifold::addContact(const ContactPoint& contact)
         depthSum += candidates[i].depth;
       }
       const double score = spreadScore(subset, normal);
-      if (score > bestScore || (score == bestScore && depthSum > bestDepthSum)) {
+      if (score > bestScore
+          || (score == bestScore && depthSum > bestDepthSum)) {
         bestScore = score;
         bestDepthSum = depthSum;
         bestDrop = drop;
@@ -241,7 +242,8 @@ const CollisionObject* ContactManifold::getObject2() const
   return object2_;
 }
 
-void ContactManifold::setObjects(const CollisionObject* o1, const CollisionObject* o2)
+void ContactManifold::setObjects(
+    const CollisionObject* o1, const CollisionObject* o2)
 {
   object1_ = o1;
   object2_ = o2;

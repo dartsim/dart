@@ -75,4 +75,4 @@ DART_COLLISION_EXPERIMENTAL_API double distanceConvexConvex(
     DistanceResult& result,
     const DistanceOption& option);
 
-}
+} // namespace dart::collision::experimental
