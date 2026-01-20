@@ -245,6 +245,7 @@ For all available CMake configuration options and their defaults, refer to [`CMa
 - `DART_BUILD_DARTPY` - Enable Python bindings
 - `DART_BUILD_GUI` - Enable OpenSceneGraph GUI
 - `DART_BUILD_GUI_RAYLIB` - Enable experimental Raylib integration (builds `raylib` example)
+- `DART_BUILD_GUI_VSG` - Enable VulkanSceneGraph visualization (requires Vulkan SDK; used by `collision_viz` example)
 - `DART_BUILD_TESTS` - Build C++ tests (wraps the standard `BUILD_TESTING` option)
 - `DART_BUILD_EXAMPLES` - Build the GUI-based example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
 - `DART_BUILD_TUTORIALS` - Build the GUI-based tutorial targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)

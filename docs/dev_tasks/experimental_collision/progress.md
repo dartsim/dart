@@ -17,7 +17,7 @@
 | GJK/EPA Algorithm          | **Complete** | 100%     |
 | Convex/Mesh Shapes         | **Complete** | 100%     |
 | Continuous Collision (CCD) | **Complete** | 100%     |
-| Visual Verification        | **Partial**  | 70%      |
+| Visual Verification        | **Complete** | 100%     |
 | DART Integration           | **Deferred** | -        |
 
 ---
@@ -226,7 +226,7 @@ bool NarrowPhase::sphereCast(start, end, radius, target, option, result);
 bool NarrowPhase::isSphereCastSupported(ShapeType type);
 ```
 
-### Priority 8: Visual Verification — PARTIAL (Code Complete, Integration Incomplete)
+### Priority 8: Visual Verification — COMPLETE
 
 **Implementation**: `dart/gui/vsg/` module with `examples/collision_viz/`
 
@@ -246,23 +246,23 @@ bool NarrowPhase::isSphereCastSupported(ShapeType type);
 | Headless rendering              | **Complete** | `SimpleViewer::headless()` + PPM export   |
 | Interactive windowed mode       | **Complete** | Mouse rotation/zoom, close to exit        |
 
-#### Integration Gaps (Blocking "Complete" Status)
+#### CI & Testing Integration (2026-01-20)
 
-| Gap                           | Status      | Impact                                              |
-| ----------------------------- | ----------- | --------------------------------------------------- |
-| `DART_BUILD_GUI_VSG=OFF`      | **Blocker** | Disabled by default; developers can't easily use it |
-| No CI integration             | **Blocker** | Not tested in CI; regressions undetected            |
-| No unit tests                 | **Blocker** | No automated verification of VSG code               |
-| Vulkan dependency             | Risk        | May not work on all systems (needs GPU/drivers)     |
-| Not verified on all platforms | Risk        | Only tested manually on Linux                       |
+| Component                  | Status       | Notes                                              |
+| -------------------------- | ------------ | -------------------------------------------------- |
+| CI job (`vsg-rendering`)   | **Complete** | Ubuntu workflow with Vulkan deps                   |
+| Build option in pixi.toml  | **Complete** | `DART_BUILD_GUI_VSG_VALUE` variable added          |
+| Unit tests                 | **Complete** | 44 tests (GeometryBuilders, CollisionSceneBuilder, SimpleViewer, DebugDraw) |
+| Documentation              | **Complete** | `DART_BUILD_GUI_VSG` option documented in building.md |
+| Headless CI verification   | **Complete** | `collision_viz --headless --frames 10` in CI       |
 
-#### Next Steps for Visualization
+#### Remaining Considerations (Low Priority)
 
-1. **P0: Add CI smoke test** — Build `collision_viz` with `DART_BUILD_GUI_VSG=ON` on at least one CI platform
-2. **P0: Enable by default OR document clearly** — Either enable VSG in default build, or add clear docs on how to enable
-3. **P1: Add headless CI verification** — Run `collision_viz --headless` in CI and verify output image
-4. **P2: Add unit tests** — Test GeometryBuilders and CollisionSceneBuilder APIs
-5. **P2: Cross-platform verification** — Test on macOS and Windows (if Vulkan available)
+| Item                          | Status   | Notes                                           |
+| ----------------------------- | -------- | ----------------------------------------------- |
+| macOS CI                      | Deferred | Vulkan not well-supported on macOS              |
+| Windows CI                    | Deferred | Would need Vulkan SDK setup in CI               |
+| Default-ON build              | Deferred | Kept OFF to avoid Vulkan dependency for most users |
 
 #### Key APIs (Reference)
 
