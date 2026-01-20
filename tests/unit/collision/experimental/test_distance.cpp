@@ -299,6 +299,75 @@ TEST(DistanceCapsuleBox, Separated)
   EXPECT_NEAR(dist, 2.0, 1e-6);
 }
 
+TEST(DistanceCapsuleBox, ThinSlabSeparated)
+{
+  CapsuleShape capsule(0.5, 2.0);
+  BoxShape box(Eigen::Vector3d(1.0, 1.0, 1e-3));
+
+  Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
+  tfCapsule.translation() = Eigen::Vector3d(0, 0, 2.0);
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+
+  DistanceResult result;
+  double dist = distanceCapsuleBox(capsule, tfCapsule, box, tfBox, result);
+
+  EXPECT_NEAR(dist, 0.499, 1e-6);
+}
+
+TEST(DistancePlaneShape, SphereAbovePlane)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  SphereShape sphere(1.0);
+
+  Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  tfSphere.translation() = Eigen::Vector3d(0, 0, 3.0);
+
+  DistanceResult result;
+  double dist = distancePlaneShape(plane, tfPlane, sphere, tfSphere, result);
+
+  EXPECT_NEAR(dist, 2.0, 1e-6);
+  EXPECT_NEAR(result.pointOnObject1.z(), 0.0, 1e-6);
+  EXPECT_NEAR(result.pointOnObject2.z(), 2.0, 1e-6);
+  EXPECT_NEAR(result.normal.z(), 1.0, 1e-6);
+}
+
+TEST(DistancePlaneShape, SpherePenetratingPlane)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  SphereShape sphere(1.0);
+
+  Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  tfSphere.translation() = Eigen::Vector3d(0, 0, 0.5);
+
+  DistanceResult result;
+  double dist = distancePlaneShape(plane, tfPlane, sphere, tfSphere, result);
+
+  EXPECT_NEAR(dist, -0.5, 1e-6);
+  EXPECT_NEAR(result.pointOnObject1.z(), 0.0, 1e-6);
+  EXPECT_NEAR(result.pointOnObject2.z(), -0.5, 1e-6);
+  EXPECT_NEAR(result.normal.z(), -1.0, 1e-6);
+}
+
+TEST(DistancePlaneShape, BoxAbovePlane)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  BoxShape box(Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+  tfBox.translation() = Eigen::Vector3d(0, 0, 1.5);
+
+  DistanceResult result;
+  double dist = distancePlaneShape(plane, tfPlane, box, tfBox, result);
+
+  EXPECT_NEAR(dist, 0.5, 1e-6);
+  EXPECT_NEAR(result.pointOnObject1.z(), 0.0, 1e-6);
+  EXPECT_NEAR(result.pointOnObject2.z(), 0.5, 1e-6);
+  EXPECT_NEAR(result.normal.z(), 1.0, 1e-6);
+}
+
 TEST(NarrowPhaseDistance, IsDistanceSupported)
 {
   EXPECT_TRUE(
