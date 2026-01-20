@@ -104,12 +104,19 @@ See `docs/onboarding/code-style.md` for canonical conventions once updated for t
 - Users can suppress warnings via `DART_SUPPRESS_DEPRECATED_HEADER_WARNING`.
 - Preserves backward compatibility during transition.
 - Directory structure is maintained in installed headers.
+- Centralized generation keeps maintenance low (no checked-in wrappers).
+- Build-time overhead is small (simple file writes during CMake configure).
+- Packaging stays simple: no reliance on symlinks or platform-specific install tricks.
+- Include paths remain deterministic (wrappers always include the snake_case header).
 
 **Caveats:**
 
 - Acronym handling is centralized in `dart_snake_to_pascal()`; new acronym-heavy headers must update the mapping.
 - Case-only wrappers are suppressed on case-insensitive filesystems (they still resolve because the FS is case-insensitive).
 - Component umbrellas can collide with concrete headers (e.g., `dart/sensor/sensor.hpp`); skip installing the generated umbrella in those cases.
+- Warnings can be noisy for downstreams that treat warnings as errors unless they suppress the header warnings.
+- Extra wrapper headers increase install footprint and can confuse header discovery tooling.
+- Mixed includes (PascalCase and snake_case) can delay cleanup because warnings only fire when legacy headers are included.
 
 ## 4. Case-Insensitivity Analysis
 
@@ -127,7 +134,15 @@ On case-insensitive filesystems (macOS default, Windows), `World.hpp` and `world
 
 If a component already has a concrete header named `<component>.hpp` (snake_case), the generated `<component>.hpp` umbrella header can collide and create include recursion. In this PR, the `dart/sensor` component skips installing the generated umbrella header to avoid shadowing the concrete `dart/sensor/sensor.hpp`.
 
-## 5. Recommended Migration Strategy
+## 5. Alternatives Considered
+
+- **Install-time symlinks**: Works well on Unix but is brittle on Windows and some packaging flows; case-only symlinks still collide on case-insensitive filesystems.
+- **Install-time copies without warnings**: Reduces noise but hides deprecations, making the migration timeline harder to enforce.
+- **Checked-in PascalCase wrappers**: Avoids CMake generation but adds long-term maintenance burden and risks divergence from the canonical headers.
+- **Compiler include maps/module maps**: Not portable across toolchains and adds extra build-system complexity.
+- **Drop compat immediately**: Maximum churn for downstreams and breaks `gz-physics` users; not acceptable for DART 7.x.
+
+## 6. Recommended Migration Strategy
 
 ### DART 7.x (Current)
 
@@ -141,7 +156,7 @@ If a component already has a concrete header named `<component>.hpp` (snake_case
 - Rename the remaining case-only umbrella headers (`dart/All.hpp`, `dart/Export.hpp`).
 - Update migration notes and downstream guidance.
 
-## 6. Validation
+## 7. Validation
 
 - `pixi run -e gazebo test-gz` (passed).
 
