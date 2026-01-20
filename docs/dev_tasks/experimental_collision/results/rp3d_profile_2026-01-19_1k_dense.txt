@@ -1,0 +1,188 @@
+---------------
+| Profiling : Root (total running time : 2.51628 ms) ---
+|   0 -- PhysicsWorld::update() : 87.1733 % | 0.731175 ms/frame (3 calls)
+|   1 -- SphereShape::computeAABB() : 0 % | 0 ms/frame (0 calls)
+| Unaccounted : 0.322756 ms (12.8267 %)
+   ---------------
+   | Profiling : PhysicsWorld::update() (total running time : 2.19352 ms) ---
+   |   0 -- BroadPhaseSystem::updateColliders() : 19.3203 % | 0.141265 ms/frame (3 calls)
+   |   1 -- DynamicsSystem::updateBodiesState() : 3.70782 % | 0.0271107 ms/frame (3 calls)
+   |   2 -- PhysicsWorld::solvePositionCorrection() : 0.0265326 % | 0.000194 ms/frame (3 calls)
+   |   3 -- DynamicsSystem::integrateRigidBodiesPositions() : 1.34888 % | 0.00986267 ms/frame (3 calls)
+   |   4 -- PhysicsWorld::solveContactsAndConstraints() : 31.0018 % | 0.226677 ms/frame (3 calls)
+   |   5 -- DynamicsSystem::integrateRigidBodiesVelocities() : 1.49659 % | 0.0109427 ms/frame (3 calls)
+   |   6 -- OverlappingPairs::updateCollidingInPreviousFrame() : 0.0559374 % | 0.000409 ms/frame (3 calls)
+   |   7 -- CollisionDetectionSystem::createContacts() : 2.06699 % | 0.0151133 ms/frame (3 calls)
+   |   8 -- PhysicsWorld::createIslands() : 4.16654 % | 0.0304647 ms/frame (3 calls)
+   |   9 -- CollisionDetectionSystem::computeCollisionDetection() : 33.1813 % | 0.242613 ms/frame (3 calls)
+   | Unaccounted : 0.079566 ms (3.62731 %)
+      ---------------
+      | Profiling : BroadPhaseSystem::updateColliders() (total running time : 0.423795 ms) ---
+      |   0 -- BroadPhaseSystem::updateCollidersComponents() : 99.9523 % | 0.141198 ms/frame (3 calls)
+      | Unaccounted : 0.000202 ms (0.0476646 %)
+         ---------------
+         | Profiling : BroadPhaseSystem::updateCollidersComponents() (total running time : 0.423593 ms) ---
+         |   0 -- DynamicAABBTree::updateObject() : 37.2586 % | 0.0526083 ms/frame (3000 calls)
+         |   1 -- SphereShape::computeAABB() : 13.1272 % | 0.0185353 ms/frame (3000 calls)
+         | Unaccounted : 0.210162 ms (49.6141 %)
+      ---------------
+      | Profiling : PhysicsWorld::solvePositionCorrection() (total running time : 0.000582 ms) ---
+      |   0 -- ConstraintSolverSystem::solvePositionConstraints() : 46.2199 % | 8.96667e-05 ms/frame (9 calls)
+      | Unaccounted : 0.000313 ms (53.7801 %)
+      ---------------
+      | Profiling : PhysicsWorld::solveContactsAndConstraints() (total running time : 0.680032 ms) ---
+      |   0 -- ContactSolver::storeImpulses() : 0.717172 % | 0.00162567 ms/frame (3 calls)
+      |   1 -- ContactSolverSystem::solve() : 59.2197 % | 0.134238 ms/frame (18 calls)
+      |   2 -- ConstraintSolverSystem::solveVelocityConstraints() : 0.0876429 % | 0.000198667 ms/frame (18 calls)
+      |   3 -- ConstraintSolverSystem::initialize() : 0.082202 % | 0.000186333 ms/frame (3 calls)
+      |   4 -- ContactSolver::init() : 39.6242 % | 0.089819 ms/frame (3 calls)
+      | Unaccounted : 0.00183 ms (0.269105 %)
+         ---------------
+         | Profiling : ContactSolver::init() (total running time : 0.269457 ms) ---
+         |   0 -- ContactSolver::warmStart() : 10.1003 % | 0.009072 ms/frame (3 calls)
+         |   1 -- ContactSolver::initializeForIsland() : 84.1837 % | 0.075613 ms/frame (464 calls)
+         | Unaccounted : 0.015402 ms (5.71594 %)
+            ---------------
+            | Profiling : ContactSolver::initializeForIsland() (total running time : 0.226839 ms) ---
+            |   0 -- ContactSolver::computeFrictionVectors() : 12.3277 % | 0.00932133 ms/frame (709 calls)
+            | Unaccounted : 0.198875 ms (87.6723 %)
+      ---------------
+      | Profiling : CollisionDetectionSystem::createContacts() (total running time : 0.04534 ms) ---
+      |   0 -- CollisionDetectionSystem::computeLostContactPairs() : 18.0966 % | 0.002735 ms/frame (3 calls)
+      | Unaccounted : 0.037135 ms (81.9034 %)
+      ---------------
+      | Profiling : CollisionDetectionSystem::computeCollisionDetection() (total running time : 0.72784 ms) ---
+      |   0 -- CollisionDetectionSystem::computeNarrowPhase() : 42.4074 % | 0.102886 ms/frame (3 calls)
+      |   1 -- CollisionDetectionSystem::computeMiddlePhase() : 30.5525 % | 0.0741243 ms/frame (3 calls)
+      |   2 -- CollisionDetectionSystem::computeBroadPhase() : 26.9819 % | 0.0654617 ms/frame (3 calls)
+      | Unaccounted : 0.000424 ms (0.0582546 %)
+         ---------------
+         | Profiling : CollisionDetectionSystem::computeNarrowPhase() (total running time : 0.308658 ms) ---
+         |   0 -- CollisionDetectionSystem::reducePotentialContactManifolds() : 10.0318 % | 0.0103213 ms/frame (3 calls)
+         |   1 -- CollisionDetectionSystem::processPotentialContacts() : 73.4522 % | 0.075572 ms/frame (18 calls)
+         | Unaccounted : 0.050978 ms (16.516 %)
+            ---------------
+            | Profiling : CollisionDetectionSystem::reducePotentialContactManifolds() (total running time : 0.030964 ms) ---
+            |   0 -- CollisionDetectionSystem::removeDuplicatedContactPointsInManifold() : 40.7086 % | 0.00420167 ms/frame (709 calls)
+            | Unaccounted : 0.018359 ms (59.2914 %)
+         ---------------
+         | Profiling : CollisionDetectionSystem::computeMiddlePhase() (total running time : 0.222373 ms) ---
+         |   0 -- OverlappingPairs::clearObsoleteLastFrameCollisionInfos() : 0.0242835 % | 1.8e-05 ms/frame (3 calls)
+         | Unaccounted : 0.222319 ms (99.9757 %)
+         ---------------
+         | Profiling : CollisionDetectionSystem::computeBroadPhase() (total running time : 0.196385 ms) ---
+         |   0 -- CollisionDetectionSystem::removeNonOverlappingPairs() : 2.91825 % | 0.00191033 ms/frame (3 calls)
+         |   1 -- CollisionDetectionSystem::updateOverlappingPairs() : 10.8017 % | 0.007071 ms/frame (3 calls)
+         |   2 -- BroadPhaseSystem::computeOverlappingPairs() : 86.0539 % | 0.0563323 ms/frame (3 calls)
+         | Unaccounted : 0.000444 ms (0.226087 %)
+            ---------------
+            | Profiling : CollisionDetectionSystem::removeNonOverlappingPairs() (total running time : 0.005731 ms) ---
+            |   0 -- OverlappingPairs::removeConvexPairWithIndex() : 23.2769 % | 0.000444667 ms/frame (9 calls)
+            |   1 -- BroadPhaseSystem::testOverlappingShapes() : 5.89775 % | 0.000112667 ms/frame (9 calls)
+            | Unaccounted : 0.004059 ms (70.8253 %)
+            ---------------
+            | Profiling : CollisionDetectionSystem::updateOverlappingPairs() (total running time : 0.021213 ms) ---
+            |   0 -- OverlappingPairs::addPair() : 9.05577 % | 0.000640333 ms/frame (13 calls)
+            | Unaccounted : 0.019292 ms (90.9442 %)
+               ---------------
+               | Profiling : OverlappingPairs::addPair() (total running time : 0.001921 ms) ---
+               |   0 -- CollisionDispatch::selectNarrowPhaseAlgorithm() : 12.1291 % | 7.76667e-05 ms/frame (13 calls)
+               | Unaccounted : 0.001688 ms (87.8709 %)
+            ---------------
+            | Profiling : BroadPhaseSystem::computeOverlappingPairs() (total running time : 0.168997 ms) ---
+            |   0 -- DynamicAABBTree::reportAllShapesOverlappingWithShapes() : 92.6306 % | 0.052181 ms/frame (3 calls)
+            | Unaccounted : 0.012454 ms (7.36936 %)
+---------------
+| Profiling : Root (total running time : 2.92319 ms) ---
+|   0 -- PhysicsWorld::update() : 75.0388 % | 0.731175 ms/frame (3 calls)
+|   1 -- SphereShape::computeAABB() : 0 % | 0 ms/frame (0 calls)
+| Unaccounted : 0.729663 ms (24.9612 %)
+   ---------------
+   | Profiling : PhysicsWorld::update() (total running time : 2.19352 ms) ---
+   |   0 -- BroadPhaseSystem::updateColliders() : 19.3203 % | 0.141265 ms/frame (3 calls)
+   |   1 -- DynamicsSystem::updateBodiesState() : 3.70782 % | 0.0271107 ms/frame (3 calls)
+   |   2 -- PhysicsWorld::solvePositionCorrection() : 0.0265326 % | 0.000194 ms/frame (3 calls)
+   |   3 -- DynamicsSystem::integrateRigidBodiesPositions() : 1.34888 % | 0.00986267 ms/frame (3 calls)
+   |   4 -- PhysicsWorld::solveContactsAndConstraints() : 31.0018 % | 0.226677 ms/frame (3 calls)
+   |   5 -- DynamicsSystem::integrateRigidBodiesVelocities() : 1.49659 % | 0.0109427 ms/frame (3 calls)
+   |   6 -- OverlappingPairs::updateCollidingInPreviousFrame() : 0.0559374 % | 0.000409 ms/frame (3 calls)
+   |   7 -- CollisionDetectionSystem::createContacts() : 2.06699 % | 0.0151133 ms/frame (3 calls)
+   |   8 -- PhysicsWorld::createIslands() : 4.16654 % | 0.0304647 ms/frame (3 calls)
+   |   9 -- CollisionDetectionSystem::computeCollisionDetection() : 33.1813 % | 0.242613 ms/frame (3 calls)
+   | Unaccounted : 0.079566 ms (3.62731 %)
+      ---------------
+      | Profiling : BroadPhaseSystem::updateColliders() (total running time : 0.423795 ms) ---
+      |   0 -- BroadPhaseSystem::updateCollidersComponents() : 99.9523 % | 0.141198 ms/frame (3 calls)
+      | Unaccounted : 0.000202 ms (0.0476646 %)
+         ---------------
+         | Profiling : BroadPhaseSystem::updateCollidersComponents() (total running time : 0.423593 ms) ---
+         |   0 -- DynamicAABBTree::updateObject() : 37.2586 % | 0.0526083 ms/frame (3000 calls)
+         |   1 -- SphereShape::computeAABB() : 13.1272 % | 0.0185353 ms/frame (3000 calls)
+         | Unaccounted : 0.210162 ms (49.6141 %)
+      ---------------
+      | Profiling : PhysicsWorld::solvePositionCorrection() (total running time : 0.000582 ms) ---
+      |   0 -- ConstraintSolverSystem::solvePositionConstraints() : 46.2199 % | 8.96667e-05 ms/frame (9 calls)
+      | Unaccounted : 0.000313 ms (53.7801 %)
+      ---------------
+      | Profiling : PhysicsWorld::solveContactsAndConstraints() (total running time : 0.680032 ms) ---
+      |   0 -- ContactSolver::storeImpulses() : 0.717172 % | 0.00162567 ms/frame (3 calls)
+      |   1 -- ContactSolverSystem::solve() : 59.2197 % | 0.134238 ms/frame (18 calls)
+      |   2 -- ConstraintSolverSystem::solveVelocityConstraints() : 0.0876429 % | 0.000198667 ms/frame (18 calls)
+      |   3 -- ConstraintSolverSystem::initialize() : 0.082202 % | 0.000186333 ms/frame (3 calls)
+      |   4 -- ContactSolver::init() : 39.6242 % | 0.089819 ms/frame (3 calls)
+      | Unaccounted : 0.00183 ms (0.269105 %)
+         ---------------
+         | Profiling : ContactSolver::init() (total running time : 0.269457 ms) ---
+         |   0 -- ContactSolver::warmStart() : 10.1003 % | 0.009072 ms/frame (3 calls)
+         |   1 -- ContactSolver::initializeForIsland() : 84.1837 % | 0.075613 ms/frame (464 calls)
+         | Unaccounted : 0.015402 ms (5.71594 %)
+            ---------------
+            | Profiling : ContactSolver::initializeForIsland() (total running time : 0.226839 ms) ---
+            |   0 -- ContactSolver::computeFrictionVectors() : 12.3277 % | 0.00932133 ms/frame (709 calls)
+            | Unaccounted : 0.198875 ms (87.6723 %)
+      ---------------
+      | Profiling : CollisionDetectionSystem::createContacts() (total running time : 0.04534 ms) ---
+      |   0 -- CollisionDetectionSystem::computeLostContactPairs() : 18.0966 % | 0.002735 ms/frame (3 calls)
+      | Unaccounted : 0.037135 ms (81.9034 %)
+      ---------------
+      | Profiling : CollisionDetectionSystem::computeCollisionDetection() (total running time : 0.72784 ms) ---
+      |   0 -- CollisionDetectionSystem::computeNarrowPhase() : 42.4074 % | 0.102886 ms/frame (3 calls)
+      |   1 -- CollisionDetectionSystem::computeMiddlePhase() : 30.5525 % | 0.0741243 ms/frame (3 calls)
+      |   2 -- CollisionDetectionSystem::computeBroadPhase() : 26.9819 % | 0.0654617 ms/frame (3 calls)
+      | Unaccounted : 0.000424 ms (0.0582546 %)
+         ---------------
+         | Profiling : CollisionDetectionSystem::computeNarrowPhase() (total running time : 0.308658 ms) ---
+         |   0 -- CollisionDetectionSystem::reducePotentialContactManifolds() : 10.0318 % | 0.0103213 ms/frame (3 calls)
+         |   1 -- CollisionDetectionSystem::processPotentialContacts() : 73.4522 % | 0.075572 ms/frame (18 calls)
+         | Unaccounted : 0.050978 ms (16.516 %)
+            ---------------
+            | Profiling : CollisionDetectionSystem::reducePotentialContactManifolds() (total running time : 0.030964 ms) ---
+            |   0 -- CollisionDetectionSystem::removeDuplicatedContactPointsInManifold() : 40.7086 % | 0.00420167 ms/frame (709 calls)
+            | Unaccounted : 0.018359 ms (59.2914 %)
+         ---------------
+         | Profiling : CollisionDetectionSystem::computeMiddlePhase() (total running time : 0.222373 ms) ---
+         |   0 -- OverlappingPairs::clearObsoleteLastFrameCollisionInfos() : 0.0242835 % | 1.8e-05 ms/frame (3 calls)
+         | Unaccounted : 0.222319 ms (99.9757 %)
+         ---------------
+         | Profiling : CollisionDetectionSystem::computeBroadPhase() (total running time : 0.196385 ms) ---
+         |   0 -- CollisionDetectionSystem::removeNonOverlappingPairs() : 2.91825 % | 0.00191033 ms/frame (3 calls)
+         |   1 -- CollisionDetectionSystem::updateOverlappingPairs() : 10.8017 % | 0.007071 ms/frame (3 calls)
+         |   2 -- BroadPhaseSystem::computeOverlappingPairs() : 86.0539 % | 0.0563323 ms/frame (3 calls)
+         | Unaccounted : 0.000444 ms (0.226087 %)
+            ---------------
+            | Profiling : CollisionDetectionSystem::removeNonOverlappingPairs() (total running time : 0.005731 ms) ---
+            |   0 -- OverlappingPairs::removeConvexPairWithIndex() : 23.2769 % | 0.000444667 ms/frame (9 calls)
+            |   1 -- BroadPhaseSystem::testOverlappingShapes() : 5.89775 % | 0.000112667 ms/frame (9 calls)
+            | Unaccounted : 0.004059 ms (70.8253 %)
+            ---------------
+            | Profiling : CollisionDetectionSystem::updateOverlappingPairs() (total running time : 0.021213 ms) ---
+            |   0 -- OverlappingPairs::addPair() : 9.05577 % | 0.000640333 ms/frame (13 calls)
+            | Unaccounted : 0.019292 ms (90.9442 %)
+               ---------------
+               | Profiling : OverlappingPairs::addPair() (total running time : 0.001921 ms) ---
+               |   0 -- CollisionDispatch::selectNarrowPhaseAlgorithm() : 12.1291 % | 7.76667e-05 ms/frame (13 calls)
+               | Unaccounted : 0.001688 ms (87.8709 %)
+            ---------------
+            | Profiling : BroadPhaseSystem::computeOverlappingPairs() (total running time : 0.168997 ms) ---
+            |   0 -- DynamicAABBTree::reportAllShapesOverlappingWithShapes() : 92.6306 % | 0.052181 ms/frame (3 calls)
+            | Unaccounted : 0.012454 ms (7.36936 %)
