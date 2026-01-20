@@ -56,7 +56,9 @@ set(collision_experimental_sources
   narrow_phase/raycast.cpp
   narrow_phase/sphere_box.cpp
   narrow_phase/sphere_sphere.cpp
+  sdf/dense_esdf_field.cpp
   sdf/dense_sdf_field.cpp
+  sdf/dense_tsdf_field.cpp
   shapes/shape.cpp
   types.cpp
 )

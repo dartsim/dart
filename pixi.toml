@@ -388,6 +388,30 @@ CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cm
   { arg = "build_type", default = "Release" },
 ] }
 
+voxblox-bootstrap = { cmd = ["bash", "-lc", """
+set -euo pipefail
+VOXBLOX_ROOT=${VOXBLOX_ROOT:-/home/js/dev/physics/voxblox}
+VOXBLOX_WS=${VOXBLOX_WS:-/home/js/dev/physics/voxblox_ws}
+VOXBLOX_GIT_URL=${VOXBLOX_GIT_URL:-https://github.com/ethz-asl/voxblox.git}
+
+if [ -e "$VOXBLOX_ROOT" ] && [ ! -d "$VOXBLOX_ROOT/.git" ]; then
+  echo "VOXBLOX_ROOT exists but is not a git repo: $VOXBLOX_ROOT" >&2
+  exit 1
+fi
+
+if [ ! -d "$VOXBLOX_ROOT/.git" ]; then
+  git clone --recursive "$VOXBLOX_GIT_URL" "$VOXBLOX_ROOT"
+fi
+
+mkdir -p "$VOXBLOX_WS/src"
+if [ -e "$VOXBLOX_WS/src/voxblox" ]; then
+  rm -rf "$VOXBLOX_WS/src/voxblox"
+fi
+ln -s "$VOXBLOX_ROOT" "$VOXBLOX_WS/src/voxblox"
+echo "Voxblox cloned. ROS/catkin build is not run here."
+echo "If you need a build, use a ROS workspace and catkin_make."
+"""] }
+
 build-examples = { cmd = [
   "bash",
   "-lc",
