@@ -31,16 +31,16 @@
  */
 
 #include "HumanArmJointLimitConstraint.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 #include "HumanLegJointLimitConstraint.hpp"
 
 #include <dart/config.hpp>
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 #include <dart/utils/All.hpp>
 #include <dart/collision/bullet/All.hpp>
 #include <dart/collision/ode/ode.hpp>
 #include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/io/read.hpp>
 
 #include <cmath>
 

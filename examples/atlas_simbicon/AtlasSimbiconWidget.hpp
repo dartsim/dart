@@ -39,10 +39,10 @@
 #ifndef DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWIDGET_HPP_
 #define DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWIDGET_HPP_
 
-#include "dart/gui/ImGuiViewer.hpp"
-#include "dart/gui/ImGuiWidget.hpp"
+#include "dart/gui/im_gui_viewer.hpp"
+#include "dart/gui/im_gui_widget.hpp"
 
-#include <dart/gui/IncludeImGui.hpp>
+#include <dart/gui/include_im_gui.hpp>
 
 #include <utility>
 

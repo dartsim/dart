@@ -32,7 +32,7 @@
 
 #include "../../helpers/GTestUtils.hpp"
 
-#include <dart/common/FreeListAllocator.hpp>
+#include <dart/common/free_list_allocator.hpp>
 
 #include <gtest/gtest.h>
 

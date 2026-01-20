@@ -53,7 +53,7 @@
  * LICENSE.TXT and LICENSE-BSD.TXT for more details.
  */
 
-#include "dart/math/lcp/pivoting/dantzig/Misc.hpp"
+#include "dart/math/lcp/pivoting/dantzig/misc.hpp"
 
 namespace dart::math {
 

@@ -30,17 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/CollisionResult.hpp>
-#include <dart/collision/fcl/FCLCollisionDetector.hpp>
+#include <dart/collision/collision_result.hpp>
+#include <dart/collision/fcl/fcl_collision_detector.hpp>
 
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/ConeShape.hpp>
-#include <dart/dynamics/CylinderShape.hpp>
-#include <dart/dynamics/EllipsoidShape.hpp>
-#include <dart/dynamics/Frame.hpp>
-#include <dart/dynamics/PlaneShape.hpp>
-#include <dart/dynamics/SimpleFrame.hpp>
-#include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/cone_shape.hpp>
+#include <dart/dynamics/cylinder_shape.hpp>
+#include <dart/dynamics/ellipsoid_shape.hpp>
+#include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/plane_shape.hpp>
+#include <dart/dynamics/simple_frame.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>

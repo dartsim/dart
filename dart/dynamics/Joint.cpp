@@ -30,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/joint.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/DegreeOfFreedom.hpp"
-#include "dart/dynamics/Skeleton.hpp"
-#include "dart/math/Helpers.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/skeleton.hpp"
+#include "dart/math/helpers.hpp"
 
 #include <string>
 

@@ -1,12 +1,12 @@
 #include <dart/config.hpp>
 
-#include <dart/utils/sdf/detail/GeometryParsers.hpp>
-#include <dart/utils/sdf/detail/SdfHelpers.hpp>
+#include <dart/utils/sdf/detail/geometry_parsers.hpp>
+#include <dart/utils/sdf/detail/sdf_helpers.hpp>
 
-#include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 
-#include <dart/common/LocalResourceRetriever.hpp>
-#include <dart/common/Uri.hpp>
+#include <dart/common/local_resource_retriever.hpp>
+#include <dart/common/uri.hpp>
 
 #include <gtest/gtest.h>
 

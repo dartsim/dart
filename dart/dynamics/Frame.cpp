@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/frame.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/Shape.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/dynamics/shape.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -32,14 +32,14 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include "dart/common/Logging.hpp"
+#include "dart/common/logging.hpp"
 #include "dart/config.hpp"
-#include "dart/dynamics/FreeJoint.hpp"
-#include "dart/dynamics/InverseKinematics.hpp"
-#include "dart/dynamics/Skeleton.hpp"
-#include "dart/math/optimization/Function.hpp"
-#include "dart/math/optimization/GradientDescentSolver.hpp"
-#include "dart/math/optimization/Problem.hpp"
+#include "dart/dynamics/free_joint.hpp"
+#include "dart/dynamics/inverse_kinematics.hpp"
+#include "dart/dynamics/skeleton.hpp"
+#include "dart/math/optimization/function.hpp"
+#include "dart/math/optimization/gradient_descent_solver.hpp"
+#include "dart/math/optimization/problem.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

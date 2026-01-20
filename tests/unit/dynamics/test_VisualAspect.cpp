@@ -1,6 +1,6 @@
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

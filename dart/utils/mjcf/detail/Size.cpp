@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/mjcf/detail/Size.hpp"
+#include "dart/utils/mjcf/detail/size.hpp"
 
-#include "dart/utils/XmlHelpers.hpp"
+#include "dart/utils/xml_helpers.hpp"
 
 namespace dart {
 namespace utils {

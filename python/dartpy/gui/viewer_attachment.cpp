@@ -2,10 +2,10 @@
 #include "gui/gui.hpp"
 #include "gui/utils.hpp"
 
-#include <dart/gui/GridVisual.hpp>
-#include <dart/gui/PolyhedronVisual.hpp>
-#include <dart/gui/SupportPolygonVisual.hpp>
-#include <dart/gui/Viewer.hpp>
+#include <dart/gui/grid_visual.hpp>
+#include <dart/gui/polyhedron_visual.hpp>
+#include <dart/gui/support_polygon_visual.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

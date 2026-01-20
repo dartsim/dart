@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/mjcf/detail/Mesh.hpp"
+#include "dart/utils/mjcf/detail/mesh.hpp"
 
-#include "dart/dynamics/MeshShape.hpp"
-#include "dart/utils/MeshLoader.hpp"
-#include "dart/utils/XmlHelpers.hpp"
-#include "dart/utils/mjcf/detail/Utils.hpp"
+#include "dart/dynamics/mesh_shape.hpp"
+#include "dart/utils/mesh_loader.hpp"
+#include "dart/utils/mjcf/detail/utils.hpp"
+#include "dart/utils/xml_helpers.hpp"
 
 namespace dart {
 namespace utils {

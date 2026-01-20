@@ -35,13 +35,13 @@
 #include "helpers/dynamics_helpers.hpp"
 
 #include "dart/collision/All.hpp"
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/RevoluteJoint.hpp"
-#include "dart/dynamics/Skeleton.hpp"
-#include "dart/io/Read.hpp"
-#include "dart/math/Geometry.hpp"
-#include "dart/math/Random.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/revolute_joint.hpp"
+#include "dart/dynamics/skeleton.hpp"
+#include "dart/io/read.hpp"
+#include "dart/math/geometry.hpp"
+#include "dart/math/random.hpp"
 
 #include <gtest/gtest.h>
 
@@ -52,14 +52,14 @@
 #if DART_HAVE_BULLET
   #include "dart/collision/bullet/All.hpp"
 #endif
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
-#include "dart/constraint/BallJointConstraint.hpp"
-#include "dart/constraint/ConstraintSolver.hpp"
-#include "dart/constraint/RevoluteJointConstraint.hpp"
-#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
-#include "dart/math/lcp/projection/PgsSolver.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/collision/dart/dart_collision_detector.hpp"
+#include "dart/collision/fcl/fcl_collision_detector.hpp"
+#include "dart/constraint/ball_joint_constraint.hpp"
+#include "dart/constraint/constraint_solver.hpp"
+#include "dart/constraint/revolute_joint_constraint.hpp"
+#include "dart/math/lcp/pivoting/dantzig_solver.hpp"
+#include "dart/math/lcp/projection/pgs_solver.hpp"
+#include "dart/simulation/world.hpp"
 
 using namespace dart;
 using namespace math;

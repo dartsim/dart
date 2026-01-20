@@ -1,6 +1,6 @@
 // Copyright (c) 2011, The DART development contributors
 
-#include <dart/dynamics/HeightmapShape.hpp>
+#include <dart/dynamics/heightmap_shape.hpp>
 
 #include <gtest/gtest.h>
 

@@ -31,7 +31,7 @@
  */
 
 #include "../../helpers/GTestUtils.hpp"
-#include "dart/common/Uri.hpp"
+#include "dart/common/uri.hpp"
 
 #include <gtest/gtest.h>
 

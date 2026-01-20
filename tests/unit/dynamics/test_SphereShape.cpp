@@ -1,6 +1,6 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 
 #include <gtest/gtest.h>
 

@@ -50,7 +50,7 @@ set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${DART_SOURCE_DIR}/cmake")
 
 include(dart_defs)
-include(CompilerCache)
+include(compiler_cache)
 
 # Initialize CMake component helpers (now part of dart_defs.cmake)
 # Uses the following variables:
@@ -432,7 +432,7 @@ endif()
 #===============================================================================
 # Find dependencies
 #===============================================================================
-include(DARTFindDependencies)
+include(dart_find_dependencies)
 
 #===============================================================================
 # Check for non-case-sensitive filesystems

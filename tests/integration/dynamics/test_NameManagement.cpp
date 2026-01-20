@@ -34,8 +34,8 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/dynamics/soft_body_node.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <gtest/gtest.h>
 

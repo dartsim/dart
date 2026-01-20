@@ -32,15 +32,15 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/constraint/ConstraintSolver.hpp>
+#include <dart/constraint/constraint_solver.hpp>
 
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#include <dart/collision/bullet/bullet_collision_detector.hpp>
 
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
-#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
+#include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 
 #include <gtest/gtest.h>
 

@@ -31,15 +31,15 @@
  */
 
 #include "../../helpers/GTestUtils.hpp"
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/DistanceFilter.hpp"
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/FreeJoint.hpp"
-#include "dart/dynamics/RevoluteJoint.hpp"
-#include "dart/dynamics/ShapeNode.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/collision/collision_object.hpp"
+#include "dart/collision/dart/dart_collision_detector.hpp"
+#include "dart/collision/distance_filter.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/free_joint.hpp"
+#include "dart/dynamics/revolute_joint.hpp"
+#include "dart/dynamics/shape_node.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
 #include <gtest/gtest.h>
 

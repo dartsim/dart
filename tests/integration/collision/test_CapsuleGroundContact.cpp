@@ -32,19 +32,19 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/constraint/ConstraintSolver.hpp>
+#include <dart/constraint/constraint_solver.hpp>
 
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
-#include <dart/collision/ode/OdeCollisionDetector.hpp>
+#include <dart/collision/bullet/bullet_collision_detector.hpp>
+#include <dart/collision/ode/ode_collision_detector.hpp>
 
-#include <dart/dynamics/CapsuleShape.hpp>
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/Inertia.hpp>
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/capsule_shape.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/inertia.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
-#include <dart/math/Constants.hpp>
+#include <dart/math/constants.hpp>
 
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>

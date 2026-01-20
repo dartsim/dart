@@ -1,23 +1,23 @@
-#include <dart/gui/All.hpp>
-#include <dart/gui/SupportPolygonVisual.hpp>
+#include <dart/gui/all.hpp>
+#include <dart/gui/support_polygon_visual.hpp>
 
-#include <dart/utils/CompositeResourceRetriever.hpp>
-#include <dart/utils/DartResourceRetriever.hpp>
-#include <dart/utils/HttpResourceRetriever.hpp>
-#include <dart/utils/PackageResourceRetriever.hpp>
+#include <dart/utils/composite_resource_retriever.hpp>
+#include <dart/utils/dart_resource_retriever.hpp>
+#include <dart/utils/http_resource_retriever.hpp>
+#include <dart/utils/package_resource_retriever.hpp>
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/ShapeNode.hpp>
-#include <dart/dynamics/Skeleton.hpp>
-#include <dart/dynamics/WeldJoint.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
-#include <dart/common/LocalResourceRetriever.hpp>
-#include <dart/common/Uri.hpp>
+#include <dart/common/local_resource_retriever.hpp>
+#include <dart/common/uri.hpp>
 
 #include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/io/read.hpp>
 
 #include <CLI/CLI.hpp>
 

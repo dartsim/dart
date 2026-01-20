@@ -30,15 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/Joint.hpp"
-#include "dart/dynamics/PointMass.hpp"
-#include "dart/dynamics/Skeleton.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/io/Read.hpp"
-#include "dart/math/Constants.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/dynamics/joint.hpp"
+#include "dart/dynamics/point_mass.hpp"
+#include "dart/dynamics/skeleton.hpp"
+#include "dart/dynamics/soft_body_node.hpp"
+#include "dart/io/read.hpp"
+#include "dart/math/constants.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

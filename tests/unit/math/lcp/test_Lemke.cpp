@@ -31,8 +31,8 @@
  */
 
 #include "../../../helpers/GTestUtils.hpp"
-#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
-#include "dart/math/lcp/pivoting/LemkeSolver.hpp"
+#include "dart/math/lcp/pivoting/dantzig_solver.hpp"
+#include "dart/math/lcp/pivoting/lemke_solver.hpp"
 
 #include <gtest/gtest.h>
 

@@ -33,9 +33,9 @@
 #ifndef DART_UNITTESTS_GTESTUTILS_HPP_
 #define DART_UNITTESTS_GTESTUTILS_HPP_
 
-#include "dart/math/Geometry.hpp"
-#include "dart/math/Helpers.hpp"
-#include "dart/math/MathTypes.hpp"
+#include "dart/math/geometry.hpp"
+#include "dart/math/helpers.hpp"
+#include "dart/math/math_types.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

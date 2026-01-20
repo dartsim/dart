@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/mjcf/detail/Equality.hpp"
+#include "dart/utils/mjcf/detail/equality.hpp"
 
-#include "dart/utils/XmlHelpers.hpp"
+#include "dart/utils/xml_helpers.hpp"
 
 namespace dart {
 namespace utils {

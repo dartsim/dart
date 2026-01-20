@@ -30,15 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
-#include "dart/collision/fcl/FCLCollisionObject.hpp"
+#include "dart/collision/fcl/fcl_collision_detector.hpp"
+#include "dart/collision/fcl/fcl_collision_object.hpp"
 #include "dart/config.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/ConvexMeshShape.hpp"
-#include "dart/dynamics/FreeJoint.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/convex_mesh_shape.hpp"
+#include "dart/dynamics/free_joint.hpp"
+#include "dart/dynamics/simple_frame.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -49,12 +49,12 @@
 #include <random>
 
 #if DART_HAVE_BULLET
-  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
-  #include "dart/collision/bullet/BulletCollisionObject.hpp"
+  #include "dart/collision/bullet/bullet_collision_detector.hpp"
+  #include "dart/collision/bullet/bullet_collision_object.hpp"
 #endif
 #if DART_HAVE_ODE
-  #include "dart/collision/ode/OdeCollisionDetector.hpp"
-  #include "dart/collision/ode/OdeCollisionObject.hpp"
+  #include "dart/collision/ode/ode_collision_detector.hpp"
+  #include "dart/collision/ode/ode_collision_object.hpp"
 #endif
 
 using dart::collision::FCLCollisionDetector;

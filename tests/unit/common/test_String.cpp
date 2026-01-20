@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/String.hpp>
+#include <dart/common/string.hpp>
 
 #include <gtest/gtest.h>
 

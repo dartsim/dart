@@ -30,20 +30,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/Viewer.hpp"
+#include "dart/gui/viewer.hpp"
 
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/Shape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/gui/DefaultEventHandler.hpp"
-#include "dart/gui/DragAndDrop.hpp"
-#include "dart/gui/TrackballManipulator.hpp"
-#include "dart/gui/Utils.hpp"
-#include "dart/gui/ViewerConfig.hpp"
-#include "dart/gui/WorldNode.hpp"
-#include "dart/gui/detail/CameraModeCallback.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/shape.hpp"
+#include "dart/dynamics/simple_frame.hpp"
+#include "dart/gui/default_event_handler.hpp"
+#include "dart/gui/detail/camera_mode_callback.hpp"
+#include "dart/gui/drag_and_drop.hpp"
+#include "dart/gui/trackball_manipulator.hpp"
+#include "dart/gui/utils.hpp"
+#include "dart/gui/viewer_config.hpp"
+#include "dart/gui/world_node.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <osg/OperationThread>
 #include <osgDB/WriteFile>

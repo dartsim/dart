@@ -1,6 +1,6 @@
 #include "utils/skel_parser.hpp"
 
-#include "dart/utils/SkelParser.hpp"
+#include "dart/utils/skel_parser.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

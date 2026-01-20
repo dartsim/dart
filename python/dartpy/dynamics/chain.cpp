@@ -2,8 +2,8 @@
 
 #include "common/repr.hpp"
 #include "common/type_casters.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/Chain.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/chain.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

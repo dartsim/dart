@@ -34,7 +34,7 @@
 #include "InputHandler.hpp"
 #include "WamWorld.hpp"
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
 #include <dart/All.hpp>
 

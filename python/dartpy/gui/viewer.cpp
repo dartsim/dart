@@ -3,17 +3,17 @@
 #include "gui/gui.hpp"
 #include "gui/utils.hpp"
 
-#include <dart/gui/DragAndDrop.hpp>
-#include <dart/gui/InteractiveFrame.hpp>
-#include <dart/gui/Utils.hpp>
-#include <dart/gui/Viewer.hpp>
-#include <dart/gui/WorldNode.hpp>
+#include <dart/gui/drag_and_drop.hpp>
+#include <dart/gui/interactive_frame.hpp>
+#include <dart/gui/utils.hpp>
+#include <dart/gui/viewer.hpp>
+#include <dart/gui/world_node.hpp>
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/dynamics/BodyNode.hpp>
-#include <dart/dynamics/Entity.hpp>
-#include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/entity.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

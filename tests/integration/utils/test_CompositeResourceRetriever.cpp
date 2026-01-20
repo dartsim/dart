@@ -31,8 +31,8 @@
  */
 
 #include "../../helpers/common_helpers.hpp"
-#include "dart/common/Diagnostics.hpp"
-#include "dart/utils/CompositeResourceRetriever.hpp"
+#include "dart/common/diagnostics.hpp"
+#include "dart/utils/composite_resource_retriever.hpp"
 
 #include <gtest/gtest.h>
 

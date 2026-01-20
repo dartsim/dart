@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/mjcf/detail/Inertial.hpp"
+#include "dart/utils/mjcf/detail/inertial.hpp"
 
-#include "dart/common/Macros.hpp"
-#include "dart/utils/XmlHelpers.hpp"
-#include "dart/utils/mjcf/detail/Utils.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/utils/mjcf/detail/utils.hpp"
+#include "dart/utils/xml_helpers.hpp"
 
 namespace dart {
 namespace utils {

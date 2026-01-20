@@ -32,13 +32,13 @@
 
 #include "../../helpers/GTestUtils.hpp"
 #include "../../helpers/dynamics_helpers.hpp"
-#include "dart/collision/ode/OdeCollisionDetector.hpp"
-#include "dart/constraint/ConstraintSolver.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/math/Geometry.hpp"
-#include "dart/math/Helpers.hpp"
-#include "dart/math/Random.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/collision/ode/ode_collision_detector.hpp"
+#include "dart/constraint/constraint_solver.hpp"
+#include "dart/dynamics/simple_frame.hpp"
+#include "dart/math/geometry.hpp"
+#include "dart/math/helpers.hpp"
+#include "dart/math/random.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <gtest/gtest.h>
 

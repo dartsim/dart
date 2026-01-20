@@ -32,7 +32,7 @@
 
 #include "../../helpers/GTestUtils.hpp"
 
-#include <dart/common/Stopwatch.hpp>
+#include <dart/common/stopwatch.hpp>
 
 #include <gtest/gtest.h>
 

@@ -1,0 +1,114 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#ifndef DART_DYNAMICS_SOFTMESHSHAPE_HPP_
+#define DART_DYNAMICS_SOFTMESHSHAPE_HPP_
+
+#include <dart/dynamics/shape.hpp>
+
+#include <dart/math/tri_mesh.hpp>
+
+#include <Eigen/Dense>
+#include <assimp/scene.h>
+
+#include <memory>
+
+namespace dart {
+namespace dynamics {
+
+class SoftBodyNode;
+
+// TODO(JS): Implement
+class DART_API SoftMeshShape : public Shape
+{
+public:
+  friend class SoftBodyNode;
+
+  /// @brief Constructor.
+  explicit SoftMeshShape(SoftBodyNode* _softBodyNode);
+
+  /// @brief Destructor.
+  virtual ~SoftMeshShape();
+
+  // Documentation inherited.
+  std::string_view getType() const override;
+
+  /// Returns shape type for this class
+  static std::string_view getStaticType();
+
+  /// Returns the TriMesh representation of this soft mesh.
+  std::shared_ptr<math::TriMesh<double>> getTriMesh() const;
+
+  /// Returns the aiMesh representation (deprecated, for backward
+  /// compatibility).
+  [[deprecated(
+      "Use getTriMesh() instead; Assimp APIs will be removed in DART "
+      "8.")]] const aiMesh*
+  getAssimpMesh() const;
+
+  /// Get the SoftBodyNode that is associated with this SoftMeshShape
+  const SoftBodyNode* getSoftBodyNode() const;
+
+  /// @brief Update positions of the vertices using the parent soft body node.
+  void update();
+
+  // Documentation inherited.
+  Eigen::Matrix3d computeInertia(double mass) const override;
+
+  // Documentation inherited.
+  ShapePtr clone() const override;
+
+protected:
+  // Documentation inherited.
+  void updateBoundingBox() const override;
+
+  // Documentation inherited.
+  void updateVolume() const override;
+
+private:
+  /// @brief Build mesh using SoftBodyNode data
+  void _buildMesh();
+
+  /// @brief
+  SoftBodyNode* mSoftBodyNode;
+
+  /// TriMesh representation (preferred).
+  std::shared_ptr<math::TriMesh<double>> mTriMesh;
+
+  /// Cached aiMesh representation (deprecated, for backward compatibility).
+  std::unique_ptr<aiMesh> mAssimpMesh;
+};
+
+} // namespace dynamics
+} // namespace dart
+
+#endif // DART_DYNAMICS_SOFTMESHSHAPE_HPP_

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/Contact.hpp>
+#include <dart/collision/contact.hpp>
 
 #include <gtest/gtest.h>
 

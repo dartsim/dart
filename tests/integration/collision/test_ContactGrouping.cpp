@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/io/Read.hpp"
+#include "dart/io/read.hpp"
 
-#include <dart/collision/ode/OdeCollisionDetector.hpp>
+#include <dart/collision/ode/ode_collision_detector.hpp>
 
 #include <dart/All.hpp>
 

@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/sensor/Sensor.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/sensor/sensor.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <gtest/gtest.h>
 

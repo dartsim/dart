@@ -2,13 +2,13 @@
 
 #include "common/repr.hpp"
 #include "common/type_casters.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/EndEffector.hpp"
-#include "dart/dynamics/InverseKinematics.hpp"
-#include "dart/dynamics/Joint.hpp"
-#include "dart/dynamics/Shape.hpp"
-#include "dart/dynamics/ShapeNode.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/end_effector.hpp"
+#include "dart/dynamics/inverse_kinematics.hpp"
+#include "dart/dynamics/joint.hpp"
+#include "dart/dynamics/shape.hpp"
+#include "dart/dynamics/shape_node.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

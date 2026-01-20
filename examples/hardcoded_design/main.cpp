@@ -42,7 +42,7 @@
 
 #include "HardcodedEventHandler.hpp"
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
 #include <dart/All.hpp>
 

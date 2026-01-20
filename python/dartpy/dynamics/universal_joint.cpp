@@ -1,7 +1,7 @@
 #include "dynamics/universal_joint.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/dynamics/UniversalJoint.hpp"
+#include "dart/dynamics/universal_joint.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

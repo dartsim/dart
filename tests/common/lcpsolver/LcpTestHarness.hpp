@@ -33,8 +33,8 @@
 #ifndef DART_TESTS_LCPTESTHARNESS_HPP_
 #define DART_TESTS_LCPTESTHARNESS_HPP_
 
-#include <dart/math/lcp/LcpSolver.hpp>
-#include <dart/math/lcp/LcpValidation.hpp>
+#include <dart/math/lcp/lcp_solver.hpp>
+#include <dart/math/lcp/lcp_validation.hpp>
 
 #include <Eigen/Core>
 

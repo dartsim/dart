@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <dart/common/Export.hpp>
+#include <dart/common/export.hpp>
 
 #ifndef DART_API
   #if defined(DART_BUILDING_DART)

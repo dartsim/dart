@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/Profile.hpp>
+#include <dart/common/profile.hpp>
 
 #include <gtest/gtest.h>
 
 #if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
-  #include <dart/common/detail/Profiler.hpp>
+  #include <dart/common/detail/profiler.hpp>
 
   #include <chrono>
   #include <sstream>

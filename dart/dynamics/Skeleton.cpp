@@ -30,23 +30,23 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
-#include "dart/common/Exception.hpp"
-#include "dart/common/Logging.hpp"
-#include "dart/common/Macros.hpp"
-#include "dart/common/StlHelpers.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/DegreeOfFreedom.hpp"
-#include "dart/dynamics/EndEffector.hpp"
-#include "dart/dynamics/InverseKinematics.hpp"
-#include "dart/dynamics/Joint.hpp"
-#include "dart/dynamics/Marker.hpp"
-#include "dart/dynamics/PointMass.hpp"
-#include "dart/dynamics/ShapeNode.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/math/Geometry.hpp"
-#include "dart/math/Helpers.hpp"
+#include "dart/common/exception.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/common/stl_helpers.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/end_effector.hpp"
+#include "dart/dynamics/inverse_kinematics.hpp"
+#include "dart/dynamics/joint.hpp"
+#include "dart/dynamics/marker.hpp"
+#include "dart/dynamics/point_mass.hpp"
+#include "dart/dynamics/shape_node.hpp"
+#include "dart/dynamics/soft_body_node.hpp"
+#include "dart/math/geometry.hpp"
+#include "dart/math/helpers.hpp"
 
 #include <algorithm>
 #include <iterator>

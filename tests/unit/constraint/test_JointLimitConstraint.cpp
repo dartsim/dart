@@ -31,9 +31,9 @@
  */
 
 #include "../../helpers/GTestUtils.hpp"
-#include "dart/constraint/JointLimitConstraint.hpp"
-#include "dart/dynamics/RevoluteJoint.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/constraint/joint_limit_constraint.hpp"
+#include "dart/dynamics/revolute_joint.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
 #include <gtest/gtest.h>
 

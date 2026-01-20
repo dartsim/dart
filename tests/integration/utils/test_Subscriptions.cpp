@@ -31,8 +31,8 @@
  */
 
 #include "dart/common/sub_ptr.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 
 #include <gtest/gtest.h>
 

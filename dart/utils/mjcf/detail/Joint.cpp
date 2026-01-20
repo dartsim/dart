@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/mjcf/detail/Joint.hpp"
+#include "dart/utils/mjcf/detail/joint.hpp"
 
-#include "dart/utils/XmlHelpers.hpp"
-#include "dart/utils/mjcf/detail/Body.hpp"
+#include "dart/utils/mjcf/detail/body.hpp"
+#include "dart/utils/xml_helpers.hpp"
 
 namespace dart {
 namespace utils {

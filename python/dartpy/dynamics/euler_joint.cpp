@@ -1,7 +1,7 @@
 #include "dynamics/euler_joint.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/dynamics/EulerJoint.hpp"
+#include "dart/dynamics/euler_joint.hpp"
 
 #include <nanobind/nanobind.h>
 

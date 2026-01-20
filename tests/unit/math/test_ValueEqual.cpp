@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/Helpers.hpp"
+#include "dart/math/helpers.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

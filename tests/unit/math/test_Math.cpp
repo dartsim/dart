@@ -32,12 +32,12 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include "dart/common/Stopwatch.hpp"
-#include "dart/dynamics/RevoluteJoint.hpp"
-#include "dart/dynamics/Skeleton.hpp"
-#include "dart/math/Geometry.hpp"
-#include "dart/math/Helpers.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/common/stopwatch.hpp"
+#include "dart/dynamics/revolute_joint.hpp"
+#include "dart/dynamics/skeleton.hpp"
+#include "dart/math/geometry.hpp"
+#include "dart/math/helpers.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <gtest/gtest.h>
 

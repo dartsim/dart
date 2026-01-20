@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/mjcf/detail/Weld.hpp"
+#include "dart/utils/mjcf/detail/weld.hpp"
 
-#include "dart/common/Macros.hpp"
-#include "dart/utils/XmlHelpers.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/utils/xml_helpers.hpp"
 
 namespace dart {
 namespace utils {

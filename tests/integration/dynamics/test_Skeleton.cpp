@@ -35,12 +35,12 @@
 #include "helpers/dynamics_helpers.hpp"
 
 #include "dart/common/sub_ptr.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/RevoluteJoint.hpp"
-#include "dart/dynamics/Skeleton.hpp"
-#include "dart/io/Read.hpp"
-#include "dart/math/Geometry.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/revolute_joint.hpp"
+#include "dart/dynamics/skeleton.hpp"
+#include "dart/io/read.hpp"
+#include "dart/math/geometry.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <gtest/gtest.h>
 

@@ -33,9 +33,9 @@
 #include "helpers/GTestUtils.hpp"
 
 #include "dart/utils/All.hpp"
-#include "dart/utils/mjcf/detail/MujocoModel.hpp"
-#include "dart/utils/mjcf/detail/Types.hpp"
-#include "dart/utils/mjcf/detail/Utils.hpp"
+#include "dart/utils/mjcf/detail/mujoco_model.hpp"
+#include "dart/utils/mjcf/detail/types.hpp"
+#include "dart/utils/mjcf/detail/utils.hpp"
 
 #include <dart/All.hpp>
 

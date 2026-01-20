@@ -32,12 +32,12 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include "dart/dynamics/FreeJoint.hpp"
-#include "dart/dynamics/MeshShape.hpp"
-#include "dart/dynamics/PlanarJoint.hpp"
-#include "dart/dynamics/WeldJoint.hpp"
-#include "dart/simulation/World.hpp"
-#include "dart/utils/urdf/UrdfParser.hpp"
+#include "dart/dynamics/free_joint.hpp"
+#include "dart/dynamics/mesh_shape.hpp"
+#include "dart/dynamics/planar_joint.hpp"
+#include "dart/dynamics/weld_joint.hpp"
+#include "dart/simulation/world.hpp"
+#include "dart/utils/urdf/urdf_parser.hpp"
 
 #include <Eigen/Core>
 #include <Eigen/Dense>

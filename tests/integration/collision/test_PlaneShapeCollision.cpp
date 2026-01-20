@@ -30,25 +30,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/DartResourceRetriever.hpp>
+#include <dart/utils/dart_resource_retriever.hpp>
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/constraint/ConstraintSolver.hpp>
+#include <dart/constraint/constraint_solver.hpp>
 
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
-#include <dart/collision/fcl/FCLCollisionDetector.hpp>
-#include <dart/collision/ode/OdeCollisionDetector.hpp>
+#include <dart/collision/bullet/bullet_collision_detector.hpp>
+#include <dart/collision/fcl/fcl_collision_detector.hpp>
+#include <dart/collision/ode/ode_collision_detector.hpp>
 
 #include <dart/dynamics/All.hpp>
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/MeshShape.hpp>
-#include <dart/dynamics/PlaneShape.hpp>
-#include <dart/dynamics/Skeleton.hpp>
-#include <dart/dynamics/WeldJoint.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/mesh_shape.hpp>
+#include <dart/dynamics/plane_shape.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
-#include <dart/common/Diagnostics.hpp>
+#include <dart/common/diagnostics.hpp>
 
 #include <gtest/gtest.h>
 #include <helpers/GTestUtils.hpp>

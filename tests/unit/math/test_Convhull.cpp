@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/math/detail/Convhull.hpp>
+#include <dart/math/detail/convhull.hpp>
 
 #include <gtest/gtest.h>
 

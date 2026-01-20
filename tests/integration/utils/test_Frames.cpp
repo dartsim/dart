@@ -32,10 +32,10 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include "dart/common/Macros.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/math/Helpers.hpp"
-#include "dart/math/Random.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/dynamics/simple_frame.hpp"
+#include "dart/math/helpers.hpp"
+#include "dart/math/random.hpp"
 
 #include <gtest/gtest.h>
 

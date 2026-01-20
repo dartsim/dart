@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/Viewer.hpp>
-#include <dart/gui/ViewerConfig.hpp>
+#include <dart/gui/viewer.hpp>
+#include <dart/gui/viewer_config.hpp>
 
 #include <gtest/gtest.h>
 

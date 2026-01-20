@@ -24,11 +24,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/ShapeFrameNode.hpp>
-#include <dart/gui/render/ConvexMeshShapeNode.hpp>
+#include <dart/gui/render/convex_mesh_shape_node.hpp>
+#include <dart/gui/shape_frame_node.hpp>
 
-#include <dart/dynamics/ConvexMeshShape.hpp>
-#include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/convex_mesh_shape.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 
 #include <gtest/gtest.h>
 #include <osg/ref_ptr>

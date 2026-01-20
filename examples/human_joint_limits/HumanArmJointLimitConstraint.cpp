@@ -31,16 +31,16 @@
  */
 
 #include "HumanArmJointLimitConstraint.hpp"
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
-#include <dart/dynamics/BodyNode.hpp>
-#include <dart/dynamics/Joint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
-#include <dart/common/Logging.hpp>
+#include <dart/common/logging.hpp>
 
 #include <dart/config.hpp>
-#include <dart/math/lcp/pivoting/dantzig/Lcp.hpp>
+#include <dart/math/lcp/pivoting/dantzig/lcp.hpp>
 
 #include <iostream>
 #include <limits>

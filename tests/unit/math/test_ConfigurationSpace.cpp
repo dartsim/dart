@@ -31,8 +31,8 @@
  */
 
 #include "../../helpers/GTestUtils.hpp"
-#include "dart/math/ConfigurationSpace.hpp"
-#include "dart/math/Geometry.hpp"
+#include "dart/math/configuration_space.hpp"
+#include "dart/math/geometry.hpp"
 
 #include <gtest/gtest.h>
 

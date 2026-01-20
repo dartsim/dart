@@ -32,18 +32,18 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/constraint/ConstraintSolver.hpp>
+#include <dart/constraint/constraint_solver.hpp>
 
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#include <dart/collision/bullet/bullet_collision_detector.hpp>
 
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/PlaneShape.hpp>
-#include <dart/dynamics/Skeleton.hpp>
-#include <dart/dynamics/SphereShape.hpp>
-#include <dart/dynamics/WeldJoint.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/plane_shape.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
 #include <gtest/gtest.h>
 

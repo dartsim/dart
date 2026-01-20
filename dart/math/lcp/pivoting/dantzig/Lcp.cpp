@@ -152,11 +152,11 @@ rows/columns and manipulate C.
 
 #define NUB_OPTIMIZATIONS
 
-#include "dart/math/lcp/pivoting/dantzig/Lcp.hpp"
+#include "dart/math/lcp/pivoting/dantzig/lcp.hpp"
 
-#include "dart/common/Macros.hpp"
-#include "dart/math/lcp/pivoting/dantzig/Matrix.hpp"
-#include "dart/math/lcp/pivoting/dantzig/Misc.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/math/lcp/pivoting/dantzig/matrix.hpp"
+#include "dart/math/lcp/pivoting/dantzig/misc.hpp"
 
 #include <memory>
 #include <vector>

@@ -32,7 +32,7 @@
 
 #include "math/trimesh.hpp"
 
-#include "dart/math/TriMesh.hpp"
+#include "dart/math/tri_mesh.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

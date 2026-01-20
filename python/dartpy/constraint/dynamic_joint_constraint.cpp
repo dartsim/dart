@@ -2,11 +2,11 @@
 
 #include "common/eigen_utils.hpp"
 #include "common/polymorphic_utils.hpp"
-#include "dart/constraint/BallJointConstraint.hpp"
-#include "dart/constraint/DynamicJointConstraint.hpp"
-#include "dart/constraint/RevoluteJointConstraint.hpp"
-#include "dart/constraint/WeldJointConstraint.hpp"
-#include "dart/dynamics/BodyNode.hpp"
+#include "dart/constraint/ball_joint_constraint.hpp"
+#include "dart/constraint/dynamic_joint_constraint.hpp"
+#include "dart/constraint/revolute_joint_constraint.hpp"
+#include "dart/constraint/weld_joint_constraint.hpp"
+#include "dart/dynamics/body_node.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

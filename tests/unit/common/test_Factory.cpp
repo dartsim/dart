@@ -32,7 +32,7 @@
 
 #include "../../helpers/GTestUtils.hpp"
 
-#include <dart/common/Factory.hpp>
+#include <dart/common/factory.hpp>
 
 #include <gtest/gtest.h>
 

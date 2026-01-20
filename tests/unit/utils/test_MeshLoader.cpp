@@ -7,11 +7,11 @@
 
 #include <dart/config.hpp>
 
-#include <dart/utils/AssimpMeshLoader.hpp>
-#include <dart/utils/DartResourceRetriever.hpp>
-#include <dart/utils/MeshLoader.hpp>
+#include <dart/utils/assimp_mesh_loader.hpp>
+#include <dart/utils/dart_resource_retriever.hpp>
+#include <dart/utils/mesh_loader.hpp>
 
-#include <dart/common/LocalResourceRetriever.hpp>
+#include <dart/common/local_resource_retriever.hpp>
 
 #include <assimp/cimport.h>
 #include <assimp/postprocess.h>

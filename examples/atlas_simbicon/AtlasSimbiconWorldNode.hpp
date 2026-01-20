@@ -35,7 +35,7 @@
 
 #include "Controller.hpp"
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
 #include <dart/utils/All.hpp>
 

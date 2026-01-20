@@ -36,9 +36,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/Recording.hpp"
+#include "dart/simulation/recording.hpp"
 
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
 #include <iostream>
 

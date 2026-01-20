@@ -30,24 +30,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/io/Read.hpp"
+#include "dart/io/read.hpp"
 
-#include "dart/common/LocalResourceRetriever.hpp"
-#include "dart/common/Logging.hpp"
-#include "dart/common/Result.hpp"
-#include "dart/common/String.hpp"
-#include "dart/utils/CompositeResourceRetriever.hpp"
-#include "dart/utils/DartResourceRetriever.hpp"
-#include "dart/utils/PackageResourceRetriever.hpp"
-#include "dart/utils/SkelParser.hpp"
-#include "dart/utils/mjcf/MjcfParser.hpp"
+#include "dart/common/local_resource_retriever.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/common/result.hpp"
+#include "dart/common/string.hpp"
+#include "dart/utils/composite_resource_retriever.hpp"
+#include "dart/utils/dart_resource_retriever.hpp"
+#include "dart/utils/mjcf/mjcf_parser.hpp"
+#include "dart/utils/package_resource_retriever.hpp"
+#include "dart/utils/skel_parser.hpp"
 
 #if DART_HAS_SDFORMAT
-  #include "dart/utils/sdf/SdfParser.hpp"
+  #include "dart/utils/sdf/sdf_parser.hpp"
 #endif
 
 #if DART_IO_HAS_URDF
-  #include "dart/utils/urdf/UrdfParser.hpp"
+  #include "dart/utils/urdf/urdf_parser.hpp"
 #endif
 
 #include <tinyxml2.h>

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Stopwatch.hpp"
+#include "dart/common/stopwatch.hpp"
 
 namespace dart::common {
 

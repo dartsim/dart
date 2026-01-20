@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/detail/Profiler.hpp"
+#include "dart/common/detail/profiler.hpp"
 
 #include <algorithm>
 #include <chrono>

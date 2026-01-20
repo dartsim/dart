@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/Group.hpp>
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/group.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
-#include <dart/common/Deprecated.hpp>
+#include <dart/common/deprecated.hpp>
 
 #include <gtest/gtest.h>
 

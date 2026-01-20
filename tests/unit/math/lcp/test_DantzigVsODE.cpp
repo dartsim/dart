@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lcp/pivoting/dantzig/Common.hpp"
-#include "dart/math/lcp/pivoting/dantzig/Lcp.hpp"
+#include "dart/math/lcp/pivoting/dantzig/common.hpp"
+#include "dart/math/lcp/pivoting/dantzig/lcp.hpp"
 
 // Undefine assertion macros from dantzig to avoid conflicts with baseline
 #undef dIASSERT

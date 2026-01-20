@@ -34,14 +34,14 @@
 #include "AtlasSimbiconWidget.hpp"
 #include "AtlasSimbiconWorldNode.hpp"
 
-#include <dart/gui/All.hpp>
-#include <dart/gui/IncludeImGui.hpp>
+#include <dart/gui/all.hpp>
+#include <dart/gui/include_im_gui.hpp>
 
 #include <dart/utils/All.hpp>
 #include <dart/utils/urdf/All.hpp>
 
 #include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/io/read.hpp>
 
 #include <CLI/CLI.hpp>
 

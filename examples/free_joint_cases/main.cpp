@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/GridVisual.hpp>
-#include <dart/gui/ImGuiHandler.hpp>
-#include <dart/gui/ImGuiViewer.hpp>
-#include <dart/gui/ImGuiWidget.hpp>
-#include <dart/gui/IncludeImGui.hpp>
-#include <dart/gui/WorldNode.hpp>
+#include <dart/gui/grid_visual.hpp>
+#include <dart/gui/im_gui_handler.hpp>
+#include <dart/gui/im_gui_viewer.hpp>
+#include <dart/gui/im_gui_widget.hpp>
+#include <dart/gui/include_im_gui.hpp>
+#include <dart/gui/world_node.hpp>
 
 #include <dart/All.hpp>
 
