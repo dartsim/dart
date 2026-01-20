@@ -122,6 +122,9 @@ raycast benchmarks are now in `tests/benchmark/collision/comparative/` (raycast
 currently compares experimental vs Bullet only).
 Mixed primitives scenarios (dense/sparse) are now in
 `tests/benchmark/collision/scenarios/bm_mixed_primitives.cpp`.
+Batched raycast scenarios (10k rays) are now in
+`tests/benchmark/collision/scenarios/bm_raycast_batch.cpp` (experimental vs
+Bullet).
 
 **Narrow-phase performance comparison (lower is better):**
 
