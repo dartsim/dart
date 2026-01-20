@@ -33,6 +33,7 @@
 #include "dart/simulation/experimental/multi_body/link.hpp"
 
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/kinematics/joint_transform.hpp"
 #include "dart/simulation/experimental/multi_body/joint.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -60,9 +61,23 @@ Joint Link::getParentJoint() const
 //==============================================================================
 const Eigen::Isometry3d& Link::getLocalTransform() const
 {
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return linkComp.transformFromParentJoint;
+  auto& registry = getWorld()->getRegistry();
+  auto& linkComp = registry.get<comps::Link>(getEntity());
+
+  if (linkComp.needLocalTransformUpdate) {
+    if (linkComp.parentJoint != entt::null) {
+      const auto& jointComp = registry.get<comps::Joint>(linkComp.parentJoint);
+      Eigen::Isometry3d jointTransform
+          = kinematics::computeJointTransform(jointComp);
+      linkComp.localTransformCache
+          = jointTransform * linkComp.transformFromParentJoint;
+    } else {
+      linkComp.localTransformCache = linkComp.transformFromParentJoint;
+    }
+    linkComp.needLocalTransformUpdate = false;
+  }
+
+  return linkComp.localTransformCache;
 }
 
 //==============================================================================

@@ -62,6 +62,9 @@ struct Link
 
   Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
 
+  mutable Eigen::Isometry3d localTransformCache = Eigen::Isometry3d::Identity();
+  mutable bool needLocalTransformUpdate = true;
+
   static constexpr auto entityFields()
   {
     return std::make_tuple(&Link::parentJoint, &Link::childJoints);

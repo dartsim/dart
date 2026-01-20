@@ -146,7 +146,8 @@ Eigen::VectorXd Joint::getPosition() const
 //==============================================================================
 void Joint::setPosition(const Eigen::VectorXd& position)
 {
-  auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  auto& registry = m_world->getRegistry();
+  auto& jointComp = registry.get<comps::Joint>(m_entity);
   DART_EXPERIMENTAL_THROW_T_IF(
       static_cast<std::size_t>(position.size()) != jointComp.getDOF(),
       InvalidArgumentException,
@@ -154,6 +155,16 @@ void Joint::setPosition(const Eigen::VectorXd& position)
       jointComp.getDOF(),
       position.size());
   jointComp.position = position;
+
+  if (jointComp.childLink != entt::null) {
+    auto& childLinkComp = registry.get<comps::Link>(jointComp.childLink);
+    childLinkComp.needLocalTransformUpdate = true;
+
+    if (auto* cache
+        = registry.try_get<comps::FrameCache>(jointComp.childLink)) {
+      cache->needTransformUpdate = true;
+    }
+  }
 }
 
 //==============================================================================

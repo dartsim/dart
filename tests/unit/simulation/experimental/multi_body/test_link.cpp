@@ -258,3 +258,131 @@ TEST(Link, BranchingTree)
   EXPECT_EQ(rightArm.getParentJoint().getParentLink().getName(), "torso");
   EXPECT_EQ(head.getParentJoint().getParentLink().getName(), "torso");
 }
+
+//==============================================================================
+// Forward Kinematics Integration Tests
+//==============================================================================
+
+TEST(Link, LocalTransformFromJointPosition)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("arm");
+
+  auto base = robot.addLink("base");
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "joint1",
+       .jointType = dse::comps::JointType::Revolute,
+       .jointAxis = Eigen::Vector3d::UnitZ()});
+
+  link1.getParentJoint().setPosition(Eigen::VectorXd::Zero(1));
+
+  const auto& localTf = link1.getLocalTransform();
+  EXPECT_TRUE(localTf.isApprox(Eigen::Isometry3d::Identity()));
+}
+
+TEST(Link, LocalTransformRotatesWithJoint)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("arm");
+
+  auto base = robot.addLink("base");
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "joint1",
+       .jointType = dse::comps::JointType::Revolute,
+       .jointAxis = Eigen::Vector3d::UnitZ()});
+
+  Eigen::VectorXd pos(1);
+  pos << M_PI / 2;
+  link1.getParentJoint().setPosition(pos);
+
+  const auto& localTf = link1.getLocalTransform();
+
+  Eigen::Vector3d rotatedX = localTf.rotation() * Eigen::Vector3d::UnitX();
+  EXPECT_TRUE(rotatedX.isApprox(Eigen::Vector3d::UnitY(), 1e-10));
+}
+
+TEST(Link, LocalTransformCacheInvalidatedOnJointChange)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("arm");
+
+  auto base = robot.addLink("base");
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "joint1",
+       .jointType = dse::comps::JointType::Revolute,
+       .jointAxis = Eigen::Vector3d::UnitZ()});
+
+  link1.getParentJoint().setPosition(Eigen::VectorXd::Zero(1));
+  const auto& tf1 = link1.getLocalTransform();
+  EXPECT_TRUE(tf1.isApprox(Eigen::Isometry3d::Identity()));
+
+  Eigen::VectorXd pos(1);
+  pos << M_PI;
+  link1.getParentJoint().setPosition(pos);
+
+  const auto& tf2 = link1.getLocalTransform();
+  Eigen::Vector3d rotatedX = tf2.rotation() * Eigen::Vector3d::UnitX();
+  EXPECT_TRUE(rotatedX.isApprox(-Eigen::Vector3d::UnitX(), 1e-10));
+}
+
+TEST(Link, PrismaticJointTranslatesLink)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("slider");
+
+  auto base = robot.addLink("base");
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "joint1",
+       .jointType = dse::comps::JointType::Prismatic,
+       .jointAxis = Eigen::Vector3d::UnitX()});
+
+  Eigen::VectorXd pos(1);
+  pos << 1.5;
+  link1.getParentJoint().setPosition(pos);
+
+  const auto& localTf = link1.getLocalTransform();
+  EXPECT_TRUE(localTf.translation().isApprox(Eigen::Vector3d(1.5, 0, 0), 1e-10));
+  EXPECT_TRUE(localTf.rotation().isApprox(Eigen::Matrix3d::Identity()));
+}
+
+TEST(Link, TwoLinkArmForwardKinematics)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("arm");
+
+  auto base = robot.addLink("base");
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "joint1",
+       .jointType = dse::comps::JointType::Revolute,
+       .jointAxis = Eigen::Vector3d::UnitZ()});
+  auto link2 = robot.addLink(
+      "link2",
+      {.parentLink = link1,
+       .jointName = "joint2",
+       .jointType = dse::comps::JointType::Revolute,
+       .jointAxis = Eigen::Vector3d::UnitZ()});
+
+  Eigen::VectorXd pos1(1), pos2(1);
+  pos1 << M_PI / 4;
+  pos2 << -M_PI / 4;
+
+  link1.getParentJoint().setPosition(pos1);
+  link2.getParentJoint().setPosition(pos2);
+
+  world.enterSimulationMode();
+  world.updateKinematics();
+
+  const auto& worldTf2 = link2.getWorldTransform();
+
+  EXPECT_TRUE(worldTf2.rotation().isApprox(Eigen::Matrix3d::Identity(), 1e-10));
+}
