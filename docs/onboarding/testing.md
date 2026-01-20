@@ -466,13 +466,13 @@ dart_get_tests(integration_tests "integration")
 
 Areas that commonly need additional test coverage (identified from test-coverage-audit):
 
-| Pattern | What to Test | Example |
-|---------|--------------|---------|
-| **Smart pointers** | Lifecycle, expiration, owner lifetime | `BodyNodePtr`, `NodePtr`, `WeakPtr` variants |
-| **Aspect system** | `has<T>()`, `get<T>()`, `removeAspect<T>()`, `isSpecializedFor<T>()` | Composite template methods |
-| **Constraint solvers** | Empty inputs, duplicate skeletons, timestep changes, null detectors | `ConstraintSolver` edge cases |
-| **Collision filters** | Self-collision, blacklist edge cases, composite behavior | `CollisionFilter` combinations |
-| **Template classes** | All template instantiations, not just common types | `TemplateBodyNodePtr<BodyNode>` vs `<const BodyNode>` |
+| Pattern                | What to Test                                                         | Example                                               |
+| ---------------------- | -------------------------------------------------------------------- | ----------------------------------------------------- |
+| **Smart pointers**     | Lifecycle, expiration, owner lifetime                                | `BodyNodePtr`, `NodePtr`, `WeakPtr` variants          |
+| **Aspect system**      | `has<T>()`, `get<T>()`, `removeAspect<T>()`, `isSpecializedFor<T>()` | Composite template methods                            |
+| **Constraint solvers** | Empty inputs, duplicate skeletons, timestep changes, null detectors  | `ConstraintSolver` edge cases                         |
+| **Collision filters**  | Self-collision, blacklist edge cases, composite behavior             | `CollisionFilter` combinations                        |
+| **Template classes**   | All template instantiations, not just common types                   | `TemplateBodyNodePtr<BodyNode>` vs `<const BodyNode>` |
 
 **Key insight**: Template classes and smart pointer wrappers often have lower coverage because tests only exercise common instantiations. Add explicit tests for const variants, weak references, and edge cases like expired pointers.
 

@@ -45,7 +45,7 @@ namespace constraint {
 
 /// Base class for joint constraints that are being created or destructed during
 /// simulation.
-class DynamicJointConstraint : public ConstraintBase
+class DART_API DynamicJointConstraint : public ConstraintBase
 {
 public:
   /// Constructor
