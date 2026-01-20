@@ -128,6 +128,8 @@ Bullet).
 Mesh-heavy scenarios are now in
 `tests/benchmark/collision/scenarios/bm_mesh_heavy.cpp` (experimental vs
 FCL/Bullet).
+Experimental CCD microbenchmarks are now in
+`tests/benchmark/collision/experimental/bm_ccd.cpp`.
 
 **Narrow-phase performance comparison (lower is better):**
 

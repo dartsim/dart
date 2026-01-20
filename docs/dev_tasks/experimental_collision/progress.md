@@ -11,7 +11,7 @@
 | Standalone CollisionWorld  | **Complete**    | 100%     |
 | Additional Shapes          | **Complete**    | 100%     |
 | Distance Queries           | **Complete**    | 100%     |
-| Comparative Benchmarks     | **In Progress** | 85%      |
+| Comparative Benchmarks     | **In Progress** | 88%      |
 | Raycast Support            | **Complete**    | 100%     |
 | ECS Refactoring            | **Complete**    | 100%     |
 | GJK/EPA Algorithm          | **Complete**    | 100%     |
@@ -124,6 +124,7 @@ Structured suite progress:
 - Added mixed primitives scenario benchmark in `tests/benchmark/collision/scenarios/bm_mixed_primitives.cpp` (dense/sparse; experimental vs FCL/Bullet/ODE)
 - Added batched raycast scenario in `tests/benchmark/collision/scenarios/bm_raycast_batch.cpp` (experimental vs Bullet)
 - Added mesh-heavy scenario in `tests/benchmark/collision/scenarios/bm_mesh_heavy.cpp` (experimental vs FCL/Bullet)
+- Added experimental CCD microbench in `tests/benchmark/collision/experimental/bm_ccd.cpp`
 
 Planned restructure and coverage before calling this complete:
 

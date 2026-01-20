@@ -407,6 +407,7 @@ data/          # mesh/convex fixtures used by multiple benchmarks
 - Mixed primitives scenario benchmark added (`scenarios/bm_mixed_primitives.cpp`, dense/sparse)
 - Batched raycast scenario benchmark added (`scenarios/bm_raycast_batch.cpp`, experimental vs Bullet)
 - Mesh-heavy scenario benchmark added (`scenarios/bm_mesh_heavy.cpp`, experimental vs FCL/Bullet)
+- Experimental CCD microbench added (`experimental/bm_ccd.cpp`)
 
 **Acceptance criteria**:
 
