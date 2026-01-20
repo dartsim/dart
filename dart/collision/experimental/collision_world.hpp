@@ -84,6 +84,20 @@ public:
       const RaycastOption& option,
       std::vector<RaycastResult>& results);
 
+  bool sphereCast(
+      const Eigen::Vector3d& start,
+      const Eigen::Vector3d& end,
+      double radius,
+      const CcdOption& option,
+      CcdResult& result);
+
+  bool sphereCastAll(
+      const Eigen::Vector3d& start,
+      const Eigen::Vector3d& end,
+      double radius,
+      const CcdOption& option,
+      std::vector<CcdResult>& results);
+
   void clear();
 
   [[nodiscard]] entt::registry& getRegistry()

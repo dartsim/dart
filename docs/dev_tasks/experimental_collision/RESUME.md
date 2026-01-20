@@ -10,33 +10,33 @@
 
 ## What's Complete
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Core types (ContactPoint, Manifold, Result, Ray) | ✅ | 21 tests |
-| Aabb | ✅ | 26 tests |
-| Shapes (Sphere, Box, Capsule, Cylinder, Plane, Convex, Mesh) | ✅ | 24 tests |
-| Sphere-sphere collision | ✅ | 17 tests |
-| Box-box collision (SAT) | ✅ | 18 tests |
-| Sphere-box collision | ✅ | 19 tests |
-| Capsule collision (all pairs) | ✅ | 14 tests |
-| Cylinder collision (all pairs) | ✅ | 18 tests |
-| Plane collision (all pairs) | ✅ | 11 tests |
-| Distance queries (6 pairs + Convex/Mesh) | ✅ | 18 tests |
-| Raycast (6 shapes incl. Mesh) | ✅ | 32 tests |
-| Brute-force broad-phase | ✅ | 15 tests |
-| CollisionObject (ECS handle) | ✅ | 12 tests |
-| NarrowPhase dispatcher | ✅ | 7 tests |
-| CollisionWorld (ECS-based) | ✅ | 8 tests |
-| ECS Refactoring | ✅ | Handle-based API |
-| **GJK/EPA Algorithm** | ✅ | 15 tests |
-| **ConvexShape** | ✅ | 5 tests |
-| **MeshShape** | ✅ | 4 tests |
-| **GJK-based Convex/Mesh Collision** | ✅ | 10 tests |
-| **Ray-Mesh Intersection** | ✅ | 8 tests (Moller-Trumbore) |
-| **GJK-based Distance (Convex/Mesh)** | ✅ | 4 tests |
-| **Ray-Convex Intersection** | ✅ | 7 tests (GJK-based binary search) |
-| Comparative benchmarks vs FCL/Bullet/ODE | ✅ | `bm_comparative.cpp` |
-| Accuracy verification | ✅ | Matches FCL within tolerance |
+| Component                                                    | Status | Notes                             |
+| ------------------------------------------------------------ | ------ | --------------------------------- |
+| Core types (ContactPoint, Manifold, Result, Ray)             | ✅     | 21 tests                          |
+| Aabb                                                         | ✅     | 26 tests                          |
+| Shapes (Sphere, Box, Capsule, Cylinder, Plane, Convex, Mesh) | ✅     | 24 tests                          |
+| Sphere-sphere collision                                      | ✅     | 17 tests                          |
+| Box-box collision (SAT)                                      | ✅     | 18 tests                          |
+| Sphere-box collision                                         | ✅     | 19 tests                          |
+| Capsule collision (all pairs)                                | ✅     | 14 tests                          |
+| Cylinder collision (all pairs)                               | ✅     | 18 tests                          |
+| Plane collision (all pairs)                                  | ✅     | 11 tests                          |
+| Distance queries (6 pairs + Convex/Mesh)                     | ✅     | 18 tests                          |
+| Raycast (6 shapes incl. Mesh)                                | ✅     | 32 tests                          |
+| Brute-force broad-phase                                      | ✅     | 15 tests                          |
+| CollisionObject (ECS handle)                                 | ✅     | 12 tests                          |
+| NarrowPhase dispatcher                                       | ✅     | 7 tests                           |
+| CollisionWorld (ECS-based)                                   | ✅     | 8 tests                           |
+| ECS Refactoring                                              | ✅     | Handle-based API                  |
+| **GJK/EPA Algorithm**                                        | ✅     | 15 tests                          |
+| **ConvexShape**                                              | ✅     | 5 tests                           |
+| **MeshShape**                                                | ✅     | 4 tests                           |
+| **GJK-based Convex/Mesh Collision**                          | ✅     | 10 tests                          |
+| **Ray-Mesh Intersection**                                    | ✅     | 8 tests (Moller-Trumbore)         |
+| **GJK-based Distance (Convex/Mesh)**                         | ✅     | 4 tests                           |
+| **Ray-Convex Intersection**                                  | ✅     | 7 tests (GJK-based binary search) |
+| Comparative benchmarks vs FCL/Bullet/ODE                     | ✅     | `bm_comparative.cpp`              |
+| Accuracy verification                                        | ✅     | Matches FCL within tolerance      |
 
 ## ECS Architecture
 
@@ -61,25 +61,25 @@ CollisionObject (handle) = entt::entity + CollisionWorld*
 
 ## Benchmark Results
 
-| Shape Pair | Experimental | Best Alternative | Speedup |
-|------------|-------------|------------------|---------|
-| Sphere-Sphere | **41 ns** | 411 ns (Bullet) | **10x** |
-| Box-Box | **210 ns** | 1094 ns (Bullet) | **5x** |
-| Capsule-Capsule | **41 ns** | 242 ns (FCL) | **6x** |
-| Distance | **7 ns** | 288 ns (FCL) | **40x** |
+| Shape Pair      | Experimental | Best Alternative | Speedup |
+| --------------- | ------------ | ---------------- | ------- |
+| Sphere-Sphere   | **41 ns**    | 411 ns (Bullet)  | **10x** |
+| Box-Box         | **210 ns**   | 1094 ns (Bullet) | **5x**  |
+| Capsule-Capsule | **41 ns**    | 242 ns (FCL)     | **6x**  |
+| Distance        | **7 ns**     | 288 ns (FCL)     | **40x** |
 
 ## What's NOT Done
 
-| Component | Priority | Notes |
-|-----------|----------|-------|
-| ~~GJK-based mesh-primitive collision~~ | ~~Medium~~ | ✅ DONE — `collideConvexConvex()` via GJK |
-| ~~Ray-mesh intersection~~ | ~~Medium~~ | ✅ DONE — Moller-Trumbore algorithm |
-| ~~Distance for Convex/Mesh~~ | ~~Medium~~ | ✅ DONE — `distanceConvexConvex()` via GJK |
-| ~~Ray-convex intersection~~ | ~~Medium~~ | ✅ DONE — GJK-based point-in-convex + binary search |
-| Continuous Collision Detection (CCD) | Medium | Swept sphere/capsule, conservative advancement |
-| Visual verification tool | Low | Raylib available in DART, needs visualizer |
-| Optimized broad-phase | Low | BVH or spatial hash (current is O(N²)) |
-| DART integration | Deferred | Wait for feature parity |
+| Component                              | Priority   | Notes                                               |
+| -------------------------------------- | ---------- | --------------------------------------------------- |
+| ~~GJK-based mesh-primitive collision~~ | ~~Medium~~ | ✅ DONE — `collideConvexConvex()` via GJK           |
+| ~~Ray-mesh intersection~~              | ~~Medium~~ | ✅ DONE — Moller-Trumbore algorithm                 |
+| ~~Distance for Convex/Mesh~~           | ~~Medium~~ | ✅ DONE — `distanceConvexConvex()` via GJK          |
+| ~~Ray-convex intersection~~            | ~~Medium~~ | ✅ DONE — GJK-based point-in-convex + binary search |
+| Continuous Collision Detection (CCD)   | Medium     | Swept sphere/capsule, conservative advancement      |
+| Visual verification tool               | Low        | Raylib available in DART, needs visualizer          |
+| Optimized broad-phase                  | Low        | BVH or spatial hash (current is O(N²))              |
+| DART integration                       | Deferred   | Wait for feature parity                             |
 
 ## How to Resume
 
@@ -102,17 +102,17 @@ for t in bin/test_*; do $t 2>&1 | tail -1; done
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `dart/collision/experimental/shapes/shape.hpp` | All shape classes including ConvexShape and MeshShape |
-| `dart/collision/experimental/narrow_phase/gjk.hpp` | GJK/EPA algorithm |
-| `dart/collision/experimental/narrow_phase/convex_convex.hpp` | Support functions + GJK collision dispatch |
-| `dart/collision/experimental/narrow_phase/raycast.hpp` | Raycast for all shapes including Mesh |
-| `dart/collision/experimental/collision_world.hpp` | ECS-based world with registry |
-| `dart/collision/experimental/collision_object.hpp` | Lightweight handle class |
-| `tests/unit/collision/experimental/test_gjk.cpp` | GJK tests |
-| `tests/unit/collision/experimental/test_convex.cpp` | Convex/Mesh collision tests |
-| `tests/unit/collision/experimental/test_raycast.cpp` | Raycast tests including mesh (32 tests) |
+| File                                                         | Purpose                                               |
+| ------------------------------------------------------------ | ----------------------------------------------------- |
+| `dart/collision/experimental/shapes/shape.hpp`               | All shape classes including ConvexShape and MeshShape |
+| `dart/collision/experimental/narrow_phase/gjk.hpp`           | GJK/EPA algorithm                                     |
+| `dart/collision/experimental/narrow_phase/convex_convex.hpp` | Support functions + GJK collision dispatch            |
+| `dart/collision/experimental/narrow_phase/raycast.hpp`       | Raycast for all shapes including Mesh                 |
+| `dart/collision/experimental/collision_world.hpp`            | ECS-based world with registry                         |
+| `dart/collision/experimental/collision_object.hpp`           | Lightweight handle class                              |
+| `tests/unit/collision/experimental/test_gjk.cpp`             | GJK tests                                             |
+| `tests/unit/collision/experimental/test_convex.cpp`          | Convex/Mesh collision tests                           |
+| `tests/unit/collision/experimental/test_raycast.cpp`         | Raycast tests including mesh (32 tests)               |
 
 ## Key Constraints
 
@@ -126,12 +126,12 @@ for t in bin/test_*; do $t 2>&1 | tail -1; done
 
 ## Reference Implementations
 
-| Library | Path | Algorithms |
-|---------|------|------------|
-| **libccd** | `/home/js/dev/physics/libccd` | GJK, EPA, MPR (C style, port to C++20) |
-| **FCL** | `/home/js/dev/physics/fcl` | BVH mesh-mesh, distance, broad-phase |
-| **Bullet3** | `/home/js/dev/physics/bullet3` | Battle-tested collision (legacy) |
-| **ODE** | `/home/js/dev/physics/ODE` | Battle-tested collision (legacy) |
+| Library     | Path                           | Algorithms                             |
+| ----------- | ------------------------------ | -------------------------------------- |
+| **libccd**  | `/home/js/dev/physics/libccd`  | GJK, EPA, MPR (C style, port to C++20) |
+| **FCL**     | `/home/js/dev/physics/fcl`     | BVH mesh-mesh, distance, broad-phase   |
+| **Bullet3** | `/home/js/dev/physics/bullet3` | Battle-tested collision (legacy)       |
+| **ODE**     | `/home/js/dev/physics/ODE`     | Battle-tested collision (legacy)       |
 
 ## Suggested Next Steps
 

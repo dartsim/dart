@@ -5,43 +5,45 @@
 
 ## Status Summary
 
-| Phase                     | Status       | Progress |
-| ------------------------- | ------------ | -------- |
-| Core Types & Primitives   | **Complete** | 100%     |
-| Standalone CollisionWorld | **Complete** | 100%     |
-| Additional Shapes         | **Complete** | 100%     |
-| Distance Queries          | **Complete** | 100%     |
-| Comparative Benchmarks    | **Complete** | 100%     |
-| Raycast Support           | **Complete** | 100%     |
-| ECS Refactoring           | **Complete** | 100%     |
-| GJK/EPA Algorithm         | **Complete** | 100%     |
-| Convex/Mesh Shapes        | **Complete** | 100%     |
-| Visual Verification       | Not Started  | 0%       |
-| DART Integration          | **Deferred** | -        |
+| Phase                      | Status       | Progress |
+| -------------------------- | ------------ | -------- |
+| Core Types & Primitives    | **Complete** | 100%     |
+| Standalone CollisionWorld  | **Complete** | 100%     |
+| Additional Shapes          | **Complete** | 100%     |
+| Distance Queries           | **Complete** | 100%     |
+| Comparative Benchmarks     | **Complete** | 100%     |
+| Raycast Support            | **Complete** | 100%     |
+| ECS Refactoring            | **Complete** | 100%     |
+| GJK/EPA Algorithm          | **Complete** | 100%     |
+| Convex/Mesh Shapes         | **Complete** | 100%     |
+| Continuous Collision (CCD) | **Complete** | 100%     |
+| Visual Verification        | Not Started  | 0%       |
+| DART Integration           | **Deferred** | -        |
 
 ---
 
-## Completed Components (292 tests)
+## Completed Components (341 tests)
 
-| Component                        | Files                                   | Tests | Notes                           |
-| -------------------------------- | --------------------------------------- | ----- | ------------------------------- |
-| ContactPoint, ContactManifold    | types.hpp/.cpp                          | 21    | Core contact representation     |
-| CollisionResult, CollisionOption | types.hpp/.cpp                          | -     | (included above)                |
-| Aabb                             | aabb.hpp/.cpp                           | 26    | Axis-aligned bounding box       |
-| All Shapes                       | shapes/shape.hpp/.cpp                   | 24    | Sphere, Box, Capsule, Cylinder, Plane, Convex, Mesh |
-| GJK/EPA Algorithm                | narrow_phase/gjk.hpp/.cpp               | 15    | Generic convex collision detection |
-| Sphere-sphere                    | narrow_phase/sphere_sphere.hpp/.cpp     | 17    | Narrow-phase                    |
-| Box-box (SAT)                    | narrow_phase/box_box.hpp/.cpp           | 18    | Separating Axis Theorem         |
-| Sphere-box                       | narrow_phase/sphere_box.hpp/.cpp        | 19    | Mixed pair                      |
-| Capsule collision                | narrow_phase/capsule_*.hpp/.cpp         | 14    | All capsule pairs               |
-| Cylinder collision               | narrow_phase/cylinder_collision.hpp/.cpp| 18    | All cylinder pairs              |
-| Plane collision                  | narrow_phase/plane_sphere.hpp/.cpp      | 11    | All plane pairs                 |
-| Distance queries                 | narrow_phase/distance.hpp/.cpp          | 18    | 6 primitive pairs + Convex/Mesh |
-| Raycast                          | narrow_phase/raycast.hpp/.cpp           | 39    | 7 shape types incl. Mesh/Convex |
-| BruteForceBroadPhase             | broad_phase/brute_force.hpp/.cpp        | 15    | O(n²) broad-phase               |
-| CollisionObject                  | collision_object.hpp/.cpp               | 12    | Lightweight ECS handle          |
-| NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp      | 7     | Shape-type dispatch             |
-| CollisionWorld                   | collision_world.hpp/.cpp                | 8     | Standalone collision detection  |
+| Component                        | Files                                    | Tests | Notes                                               |
+| -------------------------------- | ---------------------------------------- | ----- | --------------------------------------------------- |
+| ContactPoint, ContactManifold    | types.hpp/.cpp                           | 21    | Core contact representation                         |
+| CollisionResult, CollisionOption | types.hpp/.cpp                           | -     | (included above)                                    |
+| Aabb                             | aabb.hpp/.cpp                            | 26    | Axis-aligned bounding box                           |
+| All Shapes                       | shapes/shape.hpp/.cpp                    | 24    | Sphere, Box, Capsule, Cylinder, Plane, Convex, Mesh |
+| GJK/EPA Algorithm                | narrow_phase/gjk.hpp/.cpp                | 15    | Generic convex collision detection                  |
+| Sphere-sphere                    | narrow_phase/sphere_sphere.hpp/.cpp      | 17    | Narrow-phase                                        |
+| Box-box (SAT)                    | narrow_phase/box_box.hpp/.cpp            | 18    | Separating Axis Theorem                             |
+| Sphere-box                       | narrow_phase/sphere_box.hpp/.cpp         | 19    | Mixed pair                                          |
+| Capsule collision                | narrow*phase/capsule*\*.hpp/.cpp         | 14    | All capsule pairs                                   |
+| Cylinder collision               | narrow_phase/cylinder_collision.hpp/.cpp | 18    | All cylinder pairs                                  |
+| Plane collision                  | narrow_phase/plane_sphere.hpp/.cpp       | 11    | All plane pairs                                     |
+| Distance queries                 | narrow_phase/distance.hpp/.cpp           | 18    | 6 primitive pairs + Convex/Mesh                     |
+| Raycast                          | narrow_phase/raycast.hpp/.cpp            | 39    | 7 shape types incl. Mesh/Convex                     |
+| CCD (sphere/capsule cast)        | narrow_phase/ccd.hpp/.cpp                | 49    | Swept volume + conservative advancement             |
+| BruteForceBroadPhase             | broad_phase/brute_force.hpp/.cpp         | 15    | O(n²) broad-phase                                   |
+| CollisionObject                  | collision_object.hpp/.cpp                | 12    | Lightweight ECS handle                              |
+| NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp       | 7     | Shape-type dispatch                                 |
+| CollisionWorld                   | collision_world.hpp/.cpp                 | 8     | Standalone collision detection                      |
 
 ---
 
@@ -49,58 +51,59 @@
 
 ### Priority 1: More Shapes
 
-| Shape         | Implementation | Tests   | Notes                                                |
-| ------------- | -------------- | ------- | ---------------------------------------------------- |
-| CapsuleShape  | **Complete**   | 14      | Sphere-swept line segment                            |
-| CylinderShape | **Complete**   | 3       | Axis-aligned cylinder (shape only, no collision yet) |
-| PlaneShape    | **Complete**   | 11      | Infinite half-space                                  |
-| ConvexShape   | **Complete**   | 5       | Vertex-based convex hull with support function       |
-| MeshShape     | **Complete**   | 4       | Triangle mesh with support function                  |
+| Shape         | Implementation | Tests | Notes                                                |
+| ------------- | -------------- | ----- | ---------------------------------------------------- |
+| CapsuleShape  | **Complete**   | 14    | Sphere-swept line segment                            |
+| CylinderShape | **Complete**   | 3     | Axis-aligned cylinder (shape only, no collision yet) |
+| PlaneShape    | **Complete**   | 11    | Infinite half-space                                  |
+| ConvexShape   | **Complete**   | 5     | Vertex-based convex hull with support function       |
+| MeshShape     | **Complete**   | 4     | Triangle mesh with support function                  |
 
 ### Priority 2: Shape Pairs ✅ COMPLETE (all primitive pairs)
 
-| Pair              | Status       | Tests | Notes                        |
-| ----------------- | ------------ | ----- | ---------------------------- |
-| Capsule-capsule   | **Complete** | 14    | Common in robotics           |
-| Capsule-sphere    | **Complete** | -     | Included in capsule tests    |
-| Capsule-box       | **Complete** | -     | Included in capsule tests    |
-| Plane-sphere      | **Complete** | 11    | Ground contact               |
-| Plane-box         | **Complete** | -     | Included in plane tests      |
-| Plane-capsule     | **Complete** | -     | Included in plane tests      |
-| Cylinder-cylinder | **Complete** | 18    | Full cylinder support        |
-| Cylinder-sphere   | **Complete** | -     | Included in cylinder tests   |
-| Cylinder-box      | **Complete** | -     | Included in cylinder tests   |
-| Cylinder-capsule  | **Complete** | -     | Included in cylinder tests   |
-| Cylinder-plane    | **Complete** | -     | Included in cylinder tests   |
-| Mesh-primitive    | Pending      |       | GJK/EPA based                |
+| Pair              | Status       | Tests | Notes                      |
+| ----------------- | ------------ | ----- | -------------------------- |
+| Capsule-capsule   | **Complete** | 14    | Common in robotics         |
+| Capsule-sphere    | **Complete** | -     | Included in capsule tests  |
+| Capsule-box       | **Complete** | -     | Included in capsule tests  |
+| Plane-sphere      | **Complete** | 11    | Ground contact             |
+| Plane-box         | **Complete** | -     | Included in plane tests    |
+| Plane-capsule     | **Complete** | -     | Included in plane tests    |
+| Cylinder-cylinder | **Complete** | 18    | Full cylinder support      |
+| Cylinder-sphere   | **Complete** | -     | Included in cylinder tests |
+| Cylinder-box      | **Complete** | -     | Included in cylinder tests |
+| Cylinder-capsule  | **Complete** | -     | Included in cylinder tests |
+| Cylinder-plane    | **Complete** | -     | Included in cylinder tests |
+| Mesh-primitive    | Pending      |       | GJK/EPA based              |
 
 ### Priority 3: Distance Queries ✅ COMPLETE (6 primitive pairs + Convex/Mesh)
 
-| Query Type           | Status       | Notes                    |
-| -------------------- | ------------ | ------------------------ |
-| Sphere-sphere dist   | **Complete** | 18 tests total           |
-| Sphere-box dist      | **Complete** | Included in distance     |
-| Box-box dist         | **Complete** | Included in distance     |
-| Capsule-capsule dist | **Complete** | Included in distance     |
-| Capsule-sphere dist  | **Complete** | Included in distance     |
-| Capsule-box dist     | **Complete** | Included in distance     |
-| Convex-Convex dist   | **Complete** | GJK-based, 4 tests       |
-| Convex-Mesh dist     | **Complete** | GJK-based                |
-| Mesh-Mesh dist       | **Complete** | GJK-based                |
+| Query Type           | Status       | Notes                |
+| -------------------- | ------------ | -------------------- |
+| Sphere-sphere dist   | **Complete** | 18 tests total       |
+| Sphere-box dist      | **Complete** | Included in distance |
+| Box-box dist         | **Complete** | Included in distance |
+| Capsule-capsule dist | **Complete** | Included in distance |
+| Capsule-sphere dist  | **Complete** | Included in distance |
+| Capsule-box dist     | **Complete** | Included in distance |
+| Convex-Convex dist   | **Complete** | GJK-based, 4 tests   |
+| Convex-Mesh dist     | **Complete** | GJK-based            |
+| Mesh-Mesh dist       | **Complete** | GJK-based            |
 
 ### Priority 4: Raycast ✅ COMPLETE (7 shapes)
 
-| Feature      | Status       | Tests | Notes                    |
-| ------------ | ------------ | ----- | ------------------------ |
-| Ray-sphere   | **Complete** | 5     | Hit/miss, inside, max dist |
-| Ray-box      | **Complete** | 5     | All faces, rotated       |
+| Feature      | Status       | Tests | Notes                        |
+| ------------ | ------------ | ----- | ---------------------------- |
+| Ray-sphere   | **Complete** | 5     | Hit/miss, inside, max dist   |
+| Ray-box      | **Complete** | 5     | All faces, rotated           |
 | Ray-capsule  | **Complete** | 3     | Cylindrical + spherical caps |
-| Ray-cylinder | **Complete** | 4     | Curved surface + caps    |
-| Ray-plane    | **Complete** | 6     | Backface culling, offset |
-| Ray-mesh     | **Complete** | 8     | Moller-Trumbore algorithm |
-| Ray-convex   | **Complete** | 7     | GJK-based binary search  |
+| Ray-cylinder | **Complete** | 4     | Curved surface + caps        |
+| Ray-plane    | **Complete** | 6     | Backface culling, offset     |
+| Ray-mesh     | **Complete** | 8     | Moller-Trumbore algorithm    |
+| Ray-convex   | **Complete** | 7     | GJK-based binary search      |
 
 **CollisionWorld raycast API:**
+
 - `raycast(ray, option, result)` - Returns closest hit
 - `raycastAll(ray, option, results)` - Returns all hits sorted by distance
 
@@ -123,49 +126,46 @@
 
 Current architecture uses `shared_ptr<CollisionObject>`. Target architecture:
 
-| Current                  | Target (ECS)                              |
-| ------------------------ | ----------------------------------------- |
+| Current                       | Target (ECS)                               |
+| ----------------------------- | ------------------------------------------ |
 | `shared_ptr<CollisionObject>` | Lightweight handle (entity ID + world ptr) |
-| Shape* owned by object   | ShapeComponent in registry                |
-| Transform in object      | TransformComponent in registry            |
-| AABB in object           | AabbComponent in registry                 |
-| `std::vector<shared_ptr>` | `entt::registry`                         |
+| Shape\* owned by object       | ShapeComponent in registry                 |
+| Transform in object           | TransformComponent in registry             |
+| AABB in object                | AabbComponent in registry                  |
+| `std::vector<shared_ptr>`     | `entt::registry`                           |
 
 **Benefits:**
+
 - Better cache locality for iteration
 - Copyable handles (no pointer ownership issues)
 - Consistent with simulation/experimental pattern
 
-### Priority 7: Continuous Collision Detection (CCD)
+### Priority 7: Continuous Collision Detection (CCD) ✅ COMPLETE
 
 CCD prevents fast-moving objects from tunneling through thin obstacles.
 
-| Algorithm | Use Case | Complexity |
-|-----------|----------|------------|
-| Swept sphere/capsule | Character controllers, projectiles | O(1) per pair |
-| Conservative advancement | General convex pairs | O(k) iterations |
-| Time-of-impact (TOI) | GJK-based, precise | O(k) GJK queries |
+| Algorithm                    | Status       | Tests | Notes                                         |
+| ---------------------------- | ------------ | ----- | --------------------------------------------- |
+| Sphere-cast (all primitives) | **Complete** | 34    | Sphere, Box, Capsule, Cylinder, Plane, Convex |
+| Capsule-cast                 | **Complete** | 10    | Sphere, Box, Capsule, Plane                   |
+| Conservative advancement     | **Complete** | 4     | General convex-convex via GJK                 |
+| NarrowPhase dispatcher       | **Complete** | 3     | `sphereCast()`, `isSphereCastSupported()`     |
 
-**Phases:**
-1. **Swept primitives** — Sphere, capsule swept volumes (sphere-cast, capsule-cast)
-2. **Conservative advancement** — Iteratively advance time until contact
-3. **GJK-based TOI** — Precise time-of-impact for convex pairs
+**Implemented API:**
 
-**API sketch:**
 ```cpp
-struct CcdOption {
-  double timeStep = 1.0;
-  double tolerance = 1e-4;
-  int maxIterations = 32;
-};
+// Sphere-cast functions (sweep sphere against static target)
+bool sphereCastSphere/Box/Capsule/Cylinder/Plane/Convex(...);
 
-struct CcdResult {
-  bool hit = false;
-  double timeOfImpact = 1.0;
-  ContactPoint contact;
-};
+// Capsule-cast functions (sweep capsule against static target)
+bool capsuleCastSphere/Box/Capsule/Plane(...);
 
-bool ccdQuery(obj1, vel1, obj2, vel2, CcdOption, CcdResult&);
+// Conservative advancement for general convex pairs
+bool conservativeAdvancement(shapeA, tfAStart, tfAEnd, shapeB, tfB, option, result);
+
+// NarrowPhase dispatcher
+bool NarrowPhase::sphereCast(start, end, radius, target, option, result);
+bool NarrowPhase::isSphereCastSupported(ShapeType type);
 ```
 
 ### Priority 8: Visual Verification

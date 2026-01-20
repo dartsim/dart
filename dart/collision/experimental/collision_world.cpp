@@ -212,6 +212,63 @@ bool CollisionWorld::raycastAll(
   return !results.empty();
 }
 
+bool CollisionWorld::sphereCast(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    double radius,
+    const CcdOption& option,
+    CcdResult& result)
+{
+  result = CcdResult();
+
+  CcdResult closestResult;
+  double closestToi = std::numeric_limits<double>::max();
+
+  auto view = m_registry.view<comps::CollisionObjectTag>();
+  for (auto entity : view) {
+    CollisionObject obj(entity, this);
+    CcdResult tempResult;
+    if (NarrowPhase::sphereCast(start, end, radius, obj, option, tempResult)) {
+      if (tempResult.timeOfImpact < closestToi) {
+        closestToi = tempResult.timeOfImpact;
+        closestResult = tempResult;
+      }
+    }
+  }
+
+  if (closestResult.hit) {
+    result = closestResult;
+    return true;
+  }
+
+  return false;
+}
+
+bool CollisionWorld::sphereCastAll(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    double radius,
+    const CcdOption& option,
+    std::vector<CcdResult>& results)
+{
+  results.clear();
+
+  auto view = m_registry.view<comps::CollisionObjectTag>();
+  for (auto entity : view) {
+    CollisionObject obj(entity, this);
+    CcdResult tempResult;
+    if (NarrowPhase::sphereCast(start, end, radius, obj, option, tempResult)) {
+      results.push_back(tempResult);
+    }
+  }
+
+  std::sort(results.begin(), results.end(), [](const CcdResult& a, const CcdResult& b) {
+    return a.timeOfImpact < b.timeOfImpact;
+  });
+
+  return !results.empty();
+}
+
 void CollisionWorld::clear()
 {
   m_broadPhase.clear();

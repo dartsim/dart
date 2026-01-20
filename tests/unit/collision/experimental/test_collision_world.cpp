@@ -189,3 +189,134 @@ TEST(CollisionWorld, UpdateObject)
   result.clear();
   EXPECT_TRUE(world.collide(option, result));
 }
+
+//==============================================================================
+// CollisionWorld SphereCast tests
+//==============================================================================
+
+TEST(CollisionWorldSphereCast, NoHit)
+{
+  CollisionWorld world;
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(10, 0, 0);
+  world.createObject(std::make_unique<SphereShape>(1.0), tf);
+
+  Eigen::Vector3d start(0, 0, 0);
+  Eigen::Vector3d end(0, 0, 10);
+  double radius = 0.5;
+
+  CcdOption option;
+  CcdResult result;
+
+  EXPECT_FALSE(world.sphereCast(start, end, radius, option, result));
+  EXPECT_FALSE(result.hit);
+}
+
+TEST(CollisionWorldSphereCast, SingleHit)
+{
+  CollisionWorld world;
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0, 0, 5);
+  auto target = world.createObject(std::make_unique<SphereShape>(1.0), tf);
+
+  Eigen::Vector3d start(0, 0, 0);
+  Eigen::Vector3d end(0, 0, 10);
+  double radius = 0.5;
+
+  CcdOption option;
+  CcdResult result;
+
+  EXPECT_TRUE(world.sphereCast(start, end, radius, option, result));
+  EXPECT_TRUE(result.hit);
+  EXPECT_NE(result.object, nullptr);
+  EXPECT_EQ(*result.object, target);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 1.0);
+}
+
+TEST(CollisionWorldSphereCast, ClosestHit)
+{
+  CollisionWorld world;
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  tf1.translation() = Eigen::Vector3d(0, 0, 5);
+  auto near = world.createObject(std::make_unique<SphereShape>(1.0), tf1);
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(0, 0, 8);
+  world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+
+  Eigen::Vector3d start(0, 0, 0);
+  Eigen::Vector3d end(0, 0, 15);
+  double radius = 0.5;
+
+  CcdOption option;
+  CcdResult result;
+
+  EXPECT_TRUE(world.sphereCast(start, end, radius, option, result));
+  EXPECT_NE(result.object, nullptr);
+  EXPECT_EQ(*result.object, near);
+}
+
+TEST(CollisionWorldSphereCast, SphereCastAll)
+{
+  CollisionWorld world;
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  tf1.translation() = Eigen::Vector3d(0, 0, 5);
+  world.createObject(std::make_unique<SphereShape>(1.0), tf1);
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(0, 0, 8);
+  world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+
+  Eigen::Isometry3d tf3 = Eigen::Isometry3d::Identity();
+  tf3.translation() = Eigen::Vector3d(10, 0, 0);
+  world.createObject(std::make_unique<SphereShape>(1.0), tf3);
+
+  Eigen::Vector3d start(0, 0, 0);
+  Eigen::Vector3d end(0, 0, 15);
+  double radius = 0.5;
+
+  CcdOption option;
+  std::vector<CcdResult> results;
+
+  EXPECT_TRUE(world.sphereCastAll(start, end, radius, option, results));
+  EXPECT_EQ(results.size(), 2u);
+
+  EXPECT_LT(results[0].timeOfImpact, results[1].timeOfImpact);
+}
+
+TEST(CollisionWorldSphereCast, MixedShapes)
+{
+  CollisionWorld world;
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  tf1.translation() = Eigen::Vector3d(0, 0, 3);
+  world.createObject(std::make_unique<SphereShape>(1.0), tf1);
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(0, 0, 6);
+  world.createObject(
+      std::make_unique<BoxShape>(Eigen::Vector3d(2, 2, 2)), tf2);
+
+  Eigen::Isometry3d tf3 = Eigen::Isometry3d::Identity();
+  tf3.translation() = Eigen::Vector3d(0, 0, 10);
+  world.createObject(std::make_unique<CapsuleShape>(0.5, 2.0), tf3);
+
+  Eigen::Vector3d start(0, 0, 0);
+  Eigen::Vector3d end(0, 0, 15);
+  double radius = 0.25;
+
+  CcdOption option;
+  std::vector<CcdResult> results;
+
+  EXPECT_TRUE(world.sphereCastAll(start, end, radius, option, results));
+  EXPECT_EQ(results.size(), 3u);
+
+  for (std::size_t i = 1; i < results.size(); ++i) {
+    EXPECT_LE(results[i - 1].timeOfImpact, results[i].timeOfImpact);
+  }
+}
