@@ -24,23 +24,27 @@ If we can't beat existing backends in performance, there's no point in building 
 ## Quick Links
 
 ### Core Documentation
+
 - [Design Document](./design.md) - API design, architecture decisions
 - [Progress Tracker](./progress.md) - Current status and completed tasks
 - [Gap Analysis](./gap_analysis.md) - Implementation gaps vs reference backends (priority roadmap)
 
 ### Architecture
+
 - [ECS Architecture](./ecs_architecture.md) - Batch-friendly data layout, SoA storage, parallel pipeline
 - [Parallelization Plan](./parallelization_plan.md) - Multi-core batch collision roadmap
 - [Conventions](./conventions.md) - Normal/sign conventions and adapter rules
 - [Contact Manifolds](./contact_manifolds.md) - Contact representation notes
 
 ### Reference & Benchmarks
+
 - [Reference Comparison](./reference_comparison.md) - FCL/Bullet/ODE feature and algorithm comparison
 - [SDF + Gradients](./sdf_and_gradients.md) - SDF survey and gradient guidance
 - [Benchmark Catalog](./benchmark_catalog.md) - Surveyed benchmark cases and datasets
 - [Benchmark Results](./benchmark_results.md) - Latest structured suite results and gates
 
 ### Archive
+
 - [archive/](./archive/) - Historical research notes (RP3D ECS investigation)
 
 ## Current Status
@@ -52,9 +56,11 @@ The module is being developed as a **standalone collision library** first, befor
 ### What's Built (413 tests passing)
 
 **Shapes:**
+
 - SphereShape, BoxShape, CapsuleShape, CylinderShape, PlaneShape, ConvexShape
 
 **Narrow-phase algorithms:**
+
 - Sphere-sphere, sphere-box, sphere-capsule, sphere-cylinder, sphere-plane
 - Box-box (SAT), box-capsule, box-cylinder, box-plane
 - Capsule-capsule, capsule-cylinder, capsule-plane
@@ -63,15 +69,18 @@ The module is being developed as a **standalone collision library** first, befor
 - Convex-convex (GJK/EPA)
 
 **Broad-phase:**
+
 - BruteForceBroadPhase, SweepAndPrune, SpatialHash, AABBTree
 
 **Query types:**
+
 - Collision detection with contact manifolds
 - Distance queries (signed distance, closest points)
 - Raycast (all shapes)
 - Continuous collision detection (CCD)
 
 **Infrastructure:**
+
 - CollisionWorld with ECS (entt) backend
 - Batch API with SoA storage and BatchView
 - Stable object IDs for determinism
@@ -87,16 +96,16 @@ See [gap_analysis.md](./gap_analysis.md) for full priority roadmap.
 
 ## Key Design Decisions
 
-| Decision               | Choice                                       | Rationale                                     |
-| ---------------------- | -------------------------------------------- | --------------------------------------------- |
-| Namespace              | `dart::collision::experimental`              | Follows simulation/experimental pattern       |
-| File naming            | snake_case                                   | Matches experimental convention               |
-| Normal convention      | From object2 to object1                      | Matches existing DART convention              |
-| Contact representation | Extensible manifold-based                    | Supports rigid/deformable/cloth/codimensional |
-| Broad-phase            | Extensible interface (4 implementations)     | Different algorithms for different use cases  |
-| Determinism            | Bit-exact when possible                      | Required for reproducible simulation          |
-| Development approach   | Standalone library first                     | Defer DART integration until feature parity   |
-| ECS backend            | entt + SoA BatchStorage                      | Cache-friendly, scales to 10k+ objects        |
+| Decision               | Choice                                   | Rationale                                     |
+| ---------------------- | ---------------------------------------- | --------------------------------------------- |
+| Namespace              | `dart::collision::experimental`          | Follows simulation/experimental pattern       |
+| File naming            | snake_case                               | Matches experimental convention               |
+| Normal convention      | From object2 to object1                  | Matches existing DART convention              |
+| Contact representation | Extensible manifold-based                | Supports rigid/deformable/cloth/codimensional |
+| Broad-phase            | Extensible interface (4 implementations) | Different algorithms for different use cases  |
+| Determinism            | Bit-exact when possible                  | Required for reproducible simulation          |
+| Development approach   | Standalone library first                 | Defer DART integration until feature parity   |
+| ECS backend            | entt + SoA BatchStorage                  | Cache-friendly, scales to 10k+ objects        |
 
 ## Build & Test
 

@@ -703,6 +703,24 @@ TEST(RaycastMesh, BackfaceCullingFromInside)
   EXPECT_FALSE(hit);
 }
 
+TEST(RaycastMesh, FromInsideNoBackfaceCulling)
+{
+  MeshShape mesh(makeCubeVertices(1.0), makeCubeTriangles());
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0));
+  RaycastOption option;
+  option.backfaceCulling = false;
+  RaycastResult result;
+
+  bool hit = raycastMesh(ray, mesh, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_NEAR(result.distance, 1.0, 1e-10);
+  EXPECT_NEAR(result.point.x(), 1.0, 1e-10);
+  EXPECT_LT(result.normal.dot(ray.direction), 0.0);
+}
+
 TEST(RaycastMesh, NarrowPhaseSupported)
 {
   EXPECT_TRUE(NarrowPhase::isRaycastSupported(ShapeType::Mesh));
