@@ -53,12 +53,12 @@ Root cause was dangling reference after vector reallocation in `insertLeaf()`.
 
 Results (after fix):
 
-| Scenario      | Count | Broadphase | Narrowphase | Pairs  | Contacts |
-| ------------- | ----- | ---------- | ----------- | ------ | -------- |
-| Dense spheres | 1k    | 163µs      | 83µs        | 458    | 252      |
-| Dense spheres | 10k   | 11.3ms     | 665ms       | 46.3k  | 24.7k    |
-| Sparse spheres| 1k    | 57µs       | 0.4µs       | 4      | 4        |
-| Sparse spheres| 10k   | 2.3ms      | 87µs        | 403    | 209      |
+| Scenario       | Count | Broadphase | Narrowphase | Pairs | Contacts |
+| -------------- | ----- | ---------- | ----------- | ----- | -------- |
+| Dense spheres  | 1k    | 163µs      | 83µs        | 458   | 252      |
+| Dense spheres  | 10k   | 11.3ms     | 665ms       | 46.3k | 24.7k    |
+| Sparse spheres | 1k    | 57µs       | 0.4µs       | 4     | 4        |
+| Sparse spheres | 10k   | 2.3ms      | 87µs        | 403   | 209      |
 
 See `benchmark_results.md` for full details.
 

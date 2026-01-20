@@ -24,7 +24,7 @@
 - `tests/benchmark/collision/scenarios/bm_pipeline_breakdown.cpp` - AABB update + broadphase + narrowphase timing (includes RP3D-aligned sphere-only dense/sparse variants).
 - `tests/benchmark/collision/experimental/bm_ccd.cpp` - experimental CCD microbenchmarks.
 - `tests/benchmark/collision/experimental/bm_libccd.cpp` - DART vs libccd GJK/EPA/MPR microbenchmarks (optional).
-- `dart/collision/experimental/benchmarks/bm_sdf_compare.cpp` - Dense SDF query throughput + optional Voxblox ESDF comparisons when `-DDART_EXPERIMENTAL_VOXBLOX_ROOT=/path/to/voxblox` is set (benchmark target only; no core dependency).
+- `dart/collision/experimental/benchmarks/bm_sdf_compare.cpp` - Dense SDF/ESDF query throughput (and ESDF build timing) + optional Voxblox ESDF comparisons when `-DDART_EXPERIMENTAL_VOXBLOX_ROOT=/path/to/voxblox` is set (benchmark target only; no core dependency).
 - `tests/benchmark/collision/fixtures/` - shared shape/scene builders.
 - `tests/benchmark/collision/data/` - shared mesh/convex fixtures.
 
@@ -50,6 +50,21 @@ Recorded (partial), Baseline only, TBA.
 | Baseline microbench               | `tests/benchmark/collision/bm_experimental.cpp`                 | Experimental                 | Baseline only (historical)         |
 | Baseline comparative              | `tests/benchmark/collision/bm_comparative.cpp`                  | Experimental/FCL/Bullet/ODE  | Historical; build broken (API)     |
 | SDF compare                       | `dart/collision/experimental/benchmarks/bm_sdf_compare.cpp`     | Experimental (+ Voxblox opt) | TBA                                |
+
+## Unit test coverage status
+
+Status labels: Implemented, Partial, TBA.
+
+| Area                                   | Status      | Notes / Next test                                                |
+| -------------------------------------- | ----------- | ---------------------------------------------------------------- |
+| Contact manifold invariants            | Partial     | `isTypeCompatible()` covered; add deterministic reduction test.  |
+| Broadphase determinism (pair ordering) | Implemented | Deterministic ordering tests in `test_*` broadphase suites.      |
+| CollisionWorld ordering                | Partial     | `raycastAll` ordering + repeatability covered; `collideAll` TBD. |
+| Distance edge cases / scale sweeps     | Partial     | Add unit tests for 1e-3/1/1e3 regimes + thin features.           |
+| Raycast edge cases                     | Partial     | Add near-parallel/inside-origin + ordering tests at world level. |
+| CCD shape casts                        | Implemented | Extensive sphere/capsule cast coverage in `test_ccd.cpp`.        |
+| SDF fields + gradients                 | Implemented | Dense SDF/TSDF/ESDF + Voxblox optional comparisons.              |
+| Cross-backend correctness              | Partial     | Collision/distance covered; add raycast cross-backend checks.    |
 
 ### Library-provided benchmarks and demos
 
@@ -111,6 +126,14 @@ Recorded (partial), Baseline only, TBA.
 - Convex/mesh shape casts beyond sphere/capsule (Parry/BEPU references).
 - SDF/voxel gradient sweeps (Dense SDF vs Voxblox ESDF comparison).
 - Broadphase scaling with thread counts (1/2/4/8/16) per parallelization plan.
+
+## Priority next steps (testing + benchmarking)
+
+1. Add `CollisionWorld::collideAll` ordering + repeatability tests.
+2. Add unit tests for distance/raycast edge-case regimes (grazing, thin features, extreme scales).
+3. Add cross-backend raycast consistency tests (where supported).
+4. Implement heightfield/terrain and compound/aggregate benchmark scenarios.
+5. Extend shape-cast benchmarks beyond sphere/capsule and add thread-scaling runs.
 
 ## Per-query, per-shape case checklist
 

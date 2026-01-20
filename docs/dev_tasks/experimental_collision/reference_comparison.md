@@ -127,9 +127,14 @@
 ### Voxblox
 
 - Goal: incremental volumetric mapping with TSDF/ESDF distance fields for planning.
-- Design: sparse voxel block layers (TSDF/ESDF/occupancy) keyed by hashed block indices; TSDF integrators (simple/merged/fast) fuse point clouds; ESDF generation from TSDF or occupancy using raise/lower wavefronts with a bucketed priority queue; supports full or quasi-Euclidean distance.
-- Strengths: ESDF distance + gradient queries with optional interpolation and batch query helpers; marching-cubes mesh extraction from SDF layers; ROS integration and protobuf-based serialization.
-- Gaps: not a collision detection engine; no contact manifolds, broadphase, or continuous collision queries; resolution-limited and best suited for static scene distance checks.
+- Design: sparse voxel block layers (TSDF/ESDF/occupancy) keyed by hashed block indices; `Layer` stores `Block` objects with dense voxel arrays and per-block update flags; `TsdfVoxel` stores distance/weight/color while `EsdfVoxel` tracks distance, observed, fixed-band status, queue state, and parent direction.
+- TSDF pipeline: simple/merged/fast integrators fuse point clouds with truncation, range limits, weight drop-off, and optional clearing; merging and anti-grazing options trade accuracy for throughput.
+- ESDF pipeline: raise/lower wavefront updates via a bucketed priority queue (fast marching), with configurable fixed band (`min_distance_m`), minimum change threshold (`min_diff_m`), and full vs quasi-Euclidean distance; neighborhood connectivity uses 6/18/26 offsets with precomputed sqrt(2)/sqrt(3) costs.
+- Queries: `EsdfMap` provides distance + gradient queries with optional trilinear interpolation; gradients use voxel-size central differences and can fall back to adaptive one-sided estimates; batch query helpers are exposed for Python.
+- Strengths: well-tested mapping stack with TSDF-to-ESDF conversion, batch query helpers, and marching-cubes mesh extraction; clear separation of layers and integrators for reuse.
+- Gaps: not a collision detection engine; no contact manifolds, broadphase, or continuous collision/time-of-impact queries; resolution-limited and best suited for static scene clearance checks.
+- Build notes: ROS/catkin-centric build and glog/protobuf dependencies; not lightweight for non-ROS environments.
+- Relevance to DART: strong reference for TSDF/ESDF algorithms and data layout, but should remain a test/benchmark-only comparison (no core dependency).
 
 ## Feature comparison (from local source trees)
 
