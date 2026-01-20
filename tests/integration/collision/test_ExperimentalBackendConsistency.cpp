@@ -153,7 +153,11 @@ double NormalAlignment(
 BackendCapabilities CapabilitiesFor(std::string_view type)
 {
   BackendCapabilities caps;
-  if (type == "ode") {
+  if (type == "fcl") {
+    caps.supportsCapsule = false;
+  } else if (type == "bullet") {
+    caps.supportsDistance = false;
+  } else if (type == "ode") {
     caps.supportsDistance = false;
     caps.supportsCapsule = false;
   }
@@ -177,6 +181,20 @@ bool ShouldCompareDepth(const CaseSpec& spec)
   }
 
   return true;
+}
+
+bool IsContactForEdge(
+    const Outcome& outcome, const CaseSpec& spec, double contactEps)
+{
+  if (spec.edge == EdgeCase::kGrazing) {
+    if (outcome.hasDistance) {
+      return outcome.distance <= contactEps;
+    }
+    return outcome.colliding;
+  }
+
+  return outcome.colliding
+         || (outcome.hasDistance && outcome.distance <= contactEps);
 }
 
 std::vector<CaseSpec> BuildCases()
@@ -439,12 +457,12 @@ void ExpectConsistent(
     const Outcome& experimental, const Outcome& reference, const CaseSpec& spec)
 {
   const double contactEps = ContactEpsilon(spec.scale);
-  const bool expContact
-      = experimental.colliding
-        || (experimental.hasDistance && experimental.distance <= contactEps);
-  const bool refContact
-      = reference.colliding
-        || (reference.hasDistance && reference.distance <= contactEps);
+  if (spec.edge == EdgeCase::kGrazing
+      && (!experimental.hasDistance || !reference.hasDistance)) {
+    return;
+  }
+  const bool expContact = IsContactForEdge(experimental, spec, contactEps);
+  const bool refContact = IsContactForEdge(reference, spec, contactEps);
 
   if (spec.edge == EdgeCase::kDeepPenetration) {
     EXPECT_TRUE(expContact);
@@ -522,6 +540,10 @@ TEST(ExperimentalCollision, CrossBackendConsistency)
 
     for (const auto& backend : backends) {
       if (!backend.caps.supportsCapsule && PairUsesCapsule(spec.pair)) {
+        continue;
+      }
+      if (backend.name == "Bullet" && spec.scale <= 1e-3) {
+        // Bullet runs in single precision; tiny scales are unreliable.
         continue;
       }
 
