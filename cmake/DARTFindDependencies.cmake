@@ -76,6 +76,16 @@ option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
 mark_as_advanced(DART_SKIP_spdlog)
 dart_find_package(spdlog)
 
+# Taskflow - Parallel task programming library (for compute graph)
+dart_find_package(Taskflow)
+if(Taskflow_FOUND)
+  if(DART_VERBOSE)
+    message(STATUS "Looking for Taskflow - found")
+  endif()
+else()
+  message(STATUS "Looking for Taskflow - NOT found (parallel compute graph disabled)")
+endif()
+
 # Only fetch ODE/Bullet if the corresponding collision module is enabled
 # and system libraries are not being used.
 set(_dart_need_fetch_content OFF)

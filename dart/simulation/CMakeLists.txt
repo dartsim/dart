@@ -3,8 +3,13 @@ file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
-dart_add_core_headers(${hdrs} ${detail_hdrs})
-dart_add_core_sources(${srcs} ${detail_srcs})
+
+# compute_graph module (parallel execution via Taskflow)
+file(GLOB compute_graph_hdrs "compute_graph/*.hpp")
+file(GLOB compute_graph_srcs "compute_graph/*.cpp")
+
+dart_add_core_headers(${hdrs} ${detail_hdrs} ${compute_graph_hdrs})
+dart_add_core_sources(${srcs} ${detail_srcs} ${compute_graph_srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "simulation headers" ${hdrs})
@@ -27,6 +32,11 @@ install(
 install(
   FILES ${detail_hdrs}
   DESTINATION include/dart/simulation/detail
+  COMPONENT headers
+)
+install(
+  FILES ${compute_graph_hdrs}
+  DESTINATION include/dart/simulation/compute_graph
   COMPONENT headers
 )
 # Install generated compatibility headers preserving subdirectory structure

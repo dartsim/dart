@@ -179,6 +179,19 @@ endif()
 # Boost gdb helper scripts embed inline asm that breaks GCC with our flags.
 target_compile_definitions(dart PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
 
+# Taskflow settings (for parallel compute graph execution)
+if(Taskflow_FOUND)
+  if(TARGET Taskflow::Taskflow)
+    target_link_libraries(dart PUBLIC Taskflow::Taskflow)
+    target_compile_definitions(dart PUBLIC -DDART_HAVE_TASKFLOW=1)
+  else()
+    message(WARNING "Taskflow found, but Taskflow::Taskflow target not available")
+    target_compile_definitions(dart PUBLIC -DDART_HAVE_TASKFLOW=0)
+  endif()
+else()
+  target_compile_definitions(dart PUBLIC -DDART_HAVE_TASKFLOW=0)
+endif()
+
 # octomap settings
 if(TARGET octomap)
   target_link_libraries(dart PUBLIC octomap)
