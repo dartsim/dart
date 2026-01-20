@@ -49,7 +49,11 @@
 #include "dart/common/String.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
+#include "dart/math/lcp/pivoting/LemkeSolver.hpp"
+#include "dart/math/lcp/projection/PgsSolver.hpp"
 
 #include <iostream>
 #include <string>
@@ -155,6 +159,40 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
   return nullptr;
 }
 
+math::LcpSolverPtr createLcpSolver(LcpSolverType type)
+{
+  switch (type) {
+    case LcpSolverType::Dantzig:
+      return std::make_shared<math::DantzigSolver>();
+    case LcpSolverType::Pgs:
+      return std::make_shared<math::PgsSolver>();
+    case LcpSolverType::Lemke:
+      return std::make_shared<math::LemkeSolver>();
+  }
+
+  DART_FATAL(
+      "Encountered unsupported LcpSolverType value: {}.",
+      static_cast<int>(type));
+  return std::make_shared<math::DantzigSolver>();
+}
+
+std::unique_ptr<constraint::ConstraintSolver> createConstraintSolver(
+    const WorldConfig& config)
+{
+  auto primary = createLcpSolver(config.primaryLcpSolver);
+
+  if (config.secondaryLcpSolver.has_value()) {
+    auto secondary = createLcpSolver(config.secondaryLcpSolver.value());
+    return std::make_unique<constraint::ConstraintSolver>(
+        std::move(primary), std::move(secondary));
+  }
+
+  auto solver
+      = std::make_unique<constraint::ConstraintSolver>(std::move(primary));
+  solver->setSecondaryLcpSolver(nullptr);
+  return solver;
+}
+
 } // namespace
 
 //==============================================================================
@@ -187,9 +225,7 @@ World::World(const WorldConfig& config)
 {
   mIndices.push_back(0);
 
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
-  DART_SUPPRESS_DEPRECATED_END
+  auto solver = createConstraintSolver(config);
   setConstraintSolver(std::move(solver));
 
   if (auto detector = resolveCollisionDetector(config))

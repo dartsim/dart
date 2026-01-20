@@ -11,6 +11,7 @@
 #include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 
 // Projection methods
+#include <dart/math/lcp/projection/ApgdSolver.hpp>
 #include <dart/math/lcp/projection/BgsSolver.hpp>
 #include <dart/math/lcp/projection/BlockedJacobiSolver.hpp>
 #include <dart/math/lcp/projection/JacobiSolver.hpp>
@@ -19,15 +20,19 @@
 #include <dart/math/lcp/projection/RedBlackGaussSeidelSolver.hpp>
 #include <dart/math/lcp/projection/SubspaceMinimizationSolver.hpp>
 #include <dart/math/lcp/projection/SymmetricPsorSolver.hpp>
+#include <dart/math/lcp/projection/TgsSolver.hpp>
 
 // Newton methods
+#include <dart/math/lcp/newton/BoxedSemiSmoothNewtonSolver.hpp>
 #include <dart/math/lcp/newton/FischerBurmeisterNewtonSolver.hpp>
 #include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
 #include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
 
 // Other methods
+#include <dart/math/lcp/other/AdmmSolver.hpp>
 #include <dart/math/lcp/other/InteriorPointSolver.hpp>
 #include <dart/math/lcp/other/MprgpSolver.hpp>
+#include <dart/math/lcp/other/SapSolver.hpp>
 #include <dart/math/lcp/other/ShockPropagationSolver.hpp>
 #include <dart/math/lcp/other/StaggeringSolver.hpp>
 

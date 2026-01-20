@@ -139,6 +139,7 @@ dart_build_tests(
   TARGET_PREFIX UNIT_math_lcp
   LINK_LIBRARIES dart dart-baseline-ode
   SOURCES
+    math/lcp/test_AllSolversSmoke.cpp
     math/lcp/test_DantzigVsODE.cpp
     math/lcp/test_DantzigSolver.cpp
     math/lcp/test_LcpEdgeCases.cpp
@@ -195,6 +196,11 @@ if(TARGET dart-io)
   dart_add_test("unit" test_IoRead io/test_Read.cpp)
   target_link_libraries(test_IoRead dart-io)
 endif()
+
+# ==============================================================================
+# Simulation Tests
+# ==============================================================================
+dart_add_test("unit" UNIT_simulation_WorldConfig simulation/test_WorldConfig.cpp)
 
 # ==============================================================================
 # Simulation-Experimental Tests
