@@ -733,9 +733,9 @@ private:
     ImGui::Text("FontSize: %.1f", ImGui::GetFontSize());
     ImGui::Text("FontGlobalScale: %.3f", io.FontGlobalScale);
     ImGui::Text("UiScale: %.2f", mUiScale);
-    if (io.Fonts && io.Fonts->TexWidth > 0 && io.Fonts->TexHeight > 0) {
+    if (io.Fonts && io.Fonts->TexData) {
       ImGui::Text(
-          "FontTex: %d x %d", io.Fonts->TexWidth, io.Fonts->TexHeight);
+          "FontTex: %d x %d", io.Fonts->TexData->Width, io.Fonts->TexData->Height);
     }
   }
 

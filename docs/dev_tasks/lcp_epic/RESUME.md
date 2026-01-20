@@ -6,176 +6,134 @@
 
 - **Branch**: `refactor/lcp_plan`
 - **PR**: #2464
-- **State**: Added ImGui debug readout in lcp_physics, needs visual verification
-- **Blocker**: Human visual test needed to confirm lcp_physics is crisp at scale 2
+- **State**: All code committed and pushed. Ready for visual verification.
+- **Next Action**: Visual test at `--gui-scale 2` to confirm fixes work
 
 ---
 
-## What Was Done (This Session)
-
-### 1. Disable FontGlobalScale When setFontScale Is Active
-
-`applyImGuiScale()` now skips `FontGlobalScale` if `setFontScale()` was used,
-avoiding bitmap scaling when ImGui is rebuilt at the target size.
-
-**Files changed**:
-
-- `dart/gui/ImGuiHandler.cpp` - Track opt-out flag and preserve FontGlobalScale
-
-### 2. Normalize Framebuffer Scale When Viewport/Traits Are Flipped
-
-`newFrame()` now treats the larger of viewport/traits as framebuffer size when
-the ratio falls below 1, avoiding downscaling in ImGui on some OSG setups.
-
-**Files changed**:
-
-- `dart/gui/ImGuiHandler.cpp` - Scale fallback for viewport vs traits
-
-### 3. Scale lcp_physics Widget Layout with Font Size
-
-Fixed-size ImGui widget measurements (panel size, button width, plot size,
-wrap width) now scale from the current font size to avoid cramped or broken
-layout at `--gui-scale > 1`.
-
-**Files changed**:
-
-- `examples/lcp_physics/main.cpp` - Apply font-based UI scaling
-
-### 4. Add ImGui Debug Readout to lcp_physics
-
-Added an `ImGui Debug` collapsible section to report display size, framebuffer
-scale, font size, and font global scale for diagnosing DPI issues.
-
-**Files changed**:
-
-- `examples/lcp_physics/main.cpp` - Add ImGui debug section
-
----
-
-## Files Ready to Commit
+## Recent Commits (All Pushed)
 
 ```
-M  docs/dev_tasks/lcp_epic/README.md
-M  docs/dev_tasks/lcp_epic/RESUME.md
-M  examples/lcp_physics/main.cpp
+97c7376297c checkpoint(examples): add ImGui debug readout for lcp_physics
+997025ec189 checkpoint(examples): scale lcp_physics widget layout with font size
+b0bb5e95b6c checkpoint(gui): normalize ImGui framebuffer scale
+26f7cc3725f checkpoint(gui): skip FontGlobalScale with rebuilt fonts
+27881b54067 fix(gui): clear shape nodes when switching worlds in WorldNode
+0472a322d68 fix(gui): add setFontScale() for crisp ImGui text at high DPI
+4639cd41e5b fix(example): load fonts at scaled size for crisp text at high DPI
+6ee024c0f6c fix(example): correct GUI scaling and suppress slip compliance warnings
+bc4e6e7a8e7 feat(example): add ImGui widget to lcp_physics for interactive control
 ```
 
 ---
 
-## Next Steps
+## What Was Built
 
-### Step 1: Visual Test (Requires Human)
+### 1. ImGui Font Scaling Fix (Framework-Level)
+
+Added `ImGuiHandler::setFontScale()` that rebuilds the font atlas at the target
+pixel size instead of using `FontGlobalScale` (which causes bitmap blur).
+
+**Key files**:
+- `dart/gui/ImGuiHandler.hpp` - `setFontScale()` declaration
+- `dart/gui/ImGuiHandler.cpp` - Implementation with framebuffer scale handling
+
+### 2. WorldNode Scenario Switching Fix
+
+Fixed white screen when switching scenarios by clearing all ShapeFrameNodes
+before replacing the world (prevents dangling Frame pointers).
+
+**Key files**:
+- `dart/gui/WorldNode.hpp` - `clearAllShapeFrameNodes()` declaration
+- `dart/gui/WorldNode.cpp` - Implementation
+
+### 3. lcp_physics Example Enhancements
+
+- Full ImGui control panel (play/pause/step/reset, scenario switching, solver selection)
+- 5 physics scenarios: mass_ratio, box_stack, ball_drop, dominos, inclined_plane
+- Performance monitoring (FPS, step time graph, contact count)
+- Headless mode with `--headless --frames N --out DIR`
+- ImGui Debug section for DPI diagnostics
+- UI scales with font size at high DPI
+
+### 4. Applied to All 11 ImGui Examples
+
+All examples call `setFontScale()` after `setImGuiScale()`:
+- atlas_simbicon, box_stacking, coupler_constraint, fetch, free_joint_cases
+- heightmap, imgui, lcp_physics, mimic_pendulums, point_cloud, tinkertoy
+
+---
+
+## Visual Verification Needed
 
 ```bash
 cd /home/js/dev/dartsim/dart/task_4
-
-# Test any example at high DPI
 ./build/default/cpp/Release/bin/lcp_physics --gui-scale 2
-./build/default/cpp/Release/bin/imgui --gui-scale 2
-./build/default/cpp/Release/bin/box_stacking --gui-scale 2
 ```
 
-**Check**: Is the ImGui text crisp or blurry at scale 2?
+**Check**:
+1. Is the ImGui text crisp (not blurry)?
+2. Does switching scenarios work (not white screen)?
+3. Does the UI layout scale properly?
 
-### Step 2: Based on Visual Test Result
-
-**If text is CRISP** (fix works):
-
-```bash
-git add -A
-git commit -m "checkpoint(examples): add ImGui debug readout for lcp_physics
-
-Expose DisplaySize, DisplayFramebufferScale, FontSize, and FontGlobalScale in
-an ImGui Debug section to help diagnose DPI issues."
-
-git push origin refactor/lcp_plan
-```
-
-**If text is still BLURRY** (needs debugging):
-
-1. Check that `mFramebufferScale` is being detected correctly
-2. Verify the font atlas is actually being rebuilt (add logging)
-3. Log viewport vs traits sizes to confirm the ratio direction
-4. Open `ImGui Debug` section in lcp_physics and record the reported values
-   (DisplaySize, DisplayFramebufferScale, FontSize, FontGlobalScale, UiScale)
+**If issues persist**, open the "ImGui Debug" section in lcp_physics to see:
+- DisplaySize, DisplayFramebufferScale, FontSize, FontGlobalScale, UiScale
 
 ---
 
-## Technical Details
+## Commands Reference
 
-### How setFontScale() Works
+```bash
+# Build
+pixi run build
+
+# Run lcp_physics
+./build/default/cpp/Release/bin/lcp_physics                    # Default
+./build/default/cpp/Release/bin/lcp_physics --gui-scale 2      # High DPI
+./build/default/cpp/Release/bin/lcp_physics --list             # List scenarios
+./build/default/cpp/Release/bin/lcp_physics --headless --scenario mass --frames 100
+
+# Run tests
+pixi run test-all
+
+# Clean corrupted frame files
+find . -maxdepth 1 -type f -name $'*[\x80-\xff]*' -delete
+```
+
+---
+
+## Technical Context
+
+### Font Scaling Architecture
 
 ```cpp
-// In setFontScale():
-mFontScale = scale;
-mUseFontScale = true;
-mFontScaleDirty = true;
+// User calls:
+viewer->setImGuiScale(guiScale);                    // Widget sizes
+viewer->getImGuiHandler()->setFontScale(guiScale);  // Font at target size
 
-// In newFrame():
+// In ImGuiHandler::newFrame():
 if (mUseFontScale && (mFontScaleDirty || scaleChanged)) {
     rebuildDefaultFont(mFontScale, framebufferScale);
-    mFontScaleDirty = false;
 }
 
-// In rebuildDefaultFont():
-config.SizePixels = 13.0f * fontScale * framebufferScale;
-io.FontGlobalScale = 1.0f / framebufferScale;
+// Font loaded at: 13.0f * fontScale * framebufferScale pixels
+// FontGlobalScale set to: 1.0f / framebufferScale
 ```
 
-### How applyImGuiScale() Avoids Blur
+### WorldNode Scenario Switching
 
 ```cpp
-// In setFontScale():
-gDisableFontGlobalScale = true;
-
-// In applyImGuiScale():
-if (!gDisableFontGlobalScale) {
-  io.FontGlobalScale = scale;
+void WorldNode::setWorld(std::shared_ptr<World> newWorld) {
+  clearAllShapeFrameNodes();  // Remove old nodes first
+  mWorld = newWorld;
 }
 ```
 
-### How Framebuffer Scale Is Normalized
-
-```cpp
-float scaleX = viewportWidth / traitsWidth;
-float scaleY = viewportHeight / traitsHeight;
-if (scaleX < 1.0f || scaleY < 1.0f) {
-  scaleX = traitsWidth / viewportWidth;
-  scaleY = traitsHeight / viewportHeight;
-  displaySize = ImVec2(viewportWidth, viewportHeight);
-}
-```
-
-### How the lcp_physics Widget Scales Layout
+### UI Scaling in lcp_physics
 
 ```cpp
 const float uiScale = ImGui::GetFontSize() / 13.0f;
 ImGui::SetNextWindowSize(ImVec2(340.0f * uiScale, 600.0f * uiScale), ...);
-ImGui::Button("Play", ImVec2(70.0f * uiScale, 0.0f));
-```
-
-### Why FontGlobalScale Alone Causes Blur
-
-ImGui's default font is a 13px bitmap. When you set `FontGlobalScale = 2.0`:
-
-1. Renders the 13px bitmap
-2. Scales it up 2x at display time
-3. Result: 26px but blurry (upscaled bitmap)
-
-With `setFontScale()`:
-
-1. Loads a 26px font at initialization
-2. Renders natively at 26px
-3. Result: 26px and crisp (native resolution)
-
----
-
-## Clean Up Corrupted Frame Files
-
-If you see files with non-ASCII names in git status:
-
-```bash
-find . -maxdepth 1 -type f -name $'*[\x80-\xff]*' -delete
 ```
 
 ---
@@ -185,27 +143,17 @@ find . -maxdepth 1 -type f -name $'*[\x80-\xff]*' -delete
 ```bash
 cd /home/js/dev/dartsim/dart/task_4
 git checkout refactor/lcp_plan
-git status  # Should show all files above
+git log --oneline -5  # Verify latest commits
 
-# Build (may already be built)
+# Build if needed
 pixi run build
 
 # Visual test
 ./build/default/cpp/Release/bin/lcp_physics --gui-scale 2
 
-# If crisp: commit and push (see commands above)
+# If all works, this phase is complete
+# If issues found, debug using ImGui Debug section
 ```
-
----
-
-## Previous Session Work (Already Committed)
-
-| Commit        | Description                                         |
-| ------------- | --------------------------------------------------- |
-| `4639cd41e5b` | Load fonts at scaled size (per-example, superseded) |
-| `6ee024c0f6c` | Fix GUI scaling and slip compliance warnings        |
-| `bc4e6e7a8e7` | Add ImGui widget to lcp_physics                     |
-| `c9c630b0464` | Remove lcp_solvers example (moved to benchmarks)    |
 
 ---
 
@@ -218,4 +166,15 @@ pixi run build
 
 ---
 
-**Last Updated**: 2026-01-19 13:50 PST
+## Key Files Reference
+
+| File | Purpose |
+|------|---------|
+| `dart/gui/ImGuiHandler.*` | Font scaling implementation |
+| `dart/gui/WorldNode.*` | Scenario switching fix |
+| `examples/lcp_physics/main.cpp` | Main example with all features |
+| `docs/dev_tasks/lcp_epic/` | This documentation |
+
+---
+
+**Last Updated**: 2026-01-19

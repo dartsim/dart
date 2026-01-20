@@ -11,60 +11,44 @@
 | Phase 3 | Python Bindings                       | ✅ Complete            |
 | Phase 4 | Future Solvers, Benchmarks, Docs      | 📋 Not Started         |
 
-**Current Work**: Fixing ImGui blurriness at high DPI (see RESUME.md)
+**Current State**: All code committed and pushed. Needs visual verification of high-DPI fixes.
 
 ---
 
 ## What Was Built
 
-### Examples
+### GUI Fixes (dart/gui/)
 
-| Example       | Status      | Description                                  |
-| ------------- | ----------- | -------------------------------------------- |
-| `lcp_physics` | ✅ Complete | 5 physics scenarios with ImGui control panel |
-| `lcp_solvers` | ❌ Removed  | Moved to `tests/benchmark/lcpsolver/`        |
+| Fix | Commit | Description |
+|-----|--------|-------------|
+| Font scaling | `0472a322d68` | `setFontScale()` loads fonts at target size |
+| World switching | `27881b54067` | Clear nodes before switching worlds (fixes white screen) |
+| Framebuffer scale | `b0bb5e95b6c` | Normalize scale when viewport/traits flipped |
+| FontGlobalScale skip | `26f7cc3725f` | Avoid double-scaling with rebuilt fonts |
 
-### lcp_physics Features
+### lcp_physics Example
 
-- **5 Scenarios**: mass_ratio, box_stack, ball_drop, dominos, inclined_plane
-- **ImGui Widget**: Play/pause/step/reset, scenario switching, solver selection
-- **Parameter Editing**: Timestep, gravity
-- **Performance Monitoring**: FPS, step time graph, contact count
-- **Headless Mode**: `--headless --frames N --out DIR`
-- **Solvers**: Dantzig (pivoting), PGS (iterative)
+| Feature | Description |
+|---------|-------------|
+| ImGui widget | Full control panel with scenarios, solvers, parameters |
+| 5 scenarios | mass_ratio, box_stack, ball_drop, dominos, inclined_plane |
+| Headless mode | `--headless --frames N --out DIR` |
+| Debug section | DPI diagnostics (DisplaySize, FontSize, etc.) |
+| UI scaling | Layout scales with font size at high DPI |
 
 ### Test Infrastructure
 
-| File                                           | Purpose                            |
-| ---------------------------------------------- | ---------------------------------- |
-| `tests/common/lcpsolver/LcpProblemFactory.hpp` | Unified LCP problem generation     |
-| `tests/unit/math/lcp/test_AllSolversSmoke.cpp` | Smoke tests for all 19 solvers     |
-| `tests/benchmark/lcpsolver/`                   | Google Benchmark performance tests |
+| File | Purpose |
+|------|---------|
+| `tests/common/lcpsolver/LcpProblemFactory.hpp` | Unified LCP problem generation |
+| `tests/unit/math/lcp/test_AllSolversSmoke.cpp` | Smoke tests for all 19 solvers |
+| `tests/benchmark/lcpsolver/` | Google Benchmark performance tests |
 
 ### Python Bindings
 
-- `LcpSolverType` enum
-- `CollisionDetectorType` enum
+- `LcpSolverType` and `CollisionDetectorType` enums
 - `WorldConfig` with solver selection
 - `World.create(config)` factory
-
----
-
-## Active Bug: ImGui Blurriness
-
-**Problem**: Text is blurry at `--gui-scale > 1`
-
-**Cause**: `FontGlobalScale` scales bitmap fonts at runtime
-
-**Fix Status**: `setFontScale()` rebuilds fonts; `applyImGuiScale()` skips
-`FontGlobalScale` after `setFontScale()`. Added viewport/traits fallback to
-keep framebuffer scale >= 1 and scaled the lcp_physics widget layout to the
-current ImGui font size. Added an ImGui debug section in lcp_physics to report
-DisplaySize/FramebufferScale/FontGlobalScale for diagnosis (needs visual test)
-
-**Details**: See [RESUME.md](RESUME.md) for full context and next steps
-
-**Scope Unknown**: May affect all ImGui examples, not just lcp_physics
 
 ---
 
@@ -76,7 +60,7 @@ pixi run build
 
 # Run lcp_physics
 ./build/default/cpp/Release/bin/lcp_physics                    # Default
-./build/default/cpp/Release/bin/lcp_physics --gui-scale 2      # High DPI
+./build/default/cpp/Release/bin/lcp_physics --gui-scale 2      # High DPI test
 ./build/default/cpp/Release/bin/lcp_physics --list             # List scenarios
 ./build/default/cpp/Release/bin/lcp_physics --headless --scenario mass --frames 100
 
@@ -89,48 +73,26 @@ find . -maxdepth 1 -type f -name $'*[\x80-\xff]*' -delete
 
 ---
 
-## Phase Details
+## Phase 4 Future Work
 
-### Phase 1: Foundation ✅
-
-- `LcpSolverType` enum (Dantzig/Pgs/Lemke)
-- `WorldConfig` solver selection
-- Demo stability fixes
-- Unit test: `tests/unit/simulation/test_WorldConfig.cpp`
-
-### Phase 2: Test Infrastructure ✅
-
-- `LcpProblemFactory` with edge cases, well-conditioned, ill-conditioned problems
-- Smoke tests for all 19 LCP solvers
-- All tests pass (143+)
-
-### Phase 3: Python Bindings ✅
-
-- Enums and WorldConfig bound
-- `World.create(config)` works
-- Python tests pass
-
-### Phase 4: Future Work 📋
-
-| Priority | Item                                  |
-| -------- | ------------------------------------- |
-| P1       | APGD solver (10-100x faster than PGS) |
-| P1       | TGS solver (GPU real-time)            |
-| P2       | Runtime solver switching              |
-| P2       | Benchmark infrastructure              |
-| P3       | Documentation expansion               |
+| Priority | Item |
+|----------|------|
+| P1 | APGD solver (10-100x faster than PGS) |
+| P1 | TGS solver (GPU real-time) |
+| P2 | Runtime solver switching |
+| P2 | Benchmark infrastructure |
+| P3 | Documentation expansion |
 
 ---
 
 ## Key Files
 
 ```
-dart/math/lcp/                           # LCP solver implementations
-dart/gui/ImGuiHandler.*                  # ImGui integration (has uncommitted changes)
-examples/lcp_physics/                    # Main example
-tests/common/lcpsolver/LcpProblemFactory.hpp
-tests/unit/math/lcp/test_AllSolversSmoke.cpp
-tests/benchmark/lcpsolver/               # Performance benchmarks
+dart/gui/ImGuiHandler.*              # Font scaling implementation
+dart/gui/WorldNode.*                 # Scenario switching fix
+examples/lcp_physics/main.cpp        # Main example with all features
+tests/common/lcpsolver/              # Test infrastructure
+tests/benchmark/lcpsolver/           # Performance benchmarks
 ```
 
 ---
@@ -139,7 +101,7 @@ tests/benchmark/lcpsolver/               # Performance benchmarks
 
 - **Branch**: `refactor/lcp_plan`
 - **PR**: #2464
-- **Uncommitted**: lcp_physics widget layout scaling (needs visual test)
+- **State**: All committed and pushed
 
 ---
 
