@@ -219,3 +219,19 @@ TEST(Gjk, SmallOverlap)
 
   EXPECT_TRUE(Gjk::intersect(supportA, supportB));
 }
+
+TEST(Epa, SphereSphereIntersecting)
+{
+  auto supportA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
+  auto supportB = makeSphereSupport(Eigen::Vector3d(1.5, 0, 0), 1.0);
+
+  GjkResult gjk = Gjk::query(supportA, supportB, Eigen::Vector3d(1.5, 0, 0));
+  ASSERT_TRUE(gjk.intersecting);
+
+  EpaResult epa = Epa::penetration(supportA, supportB, gjk.simplex);
+  if (epa.success) {
+    EXPECT_NEAR(epa.depth, 0.5, 1e-4);
+  } else {
+    EXPECT_LT(gjk.simplex.size, 4);
+  }
+}

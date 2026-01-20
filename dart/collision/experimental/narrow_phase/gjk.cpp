@@ -43,6 +43,8 @@ namespace dart::collision::experimental {
 namespace {
 
 constexpr double kEpsilon = 1e-12;
+constexpr int kMaxIterations = 64;
+constexpr double kTolerance = 1e-6;
 
 SupportPoint computeSupport(
     const SupportFunction& supportA,
