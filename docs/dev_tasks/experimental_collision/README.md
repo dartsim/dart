@@ -28,6 +28,7 @@ If we can't beat existing backends in performance, there's no point in building 
 - [Phase Plan](./phases.md) - Detailed phase breakdown with deliverables
 - [Progress Tracker](./progress.md) - Current status and completed tasks
 - [Reference Comparison](./reference_comparison.md) - FCL/Bullet/ODE feature and algorithm comparison
+- [Benchmark Catalog](./benchmark_catalog.md) - Surveyed benchmark cases and datasets
 
 ## Current Status
 
