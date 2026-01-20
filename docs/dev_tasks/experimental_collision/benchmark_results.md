@@ -46,7 +46,7 @@ run, and keep the most recent results at the top.
 
 | Date       | Commit      | Summary                             | Notes                                              |
 | ---------- | ----------- | ----------------------------------- | -------------------------------------------------- |
-| 2026-01-20 | 7bc79f0dd6b | RP3D-aligned pipeline breakdown try | Segfault in AABB tree; partial JSON (dirty tree).  |
+| 2026-01-20 | 7bc79f0dd6b | RP3D-aligned pipeline breakdown try | Segfault persists after rebuild; partial JSON.     |
 | 2026-01-20 | f315999cdfe | Raycast batch + comparative raycast | SweepAndPrune; 500 rays; 1k/2k objects             |
 | 2026-01-19 | TBD         | Baseline results (pre-structure)    |                                                    |
 | 2026-01-19 | b1f6e5e     | Comparative + scenarios runs        | Distance/mixed underperform; raycast blocked then. |
@@ -124,5 +124,7 @@ BM_Scenario_PipelineBreakdown_Sparse_Experimental/10000: aabb_ns=509226.0 broadp
 - **Raw Output**:
   - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-19_1k.json` (partial)
   - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_004159.json` (partial; JSON truncated before benchmarks)
-- **Notes**: Dirty working tree due to parallel agents; crash persists.
+  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_005830.json` (partial; JSON truncated before benchmarks)
+  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_010005.json` (partial; JSON truncated before benchmarks)
+- **Notes**: Rebuilt `bm_scenarios_pipeline_breakdown`; dirty working tree due to parallel agents; crash persists.
 - **Next**: rerun once the AABB tree crash is resolved.

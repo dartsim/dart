@@ -49,10 +49,12 @@ build/default/cpp/Release/bin/bm_scenarios_pipeline_breakdown \
 ```
 
 Result: `bm_scenarios_pipeline_breakdown` still segfaults on RP3D filters as of
-2026-01-20. Partial JSON outputs are in:
+2026-01-20, even after rebuilding the benchmark target. Partial JSON outputs are in:
 
 - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-19_1k.json`
 - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_004159.json`
+- `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_005830.json`
+- `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_010005.json`
 
 See `benchmark_results.md` for the failure log.
 
