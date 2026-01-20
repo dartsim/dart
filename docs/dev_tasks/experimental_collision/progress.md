@@ -144,12 +144,12 @@ Current architecture uses `shared_ptr<CollisionObject>`. Target architecture:
 
 CCD prevents fast-moving objects from tunneling through thin obstacles.
 
-| Algorithm                    | Status       | Tests | Notes                                              |
-| ---------------------------- | ------------ | ----- | -------------------------------------------------- |
+| Algorithm                    | Status       | Tests | Notes                                               |
+| ---------------------------- | ------------ | ----- | --------------------------------------------------- |
 | Sphere-cast (all primitives) | **Complete** | 37    | Sphere, Box, Capsule, Cylinder, Plane, Convex, Mesh |
-| Capsule-cast                 | **Complete** | 10    | Sphere, Box, Capsule, Plane                   |
-| Conservative advancement     | **Complete** | 4     | General convex-convex via GJK                 |
-| NarrowPhase dispatcher       | **Complete** | 3     | `sphereCast()`, `isSphereCastSupported()`     |
+| Capsule-cast                 | **Complete** | 10    | Sphere, Box, Capsule, Plane                         |
+| Conservative advancement     | **Complete** | 4     | General convex-convex via GJK                       |
+| NarrowPhase dispatcher       | **Complete** | 3     | `sphereCast()`, `isSphereCastSupported()`           |
 
 **Implemented API:**
 

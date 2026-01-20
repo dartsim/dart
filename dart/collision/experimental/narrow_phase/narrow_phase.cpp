@@ -640,6 +640,30 @@ bool NarrowPhase::capsuleCast(
       }
       return hit;
     }
+    case ShapeType::Cylinder: {
+      const auto* c = static_cast<const CylinderShape*>(shape);
+      bool hit = capsuleCastCylinder(capsuleStart, capsuleEnd, capsule, *c, transform, option, result);
+      if (hit) {
+        result.object = &target;
+      }
+      return hit;
+    }
+    case ShapeType::Convex: {
+      const auto* c = static_cast<const ConvexShape*>(shape);
+      bool hit = capsuleCastConvex(capsuleStart, capsuleEnd, capsule, *c, transform, option, result);
+      if (hit) {
+        result.object = &target;
+      }
+      return hit;
+    }
+    case ShapeType::Mesh: {
+      const auto* m = static_cast<const MeshShape*>(shape);
+      bool hit = capsuleCastMesh(capsuleStart, capsuleEnd, capsule, *m, transform, option, result);
+      if (hit) {
+        result.object = &target;
+      }
+      return hit;
+    }
     default:
       return false;
   }
@@ -652,6 +676,9 @@ bool NarrowPhase::isCapsuleCastSupported(ShapeType type)
     case ShapeType::Box:
     case ShapeType::Capsule:
     case ShapeType::Plane:
+    case ShapeType::Cylinder:
+    case ShapeType::Convex:
+    case ShapeType::Mesh:
       return true;
     default:
       return false;

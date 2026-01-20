@@ -774,6 +774,129 @@ bool capsuleCastPlane(
   return true;
 }
 
+bool capsuleCastCylinder(
+    const Eigen::Isometry3d& capsuleStart,
+    const Eigen::Isometry3d& capsuleEnd,
+    const CapsuleShape& capsule,
+    const CylinderShape& target,
+    const Eigen::Isometry3d& targetTransform,
+    const CcdOption& option,
+    CcdResult& result)
+{
+  result.clear();
+
+  const double capsuleRadius = capsule.getRadius();
+  const double halfHeight = capsule.getHeight() / 2.0;
+
+  double bestT = 2.0;
+  CcdResult bestResult;
+
+  auto testEndpoint = [&](bool top) {
+    Eigen::Vector3d startPos = getCapsuleEndpoint(capsuleStart, halfHeight, top);
+    Eigen::Vector3d endPos = getCapsuleEndpoint(capsuleEnd, halfHeight, top);
+
+    CcdResult localResult;
+    if (sphereCastCylinder(startPos, endPos, capsuleRadius, target, targetTransform, option, localResult)) {
+      if (localResult.timeOfImpact < bestT) {
+        bestT = localResult.timeOfImpact;
+        bestResult = localResult;
+      }
+    }
+  };
+
+  testEndpoint(true);
+  testEndpoint(false);
+
+  if (bestT > 1.0) {
+    return false;
+  }
+
+  result = bestResult;
+  return true;
+}
+
+bool capsuleCastConvex(
+    const Eigen::Isometry3d& capsuleStart,
+    const Eigen::Isometry3d& capsuleEnd,
+    const CapsuleShape& capsule,
+    const ConvexShape& target,
+    const Eigen::Isometry3d& targetTransform,
+    const CcdOption& option,
+    CcdResult& result)
+{
+  result.clear();
+
+  const double capsuleRadius = capsule.getRadius();
+  const double halfHeight = capsule.getHeight() / 2.0;
+
+  double bestT = 2.0;
+  CcdResult bestResult;
+
+  auto testEndpoint = [&](bool top) {
+    Eigen::Vector3d startPos = getCapsuleEndpoint(capsuleStart, halfHeight, top);
+    Eigen::Vector3d endPos = getCapsuleEndpoint(capsuleEnd, halfHeight, top);
+
+    CcdResult localResult;
+    if (sphereCastConvex(startPos, endPos, capsuleRadius, target, targetTransform, option, localResult)) {
+      if (localResult.timeOfImpact < bestT) {
+        bestT = localResult.timeOfImpact;
+        bestResult = localResult;
+      }
+    }
+  };
+
+  testEndpoint(true);
+  testEndpoint(false);
+
+  if (bestT > 1.0) {
+    return false;
+  }
+
+  result = bestResult;
+  return true;
+}
+
+bool capsuleCastMesh(
+    const Eigen::Isometry3d& capsuleStart,
+    const Eigen::Isometry3d& capsuleEnd,
+    const CapsuleShape& capsule,
+    const MeshShape& target,
+    const Eigen::Isometry3d& targetTransform,
+    const CcdOption& option,
+    CcdResult& result)
+{
+  result.clear();
+
+  const double capsuleRadius = capsule.getRadius();
+  const double halfHeight = capsule.getHeight() / 2.0;
+
+  double bestT = 2.0;
+  CcdResult bestResult;
+
+  auto testEndpoint = [&](bool top) {
+    Eigen::Vector3d startPos = getCapsuleEndpoint(capsuleStart, halfHeight, top);
+    Eigen::Vector3d endPos = getCapsuleEndpoint(capsuleEnd, halfHeight, top);
+
+    CcdResult localResult;
+    if (sphereCastMesh(startPos, endPos, capsuleRadius, target, targetTransform, option, localResult)) {
+      if (localResult.timeOfImpact < bestT) {
+        bestT = localResult.timeOfImpact;
+        bestResult = localResult;
+      }
+    }
+  };
+
+  testEndpoint(true);
+  testEndpoint(false);
+
+  if (bestT > 1.0) {
+    return false;
+  }
+
+  result = bestResult;
+  return true;
+}
+
 namespace {
 
 Eigen::Isometry3d interpolateTransform(

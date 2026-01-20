@@ -140,6 +140,33 @@ namespace dart::collision::experimental {
     const CcdOption& option,
     CcdResult& result);
 
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool capsuleCastCylinder(
+    const Eigen::Isometry3d& capsuleStart,
+    const Eigen::Isometry3d& capsuleEnd,
+    const CapsuleShape& capsule,
+    const CylinderShape& target,
+    const Eigen::Isometry3d& targetTransform,
+    const CcdOption& option,
+    CcdResult& result);
+
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool capsuleCastConvex(
+    const Eigen::Isometry3d& capsuleStart,
+    const Eigen::Isometry3d& capsuleEnd,
+    const CapsuleShape& capsule,
+    const ConvexShape& target,
+    const Eigen::Isometry3d& targetTransform,
+    const CcdOption& option,
+    CcdResult& result);
+
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool capsuleCastMesh(
+    const Eigen::Isometry3d& capsuleStart,
+    const Eigen::Isometry3d& capsuleEnd,
+    const CapsuleShape& capsule,
+    const MeshShape& target,
+    const Eigen::Isometry3d& targetTransform,
+    const CcdOption& option,
+    CcdResult& result);
+
 [[nodiscard]] DART_COLLISION_EXPERIMENTAL_API bool conservativeAdvancement(
     const ConvexShape& shapeA,
     const Eigen::Isometry3d& transformAStart,

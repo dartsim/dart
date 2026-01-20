@@ -951,6 +951,151 @@ TEST(CapsuleCastPlane, TiltedCapsule)
 }
 
 //==============================================================================
+// Capsule-cast Cylinder tests
+//==============================================================================
+
+TEST(CapsuleCastCylinder, Miss)
+{
+  CapsuleShape capsule(0.5, 2.0);
+  CylinderShape target(1.0, 2.0);
+  Eigen::Isometry3d targetTransform = Eigen::Isometry3d::Identity();
+
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  capsuleStart.translation() = Eigen::Vector3d(10, 0, 0);
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(10, 0, 10);
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = capsuleCastCylinder(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+
+  EXPECT_FALSE(hit);
+}
+
+TEST(CapsuleCastCylinder, DirectHit)
+{
+  CapsuleShape capsule(0.5, 2.0);
+  CylinderShape target(1.0, 2.0);
+  Eigen::Isometry3d targetTransform = Eigen::Isometry3d::Identity();
+
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  capsuleStart.translation() = Eigen::Vector3d(-5, 0, 0);
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(5, 0, 0);
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = capsuleCastCylinder(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 0.5);
+}
+
+//==============================================================================
+// Capsule-cast Convex tests
+//==============================================================================
+
+TEST(CapsuleCastConvex, Miss)
+{
+  CapsuleShape capsule(0.5, 2.0);
+  std::vector<Eigen::Vector3d> vertices = {
+      {-1, -1, -1}, {1, -1, -1}, {1, 1, -1}, {-1, 1, -1},
+      {-1, -1, 1}, {1, -1, 1}, {1, 1, 1}, {-1, 1, 1}};
+  ConvexShape target(vertices);
+  Eigen::Isometry3d targetTransform = Eigen::Isometry3d::Identity();
+
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  capsuleStart.translation() = Eigen::Vector3d(10, 0, 0);
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(10, 0, 10);
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = capsuleCastConvex(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+
+  EXPECT_FALSE(hit);
+}
+
+TEST(CapsuleCastConvex, DirectHit)
+{
+  CapsuleShape capsule(0.5, 2.0);
+  std::vector<Eigen::Vector3d> vertices = {
+      {-1, -1, -1}, {1, -1, -1}, {1, 1, -1}, {-1, 1, -1},
+      {-1, -1, 1}, {1, -1, 1}, {1, 1, 1}, {-1, 1, 1}};
+  ConvexShape target(vertices);
+  Eigen::Isometry3d targetTransform = Eigen::Isometry3d::Identity();
+
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  capsuleStart.translation() = Eigen::Vector3d(-5, 0, 0);
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(5, 0, 0);
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = capsuleCastConvex(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 0.5);
+}
+
+//==============================================================================
+// Capsule-cast Mesh tests
+//==============================================================================
+
+TEST(CapsuleCastMesh, Miss)
+{
+  CapsuleShape capsule(0.5, 2.0);
+  std::vector<Eigen::Vector3d> vertices = {
+      {0, 0, 0}, {2, 0, 0}, {1, 2, 0}, {1, 1, 2}};
+  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+  MeshShape target(vertices, triangles);
+  Eigen::Isometry3d targetTransform = Eigen::Isometry3d::Identity();
+
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  capsuleStart.translation() = Eigen::Vector3d(10, 0, 0);
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(10, 0, 10);
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = capsuleCastMesh(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+
+  EXPECT_FALSE(hit);
+}
+
+TEST(CapsuleCastMesh, DirectHit)
+{
+  CapsuleShape capsule(0.25, 1.0);
+  std::vector<Eigen::Vector3d> vertices = {
+      {0, 0, 0}, {2, 0, 0}, {1, 2, 0}, {1, 1, 2}};
+  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+  MeshShape target(vertices, triangles);
+  Eigen::Isometry3d targetTransform = Eigen::Isometry3d::Identity();
+  targetTransform.translation() = Eigen::Vector3d(0, 0, 5);
+
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  capsuleStart.translation() = Eigen::Vector3d(1, 1, 0);
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(1, 1, 10);
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = capsuleCastMesh(capsuleStart, capsuleEnd, capsule, target, targetTransform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 1.0);
+}
+
+//==============================================================================
 // Conservative Advancement tests
 //==============================================================================
 
@@ -1202,7 +1347,7 @@ TEST(NarrowPhaseCapsuleCast, IsCapsuleCastSupported)
   EXPECT_TRUE(NarrowPhase::isCapsuleCastSupported(ShapeType::Box));
   EXPECT_TRUE(NarrowPhase::isCapsuleCastSupported(ShapeType::Capsule));
   EXPECT_TRUE(NarrowPhase::isCapsuleCastSupported(ShapeType::Plane));
-  EXPECT_FALSE(NarrowPhase::isCapsuleCastSupported(ShapeType::Cylinder));
-  EXPECT_FALSE(NarrowPhase::isCapsuleCastSupported(ShapeType::Convex));
-  EXPECT_FALSE(NarrowPhase::isCapsuleCastSupported(ShapeType::Mesh));
+  EXPECT_TRUE(NarrowPhase::isCapsuleCastSupported(ShapeType::Cylinder));
+  EXPECT_TRUE(NarrowPhase::isCapsuleCastSupported(ShapeType::Convex));
+  EXPECT_TRUE(NarrowPhase::isCapsuleCastSupported(ShapeType::Mesh));
 }
