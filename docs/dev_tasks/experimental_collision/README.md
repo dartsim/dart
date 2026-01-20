@@ -3,6 +3,7 @@
 > **Epic Status**: Standalone Library Development
 > **Last Updated**: 2026-01-19
 > **Location**: `dart/collision/experimental/`
+> **Housekeeping**: This folder includes local filesystem paths (e.g., `/home/js/...`) for active work; remove or sanitize them once all experimental_collision tasks are complete.
 
 ## North Star
 

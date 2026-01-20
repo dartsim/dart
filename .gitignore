@@ -64,6 +64,7 @@ docs/python_api/_build/
 
 # Data files
 data/screencap/*
+*.vsgt
 
 # Temporary directory for dependencies
 .deps/
