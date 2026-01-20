@@ -18,8 +18,8 @@
 
 ```
 Branch: feature/sim_exp
-Status: Dirty (uncommitted changes)
-Commits ahead of origin: 10
+Status: Clean (no uncommitted changes)
+Commits ahead of origin: 3
 ```
 
 ## What Works Now
@@ -54,13 +54,9 @@ and contact constraints during `step()`.
 
 ## Last Session Summary
 
-Completed Phase 5.3/5.4 (Collision + Constraints) and polish:
-
-1. **ShapeNode API** - new component/handle + createShapeNode on Link/RigidBody
-2. **Classic adapter bridge** - builds classic Skeletons, attaches shapes, syncs state
-3. **World collision/constraint APIs** - detectCollisions, getLastCollisionResult, solver hooks
-4. **RigidBody frame sync** - transforms now update FrameCache/FreeFrameProperties
-5. **Tests + Python** - new C++ tests and Python bindings/tests for ShapeNode + step
+Fixed classic-adapter build issues, corrected support polygon end-effector
+mapping, and updated the epic docs with Phase 5 completion plus a new
+simulation-experimental unit test README.
 
 ## Test Status
 
@@ -76,7 +72,7 @@ Completed Phase 5.3/5.4 (Collision + Constraints) and polish:
 | `test_joint_transform.cpp`       | 74    | ✅     |
 | **Dynamics Total**               | 143+  | ✅     |
 
-**Python Tests**: 12 tests in `python/tests/unit/simulation_experimental/`
+**Python Tests**: 18 tests in `python/tests/unit/simulation_experimental/`
 
 ## How to Resume
 
@@ -84,7 +80,7 @@ Completed Phase 5.3/5.4 (Collision + Constraints) and polish:
 
 ```bash
 git checkout feature/sim_exp
-git status  # Expect local changes (ShapeNode + collision integration)
+git status  # Expect clean tree with local commits
 git log -5 --oneline
 
 # Build
@@ -102,7 +98,7 @@ pixi run cmake --build build/default/cpp/Release --target dart-simulation-experi
 
 **Option A: Complete Phase 3-4 (Testing/Performance)**
 
-- Run coverage analysis: `pixi run test-coverage` (if available)
+- Run coverage analysis: `pixi run coverage-report`
 - Profile and optimize hot paths
 - Document performance characteristics
 

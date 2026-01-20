@@ -84,7 +84,7 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 | `test_collision_integration.cpp` | Basic    | Contact constraints with shape nodes              |
 | `bm_ecs_safety.cpp`              | Basic    | ECS access benchmark                              |
 
-**Python Tests**: `python/tests/unit/simulation_experimental/test_experimental_world.py` (12 tests)
+**Python Tests**: `python/tests/unit/simulation_experimental/test_experimental_world.py` (18 tests)
 
 **Examples**: `examples/simulation_experimental_hello_world/` (C++ example)
 
@@ -273,7 +273,7 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 - [ ] Add property-based tests for StateSpace
 - [ ] Benchmark test: create 1000-body world, serialize, deserialize
 - [ ] Add CI check for test coverage threshold
-- [ ] Document test patterns in `tests/unit/simulation/experimental/README.md`
+- [x] Document test patterns in `tests/unit/simulation/experimental/README.md`
 
 **Acceptance Criteria**:
 
@@ -331,16 +331,16 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 
 **Tasks**:
 
-- [ ] Design physics pipeline for ECS architecture
-- [ ] Implement mass property components
-- [ ] Implement forward kinematics system
-- [ ] Implement forward dynamics (ABA) system
-- [ ] Integrate `dart::collision::CollisionDetector`
-- [ ] Integrate `dart::constraint::ConstraintSolver`
-- [ ] Implement `World::step()` with configurable integrator
-- [ ] Add physics unit tests
-- [ ] Add physics integration tests
-- [ ] Validate against classic API (same inputs produce same outputs)
+- [x] Design physics pipeline for ECS architecture
+- [x] Implement mass property components
+- [x] Implement forward kinematics system
+- [x] Implement forward dynamics (ABA) system
+- [x] Integrate `dart::collision::CollisionDetector`
+- [x] Integrate `dart::constraint::ConstraintSolver`
+- [x] Implement `World::step()` with configurable integrator
+- [x] Add physics unit tests
+- [x] Add physics integration tests
+- [x] Validate against classic API (same inputs produce same outputs)
 
 **Acceptance Criteria**:
 
@@ -437,7 +437,7 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 - [ ] Documentation written
 - [ ] Classic comparison (BLOCKED: requires Phase 5 kinematics)
 
-### Phase 5: Physics (Target: Week 13-20) 🔄 IN PROGRESS
+### Phase 5: Physics (Target: Week 13-20) ✅ COMPLETE
 
 #### Phase 5.1: Forward Kinematics ✅ COMPLETE
 
@@ -467,11 +467,11 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 - [x] Automatic force clearing after step
 - [x] Physics correctness tests (free-fall, external forces)
 
-#### Phase 5.3-5.4: Collision & Constraints (DEFERRED)
+#### Phase 5.3-5.4: Collision & Constraints ✅ COMPLETE
 
-- [ ] Collision detection integration (requires adapter to classic `dart::collision`)
-- [ ] Constraint solver integration (requires adapter to classic `dart::constraint`)
-- Note: Deferred due to architectural complexity - classic modules expect `ShapeFrame` not ECS
+- [x] Collision detection integration (classic adapter to `dart::collision`)
+- [x] Constraint solver integration (classic adapter to `dart::constraint`)
+- [x] ShapeNode support wired into classic collision + constraint solving
 
 ### Phase 6: Migration (Target: Week 21-24)
 
