@@ -68,8 +68,8 @@ contacts. SDFs trade memory for fast queries and stable gradients.
 
 ## Runtime Comparison Plan
 
-- Accuracy: compare dense-field queries against analytic SDFs (sphere/plane) and a Voxblox ESDF map built from the same grid samples.
-- Performance: benchmark query throughput for distance and distance+gradient across dense SDF and Voxblox adapters, using identical query sets and resolutions.
+- Accuracy: compare dense-field queries against analytic SDFs (sphere/plane) and a Voxblox ESDF map built from the same grid samples (tests/bench only).
+- Performance: benchmark dense SDF query throughput in DART and optionally compare to Voxblox using identical query sets and resolutions.
 - Reporting: track max/mean absolute distance error, gradient cosine error, and queries/sec; log voxel size, map bounds, and interpolation settings.
-- Enable Voxblox comparisons by configuring with `-DDART_EXPERIMENTAL_ESDF_MAP_ROOT=/path/to/voxblox`.
+- Keep Voxblox comparisons limited to tests/benchmarks so the collision module has no external dependency (enable with `-DDART_EXPERIMENTAL_VOXBLOX_ROOT=/path/to/voxblox`).
 - Optional extensions: compare against Bullet's SDF primitives or Parry voxel queries when those backends are enabled.

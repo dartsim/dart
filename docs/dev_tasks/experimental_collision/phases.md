@@ -112,53 +112,20 @@ Remove External (DART 8)
 - [ ] Structured benchmark suite (comparative + scenarios + fixtures)
 - [ ] Visual verification tool functional
 
-### Benchmark Results (Baseline, pre-structured suite)
+### Benchmark Results (Structured Suite)
 
-Baseline numbers from `bm_comparative.cpp`. These will be re-measured after the
-structured suite is in place.
+Benchmark outputs and summaries (including legacy baseline numbers) live in
+`docs/dev_tasks/experimental_collision/benchmark_results.md`.
 
-Structured suite progress (2026-01-19): comparative narrow-phase and distance
-benchmarks now include edge-case + scale sweeps, and comparative raycast
-benchmarks live in `tests/benchmark/collision/comparative/` (raycast currently
-compares experimental vs Bullet only).
-Mixed primitives scenarios (dense/sparse) are in
-`tests/benchmark/collision/scenarios/bm_mixed_primitives.cpp`.
-Batched raycast scenarios (10k rays) are in
-`tests/benchmark/collision/scenarios/bm_raycast_batch.cpp` (experimental vs
-Bullet).
-Mesh-heavy scenarios are in
-`tests/benchmark/collision/scenarios/bm_mesh_heavy.cpp` (experimental vs
-FCL/Bullet).
-Experimental CCD microbenchmarks are in
-`tests/benchmark/collision/experimental/bm_ccd.cpp`.
-Cross-backend correctness checks now run in integration tests, and structured
-results live in `docs/dev_tasks/experimental_collision/benchmark_results.md`.
+Structured suite layout and coverage are tracked in
+`docs/dev_tasks/experimental_collision/benchmark_catalog.md`.
 
-**Narrow-phase performance comparison (lower is better):**
+Key benchmark locations:
 
-| Shape Pair      | Experimental   | FCL          | Bullet       | ODE          | Speedup vs Best      |
-| --------------- | -------------- | ------------ | ------------ | ------------ | -------------------- |
-| Sphere-Sphere   | **41 ns**      | 774-1107 ns  | 411-586 ns   | 991-1002 ns  | **10-14x** vs Bullet |
-| Box-Box         | **210-217 ns** | 2429-2486 ns | 1094-1147 ns | 2210-2226 ns | **5x** vs Bullet     |
-| Capsule-Capsule | **41 ns**      | 242 ns       | 440 ns       | 1381-1382 ns | **6x** vs FCL        |
-| Distance Sphere | **7 ns**       | 286-288 ns   | N/A          | N/A          | **40x** vs FCL       |
-
-**N-body scaling (brute-force broad-phase):**
-
-| N Objects  | Experimental | FCL        | Bullet     | ODE        |
-| ---------- | ------------ | ---------- | ---------- | ---------- |
-| 10         | 693 ns       | 1475 ns    | 876 ns     | 2397 ns    |
-| 50         | 11,365 ns    | 4,836 ns   | 3,910 ns   | 12,458 ns  |
-| 100        | 44,792 ns    | 12,733 ns  | 10,827 ns  | 29,006 ns  |
-| Complexity | O(N²)        | O(N log N) | O(N log N) | O(N log N) |
-
-**Note**: Our brute-force broad-phase is intentionally simple. At large N, FCL/Bullet with spatial acceleration structures outperform. Narrow-phase wins remain significant regardless.
-
-**Accuracy verification:** ✓ PASSED
-
-- Sphere-sphere: Penetration depth matches FCL within 1cm tolerance
-- Box-box: Collision detection agrees with FCL
-- Distance queries: Exact results (within 1e-6)
+- Comparative benchmarks: `tests/benchmark/collision/comparative/`
+- Scenario benchmarks: `tests/benchmark/collision/scenarios/`
+- Experimental microbenchmarks: `tests/benchmark/collision/experimental/`
+  (CCD microbench in `bm_ccd.cpp`)
 
 ### Batch Benchmark Requirements (Comparative)
 

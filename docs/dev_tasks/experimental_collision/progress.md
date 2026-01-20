@@ -158,16 +158,8 @@ Structured suite coverage (complete):
    - Cross-backend correctness checks via integration tests
    - Experimental must meet or beat best backend per supported case
 
-Baseline results (pre-structured suite):
-
-| Shape Pair      | Experimental | FCL          | Bullet       | ODE          | Speedup |
-| --------------- | ------------ | ------------ | ------------ | ------------ | ------- |
-| Sphere-Sphere   | **41 ns**    | 774-1107 ns  | 411-586 ns   | 991-1002 ns  | **10x** |
-| Box-Box         | **210 ns**   | 2429-2486 ns | 1094-1147 ns | 2210-2226 ns | **5x**  |
-| Capsule-Capsule | **41 ns**    | 242 ns       | 440 ns       | 1381-1382 ns | **6x**  |
-| Distance        | **7 ns**     | 286-288 ns   | N/A          | N/A          | **40x** |
-
-Baseline accuracy verification: PASSED
+Baseline and structured results are consolidated in
+`docs/dev_tasks/experimental_collision/benchmark_results.md`.
 
 ### Priority 6: ECS Refactoring (Next)
 

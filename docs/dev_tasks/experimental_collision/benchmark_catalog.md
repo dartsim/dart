@@ -1,6 +1,6 @@
 # Collision Benchmark Catalog
 
-> **Last Updated**: 2026-01-19
+> **Last Updated**: 2026-01-20
 
 ## Purpose
 
@@ -24,12 +24,32 @@
 - `tests/benchmark/collision/scenarios/bm_pipeline_breakdown.cpp` - AABB update + broadphase + narrowphase timing (includes RP3D-aligned sphere-only dense/sparse variants).
 - `tests/benchmark/collision/experimental/bm_ccd.cpp` - experimental CCD microbenchmarks.
 - `tests/benchmark/collision/experimental/bm_libccd.cpp` - DART vs libccd GJK/EPA/MPR microbenchmarks (optional).
-- `dart/collision/experimental/benchmarks/bm_sdf_compare.cpp` - SDF/ESDF query throughput and accuracy comparisons (Dense SDF vs Voxblox when available; enable with `-DDART_EXPERIMENTAL_ESDF_MAP_ROOT=/path/to/voxblox`).
+- `dart/collision/experimental/benchmarks/bm_sdf_compare.cpp` - Dense SDF query throughput + optional Voxblox ESDF comparisons when `-DDART_EXPERIMENTAL_VOXBLOX_ROOT=/path/to/voxblox` is set (benchmark target only; no core dependency).
 - `tests/benchmark/collision/fixtures/` - shared shape/scene builders.
 - `tests/benchmark/collision/data/` - shared mesh/convex fixtures.
 
 Note: `bm_libccd.cpp` builds only when libccd is available. Use
 `-DDART_TESTS_LIBCCD_ROOT=/path/to/libccd` or ensure `pkg-config ccd` resolves.
+
+## Structured suite coverage and result status
+
+Results are recorded in `benchmark_results.md`. Status labels: Recorded,
+Recorded (partial), Baseline only, TBA.
+
+| Suite / Case                        | Benchmarks                                                     | Backends                       | Results status                          |
+| ----------------------------------- | -------------------------------------------------------------- | ------------------------------ | --------------------------------------- |
+| Comparative narrow-phase (sweep)    | `tests/benchmark/collision/comparative/bm_narrow_phase.cpp`    | Experimental/FCL/Bullet/ODE    | Recorded                                |
+| Comparative distance (sweep)        | `tests/benchmark/collision/comparative/bm_distance.cpp`        | Experimental/FCL/Bullet/ODE    | Recorded (ODE distance warnings)        |
+| Comparative raycast (single)        | `tests/benchmark/collision/comparative/bm_raycast.cpp`         | Experimental/Bullet            | Recorded                                |
+| Mixed primitives (dense/sparse)     | `tests/benchmark/collision/scenarios/bm_mixed_primitives.cpp`  | Experimental/FCL/Bullet/ODE    | Recorded                                |
+| Mesh-heavy scenarios                | `tests/benchmark/collision/scenarios/bm_mesh_heavy.cpp`        | Experimental/FCL/Bullet        | Recorded                                |
+| Batched raycasts                    | `tests/benchmark/collision/scenarios/bm_raycast_batch.cpp`     | Experimental/Bullet            | Recorded                                |
+| Pipeline breakdown (stage timing)   | `tests/benchmark/collision/scenarios/bm_pipeline_breakdown.cpp`| Experimental                   | Recorded; RP3D-aligned TBA (crash)      |
+| CCD microbench                      | `tests/benchmark/collision/experimental/bm_ccd.cpp`            | Experimental                   | TBA                                     |
+| libccd microbench                   | `tests/benchmark/collision/experimental/bm_libccd.cpp`         | DART/libccd                    | Recorded                                |
+| Baseline microbench                 | `tests/benchmark/collision/bm_experimental.cpp`                | Experimental                   | Baseline only (historical)              |
+| Baseline comparative                | `tests/benchmark/collision/bm_comparative.cpp`                 | Experimental/FCL/Bullet/ODE    | Baseline only (historical)              |
+| SDF compare                         | `dart/collision/experimental/benchmarks/bm_sdf_compare.cpp`     | Experimental (+ Voxblox opt)   | TBA                                     |
 
 ### Library-provided benchmarks and demos
 
@@ -81,6 +101,16 @@ Note: `bm_libccd.cpp` builds only when libccd is available. Use
 | Contact stability           | Box stacking, aggregates, frictional stacks | contacts, manifold quality | qu3e demo, Bullet/ODE demos, BEPU demos    | Track contact count, stability, and solver convergence     |
 | 2D sanity checks (optional) | Simple 2D convex pairs and time of impact   | collision, time of impact  | tinyc2, ncollide2d                         | Useful for algorithm regression tests                      |
 | Gradient consistency        | Convex pairs with analytic gradients        | distance + gradient        | GJK/EPA, SDF papers                        | Validate gradient direction and sign near feature switches |
+
+## Planned additions (TBA results)
+
+- Heightfield/terrain collision + raycast scenarios (BEPU/Jitter/RP3D demos).
+- Compound/aggregate body scenes (compound-heavy stress, nested transforms).
+- Contact stability stacks (box stacks, frictional piles, manifold quality).
+- Convex mesh distance datasets (ellipsoids + ShapeNet convex mesh sets).
+- Convex/mesh shape casts beyond sphere/capsule (Parry/BEPU references).
+- SDF/voxel gradient sweeps (Dense SDF vs Voxblox ESDF comparison).
+- Broadphase scaling with thread counts (1/2/4/8/16) per parallelization plan.
 
 ## Per-query, per-shape case checklist
 
