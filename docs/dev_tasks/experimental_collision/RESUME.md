@@ -2,7 +2,7 @@
 
 ## Current State (2026-01-19)
 
-**Branch**: `feature/new_coll` — mixed primitives + batched raycast scenarios added; local uncommitted unrelated changes present
+**Branch**: `feature/new_coll` — mixed primitives + batched raycast + mesh-heavy scenarios added; local uncommitted unrelated changes present
 
 **Tests**: 292 passing across 17 test files
 
@@ -72,17 +72,17 @@ Baseline only; re-measure after the structured benchmark suite is in place.
 
 ## What's NOT Done
 
-| Component                              | Priority   | Notes                                                                                                           |
-| -------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------- |
-| ~~GJK-based mesh-primitive collision~~ | ~~Medium~~ | ✅ DONE — `collideConvexConvex()` via GJK                                                                       |
-| ~~Ray-mesh intersection~~              | ~~Medium~~ | ✅ DONE — Moller-Trumbore algorithm                                                                             |
-| ~~Distance for Convex/Mesh~~           | ~~Medium~~ | ✅ DONE — `distanceConvexConvex()` via GJK                                                                      |
-| ~~Ray-convex intersection~~            | ~~Medium~~ | ✅ DONE — GJK-based point-in-convex + binary search                                                             |
-| Structured benchmark suite             | High       | Comparative narrow-phase/distance/raycast done; mixed primitives + batched raycast scenarios added; CCD pending |
-| Continuous Collision Detection (CCD)   | Medium     | Swept sphere/capsule, conservative advancement                                                                  |
-| Visual verification tool               | Low        | Raylib available in DART, needs visualizer                                                                      |
-| Optimized broad-phase                  | Low        | BVH or spatial hash (current is O(N²))                                                                          |
-| DART integration                       | Deferred   | Wait for feature parity                                                                                         |
+| Component                              | Priority   | Notes                                                                                                                        |
+| -------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| ~~GJK-based mesh-primitive collision~~ | ~~Medium~~ | ✅ DONE — `collideConvexConvex()` via GJK                                                                                    |
+| ~~Ray-mesh intersection~~              | ~~Medium~~ | ✅ DONE — Moller-Trumbore algorithm                                                                                          |
+| ~~Distance for Convex/Mesh~~           | ~~Medium~~ | ✅ DONE — `distanceConvexConvex()` via GJK                                                                                   |
+| ~~Ray-convex intersection~~            | ~~Medium~~ | ✅ DONE — GJK-based point-in-convex + binary search                                                                          |
+| Structured benchmark suite             | High       | Comparative narrow-phase/distance/raycast done; mixed primitives + batched raycast + mesh-heavy scenarios added; CCD pending |
+| Continuous Collision Detection (CCD)   | Medium     | Swept sphere/capsule, conservative advancement                                                                               |
+| Visual verification tool               | Low        | Raylib available in DART, needs visualizer                                                                                   |
+| Optimized broad-phase                  | Low        | BVH or spatial hash (current is O(N²))                                                                                       |
+| DART integration                       | Deferred   | Wait for feature parity                                                                                                      |
 
 ## How to Resume
 
@@ -106,6 +106,7 @@ for t in bin/test_*; do $t 2>&1 | tail -1; done
 ./tests/benchmark/bm_comparative_raycast --benchmark_filter="BM_Raycast_.*"
 ./tests/benchmark/bm_scenarios_mixed_primitives --benchmark_filter="BM_Scenario_.*"
 ./tests/benchmark/bm_scenarios_raycast_batch --benchmark_filter="BM_Scenario_.*"
+./tests/benchmark/bm_scenarios_mesh_heavy --benchmark_filter="BM_Scenario_.*"
 ```
 
 ## Key Files
@@ -158,6 +159,7 @@ for t in bin/test_*; do $t 2>&1 | tail -1; done
 ## Commit History (Recent)
 
 ```
+dbb161de9dc bench(collision): add mesh-heavy scenario benchmark
 22dd147d34f bench(collision): add batched raycast scenario
 c03e038fdc0 bench(collision): add mixed primitives scenario benchmark
 9853dbb9472 bench(collision): add comparative distance and raycast benchmarks

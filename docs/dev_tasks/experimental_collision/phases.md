@@ -125,6 +125,9 @@ Mixed primitives scenarios (dense/sparse) are now in
 Batched raycast scenarios (10k rays) are now in
 `tests/benchmark/collision/scenarios/bm_raycast_batch.cpp` (experimental vs
 Bullet).
+Mesh-heavy scenarios are now in
+`tests/benchmark/collision/scenarios/bm_mesh_heavy.cpp` (experimental vs
+FCL/Bullet).
 
 **Narrow-phase performance comparison (lower is better):**
 
