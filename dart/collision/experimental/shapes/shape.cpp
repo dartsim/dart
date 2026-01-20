@@ -261,4 +261,27 @@ Eigen::Vector3d MeshShape::support(const Eigen::Vector3d& direction) const
   return vertices_[maxIndex];
 }
 
+SdfShape::SdfShape(std::shared_ptr<const SignedDistanceField> field)
+  : field_(std::move(field))
+{
+}
+
+ShapeType SdfShape::getType() const
+{
+  return ShapeType::Sdf;
+}
+
+Aabb SdfShape::computeLocalAabb() const
+{
+  if (!field_) {
+    return Aabb();
+  }
+  return field_->localAabb();
+}
+
+const SignedDistanceField* SdfShape::getField() const
+{
+  return field_.get();
+}
+
 }

@@ -310,6 +310,21 @@ double NarrowPhase::distance(
     return distanceSphereSphere(*s1, tf1, *s2, tf2, result, option);
   }
 
+  if (type1 == ShapeType::Sphere && type2 == ShapeType::Sdf) {
+    const auto* s = static_cast<const SphereShape*>(shape1);
+    const auto* sdf = static_cast<const SdfShape*>(shape2);
+    return distanceSphereSdf(*s, tf1, *sdf, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Sdf && type2 == ShapeType::Sphere) {
+    const auto* sdf = static_cast<const SdfShape*>(shape1);
+    const auto* s = static_cast<const SphereShape*>(shape2);
+    double d = distanceSphereSdf(*s, tf2, *sdf, tf1, result, option);
+    std::swap(result.pointOnObject1, result.pointOnObject2);
+    result.normal = -result.normal;
+    return d;
+  }
+
   if (type1 == ShapeType::Sphere && type2 == ShapeType::Box) {
     const auto* s = static_cast<const SphereShape*>(shape1);
     const auto* b = static_cast<const BoxShape*>(shape2);
@@ -335,6 +350,21 @@ double NarrowPhase::distance(
     const auto* c1 = static_cast<const CapsuleShape*>(shape1);
     const auto* c2 = static_cast<const CapsuleShape*>(shape2);
     return distanceCapsuleCapsule(*c1, tf1, *c2, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Sdf) {
+    const auto* c = static_cast<const CapsuleShape*>(shape1);
+    const auto* sdf = static_cast<const SdfShape*>(shape2);
+    return distanceCapsuleSdf(*c, tf1, *sdf, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Sdf && type2 == ShapeType::Capsule) {
+    const auto* sdf = static_cast<const SdfShape*>(shape1);
+    const auto* c = static_cast<const CapsuleShape*>(shape2);
+    double d = distanceCapsuleSdf(*c, tf2, *sdf, tf1, result, option);
+    std::swap(result.pointOnObject1, result.pointOnObject2);
+    result.normal = -result.normal;
+    return d;
   }
 
   if (type1 == ShapeType::Capsule && type2 == ShapeType::Sphere) {
@@ -380,6 +410,10 @@ bool NarrowPhase::isDistanceSupported(ShapeType type1, ShapeType type2)
   if (type1 == ShapeType::Sphere && type2 == ShapeType::Sphere) {
     return true;
   }
+  if ((type1 == ShapeType::Sphere && type2 == ShapeType::Sdf)
+      || (type1 == ShapeType::Sdf && type2 == ShapeType::Sphere)) {
+    return true;
+  }
   if (type1 == ShapeType::Box && type2 == ShapeType::Box) {
     return true;
   }
@@ -388,6 +422,10 @@ bool NarrowPhase::isDistanceSupported(ShapeType type1, ShapeType type2)
     return true;
   }
   if (type1 == ShapeType::Capsule && type2 == ShapeType::Capsule) {
+    return true;
+  }
+  if ((type1 == ShapeType::Capsule && type2 == ShapeType::Sdf)
+      || (type1 == ShapeType::Sdf && type2 == ShapeType::Capsule)) {
     return true;
   }
   if ((type1 == ShapeType::Capsule && type2 == ShapeType::Sphere)

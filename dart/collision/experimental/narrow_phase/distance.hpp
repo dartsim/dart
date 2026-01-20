@@ -45,6 +45,7 @@ class CapsuleShape;
 class CylinderShape;
 class PlaneShape;
 class SphereShape;
+class SdfShape;
 
 [[nodiscard]] DART_COLLISION_EXPERIMENTAL_API double distanceSphereSphere(
     const SphereShape& sphere1,
@@ -91,6 +92,22 @@ class SphereShape;
     const Eigen::Isometry3d& capsuleTransform,
     const BoxShape& box,
     const Eigen::Isometry3d& boxTransform,
+    DistanceResult& result,
+    const DistanceOption& option = DistanceOption());
+
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API double distanceSphereSdf(
+    const SphereShape& sphere,
+    const Eigen::Isometry3d& sphereTransform,
+    const SdfShape& sdf,
+    const Eigen::Isometry3d& sdfTransform,
+    DistanceResult& result,
+    const DistanceOption& option = DistanceOption());
+
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API double distanceCapsuleSdf(
+    const CapsuleShape& capsule,
+    const Eigen::Isometry3d& capsuleTransform,
+    const SdfShape& sdf,
+    const Eigen::Isometry3d& sdfTransform,
     DistanceResult& result,
     const DistanceOption& option = DistanceOption());
 

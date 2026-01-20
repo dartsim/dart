@@ -115,6 +115,29 @@ Eigen::Vector3d closestPointOnBox(
       std::clamp(point.z(), -halfExtents.z(), halfExtents.z()));
 }
 
+bool querySdfDistanceAndGradient(
+    const SignedDistanceField* field,
+    const Eigen::Isometry3d& sdfInverse,
+    const Eigen::Matrix3d& sdfRotation,
+    const Eigen::Vector3d& pointWorld,
+    const SdfQueryOptions& options,
+    double* distance,
+    Eigen::Vector3d* gradientWorld)
+{
+  if (!field) {
+    return false;
+  }
+
+  Eigen::Vector3d gradientField = Eigen::Vector3d::Zero();
+  const Eigen::Vector3d pointField = sdfInverse * pointWorld;
+  if (!field->distanceAndGradient(pointField, distance, &gradientField, options)) {
+    return false;
+  }
+
+  *gradientWorld = sdfRotation * gradientField;
+  return true;
+}
+
 }
 
 double distanceSphereSphere(
@@ -439,6 +462,166 @@ double distanceCapsuleBox(
   }
 
   return dist;
+}
+
+double distanceSphereSdf(
+    const SphereShape& sphere,
+    const Eigen::Isometry3d& sphereTransform,
+    const SdfShape& sdf,
+    const Eigen::Isometry3d& sdfTransform,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  const Eigen::Vector3d center = sphereTransform.translation();
+  const double radius = sphere.getRadius();
+
+  const SignedDistanceField* field = sdf.getField();
+  if (!field) {
+    result.distance = std::numeric_limits<double>::max();
+    return result.distance;
+  }
+
+  const Eigen::Isometry3d sdf_inverse = sdfTransform.inverse();
+  const Eigen::Matrix3d sdf_rotation = sdfTransform.rotation();
+
+  SdfQueryOptions query_options;
+  query_options.maxDistance = option.upperBound + radius;
+
+  double field_distance = 0.0;
+  Eigen::Vector3d gradientWorld = Eigen::Vector3d::Zero();
+  if (!querySdfDistanceAndGradient(
+          field,
+          sdf_inverse,
+          sdf_rotation,
+          center,
+          query_options,
+          &field_distance,
+          &gradientWorld)) {
+    result.distance = std::numeric_limits<double>::max();
+    return result.distance;
+  }
+
+  const double dist = field_distance - radius;
+  result.distance = dist;
+
+  if (dist > option.upperBound) {
+    return dist;
+  }
+
+  if (option.enableNearestPoints) {
+    Eigen::Vector3d normal = Eigen::Vector3d::UnitX();
+    const double grad_norm = gradientWorld.norm();
+    if (grad_norm > 1e-12) {
+      const Eigen::Vector3d grad_unit = gradientWorld / grad_norm;
+      const double sign = (field_distance >= 0.0) ? 1.0 : -1.0;
+      normal = grad_unit * sign;
+
+      result.pointOnObject2 = center - grad_unit * field_distance;
+      result.pointOnObject1 = center + normal * radius;
+    } else {
+      result.pointOnObject2 = center;
+      result.pointOnObject1 = center + normal * radius;
+    }
+    result.normal = normal;
+  }
+
+  return dist;
+}
+
+double distanceCapsuleSdf(
+    const CapsuleShape& capsule,
+    const Eigen::Isometry3d& capsuleTransform,
+    const SdfShape& sdf,
+    const Eigen::Isometry3d& sdfTransform,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  const double radius = capsule.getRadius();
+  const double halfHeight = capsule.getHeight() * 0.5;
+
+  const Eigen::Vector3d axis = capsuleTransform.rotation().col(2);
+  const Eigen::Vector3d center = capsuleTransform.translation();
+  const Eigen::Vector3d top = center + axis * halfHeight;
+  const Eigen::Vector3d bottom = center - axis * halfHeight;
+
+  const SignedDistanceField* field = sdf.getField();
+  if (!field) {
+    result.distance = std::numeric_limits<double>::max();
+    return result.distance;
+  }
+
+  const Eigen::Isometry3d sdf_inverse = sdfTransform.inverse();
+  const Eigen::Matrix3d sdf_rotation = sdfTransform.rotation();
+
+  SdfQueryOptions query_options;
+  query_options.maxDistance = option.upperBound + radius;
+
+  const double voxel_size = std::max(field->voxelSize(), 1e-6);
+  const int raw_samples =
+      static_cast<int>(std::ceil(capsule.getHeight() / voxel_size)) + 1;
+  const int num_samples = std::clamp(raw_samples, 2, 32);
+
+  bool found = false;
+  double best_dist = std::numeric_limits<double>::max();
+  double best_field_distance = 0.0;
+  Eigen::Vector3d best_axis_point = Eigen::Vector3d::Zero();
+  Eigen::Vector3d best_gradient = Eigen::Vector3d::Zero();
+
+  for (int i = 0; i < num_samples; ++i) {
+    const double t = (num_samples == 1) ? 0.5 : static_cast<double>(i) / (num_samples - 1);
+    const Eigen::Vector3d axis_point = bottom + (top - bottom) * t;
+
+    double field_distance = 0.0;
+    Eigen::Vector3d gradientWorld = Eigen::Vector3d::Zero();
+    if (!querySdfDistanceAndGradient(
+            field,
+            sdf_inverse,
+            sdf_rotation,
+            axis_point,
+            query_options,
+            &field_distance,
+            &gradientWorld)) {
+      continue;
+    }
+
+    const double dist = field_distance - radius;
+    if (dist < best_dist) {
+      best_dist = dist;
+      best_field_distance = field_distance;
+      best_axis_point = axis_point;
+      best_gradient = gradientWorld;
+      found = true;
+    }
+  }
+
+  if (!found) {
+    result.distance = std::numeric_limits<double>::max();
+    return result.distance;
+  }
+
+  result.distance = best_dist;
+  if (best_dist > option.upperBound) {
+    return best_dist;
+  }
+
+  if (option.enableNearestPoints) {
+    Eigen::Vector3d normal = Eigen::Vector3d::UnitX();
+    const double grad_norm = best_gradient.norm();
+    if (grad_norm > 1e-12) {
+      const Eigen::Vector3d grad_unit = best_gradient / grad_norm;
+      const double sign = (best_field_distance >= 0.0) ? 1.0 : -1.0;
+      normal = grad_unit * sign;
+
+      result.pointOnObject2 = best_axis_point - grad_unit * best_field_distance;
+      result.pointOnObject1 = best_axis_point + normal * radius;
+    } else {
+      result.pointOnObject2 = best_axis_point;
+      result.pointOnObject1 = best_axis_point + normal * radius;
+    }
+    result.normal = normal;
+  }
+
+  return best_dist;
 }
 
 }

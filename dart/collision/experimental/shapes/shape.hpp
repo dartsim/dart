@@ -34,7 +34,9 @@
 
 #include <dart/collision/experimental/aabb.hpp>
 #include <dart/collision/experimental/export.hpp>
+#include <dart/collision/experimental/sdf/signed_distance_field.hpp>
 
+#include <memory>
 #include <vector>
 
 namespace dart::collision::experimental {
@@ -49,6 +51,7 @@ enum class ShapeType
   Plane,
   Mesh,
   Convex,
+  Sdf,
   HeightField,
   PointCloud
 };
@@ -177,6 +180,21 @@ public:
 private:
   std::vector<Eigen::Vector3d> vertices_;
   std::vector<Triangle> triangles_;
+};
+
+/// Signed distance field shape for distance and gradient queries.
+class DART_COLLISION_EXPERIMENTAL_API SdfShape : public Shape
+{
+public:
+  explicit SdfShape(std::shared_ptr<const SignedDistanceField> field);
+
+  [[nodiscard]] ShapeType getType() const override;
+  [[nodiscard]] Aabb computeLocalAabb() const override;
+
+  [[nodiscard]] const SignedDistanceField* getField() const;
+
+private:
+  std::shared_ptr<const SignedDistanceField> field_;
 };
 
 }
