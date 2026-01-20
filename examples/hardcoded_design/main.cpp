@@ -40,7 +40,7 @@
  * '-' will make the joints move in the negative direction.
  */
 
-#include "HardcodedEventHandler.hpp"
+#include "hardcoded_event_handler.hpp"
 
 #include <dart/gui/all.hpp>
 

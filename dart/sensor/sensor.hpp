@@ -42,7 +42,7 @@
 #include <dart/common/sub_ptr.hpp>
 #include <dart/common/subject.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 #include <dart/sensor/fwd.hpp>
 
 #include <Eigen/Geometry>

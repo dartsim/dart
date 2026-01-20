@@ -35,7 +35,7 @@
 
 #include <dart/common/detail/connection_body.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <functional>
 #include <memory>

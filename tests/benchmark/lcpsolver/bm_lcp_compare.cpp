@@ -8,7 +8,7 @@
  * Solver-agnostic benchmark harness for LCP comparisons.
  */
 
-#include "tests/common/lcpsolver/LcpTestHarness.hpp"
+#include "tests/common/lcpsolver/lcp_test_harness.hpp"
 
 #include <dart/math/lcp/newton/fischer_burmeister_newton_solver.hpp>
 #include <dart/math/lcp/newton/minimum_map_newton_solver.hpp>

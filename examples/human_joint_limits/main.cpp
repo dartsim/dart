@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "HumanArmJointLimitConstraint.hpp"
+#include "human_arm_joint_limit_constraint.hpp"
 #include "dart/common/macros.hpp"
-#include "HumanLegJointLimitConstraint.hpp"
+#include "human_leg_joint_limit_constraint.hpp"
 
 #include <dart/config.hpp>
 #include <dart/gui/all.hpp>

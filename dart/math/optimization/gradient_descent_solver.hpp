@@ -35,7 +35,7 @@
 
 #include <dart/math/optimization/solver.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <random>
 

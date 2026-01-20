@@ -40,7 +40,7 @@
 #include <dart/common/subject.hpp>
 #include <dart/common/version_counter.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <memory>
 

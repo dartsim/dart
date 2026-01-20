@@ -55,7 +55,7 @@
 #include <dart/common/smart_pointer.hpp>
 #include <dart/common/subject.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 #include <dart/sensor/sensor_manager.hpp>
 
 #include <Eigen/Dense>

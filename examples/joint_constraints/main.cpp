@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Controller.hpp"
+#include "controller.hpp"
 #include "dart/common/macros.hpp"
 
 #include <dart/gui/all.hpp>

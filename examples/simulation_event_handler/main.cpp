@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "SimulationEventHandler.hpp"
+#include "simulation_event_handler.hpp"
 
 #include <dart/gui/all.hpp>
 

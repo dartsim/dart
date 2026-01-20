@@ -39,7 +39,7 @@
 
 #include <dart/common/specialized_for_aspect.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Geometry>
 

@@ -37,7 +37,7 @@
 
 #include <dart/common/embedded_aspect.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Core>
 

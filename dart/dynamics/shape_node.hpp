@@ -38,7 +38,7 @@
 
 #include <dart/common/signal.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Dense>
 

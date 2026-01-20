@@ -48,7 +48,7 @@
 #include <dart/common/name_manager.hpp>
 #include <dart/common/version_counter.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <mutex>
 #include <span>

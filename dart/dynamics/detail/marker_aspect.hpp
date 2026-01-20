@@ -35,7 +35,7 @@
 
 #include <dart/math/helpers.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Core>
 

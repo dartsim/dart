@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "TinkertoyWidget.hpp"
-#include "TinkertoyWorldNode.hpp"
+#include "tinkertoy_widget.hpp"
+#include "tinkertoy_world_node.hpp"
 
 #include <dart/config.hpp>
 

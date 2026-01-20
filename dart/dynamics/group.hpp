@@ -32,7 +32,7 @@
 
 #include <dart/dynamics/referential_skeleton.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <span>
 
