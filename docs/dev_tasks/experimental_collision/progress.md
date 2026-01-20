@@ -369,7 +369,8 @@ in derived classes (AabbTree, BruteForce, SpatialHash, SweepAndPrune).
 - Optional bulk rebuild path for large scene edits
 - Exit criteria: Broadphase update scales for large object counts
 
-**Status**: Not started
+**Status**: Deferred - Phase 3 (Parallel Narrowphase) should come first per parallelization plan.
+See `parallelization_plan.md` for the full roadmap.
 
 ---
 
