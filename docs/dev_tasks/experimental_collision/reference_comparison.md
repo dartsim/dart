@@ -80,6 +80,48 @@
 - Strengths: minimal, fast distance queries with witness points; multi-language bindings.
 - Gaps: convex-only; no penetration depth/contact manifold; no broadphase or scene management.
 
+### BEPUphysics1
+
+- Goal: C# 3D physics engine with CCD, multithreading, and broad collision support.
+- Design: broadphase systems (dynamic hierarchy, sort-and-sweep, brute), convex collision via GJK/MPR, contact manifolds and reducers.
+- Strengths: convex/compound/mesh/terrain shapes, convex cast and raycast support, contact manifold infrastructure.
+- Gaps: older v1 codebase, low recent activity, conventions not clearly documented.
+
+### JitterPhysics
+
+- Goal: lightweight C# 3D physics engine for games.
+- Design: collision systems (SAP, persistent SAP, brute), GJK and XenoCollide (MPR) for convex, manifold-based contacts.
+- Strengths: simple API, multithreading, mesh/terrain and convex support, raycast + closest points.
+- Gaps: no explicit CCD/time of impact API found; older codebase.
+
+### ncollide
+
+- Goal: 2D/3D Rust collision library (passively maintained, superseded by Parry).
+- Design: dynamic BVH broadphase, contact manifolds, GJK/EPA-based convex queries, time of impact for linear motion.
+- Strengths: rich shape set, ray cast, time of impact for non-rotating motion.
+- Gaps: maintenance mode, limited evolution compared to Parry.
+
+### collision-rs
+
+- Goal: Rust collision primitives and broadphase utilities built on cgmath.
+- Design: DBVT + sweep-and-prune + brute force, GJK/EPA for manifolds, continuous GJK for CCD.
+- Strengths: explicit DBVT and polyhedron benchmarks, convex distance queries.
+- Gaps: not fully covered by tests, limited scene/world orchestration.
+
+### qu3e
+
+- Goal: minimal C++ 3D engine focused on boxes and simplicity.
+- Design: dynamic AABB tree broadphase, SAT for OBB, manifold-based contacts.
+- Strengths: simple API, stable manifold generation, AABB/point queries, raycast.
+- Gaps: box-only shapes, no CCD, intentionally minimal features.
+
+### tinyc2 (cute_c2)
+
+- Goal: 2D header-only narrowphase routines (immediate mode).
+- Design: GJK-based closest points, time of impact shape casts, optional manifolds; no broadphase.
+- Strengths: clear 2D reference implementation, convex hull generation, time of impact examples.
+- Gaps: 2D only, no scene management.
+
 ## Feature comparison (from local source trees)
 
 ### Query types
@@ -106,6 +148,19 @@ Legend: Y = supported, N = not supported, P = partial or user-managed.
 | Continuous collision (CCD / time of impact) | P    | N              | Y     | N       | Coal CCD not prominent in README; Parry has shape casts   |
 | Broadphase group queries                    | Y    | Y              | P     | N       | Parry provides BVH utilities, not a full world manager    |
 
+### Query types (community libraries)
+
+Legend: Y = supported, N = not supported, P = partial or user-managed.
+
+| Query                                       | BEPUphysics1 | JitterPhysics | ncollide | collision-rs | qu3e | tinyc2 | Notes                                                               |
+| ------------------------------------------- | ------------ | ------------- | -------- | ------------ | ---- | ------ | ------------------------------------------------------------------- |
+| Collision (binary + contacts)               | Y            | Y             | Y        | Y            | Y    | Y      | tinyc2 is 2D only                                                   |
+| Distance / closest points                   | Y            | Y             | Y        | Y            | N    | Y      | collision-rs convex distance; tinyc2 GJK closest points             |
+| Tolerance-only check                        | N            | N             | N        | N            | N    | N      |                                                                     |
+| Raycast                                     | Y            | Y             | Y        | P            | Y    | Y      | collision-rs has Ray primitives; query coverage varies              |
+| Continuous collision (CCD / time of impact) | Y            | N             | P        | P            | N    | Y      | ncollide time of impact is linear-only; collision-rs continuous GJK |
+| Broadphase group queries                    | Y            | Y             | Y        | P            | Y    | N      | collision-rs exposes DBVT/SaP; tinyc2 has no broadphase             |
+
 ### Batch query support (data structures and throughput)
 
 | Library        | Batch-friendly structures                          | Typical batch usage                                            | Notes                                                                       |
@@ -118,6 +173,12 @@ Legend: Y = supported, N = not supported, P = partial or user-managed.
 | ReactPhysics3D | Dynamic AABB tree                                  | World step builds/updates pairs                                | Discrete pipeline; contact persistence managed by engine                    |
 | Parry          | BVH partitioning utilities                         | User-managed BVH queries                                       | Broadphase orchestration is external (e.g., in Rapier)                      |
 | OpenGJK        | None                                               | Single convex pair at a time                                   | Distance-only GJK kernel                                                    |
+| BEPUphysics1   | Dynamic hierarchy, sort-and-sweep, brute           | World step builds/updates pairs                                | Internal multithreading, query accelerators                                 |
+| JitterPhysics  | SAP, persistent SAP, brute                         | World step builds/updates pairs                                | Persistent SAP favors temporal coherence                                    |
+| ncollide       | Dynamic BVH                                        | Pipeline manages pairs                                         | Broadphase is integrated into the pipeline/world                            |
+| collision-rs   | DBVT, sweep and prune                              | User-managed batch queries                                     | Provides data structures; no full world manager                             |
+| qu3e           | Dynamic AABB tree                                  | World step builds/updates pairs                                | Minimal engine; batch performance tied to simple data layout                |
+| tinyc2         | None                                               | Single pair at a time                                          | Narrowphase-only 2D library                                                 |
 
 Batch here means many pairwise queries per frame; none of these expose a dedicated SIMD batch API, so throughput depends on per-call overhead and data layout.
 
@@ -172,6 +233,23 @@ Legend: Y = supported, N = not supported, P = generic convex/user-defined.
 | Compound/composite | P    | Y              | Y     | N       | Coal lacks explicit compound shapes; use multiple objects |
 | Voxels/SDF         | N    | N              | Y     | N       | Parry includes voxel shapes                               |
 
+### Shape types (community libraries)
+
+Legend: Y = supported, N = not supported, P = limited or 2D-only.
+
+| Shape               | BEPUphysics1 | JitterPhysics | ncollide | collision-rs | qu3e | tinyc2 | Notes                                     |
+| ------------------- | ------------ | ------------- | -------- | ------------ | ---- | ------ | ----------------------------------------- |
+| Sphere/ball         | Y            | Y             | Y        | Y            | N    | P      | tinyc2 uses circles (2D)                  |
+| Box/cuboid          | Y            | Y             | Y        | Y            | Y    | P      | tinyc2 has AABB/convex polygons           |
+| Capsule             | Y            | Y             | Y        | Y            | N    | P      | tinyc2 supports 2D capsule                |
+| Cylinder            | Y            | Y             | Y        | Y            | N    | N      |                                           |
+| Cone                | Y            | Y             | Y        | N            | N    | N      |                                           |
+| Convex hull/poly    | Y            | Y             | Y        | Y            | N    | P      | tinyc2 supports convex polygons (2D)      |
+| Mesh (concave)      | Y            | Y             | Y        | N            | N    | N      |                                           |
+| Heightfield/terrain | Y            | Y             | Y        | N            | N    | N      |                                           |
+| Compound/composite  | Y            | Y             | Y        | N            | P    | N      | qu3e aggregates boxes only                |
+| 2D shapes           | N            | N             | Y        | Y            | N    | Y      | ncollide/collision-rs include 2D variants |
+
 ### Broadphase algorithms
 
 - FCL: Dynamic AABB tree, dynamic AABB tree array, sweep and prune (SaP/SSaP), spatial hash, interval tree, brute force.
@@ -184,6 +262,15 @@ Legend: Y = supported, N = not supported, P = generic convex/user-defined.
 - Bullet: GJK/EPA (btGjkPairDetector, btGjkEpa), MPR (btMprPenetration), polyhedral contact clipping, specialized box-box; persistent manifolds; mesh via BvhTriangleMeshShape (static concave) and GImpact (dynamic concave).
 - ODE: analytic primitives plus libccd for convex (GJK/EPA); triangle mesh via OPCODE or GIMPACT; ray-mesh in collision_trimesh_ray.
 - libccd: GJK/EPA + MPR only, convex-only, driven by user-defined support functions.
+
+### Narrowphase and mesh algorithms (community libraries)
+
+- BEPUphysics1: GJK (boolean and closest points) and MPR, manifold generators for convex/mesh/terrain contacts.
+- JitterPhysics: GJK + XenoCollide (MPR) for convex, mesh and terrain via multishape handling.
+- ncollide: GJK/EPA-based convex, contact manifold generators including trimesh; linear time of impact only.
+- collision-rs: GJK/EPA for convex, continuous GJK for CCD; no mesh collision pipeline.
+- qu3e: SAT-based OBB manifolds with polygon clipping; discrete only.
+- tinyc2: 2D GJK + time of impact with convex hull support; narrowphase only.
 
 ## Conventions and Terminology
 
@@ -212,6 +299,12 @@ Legend: Y = supported, N = not supported, P = generic convex/user-defined.
 | ODE            | Contact points (dContactGeom)       | No explicit manifold; caller aggregates           |
 | Parry          | Contact + ContactManifold           | Explicit manifolds; normals + multiple points     |
 | ReactPhysics3D | ContactManifold with points         | Up to 4 points; cached for stability              |
+| BEPUphysics1   | Contact manifolds                   | Manifold generators + contact reduction/refresher |
+| JitterPhysics  | Contact manifolds                   | Manifold-based contacts in collision systems      |
+| ncollide       | ContactManifold                     | Explicit manifolds; part of pipeline              |
+| collision-rs   | Contact data via GJK/EPA            | Manifold support per README; no world persistence |
+| qu3e           | Contact manifolds                   | SAT manifolds; reduction not implemented          |
+| tinyc2         | Contact manifold (2D)               | Optional manifold generation per query            |
 | libccd         | Single penetration info             | No manifold; GJK/EPA gives one direction/depth    |
 | OpenGJK        | Witness points from simplex         | Distance-only, no contact manifold                |
 
@@ -232,6 +325,7 @@ Edge-edge and face-face interactions are typically represented via a multi-point
 - DART DistanceResult uses signed distance; negative means penetration (see `dart/collision/DistanceResult.hpp`).
 - Provide adapter helpers when using libraries with opposite normal conventions (FCL/Coal/Parry/React) or signed depth (Bullet/Parry).
 - Keep terminology consistent: signed distance is positive when separated, penetration depth is positive overlap.
+- For BEPUphysics1, JitterPhysics, ncollide, collision-rs, qu3e, and tinyc2, normal/sign conventions are not clearly documented; verify in code before adapter work.
 
 ## Cross-Backend Validation Policy
 
@@ -266,13 +360,14 @@ correctness for the same inputs.
 
 ### SDF support (observed)
 
-| Library                | SDF or voxel support            | Notes                                                                       |
-| ---------------------- | ------------------------------- | --------------------------------------------------------------------------- |
-| Bullet                 | btSdfCollisionShape / btMiniSDF | Signed distance fields for implicit collision (btMiniSDF exposes gradients) |
-| Parry                  | Voxels                          | Voxel shapes exist; not explicitly SDF                                      |
-| FCL / Coal             | None explicit                   | Focus on meshes/convex/BVH and GJK/EPA                                      |
-| ODE / libccd / OpenGJK | None                            | No SDF primitives                                                           |
-| ReactPhysics3D         | None                            | Discrete contact shapes only                                                |
+| Library                                       | SDF or voxel support            | Notes                                                                       |
+| --------------------------------------------- | ------------------------------- | --------------------------------------------------------------------------- |
+| Bullet                                        | btSdfCollisionShape / btMiniSDF | Signed distance fields for implicit collision (btMiniSDF exposes gradients) |
+| Parry                                         | Voxels                          | Voxel shapes exist; not explicitly SDF                                      |
+| FCL / Coal                                    | None explicit                   | Focus on meshes/convex/BVH and GJK/EPA                                      |
+| ODE / libccd / OpenGJK                        | None                            | No SDF primitives                                                           |
+| ReactPhysics3D                                | None                            | Discrete contact shapes only                                                |
+| BEPU/Jitter/ncollide/collision-rs/qu3e/tinyc2 | None                            | No SDF primitives in inspected sources                                      |
 
 ### SDF references and implications (from curated list)
 
@@ -291,18 +386,9 @@ correctness for the same inputs.
 
 Source: /home/js/dev/physics/awesome-collision-detection (commit effd3f8). The list is not exhaustive and many entries are physics engines with collision subsystems.
 
-Active libraries already inspected above: Bullet, FCL, HPP-FCL (Coal), libccd, ODE, OpenGJK, Parry, ReactPhysics3D.
+Active libraries inspected above: Bullet, FCL, HPP-FCL (Coal), libccd, ODE, OpenGJK, Parry, ReactPhysics3D, BEPUphysics1, JitterPhysics, ncollide, collision-rs, qu3e, tinyc2.
 
-### Additional active libraries (not locally inspected here)
-
-| Library       | Scope                  | Notes for DART                                                   |
-| ------------- | ---------------------- | ---------------------------------------------------------------- |
-| BEPUphysics 1 | 3D physics engine      | C# engine; potential ideas for batch throughput and cache layout |
-| collision-rs  | 3D collision/proximity | Rust crate; likely shares older ncollide ideas                   |
-| JitterPhysics | 3D physics engine      | C# engine; may have simpler contact pipelines to compare         |
-| ncollide      | 3D collision/proximity | Predecessor of Parry; legacy algorithms and shape support        |
-| qu3e          | Minimal 3D physics     | Small codebase; good for reviewing manifold generation           |
-| tinyc2        | 2D collision           | 2D only; useful for test harness patterns                        |
+The curated list is not exhaustive; additional candidates may exist outside this list.
 
 ### Legacy/inactive references (still useful)
 
@@ -319,6 +405,8 @@ Active libraries already inspected above: Bullet, FCL, HPP-FCL (Coal), libccd, O
 ### Research and benchmarks (selected from curated list)
 
 - GJK++ / Collision Detection Accelerated (Montaut 2022-2023): accelerated GJK and benchmarks.
+- colbench: ellipsoid and YCB collision benchmarks built around HPP-FCL.
+- collision-detection-benchmark: ellipsoid and ShapeNet convex mesh benchmarks for GJK variants.
 - Differentiable collision detection (Montaut 2022): randomized smoothing for stable gradients.
 - Robust mesh contact generation (Hauser 2013): contact for unstructured meshes.
 - Penetration depth (PolyDepth 2012): iterative contact-space projection.
@@ -335,20 +423,31 @@ Active libraries already inspected above: Bullet, FCL, HPP-FCL (Coal), libccd, O
 - Coal: targets high-performance GJK/EPA, includes accelerated variants and security margins; reports large speedups in its own benchmarks.
 - Parry: broad query set including shape casts; performance depends on BVH usage and user-side batching.
 - ReactPhysics3D: discrete pipeline with custom containers (no STL) and integrated profiling; emphasis on stable real-time steps.
+- BEPUphysics1: multiple broadphase options with multithreading; performance influenced by manifold reduction and C# runtime overhead.
+- JitterPhysics: SAP and persistent SAP favor temporal coherence; overall speed depends on managed runtime and collision system choice.
+- ncollide / collision-rs: performance depends on DBVT and user-managed pipelines; less tuned for large real-time scenes.
+- qu3e: minimal and fast for box-only scenes; not representative for complex shape mixes.
+- tinyc2: narrowphase-only 2D; useful for microbenchmarks, not scene-scale performance.
 - Batch throughput: FCL and Bullet favor repeated-world queries with stable object sets; ODE favors simple per-step space traversal; libccd requires a separate batch layer.
 
 ## Dev activity snapshot (local repos)
 
-| Library        | Last commit (date) | Last commit summary                                                                               | Commits last 12 months |
-| -------------- | ------------------ | ------------------------------------------------------------------------------------------------- | ---------------------- |
-| FCL            | 2026-01-15         | Feat: Check for local gtest first                                                                 | 5                      |
-| Bullet         | 2025-10-21         | add pyproject.toml                                                                                | 5                      |
-| ODE            | 2024-01-14         | Cosmetic: Commentary spelling corrections                                                         | 0                      |
-| libccd         | 2018-12-22         | Fixed division by zero in the computation of a direction vector in ccdMPRPenetration. (fixes #49) | 0                      |
-| Coal (HPP-FCL) | 2026-01-16         | Merge pull request #803 from jorisv/topic/fix-pixi-toml                                           | 433                    |
-| ReactPhysics3D | 2025-01-09         | Fix the documentation URL in the README.md                                                        | 0                      |
-| Parry          | 2026-01-09         | Migrate codebase to glam + release v0.26.0 (#401)                                                 | 88                     |
-| OpenGJK        | 2025-12-29         | Enhance witness point verification with scale-aware tolerance                                     | 29                     |
+| Library              | Last commit (date) | Last commit summary                                                                                                | Commits last 12 months |
+| -------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------ | ---------------------- |
+| FCL                  | 2026-01-15         | Feat: Check for local gtest first                                                                                  | 5                      |
+| Bullet               | 2025-10-21         | add pyproject.toml                                                                                                 | 5                      |
+| ODE                  | 2024-01-14         | Cosmetic: Commentary spelling corrections                                                                          | 0                      |
+| libccd               | 2018-12-22         | Fixed division by zero in the computation of a direction vector in ccdMPRPenetration. (fixes #49)                  | 0                      |
+| Coal (HPP-FCL)       | 2026-01-16         | Merge pull request #803 from jorisv/topic/fix-pixi-toml                                                            | 433                    |
+| ReactPhysics3D       | 2025-01-09         | Fix the documentation URL in the README.md                                                                         | 0                      |
+| Parry                | 2026-01-09         | Migrate codebase to glam + release v0.26.0 (#401)                                                                  | 88                     |
+| OpenGJK              | 2025-12-29         | Enhance witness point verification with scale-aware tolerance                                                      | 29                     |
+| BEPUphysics1         | 2021-08-02         | Removed event handler from ShapeChanged when ignoring shape changes. Necessary to avoid leaks when reusing shapes. | 0                      |
+| JitterPhysics        | 2021-08-08         | Updated Readme: Jitter physics is back                                                                             | 0                      |
+| ncollide             | 2022-03-18         | Release v0.33.0                                                                                                    | 0                      |
+| collision-rs         | 2021-10-08         | fmt (#135)                                                                                                         | 0                      |
+| qu3e                 | 2021-05-08         | Merge pull request #57 from wmcnamara/readme-fix                                                                   | 0                      |
+| tinyc2 (tinyheaders) | 2026-01-07         | fix: Properly shutdown AudioUnit on macOS to avoid crash on exit (#419)                                            | 8                      |
 
 ## Takeaways and recommendations for DART experimental collision
 
@@ -366,6 +465,10 @@ Active libraries already inspected above: Bullet, FCL, HPP-FCL (Coal), libccd, O
 - Consider a "security margin" mode (HPP-FCL style) alongside exact geometry mode for stability vs accuracy tradeoffs.
 - Add persistent manifold caching and contact reduction options to match Bullet stability while keeping exact geometry modes for accuracy.
 - Support contact manifolds/patches where possible (Coal/Parry) to improve stacking stability and contact richness.
+- Include SAP/persistent SAP and dynamic hierarchy options (BEPU/Jitter) and DBVT (collision-rs) to validate batch throughput tradeoffs.
+- Add scene dump/replay tooling to capture hard collision bugs and share reproducible benchmarks (qu3e style).
+- Add numeric robustness tests for large coordinate scales and degenerate convex features (tinyc2 notes on GJK sensitivity).
+- Use external datasets (YCB, ShapeNet, ellipsoids) and broadphase benchmarks (spatial-collision-datastructures) in the structured suite.
 - Standardize result conventions across all backends (normal direction, signed distance, penetration depth) to match DART Contact/DistanceResult.
 - If gradients are exposed (convex or SDF), return them explicitly and test edge/vertex degeneracies for sign consistency.
 - Make determinism a first-class option (stable ordering, fixed tolerances, reproducible queries) while still enabling fast paths.
