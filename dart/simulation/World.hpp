@@ -78,6 +78,20 @@ enum class CollisionDetectorType
   Ode,
 };
 
+/// Configuration for compute graph execution (experimental).
+struct GraphExecutionConfig final
+{
+  /// Number of worker threads for parallel execution.
+  /// - 0: Use hardware concurrency (auto-detect)
+  /// - 1: Single-threaded sequential execution
+  /// - N: Use N worker threads
+  std::size_t numWorkers{0};
+
+  /// Force sequential execution regardless of numWorkers.
+  /// Useful for debugging and determinism verification.
+  bool forceSequential{false};
+};
+
 /// Configuration bundle used when constructing a World.
 struct WorldConfig final
 {
@@ -86,6 +100,9 @@ struct WorldConfig final
 
   /// Preferred collision detector for the world.
   CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
+
+  /// Compute graph execution configuration (experimental).
+  GraphExecutionConfig graphExecution;
 
   WorldConfig() = default;
   explicit WorldConfig(std::string_view worldName)
