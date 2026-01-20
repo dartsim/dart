@@ -119,3 +119,66 @@ Shortcut: `pixi run test-all` runs lint + build + all tests.
 > **Prefer slash commands** over manual prompts when available.
 
 Index: [`docs/prompts/AGENTS.md`](docs/prompts/AGENTS.md)
+
+<skills_system priority="1">
+
+## Available Skills
+
+<!-- SKILLS_TABLE_START -->
+<usage>
+When users ask you to perform tasks, check if any of the available skills below can help complete the task more effectively. Skills provide specialized capabilities and domain knowledge.
+
+How to use skills:
+- Invoke: `npx openskills read <skill-name>` (run in your shell)
+  - For multiple: `npx openskills read skill-one,skill-two`
+- The skill content will load with detailed instructions on how to complete the task
+- Base directory provided in output for resolving bundled resources (references/, scripts/, assets/)
+
+Usage notes:
+- Only use skills listed in <available_skills> below
+- Do not invoke a skill that is already loaded in your context
+- Each skill invocation is stateless
+</usage>
+
+<available_skills>
+
+<skill>
+<name>dart-build</name>
+<description>DART build system knowledge - CMake, pixi, dependencies, troubleshooting</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>dart-ci</name>
+<description>DART CI/CD troubleshooting - GitHub Actions, cache debugging, platform-specific failures</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>dart-contribute</name>
+<description>DART contribution workflow - branching, PRs, code review, dual-PR for bugfixes</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>dart-io</name>
+<description>DART model loading - URDF, SDF, MJCF, SKEL parsers and dart::io unified API</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>dart-python</name>
+<description>DART Python bindings (dartpy) - nanobind, wheel building, API patterns</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>dart-test</name>
+<description>DART testing patterns - unit tests, integration tests, CI validation</description>
+<location>project</location>
+</skill>
+
+</available_skills>
+<!-- SKILLS_TABLE_END -->
+
+</skills_system>
