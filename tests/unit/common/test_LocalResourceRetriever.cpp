@@ -35,7 +35,11 @@
 
 #include <gtest/gtest.h>
 
+#include <atomic>
+#include <chrono>
+#include <filesystem>
 #include <fstream>
+#include <stdexcept>
 
 #include <cstdio>
 
@@ -49,14 +53,13 @@ class TempFile
 public:
   explicit TempFile(const std::string& content)
   {
-    mPath = std::tmpnam(nullptr);
-    std::ofstream ofs(mPath);
-    ofs << content;
+    mPath = createTempFile(content);
   }
 
   ~TempFile()
   {
-    std::remove(mPath.c_str());
+    if (!mPath.empty())
+      std::remove(mPath.c_str());
   }
 
   const std::string& path() const
@@ -70,6 +73,33 @@ public:
   }
 
 private:
+  static std::string createTempFile(const std::string& content)
+  {
+    const auto dir = std::filesystem::temp_directory_path();
+    static std::atomic<unsigned long long> counter{0};
+
+    for (int attempt = 0; attempt < 16; ++attempt) {
+      const auto stamp
+          = std::chrono::steady_clock::now().time_since_epoch().count();
+      const auto unique = counter.fetch_add(1, std::memory_order_relaxed);
+      const auto path = dir
+                        / ("dart-test-" + std::to_string(stamp) + "-"
+                           + std::to_string(unique));
+
+      if (std::filesystem::exists(path))
+        continue;
+
+      std::ofstream ofs(path, std::ios::binary);
+      if (!ofs)
+        continue;
+
+      ofs << content;
+      return path.string();
+    }
+
+    throw std::runtime_error("Failed to create temporary file for test.");
+  }
+
   std::string mPath;
 };
 

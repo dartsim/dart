@@ -377,3 +377,65 @@ TEST(ConstraintSolver, SplitImpulseSkipsNonContactPositionPass)
   ASSERT_EQ(constraint->useSplitImpulse.size(), 1u);
   EXPECT_TRUE(constraint->useSplitImpulse[0]);
 }
+
+//==============================================================================
+TEST(ConstraintSolver, SolveWithNoSkeletonsDoesNothing)
+{
+  constraint::ConstraintSolver solver;
+
+  EXPECT_EQ(solver.getSkeletons().size(), 0u);
+  EXPECT_NO_THROW(solver.solve());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, AddDuplicateSkeletonIgnored)
+{
+  constraint::ConstraintSolver solver;
+  auto skeleton = dynamics::Skeleton::create("duplicate_test");
+
+  solver.addSkeleton(skeleton);
+  ASSERT_EQ(solver.getSkeletons().size(), 1u);
+
+  solver.addSkeleton(skeleton);
+  EXPECT_EQ(solver.getSkeletons().size(), 1u);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, RemoveNonExistentSkeletonNoOp)
+{
+  constraint::ConstraintSolver solver;
+  auto skeleton1 = dynamics::Skeleton::create("skeleton1");
+  auto skeleton2 = dynamics::Skeleton::create("skeleton2");
+
+  solver.addSkeleton(skeleton1);
+  ASSERT_EQ(solver.getSkeletons().size(), 1u);
+
+  EXPECT_NO_THROW(solver.removeSkeleton(skeleton2));
+  EXPECT_EQ(solver.getSkeletons().size(), 1u);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SetTimeStepAffectsSolver)
+{
+  constraint::ConstraintSolver solver;
+
+  EXPECT_DOUBLE_EQ(solver.getTimeStep(), 0.001);
+
+  solver.setTimeStep(0.002);
+  EXPECT_DOUBLE_EQ(solver.getTimeStep(), 0.002);
+
+  solver.setTimeStep(0.0001);
+  EXPECT_DOUBLE_EQ(solver.getTimeStep(), 0.0001);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SetNullCollisionDetectorIgnored)
+{
+  constraint::ConstraintSolver solver;
+
+  auto originalDetector = solver.getCollisionDetector();
+  ASSERT_NE(originalDetector, nullptr);
+
+  solver.setCollisionDetector(nullptr);
+  EXPECT_EQ(solver.getCollisionDetector(), originalDetector);
+}

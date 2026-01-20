@@ -328,3 +328,151 @@ TEST(BodyNodeCollisionFilter, ImmobileSkeletonsIgnored)
   result.clear();
   EXPECT_TRUE(group->collide(option, &result));
 }
+
+//==============================================================================
+// Edge case tests for CompositeCollisionFilter
+//==============================================================================
+
+TEST(CompositeCollisionFilter, RemoveNonExistentFilter)
+{
+  CompositeCollisionFilter composite;
+  AlwaysIgnoreFilter alwaysIgnore;
+  NeverIgnoreFilter neverIgnore;
+
+  composite.addCollisionFilter(&alwaysIgnore);
+  EXPECT_TRUE(composite.ignoresCollision(nullptr, nullptr));
+
+  composite.removeCollisionFilter(&neverIgnore);
+
+  EXPECT_TRUE(composite.ignoresCollision(nullptr, nullptr));
+}
+
+TEST(CompositeCollisionFilter, AddSameFilterTwice)
+{
+  CompositeCollisionFilter composite;
+  AlwaysIgnoreFilter alwaysIgnore;
+
+  composite.addCollisionFilter(&alwaysIgnore);
+  composite.addCollisionFilter(&alwaysIgnore);
+
+  EXPECT_TRUE(composite.ignoresCollision(nullptr, nullptr));
+
+  composite.removeCollisionFilter(&alwaysIgnore);
+
+  EXPECT_FALSE(composite.ignoresCollision(nullptr, nullptr));
+}
+
+//==============================================================================
+// Edge case tests for BodyNodeCollisionFilter
+//==============================================================================
+
+TEST(BodyNodeCollisionFilter, SameBodyNodeCollision)
+{
+  auto skel = Skeleton::create("skel");
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+
+  pair.second->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0)));
+  pair.second->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.5)));
+
+  auto detector = DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(pair.second->getShapeNode(0));
+  group->addShapeFrame(pair.second->getShapeNode(1));
+
+  auto filter = std::make_shared<BodyNodeCollisionFilter>();
+  CollisionOption option;
+  option.collisionFilter = filter;
+  CollisionResult result;
+
+  EXPECT_FALSE(group->collide(option, &result));
+}
+
+TEST(BodyNodeCollisionFilter, AddDuplicatePairToBlacklist)
+{
+  auto skel1 = createSkeleton("skel1");
+  auto skel2 = createSkeleton("skel2");
+  auto body1 = skel1->getBodyNode(0);
+  auto body2 = skel2->getBodyNode(0);
+
+  skel1->getJoint(0)->setPosition(0, 0.0);
+  skel2->getJoint(0)->setPosition(0, 0.5);
+
+  auto detector = DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(body1->getShapeNode(0));
+  group->addShapeFrame(body2->getShapeNode(0));
+
+  auto filter = std::make_shared<BodyNodeCollisionFilter>();
+
+  filter->addBodyNodePairToBlackList(body1, body2);
+  filter->addBodyNodePairToBlackList(body1, body2);
+  filter->addBodyNodePairToBlackList(body2, body1);
+
+  CollisionOption option;
+  option.collisionFilter = filter;
+  CollisionResult result;
+
+  EXPECT_FALSE(group->collide(option, &result));
+
+  filter->removeBodyNodePairFromBlackList(body1, body2);
+
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+}
+
+TEST(BodyNodeCollisionFilter, RemoveNonExistentPairFromBlacklist)
+{
+  auto skel1 = createSkeleton("skel1");
+  auto skel2 = createSkeleton("skel2");
+  auto skel3 = createSkeleton("skel3");
+  auto body1 = skel1->getBodyNode(0);
+  auto body2 = skel2->getBodyNode(0);
+  auto body3 = skel3->getBodyNode(0);
+
+  skel1->getJoint(0)->setPosition(0, 0.0);
+  skel2->getJoint(0)->setPosition(0, 0.5);
+
+  auto detector = DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(body1->getShapeNode(0));
+  group->addShapeFrame(body2->getShapeNode(0));
+
+  auto filter = std::make_shared<BodyNodeCollisionFilter>();
+
+  filter->addBodyNodePairToBlackList(body1, body2);
+
+  CollisionOption option;
+  option.collisionFilter = filter;
+  CollisionResult result;
+
+  EXPECT_FALSE(group->collide(option, &result));
+
+  filter->removeBodyNodePairFromBlackList(body1, body3);
+  filter->removeBodyNodePairFromBlackList(body2, body3);
+
+  result.clear();
+  EXPECT_FALSE(group->collide(option, &result));
+
+  filter->removeBodyNodePairFromBlackList(body1, body2);
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+}
+
+TEST(BodyNodeCollisionFilter, ObjectSelfCollision)
+{
+  auto skel = createSkeleton("skel");
+  auto body = skel->getBodyNode(0);
+
+  auto detector = DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(body->getShapeNode(0));
+
+  auto filter = std::make_shared<BodyNodeCollisionFilter>();
+  CollisionOption option;
+  option.collisionFilter = filter;
+  CollisionResult result;
+
+  EXPECT_FALSE(group->collide(option, &result));
+}

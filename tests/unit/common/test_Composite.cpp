@@ -232,3 +232,82 @@ TEST(CompositeTests, CloneableMapCopyHandlesNullEntries)
   EXPECT_DOUBLE_EQ(copiedState->value, 2.0);
   EXPECT_EQ(copiedState->visits, 3);
 }
+
+//==============================================================================
+TEST(CompositeTests, HasReturnsFalseForMissingAspect)
+{
+  TrackingComposite composite;
+
+  // has<T>() should return false when aspect has not been added
+  EXPECT_FALSE(composite.has<StatefulAspect>());
+  EXPECT_EQ(composite.get<StatefulAspect>(), nullptr);
+}
+
+//==============================================================================
+TEST(CompositeTests, HasReturnsTrueForPresentAspect)
+{
+  TrackingComposite composite;
+
+  // Initially no aspect
+  EXPECT_FALSE(composite.has<StatefulAspect>());
+
+  // Create the aspect
+  auto* aspect = composite.createAspect<StatefulAspect>();
+  ASSERT_NE(aspect, nullptr);
+
+  // has<T>() should now return true
+  EXPECT_TRUE(composite.has<StatefulAspect>());
+  EXPECT_NE(composite.get<StatefulAspect>(), nullptr);
+}
+
+//==============================================================================
+TEST(CompositeTests, RemoveAspectDeletesAspect)
+{
+  TrackingComposite composite;
+
+  // Create the aspect
+  auto* aspect = composite.createAspect<StatefulAspect>();
+  ASSERT_NE(aspect, nullptr);
+  EXPECT_TRUE(composite.has<StatefulAspect>());
+
+  // Remove the aspect
+  composite.removeAspect<StatefulAspect>();
+
+  // has<T>() should now return false
+  EXPECT_FALSE(composite.has<StatefulAspect>());
+  EXPECT_EQ(composite.get<StatefulAspect>(), nullptr);
+}
+
+//==============================================================================
+TEST(CompositeTests, GetConstReturnsCorrectPointer)
+{
+  TrackingComposite composite;
+  auto* aspect = composite.createAspect<StatefulAspect>(1.5, 2.5);
+  ASSERT_NE(aspect, nullptr);
+
+  // Get const reference to composite
+  const TrackingComposite& constComposite = composite;
+
+  // const get<T>() should return same pointer as non-const get<T>()
+  const StatefulAspect* constAspect = constComposite.get<StatefulAspect>();
+  ASSERT_NE(constAspect, nullptr);
+  EXPECT_EQ(constAspect, aspect);
+
+  // Verify we can read values through const pointer
+  EXPECT_DOUBLE_EQ(constAspect->mState.value, 1.5);
+  EXPECT_DOUBLE_EQ(constAspect->mProperties.stiffness, 2.5);
+}
+
+//==============================================================================
+TEST(CompositeTests, IsSpecializedForReturnsFalseOnBaseComposite)
+{
+  // isSpecializedFor<T>() should always return false for the base Composite
+  // class (it's a static constexpr function)
+  EXPECT_FALSE(Composite::isSpecializedFor<StatefulAspect>());
+  EXPECT_FALSE(TrackingComposite::isSpecializedFor<StatefulAspect>());
+
+  // Verify at instance level as well (even though it's static)
+  TrackingComposite composite;
+  (void)composite; // Silence unused variable warning
+  EXPECT_FALSE(TrackingComposite::isSpecializedFor<StatefulAspect>());
+}
