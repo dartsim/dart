@@ -165,8 +165,7 @@ TEST(World, StepRequiresSimulationMode)
   dart::simulation::experimental::World world;
 
   EXPECT_THROW(
-      world.step(),
-      dart::simulation::experimental::InvalidArgumentException);
+      world.step(), dart::simulation::experimental::InvalidArgumentException);
 
   world.enterSimulationMode();
   EXPECT_NO_THROW(world.step());
