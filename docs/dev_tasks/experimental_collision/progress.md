@@ -5,24 +5,24 @@
 
 ## Status Summary
 
-| Phase                      | Status          | Progress |
-| -------------------------- | --------------- | -------- |
-| Core Types & Primitives    | **Complete**    | 100%     |
-| Standalone CollisionWorld  | **Complete**    | 100%     |
-| Additional Shapes          | **Complete**    | 100%     |
-| Distance Queries           | **Complete**    | 100%     |
-| Comparative Benchmarks     | **Complete**    | 100%     |
-| Raycast Support            | **Complete**    | 100%     |
-| ECS Refactoring            | **Complete**    | 100%     |
-| GJK/EPA Algorithm          | **Complete**    | 100%     |
-| Convex/Mesh Shapes         | **Complete**    | 100%     |
-| Continuous Collision (CCD) | **Complete**    | 100%     |
-| Visual Verification        | **Complete**    | 100%     |
-| DART Integration           | **Deferred**    | -        |
+| Phase                      | Status       | Progress |
+| -------------------------- | ------------ | -------- |
+| Core Types & Primitives    | **Complete** | 100%     |
+| Standalone CollisionWorld  | **Complete** | 100%     |
+| Additional Shapes          | **Complete** | 100%     |
+| Distance Queries           | **Complete** | 100%     |
+| Comparative Benchmarks     | **Complete** | 100%     |
+| Raycast Support            | **Complete** | 100%     |
+| ECS Refactoring            | **Complete** | 100%     |
+| GJK/EPA Algorithm          | **Complete** | 100%     |
+| Convex/Mesh Shapes         | **Complete** | 100%     |
+| Continuous Collision (CCD) | **Complete** | 100%     |
+| Visual Verification        | **Complete** | 100%     |
+| DART Integration           | **Deferred** | -        |
 
 ---
 
-## Completed Components (363 tests)
+## Completed Components (384 tests)
 
 | Component                        | Files                                    | Tests | Notes                                               |
 | -------------------------------- | ---------------------------------------- | ----- | --------------------------------------------------- |
@@ -41,6 +41,7 @@
 | Raycast                          | narrow_phase/raycast.hpp/.cpp            | 39    | 7 shape types incl. Mesh/Convex                     |
 | CCD (sphere/capsule cast)        | narrow_phase/ccd.hpp/.cpp                | 62    | Swept volume + conservative advancement             |
 | BruteForceBroadPhase             | broad_phase/brute_force.hpp/.cpp         | 15    | O(n²) broad-phase                                   |
+| AabbTreeBroadPhase               | broad_phase/aabb_tree.hpp/.cpp           | 21    | O(n log n) dynamic AABB tree                        |
 | CollisionObject                  | collision_object.hpp/.cpp                | 12    | Lightweight ECS handle                              |
 | NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp       | 7     | Shape-type dispatch                                 |
 | CollisionWorld                   | collision_world.hpp/.cpp                 | 8     | Standalone collision detection                      |
@@ -217,19 +218,19 @@ bool NarrowPhase::isSphereCastSupported(ShapeType type);
 
 **Implementation**: `dart/gui/vsg/` module with `examples/collision_viz/`
 
-| Feature                          | Status       | Notes                                       |
-| -------------------------------- | ------------ | ------------------------------------------- |
-| Primitive shapes                 | **Complete** | Sphere, Box, Capsule, Cylinder, Plane       |
-| Convex/Mesh shapes               | **Complete** | Via GeometryBuilders                        |
-| Contact points                   | **Complete** | Red spheres with configurable size          |
-| Contact normals                  | **Complete** | Yellow arrows with configurable length      |
-| AABB wireframes                  | **Complete** | `createWireframeBox()` + `addAabb()`        |
-| Distance query visualization     | **Complete** | `addDistanceResult()` - points + line       |
-| Raycast visualization            | **Complete** | `addRaycast()` - ray + hit point + normal   |
-| Sphere-cast / CCD visualization  | **Complete** | `addSphereCast()` - trajectory + hit        |
-| Grid and coordinate axes         | **Complete** | `addGrid()` + `addAxes()`                   |
-| Headless rendering               | **Complete** | `SimpleViewer::headless()` + PPM export     |
-| Interactive windowed mode        | **Complete** | Mouse rotation/zoom, close to exit          |
+| Feature                         | Status       | Notes                                     |
+| ------------------------------- | ------------ | ----------------------------------------- |
+| Primitive shapes                | **Complete** | Sphere, Box, Capsule, Cylinder, Plane     |
+| Convex/Mesh shapes              | **Complete** | Via GeometryBuilders                      |
+| Contact points                  | **Complete** | Red spheres with configurable size        |
+| Contact normals                 | **Complete** | Yellow arrows with configurable length    |
+| AABB wireframes                 | **Complete** | `createWireframeBox()` + `addAabb()`      |
+| Distance query visualization    | **Complete** | `addDistanceResult()` - points + line     |
+| Raycast visualization           | **Complete** | `addRaycast()` - ray + hit point + normal |
+| Sphere-cast / CCD visualization | **Complete** | `addSphereCast()` - trajectory + hit      |
+| Grid and coordinate axes        | **Complete** | `addGrid()` + `addAxes()`                 |
+| Headless rendering              | **Complete** | `SimpleViewer::headless()` + PPM export   |
+| Interactive windowed mode       | **Complete** | Mouse rotation/zoom, close to exit        |
 
 **Key APIs:**
 
@@ -289,7 +290,8 @@ dart/collision/experimental/
 │   └── raycast.hpp/.cpp        # Ray-shape intersections
 └── broad_phase/
     ├── broad_phase.hpp         # BroadPhase interface
-    └── brute_force.hpp/.cpp    # O(n^2) broad-phase
+    ├── brute_force.hpp/.cpp    # O(n^2) broad-phase
+    └── aabb_tree.hpp/.cpp      # O(n log n) dynamic AABB tree
 ```
 
 ---
@@ -325,6 +327,8 @@ done
 | 2026-01-19 | Standalone shapes (no dynamics dep)           | Enables pure collision testing                   |
 | 2026-01-19 | Use PascalCase for abbreviations (Aabb)       | Codebase convention                              |
 | 2026-01-19 | BoxShape stores full extents internally       | API takes half-extents for compatibility         |
+| 2026-01-19 | AABB Tree with SAH insertion                  | O(n log n) vs O(n²), 95-188x speedup at scale    |
+| 2026-01-19 | Fat AABBs in AABB Tree                        | Reduce update frequency for small movements      |
 | 2026-01-19 | CollisionWorld as standalone API              | Simpler than full CollisionDetector integration  |
 
 ---

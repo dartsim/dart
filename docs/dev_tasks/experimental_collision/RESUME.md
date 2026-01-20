@@ -1,14 +1,14 @@
 # Resume: Experimental Collision Module
 
-## Current State (2026-01-20)
+## Current State (2026-01-19)
 
-**Branch**: `feature/new_coll` — mixed primitives + batched raycast + mesh-heavy scenarios + CCD microbench added; local uncommitted unrelated changes present
+**Branch**: `feature/new_coll` — ahead 2 commits; local uncommitted unrelated changes present (other agents + lint)
 
-**Tests**: 292 passing across 17 test files
+**Tests**: Not run in this session; last known 292 passing across 17 test files
 
-**Performance**: Baseline validated — 5-40x faster on subset; structured suite complete with edge-case/scale sweeps and cross-backend checks added; results log created
+**Performance**: Baseline validated — 5-40x faster on subset; structured suite complete with edge-case/scale sweeps and cross-backend checks added; results log created; pipeline breakdown run captured in `benchmark_results.md`
 
-**New in this session**: Added edge-case + scale sweep benchmarks, cross-backend integration test, and `benchmark_results.md`; added batch API scaffolding + pipeline breakdown benchmark; captured ReactPhysics3D 10k profiling summary.
+**New in this session**: Added AABB update counter to pipeline breakdown benchmark; added runner script + JSON summary capture for pipeline breakdown; ran lint + build.
 
 ## What's Complete
 
@@ -74,17 +74,17 @@ Baseline only; updated runs should go into `benchmark_results.md`.
 
 ## What's NOT Done
 
-| Component                              | Priority   | Notes                                                                                                                 |
-| -------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------- |
-| ~~GJK-based mesh-primitive collision~~ | ~~Medium~~ | ✅ DONE — `collideConvexConvex()` via GJK                                                                             |
-| ~~Ray-mesh intersection~~              | ~~Medium~~ | ✅ DONE — Moller-Trumbore algorithm                                                                                   |
-| ~~Distance for Convex/Mesh~~           | ~~Medium~~ | ✅ DONE — `distanceConvexConvex()` via GJK                                                                            |
-| ~~Ray-convex intersection~~            | ~~Medium~~ | ✅ DONE — GJK-based point-in-convex + binary search                                                                   |
-| Benchmark results log updates          | High       | Run structured suite, capture JSON, update `benchmark_results.md` gates                                               |
-| Raycast edge-case expansion (optional) | Medium     | Add grazing/origin-inside cases if needed for coverage                                                               |
-| Visual verification tool               | Low        | Raylib available in DART, needs visualizer                                                                            |
-| Optimized broad-phase                  | Low        | BVH or spatial hash (current is O(N²))                                                                                |
-| DART integration                       | Deferred   | Wait for feature parity                                                                                               |
+| Component                              | Priority   | Notes                                                                   |
+| -------------------------------------- | ---------- | ----------------------------------------------------------------------- |
+| ~~GJK-based mesh-primitive collision~~ | ~~Medium~~ | ✅ DONE — `collideConvexConvex()` via GJK                               |
+| ~~Ray-mesh intersection~~              | ~~Medium~~ | ✅ DONE — Moller-Trumbore algorithm                                     |
+| ~~Distance for Convex/Mesh~~           | ~~Medium~~ | ✅ DONE — `distanceConvexConvex()` via GJK                              |
+| ~~Ray-convex intersection~~            | ~~Medium~~ | ✅ DONE — GJK-based point-in-convex + binary search                     |
+| Benchmark results log updates          | High       | Run structured suite, capture JSON, update `benchmark_results.md` gates |
+| Raycast edge-case expansion (optional) | Medium     | Add grazing/origin-inside cases if needed for coverage                  |
+| Visual verification tool               | Low        | Raylib available in DART, needs visualizer                              |
+| Optimized broad-phase                  | Low        | BVH or spatial hash (current is O(N²))                                  |
+| DART integration                       | Deferred   | Wait for feature parity                                                 |
 
 ## How to Resume
 
