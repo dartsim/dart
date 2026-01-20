@@ -37,8 +37,9 @@
 #include <benchmark/benchmark.h>
 
 #include <atomic>
-#include <cmath>
 #include <thread>
+
+#include <cmath>
 
 namespace compute = dart::simulation::experimental::compute;
 
@@ -61,9 +62,8 @@ compute::ComputeGraph buildLinearChain(int nodeCount, int workMicroseconds)
   compute::ComputeNode* prev = nullptr;
   for (int i = 0; i < nodeCount; ++i) {
     auto& node = graph.addNode(
-        "node_" + std::to_string(i), [workMicroseconds]() {
-          simulateWork(workMicroseconds);
-        });
+        "node_" + std::to_string(i),
+        [workMicroseconds]() { simulateWork(workMicroseconds); });
     if (prev) {
       graph.addDependency(*prev, node);
     }
@@ -82,9 +82,8 @@ compute::ComputeGraph buildParallelFanOut(int nodeCount, int workMicroseconds)
 
   for (int i = 0; i < nodeCount; ++i) {
     auto& node = graph.addNode(
-        "worker_" + std::to_string(i), [workMicroseconds]() {
-          simulateWork(workMicroseconds);
-        });
+        "worker_" + std::to_string(i),
+        [workMicroseconds]() { simulateWork(workMicroseconds); });
     graph.addDependency(start, node);
     graph.addDependency(node, end);
   }
@@ -97,10 +96,8 @@ compute::ComputeGraph buildDiamond(int width, int depth, int workMicroseconds)
   compute::ComputeGraph graph;
 
   std::vector<compute::ComputeNode*> prevLayer;
-  prevLayer.push_back(
-      &graph.addNode("start", [workMicroseconds]() {
-        simulateWork(workMicroseconds);
-      }));
+  prevLayer.push_back(&graph.addNode(
+      "start", [workMicroseconds]() { simulateWork(workMicroseconds); }));
 
   for (int d = 0; d < depth; ++d) {
     std::vector<compute::ComputeNode*> currentLayer;
@@ -117,9 +114,8 @@ compute::ComputeGraph buildDiamond(int width, int depth, int workMicroseconds)
     prevLayer = currentLayer;
   }
 
-  auto& end = graph.addNode("end", [workMicroseconds]() {
-    simulateWork(workMicroseconds);
-  });
+  auto& end = graph.addNode(
+      "end", [workMicroseconds]() { simulateWork(workMicroseconds); });
   for (auto* prev : prevLayer) {
     graph.addDependency(*prev, end);
   }
