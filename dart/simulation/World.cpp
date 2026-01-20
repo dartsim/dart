@@ -50,6 +50,7 @@
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/simulation/compute_graph/world_step_graph.hpp"
 
 #include <iostream>
 #include <string>
@@ -182,6 +183,7 @@ World::World(const WorldConfig& config)
     mTimeStep(0.001),
     mTime(0.0),
     mFrame(0),
+    mGraphExecutionConfig(config.graphExecution),
     mRecording(new Recording(mSkeletons)),
     onNameChanged(mNameChangedSignal)
 {
@@ -215,6 +217,7 @@ WorldPtr World::clone() const
 
   worldClone->setGravity(mGravity);
   worldClone->setTimeStep(mTimeStep);
+  worldClone->setGraphExecutionConfig(mGraphExecutionConfig);
 
   auto cd = getConstraintSolver()->getCollisionDetector();
   if (cd) {
@@ -265,12 +268,27 @@ void World::setTimeStep(double _timeStep)
   mConstraintSolver->setTimeStep(_timeStep);
   for (auto& skel : mSkeletons)
     skel->setTimeStep(_timeStep);
+  mGraphDirty = true;
 }
 
 //==============================================================================
 double World::getTimeStep() const
 {
   return mTimeStep;
+}
+
+//==============================================================================
+void World::setGraphExecutionConfig(const GraphExecutionConfig& config)
+{
+  mGraphExecutionConfig = config;
+  mWorldStepGraph.reset();
+  mGraphDirty = true;
+}
+
+//==============================================================================
+const GraphExecutionConfig& World::getGraphExecutionConfig() const
+{
+  return mGraphExecutionConfig;
 }
 
 //==============================================================================
@@ -293,6 +311,25 @@ void World::reset()
 void World::step(bool _resetCommand)
 {
   DART_PROFILE_FRAME;
+
+  if (mGraphExecutionConfig.enableComputeGraph) {
+    ExecutorConfig executorConfig;
+    executorConfig.numWorkers = mGraphExecutionConfig.numWorkers;
+    executorConfig.forceSequential = mGraphExecutionConfig.forceSequential;
+    executorConfig.batchSize = mGraphExecutionConfig.batchSize;
+    executorConfig.enableProfiling = mGraphExecutionConfig.enableProfiling;
+
+    if (!mWorldStepGraph) {
+      mWorldStepGraph = std::make_unique<WorldStepGraph>(*this, executorConfig);
+      mGraphDirty = false;
+    } else if (mGraphDirty) {
+      mWorldStepGraph->rebuild();
+      mGraphDirty = false;
+    }
+
+    mWorldStepGraph->step(_resetCommand);
+    return;
+  }
 
   // Integrate velocity for unconstrained skeletons
   {
@@ -463,6 +500,7 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 
   // Update recording
   mRecording->updateNumGenCoords(mSkeletons);
+  mGraphDirty = true;
 
   return _skeleton->getName();
 }
@@ -513,6 +551,7 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 
   // Remove from the pointer map
   mMapForSkeletons.erase(_skeleton);
+  mGraphDirty = true;
 }
 
 //==============================================================================
@@ -783,6 +822,7 @@ void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
 
   mConstraintSolver = std::move(solver);
   mConstraintSolver->setTimeStep(mTimeStep);
+  mGraphDirty = true;
 }
 
 //==============================================================================

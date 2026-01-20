@@ -32,6 +32,7 @@
 
 #include "dart/simulation/compute_graph/graph_executor.hpp"
 
+#include "dart/common/Profile.hpp"
 #include "dart/simulation/compute_graph/taskflow_executor.hpp"
 
 #include <chrono>
@@ -42,9 +43,14 @@ namespace dart::simulation {
 GraphExecutorPtr GraphExecutor::create(const ExecutorConfig& config)
 {
   if (config.forceSequential || config.numWorkers == 1) {
-    return std::make_shared<SequentialExecutor>();
+    return std::make_shared<SequentialExecutor>(config);
   }
   return std::make_shared<TaskflowExecutor>(config);
+}
+
+SequentialExecutor::SequentialExecutor(const ExecutorConfig& config)
+  : mConfig(config)
+{
 }
 
 void SequentialExecutor::execute(
@@ -54,10 +60,40 @@ void SequentialExecutor::execute(
     return;
   }
 
+  const bool enableProfiling = mConfig.enableProfiling;
+  const auto onNodeComplete = mConfig.onNodeComplete;
+  const bool reportTiming = static_cast<bool>(onNodeComplete);
+
   for (NodeId nodeId : graph.getTopologicalOrder()) {
     auto node = graph.getNode(nodeId);
     if (node) {
-      node->execute(ctx);
+      if (enableProfiling || reportTiming) {
+        auto start = std::chrono::steady_clock::time_point{};
+        if (reportTiming) {
+          start = std::chrono::steady_clock::now();
+        }
+
+        if (enableProfiling) {
+#if defined(DART_PROFILE_HAS_TRACY) && DART_PROFILE_HAS_TRACY
+          ZoneScoped;
+          const auto& name = node->getName();
+          ZoneName(name.c_str(), name.size());
+#endif
+          DART_PROFILE_TEXT_SCOPED(node->getName());
+          node->execute(ctx);
+        } else {
+          node->execute(ctx);
+        }
+
+        if (reportTiming) {
+          const auto end = std::chrono::steady_clock::now();
+          const auto elapsedMs
+              = std::chrono::duration<double, std::milli>(end - start).count();
+          onNodeComplete(nodeId, elapsedMs);
+        }
+      } else {
+        node->execute(ctx);
+      }
     }
   }
 }

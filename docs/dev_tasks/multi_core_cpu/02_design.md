@@ -196,8 +196,11 @@ Determinism is guaranteed by:
 
 ```cpp
 struct GraphExecutionConfig {
+  bool enableComputeGraph{false};
   std::size_t numWorkers{0};  // 0 = auto, 1 = sequential
   bool forceSequential{false};
+  std::size_t batchSize{0};   // 0 = auto, 1 = per-skeleton
+  bool enableProfiling{false};
 };
 ```
 

@@ -203,6 +203,8 @@ endif()
 if(Taskflow_FOUND)
   dart_add_test("unit" UNIT_simulation_compute_graph simulation/compute_graph/test_compute_graph.cpp)
   target_link_libraries(UNIT_simulation_compute_graph dart)
+  dart_add_test("unit" UNIT_simulation_compute_graph_world_step_graph simulation/compute_graph/test_world_step_graph.cpp)
+  target_link_libraries(UNIT_simulation_compute_graph_world_step_graph dart)
 endif()
 
 # ==============================================================================

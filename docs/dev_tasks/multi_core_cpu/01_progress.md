@@ -2,9 +2,9 @@
 
 ## Current Status
 
-**Phase**: 1 (Core Infrastructure)
+**Phase**: 2 (World Integration)
 **Status**: Complete
-**Last Updated**: 2025-01-19
+**Last Updated**: 2026-01-19
 
 ## Completed Tasks
 
@@ -35,21 +35,27 @@
 - [x] Verified build passes: `pixi run build`
 - [x] Verified tests pass: `ctest -R compute_graph` (8/8 passed)
 
-## Next Steps (Phase 2)
+### Session 3: Phase 2 Integration and Profiling
 
-1. **Integration with World::step()**
-   - Add configuration flag to World to use graph-based stepping
-   - Wire WorldStepGraph into World::step() when enabled
+- [x] Integrated compute graph into `World::step()` via configuration flag
+- [x] Added batching support for skeleton nodes in `WorldStepGraph`
+- [x] Added profiling hooks (Tracy/text + callbacks) to graph executors
+- [x] Added graph rebuild triggers for skeleton/time step/solver changes
+- [x] Added unit tests for WorldStepGraph integration and batching
 
-2. **Performance Optimization**
-   - Profile with Tracy to identify bottlenecks
-   - Implement batch skeleton operations
-   - Consider SIMD optimizations
+## Next Steps (Phase 3)
 
-3. **Testing**
-   - Add integration tests with actual physics scenarios
-   - Compare numerical results between sequential and parallel execution
-   - Add stress tests with many skeletons
+1. **GPU Acceleration**
+   - Implement CUDA/OpenCL compute nodes
+   - Add device selection/configuration API
+
+2. **Distributed Execution**
+   - Prototype multi-process graph executor
+   - Define serialization format for graph state
+
+3. **Dynamic Graph Restructuring**
+   - Add workload-aware graph rebuilding heuristics
+   - Support incremental updates when skeletons are added/removed
 
 ## Known Issues
 
@@ -98,4 +104,20 @@ tests/unit/CMakeLists.txt               # Added compute_graph test
 tests/benchmark/simulation/             # NEW location
 └── bm_compute_graph.cpp
 tests/benchmark/CMakeLists.txt          # Added bm_compute_graph
+```
+
+## Files Changed (Session 3)
+
+```
+dart/simulation/compute_graph/fwd.hpp
+dart/simulation/compute_graph/graph_executor.hpp
+dart/simulation/compute_graph/graph_executor.cpp
+dart/simulation/compute_graph/taskflow_executor.cpp
+dart/simulation/compute_graph/world_step_graph.hpp
+dart/simulation/compute_graph/world_step_graph.cpp
+dart/simulation/World.hpp
+dart/simulation/World.cpp
+
+tests/unit/simulation/compute_graph/test_world_step_graph.cpp
+tests/unit/CMakeLists.txt
 ```

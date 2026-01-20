@@ -35,9 +35,13 @@
 #include <dart/simulation/compute_graph/compute_graph.hpp>
 #include <dart/simulation/compute_graph/graph_executor.hpp>
 
+#include <vector>
+
 namespace dart::simulation {
 class World;
-}
+class IntegratePositionsNode;
+class BatchIntegratePositionsNode;
+} // namespace dart::simulation
 
 namespace dart::simulation {
 
@@ -74,11 +78,14 @@ public:
 
 private:
   void buildGraph();
+  [[nodiscard]] std::size_t resolveBatchSize(std::size_t skeletonCount) const;
 
   World& mWorld;
   ComputeGraphPtr mGraph;
   GraphExecutorPtr mExecutor;
-  bool mResetCommand{true};
+  ExecutorConfig mConfig;
+  std::vector<IntegratePositionsNode*> mIntegrateNodes;
+  std::vector<BatchIntegratePositionsNode*> mBatchIntegrateNodes;
 };
 
 } // namespace dart::simulation

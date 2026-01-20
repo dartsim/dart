@@ -69,6 +69,8 @@
 namespace dart {
 namespace simulation {
 
+class WorldStepGraph;
+
 /// Available collision detector backends for a World.
 enum class CollisionDetectorType
 {
@@ -81,6 +83,9 @@ enum class CollisionDetectorType
 /// Configuration for compute graph execution (experimental).
 struct GraphExecutionConfig final
 {
+  /// Enable compute graph stepping inside World::step().
+  bool enableComputeGraph{false};
+
   /// Number of worker threads for parallel execution.
   /// - 0: Use hardware concurrency (auto-detect)
   /// - 1: Single-threaded sequential execution
@@ -90,6 +95,12 @@ struct GraphExecutionConfig final
   /// Force sequential execution regardless of numWorkers.
   /// Useful for debugging and determinism verification.
   bool forceSequential{false};
+
+  /// Skeletons per batch node (see ExecutorConfig::batchSize).
+  std::size_t batchSize{0};
+
+  /// Enable per-node profiling in the graph executor.
+  bool enableProfiling{false};
 };
 
 /// Configuration bundle used when constructing a World.
@@ -171,6 +182,12 @@ public:
 
   /// Get time step
   double getTimeStep() const;
+
+  /// Configure compute-graph based stepping.
+  void setGraphExecutionConfig(const GraphExecutionConfig& config);
+
+  /// Get the compute-graph execution configuration.
+  const GraphExecutionConfig& getGraphExecutionConfig() const;
 
   //--------------------------------------------------------------------------
   // Structural Properties
@@ -413,6 +430,8 @@ public:
   /// \}
 
 protected:
+  friend class WorldStepGraph;
+
   /// Register when a Skeleton's name is changed
   void handleSkeletonNameChange(
       const dynamics::ConstMetaSkeletonPtr& _skeleton);
@@ -470,6 +489,15 @@ protected:
 
   /// Current simulation frame number
   int mFrame;
+
+  /// Compute graph configuration for stepping.
+  GraphExecutionConfig mGraphExecutionConfig;
+
+  /// Cached compute graph wrapper (built on demand).
+  std::unique_ptr<WorldStepGraph> mWorldStepGraph;
+
+  /// Whether the cached graph needs rebuilding.
+  bool mGraphDirty{true};
 
   /// Constraint solver
   std::unique_ptr<constraint::ConstraintSolver> mConstraintSolver;

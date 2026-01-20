@@ -4,7 +4,7 @@
 
 This task implements parallel execution support for DART's simulation loop using a compute-graph abstraction backed by [Taskflow](https://taskflow.github.io/).
 
-**Status**: Phase 1 Complete (Core Infrastructure)
+**Status**: Phase 2 Complete (World Integration, Batching, Profiling)
 
 ## Goal
 
@@ -33,7 +33,7 @@ dart/simulation/compute_graph/
 
 ### Key Design Decisions
 
-1. **External wrapper approach**: `WorldStepGraph` wraps `dart::simulation::World` rather than modifying `World::step()` directly. This allows A/B testing and keeps the code isolated.
+1. **Wrapper-backed integration**: `WorldStepGraph` wraps `dart::simulation::World`, and `World::step()` delegates to it when enabled, keeping the sequential path intact for A/B testing.
 
 2. **Graph structure** (per step):
    - Phase 1: ForwardDynamics nodes (parallel per skeleton)
@@ -52,14 +52,20 @@ dart/simulation/compute_graph/
 
 ## Files Modified
 
-| File                               | Change                                     |
-| ---------------------------------- | ------------------------------------------ |
-| `cmake/DARTFindDependencies.cmake` | Added Taskflow find_package                |
-| `dart/CMakeLists.txt`              | Added Taskflow link and DART_HAVE_TASKFLOW |
-| `dart/simulation/CMakeLists.txt`   | Added compute_graph sources                |
-| `dart/simulation/World.hpp`        | Added GraphExecutionConfig struct          |
-| `tests/unit/CMakeLists.txt`        | Added compute_graph tests                  |
-| `tests/benchmark/CMakeLists.txt`   | Added bm_compute_graph                     |
+| File                                                            | Change                                     |
+| --------------------------------------------------------------- | ------------------------------------------ |
+| `cmake/DARTFindDependencies.cmake`                              | Added Taskflow find_package                |
+| `dart/CMakeLists.txt`                                           | Added Taskflow link and DART_HAVE_TASKFLOW |
+| `dart/simulation/CMakeLists.txt`                                | Added compute_graph sources                |
+| `dart/simulation/World.hpp`                                     | Added GraphExecutionConfig struct          |
+| `dart/simulation/World.cpp`                                     | Graph-backed World::step integration       |
+| `dart/simulation/compute_graph/fwd.hpp`                         | Added batching config for executors        |
+| `dart/simulation/compute_graph/graph_executor.hpp/cpp`          | Profiling hooks + config plumbing          |
+| `dart/simulation/compute_graph/taskflow_executor.cpp`           | Profiling hooks                            |
+| `dart/simulation/compute_graph/world_step_graph.hpp/cpp`        | Batching + time/frame updates              |
+| `tests/unit/CMakeLists.txt`                                     | Added compute_graph tests                  |
+| `tests/unit/simulation/compute_graph/test_world_step_graph.cpp` | WorldStepGraph tests                       |
+| `tests/benchmark/CMakeLists.txt`                                | Added bm_compute_graph                     |
 
 ## Usage
 
@@ -83,9 +89,24 @@ stepGraph.step();
 dart::simulation::ExecutorConfig config;
 config.numWorkers = 4;           // 0 = auto, 1 = sequential
 config.forceSequential = false;  // Force sequential for debugging
+config.batchSize = 4;            // 0 = auto, 1 = per-skeleton
 config.enableProfiling = true;   // Enable node timing
 
 dart::simulation::WorldStepGraph stepGraph(*world, config);
+```
+
+### World::step() Integration
+
+```cpp
+dart::simulation::WorldConfig config;
+config.graphExecution.enableComputeGraph = true;
+config.graphExecution.numWorkers = 4;
+config.graphExecution.batchSize = 4;
+config.graphExecution.enableProfiling = true;
+
+auto world = dart::simulation::World::create(config);
+// ... add skeletons ...
+world->step();  // Uses compute graph when enabled
 ```
 
 ## Testing
@@ -115,15 +136,15 @@ pixi run build
 - [x] Unit tests
 - [x] Benchmarks
 
-### Phase 2 (Planned)
+### Phase 2 (Complete)
 
-- [ ] Integration with World::step() via configuration flag
-- [ ] Batch skeleton operations for better parallelism
-- [ ] SIMD-optimized node implementations
-- [ ] Profiling integration with Tracy
+- [x] Integration with World::step() via configuration flag
+- [x] Batch skeleton operations for better parallelism
+- [x] Profiling integration with Tracy
 
 ### Phase 3 (Planned)
 
+- [ ] SIMD-optimized node implementations
 - [ ] GPU acceleration via CUDA/OpenCL nodes
 - [ ] Distributed execution support
 - [ ] Dynamic graph restructuring based on workload

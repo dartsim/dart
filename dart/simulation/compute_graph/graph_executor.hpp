@@ -66,6 +66,8 @@ public:
 class DART_API SequentialExecutor : public GraphExecutor
 {
 public:
+  explicit SequentialExecutor(const ExecutorConfig& config = {});
+
   void execute(ComputeGraph& graph, const ExecutionContext& ctx) override;
 
   std::future<void> executeAsync(
@@ -77,6 +79,9 @@ public:
   }
 
   void waitAll() override {}
+
+private:
+  ExecutorConfig mConfig;
 };
 
 } // namespace dart::simulation

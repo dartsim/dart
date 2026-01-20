@@ -32,6 +32,8 @@
 
 #include "dart/simulation/compute_graph/taskflow_executor.hpp"
 
+#include "dart/common/Profile.hpp"
+
 #include <chrono>
 #include <thread>
 #include <unordered_map>
@@ -88,10 +90,43 @@ void TaskflowExecutor::buildAndExecute(
 
   tf::Taskflow taskflow;
   std::unordered_map<NodeId, tf::Task> taskMap;
+  const bool enableProfiling = mConfig.enableProfiling;
+  const auto onNodeComplete = mConfig.onNodeComplete;
+  const bool reportTiming = static_cast<bool>(onNodeComplete);
 
   for (const auto& node : graph.getNodes()) {
     NodeId nodeId = node->getId();
-    auto task = taskflow.emplace([node, &ctx]() { node->execute(ctx); });
+    auto task = taskflow.emplace(
+        [node, &ctx, enableProfiling, reportTiming, onNodeComplete]() {
+          if (enableProfiling || reportTiming) {
+            auto start = std::chrono::steady_clock::time_point{};
+            if (reportTiming) {
+              start = std::chrono::steady_clock::now();
+            }
+
+            if (enableProfiling) {
+#if defined(DART_PROFILE_HAS_TRACY) && DART_PROFILE_HAS_TRACY
+              ZoneScoped;
+              const auto& name = node->getName();
+              ZoneName(name.c_str(), name.size());
+#endif
+              DART_PROFILE_TEXT_SCOPED(node->getName());
+              node->execute(ctx);
+            } else {
+              node->execute(ctx);
+            }
+
+            if (reportTiming) {
+              const auto end = std::chrono::steady_clock::now();
+              const auto elapsedMs
+                  = std::chrono::duration<double, std::milli>(end - start)
+                        .count();
+              onNodeComplete(node->getId(), elapsedMs);
+            }
+          } else {
+            node->execute(ctx);
+          }
+        });
     task.name(node->getName());
     taskMap[nodeId] = task;
   }

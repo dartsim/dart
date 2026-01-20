@@ -97,6 +97,12 @@ struct DART_API ExecutorConfig
   /// Useful for debugging and determinism verification
   bool forceSequential{false};
 
+  /// Skeletons per batch node for WorldStepGraph.
+  /// - 0: Auto (heuristic based on worker count)
+  /// - 1: Disable batching (one node per skeleton)
+  /// - N: Group up to N skeletons per batch node
+  std::size_t batchSize{0};
+
   /// Enable profiling/tracing of node execution
   bool enableProfiling{false};
 
