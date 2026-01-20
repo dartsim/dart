@@ -67,4 +67,12 @@ DART_COLLISION_EXPERIMENTAL_API bool collideConvexConvex(
     CollisionResult& result,
     const CollisionOption& option);
 
+DART_COLLISION_EXPERIMENTAL_API double distanceConvexConvex(
+    const Shape& shape1,
+    const Eigen::Isometry3d& tf1,
+    const Shape& shape2,
+    const Eigen::Isometry3d& tf2,
+    DistanceResult& result,
+    const DistanceOption& option);
+
 }

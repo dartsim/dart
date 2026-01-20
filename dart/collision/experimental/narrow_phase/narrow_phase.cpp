@@ -366,6 +366,11 @@ double NarrowPhase::distance(
     return d;
   }
 
+  if (type1 == ShapeType::Convex || type1 == ShapeType::Mesh
+      || type2 == ShapeType::Convex || type2 == ShapeType::Mesh) {
+    return distanceConvexConvex(*shape1, tf1, *shape2, tf2, result, option);
+  }
+
   return std::numeric_limits<double>::max();
 }
 
@@ -390,6 +395,10 @@ bool NarrowPhase::isDistanceSupported(ShapeType type1, ShapeType type2)
   }
   if ((type1 == ShapeType::Capsule && type2 == ShapeType::Box)
       || (type1 == ShapeType::Box && type2 == ShapeType::Capsule)) {
+    return true;
+  }
+  if (type1 == ShapeType::Convex || type1 == ShapeType::Mesh
+      || type2 == ShapeType::Convex || type2 == ShapeType::Mesh) {
     return true;
   }
   return false;

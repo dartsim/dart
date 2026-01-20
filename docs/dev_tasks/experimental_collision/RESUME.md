@@ -2,9 +2,9 @@
 
 ## Current State (2026-01-19)
 
-**Branch**: `feature/new_coll` — all changes committed
+**Branch**: `feature/new_coll` — uncommitted changes for GJK-based distance
 
-**Tests**: 263 passing across 16 test files
+**Tests**: 285 passing across 17 test files
 
 **Performance**: VALIDATED — 5-40x faster than FCL/Bullet/ODE in narrow-phase
 
@@ -21,8 +21,8 @@
 | Capsule collision (all pairs) | ✅ | 14 tests |
 | Cylinder collision (all pairs) | ✅ | 18 tests |
 | Plane collision (all pairs) | ✅ | 11 tests |
-| Distance queries (6 pairs) | ✅ | 14 tests |
-| Raycast (5 shapes) | ✅ | 24 tests |
+| Distance queries (6 pairs + Convex/Mesh) | ✅ | 18 tests |
+| Raycast (6 shapes incl. Mesh) | ✅ | 32 tests |
 | Brute-force broad-phase | ✅ | 15 tests |
 | CollisionObject (ECS handle) | ✅ | 12 tests |
 | NarrowPhase dispatcher | ✅ | 7 tests |
@@ -31,6 +31,9 @@
 | **GJK/EPA Algorithm** | ✅ | 15 tests |
 | **ConvexShape** | ✅ | 5 tests |
 | **MeshShape** | ✅ | 4 tests |
+| **GJK-based Convex/Mesh Collision** | ✅ | 10 tests |
+| **Ray-Mesh Intersection** | ✅ | 8 tests (Moller-Trumbore) |
+| **GJK-based Distance (Convex/Mesh)** | ✅ | 4 tests |
 | Comparative benchmarks vs FCL/Bullet/ODE | ✅ | `bm_comparative.cpp` |
 | Accuracy verification | ✅ | Matches FCL within tolerance |
 
@@ -68,8 +71,10 @@ CollisionObject (handle) = entt::entity + CollisionWorld*
 
 | Component | Priority | Notes |
 |-----------|----------|-------|
-| GJK-based mesh-primitive collision | Medium | Wire GJK into NarrowPhase for Convex/Mesh shapes |
-| Ray-mesh intersection | Medium | After mesh collision |
+| ~~GJK-based mesh-primitive collision~~ | ~~Medium~~ | ✅ DONE — `collideConvexConvex()` via GJK |
+| ~~Ray-mesh intersection~~ | ~~Medium~~ | ✅ DONE — Moller-Trumbore algorithm |
+| ~~Distance for Convex/Mesh~~ | ~~Medium~~ | ✅ DONE — `distanceConvexConvex()` via GJK |
+| Ray-convex intersection | Medium | Use support function for ConvexShape |
 | Visual verification tool | Low | Raylib available in DART, needs visualizer |
 | Optimized broad-phase | Low | BVH or spatial hash (current is O(N²)) |
 | DART integration | Deferred | Wait for feature parity |
@@ -99,10 +104,13 @@ for t in bin/test_*; do $t 2>&1 | tail -1; done
 |------|---------|
 | `dart/collision/experimental/shapes/shape.hpp` | All shape classes including ConvexShape and MeshShape |
 | `dart/collision/experimental/narrow_phase/gjk.hpp` | GJK/EPA algorithm |
+| `dart/collision/experimental/narrow_phase/convex_convex.hpp` | Support functions + GJK collision dispatch |
+| `dart/collision/experimental/narrow_phase/raycast.hpp` | Raycast for all shapes including Mesh |
 | `dart/collision/experimental/collision_world.hpp` | ECS-based world with registry |
 | `dart/collision/experimental/collision_object.hpp` | Lightweight handle class |
 | `tests/unit/collision/experimental/test_gjk.cpp` | GJK tests |
-| `tests/unit/collision/experimental/test_shapes.cpp` | Shape tests including Convex/Mesh |
+| `tests/unit/collision/experimental/test_convex.cpp` | Convex/Mesh collision tests |
+| `tests/unit/collision/experimental/test_raycast.cpp` | Raycast tests including mesh (32 tests) |
 
 ## Key Constraints
 
@@ -114,15 +122,23 @@ for t in bin/test_*; do $t 2>&1 | tail -1; done
 6. **BoxShape** — API takes half-extents, stores half-extents internally
 7. **Handle-based API** — CollisionObject is copyable, cheap to pass by value
 
+## Reference Implementations
+
+| Library | Path | Algorithms |
+|---------|------|------------|
+| **libccd** | `/home/js/dev/physics/libccd` | GJK, EPA, MPR (C style, port to C++20) |
+| **FCL** | `/home/js/dev/physics/fcl` | BVH mesh-mesh, distance, broad-phase |
+| **Bullet3** | `/home/js/dev/physics/bullet3` | Battle-tested collision (legacy) |
+| **ODE** | `/home/js/dev/physics/ODE` | Battle-tested collision (legacy) |
+
 ## Suggested Next Steps
 
-1. **Wire GJK into NarrowPhase** — Add Convex/Mesh collision using GJK
-   - Add cases to `NarrowPhase::collide()` for ConvexShape and MeshShape
-   - Use EPA for penetration depth on intersection
+1. **Ray-convex intersection** — Use ConvexShape::support() for raycast
+   - Use GJK-based ray-convex intersection
+   - Add to `NarrowPhase::raycast()` dispatcher
 
-2. **Ray-mesh intersection** — Moller-Trumbore algorithm
-   - Iterate triangles, find first hit
-   - Add to raycast dispatcher
+2. **BVH broad-phase** — Reference FCL for spatial acceleration
+   - Replace brute-force O(N²) with BVH
 
 3. **Visual verification** (optional)
    - Use `DART_BUILD_GUI_RAYLIB=ON`
@@ -131,9 +147,10 @@ for t in bin/test_*; do $t 2>&1 | tail -1; done
 ## Commit History (Recent)
 
 ```
+<pending>    feat(collision): add GJK-based distance for Convex/Mesh shapes
+df120cf8143 feat(collision): add raycast support for MeshShape
+ca999c52db4 feat(collision): wire GJK into NarrowPhase for convex/mesh collision
 c31920a83bc feat(collision): add ConvexShape, MeshShape, and GJK/EPA algorithm
-8fbc3fee5e0 docs(collision): update RESUME.md with ECS completion status
 86891abfadd feat(collision): refactor to ECS architecture with raycast support
-0d6273a1832 docs(collision): update RESUME.md for fresh agent session resumption
 f9b0b00bb56 perf(collision): add comparative benchmarks against FCL/Bullet/ODE
 ```

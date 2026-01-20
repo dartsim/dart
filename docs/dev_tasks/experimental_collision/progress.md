@@ -21,7 +21,7 @@
 
 ---
 
-## Completed Components (263 tests)
+## Completed Components (285 tests)
 
 | Component                        | Files                                   | Tests | Notes                           |
 | -------------------------------- | --------------------------------------- | ----- | ------------------------------- |
@@ -36,8 +36,8 @@
 | Capsule collision                | narrow_phase/capsule_*.hpp/.cpp         | 14    | All capsule pairs               |
 | Cylinder collision               | narrow_phase/cylinder_collision.hpp/.cpp| 18    | All cylinder pairs              |
 | Plane collision                  | narrow_phase/plane_sphere.hpp/.cpp      | 11    | All plane pairs                 |
-| Distance queries                 | narrow_phase/distance.hpp/.cpp          | 14    | 6 shape pairs                   |
-| Raycast                          | narrow_phase/raycast.hpp/.cpp           | 24    | All 5 shape types               |
+| Distance queries                 | narrow_phase/distance.hpp/.cpp          | 18    | 6 primitive pairs + Convex/Mesh |
+| Raycast                          | narrow_phase/raycast.hpp/.cpp           | 32    | 6 shape types incl. Mesh        |
 | BruteForceBroadPhase             | broad_phase/brute_force.hpp/.cpp        | 15    | O(n²) broad-phase               |
 | CollisionObject                  | collision_object.hpp/.cpp               | 12    | Lightweight ECS handle          |
 | NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp      | 7     | Shape-type dispatch             |
@@ -74,18 +74,21 @@
 | Cylinder-plane    | **Complete** | -     | Included in cylinder tests   |
 | Mesh-primitive    | Pending      |       | GJK/EPA based                |
 
-### Priority 3: Distance Queries ✅ COMPLETE (6 pairs)
+### Priority 3: Distance Queries ✅ COMPLETE (6 primitive pairs + Convex/Mesh)
 
 | Query Type           | Status       | Notes                    |
 | -------------------- | ------------ | ------------------------ |
-| Sphere-sphere dist   | **Complete** | 14 tests total           |
+| Sphere-sphere dist   | **Complete** | 18 tests total           |
 | Sphere-box dist      | **Complete** | Included in distance     |
 | Box-box dist         | **Complete** | Included in distance     |
 | Capsule-capsule dist | **Complete** | Included in distance     |
 | Capsule-sphere dist  | **Complete** | Included in distance     |
 | Capsule-box dist     | **Complete** | Included in distance     |
+| Convex-Convex dist   | **Complete** | GJK-based, 4 tests       |
+| Convex-Mesh dist     | **Complete** | GJK-based                |
+| Mesh-Mesh dist       | **Complete** | GJK-based                |
 
-### Priority 4: Raycast ✅ COMPLETE (5 primitives)
+### Priority 4: Raycast ✅ COMPLETE (6 shapes)
 
 | Feature      | Status       | Tests | Notes                    |
 | ------------ | ------------ | ----- | ------------------------ |
@@ -94,7 +97,7 @@
 | Ray-capsule  | **Complete** | 3     | Cylindrical + spherical caps |
 | Ray-cylinder | **Complete** | 4     | Curved surface + caps    |
 | Ray-plane    | **Complete** | 6     | Backface culling, offset |
-| Ray-mesh     | Pending      | -     | Future: GJK/EPA based    |
+| Ray-mesh     | **Complete** | 8     | Moller-Trumbore algorithm |
 
 **CollisionWorld raycast API:**
 - `raycast(ray, option, result)` - Returns closest hit

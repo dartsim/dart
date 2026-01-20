@@ -32,12 +32,14 @@
 
 #include <dart/collision/experimental/narrow_phase/convex_convex.hpp>
 
+#include <limits>
+
 namespace dart::collision::experimental {
 
 SupportFunction makeConvexSupportFunction(
     const ConvexShape& shape, const Eigen::Isometry3d& transform)
 {
-  return [&shape, &transform](const Eigen::Vector3d& dir) -> Eigen::Vector3d {
+  return [&shape, transform](const Eigen::Vector3d& dir) -> Eigen::Vector3d {
     Eigen::Vector3d localDir = transform.linear().transpose() * dir;
     Eigen::Vector3d localSupport = shape.support(localDir);
     return transform * localSupport;
@@ -47,7 +49,7 @@ SupportFunction makeConvexSupportFunction(
 SupportFunction makeMeshSupportFunction(
     const MeshShape& shape, const Eigen::Isometry3d& transform)
 {
-  return [&shape, &transform](const Eigen::Vector3d& dir) -> Eigen::Vector3d {
+  return [&shape, transform](const Eigen::Vector3d& dir) -> Eigen::Vector3d {
     Eigen::Vector3d localDir = transform.linear().transpose() * dir;
     Eigen::Vector3d localSupport = shape.support(localDir);
     return transform * localSupport;
@@ -72,7 +74,7 @@ SupportFunction makeBoxSupportFunction(
     const BoxShape& shape, const Eigen::Isometry3d& transform)
 {
   Eigen::Vector3d halfExtents = shape.getHalfExtents();
-  return [halfExtents, &transform](const Eigen::Vector3d& dir) -> Eigen::Vector3d {
+  return [halfExtents, transform](const Eigen::Vector3d& dir) -> Eigen::Vector3d {
     Eigen::Vector3d localDir = transform.linear().transpose() * dir;
     Eigen::Vector3d localSupport;
     localSupport.x() = (localDir.x() >= 0) ? halfExtents.x() : -halfExtents.x();
@@ -87,7 +89,7 @@ SupportFunction makeCapsuleSupportFunction(
 {
   double radius = shape.getRadius();
   double halfHeight = shape.getHeight() / 2.0;
-  return [radius, halfHeight, &transform](
+  return [radius, halfHeight, transform](
              const Eigen::Vector3d& dir) -> Eigen::Vector3d {
     Eigen::Vector3d localDir = transform.linear().transpose() * dir;
     double len = localDir.norm();
@@ -108,7 +110,7 @@ SupportFunction makeCylinderSupportFunction(
 {
   double radius = shape.getRadius();
   double halfHeight = shape.getHeight() / 2.0;
-  return [radius, halfHeight, &transform](
+  return [radius, halfHeight, transform](
              const Eigen::Vector3d& dir) -> Eigen::Vector3d {
     Eigen::Vector3d localDir = transform.linear().transpose() * dir;
     Eigen::Vector3d localSupport;
@@ -189,6 +191,61 @@ bool collideConvexConvex(
 
   result.addContact(contact);
   return true;
+}
+
+double distanceConvexConvex(
+    const Shape& shape1,
+    const Eigen::Isometry3d& tf1,
+    const Shape& shape2,
+    const Eigen::Isometry3d& tf2,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  auto supportA = makeSupportFunction(shape1, tf1);
+  auto supportB = makeSupportFunction(shape2, tf2);
+
+  Eigen::Vector3d initialDir = tf2.translation() - tf1.translation();
+  if (initialDir.squaredNorm() < 1e-10) {
+    initialDir = Eigen::Vector3d::UnitX();
+  }
+
+  GjkResult gjkResult = Gjk::query(supportA, supportB, initialDir);
+
+  if (gjkResult.intersecting) {
+    result.distance = 0.0;
+    result.pointOnObject1 = tf1.translation();
+    result.pointOnObject2 = tf2.translation();
+    result.normal = Eigen::Vector3d::UnitZ();
+    return 0.0;
+  }
+
+  Eigen::Vector3d sepAxis = gjkResult.separationAxis;
+  if (sepAxis.squaredNorm() < 1e-10) {
+    sepAxis = Eigen::Vector3d::UnitX();
+  }
+  sepAxis.normalize();
+
+  Eigen::Vector3d pointA = supportA(sepAxis);
+  Eigen::Vector3d pointB = supportB(-sepAxis);
+
+  double dist = (pointB - pointA).dot(sepAxis);
+  if (dist < 0.0) {
+    dist = -dist;
+    sepAxis = -sepAxis;
+    std::swap(pointA, pointB);
+  }
+
+  if (option.upperBound < dist) {
+    result.distance = std::numeric_limits<double>::max();
+    return std::numeric_limits<double>::max();
+  }
+
+  result.distance = dist;
+  result.pointOnObject1 = pointA;
+  result.pointOnObject2 = pointB;
+  result.normal = sepAxis;
+
+  return dist;
 }
 
 }  // namespace dart::collision::experimental

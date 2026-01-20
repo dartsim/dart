@@ -256,3 +256,85 @@ TEST(NarrowPhaseDistance, BoxSphere)
 
   EXPECT_NEAR(dist, 1.5, 1e-6);
 }
+
+std::vector<Eigen::Vector3d> makeOctahedronVertices(double scale = 1.0)
+{
+  return {
+      {scale, 0, 0},
+      {-scale, 0, 0},
+      {0, scale, 0},
+      {0, -scale, 0},
+      {0, 0, scale},
+      {0, 0, -scale}};
+}
+
+TEST(NarrowPhaseDistance, ConvexConvexSeparated)
+{
+  CollisionWorld world;
+
+  auto obj1 = world.createObject(
+      std::make_unique<ConvexShape>(makeOctahedronVertices(1.0)));
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(5.0, 0, 0);
+  auto obj2 = world.createObject(
+      std::make_unique<ConvexShape>(makeOctahedronVertices(1.0)), tf2);
+
+  DistanceOption option;
+  DistanceResult result;
+
+  double dist = NarrowPhase::distance(obj1, obj2, option, result);
+
+  EXPECT_GT(dist, 2.9);
+  EXPECT_LT(dist, 3.1);
+}
+
+TEST(NarrowPhaseDistance, ConvexSphereSeparated)
+{
+  CollisionWorld world;
+
+  auto obj1 = world.createObject(
+      std::make_unique<ConvexShape>(makeOctahedronVertices(1.0)));
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(5.0, 0, 0);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+
+  DistanceOption option;
+  DistanceResult result;
+
+  double dist = NarrowPhase::distance(obj1, obj2, option, result);
+
+  EXPECT_GT(dist, 2.9);
+  EXPECT_LT(dist, 3.1);
+}
+
+TEST(NarrowPhaseDistance, ConvexIntersecting)
+{
+  CollisionWorld world;
+
+  auto obj1 = world.createObject(
+      std::make_unique<ConvexShape>(makeOctahedronVertices(1.0)));
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(1.0, 0, 0);
+  auto obj2 = world.createObject(
+      std::make_unique<ConvexShape>(makeOctahedronVertices(1.0)), tf2);
+
+  DistanceOption option;
+  DistanceResult result;
+
+  double dist = NarrowPhase::distance(obj1, obj2, option, result);
+
+  EXPECT_NEAR(dist, 0.0, 1e-6);
+}
+
+TEST(NarrowPhaseDistance, IsDistanceSupportedConvex)
+{
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Convex, ShapeType::Convex));
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Convex, ShapeType::Sphere));
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Mesh, ShapeType::Mesh));
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Mesh, ShapeType::Convex));
+}
+
+
