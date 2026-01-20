@@ -29,6 +29,7 @@ If we can't beat existing backends in performance, there's no point in building 
 - [Progress Tracker](./progress.md) - Current status and completed tasks
 - [Parallelization Plan](./parallelization_plan.md) - Multi-core batch collision roadmap
 - [ECS Data Layout](./ecs_data_layout.md) - Batch-friendly data layout and interface notes
+- [ECS Batch Decision Plan](./ecs_batch_decision_plan.md) - Evidence-driven ECS batch plan
 - [ReactPhysics3D ECS Review](./reactphysics3d_ecs_review.md) - ECS data layout and pipeline notes
 - [Reference Comparison](./reference_comparison.md) - FCL/Bullet/ODE feature and algorithm comparison
 - [Conventions](./conventions.md) - Normal/sign conventions and adapter rules

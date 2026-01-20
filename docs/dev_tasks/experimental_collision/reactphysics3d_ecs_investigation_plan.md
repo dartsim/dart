@@ -1,6 +1,6 @@
 # ReactPhysics3D ECS Investigation Plan
 
-Status: in progress (profiling baselines captured; DART comparison pending)
+Status: in progress (baselines captured; DART comparison complete; ECS layout translation in progress)
 Last updated: 2026-01-20
 
 ## Purpose
@@ -40,8 +40,8 @@ strategy, but do not yet prove performance characteristics.
 1. Phase A: Code review of ECS data layout and collision pipeline (done).
 2. Phase B: Profiling baselines for dense/sparse spheres (done).
 3. Phase C: Profiling for mixed shapes + moved objects (pending).
-4. Phase D: DART comparison on matched scenarios (blocked: AABB tree crash).
-5. Phase E: Translate findings into DART ECS data layout plan (pending).
+4. Phase D: DART comparison on matched scenarios (done).
+5. Phase E: Translate findings into DART ECS data layout plan (in progress).
 
 ## Step-by-step profiling plan
 
@@ -78,10 +78,10 @@ strategy, but do not yet prove performance characteristics.
 
 1. Extend profiling to mixed shapes and moved objects (driver changes only after
    benchmark ownership is clear).
-2. Wait for the DART AABB tree crash to be resolved before running the
-   RP3D-aligned pipeline breakdown benchmark (no benchmark code edits here).
-3. Once DART results are available, compare stage ratios and update the
-   ECS data layout plan in `ecs_data_layout.md`.
+2. Use the RP3D-aligned pipeline breakdown results already captured to
+   refine the ECS data layout plan (no benchmark code edits here).
+3. Implement Phase 1 data layout changes and document the decision path in
+   `ecs_batch_decision_plan.md` and `ecs_data_layout.md`.
 
 ## Driver usage (example)
 

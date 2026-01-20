@@ -43,9 +43,8 @@ Status update (2026-01-20):
   (BatchSettings, BatchStats, BroadPhaseSnapshot).
 - Added `CollisionWorld::updateAll`, `buildBroadPhaseSnapshot`,
   and `collideAll` for explicit pipeline staging.
-- Added pipeline breakdown benchmark
-  `tests/benchmark/collision/scenarios/bm_pipeline_breakdown.cpp` with 1k/10k
-  dense/sparse runs and per-stage counters.
+- AABB tree crash fixed; RP3D-aligned pipeline breakdown captured and logged
+  in `benchmark_results.md` and `reactphysics3d_ecs_profile_results.md`.
 
 ## Phase 1: Data Layout and Batch API
 
@@ -160,9 +159,8 @@ Exit criteria:
 
 ## Immediate Next Steps
 
-1. Run RP3D-aligned pipeline breakdown once the AABB tree crash is resolved
-   (dense/sparse sphere-only, 1k/10k).
-2. Compare RP3D profiler baselines against DART results and log in
-   `benchmark_results.md`.
-3. Implement ECS-friendly data layout changes described in
-   `ecs_data_layout.md` (SoA cache + stable ids + batch view).
+1. Implement ECS-friendly data layout changes described in
+   `ecs_data_layout.md` (ObjectId + BatchStorage/BatchView + batch narrowphase).
+2. Wire the batch path in `CollisionWorld` to avoid per-pair registry lookups.
+3. Once benchmark ownership is clear, re-run the RP3D-aligned pipeline
+   breakdown to measure impact.
