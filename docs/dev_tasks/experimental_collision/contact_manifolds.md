@@ -42,6 +42,9 @@ targets for DART's experimental collision module.
 - Add manifold generators for box-box and polyhedral contacts (SAT clipping).
 - Extend to contact patches for face-face and near-coplanar cases.
 - Provide contact type tags (Point/Edge/Face/Patch) to enable solver tuning.
+- Current experimental `ContactManifold` keeps up to 4 contacts and applies a deterministic spread-based reduction.
+- ContactType is a semantic tag; `isTypeCompatible()` is a lightweight sanity check for counts and shared normals.
+- The 4-point cap is a solver limit; it still represents a surface manifold/patch, not a volumetric overlap.
 
 ## Notes for Backends
 

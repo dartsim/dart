@@ -27,19 +27,19 @@ be7a400c3ab fix(collision): correct ConvexIntersecting test expectation
 
 ## What's Complete (415 tests)
 
-| Component                       | Tests | Status                                       |
-| ------------------------------- | ----- | -------------------------------------------- |
-| **Broadphase: AABB Tree**       | 21    | ✅ O(n log n) with SAH insertion, fat AABBs  |
-| **Broadphase: Spatial Hash**    | 24    | ✅ O(1) avg for uniform distributions        |
-| **Broadphase: Sweep-and-Prune** | 19    | ✅ O(n + k) for mostly-static                |
-| **Broadphase: Brute Force**     | 15    | ✅ O(n²) reference                           |
-| **CollisionWorld**              | 17    | ✅ Runtime broadphase selection              |
-| Narrow-phase (all primitives)   | ~100  | ✅ Sphere, Box, Capsule, Cylinder, Plane     |
-| GJK/EPA                         | 16    | ✅ Generic convex collision                  |
-| Distance queries                | 19    | ✅ 6 primitive pairs + Convex/Mesh           |
-| Raycast                         | 39    | ✅ 7 shape types                             |
-| CCD (sphere/capsule cast)       | 62    | ✅ Conservative advancement                  |
-| Convex/Mesh shapes              | 10    | ✅ Support functions for GJK                 |
+| Component                       | Tests | Status                                      |
+| ------------------------------- | ----- | ------------------------------------------- |
+| **Broadphase: AABB Tree**       | 21    | ✅ O(n log n) with SAH insertion, fat AABBs |
+| **Broadphase: Spatial Hash**    | 24    | ✅ O(1) avg for uniform distributions       |
+| **Broadphase: Sweep-and-Prune** | 19    | ✅ O(n + k) for mostly-static               |
+| **Broadphase: Brute Force**     | 15    | ✅ O(n²) reference                          |
+| **CollisionWorld**              | 17    | ✅ Runtime broadphase selection             |
+| Narrow-phase (all primitives)   | ~100  | ✅ Sphere, Box, Capsule, Cylinder, Plane    |
+| GJK/EPA                         | 16    | ✅ Generic convex collision                 |
+| Distance queries                | 19    | ✅ 6 primitive pairs + Convex/Mesh          |
+| Raycast                         | 39    | ✅ 7 shape types                            |
+| CCD (sphere/capsule cast)       | 62    | ✅ Conservative advancement                 |
+| Convex/Mesh shapes              | 10    | ✅ Support functions for GJK                |
 
 ## Broadphase Algorithm Selection
 
@@ -60,14 +60,14 @@ CollisionWorld world(BroadPhaseType::BruteForce);
 
 ## Uncommitted Files (WIP from parallel agents)
 
-| File                                                           | Description                   |
-| -------------------------------------------------------------- | ----------------------------- |
-| `dart/collision/experimental/narrow_phase/mpr.hpp/cpp`         | MPR algorithm (incomplete)    |
-| `tests/unit/collision/experimental/test_libccd_algorithms.cpp` | libccd comparison tests       |
-| `tests/benchmark/collision/experimental/bm_libccd.cpp`         | libccd benchmarks             |
-| `cmake/dart_test_libccd.cmake`                                 | CMake for libccd tests        |
-| `rp3d_profiling_*.txt`                                         | ReactPhysics3D profiling data |
-| `docs/dev_tasks/experimental_collision/reference_comparison.md`| Voxblox research notes        |
+| File                                                            | Description                   |
+| --------------------------------------------------------------- | ----------------------------- |
+| `dart/collision/experimental/narrow_phase/mpr.hpp/cpp`          | MPR algorithm (incomplete)    |
+| `tests/unit/collision/experimental/test_libccd_algorithms.cpp`  | libccd comparison tests       |
+| `tests/benchmark/collision/experimental/bm_libccd.cpp`          | libccd benchmarks             |
+| `cmake/dart_test_libccd.cmake`                                  | CMake for libccd tests        |
+| `rp3d_profiling_*.txt`                                          | ReactPhysics3D profiling data |
+| `docs/dev_tasks/experimental_collision/reference_comparison.md` | Voxblox research notes        |
 
 ## How to Resume
 
@@ -88,15 +88,18 @@ done
 ## Possible Next Steps
 
 ### Priority 1: DART Integration (deferred per user request - do last)
+
 - Wire as additional CollisionDetector backend
 - Pass existing collision integration tests
 
 ### Priority 2: Additional Optimizations
+
 - Incremental SAP (exploit temporal coherence)
 - Hierarchical spatial hash for varying object sizes
 - Parallel batch collision processing
 
 ### Priority 3: Clean Up WIP Files
+
 - Review and commit or remove MPR/libccd work
 - Clean up profiling data files
 
@@ -109,12 +112,12 @@ done
 
 ## Key Files Reference
 
-| File                                                           | Purpose                          |
-| -------------------------------------------------------------- | -------------------------------- |
-| `dart/collision/experimental/broad_phase/spatial_hash.hpp`     | SpatialHash (O(1) avg queries)   |
-| `dart/collision/experimental/broad_phase/aabb_tree.hpp`        | AABB Tree (SAH, fat AABBs)       |
-| `dart/collision/experimental/broad_phase/sweep_and_prune.hpp`  | SAP (sorted endpoints)           |
-| `dart/collision/experimental/fwd.hpp`                          | BroadPhaseType enum              |
-| `tests/unit/collision/experimental/test_spatial_hash.cpp`      | 24 Spatial Hash tests            |
-| `tests/benchmark/collision/experimental/bm_broadphase.cpp`     | All broadphase benchmarks        |
-| `docs/dev_tasks/experimental_collision/progress.md`            | Full component status            |
+| File                                                          | Purpose                        |
+| ------------------------------------------------------------- | ------------------------------ |
+| `dart/collision/experimental/broad_phase/spatial_hash.hpp`    | SpatialHash (O(1) avg queries) |
+| `dart/collision/experimental/broad_phase/aabb_tree.hpp`       | AABB Tree (SAH, fat AABBs)     |
+| `dart/collision/experimental/broad_phase/sweep_and_prune.hpp` | SAP (sorted endpoints)         |
+| `dart/collision/experimental/fwd.hpp`                         | BroadPhaseType enum            |
+| `tests/unit/collision/experimental/test_spatial_hash.cpp`     | 24 Spatial Hash tests          |
+| `tests/benchmark/collision/experimental/bm_broadphase.cpp`    | All broadphase benchmarks      |
+| `docs/dev_tasks/experimental_collision/progress.md`           | Full component status          |

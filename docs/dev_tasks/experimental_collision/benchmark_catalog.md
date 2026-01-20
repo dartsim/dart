@@ -24,6 +24,7 @@
 - `tests/benchmark/collision/scenarios/bm_pipeline_breakdown.cpp` - AABB update + broadphase + narrowphase timing (includes RP3D-aligned sphere-only dense/sparse variants).
 - `tests/benchmark/collision/experimental/bm_ccd.cpp` - experimental CCD microbenchmarks.
 - `tests/benchmark/collision/experimental/bm_libccd.cpp` - DART vs libccd GJK/EPA/MPR microbenchmarks (optional).
+- `dart/collision/experimental/benchmarks/bm_sdf_compare.cpp` - SDF/ESDF query throughput and accuracy comparisons (Dense SDF vs Voxblox when available; enable with `-DDART_EXPERIMENTAL_ESDF_MAP_ROOT=/path/to/voxblox`).
 - `tests/benchmark/collision/fixtures/` - shared shape/scene builders.
 - `tests/benchmark/collision/data/` - shared mesh/convex fixtures.
 

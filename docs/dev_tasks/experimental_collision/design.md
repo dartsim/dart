@@ -618,6 +618,7 @@ enum class ShapeType {
   Plane,
   Mesh,
   Convex,
+  Sdf,
   // Future
   HeightField,
   PointCloud
@@ -630,9 +631,6 @@ public:
 
   [[nodiscard]] virtual ShapeType getType() const = 0;
   [[nodiscard]] virtual Aabb computeLocalAabb() const = 0;
-
-  // For future: signed distance function
-  // [[nodiscard]] virtual double signedDistance(const Eigen::Vector3d& point) const;
 };
 
 class SphereShape : public Shape {

@@ -93,7 +93,7 @@ Add bulk interfaces to reduce per-object overhead:
 
 - `build(const std::span<const Aabb>& aabbs)`
 - `updateRange(const std::span<const ObjectId>& ids,
-           const std::span<const Aabb>& aabbs)`
+const std::span<const Aabb>& aabbs)`
 - `queryPairs(std::vector<BroadPhasePair>& out)` (caller-owned storage)
 
 ### NarrowPhase
@@ -101,9 +101,9 @@ Add bulk interfaces to reduce per-object overhead:
 Expose batch-friendly entry points:
 
 - `collidePairs(const std::span<BroadPhasePair>& pairs,
-            const BatchView& view,
-            BatchOutput& out,
-            BatchScratch& scratch)`
+const BatchView& view,
+BatchOutput& out,
+BatchScratch& scratch)`
 
 ### Batch view
 

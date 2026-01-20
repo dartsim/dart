@@ -16,6 +16,7 @@
 - collision-rs: `/home/js/dev/physics/collision-rs` (commit 29090c4, 2021-10-08; 0 commits in last 12 months)
 - qu3e: `/home/js/dev/physics/qu3e` (commit 1f519c9, 2021-05-08; 0 commits in last 12 months)
 - tinyc2 (cute_c2): `/home/js/dev/physics/tinyheaders` (commit af97c17, 2026-01-07; 8 commits in last 12 months)
+- Voxblox: `/home/js/dev/physics/voxblox` (commit c8066b0, 2021-11-22; 0 commits in last 12 months) from https://github.com/ethz-asl/voxblox
 - Legacy/inactive references (not cloned locally): ColDet, GIMPACT, OPCODE, SOLID, OZCollide.
 - Sources used: README files plus public headers and source trees in each repo.
 - Benchmark suites: `/home/js/dev/physics/colbench` (commit e09ed36, 2023-07-03), `/home/js/dev/physics/collision-detection-benchmark` (commit 4073887, 2022-07-07), `/home/js/dev/physics/spatial-collision-datastructures` (commit 3b993fb, 2018-03-05).
@@ -122,6 +123,13 @@
 - Design: GJK-based closest points, time of impact shape casts, optional manifolds; no broadphase.
 - Strengths: clear 2D reference implementation, convex hull generation, time of impact examples.
 - Gaps: 2D only, no scene management.
+
+### Voxblox
+
+- Goal: incremental volumetric mapping with TSDF/ESDF distance fields for planning.
+- Design: sparse voxel block layers (TSDF/ESDF/occupancy) keyed by hashed block indices; TSDF integrators (simple/merged/fast) fuse point clouds; ESDF generation from TSDF or occupancy using raise/lower wavefronts with a bucketed priority queue; supports full or quasi-Euclidean distance.
+- Strengths: ESDF distance + gradient queries with optional interpolation and batch query helpers; marching-cubes mesh extraction from SDF layers; ROS integration and protobuf-based serialization.
+- Gaps: not a collision detection engine; no contact manifolds, broadphase, or continuous collision queries; resolution-limited and best suited for static scene distance checks.
 
 ## Feature comparison (from local source trees)
 
@@ -294,23 +302,23 @@ and `contact_manifolds.md` for manifold representation guidance.
 
 ### Contact representations and manifolds
 
-| Library        | Contact representation              | Manifold behavior                                                                           |
-| -------------- | ----------------------------------- | ------------------------------------------------------------------------------------------- |
-| DART           | Contact points + ContactManifold    | Legacy backend returns flat list; experimental has manifold container but minimal reduction |
-| FCL            | Contact points (pos, normal, depth) | No explicit manifold; returns list                                                          |
-| Coal           | Contact points + ContactPatch       | Supports patches (polygonal contact regions)                                                |
-| Bullet         | Persistent manifolds of points      | Up to 4 points per manifold, cached across frames                                           |
-| ODE            | Contact points (dContactGeom)       | No explicit manifold; caller aggregates                                                     |
-| Parry          | Contact + ContactManifold           | Explicit manifolds; normals + multiple points                                               |
-| ReactPhysics3D | ContactManifold with points         | Up to 4 points; cached for stability                                                        |
-| BEPUphysics1   | Contact manifolds                   | Manifold generators + contact reduction/refresher                                           |
-| JitterPhysics  | Contact manifolds                   | Manifold-based contacts in collision systems                                                |
-| ncollide       | ContactManifold                     | Explicit manifolds; part of pipeline                                                        |
-| collision-rs   | Contact data via GJK/EPA            | Manifold support per README; no world persistence                                           |
-| qu3e           | Contact manifolds                   | SAT manifolds; reduction not implemented                                                    |
-| tinyc2         | Contact manifold (2D)               | Optional manifold generation per query                                                      |
-| libccd         | Single penetration info             | No manifold; GJK/EPA gives one direction/depth                                              |
-| OpenGJK        | Witness points from simplex         | Distance-only, no contact manifold                                                          |
+| Library        | Contact representation              | Manifold behavior                                                                                                                                                           |
+| -------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DART           | Contact points + ContactManifold    | Legacy backend returns flat list; experimental uses fixed-size manifolds (4) with deterministic reduction; 4-point caps are surface manifolds (not volume); persistence TBD |
+| FCL            | Contact points (pos, normal, depth) | No explicit manifold; returns list                                                                                                                                          |
+| Coal           | Contact points + ContactPatch       | Supports patches (polygonal contact regions)                                                                                                                                |
+| Bullet         | Persistent manifolds of points      | Up to 4 points per manifold, cached across frames                                                                                                                           |
+| ODE            | Contact points (dContactGeom)       | No explicit manifold; caller aggregates                                                                                                                                     |
+| Parry          | Contact + ContactManifold           | Explicit manifolds; normals + multiple points                                                                                                                               |
+| ReactPhysics3D | ContactManifold with points         | Up to 4 points; cached for stability                                                                                                                                        |
+| BEPUphysics1   | Contact manifolds                   | Manifold generators + contact reduction/refresher                                                                                                                           |
+| JitterPhysics  | Contact manifolds                   | Manifold-based contacts in collision systems                                                                                                                                |
+| ncollide       | ContactManifold                     | Explicit manifolds; part of pipeline                                                                                                                                        |
+| collision-rs   | Contact data via GJK/EPA            | Manifold support per README; no world persistence                                                                                                                           |
+| qu3e           | Contact manifolds                   | SAT manifolds; reduction not implemented                                                                                                                                    |
+| tinyc2         | Contact manifold (2D)               | Optional manifold generation per query                                                                                                                                      |
+| libccd         | Single penetration info             | No manifold; GJK/EPA gives one direction/depth                                                                                                                              |
+| OpenGJK        | Witness points from simplex         | Distance-only, no contact manifold                                                                                                                                          |
 
 ### Contact result types (for DART to standardize)
 
@@ -353,6 +361,9 @@ correctness for the same inputs.
   tolerance
 - For Bullet, account for collision margins; either disable margins or document
   expected deltas
+- For ESDF/SDF backends (Voxblox, Bullet SDF), sample query points and compare
+  signed distance and gradients against analytic primitives or FCL/Parry
+  distance queries; account for voxel resolution and interpolation
 
 **Mismatch triage**:
 
@@ -367,20 +378,65 @@ See `sdf_and_gradients.md` for a focused SDF + gradient survey and integration t
 
 ### SDF support (observed)
 
-| Library                                       | SDF or voxel support            | Notes                                                                       |
-| --------------------------------------------- | ------------------------------- | --------------------------------------------------------------------------- |
-| Bullet                                        | btSdfCollisionShape / btMiniSDF | Signed distance fields for implicit collision (btMiniSDF exposes gradients) |
-| Parry                                         | Voxels                          | Voxel shapes exist; not explicitly SDF                                      |
-| FCL / Coal                                    | None explicit                   | Focus on meshes/convex/BVH and GJK/EPA                                      |
-| ODE / libccd / OpenGJK                        | None                            | No SDF primitives                                                           |
-| ReactPhysics3D                                | None                            | Discrete contact shapes only                                                |
-| BEPU/Jitter/ncollide/collision-rs/qu3e/tinyc2 | None                            | No SDF primitives in inspected sources                                      |
+| Library                                       | SDF or voxel support            | Notes                                                                        |
+| --------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------- |
+| Bullet                                        | btSdfCollisionShape / btMiniSDF | Signed distance fields for implicit collision (btMiniSDF exposes gradients)  |
+| Voxblox                                       | TSDF + ESDF + occupancy layers  | ESDF distance/gradient queries with optional interpolation and batch helpers |
+| Parry                                         | Voxels                          | Voxel shapes exist; not explicitly SDF                                       |
+| FCL / Coal                                    | None explicit                   | Focus on meshes/convex/BVH and GJK/EPA                                       |
+| ODE / libccd / OpenGJK                        | None                            | No SDF primitives                                                            |
+| ReactPhysics3D                                | None                            | Discrete contact shapes only                                                 |
+| BEPU/Jitter/ncollide/collision-rs/qu3e/tinyc2 | None                            | No SDF primitives in inspected sources                                       |
+
+### Voxblox implementation notes (local source)
+
+- Data layout: sparse voxel blocks (Layer/Block) storing TSDF, ESDF, occupancy, and intensity voxels; blocks are keyed by hashed block indices.
+- ESDF generation: EsdfIntegrator propagates TSDF into ESDF using fixed-band voxels plus raise/lower wavefront updates with a bucketed priority queue; optional full or quasi-Euclidean distance. EsdfOccIntegrator can build ESDF from occupancy with 26-connectivity.
+- Query surface: EsdfMap exposes distance, distance+gradient, observed checks, and batch query helpers; Interpolator supports nearest or trilinear sampling and adaptive gradients.
+- Integration/meshing: TSDF integrators (simple/merged/fast) fuse point clouds; MeshIntegrator runs marching cubes over SDF layers for mesh extraction.
 
 ### SDF references and implications (from curated list)
 
 - Macklin 2020 (SDF contact) suggests robust SDF collision with local optimization and stable gradients.
-- Koschier 2016 and Voxblox 2016 highlight hierarchical and incremental SDF construction pipelines.
+- Koschier 2016 and Voxblox 2017 highlight hierarchical and incremental SDF construction pipelines; Voxblox uses raise/lower wavefront updates for ESDFs.
 - Xu/Barbic 2014 covers SDF generation for polygon soup meshes; relevant for mesh import.
+
+### Robotics physics use cases (SDF/ESDF)
+
+- Proximity/clearance queries for navigation, manipulation, and footstep planning in complex static scenes.
+- Gradient-based trajectory optimization (CHOMP/TrajOpt-style) and constraint-based planners that use distance + gradient signals.
+- Contact smoothing or penalty-based contact for irregular terrain/geometry where mesh contact is noisy.
+- RL training: dense shaping rewards (clearance, progress), safety constraints, and curriculum difficulty using distance-to-obstacle signals.
+
+### Why SDF/ESDF over other queries or data structures
+
+- Continuous distance + gradient signals; contact-only queries are sparse and discontinuous for optimization/RL.
+- Query cost is near constant per sample and decoupled from mesh complexity; BVH traversal scales with scene complexity.
+- ESDF enables fast batched queries for large rollouts, particles, or policy evaluations with predictable latency.
+- Tradeoffs: memory and resolution limits, discretization artifacts, and costly updates for highly dynamic scenes.
+
+### Placement in DART (core vs extension)
+
+- Treat SDF/ESDF as an optional shape/backend in DART rather than a core replacement for exact geometry.
+- Best fit: static environment or slow-changing obstacles; dynamic SDF updates are expensive and resolution-bound.
+- Integrate through the standard query API (distance, gradient, raycast), while keeping exact convex/mesh paths for accuracy.
+
+### CCD considerations for SDF/ESDF
+
+- ESDF can support conservative advancement (distance + gradient along motion) for approximate CCD in static scenes.
+- Not a drop-in replacement for exact CCD: discretization and interpolation can miss thin features or fast motions.
+- For dynamic-dynamic CCD, a time-varying SDF or analytic CCD remains necessary for correctness.
+
+### Experimental scope fit
+
+- The experimental collision module is the right place to prototype SDF/ESDF shapes, gradients, and query APIs.
+- Use it to evaluate runtime tradeoffs, then decide whether a stable SDF shape belongs in the core API.
+
+### Runtime comparison plan (accuracy + performance)
+
+- Compare dense SDF and Voxblox ESDF on identical query sets; track mean/max distance error and gradient alignment vs analytic SDFs.
+- Benchmark query throughput for distance and distance+gradient; report queries/sec vs voxel size and interpolation mode.
+- Use `dart/collision/experimental/benchmarks/bm_sdf_compare.cpp` and `tests/unit/collision/experimental/test_sdf_compare.cpp` as baselines and extend to Bullet/Parry when available.
 
 ### Gradient considerations for convex shapes
 
@@ -394,7 +450,7 @@ See `sdf_and_gradients.md` for a focused SDF + gradient survey and integration t
 
 Source: /home/js/dev/physics/awesome-collision-detection (commit effd3f8). The list is not exhaustive and many entries are physics engines with collision subsystems.
 
-Active libraries inspected above: Bullet, FCL, HPP-FCL (Coal), libccd, ODE, OpenGJK, Parry, ReactPhysics3D, BEPUphysics1, JitterPhysics, ncollide, collision-rs, qu3e, tinyc2.
+Active libraries inspected above: Bullet, FCL, HPP-FCL (Coal), libccd, ODE, OpenGJK, Parry, ReactPhysics3D, BEPUphysics1, JitterPhysics, ncollide, collision-rs, qu3e, tinyc2, Voxblox.
 
 The curated list is not exhaustive; additional candidates may exist outside this list.
 
@@ -457,6 +513,7 @@ The curated list is not exhaustive; additional candidates may exist outside this
 | collision-rs         | 2021-10-08         | fmt (#135)                                                                                                         | 0                      |
 | qu3e                 | 2021-05-08         | Merge pull request #57 from wmcnamara/readme-fix                                                                   | 0                      |
 | tinyc2 (tinyheaders) | 2026-01-07         | fix: Properly shutdown AudioUnit on macOS to avoid crash on exit (#419)                                            | 8                      |
+| Voxblox              | 2021-11-22         | Merge pull request #385 from ethz-asl/pr-update-catkin-grpc                                                        | 0                      |
 
 ## Takeaways and recommendations for DART experimental collision
 
