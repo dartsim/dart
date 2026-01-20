@@ -53,6 +53,14 @@ class CollisionGroup;
 class BroadPhase;
 class AabbTreeBroadPhase;
 class BruteForceBroadPhase;
+class SweepAndPruneBroadPhase;
+
+enum class BroadPhaseType
+{
+  BruteForce,
+  AabbTree,
+  SweepAndPrune
+};
 
 struct BatchSettings;
 struct BatchTimings;

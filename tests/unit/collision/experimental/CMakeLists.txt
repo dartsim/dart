@@ -9,6 +9,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 
 include(dart_defs)
+include(dart_test_libccd)
 
 enable_testing()
 
@@ -18,6 +19,9 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
   set(COLLISION_EXPERIMENTAL_TESTS "" CACHE INTERNAL "" FORCE)
 
   file(GLOB test_files "${CMAKE_CURRENT_SOURCE_DIR}/test_*.cpp")
+  if(NOT DART_TESTS_LIBCCD_FOUND)
+    list(FILTER test_files EXCLUDE REGEX "test_libccd_.*\\.cpp$")
+  endif()
 
   foreach(test_file ${test_files})
     get_filename_component(test_name ${test_file} NAME_WE)
@@ -29,6 +33,9 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
         GTest::gtest
         GTest::gtest_main
     )
+    if(DART_TESTS_LIBCCD_FOUND AND test_name MATCHES "^test_libccd_")
+      target_link_libraries(${test_name} PRIVATE dart_tests_libccd)
+    endif()
 
     add_test(NAME ${test_name} COMMAND ${test_name})
     set_tests_properties(${test_name} PROPERTIES LABELS "collision-experimental")

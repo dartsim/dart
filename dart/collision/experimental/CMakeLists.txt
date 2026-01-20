@@ -36,6 +36,7 @@ add_library(${target_name}
   aabb.cpp
   broad_phase/aabb_tree.cpp
   broad_phase/brute_force.cpp
+  broad_phase/sweep_and_prune.cpp
   collision_object.cpp
   collision_world.cpp
   narrow_phase/box_box.cpp
@@ -47,6 +48,7 @@ add_library(${target_name}
   narrow_phase/cylinder_collision.cpp
   narrow_phase/distance.cpp
   narrow_phase/gjk.cpp
+  narrow_phase/mpr.cpp
   narrow_phase/narrow_phase.cpp
   narrow_phase/plane_sphere.cpp
   narrow_phase/raycast.cpp

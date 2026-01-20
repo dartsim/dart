@@ -32,6 +32,9 @@
 
 #include <dart/collision/experimental/collision_world.hpp>
 
+#include <dart/collision/experimental/broad_phase/aabb_tree.hpp>
+#include <dart/collision/experimental/broad_phase/brute_force.hpp>
+#include <dart/collision/experimental/broad_phase/sweep_and_prune.hpp>
 #include <dart/collision/experimental/comps/collision_object.hpp>
 #include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
 
@@ -40,8 +43,26 @@
 
 namespace dart::collision::experimental {
 
-CollisionWorld::CollisionWorld() = default;
+CollisionWorld::CollisionWorld(BroadPhaseType broadPhaseType)
+  : m_broadPhaseType(broadPhaseType)
+  , m_broadPhase(createBroadPhase(broadPhaseType))
+{
+}
+
 CollisionWorld::~CollisionWorld() = default;
+
+std::unique_ptr<BroadPhase> CollisionWorld::createBroadPhase(BroadPhaseType type)
+{
+  switch (type) {
+    case BroadPhaseType::BruteForce:
+      return std::make_unique<BruteForceBroadPhase>();
+    case BroadPhaseType::AabbTree:
+      return std::make_unique<AabbTreeBroadPhase>();
+    case BroadPhaseType::SweepAndPrune:
+      return std::make_unique<SweepAndPruneBroadPhase>();
+  }
+  return std::make_unique<AabbTreeBroadPhase>();
+}
 
 CollisionObject CollisionWorld::createObject(
     std::unique_ptr<Shape> shape,
@@ -66,7 +87,7 @@ CollisionObject CollisionWorld::createObject(
   aabbComp.aabb = aabb;
   aabbComp.dirty = false;
 
-  m_broadPhase.add(static_cast<std::size_t>(entity), aabb);
+  m_broadPhase->add(static_cast<std::size_t>(entity), aabb);
 
   return obj;
 }
@@ -78,7 +99,7 @@ void CollisionWorld::destroyObject(CollisionObject object)
   }
 
   auto entity = object.getEntity();
-  m_broadPhase.remove(static_cast<std::size_t>(entity));
+  m_broadPhase->remove(static_cast<std::size_t>(entity));
   m_registry.destroy(entity);
 }
 
@@ -95,7 +116,7 @@ void CollisionWorld::updateObject(CollisionObject object)
     Aabb aabb = object.computeAabb();
     aabbComp->aabb = aabb;
     aabbComp->dirty = false;
-    m_broadPhase.update(static_cast<std::size_t>(entity), aabb);
+    m_broadPhase->update(static_cast<std::size_t>(entity), aabb);
   }
 }
 
@@ -128,7 +149,7 @@ std::size_t CollisionWorld::updateAll()
       Aabb aabb = obj.computeAabb();
       aabbComp->aabb = aabb;
       aabbComp->dirty = false;
-      m_broadPhase.update(static_cast<std::size_t>(entity), aabb);
+      m_broadPhase->update(static_cast<std::size_t>(entity), aabb);
       ++updated;
     }
   }
@@ -138,8 +159,8 @@ std::size_t CollisionWorld::updateAll()
 BroadPhaseSnapshot CollisionWorld::buildBroadPhaseSnapshot() const
 {
   BroadPhaseSnapshot snapshot;
-  snapshot.pairs = m_broadPhase.queryPairs();
-  snapshot.numObjects = m_broadPhase.size();
+  snapshot.pairs = m_broadPhase->queryPairs();
+  snapshot.numObjects = m_broadPhase->size();
   return snapshot;
 }
 
@@ -201,7 +222,7 @@ bool CollisionWorld::collide(const CollisionOption& option, CollisionResult& res
   result.clear();
   bool hasCollision = false;
 
-  auto pairs = m_broadPhase.queryPairs();
+  auto pairs = m_broadPhase->queryPairs();
 
   for (const auto& pair : pairs) {
     auto entity1 = static_cast<entt::entity>(pair.first);
@@ -407,7 +428,7 @@ bool CollisionWorld::capsuleCastAll(
 
 void CollisionWorld::clear()
 {
-  m_broadPhase.clear();
+  m_broadPhase->clear();
   m_registry.clear();
 }
 

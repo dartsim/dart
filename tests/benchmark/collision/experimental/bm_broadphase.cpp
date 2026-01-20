@@ -32,6 +32,7 @@
 
 #include <dart/collision/experimental/broad_phase/aabb_tree.hpp>
 #include <dart/collision/experimental/broad_phase/brute_force.hpp>
+#include <dart/collision/experimental/broad_phase/sweep_and_prune.hpp>
 
 #include <benchmark/benchmark.h>
 
@@ -115,6 +116,22 @@ static void BM_AabbTree_QueryPairs(benchmark::State& state)
   state.SetItemsProcessed(state.iterations() * numObjects);
 }
 
+static void BM_SweepAndPrune_QueryPairs(benchmark::State& state)
+{
+  const int numObjects = state.range(0);
+  auto objects = generateObjects(numObjects, 100.0, 2.0, 42);
+
+  SweepAndPruneBroadPhase bp;
+  populateBroadPhase(bp, objects);
+
+  for (auto _ : state) {
+    auto pairs = bp.queryPairs();
+    benchmark::DoNotOptimize(pairs);
+  }
+
+  state.SetItemsProcessed(state.iterations() * numObjects);
+}
+
 static void BM_BruteForce_Add(benchmark::State& state)
 {
   const int numObjects = state.range(0);
@@ -136,6 +153,20 @@ static void BM_AabbTree_Add(benchmark::State& state)
 
   for (auto _ : state) {
     AabbTreeBroadPhase bp;
+    populateBroadPhase(bp, objects);
+    benchmark::DoNotOptimize(bp);
+  }
+
+  state.SetItemsProcessed(state.iterations() * numObjects);
+}
+
+static void BM_SweepAndPrune_Add(benchmark::State& state)
+{
+  const int numObjects = state.range(0);
+  auto objects = generateObjects(numObjects, 100.0, 2.0, 42);
+
+  for (auto _ : state) {
+    SweepAndPruneBroadPhase bp;
     populateBroadPhase(bp, objects);
     benchmark::DoNotOptimize(bp);
   }
@@ -171,6 +202,28 @@ static void BM_AabbTree_Update(benchmark::State& state)
   auto objects = generateObjects(numObjects, 100.0, 2.0, 42);
 
   AabbTreeBroadPhase bp;
+  populateBroadPhase(bp, objects);
+
+  std::mt19937 rng(123);
+  std::uniform_real_distribution<double> offsetDist(-0.5, 0.5);
+
+  for (auto _ : state) {
+    for (const auto& obj : objects) {
+      Eigen::Vector3d offset(offsetDist(rng), offsetDist(rng), offsetDist(rng));
+      Aabb updated(obj.aabb.min + offset, obj.aabb.max + offset);
+      bp.update(obj.id, updated);
+    }
+  }
+
+  state.SetItemsProcessed(state.iterations() * numObjects);
+}
+
+static void BM_SweepAndPrune_Update(benchmark::State& state)
+{
+  const int numObjects = state.range(0);
+  auto objects = generateObjects(numObjects, 100.0, 2.0, 42);
+
+  SweepAndPruneBroadPhase bp;
   populateBroadPhase(bp, objects);
 
   std::mt19937 rng(123);
@@ -223,6 +276,24 @@ static void BM_AabbTree_QueryOverlapping(benchmark::State& state)
   state.SetItemsProcessed(state.iterations());
 }
 
+static void BM_SweepAndPrune_QueryOverlapping(benchmark::State& state)
+{
+  const int numObjects = state.range(0);
+  auto objects = generateObjects(numObjects, 100.0, 2.0, 42);
+
+  SweepAndPruneBroadPhase bp;
+  populateBroadPhase(bp, objects);
+
+  Aabb query(Eigen::Vector3d(-10, -10, -10), Eigen::Vector3d(10, 10, 10));
+
+  for (auto _ : state) {
+    auto results = bp.queryOverlapping(query);
+    benchmark::DoNotOptimize(results);
+  }
+
+  state.SetItemsProcessed(state.iterations());
+}
+
 BENCHMARK(BM_BruteForce_QueryPairs)
     ->Arg(10)
     ->Arg(50)
@@ -235,14 +306,23 @@ BENCHMARK(BM_AabbTree_QueryPairs)
     ->Arg(100)
     ->Arg(500)
     ->Arg(1000);
+BENCHMARK(BM_SweepAndPrune_QueryPairs)
+    ->Arg(10)
+    ->Arg(50)
+    ->Arg(100)
+    ->Arg(500)
+    ->Arg(1000);
 
 BENCHMARK(BM_BruteForce_Add)->Arg(10)->Arg(100)->Arg(1000);
 BENCHMARK(BM_AabbTree_Add)->Arg(10)->Arg(100)->Arg(1000);
+BENCHMARK(BM_SweepAndPrune_Add)->Arg(10)->Arg(100)->Arg(1000);
 
 BENCHMARK(BM_BruteForce_Update)->Arg(10)->Arg(100)->Arg(1000);
 BENCHMARK(BM_AabbTree_Update)->Arg(10)->Arg(100)->Arg(1000);
+BENCHMARK(BM_SweepAndPrune_Update)->Arg(10)->Arg(100)->Arg(1000);
 
 BENCHMARK(BM_BruteForce_QueryOverlapping)->Arg(100)->Arg(1000)->Arg(10000);
 BENCHMARK(BM_AabbTree_QueryOverlapping)->Arg(100)->Arg(1000)->Arg(10000);
+BENCHMARK(BM_SweepAndPrune_QueryOverlapping)->Arg(100)->Arg(1000)->Arg(10000);
 
 BENCHMARK_MAIN();

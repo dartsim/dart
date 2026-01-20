@@ -32,10 +32,11 @@
 
 #pragma once
 
-#include <dart/collision/experimental/broad_phase/brute_force.hpp>
 #include <dart/collision/experimental/batch.hpp>
+#include <dart/collision/experimental/broad_phase/broad_phase.hpp>
 #include <dart/collision/experimental/collision_object.hpp>
 #include <dart/collision/experimental/export.hpp>
+#include <dart/collision/experimental/fwd.hpp>
 #include <dart/collision/experimental/types.hpp>
 
 #include <entt/entt.hpp>
@@ -48,7 +49,8 @@ namespace dart::collision::experimental {
 class DART_COLLISION_EXPERIMENTAL_API CollisionWorld
 {
 public:
-  CollisionWorld();
+  explicit CollisionWorld(
+      BroadPhaseType broadPhaseType = BroadPhaseType::AabbTree);
   ~CollisionWorld();
 
   CollisionWorld(const CollisionWorld&) = delete;
@@ -135,9 +137,27 @@ public:
     return m_registry;
   }
 
+  [[nodiscard]] BroadPhaseType getBroadPhaseType() const
+  {
+    return m_broadPhaseType;
+  }
+
+  [[nodiscard]] BroadPhase& getBroadPhase()
+  {
+    return *m_broadPhase;
+  }
+
+  [[nodiscard]] const BroadPhase& getBroadPhase() const
+  {
+    return *m_broadPhase;
+  }
+
 private:
+  static std::unique_ptr<BroadPhase> createBroadPhase(BroadPhaseType type);
+
   entt::registry m_registry;
-  BruteForceBroadPhase m_broadPhase;
+  BroadPhaseType m_broadPhaseType;
+  std::unique_ptr<BroadPhase> m_broadPhase;
 };
 
 } // namespace dart::collision::experimental
