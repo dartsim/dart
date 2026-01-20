@@ -47,6 +47,7 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
   dart_experimental_add_unit_test_dir(world ${CMAKE_CURRENT_SOURCE_DIR}/world)
   dart_experimental_add_unit_test_dir(frame ${CMAKE_CURRENT_SOURCE_DIR}/frame)
   dart_experimental_add_unit_test_dir(multi_body ${CMAKE_CURRENT_SOURCE_DIR}/multi_body)
+  dart_experimental_add_unit_test_dir(kinematics ${CMAKE_CURRENT_SOURCE_DIR}/kinematics)
   dart_experimental_add_unit_test_dir(space ${CMAKE_CURRENT_SOURCE_DIR}/space)
 
   # Create meta target for all unit tests

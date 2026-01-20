@@ -34,6 +34,7 @@ set(component_name simulation-experimental)
 add_library(${target_name}
   body/rigid_body.cpp
   common/diagnostics.cpp
+  kinematics/joint_transform.cpp
   common/exceptions.cpp
   common/profiling.cpp
   comps/dynamics.cpp
