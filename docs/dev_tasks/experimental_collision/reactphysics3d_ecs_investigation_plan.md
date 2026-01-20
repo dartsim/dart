@@ -68,8 +68,20 @@ strategy, but do not yet prove performance characteristics.
 
 ## Immediate next steps
 
-1. Write a small RP3D driver that emits profiler reports for the dense/sparse
-   scenarios above.
-2. Capture baseline profiler output for 1k and 10k objects.
-3. Record results in a dedicated results note and link from
-   `reactphysics3d_ecs_review.md`.
+1. Use `rp3d_profile_driver.cpp` to capture dense/sparse baselines for 1k/10k.
+2. Record results in `reactphysics3d_ecs_profile_results.md` and attach raw logs.
+3. Compare against matched DART pipeline breakdown scenarios.
+
+## Driver usage (example)
+
+```bash
+c++ -std=c++17 -O3 -DIS_RP3D_PROFILING_ENABLED \
+  -I /path/to/reactphysics3d/include \
+  docs/dev_tasks/experimental_collision/rp3d_profile_driver.cpp \
+  -L /path/to/reactphysics3d/build_profile -lreactphysics3d \
+  -Wl,-rpath,/path/to/reactphysics3d/build_profile \
+  -o /tmp/rp3d_profile_driver
+
+/tmp/rp3d_profile_driver 10000 10 2 1 /tmp/rp3d_profile_10k_dense.txt
+/tmp/rp3d_profile_driver 10000 50 2 1 /tmp/rp3d_profile_10k_sparse.txt
+```
