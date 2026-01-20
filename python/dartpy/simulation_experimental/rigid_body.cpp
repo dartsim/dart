@@ -4,6 +4,7 @@
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 
 namespace nb = nanobind;
@@ -38,7 +39,13 @@ void defRigidBody(nb::module_& m)
       .def("addForce", &RigidBody::addForce, nb::arg("force"))
       .def("getTorque", &RigidBody::getTorque)
       .def("addTorque", &RigidBody::addTorque, nb::arg("torque"))
-      .def("clearForces", &RigidBody::clearForces);
+      .def("clearForces", &RigidBody::clearForces)
+      .def(
+          "createShapeNode",
+          &RigidBody::createShapeNode,
+          nb::arg("shape"),
+          nb::arg("name") = "",
+          nb::arg("options") = ShapeNodeOptions{});
 }
 
 } // namespace dart::python_nb

@@ -142,6 +142,25 @@ def test_frame_transforms():
     assert tf is not None
 
 
+def test_shape_node_creation():
+    exp = dart.simulation_experimental
+    world = exp.World()
+    robot = world.add_multi_body("robot")
+    base = robot.add_link("base")
+
+    shape = dart.dynamics.BoxShape([1.0, 2.0, 3.0])
+    options = exp.ShapeNodeOptions()
+    options.collidable = False
+    options.friction_coeff = 0.7
+    options.restitution_coeff = 0.4
+
+    node = base.create_shape_node(shape, "base_shape", options)
+    assert node.get_name() == "base_shape"
+    assert not node.is_collidable()
+    assert node.get_friction_coeff() == pytest.approx(0.7)
+    assert node.get_restitution_coeff() == pytest.approx(0.4)
+
+
 def test_get_multibody():
     exp = dart.simulation_experimental
     world = exp.World()
@@ -198,6 +217,17 @@ def test_state_space_bounds():
     assert len(lower) == 4
     assert len(upper) == 4
     assert np.allclose(lower, [-1.0, -1.0, -5.0, -5.0])
+
+
+def test_world_step_advances_time():
+    exp = dart.simulation_experimental
+    world = exp.World()
+    world.set_time_step(0.01)
+    world.enter_simulation_mode()
+
+    assert world.get_time() == 0.0
+    world.step()
+    assert world.get_time() == pytest.approx(0.01)
     assert np.allclose(upper, [1.0, 1.0, 5.0, 5.0])
 
 

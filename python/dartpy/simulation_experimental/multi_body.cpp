@@ -7,6 +7,7 @@
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/optional.h>
+#include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/string_view.h>
 
@@ -60,7 +61,13 @@ void defExpLink(nb::module_& m)
       .def("getName", &Link::getName)
       .def("getParentJoint", &Link::getParentJoint)
       .def("getLocalTransform", &Link::getLocalTransform)
-      .def("getWorldTransform", &Link::getWorldTransform);
+      .def("getWorldTransform", &Link::getWorldTransform)
+      .def(
+          "createShapeNode",
+          &Link::createShapeNode,
+          nb::arg("shape"),
+          nb::arg("name") = "",
+          nb::arg("options") = ShapeNodeOptions{});
 }
 
 void defExpMultiBody(nb::module_& m)

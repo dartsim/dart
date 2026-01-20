@@ -1,5 +1,6 @@
 #include "simulation_experimental/world.hpp"
 
+#include "dart/collision/CollisionResult.hpp"
 #include "dart/simulation/experimental/body/rigid_body.hpp"
 #include "dart/simulation/experimental/body/rigid_body_options.hpp"
 #include "dart/simulation/experimental/frame/fixed_frame.hpp"
@@ -87,6 +88,30 @@ void defExperimentalWorld(nb::module_& m)
       .def("isSimulationMode", &World::isSimulationMode)
       .def("enterSimulationMode", &World::enterSimulationMode)
       .def("updateKinematics", &World::updateKinematics)
+      .def(
+          "step",
+          &World::step,
+          nb::arg("clear_forces") = true,
+          nb::call_guard<nb::gil_scoped_release>())
+      .def("getTimeStep", &World::getTimeStep)
+      .def("setTimeStep", &World::setTimeStep, nb::arg("time_step"))
+      .def("getGravity", &World::getGravity)
+      .def("setGravity", &World::setGravity, nb::arg("gravity"))
+      .def("getTime", &World::getTime)
+      .def("setTime", &World::setTime, nb::arg("time"))
+      .def("getFrame", &World::getFrame)
+      .def(
+          "detectCollisions",
+          [](World& self) -> dart::collision::CollisionResult {
+            return self.detectCollisions();
+          },
+          nb::call_guard<nb::gil_scoped_release>())
+      .def(
+          "getLastCollisionResult",
+          [](World& self) -> const dart::collision::CollisionResult& {
+            return self.getLastCollisionResult();
+          },
+          nb::rv_policy::reference_internal)
       .def("clear", &World::clear);
 }
 
