@@ -71,6 +71,7 @@ Legend: WIN = min speedup > 1.0; MIXED = min < 1.0 and p90 > 1.0; LOSS = p50 < 1
 
 | Date       | Commit      | Summary                              | Notes                                              |
 | ---------- | ----------- | ------------------------------------ | -------------------------------------------------- |
+| 2026-01-20 | 387fa20be70 | SDF/ESDF sweep after build tuning    | Scratch reuse + static offsets; no Voxblox.        |
 | 2026-01-20 | c2d07524b37 | Distance rerun (plane/cylinder)      | Accuracy pass; Bullet/ODE distance unsupported.    |
 | 2026-01-20 | 788a69e7bb2 | SDF/ESDF resolution sweep (extended) | Voxblox lib not found; added 80/96 dims.           |
 | 2026-01-20 | be3923bf398 | SDF/ESDF resolution sweep            | Voxblox lib not found; resolution scaling logged.  |
@@ -103,6 +104,35 @@ Legend: WIN = min speedup > 1.0; MIXED = min < 1.0 and p90 > 1.0; LOSS = p50 < 1
 Summary (key cases):
 
 - Sphere-sphere: experimental 5.18 ns vs FCL 211 ns.
+
+## Run 2026-01-20 — SDF/ESDF sweep after build tuning
+
+- **Branch / Commit**: `feature/new_coll` / `387fa20be70`
+- **Build**: `Release` (build/default/cpp/Release)
+- **CPU**: 13th Gen Intel(R) Core(TM) i9-13950HX
+- **OS**: Ubuntu 25.10
+- **Compiler**: c++ (Ubuntu 15.2.0-4ubuntu4) 15.2.0
+- **Notes**:
+  - CPU scaling enabled; expect some variance.
+  - Voxblox comparisons skipped (no `libvoxblox` found).
+  - `--benchmark_min_time=0.05s`.
+- **Command**:
+  - `build/default/cpp/Release/dart/collision/experimental/bm_collision_experimental_sdf_compare --benchmark_min_time=0.05s --benchmark_format=json --benchmark_out=docs/dev_tasks/experimental_collision/results/bm_sdf_compare_opt_2026-01-20_092632.json`
+- **Raw Output**:
+  - `docs/dev_tasks/experimental_collision/results/bm_sdf_compare_opt_2026-01-20_092632.json`
+
+Summary (items per second):
+
+- Dense SDF distance: 34.22/32.96/34.22 M queries/s (1024/4096/16384 points).
+- Sphere vs SDF distance: 3.83/3.77/3.59 M queries/s.
+- Dense ESDF distance: 25.28/28.49/25.11 M queries/s.
+- Dense ESDF build: 4.79 M voxels/s (32^3 grid).
+
+Summary (items per second, 4096 queries unless noted):
+
+- Dense SDF distance sweep: 26.97 M (32^3, 0.10 m), 26.83 M (40^3, 0.08 m), 26.07 M (64^3, 0.05 m), 24.40 M (80^3, 0.04 m), 22.47 M (96^3, 0.033333 m).
+- Dense ESDF distance sweep: 24.72 M (32^3), 24.47 M (40^3), 22.90 M (64^3), 23.47 M (80^3), 22.72 M (96^3).
+- Dense ESDF build sweep: 4.71 M (32^3), 4.49 M (40^3), 4.53 M (64^3), 4.47 M (80^3), 4.08 M (96^3) voxels/s.
 
 ## Run 2026-01-20 — SDF/ESDF resolution sweep (extended)
 
