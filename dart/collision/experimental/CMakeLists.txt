@@ -36,6 +36,7 @@ add_library(${target_name}
   aabb.cpp
   broad_phase/aabb_tree.cpp
   broad_phase/brute_force.cpp
+  broad_phase/spatial_hash.cpp
   broad_phase/sweep_and_prune.cpp
   collision_object.cpp
   collision_world.cpp

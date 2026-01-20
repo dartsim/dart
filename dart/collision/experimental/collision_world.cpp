@@ -34,6 +34,7 @@
 
 #include <dart/collision/experimental/broad_phase/aabb_tree.hpp>
 #include <dart/collision/experimental/broad_phase/brute_force.hpp>
+#include <dart/collision/experimental/broad_phase/spatial_hash.hpp>
 #include <dart/collision/experimental/broad_phase/sweep_and_prune.hpp>
 #include <dart/collision/experimental/comps/collision_object.hpp>
 #include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
@@ -60,6 +61,8 @@ std::unique_ptr<BroadPhase> CollisionWorld::createBroadPhase(BroadPhaseType type
       return std::make_unique<BruteForceBroadPhase>();
     case BroadPhaseType::AabbTree:
       return std::make_unique<AabbTreeBroadPhase>();
+    case BroadPhaseType::SpatialHash:
+      return std::make_unique<SpatialHashBroadPhase>();
     case BroadPhaseType::SweepAndPrune:
       return std::make_unique<SweepAndPruneBroadPhase>();
   }

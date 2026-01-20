@@ -42,6 +42,7 @@
 | CCD (sphere/capsule cast)        | narrow_phase/ccd.hpp/.cpp                | 62    | Swept volume + conservative advancement             |
 | BruteForceBroadPhase             | broad_phase/brute_force.hpp/.cpp         | 15    | O(n²) broad-phase                                   |
 | AabbTreeBroadPhase               | broad_phase/aabb_tree.hpp/.cpp           | 21    | O(n log n) dynamic AABB tree                        |
+| SpatialHashBroadPhase            | broad_phase/spatial_hash.hpp/.cpp        | 24    | O(1) avg for uniform distributions                  |
 | SweepAndPruneBroadPhase          | broad_phase/sweep_and_prune.hpp/.cpp     | 19    | O(n + k) sorted endpoint lists                      |
 | CollisionObject                  | collision_object.hpp/.cpp                | 12    | Lightweight ECS handle                              |
 | NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp       | 7     | Shape-type dispatch                                 |

@@ -484,15 +484,19 @@ CollisionWorld world(BroadPhaseType::SweepAndPrune);
 
 // For debugging or very small object counts (< 20)
 CollisionWorld world(BroadPhaseType::BruteForce);
+
+// For uniform distributions with known object sizes
+CollisionWorld world(BroadPhaseType::SpatialHash);
 ```
 
 #### Algorithm Comparison
 
-| Algorithm         | Complexity       | Best For                       | Trade-offs                             |
-| ----------------- | ---------------- | ------------------------------ | -------------------------------------- |
-| **AABB Tree**     | O(n log n) query | Dynamic scenes, general use    | Higher insertion cost, memory overhead |
-| **Sweep & Prune** | O(n + k) query   | Mostly-static, coherent motion | Must resort on large movements         |
-| **Brute Force**   | O(n²) query      | Debugging, N < 20              | Simple but doesn't scale               |
+| Algorithm         | Complexity       | Best For                       | Trade-offs                               |
+| ----------------- | ---------------- | ------------------------------ | ---------------------------------------- |
+| **AABB Tree**     | O(n log n) query | Dynamic scenes, general use    | Higher insertion cost, memory overhead   |
+| **Spatial Hash**  | O(1) avg query   | Uniform distributions, dense   | Cell size tuning, large objects are slow |
+| **Sweep & Prune** | O(n + k) query   | Mostly-static, coherent motion | Must resort on large movements           |
+| **Brute Force**   | O(n²) query      | Debugging, N < 20              | Simple but doesn't scale                 |
 
 #### Performance Characteristics
 
@@ -502,6 +506,14 @@ CollisionWorld world(BroadPhaseType::BruteForce);
 - Fat AABBs reduce update frequency for small movements
 - 95-188x faster than brute-force at 500-1000 objects
 - Best choice when objects move frequently
+
+**Spatial Hash**:
+
+- Objects hashed into 3D grid cells based on AABB
+- O(1) average query time for uniform distributions
+- Cell size should match average object size for best performance
+- Large objects spanning many cells can degrade performance
+- Good for dense scenes with similar-sized objects
 
 **Sweep-and-Prune**:
 
@@ -522,11 +534,13 @@ CollisionWorld world(BroadPhaseType::BruteForce);
 | Scenario                              | Recommended Algorithm |
 | ------------------------------------- | --------------------- |
 | General robotics simulation           | AabbTree (default)    |
+| Uniform object sizes, dense scene     | SpatialHash           |
 | Static environment + one moving robot | SweepAndPrune         |
 | Debugging collision issues            | BruteForce            |
 | < 20 objects                          | Any (BruteForce OK)   |
 | > 100 objects with frequent movement  | AabbTree              |
 | > 1000 objects, mostly static         | SweepAndPrune         |
+| Particle systems, uniform grids       | SpatialHash           |
 
 #### Querying the Active Algorithm
 
