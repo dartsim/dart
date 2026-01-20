@@ -52,6 +52,15 @@
 | Continuous collision (CCD / time of impact) | Y   | Y      | N   | FCL continuousCollide; Bullet convex sweep / convex cast |
 | Broadphase group queries                    | Y   | Y      | Y   | FCL managers; Bullet broadphase; ODE spaces              |
 
+### Batch query support (data structures and throughput)
+
+| Library | Batch-friendly structures                          | Typical batch usage                                            | Notes                                                                       |
+| ------- | -------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| FCL     | Dynamic AABB tree managers, SaP/SSaP, spatial hash | Register objects once, update transforms, query many pairs     | Designed for group queries; BVH traversal overhead can dominate tiny scenes |
+| Bullet  | DBVT broadphase, pair cache, persistent manifolds  | World step builds/updates pairs, narrowphase over cached pairs | Strong temporal coherence; margins trade accuracy for stability             |
+| ODE     | Spaces (hash, SAP, quadtree)                       | dSpaceCollide over a space each step                           | Simple batch API; performance depends on space choice                       |
+| libccd  | None                                               | Single convex pair at a time                                   | Pure narrowphase; no scene or batch layer                                   |
+
 ### Convex-only reference (libccd)
 
 | Capability                | libccd | Notes                                       |
@@ -102,6 +111,7 @@
 - FCL: strong for mesh-heavy scenes and accurate distance/CCD, but generic templates and BVH traversal add overhead for simple primitives.
 - Bullet: optimized for real-time scenes with temporal coherence (persistent manifolds, pair caches); accuracy depends on margins and contact reduction.
 - ODE: simpler collision pipeline that can be fast for basic primitives; lacks distance queries and modern CCD, and mesh handling depends on external backends.
+- Batch throughput: FCL and Bullet favor repeated-world queries with stable object sets; ODE favors simple per-step space traversal; libccd requires a separate batch layer.
 
 ## Dev activity snapshot (local repos)
 
@@ -119,6 +129,7 @@
 - Offer multiple broadphase strategies (dynamic AABB tree, sweep and prune, spatial hash) with a clear default and deterministic ordering.
 - Keep narrowphase specialized and fast for primitives, but retain a robust GJK/EPA path for convex and mesh.
 - Keep a clean support-function interface (libccd style) to enable custom convex shapes and fast experimentation.
+- Make batch query performance a first-class goal: stable IDs, cached pairs/manifolds, and benchmarks reporting queries/sec for scene-scale sweeps.
 - Add persistent manifold caching and contact reduction options to match Bullet stability while keeping exact geometry modes for accuracy.
 - Make determinism a first-class option (stable ordering, fixed tolerances, reproducible queries) while still enabling fast paths.
 - Invest in mesh robustness: edge and vertex welding, triangle adjacency hints, and BVH refit for moving meshes.
