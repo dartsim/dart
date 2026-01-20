@@ -67,6 +67,24 @@ std::vector<Eigen::Vector3d> MakeBoxVertices(const Eigen::Vector3d& half)
   };
 }
 
+std::vector<Eigen::Vector3i> MakeBoxTriangles()
+{
+  return {
+      {0, 1, 2},
+      {0, 2, 3}, // -Z
+      {4, 6, 5},
+      {4, 7, 6}, // +Z
+      {3, 2, 6},
+      {3, 6, 7}, // +Y
+      {0, 5, 1},
+      {0, 4, 5}, // -Y
+      {0, 3, 7},
+      {0, 7, 4}, // -X
+      {1, 5, 6},
+      {1, 6, 2}, // +X
+  };
+}
+
 } // namespace
 
 static void BM_CCD_SphereCast_Sphere(benchmark::State& state)
@@ -107,6 +125,82 @@ static void BM_CCD_SphereCast_Box(benchmark::State& state)
 }
 BENCHMARK(BM_CCD_SphereCast_Box);
 
+static void BM_CCD_SphereCast_Plane(benchmark::State& state)
+{
+  PlaneShape target(Eigen::Vector3d::UnitZ(), 0.0);
+  const Eigen::Isometry3d targetTf = Eigen::Isometry3d::Identity();
+
+  const Eigen::Vector3d start(0.0, 0.0, 5.0);
+  const Eigen::Vector3d end(0.0, 0.0, -5.0);
+
+  CcdOption option = CcdOption::standard();
+  CcdResult result;
+
+  for (auto _ : state) {
+    result.clear();
+    benchmark::DoNotOptimize(sphereCastPlane(
+        start, end, kSphereRadius, target, targetTf, option, result));
+  }
+}
+BENCHMARK(BM_CCD_SphereCast_Plane);
+
+static void BM_CCD_SphereCast_Cylinder(benchmark::State& state)
+{
+  CylinderShape target(1.0, 2.0);
+  const Eigen::Isometry3d targetTf = Eigen::Isometry3d::Identity();
+
+  const Eigen::Vector3d start(-5.0, 0.0, 0.0);
+  const Eigen::Vector3d end(5.0, 0.0, 0.0);
+
+  CcdOption option = CcdOption::standard();
+  CcdResult result;
+
+  for (auto _ : state) {
+    result.clear();
+    benchmark::DoNotOptimize(sphereCastCylinder(
+        start, end, kSphereRadius, target, targetTf, option, result));
+  }
+}
+BENCHMARK(BM_CCD_SphereCast_Cylinder);
+
+static void BM_CCD_SphereCast_Convex(benchmark::State& state)
+{
+  ConvexShape target(MakeBoxVertices(kHalfExtents));
+  const Eigen::Isometry3d targetTf = Eigen::Isometry3d::Identity();
+
+  const Eigen::Vector3d start(-5.0, 0.0, 0.0);
+  const Eigen::Vector3d end(5.0, 0.0, 0.0);
+
+  CcdOption option = CcdOption::standard();
+  CcdResult result;
+
+  for (auto _ : state) {
+    result.clear();
+    benchmark::DoNotOptimize(sphereCastConvex(
+        start, end, kSphereRadius, target, targetTf, option, result));
+  }
+}
+BENCHMARK(BM_CCD_SphereCast_Convex);
+
+static void BM_CCD_SphereCast_Mesh(benchmark::State& state)
+{
+  MeshShape target(MakeBoxVertices(kHalfExtents), MakeBoxTriangles());
+  const Eigen::Isometry3d targetTf = Eigen::Isometry3d::Identity();
+
+  const Eigen::Vector3d start(-5.0, 0.0, 0.0);
+  const Eigen::Vector3d end(5.0, 0.0, 0.0);
+
+  CcdOption option = CcdOption::standard();
+  CcdResult result;
+
+  for (auto _ : state) {
+    result.clear();
+    benchmark::DoNotOptimize(sphereCastMesh(
+        start, end, kSphereRadius, target, targetTf, option, result));
+  }
+}
+BENCHMARK(BM_CCD_SphereCast_Mesh);
+
 static void BM_CCD_CapsuleCast_Capsule(benchmark::State& state)
 {
   CapsuleShape capsule(kCapsuleRadius, kCapsuleHeight);
@@ -126,6 +220,69 @@ static void BM_CCD_CapsuleCast_Capsule(benchmark::State& state)
   }
 }
 BENCHMARK(BM_CCD_CapsuleCast_Capsule);
+
+static void BM_CCD_CapsuleCast_Box(benchmark::State& state)
+{
+  CapsuleShape capsule(kCapsuleRadius, kCapsuleHeight);
+  BoxShape target(kHalfExtents);
+  const Eigen::Isometry3d targetTf = Eigen::Isometry3d::Identity();
+
+  const Eigen::Isometry3d startTf
+      = MakeTransform(Eigen::Vector3d(-5.0, 0.0, 0.0));
+  const Eigen::Isometry3d endTf = MakeTransform(Eigen::Vector3d(5.0, 0.0, 0.0));
+
+  CcdOption option = CcdOption::standard();
+  CcdResult result;
+
+  for (auto _ : state) {
+    result.clear();
+    benchmark::DoNotOptimize(capsuleCastBox(
+        startTf, endTf, capsule, target, targetTf, option, result));
+  }
+}
+BENCHMARK(BM_CCD_CapsuleCast_Box);
+
+static void BM_CCD_CapsuleCast_Convex(benchmark::State& state)
+{
+  CapsuleShape capsule(kCapsuleRadius, kCapsuleHeight);
+  ConvexShape target(MakeBoxVertices(kHalfExtents));
+  const Eigen::Isometry3d targetTf = Eigen::Isometry3d::Identity();
+
+  const Eigen::Isometry3d startTf
+      = MakeTransform(Eigen::Vector3d(-5.0, 0.0, 0.0));
+  const Eigen::Isometry3d endTf = MakeTransform(Eigen::Vector3d(5.0, 0.0, 0.0));
+
+  CcdOption option = CcdOption::standard();
+  CcdResult result;
+
+  for (auto _ : state) {
+    result.clear();
+    benchmark::DoNotOptimize(capsuleCastConvex(
+        startTf, endTf, capsule, target, targetTf, option, result));
+  }
+}
+BENCHMARK(BM_CCD_CapsuleCast_Convex);
+
+static void BM_CCD_CapsuleCast_Mesh(benchmark::State& state)
+{
+  CapsuleShape capsule(kCapsuleRadius, kCapsuleHeight);
+  MeshShape target(MakeBoxVertices(kHalfExtents), MakeBoxTriangles());
+  const Eigen::Isometry3d targetTf = Eigen::Isometry3d::Identity();
+
+  const Eigen::Isometry3d startTf
+      = MakeTransform(Eigen::Vector3d(-5.0, 0.0, 0.0));
+  const Eigen::Isometry3d endTf = MakeTransform(Eigen::Vector3d(5.0, 0.0, 0.0));
+
+  CcdOption option = CcdOption::standard();
+  CcdResult result;
+
+  for (auto _ : state) {
+    result.clear();
+    benchmark::DoNotOptimize(capsuleCastMesh(
+        startTf, endTf, capsule, target, targetTf, option, result));
+  }
+}
+BENCHMARK(BM_CCD_CapsuleCast_Mesh);
 
 static void BM_CCD_ConservativeAdvancement_Convex(benchmark::State& state)
 {
