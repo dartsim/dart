@@ -502,6 +502,15 @@ private:
 | No hash iteration        | Avoid `unordered_map/set` in hot paths              |
 | Floating-point care      | Use consistent operations, avoid reassociation      |
 
+### Batch Query Ordering
+
+Batch APIs (e.g., collideAll/distanceAll/raycastAll) must return results in a deterministic order that does not depend on threading or insertion timing.
+
+- Assign stable object IDs on creation; use IDs for ordering in public batch results.
+- Sort pair results by `(id1, id2, query_index)` with `id1 < id2`.
+- Sort raycast results by `(distance, object_id)` to keep hit order stable.
+- Parallel implementations must merge per-thread results with a stable sort.
+
 ### Utility Function
 
 ```cpp

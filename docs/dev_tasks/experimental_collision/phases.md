@@ -140,6 +140,37 @@ Remove External (DART 8)
 - Box-box: Collision detection agrees with FCL
 - Distance queries: Exact results (within 1e-6)
 
+### Batch Benchmark Requirements (Comparative)
+
+**Definition:** Batch = many queries per frame over a scene (broadphase + narrowphase), not just single-pair microbenchmarks.
+
+**Scenarios (minimum set):**
+
+- Mixed primitives scene (sphere/box/capsule) with 1k and 10k objects
+- Dense cluster vs sparse distribution (broadphase stress)
+- Mesh-heavy scene (static meshes + moving primitives)
+- Batched raycasts (10k rays) with hit/miss mix
+
+**Metrics to record:**
+
+- Pairs/sec and queries/sec
+- Time per frame (update + broadphase + narrowphase)
+- Contact count and accuracy deltas vs baseline backends
+- Peak memory and allocation counts in the hot path
+
+**Fairness rules:**
+
+- Pre-create objects and meshes outside timed loops
+- Fixed RNG seeds and identical transforms across backends
+- Match options (contact flags, tolerances) per backend
+- Warm-up iterations before timing
+
+**Acceptance thresholds:**
+
+- Experimental throughput must be **>= best backend** for each supported scenario
+- If within 10% of best, document the gap and add an optimization task before integration
+- If worse, block integration until the batch gap is closed
+
 ---
 
 ## Integration Phase (Deferred)
