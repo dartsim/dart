@@ -85,6 +85,22 @@ std::vector<NeighborOffset> buildSurfaceOffsets()
   return offsets;
 }
 
+const std::vector<NeighborOffset>& surfaceOffsets()
+{
+  static const std::vector<NeighborOffset> kSurfaceOffsets
+      = buildSurfaceOffsets();
+  return kSurfaceOffsets;
+}
+
+const std::vector<NeighborOffset>& neighborOffsets(bool use_diagonal)
+{
+  static const std::vector<NeighborOffset> kSixOffsets
+      = buildNeighborOffsets(false);
+  static const std::vector<NeighborOffset> kTwentySixOffsets
+      = buildNeighborOffsets(true);
+  return use_diagonal ? kTwentySixOffsets : kSixOffsets;
+}
+
 } // namespace
 
 DenseEsdfField::DenseEsdfField(
@@ -102,6 +118,21 @@ DenseEsdfField::DenseEsdfField(
                            * static_cast<std::size_t>(dims_.z());
   distances_.assign(size, max_distance_);
   observed_.assign(size, 0);
+}
+
+void DenseEsdfField::ensureScratch(std::size_t size)
+{
+  if (signs_.size() != size) {
+    signs_.assign(size, 0);
+  } else {
+    std::fill(signs_.begin(), signs_.end(), 0);
+  }
+
+  if (surface_.size() != size) {
+    surface_.assign(size, 0);
+  } else {
+    std::fill(surface_.begin(), surface_.end(), 0);
+  }
 }
 
 void DenseEsdfField::setDistance(const Eigen::Vector3i& index, double distance)
@@ -150,10 +181,17 @@ bool DenseEsdfField::buildFromTsdf(
   const std::size_t size = static_cast<std::size_t>(dims_.x())
                            * static_cast<std::size_t>(dims_.y())
                            * static_cast<std::size_t>(dims_.z());
-  distances_.assign(size, max_distance_);
-  observed_.assign(size, 0);
-  std::vector<int8_t> signs(size, 0);
-  std::vector<std::uint8_t> surface(size, 0);
+  if (distances_.size() != size) {
+    distances_.assign(size, max_distance_);
+  } else {
+    std::fill(distances_.begin(), distances_.end(), max_distance_);
+  }
+  if (observed_.size() != size) {
+    observed_.assign(size, 0);
+  } else {
+    std::fill(observed_.begin(), observed_.end(), 0);
+  }
+  ensureScratch(size);
 
   const double surface_band = (options.surfaceDistance > 0.0)
                                   ? options.surfaceDistance
@@ -170,24 +208,24 @@ bool DenseEsdfField::buildFromTsdf(
         }
         observed_[linear] = 1;
         const double dist = tsdf.getDistance(index);
-        signs[linear] = (dist >= 0.0) ? 1 : -1;
+        signs_[linear] = (dist >= 0.0) ? 1 : -1;
         if (std::abs(dist) <= surface_band) {
-          surface[linear] = 1;
+          surface_[linear] = 1;
         }
       }
     }
   }
 
-  const auto surface_offsets = buildSurfaceOffsets();
+  const auto& surface_offsets = surfaceOffsets();
   for (int z = 0; z < dims_.z(); ++z) {
     for (int y = 0; y < dims_.y(); ++y) {
       for (int x = 0; x < dims_.x(); ++x) {
         const Eigen::Vector3i index(x, y, z);
         const std::size_t linear = toLinear(index);
-        if (!observed_[linear] || surface[linear]) {
+        if (!observed_[linear] || surface_[linear]) {
           continue;
         }
-        const int8_t sign = signs[linear];
+        const int8_t sign = signs_[linear];
         for (const auto& neighbor : surface_offsets) {
           const Eigen::Vector3i neighbor_index = index + neighbor.offset;
           if (!isValidIndex(neighbor_index)) {
@@ -197,8 +235,8 @@ bool DenseEsdfField::buildFromTsdf(
           if (!observed_[neighbor_linear]) {
             continue;
           }
-          if (signs[neighbor_linear] != sign) {
-            surface[linear] = 1;
+          if (signs_[neighbor_linear] != sign) {
+            surface_[linear] = 1;
             break;
           }
         }
@@ -218,14 +256,13 @@ bool DenseEsdfField::buildFromTsdf(
       cmp);
 
   for (std::size_t i = 0; i < size; ++i) {
-    if (observed_[i] && surface[i]) {
+    if (observed_[i] && surface_[i]) {
       distances_[i] = 0.0;
       queue.push({0.0, i});
     }
   }
 
-  const auto neighbor_offsets
-      = buildNeighborOffsets(options.useDiagonalNeighbors);
+  const auto& neighbor_offsets = neighborOffsets(options.useDiagonalNeighbors);
   const int stride_x = dims_.x();
   const int stride_y = dims_.x() * dims_.y();
 
@@ -272,7 +309,7 @@ bool DenseEsdfField::buildFromTsdf(
       distances_[i] = max_distance_;
       continue;
     }
-    distances_[i] = distances_[i] * static_cast<double>(signs[i]);
+    distances_[i] = distances_[i] * static_cast<double>(signs_[i]);
   }
 
   return true;

@@ -95,6 +95,8 @@ public:
   [[nodiscard]] double maxDistance() const override;
 
 private:
+  void ensureScratch(std::size_t size);
+
   bool isValidIndex(const Eigen::Vector3i& index) const;
   std::size_t toLinear(const Eigen::Vector3i& index) const;
 
@@ -112,6 +114,8 @@ private:
 
   std::vector<double> distances_;
   std::vector<std::uint8_t> observed_;
+  std::vector<int8_t> signs_;
+  std::vector<std::uint8_t> surface_;
 };
 
 } // namespace dart::collision::experimental
