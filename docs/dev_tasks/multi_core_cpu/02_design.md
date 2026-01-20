@@ -94,6 +94,21 @@ This document describes the design of the compute-graph based parallel execution
                                  └─────────────────────┘
 ```
 
+### Current WorldStepGraph (Batched Form)
+
+```
+[BatchForwardDynamics 0..B-1] --\
+[BatchForwardDynamics B..2B-1] ---+--> [ConstraintSolve] --> [BatchIntegratePositions 0..B-1] --\
+[BatchForwardDynamics ...] ------/                             [BatchIntegratePositions B..2B-1] ---+--> [TimeAdvance]
+                                                                  [BatchIntegratePositions ...] -----/
+```
+
+Notes:
+
+- When batching is disabled (batchSize = 1), each batch node is replaced with
+  per-skeleton ForwardDynamics/IntegratePositions nodes.
+- If there are no mobile skeletons, the graph reduces to ConstraintSolve -> TimeAdvance.
+
 ## Key Classes
 
 ### ExecutionContext
