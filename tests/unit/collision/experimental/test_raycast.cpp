@@ -74,6 +74,28 @@ TEST(RaycastSphere, HitFromOutside)
   EXPECT_NEAR(result.normal.z(), -1.0, 1e-10);
 }
 
+TEST(RaycastSphere, GrazingHit)
+{
+  SphereShape sphere(1.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(-5, 1, 0), Eigen::Vector3d(1, 0, 0));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastSphere(ray, sphere, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_TRUE(result.isHit());
+  EXPECT_NEAR(result.distance, 5.0, 1e-10);
+  EXPECT_NEAR(result.point.x(), 0.0, 1e-10);
+  EXPECT_NEAR(result.point.y(), 1.0, 1e-10);
+  EXPECT_NEAR(result.point.z(), 0.0, 1e-10);
+  EXPECT_NEAR(result.normal.x(), 0.0, 1e-10);
+  EXPECT_NEAR(result.normal.y(), 1.0, 1e-10);
+  EXPECT_NEAR(result.normal.z(), 0.0, 1e-10);
+}
+
 TEST(RaycastSphere, HitFromInside)
 {
   SphereShape sphere(2.0);
@@ -152,6 +174,27 @@ TEST(RaycastBox, HitFrontFace)
   EXPECT_TRUE(hit);
   EXPECT_NEAR(result.distance, 4.0, 1e-10);
   EXPECT_NEAR(result.point.z(), -1.0, 1e-10);
+  EXPECT_NEAR(result.normal.z(), -1.0, 1e-10);
+}
+
+TEST(RaycastBox, ThinSlabHit)
+{
+  BoxShape box(Eigen::Vector3d(1, 1, 1e-3));
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(0, 0, -1), Eigen::Vector3d(0, 0, 1));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastBox(ray, box, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_NEAR(result.distance, 0.999, 1e-10);
+  EXPECT_NEAR(result.point.x(), 0.0, 1e-10);
+  EXPECT_NEAR(result.point.y(), 0.0, 1e-10);
+  EXPECT_NEAR(result.point.z(), -1e-3, 1e-10);
+  EXPECT_NEAR(result.normal.x(), 0.0, 1e-10);
+  EXPECT_NEAR(result.normal.y(), 0.0, 1e-10);
   EXPECT_NEAR(result.normal.z(), -1.0, 1e-10);
 }
 
@@ -327,6 +370,24 @@ TEST(RaycastPlane, Miss_ParallelRay)
   bool hit = raycastPlane(ray, plane, transform, option, result);
 
   EXPECT_FALSE(hit);
+}
+
+TEST(RaycastPlane, NearParallelRay)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Eigen::Vector3d dir = Eigen::Vector3d(1, 0, -1e-6).normalized();
+  Ray ray(Eigen::Vector3d(0, 0, 1), dir);
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastPlane(ray, plane, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  double expected = 1.0 / std::abs(dir.z());
+  EXPECT_NEAR(result.distance, expected, 1e-4);
+  EXPECT_NEAR(result.point.z(), 0.0, 1e-8);
 }
 
 TEST(RaycastPlane, Miss_BackfaceCulling)

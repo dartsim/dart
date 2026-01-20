@@ -143,6 +143,23 @@ TEST(DistanceSphereBox, Touching)
   EXPECT_NEAR(dist, 0.0, 1e-6);
 }
 
+TEST(DistanceSphereBox, GrazingGap)
+{
+  SphereShape sphere(1.0);
+  BoxShape box(Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  const double gap = 1e-4;
+
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+  tfSphere.translation() = Eigen::Vector3d(2.0 + gap, 0, 0);
+
+  DistanceResult result;
+  double dist = distanceSphereBox(sphere, tfSphere, box, tfBox, result);
+
+  EXPECT_NEAR(dist, gap, 1e-7);
+}
+
 TEST(DistanceSphereBox, Penetrating)
 {
   SphereShape sphere(1.0);
@@ -171,6 +188,23 @@ TEST(DistanceBoxBox, Separated)
   double dist = distanceBoxBox(b1, tf1, b2, tf2, result);
 
   EXPECT_NEAR(dist, 2.0, 1e-6);
+}
+
+TEST(DistanceBoxBox, ThinFeatureSeparated)
+{
+  BoxShape b1(Eigen::Vector3d(1.0, 1.0, 1e-3));
+  BoxShape b2(Eigen::Vector3d(1.0, 1.0, 1e-3));
+
+  const double gap = 5e-3;
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(0, 0, 2e-3 + gap);
+
+  DistanceResult result;
+  double dist = distanceBoxBox(b1, tf1, b2, tf2, result);
+
+  EXPECT_NEAR(dist, gap, 1e-6);
 }
 
 TEST(DistanceCapsuleCapsule, Separated)

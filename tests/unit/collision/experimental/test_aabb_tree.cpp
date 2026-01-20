@@ -484,8 +484,7 @@ TEST(AabbTreeBroadPhase, QueryPairsFiltered)
   }
 
   filtered.clear();
-  bp.queryPairsFiltered(filtered, [](std::size_t, std::size_t) {
-    return false;
-  });
+  bp.queryPairsFiltered(
+      filtered, [](std::size_t, std::size_t) { return false; });
   EXPECT_TRUE(filtered.empty());
 }
