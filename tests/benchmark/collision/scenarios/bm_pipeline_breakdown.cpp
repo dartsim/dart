@@ -157,6 +157,7 @@ void RunPipelineBenchmark(benchmark::State& state, double range)
   std::size_t totalPairBytes = 0;
   std::size_t totalContactBytes = 0;
   std::size_t totalTempBytes = 0;
+  std::size_t totalUpdated = 0;
 
   std::size_t iteration = 0;
   for (auto _ : state) {
@@ -168,7 +169,7 @@ void RunPipelineBenchmark(benchmark::State& state, double range)
       tf.translation().x() += shift;
       objects[i].setTransform(tf);
     }
-    world.updateAll();
+    totalUpdated += world.updateAll();
     auto endUpdate = Clock::now();
     updateNs += std::chrono::duration_cast<std::chrono::nanoseconds>(
                     endUpdate - startUpdate)
@@ -218,6 +219,8 @@ void RunPipelineBenchmark(benchmark::State& state, double range)
       = benchmark::Counter(mergeNs, benchmark::Counter::kAvgIterations);
   state.counters["pairs"]
       = benchmark::Counter(totalPairs, benchmark::Counter::kAvgIterations);
+  state.counters["aabb_updates"]
+      = benchmark::Counter(totalUpdated, benchmark::Counter::kAvgIterations);
   state.counters["pairs_tested"] = benchmark::Counter(
       totalPairsTested, benchmark::Counter::kAvgIterations);
   state.counters["contacts"]
