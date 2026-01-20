@@ -3522,8 +3522,9 @@ static void computeSupportPolygon(
       vertex_indices, std::span<const Eigen::Vector3d>(geometry), axis1, axis2);
 
   ee_indices.reserve(vertex_indices.size());
-  for (std::size_t i = 0; i < vertex_indices.size(); ++i)
-    ee_indices[i] = originalEE_map[vertex_indices[i]];
+  for (std::size_t i = 0; i < vertex_indices.size(); ++i) {
+    ee_indices.push_back(originalEE_map[vertex_indices[i]]);
+  }
 
   if (polygon.size() > 0)
     centroid = math::computeCentroidOfHull(polygon);
