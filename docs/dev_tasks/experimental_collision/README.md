@@ -85,9 +85,13 @@ The module is being developed as a **standalone collision library** first, befor
 - Batch API with SoA storage and BatchView
 - Stable object IDs for determinism
 
+**Filtering:**
+
+- Collision filtering (groups/masks) with bitmask and callback APIs
+
 ### What's Next (Priority)
 
-1. **P0 - Collision filtering** (groups/masks)
+1. ~~**P0 - Collision filtering** (groups/masks)~~ **COMPLETE**
 2. **P0 - Compound shapes**
 3. **P0 - Parallel narrowphase**
 4. **P1 - DART backend integration**
@@ -114,7 +118,7 @@ See [gap_analysis.md](./gap_analysis.md) for full priority roadmap.
 # Build and run all collision-experimental tests
 pixi run build && ctest --test-dir build/default/cpp/Release -L collision-experimental -j$(nproc)
 
-# Expected: 413 tests across 26 test binaries
+# Expected: 444 tests across 27 test binaries
 ```
 
 ## Success Criteria
@@ -128,7 +132,7 @@ pixi run build && ctest --test-dir build/default/cpp/Release -L collision-experi
 - [x] Continuous collision detection
 - [x] Multiple broadphase algorithms
 - [x] ECS batch infrastructure
-- [ ] Collision filtering (groups/masks)
+- [x] Collision filtering (groups/masks)
 - [ ] Compound shapes
 - [ ] Parallel narrowphase
 - [ ] Performance parity with FCL

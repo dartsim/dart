@@ -22,7 +22,7 @@
 
 ---
 
-## Completed Components (413 tests)
+## Completed Components (444 tests)
 
 | Component                        | Files                                    | Tests | Notes                                               |
 | -------------------------------- | ---------------------------------------- | ----- | --------------------------------------------------- |
@@ -47,6 +47,7 @@
 | CollisionObject                  | collision_object.hpp/.cpp                | 12    | Lightweight ECS handle                              |
 | NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp       | 7     | Shape-type dispatch                                 |
 | CollisionWorld                   | collision_world.hpp/.cpp                 | 8     | Standalone collision detection                      |
+| CollisionFilter                  | collision_filter.hpp/.cpp                | 31    | Bitmask + callback collision filtering              |
 
 ---
 
@@ -62,7 +63,7 @@ See **[gap_analysis.md](./gap_analysis.md)** for a comprehensive comparison agai
 
 **Critical gaps blocking integration:**
 
-1. No collision filtering (groups/masks)
+1. ~~No collision filtering (groups/masks)~~ **COMPLETE** (2026-01-20)
 2. No compound shapes
 3. No parallel narrowphase
 4. Not yet wired as DART CollisionDetector backend
@@ -146,10 +147,10 @@ Structured suite updates:
 - Raycast batch uses SweepAndPrune broadphase and 500 rays with 1k/2k objects for bounded runtime
 - Added mesh-heavy scenario in `tests/benchmark/collision/scenarios/bm_mesh_heavy.cpp` (experimental vs FCL/Bullet)
 - Added pipeline breakdown scenario in `tests/benchmark/collision/scenarios/bm_pipeline_breakdown.cpp` (AABB update + broadphase + narrowphase timing for 1k/10k)
-- Added experimental CCD microbench in `tests/benchmark/collision/experimental/bm_ccd.cpp`
+- Added experimental CCD microbench in `tests/benchmark/collision/experimental/bm_ccd.cpp` (sphere/capsule vs plane/cylinder/convex/mesh + conservative advancement)
 - Added edge-case + scale sweep coverage for comparative narrow-phase and distance (touching, deep penetration, grazing, thin features; 1e-3, 1, 1e3)
 - Added fairness-aligned distance options (nearest points + no early exit) across backends
-- Added cross-backend correctness integration test (experimental vs FCL/Bullet/ODE)
+- Added cross-backend correctness checks (analytic primitives: experimental vs FCL/Bullet/ODE; experimental vs Bullet raycast for sphere/box; Bullet/ODE distance unsupported)
 - Added benchmark results log in `docs/dev_tasks/experimental_collision/benchmark_results.md`
 
 Structured suite coverage (complete):
@@ -248,21 +249,21 @@ bool NarrowPhase::isSphereCastSupported(ShapeType type);
 
 #### CI & Testing Integration (2026-01-20)
 
-| Component                  | Status       | Notes                                              |
-| -------------------------- | ------------ | -------------------------------------------------- |
-| CI job (`vsg-rendering`)   | **Complete** | Ubuntu workflow with Vulkan deps                   |
-| Build option in pixi.toml  | **Complete** | `DART_BUILD_GUI_VSG_VALUE` variable added          |
-| Unit tests                 | **Complete** | 44 tests (GeometryBuilders, CollisionSceneBuilder, SimpleViewer, DebugDraw) |
-| Documentation              | **Complete** | `DART_BUILD_GUI_VSG` option documented in building.md |
-| Headless CI verification   | **Complete** | `collision_viz --headless --frames 10` in CI       |
+| Component                 | Status       | Notes                                                                       |
+| ------------------------- | ------------ | --------------------------------------------------------------------------- |
+| CI job (`vsg-rendering`)  | **Complete** | Ubuntu workflow with Vulkan deps                                            |
+| Build option in pixi.toml | **Complete** | `DART_BUILD_GUI_VSG_VALUE` variable added                                   |
+| Unit tests                | **Complete** | 44 tests (GeometryBuilders, CollisionSceneBuilder, SimpleViewer, DebugDraw) |
+| Documentation             | **Complete** | `DART_BUILD_GUI_VSG` option documented in building.md                       |
+| Headless CI verification  | **Complete** | `collision_viz --headless --frames 10` in CI                                |
 
 #### Remaining Considerations (Low Priority)
 
-| Item                          | Status   | Notes                                           |
-| ----------------------------- | -------- | ----------------------------------------------- |
-| macOS CI                      | Deferred | Vulkan not well-supported on macOS              |
-| Windows CI                    | Deferred | Would need Vulkan SDK setup in CI               |
-| Default-ON build              | Deferred | Kept OFF to avoid Vulkan dependency for most users |
+| Item             | Status   | Notes                                              |
+| ---------------- | -------- | -------------------------------------------------- |
+| macOS CI         | Deferred | Vulkan not well-supported on macOS                 |
+| Windows CI       | Deferred | Would need Vulkan SDK setup in CI                  |
+| Default-ON build | Deferred | Kept OFF to avoid Vulkan dependency for most users |
 
 #### Key APIs (Reference)
 

@@ -238,17 +238,17 @@ FCL's BV flexibility is powerful but adds significant template complexity. For e
 
 ## 6. Advanced Features
 
-| Feature                            | Experimental | FCL | Bullet  | ODE     | Priority |
-| ---------------------------------- | ------------ | --- | ------- | ------- | -------- |
-| Collision filtering (groups/masks) | ❌           | ✅  | ✅      | ✅      | **High** |
-| Collision callbacks                | partial      | ✅  | ✅      | ✅      | Medium   |
-| Persistent manifolds               | ❌           | ❌  | ✅      | ❌      | **High** |
-| Contact reduction                  | partial      | ❌  | ✅      | ❌      | Medium   |
-| Security margins                   | ❌           | ❌  | ✅      | ❌      | Low      |
-| Compound shapes                    | ❌           | ❌  | ✅      | partial | **High** |
-| Multi-threading                    | ❌           | ❌  | partial | ❌      | **High** |
-| Contact warm-starting              | ❌           | ❌  | ✅      | ❌      | Medium   |
-| Tolerance verification             | ❌           | ✅  | ❌      | ❌      | Low      |
+| Feature                            | Experimental | FCL | Bullet  | ODE     | Priority     |
+| ---------------------------------- | ------------ | --- | ------- | ------- | ------------ |
+| Collision filtering (groups/masks) | ✅           | ✅  | ✅      | ✅      | **Complete** |
+| Collision callbacks                | ✅           | ✅  | ✅      | ✅      | **Complete** |
+| Persistent manifolds               | ❌           | ❌  | ✅      | ❌      | **High**     |
+| Contact reduction                  | partial      | ❌  | ✅      | ❌      | Medium       |
+| Security margins                   | ❌           | ❌  | ✅      | ❌      | Low          |
+| Compound shapes                    | ❌           | ❌  | ✅      | partial | **High**     |
+| Multi-threading                    | ❌           | ❌  | partial | ❌      | **High**     |
+| Contact warm-starting              | ❌           | ❌  | ✅      | ❌      | Medium       |
+| Tolerance verification             | ❌           | ✅  | ❌      | ❌      | Low          |
 
 ---
 
