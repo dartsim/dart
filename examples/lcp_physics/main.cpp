@@ -47,6 +47,8 @@
 #include <string>
 #include <vector>
 
+#include <cmath>
+
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::gui;
@@ -55,6 +57,7 @@ using namespace dart::constraint;
 namespace {
 
 constexpr int kMaxHistorySize = 120;
+constexpr float kDefaultFontSize = 13.0f;
 
 enum class Scenario
 {
@@ -546,9 +549,12 @@ public:
   void render() override
   {
     updateFps();
+    mUiScale = getUiScale();
 
-    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(340, 600), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(
+        ImVec2(10.0f * mUiScale, 10.0f * mUiScale), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(
+        ImVec2(340.0f * mUiScale, 600.0f * mUiScale), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowBgAlpha(0.85f);
 
     if (!ImGui::Begin("LCP Physics Control")) {
@@ -591,17 +597,18 @@ private:
     if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
       bool simulating = mViewer->isSimulating();
 
-      if (ImGui::Button(simulating ? "Pause" : "Play", ImVec2(70, 0))) {
+      if (ImGui::Button(
+              simulating ? "Pause" : "Play", ImVec2(70.0f * mUiScale, 0.0f))) {
         mViewer->simulate(!simulating);
       }
       ImGui::SameLine();
-      if (ImGui::Button("Step", ImVec2(70, 0))) {
+      if (ImGui::Button("Step", ImVec2(70.0f * mUiScale, 0.0f))) {
         if (simulating)
           mViewer->simulate(false);
         mWorld->step();
       }
       ImGui::SameLine();
-      if (ImGui::Button("Reset", ImVec2(70, 0))) {
+      if (ImGui::Button("Reset", ImVec2(70.0f * mUiScale, 0.0f))) {
         resetScenario();
       }
 
@@ -689,7 +696,7 @@ private:
             nullptr,
             0.0f,
             maxTime,
-            ImVec2(300, 60));
+            ImVec2(300.0f * mUiScale, 60.0f * mUiScale));
 
         float avgTime = 0.0f;
         for (float t : history)
@@ -703,10 +710,19 @@ private:
   void renderExplanationSection()
   {
     if (ImGui::CollapsingHeader("About This Scenario")) {
-      ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 310);
+      ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 310.0f * mUiScale);
       ImGui::TextUnformatted(mScenarios[mCurrentScenario].explanation.c_str());
       ImGui::PopTextWrapPos();
     }
+  }
+
+  float getUiScale() const
+  {
+    const float fontSize = ImGui::GetFontSize();
+    if (!std::isfinite(fontSize) || fontSize <= 0.0f) {
+      return 1.0f;
+    }
+    return fontSize / kDefaultFontSize;
   }
 
   void resetScenario()
@@ -742,6 +758,7 @@ private:
   int mCurrentScenario;
   int mCurrentSolver;
   int mTimeStep;
+  float mUiScale{1.0f};
 
   double mFps{0.0};
   int mFrameCount;

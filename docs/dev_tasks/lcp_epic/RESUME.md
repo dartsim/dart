@@ -6,7 +6,7 @@
 
 - **Branch**: `refactor/lcp_plan`
 - **PR**: #2464
-- **State**: Added framebuffer scale fallback, needs visual verification
+- **State**: Scaled lcp_physics widget layout to font size, needs visual verification
 - **Blocker**: Human visual test needed to confirm lcp_physics is crisp at scale 2
 
 ---
@@ -31,15 +31,25 @@ the ratio falls below 1, avoiding downscaling in ImGui on some OSG setups.
 
 - `dart/gui/ImGuiHandler.cpp` - Scale fallback for viewport vs traits
 
+### 3. Scale lcp_physics Widget Layout with Font Size
+
+Fixed-size ImGui widget measurements (panel size, button width, plot size,
+wrap width) now scale from the current font size to avoid cramped or broken
+layout at `--gui-scale > 1`.
+
+**Files changed**:
+
+- `examples/lcp_physics/main.cpp` - Apply font-based UI scaling
+
 ---
 
 ## Files Ready to Commit
 
 ```
 M  CHANGELOG.md
-M  dart/gui/ImGuiHandler.cpp
 M  docs/dev_tasks/lcp_epic/README.md
 M  docs/dev_tasks/lcp_epic/RESUME.md
+M  examples/lcp_physics/main.cpp
 ```
 
 ---
@@ -65,10 +75,11 @@ cd /home/js/dev/dartsim/dart/task_4
 
 ```bash
 git add -A
-git commit -m "fix(gui): normalize ImGui framebuffer scale detection
+git commit -m "fix(examples): scale lcp_physics widget layout with font size
 
-Use the larger of viewport/traits as the framebuffer size to keep
-DisplayFramebufferScale >= 1 on HiDPI and XWayland setups."
+Scale the fixed ImGui measurements (panel size, button widths, plot size,
+wrap width) from the current font size to prevent cramped layout at
+--gui-scale > 1."
 
 git push origin refactor/lcp_plan
 ```
@@ -78,6 +89,7 @@ git push origin refactor/lcp_plan
 1. Check that `mFramebufferScale` is being detected correctly
 2. Verify the font atlas is actually being rebuilt (add logging)
 3. Log viewport vs traits sizes to confirm the ratio direction
+4. Compare `ImGui::GetFontSize()` vs expected gui-scale in lcp_physics
 
 ---
 
@@ -124,6 +136,14 @@ if (scaleX < 1.0f || scaleY < 1.0f) {
   scaleY = traitsHeight / viewportHeight;
   displaySize = ImVec2(viewportWidth, viewportHeight);
 }
+```
+
+### How the lcp_physics Widget Scales Layout
+
+```cpp
+const float uiScale = ImGui::GetFontSize() / 13.0f;
+ImGui::SetNextWindowSize(ImVec2(340.0f * uiScale, 600.0f * uiScale), ...);
+ImGui::Button("Play", ImVec2(70.0f * uiScale, 0.0f));
 ```
 
 ### Why FontGlobalScale Alone Causes Blur
