@@ -1,15 +1,14 @@
 # Experimental Built-in Collision Detection Module
 
 > **Epic Status**: Standalone Library Development
-> **Last Updated**: 2026-01-19
+> **Last Updated**: 2026-01-20
 > **Location**: `dart/collision/experimental/`
-> **Housekeeping**: This folder includes local filesystem paths (e.g., `/home/js/...`) for active work; remove or sanitize them once all experimental_collision tasks are complete.
 
 ## North Star
 
 DART should ultimately rely on a single, fully built-in collision detection implementation that we can iterate on indefinitely, eliminating external collision-detection backend dependencies.
 
-## ⚠️ CRITICAL: Performance Goal
+## CRITICAL: Performance Goal
 
 **The experimental collision module MUST be faster than existing backends (FCL, Bullet, ODE) while maintaining equal or better accuracy and feature parity.**
 
@@ -24,19 +23,25 @@ If we can't beat existing backends in performance, there's no point in building 
 
 ## Quick Links
 
+### Core Documentation
 - [Design Document](./design.md) - API design, architecture decisions
-- [Phase Plan](./phases.md) - Detailed phase breakdown with deliverables
 - [Progress Tracker](./progress.md) - Current status and completed tasks
-- [Parallelization Plan](./parallelization_plan.md) - Multi-core batch collision roadmap
-- [ECS Data Layout](./ecs_data_layout.md) - Batch-friendly data layout and interface notes
-- [ReactPhysics3D ECS Review](./reactphysics3d_ecs_review.md) - ECS data layout and pipeline notes
-- [Reference Comparison](./reference_comparison.md) - FCL/Bullet/ODE feature and algorithm comparison
 - [Gap Analysis](./gap_analysis.md) - Implementation gaps vs reference backends (priority roadmap)
+
+### Architecture
+- [ECS Architecture](./ecs_architecture.md) - Batch-friendly data layout, SoA storage, parallel pipeline
+- [Parallelization Plan](./parallelization_plan.md) - Multi-core batch collision roadmap
 - [Conventions](./conventions.md) - Normal/sign conventions and adapter rules
 - [Contact Manifolds](./contact_manifolds.md) - Contact representation notes
+
+### Reference & Benchmarks
+- [Reference Comparison](./reference_comparison.md) - FCL/Bullet/ODE feature and algorithm comparison
 - [SDF + Gradients](./sdf_and_gradients.md) - SDF survey and gradient guidance
 - [Benchmark Catalog](./benchmark_catalog.md) - Surveyed benchmark cases and datasets
 - [Benchmark Results](./benchmark_results.md) - Latest structured suite results and gates
+
+### Archive
+- [archive/](./archive/) - Historical research notes (RP3D ECS investigation)
 
 ## Current Status
 
@@ -44,23 +49,41 @@ If we can't beat existing backends in performance, there's no point in building 
 
 The module is being developed as a **standalone collision library** first, before DART API integration. Integration is deferred until feature parity with existing backends.
 
-### What's Built (149 tests passing)
+### What's Built (413 tests passing)
 
-- Core types: ContactPoint, ContactManifold, CollisionResult, CollisionOption
-- Shapes: SphereShape, BoxShape
-- Narrow-phase: sphere-sphere, box-box (SAT), sphere-box
-- Broad-phase: BruteForceBroadPhase
-- CollisionObject wrapper
-- NarrowPhase dispatcher
-- CollisionWorld (standalone collision detection)
+**Shapes:**
+- SphereShape, BoxShape, CapsuleShape, CylinderShape, PlaneShape, ConvexShape
 
-### What's Next
+**Narrow-phase algorithms:**
+- Sphere-sphere, sphere-box, sphere-capsule, sphere-cylinder, sphere-plane
+- Box-box (SAT), box-capsule, box-cylinder, box-plane
+- Capsule-capsule, capsule-cylinder, capsule-plane
+- Cylinder-cylinder, cylinder-plane
+- Plane-plane
+- Convex-convex (GJK/EPA)
 
-1. **More shapes**: Capsule, Cylinder, Plane, Mesh
-2. **Distance queries**: Signed distance, closest points
-3. **Raycast support**
-4. **Comprehensive benchmarks**
-5. **Visual verification GUI** (rerun or raylib)
+**Broad-phase:**
+- BruteForceBroadPhase, SweepAndPrune, SpatialHash, AABBTree
+
+**Query types:**
+- Collision detection with contact manifolds
+- Distance queries (signed distance, closest points)
+- Raycast (all shapes)
+- Continuous collision detection (CCD)
+
+**Infrastructure:**
+- CollisionWorld with ECS (entt) backend
+- Batch API with SoA storage and BatchView
+- Stable object IDs for determinism
+
+### What's Next (Priority)
+
+1. **P0 - Collision filtering** (groups/masks)
+2. **P0 - Compound shapes**
+3. **P0 - Parallel narrowphase**
+4. **P1 - DART backend integration**
+
+See [gap_analysis.md](./gap_analysis.md) for full priority roadmap.
 
 ## Key Design Decisions
 
@@ -70,60 +93,35 @@ The module is being developed as a **standalone collision library** first, befor
 | File naming            | snake_case                                   | Matches experimental convention               |
 | Normal convention      | From object2 to object1                      | Matches existing DART convention              |
 | Contact representation | Extensible manifold-based                    | Supports rigid/deformable/cloth/codimensional |
-| Broad-phase            | Start with brute-force, extensible interface | Simple first, optimize later                  |
+| Broad-phase            | Extensible interface (4 implementations)     | Different algorithms for different use cases  |
 | Determinism            | Bit-exact when possible                      | Required for reproducible simulation          |
 | Development approach   | Standalone library first                     | Defer DART integration until feature parity   |
-
-## Directory Structure
-
-```
-dart/collision/experimental/
-├── CMakeLists.txt
-├── export.hpp
-├── fwd.hpp
-├── types.hpp/.cpp          # ContactPoint, ContactManifold, CollisionResult, CollisionOption
-├── aabb.hpp/.cpp           # Axis-aligned bounding box
-├── collision_object.hpp/.cpp
-├── collision_world.hpp/.cpp  # Standalone collision detection
-├── shapes/
-│   └── shape.hpp/.cpp      # SphereShape, BoxShape
-├── narrow_phase/
-│   ├── narrow_phase.hpp/.cpp  # Shape-type dispatch
-│   ├── sphere_sphere.hpp/.cpp
-│   ├── box_box.hpp/.cpp
-│   └── sphere_box.hpp/.cpp
-└── broad_phase/
-    ├── broad_phase.hpp     # Interface
-    └── brute_force.hpp/.cpp
-```
+| ECS backend            | entt + SoA BatchStorage                      | Cache-friendly, scales to 10k+ objects        |
 
 ## Build & Test
 
 ```bash
-# Configure with experimental collision
-pixi run cmake -B build -DDART_BUILD_COLLISION_EXPERIMENTAL=ON -DDART_BUILD_TESTS=ON
+# Build and run all collision-experimental tests
+pixi run build && ctest --test-dir build/default/cpp/Release -L collision-experimental -j$(nproc)
 
-# Build all experimental tests
-cmake --build build --target dart_collision_experimental_tests
-
-# Run all tests (149 tests across 10 files)
-for t in test_types test_aabb test_shapes test_sphere_sphere test_brute_force \
-         test_box_box test_sphere_box test_collision_object test_narrow_phase \
-         test_collision_world; do
-  ./build/bin/$t
-done
+# Expected: 413 tests across 26 test binaries
 ```
 
 ## Success Criteria
 
 ### Standalone Library Complete When:
 
-- [ ] All primitive shapes: Sphere, Box, Capsule, Cylinder, Plane
-- [ ] Mesh-primitive collision
-- [ ] Distance queries (signed distance, closest points)
-- [ ] Raycast support
-- [ ] Comprehensive benchmarks established
-- [ ] Visual verification tool working
+- [x] All primitive shapes: Sphere, Box, Capsule, Cylinder, Plane
+- [x] Convex shape (GJK/EPA)
+- [x] Distance queries (signed distance, closest points)
+- [x] Raycast support
+- [x] Continuous collision detection
+- [x] Multiple broadphase algorithms
+- [x] ECS batch infrastructure
+- [ ] Collision filtering (groups/masks)
+- [ ] Compound shapes
+- [ ] Parallel narrowphase
+- [ ] Performance parity with FCL
 
 ### DART Integration (Deferred):
 
