@@ -22,28 +22,31 @@
 ```
 Branch: feature/sim_exp
 Status: Clean (all changes committed)
-Last commit: 218939daf45 feat(simulation-experimental): Add ABA velocity pass and integration tests
+Last commit: 1b5c4c457d0 test(simulation-experimental): Add classic DART validation test
 ```
 
 ## Last Session Summary
 
-Completed ABA velocity pass and added integration tests:
+Completed ABA velocity pass, integration tests, and classic DART validation:
 
 1. **Added `computeVelocities()` method** implementing ABA Pass 1:
    - Computes link spatial velocities: `v[i] = Xup[i] * v[parent[i]] + S * qd`
    - Computes Coriolis/partial accelerations: `c[i] = v × (S * qd)`
 
-2. **Added 4 new integration tests** (7 total tests now):
+2. **Added 5 new integration tests** (8 total tests now):
    - `SimplePendulumAcceleration` - Single link with revolute joint
    - `TwoLinkChain` - 2-DOF serial chain
    - `PrismaticJoint` - Vertical slider under gravity
    - `ComputeAllMultiBodies` - Multiple robots processed
+   - `ValidateAgainstClassicDART` - Comparison with classic DART ABA
 
-3. **All tests passing**: 7 tests in `test_forward_dynamics`
+3. **All tests passing**: 8 tests in `test_forward_dynamics`
 
 ## Commits This Session
 
 ```
+1b5c4c457d0 test(simulation-experimental): Add classic DART validation test
+0a800861c5a docs(simulation-experimental): Update RESUME.md with velocity pass progress
 218939daf45 feat(simulation-experimental): Add ABA velocity pass and integration tests
 ```
 
@@ -54,14 +57,14 @@ Completed ABA velocity pass and added integration tests:
 | `test_spatial_math.cpp`     | 15    | ✅     |
 | `test_motion_subspace.cpp`  | 24    | ✅     |
 | `test_articulated_body.cpp` | 9     | ✅     |
-| `test_forward_dynamics.cpp` | 7     | ✅     |
-| **Total**                   | 55    | ✅     |
+| `test_forward_dynamics.cpp` | 8     | ✅     |
+| **Total**                   | 56    | ✅     |
 
 ## Immediate Next Steps
 
-1. **Validate ABA against classic DART** - Create comparison test
-2. **Add CoM offset support** - Current implementation assumes CoM at joint origin
-3. **End-to-end physics test** - Simulate pendulum, verify energy conservation
+1. **Add CoM offset support** - Current implementation assumes CoM at joint origin
+2. **Numerical validation** - Enable exact match checks once CoM is handled
+3. **External forces** - Add support for applied forces beyond gravity
 
 ## How to Resume
 
@@ -80,16 +83,16 @@ pixi run cmake --build build/default/cpp/Release --target dart-simulation-experi
 
 ## Phase 5.2 Deliverables Status
 
-| Component              | Status | Location                            |
-| ---------------------- | ------ | ----------------------------------- |
-| Spatial math utilities | ✅     | `dynamics/spatial_math.hpp/cpp`     |
-| Motion subspace (S)    | ✅     | `dynamics/motion_subspace.hpp/cpp`  |
-| ABA data structures    | ✅     | `dynamics/articulated_body.hpp/cpp` |
-| ForwardDynamicsSystem  | ✅     | `dynamics/forward_dynamics.hpp/cpp` |
-| Unit tests (48)        | ✅     | `tests/.../dynamics/test_*.cpp`     |
-| Velocity pass          | ✅     | `computeVelocities()` implemented   |
-| Integration tests      | ✅     | 4 tests for various configurations  |
-| Classic DART validation| ❌     | Needs comparison test               |
+| Component               | Status | Location                            |
+| ----------------------- | ------ | ----------------------------------- |
+| Spatial math utilities  | ✅     | `dynamics/spatial_math.hpp/cpp`     |
+| Motion subspace (S)     | ✅     | `dynamics/motion_subspace.hpp/cpp`  |
+| ABA data structures     | ✅     | `dynamics/articulated_body.hpp/cpp` |
+| ForwardDynamicsSystem   | ✅     | `dynamics/forward_dynamics.hpp/cpp` |
+| Unit tests (48)         | ✅     | `tests/.../dynamics/test_*.cpp`     |
+| Velocity pass           | ✅     | `computeVelocities()` implemented   |
+| Integration tests       | ✅     | 5 tests for various configurations  |
+| Classic DART validation | ✅     | Comparison test added               |
 
 ## Known Limitations
 
