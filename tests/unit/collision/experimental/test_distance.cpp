@@ -368,6 +368,43 @@ TEST(DistancePlaneShape, BoxAbovePlane)
   EXPECT_NEAR(result.normal.z(), 1.0, 1e-6);
 }
 
+TEST(DistancePlaneShape, CapsuleAbovePlane)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  CapsuleShape capsule(0.5, 2.0);
+
+  Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
+  tfCapsule.translation() = Eigen::Vector3d(0, 0, 2.5);
+
+  DistanceResult result;
+  double dist = distancePlaneShape(plane, tfPlane, capsule, tfCapsule, result);
+
+  EXPECT_NEAR(dist, 1.0, 1e-6);
+  EXPECT_NEAR(result.pointOnObject1.z(), 0.0, 1e-6);
+  EXPECT_NEAR(result.pointOnObject2.z(), 1.0, 1e-6);
+  EXPECT_NEAR(result.normal.z(), 1.0, 1e-6);
+}
+
+TEST(DistancePlaneShape, CylinderAbovePlane)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  CylinderShape cylinder(0.5, 2.0);
+
+  Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfCylinder = Eigen::Isometry3d::Identity();
+  tfCylinder.translation() = Eigen::Vector3d(0, 0, 2.0);
+
+  DistanceResult result;
+  double dist
+      = distancePlaneShape(plane, tfPlane, cylinder, tfCylinder, result);
+
+  EXPECT_NEAR(dist, 1.0, 1e-6);
+  EXPECT_NEAR(result.pointOnObject1.z(), 0.0, 1e-6);
+  EXPECT_NEAR(result.pointOnObject2.z(), 1.0, 1e-6);
+  EXPECT_NEAR(result.normal.z(), 1.0, 1e-6);
+}
+
 TEST(NarrowPhaseDistance, IsDistanceSupported)
 {
   EXPECT_TRUE(
