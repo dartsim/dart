@@ -8,6 +8,10 @@
 
 ## Last Session Summary
 
+Added broadphase snapshot caching in `CollisionWorld` with a dirty flag to
+avoid re-querying pairs when no updates occur, and documented the cache
+in `ecs_data_layout.md`.
+
 Fixed two pre-existing test failures with incorrect geometric expectations:
 
 1. **ConvexIntersecting test** - Expected distance=0 for shapes that actually overlap (penetration), fixed to expect negative distance

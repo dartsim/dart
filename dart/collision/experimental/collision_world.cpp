@@ -90,6 +90,7 @@ CollisionObject CollisionWorld::createObject(
   aabbComp.dirty = false;
 
   m_broadPhase->add(static_cast<std::size_t>(entity), aabb);
+  m_snapshotDirty = true;
 
   return obj;
 }
@@ -103,6 +104,7 @@ void CollisionWorld::destroyObject(CollisionObject object)
   auto entity = object.getEntity();
   m_broadPhase->remove(static_cast<std::size_t>(entity));
   m_registry.destroy(entity);
+  m_snapshotDirty = true;
 }
 
 void CollisionWorld::updateObject(CollisionObject object)
@@ -119,6 +121,7 @@ void CollisionWorld::updateObject(CollisionObject object)
     aabbComp->aabb = aabb;
     aabbComp->dirty = false;
     m_broadPhase->update(static_cast<std::size_t>(entity), aabb);
+    m_snapshotDirty = true;
   }
 }
 
@@ -169,6 +172,10 @@ std::size_t CollisionWorld::updateAll(
     stats->numAabbUpdates = updated;
   }
 
+  if (updated > 0) {
+    m_snapshotDirty = true;
+  }
+
   return updated;
 }
 
@@ -195,6 +202,11 @@ void CollisionWorld::buildBroadPhaseSnapshot(BroadPhaseSnapshot& out) const
 void CollisionWorld::buildBroadPhaseSnapshot(
     BroadPhaseSnapshot& out, const BatchSettings& settings) const
 {
+  if (!m_snapshotDirty && m_cachedDeterministic == settings.deterministic) {
+    out = m_cachedSnapshot;
+    return;
+  }
+
   out.pairs.clear();
   m_broadPhase->queryPairs(out.pairs);
   out.numObjects = m_broadPhase->size();
@@ -207,6 +219,10 @@ void CollisionWorld::buildBroadPhaseSnapshot(
     }
     std::sort(out.pairs.begin(), out.pairs.end());
   }
+
+  m_cachedSnapshot = out;
+  m_snapshotDirty = false;
+  m_cachedDeterministic = settings.deterministic;
 }
 
 bool CollisionWorld::collideAll(
@@ -510,6 +526,9 @@ void CollisionWorld::clear()
 {
   m_broadPhase->clear();
   m_registry.clear();
+  m_cachedSnapshot.clear();
+  m_snapshotDirty = true;
+  m_cachedDeterministic = true;
 }
 
 } // namespace dart::collision::experimental

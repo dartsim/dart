@@ -181,6 +181,9 @@ private:
   entt::registry m_registry;
   BroadPhaseType m_broadPhaseType;
   std::unique_ptr<BroadPhase> m_broadPhase;
+  mutable BroadPhaseSnapshot m_cachedSnapshot;
+  mutable bool m_snapshotDirty = true;
+  mutable bool m_cachedDeterministic = true;
 };
 
 } // namespace dart::collision::experimental

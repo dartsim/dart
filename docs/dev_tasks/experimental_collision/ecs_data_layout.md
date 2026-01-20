@@ -53,6 +53,12 @@ bulk queries.
 - Maintain a `std::vector<ObjectId> dirtyIds` for AABB updates.
 - Optionally keep a bitset to avoid duplicates when multiple updates occur.
 
+### Broadphase snapshot caching
+
+- Cache the most recent broadphase snapshot and reuse it when no objects moved.
+- Invalidate the cache on create/destroy and on any AABB update.
+- Keep a separate cache key for deterministic vs non-deterministic ordering.
+
 ### Pair and contact cache (temporal coherence)
 
 - Store a `PairId` per broadphase overlap and reuse last-frame narrowphase
