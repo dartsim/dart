@@ -43,15 +43,15 @@ passing (cylinder-box fallback + box-box depth aligned; see run notes).
 
 Legend: WIN = min speedup > 1.0; MIXED = min < 1.0 and p90 > 1.0; LOSS = p50 < 1.0.
 
-| Suite / Case                          | Unit | Experimental (min/p50/p90) | FCL (min/p50/p90)      | Bullet (min/p50/p90) | ODE (min/p50/p90)    | Speedup (min/p50/p90 vs best) | Status | Notes                                                      |
-| ------------------------------------- | ---- | -------------------------- | ---------------------- | -------------------- | -------------------- | ----------------------------- | ------ | ---------------------------------------------------------- |
-| Narrow-phase edge cases (scale sweep) | ns   | 26.5/42.3/177.0            | 179.8/512.0/1,609.5    | 247.6/429.6/1,009.9  | 159.0/778.8/1,541.5  | 2.75x/7.01x/11.04x            | WIN    | 77 cases across scales/edge cases.                         |
-| Distance edge cases (scale sweep)     | ns   | 4.7/38.4/124.7             | 224.3/409.3/28,778.3   | 2.6/3.2/3.8          | 380.1/511.7/643.9    | 0.02x/0.09x/0.49x             | LOSS   | 66 cases; ODE distance unsupported (noisy logs).           |
-| Mixed primitives (dense/sparse)       | ms   | 0.03/55.42/7,854.78        | 1.52/54.84/836.05      | 0.01/52.99/11,839.86 | 0.03/43.30/14,055.96 | 0.06x/0.42x/1.10x             | MIXED  | 6 cases (100/1k/10k); BigO/RMS excluded.                   |
-| Mesh-heavy scenario                   | ms   | 8.65/96.38/166.56          | 144.12/709.23/1,161.32 | 30.98/445.37/776.89  | N/A                  | 3.58x/4.13x/4.56x             | WIN    | 2 cases; mesh loader warns about empty path.               |
-| Batched raycasts                      | ms   | 21.63/37.73/52.93          | N/A                    | 47.00/125.00/270.99  | N/A                  | 2.17x/3.31x/5.00x             | WIN    | 500 rays, 1k/2k objects; SweepAndPrune for experimental.   |
-| Comparative raycast (single)          | ns   | 23.3/52.1/66.5             | N/A                    | 186.1/476.8/731.1    | N/A                  | 6.85x/9.14x/10.99x            | WIN    | 5 cases; experimental vs Bullet only.                      |
-| libccd microbench (GJK/EPA/MPR)       | ns   | 59.7/71.4/108.8            | N/A                    | N/A                  | N/A                  | 0.43x/0.53x/8,699.10x         | MIXED  | libccd 29.1/49.5/651,682.0 ns; speedup uses libccd/DART.   |
+| Suite / Case                          | Unit | Experimental (min/p50/p90) | FCL (min/p50/p90)      | Bullet (min/p50/p90) | ODE (min/p50/p90)    | Speedup (min/p50/p90 vs best) | Status | Notes                                                    |
+| ------------------------------------- | ---- | -------------------------- | ---------------------- | -------------------- | -------------------- | ----------------------------- | ------ | -------------------------------------------------------- |
+| Narrow-phase edge cases (scale sweep) | ns   | 26.5/42.3/177.0            | 179.8/512.0/1,609.5    | 247.6/429.6/1,009.9  | 159.0/778.8/1,541.5  | 2.75x/7.01x/11.04x            | WIN    | 77 cases across scales/edge cases.                       |
+| Distance edge cases (scale sweep)     | ns   | 4.7/38.4/124.7             | 224.3/409.3/28,778.3   | 2.6/3.2/3.8          | 380.1/511.7/643.9    | 0.02x/0.09x/0.49x             | LOSS   | 66 cases; ODE distance unsupported (noisy logs).         |
+| Mixed primitives (dense/sparse)       | ms   | 0.03/55.42/7,854.78        | 1.52/54.84/836.05      | 0.01/52.99/11,839.86 | 0.03/43.30/14,055.96 | 0.06x/0.42x/1.10x             | MIXED  | 6 cases (100/1k/10k); BigO/RMS excluded.                 |
+| Mesh-heavy scenario                   | ms   | 8.65/96.38/166.56          | 144.12/709.23/1,161.32 | 30.98/445.37/776.89  | N/A                  | 3.58x/4.13x/4.56x             | WIN    | 2 cases; mesh loader warns about empty path.             |
+| Batched raycasts                      | ms   | 21.63/37.73/52.93          | N/A                    | 47.00/125.00/270.99  | N/A                  | 2.17x/3.31x/5.00x             | WIN    | 500 rays, 1k/2k objects; SweepAndPrune for experimental. |
+| Comparative raycast (single)          | ns   | 23.3/52.1/66.5             | N/A                    | 186.1/476.8/731.1    | N/A                  | 6.85x/9.14x/10.99x            | WIN    | 5 cases; experimental vs Bullet only.                    |
+| libccd microbench (GJK/EPA/MPR)       | ns   | 59.7/71.4/108.8            | N/A                    | N/A                  | N/A                  | 0.43x/0.53x/8,699.10x         | MIXED  | libccd 29.1/49.5/651,682.0 ns; speedup uses libccd/DART. |
 
 ### Performance Gaps (Experimental < best backend)
 
@@ -68,17 +68,17 @@ Legend: WIN = min speedup > 1.0; MIXED = min < 1.0 and p90 > 1.0; LOSS = p50 < 1
 
 ## Result History (Keep Brief)
 
-| Date       | Commit      | Summary                             | Notes                                              |
-| ---------- | ----------- | ----------------------------------- | -------------------------------------------------- |
+| Date       | Commit      | Summary                              | Notes                                              |
+| ---------- | ----------- | ------------------------------------ | -------------------------------------------------- |
 | 2026-01-20 | db9b3f36dc2 | Cylinder-box + box-box benchmark fix | Accuracy checks pass; depth warning resolved.      |
-| 2026-01-20 | e1b474aeb80 | Comparative + baseline rerun        | Capsule fallback fixed; cylinder-box mismatch.     |
-| 2026-01-20 | 154e5440be3 | SDF/ESDF benchmark                  | Voxblox lib not found; ESDF build/query recorded.  |
-| 2026-01-20 | d3d2174bff0 | Partial comparative + libccd rerun  | Capsule fallback; `bm_comparative` build break.    |
-| 2026-01-20 | 1fac7c64227 | libccd microbench                   | EPA faster; GJK/MPR slower vs libccd.              |
-| 2026-01-20 | 7bc79f0dd6b | RP3D-aligned pipeline breakdown try | Segfault persists after rebuild; partial JSON.     |
-| 2026-01-20 | f315999cdfe | Raycast batch + comparative raycast | SweepAndPrune; 500 rays; 1k/2k objects             |
-| 2026-01-19 | TBD         | Baseline results (pre-structure)    |                                                    |
-| 2026-01-19 | b1f6e5e     | Comparative + scenarios runs        | Distance/mixed underperform; raycast blocked then. |
+| 2026-01-20 | e1b474aeb80 | Comparative + baseline rerun         | Capsule fallback fixed; cylinder-box mismatch.     |
+| 2026-01-20 | 154e5440be3 | SDF/ESDF benchmark                   | Voxblox lib not found; ESDF build/query recorded.  |
+| 2026-01-20 | d3d2174bff0 | Partial comparative + libccd rerun   | Capsule fallback; `bm_comparative` build break.    |
+| 2026-01-20 | 1fac7c64227 | libccd microbench                    | EPA faster; GJK/MPR slower vs libccd.              |
+| 2026-01-20 | 7bc79f0dd6b | RP3D-aligned pipeline breakdown try  | Segfault persists after rebuild; partial JSON.     |
+| 2026-01-20 | f315999cdfe | Raycast batch + comparative raycast  | SweepAndPrune; 500 rays; 1k/2k objects             |
+| 2026-01-19 | TBD         | Baseline results (pre-structure)     |                                                    |
+| 2026-01-19 | b1f6e5e     | Comparative + scenarios runs         | Distance/mixed underperform; raycast blocked then. |
 
 ## Run 2026-01-20 — SDF/ESDF compare
 
