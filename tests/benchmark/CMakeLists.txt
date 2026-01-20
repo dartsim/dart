@@ -68,6 +68,20 @@ if(TARGET dart-io)
 endif()
 
 # ==============================================================================
+# Simulation Benchmarks
+# ==============================================================================
+# Compute graph benchmarks (requires Taskflow)
+if(Taskflow_FOUND)
+  add_executable(bm_compute_graph simulation/bm_compute_graph.cpp)
+  target_link_libraries(bm_compute_graph
+    dart
+    benchmark::benchmark
+    benchmark::benchmark_main
+  )
+  dart_format_add(simulation/bm_compute_graph.cpp)
+endif()
+
+# ==============================================================================
 # Component Benchmarks (organized in subdirectories)
 # ==============================================================================
 add_subdirectory(lcpsolver)

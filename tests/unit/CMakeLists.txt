@@ -197,6 +197,15 @@ if(TARGET dart-io)
 endif()
 
 # ==============================================================================
+# Simulation Tests
+# ==============================================================================
+# Compute graph tests (requires Taskflow)
+if(Taskflow_FOUND)
+  dart_add_test("unit" UNIT_simulation_compute_graph simulation/compute_graph/test_compute_graph.cpp)
+  target_link_libraries(UNIT_simulation_compute_graph dart)
+endif()
+
+# ==============================================================================
 # Simulation-Experimental Tests
 # ==============================================================================
 if(DART_BUILD_SIMULATION_EXPERIMENTAL)
