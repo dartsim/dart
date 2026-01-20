@@ -485,6 +485,41 @@ TEST(NarrowPhaseDistance, CylinderBoxThinHeight)
   EXPECT_NEAR(dist, 0.5, 1e-5);
 }
 
+TEST(NarrowPhaseDistance, CylinderSphereSeparated)
+{
+  CollisionWorld world;
+  auto obj1 = world.createObject(std::make_unique<CylinderShape>(1.0, 2.0));
+
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  tfSphere.translation() = Eigen::Vector3d(3.0, 0, 0);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(0.5), tfSphere);
+
+  DistanceOption option;
+  DistanceResult result;
+
+  double dist = NarrowPhase::distance(obj1, obj2, option, result);
+
+  EXPECT_NEAR(dist, 1.5, 1e-6);
+}
+
+TEST(NarrowPhaseDistance, CylinderCylinderThinHeight)
+{
+  CollisionWorld world;
+  auto obj1 = world.createObject(std::make_unique<CylinderShape>(0.5, 1e-3));
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(2.0, 0, 0);
+  auto obj2
+      = world.createObject(std::make_unique<CylinderShape>(0.75, 1e-3), tf2);
+
+  DistanceOption option;
+  DistanceResult result;
+
+  double dist = NarrowPhase::distance(obj1, obj2, option, result);
+
+  EXPECT_NEAR(dist, 0.75, 1e-5);
+}
+
 std::vector<Eigen::Vector3d> makeOctahedronVertices(double scale = 1.0)
 {
   return {
