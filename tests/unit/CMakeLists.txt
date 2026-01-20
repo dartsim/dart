@@ -72,6 +72,8 @@ dart_add_test(
 dart_add_test(
   "unit" UNIT_constraint_JointLimitConstraint constraint/test_JointLimitConstraint.cpp)
 dart_add_test(
+  "unit" UNIT_constraint_JointConstraint constraint/test_JointConstraint.cpp)
+dart_add_test(
   "unit" UNIT_constraint_BalanceConstraint constraint/test_BalanceConstraint.cpp)
 dart_add_test(
   "unit" UNIT_constraint_ContactSurface constraint/test_ContactSurface.cpp)

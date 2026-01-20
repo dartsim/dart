@@ -31,6 +31,7 @@ These templates don't have slash command equivalents. Use them manually:
 | [common/pr-merge-and-cleanup.md](common/pr-merge-and-cleanup.md)             | Monitor CI and merge                      |
 | [issues/discussion.md](issues/discussion.md)                                 | Triage / validity check                   |
 | [issues/closing-message.md](issues/closing-message.md)                       | Generate closing reply                    |
+| [issues/downstream-fix.md](issues/downstream-fix.md)                         | Fix DART bug from gz-physics/Gazebo issue |
 | [release/packaging-branch.md](release/packaging-branch.md)                   | Create release packaging PR               |
 | [release/backport-pr.md](release/backport-pr.md)                             | Cherry-pick to release branch             |
 | [release/branch-ci-fix.md](release/branch-ci-fix.md)                         | Fix CI on release branch                  |
