@@ -42,6 +42,7 @@
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -913,6 +914,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     const FCLCollisionGeometryDeleter& deleter)
 {
   using dynamics::BoxShape;
+  using dynamics::CapsuleShape;
   using dynamics::ConeShape;
   using dynamics::CylinderShape;
   using dynamics::EllipsoidShape;
@@ -974,6 +976,19 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     } else {
       geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
     }
+  } else if (CapsuleShape::getStaticType() == shapeType) {
+    DART_ASSERT(dynamic_cast<const CapsuleShape*>(shape.get()));
+
+    const auto capsule = static_cast<const CapsuleShape*>(shape.get());
+    const auto radius = capsule->getRadius();
+    const auto height = capsule->getHeight();
+
+    geom = new fcl::Capsule(radius, height);
+
+    DART_WARN_ONCE_IF(
+        FCLCollisionDetector::MESH == type,
+        "[FCLCollisionDetector] CapsuleShape requested with primitive shape "
+        "type MESH. Using analytic capsule instead of mesh fallback.");
   } else if (ConeShape::getStaticType() == shapeType) {
     DART_ASSERT(dynamic_cast<const ConeShape*>(shape.get()));
 

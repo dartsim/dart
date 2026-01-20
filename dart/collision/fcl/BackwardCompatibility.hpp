@@ -79,6 +79,7 @@ using Matrix3 = ::fcl::Matrix3<double>;
 using Transform3 = ::fcl::Transform3<double>;
 // Geometric primitives
 using Box = ::fcl::Box<double>;
+using Capsule = ::fcl::Capsule<double>;
 using Cylinder = ::fcl::Cylinder<double>;
 using Cone = ::fcl::Cone<double>;
 using Ellipsoid = ::fcl::Ellipsoid<double>;
