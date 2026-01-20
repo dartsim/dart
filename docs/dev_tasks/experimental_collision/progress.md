@@ -1,6 +1,6 @@
 # Experimental Collision Module - Progress Tracker
 
-> **Last Updated**: 2026-01-19
+> **Last Updated**: 2026-01-20
 > **Current Focus**: Standalone Library Development
 
 ## Status Summary
@@ -126,6 +126,7 @@ Structured suite updates:
 - Added comparative raycast benchmark in `tests/benchmark/collision/comparative/bm_raycast.cpp` (experimental vs Bullet; FCL/ODE not available)
 - Added mixed primitives scenario benchmark in `tests/benchmark/collision/scenarios/bm_mixed_primitives.cpp` (dense/sparse; experimental vs FCL/Bullet/ODE)
 - Added batched raycast scenario in `tests/benchmark/collision/scenarios/bm_raycast_batch.cpp` (experimental vs Bullet)
+- Raycast batch uses SweepAndPrune broadphase and 500 rays with 1k/2k objects for bounded runtime
 - Added mesh-heavy scenario in `tests/benchmark/collision/scenarios/bm_mesh_heavy.cpp` (experimental vs FCL/Bullet)
 - Added pipeline breakdown scenario in `tests/benchmark/collision/scenarios/bm_pipeline_breakdown.cpp` (AABB update + broadphase + narrowphase timing for 1k/10k)
 - Added experimental CCD microbench in `tests/benchmark/collision/experimental/bm_ccd.cpp`

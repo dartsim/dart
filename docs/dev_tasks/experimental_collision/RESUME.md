@@ -3,23 +3,20 @@
 ## Current State (2026-01-20)
 
 **Branch**: `feature/new_coll`  
-**Build Status**: ✅ Passing  
-**Tests**: 403+ tests passing (all broadphase, narrow-phase, CCD, distance, raycast)
+**Build Status**: ✅ `pixi run build`  
+**Lint**: ✅ `pixi run lint`  
+**Tests**: Not run this session (unit/integration)
 
 ## Last Session Summary
 
-Completed runtime broadphase algorithm selection for CollisionWorld:
-
-1. ✅ AABB Tree broadphase — O(n log n) with SAH insertion, fat AABBs, 21 tests
-2. ✅ Sweep-and-Prune broadphase — O(n + k) sorted endpoints, 19 tests
-3. ✅ Runtime selection via `BroadPhaseType` enum in CollisionWorld constructor
-4. ✅ Benchmarks for all 3 algorithms (QueryPairs, Add, Update, QueryOverlapping)
-5. ✅ Documentation updated with broadphase selection guide
-6. ✅ Added RP3D-aligned pipeline breakdown scenarios (sphere-only dense/sparse)
-7. ✅ Extended batch API scaffolding (BatchSettings fields, BatchOutput)
-8. ✅ Added RP3D profiling driver + updated investigation notes
+- Updated `bm_scenarios_raycast_batch` to use SweepAndPrune and smaller workloads (500 rays; 1k/2k objects).
+- Ran raycast comparative + batch benchmarks; saved valid JSON outputs.
+- Removed invalid benchmark JSON outputs from prior runs.
+- Updated benchmark docs: `benchmark_results.md`, `benchmark_catalog.md`, `progress.md`.
 
 ## Recent Commits (Committed)
+
+No new commits in this session. Prior history:
 
 ```
 61d7e8e1024 benchmark: add rp3d-aligned pipeline breakdown scenarios
@@ -33,6 +30,27 @@ b1f6e5ebf05 docs: update progress tracker with AABB tree broadphase
 ```
 
 ## Uncommitted Changes
+
+### Benchmarks (current session)
+
+| File                                                       | Description                                                     |
+| ---------------------------------------------------------- | --------------------------------------------------------------- |
+| `tests/benchmark/collision/scenarios/bm_raycast_batch.cpp` | Use SweepAndPrune; reduce ray/object counts for bounded runtime |
+
+### Benchmark results (current session)
+
+| File                                                                                              | Description                |
+| ------------------------------------------------------------------------------------------------- | -------------------------- |
+| `docs/dev_tasks/experimental_collision/results/bm_comparative_raycast_2026-01-20_000232.json`     | Comparative raycast output |
+| `docs/dev_tasks/experimental_collision/results/bm_scenarios_raycast_batch_2026-01-20_001850.json` | Raycast batch output       |
+
+### Documentation updates (current session)
+
+| File                                                         | Description                         |
+| ------------------------------------------------------------ | ----------------------------------- |
+| `docs/dev_tasks/experimental_collision/benchmark_results.md` | Updated run logs + status notes     |
+| `docs/dev_tasks/experimental_collision/benchmark_catalog.md` | Raycast batch parameters            |
+| `docs/dev_tasks/experimental_collision/progress.md`          | Benchmark progress and date refresh |
 
 ### Code Changes (from earlier sessions, not yet committed)
 

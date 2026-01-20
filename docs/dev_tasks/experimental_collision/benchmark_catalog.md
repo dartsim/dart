@@ -74,7 +74,7 @@ Note: `bm_libccd.cpp` builds only when libccd is available. Use
 | Convex mesh distance        | ShapeNet convex meshes                      | distance, collision        | collision-detection-benchmark              | Tests non-strictly convex cases                            |
 | Mesh-heavy scenes           | Static meshes + moving primitives           | collision, contacts        | DART scenarios, Bullet benchmark demo      | Stresses BVH traversal and cache locality                  |
 | Heightfield/terrain         | Moving primitives on terrain                | collision, contacts        | BEPU/Jitter/ReactPhysics3D demos           | Important for robotics ground contact                      |
-| Raycast batch               | 10k rays with hit/miss mix                  | raycast                    | DART raycast batch, Bullet demo            | Measure query/sec and result determinism                   |
+| Raycast batch               | 500 rays with hit/miss mix (1k/2k objects)  | raycast                    | DART raycast batch, Bullet demo            | Measure query/sec and result determinism                   |
 | CCD/shape cast              | Swept sphere/capsule/convex cast            | time of impact, shape cast | DART bm_ccd, Parry shape casts, BEPU casts | Align linear vs nonlinear CCD modes                        |
 | Broadphase scaling          | 1k/10k objects, dense vs sparse             | broadphase + collision     | spatial-collision-datastructures, DART     | Report pairs/sec + update cost                             |
 | Contact stability           | Box stacking, aggregates, frictional stacks | contacts, manifold quality | qu3e demo, Bullet/ODE demos, BEPU demos    | Track contact count, stability, and solver convergence     |
