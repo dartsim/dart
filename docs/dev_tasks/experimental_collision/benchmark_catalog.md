@@ -36,20 +36,20 @@ Note: `bm_libccd.cpp` builds only when libccd is available. Use
 Results are recorded in `benchmark_results.md`. Status labels: Recorded,
 Recorded (partial), Baseline only, TBA.
 
-| Suite / Case                        | Benchmarks                                                     | Backends                       | Results status                          |
-| ----------------------------------- | -------------------------------------------------------------- | ------------------------------ | --------------------------------------- |
-| Comparative narrow-phase (sweep)    | `tests/benchmark/collision/comparative/bm_narrow_phase.cpp`    | Experimental/FCL/Bullet/ODE    | Recorded                                |
-| Comparative distance (sweep)        | `tests/benchmark/collision/comparative/bm_distance.cpp`        | Experimental/FCL/Bullet/ODE    | Recorded (ODE distance warnings)        |
-| Comparative raycast (single)        | `tests/benchmark/collision/comparative/bm_raycast.cpp`         | Experimental/Bullet            | Recorded                                |
-| Mixed primitives (dense/sparse)     | `tests/benchmark/collision/scenarios/bm_mixed_primitives.cpp`  | Experimental/FCL/Bullet/ODE    | Recorded                                |
-| Mesh-heavy scenarios                | `tests/benchmark/collision/scenarios/bm_mesh_heavy.cpp`        | Experimental/FCL/Bullet        | Recorded                                |
-| Batched raycasts                    | `tests/benchmark/collision/scenarios/bm_raycast_batch.cpp`     | Experimental/Bullet            | Recorded                                |
-| Pipeline breakdown (stage timing)   | `tests/benchmark/collision/scenarios/bm_pipeline_breakdown.cpp`| Experimental                   | Recorded; RP3D-aligned TBA (crash)      |
-| CCD microbench                      | `tests/benchmark/collision/experimental/bm_ccd.cpp`            | Experimental                   | TBA                                     |
-| libccd microbench                   | `tests/benchmark/collision/experimental/bm_libccd.cpp`         | DART/libccd                    | Recorded                                |
-| Baseline microbench                 | `tests/benchmark/collision/bm_experimental.cpp`                | Experimental                   | Baseline only (historical)              |
-| Baseline comparative                | `tests/benchmark/collision/bm_comparative.cpp`                 | Experimental/FCL/Bullet/ODE    | Baseline only (historical)              |
-| SDF compare                         | `dart/collision/experimental/benchmarks/bm_sdf_compare.cpp`     | Experimental (+ Voxblox opt)   | TBA                                     |
+| Suite / Case                      | Benchmarks                                                      | Backends                     | Results status                     |
+| --------------------------------- | --------------------------------------------------------------- | ---------------------------- | ---------------------------------- |
+| Comparative narrow-phase (sweep)  | `tests/benchmark/collision/comparative/bm_narrow_phase.cpp`     | Experimental/FCL/Bullet/ODE  | Recorded (capsule fallback issues) |
+| Comparative distance (sweep)      | `tests/benchmark/collision/comparative/bm_distance.cpp`         | Experimental/FCL/Bullet/ODE  | Recorded (Bullet/ODE warnings)     |
+| Comparative raycast (single)      | `tests/benchmark/collision/comparative/bm_raycast.cpp`          | Experimental/Bullet          | Recorded                           |
+| Mixed primitives (dense/sparse)   | `tests/benchmark/collision/scenarios/bm_mixed_primitives.cpp`   | Experimental/FCL/Bullet/ODE  | Recorded                           |
+| Mesh-heavy scenarios              | `tests/benchmark/collision/scenarios/bm_mesh_heavy.cpp`         | Experimental/FCL/Bullet      | Recorded                           |
+| Batched raycasts                  | `tests/benchmark/collision/scenarios/bm_raycast_batch.cpp`      | Experimental/Bullet          | Recorded                           |
+| Pipeline breakdown (stage timing) | `tests/benchmark/collision/scenarios/bm_pipeline_breakdown.cpp` | Experimental                 | Recorded; RP3D-aligned TBA (crash) |
+| CCD microbench                    | `tests/benchmark/collision/experimental/bm_ccd.cpp`             | Experimental                 | TBA                                |
+| libccd microbench                 | `tests/benchmark/collision/experimental/bm_libccd.cpp`          | DART/libccd                  | Recorded                           |
+| Baseline microbench               | `tests/benchmark/collision/bm_experimental.cpp`                 | Experimental                 | Baseline only (historical)         |
+| Baseline comparative              | `tests/benchmark/collision/bm_comparative.cpp`                  | Experimental/FCL/Bullet/ODE  | Historical; build broken (API)     |
+| SDF compare                       | `dart/collision/experimental/benchmarks/bm_sdf_compare.cpp`     | Experimental (+ Voxblox opt) | TBA                                |
 
 ### Library-provided benchmarks and demos
 

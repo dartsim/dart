@@ -11,7 +11,7 @@
 | Standalone CollisionWorld  | **Complete** | 100%     |
 | Additional Shapes          | **Complete** | 100%     |
 | Distance Queries           | **Complete** | 100%     |
-| Comparative Benchmarks     | **Complete** | 100%     |
+| Comparative Benchmarks     | **Partial**  | 90%      |
 | Raycast Support            | **Complete** | 100%     |
 | ECS Refactoring            | **Complete** | 100%     |
 | GJK/EPA Algorithm          | **Complete** | 100%     |
@@ -333,4 +333,7 @@ done
 
 ## Blockers
 
-_None currently_
+- `bm_comparative.cpp` fails to build due to CollisionWorld API drift
+  (`CollisionWorld::addObject` removed; `CollisionObject` ctor mismatch).
+- `bm_comparative_narrow_phase` capsule-related accuracy checks invalid because
+  CapsuleShape falls back to a tiny sphere in the experimental adapter.
