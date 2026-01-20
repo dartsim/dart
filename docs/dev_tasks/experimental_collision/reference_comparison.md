@@ -11,7 +11,7 @@
 - Parry: `/home/js/dev/physics/parry` (commit 72f842d, 2026-01-09; 88 commits in last 12 months)
 - OpenGJK: `/home/js/dev/physics/opengjk` (commit 5eca7fa, 2025-12-29; 29 commits in last 12 months)
 - Sources used: README files plus public headers and source trees in each repo.
-- External curated list: https://github.com/jslee02/awesome-collision-detection (library catalog, not exhaustive).
+- External curated list: /home/js/dev/physics/awesome-collision-detection (commit effd3f8) from https://github.com/jslee02/awesome-collision-detection (library catalog, not exhaustive).
 - This is a snapshot. Refresh before release or external publication.
 
 ## High-level goals and positioning
@@ -178,36 +178,118 @@ Legend: Y = supported, N = not supported, P = generic convex/user-defined.
 - ODE: analytic primitives plus libccd for convex (GJK/EPA); triangle mesh via OPCODE or GIMPACT; ray-mesh in collision_trimesh_ray.
 - libccd: GJK/EPA + MPR only, convex-only, driven by user-defined support functions.
 
+## Conventions and Terminology
+
+### Normal direction and distance sign
+
+| Library        | Normal convention                          | Penetration sign                    | Signed distance support      | Notes                                                                 |
+| -------------- | ------------------------------------------ | ----------------------------------- | ---------------------------- | --------------------------------------------------------------------- |
+| DART           | normal points from bodyNode2 to bodyNode1  | penetrationDepth positive           | yes (DistanceResult)         | Signed distance is negative when penetrating                          |
+| FCL            | normal points from o1 to o2                | penetration_depth positive          | yes (enable_signed_distance) | DistanceResult is positive when separated; negative if signed enabled |
+| Coal           | normal points from o1 to o2                | penetration_depth positive          | yes                          | Signed distance used to define normal/witness points                  |
+| Bullet         | normalWorldOnB points from B to A          | distance1 negative when penetrating | yes (distance1)              | If B is treated as object2, normal aligns with object2->object1       |
+| ODE            | normal points into body1                   | depth positive                      | no                           | Equivalent to object2->object1 if g1 is object1                       |
+| Parry          | normal1 points from shape1 to shape2       | dist negative when penetrating      | yes (dist)                   | Explicit signed distance in Contact                                   |
+| ReactPhysics3D | normal from body1 to body2                 | penetrationDepth positive           | no                           | Discrete collision only                                               |
+| libccd         | direction is separation/penetration vector | penetration depth positive          | partial                      | Provides penetration depth + direction; no signed distance API        |
+| OpenGJK        | N/A (distance-only)                        | N/A                                 | no                           | Returns minimum distance (0 if intersecting)                          |
+
+### Contact representations and manifolds
+
+| Library        | Contact representation              | Manifold behavior                                 |
+| -------------- | ----------------------------------- | ------------------------------------------------- |
+| DART           | Contact points (Contact struct)     | No explicit manifold; returns list                |
+| FCL            | Contact points (pos, normal, depth) | No explicit manifold; returns list                |
+| Coal           | Contact points + ContactPatch       | Supports patches (polygonal contact regions)      |
+| Bullet         | Persistent manifolds of points      | Up to 4 points per manifold, cached across frames |
+| ODE            | Contact points (dContactGeom)       | No explicit manifold; caller aggregates           |
+| Parry          | Contact + ContactManifold           | Explicit manifolds; normals + multiple points     |
+| ReactPhysics3D | ContactManifold with points         | Up to 4 points; cached for stability              |
+| libccd         | Single penetration info             | No manifold; GJK/EPA gives one direction/depth    |
+| OpenGJK        | Witness points from simplex         | Distance-only, no contact manifold                |
+
+### Contact result types (for DART to standardize)
+
+| Type                   | Output                                 | Notes                                                           |
+| ---------------------- | -------------------------------------- | --------------------------------------------------------------- |
+| Point                  | position + normal + depth              | Baseline DART contact format                                    |
+| Manifold (multi-point) | small set of points with shared normal | Improves stacking and friction stability; used in Bullet/Parry  |
+| Patch / surface        | polygon or contact region              | Coal exposes ContactPatch; better torque/friction for face-face |
+| Volume / SDF overlap   | volume metric + gradient               | Enables gradient-based methods; heavier storage and tuning      |
+
+Edge-edge and face-face interactions are typically represented via a multi-point manifold or a patch output.
+
+### DART consistency guidelines
+
+- DART Contact defines the normal from bodyNode2 to bodyNode1, with positive penetration depth (see `dart/collision/Contact.hpp`).
+- DART DistanceResult uses signed distance; negative means penetration (see `dart/collision/DistanceResult.hpp`).
+- Provide adapter helpers when using libraries with opposite normal conventions (FCL/Coal/Parry/React) or signed depth (Bullet/Parry).
+- Keep terminology consistent: signed distance is positive when separated, penetration depth is positive overlap.
+
+## SDF and Gradient-Based Queries
+
+### SDF support (observed)
+
+| Library                | SDF or voxel support            | Notes                                                                       |
+| ---------------------- | ------------------------------- | --------------------------------------------------------------------------- |
+| Bullet                 | btSdfCollisionShape / btMiniSDF | Signed distance fields for implicit collision (btMiniSDF exposes gradients) |
+| Parry                  | Voxels                          | Voxel shapes exist; not explicitly SDF                                      |
+| FCL / Coal             | None explicit                   | Focus on meshes/convex/BVH and GJK/EPA                                      |
+| ODE / libccd / OpenGJK | None                            | No SDF primitives                                                           |
+| ReactPhysics3D         | None                            | Discrete contact shapes only                                                |
+
+### SDF references and implications (from curated list)
+
+- Macklin 2020 (SDF contact) suggests robust SDF collision with local optimization and stable gradients.
+- Koschier 2016 and Voxblox 2016 highlight hierarchical and incremental SDF construction pipelines.
+- Xu/Barbic 2014 covers SDF generation for polygon soup meshes; relevant for mesh import.
+
+### Gradient considerations for convex shapes
+
+- GJK/EPA provide witness points and a separating/penetration direction; this is the natural gradient or subgradient of signed distance.
+- For convex shapes, gradients are well-defined almost everywhere but can be non-unique at edges/vertices; return a stable normal with tie-breaking.
+- Penetration gradients should align with the penetration direction (EPA or conservative advancement) and be consistent with the signed distance convention.
+- Differentiable collision detection (randomized smoothing, Montaut 2022) can stabilize gradients near feature switches.
+
 ## Wider ecosystem snapshot (awesome-collision-detection)
 
-The curated list includes many additional libraries. Coal/HPP-FCL,
-ReactPhysics3D, Parry, and OpenGJK are locally inspected above. The
-following are not inspected yet, so treat them as leads to verify.
+Source: /home/js/dev/physics/awesome-collision-detection (commit effd3f8). The list is not exhaustive and many entries are physics engines with collision subsystems.
 
-| Library       | Focus                  | Notes for DART                                                     |
-| ------------- | ---------------------- | ------------------------------------------------------------------ |
-| ncollide      | 3D collision/proximity | Older Rust library; may have legacy algorithms worth comparing     |
-| collision-rs  | 3D collision           | Rust crate; feature list not specified in the curated list         |
-| BEPUphysics   | 3D physics engine      | C# engine; potential ideas for batch throughput and cache layout   |
-| JitterPhysics | 3D physics engine      | C# engine; may have simpler collision pipelines to compare         |
-| qu3e          | 3D physics engine      | Minimal engine; good for reviewing simplified contact generation   |
-| tinyc2        | 2D only                | Not directly relevant to DART 3D but useful for 2D algorithm ideas |
+Active libraries already inspected above: Bullet, FCL, HPP-FCL (Coal), libccd, ODE, OpenGJK, Parry, ReactPhysics3D.
 
-Inactive but still relevant for mesh collision history:
+### Additional active libraries (not locally inspected here)
 
-- GIMPACT (mesh collision, used by ODE/Bullet)
-- OPCODE (legacy BVH; used by ODE)
-- SOLID, ColDet (older references for mesh collision)
+| Library       | Scope                  | Notes for DART                                                   |
+| ------------- | ---------------------- | ---------------------------------------------------------------- |
+| BEPUphysics 1 | 3D physics engine      | C# engine; potential ideas for batch throughput and cache layout |
+| collision-rs  | 3D collision/proximity | Rust crate; likely shares older ncollide ideas                   |
+| JitterPhysics | 3D physics engine      | C# engine; may have simpler contact pipelines to compare         |
+| ncollide      | 3D collision/proximity | Predecessor of Parry; legacy algorithms and shape support        |
+| qu3e          | Minimal 3D physics     | Small codebase; good for reviewing manifold generation           |
+| tinyc2        | 2D collision           | 2D only; useful for test harness patterns                        |
 
-Related mesh processing tools listed:
+### Legacy/inactive references (still useful)
 
-- bounding-mesh (mesh approximation, convex decomposition)
-- cinolib, libigl (mesh processing utilities)
+- ColDet, SOLID: older mesh collision references.
+- GIMPACT: dynamic triangle mesh collision (used by ODE/Bullet).
+- OPCODE: legacy BVH/trimesh backend (used by ODE).
+- OZCollide: legacy collision library.
 
-Benchmarks and references listed:
+### Mesh processing and decomposition references
 
-- colbench / collision-detection-benchmark (HPP-FCL focused)
-- spatial-collision-datastructures (broadphase data structure benchmark)
+- bounding-mesh: bounding mesh and convex decomposition algorithms.
+- cinolib, libigl: geometry processing utilities (repair, decimation, SDF generation).
+
+### Research and benchmarks (selected from curated list)
+
+- GJK++ / Collision Detection Accelerated (Montaut 2022-2023): accelerated GJK and benchmarks.
+- Differentiable collision detection (Montaut 2022): randomized smoothing for stable gradients.
+- Robust mesh contact generation (Hauser 2013): contact for unstructured meshes.
+- Penetration depth (PolyDepth 2012): iterative contact-space projection.
+- SDF collision (Macklin 2020) and hierarchical SDFs (Koschier 2016); Voxblox for SDF construction.
+- CCD (Tang 2009/2013, Brochu 2012): controlled advancement and geometrically exact CCD.
+- Broadphase data structure benchmarks (ttvd/spatial-collision-datastructures).
+- Reference texts: Real-Time Collision Detection (Ericson) and Collision Detection in Interactive 3D Environments.
 
 ## Performance notes (architecture-informed, not benchmarked here)
 
@@ -248,6 +330,8 @@ Benchmarks and references listed:
 - Consider a "security margin" mode (HPP-FCL style) alongside exact geometry mode for stability vs accuracy tradeoffs.
 - Add persistent manifold caching and contact reduction options to match Bullet stability while keeping exact geometry modes for accuracy.
 - Support contact manifolds/patches where possible (Coal/Parry) to improve stacking stability and contact richness.
+- Standardize result conventions across all backends (normal direction, signed distance, penetration depth) to match DART Contact/DistanceResult.
+- If gradients are exposed (convex or SDF), return them explicitly and test edge/vertex degeneracies for sign consistency.
 - Make determinism a first-class option (stable ordering, fixed tolerances, reproducible queries) while still enabling fast paths.
 - Invest in mesh robustness: edge and vertex welding, triangle adjacency hints, and BVH refit for moving meshes.
 - Consider optional SDF or heightfield shapes to exceed current backends and improve large terrain handling.
