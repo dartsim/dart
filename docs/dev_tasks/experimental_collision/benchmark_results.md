@@ -70,6 +70,7 @@ Legend: WIN = min speedup > 1.0; MIXED = min < 1.0 and p90 > 1.0; LOSS = p50 < 1
 
 | Date       | Commit      | Summary                              | Notes                                              |
 | ---------- | ----------- | ------------------------------------ | -------------------------------------------------- |
+| 2026-01-20 | 788a69e7bb2 | SDF/ESDF resolution sweep (extended) | Voxblox lib not found; added 80/96 dims.           |
 | 2026-01-20 | be3923bf398 | SDF/ESDF resolution sweep            | Voxblox lib not found; resolution scaling logged.  |
 | 2026-01-20 | db9b3f36dc2 | Cylinder-box + box-box benchmark fix | Accuracy checks pass; depth warning resolved.      |
 | 2026-01-20 | e1b474aeb80 | Comparative + baseline rerun         | Capsule fallback fixed; cylinder-box mismatch.     |
@@ -80,6 +81,29 @@ Legend: WIN = min speedup > 1.0; MIXED = min < 1.0 and p90 > 1.0; LOSS = p50 < 1
 | 2026-01-20 | f315999cdfe | Raycast batch + comparative raycast  | SweepAndPrune; 500 rays; 1k/2k objects             |
 | 2026-01-19 | TBD         | Baseline results (pre-structure)     |                                                    |
 | 2026-01-19 | b1f6e5e     | Comparative + scenarios runs         | Distance/mixed underperform; raycast blocked then. |
+
+## Run 2026-01-20 — SDF/ESDF resolution sweep (extended)
+
+- **Branch / Commit**: `feature/new_coll` / `788a69e7bb2`
+- **Build**: `Release` (build/default/cpp/Release)
+- **CPU**: 13th Gen Intel(R) Core(TM) i9-13950HX
+- **OS**: Ubuntu 25.10
+- **Compiler**: c++ (Ubuntu 15.2.0-4ubuntu4) 15.2.0
+- **Notes**:
+  - CPU scaling enabled; expect some variance.
+  - Voxblox comparisons skipped (no `libvoxblox` found).
+  - Resolution sweep keeps world extent fixed at 3.2 m with dims 32/40/64/80/96 and voxel sizes 0.10/0.08/0.05/0.04/0.033333.
+  - `--benchmark_min_time=0.05s`.
+- **Command**:
+  - `build/default/cpp/Release/dart/collision/experimental/bm_collision_experimental_sdf_compare --benchmark_min_time=0.05s --benchmark_format=json --benchmark_out=docs/dev_tasks/experimental_collision/results/bm_sdf_compare_resolution_2026-01-20_090950.json`
+- **Raw Output**:
+  - `docs/dev_tasks/experimental_collision/results/bm_sdf_compare_resolution_2026-01-20_090950.json`
+
+Summary (items per second, 4096 queries unless noted):
+
+- Dense SDF distance sweep: 28.60 M (32^3, 0.10 m), 28.90 M (40^3, 0.08 m), 25.59 M (64^3, 0.05 m), 23.98 M (80^3, 0.04 m), 22.06 M (96^3, 0.033333 m).
+- Dense ESDF distance sweep: 27.75 M (32^3), 29.81 M (40^3), 24.86 M (64^3), 26.03 M (80^3), 23.31 M (96^3).
+- Dense ESDF build sweep: 4.90 M (32^3), 4.52 M (40^3), 4.67 M (64^3), 4.11 M (80^3), 4.05 M (96^3) voxels/s.
 
 ## Run 2026-01-20 — SDF/ESDF resolution sweep
 
