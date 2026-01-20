@@ -32,7 +32,7 @@ set(target_name ${PROJECT_NAME}-collision-experimental)
 set(component_name collision-experimental)
 
 # Source files - start minimal, add as we implement
-add_library(${target_name}
+set(collision_experimental_sources
   aabb.cpp
   broad_phase/aabb_tree.cpp
   broad_phase/brute_force.cpp
@@ -40,6 +40,7 @@ add_library(${target_name}
   broad_phase/sweep_and_prune.cpp
   collision_object.cpp
   collision_world.cpp
+  contact_manifold.cpp
   narrow_phase/box_box.cpp
   narrow_phase/capsule_box.cpp
   narrow_phase/capsule_capsule.cpp
@@ -55,9 +56,12 @@ add_library(${target_name}
   narrow_phase/raycast.cpp
   narrow_phase/sphere_box.cpp
   narrow_phase/sphere_sphere.cpp
+  sdf/dense_sdf_field.cpp
   shapes/shape.cpp
   types.cpp
 )
+
+add_library(${target_name} ${collision_experimental_sources})
 
 include(dart_defs)
 include(dart_experimental_dependencies)
@@ -80,6 +84,39 @@ target_link_libraries(${target_name}
 target_compile_definitions(${target_name}
   PRIVATE
     DART_BUILDING_COLLISION_EXPERIMENTAL
+)
+
+set(DART_EXPERIMENTAL_ESDF_MAP_ROOT "" CACHE PATH "Path to an ESDF map backend source or install")
+if(DART_EXPERIMENTAL_ESDF_MAP_ROOT)
+  find_path(ESDF_MAP_INCLUDE_DIR
+    NAMES voxblox/core/esdf_map.h
+    PATHS
+      ${DART_EXPERIMENTAL_ESDF_MAP_ROOT}
+      ${DART_EXPERIMENTAL_ESDF_MAP_ROOT}/voxblox/include
+      ${DART_EXPERIMENTAL_ESDF_MAP_ROOT}/include
+  )
+  find_library(ESDF_MAP_LIBRARY
+    NAMES voxblox
+    PATHS
+      ${DART_EXPERIMENTAL_ESDF_MAP_ROOT}/lib
+      ${DART_EXPERIMENTAL_ESDF_MAP_ROOT}/build
+      ${DART_EXPERIMENTAL_ESDF_MAP_ROOT}/devel/lib
+  )
+
+  if(ESDF_MAP_INCLUDE_DIR AND ESDF_MAP_LIBRARY)
+    target_sources(${target_name} PRIVATE sdf/esdf_map_field.cpp)
+    target_include_directories(${target_name} PUBLIC ${ESDF_MAP_INCLUDE_DIR})
+    target_link_libraries(${target_name} PUBLIC ${ESDF_MAP_LIBRARY})
+    target_compile_definitions(${target_name} PUBLIC DART_EXPERIMENTAL_HAVE_ESDF_MAP)
+  endif()
+endif()
+
+# Benchmarks (optional)
+dart_experimental_add_benchmark(
+  bm_collision_experimental_sdf_compare
+  ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/bm_sdf_compare.cpp
+  LIBRARY ${target_name}
+  LABEL collision-experimental
 )
 
 # Component
