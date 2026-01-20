@@ -307,6 +307,35 @@ TEST(CollisionWorld, CollideAllOrderingAndRepeatability)
   }
 }
 
+TEST(CollisionWorld, ObjectIdRoundTrip)
+{
+  CollisionWorld world;
+
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0));
+
+  const std::size_t id1 = obj1.getId();
+  const std::size_t id2 = obj2.getId();
+
+  ASSERT_NE(id1, id2);
+
+  auto lookup1 = world.getObjectById(id1);
+  auto lookup2 = world.getObjectById(id2);
+
+  EXPECT_TRUE(lookup1.isValid());
+  EXPECT_TRUE(lookup2.isValid());
+  EXPECT_EQ(lookup1.getEntity(), obj1.getEntity());
+  EXPECT_EQ(lookup2.getEntity(), obj2.getEntity());
+
+  world.destroyObject(obj1);
+  auto missing = world.getObjectById(id1);
+  EXPECT_FALSE(missing.isValid());
+
+  auto obj3 = world.createObject(std::make_unique<SphereShape>(1.0));
+  const std::size_t id3 = obj3.getId();
+  EXPECT_NE(id3, id1);
+}
+
 //==============================================================================
 // CollisionWorld Raycast tests
 //==============================================================================

@@ -49,24 +49,22 @@
 
 namespace dart::collision::experimental {
 
-bool NarrowPhase::collide(
-    const CollisionObject& obj1,
-    const CollisionObject& obj2,
+namespace {
+
+bool collideShapes(
+    const Shape* shape1,
+    const Eigen::Isometry3d& tf1,
+    const Shape* shape2,
+    const Eigen::Isometry3d& tf2,
     const CollisionOption& option,
     CollisionResult& result)
 {
-  const Shape* shape1 = obj1.getShape();
-  const Shape* shape2 = obj2.getShape();
-
   if (!shape1 || !shape2) {
     return false;
   }
 
   ShapeType type1 = shape1->getType();
   ShapeType type2 = shape2->getType();
-
-  const Eigen::Isometry3d& tf1 = obj1.getTransform();
-  const Eigen::Isometry3d& tf2 = obj2.getTransform();
 
   if (type1 == ShapeType::Sphere && type2 == ShapeType::Sphere) {
     const auto* s1 = static_cast<const SphereShape*>(shape1);
@@ -218,6 +216,34 @@ bool NarrowPhase::collide(
   }
 
   return false;
+}
+
+} // namespace
+
+bool NarrowPhase::collide(
+    const CollisionObject& obj1,
+    const CollisionObject& obj2,
+    const CollisionOption& option,
+    CollisionResult& result)
+{
+  return collideShapes(
+      obj1.getShape(),
+      obj1.getTransform(),
+      obj2.getShape(),
+      obj2.getTransform(),
+      option,
+      result);
+}
+
+bool NarrowPhase::collide(
+    const Shape* shape1,
+    const Eigen::Isometry3d& tf1,
+    const Shape* shape2,
+    const Eigen::Isometry3d& tf2,
+    const CollisionOption& option,
+    CollisionResult& result)
+{
+  return collideShapes(shape1, tf1, shape2, tf2, option, result);
 }
 
 bool NarrowPhase::isSupported(ShapeType type1, ShapeType type2)
@@ -396,6 +422,24 @@ double NarrowPhase::distance(
     return d;
   }
 
+  if (type1 == ShapeType::Plane) {
+    const auto* p = static_cast<const PlaneShape*>(shape1);
+    return distancePlaneShape(*p, tf1, *shape2, tf2, result, option);
+  }
+
+  if (type2 == ShapeType::Plane) {
+    const auto* p = static_cast<const PlaneShape*>(shape2);
+    double d = distancePlaneShape(*p, tf2, *shape1, tf1, result, option);
+    std::swap(result.pointOnObject1, result.pointOnObject2);
+    result.normal = -result.normal;
+    return d;
+  }
+
+  if ((type1 == ShapeType::Cylinder || type2 == ShapeType::Cylinder)
+      && type1 != ShapeType::Sdf && type2 != ShapeType::Sdf) {
+    return distanceConvexConvex(*shape1, tf1, *shape2, tf2, result, option);
+  }
+
   if (type1 == ShapeType::Convex || type1 == ShapeType::Mesh
       || type2 == ShapeType::Convex || type2 == ShapeType::Mesh) {
     return distanceConvexConvex(*shape1, tf1, *shape2, tf2, result, option);
@@ -406,6 +450,20 @@ double NarrowPhase::distance(
 
 bool NarrowPhase::isDistanceSupported(ShapeType type1, ShapeType type2)
 {
+  auto isSupportShape = [](ShapeType type) {
+    switch (type) {
+      case ShapeType::Sphere:
+      case ShapeType::Box:
+      case ShapeType::Capsule:
+      case ShapeType::Cylinder:
+      case ShapeType::Convex:
+      case ShapeType::Mesh:
+        return true;
+      default:
+        return false;
+    }
+  };
+
   if (type1 == ShapeType::Sphere && type2 == ShapeType::Sphere) {
     return true;
   }
@@ -433,6 +491,15 @@ bool NarrowPhase::isDistanceSupported(ShapeType type1, ShapeType type2)
   }
   if ((type1 == ShapeType::Capsule && type2 == ShapeType::Box)
       || (type1 == ShapeType::Box && type2 == ShapeType::Capsule)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Plane && isSupportShape(type2))
+      || (type2 == ShapeType::Plane && isSupportShape(type1))) {
+    return true;
+  }
+  if ((type1 == ShapeType::Cylinder || type2 == ShapeType::Cylinder)
+      && type1 != ShapeType::Sdf && type2 != ShapeType::Sdf
+      && type1 != ShapeType::Plane && type2 != ShapeType::Plane) {
     return true;
   }
   if (type1 == ShapeType::Convex || type1 == ShapeType::Mesh

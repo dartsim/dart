@@ -69,6 +69,9 @@ public:
   [[nodiscard]] std::size_t numObjects() const;
   [[nodiscard]] CollisionObject getObject(std::size_t index);
   [[nodiscard]] CollisionObject getObjectById(std::size_t id);
+  [[nodiscard]] BatchView getBatchView() const;
+
+  void reserveObjects(std::size_t count);
 
   [[nodiscard]] std::size_t updateAll();
 
@@ -184,6 +187,7 @@ private:
   std::unique_ptr<BroadPhase> m_broadPhase;
   std::size_t m_nextObjectId = 0;
   std::vector<entt::entity> m_idToEntity;
+  BatchStorage m_batchStorage;
   mutable BroadPhaseSnapshot m_cachedSnapshot;
   mutable bool m_snapshotDirty = true;
   mutable bool m_cachedDeterministic = true;

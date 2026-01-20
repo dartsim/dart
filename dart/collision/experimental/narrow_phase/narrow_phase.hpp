@@ -49,6 +49,14 @@ public:
       const CollisionOption& option,
       CollisionResult& result);
 
+  static bool collide(
+      const Shape* shape1,
+      const Eigen::Isometry3d& tf1,
+      const Shape* shape2,
+      const Eigen::Isometry3d& tf2,
+      const CollisionOption& option,
+      CollisionResult& result);
+
   static double distance(
       const CollisionObject& obj1,
       const CollisionObject& obj2,

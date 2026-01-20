@@ -36,12 +36,20 @@
 #include <dart/collision/experimental/export.hpp>
 #include <dart/collision/experimental/types.hpp>
 
+#include <Eigen/Geometry>
+
+#include <limits>
+#include <span>
 #include <vector>
 
 #include <cstddef>
 #include <cstdint>
 
 namespace dart::collision::experimental {
+
+class Shape;
+
+using ObjectId = std::size_t;
 
 struct DART_COLLISION_EXPERIMENTAL_API BatchSettings
 {
@@ -119,6 +127,177 @@ struct DART_COLLISION_EXPERIMENTAL_API BroadPhaseSnapshot
   {
     pairs.clear();
     numObjects = 0;
+  }
+};
+
+struct DART_COLLISION_EXPERIMENTAL_API BatchView
+{
+  std::span<const ObjectId> ids;
+  std::span<const Shape* const> shapes;
+  std::span<const Eigen::Isometry3d> transforms;
+  std::span<const Aabb> aabbs;
+  std::span<const std::uint8_t> flags;
+  std::span<const std::size_t> idToIndex;
+  std::size_t invalidIndex = std::numeric_limits<std::size_t>::max();
+
+  [[nodiscard]] std::size_t size() const
+  {
+    return ids.size();
+  }
+
+  [[nodiscard]] std::size_t indexForId(ObjectId id) const
+  {
+    if (id >= idToIndex.size()) {
+      return invalidIndex;
+    }
+    return idToIndex[id];
+  }
+
+  [[nodiscard]] const Shape* shape(ObjectId id) const
+  {
+    const std::size_t index = indexForId(id);
+    if (index == invalidIndex || index >= shapes.size()) {
+      return nullptr;
+    }
+    return shapes[index];
+  }
+
+  [[nodiscard]] const Eigen::Isometry3d* transform(ObjectId id) const
+  {
+    const std::size_t index = indexForId(id);
+    if (index == invalidIndex || index >= transforms.size()) {
+      return nullptr;
+    }
+    return &transforms[index];
+  }
+
+  [[nodiscard]] const Aabb* aabb(ObjectId id) const
+  {
+    const std::size_t index = indexForId(id);
+    if (index == invalidIndex || index >= aabbs.size()) {
+      return nullptr;
+    }
+    return &aabbs[index];
+  }
+};
+
+struct DART_COLLISION_EXPERIMENTAL_API BatchStorage
+{
+  static constexpr std::size_t kInvalidIndex
+      = std::numeric_limits<std::size_t>::max();
+
+  std::vector<ObjectId> ids;
+  std::vector<const Shape*> shapes;
+  std::vector<Eigen::Isometry3d> transforms;
+  std::vector<Aabb> aabbs;
+  std::vector<std::uint8_t> flags;
+  std::vector<std::size_t> idToIndex;
+
+  void clear()
+  {
+    ids.clear();
+    shapes.clear();
+    transforms.clear();
+    aabbs.clear();
+    flags.clear();
+    idToIndex.clear();
+  }
+
+  void reserve(std::size_t count)
+  {
+    ids.reserve(count);
+    shapes.reserve(count);
+    transforms.reserve(count);
+    aabbs.reserve(count);
+    flags.reserve(count);
+    if (count > idToIndex.size()) {
+      idToIndex.resize(count, kInvalidIndex);
+    }
+  }
+
+  [[nodiscard]] std::size_t size() const
+  {
+    return ids.size();
+  }
+
+  void add(
+      ObjectId id,
+      const Shape* shape,
+      const Eigen::Isometry3d& transform,
+      const Aabb& aabb)
+  {
+    if (id >= idToIndex.size()) {
+      idToIndex.resize(id + 1, kInvalidIndex);
+    }
+    if (idToIndex[id] != kInvalidIndex) {
+      update(id, shape, transform, aabb);
+      return;
+    }
+    idToIndex[id] = ids.size();
+    ids.push_back(id);
+    shapes.push_back(shape);
+    transforms.push_back(transform);
+    aabbs.push_back(aabb);
+    flags.push_back(0);
+  }
+
+  void update(
+      ObjectId id,
+      const Shape* shape,
+      const Eigen::Isometry3d& transform,
+      const Aabb& aabb)
+  {
+    if (id >= idToIndex.size()) {
+      return;
+    }
+    const std::size_t index = idToIndex[id];
+    if (index == kInvalidIndex || index >= ids.size()) {
+      return;
+    }
+    shapes[index] = shape;
+    transforms[index] = transform;
+    aabbs[index] = aabb;
+  }
+
+  void remove(ObjectId id)
+  {
+    if (id >= idToIndex.size()) {
+      return;
+    }
+    const std::size_t index = idToIndex[id];
+    if (index == kInvalidIndex || index >= ids.size()) {
+      return;
+    }
+    const std::size_t lastIndex = ids.size() - 1;
+    if (index != lastIndex) {
+      ids[index] = ids[lastIndex];
+      shapes[index] = shapes[lastIndex];
+      transforms[index] = transforms[lastIndex];
+      aabbs[index] = aabbs[lastIndex];
+      flags[index] = flags[lastIndex];
+      idToIndex[ids[index]] = index;
+    }
+    ids.pop_back();
+    shapes.pop_back();
+    transforms.pop_back();
+    aabbs.pop_back();
+    flags.pop_back();
+    idToIndex[id] = kInvalidIndex;
+  }
+
+  [[nodiscard]] BatchView view() const
+  {
+    BatchView view;
+    view.ids = std::span<const ObjectId>(ids.data(), ids.size());
+    view.shapes = std::span<const Shape* const>(shapes.data(), shapes.size());
+    view.transforms = std::span<const Eigen::Isometry3d>(
+        transforms.data(), transforms.size());
+    view.aabbs = std::span<const Aabb>(aabbs.data(), aabbs.size());
+    view.flags = std::span<const std::uint8_t>(flags.data(), flags.size());
+    view.idToIndex
+        = std::span<const std::size_t>(idToIndex.data(), idToIndex.size());
+    view.invalidIndex = kInvalidIndex;
+    return view;
   }
 };
 

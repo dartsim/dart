@@ -50,6 +50,11 @@ Maintain a compact SoA cache for hot data:
 The registry remains authoritative, but the batch cache is the fast path for
 bulk queries.
 
+Implementation status:
+
+- `BatchStorage` + `BatchView` live in `dart/collision/experimental/batch.hpp`.
+- `CollisionWorld` syncs batch storage on create/destroy/update.
+
 ### Dirty/moved tracking
 
 - Maintain a `std::vector<ObjectId> dirtyIds` for AABB updates.
@@ -93,6 +98,7 @@ bulk queries.
 - `updateAll(const BatchSettings&, BatchStats*)` already exists; add
   `updateDirty(const std::span<ObjectId>& ids)` for explicit updates.
 - `getObjectById(ObjectId id)` for mapping snapshot ids back to handles.
+- `getBatchView()` to expose read-only SoA data for batch queries.
 - `buildBroadPhaseSnapshot(const BatchSettings&)` should avoid allocations when
   provided with a reusable output buffer.
 

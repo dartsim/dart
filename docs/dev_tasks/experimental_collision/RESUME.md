@@ -15,6 +15,9 @@ in `ecs_data_layout.md`.
 Added stable object IDs for collision objects (stored in
 `BroadPhaseComponent`) and exposed them via `CollisionObject::getId()`.
 
+Added BatchStorage/BatchView SoA cache and a shape/transform narrowphase
+overload to reduce per-pair ECS lookups in batch collision.
+
 Fixed two pre-existing test failures with incorrect geometric expectations:
 
 1. **ConvexIntersecting test** - Expected distance=0 for shapes that actually overlap (penetration), fixed to expect negative distance

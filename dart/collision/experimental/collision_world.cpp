@@ -90,6 +90,9 @@ CollisionObject CollisionWorld::createObject(
   aabbComp.aabb = aabb;
   aabbComp.dirty = false;
 
+  const auto& shapeComp = m_registry.get<comps::ShapeComponent>(entity);
+  const auto& transformComp = m_registry.get<comps::TransformComponent>(entity);
+
   broadPhaseComp.broadPhaseId = m_nextObjectId++;
   if (broadPhaseComp.broadPhaseId >= m_idToEntity.size()) {
     m_idToEntity.resize(broadPhaseComp.broadPhaseId + 1, entt::null);
@@ -97,6 +100,11 @@ CollisionObject CollisionWorld::createObject(
   m_idToEntity[broadPhaseComp.broadPhaseId] = entity;
 
   m_broadPhase->add(broadPhaseComp.broadPhaseId, aabb);
+  m_batchStorage.add(
+      broadPhaseComp.broadPhaseId,
+      shapeComp.shape.get(),
+      transformComp.transform,
+      aabb);
   m_snapshotDirty = true;
 
   return obj;
@@ -115,6 +123,7 @@ void CollisionWorld::destroyObject(CollisionObject object)
     if (broadPhaseComp->broadPhaseId < m_idToEntity.size()) {
       m_idToEntity[broadPhaseComp->broadPhaseId] = entt::null;
     }
+    m_batchStorage.remove(broadPhaseComp->broadPhaseId);
   } else {
     m_broadPhase->remove(static_cast<std::size_t>(entity));
   }
@@ -138,6 +147,11 @@ void CollisionWorld::updateObject(CollisionObject object)
     aabbComp->dirty = false;
     if (broadPhaseComp) {
       m_broadPhase->update(broadPhaseComp->broadPhaseId, aabb);
+      m_batchStorage.update(
+          broadPhaseComp->broadPhaseId,
+          object.getShape(),
+          object.getTransform(),
+          aabb);
     } else {
       m_broadPhase->update(static_cast<std::size_t>(entity), aabb);
     }
@@ -175,6 +189,19 @@ CollisionObject CollisionWorld::getObjectById(std::size_t id)
   return CollisionObject(entity, this);
 }
 
+BatchView CollisionWorld::getBatchView() const
+{
+  return m_batchStorage.view();
+}
+
+void CollisionWorld::reserveObjects(std::size_t count)
+{
+  m_batchStorage.reserve(count);
+  if (count > m_idToEntity.size()) {
+    m_idToEntity.resize(count, entt::null);
+  }
+}
+
 std::size_t CollisionWorld::updateAll()
 {
   BatchSettings settings;
@@ -198,6 +225,11 @@ std::size_t CollisionWorld::updateAll(
       aabbComp->dirty = false;
       if (broadPhaseComp) {
         m_broadPhase->update(broadPhaseComp->broadPhaseId, aabb);
+        m_batchStorage.update(
+            broadPhaseComp->broadPhaseId,
+            obj.getShape(),
+            obj.getTransform(),
+            aabb);
       } else {
         m_broadPhase->update(static_cast<std::size_t>(entity), aabb);
       }
@@ -294,28 +326,22 @@ bool CollisionWorld::collideAll(
     stats->tempBytes = stats->pairBytes;
   }
 
+  auto view = getBatchView();
   for (const auto& pair : snapshot.pairs) {
-    if (pair.first >= m_idToEntity.size()
-        || pair.second >= m_idToEntity.size()) {
+    const auto* shape1 = view.shape(pair.first);
+    const auto* shape2 = view.shape(pair.second);
+    const auto* tf1 = view.transform(pair.first);
+    const auto* tf2 = view.transform(pair.second);
+
+    if (!shape1 || !shape2 || !tf1 || !tf2) {
       continue;
     }
-
-    auto entity1 = m_idToEntity[pair.first];
-    auto entity2 = m_idToEntity[pair.second];
-
-    if (entity1 == entt::null || entity2 == entt::null
-        || !m_registry.valid(entity1) || !m_registry.valid(entity2)) {
-      continue;
-    }
-
-    CollisionObject obj1(entity1, this);
-    CollisionObject obj2(entity2, this);
 
     if (stats) {
       ++stats->numPairsTested;
     }
 
-    if (NarrowPhase::collide(obj1, obj2, option, result)) {
+    if (NarrowPhase::collide(shape1, *tf1, shape2, *tf2, option, result)) {
       hasCollision = true;
       if (option.enableContact == false
           || (option.maxNumContacts > 0
@@ -354,24 +380,18 @@ bool CollisionWorld::collide(
 
   auto pairs = m_broadPhase->queryPairs();
 
+  auto view = getBatchView();
   for (const auto& pair : pairs) {
-    if (pair.first >= m_idToEntity.size()
-        || pair.second >= m_idToEntity.size()) {
+    const auto* shape1 = view.shape(pair.first);
+    const auto* shape2 = view.shape(pair.second);
+    const auto* tf1 = view.transform(pair.first);
+    const auto* tf2 = view.transform(pair.second);
+
+    if (!shape1 || !shape2 || !tf1 || !tf2) {
       continue;
     }
 
-    auto entity1 = m_idToEntity[pair.first];
-    auto entity2 = m_idToEntity[pair.second];
-
-    if (entity1 == entt::null || entity2 == entt::null
-        || !m_registry.valid(entity1) || !m_registry.valid(entity2)) {
-      continue;
-    }
-
-    CollisionObject obj1(entity1, this);
-    CollisionObject obj2(entity2, this);
-
-    if (NarrowPhase::collide(obj1, obj2, option, result)) {
+    if (NarrowPhase::collide(shape1, *tf1, shape2, *tf2, option, result)) {
       hasCollision = true;
       if (option.enableContact == false
           || (option.maxNumContacts > 0
@@ -578,6 +598,7 @@ void CollisionWorld::clear()
   m_registry.clear();
   m_idToEntity.clear();
   m_nextObjectId = 0;
+  m_batchStorage.clear();
   m_cachedSnapshot.clear();
   m_snapshotDirty = true;
   m_cachedDeterministic = true;

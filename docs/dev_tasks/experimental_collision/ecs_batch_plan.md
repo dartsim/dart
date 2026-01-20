@@ -40,7 +40,7 @@ Exit criteria:
 - Create/destroy/update path keeps batch storage in sync.
 - `collideAll` can consume `BatchView` (no per-pair entt lookups).
 
-## Phase 3: ECS-Friendly Narrowphase Interface (next)
+## Phase 3: ECS-Friendly Narrowphase Interface (in progress)
 
 Deliverables:
 
@@ -73,6 +73,9 @@ Exit criteria:
 
 ## Immediate Next Steps
 
-1. Implement BatchStorage + BatchView and wire into `CollisionWorld`.
-2. Add narrowphase shape/transform overload and use it in batch collide.
-3. Update `ecs_data_layout.md` and `RESUME.md` with implementation status.
+1. Add a small unit test covering `CollisionObject::getId()` and
+   `CollisionWorld::getObjectById()` round-trip.
+2. Extend the batch view to expose optional flags (static/disabled) once
+   filtering rules are defined.
+3. Validate single-thread regressions after batch-view plumbing (timing-only,
+   no benchmark code changes).
