@@ -115,9 +115,18 @@ TEST(Gjk, SphereBoxIntersecting)
 {
   auto supportA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
   auto supportB =
-      makeBoxSupport(Eigen::Vector3d(1.5, 0, 0), Eigen::Vector3d(0.5, 0.5, 0.5));
+      makeBoxSupport(Eigen::Vector3d(1.4, 0, 0), Eigen::Vector3d(0.5, 0.5, 0.5));
 
   EXPECT_TRUE(Gjk::intersect(supportA, supportB));
+}
+
+TEST(Gjk, SphereBoxTouching)
+{
+  auto supportA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
+  auto supportB =
+      makeBoxSupport(Eigen::Vector3d(1.5, 0, 0), Eigen::Vector3d(0.5, 0.5, 0.5));
+
+  EXPECT_FALSE(Gjk::intersect(supportA, supportB));
 }
 
 TEST(Gjk, SphereBoxSeparated)
