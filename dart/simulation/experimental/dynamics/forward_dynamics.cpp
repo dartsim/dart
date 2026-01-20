@@ -277,6 +277,60 @@ void ForwardDynamicsSystem::computeAccelerations(
   }
 }
 
+void ForwardDynamicsSystem::computeVelocities(
+    World& world,
+    const MultiBody& multiBody,
+    std::span<const Eigen::Isometry3d> linkTransforms)
+{
+  auto& registry = world.getRegistry();
+  const auto& mbComp
+      = registry.get<comps::MultiBodyStructure>(multiBody.getEntity());
+  const std::size_t numLinks = mbComp.links.size();
+
+  for (std::size_t idx = 0; idx < numLinks; ++idx) {
+    const auto linkEntity = mbComp.links[idx];
+    const auto& linkComp = registry.get<comps::Link>(linkEntity);
+
+    auto& linkData = m_workspace.getLinkData(idx);
+
+    if (linkComp.parentJoint == entt::null) {
+      linkData.spatialVelocity = Eigen::Vector6d::Zero();
+      linkData.partialAcceleration = Eigen::Vector6d::Zero();
+      continue;
+    }
+
+    const auto& jointComp = registry.get<comps::Joint>(linkComp.parentJoint);
+
+    std::size_t parentIdx = 0;
+    for (std::size_t j = 0; j < numLinks; ++j) {
+      if (mbComp.links[j] == jointComp.parentLink) {
+        parentIdx = j;
+        break;
+      }
+    }
+
+    const Eigen::Isometry3d T_parent_child
+        = linkTransforms[parentIdx].inverse() * linkTransforms[idx];
+    const auto parentVel = transformSpatialVelocityInverse(
+        T_parent_child, m_workspace.getLinkData(parentIdx).spatialVelocity);
+
+    const std::size_t dof = jointComp.getDOF();
+    if (dof == 0) {
+      linkData.spatialVelocity = parentVel;
+      linkData.partialAcceleration = Eigen::Vector6d::Zero();
+      continue;
+    }
+
+    const auto S = computeMotionSubspace(jointComp);
+    const Eigen::VectorXd jointVel = S * jointComp.velocity;
+
+    linkData.spatialVelocity = parentVel + jointVel;
+
+    linkData.partialAcceleration
+        = spatialCross(linkData.spatialVelocity, jointVel);
+  }
+}
+
 void ForwardDynamicsSystem::compute(World& world, MultiBody& multiBody)
 {
   initializeWorkspace(multiBody);
@@ -292,6 +346,7 @@ void ForwardDynamicsSystem::compute(World& world, MultiBody& multiBody)
 
   m_workspace.reset();
 
+  computeVelocities(world, multiBody, m_linkTransforms);
   computeArticulatedInertias(world, multiBody, m_linkTransforms);
   computeBiasForces(world, multiBody, m_linkTransforms);
   computeAccelerations(world, multiBody, m_linkTransforms);

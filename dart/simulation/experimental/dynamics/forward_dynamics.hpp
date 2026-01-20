@@ -88,6 +88,11 @@ public:
 private:
   void initializeWorkspace(const MultiBody& multiBody);
 
+  void computeVelocities(
+      World& world,
+      const MultiBody& multiBody,
+      std::span<const Eigen::Isometry3d> linkTransforms);
+
   void computeArticulatedInertias(
       World& world,
       const MultiBody& multiBody,
