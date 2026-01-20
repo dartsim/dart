@@ -448,14 +448,19 @@ This avoids noisy bot-to-bot conversations while still leveraging automated veri
 
 After identifying an AI-generated review comment to address:
 
-1. **Push the fix** silently (no reply to the comment)
-2. **Resolve the thread immediately** using GraphQL (see commands below)
-3. **Re-trigger the review**: `gh pr comment <PR> --body "@codex review"`
-4. **Monitor for results**:
+1. **Make the code fix**
+2. **Run `pixi run lint`** — MANDATORY before every commit (auto-fixes formatting)
+3. **Commit and push** silently (no reply to the comment)
+4. **Resolve the thread immediately** using GraphQL (see commands below)
+5. **Re-trigger the review**: `gh pr comment <PR> --body "@codex review"`
+6. **Monitor for results**:
    - New review comments → repeat from step 1
    - "No issues" or 👍 reaction → done, PR is ready for human review
 
-**Agents MUST resolve threads automatically after pushing fixes.** This keeps the PR clean.
+**Agents MUST:**
+
+- Run `pixi run lint` before EVERY commit (CI will fail otherwise)
+- Resolve threads automatically after pushing fixes (keeps PR clean)
 
 ### GraphQL Commands for Thread Resolution
 
