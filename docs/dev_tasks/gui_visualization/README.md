@@ -2,7 +2,7 @@
 
 > **Created**: 2026-01-20
 > **Updated**: 2026-01-19
-> **Status**: Phase 1.1 Complete (Project Setup) - Phase 1.3 Complete (Transform Utilities)
+> **Status**: Phase 1-3 COMPLETE - All VSG building blocks implemented
 > **Decision**: VulkanSceneGraph (VSG) for all visualization needs
 
 ## Background
@@ -450,22 +450,22 @@ vulkanscenegraph = ">=1.0"
 
 ### Phase 1 Complete When:
 
-- [ ] VSG builds in DART project
-- [ ] All geometry builders work (sphere, box, capsule, cylinder, plane, mesh)
-- [ ] Transform conversions work
-- [ ] Debug primitives work (points, lines, arrows)
+- [x] VSG builds in DART project
+- [x] All geometry builders work (sphere, box, capsule, cylinder, plane, mesh)
+- [x] Transform conversions work
+- [x] Debug primitives work (points, lines, arrows)
 
 ### Phase 2 Complete When:
 
-- [ ] SimpleViewer displays shapes
-- [ ] Camera orbit controls work
-- [ ] Can render collision world objects
+- [x] SimpleViewer displays shapes
+- [x] Camera orbit controls work
+- [x] Can render collision world objects
 
 ### Phase 3 Complete When:
 
-- [ ] CollisionSceneBuilder visualizes collision results
-- [ ] Example tool works end-to-end
-- [ ] Can visualize CCD (sphere-cast, capsule-cast)
+- [x] CollisionSceneBuilder visualizes collision results
+- [x] Example tool works end-to-end
+- [x] Can visualize CCD (sphere-cast, capsule-cast)
 
 ---
 

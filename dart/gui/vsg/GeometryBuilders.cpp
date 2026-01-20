@@ -32,6 +32,8 @@
 
 #include "dart/gui/vsg/GeometryBuilders.hpp"
 
+#include <dart/collision/experimental/shapes/shape.hpp>
+
 #include <vsg/utils/Builder.h>
 
 namespace dart::gui::vsg {
@@ -191,6 +193,75 @@ namespace {
   stateGroup->addChild(drawCommands);
 
   return stateGroup;
+}
+
+::vsg::ref_ptr<::vsg::Node> createFromShape(
+    const collision::experimental::Shape& shape, const GeometryOptions& options)
+{
+  using collision::experimental::BoxShape;
+  using collision::experimental::CapsuleShape;
+  using collision::experimental::ConvexShape;
+  using collision::experimental::CylinderShape;
+  using collision::experimental::MeshShape;
+  using collision::experimental::PlaneShape;
+  using collision::experimental::ShapeType;
+  using collision::experimental::SphereShape;
+
+  switch (shape.getType()) {
+    case ShapeType::Sphere: {
+      const auto& sphere = static_cast<const SphereShape&>(shape);
+      return createSphere(sphere.getRadius(), options);
+    }
+    case ShapeType::Box: {
+      const auto& box = static_cast<const BoxShape&>(shape);
+      return createBox(box.getHalfExtents() * 2.0, options);
+    }
+    case ShapeType::Capsule: {
+      const auto& capsule = static_cast<const CapsuleShape&>(shape);
+      return createCapsule(capsule.getRadius(), capsule.getHeight(), options);
+    }
+    case ShapeType::Cylinder: {
+      const auto& cylinder = static_cast<const CylinderShape&>(shape);
+      return createCylinder(
+          cylinder.getRadius(), cylinder.getHeight(), options);
+    }
+    case ShapeType::Plane: {
+      const auto& plane = static_cast<const PlaneShape&>(shape);
+      (void)plane;
+      return createPlane(10.0, 10.0, options);
+    }
+    case ShapeType::Mesh: {
+      const auto& mesh = static_cast<const MeshShape&>(shape);
+      std::vector<std::array<unsigned int, 3>> triangles;
+      triangles.reserve(mesh.getTriangles().size());
+      for (const auto& tri : mesh.getTriangles()) {
+        triangles.push_back(
+            {static_cast<unsigned int>(tri.x()),
+             static_cast<unsigned int>(tri.y()),
+             static_cast<unsigned int>(tri.z())});
+      }
+      return createMesh(mesh.getVertices(), triangles, options);
+    }
+    case ShapeType::Convex: {
+      const auto& convex = static_cast<const ConvexShape&>(shape);
+      std::vector<std::array<unsigned int, 3>> triangles;
+      const auto& verts = convex.getVertices();
+      if (verts.size() >= 3) {
+        for (size_t i = 1; i + 1 < verts.size(); ++i) {
+          triangles.push_back(
+              {0,
+               static_cast<unsigned int>(i),
+               static_cast<unsigned int>(i + 1)});
+        }
+      }
+      return createMesh(verts, triangles, options);
+    }
+    case ShapeType::Cone:
+    case ShapeType::HeightField:
+    case ShapeType::PointCloud:
+    default:
+      return createSphere(0.1, options);
+  }
 }
 
 } // namespace dart::gui::vsg

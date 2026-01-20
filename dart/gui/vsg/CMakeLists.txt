@@ -39,7 +39,17 @@ target_include_directories(
     $<BUILD_INTERFACE:${DART_BINARY_DIR}>
     $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(${target_name} PUBLIC Eigen3::Eigen ${link_libraries})
+target_link_libraries(${target_name}
+  PUBLIC
+    Eigen3::Eigen
+    ${link_libraries}
+)
+
+# Link to collision-experimental for createFromShape()
+# Use generator expression since collision-experimental is added after gui/vsg
+if(DART_BUILD_COLLISION_EXPERIMENTAL)
+  target_link_libraries(${target_name} PUBLIC ${PROJECT_NAME}-collision-experimental)
+endif()
 
 if(MSVC AND BUILD_SHARED_LIBS)
   if(CMAKE_CONFIGURATION_TYPES)

@@ -39,47 +39,43 @@
 #include <Eigen/Geometry>
 #include <vsg/all.h>
 
-#include <array>
 #include <vector>
 
 namespace dart::collision::experimental {
-class Shape;
+class CollisionObject;
+class CollisionResult;
+struct CcdResult;
 } // namespace dart::collision::experimental
 
 namespace dart::gui::vsg {
 
-struct DART_GUI_VSG_API GeometryOptions
+class DART_GUI_VSG_API CollisionSceneBuilder
 {
-  Eigen::Vector4d color{0.7, 0.7, 0.7, 1.0};
-  bool wireframe{false};
-  bool twoSided{false};
+public:
+  CollisionSceneBuilder();
+  ~CollisionSceneBuilder();
+
+  void addObject(
+      const collision::experimental::CollisionObject& obj,
+      const Eigen::Vector4d& color = colors::Gray);
+
+  void addContacts(
+      const collision::experimental::CollisionResult& result,
+      double normalLength = 0.1,
+      double pointSize = 0.02);
+
+  void addSphereCast(
+      const Eigen::Vector3d& start,
+      const Eigen::Vector3d& end,
+      double radius,
+      const collision::experimental::CcdResult* hit = nullptr);
+
+  ::vsg::ref_ptr<::vsg::Node> build();
+
+  void clear();
+
+private:
+  std::vector<::vsg::ref_ptr<::vsg::Node>> m_nodes;
 };
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createSphere(
-    double radius, const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createBox(
-    const Eigen::Vector3d& size, const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createCapsule(
-    double radius, double height, const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createCylinder(
-    double radius, double height, const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createCone(
-    double radius, double height, const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createPlane(
-    double width, double height, const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createMesh(
-    const std::vector<Eigen::Vector3d>& vertices,
-    const std::vector<std::array<unsigned int, 3>>& triangles,
-    const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createFromShape(
-    const collision::experimental::Shape& shape,
-    const GeometryOptions& options = {});
 
 } // namespace dart::gui::vsg

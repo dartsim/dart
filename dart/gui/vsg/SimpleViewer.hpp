@@ -33,53 +33,70 @@
 #pragma once
 
 #include <dart/gui/vsg/Export.hpp>
-#include <dart/gui/vsg/Materials.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <vsg/all.h>
 
-#include <array>
-#include <vector>
-
-namespace dart::collision::experimental {
-class Shape;
-} // namespace dart::collision::experimental
+#include <memory>
+#include <string>
 
 namespace dart::gui::vsg {
 
-struct DART_GUI_VSG_API GeometryOptions
+class DART_GUI_VSG_API SimpleViewer
 {
-  Eigen::Vector4d color{0.7, 0.7, 0.7, 1.0};
-  bool wireframe{false};
-  bool twoSided{false};
+public:
+  SimpleViewer(
+      int width = 800,
+      int height = 600,
+      const std::string& title = "DART VSG Viewer");
+  ~SimpleViewer();
+
+  SimpleViewer(const SimpleViewer&) = delete;
+  SimpleViewer& operator=(const SimpleViewer&) = delete;
+  SimpleViewer(SimpleViewer&&) = default;
+  SimpleViewer& operator=(SimpleViewer&&) = default;
+
+  void setScene(::vsg::ref_ptr<::vsg::Node> scene);
+  [[nodiscard]] ::vsg::ref_ptr<::vsg::Group> getRoot() const;
+
+  void addNode(::vsg::ref_ptr<::vsg::Node> node);
+  void removeNode(::vsg::ref_ptr<::vsg::Node> node);
+  void clear();
+
+  void lookAt(
+      const Eigen::Vector3d& eye,
+      const Eigen::Vector3d& center,
+      const Eigen::Vector3d& up = Eigen::Vector3d::UnitZ());
+  void resetCamera();
+
+  void setBackgroundColor(const Eigen::Vector4d& color);
+
+  bool frame();
+  void run();
+  [[nodiscard]] bool shouldClose() const;
+
+  void addGrid(double size = 10.0, double spacing = 1.0);
+  void addAxes(double length = 1.0);
+
+private:
+  void setupViewer();
+  void setupCamera();
+  void compile();
+
+  int m_width;
+  int m_height;
+  std::string m_title;
+  Eigen::Vector4d m_backgroundColor{0.2, 0.2, 0.3, 1.0};
+
+  ::vsg::ref_ptr<::vsg::Viewer> m_viewer;
+  ::vsg::ref_ptr<::vsg::Window> m_window;
+  ::vsg::ref_ptr<::vsg::Group> m_root;
+  ::vsg::ref_ptr<::vsg::Group> m_sceneRoot;
+  ::vsg::ref_ptr<::vsg::Camera> m_camera;
+  ::vsg::ref_ptr<::vsg::LookAt> m_lookAt;
+
+  bool m_needsCompile{true};
 };
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createSphere(
-    double radius, const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createBox(
-    const Eigen::Vector3d& size, const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createCapsule(
-    double radius, double height, const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createCylinder(
-    double radius, double height, const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createCone(
-    double radius, double height, const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createPlane(
-    double width, double height, const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createMesh(
-    const std::vector<Eigen::Vector3d>& vertices,
-    const std::vector<std::array<unsigned int, 3>>& triangles,
-    const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createFromShape(
-    const collision::experimental::Shape& shape,
-    const GeometryOptions& options = {});
 
 } // namespace dart::gui::vsg
