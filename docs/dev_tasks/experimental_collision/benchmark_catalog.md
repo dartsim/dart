@@ -21,6 +21,7 @@
 - `tests/benchmark/collision/scenarios/bm_mixed_primitives.cpp` - mixed primitives scenarios.
 - `tests/benchmark/collision/scenarios/bm_mesh_heavy.cpp` - mesh-heavy scenes.
 - `tests/benchmark/collision/scenarios/bm_raycast_batch.cpp` - batched raycasts.
+- `tests/benchmark/collision/scenarios/bm_pipeline_breakdown.cpp` - AABB update + broadphase + narrowphase timing.
 - `tests/benchmark/collision/experimental/bm_ccd.cpp` - experimental CCD microbenchmarks.
 - `tests/benchmark/collision/fixtures/` - shared shape/scene builders.
 - `tests/benchmark/collision/data/` - shared mesh/convex fixtures.
@@ -62,18 +63,18 @@
 
 ## Benchmark taxonomy (organize new cases by category)
 
-| Category                    | Scenarios (examples)                        | Query types                | Candidate sources                          | Notes                                                  |
-| --------------------------- | ------------------------------------------- | -------------------------- | ------------------------------------------ | ------------------------------------------------------ |
-| Primitive microbench        | Sphere-sphere, box-box, capsule-capsule     | collision, distance        | DART comparative, HPP-FCL tests, qu3e      | Baseline latency + accuracy checks                     |
-| Convex-convex distance      | Ellipsoid pairs                             | distance, closest points   | colbench, collision-detection-benchmark    | Good for GJK/EPA and gradient validation               |
-| Convex mesh distance        | ShapeNet convex meshes                      | distance, collision        | collision-detection-benchmark              | Tests non-strictly convex cases                        |
-| Mesh-heavy scenes           | Static meshes + moving primitives           | collision, contacts        | DART scenarios, Bullet benchmark demo      | Stresses BVH traversal and cache locality              |
-| Heightfield/terrain         | Moving primitives on terrain                | collision, contacts        | BEPU/Jitter/ReactPhysics3D demos           | Important for robotics ground contact                  |
-| Raycast batch               | 10k rays with hit/miss mix                  | raycast                    | DART raycast batch, Bullet demo            | Measure query/sec and result determinism               |
-| CCD/shape cast              | Swept sphere/capsule/convex cast            | time of impact, shape cast | DART bm_ccd, Parry shape casts, BEPU casts | Align linear vs nonlinear CCD modes                    |
-| Broadphase scaling          | 1k/10k objects, dense vs sparse             | broadphase + collision     | spatial-collision-datastructures, DART     | Report pairs/sec + update cost                         |
-| Contact stability           | Box stacking, aggregates, frictional stacks | contacts, manifold quality | qu3e demo, Bullet/ODE demos, BEPU demos    | Track contact count, stability, and solver convergence |
-| 2D sanity checks (optional) | Simple 2D convex pairs and time of impact   | collision, time of impact  | tinyc2, ncollide2d                         | Useful for algorithm regression tests                  |
+| Category                    | Scenarios (examples)                        | Query types                | Candidate sources                          | Notes                                                      |
+| --------------------------- | ------------------------------------------- | -------------------------- | ------------------------------------------ | ---------------------------------------------------------- |
+| Primitive microbench        | Sphere-sphere, box-box, capsule-capsule     | collision, distance        | DART comparative, HPP-FCL tests, qu3e      | Baseline latency + accuracy checks                         |
+| Convex-convex distance      | Ellipsoid pairs                             | distance, closest points   | colbench, collision-detection-benchmark    | Good for GJK/EPA and gradient validation                   |
+| Convex mesh distance        | ShapeNet convex meshes                      | distance, collision        | collision-detection-benchmark              | Tests non-strictly convex cases                            |
+| Mesh-heavy scenes           | Static meshes + moving primitives           | collision, contacts        | DART scenarios, Bullet benchmark demo      | Stresses BVH traversal and cache locality                  |
+| Heightfield/terrain         | Moving primitives on terrain                | collision, contacts        | BEPU/Jitter/ReactPhysics3D demos           | Important for robotics ground contact                      |
+| Raycast batch               | 10k rays with hit/miss mix                  | raycast                    | DART raycast batch, Bullet demo            | Measure query/sec and result determinism                   |
+| CCD/shape cast              | Swept sphere/capsule/convex cast            | time of impact, shape cast | DART bm_ccd, Parry shape casts, BEPU casts | Align linear vs nonlinear CCD modes                        |
+| Broadphase scaling          | 1k/10k objects, dense vs sparse             | broadphase + collision     | spatial-collision-datastructures, DART     | Report pairs/sec + update cost                             |
+| Contact stability           | Box stacking, aggregates, frictional stacks | contacts, manifold quality | qu3e demo, Bullet/ODE demos, BEPU demos    | Track contact count, stability, and solver convergence     |
+| 2D sanity checks (optional) | Simple 2D convex pairs and time of impact   | collision, time of impact  | tinyc2, ncollide2d                         | Useful for algorithm regression tests                      |
 | Gradient consistency        | Convex pairs with analytic gradients        | distance + gradient        | GJK/EPA, SDF papers                        | Validate gradient direction and sign near feature switches |
 
 ## Per-query, per-shape case checklist
