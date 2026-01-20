@@ -38,6 +38,10 @@ add_library(${target_name}
   compute/compute_node.cpp
   compute/sequential_executor.cpp
   compute/taskflow_executor.cpp
+  dynamics/articulated_body.cpp
+  dynamics/forward_dynamics.cpp
+  dynamics/motion_subspace.cpp
+  dynamics/spatial_math.cpp
   kinematics/joint_transform.cpp
   common/exceptions.cpp
   common/profiling.cpp
