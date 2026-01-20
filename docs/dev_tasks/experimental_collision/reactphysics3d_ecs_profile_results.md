@@ -37,7 +37,7 @@ children in the profiler report.
 - `docs/dev_tasks/experimental_collision/results/rp3d_profile_2026-01-19_10k_dense.txt`
 - `docs/dev_tasks/experimental_collision/results/rp3d_profile_2026-01-19_10k_sparse.txt`
 
-## DART comparison (planned)
+## DART comparison (attempted)
 
 Run DART pipeline breakdown with RP3D-aligned scenarios:
 
@@ -46,7 +46,8 @@ Run DART pipeline breakdown with RP3D-aligned scenarios:
   --benchmark_filter="PipelineBreakdown_RP3D_.*"
 ```
 
-Record results in `benchmark_results.md` alongside the RP3D baselines.
+Result: `bm_scenarios_pipeline_breakdown` segfaults on RP3D filters (and
+baseline filters). See `benchmark_results.md` for the failure log.
 
 ## Notes
 
