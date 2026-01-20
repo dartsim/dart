@@ -1,12 +1,11 @@
-<!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
-<!-- Source: .claude/skills/dart-python/SKILL.md -->
-<!-- Sync script: scripts/sync_ai_commands.py -->
-<!-- Run `pixi run sync-ai-commands` to update -->
-
 ---
 name: dart-python
 description: DART Python bindings (dartpy) - nanobind, wheel building, API patterns
 ---
+<!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
+<!-- Source: .claude/skills/dart-python/SKILL.md -->
+<!-- Sync script: scripts/sync_ai_commands.py -->
+<!-- Run `pixi run sync-ai-commands` to update -->
 
 # DART Python Bindings (dartpy)
 

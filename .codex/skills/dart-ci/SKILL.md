@@ -1,12 +1,11 @@
-<!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
-<!-- Source: .claude/skills/dart-ci/SKILL.md -->
-<!-- Sync script: scripts/sync_ai_commands.py -->
-<!-- Run `pixi run sync-ai-commands` to update -->
-
 ---
 name: dart-ci
 description: DART CI/CD troubleshooting - GitHub Actions, cache debugging, platform-specific failures
 ---
+<!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
+<!-- Source: .claude/skills/dart-ci/SKILL.md -->
+<!-- Sync script: scripts/sync_ai_commands.py -->
+<!-- Run `pixi run sync-ai-commands` to update -->
 
 # DART CI/CD Troubleshooting
 

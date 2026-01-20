@@ -83,25 +83,40 @@ def validate_codex_skill(skill_path: Path) -> list[str]:
 
 def has_auto_gen_header(content: str) -> bool:
     """Check if content has the auto-generated header."""
-    return content.startswith("<!-- AUTO-GENERATED FILE")
+    return "<!-- AUTO-GENERATED FILE" in content
 
 
 def strip_auto_gen_header(content: str) -> str:
     """Remove auto-generated header from content for comparison."""
-    if has_auto_gen_header(content):
-        lines = content.split("\n")
-        for i, line in enumerate(lines):
-            if not line.startswith("<!--") and line.strip() == "":
+    lines = content.split("\n")
+    result_lines = []
+    in_header = False
+
+    for line in lines:
+        if line.startswith("<!-- AUTO-GENERATED FILE"):
+            in_header = True
+            continue
+        if in_header:
+            if line.startswith("<!--"):
                 continue
-            if not line.startswith("<!--"):
-                return "\n".join(lines[i:])
-    return content
+            in_header = False
+        result_lines.append(line)
+
+    return "\n".join(result_lines)
 
 
 def add_auto_gen_header(content: str, source_path: str) -> str:
-    """Add auto-generated header to content."""
-    header = AUTO_GEN_HEADER.format(source_path=source_path)
-    return header + content
+    """Add auto-generated header after YAML frontmatter (if present) to preserve tool parsing."""
+    header = AUTO_GEN_HEADER.format(source_path=source_path).rstrip("\n")
+
+    if content.startswith("---"):
+        lines = content.split("\n")
+        for i, line in enumerate(lines[1:], start=1):
+            if line.strip() == "---":
+                frontmatter = "\n".join(lines[: i + 1])
+                rest = "\n".join(lines[i + 1 :])
+                return frontmatter + "\n" + header + "\n" + rest
+    return header + "\n\n" + content
 
 
 def sync_flat_files(
