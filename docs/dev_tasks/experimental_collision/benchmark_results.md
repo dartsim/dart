@@ -41,15 +41,39 @@ run, and keep the most recent results at the top.
 | Mixed primitives (dense/sparse)       | see JSON     | see JSON | see JSON | see JSON | 0.06x-1.4x (p50 0.35x)   | 6 cases (100/1k/10k); BigO/RMS excluded.                    |
 | Mesh-heavy scenario                   | see JSON     | see JSON | see JSON | see JSON | 3.6x-4.7x                | 2 cases; mesh loader warns about empty path.                |
 | Batched raycasts                      | see JSON     | N/A      | see JSON | N/A      | TBD                      | 500 rays, 1k/2k objects; SweepAndPrune for experimental.    |
+| libccd microbench (GJK/EPA/MPR)       | see JSON     | N/A      | N/A      | N/A      | mixed                    | DART faster on EPA (~12.8k×), slower on GJK/MPR (1.1-2.2×). |
 
 ## Result History (Keep Brief)
 
 | Date       | Commit      | Summary                             | Notes                                              |
 | ---------- | ----------- | ----------------------------------- | -------------------------------------------------- |
+| 2026-01-20 | 1fac7c64227 | libccd microbench                   | EPA faster; GJK/MPR slower vs libccd.              |
 | 2026-01-20 | 7bc79f0dd6b | RP3D-aligned pipeline breakdown try | Segfault persists after rebuild; partial JSON.     |
 | 2026-01-20 | f315999cdfe | Raycast batch + comparative raycast | SweepAndPrune; 500 rays; 1k/2k objects             |
 | 2026-01-19 | TBD         | Baseline results (pre-structure)    |                                                    |
 | 2026-01-19 | b1f6e5e     | Comparative + scenarios runs        | Distance/mixed underperform; raycast blocked then. |
+
+## Run 2026-01-20 — libccd microbench
+
+- **Branch / Commit**: `feature/new_coll` / `1fac7c64227`
+- **Build**: `Release` (build/default/cpp/Release)
+- **CPU**: 13th Gen Intel(R) Core(TM) i9-13950HX
+- **OS**: Ubuntu 25.10
+- **Compiler**: c++ (Ubuntu 15.2.0-4ubuntu4) 15.2.0
+- **Notes**:
+  - libccd from pixi env (`.pixi/envs/default`), since the local libccd CMakeLists target name collides with the already-imported `ccd` target.
+  - `--benchmark_min_time=0.05s`.
+- **Command**:
+  - `pixi run bm bm_experimental_libccd -- --benchmark_min_time=0.05s --benchmark_format=json --benchmark_out=docs/dev_tasks/experimental_collision/results/bm_experimental_libccd_2026-01-20_012403.json`
+- **Raw Output**:
+  - `docs/dev_tasks/experimental_collision/results/bm_experimental_libccd_2026-01-20_012403.json`
+
+Summary (speedup = libccd time / experimental time):
+
+- GJK sphere-sphere: 0.46x (experimental 2.16x slower).
+- GJK+EPA sphere-sphere: 12,763x (experimental faster).
+- MPR sphere-sphere: 0.88x (experimental 1.14x slower).
+- GJK box-box: 0.53x (experimental 1.88x slower).
 
 ## Run 2026-01-20 — Raycast comparative + batch scenarios
 
@@ -126,5 +150,6 @@ BM_Scenario_PipelineBreakdown_Sparse_Experimental/10000: aabb_ns=509226.0 broadp
   - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_004159.json` (partial; JSON truncated before benchmarks)
   - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_005830.json` (partial; JSON truncated before benchmarks)
   - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_010005.json` (partial; JSON truncated before benchmarks)
+  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_013729.json` (partial; JSON truncated before benchmarks)
 - **Notes**: Rebuilt `bm_scenarios_pipeline_breakdown`; dirty working tree due to parallel agents; crash persists.
 - **Next**: rerun once the AABB tree crash is resolved.
