@@ -613,19 +613,29 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
     const auto* traits
         = graphicsContext ? graphicsContext->getTraits() : nullptr;
     if (traits && traits->width > 0 && traits->height > 0) {
-      framebufferScale.x = static_cast<float>(viewport->width())
-                           / static_cast<float>(traits->width);
-      framebufferScale.y = static_cast<float>(viewport->height())
-                           / static_cast<float>(traits->height);
+      const float viewportWidth = static_cast<float>(viewport->width());
+      const float viewportHeight = static_cast<float>(viewport->height());
+      const float traitsWidth = static_cast<float>(traits->width);
+      const float traitsHeight = static_cast<float>(traits->height);
 
-      framebufferScale.x
-          = framebufferScale.x > 0.0f ? framebufferScale.x : 1.0f;
-      framebufferScale.y
-          = framebufferScale.y > 0.0f ? framebufferScale.y : 1.0f;
+      if (viewportWidth > 0.0f && viewportHeight > 0.0f) {
+        float scaleX = viewportWidth / traitsWidth;
+        float scaleY = viewportHeight / traitsHeight;
 
-      displaySize = ImVec2(
-          static_cast<float>(traits->width),
-          static_cast<float>(traits->height));
+        // Some platforms swap window vs framebuffer sizing between viewport
+        // and traits. Keep the scale >= 1 by treating the larger dimension as
+        // the framebuffer size.
+        if (scaleX < 1.0f || scaleY < 1.0f) {
+          scaleX = traitsWidth / viewportWidth;
+          scaleY = traitsHeight / viewportHeight;
+          displaySize = ImVec2(viewportWidth, viewportHeight);
+        } else {
+          displaySize = ImVec2(traitsWidth, traitsHeight);
+        }
+
+        framebufferScale.x = scaleX > 0.0f ? scaleX : 1.0f;
+        framebufferScale.y = scaleY > 0.0f ? scaleY : 1.0f;
+      }
     }
   }
 

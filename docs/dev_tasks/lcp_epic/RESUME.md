@@ -6,7 +6,7 @@
 
 - **Branch**: `refactor/lcp_plan`
 - **PR**: #2464
-- **State**: Updated ImGui scaling logic, needs visual verification
+- **State**: Added framebuffer scale fallback, needs visual verification
 - **Blocker**: Human visual test needed to confirm lcp_physics is crisp at scale 2
 
 ---
@@ -22,11 +22,21 @@ avoiding bitmap scaling when ImGui is rebuilt at the target size.
 
 - `dart/gui/ImGuiHandler.cpp` - Track opt-out flag and preserve FontGlobalScale
 
+### 2. Normalize Framebuffer Scale When Viewport/Traits Are Flipped
+
+`newFrame()` now treats the larger of viewport/traits as framebuffer size when
+the ratio falls below 1, avoiding downscaling in ImGui on some OSG setups.
+
+**Files changed**:
+
+- `dart/gui/ImGuiHandler.cpp` - Scale fallback for viewport vs traits
+
 ---
 
 ## Files Ready to Commit
 
 ```
+M  CHANGELOG.md
 M  dart/gui/ImGuiHandler.cpp
 M  docs/dev_tasks/lcp_epic/README.md
 M  docs/dev_tasks/lcp_epic/RESUME.md
@@ -55,10 +65,10 @@ cd /home/js/dev/dartsim/dart/task_4
 
 ```bash
 git add -A
-git commit -m "fix(gui): avoid FontGlobalScale when using setFontScale
+git commit -m "fix(gui): normalize ImGui framebuffer scale detection
 
-Skip FontGlobalScale in applyImGuiScale once setFontScale opts in to
-rebuilt fonts, preventing bitmap scaling blur at --gui-scale > 1."
+Use the larger of viewport/traits as the framebuffer size to keep
+DisplayFramebufferScale >= 1 on HiDPI and XWayland setups."
 
 git push origin refactor/lcp_plan
 ```
@@ -67,7 +77,7 @@ git push origin refactor/lcp_plan
 
 1. Check that `mFramebufferScale` is being detected correctly
 2. Verify the font atlas is actually being rebuilt (add logging)
-3. Test with explicit pixel sizes
+3. Log viewport vs traits sizes to confirm the ratio direction
 
 ---
 
@@ -101,6 +111,18 @@ gDisableFontGlobalScale = true;
 // In applyImGuiScale():
 if (!gDisableFontGlobalScale) {
   io.FontGlobalScale = scale;
+}
+```
+
+### How Framebuffer Scale Is Normalized
+
+```cpp
+float scaleX = viewportWidth / traitsWidth;
+float scaleY = viewportHeight / traitsHeight;
+if (scaleX < 1.0f || scaleY < 1.0f) {
+  scaleX = traitsWidth / viewportWidth;
+  scaleY = traitsHeight / viewportHeight;
+  displaySize = ImVec2(viewportWidth, viewportHeight);
 }
 ```
 

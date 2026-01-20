@@ -87,7 +87,7 @@
   - GUI naming updates and backend cleanup (including the osg suffix removal). ([#2209](https://github.com/dartsim/dart/pull/2209), [#2257](https://github.com/dartsim/dart/pull/2257))
   - ImGui integration updates: FetchContent, Vulkan detection/loader fixes, GUI scale controls, and ImGuiWidget subclassing. ([#2056](https://github.com/dartsim/dart/pull/2056), [#2085](https://github.com/dartsim/dart/pull/2085), [#2261](https://github.com/dartsim/dart/pull/2261), [#2280](https://github.com/dartsim/dart/pull/2280), [#2356](https://github.com/dartsim/dart/pull/2356))
   - Rendering updates: PolyhedronVisual attachments and VisualAspect color handling. ([#2214](https://github.com/dartsim/dart/pull/2214), [#2230](https://github.com/dartsim/dart/pull/2230))
-  - Skip `FontGlobalScale` when ImGui font atlases are rebuilt for GUI scaling, reducing bitmap upscaling at high DPI.
+  - Skip `FontGlobalScale` when ImGui font atlases are rebuilt for GUI scaling, and normalize framebuffer scale detection to avoid downscaling on HiDPI setups.
 
 - Core
   - Added `<numbers>`-style variable templates (`dart::math::pi`, `phi`, `two_pi`, etc.) plus numeric-limits helpers (`inf_v`, `max_v`, `min_v`, `eps_v`) in `dart/math/Constants.hpp` and deprecated `dart::math::constants<T>` (the legacy struct/header will be removed in DART 7.1). ([#2150](https://github.com/dartsim/dart/pull/2150), [#2157](https://github.com/dartsim/dart/pull/2157), [#2225](https://github.com/dartsim/dart/pull/2225))

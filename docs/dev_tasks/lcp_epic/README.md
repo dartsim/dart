@@ -56,8 +56,9 @@
 
 **Cause**: `FontGlobalScale` scales bitmap fonts at runtime
 
-**Fix Status**: `setFontScale()` rebuilds fonts; `applyImGuiScale()` now skips
-`FontGlobalScale` after `setFontScale()` (needs visual testing)
+**Fix Status**: `setFontScale()` rebuilds fonts; `applyImGuiScale()` skips
+`FontGlobalScale` after `setFontScale()`. Added viewport/traits fallback to
+keep framebuffer scale >= 1 (needs visual testing)
 
 **Details**: See [RESUME.md](RESUME.md) for full context and next steps
 
@@ -136,7 +137,7 @@ tests/benchmark/lcpsolver/               # Performance benchmarks
 
 - **Branch**: `refactor/lcp_plan`
 - **PR**: #2464
-- **Uncommitted**: ImGuiHandler FontGlobalScale opt-out (needs visual test)
+- **Uncommitted**: ImGuiHandler framebuffer scale fallback (needs visual test)
 
 ---
 
