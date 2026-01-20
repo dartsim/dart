@@ -2,51 +2,61 @@
 
 ## Quick Status
 
-**Phase 5.2 (Dynamics) COMPLETE. Phase 5.5 (step()) COMPLETE (without collision/constraints).**
+**Phase 5.2 (Dynamics) COMPLETE. Phase 5.5 (step()) COMPLETE. Collision/Constraints DEFERRED.**
 
-| Phase | Status         | Description                                              |
-| ----- | -------------- | -------------------------------------------------------- |
-| 0     | ✅ Complete    | Ground-truth: tests, docs, example                       |
-| 1     | ✅ Complete    | API cleanup: all joint types, state accessors, RigidBody |
-| 2     | ✅ Complete    | Python bindings: all classes + StateSpace                |
-| 3     | 🔄 In Progress | Testing strategy: golden tests done, coverage pending    |
-| 4     | 🔄 In Progress | Performance: benchmarks done, profiling pending          |
-| 5.1   | ✅ Complete    | Forward Kinematics: joint transforms + Link integration  |
-| CG    | ✅ Complete    | Compute Graph: Taskflow integration for parallel exec    |
-| 5.2   | ✅ Complete    | Forward Dynamics: ABA algorithm with CoM + external forces |
-| 5.5   | ✅ Complete    | World::step(): Physics simulation with semi-implicit Euler |
-| 5.3-4 | Deferred       | Collision + Constraints: Complex integration deferred    |
-| 6     | Future         | Migration story                                          |
+| Phase | Status      | Description                                                |
+| ----- | ----------- | ---------------------------------------------------------- |
+| 0-2   | ✅ Complete | Ground-truth, API cleanup, Python bindings                 |
+| 3-4   | 🔄 Partial  | Testing/perf: golden tests done, coverage/optimization TBD |
+| 5.1   | ✅ Complete | Forward Kinematics: joint transforms + Link integration    |
+| 5.2   | ✅ Complete | Forward Dynamics: ABA with CoM + external forces           |
+| 5.5   | ✅ Complete | World::step(): Semi-implicit Euler integration             |
+| 5.3-4 | ⏸️ Deferred | Collision + Constraints: Complex adapter work needed       |
+| 6     | Future      | Migration story                                            |
 
 ## Current Branch
 
 ```
 Branch: feature/sim_exp
-Status: Clean (pending commit)
+Status: Clean (all changes committed)
+Commits ahead of origin: 10
+```
+
+## What Works Now
+
+The experimental API has a **fully functional physics simulation**:
+
+```cpp
+namespace dse = dart::simulation::experimental;
+
+dse::World world;
+world.setGravity({0, 0, -9.81});
+world.setTimeStep(0.001);
+
+auto robot = world.addMultiBody("robot");
+auto base = robot.addLink("base");
+auto link = robot.addLink("link", {
+    .parentLink = base,
+    .jointType = dse::comps::JointType::Revolute
+});
+
+link.setMass(1.0);
+link.addExternalForce({10, 0, 0});
+
+world.enterSimulationMode();
+for (int i = 0; i < 1000; ++i) {
+    world.step();  // Physics simulation works!
+}
 ```
 
 ## Last Session Summary
 
 Completed Phase 5.2 (Dynamics) and Phase 5.5 (step()):
 
-1. **Added CoM offset to MassProperties**
-   - `localCOM` field in `comps/dynamics.hpp`
-   - ABA now correctly uses CoM for spatial inertia and gravity torques
-
-2. **Enabled exact validation against classic DART**
-   - `ValidateAgainstClassicDART` test now uses 1e-10 tolerance
-   - Experimental API produces identical accelerations to classic DART
-
-3. **Added external force support**
-   - `externalForce` and `externalTorque` fields in Link component
-   - `Link::addExternalForce()`, `setExternalForce()`, `clearExternalForces()`
-   - ABA includes external forces in bias force computation
-
-4. **Implemented World::step()**
-   - Semi-implicit Euler integration (velocity then position)
-   - Configurable gravity, timeStep
-   - Time and frame tracking
-   - Automatic force clearing
+1. **CoM offset support** - `localCOM` in MassProperties, used in spatial inertia/gravity
+2. **External forces** - `Link::addExternalForce()`, `setExternalTorque()`, `clearExternalForces()`
+3. **World::step()** - Semi-implicit Euler, configurable gravity/timeStep, time tracking
+4. **Exact validation** - Experimental ABA matches classic DART to 1e-10 tolerance
 
 ## Test Status
 
@@ -57,56 +67,106 @@ Completed Phase 5.2 (Dynamics) and Phase 5.5 (step()):
 | `test_articulated_body.cpp` | 9     | ✅     |
 | `test_forward_dynamics.cpp` | 9     | ✅     |
 | `test_world.cpp`            | 12    | ✅     |
-| **Total**                   | 69    | ✅     |
-
-New tests added:
-- `ExternalForces` - Validates external force integration
-- `StepRequiresSimulationMode` - Mode check
-- `StepAdvancesTime` - Time/frame tracking
-- `FreeFallDynamics` - Physics correctness
-- `ExternalForceIntegration` - Force integration correctness
-
-## Immediate Next Steps
-
-1. **Commit current changes** - CoM, external forces, step()
-2. **Run full test suite** - Ensure no regressions
-3. **Phase 5.3-5.4 (Collision/Constraints)** - Complex, deferred for now
+| `test_joint_transform.cpp`  | 74    | ✅     |
+| **Dynamics Total**          | 143+  | ✅     |
 
 ## How to Resume
 
+### 1. Verify Environment
+
 ```bash
 git checkout feature/sim_exp
-git status && git log -5 --oneline
+git status  # Should be clean
+git log -5 --oneline
 
-# Build and test
+# Build
 pixi run cmake --build build/default/cpp/Release --target dart-simulation-experimental
+
+# Run tests
 ./build/default/cpp/Release/bin/test_forward_dynamics
 ./build/default/cpp/Release/bin/test_world
+./build/default/cpp/Release/bin/test_spatial_math
 ```
 
-## Phase 5 Deliverables Status
+### 2. Choose Next Task
 
-| Component               | Status | Location                            |
-| ----------------------- | ------ | ----------------------------------- |
-| Spatial math utilities  | ✅     | `dynamics/spatial_math.hpp/cpp`     |
-| Motion subspace (S)     | ✅     | `dynamics/motion_subspace.hpp/cpp`  |
-| ABA data structures     | ✅     | `dynamics/articulated_body.hpp/cpp` |
-| ForwardDynamicsSystem   | ✅     | `dynamics/forward_dynamics.hpp/cpp` |
-| CoM offset support      | ✅     | `comps/dynamics.hpp` (MassProperties)|
-| External forces         | ✅     | `comps/link.hpp`, `multi_body/link.cpp` |
-| World::step()           | ✅     | `world.hpp/cpp`                     |
-| Collision integration   | Deferred | Requires adapter to classic collision |
-| Constraint integration  | Deferred | Requires adapter to classic solver |
+**Option A: Complete Phase 3-4 (Testing/Performance)**
+- Run coverage analysis: `pixi run test-coverage` (if available)
+- Profile and optimize hot paths
+- Document performance characteristics
 
-## Known Limitations
+**Option B: Phase 5.3-5.4 (Collision/Constraints) - COMPLEX**
+- Requires creating adapter classes to bridge ECS with classic DART's collision/constraint modules
+- Key challenge: `CollisionObject` expects `dynamics::ShapeFrame*`, not ECS entities
+- Possible approaches:
+  1. Create `ExperimentalShapeFrame` adapter wrapping Link
+  2. Modify collision module to accept transform providers
+  3. Create standalone collision system for experimental API
 
-1. **No collision detection**: Requires adapting classic `dart::collision` to ECS
-2. **No constraint solving**: Requires adapting classic `dart::constraint` to ECS
-3. **Fixed base only**: Root link cannot have velocity/acceleration
+**Option C: Phase 6 (Migration)**
+- Write migration guide: classic to experimental
+- Create conversion utilities
+- Add deprecation warnings
 
-## Related Files
+**Option D: Polish and PR**
+- Run `pixi run lint` and fix any issues
+- Run full test suite: `pixi run test-all`
+- Create PR for the feature branch
+
+## Key Files Reference
+
+### Dynamics Module (Phase 5.2)
+```
+dart/simulation/experimental/dynamics/
+├── spatial_math.hpp/cpp      # Spatial vector types, transforms
+├── motion_subspace.hpp/cpp   # Joint S matrix computation
+├── articulated_body.hpp/cpp  # ABA workspace data structures
+└── forward_dynamics.hpp/cpp  # ABA algorithm implementation
+```
+
+### World::step() (Phase 5.5)
+```
+dart/simulation/experimental/
+├── world.hpp    # step(), setGravity(), setTimeStep(), getTime()
+└── world.cpp    # step() implementation with semi-implicit Euler
+```
+
+### Link External Forces
+```
+dart/simulation/experimental/
+├── comps/link.hpp           # externalForce, externalTorque fields
+├── multi_body/link.hpp/cpp  # addExternalForce(), clearExternalForces()
+```
+
+## Architecture Notes
+
+### ABA Algorithm Flow
+```
+World::step()
+  └─> ForwardDynamicsSystem::compute()
+        ├─> computeVelocities()        # Pass 1: v[i], c[i]
+        ├─> computeArticulatedInertias() # Pass 2a: IA[i]
+        ├─> computeBiasForces()        # Pass 2b: pA[i] with gravity + external
+        └─> computeAccelerations()     # Pass 3: ddq[i]
+  └─> Integrate velocities: dq += ddq * dt
+  └─> Integrate positions: q += dq * dt
+  └─> Clear external forces (optional)
+```
+
+### Why Collision/Constraints Are Deferred
+Classic DART's collision module uses `dynamics::ShapeFrame` extensively:
+- `CollisionObject` constructor requires `const dynamics::ShapeFrame*`
+- Shape transforms come from `ShapeFrame::getWorldTransform()`
+- Experimental API uses ECS entities, not inheritance
+
+Options considered:
+1. **Adapter pattern**: Create wrapper classes (adds complexity)
+2. **Parallel system**: New collision for ECS (duplicates code)
+3. **Modify classic**: Add transform provider interface (invasive)
+
+## Related Documents
 
 - **Epic tracker**: `docs/dev_tasks/simulation_experimental_api_epic/README.md`
 - **Phase 5 design**: `docs/dev_tasks/simulation_experimental_api_epic/phase5_physics_design.md`
-- **Dynamics module**: `dart/simulation/experimental/dynamics/`
-- **Tests**: `tests/unit/simulation/experimental/`
+- **Classic DART ABA**: `dart/dynamics/Skeleton.cpp:3675`
+- **Classic World::step()**: `dart/simulation/World.cpp:293`

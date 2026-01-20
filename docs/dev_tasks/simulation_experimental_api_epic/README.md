@@ -449,13 +449,30 @@ forward kinematics calculations (computing link transforms from joint positions)
 - [x] 74 unit tests for joint transforms (`test_joint_transform.cpp`)
 - [x] 5 FK integration tests in `test_link.cpp`
 
-#### Phase 5.2-5: Remaining (Pending)
+#### Phase 5.2: Forward Dynamics ✅ COMPLETE
 
-- [ ] Pipeline designed (design doc created: `phase5_physics_design.md`)
-- [ ] Dynamics system (ABA algorithm)
-- [ ] Collision integrated
-- [ ] Constraints integrated
-- [ ] `step()` working
+- [x] Spatial math utilities (`dynamics/spatial_math.hpp/cpp`)
+- [x] Motion subspace computation (`dynamics/motion_subspace.hpp/cpp`)
+- [x] ABA workspace data structures (`dynamics/articulated_body.hpp/cpp`)
+- [x] ForwardDynamicsSystem with full ABA (`dynamics/forward_dynamics.hpp/cpp`)
+- [x] CoM offset support in MassProperties
+- [x] External force/torque support on Links
+- [x] Exact validation against classic DART (1e-10 tolerance)
+- [x] 57 dynamics unit tests passing
+
+#### Phase 5.5: World::step() ✅ COMPLETE
+
+- [x] Semi-implicit Euler integration (velocity then position)
+- [x] Configurable gravity, timeStep
+- [x] Time and frame tracking
+- [x] Automatic force clearing after step
+- [x] Physics correctness tests (free-fall, external forces)
+
+#### Phase 5.3-5.4: Collision & Constraints (DEFERRED)
+
+- [ ] Collision detection integration (requires adapter to classic `dart::collision`)
+- [ ] Constraint solver integration (requires adapter to classic `dart::constraint`)
+- Note: Deferred due to architectural complexity - classic modules expect `ShapeFrame` not ECS
 
 ### Phase 6: Migration (Target: Week 21-24)
 
