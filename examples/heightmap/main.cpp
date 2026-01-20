@@ -670,6 +670,7 @@ int main(int argc, char* argv[])
   // Create the Viewer instance
   dart::gui::ImGuiViewer viewer;
   viewer.setImGuiScale(static_cast<float>(guiScale));
+  viewer.getImGuiHandler()->setFontScale(static_cast<float>(guiScale));
   viewer.addWorldNode(node);
   viewer.simulate(true);
 
