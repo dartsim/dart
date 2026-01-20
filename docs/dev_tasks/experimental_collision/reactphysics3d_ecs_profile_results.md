@@ -48,16 +48,19 @@ build/default/cpp/Release/bin/bm_scenarios_pipeline_breakdown \
   --benchmark_min_time=0.05s
 ```
 
-Result: `bm_scenarios_pipeline_breakdown` still segfaults on RP3D filters as of
-2026-01-20, even after rebuilding the benchmark target. Partial JSON outputs are in:
+**Update 2026-01-20**: Segfault in `AabbTreeBroadPhase::combine()` **FIXED**.
+Root cause was dangling reference after vector reallocation in `insertLeaf()`.
 
-- `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-19_1k.json`
-- `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_004159.json`
-- `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_005830.json`
-- `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_010005.json`
-- `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_013729.json`
+Results (after fix):
 
-See `benchmark_results.md` for the failure log.
+| Scenario      | Count | Broadphase | Narrowphase | Pairs  | Contacts |
+| ------------- | ----- | ---------- | ----------- | ------ | -------- |
+| Dense spheres | 1k    | 163µs      | 83µs        | 458    | 252      |
+| Dense spheres | 10k   | 11.3ms     | 665ms       | 46.3k  | 24.7k    |
+| Sparse spheres| 1k    | 57µs       | 0.4µs       | 4      | 4        |
+| Sparse spheres| 10k   | 2.3ms      | 87µs        | 403    | 209      |
+
+See `benchmark_results.md` for full details.
 
 ## Notes
 

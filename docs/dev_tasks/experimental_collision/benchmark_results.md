@@ -174,7 +174,7 @@ Summary (speedup = libccd time / experimental time):
 - **OS**: Ubuntu 25.10
 - **Compiler**: c++ (Ubuntu 15.2.0-4ubuntu4) 15.2.0
 - **Notes**:
-  - Raycast batch uses SweepAndPrune broadphase to avoid AabbTree crash.
+  - Raycast batch uses SweepAndPrune broadphase (was to avoid AabbTree crash, now fixed).
   - Raycast batch uses 500 rays with 1k/2k objects for bounded runtime.
   - `--benchmark_min_time=0.05s`.
 - **Command**:
@@ -231,16 +231,15 @@ BM_Scenario_PipelineBreakdown_Sparse_Experimental/1000: aabb_ns=57942.3495145631
 BM_Scenario_PipelineBreakdown_Sparse_Experimental/10000: aabb_ns=509226.0 broadphase_ns=648132646.0 narrowphase_ns=2234726435.0 merge_ns=32116.0 pairs=82932.0 contacts=41125.0
 ```
 
-## Run 2026-01-20 — Pipeline breakdown (RP3D-aligned) [FAILED]
+## Run 2026-01-20 — Pipeline breakdown (RP3D-aligned) [FIXED]
 
-- **Status**: segfault in `AabbTreeBroadPhase::combine()` during object creation.
+- **Status**: ~~segfault in `AabbTreeBroadPhase::combine()` during object creation.~~ **FIXED** (2026-01-20)
+- **Root cause**: Dangling reference after vector reallocation in `insertLeaf()`.
 - **Command**:
-  - `build/default/cpp/Release/bin/bm_scenarios_pipeline_breakdown --benchmark_filter="PipelineBreakdown_RP3D_.*" --benchmark_format=json --benchmark_min_time=0.05s`
-- **Raw Output**:
-  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-19_1k.json` (partial)
-  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_004159.json` (partial; JSON truncated before benchmarks)
-  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_005830.json` (partial; JSON truncated before benchmarks)
-  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_010005.json` (partial; JSON truncated before benchmarks)
-  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_013729.json` (partial; JSON truncated before benchmarks)
-- **Notes**: Rebuilt `bm_scenarios_pipeline_breakdown`; dirty working tree due to parallel agents; crash persists.
-- **Next**: rerun once the AABB tree crash is resolved.
+  - `build/default/cpp/Release/bin/bm_scenarios_pipeline_breakdown --benchmark_filter="PipelineBreakdown_RP3D_.*" --benchmark_format=json --benchmark_min_time=0.1s`
+- **Results** (after fix):
+  - Dense 1k: broadphase 163µs, narrowphase 83µs, 458 pairs, 252 contacts
+  - Dense 10k: broadphase 11.3ms, narrowphase 665ms, 46.3k pairs, 24.7k contacts
+  - Sparse 1k: broadphase 57µs, narrowphase 0.4µs, 4 pairs, 4 contacts
+  - Sparse 10k: broadphase 2.3ms, narrowphase 87µs, 403 pairs, 209 contacts
+- **Notes**: Fix applied to `aabb_tree.cpp` - copy AABB values before `allocateNode()` to avoid dangling references.

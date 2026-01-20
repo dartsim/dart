@@ -331,8 +331,48 @@ done
 
 ---
 
+## Broad-Phase Next Steps
+
+### Priority 1: Fix AabbTree Crash (Blocking) ✅ FIXED
+
+**Issue**: Segfault in `AabbTreeBroadPhase::combine()` during object creation.
+Blocks RP3D-aligned pipeline breakdown benchmarks with AabbTree.
+
+**Root cause**: Dangling reference after vector reallocation. In `insertLeaf()`,
+a reference to `nodes_[leafIndex].fatAabb` was stored, then `allocateNode()` was
+called which could trigger `nodes_.emplace_back()` and reallocate the vector,
+invalidating the reference.
+
+**Fix**: Copy AABB values before calling `allocateNode()` instead of storing
+references.
+
+**Status**: Fixed (2026-01-20)
+
+### Priority 2: Bulk API Interfaces (ECS Phase 1)
+
+Add batch-friendly methods to `BroadPhase` interface:
+
+```cpp
+build(const std::span<const Aabb>& aabbs);
+updateRange(const std::span<const ObjectId>& ids, const std::span<const Aabb>& aabbs);
+queryPairs(std::vector<BroadPhasePair>& out);  // caller-owned storage
+```
+
+**Status**: Not started
+
+### Priority 3: Parallel Broadphase (Phase 4 - Optional)
+
+- Parallel AABB recompute and fat-AABB update
+- Optional bulk rebuild path for large scene edits
+- Exit criteria: Broadphase update scales for large object counts
+
+**Status**: Not started
+
+---
+
 ## Blockers
 
+- ~~**AabbTree segfault**: Crash in `combine()` during object creation.~~ **FIXED** (2026-01-20)
 - `bm_comparative.cpp` fails to build due to CollisionWorld API drift
   (`CollisionWorld::addObject` removed; `CollisionObject` ctor mismatch).
 - `bm_comparative_narrow_phase` capsule-related accuracy checks invalid because
