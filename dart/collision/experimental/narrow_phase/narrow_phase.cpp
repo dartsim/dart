@@ -36,6 +36,7 @@
 #include <dart/collision/experimental/narrow_phase/capsule_box.hpp>
 #include <dart/collision/experimental/narrow_phase/capsule_capsule.hpp>
 #include <dart/collision/experimental/narrow_phase/capsule_sphere.hpp>
+#include <dart/collision/experimental/narrow_phase/ccd.hpp>
 #include <dart/collision/experimental/narrow_phase/convex_convex.hpp>
 #include <dart/collision/experimental/narrow_phase/cylinder_collision.hpp>
 #include <dart/collision/experimental/narrow_phase/distance.hpp>
@@ -489,6 +490,91 @@ bool NarrowPhase::isRaycastSupported(ShapeType type)
     case ShapeType::Cylinder:
     case ShapeType::Plane:
     case ShapeType::Mesh:
+    case ShapeType::Convex:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool NarrowPhase::sphereCast(
+    const Eigen::Vector3d& sphereStart,
+    const Eigen::Vector3d& sphereEnd,
+    double sphereRadius,
+    const CollisionObject& target,
+    const CcdOption& option,
+    CcdResult& result)
+{
+  const Shape* shape = target.getShape();
+  if (!shape) {
+    return false;
+  }
+
+  ShapeType type = shape->getType();
+  const Eigen::Isometry3d& transform = target.getTransform();
+
+  switch (type) {
+    case ShapeType::Sphere: {
+      const auto* s = static_cast<const SphereShape*>(shape);
+      bool hit = sphereCastSphere(sphereStart, sphereEnd, sphereRadius, *s, transform, option, result);
+      if (hit) {
+        result.object = &target;
+      }
+      return hit;
+    }
+    case ShapeType::Box: {
+      const auto* b = static_cast<const BoxShape*>(shape);
+      bool hit = sphereCastBox(sphereStart, sphereEnd, sphereRadius, *b, transform, option, result);
+      if (hit) {
+        result.object = &target;
+      }
+      return hit;
+    }
+    case ShapeType::Capsule: {
+      const auto* c = static_cast<const CapsuleShape*>(shape);
+      bool hit = sphereCastCapsule(sphereStart, sphereEnd, sphereRadius, *c, transform, option, result);
+      if (hit) {
+        result.object = &target;
+      }
+      return hit;
+    }
+    case ShapeType::Cylinder: {
+      const auto* c = static_cast<const CylinderShape*>(shape);
+      bool hit = sphereCastCylinder(sphereStart, sphereEnd, sphereRadius, *c, transform, option, result);
+      if (hit) {
+        result.object = &target;
+      }
+      return hit;
+    }
+    case ShapeType::Plane: {
+      const auto* p = static_cast<const PlaneShape*>(shape);
+      bool hit = sphereCastPlane(sphereStart, sphereEnd, sphereRadius, *p, transform, option, result);
+      if (hit) {
+        result.object = &target;
+      }
+      return hit;
+    }
+    case ShapeType::Convex: {
+      const auto* c = static_cast<const ConvexShape*>(shape);
+      bool hit = sphereCastConvex(sphereStart, sphereEnd, sphereRadius, *c, transform, option, result);
+      if (hit) {
+        result.object = &target;
+      }
+      return hit;
+    }
+    default:
+      return false;
+  }
+}
+
+bool NarrowPhase::isSphereCastSupported(ShapeType type)
+{
+  switch (type) {
+    case ShapeType::Sphere:
+    case ShapeType::Box:
+    case ShapeType::Capsule:
+    case ShapeType::Cylinder:
+    case ShapeType::Plane:
     case ShapeType::Convex:
       return true;
     default:

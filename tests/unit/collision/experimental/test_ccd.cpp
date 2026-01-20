@@ -30,7 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/collision/experimental/collision_object.hpp>
+#include <dart/collision/experimental/collision_world.hpp>
 #include <dart/collision/experimental/narrow_phase/ccd.hpp>
+#include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
 #include <dart/collision/experimental/types.hpp>
 
@@ -510,6 +513,153 @@ TEST(SphereCastPlane, RotatedPlane)
 }
 
 //==============================================================================
+// Sphere-cast Cylinder tests
+//==============================================================================
+
+TEST(SphereCastCylinder, Miss)
+{
+  CylinderShape target(1.0, 2.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Eigen::Vector3d start(10, 0, 0);
+  Eigen::Vector3d end(10, 0, 10);
+  double radius = 0.5;
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = sphereCastCylinder(start, end, radius, target, transform, option, result);
+
+  EXPECT_FALSE(hit);
+}
+
+TEST(SphereCastCylinder, HitCurvedSurface)
+{
+  CylinderShape target(1.0, 4.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Eigen::Vector3d start(-5, 0, 0);
+  Eigen::Vector3d end(5, 0, 0);
+  double radius = 0.5;
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = sphereCastCylinder(start, end, radius, target, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 0.5);
+  EXPECT_NEAR(result.normal.x(), -1.0, 1e-6);
+}
+
+TEST(SphereCastCylinder, HitTopCap)
+{
+  CylinderShape target(1.0, 2.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Eigen::Vector3d start(0, 0, 5);
+  Eigen::Vector3d end(0, 0, -5);
+  double radius = 0.5;
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = sphereCastCylinder(start, end, radius, target, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 0.5);
+  EXPECT_NEAR(result.normal.z(), 1.0, 1e-6);
+}
+
+TEST(SphereCastCylinder, HitBottomCap)
+{
+  CylinderShape target(1.0, 2.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Eigen::Vector3d start(0, 0, -5);
+  Eigen::Vector3d end(0, 0, 5);
+  double radius = 0.5;
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = sphereCastCylinder(start, end, radius, target, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 0.5);
+  EXPECT_NEAR(result.normal.z(), -1.0, 1e-6);
+}
+
+//==============================================================================
+// Sphere-cast Convex tests
+//==============================================================================
+
+TEST(SphereCastConvex, Miss)
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+  ConvexShape target(vertices);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Eigen::Vector3d start(10, 0, 0);
+  Eigen::Vector3d end(10, 0, 10);
+  double radius = 0.25;
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = sphereCastConvex(start, end, radius, target, transform, option, result);
+
+  EXPECT_FALSE(hit);
+}
+
+TEST(SphereCastConvex, DirectHit)
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+  ConvexShape target(vertices);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Eigen::Vector3d start(-5, 0, 0);
+  Eigen::Vector3d end(5, 0, 0);
+  double radius = 0.25;
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = sphereCastConvex(start, end, radius, target, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.timeOfImpact, 0.3);
+  EXPECT_LT(result.timeOfImpact, 0.5);
+}
+
+TEST(SphereCastConvex, TranslatedTarget)
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+  ConvexShape target(vertices);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(0, 0, 5);
+
+  Eigen::Vector3d start(0, 0, 0);
+  Eigen::Vector3d end(0, 0, 10);
+  double radius = 0.25;
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = sphereCastConvex(start, end, radius, target, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.timeOfImpact, 0.3);
+  EXPECT_LT(result.timeOfImpact, 0.5);
+}
+
+//==============================================================================
 // Capsule-cast Sphere tests
 //==============================================================================
 
@@ -869,4 +1019,61 @@ TEST(SphereCast, Determinism)
     EXPECT_EQ(results[i].normal.y(), results[0].normal.y());
     EXPECT_EQ(results[i].normal.z(), results[0].normal.z());
   }
+}
+
+//==============================================================================
+// NarrowPhase dispatcher tests
+//==============================================================================
+
+TEST(NarrowPhaseSphereCast, SphereTarget)
+{
+  CollisionWorld world;
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(0, 0, 5);
+  auto target = world.createObject(
+      std::make_unique<SphereShape>(1.0), transform);
+
+  Eigen::Vector3d start(0, 0, 0);
+  Eigen::Vector3d end(0, 0, 10);
+  double radius = 0.5;
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = NarrowPhase::sphereCast(start, end, radius, target, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_EQ(result.object, &target);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 1.0);
+}
+
+TEST(NarrowPhaseSphereCast, BoxTarget)
+{
+  CollisionWorld world;
+  auto target = world.createObject(
+      std::make_unique<BoxShape>(Eigen::Vector3d(1, 1, 1)));
+
+  Eigen::Vector3d start(0, 0, -5);
+  Eigen::Vector3d end(0, 0, 5);
+  double radius = 0.5;
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = NarrowPhase::sphereCast(start, end, radius, target, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_EQ(result.object, &target);
+}
+
+TEST(NarrowPhaseSphereCast, IsSphereCastSupported)
+{
+  EXPECT_TRUE(NarrowPhase::isSphereCastSupported(ShapeType::Sphere));
+  EXPECT_TRUE(NarrowPhase::isSphereCastSupported(ShapeType::Box));
+  EXPECT_TRUE(NarrowPhase::isSphereCastSupported(ShapeType::Capsule));
+  EXPECT_TRUE(NarrowPhase::isSphereCastSupported(ShapeType::Cylinder));
+  EXPECT_TRUE(NarrowPhase::isSphereCastSupported(ShapeType::Plane));
+  EXPECT_TRUE(NarrowPhase::isSphereCastSupported(ShapeType::Convex));
+  EXPECT_FALSE(NarrowPhase::isSphereCastSupported(ShapeType::Mesh));
 }

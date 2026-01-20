@@ -36,6 +36,8 @@
 #include <dart/collision/experimental/export.hpp>
 #include <dart/collision/experimental/types.hpp>
 
+#include <Eigen/Core>
+
 namespace dart::collision::experimental {
 
 class DART_COLLISION_EXPERIMENTAL_API NarrowPhase
@@ -64,6 +66,16 @@ public:
       RaycastResult& result);
 
   static bool isRaycastSupported(ShapeType type);
+
+  static bool sphereCast(
+      const Eigen::Vector3d& sphereStart,
+      const Eigen::Vector3d& sphereEnd,
+      double sphereRadius,
+      const CollisionObject& target,
+      const CcdOption& option,
+      CcdResult& result);
+
+  static bool isSphereCastSupported(ShapeType type);
 };
 
 }
