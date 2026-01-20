@@ -1,5 +1,6 @@
 #include "simulation_experimental/multi_body.hpp"
 
+#include "dart/dynamics/Shape.hpp"
 #include "dart/simulation/experimental/multi_body/joint.hpp"
 #include "dart/simulation/experimental/multi_body/link.hpp"
 #include "dart/simulation/experimental/multi_body/multi_body.hpp"

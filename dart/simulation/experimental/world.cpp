@@ -110,6 +110,8 @@ bool hasEntityWithName(const entt::registry& registry, std::string_view name)
 
 namespace dart::simulation::experimental {
 
+namespace classic = dart::dynamics;
+
 struct World::ClassicAdapter
 {
   explicit ClassicAdapter(World& world);
@@ -131,23 +133,23 @@ struct World::ClassicAdapter
 private:
   World& m_world;
 
-  std::unordered_map<entt::entity, dynamics::SkeletonPtr> m_skeletonByMultiBody;
-  std::unordered_map<entt::entity, dynamics::BodyNode*> m_bodyNodeByLink;
-  std::unordered_map<entt::entity, dynamics::Joint*> m_jointByEntity;
+  std::unordered_map<entt::entity, classic::SkeletonPtr> m_skeletonByMultiBody;
+  std::unordered_map<entt::entity, classic::BodyNode*> m_bodyNodeByLink;
+  std::unordered_map<entt::entity, classic::Joint*> m_jointByEntity;
   std::unordered_map<entt::entity, comps::JointType> m_jointTypeByEntity;
 
-  std::unordered_map<entt::entity, dynamics::SkeletonPtr> m_skeletonByRigidBody;
-  std::unordered_map<entt::entity, dynamics::BodyNode*> m_bodyNodeByRigidBody;
-  std::unordered_map<entt::entity, dynamics::FreeJoint*> m_freeJointByRigidBody;
+  std::unordered_map<entt::entity, classic::SkeletonPtr> m_skeletonByRigidBody;
+  std::unordered_map<entt::entity, classic::BodyNode*> m_bodyNodeByRigidBody;
+  std::unordered_map<entt::entity, classic::FreeJoint*> m_freeJointByRigidBody;
 
-  std::vector<dynamics::SkeletonPtr> m_allSkeletons;
+  std::vector<classic::SkeletonPtr> m_allSkeletons;
   std::unique_ptr<constraint::ConstraintSolver> m_constraintSolver;
 
   void buildMultiBodySkeleton(entt::entity mbEntity);
   void buildRigidBodySkeleton(entt::entity rbEntity);
-  dynamics::BodyNode* findBodyNode(entt::entity parentEntity) const;
+  classic::BodyNode* findBodyNode(entt::entity parentEntity) const;
   void attachShapeNodes();
-  void syncJointLimits(const comps::Joint& jointComp, dynamics::Joint* joint);
+  void syncJointLimits(const comps::Joint& jointComp, classic::Joint* joint);
 
   static Eigen::VectorXd reorderFreeToClassic(
       const Eigen::VectorXd& experimental);
@@ -158,6 +160,7 @@ private:
 };
 
 World::World() = default;
+World::~World() = default;
 
 //==============================================================================
 World::ClassicAdapter::ClassicAdapter(World& world) : m_world(world) {}
@@ -207,7 +210,7 @@ bool World::ClassicAdapter::hasFiniteLimit(
 }
 
 //==============================================================================
-dynamics::BodyNode* World::ClassicAdapter::findBodyNode(
+classic::BodyNode* World::ClassicAdapter::findBodyNode(
     entt::entity parentEntity) const
 {
   const auto linkIt = m_bodyNodeByLink.find(parentEntity);
@@ -225,7 +228,7 @@ dynamics::BodyNode* World::ClassicAdapter::findBodyNode(
 
 //==============================================================================
 void World::ClassicAdapter::syncJointLimits(
-    const comps::Joint& jointComp, dynamics::Joint* joint)
+    const comps::Joint& jointComp, classic::Joint* joint)
 {
   if (!joint) {
     return;
@@ -265,7 +268,7 @@ void World::ClassicAdapter::buildMultiBodySkeleton(entt::entity mbEntity)
   const auto* nameComp = registry.try_get<comps::Name>(mbEntity);
   const std::string mbName = nameComp ? nameComp->name : "multibody";
 
-  auto skeleton = dynamics::Skeleton::create(mbName);
+  auto skeleton = classic::Skeleton::create(mbName);
   skeleton->setTimeStep(m_world.getTimeStep());
   skeleton->setGravity(m_world.getGravity());
 
@@ -276,27 +279,27 @@ void World::ClassicAdapter::buildMultiBodySkeleton(entt::entity mbEntity)
 
   auto buildSubtree = [&](auto&& self,
                           entt::entity linkEntity,
-                          dynamics::BodyNode* parentBody) -> void {
+                          classic::BodyNode* parentBody) -> void {
     if (m_bodyNodeByLink.find(linkEntity) != m_bodyNodeByLink.end()) {
       return;
     }
 
     const auto& linkComp = registry.get<comps::Link>(linkEntity);
-    dynamics::BodyNode::Properties bodyProps;
+    classic::BodyNode::Properties bodyProps;
     bodyProps.mName = linkComp.name;
 
-    dynamics::Joint* joint = nullptr;
-    dynamics::BodyNode* bodyNode = nullptr;
+    classic::Joint* joint = nullptr;
+    classic::BodyNode* bodyNode = nullptr;
     comps::JointType jointType = comps::JointType::Fixed;
 
     if (!parentBody) {
-      dynamics::WeldJoint::Properties jointProps;
+      classic::WeldJoint::Properties jointProps;
       jointProps.mName = std::format("{}_root_joint", linkComp.name);
       jointProps.mT_ParentBodyToJoint = Eigen::Isometry3d::Identity();
       jointProps.mT_ChildBodyToJoint
           = linkComp.transformFromParentJoint.inverse();
 
-      auto pair = skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
+      auto pair = skeleton->createJointAndBodyNodePair<classic::WeldJoint>(
           nullptr, jointProps, bodyProps);
       joint = pair.first;
       bodyNode = pair.second;
@@ -306,62 +309,61 @@ void World::ClassicAdapter::buildMultiBodySkeleton(entt::entity mbEntity)
 
       switch (jointComp.type) {
         case comps::JointType::Fixed: {
-          dynamics::WeldJoint::Properties jointProps;
+          classic::WeldJoint::Properties jointProps;
           jointProps.mName = jointComp.name;
           jointProps.mT_ParentBodyToJoint = Eigen::Isometry3d::Identity();
           jointProps.mT_ChildBodyToJoint
               = linkComp.transformFromParentJoint.inverse();
-          auto pair = skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
+          auto pair = skeleton->createJointAndBodyNodePair<classic::WeldJoint>(
               parentBody, jointProps, bodyProps);
           joint = pair.first;
           bodyNode = pair.second;
           break;
         }
         case comps::JointType::Revolute: {
-          dynamics::RevoluteJoint::Properties jointProps;
+          classic::RevoluteJoint::Properties jointProps;
           jointProps.mName = jointComp.name;
           jointProps.mAxis = jointComp.axis;
           jointProps.mT_ParentBodyToJoint = Eigen::Isometry3d::Identity();
           jointProps.mT_ChildBodyToJoint
               = linkComp.transformFromParentJoint.inverse();
           auto pair
-              = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+              = skeleton->createJointAndBodyNodePair<classic::RevoluteJoint>(
                   parentBody, jointProps, bodyProps);
           joint = pair.first;
           bodyNode = pair.second;
           break;
         }
         case comps::JointType::Prismatic: {
-          dynamics::PrismaticJoint::Properties jointProps;
+          classic::PrismaticJoint::Properties jointProps;
           jointProps.mName = jointComp.name;
           jointProps.mAxis = jointComp.axis;
           jointProps.mT_ParentBodyToJoint = Eigen::Isometry3d::Identity();
           jointProps.mT_ChildBodyToJoint
               = linkComp.transformFromParentJoint.inverse();
           auto pair
-              = skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
+              = skeleton->createJointAndBodyNodePair<classic::PrismaticJoint>(
                   parentBody, jointProps, bodyProps);
           joint = pair.first;
           bodyNode = pair.second;
           break;
         }
         case comps::JointType::Screw: {
-          dynamics::ScrewJoint::Properties jointProps;
+          classic::ScrewJoint::Properties jointProps;
           jointProps.mName = jointComp.name;
           jointProps.mAxis = jointComp.axis;
           jointProps.mPitch = jointComp.pitch;
           jointProps.mT_ParentBodyToJoint = Eigen::Isometry3d::Identity();
           jointProps.mT_ChildBodyToJoint
               = linkComp.transformFromParentJoint.inverse();
-          auto pair
-              = skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint>(
-                  parentBody, jointProps, bodyProps);
+          auto pair = skeleton->createJointAndBodyNodePair<classic::ScrewJoint>(
+              parentBody, jointProps, bodyProps);
           joint = pair.first;
           bodyNode = pair.second;
           break;
         }
         case comps::JointType::Universal: {
-          dynamics::UniversalJoint::Properties jointProps;
+          classic::UniversalJoint::Properties jointProps;
           jointProps.mName = jointComp.name;
           jointProps.mAxis[0] = jointComp.axis;
           jointProps.mAxis[1] = jointComp.axis2;
@@ -369,30 +371,30 @@ void World::ClassicAdapter::buildMultiBodySkeleton(entt::entity mbEntity)
           jointProps.mT_ChildBodyToJoint
               = linkComp.transformFromParentJoint.inverse();
           auto pair
-              = skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(
+              = skeleton->createJointAndBodyNodePair<classic::UniversalJoint>(
                   parentBody, jointProps, bodyProps);
           joint = pair.first;
           bodyNode = pair.second;
           break;
         }
         case comps::JointType::Ball: {
-          dynamics::BallJoint::Properties jointProps;
+          classic::BallJoint::Properties jointProps;
           jointProps.mName = jointComp.name;
           jointProps.mCoordinateChart
-              = dynamics::BallJoint::CoordinateChart::EULER_ZYX;
+              = classic::BallJoint::CoordinateChart::EULER_ZYX;
           jointProps.mT_ParentBodyToJoint = Eigen::Isometry3d::Identity();
           jointProps.mT_ChildBodyToJoint
               = linkComp.transformFromParentJoint.inverse();
-          auto pair = skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(
+          auto pair = skeleton->createJointAndBodyNodePair<classic::BallJoint>(
               parentBody, jointProps, bodyProps);
           joint = pair.first;
           bodyNode = pair.second;
           break;
         }
         case comps::JointType::Planar: {
-          dynamics::PlanarJoint::Properties jointProps;
+          classic::PlanarJoint::Properties jointProps;
           jointProps.mName = jointComp.name;
-          jointProps.mPlaneType = dynamics::PlanarJoint::PlaneType::ARBITRARY;
+          jointProps.mPlaneType = classic::PlanarJoint::PlaneType::ARBITRARY;
 
           const Eigen::Vector3d normal = jointComp.axis.normalized();
           const Eigen::Vector3d axis1 = jointComp.axis2.normalized();
@@ -404,21 +406,21 @@ void World::ClassicAdapter::buildMultiBodySkeleton(entt::entity mbEntity)
           jointProps.mT_ChildBodyToJoint
               = linkComp.transformFromParentJoint.inverse();
           auto pair
-              = skeleton->createJointAndBodyNodePair<dynamics::PlanarJoint>(
+              = skeleton->createJointAndBodyNodePair<classic::PlanarJoint>(
                   parentBody, jointProps, bodyProps);
           joint = pair.first;
           bodyNode = pair.second;
           break;
         }
         case comps::JointType::Free: {
-          dynamics::FreeJoint::Properties jointProps;
+          classic::FreeJoint::Properties jointProps;
           jointProps.mName = jointComp.name;
           jointProps.mCoordinateChart
-              = dynamics::FreeJoint::CoordinateChart::EULER_ZYX;
+              = classic::FreeJoint::CoordinateChart::EULER_ZYX;
           jointProps.mT_ParentBodyToJoint = Eigen::Isometry3d::Identity();
           jointProps.mT_ChildBodyToJoint
               = linkComp.transformFromParentJoint.inverse();
-          auto pair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          auto pair = skeleton->createJointAndBodyNodePair<classic::FreeJoint>(
               parentBody, jointProps, bodyProps);
           joint = pair.first;
           bodyNode = pair.second;
@@ -440,7 +442,7 @@ void World::ClassicAdapter::buildMultiBodySkeleton(entt::entity mbEntity)
       }
 
       const auto& mass = linkComp.mass;
-      dynamics::Inertia inertia;
+      classic::Inertia inertia;
       inertia.setMass(mass.mass);
       inertia.setLocalCOM(mass.localCOM);
       inertia.setMoment(mass.inertia);
@@ -468,18 +470,18 @@ void World::ClassicAdapter::buildRigidBodySkeleton(entt::entity rbEntity)
   const auto* nameComp = registry.try_get<comps::Name>(rbEntity);
   const std::string rbName = nameComp ? nameComp->name : "rigid_body";
 
-  auto skeleton = dynamics::Skeleton::create(rbName);
+  auto skeleton = classic::Skeleton::create(rbName);
   skeleton->setTimeStep(m_world.getTimeStep());
   skeleton->setGravity(m_world.getGravity());
 
-  dynamics::FreeJoint::Properties jointProps;
+  classic::FreeJoint::Properties jointProps;
   jointProps.mName = std::format("{}_root_joint", rbName);
-  jointProps.mCoordinateChart = dynamics::FreeJoint::CoordinateChart::EULER_ZYX;
+  jointProps.mCoordinateChart = classic::FreeJoint::CoordinateChart::EULER_ZYX;
 
-  dynamics::BodyNode::Properties bodyProps;
+  classic::BodyNode::Properties bodyProps;
   bodyProps.mName = rbName;
 
-  auto pair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+  auto pair = skeleton->createJointAndBodyNodePair<classic::FreeJoint>(
       nullptr, jointProps, bodyProps);
 
   m_skeletonByRigidBody[rbEntity] = skeleton;
@@ -488,7 +490,7 @@ void World::ClassicAdapter::buildRigidBodySkeleton(entt::entity rbEntity)
   m_allSkeletons.push_back(skeleton);
 
   const auto& massProps = registry.get<comps::MassProperties>(rbEntity);
-  dynamics::Inertia inertia;
+  classic::Inertia inertia;
   inertia.setMass(massProps.mass);
   inertia.setLocalCOM(massProps.localCOM);
   inertia.setMoment(massProps.inertia);
@@ -513,8 +515,8 @@ void World::ClassicAdapter::attachShapeNodes()
     }
 
     auto* shapeNode = bodyNode->createShapeNodeWith<
-        dynamics::CollisionAspect,
-        dynamics::DynamicsAspect>(shapeComp.shape);
+        classic::CollisionAspect,
+        classic::DynamicsAspect>(shapeComp.shape);
 
     shapeNode->setRelativeTransform(shapeComp.relativeTransform);
     if (auto* collisionAspect = shapeNode->getCollisionAspect()) {
@@ -571,7 +573,7 @@ void World::ClassicAdapter::syncFromExperimental()
   for (const auto& [linkEntity, bodyNode] : m_bodyNodeByLink) {
     const auto& linkComp = registry.get<comps::Link>(linkEntity);
     const auto& mass = linkComp.mass;
-    dynamics::Inertia inertia;
+    classic::Inertia inertia;
     inertia.setMass(mass.mass);
     inertia.setLocalCOM(mass.localCOM);
     inertia.setMoment(mass.inertia);
@@ -580,7 +582,7 @@ void World::ClassicAdapter::syncFromExperimental()
 
   for (const auto& [rbEntity, bodyNode] : m_bodyNodeByRigidBody) {
     const auto& massProps = registry.get<comps::MassProperties>(rbEntity);
-    dynamics::Inertia inertia;
+    classic::Inertia inertia;
     inertia.setMass(massProps.mass);
     inertia.setLocalCOM(massProps.localCOM);
     inertia.setMoment(massProps.inertia);
@@ -617,13 +619,13 @@ void World::ClassicAdapter::syncFromExperimental()
     tf.translation() = transform.position;
     tf.linear() = transform.orientation.toRotationMatrix();
 
-    freeJoint->setTransform(tf, dynamics::Frame::World());
+    freeJoint->setTransform(tf, classic::Frame::World());
 
     Eigen::Vector6d spatialVelocity;
     spatialVelocity.head<3>() = velocity.angular;
     spatialVelocity.tail<3>() = velocity.linear;
     freeJoint->setSpatialVelocity(
-        spatialVelocity, dynamics::Frame::World(), dynamics::Frame::World());
+        spatialVelocity, classic::Frame::World(), classic::Frame::World());
   }
 
   for (const auto& skeleton : m_allSkeletons) {
@@ -707,7 +709,7 @@ void World::ClassicAdapter::integratePositionsAndSync(
     transform.orientation = Eigen::Quaterniond(tf.linear());
 
     const Eigen::Vector6d spatialVelocity = bodyNode->getSpatialVelocity(
-        dynamics::Frame::World(), dynamics::Frame::World());
+        classic::Frame::World(), classic::Frame::World());
     velocity.angular = spatialVelocity.head<3>();
     velocity.linear = spatialVelocity.tail<3>();
 

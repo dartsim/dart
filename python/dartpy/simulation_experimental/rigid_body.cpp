@@ -1,5 +1,6 @@
 #include "simulation_experimental/rigid_body.hpp"
 
+#include "dart/dynamics/Shape.hpp"
 #include "dart/simulation/experimental/body/rigid_body.hpp"
 
 #include <nanobind/eigen/dense.h>
