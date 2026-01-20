@@ -88,24 +88,24 @@ The experimental collision module has **strong primitive coverage** but signific
 | Sphere-Sphere     | ✅           | ✅  | ✅     | ❌  |                    |
 | Sphere-Box        | ✅           | ✅  | ✅     | ❌  |                    |
 | Sphere-Capsule    | ✅           | ✅  | ✅     | ❌  | Via Capsule-Sphere |
-| Sphere-Cylinder   | ❌           | ✅  | ✅     | ❌  | **Missing**        |
-| Sphere-Plane      | ❌           | ✅  | ✅     | ❌  | **Missing**        |
+| Sphere-Cylinder   | ✅           | ✅  | ✅     | ❌  | GJK-based          |
+| Sphere-Plane      | ✅           | ✅  | ✅     | ❌  | Support-function   |
 | Box-Box           | ✅           | ✅  | ✅     | ❌  |                    |
 | Box-Capsule       | ✅           | ✅  | ✅     | ❌  |                    |
-| Box-Cylinder      | ❌           | ✅  | ✅     | ❌  | **Missing**        |
-| Box-Plane         | ❌           | ✅  | ✅     | ❌  | **Missing**        |
+| Box-Cylinder      | ✅           | ✅  | ✅     | ❌  | GJK-based          |
+| Box-Plane         | ✅           | ✅  | ✅     | ❌  | Support-function   |
 | Capsule-Capsule   | ✅           | ✅  | ✅     | ❌  |                    |
-| Capsule-Cylinder  | ❌           | ✅  | ✅     | ❌  | **Missing**        |
-| Capsule-Plane     | ❌           | ✅  | ✅     | ❌  | **Missing**        |
-| Cylinder-Cylinder | ❌           | ✅  | ✅     | ❌  | **Missing**        |
-| Cylinder-Plane    | ❌           | ✅  | ✅     | ❌  | **Missing**        |
+| Capsule-Cylinder  | ✅           | ✅  | ✅     | ❌  | GJK-based          |
+| Capsule-Plane     | ✅           | ✅  | ✅     | ❌  | Support-function   |
+| Cylinder-Cylinder | ✅           | ✅  | ✅     | ❌  | GJK-based          |
+| Cylinder-Plane    | ✅           | ✅  | ✅     | ❌  | Support-function   |
 | Convex-Convex     | ✅           | ✅  | ✅     | ❌  | GJK-based          |
 | Convex-Mesh       | ✅           | ✅  | ✅     | ❌  | GJK-based          |
 | Mesh-Mesh         | ✅           | ✅  | ✅     | ❌  | GJK-based          |
 | Sphere-SDF        | ✅           | ❌  | ✅     | ❌  | **Ahead**          |
 | Capsule-SDF       | ✅           | ❌  | ✅     | ❌  | **Ahead**          |
 
-**Distance Coverage: ~65%** - Missing Cylinder-_ and Plane-_ specialized pairs.
+**Distance Coverage: ~85%** - Remaining gaps are plane-plane and SDF pairs beyond sphere/capsule.
 
 ### Raycast Queries
 

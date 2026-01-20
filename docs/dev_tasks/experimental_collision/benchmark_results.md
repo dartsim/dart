@@ -39,7 +39,8 @@ Summary status legend: WIN = min speedup > 1.0; MIXED = min < 1.0 and p90 > 1.0;
 Values are min/p50/p90 for each suite (iteration runs only; BigO/RMS excluded).
 Latest full-suite summary is from 2026-01-19; the 2026-01-20 rerun refreshed
 comparative suites and the baseline `bm_comparative` with accuracy checks
-passing (cylinder-box fallback + box-box depth aligned; see run notes).
+passing (cylinder-box fallback + box-box depth aligned; see run notes). The
+2026-01-20 distance rerun captures the plane/cylinder distance support update.
 
 Legend: WIN = min speedup > 1.0; MIXED = min < 1.0 and p90 > 1.0; LOSS = p50 < 1.0.
 
@@ -70,6 +71,7 @@ Legend: WIN = min speedup > 1.0; MIXED = min < 1.0 and p90 > 1.0; LOSS = p50 < 1
 
 | Date       | Commit      | Summary                              | Notes                                              |
 | ---------- | ----------- | ------------------------------------ | -------------------------------------------------- |
+| 2026-01-20 | c2d07524b37 | Distance rerun (plane/cylinder)      | Accuracy pass; Bullet/ODE distance unsupported.    |
 | 2026-01-20 | 788a69e7bb2 | SDF/ESDF resolution sweep (extended) | Voxblox lib not found; added 80/96 dims.           |
 | 2026-01-20 | be3923bf398 | SDF/ESDF resolution sweep            | Voxblox lib not found; resolution scaling logged.  |
 | 2026-01-20 | db9b3f36dc2 | Cylinder-box + box-box benchmark fix | Accuracy checks pass; depth warning resolved.      |
@@ -81,6 +83,26 @@ Legend: WIN = min speedup > 1.0; MIXED = min < 1.0 and p90 > 1.0; LOSS = p50 < 1
 | 2026-01-20 | f315999cdfe | Raycast batch + comparative raycast  | SweepAndPrune; 500 rays; 1k/2k objects             |
 | 2026-01-19 | TBD         | Baseline results (pre-structure)     |                                                    |
 | 2026-01-19 | b1f6e5e     | Comparative + scenarios runs         | Distance/mixed underperform; raycast blocked then. |
+
+## Run 2026-01-20 — Comparative distance rerun (plane/cylinder support)
+
+- **Branch / Commit**: `feature/new_coll` / `c2d07524b37`
+- **Build**: `Release` (build/default/cpp/Release)
+- **CPU**: 13th Gen Intel(R) Core(TM) i9-13950HX
+- **OS**: Ubuntu 25.10
+- **Compiler**: c++ (Ubuntu 15.2.0-4ubuntu4) 15.2.0
+- **Notes**:
+  - Plane/cylinder distance support added; accuracy check passed.
+  - Bullet/ODE distance still unsupported (distance returns 0 / -1).
+  - `--benchmark_min_time=0.05s`.
+- **Command**:
+  - `build/default/cpp/Release/bin/bm_comparative_distance --benchmark_min_time=0.05s --benchmark_out=build/default/cpp/Release/benchmarks/bm_comparative_distance_20260120_091559.json --benchmark_out_format=json`
+- **Raw Output**:
+  - `build/default/cpp/Release/benchmarks/bm_comparative_distance_20260120_091559.json`
+
+Summary (key cases):
+
+- Sphere-sphere: experimental 5.18 ns vs FCL 211 ns.
 
 ## Run 2026-01-20 — SDF/ESDF resolution sweep (extended)
 
