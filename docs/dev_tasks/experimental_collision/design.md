@@ -488,27 +488,30 @@ CollisionWorld world(BroadPhaseType::BruteForce);
 
 #### Algorithm Comparison
 
-| Algorithm        | Complexity       | Best For                          | Trade-offs                              |
-| ---------------- | ---------------- | --------------------------------- | --------------------------------------- |
-| **AABB Tree**    | O(n log n) query | Dynamic scenes, general use       | Higher insertion cost, memory overhead  |
-| **Sweep & Prune**| O(n + k) query   | Mostly-static, coherent motion    | Must resort on large movements          |
-| **Brute Force**  | O(n²) query      | Debugging, N < 20                 | Simple but doesn't scale                |
+| Algorithm         | Complexity       | Best For                       | Trade-offs                             |
+| ----------------- | ---------------- | ------------------------------ | -------------------------------------- |
+| **AABB Tree**     | O(n log n) query | Dynamic scenes, general use    | Higher insertion cost, memory overhead |
+| **Sweep & Prune** | O(n + k) query   | Mostly-static, coherent motion | Must resort on large movements         |
+| **Brute Force**   | O(n²) query      | Debugging, N < 20              | Simple but doesn't scale               |
 
 #### Performance Characteristics
 
 **AABB Tree** (default):
+
 - Uses Surface Area Heuristic (SAH) for balanced insertion
 - Fat AABBs reduce update frequency for small movements
 - 95-188x faster than brute-force at 500-1000 objects
 - Best choice when objects move frequently
 
 **Sweep-and-Prune**:
+
 - Maintains sorted endpoint lists per axis
 - Exploits temporal coherence (objects don't move much between frames)
 - Efficient when most objects are static with few moving
 - Requires full resort if many objects move large distances
 
 **Brute Force**:
+
 - Simple O(n²) pairwise AABB tests
 - No data structure overhead
 - Useful for debugging or when N is very small
@@ -516,14 +519,14 @@ CollisionWorld world(BroadPhaseType::BruteForce);
 
 #### When to Use Each
 
-| Scenario                                    | Recommended Algorithm |
-| ------------------------------------------- | --------------------- |
-| General robotics simulation                 | AabbTree (default)    |
-| Static environment + one moving robot       | SweepAndPrune         |
-| Debugging collision issues                  | BruteForce            |
-| < 20 objects                                | Any (BruteForce OK)   |
-| > 100 objects with frequent movement        | AabbTree              |
-| > 1000 objects, mostly static               | SweepAndPrune         |
+| Scenario                              | Recommended Algorithm |
+| ------------------------------------- | --------------------- |
+| General robotics simulation           | AabbTree (default)    |
+| Static environment + one moving robot | SweepAndPrune         |
+| Debugging collision issues            | BruteForce            |
+| < 20 objects                          | Any (BruteForce OK)   |
+| > 100 objects with frequent movement  | AabbTree              |
+| > 1000 objects, mostly static         | SweepAndPrune         |
 
 #### Querying the Active Algorithm
 

@@ -85,7 +85,7 @@ constexpr double kCapsuleRadius = 0.4;
 constexpr double kCapsuleHeight = 1.2;
 constexpr double kDenseRange = 2.0;
 constexpr double kSparseRange = 10.0;
-constexpr std::size_t kRayCount = 10000;
+constexpr std::size_t kRayCount = 1000;
 const Eigen::Vector3d kBoxHalfExtents(0.5, 0.5, 0.5);
 const Eigen::Vector3d kBoxSize(1.0, 1.0, 1.0);
 
@@ -284,14 +284,14 @@ static void BM_Scenario_RaycastBatch_Dense_Experimental(benchmark::State& state)
 {
   RunExperimentalRaycastScenario(state, kDenseRange);
 }
-BENCHMARK(BM_Scenario_RaycastBatch_Dense_Experimental)->Arg(1000)->Arg(10000);
+BENCHMARK(BM_Scenario_RaycastBatch_Dense_Experimental)->Arg(1000)->Arg(5000);
 
 static void BM_Scenario_RaycastBatch_Sparse_Experimental(
     benchmark::State& state)
 {
   RunExperimentalRaycastScenario(state, kSparseRange);
 }
-BENCHMARK(BM_Scenario_RaycastBatch_Sparse_Experimental)->Arg(1000)->Arg(10000);
+BENCHMARK(BM_Scenario_RaycastBatch_Sparse_Experimental)->Arg(1000)->Arg(5000);
 
 #if DART_HAVE_BULLET
 static void BM_Scenario_RaycastBatch_Dense_Bullet(benchmark::State& state)
@@ -299,14 +299,14 @@ static void BM_Scenario_RaycastBatch_Dense_Bullet(benchmark::State& state)
   auto detector = dart::collision::BulletCollisionDetector::create();
   RunDetectorRaycastScenario(state, detector, kDenseRange);
 }
-BENCHMARK(BM_Scenario_RaycastBatch_Dense_Bullet)->Arg(1000)->Arg(10000);
+BENCHMARK(BM_Scenario_RaycastBatch_Dense_Bullet)->Arg(1000)->Arg(5000);
 
 static void BM_Scenario_RaycastBatch_Sparse_Bullet(benchmark::State& state)
 {
   auto detector = dart::collision::BulletCollisionDetector::create();
   RunDetectorRaycastScenario(state, detector, kSparseRange);
 }
-BENCHMARK(BM_Scenario_RaycastBatch_Sparse_Bullet)->Arg(1000)->Arg(10000);
+BENCHMARK(BM_Scenario_RaycastBatch_Sparse_Bullet)->Arg(1000)->Arg(5000);
 #endif
 
 BENCHMARK_MAIN();

@@ -72,18 +72,18 @@ if(DART_BUILD_COLLISION_EXPERIMENTAL)
     benchmark::benchmark
   )
   dart_format_add(collision/experimental/bm_ccd.cpp)
-  # TODO: bm_libccd.cpp doesn't exist yet - uncomment when created
-  # if(DART_TESTS_LIBCCD_FOUND)
-  #   add_executable(
-  #     bm_experimental_libccd
-  #     collision/experimental/bm_libccd.cpp
-  #   )
-  #   target_link_libraries(bm_experimental_libccd
-  #     dart-collision-experimental
-  #     dart_tests_libccd
-  #     benchmark::benchmark
-  #   )
-  # endif()
+  if(DART_TESTS_LIBCCD_FOUND)
+    add_executable(
+      bm_experimental_libccd
+      collision/experimental/bm_libccd.cpp
+    )
+    target_link_libraries(bm_experimental_libccd
+      dart-collision-experimental
+      dart_tests_libccd
+      benchmark::benchmark
+    )
+    dart_format_add(collision/experimental/bm_libccd.cpp)
+  endif()
   add_executable(
     bm_experimental_broadphase
     collision/experimental/bm_broadphase.cpp
