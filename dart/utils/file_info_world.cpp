@@ -60,7 +60,7 @@ bool FileInfoWorld::loadFile(const char* _fName)
     return false;
 
   inFile.precision(8);
-  char buffer[256];
+  std::string token;
   int numFrames;
   int numSkeletons;
   int intVal;
@@ -69,13 +69,13 @@ bool FileInfoWorld::loadFile(const char* _fName)
   std::vector<double> tempState;
   Eigen::VectorXd state;
 
-  inFile >> buffer;
+  inFile >> token;
   inFile >> numFrames;
-  inFile >> buffer;
+  inFile >> token;
   inFile >> numSkeletons;
 
   for (int i = 0; i < numSkeletons; i++) {
-    inFile >> buffer;
+    inFile >> token;
     inFile >> intVal;
     numDofsForSkels.push_back(intVal);
   }
@@ -93,7 +93,7 @@ bool FileInfoWorld::loadFile(const char* _fName)
       }
     }
 
-    inFile >> buffer;
+    inFile >> token;
     inFile >> intVal;
     for (int j = 0; j < intVal; j++) {
       for (int k = 0; k < 6; k++) {

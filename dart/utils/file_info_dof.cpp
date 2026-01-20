@@ -66,17 +66,17 @@ bool FileInfoDof::loadFile(const char* _fName)
     return false;
 
   inFile.precision(20);
-  char buffer[256];
+  std::string token;
   std::size_t nDof;
 
   // nFrames =
-  inFile >> buffer;
-  inFile >> buffer;
+  inFile >> token;
+  inFile >> token;
   inFile >> mNumFrames;
 
   // nDof =
-  inFile >> buffer;
-  inFile >> buffer;
+  inFile >> token;
+  inFile >> token;
   inFile >> nDof;
 
   if (mSkel == nullptr || mSkel->getNumDofs() != nDof)
@@ -86,7 +86,7 @@ bool FileInfoDof::loadFile(const char* _fName)
 
   // dof names
   for (std::size_t i = 0; i < nDof; i++)
-    inFile >> buffer;
+    inFile >> token;
   for (std::size_t j = 0; j < mNumFrames; j++) {
     mDofs[j].resize(nDof);
     for (std::size_t i = 0; i < nDof; i++) {
@@ -97,7 +97,7 @@ bool FileInfoDof::loadFile(const char* _fName)
   }
 
   // fps
-  inFile >> buffer;
+  inFile >> token;
   if (!inFile.eof())
     inFile >> mFPS;
 
