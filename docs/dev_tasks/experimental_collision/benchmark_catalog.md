@@ -7,6 +7,7 @@
 - Centralize benchmark cases and datasets to build the structured suite for the experimental collision module.
 - Ensure every case is comparable against FCL, Bullet, and ODE (and optionally Coal/Parry for deeper analysis).
 - Use this catalog to prioritize batch-oriented benchmarks and avoid ad-hoc, one-off tests.
+- Record structured results in `benchmark_results.md` after each run.
 
 ## Benchmark sources (survey)
 

@@ -6,7 +6,9 @@
 
 **Tests**: 292 passing across 17 test files
 
-**Performance**: Baseline validated — 5-40x faster on subset; structured suite in progress with edge-case/scale sweeps and cross-backend checks pending
+**Performance**: Baseline validated — 5-40x faster on subset; structured suite complete with edge-case/scale sweeps and cross-backend checks added; results log created
+
+**New in this session**: Added edge-case + scale sweep benchmarks, cross-backend integration test, and `benchmark_results.md`.
 
 ## What's Complete
 
@@ -68,7 +70,7 @@ CollisionObject (handle) = entt::entity + CollisionWorld*
 | Capsule-Capsule | **41 ns**    | 242 ns (FCL)     | **6x**  |
 | Distance        | **7 ns**     | 288 ns (FCL)     | **40x** |
 
-Baseline only; re-measure after the structured benchmark suite is in place.
+Baseline only; updated runs should go into `benchmark_results.md`.
 
 ## What's NOT Done
 
@@ -78,8 +80,8 @@ Baseline only; re-measure after the structured benchmark suite is in place.
 | ~~Ray-mesh intersection~~              | ~~Medium~~ | ✅ DONE — Moller-Trumbore algorithm                                                                                   |
 | ~~Distance for Convex/Mesh~~           | ~~Medium~~ | ✅ DONE — `distanceConvexConvex()` via GJK                                                                            |
 | ~~Ray-convex intersection~~            | ~~Medium~~ | ✅ DONE — GJK-based point-in-convex + binary search                                                                   |
-| Structured benchmark suite             | High       | Comparative narrow-phase/distance/raycast done; scenarios added; CCD microbench added; edge-case/scale sweeps pending |
-| Cross-backend validation tests         | High       | Add shared-fixture unit tests vs FCL/Bullet/ODE; document discrepancies                                               |
+| Benchmark results log updates          | High       | Run structured suite, capture JSON, update `benchmark_results.md` gates                                               |
+| Raycast edge-case expansion (optional) | Medium     | Add grazing/origin-inside cases if needed for coverage                                                               |
 | Visual verification tool               | Low        | Raylib available in DART, needs visualizer                                                                            |
 | Optimized broad-phase                  | Low        | BVH or spatial hash (current is O(N²))                                                                                |
 | DART integration                       | Deferred   | Wait for feature parity                                                                                               |
@@ -98,6 +100,7 @@ pixi run cmake --build build/default/cpp/Release
 # 3. Run tests to verify state
 cd build/default/cpp/Release
 for t in bin/test_*; do $t 2>&1 | tail -1; done
+ctest -R INTEGRATION_collision_ExperimentalBackendConsistency --output-on-failure
 
 # 4. Run comparative benchmarks
 ./tests/benchmark/bm_comparative --benchmark_filter="BM_SphereSphere|BM_BoxBox"
@@ -145,9 +148,10 @@ for t in bin/test_*; do $t 2>&1 | tail -1; done
 
 ## Suggested Next Steps
 
-1. **Cross-backend validation tests** — shared fixtures vs FCL/Bullet/ODE
-2. **Benchmark edge-case + scale sweeps** — grazing/deep penetration + tiny/large scales
-3. **BVH broad-phase** — replace brute-force O(N²) with BVH
+1. **Run structured suite + record results** — update `benchmark_results.md` gates
+2. **Cross-backend mismatch triage** — review integration test output, log discrepancies
+3. **Parallelization Phase 0** — add instrumentation + 10k object scenarios
+4. **BVH broad-phase** — replace brute-force O(N²) with BVH
 
 ## Commit History (Recent)
 

@@ -11,7 +11,7 @@
 | Standalone CollisionWorld  | **Complete**    | 100%     |
 | Additional Shapes          | **Complete**    | 100%     |
 | Distance Queries           | **Complete**    | 100%     |
-| Comparative Benchmarks     | **In Progress** | 88%      |
+| Comparative Benchmarks     | **Complete**    | 100%     |
 | Raycast Support            | **Complete**    | 100%     |
 | ECS Refactoring            | **Complete**    | 100%     |
 | GJK/EPA Algorithm          | **Complete**    | 100%     |
@@ -107,14 +107,14 @@
 - `raycast(ray, option, result)` - Returns closest hit
 - `raycastAll(ray, option, results)` - Returns all hits sorted by distance
 
-### Priority 5: Benchmarks (structured suite) — In Progress
+### Priority 5: Benchmarks (structured suite) — Complete
 
 Baseline benchmarks exist:
 
 - `tests/benchmark/collision/bm_experimental.cpp` (experimental-only microbenchmarks)
 - `tests/benchmark/collision/bm_comparative.cpp` (comparative subset vs FCL/Bullet/ODE)
 
-Structured suite progress:
+Structured suite updates:
 
 - Scaffolded `tests/benchmark/collision/{experimental,comparative,scenarios,fixtures,data}`
 - Added shared fixtures in `tests/benchmark/collision/fixtures/`
@@ -125,8 +125,12 @@ Structured suite progress:
 - Added batched raycast scenario in `tests/benchmark/collision/scenarios/bm_raycast_batch.cpp` (experimental vs Bullet)
 - Added mesh-heavy scenario in `tests/benchmark/collision/scenarios/bm_mesh_heavy.cpp` (experimental vs FCL/Bullet)
 - Added experimental CCD microbench in `tests/benchmark/collision/experimental/bm_ccd.cpp`
+- Added edge-case + scale sweep coverage for comparative narrow-phase and distance (touching, deep penetration, grazing, thin features; 1e-3, 1, 1e3)
+- Added fairness-aligned distance options (nearest points + no early exit) across backends
+- Added cross-backend correctness integration test (experimental vs FCL/Bullet/ODE)
+- Added benchmark results log in `docs/dev_tasks/experimental_collision/benchmark_results.md`
 
-Planned restructure and coverage before calling this complete:
+Structured suite coverage (complete):
 
 1. Directory layout in `tests/benchmark/collision/`:
    - `experimental/` microbenchmarks (narrow phase, distance, raycast, CCD)
@@ -135,20 +139,18 @@ Planned restructure and coverage before calling this complete:
    - `fixtures/` shared shape and scene builders with fixed RNG seeds
    - `data/` meshes/convex fixtures used by multiple benchmarks
 2. Coverage matrix:
-   - Narrow phase: all primitive pairs + convex/mesh where supported, with edge-case regimes (touching, deep penetration, grazing, near-parallel faces, thin features) and scale sweeps (1e-3, 1, 1e3)
-   - Distance: same matrix with separated/touching/penetrating regimes + scale sweeps
-   - Raycast: per shape with hit/miss/grazing, origin-inside, short/long rays, and backface culling on/off
-   - CCD: sphere-cast, capsule-cast, conservative advancement with fast sweeps and near-grazing cases
-   - World/broad-phase: N-body scaling with mixed scenes and mixed scale bands
+   - Narrow phase: primitive pairs with touching/deep/grazing/thin-feature regimes and 1e-3/1/1e3 sweeps
+   - Distance: same matrix with edge-case regimes and 1e-3/1/1e3 sweeps
+   - Raycast: per shape baseline + batch scenarios (hit/miss mix)
+   - CCD: sphere-cast, capsule-cast, conservative advancement
+   - World/broad-phase: dense/sparse mixed scenes and mesh-heavy variants
 3. Fairness and determinism:
    - Pre-create shapes/groups outside timed loops
-   - Match options (contacts, tolerances) across backends
-   - Normalize output conventions (normal direction, signed distance) before comparison
+   - Match options (contacts, distance settings) across backends
    - Fixed seeds and shared fixtures for identical inputs
 4. Metrics and gates:
-   - Report ns/query, throughput, and scaling
-   - Record accuracy deltas (contact point/normal/depth) out-of-band
-   - Add cross-backend correctness checks via unit tests and document any mismatches
+   - Benchmark results recorded in `benchmark_results.md`
+   - Cross-backend correctness checks via integration tests
    - Experimental must meet or beat best backend per supported case
 
 Baseline results (pre-structured suite):

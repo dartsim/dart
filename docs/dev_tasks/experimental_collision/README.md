@@ -27,8 +27,11 @@ If we can't beat existing backends in performance, there's no point in building 
 - [Design Document](./design.md) - API design, architecture decisions
 - [Phase Plan](./phases.md) - Detailed phase breakdown with deliverables
 - [Progress Tracker](./progress.md) - Current status and completed tasks
+- [Parallelization Plan](./parallelization_plan.md) - Multi-core batch collision roadmap
+- [ReactPhysics3D ECS Review](./reactphysics3d_ecs_review.md) - ECS data layout and pipeline notes
 - [Reference Comparison](./reference_comparison.md) - FCL/Bullet/ODE feature and algorithm comparison
 - [Benchmark Catalog](./benchmark_catalog.md) - Surveyed benchmark cases and datasets
+- [Benchmark Results](./benchmark_results.md) - Latest structured suite results and gates
 
 ## Current Status
 

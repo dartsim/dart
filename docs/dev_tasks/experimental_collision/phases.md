@@ -117,19 +117,22 @@ Remove External (DART 8)
 Baseline numbers from `bm_comparative.cpp`. These will be re-measured after the
 structured suite is in place.
 
-Structured suite progress (2026-01-19): comparative narrow-phase, distance, and
-raycast benchmarks are now in `tests/benchmark/collision/comparative/` (raycast
-currently compares experimental vs Bullet only).
-Mixed primitives scenarios (dense/sparse) are now in
+Structured suite progress (2026-01-19): comparative narrow-phase and distance
+benchmarks now include edge-case + scale sweeps, and comparative raycast
+benchmarks live in `tests/benchmark/collision/comparative/` (raycast currently
+compares experimental vs Bullet only).
+Mixed primitives scenarios (dense/sparse) are in
 `tests/benchmark/collision/scenarios/bm_mixed_primitives.cpp`.
-Batched raycast scenarios (10k rays) are now in
+Batched raycast scenarios (10k rays) are in
 `tests/benchmark/collision/scenarios/bm_raycast_batch.cpp` (experimental vs
 Bullet).
-Mesh-heavy scenarios are now in
+Mesh-heavy scenarios are in
 `tests/benchmark/collision/scenarios/bm_mesh_heavy.cpp` (experimental vs
 FCL/Bullet).
-Experimental CCD microbenchmarks are now in
+Experimental CCD microbenchmarks are in
 `tests/benchmark/collision/experimental/bm_ccd.cpp`.
+Cross-backend correctness checks now run in integration tests, and structured
+results live in `docs/dev_tasks/experimental_collision/benchmark_results.md`.
 
 **Narrow-phase performance comparison (lower is better):**
 

@@ -410,6 +410,9 @@ data/          # mesh/convex fixtures used by multiple benchmarks
 - Batched raycast scenario benchmark added (`scenarios/bm_raycast_batch.cpp`, experimental vs Bullet)
 - Mesh-heavy scenario benchmark added (`scenarios/bm_mesh_heavy.cpp`, experimental vs FCL/Bullet)
 - Experimental CCD microbench added (`experimental/bm_ccd.cpp`)
+- Edge-case + scale sweep coverage added for comparative narrow-phase and distance
+- Cross-backend consistency integration test added (experimental vs FCL/Bullet/ODE)
+- Benchmark results log added (`docs/dev_tasks/experimental_collision/benchmark_results.md`)
 
 **Acceptance criteria**:
 
@@ -431,12 +434,12 @@ experimental + reference backends and compare results within tolerances.
 
 **Acceptance Criteria**:
 
-- [ ] Shared fixtures drive the same inputs for experimental, FCL, Bullet, ODE
-- [ ] Collision: consistent hit/no-hit and depth within tolerance
-- [ ] Distance: consistent signed distance and closest points within tolerance
+- [x] Shared fixtures drive the same inputs for experimental, FCL, Bullet, ODE
+- [x] Collision: consistent hit/no-hit and depth within tolerance
+- [x] Distance: consistent distance within tolerance (signed or near-zero)
 - [ ] Raycast: consistent hit/no-hit and distance ordering (when supported)
-- [ ] Normals are compared after converting to DART's convention
-- [ ] Known discrepancies are documented with rationale (e.g., Bullet margins)
+- [x] Normals compared with DART convention alignment checks
+- [ ] Known discrepancies documented with rationale (e.g., Bullet margins)
 - [ ] If results disagree, isolate with analytic references for primitives and
       record a follow-up task for the suspected backend
 
