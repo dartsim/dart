@@ -225,8 +225,8 @@ BENCHMARK(BM_SphereSphere_ODE);
 
 static void BM_BoxBox_Experimental(benchmark::State& state)
 {
-  BoxShape b1(Eigen::Vector3d(1, 1, 1));
-  BoxShape b2(Eigen::Vector3d(1, 1, 1));
+  BoxShape b1(Eigen::Vector3d(0.5, 0.5, 0.5));
+  BoxShape b2(Eigen::Vector3d(0.5, 0.5, 0.5));
 
   Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
@@ -722,8 +722,8 @@ bool verifySphereSphereAccuracy()
 
 bool verifyBoxBoxAccuracy()
 {
-  BoxShape expB1(Eigen::Vector3d(1, 1, 1));
-  BoxShape expB2(Eigen::Vector3d(1, 1, 1));
+  BoxShape expB1(Eigen::Vector3d(0.5, 0.5, 0.5));
+  BoxShape expB2(Eigen::Vector3d(0.5, 0.5, 0.5));
 
   Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();

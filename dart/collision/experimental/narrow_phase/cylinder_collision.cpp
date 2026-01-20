@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/collision/experimental/narrow_phase/convex_convex.hpp>
 #include <dart/collision/experimental/narrow_phase/cylinder_collision.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
 
@@ -312,7 +313,8 @@ bool collideCylinderBox(
   }
 
   if (!foundCollision) {
-    return false;
+    return collideConvexConvex(
+        cylinder, cylinderTransform, box, boxTransform, result, option);
   }
 
   const Eigen::Vector3d normalWorld = cylinderTransform.rotation() * bestNormal;

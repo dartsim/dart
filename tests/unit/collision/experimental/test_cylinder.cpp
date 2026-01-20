@@ -204,6 +204,22 @@ TEST(CylinderBox, CylinderSideTouchesBox)
   EXPECT_GE(result.numContacts(), 1u);
 }
 
+TEST(CylinderBox, BoxFaceOverlapWithoutCornerInside)
+{
+  CylinderShape cylinder(0.5, 2.0);
+  BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
+
+  Eigen::Isometry3d tfCylinder = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+  tfBox.translation() = Eigen::Vector3d(0.8, 0, 0);
+
+  CollisionResult result;
+  bool collided = collideCylinderBox(cylinder, tfCylinder, box, tfBox, result);
+
+  EXPECT_TRUE(collided);
+  EXPECT_GE(result.numContacts(), 1u);
+}
+
 TEST(CylinderBox, CylinderOnTopOfBox)
 {
   CylinderShape cylinder(0.5, 2.0);
