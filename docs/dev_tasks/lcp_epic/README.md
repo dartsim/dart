@@ -59,7 +59,8 @@
 **Fix Status**: `setFontScale()` rebuilds fonts; `applyImGuiScale()` skips
 `FontGlobalScale` after `setFontScale()`. Added viewport/traits fallback to
 keep framebuffer scale >= 1 and scaled the lcp_physics widget layout to the
-current ImGui font size (needs visual testing)
+current ImGui font size. Added an ImGui debug section in lcp_physics to report
+DisplaySize/FramebufferScale/FontGlobalScale for diagnosis (needs visual test)
 
 **Details**: See [RESUME.md](RESUME.md) for full context and next steps
 

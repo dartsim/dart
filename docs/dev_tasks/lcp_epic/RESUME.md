@@ -6,7 +6,7 @@
 
 - **Branch**: `refactor/lcp_plan`
 - **PR**: #2464
-- **State**: Scaled lcp_physics widget layout to font size, needs visual verification
+- **State**: Added ImGui debug readout in lcp_physics, needs visual verification
 - **Blocker**: Human visual test needed to confirm lcp_physics is crisp at scale 2
 
 ---
@@ -41,12 +41,20 @@ layout at `--gui-scale > 1`.
 
 - `examples/lcp_physics/main.cpp` - Apply font-based UI scaling
 
+### 4. Add ImGui Debug Readout to lcp_physics
+
+Added an `ImGui Debug` collapsible section to report display size, framebuffer
+scale, font size, and font global scale for diagnosing DPI issues.
+
+**Files changed**:
+
+- `examples/lcp_physics/main.cpp` - Add ImGui debug section
+
 ---
 
 ## Files Ready to Commit
 
 ```
-M  CHANGELOG.md
 M  docs/dev_tasks/lcp_epic/README.md
 M  docs/dev_tasks/lcp_epic/RESUME.md
 M  examples/lcp_physics/main.cpp
@@ -75,11 +83,10 @@ cd /home/js/dev/dartsim/dart/task_4
 
 ```bash
 git add -A
-git commit -m "fix(examples): scale lcp_physics widget layout with font size
+git commit -m "checkpoint(examples): add ImGui debug readout for lcp_physics
 
-Scale the fixed ImGui measurements (panel size, button widths, plot size,
-wrap width) from the current font size to prevent cramped layout at
---gui-scale > 1."
+Expose DisplaySize, DisplayFramebufferScale, FontSize, and FontGlobalScale in
+an ImGui Debug section to help diagnose DPI issues."
 
 git push origin refactor/lcp_plan
 ```
@@ -89,7 +96,8 @@ git push origin refactor/lcp_plan
 1. Check that `mFramebufferScale` is being detected correctly
 2. Verify the font atlas is actually being rebuilt (add logging)
 3. Log viewport vs traits sizes to confirm the ratio direction
-4. Compare `ImGui::GetFontSize()` vs expected gui-scale in lcp_physics
+4. Open `ImGui Debug` section in lcp_physics and record the reported values
+   (DisplaySize, DisplayFramebufferScale, FontSize, FontGlobalScale, UiScale)
 
 ---
 

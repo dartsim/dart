@@ -567,6 +567,7 @@ public:
     renderSolverSection();
     renderParameterSection();
     renderPerformanceSection();
+    renderDebugSection();
     renderExplanationSection();
 
     ImGui::End();
@@ -713,6 +714,28 @@ private:
       ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 310.0f * mUiScale);
       ImGui::TextUnformatted(mScenarios[mCurrentScenario].explanation.c_str());
       ImGui::PopTextWrapPos();
+    }
+  }
+
+  void renderDebugSection()
+  {
+    if (!ImGui::CollapsingHeader("ImGui Debug")) {
+      return;
+    }
+
+    const ImGuiIO& io = ImGui::GetIO();
+    ImGui::Text(
+        "DisplaySize: %.0f x %.0f", io.DisplaySize.x, io.DisplaySize.y);
+    ImGui::Text(
+        "FramebufferScale: %.2f x %.2f",
+        io.DisplayFramebufferScale.x,
+        io.DisplayFramebufferScale.y);
+    ImGui::Text("FontSize: %.1f", ImGui::GetFontSize());
+    ImGui::Text("FontGlobalScale: %.3f", io.FontGlobalScale);
+    ImGui::Text("UiScale: %.2f", mUiScale);
+    if (io.Fonts && io.Fonts->TexWidth > 0 && io.Fonts->TexHeight > 0) {
+      ImGui::Text(
+          "FontTex: %d x %d", io.Fonts->TexWidth, io.Fonts->TexHeight);
     }
   }
 
