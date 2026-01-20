@@ -404,6 +404,7 @@ data/          # mesh/convex fixtures used by multiple benchmarks
 - Comparative narrow-phase benchmark added (`comparative/bm_narrow_phase.cpp`)
 - Comparative distance benchmark added (`comparative/bm_distance.cpp`)
 - Comparative raycast benchmark added (`comparative/bm_raycast.cpp`, experimental vs Bullet)
+- Mixed primitives scenario benchmark added (`scenarios/bm_mixed_primitives.cpp`, dense/sparse)
 
 **Acceptance criteria**:
 
@@ -424,7 +425,7 @@ first 10 tasks to avoid mixing early scaffolding with batch-scale work.
 
 **Acceptance Criteria**:
 
-- [ ] Mixed primitives scene at 1k and 10k objects
+- [ ] Mixed primitives scene at 1k and 10k objects (dense/sparse added, more variants needed)
 - [ ] Dense vs sparse distributions (broadphase stress)
 - [ ] Mesh-heavy scene (static meshes + moving primitives)
 - [ ] Batched raycasts (10k rays) with hit/miss mix

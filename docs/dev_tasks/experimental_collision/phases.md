@@ -120,6 +120,8 @@ structured suite is in place.
 Structured suite progress (2026-01-19): comparative narrow-phase, distance, and
 raycast benchmarks are now in `tests/benchmark/collision/comparative/` (raycast
 currently compares experimental vs Bullet only).
+Mixed primitives scenarios (dense/sparse) are now in
+`tests/benchmark/collision/scenarios/bm_mixed_primitives.cpp`.
 
 **Narrow-phase performance comparison (lower is better):**
 

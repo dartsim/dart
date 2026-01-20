@@ -11,7 +11,7 @@
 | Standalone CollisionWorld  | **Complete**    | 100%     |
 | Additional Shapes          | **Complete**    | 100%     |
 | Distance Queries           | **Complete**    | 100%     |
-| Comparative Benchmarks     | **In Progress** | 70%      |
+| Comparative Benchmarks     | **In Progress** | 75%      |
 | Raycast Support            | **Complete**    | 100%     |
 | ECS Refactoring            | **Complete**    | 100%     |
 | GJK/EPA Algorithm          | **Complete**    | 100%     |
@@ -121,6 +121,7 @@ Structured suite progress:
 - Added comparative narrow-phase benchmark in `tests/benchmark/collision/comparative/bm_narrow_phase.cpp`
 - Added comparative distance benchmark in `tests/benchmark/collision/comparative/bm_distance.cpp`
 - Added comparative raycast benchmark in `tests/benchmark/collision/comparative/bm_raycast.cpp` (experimental vs Bullet; FCL/ODE not available)
+- Added mixed primitives scenario benchmark in `tests/benchmark/collision/scenarios/bm_mixed_primitives.cpp` (dense/sparse; experimental vs FCL/Bullet/ODE)
 
 Planned restructure and coverage before calling this complete:
 
