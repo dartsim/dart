@@ -48,7 +48,7 @@ run, and keep the most recent results at the top.
 | Date       | Commit      | Summary                             | Notes                                              |
 | ---------- | ----------- | ----------------------------------- | -------------------------------------------------- |
 | 2026-01-20 | 1fac7c64227 | libccd microbench                   | EPA faster; GJK/MPR slower vs libccd.              |
-| 2026-01-20 | 7bc79f0dd6b | RP3D-aligned pipeline breakdown try | Segfault persists after rebuild; partial JSON.     |
+| 2026-01-20 | 3e0bd1bb41b | RP3D-aligned pipeline breakdown     | Dense/sparse spheres 1k/10k recorded.              |
 | 2026-01-20 | f315999cdfe | Raycast batch + comparative raycast | SweepAndPrune; 500 rays; 1k/2k objects             |
 | 2026-01-19 | TBD         | Baseline results (pre-structure)    |                                                    |
 | 2026-01-19 | b1f6e5e     | Comparative + scenarios runs        | Distance/mixed underperform; raycast blocked then. |
@@ -140,16 +140,26 @@ BM_Scenario_PipelineBreakdown_Sparse_Experimental/1000: aabb_ns=57942.3495145631
 BM_Scenario_PipelineBreakdown_Sparse_Experimental/10000: aabb_ns=509226.0 broadphase_ns=648132646.0 narrowphase_ns=2234726435.0 merge_ns=32116.0 pairs=82932.0 contacts=41125.0
 ```
 
-## Run 2026-01-20 — Pipeline breakdown (RP3D-aligned) [FAILED]
+## Run 2026-01-20 — Pipeline breakdown (RP3D-aligned)
 
-- **Status**: segfault in `AabbTreeBroadPhase::combine()` during object creation.
+- **Branch / Commit**: `feature/new_coll` / `3e0bd1bb41b`
+- **Build**: `Release` (build/default/cpp/Release)
+- **CPU**: 13th Gen Intel(R) Core(TM) i9-13950HX
+- **OS**: Ubuntu 25.10
+- **Compiler**: c++ (Ubuntu 15.2.0-4ubuntu4) 15.2.0
+- **Notes**:
+  - RP3D-aligned sphere-only dense/sparse scenes (1k/10k).
+  - `--benchmark_min_time=0.05s`.
 - **Command**:
   - `build/default/cpp/Release/bin/bm_scenarios_pipeline_breakdown --benchmark_filter="PipelineBreakdown_RP3D_.*" --benchmark_format=json --benchmark_min_time=0.05s`
 - **Raw Output**:
-  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-19_1k.json` (partial)
-  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_004159.json` (partial; JSON truncated before benchmarks)
-  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_005830.json` (partial; JSON truncated before benchmarks)
-  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_010005.json` (partial; JSON truncated before benchmarks)
-  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_013729.json` (partial; JSON truncated before benchmarks)
-- **Notes**: Rebuilt `bm_scenarios_pipeline_breakdown`; dirty working tree due to parallel agents; crash persists.
-- **Next**: rerun once the AABB tree crash is resolved.
+  - `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_015424.json`
+
+Summary:
+
+```
+BM_Scenario_PipelineBreakdown_RP3D_Dense_Spheres_Experimental/1000: aabb_update_ns=44155.97003745318 broadphase_ns=149967.65917602996 narrowphase_ns=76474.0 merge_ns=144.69662921348313 pairs=458.0 contacts=252.0
+BM_Scenario_PipelineBreakdown_RP3D_Dense_Spheres_Experimental/10000: aabb_update_ns=421720.0 broadphase_ns=10237884.0 narrowphase_ns=656721732.0 merge_ns=32321.0 pairs=46345.0 contacts=24686.0
+BM_Scenario_PipelineBreakdown_RP3D_Sparse_Spheres_Experimental/1000: aabb_update_ns=46493.759825327514 broadphase_ns=50766.985443959245 narrowphase_ns=329.29694323144105 merge_ns=16.973799126637555 pairs=4.0 contacts=4.0
+BM_Scenario_PipelineBreakdown_RP3D_Sparse_Spheres_Experimental/10000: aabb_update_ns=428326.14814814815 broadphase_ns=2075412.5925925926 narrowphase_ns=75518.92592592593 merge_ns=138.1851851851852 pairs=403.0 contacts=209.0
+```

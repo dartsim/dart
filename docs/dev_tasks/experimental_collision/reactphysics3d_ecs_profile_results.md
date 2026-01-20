@@ -1,7 +1,7 @@
 # ReactPhysics3D ECS Profiling Results
 
-Status: initial baseline
-Last updated: 2026-01-19
+Status: baseline + DART comparison
+Last updated: 2026-01-20
 
 ## Setup
 
@@ -37,7 +37,7 @@ children in the profiler report.
 - `docs/dev_tasks/experimental_collision/results/rp3d_profile_2026-01-19_10k_dense.txt`
 - `docs/dev_tasks/experimental_collision/results/rp3d_profile_2026-01-19_10k_sparse.txt`
 
-## DART comparison (attempted)
+## DART comparison (completed)
 
 Run DART pipeline breakdown with RP3D-aligned scenarios:
 
@@ -48,16 +48,18 @@ build/default/cpp/Release/bin/bm_scenarios_pipeline_breakdown \
   --benchmark_min_time=0.05s
 ```
 
-Result: `bm_scenarios_pipeline_breakdown` still segfaults on RP3D filters as of
-2026-01-20, even after rebuilding the benchmark target. Partial JSON outputs are in:
+Results (ns, single-thread):
 
-- `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-19_1k.json`
-- `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_004159.json`
-- `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_005830.json`
-- `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_010005.json`
-- `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_013729.json`
+- Dense 1k: aabb_update_ns=44155.97003745318 broadphase_ns=149967.65917602996 narrowphase_ns=76474.0 merge_ns=144.69662921348313 pairs=458.0 contacts=252.0
+- Dense 10k: aabb_update_ns=421720.0 broadphase_ns=10237884.0 narrowphase_ns=656721732.0 merge_ns=32321.0 pairs=46345.0 contacts=24686.0
+- Sparse 1k: aabb_update_ns=46493.759825327514 broadphase_ns=50766.985443959245 narrowphase_ns=329.29694323144105 merge_ns=16.973799126637555 pairs=4.0 contacts=4.0
+- Sparse 10k: aabb_update_ns=428326.14814814815 broadphase_ns=2075412.5925925926 narrowphase_ns=75518.92592592593 merge_ns=138.1851851851852 pairs=403.0 contacts=209.0
 
-See `benchmark_results.md` for the failure log.
+Raw output:
+
+- `docs/dev_tasks/experimental_collision/results/bm_pipeline_breakdown_rp3d_2026-01-20_015424.json`
+
+See `benchmark_results.md` for the full run log.
 
 ## Notes
 
