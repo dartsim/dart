@@ -374,3 +374,34 @@ Task 1 (skeleton)
                          ▼
                    Task 10 (integration)
 ```
+
+---
+
+## Batch Benchmarks and Ordering (Cross-cutting)
+
+These tasks apply across later phases; keep them tracked separately from the
+first 10 tasks to avoid mixing early scaffolding with batch-scale work.
+
+### Task B1: Batch Benchmark Scenarios
+
+**Goal**: Implement batch-scale benchmarks defined in `phases.md`.
+
+**Acceptance Criteria**:
+
+- [ ] Mixed primitives scene at 1k and 10k objects
+- [ ] Dense vs sparse distributions (broadphase stress)
+- [ ] Mesh-heavy scene (static meshes + moving primitives)
+- [ ] Batched raycasts (10k rays) with hit/miss mix
+- [ ] Metrics include pairs/sec, queries/sec, per-frame time, and memory stats
+- [ ] Comparative results against FCL/Bullet/ODE
+
+### Task B2: Deterministic Batch Ordering
+
+**Goal**: Enforce deterministic ordering for batched query results.
+
+**Acceptance Criteria**:
+
+- [ ] Stable object IDs assigned on creation
+- [ ] collideAll/distanceAll results sorted by `(id1, id2, query_index)`
+- [ ] raycastAll results sorted by `(distance, object_id)`
+- [ ] Tests cover order independence and multi-threaded merge determinism
