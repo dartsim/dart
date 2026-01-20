@@ -66,6 +66,19 @@ public:
     out = queryPairs();
   }
 
+  template <typename FilterFunc>
+  void queryPairsFiltered(
+      std::vector<BroadPhasePair>& out, FilterFunc&& filter) const
+  {
+    out.clear();
+    auto allPairs = queryPairs();
+    for (const auto& pair : allPairs) {
+      if (filter(pair.first, pair.second)) {
+        out.push_back(pair);
+      }
+    }
+  }
+
   virtual void build(
       std::span<const std::size_t> ids, std::span<const Aabb> aabbs)
   {

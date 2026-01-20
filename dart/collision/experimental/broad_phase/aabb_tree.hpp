@@ -61,9 +61,11 @@ public:
       const Aabb& aabb) const override;
   [[nodiscard]] std::size_t size() const override;
 
-  using BroadPhase::build;
-  using BroadPhase::queryPairs;
-  using BroadPhase::updateRange;
+  void queryPairs(std::vector<BroadPhasePair>& out) const override;
+  void build(
+      std::span<const std::size_t> ids, std::span<const Aabb> aabbs) override;
+  void updateRange(
+      std::span<const std::size_t> ids, std::span<const Aabb> aabbs) override;
 
   [[nodiscard]] double getFatAabbMargin() const
   {

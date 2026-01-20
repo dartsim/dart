@@ -116,17 +116,49 @@ void AabbTreeBroadPhase::remove(std::size_t id)
 std::vector<BroadPhasePair> AabbTreeBroadPhase::queryPairs() const
 {
   std::vector<BroadPhasePair> pairs;
+  queryPairs(pairs);
+  return pairs;
+}
+
+void AabbTreeBroadPhase::queryPairs(std::vector<BroadPhasePair>& out) const
+{
+  out.clear();
 
   if (root_ == kNullNode) {
-    return pairs;
+    return;
   }
 
-  queryPairsRecursive(root_, root_, pairs);
+  queryPairsRecursive(root_, root_, out);
 
-  std::sort(pairs.begin(), pairs.end());
-  pairs.erase(std::unique(pairs.begin(), pairs.end()), pairs.end());
+  std::sort(out.begin(), out.end());
+  out.erase(std::unique(out.begin(), out.end()), out.end());
+}
 
-  return pairs;
+void AabbTreeBroadPhase::build(
+    std::span<const std::size_t> ids, std::span<const Aabb> aabbs)
+{
+  clear();
+
+  const std::size_t n = std::min(ids.size(), aabbs.size());
+  if (n == 0) {
+    return;
+  }
+
+  nodes_.reserve(2 * n);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    add(ids[i], aabbs[i]);
+  }
+}
+
+void AabbTreeBroadPhase::updateRange(
+    std::span<const std::size_t> ids, std::span<const Aabb> aabbs)
+{
+  const std::size_t n = std::min(ids.size(), aabbs.size());
+
+  for (std::size_t i = 0; i < n; ++i) {
+    update(ids[i], aabbs[i]);
+  }
 }
 
 std::vector<std::size_t> AabbTreeBroadPhase::queryOverlapping(
