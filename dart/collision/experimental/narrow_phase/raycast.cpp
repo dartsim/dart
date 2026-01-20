@@ -127,8 +127,10 @@ bool raycastBox(
 
   double tMin = 0.0;
   double tMax = std::numeric_limits<double>::max();
-  int hitAxis = -1;
-  int hitSign = 1;
+  int hitAxisMin = -1;
+  int hitSignMin = 1;
+  int hitAxisMax = -1;
+  int hitSignMax = 1;
 
   for (int i = 0; i < 3; ++i) {
     if (std::abs(localDir[i]) < kEpsilon) {
@@ -148,10 +150,14 @@ bool raycastBox(
 
       if (t1 > tMin) {
         tMin = t1;
-        hitAxis = i;
-        hitSign = sign;
+        hitAxisMin = i;
+        hitSignMin = sign;
       }
-      tMax = std::min(tMax, t2);
+      if (t2 < tMax) {
+        tMax = t2;
+        hitAxisMax = i;
+        hitSignMax = -sign;
+      }
 
       if (tMin > tMax) {
         return false;
@@ -159,20 +165,31 @@ bool raycastBox(
     }
   }
 
-  if (tMin < 0.0) {
-    return false;
+  double tHit = tMin;
+  int hitAxis = hitAxisMin;
+  int hitSign = hitSignMin;
+  if (tHit < 0.0) {
+    if (tMax < 0.0) {
+      return false;
+    }
+    tHit = tMax;
+    hitAxis = hitAxisMax;
+    hitSign = hitSignMax;
   }
 
   double maxDist = std::min(ray.maxDistance, option.maxDistance);
-  if (tMin > maxDist) {
+  if (tHit > maxDist) {
     return false;
   }
 
   result.hit = true;
-  result.distance = tMin;
-  result.point = ray.pointAt(tMin);
+  result.distance = tHit;
+  result.point = ray.pointAt(tHit);
 
   Eigen::Vector3d localNormal = Eigen::Vector3d::Zero();
+  if (hitAxis < 0) {
+    return false;
+  }
   localNormal[hitAxis] = static_cast<double>(hitSign);
   result.normal = boxTransform.rotation() * localNormal;
 

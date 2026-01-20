@@ -215,6 +215,27 @@ TEST(RaycastBox, HitSideFace)
   EXPECT_NEAR(result.normal.x(), -1.0, 1e-10);
 }
 
+TEST(RaycastBox, RayStartsInside)
+{
+  BoxShape box(Eigen::Vector3d(1, 1, 1));
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastBox(ray, box, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_NEAR(result.distance, 1.0, 1e-10);
+  EXPECT_NEAR(result.point.x(), 1.0, 1e-10);
+  EXPECT_NEAR(result.point.y(), 0.0, 1e-10);
+  EXPECT_NEAR(result.point.z(), 0.0, 1e-10);
+  EXPECT_NEAR(result.normal.x(), 1.0, 1e-10);
+  EXPECT_NEAR(result.normal.y(), 0.0, 1e-10);
+  EXPECT_NEAR(result.normal.z(), 0.0, 1e-10);
+}
+
 TEST(RaycastBox, RotatedBox)
 {
   BoxShape box(Eigen::Vector3d(1, 1, 1));
