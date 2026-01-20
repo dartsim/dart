@@ -32,7 +32,7 @@
 
 #include "dart/common/macros.hpp"
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 

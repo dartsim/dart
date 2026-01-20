@@ -34,7 +34,7 @@
 #include <dart/gui/im_gui_handler.hpp>
 #include <dart/gui/include_im_gui.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <CLI/CLI.hpp>
 

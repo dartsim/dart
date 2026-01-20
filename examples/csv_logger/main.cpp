@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
 #include <Eigen/Geometry>

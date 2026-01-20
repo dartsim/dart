@@ -32,7 +32,7 @@
 
 #include "dart/collision/fcl/All.hpp"
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 #if DART_HAVE_BULLET

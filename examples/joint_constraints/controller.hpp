@@ -33,7 +33,7 @@
 #ifndef EXAMPLES_JOINTCONSTRAINTS_CONTROLLER_HPP_
 #define EXAMPLES_JOINTCONSTRAINTS_CONTROLLER_HPP_
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <Eigen/Dense>
 

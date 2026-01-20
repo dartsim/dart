@@ -32,7 +32,7 @@
 
 #include "helpers/gtest_utils.hpp"
 
-#include "dart/All.hpp"
+#include "dart/all.hpp"
 #include "dart/config.hpp"
 #include "dart/math/constants.hpp"
 #include "dart/math/helpers.hpp"
