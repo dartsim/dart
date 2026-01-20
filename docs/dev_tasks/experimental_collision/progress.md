@@ -22,7 +22,7 @@
 
 ---
 
-## Completed Components (362 tests)
+## Completed Components (363 tests)
 
 | Component                        | Files                                    | Tests | Notes                                               |
 | -------------------------------- | ---------------------------------------- | ----- | --------------------------------------------------- |
@@ -39,7 +39,7 @@
 | Plane collision                  | narrow_phase/plane_sphere.hpp/.cpp       | 11    | All plane pairs                                     |
 | Distance queries                 | narrow_phase/distance.hpp/.cpp           | 18    | 6 primitive pairs + Convex/Mesh                     |
 | Raycast                          | narrow_phase/raycast.hpp/.cpp            | 39    | 7 shape types incl. Mesh/Convex                     |
-| CCD (sphere/capsule cast)        | narrow_phase/ccd.hpp/.cpp                | 61    | Swept volume + conservative advancement             |
+| CCD (sphere/capsule cast)        | narrow_phase/ccd.hpp/.cpp                | 62    | Swept volume + conservative advancement             |
 | BruteForceBroadPhase             | broad_phase/brute_force.hpp/.cpp         | 15    | O(n²) broad-phase                                   |
 | CollisionObject                  | collision_object.hpp/.cpp                | 12    | Lightweight ECS handle                              |
 | NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp       | 7     | Shape-type dispatch                                 |
