@@ -30,6 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+// Avoid Eigen stack allocation in this translation unit to prevent macOS arm64
+// Lemke solver segfaults from unaligned stack temporaries.
+#define EIGEN_STACK_ALLOCATION_LIMIT 0
+
 #include "dart/math/lcp/pivoting/LemkeSolver.hpp"
 
 #include "dart/math/lcp/LcpValidation.hpp"
@@ -329,18 +333,6 @@ LcpResult LemkeSolver::solve(
       = (lo.array().abs().maxCoeff() <= absTol)
         && (hi.array() == std::numeric_limits<double>::infinity()).all()
         && (findex.array() < 0).all();
-#if defined(__APPLE__) && (defined(__aarch64__) || defined(__arm64__))
-  if (standardBounds) {
-    DantzigSolver fallback;
-    LcpResult fallbackResult = fallback.solve(problem, x, options);
-    if (fallbackResult.status == LcpSolverStatus::Success
-        && fallbackResult.message.empty()) {
-      fallbackResult.message
-          = "Lemke solver disabled on macOS arm64; used Dantzig solver.";
-    }
-    return fallbackResult;
-  }
-#endif
   if (!standardBounds) {
     // Lemke is implemented for standard LCP only, but callers may still route
     // boxed/findex problems through this solver. Delegate to the boxed-capable

@@ -73,7 +73,7 @@
 - LCP and Optimization
   - Refactored the LCP solver stack under `dart::math::lcp` with unified APIs plus new solver implementations and ImGui dashboard support. ([#2202](https://github.com/dartsim/dart/pull/2202), [#2241](https://github.com/dartsim/dart/pull/2241), [#2318](https://github.com/dartsim/dart/pull/2318), [#2355](https://github.com/dartsim/dart/pull/2355))
   - Modernized the Dantzig solver and improved stability (C++20 optimizations, NaN fallback, warning suppression). ([#2081](https://github.com/dartsim/dart/pull/2081), [#2253](https://github.com/dartsim/dart/pull/2253), [#2111](https://github.com/dartsim/dart/pull/2111))
-  - Fall back to the Dantzig solver on macOS arm64 to avoid Lemke solver segfaults.
+  - Fixed Lemke solver segfaults on macOS arm64 by avoiding Eigen stack allocations. ([#2462](https://github.com/dartsim/dart/pull/2462))
   - Added LCP documentation. ([#2240](https://github.com/dartsim/dart/pull/2240))
 
 - IO and Parsing
