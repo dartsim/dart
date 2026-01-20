@@ -113,9 +113,110 @@ TEST(JointLimitConstraintTests, GlobalParametersCanBeConfigured)
   EXPECT_DOUBLE_EQ(JointLimitConstraint::getMaxErrorReductionVelocity(), 0.5);
   EXPECT_DOUBLE_EQ(JointLimitConstraint::getConstraintForceMixing(), 1e-6);
 
-  // Restore globals to avoid leaking configuration into other tests.
   JointLimitConstraint::setErrorAllowance(originalAllowance);
   JointLimitConstraint::setErrorReductionParameter(originalErp);
   JointLimitConstraint::setMaxErrorReductionVelocity(originalErv);
   JointLimitConstraint::setConstraintForceMixing(originalCfm);
+}
+
+//==============================================================================
+TEST(JointLimitConstraintTests, GetType)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = skeleton->getJoint(0);
+  JointLimitConstraint constraint(joint);
+
+  EXPECT_EQ(constraint.getType(), JointLimitConstraint::getStaticType());
+  EXPECT_FALSE(constraint.getType().empty());
+  EXPECT_EQ(std::string(constraint.getType()), "JointLimitConstraint");
+}
+
+//==============================================================================
+TEST(JointLimitConstraintTests, ActivatesForLowerPositionViolation)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  ExposedJointLimitConstraint constraint(joint);
+
+  joint->setPosition(0, 0.0);
+  joint->setVelocity(0, 0.0);
+  constraint.update();
+  EXPECT_FALSE(constraint.isActive());
+
+  joint->setPosition(0, joint->getPositionLowerLimit(0) - 0.05);
+  constraint.update();
+  EXPECT_TRUE(constraint.isActive());
+}
+
+//==============================================================================
+TEST(JointLimitConstraintTests, ActivatesForLowerVelocityViolation)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  ExposedJointLimitConstraint constraint(joint);
+
+  joint->setPosition(0, 0.0);
+  joint->setVelocity(0, 0.0);
+  constraint.update();
+  EXPECT_FALSE(constraint.isActive());
+
+  joint->setVelocity(0, joint->getVelocityLowerLimit(0) - 0.1);
+  constraint.update();
+  EXPECT_TRUE(constraint.isActive());
+}
+
+//==============================================================================
+TEST(JointLimitConstraintTests, NotActiveAtExactBoundary)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  ExposedJointLimitConstraint constraint(joint);
+
+  joint->setPosition(0, joint->getPositionUpperLimit(0));
+  joint->setVelocity(0, 0.0);
+  constraint.update();
+  EXPECT_FALSE(constraint.isActive());
+
+  joint->setPosition(0, joint->getPositionLowerLimit(0));
+  constraint.update();
+  EXPECT_FALSE(constraint.isActive());
+}
+
+//==============================================================================
+TEST(JointLimitConstraintTests, DimensionMatchesViolations)
+{
+  auto skeleton = Skeleton::create("multi_dof");
+
+  RevoluteJoint::Properties props1;
+  props1.mAxis = Eigen::Vector3d::UnitX();
+  auto pair1
+      = skeleton->createJointAndBodyNodePair<RevoluteJoint>(nullptr, props1);
+  auto* joint1 = pair1.first;
+  auto* body1 = pair1.second;
+
+  RevoluteJoint::Properties props2;
+  props2.mAxis = Eigen::Vector3d::UnitY();
+  auto pair2
+      = skeleton->createJointAndBodyNodePair<RevoluteJoint>(body1, props2);
+  auto* joint2 = pair2.first;
+
+  joint1->setPositionLowerLimit(0, -0.5);
+  joint1->setPositionUpperLimit(0, 0.5);
+  joint2->setPositionLowerLimit(0, -0.5);
+  joint2->setPositionUpperLimit(0, 0.5);
+
+  ExposedJointLimitConstraint constraint1(joint1);
+  ExposedJointLimitConstraint constraint2(joint2);
+
+  joint1->setPosition(0, 0.0);
+  joint2->setPosition(0, 0.0);
+  constraint1.update();
+  constraint2.update();
+  EXPECT_EQ(constraint1.getDimension(), 0u);
+  EXPECT_EQ(constraint2.getDimension(), 0u);
+
+  joint1->setPosition(0, 0.6);
+  constraint1.update();
+  EXPECT_EQ(constraint1.getDimension(), 1u);
+  EXPECT_EQ(constraint2.getDimension(), 0u);
 }

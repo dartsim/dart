@@ -94,6 +94,7 @@ dart_add_test("unit" UNIT_constraint_JointConstraints constraint/test_JointConst
 dart_add_test("unit" UNIT_constraint_MotorConstraints constraint/test_MotorConstraints.cpp)
 dart_add_test("unit" UNIT_constraint_WeldJointConstraint constraint/test_WeldJointConstraint.cpp)
 dart_add_test("unit" UNIT_constraint_BallJointConstraint constraint/test_BallJointConstraint.cpp)
+dart_add_test("unit" UNIT_constraint_ServoMotorConstraint constraint/test_ServoMotorConstraint.cpp)
 
 # ==============================================================================
 # Dynamics Tests

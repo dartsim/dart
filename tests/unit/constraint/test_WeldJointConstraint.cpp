@@ -32,9 +32,11 @@
 
 #include <dart/simulation/World.hpp>
 
+#include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/constraint/WeldJointConstraint.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
@@ -143,4 +145,167 @@ TEST(WeldJointConstraint, StaticSettings)
   WeldJointConstraint::setErrorReductionParameter(originalErp);
   WeldJointConstraint::setMaxErrorReductionVelocity(originalErv);
   WeldJointConstraint::setConstraintForceMixing(originalCfm);
+}
+
+TEST(WeldJointConstraint, SimulateWithTwoBodies)
+{
+  auto world = World::create();
+
+  auto skel1 = createFreeSkeleton("skel1");
+  auto skel2 = createFreeSkeleton("skel2");
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  auto body1 = skel1->getBodyNode(0);
+  auto body2 = skel2->getBodyNode(0);
+
+  skel2->setPosition(3, 1.0);
+
+  auto constraint = std::make_shared<WeldJointConstraint>(body1, body2);
+  world->getConstraintSolver()->addConstraint(constraint);
+
+  for (int i = 0; i < 100; ++i) {
+    world->step();
+  }
+
+  Eigen::Isometry3d relTransform
+      = body1->getTransform().inverse() * body2->getTransform();
+  Eigen::Isometry3d expectedRelTransform = constraint->getRelativeTransform();
+
+  Eigen::Vector3d translationError
+      = relTransform.translation() - expectedRelTransform.translation();
+  EXPECT_LT(translationError.norm(), 3.0);
+}
+
+TEST(WeldJointConstraint, SimulateWithOneBody)
+{
+  auto world = World::create();
+
+  auto skel = createFreeSkeleton("skel");
+  world->addSkeleton(skel);
+
+  auto body = skel->getBodyNode(0);
+
+  skel->setPosition(3, 0.5);
+  skel->setPosition(4, 0.5);
+
+  auto constraint = std::make_shared<WeldJointConstraint>(body);
+  world->getConstraintSolver()->addConstraint(constraint);
+
+  Eigen::Isometry3d initialPose = body->getTransform();
+
+  for (int i = 0; i < 100; ++i) {
+    world->step();
+  }
+
+  Eigen::Isometry3d finalPose = body->getTransform();
+  Eigen::Vector3d poseError
+      = finalPose.translation() - initialPose.translation();
+
+  EXPECT_LT(poseError.norm(), 1.0);
+}
+
+TEST(WeldJointConstraint, RemoveConstraint)
+{
+  auto world = World::create();
+
+  auto skel1 = createFreeSkeleton("skel1");
+  auto skel2 = createFreeSkeleton("skel2");
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  auto body1 = skel1->getBodyNode(0);
+  auto body2 = skel2->getBodyNode(0);
+
+  auto constraint = std::make_shared<WeldJointConstraint>(body1, body2);
+
+  world->getConstraintSolver()->addConstraint(constraint);
+  EXPECT_EQ(world->getConstraintSolver()->getNumConstraints(), 1u);
+
+  world->getConstraintSolver()->removeConstraint(constraint);
+  EXPECT_EQ(world->getConstraintSolver()->getNumConstraints(), 0u);
+}
+
+TEST(WeldJointConstraint, SameSkeletonTwoBodies)
+{
+  auto world = World::create();
+
+  auto skel = Skeleton::create("skel");
+  auto [joint1, body1] = skel->createJointAndBodyNodePair<FreeJoint>();
+  auto [joint2, body2] = skel->createJointAndBodyNodePair<FreeJoint>(body1);
+
+  world->addSkeleton(skel);
+
+  auto constraint = std::make_shared<WeldJointConstraint>(body1, body2);
+
+  world->getConstraintSolver()->addConstraint(constraint);
+
+  for (int i = 0; i < 10; ++i) {
+    world->step();
+  }
+
+  EXPECT_EQ(constraint->getBodyNode1(), body1);
+  EXPECT_EQ(constraint->getBodyNode2(), body2);
+}
+
+TEST(WeldJointConstraint, MultipleConstraints)
+{
+  auto world = World::create();
+
+  auto skel1 = createFreeSkeleton("skel1");
+  auto skel2 = createFreeSkeleton("skel2");
+  auto skel3 = createFreeSkeleton("skel3");
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+  world->addSkeleton(skel3);
+
+  auto body1 = skel1->getBodyNode(0);
+  auto body2 = skel2->getBodyNode(0);
+  auto body3 = skel3->getBodyNode(0);
+
+  auto constraint1 = std::make_shared<WeldJointConstraint>(body1, body2);
+  auto constraint2 = std::make_shared<WeldJointConstraint>(body2, body3);
+
+  world->getConstraintSolver()->addConstraint(constraint1);
+  world->getConstraintSolver()->addConstraint(constraint2);
+
+  EXPECT_EQ(world->getConstraintSolver()->getNumConstraints(), 2u);
+
+  for (int i = 0; i < 10; ++i) {
+    world->step();
+  }
+
+  world->getConstraintSolver()->removeAllConstraints();
+  EXPECT_EQ(world->getConstraintSolver()->getNumConstraints(), 0u);
+}
+
+TEST(WeldJointConstraint, RelativeTransformMaintained)
+{
+  auto world = World::create();
+
+  auto skel1 = createFreeSkeleton("skel1");
+  auto skel2 = createFreeSkeleton("skel2");
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  auto body1 = skel1->getBodyNode(0);
+  auto body2 = skel2->getBodyNode(0);
+
+  skel2->setPosition(3, 2.0);
+  skel2->setPosition(4, 1.0);
+
+  auto constraint = std::make_shared<WeldJointConstraint>(body1, body2);
+
+  Eigen::Isometry3d relativeTransform = Eigen::Isometry3d::Identity();
+  relativeTransform.translation() = Eigen::Vector3d(2.0, 1.0, 0.0);
+  constraint->setRelativeTransform(relativeTransform);
+
+  world->getConstraintSolver()->addConstraint(constraint);
+
+  for (int i = 0; i < 50; ++i) {
+    world->step();
+  }
+
+  Eigen::Isometry3d storedRelTransform = constraint->getRelativeTransform();
+  EXPECT_TRUE(storedRelTransform.isApprox(relativeTransform));
 }

@@ -30,7 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/World.hpp>
+
 #include <dart/constraint/BallJointConstraint.hpp>
+#include <dart/constraint/ConstraintSolver.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
@@ -41,6 +44,7 @@
 using namespace dart;
 using namespace dart::dynamics;
 using namespace dart::constraint;
+using namespace dart::simulation;
 
 namespace {
 
@@ -133,4 +137,143 @@ TEST(BallJointConstraint, StaticSettings)
   BallJointConstraint::setErrorReductionParameter(originalErp);
   BallJointConstraint::setMaxErrorReductionVelocity(originalErv);
   BallJointConstraint::setConstraintForceMixing(originalCfm);
+}
+
+TEST(BallJointConstraint, SimulateWithTwoBodies)
+{
+  auto world = World::create();
+
+  auto skel1 = createFreeSkeleton("skel1");
+  auto skel2 = createFreeSkeleton("skel2");
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  auto body1 = skel1->getBodyNode(0);
+  auto body2 = skel2->getBodyNode(0);
+
+  skel2->setPosition(3, 1.0);
+
+  Eigen::Vector3d jointPos(0.5, 0.0, 0.0);
+  auto constraint
+      = std::make_shared<BallJointConstraint>(body1, body2, jointPos);
+
+  world->getConstraintSolver()->addConstraint(constraint);
+
+  for (int i = 0; i < 100; ++i) {
+    world->step();
+  }
+
+  double distance = (skel1->getPositions().segment<3>(3)
+                     - skel2->getPositions().segment<3>(3))
+                        .norm();
+
+  EXPECT_LT(distance, 2.0);
+}
+
+TEST(BallJointConstraint, SimulateWithOneBody)
+{
+  auto world = World::create();
+
+  auto skel = createFreeSkeleton("skel");
+  world->addSkeleton(skel);
+
+  auto body = skel->getBodyNode(0);
+
+  skel->setPosition(3, 1.0);
+  skel->setPosition(4, 0.5);
+
+  Eigen::Vector3d jointPos(0.0, 0.0, 0.0);
+  auto constraint = std::make_shared<BallJointConstraint>(body, jointPos);
+
+  world->getConstraintSolver()->addConstraint(constraint);
+
+  for (int i = 0; i < 100; ++i) {
+    world->step();
+  }
+
+  Eigen::Vector3d bodyPos = body->getTransform().translation();
+  EXPECT_TRUE(bodyPos.norm() < 2.0);
+}
+
+TEST(BallJointConstraint, RemoveConstraint)
+{
+  auto world = World::create();
+
+  auto skel1 = createFreeSkeleton("skel1");
+  auto skel2 = createFreeSkeleton("skel2");
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  auto body1 = skel1->getBodyNode(0);
+  auto body2 = skel2->getBodyNode(0);
+
+  Eigen::Vector3d jointPos(0.0, 0.0, 0.0);
+  auto constraint
+      = std::make_shared<BallJointConstraint>(body1, body2, jointPos);
+
+  world->getConstraintSolver()->addConstraint(constraint);
+  EXPECT_EQ(world->getConstraintSolver()->getNumConstraints(), 1u);
+
+  world->getConstraintSolver()->removeConstraint(constraint);
+  EXPECT_EQ(world->getConstraintSolver()->getNumConstraints(), 0u);
+}
+
+TEST(BallJointConstraint, SameSkeletonTwoBodies)
+{
+  auto world = World::create();
+
+  auto skel = Skeleton::create("skel");
+  auto [joint1, body1] = skel->createJointAndBodyNodePair<FreeJoint>();
+  auto [joint2, body2] = skel->createJointAndBodyNodePair<FreeJoint>(body1);
+
+  world->addSkeleton(skel);
+
+  Eigen::Vector3d jointPos(0.0, 0.0, 0.0);
+  auto constraint
+      = std::make_shared<BallJointConstraint>(body1, body2, jointPos);
+
+  world->getConstraintSolver()->addConstraint(constraint);
+
+  for (int i = 0; i < 10; ++i) {
+    world->step();
+  }
+
+  EXPECT_EQ(constraint->getBodyNode1(), body1);
+  EXPECT_EQ(constraint->getBodyNode2(), body2);
+}
+
+TEST(BallJointConstraint, MultipleConstraints)
+{
+  auto world = World::create();
+
+  auto skel1 = createFreeSkeleton("skel1");
+  auto skel2 = createFreeSkeleton("skel2");
+  auto skel3 = createFreeSkeleton("skel3");
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+  world->addSkeleton(skel3);
+
+  auto body1 = skel1->getBodyNode(0);
+  auto body2 = skel2->getBodyNode(0);
+  auto body3 = skel3->getBodyNode(0);
+
+  Eigen::Vector3d jointPos1(0.0, 0.0, 0.0);
+  Eigen::Vector3d jointPos2(1.0, 0.0, 0.0);
+
+  auto constraint1
+      = std::make_shared<BallJointConstraint>(body1, body2, jointPos1);
+  auto constraint2
+      = std::make_shared<BallJointConstraint>(body2, body3, jointPos2);
+
+  world->getConstraintSolver()->addConstraint(constraint1);
+  world->getConstraintSolver()->addConstraint(constraint2);
+
+  EXPECT_EQ(world->getConstraintSolver()->getNumConstraints(), 2u);
+
+  for (int i = 0; i < 10; ++i) {
+    world->step();
+  }
+
+  world->getConstraintSolver()->removeAllConstraints();
+  EXPECT_EQ(world->getConstraintSolver()->getNumConstraints(), 0u);
 }
