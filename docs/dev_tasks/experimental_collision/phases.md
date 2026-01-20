@@ -167,6 +167,8 @@ Experimental CCD microbenchmarks are now in
 - Dense cluster vs sparse distribution (broadphase stress)
 - Mesh-heavy scene (static meshes + moving primitives)
 - Batched raycasts (10k rays) with hit/miss mix
+- Edge-case matrix for narrow-phase/distance/raycast (grazing, deep penetration, thin features, near-parallel faces)
+- Scale sweeps (tiny/nominal/large, e.g. 1e-3, 1, 1e3)
 
 **Metrics to record:**
 
@@ -174,6 +176,7 @@ Experimental CCD microbenchmarks are now in
 - Time per frame (update + broadphase + narrowphase)
 - Contact count and accuracy deltas vs baseline backends
 - Peak memory and allocation counts in the hot path
+- Cross-backend consistency summary (hit/no-hit, distance, normal, depth)
 
 **Fairness rules:**
 
@@ -247,3 +250,4 @@ Experimental CCD microbenchmarks are now in
 | Missing shape pairs    | Prioritize based on DART example usage     |
 | Numerical edge cases   | Comprehensive edge case testing            |
 | Platform differences   | CI on all platforms, determinism tests     |
+| Backend disagreements  | Cross-backend unit tests + analytic checks |

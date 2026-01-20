@@ -6,7 +6,7 @@
 
 **Tests**: 292 passing across 17 test files
 
-**Performance**: Baseline validated — 5-40x faster on subset; structured suite in progress
+**Performance**: Baseline validated — 5-40x faster on subset; structured suite in progress with edge-case/scale sweeps and cross-backend checks pending
 
 ## What's Complete
 
@@ -72,17 +72,17 @@ Baseline only; re-measure after the structured benchmark suite is in place.
 
 ## What's NOT Done
 
-| Component                              | Priority   | Notes                                                                                                                                              |
-| -------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ~~GJK-based mesh-primitive collision~~ | ~~Medium~~ | ✅ DONE — `collideConvexConvex()` via GJK                                                                                                          |
-| ~~Ray-mesh intersection~~              | ~~Medium~~ | ✅ DONE — Moller-Trumbore algorithm                                                                                                                |
-| ~~Distance for Convex/Mesh~~           | ~~Medium~~ | ✅ DONE — `distanceConvexConvex()` via GJK                                                                                                         |
-| ~~Ray-convex intersection~~            | ~~Medium~~ | ✅ DONE — GJK-based point-in-convex + binary search                                                                                                |
-| Structured benchmark suite             | High       | Comparative narrow-phase/distance/raycast done; mixed primitives + batched raycast + mesh-heavy scenarios added; experimental CCD microbench added |
-| Continuous Collision Detection (CCD)   | Medium     | Swept sphere/capsule, conservative advancement                                                                                                     |
-| Visual verification tool               | Low        | Raylib available in DART, needs visualizer                                                                                                         |
-| Optimized broad-phase                  | Low        | BVH or spatial hash (current is O(N²))                                                                                                             |
-| DART integration                       | Deferred   | Wait for feature parity                                                                                                                            |
+| Component                              | Priority   | Notes                                                                                                                 |
+| -------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------- |
+| ~~GJK-based mesh-primitive collision~~ | ~~Medium~~ | ✅ DONE — `collideConvexConvex()` via GJK                                                                             |
+| ~~Ray-mesh intersection~~              | ~~Medium~~ | ✅ DONE — Moller-Trumbore algorithm                                                                                   |
+| ~~Distance for Convex/Mesh~~           | ~~Medium~~ | ✅ DONE — `distanceConvexConvex()` via GJK                                                                            |
+| ~~Ray-convex intersection~~            | ~~Medium~~ | ✅ DONE — GJK-based point-in-convex + binary search                                                                   |
+| Structured benchmark suite             | High       | Comparative narrow-phase/distance/raycast done; scenarios added; CCD microbench added; edge-case/scale sweeps pending |
+| Cross-backend validation tests         | High       | Add shared-fixture unit tests vs FCL/Bullet/ODE; document discrepancies                                               |
+| Visual verification tool               | Low        | Raylib available in DART, needs visualizer                                                                            |
+| Optimized broad-phase                  | Low        | BVH or spatial hash (current is O(N²))                                                                                |
+| DART integration                       | Deferred   | Wait for feature parity                                                                                               |
 
 ## How to Resume
 
@@ -145,17 +145,9 @@ for t in bin/test_*; do $t 2>&1 | tail -1; done
 
 ## Suggested Next Steps
 
-1. **Continuous Collision Detection (CCD)** — Prevent tunneling
-   - Swept sphere/capsule for character controllers
-   - Conservative advancement for general convex pairs
-   - GJK-based time-of-impact
-
-2. **BVH broad-phase** — Reference FCL for spatial acceleration
-   - Replace brute-force O(N²) with BVH
-
-3. **Visual verification** (optional)
-   - Use `DART_BUILD_GUI_RAYLIB=ON`
-   - Create simple visualizer for debugging
+1. **Cross-backend validation tests** — shared fixtures vs FCL/Bullet/ODE
+2. **Benchmark edge-case + scale sweeps** — grazing/deep penetration + tiny/large scales
+3. **BVH broad-phase** — replace brute-force O(N²) with BVH
 
 ## Commit History (Recent)
 

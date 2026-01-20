@@ -135,18 +135,20 @@ Planned restructure and coverage before calling this complete:
    - `fixtures/` shared shape and scene builders with fixed RNG seeds
    - `data/` meshes/convex fixtures used by multiple benchmarks
 2. Coverage matrix:
-   - Narrow phase: all primitive pairs + convex/mesh where supported
-   - Distance: same matrix with separated/touching/penetrating regimes
-   - Raycast: per shape with hit/miss/grazing and backface culling on/off
-   - CCD: sphere-cast, capsule-cast, conservative advancement
-   - World/broad-phase: N-body scaling with mixed scenes
+   - Narrow phase: all primitive pairs + convex/mesh where supported, with edge-case regimes (touching, deep penetration, grazing, near-parallel faces, thin features) and scale sweeps (1e-3, 1, 1e3)
+   - Distance: same matrix with separated/touching/penetrating regimes + scale sweeps
+   - Raycast: per shape with hit/miss/grazing, origin-inside, short/long rays, and backface culling on/off
+   - CCD: sphere-cast, capsule-cast, conservative advancement with fast sweeps and near-grazing cases
+   - World/broad-phase: N-body scaling with mixed scenes and mixed scale bands
 3. Fairness and determinism:
    - Pre-create shapes/groups outside timed loops
    - Match options (contacts, tolerances) across backends
+   - Normalize output conventions (normal direction, signed distance) before comparison
    - Fixed seeds and shared fixtures for identical inputs
 4. Metrics and gates:
    - Report ns/query, throughput, and scaling
    - Record accuracy deltas (contact point/normal/depth) out-of-band
+   - Add cross-backend correctness checks via unit tests and document any mismatches
    - Experimental must meet or beat best backend per supported case
 
 Baseline results (pre-structured suite):

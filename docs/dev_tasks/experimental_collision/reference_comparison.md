@@ -10,7 +10,14 @@
 - ReactPhysics3D: `/home/js/dev/physics/reactphysics3d` (commit 7000610a, 2025-01-09; 0 commits in last 12 months)
 - Parry: `/home/js/dev/physics/parry` (commit 72f842d, 2026-01-09; 88 commits in last 12 months)
 - OpenGJK: `/home/js/dev/physics/opengjk` (commit 5eca7fa, 2025-12-29; 29 commits in last 12 months)
+- BEPUphysics1: `/home/js/dev/physics/bepuphysics1` (commit 88243f8, 2021-08-02; 0 commits in last 12 months)
+- JitterPhysics: `/home/js/dev/physics/jitterphysics` (commit 9f108c0, 2021-08-08; 0 commits in last 12 months)
+- ncollide: `/home/js/dev/physics/ncollide` (commit f3c3ecb3, 2022-03-18; 0 commits in last 12 months)
+- collision-rs: `/home/js/dev/physics/collision-rs` (commit 29090c4, 2021-10-08; 0 commits in last 12 months)
+- qu3e: `/home/js/dev/physics/qu3e` (commit 1f519c9, 2021-05-08; 0 commits in last 12 months)
+- tinyc2 (cute_c2): `/home/js/dev/physics/tinyheaders` (commit af97c17, 2026-01-07; 8 commits in last 12 months)
 - Sources used: README files plus public headers and source trees in each repo.
+- Benchmark suites: `/home/js/dev/physics/colbench` (commit e09ed36, 2023-07-03), `/home/js/dev/physics/collision-detection-benchmark` (commit 4073887, 2022-07-07), `/home/js/dev/physics/spatial-collision-datastructures` (commit 3b993fb, 2018-03-05).
 - External curated list: /home/js/dev/physics/awesome-collision-detection (commit effd3f8) from https://github.com/jslee02/awesome-collision-detection (library catalog, not exhaustive).
 - This is a snapshot. Refresh before release or external publication.
 
@@ -225,6 +232,35 @@ Edge-edge and face-face interactions are typically represented via a multi-point
 - DART DistanceResult uses signed distance; negative means penetration (see `dart/collision/DistanceResult.hpp`).
 - Provide adapter helpers when using libraries with opposite normal conventions (FCL/Coal/Parry/React) or signed depth (Bullet/Parry).
 - Keep terminology consistent: signed distance is positive when separated, penetration depth is positive overlap.
+
+## Cross-Backend Validation Policy
+
+These checks exist to ensure experimental and reference backends agree on
+correctness for the same inputs.
+
+**Test inputs**:
+
+- Use shared fixtures and deterministic seeds across all backends
+- Run common cases plus edge cases (grazing, deep penetration, thin features,
+  near-parallel faces)
+- Include scale sweeps for both geometry and transforms (tiny/nominal/large,
+  e.g. 1e-3, 1, 1e3)
+
+**Comparison rules**:
+
+- Convert normals to DART's convention before comparing
+- Compare hit/no-hit, signed distance, and penetration depth within tolerances
+- Compare contact points with positional tolerance; compare normals with angular
+  tolerance
+- For Bullet, account for collision margins; either disable margins or document
+  expected deltas
+
+**Mismatch triage**:
+
+- Re-check conventions (normal direction, signed distance, depth sign)
+- Compare against analytic references for primitive pairs
+- Use majority agreement across multiple backends when possible
+- Document known deviations and add a follow-up task before integration
 
 ## SDF and Gradient-Based Queries
 

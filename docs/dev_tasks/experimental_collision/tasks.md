@@ -397,6 +397,8 @@ data/          # mesh/convex fixtures used by multiple benchmarks
 - Raycast: per shape with hit/miss/grazing and backface culling toggles
 - CCD: sphere-cast, capsule-cast, conservative advancement
 - World/broad-phase: N-body scaling with mixed scenes
+- Edge-case matrix: grazing contacts, near-parallel faces, thin features, deep penetration
+- Scale sweeps: tiny/nominal/large (1e-3, 1, 1e3) for both shape size and transforms
 
 **Current status (2026-01-19):**
 
@@ -413,7 +415,30 @@ data/          # mesh/convex fixtures used by multiple benchmarks
 
 - Baseline runs are reproducible and use shared fixtures/options
 - Comparative benchmarks include FCL, Bullet, and ODE where supported
+- Edge-case and scale-sweep benchmarks are present for each query type
 - Google Benchmark JSON output is captured for regression tracking
+
+---
+
+## Cross-Backend Validation Tests
+
+These are correctness checks (not performance) that run the same cases through
+experimental + reference backends and compare results within tolerances.
+
+### Task V1: Pairwise Reference Cross-Checks
+
+**Goal**: Verify collision, distance, and raycast consistency across backends.
+
+**Acceptance Criteria**:
+
+- [ ] Shared fixtures drive the same inputs for experimental, FCL, Bullet, ODE
+- [ ] Collision: consistent hit/no-hit and depth within tolerance
+- [ ] Distance: consistent signed distance and closest points within tolerance
+- [ ] Raycast: consistent hit/no-hit and distance ordering (when supported)
+- [ ] Normals are compared after converting to DART's convention
+- [ ] Known discrepancies are documented with rationale (e.g., Bullet margins)
+- [ ] If results disagree, isolate with analytic references for primitives and
+      record a follow-up task for the suspected backend
 
 ---
 
