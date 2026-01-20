@@ -43,17 +43,17 @@ cmake --build build/default/cpp/Release --target bm_experimental_libccd
 ./build/default/cpp/Release/bin/bm_experimental_libccd
 ```
 
-## Latest run (2026-01-20, commit e1b474aeb80)
+## Latest run (2026-01-20, commit db9b3f36dc2)
 
 - Command:
-  - `build/default/cpp/Release/bin/bm_experimental_libccd --benchmark_min_time=0.05s --benchmark_out=build/default/cpp/Release/benchmarks/bm_experimental_libccd_20260120_025817.json --benchmark_out_format=json`
+  - `build/default/cpp/Release/bin/bm_experimental_libccd --benchmark_min_time=0.05s --benchmark_out=build/default/cpp/Release/benchmarks/bm_experimental_libccd_20260120_035253.json --benchmark_out_format=json`
 - Output:
-  - `build/default/cpp/Release/benchmarks/bm_experimental_libccd_20260120_025817.json`
+  - `build/default/cpp/Release/benchmarks/bm_experimental_libccd_20260120_035253.json`
 - Summary (speedup = libccd time / experimental time):
-  - GJK sphere-sphere: 0.71x (experimental ~1.4x slower).
-  - GJK+EPA sphere-sphere: 14,186x (experimental faster).
-  - MPR sphere-sphere: 1.03x (experimental ~3% faster).
-  - GJK box-box: 0.51x (experimental ~2.0x slower).
+  - GJK sphere-sphere: 0.43x (experimental ~2.3x slower).
+  - GJK+EPA sphere-sphere: 12,427x (experimental faster).
+  - MPR sphere-sphere: 0.49x (experimental ~2.0x slower).
+  - GJK box-box: 0.56x (experimental ~1.8x slower).
 
 ## Caution
 

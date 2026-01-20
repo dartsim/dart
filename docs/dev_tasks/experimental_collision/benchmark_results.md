@@ -29,7 +29,7 @@ run, and keep the most recent results at the top.
 | Narrow-phase speedup      | >= best backend              | PASS    | 77 cases; min 2.75x, p50 7.01x, p90 11.04x vs best backend.                        |
 | Distance speedup          | >= best backend              | FAIL    | Experimental slower (min 0.02x, p50 0.09x, p90 0.49x); Bullet/ODE distance warn.   |
 | Scenario throughput       | >= best backend              | PARTIAL | Mixed 0.06x-1.40x (p50 0.42x, p90 1.10x); mesh 3.58x-4.67x; ray batch 2.17x-5.72x. |
-| Cross-backend correctness | No blocking mismatches       | PARTIAL | Cylinder-box mismatch; Bullet/ODE distance unsupported.                            |
+| Cross-backend correctness | No blocking mismatches       | PARTIAL | Collision checks pass; Bullet/ODE distance unsupported.                            |
 | Scale sweep stability     | No regressions across scales | PARTIAL | Narrow-phase/distance sweeps run; pipeline ok; raycast batch ok.                   |
 
 Summary status legend: WIN = min speedup > 1.0; MIXED = min < 1.0 and p90 > 1.0; LOSS = p50 < 1.0.
@@ -38,8 +38,8 @@ Summary status legend: WIN = min speedup > 1.0; MIXED = min < 1.0 and p90 > 1.0;
 
 Values are min/p50/p90 for each suite (iteration runs only; BigO/RMS excluded).
 Latest full-suite summary is from 2026-01-19; the 2026-01-20 rerun refreshed
-comparative suites and the baseline `bm_comparative` but still has a
-cylinder-box mismatch and a box-box depth warning (see run notes).
+comparative suites and the baseline `bm_comparative` with accuracy checks
+passing (cylinder-box fallback + box-box depth aligned; see run notes).
 
 Legend: WIN = min speedup > 1.0; MIXED = min < 1.0 and p90 > 1.0; LOSS = p50 < 1.0.
 
@@ -51,7 +51,7 @@ Legend: WIN = min speedup > 1.0; MIXED = min < 1.0 and p90 > 1.0; LOSS = p50 < 1
 | Mesh-heavy scenario                   | ms   | 8.65/96.38/166.56          | 144.12/709.23/1,161.32 | 30.98/445.37/776.89  | N/A                  | 3.58x/4.13x/4.56x             | WIN    | 2 cases; mesh loader warns about empty path.               |
 | Batched raycasts                      | ms   | 21.63/37.73/52.93          | N/A                    | 47.00/125.00/270.99  | N/A                  | 2.17x/3.31x/5.00x             | WIN    | 500 rays, 1k/2k objects; SweepAndPrune for experimental.   |
 | Comparative raycast (single)          | ns   | 23.3/52.1/66.5             | N/A                    | 186.1/476.8/731.1    | N/A                  | 6.85x/9.14x/10.99x            | WIN    | 5 cases; experimental vs Bullet only.                      |
-| libccd microbench (GJK/EPA/MPR)       | ns   | 80.2/152.8/209.1           | N/A                    | N/A                  | N/A                  | 0.46x/0.71x/8,934.56x         | MIXED  | libccd 69.7/97.0/1,383,046.6 ns; speedup uses libccd/DART. |
+| libccd microbench (GJK/EPA/MPR)       | ns   | 59.7/71.4/108.8            | N/A                    | N/A                  | N/A                  | 0.43x/0.53x/8,699.10x         | MIXED  | libccd 29.1/49.5/651,682.0 ns; speedup uses libccd/DART.   |
 
 ### Performance Gaps (Experimental < best backend)
 
@@ -70,6 +70,7 @@ Legend: WIN = min speedup > 1.0; MIXED = min < 1.0 and p90 > 1.0; LOSS = p50 < 1
 
 | Date       | Commit      | Summary                             | Notes                                              |
 | ---------- | ----------- | ----------------------------------- | -------------------------------------------------- |
+| 2026-01-20 | db9b3f36dc2 | Cylinder-box + box-box benchmark fix | Accuracy checks pass; depth warning resolved.      |
 | 2026-01-20 | e1b474aeb80 | Comparative + baseline rerun        | Capsule fallback fixed; cylinder-box mismatch.     |
 | 2026-01-20 | 154e5440be3 | SDF/ESDF benchmark                  | Voxblox lib not found; ESDF build/query recorded.  |
 | 2026-01-20 | d3d2174bff0 | Partial comparative + libccd rerun  | Capsule fallback; `bm_comparative` build break.    |
@@ -101,6 +102,40 @@ Summary (items per second):
 - Sphere vs SDF distance: 2.50/2.34/2.70 M queries/s.
 - Dense ESDF distance: 23.03/19.82/13.78 M queries/s.
 - Dense ESDF build: 4.41 M voxels/s (32^3 grid).
+
+## Run 2026-01-20 — Comparative rerun (cylinder-box fix)
+
+- **Branch / Commit**: `feature/new_coll` / `db9b3f36dc2`
+- **Build**: `Release` (build/default/cpp/Release)
+- **CPU**: 13th Gen Intel(R) Core(TM) i9-13950HX
+- **OS**: Ubuntu 25.10
+- **Compiler**: c++ (Ubuntu 15.2.0-4ubuntu4) 15.2.0
+- **Notes**:
+  - Accuracy checks pass; cylinder-box fallback + box-box depth alignment.
+  - Bullet/ODE distance still unsupported (distance returns 0 / -1).
+  - `--benchmark_min_time=0.05s`.
+- **Command**:
+  - `cmake --build build/default/cpp/Release --target bm_comparative`
+  - `build/default/cpp/Release/bin/bm_comparative_narrow_phase --benchmark_min_time=0.05s --benchmark_out=build/default/cpp/Release/benchmarks/bm_comparative_narrow_phase_20260120_035117.json --benchmark_out_format=json`
+  - `build/default/cpp/Release/bin/bm_comparative_distance --benchmark_min_time=0.05s --benchmark_out=build/default/cpp/Release/benchmarks/bm_comparative_distance_20260120_035157.json --benchmark_out_format=json`
+  - `build/default/cpp/Release/bin/bm_comparative_raycast --benchmark_min_time=0.05s --benchmark_out=build/default/cpp/Release/benchmarks/bm_comparative_raycast_20260120_035243.json --benchmark_out_format=json`
+  - `build/default/cpp/Release/bin/bm_experimental_libccd --benchmark_min_time=0.05s --benchmark_out=build/default/cpp/Release/benchmarks/bm_experimental_libccd_20260120_035253.json --benchmark_out_format=json`
+  - `build/default/cpp/Release/bin/bm_comparative --benchmark_min_time=0.05s --benchmark_out=build/default/cpp/Release/benchmarks/bm_comparative_20260120_035302.json --benchmark_out_format=json`
+- **Raw Output**:
+  - `build/default/cpp/Release/benchmarks/bm_comparative_narrow_phase_20260120_035117.json`
+  - `build/default/cpp/Release/benchmarks/bm_comparative_distance_20260120_035157.json`
+  - `build/default/cpp/Release/benchmarks/bm_comparative_raycast_20260120_035243.json`
+  - `build/default/cpp/Release/benchmarks/bm_experimental_libccd_20260120_035253.json`
+  - `build/default/cpp/Release/benchmarks/bm_comparative_20260120_035302.json`
+
+Summary (valid cases only):
+
+- Narrow-phase: accuracy checks pass; performance consistent with prior run.
+- Distance: experimental vs FCL consistent; Bullet/ODE distance unsupported.
+- Raycast: experimental remains 5.7x-11.6x faster vs Bullet.
+- libccd: GJK sphere-sphere 67.9 ns vs 29.1 ns; GJK+EPA 74.9 ns vs 930,944 ns;
+  MPR 59.7 ns vs 29.5 ns; GJK box-box 123.3 ns vs 69.5 ns.
+- `bm_comparative`: accuracy checks pass; box-box depth ~0.2.
 
 ## Run 2026-01-20 — Comparative + baseline rerun (dirty)
 
@@ -177,7 +212,7 @@ A rerun of `bm_comparative` is captured in the 2026-01-20 entry above.
 
 ## Run 2026-01-20 — libccd microbench
 
-- **Branch / Commit**: `feature/new_coll` / `e1b474aeb80`
+- **Branch / Commit**: `feature/new_coll` / `db9b3f36dc2`
 - **Build**: `Release` (build/default/cpp/Release)
 - **CPU**: 13th Gen Intel(R) Core(TM) i9-13950HX
 - **OS**: Ubuntu 25.10
@@ -186,16 +221,16 @@ A rerun of `bm_comparative` is captured in the 2026-01-20 entry above.
   - libccd from pixi env (`.pixi/envs/default`), since the local libccd CMakeLists target name collides with the already-imported `ccd` target.
   - `--benchmark_min_time=0.05s`.
 - **Command**:
-  - `build/default/cpp/Release/bin/bm_experimental_libccd --benchmark_min_time=0.05s --benchmark_out=build/default/cpp/Release/benchmarks/bm_experimental_libccd_20260120_025817.json --benchmark_out_format=json`
+  - `build/default/cpp/Release/bin/bm_experimental_libccd --benchmark_min_time=0.05s --benchmark_out=build/default/cpp/Release/benchmarks/bm_experimental_libccd_20260120_035253.json --benchmark_out_format=json`
 - **Raw Output**:
-  - `build/default/cpp/Release/benchmarks/bm_experimental_libccd_20260120_025817.json`
+  - `build/default/cpp/Release/benchmarks/bm_experimental_libccd_20260120_035253.json`
 
 Summary (speedup = libccd time / experimental time):
 
-- GJK sphere-sphere: 0.71x (experimental ~1.4x slower).
-- GJK+EPA sphere-sphere: 14,186x (experimental faster).
-- MPR sphere-sphere: 1.03x (experimental ~3% faster).
-- GJK box-box: 0.51x (experimental ~2.0x slower).
+- GJK sphere-sphere: 0.43x (experimental ~2.3x slower).
+- GJK+EPA sphere-sphere: 12,427x (experimental faster).
+- MPR sphere-sphere: 0.49x (experimental ~2.0x slower).
+- GJK box-box: 0.56x (experimental ~1.8x slower).
 
 ## Run 2026-01-20 — Raycast comparative + batch scenarios
 

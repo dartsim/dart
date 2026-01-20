@@ -38,7 +38,7 @@ Recorded (partial), Baseline only, TBA.
 
 | Suite / Case                      | Benchmarks                                                      | Backends                     | Results status                     |
 | --------------------------------- | --------------------------------------------------------------- | ---------------------------- | ---------------------------------- |
-| Comparative narrow-phase (sweep)  | `tests/benchmark/collision/comparative/bm_narrow_phase.cpp`     | Experimental/FCL/Bullet/ODE  | Recorded (cylinder-box mismatch)   |
+| Comparative narrow-phase (sweep)  | `tests/benchmark/collision/comparative/bm_narrow_phase.cpp`     | Experimental/FCL/Bullet/ODE  | Recorded (accuracy pass)           |
 | Comparative distance (sweep)      | `tests/benchmark/collision/comparative/bm_distance.cpp`         | Experimental/FCL/Bullet/ODE  | Recorded (Bullet/ODE warnings)     |
 | Comparative raycast (single)      | `tests/benchmark/collision/comparative/bm_raycast.cpp`          | Experimental/Bullet          | Recorded                           |
 | Mixed primitives (dense/sparse)   | `tests/benchmark/collision/scenarios/bm_mixed_primitives.cpp`   | Experimental/FCL/Bullet/ODE  | Recorded                           |
@@ -48,8 +48,8 @@ Recorded (partial), Baseline only, TBA.
 | CCD microbench                    | `tests/benchmark/collision/experimental/bm_ccd.cpp`             | Experimental                 | TBA                                |
 | libccd microbench                 | `tests/benchmark/collision/experimental/bm_libccd.cpp`          | DART/libccd                  | Recorded                           |
 | Baseline microbench               | `tests/benchmark/collision/bm_experimental.cpp`                 | Experimental                 | Baseline only (historical)         |
-| Baseline comparative              | `tests/benchmark/collision/bm_comparative.cpp`                  | Experimental/FCL/Bullet/ODE  | Recorded (build fixed; depth warn) |
-| SDF compare                       | `dart/collision/experimental/benchmarks/bm_sdf_compare.cpp`     | Experimental (+ Voxblox opt) | TBA                                |
+| Baseline comparative              | `tests/benchmark/collision/bm_comparative.cpp`                  | Experimental/FCL/Bullet/ODE  | Recorded (accuracy pass)           |
+| SDF compare                       | `dart/collision/experimental/benchmarks/bm_sdf_compare.cpp`     | Experimental (+ Voxblox opt) | Recorded                           |
 
 ## Unit test coverage status
 
