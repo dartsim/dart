@@ -34,6 +34,8 @@ performance competitive.
 - Assign a monotonic `ObjectId` on creation (never reused in world lifetime).
 - Store `ObjectId` in a component and keep `entity <-> ObjectId` maps.
 - Use `(id1, id2)` ordering for determinism and stable merges.
+- Initial implementation: `BroadPhaseComponent::broadPhaseId` assigned in
+  `CollisionWorld`, exposed via `CollisionObject::getId()`.
 
 ### Batch storage (SoA)
 
@@ -90,6 +92,7 @@ bulk queries.
 - `reserveObjects(std::size_t count)` to preallocate SoA buffers.
 - `updateAll(const BatchSettings&, BatchStats*)` already exists; add
   `updateDirty(const std::span<ObjectId>& ids)` for explicit updates.
+- `getObjectById(ObjectId id)` for mapping snapshot ids back to handles.
 - `buildBroadPhaseSnapshot(const BatchSettings&)` should avoid allocations when
   provided with a reusable output buffer.
 

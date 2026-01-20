@@ -80,6 +80,7 @@ CollisionObject CollisionWorld::createObject(
   m_registry.emplace<comps::ShapeComponent>(entity, std::move(shape));
   m_registry.emplace<comps::TransformComponent>(entity, transform);
   m_registry.emplace<comps::AabbComponent>(entity);
+  auto& broadPhaseComp = m_registry.emplace<comps::BroadPhaseComponent>(entity);
   m_registry.emplace<comps::UserDataComponent>(entity);
 
   CollisionObject obj(entity, this);
@@ -89,7 +90,13 @@ CollisionObject CollisionWorld::createObject(
   aabbComp.aabb = aabb;
   aabbComp.dirty = false;
 
-  m_broadPhase->add(static_cast<std::size_t>(entity), aabb);
+  broadPhaseComp.broadPhaseId = m_nextObjectId++;
+  if (broadPhaseComp.broadPhaseId >= m_idToEntity.size()) {
+    m_idToEntity.resize(broadPhaseComp.broadPhaseId + 1, entt::null);
+  }
+  m_idToEntity[broadPhaseComp.broadPhaseId] = entity;
+
+  m_broadPhase->add(broadPhaseComp.broadPhaseId, aabb);
   m_snapshotDirty = true;
 
   return obj;
@@ -102,7 +109,15 @@ void CollisionWorld::destroyObject(CollisionObject object)
   }
 
   auto entity = object.getEntity();
-  m_broadPhase->remove(static_cast<std::size_t>(entity));
+  auto* broadPhaseComp = m_registry.try_get<comps::BroadPhaseComponent>(entity);
+  if (broadPhaseComp) {
+    m_broadPhase->remove(broadPhaseComp->broadPhaseId);
+    if (broadPhaseComp->broadPhaseId < m_idToEntity.size()) {
+      m_idToEntity[broadPhaseComp->broadPhaseId] = entt::null;
+    }
+  } else {
+    m_broadPhase->remove(static_cast<std::size_t>(entity));
+  }
   m_registry.destroy(entity);
   m_snapshotDirty = true;
 }
@@ -115,12 +130,17 @@ void CollisionWorld::updateObject(CollisionObject object)
 
   auto entity = object.getEntity();
   auto* aabbComp = m_registry.try_get<comps::AabbComponent>(entity);
+  auto* broadPhaseComp = m_registry.try_get<comps::BroadPhaseComponent>(entity);
 
   if (aabbComp && aabbComp->dirty) {
     Aabb aabb = object.computeAabb();
     aabbComp->aabb = aabb;
     aabbComp->dirty = false;
-    m_broadPhase->update(static_cast<std::size_t>(entity), aabb);
+    if (broadPhaseComp) {
+      m_broadPhase->update(broadPhaseComp->broadPhaseId, aabb);
+    } else {
+      m_broadPhase->update(static_cast<std::size_t>(entity), aabb);
+    }
     m_snapshotDirty = true;
   }
 }
@@ -143,6 +163,18 @@ CollisionObject CollisionWorld::getObject(std::size_t index)
   return CollisionObject();
 }
 
+CollisionObject CollisionWorld::getObjectById(std::size_t id)
+{
+  if (id >= m_idToEntity.size()) {
+    return CollisionObject();
+  }
+  auto entity = m_idToEntity[id];
+  if (entity == entt::null || !m_registry.valid(entity)) {
+    return CollisionObject();
+  }
+  return CollisionObject(entity, this);
+}
+
 std::size_t CollisionWorld::updateAll()
 {
   BatchSettings settings;
@@ -157,12 +189,18 @@ std::size_t CollisionWorld::updateAll(
   auto view = m_registry.view<comps::CollisionObjectTag>();
   for (auto entity : view) {
     auto* aabbComp = m_registry.try_get<comps::AabbComponent>(entity);
+    auto* broadPhaseComp
+        = m_registry.try_get<comps::BroadPhaseComponent>(entity);
     if (aabbComp && aabbComp->dirty) {
       CollisionObject obj(entity, this);
       Aabb aabb = obj.computeAabb();
       aabbComp->aabb = aabb;
       aabbComp->dirty = false;
-      m_broadPhase->update(static_cast<std::size_t>(entity), aabb);
+      if (broadPhaseComp) {
+        m_broadPhase->update(broadPhaseComp->broadPhaseId, aabb);
+      } else {
+        m_broadPhase->update(static_cast<std::size_t>(entity), aabb);
+      }
       ++updated;
     }
   }
@@ -257,10 +295,16 @@ bool CollisionWorld::collideAll(
   }
 
   for (const auto& pair : snapshot.pairs) {
-    auto entity1 = static_cast<entt::entity>(pair.first);
-    auto entity2 = static_cast<entt::entity>(pair.second);
+    if (pair.first >= m_idToEntity.size()
+        || pair.second >= m_idToEntity.size()) {
+      continue;
+    }
 
-    if (!m_registry.valid(entity1) || !m_registry.valid(entity2)) {
+    auto entity1 = m_idToEntity[pair.first];
+    auto entity2 = m_idToEntity[pair.second];
+
+    if (entity1 == entt::null || entity2 == entt::null
+        || !m_registry.valid(entity1) || !m_registry.valid(entity2)) {
       continue;
     }
 
@@ -311,10 +355,16 @@ bool CollisionWorld::collide(
   auto pairs = m_broadPhase->queryPairs();
 
   for (const auto& pair : pairs) {
-    auto entity1 = static_cast<entt::entity>(pair.first);
-    auto entity2 = static_cast<entt::entity>(pair.second);
+    if (pair.first >= m_idToEntity.size()
+        || pair.second >= m_idToEntity.size()) {
+      continue;
+    }
 
-    if (!m_registry.valid(entity1) || !m_registry.valid(entity2)) {
+    auto entity1 = m_idToEntity[pair.first];
+    auto entity2 = m_idToEntity[pair.second];
+
+    if (entity1 == entt::null || entity2 == entt::null
+        || !m_registry.valid(entity1) || !m_registry.valid(entity2)) {
       continue;
     }
 
@@ -526,6 +576,8 @@ void CollisionWorld::clear()
 {
   m_broadPhase->clear();
   m_registry.clear();
+  m_idToEntity.clear();
+  m_nextObjectId = 0;
   m_cachedSnapshot.clear();
   m_snapshotDirty = true;
   m_cachedDeterministic = true;

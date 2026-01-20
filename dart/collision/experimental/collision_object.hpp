@@ -73,6 +73,8 @@ public:
 
   [[nodiscard]] bool isValid() const;
 
+  [[nodiscard]] std::size_t getId() const;
+
   [[nodiscard]] entt::entity getEntity() const
   {
     return m_entity;

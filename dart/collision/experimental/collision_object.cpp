@@ -34,6 +34,8 @@
 #include <dart/collision/experimental/collision_world.hpp>
 #include <dart/collision/experimental/comps/collision_object.hpp>
 
+#include <limits>
+
 namespace dart::collision::experimental {
 
 CollisionObject::CollisionObject(entt::entity entity, CollisionWorld* world)
@@ -125,6 +127,17 @@ bool CollisionObject::isValid() const
     return false;
   }
   return m_world->getRegistry().valid(m_entity);
+}
+
+std::size_t CollisionObject::getId() const
+{
+  if (!isValid()) {
+    return std::numeric_limits<std::size_t>::max();
+  }
+  auto& registry = m_world->getRegistry();
+  auto* broadPhaseComp = registry.try_get<comps::BroadPhaseComponent>(m_entity);
+  return broadPhaseComp ? broadPhaseComp->broadPhaseId
+                        : std::numeric_limits<std::size_t>::max();
 }
 
 } // namespace dart::collision::experimental

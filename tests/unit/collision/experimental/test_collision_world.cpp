@@ -213,9 +213,9 @@ TEST(CollisionWorld, CollideAllOrderingAndRepeatability)
   tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
   auto obj2 = world.createObject(std::make_unique<SphereShape>(radius), tf2);
 
-  const std::size_t id0 = static_cast<std::size_t>(obj0.getEntity());
-  const std::size_t id1 = static_cast<std::size_t>(obj1.getEntity());
-  const std::size_t id2 = static_cast<std::size_t>(obj2.getEntity());
+  const std::size_t id0 = obj0.getId();
+  const std::size_t id1 = obj1.getId();
+  const std::size_t id2 = obj2.getId();
 
   std::vector<BroadPhasePair> expectedPairs;
   expectedPairs.emplace_back(std::min(id0, id2), std::max(id0, id2));
