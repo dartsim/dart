@@ -270,4 +270,48 @@ struct DART_COLLISION_EXPERIMENTAL_API RaycastOption
   }
 };
 
+struct DART_COLLISION_EXPERIMENTAL_API CcdResult
+{
+  bool hit = false;
+
+  double timeOfImpact = 1.0;
+
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+
+  const CollisionObject* object = nullptr;
+
+  [[nodiscard]] bool isHit() const
+  {
+    return hit;
+  }
+
+  void clear()
+  {
+    hit = false;
+    timeOfImpact = 1.0;
+    point = Eigen::Vector3d::Zero();
+    normal = Eigen::Vector3d::UnitZ();
+    object = nullptr;
+  }
+};
+
+struct DART_COLLISION_EXPERIMENTAL_API CcdOption
+{
+  double tolerance = 1e-4;
+
+  int maxIterations = 32;
+
+  [[nodiscard]] static CcdOption standard()
+  {
+    return {1e-4, 32};
+  }
+
+  [[nodiscard]] static CcdOption precise()
+  {
+    return {1e-6, 64};
+  }
+};
+
 }
