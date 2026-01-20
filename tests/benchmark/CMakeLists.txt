@@ -100,6 +100,16 @@ if(DART_BUILD_COLLISION_EXPERIMENTAL)
     benchmark::benchmark
   )
   dart_format_add(collision/comparative/bm_raycast.cpp)
+  add_executable(
+    bm_scenarios_mixed_primitives
+    collision/scenarios/bm_mixed_primitives.cpp
+  )
+  target_link_libraries(bm_scenarios_mixed_primitives
+    dart
+    dart-collision-experimental
+    benchmark::benchmark
+  )
+  dart_format_add(collision/scenarios/bm_mixed_primitives.cpp)
   dart_format_add(collision/fixtures/shape_factories.hpp)
   dart_format_add(collision/fixtures/scene_builders.hpp)
 endif()
