@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/collision/experimental/aabb.hpp>
+#include <dart/collision/experimental/fwd.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
 
 #include <Eigen/Geometry>
@@ -44,6 +45,11 @@ namespace dart::collision::experimental::comps {
 
 struct CollisionObjectTag
 {
+};
+
+struct ObjectIdComponent
+{
+  ObjectId id = 0;
 };
 
 struct ShapeComponent

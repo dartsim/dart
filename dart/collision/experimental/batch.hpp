@@ -36,6 +36,10 @@
 #include <dart/collision/experimental/export.hpp>
 #include <dart/collision/experimental/types.hpp>
 
+#include <Eigen/Geometry>
+
+#include <limits>
+#include <span>
 #include <vector>
 
 #include <cstddef>
@@ -121,5 +125,127 @@ struct DART_COLLISION_EXPERIMENTAL_API BroadPhaseSnapshot
     numObjects = 0;
   }
 };
+
+constexpr std::size_t kInvalidBatchIndex
+    = std::numeric_limits<std::size_t>::max();
+
+constexpr std::uint8_t kBatchDirty = 1u << 0;
+constexpr std::uint8_t kBatchEnabled = 1u << 1;
+constexpr std::uint8_t kBatchStatic = 1u << 2;
+
+struct BatchView;
+
+struct DART_COLLISION_EXPERIMENTAL_API BatchStorage
+{
+  std::vector<ObjectId> ids;
+  std::vector<const Shape*> shapes;
+  std::vector<Eigen::Isometry3d> transforms;
+  std::vector<Aabb> aabbs;
+  std::vector<std::uint8_t> flags;
+  std::vector<std::size_t> idToIndex;
+
+  void clear()
+  {
+    ids.clear();
+    shapes.clear();
+    transforms.clear();
+    aabbs.clear();
+    flags.clear();
+    idToIndex.clear();
+  }
+
+  void reserve(std::size_t count)
+  {
+    ids.reserve(count);
+    shapes.reserve(count);
+    transforms.reserve(count);
+    aabbs.reserve(count);
+    flags.reserve(count);
+  }
+
+  void resetIndex(std::size_t size)
+  {
+    idToIndex.assign(size, kInvalidBatchIndex);
+  }
+
+  [[nodiscard]] std::size_t indexFor(ObjectId id) const
+  {
+    if (id >= idToIndex.size()) {
+      return kInvalidBatchIndex;
+    }
+    return idToIndex[id];
+  }
+
+  [[nodiscard]] bool contains(ObjectId id) const
+  {
+    return indexFor(id) != kInvalidBatchIndex;
+  }
+
+  [[nodiscard]] BatchView view() const;
+};
+
+struct DART_COLLISION_EXPERIMENTAL_API BatchView
+{
+  std::span<const ObjectId> ids;
+  std::span<const Shape*> shapes;
+  std::span<const Eigen::Isometry3d> transforms;
+  std::span<const Aabb> aabbs;
+  std::span<const std::uint8_t> flags;
+  std::span<const std::size_t> idToIndex;
+
+  [[nodiscard]] std::size_t size() const
+  {
+    return ids.size();
+  }
+
+  [[nodiscard]] std::size_t indexFor(ObjectId id) const
+  {
+    if (id >= idToIndex.size()) {
+      return kInvalidBatchIndex;
+    }
+    return idToIndex[id];
+  }
+
+  [[nodiscard]] bool contains(ObjectId id) const
+  {
+    return indexFor(id) != kInvalidBatchIndex;
+  }
+
+  [[nodiscard]] const Shape* shape(ObjectId id) const
+  {
+    const auto index = indexFor(id);
+    return index == kInvalidBatchIndex ? nullptr : shapes[index];
+  }
+
+  [[nodiscard]] const Eigen::Isometry3d* transform(ObjectId id) const
+  {
+    const auto index = indexFor(id);
+    return index == kInvalidBatchIndex ? nullptr : &transforms[index];
+  }
+
+  [[nodiscard]] const Aabb* aabb(ObjectId id) const
+  {
+    const auto index = indexFor(id);
+    return index == kInvalidBatchIndex ? nullptr : &aabbs[index];
+  }
+
+  [[nodiscard]] std::uint8_t flagsFor(ObjectId id) const
+  {
+    const auto index = indexFor(id);
+    return index == kInvalidBatchIndex ? 0u : flags[index];
+  }
+};
+
+inline BatchView BatchStorage::view() const
+{
+  BatchView view;
+  view.ids = ids;
+  view.shapes = shapes;
+  view.transforms = transforms;
+  view.aabbs = aabbs;
+  view.flags = flags;
+  view.idToIndex = idToIndex;
+  return view;
+}
 
 } // namespace dart::collision::experimental

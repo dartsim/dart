@@ -44,6 +44,14 @@ class DART_COLLISION_EXPERIMENTAL_API NarrowPhase
 {
 public:
   static bool collide(
+      const Shape* shape1,
+      const Eigen::Isometry3d& tf1,
+      const Shape* shape2,
+      const Eigen::Isometry3d& tf2,
+      const CollisionOption& option,
+      CollisionResult& result);
+
+  static bool collide(
       const CollisionObject& obj1,
       const CollisionObject& obj2,
       const CollisionOption& option,
