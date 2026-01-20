@@ -44,6 +44,7 @@ class BoxShape;
 class CapsuleShape;
 class CylinderShape;
 class PlaneShape;
+class Shape;
 class SphereShape;
 class SdfShape;
 
@@ -92,6 +93,14 @@ class SdfShape;
     const Eigen::Isometry3d& capsuleTransform,
     const BoxShape& box,
     const Eigen::Isometry3d& boxTransform,
+    DistanceResult& result,
+    const DistanceOption& option = DistanceOption());
+
+[[nodiscard]] DART_COLLISION_EXPERIMENTAL_API double distancePlaneShape(
+    const PlaneShape& plane,
+    const Eigen::Isometry3d& planeTransform,
+    const Shape& shape,
+    const Eigen::Isometry3d& shapeTransform,
     DistanceResult& result,
     const DistanceOption& option = DistanceOption());
 

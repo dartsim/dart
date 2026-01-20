@@ -287,9 +287,9 @@ TEST(NarrowPhaseDistance, IsDistanceSupported)
       NarrowPhase::isDistanceSupported(ShapeType::Capsule, ShapeType::Box));
   EXPECT_TRUE(
       NarrowPhase::isDistanceSupported(ShapeType::Box, ShapeType::Capsule));
-  EXPECT_FALSE(
+  EXPECT_TRUE(
       NarrowPhase::isDistanceSupported(ShapeType::Plane, ShapeType::Sphere));
-  EXPECT_FALSE(
+  EXPECT_TRUE(
       NarrowPhase::isDistanceSupported(ShapeType::Cylinder, ShapeType::Box));
 }
 

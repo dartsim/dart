@@ -115,6 +115,97 @@ Eigen::Vector3d closestPointOnBox(
       std::clamp(point.z(), -halfExtents.z(), halfExtents.z()));
 }
 
+constexpr double kSupportEps = 1e-12;
+
+bool supportPointOnShape(
+    const Shape& shape,
+    const Eigen::Isometry3d& transform,
+    const Eigen::Vector3d& directionWorld,
+    Eigen::Vector3d& supportWorld)
+{
+  Eigen::Vector3d dir = directionWorld;
+  if (dir.squaredNorm() < kSupportEps) {
+    dir = Eigen::Vector3d::UnitX();
+  }
+
+  switch (shape.getType()) {
+    case ShapeType::Sphere: {
+      const auto& sphere = static_cast<const SphereShape&>(shape);
+      supportWorld
+          = transform.translation() + sphere.getRadius() * dir.normalized();
+      return true;
+    }
+    case ShapeType::Box: {
+      const auto& box = static_cast<const BoxShape&>(shape);
+      const Eigen::Vector3d localDir = transform.linear().transpose() * dir;
+      Eigen::Vector3d localSupport;
+      const Eigen::Vector3d& halfExtents = box.getHalfExtents();
+      localSupport.x()
+          = (localDir.x() >= 0.0) ? halfExtents.x() : -halfExtents.x();
+      localSupport.y()
+          = (localDir.y() >= 0.0) ? halfExtents.y() : -halfExtents.y();
+      localSupport.z()
+          = (localDir.z() >= 0.0) ? halfExtents.z() : -halfExtents.z();
+      supportWorld = transform * localSupport;
+      return true;
+    }
+    case ShapeType::Capsule: {
+      const auto& capsule = static_cast<const CapsuleShape&>(shape);
+      const double radius = capsule.getRadius();
+      const double halfHeight = capsule.getHeight() * 0.5;
+      Eigen::Vector3d localDir = transform.linear().transpose() * dir;
+      if (localDir.squaredNorm() < kSupportEps) {
+        localDir = Eigen::Vector3d::UnitX();
+      }
+      const Eigen::Vector3d dirNorm = localDir.normalized();
+      const Eigen::Vector3d axisPoint
+          = (dirNorm.z() >= 0.0) ? Eigen::Vector3d(0, 0, halfHeight)
+                                 : Eigen::Vector3d(0, 0, -halfHeight);
+      supportWorld = transform * (axisPoint + radius * dirNorm);
+      return true;
+    }
+    case ShapeType::Cylinder: {
+      const auto& cylinder = static_cast<const CylinderShape&>(shape);
+      const double radius = cylinder.getRadius();
+      const double halfHeight = cylinder.getHeight() * 0.5;
+      const Eigen::Vector3d localDir = transform.linear().transpose() * dir;
+      const double xyLen = std::sqrt(
+          localDir.x() * localDir.x() + localDir.y() * localDir.y());
+      Eigen::Vector3d localSupport;
+      if (xyLen < kSupportEps) {
+        localSupport.x() = radius;
+        localSupport.y() = 0.0;
+      } else {
+        localSupport.x() = radius * localDir.x() / xyLen;
+        localSupport.y() = radius * localDir.y() / xyLen;
+      }
+      localSupport.z() = (localDir.z() >= 0.0) ? halfHeight : -halfHeight;
+      supportWorld = transform * localSupport;
+      return true;
+    }
+    case ShapeType::Convex: {
+      const auto& convex = static_cast<const ConvexShape&>(shape);
+      Eigen::Vector3d localDir = transform.linear().transpose() * dir;
+      if (localDir.squaredNorm() < kSupportEps) {
+        localDir = Eigen::Vector3d::UnitX();
+      }
+      supportWorld = transform * convex.support(localDir);
+      return true;
+    }
+    case ShapeType::Mesh: {
+      const auto& mesh = static_cast<const MeshShape&>(shape);
+      Eigen::Vector3d localDir = transform.linear().transpose() * dir;
+      if (localDir.squaredNorm() < kSupportEps) {
+        localDir = Eigen::Vector3d::UnitX();
+      }
+      supportWorld = transform * mesh.support(localDir);
+      return true;
+    }
+    default:
+      return false;
+  }
+}
+
 bool querySdfDistanceAndGradient(
     const SignedDistanceField* field,
     const Eigen::Isometry3d& sdfInverse,
@@ -468,6 +559,47 @@ double distanceCapsuleBox(
   }
 
   return dist;
+}
+
+double distancePlaneShape(
+    const PlaneShape& plane,
+    const Eigen::Isometry3d& planeTransform,
+    const Shape& shape,
+    const Eigen::Isometry3d& shapeTransform,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  const Eigen::Vector3d worldNormal
+      = planeTransform.rotation() * plane.getNormal();
+  const Eigen::Vector3d planePoint
+      = planeTransform.translation() + worldNormal * plane.getOffset();
+
+  Eigen::Vector3d supportPoint = Eigen::Vector3d::Zero();
+  if (!supportPointOnShape(shape, shapeTransform, -worldNormal, supportPoint)) {
+    result.distance = std::numeric_limits<double>::max();
+    return result.distance;
+  }
+
+  const double signedDist = worldNormal.dot(supportPoint - planePoint);
+  if (signedDist > option.upperBound) {
+    result.distance = signedDist;
+    return signedDist;
+  }
+
+  result.distance = signedDist;
+
+  if (option.enableNearestPoints) {
+    result.pointOnObject2 = supportPoint;
+    result.pointOnObject1 = supportPoint - worldNormal * signedDist;
+    const Eigen::Vector3d delta = result.pointOnObject2 - result.pointOnObject1;
+    if (delta.squaredNorm() > kSupportEps) {
+      result.normal = delta.normalized();
+    } else {
+      result.normal = worldNormal;
+    }
+  }
+
+  return signedDist;
 }
 
 double distanceSphereSdf(
