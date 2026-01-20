@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <array>
+
 #include <cmath>
 
 namespace dart::collision::experimental {
@@ -107,9 +108,7 @@ bool portalEncapsulatesOrigin(const Portal& portal, const Eigen::Vector3d& dir)
 }
 
 bool portalReachTolerance(
-    const Portal& portal,
-    const SupportPoint& v4,
-    const Eigen::Vector3d& dir)
+    const Portal& portal, const SupportPoint& v4, const Eigen::Vector3d& dir)
 {
   const double dv1 = portal.points[1].v.dot(dir);
   const double dv2 = portal.points[2].v.dot(dir);
@@ -270,6 +269,31 @@ int refinePortal(
   return -1;
 }
 
+struct SegmentClosestResult
+{
+  Eigen::Vector3d closest = Eigen::Vector3d::Zero();
+  double t = 0.0;
+};
+
+SegmentClosestResult closestPointOnSegmentToOrigin(
+    const Eigen::Vector3d& a, const Eigen::Vector3d& b)
+{
+  SegmentClosestResult result;
+  const Eigen::Vector3d ab = b - a;
+  const double abLen2 = ab.squaredNorm();
+  if (abLen2 < kEpsilon) {
+    result.closest = a;
+    result.t = 0.0;
+    return result;
+  }
+
+  double t = -a.dot(ab) / abLen2;
+  t = std::clamp(t, 0.0, 1.0);
+  result.t = t;
+  result.closest = a + t * ab;
+  return result;
+}
+
 Eigen::Vector3d closestPointOnTriangleToOrigin(
     const Eigen::Vector3d& a,
     const Eigen::Vector3d& b,
@@ -317,17 +341,38 @@ Eigen::Vector3d closestPointOnTriangleToOrigin(
     return b + w * (c - b);
   }
 
-  const double denom = 1.0 / (va + vb + vc);
-  const double v = vb * denom;
-  const double w = vc * denom;
+  const double denom = va + vb + vc;
+  if (isZero(denom)) {
+    auto closest = closestPointOnSegmentToOrigin(a, b).closest;
+    double bestDist2 = closest.squaredNorm();
+
+    const Eigen::Vector3d acClosest
+        = closestPointOnSegmentToOrigin(a, c).closest;
+    double dist2 = acClosest.squaredNorm();
+    if (dist2 < bestDist2) {
+      closest = acClosest;
+      bestDist2 = dist2;
+    }
+
+    const Eigen::Vector3d bcClosest
+        = closestPointOnSegmentToOrigin(b, c).closest;
+    dist2 = bcClosest.squaredNorm();
+    if (dist2 < bestDist2) {
+      closest = bcClosest;
+    }
+
+    return closest;
+  }
+
+  const double inv = 1.0 / denom;
+  const double v = vb * inv;
+  const double w = vc * inv;
   const double u = 1.0 - v - w;
   return u * a + v * b + w * c;
 }
 
 void findPos(
-    const Portal& portal,
-    Eigen::Vector3d& pointA,
-    Eigen::Vector3d& pointB)
+    const Portal& portal, Eigen::Vector3d& pointA, Eigen::Vector3d& pointB)
 {
   Eigen::Vector3d dir;
   portalDir(portal, dir);
@@ -382,7 +427,8 @@ void findPenetration(
     portalDir(portal, dir);
     SupportPoint v4 = computeSupport(supportA, supportB, dir);
 
-    if (portalReachTolerance(portal, v4, dir) || iter + 1 >= Mpr::kMaxIterations) {
+    if (portalReachTolerance(portal, v4, dir)
+        || iter + 1 >= Mpr::kMaxIterations) {
       const Eigen::Vector3d a = portal.points[1].v;
       const Eigen::Vector3d b = portal.points[2].v;
       const Eigen::Vector3d c = portal.points[3].v;
@@ -432,7 +478,7 @@ void findPenetrationSegment(Portal& portal, MprResult& result)
   result.success = true;
 }
 
-}  // namespace
+} // namespace
 
 bool Mpr::intersect(
     const SupportFunction& supportA,
@@ -485,4 +531,4 @@ MprResult Mpr::penetration(
   return result;
 }
 
-}  // namespace dart::collision::experimental
+} // namespace dart::collision::experimental

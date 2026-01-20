@@ -43,8 +43,8 @@
 
 namespace dart::collision::experimental {
 
-using SupportFunction =
-    std::function<Eigen::Vector3d(const Eigen::Vector3d& direction)>;
+using SupportFunction
+    = std::function<Eigen::Vector3d(const Eigen::Vector3d& direction)>;
 
 struct DART_COLLISION_EXPERIMENTAL_API SupportPoint
 {
@@ -100,7 +100,7 @@ class DART_COLLISION_EXPERIMENTAL_API Gjk
 {
 public:
   static constexpr int kMaxIterations = 64;
-  static constexpr double kTolerance = 1e-8;
+  static constexpr double kTolerance = 1e-6;
 
   static GjkResult query(
       const SupportFunction& supportA,
@@ -125,4 +125,4 @@ public:
       const GjkSimplex& simplex);
 };
 
-}
+} // namespace dart::collision::experimental

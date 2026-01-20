@@ -34,17 +34,16 @@
 
 #include <algorithm>
 #include <array>
-#include <cmath>
 #include <limits>
 #include <vector>
+
+#include <cmath>
 
 namespace dart::collision::experimental {
 
 namespace {
 
 constexpr double kEpsilon = 1e-12;
-constexpr int kMaxIterations = 64;
-constexpr double kTolerance = 1e-6;
 
 SupportPoint computeSupport(
     const SupportFunction& supportA,
@@ -82,6 +81,31 @@ struct TriangleClosestResult
   std::array<double, 3> weights{};
   TriangleRegion region = TriangleRegion::Face;
 };
+
+struct SegmentClosestResult
+{
+  Eigen::Vector3d closest = Eigen::Vector3d::Zero();
+  double t = 0.0;
+};
+
+SegmentClosestResult closestPointSegmentToOrigin(
+    const Eigen::Vector3d& a, const Eigen::Vector3d& b)
+{
+  SegmentClosestResult result;
+  const Eigen::Vector3d ab = b - a;
+  const double abLen2 = ab.squaredNorm();
+  if (abLen2 < kEpsilon) {
+    result.closest = a;
+    result.t = 0.0;
+    return result;
+  }
+
+  double t = -a.dot(ab) / abLen2;
+  t = std::clamp(t, 0.0, 1.0);
+  result.t = t;
+  result.closest = a + t * ab;
+  return result;
+}
 
 TriangleClosestResult closestPointTriangleToOrigin(
     const Eigen::Vector3d& a,
@@ -152,10 +176,58 @@ TriangleClosestResult closestPointTriangleToOrigin(
 
   const double denom = va + vb + vc;
   if (std::abs(denom) < kEpsilon) {
-    result.closest = a;
-    result.weights = {1.0, 0.0, 0.0};
-    result.region = TriangleRegion::VertexA;
-    return result;
+    auto best = TriangleClosestResult{};
+    const auto ab = closestPointSegmentToOrigin(a, b);
+    best.closest = ab.closest;
+    if (ab.t <= 0.0) {
+      best.weights = {1.0, 0.0, 0.0};
+      best.region = TriangleRegion::VertexA;
+    } else if (ab.t >= 1.0) {
+      best.weights = {0.0, 1.0, 0.0};
+      best.region = TriangleRegion::VertexB;
+    } else {
+      best.weights = {1.0 - ab.t, ab.t, 0.0};
+      best.region = TriangleRegion::EdgeAB;
+    }
+    double bestDist2 = best.closest.squaredNorm();
+
+    const auto ac = closestPointSegmentToOrigin(a, c);
+    TriangleClosestResult candidate;
+    candidate.closest = ac.closest;
+    if (ac.t <= 0.0) {
+      candidate.weights = {1.0, 0.0, 0.0};
+      candidate.region = TriangleRegion::VertexA;
+    } else if (ac.t >= 1.0) {
+      candidate.weights = {0.0, 0.0, 1.0};
+      candidate.region = TriangleRegion::VertexC;
+    } else {
+      candidate.weights = {1.0 - ac.t, 0.0, ac.t};
+      candidate.region = TriangleRegion::EdgeAC;
+    }
+    double candidateDist2 = candidate.closest.squaredNorm();
+    if (candidateDist2 < bestDist2) {
+      best = candidate;
+      bestDist2 = candidateDist2;
+    }
+
+    const auto bc = closestPointSegmentToOrigin(b, c);
+    candidate.closest = bc.closest;
+    if (bc.t <= 0.0) {
+      candidate.weights = {0.0, 1.0, 0.0};
+      candidate.region = TriangleRegion::VertexB;
+    } else if (bc.t >= 1.0) {
+      candidate.weights = {0.0, 0.0, 1.0};
+      candidate.region = TriangleRegion::VertexC;
+    } else {
+      candidate.weights = {0.0, 1.0 - bc.t, bc.t};
+      candidate.region = TriangleRegion::EdgeBC;
+    }
+    candidateDist2 = candidate.closest.squaredNorm();
+    if (candidateDist2 < bestDist2) {
+      best = candidate;
+    }
+
+    return best;
   }
   const double inv = 1.0 / denom;
   const double v = vb * inv;
@@ -398,7 +470,8 @@ void fillSeparationResult(
 {
   result.intersecting = false;
   result.distance = closest.norm();
-  computeClosestPoints(simplex, weights, result.closestPointA, result.closestPointB);
+  computeClosestPoints(
+      simplex, weights, result.closestPointA, result.closestPointB);
 
   Eigen::Vector3d axis = result.closestPointB - result.closestPointA;
   if (axis.squaredNorm() > kEpsilon) {
@@ -410,7 +483,7 @@ void fillSeparationResult(
   }
 }
 
-}  // namespace
+} // namespace
 
 GjkResult Gjk::query(
     const SupportFunction& supportA,
@@ -432,9 +505,9 @@ GjkResult Gjk::query(
 
   double prevDist2 = std::numeric_limits<double>::infinity();
 
-  for (int iter = 0; iter < kMaxIterations; ++iter) {
+  for (int iter = 0; iter < Gjk::kMaxIterations; ++iter) {
     const double dist2 = closest.squaredNorm();
-    if (dist2 <= kTolerance * kTolerance) {
+    if (dist2 <= Gjk::kTolerance * Gjk::kTolerance) {
       result.intersecting = true;
       result.simplex = simplex;
       return result;
@@ -444,7 +517,7 @@ GjkResult Gjk::query(
     SupportPoint newPoint = computeSupport(supportA, supportB, direction);
 
     const double delta = newPoint.v.dot(direction) - closest.dot(direction);
-    if (delta <= kTolerance) {
+    if (delta <= Gjk::kTolerance) {
       fillSeparationResult(simplex, weights, closest, result);
       result.simplex = simplex;
       return result;
@@ -459,7 +532,7 @@ GjkResult Gjk::query(
     }
 
     const double newDist2 = closest.squaredNorm();
-    if (std::abs(prevDist2 - newDist2) <= kTolerance * kTolerance) {
+    if (std::abs(prevDist2 - newDist2) <= Gjk::kTolerance * Gjk::kTolerance) {
       fillSeparationResult(simplex, weights, closest, result);
       result.simplex = simplex;
       return result;
@@ -537,7 +610,7 @@ bool addFace(
   return true;
 }
 
-}  // namespace
+} // namespace
 
 EpaResult Epa::penetration(
     const SupportFunction& supportA,
@@ -564,7 +637,7 @@ EpaResult Epa::penetration(
   addFace(faces, vertices, 0, 2, 3);
   addFace(faces, vertices, 1, 3, 2);
 
-  for (int iteration = 0; iteration < kMaxIterations; ++iteration) {
+  for (int iteration = 0; iteration < Epa::kMaxIterations; ++iteration) {
     int closestFaceIdx = -1;
     double closestDist = std::numeric_limits<double>::max();
 
@@ -585,13 +658,13 @@ EpaResult Epa::penetration(
     SupportPoint newPoint = computeSupport(supportA, supportB, faceNormal);
     const double newDist = newPoint.v.dot(faceNormal);
 
-    if (newDist - closestDist < kTolerance) {
+    if (newDist - closestDist < Epa::kTolerance) {
       const auto& fv = closestFace.vertices;
       const SupportPoint& va = vertices[fv[0]];
       const SupportPoint& vb = vertices[fv[1]];
       const SupportPoint& vc = vertices[fv[2]];
-      TriangleClosestResult tri = closestPointTriangleToOrigin(
-          va.v, vb.v, vc.v);
+      TriangleClosestResult tri
+          = closestPointTriangleToOrigin(va.v, vb.v, vc.v);
 
       result.depth = closestDist;
       result.normal = faceNormal;
@@ -631,4 +704,4 @@ EpaResult Epa::penetration(
   return result;
 }
 
-}  // namespace dart::collision::experimental
+} // namespace dart::collision::experimental
