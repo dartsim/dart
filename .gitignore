@@ -110,6 +110,8 @@ imgui.ini
 
 # Profiling logs
 profiling/*.txt
+rp3d_profiling_*.txt
+*_profile_*.txt
 
 # Generated testing images
 *.png
