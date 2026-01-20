@@ -314,6 +314,23 @@ TEST(RaycastCapsule, HitSphericalCap)
   EXPECT_NEAR(result.normal.z(), -1.0, 1e-10);
 }
 
+TEST(RaycastCapsule, RayStartsInside)
+{
+  CapsuleShape capsule(1.0, 2.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 1));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastCapsule(ray, capsule, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_NEAR(result.distance, 2.0, 1e-10);
+  EXPECT_NEAR(result.point.z(), 2.0, 1e-10);
+  EXPECT_NEAR(result.normal.z(), 1.0, 1e-10);
+}
+
 TEST(RaycastCylinder, Miss)
 {
   CylinderShape cylinder(0.5, 2.0);
@@ -377,6 +394,23 @@ TEST(RaycastCylinder, HitBottomCap)
   EXPECT_NEAR(result.distance, 4.0, 1e-10);
   EXPECT_NEAR(result.point.z(), -1.0, 1e-10);
   EXPECT_NEAR(result.normal.z(), -1.0, 1e-10);
+}
+
+TEST(RaycastCylinder, RayStartsInside)
+{
+  CylinderShape cylinder(1.0, 2.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 1));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastCylinder(ray, cylinder, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_NEAR(result.distance, 1.0, 1e-10);
+  EXPECT_NEAR(result.point.z(), 1.0, 1e-10);
+  EXPECT_NEAR(result.normal.z(), 1.0, 1e-10);
 }
 
 TEST(RaycastPlane, Miss_ParallelRay)
