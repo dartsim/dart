@@ -39,7 +39,7 @@
 
 #include <dart/dynamics/shape_node.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/Core>
 

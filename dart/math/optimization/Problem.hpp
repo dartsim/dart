@@ -35,7 +35,7 @@
 
 #include <dart/math/optimization/Function.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 

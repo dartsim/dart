@@ -40,7 +40,7 @@
 
 #include <dart/common/Deprecated.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 namespace dart {
 namespace collision {

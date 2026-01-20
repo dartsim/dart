@@ -36,7 +36,7 @@
 #include <dart/constraint/constraint_solver.hpp>
 #include <dart/constraint/fwd.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 namespace dart {
 namespace constraint {

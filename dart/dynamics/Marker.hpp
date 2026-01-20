@@ -38,7 +38,7 @@
 
 #include <dart/common/Deprecated.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 

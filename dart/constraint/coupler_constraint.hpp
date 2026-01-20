@@ -38,7 +38,7 @@
 #include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/mimic_dof_properties.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <span>
 #include <vector>

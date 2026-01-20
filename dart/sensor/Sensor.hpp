@@ -42,7 +42,7 @@
 #include <dart/common/class_with_virtual_base.hpp>
 #include <dart/common/sub_ptr.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 #include <dart/sensor/fwd.hpp>
 
 #include <Eigen/Geometry>

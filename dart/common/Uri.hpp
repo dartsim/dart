@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_URI_HPP_
 #define DART_COMMON_URI_HPP_
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <string>
 #include <string_view>

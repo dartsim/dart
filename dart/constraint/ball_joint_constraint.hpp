@@ -37,7 +37,7 @@
 
 #include <dart/math/math_types.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 

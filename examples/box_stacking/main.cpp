@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 #include <dart/gui/include_im_gui.hpp>
 
 #include <dart/utils/All.hpp>
@@ -38,7 +38,7 @@
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 #include <dart/math/lcp/projection/pgs_solver.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <CLI/CLI.hpp>
 

@@ -37,7 +37,7 @@
 #include <dart/common/Resource.hpp>
 #include <dart/common/Uri.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <memory>
 #include <string>

@@ -37,7 +37,7 @@
 #include <dart/dynamics/Node.hpp>
 #include <dart/dynamics/fwd.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <memory>
 #include <span>

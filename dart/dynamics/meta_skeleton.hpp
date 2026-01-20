@@ -43,7 +43,7 @@
 #include <dart/common/Subject.hpp>
 #include <dart/common/lockable_reference.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 

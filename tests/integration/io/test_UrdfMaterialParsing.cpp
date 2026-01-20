@@ -32,7 +32,7 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 #include <dart/io/Read.hpp>
 
 #include <gtest/gtest.h>

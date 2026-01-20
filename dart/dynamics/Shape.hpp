@@ -43,7 +43,7 @@
 #include <dart/common/class_with_virtual_base.hpp>
 #include <dart/common/version_counter.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 

@@ -37,7 +37,7 @@
 #include "dart/utils/mjcf/detail/Utils.hpp"
 #include "dart/utils/mjcf/detail/mujoco_model.hpp"
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <gtest/gtest.h>
 

@@ -35,7 +35,7 @@
 
 #include <dart/common/resource_retriever.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 namespace dart {
 namespace common {

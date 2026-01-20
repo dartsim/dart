@@ -35,7 +35,7 @@
 
 #include <dart/math/lcp/lcp_types.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/Core>
 

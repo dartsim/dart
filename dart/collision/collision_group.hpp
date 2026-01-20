@@ -45,7 +45,7 @@
 
 #include <dart/common/Observer.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <span>
 #include <unordered_map>

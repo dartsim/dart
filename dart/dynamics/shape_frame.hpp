@@ -42,7 +42,7 @@
 #include <dart/common/aspect_with_version.hpp>
 #include <dart/common/specialized_for_aspect.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 

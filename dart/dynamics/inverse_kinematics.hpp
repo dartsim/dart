@@ -45,7 +45,7 @@
 #include <dart/common/Subject.hpp>
 #include <dart/common/sub_ptr.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/SVD>
 

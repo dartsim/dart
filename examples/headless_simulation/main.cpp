@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 #include <dart/io/Read.hpp>
 
 #include <chrono>

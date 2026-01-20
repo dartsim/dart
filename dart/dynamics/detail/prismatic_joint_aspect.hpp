@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/generic_joint.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 

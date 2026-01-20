@@ -55,7 +55,7 @@
 
 #pragma once
 
-#include "dart/export.hpp"
+#include "dart/Export.hpp"
 #include "dart/math/lcp/pivoting/dantzig/Common.hpp"
 
 #include <Eigen/Core>

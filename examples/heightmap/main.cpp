@@ -34,7 +34,7 @@
 
 #include <dart/config.hpp>
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 #include <dart/gui/im_gui_handler.hpp>
 #include <dart/gui/include_im_gui.hpp>
 
@@ -45,7 +45,7 @@
   #include <dart/collision/ode/ode_collision_detector.hpp>
 #endif
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <CLI/CLI.hpp>
 

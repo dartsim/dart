@@ -42,7 +42,7 @@
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/fwd.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 

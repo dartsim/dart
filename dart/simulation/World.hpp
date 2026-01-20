@@ -55,7 +55,7 @@
 #include <dart/common/name_manager.hpp>
 #include <dart/common/smart_pointer.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 #include <dart/sensor/sensor_manager.hpp>
 
 #include <Eigen/Dense>

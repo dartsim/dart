@@ -35,7 +35,7 @@
 
 #include <dart/math/lcp/lcp_solver.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 namespace dart {
 namespace math {

@@ -34,7 +34,7 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 #include <dart/io/Read.hpp>
 
 #include <gtest/gtest.h>

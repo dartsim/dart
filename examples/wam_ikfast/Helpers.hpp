@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 dart::dynamics::SkeletonPtr createGround();
 

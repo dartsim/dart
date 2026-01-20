@@ -33,7 +33,7 @@
 #ifndef DART_COLLISION_RAYCASTOPTION_HPP_
 #define DART_COLLISION_RAYCASTOPTION_HPP_
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <functional>
 #include <memory>

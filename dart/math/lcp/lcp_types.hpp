@@ -33,7 +33,7 @@
 #ifndef DART_MATH_LCP_LCPTYPES_HPP_
 #define DART_MATH_LCP_LCPTYPES_HPP_
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/Core>
 

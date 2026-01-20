@@ -35,7 +35,7 @@
 
 #include <dart/math/Mesh.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <memory>
 

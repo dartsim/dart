@@ -37,7 +37,7 @@
 
 #include <dart/dynamics/fwd.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 namespace dart {
 namespace collision {

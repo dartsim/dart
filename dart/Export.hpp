@@ -30,14 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-// Backward compatibility header.
-// Use <dart/export.hpp> instead.
-
 #pragma once
 
-#ifndef DART_SUPPRESS_HEADER_CASE_DEPRECATED_WARNING
-  #pragma message(                                                             \
-      "dart/Export.hpp is deprecated in DART 7; use <dart/export.hpp> instead.")
+#include <dart/common/export.hpp>
+
+#ifndef DART_API
+  #if defined(DART_BUILDING_DART)
+    #define DART_API DART_DLL_EXPORT
+  #else
+    #define DART_API DART_DLL_IMPORT
+  #endif
 #endif
 
-#include <dart/export.hpp>
+#ifndef DART_LOCAL
+  #if DART_BUILD_SHARED
+    #define DART_LOCAL DART_DLL_LOCAL
+  #else
+    #define DART_LOCAL
+  #endif
+#endif

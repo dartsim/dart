@@ -36,7 +36,7 @@
 #include <dart/math/Mesh.hpp>
 #include <dart/math/tri_mesh.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <initializer_list>
 #include <vector>

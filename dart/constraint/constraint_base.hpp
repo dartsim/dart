@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/fwd.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <string_view>
 

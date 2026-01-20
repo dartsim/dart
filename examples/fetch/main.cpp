@@ -32,7 +32,7 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 #include <dart/gui/im_gui_handler.hpp>
 #include <dart/gui/include_im_gui.hpp>
 
@@ -40,7 +40,7 @@
 
 #include <dart/collision/bullet/All.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 #include <dart/io/Read.hpp>
 
 #include <CLI/CLI.hpp>

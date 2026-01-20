@@ -1,4 +1,4 @@
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 #include <dart/gui/support_polygon_visual.hpp>
 
 #include <dart/utils/composite_resource_retriever.hpp>
@@ -16,7 +16,7 @@
 #include <dart/common/Uri.hpp>
 #include <dart/common/local_resource_retriever.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 #include <dart/io/Read.hpp>
 
 #include <CLI/CLI.hpp>

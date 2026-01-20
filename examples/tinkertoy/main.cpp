@@ -35,10 +35,10 @@
 
 #include <dart/config.hpp>
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 #include <dart/gui/im_gui_handler.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <CLI/CLI.hpp>
 

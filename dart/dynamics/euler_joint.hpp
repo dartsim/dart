@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/detail/euler_joint_aspect.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 namespace dart {
 namespace dynamics {

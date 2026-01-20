@@ -30,14 +30,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-// Backward compatibility header.
-// Use <dart/all.hpp> instead.
-
 #pragma once
 
-#ifndef DART_SUPPRESS_HEADER_CASE_DEPRECATED_WARNING
-  #pragma message(                                                             \
-      "dart/All.hpp is deprecated in DART 7; use <dart/all.hpp> instead.")
-#endif
-
-#include <dart/all.hpp>
+// clang-format off
+#include <dart/config.hpp>
+#include <dart/Export.hpp>
+#include <dart/common/All.hpp>
+#include <dart/math/All.hpp>
+#define DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
+#include <dart/optimizer/all.hpp>
+#undef DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
+#include <dart/collision/All.hpp>
+#include <dart/constraint/All.hpp>
+#include <dart/dynamics/All.hpp>
+#include <dart/simulation/All.hpp>
+#include <dart/sensor/All.hpp>
+// clang-format on

@@ -51,7 +51,7 @@
 #include <dart/common/Signal.hpp>
 #include <dart/common/embedded_aspect.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>

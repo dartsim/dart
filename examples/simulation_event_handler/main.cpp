@@ -32,11 +32,11 @@
 
 #include "SimulationEventHandler.hpp"
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
 #include <dart/utils/All.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <iostream>
 

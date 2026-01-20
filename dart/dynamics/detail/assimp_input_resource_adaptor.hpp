@@ -36,7 +36,7 @@
 #include <dart/common/Resource.hpp>
 #include <dart/common/resource_retriever.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>

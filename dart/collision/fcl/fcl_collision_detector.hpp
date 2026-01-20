@@ -36,7 +36,7 @@
 #include <dart/collision/collision_detector.hpp>
 #include <dart/collision/fcl/FCLTypes.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 #include <vector>
 

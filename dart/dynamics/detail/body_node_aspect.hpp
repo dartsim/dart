@@ -40,7 +40,7 @@
 #include <dart/common/embedded_aspect.hpp>
 #include <dart/common/proxy_aspect.hpp>
 
-#include <dart/export.hpp>
+#include <dart/Export.hpp>
 
 namespace dart {
 namespace dynamics {
