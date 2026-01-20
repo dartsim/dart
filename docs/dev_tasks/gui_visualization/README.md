@@ -1,245 +1,501 @@
-# GUI/Visualization Library Migration Plan
+# GUI/Visualization: VSG Migration Plan
 
 > **Created**: 2026-01-20
-> **Status**: Research Complete, Awaiting Decision
-> **Context**: OSG replacement for DART visualization
+> **Updated**: 2026-01-19
+> **Status**: Phase 1.1 Complete (Project Setup) - Phase 1.3 Complete (Transform Utilities)
+> **Decision**: VulkanSceneGraph (VSG) for all visualization needs
 
 ## Background
 
 DART currently uses **OpenSceneGraph (OSG)** for visualization (`dart/gui/`), but:
+
 - OSG is **legacy and no longer actively maintained**
 - Need modern, future-proof replacement
-- Two potential paths: simple (Raylib) vs full-featured (VSG)
+- **Decision**: VSG - same author as OSG, Vulkan-based, proper scene graph
 
-## Current DART GUI Architecture
+## Why VSG
 
-From `dart/gui/`:
-
-| Component | File | Purpose |
-|-----------|------|---------|
-| Viewer | `Viewer.hpp` | Main window, camera, lighting, headless support |
-| ImGuiViewer | `ImGuiViewer.hpp` | Viewer + Dear ImGui widgets |
-| WorldNode | `WorldNode.hpp` | Bridge DART World → OSG scene graph |
-| ShapeFrameNode | `ShapeFrameNode.hpp` | Per-body-node rendering |
-| ShapeNode (abstract) | `render/ShapeNode.hpp` | Base for shape renderers |
-| Shape renderers | `render/*ShapeNode.hpp` | Box, Capsule, Cylinder, Sphere, Mesh, etc. |
-| DragAndDrop | `DragAndDrop.hpp` | Interactive manipulation |
-| InteractiveFrame | `InteractiveFrame.hpp` | 3D gizmo handles |
-| TrackballManipulator | `TrackballManipulator.hpp` | Orbit camera control |
-
-**Key Requirements for Replacement**:
-1. Scene graph (hierarchical transforms) - **CRITICAL** for robotics
-2. ImGui integration - existing widgets depend on it
-3. All primitive shapes rendering
-4. Selection/picking
-5. Shadows
-6. Custom shaders
-7. Headless rendering
-8. Model loading (meshes for URDF)
+| Aspect        | VSG Advantage                                             |
+| ------------- | --------------------------------------------------------- |
+| Scene Graph   | ✅ Native hierarchical transforms (critical for robotics) |
+| OSG Migration | ✅ Same author, similar concepts, natural migration path  |
+| Performance   | ✅ Vulkan-based, multi-threaded, future-proof             |
+| Primitives    | ✅ Node-based geometry, similar to OSG patterns           |
+| Shaders       | ✅ Modern Vulkan SPIR-V pipeline                          |
 
 ---
 
-## Candidates Evaluated
+## Strategy: Building Blocks Approach
 
-### 1. Raylib
+Build reusable VSG components that:
 
-**What**: Simple C game development library with 3D support.
+1. **Immediately useful** for collision detector visualization
+2. **Reusable** for future full OSG→VSG migration
+3. **Minimal scope** - don't over-engineer
 
-| Aspect | Assessment |
-|--------|------------|
-| Scene Graph | ❌ **NOT BUILT-IN** - must implement manually |
-| Primitives | ✅ `DrawSphere`, `DrawCube`, `DrawCapsule`, `DrawCylinder` directly |
-| ImGui | ✅ rlImGui well-supported |
-| Shadows | ⚠️ Basic, requires custom implementation |
-| Picking | ⚠️ `GetRayCollision*` helpers, manual scene-level |
-| Shaders | ✅ Custom GLSL supported |
-| Models | ✅ GLTF, OBJ, IQM |
-| Dependencies | ✅ Self-contained, bundles everything |
-| Build | ✅ Simple CMake |
-| Learning Curve | ✅ Very low, excellent docs |
-| Performance | ✅ Good for real-time |
-| Maturity | ✅ 10+ years, 28k+ GitHub stars |
+### What We're NOT Doing (Yet)
 
-**Pros**:
-- Dead simple API
-- All primitives directly available
-- Self-contained (no external deps)
-- Great for quick prototyping
+- Full dart/gui/ replacement
+- WorldNode/ShapeFrameNode porting
+- ImGui integration
+- Simulation visualization
+- URDF model loading
 
-**Cons**:
-- **No scene graph** - fundamental gap for robotics
-- Would need significant custom code for hierarchical transforms
-- Different paradigm from OSG
+### What We ARE Doing
 
-### 2. VulkanSceneGraph (VSG)
-
-**What**: Modern Vulkan-based scene graph by the same author as OSG.
-
-| Aspect | Assessment |
-|--------|------------|
-| Scene Graph | ✅ **CORE FEATURE** - native hierarchical transforms |
-| Primitives | ✅ Node-based, similar to OSG |
-| ImGui | ⚠️ vsgImGui addon available |
-| Shadows | ✅ Modern shadow techniques built-in |
-| Picking | ✅ Intersection visitors |
-| Shaders | ✅ Vulkan SPIR-V, modern pipeline |
-| Models | ✅ vsgXchange for GLTF, OBJ, etc. |
-| Dependencies | ⚠️ Vulkan SDK required |
-| Build | ⚠️ CMake, needs Vulkan setup |
-| Learning Curve | ⚠️ Medium (but easier from OSG) |
-| Performance | ✅ Excellent (Vulkan, multi-threaded) |
-| Maturity | ⚠️ Newer (1.7k stars) but active |
-
-**Pros**:
-- Same author as OSG - natural migration path
-- Proper scene graph for robotics hierarchies
-- Vulkan performance (future-proof)
-- Similar concepts to OSG (easier migration)
-
-**Cons**:
-- Vulkan SDK dependency
-- Steeper learning curve than raylib
-- Smaller community than OSG
-
-### 3. Polyscope (For Quick Debugging Only)
-
-**What**: C++/Python viewer for 3D data (meshes, point clouds).
-
-| Aspect | Assessment |
-|--------|------------|
-| API | ✅ Minimal: `init()`, `registerSurfaceMesh()`, `show()` |
-| Vectors | ✅ Built-in vector field visualization |
-| Points | ✅ Built-in point cloud support |
-| Render Loop | ✅ Not needed - library handles it |
-| License | ✅ MIT |
-
-**Best for**: Quick visual debugging of collision results (contacts, normals).
-**Not suitable for**: Full DART GUI replacement.
-
-### 4. Rerun (For Logging/Debugging Only)
-
-**What**: Logging + visualization tool for robotics/AI data.
-
-| Aspect | Assessment |
-|--------|------------|
-| Primitives | ✅ Boxes3D, Capsules3D, Cylinders3D, Ellipsoids3D, Mesh3D |
-| Vectors | ✅ Arrows3D |
-| Points | ✅ Points3D |
-| Dependencies | ⚠️ Apache Arrow (heavy) |
-| Viewer | ⚠️ Separate app required |
-
-**Best for**: Time-series debugging, multimodal logging.
-**Not suitable for**: Full DART GUI replacement (heavyweight).
+- Core VSG setup (window, viewer, camera)
+- Shape geometry builders (reusable)
+- Transform utilities (Eigen ↔ VSG)
+- Debug visualization (points, lines, arrows)
+- Simple collision scene viewer
 
 ---
 
-## Head-to-Head: Raylib vs VSG
+## Phase 1: VSG Foundation (Building Blocks)
 
-| Criterion | Raylib | VSG | Winner |
-|-----------|--------|-----|--------|
-| Scene Graph | ❌ Manual | ✅ Native | **VSG** |
-| OSG Migration Ease | ❌ Different paradigm | ✅ Same author | **VSG** |
-| Primitive Rendering | ✅ Direct | ✅ Node-based | Tie |
-| ImGui Integration | ✅ rlImGui | ⚠️ vsgImGui | Raylib |
-| Build Simplicity | ✅ Self-contained | ⚠️ Vulkan SDK | Raylib |
-| Learning (from scratch) | ✅ Low | ⚠️ Medium | Raylib |
-| Learning (from OSG) | ⚠️ High | ✅ Low | **VSG** |
-| Performance | ✅ Good | ✅ Excellent | **VSG** |
-| Future-Proofing | ⚠️ OpenGL | ✅ Vulkan | **VSG** |
-| Robotics Suitability | ⚠️ Needs custom work | ✅ Built for this | **VSG** |
+These components will be reusable for any future VSG work.
+
+### 1.1 Project Setup
+
+```
+dart/gui/vsg/                    # New VSG module
+├── CMakeLists.txt               # VSG dependency, optional build
+├── export.hpp                   # DLL export macros
+├── fwd.hpp                      # Forward declarations
+└── ...
+```
+
+**Tasks**:
+
+- [x] Add VSG as optional dependency in pixi.toml / CMake
+- [x] Create dart/gui/vsg/ module structure
+- [x] Verify VSG builds on Linux (CI later)
+
+### 1.2 Geometry Builders (Reusable)
+
+Convert collision shapes to VSG geometry. These map directly to future ShapeNode replacements.
+
+```cpp
+namespace dart::gui::vsg {
+
+// Shape → VSG geometry conversion (reusable building blocks)
+::vsg::ref_ptr<::vsg::Node> createSphere(double radius, const Options& opts = {});
+::vsg::ref_ptr<::vsg::Node> createBox(const Eigen::Vector3d& size, const Options& opts = {});
+::vsg::ref_ptr<::vsg::Node> createCapsule(double radius, double height, const Options& opts = {});
+::vsg::ref_ptr<::vsg::Node> createCylinder(double radius, double height, const Options& opts = {});
+::vsg::ref_ptr<::vsg::Node> createPlane(const Eigen::Vector3d& normal, double offset, const Options& opts = {});
+::vsg::ref_ptr<::vsg::Node> createMesh(const std::vector<Eigen::Vector3d>& vertices,
+                                        const std::vector<std::array<int,3>>& triangles,
+                                        const Options& opts = {});
+
+// From experimental collision shapes
+::vsg::ref_ptr<::vsg::Node> createFromShape(const collision::experimental::Shape& shape,
+                                             const Options& opts = {});
+
+} // namespace dart::gui::vsg
+```
+
+**Files**:
+
+- `geometry_builders.hpp/.cpp` - Shape creation utilities
+
+**Tasks**:
+
+- [ ] Implement sphere geometry builder
+- [ ] Implement box geometry builder
+- [ ] Implement capsule geometry builder
+- [ ] Implement cylinder geometry builder
+- [ ] Implement plane geometry builder
+- [ ] Implement mesh geometry builder
+- [ ] Add `createFromShape()` dispatcher for experimental::Shape
+
+### 1.3 Transform Utilities (Reusable)
+
+```cpp
+namespace dart::gui::vsg {
+
+// Eigen ↔ VSG conversions
+::vsg::dmat4 toVsg(const Eigen::Isometry3d& transform);
+::vsg::dvec3 toVsg(const Eigen::Vector3d& vec);
+::vsg::dvec4 toVsg(const Eigen::Vector4d& vec);
+
+Eigen::Isometry3d toEigen(const ::vsg::dmat4& mat);
+Eigen::Vector3d toEigen(const ::vsg::dvec3& vec);
+
+// Create transform node
+::vsg::ref_ptr<::vsg::MatrixTransform> createTransform(const Eigen::Isometry3d& tf);
+
+} // namespace dart::gui::vsg
+```
+
+**Files**:
+
+- `conversions.hpp/.cpp` - Type conversions
+
+**Tasks**:
+
+- [x] Implement Eigen → VSG matrix conversion
+- [x] Implement Eigen → VSG vector conversions
+- [x] Implement VSG → Eigen conversions
+- [x] Add createTransform() helper
+
+### 1.4 Color/Material Utilities (Reusable)
+
+```cpp
+namespace dart::gui::vsg {
+
+struct MaterialOptions {
+  Eigen::Vector4d color = {0.7, 0.7, 0.7, 1.0};
+  bool wireframe = false;
+  double shininess = 32.0;
+};
+
+// Create basic material/shader setup
+::vsg::ref_ptr<::vsg::StateGroup> createMaterial(const MaterialOptions& opts);
+
+// Preset colors for debug visualization
+namespace colors {
+  constexpr Eigen::Vector4d Red    = {1.0, 0.2, 0.2, 1.0};
+  constexpr Eigen::Vector4d Green  = {0.2, 1.0, 0.2, 1.0};
+  constexpr Eigen::Vector4d Blue   = {0.2, 0.2, 1.0, 1.0};
+  constexpr Eigen::Vector4d Yellow = {1.0, 1.0, 0.2, 1.0};
+  constexpr Eigen::Vector4d Cyan   = {0.2, 1.0, 1.0, 1.0};
+  constexpr Eigen::Vector4d Orange = {1.0, 0.5, 0.2, 1.0};
+  constexpr Eigen::Vector4d White  = {1.0, 1.0, 1.0, 1.0};
+  constexpr Eigen::Vector4d Gray   = {0.5, 0.5, 0.5, 1.0};
+}
+
+} // namespace dart::gui::vsg
+```
+
+**Files**:
+
+- `materials.hpp/.cpp` - Material/color utilities
+
+**Tasks**:
+
+- [ ] Implement basic material creation
+- [ ] Add preset colors
+- [ ] Add wireframe support
+
+### 1.5 Debug Visualization (Reusable)
+
+```cpp
+namespace dart::gui::vsg {
+
+// Debug primitives for visualization
+::vsg::ref_ptr<::vsg::Node> createPoint(const Eigen::Vector3d& pos,
+                                         double size = 0.02,
+                                         const Eigen::Vector4d& color = colors::Red);
+
+::vsg::ref_ptr<::vsg::Node> createLine(const Eigen::Vector3d& start,
+                                        const Eigen::Vector3d& end,
+                                        const Eigen::Vector4d& color = colors::White);
+
+::vsg::ref_ptr<::vsg::Node> createArrow(const Eigen::Vector3d& start,
+                                         const Eigen::Vector3d& direction,
+                                         double length = 0.1,
+                                         const Eigen::Vector4d& color = colors::Blue);
+
+// Batch creation for performance
+::vsg::ref_ptr<::vsg::Node> createPoints(const std::vector<Eigen::Vector3d>& positions,
+                                          double size = 0.02,
+                                          const Eigen::Vector4d& color = colors::Red);
+
+::vsg::ref_ptr<::vsg::Node> createArrows(const std::vector<Eigen::Vector3d>& starts,
+                                          const std::vector<Eigen::Vector3d>& directions,
+                                          double length = 0.1,
+                                          const Eigen::Vector4d& color = colors::Blue);
+
+} // namespace dart::gui::vsg
+```
+
+**Files**:
+
+- `debug_draw.hpp/.cpp` - Debug visualization primitives
+
+**Tasks**:
+
+- [ ] Implement point rendering
+- [ ] Implement line rendering
+- [ ] Implement arrow rendering (line + cone tip)
+- [ ] Implement batch versions
 
 ---
 
-## Recommendation
+## Phase 2: Simple Viewer (Building Block)
 
-### Two-Track Approach
+Basic viewer that can be reused/extended later.
 
-#### Track 1: Quick Debug Tool (Raylib)
-**Purpose**: Standalone collision visualization for `dart/collision/experimental`
-**Scope**: 
-- Render shapes (box, sphere, capsule, cylinder, mesh)
-- Show contact points and normals
-- Simple camera controls
-- No DART integration needed
+### 2.1 Simple Viewer
 
-**Benefits**:
-- Quick to implement
-- Learn raylib API
-- Useful immediately for collision debugging
-- Low risk, isolated from main codebase
+```cpp
+namespace dart::gui::vsg {
 
-#### Track 2: Full GUI Replacement (VSG)
-**Purpose**: Replace OSG in `dart/gui/`
-**Scope**:
-- Port WorldNode, ShapeFrameNode, ShapeNode hierarchy
-- Port ImGui integration via vsgImGui
-- Port all shape renderers
-- Port DragAndDrop, InteractiveFrame
-- Maintain API compatibility where possible
+class SimpleViewer {
+public:
+  SimpleViewer(int width = 800, int height = 600, const std::string& title = "DART VSG");
+  ~SimpleViewer();
 
-**Benefits**:
-- Proper scene graph for robotics
-- Vulkan performance
-- Future-proof
-- Natural OSG migration
+  // Scene management
+  void setScene(::vsg::ref_ptr<::vsg::Node> scene);
+  ::vsg::ref_ptr<::vsg::Group> getRoot();
 
-### Decision Matrix
+  // Add/remove nodes
+  void addNode(::vsg::ref_ptr<::vsg::Node> node);
+  void removeNode(::vsg::ref_ptr<::vsg::Node> node);
+  void clear();
 
-| If your priority is... | Choose |
-|------------------------|--------|
-| Quick collision debugging NOW | Raylib |
-| Long-term DART visualization | VSG |
-| Both (recommended) | Raylib first, then VSG |
+  // Camera
+  void lookAt(const Eigen::Vector3d& eye, const Eigen::Vector3d& center, const Eigen::Vector3d& up);
+  void resetCamera();
+
+  // Render
+  void frame();           // Render single frame
+  void run();             // Run until window closed
+  bool shouldClose();
+
+private:
+  // VSG internals
+  ::vsg::ref_ptr<::vsg::Viewer> mViewer;
+  ::vsg::ref_ptr<::vsg::Group> mRoot;
+  ::vsg::ref_ptr<::vsg::Window> mWindow;
+  // ... camera, etc.
+};
+
+} // namespace dart::gui::vsg
+```
+
+**Files**:
+
+- `SimpleViewer.hpp/.cpp` - Basic VSG viewer
+
+**Tasks**:
+
+- [ ] Implement window creation
+- [ ] Implement basic camera (orbit controls)
+- [ ] Implement scene graph root
+- [ ] Implement frame() and run()
+- [ ] Add grid/axes helpers
 
 ---
 
-## Next Steps
+## Phase 3: Collision Visualization (Specific Use Case)
 
-### Immediate (Collision Debug Tool)
-- [ ] Create `tools/collision_debug/` with raylib
-- [ ] Implement shape rendering (primitives + mesh)
-- [ ] Add contact point/normal visualization
-- [ ] Test with experimental collision module
+Minimal additions for collision module visualization.
 
-### Future (OSG Replacement)
-- [ ] Prototype VSG integration in `dart/gui/experimental/`
-- [ ] Port basic Viewer functionality
-- [ ] Port ImGui via vsgImGui
-- [ ] Port shape renderers
-- [ ] Performance comparison with OSG
-- [ ] Full migration plan
+### 3.1 Collision Scene Builder
+
+```cpp
+namespace dart::gui::vsg {
+
+// Visualize collision world state
+class CollisionSceneBuilder {
+public:
+  // Add collision objects
+  void addObject(const collision::experimental::CollisionObject& obj,
+                 const Eigen::Vector4d& color = colors::Gray);
+
+  // Add collision results
+  void addContacts(const collision::experimental::CollisionResult& result,
+                   double normalLength = 0.1);
+
+  // Add CCD results
+  void addSphereCast(const Eigen::Vector3d& start,
+                     const Eigen::Vector3d& end,
+                     double radius,
+                     const collision::experimental::CcdResult* hit = nullptr);
+
+  // Build scene graph
+  ::vsg::ref_ptr<::vsg::Node> build();
+
+  // Clear for next frame
+  void clear();
+
+private:
+  std::vector<::vsg::ref_ptr<::vsg::Node>> mNodes;
+};
+
+} // namespace dart::gui::vsg
+```
+
+**Files**:
+
+- `CollisionSceneBuilder.hpp/.cpp` - Collision-specific visualization
+
+**Tasks**:
+
+- [ ] Implement addObject() using geometry builders
+- [ ] Implement addContacts() with points + normals
+- [ ] Implement addSphereCast() visualization
+- [ ] Implement build() to compose scene graph
+
+### 3.2 Example/Tool
+
+Simple executable to test collision visualization:
+
+```
+tools/collision_viz/
+├── CMakeLists.txt
+└── main.cpp
+```
+
+```cpp
+// Example usage
+int main() {
+  using namespace dart::collision::experimental;
+  using namespace dart::gui::vsg;
+
+  // Create collision world
+  CollisionWorld world;
+  auto box = world.createObject(std::make_unique<BoxShape>(Eigen::Vector3d(1,1,1)));
+  auto sphere = world.createObject(std::make_unique<SphereShape>(0.5),
+                                    Eigen::Translation3d(2, 0, 0) * Eigen::Isometry3d::Identity());
+
+  // Collide
+  CollisionResult result;
+  world.collide(CollisionOption(), result);
+
+  // Visualize
+  SimpleViewer viewer;
+  CollisionSceneBuilder builder;
+  builder.addObject(box, colors::Blue);
+  builder.addObject(sphere, colors::Green);
+  builder.addContacts(result);
+  viewer.setScene(builder.build());
+  viewer.run();
+
+  return 0;
+}
+```
+
+**Tasks**:
+
+- [ ] Create tools/collision_viz/ structure
+- [ ] Implement example showing shapes
+- [ ] Implement example showing contacts
+- [ ] Implement example showing CCD (sphere-cast)
+
+---
+
+## File Structure
+
+```
+dart/gui/vsg/
+├── CMakeLists.txt
+├── export.hpp
+├── fwd.hpp
+├── conversions.hpp              # Eigen ↔ VSG
+├── conversions.cpp
+├── materials.hpp                # Colors, materials
+├── materials.cpp
+├── geometry_builders.hpp        # Shape → VSG geometry
+├── geometry_builders.cpp
+├── debug_draw.hpp               # Points, lines, arrows
+├── debug_draw.cpp
+├── SimpleViewer.hpp             # Basic viewer
+├── SimpleViewer.cpp
+├── CollisionSceneBuilder.hpp    # Collision-specific
+└── CollisionSceneBuilder.cpp
+
+tools/collision_viz/
+├── CMakeLists.txt
+└── main.cpp
+```
+
+---
+
+## Mapping to Future OSG Migration
+
+| Building Block       | Future Use (dart/gui replacement)  |
+| -------------------- | ---------------------------------- |
+| `geometry_builders`  | → `render/*ShapeNode` replacements |
+| `conversions`        | → Used everywhere                  |
+| `materials`          | → Material system                  |
+| `debug_draw`         | → Debug visualization layer        |
+| `SimpleViewer`       | → Base for `Viewer` replacement    |
+| Scene graph patterns | → `WorldNode`, `ShapeFrameNode`    |
+
+---
+
+## Dependencies
+
+### Required
+
+- **VulkanSceneGraph (VSG)** - core library
+- **Vulkan SDK** - graphics API (runtime)
+
+### Build Integration
+
+```cmake
+# CMake
+find_package(vsg REQUIRED)
+target_link_libraries(dart-gui-vsg PUBLIC vsg::vsg)
+```
+
+```toml
+# pixi.toml (if available via conda-forge)
+[dependencies]
+vulkanscenegraph = ">=1.0"
+```
+
+### Optional (for later phases)
+
+- vsgImGui - ImGui integration
+- vsgXchange - model loading (GLTF, OBJ)
+
+---
+
+## Success Criteria
+
+### Phase 1 Complete When:
+
+- [ ] VSG builds in DART project
+- [ ] All geometry builders work (sphere, box, capsule, cylinder, plane, mesh)
+- [ ] Transform conversions work
+- [ ] Debug primitives work (points, lines, arrows)
+
+### Phase 2 Complete When:
+
+- [ ] SimpleViewer displays shapes
+- [ ] Camera orbit controls work
+- [ ] Can render collision world objects
+
+### Phase 3 Complete When:
+
+- [ ] CollisionSceneBuilder visualizes collision results
+- [ ] Example tool works end-to-end
+- [ ] Can visualize CCD (sphere-cast, capsule-cast)
 
 ---
 
 ## Resources
 
-### Raylib
-- Website: https://www.raylib.com/
-- GitHub: https://github.com/raysan5/raylib (28k+ stars)
-- Cheatsheet: https://www.raylib.com/cheatsheet/cheatsheet.html
-- rlImGui: https://github.com/raylib-extras/rlImGui
-
 ### VulkanSceneGraph (VSG)
+
 - Website: https://vsg-dev.github.io/VulkanSceneGraph/
 - GitHub: https://github.com/vsg-dev/VulkanSceneGraph (1.7k stars)
 - Tutorial: https://github.com/vsg-dev/vsgTutorial
 - Examples: https://github.com/vsg-dev/vsgExamples
-- vsgImGui: https://github.com/vsg-dev/vsgImGui
+- API Docs: https://vsg-dev.github.io/VulkanSceneGraph/docs/
 
-### Polyscope (Debug Only)
-- Website: https://polyscope.run/
-- GitHub: https://github.com/nmwsharp/polyscope (2.1k stars)
+### Key VSG Concepts
 
-### Rerun (Debug Only)
-- Website: https://rerun.io/
-- Docs: https://rerun.io/docs/getting-started/quick-start
+- `vsg::Node` - Base scene graph node
+- `vsg::Group` - Container for children
+- `vsg::MatrixTransform` - Transform node
+- `vsg::StateGroup` - Material/shader state
+- `vsg::Geometry` - Renderable geometry
+- `vsg::Viewer` - Window + render loop
+- `vsg::Builder` - Geometry creation helpers
 
 ---
 
 ## Decision Log
 
-| Date | Decision | Rationale |
-|------|----------|-----------|
-| 2026-01-20 | Research complete | Evaluated Raylib, VSG, Polyscope, Rerun |
-| 2026-01-20 | Two-track approach recommended | Raylib for quick debug, VSG for full replacement |
-| | Awaiting decision | Need to decide which track to pursue first |
+| Date       | Decision                 | Rationale                                                         |
+| ---------- | ------------------------ | ----------------------------------------------------------------- |
+| 2026-01-20 | Research complete        | Evaluated multiple options                                        |
+| 2026-01-20 | **Choose VSG only**      | Scene graph essential; natural OSG successor; Vulkan future-proof |
+| 2026-01-20 | Building blocks approach | Learn VSG incrementally; create reusable components               |
+| 2026-01-20 | Collision viz first      | Immediate value; minimal scope; tests building blocks             |
