@@ -64,6 +64,8 @@ constexpr double kCapsuleRadius = 0.4;
 constexpr double kCapsuleHeight = 1.2;
 constexpr double kDenseRange = 2.0;
 constexpr double kSparseRange = 10.0;
+constexpr double kRp3dDenseRange = 10.0;
+constexpr double kRp3dSparseRange = 50.0;
 const Eigen::Vector3d kBoxHalfExtents(0.5, 0.5, 0.5);
 
 std::size_t MaxContactsForCount(std::size_t count)
@@ -93,6 +95,23 @@ std::vector<ShapeSpec> MakeMixedScene(
     }
     spec.transform
         = dart::benchmark::collision::RandomTransformWithRotation(rng, range);
+    specs.push_back(spec);
+  }
+
+  return specs;
+}
+
+std::vector<ShapeSpec> MakeSphereScene(
+    std::size_t count, double range, unsigned int seed)
+{
+  auto rng = dart::benchmark::collision::MakeDeterministicRng(seed);
+  std::vector<ShapeSpec> specs;
+  specs.reserve(count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    ShapeSpec spec;
+    spec.kind = ShapeKind::Sphere;
+    spec.transform = dart::benchmark::collision::RandomTransform(rng, range);
     specs.push_back(spec);
   }
 
@@ -129,12 +148,16 @@ void BuildExperimentalWorld(
   }
 }
 
-void RunPipelineBenchmark(benchmark::State& state, double range)
+using SceneBuilder = std::vector<ShapeSpec> (*)(
+    std::size_t count, double range, unsigned int seed);
+
+void RunPipelineBenchmark(
+    benchmark::State& state, double range, SceneBuilder buildScene)
 {
   using Clock = std::chrono::steady_clock;
 
   const std::size_t count = static_cast<std::size_t>(state.range(0));
-  auto specs = MakeMixedScene(count, range, 42);
+  auto specs = buildScene(count, range, 42);
 
   CollisionWorld world;
   std::vector<CollisionObject> objects;
@@ -238,7 +261,7 @@ void RunPipelineBenchmark(benchmark::State& state, double range)
 static void BM_Scenario_PipelineBreakdown_Dense_Experimental(
     benchmark::State& state)
 {
-  RunPipelineBenchmark(state, kDenseRange);
+  RunPipelineBenchmark(state, kDenseRange, MakeMixedScene);
 }
 BENCHMARK(BM_Scenario_PipelineBreakdown_Dense_Experimental)
     ->Arg(1000)
@@ -248,9 +271,29 @@ BENCHMARK(BM_Scenario_PipelineBreakdown_Dense_Experimental)
 static void BM_Scenario_PipelineBreakdown_Sparse_Experimental(
     benchmark::State& state)
 {
-  RunPipelineBenchmark(state, kSparseRange);
+  RunPipelineBenchmark(state, kSparseRange, MakeMixedScene);
 }
 BENCHMARK(BM_Scenario_PipelineBreakdown_Sparse_Experimental)
+    ->Arg(1000)
+    ->Arg(10000)
+    ->Complexity();
+
+static void BM_Scenario_PipelineBreakdown_RP3D_Dense_Spheres_Experimental(
+    benchmark::State& state)
+{
+  RunPipelineBenchmark(state, kRp3dDenseRange, MakeSphereScene);
+}
+BENCHMARK(BM_Scenario_PipelineBreakdown_RP3D_Dense_Spheres_Experimental)
+    ->Arg(1000)
+    ->Arg(10000)
+    ->Complexity();
+
+static void BM_Scenario_PipelineBreakdown_RP3D_Sparse_Spheres_Experimental(
+    benchmark::State& state)
+{
+  RunPipelineBenchmark(state, kRp3dSparseRange, MakeSphereScene);
+}
+BENCHMARK(BM_Scenario_PipelineBreakdown_RP3D_Sparse_Spheres_Experimental)
     ->Arg(1000)
     ->Arg(10000)
     ->Complexity();

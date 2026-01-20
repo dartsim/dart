@@ -37,6 +37,17 @@ children in the profiler report.
 - `docs/dev_tasks/experimental_collision/results/rp3d_profile_2026-01-19_10k_dense.txt`
 - `docs/dev_tasks/experimental_collision/results/rp3d_profile_2026-01-19_10k_sparse.txt`
 
+## DART comparison (planned)
+
+Run DART pipeline breakdown with RP3D-aligned scenarios:
+
+```bash
+./tests/benchmark/bm_scenarios_pipeline_breakdown \
+  --benchmark_filter="PipelineBreakdown_RP3D_.*"
+```
+
+Record results in `benchmark_results.md` alongside the RP3D baselines.
+
 ## Notes
 
 - Broadphase dominates the dense 10k case (dynamic AABB tree update + overlap).

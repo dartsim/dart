@@ -21,7 +21,7 @@
 - `tests/benchmark/collision/scenarios/bm_mixed_primitives.cpp` - mixed primitives scenarios.
 - `tests/benchmark/collision/scenarios/bm_mesh_heavy.cpp` - mesh-heavy scenes.
 - `tests/benchmark/collision/scenarios/bm_raycast_batch.cpp` - batched raycasts.
-- `tests/benchmark/collision/scenarios/bm_pipeline_breakdown.cpp` - AABB update + broadphase + narrowphase timing.
+- `tests/benchmark/collision/scenarios/bm_pipeline_breakdown.cpp` - AABB update + broadphase + narrowphase timing (includes RP3D-aligned sphere-only dense/sparse variants).
 - `tests/benchmark/collision/experimental/bm_ccd.cpp` - experimental CCD microbenchmarks.
 - `tests/benchmark/collision/experimental/bm_libccd.cpp` - DART vs libccd GJK/EPA/MPR microbenchmarks (optional).
 - `tests/benchmark/collision/fixtures/` - shared shape/scene builders.

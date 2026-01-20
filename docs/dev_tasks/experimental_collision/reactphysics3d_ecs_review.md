@@ -86,47 +86,19 @@ entity->index map lookups are still in the hot path for some operations.
 5. Compare with DART experimental benchmarks using identical scenes.
 6. Record CPU core usage and memory footprint.
 
-## Profiling Run (Sparse 10k Spheres, Headless)
+## Profiling Baselines (Sphere-Only)
 
-Because the testbed requires a GUI (nanogui/GLFW), profiling was run using a
-small console driver linked against the profiling-enabled library.
+Baseline runs are tracked in
+`reactphysics3d_ecs_profile_results.md` with raw outputs in
+`docs/dev_tasks/experimental_collision/results/`. The headless driver lives at
+`rp3d_profile_driver.cpp`.
 
-Build (library):
+Key takeaways from the 10k sphere cases (ms/frame):
 
-```bash
-cmake -S /home/js/dev/physics/reactphysics3d \
-  -B /home/js/dev/physics/reactphysics3d/build_profile \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DRP3D_PROFILING_ENABLED=ON \
-  -DRP3D_COMPILE_TESTS=OFF \
-  -DRP3D_COMPILE_TESTBED=OFF
-cmake --build /home/js/dev/physics/reactphysics3d/build_profile --parallel
-```
-
-Driver notes:
-
-- Compiled with `-DIS_RP3D_PROFILING_ENABLED` to match the library ABI.
-- Scene: 10k dynamic spheres, radius 0.5, positions uniform in `[-50, 50]`.
-- `gravity = (0,0,0)`, sleeping disabled, 2 update steps.
-- Output file: `/tmp/rp3d_profiling_profile_10000.txt`.
-
-Key timings (ms/frame, 2 frames):
-
-- `PhysicsWorld::update` total: **10.22 ms**
-- `CollisionDetectionSystem::computeCollisionDetection`: **8.11 ms**
-  - `computeBroadPhase`: **7.65 ms**
-  - `computeMiddlePhase`: **0.214 ms**
-  - `computeNarrowPhase`: **0.248 ms**
-- `BroadPhaseSystem::updateCollidersComponents`: **1.04 ms**
-  - `DynamicAABBTree::updateObject`: **0.231 ms** (20k calls)
-  - `SphereShape::computeAABB`: **0.172 ms** (20k calls)
-- `DynamicAABBTree::reportAllShapesOverlappingWithShapes`: **7.38 ms**
-
-Observations:
-
-- Broadphase dominates for sparse 10k scenes; narrowphase is small at this density.
-- AABB update cost is measurable but secondary to broadphase pair generation.
-- Significant "Unaccounted" time suggests missing profiler scopes in some paths.
+- Dense (range 10): collision detection **~36.6 ms**, broadphase **~22.9 ms**,
+  narrowphase **~10.6 ms**
+- Sparse (range 50): collision detection **~0.273 ms**, broadphase **~0.139 ms**,
+  narrowphase **~0.080 ms**
 
 ## Takeaways for DART Experimental Collision
 
