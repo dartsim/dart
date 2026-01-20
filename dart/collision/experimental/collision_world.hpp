@@ -78,6 +78,13 @@ public:
   [[nodiscard]] std::size_t updateAll(
       const BatchSettings& settings, BatchStats* stats = nullptr);
 
+  [[nodiscard]] std::size_t updateDirty(std::span<const ObjectId> ids);
+
+  [[nodiscard]] std::size_t updateDirty(
+      std::span<const ObjectId> ids,
+      const BatchSettings& settings,
+      BatchStats* stats = nullptr);
+
   [[nodiscard]] BroadPhaseSnapshot buildBroadPhaseSnapshot() const;
 
   [[nodiscard]] BroadPhaseSnapshot buildBroadPhaseSnapshot(

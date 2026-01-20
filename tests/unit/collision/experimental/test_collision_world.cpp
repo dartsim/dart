@@ -336,6 +336,35 @@ TEST(CollisionWorld, ObjectIdRoundTrip)
   EXPECT_NE(id3, id1);
 }
 
+TEST(CollisionWorld, UpdateDirtyById)
+{
+  CollisionWorld world;
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0), tf1);
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(5.0, 0, 0);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+
+  auto snapshot = world.buildBroadPhaseSnapshot();
+  EXPECT_TRUE(snapshot.pairs.empty());
+
+  Eigen::Isometry3d tf2Overlap = tf2;
+  tf2Overlap.translation() = Eigen::Vector3d(1.5, 0, 0);
+  obj2.setTransform(tf2Overlap);
+
+  std::vector<ObjectId> dirtyIds{obj2.getId()};
+  EXPECT_EQ(world.updateDirty(dirtyIds), 1u);
+
+  auto updatedSnapshot = world.buildBroadPhaseSnapshot();
+  ASSERT_EQ(updatedSnapshot.pairs.size(), 1u);
+
+  CollisionResult result;
+  EXPECT_TRUE(world.collideAll(updatedSnapshot, CollisionOption(), result));
+  EXPECT_EQ(result.numContacts(), 1u);
+}
+
 //==============================================================================
 // CollisionWorld Raycast tests
 //==============================================================================

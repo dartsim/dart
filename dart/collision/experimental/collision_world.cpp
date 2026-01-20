@@ -249,6 +249,67 @@ std::size_t CollisionWorld::updateAll(
   return updated;
 }
 
+std::size_t CollisionWorld::updateDirty(std::span<const ObjectId> ids)
+{
+  BatchSettings settings;
+  return updateDirty(ids, settings, nullptr);
+}
+
+std::size_t CollisionWorld::updateDirty(
+    std::span<const ObjectId> ids,
+    const BatchSettings& settings,
+    BatchStats* stats)
+{
+  (void)settings;
+  std::size_t updated = 0;
+
+  for (ObjectId id : ids) {
+    if (id >= m_idToEntity.size()) {
+      continue;
+    }
+    auto entity = m_idToEntity[id];
+    if (entity == entt::null || !m_registry.valid(entity)) {
+      continue;
+    }
+
+    auto* aabbComp = m_registry.try_get<comps::AabbComponent>(entity);
+    if (!aabbComp || !aabbComp->dirty) {
+      continue;
+    }
+
+    CollisionObject obj(entity, this);
+    Aabb aabb = obj.computeAabb();
+    aabbComp->aabb = aabb;
+    aabbComp->dirty = false;
+
+    auto* broadPhaseComp
+        = m_registry.try_get<comps::BroadPhaseComponent>(entity);
+    if (broadPhaseComp) {
+      m_broadPhase->update(broadPhaseComp->broadPhaseId, aabb);
+      m_batchStorage.update(
+          broadPhaseComp->broadPhaseId,
+          obj.getShape(),
+          obj.getTransform(),
+          aabb);
+    } else {
+      m_broadPhase->update(static_cast<std::size_t>(entity), aabb);
+    }
+
+    ++updated;
+  }
+
+  if (stats) {
+    stats->numObjects = numObjects();
+    stats->numAabbUpdates = updated;
+  }
+
+  if (updated > 0) {
+    m_snapshotDirty = true;
+  }
+
+  return updated;
+}
+
 BroadPhaseSnapshot CollisionWorld::buildBroadPhaseSnapshot() const
 {
   BatchSettings settings;
