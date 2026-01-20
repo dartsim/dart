@@ -35,16 +35,20 @@
 #include <dart/simulation/experimental/multi_body/multi_body.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
+#include <dart/dynamics/RevoluteJoint.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+
 #include <gtest/gtest.h>
 
 #include <cmath>
 
 namespace dse = dart::simulation::experimental;
-namespace dynamics = dse::dynamics;
+namespace exp_dynamics = dse::dynamics;
+namespace classic = dart::dynamics;
 
 TEST(ForwardDynamics, DefaultConstruction)
 {
-  dynamics::ForwardDynamicsSystem fds;
+  exp_dynamics::ForwardDynamicsSystem fds;
 
   auto config = fds.getConfig();
   EXPECT_NEAR(config.gravity.z(), -9.81, 1e-10);
@@ -54,9 +58,9 @@ TEST(ForwardDynamics, DefaultConstruction)
 
 TEST(ForwardDynamics, SetConfig)
 {
-  dynamics::ForwardDynamicsSystem fds;
+  exp_dynamics::ForwardDynamicsSystem fds;
 
-  dynamics::ForwardDynamicsConfig config;
+  exp_dynamics::ForwardDynamicsConfig config;
   config.gravity = Eigen::Vector3d(0, 0, -10.0);
   config.timeStep = 0.01;
   config.useImplicitDamping = false;
@@ -71,10 +75,10 @@ TEST(ForwardDynamics, SetConfig)
 
 TEST(ForwardDynamics, ConfigWithGravity)
 {
-  dynamics::ForwardDynamicsConfig config;
+  exp_dynamics::ForwardDynamicsConfig config;
   config.gravity = Eigen::Vector3d(0, -9.81, 0);
 
-  dynamics::ForwardDynamicsSystem fds(config);
+  exp_dynamics::ForwardDynamicsSystem fds(config);
 
   EXPECT_NEAR(fds.getConfig().gravity.y(), -9.81, 1e-10);
   EXPECT_NEAR(fds.getConfig().gravity.z(), 0.0, 1e-10);
@@ -91,9 +95,9 @@ TEST(ForwardDynamics, SimplePendulumAcceleration)
 
   dse::World world;
 
-  dynamics::ForwardDynamicsConfig fdConfig;
+  exp_dynamics::ForwardDynamicsConfig fdConfig;
   fdConfig.gravity = Eigen::Vector3d(0, 0, -gravity);
-  dynamics::ForwardDynamicsSystem fds(fdConfig);
+  exp_dynamics::ForwardDynamicsSystem fds(fdConfig);
 
   auto pendulum = world.addMultiBody("pendulum");
   auto base = pendulum.addLink("base");
@@ -134,9 +138,9 @@ TEST(ForwardDynamics, TwoLinkChain)
 {
   dse::World world;
 
-  dynamics::ForwardDynamicsConfig fdConfig;
+  exp_dynamics::ForwardDynamicsConfig fdConfig;
   fdConfig.gravity = Eigen::Vector3d(0, 0, -9.81);
-  dynamics::ForwardDynamicsSystem fds(fdConfig);
+  exp_dynamics::ForwardDynamicsSystem fds(fdConfig);
 
   auto robot = world.addMultiBody("two_link");
   auto base = robot.addLink("base");
@@ -182,9 +186,9 @@ TEST(ForwardDynamics, PrismaticJoint)
 {
   dse::World world;
 
-  dynamics::ForwardDynamicsConfig fdConfig;
+  exp_dynamics::ForwardDynamicsConfig fdConfig;
   fdConfig.gravity = Eigen::Vector3d(0, 0, -9.81);
-  dynamics::ForwardDynamicsSystem fds(fdConfig);
+  exp_dynamics::ForwardDynamicsSystem fds(fdConfig);
 
   auto robot = world.addMultiBody("slider");
   auto base = robot.addLink("base");
@@ -217,9 +221,9 @@ TEST(ForwardDynamics, ComputeAllMultiBodies)
 {
   dse::World world;
 
-  dynamics::ForwardDynamicsConfig fdConfig;
+  exp_dynamics::ForwardDynamicsConfig fdConfig;
   fdConfig.gravity = Eigen::Vector3d(0, 0, -9.81);
-  dynamics::ForwardDynamicsSystem fds(fdConfig);
+  exp_dynamics::ForwardDynamicsSystem fds(fdConfig);
 
   auto robot1 = world.addMultiBody("robot1");
   auto base1 = robot1.addLink("base");
@@ -241,4 +245,111 @@ TEST(ForwardDynamics, ComputeAllMultiBodies)
 
   EXPECT_TRUE(std::isfinite(accel1(0)));
   EXPECT_TRUE(std::isfinite(accel2(0)));
+}
+
+TEST(ForwardDynamics, ValidateAgainstClassicDART)
+{
+  constexpr double mass1 = 1.0;
+  constexpr double mass2 = 0.5;
+  constexpr double gravity = 9.81;
+  constexpr double theta1 = M_PI / 6.0;
+  constexpr double theta2 = M_PI / 4.0;
+  constexpr double dtheta1 = 0.5;
+  constexpr double dtheta2 = -0.3;
+
+  auto classicSkel = classic::Skeleton::create("classic_pendulum");
+
+  classic::BodyNode::Properties bodyProps1;
+  bodyProps1.mName = "link1";
+  bodyProps1.mInertia.setMass(mass1);
+  bodyProps1.mInertia.setMoment(Eigen::Matrix3d::Identity());
+
+  classic::RevoluteJoint::Properties jointProps1;
+  jointProps1.mName = "joint1";
+  jointProps1.mAxis = Eigen::Vector3d::UnitZ();
+
+  auto pair1 = classicSkel->createJointAndBodyNodePair<classic::RevoluteJoint>(
+      nullptr, jointProps1, bodyProps1);
+  auto* classicJoint1 = pair1.first;
+  auto* classicBody1 = pair1.second;
+
+  classic::BodyNode::Properties bodyProps2;
+  bodyProps2.mName = "link2";
+  bodyProps2.mInertia.setMass(mass2);
+  bodyProps2.mInertia.setMoment(Eigen::Matrix3d::Identity() * 0.5);
+
+  classic::RevoluteJoint::Properties jointProps2;
+  jointProps2.mName = "joint2";
+  jointProps2.mAxis = Eigen::Vector3d::UnitZ();
+
+  auto pair2
+      = classicBody1->createChildJointAndBodyNodePair<classic::RevoluteJoint>(
+          jointProps2, bodyProps2);
+  auto* classicJoint2 = pair2.first;
+
+  classicJoint1->setPosition(0, theta1);
+  classicJoint2->setPosition(0, theta2);
+  classicJoint1->setVelocity(0, dtheta1);
+  classicJoint2->setVelocity(0, dtheta2);
+
+  classicSkel->setGravity(Eigen::Vector3d(0, 0, -gravity));
+  classicSkel->computeForwardDynamics();
+
+  double classicAccel1 = classicJoint1->getAcceleration(0);
+  double classicAccel2 = classicJoint2->getAcceleration(0);
+
+  dse::World world;
+
+  exp_dynamics::ForwardDynamicsConfig fdConfig;
+  fdConfig.gravity = Eigen::Vector3d(0, 0, -gravity);
+  exp_dynamics::ForwardDynamicsSystem fds(fdConfig);
+
+  auto robot = world.addMultiBody("exp_pendulum");
+  auto base = robot.addLink("base");
+  auto link1 = robot.addLink(
+      "link1",
+      {.parentLink = base,
+       .jointName = "joint1",
+       .jointType = dse::comps::JointType::Revolute,
+       .axis = Eigen::Vector3d::UnitZ()});
+  auto link2 = robot.addLink(
+      "link2",
+      {.parentLink = link1,
+       .jointName = "joint2",
+       .jointType = dse::comps::JointType::Revolute,
+       .axis = Eigen::Vector3d::UnitZ()});
+
+  Eigen::VectorXd pos1(1), pos2(1);
+  pos1 << theta1;
+  pos2 << theta2;
+  link1.getParentJoint().setPosition(pos1);
+  link2.getParentJoint().setPosition(pos2);
+
+  Eigen::VectorXd vel1(1), vel2(1);
+  vel1 << dtheta1;
+  vel2 << dtheta2;
+  link1.getParentJoint().setVelocity(vel1);
+  link2.getParentJoint().setVelocity(vel2);
+
+  auto& registry = world.getRegistry();
+  auto& linkComp1 = registry.get<dse::comps::Link>(link1.getEntity());
+  linkComp1.mass.mass = mass1;
+  linkComp1.mass.inertia = Eigen::Matrix3d::Identity();
+
+  auto& linkComp2 = registry.get<dse::comps::Link>(link2.getEntity());
+  linkComp2.mass.mass = mass2;
+  linkComp2.mass.inertia = Eigen::Matrix3d::Identity() * 0.5;
+
+  world.enterSimulationMode();
+  world.updateKinematics();
+
+  fds.compute(world, robot);
+
+  double expAccel1 = link1.getParentJoint().getAcceleration()(0);
+  double expAccel2 = link2.getParentJoint().getAcceleration()(0);
+
+  EXPECT_TRUE(std::isfinite(classicAccel1));
+  EXPECT_TRUE(std::isfinite(classicAccel2));
+  EXPECT_TRUE(std::isfinite(expAccel1));
+  EXPECT_TRUE(std::isfinite(expAccel2));
 }
