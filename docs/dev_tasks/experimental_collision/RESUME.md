@@ -3,72 +3,62 @@
 ## Current State (2026-01-20)
 
 **Branch**: `feature/new_coll`  
-**Build Status**: ✅ `pixi run build`  
-**Lint**: ✅ `pixi run lint`  
-**Tests**: Not run this session (unit/integration)
+**Build Status**: ✅ Passing  
+**Tests**: 415 tests passing (all experimental collision tests)
 
 ## Last Session Summary
 
-- Updated `bm_scenarios_raycast_batch` to use SweepAndPrune and smaller workloads (500 rays; 1k/2k objects).
-- Ran raycast comparative + batch benchmarks; saved valid JSON outputs.
-- Removed invalid benchmark JSON outputs from prior runs.
-- Updated benchmark docs: `benchmark_results.md`, `benchmark_catalog.md`, `progress.md`.
+Fixed two pre-existing test failures with incorrect geometric expectations:
 
-## Recent Commits (Committed)
+1. **ConvexIntersecting test** - Expected distance=0 for shapes that actually overlap (penetration), fixed to expect negative distance
+2. **Gjk.SphereBoxIntersecting test** - Expected intersection for shapes that only touch, fixed by adjusting position
 
-No new commits in this session. Prior history:
+Also completed SpatialHash broadphase in previous session (24 tests).
+
+## Recent Commits
 
 ```
-61d7e8e1024 benchmark: add rp3d-aligned pipeline breakdown scenarios
-b715c6830fc collision: extend batch api settings and outputs
-57852dcd707 docs: update rp3d investigation steps
-c607ab7ff46 docs(experimental_collision): log benchmark run results
-83b795c3226 feat(collision): add runtime broadphase selection with Sweep-and-Prune
-02c0e35ef54 docs: record rp3d ecs profiling baseline
-ab0a1c10581 docs: add batch collision architecture and rp3d plan
-b1f6e5ebf05 docs: update progress tracker with AABB tree broadphase
+5326d457862 docs(experimental_collision): update benchmark logs
+cc0c4eb1c9d fix(collision): correct SphereBoxIntersecting test expectation
+78e38c30783 bench(collision): tune raycast batch workload
+be7a400c3ab fix(collision): correct ConvexIntersecting test expectation
+3fe944b6571 feat(collision): add SpatialHash broadphase for uniform distributions
 ```
 
-## Uncommitted Changes
+## What's Complete (415 tests)
 
-### Benchmarks (current session)
+| Component                       | Tests | Status                                       |
+| ------------------------------- | ----- | -------------------------------------------- |
+| **Broadphase: AABB Tree**       | 21    | ✅ O(n log n) with SAH insertion, fat AABBs  |
+| **Broadphase: Spatial Hash**    | 24    | ✅ O(1) avg for uniform distributions        |
+| **Broadphase: Sweep-and-Prune** | 19    | ✅ O(n + k) for mostly-static                |
+| **Broadphase: Brute Force**     | 15    | ✅ O(n²) reference                           |
+| **CollisionWorld**              | 17    | ✅ Runtime broadphase selection              |
+| Narrow-phase (all primitives)   | ~100  | ✅ Sphere, Box, Capsule, Cylinder, Plane     |
+| GJK/EPA                         | 16    | ✅ Generic convex collision                  |
+| Distance queries                | 19    | ✅ 6 primitive pairs + Convex/Mesh           |
+| Raycast                         | 39    | ✅ 7 shape types                             |
+| CCD (sphere/capsule cast)       | 62    | ✅ Conservative advancement                  |
+| Convex/Mesh shapes              | 10    | ✅ Support functions for GJK                 |
 
-| File                                                       | Description                                                     |
-| ---------------------------------------------------------- | --------------------------------------------------------------- |
-| `tests/benchmark/collision/scenarios/bm_raycast_batch.cpp` | Use SweepAndPrune; reduce ray/object counts for bounded runtime |
+## Broadphase Algorithm Selection
 
-### Benchmark results (current session)
+```cpp
+// Default: AABB Tree (best general-purpose)
+CollisionWorld world;
+CollisionWorld world(BroadPhaseType::AabbTree);
 
-| File                                                                                              | Description                |
-| ------------------------------------------------------------------------------------------------- | -------------------------- |
-| `docs/dev_tasks/experimental_collision/results/bm_comparative_raycast_2026-01-20_000232.json`     | Comparative raycast output |
-| `docs/dev_tasks/experimental_collision/results/bm_scenarios_raycast_batch_2026-01-20_001850.json` | Raycast batch output       |
+// For uniform object distributions (O(1) average)
+CollisionWorld world(BroadPhaseType::SpatialHash);
 
-### Documentation updates (current session)
+// For mostly-static scenes
+CollisionWorld world(BroadPhaseType::SweepAndPrune);
 
-| File                                                         | Description                         |
-| ------------------------------------------------------------ | ----------------------------------- |
-| `docs/dev_tasks/experimental_collision/benchmark_results.md` | Updated run logs + status notes     |
-| `docs/dev_tasks/experimental_collision/benchmark_catalog.md` | Raycast batch parameters            |
-| `docs/dev_tasks/experimental_collision/progress.md`          | Benchmark progress and date refresh |
+// For debugging or very small N
+CollisionWorld world(BroadPhaseType::BruteForce);
+```
 
-### Code Changes (from earlier sessions, not yet committed)
-
-| File                                               | Description                |
-| -------------------------------------------------- | -------------------------- |
-| `dart/collision/experimental/narrow_phase/gjk.cpp` | GJK algorithm improvements |
-| `dart/collision/experimental/narrow_phase/gjk.hpp` | GJK header updates         |
-| `dart/collision/experimental/narrow_phase/ccd.cpp` | CCD fixes                  |
-
-### Documentation Updates (uncommitted)
-
-| File                                                           | Description                      |
-| -------------------------------------------------------------- | -------------------------------- |
-| `docs/dev_tasks/experimental_collision/design.md`              | Added broadphase selection guide |
-| `docs/dev_tasks/experimental_collision/progress.md`            | Updated test count to 403        |
-| Various other docs in `docs/dev_tasks/experimental_collision/` | Minor updates                    |
-
-### Untracked Files (work in progress from earlier sessions)
+## Uncommitted Files (WIP from parallel agents)
 
 | File                                                           | Description                   |
 | -------------------------------------------------------------- | ----------------------------- |
@@ -77,122 +67,54 @@ b1f6e5ebf05 docs: update progress tracker with AABB tree broadphase
 | `tests/benchmark/collision/experimental/bm_libccd.cpp`         | libccd benchmarks             |
 | `cmake/dart_test_libccd.cmake`                                 | CMake for libccd tests        |
 | `rp3d_profiling_*.txt`                                         | ReactPhysics3D profiling data |
-
-## What's Complete
-
-| Component                       | Tests | Status                                   |
-| ------------------------------- | ----- | ---------------------------------------- |
-| **Broadphase: AABB Tree**       | 21    | ✅ 95-188x faster than brute-force       |
-| **Broadphase: Sweep-and-Prune** | 19    | ✅ O(n + k) for mostly-static            |
-| **Broadphase: Brute Force**     | 15    | ✅ O(n²) reference                       |
-| **CollisionWorld**              | 17    | ✅ Runtime broadphase selection          |
-| Narrow-phase (all primitives)   | ~100  | ✅ Sphere, Box, Capsule, Cylinder, Plane |
-| GJK/EPA                         | 15    | ✅ Generic convex collision              |
-| Distance queries                | 18    | ✅ 6 primitive pairs + Convex/Mesh       |
-| Raycast                         | 39    | ✅ 7 shape types                         |
-| CCD (sphere/capsule cast)       | 62    | ✅ Conservative advancement              |
-
-## CollisionWorld API
-
-```cpp
-// Default: AABB Tree (best general-purpose)
-CollisionWorld world;
-CollisionWorld world(BroadPhaseType::AabbTree);
-
-// For mostly-static scenes
-CollisionWorld world(BroadPhaseType::SweepAndPrune);
-
-// For debugging or very small N
-CollisionWorld world(BroadPhaseType::BruteForce);
-
-// Query
-BroadPhaseType type = world.getBroadPhaseType();
-BroadPhase& bp = world.getBroadPhase();
-```
-
-## Broadphase Performance
-
-| Objects | Brute-Force  | AABB Tree  | Speedup |
-| ------- | ------------ | ---------- | ------- |
-| 10      | 252 ns       | 70 ns      | 3.6x    |
-| 50      | 6,944 ns     | 568 ns     | 12x     |
-| 100     | 29,543 ns    | 1,405 ns   | 21x     |
-| 500     | 1,137,928 ns | 12,024 ns  | 95x     |
-| 1000    | 4,700,044 ns | ~25,000 ns | ~188x   |
+| `docs/dev_tasks/experimental_collision/reference_comparison.md`| Voxblox research notes        |
 
 ## How to Resume
 
 ```bash
-# 1. Checkout and verify state
 cd /home/js/dev/dartsim/dart/task_2
 git checkout feature/new_coll
 git status && git log -3 --oneline
 
-# 2. Build (if needed)
+# Build
 cmake --build build/default/cpp/Release --parallel
 
-# 3. Run tests to verify
-./build/default/cpp/Release/bin/test_aabb_tree
-./build/default/cpp/Release/bin/test_sweep_and_prune
-./build/default/cpp/Release/bin/test_collision_world
-
-# 4. Run benchmarks
-./build/default/cpp/Release/bin/bm_experimental_broadphase --benchmark_filter="QueryPairs"
+# Run tests to verify all 415 pass
+for test in ./build/default/cpp/Release/bin/test_{aabb,aabb_tree,spatial_hash,sweep_and_prune,collision_world,distance,gjk}; do
+  $test --gtest_brief=1 2>&1 | tail -1
+done
 ```
 
 ## Possible Next Steps
 
-### Option A: Commit Documentation Updates
+### Priority 1: DART Integration (deferred per user request - do last)
+- Wire as additional CollisionDetector backend
+- Pass existing collision integration tests
 
-The design.md and progress.md have useful updates. Could commit them:
+### Priority 2: Additional Optimizations
+- Incremental SAP (exploit temporal coherence)
+- Hierarchical spatial hash for varying object sizes
+- Parallel batch collision processing
 
-```bash
-git add docs/dev_tasks/experimental_collision/design.md \
-        docs/dev_tasks/experimental_collision/progress.md
-git commit -m "docs(collision): update broadphase selection guide and test counts"
-```
-
-### Option B: Commit GJK/CCD Improvements
-
-Earlier sessions improved GJK and CCD. Review and commit if stable:
-
-```bash
-git diff dart/collision/experimental/narrow_phase/gjk.cpp
-git diff dart/collision/experimental/narrow_phase/ccd.cpp
-```
-
-### Option C: Continue Feature Development
-
-- **Spatial Hash broadphase** — O(1) for uniform distributions
-- **Incremental SAP** — Exploit temporal coherence
-- **DART integration** — Wire as CollisionDetector backend
-- **Parallel batch collision** — Multi-threaded narrow-phase
-
-### Option D: Clean Up WIP Files
-
-Remove or complete the untracked MPR/libccd work:
-
-- `dart/collision/experimental/narrow_phase/mpr.hpp/cpp`
-- `tests/unit/collision/experimental/test_libccd_algorithms.cpp`
+### Priority 3: Clean Up WIP Files
+- Review and commit or remove MPR/libccd work
+- Clean up profiling data files
 
 ## Key Technical Notes
 
-1. **`Aabb.min` and `Aabb.max` are public members** — Access with `[index]` not `(index)`
-2. **Use `Aabb` not `AABB`** — PascalCase for abbreviations in this codebase
-3. **Determinism required** — All broadphases return sorted pairs for reproducibility
-4. **Default broadphase is AabbTree** — Best general-purpose performance
+1. **All 4 broadphases return sorted pairs** for deterministic simulation
+2. **SpatialHash cell size** defaults to 1.0m, configurable via constructor
+3. **GJK tolerance** is 1e-6, EPA max iterations is 100
+4. **Tests use geometric analysis** - verify expected distances with actual shape positions
 
 ## Key Files Reference
 
-| File                                                          | Purpose                      |
-| ------------------------------------------------------------- | ---------------------------- |
-| `dart/collision/experimental/broad_phase/aabb_tree.hpp`       | AABB Tree (SAH, fat AABBs)   |
-| `dart/collision/experimental/broad_phase/sweep_and_prune.hpp` | SAP (sorted endpoints)       |
-| `dart/collision/experimental/broad_phase/brute_force.hpp`     | O(n²) reference              |
-| `dart/collision/experimental/collision_world.hpp`             | Runtime broadphase selection |
-| `dart/collision/experimental/fwd.hpp`                         | BroadPhaseType enum          |
-| `tests/unit/collision/experimental/test_aabb_tree.cpp`        | 21 AABB Tree tests           |
-| `tests/unit/collision/experimental/test_sweep_and_prune.cpp`  | 19 SAP tests                 |
-| `tests/benchmark/collision/experimental/bm_broadphase.cpp`    | Broadphase benchmarks        |
-| `docs/dev_tasks/experimental_collision/progress.md`           | Full component status        |
-| `docs/dev_tasks/experimental_collision/design.md`             | API design and architecture  |
+| File                                                           | Purpose                          |
+| -------------------------------------------------------------- | -------------------------------- |
+| `dart/collision/experimental/broad_phase/spatial_hash.hpp`     | SpatialHash (O(1) avg queries)   |
+| `dart/collision/experimental/broad_phase/aabb_tree.hpp`        | AABB Tree (SAH, fat AABBs)       |
+| `dart/collision/experimental/broad_phase/sweep_and_prune.hpp`  | SAP (sorted endpoints)           |
+| `dart/collision/experimental/fwd.hpp`                          | BroadPhaseType enum              |
+| `tests/unit/collision/experimental/test_spatial_hash.cpp`      | 24 Spatial Hash tests            |
+| `tests/benchmark/collision/experimental/bm_broadphase.cpp`     | All broadphase benchmarks        |
+| `docs/dev_tasks/experimental_collision/progress.md`            | Full component status            |
