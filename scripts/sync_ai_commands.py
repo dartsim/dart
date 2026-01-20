@@ -24,6 +24,15 @@ from pathlib import Path
 CODEX_NAME_LIMIT = 100
 CODEX_DESC_LIMIT = 500
 
+# Header added to auto-generated files
+AUTO_GEN_HEADER = """\
+<!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
+<!-- Source: {source_path} -->
+<!-- Sync script: scripts/sync_ai_commands.py -->
+<!-- Run `pixi run sync-ai-commands` to update -->
+
+"""
+
 
 def get_repo_root() -> Path:
     return Path(__file__).parent.parent
@@ -72,6 +81,44 @@ def validate_codex_skill(skill_path: Path) -> list[str]:
     return warnings
 
 
+def has_auto_gen_header(content: str) -> bool:
+    """Check if content has the auto-generated header."""
+    return "<!-- AUTO-GENERATED FILE" in content
+
+
+def strip_auto_gen_header(content: str) -> str:
+    """Remove auto-generated header from content for comparison."""
+    lines = content.split("\n")
+    result_lines = []
+    in_header = False
+
+    for line in lines:
+        if line.startswith("<!-- AUTO-GENERATED FILE"):
+            in_header = True
+            continue
+        if in_header:
+            if line.startswith("<!--"):
+                continue
+            in_header = False
+        result_lines.append(line)
+
+    return "\n".join(result_lines)
+
+
+def add_auto_gen_header(content: str, source_path: str) -> str:
+    """Add auto-generated header after YAML frontmatter (if present) to preserve tool parsing."""
+    header = AUTO_GEN_HEADER.format(source_path=source_path).rstrip("\n")
+
+    if content.startswith("---"):
+        lines = content.split("\n")
+        for i, line in enumerate(lines[1:], start=1):
+            if line.strip() == "---":
+                frontmatter = "\n".join(lines[: i + 1])
+                rest = "\n".join(lines[i + 1 :])
+                return frontmatter + "\n" + header + "\n" + rest
+    return header + "\n\n" + content
+
+
 def sync_flat_files(
     source_dir: Path,
     target_dir: Path,
@@ -98,11 +145,15 @@ def sync_flat_files(
 
     for source_file in source_files:
         target_file = target_dir / source_file.name
+        source_content = source_file.read_text()
+        source_rel_path = source_file.relative_to(get_repo_root())
 
         if target_file.exists():
-            source_content = source_file.read_text()
             target_content = target_file.read_text()
-            if source_content == target_content:
+            target_content_stripped = strip_auto_gen_header(target_content)
+            if source_content == target_content_stripped and has_auto_gen_header(
+                target_content
+            ):
                 skipped_count += 1
                 continue
 
@@ -112,7 +163,10 @@ def sync_flat_files(
             status = "MISMATCH" if target_file.exists() else "MISSING"
             print(f"  {status}: {source_file.name}")
         else:
-            shutil.copy2(source_file, target_file)
+            content_with_header = add_auto_gen_header(
+                source_content, str(source_rel_path)
+            )
+            target_file.write_text(content_with_header)
             print(f"  SYNCED:   {source_file.name}")
             synced_count += 1
 
@@ -163,6 +217,8 @@ def sync_skills(
         source_skill = source_dir / skill_name / "SKILL.md"
         target_skill_dir = target_dir / skill_name
         target_skill = target_skill_dir / "SKILL.md"
+        source_content = source_skill.read_text()
+        source_rel_path = source_skill.relative_to(get_repo_root())
 
         if target_tool == "codex":
             warnings = validate_codex_skill(source_skill)
@@ -170,9 +226,11 @@ def sync_skills(
                 print(f"  WARNING:  {skill_name}: {w}")
 
         if target_skill.exists():
-            source_content = source_skill.read_text()
             target_content = target_skill.read_text()
-            if source_content == target_content:
+            target_content_stripped = strip_auto_gen_header(target_content)
+            if source_content == target_content_stripped and has_auto_gen_header(
+                target_content
+            ):
                 skipped_count += 1
                 continue
 
@@ -183,7 +241,10 @@ def sync_skills(
             print(f"  {status}: {skill_name}/SKILL.md")
         else:
             target_skill_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source_skill, target_skill)
+            content_with_header = add_auto_gen_header(
+                source_content, str(source_rel_path)
+            )
+            target_skill.write_text(content_with_header)
             print(f"  SYNCED:   {skill_name}/SKILL.md")
             synced_count += 1
 

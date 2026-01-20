@@ -28,10 +28,15 @@ Pluggable collision detection with multiple backends.
 - `CollisionGroup::collide()` for collision queries
 - Filter pairs via `CollisionFilter` for performance
 
+## Gotchas
+
+- **Object destruction lifecycle**: In `notifyCollisionObjectDestroying()`, do NOT call `object->getShape()` — the underlying `ShapeFrame` may already be freed. Shape cleanup is handled by the object's deleter (e.g., `BulletCollisionShapeDeleter`), so manual reclamation in the notification callback is both redundant and unsafe (causes heap-use-after-free).
+
 ## Testing
 
 Unit tests: `tests/unit/collision/`
 Integration tests: `tests/integration/test_Collision*.cpp`
+ASAN testing: `pixi run test-asan` (catches memory errors like use-after-free)
 
 ## See Also
 

@@ -178,7 +178,7 @@ lint-yaml = { cmd = """
 lint-toml = { cmd = ["bash", "-lc", "python scripts/lint_toml.py"] }
 
 lint-md = { cmd = """
-    prettier --write '**/*.md' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
+    prettier --write '**/*.md' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**' '!.codex/**' '!.opencode/**'
 """ }
 
 lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
