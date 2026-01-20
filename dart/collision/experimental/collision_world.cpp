@@ -34,6 +34,7 @@
 #include <dart/collision/experimental/broad_phase/brute_force.hpp>
 #include <dart/collision/experimental/broad_phase/spatial_hash.hpp>
 #include <dart/collision/experimental/broad_phase/sweep_and_prune.hpp>
+#include <dart/collision/experimental/collision_filter.hpp>
 #include <dart/collision/experimental/collision_world.hpp>
 #include <dart/collision/experimental/comps/collision_object.hpp>
 #include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
@@ -82,6 +83,7 @@ CollisionObject CollisionWorld::createObject(
   m_registry.emplace<comps::AabbComponent>(entity);
   auto& broadPhaseComp = m_registry.emplace<comps::BroadPhaseComponent>(entity);
   m_registry.emplace<comps::UserDataComponent>(entity);
+  m_registry.emplace<comps::CollisionFilterComponent>(entity);
 
   CollisionObject obj(entity, this);
   Aabb aabb = obj.computeAabb();
@@ -398,6 +400,29 @@ bool CollisionWorld::collideAll(
       continue;
     }
 
+    if (pair.first < m_idToEntity.size() && pair.second < m_idToEntity.size()) {
+      auto entity1 = m_idToEntity[pair.first];
+      auto entity2 = m_idToEntity[pair.second];
+      if (entity1 != entt::null && entity2 != entt::null) {
+        auto* filter1
+            = m_registry.try_get<comps::CollisionFilterComponent>(entity1);
+        auto* filter2
+            = m_registry.try_get<comps::CollisionFilterComponent>(entity2);
+        if (filter1 && filter2) {
+          if (!shouldCollide(filter1->filterData, filter2->filterData)) {
+            continue;
+          }
+          if (option.collisionFilter) {
+            CollisionObject obj1(entity1, this);
+            CollisionObject obj2(entity2, this);
+            if (option.collisionFilter->ignoresCollision(obj1, obj2)) {
+              continue;
+            }
+          }
+        }
+      }
+    }
+
     if (stats) {
       ++stats->numPairsTested;
     }
@@ -452,6 +477,29 @@ bool CollisionWorld::collide(
       continue;
     }
 
+    if (pair.first < m_idToEntity.size() && pair.second < m_idToEntity.size()) {
+      auto entity1 = m_idToEntity[pair.first];
+      auto entity2 = m_idToEntity[pair.second];
+      if (entity1 != entt::null && entity2 != entt::null) {
+        auto* filter1
+            = m_registry.try_get<comps::CollisionFilterComponent>(entity1);
+        auto* filter2
+            = m_registry.try_get<comps::CollisionFilterComponent>(entity2);
+        if (filter1 && filter2) {
+          if (!shouldCollide(filter1->filterData, filter2->filterData)) {
+            continue;
+          }
+          if (option.collisionFilter) {
+            CollisionObject obj1(entity1, this);
+            CollisionObject obj2(entity2, this);
+            if (option.collisionFilter->ignoresCollision(obj1, obj2)) {
+              continue;
+            }
+          }
+        }
+      }
+    }
+
     if (NarrowPhase::collide(shape1, *tf1, shape2, *tf2, option, result)) {
       hasCollision = true;
       if (option.enableContact == false
@@ -474,6 +522,17 @@ bool CollisionWorld::collide(
   if (!obj1.isValid() || !obj2.isValid()) {
     return false;
   }
+
+  const auto& filter1 = obj1.getCollisionFilterData();
+  const auto& filter2 = obj2.getCollisionFilterData();
+  if (!shouldCollide(filter1, filter2)) {
+    return false;
+  }
+  if (option.collisionFilter
+      && option.collisionFilter->ignoresCollision(obj1, obj2)) {
+    return false;
+  }
+
   return NarrowPhase::collide(obj1, obj2, option, result);
 }
 

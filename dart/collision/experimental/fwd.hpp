@@ -52,6 +52,11 @@ class SignedDistanceField;
 class CollisionObject;
 class CollisionGroup;
 
+struct CollisionFilterData;
+class CollisionFilter;
+class CallbackCollisionFilter;
+class CompositeCollisionFilter;
+
 class BroadPhase;
 class AabbTreeBroadPhase;
 class BruteForceBroadPhase;

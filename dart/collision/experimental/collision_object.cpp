@@ -36,6 +36,8 @@
 
 #include <limits>
 
+#include <cstdint>
+
 namespace dart::collision::experimental {
 
 CollisionObject::CollisionObject(entt::entity entity, CollisionWorld* world)
@@ -119,6 +121,96 @@ void* CollisionObject::getUserData() const
   auto& registry = m_world->getRegistry();
   auto* userDataComp = registry.try_get<comps::UserDataComponent>(m_entity);
   return userDataComp ? userDataComp->userData : nullptr;
+}
+
+std::uint32_t CollisionObject::getCollisionGroup() const
+{
+  if (!isValid()) {
+    return kCollisionGroupAll;
+  }
+  auto& registry = m_world->getRegistry();
+  auto* filterComp
+      = registry.try_get<comps::CollisionFilterComponent>(m_entity);
+  return filterComp ? filterComp->filterData.collisionGroup
+                    : kCollisionGroupAll;
+}
+
+void CollisionObject::setCollisionGroup(std::uint32_t group)
+{
+  if (!isValid()) {
+    return;
+  }
+  auto& registry = m_world->getRegistry();
+  auto* filterComp
+      = registry.try_get<comps::CollisionFilterComponent>(m_entity);
+  if (filterComp) {
+    filterComp->filterData.collisionGroup = group;
+  }
+}
+
+std::uint32_t CollisionObject::getCollisionMask() const
+{
+  if (!isValid()) {
+    return kCollisionMaskAll;
+  }
+  auto& registry = m_world->getRegistry();
+  auto* filterComp
+      = registry.try_get<comps::CollisionFilterComponent>(m_entity);
+  return filterComp ? filterComp->filterData.collisionMask : kCollisionMaskAll;
+}
+
+void CollisionObject::setCollisionMask(std::uint32_t mask)
+{
+  if (!isValid()) {
+    return;
+  }
+  auto& registry = m_world->getRegistry();
+  auto* filterComp
+      = registry.try_get<comps::CollisionFilterComponent>(m_entity);
+  if (filterComp) {
+    filterComp->filterData.collisionMask = mask;
+  }
+}
+
+void CollisionObject::setCollisionFilter(
+    std::uint32_t group, std::uint32_t mask)
+{
+  if (!isValid()) {
+    return;
+  }
+  auto& registry = m_world->getRegistry();
+  auto* filterComp
+      = registry.try_get<comps::CollisionFilterComponent>(m_entity);
+  if (filterComp) {
+    filterComp->filterData.collisionGroup = group;
+    filterComp->filterData.collisionMask = mask;
+  }
+}
+
+const CollisionFilterData& CollisionObject::getCollisionFilterData() const
+{
+  static const CollisionFilterData defaultData = CollisionFilterData::all();
+  if (!isValid()) {
+    return defaultData;
+  }
+  auto& registry = m_world->getRegistry();
+  auto* filterComp
+      = registry.try_get<comps::CollisionFilterComponent>(m_entity);
+  return filterComp ? filterComp->filterData : defaultData;
+}
+
+void CollisionObject::setCollisionFilterData(
+    const CollisionFilterData& filterData)
+{
+  if (!isValid()) {
+    return;
+  }
+  auto& registry = m_world->getRegistry();
+  auto* filterComp
+      = registry.try_get<comps::CollisionFilterComponent>(m_entity);
+  if (filterComp) {
+    filterComp->filterData = filterData;
+  }
 }
 
 bool CollisionObject::isValid() const

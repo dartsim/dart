@@ -82,14 +82,21 @@ struct DART_COLLISION_EXPERIMENTAL_API CollisionOption
 
   std::size_t maxNumContacts = 1000;
 
+  const CollisionFilter* collisionFilter = nullptr;
+
   [[nodiscard]] static CollisionOption binaryCheck()
   {
-    return {false, 1};
+    return {false, 1, nullptr};
   }
 
   [[nodiscard]] static CollisionOption fullContacts(std::size_t max = 1000)
   {
-    return {true, max};
+    return {true, max, nullptr};
+  }
+
+  [[nodiscard]] static CollisionOption withFilter(const CollisionFilter* filter)
+  {
+    return {true, 1000, filter};
   }
 };
 

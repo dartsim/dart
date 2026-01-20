@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/collision/experimental/aabb.hpp>
+#include <dart/collision/experimental/collision_filter.hpp>
 #include <dart/collision/experimental/export.hpp>
 #include <dart/collision/experimental/shapes/shape.hpp>
 
@@ -40,6 +41,7 @@
 #include <entt/entt.hpp>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace dart::collision::experimental {
 
@@ -70,6 +72,17 @@ public:
 
   void setUserData(void* data);
   [[nodiscard]] void* getUserData() const;
+
+  [[nodiscard]] std::uint32_t getCollisionGroup() const;
+  void setCollisionGroup(std::uint32_t group);
+
+  [[nodiscard]] std::uint32_t getCollisionMask() const;
+  void setCollisionMask(std::uint32_t mask);
+
+  void setCollisionFilter(std::uint32_t group, std::uint32_t mask);
+
+  [[nodiscard]] const CollisionFilterData& getCollisionFilterData() const;
+  void setCollisionFilterData(const CollisionFilterData& filterData);
 
   [[nodiscard]] bool isValid() const;
 

@@ -30,61 +30,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <dart/collision/experimental/aabb.hpp>
 #include <dart/collision/experimental/collision_filter.hpp>
-#include <dart/collision/experimental/shapes/shape.hpp>
 
-#include <Eigen/Geometry>
+#include <algorithm>
 
-#include <memory>
-#include <variant>
+namespace dart::collision::experimental {
 
-namespace dart::collision::experimental::comps {
-
-struct CollisionObjectTag
+void CompositeCollisionFilter::addFilter(const CollisionFilter* filter)
 {
-};
+  if (filter
+      && std::find(filters_.begin(), filters_.end(), filter)
+             == filters_.end()) {
+    filters_.push_back(filter);
+  }
+}
 
-struct ShapeComponent
+void CompositeCollisionFilter::removeFilter(const CollisionFilter* filter)
 {
-  std::unique_ptr<Shape> shape;
+  auto it = std::find(filters_.begin(), filters_.end(), filter);
+  if (it != filters_.end()) {
+    filters_.erase(it);
+  }
+}
 
-  ShapeComponent() = default;
-  explicit ShapeComponent(std::unique_ptr<Shape> s) : shape(std::move(s)) {}
-
-  ShapeComponent(ShapeComponent&&) = default;
-  ShapeComponent& operator=(ShapeComponent&&) = default;
-
-  ShapeComponent(const ShapeComponent&) = delete;
-  ShapeComponent& operator=(const ShapeComponent&) = delete;
-};
-
-struct TransformComponent
+void CompositeCollisionFilter::clearFilters()
 {
-  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-};
+  filters_.clear();
+}
 
-struct AabbComponent
+bool CompositeCollisionFilter::ignoresCollision(
+    const CollisionObject& object1, const CollisionObject& object2) const
 {
-  Aabb aabb;
-  bool dirty = true;
-};
+  for (const auto* filter : filters_) {
+    if (filter && filter->ignoresCollision(object1, object2)) {
+      return true;
+    }
+  }
+  return false;
+}
 
-struct BroadPhaseComponent
-{
-  std::size_t broadPhaseId = 0;
-};
-
-struct UserDataComponent
-{
-  void* userData = nullptr;
-};
-
-struct CollisionFilterComponent
-{
-  CollisionFilterData filterData;
-};
-
-} // namespace dart::collision::experimental::comps
+} // namespace dart::collision::experimental

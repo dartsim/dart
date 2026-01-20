@@ -38,6 +38,7 @@ set(collision_experimental_sources
   broad_phase/brute_force.cpp
   broad_phase/spatial_hash.cpp
   broad_phase/sweep_and_prune.cpp
+  collision_filter.cpp
   collision_object.cpp
   collision_world.cpp
   contact_manifold.cpp
