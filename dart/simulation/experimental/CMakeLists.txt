@@ -57,6 +57,7 @@ add_library(${target_name}
   frame/free_frame.cpp
   io/binary_io.cpp
   io/serializer.cpp
+  shape/shape_node.cpp
   multi_body/joint.cpp
   multi_body/link.cpp
   multi_body/multi_body.cpp

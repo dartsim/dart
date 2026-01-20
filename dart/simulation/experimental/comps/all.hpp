@@ -39,3 +39,4 @@
 #include <dart/simulation/experimental/comps/multi_body.hpp>
 #include <dart/simulation/experimental/comps/name.hpp>
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
+#include <dart/simulation/experimental/comps/shape_node.hpp>

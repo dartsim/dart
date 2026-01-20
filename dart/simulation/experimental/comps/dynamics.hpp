@@ -69,8 +69,9 @@ struct MassProperties
   DART_EXPERIMENTAL_PROPERTY_COMPONENT(MassProperties);
 
   double mass = 1.0;
-  Eigen::Vector3d localCOM = Eigen::Vector3d::Zero();  // Body frame, relative to joint
-  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();  // About CoM
+  Eigen::Vector3d localCOM
+      = Eigen::Vector3d::Zero(); // Body frame, relative to joint
+  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity(); // About CoM
 };
 
 /// Force and torque accumulators

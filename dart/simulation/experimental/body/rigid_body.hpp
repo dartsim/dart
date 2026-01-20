@@ -36,6 +36,7 @@
 
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
+#include <dart/simulation/experimental/shape/shape_node.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -74,6 +75,15 @@ public:
 
   /// Get the name of the rigid body
   [[nodiscard]] std::string getName() const;
+
+  //--------------------------------------------------------------------------
+  // Frame interface overrides
+  //--------------------------------------------------------------------------
+
+  /// Get the local transform of this rigid body
+  ///
+  /// Returns the transform from the parent frame to this rigid body frame.
+  [[nodiscard]] const Eigen::Isometry3d& getLocalTransform() const override;
 
   // Note: getEntity(), getWorld(), isValid() inherited from Frame
 
@@ -127,6 +137,16 @@ public:
 
   /// Clear accumulated forces and torques
   void clearForces();
+
+  /// Create a ShapeNode attached to this RigidBody
+  ///
+  /// @param shape Collision geometry to attach
+  /// @param name Optional name for the shape
+  /// @param options Shape configuration options
+  ShapeNode createShapeNode(
+      const dart::dynamics::ShapePtr& shape,
+      std::string_view name = "",
+      const ShapeNodeOptions& options = ShapeNodeOptions{});
 };
 
 } // namespace dart::simulation::experimental

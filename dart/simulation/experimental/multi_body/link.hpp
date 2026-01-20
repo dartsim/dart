@@ -34,6 +34,7 @@
 
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/multi_body/joint.hpp>
+#include <dart/simulation/experimental/shape/shape_node.hpp>
 
 #include <entt/entt.hpp>
 
@@ -137,6 +138,16 @@ public:
   void setExternalTorque(const Eigen::Vector3d& torque);
 
   void clearExternalForces();
+
+  /// Create a ShapeNode attached to this Link
+  ///
+  /// @param shape Collision geometry to attach
+  /// @param name Optional name for the shape
+  /// @param options Shape configuration options
+  ShapeNode createShapeNode(
+      const dart::dynamics::ShapePtr& shape,
+      std::string_view name = "",
+      const ShapeNodeOptions& options = ShapeNodeOptions{});
 };
 
 } // namespace dart::simulation::experimental

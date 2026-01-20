@@ -36,10 +36,17 @@
 
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 
+#include <dart/constraint/Fwd.hpp>
+
+#include <dart/collision/Fwd.hpp>
+
+#include <dart/dynamics/Fwd.hpp>
+
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
 #include <iosfwd>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -105,19 +112,13 @@ public:
   {
     return m_timeStep;
   }
-  void setTimeStep(double dt)
-  {
-    m_timeStep = dt;
-  }
+  void setTimeStep(double dt);
 
   [[nodiscard]] const Eigen::Vector3d& getGravity() const
   {
     return m_gravity;
   }
-  void setGravity(const Eigen::Vector3d& gravity)
-  {
-    m_gravity = gravity;
-  }
+  void setGravity(const Eigen::Vector3d& gravity);
 
   [[nodiscard]] double getTime() const
   {
@@ -132,6 +133,21 @@ public:
   {
     return m_frame;
   }
+
+  //--------------------------------------------------------------------------
+  // Collision and constraints
+  //--------------------------------------------------------------------------
+  void setConstraintSolver(constraint::UniqueConstraintSolverPtr solver);
+  constraint::ConstraintSolver* getConstraintSolver();
+  const constraint::ConstraintSolver* getConstraintSolver() const;
+
+  void setCollisionDetector(
+      const collision::CollisionDetectorPtr& collisionDetector);
+  collision::CollisionDetectorPtr getCollisionDetector();
+  collision::ConstCollisionDetectorPtr getCollisionDetector() const;
+
+  const collision::CollisionResult& detectCollisions();
+  const collision::CollisionResult& getLastCollisionResult() const;
 
   //--------------------------------------------------------------------------
   // Registry access
@@ -158,6 +174,9 @@ private:
   friend class Joint;
   friend class MultiBody;
   friend class RigidBody;
+  friend class ShapeNode;
+
+  struct ClassicAdapter;
 
   Frame resolveParentFrame(const Frame& parent) const;
   entt::entity createFrameEntity(
@@ -168,6 +187,12 @@ private:
       std::string_view autoNamePrefix,
       bool isFixedFrame,
       std::string& outName);
+
+  ShapeNode createShapeNode(
+      entt::entity parentEntity,
+      const dart::dynamics::ShapePtr& shape,
+      std::string_view name,
+      const ShapeNodeOptions& options);
 
   void ensureDesignMode() const;
   void resetCountersFromRegistry();
@@ -181,11 +206,14 @@ private:
   std::size_t m_rigidBodyCounter{0};
   std::size_t m_linkCounter{0};
   std::size_t m_jointCounter{0};
+  std::size_t m_shapeNodeCounter{0};
 
   double m_timeStep{0.001};
   double m_time{0.0};
   std::size_t m_frame{0};
   Eigen::Vector3d m_gravity{0.0, 0.0, -9.81};
+
+  std::unique_ptr<ClassicAdapter> m_classicAdapter;
 };
 
 } // namespace dart::simulation::experimental

@@ -32,8 +32,33 @@
 
 #include "dart/simulation/experimental/body/rigid_body.hpp"
 
+#include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
 #include "dart/simulation/experimental/world.hpp"
+
+namespace {
+
+void syncFrameFromTransform(entt::registry& registry, entt::entity entity)
+{
+  const auto& transform
+      = registry.get<dart::simulation::experimental::comps::Transform>(entity);
+
+  if (auto* props
+      = registry.try_get<
+          dart::simulation::experimental::comps::FreeFrameProperties>(entity)) {
+    props->localTransform = Eigen::Isometry3d::Identity();
+    props->localTransform.translation() = transform.position;
+    props->localTransform.linear() = transform.orientation.toRotationMatrix();
+  }
+
+  if (auto* cache
+      = registry.try_get<dart::simulation::experimental::comps::FrameCache>(
+          entity)) {
+    cache->needTransformUpdate = true;
+  }
+}
+
+} // namespace
 
 namespace dart::simulation::experimental {
 
@@ -51,6 +76,14 @@ std::string RigidBody::getName() const
     return name->name;
   }
   return "";
+}
+
+//==============================================================================
+const Eigen::Isometry3d& RigidBody::getLocalTransform() const
+{
+  const auto& props
+      = getWorld()->getRegistry().get<comps::FreeFrameProperties>(getEntity());
+  return props.localTransform;
 }
 
 //==============================================================================
@@ -96,9 +129,10 @@ Eigen::Vector3d RigidBody::getPosition() const
 //==============================================================================
 void RigidBody::setPosition(const Eigen::Vector3d& position)
 {
-  auto& transform
-      = getWorld()->getRegistry().get<comps::Transform>(getEntity());
+  auto& registry = getWorld()->getRegistry();
+  auto& transform = registry.get<comps::Transform>(getEntity());
   transform.position = position;
+  syncFrameFromTransform(registry, getEntity());
 }
 
 //==============================================================================
@@ -112,9 +146,10 @@ Eigen::Quaterniond RigidBody::getOrientation() const
 //==============================================================================
 void RigidBody::setOrientation(const Eigen::Quaterniond& orientation)
 {
-  auto& transform
-      = getWorld()->getRegistry().get<comps::Transform>(getEntity());
+  auto& registry = getWorld()->getRegistry();
+  auto& transform = registry.get<comps::Transform>(getEntity());
   transform.orientation = orientation;
+  syncFrameFromTransform(registry, getEntity());
 }
 
 //==============================================================================
@@ -181,6 +216,17 @@ void RigidBody::clearForces()
   auto& force = getWorld()->getRegistry().get<comps::Force>(getEntity());
   force.force.setZero();
   force.torque.setZero();
+}
+
+//==============================================================================
+ShapeNode RigidBody::createShapeNode(
+    const dart::dynamics::ShapePtr& shape,
+    std::string_view name,
+    const ShapeNodeOptions& options)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !shape, InvalidArgumentException, "ShapeNode requires a valid shape");
+  return getWorld()->createShapeNode(getEntity(), shape, name, options);
 }
 
 } // namespace dart::simulation::experimental

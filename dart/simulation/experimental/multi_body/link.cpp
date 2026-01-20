@@ -32,6 +32,7 @@
 
 #include "dart/simulation/experimental/multi_body/link.hpp"
 
+#include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
 #include "dart/simulation/experimental/kinematics/joint_transform.hpp"
 #include "dart/simulation/experimental/multi_body/joint.hpp"
@@ -181,6 +182,17 @@ void Link::clearExternalForces()
   auto& linkComp = getWorld()->getRegistry().get<comps::Link>(getEntity());
   linkComp.externalForce.setZero();
   linkComp.externalTorque.setZero();
+}
+
+//==============================================================================
+ShapeNode Link::createShapeNode(
+    const dart::dynamics::ShapePtr& shape,
+    std::string_view name,
+    const ShapeNodeOptions& options)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !shape, InvalidArgumentException, "ShapeNode requires a valid shape");
+  return getWorld()->createShapeNode(getEntity(), shape, name, options);
 }
 
 } // namespace dart::simulation::experimental

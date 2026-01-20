@@ -32,28 +32,37 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/export.hpp>
+#include <dart/simulation/experimental/comps/component_category.hpp>
 
-namespace dart::simulation::experimental {
+#include <dart/dynamics/Fwd.hpp>
 
-class FixedFrame;
-class Frame;
-class FreeFrame;
-class Joint;
-class Link;
-class MultiBody;
-class RigidBody;
-class ShapeNode;
-class World;
+#include <Eigen/Geometry>
+#include <entt/entt.hpp>
 
-// Options structs
-struct FixedFrameOptions;
-struct FreeFrameOptions;
-struct JointOptions;
-struct LinkOptions;
-struct MultiBodyOptions;
-struct RigidBodyOptions;
-struct ShapeNodeOptions;
-struct WorldOptions;
+namespace dart::simulation::experimental::comps {
 
-} // namespace dart::simulation::experimental
+/// Tag marking entity as a ShapeNode
+struct ShapeNodeTag
+{
+  DART_EXPERIMENTAL_TAG_COMPONENT(ShapeNodeTag);
+};
+
+/// ShapeNode component storing collision geometry metadata.
+///
+/// This component is runtime-only and is not serialized.
+struct ShapeNode
+{
+  DART_EXPERIMENTAL_CACHE_COMPONENT(ShapeNode);
+
+  entt::entity parentEntity = entt::null;
+  Eigen::Isometry3d relativeTransform = Eigen::Isometry3d::Identity();
+  dart::dynamics::ShapePtr shape;
+
+  bool collidable = true;
+  double frictionCoeff = 1.0;
+  double restitutionCoeff = 0.0;
+
+  dart::dynamics::ShapeNode* classicShapeNode = nullptr;
+};
+
+} // namespace dart::simulation::experimental::comps
