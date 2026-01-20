@@ -27,7 +27,7 @@ Exit criteria:
 - `CollisionObject::getId()` available.
 - `CollisionWorld::buildBroadPhaseSnapshot()` reuses cached pairs when valid.
 
-## Phase 2: BatchStorage + BatchView (in progress)
+## Phase 2: BatchStorage + BatchView (done)
 
 Deliverables:
 
@@ -40,7 +40,7 @@ Exit criteria:
 - Create/destroy/update path keeps batch storage in sync.
 - `collideAll` can consume `BatchView` (no per-pair entt lookups).
 
-## Phase 3: ECS-Friendly Narrowphase Interface (in progress)
+## Phase 3: ECS-Friendly Narrowphase Interface (done)
 
 Deliverables:
 
@@ -73,9 +73,8 @@ Exit criteria:
 
 ## Immediate Next Steps
 
-1. Add a small unit test covering `CollisionObject::getId()` and
-   `CollisionWorld::getObjectById()` round-trip.
-2. Extend the batch view to expose optional flags (static/disabled) once
+1. Extend the batch view to expose optional flags (static/disabled) once
    filtering rules are defined.
+2. Add a filtered broadphase query path using the flags (mask/group support).
 3. Validate single-thread regressions after batch-view plumbing (timing-only,
    no benchmark code changes).

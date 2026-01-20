@@ -102,6 +102,10 @@ Implementation status:
 - `buildBroadPhaseSnapshot(const BatchSettings&)` should avoid allocations when
   provided with a reusable output buffer.
 
+Implementation status:
+
+- `updateDirty(std::span<const ObjectId>)` is implemented in `CollisionWorld`.
+
 ### BroadPhase
 
 Add bulk interfaces to reduce per-object overhead:

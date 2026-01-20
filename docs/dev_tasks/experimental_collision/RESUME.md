@@ -18,6 +18,13 @@ Added stable object IDs for collision objects (stored in
 Added BatchStorage/BatchView SoA cache and a shape/transform narrowphase
 overload to reduce per-pair ECS lookups in batch collision.
 
+Added `CollisionWorld::updateDirty` for explicit per-id AABB updates.
+
+Tests currently fail with segfaults in collision-experimental binaries
+(`test_ccd`, `test_collision_object`, `test_collision_world`, `test_convex`,
+`test_narrow_phase`). Suspected Eigen alignment in `BatchStorage` was addressed
+with aligned allocators, but crashes persist; needs follow-up debugging.
+
 Fixed two pre-existing test failures with incorrect geometric expectations:
 
 1. **ConvexIntersecting test** - Expected distance=0 for shapes that actually overlap (penetration), fixed to expect negative distance
