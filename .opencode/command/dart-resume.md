@@ -2,6 +2,10 @@
 description: Continue work from previous session
 agent: build
 ---
+<!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
+<!-- Source: .claude/commands/dart-resume.md -->
+<!-- Sync script: scripts/sync_ai_commands.py -->
+<!-- Run `pixi run sync-ai-commands` to update -->
 
 Resume unfinished work: $ARGUMENTS
 
