@@ -144,6 +144,80 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 
 3. Update `AGENTS.md` skills table
 
+### Skill Design Principles
+
+Skills and subfolder `AGENTS.md` files serve different purposes. Understanding this prevents duplication.
+
+#### Skills vs Subfolder AGENTS.md
+
+| Type                    | Purpose                   | When Loaded                   | Content Style                       |
+| ----------------------- | ------------------------- | ----------------------------- | ----------------------------------- |
+| **SKILL.md**            | On-demand quick reference | Agent explicitly loads skill  | Lightweight, commands, pointers     |
+| **Subfolder AGENTS.md** | Module-specific context   | Auto-loaded when in directory | Module architecture, file locations |
+
+#### Design Rules
+
+1. **Skills are lightweight** — Quick commands and common patterns only
+2. **Skills point to full docs** — "For complete guide: `docs/onboarding/X.md`"
+3. **Subfolder AGENTS.md is source of truth** — Module-specific details live there
+4. **No duplication** — Skills reference docs, don't copy content
+
+#### Skill Template (Follow Existing Pattern)
+
+Follow the pattern of `dart-build` and `dart-test`:
+
+```markdown
+---
+name: dart-<name>
+description: Brief description for skill discovery
+---
+
+# Skill Title
+
+Load this skill when [trigger condition].
+
+## Quick Commands
+
+\`\`\`bash
+pixi run <relevant-command>
+\`\`\`
+
+## Full Documentation
+
+For complete guide: `docs/onboarding/<relevant>.md`
+
+For module details: `<module>/AGENTS.md`
+
+## Common Issues
+
+| Issue | Solution |
+| ----- | -------- |
+| ...   | ...      |
+
+## Key Files
+
+- `path/to/main/file`
+- `path/to/tests`
+```
+
+#### Cross-Agent Compatibility
+
+Skills work across multiple AI tools through automatic syncing:
+
+| Source            | Target           | Tool                  |
+| ----------------- | ---------------- | --------------------- |
+| `.claude/skills/` | (native)         | Claude Code, OpenCode |
+| `.claude/skills/` | `.codex/skills/` | Codex                 |
+
+**Sync is automatic** via `pixi run lint` (includes `sync-ai-commands`).
+
+**CI verification**: `pixi run check-ai-commands` ensures sync in CI.
+
+#### Acknowledgment
+
+The SKILL.md format is inspired by [OpenSkills](https://github.com/anthropics/openskills) (Apache 2.0).
+DART skills are original content under BSD 2-Clause license.
+
 ### Keeping Commands and Skills in Sync
 
 Commands and skills exist in multiple directories because tools don't share paths.

@@ -25,12 +25,12 @@ For module-specific details: `dart/io/AGENTS.md`
 
 ## Supported Formats
 
-| Format | Extension | Use Case |
-|--------|-----------|----------|
-| URDF | `.urdf` | ROS robots |
-| SDF | `.sdf`, `.world` | Gazebo models |
-| MJCF | `.xml` | MuJoCo models |
-| SKEL | `.skel` | Legacy DART |
+| Format | Extension        | Use Case      |
+| ------ | ---------------- | ------------- |
+| URDF   | `.urdf`          | ROS robots    |
+| SDF    | `.sdf`, `.world` | Gazebo models |
+| MJCF   | `.xml`           | MuJoCo models |
+| SKEL   | `.skel`          | Legacy DART   |
 
 ## Common Patterns
 
