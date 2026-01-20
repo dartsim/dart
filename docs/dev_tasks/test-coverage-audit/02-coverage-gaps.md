@@ -60,6 +60,10 @@
 - Error handling in setters
 - Edge cases in kinematics calculations
 
+**Recently tested**:
+
+- `BodyNodePtr`, `WeakBodyNodePtr` ✅ DONE (33 tests)
+
 **Likely untested**:
 
 - Many detail/ implementation classes
