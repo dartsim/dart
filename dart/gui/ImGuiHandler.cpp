@@ -203,6 +203,11 @@ ConvertedKey convertFromOSGKey(int key)
   }
 }
 
+namespace {
+// Disable FontGlobalScale when using rebuilt fonts to avoid bitmap scaling.
+bool gDisableFontGlobalScale = false;
+} // namespace
+
 //==============================================================================
 void applyImGuiScale(float scale)
 {
@@ -217,13 +222,17 @@ void applyImGuiScale(float scale)
   // Reset to the captured base style before applying the requested scale so
   // repeated calls are idempotent and preserve the configured palette.
   style = baseStyle;
-  io.FontGlobalScale = 1.f;
+  if (!gDisableFontGlobalScale) {
+    io.FontGlobalScale = 1.f;
+  }
 
   if (std::abs(scale - 1.f) < 1e-6f)
     return;
 
   style.ScaleAllSizes(scale);
-  io.FontGlobalScale = scale;
+  if (!gDisableFontGlobalScale) {
+    io.FontGlobalScale = scale;
+  }
 }
 
 //==============================================================================
@@ -374,6 +383,7 @@ void ImGuiHandler::setFontScale(float scale)
     return;
   }
 
+  gDisableFontGlobalScale = true;
   mFontScale = scale;
   mUseFontScale = true;
   mFontScaleDirty = true;

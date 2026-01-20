@@ -6,69 +6,30 @@
 
 - **Branch**: `refactor/lcp_plan`
 - **PR**: #2464
-- **State**: Ready to commit - all changes complete, needs visual verification
-- **Blocker**: Human visual test needed to confirm fix works
+- **State**: Updated ImGui scaling logic, needs visual verification
+- **Blocker**: Human visual test needed to confirm lcp_physics is crisp at scale 2
 
 ---
 
 ## What Was Done (This Session)
 
-### 1. ImGuiHandler Font Scaling (Framework-Level Fix)
+### 1. Disable FontGlobalScale When setFontScale Is Active
 
-Added `setFontScale(float)` to `dart/gui/ImGuiHandler`:
-
-- Rebuilds font atlas at `fontScale * framebufferScale` pixels
-- Handles runtime DPI changes (e.g., moving window between monitors)
-- Sets `FontGlobalScale = 1/framebufferScale` to avoid double-scaling
+`applyImGuiScale()` now skips `FontGlobalScale` if `setFontScale()` was used,
+avoiding bitmap scaling when ImGui is rebuilt at the target size.
 
 **Files changed**:
 
-- `dart/gui/ImGuiHandler.hpp` - Added method declaration and member variables
-- `dart/gui/ImGuiHandler.cpp` - Added implementation
-
-### 2. Applied Fix to All 11 ImGui Examples
-
-Every example now calls `setFontScale()` after `setImGuiScale()`:
-
-| Example            | File                                  |
-| ------------------ | ------------------------------------- |
-| atlas_simbicon     | `examples/atlas_simbicon/main.cpp`    |
-| box_stacking       | `examples/box_stacking/main.cpp`      |
-| coupler_constraint | `examples/coupler_constraint/main.cpp`|
-| fetch              | `examples/fetch/main.cpp`             |
-| free_joint_cases   | `examples/free_joint_cases/main.cpp`  |
-| heightmap          | `examples/heightmap/main.cpp`         |
-| imgui              | `examples/imgui/main.cpp`             |
-| lcp_physics        | `examples/lcp_physics/main.cpp`       |
-| mimic_pendulums    | `examples/mimic_pendulums/main.cpp`   |
-| point_cloud        | `examples/point_cloud/main.cpp`       |
-| tinkertoy          | `examples/tinkertoy/main.cpp`         |
-
-### 3. Build Verified
-
-All examples compile successfully with `pixi run build`.
+- `dart/gui/ImGuiHandler.cpp` - Track opt-out flag and preserve FontGlobalScale
 
 ---
 
 ## Files Ready to Commit
 
 ```
-M  .gitignore                           # Corrupted frame file documentation
-M  dart/gui/ImGuiHandler.cpp            # setFontScale() implementation
-M  dart/gui/ImGuiHandler.hpp            # setFontScale() declaration
-M  docs/dev_tasks/lcp_epic/README.md    # Updated status
-A  docs/dev_tasks/lcp_epic/RESUME.md    # This file
-M  examples/atlas_simbicon/main.cpp     # Added setFontScale()
-M  examples/box_stacking/main.cpp       # Added setFontScale()
-M  examples/coupler_constraint/main.cpp # Added setFontScale()
-M  examples/fetch/main.cpp              # Added setFontScale()
-M  examples/free_joint_cases/main.cpp   # Added setFontScale()
-M  examples/heightmap/main.cpp          # Added setFontScale()
-M  examples/imgui/main.cpp              # Added setFontScale()
-M  examples/lcp_physics/main.cpp        # Uses setFontScale() instead of local helper
-M  examples/mimic_pendulums/main.cpp    # Added setFontScale()
-M  examples/point_cloud/main.cpp        # Added setFontScale()
-M  examples/tinkertoy/main.cpp          # Added setFontScale()
+M  dart/gui/ImGuiHandler.cpp
+M  docs/dev_tasks/lcp_epic/README.md
+M  docs/dev_tasks/lcp_epic/RESUME.md
 ```
 
 ---
@@ -94,16 +55,10 @@ cd /home/js/dev/dartsim/dart/task_4
 
 ```bash
 git add -A
-git commit -m "fix(gui): add setFontScale() for crisp ImGui text at high DPI
+git commit -m "fix(gui): avoid FontGlobalScale when using setFontScale
 
-Add ImGuiHandler::setFontScale() that rebuilds the font atlas at the
-target size instead of using FontGlobalScale which causes blur.
-
-- Load font at fontScale * framebufferScale pixels with 2x oversampling
-- Handle runtime DPI changes in newFrame()
-- Apply fix to all 11 ImGui examples
-
-This fixes blurry ImGui widgets when using --gui-scale > 1."
+Skip FontGlobalScale in applyImGuiScale once setFontScale opts in to
+rebuilt fonts, preventing bitmap scaling blur at --gui-scale > 1."
 
 git push origin refactor/lcp_plan
 ```
@@ -135,6 +90,18 @@ if (mUseFontScale && (mFontScaleDirty || scaleChanged)) {
 // In rebuildDefaultFont():
 config.SizePixels = 13.0f * fontScale * framebufferScale;
 io.FontGlobalScale = 1.0f / framebufferScale;
+```
+
+### How applyImGuiScale() Avoids Blur
+
+```cpp
+// In setFontScale():
+gDisableFontGlobalScale = true;
+
+// In applyImGuiScale():
+if (!gDisableFontGlobalScale) {
+  io.FontGlobalScale = scale;
+}
 ```
 
 ### Why FontGlobalScale Alone Causes Blur

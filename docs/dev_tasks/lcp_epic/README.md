@@ -56,7 +56,8 @@
 
 **Cause**: `FontGlobalScale` scales bitmap fonts at runtime
 
-**Fix Status**: Two approaches implemented, needs visual testing
+**Fix Status**: `setFontScale()` rebuilds fonts; `applyImGuiScale()` now skips
+`FontGlobalScale` after `setFontScale()` (needs visual testing)
 
 **Details**: See [RESUME.md](RESUME.md) for full context and next steps
 
@@ -135,7 +136,7 @@ tests/benchmark/lcpsolver/               # Performance benchmarks
 
 - **Branch**: `refactor/lcp_plan`
 - **PR**: #2464
-- **Uncommitted**: ImGuiHandler font scaling fix (needs visual test)
+- **Uncommitted**: ImGuiHandler FontGlobalScale opt-out (needs visual test)
 
 ---
 
