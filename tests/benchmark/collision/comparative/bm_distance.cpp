@@ -57,8 +57,10 @@
 
 #include <benchmark/benchmark.h>
 
+#include <array>
 #include <iostream>
 #include <memory>
+#include <string>
 
 #include <cmath>
 
@@ -385,7 +387,7 @@ void RunDistanceCaseExperimental(
 
       for (auto _ : state) {
         result.clear();
-        const double dist
+        double dist
             = distanceSphereSphere(s1, tfs.tf1, s2, tfs.tf2, result, option);
         benchmark::DoNotOptimize(dist);
       }
@@ -399,7 +401,7 @@ void RunDistanceCaseExperimental(
 
       for (auto _ : state) {
         result.clear();
-        const double dist
+        double dist
             = distanceBoxBox(b1, tfs.tf1, b2, tfs.tf2, result, option);
         benchmark::DoNotOptimize(dist);
       }
@@ -413,7 +415,7 @@ void RunDistanceCaseExperimental(
 
       for (auto _ : state) {
         result.clear();
-        const double dist
+        double dist
             = distanceCapsuleCapsule(c1, tfs.tf1, c2, tfs.tf2, result, option);
         benchmark::DoNotOptimize(dist);
       }
@@ -427,7 +429,7 @@ void RunDistanceCaseExperimental(
 
       for (auto _ : state) {
         result.clear();
-        const double dist
+        double dist
             = distanceSphereBox(sphere, tfs.tf1, box, tfs.tf2, result, option);
         benchmark::DoNotOptimize(dist);
       }
@@ -441,7 +443,7 @@ void RunDistanceCaseExperimental(
 
       for (auto _ : state) {
         result.clear();
-        const double dist = distanceCapsuleSphere(
+        double dist = distanceCapsuleSphere(
             capsule, tfs.tf1, sphere, tfs.tf2, result, option);
         benchmark::DoNotOptimize(dist);
       }
@@ -455,7 +457,7 @@ void RunDistanceCaseExperimental(
 
       for (auto _ : state) {
         result.clear();
-        const double dist = distanceCapsuleBox(
+        double dist = distanceCapsuleBox(
             capsule, tfs.tf1, box, tfs.tf2, result, option);
         benchmark::DoNotOptimize(dist);
       }
@@ -579,456 +581,181 @@ static void BM_Distance_EdgeCases_ODE(
 using dart::benchmark::collision::EdgeCase;
 using dart::benchmark::collision::PairKind;
 
+using EdgeCaseBenchmark = void (*)(benchmark::State&, PairKind, EdgeCase);
+
+static std::string EdgeCaseLabel(PairKind pair, EdgeCase edge)
+{
+  std::string label = dart::benchmark::collision::PairKindName(pair);
+  label += "_";
+  label += dart::benchmark::collision::EdgeCaseName(edge);
+  return label;
+}
+
+static void RegisterEdgeCaseBenchmark(
+    const char* prefix,
+    EdgeCaseBenchmark fn,
+    PairKind pair,
+    EdgeCase edge)
+{
+  std::string name = std::string(prefix) + "/" + EdgeCaseLabel(pair, edge);
+  auto* bench = benchmark::RegisterBenchmark(name.c_str(), fn, pair, edge);
+  edge_case_bench::AddScaleArgs(bench);
+}
+
 static void RegisterDistanceEdgeCases()
 {
-  using edge_case_bench::AddScaleArgs;
+  const std::array<EdgeCase, 3> base_edges = {
+      EdgeCase::kTouching,
+      EdgeCase::kDeepPenetration,
+      EdgeCase::kGrazing};
+  const std::array<EdgeCase, 4> box_edges = {
+      EdgeCase::kTouching,
+      EdgeCase::kDeepPenetration,
+      EdgeCase::kGrazing,
+      EdgeCase::kThinFeature};
 
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      SphereSphere_Touching,
-      PairKind::kSphereSphere,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      SphereSphere_DeepPenetration,
-      PairKind::kSphereSphere,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      SphereSphere_Grazing,
-      PairKind::kSphereSphere,
-      EdgeCase::kGrazing));
+  for (EdgeCase edge : base_edges) {
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_Experimental",
+        edge_case_bench::BM_Distance_EdgeCases_Experimental,
+        PairKind::kSphereSphere,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_Experimental",
+        edge_case_bench::BM_Distance_EdgeCases_Experimental,
+        PairKind::kCapsuleCapsule,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_Experimental",
+        edge_case_bench::BM_Distance_EdgeCases_Experimental,
+        PairKind::kCapsuleSphere,
+        edge);
+  }
+  for (EdgeCase edge : box_edges) {
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_Experimental",
+        edge_case_bench::BM_Distance_EdgeCases_Experimental,
+        PairKind::kBoxBox,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_Experimental",
+        edge_case_bench::BM_Distance_EdgeCases_Experimental,
+        PairKind::kSphereBox,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_Experimental",
+        edge_case_bench::BM_Distance_EdgeCases_Experimental,
+        PairKind::kCapsuleBox,
+        edge);
+  }
 
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      BoxBox_Touching,
-      PairKind::kBoxBox,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      BoxBox_DeepPenetration,
-      PairKind::kBoxBox,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      BoxBox_Grazing,
-      PairKind::kBoxBox,
-      EdgeCase::kGrazing));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      BoxBox_ThinFeature,
-      PairKind::kBoxBox,
-      EdgeCase::kThinFeature));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      CapsuleCapsule_Touching,
-      PairKind::kCapsuleCapsule,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      CapsuleCapsule_DeepPenetration,
-      PairKind::kCapsuleCapsule,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      CapsuleCapsule_Grazing,
-      PairKind::kCapsuleCapsule,
-      EdgeCase::kGrazing));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      SphereBox_Touching,
-      PairKind::kSphereBox,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      SphereBox_DeepPenetration,
-      PairKind::kSphereBox,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      SphereBox_Grazing,
-      PairKind::kSphereBox,
-      EdgeCase::kGrazing));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      SphereBox_ThinFeature,
-      PairKind::kSphereBox,
-      EdgeCase::kThinFeature));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      CapsuleSphere_Touching,
-      PairKind::kCapsuleSphere,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      CapsuleSphere_DeepPenetration,
-      PairKind::kCapsuleSphere,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      CapsuleSphere_Grazing,
-      PairKind::kCapsuleSphere,
-      EdgeCase::kGrazing));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      CapsuleBox_Touching,
-      PairKind::kCapsuleBox,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      CapsuleBox_DeepPenetration,
-      PairKind::kCapsuleBox,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      CapsuleBox_Grazing,
-      PairKind::kCapsuleBox,
-      EdgeCase::kGrazing));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Experimental,
-      CapsuleBox_ThinFeature,
-      PairKind::kCapsuleBox,
-      EdgeCase::kThinFeature));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      SphereSphere_Touching,
-      PairKind::kSphereSphere,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      SphereSphere_DeepPenetration,
-      PairKind::kSphereSphere,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      SphereSphere_Grazing,
-      PairKind::kSphereSphere,
-      EdgeCase::kGrazing));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      BoxBox_Touching,
-      PairKind::kBoxBox,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      BoxBox_DeepPenetration,
-      PairKind::kBoxBox,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      BoxBox_Grazing,
-      PairKind::kBoxBox,
-      EdgeCase::kGrazing));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      BoxBox_ThinFeature,
-      PairKind::kBoxBox,
-      EdgeCase::kThinFeature));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      CapsuleCapsule_Touching,
-      PairKind::kCapsuleCapsule,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      CapsuleCapsule_DeepPenetration,
-      PairKind::kCapsuleCapsule,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      CapsuleCapsule_Grazing,
-      PairKind::kCapsuleCapsule,
-      EdgeCase::kGrazing));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      SphereBox_Touching,
-      PairKind::kSphereBox,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      SphereBox_DeepPenetration,
-      PairKind::kSphereBox,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      SphereBox_Grazing,
-      PairKind::kSphereBox,
-      EdgeCase::kGrazing));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      SphereBox_ThinFeature,
-      PairKind::kSphereBox,
-      EdgeCase::kThinFeature));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      CapsuleSphere_Touching,
-      PairKind::kCapsuleSphere,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      CapsuleSphere_DeepPenetration,
-      PairKind::kCapsuleSphere,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      CapsuleSphere_Grazing,
-      PairKind::kCapsuleSphere,
-      EdgeCase::kGrazing));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      CapsuleBox_Touching,
-      PairKind::kCapsuleBox,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      CapsuleBox_DeepPenetration,
-      PairKind::kCapsuleBox,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      CapsuleBox_Grazing,
-      PairKind::kCapsuleBox,
-      EdgeCase::kGrazing));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_FCL,
-      CapsuleBox_ThinFeature,
-      PairKind::kCapsuleBox,
-      EdgeCase::kThinFeature));
+  for (EdgeCase edge : base_edges) {
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_FCL",
+        edge_case_bench::BM_Distance_EdgeCases_FCL,
+        PairKind::kSphereSphere,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_FCL",
+        edge_case_bench::BM_Distance_EdgeCases_FCL,
+        PairKind::kCapsuleCapsule,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_FCL",
+        edge_case_bench::BM_Distance_EdgeCases_FCL,
+        PairKind::kCapsuleSphere,
+        edge);
+  }
+  for (EdgeCase edge : box_edges) {
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_FCL",
+        edge_case_bench::BM_Distance_EdgeCases_FCL,
+        PairKind::kBoxBox,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_FCL",
+        edge_case_bench::BM_Distance_EdgeCases_FCL,
+        PairKind::kSphereBox,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_FCL",
+        edge_case_bench::BM_Distance_EdgeCases_FCL,
+        PairKind::kCapsuleBox,
+        edge);
+  }
 
 #if DART_HAVE_BULLET
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      SphereSphere_Touching,
-      PairKind::kSphereSphere,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      SphereSphere_DeepPenetration,
-      PairKind::kSphereSphere,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      SphereSphere_Grazing,
-      PairKind::kSphereSphere,
-      EdgeCase::kGrazing));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      BoxBox_Touching,
-      PairKind::kBoxBox,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      BoxBox_DeepPenetration,
-      PairKind::kBoxBox,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      BoxBox_Grazing,
-      PairKind::kBoxBox,
-      EdgeCase::kGrazing));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      BoxBox_ThinFeature,
-      PairKind::kBoxBox,
-      EdgeCase::kThinFeature));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      CapsuleCapsule_Touching,
-      PairKind::kCapsuleCapsule,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      CapsuleCapsule_DeepPenetration,
-      PairKind::kCapsuleCapsule,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      CapsuleCapsule_Grazing,
-      PairKind::kCapsuleCapsule,
-      EdgeCase::kGrazing));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      SphereBox_Touching,
-      PairKind::kSphereBox,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      SphereBox_DeepPenetration,
-      PairKind::kSphereBox,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      SphereBox_Grazing,
-      PairKind::kSphereBox,
-      EdgeCase::kGrazing));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      SphereBox_ThinFeature,
-      PairKind::kSphereBox,
-      EdgeCase::kThinFeature));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      CapsuleSphere_Touching,
-      PairKind::kCapsuleSphere,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      CapsuleSphere_DeepPenetration,
-      PairKind::kCapsuleSphere,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      CapsuleSphere_Grazing,
-      PairKind::kCapsuleSphere,
-      EdgeCase::kGrazing));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      CapsuleBox_Touching,
-      PairKind::kCapsuleBox,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      CapsuleBox_DeepPenetration,
-      PairKind::kCapsuleBox,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      CapsuleBox_Grazing,
-      PairKind::kCapsuleBox,
-      EdgeCase::kGrazing));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_Bullet,
-      CapsuleBox_ThinFeature,
-      PairKind::kCapsuleBox,
-      EdgeCase::kThinFeature));
+  for (EdgeCase edge : base_edges) {
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_Bullet",
+        edge_case_bench::BM_Distance_EdgeCases_Bullet,
+        PairKind::kSphereSphere,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_Bullet",
+        edge_case_bench::BM_Distance_EdgeCases_Bullet,
+        PairKind::kCapsuleCapsule,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_Bullet",
+        edge_case_bench::BM_Distance_EdgeCases_Bullet,
+        PairKind::kCapsuleSphere,
+        edge);
+  }
+  for (EdgeCase edge : box_edges) {
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_Bullet",
+        edge_case_bench::BM_Distance_EdgeCases_Bullet,
+        PairKind::kBoxBox,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_Bullet",
+        edge_case_bench::BM_Distance_EdgeCases_Bullet,
+        PairKind::kSphereBox,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_Bullet",
+        edge_case_bench::BM_Distance_EdgeCases_Bullet,
+        PairKind::kCapsuleBox,
+        edge);
+  }
 #endif
 
 #if DART_HAVE_ODE
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      SphereSphere_Touching,
-      PairKind::kSphereSphere,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      SphereSphere_DeepPenetration,
-      PairKind::kSphereSphere,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      SphereSphere_Grazing,
-      PairKind::kSphereSphere,
-      EdgeCase::kGrazing));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      BoxBox_Touching,
-      PairKind::kBoxBox,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      BoxBox_DeepPenetration,
-      PairKind::kBoxBox,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      BoxBox_Grazing,
-      PairKind::kBoxBox,
-      EdgeCase::kGrazing));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      BoxBox_ThinFeature,
-      PairKind::kBoxBox,
-      EdgeCase::kThinFeature));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      CapsuleCapsule_Touching,
-      PairKind::kCapsuleCapsule,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      CapsuleCapsule_DeepPenetration,
-      PairKind::kCapsuleCapsule,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      CapsuleCapsule_Grazing,
-      PairKind::kCapsuleCapsule,
-      EdgeCase::kGrazing));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      SphereBox_Touching,
-      PairKind::kSphereBox,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      SphereBox_DeepPenetration,
-      PairKind::kSphereBox,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      SphereBox_Grazing,
-      PairKind::kSphereBox,
-      EdgeCase::kGrazing));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      SphereBox_ThinFeature,
-      PairKind::kSphereBox,
-      EdgeCase::kThinFeature));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      CapsuleSphere_Touching,
-      PairKind::kCapsuleSphere,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      CapsuleSphere_DeepPenetration,
-      PairKind::kCapsuleSphere,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      CapsuleSphere_Grazing,
-      PairKind::kCapsuleSphere,
-      EdgeCase::kGrazing));
-
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      CapsuleBox_Touching,
-      PairKind::kCapsuleBox,
-      EdgeCase::kTouching));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      CapsuleBox_DeepPenetration,
-      PairKind::kCapsuleBox,
-      EdgeCase::kDeepPenetration));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      CapsuleBox_Grazing,
-      PairKind::kCapsuleBox,
-      EdgeCase::kGrazing));
-  AddScaleArgs(BENCHMARK_CAPTURE(
-      BM_Distance_EdgeCases_ODE,
-      CapsuleBox_ThinFeature,
-      PairKind::kCapsuleBox,
-      EdgeCase::kThinFeature));
+  for (EdgeCase edge : base_edges) {
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_ODE",
+        edge_case_bench::BM_Distance_EdgeCases_ODE,
+        PairKind::kSphereSphere,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_ODE",
+        edge_case_bench::BM_Distance_EdgeCases_ODE,
+        PairKind::kCapsuleCapsule,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_ODE",
+        edge_case_bench::BM_Distance_EdgeCases_ODE,
+        PairKind::kCapsuleSphere,
+        edge);
+  }
+  for (EdgeCase edge : box_edges) {
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_ODE",
+        edge_case_bench::BM_Distance_EdgeCases_ODE,
+        PairKind::kBoxBox,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_ODE",
+        edge_case_bench::BM_Distance_EdgeCases_ODE,
+        PairKind::kSphereBox,
+        edge);
+    RegisterEdgeCaseBenchmark(
+        "BM_Distance_EdgeCases_ODE",
+        edge_case_bench::BM_Distance_EdgeCases_ODE,
+        PairKind::kCapsuleBox,
+        edge);
+  }
 #endif
 }
 
