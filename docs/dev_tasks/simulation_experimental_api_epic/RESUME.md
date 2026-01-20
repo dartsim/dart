@@ -2,7 +2,7 @@
 
 ## Quick Status
 
-**Phase 5.2 (Dynamics) COMPLETE. Phase 5.5 (step()) COMPLETE. Collision/Constraints DEFERRED.**
+**Phase 5.2 (Dynamics), 5.3/5.4 (Collision + Constraints), and 5.5 (step()) COMPLETE.**
 
 | Phase | Status      | Description                                                |
 | ----- | ----------- | ---------------------------------------------------------- |
@@ -10,21 +10,21 @@
 | 3-4   | 🔄 Partial  | Testing/perf: golden tests done, coverage/optimization TBD |
 | 5.1   | ✅ Complete | Forward Kinematics: joint transforms + Link integration    |
 | 5.2   | ✅ Complete | Forward Dynamics: ABA with CoM + external forces           |
+| 5.3-4 | ✅ Complete | Collision + Constraints: classic adapter + ShapeNode       |
 | 5.5   | ✅ Complete | World::step(): Semi-implicit Euler integration             |
-| 5.3-4 | ⏸️ Deferred | Collision + Constraints: Complex adapter work needed       |
 | 6     | Future      | Migration story                                            |
 
 ## Current Branch
 
 ```
 Branch: feature/sim_exp
-Status: Clean (all changes committed)
+Status: Dirty (uncommitted changes)
 Commits ahead of origin: 10
 ```
 
 ## What Works Now
 
-The experimental API has a **fully functional physics simulation**:
+The experimental API has a **fully functional physics simulation** with collision/constraint resolution via the classic adapter:
 
 ```cpp
 namespace dse = dart::simulation::experimental;
@@ -49,26 +49,34 @@ for (int i = 0; i < 1000; ++i) {
 }
 ```
 
+ShapeNodes attached to Links or RigidBodies participate in collision detection
+and contact constraints during `step()`.
+
 ## Last Session Summary
 
-Completed Phase 5.2 (Dynamics) and Phase 5.5 (step()):
+Completed Phase 5.3/5.4 (Collision + Constraints) and polish:
 
-1. **CoM offset support** - `localCOM` in MassProperties, used in spatial inertia/gravity
-2. **External forces** - `Link::addExternalForce()`, `setExternalTorque()`, `clearExternalForces()`
-3. **World::step()** - Semi-implicit Euler, configurable gravity/timeStep, time tracking
-4. **Exact validation** - Experimental ABA matches classic DART to 1e-10 tolerance
+1. **ShapeNode API** - new component/handle + createShapeNode on Link/RigidBody
+2. **Classic adapter bridge** - builds classic Skeletons, attaches shapes, syncs state
+3. **World collision/constraint APIs** - detectCollisions, getLastCollisionResult, solver hooks
+4. **RigidBody frame sync** - transforms now update FrameCache/FreeFrameProperties
+5. **Tests + Python** - new C++ tests and Python bindings/tests for ShapeNode + step
 
 ## Test Status
 
-| Test File                   | Tests | Status |
-| --------------------------- | ----- | ------ |
-| `test_spatial_math.cpp`     | 15    | ✅     |
-| `test_motion_subspace.cpp`  | 24    | ✅     |
-| `test_articulated_body.cpp` | 9     | ✅     |
-| `test_forward_dynamics.cpp` | 9     | ✅     |
-| `test_world.cpp`            | 12    | ✅     |
-| `test_joint_transform.cpp`  | 74    | ✅     |
-| **Dynamics Total**          | 143+  | ✅     |
+| Test File                        | Tests | Status |
+| -------------------------------- | ----- | ------ |
+| `test_spatial_math.cpp`          | 15    | ✅     |
+| `test_motion_subspace.cpp`       | 24    | ✅     |
+| `test_articulated_body.cpp`      | 9     | ✅     |
+| `test_forward_dynamics.cpp`      | 9     | ✅     |
+| `test_world.cpp`                 | 12    | ✅     |
+| `test_shape_node.cpp`            | 2     | ✅     |
+| `test_collision_integration.cpp` | 1     | ✅     |
+| `test_joint_transform.cpp`       | 74    | ✅     |
+| **Dynamics Total**               | 143+  | ✅     |
+
+**Python Tests**: 12 tests in `python/tests/unit/simulation_experimental/`
 
 ## How to Resume
 
@@ -76,7 +84,7 @@ Completed Phase 5.2 (Dynamics) and Phase 5.5 (step()):
 
 ```bash
 git checkout feature/sim_exp
-git status  # Should be clean
+git status  # Expect local changes (ShapeNode + collision integration)
 git log -5 --oneline
 
 # Build
@@ -85,30 +93,27 @@ pixi run cmake --build build/default/cpp/Release --target dart-simulation-experi
 # Run tests
 ./build/default/cpp/Release/bin/test_forward_dynamics
 ./build/default/cpp/Release/bin/test_world
+./build/default/cpp/Release/bin/test_shape_node
+./build/default/cpp/Release/bin/test_collision_integration
 ./build/default/cpp/Release/bin/test_spatial_math
 ```
 
 ### 2. Choose Next Task
 
 **Option A: Complete Phase 3-4 (Testing/Performance)**
+
 - Run coverage analysis: `pixi run test-coverage` (if available)
 - Profile and optimize hot paths
 - Document performance characteristics
 
-**Option B: Phase 5.3-5.4 (Collision/Constraints) - COMPLEX**
-- Requires creating adapter classes to bridge ECS with classic DART's collision/constraint modules
-- Key challenge: `CollisionObject` expects `dynamics::ShapeFrame*`, not ECS entities
-- Possible approaches:
-  1. Create `ExperimentalShapeFrame` adapter wrapping Link
-  2. Modify collision module to accept transform providers
-  3. Create standalone collision system for experimental API
+**Option B: Phase 6 (Migration)**
 
-**Option C: Phase 6 (Migration)**
 - Write migration guide: classic to experimental
 - Create conversion utilities
 - Add deprecation warnings
 
-**Option D: Polish and PR**
+**Option C: Polish and PR**
+
 - Run `pixi run lint` and fix any issues
 - Run full test suite: `pixi run test-all`
 - Create PR for the feature branch
@@ -116,6 +121,7 @@ pixi run cmake --build build/default/cpp/Release --target dart-simulation-experi
 ## Key Files Reference
 
 ### Dynamics Module (Phase 5.2)
+
 ```
 dart/simulation/experimental/dynamics/
 ├── spatial_math.hpp/cpp      # Spatial vector types, transforms
@@ -125,6 +131,7 @@ dart/simulation/experimental/dynamics/
 ```
 
 ### World::step() (Phase 5.5)
+
 ```
 dart/simulation/experimental/
 ├── world.hpp    # step(), setGravity(), setTimeStep(), getTime()
@@ -132,6 +139,7 @@ dart/simulation/experimental/
 ```
 
 ### Link External Forces
+
 ```
 dart/simulation/experimental/
 ├── comps/link.hpp           # externalForce, externalTorque fields
@@ -141,6 +149,7 @@ dart/simulation/experimental/
 ## Architecture Notes
 
 ### ABA Algorithm Flow
+
 ```
 World::step()
   └─> ForwardDynamicsSystem::compute()
@@ -153,13 +162,16 @@ World::step()
   └─> Clear external forces (optional)
 ```
 
-### Why Collision/Constraints Are Deferred
-Classic DART's collision module uses `dynamics::ShapeFrame` extensively:
-- `CollisionObject` constructor requires `const dynamics::ShapeFrame*`
-- Shape transforms come from `ShapeFrame::getWorldTransform()`
-- Experimental API uses ECS entities, not inheritance
+### Collision/Constraint Adapter
+
+Classic DART's `ConstraintSolver` is used as an internal backend:
+
+- Experimental entities are mirrored into classic Skeletons
+- `ShapeNode` components attach to classic ShapeNodes for collision/contact
+- State is synchronized before/after constraint solving
 
 Options considered:
+
 1. **Adapter pattern**: Create wrapper classes (adds complexity)
 2. **Parallel system**: New collision for ECS (duplicates code)
 3. **Modify classic**: Add transform provider interface (invasive)

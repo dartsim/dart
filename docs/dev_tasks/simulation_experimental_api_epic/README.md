@@ -10,7 +10,7 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 - **Parallel execution potential** for multi-core systems
 - **Automatic serialization** of simulation state
 
-**Current State**: Phase 1 complete (kinematics + ECS scaffolding). The physics simulation loop (`step()`) and dynamics systems are **not yet implemented**.
+**Current State**: Phases 0-2 and 5 complete; Phase 3-4 (testing/perf) still partial. `World::step()` runs forward dynamics and resolves collisions/constraints via a classic-API adapter.
 
 **End State Vision**: `dart::simulation::experimental::World` will become `dart::simulation::World` in DART 8, with full Python bindings and feature parity with the classic API.
 
@@ -48,42 +48,43 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 
 | Joint Type | DOF | Data Model | Kinematics | Tests |
 | ---------- | --- | ---------- | ---------- | ----- |
-| Revolute   | 1   | ✅         | TODO       | ✅    |
-| Prismatic  | 1   | ✅         | TODO       | ✅    |
+| Revolute   | 1   | ✅         | ✅         | ✅    |
+| Prismatic  | 1   | ✅         | ✅         | ✅    |
 | Fixed      | 0   | ✅         | N/A        | ✅    |
-| Screw      | 1   | ✅         | TODO       | ✅    |
-| Universal  | 2   | ✅         | TODO       | ✅    |
-| Ball       | 3   | ✅         | TODO       | ✅    |
-| Planar     | 3   | ✅         | TODO       | ✅    |
-| Free       | 6   | ✅         | TODO       | ✅    |
+| Screw      | 1   | ✅         | ✅         | ✅    |
+| Universal  | 2   | ✅         | ✅         | ✅    |
+| Ball       | 3   | ✅         | ✅         | ✅    |
+| Planar     | 3   | ✅         | ✅         | ✅    |
+| Free       | 6   | ✅         | ✅         | ✅    |
 
-**Note**: All joint types are fully supported at the data model level. "Kinematics TODO" refers to
-forward kinematics calculations (computing link transforms from joint positions), which is Phase 5 work.
+**Note**: All joint types are fully supported at the data model level and forward kinematics is implemented for all joint transforms (Phase 5.1).
 
 ### Python Bindings Status
 
 **Current**: Phase 2 complete
 
 - `dartpy.simulation_experimental` module exists and is functional
-- Bound classes: World, MultiBody, Link, Joint, Frame, FreeFrame, FixedFrame, RigidBody, StateSpace, StateSpaceVariable
+- Bound classes: World, MultiBody, Link, Joint, Frame, FreeFrame, FixedFrame, RigidBody, ShapeNode, ShapeNodeOptions, StateSpace, StateSpaceVariable
 - Bound enums: JointType
 - Python tests: 16 tests in `python/tests/unit/simulation_experimental/`
 
 ### Tests & Examples
 
-| Test File                | Status   | Coverage                                          |
-| ------------------------ | -------- | ------------------------------------------------- |
-| `test_world.cpp`         | Good     | Mode control, basic creation                      |
-| `test_multi_body.cpp`    | Good     | Link/joint creation, trees                        |
-| `test_serialization.cpp` | Good     | Save/load worlds                                  |
-| `test_frames.cpp`        | Basic    | Frame operations                                  |
-| `test_state_space.cpp`   | Basic    | StateSpace API                                    |
-| `test_joint.cpp`         | **Good** | 41 tests: types, DOF, state accessors, limits     |
-| `test_link.cpp`          | **Good** | 14 tests: name, parent joint, frame, copy, chains |
-| `test_rigid_body.cpp`    | **Good** | 14 tests: mass, inertia, pose, velocity, forces   |
-| `bm_ecs_safety.cpp`      | Basic    | ECS access benchmark                              |
+| Test File                        | Status   | Coverage                                          |
+| -------------------------------- | -------- | ------------------------------------------------- |
+| `test_world.cpp`                 | Good     | Mode control, basic creation                      |
+| `test_multi_body.cpp`            | Good     | Link/joint creation, trees                        |
+| `test_serialization.cpp`         | Good     | Save/load worlds                                  |
+| `test_frames.cpp`                | Basic    | Frame operations                                  |
+| `test_state_space.cpp`           | Basic    | StateSpace API                                    |
+| `test_joint.cpp`                 | **Good** | 41 tests: types, DOF, state accessors, limits     |
+| `test_link.cpp`                  | **Good** | 14 tests: name, parent joint, frame, copy, chains |
+| `test_rigid_body.cpp`            | **Good** | 14 tests: mass, inertia, pose, velocity, forces   |
+| `test_shape_node.cpp`            | Basic    | Shape node creation, transforms, properties       |
+| `test_collision_integration.cpp` | Basic    | Contact constraints with shape nodes              |
+| `bm_ecs_safety.cpp`              | Basic    | ECS access benchmark                              |
 
-**Python Tests**: `python/tests/unit/simulation_experimental/test_experimental_world.py` (10 tests)
+**Python Tests**: `python/tests/unit/simulation_experimental/test_experimental_world.py` (12 tests)
 
 **Examples**: `examples/simulation_experimental_hello_world/` (C++ example)
 
@@ -137,10 +138,8 @@ forward kinematics calculations (computing link transforms from joint positions)
 
 ### Missing Infrastructure
 
-- **No `step()` function**: Cannot simulate physics.
-- **No collision detection**: Must integrate with `dart/collision/`.
-- **No constraint solving**: Must integrate with `dart/constraint/`.
 - **No model loading**: Cannot load URDF/SDF/MJCF into experimental World.
+- **No migration tooling**: Classic-to-experimental conversion helpers are still needed.
 
 ### Open Questions
 
