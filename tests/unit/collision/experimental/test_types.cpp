@@ -176,6 +176,51 @@ TEST(ContactManifold, GetSharedNormal_Empty)
   EXPECT_EQ(manifold.getSharedNormal(), Eigen::Vector3d::Zero());
 }
 
+TEST(ContactManifold, TypeCompatibility)
+{
+  ContactPoint cp;
+  cp.normal = Eigen::Vector3d::UnitZ();
+
+  ContactManifold pointManifold;
+  pointManifold.addContact(cp);
+  pointManifold.setType(ContactType::Point);
+  EXPECT_TRUE(pointManifold.isTypeCompatible());
+  pointManifold.addContact(cp);
+  EXPECT_FALSE(pointManifold.isTypeCompatible());
+
+  ContactManifold edgeManifold;
+  edgeManifold.addContact(cp);
+  edgeManifold.addContact(cp);
+  edgeManifold.setType(ContactType::Edge);
+  EXPECT_TRUE(edgeManifold.isTypeCompatible());
+
+  ContactManifold faceManifold;
+  faceManifold.addContact(cp);
+  faceManifold.addContact(cp);
+  faceManifold.addContact(cp);
+  faceManifold.setType(ContactType::Face);
+  EXPECT_TRUE(faceManifold.isTypeCompatible());
+
+  ContactManifold badFace;
+  ContactPoint cp2;
+  cp2.normal = Eigen::Vector3d::UnitX();
+  badFace.addContact(cp);
+  badFace.addContact(cp2);
+  badFace.addContact(cp);
+  badFace.setType(ContactType::Face);
+  EXPECT_FALSE(badFace.isTypeCompatible());
+
+  ContactManifold patchManifold;
+  patchManifold.addContact(cp);
+  patchManifold.addContact(cp);
+  patchManifold.setType(ContactType::Patch);
+  EXPECT_TRUE(patchManifold.isTypeCompatible());
+
+  ContactManifold unknownManifold;
+  unknownManifold.setType(ContactType::Unknown);
+  EXPECT_TRUE(unknownManifold.isTypeCompatible());
+}
+
 TEST(CollisionResult, DefaultConstruction)
 {
   CollisionResult result;

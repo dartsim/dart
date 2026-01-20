@@ -32,45 +32,58 @@
 
 #pragma once
 
+#include <dart/collision/experimental/contact_point.hpp>
 #include <dart/collision/experimental/export.hpp>
+#include <dart/collision/experimental/fwd.hpp>
+
+#include <array>
+#include <cstddef>
+#include <span>
 
 namespace dart::collision::experimental {
 
-struct ContactPoint;
-class ContactManifold;
-class CollisionResult;
-struct CollisionOption;
-
-class Aabb;
-
-class Shape;
-class SphereShape;
-class BoxShape;
-class SdfShape;
-class SignedDistanceField;
-
-class CollisionObject;
-class CollisionGroup;
-
-class BroadPhase;
-class AabbTreeBroadPhase;
-class BruteForceBroadPhase;
-class SpatialHashBroadPhase;
-class SweepAndPruneBroadPhase;
-
-enum class BroadPhaseType
+enum class ContactType
 {
-  BruteForce,
-  AabbTree,
-  SpatialHash,
-  SweepAndPrune
+  Point,
+  Edge,
+  Face,
+  Patch,
+  Unknown
 };
 
-struct BatchSettings;
-struct BatchScratch;
-struct BatchTimings;
-struct BatchStats;
-struct BatchOutput;
-struct BroadPhaseSnapshot;
+class DART_COLLISION_EXPERIMENTAL_API ContactManifold
+{
+public:
+  // Contact count is a solver cap; a 4-point manifold still represents a
+  // surface patch, not a volumetric overlap.
+  static constexpr std::size_t kMaxContacts = 4;
 
-}
+  ContactManifold() = default;
+
+  void addContact(const ContactPoint& contact);
+  void clear();
+
+  [[nodiscard]] std::size_t numContacts() const;
+  [[nodiscard]] bool hasContacts() const;
+  [[nodiscard]] const ContactPoint& getContact(std::size_t i) const;
+  [[nodiscard]] std::span<const ContactPoint> getContacts() const;
+
+  [[nodiscard]] ContactType getType() const;
+  void setType(ContactType type);
+  [[nodiscard]] bool isTypeCompatible() const;
+
+  [[nodiscard]] Eigen::Vector3d getSharedNormal() const;
+
+  [[nodiscard]] const CollisionObject* getObject1() const;
+  [[nodiscard]] const CollisionObject* getObject2() const;
+  void setObjects(const CollisionObject* o1, const CollisionObject* o2);
+
+private:
+  std::array<ContactPoint, kMaxContacts> contacts_{};
+  std::size_t numContacts_ = 0;
+  ContactType type_ = ContactType::Unknown;
+  const CollisionObject* object1_ = nullptr;
+  const CollisionObject* object2_ = nullptr;
+};
+
+} // namespace dart::collision::experimental

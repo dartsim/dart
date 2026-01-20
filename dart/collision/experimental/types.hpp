@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart/collision/experimental/contact_manifold.hpp>
+#include <dart/collision/experimental/contact_point.hpp>
 #include <dart/collision/experimental/export.hpp>
 #include <dart/collision/experimental/fwd.hpp>
 
@@ -42,71 +44,6 @@
 #include <vector>
 
 namespace dart::collision::experimental {
-
-struct DART_COLLISION_EXPERIMENTAL_API ContactPoint
-{
-  Eigen::Vector3d position = Eigen::Vector3d::Zero();
-
-  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
-
-  double depth = 0.0;
-
-  const CollisionObject* object1 = nullptr;
-  const CollisionObject* object2 = nullptr;
-
-  int featureIndex1 = -1;
-  int featureIndex2 = -1;
-
-  static constexpr double kNormalEpsilon = 1e-6;
-
-  [[nodiscard]] static bool isZeroNormal(const Eigen::Vector3d& n)
-  {
-    return n.squaredNorm() < kNormalEpsilon * kNormalEpsilon;
-  }
-
-  [[nodiscard]] static bool isNonZeroNormal(const Eigen::Vector3d& n)
-  {
-    return !isZeroNormal(n);
-  }
-};
-
-enum class ContactType
-{
-  Point,
-  Edge,
-  Face,
-  Patch,
-  Unknown
-};
-
-class DART_COLLISION_EXPERIMENTAL_API ContactManifold
-{
-public:
-  ContactManifold() = default;
-
-  void addContact(const ContactPoint& contact);
-  void clear();
-
-  [[nodiscard]] std::size_t numContacts() const;
-  [[nodiscard]] bool hasContacts() const;
-  [[nodiscard]] const ContactPoint& getContact(std::size_t i) const;
-  [[nodiscard]] std::span<const ContactPoint> getContacts() const;
-
-  [[nodiscard]] ContactType getType() const;
-  void setType(ContactType type);
-
-  [[nodiscard]] Eigen::Vector3d getSharedNormal() const;
-
-  [[nodiscard]] const CollisionObject* getObject1() const;
-  [[nodiscard]] const CollisionObject* getObject2() const;
-  void setObjects(const CollisionObject* o1, const CollisionObject* o2);
-
-private:
-  std::vector<ContactPoint> contacts_;
-  ContactType type_ = ContactType::Unknown;
-  const CollisionObject* object1_ = nullptr;
-  const CollisionObject* object2_ = nullptr;
-};
 
 class DART_COLLISION_EXPERIMENTAL_API CollisionResult
 {

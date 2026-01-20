@@ -33,44 +33,37 @@
 #pragma once
 
 #include <dart/collision/experimental/export.hpp>
+#include <dart/collision/experimental/fwd.hpp>
+
+#include <Eigen/Core>
 
 namespace dart::collision::experimental {
 
-struct ContactPoint;
-class ContactManifold;
-class CollisionResult;
-struct CollisionOption;
-
-class Aabb;
-
-class Shape;
-class SphereShape;
-class BoxShape;
-class SdfShape;
-class SignedDistanceField;
-
-class CollisionObject;
-class CollisionGroup;
-
-class BroadPhase;
-class AabbTreeBroadPhase;
-class BruteForceBroadPhase;
-class SpatialHashBroadPhase;
-class SweepAndPruneBroadPhase;
-
-enum class BroadPhaseType
+struct DART_COLLISION_EXPERIMENTAL_API ContactPoint
 {
-  BruteForce,
-  AabbTree,
-  SpatialHash,
-  SweepAndPrune
+  Eigen::Vector3d position = Eigen::Vector3d::Zero();
+
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+
+  double depth = 0.0;
+
+  const CollisionObject* object1 = nullptr;
+  const CollisionObject* object2 = nullptr;
+
+  int featureIndex1 = -1;
+  int featureIndex2 = -1;
+
+  static constexpr double kNormalEpsilon = 1e-6;
+
+  [[nodiscard]] static bool isZeroNormal(const Eigen::Vector3d& n)
+  {
+    return n.squaredNorm() < kNormalEpsilon * kNormalEpsilon;
+  }
+
+  [[nodiscard]] static bool isNonZeroNormal(const Eigen::Vector3d& n)
+  {
+    return !isZeroNormal(n);
+  }
 };
 
-struct BatchSettings;
-struct BatchScratch;
-struct BatchTimings;
-struct BatchStats;
-struct BatchOutput;
-struct BroadPhaseSnapshot;
-
-}
+} // namespace dart::collision::experimental
