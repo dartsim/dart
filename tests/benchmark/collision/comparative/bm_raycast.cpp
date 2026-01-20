@@ -105,8 +105,8 @@ void RunRaycastDetectorBenchmark(
 static void BM_Raycast_Sphere_Experimental(benchmark::State& state)
 {
   CollisionWorld world;
-  auto shape = std::make_shared<SphereShape>(0.5);
-  world.createObject(shape, Eigen::Isometry3d::Identity());
+  auto shape = std::make_unique<SphereShape>(0.5);
+  world.createObject(std::move(shape), Eigen::Isometry3d::Identity());
 
   const Eigen::Vector3d origin(-2.0, 0.0, 0.0);
   const Eigen::Vector3d direction(4.0, 0.0, 0.0);
@@ -143,8 +143,8 @@ BENCHMARK(BM_Raycast_Sphere_Bullet);
 static void BM_Raycast_Box_Experimental(benchmark::State& state)
 {
   CollisionWorld world;
-  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5));
-  world.createObject(shape, Eigen::Isometry3d::Identity());
+  auto shape = std::make_unique<BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5));
+  world.createObject(std::move(shape), Eigen::Isometry3d::Identity());
 
   const Eigen::Vector3d origin(-2.0, 0.0, 0.0);
   const Eigen::Vector3d direction(4.0, 0.0, 0.0);
@@ -182,8 +182,8 @@ BENCHMARK(BM_Raycast_Box_Bullet);
 static void BM_Raycast_Capsule_Experimental(benchmark::State& state)
 {
   CollisionWorld world;
-  auto shape = std::make_shared<CapsuleShape>(0.5, 2.0);
-  world.createObject(shape, Eigen::Isometry3d::Identity());
+  auto shape = std::make_unique<CapsuleShape>(0.5, 2.0);
+  world.createObject(std::move(shape), Eigen::Isometry3d::Identity());
 
   const Eigen::Vector3d origin(-2.0, 0.0, 0.0);
   const Eigen::Vector3d direction(4.0, 0.0, 0.0);
@@ -220,8 +220,8 @@ BENCHMARK(BM_Raycast_Capsule_Bullet);
 static void BM_Raycast_Cylinder_Experimental(benchmark::State& state)
 {
   CollisionWorld world;
-  auto shape = std::make_shared<CylinderShape>(0.5, 2.0);
-  world.createObject(shape, Eigen::Isometry3d::Identity());
+  auto shape = std::make_unique<CylinderShape>(0.5, 2.0);
+  world.createObject(std::move(shape), Eigen::Isometry3d::Identity());
 
   const Eigen::Vector3d origin(-2.0, 0.0, 0.0);
   const Eigen::Vector3d direction(4.0, 0.0, 0.0);
@@ -258,8 +258,8 @@ BENCHMARK(BM_Raycast_Cylinder_Bullet);
 static void BM_Raycast_Plane_Experimental(benchmark::State& state)
 {
   CollisionWorld world;
-  auto shape = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
-  world.createObject(shape, Eigen::Isometry3d::Identity());
+  auto shape = std::make_unique<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  world.createObject(std::move(shape), Eigen::Isometry3d::Identity());
 
   const Eigen::Vector3d origin(0.0, 0.0, 1.0);
   const Eigen::Vector3d direction(0.0, 0.0, -2.0);

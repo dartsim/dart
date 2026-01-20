@@ -8,14 +8,14 @@ contacts. SDFs trade memory for fast queries and stable gradients.
 
 ## Library Snapshot
 
-| Library | SDF / voxel support | Notes |
-| ------- | ------------------- | ----- |
-| Bullet  | btSdfCollisionShape / btMiniSDF | Includes gradients and CUDA-friendly layouts |
-| Parry   | Voxels              | Voxels are supported; not a full SDF pipeline |
-| FCL/Coal| None                | Mesh/convex/BVH focus |
-| ODE     | None                | No SDF primitive |
-| libccd  | None                | Convex-only support functions |
-| OpenGJK | None                | Distance-only convex GJK |
+| Library  | SDF / voxel support             | Notes                                         |
+| -------- | ------------------------------- | --------------------------------------------- |
+| Bullet   | btSdfCollisionShape / btMiniSDF | Includes gradients and CUDA-friendly layouts  |
+| Parry    | Voxels                          | Voxels are supported; not a full SDF pipeline |
+| FCL/Coal | None                            | Mesh/convex/BVH focus                         |
+| ODE      | None                            | No SDF primitive                              |
+| libccd   | None                            | Convex-only support functions                 |
+| OpenGJK  | None                            | Distance-only convex GJK                      |
 
 ## Key References (from awesome-collision-detection)
 

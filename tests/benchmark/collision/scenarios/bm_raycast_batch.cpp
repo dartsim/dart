@@ -227,7 +227,8 @@ void RunExperimentalRaycastScenario(benchmark::State& state, double range)
   auto segments = MakeRaySegments(kRayCount, range, 1337);
   auto rays = BuildRays(segments);
 
-  CollisionWorld world;
+  // Use sweep-and-prune until AABB tree stability improves for raycast.
+  CollisionWorld world(BroadPhaseType::SweepAndPrune);
   std::vector<CollisionObject> objects;
   BuildExperimentalWorld(specs, world, objects);
 

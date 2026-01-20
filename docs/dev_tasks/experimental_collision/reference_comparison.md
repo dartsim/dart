@@ -164,22 +164,22 @@ Legend: Y = supported, N = not supported, P = partial or user-managed.
 
 ### Batch query support (data structures and throughput)
 
-| Library        | Batch-friendly structures                          | Batch optimizations                                      | Notes                                                                       |
-| -------------- | -------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------- |
-| FCL            | Dynamic AABB tree managers, SaP/SSaP, spatial hash | Manager-level pair enumeration                           | Designed for group queries; BVH traversal overhead can dominate tiny scenes |
-| Bullet         | DBVT broadphase, pair cache                        | Persistent manifolds, pair cache reuse                   | Strong temporal coherence; margins trade accuracy for stability             |
-| ODE            | Spaces (hash, SAP, quadtree)                       | Space hierarchy + callback-based pair traversal          | Simple batch API; performance depends on space choice                       |
-| libccd         | None                                               | None                                                     | Pure narrowphase; no scene or batch layer                                   |
-| Coal           | Dynamic AABB tree managers, SaP/SSaP, spatial hash | ComputeCollision caches per-pair solver state            | Strong batch usage; security margins influence throughput                   |
-| ReactPhysics3D | Dynamic AABB tree                                  | Persistent manifolds, broadphase incremental updates     | Discrete pipeline; contact persistence managed by engine                    |
-| Parry          | BVH partitioning utilities                         | User-managed pair pipeline (Rapier provides caching)     | Broadphase orchestration is external (e.g., in Rapier)                      |
-| OpenGJK        | None                                               | None                                                     | Distance-only GJK kernel                                                    |
-| BEPUphysics1   | Dynamic hierarchy, sort-and-sweep, brute           | Multithreaded pipeline + manifold refresh                | Internal multithreading, query accelerators                                 |
-| JitterPhysics  | SAP, persistent SAP, brute                         | Persistent SAP + manifold caching                        | Persistent SAP favors temporal coherence                                    |
-| ncollide       | Dynamic BVH                                        | Pipeline caches contact manifolds                        | Broadphase is integrated into the pipeline/world                            |
-| collision-rs   | DBVT, sweep and prune                              | User-managed batch caching                               | Provides data structures; no full world manager                             |
-| qu3e           | Dynamic AABB tree                                  | Minimal caching; simple pair updates                     | Minimal engine; batch performance tied to simple data layout                |
-| tinyc2         | None                                               | None                                                     | Narrowphase-only 2D library                                                 |
+| Library        | Batch-friendly structures                          | Batch optimizations                                  | Notes                                                                       |
+| -------------- | -------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------- |
+| FCL            | Dynamic AABB tree managers, SaP/SSaP, spatial hash | Manager-level pair enumeration                       | Designed for group queries; BVH traversal overhead can dominate tiny scenes |
+| Bullet         | DBVT broadphase, pair cache                        | Persistent manifolds, pair cache reuse               | Strong temporal coherence; margins trade accuracy for stability             |
+| ODE            | Spaces (hash, SAP, quadtree)                       | Space hierarchy + callback-based pair traversal      | Simple batch API; performance depends on space choice                       |
+| libccd         | None                                               | None                                                 | Pure narrowphase; no scene or batch layer                                   |
+| Coal           | Dynamic AABB tree managers, SaP/SSaP, spatial hash | ComputeCollision caches per-pair solver state        | Strong batch usage; security margins influence throughput                   |
+| ReactPhysics3D | Dynamic AABB tree                                  | Persistent manifolds, broadphase incremental updates | Discrete pipeline; contact persistence managed by engine                    |
+| Parry          | BVH partitioning utilities                         | User-managed pair pipeline (Rapier provides caching) | Broadphase orchestration is external (e.g., in Rapier)                      |
+| OpenGJK        | None                                               | None                                                 | Distance-only GJK kernel                                                    |
+| BEPUphysics1   | Dynamic hierarchy, sort-and-sweep, brute           | Multithreaded pipeline + manifold refresh            | Internal multithreading, query accelerators                                 |
+| JitterPhysics  | SAP, persistent SAP, brute                         | Persistent SAP + manifold caching                    | Persistent SAP favors temporal coherence                                    |
+| ncollide       | Dynamic BVH                                        | Pipeline caches contact manifolds                    | Broadphase is integrated into the pipeline/world                            |
+| collision-rs   | DBVT, sweep and prune                              | User-managed batch caching                           | Provides data structures; no full world manager                             |
+| qu3e           | Dynamic AABB tree                                  | Minimal caching; simple pair updates                 | Minimal engine; batch performance tied to simple data layout                |
+| tinyc2         | None                                               | None                                                 | Narrowphase-only 2D library                                                 |
 
 Batch here means many pairwise queries per frame. None of these expose a dedicated SIMD batch API, so throughput depends on per-call overhead, data layout, and how much temporal coherence is captured (pair caches, persistent manifolds).
 
@@ -280,37 +280,37 @@ and `contact_manifolds.md` for manifold representation guidance.
 
 ### Normal direction and distance sign
 
-| Library        | Normal convention                          | Penetration sign                    | Signed distance support      | Notes                                                                 |
-| -------------- | ------------------------------------------ | ----------------------------------- | ---------------------------- | --------------------------------------------------------------------- |
-| DART           | normal points from bodyNode2 to bodyNode1  | penetrationDepth positive           | yes (DistanceResult)         | Signed distance is negative when penetrating; distance normals should align with point2 - point1 |
-| FCL            | normal points from o1 to o2                | penetration_depth positive          | yes (enable_signed_distance) | DistanceResult is positive when separated; negative if signed enabled |
-| Coal           | normal points from o1 to o2                | penetration_depth positive          | yes                          | Signed distance used to define normal/witness points                  |
-| Bullet         | normalWorldOnB points from B to A          | distance1 negative when penetrating | yes (distance1)              | If B is treated as object2, normal aligns with object2->object1       |
-| ODE            | normal points into body1                   | depth positive                      | no                           | Equivalent to object2->object1 if g1 is object1                       |
-| Parry          | normal1 points from shape1 to shape2       | dist negative when penetrating      | yes (dist)                   | Explicit signed distance in Contact                                   |
-| ReactPhysics3D | normal from body1 to body2                 | penetrationDepth positive           | no                           | Discrete collision only                                               |
-| libccd         | direction is translation to move obj2 out  | penetration depth positive          | partial                      | Direction must be flipped to match DART contact normal; no distance API |
-| OpenGJK        | N/A (distance-only)                        | N/A                                 | no                           | Returns minimum distance (0 if intersecting)                          |
+| Library        | Normal convention                         | Penetration sign                    | Signed distance support      | Notes                                                                                            |
+| -------------- | ----------------------------------------- | ----------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------ |
+| DART           | normal points from bodyNode2 to bodyNode1 | penetrationDepth positive           | yes (DistanceResult)         | Signed distance is negative when penetrating; distance normals should align with point2 - point1 |
+| FCL            | normal points from o1 to o2               | penetration_depth positive          | yes (enable_signed_distance) | DistanceResult is positive when separated; negative if signed enabled                            |
+| Coal           | normal points from o1 to o2               | penetration_depth positive          | yes                          | Signed distance used to define normal/witness points                                             |
+| Bullet         | normalWorldOnB points from B to A         | distance1 negative when penetrating | yes (distance1)              | If B is treated as object2, normal aligns with object2->object1                                  |
+| ODE            | normal points into body1                  | depth positive                      | no                           | Equivalent to object2->object1 if g1 is object1                                                  |
+| Parry          | normal1 points from shape1 to shape2      | dist negative when penetrating      | yes (dist)                   | Explicit signed distance in Contact                                                              |
+| ReactPhysics3D | normal from body1 to body2                | penetrationDepth positive           | no                           | Discrete collision only                                                                          |
+| libccd         | direction is translation to move obj2 out | penetration depth positive          | partial                      | Direction must be flipped to match DART contact normal; no distance API                          |
+| OpenGJK        | N/A (distance-only)                       | N/A                                 | no                           | Returns minimum distance (0 if intersecting)                                                     |
 
 ### Contact representations and manifolds
 
-| Library        | Contact representation              | Manifold behavior                                 |
-| -------------- | ----------------------------------- | ------------------------------------------------- |
+| Library        | Contact representation              | Manifold behavior                                                                           |
+| -------------- | ----------------------------------- | ------------------------------------------------------------------------------------------- |
 | DART           | Contact points + ContactManifold    | Legacy backend returns flat list; experimental has manifold container but minimal reduction |
-| FCL            | Contact points (pos, normal, depth) | No explicit manifold; returns list                |
-| Coal           | Contact points + ContactPatch       | Supports patches (polygonal contact regions)      |
-| Bullet         | Persistent manifolds of points      | Up to 4 points per manifold, cached across frames |
-| ODE            | Contact points (dContactGeom)       | No explicit manifold; caller aggregates           |
-| Parry          | Contact + ContactManifold           | Explicit manifolds; normals + multiple points     |
-| ReactPhysics3D | ContactManifold with points         | Up to 4 points; cached for stability              |
-| BEPUphysics1   | Contact manifolds                   | Manifold generators + contact reduction/refresher |
-| JitterPhysics  | Contact manifolds                   | Manifold-based contacts in collision systems      |
-| ncollide       | ContactManifold                     | Explicit manifolds; part of pipeline              |
-| collision-rs   | Contact data via GJK/EPA            | Manifold support per README; no world persistence |
-| qu3e           | Contact manifolds                   | SAT manifolds; reduction not implemented          |
-| tinyc2         | Contact manifold (2D)               | Optional manifold generation per query            |
-| libccd         | Single penetration info             | No manifold; GJK/EPA gives one direction/depth    |
-| OpenGJK        | Witness points from simplex         | Distance-only, no contact manifold                |
+| FCL            | Contact points (pos, normal, depth) | No explicit manifold; returns list                                                          |
+| Coal           | Contact points + ContactPatch       | Supports patches (polygonal contact regions)                                                |
+| Bullet         | Persistent manifolds of points      | Up to 4 points per manifold, cached across frames                                           |
+| ODE            | Contact points (dContactGeom)       | No explicit manifold; caller aggregates                                                     |
+| Parry          | Contact + ContactManifold           | Explicit manifolds; normals + multiple points                                               |
+| ReactPhysics3D | ContactManifold with points         | Up to 4 points; cached for stability                                                        |
+| BEPUphysics1   | Contact manifolds                   | Manifold generators + contact reduction/refresher                                           |
+| JitterPhysics  | Contact manifolds                   | Manifold-based contacts in collision systems                                                |
+| ncollide       | ContactManifold                     | Explicit manifolds; part of pipeline                                                        |
+| collision-rs   | Contact data via GJK/EPA            | Manifold support per README; no world persistence                                           |
+| qu3e           | Contact manifolds                   | SAT manifolds; reduction not implemented                                                    |
+| tinyc2         | Contact manifold (2D)               | Optional manifold generation per query                                                      |
+| libccd         | Single penetration info             | No manifold; GJK/EPA gives one direction/depth                                              |
+| OpenGJK        | Witness points from simplex         | Distance-only, no contact manifold                                                          |
 
 ### Contact result types (for DART to standardize)
 

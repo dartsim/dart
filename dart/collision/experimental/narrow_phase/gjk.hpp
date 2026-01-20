@@ -46,6 +46,37 @@ namespace dart::collision::experimental {
 using SupportFunction =
     std::function<Eigen::Vector3d(const Eigen::Vector3d& direction)>;
 
+struct DART_COLLISION_EXPERIMENTAL_API SupportPoint
+{
+  Eigen::Vector3d v = Eigen::Vector3d::Zero();
+  Eigen::Vector3d v1 = Eigen::Vector3d::Zero();
+  Eigen::Vector3d v2 = Eigen::Vector3d::Zero();
+};
+
+struct DART_COLLISION_EXPERIMENTAL_API GjkSimplex
+{
+  std::array<SupportPoint, 4> points;
+  int size = 0;
+
+  void clear()
+  {
+    size = 0;
+  }
+
+  void push(const SupportPoint& point)
+  {
+    if (size < static_cast<int>(points.size())) {
+      points[size] = point;
+      ++size;
+    }
+  }
+
+  void set(int index, const SupportPoint& point)
+  {
+    points[index] = point;
+  }
+};
+
 struct DART_COLLISION_EXPERIMENTAL_API GjkResult
 {
   bool intersecting = false;
@@ -53,8 +84,7 @@ struct DART_COLLISION_EXPERIMENTAL_API GjkResult
   Eigen::Vector3d closestPointA = Eigen::Vector3d::Zero();
   Eigen::Vector3d closestPointB = Eigen::Vector3d::Zero();
   Eigen::Vector3d separationAxis = Eigen::Vector3d::Zero();
-  std::array<Eigen::Vector3d, 4> simplex = {};
-  int simplexSize = 0;
+  GjkSimplex simplex;
 };
 
 struct DART_COLLISION_EXPERIMENTAL_API EpaResult
@@ -92,7 +122,7 @@ public:
   static EpaResult penetration(
       const SupportFunction& supportA,
       const SupportFunction& supportB,
-      const std::array<Eigen::Vector3d, 4>& simplex);
+      const GjkSimplex& simplex);
 };
 
 }

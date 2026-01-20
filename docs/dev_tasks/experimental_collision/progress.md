@@ -22,7 +22,7 @@
 
 ---
 
-## Completed Components (384 tests)
+## Completed Components (403 tests)
 
 | Component                        | Files                                    | Tests | Notes                                               |
 | -------------------------------- | ---------------------------------------- | ----- | --------------------------------------------------- |
@@ -42,6 +42,7 @@
 | CCD (sphere/capsule cast)        | narrow_phase/ccd.hpp/.cpp                | 62    | Swept volume + conservative advancement             |
 | BruteForceBroadPhase             | broad_phase/brute_force.hpp/.cpp         | 15    | O(n²) broad-phase                                   |
 | AabbTreeBroadPhase               | broad_phase/aabb_tree.hpp/.cpp           | 21    | O(n log n) dynamic AABB tree                        |
+| SweepAndPruneBroadPhase          | broad_phase/sweep_and_prune.hpp/.cpp     | 19    | O(n + k) sorted endpoint lists                      |
 | CollisionObject                  | collision_object.hpp/.cpp                | 12    | Lightweight ECS handle                              |
 | NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp       | 7     | Shape-type dispatch                                 |
 | CollisionWorld                   | collision_world.hpp/.cpp                 | 8     | Standalone collision detection                      |
@@ -291,7 +292,8 @@ dart/collision/experimental/
 └── broad_phase/
     ├── broad_phase.hpp         # BroadPhase interface
     ├── brute_force.hpp/.cpp    # O(n^2) broad-phase
-    └── aabb_tree.hpp/.cpp      # O(n log n) dynamic AABB tree
+    ├── aabb_tree.hpp/.cpp      # O(n log n) dynamic AABB tree
+    └── sweep_and_prune.hpp/.cpp # O(n + k) sorted endpoints
 ```
 
 ---
@@ -330,6 +332,8 @@ done
 | 2026-01-19 | AABB Tree with SAH insertion                  | O(n log n) vs O(n²), 95-188x speedup at scale    |
 | 2026-01-19 | Fat AABBs in AABB Tree                        | Reduce update frequency for small movements      |
 | 2026-01-19 | CollisionWorld as standalone API              | Simpler than full CollisionDetector integration  |
+| 2026-01-19 | Runtime broadphase selection via enum         | AabbTree (default), SweepAndPrune, BruteForce    |
+| 2026-01-19 | Sweep-and-Prune using sorted endpoint lists   | O(n + k) queries, good for mostly-static scenes  |
 
 ---
 

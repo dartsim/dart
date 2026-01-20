@@ -21,7 +21,7 @@
 
 - Entity = 32-bit id with `index + generation` (24 bits index, 8 bits generation).
 - EntityManager recycles indices only when a queue of free indices is large enough
-  to avoid fast re-use.
+  to avoid fast reuse.
 - Components base class stores components in tightly packed, aligned arrays (SoA).
 - Each Components instance tracks:
   - `mMapEntityToComponentIndex` for entity -> array index

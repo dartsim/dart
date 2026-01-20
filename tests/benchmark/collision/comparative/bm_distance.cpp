@@ -401,8 +401,7 @@ void RunDistanceCaseExperimental(
 
       for (auto _ : state) {
         result.clear();
-        double dist
-            = distanceBoxBox(b1, tfs.tf1, b2, tfs.tf2, result, option);
+        double dist = distanceBoxBox(b1, tfs.tf1, b2, tfs.tf2, result, option);
         benchmark::DoNotOptimize(dist);
       }
       return;
@@ -592,10 +591,7 @@ static std::string EdgeCaseLabel(PairKind pair, EdgeCase edge)
 }
 
 static void RegisterEdgeCaseBenchmark(
-    const char* prefix,
-    EdgeCaseBenchmark fn,
-    PairKind pair,
-    EdgeCase edge)
+    const char* prefix, EdgeCaseBenchmark fn, PairKind pair, EdgeCase edge)
 {
   std::string name = std::string(prefix) + "/" + EdgeCaseLabel(pair, edge);
   auto* bench = benchmark::RegisterBenchmark(name.c_str(), fn, pair, edge);
@@ -604,15 +600,13 @@ static void RegisterEdgeCaseBenchmark(
 
 static void RegisterDistanceEdgeCases()
 {
-  const std::array<EdgeCase, 3> base_edges = {
-      EdgeCase::kTouching,
-      EdgeCase::kDeepPenetration,
-      EdgeCase::kGrazing};
-  const std::array<EdgeCase, 4> box_edges = {
-      EdgeCase::kTouching,
-      EdgeCase::kDeepPenetration,
-      EdgeCase::kGrazing,
-      EdgeCase::kThinFeature};
+  const std::array<EdgeCase, 3> base_edges
+      = {EdgeCase::kTouching, EdgeCase::kDeepPenetration, EdgeCase::kGrazing};
+  const std::array<EdgeCase, 4> box_edges
+      = {EdgeCase::kTouching,
+         EdgeCase::kDeepPenetration,
+         EdgeCase::kGrazing,
+         EdgeCase::kThinFeature};
 
   for (EdgeCase edge : base_edges) {
     RegisterEdgeCaseBenchmark(

@@ -430,6 +430,13 @@ namespace detail {
 ```cpp
 namespace dart::collision::experimental {
 
+/// Broad-phase algorithm selection for CollisionWorld.
+enum class BroadPhaseType {
+  AabbTree,       ///< Dynamic AABB tree with SAH (default, best general-purpose)
+  SweepAndPrune,  ///< Sorted endpoint lists (good for mostly-static scenes)
+  BruteForce      ///< O(n²) all-pairs (debugging, very small N)
+};
+
 /// Abstract broad-phase interface.
 ///
 /// Broad-phase algorithms identify candidate collision pairs
@@ -460,26 +467,74 @@ public:
   computePotentialPairs() const = 0;
 };
 
-/// Brute-force O(n^2) broad-phase with AABB culling.
-///
-/// Simple but effective for small object counts (< 100).
-/// Deterministic: pairs are generated in insertion order.
-class BruteForceBroadPhase : public BroadPhase {
-public:
-  void add(CollisionObject* object) override;
-  void remove(CollisionObject* object) override;
-  void update(CollisionObject* object) override;
-  void clear() override;
-  [[nodiscard]] std::size_t size() const override;
-
-  [[nodiscard]] std::vector<std::pair<CollisionObject*, CollisionObject*>>
-  computePotentialPairs() const override;
-
-private:
-  std::vector<CollisionObject*> objects_;  // Ordered for determinism
-};
-
 } // namespace dart::collision::experimental
+```
+
+### Broad-Phase Algorithm Selection Guide
+
+CollisionWorld supports runtime selection of broad-phase algorithms via the constructor:
+
+```cpp
+// Default: AABB Tree (best general-purpose performance)
+CollisionWorld world;
+CollisionWorld world(BroadPhaseType::AabbTree);
+
+// For mostly-static scenes with few moving objects
+CollisionWorld world(BroadPhaseType::SweepAndPrune);
+
+// For debugging or very small object counts (< 20)
+CollisionWorld world(BroadPhaseType::BruteForce);
+```
+
+#### Algorithm Comparison
+
+| Algorithm        | Complexity       | Best For                          | Trade-offs                              |
+| ---------------- | ---------------- | --------------------------------- | --------------------------------------- |
+| **AABB Tree**    | O(n log n) query | Dynamic scenes, general use       | Higher insertion cost, memory overhead  |
+| **Sweep & Prune**| O(n + k) query   | Mostly-static, coherent motion    | Must resort on large movements          |
+| **Brute Force**  | O(n²) query      | Debugging, N < 20                 | Simple but doesn't scale                |
+
+#### Performance Characteristics
+
+**AABB Tree** (default):
+- Uses Surface Area Heuristic (SAH) for balanced insertion
+- Fat AABBs reduce update frequency for small movements
+- 95-188x faster than brute-force at 500-1000 objects
+- Best choice when objects move frequently
+
+**Sweep-and-Prune**:
+- Maintains sorted endpoint lists per axis
+- Exploits temporal coherence (objects don't move much between frames)
+- Efficient when most objects are static with few moving
+- Requires full resort if many objects move large distances
+
+**Brute Force**:
+- Simple O(n²) pairwise AABB tests
+- No data structure overhead
+- Useful for debugging or when N is very small
+- Reference implementation for correctness testing
+
+#### When to Use Each
+
+| Scenario                                    | Recommended Algorithm |
+| ------------------------------------------- | --------------------- |
+| General robotics simulation                 | AabbTree (default)    |
+| Static environment + one moving robot       | SweepAndPrune         |
+| Debugging collision issues                  | BruteForce            |
+| < 20 objects                                | Any (BruteForce OK)   |
+| > 100 objects with frequent movement        | AabbTree              |
+| > 1000 objects, mostly static               | SweepAndPrune         |
+
+#### Querying the Active Algorithm
+
+```cpp
+CollisionWorld world(BroadPhaseType::AabbTree);
+
+// Query the type
+BroadPhaseType type = world.getBroadPhaseType();
+
+// Access the underlying broad-phase (for advanced use)
+BroadPhase& bp = world.getBroadPhase();
 ```
 
 ---

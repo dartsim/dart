@@ -23,8 +23,12 @@
 - `tests/benchmark/collision/scenarios/bm_raycast_batch.cpp` - batched raycasts.
 - `tests/benchmark/collision/scenarios/bm_pipeline_breakdown.cpp` - AABB update + broadphase + narrowphase timing.
 - `tests/benchmark/collision/experimental/bm_ccd.cpp` - experimental CCD microbenchmarks.
+- `tests/benchmark/collision/experimental/bm_libccd.cpp` - DART vs libccd GJK/EPA/MPR microbenchmarks (optional).
 - `tests/benchmark/collision/fixtures/` - shared shape/scene builders.
 - `tests/benchmark/collision/data/` - shared mesh/convex fixtures.
+
+Note: `bm_libccd.cpp` builds only when libccd is available. Use
+`-DDART_TESTS_LIBCCD_ROOT=/path/to/libccd` or ensure `pkg-config ccd` resolves.
 
 ### Library-provided benchmarks and demos
 

@@ -80,6 +80,7 @@ public:
 ```
 
 Notes:
+
 - `BatchScratch` lives per worker thread (TLS or an explicit pool).
 - `BatchOutput` separates pair ordering from manifolds and allows stable merges.
 - `grainSize` can be tuned or auto-selected based on pair count.

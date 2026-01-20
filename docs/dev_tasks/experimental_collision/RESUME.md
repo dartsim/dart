@@ -1,167 +1,164 @@
 # Resume: Experimental Collision Module
 
-## Current State (2026-01-19)
+## Current State (2026-01-20)
 
-**Branch**: `feature/new_coll` — ahead 2 commits; local uncommitted unrelated changes present (other agents + lint)
+**Branch**: `feature/new_coll`  
+**Build Status**: ✅ Passing  
+**Tests**: 403+ tests passing (all broadphase, narrow-phase, CCD, distance, raycast)
 
-**Tests**: Not run in this session; last known 292 passing across 17 test files
+## Last Session Summary
 
-**Performance**: Baseline validated — 5-40x faster on subset; structured suite complete with edge-case/scale sweeps and cross-backend checks added; results log created; pipeline breakdown run captured in `benchmark_results.md`
+Completed runtime broadphase algorithm selection for CollisionWorld:
 
-**New in this session**: Added AABB update counter to pipeline breakdown benchmark; added runner script + JSON summary capture for pipeline breakdown; ran lint + build.
+1. ✅ AABB Tree broadphase — O(n log n) with SAH insertion, fat AABBs, 21 tests
+2. ✅ Sweep-and-Prune broadphase — O(n + k) sorted endpoints, 19 tests  
+3. ✅ Runtime selection via `BroadPhaseType` enum in CollisionWorld constructor
+4. ✅ Benchmarks for all 3 algorithms (QueryPairs, Add, Update, QueryOverlapping)
+5. ✅ Documentation updated with broadphase selection guide
+
+## Recent Commits (Committed)
+
+```
+c607ab7ff46 docs(experimental_collision): log benchmark run results
+83b795c3226 feat(collision): add runtime broadphase selection with Sweep-and-Prune
+02c0e35ef54 docs: record rp3d ecs profiling baseline
+ab0a1c10581 docs: add batch collision architecture and rp3d plan
+b1f6e5ebf05 docs: update progress tracker with AABB tree broadphase
+```
+
+## Uncommitted Changes
+
+### Code Changes (from earlier sessions, not yet committed)
+| File | Description |
+|------|-------------|
+| `dart/collision/experimental/narrow_phase/gjk.cpp` | GJK algorithm improvements |
+| `dart/collision/experimental/narrow_phase/gjk.hpp` | GJK header updates |
+| `dart/collision/experimental/narrow_phase/ccd.cpp` | CCD fixes |
+
+### Documentation Updates (uncommitted)
+| File | Description |
+|------|-------------|
+| `docs/dev_tasks/experimental_collision/design.md` | Added broadphase selection guide |
+| `docs/dev_tasks/experimental_collision/progress.md` | Updated test count to 403 |
+| Various other docs in `docs/dev_tasks/experimental_collision/` | Minor updates |
+
+### Untracked Files (work in progress from earlier sessions)
+| File | Description |
+|------|-------------|
+| `dart/collision/experimental/narrow_phase/mpr.hpp/cpp` | MPR algorithm (incomplete) |
+| `tests/unit/collision/experimental/test_libccd_algorithms.cpp` | libccd comparison tests |
+| `tests/benchmark/collision/experimental/bm_libccd.cpp` | libccd benchmarks |
+| `cmake/dart_test_libccd.cmake` | CMake for libccd tests |
+| `rp3d_profiling_*.txt` | ReactPhysics3D profiling data |
 
 ## What's Complete
 
-| Component                                                    | Status | Notes                                                                                                                          |
-| ------------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| Core types (ContactPoint, Manifold, Result, Ray)             | ✅     | 21 tests                                                                                                                       |
-| Aabb                                                         | ✅     | 26 tests                                                                                                                       |
-| Shapes (Sphere, Box, Capsule, Cylinder, Plane, Convex, Mesh) | ✅     | 24 tests                                                                                                                       |
-| Sphere-sphere collision                                      | ✅     | 17 tests                                                                                                                       |
-| Box-box collision (SAT)                                      | ✅     | 18 tests                                                                                                                       |
-| Sphere-box collision                                         | ✅     | 19 tests                                                                                                                       |
-| Capsule collision (all pairs)                                | ✅     | 14 tests                                                                                                                       |
-| Cylinder collision (all pairs)                               | ✅     | 18 tests                                                                                                                       |
-| Plane collision (all pairs)                                  | ✅     | 11 tests                                                                                                                       |
-| Distance queries (6 pairs + Convex/Mesh)                     | ✅     | 18 tests                                                                                                                       |
-| Raycast (6 shapes incl. Mesh)                                | ✅     | 32 tests                                                                                                                       |
-| Brute-force broad-phase                                      | ✅     | 15 tests                                                                                                                       |
-| CollisionObject (ECS handle)                                 | ✅     | 12 tests                                                                                                                       |
-| NarrowPhase dispatcher                                       | ✅     | 7 tests                                                                                                                        |
-| CollisionWorld (ECS-based)                                   | ✅     | 8 tests                                                                                                                        |
-| ECS Refactoring                                              | ✅     | Handle-based API                                                                                                               |
-| **GJK/EPA Algorithm**                                        | ✅     | 15 tests                                                                                                                       |
-| **ConvexShape**                                              | ✅     | 5 tests                                                                                                                        |
-| **MeshShape**                                                | ✅     | 4 tests                                                                                                                        |
-| **GJK-based Convex/Mesh Collision**                          | ✅     | 10 tests                                                                                                                       |
-| **Ray-Mesh Intersection**                                    | ✅     | 8 tests (Moller-Trumbore)                                                                                                      |
-| **GJK-based Distance (Convex/Mesh)**                         | ✅     | 4 tests                                                                                                                        |
-| **Ray-Convex Intersection**                                  | ✅     | 7 tests (GJK-based binary search)                                                                                              |
-| Comparative benchmarks vs FCL/Bullet/ODE                     | ✅     | Baseline subset in `bm_comparative.cpp` + structured narrow-phase/distance/raycast in `tests/benchmark/collision/comparative/` |
-| Accuracy verification                                        | ✅     | Matches FCL within tolerance                                                                                                   |
+| Component | Tests | Status |
+|-----------|-------|--------|
+| **Broadphase: AABB Tree** | 21 | ✅ 95-188x faster than brute-force |
+| **Broadphase: Sweep-and-Prune** | 19 | ✅ O(n + k) for mostly-static |
+| **Broadphase: Brute Force** | 15 | ✅ O(n²) reference |
+| **CollisionWorld** | 17 | ✅ Runtime broadphase selection |
+| Narrow-phase (all primitives) | ~100 | ✅ Sphere, Box, Capsule, Cylinder, Plane |
+| GJK/EPA | 15 | ✅ Generic convex collision |
+| Distance queries | 18 | ✅ 6 primitive pairs + Convex/Mesh |
+| Raycast | 39 | ✅ 7 shape types |
+| CCD (sphere/capsule cast) | 62 | ✅ Conservative advancement |
 
-## ECS Architecture
+## CollisionWorld API
 
-```
-CollisionWorld
-  └── entt::registry
-        ├── CollisionObjectTag
-        ├── ShapeComponent (unique_ptr<Shape>)
-        ├── TransformComponent (Eigen::Isometry3d)
-        ├── AabbComponent (Aabb + dirty flag)
-        └── UserDataComponent (void*)
+```cpp
+// Default: AABB Tree (best general-purpose)
+CollisionWorld world;
+CollisionWorld world(BroadPhaseType::AabbTree);
 
-CollisionObject (handle) = entt::entity + CollisionWorld*
+// For mostly-static scenes
+CollisionWorld world(BroadPhaseType::SweepAndPrune);
+
+// For debugging or very small N
+CollisionWorld world(BroadPhaseType::BruteForce);
+
+// Query
+BroadPhaseType type = world.getBroadPhaseType();
+BroadPhase& bp = world.getBroadPhase();
 ```
 
-## GJK/EPA Implementation
+## Broadphase Performance
 
-- `Gjk::query()` - Full GJK with intersection status and separation axis
-- `Gjk::intersect()` - Simple boolean intersection test
-- `Epa::penetration()` - Penetration depth using Expanding Polytope Algorithm
-- Support function interface for any convex shape
-
-## Benchmark Results
-
-| Shape Pair      | Experimental | Best Alternative | Speedup |
-| --------------- | ------------ | ---------------- | ------- |
-| Sphere-Sphere   | **41 ns**    | 411 ns (Bullet)  | **10x** |
-| Box-Box         | **210 ns**   | 1094 ns (Bullet) | **5x**  |
-| Capsule-Capsule | **41 ns**    | 242 ns (FCL)     | **6x**  |
-| Distance        | **7 ns**     | 288 ns (FCL)     | **40x** |
-
-Baseline only; updated runs should go into `benchmark_results.md`.
-
-## What's NOT Done
-
-| Component                              | Priority   | Notes                                                                   |
-| -------------------------------------- | ---------- | ----------------------------------------------------------------------- |
-| ~~GJK-based mesh-primitive collision~~ | ~~Medium~~ | ✅ DONE — `collideConvexConvex()` via GJK                               |
-| ~~Ray-mesh intersection~~              | ~~Medium~~ | ✅ DONE — Moller-Trumbore algorithm                                     |
-| ~~Distance for Convex/Mesh~~           | ~~Medium~~ | ✅ DONE — `distanceConvexConvex()` via GJK                              |
-| ~~Ray-convex intersection~~            | ~~Medium~~ | ✅ DONE — GJK-based point-in-convex + binary search                     |
-| Benchmark results log updates          | High       | Run structured suite, capture JSON, update `benchmark_results.md` gates |
-| Raycast edge-case expansion (optional) | Medium     | Add grazing/origin-inside cases if needed for coverage                  |
-| Visual verification tool               | Low        | Raylib available in DART, needs visualizer                              |
-| Optimized broad-phase                  | Low        | BVH or spatial hash (current is O(N²))                                  |
-| DART integration                       | Deferred   | Wait for feature parity                                                 |
+| Objects | Brute-Force | AABB Tree | Speedup |
+|---------|-------------|-----------|---------|
+| 10 | 252 ns | 70 ns | 3.6x |
+| 50 | 6,944 ns | 568 ns | 12x |
+| 100 | 29,543 ns | 1,405 ns | 21x |
+| 500 | 1,137,928 ns | 12,024 ns | 95x |
+| 1000 | 4,700,044 ns | ~25,000 ns | ~188x |
 
 ## How to Resume
 
 ```bash
-# 1. Checkout and verify
+# 1. Checkout and verify state
+cd /home/js/dev/dartsim/dart/task_2
 git checkout feature/new_coll
 git status && git log -3 --oneline
 
-# 2. Verify build with experimental collision enabled
-pixi run cmake -B build/default/cpp/Release -DDART_BUILD_COLLISION_EXPERIMENTAL=ON
-pixi run cmake --build build/default/cpp/Release
+# 2. Build (if needed)
+cmake --build build/default/cpp/Release --parallel
 
-# 3. Run tests to verify state
-cd build/default/cpp/Release
-for t in bin/test_*; do $t 2>&1 | tail -1; done
-ctest -R INTEGRATION_collision_ExperimentalBackendConsistency --output-on-failure
+# 3. Run tests to verify
+./build/default/cpp/Release/bin/test_aabb_tree
+./build/default/cpp/Release/bin/test_sweep_and_prune
+./build/default/cpp/Release/bin/test_collision_world
 
-# 4. Run comparative benchmarks
-./tests/benchmark/bm_comparative --benchmark_filter="BM_SphereSphere|BM_BoxBox"
-./tests/benchmark/bm_comparative_narrow_phase --benchmark_filter="BM_Collision_.*"
-./tests/benchmark/bm_comparative_distance --benchmark_filter="BM_Distance_.*"
-./tests/benchmark/bm_comparative_raycast --benchmark_filter="BM_Raycast_.*"
-./tests/benchmark/bm_experimental_ccd --benchmark_filter="BM_CCD_.*"
-./tests/benchmark/bm_scenarios_mixed_primitives --benchmark_filter="BM_Scenario_.*"
-./tests/benchmark/bm_scenarios_raycast_batch --benchmark_filter="BM_Scenario_.*"
-./tests/benchmark/bm_scenarios_mesh_heavy --benchmark_filter="BM_Scenario_.*"
+# 4. Run benchmarks
+./build/default/cpp/Release/bin/bm_experimental_broadphase --benchmark_filter="QueryPairs"
 ```
 
-## Key Files
+## Possible Next Steps
 
-| File                                                         | Purpose                                               |
-| ------------------------------------------------------------ | ----------------------------------------------------- |
-| `dart/collision/experimental/shapes/shape.hpp`               | All shape classes including ConvexShape and MeshShape |
-| `dart/collision/experimental/narrow_phase/gjk.hpp`           | GJK/EPA algorithm                                     |
-| `dart/collision/experimental/narrow_phase/convex_convex.hpp` | Support functions + GJK collision dispatch            |
-| `dart/collision/experimental/narrow_phase/raycast.hpp`       | Raycast for all shapes including Mesh                 |
-| `dart/collision/experimental/collision_world.hpp`            | ECS-based world with registry                         |
-| `dart/collision/experimental/collision_object.hpp`           | Lightweight handle class                              |
-| `tests/unit/collision/experimental/test_gjk.cpp`             | GJK tests                                             |
-| `tests/unit/collision/experimental/test_convex.cpp`          | Convex/Mesh collision tests                           |
-| `tests/unit/collision/experimental/test_raycast.cpp`         | Raycast tests including mesh (32 tests)               |
-
-## Key Constraints
-
-1. **Use `Aabb` not `AABB`** — PascalCase for abbreviations
-2. **BSD copyright headers only** — no other boilerplate comments
-3. **snake_case for file names** — experimental module convention
-4. **Determinism required** — bit-exact results, use `std::vector`, ordered iteration
-5. **Normal convention** — from object2 to object1 (DART's convention)
-6. **BoxShape** — API takes half-extents, stores half-extents internally
-7. **Handle-based API** — CollisionObject is copyable, cheap to pass by value
-
-## Reference Implementations
-
-| Library     | Path                           | Algorithms                             |
-| ----------- | ------------------------------ | -------------------------------------- |
-| **libccd**  | `/home/js/dev/physics/libccd`  | GJK, EPA, MPR (C style, port to C++20) |
-| **FCL**     | `/home/js/dev/physics/fcl`     | BVH mesh-mesh, distance, broad-phase   |
-| **Bullet3** | `/home/js/dev/physics/bullet3` | Battle-tested collision (legacy)       |
-| **ODE**     | `/home/js/dev/physics/ODE`     | Battle-tested collision (legacy)       |
-
-## Suggested Next Steps
-
-1. **Run structured suite + record results** — update `benchmark_results.md` gates
-2. **Cross-backend mismatch triage** — review integration test output, log discrepancies
-3. **Parallelization Phase 0** — add instrumentation + 10k object scenarios
-4. **BVH broad-phase** — replace brute-force O(N²) with BVH
-
-## Commit History (Recent)
-
+### Option A: Commit Documentation Updates
+The design.md and progress.md have useful updates. Could commit them:
+```bash
+git add docs/dev_tasks/experimental_collision/design.md \
+        docs/dev_tasks/experimental_collision/progress.md
+git commit -m "docs(collision): update broadphase selection guide and test counts"
 ```
-0c6fb8e64a1 bench(collision): add experimental CCD benchmarks
-dbb161de9dc bench(collision): add mesh-heavy scenario benchmark
-22dd147d34f bench(collision): add batched raycast scenario
-c03e038fdc0 bench(collision): add mixed primitives scenario benchmark
-9853dbb9472 bench(collision): add comparative distance and raycast benchmarks
-e029676a1d3 docs(dev_tasks): track distance and raycast benchmarks
-81809bee033 docs(collision): expand ecosystem comparison
-3edd8e5c1ef docs(dev_tasks): update benchmark plan status
+
+### Option B: Commit GJK/CCD Improvements
+Earlier sessions improved GJK and CCD. Review and commit if stable:
+```bash
+git diff dart/collision/experimental/narrow_phase/gjk.cpp
+git diff dart/collision/experimental/narrow_phase/ccd.cpp
 ```
+
+### Option C: Continue Feature Development
+- **Spatial Hash broadphase** — O(1) for uniform distributions
+- **Incremental SAP** — Exploit temporal coherence
+- **DART integration** — Wire as CollisionDetector backend
+- **Parallel batch collision** — Multi-threaded narrow-phase
+
+### Option D: Clean Up WIP Files
+Remove or complete the untracked MPR/libccd work:
+- `dart/collision/experimental/narrow_phase/mpr.hpp/cpp`
+- `tests/unit/collision/experimental/test_libccd_algorithms.cpp`
+
+## Key Technical Notes
+
+1. **`Aabb.min` and `Aabb.max` are public members** — Access with `[index]` not `(index)`
+2. **Use `Aabb` not `AABB`** — PascalCase for abbreviations in this codebase
+3. **Determinism required** — All broadphases return sorted pairs for reproducibility
+4. **Default broadphase is AabbTree** — Best general-purpose performance
+
+## Key Files Reference
+
+| File | Purpose |
+|------|---------|
+| `dart/collision/experimental/broad_phase/aabb_tree.hpp` | AABB Tree (SAH, fat AABBs) |
+| `dart/collision/experimental/broad_phase/sweep_and_prune.hpp` | SAP (sorted endpoints) |
+| `dart/collision/experimental/broad_phase/brute_force.hpp` | O(n²) reference |
+| `dart/collision/experimental/collision_world.hpp` | Runtime broadphase selection |
+| `dart/collision/experimental/fwd.hpp` | BroadPhaseType enum |
+| `tests/unit/collision/experimental/test_aabb_tree.cpp` | 21 AABB Tree tests |
+| `tests/unit/collision/experimental/test_sweep_and_prune.cpp` | 19 SAP tests |
+| `tests/benchmark/collision/experimental/bm_broadphase.cpp` | Broadphase benchmarks |
+| `docs/dev_tasks/experimental_collision/progress.md` | Full component status |
+| `docs/dev_tasks/experimental_collision/design.md` | API design and architecture |

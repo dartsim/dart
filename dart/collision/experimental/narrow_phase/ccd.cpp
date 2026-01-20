@@ -476,21 +476,18 @@ bool sphereCastConvex(
       return true;
     }
 
+    Eigen::Vector3d pointA = gjkResult.closestPointA;
+    Eigen::Vector3d pointB = gjkResult.closestPointB;
+    double distance = gjkResult.distance;
+
     Eigen::Vector3d sepAxis = gjkResult.separationAxis;
+    if (sepAxis.squaredNorm() < kEpsilon) {
+      sepAxis = pointB - pointA;
+    }
     if (sepAxis.squaredNorm() < kEpsilon) {
       sepAxis = Eigen::Vector3d::UnitX();
     }
     sepAxis.normalize();
-
-    Eigen::Vector3d pointA = supportA(sepAxis);
-    Eigen::Vector3d pointB = supportB(-sepAxis);
-    double distance = (pointB - pointA).dot(sepAxis);
-
-    if (distance < 0.0) {
-      distance = -distance;
-      sepAxis = -sepAxis;
-      std::swap(pointA, pointB);
-    }
 
     if (distance < option.tolerance) {
       result.hit = true;
@@ -560,21 +557,18 @@ bool sphereCastMesh(
       return true;
     }
 
+    Eigen::Vector3d pointA = gjkResult.closestPointA;
+    Eigen::Vector3d pointB = gjkResult.closestPointB;
+    double distance = gjkResult.distance;
+
     Eigen::Vector3d sepAxis = gjkResult.separationAxis;
+    if (sepAxis.squaredNorm() < kEpsilon) {
+      sepAxis = pointB - pointA;
+    }
     if (sepAxis.squaredNorm() < kEpsilon) {
       sepAxis = Eigen::Vector3d::UnitX();
     }
     sepAxis.normalize();
-
-    Eigen::Vector3d pointA = supportA(sepAxis);
-    Eigen::Vector3d pointB = supportB(-sepAxis);
-    double distance = (pointB - pointA).dot(sepAxis);
-
-    if (distance < 0.0) {
-      distance = -distance;
-      sepAxis = -sepAxis;
-      std::swap(pointA, pointB);
-    }
 
     if (distance < option.tolerance) {
       result.hit = true;
@@ -985,21 +979,18 @@ bool conservativeAdvancement(
       return true;
     }
 
+    Eigen::Vector3d pointA = gjkResult.closestPointA;
+    Eigen::Vector3d pointB = gjkResult.closestPointB;
+    double distance = gjkResult.distance;
+
     Eigen::Vector3d sepAxis = gjkResult.separationAxis;
+    if (sepAxis.squaredNorm() < kEpsilon) {
+      sepAxis = pointB - pointA;
+    }
     if (sepAxis.squaredNorm() < kEpsilon) {
       sepAxis = Eigen::Vector3d::UnitX();
     }
     sepAxis.normalize();
-
-    Eigen::Vector3d pointA = supportA(sepAxis);
-    Eigen::Vector3d pointB = supportB(-sepAxis);
-    double distance = (pointB - pointA).dot(sepAxis);
-
-    if (distance < 0.0) {
-      distance = -distance;
-      sepAxis = -sepAxis;
-      std::swap(pointA, pointB);
-    }
 
     if (distance < option.tolerance) {
       result.hit = true;

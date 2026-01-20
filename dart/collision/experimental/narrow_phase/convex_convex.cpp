@@ -32,7 +32,11 @@
 
 #include <dart/collision/experimental/narrow_phase/convex_convex.hpp>
 
+#include <dart/collision/experimental/narrow_phase/mpr.hpp>
+
+#include <cmath>
 #include <limits>
+#include <vector>
 
 namespace dart::collision::experimental {
 
@@ -114,7 +118,8 @@ SupportFunction makeCylinderSupportFunction(
              const Eigen::Vector3d& dir) -> Eigen::Vector3d {
     Eigen::Vector3d localDir = transform.linear().transpose() * dir;
     Eigen::Vector3d localSupport;
-    double xyLen = std::sqrt(localDir.x() * localDir.x() + localDir.y() * localDir.y());
+    double xyLen = std::sqrt(localDir.x() * localDir.x()
+                             + localDir.y() * localDir.y());
     if (xyLen < 1e-10) {
       localSupport.x() = radius;
       localSupport.y() = 0;
@@ -156,6 +161,42 @@ SupportFunction makeSupportFunction(
   }
 }
 
+Eigen::Vector3d averageVertexPosition(
+    const std::vector<Eigen::Vector3d>& vertices)
+{
+  if (vertices.empty()) {
+    return Eigen::Vector3d::Zero();
+  }
+
+  Eigen::Vector3d sum = Eigen::Vector3d::Zero();
+  for (const auto& v : vertices) {
+    sum += v;
+  }
+  return sum / static_cast<double>(vertices.size());
+}
+
+Eigen::Vector3d computeShapeCenter(
+    const Shape& shape, const Eigen::Isometry3d& transform)
+{
+  switch (shape.getType()) {
+    case ShapeType::Sphere:
+    case ShapeType::Box:
+    case ShapeType::Capsule:
+    case ShapeType::Cylinder:
+      return transform.translation();
+    case ShapeType::Convex: {
+      const auto& convex = static_cast<const ConvexShape&>(shape);
+      return transform * averageVertexPosition(convex.getVertices());
+    }
+    case ShapeType::Mesh: {
+      const auto& mesh = static_cast<const MeshShape&>(shape);
+      return transform * averageVertexPosition(mesh.getVertices());
+    }
+    default:
+      return transform.translation();
+  }
+}
+
 }  // namespace
 
 bool collideConvexConvex(
@@ -184,10 +225,43 @@ bool collideConvexConvex(
     return true;
   }
 
+  EpaResult epaResult = Epa::penetration(supportA, supportB, gjkResult.simplex);
+  Eigen::Vector3d contactNormal = Eigen::Vector3d::Zero();
+  double penetrationDepth = 0.0;
+  Eigen::Vector3d pointA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d pointB = Eigen::Vector3d::Zero();
+
+  if (epaResult.success) {
+    penetrationDepth = epaResult.depth;
+    contactNormal = -epaResult.normal;
+    pointA = epaResult.pointOnA;
+    pointB = epaResult.pointOnB;
+  } else {
+    const Eigen::Vector3d centerA = computeShapeCenter(shape1, tf1);
+    const Eigen::Vector3d centerB = computeShapeCenter(shape2, tf2);
+    MprResult mprResult = Mpr::penetration(supportA, supportB, centerA, centerB);
+    if (mprResult.success) {
+      penetrationDepth = mprResult.depth;
+      contactNormal = -mprResult.normal;
+      pointA = mprResult.pointOnA;
+      pointB = mprResult.pointOnB;
+    }
+  }
+
+  if (contactNormal.squaredNorm() < 1e-12) {
+    contactNormal = Eigen::Vector3d::UnitZ();
+  } else {
+    contactNormal.normalize();
+  }
+
+  if (penetrationDepth < 0.0) {
+    penetrationDepth = -penetrationDepth;
+  }
+
   ContactPoint contact;
-  contact.depth = 0.01;
-  contact.normal = Eigen::Vector3d::UnitZ();
-  contact.position = (tf1.translation() + tf2.translation()) / 2.0;
+  contact.depth = penetrationDepth;
+  contact.normal = contactNormal;
+  contact.position = (pointA + pointB) * 0.5;
 
   result.addContact(contact);
   return true;
@@ -211,41 +285,63 @@ double distanceConvexConvex(
 
   GjkResult gjkResult = Gjk::query(supportA, supportB, initialDir);
 
-  if (gjkResult.intersecting) {
-    result.distance = 0.0;
-    result.pointOnObject1 = tf1.translation();
-    result.pointOnObject2 = tf2.translation();
-    result.normal = Eigen::Vector3d::UnitZ();
-    return 0.0;
+  if (!gjkResult.intersecting) {
+    if (option.upperBound < gjkResult.distance) {
+      result.distance = std::numeric_limits<double>::max();
+      return std::numeric_limits<double>::max();
+    }
+
+    result.distance = gjkResult.distance;
+    if (option.enableNearestPoints) {
+      result.pointOnObject1 = gjkResult.closestPointA;
+      result.pointOnObject2 = gjkResult.closestPointB;
+      if (gjkResult.distance > 1e-12) {
+        result.normal =
+            (gjkResult.closestPointB - gjkResult.closestPointA).normalized();
+      } else {
+        result.normal = Eigen::Vector3d::UnitX();
+      }
+    }
+    return gjkResult.distance;
   }
 
-  Eigen::Vector3d sepAxis = gjkResult.separationAxis;
-  if (sepAxis.squaredNorm() < 1e-10) {
-    sepAxis = Eigen::Vector3d::UnitX();
+  EpaResult epaResult = Epa::penetration(supportA, supportB, gjkResult.simplex);
+  double depth = 0.0;
+  Eigen::Vector3d pointA = tf1.translation();
+  Eigen::Vector3d pointB = tf2.translation();
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitX();
+
+  if (epaResult.success) {
+    depth = epaResult.depth;
+    pointA = epaResult.pointOnA;
+    pointB = epaResult.pointOnB;
+    if ((pointB - pointA).squaredNorm() > 1e-12) {
+      normal = (pointB - pointA).normalized();
+    }
+  } else {
+    const Eigen::Vector3d centerA = computeShapeCenter(shape1, tf1);
+    const Eigen::Vector3d centerB = computeShapeCenter(shape2, tf2);
+    MprResult mprResult = Mpr::penetration(supportA, supportB, centerA, centerB);
+    if (mprResult.success) {
+      depth = mprResult.depth;
+      pointA = mprResult.pointOnA;
+      pointB = mprResult.pointOnB;
+      if ((pointB - pointA).squaredNorm() > 1e-12) {
+        normal = (pointB - pointA).normalized();
+      } else if (mprResult.normal.squaredNorm() > 1e-12) {
+        normal = mprResult.normal.normalized();
+      }
+    }
   }
-  sepAxis.normalize();
 
-  Eigen::Vector3d pointA = supportA(sepAxis);
-  Eigen::Vector3d pointB = supportB(-sepAxis);
-
-  double dist = (pointB - pointA).dot(sepAxis);
-  if (dist < 0.0) {
-    dist = -dist;
-    sepAxis = -sepAxis;
-    std::swap(pointA, pointB);
+  result.distance = -depth;
+  if (option.enableNearestPoints) {
+    result.pointOnObject1 = pointA;
+    result.pointOnObject2 = pointB;
+    result.normal = normal;
   }
 
-  if (option.upperBound < dist) {
-    result.distance = std::numeric_limits<double>::max();
-    return std::numeric_limits<double>::max();
-  }
-
-  result.distance = dist;
-  result.pointOnObject1 = pointA;
-  result.pointOnObject2 = pointB;
-  result.normal = sepAxis;
-
-  return dist;
+  return -depth;
 }
 
 }  // namespace dart::collision::experimental

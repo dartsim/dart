@@ -7,13 +7,13 @@ targets for DART's experimental collision module.
 
 ## Contact Result Types
 
-| Type   | Representation                        | Typical use |
-| ------ | ------------------------------------- | ----------- |
-| Point  | Single position + normal + depth      | Sphere-sphere, vertex-face |
-| Edge   | Line segment or two points            | Edge-edge contacts (boxes, capsules) |
-| Face   | Polygon/patch with shared normal      | Box-face, mesh-face |
-| Patch  | Curved surface region                 | Capsule-cylinder, sphere-plane |
-| Volume | Overlap volume + gradient             | SDF/voxel collision, deformation |
+| Type   | Representation                   | Typical use                          |
+| ------ | -------------------------------- | ------------------------------------ |
+| Point  | Single position + normal + depth | Sphere-sphere, vertex-face           |
+| Edge   | Line segment or two points       | Edge-edge contacts (boxes, capsules) |
+| Face   | Polygon/patch with shared normal | Box-face, mesh-face                  |
+| Patch  | Curved surface region            | Capsule-cylinder, sphere-plane       |
+| Volume | Overlap volume + gradient        | SDF/voxel collision, deformation     |
 
 ## Manifold Generation Techniques
 
