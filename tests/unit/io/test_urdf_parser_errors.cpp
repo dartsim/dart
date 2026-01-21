@@ -4,7 +4,7 @@
 
 #include <dart/utils/urdf/urdf_parser.hpp>
 
-#include <dart/io/all.hpp>
+#include <dart/io/All.hpp>
 
 #include <gtest/gtest.h>
 

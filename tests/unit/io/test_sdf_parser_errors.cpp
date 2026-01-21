@@ -5,7 +5,7 @@
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
-#include <dart/io/all.hpp>
+#include <dart/io/All.hpp>
 
 #include <gtest/gtest.h>
 
