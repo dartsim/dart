@@ -54,10 +54,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup pixi
-        uses: prefix-dev/setup-pixi@v0.9.3
+      - name: Setup pixi (CI)
+        uses: ./.github/actions/setup-pixi-ci
         with:
-          cache: true
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
@@ -65,11 +64,6 @@ jobs:
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 2
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
-        with:
-          disable_annotations: true
 
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
@@ -100,10 +94,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup pixi
-        uses: prefix-dev/setup-pixi@v0.9.3
+      - name: Setup pixi (CI)
+        uses: ./.github/actions/setup-pixi-ci
         with:
-          cache: true
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
@@ -111,11 +104,6 @@ jobs:
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 2
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
-        with:
-          disable_annotations: true
 
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
@@ -149,10 +137,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup pixi
-        uses: prefix-dev/setup-pixi@v0.9.3
+      - name: Setup pixi (CI)
+        uses: ./.github/actions/setup-pixi-ci
         with:
-          cache: true
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
@@ -160,11 +147,6 @@ jobs:
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 2
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
-        with:
-          disable_annotations: true
 
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
@@ -187,21 +169,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup pixi
-        uses: prefix-dev/setup-pixi@v0.9.3
+      - name: Setup pixi (CI)
+        uses: ./.github/actions/setup-pixi-ci
         with:
-          cache: true
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 2
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
-        with:
-          disable_annotations: true
 
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
@@ -243,10 +220,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup pixi
-        uses: prefix-dev/setup-pixi@v0.9.3
+      - name: Setup pixi (CI)
+        uses: ./.github/actions/setup-pixi-ci
         with:
-          cache: true
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
@@ -254,11 +230,6 @@ jobs:
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev xvfb mesa-utils
           version: 3
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
-        with:
-          disable_annotations: true
 
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
