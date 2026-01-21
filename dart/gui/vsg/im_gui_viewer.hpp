@@ -177,6 +177,7 @@ private:
 
   ImGuiCallback m_imguiCallback;
   ::vsg::ref_ptr<ImGuiCommand> m_imguiCommand;
+  ::vsg::ref_ptr<::vsg::Node> m_renderImGui;
 
   bool m_needsCompile{true};
 };

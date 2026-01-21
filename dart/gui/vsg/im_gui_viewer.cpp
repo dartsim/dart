@@ -119,6 +119,8 @@ void ImGuiViewer::compile()
     return;
   }
 
+  m_viewer->deviceWaitIdle();
+
   auto commandGraph = ::vsg::CommandGraph::create(m_window);
   auto renderGraph = ::vsg::RenderGraph::create(m_window);
   commandGraph->addChild(renderGraph);
@@ -134,9 +136,11 @@ void ImGuiViewer::compile()
   view->addChild(::vsg::createHeadlight());
   renderGraph->addChild(view);
 
-  m_imguiCommand = ImGuiCommand::create(&m_imguiCallback);
-  auto renderImGui = vsgImGui::RenderImGui::create(m_window, m_imguiCommand);
-  renderGraph->addChild(renderImGui);
+  if (!m_renderImGui) {
+    m_imguiCommand = ImGuiCommand::create(&m_imguiCallback);
+    m_renderImGui = vsgImGui::RenderImGui::create(m_window, m_imguiCommand);
+  }
+  renderGraph->addChild(m_renderImGui);
 
   m_viewer->assignRecordAndSubmitTaskAndPresentation({commandGraph});
   m_viewer->compile();

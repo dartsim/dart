@@ -317,6 +317,9 @@ int main(int argc, char* argv[])
 
   CLI11_PARSE(app, argc, argv);
 
+  int scaledWidth = static_cast<int>(width * guiScale);
+  int scaledHeight = static_cast<int>(height * guiScale);
+
   std::cout << "DART Collision Sandbox - Interactive Demo\n";
   std::cout << "=========================================\n\n";
 
@@ -325,7 +328,7 @@ int main(int argc, char* argv[])
   DemoState state;
 
   if (headless) {
-    auto viewer = guivsg::SimpleViewer::headless(width, height);
+    auto viewer = guivsg::SimpleViewer::headless(scaledWidth, scaledHeight);
     viewer.addGrid(6.0, 1.0);
     viewer.addAxes(1.0);
     viewer.lookAt(
@@ -347,7 +350,7 @@ int main(int argc, char* argv[])
     return 0;
   }
 
-  guivsg::ImGuiViewer viewer(width, height, "DART Collision Sandbox");
+  guivsg::ImGuiViewer viewer(scaledWidth, scaledHeight, "DART Collision Sandbox");
   viewer.addGrid(6.0, 1.0);
   viewer.addAxes(1.0);
   viewer.lookAt(
@@ -356,8 +359,15 @@ int main(int argc, char* argv[])
       Eigen::Vector3d::UnitZ());
 
   float guiScaleF = static_cast<float>(guiScale);
-  viewer.setImGuiCallback([&state, guiScaleF]() {
+  bool firstFrame = true;
+  viewer.setImGuiCallback([&state, guiScaleF, &firstFrame]() {
     ImGui::GetIO().FontGlobalScale = guiScaleF;
+
+    if (firstFrame) {
+      ImGui::SetNextWindowPos(ImVec2(10 * guiScaleF, 10 * guiScaleF));
+      ImGui::SetNextWindowSize(ImVec2(280 * guiScaleF, 320 * guiScaleF));
+      firstFrame = false;
+    }
 
     ImGui::Begin("Collision Sandbox Controls");
 
