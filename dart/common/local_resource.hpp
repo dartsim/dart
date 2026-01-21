@@ -36,7 +36,7 @@
 #include <dart/common/class_with_virtual_base.hpp>
 #include <dart/common/resource.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 namespace dart {
 namespace common {

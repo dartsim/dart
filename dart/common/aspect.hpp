@@ -37,7 +37,7 @@
 #include <dart/common/cloneable.hpp>
 #include <dart/common/detail/no_op.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <string>
 

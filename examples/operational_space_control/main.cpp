@@ -35,7 +35,7 @@
 #include <dart/utils/All.hpp>
 #include <dart/utils/urdf/All.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
 using namespace dart::common;

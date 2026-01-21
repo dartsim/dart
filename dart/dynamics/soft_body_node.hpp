@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/detail/soft_body_node_aspect.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <span>
 

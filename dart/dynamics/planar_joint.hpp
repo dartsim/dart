@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/detail/planar_joint_aspect.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 namespace dart {
 namespace dynamics {

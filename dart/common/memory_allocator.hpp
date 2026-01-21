@@ -37,7 +37,7 @@
 
 #include <dart/common/castable.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <iostream>
 #include <string_view>

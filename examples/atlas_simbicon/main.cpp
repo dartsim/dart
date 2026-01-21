@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "AtlasSimbiconEventHandler.hpp"
-#include "AtlasSimbiconWidget.hpp"
-#include "AtlasSimbiconWorldNode.hpp"
+#include "atlas_simbicon_event_handler.hpp"
+#include "atlas_simbicon_widget.hpp"
+#include "atlas_simbicon_world_node.hpp"
 
 #include <dart/gui/all.hpp>
 #include <dart/gui/include_im_gui.hpp>
@@ -40,7 +40,7 @@
 #include <dart/utils/All.hpp>
 #include <dart/utils/urdf/All.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
 #include <CLI/CLI.hpp>

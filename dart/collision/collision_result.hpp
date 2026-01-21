@@ -37,7 +37,7 @@
 
 #include <dart/dynamics/fwd.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <span>
 #include <unordered_set>

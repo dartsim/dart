@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <atomic>
 #include <chrono>

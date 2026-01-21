@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_BODYNODEPTR_HPP_
 #define DART_DYNAMICS_DETAIL_BODYNODEPTR_HPP_
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <atomic>
 #include <memory>

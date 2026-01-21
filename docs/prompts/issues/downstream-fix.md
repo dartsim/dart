@@ -62,7 +62,7 @@ Workflow
    - Cherry-pick or adapt the fix (watch for API differences).
    - DART 6.16 differences:
      - Use `dtwarn << "message"` instead of `DART_WARN()`.
-     - Use `#include <dart/dart.hpp>` instead of `#include <dart/All.hpp>`.
+     - Use `#include <dart/dart.hpp>` instead of `#include <dart/all.hpp>`.
      - Test CMakeLists may use `GLOB_SOURCES` pattern.
    - Run `pixi run lint` and verify tests pass.
 

@@ -45,7 +45,7 @@
   #include <dart/collision/ode/ode_collision_detector.hpp>
 #endif
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <CLI/CLI.hpp>
 

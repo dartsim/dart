@@ -75,7 +75,7 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 
 - **Bug fixes**: Require PRs to BOTH `release-6.16` AND `main` branches. See `docs/onboarding/contributing.md`.
 - **Multi-phase tasks**: Create `docs/dev_tasks/<task>/` for tracking. See `docs/dev_tasks/README.md` for criteria.
-- **AI reviews**: Do NOT reply to AI-generated review comments (Codex, Copilot). Push fix, then `@codex review`. See `docs/onboarding/ai-tools.md`.
+- **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]}`, `github-actions[bot]`, `copilot[bot]`). No `gh pr comment`, no PR comment replies. Just push the fix silently, then re-trigger with `@codex review`. See `docs/onboarding/ai-tools.md`.
 - **Commands**: Use `pixi run ...` tasks; don't invent new entry points.
 - **Formatting**: Run `pixi run lint` before committing (auto-fixes).
 - **PRs**: Use `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone (`DART 7.0` for `main`, `DART 6.16.x` for `release-6.16`).
@@ -85,7 +85,7 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 
 **STOP before every `git commit`. Verify:**
 
-- [ ] `pixi run lint` — Format code/docs (run even for docs-only changes)
+- [ ] **`pixi run lint`** — ALWAYS run, even for docs-only changes. CI WILL fail without this.
 - [ ] `pixi run build` — If C++/Python code changed
 - [ ] `pixi run test-unit` — If behavior could be affected
 - [ ] **CHANGELOG.md** — Update if adding features, fixing bugs, or making breaking changes
@@ -93,7 +93,7 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 
 Shortcut: `pixi run test-all` runs lint + build + all tests.
 
-**Why this exists**: Agents often skip these steps when focused on the task. CI will catch issues, but fixing post-push wastes time. Run checks locally first.
+**Why this exists**: Agents often skip `pixi run lint` when focused on the task. CI will catch issues, but fixing post-push wastes time and CI resources. Run lint locally first—EVERY time.
 
 ## Tool Compatibility
 
