@@ -85,6 +85,28 @@ target_link_libraries(bm_simd
 )
 dart_format_add(simd/bm_simd.cpp)
 
+option(DART_SIMD_BENCHMARK_DRJIT "Enable drjit comparison benchmarks" OFF)
+if(DART_SIMD_BENCHMARK_DRJIT)
+  include(FetchContent)
+  FetchContent_Declare(
+    drjit
+    GIT_REPOSITORY https://github.com/mitsuba-renderer/drjit.git
+    GIT_TAG v1.0.0
+  )
+  set(DRJIT_ENABLE_JIT OFF CACHE BOOL "" FORCE)
+  set(DRJIT_ENABLE_AUTODIFF OFF CACHE BOOL "" FORCE)
+  set(DRJIT_ENABLE_PYTHON OFF CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(drjit)
+
+  add_executable(bm_simd_vs_drjit simd/bm_simd_vs_drjit.cpp)
+  target_link_libraries(bm_simd_vs_drjit
+    dart-simd
+    drjit
+    benchmark::benchmark
+  )
+  dart_format_add(simd/bm_simd_vs_drjit.cpp)
+endif()
+
 # ==============================================================================
 # Note: Benchmarks are standalone executables for performance measurement.
 # They are NOT registered as ctests since they measure performance, not correctness.
