@@ -93,8 +93,8 @@ TEST(VsgGeometryBuilders, CreatePlane)
 
 TEST(VsgGeometryBuilders, CreateMesh)
 {
-  std::vector<Eigen::Vector3d> vertices = {
-      {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.5, 1.0, 0.0}};
+  std::vector<Eigen::Vector3d> vertices
+      = {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.5, 1.0, 0.0}};
   std::vector<std::array<unsigned int, 3>> triangles = {{0, 1, 2}};
 
   auto node = vsg::createMesh(vertices, triangles);

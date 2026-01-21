@@ -39,9 +39,9 @@
 #include <vsg/all.h>
 
 #ifdef DART_HAS_VSGIMGUI
-#  include <vsgImGui/RenderImGui.h>
-#  include <vsgImGui/SendEventsToImGui.h>
-#  include <vsgImGui/imgui.h>
+  #include <vsgImGui/RenderImGui.h>
+  #include <vsgImGui/SendEventsToImGui.h>
+  #include <vsgImGui/imgui.h>
 #endif
 
 #include <functional>

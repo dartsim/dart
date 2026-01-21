@@ -41,6 +41,7 @@
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/CapsuleShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/SphereShape.hpp>
 
@@ -78,11 +79,18 @@ struct ShapeSpec
   Eigen::Isometry3d transform;
 };
 
+struct ChildShapeSpec
+{
+  ShapeKind kind;
+  Eigen::Isometry3d relativeTransform;
+};
+
 constexpr double kSphereRadius = 0.5;
 constexpr double kCapsuleRadius = 0.4;
 constexpr double kCapsuleHeight = 1.2;
 constexpr double kDenseRange = 2.0;
 constexpr double kSparseRange = 10.0;
+constexpr double kAggregateOffset = 1.6;
 const Eigen::Vector3d kBoxHalfExtents(0.5, 0.5, 0.5);
 const Eigen::Vector3d kBoxSize(1.0, 1.0, 1.0);
 

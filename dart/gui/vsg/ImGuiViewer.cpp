@@ -34,10 +34,10 @@
 
 #ifdef DART_HAS_VSGIMGUI
 
-#  include "dart/gui/vsg/Conversions.hpp"
-#  include "dart/gui/vsg/DebugDraw.hpp"
+  #include "dart/gui/vsg/Conversions.hpp"
+  #include "dart/gui/vsg/DebugDraw.hpp"
 
-#  include <vsg/all.h>
+  #include <vsg/all.h>
 
 namespace dart::gui::vsg {
 
@@ -45,9 +45,7 @@ class ImGuiViewer::ImGuiCommand
   : public ::vsg::Inherit<::vsg::Command, ImGuiCommand>
 {
 public:
-  ImGuiCommand(ImGuiCallback* callback) : m_callback(callback)
-  {
-  }
+  ImGuiCommand(ImGuiCallback* callback) : m_callback(callback) {}
 
   void record([[maybe_unused]] ::vsg::CommandBuffer& cb) const override
   {
@@ -137,8 +135,7 @@ void ImGuiViewer::compile()
   renderGraph->addChild(view);
 
   m_imguiCommand = ImGuiCommand::create(&m_imguiCallback);
-  auto renderImGui
-      = vsgImGui::RenderImGui::create(m_window, m_imguiCommand);
+  auto renderImGui = vsgImGui::RenderImGui::create(m_window, m_imguiCommand);
   renderGraph->addChild(renderImGui);
 
   m_viewer->assignRecordAndSubmitTaskAndPresentation({commandGraph});

@@ -33,14 +33,14 @@ namespace vsg = dart::gui::vsg;
 
 TEST(VsgDebugDraw, CreatePoint)
 {
-  auto node = vsg::createPoint(Eigen::Vector3d(1, 2, 3), 0.05, vsg::colors::Red);
+  auto node
+      = vsg::createPoint(Eigen::Vector3d(1, 2, 3), 0.05, vsg::colors::Red);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgDebugDraw, CreatePoints)
 {
-  std::vector<Eigen::Vector3d> positions = {
-      {0, 0, 0}, {1, 0, 0}, {0, 1, 0}};
+  std::vector<Eigen::Vector3d> positions = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}};
   auto node = vsg::createPoints(positions, 0.03, vsg::colors::Green);
   ASSERT_NE(node, nullptr);
 }
@@ -48,9 +48,7 @@ TEST(VsgDebugDraw, CreatePoints)
 TEST(VsgDebugDraw, CreateLine)
 {
   auto node = vsg::createLine(
-      Eigen::Vector3d(0, 0, 0),
-      Eigen::Vector3d(1, 1, 1),
-      vsg::colors::Blue);
+      Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 1, 1), vsg::colors::Blue);
   ASSERT_NE(node, nullptr);
 }
 

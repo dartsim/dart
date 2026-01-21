@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/vsg/SimpleViewer.hpp>
 #include <dart/gui/vsg/DebugDraw.hpp>
+#include <dart/gui/vsg/SimpleViewer.hpp>
 
 #include <gtest/gtest.h>
 

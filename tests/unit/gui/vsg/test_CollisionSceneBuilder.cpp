@@ -48,8 +48,7 @@ TEST(VsgCollisionSceneBuilder, DefaultConstruction)
 TEST(VsgCollisionSceneBuilder, AddObject)
 {
   collision::CollisionWorld world;
-  auto obj = world.createObject(
-      std::make_unique<collision::SphereShape>(1.0));
+  auto obj = world.createObject(std::make_unique<collision::SphereShape>(1.0));
 
   vsg::CollisionSceneBuilder builder;
   builder.addObject(obj, vsg::colors::Red);
@@ -61,8 +60,8 @@ TEST(VsgCollisionSceneBuilder, AddObject)
 TEST(VsgCollisionSceneBuilder, AddMultipleObjects)
 {
   collision::CollisionWorld world;
-  auto sphere = world.createObject(
-      std::make_unique<collision::SphereShape>(1.0));
+  auto sphere
+      = world.createObject(std::make_unique<collision::SphereShape>(1.0));
   auto box = world.createObject(
       std::make_unique<collision::BoxShape>(Eigen::Vector3d(1, 1, 1)));
 
@@ -77,10 +76,10 @@ TEST(VsgCollisionSceneBuilder, AddMultipleObjects)
 TEST(VsgCollisionSceneBuilder, AddContacts)
 {
   collision::CollisionWorld world;
-  auto sphere1 = world.createObject(
-      std::make_unique<collision::SphereShape>(1.0));
-  auto sphere2 = world.createObject(
-      std::make_unique<collision::SphereShape>(1.0));
+  auto sphere1
+      = world.createObject(std::make_unique<collision::SphereShape>(1.0));
+  auto sphere2
+      = world.createObject(std::make_unique<collision::SphereShape>(1.0));
   sphere2.setTransform(
       Eigen::Translation3d(1.5, 0, 0) * Eigen::Isometry3d::Identity());
 
@@ -129,9 +128,7 @@ TEST(VsgCollisionSceneBuilder, AddDistanceResult)
 TEST(VsgCollisionSceneBuilder, AddRaycast)
 {
   collision::Ray ray(
-      Eigen::Vector3d(0, 0, 0),
-      Eigen::Vector3d(1, 0, 0).normalized(),
-      10.0);
+      Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0).normalized(), 10.0);
 
   collision::RaycastResult hit;
   hit.hit = true;
@@ -149,9 +146,7 @@ TEST(VsgCollisionSceneBuilder, AddRaycast)
 TEST(VsgCollisionSceneBuilder, AddRaycastMiss)
 {
   collision::Ray ray(
-      Eigen::Vector3d(0, 0, 0),
-      Eigen::Vector3d(1, 0, 0).normalized(),
-      10.0);
+      Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0).normalized(), 10.0);
 
   vsg::CollisionSceneBuilder builder;
   builder.addRaycast(ray, nullptr);
@@ -176,8 +171,7 @@ TEST(VsgCollisionSceneBuilder, AddSphereCast)
 TEST(VsgCollisionSceneBuilder, Clear)
 {
   collision::CollisionWorld world;
-  auto obj = world.createObject(
-      std::make_unique<collision::SphereShape>(1.0));
+  auto obj = world.createObject(std::make_unique<collision::SphereShape>(1.0));
 
   vsg::CollisionSceneBuilder builder;
   builder.addObject(obj);

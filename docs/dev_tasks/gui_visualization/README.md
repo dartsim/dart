@@ -1,8 +1,8 @@
 # GUI/Visualization: VSG Migration Plan
 
 > **Created**: 2026-01-20
-> **Updated**: 2026-01-19
-> **Status**: Phase 1-3 COMPLETE - All VSG building blocks implemented
+> **Updated**: 2026-01-20
+> **Status**: Phase 1-4 COMPLETE - VSG foundation + ImGui integration
 > **Decision**: VulkanSceneGraph (VSG) for all visualization needs
 
 ## Background
@@ -37,7 +37,6 @@ Build reusable VSG components that:
 
 - Full dart/gui/ replacement
 - WorldNode/ShapeFrameNode porting
-- ImGui integration
 - Simulation visualization
 - URDF model loading
 
@@ -466,6 +465,70 @@ vulkanscenegraph = ">=1.0"
 - [x] CollisionSceneBuilder visualizes collision results
 - [x] Example tool works end-to-end
 - [x] Can visualize CCD (sphere-cast, capsule-cast)
+
+---
+
+## Phase 4: ImGui Integration (COMPLETE)
+
+Added interactive controls using vsgImGui.
+
+### 4.1 vsgImGui FetchContent
+
+vsgImGui is not on conda-forge, so we use CMake FetchContent.
+
+**Key Challenges Solved**:
+
+- Target conflict: vsgImGui creates `docs`, `clobber`, `uninstall` targets that conflict with DART
+- Solution: Create stub targets before `add_subdirectory(vsgImGui)`
+- C++20 enforcement: vsgImGui sets C++17 but DART uses C++20
+- Solution: Explicit `target_compile_features(dart-gui-vsg PUBLIC cxx_std_20)`
+
+### 4.2 ImGuiViewer Class
+
+New viewer class extending SimpleViewer with ImGui support.
+
+**Files**:
+
+- `ImGuiViewer.hpp/.cpp` - ImGui-enabled VSG viewer
+
+**Features**:
+
+- `setImGuiCallback(std::function<void()>)` - Register custom ImGui widgets
+- `computePickingRay(screenX, screenY, origin, direction)` - Screen-to-world ray
+- `getWindowSize(width, height)` - Current window dimensions
+
+### 4.3 collision_sandbox Example
+
+Interactive demo showing all collision query types.
+
+**Location**: `examples/collision_sandbox/`
+
+**Demo Modes**:
+
+| Mode      | Description                          |
+| --------- | ------------------------------------ |
+| Shapes    | Basic primitives (box, sphere, etc.) |
+| Contacts  | Collision detection with contacts    |
+| Filtering | Collision group/mask filtering       |
+| Distance  | Distance between objects             |
+| Raycast   | Ray intersection queries             |
+| CCD       | Continuous collision (sphere-cast)   |
+| Picking   | Mouse raycast picking                |
+
+**Controls**:
+
+- Radio buttons to switch demo modes
+- AABB toggle checkbox
+- Mode-specific sliders (sphere offset, ray angle)
+- Middle-click for mouse picking (in Picking mode)
+
+### Phase 4 Complete When:
+
+- [x] vsgImGui integrated via FetchContent
+- [x] ImGuiViewer class with callback support
+- [x] collision_sandbox example with all demo modes
+- [x] Mouse raycast picking with screen-to-world conversion
+- [x] Real collision queries (raycast, sphereCast) instead of mock data
 
 ---
 

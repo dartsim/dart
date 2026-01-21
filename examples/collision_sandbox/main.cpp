@@ -262,7 +262,8 @@ void buildScene(
       collision::CcdOption ccdOpt = collision::CcdOption::standard();
       collision::CcdResult ccdHit;
       bool hit = world.sphereCast(ccdStart, ccdEnd, ccdRadius, ccdOpt, ccdHit);
-      builder.addSphereCast(ccdStart, ccdEnd, ccdRadius, hit ? &ccdHit : nullptr);
+      builder.addSphereCast(
+          ccdStart, ccdEnd, ccdRadius, hit ? &ccdHit : nullptr);
       break;
     }
 
@@ -296,14 +297,16 @@ int main(int argc, char* argv[])
   CLI::App app("DART Collision Sandbox - Interactive Demo");
 
   bool headless = false;
-  app.add_flag("--headless", headless, "Run in headless mode (render and exit)");
+  app.add_flag(
+      "--headless", headless, "Run in headless mode (render and exit)");
 
   double guiScale = 1.0;
   app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
       ->check(CLI::PositiveNumber);
 
   int width = 1280;
-  app.add_option("-W,--width", width, "Window width")->check(CLI::PositiveNumber);
+  app.add_option("-W,--width", width, "Window width")
+      ->check(CLI::PositiveNumber);
 
   int height = 720;
   app.add_option("-H,--height", height, "Window height")
