@@ -38,3 +38,9 @@
 #include <dart/simd/detail/scalar/vec_mask.hpp>
 #include <dart/simd/fwd.hpp>
 #include <dart/simd/memory.hpp>
+
+#if defined(DART_SIMD_SSE42)
+  #include <dart/simd/detail/sse42/operations.hpp>
+  #include <dart/simd/detail/sse42/vec.hpp>
+  #include <dart/simd/detail/sse42/vec_mask.hpp>
+#endif
