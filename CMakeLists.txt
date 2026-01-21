@@ -1019,7 +1019,14 @@ if(DOXYGEN_FOUND)
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/docs/doxygen
     DEPENDS ${DOXYGEN_DOXYFILE}
   )
-  add_custom_target(docs DEPENDS ${DOXYGEN_HTML_INDEX})
+  # Use dart-docs to avoid conflicts with vsgImGui's docs target from VSG macros
+  # The vsg_add_target_docs macro creates a 'docs' target that conflicts
+  add_custom_target(dart-docs DEPENDS ${DOXYGEN_HTML_INDEX})
+  if(NOT TARGET docs)
+    add_custom_target(docs DEPENDS dart-docs)
+  else()
+    add_dependencies(docs dart-docs)
+  endif()
   add_custom_target(
     docs_forced
     COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
