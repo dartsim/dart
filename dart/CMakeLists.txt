@@ -110,15 +110,14 @@ endif()
 get_filename_component(dart_hpp "dart.hpp" ABSOLUTE)
 get_filename_component(dart_all_hpp "all.hpp" ABSOLUTE)
 get_filename_component(dart_export_hpp "export.hpp" ABSOLUTE)
-# Compatibility headers for deprecated PascalCase names
-get_filename_component(dart_All_hpp "All.hpp" ABSOLUTE)
-get_filename_component(dart_Export_hpp "Export.hpp" ABSOLUTE)
-dart_add_core_headers(
-  ${dart_hpp}
-  ${dart_all_hpp}
-  ${dart_export_hpp}
-  ${dart_All_hpp}
-  ${dart_Export_hpp}
+dart_add_core_headers(${dart_hpp} ${dart_all_hpp} ${dart_export_hpp})
+
+# Generate PascalCase compatibility headers (All.hpp, Export.hpp) at build time
+# These are only generated on case-sensitive filesystems to avoid collisions
+dart_generate_case_compat_headers(
+  HEADERS ${dart_all_hpp} ${dart_export_hpp}
+  OUTPUT_DIR "${DART_BINARY_DIR}/dart"
+  COMPONENT_PATH dart
 )
 get_property(dart_core_headers GLOBAL PROPERTY DART_CORE_HEADERS)
 get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
@@ -317,9 +316,17 @@ endif()
 
 install(
   FILES ${dart_hpp} ${dart_all_hpp} ${dart_export_hpp}
-        ${dart_All_hpp} ${dart_Export_hpp}
   DESTINATION include/dart/
   COMPONENT headers
 )
+
+# Install generated PascalCase compatibility headers (only on case-sensitive FS)
+if(DART_GENERATED_COMPAT_HEADERS)
+  install(
+    FILES ${DART_GENERATED_COMPAT_HEADERS}
+    DESTINATION include/dart/
+    COMPONENT headers
+  )
+endif()
 
 dart_format_add(${dart_core_headers} ${dart_core_sources})
