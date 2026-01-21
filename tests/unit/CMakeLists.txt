@@ -217,3 +217,11 @@ dart_build_tests(
     simd/test_config.cpp
     simd/test_edge_cases.cpp
 )
+
+dart_build_tests(
+  TYPE unit
+  TARGET_PREFIX UNIT_simd
+  LINK_LIBRARIES dart-simd Eigen3::Eigen GTest::gtest_main
+  SOURCES
+    simd/test_eigen_interop.cpp
+)
