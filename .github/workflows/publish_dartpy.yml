@@ -95,9 +95,24 @@ jobs:
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
         with:
           pixi-version: latest
-          cache: ${{ !contains(runner.labels, 'self-hosted') }}
-          post-cleanup: ${{ !contains(runner.labels, 'self-hosted') }}
+          cache: ${{ !contains(runner.labels, 'dartsim') }}
+          post-cleanup: ${{ !contains(runner.labels, 'dartsim') }}
+          run-install: ${{ !contains(runner.labels, 'dartsim') }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi${{ runner.os == 'Windows' && '.exe' || '' }}
+
+      - name: Pixi install (retry)
+        if: contains(runner.labels, 'dartsim') && ((matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v'))
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if pixi install -e py${{ matrix.python-version }}-wheel; then
+              exit 0
+            fi
+            echo "pixi install -e py${{ matrix.python-version }}-wheel failed (attempt ${attempt}/3)" >&2
+            sleep $((attempt * 20))
+          done
+          exit 1
+
       - name: Setup sccache
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
         uses: mozilla-actions/sccache-action@v0.0.9
