@@ -35,7 +35,7 @@
 
 #include <dart/constraint/constraint_base.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 namespace dart {
 
