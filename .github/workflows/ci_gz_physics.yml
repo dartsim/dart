@@ -54,38 +54,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup pixi
-        uses: prefix-dev/setup-pixi@v0.9.3
+      - name: Setup pixi (CI)
+        uses: ./.github/actions/setup-pixi-ci
         with:
-          cache: ${{ startsWith(runner.name, 'GitHub Actions') }}
-          post-cleanup: ${{ startsWith(runner.name, 'GitHub Actions') }}
-          run-install: ${{ startsWith(runner.name, 'GitHub Actions') }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
-
-      - name: Pixi install (retry)
-        if: ${{ !startsWith(runner.name, 'GitHub Actions') }}
-        run: |
-          set -euo pipefail
-          for attempt in 1 2 3; do
-            if pixi install -e gazebo; then
-              exit 0
-            fi
-            echo "pixi install -e gazebo failed (attempt ${attempt}/3)" >&2
-            sleep $((attempt * 20))
-          done
-          exit 1
+          install-args: -e gazebo
 
       - name: Install apt packages
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 1.0
-
-      - name: Setup sccache
-        if: startsWith(runner.name, 'GitHub Actions')
-        uses: mozilla-actions/sccache-action@v0.0.9
-        with:
-          disable_annotations: true
 
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
