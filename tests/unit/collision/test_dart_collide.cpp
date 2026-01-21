@@ -4,17 +4,19 @@
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/dart/DARTCollide.hpp>
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
+
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/SphereShape.hpp>
+
 #include <dart/math/Constants.hpp>
 
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
-#include <Eigen/Geometry>
+#include <memory>
 
 #include <cmath>
-#include <memory>
 
 using namespace dart;
 using namespace dart::collision;
@@ -86,8 +88,7 @@ TEST(DARTCollide, SphereSphereCases)
   auto detector = DARTCollisionDetector::create();
   auto sphere = std::make_shared<SphereShape>(0.5);
 
-  auto objA = makeObject(
-      sphere, detector.get(), Eigen::Isometry3d::Identity());
+  auto objA = makeObject(sphere, detector.get(), Eigen::Isometry3d::Identity());
 
   Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
   tfB.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
@@ -141,8 +142,7 @@ TEST(DARTCollide, BoxSphereContacts)
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
   auto sphere = std::make_shared<SphereShape>(0.4);
 
-  auto boxObj = makeObject(
-      box, detector.get(), Eigen::Isometry3d::Identity());
+  auto boxObj = makeObject(box, detector.get(), Eigen::Isometry3d::Identity());
 
   Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
   tfSphere.translation() = Eigen::Vector3d(0.6, 0.0, 0.0);
@@ -194,10 +194,9 @@ TEST(DARTCollide, BoxSphereInsideAndBoundary)
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
   auto sphere = std::make_shared<SphereShape>(0.2);
 
-  auto boxObj = makeObject(
-      box, detector.get(), Eigen::Isometry3d::Identity());
-  auto sphereObj = makeObject(
-      sphere, detector.get(), Eigen::Isometry3d::Identity());
+  auto boxObj = makeObject(box, detector.get(), Eigen::Isometry3d::Identity());
+  auto sphereObj
+      = makeObject(sphere, detector.get(), Eigen::Isometry3d::Identity());
 
   CollisionResult inside;
   int contacts = collideBoxSphere(
@@ -235,10 +234,9 @@ TEST(DARTCollide, SphereBoxInsideAndBoundary)
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
   auto sphere = std::make_shared<SphereShape>(0.2);
 
-  auto boxObj = makeObject(
-      box, detector.get(), Eigen::Isometry3d::Identity());
-  auto sphereObj = makeObject(
-      sphere, detector.get(), Eigen::Isometry3d::Identity());
+  auto boxObj = makeObject(box, detector.get(), Eigen::Isometry3d::Identity());
+  auto sphereObj
+      = makeObject(sphere, detector.get(), Eigen::Isometry3d::Identity());
 
   CollisionResult inside;
   int contacts = collideSphereBox(
@@ -278,7 +276,7 @@ TEST(DARTCollide, BoxBoxContacts)
   Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
   tfB.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
   tfB.linear() = Eigen::AngleAxisd(0.25 * math::pi, Eigen::Vector3d::UnitZ())
-                    .toRotationMatrix();
+                     .toRotationMatrix();
 
   auto objA = makeObject(box, detector.get(), tfA);
   auto objB = makeObject(box, detector.get(), tfB);
@@ -369,7 +367,8 @@ TEST(DARTCollide, CylinderSphereSideAndCap)
   auto detector = DARTCollisionDetector::create();
   auto shape = std::make_shared<SphereShape>(0.1);
 
-  auto cylObj = makeObject(shape, detector.get(), Eigen::Isometry3d::Identity());
+  auto cylObj
+      = makeObject(shape, detector.get(), Eigen::Isometry3d::Identity());
   auto sphereObj
       = makeObject(shape, detector.get(), Eigen::Isometry3d::Identity());
 
@@ -412,7 +411,8 @@ TEST(DARTCollide, CylinderPlaneNonParallelAndSeparated)
   auto detector = DARTCollisionDetector::create();
   auto shape = std::make_shared<SphereShape>(0.1);
 
-  auto cylObj = makeObject(shape, detector.get(), Eigen::Isometry3d::Identity());
+  auto cylObj
+      = makeObject(shape, detector.get(), Eigen::Isometry3d::Identity());
   auto planeObj
       = makeObject(shape, detector.get(), Eigen::Isometry3d::Identity());
 
@@ -504,9 +504,8 @@ TEST(DARTCollideHelpers, ClosestLineBoxPoints)
   dVector3 p1 = {2.0, -2.0, 0.5, 0.0};
   dVector3 p2 = {-2.0, 2.0, -0.5, 0.0};
   dVector3 center = {0.0, 0.0, 0.0, 0.0};
-  dMatrix3 rotation = {1.0, 0.0, 0.0, 0.0,
-                       0.0, 1.0, 0.0, 0.0,
-                       0.0, 0.0, 1.0, 0.0};
+  dMatrix3 rotation
+      = {1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0};
   dVector3 side = {1.0, 1.0, 1.0, 0.0};
   dVector3 lret = {0.0, 0.0, 0.0, 0.0};
   dVector3 bret = {0.0, 0.0, 0.0, 0.0};

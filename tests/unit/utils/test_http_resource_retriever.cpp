@@ -9,12 +9,13 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
-#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
 #include <string>
+
+#include <cstdint>
 
 using namespace dart;
 using namespace dart::utils;
@@ -58,8 +59,7 @@ std::string computeHash(std::string_view input)
 }
 
 std::filesystem::path computeCachePath(
-    const std::filesystem::path& cacheDir,
-    const common::Uri& uri)
+    const std::filesystem::path& cacheDir, const common::Uri& uri)
 {
   std::string url = uri.toString();
   if (uri.mFragment) {

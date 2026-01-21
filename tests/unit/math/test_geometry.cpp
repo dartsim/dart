@@ -37,10 +37,11 @@
 
 #include <gtest/gtest.h>
 
-#include <cmath>
 #include <iostream>
 #include <span>
 #include <vector>
+
+#include <cmath>
 
 using namespace dart;
 using namespace dart::math;

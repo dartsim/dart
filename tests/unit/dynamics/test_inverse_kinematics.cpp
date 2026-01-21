@@ -103,7 +103,8 @@ public:
     Eigen::VectorXd config
         = Eigen::VectorXd::Zero(static_cast<int>(mDofs.size()));
     if (!mDofs.empty()) {
-      config[0] = mIK->getNode()->getSkeleton()->getDof(mDofs[0])->getPosition();
+      config[0]
+          = mIK->getNode()->getSkeleton()->getDof(mDofs[0])->getPosition();
     }
     mSolutions.emplace_back(config, VALID);
     return mSolutions;
@@ -224,8 +225,7 @@ TEST(InverseKinematics, AnalyticalGradientAndWeights)
   const auto solutions = analyticalPtr->getSolutions();
   ASSERT_EQ(solutions.size(), 1u);
   EXPECT_EQ(
-      solutions[0].mConfig.size(),
-      static_cast<int>(ik->getDofs().size()));
+      solutions[0].mConfig.size(), static_cast<int>(ik->getDofs().size()));
 
   Eigen::VectorXd q = ik->getPositions();
   Eigen::VectorXd grad = Eigen::VectorXd::Zero(q.size());
@@ -279,9 +279,8 @@ TEST(InverseKinematics, TaskSpaceRegionAccessorsAndError)
 
   auto reference = std::make_shared<SimpleFrame>(Frame::World(), "ik_ref");
   Eigen::Isometry3d refTf = Eigen::Isometry3d::Identity();
-  refTf.linear()
-      = Eigen::AngleAxisd(0.25 * math::pi, Eigen::Vector3d::UnitZ())
-            .toRotationMatrix();
+  refTf.linear() = Eigen::AngleAxisd(0.25 * math::pi, Eigen::Vector3d::UnitZ())
+                       .toRotationMatrix();
   reference->setTransform(refTf);
   tsr.setReferenceFrame(reference);
   EXPECT_EQ(tsr.getReferenceFrame(), reference);
@@ -290,10 +289,9 @@ TEST(InverseKinematics, TaskSpaceRegionAccessorsAndError)
   auto target = std::make_shared<SimpleFrame>(Frame::World(), "ik_target");
   Eigen::Isometry3d targetTf = fixture.end->getTransform();
   targetTf.translation() += Eigen::Vector3d(0.2, -0.1, 0.15);
-  targetTf.linear()
-      = (Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitX())
-         * Eigen::AngleAxisd(-0.3, Eigen::Vector3d::UnitY()))
-            .toRotationMatrix();
+  targetTf.linear() = (Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitX())
+                       * Eigen::AngleAxisd(-0.3, Eigen::Vector3d::UnitY()))
+                          .toRotationMatrix();
   target->setTransform(targetTf);
   ik->setTarget(target);
 
@@ -303,8 +301,8 @@ TEST(InverseKinematics, TaskSpaceRegionAccessorsAndError)
   const auto& error = tsr.evalError(q);
   EXPECT_TRUE(error.array().isFinite().all());
 
-  const auto desired = tsr.computeDesiredTransform(
-      fixture.end->getTransform(), error);
+  const auto desired
+      = tsr.computeDesiredTransform(fixture.end->getTransform(), error);
   EXPECT_TRUE(desired.matrix().array().isFinite().all());
 
   const auto& boundsOut = tsr.getBounds();
@@ -317,10 +315,10 @@ TEST(InverseKinematics, TaskSpaceRegionAccessorsAndError)
   expectedWeights.head<3>().setConstant(0.5);
   expectedWeights.tail<3>().setConstant(1.5);
   EXPECT_TRUE(tsr.getErrorWeights().isApprox(expectedWeights));
-  EXPECT_TRUE(tsr.getAngularErrorWeights().isApprox(
-      Eigen::Vector3d::Constant(0.5)));
-  EXPECT_TRUE(tsr.getLinearErrorWeights().isApprox(
-      Eigen::Vector3d::Constant(1.5)));
+  EXPECT_TRUE(
+      tsr.getAngularErrorWeights().isApprox(Eigen::Vector3d::Constant(0.5)));
+  EXPECT_TRUE(
+      tsr.getLinearErrorWeights().isApprox(Eigen::Vector3d::Constant(1.5)));
 }
 
 TEST(InverseKinematics, AnalyticalExtraDofsAndGradientCaching)
@@ -329,18 +327,20 @@ TEST(InverseKinematics, AnalyticalExtraDofsAndGradientCaching)
   auto ik = fixture.end->getOrCreateIK();
   ASSERT_NE(ik, nullptr);
 
-  auto target = std::make_shared<SimpleFrame>(Frame::World(), "ik_target_extra");
+  auto target
+      = std::make_shared<SimpleFrame>(Frame::World(), "ik_target_extra");
   Eigen::Isometry3d targetTf = fixture.end->getTransform();
   targetTf.translation() += Eigen::Vector3d(0.1, 0.0, 0.0);
   target->setTransform(targetTf);
   ik->setTarget(target);
 
   auto& analytical = ik->setGradientMethod<PartialAnalytical>();
-  analytical.setExtraDofUtilization(InverseKinematics::Analytical::PRE_ANALYTICAL);
+  analytical.setExtraDofUtilization(
+      InverseKinematics::Analytical::PRE_ANALYTICAL);
   analytical.setExtraErrorLengthClamp(0.2);
   analytical.setComponentWiseClamp(0.05);
-  analytical.setComponentWeights(Eigen::VectorXd::Constant(
-      static_cast<int>(ik->getDofs().size()), 1.0));
+  analytical.setComponentWeights(
+      Eigen::VectorXd::Constant(static_cast<int>(ik->getDofs().size()), 1.0));
 
   Eigen::VectorXd q = ik->getPositions();
   Eigen::VectorXd grad = Eigen::VectorXd::Zero(q.size());
@@ -354,13 +354,11 @@ TEST(InverseKinematics, AnalyticalExtraDofsAndGradientCaching)
   EXPECT_TRUE(grad.isApprox(firstGrad));
 
   EXPECT_EQ(analytical.getIK(), ik.get());
-  EXPECT_EQ(
-      analytical.getExtraErrorLengthClamp(), 0.2);
+  EXPECT_EQ(analytical.getExtraErrorLengthClamp(), 0.2);
   EXPECT_EQ(
       analytical.getExtraDofUtilization(),
       InverseKinematics::Analytical::PRE_ANALYTICAL);
-  EXPECT_DOUBLE_EQ(
-      analytical.getComponentWiseClamp(), 0.05);
+  EXPECT_DOUBLE_EQ(analytical.getComponentWiseClamp(), 0.05);
   EXPECT_EQ(
       analytical.getComponentWeights().size(),
       static_cast<int>(ik->getDofs().size()));
@@ -381,8 +379,7 @@ TEST(InverseKinematics, ObjectiveAndConstraintEvaluation)
       });
 
   auto nullspace = std::make_shared<math::ModularFunction>("nullspace");
-  nullspace->setCostFunction(
-      [](const Eigen::VectorXd& x) { return x.sum(); });
+  nullspace->setCostFunction([](const Eigen::VectorXd& x) { return x.sum(); });
   nullspace->setGradientFunction(
       [](const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd> grad) {
         grad.setOnes();

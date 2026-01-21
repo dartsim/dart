@@ -250,7 +250,8 @@ TEST(GradientDescentSolverTest, RandomizeAndClamp)
   GradientDescentSolver::UniqueProperties descentProps(
       0.1, 1, 0, 1.0, 0.25, 1.0);
   GradientDescentSolver solver(
-      GradientDescentSolver::Properties(Solver::Properties(problem), descentProps));
+      GradientDescentSolver::Properties(
+          Solver::Properties(problem), descentProps));
 
   Eigen::VectorXd x;
   solver.randomizeConfiguration(x);

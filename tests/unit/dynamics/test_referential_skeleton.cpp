@@ -1,7 +1,7 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/Group.hpp>
 #include <dart/dynamics/InvalidIndex.hpp>
 #include <dart/dynamics/RevoluteJoint.hpp>
@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+
 #include <cmath>
 
 using namespace dart;
