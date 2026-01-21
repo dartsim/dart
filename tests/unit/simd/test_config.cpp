@@ -34,8 +34,9 @@
 
 #include <gtest/gtest.h>
 
-#include <cstring>
 #include <iostream>
+
+#include <cstring>
 
 using namespace dart::simd;
 
@@ -54,9 +55,12 @@ TEST(SimdConfig, PreferredWidths)
   EXPECT_GE(preferred_width_v<double>, 1u);
   EXPECT_GE(preferred_width_v<std::int32_t>, 1u);
 
-  std::cout << "Preferred width (float): " << preferred_width_v<float> << std::endl;
-  std::cout << "Preferred width (double): " << preferred_width_v<double> << std::endl;
-  std::cout << "Preferred width (int32): " << preferred_width_v<std::int32_t> << std::endl;
+  std::cout << "Preferred width (float): " << preferred_width_v<float>
+            << std::endl;
+  std::cout << "Preferred width (double): " << preferred_width_v<double>
+            << std::endl;
+  std::cout << "Preferred width (int32): " << preferred_width_v<std::int32_t>
+            << std::endl;
 }
 
 #if defined(DART_SIMD_SSE42)

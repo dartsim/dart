@@ -55,7 +55,7 @@ aligned_vector<T> generateRandomData(std::size_t size, int seed = 42)
   return data;
 }
 
-}
+} // namespace
 
 static void BM_Vec4f_Add(benchmark::State& state)
 {
@@ -279,8 +279,10 @@ static void BM_Vec4i_Add(benchmark::State& state)
   aligned_vector<std::int32_t> data_b(kArraySize);
   aligned_vector<std::int32_t> result(kArraySize);
 
-  for (auto& val : data_a) val = dist(gen);
-  for (auto& val : data_b) val = dist(gen);
+  for (auto& val : data_a)
+    val = dist(gen);
+  for (auto& val : data_b)
+    val = dist(gen);
 
   for (auto _ : state) {
     for (std::size_t i = 0; i < kArraySize; i += 4) {
@@ -292,7 +294,8 @@ static void BM_Vec4i_Add(benchmark::State& state)
     benchmark::DoNotOptimize(result.data());
   }
   state.SetBytesProcessed(
-      static_cast<int64_t>(state.iterations()) * kArraySize * sizeof(std::int32_t));
+      static_cast<int64_t>(state.iterations()) * kArraySize
+      * sizeof(std::int32_t));
 }
 BENCHMARK(BM_Vec4i_Add);
 
@@ -304,8 +307,10 @@ static void BM_Vec4i_Mul(benchmark::State& state)
   aligned_vector<std::int32_t> data_b(kArraySize);
   aligned_vector<std::int32_t> result(kArraySize);
 
-  for (auto& val : data_a) val = dist(gen);
-  for (auto& val : data_b) val = dist(gen);
+  for (auto& val : data_a)
+    val = dist(gen);
+  for (auto& val : data_b)
+    val = dist(gen);
 
   for (auto _ : state) {
     for (std::size_t i = 0; i < kArraySize; i += 4) {
@@ -317,7 +322,8 @@ static void BM_Vec4i_Mul(benchmark::State& state)
     benchmark::DoNotOptimize(result.data());
   }
   state.SetBytesProcessed(
-      static_cast<int64_t>(state.iterations()) * kArraySize * sizeof(std::int32_t));
+      static_cast<int64_t>(state.iterations()) * kArraySize
+      * sizeof(std::int32_t));
 }
 BENCHMARK(BM_Vec4i_Mul);
 

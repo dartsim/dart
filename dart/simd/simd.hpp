@@ -44,3 +44,9 @@
   #include <dart/simd/detail/sse42/vec.hpp>
   #include <dart/simd/detail/sse42/vec_mask.hpp>
 #endif
+
+#if defined(DART_SIMD_AVX2)
+  #include <dart/simd/detail/avx2/operations.hpp>
+  #include <dart/simd/detail/avx2/vec.hpp>
+  #include <dart/simd/detail/avx2/vec_mask.hpp>
+#endif
