@@ -34,6 +34,8 @@ jobs:
             cmake_flags: "-DDART_SIMD_FORCE_SCALAR=ON"
           - name: sse42
             cmake_flags: "-DCMAKE_CXX_FLAGS=-msse4.2"
+          - name: avx
+            cmake_flags: "-DCMAKE_CXX_FLAGS=-mavx -mno-avx2"
           - name: avx2
             cmake_flags: "-DCMAKE_CXX_FLAGS=-mavx2 -mfma"
     name: x86_64 ${{ matrix.simd_level.name }}

@@ -8,6 +8,16 @@ set(simd_headers
   detail/scalar/vec.hpp
   detail/scalar/vec_mask.hpp
   detail/scalar/operations.hpp
+  geometry/vector3.hpp
+  geometry/vector4.hpp
+  geometry/matrix3x3.hpp
+  geometry/matrix4x4.hpp
+  geometry/quaternion.hpp
+  geometry/isometry3.hpp
+  dynamic/vector.hpp
+  dynamic/matrix.hpp
+  eigen/interop.hpp
+  eigen/iterator.hpp
 )
 
 # Header-only library (interface target)

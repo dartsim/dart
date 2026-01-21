@@ -75,6 +75,14 @@ struct Vec
     return result;
   }
 
+  /// Create from explicit values (variadic for any width)
+  template <typename... Args>
+    requires(sizeof...(Args) == Width && (std::same_as<Args, T> && ...))
+  DART_SIMD_INLINE static constexpr Vec set(Args... args)
+  {
+    return Vec(std::array<T, Width>{static_cast<T>(args)...});
+  }
+
   DART_SIMD_INLINE static Vec load(const T* ptr)
   {
     Vec result;

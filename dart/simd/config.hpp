@@ -37,6 +37,11 @@
 
 #if defined(DART_SIMD_FORCE_SCALAR)
   #undef DART_SIMD_AVX512
+  #undef DART_SIMD_AVX512F
+  #undef DART_SIMD_AVX512DQ
+  #undef DART_SIMD_AVX512BW
+  #undef DART_SIMD_AVX512VL
+  #undef DART_SIMD_AVX512CD
   #undef DART_SIMD_AVX2
   #undef DART_SIMD_AVX
   #undef DART_SIMD_SSE42
@@ -45,6 +50,19 @@
   #define DART_SIMD_SCALAR 1
 #elif defined(__AVX512F__) && defined(__AVX512DQ__)
   #define DART_SIMD_AVX512 1
+  #define DART_SIMD_AVX512F 1
+  #if defined(__AVX512DQ__)
+    #define DART_SIMD_AVX512DQ 1
+  #endif
+  #if defined(__AVX512BW__)
+    #define DART_SIMD_AVX512BW 1
+  #endif
+  #if defined(__AVX512VL__)
+    #define DART_SIMD_AVX512VL 1
+  #endif
+  #if defined(__AVX512CD__)
+    #define DART_SIMD_AVX512CD 1
+  #endif
   #define DART_SIMD_AVX2 1
   #define DART_SIMD_AVX 1
   #define DART_SIMD_SSE42 1
@@ -61,6 +79,14 @@
 
 #if defined(__ARM_NEON) || defined(__ARM_NEON__)
   #define DART_SIMD_NEON 1
+#endif
+
+#if defined(__ARM_FEATURE_SVE)
+  #define DART_SIMD_SVE 1
+#endif
+
+#if defined(__ARM_FEATURE_SVE2)
+  #define DART_SIMD_SVE2 1
 #endif
 
 #if defined(__FMA__) || defined(DART_SIMD_AVX2)
@@ -96,7 +122,21 @@
 namespace dart::simd {
 
 #if defined(DART_SIMD_AVX512)
-inline constexpr const char* backend_name = "AVX-512";
+inline constexpr const char* backend_name
+    = "AVX-512F"
+  #if defined(DART_SIMD_AVX512DQ)
+      "+DQ"
+  #endif
+  #if defined(DART_SIMD_AVX512BW)
+      "+BW"
+  #endif
+  #if defined(DART_SIMD_AVX512VL)
+      "+VL"
+  #endif
+  #if defined(DART_SIMD_AVX512CD)
+      "+CD"
+  #endif
+    ;
 inline constexpr std::size_t max_vector_bytes = 64;
 #elif defined(DART_SIMD_AVX2)
 inline constexpr const char* backend_name = "AVX2+FMA";
@@ -144,7 +184,7 @@ struct NativeWidth<std::uint32_t>
 {
   static constexpr std::size_t value = 16;
 };
-#elif defined(DART_SIMD_AVX2) || defined(DART_SIMD_AVX)
+#elif defined(DART_SIMD_AVX2)
 template <>
 struct NativeWidth<float>
 {
@@ -164,6 +204,27 @@ template <>
 struct NativeWidth<std::uint32_t>
 {
   static constexpr std::size_t value = 8;
+};
+#elif defined(DART_SIMD_AVX)
+template <>
+struct NativeWidth<float>
+{
+  static constexpr std::size_t value = 8;
+};
+template <>
+struct NativeWidth<double>
+{
+  static constexpr std::size_t value = 4;
+};
+template <>
+struct NativeWidth<std::int32_t>
+{
+  static constexpr std::size_t value = 4;
+};
+template <>
+struct NativeWidth<std::uint32_t>
+{
+  static constexpr std::size_t value = 4;
 };
 #elif defined(DART_SIMD_SSE42)
 template <>

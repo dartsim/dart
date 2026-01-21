@@ -45,6 +45,12 @@
   #include <dart/simd/detail/sse42/vec_mask.hpp>
 #endif
 
+#if defined(DART_SIMD_AVX) && !defined(DART_SIMD_AVX2)
+  #include <dart/simd/detail/avx/operations.hpp>
+  #include <dart/simd/detail/avx/vec.hpp>
+  #include <dart/simd/detail/avx/vec_mask.hpp>
+#endif
+
 #if defined(DART_SIMD_AVX2)
   #include <dart/simd/detail/avx2/operations.hpp>
   #include <dart/simd/detail/avx2/vec.hpp>
@@ -62,3 +68,13 @@
   #include <dart/simd/detail/avx512/vec.hpp>
   #include <dart/simd/detail/avx512/vec_mask.hpp>
 #endif
+
+#include <dart/simd/dynamic/matrix.hpp>
+#include <dart/simd/dynamic/vector.hpp>
+#include <dart/simd/eigen/interop.hpp>
+#include <dart/simd/geometry/isometry3.hpp>
+#include <dart/simd/geometry/matrix3x3.hpp>
+#include <dart/simd/geometry/matrix4x4.hpp>
+#include <dart/simd/geometry/quaternion.hpp>
+#include <dart/simd/geometry/vector3.hpp>
+#include <dart/simd/geometry/vector4.hpp>
