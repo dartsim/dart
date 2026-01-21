@@ -69,3 +69,4 @@ add_subdirectory(rerun)
 
 # Experimental collision visualization
 add_subdirectory(collision_viz)
+add_subdirectory(collision_sandbox)
