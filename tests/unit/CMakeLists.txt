@@ -179,17 +179,17 @@ endif()
 # GUI VSG Tests
 # ==============================================================================
 if(TARGET dart-gui-vsg)
-  dart_add_test("unit" UNIT_gui_vsg_GeometryBuilders gui/vsg/test_GeometryBuilders.cpp)
-  target_link_libraries(UNIT_gui_vsg_GeometryBuilders dart-gui-vsg dart-collision-experimental)
+  dart_add_test("unit" UNIT_gui_vsg_geometry_builders gui/vsg/test_geometry_builders.cpp)
+  target_link_libraries(UNIT_gui_vsg_geometry_builders dart-gui-vsg dart-collision-experimental)
 
-  dart_add_test("unit" UNIT_gui_vsg_DebugDraw gui/vsg/test_DebugDraw.cpp)
-  target_link_libraries(UNIT_gui_vsg_DebugDraw dart-gui-vsg)
+  dart_add_test("unit" UNIT_gui_vsg_debug_draw gui/vsg/test_debug_draw.cpp)
+  target_link_libraries(UNIT_gui_vsg_debug_draw dart-gui-vsg)
 
-  dart_add_test("unit" UNIT_gui_vsg_SimpleViewer gui/vsg/test_SimpleViewer.cpp)
-  target_link_libraries(UNIT_gui_vsg_SimpleViewer dart-gui-vsg)
+  dart_add_test("unit" UNIT_gui_vsg_simple_viewer gui/vsg/test_simple_viewer.cpp)
+  target_link_libraries(UNIT_gui_vsg_simple_viewer dart-gui-vsg)
 
-  dart_add_test("unit" UNIT_gui_vsg_CollisionSceneBuilder gui/vsg/test_CollisionSceneBuilder.cpp)
-  target_link_libraries(UNIT_gui_vsg_CollisionSceneBuilder dart-gui-vsg dart-collision-experimental)
+  dart_add_test("unit" UNIT_gui_vsg_collision_scene_builder gui/vsg/test_collision_scene_builder.cpp)
+  target_link_libraries(UNIT_gui_vsg_collision_scene_builder dart-gui-vsg dart-collision-experimental)
 endif()
 
 # ==============================================================================

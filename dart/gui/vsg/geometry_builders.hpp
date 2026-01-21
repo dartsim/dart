@@ -32,59 +32,54 @@
 
 #pragma once
 
-#include <dart/gui/vsg/Export.hpp>
-#include <dart/gui/vsg/Materials.hpp>
+#include <dart/gui/vsg/export.hpp>
+#include <dart/gui/vsg/materials.hpp>
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <vsg/all.h>
 
+#include <array>
 #include <vector>
+
+namespace dart::collision::experimental {
+class Shape;
+} // namespace dart::collision::experimental
 
 namespace dart::gui::vsg {
 
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createPoint(
-    const Eigen::Vector3d& position,
-    double size = 0.02,
-    const Eigen::Vector4d& color = colors::Red);
+struct DART_GUI_VSG_API GeometryOptions
+{
+  Eigen::Vector4d color{0.7, 0.7, 0.7, 1.0};
+  bool wireframe{false};
+  bool twoSided{false};
+};
 
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createLine(
-    const Eigen::Vector3d& start,
-    const Eigen::Vector3d& end,
-    const Eigen::Vector4d& color = colors::White);
+DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createSphere(
+    double radius, const GeometryOptions& options = {});
 
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createArrow(
-    const Eigen::Vector3d& start,
-    const Eigen::Vector3d& direction,
-    double length = 0.1,
-    const Eigen::Vector4d& color = colors::Blue);
+DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createBox(
+    const Eigen::Vector3d& size, const GeometryOptions& options = {});
 
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createPoints(
-    const std::vector<Eigen::Vector3d>& positions,
-    double size = 0.02,
-    const Eigen::Vector4d& color = colors::Red);
+DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createCapsule(
+    double radius, double height, const GeometryOptions& options = {});
 
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createLines(
-    const std::vector<Eigen::Vector3d>& starts,
-    const std::vector<Eigen::Vector3d>& ends,
-    const Eigen::Vector4d& color = colors::White);
+DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createCylinder(
+    double radius, double height, const GeometryOptions& options = {});
 
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createArrows(
-    const std::vector<Eigen::Vector3d>& starts,
-    const std::vector<Eigen::Vector3d>& directions,
-    double length = 0.1,
-    const Eigen::Vector4d& color = colors::Blue);
+DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createCone(
+    double radius, double height, const GeometryOptions& options = {});
 
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createAxes(
-    double length = 1.0, double thickness = 0.02);
+DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createPlane(
+    double width, double height, const GeometryOptions& options = {});
 
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createGrid(
-    double size = 10.0,
-    double spacing = 1.0,
-    const Eigen::Vector4d& color = colors::Gray);
+DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createMesh(
+    const std::vector<Eigen::Vector3d>& vertices,
+    const std::vector<std::array<unsigned int, 3>>& triangles,
+    const GeometryOptions& options = {});
 
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createWireframeBox(
-    const Eigen::Vector3d& min,
-    const Eigen::Vector3d& max,
-    const Eigen::Vector4d& color = colors::Yellow);
+DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createFromShape(
+    const collision::experimental::Shape& shape,
+    const GeometryOptions& options = {});
 
 } // namespace dart::gui::vsg

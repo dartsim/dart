@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/vsg/GeometryBuilders.hpp"
+#include "dart/gui/vsg/geometry_builders.hpp"
 
 #include <dart/collision/experimental/shapes/shape.hpp>
 

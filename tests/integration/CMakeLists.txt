@@ -33,10 +33,10 @@ endif()
 if(DART_BUILD_COLLISION_EXPERIMENTAL)
   dart_add_test(
     "integration"
-    INTEGRATION_collision_ExperimentalBackendConsistency
-    collision/test_ExperimentalBackendConsistency.cpp)
+    INTEGRATION_collision_experimental_backend_consistency
+    collision/test_experimental_backend_consistency.cpp)
   target_link_libraries(
-    INTEGRATION_collision_ExperimentalBackendConsistency
+    INTEGRATION_collision_experimental_backend_consistency
     dart-collision-experimental)
 endif()
 

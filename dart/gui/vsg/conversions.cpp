@@ -30,22 +30,64 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/gui/vsg/conversions.hpp"
 
-#include <dart/common/Export.hpp>
+namespace dart::gui::vsg {
 
-#ifndef DART_GUI_VSG_API
-  #if defined(DART_BUILDING_DART_GUI_VSG)
-    #define DART_GUI_VSG_API DART_DLL_EXPORT
-  #else
-    #define DART_GUI_VSG_API DART_DLL_IMPORT
-  #endif
-#endif
+::vsg::dmat4 toVsg(const Eigen::Isometry3d& transform)
+{
+  const Eigen::Matrix4d m = transform.matrix();
+  return ::vsg::dmat4(
+      m(0, 0),
+      m(1, 0),
+      m(2, 0),
+      m(3, 0),
+      m(0, 1),
+      m(1, 1),
+      m(2, 1),
+      m(3, 1),
+      m(0, 2),
+      m(1, 2),
+      m(2, 2),
+      m(3, 2),
+      m(0, 3),
+      m(1, 3),
+      m(2, 3),
+      m(3, 3));
+}
 
-#ifndef DART_GUI_VSG_LOCAL
-  #if DART_BUILD_SHARED
-    #define DART_GUI_VSG_LOCAL DART_DLL_LOCAL
-  #else
-    #define DART_GUI_VSG_LOCAL
-  #endif
-#endif
+::vsg::dvec3 toVsg(const Eigen::Vector3d& vec)
+{
+  return ::vsg::dvec3(vec.x(), vec.y(), vec.z());
+}
+
+::vsg::dvec4 toVsg(const Eigen::Vector4d& vec)
+{
+  return ::vsg::dvec4(vec.x(), vec.y(), vec.z(), vec.w());
+}
+
+Eigen::Isometry3d toEigen(const ::vsg::dmat4& mat)
+{
+  Eigen::Matrix4d m;
+  m << mat(0, 0), mat(0, 1), mat(0, 2), mat(0, 3), mat(1, 0), mat(1, 1),
+      mat(1, 2), mat(1, 3), mat(2, 0), mat(2, 1), mat(2, 2), mat(2, 3),
+      mat(3, 0), mat(3, 1), mat(3, 2), mat(3, 3);
+  Eigen::Isometry3d transform;
+  transform.matrix() = m;
+  return transform;
+}
+
+Eigen::Vector3d toEigen(const ::vsg::dvec3& vec)
+{
+  return Eigen::Vector3d(vec.x, vec.y, vec.z);
+}
+
+::vsg::ref_ptr<::vsg::MatrixTransform> createTransform(
+    const Eigen::Isometry3d& tf)
+{
+  auto transform = ::vsg::MatrixTransform::create();
+  transform->matrix = toVsg(tf);
+  return transform;
+}
+
+} // namespace dart::gui::vsg

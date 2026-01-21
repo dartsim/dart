@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/vsg/ImGuiViewer.hpp"
+#include "dart/gui/vsg/im_gui_viewer.hpp"
 
 #ifdef DART_HAS_VSGIMGUI
 
-  #include "dart/gui/vsg/Conversions.hpp"
-  #include "dart/gui/vsg/DebugDraw.hpp"
+  #include "dart/gui/vsg/conversions.hpp"
+  #include "dart/gui/vsg/debug_draw.hpp"
 
   #include <vsg/all.h>
 

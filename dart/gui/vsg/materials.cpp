@@ -30,64 +30,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/vsg/Conversions.hpp"
+#include "dart/gui/vsg/materials.hpp"
 
 namespace dart::gui::vsg {
 
-::vsg::dmat4 toVsg(const Eigen::Isometry3d& transform)
+::vsg::ref_ptr<::vsg::vec4Value> createColorValue(const Eigen::Vector4d& color)
 {
-  const Eigen::Matrix4d m = transform.matrix();
-  return ::vsg::dmat4(
-      m(0, 0),
-      m(1, 0),
-      m(2, 0),
-      m(3, 0),
-      m(0, 1),
-      m(1, 1),
-      m(2, 1),
-      m(3, 1),
-      m(0, 2),
-      m(1, 2),
-      m(2, 2),
-      m(3, 2),
-      m(0, 3),
-      m(1, 3),
-      m(2, 3),
-      m(3, 3));
+  return ::vsg::vec4Value::create(
+      ::vsg::vec4(
+          static_cast<float>(color.x()),
+          static_cast<float>(color.y()),
+          static_cast<float>(color.z()),
+          static_cast<float>(color.w())));
 }
 
-::vsg::dvec3 toVsg(const Eigen::Vector3d& vec)
+::vsg::ref_ptr<::vsg::StateGroup> createStateGroup(
+    const MaterialOptions& options)
 {
-  return ::vsg::dvec3(vec.x(), vec.y(), vec.z());
-}
+  auto stateGroup = ::vsg::StateGroup::create();
 
-::vsg::dvec4 toVsg(const Eigen::Vector4d& vec)
-{
-  return ::vsg::dvec4(vec.x(), vec.y(), vec.z(), vec.w());
-}
+  if (options.wireframe) {
+    auto rasterState = ::vsg::RasterizationState::create();
+    rasterState->polygonMode = VK_POLYGON_MODE_LINE;
+    stateGroup->add(rasterState);
+  }
 
-Eigen::Isometry3d toEigen(const ::vsg::dmat4& mat)
-{
-  Eigen::Matrix4d m;
-  m << mat(0, 0), mat(0, 1), mat(0, 2), mat(0, 3), mat(1, 0), mat(1, 1),
-      mat(1, 2), mat(1, 3), mat(2, 0), mat(2, 1), mat(2, 2), mat(2, 3),
-      mat(3, 0), mat(3, 1), mat(3, 2), mat(3, 3);
-  Eigen::Isometry3d transform;
-  transform.matrix() = m;
-  return transform;
-}
+  if (options.twoSided) {
+    auto rasterState = ::vsg::RasterizationState::create();
+    rasterState->cullMode = VK_CULL_MODE_NONE;
+    stateGroup->add(rasterState);
+  }
 
-Eigen::Vector3d toEigen(const ::vsg::dvec3& vec)
-{
-  return Eigen::Vector3d(vec.x, vec.y, vec.z);
-}
-
-::vsg::ref_ptr<::vsg::MatrixTransform> createTransform(
-    const Eigen::Isometry3d& tf)
-{
-  auto transform = ::vsg::MatrixTransform::create();
-  transform->matrix = toVsg(tf);
-  return transform;
+  return stateGroup;
 }
 
 } // namespace dart::gui::vsg

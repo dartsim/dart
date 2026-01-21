@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/vsg/SimpleViewer.hpp"
+#include "dart/gui/vsg/simple_viewer.hpp"
 
-#include "dart/gui/vsg/Conversions.hpp"
-#include "dart/gui/vsg/DebugDraw.hpp"
+#include "dart/gui/vsg/conversions.hpp"
+#include "dart/gui/vsg/debug_draw.hpp"
 
 #include <vsg/all.h>
 

@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/vsg/CollisionSceneBuilder.hpp>
-#include <dart/gui/vsg/Materials.hpp>
+#include <dart/gui/vsg/collision_scene_builder.hpp>
+#include <dart/gui/vsg/materials.hpp>
 
 #include <dart/collision/experimental/aabb.hpp>
 #include <dart/collision/experimental/collision_object.hpp>

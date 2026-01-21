@@ -32,54 +32,27 @@
 
 #pragma once
 
-#include <dart/gui/vsg/Export.hpp>
-#include <dart/gui/vsg/Materials.hpp>
+#include <dart/gui/vsg/export.hpp>
 
-#include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <vsg/all.h>
-
-#include <array>
-#include <vector>
-
-namespace dart::collision::experimental {
-class Shape;
-} // namespace dart::collision::experimental
+#include <vsg/maths/mat4.h>
+#include <vsg/maths/vec3.h>
+#include <vsg/maths/vec4.h>
+#include <vsg/nodes/MatrixTransform.h>
 
 namespace dart::gui::vsg {
 
-struct DART_GUI_VSG_API GeometryOptions
-{
-  Eigen::Vector4d color{0.7, 0.7, 0.7, 1.0};
-  bool wireframe{false};
-  bool twoSided{false};
-};
+DART_GUI_VSG_API ::vsg::dmat4 toVsg(const Eigen::Isometry3d& transform);
 
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createSphere(
-    double radius, const GeometryOptions& options = {});
+DART_GUI_VSG_API ::vsg::dvec3 toVsg(const Eigen::Vector3d& vec);
 
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createBox(
-    const Eigen::Vector3d& size, const GeometryOptions& options = {});
+DART_GUI_VSG_API ::vsg::dvec4 toVsg(const Eigen::Vector4d& vec);
 
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createCapsule(
-    double radius, double height, const GeometryOptions& options = {});
+DART_GUI_VSG_API Eigen::Isometry3d toEigen(const ::vsg::dmat4& mat);
 
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createCylinder(
-    double radius, double height, const GeometryOptions& options = {});
+DART_GUI_VSG_API Eigen::Vector3d toEigen(const ::vsg::dvec3& vec);
 
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createCone(
-    double radius, double height, const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createPlane(
-    double width, double height, const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createMesh(
-    const std::vector<Eigen::Vector3d>& vertices,
-    const std::vector<std::array<unsigned int, 3>>& triangles,
-    const GeometryOptions& options = {});
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createFromShape(
-    const collision::experimental::Shape& shape,
-    const GeometryOptions& options = {});
+DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::MatrixTransform> createTransform(
+    const Eigen::Isometry3d& tf);
 
 } // namespace dart::gui::vsg

@@ -32,27 +32,20 @@
 
 #pragma once
 
-#include <dart/gui/vsg/Export.hpp>
+#include <dart/common/export.hpp>
 
-#include <Eigen/Geometry>
-#include <vsg/maths/mat4.h>
-#include <vsg/maths/vec3.h>
-#include <vsg/maths/vec4.h>
-#include <vsg/nodes/MatrixTransform.h>
+#ifndef DART_GUI_VSG_API
+  #if defined(DART_BUILDING_DART_GUI_VSG)
+    #define DART_GUI_VSG_API DART_DLL_EXPORT
+  #else
+    #define DART_GUI_VSG_API DART_DLL_IMPORT
+  #endif
+#endif
 
-namespace dart::gui::vsg {
-
-DART_GUI_VSG_API ::vsg::dmat4 toVsg(const Eigen::Isometry3d& transform);
-
-DART_GUI_VSG_API ::vsg::dvec3 toVsg(const Eigen::Vector3d& vec);
-
-DART_GUI_VSG_API ::vsg::dvec4 toVsg(const Eigen::Vector4d& vec);
-
-DART_GUI_VSG_API Eigen::Isometry3d toEigen(const ::vsg::dmat4& mat);
-
-DART_GUI_VSG_API Eigen::Vector3d toEigen(const ::vsg::dvec3& vec);
-
-DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::MatrixTransform> createTransform(
-    const Eigen::Isometry3d& tf);
-
-} // namespace dart::gui::vsg
+#ifndef DART_GUI_VSG_LOCAL
+  #if DART_BUILD_SHARED
+    #define DART_GUI_VSG_LOCAL DART_DLL_LOCAL
+  #else
+    #define DART_GUI_VSG_LOCAL
+  #endif
+#endif

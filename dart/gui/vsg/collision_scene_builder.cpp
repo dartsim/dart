@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/vsg/CollisionSceneBuilder.hpp"
+#include "dart/gui/vsg/collision_scene_builder.hpp"
 
-#include "dart/gui/vsg/Conversions.hpp"
-#include "dart/gui/vsg/DebugDraw.hpp"
-#include "dart/gui/vsg/GeometryBuilders.hpp"
+#include "dart/gui/vsg/conversions.hpp"
+#include "dart/gui/vsg/debug_draw.hpp"
+#include "dart/gui/vsg/geometry_builders.hpp"
 
 #include <dart/collision/experimental/aabb.hpp>
 #include <dart/collision/experimental/collision_object.hpp>

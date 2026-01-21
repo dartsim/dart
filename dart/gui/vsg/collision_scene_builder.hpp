@@ -30,38 +30,71 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/vsg/Materials.hpp"
+#pragma once
+
+#include <dart/gui/vsg/export.hpp>
+#include <dart/gui/vsg/materials.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <vsg/all.h>
+
+#include <vector>
+
+namespace dart::collision::experimental {
+class Aabb;
+class CollisionObject;
+class CollisionResult;
+struct CcdResult;
+struct DistanceResult;
+struct Ray;
+struct RaycastResult;
+} // namespace dart::collision::experimental
 
 namespace dart::gui::vsg {
 
-::vsg::ref_ptr<::vsg::vec4Value> createColorValue(const Eigen::Vector4d& color)
+class DART_GUI_VSG_API CollisionSceneBuilder
 {
-  return ::vsg::vec4Value::create(
-      ::vsg::vec4(
-          static_cast<float>(color.x()),
-          static_cast<float>(color.y()),
-          static_cast<float>(color.z()),
-          static_cast<float>(color.w())));
-}
+public:
+  CollisionSceneBuilder();
+  ~CollisionSceneBuilder();
 
-::vsg::ref_ptr<::vsg::StateGroup> createStateGroup(
-    const MaterialOptions& options)
-{
-  auto stateGroup = ::vsg::StateGroup::create();
+  void addObject(
+      const collision::experimental::CollisionObject& obj,
+      const Eigen::Vector4d& color = colors::Gray);
 
-  if (options.wireframe) {
-    auto rasterState = ::vsg::RasterizationState::create();
-    rasterState->polygonMode = VK_POLYGON_MODE_LINE;
-    stateGroup->add(rasterState);
-  }
+  void addContacts(
+      const collision::experimental::CollisionResult& result,
+      double normalLength = 0.1,
+      double pointSize = 0.02);
 
-  if (options.twoSided) {
-    auto rasterState = ::vsg::RasterizationState::create();
-    rasterState->cullMode = VK_CULL_MODE_NONE;
-    stateGroup->add(rasterState);
-  }
+  void addSphereCast(
+      const Eigen::Vector3d& start,
+      const Eigen::Vector3d& end,
+      double radius,
+      const collision::experimental::CcdResult* hit = nullptr);
 
-  return stateGroup;
-}
+  void addAabb(
+      const collision::experimental::Aabb& aabb,
+      const Eigen::Vector4d& color = colors::Yellow);
+
+  void addDistanceResult(
+      const collision::experimental::DistanceResult& result,
+      const Eigen::Vector4d& lineColor = colors::Cyan,
+      const Eigen::Vector4d& pointColor = colors::Magenta);
+
+  void addRaycast(
+      const collision::experimental::Ray& ray,
+      const collision::experimental::RaycastResult* hit = nullptr,
+      const Eigen::Vector4d& rayColor = colors::Cyan,
+      const Eigen::Vector4d& hitColor = colors::Red);
+
+  ::vsg::ref_ptr<::vsg::Node> build();
+
+  void clear();
+
+private:
+  std::vector<::vsg::ref_ptr<::vsg::Node>> m_nodes;
+};
 
 } // namespace dart::gui::vsg

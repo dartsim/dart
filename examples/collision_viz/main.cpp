@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/vsg/CollisionSceneBuilder.hpp>
-#include <dart/gui/vsg/SimpleViewer.hpp>
+#include <dart/gui/vsg/collision_scene_builder.hpp>
+#include <dart/gui/vsg/simple_viewer.hpp>
 
 #include <dart/collision/experimental/aabb.hpp>
 #include <dart/collision/experimental/collision_object.hpp>

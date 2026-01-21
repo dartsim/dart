@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <dart/gui/vsg/Export.hpp>
+#include <dart/gui/vsg/export.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>

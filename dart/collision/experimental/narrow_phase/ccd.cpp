@@ -33,7 +33,7 @@
 #include <dart/collision/experimental/narrow_phase/ccd.hpp>
 #include <dart/collision/experimental/narrow_phase/gjk.hpp>
 
-#include <dart/common/Macros.hpp>
+#include <dart/common/macros.hpp>
 
 #include <algorithm>
 

@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/vsg/DebugDraw.hpp"
+#include "dart/gui/vsg/debug_draw.hpp"
 
-#include "dart/gui/vsg/Conversions.hpp"
-#include "dart/gui/vsg/GeometryBuilders.hpp"
+#include "dart/gui/vsg/conversions.hpp"
+#include "dart/gui/vsg/geometry_builders.hpp"
 
 #include <vsg/utils/Builder.h>
 #include <vsg/utils/GraphicsPipelineConfigurator.h>
