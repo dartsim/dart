@@ -26,6 +26,8 @@ jobs:
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
+          cache: ${{ !contains(runner.labels, 'self-hosted') }}
+          post-cleanup: ${{ !contains(runner.labels, 'self-hosted') }}
           run-install: false
       - name: Update lockfiles
         run: |

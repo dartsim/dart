@@ -57,7 +57,8 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
-          cache: true
+          cache: ${{ !contains(runner.labels, 'self-hosted') }}
+          post-cleanup: ${{ !contains(runner.labels, 'self-hosted') }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install apt packages

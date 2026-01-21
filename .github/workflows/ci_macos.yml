@@ -54,6 +54,7 @@ jobs:
         with:
           # Avoid cache key generation failures on macOS self-hosted runners
           cache: false
+          post-cleanup: ${{ !contains(runner.labels, 'self-hosted') }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Setup sccache
@@ -95,6 +96,7 @@ jobs:
         with:
           # Avoid cache key generation failures on macOS self-hosted runners
           cache: false
+          post-cleanup: ${{ !contains(runner.labels, 'self-hosted') }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Setup sccache

@@ -95,9 +95,9 @@ jobs:
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
         with:
           pixi-version: latest
-          cache: true
+          cache: ${{ !contains(runner.labels, 'self-hosted') }}
+          post-cleanup: ${{ !contains(runner.labels, 'self-hosted') }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi${{ runner.os == 'Windows' && '.exe' || '' }}
-
       - name: Setup sccache
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
         uses: mozilla-actions/sccache-action@v0.0.9
