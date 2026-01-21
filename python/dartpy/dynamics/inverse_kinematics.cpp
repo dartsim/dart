@@ -1,10 +1,10 @@
 #include "dynamics/inverse_kinematics.hpp"
 
 #include "common/repr.hpp"
-#include "dart/common/Diagnostics.hpp"
-#include "dart/dynamics/InverseKinematics.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/math/optimization/Solver.hpp"
+#include "dart/common/diagnostics.hpp"
+#include "dart/dynamics/inverse_kinematics.hpp"
+#include "dart/dynamics/simple_frame.hpp"
+#include "dart/math/optimization/solver.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

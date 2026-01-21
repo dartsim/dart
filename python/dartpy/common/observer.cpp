@@ -1,6 +1,6 @@
 #include "common/observer.hpp"
 
-#include "dart/common/Observer.hpp"
+#include "dart/common/observer.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

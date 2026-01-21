@@ -32,36 +32,36 @@
 
 #include <dart/config.hpp>
 
-#include <dart/gui/GridVisual.hpp>
-#include <dart/gui/ImGuiHandler.hpp>
-#include <dart/gui/ImGuiViewer.hpp>
-#include <dart/gui/ImGuiWidget.hpp>
-#include <dart/gui/RealTimeWorldNode.hpp>
+#include <dart/gui/grid_visual.hpp>
+#include <dart/gui/im_gui_handler.hpp>
+#include <dart/gui/im_gui_viewer.hpp>
+#include <dart/gui/im_gui_widget.hpp>
+#include <dart/gui/real_time_world_node.hpp>
 
-#include <dart/io/Read.hpp>
+#include <dart/io/read.hpp>
 
 #if DART_HAVE_BULLET
-  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+  #include <dart/collision/bullet/bullet_collision_detector.hpp>
 #endif
 #if DART_HAVE_ODE
-  #include <dart/collision/ode/OdeCollisionDetector.hpp>
+  #include <dart/collision/ode/ode_collision_detector.hpp>
 #endif
-#include <dart/gui/IncludeImGui.hpp>
+#include <dart/gui/include_im_gui.hpp>
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/constraint/ConstraintSolver.hpp>
-#include <dart/constraint/MimicMotorConstraint.hpp>
+#include <dart/constraint/constraint_solver.hpp>
+#include <dart/constraint/mimic_motor_constraint.hpp>
 
-#include <dart/dynamics/BodyNode.hpp>
-#include <dart/dynamics/Joint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
-#include <dart/math/Helpers.hpp>
-#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
-#include <dart/math/lcp/projection/PgsSolver.hpp>
+#include <dart/math/helpers.hpp>
+#include <dart/math/lcp/pivoting/dantzig_solver.hpp>
+#include <dart/math/lcp/projection/pgs_solver.hpp>
 
-#include <dart/common/Uri.hpp>
+#include <dart/common/uri.hpp>
 
 #include <CLI/CLI.hpp>
 #include <Eigen/Core>

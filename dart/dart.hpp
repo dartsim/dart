@@ -32,6 +32,6 @@
 
 #pragma message(                                                               \
     "This header has been deprecated in DART 7.1. "                            \
-    "Please include dart/All.hpp instead.")
+    "Please include dart/all.hpp instead.")
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>

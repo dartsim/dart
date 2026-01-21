@@ -30,18 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/ImGuiHandler.hpp>
-#include <dart/gui/ImGuiViewer.hpp>
-#include <dart/gui/ImGuiWidget.hpp>
-#include <dart/gui/IncludeImGui.hpp>
+#include <dart/gui/im_gui_handler.hpp>
+#include <dart/gui/im_gui_viewer.hpp>
+#include <dart/gui/im_gui_widget.hpp>
+#include <dart/gui/include_im_gui.hpp>
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 
-#include <dart/math/lcp/All.hpp>
-#include <dart/math/lcp/LcpValidation.hpp>
+#include <dart/math/lcp/all.hpp>
+#include <dart/math/lcp/lcp_validation.hpp>
 
 #include <CLI/CLI.hpp>
 #include <Eigen/Core>

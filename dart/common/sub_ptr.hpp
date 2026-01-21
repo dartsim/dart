@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_SUB_PTR_HPP_
 #define DART_COMMON_SUB_PTR_HPP_
 
-#include <dart/common/Observer.hpp>
+#include <dart/common/observer.hpp>
 
 namespace dart {
 namespace common {
