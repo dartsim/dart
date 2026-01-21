@@ -1377,6 +1377,10 @@ int collideCylinderPlane(
     }
   }
 
+  if (found == -1) {
+    return 0;
+  }
+
   Eigen::Vector3d point;
 
   if (std::abs(depth[found] - depth[(found + 1) % 4]) < kDartCollisionEps)

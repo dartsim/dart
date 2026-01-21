@@ -484,6 +484,9 @@ double SoftBodyNode::getDampingCoefficient() const
 //==============================================================================
 void SoftBodyNode::removeAllPointMasses()
 {
+  for (auto* pointMass : mPointMasses) {
+    delete pointMass;
+  }
   mPointMasses.clear();
   mAspectProperties.mPointProps.clear();
   mAspectProperties.mFaces.clear();
