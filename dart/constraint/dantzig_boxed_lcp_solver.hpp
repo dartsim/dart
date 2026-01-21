@@ -35,7 +35,7 @@
 
 #include <dart/constraint/boxed_lcp_solver.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 namespace dart {
 namespace constraint {

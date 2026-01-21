@@ -41,7 +41,7 @@
 #include <dart/common/aspect_with_version.hpp>
 #include <dart/common/specialized_for_aspect.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 namespace dart {
 namespace dynamics {

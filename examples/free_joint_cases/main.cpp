@@ -37,7 +37,7 @@
 #include <dart/gui/include_im_gui.hpp>
 #include <dart/gui/world_node.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <CLI/CLI.hpp>
 

@@ -38,7 +38,7 @@
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 #include <dart/math/lcp/projection/pgs_solver.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <CLI/CLI.hpp>
 

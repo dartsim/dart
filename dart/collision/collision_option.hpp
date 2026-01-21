@@ -33,7 +33,7 @@
 #ifndef DART_COLLISION_COLLISIONOPTION_HPP_
 #define DART_COLLISION_COLLISIONOPTION_HPP_
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <memory>
 

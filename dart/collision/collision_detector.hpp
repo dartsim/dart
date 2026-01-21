@@ -47,7 +47,7 @@
 #include <dart/common/diagnostics.hpp>
 #include <dart/common/factory.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 #include <Eigen/Dense>
 

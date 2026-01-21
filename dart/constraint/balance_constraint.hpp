@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/hierarchical_ik.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 namespace dart {
 namespace constraint {

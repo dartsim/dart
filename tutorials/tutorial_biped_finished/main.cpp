@@ -36,7 +36,7 @@
 
 #include <dart/utils/All.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
 const double default_speed_increment = 0.5;

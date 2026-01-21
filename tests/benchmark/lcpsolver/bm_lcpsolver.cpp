@@ -10,7 +10,7 @@
 
 #include "dart/math/lcp/pivoting/dantzig/lcp.hpp"
 #include "tests/baseline/odelcpsolver/lcp.h"
-#include "tests/common/lcpsolver/LCPTestProblems.hpp"
+#include "tests/common/lcpsolver/lcp_test_problems.hpp"
 
 #include <benchmark/benchmark.h>
 

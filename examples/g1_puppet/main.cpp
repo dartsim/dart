@@ -16,7 +16,7 @@
 #include <dart/common/local_resource_retriever.hpp>
 #include <dart/common/uri.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
 #include <CLI/CLI.hpp>

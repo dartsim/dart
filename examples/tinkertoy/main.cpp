@@ -30,15 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "TinkertoyWidget.hpp"
-#include "TinkertoyWorldNode.hpp"
+#include "tinkertoy_widget.hpp"
+#include "tinkertoy_world_node.hpp"
 
 #include <dart/config.hpp>
 
 #include <dart/gui/all.hpp>
 #include <dart/gui/im_gui_handler.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <CLI/CLI.hpp>
 

@@ -35,7 +35,7 @@
 
 #include <dart/common/memory_allocator.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/export.hpp>
 
 namespace dart::common {
 
