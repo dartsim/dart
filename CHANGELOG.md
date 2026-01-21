@@ -2,7 +2,7 @@
 
 ## DART 6
 
-### [DART 6.16.5 (TBD)](https://github.com/dartsim/dart/milestone/90?closed=1)
+### [DART 6.16.5 (2026-01-21)](https://github.com/dartsim/dart/milestone/90?closed=1)
 
 * Constraint
 
