@@ -187,8 +187,9 @@ bool SolveLCP(
 #ifndef NDEBUG
   {
     // check restrictions on lo and hi
-    for (int k = 0; k < n; ++k)
+    for (int k = 0; k < n; ++k) {
       DART_ASSERT(lo[k] <= 0 && hi[k] >= 0);
+    }
   }
 #endif
 
@@ -303,8 +304,9 @@ bool SolveLCP(
 
     if (!hit_first_friction_index && findex && findex[i] >= 0) {
       // un-permute x into delta_w, which is not being used at the moment
-      for (int j = 0; j < n; ++j)
+      for (int j = 0; j < n; ++j) {
         delta_w[p[j]] = x[j];
+      }
 
       // set lo and hi values
       for (int k = i; k < n; ++k) {
@@ -409,8 +411,9 @@ bool SolveLCP(
             if (!state[indexN_k] ? delta_w[indexN_k] < 0
                                  : delta_w[indexN_k] > 0) {
               // don't bother checking if lo=hi=0
-              if (lo[indexN_k] == 0 && hi[indexN_k] == 0)
+              if (lo[indexN_k] == 0 && hi[indexN_k] == 0) {
                 continue;
+              }
               Scalar s2 = -w[indexN_k] / delta_w[indexN_k];
               if (s2 < s) {
                 s = s2;
@@ -513,8 +516,9 @@ bool SolveLCP(
             break;
         }
 
-        if (cmd <= 3)
+        if (cmd <= 3) {
           break;
+        }
       } // for (;;)
     } // else
 

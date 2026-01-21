@@ -131,10 +131,11 @@ void RealTimeWorldNode::refresh()
     const double elapsedRealTime = mRefreshTimer.time_s();
     const double targetRTF = getTargetRealTimeFactor();
 
-    if (targetRTF > 0.0 && elapsedRealTime > 0.0)
+    if (targetRTF > 0.0 && elapsedRealTime > 0.0) {
       mSimTimeBudget += elapsedRealTime * targetRTF;
-    else if (elapsedRealTime <= 0.0)
+    } else if (elapsedRealTime <= 0.0) {
       mSimTimeBudget += mTargetSimTimeLapse;
+    }
 
     std::size_t numSteps = 0;
     const std::size_t maxStepsPerRefresh = 2048;
@@ -160,10 +161,11 @@ void RealTimeWorldNode::refresh()
     const double denominator
         = (elapsedRealTime > 0.0) ? elapsedRealTime : mTargetRealTimeLapse;
 
-    if (denominator > 0.0)
+    if (denominator > 0.0) {
       mLastRealTimeFactor = simAdvanced / denominator;
-    else
+    } else {
       mLastRealTimeFactor = 0.0;
+    }
 
     mLowestRealTimeFactor
         = std::min(mLastRealTimeFactor, mLowestRealTimeFactor);

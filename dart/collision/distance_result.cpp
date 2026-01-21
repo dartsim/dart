@@ -66,8 +66,9 @@ void DistanceResult::clear()
 //==============================================================================
 bool DistanceResult::found() const
 {
-  if (!shapeFrame1 || !shapeFrame2)
+  if (!shapeFrame1 || !shapeFrame2) {
     return false;
+  }
 
   return true;
 }

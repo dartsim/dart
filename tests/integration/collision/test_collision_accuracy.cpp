@@ -157,8 +157,9 @@ TEST(Issue1184, Accuracy)
             const double currentHeight
                 = object->getBodyNode(0)->getTransform().translation()[2];
 
-            if (currentHeight < lowestHeight)
+            if (currentHeight < lowestHeight) {
               lowestHeight = currentHeight;
+            }
 
             time = world->getTime();
           }

@@ -134,19 +134,22 @@ void enableDragAndDrops(
     dart::gui::Viewer& viewer, const dart::dynamics::SkeletonPtr& wam)
 {
   // Turn on drag-and-drop for the whole Skeleton
-  for (std::size_t i = 0; i < wam->getNumBodyNodes(); ++i)
+  for (std::size_t i = 0; i < wam->getNumBodyNodes(); ++i) {
     viewer.enableDragAndDrop(wam->getBodyNode(i), false, false);
+  }
 
   for (std::size_t i = 0; i < wam->getNumEndEffectors(); ++i) {
     dart::dynamics::EndEffector* ee = wam->getEndEffector(i);
-    if (!ee->getIK())
+    if (!ee->getIK()) {
       continue;
+    }
 
     // Check whether the target is an interactive frame, and add it if it is
     const auto& frame = std::dynamic_pointer_cast<dart::gui::InteractiveFrame>(
         ee->getIK()->getTarget());
 
-    if (frame)
+    if (frame) {
       viewer.enableDragAndDrop(frame.get());
+    }
   }
 }

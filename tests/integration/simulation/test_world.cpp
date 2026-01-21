@@ -80,8 +80,9 @@ public:
       mKey(key),
       mRestorer(std::move(restorer))
   {
-    if (!mFactory || !mFactory->canCreate(mKey))
+    if (!mFactory || !mFactory->canCreate(mKey)) {
       return;
+    }
 
     mDisabled = true;
     mFactory->unregisterCreator(mKey);
@@ -95,8 +96,9 @@ public:
 
   ~ScopedCollisionFactoryDisabler()
   {
-    if (mFactory && mDisabled && mRestorer)
+    if (mFactory && mDisabled && mRestorer) {
       mFactory->registerCreator(mKey, mRestorer);
+    }
   }
 
   bool wasDisabled() const
@@ -163,8 +165,9 @@ TEST(World, AddingAndRemovingSkeletons)
   int nSteps = 20;
 
   // Empty world
-  for (int i = 0; i < nSteps; ++i)
+  for (int i = 0; i < nSteps; ++i) {
     world->step();
+  }
 
   EXPECT_FALSE(world->hasSkeleton(skeleton1));
   EXPECT_FALSE(world->hasSkeleton(skeleton2));
@@ -177,8 +180,9 @@ TEST(World, AddingAndRemovingSkeletons)
   world->addSkeleton(skeleton2);
   EXPECT_TRUE(world->hasSkeleton(skeleton2));
   EXPECT_TRUE(world->getNumSkeletons() == 2);
-  for (int i = 0; i < nSteps; ++i)
+  for (int i = 0; i < nSteps; ++i) {
     world->step();
+  }
 
   std::string s1name = skeleton1->getName();
   std::string s2name = skeleton2->getName();
@@ -188,8 +192,9 @@ TEST(World, AddingAndRemovingSkeletons)
   // Remove skeleton2
   world->removeSkeleton(skeleton2);
   EXPECT_TRUE(world->getNumSkeletons() == 1);
-  for (int i = 0; i < nSteps; ++i)
+  for (int i = 0; i < nSteps; ++i) {
     world->step();
+  }
 
   EXPECT_TRUE(skeleton1 == world->getSkeleton(s1name));
   EXPECT_FALSE(skeleton2 == world->getSkeleton(s2name));
@@ -201,8 +206,9 @@ TEST(World, AddingAndRemovingSkeletons)
   world->addSkeleton(skeleton4);
   EXPECT_TRUE(world->hasSkeleton(skeleton4));
   EXPECT_TRUE(world->getNumSkeletons() == 3);
-  for (int i = 0; i < nSteps; ++i)
+  for (int i = 0; i < nSteps; ++i) {
     world->step();
+  }
 
   std::string s3name = skeleton3->getName();
   std::string s4name = skeleton4->getName();
@@ -217,8 +223,9 @@ TEST(World, AddingAndRemovingSkeletons)
   // Remove skeleton1
   world->removeSkeleton(skeleton1);
   EXPECT_TRUE(world->getNumSkeletons() == 2);
-  for (int i = 0; i < nSteps; ++i)
+  for (int i = 0; i < nSteps; ++i) {
     world->step();
+  }
 
   EXPECT_FALSE(skeleton1 == world->getSkeleton(s1name));
   EXPECT_TRUE(world->getSkeleton(s1name) == nullptr);
@@ -226,8 +233,9 @@ TEST(World, AddingAndRemovingSkeletons)
   // Remove all the skeletons
   world->removeAllSkeletons();
   EXPECT_EQ((int)world->getNumSkeletons(), 0);
-  for (int i = 0; i < nSteps; ++i)
+  for (int i = 0; i < nSteps; ++i) {
     world->step();
+  }
 
   EXPECT_FALSE(skeleton3 == world->getSkeleton(s3name));
   EXPECT_TRUE(world->getSkeleton(s3name) == nullptr);
@@ -296,15 +304,17 @@ TEST(World, Cloning)
   fileList.push_back("dart://sample/skel/fullbody1.skel");
 
   std::vector<dart::simulation::WorldPtr> worlds;
-  for (std::size_t i = 0; i < fileList.size(); ++i)
+  for (std::size_t i = 0; i < fileList.size(); ++i) {
     worlds.push_back(dart::io::readWorld(fileList[i]));
+  }
 
   for (std::size_t i = 0; i < worlds.size(); ++i) {
     dart::simulation::WorldPtr original = worlds[i];
     std::vector<dart::simulation::WorldPtr> clones;
     clones.push_back(original);
-    for (std::size_t j = 1; j < 5; ++j)
+    for (std::size_t j = 1; j < 5; ++j) {
       clones.push_back(clones[j - 1]->clone());
+    }
 
 #if DART_BUILD_MODE_RELEASE
     std::size_t numIterations = 500;
@@ -318,8 +328,9 @@ TEST(World, Cloning)
 
         // Generate a random command vector
         Eigen::VectorXd commands = skel->getCommands();
-        for (int q = 0; q < commands.size(); ++q)
+        for (int q = 0; q < commands.size(); ++q) {
           commands[q] = Random::uniform(-0.1, 0.1);
+        }
 
         // Assign the command vector to each clone of the kth skeleton
         for (std::size_t c = 0; c < clones.size(); ++c) {
@@ -329,8 +340,9 @@ TEST(World, Cloning)
       }
 
       // Step each clone forward
-      for (std::size_t c = 0; c < clones.size(); ++c)
+      for (std::size_t c = 0; c < clones.size(); ++c) {
         clones[c]->step(false);
+      }
     }
 
     for (std::size_t c = 0; c < clones.size(); ++c) {
@@ -415,8 +427,9 @@ TEST(World, SetCollisionDetectorByType)
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
 
-  if (!factory->canCreate("dart"))
+  if (!factory->canCreate("dart")) {
     GTEST_SKIP() << "dart collision detector is not available in this build";
+  }
 
   auto world = World::create();
   world->setCollisionDetector(CollisionDetectorType::Dart);
@@ -431,8 +444,9 @@ TEST(World, ConfiguresCollisionDetectorViaConfig)
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
 
-  if (!factory->canCreate("dart"))
+  if (!factory->canCreate("dart")) {
     GTEST_SKIP() << "dart collision detector is not available in this build";
+  }
 
   WorldConfig config;
   config.name = "configured-world";
@@ -448,8 +462,9 @@ TEST(World, DefaultWorldUsesFclPrimitive)
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
 
-  if (!factory->canCreate("fcl"))
+  if (!factory->canCreate("fcl")) {
     GTEST_SKIP() << "fcl collision detector is not available in this build";
+  }
 
   auto world = World::create();
   auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
@@ -466,8 +481,9 @@ TEST(World, TypedSetterConfiguresFclPrimitive)
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
 
-  if (!factory->canCreate("fcl"))
+  if (!factory->canCreate("fcl")) {
     GTEST_SKIP() << "fcl collision detector is not available in this build";
+  }
 
   auto world = World::create();
   world->setCollisionDetector(CollisionDetectorType::Dart);
@@ -490,8 +506,9 @@ TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
         return collision::DARTCollisionDetector::create();
       });
 
-  if (!disableDart.wasDisabled())
+  if (!disableDart.wasDisabled()) {
     GTEST_SKIP() << "dart collision detector is not registered in this build";
+  }
 
   auto world = World::create();
   auto original = world->getCollisionDetector();
@@ -513,8 +530,9 @@ TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
         return collision::DARTCollisionDetector::create();
       });
 
-  if (!disableDart.wasDisabled())
+  if (!disableDart.wasDisabled()) {
     GTEST_SKIP() << "dart collision detector is not registered in this build";
+  }
 
   WorldConfig config;
   config.name = "fallback-pref";
@@ -536,8 +554,9 @@ TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
         return collision::DARTCollisionDetector::create();
       });
 
-  if (!disableDart.wasDisabled())
+  if (!disableDart.wasDisabled()) {
     GTEST_SKIP() << "dart collision detector is not registered in this build";
+  }
 
   ScopedCollisionFactoryDisabler disableFcl(
       collision::FCLCollisionDetector::getStaticType(),
@@ -545,8 +564,9 @@ TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
         return collision::FCLCollisionDetector::create();
       });
 
-  if (!disableFcl.wasDisabled())
+  if (!disableFcl.wasDisabled()) {
     GTEST_SKIP() << "fcl collision detector is not registered in this build";
+  }
 
   WorldConfig config;
   config.name = "no-fallback-world";
@@ -663,8 +683,9 @@ TEST(World, RevoluteJointConstraintBasics)
   auto* bd2 = world->getSkeleton(0)->getBodyNode("link 10");
   const Eigen::Vector3d offset(0.0, 0.025, 0.0);
 
-  for (int i = 0; i < 200; ++i)
+  for (int i = 0; i < 200; ++i) {
     world->step();
+  }
 
   const Eigen::Vector3d pos1 = bd1->getTransform() * offset;
   const Eigen::Vector3d pos2 = bd2->getTransform() * offset;

@@ -78,8 +78,9 @@ ScrewJoint::Properties ScrewJoint::getScrewJointProperties() const
 //==============================================================================
 void ScrewJoint::copy(const ScrewJoint& _otherJoint)
 {
-  if (this == &_otherJoint)
+  if (this == &_otherJoint) {
     return;
+  }
 
   setProperties(_otherJoint.getScrewJointProperties());
 }
@@ -87,8 +88,9 @@ void ScrewJoint::copy(const ScrewJoint& _otherJoint)
 //==============================================================================
 void ScrewJoint::copy(const ScrewJoint* _otherJoint)
 {
-  if (nullptr == _otherJoint)
+  if (nullptr == _otherJoint) {
     return;
+  }
 
   copy(*_otherJoint);
 }
@@ -122,8 +124,9 @@ bool ScrewJoint::isCyclic(std::size_t /*_index*/) const
 //==============================================================================
 void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-  if (_axis == mAspectProperties.mAxis)
+  if (_axis == mAspectProperties.mAxis) {
     return;
+  }
 
   mAspectProperties.mAxis = _axis.normalized();
   Joint::notifyPositionUpdated();
@@ -140,8 +143,9 @@ const Eigen::Vector3d& ScrewJoint::getAxis() const
 //==============================================================================
 void ScrewJoint::setPitch(double _pitch)
 {
-  if (_pitch == mAspectProperties.mPitch)
+  if (_pitch == mAspectProperties.mPitch) {
     return;
+  }
 
   mAspectProperties.mPitch = _pitch;
   Joint::notifyPositionUpdated();
@@ -195,8 +199,9 @@ Joint* ScrewJoint::clone() const
 void ScrewJoint::updateDegreeOfFreedomNames()
 {
   // Same name as the joint it belongs to.
-  if (!mDofs[0]->isNamePreserved())
+  if (!mDofs[0]->isNamePreserved()) {
     mDofs[0]->setName(Joint::mAspectProperties.mName, false);
+  }
 }
 
 //==============================================================================
@@ -216,8 +221,9 @@ void ScrewJoint::updateRelativeTransform() const
 //==============================================================================
 void ScrewJoint::updateRelativeJacobian(bool _mandatory) const
 {
-  if (_mandatory)
+  if (_mandatory) {
     mJacobian = getRelativeJacobianStatic(getPositionsStatic());
+  }
 }
 
 //==============================================================================

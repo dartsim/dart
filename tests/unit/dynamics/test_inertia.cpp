@@ -75,8 +75,9 @@ TEST(Inertia, Transformations)
     dynamics::Inertia inertia(mass, com, moment);
 
     Eigen::Vector3d axis = math::Random::uniform<Eigen::Vector3d>(-1.0, 1.0);
-    if (axis.norm() < 1e-6)
+    if (axis.norm() < 1e-6) {
       axis = Eigen::Vector3d::UnitX();
+    }
     axis.normalize();
     const double angle = math::Random::uniform<double>(-3.14, 3.14);
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();

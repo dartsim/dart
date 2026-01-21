@@ -88,8 +88,9 @@ void BulletCollisionObject::updateEngineData()
   btTransform worldTransform
       = convertTransform(mShapeFrame->getWorldTransform());
 
-  if (mBulletCollisionShape->mRelativeTransform)
+  if (mBulletCollisionShape->mRelativeTransform) {
     worldTransform *= (*mBulletCollisionShape->mRelativeTransform);
+  }
 
   mBulletCollisionObject->setWorldTransform(worldTransform);
 }

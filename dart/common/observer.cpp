@@ -42,8 +42,9 @@ Observer::~Observer()
 {
   std::set<const Subject*>::iterator it = mSubjects.begin(),
                                      end = mSubjects.end();
-  while (it != end)
+  while (it != end) {
     (*(it++))->removeObserver(this);
+  }
   // We do this tricky iterator method to deal with the fact that mObservers
   // will be changing as we go through the loop
 }
@@ -64,11 +65,13 @@ void Observer::handleDestructionNotification(const Subject*)
 //==============================================================================
 void Observer::addSubject(const Subject* _subject)
 {
-  if (nullptr == _subject)
+  if (nullptr == _subject) {
     return;
+  }
 
-  if (mSubjects.contains(_subject))
+  if (mSubjects.contains(_subject)) {
     return;
+  }
 
   mSubjects.insert(_subject);
   _subject->addObserver(this);
@@ -77,11 +80,13 @@ void Observer::addSubject(const Subject* _subject)
 //==============================================================================
 void Observer::removeSubject(const Subject* _subject)
 {
-  if (nullptr == _subject)
+  if (nullptr == _subject) {
     return;
+  }
 
-  if (!mSubjects.contains(_subject))
+  if (!mSubjects.contains(_subject)) {
     return;
+  }
 
   mSubjects.erase(_subject);
   _subject->removeObserver(this);
@@ -93,8 +98,9 @@ void Observer::removeAllSubjects()
   std::set<const Subject*>::iterator it = mSubjects.begin(),
                                      end = mSubjects.end();
 
-  while (it != end)
+  while (it != end) {
     removeSubject(*(it++));
+  }
 }
 
 } // namespace common

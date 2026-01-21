@@ -55,8 +55,9 @@ public:
   {
     ::osg::ref_ptr<WorldNode> currentNode = dynamic_cast<WorldNode*>(node);
 
-    if (currentNode)
+    if (currentNode) {
       currentNode->refresh();
+    }
 
     traverse(node, nv);
   }
@@ -194,8 +195,9 @@ void WorldNode::setupViewer()
 //==============================================================================
 void WorldNode::clearChildUtilizationFlags()
 {
-  for (auto& node_pair : mFrameToNode)
+  for (auto& node_pair : mFrameToNode) {
     node_pair.second->clearUtilization();
+  }
 }
 
 //==============================================================================
@@ -207,8 +209,9 @@ void WorldNode::clearUnusedNodes()
   // Find unused ShapeFrameNodes
   for (auto& node_pair : mFrameToNode) {
     ShapeFrameNode* node = node_pair.second;
-    if (node && !node->wasUtilized())
+    if (node && !node->wasUtilized()) {
       unused.push_back(node_pair.first);
+    }
   }
 
   // Clear unused ShapeFrameNodes
@@ -224,8 +227,9 @@ void WorldNode::clearUnusedNodes()
 //==============================================================================
 void WorldNode::refreshSkeletons()
 {
-  if (!mWorld)
+  if (!mWorld) {
     return;
+  }
 
   // Apply the recursive Frame refreshing functionality to the root BodyNode of
   // each Skeleton
@@ -240,11 +244,13 @@ void WorldNode::refreshSkeletons()
 //==============================================================================
 void WorldNode::refreshSimpleFrames()
 {
-  if (!mWorld)
+  if (!mWorld) {
     return;
+  }
 
-  for (std::size_t i = 0, end = mWorld->getNumSimpleFrames(); i < end; ++i)
+  for (std::size_t i = 0, end = mWorld->getNumSimpleFrames(); i < end; ++i) {
     refreshBaseFrameNode(mWorld->getSimpleFrame(i).get());
+  }
 }
 
 //==============================================================================
@@ -255,14 +261,16 @@ void WorldNode::refreshBaseFrameNode(dart::dynamics::Frame* frame)
   while (!frames.empty()) {
     dart::dynamics::Frame* nextFrame = frames.front();
     frames.pop_front();
-    if (nextFrame->isShapeFrame())
+    if (nextFrame->isShapeFrame()) {
       refreshShapeFrameNode(nextFrame);
+    }
 
     const std::set<dart::dynamics::Frame*>& childFrames
         = nextFrame->getChildFrames();
 
-    for (dart::dynamics::Frame* child : childFrames)
+    for (dart::dynamics::Frame* child : childFrames) {
       frames.push_back(child);
+    }
   }
 }
 
@@ -276,8 +284,9 @@ void WorldNode::refreshShapeFrameNode(dart::dynamics::Frame* frame)
 
   if (!inserted) {
     ShapeFrameNode* node = it->second;
-    if (!node)
+    if (!node) {
       return;
+    }
 
     node->refresh(true);
 
@@ -313,8 +322,9 @@ void WorldNode::refreshShapeFrameNode(dart::dynamics::Frame* frame)
   if (!node->getShapeFrame()->hasVisualAspect()
       || !node->getShapeFrame()->getVisualAspect(true)->getShadowed()) {
     mNormalGroup->addChild(node);
-  } else
+  } else {
     mShadowedGroup->addChild(node);
+  }
 }
 
 //==============================================================================
@@ -339,8 +349,9 @@ void WorldNode::setShadowTechnique(
 //==============================================================================
 ::osg::ref_ptr<osgShadow::ShadowTechnique> WorldNode::getShadowTechnique() const
 {
-  if (!mShadowed)
+  if (!mShadowed) {
     return nullptr;
+  }
   return mShadowedGroup->getShadowTechnique();
 }
 

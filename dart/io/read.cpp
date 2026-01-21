@@ -63,8 +63,9 @@ namespace {
 common::ResourceRetrieverPtr getRetriever(
     const common::ResourceRetrieverPtr& retrieverOrNullptr)
 {
-  if (retrieverOrNullptr)
+  if (retrieverOrNullptr) {
     return retrieverOrNullptr;
+  }
 
   auto composite = std::make_shared<utils::CompositeResourceRetriever>();
   composite->addSchemaRetriever(
@@ -76,31 +77,38 @@ common::ResourceRetrieverPtr getRetriever(
 std::string getLowercaseExtension(const common::Uri& uri)
 {
   std::string path;
-  if (uri.mPath)
+  if (uri.mPath) {
     path = uri.mPath.get();
-  else
+  } else {
     path = uri.toString();
+  }
 
   const auto slash = path.find_last_of("/\\");
   const auto dot = path.find_last_of('.');
-  if (dot == std::string::npos)
+  if (dot == std::string::npos) {
     return {};
-  if (slash != std::string::npos && dot < slash)
+  }
+  if (slash != std::string::npos && dot < slash) {
     return {};
+  }
   return common::toLower(path.substr(dot));
 }
 
 std::optional<ModelFormat> inferFormatFromExtension(const common::Uri& uri)
 {
   const auto ext = getLowercaseExtension(uri);
-  if (ext == ".skel")
+  if (ext == ".skel") {
     return ModelFormat::Skel;
-  if (ext == ".sdf" || ext == ".world")
+  }
+  if (ext == ".sdf" || ext == ".world") {
     return ModelFormat::Sdf;
-  if (ext == ".urdf")
+  }
+  if (ext == ".urdf") {
     return ModelFormat::Urdf;
-  if (ext == ".mjcf")
+  }
+  if (ext == ".mjcf") {
     return ModelFormat::Mjcf;
+  }
 
   // Extensions like ".xml" are ambiguous across multiple formats.
   return std::nullopt;
@@ -147,14 +155,18 @@ std::optional<ModelFormat> inferFormatFromXmlRoot(
   }
 
   const std::string rootName = root->Name();
-  if (rootName == "skel")
+  if (rootName == "skel") {
     return ModelFormat::Skel;
-  if (rootName == "sdf")
+  }
+  if (rootName == "sdf") {
     return ModelFormat::Sdf;
-  if (rootName == "robot")
+  }
+  if (rootName == "robot") {
     return ModelFormat::Urdf;
-  if (rootName == "mujoco")
+  }
+  if (rootName == "mujoco") {
     return ModelFormat::Mjcf;
+  }
 
   return std::nullopt;
 }
@@ -162,8 +174,9 @@ std::optional<ModelFormat> inferFormatFromXmlRoot(
 std::optional<ModelFormat> inferFormat(
     const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
 {
-  if (const auto ext = inferFormatFromExtension(uri))
+  if (const auto ext = inferFormatFromExtension(uri)) {
     return ext;
+  }
 
   return inferFormatFromXmlRoot(uri, retriever);
 }
@@ -179,15 +192,17 @@ ReadOptions resolveOptions(const ReadOptions& options)
 common::ResourceRetrieverPtr getUrdfResourceRetriever(
     const ReadOptions& options)
 {
-  if (options.urdfPackageDirectories.empty())
+  if (options.urdfPackageDirectories.empty()) {
     return options.resourceRetriever;
+  }
 
   auto packageRetriever = std::make_shared<utils::PackageResourceRetriever>(
       options.resourceRetriever);
   for (const auto& [packageName, packageDirectories] :
        options.urdfPackageDirectories) {
-    for (const auto& packageDirectory : packageDirectories)
+    for (const auto& packageDirectory : packageDirectories) {
       packageRetriever->addPackageDirectory(packageName, packageDirectory);
+    }
   }
 
   auto resolver = std::make_shared<utils::CompositeResourceRetriever>();
@@ -306,8 +321,9 @@ dynamics::SkeletonPtr readSkeleton(
       const auto world
           = utils::SkelParser::readWorld(uri, resolved.resourceRetriever);
       if (world) {
-        if (world->getNumSkeletons() == 0)
+        if (world->getNumSkeletons() == 0) {
           return nullptr;
+        }
 
         if (world->getNumSkeletons() > 1) {
           DART_WARN(

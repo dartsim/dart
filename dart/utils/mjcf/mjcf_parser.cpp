@@ -596,8 +596,9 @@ bool populateSkeletonRecurse(
   DART_ASSERT(joint != nullptr);
 
   // Create ShapeNodes for the current BodyNode
-  if (!createShapeNodes(bodyNode, mjcfBody, mjcfAsset))
+  if (!createShapeNodes(bodyNode, mjcfBody, mjcfAsset)) {
     return false;
+  }
 
   for (auto i = 0u; i < mjcfBody.getNumChildBodies(); ++i) {
     if (!populateSkeletonRecurse(
@@ -776,8 +777,9 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
         "{}",
         "[MjcfParser] Failed to parse MJCF file for the following "
         "reason(s):\n");
-    for (const auto& error : errors)
+    for (const auto& error : errors) {
       DART_ERROR(" - {}", error.getMessage());
+    }
 
     return nullptr;
   }

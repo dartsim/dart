@@ -53,8 +53,9 @@ const std::string& EntityNode<Base>::setName(const std::string& newName)
 {
   using NameImpl = detail::EntityNodeAspectBase<Base>;
 
-  if (NameImpl::mAspectProperties.mName == newName && !newName.empty())
+  if (NameImpl::mAspectProperties.mName == newName && !newName.empty()) {
     return NameImpl::mAspectProperties.mName;
+  }
 
   const std::string oldName = NameImpl::mAspectProperties.mName;
 

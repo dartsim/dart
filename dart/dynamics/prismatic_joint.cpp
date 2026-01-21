@@ -77,8 +77,9 @@ PrismaticJoint::Properties PrismaticJoint::getPrismaticJointProperties() const
 //==============================================================================
 void PrismaticJoint::copy(const PrismaticJoint& _otherJoint)
 {
-  if (this == &_otherJoint)
+  if (this == &_otherJoint) {
     return;
+  }
 
   setProperties(_otherJoint.getPrismaticJointProperties());
 }
@@ -86,8 +87,9 @@ void PrismaticJoint::copy(const PrismaticJoint& _otherJoint)
 //==============================================================================
 void PrismaticJoint::copy(const PrismaticJoint* _otherJoint)
 {
-  if (nullptr == _otherJoint)
+  if (nullptr == _otherJoint) {
     return;
+  }
 
   copy(*_otherJoint);
 }
@@ -121,8 +123,9 @@ bool PrismaticJoint::isCyclic(std::size_t /*_index*/) const
 //==============================================================================
 void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-  if (_axis == mAspectProperties.mAxis)
+  if (_axis == mAspectProperties.mAxis) {
     return;
+  }
 
   mAspectProperties.mAxis = _axis.normalized();
   Joint::notifyPositionUpdated();
@@ -171,8 +174,9 @@ Joint* PrismaticJoint::clone() const
 void PrismaticJoint::updateDegreeOfFreedomNames()
 {
   // Same name as the joint it belongs to.
-  if (!mDofs[0]->isNamePreserved())
+  if (!mDofs[0]->isNamePreserved()) {
     mDofs[0]->setName(Joint::mAspectProperties.mName, false);
+  }
 }
 
 //==============================================================================
@@ -189,8 +193,9 @@ void PrismaticJoint::updateRelativeTransform() const
 //==============================================================================
 void PrismaticJoint::updateRelativeJacobian(bool _mandatory) const
 {
-  if (_mandatory)
+  if (_mandatory) {
     mJacobian = getRelativeJacobianStatic(getPositionsStatic());
+  }
 }
 
 //==============================================================================

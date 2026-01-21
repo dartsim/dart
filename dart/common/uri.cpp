@@ -138,20 +138,22 @@ auto UriComponent::get() const -> reference_const_type
 //==============================================================================
 auto UriComponent::get_value_or(reference_type _default) -> reference_type
 {
-  if (mExists)
+  if (mExists) {
     return mValue;
-  else
+  } else {
     return _default;
+  }
 }
 
 //==============================================================================
 auto UriComponent::get_value_or(reference_const_type _default) const
     -> reference_const_type
 {
-  if (mExists)
+  if (mExists) {
     return mValue;
-  else
+  } else {
     return _default;
+  }
 }
 
 /*
@@ -205,33 +207,39 @@ bool Uri::fromString(std::string_view input)
   clear();
 
   std::match_results<std::string_view::const_iterator> matches;
-  if (!std::regex_match(input.begin(), input.end(), matches, uriRegex))
+  if (!std::regex_match(input.begin(), input.end(), matches, uriRegex)) {
     return false;
+  }
 
   DART_ASSERT(matches.size() > schemeIndex);
   const auto& schemeMatch = matches[schemeIndex];
-  if (schemeMatch.matched)
+  if (schemeMatch.matched) {
     mScheme = schemeMatch.str();
+  }
 
   DART_ASSERT(matches.size() > authorityIndex);
   const auto& authorityMatch = matches[authorityIndex];
-  if (authorityMatch.matched)
+  if (authorityMatch.matched) {
     mAuthority = authorityMatch.str();
+  }
 
   DART_ASSERT(matches.size() > pathIndex);
   const auto& pathMatch = matches[pathIndex];
-  if (pathMatch.matched)
+  if (pathMatch.matched) {
     mPath = pathMatch.str();
+  }
 
   DART_ASSERT(matches.size() > queryIndex);
   const auto& queryMatch = matches[queryIndex];
-  if (queryMatch.matched)
+  if (queryMatch.matched) {
     mQuery = queryMatch.str();
+  }
 
   DART_ASSERT(matches.size() > fragmentIndex);
   const auto& fragmentMatch = matches[fragmentIndex];
-  if (fragmentMatch.matched)
+  if (fragmentMatch.matched) {
     mFragment = fragmentMatch.str();
+  }
 
   return true;
 }
@@ -271,8 +279,9 @@ bool Uri::fromStringOrPath(std::string_view input)
       windowsPathRegex,
       std::regex_constants::match_continuous);
 
-  if (isPath)
+  if (isPath) {
     return fromPath(input);
+  }
 
 #else
 
@@ -284,8 +293,9 @@ bool Uri::fromStringOrPath(std::string_view input)
       uriSchemeRegex,
       std::regex_constants::match_continuous);
 
-  if (noScheme)
+  if (noScheme) {
     return fromPath(input);
+  }
 
 #endif
 
@@ -357,15 +367,17 @@ bool Uri::fromRelativeUri(const Uri& base, const Uri& relative, bool /*strict*/)
       if (relative.mPath->empty()) {
         mPath = base.mPath;
 
-        if (relative.mQuery)
+        if (relative.mQuery) {
           mQuery = relative.mQuery;
-        else
+        } else {
           mQuery = base.mQuery;
+        }
       } else {
-        if (relative.mPath->front() == '/')
+        if (relative.mPath->front() == '/') {
           mPath = removeDotSegments(*relative.mPath);
-        else
+        } else {
           mPath = removeDotSegments(mergePaths(base, relative));
+        }
 
         mQuery = relative.mQuery;
       }
@@ -386,19 +398,23 @@ std::string Uri::toString() const
   // This function implements the pseudo-code from Section 5.3 of RFC 3986.
   std::stringstream output;
 
-  if (mScheme)
+  if (mScheme) {
     output << *mScheme << ":";
+  }
 
-  if (mAuthority)
+  if (mAuthority) {
     output << "//" << *mAuthority;
+  }
 
   output << mPath.get_value_or("");
 
-  if (mQuery)
+  if (mQuery) {
     output << "?" << *mQuery;
+  }
 
-  if (mFragment)
+  if (mFragment) {
     output << "#" << *mFragment;
+  }
 
   return output.str();
 }
@@ -495,10 +511,11 @@ Uri Uri::createFromRelativeUri(
 std::string Uri::getUri(std::string_view input)
 {
   Uri uri;
-  if (uri.fromStringOrPath(input))
+  if (uri.fromStringOrPath(input)) {
     return uri.toString();
-  else
+  } else {
     return "";
+  }
 }
 
 //==============================================================================
@@ -506,10 +523,11 @@ std::string Uri::getRelativeUri(
     std::string_view base, std::string_view relative, bool strict)
 {
   Uri mergedUri;
-  if (!mergedUri.fromRelativeUri(base, relative, strict))
+  if (!mergedUri.fromRelativeUri(base, relative, strict)) {
     return "";
-  else
+  } else {
     return mergedUri.toString();
+  }
 }
 
 //==============================================================================
@@ -517,10 +535,11 @@ std::string Uri::getRelativeUri(
     const Uri& base, std::string_view relative, bool strict)
 {
   Uri mergedUri;
-  if (!mergedUri.fromRelativeUri(base, relative, strict))
+  if (!mergedUri.fromRelativeUri(base, relative, strict)) {
     return "";
-  else
+  } else {
     return mergedUri.toString();
+  }
 }
 
 //==============================================================================
@@ -528,10 +547,11 @@ std::string Uri::getRelativeUri(
     const Uri& baseUri, const Uri& relativeUri, bool strict)
 {
   Uri mergedUri;
-  if (!mergedUri.fromRelativeUri(baseUri, relativeUri, strict))
+  if (!mergedUri.fromRelativeUri(baseUri, relativeUri, strict)) {
     return "";
-  else
+  } else {
     return mergedUri.toString();
+  }
 }
 
 //==============================================================================
@@ -547,8 +567,9 @@ std::string Uri::getFilesystemPath() const
   if (mScheme.get_value_or("") == "file") {
     const std::string& filesystemPath = getPath();
 
-    if (!filesystemPath.empty() && filesystemPath[0] == '/')
+    if (!filesystemPath.empty() && filesystemPath[0] == '/') {
       return filesystemPath.substr(1);
+    }
   }
 #endif
 
@@ -562,14 +583,15 @@ std::string Uri::mergePaths(const Uri& base, const Uri& relative)
   DART_ASSERT(relative.mPath && "The path component is always defined.");
 
   // This directly implements the logic from Section 5.2.3. of RFC 3986.
-  if (base.mAuthority && base.mPath->empty())
+  if (base.mAuthority && base.mPath->empty()) {
     return "/" + *relative.mPath;
-  else {
+  } else {
     const std::size_t index = base.mPath->find_last_of('/');
-    if (index != std::string::npos)
+    if (index != std::string::npos) {
       return base.mPath->substr(0, index + 1) + *relative.mPath;
-    else
+    } else {
       return *relative.mPath;
+    }
   }
 }
 
@@ -608,18 +630,20 @@ std::string Uri::removeDotSegments(const std::string& path)
       input = "/";
 
       std::size_t index = output.find_last_of('/');
-      if (index != std::string::npos)
+      if (index != std::string::npos) {
         output = output.substr(0, index);
-      else
+      } else {
         output = "";
+      }
     } else if (startsWith(input, "/../")) {
       input = "/" + input.substr(4);
 
       std::size_t index = output.find_last_of('/');
-      if (index != std::string::npos)
+      if (index != std::string::npos) {
         output = output.substr(0, index);
-      else
+      } else {
         output = "";
+      }
     }
     // D.  if the input buffer consists only of "." or "..", then remove
     //     that from the input buffer; otherwise,
@@ -635,10 +659,11 @@ std::string Uri::removeDotSegments(const std::string& path)
       std::size_t index = input.find_first_of('/', 1);
       output += input.substr(0, index);
 
-      if (index != std::string::npos)
+      if (index != std::string::npos) {
         input = input.substr(index);
-      else
+      } else {
         input = "";
+      }
     }
   }
 

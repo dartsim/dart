@@ -67,8 +67,9 @@ void computeVertexNormals(
     const Eigen::Vector3d& v1 = vertices[triangle[1]];
     const Eigen::Vector3d& v2 = vertices[triangle[2]];
     const Eigen::Vector3d n = (v1 - v0).cross(v2 - v0);
-    if (n.squaredNorm() < 1e-12)
+    if (n.squaredNorm() < 1e-12) {
       continue;
+    }
 
     normals[triangle[0]] += n;
     normals[triangle[1]] += n;
@@ -77,8 +78,9 @@ void computeVertexNormals(
 
   for (auto& normal : normals) {
     const double norm = normal.norm();
-    if (norm > 1e-12)
+    if (norm > 1e-12) {
       normal /= norm;
+    }
   }
 }
 
@@ -148,8 +150,9 @@ void ConvexMeshShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     return;
+  }
 
   extractData(false);
 }
@@ -232,10 +235,11 @@ ConvexMeshShapeDrawable::ConvexMeshShapeDrawable(
 //==============================================================================
 void ConvexMeshShapeDrawable::refresh(bool firstTime)
 {
-  if (mConvexMeshShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mConvexMeshShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     setDataVariance(::osg::Object::STATIC);
-  else
+  } else {
     setDataVariance(::osg::Object::DYNAMIC);
+  }
 
   const auto mesh = mConvexMeshShape->getMesh();
   const Vertices* vertices = mesh ? &mesh->getVertices() : nullptr;
@@ -267,13 +271,16 @@ void ConvexMeshShapeDrawable::refresh(bool firstTime)
           dart::dynamics::Shape::DYNAMIC_ELEMENTS)
       || firstTime) {
     const std::size_t vertexCount = vertices ? vertices->size() : 0u;
-    if (mVertices->size() != vertexCount)
+    if (mVertices->size() != vertexCount) {
       mVertices->resize(vertexCount);
-    if (mNormals->size() != vertexCount)
+    }
+    if (mNormals->size() != vertexCount) {
       mNormals->resize(vertexCount);
+    }
 
-    for (std::size_t i = 0; i < vertexCount; ++i)
+    for (std::size_t i = 0; i < vertexCount; ++i) {
       (*mVertices)[i] = eigToOsgVec3((*vertices)[i]);
+    }
     setVertexArray(mVertices);
 
     const Normals* normals = nullptr;
@@ -286,8 +293,9 @@ void ConvexMeshShapeDrawable::refresh(bool firstTime)
     }
 
     if (normals) {
-      for (std::size_t i = 0; i < vertexCount; ++i)
+      for (std::size_t i = 0; i < vertexCount; ++i) {
         (*mNormals)[i] = eigToOsgVec3((*normals)[i]);
+      }
       setNormalArray(mNormals, ::osg::Array::BIND_PER_VERTEX);
     }
   }

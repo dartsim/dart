@@ -52,22 +52,25 @@ namespace {
 
 void collectGeometries(osg::Node* node, std::vector<osg::Geometry*>& geometries)
 {
-  if (!node)
+  if (!node) {
     return;
+  }
 
   if (auto* geode = node->asGeode()) {
     const unsigned int numDrawables = geode->getNumDrawables();
     for (unsigned int i = 0; i < numDrawables; ++i) {
       auto* geometry = dynamic_cast<osg::Geometry*>(geode->getDrawable(i));
-      if (geometry)
+      if (geometry) {
         geometries.push_back(geometry);
+      }
     }
   }
 
   if (auto* group = node->asGroup()) {
     const unsigned int numChildren = group->getNumChildren();
-    for (unsigned int i = 0; i < numChildren; ++i)
+    for (unsigned int i = 0; i < numChildren; ++i) {
       collectGeometries(group->getChild(i), geometries);
+    }
   }
 }
 
@@ -146,8 +149,9 @@ TEST(MeshShapeNodeTest, TessellatesConcavePolygons)
   for (unsigned int i = 0; i < frameNode->getNumChildren(); ++i) {
     meshNode = dynamic_cast<dart::gui::render::MeshShapeNode*>(
         frameNode->getChild(i));
-    if (meshNode)
+    if (meshNode) {
       break;
+    }
   }
   ASSERT_NE(meshNode, nullptr);
 
@@ -161,16 +165,19 @@ TEST(MeshShapeNodeTest, TessellatesConcavePolygons)
     const unsigned int primitiveCount = geometry->getNumPrimitiveSets();
     for (unsigned int i = 0; i < primitiveCount; ++i) {
       const osg::PrimitiveSet* primitive = geometry->getPrimitiveSet(i);
-      if (!primitive)
+      if (!primitive) {
         continue;
+      }
 
       const auto mode = primitive->getMode();
-      if (mode == osg::PrimitiveSet::POLYGON)
+      if (mode == osg::PrimitiveSet::POLYGON) {
         hasPolygons = true;
+      }
       if (mode == osg::PrimitiveSet::TRIANGLES
           || mode == osg::PrimitiveSet::TRIANGLE_FAN
-          || mode == osg::PrimitiveSet::TRIANGLE_STRIP)
+          || mode == osg::PrimitiveSet::TRIANGLE_STRIP) {
         hasTriangles = true;
+      }
     }
   }
 

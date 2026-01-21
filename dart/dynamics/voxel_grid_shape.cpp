@@ -122,8 +122,9 @@ void VoxelGridShape::setOctree(std::shared_ptr<octomap::OcTree> octree)
     return;
   }
 
-  if (octree == mOctree)
+  if (octree == mOctree) {
     return;
+  }
 
   mOctree = std::move(octree);
 
@@ -193,10 +194,11 @@ void VoxelGridShape::updateOccupancy(
 double VoxelGridShape::getOccupancy(const Eigen::Vector3d& point) const
 {
   const auto node = mOctree->search(point.x(), point.y(), point.z());
-  if (node)
+  if (node) {
     return node->getOccupancy();
-  else
+  } else {
     return 0.0;
+  }
 }
 
 //==============================================================================

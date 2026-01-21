@@ -69,14 +69,16 @@ private:
 template <class T>
 void UnorderedPairs<T>::addPair(const T* left, const T* right)
 {
-  if (!left || !right)
+  if (!left || !right) {
     return;
+  }
 
   const auto* less = left;
   const auto* greater = right;
 
-  if (less > greater)
+  if (less > greater) {
     std::swap(less, greater);
+  }
 
   // Call insert in case an entry for bodyNodeLess doesn't exist. If it doesn't
   // exist, it will be initialized with an empty set. If it does already exist,
@@ -94,14 +96,16 @@ void UnorderedPairs<T>::addPair(const T* left, const T* right)
 template <class T>
 void UnorderedPairs<T>::removePair(const T* left, const T* right)
 {
-  if (!left || !right)
+  if (!left || !right) {
     return;
+  }
 
   const auto* bodyNodeLess = left;
   const auto* bodyNodeGreater = right;
 
-  if (bodyNodeLess > bodyNodeGreater)
+  if (bodyNodeLess > bodyNodeGreater) {
     std::swap(bodyNodeLess, bodyNodeGreater);
+  }
 
   // Remove the pair only when it already exists
   const auto resultLeft = mList.find(bodyNodeLess);
@@ -110,8 +114,9 @@ void UnorderedPairs<T>::removePair(const T* left, const T* right)
     auto& associatedRights = resultLeft->second;
     associatedRights.erase(bodyNodeGreater);
 
-    if (associatedRights.empty())
+    if (associatedRights.empty()) {
       mList.erase(resultLeft);
+    }
   }
 }
 
@@ -129,16 +134,18 @@ bool UnorderedPairs<T>::contains(const T* left, const T* right) const
   const auto* less = left;
   const auto* greater = right;
 
-  if (less > greater)
+  if (less > greater) {
     std::swap(less, greater);
+  }
 
   const auto resultLeft = mList.find(less);
   const bool foundLeft = (resultLeft != mList.end());
   if (foundLeft) {
     auto& associatedRights = resultLeft->second;
 
-    if (associatedRights.contains(greater))
+    if (associatedRights.contains(greater)) {
       return true;
+    }
   }
 
   return false;

@@ -73,8 +73,9 @@ std::string trim(std::string_view str, std::string_view whitespaces)
 std::string trimLeft(std::string_view str, std::string_view whitespaces)
 {
   const auto startpos = str.find_first_not_of(whitespaces);
-  if (startpos == std::string_view::npos)
+  if (startpos == std::string_view::npos) {
     return std::string();
+  }
   return std::string(str.substr(startpos));
 }
 
@@ -82,8 +83,9 @@ std::string trimLeft(std::string_view str, std::string_view whitespaces)
 std::string trimRight(std::string_view str, std::string_view whitespaces)
 {
   const auto endpos = str.find_last_not_of(whitespaces);
-  if (endpos == std::string_view::npos)
+  if (endpos == std::string_view::npos) {
     return std::string();
+  }
   return std::string(str.substr(0, endpos + 1));
 }
 

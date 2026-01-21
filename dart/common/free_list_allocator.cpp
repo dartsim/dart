@@ -206,8 +206,9 @@ bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
       = mBaseAllocator.allocate(sizeToAllocate + sizeof(MemoryBlockHeader));
 
   // Return false if failed to allocate
-  if (memory == nullptr)
+  if (memory == nullptr) {
     return false;
+  }
 
   // Construct the memory block header, linking the current block as the next
   // block

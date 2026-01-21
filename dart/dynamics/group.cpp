@@ -280,8 +280,9 @@ bool Group::addComponent(BodyNode* _bn, bool _warning)
 
   added |= addBodyNode(_bn, false);
 
-  for (std::size_t i = 0; i < _bn->getParentJoint()->getNumDofs(); ++i)
+  for (std::size_t i = 0; i < _bn->getParentJoint()->getNumDofs(); ++i) {
     added |= addDof(_bn->getParentJoint()->getDof(i), false);
+  }
 
   if (_warning && !added) {
     DART_WARN(
@@ -301,8 +302,9 @@ bool Group::addComponent(BodyNode* _bn, bool _warning)
 bool Group::addComponents(std::span<BodyNode* const> bodyNodes, bool warning)
 {
   bool added = false;
-  for (BodyNode* bn : bodyNodes)
+  for (BodyNode* bn : bodyNodes) {
     added |= addComponent(bn, warning);
+  }
 
   return added;
 }
@@ -326,8 +328,9 @@ bool Group::removeComponent(BodyNode* _bn, bool _warning)
 
   removed |= removeBodyNode(_bn, false);
 
-  for (std::size_t i = 0; i < _bn->getParentJoint()->getNumDofs(); ++i)
+  for (std::size_t i = 0; i < _bn->getParentJoint()->getNumDofs(); ++i) {
     removed |= removeDof(_bn->getParentJoint()->getDof(i), false);
+  }
 
   if (_warning && !removed) {
     DART_WARN(
@@ -347,8 +350,9 @@ bool Group::removeComponent(BodyNode* _bn, bool _warning)
 bool Group::removeComponents(std::span<BodyNode* const> bodyNodes, bool warning)
 {
   bool removed = false;
-  for (BodyNode* bn : bodyNodes)
+  for (BodyNode* bn : bodyNodes) {
     removed |= removeComponent(bn, warning);
+  }
 
   return removed;
 }
@@ -390,8 +394,9 @@ bool Group::addBodyNode(BodyNode* _bn, bool _warning)
 bool Group::addBodyNodes(std::span<BodyNode* const> bodyNodes, bool warning)
 {
   bool added = false;
-  for (BodyNode* bn : bodyNodes)
+  for (BodyNode* bn : bodyNodes) {
     added |= addBodyNode(bn, warning);
+  }
 
   return added;
 }
@@ -433,8 +438,9 @@ bool Group::removeBodyNode(BodyNode* _bn, bool _warning)
 bool Group::removeBodyNodes(std::span<BodyNode* const> bodyNodes, bool warning)
 {
   bool removed = false;
-  for (BodyNode* bn : bodyNodes)
+  for (BodyNode* bn : bodyNodes) {
     removed |= removeBodyNode(bn, warning);
+  }
 
   return removed;
 }
@@ -461,8 +467,9 @@ bool Group::addJoint(Joint* _joint, bool _addDofs, bool _warning)
   }
 
   if (_addDofs) {
-    for (std::size_t i = 0; i < _joint->getNumDofs(); ++i)
+    for (std::size_t i = 0; i < _joint->getNumDofs(); ++i) {
       added |= addDof(_joint->getDof(i), false, false);
+    }
   }
 
   if (!added && _warning) {
@@ -494,8 +501,9 @@ bool Group::addJoints(
     std::span<Joint* const> joints, bool addDofs, bool warning)
 {
   bool added = false;
-  for (Joint* joint : joints)
+  for (Joint* joint : joints) {
     added |= addJoint(joint, addDofs, warning);
+  }
 
   return added;
 }
@@ -525,8 +533,9 @@ bool Group::removeJoint(Joint* _joint, bool _removeDofs, bool _warning)
   }
 
   if (_removeDofs) {
-    for (std::size_t i = 0; i < _joint->getNumDofs(); ++i)
+    for (std::size_t i = 0; i < _joint->getNumDofs(); ++i) {
       removed |= removeDof(_joint->getDof(i), false, false);
+    }
   }
 
   if (!removed && _warning) {
@@ -558,8 +567,9 @@ bool Group::removeJoints(
     std::span<Joint* const> joints, bool removeDofs, bool warning)
 {
   bool removed = false;
-  for (Joint* joint : joints)
+  for (Joint* joint : joints) {
     removed |= removeJoint(joint, removeDofs, warning);
+  }
 
   return removed;
 }
@@ -585,8 +595,9 @@ bool Group::addDof(DegreeOfFreedom* _dof, bool _addJoint, bool _warning)
     added = true;
   }
 
-  if (_addJoint)
+  if (_addJoint) {
     added |= addJoint(_dof->getJoint(), false, false);
+  }
 
   if (!added && _warning) {
     if (_addJoint) {
@@ -618,8 +629,9 @@ bool Group::addDofs(
     std::span<DegreeOfFreedom* const> dofs, bool addJoint, bool warning)
 {
   bool added = false;
-  for (DegreeOfFreedom* dof : dofs)
+  for (DegreeOfFreedom* dof : dofs) {
     added |= addDof(dof, addJoint, warning);
+  }
 
   return added;
 }
@@ -663,8 +675,9 @@ bool Group::removeDof(DegreeOfFreedom* _dof, bool _cleanupJoint, bool _warning)
     }
 
     // Remove the Joint if none of its DOFs remain
-    if (performCleanup)
+    if (performCleanup) {
       removed |= removeJoint(joint, false, false);
+    }
   }
 
   if (!removed && _warning) {
@@ -696,8 +709,9 @@ bool Group::removeDofs(
     std::span<DegreeOfFreedom* const> dofs, bool cleanupJoint, bool warning)
 {
   bool removed = false;
-  for (DegreeOfFreedom* dof : dofs)
+  for (DegreeOfFreedom* dof : dofs) {
     removed |= removeDof(dof, cleanupJoint, warning);
+  }
 
   return removed;
 }
@@ -716,12 +730,14 @@ Group::Group(
     for (std::size_t i = 0; i < bodyNodes.size(); ++i) {
       Joint* joint = bodyNodes[i]->getParentJoint();
 
-      if (includeJoints)
+      if (includeJoints) {
         addJoint(joint, false);
+      }
 
       if (includeDofs) {
-        for (std::size_t j = 0; j < joint->getNumDofs(); ++j)
+        for (std::size_t j = 0; j < joint->getNumDofs(); ++j) {
           addDof(joint->getDof(j));
+        }
       }
     }
   }
@@ -751,14 +767,17 @@ Group::Group(const std::string& _name, const MetaSkeletonPtr& _metaSkeleton)
   setName(_name);
 
   if (_metaSkeleton) {
-    for (std::size_t i = 0; i < _metaSkeleton->getNumBodyNodes(); ++i)
+    for (std::size_t i = 0; i < _metaSkeleton->getNumBodyNodes(); ++i) {
       addBodyNode(_metaSkeleton->getBodyNode(i));
+    }
 
-    for (std::size_t i = 0; i < _metaSkeleton->getNumJoints(); ++i)
+    for (std::size_t i = 0; i < _metaSkeleton->getNumJoints(); ++i) {
       addJoint(_metaSkeleton->getJoint(i), false);
+    }
 
-    for (std::size_t i = 0; i < _metaSkeleton->getNumDofs(); ++i)
+    for (std::size_t i = 0; i < _metaSkeleton->getNumDofs(); ++i) {
       addDof(_metaSkeleton->getDof(i), false);
+    }
   }
 }
 

@@ -276,9 +276,11 @@ TEST(LieGroupOperators, ExponentialMappings)
     Exp_s_2.topRightCorner<3, 1>() = P * s.tail<3>();
 
     //
-    for (int i = 0; i < 4; ++i)
-      for (int j = 0; j < 4; ++j)
+    for (int i = 0; i < 4; ++i) {
+      for (int j = 0; j < 4; ++j) {
         EXPECT_NEAR(Exp_s(i, j), Exp_s_2(i, j), LIE_GROUP_OPT_TOL);
+      }
+    }
   }
 
   // ExpAngular
@@ -308,9 +310,11 @@ TEST(LieGroupOperators, ExponentialMappings)
     Exp_s_2.topRightCorner<3, 1>() = P * s.tail<3>();
 
     //
-    for (int i = 0; i < 4; ++i)
-      for (int j = 0; j < 4; ++j)
+    for (int i = 0; i < 4; ++i) {
+      for (int j = 0; j < 4; ++j) {
         EXPECT_NEAR(Exp_s(i, j), Exp_s_2(i, j), LIE_GROUP_OPT_TOL);
+      }
+    }
   }
 
   // ExpLinear
@@ -340,9 +344,11 @@ TEST(LieGroupOperators, ExponentialMappings)
     Exp_s_2.topRightCorner<3, 1>() = P * s.tail<3>();
 
     //
-    for (int i = 0; i < 4; ++i)
-      for (int j = 0; j < 4; ++j)
+    for (int i = 0; i < 4; ++i) {
+      for (int j = 0; j < 4; ++j) {
         EXPECT_NEAR(Exp_s(i, j), Exp_s_2(i, j), LIE_GROUP_OPT_TOL);
+      }
+    }
   }
   // Exponential mapping test with high values
   int numExpTests = 100;
@@ -352,8 +358,9 @@ TEST(LieGroupOperators, ExponentialMappings)
   for (int idxTest = 0; idxTest < numExpTests; ++idxTest) {
     Eigen::Vector3d randomS = Eigen::Vector3d::Zero();
 
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < 3; ++i) {
       randomS[i] = Random::uniform(min, max);
+    }
 
     Eigen::Isometry3d T = math::expAngular(randomS);
     EXPECT_TRUE(math::verifyTransform(T));
@@ -362,8 +369,9 @@ TEST(LieGroupOperators, ExponentialMappings)
   for (int idxTest = 0; idxTest < numExpTests; ++idxTest) {
     Eigen::Vector6d randomS = Eigen::Vector6d::Zero();
 
-    for (int i = 0; i < 6; ++i)
+    for (int i = 0; i < 6; ++i) {
       randomS[i] = Random::uniform(min, max);
+    }
 
     Eigen::Isometry3d T = math::expMap(randomS);
     EXPECT_TRUE(math::verifyTransform(T));
@@ -388,8 +396,9 @@ TEST(LieGroupOperators, AdjointMappings)
         = T.matrix() * toMatrixForm(V) * T.inverse().matrix();
     Eigen::Vector6d T_V_InvT_se3 = fromMatrixForm(T_V_InvT);
 
-    for (int j = 0; j < 6; ++j)
+    for (int j = 0; j < 6; ++j) {
       EXPECT_NEAR(AdTV(j), T_V_InvT_se3(j), LIE_GROUP_OPT_TOL);
+    }
 
     // Ad(T, V) = [R 0; [p]R R] * V
     Eigen::Matrix6d AdTMatrix = Eigen::Matrix6d::Zero();
@@ -398,8 +407,9 @@ TEST(LieGroupOperators, AdjointMappings)
     AdTMatrix.bottomLeftCorner<3, 3>()
         = math::makeSkewSymmetric(T.translation()) * T.linear();
     Eigen::Vector6d AdTMatrix_V = AdTMatrix * V;
-    for (int j = 0; j < 6; ++j)
+    for (int j = 0; j < 6; ++j) {
       EXPECT_NEAR(AdTV(j), AdTMatrix_V(j), LIE_GROUP_OPT_TOL);
+    }
   }
 
   // AdR == AdT([R 0; 0 1], V)
@@ -413,8 +423,9 @@ TEST(LieGroupOperators, AdjointMappings)
     Eigen::Vector6d AdTV = AdT(R, V);
     Eigen::Vector6d AdRV = AdR(T, V);
 
-    for (int j = 0; j < 6; ++j)
+    for (int j = 0; j < 6; ++j) {
       EXPECT_NEAR(AdTV(j), AdRV(j), LIE_GROUP_OPT_TOL);
+    }
   }
 
   // AdTAngular == AdT(T, se3(w, 0))
@@ -428,8 +439,9 @@ TEST(LieGroupOperators, AdjointMappings)
     Eigen::Vector6d AdTV = AdT(T, V);
     Eigen::Vector6d AdTAng = AdTAngular(T, w);
 
-    for (int j = 0; j < 6; ++j)
+    for (int j = 0; j < 6; ++j) {
       EXPECT_NEAR(AdTV(j), AdTAng(j), LIE_GROUP_OPT_TOL);
+    }
   }
 
   // AdTLinear == AdT(T, se3(w, 0))
@@ -443,8 +455,9 @@ TEST(LieGroupOperators, AdjointMappings)
     Eigen::Vector6d AdTV = AdT(T, V);
     Eigen::Vector6d AdTLin = AdTLinear(T, v);
 
-    for (int j = 0; j < 6; ++j)
+    for (int j = 0; j < 6; ++j) {
       EXPECT_NEAR(AdTV(j), AdTLin(j), LIE_GROUP_OPT_TOL);
+    }
   }
 
   // AdTJac
@@ -458,8 +471,9 @@ TEST(LieGroupOperators, AdjointMappings)
     Eigen::Vector6d AdTV = AdT(T, V);
     Eigen::Vector6d AdTLin = AdTLinear(T, v);
 
-    for (int j = 0; j < 6; ++j)
+    for (int j = 0; j < 6; ++j) {
       EXPECT_NEAR(AdTV(j), AdTLin(j), LIE_GROUP_OPT_TOL);
+    }
   }
 
   // AdInvT
@@ -472,8 +486,9 @@ TEST(LieGroupOperators, AdjointMappings)
     Eigen::Vector6d Ad_InvT = AdT(InvT, V);
     Eigen::Vector6d AdInv_T = AdInvT(T, V);
 
-    for (int j = 0; j < 6; ++j)
+    for (int j = 0; j < 6; ++j) {
       EXPECT_NEAR(Ad_InvT(j), AdInv_T(j), LIE_GROUP_OPT_TOL);
+    }
   }
 
   // AdInvRLinear
@@ -489,8 +504,9 @@ TEST(LieGroupOperators, AdjointMappings)
     Eigen::Vector6d AdT_ = AdT(R.inverse(), V);
     Eigen::Vector6d AdInvRLinear_ = AdInvRLinear(T, v);
 
-    for (int j = 0; j < 6; ++j)
+    for (int j = 0; j < 6; ++j) {
       EXPECT_NEAR(AdT_(j), AdInvRLinear_(j), LIE_GROUP_OPT_TOL);
+    }
   }
 
   // dAdT
@@ -508,8 +524,9 @@ TEST(LieGroupOperators, AdjointMappings)
     AdTMatrix.bottomLeftCorner<3, 3>()
         = math::makeSkewSymmetric(T.translation()) * T.linear();
     Eigen::Vector6d AdTTransMatrix_V = AdTMatrix.transpose() * F;
-    for (int j = 0; j < 6; ++j)
+    for (int j = 0; j < 6; ++j) {
       EXPECT_NEAR(dAdTF(j), AdTTransMatrix_V(j), LIE_GROUP_OPT_TOL);
+    }
   }
 
   // dAdInvT
@@ -524,8 +541,9 @@ TEST(LieGroupOperators, AdjointMappings)
     //
     Eigen::Vector6d dAd_InvTF = dAdT(InvT, F);
 
-    for (int j = 0; j < 6; ++j)
+    for (int j = 0; j < 6; ++j) {
       EXPECT_NEAR(dAdInvT_F(j), dAd_InvTF(j), LIE_GROUP_OPT_TOL);
+    }
 
     // dAd(T, F) = [R 0; [p]R R]^T * F
     Eigen::Matrix6d AdInvTMatrix = Eigen::Matrix6d::Zero();
@@ -534,8 +552,9 @@ TEST(LieGroupOperators, AdjointMappings)
     AdInvTMatrix.bottomLeftCorner<3, 3>()
         = math::makeSkewSymmetric(InvT.translation()) * InvT.linear();
     Eigen::Vector6d AdInvTTransMatrix_V = AdInvTMatrix.transpose() * F;
-    for (int j = 0; j < 6; ++j)
+    for (int j = 0; j < 6; ++j) {
       EXPECT_NEAR(dAdInvT_F(j), AdInvTTransMatrix_V(j), LIE_GROUP_OPT_TOL);
+    }
   }
 
   // dAdInvR
@@ -552,8 +571,9 @@ TEST(LieGroupOperators, AdjointMappings)
     //
     Eigen::Vector6d dAd_InvTF = dAdT(InvR, F);
 
-    for (int j = 0; j < 6; ++j)
+    for (int j = 0; j < 6; ++j) {
       EXPECT_NEAR(dAdInvR_F(j), dAd_InvTF(j), LIE_GROUP_OPT_TOL);
+    }
   }
 
   // ad
@@ -570,8 +590,9 @@ TEST(LieGroupOperators, AdjointMappings)
     adV_Matrix.bottomLeftCorner<3, 3>() = math::makeSkewSymmetric(V.tail<3>());
     Eigen::Vector6d adV_Matrix_W = adV_Matrix * W;
 
-    for (int j = 0; j < 6; ++j)
+    for (int j = 0; j < 6; ++j) {
       EXPECT_NEAR(ad_V_W(j), adV_Matrix_W(j), LIE_GROUP_OPT_TOL);
+    }
   }
 
   // dad
@@ -589,7 +610,8 @@ TEST(LieGroupOperators, AdjointMappings)
     dadV_Matrix.bottomLeftCorner<3, 3>() = math::makeSkewSymmetric(V.tail<3>());
     Eigen::Vector6d dadV_Matrix_F = dadV_Matrix.transpose() * F;
 
-    for (int j = 0; j < 6; ++j)
+    for (int j = 0; j < 6; ++j) {
       EXPECT_NEAR(dad_V_F(j), dadV_Matrix_F(j), LIE_GROUP_OPT_TOL);
+    }
   }
 }

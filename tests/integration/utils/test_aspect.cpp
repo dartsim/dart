@@ -71,11 +71,13 @@ struct EmbeddedStateData
 
   bool operator==(const EmbeddedStateData& other) const
   {
-    if (other.d != d)
+    if (other.d != d) {
       return false;
+    }
 
-    if (other.i != i)
+    if (other.i != i) {
       return false;
+    }
 
     return true;
   }
@@ -102,11 +104,13 @@ struct EmbeddedPropertiesData
 
   bool operator==(const EmbeddedPropertiesData& other) const
   {
-    if (other.b != b)
+    if (other.b != b) {
       return false;
+    }
 
-    if (other.f != f)
+    if (other.f != f) {
       return false;
+    }
 
     return true;
   }
@@ -379,8 +383,9 @@ static std::size_t findLifecycleEventIndex(
 {
   for (std::size_t i = 0; i < lifecycleEvents.size(); ++i) {
     const auto& event = lifecycleEvents[i];
-    if (event.tag == tag && event.id == id && event.type == type)
+    if (event.tag == tag && event.id == id && event.type == type) {
       return i;
+    }
   }
 
   return lifecycleEvents.size();

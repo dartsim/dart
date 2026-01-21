@@ -239,8 +239,9 @@ void Joints::kinematicsTest(const typename JointType::Properties& _properties)
     joint->setPositions(q);
     joint->setVelocities(dq);
 
-    if (dof == 0)
+    if (dof == 0) {
       return;
+    }
 
     Eigen::Isometry3d T = joint->getRelativeTransform();
     Jacobian J = joint->getRelativeJacobian();
@@ -291,8 +292,9 @@ void Joints::kinematicsTest(const typename JointType::Properties& _properties)
     }
 
     for (int i = 0; i < dof; ++i) {
-      for (int j = 0; j < 6; ++j)
+      for (int j = 0; j < 6; ++j) {
         EXPECT_NEAR(J.col(i)(j), numericJ.col(i)(j), JOINT_TOL);
+      }
     }
 
     //--------------------------------------------------------------------------
@@ -320,8 +322,9 @@ void Joints::kinematicsTest(const typename JointType::Properties& _properties)
     }
 
     for (int i = 0; i < dof; ++i) {
-      for (int j = 0; j < 6; ++j)
+      for (int j = 0; j < 6; ++j) {
         EXPECT_NEAR(dJ.col(i)(j), numeric_dJ.col(i)(j), JOINT_TOL);
+      }
     }
   }
 
@@ -330,13 +333,15 @@ void Joints::kinematicsTest(const typename JointType::Properties& _properties)
   double posMax = +1e+64;
 
   for (int idxTest = 0; idxTest < numTests; ++idxTest) {
-    for (int i = 0; i < dof; ++i)
+    for (int i = 0; i < dof; ++i) {
       q(i) = Random::uniform(posMin, posMax);
+    }
 
     skeleton->setPositions(q);
 
-    if (joint->getNumDofs() == 0)
+    if (joint->getNumDofs() == 0) {
       return;
+    }
 
     Eigen::Isometry3d T = joint->getRelativeTransform();
     EXPECT_TRUE(math::verifyTransform(T));
@@ -911,8 +916,9 @@ TEST_F(Joints, JointCoulombFriction)
   timeSteps[1] = 1e-3;
   timeSteps[2] = 1e-4;
 
-  for (auto timeStep : timeSteps)
+  for (auto timeStep : timeSteps) {
     testJointCoulombFrictionForce(timeStep);
+  }
 }
 
 //==============================================================================
@@ -1086,8 +1092,9 @@ void testServoMotor()
   joints[6]->setForceLowerLimit(0, -inf);
   joints[6]->setCoulombFriction(0, inf);
 
-  for (auto pendulum : pendulums)
+  for (auto pendulum : pendulums) {
     world->addSkeleton(pendulum);
+  }
 
 #if !defined(NDEBUG)
   double simTime = 0.2;
@@ -1114,8 +1121,9 @@ void testServoMotor()
     world->step();
 
     std::vector<double> jointVels(numPendulums);
-    for (std::size_t j = 0; j < numPendulums; ++j)
+    for (std::size_t j = 0; j < numPendulums; ++j) {
       jointVels[j] = joints[j]->getVelocity(0);
+    }
 
     maxAbsJointVel5 = std::max(maxAbsJointVel5, std::abs(jointVels[5]));
 
@@ -1310,8 +1318,9 @@ void testMimicCouplerJoint()
   double initialReferencePosition = joints[0]->getPosition(0);
   double initialError = joints[1]->getPosition(0) - joints[0]->getPosition(0);
 
-  for (int i = 0; i < 400; ++i)
+  for (int i = 0; i < 400; ++i) {
     world->step();
+  }
 
   double finalError = joints[1]->getPosition(0) - joints[0]->getPosition(0);
 
@@ -1640,8 +1649,9 @@ template <int N>
 Eigen::Matrix<double, N, 1> random_vec(double limit = 100)
 {
   Eigen::Matrix<double, N, 1> v;
-  for (std::size_t i = 0; i < N; ++i)
+  for (std::size_t i = 0; i < N; ++i) {
     v[i] = math::Random::uniform(-std::abs(limit), std::abs(limit));
+  }
   return v;
 }
 
@@ -1656,8 +1666,9 @@ Eigen::Isometry3d random_transform(
   tf.setIdentity();
   tf.translate(r);
 
-  if (theta.norm() > 0)
+  if (theta.norm() > 0) {
     tf.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
+  }
 
   return tf;
 }
@@ -2766,8 +2777,9 @@ TEST_F(Joints, FreeJointSphericalInertiaConstantWorldTwistLongHorizon)
   const double energy0 = skel->computeKineticEnergy();
 
   const std::size_t numSteps = 1000;
-  for (std::size_t i = 0; i < numSteps; ++i)
+  for (std::size_t i = 0; i < numSteps; ++i) {
     world->step();
+  }
 
   const double t = dt * static_cast<double>(numSteps);
 
@@ -2939,10 +2951,12 @@ void testCoMJacobianSignConsistency()
   EXPECT_NE(servoPendulum, nullptr);
   EXPECT_NE(velocityPendulum, nullptr);
 
-  for (std::size_t i = 0; i < servoPendulum->getNumBodyNodes(); ++i)
+  for (std::size_t i = 0; i < servoPendulum->getNumBodyNodes(); ++i) {
     servoPendulum->getBodyNode(i)->setCollidable(false);
-  for (std::size_t i = 0; i < velocityPendulum->getNumBodyNodes(); ++i)
+  }
+  for (std::size_t i = 0; i < velocityPendulum->getNumBodyNodes(); ++i) {
     velocityPendulum->getBodyNode(i)->setCollidable(false);
+  }
 
   // Configure joints
   double sufficient_force = 1e+5;

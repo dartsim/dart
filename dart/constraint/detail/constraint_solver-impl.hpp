@@ -45,8 +45,9 @@ void ConstraintSolver::eachConstraint(Func func) const
                     std::invoke_result_t<Func, const ConstraintBase*>,
                     bool>) {
     for (auto i = 0u; i < getNumConstraints(); ++i) {
-      if (!func(getConstraint(i)))
+      if (!func(getConstraint(i))) {
         return;
+      }
     }
   } else {
     for (auto i = 0u; i < getNumConstraints(); ++i) {
@@ -63,8 +64,9 @@ void ConstraintSolver::eachConstraint(Func func)
                     std::invoke_result_t<Func, ConstraintBase*>,
                     bool>) {
     for (auto i = 0u; i < getNumConstraints(); ++i) {
-      if (!func(getConstraint(i)))
+      if (!func(getConstraint(i))) {
         return;
+      }
     }
   } else {
     for (auto i = 0u; i < getNumConstraints(); ++i) {

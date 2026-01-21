@@ -95,8 +95,9 @@ TEST(FileInfoWorld, Basic)
   EXPECT_EQ(recording1->getNumSkeletons(), recording2->getNumSkeletons());
 
   // Check number of dofs of the skeletons
-  for (std::size_t i = 0; i < numSkeletons; ++i)
+  for (std::size_t i = 0; i < numSkeletons; ++i) {
     EXPECT_EQ(recording1->getNumDofs(i), recording2->getNumDofs(i));
+  }
 
   // Check generalized positions and contact info
   for (std::size_t i = 0; i < numFrames; ++i) {

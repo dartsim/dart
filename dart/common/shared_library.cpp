@@ -78,8 +78,9 @@ SharedLibrary::SharedLibrary(
 //==============================================================================
 SharedLibrary::~SharedLibrary()
 {
-  if (!isValid())
+  if (!isValid()) {
     return;
+  }
 
   DART_ERROR_IF(
       DYNLIB_UNLOAD(mInstance),
@@ -109,8 +110,9 @@ bool SharedLibrary::isValid() const
 //==============================================================================
 void* SharedLibrary::getSymbol(std::string_view symbolName) const
 {
-  if (!isValid())
+  if (!isValid()) {
     return nullptr;
+  }
 
   const std::string symbolNameString(symbolName);
   auto symbol = DYNLIB_GETSYM(mInstance, symbolNameString.c_str());

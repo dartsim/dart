@@ -349,8 +349,9 @@ template <
     DataT (*getData)(const OwnerT*)>
 auto ProxyCloneable<Base, OwnerT, DataT, setData, getData>::get() const -> Data
 {
-  if (mOwner)
+  if (mOwner) {
     return (*getData)(mOwner);
+  }
 
   return *mData;
 }
@@ -488,19 +489,21 @@ void CloneableMap<MapType>::copy(const MapType& otherMap, bool merge)
     if (mMap.end() == receiver) {
       // If we've reached the end of this CloneableMapHolder's map, then we
       // should just add each entry
-      if (!merge || sender->second)
+      if (!merge || sender->second) {
         mMap[sender->first]
             = sender->second ? sender->second->clone() : nullptr;
+      }
       ++sender;
     } else if (receiver->first == sender->first) {
       if (sender->second) {
         // If the sender has an object, we should copy it.
-        if (receiver->second)
+        if (receiver->second) {
           // We should copy instead of cloning the incoming object when possible
           // so we can avoid the memory allocation overhead of cloning.
           receiver->second->copy(*sender->second);
-        else
+        } else {
           receiver->second = sender->second->clone();
+        }
       } else if (!merge) {
         // If the sender has no object, we should clear this one.
         receiver->second = nullptr;
@@ -598,8 +601,9 @@ std::unique_ptr<CloneableVector<T>> CloneableVector<T>::clone() const
   std::vector<T> clonedVector;
   clonedVector.reserve(mVector.size());
 
-  for (const T& entry : mVector)
+  for (const T& entry : mVector) {
     clonedVector.push_back(entry->clone());
+  }
 
   return std::make_unique<CloneableVector<T>>(std::move(clonedVector));
 }
@@ -612,12 +616,13 @@ void CloneableVector<T>::copy(const CloneableVector<T>& anotherVector)
   mVector.resize(other.size());
 
   for (std::size_t i = 0; i < other.size(); ++i) {
-    if (mVector[i] && other[i])
+    if (mVector[i] && other[i]) {
       mVector[i]->copy(*other[i]);
-    else if (other[i])
+    } else if (other[i]) {
       mVector[i] = other[i]->clone();
-    else
+    } else {
       mVector[i] = nullptr;
+    }
   }
 }
 

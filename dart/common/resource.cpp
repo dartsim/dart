@@ -48,8 +48,9 @@ std::string Resource::readAll()
   const auto result = read(&content.front(), content.size(), 1);
   // Safe because std::string is guaranteed to be contiguous in C++11.
 
-  if (result != 1)
+  if (result != 1) {
     throw std::runtime_error("Failed reading data from a resource.");
+  }
 
   return content;
 }

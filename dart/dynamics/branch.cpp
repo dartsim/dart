@@ -130,13 +130,15 @@ MetaSkeletonPtr Branch::cloneMetaSkeleton(const std::string& cloneName) const
 //==============================================================================
 bool Branch::isStillBranch() const
 {
-  if (!isAssembled())
+  if (!isAssembled()) {
     return false;
+  }
 
   for (std::size_t i = 0; i < mBodyNodes.size(); ++i) {
     BodyNode* bn = mBodyNodes[i];
-    if (bn->getNumChildBodyNodes() != mNumChildNodes[i])
+    if (bn->getNumChildBodyNodes() != mNumChildNodes[i]) {
       return false;
+    }
   }
 
   return true;

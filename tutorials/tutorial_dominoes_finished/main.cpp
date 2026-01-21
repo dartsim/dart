@@ -121,8 +121,9 @@ public:
   /// Coriolis forces
   void setPDForces()
   {
-    if (nullptr == mManipulator)
+    if (nullptr == mManipulator) {
       return;
+    }
 
     // Compute the joint position error
     // snippet:cpp-dominoes-lesson2c-state-start
@@ -164,8 +165,9 @@ public:
   /// Compute an operational space controller to push on the first domino
   void setOperationalSpaceForces()
   {
-    if (nullptr == mManipulator)
+    if (nullptr == mManipulator) {
       return;
+    }
 
     // snippet:cpp-dominoes-lesson3b-mass-start
     const Eigen::MatrixXd& M = mManipulator->getMassMatrix();

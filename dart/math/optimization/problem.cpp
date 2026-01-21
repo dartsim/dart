@@ -49,8 +49,9 @@ template <typename T>
 static T getVectorObjectIfAvailable(std::size_t _idx, std::span<const T> _vec)
 {
   // TODO: Should we have an out-of-bounds assertion or throw here?
-  if (_idx < _vec.size())
+  if (_idx < _vec.size()) {
     return _vec[_idx];
+  }
 
   return nullptr;
 }
@@ -128,20 +129,22 @@ void Problem::addSeed(const Eigen::VectorXd& _seed)
 //==============================================================================
 Eigen::VectorXd& Problem::getSeed(std::size_t _index)
 {
-  if (_index < mSeeds.size())
+  if (_index < mSeeds.size()) {
     return mSeeds[_index];
+  }
 
-  if (mSeeds.size() == 0)
+  if (mSeeds.size() == 0) {
     DART_WARN(
         "Requested seed at index [{}], but there are currently no seeds. "
         "Returning the problem's initial guess instead.",
         _index);
-  else
+  } else {
     DART_WARN(
         "Requested seed at index [{}], but the current max index is [{}]. "
         "Returning the Problem's initial guess instead.",
         _index,
         mSeeds.size() - 1);
+  }
 
   return mInitialGuess;
 }
