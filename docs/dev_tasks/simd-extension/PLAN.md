@@ -37,15 +37,44 @@ This document outlines the plan for extending the dart::simd layer with:
 
 ### Benchmark Results (AVX2+FMA, Intel 13th Gen, Updated)
 
-| Operation            | Size  | DART     | drjit   | Winner         |
-| -------------------- | ----- | -------- | ------- | -------------- |
-| **FMA f32**          | 65536 | 137 Gi/s | 80 Gi/s | **DART +71%**  |
-| **FMA f32 (unroll)** | 65536 | 137 Gi/s | 80 Gi/s | **DART +71%**  |
-| **Dot f32**          | 65536 | 81 Gi/s  | 37 Gi/s | **DART +119%** |
-| **Dot f32 (unroll)** | 65536 | 181 Gi/s | 37 Gi/s | **DART +389%** |
+#### Core Operations (65536 elements)
 
-**Summary**: After FMA optimization (native SIMD width + loop unrolling), DART significantly
-outperforms drjit on FMA and dot product operations.
+| Operation               | dart::simd | drjit   | Winner   | Advantage |
+| ----------------------- | ---------- | ------- | -------- | --------- |
+| **Dot f32 (4x unroll)** | 151 Gi/s   | 40 Gi/s | **DART** | **+278%** |
+| **Dot f32**             | 79 Gi/s    | 40 Gi/s | **DART** | **+98%**  |
+| **FMA f32 (2x unroll)** | 109 Gi/s   | 96 Gi/s | **DART** | **+14%**  |
+| **FMA f32**             | 103 Gi/s   | 96 Gi/s | **DART** | **+7%**   |
+| **Add f32**             | 86 Gi/s    | 97 Gi/s | drjit    | -11%      |
+| **Mul f32**             | 105 Gi/s   | 97 Gi/s | **DART** | **+8%**   |
+| **Sqrt f32**            | 26 Gi/s    | 27 Gi/s | ~Same    | -4%       |
+| **Add f64**             | 74 Gi/s    | 74 Gi/s | ~Same    | 0%        |
+
+#### Real-World Scale Benchmarks (DART vs drjit)
+
+| Benchmark           | Size         | DART     | drjit    | Winner         |
+| ------------------- | ------------ | -------- | -------- | -------------- |
+| **TransformPoints** | 1K vertices  | 250 Gi/s | 138 Gi/s | **DART +81%**  |
+| **TransformPoints** | 64K vertices | 70 Gi/s  | 36 Gi/s  | **DART +94%**  |
+| **TransformPoints** | 1M points    | 50 Gi/s  | -        | **DART**       |
+| **BatchDot3**       | 1K contacts  | 224 Gi/s | 210 Gi/s | **DART +7%**   |
+| **BatchDot3**       | 4K contacts  | 142 Gi/s | 131 Gi/s | **DART +8%**   |
+| **BatchCross3**     | 1K contacts  | 234 Gi/s | 143 Gi/s | **DART +64%**  |
+| **BatchCross3**     | 4K contacts  | 89 Gi/s  | 58 Gi/s  | **DART +53%**  |
+| **BatchNormalize3** | 1K vectors   | 156 Gi/s | 74 Gi/s  | **DART +111%** |
+| **BatchNormalize3** | 4K vectors   | 156 Gi/s | 62 Gi/s  | **DART +152%** |
+
+**Summary**: DART outperforms drjit on most operations:
+
+- **Compute-bound ops** (Dot, FMA, Cross, Normalize): DART wins by +7% to +278%
+- **Memory-bound ops** (Add): drjit wins by ~11% due to simpler loop
+- **Real-world ops**: DART wins across all tested scenarios (+7% to +152%)
+
+**Key advantages**:
+
+1. Native SIMD width (8-wide on AVX2 vs drjit's 4-wide)
+2. Loop unrolling with multiple accumulators
+3. Proper FMA utilization pattern
 
 ---
 

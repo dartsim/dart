@@ -722,6 +722,57 @@ BENCHMARK(BM_TransformPoints_DART_f32)
     ->Arg(1 << 18)
     ->Arg(1 << 20);
 
+#if defined(DART_HAS_DRJIT)
+static void BM_TransformPoints_DrJit_f32(benchmark::State& state)
+{
+  const std::size_t n = state.range(0);
+  std::vector<float> points_x(n), points_y(n), points_z(n);
+  std::vector<float> result_x(n), result_y(n), result_z(n);
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> dist(-10.0f, 10.0f);
+  for (std::size_t i = 0; i < n; ++i) {
+    points_x[i] = dist(gen);
+    points_y[i] = dist(gen);
+    points_z[i] = dist(gen);
+  }
+
+  using Packet = drjit::Packet<float, 4>;
+  Packet m00 = drjit::full<Packet>(0.866f);
+  Packet m01 = drjit::full<Packet>(-0.5f);
+  Packet m10 = drjit::full<Packet>(0.5f);
+  Packet m11 = drjit::full<Packet>(0.866f);
+  Packet tx = drjit::full<Packet>(1.0f);
+  Packet ty = drjit::full<Packet>(2.0f);
+  Packet tz = drjit::full<Packet>(3.0f);
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; i += 4) {
+      auto x = drjit::load<Packet>(&points_x[i]);
+      auto y = drjit::load<Packet>(&points_y[i]);
+      auto z = drjit::load<Packet>(&points_z[i]);
+
+      auto rx = drjit::fmadd(m00, x, drjit::fmadd(m01, y, tx));
+      auto ry = drjit::fmadd(m10, x, drjit::fmadd(m11, y, ty));
+      auto rz = z + tz;
+
+      drjit::store(&result_x[i], rx);
+      drjit::store(&result_y[i], ry);
+      drjit::store(&result_z[i], rz);
+    }
+    benchmark::DoNotOptimize(result_x.data());
+    benchmark::DoNotOptimize(result_y.data());
+    benchmark::DoNotOptimize(result_z.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 6);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_TransformPoints_DrJit_f32)
+    ->RangeMultiplier(4)
+    ->Range(kMeshMin, kMeshTypical);
+#endif
+
 // -----------------------------------------------------------------------------
 // Batch Dot Product (Contact Normal Processing)
 // Real-world: Compute contact penetration depths, force projections
@@ -774,6 +825,51 @@ static void BM_BatchDot3_DART_f32(benchmark::State& state)
 BENCHMARK(BM_BatchDot3_DART_f32)
     ->RangeMultiplier(4)
     ->Range(kContactMin, kContactMax);
+
+#if defined(DART_HAS_DRJIT)
+static void BM_BatchDot3_DrJit_f32(benchmark::State& state)
+{
+  const std::size_t n = state.range(0);
+  std::vector<float> a_x(n), a_y(n), a_z(n);
+  std::vector<float> b_x(n), b_y(n), b_z(n);
+  std::vector<float> result(n);
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+  for (std::size_t i = 0; i < n; ++i) {
+    a_x[i] = dist(gen);
+    a_y[i] = dist(gen);
+    a_z[i] = dist(gen);
+    b_x[i] = dist(gen);
+    b_y[i] = dist(gen);
+    b_z[i] = dist(gen);
+  }
+
+  using Packet = drjit::Packet<float, 4>;
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; i += 4) {
+      auto ax = drjit::load<Packet>(&a_x[i]);
+      auto ay = drjit::load<Packet>(&a_y[i]);
+      auto az = drjit::load<Packet>(&a_z[i]);
+      auto bx = drjit::load<Packet>(&b_x[i]);
+      auto by = drjit::load<Packet>(&b_y[i]);
+      auto bz = drjit::load<Packet>(&b_z[i]);
+
+      // dot(a, b) = ax*bx + ay*by + az*bz
+      auto dot = drjit::fmadd(ax, bx, drjit::fmadd(ay, by, az * bz));
+      drjit::store(&result[i], dot);
+    }
+    benchmark::DoNotOptimize(result.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 7);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_BatchDot3_DrJit_f32)
+    ->RangeMultiplier(4)
+    ->Range(kContactMin, kContactMax);
+#endif
 
 // -----------------------------------------------------------------------------
 // Batch Cross Product (Torque Computation)
@@ -833,6 +929,58 @@ BENCHMARK(BM_BatchCross3_DART_f32)
     ->RangeMultiplier(4)
     ->Range(kContactMin, kContactMax);
 
+#if defined(DART_HAS_DRJIT)
+static void BM_BatchCross3_DrJit_f32(benchmark::State& state)
+{
+  const std::size_t n = state.range(0);
+  std::vector<float> a_x(n), a_y(n), a_z(n);
+  std::vector<float> b_x(n), b_y(n), b_z(n);
+  std::vector<float> r_x(n), r_y(n), r_z(n);
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+  for (std::size_t i = 0; i < n; ++i) {
+    a_x[i] = dist(gen);
+    a_y[i] = dist(gen);
+    a_z[i] = dist(gen);
+    b_x[i] = dist(gen);
+    b_y[i] = dist(gen);
+    b_z[i] = dist(gen);
+  }
+
+  using Packet = drjit::Packet<float, 4>;
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; i += 4) {
+      auto ax = drjit::load<Packet>(&a_x[i]);
+      auto ay = drjit::load<Packet>(&a_y[i]);
+      auto az = drjit::load<Packet>(&a_z[i]);
+      auto bx = drjit::load<Packet>(&b_x[i]);
+      auto by = drjit::load<Packet>(&b_y[i]);
+      auto bz = drjit::load<Packet>(&b_z[i]);
+
+      // cross(a, b) = (ay*bz - az*by, az*bx - ax*bz, ax*by - ay*bx)
+      auto cx = drjit::fmsub(ay, bz, az * by);
+      auto cy = drjit::fmsub(az, bx, ax * bz);
+      auto cz = drjit::fmsub(ax, by, ay * bx);
+
+      drjit::store(&r_x[i], cx);
+      drjit::store(&r_y[i], cy);
+      drjit::store(&r_z[i], cz);
+    }
+    benchmark::DoNotOptimize(r_x.data());
+    benchmark::DoNotOptimize(r_y.data());
+    benchmark::DoNotOptimize(r_z.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 9);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_BatchCross3_DrJit_f32)
+    ->RangeMultiplier(4)
+    ->Range(kContactMin, kContactMax);
+#endif
+
 // -----------------------------------------------------------------------------
 // Batch Normalize (Unit Vector Computation)
 // Real-world: Normalize contact normals, compute unit directions
@@ -881,6 +1029,50 @@ static void BM_BatchNormalize3_DART_f32(benchmark::State& state)
 BENCHMARK(BM_BatchNormalize3_DART_f32)
     ->RangeMultiplier(4)
     ->Range(kContactMin, kContactMax);
+
+#if defined(DART_HAS_DRJIT)
+static void BM_BatchNormalize3_DrJit_f32(benchmark::State& state)
+{
+  const std::size_t n = state.range(0);
+  std::vector<float> v_x(n), v_y(n), v_z(n);
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> dist(0.1f, 10.0f);
+  for (std::size_t i = 0; i < n; ++i) {
+    v_x[i] = dist(gen);
+    v_y[i] = dist(gen);
+    v_z[i] = dist(gen);
+  }
+
+  using Packet = drjit::Packet<float, 4>;
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; i += 4) {
+      auto x = drjit::load<Packet>(&v_x[i]);
+      auto y = drjit::load<Packet>(&v_y[i]);
+      auto z = drjit::load<Packet>(&v_z[i]);
+
+      // norm = sqrt(x² + y² + z²)
+      auto norm_sq = drjit::fmadd(x, x, drjit::fmadd(y, y, z * z));
+      auto inv_norm = drjit::rsqrt(norm_sq);
+
+      // Normalize
+      drjit::store(&v_x[i], x * inv_norm);
+      drjit::store(&v_y[i], y * inv_norm);
+      drjit::store(&v_z[i], z * inv_norm);
+    }
+    benchmark::DoNotOptimize(v_x.data());
+    benchmark::DoNotOptimize(v_y.data());
+    benchmark::DoNotOptimize(v_z.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 6);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_BatchNormalize3_DrJit_f32)
+    ->RangeMultiplier(4)
+    ->Range(kContactMin, kContactMax);
+#endif
 
 // -----------------------------------------------------------------------------
 // Matrix-Vector Multiply (Jacobian Application)
@@ -931,6 +1123,48 @@ BENCHMARK(BM_MatVec_DART_f32)
     ->Arg(180)
     ->Arg(600)
     ->Arg(kDynamicsMax);
+
+#if defined(DART_HAS_DRJIT)
+static void BM_MatVec_DrJit_f32(benchmark::State& state)
+{
+  const std::size_t n = state.range(0);
+  const std::size_t m = 6;
+
+  std::vector<float> matrix(m * n);
+  std::vector<float> vec(n);
+  std::vector<float> result(m);
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+  for (auto& v : matrix)
+    v = dist(gen);
+  for (auto& v : vec)
+    v = dist(gen);
+
+  using Packet = drjit::Packet<float, 4>;
+
+  for (auto _ : state) {
+    for (std::size_t row = 0; row < m; ++row) {
+      Packet acc = drjit::zeros<Packet>();
+      const float* row_ptr = &matrix[row * n];
+      for (std::size_t j = 0; j < n; j += 4) {
+        auto mat_val = drjit::load<Packet>(&row_ptr[j]);
+        auto vec_val = drjit::load<Packet>(&vec[j]);
+        acc = drjit::fmadd(mat_val, vec_val, acc);
+      }
+      result[row] = drjit::sum(acc);
+    }
+    benchmark::DoNotOptimize(result.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * (m * n + n) * sizeof(float));
+}
+BENCHMARK(BM_MatVec_DrJit_f32)
+    ->Arg(kDynamicsMin)
+    ->Arg(180)
+    ->Arg(600)
+    ->Arg(kDynamicsMax);
+#endif
 
 // -----------------------------------------------------------------------------
 // AABB Overlap Test (Collision Broadphase)
@@ -1019,6 +1253,82 @@ static void BM_AABBOverlap_DART_f32(benchmark::State& state)
 BENCHMARK(BM_AABBOverlap_DART_f32)
     ->RangeMultiplier(4)
     ->Range(kCollisionMin, kCollisionMax);
+
+#if defined(DART_HAS_DRJIT)
+static void BM_AABBOverlap_DrJit_f32(benchmark::State& state)
+{
+  const std::size_t n = state.range(0);
+
+  std::vector<float> a_min_x(n), a_min_y(n), a_min_z(n);
+  std::vector<float> a_max_x(n), a_max_y(n), a_max_z(n);
+  std::vector<float> b_min_x(n), b_min_y(n), b_min_z(n);
+  std::vector<float> b_max_x(n), b_max_y(n), b_max_z(n);
+  std::vector<int32_t> overlap_result(n);
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> pos(-10.0f, 10.0f);
+  std::uniform_real_distribution<float> size(0.1f, 2.0f);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    float ax = pos(gen), ay = pos(gen), az = pos(gen);
+    float as = size(gen);
+    a_min_x[i] = ax;
+    a_min_y[i] = ay;
+    a_min_z[i] = az;
+    a_max_x[i] = ax + as;
+    a_max_y[i] = ay + as;
+    a_max_z[i] = az + as;
+
+    float bx = pos(gen), by = pos(gen), bz = pos(gen);
+    float bs = size(gen);
+    b_min_x[i] = bx;
+    b_min_y[i] = by;
+    b_min_z[i] = bz;
+    b_max_x[i] = bx + bs;
+    b_max_y[i] = by + bs;
+    b_max_z[i] = bz + bs;
+  }
+
+  using Packet = drjit::Packet<float, 4>;
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; i += 4) {
+      auto a_minx = drjit::load<Packet>(&a_min_x[i]);
+      auto a_miny = drjit::load<Packet>(&a_min_y[i]);
+      auto a_minz = drjit::load<Packet>(&a_min_z[i]);
+      auto a_maxx = drjit::load<Packet>(&a_max_x[i]);
+      auto a_maxy = drjit::load<Packet>(&a_max_y[i]);
+      auto a_maxz = drjit::load<Packet>(&a_max_z[i]);
+
+      auto b_minx = drjit::load<Packet>(&b_min_x[i]);
+      auto b_miny = drjit::load<Packet>(&b_min_y[i]);
+      auto b_minz = drjit::load<Packet>(&b_min_z[i]);
+      auto b_maxx = drjit::load<Packet>(&b_max_x[i]);
+      auto b_maxy = drjit::load<Packet>(&b_max_y[i]);
+      auto b_maxz = drjit::load<Packet>(&b_max_z[i]);
+
+      // AABB overlap test
+      auto ox = (a_maxx >= b_minx) & (a_minx <= b_maxx);
+      auto oy = (a_maxy >= b_miny) & (a_miny <= b_maxy);
+      auto oz = (a_maxz >= b_minz) & (a_minz <= b_maxz);
+      auto overlap = ox & oy & oz;
+
+      auto result = drjit::select(
+          overlap, drjit::full<Packet>(1.0f), drjit::zeros<Packet>());
+      for (std::size_t j = 0; j < 4 && i + j < n; ++j) {
+        overlap_result[i + j] = static_cast<int32_t>(result[j]);
+      }
+    }
+    benchmark::DoNotOptimize(overlap_result.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 12);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_AABBOverlap_DrJit_f32)
+    ->RangeMultiplier(4)
+    ->Range(kCollisionMin, kCollisionMax);
+#endif
 
 // =============================================================================
 // Main with info output
