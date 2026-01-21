@@ -1,6 +1,6 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include "helpers/GTestUtils.hpp"
+#include "helpers/gtest_utils.hpp"
 
 #include <dart/dynamics/PointCloudShape.hpp>
 
