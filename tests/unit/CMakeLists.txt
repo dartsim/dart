@@ -214,4 +214,6 @@ dart_build_tests(
     simd/test_vec_scalar.cpp
     simd/test_vec_mask_scalar.cpp
     simd/test_operations_scalar.cpp
+    simd/test_config.cpp
+    simd/test_edge_cases.cpp
 )

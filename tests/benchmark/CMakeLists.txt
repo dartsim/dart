@@ -76,6 +76,16 @@ if(DART_BUILD_SIMULATION_EXPERIMENTAL)
 endif()
 
 # ==============================================================================
+# SIMD Benchmarks
+# ==============================================================================
+add_executable(bm_simd simd/bm_simd.cpp)
+target_link_libraries(bm_simd
+  dart-simd
+  benchmark::benchmark
+)
+dart_format_add(simd/bm_simd.cpp)
+
+# ==============================================================================
 # Note: Benchmarks are standalone executables for performance measurement.
 # They are NOT registered as ctests since they measure performance, not correctness.
 #
