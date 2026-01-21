@@ -95,13 +95,13 @@ jobs:
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
         with:
           pixi-version: latest
-          cache: ${{ !contains(runner.labels, 'dartsim') }}
-          post-cleanup: ${{ !contains(runner.labels, 'dartsim') }}
-          run-install: ${{ !contains(runner.labels, 'dartsim') }}
+          cache: ${{ startsWith(runner.name, 'GitHub Actions') }}
+          post-cleanup: ${{ startsWith(runner.name, 'GitHub Actions') }}
+          run-install: ${{ startsWith(runner.name, 'GitHub Actions') }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi${{ runner.os == 'Windows' && '.exe' || '' }}
 
       - name: Pixi install (retry)
-        if: contains(runner.labels, 'dartsim') && ((matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v'))
+        if: !startsWith(runner.name , 'GitHub Actions') && ((matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v'))
         run: |
           set -euo pipefail
           for attempt in 1 2 3; do
@@ -114,7 +114,7 @@ jobs:
           exit 1
 
       - name: Setup sccache
-        if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
+        if: ((matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')) && startsWith(runner.name, 'GitHub Actions')
         uses: mozilla-actions/sccache-action@v0.0.9
         with:
           disable_annotations: true

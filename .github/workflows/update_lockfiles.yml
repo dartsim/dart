@@ -27,7 +27,7 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           cache: false
-          post-cleanup: ${{ !contains(runner.labels, 'dartsim') }}
+          post-cleanup: ${{ startsWith(runner.name, 'GitHub Actions') }}
           run-install: false
       - name: Update lockfiles
         run: |

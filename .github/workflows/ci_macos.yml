@@ -54,10 +54,11 @@ jobs:
         with:
           # Avoid cache key generation failures on macOS self-hosted runners
           cache: false
-          post-cleanup: ${{ !contains(runner.labels, 'dartsim') }}
+          post-cleanup: ${{ startsWith(runner.name, 'GitHub Actions') }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Setup sccache
+        if: startsWith(runner.name, 'GitHub Actions')
         continue-on-error: true
         uses: mozilla-actions/sccache-action@v0.0.9
         with:
@@ -96,10 +97,11 @@ jobs:
         with:
           # Avoid cache key generation failures on macOS self-hosted runners
           cache: false
-          post-cleanup: ${{ !contains(runner.labels, 'dartsim') }}
+          post-cleanup: ${{ startsWith(runner.name, 'GitHub Actions') }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Setup sccache
+        if: startsWith(runner.name, 'GitHub Actions')
         continue-on-error: true
         uses: mozilla-actions/sccache-action@v0.0.9
         with:

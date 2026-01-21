@@ -57,13 +57,13 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
-          cache: ${{ !contains(runner.labels, 'dartsim') }}
-          post-cleanup: ${{ !contains(runner.labels, 'dartsim') }}
-          run-install: ${{ !contains(runner.labels, 'dartsim') }}
+          cache: ${{ startsWith(runner.name, 'GitHub Actions') }}
+          post-cleanup: ${{ startsWith(runner.name, 'GitHub Actions') }}
+          run-install: ${{ startsWith(runner.name, 'GitHub Actions') }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Pixi install (retry)
-        if: contains(runner.labels, 'dartsim')
+        if: !startsWith(runner.name , 'GitHub Actions')
         run: |
           set -euo pipefail
           for attempt in 1 2 3; do
@@ -82,6 +82,7 @@ jobs:
           version: 2
 
       - name: Setup sccache
+        if: startsWith(runner.name, 'GitHub Actions')
         uses: mozilla-actions/sccache-action@v0.0.9
         with:
           disable_annotations: true
@@ -118,13 +119,13 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
-          cache: ${{ !contains(runner.labels, 'dartsim') }}
-          post-cleanup: ${{ !contains(runner.labels, 'dartsim') }}
-          run-install: ${{ !contains(runner.labels, 'dartsim') }}
+          cache: ${{ startsWith(runner.name, 'GitHub Actions') }}
+          post-cleanup: ${{ startsWith(runner.name, 'GitHub Actions') }}
+          run-install: ${{ startsWith(runner.name, 'GitHub Actions') }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Pixi install (retry)
-        if: contains(runner.labels, 'dartsim')
+        if: !startsWith(runner.name , 'GitHub Actions')
         run: |
           set -euo pipefail
           for attempt in 1 2 3; do
@@ -143,6 +144,7 @@ jobs:
           version: 2
 
       - name: Setup sccache
+        if: startsWith(runner.name, 'GitHub Actions')
         uses: mozilla-actions/sccache-action@v0.0.9
         with:
           disable_annotations: true
@@ -182,13 +184,13 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
-          cache: ${{ !contains(runner.labels, 'dartsim') }}
-          post-cleanup: ${{ !contains(runner.labels, 'dartsim') }}
-          run-install: ${{ !contains(runner.labels, 'dartsim') }}
+          cache: ${{ startsWith(runner.name, 'GitHub Actions') }}
+          post-cleanup: ${{ startsWith(runner.name, 'GitHub Actions') }}
+          run-install: ${{ startsWith(runner.name, 'GitHub Actions') }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Pixi install (retry)
-        if: contains(runner.labels, 'dartsim')
+        if: !startsWith(runner.name , 'GitHub Actions')
         run: |
           set -euo pipefail
           for attempt in 1 2 3; do
@@ -207,6 +209,7 @@ jobs:
           version: 2
 
       - name: Setup sccache
+        if: startsWith(runner.name, 'GitHub Actions')
         uses: mozilla-actions/sccache-action@v0.0.9
         with:
           disable_annotations: true
@@ -235,12 +238,12 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
-          cache: ${{ !contains(runner.labels, 'dartsim') }}
-          post-cleanup: ${{ !contains(runner.labels, 'dartsim') }}
-          run-install: ${{ !contains(runner.labels, 'dartsim') }}
+          cache: ${{ startsWith(runner.name, 'GitHub Actions') }}
+          post-cleanup: ${{ startsWith(runner.name, 'GitHub Actions') }}
+          run-install: ${{ startsWith(runner.name, 'GitHub Actions') }}
 
       - name: Pixi install (retry)
-        if: contains(runner.labels, 'dartsim')
+        if: !startsWith(runner.name , 'GitHub Actions')
         run: |
           set -euo pipefail
           for attempt in 1 2 3; do
@@ -259,6 +262,7 @@ jobs:
           version: 2
 
       - name: Setup sccache
+        if: startsWith(runner.name, 'GitHub Actions')
         uses: mozilla-actions/sccache-action@v0.0.9
         with:
           disable_annotations: true
@@ -306,13 +310,13 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
-          cache: ${{ !contains(runner.labels, 'dartsim') }}
-          post-cleanup: ${{ !contains(runner.labels, 'dartsim') }}
-          run-install: ${{ !contains(runner.labels, 'dartsim') }}
+          cache: ${{ startsWith(runner.name, 'GitHub Actions') }}
+          post-cleanup: ${{ startsWith(runner.name, 'GitHub Actions') }}
+          run-install: ${{ startsWith(runner.name, 'GitHub Actions') }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Pixi install (retry)
-        if: contains(runner.labels, 'dartsim')
+        if: !startsWith(runner.name , 'GitHub Actions')
         run: |
           set -euo pipefail
           for attempt in 1 2 3; do
@@ -331,6 +335,7 @@ jobs:
           version: 3
 
       - name: Setup sccache
+        if: startsWith(runner.name, 'GitHub Actions')
         uses: mozilla-actions/sccache-action@v0.0.9
         with:
           disable_annotations: true
