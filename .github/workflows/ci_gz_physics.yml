@@ -63,7 +63,7 @@ jobs:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Pixi install (retry)
-        if: !startsWith(runner.name , 'GitHub Actions')
+        if: ${{ !startsWith(runner.name, 'GitHub Actions') }}
         run: |
           set -euo pipefail
           for attempt in 1 2 3; do

@@ -101,7 +101,7 @@ jobs:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi${{ runner.os == 'Windows' && '.exe' || '' }}
 
       - name: Pixi install (retry)
-        if: !startsWith(runner.name , 'GitHub Actions') && ((matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v'))
+        if: ${{ !startsWith(runner.name, 'GitHub Actions') && ((matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')) }}
         run: |
           set -euo pipefail
           for attempt in 1 2 3; do

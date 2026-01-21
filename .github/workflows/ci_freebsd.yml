@@ -62,7 +62,7 @@ jobs:
           fi
 
       - name: Pixi install (retry)
-        if: !startsWith(runner.name , 'GitHub Actions') && steps.prereqs.outputs.kvm_available == 'true' && steps.prereqs.outputs.docker_available == 'true'
+        if: ${{ !startsWith(runner.name, 'GitHub Actions') && steps.prereqs.outputs.kvm_available == 'true' && steps.prereqs.outputs.docker_available == 'true' }}
         run: |
           set -euo pipefail
           for attempt in 1 2 3; do
