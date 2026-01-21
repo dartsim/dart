@@ -30,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dynamics/BallJoint.hpp>
-#include <dart/dynamics/BodyNode.hpp>
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/MetaSkeleton.hpp>
-#include <dart/dynamics/PrismaticJoint.hpp>
-#include <dart/dynamics/RevoluteJoint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/ball_joint.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/meta_skeleton.hpp>
+#include <dart/dynamics/prismatic_joint.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
 #include <gtest/gtest.h>
 

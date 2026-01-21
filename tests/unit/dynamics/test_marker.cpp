@@ -1,11 +1,11 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/dynamics/BodyNode.hpp>
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/Marker.hpp>
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/marker.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
-#include <dart/math/Constants.hpp>
+#include <dart/math/constants.hpp>
 
 #include <gtest/gtest.h>
 

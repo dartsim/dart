@@ -1,15 +1,15 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/dynamics/BodyNode.hpp>
-#include <dart/dynamics/HierarchicalIK.hpp>
-#include <dart/dynamics/InverseKinematics.hpp>
-#include <dart/dynamics/RevoluteJoint.hpp>
-#include <dart/dynamics/SimpleFrame.hpp>
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/hierarchical_ik.hpp>
+#include <dart/dynamics/inverse_kinematics.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/simple_frame.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
-#include <dart/math/Constants.hpp>
-#include <dart/math/optimization/Function.hpp>
-#include <dart/math/optimization/GradientDescentSolver.hpp>
+#include <dart/math/constants.hpp>
+#include <dart/math/optimization/function.hpp>
+#include <dart/math/optimization/gradient_descent_solver.hpp>
 
 #include <gtest/gtest.h>
 

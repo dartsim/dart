@@ -7,12 +7,12 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include "dart/constraint/CouplerConstraint.hpp"
-#include "dart/constraint/MimicMotorConstraint.hpp"
-#include "dart/constraint/ServoMotorConstraint.hpp"
-#include "dart/dynamics/MimicDofProperties.hpp"
-#include "dart/dynamics/RevoluteJoint.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/constraint/coupler_constraint.hpp"
+#include "dart/constraint/mimic_motor_constraint.hpp"
+#include "dart/constraint/servo_motor_constraint.hpp"
+#include "dart/dynamics/mimic_dof_properties.hpp"
+#include "dart/dynamics/revolute_joint.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
 #include <gtest/gtest.h>
 

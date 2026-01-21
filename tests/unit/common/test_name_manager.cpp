@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/NameManager.hpp>
+#include <dart/common/name_manager.hpp>
 
 #include <gtest/gtest.h>
 

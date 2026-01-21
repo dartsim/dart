@@ -5,10 +5,10 @@
  * This file is provided under the BSD-style License.
  */
 
-#include <dart/dynamics/Frame.hpp>
-#include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 
-#include <dart/math/Constants.hpp>
+#include <dart/math/constants.hpp>
 
 #include <gtest/gtest.h>
 

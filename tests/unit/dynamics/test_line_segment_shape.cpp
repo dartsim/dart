@@ -1,6 +1,6 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/dynamics/LineSegmentShape.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
 
 #include <gtest/gtest.h>
 

@@ -47,7 +47,7 @@
 #include "dart/dynamics/simple_frame.hpp"
 
 #if DART_HAVE_BULLET
-  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
+  #include "dart/collision/bullet/bullet_collision_detector.hpp"
 #endif
 
 #include <gtest/gtest.h>

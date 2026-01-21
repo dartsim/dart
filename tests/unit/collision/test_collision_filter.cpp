@@ -30,17 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/CollisionFilter.hpp>
-#include <dart/collision/CollisionGroup.hpp>
-#include <dart/collision/CollisionOption.hpp>
-#include <dart/collision/CollisionResult.hpp>
-#include <dart/collision/dart/DARTCollisionDetector.hpp>
+#include <dart/collision/collision_filter.hpp>
+#include <dart/collision/collision_group.hpp>
+#include <dart/collision/collision_option.hpp>
+#include <dart/collision/collision_result.hpp>
+#include <dart/collision/dart/dart_collision_detector.hpp>
 
-#include <dart/dynamics/BodyNode.hpp>
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/RevoluteJoint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
 #include <gtest/gtest.h>
 

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/VersionCounter.hpp>
+#include <dart/common/version_counter.hpp>
 
 #include <gtest/gtest.h>
 

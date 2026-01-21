@@ -1,9 +1,9 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/utils/FileInfoDof.hpp>
+#include <dart/utils/file_info_dof.hpp>
 
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
 #include <gtest/gtest.h>
 

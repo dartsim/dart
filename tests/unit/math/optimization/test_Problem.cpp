@@ -5,8 +5,8 @@
  * This file is provided under the BSD-style License.
  */
 
-#include "dart/math/optimization/GradientDescentSolver.hpp"
-#include "dart/math/optimization/Problem.hpp"
+#include "dart/math/optimization/gradient_descent_solver.hpp"
+#include "dart/math/optimization/problem.hpp"
 
 #include <gtest/gtest.h>
 

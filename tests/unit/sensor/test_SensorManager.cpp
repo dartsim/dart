@@ -1,8 +1,8 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/sensor/SensorManager.hpp>
+#include <dart/sensor/sensor_manager.hpp>
 
 #include <gtest/gtest.h>
 

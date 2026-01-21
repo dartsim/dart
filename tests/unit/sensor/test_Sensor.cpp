@@ -1,10 +1,10 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 
-#include <dart/sensor/Sensor.hpp>
+#include <dart/sensor/sensor.hpp>
 
 #include <gtest/gtest.h>
 

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/LockableReference.hpp>
+#include <dart/common/lockable_reference.hpp>
 
 #include <gtest/gtest.h>
 

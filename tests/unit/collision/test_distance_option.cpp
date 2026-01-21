@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/DistanceFilter.hpp>
-#include <dart/collision/DistanceOption.hpp>
+#include <dart/collision/distance_filter.hpp>
+#include <dart/collision/distance_option.hpp>
 
 #include <gtest/gtest.h>
 

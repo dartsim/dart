@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/io/All.hpp"
+#include "dart/io/all.hpp"
 
 #include <dart/config.hpp>
 

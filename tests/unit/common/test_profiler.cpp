@@ -1,6 +1,6 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/common/detail/Profiler.hpp>
+#include <dart/common/detail/profiler.hpp>
 
 #include <gtest/gtest.h>
 

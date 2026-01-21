@@ -1,17 +1,17 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/collision/CollisionGroup.hpp>
-#include <dart/collision/CollisionOption.hpp>
-#include <dart/collision/CollisionResult.hpp>
-#include <dart/collision/dart/DARTCollisionDetector.hpp>
+#include <dart/collision/collision_group.hpp>
+#include <dart/collision/collision_option.hpp>
+#include <dart/collision/collision_result.hpp>
+#include <dart/collision/dart/dart_collision_detector.hpp>
 
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/CylinderShape.hpp>
-#include <dart/dynamics/EllipsoidShape.hpp>
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/ShapeNode.hpp>
-#include <dart/dynamics/Skeleton.hpp>
-#include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/cylinder_shape.hpp>
+#include <dart/dynamics/ellipsoid_shape.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 
 #include <gtest/gtest.h>
 

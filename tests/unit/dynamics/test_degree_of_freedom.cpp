@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dynamics/BallJoint.hpp>
-#include <dart/dynamics/DegreeOfFreedom.hpp>
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/PrismaticJoint.hpp>
-#include <dart/dynamics/RevoluteJoint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
-#include <dart/dynamics/TranslationalJoint.hpp>
+#include <dart/dynamics/ball_joint.hpp>
+#include <dart/dynamics/degree_of_freedom.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/prismatic_joint.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/translational_joint.hpp>
 
 #include <gtest/gtest.h>
 

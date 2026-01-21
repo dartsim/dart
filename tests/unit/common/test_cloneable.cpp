@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/Cloneable.hpp>
+#include <dart/common/cloneable.hpp>
 
 #include <gtest/gtest.h>
 

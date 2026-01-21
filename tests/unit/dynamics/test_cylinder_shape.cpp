@@ -1,8 +1,8 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/dynamics/CylinderShape.hpp>
+#include <dart/dynamics/cylinder_shape.hpp>
 
-#include <dart/math/Constants.hpp>
+#include <dart/math/constants.hpp>
 
 #include <gtest/gtest.h>
 

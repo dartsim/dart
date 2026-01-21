@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/Aspect.hpp>
-#include <dart/common/AspectWithVersion.hpp>
-#include <dart/common/Composite.hpp>
+#include <dart/common/aspect.hpp>
+#include <dart/common/aspect_with_version.hpp>
+#include <dart/common/composite.hpp>
 
 #include <gtest/gtest.h>
 

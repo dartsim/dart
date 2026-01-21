@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/Castable.hpp>
+#include <dart/common/castable.hpp>
 
 #include <gtest/gtest.h>
 

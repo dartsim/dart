@@ -1,8 +1,8 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/dynamics/ConeShape.hpp>
+#include <dart/dynamics/cone_shape.hpp>
 
-#include <dart/math/Constants.hpp>
+#include <dart/math/constants.hpp>
 
 #include <gtest/gtest.h>
 

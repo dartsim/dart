@@ -1,10 +1,10 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/utils/HttpResourceRetriever.hpp>
+#include <dart/utils/http_resource_retriever.hpp>
 
-#include <dart/common/Diagnostics.hpp>
-#include <dart/common/Macros.hpp>
-#include <dart/common/Uri.hpp>
+#include <dart/common/diagnostics.hpp>
+#include <dart/common/macros.hpp>
+#include <dart/common/uri.hpp>
 
 #include <gtest/gtest.h>
 

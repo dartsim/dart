@@ -1,9 +1,9 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/dynamics/BodyNode.hpp>
-#include <dart/dynamics/InvalidIndex.hpp>
-#include <dart/dynamics/Skeleton.hpp>
-#include <dart/dynamics/WeldJoint.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/invalid_index.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
 #include <gtest/gtest.h>
 

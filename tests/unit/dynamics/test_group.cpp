@@ -7,8 +7,8 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include <dart/dynamics/Group.hpp>
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/group.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
 #include <gtest/gtest.h>
 

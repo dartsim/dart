@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/Singleton.hpp>
+#include <dart/common/singleton.hpp>
 
 #include <gtest/gtest.h>
 

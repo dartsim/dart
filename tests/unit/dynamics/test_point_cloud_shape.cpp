@@ -2,7 +2,7 @@
 
 #include "helpers/gtest_utils.hpp"
 
-#include <dart/dynamics/PointCloudShape.hpp>
+#include <dart/dynamics/point_cloud_shape.hpp>
 
 #include <gtest/gtest.h>
 

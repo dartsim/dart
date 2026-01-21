@@ -1,11 +1,11 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/dynamics/Frame.hpp>
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/Group.hpp>
-#include <dart/dynamics/InvalidIndex.hpp>
-#include <dart/dynamics/RevoluteJoint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/group.hpp>
+#include <dart/dynamics/invalid_index.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
 #include <gtest/gtest.h>
 

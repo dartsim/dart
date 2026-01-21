@@ -7,9 +7,9 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include "dart/constraint/BallJointConstraint.hpp"
-#include "dart/constraint/WeldJointConstraint.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/constraint/ball_joint_constraint.hpp"
+#include "dart/constraint/weld_joint_constraint.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
 #include <gtest/gtest.h>
 

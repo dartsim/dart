@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/RaycastOption.hpp>
+#include <dart/collision/raycast_option.hpp>
 
 #include <gtest/gtest.h>
 

@@ -1,10 +1,10 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/dynamics/BodyNode.hpp>
-#include <dart/dynamics/EndEffector.hpp>
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/RevoluteJoint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/end_effector.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
 #include <gtest/gtest.h>
 

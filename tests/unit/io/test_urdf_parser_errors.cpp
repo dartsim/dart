@@ -2,9 +2,9 @@
 
 #include <dart/config.hpp>
 
-#include <dart/utils/urdf/UrdfParser.hpp>
+#include <dart/utils/urdf/urdf_parser.hpp>
 
-#include <dart/io/All.hpp>
+#include <dart/io/all.hpp>
 
 #include <gtest/gtest.h>
 

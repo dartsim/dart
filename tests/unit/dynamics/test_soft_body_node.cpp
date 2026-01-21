@@ -1,10 +1,10 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
-#include <dart/dynamics/SoftBodyNode.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/soft_body_node.hpp>
 
 #include <gtest/gtest.h>
 
