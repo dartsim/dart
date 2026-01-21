@@ -35,7 +35,10 @@
 
 #include <gtest/gtest.h>
 
+#include <string_view>
+
 using dart::common::Uri;
+using dart::common::UriComponent;
 
 TEST(UriHelpers, fromString_ValidUri_ReturnsTrue)
 {
@@ -343,4 +346,38 @@ TEST(UriHelpers, getRelativeUri)
   ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, "http:g", false));
   EXPECT_EQ("http://a/b/c/g", mergedUri.toString());
 #endif
+}
+
+TEST(UriHelpers, UriComponentAccessors)
+{
+  UriComponent component("value");
+  std::string fallback = "fallback";
+
+  EXPECT_EQ(component.get_value_or(fallback), "value");
+  EXPECT_EQ(component->size(), std::string("value").size());
+
+  UriComponent empty;
+  EXPECT_EQ(empty.get_value_or(fallback), fallback);
+}
+
+TEST(UriHelpers, CreateFromRelativeUri)
+{
+  const std::string base = "http://a/b/c/d;p?q";
+  const std::string relative = "g";
+  const std::string_view baseView(base);
+  const std::string_view relativeView(relative);
+
+  const auto mergedFromStrings
+      = Uri::createFromRelativeUri(baseView, relativeView, true);
+  EXPECT_EQ(mergedFromStrings.toString(), "http://a/b/c/g");
+
+  const auto baseUri = Uri::createFromString(base);
+  const auto mergedFromBase
+      = Uri::createFromRelativeUri(baseUri, relativeView, true);
+  EXPECT_EQ(mergedFromBase.toString(), "http://a/b/c/g");
+
+  const auto relativeUri = Uri::createFromString(relative);
+  const auto mergedFromUris
+      = Uri::createFromRelativeUri(baseUri, relativeUri, true);
+  EXPECT_EQ(mergedFromUris.toString(), "http://a/b/c/g");
 }

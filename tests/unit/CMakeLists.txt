@@ -9,6 +9,10 @@ dart_add_test("unit" UNIT_collision_DistanceFilter collision/test_distance_filte
 
 dart_add_test("unit" UNIT_collision_CollisionGroup collision/test_collision_group.cpp)
 
+dart_add_test(
+  "unit" UNIT_collision_DARTCollisionDetector collision/test_dart_collision_detector.cpp)
+dart_add_test("unit" UNIT_collision_DARTCollide collision/test_dart_collide.cpp)
+
 dart_add_test("unit" UNIT_collision_Raycast collision/test_raycast.cpp)
 
 dart_add_test("unit" UNIT_collision_CollisionResult collision/test_collision_result.cpp)
@@ -52,6 +56,7 @@ set(common_unit_sources
   common/test_memory_manager.cpp
   common/test_name_manager.cpp
   common/test_pool_allocator.cpp
+  common/test_profiler.cpp
   common/test_resource.cpp
   common/test_result.cpp
   common/test_signal.cpp
@@ -95,6 +100,8 @@ dart_add_test("unit" UNIT_constraint_MotorConstraints constraint/test_motor_cons
 dart_add_test("unit" UNIT_constraint_WeldJointConstraint constraint/test_weld_joint_constraint.cpp)
 dart_add_test("unit" UNIT_constraint_BallJointConstraint constraint/test_ball_joint_constraint.cpp)
 dart_add_test("unit" UNIT_constraint_ServoMotorConstraint constraint/test_servo_motor_constraint.cpp)
+dart_add_test(
+  "unit" UNIT_constraint_SoftContactConstraint constraint/test_soft_contact_constraint.cpp)
 
 # ==============================================================================
 # Dynamics Tests
@@ -128,15 +135,22 @@ dart_add_test("unit" UNIT_dynamics_ConeShape dynamics/test_cone_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_CylinderShape dynamics/test_cylinder_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_EllipsoidShape dynamics/test_ellipsoid_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_PlaneShape dynamics/test_plane_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_PointCloudShape dynamics/test_point_cloud_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_EndEffector dynamics/test_end_effector.cpp)
 dart_add_test("unit" UNIT_dynamics_Marker dynamics/test_marker.cpp)
 dart_add_test("unit" UNIT_dynamics_PointMass dynamics/test_point_mass.cpp)
+dart_add_test("unit" UNIT_dynamics_SoftBodyNodeHelper dynamics/test_soft_body_node_helper.cpp)
+dart_add_test("unit" UNIT_dynamics_SoftBodyNode dynamics/test_soft_body_node.cpp)
 dart_add_test("unit" UNIT_dynamics_Frame dynamics/test_frame.cpp)
 dart_add_test("unit" UNIT_dynamics_Group dynamics/test_group.cpp)
 dart_add_test("unit" UNIT_dynamics_Joints dynamics/test_joints.cpp)
 dart_add_test("unit" UNIT_dynamics_DegreeOfFreedom dynamics/test_degree_of_freedom.cpp)
 dart_add_test("unit" UNIT_dynamics_MetaSkeleton dynamics/test_meta_skeleton.cpp)
 dart_add_test("unit" UNIT_dynamics_Linkage dynamics/test_linkage.cpp)
+dart_add_test("unit" UNIT_dynamics_LineSegmentShape dynamics/test_line_segment_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_ZeroDofJoint dynamics/test_zero_dof_joint.cpp)
+dart_add_test("unit" UNIT_dynamics_ReferentialSkeleton dynamics/test_referential_skeleton.cpp)
+dart_add_test("unit" UNIT_dynamics_InverseKinematics dynamics/test_inverse_kinematics.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
@@ -223,6 +237,12 @@ endif()
 if(TARGET dart-utils)
   dart_add_test("unit" test_mesh_loaderNone utils/test_mesh_loader.cpp)
   target_link_libraries(test_mesh_loaderNone dart-utils)
+
+dart_add_test("unit" test_HttpResourceRetriever utils/test_http_resource_retriever.cpp)
+  target_link_libraries(test_HttpResourceRetriever dart-utils)
+
+  dart_add_test("unit" test_FileInfoDof utils/test_file_info_dof.cpp)
+  target_link_libraries(test_FileInfoDof dart-utils)
 
   dart_add_test("unit" test_xml_helpersNone utils/test_xml_helpers.cpp)
   target_link_libraries(test_xml_helpersNone dart-utils)

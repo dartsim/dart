@@ -69,7 +69,9 @@ public:
 
   Uri fileUri() const
   {
-    return Uri("file://" + mPath);
+    Uri uri;
+    uri.fromPath(mPath);
+    return uri;
   }
 
 private:

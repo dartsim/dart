@@ -806,6 +806,7 @@ lcov \
     '*/tests/*' \
     '*/examples/*' \
     '*/tutorials/*' \
+    '*/dart/gui/*' \
     --output-file coverage.info \
 && lcov --list coverage.info
 """], depends-on = ["build-coverage"], env = { BUILD_TYPE = "Debug" } }

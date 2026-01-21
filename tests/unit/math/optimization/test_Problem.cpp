@@ -5,6 +5,7 @@
  * This file is provided under the BSD-style License.
  */
 
+#include "dart/math/optimization/GradientDescentSolver.hpp"
 #include "dart/math/optimization/Problem.hpp"
 
 #include <gtest/gtest.h>
@@ -31,6 +32,30 @@ public:
   {
     grad = 2.0 * x;
   }
+};
+
+class LinearFunction : public Function
+{
+public:
+  LinearFunction(double offset, const std::string& name)
+    : Function(name), mOffset(offset)
+  {
+  }
+
+  double eval(const Eigen::VectorXd& x) override
+  {
+    return x[0] + mOffset;
+  }
+
+  void evalGradient(
+      const Eigen::VectorXd& /*x*/, Eigen::Map<Eigen::VectorXd> grad) override
+  {
+    grad.setZero();
+    grad[0] = 1.0;
+  }
+
+private:
+  double mOffset;
 };
 
 } // namespace
@@ -172,4 +197,75 @@ TEST(ProblemTest, OptimalSolutionTracking)
 
   EXPECT_EQ(prob.getOptimalSolution(), solution);
   EXPECT_DOUBLE_EQ(prob.getOptimumValue(), 3.14);
+}
+
+TEST(GradientDescentSolverTest, ReturnsFalseWithoutProblem)
+{
+  GradientDescentSolver solver;
+  EXPECT_FALSE(solver.solve());
+}
+
+TEST(GradientDescentSolverTest, SolvesZeroDimensionProblem)
+{
+  auto problem = std::make_shared<Problem>(0);
+  GradientDescentSolver solver(problem);
+
+  EXPECT_TRUE(solver.solve());
+  EXPECT_EQ(problem->getOptimalSolution().size(), 0);
+  EXPECT_DOUBLE_EQ(problem->getOptimumValue(), 0.0);
+}
+
+TEST(GradientDescentSolverTest, SolvesWithConstraints)
+{
+  auto problem = std::make_shared<Problem>(1);
+  problem->setInitialGuess(Eigen::VectorXd::Constant(1, 2.0));
+  problem->setLowerBounds(Eigen::VectorXd::Constant(1, -5.0));
+  problem->setUpperBounds(Eigen::VectorXd::Constant(1, 5.0));
+  problem->setObjective(std::make_shared<SimpleFunction>("objective"));
+
+  auto eq = std::make_shared<LinearFunction>(0.0, "eq");
+  auto ineq = std::make_shared<LinearFunction>(-1.0, "ineq");
+  problem->addEqConstraint(eq);
+  problem->addIneqConstraint(ineq);
+
+  GradientDescentSolver solver(problem);
+  solver.setStepSize(0.1);
+  solver.setNumMaxIterations(500);
+  solver.setTolerance(0.2);
+  solver.getEqConstraintWeights() = Eigen::VectorXd::Constant(1, 2.0);
+  solver.getIneqConstraintWeights() = Eigen::VectorXd::Constant(1, 1.0);
+
+  EXPECT_TRUE(solver.solve());
+  const auto solution = problem->getOptimalSolution();
+  EXPECT_NEAR(eq->eval(solution), 0.0, solver.getTolerance());
+  EXPECT_LE(ineq->eval(solution), solver.getTolerance());
+}
+
+TEST(GradientDescentSolverTest, RandomizeAndClamp)
+{
+  auto problem = std::make_shared<Problem>(2);
+  problem->setLowerBounds(Eigen::Vector2d(-1.0, -1.0));
+  problem->setUpperBounds(Eigen::Vector2d(1.0, 1.0));
+
+  GradientDescentSolver::UniqueProperties descentProps(
+      0.1, 1, 0, 1.0, 0.25, 1.0);
+  GradientDescentSolver solver(
+      GradientDescentSolver::Properties(Solver::Properties(problem), descentProps));
+
+  Eigen::VectorXd x;
+  solver.randomizeConfiguration(x);
+  ASSERT_EQ(x.size(), 2);
+  EXPECT_GE(x[0], -1.0);
+  EXPECT_LE(x[0], 1.0);
+  EXPECT_GE(x[1], -1.0);
+  EXPECT_LE(x[1], 1.0);
+
+  x << 2.0, -2.0;
+  solver.clampToBoundary(x);
+  EXPECT_DOUBLE_EQ(x[0], 1.0);
+  EXPECT_DOUBLE_EQ(x[1], -1.0);
+
+  auto clone = solver.clone();
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->getType(), GradientDescentSolver::Type);
 }

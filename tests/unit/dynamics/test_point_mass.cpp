@@ -164,3 +164,90 @@ TEST(PointMassPropertiesTest, CustomLimits)
   EXPECT_TRUE(props.mVelocityLowerLimits.isApprox(velLower));
   EXPECT_TRUE(props.mVelocityUpperLimits.isApprox(velUpper));
 }
+
+TEST(PointMass, KinematicsAndForces)
+{
+  auto skeleton = Skeleton::create("point-mass");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(1.0),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      10.0,
+      10.0,
+      0.1);
+
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  pm->setPositions(Eigen::Vector3d(0.2, 0.3, 0.4));
+  EXPECT_TRUE(pm->getPositions().isApprox(Eigen::Vector3d(0.2, 0.3, 0.4)));
+  pm->setPosition(1, 0.8);
+  EXPECT_NEAR(pm->getPosition(1), 0.8, 1e-12);
+  pm->resetPositions();
+  EXPECT_TRUE(pm->getPositions().isApprox(Eigen::Vector3d::Zero()));
+
+  pm->setVelocities(Eigen::Vector3d(0.5, 0.6, 0.7));
+  EXPECT_TRUE(pm->getVelocities().isApprox(Eigen::Vector3d(0.5, 0.6, 0.7)));
+  pm->setVelocity(0, -0.2);
+  EXPECT_NEAR(pm->getVelocity(0), -0.2, 1e-12);
+  pm->integratePositions(0.5);
+  EXPECT_NEAR(pm->getPositions()[0], -0.1, 1e-12);
+  pm->resetVelocities();
+  EXPECT_TRUE(pm->getVelocities().isApprox(Eigen::Vector3d::Zero()));
+
+  pm->setAccelerations(Eigen::Vector3d(1.0, -2.0, 3.0));
+  EXPECT_TRUE(pm->getAccelerations().isApprox(Eigen::Vector3d(1.0, -2.0, 3.0)));
+  pm->setAcceleration(2, 0.9);
+  EXPECT_NEAR(pm->getAcceleration(2), 0.9, 1e-12);
+  pm->integrateVelocities(0.5);
+  EXPECT_NEAR(pm->getVelocities()[2], 0.45, 1e-12);
+  pm->resetAccelerations();
+  EXPECT_TRUE(pm->getAccelerations().isApprox(Eigen::Vector3d::Zero()));
+
+  pm->setForces(Eigen::Vector3d(3.0, 2.0, 1.0));
+  EXPECT_TRUE(pm->getForces().isApprox(Eigen::Vector3d(3.0, 2.0, 1.0)));
+  pm->setForce(1, -4.0);
+  EXPECT_NEAR(pm->getForce(1), -4.0, 1e-12);
+  pm->resetForces();
+  EXPECT_TRUE(pm->getForces().isApprox(Eigen::Vector3d::Zero()));
+
+  pm->setVelocityChange(0, 0.3);
+  EXPECT_NEAR(pm->getVelocityChange(0), 0.3, 1e-12);
+  pm->resetVelocityChanges();
+  EXPECT_NEAR(pm->getVelocityChange(0), 0.0, 1e-12);
+
+  pm->setConstraintImpulse(0, 1.2);
+  EXPECT_NEAR(pm->getConstraintImpulse(0), 1.2, 1e-12);
+  pm->addConstraintImpulse(Eigen::Vector3d(0.1, 0.2, 0.3));
+  EXPECT_TRUE(
+      pm->getConstraintImpulses().isApprox(Eigen::Vector3d(1.3, 0.2, 0.3)));
+  pm->clearConstraintImpulse();
+  EXPECT_TRUE(pm->getConstraintImpulses().isApprox(Eigen::Vector3d::Zero()));
+
+  pm->addExtForce(Eigen::Vector3d(0.5, 0.0, -0.5));
+  pm->addExtForce(Eigen::Vector3d(0.1, 0.2, 0.3), true);
+  pm->clearExtForce();
+
+  const auto bodyJac = pm->getBodyJacobian();
+  EXPECT_EQ(bodyJac.rows(), 3);
+  EXPECT_EQ(bodyJac.cols(), softBody->getNumDependentGenCoords() + 3);
+
+  const auto worldJac = pm->getWorldJacobian();
+  EXPECT_EQ(worldJac.rows(), 3);
+  EXPECT_EQ(worldJac.cols(), softBody->getNumDependentGenCoords() + 3);
+
+  pm->setVelocities(Eigen::Vector3d(0.1, 0.0, 0.0));
+  EXPECT_TRUE(pm->getBodyVelocity().isApprox(Eigen::Vector3d(0.1, 0.0, 0.0)));
+  EXPECT_TRUE(pm->getWorldVelocity().isApprox(Eigen::Vector3d(0.1, 0.0, 0.0)));
+
+  pm->setAccelerations(Eigen::Vector3d(0.0, -0.2, 0.0));
+  EXPECT_TRUE(
+      pm->getBodyAcceleration().isApprox(Eigen::Vector3d(0.0, -0.2, 0.0)));
+  EXPECT_TRUE(
+      pm->getWorldAcceleration().isApprox(Eigen::Vector3d(0.0, -0.2, 0.0)));
+}
