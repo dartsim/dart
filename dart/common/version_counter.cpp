@@ -52,8 +52,9 @@ VersionCounter::VersionCounter() : mVersion(0), mDependent(nullptr)
 std::size_t VersionCounter::incrementVersion()
 {
   ++mVersion;
-  if (mDependent)
+  if (mDependent) {
     mDependent->incrementVersion();
+  }
 
   return mVersion;
 }

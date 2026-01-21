@@ -110,8 +110,9 @@ std::vector<T> parseArray(std::string_view text)
   std::istringstream stream{std::string(text)};
   std::vector<T> values;
   T value{};
-  while (stream >> value)
+  while (stream >> value) {
     values.push_back(value);
+  }
   return values;
 }
 
@@ -124,11 +125,13 @@ DART_UTILS_API sdf::ParamPtr getChildValueParam(
 template <typename T>
 bool readScalarParam(const sdf::ParamPtr& param, T& value)
 {
-  if (!param)
+  if (!param) {
     return false;
+  }
 
-  if (param->Get(value))
+  if (param->Get(value)) {
     return true;
+  }
 
   std::string text;
   try {

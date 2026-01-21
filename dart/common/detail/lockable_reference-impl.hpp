@@ -51,8 +51,9 @@ SingleLockableReference<Lockable>::SingleLockableReference(
 template <typename Lockable>
 void SingleLockableReference<Lockable>::lock()
 {
-  if (mLockableHolder.expired())
+  if (mLockableHolder.expired()) {
     return;
+  }
 
   mLockable.lock();
 }
@@ -61,8 +62,9 @@ void SingleLockableReference<Lockable>::lock()
 template <typename Lockable>
 bool SingleLockableReference<Lockable>::try_lock() noexcept
 {
-  if (mLockableHolder.expired())
+  if (mLockableHolder.expired()) {
     return false;
+  }
 
   return mLockable.try_lock();
 }
@@ -71,8 +73,9 @@ bool SingleLockableReference<Lockable>::try_lock() noexcept
 template <typename Lockable>
 void SingleLockableReference<Lockable>::unlock() noexcept
 {
-  if (mLockableHolder.expired())
+  if (mLockableHolder.expired()) {
     return;
+  }
 
   mLockable.unlock();
 }
@@ -101,23 +104,27 @@ MultiLockableReference<Lockable>::MultiLockableReference(
 template <typename Lockable>
 void MultiLockableReference<Lockable>::lock()
 {
-  if (mLockableHolder.expired())
+  if (mLockableHolder.expired()) {
     return;
+  }
 
-  for (auto lockable : mLockables)
+  for (auto lockable : mLockables) {
     lockable->lock();
+  }
 }
 
 //==============================================================================
 template <typename Lockable>
 bool MultiLockableReference<Lockable>::try_lock() noexcept
 {
-  if (mLockableHolder.expired())
+  if (mLockableHolder.expired()) {
     return false;
+  }
 
   for (auto lockable : mLockables) {
-    if (!lockable->try_lock())
+    if (!lockable->try_lock()) {
       return false;
+    }
   }
 
   return true;
@@ -127,11 +134,13 @@ bool MultiLockableReference<Lockable>::try_lock() noexcept
 template <typename Lockable>
 void MultiLockableReference<Lockable>::unlock() noexcept
 {
-  if (mLockableHolder.expired())
+  if (mLockableHolder.expired()) {
     return;
+  }
 
-  for (auto it = mLockables.rbegin(); it != mLockables.rend(); ++it)
+  for (auto it = mLockables.rbegin(); it != mLockables.rend(); ++it) {
     (*it)->unlock();
+  }
 }
 
 //==============================================================================

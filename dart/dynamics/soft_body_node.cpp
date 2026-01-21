@@ -83,19 +83,20 @@ bool SoftBodyNodeUniqueProperties::connectPointMasses(
     std::size_t i1, std::size_t i2)
 {
   if (i1 >= mPointProps.size() || i2 >= mPointProps.size()) {
-    if (mPointProps.size() == 0)
+    if (mPointProps.size() == 0) {
       DART_WARN(
           "Attempting to add a connection between indices {} and {}, but there "
           "are currently no entries in mPointProps!",
           i1,
           i2);
-    else
+    } else {
       DART_WARN(
           "Attempting to add a connection between indices {} and {}, but the "
           "entries in mPointProps only go up to {}!",
           i1,
           i2,
           mPointProps.size() - 1);
+    }
     return false;
   }
 
@@ -138,8 +139,9 @@ SoftBodyNodeProperties::SoftBodyNodeProperties(
 //==============================================================================
 SoftBodyNode::~SoftBodyNode()
 {
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     delete mPointMasses[i];
+  }
 
   delete mNotifier;
 }
@@ -174,8 +176,9 @@ void SoftBodyNode::setProperties(const UniqueProperties& _properties)
 //==============================================================================
 void SoftBodyNode::setAspectState(const AspectState& state)
 {
-  if (mAspectState.mPointStates == state.mPointStates)
+  if (mAspectState.mPointStates == state.mPointStates) {
     return;
+  }
 
   mAspectState = state;
   mNotifier->dirtyTransform();
@@ -205,8 +208,9 @@ SoftBodyNode::Properties SoftBodyNode::getSoftBodyNodeProperties() const
 //==============================================================================
 void SoftBodyNode::copy(const SoftBodyNode& _otherSoftBodyNode)
 {
-  if (this == &_otherSoftBodyNode)
+  if (this == &_otherSoftBodyNode) {
     return;
+  }
 
   setProperties(_otherSoftBodyNode.getSoftBodyNodeProperties());
 }
@@ -214,8 +218,9 @@ void SoftBodyNode::copy(const SoftBodyNode& _otherSoftBodyNode)
 //==============================================================================
 void SoftBodyNode::copy(const SoftBodyNode* _otherSoftBodyNode)
 {
-  if (nullptr == _otherSoftBodyNode)
+  if (nullptr == _otherSoftBodyNode) {
     return;
+  }
 
   copy(*_otherSoftBodyNode);
 }
@@ -237,8 +242,9 @@ std::size_t SoftBodyNode::getNumPointMasses() const
 PointMass* SoftBodyNode::getPointMass(std::size_t _idx)
 {
   DART_ASSERT(_idx < mPointMasses.size());
-  if (_idx < mPointMasses.size())
+  if (_idx < mPointMasses.size()) {
     return mPointMasses[_idx];
+  }
 
   return nullptr;
 }
@@ -289,8 +295,9 @@ BodyNode* SoftBodyNode::clone(
 
   clonedBn->matchAspects(this);
 
-  if (cloneNodes)
+  if (cloneNodes) {
     clonedBn->matchNodes(this);
+  }
 
   return clonedBn;
 }
@@ -303,13 +310,15 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
   std::size_t newCount = softProperties.mPointProps.size();
   std::size_t oldCount = mPointMasses.size();
 
-  if (newCount == oldCount)
+  if (newCount == oldCount) {
     return;
+  }
 
   // Adjust the number of PointMass objects since that has changed
   if (newCount < oldCount) {
-    for (std::size_t i = newCount; i < oldCount; ++i)
+    for (std::size_t i = newCount; i < oldCount; ++i) {
       delete mPointMasses[i];
+    }
     mPointMasses.resize(newCount);
   } else if (oldCount < newCount) {
     mPointMasses.resize(newCount);
@@ -329,8 +338,9 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
     std::shared_ptr<SoftMeshShape> softShape
         = std::dynamic_pointer_cast<SoftMeshShape>(softNode->getShape());
 
-    if (softShape)
+    if (softShape) {
       softShape->_buildMesh();
+    }
   } else {
     std::string shapeNodeList;
     for (std::size_t i = 0; i < getNumShapeNodes(); ++i) {
@@ -355,8 +365,9 @@ void SoftBodyNode::init(const SkeletonPtr& _skeleton)
 {
   BodyNode::init(_skeleton);
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     mPointMasses[i]->init();
+  }
 
   //  //----------------------------------------------------------------------------
   //  // Visualization shape
@@ -413,8 +424,9 @@ double SoftBodyNode::getMass() const
 {
   double totalMass = BodyNode::getMass();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     totalMass += mPointMasses.at(i)->getMass();
+  }
 
   return totalMass;
 }
@@ -424,8 +436,9 @@ void SoftBodyNode::setVertexSpringStiffness(double _kv)
 {
   DART_ASSERT(0.0 <= _kv);
 
-  if (_kv == mAspectProperties.mKv)
+  if (_kv == mAspectProperties.mKv) {
     return;
+  }
 
   mAspectProperties.mKv = _kv;
   incrementVersion();
@@ -442,8 +455,9 @@ void SoftBodyNode::setEdgeSpringStiffness(double _ke)
 {
   DART_ASSERT(0.0 <= _ke);
 
-  if (_ke == mAspectProperties.mKe)
+  if (_ke == mAspectProperties.mKe) {
     return;
+  }
 
   mAspectProperties.mKe = _ke;
   incrementVersion();
@@ -468,8 +482,9 @@ void SoftBodyNode::setDampingCoefficient(double _damp)
     _damp = 0.0;
   }
 
-  if (_damp == mAspectProperties.mDampCoeff)
+  if (_damp == mAspectProperties.mDampCoeff) {
     return;
+  }
 
   mAspectProperties.mDampCoeff = _damp;
   incrementVersion();
@@ -537,16 +552,18 @@ void SoftBodyNode::clearConstraintImpulse()
 {
   BodyNode::clearConstraintImpulse();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     mPointMasses.at(i)->clearConstraintImpulse();
+  }
 }
 
 //==============================================================================
 void SoftBodyNode::checkArticulatedInertiaUpdate() const
 {
   ConstSkeletonPtr skel = getSkeleton();
-  if (skel && skel->mTreeCache[mTreeIndex].mDirty.mArticulatedInertia)
+  if (skel && skel->mTreeCache[mTreeIndex].mDirty.mArticulatedInertia) {
     skel->updateArticulatedInertia(mTreeIndex);
+  }
 }
 
 //==============================================================================
@@ -554,8 +571,9 @@ void SoftBodyNode::updateTransform()
 {
   BodyNode::updateTransform();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     mPointMasses.at(i)->updateTransform();
+  }
 
   mNotifier->clearTransformNotice();
 }
@@ -565,8 +583,9 @@ void SoftBodyNode::updateVelocity()
 {
   BodyNode::updateVelocity();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     mPointMasses.at(i)->updateVelocity();
+  }
 
   mNotifier->clearVelocityNotice();
 }
@@ -576,8 +595,9 @@ void SoftBodyNode::updatePartialAcceleration() const
 {
   BodyNode::updatePartialAcceleration();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     mPointMasses.at(i)->updatePartialAcceleration();
+  }
 
   mNotifier->clearPartialAccelerationNotice();
 }
@@ -587,8 +607,9 @@ void SoftBodyNode::updateAccelerationID()
 {
   BodyNode::updateAccelerationID();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     mPointMasses.at(i)->updateAccelerationID();
+  }
 
   mNotifier->clearAccelerationNotice();
 }
@@ -599,22 +620,25 @@ void SoftBodyNode::updateTransmittedForceID(
 {
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
-  for (auto& pointMass : mPointMasses)
+  for (auto& pointMass : mPointMasses) {
     pointMass->updateTransmittedForceID(_gravity, _withExternalForces);
+  }
 
   // Gravity force
-  if (BodyNode::mAspectProperties.mGravityMode == true)
+  if (BodyNode::mAspectProperties.mGravityMode == true) {
     mFgravity.noalias()
         = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
-  else
+  } else {
     mFgravity.setZero();
+  }
 
   // Inertial force
   mF.noalias() = mI * getSpatialAcceleration();
 
   // External force
-  if (_withExternalForces)
+  if (_withExternalForces) {
     mF -= BodyNode::mAspectState.mFext;
+  }
 
   // Verification
   DART_ASSERT(!math::isNan(mF));
@@ -647,9 +671,10 @@ void SoftBodyNode::updateTransmittedForceID(
 void SoftBodyNode::updateJointForceID(
     double _timeStep, bool _withDampingForces, bool _withSpringForces)
 {
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     mPointMasses.at(i)->updateJointForceID(
         _timeStep, _withDampingForces, _withSpringForces);
+  }
 
   BodyNode::updateJointForceID(
       _timeStep, _withDampingForces, _withSpringForces);
@@ -674,8 +699,9 @@ void SoftBodyNode::updateArtInertia(double _timeStep) const
 {
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
-  for (auto& pointMass : mPointMasses)
+  for (auto& pointMass : mPointMasses) {
     pointMass->updateArtInertiaFD(_timeStep);
+  }
 
   DART_ASSERT(mParentJoint != nullptr);
 
@@ -729,11 +755,12 @@ void SoftBodyNode::updateBiasForce(
   }
 
   // Gravity force
-  if (BodyNode::mAspectProperties.mGravityMode == true)
+  if (BodyNode::mAspectProperties.mGravityMode == true) {
     mFgravity.noalias()
         = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
-  else
+  } else {
     mFgravity.setZero();
+  }
 
   // Set bias force
   const Eigen::Vector6d& V = getSpatialVelocity();
@@ -775,8 +802,9 @@ void SoftBodyNode::updateAccelerationFD()
 {
   BodyNode::updateAccelerationFD();
 
-  for (auto& pointMass : mPointMasses)
+  for (auto& pointMass : mPointMasses) {
     pointMass->updateAccelerationFD();
+  }
 
   mNotifier->clearAccelerationNotice();
 }
@@ -786,15 +814,17 @@ void SoftBodyNode::updateTransmittedForceFD()
 {
   BodyNode::updateTransmittedForceFD();
 
-  for (auto& pointMass : mPointMasses)
+  for (auto& pointMass : mPointMasses) {
     pointMass->updateTransmittedForce();
+  }
 }
 
 //==============================================================================
 void SoftBodyNode::updateBiasImpulse()
 {
-  for (auto& pointMass : mPointMasses)
+  for (auto& pointMass : mPointMasses) {
     pointMass->updateBiasImpulseFD();
+  }
 
   // Update impulsive bias force
   mBiasImpulse = -mConstraintImpulse;
@@ -827,8 +857,9 @@ void SoftBodyNode::updateVelocityChangeFD()
 {
   BodyNode::updateVelocityChangeFD();
 
-  for (auto& pointMass : mPointMasses)
+  for (auto& pointMass : mPointMasses) {
     pointMass->updateVelocityChangeFD();
+  }
 }
 
 //==============================================================================
@@ -836,8 +867,9 @@ void SoftBodyNode::updateTransmittedImpulse()
 {
   BodyNode::updateTransmittedImpulse();
 
-  for (auto& pointMass : mPointMasses)
+  for (auto& pointMass : mPointMasses) {
     pointMass->updateTransmittedImpulse();
+  }
 }
 
 //==============================================================================
@@ -845,8 +877,9 @@ void SoftBodyNode::updateConstrainedTerms(double _timeStep)
 {
   BodyNode::updateConstrainedTerms(_timeStep);
 
-  for (auto& pointMass : mPointMasses)
+  for (auto& pointMass : mPointMasses) {
     pointMass->updateConstrainedTermsFD(_timeStep);
+  }
 }
 
 //==============================================================================
@@ -913,8 +946,9 @@ void SoftBodyNode::aggregateAugMassMatrix(
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   //------------------------ PointMass Part ------------------------------------
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     mPointMasses.at(i)->aggregateAugMassMatrix(_MCol, _col, _timeStep);
+  }
 
   //----------------------- SoftBodyNode Part ----------------------------------
   mM_F.noalias() = mI * mM_dV;
@@ -956,8 +990,9 @@ void SoftBodyNode::aggregateAugMassMatrix(
 void SoftBodyNode::updateInvMassMatrix()
 {
   //------------------------ PointMass Part ------------------------------------
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     mPointMasses.at(i)->updateInvMassMatrix();
+  }
 
   //----------------------- SoftBodyNode Part ----------------------------------
   //
@@ -1050,8 +1085,9 @@ void SoftBodyNode::aggregateInvMassMatrix(
   mParentJoint->addInvMassMatrixSegmentTo(mInvM_U);
 
   //
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     mPointMasses.at(i)->aggregateInvMassMatrix(_InvMCol, _col);
+  }
 }
 
 //==============================================================================
@@ -1103,14 +1139,16 @@ void SoftBodyNode::aggregateGravityForceVector(
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   //------------------------ PointMass Part ------------------------------------
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     mPointMasses.at(i)->aggregateGravityForceVector(_g, _gravity);
+  }
 
   //----------------------- SoftBodyNode Part ----------------------------------
-  if (BodyNode::mAspectProperties.mGravityMode == true)
+  if (BodyNode::mAspectProperties.mGravityMode == true) {
     mG_F = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
-  else
+  } else {
     mG_F.setZero();
+  }
 
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end();
@@ -1194,8 +1232,9 @@ void SoftBodyNode::aggregateCombinedVector(
 void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
 {
   //------------------------ PointMass Part ------------------------------------
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     mPointMasses.at(i)->aggregateExternalForces(_Fext);
+  }
 
   //----------------------- SoftBodyNode Part ----------------------------------
   mFext_F = BodyNode::mAspectState.mFext;
@@ -1228,8 +1267,9 @@ void SoftBodyNode::clearExternalForces()
 {
   BodyNode::clearExternalForces();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     mPointMasses.at(i)->clearExtForce();
+  }
 }
 
 //==============================================================================
@@ -1237,8 +1277,9 @@ void SoftBodyNode::clearInternalForces()
 {
   BodyNode::clearInternalForces();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
     mPointMasses[i]->resetForces();
+  }
 }
 
 //==============================================================================
@@ -2578,17 +2619,21 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
   //----------------------------------------------------------------------------
   // a) longitudinal
   // -- top
-  for (std::size_t i = 0; i < _nSlices; i++)
+  for (std::size_t i = 0; i < _nSlices; i++) {
     properties.connectPointMasses(0, i + 1);
+  }
   // -- middle
-  for (std::size_t i = 0; i < _nStacks - 2; i++)
-    for (std::size_t j = 0; j < _nSlices; j++)
+  for (std::size_t i = 0; i < _nStacks - 2; i++) {
+    for (std::size_t j = 0; j < _nSlices; j++) {
       properties.connectPointMasses(
           i * _nSlices + j + 1, (i + 1) * _nSlices + j + 1);
+    }
+  }
   // -- bottom
-  for (std::size_t i = 0; i < _nSlices; i++)
+  for (std::size_t i = 0; i < _nSlices; i++) {
     properties.connectPointMasses(
         (_nStacks - 1) * _nSlices + 1, (_nStacks - 2) * _nSlices + i + 1);
+  }
 
   // b) latitudinal
   for (std::size_t i = 0; i < _nStacks - 1; i++) {
@@ -2794,8 +2839,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
 
   // a) longitudinal
   // -- top
-  for (std::size_t i = 0; i < _nSlices; i++)
+  for (std::size_t i = 0; i < _nSlices; i++) {
     properties.connectPointMasses(0, i + 1);
+  }
   for (std::size_t i = 0; i < _nRings - 1; i++) {
     for (std::size_t j = 0; j < _nSlices; j++) {
       properties.connectPointMasses(
@@ -2821,8 +2867,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
               + j);
     }
   }
-  for (std::size_t i = 1; i < _nSlices; i++)
+  for (std::size_t i = 1; i < _nSlices; i++) {
     properties.connectPointMasses(nTotalMasses - 1 - i, nTotalMasses - 1);
+  }
 
   // b) latitudinal
   for (std::size_t i = 0; i < _nStacks; i++) {

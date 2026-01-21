@@ -217,8 +217,9 @@ protected:
     DART_ASSERT(nullptr == this->getComposite());
 
     Base::setComposite(newComposite);
-    if (mTemporaryState)
+    if (mTemporaryState) {
       SetEmbeddedState(static_cast<Derived*>(this), *mTemporaryState);
+    }
 
     mTemporaryState = nullptr;
   }
@@ -388,8 +389,9 @@ protected:
     DART_ASSERT(nullptr == this->getComposite());
 
     Base::setComposite(newComposite);
-    if (mTemporaryProperties)
+    if (mTemporaryProperties) {
       SetEmbeddedProperties(static_cast<Derived*>(this), *mTemporaryProperties);
+    }
 
     // Release the temporary memory
     mTemporaryProperties = nullptr;

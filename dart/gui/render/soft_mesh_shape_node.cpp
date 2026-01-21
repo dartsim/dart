@@ -107,8 +107,9 @@ void SoftMeshShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     return;
+  }
 
   extractData(false);
 }
@@ -213,26 +214,30 @@ static void computeNormals(
     std::vector<Eigen::Vector3d>& normals,
     const dart::dynamics::SoftBodyNode* bn)
 {
-  for (std::size_t i = 0; i < normals.size(); ++i)
+  for (std::size_t i = 0; i < normals.size(); ++i) {
     normals[i] = Eigen::Vector3d::Zero();
+  }
 
   for (std::size_t i = 0; i < bn->getNumFaces(); ++i) {
     const Eigen::Vector3i& face = bn->getFace(i);
-    for (std::size_t j = 0; j < 3; ++j)
+    for (std::size_t j = 0; j < 3; ++j) {
       normals[face[j]] += normalFromVertex(bn, face, j);
+    }
   }
 
-  for (std::size_t i = 0; i < normals.size(); ++i)
+  for (std::size_t i = 0; i < normals.size(); ++i) {
     normals[i].normalize();
+  }
 }
 
 //==============================================================================
 void SoftMeshShapeDrawable::refresh(bool firstTime)
 {
-  if (mSoftMeshShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mSoftMeshShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     setDataVariance(::osg::Object::STATIC);
-  else
+  } else {
     setDataVariance(::osg::Object::DYNAMIC);
+  }
 
   const dart::dynamics::SoftBodyNode* bn = mSoftMeshShape->getSoftBodyNode();
 
@@ -244,8 +249,9 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
 
     for (std::size_t i = 0; i < bn->getNumFaces(); ++i) {
       const Eigen::Vector3i& F = bn->getFace(i);
-      for (std::size_t j = 0; j < 3; ++j)
+      for (std::size_t j = 0; j < 3; ++j) {
         elements->push_back(F[j]);
+      }
     }
 
     addPrimitiveSet(elements);
@@ -255,14 +261,17 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
       || mSoftMeshShape->checkDataVariance(
           dart::dynamics::Shape::DYNAMIC_ELEMENTS)
       || firstTime) {
-    if (mVertices->size() != bn->getNumPointMasses())
+    if (mVertices->size() != bn->getNumPointMasses()) {
       mVertices->resize(bn->getNumPointMasses());
+    }
 
-    if (mNormals->size() != bn->getNumPointMasses())
+    if (mNormals->size() != bn->getNumPointMasses()) {
       mNormals->resize(bn->getNumPointMasses());
+    }
 
-    if (mEigNormals.size() != bn->getNumPointMasses())
+    if (mEigNormals.size() != bn->getNumPointMasses()) {
       mEigNormals.resize(bn->getNumPointMasses());
+    }
 
     computeNormals(mEigNormals, bn);
     for (std::size_t i = 0; i < bn->getNumPointMasses(); ++i) {

@@ -169,8 +169,9 @@ bool equals(
         std::common_type_t<typename T1::Scalar, typename T2::Scalar, double>>(
         1e-5))
 {
-  if (expected.rows() != actual.rows() || expected.cols() != actual.cols())
+  if (expected.rows() != actual.rows() || expected.cols() != actual.cols()) {
     return false;
+  }
 
   using CommonScalar
       = std::common_type_t<typename T1::Scalar, typename T2::Scalar, double>;
@@ -180,11 +181,13 @@ bool equals(
       const CommonScalar lhs = static_cast<CommonScalar>(expected(i, j));
       const CommonScalar rhs = static_cast<CommonScalar>(actual(i, j));
 
-      if (std::isnan(lhs) && std::isnan(rhs))
+      if (std::isnan(lhs) && std::isnan(rhs)) {
         continue;
+      }
 
-      if (!dart::math::isApprox(lhs, rhs, tol, tol))
+      if (!dart::math::isApprox(lhs, rhs, tol, tol)) {
         return false;
+      }
     }
   }
 

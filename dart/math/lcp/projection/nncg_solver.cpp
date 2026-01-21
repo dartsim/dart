@@ -46,8 +46,9 @@ namespace {
 
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
-  if (A.size() == 0)
+  if (A.size() == 0) {
     return 0.0;
+  }
 
   return A.cwiseAbs().rowwise().sum().maxCoeff();
 }
@@ -113,8 +114,9 @@ LcpResult NncgSolver::solve(
     return result;
   }
 
-  if (x.size() != n || !options.warmStart || !x.allFinite())
+  if (x.size() != n || !options.warmStart || !x.allFinite()) {
     x = Eigen::VectorXd::Zero(n);
+  }
 
   const int maxIterations = std::max(
       1,
@@ -209,8 +211,9 @@ LcpResult NncgSolver::solve(
   bool converged = false;
   int iterationsUsed = 0;
 
-  if (!updateMetrics(x))
+  if (!updateMetrics(x)) {
     return result;
+  }
 
   if (residual <= tol && complementarity <= compTol) {
     converged = true;
@@ -239,14 +242,17 @@ LcpResult NncgSolver::solve(
     const double rNormSq = r.squaredNorm();
     const double rNewNormSq = rNew.squaredNorm();
     double beta = 0.0;
-    if (rNormSq > 0.0)
+    if (rNormSq > 0.0) {
       beta = rNewNormSq / rNormSq;
+    }
 
     bool restart = false;
-    if (!std::isfinite(beta) || beta > params->restartThreshold)
+    if (!std::isfinite(beta) || beta > params->restartThreshold) {
       restart = true;
-    if (restartInterval > 0 && ((iter + 1) % restartInterval == 0))
+    }
+    if (restartInterval > 0 && ((iter + 1) % restartInterval == 0)) {
       restart = true;
+    }
 
     if (restart) {
       p = -rNew;
@@ -257,11 +263,13 @@ LcpResult NncgSolver::solve(
     x = xCandidate;
     r = rNew;
 
-    if (!updateMetrics(x))
+    if (!updateMetrics(x)) {
       return result;
+    }
 
-    if (residual <= tol && complementarity <= compTol)
+    if (residual <= tol && complementarity <= compTol) {
       converged = true;
+    }
   }
 
   result.iterations = iterationsUsed;

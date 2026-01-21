@@ -56,8 +56,9 @@ LocalResource::LocalResource(const std::string& _path)
 //==============================================================================
 LocalResource::~LocalResource()
 {
-  if (!mFile)
+  if (!mFile) {
     return;
+  }
 
   DART_WARN_IF(
       std::fclose(mFile) == EOF,
@@ -74,8 +75,9 @@ bool LocalResource::isGood() const
 //==============================================================================
 std::size_t LocalResource::getSize()
 {
-  if (!mFile)
+  if (!mFile) {
     return 0;
+  }
 
   const long offset = std::ftell(mFile);
   if (offset == -1L) {
@@ -131,8 +133,9 @@ std::size_t LocalResource::getSize()
 //==============================================================================
 std::size_t LocalResource::tell()
 {
-  if (!mFile)
+  if (!mFile) {
     return 0;
+  }
 
   const long offset = std::ftell(mFile);
   if (offset == -1L) {
@@ -180,9 +183,9 @@ bool LocalResource::seek(ptrdiff_t _offset, SeekType _mode)
       return false;
   }
 
-  if (!std::fseek(mFile, _offset, origin) && !std::ferror(mFile))
+  if (!std::fseek(mFile, _offset, origin) && !std::ferror(mFile)) {
     return true;
-  else {
+  } else {
     DART_WARN("Failed seeking: {}", std::strerror(errno));
     return false;
   }
@@ -192,8 +195,9 @@ bool LocalResource::seek(ptrdiff_t _offset, SeekType _mode)
 std::size_t LocalResource::read(
     void* _buffer, std::size_t _size, std::size_t _count)
 {
-  if (!mFile)
+  if (!mFile) {
     return 0;
+  }
 
   const std::size_t result = std::fread(_buffer, _size, _count, mFile);
   DART_WARN_IF(

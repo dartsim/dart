@@ -82,8 +82,9 @@ TranslationalJoint2D::getTranslationalJoint2DProperties() const
 //==============================================================================
 void TranslationalJoint2D::copy(const TranslationalJoint2D& otherJoint)
 {
-  if (this == &otherJoint)
+  if (this == &otherJoint) {
     return;
+  }
 
   setProperties(otherJoint.getTranslationalJoint2DProperties());
 }
@@ -91,8 +92,9 @@ void TranslationalJoint2D::copy(const TranslationalJoint2D& otherJoint)
 //==============================================================================
 void TranslationalJoint2D::copy(const TranslationalJoint2D* otherJoint)
 {
-  if (nullptr == otherJoint)
+  if (nullptr == otherJoint) {
     return;
+  }
 
   copy(*this);
 }
@@ -129,8 +131,9 @@ void TranslationalJoint2D::setXYPlane(bool renameDofs)
 {
   mAspectProperties.setXYPlane();
 
-  if (renameDofs)
+  if (renameDofs) {
     updateDegreeOfFreedomNames();
+  }
   notifyPositionUpdated();
 }
 
@@ -139,8 +142,9 @@ void TranslationalJoint2D::setYZPlane(bool renameDofs)
 {
   mAspectProperties.setYZPlane();
 
-  if (renameDofs)
+  if (renameDofs) {
     updateDegreeOfFreedomNames();
+  }
   notifyPositionUpdated();
 }
 
@@ -149,8 +153,9 @@ void TranslationalJoint2D::setZXPlane(bool renameDofs)
 {
   mAspectProperties.setZXPlane();
 
-  if (renameDofs)
+  if (renameDofs) {
     updateDegreeOfFreedomNames();
+  }
   notifyPositionUpdated();
 }
 
@@ -162,8 +167,9 @@ void TranslationalJoint2D::setArbitraryPlane(
 {
   mAspectProperties.setArbitraryPlane(transAxis1, transAxis2);
 
-  if (renameDofs)
+  if (renameDofs) {
     updateDegreeOfFreedomNames();
+  }
   notifyPositionUpdated();
 }
 
@@ -213,10 +219,12 @@ Joint* TranslationalJoint2D::clone() const
 //==============================================================================
 void TranslationalJoint2D::updateDegreeOfFreedomNames()
 {
-  if (!mDofs[0]->isNamePreserved())
+  if (!mDofs[0]->isNamePreserved()) {
     mDofs[0]->setName(Joint::mAspectProperties.mName + "_1", false);
-  if (!mDofs[1]->isNamePreserved())
+  }
+  if (!mDofs[1]->isNamePreserved()) {
     mDofs[1]->setName(Joint::mAspectProperties.mName + "_2", false);
+  }
 }
 
 //==============================================================================

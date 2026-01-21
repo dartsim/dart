@@ -98,8 +98,9 @@ BallJoint::Properties BallJoint::getBallJointProperties() const
 //==============================================================================
 void BallJoint::copy(const BallJoint& otherJoint)
 {
-  if (this == &otherJoint)
+  if (this == &otherJoint) {
     return;
+  }
 
   setProperties(otherJoint.getBallJointProperties());
 }
@@ -107,8 +108,9 @@ void BallJoint::copy(const BallJoint& otherJoint)
 //==============================================================================
 void BallJoint::copy(const BallJoint* otherJoint)
 {
-  if (nullptr == otherJoint)
+  if (nullptr == otherJoint) {
     return;
+  }
 
   copy(*otherJoint);
 }
@@ -123,8 +125,9 @@ BallJoint& BallJoint::operator=(const BallJoint& otherJoint)
 //==============================================================================
 void BallJoint::setCoordinateChart(CoordinateChart chart)
 {
-  if (mAspectProperties.mCoordinateChart == chart)
+  if (mAspectProperties.mCoordinateChart == chart) {
     return;
+  }
 
   const CoordinateChart previousChart = mAspectProperties.mCoordinateChart;
   const Eigen::Matrix3d rotation
@@ -262,12 +265,14 @@ void BallJoint::updateDegreeOfFreedomNames()
 {
   std::array<std::string, 3> affixes{"_x", "_y", "_z"};
 
-  if (getCoordinateChart() == CoordinateChart::EULER_ZYX)
+  if (getCoordinateChart() == CoordinateChart::EULER_ZYX) {
     affixes = {"_z", "_y", "_x"};
+  }
 
   for (std::size_t i = 0; i < affixes.size(); ++i) {
-    if (!mDofs[i]->isNamePreserved())
+    if (!mDofs[i]->isNamePreserved()) {
       mDofs[i]->setName(Joint::mAspectProperties.mName + affixes[i], false);
+    }
   }
 }
 

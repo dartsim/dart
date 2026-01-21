@@ -147,8 +147,9 @@ template <class NodeType>
 std::size_t BasicNodeManagerForBodyNode::getNumNodes() const
 {
   NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
-  if (mNodeMap.end() == it)
+  if (mNodeMap.end() == it) {
     return 0;
+  }
 
   return it->second.size();
 }
@@ -158,8 +159,9 @@ template <class NodeType>
 NodeType* BasicNodeManagerForBodyNode::getNode(std::size_t index)
 {
   NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
-  if (mNodeMap.end() == it)
+  if (mNodeMap.end() == it) {
     return nullptr;
+  }
 
   return static_cast<NodeType*>(
       getVectorObjectIfAvailable<Node*>(index, it->second));
@@ -198,8 +200,9 @@ std::size_t BasicNodeManagerForSkeleton::getNumNodes(
 
   const NodeMap& nodeMap = mTreeNodeMaps[treeIndex];
   NodeMap::const_iterator it = nodeMap.find(typeid(NodeType));
-  if (nodeMap.end() == it)
+  if (nodeMap.end() == it) {
     return 0;
+  }
 
   return it->second.size();
 }
@@ -262,8 +265,9 @@ NodeType* BasicNodeManagerForSkeleton::getNode(const std::string& name)
 {
   NodeNameMgrMap::const_iterator it = mNodeNameMgrMap.find(typeid(NodeType));
 
-  if (mNodeNameMgrMap.end() == it)
+  if (mNodeNameMgrMap.end() == it) {
     return nullptr;
+  }
 
   return static_cast<NodeType*>(it->second.getObject(name));
 }

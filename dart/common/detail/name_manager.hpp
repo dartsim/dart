@@ -67,13 +67,15 @@ bool NameManager<T>::setPattern(std::string_view newPattern)
   std::size_t number_start = newPattern.find("%d");
 
   if (name_start == std::string_view::npos
-      || number_start == std::string_view::npos)
+      || number_start == std::string_view::npos) {
     return false;
+  }
 
-  if (name_start < number_start)
+  if (name_start < number_start) {
     mNameBeforeNumber = true;
-  else
+  } else {
     mNameBeforeNumber = false;
+  }
 
   std::size_t prefix_end = std::min(name_start, number_start);
   std::size_t infix_end = std::max(name_start, number_start);
@@ -90,17 +92,19 @@ bool NameManager<T>::setPattern(std::string_view newPattern)
 template <class T>
 std::string NameManager<T>::issueNewName(std::string_view name) const
 {
-  if (!hasName(name))
+  if (!hasName(name)) {
     return std::string(name);
+  }
 
   int count = 1;
   std::string newName;
   do {
     std::stringstream ss;
-    if (mNameBeforeNumber)
+    if (mNameBeforeNumber) {
       ss << mPrefix << name << mInfix << count++ << mAffix;
-    else
+    } else {
       ss << mPrefix << count++ << mInfix << name << mAffix;
+    }
     newName = ss.str();
   } while (hasName(newName));
 
@@ -157,13 +161,15 @@ bool NameManager<T>::removeName(std::string_view name)
 
   auto it = mMap.find(name);
 
-  if (it == mMap.end())
+  if (it == mMap.end()) {
     return false;
+  }
 
   auto rit = mReverseMap.find(it->second);
 
-  if (rit != mReverseMap.end())
+  if (rit != mReverseMap.end()) {
     mReverseMap.erase(rit);
+  }
 
   mMap.erase(it);
 
@@ -178,12 +184,14 @@ bool NameManager<T>::removeObject(const T& obj)
 
   typename std::map<T, std::string>::iterator rit = mReverseMap.find(obj);
 
-  if (rit == mReverseMap.end())
+  if (rit == mReverseMap.end()) {
     return false;
+  }
 
   auto it = mMap.find(rit->second);
-  if (it != mMap.end())
+  if (it != mMap.end()) {
     mMap.erase(it);
+  }
 
   mReverseMap.erase(rit);
 
@@ -233,10 +241,11 @@ T NameManager<T>::getObject(std::string_view name) const
 {
   auto result = mMap.find(name);
 
-  if (result != mMap.end())
+  if (result != mMap.end()) {
     return result->second;
-  else
+  } else {
     return nullptr;
+  }
 }
 
 //==============================================================================
@@ -248,10 +257,11 @@ std::string NameManager<T>::getName(const T& obj) const
   typename std::map<T, std::string>::const_iterator result
       = mReverseMap.find(obj);
 
-  if (result != mReverseMap.end())
+  if (result != mReverseMap.end()) {
     return result->second;
-  else
+  } else {
     return "";
+  }
 }
 
 //==============================================================================
@@ -262,11 +272,13 @@ std::string NameManager<T>::changeObjectName(
   DART_ASSERT(mReverseMap.size() == mMap.size());
 
   typename std::map<T, std::string>::iterator rit = mReverseMap.find(obj);
-  if (rit == mReverseMap.end())
+  if (rit == mReverseMap.end()) {
     return std::string(newName);
+  }
 
-  if (rit->second == newName)
+  if (rit->second == newName) {
     return rit->second;
+  }
 
   removeName(rit->second);
   return issueNewNameAndAdd(newName, obj);

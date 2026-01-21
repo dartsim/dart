@@ -164,26 +164,30 @@ void cullPoints(int n, double p[], int m, int i0, int iret[])
 
   // compute the angle of each point w.r.t. the centroid
   double A[8];
-  for (i = 0; i < n; i++)
+  for (i = 0; i < n; i++) {
     A[i] = atan2(p[i * 2 + 1] - cy, p[i * 2] - cx);
+  }
 
   // search for points that have angles closest to A[i0] + i*(2*pi/m).
   int avail[8];
-  for (i = 0; i < n; i++)
+  for (i = 0; i < n; i++) {
     avail[i] = 1;
+  }
   avail[i0] = 0;
   iret[0] = i0;
   iret++;
   for (j = 1; j < m; j++) {
     a = double(j) * (2 * math::pi / m) + A[i0];
-    if (a > math::pi)
+    if (a > math::pi) {
       a -= 2 * math::pi;
+    }
     double maxdiff = 1e9, diff;
     for (i = 0; i < n; i++) {
       if (avail[i]) {
         diff = fabs(A[i] - a);
-        if (diff > math::pi)
+        if (diff > math::pi) {
           diff = 2 * math::pi - diff;
+        }
         if (diff < maxdiff) {
           maxdiff = diff;
           *iret = i;
@@ -273,8 +277,9 @@ int intersectRectQuad(double h[2], double p[8], double ret[16])
     }
   }
 done:
-  if (q != ret)
+  if (q != ret) {
     memcpy(ret, q, nr * 2 * sizeof(double));
+  }
   return nr;
 }
 
@@ -330,8 +335,9 @@ void dClosestLineBoxPoints(
       s[i] = -s[i];
       v[i] = -v[i];
       sign[i] = -1;
-    } else
+    } else {
       sign[i] = 1;
+    }
   }
 
   // compute v^2
@@ -371,17 +377,20 @@ void dClosestLineBoxPoints(
   // compute d|d|^2/dt for t=0. if it's >= 0 then p1 is the closest point
   double t = 0;
   double dd2dt = 0;
-  for (i = 0; i < 3; i++)
+  for (i = 0; i < 3; i++) {
     dd2dt -= (region[i] ? v2[i] : 0) * tanchor[i];
-  if (dd2dt >= 0)
+  }
+  if (dd2dt >= 0) {
     goto got_answer;
+  }
 
   do {
     // find the point on the line that is at the next clip plane boundary
     double next_t = 1;
     for (i = 0; i < 3; i++) {
-      if (tanchor[i] > t && tanchor[i] < 1 && tanchor[i] < next_t)
+      if (tanchor[i] > t && tanchor[i] < 1 && tanchor[i] < next_t) {
         next_t = tanchor[i];
+      }
     }
 
     // compute d|d|^2/dt for the next t
@@ -412,20 +421,23 @@ void dClosestLineBoxPoints(
 got_answer:
 
   // compute closest point on the line
-  for (i = 0; i < 3; i++)
+  for (i = 0; i < 3; i++) {
     lret[i] = p1[i] + t * tmp[i]; // note: tmp=p2-p1
+  }
 
   // compute closest point on the box
   for (i = 0; i < 3; i++) {
     tmp[i] = sign[i] * (s[i] + t * v[i]);
-    if (tmp[i] < -h[i])
+    if (tmp[i] < -h[i]) {
       tmp[i] = -h[i];
-    else if (tmp[i] > h[i])
+    } else if (tmp[i] > h[i]) {
       tmp[i] = h[i];
+    }
   }
   dMULTIPLY0_331(s, R, tmp);
-  for (i = 0; i < 3; i++)
+  for (i = 0; i < 3; i++) {
     bret[i] = s[i] + c[i];
+  }
 }
 
 // given two boxes (p1,R1,side1) and (p2,R2,side2), collide them together and
@@ -619,10 +631,12 @@ int dBoxBox(
 
 #undef TST
 
-  if (!code)
+  if (!code) {
     return 0;
-  if (s > 0.0)
+  }
+  if (s > 0.0) {
     return 0;
+  }
 
   // if we get to this point, the boxes interpenetrate. compute the normal
   // in global coordinates.
@@ -650,41 +664,49 @@ int dBoxBox(
     // find a point pa on the intersecting edge of box 1
     dVector3 pa;
     double sign;
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < 3; i++) {
       pa[i] = p1[i];
+    }
     for (j = 0; j < 3; j++) {
 #define TEMP_INNER14(a, b) (a[0] * (b)[0] + a[1] * (b)[4] + a[2] * (b)[8])
       sign = (TEMP_INNER14(normal, R1 + j) > 0) ? 1.0 : -1.0;
 
       // sign = (Inner14(normal,R1+j) > 0) ? 1.0 : -1.0;
 
-      for (i = 0; i < 3; i++)
+      for (i = 0; i < 3; i++) {
         pa[i] += sign * A[j] * R1[i * 4 + j];
+      }
     }
 
     // find a point pb on the intersecting edge of box 2
     dVector3 pb;
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < 3; i++) {
       pb[i] = p2[i];
+    }
     for (j = 0; j < 3; j++) {
       sign = (TEMP_INNER14(normal, R2 + j) > 0) ? -1.0 : 1.0;
 #undef TEMP_INNER14
-      for (i = 0; i < 3; i++)
+      for (i = 0; i < 3; i++) {
         pb[i] += sign * B[j] * R2[i * 4 + j];
+      }
     }
 
     double alpha, beta;
     dVector3 ua, ub;
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < 3; i++) {
       ua[i] = R1[((code)-7) / 3 + i * 4];
-    for (i = 0; i < 3; i++)
+    }
+    for (i = 0; i < 3; i++) {
       ub[i] = R2[((code)-7) % 3 + i * 4];
+    }
 
     dLineClosestApproach(pa, ua, pb, ub, &alpha, &beta);
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < 3; i++) {
       pa[i] += ua[i] * alpha;
-    for (i = 0; i < 3; i++)
+    }
+    for (i = 0; i < 3; i++) {
       pb[i] += ub[i] * beta;
+    }
 
     {
       point_vec << 0.5 * (pa[0] + pb[0]), 0.5 * (pa[1] + pb[1]),
@@ -770,19 +792,22 @@ int dBoxBox(
   // compute center point of incident face, in reference-face coordinates
   dVector3 center;
   if (nr[lanr] < 0) {
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < 3; i++) {
       center[i] = pb[i] - pa[i] + Sb[lanr] * Rb[i * 4 + lanr];
+    }
   } else {
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < 3; i++) {
       center[i] = pb[i] - pa[i] - Sb[lanr] * Rb[i * 4 + lanr];
+    }
   }
 
   // find the normal and non-normal axis numbers of the reference box
   int codeN, code1, code2;
-  if (code <= 3)
+  if (code <= 3) {
     codeN = code - 1;
-  else
+  } else {
     codeN = code - 4;
+  }
   if (codeN == 0) {
     code1 = 1;
     code2 = 2;
@@ -829,8 +854,9 @@ int dBoxBox(
   // intersect the incident and reference faces
   double ret[16];
   int n = intersectRectQuad(rect, quad, ret);
-  if (n < 1)
+  if (n < 1) {
     return 0; // this should never happen
+  }
 
   // convert the intersection points into reference-face coordinates,
   // and compute the contact position and depth for each point. only keep
@@ -859,13 +885,15 @@ int dBoxBox(
       cnum++;
     }
   }
-  if (cnum < 1)
+  if (cnum < 1) {
     return 0; // this should never happen
+  }
 
   // we can't generate more contacts than we actually have
   int maxc = 4;
-  if (maxc > cnum)
+  if (maxc > cnum) {
     maxc = cnum;
+  }
   // if (maxc < 1) maxc = 1;
 
   if (cnum <= maxc) {
@@ -1338,10 +1366,11 @@ int collideCylinderPlane(
   double mag = Ry.norm();
   Ry.normalize();
   if (mag < kDartCollisionEps) {
-    if (std::abs(Rx[2]) > 1.0 - kDartCollisionEps)
+    if (std::abs(Rx[2]) > 1.0 - kDartCollisionEps) {
       Ry = Eigen::Vector3d::UnitX();
-    else
+    } else {
       Ry = (Eigen::Vector3d(Rx[1], -Rx[0], 0.0)).normalized();
+    }
   }
 
   Eigen::Vector3d Rz = Rx.cross(Ry);
@@ -1379,12 +1408,14 @@ int collideCylinderPlane(
 
   Eigen::Vector3d point;
 
-  if (std::abs(depth[found] - depth[(found + 1) % 4]) < kDartCollisionEps)
+  if (std::abs(depth[found] - depth[(found + 1) % 4]) < kDartCollisionEps) {
     point = T * (0.5 * (c[found] + c[(found + 1) % 4]));
-  else if (std::abs(depth[found] - depth[(found + 3) % 4]) < kDartCollisionEps)
+  } else if (
+      std::abs(depth[found] - depth[(found + 3) % 4]) < kDartCollisionEps) {
     point = T * (0.5 * (c[found] + c[(found + 3) % 4]));
-  else
+  } else {
     point = T * c[found];
+  }
 
   if (penetration > 0.0) {
     Contact contact;

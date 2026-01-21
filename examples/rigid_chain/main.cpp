@@ -61,9 +61,11 @@ private:
     int nDof = mWorld->getSkeleton(0)->getNumDofs();
     // add damping to each joint; twist-dof has smaller damping
     Eigen::VectorXd damping = -0.01 * mWorld->getSkeleton(0)->getVelocities();
-    for (int i = 0; i < nDof; i++)
-      if (i % 3 == 1)
+    for (int i = 0; i < nDof; i++) {
+      if (i % 3 == 1) {
         damping[i] *= 0.1;
+      }
+    }
     return damping;
   }
 };
@@ -82,8 +84,9 @@ int main()
 
   int dof = myWorld->getSkeleton(0)->getNumDofs();
   Eigen::VectorXd initPose(dof);
-  for (int i = 0; i < dof; i++)
+  for (int i = 0; i < dof; i++) {
     initPose[i] = dart::math::Random::uniform(-0.5, 0.5);
+  }
   myWorld->getSkeleton(0)->setPositions(initPose);
 
   // Create a WorldNode and wrap it around the world

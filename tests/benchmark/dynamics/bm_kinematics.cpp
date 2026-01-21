@@ -79,8 +79,9 @@ std::vector<dart::simulation::WorldPtr> getWorlds()
 {
   std::vector<std::string> sceneFiles = getSceneFiles();
   std::vector<dart::simulation::WorldPtr> worlds;
-  for (std::size_t i = 0; i < sceneFiles.size(); ++i)
+  for (std::size_t i = 0; i < sceneFiles.size(); ++i) {
     worlds.push_back(dart::io::readWorld(dart::common::Uri(sceneFiles[i])));
+  }
 
   return worlds;
 }
@@ -92,12 +93,14 @@ void testForwardKinematicSpeed(
     bool acceleration,
     std::size_t numTests)
 {
-  if (nullptr == skel)
+  if (nullptr == skel) {
     return;
+  }
 
   dart::dynamics::BodyNode* bn = skel->getBodyNode(0);
-  while (bn->getNumChildBodyNodes() > 0)
+  while (bn->getNumChildBodyNodes() > 0) {
     bn = bn->getChildBodyNode(0);
+  }
 
   for (std::size_t i = 0; i < numTests; ++i) {
     for (std::size_t i = 0; i < skel->getNumDofs(); ++i) {
@@ -109,14 +112,16 @@ void testForwardKinematicSpeed(
     }
 
     for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i) {
-      if (position)
+      if (position) {
         skel->getBodyNode(i)->getWorldTransform();
+      }
       if (velocity) {
         skel->getBodyNode(i)->getSpatialVelocity();
         skel->getBodyNode(i)->getPartialAcceleration();
       }
-      if (acceleration)
+      if (acceleration) {
         skel->getBodyNode(i)->getSpatialAcceleration();
+      }
     }
   }
 }
@@ -154,8 +159,9 @@ BENCHMARK(BM_Kinematics)->Arg(1)->Arg(10)->Arg(100)->Arg(1000)->Arg(10000);
 void testDynamicsSpeed(
     dart::simulation::WorldPtr world, std::size_t numIterations)
 {
-  if (nullptr == world)
+  if (nullptr == world) {
     return;
+  }
 
   world->eachSkeleton([](dart::dynamics::Skeleton* skel) {
     skel->resetPositions();
@@ -163,16 +169,18 @@ void testDynamicsSpeed(
     skel->resetAccelerations();
   });
 
-  for (std::size_t i = 0; i < numIterations; ++i)
+  for (std::size_t i = 0; i < numIterations; ++i) {
     world->step();
+  }
 }
 
 void runDynamicsTest(
     const std::vector<dart::simulation::WorldPtr>& worlds,
     std::size_t numIterations)
 {
-  for (std::size_t i = 0; i < worlds.size(); ++i)
+  for (std::size_t i = 0; i < worlds.size(); ++i) {
     testDynamicsSpeed(worlds[i], numIterations);
+  }
 }
 
 static void BM_Dynamics(benchmark::State& state)

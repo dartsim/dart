@@ -289,10 +289,11 @@ double State::getCoronalCOMVelocity()
 //==============================================================================
 Eigen::Vector3d State::getStanceAnklePosition() const
 {
-  if (mStanceFoot == nullptr)
+  if (mStanceFoot == nullptr) {
     return getCOM();
-  else
+  } else {
     return _getJointPosition(mStanceFoot);
+  }
 }
 
 //==============================================================================
@@ -321,10 +322,11 @@ double State::getSagittalPelvisAngle() const
 
   Vector3d cross = comY.cross(projPelvisZ);
 
-  if (cross[2] > 0.0)
+  if (cross[2] > 0.0) {
     return angle;
-  else
+  } else {
     return -angle;
+  }
 }
 
 //==============================================================================
@@ -340,10 +342,11 @@ double State::getCoronalPelvisAngle() const
 
   Vector3d cross = comY.cross(projPelvisZ);
 
-  if (cross[0] > 0.0)
+  if (cross[0] > 0.0) {
     return angle;
-  else
+  } else {
     return -angle;
+  }
 }
 
 //==============================================================================
@@ -359,10 +362,11 @@ double State::getSagittalLeftLegAngle() const
 
   Vector3d cross = comY.cross(projThighAZ);
 
-  if (cross[2] > 0.0)
+  if (cross[2] > 0.0) {
     return angle;
-  else
+  } else {
     return -angle;
+  }
 }
 
 //==============================================================================
@@ -378,10 +382,11 @@ double State::getSagittalRightLegAngle() const
 
   Vector3d cross = comY.cross(projThighAZ);
 
-  if (cross[2] > 0.0)
+  if (cross[2] > 0.0) {
     return angle;
-  else
+  } else {
     return -angle;
+  }
 }
 
 //==============================================================================
@@ -397,10 +402,11 @@ double State::getCoronalLeftLegAngle() const
 
   Vector3d cross = comY.cross(projThighAZ);
 
-  if (cross[0] > 0.0)
+  if (cross[0] > 0.0) {
     return angle;
-  else
+  } else {
     return -angle;
+  }
 }
 
 //==============================================================================
@@ -416,10 +422,11 @@ double State::getCoronalRightLegAngle() const
 
   Vector3d cross = comY.cross(projThighAZ);
 
-  if (cross[0] > 0.0)
+  if (cross[0] > 0.0) {
     return angle;
-  else
+  } else {
     return -angle;
+  }
 }
 
 //==============================================================================

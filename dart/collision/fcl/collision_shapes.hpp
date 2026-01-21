@@ -242,8 +242,9 @@ template <class BV>
   double deltaRadius;
   double radiusLow, radiusHigh;
 
-  if (_slices >= CACHE_SIZE)
+  if (_slices >= CACHE_SIZE) {
     _slices = CACHE_SIZE - 1;
+  }
 
   if (_slices < 2 || _stacks < 1 || _baseRadius < 0.0 || _topRadius < 0.0
       || _height < 0.0) {

@@ -81,8 +81,9 @@ LcpResult DantzigSolver::solve(
     return result;
   }
 
-  if (x.size() != n)
+  if (x.size() != n) {
     x = Eigen::VectorXd::Zero(n);
+  }
   const int nSkip = padding(static_cast<int>(n));
 
   std::vector<double> Adata(n * nSkip, 0.0);

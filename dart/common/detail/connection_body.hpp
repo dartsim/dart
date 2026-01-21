@@ -143,8 +143,9 @@ struct DefaultCombiner
   {
     // If there are no slots to call, just return the
     // default-constructed value
-    if (first == last)
+    if (first == last) {
       return T();
+    }
 
     return *(--last);
   }

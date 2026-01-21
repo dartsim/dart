@@ -72,17 +72,20 @@ void printUsage(const char* argv0)
 
 bool parseSizeT(std::string_view value, std::size_t& output)
 {
-  if (value.empty() || value.front() == '-')
+  if (value.empty() || value.front() == '-') {
     return false;
+  }
 
   char* end = nullptr;
   const unsigned long long result
       = std::strtoull(std::string(value).c_str(), &end, 10);
-  if (!end || *end != '\0')
+  if (!end || *end != '\0') {
     return false;
+  }
 
-  if (result > std::numeric_limits<std::size_t>::max())
+  if (result > std::numeric_limits<std::size_t>::max()) {
     return false;
+  }
 
   output = static_cast<std::size_t>(result);
   return true;
@@ -90,17 +93,20 @@ bool parseSizeT(std::string_view value, std::size_t& output)
 
 bool parseUnsignedInt(std::string_view value, unsigned int& output)
 {
-  if (value.empty() || value.front() == '-')
+  if (value.empty() || value.front() == '-') {
     return false;
+  }
 
   char* end = nullptr;
   const unsigned long result
       = std::strtoul(std::string(value).c_str(), &end, 10);
-  if (!end || *end != '\0')
+  if (!end || *end != '\0') {
     return false;
+  }
 
-  if (result > std::numeric_limits<unsigned int>::max())
+  if (result > std::numeric_limits<unsigned int>::max()) {
     return false;
+  }
 
   output = static_cast<unsigned int>(result);
   return true;
@@ -108,13 +114,15 @@ bool parseUnsignedInt(std::string_view value, unsigned int& output)
 
 bool parseDouble(std::string_view value, double& output)
 {
-  if (value.empty())
+  if (value.empty()) {
     return false;
+  }
 
   char* end = nullptr;
   const double result = std::strtod(std::string(value).c_str(), &end);
-  if (!end || *end != '\0')
+  if (!end || *end != '\0') {
     return false;
+  }
 
   output = result;
   return true;
@@ -178,10 +186,12 @@ int main(int argc, char* argv[])
 {
   Options options;
   const ParseResult parseResult = parseArgs(argc, argv, options);
-  if (parseResult == ParseResult::Help)
+  if (parseResult == ParseResult::Help) {
     return 0;
-  if (parseResult == ParseResult::Error)
+  }
+  if (parseResult == ParseResult::Error) {
     return 1;
+  }
 
   dart::math::Random::setSeed(options.seed);
 
@@ -191,8 +201,9 @@ int main(int argc, char* argv[])
     return 1;
   }
 
-  if (options.setTimeStep)
+  if (options.setTimeStep) {
     world->setTimeStep(options.timeStep);
+  }
 
   std::cout << "World loaded with " << world->getNumSkeletons()
             << " skeleton(s).\n"
@@ -200,8 +211,9 @@ int main(int argc, char* argv[])
             << "Steps: " << options.steps << "\n";
 
   const auto start = std::chrono::steady_clock::now();
-  for (std::size_t i = 0; i < options.steps; ++i)
+  for (std::size_t i = 0; i < options.steps; ++i) {
     world->step();
+  }
   const auto end = std::chrono::steady_clock::now();
 
   const std::chrono::duration<double> elapsed = end - start;

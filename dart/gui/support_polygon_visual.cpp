@@ -102,15 +102,17 @@ double SupportPolygonVisual::getDisplayElevation() const
 //==============================================================================
 void SupportPolygonVisual::displayPolygon(bool display)
 {
-  if (mDisplayPolygon == display)
+  if (mDisplayPolygon == display) {
     return;
+  }
 
   mDisplayPolygon = display;
 
-  if (mDisplayPolygon)
+  if (mDisplayPolygon) {
     addChild(mPolygonGeode);
-  else
+  } else {
     removeChild(mPolygonGeode);
+  }
 }
 
 //==============================================================================
@@ -130,15 +132,17 @@ Eigen::Vector4d SupportPolygonVisual::getPolygonColor() const
 //==============================================================================
 void SupportPolygonVisual::displayCentroid(bool display)
 {
-  if (mDisplayCentroid == display)
+  if (mDisplayCentroid == display) {
     return;
+  }
 
   mDisplayCentroid = display;
 
-  if (mDisplayCentroid)
+  if (mDisplayCentroid) {
     addChild(mCentroidNode);
-  else
+  } else {
     removeChild(mCentroidNode);
+  }
 }
 
 //==============================================================================
@@ -150,8 +154,9 @@ bool SupportPolygonVisual::isCentroidDisplayed() const
 //==============================================================================
 void SupportPolygonVisual::setCentroidRadius(double radius)
 {
-  if (mCentroidRadius == radius)
+  if (mCentroidRadius == radius) {
     return;
+  }
 
   mCentroidRadius = radius;
   const dart::dynamics::ShapePtr& shape = mCentroid->getShape();
@@ -169,15 +174,17 @@ double SupportPolygonVisual::getCentroidRadius() const
 //==============================================================================
 void SupportPolygonVisual::displayCenterOfMass(bool display)
 {
-  if (mDisplayCOM == display)
+  if (mDisplayCOM == display) {
     return;
+  }
 
   mDisplayCOM = display;
 
-  if (mDisplayCOM)
+  if (mDisplayCOM) {
     addChild(mComNode);
-  else
+  } else {
     removeChild(mComNode);
+  }
 }
 
 //==============================================================================
@@ -189,8 +196,9 @@ bool SupportPolygonVisual::isCenterOfMassDisplayed() const
 //==============================================================================
 void SupportPolygonVisual::setCenterOfMassRadius(double radius)
 {
-  if (mComRadius == radius)
+  if (mComRadius == radius) {
     return;
+  }
 
   mComRadius = radius;
   const dart::dynamics::ShapePtr& shape = mCom->getShape();
@@ -233,8 +241,9 @@ const Eigen::Vector4d& SupportPolygonVisual::getInvalidCOMColor() const
 void SupportPolygonVisual::refresh()
 {
   const dart::dynamics::SkeletonPtr& skel = mSkeleton.lock();
-  if (nullptr == skel)
+  if (nullptr == skel) {
     return;
+  }
 
   const dart::math::SupportPolygon& poly
       = (dart::dynamics::INVALID_INDEX == mTreeIndex)
@@ -317,10 +326,11 @@ void SupportPolygonVisual::refresh()
     tf.translation() = C;
     mCom->setTransform(tf);
 
-    if (dart::math::isInsideSupportPolygon(Cproj, poly))
+    if (dart::math::isInsideSupportPolygon(Cproj, poly)) {
       mCom->getVisualAspect(true)->setColor(mValidColor);
-    else
+    } else {
       mCom->getVisualAspect(true)->setColor(mInvalidColor);
+    }
 
     mComNode->refresh();
 

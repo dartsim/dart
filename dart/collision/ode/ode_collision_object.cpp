@@ -66,8 +66,9 @@ static detail::OdeGeom* createOdeGeom(
 //==============================================================================
 OdeCollisionObject::~OdeCollisionObject()
 {
-  if (mBodyId)
+  if (mBodyId) {
     dBodyDestroy(mBodyId);
+  }
 }
 
 //==============================================================================
@@ -140,8 +141,9 @@ void OdeCollisionObject::updateEngineData()
 
   // If body id is nullptr, this object is immobile. Immobile geom doesn't need
   // to update its pose.
-  if (!mBodyId)
+  if (!mBodyId) {
     return;
+  }
 
   const Eigen::Isometry3d& tf = getTransform();
 

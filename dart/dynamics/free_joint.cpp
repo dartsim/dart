@@ -78,8 +78,9 @@ FreeJoint::Properties FreeJoint::getFreeJointProperties() const
 //==============================================================================
 void FreeJoint::copy(const FreeJoint& otherJoint)
 {
-  if (this == &otherJoint)
+  if (this == &otherJoint) {
     return;
+  }
 
   setProperties(otherJoint.getFreeJointProperties());
 }
@@ -87,8 +88,9 @@ void FreeJoint::copy(const FreeJoint& otherJoint)
 //==============================================================================
 void FreeJoint::copy(const FreeJoint* otherJoint)
 {
-  if (nullptr == otherJoint)
+  if (nullptr == otherJoint) {
     return;
+  }
 
   copy(*otherJoint);
 }
@@ -103,8 +105,9 @@ FreeJoint& FreeJoint::operator=(const FreeJoint& otherJoint)
 //==============================================================================
 void FreeJoint::setCoordinateChart(CoordinateChart chart)
 {
-  if (mAspectProperties.mCoordinateChart == chart)
+  if (mAspectProperties.mCoordinateChart == chart) {
     return;
+  }
 
   const CoordinateChart previousChart = mAspectProperties.mCoordinateChart;
   const Eigen::Isometry3d transform
@@ -193,8 +196,9 @@ Eigen::Isometry3d FreeJoint::convertToTransform(
 void FreeJoint::setTransformOf(
     Joint* joint, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
 {
-  if (nullptr == joint)
+  if (nullptr == joint) {
     return;
+  }
 
   FreeJoint* freeJoint = dynamic_cast<FreeJoint*>(joint);
 
@@ -214,8 +218,9 @@ void FreeJoint::setTransformOf(
 void FreeJoint::setTransformOf(
     BodyNode* bodyNode, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
 {
-  if (nullptr == bodyNode)
+  if (nullptr == bodyNode) {
     return;
+  }
 
   setTransformOf(bodyNode->getParentJoint(), tf, withRespectTo);
 }
@@ -227,21 +232,24 @@ void FreeJoint::setTransformOf(
     const Frame* withRespectTo,
     bool applyToAllRootBodies)
 {
-  if (nullptr == skeleton)
+  if (nullptr == skeleton) {
     return;
+  }
 
   const std::size_t numTrees = skeleton->getNumTrees();
 
-  if (0 == numTrees)
+  if (0 == numTrees) {
     return;
+  }
 
   if (!applyToAllRootBodies) {
     setTransformOf(skeleton->getRootBodyNode(), tf, withRespectTo);
     return;
   }
 
-  for (std::size_t i = 0; i < numTrees; ++i)
+  for (std::size_t i = 0; i < numTrees; ++i) {
     setTransformOf(skeleton->getRootBodyNode(i), tf, withRespectTo);
+  }
 }
 
 //==============================================================================
@@ -255,11 +263,13 @@ void FreeJoint::setSpatialMotion(
     const Frame* accRelativeTo,
     const Frame* accInCoordinatesOf)
 {
-  if (newTransform)
+  if (newTransform) {
     setTransform(*newTransform, withRespectTo);
+  }
 
-  if (newSpatialVelocity)
+  if (newSpatialVelocity) {
     setSpatialVelocity(*newSpatialVelocity, velRelativeTo, velInCoordinatesOf);
+  }
 
   if (newSpatialAcceleration) {
     setSpatialAcceleration(
@@ -765,20 +775,25 @@ void FreeJoint::updateDegreeOfFreedomNames()
 {
   std::array<std::string, 3> rotAffixes{"_rot_x", "_rot_y", "_rot_z"};
 
-  if (getCoordinateChart() == CoordinateChart::EULER_ZYX)
+  if (getCoordinateChart() == CoordinateChart::EULER_ZYX) {
     rotAffixes = {"_rot_z", "_rot_y", "_rot_x"};
-
-  for (std::size_t i = 0; i < rotAffixes.size(); ++i) {
-    if (!mDofs[i]->isNamePreserved())
-      mDofs[i]->setName(Joint::mAspectProperties.mName + rotAffixes[i], false);
   }
 
-  if (!mDofs[3]->isNamePreserved())
+  for (std::size_t i = 0; i < rotAffixes.size(); ++i) {
+    if (!mDofs[i]->isNamePreserved()) {
+      mDofs[i]->setName(Joint::mAspectProperties.mName + rotAffixes[i], false);
+    }
+  }
+
+  if (!mDofs[3]->isNamePreserved()) {
     mDofs[3]->setName(Joint::mAspectProperties.mName + "_pos_x", false);
-  if (!mDofs[4]->isNamePreserved())
+  }
+  if (!mDofs[4]->isNamePreserved()) {
     mDofs[4]->setName(Joint::mAspectProperties.mName + "_pos_y", false);
-  if (!mDofs[5]->isNamePreserved())
+  }
+  if (!mDofs[5]->isNamePreserved()) {
     mDofs[5]->setName(Joint::mAspectProperties.mName + "_pos_z", false);
+  }
 }
 
 //==============================================================================

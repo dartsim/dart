@@ -103,8 +103,9 @@ void SphereShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     return;
+  }
 
   extractData(false);
 }
@@ -182,10 +183,11 @@ SphereShapeDrawable::SphereShapeDrawable(
 //==============================================================================
 void SphereShapeDrawable::refresh(bool firstTime)
 {
-  if (mSphereShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mSphereShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     setDataVariance(::osg::Object::STATIC);
-  else
+  } else {
     setDataVariance(::osg::Object::DYNAMIC);
+  }
 
   if (mSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
       || firstTime) {

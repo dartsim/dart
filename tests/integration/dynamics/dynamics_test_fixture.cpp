@@ -264,39 +264,43 @@ void compareBodyNodeFkToJacobian(
   bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
   EXPECT_TRUE(spatialVelSegEqual);
   EXPECT_TRUE(spatialVelEqual);
-  if (!spatialVelSegEqual)
+  if (!spatialVelSegEqual) {
     printComparisonError(
         "spatial velocity (seg)",
         bn->getName(),
         refFrame->getName(),
         SpatialVelFk,
         SpatialVelJacSeg);
-  if (!spatialVelEqual)
+  }
+  if (!spatialVelEqual) {
     printComparisonError(
         "spatial velocity",
         bn->getName(),
         refFrame->getName(),
         SpatialVelFk,
         SpatialVelJac);
+  }
 
   bool spatialAccSegEqual = equals(SpatialAccFk, SpatialAccJacSeg, tolerance);
   bool spatialAccEqual = equals(SpatialAccFk, SpatialAccJac, tolerance);
   EXPECT_TRUE(spatialAccSegEqual);
   EXPECT_TRUE(spatialAccEqual);
-  if (!spatialAccSegEqual)
+  if (!spatialAccSegEqual) {
     printComparisonError(
         "spatial acceleration (seg)",
         bn->getName(),
         refFrame->getName(),
         SpatialAccFk,
         SpatialAccJacSeg);
-  if (!spatialAccEqual)
+  }
+  if (!spatialAccEqual) {
     printComparisonError(
         "spatial acceleration",
         bn->getName(),
         refFrame->getName(),
         SpatialAccFk,
         SpatialAccJac);
+  }
 
   //-- Linear Jacobian tests ---------------------------------------------------
 
@@ -319,39 +323,43 @@ void compareBodyNodeFkToJacobian(
   bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
   EXPECT_TRUE(linearVelSegEqual);
   EXPECT_TRUE(linearVelEqual);
-  if (!linearVelSegEqual)
+  if (!linearVelSegEqual) {
     printComparisonError(
         "linear velocity (seg)",
         bn->getName(),
         refFrame->getName(),
         LinearVelFk,
         LinearVelJacSeg);
-  if (!linearVelEqual)
+  }
+  if (!linearVelEqual) {
     printComparisonError(
         "linear velocity",
         bn->getName(),
         refFrame->getName(),
         LinearVelFk,
         LinearVelJac);
+  }
 
   bool linearAccSegEqual = equals(LinearAccFk, LinearAccJacSeg, tolerance);
   bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
   EXPECT_TRUE(linearAccSegEqual);
   EXPECT_TRUE(linearAccEqual);
-  if (!linearAccSegEqual)
+  if (!linearAccSegEqual) {
     printComparisonError(
         "linear acceleration (seg)",
         bn->getName(),
         refFrame->getName(),
         LinearAccFk,
         LinearAccJacSeg);
-  if (!linearAccEqual)
+  }
+  if (!linearAccEqual) {
     printComparisonError(
         "linear acceleration",
         bn->getName(),
         refFrame->getName(),
         LinearAccFk,
         LinearAccJac);
+  }
 
   //-- Angular Jacobian tests
 
@@ -375,39 +383,43 @@ void compareBodyNodeFkToJacobian(
   bool angularVelEqual = equals(AngularVelFk, AngularVelJac, tolerance);
   EXPECT_TRUE(angularVelSegEqual);
   EXPECT_TRUE(angularVelEqual);
-  if (!angularVelSegEqual)
+  if (!angularVelSegEqual) {
     printComparisonError(
         "angular velocity (seg)",
         bn->getName(),
         refFrame->getName(),
         AngularVelFk,
         AngularVelJacSeg);
-  if (!angularVelEqual)
+  }
+  if (!angularVelEqual) {
     printComparisonError(
         "angular velocity",
         bn->getName(),
         refFrame->getName(),
         AngularVelFk,
         AngularVelJac);
+  }
 
   bool angularAccSegEqual = equals(AngularAccFk, AngularAccJacSeg, tolerance);
   bool angularAccEqual = equals(AngularAccFk, AngularAccJac, tolerance);
   EXPECT_TRUE(angularAccSegEqual);
   EXPECT_TRUE(angularAccEqual);
-  if (!angularAccSegEqual)
+  if (!angularAccSegEqual) {
     printComparisonError(
         "angular acceleration (seg)",
         bn->getName(),
         refFrame->getName(),
         AngularAccFk,
         AngularAccJacSeg);
-  if (!angularAccEqual)
+  }
+  if (!angularAccEqual) {
     printComparisonError(
         "angular acceleration",
         bn->getName(),
         refFrame->getName(),
         AngularAccFk,
         AngularAccJac);
+  }
 }
 
 //==============================================================================
@@ -455,39 +467,43 @@ void compareBodyNodeFkToJacobian(
   bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
   EXPECT_TRUE(spatialVelSegEqual);
   EXPECT_TRUE(spatialVelEqual);
-  if (!spatialVelSegEqual)
+  if (!spatialVelSegEqual) {
     printComparisonError(
         "spatial velocity w/ offset (seg)",
         bn->getName(),
         refFrame->getName(),
         SpatialVelFk,
         SpatialVelJacSeg);
-  if (!spatialVelEqual)
+  }
+  if (!spatialVelEqual) {
     printComparisonError(
         "spatial velocity w/ offset",
         bn->getName(),
         refFrame->getName(),
         SpatialVelFk,
         SpatialVelJac);
+  }
 
   bool spatialAccSegEqual = equals(SpatialAccFk, SpatialAccJacSeg, tolerance);
   bool spatialAccEqual = equals(SpatialAccFk, SpatialAccJac, tolerance);
   EXPECT_TRUE(spatialAccSegEqual);
   EXPECT_TRUE(spatialAccEqual);
-  if (!spatialAccSegEqual)
+  if (!spatialAccSegEqual) {
     printComparisonError(
         "spatial acceleration w/ offset (seg)",
         bn->getName(),
         refFrame->getName(),
         SpatialAccFk,
         SpatialAccJacSeg);
-  if (!spatialAccEqual)
+  }
+  if (!spatialAccEqual) {
     printComparisonError(
         "spatial acceleration w/ offset",
         bn->getName(),
         refFrame->getName(),
         SpatialAccFk,
         SpatialAccJac);
+  }
 
   //-- Linear Jacobian tests ---------------------------------------------------
 
@@ -514,39 +530,43 @@ void compareBodyNodeFkToJacobian(
   bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
   EXPECT_TRUE(linearVelSegEqual);
   EXPECT_TRUE(linearVelEqual);
-  if (!linearVelSegEqual)
+  if (!linearVelSegEqual) {
     printComparisonError(
         "linear velocity w/ offset (seg)",
         bn->getName(),
         refFrame->getName(),
         LinearVelFk,
         LinearVelJacSeg);
-  if (!linearVelEqual)
+  }
+  if (!linearVelEqual) {
     printComparisonError(
         "linear velocity w/ offset",
         bn->getName(),
         refFrame->getName(),
         LinearVelFk,
         LinearVelJac);
+  }
 
   bool linearAccSegEqual = equals(LinearAccFk, LinearAccJacSeg, tolerance);
   bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
   EXPECT_TRUE(linearAccSegEqual);
   EXPECT_TRUE(linearAccEqual);
-  if (!linearAccSegEqual)
+  if (!linearAccSegEqual) {
     printComparisonError(
         "linear acceleration w/ offset (seg)",
         bn->getName(),
         refFrame->getName(),
         LinearAccFk,
         LinearAccJacSeg);
-  if (!linearAccEqual)
+  }
+  if (!linearAccEqual) {
     printComparisonError(
         "linear acceleration w/ offset",
         bn->getName(),
         refFrame->getName(),
         LinearAccFk,
         LinearAccJac);
+  }
 
   //-- Angular Jacobian tests --------------------------------------------------
 
@@ -570,39 +590,43 @@ void compareBodyNodeFkToJacobian(
   bool angularVelEqual = equals(AngularVelFk, AngularVelJac, tolerance);
   EXPECT_TRUE(angularVelSegEqual);
   EXPECT_TRUE(angularVelEqual);
-  if (!angularVelSegEqual)
+  if (!angularVelSegEqual) {
     printComparisonError(
         "angular velocity w/ offset (seg)",
         bn->getName(),
         refFrame->getName(),
         AngularVelFk,
         AngularVelJacSeg);
-  if (!angularVelEqual)
+  }
+  if (!angularVelEqual) {
     printComparisonError(
         "angular velocity w/ offset",
         bn->getName(),
         refFrame->getName(),
         AngularVelFk,
         AngularVelJac);
+  }
 
   bool angularAccSegEqual = equals(AngularAccFk, AngularAccJacSeg, tolerance);
   bool angularAccEqual = equals(AngularAccFk, AngularAccJac, tolerance);
   EXPECT_TRUE(angularAccSegEqual);
-  if (!angularAccSegEqual)
+  if (!angularAccSegEqual) {
     printComparisonError(
         "angular acceleration w/ offset (seg)",
         bn->getName(),
         refFrame->getName(),
         AngularAccFk,
         AngularAccJacSeg);
+  }
   EXPECT_TRUE(angularAccEqual);
-  if (!angularAccEqual)
+  if (!angularAccEqual) {
     printComparisonError(
         "angular acceleration w/ offset",
         bn->getName(),
         refFrame->getName(),
         AngularAccFk,
         AngularAccJac);
+  }
 }
 
 //==============================================================================
@@ -904,8 +928,9 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
         compareBodyNodeFkToJacobianRelative(bn, bn, Frame::World(), TOLERANCE);
 
 #if !defined(NDEBUG)
-        if (skeleton->getNumBodyNodes() == 0u)
+        if (skeleton->getNumBodyNodes() == 0u) {
           continue;
+        }
 
         for (std::size_t l = skeleton->getNumBodyNodes() - 1;
              l < skeleton->getNumBodyNodes();
@@ -1544,10 +1569,12 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
 
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          if (lbRP < -pi)
+          if (lbRP < -pi) {
             lbRP = -pi;
-          if (ubRP > pi)
+          }
+          if (ubRP > pi) {
             ubRP = pi;
+          }
           joint->setRestPosition(l, Random::uniform(lbRP, ubRP));
         }
       }
@@ -1708,23 +1735,25 @@ void compareCOMJacobianToFk(
 
   bool spatialVelEqual = equals(comSpatialVelFk, comSpatialVelJac, tolerance);
   EXPECT_TRUE(spatialVelEqual);
-  if (!spatialVelEqual)
+  if (!spatialVelEqual) {
     printComparisonError(
         "COM spatial velocity",
         skel->getName(),
         refFrame->getName(),
         comSpatialVelFk,
         comSpatialVelJac);
+  }
 
   bool spatialAccEqual = equals(comSpatialAccFk, comSpatialAccJac, tolerance);
   EXPECT_TRUE(spatialAccEqual);
-  if (!spatialAccEqual)
+  if (!spatialAccEqual) {
     printComparisonError(
         "COM spatial acceleration",
         skel->getName(),
         refFrame->getName(),
         comSpatialAccFk,
         comSpatialAccJac);
+  }
 
   Vector3d comLinearVelFk
       = skel->getCOMLinearVelocity(Frame::World(), refFrame);
@@ -1740,23 +1769,25 @@ void compareCOMJacobianToFk(
 
   bool linearVelEqual = equals(comLinearVelFk, comLinearVelJac);
   EXPECT_TRUE(linearVelEqual);
-  if (!linearVelEqual)
+  if (!linearVelEqual) {
     printComparisonError(
         "COM linear velocity",
         skel->getName(),
         refFrame->getName(),
         comLinearVelFk,
         comLinearVelJac);
+  }
 
   bool linearAccEqual = equals(comLinearAccFk, comLinearAccJac);
   EXPECT_TRUE(linearAccEqual);
-  if (!linearAccEqual)
+  if (!linearAccEqual) {
     printComparisonError(
         "COM linear acceleration",
         skel->getName(),
         refFrame->getName(),
         comLinearAccFk,
         comLinearAccJac);
+  }
 }
 
 //==============================================================================
@@ -1838,10 +1869,12 @@ void DynamicsTest::testCenterOfMass(const common::Uri& uri)
 
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          if (lbRP < -pi)
+          if (lbRP < -pi) {
             lbRP = -pi;
-          if (ubRP > pi)
+          }
+          if (ubRP > pi) {
             ubRP = pi;
+          }
           joint->setRestPosition(l, Random::uniform(lbRP, ubRP));
         }
       }
@@ -1863,8 +1896,9 @@ void DynamicsTest::testCenterOfMass(const common::Uri& uri)
 
       compareCOMJacobianToFk(skeleton, Frame::World(), 1e-6);
 
-      for (std::size_t r = 0; r < refFrames.size(); ++r)
+      for (std::size_t r = 0; r < refFrames.size(); ++r) {
         compareCOMJacobianToFk(skeleton, refFrames[r], 1e-6);
+      }
     }
   }
 }
@@ -1991,10 +2025,12 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
 
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          if (lbRP < -pi)
+          if (lbRP < -pi) {
             lbRP = -pi;
-          if (ubRP > pi)
+          }
+          if (ubRP > pi) {
             ubRP = pi;
+          }
           joint->setRestPosition(l, Random::uniform(lbRP, ubRP));
         }
       }
@@ -2011,8 +2047,9 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
       skel->setVelocities(dq);
       skel->setAccelerations(ddq);
 
-      for (const auto& gravity : gravities)
+      for (const auto& gravity : gravities) {
         compareCOMAccelerationToGravity(skel, gravity, 1e-6);
+      }
     }
   }
 }
@@ -2070,10 +2107,12 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
         for (int l = 0; l < localDof; ++l) {
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          if (lbRP < -pi)
+          if (lbRP < -pi) {
             lbRP = -pi;
-          if (ubRP > pi)
+          }
+          if (ubRP > pi) {
             ubRP = pi;
+          }
           joint->setPosition(l, Random::uniform(lbRP, ubRP));
         }
 
@@ -2092,8 +2131,9 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
 
         std::size_t index = 0;
         for (std::size_t l = 0; l < dof; ++l) {
-          if (constraintVector1(l) == 0.0)
+          if (constraintVector1(l) == 0.0) {
             continue;
+          }
 
           EXPECT_NEAR(constraintVector1(l), constraintVector2(index), 1e-6);
           index++;
@@ -2159,10 +2199,12 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
         for (int l = 0; l < localDof; ++l) {
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          if (lbRP < -pi)
+          if (lbRP < -pi) {
             lbRP = -pi;
-          if (ubRP > pi)
+          }
+          if (ubRP > pi) {
             ubRP = pi;
+          }
           joint->setPosition(l, Random::uniform(lbRP, ubRP));
         }
       }
@@ -2174,8 +2216,9 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
 
       // Set random impulses
       VectorXd impulses = VectorXd::Zero(dof);
-      for (int k = 0; k < impulses.size(); ++k)
+      for (int k = 0; k < impulses.size(); ++k) {
         impulses[k] = Random::uniform(lb, ub);
+      }
       skel->setJointConstraintImpulses(impulses);
 
       // Compute impulse-based forward dynamics

@@ -344,8 +344,9 @@ public:
           mXResolution, mYResolution, mXSize, mYSize, mZMin, mZMax));
       mHeightmapShape
           = std::dynamic_pointer_cast<HeightmapShape<S>>(mTerrain->getShape());
-      if (!mHeightmapShape)
+      if (!mHeightmapShape) {
         return;
+      }
     }
 
     mHeightmapShape->setHeightField(
@@ -377,13 +378,15 @@ public:
     // Menu
     if (ImGui::BeginMenuBar()) {
       if (ImGui::BeginMenu("Menu")) {
-        if (ImGui::MenuItem("Exit"))
+        if (ImGui::MenuItem("Exit")) {
           mViewer->setDone(true);
+        }
         ImGui::EndMenu();
       }
       if (ImGui::BeginMenu("Help")) {
-        if (ImGui::MenuItem("About DART"))
+        if (ImGui::MenuItem("About DART")) {
           mViewer->showAbout();
+        }
         ImGui::EndMenu();
       }
       ImGui::EndMenuBar();
@@ -405,11 +408,13 @@ public:
     if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
       int e = mViewer->isSimulating() ? 0 : 1;
       if (mViewer->isAllowingSimulation()) {
-        if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
+        if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating()) {
           mViewer->simulate(true);
+        }
         ImGui::SameLine();
-        if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating())
+        if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating()) {
           mViewer->simulate(false);
+        }
       }
     }
 
@@ -421,10 +426,11 @@ public:
         auto aspect = mTerrain->getVisualAspect();
         bool display = !aspect->isHidden();
         if (ImGui::Checkbox("Show##Terrain", &display)) {
-          if (display)
+          if (display) {
             aspect->show();
-          else
+          } else {
             aspect->hide();
+          }
         }
 
         auto shape = std::dynamic_pointer_cast<dynamics::HeightmapShapef>(
@@ -433,8 +439,9 @@ public:
 
         int xResolution = static_cast<int>(mXResolution);
         if (ImGui::InputInt("X Resolution", &xResolution, 5, 10)) {
-          if (xResolution < 5)
+          if (xResolution < 5) {
             xResolution = 5;
+          }
 
           if (static_cast<int>(mXResolution) != xResolution) {
             mXResolution = xResolution;
@@ -444,8 +451,9 @@ public:
 
         int yResolution = static_cast<int>(mYResolution);
         if (ImGui::InputInt("Y Resolution", &yResolution, 5, 10)) {
-          if (yResolution < 5)
+          if (yResolution < 5) {
             yResolution = 5;
+          }
 
           if (static_cast<int>(mYResolution) != yResolution) {
             mYResolution = yResolution;
@@ -456,26 +464,30 @@ public:
         ImGui::Separator();
 
         if (ImGui::InputFloat("X Size", &mXSize, 0.1, 0.2)) {
-          if (mXSize < 0.1)
+          if (mXSize < 0.1) {
             mXSize = 0.1;
+          }
 
           updateHeightmapShape();
         }
 
         if (ImGui::InputFloat("Y Size", &mYSize, 0.1, 0.2)) {
-          if (mYSize < 0.1)
+          if (mYSize < 0.1) {
             mYSize = 0.1;
+          }
 
           updateHeightmapShape();
         }
 
         ImGui::Separator();
 
-        if (ImGui::InputFloat("Z Min", &mZMin, 0.05, 0.1))
+        if (ImGui::InputFloat("Z Min", &mZMin, 0.05, 0.1)) {
           updateHeightmapShape();
+        }
 
-        if (ImGui::InputFloat("Z Max", &mZMax, 0.05, 0.1))
+        if (ImGui::InputFloat("Z Max", &mZMax, 0.05, 0.1)) {
           updateHeightmapShape();
+        }
 
         ImGui::Separator();
 
@@ -502,40 +514,48 @@ public:
         ImGui::Text("Grid");
 
         bool display = mGrid->isDisplayed();
-        if (ImGui::Checkbox("Show##Grid", &display))
+        if (ImGui::Checkbox("Show##Grid", &display)) {
           mGrid->display(display);
+        }
 
         if (display) {
           int e = static_cast<int>(mGrid->getPlaneType());
           if (mViewer->isAllowingSimulation()) {
-            if (ImGui::RadioButton("XY-Plane", &e, 0))
+            if (ImGui::RadioButton("XY-Plane", &e, 0)) {
               mGrid->setPlaneType(gui::GridVisual::PlaneType::XY);
+            }
             ImGui::SameLine();
-            if (ImGui::RadioButton("YZ-Plane", &e, 1))
+            if (ImGui::RadioButton("YZ-Plane", &e, 1)) {
               mGrid->setPlaneType(gui::GridVisual::PlaneType::YZ);
+            }
             ImGui::SameLine();
-            if (ImGui::RadioButton("ZX-Plane", &e, 2))
+            if (ImGui::RadioButton("ZX-Plane", &e, 2)) {
               mGrid->setPlaneType(gui::GridVisual::PlaneType::ZX);
+            }
           }
 
           static Eigen::Vector3f offset;
           ImGui::Columns(3);
           offset = mGrid->getOffset().cast<float>();
-          if (ImGui::InputFloat("X", &offset[0], 0.1f, 0.5f, "%.1f"))
+          if (ImGui::InputFloat("X", &offset[0], 0.1f, 0.5f, "%.1f")) {
             mGrid->setOffset(offset.cast<double>());
+          }
           ImGui::NextColumn();
-          if (ImGui::InputFloat("Y", &offset[1], 0.1f, 0.5f, "%.1f"))
+          if (ImGui::InputFloat("Y", &offset[1], 0.1f, 0.5f, "%.1f")) {
             mGrid->setOffset(offset.cast<double>());
+          }
           ImGui::NextColumn();
-          if (ImGui::InputFloat("Z", &offset[2], 0.1f, 0.5f, "%.1f"))
+          if (ImGui::InputFloat("Z", &offset[2], 0.1f, 0.5f, "%.1f")) {
             mGrid->setOffset(offset.cast<double>());
+          }
           ImGui::Columns(1);
 
           static int cellCount;
           cellCount = static_cast<int>(mGrid->getNumCells());
           if (ImGui::InputInt("Line Count", &cellCount, 1, 5)) {
-            if (cellCount < 0)
+            if (cellCount < 0) {
               cellCount = 0;
+            }
             mGrid->setNumCells(static_cast<std::size_t>(cellCount));
           }
 
@@ -554,8 +574,9 @@ public:
                   &minorLinesPerMajorLine,
                   1,
                   5)) {
-            if (minorLinesPerMajorLine < 0)
+            if (minorLinesPerMajorLine < 0) {
               minorLinesPerMajorLine = 0;
+            }
             mGrid->setNumMinorLinesPerMajorLine(
                 static_cast<std::size_t>(minorLinesPerMajorLine));
           }

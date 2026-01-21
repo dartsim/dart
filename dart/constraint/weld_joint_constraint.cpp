@@ -184,8 +184,9 @@ void WeldJointConstraint::getInformation(ConstraintInfo* _lcp)
   _lcp->x[5] = mOldX[5];
 
   Eigen::Vector6d negativeVel = -mBodyNode1->getSpatialVelocity();
-  if (mBodyNode2)
+  if (mBodyNode2) {
     negativeVel += mJacobian2 * mBodyNode2->getSpatialVelocity();
+  }
 
   mViolation *= mErrorReductionParameter * _lcp->invTimeStep;
 
@@ -277,8 +278,9 @@ void WeldJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
     velChange -= mJacobian2 * mBodyNode2->getBodyVelocityChange();
   }
 
-  for (std::size_t i = 0; i < mDim; ++i)
+  for (std::size_t i = 0; i < mDim; ++i) {
     _vel[i] = velChange[i];
+  }
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
   // variable in ODE
@@ -291,27 +293,33 @@ void WeldJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
 //==============================================================================
 void WeldJointConstraint::excite()
 {
-  if (mBodyNode1->isReactive())
+  if (mBodyNode1->isReactive()) {
     mBodyNode1->getSkeleton()->setImpulseApplied(true);
+  }
 
-  if (mBodyNode2 == nullptr)
+  if (mBodyNode2 == nullptr) {
     return;
+  }
 
-  if (mBodyNode2->isReactive())
+  if (mBodyNode2->isReactive()) {
     mBodyNode2->getSkeleton()->setImpulseApplied(true);
+  }
 }
 
 //==============================================================================
 void WeldJointConstraint::unexcite()
 {
-  if (mBodyNode1->isReactive())
+  if (mBodyNode1->isReactive()) {
     mBodyNode1->getSkeleton()->setImpulseApplied(false);
+  }
 
-  if (mBodyNode2 == nullptr)
+  if (mBodyNode2 == nullptr) {
     return;
+  }
 
-  if (mBodyNode2->isReactive())
+  if (mBodyNode2->isReactive()) {
     mBodyNode2->getSkeleton()->setImpulseApplied(false);
+  }
 }
 
 //==============================================================================
@@ -329,16 +337,18 @@ void WeldJointConstraint::applyImpulse(double* _lambda)
 
   mBodyNode1->addConstraintImpulse(imp);
 
-  if (mBodyNode2)
+  if (mBodyNode2) {
     mBodyNode2->addConstraintImpulse(mJacobian2.transpose() * -imp);
+  }
 }
 
 //==============================================================================
 dynamics::SkeletonPtr WeldJointConstraint::getRootSkeleton() const
 {
-  if (mBodyNode1->isReactive())
+  if (mBodyNode1->isReactive()) {
     return ConstraintBase::getRootSkeleton(
         mBodyNode1->getSkeleton()->getSkeleton());
+  }
 
   if (mBodyNode2) {
     if (mBodyNode2->isReactive()) {
@@ -357,22 +367,26 @@ dynamics::SkeletonPtr WeldJointConstraint::getRootSkeleton() const
 //==============================================================================
 void WeldJointConstraint::uniteSkeletons()
 {
-  if (mBodyNode2 == nullptr)
+  if (mBodyNode2 == nullptr) {
     return;
+  }
 
-  if (!mBodyNode1->isReactive() || !mBodyNode2->isReactive())
+  if (!mBodyNode1->isReactive() || !mBodyNode2->isReactive()) {
     return;
+  }
 
-  if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
+  if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton()) {
     return;
+  }
 
   const dynamics::SkeletonPtr& unionId1
       = ConstraintBase::compressPath(mBodyNode1->getSkeleton());
   const dynamics::SkeletonPtr& unionId2
       = ConstraintBase::compressPath(mBodyNode2->getSkeleton());
 
-  if (unionId1 == unionId2)
+  if (unionId1 == unionId2) {
     return;
+  }
 
   if (unionId1->mUnionSize < unionId2->mUnionSize) {
     // Merge root1 --> root2
@@ -388,14 +402,16 @@ void WeldJointConstraint::uniteSkeletons()
 //==============================================================================
 bool WeldJointConstraint::isActive() const
 {
-  if (mBodyNode1->isReactive())
+  if (mBodyNode1->isReactive()) {
     return true;
+  }
 
   if (mBodyNode2) {
-    if (mBodyNode2->isReactive())
+    if (mBodyNode2->isReactive()) {
       return true;
-    else
+    } else {
       return false;
+    }
   } else {
     return false;
   }

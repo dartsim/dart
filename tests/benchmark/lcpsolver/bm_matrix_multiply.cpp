@@ -55,10 +55,12 @@ public:
     B.resize(size * size);
     C.resize(size * size);
 
-    for (auto& val : A)
+    for (auto& val : A) {
       val = dist(rng);
-    for (auto& val : B)
+    }
+    for (auto& val : B) {
       val = dist(rng);
+    }
   }
 
   void TearDown(const ::benchmark::State&) override

@@ -45,8 +45,9 @@ template <typename S>
 std::size_t Icosphere<S>::getNumVertices(std::size_t subdivisions)
 {
   std::size_t numVertices = 12;
-  for (auto i = 0u; i < subdivisions; ++i)
+  for (auto i = 0u; i < subdivisions; ++i) {
     numVertices += getNumEdges(i);
+  }
   return numVertices;
 }
 
@@ -136,8 +137,9 @@ void Icosphere<S>::build()
   std::tie(this->mVertices, this->mTriangles) = computeIcosahedron(mRadius);
 
   // Return if no need to subdivide
-  if (mSubdivisions == 0)
+  if (mSubdivisions == 0) {
     return;
+  }
 
   // Create index map that is used for subdivision
   using IndexMap = std::map<std::pair<std::size_t, std::size_t>, std::size_t>;
@@ -179,8 +181,9 @@ void Icosphere<S>::build()
 
         // Sort indices to guarantee that the key is unique for the same pairs
         // of indices.
-        if (indexA > indexB)
+        if (indexA > indexB) {
           std::swap(indexA, indexB);
+        }
 
         // Check whether the mid vertex given index pair is already created.
         const auto result = midVertexIndices.insert(

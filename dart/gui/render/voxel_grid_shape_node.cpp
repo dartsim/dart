@@ -187,8 +187,9 @@ void VoxelGridShapeNode::extractData(bool /*firstTime*/)
        ++it) {
     auto threshold = tree->getOccupancyThres();
 
-    if (it->getOccupancy() < threshold)
+    if (it->getOccupancy() < threshold) {
       continue;
+    }
 
     if (boxIndex < mVoxelNodes.size()) {
       mVoxelNodes[boxIndex]->updateCenter(toVector3d(it.getCoordinate()));

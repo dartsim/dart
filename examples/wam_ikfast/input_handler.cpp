@@ -65,14 +65,16 @@ void InputHandler::initialize()
 bool InputHandler::handle(
     const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&)
 {
-  if (!mWam)
+  if (!mWam) {
     return false;
+  }
 
   if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType()) {
     if (ea.getKey() == 'p' || ea.getKey() == 'P') {
-      for (std::size_t i = 0; i < mWam->getNumDofs(); ++i)
+      for (std::size_t i = 0; i < mWam->getNumDofs(); ++i) {
         std::cout << mWam->getDof(i)->getName() << ": "
                   << mWam->getDof(i)->getPosition() << std::endl;
+      }
       return true;
     }
 

@@ -80,8 +80,9 @@ PlanarJoint::Properties PlanarJoint::getPlanarJointProperties() const
 //==============================================================================
 void PlanarJoint::copy(const PlanarJoint& _otherJoint)
 {
-  if (this == &_otherJoint)
+  if (this == &_otherJoint) {
     return;
+  }
 
   setProperties(_otherJoint.getPlanarJointProperties());
 }
@@ -89,8 +90,9 @@ void PlanarJoint::copy(const PlanarJoint& _otherJoint)
 //==============================================================================
 void PlanarJoint::copy(const PlanarJoint* _otherJoint)
 {
-  if (nullptr == _otherJoint)
+  if (nullptr == _otherJoint) {
     return;
+  }
 
   copy(*_otherJoint);
 }
@@ -145,8 +147,9 @@ void PlanarJoint::setXYPlane(bool _renameDofs)
 {
   mAspectProperties.setXYPlane();
 
-  if (_renameDofs)
+  if (_renameDofs) {
     updateDegreeOfFreedomNames();
+  }
   notifyPositionUpdated();
 }
 
@@ -155,8 +158,9 @@ void PlanarJoint::setYZPlane(bool _renameDofs)
 {
   mAspectProperties.setYZPlane();
 
-  if (_renameDofs)
+  if (_renameDofs) {
     updateDegreeOfFreedomNames();
+  }
   notifyPositionUpdated();
 }
 
@@ -165,8 +169,9 @@ void PlanarJoint::setZXPlane(bool _renameDofs)
 {
   mAspectProperties.setZXPlane();
 
-  if (_renameDofs)
+  if (_renameDofs) {
     updateDegreeOfFreedomNames();
+  }
   notifyPositionUpdated();
 }
 
@@ -178,8 +183,9 @@ void PlanarJoint::setArbitraryPlane(
 {
   mAspectProperties.setArbitraryPlane(_transAxis1, _transAxis2);
 
-  if (_renameDofs)
+  if (_renameDofs) {
     updateDegreeOfFreedomNames();
+  }
   notifyPositionUpdated();
 }
 
@@ -276,8 +282,9 @@ void PlanarJoint::updateDegreeOfFreedomNames()
 
   if (affixes.size() == 2) {
     for (std::size_t i = 0; i < 2; ++i) {
-      if (!mDofs[i]->isNamePreserved())
+      if (!mDofs[i]->isNamePreserved()) {
         mDofs[i]->setName(Joint::mAspectProperties.mName + affixes[i], false);
+      }
     }
   }
 }

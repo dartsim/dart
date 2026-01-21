@@ -47,8 +47,9 @@ namespace {
 Eigen::Vector3d normalizeOrFallback(const Eigen::Vector3d& axis)
 {
   const double norm = axis.norm();
-  if (norm < 1e-9)
+  if (norm < 1e-9) {
     return Eigen::Vector3d::UnitZ();
+  }
   return axis / norm;
 }
 
@@ -153,8 +154,9 @@ void RevoluteJointConstraint::updateAngularBasis()
                                                    : Eigen::Vector3d::UnitY();
   Eigen::Vector3d perp1 = axis.cross(ref);
   const double perpNorm = perp1.norm();
-  if (perpNorm < 1e-9)
+  if (perpNorm < 1e-9) {
     perp1 = axis.cross(Eigen::Vector3d::UnitZ());
+  }
   perp1.normalize();
   Eigen::Vector3d perp2 = axis.cross(perp1);
 
@@ -253,13 +255,15 @@ void RevoluteJointConstraint::getInformation(ConstraintInfo* lcp)
 
   Eigen::Matrix<double, 5, 1> negativeVel
       = -mJacobian1 * mBodyNode1->getSpatialVelocity();
-  if (mBodyNode2)
+  if (mBodyNode2) {
     negativeVel += mJacobian2 * mBodyNode2->getSpatialVelocity();
+  }
 
   mViolation *= mErrorReductionParameter * lcp->invTimeStep;
 
-  for (std::size_t i = 0; i < mDim; ++i)
+  for (std::size_t i = 0; i < mDim; ++i) {
     lcp->b[i] = negativeVel[i] - mViolation[i];
+  }
 }
 
 //==============================================================================
@@ -326,23 +330,26 @@ void RevoluteJointConstraint::getVelocityChange(double* vel, bool withCfm)
 {
   DART_ASSERT(vel != nullptr && "Null pointer is not allowed.");
 
-  for (std::size_t i = 0; i < mDim; ++i)
+  for (std::size_t i = 0; i < mDim; ++i) {
     vel[i] = 0.0;
+  }
 
   if (mBodyNode1->getSkeleton()->isImpulseApplied()
       && mBodyNode1->isReactive()) {
     Eigen::Matrix<double, 5, 1> v1
         = mJacobian1 * mBodyNode1->getBodyVelocityChange();
-    for (std::size_t i = 0; i < mDim; ++i)
+    for (std::size_t i = 0; i < mDim; ++i) {
       vel[i] += v1[i];
+    }
   }
 
   if (mBodyNode2 && mBodyNode2->getSkeleton()->isImpulseApplied()
       && mBodyNode2->isReactive()) {
     Eigen::Matrix<double, 5, 1> v2
         = mJacobian2 * mBodyNode2->getBodyVelocityChange();
-    for (std::size_t i = 0; i < mDim; ++i)
+    for (std::size_t i = 0; i < mDim; ++i) {
       vel[i] -= v2[i];
+    }
   }
 
   if (withCfm) {
@@ -354,27 +361,33 @@ void RevoluteJointConstraint::getVelocityChange(double* vel, bool withCfm)
 //==============================================================================
 void RevoluteJointConstraint::excite()
 {
-  if (mBodyNode1->isReactive())
+  if (mBodyNode1->isReactive()) {
     mBodyNode1->getSkeleton()->setImpulseApplied(true);
+  }
 
-  if (mBodyNode2 == nullptr)
+  if (mBodyNode2 == nullptr) {
     return;
+  }
 
-  if (mBodyNode2->isReactive())
+  if (mBodyNode2->isReactive()) {
     mBodyNode2->getSkeleton()->setImpulseApplied(true);
+  }
 }
 
 //==============================================================================
 void RevoluteJointConstraint::unexcite()
 {
-  if (mBodyNode1->isReactive())
+  if (mBodyNode1->isReactive()) {
     mBodyNode1->getSkeleton()->setImpulseApplied(false);
+  }
 
-  if (mBodyNode2 == nullptr)
+  if (mBodyNode2 == nullptr) {
     return;
+  }
 
-  if (mBodyNode2->isReactive())
+  if (mBodyNode2->isReactive()) {
     mBodyNode2->getSkeleton()->setImpulseApplied(false);
+  }
 }
 
 //==============================================================================
@@ -387,20 +400,23 @@ void RevoluteJointConstraint::applyImpulse(double* lambda)
   mOldX[4] = lambda[4];
 
   Eigen::Matrix<double, 5, 1> imp;
-  for (std::size_t i = 0; i < mDim; ++i)
+  for (std::size_t i = 0; i < mDim; ++i) {
     imp[i] = lambda[i];
+  }
 
   mBodyNode1->addConstraintImpulse(mJacobian1.transpose() * imp);
 
-  if (mBodyNode2)
+  if (mBodyNode2) {
     mBodyNode2->addConstraintImpulse(-mJacobian2.transpose() * imp);
+  }
 }
 
 //==============================================================================
 dynamics::SkeletonPtr RevoluteJointConstraint::getRootSkeleton() const
 {
-  if (mBodyNode1->isReactive())
+  if (mBodyNode1->isReactive()) {
     return ConstraintBase::getRootSkeleton(mBodyNode1->getSkeleton());
+  }
 
   if (mBodyNode2) {
     if (mBodyNode2->isReactive()) {
@@ -418,8 +434,9 @@ dynamics::SkeletonPtr RevoluteJointConstraint::getRootSkeleton() const
 //==============================================================================
 bool RevoluteJointConstraint::isCollidingTwoDifferentSkeletons() const
 {
-  if (!mBodyNode2)
+  if (!mBodyNode2) {
     return false;
+  }
 
   return mBodyNode1->isReactive() && mBodyNode2->isReactive()
          && mBodyNode1->getSkeleton() != mBodyNode2->getSkeleton();
@@ -428,22 +445,26 @@ bool RevoluteJointConstraint::isCollidingTwoDifferentSkeletons() const
 //==============================================================================
 void RevoluteJointConstraint::uniteSkeletons()
 {
-  if (mBodyNode2 == nullptr)
+  if (mBodyNode2 == nullptr) {
     return;
+  }
 
-  if (!mBodyNode1->isReactive() || !mBodyNode2->isReactive())
+  if (!mBodyNode1->isReactive() || !mBodyNode2->isReactive()) {
     return;
+  }
 
-  if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
+  if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton()) {
     return;
+  }
 
   dynamics::SkeletonPtr unionId1
       = ConstraintBase::compressPath(mBodyNode1->getSkeleton());
   dynamics::SkeletonPtr unionId2
       = ConstraintBase::compressPath(mBodyNode2->getSkeleton());
 
-  if (unionId1 == unionId2)
+  if (unionId1 == unionId2) {
     return;
+  }
 
   if (unionId1->mUnionSize < unionId2->mUnionSize) {
     unionId1->mUnionRootSkeleton = unionId2;
@@ -457,14 +478,16 @@ void RevoluteJointConstraint::uniteSkeletons()
 //==============================================================================
 bool RevoluteJointConstraint::isActive() const
 {
-  if (mBodyNode1->isReactive())
+  if (mBodyNode1->isReactive()) {
     return true;
+  }
 
   if (mBodyNode2) {
-    if (mBodyNode2->isReactive())
+    if (mBodyNode2->isReactive()) {
       return true;
-    else
+    } else {
       return false;
+    }
   } else {
     return false;
   }

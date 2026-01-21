@@ -75,8 +75,9 @@ public:
 
   void customPostStep() override
   {
-    if (mCurrentIndex < mHistory.size() - 1)
+    if (mCurrentIndex < mHistory.size() - 1) {
       mHistory.resize(mCurrentIndex + 1);
+    }
 
     grabTimeSlice();
     ++mCurrentIndex;
@@ -86,11 +87,13 @@ public:
   {
     mViewer->simulate(false);
 
-    if (mHistory.empty())
+    if (mHistory.empty()) {
       return;
+    }
 
-    if (index >= mHistory.size())
+    if (index >= mHistory.size()) {
       index = mHistory.size() - 1;
+    }
 
     std::cout << "Moving to time step #" << index << std::endl;
 
@@ -117,8 +120,9 @@ public:
 
   void moveBackward(int delta)
   {
-    if (mCurrentIndex > 0)
+    if (mCurrentIndex > 0) {
       moveTo(mCurrentIndex - delta);
+    }
   }
 
   void restart()
@@ -156,8 +160,9 @@ public:
   virtual bool handle(
       const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
   {
-    if (!mRecWorld)
+    if (!mRecWorld) {
       return false;
+    }
 
     if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
       if (ea.getKey() == '[') {

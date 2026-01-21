@@ -78,8 +78,9 @@ bool CompositeResourceRetriever::exists(const common::Uri& uri)
 {
   for (const common::ResourceRetrieverPtr& resourceRetriever :
        getRetrievers(uri)) {
-    if (resourceRetriever->exists(uri))
+    if (resourceRetriever->exists(uri)) {
       return true;
+    }
   }
   return false;
 }
@@ -90,8 +91,9 @@ common::ResourcePtr CompositeResourceRetriever::retrieve(const common::Uri& uri)
   const std::vector<common::ResourceRetrieverPtr>& retrievers
       = getRetrievers(uri);
   for (const common::ResourceRetrieverPtr& resourceRetriever : retrievers) {
-    if (common::ResourcePtr resource = resourceRetriever->retrieve(uri))
+    if (common::ResourcePtr resource = resourceRetriever->retrieve(uri)) {
       return resource;
+    }
   }
 
   DART_WARN(
@@ -110,8 +112,9 @@ std::string CompositeResourceRetriever::getFilePath(const common::Uri& uri)
 {
   for (const auto& resourceRetriever : getRetrievers(uri)) {
     const auto path = resourceRetriever->getFilePath(uri);
-    if (!path.empty())
+    if (!path.empty()) {
       return path;
+    }
   }
 
   return "";
@@ -127,9 +130,10 @@ CompositeResourceRetriever::getRetrievers(const common::Uri& uri) const
   std::vector<common::ResourceRetrieverPtr> retrievers;
 
   const auto it = mResourceRetrievers.find(schema);
-  if (it != std::end(mResourceRetrievers))
+  if (it != std::end(mResourceRetrievers)) {
     retrievers.insert(
         std::end(retrievers), std::begin(it->second), std::end(it->second));
+  }
 
   retrievers.insert(
       std::end(retrievers),

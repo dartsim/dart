@@ -49,8 +49,9 @@ CollisionFilter::~CollisionFilter()
 void CompositeCollisionFilter::addCollisionFilter(const CollisionFilter* filter)
 {
   // nullptr is not an allowed filter
-  if (!filter)
+  if (!filter) {
     return;
+  }
 
   mFilters.insert(filter);
 }
@@ -73,8 +74,9 @@ bool CompositeCollisionFilter::ignoresCollision(
     const CollisionObject* object1, const CollisionObject* object2) const
 {
   for (const auto* filter : mFilters) {
-    if (filter->ignoresCollision(object1, object2))
+    if (filter->ignoresCollision(object1, object2)) {
       return true;
+    }
   }
 
   return false;
@@ -105,13 +107,15 @@ bool BodyNodeCollisionFilter::ignoresCollision(
     const collision::CollisionObject* object1,
     const collision::CollisionObject* object2) const
 {
-  if (object1 == object2)
+  if (object1 == object2) {
     return true;
+  }
 
   const auto* shapeFrame1 = object1->getShapeFrame();
   const auto* shapeFrame2 = object2->getShapeFrame();
-  if (!shapeFrame1 || !shapeFrame2)
+  if (!shapeFrame1 || !shapeFrame2) {
     return false;
+  }
 
   auto shapeNode1 = shapeFrame1->asShapeNode();
   auto shapeNode2 = shapeFrame2->asShapeNode();
@@ -121,40 +125,49 @@ bool BodyNodeCollisionFilter::ignoresCollision(
   // attached to a BodyNode. So here we just return false. In order to decide
   // whether the non-ShapeNode should be ignored, please use other collision
   // filters.
-  if (!shapeNode1 || !shapeNode2)
+  if (!shapeNode1 || !shapeNode2) {
     return false;
+  }
 
   auto bodyNode1 = shapeNode1->getBodyNodePtr();
   auto bodyNode2 = shapeNode2->getBodyNodePtr();
-  if (!bodyNode1 || !bodyNode2)
+  if (!bodyNode1 || !bodyNode2) {
     return false;
+  }
 
-  if (bodyNode1 == bodyNode2)
+  if (bodyNode1 == bodyNode2) {
     return true;
+  }
 
-  if (!bodyNode1->isCollidable() || !bodyNode2->isCollidable())
+  if (!bodyNode1->isCollidable() || !bodyNode2->isCollidable()) {
     return true;
+  }
 
   const auto& skel1 = bodyNode1->getSkeleton();
   const auto& skel2 = bodyNode2->getSkeleton();
-  if (!skel1 || !skel2)
+  if (!skel1 || !skel2) {
     return false;
+  }
 
-  if (!skel1->isMobile() && !skel2->isMobile())
+  if (!skel1->isMobile() && !skel2->isMobile()) {
     return true;
+  }
 
   if (skel1 == skel2) {
-    if (!skel1->isEnabledSelfCollisionCheck())
+    if (!skel1->isEnabledSelfCollisionCheck()) {
       return true;
+    }
 
     if (!skel1->isEnabledAdjacentBodyCheck()) {
-      if (areAdjacentBodies(bodyNode1, bodyNode2))
+      if (areAdjacentBodies(bodyNode1, bodyNode2)) {
         return true;
+      }
     }
   }
 
-  if (mBodyNodeBlackList.contains(bodyNode1, bodyNode2))
+  if (mBodyNodeBlackList.contains(bodyNode1, bodyNode2)) {
     return true;
+  }
 
   return false;
 }

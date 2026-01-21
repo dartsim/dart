@@ -188,8 +188,9 @@ TEST(SkelParser, VariousShapes)
   WorldPtr world
       = SkelParser::readWorld("dart://sample/skel/test/test_shapes.skel");
 
-  for (auto i = 0u; i < 100; ++i)
+  for (auto i = 0u; i < 100; ++i) {
     world->step();
+  }
 }
 
 //==============================================================================

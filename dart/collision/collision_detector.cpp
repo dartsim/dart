@@ -74,9 +74,10 @@ bool CollisionDetector::raycast(
 std::shared_ptr<CollisionObject> CollisionDetector::claimCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
-  if (!mCollisionObjectManager)
+  if (!mCollisionObjectManager) {
     mCollisionObjectManager.reset(
         new ManagerForUnsharableCollisionObjects(this));
+  }
 
   return mCollisionObjectManager->claimCollisionObject(shapeFrame);
 }

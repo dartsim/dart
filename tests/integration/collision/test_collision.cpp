@@ -138,15 +138,18 @@ void Collision::unrotatedTest(
   } while (result.numContacts() == 0);
 
   //
-  if (_idxAxis == 0)
+  if (_idxAxis == 0) {
     std::cout << "The object is collided when its x-axis position is: "
               << (pos - dpos) << std::endl;
-  if (_idxAxis == 1)
+  }
+  if (_idxAxis == 1) {
     std::cout << "The object is collided when its y-axis position is: "
               << (pos - dpos) << std::endl;
-  if (_idxAxis == 2)
+  }
+  if (_idxAxis == 2) {
     std::cout << "The object is collided when its z-axis position is: "
               << (pos - dpos) << std::endl;
+  }
 
   // printResult(result);
 
@@ -391,18 +394,21 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
       group1->getNumShapeFrames() + group2->getNumShapeFrames()
           + group3->getNumShapeFrames());
 
-  for (std::size_t i = 0; i < group1->getNumShapeFrames(); ++i)
+  for (std::size_t i = 0; i < group1->getNumShapeFrames(); ++i) {
     EXPECT_EQ(groupAll->getShapeFrame(i), group1->getShapeFrame(i));
+  }
 
   std::size_t start = group1->getNumShapeFrames();
   std::size_t end = start + group2->getNumShapeFrames();
-  for (std::size_t i = start; i < end; ++i)
+  for (std::size_t i = start; i < end; ++i) {
     EXPECT_EQ(groupAll->getShapeFrame(i), group2->getShapeFrame(i - start));
+  }
 
   start = start + group2->getNumShapeFrames();
   end = start + group3->getNumShapeFrames();
-  for (std::size_t i = start; i < end; ++i)
+  for (std::size_t i = start; i < end; ++i) {
     EXPECT_EQ(groupAll->getShapeFrame(i), group3->getShapeFrame(i - start));
+  }
 
   collision::CollisionOption option;
   collision::CollisionResult result;
@@ -522,10 +528,11 @@ void testSphereSphere(
   // Test normal
   Eigen::Vector3d expectedNormal;
   if (result.getContact(0).collisionObject1->getShapeFrame()
-      == simpleFrame1.get())
+      == simpleFrame1.get()) {
     expectedNormal << -1, 0, 0;
-  else
+  } else {
     expectedNormal << 1, 0, 0;
+  }
   double tol2 = tol;
   if (cd->getTypeView() == FCLCollisionDetector::getStaticType()
       && static_cast<FCLCollisionDetector*>(cd.get())->getPrimitiveShapeType()
@@ -625,8 +632,9 @@ bool checkBoundingBox(
     double tol = 1e-12)
 {
   for (auto i = 0u; i < 3u; ++i) {
-    if (min[i] - tol > point[i] || point[i] > max[i] + tol)
+    if (min[i] - tol > point[i] || point[i] > max[i] + tol) {
       return false;
+    }
   }
 
   return true;
@@ -675,8 +683,9 @@ void testBoxBox(
 
   const auto checkNumContacts = (numContacts <= 4u);
   EXPECT_TRUE(checkNumContacts);
-  if (!checkNumContacts)
+  if (!checkNumContacts) {
     std::cout << "# of contacts: " << numContacts << "\n";
+  }
 
   for (const auto& contact : result.getContacts()) {
     const auto& point = contact.point;
@@ -684,8 +693,9 @@ void testBoxBox(
     const auto result = checkBoundingBox(min, max, point, tol);
     EXPECT_TRUE(result);
 
-    if (!result)
+    if (!result) {
       std::cout << "point: " << point.transpose() << "\n";
+    }
   }
 }
 
@@ -1911,8 +1921,9 @@ TEST_F(Collision, CollisionOfPrescribedJointsRejectsInvalidTimeStep)
   }
 
   // The skeletons and constraint solver must keep the valid timestep as well.
-  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i)
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
     EXPECT_DOUBLE_EQ(world->getSkeleton(i)->getTimeStep(), originalTimeStep);
+  }
 
   EXPECT_DOUBLE_EQ(
       world->getConstraintSolver()->getTimeStep(), originalTimeStep);

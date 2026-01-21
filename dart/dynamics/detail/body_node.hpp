@@ -47,12 +47,13 @@ template <class JointType>
 JointType* BodyNode::moveTo(
     BodyNode* _newParent, const typename JointType::Properties& _joint)
 {
-  if (nullptr == _newParent)
+  if (nullptr == _newParent) {
     return getSkeleton()->template moveBodyNodeTree<JointType>(
         this, getSkeleton(), nullptr, _joint);
-  else
+  } else {
     return getSkeleton()->template moveBodyNodeTree<JointType>(
         this, _newParent->getSkeleton(), _newParent, _joint);
+  }
 }
 
 //==============================================================================
@@ -93,12 +94,13 @@ std::pair<JointType*, BodyNode*> BodyNode::copyTo(
     const typename JointType::Properties& _joint,
     bool _recursive)
 {
-  if (nullptr == _newParent)
+  if (nullptr == _newParent) {
     return getSkeleton()->cloneBodyNodeTree<JointType>(
         this, getSkeleton(), nullptr, _joint, _recursive);
-  else
+  } else {
     return getSkeleton()->cloneBodyNodeTree<JointType>(
         this, _newParent->getSkeleton(), _newParent, _joint, _recursive);
+  }
 }
 
 //==============================================================================
@@ -209,8 +211,9 @@ std::size_t BodyNode::getNumShapeNodesWith() const
   auto numShapeNode = getNumShapeNodes();
 
   for (auto i = 0u; i < numShapeNode; ++i) {
-    if (getShapeNode(i)->has<AspectT>())
+    if (getShapeNode(i)->has<AspectT>()) {
       ++count;
+    }
   }
 
   return count;
@@ -225,8 +228,9 @@ const std::vector<ShapeNode*> BodyNode::getShapeNodesWith()
 
   for (std::size_t i = 0; i < numShapeNode; ++i) {
     auto* shapeNode = getShapeNode(i);
-    if (shapeNode->has<AspectT>())
+    if (shapeNode->has<AspectT>()) {
       shapeNodes.push_back(shapeNode);
+    }
   }
 
   return shapeNodes;
@@ -241,8 +245,9 @@ const std::vector<const ShapeNode*> BodyNode::getShapeNodesWith() const
 
   for (std::size_t i = 0; i < numShapeNode; ++i) {
     const auto* shapeNode = getShapeNode(i);
-    if (shapeNode->has<AspectT>())
+    if (shapeNode->has<AspectT>()) {
       shapeNodes.push_back(shapeNode);
+    }
   }
 
   return shapeNodes;
@@ -299,8 +304,9 @@ void BodyNode::eachShapeNodeWith(Func func) const
     for (auto i = 0u; i < getNumShapeNodes(); ++i) {
       const ShapeNode* shapeNode = getShapeNode(i);
       if (shapeNode->has<AspectT>()) {
-        if (!func(shapeNode))
+        if (!func(shapeNode)) {
           return;
+        }
       }
     }
   } else {
@@ -321,8 +327,9 @@ void BodyNode::eachShapeNodeWith(Func func)
     for (auto i = 0u; i < getNumShapeNodes(); ++i) {
       ShapeNode* shapeNode = getShapeNode(i);
       if (shapeNode->has<AspectT>()) {
-        if (!func(shapeNode))
+        if (!func(shapeNode)) {
           return;
+        }
       }
     }
   } else {
@@ -346,19 +353,22 @@ std::optional<Inertia> BodyNode::computeInertiaFromShapeNodes(
   for (auto i = 0u; i < getNumShapeNodes(); ++i) {
     const ShapeNode* shapeNode = getShapeNode(i);
     auto maybeMass = massProvider(shapeNode);
-    if (!maybeMass.has_value())
+    if (!maybeMass.has_value()) {
       continue;
+    }
     const double mass = *maybeMass;
-    if (mass <= 0.0)
+    if (mass <= 0.0) {
       continue;
+    }
 
     const Inertia transformed = shapeNode->computeTransformedInertia(mass);
     total += transformed.getSpatialTensor();
     used = true;
   }
 
-  if (!used)
+  if (!used) {
     return std::nullopt;
+  }
 
   return Inertia(total);
 }

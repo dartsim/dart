@@ -168,8 +168,9 @@ constexpr size_t GenericJoint<ConfigSpaceT>::NumDofs;
 template <class ConfigSpaceT>
 GenericJoint<ConfigSpaceT>::~GenericJoint()
 {
-  for (auto i = 0u; i < NumDofs; ++i)
+  for (auto i = 0u; i < NumDofs; ++i) {
     delete mDofs[i];
+  }
 }
 
 //==============================================================================
@@ -239,8 +240,9 @@ GenericJoint<ConfigSpaceT>::getGenericJointProperties() const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::copy(const GenericJoint<ConfigSpaceT>& other)
 {
-  if (this == &other)
+  if (this == &other) {
     return;
+  }
 
   setProperties(other.getGenericJointProperties());
 }
@@ -249,8 +251,9 @@ void GenericJoint<ConfigSpaceT>::copy(const GenericJoint<ConfigSpaceT>& other)
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::copy(const GenericJoint<ConfigSpaceT>* other)
 {
-  if (nullptr == other)
+  if (nullptr == other) {
     return;
+  }
 
   copy(*other);
 }
@@ -268,8 +271,9 @@ GenericJoint<ConfigSpaceT>& GenericJoint<ConfigSpaceT>::operator=(
 template <class ConfigSpaceT>
 DegreeOfFreedom* GenericJoint<ConfigSpaceT>::getDof(size_t index)
 {
-  if (index < NumDofs)
+  if (index < NumDofs) {
     return mDofs[index];
+  }
 
   GenericJoint_REPORT_OUT_OF_RANGE(getDof, index);
 
@@ -280,8 +284,9 @@ DegreeOfFreedom* GenericJoint<ConfigSpaceT>::getDof(size_t index)
 template <class ConfigSpaceT>
 const DegreeOfFreedom* GenericJoint<ConfigSpaceT>::getDof(size_t index) const
 {
-  if (index < NumDofs)
+  if (index < NumDofs) {
     return mDofs[index];
+  }
 
   GenericJoint_REPORT_OUT_OF_RANGE(getDof, index);
 
@@ -314,15 +319,17 @@ const std::string& GenericJoint<ConfigSpaceT>::setDofName(
 
   std::string& dofName = Base::mAspectProperties.mDofNames[index];
 
-  if (name == dofName)
+  if (name == dofName) {
     return dofName;
+  }
 
   const SkeletonPtr& skel
       = this->mChildBodyNode ? this->mChildBodyNode->getSkeleton() : nullptr;
-  if (skel)
+  if (skel) {
     dofName = skel->mNameMgrForDofs.changeObjectName(mDofs[index], name);
-  else
+  } else {
     dofName = name;
+  }
 
   return dofName;
 }
@@ -397,8 +404,9 @@ size_t GenericJoint<ConfigSpaceT>::getIndexInTree(size_t index) const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
 {
-  if (index >= getNumDofs())
+  if (index >= getNumDofs()) {
     GenericJoint_REPORT_OUT_OF_RANGE(setCommand, index);
+  }
 
   // Validate command is finite to prevent NaN/Inf from propagating through
   // the simulation and causing assertion failures (gz-physics#845)
@@ -491,8 +499,9 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
     return;
   }
 
-  for (std::size_t i = 0; i < getNumDofs(); ++i)
+  for (std::size_t i = 0; i < getNumDofs(); ++i) {
     setCommand(i, commands[static_cast<Eigen::Index>(i)]);
+  }
 }
 
 //==============================================================================
@@ -520,8 +529,9 @@ void GenericJoint<ConfigSpaceT>::setPosition(size_t index, double position)
 
   detail::assertFiniteState(position, this, "setPosition", "position");
 
-  if (this->mAspectState.mPositions[index] == position)
+  if (this->mAspectState.mPositions[index] == position) {
     return;
+  }
   // TODO(JS): Above code should be changed something like:
   //  if (ConfigSpaceT::getEuclideanPoint(mPositions, index) == position)
   //    return;
@@ -735,8 +745,9 @@ void GenericJoint<ConfigSpaceT>::setPositionsStatic(const Vector& positions)
 {
   detail::assertFiniteState(positions, this, "setPositions", "positions");
 
-  if (this->mAspectState.mPositions == positions)
+  if (this->mAspectState.mPositions == positions) {
     return;
+  }
 
   this->mAspectState.mPositions = positions;
   this->notifyPositionUpdated();
@@ -756,8 +767,9 @@ void GenericJoint<ConfigSpaceT>::setVelocitiesStatic(const Vector& velocities)
 {
   detail::assertFiniteState(velocities, this, "setVelocities", "velocities");
 
-  if (this->mAspectState.mVelocities == velocities)
+  if (this->mAspectState.mVelocities == velocities) {
     return;
+  }
 
   this->mAspectState.mVelocities = velocities;
   this->notifyVelocityUpdated();
@@ -777,8 +789,9 @@ void GenericJoint<ConfigSpaceT>::setAccelerationsStatic(const Vector& accels)
 {
   detail::assertFiniteState(accels, this, "setAccelerations", "accelerations");
 
-  if (this->mAspectState.mAccelerations == accels)
+  if (this->mAspectState.mAccelerations == accels) {
     return;
+  }
 
   this->mAspectState.mAccelerations = accels;
   this->notifyAccelerationUpdated();
@@ -803,15 +816,17 @@ void GenericJoint<ConfigSpaceT>::setVelocity(size_t index, double velocity)
 
   detail::assertFiniteState(velocity, this, "setVelocity", "velocity");
 
-  if (this->mAspectState.mVelocities[index] == velocity)
+  if (this->mAspectState.mVelocities[index] == velocity) {
     return;
+  }
 
   // Note: It would not make much sense to use setVelocitiesStatic() here
   this->mAspectState.mVelocities[index] = velocity;
   this->notifyVelocityUpdated();
 
-  if (this->getActuatorType(index) == Joint::VELOCITY)
+  if (this->getActuatorType(index) == Joint::VELOCITY) {
     this->mAspectState.mCommands[index] = this->getVelocitiesStatic()[index];
+  }
 }
 
 //==============================================================================
@@ -839,8 +854,9 @@ void GenericJoint<ConfigSpaceT>::setVelocities(
   setVelocitiesStatic(velocities);
 
   for (std::size_t i = 0; i < getNumDofs(); ++i) {
-    if (this->getActuatorType(i) == Joint::VELOCITY)
+    if (this->getActuatorType(i) == Joint::VELOCITY) {
       this->mAspectState.mCommands[i] = this->mAspectState.mVelocities[i];
+    }
   }
 }
 
@@ -1018,15 +1034,17 @@ void GenericJoint<ConfigSpaceT>::setAcceleration(
   detail::assertFiniteState(
       acceleration, this, "setAcceleration", "acceleration");
 
-  if (this->mAspectState.mAccelerations[index] == acceleration)
+  if (this->mAspectState.mAccelerations[index] == acceleration) {
     return;
+  }
 
   // Note: It would not make much sense to use setAccelerationsStatic() here
   this->mAspectState.mAccelerations[index] = acceleration;
   this->notifyAccelerationUpdated();
 
-  if (this->getActuatorType(index) == Joint::ACCELERATION)
+  if (this->getActuatorType(index) == Joint::ACCELERATION) {
     this->mAspectState.mCommands[index] = this->getAccelerationsStatic()[index];
+  }
 }
 
 //==============================================================================
@@ -1054,8 +1072,9 @@ void GenericJoint<ConfigSpaceT>::setAccelerations(
   setAccelerationsStatic(accelerations);
 
   for (std::size_t i = 0; i < getNumDofs(); ++i) {
-    if (this->getActuatorType(i) == Joint::ACCELERATION)
+    if (this->getActuatorType(i) == Joint::ACCELERATION) {
       this->mAspectState.mCommands[i] = this->mAspectState.mAccelerations[i];
+    }
   }
 }
 
@@ -1173,8 +1192,9 @@ void GenericJoint<ConfigSpaceT>::setForce(size_t index, double force)
 
   this->mAspectState.mForces[index] = force;
 
-  if (this->getActuatorType(index) == Joint::FORCE)
+  if (this->getActuatorType(index) == Joint::FORCE) {
     this->mAspectState.mCommands[index] = this->mAspectState.mForces[index];
+  }
 }
 
 //==============================================================================
@@ -1201,8 +1221,9 @@ void GenericJoint<ConfigSpaceT>::setForces(const Eigen::VectorXd& forces)
   this->mAspectState.mForces = forces;
 
   for (std::size_t i = 0; i < getNumDofs(); ++i) {
-    if (this->getActuatorType(i) == Joint::FORCE)
+    if (this->getActuatorType(i) == Joint::FORCE) {
       this->mAspectState.mCommands[i] = this->mAspectState.mForces[i];
+    }
   }
 }
 
@@ -1308,8 +1329,9 @@ void GenericJoint<ConfigSpaceT>::resetForces()
   this->mAspectState.mForces.setZero();
 
   for (std::size_t i = 0; i < getNumDofs(); ++i) {
-    if (this->getActuatorType(i) == Joint::FORCE)
+    if (this->getActuatorType(i) == Joint::FORCE) {
       this->mAspectState.mCommands[i] = this->mAspectState.mForces[i];
+    }
   }
 }
 
@@ -1748,8 +1770,9 @@ GenericJoint<ConfigSpaceT>::GenericJoint(const Properties& properties)
     mTotalForce(Vector::Zero()),
     mTotalImpulse(Vector::Zero())
 {
-  for (auto i = 0u; i < NumDofs; ++i)
+  for (auto i = 0u; i < NumDofs; ++i) {
     mDofs[i] = this->createDofPointer(i);
+  }
 
   // Joint and GenericJoint Aspects must be created by the most derived class.
   this->mAspectState.mPositions = properties.mInitialPositions;
@@ -1876,13 +1899,14 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildArtInertiaTo(
     Eigen::Matrix6d& parentArtInertia, const Eigen::Matrix6d& childArtInertia)
 {
-  if (Joint::isDynamic())
+  if (Joint::isDynamic()) {
     addChildArtInertiaToDynamic(parentArtInertia, childArtInertia);
-  else if (Joint::isKinematic())
+  } else if (Joint::isKinematic()) {
     addChildArtInertiaToKinematic(parentArtInertia, childArtInertia);
-  else
+  } else {
     GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
         addChildArtInertiaTo, Joint::mAspectProperties.mActuatorType);
+  }
 }
 
 //==============================================================================
@@ -1918,13 +1942,14 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitTo(
     Eigen::Matrix6d& parentArtInertia, const Eigen::Matrix6d& childArtInertia)
 {
-  if (Joint::isDynamic())
+  if (Joint::isDynamic()) {
     addChildArtInertiaImplicitToDynamic(parentArtInertia, childArtInertia);
-  else if (Joint::isKinematic())
+  } else if (Joint::isKinematic()) {
     addChildArtInertiaImplicitToKinematic(parentArtInertia, childArtInertia);
-  else
+  } else {
     GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
         addChildArtInertiaImplicitTo, Joint::mAspectProperties.mActuatorType);
+  }
 }
 
 //==============================================================================
@@ -1960,13 +1985,14 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateInvProjArtInertia(
     const Eigen::Matrix6d& artInertia)
 {
-  if (Joint::isDynamic())
+  if (Joint::isDynamic()) {
     updateInvProjArtInertiaDynamic(artInertia);
-  else if (Joint::isKinematic())
+  } else if (Joint::isKinematic()) {
     updateInvProjArtInertiaKinematic(artInertia);
-  else
+  } else {
     GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
         updateInvProjArtInertia, Joint::mAspectProperties.mActuatorType);
+  }
 }
 
 //==============================================================================
@@ -1998,14 +2024,15 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicit(
     const Eigen::Matrix6d& artInertia, double timeStep)
 {
-  if (Joint::isDynamic())
+  if (Joint::isDynamic()) {
     updateInvProjArtInertiaImplicitDynamic(artInertia, timeStep);
-  else if (Joint::isKinematic())
+  } else if (Joint::isKinematic()) {
     updateInvProjArtInertiaImplicitKinematic(artInertia, timeStep);
-  else
+  } else {
     GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
         updateInvProjArtInertiaImplicit,
         Joint::mAspectProperties.mActuatorType);
+  }
 }
 
 //==============================================================================

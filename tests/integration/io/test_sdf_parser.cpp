@@ -93,14 +93,16 @@ public:
   bool seek(ptrdiff_t offset, SeekType origin) override
   {
     std::size_t base = 0;
-    if (origin == SEEKTYPE_CUR)
+    if (origin == SEEKTYPE_CUR) {
       base = mOffset;
-    else if (origin == SEEKTYPE_END)
+    } else if (origin == SEEKTYPE_END) {
       base = mData.size();
+    }
 
     const auto next = static_cast<long long>(base) + offset;
-    if (next < 0 || next > static_cast<long long>(mData.size()))
+    if (next < 0 || next > static_cast<long long>(mData.size())) {
       return false;
+    }
 
     mOffset = static_cast<std::size_t>(next);
     return true;
@@ -109,8 +111,9 @@ public:
   std::size_t read(void* buffer, std::size_t size, std::size_t count) override
   {
     const std::size_t bytes = size * count;
-    if (bytes == 0)
+    if (bytes == 0) {
       return 0;
+    }
 
     const std::size_t available = mData.size() - mOffset;
     const std::size_t toCopy = std::min(bytes, available);
@@ -140,8 +143,9 @@ public:
   common::ResourcePtr retrieve(const common::Uri& uri) override
   {
     auto it = mFiles.find(uri.toString());
-    if (it == mFiles.end())
+    if (it == mFiles.end()) {
       return nullptr;
+    }
     return std::make_shared<MemoryResource>(it->second);
   }
 
@@ -174,15 +178,19 @@ public:
   ~LogCapture()
   {
 #if DART_HAVE_spdlog
-    if (mLogger)
+    if (mLogger) {
       mLogger->flush();
+    }
     spdlog::set_default_logger(mPreviousLogger);
-    if (mLogger)
+    if (mLogger) {
       spdlog::drop(mLogger->name());
-    if (mOldCout)
+    }
+    if (mOldCout) {
       std::cout.rdbuf(mOldCout);
-    if (mOldCerr)
+    }
+    if (mOldCerr) {
       std::cerr.rdbuf(mOldCerr);
+    }
 #else
     std::cout.rdbuf(mOldCout);
     std::cerr.rdbuf(mOldCerr);
@@ -192,10 +200,12 @@ public:
   std::string contents()
   {
 #if DART_HAVE_spdlog
-    if (mLogger)
+    if (mLogger) {
       mLogger->flush();
-    if (mStream)
+    }
+    if (mStream) {
       return mStream->str();
+    }
     return {};
 #else
     return mStream.str();
@@ -312,8 +322,9 @@ TEST(SdfParser, ResolvesMeshesRelativeToIncludedModels)
       const auto* shapeNode = body->getShapeNode(i);
       const auto shape = shapeNode->getShape();
       const auto* mesh = dynamic_cast<const dynamics::MeshShape*>(shape.get());
-      if (!mesh)
+      if (!mesh) {
         continue;
+      }
 
       foundMesh = true;
       const std::string meshPath = mesh->getMeshPath();
@@ -422,8 +433,9 @@ f 4 5 1
       const auto* shapeNode = body->getShapeNode(i);
       const auto shape = shapeNode->getShape();
       const auto* mesh = dynamic_cast<const dynamics::MeshShape*>(shape.get());
-      if (!mesh)
+      if (!mesh) {
         continue;
+      }
 
       foundMesh = true;
       const std::string meshUriStr = mesh->getMeshUri();
@@ -449,14 +461,16 @@ TEST(SdfParser, ParsingSDFFiles)
   worldFiles.push_back("dart://sample/sdf/test/single_bodynode_skeleton.world");
 
   std::vector<WorldPtr> worlds;
-  for (const auto& worldFile : worldFiles)
+  for (const auto& worldFile : worldFiles) {
     worlds.push_back(SdfParser::readWorld(worldFile));
+  }
 
   for (auto world : worlds) {
     EXPECT_TRUE(nullptr != world);
 
-    for (auto i = 0u; i < numSteps; ++i)
+    for (auto i = 0u; i < numSteps; ++i) {
       world->step();
+    }
   }
 
   // Create another list of sdf files to test with where the sdf files contains
@@ -468,15 +482,17 @@ TEST(SdfParser, ParsingSDFFiles)
 
   auto world = std::make_shared<World>();
   std::vector<SkeletonPtr> skeletons;
-  for (const auto& skeletonFile : skeletonFiles)
+  for (const auto& skeletonFile : skeletonFiles) {
     skeletons.push_back(SdfParser::readSkeleton(skeletonFile));
+  }
 
   for (auto skeleton : skeletons) {
     EXPECT_TRUE(nullptr != skeleton);
 
     world->addSkeleton(skeleton);
-    for (auto i = 0u; i < numSteps; ++i)
+    for (auto i = 0u; i < numSteps; ++i) {
       world->step();
+    }
 
     world->removeAllSkeletons();
   }
@@ -552,8 +568,9 @@ f 1 3 4
   bool foundMesh = false;
   body->eachShapeNodeWith<dynamics::VisualAspect>(
       [&](dynamics::ShapeNode* node) {
-        if (std::dynamic_pointer_cast<dynamics::MeshShape>(node->getShape()))
+        if (std::dynamic_pointer_cast<dynamics::MeshShape>(node->getShape())) {
           foundMesh = true;
+        }
       });
   EXPECT_TRUE(foundMesh);
 }

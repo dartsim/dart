@@ -154,8 +154,9 @@ TEST(AtlasIK, TightBoundsProduceNonZeroError)
   // Compute error manually using the correct DOFs
   const auto dofs = ik->getDofs();
   Eigen::VectorXd q(dofs.size());
-  for (std::size_t i = 0; i < dofs.size(); ++i)
+  for (std::size_t i = 0; i < dofs.size(); ++i) {
     q[i] = atlas->getDof(dofs[i])->getPosition();
+  }
 
   ik->getErrorMethod().clearCache();
   const Eigen::Vector6d& error = ik->getErrorMethod().evalError(q);

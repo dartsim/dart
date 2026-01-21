@@ -130,8 +130,9 @@ int LemkeImpl(
 
   Eigen::VectorXd U = Eigen::VectorXd::Zero(n);
   for (int i = 0; i < n; ++i) {
-    if (x[i] < 0)
+    if (x[i] < 0) {
       U[i] = 1;
+    }
   }
   Be = -(B * U);
   x += tval * U;
@@ -154,8 +155,9 @@ int LemkeImpl(
 
     std::vector<int> j;
     for (int i = 0; i < n; ++i) {
-      if (d[i] > piv_tol)
+      if (d[i] > piv_tol) {
         j.push_back(i);
+      }
     }
     if (j.empty()) {
       err = 2;
@@ -188,8 +190,9 @@ int LemkeImpl(
 
     // Check if artificial among these
     for (std::size_t i = 0; i < jSize; ++i) {
-      if (bas[j[i]] == t)
+      if (bas[j[i]] == t) {
         lvindex = static_cast<int>(i);
+      }
     }
 
     if (lvindex != -1) {
@@ -274,10 +277,12 @@ bool ValidateImpl(
 
   const Eigen::VectorXd w = M * z + q;
   for (int i = 0; i < n; ++i) {
-    if (w(i) < -threshold || z(i) < -threshold)
+    if (w(i) < -threshold || z(i) < -threshold) {
       return false;
-    if (std::abs(w(i) * z(i)) > threshold)
+    }
+    if (std::abs(w(i) * z(i)) > threshold) {
       return false;
+    }
   }
   return true;
 }

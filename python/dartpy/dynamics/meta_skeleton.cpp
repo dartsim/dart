@@ -90,8 +90,9 @@ void defMetaSkeleton(nb::module_& m)
           [](MetaSkeleton& self) {
             std::vector<dart::dynamics::DegreeOfFreedom*> dofs;
             dofs.reserve(self.getNumDofs());
-            for (std::size_t i = 0; i < self.getNumDofs(); ++i)
+            for (std::size_t i = 0; i < self.getNumDofs(); ++i) {
               dofs.emplace_back(self.getDof(i));
+            }
             return dofs;
           },
           nb::rv_policy::reference_internal);

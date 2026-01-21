@@ -109,8 +109,9 @@ void PyramidShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     return;
+  }
 
   extractData(false);
 }
@@ -193,14 +194,16 @@ PyramidShapeDrawable::PyramidShapeDrawable(
 //==============================================================================
 void PyramidShapeDrawable::refresh(bool firstTime)
 {
-  if (mPyramidShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mPyramidShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     setDataVariance(::osg::Object::STATIC);
-  else
+  } else {
     setDataVariance(::osg::Object::DYNAMIC);
+  }
 
   if (firstTime) {
-    for (auto& e : mElements)
+    for (auto& e : mElements) {
       e->resize(3);
+    }
 
     // Side triangle 1
     mElements[0]->at(0) = 0;
