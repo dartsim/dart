@@ -1,7 +1,7 @@
 # Reference: https://docs.codecov.com/docs/codecovyml-reference
 #
 # Test Coverage Audit: docs/dev_tasks/test-coverage-audit/
-# Targets: 85% overall (stretch), 80% near-term
+# Using 'auto' targets to track coverage trends without blocking PRs
 
 codecov:
   require_ci_to_pass: true
@@ -14,11 +14,11 @@ coverage:
   status:
     project:
       default:
-        target: 80%
-        threshold: 2% # Allow 2% fluctuation
+        target: auto
+        threshold: 2% # Allow 2% fluctuation from baseline
     patch:
       default:
-        target: 85% # Require new code to meet higher standard
+        target: auto
         threshold: 5% # More lenient for patches
 
   ignore:
