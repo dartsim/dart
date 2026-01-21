@@ -202,3 +202,16 @@ endif()
 if(DART_BUILD_SIMULATION_EXPERIMENTAL)
   add_subdirectory(simulation/experimental)
 endif()
+
+# ==============================================================================
+# SIMD Tests
+# ==============================================================================
+dart_build_tests(
+  TYPE unit
+  TARGET_PREFIX UNIT_simd
+  LINK_LIBRARIES dart-simd GTest::gtest_main
+  SOURCES
+    simd/test_vec_scalar.cpp
+    simd/test_vec_mask_scalar.cpp
+    simd/test_operations_scalar.cpp
+)
