@@ -35,7 +35,15 @@
 #include <cstddef>
 #include <cstdint>
 
-#if defined(__AVX512F__) && defined(__AVX512DQ__)
+#if defined(DART_SIMD_FORCE_SCALAR)
+  #undef DART_SIMD_AVX512
+  #undef DART_SIMD_AVX2
+  #undef DART_SIMD_AVX
+  #undef DART_SIMD_SSE42
+  #undef DART_SIMD_NEON
+  #undef DART_SIMD_FMA
+  #define DART_SIMD_SCALAR 1
+#elif defined(__AVX512F__) && defined(__AVX512DQ__)
   #define DART_SIMD_AVX512 1
   #define DART_SIMD_AVX2 1
   #define DART_SIMD_AVX 1
