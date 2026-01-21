@@ -1,18 +1,18 @@
 #include "collision/collision_detector.hpp"
 
 #include "collision/collision_group.hpp"
-#include "dart/collision/CollisionDetector.hpp"
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/collision/collision_detector.hpp"
+#include "dart/collision/dart/dart_collision_detector.hpp"
+#include "dart/collision/fcl/fcl_collision_detector.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 #if DART_HAVE_BULLET
-  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
+  #include "dart/collision/bullet/bullet_collision_detector.hpp"
 #endif
 #if DART_HAVE_ODE
-  #include "dart/collision/ode/OdeCollisionDetector.hpp"
+  #include "dart/collision/ode/ode_collision_detector.hpp"
 #endif
 
 namespace nb = nanobind;

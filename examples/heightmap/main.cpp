@@ -30,22 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
 #include <dart/config.hpp>
 
-#include <dart/gui/All.hpp>
-#include <dart/gui/ImGuiHandler.hpp>
-#include <dart/gui/IncludeImGui.hpp>
+#include <dart/gui/all.hpp>
+#include <dart/gui/im_gui_handler.hpp>
+#include <dart/gui/include_im_gui.hpp>
 
 #include <dart/utils/All.hpp>
 #include <dart/utils/urdf/All.hpp>
 
 #if DART_HAVE_ODE
-  #include <dart/collision/ode/OdeCollisionDetector.hpp>
+  #include <dart/collision/ode/ode_collision_detector.hpp>
 #endif
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <CLI/CLI.hpp>
 

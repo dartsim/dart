@@ -1,7 +1,7 @@
 #include "dynamics/frame.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/frame.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

@@ -1,6 +1,6 @@
 #include "dynamics/hierarchical_ik.hpp"
 
-#include "dart/dynamics/HierarchicalIK.hpp"
+#include "dart/dynamics/hierarchical_ik.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

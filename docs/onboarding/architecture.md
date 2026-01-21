@@ -898,7 +898,7 @@ CollisionDetector
 ## Usage Example (Pseudocode)
 
 ```cpp
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 int main() {
   // 1. Create world

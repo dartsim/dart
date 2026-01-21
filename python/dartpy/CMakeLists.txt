@@ -180,7 +180,7 @@ set(dartpy_sources
   math/geometry.cpp
   math/random.cpp
   math/eigen_geometry.cpp
-  math/TriMesh.cpp
+  math/tri_mesh.cpp
   dynamics/module.cpp
   dynamics/entity.cpp
   dynamics/degree_of_freedom.cpp

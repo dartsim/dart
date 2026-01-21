@@ -30,7 +30,7 @@
 #include "math/geometry.hpp"
 
 #include "common/eigen_utils.hpp"
-#include "dart/math/Geometry.hpp"
+#include "dart/math/geometry.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

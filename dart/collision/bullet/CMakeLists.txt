@@ -9,7 +9,7 @@ endif()
 message(STATUS "Configuring dart/collision/bullet (DART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET})")
 
 # Skip find_package when Bullet was already provided via FetchContent
-# (BULLET_FOUND and BULLET_LIBRARIES already set in DARTFindDependencies.cmake)
+# (BULLET_FOUND and BULLET_LIBRARIES already set in dart_find_dependencies.cmake)
 if(NOT BULLET_FOUND)
   # Bullet. Force MODULE mode to use the FindBullet.cmake file distributed with
   # CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
@@ -31,7 +31,7 @@ endif()
 # add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
 #
 # Skip the probe if BT_USE_DOUBLE_PRECISION is already set (e.g., from
-# FetchContent in DARTFindDependencies.cmake where we know the precision).
+# FetchContent in dart_find_dependencies.cmake where we know the precision).
 if(NOT DEFINED BT_USE_DOUBLE_PRECISION)
   include(CheckCXXSourceCompiles)
   set(CMAKE_REQUIRED_FLAGS "-w")

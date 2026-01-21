@@ -1,7 +1,7 @@
 #include "dynamics/prismatic_joint.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/dynamics/PrismaticJoint.hpp"
+#include "dart/dynamics/prismatic_joint.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
