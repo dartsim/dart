@@ -19,6 +19,7 @@ CANONICAL_BENCHMARKS = {
     "dot_product": "BM_DOT_PRODUCT",
     "matrix_multiply": "BM_MATRIX_MULTIPLY",
     "simd": "bm_simd",
+    "simd_drjit": "SPECIAL:bm-simd-drjit",
 }
 
 ALIASES = {
@@ -34,6 +35,8 @@ ALIASES = {
     "lcpsolver": "BM_LCPSOLVER",
     "lcp_solvers": "BM_LCPSOLVER_SOLVERS",
     "bm_simd": "bm_simd",
+    "bm_simd_vs_drjit": "SPECIAL:bm-simd-drjit",
+    "simd_vs_drjit": "SPECIAL:bm-simd-drjit",
 }
 
 
@@ -130,6 +133,12 @@ def run(benchmark: str, build_type: str, run_args: list[str]) -> int:
     ensure_build_exists(build_dir, build_type)
 
     target = _resolve_target(benchmark)
+
+    if target.startswith("SPECIAL:"):
+        task_name = target[8:]
+        print(f"This benchmark requires special configuration.")
+        print(f"Please run: pixi run {task_name}")
+        return 1
 
     env = os.environ.copy()
     env["BUILD_TYPE"] = build_type
