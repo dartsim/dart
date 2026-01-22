@@ -37,6 +37,8 @@
 
 #include <Eigen/Core>
 
+#include <cmath>
+
 namespace dart::simd {
 
 /// @brief SIMD-backed 4x4 matrix (column-major) for homogeneous transforms
@@ -179,6 +181,135 @@ struct Matrix4x4
         Vec<T, 4>::set(col0[1], col1[1], col2[1], col3[1]),
         Vec<T, 4>::set(col0[2], col1[2], col2[2], col3[2]),
         Vec<T, 4>::set(col0[3], col1[3], col2[3], col3[3]));
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE T determinant() const
+  {
+    T m00 = col0[0], m10 = col0[1], m20 = col0[2], m30 = col0[3];
+    T m01 = col1[0], m11 = col1[1], m21 = col1[2], m31 = col1[3];
+    T m02 = col2[0], m12 = col2[1], m22 = col2[2], m32 = col2[3];
+    T m03 = col3[0], m13 = col3[1], m23 = col3[2], m33 = col3[3];
+
+    T s0 = m00 * m11 - m10 * m01;
+    T s1 = m00 * m12 - m10 * m02;
+    T s2 = m00 * m13 - m10 * m03;
+    T s3 = m01 * m12 - m11 * m02;
+    T s4 = m01 * m13 - m11 * m03;
+    T s5 = m02 * m13 - m12 * m03;
+
+    T c5 = m22 * m33 - m32 * m23;
+    T c4 = m21 * m33 - m31 * m23;
+    T c3 = m21 * m32 - m31 * m22;
+    T c2 = m20 * m33 - m30 * m23;
+    T c1 = m20 * m32 - m30 * m22;
+    T c0 = m20 * m31 - m30 * m21;
+
+    return s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0;
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE T trace() const
+  {
+    return col0[0] + col1[1] + col2[2] + col3[3];
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE Matrix4x4 inverse() const
+  {
+    T m00 = col0[0], m10 = col0[1], m20 = col0[2], m30 = col0[3];
+    T m01 = col1[0], m11 = col1[1], m21 = col1[2], m31 = col1[3];
+    T m02 = col2[0], m12 = col2[1], m22 = col2[2], m32 = col2[3];
+    T m03 = col3[0], m13 = col3[1], m23 = col3[2], m33 = col3[3];
+
+    T s0 = m00 * m11 - m10 * m01;
+    T s1 = m00 * m12 - m10 * m02;
+    T s2 = m00 * m13 - m10 * m03;
+    T s3 = m01 * m12 - m11 * m02;
+    T s4 = m01 * m13 - m11 * m03;
+    T s5 = m02 * m13 - m12 * m03;
+
+    T c5 = m22 * m33 - m32 * m23;
+    T c4 = m21 * m33 - m31 * m23;
+    T c3 = m21 * m32 - m31 * m22;
+    T c2 = m20 * m33 - m30 * m23;
+    T c1 = m20 * m32 - m30 * m22;
+    T c0 = m20 * m31 - m30 * m21;
+
+    T det = s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0;
+    T invDet = T(1) / det;
+
+    return Matrix4x4(
+        Vec<T, 4>::set(
+            (m11 * c5 - m12 * c4 + m13 * c3) * invDet,
+            (-m10 * c5 + m12 * c2 - m13 * c1) * invDet,
+            (m10 * c4 - m11 * c2 + m13 * c0) * invDet,
+            (-m10 * c3 + m11 * c1 - m12 * c0) * invDet),
+        Vec<T, 4>::set(
+            (-m01 * c5 + m02 * c4 - m03 * c3) * invDet,
+            (m00 * c5 - m02 * c2 + m03 * c1) * invDet,
+            (-m00 * c4 + m01 * c2 - m03 * c0) * invDet,
+            (m00 * c3 - m01 * c1 + m02 * c0) * invDet),
+        Vec<T, 4>::set(
+            (m31 * s5 - m32 * s4 + m33 * s3) * invDet,
+            (-m30 * s5 + m32 * s2 - m33 * s1) * invDet,
+            (m30 * s4 - m31 * s2 + m33 * s0) * invDet,
+            (-m30 * s3 + m31 * s1 - m32 * s0) * invDet),
+        Vec<T, 4>::set(
+            (-m21 * s5 + m22 * s4 - m23 * s3) * invDet,
+            (m20 * s5 - m22 * s2 + m23 * s1) * invDet,
+            (-m20 * s4 + m21 * s2 - m23 * s0) * invDet,
+            (m20 * s3 - m21 * s1 + m22 * s0) * invDet));
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE bool tryInverse(Matrix4x4& out) const
+  {
+    T m00 = col0[0], m10 = col0[1], m20 = col0[2], m30 = col0[3];
+    T m01 = col1[0], m11 = col1[1], m21 = col1[2], m31 = col1[3];
+    T m02 = col2[0], m12 = col2[1], m22 = col2[2], m32 = col2[3];
+    T m03 = col3[0], m13 = col3[1], m23 = col3[2], m33 = col3[3];
+
+    T s0 = m00 * m11 - m10 * m01;
+    T s1 = m00 * m12 - m10 * m02;
+    T s2 = m00 * m13 - m10 * m03;
+    T s3 = m01 * m12 - m11 * m02;
+    T s4 = m01 * m13 - m11 * m03;
+    T s5 = m02 * m13 - m12 * m03;
+
+    T c5 = m22 * m33 - m32 * m23;
+    T c4 = m21 * m33 - m31 * m23;
+    T c3 = m21 * m32 - m31 * m22;
+    T c2 = m20 * m33 - m30 * m23;
+    T c1 = m20 * m32 - m30 * m22;
+    T c0 = m20 * m31 - m30 * m21;
+
+    T det = s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0;
+
+    constexpr T eps = std::is_same_v<T, float> ? T(1e-6) : T(1e-12);
+    if (std::abs(det) < eps) {
+      return false;
+    }
+
+    T invDet = T(1) / det;
+    out = Matrix4x4(
+        Vec<T, 4>::set(
+            (m11 * c5 - m12 * c4 + m13 * c3) * invDet,
+            (-m10 * c5 + m12 * c2 - m13 * c1) * invDet,
+            (m10 * c4 - m11 * c2 + m13 * c0) * invDet,
+            (-m10 * c3 + m11 * c1 - m12 * c0) * invDet),
+        Vec<T, 4>::set(
+            (-m01 * c5 + m02 * c4 - m03 * c3) * invDet,
+            (m00 * c5 - m02 * c2 + m03 * c1) * invDet,
+            (-m00 * c4 + m01 * c2 - m03 * c0) * invDet,
+            (m00 * c3 - m01 * c1 + m02 * c0) * invDet),
+        Vec<T, 4>::set(
+            (m31 * s5 - m32 * s4 + m33 * s3) * invDet,
+            (-m30 * s5 + m32 * s2 - m33 * s1) * invDet,
+            (m30 * s4 - m31 * s2 + m33 * s0) * invDet,
+            (-m30 * s3 + m31 * s1 - m32 * s0) * invDet),
+        Vec<T, 4>::set(
+            (-m21 * s5 + m22 * s4 - m23 * s3) * invDet,
+            (m20 * s5 - m22 * s2 + m23 * s1) * invDet,
+            (-m20 * s4 + m21 * s2 - m23 * s0) * invDet,
+            (m20 * s3 - m21 * s1 + m22 * s0) * invDet));
+    return true;
   }
 
   [[nodiscard]] DART_SIMD_INLINE Eigen::Matrix<T, 4, 4> toEigen() const

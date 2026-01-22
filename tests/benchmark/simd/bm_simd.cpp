@@ -1296,6 +1296,168 @@ BENCHMARK(BM_AABBOverlap_DART_f32)
     ->Range(kCollisionMin, kCollisionMax);
 
 // =============================================================================
+// Matrix3x3 Inverse Benchmarks
+// =============================================================================
+
+static void BM_Matrix3x3Inverse_DART_f32(benchmark::State& state)
+{
+  const auto n = static_cast<std::size_t>(state.range(0));
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> dist(0.1f, 10.0f);
+
+  std::vector<Matrix3x3f> matrices(n);
+  for (auto& m : matrices) {
+    m = Matrix3x3f(
+        dist(gen),
+        dist(gen),
+        dist(gen),
+        dist(gen),
+        dist(gen),
+        dist(gen),
+        dist(gen),
+        dist(gen),
+        dist(gen));
+  }
+
+  std::vector<Matrix3x3f> results(n);
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; ++i) {
+      results[i] = matrices[i].inverse();
+    }
+    benchmark::DoNotOptimize(results.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 9 * 2);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_Matrix3x3Inverse_DART_f32)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true)
+    ->RangeMultiplier(4)
+    ->Range(kCollisionMin, kCollisionMax);
+
+// =============================================================================
+// Matrix4x4 Inverse Benchmarks
+// =============================================================================
+
+static void BM_Matrix4x4Inverse_DART_f32(benchmark::State& state)
+{
+  const auto n = static_cast<std::size_t>(state.range(0));
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> dist(0.1f, 10.0f);
+
+  std::vector<Matrix4x4f> matrices(n);
+  for (auto& m : matrices) {
+    Eigen::Matrix4f em;
+    for (int r = 0; r < 4; ++r) {
+      for (int c = 0; c < 4; ++c) {
+        em(r, c) = dist(gen);
+      }
+    }
+    m = Matrix4x4f::fromEigen(em);
+  }
+
+  std::vector<Matrix4x4f> results(n);
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; ++i) {
+      results[i] = matrices[i].inverse();
+    }
+    benchmark::DoNotOptimize(results.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 16 * 2);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_Matrix4x4Inverse_DART_f32)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true)
+    ->RangeMultiplier(4)
+    ->Range(kCollisionMin, kCollisionMax);
+
+// =============================================================================
+// Matrix Determinant Benchmarks
+// =============================================================================
+
+static void BM_Matrix3x3Determinant_DART_f32(benchmark::State& state)
+{
+  const auto n = static_cast<std::size_t>(state.range(0));
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> dist(0.1f, 10.0f);
+
+  std::vector<Matrix3x3f> matrices(n);
+  for (auto& m : matrices) {
+    m = Matrix3x3f(
+        dist(gen),
+        dist(gen),
+        dist(gen),
+        dist(gen),
+        dist(gen),
+        dist(gen),
+        dist(gen),
+        dist(gen),
+        dist(gen));
+  }
+
+  aligned_vector<float> results(n);
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; ++i) {
+      results[i] = matrices[i].determinant();
+    }
+    benchmark::DoNotOptimize(results.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 9);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_Matrix3x3Determinant_DART_f32)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true)
+    ->RangeMultiplier(4)
+    ->Range(kCollisionMin, kCollisionMax);
+
+static void BM_Matrix4x4Determinant_DART_f32(benchmark::State& state)
+{
+  const auto n = static_cast<std::size_t>(state.range(0));
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> dist(0.1f, 10.0f);
+
+  std::vector<Matrix4x4f> matrices(n);
+  for (auto& m : matrices) {
+    Eigen::Matrix4f em;
+    for (int r = 0; r < 4; ++r) {
+      for (int c = 0; c < 4; ++c) {
+        em(r, c) = dist(gen);
+      }
+    }
+    m = Matrix4x4f::fromEigen(em);
+  }
+
+  aligned_vector<float> results(n);
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; ++i) {
+      results[i] = matrices[i].determinant();
+    }
+    benchmark::DoNotOptimize(results.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 16);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_Matrix4x4Determinant_DART_f32)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true)
+    ->RangeMultiplier(4)
+    ->Range(kCollisionMin, kCollisionMax);
+
+// =============================================================================
 // Main with info output
 // =============================================================================
 

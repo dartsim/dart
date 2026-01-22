@@ -1,16 +1,16 @@
 # Resume: dart::simd Extension
 
-## Last Session Summary (2026-01-21)
+## Last Session Summary (2026-01-22)
 
-**ALL 8 SPRINTS COMPLETE.** Naming convention refactor finished - all snake_case functions renamed to camelCase. Build passes (529 targets), all 8 SIMD unit tests pass, lint passes, benchmarks verified.
+**ALL 8 SPRINTS + SVE BACKEND COMPLETE.** Added ARM SVE backend with fixed-width Vec/VecMask implementation. All work committed and pushed to `feature/simd`. CI running.
 
 ## Current Branch
 
-`feature/simd` — has uncommitted changes (significant new functionality)
+`feature/simd` — clean, pushed to origin
 
 ## Immediate Next Step
 
-**Commit current work** or **integrate into DART core** (collision detection, dynamics).
+**Wait for CI** to verify ARM64 NEON build passes, then **integrate into DART core** (collision detection, dynamics).
 
 ## What's Done
 
@@ -25,53 +25,32 @@
 | 7      | Quaternion + Isometry3            | ✅     |
 | 8      | DynamicVector + DynamicMatrix     | ✅     |
 | -      | Naming refactor (camelCase)       | ✅     |
+| -      | ARM SVE backend                   | ✅     |
 
 ## Benchmark Performance (65536 elements, AVX2+FMA)
 
-| Operation        | DART       |
-| ---------------- | ---------- |
-| FMA f32 (unroll) | 134.6 Gi/s |
-| Dot f32 (unroll) | 157.1 Gi/s |
-| Mul f32          | 85.7 Gi/s  |
-| Add f32          | 85.6 Gi/s  |
+| Operation          | DART     | vs drjit |
+| ------------------ | -------- | -------- |
+| Dot f32 (unrolled) | 184 Gi/s | +359%    |
+| FMA f32            | 103 Gi/s | +34%     |
+| MatVec 180         | 141 Gi/s | +136%    |
+| TransformPoints 1K | 255 Gi/s | +128%    |
 
 ## Context That Would Be Lost
 
-- All naming now uses camelCase: `fromAxisAngle`, `transformPoint`, `toEigen`, `simdChunks`
-- Previous snake_case in tests caused build failures until fixed
-- `toVec3Padded` (not `toVec3_padded`) for padded vector conversion
-- Benchmarks use `preferred_width_v<T>` for native SIMD width
-
-## Uncommitted Changes
-
-```
-Modified:
-  .github/workflows/ci_simd.yml
-  dart/simd/CMakeLists.txt, config.hpp, simd.hpp
-  dart/simd/detail/scalar/vec.hpp
-  dart/simd/eigen/interop.hpp
-  tests/benchmark/simd/bm_simd.cpp
-  tests/unit/simd/test_eigen_interop.cpp, test_geometry.cpp, test_dynamic.cpp
-
-New:
-  dart/simd/detail/avx/          # Pure AVX backend
-  dart/simd/geometry/            # Vector3, Vector4, Matrix3x3, Matrix4x4, Quaternion, Isometry3
-  dart/simd/dynamic/             # DynamicVector, DynamicMatrix
-  dart/simd/eigen/iterator.hpp   # simdChunks streaming iterator
-  docs/dev_tasks/simd-extension/
-
-```
+- SVE uses scalar fallback for VecMask (SVE predicates are variable-length)
+- macOS CI uses NEON (Apple Silicon), not SVE (SVE requires Graviton3/Ampere)
+- drjit comparison benchmarks moved to `/tmp/dart-simd-benchmark` (private repo)
+- All naming uses camelCase: `fromAxisAngle`, `transformPoint`, `toEigen`, `simdChunks`
 
 ## How to Resume
 
 ```bash
 git checkout feature/simd
-git status  # Verify uncommitted changes
-pixi run test-unit simd  # Should pass (8/8 tests)
-pixi run bm-simd         # Verify benchmarks work
+git status  # Should be clean
+gh run list --branch feature/simd  # Check CI status
+pixi run test-unit simd  # Local verification (8/8 tests)
 ```
-
-Then: Commit the work, or continue with integration into DART core.
 
 ## Key Commands
 
@@ -79,11 +58,12 @@ Then: Commit the work, or continue with integration into DART core.
 pixi run test-unit simd    # SIMD unit tests (8 suites)
 pixi run bm-simd           # SIMD benchmarks
 pixi run lint              # Format before commit
+gh run view <run-id>       # Check CI status
 ```
 
 ## Potential Next Steps
 
-1. **Commit current work** — All sprints complete, ready for review
+1. **Wait for CI** — Verify ARM64 NEON build passes (SVE compiles but can't execute on macOS)
 2. **Integration into DART core** — Apply to collision detection, dynamics
-3. **ARM SVE backend** — Deferred research spike (detection macros ready)
+3. **Test SVE on real hardware** — Requires AWS Graviton3 or Ampere Altra
 4. **Additional optimizations** — Matrix inverse, SVD, advanced operations

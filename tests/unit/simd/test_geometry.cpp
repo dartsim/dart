@@ -223,6 +223,67 @@ TEST_F(Matrix3x3Test, Determinant)
   EXPECT_FLOAT_EQ(scale.determinant(), 24.0f);
 }
 
+TEST_F(Matrix3x3Test, Trace)
+{
+  Matrix3x3f I = Matrix3x3f::identity();
+  EXPECT_FLOAT_EQ(I.trace(), 3.0f);
+
+  Matrix3x3f A(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+  EXPECT_FLOAT_EQ(A.trace(), 15.0f);
+}
+
+TEST_F(Matrix3x3Test, Inverse)
+{
+  Matrix3x3f I = Matrix3x3f::identity();
+  Matrix3x3f Iinv = I.inverse();
+
+  EXPECT_FLOAT_EQ(Iinv(0, 0), 1.0f);
+  EXPECT_FLOAT_EQ(Iinv(1, 1), 1.0f);
+  EXPECT_FLOAT_EQ(Iinv(2, 2), 1.0f);
+
+  Matrix3x3f scale(2.0f, 0.0f, 0.0f, 0.0f, 4.0f, 0.0f, 0.0f, 0.0f, 5.0f);
+  Matrix3x3f scaleInv = scale.inverse();
+
+  EXPECT_FLOAT_EQ(scaleInv(0, 0), 0.5f);
+  EXPECT_FLOAT_EQ(scaleInv(1, 1), 0.25f);
+  EXPECT_FLOAT_EQ(scaleInv(2, 2), 0.2f);
+
+  Matrix3x3f product = scale * scaleInv;
+  EXPECT_NEAR(product(0, 0), 1.0f, 1e-6f);
+  EXPECT_NEAR(product(1, 1), 1.0f, 1e-6f);
+  EXPECT_NEAR(product(2, 2), 1.0f, 1e-6f);
+  EXPECT_NEAR(product(0, 1), 0.0f, 1e-6f);
+}
+
+TEST_F(Matrix3x3Test, InverseGeneral)
+{
+  Eigen::Matrix3f em;
+  em << 1, 2, 3, 0, 1, 4, 5, 6, 0;
+
+  Matrix3x3f A = Matrix3x3f::fromEigen(em);
+  Matrix3x3f Ainv = A.inverse();
+
+  Matrix3x3f product = A * Ainv;
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      float expected = (i == j) ? 1.0f : 0.0f;
+      EXPECT_NEAR(product(i, j), expected, 1e-5f);
+    }
+  }
+}
+
+TEST_F(Matrix3x3Test, TryInverse)
+{
+  Matrix3x3f I = Matrix3x3f::identity();
+  Matrix3x3f result;
+
+  EXPECT_TRUE(I.tryInverse(result));
+  EXPECT_FLOAT_EQ(result(0, 0), 1.0f);
+
+  Matrix3x3f singular(1.0f, 2.0f, 3.0f, 2.0f, 4.0f, 6.0f, 1.0f, 1.0f, 1.0f);
+  EXPECT_FALSE(singular.tryInverse(result));
+}
+
 TEST_F(Matrix3x3Test, EigenInterop)
 {
   Eigen::Matrix3f em;
@@ -294,6 +355,71 @@ TEST_F(Matrix4x4Test, EigenInterop)
   Eigen::Matrix4f back = sm.toEigen();
 
   EXPECT_TRUE(back.isApprox(em));
+}
+
+TEST_F(Matrix4x4Test, Determinant)
+{
+  Matrix4x4f I = Matrix4x4f::identity();
+  EXPECT_FLOAT_EQ(I.determinant(), 1.0f);
+
+  Eigen::Matrix4f em;
+  em << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16;
+  Matrix4x4f A = Matrix4x4f::fromEigen(em);
+  EXPECT_NEAR(A.determinant(), 0.0f, 1e-5f);
+
+  Eigen::Matrix4f em2;
+  em2 << 5, -2, 2, 7, 1, 0, 0, 3, -3, 1, 5, 0, 3, -1, -9, 4;
+  Matrix4x4f B = Matrix4x4f::fromEigen(em2);
+  EXPECT_NEAR(B.determinant(), 88.0f, 1e-4f);
+}
+
+TEST_F(Matrix4x4Test, Trace)
+{
+  Matrix4x4f I = Matrix4x4f::identity();
+  EXPECT_FLOAT_EQ(I.trace(), 4.0f);
+
+  Eigen::Matrix4f em;
+  em << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16;
+  Matrix4x4f A = Matrix4x4f::fromEigen(em);
+  EXPECT_FLOAT_EQ(A.trace(), 34.0f);
+}
+
+TEST_F(Matrix4x4Test, Inverse)
+{
+  Matrix4x4f I = Matrix4x4f::identity();
+  Matrix4x4f Iinv = I.inverse();
+
+  EXPECT_FLOAT_EQ(Iinv(0, 0), 1.0f);
+  EXPECT_FLOAT_EQ(Iinv(1, 1), 1.0f);
+  EXPECT_FLOAT_EQ(Iinv(2, 2), 1.0f);
+  EXPECT_FLOAT_EQ(Iinv(3, 3), 1.0f);
+
+  Eigen::Matrix4f em;
+  em << 5, -2, 2, 7, 1, 0, 0, 3, -3, 1, 5, 0, 3, -1, -9, 4;
+  Matrix4x4f A = Matrix4x4f::fromEigen(em);
+  Matrix4x4f Ainv = A.inverse();
+
+  Matrix4x4f product = A * Ainv;
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      float expected = (i == j) ? 1.0f : 0.0f;
+      EXPECT_NEAR(product(i, j), expected, 1e-4f);
+    }
+  }
+}
+
+TEST_F(Matrix4x4Test, TryInverse)
+{
+  Matrix4x4f I = Matrix4x4f::identity();
+  Matrix4x4f result;
+
+  EXPECT_TRUE(I.tryInverse(result));
+  EXPECT_FLOAT_EQ(result(0, 0), 1.0f);
+
+  Eigen::Matrix4f em;
+  em << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16;
+  Matrix4x4f singular = Matrix4x4f::fromEigen(em);
+  EXPECT_FALSE(singular.tryInverse(result));
 }
 
 class DoubleGeometryTest : public ::testing::Test

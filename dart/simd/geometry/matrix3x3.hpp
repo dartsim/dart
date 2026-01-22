@@ -36,6 +36,8 @@
 
 #include <Eigen/Core>
 
+#include <cmath>
+
 namespace dart::simd {
 
 /// @brief SIMD-backed 3x3 matrix (column-major) for rotations and transforms
@@ -162,6 +164,59 @@ struct Matrix3x3
     T d = col0[1], e = col1[1], f = col2[1];
     T g = col0[2], h = col1[2], i = col2[2];
     return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE T trace() const
+  {
+    return col0[0] + col1[1] + col2[2];
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE Matrix3x3 inverse() const
+  {
+    T a = col0[0], b = col1[0], c = col2[0];
+    T d = col0[1], e = col1[1], f = col2[1];
+    T g = col0[2], h = col1[2], i = col2[2];
+
+    T det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+    T invDet = T(1) / det;
+
+    return Matrix3x3(
+        (e * i - f * h) * invDet,
+        (c * h - b * i) * invDet,
+        (b * f - c * e) * invDet,
+        (f * g - d * i) * invDet,
+        (a * i - c * g) * invDet,
+        (c * d - a * f) * invDet,
+        (d * h - e * g) * invDet,
+        (b * g - a * h) * invDet,
+        (a * e - b * d) * invDet);
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE bool tryInverse(Matrix3x3& out) const
+  {
+    T a = col0[0], b = col1[0], c = col2[0];
+    T d = col0[1], e = col1[1], f = col2[1];
+    T g = col0[2], h = col1[2], i = col2[2];
+
+    T det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+
+    constexpr T eps = std::is_same_v<T, float> ? T(1e-6) : T(1e-12);
+    if (std::abs(det) < eps) {
+      return false;
+    }
+
+    T invDet = T(1) / det;
+    out = Matrix3x3(
+        (e * i - f * h) * invDet,
+        (c * h - b * i) * invDet,
+        (b * f - c * e) * invDet,
+        (f * g - d * i) * invDet,
+        (a * i - c * g) * invDet,
+        (c * d - a * f) * invDet,
+        (d * h - e * g) * invDet,
+        (b * g - a * h) * invDet,
+        (a * e - b * d) * invDet);
+    return true;
   }
 
   [[nodiscard]] DART_SIMD_INLINE Eigen::Matrix<T, 3, 3> toEigen() const
