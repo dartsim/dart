@@ -58,8 +58,9 @@ public:
 
   ~TempFile()
   {
-    if (!mPath.empty())
+    if (!mPath.empty()) {
       std::remove(mPath.c_str());
+    }
   }
 
   const std::string& path() const
@@ -88,12 +89,14 @@ private:
                         / ("dart-test-" + std::to_string(stamp) + "-"
                            + std::to_string(unique));
 
-      if (std::filesystem::exists(path))
+      if (std::filesystem::exists(path)) {
         continue;
+      }
 
       std::ofstream ofs(path, std::ios::binary);
-      if (!ofs)
+      if (!ofs) {
         continue;
+      }
 
       ofs << content;
       return path.string();

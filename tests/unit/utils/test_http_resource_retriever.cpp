@@ -25,8 +25,9 @@ namespace {
 
 std::string sanitizeFileName(std::string_view name)
 {
-  if (name.empty())
+  if (name.empty()) {
     return "resource";
+  }
 
   std::string sanitized;
   sanitized.reserve(name.size());
@@ -39,8 +40,9 @@ std::string sanitizeFileName(std::string_view name)
     }
   }
 
-  if (sanitized.empty())
+  if (sanitized.empty()) {
     return "resource";
+  }
 
   return sanitized;
 }
@@ -77,16 +79,19 @@ std::filesystem::path computeCachePath(
   std::string leaf = uri.mPath.get_value_or("");
   if (!leaf.empty()) {
     const auto pos = leaf.find_last_of('/');
-    if (pos != std::string::npos)
+    if (pos != std::string::npos) {
       leaf = leaf.substr(pos + 1);
+    }
   }
 
   const auto queryPos = leaf.find_first_of("?&");
-  if (queryPos != std::string::npos)
+  if (queryPos != std::string::npos) {
     leaf = leaf.substr(0, queryPos);
+  }
 
-  if (leaf.empty())
+  if (leaf.empty()) {
     leaf = "resource";
+  }
 
   const auto sanitizedLeaf = sanitizeFileName(leaf);
   return cacheDir / (hash + "_" + sanitizedLeaf);

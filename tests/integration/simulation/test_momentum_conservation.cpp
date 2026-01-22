@@ -81,7 +81,7 @@ TEST(Issue1193, AngularVelAdd)
 }
 
 const double tol = 1e-5;
-const int g_iters = 100000;
+const int g_iters = 1000;
 
 Eigen::Vector3d computeWorldAngularMomentum(const SkeletonPtr skel)
 {

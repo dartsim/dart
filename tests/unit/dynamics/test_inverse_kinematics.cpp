@@ -91,8 +91,9 @@ public:
     : Analytical(ik, "PartialAnalytical", Properties())
   {
     const auto dofs = ik->getDofs();
-    if (!dofs.empty())
+    if (!dofs.empty()) {
       mDofs.push_back(dofs.front());
+    }
   }
 
   std::span<const Solution> computeSolutions(
