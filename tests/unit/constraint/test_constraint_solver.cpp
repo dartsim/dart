@@ -213,6 +213,16 @@ private:
   double mValue;
 };
 
+class ExposedConstraintSolver : public constraint::ConstraintSolver
+{
+public:
+  bool containsConstraint(
+      const constraint::ConstConstraintBasePtr& constraint) const
+  {
+    return containConstraint(constraint);
+  }
+};
+
 class PartialNanLcpSolver : public math::LcpSolver
 {
 public:
@@ -438,4 +448,56 @@ TEST(ConstraintSolver, SetNullCollisionDetectorIgnored)
 
   solver.setCollisionDetector(nullptr);
   EXPECT_EQ(solver.getCollisionDetector(), originalDetector);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ContactSurfaceHandlerChain)
+{
+  constraint::ConstraintSolver solver;
+  auto defaultHandler = solver.getLastContactSurfaceHandler();
+  ASSERT_NE(defaultHandler, nullptr);
+
+  auto handlerA = std::make_shared<constraint::ContactSurfaceHandler>();
+  solver.addContactSurfaceHandler(handlerA);
+  EXPECT_EQ(solver.getLastContactSurfaceHandler(), handlerA);
+  EXPECT_EQ(handlerA->getParent(), defaultHandler);
+
+  solver.addContactSurfaceHandler(handlerA);
+  EXPECT_EQ(handlerA->getParent(), defaultHandler);
+
+  auto handlerB = std::make_shared<constraint::ContactSurfaceHandler>();
+  solver.addContactSurfaceHandler(handlerB);
+  EXPECT_EQ(handlerB->getParent(), handlerA);
+
+  EXPECT_TRUE(solver.removeContactSurfaceHandler(handlerB));
+  EXPECT_EQ(solver.getLastContactSurfaceHandler(), handlerA);
+
+  EXPECT_TRUE(solver.removeContactSurfaceHandler(handlerA));
+  EXPECT_EQ(solver.getLastContactSurfaceHandler(), defaultHandler);
+
+  auto missing = std::make_shared<constraint::ContactSurfaceHandler>();
+  EXPECT_FALSE(solver.removeContactSurfaceHandler(missing));
+  EXPECT_EQ(solver.getLastContactSurfaceHandler(), defaultHandler);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, AddRemoveConstraint)
+{
+  ExposedConstraintSolver solver;
+  auto skeleton = dynamics::Skeleton::create("constraint");
+  auto constraint = std::make_shared<DummyConstraint>(skeleton);
+
+  EXPECT_EQ(solver.getNumConstraints(), 0u);
+  solver.addConstraint(constraint);
+  EXPECT_EQ(solver.getNumConstraints(), 1u);
+  EXPECT_TRUE(solver.containsConstraint(constraint));
+
+  solver.addConstraint(constraint);
+  EXPECT_EQ(solver.getNumConstraints(), 1u);
+
+  solver.removeConstraint(constraint);
+  EXPECT_EQ(solver.getNumConstraints(), 0u);
+  EXPECT_FALSE(solver.containsConstraint(constraint));
+
+  EXPECT_NO_THROW(solver.removeConstraint(constraint));
 }

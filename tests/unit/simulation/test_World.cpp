@@ -32,12 +32,16 @@
 
 #include <dart/simulation/world.hpp>
 
+#include <dart/constraint/constraint_solver.hpp>
+
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
+
+#include <dart/common/exception.hpp>
 
 #include <gtest/gtest.h>
 
@@ -359,6 +363,18 @@ TEST(WorldTests, CollisionDetector)
 }
 
 //==============================================================================
+TEST(WorldTests, SetCollisionDetectorNullKeepsCurrent)
+{
+  auto world = World::create();
+
+  auto detector = world->getCollisionDetector();
+  ASSERT_NE(detector, nullptr);
+
+  world->setCollisionDetector(nullptr);
+  EXPECT_EQ(world->getCollisionDetector(), detector);
+}
+
+//==============================================================================
 TEST(WorldTests, SetCollisionDetector)
 {
   auto world = World::create();
@@ -373,6 +389,34 @@ TEST(WorldTests, SetCollisionDetector)
   world->setCollisionDetector(CollisionDetectorType::Fcl);
   auto fclDetector = world->getCollisionDetector();
   ASSERT_NE(fclDetector, nullptr);
+}
+
+//==============================================================================
+TEST(WorldTests, SetConstraintSolverRejectsNull)
+{
+  auto world = World::create();
+
+  EXPECT_THROW(
+      world->setConstraintSolver(nullptr), dart::common::NullPointerException);
+}
+
+//==============================================================================
+TEST(WorldTests, SetConstraintSolverCopiesState)
+{
+  auto world = World::create();
+  world->setTimeStep(0.005);
+  world->addSkeleton(createSimpleSkeleton("copy_skel"));
+  world->getConstraintSolver()->setSplitImpulseEnabled(true);
+
+  auto replacement = std::make_unique<constraint::ConstraintSolver>();
+  replacement->setSplitImpulseEnabled(false);
+  world->setConstraintSolver(std::move(replacement));
+
+  auto solver = world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  EXPECT_TRUE(solver->isSplitImpulseEnabled());
+  EXPECT_EQ(solver->getSkeletons().size(), 1u);
+  EXPECT_DOUBLE_EQ(solver->getTimeStep(), 0.005);
 }
 
 //==============================================================================
