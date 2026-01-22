@@ -918,8 +918,6 @@ bm-simd = { cmd = """
   "config",
 ], env = { BUILD_TYPE = "Release" } }
 
-bm-simd-drjit = { cmd = "python scripts/run_simd_drjit_benchmark.py" }
-
 tu-biped = { depends-on = [
   { task = "run-cpp-target", args = [
     "tutorial_biped",

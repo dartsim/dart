@@ -19,7 +19,6 @@ CANONICAL_BENCHMARKS = {
     "dot_product": "BM_DOT_PRODUCT",
     "matrix_multiply": "BM_MATRIX_MULTIPLY",
     "simd": "bm_simd",
-    "simd_drjit": "SPECIAL:bm-simd-drjit",
 }
 
 ALIASES = {
@@ -35,8 +34,6 @@ ALIASES = {
     "lcpsolver": "BM_LCPSOLVER",
     "lcp_solvers": "BM_LCPSOLVER_SOLVERS",
     "bm_simd": "bm_simd",
-    "bm_simd_vs_drjit": "SPECIAL:bm-simd-drjit",
-    "simd_vs_drjit": "SPECIAL:bm-simd-drjit",
 }
 
 

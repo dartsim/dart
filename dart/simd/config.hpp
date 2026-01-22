@@ -93,7 +93,8 @@
   #define DART_SIMD_FMA 1
 #endif
 
-#if !defined(DART_SIMD_SSE42) && !defined(DART_SIMD_NEON)
+#if !defined(DART_SIMD_SSE42) && !defined(DART_SIMD_NEON)                      \
+    && !defined(DART_SIMD_SVE)
   #define DART_SIMD_SCALAR 1
 #endif
 
@@ -146,6 +147,9 @@ inline constexpr const char* backend_name = "AVX";
 inline constexpr std::size_t max_vector_bytes = 32;
 #elif defined(DART_SIMD_SSE42)
 inline constexpr const char* backend_name = "SSE4.2";
+inline constexpr std::size_t max_vector_bytes = 16;
+#elif defined(DART_SIMD_SVE)
+inline constexpr const char* backend_name = "SVE";
 inline constexpr std::size_t max_vector_bytes = 16;
 #elif defined(DART_SIMD_NEON)
 inline constexpr const char* backend_name = "NEON";
@@ -227,6 +231,27 @@ struct NativeWidth<std::uint32_t>
   static constexpr std::size_t value = 4;
 };
 #elif defined(DART_SIMD_SSE42)
+template <>
+struct NativeWidth<float>
+{
+  static constexpr std::size_t value = 4;
+};
+template <>
+struct NativeWidth<double>
+{
+  static constexpr std::size_t value = 2;
+};
+template <>
+struct NativeWidth<std::int32_t>
+{
+  static constexpr std::size_t value = 4;
+};
+template <>
+struct NativeWidth<std::uint32_t>
+{
+  static constexpr std::size_t value = 4;
+};
+#elif defined(DART_SIMD_SVE)
 template <>
 struct NativeWidth<float>
 {

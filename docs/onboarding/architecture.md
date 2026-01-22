@@ -167,7 +167,7 @@ DART follows a **modular layered architecture** with clear separation of concern
 - Mesh/point cloud transformations
 - Any operation on arrays of 3D/4D vectors
 
-**Performance:** See `tests/benchmark/simd/` for comparisons against drjit. Run with `pixi run bm-simd`.
+**Performance:** See `tests/benchmark/simd/` for benchmarks. Run with `pixi run bm-simd`.
 
 ---
 

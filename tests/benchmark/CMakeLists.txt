@@ -86,7 +86,6 @@ target_link_libraries(bm_simd
 )
 
 # Enable native SIMD for benchmarks (AVX2, AVX-512, etc. based on CPU)
-# This ensures fair comparison with drjit which also uses -march=native
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
 if(COMPILER_SUPPORTS_MARCH_NATIVE)
@@ -94,29 +93,6 @@ if(COMPILER_SUPPORTS_MARCH_NATIVE)
 endif()
 
 dart_format_add(simd/bm_simd.cpp)
-
-# drjit comparison benchmarks (optional, requires network access for FetchContent)
-# Enable with: cmake -DDART_SIMD_FETCH_DRJIT=ON
-option(DART_SIMD_FETCH_DRJIT "Fetch drjit for comparison benchmarks" OFF)
-if(DART_SIMD_FETCH_DRJIT)
-  include(FetchContent)
-  FetchContent_Declare(
-    drjit
-    GIT_REPOSITORY https://github.com/mitsuba-renderer/drjit.git
-    GIT_TAG v1.0.0
-  )
-  set(DRJIT_ENABLE_JIT OFF CACHE BOOL "" FORCE)
-  set(DRJIT_ENABLE_AUTODIFF OFF CACHE BOOL "" FORCE)
-  set(DRJIT_ENABLE_PYTHON OFF CACHE BOOL "" FORCE)
-  FetchContent_MakeAvailable(drjit)
-
-  # Add drjit comparison to main benchmark executable
-  target_link_libraries(bm_simd drjit)
-  target_compile_definitions(bm_simd PRIVATE DART_HAS_DRJIT=1)
-  message(STATUS "SIMD benchmarks: drjit comparison ENABLED")
-else()
-  message(STATUS "SIMD benchmarks: drjit comparison DISABLED (set DART_SIMD_FETCH_DRJIT=ON to enable)")
-endif()
 
 # ==============================================================================
 # Note: Benchmarks are standalone executables for performance measurement.

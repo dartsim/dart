@@ -110,6 +110,7 @@ public:
     T* a = data_.data();
     const T* b = rhs.data_.data();
 
+#pragma GCC unroll 4
     for (std::size_t i = 0; i < simd_end; i += simd_width) {
       auto va = Vec<T, simd_width>::load(a + i);
       auto vb = Vec<T, simd_width>::load(b + i);
@@ -128,6 +129,7 @@ public:
     T* a = data_.data();
     const T* b = rhs.data_.data();
 
+#pragma GCC unroll 4
     for (std::size_t i = 0; i < simd_end; i += simd_width) {
       auto va = Vec<T, simd_width>::load(a + i);
       auto vb = Vec<T, simd_width>::load(b + i);
@@ -190,6 +192,7 @@ public:
     const T* b = rhs.data_.data();
 
     Vec<T, simd_width> acc = Vec<T, simd_width>::zero();
+#pragma GCC unroll 4
     for (std::size_t i = 0; i < simd_end; i += simd_width) {
       auto va = Vec<T, simd_width>::load(a + i);
       auto vb = Vec<T, simd_width>::load(b + i);
@@ -210,6 +213,7 @@ public:
     const T* a = data_.data();
 
     Vec<T, simd_width> acc = Vec<T, simd_width>::zero();
+#pragma GCC unroll 4
     for (std::size_t i = 0; i < simd_end; i += simd_width) {
       acc = acc + Vec<T, simd_width>::load(a + i);
     }

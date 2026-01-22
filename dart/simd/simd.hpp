@@ -57,7 +57,11 @@
   #include <dart/simd/detail/avx2/vec_mask.hpp>
 #endif
 
-#if defined(DART_SIMD_NEON)
+#if defined(DART_SIMD_SVE)
+  #include <dart/simd/detail/sve/operations.hpp>
+  #include <dart/simd/detail/sve/vec.hpp>
+  #include <dart/simd/detail/sve/vec_mask.hpp>
+#elif defined(DART_SIMD_NEON)
   #include <dart/simd/detail/neon/operations.hpp>
   #include <dart/simd/detail/neon/vec.hpp>
   #include <dart/simd/detail/neon/vec_mask.hpp>

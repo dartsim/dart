@@ -16,7 +16,7 @@
 
 | Sprint | Description                       | Status |
 | ------ | --------------------------------- | ------ |
-| 1      | drjit benchmark integration       | ✅     |
+| 1      | Benchmark infrastructure          | ✅     |
 | 2      | Pure AVX backend                  | ✅     |
 | 3      | Vector3/Vector4 geometric types   | ✅     |
 | 4      | Matrix3x3/Matrix4x4               | ✅     |
@@ -28,12 +28,12 @@
 
 ## Benchmark Performance (65536 elements, AVX2+FMA)
 
-| Operation        | DART       | drjit     | Advantage |
-| ---------------- | ---------- | --------- | --------- |
-| FMA f32 (unroll) | 134.6 Gi/s | 84.8 Gi/s | **+59%**  |
-| Dot f32 (unroll) | 157.1 Gi/s | 36.5 Gi/s | **+330%** |
-| Mul f32          | 85.7 Gi/s  | 80.8 Gi/s | **+6%**   |
-| Add f32          | 85.6 Gi/s  | 90.4 Gi/s | -5%       |
+| Operation        | DART       |
+| ---------------- | ---------- |
+| FMA f32 (unroll) | 134.6 Gi/s |
+| Dot f32 (unroll) | 157.1 Gi/s |
+| Mul f32          | 85.7 Gi/s  |
+| Add f32          | 85.6 Gi/s  |
 
 ## Context That Would Be Lost
 
@@ -60,8 +60,6 @@ New:
   dart/simd/eigen/iterator.hpp   # simdChunks streaming iterator
   docs/dev_tasks/simd-extension/
 
-Deleted:
-  tests/benchmark/simd/bm_simd_vs_drjit.cpp
 ```
 
 ## How to Resume
@@ -79,8 +77,7 @@ Then: Commit the work, or continue with integration into DART core.
 
 ```bash
 pixi run test-unit simd    # SIMD unit tests (8 suites)
-pixi run bm-simd           # DART-only benchmarks
-pixi run bm-simd-drjit     # With drjit comparison
+pixi run bm-simd           # SIMD benchmarks
 pixi run lint              # Format before commit
 ```
 

@@ -5,8 +5,7 @@
 This document outlines the plan for extending the dart::simd layer with:
 
 1. Complete ISA coverage for Intel/AMD/ARM
-2. Default drjit benchmark integration
-3. SIMD-backed geometric types (Vec3, Mat3x3, etc.) with Eigen interop
+2. SIMD-backed geometric types (Vec3, Mat3x3, etc.) with Eigen interop
 
 ---
 
@@ -14,7 +13,6 @@ This document outlines the plan for extending the dart::simd layer with:
 
 ### Completed
 
-- [x] **Sprint 1**: drjit benchmark integration (merged into single binary)
 - [x] **Sprint 2**: Pure AVX backend (`dart/simd/detail/avx/`)
 - [x] AVX-512 sub-extension detection (BW/DQ/VL/CD macros)
 - [x] ARM SVE/SVE2 detection macros (backend deferred)
@@ -35,44 +33,38 @@ This document outlines the plan for extending the dart::simd layer with:
 - [ ] ARM SVE backend implementation
 - [ ] Zero-copy views over interleaved ECS storage
 
-### Benchmark Results (AVX2+FMA, Intel 13th Gen, Updated)
+### Benchmark Results (AVX2+FMA, Intel 13th Gen)
 
 #### Core Operations (65536 elements)
 
-| Operation               | dart::simd | drjit   | Winner   | Advantage |
-| ----------------------- | ---------- | ------- | -------- | --------- |
-| **Dot f32 (4x unroll)** | 151 Gi/s   | 40 Gi/s | **DART** | **+278%** |
-| **Dot f32**             | 79 Gi/s    | 40 Gi/s | **DART** | **+98%**  |
-| **FMA f32 (2x unroll)** | 109 Gi/s   | 96 Gi/s | **DART** | **+14%**  |
-| **FMA f32**             | 103 Gi/s   | 96 Gi/s | **DART** | **+7%**   |
-| **Add f32**             | 86 Gi/s    | 97 Gi/s | drjit    | -11%      |
-| **Mul f32**             | 105 Gi/s   | 97 Gi/s | **DART** | **+8%**   |
-| **Sqrt f32**            | 26 Gi/s    | 27 Gi/s | ~Same    | -4%       |
-| **Add f64**             | 74 Gi/s    | 74 Gi/s | ~Same    | 0%        |
+| Operation               | dart::simd |
+| ----------------------- | ---------- |
+| **Dot f32 (4x unroll)** | 151 Gi/s   |
+| **Dot f32**             | 79 Gi/s    |
+| **FMA f32 (2x unroll)** | 109 Gi/s   |
+| **FMA f32**             | 103 Gi/s   |
+| **Add f32**             | 86 Gi/s    |
+| **Mul f32**             | 105 Gi/s   |
+| **Sqrt f32**            | 26 Gi/s    |
+| **Add f64**             | 74 Gi/s    |
 
-#### Real-World Scale Benchmarks (DART vs drjit)
+#### Real-World Scale Benchmarks
 
-| Benchmark           | Size         | DART     | drjit    | Winner         |
-| ------------------- | ------------ | -------- | -------- | -------------- |
-| **TransformPoints** | 1K vertices  | 250 Gi/s | 138 Gi/s | **DART +81%**  |
-| **TransformPoints** | 64K vertices | 70 Gi/s  | 36 Gi/s  | **DART +94%**  |
-| **TransformPoints** | 1M points    | 50 Gi/s  | -        | **DART**       |
-| **BatchDot3**       | 1K contacts  | 224 Gi/s | 210 Gi/s | **DART +7%**   |
-| **BatchDot3**       | 4K contacts  | 142 Gi/s | 131 Gi/s | **DART +8%**   |
-| **BatchCross3**     | 1K contacts  | 234 Gi/s | 143 Gi/s | **DART +64%**  |
-| **BatchCross3**     | 4K contacts  | 89 Gi/s  | 58 Gi/s  | **DART +53%**  |
-| **BatchNormalize3** | 1K vectors   | 156 Gi/s | 74 Gi/s  | **DART +111%** |
-| **BatchNormalize3** | 4K vectors   | 156 Gi/s | 62 Gi/s  | **DART +152%** |
+| Benchmark           | Size         | DART     |
+| ------------------- | ------------ | -------- |
+| **TransformPoints** | 1K vertices  | 250 Gi/s |
+| **TransformPoints** | 64K vertices | 70 Gi/s  |
+| **TransformPoints** | 1M points    | 50 Gi/s  |
+| **BatchDot3**       | 1K contacts  | 224 Gi/s |
+| **BatchDot3**       | 4K contacts  | 142 Gi/s |
+| **BatchCross3**     | 1K contacts  | 234 Gi/s |
+| **BatchCross3**     | 4K contacts  | 89 Gi/s  |
+| **BatchNormalize3** | 1K vectors   | 156 Gi/s |
+| **BatchNormalize3** | 4K vectors   | 156 Gi/s |
 
-**Summary**: DART outperforms drjit on most operations:
+**Key design advantages**:
 
-- **Compute-bound ops** (Dot, FMA, Cross, Normalize): DART wins by +7% to +278%
-- **Memory-bound ops** (Add): drjit wins by ~11% due to simpler loop
-- **Real-world ops**: DART wins across all tested scenarios (+7% to +152%)
-
-**Key advantages**:
-
-1. Native SIMD width (8-wide on AVX2 vs drjit's 4-wide)
+1. Native SIMD width (8-wide on AVX2)
 2. Loop unrolling with multiple accumulators
 3. Proper FMA utilization pattern
 
@@ -124,25 +116,7 @@ SVE is vector-length-agnostic. Hardware determines width at runtime.
 
 ---
 
-## Part 2: drjit Benchmark Integration (COMPLETED)
-
-### Implementation (DONE)
-
-- Merged `bm_simd_vs_drjit.cpp` into `bm_simd.cpp` with `#if defined(DART_HAS_DRJIT)`
-- Updated CMakeLists.txt with FetchContent for drjit
-- Added `-march=native` to benchmark target for fair comparison
-- Restructured benchmarks with consistent naming: `BM_<Op>_<Lib>_<type>/<size>`
-
-### Running Benchmarks
-
-```bash
-pixi run bm-simd          # DART-only benchmarks
-pixi run bm-simd-drjit    # With drjit comparison (fetches drjit automatically)
-```
-
----
-
-## Part 3: SIMD Vector/Matrix Types with Eigen Interop
+## Part 2: SIMD Vector/Matrix Types with Eigen Interop
 
 ### Goals
 
@@ -308,15 +282,7 @@ public:
 
 ## Implementation Roadmap (UPDATED)
 
-### Sprint 1: drjit Benchmark Integration (1 day) - COMPLETED
-
-- [x] Merge bm_simd_vs_drjit into bm_simd with conditional compilation
-- [x] Update CMakeLists.txt to auto-fetch drjit
-- [x] Update pixi.toml task
-- [x] Add `-march=native` for fair comparison
-- [x] Restructure for side-by-side comparison
-
-### Sprint 2: Pure AVX Backend (2 days) - COMPLETED
+### Sprint 1: Pure AVX Backend (2 days) - COMPLETED
 
 - [x] Add `dart/simd/detail/avx/` backend
 - [x] Float8, Double4 specializations
@@ -377,10 +343,10 @@ Extend EigenSoA for ECS-style batch processing on contiguous Eigen arrays.
 
 **Results**:
 
-- FMA: DART now **71% faster** than drjit (was 19% slower)
-- Dot: DART unrolled **389% faster** than drjit
+- FMA: Significant improvement with proper unrolling
+- Dot: 4x unrolling with multiple accumulators hides FMA latency
 
-### Sprint 7: Quaternion and Isometry3 (2 days) - COMPLETED
+### Sprint 6: Quaternion and Isometry3 (2 days) - COMPLETED
 
 Rigid body transformations are fundamental to physics simulation.
 
@@ -577,11 +543,11 @@ dart/simd/
 
 ### 2. **FMA Optimization** - MEDIUM PRIORITY
 
-**Why**: drjit is 19% faster on FMA. Closing this gap improves physics simulation.
+**Why**: Closing performance gaps improves physics simulation.
 
 **Investigation areas**:
 
-- Loop unrolling (DART does 4 elements/iteration, drjit might do more)
+- Loop unrolling (optimize elements/iteration)
 - Memory prefetching
 - Instruction scheduling
 
@@ -610,8 +576,8 @@ dart/simd/
 
 1. [x] All x86-64 ISAs from SSE4.2 to AVX-512 supported
 2. [x] ARM NEON supported (SVE deferred)
-3. [x] drjit comparison runs with `pixi run bm-simd-drjit`
-4. [x] DART competitive or faster than drjit on most operations
+3. [x] Benchmarks run with `pixi run bm-simd`
+4. [x] DART SIMD competitive with optimized implementations
 5. [x] `Vector3<T>` and `Matrix4x4<T>` with SIMD storage and Eigen interop
 6. [x] Batch transform operations (transformPoints, transformVectors) implemented
 7. [x] Zero-copy Eigen interop via `asEigen()` for DynamicVector/DynamicMatrix
