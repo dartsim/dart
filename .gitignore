@@ -108,3 +108,4 @@ imgui.ini
 
 # Profiling logs
 profiling/*.txt
+.sisyphus/
