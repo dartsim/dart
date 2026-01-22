@@ -135,7 +135,7 @@ inline void dMULTIPLY1_331(double* A, const double* B, const double* C){
 // n must be in the range [1..8]. m must be in the range [1..n]. i0 must be
 // in the range [0..n-1].
 
-void cullPoints(int n, double p[], int m, int i0, int iret[])
+DART_API void cullPoints(int n, double p[], int m, int i0, int iret[])
 {
   // compute the centroid of the polygon in cx,cy
   int i, j;
@@ -199,7 +199,7 @@ void cullPoints(int n, double p[], int m, int i0, int iret[])
   }
 }
 
-void dLineClosestApproach(
+DART_API void dLineClosestApproach(
     const dVector3 pa,
     const dVector3 ua,
     const dVector3 pb,
@@ -226,7 +226,7 @@ void dLineClosestApproach(
   }
 }
 
-int intersectRectQuad(double h[2], double p[8], double ret[16])
+DART_API int intersectRectQuad(double h[2], double p[8], double ret[16])
 {
   // q (and r) contain nq (and nr) coordinate points for the current (and
   // chopped) polygons
@@ -304,7 +304,7 @@ done:
 // in a piecewise fashion from t=0 to t=1, stopping at the point where
 // d|D(t)|^2/dt crosses from negative to positive.
 
-void dClosestLineBoxPoints(
+DART_API void dClosestLineBoxPoints(
     const dVector3 p1,
     const dVector3 p2,
     const dVector3 c,
@@ -1404,6 +1404,10 @@ int collideCylinderPlane(
       penetration = depth[i];
       found = i;
     }
+  }
+
+  if (found == -1) {
+    return 0;
   }
 
   Eigen::Vector3d point;

@@ -1,17 +1,124 @@
-# Reference: https://github.com/codecov/support/wiki/Codecov-Yaml
+# Reference: https://docs.codecov.com/docs/codecovyml-reference
+#
+# Test Coverage Audit: docs/dev_tasks/test-coverage-audit/
+# Using 'auto' targets to track coverage trends without blocking PRs
+
+codecov:
+  require_ci_to_pass: true
 
 coverage:
+  precision: 2
+  round: down
+  range: "70...90"
+
   status:
     project:
       default:
-        threshold: 1%
+        target: auto
+        threshold: 2% # Allow 2% fluctuation from baseline
     patch:
       default:
-        informational: true
-  ignore:
-    - "tests"
-    - "dart/external"
-    - "dart/gui"
+        target: auto
+        threshold: 5% # More lenient for patches
 
+  ignore:
+    # Test code (shouldn't count toward coverage)
+    - "tests/**"
+
+    # GUI - requires display for testing
+    # BACKLOG: Revisit when headless CI is feasible
+    - "dart/gui/**"
+
+    # Generated/config files
+    - "dart/config.hpp"
+    - "**/*.in" # CMake template files
+
+    # Experimental APIs under heavy development
+    # BACKLOG: Test when APIs stabilize
+    - "dart/simulation/experimental/**"
+
+    # Deprecated code scheduled for removal
+    - "**/SmartPointer.hpp"
+
+    # Examples and tutorials (demo code, not production)
+    - "examples/**"
+    - "tutorials/**"
+    - "python/examples/**"
+
+    # IKFast generated code (auto-generated)
+    - "**/ikfast*.cpp"
+
+    # Third-party/vendor (future-proofing)
+    - "extern/**"
+    - "external/**"
+    - "third_party/**"
+
+# Reduce noise from macro/exception branches
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes # Include conditional branches (if/else)
+      loop: yes # Include loop branches
+      method: no # Exclude method entry/exit (noisy)
+      macro: no # Exclude macro-generated branches (noisy)
+
+# PR comment configuration
 comment:
-  layout: "diff, flags, files"
+  layout: "header, diff, flags, files"
+  behavior: default
+  require_changes: true
+
+# Module-level tracking for visibility into per-component coverage
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        informational: true # Don't fail PRs based on component coverage
+
+  individual_components:
+    - component_id: dart_common
+      name: "Common"
+      paths:
+        - dart/common/**
+
+    - component_id: dart_math
+      name: "Math"
+      paths:
+        - dart/math/**
+
+    - component_id: dart_dynamics
+      name: "Dynamics"
+      paths:
+        - dart/dynamics/**
+
+    - component_id: dart_collision
+      name: "Collision"
+      paths:
+        - dart/collision/**
+
+    - component_id: dart_constraint
+      name: "Constraint"
+      paths:
+        - dart/constraint/**
+
+    - component_id: dart_simulation
+      name: "Simulation"
+      paths:
+        - dart/simulation/**
+        - "!dart/simulation/experimental/**"
+
+    - component_id: dart_io
+      name: "I/O"
+      paths:
+        - dart/io/**
+
+    - component_id: dart_optimizer
+      name: "Optimizer"
+      paths:
+        - dart/optimizer/**
+
+    - component_id: dart_lcpsolver
+      name: "LCP Solver"
+      paths:
+        - dart/lcpsolver/**

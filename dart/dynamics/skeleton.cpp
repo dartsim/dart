@@ -3602,7 +3602,7 @@ static void computeSupportPolygon(
   polygon = math::computeSupportPolgyon(
       vertex_indices, std::span<const Eigen::Vector3d>(geometry), axis1, axis2);
 
-  ee_indices.reserve(vertex_indices.size());
+  ee_indices.resize(vertex_indices.size());
   for (std::size_t i = 0; i < vertex_indices.size(); ++i) {
     ee_indices[i] = originalEE_map[vertex_indices[i]];
   }

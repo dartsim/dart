@@ -41,6 +41,8 @@
   - Added ASan build mode and example install destination controls. ([#2101](https://github.com/dartsim/dart/pull/2101), [#2100](https://github.com/dartsim/dart/pull/2100))
   - GUI dependency handling updates: switched ImGui to FetchContent, prefer local Vulkan loader, and removed bundled lodepng. ([#2056](https://github.com/dartsim/dart/pull/2056), [#2085](https://github.com/dartsim/dart/pull/2085), [#2051](https://github.com/dartsim/dart/pull/2051))
   - Pixi tasks and helper scripts now guard optional targets (dartpy, GUI examples) automatically, detect missing generator targets before invoking `cmake --build`, and expose `DART_BUILD_*_OVERRIDE` environment hooks so CI and local workflows can toggle bindings/apps without editing `pixi.toml`.
+  - Exported `DynamicJointConstraint` and `JointConstraint` on Windows so constraint unit tests link successfully.
+  - Exported soft contact constraints, DART collision helpers, `computeIntersection`, and IK property types on Windows to fix shared-library unit test linking. ([#2462](https://github.com/dartsim/dart/pull/2462))
 
 - Tooling and Docs
   - Added AI-native documentation architecture with AGENTS.md, module-specific guides, slash commands, and command sync automation. ([#2446](https://github.com/dartsim/dart/pull/2446), [#2447](https://github.com/dartsim/dart/pull/2447), [#2448](https://github.com/dartsim/dart/pull/2448), [#2449](https://github.com/dartsim/dart/pull/2449))
@@ -74,6 +76,8 @@
 - LCP and Optimization
   - Refactored the LCP solver stack under `dart::math::lcp` with unified APIs plus new solver implementations and ImGui dashboard support. ([#2202](https://github.com/dartsim/dart/pull/2202), [#2241](https://github.com/dartsim/dart/pull/2241), [#2318](https://github.com/dartsim/dart/pull/2318), [#2355](https://github.com/dartsim/dart/pull/2355))
   - Modernized the Dantzig solver and improved stability (C++20 optimizations, NaN fallback, warning suppression). ([#2081](https://github.com/dartsim/dart/pull/2081), [#2253](https://github.com/dartsim/dart/pull/2253), [#2111](https://github.com/dartsim/dart/pull/2111))
+  - Fixed Lemke solver segfaults on macOS arm64 by avoiding Eigen stack allocations. ([#2462](https://github.com/dartsim/dart/pull/2462))
+  - Test coverage audit with Codecov infrastructure improvements and 200+ new unit/integration tests across common, collision, constraint, dynamics, io, sensor, and simulation modules. ([#2462](https://github.com/dartsim/dart/pull/2462))
   - Added LCP documentation. ([#2240](https://github.com/dartsim/dart/pull/2240))
 
 - IO and Parsing

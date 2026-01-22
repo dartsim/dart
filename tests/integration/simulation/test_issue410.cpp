@@ -135,7 +135,7 @@ void applyVelocityCommands(
 
 // Verifies that cloned worlds run deterministically when given identical
 // velocity commands, covering the original #410 report.
-TEST(Simulation, DISABLED_ClonedWorldsStayDeterministic)
+TEST(Simulation, ClonedWorldsStayDeterministic)
 {
   auto baseWorld = dart::io::readWorld("dart://sample/skel/fullbody1.skel");
   ASSERT_NE(baseWorld, nullptr);
@@ -191,7 +191,7 @@ TEST(Simulation, DISABLED_ClonedWorldsStayDeterministic)
 
 // Ensure contact points produced under a large time step still report
 // meaningful forces instead of zero-force contacts.
-TEST(Simulation, DISABLED_ContactsReportNonZeroForceWithLargeTimeStep)
+TEST(Simulation, ContactsReportNonZeroForceWithLargeTimeStep)
 {
   auto world = World::create("issue410_contacts");
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));

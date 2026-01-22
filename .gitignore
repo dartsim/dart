@@ -108,3 +108,10 @@ imgui.ini
 
 # Profiling logs
 profiling/*.txt
+
+# Coverage files
+*.info
+*.gcda
+*.gcno
+htmlcov/
+coverage_html/

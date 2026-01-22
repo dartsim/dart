@@ -638,3 +638,48 @@ TEST(SkelParser, Shapes)
   skel = world->getSkeleton("mesh skeleton");
   EXPECT_NE(skel, nullptr);
 }
+
+//==============================================================================
+TEST(SkelParser, AdditionalSampleFilesLoad)
+{
+  const std::vector<std::string> samples
+      = {"dart://sample/skel/test/ball_joints.skel",
+         "dart://sample/skel/test/dof_attribute_test.skel",
+         "dart://sample/skel/test/joint_dynamics_elements_test.skel",
+         "dart://sample/skel/test/joint_friction_test.skel",
+         "dart://sample/skel/test/joint_limit_test.skel",
+         "dart://sample/skel/test/planar_joint.skel",
+         "dart://sample/skel/test/translational_joints.skel",
+         "dart://sample/skel/test/simple_tree_structure.skel",
+         "dart://sample/skel/test/test_drop_sphere.skel",
+         "dart://sample/skel/test/test_single_body.skel",
+         "dart://sample/skel/test/test_drop_box.skel",
+         "dart://sample/skel/test/test_drop_box_offset.skel",
+         "dart://sample/skel/test/test_drop_low_stiffness.skel",
+         "dart://sample/skel/test/test_articulated_bodies.skel",
+         "dart://sample/skel/test/test_articulated_bodies_10bodies.skel",
+         "dart://sample/skel/test/test_adaptive_deformable.skel",
+         "dart://sample/skel/test/test_shapes.skel",
+         "dart://sample/skel/test/single_pendulum.skel",
+         "dart://sample/skel/test/joint_actuator_type_test.skel",
+         "dart://sample/skel/test/collision_of_prescribed_joints_test.skel",
+         "dart://sample/skel/test/hybrid_dynamics_test.skel",
+         "dart://sample/skel/test/free_joints.skel",
+         "dart://sample/skel/test/file_info_world_test.skel",
+         "dart://sample/skel/test/double_pendulum_euler_joint.skel",
+         "dart://sample/skel/test/serial_chain_eulerxyz_joint.skel",
+         "dart://sample/skel/test/serial_chain_revolute_joint.skel",
+         "dart://sample/skel/test/single_pendulum_ball_joint.skel",
+         "dart://sample/skel/test/single_pendulum_euler_joint.skel",
+         "dart://sample/skel/test/double_pendulum_ball_joint.skel",
+         "dart://sample/skel/test/double_pendulum_with_base.skel",
+         "dart://sample/skel/test/tree_structure_ball_joint.skel",
+         "dart://sample/skel/test/tree_structure_euler_joint.skel"};
+
+  for (const auto& uri : samples) {
+    SCOPED_TRACE(uri);
+    WorldPtr world = SkelParser::readWorld(uri);
+    ASSERT_NE(world, nullptr);
+    EXPECT_GT(world->getNumSkeletons(), 0u);
+  }
+}

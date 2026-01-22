@@ -38,6 +38,8 @@
 #include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/mimic_dof_properties.hpp>
 
+#include <dart/export.hpp>
+
 #include <span>
 #include <vector>
 
@@ -49,7 +51,7 @@ namespace constraint {
 /// impulses locally. The reference joint does not receive an equal and
 /// opposite impulse. Use CouplerConstraint instead when you need a bilateral
 /// constraint that reacts on both joints.
-class MimicMotorConstraint : public ConstraintBase
+class DART_API MimicMotorConstraint : public ConstraintBase
 {
 public:
   /// Constructor that creates a MimicMotorConstraint using the given

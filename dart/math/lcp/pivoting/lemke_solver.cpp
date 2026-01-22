@@ -30,6 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+// Avoid Eigen stack allocation in this translation unit to prevent macOS arm64
+// Lemke solver segfaults from unaligned stack temporaries.
+#define EIGEN_STACK_ALLOCATION_LIMIT 0
+
 #include "dart/math/lcp/pivoting/lemke_solver.hpp"
 
 #include "dart/math/lcp/lcp_validation.hpp"

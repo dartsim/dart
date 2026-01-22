@@ -606,7 +606,7 @@ enum IntersectionResult
 
 /// Compute the intersection between a line segment that goes from a1 -> a2 and
 /// a line segment that goes from b1 -> b2.
-IntersectionResult computeIntersection(
+DART_API IntersectionResult computeIntersection(
     Eigen::Vector2d& _intersectionPoint,
     const Eigen::Vector2d& a1,
     const Eigen::Vector2d& a2,

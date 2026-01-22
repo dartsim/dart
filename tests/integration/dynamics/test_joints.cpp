@@ -3026,7 +3026,7 @@ void testCoMJacobianSignConsistency()
 }
 
 //==============================================================================
-TEST_F(Joints, DISABLED_CoMJacobianSignConsistency)
+TEST_F(Joints, CoMJacobianSignConsistency)
 {
   testCoMJacobianSignConsistency();
 }
