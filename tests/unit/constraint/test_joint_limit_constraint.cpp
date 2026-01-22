@@ -63,8 +63,14 @@ std::shared_ptr<Skeleton> makeSingleRevoluteSkeleton()
 class ExposedJointLimitConstraint : public JointLimitConstraint
 {
 public:
+  using JointLimitConstraint::applyImpulse;
+  using JointLimitConstraint::applyUnitImpulse;
+  using JointLimitConstraint::excite;
+  using JointLimitConstraint::getInformation;
+  using JointLimitConstraint::getVelocityChange;
   using JointLimitConstraint::isActive;
   using JointLimitConstraint::JointLimitConstraint;
+  using JointLimitConstraint::unexcite;
   using JointLimitConstraint::update;
 };
 
@@ -219,4 +225,67 @@ TEST(JointLimitConstraintTests, DimensionMatchesViolations)
   constraint1.update();
   EXPECT_EQ(constraint1.getDimension(), 1u);
   EXPECT_EQ(constraint2.getDimension(), 0u);
+}
+
+//==============================================================================
+TEST(JointLimitConstraintTests, GetInformation)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  ExposedJointLimitConstraint constraint(joint);
+
+  joint->setPosition(0, joint->getPositionUpperLimit(0) + 0.1);
+  skeleton->computeForwardKinematics();
+  constraint.update();
+  ASSERT_TRUE(constraint.isActive());
+
+  constraint::ConstraintInfo info;
+  double lo[6], hi[6], b[6], w[6], x[6];
+  int findex[6];
+  for (int i = 0; i < 6; ++i) {
+    lo[i] = hi[i] = b[i] = w[i] = x[i] = 0.0;
+    findex[i] = -1;
+  }
+  info.lo = lo;
+  info.hi = hi;
+  info.b = b;
+  info.w = w;
+  info.x = x;
+  info.findex = findex;
+  info.invTimeStep = 1000.0;
+
+  // Ensure non-zero error allowance
+  JointLimitConstraint::setErrorAllowance(0.01);
+
+  constraint.getInformation(&info);
+
+  EXPECT_LT(info.lo[0], info.hi[0]);
+  // Position violation should result in some 'b' value (desired velocity
+  // change)
+  EXPECT_NE(info.b[0], 0.0);
+}
+
+//==============================================================================
+TEST(JointLimitConstraintTests, ApplyImpulseAndVelocityChange)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  ExposedJointLimitConstraint constraint(joint);
+
+  joint->setPosition(0, joint->getPositionUpperLimit(0) + 0.1);
+  skeleton->computeForwardKinematics();
+  // computeForwardDynamics() updates articulated inertia and invProjArtInertia
+  skeleton->computeForwardDynamics();
+  constraint.update();
+
+  double delVel[6] = {0, 0, 0, 0, 0, 0};
+  constraint.applyUnitImpulse(0);
+  skeleton->computeImpulseForwardDynamics();
+  constraint.getVelocityChange(delVel, true);
+
+  double lambda[1] = {1.0};
+  constraint.applyImpulse(lambda);
+
+  constraint.excite();
+  constraint.unexcite();
 }
