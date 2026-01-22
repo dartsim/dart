@@ -135,15 +135,23 @@ TEST(HttpResourceRetriever, CacheHitAndOptions)
   }
 
   EXPECT_TRUE(retriever.exists(uri));
-  auto resource = retriever.retrieve(uri);
-  ASSERT_NE(resource, nullptr);
-  EXPECT_EQ(resource->readAll(), payload);
 
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  EXPECT_EQ(retriever.getFilePath(uri), cachePath.string());
-  DART_SUPPRESS_DEPRECATED_END
+  std::string filePath;
+  {
+    auto resource = retriever.retrieve(uri);
+    ASSERT_NE(resource, nullptr);
+    EXPECT_EQ(resource->readAll(), payload);
 
-  std::filesystem::remove_all(cacheDir);
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    filePath = retriever.getFilePath(uri);
+    DART_SUPPRESS_DEPRECATED_END
+  } // resource released before cleanup
+
+  EXPECT_EQ(filePath, cachePath.string());
+
+  std::error_code ec;
+  std::filesystem::remove_all(cacheDir, ec);
+  // Ignore cleanup errors on Windows where file locks can linger
 }
 
 TEST(HttpResourceRetriever, UnsupportedAndRemoteFailures)
