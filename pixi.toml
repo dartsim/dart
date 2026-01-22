@@ -1,6 +1,6 @@
 [workspace]
 name = "DART"
-version = "6.16.4"
+version = "6.16.5"
 description = "Dynamic Animation and Robotics Toolkit"
 authors = ["Jeongseok Lee <jslee02@gmail.com>"]
 channels = ["conda-forge"]
