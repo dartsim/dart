@@ -374,6 +374,25 @@ squaredDistance(const Vector3<T>& a, const Vector3<T>& b)
   return (b - a).squaredNorm();
 }
 
+/// Reflect vector v around normal n (n must be normalized)
+template <typename T>
+[[nodiscard]] DART_SIMD_INLINE Vector3<T> reflect(
+    const Vector3<T>& v, const Vector3<T>& n)
+{
+  return v - T(2) * dot(v, n) * n;
+}
+
+/// Project vector a onto vector b
+template <typename T>
+[[nodiscard]] DART_SIMD_INLINE Vector3<T> project(
+    const Vector3<T>& a, const Vector3<T>& b)
+{
+  T bLenSq = b.squaredNorm();
+  if (bLenSq < T(1e-12))
+    return Vector3<T>::zero();
+  return (dot(a, b) / bLenSq) * b;
+}
+
 // =============================================================================
 // Type Aliases
 // =============================================================================

@@ -67,6 +67,19 @@ struct Vec<float, 8>
     return Vec(_mm256_set1_ps(value));
   }
 
+  DART_SIMD_INLINE static Vec set(
+      float v0,
+      float v1,
+      float v2,
+      float v3,
+      float v4,
+      float v5,
+      float v6,
+      float v7)
+  {
+    return Vec(_mm256_setr_ps(v0, v1, v2, v3, v4, v5, v6, v7));
+  }
+
   DART_SIMD_INLINE static Vec load(const float* ptr)
   {
     return Vec(_mm256_load_ps(ptr));
@@ -172,6 +185,11 @@ struct Vec<double, 4>
   DART_SIMD_INLINE static Vec broadcast(double value)
   {
     return Vec(_mm256_set1_pd(value));
+  }
+
+  DART_SIMD_INLINE static Vec set(double v0, double v1, double v2, double v3)
+  {
+    return Vec(_mm256_setr_pd(v0, v1, v2, v3));
   }
 
   DART_SIMD_INLINE static Vec load(const double* ptr)

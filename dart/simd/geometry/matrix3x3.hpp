@@ -171,6 +171,51 @@ struct Matrix3x3
     return col0[0] + col1[1] + col2[2];
   }
 
+  [[nodiscard]] DART_SIMD_INLINE T frobeniusNorm() const
+  {
+    T sum = T(0);
+    for (int i = 0; i < 3; ++i) {
+      sum += col0[i] * col0[i] + col1[i] * col1[i] + col2[i] * col2[i];
+    }
+    return std::sqrt(sum);
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE T squaredFrobeniusNorm() const
+  {
+    T sum = T(0);
+    for (int i = 0; i < 3; ++i) {
+      sum += col0[i] * col0[i] + col1[i] * col1[i] + col2[i] * col2[i];
+    }
+    return sum;
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE Vector3<T> diagonal() const
+  {
+    return Vector3<T>(col0[0], col1[1], col2[2]);
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE bool isSymmetric(T tol = T(1e-6)) const
+  {
+    return std::abs(col1[0] - col0[1]) < tol
+           && std::abs(col2[0] - col0[2]) < tol
+           && std::abs(col2[1] - col1[2]) < tol;
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE bool isOrthogonal(T tol = T(1e-6)) const
+  {
+    Matrix3x3 product = (*this) * transposed();
+    Matrix3x3 I = Matrix3x3::identity();
+    return std::abs(product(0, 0) - I(0, 0)) < tol
+           && std::abs(product(0, 1) - I(0, 1)) < tol
+           && std::abs(product(0, 2) - I(0, 2)) < tol
+           && std::abs(product(1, 0) - I(1, 0)) < tol
+           && std::abs(product(1, 1) - I(1, 1)) < tol
+           && std::abs(product(1, 2) - I(1, 2)) < tol
+           && std::abs(product(2, 0) - I(2, 0)) < tol
+           && std::abs(product(2, 1) - I(2, 1)) < tol
+           && std::abs(product(2, 2) - I(2, 2)) < tol;
+  }
+
   [[nodiscard]] DART_SIMD_INLINE Matrix3x3 inverse() const
   {
     T a = col0[0], b = col1[0], c = col2[0];
@@ -233,6 +278,18 @@ struct Matrix3x3
     return Matrix3x3(m);
   }
 };
+
+/// Outer product: produces a 3x3 matrix from two vectors
+/// result[i][j] = a[i] * b[j]
+template <typename T>
+[[nodiscard]] DART_SIMD_INLINE Matrix3x3<T> outer(
+    const Vector3<T>& a, const Vector3<T>& b)
+{
+  return Matrix3x3<T>(
+      Vec<T, 4>::set(a.x() * b.x(), a.y() * b.x(), a.z() * b.x(), T(0)),
+      Vec<T, 4>::set(a.x() * b.y(), a.y() * b.y(), a.z() * b.y(), T(0)),
+      Vec<T, 4>::set(a.x() * b.z(), a.y() * b.z(), a.z() * b.z(), T(0)));
+}
 
 using Matrix3x3f = Matrix3x3<float>;
 using Matrix3x3d = Matrix3x3<double>;

@@ -1458,6 +1458,133 @@ BENCHMARK(BM_Matrix4x4Determinant_DART_f32)
     ->Range(kCollisionMin, kCollisionMax);
 
 // =============================================================================
+// Vector Geometry Benchmarks
+// =============================================================================
+
+static void BM_Vector3OuterProduct_DART_f32(benchmark::State& state)
+{
+  const auto n = static_cast<std::size_t>(state.range(0));
+  auto a_data = generateRandomData<float>(n * 3);
+  auto b_data = generateRandomData<float>(n * 3);
+
+  std::vector<Vector3f> a(n), b(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    a[i] = Vector3f(a_data[i * 3], a_data[i * 3 + 1], a_data[i * 3 + 2]);
+    b[i] = Vector3f(b_data[i * 3], b_data[i * 3 + 1], b_data[i * 3 + 2]);
+  }
+
+  std::vector<Matrix3x3f> results(n);
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; ++i) {
+      results[i] = outer(a[i], b[i]);
+    }
+    benchmark::DoNotOptimize(results.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 6);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_Vector3OuterProduct_DART_f32)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true)
+    ->RangeMultiplier(4)
+    ->Range(kMinSize, kMaxSize);
+
+static void BM_Vector3Reflect_DART_f32(benchmark::State& state)
+{
+  const auto n = static_cast<std::size_t>(state.range(0));
+  auto v_data = generateRandomData<float>(n * 3);
+  auto n_data = generateRandomData<float>(n * 3);
+
+  std::vector<Vector3f> vectors(n), normals(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    vectors[i] = Vector3f(v_data[i * 3], v_data[i * 3 + 1], v_data[i * 3 + 2]);
+    normals[i] = Vector3f(n_data[i * 3], n_data[i * 3 + 1], n_data[i * 3 + 2])
+                     .normalized();
+  }
+
+  std::vector<Vector3f> results(n);
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; ++i) {
+      results[i] = reflect(vectors[i], normals[i]);
+    }
+    benchmark::DoNotOptimize(results.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 6);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_Vector3Reflect_DART_f32)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true)
+    ->RangeMultiplier(4)
+    ->Range(kMinSize, kMaxSize);
+
+static void BM_Vector3Project_DART_f32(benchmark::State& state)
+{
+  const auto n = static_cast<std::size_t>(state.range(0));
+  auto a_data = generateRandomData<float>(n * 3);
+  auto b_data = generateRandomData<float>(n * 3);
+
+  std::vector<Vector3f> a(n), b(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    a[i] = Vector3f(a_data[i * 3], a_data[i * 3 + 1], a_data[i * 3 + 2]);
+    b[i] = Vector3f(b_data[i * 3], b_data[i * 3 + 1], b_data[i * 3 + 2]);
+  }
+
+  std::vector<Vector3f> results(n);
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; ++i) {
+      results[i] = project(a[i], b[i]);
+    }
+    benchmark::DoNotOptimize(results.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 6);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_Vector3Project_DART_f32)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true)
+    ->RangeMultiplier(4)
+    ->Range(kMinSize, kMaxSize);
+
+static void BM_Vector4OuterProduct_DART_f32(benchmark::State& state)
+{
+  const auto n = static_cast<std::size_t>(state.range(0));
+  auto a_data = generateRandomData<float>(n * 4);
+  auto b_data = generateRandomData<float>(n * 4);
+
+  std::vector<Vector4f> a(n), b(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    a[i] = Vector4f(
+        a_data[i * 4], a_data[i * 4 + 1], a_data[i * 4 + 2], a_data[i * 4 + 3]);
+    b[i] = Vector4f(
+        b_data[i * 4], b_data[i * 4 + 1], b_data[i * 4 + 2], b_data[i * 4 + 3]);
+  }
+
+  std::vector<Matrix4x4f> results(n);
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; ++i) {
+      results[i] = outer(a[i], b[i]);
+    }
+    benchmark::DoNotOptimize(results.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 8);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_Vector4OuterProduct_DART_f32)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true)
+    ->RangeMultiplier(4)
+    ->Range(kMinSize, kMaxSize);
+
+// =============================================================================
 // Main with info output
 // =============================================================================
 

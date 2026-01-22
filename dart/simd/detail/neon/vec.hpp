@@ -67,6 +67,12 @@ struct Vec<float, 4>
     return Vec(vdupq_n_f32(value));
   }
 
+  DART_SIMD_INLINE static Vec set(float v0, float v1, float v2, float v3)
+  {
+    alignas(16) float tmp[4] = {v0, v1, v2, v3};
+    return Vec(vld1q_f32(tmp));
+  }
+
   DART_SIMD_INLINE static Vec load(const float* ptr)
   {
     return Vec(vld1q_f32(ptr));
@@ -172,6 +178,12 @@ struct Vec<double, 2>
   DART_SIMD_INLINE static Vec broadcast(double value)
   {
     return Vec(vdupq_n_f64(value));
+  }
+
+  DART_SIMD_INLINE static Vec set(double v0, double v1)
+  {
+    alignas(16) double tmp[2] = {v0, v1};
+    return Vec(vld1q_f64(tmp));
   }
 
   DART_SIMD_INLINE static Vec load(const double* ptr)

@@ -212,6 +212,63 @@ struct Matrix4x4
     return col0[0] + col1[1] + col2[2] + col3[3];
   }
 
+  [[nodiscard]] DART_SIMD_INLINE T frobeniusNorm() const
+  {
+    T sum = T(0);
+    for (int i = 0; i < 4; ++i) {
+      sum += col0[i] * col0[i] + col1[i] * col1[i] + col2[i] * col2[i]
+             + col3[i] * col3[i];
+    }
+    return std::sqrt(sum);
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE T squaredFrobeniusNorm() const
+  {
+    T sum = T(0);
+    for (int i = 0; i < 4; ++i) {
+      sum += col0[i] * col0[i] + col1[i] * col1[i] + col2[i] * col2[i]
+             + col3[i] * col3[i];
+    }
+    return sum;
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE Vector4<T> diagonal() const
+  {
+    return Vector4<T>(col0[0], col1[1], col2[2], col3[3]);
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE bool isSymmetric(T tol = T(1e-6)) const
+  {
+    return std::abs(col1[0] - col0[1]) < tol
+           && std::abs(col2[0] - col0[2]) < tol
+           && std::abs(col3[0] - col0[3]) < tol
+           && std::abs(col2[1] - col1[2]) < tol
+           && std::abs(col3[1] - col1[3]) < tol
+           && std::abs(col3[2] - col2[3]) < tol;
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE bool isOrthogonal(T tol = T(1e-6)) const
+  {
+    Matrix4x4 product = (*this) * transposed();
+    Matrix4x4 I = Matrix4x4::identity();
+    return std::abs(product(0, 0) - I(0, 0)) < tol
+           && std::abs(product(0, 1) - I(0, 1)) < tol
+           && std::abs(product(0, 2) - I(0, 2)) < tol
+           && std::abs(product(0, 3) - I(0, 3)) < tol
+           && std::abs(product(1, 0) - I(1, 0)) < tol
+           && std::abs(product(1, 1) - I(1, 1)) < tol
+           && std::abs(product(1, 2) - I(1, 2)) < tol
+           && std::abs(product(1, 3) - I(1, 3)) < tol
+           && std::abs(product(2, 0) - I(2, 0)) < tol
+           && std::abs(product(2, 1) - I(2, 1)) < tol
+           && std::abs(product(2, 2) - I(2, 2)) < tol
+           && std::abs(product(2, 3) - I(2, 3)) < tol
+           && std::abs(product(3, 0) - I(3, 0)) < tol
+           && std::abs(product(3, 1) - I(3, 1)) < tol
+           && std::abs(product(3, 2) - I(3, 2)) < tol
+           && std::abs(product(3, 3) - I(3, 3)) < tol;
+  }
+
   [[nodiscard]] DART_SIMD_INLINE Matrix4x4 inverse() const
   {
     T m00 = col0[0], m10 = col0[1], m20 = col0[2], m30 = col0[3];
@@ -326,6 +383,18 @@ struct Matrix4x4
     return Matrix4x4(m);
   }
 };
+
+/// Outer product: produces a 4x4 matrix from two vectors
+template <typename T>
+[[nodiscard]] DART_SIMD_INLINE Matrix4x4<T> outer(
+    const Vector4<T>& a, const Vector4<T>& b)
+{
+  return Matrix4x4<T>(
+      a.data * Vec<T, 4>::broadcast(b.x()),
+      a.data * Vec<T, 4>::broadcast(b.y()),
+      a.data * Vec<T, 4>::broadcast(b.z()),
+      a.data * Vec<T, 4>::broadcast(b.w()));
+}
 
 using Matrix4x4f = Matrix4x4<float>;
 using Matrix4x4d = Matrix4x4<double>;

@@ -58,6 +58,16 @@ struct Vec<float, 4>
     return v;
   }
 
+  DART_SIMD_INLINE static Vec set(float v0, float v1, float v2, float v3)
+  {
+    Vec v;
+    v.data[0] = v0;
+    v.data[1] = v1;
+    v.data[2] = v2;
+    v.data[3] = v3;
+    return v;
+  }
+
   DART_SIMD_INLINE static Vec load(const float* ptr)
   {
     Vec v;
@@ -242,6 +252,14 @@ struct Vec<double, 2>
   {
     Vec v;
     svst1_f64(pg(), v.data, svdup_f64(value));
+    return v;
+  }
+
+  DART_SIMD_INLINE static Vec set(double v0, double v1)
+  {
+    Vec v;
+    v.data[0] = v0;
+    v.data[1] = v1;
     return v;
   }
 

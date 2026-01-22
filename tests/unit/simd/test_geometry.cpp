@@ -422,6 +422,121 @@ TEST_F(Matrix4x4Test, TryInverse)
   EXPECT_FALSE(singular.tryInverse(result));
 }
 
+TEST_F(Matrix3x3Test, FrobeniusNorm)
+{
+  Matrix3x3f scale(2.0f, 0.0f, 0.0f, 0.0f, 3.0f, 0.0f, 0.0f, 0.0f, 4.0f);
+  EXPECT_FLOAT_EQ(scale.squaredFrobeniusNorm(), 4.0f + 9.0f + 16.0f);
+  EXPECT_FLOAT_EQ(scale.frobeniusNorm(), std::sqrt(29.0f));
+}
+
+TEST_F(Matrix3x3Test, Diagonal)
+{
+  Matrix3x3f A(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+  Vector3f d = A.diagonal();
+  EXPECT_FLOAT_EQ(d.x(), 1.0f);
+  EXPECT_FLOAT_EQ(d.y(), 5.0f);
+  EXPECT_FLOAT_EQ(d.z(), 9.0f);
+}
+
+TEST_F(Matrix3x3Test, Symmetry)
+{
+  Matrix3x3f A = Matrix3x3f::identity();
+  EXPECT_TRUE(A.isSymmetric());
+
+  Matrix3x3f B(1, 2, 3, 2, 5, 6, 3, 6, 9);
+  EXPECT_TRUE(B.isSymmetric());
+
+  Matrix3x3f C(1, 2, 3, 4, 5, 6, 7, 8, 9);
+  EXPECT_FALSE(C.isSymmetric());
+}
+
+TEST_F(Matrix3x3Test, Orthogonality)
+{
+  Matrix3x3f I = Matrix3x3f::identity();
+  EXPECT_TRUE(I.isOrthogonal());
+
+  // Rotation around Z by 90 degrees
+  Matrix3x3f R(0, -1, 0, 1, 0, 0, 0, 0, 1);
+  EXPECT_TRUE(R.isOrthogonal());
+
+  Matrix3x3f scale(2, 0, 0, 0, 1, 0, 0, 0, 1);
+  EXPECT_FALSE(scale.isOrthogonal());
+}
+
+TEST_F(Matrix4x4Test, FrobeniusNorm)
+{
+  Matrix4x4f scale = Matrix4x4f::identity();
+  EXPECT_FLOAT_EQ(scale.squaredFrobeniusNorm(), 4.0f);
+  EXPECT_FLOAT_EQ(scale.frobeniusNorm(), 2.0f);
+}
+
+TEST_F(Matrix4x4Test, Diagonal)
+{
+  Matrix4x4f I = Matrix4x4f::identity();
+  Vector4f d = I.diagonal();
+  EXPECT_FLOAT_EQ(d.x(), 1.0f);
+  EXPECT_FLOAT_EQ(d.y(), 1.0f);
+  EXPECT_FLOAT_EQ(d.z(), 1.0f);
+  EXPECT_FLOAT_EQ(d.w(), 1.0f);
+}
+
+TEST_F(Matrix4x4Test, Symmetry)
+{
+  Matrix4x4f I = Matrix4x4f::identity();
+  EXPECT_TRUE(I.isSymmetric());
+
+  Eigen::Matrix4f em;
+  em << 1, 2, 3, 4, 2, 5, 6, 7, 3, 6, 8, 9, 4, 7, 9, 10;
+  Matrix4x4f A = Matrix4x4f::fromEigen(em);
+  EXPECT_TRUE(A.isSymmetric());
+}
+
+TEST_F(Vector3Test, OuterProduct)
+{
+  Vector3f a(1, 2, 3);
+  Vector3f b(4, 5, 6);
+  Matrix3x3f M = outer(a, b);
+
+  EXPECT_FLOAT_EQ(M(0, 0), 4.0f);
+  EXPECT_FLOAT_EQ(M(0, 1), 5.0f);
+  EXPECT_FLOAT_EQ(M(0, 2), 6.0f);
+  EXPECT_FLOAT_EQ(M(1, 0), 8.0f);
+  EXPECT_FLOAT_EQ(M(2, 2), 18.0f);
+}
+
+TEST_F(Vector3Test, Reflect)
+{
+  Vector3f v(1, -1, 0);
+  Vector3f n(0, 1, 0);
+  Vector3f r = reflect(v, n);
+
+  EXPECT_FLOAT_EQ(r.x(), 1.0f);
+  EXPECT_FLOAT_EQ(r.y(), 1.0f);
+  EXPECT_FLOAT_EQ(r.z(), 0.0f);
+}
+
+TEST_F(Vector3Test, Project)
+{
+  Vector3f a(1, 1, 0);
+  Vector3f b(1, 0, 0);
+  Vector3f p = project(a, b);
+
+  EXPECT_FLOAT_EQ(p.x(), 1.0f);
+  EXPECT_FLOAT_EQ(p.y(), 0.0f);
+  EXPECT_FLOAT_EQ(p.z(), 0.0f);
+}
+
+TEST_F(Vector4Test, OuterProduct)
+{
+  Vector4f a(1, 2, 3, 4);
+  Vector4f b(5, 6, 7, 8);
+  Matrix4x4f M = outer(a, b);
+
+  EXPECT_FLOAT_EQ(M(0, 0), 5.0f);
+  EXPECT_FLOAT_EQ(M(3, 3), 32.0f);
+  EXPECT_FLOAT_EQ(M(1, 2), 14.0f);
+}
+
 class DoubleGeometryTest : public ::testing::Test
 {
 };
