@@ -53,8 +53,9 @@ const ShapeNode::Properties ShapeNode::getShapeNodeProperties() const
 //==============================================================================
 void ShapeNode::copy(const ShapeNode& other)
 {
-  if (this == &other)
+  if (this == &other) {
     return;
+  }
 
   setProperties(other.getShapeNodeProperties());
 }
@@ -62,8 +63,9 @@ void ShapeNode::copy(const ShapeNode& other)
 //==============================================================================
 void ShapeNode::copy(const ShapeNode* other)
 {
-  if (nullptr == other)
+  if (nullptr == other) {
     return;
+  }
 
   copy(*other);
 }
@@ -78,8 +80,10 @@ ShapeNode& ShapeNode::operator=(const ShapeNode& other)
 //==============================================================================
 void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
 {
-  if (transform.matrix() == FixedFrame::mAspectProperties.mRelativeTf.matrix())
+  if (transform.matrix()
+      == FixedFrame::mAspectProperties.mRelativeTf.matrix()) {
     return;
+  }
 
   const Eigen::Isometry3d oldTransform = getRelativeTransform();
 
@@ -198,11 +202,13 @@ Node* ShapeNode::cloneNode(BodyNode* parent) const
   shapeNode->duplicateAspects(this);
 
   shapeNode->copy(this);
-  if (const auto& shape = getShape())
+  if (const auto& shape = getShape()) {
     shapeNode->setShape(shape->clone());
+  }
 
-  if (mIK)
+  if (mIK) {
     shapeNode->mIK = mIK->clone(shapeNode);
+  }
 
   return shapeNode;
 }

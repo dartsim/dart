@@ -63,10 +63,11 @@ ContactSurfaceHandlerPtr ContactSurfaceHandler::getParent()
 //==============================================================================
 void ContactSurfaceHandler::setParent(ContactSurfaceHandlerPtr parent)
 {
-  if (parent.get() != this)
+  if (parent.get() != this) {
     this->mParent = std::move(parent);
-  else
+  } else {
     DART_WARN("Cannot assign self as parent handler.");
+  }
 }
 
 //==============================================================================
@@ -74,8 +75,9 @@ ContactSurfaceParams ContactSurfaceHandler::createParams(
     const collision::Contact& contact,
     size_t numContactsOnCollisionObject) const
 {
-  if (mParent != nullptr)
+  if (mParent != nullptr) {
     return mParent->createParams(contact, numContactsOnCollisionObject);
+  }
   return {};
 }
 

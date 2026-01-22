@@ -78,25 +78,29 @@ std::atomic<bool>& cleanupInProgress()
 
 void dartBulletFreeImpl(void* ptr)
 {
-  if (!ptr)
+  if (!ptr) {
     return;
+  }
 
   bool shouldFree = true;
   {
     std::lock_guard<std::mutex> lock(getAllocMutex());
     auto& allocs = getOutstandingAllocs();
     const auto erased = allocs.erase(ptr);
-    if (erased == 0 && cleanupInProgress().load(std::memory_order_relaxed))
+    if (erased == 0 && cleanupInProgress().load(std::memory_order_relaxed)) {
       shouldFree = false;
+    }
   }
 
   #if defined(_MSC_VER)
-  if (!shouldFree)
+  if (!shouldFree) {
     return;
+  }
   _aligned_free(ptr);
   #else
-  if (!shouldFree)
+  if (!shouldFree) {
     return;
+  }
   std::free(ptr);
   #endif
 }
@@ -111,11 +115,13 @@ void* dartBulletAlloc(size_t size, std::size_t alignment)
   void* mem = nullptr;
   #if defined(_MSC_VER)
   mem = _aligned_malloc(size, alignment);
-  if (!mem)
+  if (!mem) {
     throw std::bad_alloc();
+  }
   #else
-  if (posix_memalign(&mem, std::max<int>(alignment, 16), size) != 0)
+  if (posix_memalign(&mem, std::max<int>(alignment, 16), size) != 0) {
     throw std::bad_alloc();
+  }
   #endif
   {
     std::lock_guard<std::mutex> lock(getAllocMutex());
@@ -135,8 +141,9 @@ void releaseOutstandingBulletAllocations()
   {
     std::lock_guard<std::mutex> lock(getAllocMutex());
     auto& allocs = getOutstandingAllocs();
-    if (allocs.empty())
+    if (allocs.empty()) {
       return;
+    }
     toFree.assign(allocs.begin(), allocs.end());
     cleanupInProgress().store(true, std::memory_order_relaxed);
   }
@@ -245,8 +252,9 @@ void BulletCollisionGroup::removeCollisionObjectFromEngine(
 //==============================================================================
 void BulletCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
-  for (const auto& info : mObjectInfoList)
+  for (const auto& info : mObjectInfoList) {
     removeCollisionObjectFromEngine(info->mObject.get());
+  }
 
   if (mBulletProadphaseAlg) {
     auto* dbvt = static_cast<btDbvtBroadphase*>(mBulletProadphaseAlg.get());

@@ -154,8 +154,9 @@ void JointCoulombFrictionConstraint::getInformation(ConstraintInfo* _lcp)
   std::size_t index = 0;
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
     DART_ASSERT(_lcp->w[index] == 0.0);
 
@@ -165,10 +166,11 @@ void JointCoulombFrictionConstraint::getInformation(ConstraintInfo* _lcp)
 
     DART_ASSERT(_lcp->findex[index] == -1);
 
-    if (mLifeTime[i])
+    if (mLifeTime[i]) {
       _lcp->x[index] = mOldX[i];
-    else
+    } else {
       _lcp->x[index] = 0.0;
+    }
 
     index++;
   }
@@ -184,8 +186,9 @@ void JointCoulombFrictionConstraint::applyUnitImpulse(std::size_t _index)
 
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
     if (localIndex == _index) {
       skeleton->clearConstraintImpulses();
@@ -210,13 +213,15 @@ void JointCoulombFrictionConstraint::getVelocityChange(
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
-    if (mJoint->getSkeleton()->isImpulseApplied())
+    if (mJoint->getSkeleton()->isImpulseApplied()) {
       _delVel[localIndex] = mJoint->getVelocityChange(i);
-    else
+    } else {
       _delVel[localIndex] = 0.0;
+    }
 
     ++localIndex;
   }
@@ -249,8 +254,9 @@ void JointCoulombFrictionConstraint::applyImpulse(double* _lambda)
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
     mJoint->setConstraintImpulse(
         i, mJoint->getConstraintImpulse(i) + _lambda[localIndex]);
@@ -271,8 +277,9 @@ dynamics::SkeletonPtr JointCoulombFrictionConstraint::getRootSkeleton() const
 bool JointCoulombFrictionConstraint::isActive() const
 {
   for (std::size_t i = 0; i < 6; ++i) {
-    if (mActive[i])
+    if (mActive[i]) {
       return true;
+    }
   }
 
   return false;

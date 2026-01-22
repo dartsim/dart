@@ -186,12 +186,14 @@ bool MemoryManager::hasAllocated(void* pointer, size_t size) const noexcept
   }
 
   if (mFreeListAllocatorWithDebug != nullptr
-      && mFreeListAllocatorWithDebug->hasAllocated(pointer, size))
+      && mFreeListAllocatorWithDebug->hasAllocated(pointer, size)) {
     return true;
+  }
 
   if (mPoolAllocatorWithDebug != nullptr
-      && mPoolAllocatorWithDebug->hasAllocated(pointer, size))
+      && mPoolAllocatorWithDebug->hasAllocated(pointer, size)) {
     return true;
+  }
 
   return false;
 }

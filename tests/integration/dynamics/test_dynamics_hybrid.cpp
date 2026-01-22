@@ -54,11 +54,13 @@ TEST_F(DynamicsTest, HybridDynamics)
   // Prepare command for each joint types per simulation steps
   Eigen::MatrixXd command = Eigen::MatrixXd::Zero(numFrames, numDofs);
   Eigen::VectorXd amp = Eigen::VectorXd::Zero(numDofs);
-  for (std::size_t i = 0; i < numDofs; ++i)
+  for (std::size_t i = 0; i < numDofs; ++i) {
     amp[i] = math::Random::uniform(-1.5, 1.5);
+  }
   for (std::size_t i = 0; i < numFrames; ++i) {
-    for (std::size_t j = 0; j < numDofs; ++j)
+    for (std::size_t j = 0; j < numDofs; ++j) {
       command(i, j) = amp[j] * std::sin(i * timeStep);
+    }
   }
 
   // Record joint forces for joint[1~4]

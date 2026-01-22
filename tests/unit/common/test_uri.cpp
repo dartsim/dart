@@ -218,8 +218,9 @@ TEST(UriHelpers, getUri_InputIsUri_DoesNotChange)
          "telnet://192.0.2.16:80/",
          "urn:oasis:names:specification:docbook:dtd:xml:4.1.2"};
 
-  for (const std::string& testUri : testUris)
+  for (const std::string& testUri : testUris) {
     EXPECT_EQ(testUri, Uri::createFromString(testUri).toString());
+  }
 }
 
 TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)

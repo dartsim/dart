@@ -71,14 +71,16 @@ public:
   bool seek(ptrdiff_t offset, SeekType origin) override
   {
     std::size_t base = 0;
-    if (origin == SEEKTYPE_CUR)
+    if (origin == SEEKTYPE_CUR) {
       base = mCursor;
-    else if (origin == SEEKTYPE_END)
+    } else if (origin == SEEKTYPE_END) {
       base = mData.size();
+    }
 
     const auto next = static_cast<long long>(base) + offset;
-    if (next < 0 || next > static_cast<long long>(mData.size()))
+    if (next < 0 || next > static_cast<long long>(mData.size())) {
       return false;
+    }
 
     mCursor = static_cast<std::size_t>(next);
     return true;
@@ -87,8 +89,9 @@ public:
   std::size_t read(void* buffer, std::size_t size, std::size_t count) override
   {
     const std::size_t bytes = size * count;
-    if (bytes < mData.size())
+    if (bytes < mData.size()) {
       return 0;
+    }
 
     std::memcpy(buffer, mData.data(), mData.size());
     mCursor = mData.size();
@@ -141,8 +144,9 @@ public:
   ResourcePtr retrieve(const Uri& uri) override
   {
     mRetrieveQueries.push_back(uri.toString());
-    if (!mShouldSucceed)
+    if (!mShouldSucceed) {
       return nullptr;
+    }
 
     return std::make_shared<StringResource>("payload:" + uri.toString());
   }

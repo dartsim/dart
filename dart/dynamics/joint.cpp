@@ -128,8 +128,9 @@ void Joint::setAspectProperties(const AspectProperties& properties)
   setTransformFromChildBodyNode(properties.mT_ChildBodyToJoint);
   setLimitEnforcement(properties.mIsPositionLimitEnforced);
   setActuatorType(properties.mActuatorType);
-  for (const auto& [index, actuatorType] : properties.mActuatorTypes)
+  for (const auto& [index, actuatorType] : properties.mActuatorTypes) {
     setActuatorType(index, actuatorType);
+  }
   setMimicJointDofs(
       std::span<const MimicDofProperties>(properties.mMimicDofProps));
 }
@@ -143,8 +144,9 @@ const Joint::Properties& Joint::getJointProperties() const
 //==============================================================================
 void Joint::copy(const Joint& _otherJoint)
 {
-  if (this == &_otherJoint)
+  if (this == &_otherJoint) {
     return;
+  }
 
   setProperties(_otherJoint.getJointProperties());
 }
@@ -152,8 +154,9 @@ void Joint::copy(const Joint& _otherJoint)
 //==============================================================================
 void Joint::copy(const Joint* _otherJoint)
 {
-  if (nullptr == _otherJoint)
+  if (nullptr == _otherJoint) {
     return;
+  }
 
   copy(*_otherJoint);
 }
@@ -169,8 +172,9 @@ Joint& Joint::operator=(const Joint& _otherJoint)
 const std::string& Joint::setName(const std::string& _name, bool _renameDofs)
 {
   if (mAspectProperties.mName == _name) {
-    if (_renameDofs)
+    if (_renameDofs) {
       updateDegreeOfFreedomNames();
+    }
     return mAspectProperties.mName;
   }
 
@@ -184,8 +188,9 @@ const std::string& Joint::setName(const std::string& _name, bool _renameDofs)
   } else {
     mAspectProperties.mName = _name;
 
-    if (_renameDofs)
+    if (_renameDofs) {
       updateDegreeOfFreedomNames();
+    }
   }
 
   return mAspectProperties.mName;
@@ -201,8 +206,9 @@ const std::string& Joint::getName() const
 void Joint::setActuatorType(Joint::ActuatorType _actuatorType)
 {
   if (mAspectProperties.mActuatorType == _actuatorType
-      && mAspectProperties.mActuatorTypes.empty())
+      && mAspectProperties.mActuatorTypes.empty()) {
     return;
+  }
 
   mAspectProperties.mActuatorType = _actuatorType;
   mAspectProperties.mActuatorTypes.clear();
@@ -252,8 +258,9 @@ void Joint::setActuatorType(std::size_t index, ActuatorType actuatorType)
 
   if (actuatorType == mAspectProperties.mActuatorType) {
     const auto it = overrides.find(index);
-    if (it == overrides.end())
+    if (it == overrides.end()) {
       return;
+    }
 
     overrides.erase(it);
     resetCommands();
@@ -261,8 +268,9 @@ void Joint::setActuatorType(std::size_t index, ActuatorType actuatorType)
   }
 
   const auto it = overrides.find(index);
-  if (it != overrides.end() && it->second == actuatorType)
+  if (it != overrides.end() && it->second == actuatorType) {
     return;
+  }
 
   overrides[index] = actuatorType;
   resetCommands();
@@ -321,8 +329,9 @@ void Joint::setActuatorTypes(std::span<const ActuatorType> actuatorTypes)
   }
 
   if (mAspectProperties.mActuatorType == newDefault
-      && mAspectProperties.mActuatorTypes == newOverrides)
+      && mAspectProperties.mActuatorTypes == newOverrides) {
     return;
+  }
 
   mAspectProperties.mActuatorType = newDefault;
   mAspectProperties.mActuatorTypes = std::move(newOverrides);
@@ -349,8 +358,9 @@ Joint::ActuatorType Joint::getActuatorType(std::size_t index) const
   }
 
   const auto it = mAspectProperties.mActuatorTypes.find(index);
-  if (it != mAspectProperties.mActuatorTypes.end())
+  if (it != mAspectProperties.mActuatorTypes.end()) {
     return it->second;
+  }
 
   return mAspectProperties.mActuatorType;
 }
@@ -363,8 +373,9 @@ std::vector<Joint::ActuatorType> Joint::getActuatorTypes() const
       numDofs, mAspectProperties.mActuatorType);
 
   for (const auto& [index, type] : mAspectProperties.mActuatorTypes) {
-    if (index < numDofs)
+    if (index < numDofs) {
       actuatorTypes[index] = type;
+    }
   }
 
   return actuatorTypes;
@@ -375,8 +386,9 @@ bool Joint::hasActuatorType(ActuatorType actuatorType) const
 {
   const auto numDofs = getNumDofs();
   for (std::size_t i = 0; i < numDofs; ++i) {
-    if (getActuatorType(i) == actuatorType)
+    if (getActuatorType(i) == actuatorType) {
       return true;
+    }
   }
   return false;
 }
@@ -491,15 +503,17 @@ std::span<const MimicDofProperties> Joint::getMimicDofProperties() const
 //==============================================================================
 void Joint::setMimicConstraintType(MimicConstraintType type)
 {
-  for (auto& prop : mAspectProperties.mMimicDofProps)
+  for (auto& prop : mAspectProperties.mMimicDofProps) {
     prop.mConstraintType = type;
+  }
 }
 
 //==============================================================================
 MimicConstraintType Joint::getMimicConstraintType() const
 {
-  if (mAspectProperties.mMimicDofProps.empty())
+  if (mAspectProperties.mMimicDofProps.empty()) {
     return MimicConstraintType::Motor;
+  }
   return mAspectProperties.mMimicDofProps.front().mConstraintType;
 }
 
@@ -520,12 +534,14 @@ bool Joint::isUsingCouplerConstraint() const
 bool Joint::isKinematic() const
 {
   const auto numDofs = getNumDofs();
-  if (numDofs == 0)
+  if (numDofs == 0) {
     return isKinematicActuatorType(mAspectProperties.mActuatorType);
+  }
 
   for (std::size_t i = 0; i < numDofs; ++i) {
-    if (!isKinematicActuatorType(getActuatorType(i)))
+    if (!isKinematicActuatorType(getActuatorType(i))) {
       return false;
+    }
   }
 
   return true;
@@ -552,8 +568,9 @@ const BodyNode* Joint::getChildBodyNode() const
 //==============================================================================
 BodyNode* Joint::getParentBodyNode()
 {
-  if (mChildBodyNode)
+  if (mChildBodyNode) {
     return mChildBodyNode->getParentBodyNode();
+  }
 
   return nullptr;
 }
@@ -875,8 +892,9 @@ void Joint::notifyVelocityUpdated()
 //==============================================================================
 void Joint::notifyAccelerationUpdated()
 {
-  if (mChildBodyNode)
+  if (mChildBodyNode) {
     mChildBodyNode->dirtyAcceleration();
+  }
 
   mNeedSpatialAccelerationUpdate = true;
   mNeedPrimaryAccelerationUpdate = true;

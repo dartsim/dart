@@ -129,8 +129,9 @@ void convertIkSolution(
   solution.mConfig.resize(dofIndices.size());
   for (auto i = 0u; i < solutionValues.size(); ++i) {
     const auto isFreeJoint = freeJointFlags[i];
-    if (isFreeJoint)
+    if (isFreeJoint) {
       continue;
+    }
 
     const auto dofIndex = dofIndices[index];
     const auto* dof = skel->getDof(dofIndex);
@@ -298,40 +299,41 @@ IkFast::IkType IkFast::getIkType2() const
 
   const int type = getIkType();
 
-  if (type == 0)
+  if (type == 0) {
     return IkType::UNKNOWN;
-  else if (type == 0x67000001)
+  } else if (type == 0x67000001) {
     return IkType::TRANSFORM_6D;
-  else if (type == 0x34000002)
+  } else if (type == 0x34000002) {
     return IkType::ROTATION_3D;
-  else if (type == 0x34000003)
+  } else if (type == 0x34000003) {
     return IkType::TRANSLATION_3D;
-  else if (type == 0x34000004)
+  } else if (type == 0x34000004) {
     return IkType::DIRECTION_3D;
-  else if (type == 0x34000005)
+  } else if (type == 0x34000005) {
     return IkType::RAY_4D;
-  else if (type == 0x34000006)
+  } else if (type == 0x34000006) {
     return IkType::LOOKAT_3D;
-  else if (type == 0x34000007)
+  } else if (type == 0x34000007) {
     return IkType::TRANSLATION_DIRECTION_5D;
-  else if (type == 0x34000008)
+  } else if (type == 0x34000008) {
     return IkType::TRANSLATION_XY_2D;
-  else if (type == 0x34000009)
+  } else if (type == 0x34000009) {
     return IkType::TRANSLATION_XY_ORIENTATION_3D;
-  else if (type == 0x3400000a)
+  } else if (type == 0x3400000a) {
     return IkType::TRANSLATION_LOCAL_GLOBAL_6D;
-  else if (type == 0x3400000b)
+  } else if (type == 0x3400000b) {
     return IkType::TRANSLATION_X_AXIS_ANGLE_4D;
-  else if (type == 0x3400000c)
+  } else if (type == 0x3400000c) {
     return IkType::TRANSLATION_Y_AXIS_ANGLE_4D;
-  else if (type == 0x3400000d)
+  } else if (type == 0x3400000d) {
     return IkType::TRANSLATION_Z_AXIS_ANGLE_4D;
-  else if (type == 0x3400000e)
+  } else if (type == 0x3400000e) {
     return IkType::TRANSLATION_X_AXIS_ANGLE_Z_NORM_4D;
-  else if (type == 0x3400000f)
+  } else if (type == 0x3400000f) {
     return IkType::TRANSLATION_Y_AXIS_ANGLE_X_NORM_4D;
-  else if (type == 0x34000010)
+  } else if (type == 0x34000010) {
     return IkType::TRANSLATION_Z_AXIS_ANGLE_Y_NORM_4D;
+  }
 
   return IkType::UNKNOWN;
 }
@@ -373,11 +375,13 @@ void IkFast::configure() const
     return;
   }
 
-  if (!checkDofMapValidity(mIK.get(), mDofs, "dof map"))
+  if (!checkDofMapValidity(mIK.get(), mDofs, "dof map")) {
     return;
+  }
 
-  if (!checkDofMapValidity(mIK.get(), mFreeDofs, "free dof map"))
+  if (!checkDofMapValidity(mIK.get(), mFreeDofs, "free dof map")) {
     return;
+  }
 
   mFreeParams.resize(static_cast<std::size_t>(ikFastNumFreeJoints));
 
@@ -408,8 +412,9 @@ IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
   const auto skeleton = mIK->getNode()->getSkeleton();
   const auto ikFastNumFreeParams = getNumFreeParameters();
   const auto ikFastFreeParams = getFreeParameters();
-  for (auto i = 0; i < ikFastNumFreeParams; ++i)
+  for (auto i = 0; i < ikFastNumFreeParams; ++i) {
     mFreeParams[i] = skeleton->getDof(ikFastFreeParams[i])->getPosition();
+  }
 
   ikfast::IkSolutionList<IkReal> solutions;
   const auto success = computeIk(
@@ -456,8 +461,9 @@ Eigen::Isometry3d IkFast::computeFk(const Eigen::VectorXd& parameters)
 bool wrapCyclicSolution(
     double currentValue, double lb, double ub, double& solutionValue)
 {
-  if (lb > ub)
+  if (lb > ub) {
     return false;
+  }
 
   const auto pi2 = math::two_pi;
 

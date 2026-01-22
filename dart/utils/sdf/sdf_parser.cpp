@@ -129,8 +129,9 @@ struct ScopedOriginMap
   explicit ScopedOriginMap(const std::shared_ptr<TempResourceMap>& map)
     : mPrevious(gCurrentOriginMap)
   {
-    if (map)
+    if (map) {
       gCurrentOriginMap = map.get();
+    }
   }
 
   ~ScopedOriginMap()
@@ -144,13 +145,15 @@ private:
 
 const common::Uri* findOriginalUri(std::string_view filePath)
 {
-  if (!gCurrentOriginMap || filePath.empty())
+  if (!gCurrentOriginMap || filePath.empty()) {
     return nullptr;
+  }
 
   const std::string filePathString(filePath);
   const auto it = gCurrentOriginMap->find(filePathString);
-  if (it == gCurrentOriginMap->end())
+  if (it == gCurrentOriginMap->end()) {
     return nullptr;
+  }
 
   return &it->second;
 }
@@ -262,19 +265,23 @@ dynamics::SkeletonPtr makeSkeleton(
 common::Uri getElementBaseUri(
     const ElementPtr& element, const common::Uri& fallbackUri)
 {
-  if (!element)
+  if (!element) {
     return fallbackUri;
+  }
 
   const auto& filePath = element->FilePath();
-  if (filePath.empty())
+  if (filePath.empty()) {
     return fallbackUri;
+  }
 
-  if (const auto* originalUri = findOriginalUri(filePath))
+  if (const auto* originalUri = findOriginalUri(filePath)) {
     return *originalUri;
+  }
 
   common::Uri elementUri;
-  if (elementUri.fromPath(filePath))
+  if (elementUri.fromPath(filePath)) {
     return elementUri;
+  }
 
   DART_WARN(
       "[SdfParser] Failed to parse file path [{}] for included element. "
@@ -399,13 +406,15 @@ bool isMissingUriError(std::string_view message, std::string& uriValue)
 {
   static constexpr std::string_view needle = "Unable to find uri[";
   const auto start = message.find(needle);
-  if (start == std::string_view::npos)
+  if (start == std::string_view::npos) {
     return false;
+  }
 
   const auto uriStart = start + needle.size();
   const auto uriEnd = message.find(']', uriStart);
-  if (uriEnd == std::string_view::npos)
+  if (uriEnd == std::string_view::npos) {
     return false;
+  }
 
   uriValue = std::string(message.substr(uriStart, uriEnd - uriStart));
   return true;
@@ -414,8 +423,9 @@ bool isMissingUriError(std::string_view message, std::string& uriValue)
 void logSdformatErrors(
     const sdf::Errors& errors, const common::Uri& uri, std::string_view context)
 {
-  if (errors.empty())
+  if (errors.empty()) {
     return;
+  }
 
   std::size_t warningCount = 0;
   std::size_t errorCount = 0;
@@ -424,10 +434,11 @@ void logSdformatErrors(
 
   for (const auto& sdformatError : errors) {
     const bool isWarning = (sdformatError.Code() == sdf::ErrorCode::WARNING);
-    if (isWarning)
+    if (isWarning) {
       ++warningCount;
-    else
+    } else {
       ++errorCount;
+    }
 
     const std::string description = describeSdformatError(sdformatError);
     std::string uriValue;
@@ -436,8 +447,9 @@ void logSdformatErrors(
       continue;
     }
 
-    if (representativeMessages.size() < 3)
+    if (representativeMessages.size() < 3) {
       representativeMessages.push_back(description);
+    }
   }
 
   std::ostringstream stream;
@@ -447,8 +459,9 @@ void logSdformatErrors(
 
   if (!missingUriCounts.empty()) {
     stream << " Missing URIs:";
-    for (const auto& [missingUri, count] : missingUriCounts)
+    for (const auto& [missingUri, count] : missingUriCounts) {
       stream << " [" << missingUri << " x" << count << ']';
+    }
   }
 
   DART_WARN("{}", stream.str());
@@ -470,14 +483,17 @@ std::filesystem::path makeTemporaryPath(const common::Uri& uri)
     name << "dart_sdf_"
          << std::chrono::high_resolution_clock::now().time_since_epoch().count()
          << '_' << counter.fetch_add(1, std::memory_order_relaxed);
-    if (attempt > 0)
+    if (attempt > 0) {
       name << '_' << attempt;
-    if (!extension.empty())
+    }
+    if (!extension.empty()) {
       name << extension.string();
+    }
 
     const auto candidate = tempDir / name.str();
-    if (!std::filesystem::exists(candidate))
+    if (!std::filesystem::exists(candidate)) {
       return candidate;
+    }
   }
 
   throw std::runtime_error(
@@ -507,24 +523,28 @@ std::string resolveWithRetriever(
     const std::shared_ptr<std::vector<std::filesystem::path>>& tempFiles,
     const std::shared_ptr<TempResourceMap>& origins)
 {
-  if (!retriever)
+  if (!retriever) {
     return std::string();
+  }
 
   const std::string requestedString(requested);
   common::Uri requestedUri;
-  if (!requestedUri.fromStringOrPath(requestedString))
+  if (!requestedUri.fromStringOrPath(requestedString)) {
     return std::string();
+  }
 
   if (requestedUri.mScheme.get_value_or("file") == "file"
       && requestedUri.mPath) {
     std::error_code ec;
     const auto candidate = requestedUri.getFilesystemPath();
-    if (std::filesystem::exists(candidate, ec) && !ec)
+    if (std::filesystem::exists(candidate, ec) && !ec) {
       return candidate;
+    }
   }
 
-  if (!retriever->exists(requestedUri))
+  if (!retriever->exists(requestedUri)) {
     return std::string();
+  }
 
   try {
     const auto data = retriever->readAll(requestedUri);
@@ -562,17 +582,21 @@ bool isWindowsAbsolutePath(std::string_view path)
 
 bool requiresBaseUriResolution(std::string_view requested)
 {
-  if (requested.empty())
+  if (requested.empty()) {
     return false;
+  }
 
-  if (hasUriScheme(requested))
+  if (hasUriScheme(requested)) {
     return false;
+  }
 
-  if (requested.front() == '/')
+  if (requested.front() == '/') {
     return false;
+  }
 
-  if (isWindowsAbsolutePath(requested))
+  if (isWindowsAbsolutePath(requested)) {
     return false;
+  }
 
   return true;
 }
@@ -580,15 +604,18 @@ bool requiresBaseUriResolution(std::string_view requested)
 std::string resolveRequestedUri(
     std::string_view requested, const common::Uri& baseUri)
 {
-  if (!requiresBaseUriResolution(requested))
+  if (!requiresBaseUriResolution(requested)) {
     return std::string(requested);
+  }
 
-  if (!baseUri.mPath)
+  if (!baseUri.mPath) {
     return std::string(requested);
+  }
 
   const auto merged = common::Uri::getRelativeUri(baseUri, requested);
-  if (!merged.empty())
+  if (!merged.empty()) {
     return merged;
+  }
 
   return std::string(requested);
 }
@@ -596,8 +623,9 @@ std::string resolveRequestedUri(
 void cleanupTemporaryResources(
     const std::shared_ptr<std::vector<std::filesystem::path>>& tempFiles)
 {
-  if (!tempFiles)
+  if (!tempFiles) {
     return;
+  }
 
   for (const auto& path : *tempFiles) {
     std::error_code ec;
@@ -650,8 +678,9 @@ bool loadSdfRoot(
   if (uri.mScheme.get_value_or("file") == "file" && uri.mPath) {
     const auto candidate = uri.getFilesystemPath();
     std::error_code ec;
-    if (std::filesystem::exists(candidate, ec) && !ec)
+    if (std::filesystem::exists(candidate, ec) && !ec) {
       localPath = candidate;
+    }
   }
   if (!localPath.empty()) {
     errors = root.Load(localPath, config);
@@ -780,11 +809,11 @@ dynamics::SkeletonPtr readSkeleton(
     NextResult result = getNextJointAndNodePair(
         body, parentJoint, parentBody, newSkeleton, sdfBodyNodes, sdfJoints);
 
-    if (BREAK == result)
+    if (BREAK == result) {
       break;
-    else if (CONTINUE == result)
+    } else if (CONTINUE == result) {
       continue;
-    else if (CREATE_ROOT_JOINT == result) {
+    } else if (CREATE_ROOT_JOINT == result) {
       SDFJoint rootJoint;
       if (options.defaultRootJointType == RootJointType::Floating) {
         // If a root FreeJoint is needed for the parent of the current joint,
@@ -804,8 +833,9 @@ dynamics::SkeletonPtr readSkeleton(
             static_cast<int>(options.defaultRootJointType));
       }
 
-      if (!createPair(newSkeleton, nullptr, rootJoint, body->second))
+      if (!createPair(newSkeleton, nullptr, rootJoint, body->second)) {
         break;
+      }
 
       sdfBodyNodes.erase(body);
       body = sdfBodyNodes.begin();
@@ -813,8 +843,10 @@ dynamics::SkeletonPtr readSkeleton(
       continue;
     }
 
-    if (!createPair(newSkeleton, parentBody, parentJoint->second, body->second))
+    if (!createPair(
+            newSkeleton, parentBody, parentJoint->second, body->second)) {
       break;
+    }
 
     sdfBodyNodes.erase(body);
     body = sdfBodyNodes.begin();
@@ -852,8 +884,9 @@ bool createPair(
     return false;
   }
 
-  if (!pair.first || !pair.second)
+  if (!pair.first || !pair.second) {
     return false;
+  }
 
   return true;
 }
@@ -906,17 +939,20 @@ void applyMimicConstraints(
 {
   for (const auto& entry : sdfJoints) {
     const auto& jointInfo = entry.second;
-    if (jointInfo.mimicInfos.empty())
+    if (jointInfo.mimicInfos.empty()) {
       continue;
+    }
 
     auto* joint = skeleton->getJoint(jointInfo.properties->mName);
-    if (!joint)
+    if (!joint) {
       continue;
+    }
 
     const auto existingProps = joint->getMimicDofProperties();
     std::vector<dynamics::MimicDofProperties> props(joint->getNumDofs());
-    for (std::size_t i = 0; i < existingProps.size() && i < props.size(); ++i)
+    for (std::size_t i = 0; i < existingProps.size() && i < props.size(); ++i) {
       props[i] = existingProps[i];
+    }
 
     bool applied = false;
     bool useCoupler = false;
@@ -948,8 +984,9 @@ void applyMimicConstraints(
             || mimic.constraintType == dynamics::MimicConstraintType::Coupler;
     }
 
-    if (!applied)
+    if (!applied) {
       continue;
+    }
 
     joint->setMimicJointDofs(
         std::span<const dynamics::MimicDofProperties>(props));
@@ -998,44 +1035,46 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
 {
   const std::string& type = joint.type;
 
-  if (std::string("prismatic") == type)
+  if (std::string("prismatic") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
         parent,
         static_cast<const dynamics::PrismaticJoint::Properties&>(
             *joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
-  else if (std::string("revolute") == type)
+  } else if (std::string("revolute") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
         parent,
         static_cast<const dynamics::RevoluteJoint::Properties&>(
             *joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
-  else if (std::string("screw") == type)
+  } else if (std::string("screw") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint>(
         parent,
         static_cast<const dynamics::ScrewJoint::Properties&>(*joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
-  else if (std::string("revolute2") == type || std::string("universal") == type)
+  } else if (
+      std::string("revolute2") == type || std::string("universal") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(
         parent,
         static_cast<const dynamics::UniversalJoint::Properties&>(
             *joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
-  else if (std::string("ball") == type)
+  } else if (std::string("ball") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(
         parent,
         static_cast<const dynamics::BallJoint::Properties&>(*joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
-  else if (std::string("fixed") == type)
+  } else if (std::string("fixed") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
         parent,
         static_cast<const dynamics::WeldJoint::Properties&>(*joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
-  else if (std::string("free") == type)
+  } else if (std::string("free") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
         parent,
         static_cast<const dynamics::FreeJoint::Properties&>(*joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
+  }
 
   DART_ERROR(
       "{}{}. Please report this as a bug! We will now quit parsing.",
@@ -1232,8 +1271,9 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
 
     // pose
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-    if (hasElement(softShapeEle, "pose"))
+    if (hasElement(softShapeEle, "pose")) {
       T = getValueIsometry3dWithExtrinsicRotation(softShapeEle, "pose");
+    }
 
     // geometry
     const ElementPtr& geometryEle = getElement(softShapeEle, "geometry");
@@ -1427,8 +1467,9 @@ void readAspects(
 
     // collision_shape
     ElementEnumerator collShapes(bodyElement, "collision");
-    while (collShapes.next())
+    while (collShapes.next()) {
       readCollisionShapeNode(bodyNode, collShapes.get(), baseUri, retriever);
+    }
   }
 }
 
@@ -1473,12 +1514,14 @@ std::vector<SDFJoint::MimicInfo> readMimicElements(
     const ElementPtr& axisElement)
 {
   std::vector<SDFJoint::MimicInfo> mimics;
-  if (!axisElement || !hasElement(axisElement, "mimic"))
+  if (!axisElement || !hasElement(axisElement, "mimic")) {
     return mimics;
+  }
 
   const auto mimicElement = getElement(axisElement, "mimic");
-  if (!mimicElement)
+  if (!mimicElement) {
     return mimics;
+  }
 
   SDFJoint::MimicInfo info;
   info.referenceJointName = getAttributeString(mimicElement, "joint");
@@ -1575,8 +1618,9 @@ SDFJoint readJoint(
   if (hasElement(_jointElement, "axis2")) {
     const ElementPtr& axis2Element = getElement(_jointElement, "axis2");
     auto mimics = readMimicElements(axis2Element);
-    for (auto& m : mimics)
+    for (auto& m : mimics) {
       m.referenceDof = 1u; // axis2 maps to the second DoF
+    }
     newJoint.mimicInfos.insert(
         newJoint.mimicInfos.end(), mimics.begin(), mimics.end());
   }
@@ -1587,13 +1631,16 @@ SDFJoint readJoint(
   Eigen::Isometry3d childToJoint = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d childWorld = Eigen::Isometry3d::Identity();
 
-  if (parent_it != _sdfBodyNodes.end())
+  if (parent_it != _sdfBodyNodes.end()) {
     parentWorld = parent_it->second.initTransform;
-  if (child_it != _sdfBodyNodes.end())
+  }
+  if (child_it != _sdfBodyNodes.end()) {
     childWorld = child_it->second.initTransform;
-  if (hasElement(_jointElement, "pose"))
+  }
+  if (hasElement(_jointElement, "pose")) {
     childToJoint
         = getValueIsometry3dWithExtrinsicRotation(_jointElement, "pose");
+  }
 
   Eigen::Isometry3d parentToJoint
       = parentWorld.inverse() * childWorld * childToJoint;
@@ -1669,8 +1716,9 @@ static bool readAxisElement(
 
   // use_parent_model_frame
   bool useParentModelFrame = false;
-  if (hasElement(axisElement, "use_parent_model_frame"))
+  if (hasElement(axisElement, "use_parent_model_frame")) {
     useParentModelFrame = getValueBool(axisElement, "use_parent_model_frame");
+  }
 
   // xyz
   Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
@@ -1724,12 +1772,13 @@ static bool readAxisElement(
   // If the zero position is out of our limits, we should change the initial
   // position instead of assuming zero
   if (0.0 < lower || upper < 0.0) {
-    if (std::isfinite(lower) && std::isfinite(upper))
+    if (std::isfinite(lower) && std::isfinite(upper)) {
       initial = (lower + upper) / 2.0;
-    else if (std::isfinite(lower))
+    } else if (std::isfinite(lower)) {
       initial = lower;
-    else if (std::isfinite(upper))
+    } else if (std::isfinite(upper)) {
       initial = upper;
+    }
 
     // Any other case means the limits are both +inf, both -inf, or one is a NaN
 
@@ -1943,8 +1992,9 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
 
   sdf::Root root;
   TemporaryResourceOwner tempResources;
-  if (!loadSdfRoot(uri, resolvedOptions.retriever, root, tempResources))
+  if (!loadSdfRoot(uri, resolvedOptions.retriever, root, tempResources)) {
     return nullptr;
+  }
 
   const ElementPtr sdfElement = root.Element();
   if (!sdfElement) {
@@ -1973,8 +2023,9 @@ dynamics::SkeletonPtr readSkeleton(
 
   sdf::Root root;
   TemporaryResourceOwner tempResources;
-  if (!loadSdfRoot(uri, resolvedOptions.retriever, root, tempResources))
+  if (!loadSdfRoot(uri, resolvedOptions.retriever, root, tempResources)) {
     return nullptr;
+  }
 
   const ElementPtr sdfElement = root.Element();
   if (!sdfElement) {

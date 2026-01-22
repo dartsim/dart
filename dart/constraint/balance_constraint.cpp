@@ -177,8 +177,9 @@ void BalanceConstraint::evalGradient(
     const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
 {
   _grad.setZero();
-  if (eval(_x) == 0.0)
+  if (eval(_x) == 0.0) {
     return;
+  }
 
   // If eval(_x) was non-zero, then the IK and Skeleton should still exist, so
   // we shouldn't need to test their existence.
@@ -197,8 +198,9 @@ void BalanceConstraint::evalGradient(
       const dynamics::EndEffector* ee = skel->getEndEffector(i);
 
       // Skip this EndEffector if it is not being used for support
-      if (!ee->getSupport() || !ee->getSupport()->isActive())
+      if (!ee->getSupport() || !ee->getSupport()->isActive()) {
         continue;
+      }
 
       mEEJacCache = skel->getLinearJacobian(ee);
 
@@ -243,8 +245,9 @@ void BalanceConstraint::evalGradient(
       for (std::size_t i = 0; i < numEE; ++i) {
         const dynamics::EndEffector* ee = skel->getEndEffector(i);
 
-        if (!ee->getSupport() || !ee->getSupport()->isActive())
+        if (!ee->getSupport() || !ee->getSupport()->isActive()) {
           continue;
+        }
 
         mEEJacCache = skel->getLinearJacobian(ee);
 
@@ -290,8 +293,9 @@ void BalanceConstraint::evalGradient(
             _grad, mEEJacCache, mNullSpaceCache, -mLastError, mDamping);
 
         // Quit after the first step if there is only one closest end effector
-        if (mClosestEndEffector[0] == mClosestEndEffector[1])
+        if (mClosestEndEffector[0] == mClosestEndEffector[1]) {
           break;
+        }
       }
     }
   }
@@ -302,8 +306,9 @@ void BalanceConstraint::evalGradient(
 //==============================================================================
 void BalanceConstraint::setErrorMethod(ErrorMethod_t _method)
 {
-  if (mErrorMethod == _method)
+  if (mErrorMethod == _method) {
     return;
+  }
 
   mErrorMethod = _method;
   clearCaches();
@@ -318,8 +323,9 @@ BalanceConstraint::ErrorMethod_t BalanceConstraint::getErrorMethod() const
 //==============================================================================
 void BalanceConstraint::setBalanceMethod(BalanceMethod_t _method)
 {
-  if (mBalanceMethod == _method)
+  if (mBalanceMethod == _method) {
     return;
+  }
 
   mBalanceMethod = _method;
   clearCaches();
@@ -334,8 +340,9 @@ BalanceConstraint::BalanceMethod_t BalanceConstraint::getBalanceMethod() const
 //==============================================================================
 void BalanceConstraint::setOptimizationTolerance(double _tol)
 {
-  if (mOptimizationTolerance == _tol)
+  if (mOptimizationTolerance == _tol) {
     return;
+  }
 
   mOptimizationTolerance = _tol;
   clearCaches();
@@ -350,8 +357,9 @@ double BalanceConstraint::getOptimizationTolerance() const
 //==============================================================================
 void BalanceConstraint::setPseudoInverseDamping(double _damping)
 {
-  if (mDamping == _damping)
+  if (mDamping == _damping) {
     return;
+  }
 
   mDamping = _damping;
   clearCaches();
@@ -385,12 +393,14 @@ void BalanceConstraint::convertJacobianMethodOutputToGradient(
 
   mInitialPositionsCache = skel->getPositions();
 
-  for (std::size_t i = 0; i < skel->getNumJoints(); ++i)
+  for (std::size_t i = 0; i < skel->getNumJoints(); ++i) {
     skel->getJoint(i)->integratePositions(1.0);
+  }
 
   // Clear out the velocities so we don't interfere with other Jacobian methods
-  for (std::size_t i = 0; i < skel->getNumDofs(); ++i)
+  for (std::size_t i = 0; i < skel->getNumDofs(); ++i) {
     skel->setVelocity(i, 0.0);
+  }
 
   grad = skel->getPositions();
   grad -= mInitialPositionsCache;

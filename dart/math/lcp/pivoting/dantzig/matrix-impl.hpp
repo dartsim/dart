@@ -247,8 +247,9 @@ template <typename Scalar>
 void dSolveLDLT(const Scalar* L, const Scalar* d, Scalar* b, int n, int nskip)
 {
   SolveL1(L, b, n, nskip);
-  for (int i = 0; i < n; ++i)
+  for (int i = 0; i < n; ++i) {
     b[i] *= d[i];
+  }
   SolveL1T(L, b, n, nskip);
 }
 
@@ -263,8 +264,9 @@ void dLDLTAddTL(
 {
   DART_ASSERT(L && d && a && n > 0 && nskip >= n);
 
-  if (n < 2)
+  if (n < 2) {
     return;
+  }
   std::vector<Scalar> W_storage;
   Scalar* W1;
   if (tmpbuf) {
@@ -423,16 +425,18 @@ void dLDLTRemove(
   }
 
   RemoveRowCol(L, n2, nskip, r);
-  if (r < (n2 - 1))
+  if (r < (n2 - 1)) {
     memmove(d + r, d + r + 1, (n2 - r - 1) * sizeof(Scalar));
+  }
 }
 
 template <typename Scalar>
 void dRemoveRowCol(Scalar* A, int n, int nskip, int r)
 {
   DART_ASSERT(A && n > 0 && nskip >= n && r >= 0 && r < n);
-  if (r >= n - 1)
+  if (r >= n - 1) {
     return;
+  }
   if (r > 0) {
     {
       const size_t move_size = (n - r - 1) * sizeof(Scalar);
@@ -668,8 +672,9 @@ void _dFactorLDLT(Scalar* A, Scalar* d, int n, int nskip1)
 {
   int i, j;
   Scalar sum, *ell, *dee, dd, p1, p2, q1, q2, Z11, m11, Z21, m21, Z22, m22;
-  if (n < 1)
+  if (n < 1) {
     return;
+  }
 
   for (i = 0; i <= n - 2; i += 2) {
     dSolveL1_2(A, A + i * nskip1, i, nskip1);

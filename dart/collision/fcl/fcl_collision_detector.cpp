@@ -71,8 +71,9 @@ namespace {
 
 std::string collisionObjectKey(const FCLCollisionObject* object)
 {
-  if (!object)
+  if (!object) {
     return "";
+  }
 
   return object->getKey();
 }
@@ -195,10 +196,11 @@ struct FCLCollisionCallbackData
 
   bool isCollision() const
   {
-    if (result)
+    if (result) {
       return result->isCollision();
-    else
+    } else {
       return foundCollision;
+    }
   }
 
   /// Constructor
@@ -431,8 +433,9 @@ template <class BV>
   double deltaRadius;
   double radiusLow, radiusHigh;
 
-  if (_slices >= CACHE_SIZE)
+  if (_slices >= CACHE_SIZE) {
     _slices = CACHE_SIZE - 1;
+  }
 
   if (_slices < 2 || _stacks < 1 || _baseRadius < 0.0 || _topRadius < 0.0
       || _height < 0.0) {
@@ -690,8 +693,9 @@ bool FCLCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
-  if (result)
+  if (result) {
     result->clear();
+  }
 
   if (0u == option.maxNumContacts) {
     DART_WARN(
@@ -700,8 +704,9 @@ bool FCLCollisionDetector::collide(
     return false;
   }
 
-  if (!checkGroupValidity(this, group))
+  if (!checkGroupValidity(this, group)) {
     return false;
+  }
 
   auto casted = static_cast<FCLCollisionGroup*>(group);
   casted->updateEngineData();
@@ -723,8 +728,9 @@ bool FCLCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
-  if (result)
+  if (result) {
     result->clear();
+  }
 
   if (0u == option.maxNumContacts) {
     DART_WARN(
@@ -733,11 +739,13 @@ bool FCLCollisionDetector::collide(
     return false;
   }
 
-  if (!checkGroupValidity(this, group1))
+  if (!checkGroupValidity(this, group1)) {
     return false;
+  }
 
-  if (!checkGroupValidity(this, group2))
+  if (!checkGroupValidity(this, group2)) {
     return false;
+  }
 
   auto casted1 = static_cast<FCLCollisionGroup*>(group1);
   auto casted2 = static_cast<FCLCollisionGroup*>(group2);
@@ -759,11 +767,13 @@ bool FCLCollisionDetector::collide(
 double FCLCollisionDetector::distance(
     CollisionGroup* group, const DistanceOption& option, DistanceResult* result)
 {
-  if (result)
+  if (result) {
     result->clear();
+  }
 
-  if (!checkGroupValidity(this, group))
+  if (!checkGroupValidity(this, group)) {
     return 0.0;
+  }
 
   auto casted = static_cast<FCLCollisionGroup*>(group);
   casted->updateEngineData();
@@ -772,8 +782,9 @@ double FCLCollisionDetector::distance(
 
   casted->getFCLCollisionManager()->distance(&distData, distanceCallback);
 
-  if (!distData.hasResult)
+  if (!distData.hasResult) {
     distData.unclampedMinDistance = 0.0;
+  }
 
   return std::max(distData.unclampedMinDistance, option.distanceLowerBound);
 }
@@ -785,14 +796,17 @@ double FCLCollisionDetector::distance(
     const DistanceOption& option,
     DistanceResult* result)
 {
-  if (result)
+  if (result) {
     result->clear();
+  }
 
-  if (!checkGroupValidity(this, group1))
+  if (!checkGroupValidity(this, group1)) {
     return 0.0;
+  }
 
-  if (!checkGroupValidity(this, group2))
+  if (!checkGroupValidity(this, group2)) {
     return 0.0;
+  }
 
   auto casted1 = static_cast<FCLCollisionGroup*>(group1);
   auto casted2 = static_cast<FCLCollisionGroup*>(group2);
@@ -806,8 +820,9 @@ double FCLCollisionDetector::distance(
 
   broadPhaseAlg1->distance(broadPhaseAlg2, &distData, distanceCallback);
 
-  if (!distData.hasResult)
+  if (!distData.hasResult) {
     distData.unclampedMinDistance = 0.0;
+  }
 
   return std::max(distData.unclampedMinDistance, option.distanceLowerBound);
 }
@@ -935,21 +950,23 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     auto* sphere = static_cast<const SphereShape*>(shape.get());
     const auto radius = sphere->getRadius();
 
-    if (FCLCollisionDetector::PRIMITIVE == type)
+    if (FCLCollisionDetector::PRIMITIVE == type) {
       geom = new fcl::Sphere(radius);
-    else
+    } else {
       geom = createEllipsoid<fcl::OBBRSS>(
           radius * 2.0, radius * 2.0, radius * 2.0);
+    }
   } else if (BoxShape::getStaticType() == shapeType) {
     DART_ASSERT(dynamic_cast<const BoxShape*>(shape.get()));
 
     auto box = static_cast<const BoxShape*>(shape.get());
     const Eigen::Vector3d& size = box->getSize();
 
-    if (FCLCollisionDetector::PRIMITIVE == type)
+    if (FCLCollisionDetector::PRIMITIVE == type) {
       geom = new fcl::Box(size[0], size[1], size[2]);
-    else
+    } else {
       geom = createCube<fcl::OBBRSS>(size[0], size[1], size[2]);
+    }
   } else if (EllipsoidShape::getStaticType() == shapeType) {
     DART_ASSERT(dynamic_cast<const EllipsoidShape*>(shape.get()));
 
@@ -1119,8 +1136,9 @@ bool collisionCallback(
 
   auto collData = static_cast<FCLCollisionCallbackData*>(cdata);
 
-  if (collData->done)
+  if (collData->done) {
     return true;
+  }
 
   const auto& fclRequest = collData->fclRequest;
   auto& fclResult = collData->fclResult;
@@ -1132,12 +1150,14 @@ bool collisionCallback(
   auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
   DART_ASSERT(collisionObject1);
   DART_ASSERT(collisionObject2);
-  if (!collisionObject1 || !collisionObject2)
+  if (!collisionObject1 || !collisionObject2) {
     return collData->done;
+  }
 
   // Filtering
-  if (filter && filter->ignoresCollision(collisionObject2, collisionObject1))
+  if (filter && filter->ignoresCollision(collisionObject2, collisionObject1)) {
     return collData->done;
+  }
 
   // Clear previous results
   fclResult.clear();
@@ -1167,8 +1187,9 @@ bool collisionCallback(
     }
 
     // Check satisfaction of the stopping conditions
-    if (result->getNumContacts() >= option.maxNumContacts)
+    if (result->getNumContacts() >= option.maxNumContacts) {
       collData->done = true;
+    }
   } else {
     // If no result is passed, stop checking when the first contact is found
     if (fclResult.isCollision()) {
@@ -1207,8 +1228,9 @@ bool distanceCallback(
     DART_ASSERT(collisionObject1);
     DART_ASSERT(collisionObject2);
 
-    if (!filter->needDistance(collisionObject2, collisionObject1))
+    if (!filter->needDistance(collisionObject2, collisionObject1)) {
       return distData->done;
+    }
   }
 
   // Clear previous results
@@ -1223,8 +1245,9 @@ bool distanceCallback(
       || currentDistance < distData->unclampedMinDistance) {
     distData->unclampedMinDistance = currentDistance;
 
-    if (result)
+    if (result) {
       interpreteDistanceResult(fclResult, o1, o2, option, *result);
+    }
 
     distData->hasResult = true;
   }
@@ -1233,8 +1256,9 @@ bool distanceCallback(
                              : std::numeric_limits<double>::infinity();
 
   if (distData->hasResult
-      && distData->unclampedMinDistance <= option.distanceLowerBound)
+      && distData->unclampedMinDistance <= option.distanceLowerBound) {
     distData->done = true;
+  }
 
   return distData->done;
 }
@@ -1261,8 +1285,9 @@ void markRepeatedPoints(
 {
   const auto checkSize = markForDeletion.size();
 
-  if (checkSize == 0u)
+  if (checkSize == 0u) {
     return;
+  }
 
   for (auto i = 0u; i < checkSize - 1u; ++i) {
     const auto& contact1 = (fclResult.*GetFun)(i);
@@ -1291,23 +1316,27 @@ void markColinearPoints(
   const auto checkSize = markForDeletion.size();
 
   for (auto i = 0u; i < checkSize; ++i) {
-    if (markForDeletion[i])
+    if (markForDeletion[i]) {
       continue;
+    }
 
     const auto& contact1 = (fclResult.*GetFun)(i);
 
     for (auto j = i + 1u; j < checkSize; ++j) {
-      if (i == j || markForDeletion[j])
+      if (i == j || markForDeletion[j]) {
         continue;
+      }
 
-      if (markForDeletion[i])
+      if (markForDeletion[i]) {
         break;
+      }
 
       const auto& contact2 = (fclResult.*GetFun)(j);
 
       for (auto k = j + 1u; k < checkSize; ++k) {
-        if (i == k)
+        if (i == k) {
           continue;
+        }
 
         const auto& contact3 = (fclResult.*GetFun)(k);
 
@@ -1330,8 +1359,9 @@ void postProcessFCL(
 {
   const auto numContacts = fclResult.numContacts();
 
-  if (0u == numContacts)
+  if (0u == numContacts) {
     return;
+  }
 
   // For binary check, return after adding the first contact point to the result
   // without the checkings of repeatidity and co-linearity.
@@ -1369,8 +1399,9 @@ void postProcessFCL(
       &fcl::CollisionResult::getContact>(markForDeletion, fclResult, tol);
 
   for (auto i = 0u; i < numContacts; ++i) {
-    if (markForDeletion[i])
+    if (markForDeletion[i]) {
       continue;
+    }
 
     if (fcl::length2(fclResult.getContact(i).normal)
         < Contact::getNormalEpsilonSquared()) {
@@ -1381,8 +1412,9 @@ void postProcessFCL(
 
     result.addContact(convertContact(fclResult.getContact(i), o1, o2, option));
 
-    if (result.getNumContacts() >= option.maxNumContacts)
+    if (result.getNumContacts() >= option.maxNumContacts) {
       return;
+    }
   }
 }
 
@@ -1396,8 +1428,9 @@ void postProcessDART(
 {
   const auto numFilteredContacts = fclResult.numContacts();
 
-  if (0u == numFilteredContacts)
+  if (0u == numFilteredContacts) {
     return;
+  }
 
   auto numContacts = 0u;
 
@@ -1451,8 +1484,9 @@ void postProcessDART(
           pair2.point);
 
       if (contactResult == COPLANAR_CONTACT) {
-        if (numContacts > 2u)
+        if (numContacts > 2u) {
           continue;
+        }
       } else if (contactResult == NO_CONTACT) {
         continue;
       } else {
@@ -1462,8 +1496,9 @@ void postProcessDART(
       const auto* fclObj1 = static_cast<FCLCollisionObject*>(o1->getUserData());
       const auto* fclObj2 = static_cast<FCLCollisionObject*>(o2->getUserData());
       if (shouldSwapDeterministically(fclObj1, fclObj2)) {
-        if (option.enableContact)
+        if (option.enableContact) {
           std::swap(pair1.point, pair2.point);
+        }
         applyDeterministicSwap(pair1);
         applyDeterministicSwap(pair2);
       }
@@ -1497,13 +1532,15 @@ void postProcessDART(
       markForDeletion, unfiltered, tol);
 
   for (auto i = 0u; i < unfilteredSize; ++i) {
-    if (markForDeletion[i])
+    if (markForDeletion[i]) {
       continue;
+    }
 
     result.addContact(unfiltered[i]);
 
-    if (result.getNumContacts() >= option.maxNumContacts)
+    if (result.getNumContacts() >= option.maxNumContacts) {
       return;
+    }
   }
 }
 
@@ -1563,10 +1600,11 @@ int evalContactPosition(
     const auto area1 = triArea(v1, v2, v3);
     const auto area2 = triArea(p1, p2, p3);
 
-    if (area1 < area2)
+    if (area1 < area2) {
       contact1 = v1 + v2 + v3;
-    else
+    } else {
       contact1 = p1 + p2 + p3;
+    }
 
     contact1[0] /= 3.0;
     contact1[1] /= 3.0;
@@ -1683,20 +1721,24 @@ FclContactGeometryOrder getContactGeometryOrder(
     fcl::CollisionObject* o1,
     fcl::CollisionObject* o2)
 {
-  if (!o1 || !o2 || !fclContact.o1 || !fclContact.o2)
+  if (!o1 || !o2 || !fclContact.o1 || !fclContact.o2) {
     return FclContactGeometryOrder::Unknown;
+  }
 
   const auto* geom1 = o1->collisionGeometry().get();
   const auto* geom2 = o2->collisionGeometry().get();
 
-  if (!geom1 || !geom2)
+  if (!geom1 || !geom2) {
     return FclContactGeometryOrder::Unknown;
+  }
 
-  if (fclContact.o1 == geom1 && fclContact.o2 == geom2)
+  if (fclContact.o1 == geom1 && fclContact.o2 == geom2) {
     return FclContactGeometryOrder::MatchesInput;
+  }
 
-  if (geom1 != geom2 && fclContact.o1 == geom2 && fclContact.o2 == geom1)
+  if (geom1 != geom2 && fclContact.o1 == geom2 && fclContact.o2 == geom1) {
     return FclContactGeometryOrder::MatchesSwapped;
+  }
 
   return FclContactGeometryOrder::Unknown;
 }
@@ -1735,8 +1777,9 @@ Contact convertContact(
       = static_cast<FCLCollisionObject*>(contact.collisionObject1);
   const auto fclObj2
       = static_cast<FCLCollisionObject*>(contact.collisionObject2);
-  if (shouldSwapDeterministically(fclObj1, fclObj2))
+  if (shouldSwapDeterministically(fclObj1, fclObj2)) {
     applyDeterministicSwap(contact);
+  }
 
   return contact;
 }

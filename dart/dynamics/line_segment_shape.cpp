@@ -111,8 +111,9 @@ float LineSegmentShape::getThickness() const
 std::size_t LineSegmentShape::addVertex(const Eigen::Vector3d& _v)
 {
   std::size_t parent = mVertices.size();
-  if (parent > 0)
+  if (parent > 0) {
     return addVertex(_v, parent - 1);
+  }
 
   mVertices.push_back(_v);
   return 0;
@@ -126,19 +127,20 @@ std::size_t LineSegmentShape::addVertex(
   mVertices.push_back(_v);
 
   if (_parent > mVertices.size()) {
-    if (mVertices.size() == 0)
+    if (mVertices.size() == 0) {
       DART_WARN(
           "Attempting to add a vertex to be a child of vertex #{}, but no "
           "vertices exist yet. No connection will be created for the new "
           "vertex yet.",
           _parent);
-    else
+    } else {
       DART_WARN(
           "Attempting to add a vertex to be a child of vertex #{}, but the "
           "vertex indices only go up to {}. No connection will be created for "
           "the new vertex yet.",
           _parent,
           mVertices.size() - 1);
+    }
   } else {
     mConnections.push_back(Eigen::Vector2i(_parent, index));
   }
@@ -150,17 +152,18 @@ std::size_t LineSegmentShape::addVertex(
 void LineSegmentShape::removeVertex(std::size_t _idx)
 {
   if (_idx >= mVertices.size()) {
-    if (mVertices.size() == 0)
+    if (mVertices.size() == 0) {
       DART_WARN(
           "Attempting to remove vertex #{}, but this LineSegmentShape contains "
           "no vertices. No vertex will be removed.",
           _idx);
-    else
+    } else {
       DART_WARN(
           "Attempting to remove vertex #{}, but vertex indices only go up to "
           "#{}. No vertex will be removed.",
           _idx,
           mVertices.size() - 1);
+    }
 
     return;
   }
@@ -172,17 +175,18 @@ void LineSegmentShape::removeVertex(std::size_t _idx)
 void LineSegmentShape::setVertex(std::size_t _idx, const Eigen::Vector3d& _v)
 {
   if (_idx >= mVertices.size()) {
-    if (mVertices.size() == 0)
+    if (mVertices.size() == 0) {
       DART_WARN(
           "Attempting to set vertex #{}, but no vertices exist in this "
           "LineSegmentShape yet.",
           _idx);
-    else
+    } else {
       DART_WARN(
           "Attempting to set vertex #{}, but the vertices of this "
           "LineSegmentShape only go up to #{}.",
           _idx,
           mVertices.size() - 1);
+    }
 
     return;
   }
@@ -192,8 +196,9 @@ void LineSegmentShape::setVertex(std::size_t _idx, const Eigen::Vector3d& _v)
 //==============================================================================
 const Eigen::Vector3d& LineSegmentShape::getVertex(std::size_t _idx) const
 {
-  if (_idx < mVertices.size())
+  if (_idx < mVertices.size()) {
     return mVertices[_idx];
+  }
 
   if (mVertices.empty()) {
     DART_WARN(
@@ -220,14 +225,14 @@ std::span<const Eigen::Vector3d> LineSegmentShape::getVertices() const
 void LineSegmentShape::addConnection(std::size_t _idx1, std::size_t _idx2)
 {
   if (_idx1 >= mVertices.size() || _idx2 >= mVertices.size()) {
-    if (mVertices.size() == 0)
+    if (mVertices.size() == 0) {
       DART_WARN(
           "Attempted to create a connection between vertex #{} and vertex #{}, "
           "but no vertices exist for this LineSegmentShape yet. No connection "
           "will be made for these non-existent vertices.",
           _idx1,
           _idx2);
-    else
+    } else {
       DART_WARN(
           "Attempted to create a connection between vertex #{} and vertex #{}, "
           "but the vertices only go up to #{}. No connection will be made for "
@@ -235,6 +240,7 @@ void LineSegmentShape::addConnection(std::size_t _idx1, std::size_t _idx2)
           _idx1,
           _idx2,
           mVertices.size());
+    }
 
     return;
   }
@@ -259,19 +265,18 @@ void LineSegmentShape::removeConnection(
 void LineSegmentShape::removeConnection(std::size_t _connectionIdx)
 {
   if (_connectionIdx >= mConnections.size()) {
-    if (mConnections.size() == 0)
-
+    if (mConnections.size() == 0) {
       DART_WARN(
           "Attempting to remove connection #{}, but no connections exist yet. "
           "No connection will be removed.",
           _connectionIdx);
-    else
-
+    } else {
       DART_WARN(
           "Attempting to remove connection #{}, but connection indices only go "
           "up to #{}. No connection will be removed.",
           _connectionIdx,
           mConnections.size() - 1);
+    }
 
     return;
   }

@@ -62,8 +62,9 @@ FileInfoDof::~FileInfoDof()
 bool FileInfoDof::loadFile(const char* _fName)
 {
   std::ifstream inFile(_fName);
-  if (inFile.fail() == 1)
+  if (inFile.fail() == 1) {
     return false;
+  }
 
   inFile.precision(20);
   std::string token;
@@ -79,14 +80,16 @@ bool FileInfoDof::loadFile(const char* _fName)
   inFile >> token;
   inFile >> nDof;
 
-  if (mSkel == nullptr || mSkel->getNumDofs() != nDof)
+  if (mSkel == nullptr || mSkel->getNumDofs() != nDof) {
     return false;
+  }
 
   mDofs.resize(mNumFrames);
 
   // dof names
-  for (std::size_t i = 0; i < nDof; i++)
+  for (std::size_t i = 0; i < nDof; i++) {
     inFile >> token;
+  }
   for (std::size_t j = 0; j < mNumFrames; j++) {
     mDofs[j].resize(nDof);
     for (std::size_t i = 0; i < nDof; i++) {
@@ -98,8 +101,9 @@ bool FileInfoDof::loadFile(const char* _fName)
 
   // fps
   inFile >> token;
-  if (!inFile.eof())
+  if (!inFile.eof()) {
     inFile >> mFPS;
+  }
 
   inFile.close();
 
@@ -117,12 +121,14 @@ bool FileInfoDof::saveFile(
     std::size_t _end,
     double /*_sampleRate*/)
 {
-  if (_end < _start)
+  if (_end < _start) {
     return false;
+  }
 
   std::ofstream outFile(_fName, std::ios::out);
-  if (outFile.fail())
+  if (outFile.fail()) {
     return false;
+  }
 
   std::size_t first = _start < mNumFrames ? _start : mNumFrames - 1;
   std::size_t last = _end < mNumFrames ? _end : mNumFrames - 1;
@@ -142,8 +148,9 @@ bool FileInfoDof::saveFile(
   outFile << std::endl;
 
   for (std::size_t i = first; i <= last; i++) {
-    for (std::size_t j = 0; j < mSkel->getNumDofs(); j++)
+    for (std::size_t j = 0; j < mSkel->getNumDofs(); j++) {
       outFile << mDofs[i][j] << ' ';
+    }
     outFile << std::endl;
   }
 

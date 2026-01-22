@@ -97,8 +97,9 @@ void PointCloudShape::addPoint(const Eigen::Vector3d& point)
 void PointCloudShape::addPoint(std::span<const Eigen::Vector3d> points)
 {
   mPoints.reserve(mPoints.size() + points.size());
-  for (const auto& point : points)
+  for (const auto& point : points) {
     mPoints.emplace_back(point);
+  }
   incrementVersion();
 }
 
@@ -114,8 +115,9 @@ void PointCloudShape::setPoint(std::span<const Eigen::Vector3d> points)
 void PointCloudShape::setPoints(const ::octomap::Pointcloud& pointCloud)
 {
   mPoints.resize(pointCloud.size());
-  for (auto i = 0u; i < mPoints.size(); ++i)
+  for (auto i = 0u; i < mPoints.size(); ++i) {
     mPoints[i] = toVector3d(pointCloud[i]);
+  }
   incrementVersion();
 }
 
@@ -123,8 +125,9 @@ void PointCloudShape::setPoints(const ::octomap::Pointcloud& pointCloud)
 void PointCloudShape::addPoints(const ::octomap::Pointcloud& pointCloud)
 {
   mPoints.reserve(mPoints.size() + pointCloud.size());
-  for (const auto& point : pointCloud)
+  for (const auto& point : pointCloud) {
     mPoints.emplace_back(toVector3d(point));
+  }
   incrementVersion();
 }
 #endif
@@ -150,8 +153,9 @@ void PointCloudShape::removeAllPoints()
 //==============================================================================
 void PointCloudShape::setPointShapeType(PointCloudShape::PointShapeType type)
 {
-  if (mPointShapeType == type)
+  if (mPointShapeType == type) {
     return;
+  }
 
   mPointShapeType = type;
   incrementVersion();

@@ -148,8 +148,9 @@ std::vector<dynamics::ShapeNode*> collectRigidShapeNodes(
 
   for (auto i = 0u; i < count; ++i) {
     auto* shapeNode = bodyNode->getShapeNode(i);
-    if (shapeNode == nullptr || isSoftMeshShape(shapeNode->getShape().get()))
+    if (shapeNode == nullptr || isSoftMeshShape(shapeNode->getShape().get())) {
       continue;
+    }
     shapes.push_back(shapeNode);
   }
 
@@ -159,43 +160,50 @@ std::vector<dynamics::ShapeNode*> collectRigidShapeNodes(
 bool setInertiaFromShapeNodes(dynamics::BodyNode* bodyNode)
 {
   const double bodyMass = bodyNode->getMass();
-  if (bodyMass <= 0.0)
+  if (bodyMass <= 0.0) {
     return false;
+  }
 
   const auto shapeNodes = collectRigidShapeNodes(bodyNode);
-  if (shapeNodes.empty())
+  if (shapeNodes.empty()) {
     return false;
+  }
 
   std::unordered_map<const dynamics::ShapeNode*, double> weights;
   double totalWeight = 0.0;
 
   for (const auto* shapeNode : shapeNodes) {
     double weight = shapeNode->getShape()->getVolume();
-    if (!std::isfinite(weight) || weight <= 0.0)
+    if (!std::isfinite(weight) || weight <= 0.0) {
       weight = 1.0;
+    }
     weights[shapeNode] = weight;
     totalWeight += weight;
   }
 
-  if (totalWeight <= 0.0)
+  if (totalWeight <= 0.0) {
     totalWeight = static_cast<double>(weights.size());
+  }
 
   const auto composite = bodyNode->computeInertiaFromShapeNodes(
       [&](const dynamics::ShapeNode* shapeNode) -> std::optional<double> {
         const auto it = weights.find(shapeNode);
-        if (it == weights.end())
+        if (it == weights.end()) {
           return std::nullopt;
+        }
         return bodyMass * (it->second / totalWeight);
       });
 
-  if (!composite.has_value())
+  if (!composite.has_value()) {
     return false;
+  }
 
   Eigen::Matrix3d moment = composite->getMoment();
   const Eigen::Vector3d desiredCom = bodyNode->getInertia().getLocalCOM();
   const Eigen::Vector3d delta = composite->getLocalCOM() - desiredCom;
-  if (!delta.isZero(1e-12))
+  if (!delta.isZero(1e-12)) {
     moment = math::parallelAxisTheorem(moment, delta, bodyMass);
+  }
 
   auto inertia = bodyNode->getInertia();
   inertia.setMoment(moment);
@@ -675,20 +683,23 @@ void readAspects(
 
     // visualization_shape
     ElementEnumerator vizShapes(bodyElement, "visualization_shape");
-    while (vizShapes.next())
+    while (vizShapes.next()) {
       readVisualizationShapeNode(bodyNode, vizShapes.get(), baseUri, retriever);
+    }
 
     // collision_shape
     ElementEnumerator collShapes(bodyElement, "collision_shape");
-    while (collShapes.next())
+    while (collShapes.next()) {
       readCollisionShapeNode(bodyNode, collShapes.get(), baseUri, retriever);
+    }
 
     // Update inertia if unspecified
     if (hasElement(bodyElement, "inertia")) {
       tinyxml2::XMLElement* inertiaElement = getElement(bodyElement, "inertia");
 
-      if (!hasElement(inertiaElement, "moment_of_inertia"))
+      if (!hasElement(inertiaElement, "moment_of_inertia")) {
         setInertiaFromShapeNodes(bodyNode);
+      }
     }
   }
 }
@@ -806,8 +817,9 @@ simulation::WorldPtr readWorld(
           cdType);
     }
 
-    if (!collision_detector)
+    if (!collision_detector) {
       collision_detector = createFclPrimitiveCollisionDetector();
+    }
 
     newWorld->setCollisionDetector(collision_detector);
   }
@@ -886,69 +898,78 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
     const SkelJoint& joint,
     const typename BodyType::Properties& body)
 {
-  if (std::string("weld") == joint.type)
+  if (std::string("weld") == joint.type) {
     return skeleton->createJointAndBodyNodePair<dynamics::WeldJoint, BodyType>(
         parent,
         static_cast<const dynamics::WeldJoint::Properties&>(*joint.properties),
         body);
+  }
 
-  else if (std::string("prismatic") == joint.type)
+  else if (std::string("prismatic") == joint.type) {
     return skeleton
         ->createJointAndBodyNodePair<dynamics::PrismaticJoint, BodyType>(
             parent,
             static_cast<const dynamics::PrismaticJoint::Properties&>(
                 *joint.properties),
             body);
+  }
 
-  else if (std::string("revolute") == joint.type)
+  else if (std::string("revolute") == joint.type) {
     return skeleton
         ->createJointAndBodyNodePair<dynamics::RevoluteJoint, BodyType>(
             parent,
             static_cast<const dynamics::RevoluteJoint::Properties&>(
                 *joint.properties),
             body);
+  }
 
-  else if (std::string("universal") == joint.type)
+  else if (std::string("universal") == joint.type) {
     return skeleton
         ->createJointAndBodyNodePair<dynamics::UniversalJoint, BodyType>(
             parent,
             static_cast<const dynamics::UniversalJoint::Properties&>(
                 *joint.properties),
             body);
+  }
 
-  else if (std::string("ball") == joint.type)
+  else if (std::string("ball") == joint.type) {
     return skeleton->createJointAndBodyNodePair<dynamics::BallJoint, BodyType>(
         parent,
         static_cast<const dynamics::BallJoint::Properties&>(*joint.properties),
         body);
+  }
 
-  else if (std::string("euler") == joint.type)
+  else if (std::string("euler") == joint.type) {
     return skeleton->createJointAndBodyNodePair<dynamics::EulerJoint, BodyType>(
         parent,
         static_cast<const dynamics::EulerJoint::Properties&>(*joint.properties),
         body);
+  }
 
-  else if (std::string("translational") == joint.type)
+  else if (std::string("translational") == joint.type) {
     return skeleton
         ->createJointAndBodyNodePair<dynamics::TranslationalJoint, BodyType>(
             parent,
             static_cast<const dynamics::TranslationalJoint::Properties&>(
                 *joint.properties),
             body);
+  }
 
-  else if (std::string("planar") == joint.type)
+  else if (std::string("planar") == joint.type) {
     return skeleton
         ->createJointAndBodyNodePair<dynamics::PlanarJoint, BodyType>(
             parent,
             static_cast<const dynamics::PlanarJoint::Properties&>(
                 *joint.properties),
             body);
+  }
 
-  else if (std::string("free") == joint.type)
+  else if (std::string("free") == joint.type) {
     return skeleton->createJointAndBodyNodePair<dynamics::FreeJoint, BodyType>(
         parent,
         static_cast<const dynamics::FreeJoint::Properties&>(*joint.properties),
         body);
+  }
 
   else {
     DART_ERROR(
@@ -968,20 +989,20 @@ bool createJointAndNodePair(
     const SkelBodyNode& body)
 {
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
-  if (body.type.empty())
+  if (body.type.empty()) {
     pair = createJointAndNodePair<dynamics::BodyNode>(
         skeleton,
         parent,
         joint,
         static_cast<const dynamics::BodyNode::Properties&>(*body.properties));
-  else if (std::string("soft") == body.type)
+  } else if (std::string("soft") == body.type) {
     pair = createJointAndNodePair<dynamics::SoftBodyNode>(
         skeleton,
         parent,
         joint,
         static_cast<const dynamics::SoftBodyNode::Properties&>(
             *body.properties));
-  else {
+  } else {
     DART_ERROR(
         "[createJointAndNodePair] Invalid type ({}) for BodyNode named [{}]",
         body.type,
@@ -989,8 +1010,9 @@ bool createJointAndNodePair(
     return false;
   }
 
-  if (pair.first == nullptr || pair.second == nullptr)
+  if (pair.first == nullptr || pair.second == nullptr) {
     return false;
+  }
 
   dynamics::Joint* newJoint = pair.first;
   newJoint->setPositions(joint.position);
@@ -999,8 +1021,9 @@ bool createJointAndNodePair(
   newJoint->setForces(joint.force);
 
   dynamics::BodyNode* bn = pair.second;
-  for (std::size_t i = 0; i < body.markers.size(); ++i)
+  for (std::size_t i = 0; i < body.markers.size(); ++i) {
     bn->createNode<dynamics::Marker>(body.markers[i]);
+  }
 
   return true;
 }
@@ -1065,8 +1088,9 @@ dynamics::SkeletonPtr readSkeleton(
   IndexToJoint order;
   JointToIndex lookup;
   ElementEnumerator xmlJoints(_skeletonElement, "joint");
-  while (xmlJoints.next())
+  while (xmlJoints.next()) {
     readJoint(xmlJoints.get(), bodyNodes, joints, order, lookup);
+  }
 
   //--------------------------------------------------------------------------
   // Assemble skeleton
@@ -1077,11 +1101,11 @@ dynamics::SkeletonPtr readSkeleton(
     NextResult result = getNextJointAndNodePair(
         it, child, parent, newSkeleton, joints, bodyNodes);
 
-    if (BREAK == result)
+    if (BREAK == result) {
       break;
-    else if (CONTINUE == result)
+    } else if (CONTINUE == result) {
       continue;
-    else if (CREATE_FREEJOINT_ROOT == result) {
+    } else if (CREATE_FREEJOINT_ROOT == result) {
       // If a root FreeJoint is needed for the parent of the current joint, then
       // create it
       BodyMap::const_iterator rootNode = bodyNodes.find(it->second.parentName);
@@ -1091,14 +1115,17 @@ dynamics::SkeletonPtr readSkeleton(
       rootJoint.type = "free";
 
       if (!createJointAndNodePair(
-              newSkeleton, nullptr, rootJoint, rootNode->second))
+              newSkeleton, nullptr, rootJoint, rootNode->second)) {
         break;
+      }
 
       continue;
     }
 
-    if (!createJointAndNodePair(newSkeleton, parent, it->second, child->second))
+    if (!createJointAndNodePair(
+            newSkeleton, parent, it->second, child->second)) {
       break;
+    }
 
     JointToIndex::iterator index = lookup.find(it->first);
     order.erase(index->second);
@@ -1106,8 +1133,9 @@ dynamics::SkeletonPtr readSkeleton(
     joints.erase(it);
 
     IndexToJoint::iterator nextJoint = order.begin();
-    if (nextJoint == order.end())
+    if (nextJoint == order.end()) {
       break;
+    }
 
     it = joints.find(nextJoint->second);
   }
@@ -1225,8 +1253,9 @@ SkelBodyNode readSoftBodyNode(
       _softBodyNodeElement, _skeletonFrame, _baseUri, _retriever);
 
   // If _softBodyNodeElement has no <soft_shape>, return rigid body node
-  if (!hasElement(_softBodyNodeElement, "soft_shape"))
+  if (!hasElement(_softBodyNodeElement, "soft_shape")) {
     return standardBodyNode;
+  }
 
   //----------------------------------------------------------------------------
   // Soft properties
@@ -1241,8 +1270,9 @@ SkelBodyNode readSoftBodyNode(
 
     // transformation
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-    if (hasElement(softShapeEle, "transformation"))
+    if (hasElement(softShapeEle, "transformation")) {
       T = getValueIsometry3d(softShapeEle, "transformation");
+    }
 
     // geometry
     tinyxml2::XMLElement* geometryEle = getElement(softShapeEle, "geometry");
@@ -1425,8 +1455,9 @@ dynamics::Marker::BasicProperties readMarker(
 
   // offset
   Eigen::Vector3d offset = Eigen::Vector3d::Zero();
-  if (hasElement(_markerElement, "offset"))
+  if (hasElement(_markerElement, "offset")) {
     offset = getValueVector3d(_markerElement, "offset");
+  }
 
   dynamics::Marker::BasicProperties newMarker;
   newMarker.mName = name;
@@ -1455,29 +1486,29 @@ void readJoint(
   // Type attribute
   joint.type = getAttributeString(_jointElement, "type");
   DART_ASSERT(!joint.type.empty());
-  if (joint.type == std::string("weld"))
+  if (joint.type == std::string("weld")) {
     joint.properties = readWeldJoint(_jointElement, joint, name);
-  else if (joint.type == std::string("prismatic"))
+  } else if (joint.type == std::string("prismatic")) {
     joint.properties = readPrismaticJoint(_jointElement, joint, name);
-  else if (joint.type == std::string("revolute"))
+  } else if (joint.type == std::string("revolute")) {
     joint.properties = readRevoluteJoint(_jointElement, joint, name);
-  else if (joint.type == std::string("screw"))
+  } else if (joint.type == std::string("screw")) {
     joint.properties = readScrewJoint(_jointElement, joint, name);
-  else if (joint.type == std::string("universal"))
+  } else if (joint.type == std::string("universal")) {
     joint.properties = readUniversalJoint(_jointElement, joint, name);
-  else if (joint.type == std::string("ball"))
+  } else if (joint.type == std::string("ball")) {
     joint.properties = readBallJoint(_jointElement, joint, name);
-  else if (joint.type == std::string("euler"))
+  } else if (joint.type == std::string("euler")) {
     joint.properties = readEulerJoint(_jointElement, joint, name);
-  else if (joint.type == std::string("translational"))
+  } else if (joint.type == std::string("translational")) {
     joint.properties = readTranslationalJoint(_jointElement, joint, name);
-  else if (joint.type == std::string("translational2d"))
+  } else if (joint.type == std::string("translational2d")) {
     joint.properties = readTranslationalJoint2D(_jointElement, joint, name);
-  else if (joint.type == std::string("planar"))
+  } else if (joint.type == std::string("planar")) {
     joint.properties = readPlanarJoint(_jointElement, joint, name);
-  else if (joint.type == std::string("free"))
+  } else if (joint.type == std::string("free")) {
     joint.properties = readFreeJoint(_jointElement, joint, name);
-  else {
+  } else {
     DART_ERROR(
         "[readJoint] Unsupported joint type [{}] requested by Joint named "
         "[{}]. This Joint will be discarded.",
@@ -1494,23 +1525,24 @@ void readJoint(
   if (hasAttribute(_jointElement, "actuator")) {
     const std::string actuator = getAttributeString(_jointElement, "actuator");
 
-    if (actuator == "force")
+    if (actuator == "force") {
       joint.properties->mActuatorType = dynamics::Joint::FORCE;
-    else if (actuator == "passive")
+    } else if (actuator == "passive") {
       joint.properties->mActuatorType = dynamics::Joint::PASSIVE;
-    else if (actuator == "servo")
+    } else if (actuator == "servo") {
       joint.properties->mActuatorType = dynamics::Joint::SERVO;
-    else if (actuator == "acceleration")
+    } else if (actuator == "acceleration") {
       joint.properties->mActuatorType = dynamics::Joint::ACCELERATION;
-    else if (actuator == "velocity")
+    } else if (actuator == "velocity") {
       joint.properties->mActuatorType = dynamics::Joint::VELOCITY;
-    else if (actuator == "locked")
+    } else if (actuator == "locked") {
       joint.properties->mActuatorType = dynamics::Joint::LOCKED;
-    else
+    } else {
       DART_ERROR(
           "Joint named [{}] contains invalid actuator attribute [{}].",
           name,
           actuator);
+    }
   } else {
     joint.properties->mActuatorType = dynamics::Joint::DefaultActuatorType;
   }
@@ -1529,8 +1561,10 @@ void readJoint(
 
   // Use an empty string (rather than "world") to indicate that the joint has no
   // parent
-  if (joint.parentName == std::string("world") && !_bodyNodes.contains("world"))
+  if (joint.parentName == std::string("world")
+      && !_bodyNodes.contains("world")) {
     joint.parentName.clear();
+  }
 
   if (parent == _bodyNodes.end() && !joint.parentName.empty()) {
     DART_ERROR(
@@ -1568,11 +1602,13 @@ void readJoint(
   Eigen::Isometry3d childToJoint = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d childWorld = child->second.initTransform;
 
-  if (parent != _bodyNodes.end())
+  if (parent != _bodyNodes.end()) {
     parentWorld = parent->second.initTransform;
+  }
 
-  if (hasElement(_jointElement, "transformation"))
+  if (hasElement(_jointElement, "transformation")) {
     childToJoint = getValueIsometry3d(_jointElement, "transformation");
+  }
 
   Eigen::Isometry3d parentToJoint
       = parentWorld.inverse() * childWorld * childToJoint;
@@ -1610,10 +1646,11 @@ void readJoint(
   // Keep track of when each joint appeared in the file
   std::size_t nextIndex;
   IndexToJoint::reverse_iterator lastIndex = _order.rbegin();
-  if (lastIndex == _order.rend())
+  if (lastIndex == _order.rend()) {
     nextIndex = 0;
-  else
+  } else {
     nextIndex = lastIndex->first + 1;
+  }
 
   _order[nextIndex] = joint.childName;
   _lookup[joint.childName] = nextIndex;
@@ -1768,9 +1805,10 @@ void readAllDegreesOfFreedom(
   }
 
   ElementEnumerator DofElements(_jointElement, "dof");
-  while (DofElements.next())
+  while (DofElements.next()) {
     readDegreeOfFreedom(
         DofElements.get(), _properties, _joint, _jointName, _numDofs);
+  }
 }
 
 //==============================================================================
@@ -1816,8 +1854,9 @@ void readDegreeOfFreedom(
     return;
   }
   // Unless the joint is a single-dof joint
-  else if (localIndex == -1 && numDofs == 1)
+  else if (localIndex == -1 && numDofs == 1) {
     localIndex = 0;
+  }
 
   DofProxy proxy(properties, joint, localIndex, jointName);
 
@@ -1871,17 +1910,21 @@ void readDegreeOfFreedom(
         proxy.initialForce);
   }
 
-  if (hasElement(_dofElement, "damping"))
+  if (hasElement(_dofElement, "damping")) {
     *proxy.dampingCoefficient = getValueDouble(_dofElement, "damping");
+  }
 
-  if (hasElement(_dofElement, "friction"))
+  if (hasElement(_dofElement, "friction")) {
     *proxy.friction = getValueDouble(_dofElement, "friction");
+  }
 
-  if (hasElement(_dofElement, "spring_rest_position"))
+  if (hasElement(_dofElement, "spring_rest_position")) {
     *proxy.restPosition = getValueDouble(_dofElement, "spring_rest_position");
+  }
 
-  if (hasElement(_dofElement, "spring_stiffness"))
+  if (hasElement(_dofElement, "spring_stiffness")) {
     *proxy.springStiffness = getValueDouble(_dofElement, "spring_stiffness");
+  }
 }
 
 //==============================================================================
@@ -1904,8 +1947,9 @@ void readJointDynamicsAndLimit(
 
   // axis
   for (std::size_t i = 0; i < _numAxis; ++i) {
-    if (i != 0)
+    if (i != 0) {
       axisName = "axis" + std::to_string(i + 1);
+    }
 
     if (hasElement(_jointElement, axisName)) {
       DofProxy proxy(_properties, _joint, i, _name);

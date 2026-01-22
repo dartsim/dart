@@ -256,8 +256,9 @@ typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
 {
   auto hasColladaExtension = [](std::string_view path) -> bool {
     const std::size_t extensionIndex = path.find_last_of('.');
-    if (extensionIndex == std::string_view::npos)
+    if (extensionIndex == std::string_view::npos) {
       return false;
+    }
 
     std::string extension(path.substr(extensionIndex));
     std::transform(
@@ -266,22 +267,26 @@ typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
   };
 
   auto isColladaResource = [&](std::string_view uri) -> bool {
-    if (hasColladaExtension(uri))
+    if (hasColladaExtension(uri)) {
       return true;
+    }
 
     const std::string uriString(uri);
     const auto parsedUri = common::Uri::createFromStringOrPath(uriString);
     if (parsedUri.mScheme.get_value_or("file") == "file" && parsedUri.mPath) {
-      if (hasColladaExtension(parsedUri.mPath.get()))
+      if (hasColladaExtension(parsedUri.mPath.get())) {
         return true;
+      }
     }
 
-    if (!retriever)
+    if (!retriever) {
       return false;
+    }
 
     const auto resource = retriever->retrieve(parsedUri);
-    if (!resource)
+    if (!resource) {
       return false;
+    }
 
     constexpr std::size_t kMaxProbeSize = 4096;
     const auto sampleSize = std::min(kMaxProbeSize, resource->getSize());

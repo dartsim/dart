@@ -109,8 +109,9 @@ public:
   /// Get the raw Joint pointer
   JointT* get() const
   {
-    if (nullptr == mBodyNodePtr)
+    if (nullptr == mBodyNodePtr) {
       return nullptr;
+    }
 
     return mBodyNodePtr->getParentJoint();
   }
@@ -228,8 +229,9 @@ public:
   TemplateJointPtr<JointT, BodyNodeT> lock() const
   {
     TemplateBodyNodePtr<BodyNodeT> bodyNode = mWeakBodyNode.lock();
-    if (nullptr == bodyNode)
+    if (nullptr == bodyNode) {
       return nullptr;
+    }
 
     return TemplateJointPtr<JointT, BodyNodeT>(bodyNode->getParentJoint());
   }

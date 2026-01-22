@@ -135,8 +135,9 @@ public:
     ::osg::ref_ptr<ViewerAttachment> attachment
         = dynamic_cast<ViewerAttachment*>(node);
 
-    if (attachment)
+    if (attachment) {
       attachment->refresh();
+    }
 
     traverse(node, nv);
   }
@@ -151,8 +152,9 @@ ViewerAttachment::ViewerAttachment() : mViewer(nullptr)
 //==============================================================================
 ViewerAttachment::~ViewerAttachment()
 {
-  if (mViewer)
+  if (mViewer) {
     mViewer->removeAttachment(this);
+  }
 }
 
 //==============================================================================
@@ -176,8 +178,9 @@ void ViewerAttachment::customAttach(Viewer* /*newViewer*/)
 //==============================================================================
 void ViewerAttachment::attach(Viewer* newViewer)
 {
-  if (mViewer)
+  if (mViewer) {
     mViewer->getRootGroup()->removeChild(this);
+  }
 
   newViewer->getRootGroup()->addChild(this);
   customAttach(newViewer);
@@ -338,10 +341,12 @@ std::vector<uint8_t> Viewer::captureBuffer(int* outWidth, int* outHeight)
   const int width = static_cast<int>(vp->width());
   const int height = static_cast<int>(vp->height());
 
-  if (outWidth)
+  if (outWidth) {
     *outWidth = width;
-  if (outHeight)
+  }
+  if (outHeight) {
     *outHeight = height;
+  }
 
   ::osg::ref_ptr<::osg::Image> image = new ::osg::Image;
   image->readPixels(
@@ -371,8 +376,9 @@ Viewer::~Viewer()
   std::unordered_set<ViewerAttachment*>::iterator it = mAttachments.begin(),
                                                   end = mAttachments.end();
 
-  while (it != end)
+  while (it != end) {
     removeAttachment(*(it++));
+  }
 }
 
 //==============================================================================
@@ -407,8 +413,9 @@ void Viewer::record(
   mImageDirectory = directory;
   mImagePrefix = prefix;
 
-  if (restart)
+  if (restart) {
     mImageSequenceNum = 0;
+  }
 
   mImageDigits = digits;
 
@@ -425,8 +432,9 @@ void Viewer::record(
 //==============================================================================
 void Viewer::pauseRecording()
 {
-  if (!mRecording)
+  if (!mRecording) {
     return;
+  }
 
   mRecording = false;
   DART_INFO(
@@ -444,8 +452,9 @@ bool Viewer::isRecording() const
 void Viewer::switchDefaultEventHandler(bool _on)
 {
   removeEventHandler(mDefaultEventHandler);
-  if (_on)
+  if (_on) {
     addEventHandler(mDefaultEventHandler);
+  }
 }
 
 //==============================================================================
@@ -507,27 +516,31 @@ bool Viewer::checkHeadlights() const
 //==============================================================================
 void Viewer::addWorldNode(WorldNode* _newWorldNode, bool _active)
 {
-  if (mWorldNodes.contains(_newWorldNode))
+  if (mWorldNodes.contains(_newWorldNode)) {
     return;
+  }
 
   mWorldNodes[_newWorldNode] = _active;
   mRootGroup->addChild(_newWorldNode);
   mCameraModeCallback->setSceneData(
       _newWorldNode); // TODO(JS): Change to addSceneData
-  if (_active)
+  if (_active) {
     _newWorldNode->simulate(mSimulating);
+  }
   _newWorldNode->mViewer = this;
   _newWorldNode->setupViewer();
   // set again the shadow technique to produce warning for ImGuiViewer
-  if (_newWorldNode->isShadowed())
+  if (_newWorldNode->isShadowed()) {
     _newWorldNode->setShadowTechnique(_newWorldNode->getShadowTechnique());
+  }
 }
 
 //==============================================================================
 void Viewer::removeWorldNode(WorldNode* _oldWorldNode)
 {
-  if (!mWorldNodes.contains(_oldWorldNode))
+  if (!mWorldNodes.contains(_oldWorldNode)) {
     return;
+  }
 
   mRootGroup->removeChild(_oldWorldNode);
   mWorldNodes.erase(_oldWorldNode);
@@ -538,8 +551,9 @@ void Viewer::removeWorldNode(std::shared_ptr<dart::simulation::World> _oldWorld)
 {
   WorldNode* node = getWorldNode(_oldWorld);
 
-  if (nullptr == node)
+  if (nullptr == node) {
     return;
+  }
 
   mRootGroup->removeChild(node);
   mWorldNodes.erase(node);
@@ -567,8 +581,9 @@ WorldNode* Viewer::getWorldNode(
 void Viewer::addAttachment(ViewerAttachment* _attachment)
 {
   Viewer* oldViewer = _attachment->mViewer;
-  if (oldViewer)
+  if (oldViewer) {
     oldViewer->removeAttachment(_attachment);
+  }
 
   _attachment->mViewer = this;
   mAttachments.insert(_attachment);
@@ -578,8 +593,9 @@ void Viewer::addAttachment(ViewerAttachment* _attachment)
 //==============================================================================
 void Viewer::removeAttachment(ViewerAttachment* _attachment)
 {
-  if (!mAttachments.contains(_attachment))
+  if (!mAttachments.contains(_attachment)) {
     return;
+  }
 
   _attachment->mViewer = nullptr;
   mAttachments.erase(_attachment);
@@ -608,8 +624,9 @@ const ::osg::ref_ptr<::osg::LightSource>& Viewer::getLightSource(
     std::size_t index) const
 {
   DART_ASSERT(index < 2);
-  if (index == 0)
+  if (index == 0) {
     return mLightSource1;
+  }
   return mLightSource2;
 }
 
@@ -644,16 +661,18 @@ void Viewer::setupDefaultLights()
 void Viewer::setUpwardsDirection(const ::osg::Vec3& _up)
 {
   mUpwards = _up;
-  if (mUpwards.length() > 0)
+  if (mUpwards.length() > 0) {
     mUpwards.normalize();
-  else
+  } else {
     mUpwards = ::osg::Vec3(0, 0, 1);
+  }
 
   mOver = _up
           ^ ::osg::Vec3(
               1, 0, 0); // Note: operator^ is the cross product operator in OSG
-  if (mOver.length() < 1e-12)
+  if (mOver.length() < 1e-12) {
     mOver = ::osg::Vec3(0, 0, 1) ^ _up;
+  }
   mOver.normalize();
 
   ::osg::Vec3 p1 = mUpwards + mOver;
@@ -672,8 +691,9 @@ void Viewer::setUpwardsDirection(const Eigen::Vector3d& _up)
 void Viewer::setWorldNodeActive(WorldNode* _node, bool _active)
 {
   auto it = mWorldNodes.find(_node);
-  if (it == mWorldNodes.end())
+  if (it == mWorldNodes.end()) {
     return;
+  }
 
   it->second = _active;
 }
@@ -688,8 +708,9 @@ void Viewer::setWorldNodeActive(
 //==============================================================================
 void Viewer::simulate(bool _on)
 {
-  if (!mAllowSimulation && _on)
+  if (!mAllowSimulation && _on) {
     return;
+  }
 
   mSimulating = _on;
   for (auto& node_pair : mWorldNodes) {
@@ -710,8 +731,9 @@ void Viewer::allowSimulation(bool _allow)
 {
   mAllowSimulation = _allow;
 
-  if (!mAllowSimulation && mSimulating)
+  if (!mAllowSimulation && mSimulating) {
     simulate(false);
+  }
 }
 
 //==============================================================================
@@ -724,12 +746,14 @@ bool Viewer::isAllowingSimulation() const
 DragAndDrop* Viewer::enableDragAndDrop(dart::dynamics::Entity* _entity)
 {
   if (dart::dynamics::BodyNode* bn
-      = dynamic_cast<dart::dynamics::BodyNode*>(_entity))
+      = dynamic_cast<dart::dynamics::BodyNode*>(_entity)) {
     return enableDragAndDrop(bn);
+  }
 
   if (dart::dynamics::SimpleFrame* sf
-      = dynamic_cast<dart::dynamics::SimpleFrame*>(_entity))
+      = dynamic_cast<dart::dynamics::SimpleFrame*>(_entity)) {
     return enableDragAndDrop(sf);
+  }
 
   return nullptr;
 }
@@ -737,13 +761,15 @@ DragAndDrop* Viewer::enableDragAndDrop(dart::dynamics::Entity* _entity)
 //==============================================================================
 SimpleFrameDnD* Viewer::enableDragAndDrop(dart::dynamics::SimpleFrame* _frame)
 {
-  if (nullptr == _frame)
+  if (nullptr == _frame) {
     return nullptr;
+  }
 
   std::map<dart::dynamics::SimpleFrame*, SimpleFrameDnD*>::iterator it
       = mSimpleFrameDnDMap.find(_frame);
-  if (it != mSimpleFrameDnDMap.end())
+  if (it != mSimpleFrameDnDMap.end()) {
     return it->second;
+  }
 
   SimpleFrameDnD* dnd = new SimpleFrameDnD(this, _frame);
   mSimpleFrameDnDMap[_frame] = dnd;
@@ -773,8 +799,9 @@ static sfs_dnd::iterator getSimpleFrameShapeDnDFromMultimap(
       return it;
     }
 
-    if (it == end)
+    if (it == end) {
       break;
+    }
     ++it;
   }
 
@@ -785,15 +812,17 @@ static sfs_dnd::iterator getSimpleFrameShapeDnDFromMultimap(
 SimpleFrameShapeDnD* Viewer::enableDragAndDrop(
     dart::dynamics::SimpleFrame* _frame, dart::dynamics::Shape* _shape)
 {
-  if (nullptr == _frame || nullptr == _shape)
+  if (nullptr == _frame || nullptr == _shape) {
     return nullptr;
+  }
 
   using namespace sfs_dnd;
 
   iterator existingDnD = getSimpleFrameShapeDnDFromMultimap(
       _frame, _shape, mSimpleFrameShapeDnDMap);
-  if (existingDnD != mSimpleFrameShapeDnDMap.end())
+  if (existingDnD != mSimpleFrameShapeDnDMap.end()) {
     return existingDnD->second;
+  }
 
   SimpleFrameShapeDnD* dnd = new SimpleFrameShapeDnD(this, _frame, _shape);
   mSimpleFrameShapeDnDMap.insert(
@@ -806,13 +835,15 @@ SimpleFrameShapeDnD* Viewer::enableDragAndDrop(
 InteractiveFrameDnD* Viewer::enableDragAndDrop(
     dart::gui::InteractiveFrame* _frame)
 {
-  if (nullptr == _frame)
+  if (nullptr == _frame) {
     return nullptr;
+  }
 
   std::map<InteractiveFrame*, InteractiveFrameDnD*>::iterator it
       = mInteractiveFrameDnDMap.find(_frame);
-  if (it != mInteractiveFrameDnDMap.end())
+  if (it != mInteractiveFrameDnDMap.end()) {
     return it->second;
+  }
 
   InteractiveFrameDnD* dnd = new InteractiveFrameDnD(this, _frame);
   mInteractiveFrameDnDMap[_frame] = dnd;
@@ -823,13 +854,15 @@ InteractiveFrameDnD* Viewer::enableDragAndDrop(
 BodyNodeDnD* Viewer::enableDragAndDrop(
     dart::dynamics::BodyNode* _bn, bool _useExternalIK, bool _useWholeBody)
 {
-  if (nullptr == _bn)
+  if (nullptr == _bn) {
     return nullptr;
+  }
 
   std::map<dart::dynamics::BodyNode*, BodyNodeDnD*>::iterator it
       = mBodyNodeDnDMap.find(_bn);
-  if (it != mBodyNodeDnDMap.end())
+  if (it != mBodyNodeDnDMap.end()) {
     return it->second;
+  }
 
   BodyNodeDnD* dnd = new BodyNodeDnD(this, _bn, _useExternalIK, _useWholeBody);
   mBodyNodeDnDMap[_bn] = dnd;
@@ -839,17 +872,21 @@ BodyNodeDnD* Viewer::enableDragAndDrop(
 //==============================================================================
 bool Viewer::disableDragAndDrop(DragAndDrop* _dnd)
 {
-  if (disableDragAndDrop(dynamic_cast<SimpleFrameShapeDnD*>(_dnd)))
+  if (disableDragAndDrop(dynamic_cast<SimpleFrameShapeDnD*>(_dnd))) {
     return true;
+  }
 
-  if (disableDragAndDrop(dynamic_cast<SimpleFrameDnD*>(_dnd)))
+  if (disableDragAndDrop(dynamic_cast<SimpleFrameDnD*>(_dnd))) {
     return true;
+  }
 
-  if (disableDragAndDrop(dynamic_cast<InteractiveFrameDnD*>(_dnd)))
+  if (disableDragAndDrop(dynamic_cast<InteractiveFrameDnD*>(_dnd))) {
     return true;
+  }
 
-  if (disableDragAndDrop(dynamic_cast<BodyNodeDnD*>(_dnd)))
+  if (disableDragAndDrop(dynamic_cast<BodyNodeDnD*>(_dnd))) {
     return true;
+  }
 
   return false;
 }
@@ -857,13 +894,15 @@ bool Viewer::disableDragAndDrop(DragAndDrop* _dnd)
 //==============================================================================
 bool Viewer::disableDragAndDrop(SimpleFrameDnD* _dnd)
 {
-  if (nullptr == _dnd)
+  if (nullptr == _dnd) {
     return false;
+  }
 
   std::map<dart::dynamics::SimpleFrame*, SimpleFrameDnD*>::iterator it
       = mSimpleFrameDnDMap.find(_dnd->getSimpleFrame());
-  if (it == mSimpleFrameDnDMap.end())
+  if (it == mSimpleFrameDnDMap.end()) {
     return false;
+  }
 
   delete it->second;
   mSimpleFrameDnDMap.erase(it);
@@ -874,16 +913,18 @@ bool Viewer::disableDragAndDrop(SimpleFrameDnD* _dnd)
 //==============================================================================
 bool Viewer::disableDragAndDrop(SimpleFrameShapeDnD* _dnd)
 {
-  if (nullptr == _dnd)
+  if (nullptr == _dnd) {
     return false;
+  }
 
   using namespace sfs_dnd;
 
   iterator it = getSimpleFrameShapeDnDFromMultimap(
       _dnd->getSimpleFrame(), _dnd->getShape(), mSimpleFrameShapeDnDMap);
 
-  if (it == mSimpleFrameShapeDnDMap.end())
+  if (it == mSimpleFrameShapeDnDMap.end()) {
     return false;
+  }
 
   delete it->second;
   mSimpleFrameShapeDnDMap.erase(it);
@@ -894,13 +935,15 @@ bool Viewer::disableDragAndDrop(SimpleFrameShapeDnD* _dnd)
 //==============================================================================
 bool Viewer::disableDragAndDrop(InteractiveFrameDnD* _dnd)
 {
-  if (nullptr == _dnd)
+  if (nullptr == _dnd) {
     return false;
+  }
 
   std::map<InteractiveFrame*, InteractiveFrameDnD*>::iterator it
       = mInteractiveFrameDnDMap.find(_dnd->getFrame());
-  if (it == mInteractiveFrameDnDMap.end())
+  if (it == mInteractiveFrameDnDMap.end()) {
     return false;
+  }
 
   delete it->second;
   mInteractiveFrameDnDMap.erase(it);
@@ -911,13 +954,15 @@ bool Viewer::disableDragAndDrop(InteractiveFrameDnD* _dnd)
 //==============================================================================
 bool Viewer::disableDragAndDrop(BodyNodeDnD* _dnd)
 {
-  if (nullptr == _dnd)
+  if (nullptr == _dnd) {
     return false;
+  }
 
   std::map<dart::dynamics::BodyNode*, BodyNodeDnD*>::iterator it
       = mBodyNodeDnDMap.find(_dnd->getBodyNode());
-  if (it == mBodyNodeDnDMap.end())
+  if (it == mBodyNodeDnDMap.end()) {
     return false;
+  }
 
   delete it->second;
   mBodyNodeDnDMap.erase(it);

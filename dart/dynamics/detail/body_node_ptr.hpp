@@ -191,8 +191,9 @@ public:
   /// Set the BodyNode for this BodyNodePtr
   void set(BodyNodeT* _ptr)
   {
-    if (mPtr == _ptr)
+    if (mPtr == _ptr) {
       return;
+    }
 
     if (nullptr != mPtr) {
       static_cast<const SkeletonRefCountingBase*>(mPtr)
@@ -268,16 +269,18 @@ public:
   /// function in a BodyNodePtr.
   TemplateBodyNodePtr<BodyNodeT> lock() const
   {
-    if (nullptr == mLocker)
+    if (nullptr == mLocker) {
       return nullptr;
+    }
 
     // We do not use the expired() function here, because we want to ensure that
     // the Skeleton's reference count remains up while we create the strong
     // BodyNodePtr that we're going to return.
     std::lock_guard<std::mutex> lock(mLocker->mMutex);
     std::shared_ptr<const Skeleton> skeleton = mLocker->mSkeleton.lock();
-    if (nullptr == skeleton)
+    if (nullptr == skeleton) {
       return nullptr;
+    }
 
     return TemplateBodyNodePtr<BodyNodeT>(mPtr);
   }
@@ -287,11 +290,12 @@ public:
   {
     mPtr = _ptr;
 
-    if (nullptr == mPtr)
+    if (nullptr == mPtr) {
       mLocker = nullptr;
-    else
+    } else {
       mLocker
           = static_cast<const SkeletonRefCountingBase*>(_ptr)->mLockedSkeleton;
+    }
   }
 
   /// Attempt to set the BodyNode for this WeakBodyNodePtr based on another
@@ -325,15 +329,17 @@ public:
   /// BodyNodePtr
   bool expired() const
   {
-    if (nullptr == mLocker)
+    if (nullptr == mLocker) {
       return true;
+    }
 
     // It is okay for 'lock' to go "unused", because it is managed by RAII after
     // it has been initialized
     std::lock_guard<std::mutex> lock(mLocker->mMutex);
     std::shared_ptr<const Skeleton> skeleton = mLocker->mSkeleton.lock();
-    if (nullptr == skeleton)
+    if (nullptr == skeleton) {
       return true;
+    }
 
     return false;
   }

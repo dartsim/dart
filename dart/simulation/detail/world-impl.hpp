@@ -59,8 +59,9 @@ void World::eachSkeleton(Func func) const
                     std::invoke_result_t<Func, const dynamics::Skeleton*>,
                     bool>) {
     for (auto skel : mSkeletons) {
-      if (!func(skel.get()))
+      if (!func(skel.get())) {
         return;
+      }
     }
   } else {
     for (auto skel : mSkeletons) {
@@ -77,8 +78,9 @@ void World::eachSkeleton(Func func)
                     std::invoke_result_t<Func, dynamics::Skeleton*>,
                     bool>) {
     for (auto skel : mSkeletons) {
-      if (!func(skel.get()))
+      if (!func(skel.get())) {
         return;
+      }
     }
   } else {
     for (auto skel : mSkeletons) {
@@ -95,8 +97,9 @@ void World::eachSimpleFrame(Func func) const
                     std::invoke_result_t<Func, const dynamics::SimpleFrame*>,
                     bool>) {
     for (auto simpleFrame : mSimpleFrames) {
-      if (!func(simpleFrame.get()))
+      if (!func(simpleFrame.get())) {
         return;
+      }
     }
   } else {
     for (auto simpleFrame : mSimpleFrames) {
@@ -113,8 +116,9 @@ void World::eachSimpleFrame(Func func)
                     std::invoke_result_t<Func, dynamics::SimpleFrame*>,
                     bool>) {
     for (auto simpleFrame : mSimpleFrames) {
-      if (!func(simpleFrame.get()))
+      if (!func(simpleFrame.get())) {
         return;
+      }
     }
   } else {
     for (auto simpleFrame : mSimpleFrames) {

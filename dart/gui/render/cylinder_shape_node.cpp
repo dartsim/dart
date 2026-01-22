@@ -101,8 +101,9 @@ void CylinderShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     return;
+  }
 
   extractData(false);
 }
@@ -179,10 +180,11 @@ CylinderShapeDrawable::CylinderShapeDrawable(
 //==============================================================================
 void CylinderShapeDrawable::refresh(bool firstTime)
 {
-  if (mCylinderShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mCylinderShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     setDataVariance(::osg::Object::STATIC);
-  else
+  } else {
     setDataVariance(::osg::Object::DYNAMIC);
+  }
 
   if (mCylinderShape->checkDataVariance(
           dart::dynamics::Shape::DYNAMIC_PRIMITIVE)

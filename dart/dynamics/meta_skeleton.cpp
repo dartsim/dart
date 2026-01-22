@@ -112,8 +112,9 @@ static void setValuesFromVector(
     const std::string& _fname,
     const std::string& _vname)
 {
-  if (!checkIndexArrayAgreement(skel, _indices, _values, _fname, _vname))
+  if (!checkIndexArrayAgreement(skel, _indices, _values, _fname, _vname)) {
     return;
+  }
 
   for (std::size_t i = 0; i < _indices.size(); ++i) {
     DegreeOfFreedom* dof = skel->getDof(_indices[i]);
@@ -253,8 +254,9 @@ static void applyToAllDofs(MetaSkeleton* skel)
   std::size_t nDofs = skel->getNumDofs();
   for (std::size_t i = 0; i < nDofs; ++i) {
     DegreeOfFreedom* dof = skel->getDof(i);
-    if (dof)
+    if (dof) {
       (dof->*apply)();
+    }
   }
 }
 
@@ -267,7 +269,7 @@ static void setValueFromIndex(
     const std::string& _fname)
 {
   if (_index >= skel->getNumDofs()) {
-    if (skel->getNumDofs() > 0)
+    if (skel->getNumDofs() > 0) {
       DART_ERROR(
           "Out of bounds index ({}) for MetaSkeleton named [{}] ({}). Must be "
           "less than {}!",
@@ -276,7 +278,7 @@ static void setValueFromIndex(
           skel->getName(),
           static_cast<const void*>(skel),
           skel->getNumDofs());
-    else
+    } else {
       DART_ERROR(
           "Index ({}) cannot be used on MetaSkeleton [{}] ({}) because it is "
           "empty!",
@@ -284,6 +286,7 @@ static void setValueFromIndex(
           _index,
           skel->getName(),
           static_cast<const void*>(skel));
+    }
     DART_ASSERT(false);
     return;
   }
@@ -310,7 +313,7 @@ static double getValueFromIndex(
     const MetaSkeleton* skel, std::size_t _index, const std::string& _fname)
 {
   if (_index >= skel->getNumDofs()) {
-    if (skel->getNumDofs() > 0)
+    if (skel->getNumDofs() > 0) {
       DART_ERROR(
           "Out of bounds index ({}) for MetaSkeleton named [{}] ({}). Must be "
           "less than {}! The return value will be zero.",
@@ -319,7 +322,7 @@ static double getValueFromIndex(
           skel->getName(),
           static_cast<const void*>(skel),
           skel->getNumDofs());
-    else
+    } else {
       DART_ERROR(
           "Index ({}) cannot be requested for MetaSkeleton [{}] ({}) because "
           "it is empty! The return value will be zero.",
@@ -327,6 +330,7 @@ static double getValueFromIndex(
           _index,
           skel->getName(),
           static_cast<const void*>(skel));
+    }
     DART_ASSERT(false);
     return 0.0;
   }
@@ -998,8 +1002,9 @@ math::Jacobian MetaSkeleton::getJacobian(
     const JacobianNode* _relativeTo,
     const Frame* _inCoordinatesOf) const
 {
-  if (_node == _relativeTo)
+  if (_node == _relativeTo) {
     return math::Jacobian::Zero(6, getNumDofs());
+  }
 
   const math::Jacobian J = getJacobian(_node);
   const math::Jacobian JRelTo = getJacobian(_relativeTo);
@@ -1007,8 +1012,9 @@ math::Jacobian MetaSkeleton::getJacobian(
 
   const math::Jacobian result = (J - math::AdTJac(T, JRelTo)).eval();
 
-  if (_node == _inCoordinatesOf)
+  if (_node == _inCoordinatesOf) {
     return result;
+  }
 
   return math::AdRJac(_node->getTransform(_inCoordinatesOf), result);
 }
@@ -1020,8 +1026,9 @@ math::Jacobian MetaSkeleton::getJacobian(
     const JacobianNode* _relativeTo,
     const Frame* _inCoordinatesOf) const
 {
-  if (_node == _relativeTo)
+  if (_node == _relativeTo) {
     return math::Jacobian::Zero(6, getNumDofs());
+  }
 
   const math::Jacobian J = getJacobian(_node);
   const math::Jacobian JRelTo = getJacobian(_relativeTo);
@@ -1030,8 +1037,9 @@ math::Jacobian MetaSkeleton::getJacobian(
   math::Jacobian result = (J - math::AdTJac(T, JRelTo)).eval();
   result.bottomRows<3>() += result.topRows<3>().colwise().cross(_localOffset);
 
-  if (_node == _inCoordinatesOf)
+  if (_node == _inCoordinatesOf) {
     return result;
+  }
 
   return math::AdRJac(_node->getTransform(_inCoordinatesOf), result);
 }
@@ -1071,8 +1079,9 @@ math::Jacobian MetaSkeleton::getJacobianSpatialDeriv(
     const JacobianNode* _relativeTo,
     const Frame* _inCoordinatesOf) const
 {
-  if (_node == _relativeTo)
+  if (_node == _relativeTo) {
     return math::Jacobian::Zero(6, getNumDofs());
+  }
 
   const math::Jacobian dJ = getJacobianSpatialDeriv(_node);
   const math::Jacobian JRelTo = getJacobian(_relativeTo);
@@ -1083,8 +1092,9 @@ math::Jacobian MetaSkeleton::getJacobianSpatialDeriv(
 
   const math::Jacobian result = dJ - math::AdTJac(T, dJRelTo + adJRelTo);
 
-  if (_node == _inCoordinatesOf)
+  if (_node == _inCoordinatesOf) {
     return result;
+  }
 
   return math::AdRJac(_node->getTransform(_inCoordinatesOf), result);
 }
@@ -1096,8 +1106,9 @@ math::Jacobian MetaSkeleton::getJacobianSpatialDeriv(
     const JacobianNode* _relativeTo,
     const Frame* _inCoordinatesOf) const
 {
-  if (_node == _relativeTo)
+  if (_node == _relativeTo) {
     return math::Jacobian::Zero(6, getNumDofs());
+  }
 
   const math::Jacobian dJ = getJacobianSpatialDeriv(_node);
   const math::Jacobian JRelTo = getJacobian(_relativeTo);
@@ -1110,8 +1121,9 @@ math::Jacobian MetaSkeleton::getJacobianSpatialDeriv(
   result.bottomRows<3>().noalias()
       += result.topRows<3>().colwise().cross(_localOffset);
 
-  if (_node == _inCoordinatesOf)
+  if (_node == _inCoordinatesOf) {
     return result;
+  }
 
   return math::AdRJac(_node->getTransform(_inCoordinatesOf), result);
 }

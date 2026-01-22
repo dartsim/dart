@@ -321,8 +321,9 @@ TEST(PlanarJoint, MomentumConservation)
   const Eigen::Vector3d initialAngular = computeWorldAngularMomentum(skel);
 
   const int numSteps = 2000;
-  for (int i = 0; i < numSteps; ++i)
+  for (int i = 0; i < numSteps; ++i) {
     world->step();
+  }
 
   const Eigen::Vector3d finalLinear = computeWorldLinearMomentum(skel);
   const Eigen::Vector3d finalAngular = computeWorldAngularMomentum(skel);

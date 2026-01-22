@@ -43,23 +43,26 @@ public:
 
   bool exists(const common::Uri& uri) override
   {
-    if (isAlias(uri))
+    if (isAlias(uri)) {
       return mDelegate->exists(mTargetUri);
+    }
     return mDelegate->exists(uri);
   }
 
   common::ResourcePtr retrieve(const common::Uri& uri) override
   {
-    if (isAlias(uri))
+    if (isAlias(uri)) {
       return mDelegate->retrieve(mTargetUri);
+    }
     return mDelegate->retrieve(uri);
   }
 
   std::string getFilePath(const common::Uri& uri) override
   {
     DART_SUPPRESS_DEPRECATED_BEGIN
-    if (isAlias(uri))
+    if (isAlias(uri)) {
       return mDelegate->getFilePath(mTargetUri);
+    }
     return mDelegate->getFilePath(uri);
     DART_SUPPRESS_DEPRECATED_END
   }
@@ -218,21 +221,24 @@ const aiScene* loadMeshWithOverrides(
 double readColladaUnitScale(const std::string& path)
 {
   std::ifstream file(path);
-  if (!file.is_open())
+  if (!file.is_open()) {
     return 1.0;
+  }
 
   const std::string token = "meter=\"";
   std::string buffer(
       (std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
   const std::size_t pos = buffer.find(token);
-  if (pos == std::string::npos)
+  if (pos == std::string::npos) {
     return 1.0;
+  }
 
   const std::size_t start = pos + token.size();
   const std::size_t end = buffer.find('"', start);
-  if (end == std::string::npos)
+  if (end == std::string::npos) {
     return 1.0;
+  }
 
   try {
     return std::stod(buffer.substr(start, end - start));
@@ -709,16 +715,18 @@ TEST(MeshShapeTest, TriMeshGetMeshPreservesMaterialIndices)
   materialSummary << "indices=";
   bool first = true;
   for (const auto& index : usedMaterialIndices) {
-    if (!first)
+    if (!first) {
       materialSummary << ",";
+    }
     materialSummary << index;
     first = false;
   }
   materialSummary << " names=";
   first = true;
   for (const auto& name : usedMaterialNames) {
-    if (!first)
+    if (!first) {
       materialSummary << ",";
+    }
     materialSummary << name;
     first = false;
   }

@@ -74,10 +74,12 @@ FCLCollisionObject::FCLCollisionObject(
       const auto bodyNode = shapeNode->getBodyNodePtr();
       const auto skeleton = bodyNode ? bodyNode->getSkeleton() : nullptr;
 
-      if (skeleton)
+      if (skeleton) {
         mKey += skeleton->getName() + "::";
-      if (bodyNode)
+      }
+      if (bodyNode) {
         mKey += bodyNode->getName() + "::";
+      }
       mKey += shapeNode->getName();
     } else {
       mKey = shapeFrame->getName();

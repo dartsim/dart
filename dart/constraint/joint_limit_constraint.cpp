@@ -281,15 +281,17 @@ void JointLimitConstraint::getInformation(ConstraintInfo* lcp)
 
       double bouncingVel = -mViolation[i];
 
-      if (bouncingVel > 0.0)
+      if (bouncingVel > 0.0) {
         bouncingVel = -mErrorAllowance;
-      else
+      } else {
         bouncingVel = +mErrorAllowance;
+      }
 
       bouncingVel *= lcp->invTimeStep * mErrorReductionParameter;
 
-      if (bouncingVel > mMaxErrorReductionVelocity)
+      if (bouncingVel > mMaxErrorReductionVelocity) {
         bouncingVel = mMaxErrorReductionVelocity;
+      }
 
       lcp->b[index] = mNegativeVel[i] + bouncingVel;
 
@@ -308,10 +310,11 @@ void JointLimitConstraint::getInformation(ConstraintInfo* lcp)
 
       DART_ASSERT(lcp->findex[index] == -1);
 
-      if (mLifeTime[i])
+      if (mLifeTime[i]) {
         lcp->x[index] = mOldX[i];
-      else
+      } else {
         lcp->x[index] = 0.0;
+      }
 
       index++;
     }
@@ -325,10 +328,11 @@ void JointLimitConstraint::getInformation(ConstraintInfo* lcp)
 
       DART_ASSERT(lcp->findex[index] == -1);
 
-      if (mLifeTime[i])
+      if (mLifeTime[i]) {
         lcp->x[index] = mOldX[i];
-      else
+      } else {
         lcp->x[index] = 0.0;
+      }
 
       index++;
     }
@@ -377,10 +381,11 @@ void JointLimitConstraint::getVelocityChange(double* delVel, bool withCfm)
       continue;
     }
 
-    if (mJoint->getSkeleton()->isImpulseApplied())
+    if (mJoint->getSkeleton()->isImpulseApplied()) {
       delVel[localIndex] = mJoint->getVelocityChange(i);
-    else
+    } else {
       delVel[localIndex] = 0.0;
+    }
 
     ++localIndex;
   }

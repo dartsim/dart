@@ -447,8 +447,9 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
   std::size_t index = 0;
   const int dof = static_cast<int>(mJoint->getNumDofs());
   for (int i = 0; i < dof; ++i) {
-    if (!mActive[i])
+    if (!mActive[i]) {
       continue;
+    }
 
 #if !defined(NDEBUG)
     if (std::abs(lcp->w[index]) > 1e-6) {
@@ -475,10 +476,11 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
     }
 #endif
 
-    if (mLifeTime[i])
+    if (mLifeTime[i]) {
       lcp->x[index] = mOldX[i];
-    else
+    } else {
       lcp->x[index] = 0.0;
+    }
 
     index++;
   }
@@ -524,10 +526,11 @@ void JointConstraint::getVelocityChange(double* delVel, bool withCfm)
       continue;
     }
 
-    if (mJoint->getSkeleton()->isImpulseApplied())
+    if (mJoint->getSkeleton()->isImpulseApplied()) {
       delVel[localIndex] = mJoint->getVelocityChange(i);
-    else
+    } else {
       delVel[localIndex] = 0.0;
+    }
 
     ++localIndex;
   }

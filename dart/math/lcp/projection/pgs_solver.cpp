@@ -96,8 +96,9 @@ LcpResult PgsSolver::solve(
     return result;
   }
 
-  if (x.size() != n)
+  if (x.size() != n) {
     x = Eigen::VectorXd::Zero(n);
+  }
 
   const Parameters* params
       = options.customOptions
@@ -160,10 +161,12 @@ LcpResult PgsSolver::solve(
     const double oldX = xdata[static_cast<std::size_t>(i)];
 
     double newX = bdata[static_cast<std::size_t>(i)];
-    for (int j = 0; j < i; ++j)
+    for (int j = 0; j < i; ++j) {
       newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
-    for (int j = i + 1; j < n; ++j)
+    }
+    for (int j = i + 1; j < n; ++j) {
       newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
+    }
 
     newX /= Adata[static_cast<std::size_t>(nSkip * i + i)];
 
@@ -176,27 +179,30 @@ LcpResult PgsSolver::solve(
               findexData[static_cast<std::size_t>(i)])]);
       const double loTmp = -hiTmp;
 
-      if (newX > hiTmp)
+      if (newX > hiTmp) {
         xdata[static_cast<std::size_t>(i)] = hiTmp;
-      else if (newX < loTmp)
+      } else if (newX < loTmp) {
         xdata[static_cast<std::size_t>(i)] = loTmp;
-      else
+      } else {
         xdata[static_cast<std::size_t>(i)] = newX;
+      }
     } else {
-      if (newX > hiData[static_cast<std::size_t>(i)])
+      if (newX > hiData[static_cast<std::size_t>(i)]) {
         xdata[static_cast<std::size_t>(i)]
             = hiData[static_cast<std::size_t>(i)];
-      else if (newX < loData[static_cast<std::size_t>(i)])
+      } else if (newX < loData[static_cast<std::size_t>(i)]) {
         xdata[static_cast<std::size_t>(i)]
             = loData[static_cast<std::size_t>(i)];
-      else
+      } else {
         xdata[static_cast<std::size_t>(i)] = newX;
+      }
     }
 
     if (possibleToTerminate) {
       const double deltaX = std::abs(xdata[static_cast<std::size_t>(i)] - oldX);
-      if (deltaX > absTolerance)
+      if (deltaX > absTolerance) {
         possibleToTerminate = false;
+      }
     }
   }
 
@@ -208,8 +214,9 @@ LcpResult PgsSolver::solve(
       const double invDiag
           = 1.0 / Adata[static_cast<std::size_t>(nSkip * index + index)];
       bdata[static_cast<std::size_t>(index)] *= invDiag;
-      for (int j = 0; j < n; ++j)
+      for (int j = 0; j < n; ++j) {
         Adata[static_cast<std::size_t>(nSkip * index + j)] *= invDiag;
+      }
     }
 
     for (int iter = 1; iter < maxIterations; ++iter) {
@@ -227,11 +234,13 @@ LcpResult PgsSolver::solve(
         double newX = bdata[static_cast<std::size_t>(index)];
         const double oldX = xdata[static_cast<std::size_t>(index)];
 
-        for (int j = 0; j < index; j++)
+        for (int j = 0; j < index; j++) {
           newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
+        }
 
-        for (int j = index + 1; j < n; j++)
+        for (int j = index + 1; j < n; j++) {
           newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
+        }
 
         newX = oldX + relaxation * (newX - oldX);
 
@@ -242,21 +251,23 @@ LcpResult PgsSolver::solve(
                   findexData[static_cast<std::size_t>(index)])]);
           const double loTmp = -hiTmp;
 
-          if (newX > hiTmp)
+          if (newX > hiTmp) {
             xdata[static_cast<std::size_t>(index)] = hiTmp;
-          else if (newX < loTmp)
+          } else if (newX < loTmp) {
             xdata[static_cast<std::size_t>(index)] = loTmp;
-          else
+          } else {
             xdata[static_cast<std::size_t>(index)] = newX;
+          }
         } else {
-          if (newX > hiData[static_cast<std::size_t>(index)])
+          if (newX > hiData[static_cast<std::size_t>(index)]) {
             xdata[static_cast<std::size_t>(index)]
                 = hiData[static_cast<std::size_t>(index)];
-          else if (newX < loData[static_cast<std::size_t>(index)])
+          } else if (newX < loData[static_cast<std::size_t>(index)]) {
             xdata[static_cast<std::size_t>(index)]
                 = loData[static_cast<std::size_t>(index)];
-          else
+          } else {
             xdata[static_cast<std::size_t>(index)] = newX;
+          }
         }
 
         if (possibleToTerminate
@@ -265,15 +276,17 @@ LcpResult PgsSolver::solve(
           const double relativeDeltaX = std::abs(
               (xdata[static_cast<std::size_t>(index)] - oldX)
               / xdata[static_cast<std::size_t>(index)]);
-          if (relativeDeltaX > relativeTolerance)
+          if (relativeDeltaX > relativeTolerance) {
             possibleToTerminate = false;
+          }
         }
       }
 
       ++iterationsUsed;
 
-      if (possibleToTerminate)
+      if (possibleToTerminate) {
         break;
+      }
     }
   }
 

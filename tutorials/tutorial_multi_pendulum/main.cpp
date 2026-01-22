@@ -97,8 +97,9 @@ public:
 
   void applyForce(std::size_t index)
   {
-    if (index < mForceCountDown.size())
+    if (index < mForceCountDown.size()) {
       mForceCountDown[index] = default_countdown;
+    }
   }
 
   void changeRestPosition(double delta)
@@ -269,10 +270,11 @@ public:
           mController->changeDamping(-delta_damping);
           return true;
         case 'r':
-          if (mController->hasConstraint())
+          if (mController->hasConstraint()) {
             mController->removeConstraint();
-          else
+          } else {
             mController->addConstraint();
+          }
           return true;
         case 'f':
           mController->toggleBodyForce();

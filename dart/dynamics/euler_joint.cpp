@@ -77,8 +77,9 @@ EulerJoint::Properties EulerJoint::getEulerJointProperties() const
 //==============================================================================
 void EulerJoint::copy(const EulerJoint& _otherJoint)
 {
-  if (this == &_otherJoint)
+  if (this == &_otherJoint) {
     return;
+  }
 
   setProperties(_otherJoint.getEulerJointProperties());
 }
@@ -86,8 +87,9 @@ void EulerJoint::copy(const EulerJoint& _otherJoint)
 //==============================================================================
 void EulerJoint::copy(const EulerJoint* _otherJoint)
 {
-  if (nullptr == _otherJoint)
+  if (nullptr == _otherJoint) {
     return;
+  }
 
   copy(*_otherJoint);
 }
@@ -122,8 +124,9 @@ bool EulerJoint::isCyclic(std::size_t _index) const
 void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _renameDofs)
 {
   mAspectProperties.mAxisOrder = _order;
-  if (_renameDofs)
+  if (_renameDofs) {
     updateDegreeOfFreedomNames();
+  }
 
   Joint::notifyPositionUpdated();
   updateRelativeJacobian(true);
@@ -211,11 +214,12 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
       J2 << 0.0, 0.0, 1.0, 0.0, 0.0, 0.0;
 
 #if !defined(NDEBUG)
-      if (std::abs(getPositionsStatic()[1]) == math::pi * 0.5)
+      if (std::abs(getPositionsStatic()[1]) == math::pi * 0.5) {
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << Joint::mAspectProperties.mName << "]. (" << _positions[0]
                   << ", " << _positions[1] << ", " << _positions[2] << ")"
                   << std::endl;
+      }
 #endif
 
       break;
@@ -234,11 +238,12 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
       J2 << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
 #if !defined(NDEBUG)
-      if (std::abs(_positions[1]) == math::pi * 0.5)
+      if (std::abs(_positions[1]) == math::pi * 0.5) {
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << Joint::mAspectProperties.mName << "]. (" << _positions[0]
                   << ", " << _positions[1] << ", " << _positions[2] << ")"
                   << std::endl;
+      }
 #endif
 
       break;
@@ -315,8 +320,9 @@ void EulerJoint::updateDegreeOfFreedomNames()
 
   if (affixes.size() == 3) {
     for (std::size_t i = 0; i < 3; ++i) {
-      if (!mDofs[i]->isNamePreserved())
+      if (!mDofs[i]->isNamePreserved()) {
         mDofs[i]->setName(Joint::mAspectProperties.mName + affixes[i], false);
+      }
     }
   }
 }

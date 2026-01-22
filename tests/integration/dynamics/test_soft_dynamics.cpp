@@ -60,16 +60,18 @@ bool equals(
   // Get the matrix sizes and sanity check the call
   const std::size_t n1 = A.cols(), m1 = A.rows();
   const std::size_t n2 = B.cols(), m2 = B.rows();
-  if (m1 != m2 || n1 != n2)
+  if (m1 != m2 || n1 != n2) {
     return false;
+  }
 
   // Check each index
   for (std::size_t i = 0; i < m1; i++) {
     for (std::size_t j = 0; j < n1; j++) {
-      if (std::isnan(A(i, j)) ^ std::isnan(B(i, j)))
+      if (std::isnan(A(i, j)) ^ std::isnan(B(i, j))) {
         return false;
-      else if (std::abs(A(i, j) - B(i, j)) > tol)
+      } else if (std::abs(A(i, j) - B(i, j)) > tol) {
         return false;
+      }
     }
   }
 
@@ -267,8 +269,9 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& fileName)
     int dof = softSkel->getNumDofs();
     //    int nBodyNodes     = skel->getNumBodyNodes();
     int nSoftBodyNodes = 0;
-    if (softSkel != nullptr)
+    if (softSkel != nullptr) {
       nSoftBodyNodes = softSkel->getNumSoftBodyNodes();
+    }
 
     if (dof == 0) {
       DART_INFO(

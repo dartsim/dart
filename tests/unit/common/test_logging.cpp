@@ -55,8 +55,9 @@ namespace {
 std::size_t countOccurrences(
     const std::string& haystack, const std::string& needle)
 {
-  if (needle.empty())
+  if (needle.empty()) {
     return 0u;
+  }
 
   std::size_t count = 0u;
   std::string::size_type pos = haystack.find(needle);
@@ -89,11 +90,13 @@ public:
   ~WarningCapture()
   {
 #if DART_HAVE_spdlog
-    if (logger)
+    if (logger) {
       logger->flush();
+    }
     spdlog::set_default_logger(previousLogger);
-    if (logger)
+    if (logger) {
       spdlog::drop(logger->name());
+    }
 #else
     std::cout.rdbuf(oldCout);
     std::cerr.rdbuf(oldCerr);
@@ -103,10 +106,12 @@ public:
   std::string contents()
   {
 #if DART_HAVE_spdlog
-    if (logger)
+    if (logger) {
       logger->flush();
-    if (stream)
+    }
+    if (stream) {
       return stream->str();
+    }
     return {};
 #else
     return stream.str();
@@ -166,14 +171,16 @@ TEST(LoggingTest, WarnOnce)
 
   {
     WarningCapture capture;
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < 3; ++i) {
       triggerWarningOnce();
+    }
 
     const std::size_t occurrences
         = countOccurrences(capture.contents(), sentinel);
-    if (occurrences == 0u)
+    if (occurrences == 0u) {
       GTEST_SKIP()
           << "warn-once sentinel already emitted earlier in this process";
+    }
 
     EXPECT_EQ(occurrences, 1u);
   }
