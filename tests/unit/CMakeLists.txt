@@ -150,6 +150,7 @@ dart_add_test("unit" UNIT_dynamics_DegreeOfFreedom dynamics/test_degree_of_freed
 dart_add_test("unit" UNIT_dynamics_MetaSkeleton dynamics/test_meta_skeleton.cpp)
 dart_add_test("unit" UNIT_dynamics_Linkage dynamics/test_linkage.cpp)
 dart_add_test("unit" UNIT_dynamics_LineSegmentShape dynamics/test_line_segment_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_PyramidShape dynamics/test_pyramid_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_ZeroDofJoint dynamics/test_zero_dof_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_ReferentialSkeleton dynamics/test_referential_skeleton.cpp)
 dart_add_test("unit" UNIT_dynamics_InverseKinematics dynamics/test_inverse_kinematics.cpp)

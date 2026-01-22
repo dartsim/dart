@@ -36,6 +36,8 @@
 
 #include <gtest/gtest.h>
 
+#include <sstream>
+
 using namespace dart;
 using namespace common;
 
@@ -83,4 +85,60 @@ TEST(StopwatchTest, Basics)
   EXPECT_DOUBLE_EQ(sw.elapsedS(), 0.0);
 
   std::cout << sw;
+}
+
+//==============================================================================
+TEST(StopwatchTest, GlobalTicToc)
+{
+  tic();
+  double elapsedS = toc(false);
+  EXPECT_GE(elapsedS, 0.0);
+
+  tic();
+  double elapsedS2 = tocS(false);
+  EXPECT_GE(elapsedS2, 0.0);
+
+  tic();
+  double elapsedMS = tocMS(false);
+  EXPECT_GE(elapsedMS, 0.0);
+
+  tic();
+  double elapsedUS = tocUS(false);
+  EXPECT_GE(elapsedUS, 0.0);
+
+  tic();
+  double elapsedNS = tocNS(false);
+  EXPECT_GE(elapsedNS, 0.0);
+}
+
+//==============================================================================
+TEST(StopwatchTest, GlobalTocWithPrint)
+{
+  std::ostringstream oss;
+  std::streambuf* oldCout = std::cout.rdbuf(oss.rdbuf());
+
+  tic();
+  double elapsedS = tocS(true);
+  EXPECT_GE(elapsedS, 0.0);
+  EXPECT_NE(oss.str().find("Elapsed time is"), std::string::npos);
+
+  oss.str("");
+  tic();
+  double elapsedMS = tocMS(true);
+  EXPECT_GE(elapsedMS, 0.0);
+  EXPECT_NE(oss.str().find("ms"), std::string::npos);
+
+  oss.str("");
+  tic();
+  double elapsedUS = tocUS(true);
+  EXPECT_GE(elapsedUS, 0.0);
+  EXPECT_NE(oss.str().find("us"), std::string::npos);
+
+  oss.str("");
+  tic();
+  double elapsedNS = tocNS(true);
+  EXPECT_GE(elapsedNS, 0.0);
+  EXPECT_NE(oss.str().find("ns"), std::string::npos);
+
+  std::cout.rdbuf(oldCout);
 }
