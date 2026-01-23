@@ -120,6 +120,7 @@ profiling/*.txt
 *.info
 *.gcda
 *.gcno
+*.gcov
 htmlcov/
 coverage_html/
 .gcov/
