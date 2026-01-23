@@ -237,10 +237,12 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     }
   }
 
+#if !defined(NDEBUG)
   if (!isSymmetric(n, mA.data())) {
     dtwarn << "[BoxedLcpConstraintSolver::solveConstrainedGroup] LCP matrix is "
               "not symmetric. Continuing to avoid assertion failure.\n";
   }
+#endif
 
   // Print LCP formulation
   //  dtdbg << "Before solve:" << std::endl;
