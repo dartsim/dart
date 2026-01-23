@@ -141,6 +141,7 @@
   - Regression and backend-specific tests: plane shape collision coverage, Bullet box stacking, FCL thin-plane regressions, FCL mesh contact regressions, servo/mimic consistency, PlaneShape GUI smoke tests, and uninitialized Isometry fixes. ([#2092](https://github.com/dartsim/dart/pull/2092), [#2227](https://github.com/dartsim/dart/pull/2227), [#2229](https://github.com/dartsim/dart/pull/2229), [#2276](https://github.com/dartsim/dart/pull/2276), [#2258](https://github.com/dartsim/dart/pull/2258), [#2263](https://github.com/dartsim/dart/pull/2263), [#2283](https://github.com/dartsim/dart/pull/2283), [#2350](https://github.com/dartsim/dart/pull/2350), [#2342](https://github.com/dartsim/dart/pull/2342), [#2130](https://github.com/dartsim/dart/pull/2130), [#2120](https://github.com/dartsim/dart/pull/2120), [#2281](https://github.com/dartsim/dart/pull/2281), [#870](https://github.com/dartsim/dart/issues/870), [#915](https://github.com/dartsim/dart/issues/915), [#410](https://github.com/dartsim/dart/issues/410))
 
 ## DART 6
+
 ### [DART 6.16.4 (2026-01-06)](https://github.com/dartsim/dart/milestone/89?closed=1)
 
 - Physics

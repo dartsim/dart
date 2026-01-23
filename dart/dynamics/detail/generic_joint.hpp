@@ -1450,8 +1450,9 @@ void GenericJoint<ConfigSpaceT>::integratePositions(
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::integrateVelocities(double dt)
 {
-  setVelocitiesStatic(math::integrateVelocity<ConfigSpaceT>(
-      getVelocitiesStatic(), getAccelerationsStatic(), dt));
+  setVelocitiesStatic(
+      math::integrateVelocity<ConfigSpaceT>(
+          getVelocitiesStatic(), getAccelerationsStatic(), dt));
 }
 
 //==============================================================================
@@ -1967,7 +1968,14 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitToDynamic(
   JacobianMatrix AIS = childArtInertia * getRelativeJacobianStatic();
   Eigen::Matrix6d PI = childArtInertia;
   PI.noalias() -= AIS * mInvProjArtInertiaImplicit * AIS.transpose();
-  DART_ASSERT(!math::isNan(PI));
+  if (math::isNan(PI) || math::isInf(PI)) {
+    DART_WARN(
+        "[GenericJoint::addChildArtInertiaImplicitToDynamic] Non-finite "
+        "articulated inertia detected for joint [{}]. Skipping child inertia "
+        "contribution.",
+        this->getName());
+    return;
+  }
 
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.

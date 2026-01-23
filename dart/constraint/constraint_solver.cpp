@@ -72,8 +72,11 @@ using namespace dynamics;
 ConstraintSolver::ConstraintSolver()
   : mCollisionDetector(collision::FCLCollisionDetector::create()),
     mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
-    mCollisionOption(collision::CollisionOption(
-        true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
+    mCollisionOption(
+        collision::CollisionOption(
+            true,
+            1000u,
+            std::make_shared<collision::BodyNodeCollisionFilter>())),
     mTimeStep(0.001),
     mContactSurfaceHandler(std::make_shared<DefaultContactSurfaceHandler>()),
     mLcpSolver(std::make_shared<math::DantzigSolver>()),
@@ -594,8 +597,9 @@ void ConstraintSolver::updateConstraints()
 
         if (hasValidMimicDof) {
           if (useCouplerConstraint && allMimicWithReference) {
-            mCouplerConstraints.push_back(std::make_shared<CouplerConstraint>(
-                joint, joint->getMimicDofProperties()));
+            mCouplerConstraints.push_back(
+                std::make_shared<CouplerConstraint>(
+                    joint, joint->getMimicDofProperties()));
           } else {
             mMimicMotorConstraints.push_back(
                 std::make_shared<MimicMotorConstraint>(

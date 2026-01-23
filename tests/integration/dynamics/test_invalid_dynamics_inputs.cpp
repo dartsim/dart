@@ -39,7 +39,6 @@
 #include <cmath>
 
 using namespace dart;
-using namespace dart::constraint;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 
@@ -154,7 +153,6 @@ TEST(InvalidDynamicsInputs, ExtremeSpringDoesNotCrash)
 TEST(InvalidDynamicsInputs, ZeroMassContactDoesNotCrash)
 {
   auto world = World::create();
-  world->setConstraintSolver(std::make_unique<BoxedLcpConstraintSolver>());
 
   auto dynamicBox = createBoxSkeleton(
       "dynamic_box",
