@@ -10,9 +10,13 @@
 
   * Validate contact surface parameters to prevent LCP solver crashes: [#2435](https://github.com/dartsim/dart/pull/2435)
 
+  * Warn and continue when the boxed LCP matrix is non-symmetric to avoid assertion failures with invalid contacts: [gz-physics#848](https://github.com/gazebosim/gz-physics/issues/848)
+
 * Dynamics
 
   * Validate SphereShape radius to prevent assertion failures with NaN/Inf/non-positive values: [#2441](https://github.com/dartsim/dart/pull/2441)
+
+  * Guard against non-finite articulated body computations from zero/epsilon mass or extreme spring values: [gz-physics#849](https://github.com/gazebosim/gz-physics/issues/849), [gz-physics#850](https://github.com/gazebosim/gz-physics/issues/850), [gz-physics#851](https://github.com/gazebosim/gz-physics/issues/851), [gz-physics#854](https://github.com/gazebosim/gz-physics/issues/854), [gz-physics#856](https://github.com/gazebosim/gz-physics/issues/856)
 
 * Parsers
   * Fix null pointer dereference in XmlHelpers getValue* functions: [#2429](https://github.com/dartsim/dart/pull/2429)
