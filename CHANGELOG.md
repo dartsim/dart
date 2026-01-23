@@ -64,6 +64,8 @@
   - Fix assertion failure crash in JointConstraint when joint limits are invalid (lower > upper). Now emits a warning and skips limit enforcement for that DOF instead of crashing. ([gz-physics#846](https://github.com/gazebosim/gz-physics/issues/846))
   - Added split impulse contact correction and clarified zero-contact handling. ([#2354](https://github.com/dartsim/dart/pull/2354), [#2220](https://github.com/dartsim/dart/pull/2220), [#201](https://github.com/dartsim/dart/issues/201))
   - Added validation for invalid contact surface parameters (NaN/Inf/negative friction, restitution, and slip compliance) to prevent LCP solver crashes. ([gazebosim/gz-physics#841](https://github.com/gazebosim/gz-physics/issues/841))
+  - Warn and continue when LCP matrices are non-symmetric to avoid assertion failures with invalid contacts. ([gz-physics#848](https://github.com/gazebosim/gz-physics/issues/848))
+  - Guard against non-finite articulated body computations from zero/epsilon mass or extreme spring values. ([gz-physics#849](https://github.com/gazebosim/gz-physics/issues/849), [gz-physics#850](https://github.com/gazebosim/gz-physics/issues/850), [gz-physics#851](https://github.com/gazebosim/gz-physics/issues/851), [gz-physics#854](https://github.com/gazebosim/gz-physics/issues/854), [gz-physics#856](https://github.com/gazebosim/gz-physics/issues/856))
 
 - Collision and Geometry
   - Fixed PascalCase ODE compatibility headers to preserve legacy includes such as `OdeCollisionDetector.hpp`. ([#2475](https://github.com/dartsim/dart/pull/2475))
@@ -139,7 +141,6 @@
   - Regression and backend-specific tests: plane shape collision coverage, Bullet box stacking, FCL thin-plane regressions, FCL mesh contact regressions, servo/mimic consistency, PlaneShape GUI smoke tests, and uninitialized Isometry fixes. ([#2092](https://github.com/dartsim/dart/pull/2092), [#2227](https://github.com/dartsim/dart/pull/2227), [#2229](https://github.com/dartsim/dart/pull/2229), [#2276](https://github.com/dartsim/dart/pull/2276), [#2258](https://github.com/dartsim/dart/pull/2258), [#2263](https://github.com/dartsim/dart/pull/2263), [#2283](https://github.com/dartsim/dart/pull/2283), [#2350](https://github.com/dartsim/dart/pull/2350), [#2342](https://github.com/dartsim/dart/pull/2342), [#2130](https://github.com/dartsim/dart/pull/2130), [#2120](https://github.com/dartsim/dart/pull/2120), [#2281](https://github.com/dartsim/dart/pull/2281), [#870](https://github.com/dartsim/dart/issues/870), [#915](https://github.com/dartsim/dart/issues/915), [#410](https://github.com/dartsim/dart/issues/410))
 
 ## DART 6
-
 ### [DART 6.16.4 (2026-01-06)](https://github.com/dartsim/dart/milestone/89?closed=1)
 
 - Physics

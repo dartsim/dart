@@ -1450,9 +1450,8 @@ void GenericJoint<ConfigSpaceT>::integratePositions(
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::integrateVelocities(double dt)
 {
-  setVelocitiesStatic(
-      math::integrateVelocity<ConfigSpaceT>(
-          getVelocitiesStatic(), getAccelerationsStatic(), dt));
+  setVelocitiesStatic(math::integrateVelocity<ConfigSpaceT>(
+      getVelocitiesStatic(), getAccelerationsStatic(), dt));
 }
 
 //==============================================================================
@@ -1918,7 +1917,14 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaToDynamic(
   JacobianMatrix AIS = childArtInertia * getRelativeJacobianStatic();
   Eigen::Matrix6d PI = childArtInertia;
   PI.noalias() -= AIS * mInvProjArtInertia * AIS.transpose();
-  DART_ASSERT(!math::isNan(PI));
+  if (math::isNan(PI) || math::isInf(PI)) {
+    DART_WARN(
+        "[GenericJoint::addChildArtInertiaToDynamic] Non-finite articulated "
+        "inertia detected for joint [{}]. Skipping child inertia "
+        "contribution.",
+        this->getName());
+    return;
+  }
 
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
@@ -2008,7 +2014,14 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaDynamic(
   mInvProjArtInertia = math::inverse<ConfigSpaceT>(projAI);
 
   // Verification
-  DART_ASSERT(!math::isNan(mInvProjArtInertia));
+  if (math::isNan(mInvProjArtInertia) || math::isInf(mInvProjArtInertia)) {
+    DART_WARN(
+        "[GenericJoint::updateInvProjArtInertiaDynamic] Non-finite inverse "
+        "projected articulated inertia detected for joint [{}]. Setting "
+        "inverse inertia to zero to avoid instability.",
+        this->getName());
+    mInvProjArtInertia.setZero();
+  }
 }
 
 //==============================================================================
@@ -2107,7 +2120,13 @@ void GenericJoint<ConfigSpaceT>::addChildBiasForceToDynamic(
   //    getInvProjArtInertiaImplicit() * mTotalForce;
 
   // Verification
-  DART_ASSERT(!math::isNan(beta));
+  if (math::isNan(beta) || math::isInf(beta)) {
+    DART_WARN(
+        "[GenericJoint::addChildBiasForceToDynamic] Non-finite bias force "
+        "detected for joint [{}]. Skipping bias force contribution.",
+        this->getName());
+    return;
+  }
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
@@ -2349,7 +2368,15 @@ void GenericJoint<ConfigSpaceT>::updateAccelerationDynamic(
                * math::AdInvT(this->getRelativeTransform(), spatialAcc)));
 
   // Verification
-  DART_ASSERT(!math::isNan(getAccelerationsStatic()));
+  const Vector accelerations = getAccelerationsStatic();
+  if (math::isNan(accelerations) || math::isInf(accelerations)) {
+    DART_WARN(
+        "[GenericJoint::updateAccelerationDynamic] Non-finite joint "
+        "accelerations detected for joint [{}]. Setting accelerations to zero "
+        "to avoid instability.",
+        this->getName());
+    setAccelerationsStatic(Vector::Zero());
+  }
 }
 
 //==============================================================================
