@@ -1759,7 +1759,12 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitToDynamic(
   JacobianMatrix AIS = childArtInertia * getRelativeJacobianStatic();
   Eigen::Matrix6d PI = childArtInertia;
   PI.noalias() -= AIS * mInvProjArtInertiaImplicit * AIS.transpose();
-  DART_ASSERT(!math::isNan(PI));
+  if (math::isNan(PI) || math::isInf(PI)) {
+    dtwarn << "[GenericJoint::addChildArtInertiaImplicitToDynamic] Non-finite "
+              "articulated inertia detected for joint ["
+           << this->getName() << "]. Skipping child inertia contribution.\n";
+    return;
+  }
 
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
