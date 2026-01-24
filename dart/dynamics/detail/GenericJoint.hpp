@@ -1703,7 +1703,12 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaToDynamic(
   JacobianMatrix AIS = childArtInertia * getRelativeJacobianStatic();
   Eigen::Matrix6d PI = childArtInertia;
   PI.noalias() -= AIS * mInvProjArtInertia * AIS.transpose();
-  DART_ASSERT(!math::isNan(PI));
+  if (math::isNan(PI) || math::isInf(PI)) {
+    dtwarn << "[GenericJoint::addChildArtInertiaToDynamic] Non-finite "
+              "articulated inertia detected for joint ["
+           << this->getName() << "]. Skipping child inertia contribution.\n";
+    return;
+  }
 
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
@@ -1754,7 +1759,12 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitToDynamic(
   JacobianMatrix AIS = childArtInertia * getRelativeJacobianStatic();
   Eigen::Matrix6d PI = childArtInertia;
   PI.noalias() -= AIS * mInvProjArtInertiaImplicit * AIS.transpose();
-  DART_ASSERT(!math::isNan(PI));
+  if (math::isNan(PI) || math::isInf(PI)) {
+    dtwarn << "[GenericJoint::addChildArtInertiaImplicitToDynamic] Non-finite "
+              "articulated inertia detected for joint ["
+           << this->getName() << "]. Skipping child inertia contribution.\n";
+    return;
+  }
 
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
@@ -1809,7 +1819,14 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaDynamic(
   mInvProjArtInertia = math::inverse<ConfigSpaceT>(projAI);
 
   // Verification
-  DART_ASSERT(!math::isNan(mInvProjArtInertia));
+  if (math::isNan(mInvProjArtInertia) || math::isInf(mInvProjArtInertia)) {
+    dtwarn
+        << "[GenericJoint::updateInvProjArtInertiaDynamic] Non-finite inverse "
+           "projected articulated inertia detected for joint ["
+        << this->getName()
+        << "]. Setting inverse inertia to zero to avoid instability.\n";
+    mInvProjArtInertia.setZero();
+  }
 }
 
 //==============================================================================
@@ -1923,7 +1940,12 @@ void GenericJoint<ConfigSpaceT>::addChildBiasForceToDynamic(
   //    getInvProjArtInertiaImplicit() * mTotalForce;
 
   // Verification
-  DART_ASSERT(!math::isNan(beta));
+  if (math::isNan(beta) || math::isInf(beta)) {
+    dtwarn << "[GenericJoint::addChildBiasForceToDynamic] Non-finite bias "
+              "force detected for joint ["
+           << this->getName() << "]. Skipping bias force contribution.\n";
+    return;
+  }
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
@@ -2170,7 +2192,14 @@ void GenericJoint<ConfigSpaceT>::updateAccelerationDynamic(
                * math::AdInvT(this->getRelativeTransform(), spatialAcc)));
 
   // Verification
-  DART_ASSERT(!math::isNan(getAccelerationsStatic()));
+  const Vector accelerations = getAccelerationsStatic();
+  if (math::isNan(accelerations) || math::isInf(accelerations)) {
+    dtwarn << "[GenericJoint::updateAccelerationDynamic] Non-finite joint "
+              "accelerations detected for joint ["
+           << this->getName()
+           << "]. Setting accelerations to zero to avoid instability.\n";
+    setAccelerationsStatic(Vector::Zero());
+  }
 }
 
 //==============================================================================

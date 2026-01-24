@@ -1829,7 +1829,13 @@ void BodyNode::updateTransmittedForceFD()
   mF = mBiasForce;
   mF.noalias() += getArticulatedInertiaImplicit() * getSpatialAcceleration();
 
-  DART_ASSERT(!math::isNan(mF));
+  if (math::isNan(mF) || math::isInf(mF)) {
+    dtwarn << "[BodyNode::updateTransmittedForceFD] Non-finite transmitted "
+              "force detected for body ["
+           << getName()
+           << "]. Setting force to zero to avoid simulation instability.\n";
+    mF.setZero();
+  }
 }
 
 //==============================================================================

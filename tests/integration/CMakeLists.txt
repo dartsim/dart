@@ -12,6 +12,7 @@ dart_build_tests(
     test_Constraint.cpp
     test_Frames.cpp
     test_Friction.cpp
+    test_InvalidDynamicsInputs.cpp
     test_InverseKinematics.cpp
     test_NameManagement.cpp
     test_Signal.cpp
