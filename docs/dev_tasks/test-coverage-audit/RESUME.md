@@ -32,20 +32,22 @@ Latest commit: `aa7a1bc9cc9` - "test: add Wave 2 tests for World API, ResourceRe
 
 **Wave 2 (completed):**
 
-| File                                           | Tests | Status |
-| ---------------------------------------------- | ----- | ------ |
-| `tests/unit/simulation/test_World.cpp`         | +11   | ✅     |
-| `tests/unit/common/test_resource_retriever.cpp`| 5     | ✅     |
-| `tests/unit/common/test_memory_manager.cpp`    | +5    | ✅     |
+| File                                            | Tests | Status |
+| ----------------------------------------------- | ----- | ------ |
+| `tests/unit/simulation/test_World.cpp`          | +11   | ✅     |
+| `tests/unit/common/test_resource_retriever.cpp` | 5     | ✅     |
+| `tests/unit/common/test_memory_manager.cpp`     | +5    | ✅     |
 
 ## Remaining Work (Wave 3+)
 
 **Medium Complexity:**
+
 - W8-9: ODE collision detector distance/raycast tests (~260-400 LOC, 5-9 tests)
 - W10: ContactConstraint tests (~120-200 LOC, 3-5 tests)
 - W11-12: RevoluteJointConstraint + DynamicJointConstraint (~160-240 LOC, 4-6 tests)
 
 **Coverage Observations:**
+
 - Dynamics shapes: 20 shape test files exist (comprehensive)
 - Dynamics joints: 7 joint test files exist (comprehensive)
 - Math/optimization: Well covered
@@ -73,6 +75,7 @@ pixi run test  # Verify all tests pass
 ```
 
 Then:
+
 - Run `pixi run coverage-report` to identify true gaps
 - Focus on ODE collision detector or ContactConstraint
 
@@ -96,8 +99,10 @@ git status && git log -3 --oneline
 ## Files Modified This Session
 
 **New files:**
+
 - tests/unit/common/test_resource_retriever.cpp
 
 **Modified:**
+
 - tests/unit/common/test_memory_manager.cpp (+5 tests)
 - tests/unit/simulation/test_World.cpp (+11 tests)

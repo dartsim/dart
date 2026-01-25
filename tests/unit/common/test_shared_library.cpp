@@ -30,11 +30,23 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/shared_library.hpp>
+#include <dart/common/platform.hpp>
 
-#include <gtest/gtest.h>
+#if DART_OS_WINDOWS
+  // SharedLibrary symbols are not exported from DART DLL on Windows.
+  // Skip these tests until Windows DLL export infrastructure is improved.
+  #include <gtest/gtest.h>
+TEST(SharedLibraryTest, WindowsSkipped)
+{
+  GTEST_SKIP() << "SharedLibrary not exported on Windows";
+}
+#else
 
-#include <cmath>
+  #include <dart/common/shared_library.hpp>
+
+  #include <gtest/gtest.h>
+
+  #include <cmath>
 
 using namespace dart::common;
 
@@ -44,7 +56,7 @@ namespace {
 /// Returns empty string if no suitable library is found.
 std::string getSystemLibraryPath()
 {
-#if DART_OS_LINUX
+  #if DART_OS_LINUX
   // Try common locations for libm on Linux
   const std::vector<std::string> candidates = {
       "/lib/x86_64-linux-gnu/libm.so.6",
@@ -60,7 +72,7 @@ std::string getSystemLibraryPath()
     }
   }
   return "";
-#elif DART_OS_MACOS
+  #elif DART_OS_MACOS
   // On macOS Big Sur and later, system libraries are in a shared cache
   // and direct paths like /usr/lib/libSystem.B.dylib may not work.
   // Use libc++.dylib which is typically available for dlopen.
@@ -74,12 +86,12 @@ std::string getSystemLibraryPath()
     }
   }
   return "";
-#elif DART_OS_WINDOWS
+  #elif DART_OS_WINDOWS
   // On Windows, use kernel32.dll which is always present
   return "kernel32.dll";
-#else
+  #else
   return "";
-#endif
+  #endif
 }
 
 } // namespace
@@ -90,24 +102,24 @@ std::string getSystemLibraryPath()
 
 TEST(SharedLibraryTest, SharedLibExtension_CorrectForPlatform)
 {
-#if DART_OS_LINUX
+  #if DART_OS_LINUX
   EXPECT_STREQ(DART_SHARED_LIB_EXTENSION, "so");
-#elif DART_OS_MACOS
+  #elif DART_OS_MACOS
   EXPECT_STREQ(DART_SHARED_LIB_EXTENSION, "dylib");
-#elif DART_OS_WINDOWS
+  #elif DART_OS_WINDOWS
   EXPECT_STREQ(DART_SHARED_LIB_EXTENSION, "dll");
-#endif
+  #endif
 }
 
 TEST(SharedLibraryTest, SharedLibPrefix_CorrectForPlatform)
 {
-#if DART_OS_LINUX
+  #if DART_OS_LINUX
   EXPECT_STREQ(DART_SHARED_LIB_PREFIX, "lib");
-#elif DART_OS_MACOS
+  #elif DART_OS_MACOS
   EXPECT_STREQ(DART_SHARED_LIB_PREFIX, "lib");
-#elif DART_OS_WINDOWS
+  #elif DART_OS_WINDOWS
   EXPECT_STREQ(DART_SHARED_LIB_PREFIX, "");
-#endif
+  #endif
 }
 
 //==============================================================================
@@ -230,15 +242,15 @@ TEST(SharedLibraryTest, GetSymbol_ValidSymbol_ReturnsNonNull)
   auto lib = SharedLibrary::create(libPath);
   ASSERT_NE(lib, nullptr);
 
-#if DART_OS_LINUX || DART_OS_MACOS
+  #if DART_OS_LINUX || DART_OS_MACOS
   // cos is a standard math function available in libm/libSystem
   void* symbol = lib->getSymbol("cos");
   EXPECT_NE(symbol, nullptr);
-#elif DART_OS_WINDOWS
+  #elif DART_OS_WINDOWS
   // GetCurrentProcess is always available in kernel32.dll
   void* symbol = lib->getSymbol("GetCurrentProcess");
   EXPECT_NE(symbol, nullptr);
-#endif
+  #endif
 }
 
 TEST(SharedLibraryTest, GetSymbol_InvalidSymbol_ReturnsNullptr)
@@ -353,3 +365,5 @@ TEST(SharedLibraryTest, Destruction_CanReloadAfterUnload)
   ASSERT_NE(lib2, nullptr);
   EXPECT_TRUE(lib2->isValid());
 }
+
+#endif // !DART_OS_WINDOWS

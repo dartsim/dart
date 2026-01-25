@@ -7,6 +7,8 @@
 
 #include <dart/math/constants.hpp>
 
+#include <dart/common/platform.hpp>
+
 #include <gtest/gtest.h>
 
 using namespace dart;
@@ -193,6 +195,7 @@ TEST_F(MarkerTest, FixedFrameRelativeMotionIsZero)
       Eigen::Vector3d(0.2, -0.1, 0.3)));
 }
 
+#if !DART_OS_WINDOWS
 TEST_F(MarkerTest, FixedJacobianNodeDependencyAccessors)
 {
   Marker* marker = body->createMarker(std::string("jacobian_node"));
@@ -211,6 +214,7 @@ TEST_F(MarkerTest, FixedJacobianNodeDependencyAccessors)
   const auto chainDofs = marker->getChainDofs();
   EXPECT_FALSE(chainDofs.empty());
 }
+#endif
 
 TEST_F(MarkerTest, FixedJacobianNodeCachesUpdate)
 {

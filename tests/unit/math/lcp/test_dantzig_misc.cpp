@@ -30,9 +30,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/math/lcp/pivoting/dantzig/misc.hpp>
+#include <dart/common/platform.hpp>
 
-#include <gtest/gtest.h>
+#if DART_OS_WINDOWS
+  #include <gtest/gtest.h>
+TEST(DantzigMiscTest, WindowsSkipped)
+{
+  GTEST_SKIP() << "dRand* not exported on Windows";
+}
+#else
+
+  #include <dart/math/lcp/pivoting/dantzig/misc.hpp>
+
+  #include <gtest/gtest.h>
 
 using namespace dart::math;
 
@@ -61,3 +71,5 @@ TEST(DantzigMiscTest, RandIntAndRealRanges)
   EXPECT_GE(real, 0.0);
   EXPECT_LE(real, 1.0);
 }
+
+#endif // !DART_OS_WINDOWS
