@@ -794,9 +794,10 @@ coverage-report = { cmd = [
 set -euo pipefail
 PIXI_ENVIRONMENT_NAME=${PIXI_ENVIRONMENT_NAME:-default}
 BUILD_TYPE=${BUILD_TYPE:-Debug}
-ROOT_BASE=$(pwd -P 2>/dev/null || pwd)
+# Prefer PIXI_PROJECT_ROOT (set by pixi) to avoid pwd issues in some CI environments
+ROOT_BASE=${PIXI_PROJECT_ROOT:-}
 if [ -z "${ROOT_BASE//[[:space:]]/}" ]; then
-  ROOT_BASE=${PIXI_PROJECT_ROOT:-}
+  ROOT_BASE=$(pwd -P 2>/dev/null || pwd)
 fi
 if [ -z "${ROOT_BASE//[[:space:]]/}" ]; then
   ROOT_BASE=${PWD:-}
