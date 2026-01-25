@@ -32,7 +32,6 @@
 
 #include "atlas_simbicon_world_node.hpp"
 
-#include "dart/common/Macros.hpp"
 #include "dart/common/macros.hpp"
 
 #include <osgShadow/ShadowMap>
