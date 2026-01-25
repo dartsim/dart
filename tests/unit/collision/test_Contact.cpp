@@ -30,22 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/exception.hpp>
+#include <dart/collision/Contact.hpp>
 
-namespace dart::common {
+#include <gtest/gtest.h>
 
-namespace {
-ErrorHandler g_errorHandler = nullptr;
-}
+#include <limits>
 
-void setErrorHandler(ErrorHandler handler)
+using dart::collision::Contact;
+
+//==============================================================================
+TEST(Contact, ZeroNormalRejectsNonFinite)
 {
-  g_errorHandler = handler;
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+
+  EXPECT_TRUE(Contact::isZeroNormal(Eigen::Vector3d(nan, 0.0, 0.0)));
+  EXPECT_TRUE(Contact::isZeroNormal(Eigen::Vector3d(0.0, inf, 0.0)));
+  EXPECT_TRUE(Contact::isZeroNormal(Eigen::Vector3d(0.0, 0.0, -inf)));
 }
 
-ErrorHandler getErrorHandler()
+//==============================================================================
+TEST(Contact, ZeroNormalHonorsEpsilon)
 {
-  return g_errorHandler;
-}
+  const double epsilon = Contact::getNormalEpsilon();
 
-} // namespace dart::common
+  EXPECT_TRUE(Contact::isZeroNormal(Eigen::Vector3d(0.0, 0.0, epsilon / 10.0)));
+  EXPECT_FALSE(Contact::isZeroNormal(Eigen::Vector3d(0.0, 0.0, epsilon * 2.0)));
+}

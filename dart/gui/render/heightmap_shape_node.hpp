@@ -35,6 +35,8 @@
 
 #include "dart/common/macros.hpp"
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/config.hpp>
 
 #include <dart/gui/render/detail/heightmap_shape_geometry.hpp>

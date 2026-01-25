@@ -34,6 +34,8 @@
 
 #include "dart/common/macros.hpp"
 
+#include "dart/common/Macros.hpp"
+
 #include <osgShadow/ShadowMap>
 
 //==============================================================================

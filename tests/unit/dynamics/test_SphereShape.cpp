@@ -1,0 +1,119 @@
+/*
+ * Copyright (c) 2011-2025, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <dart/dynamics/SphereShape.hpp>
+
+#include <gtest/gtest.h>
+
+#include <limits>
+
+#include <cmath>
+
+using namespace dart::dynamics;
+
+//==============================================================================
+TEST(SphereShapeValidation, AcceptsValidPositiveFiniteRadius)
+{
+  auto sphere = std::make_shared<SphereShape>(1.0);
+
+  sphere->setRadius(0.5);
+  EXPECT_DOUBLE_EQ(sphere->getRadius(), 0.5);
+
+  sphere->setRadius(1.0);
+  EXPECT_DOUBLE_EQ(sphere->getRadius(), 1.0);
+
+  sphere->setRadius(100.0);
+  EXPECT_DOUBLE_EQ(sphere->getRadius(), 100.0);
+
+  sphere->setRadius(1e-6);
+  EXPECT_DOUBLE_EQ(sphere->getRadius(), 1e-6);
+}
+
+//==============================================================================
+TEST(SphereShapeValidation, RejectsNaNAndPreservesOriginalRadius)
+{
+  auto sphere = std::make_shared<SphereShape>(1.0);
+  const double originalRadius = sphere->getRadius();
+
+  sphere->setRadius(std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(sphere->getRadius(), originalRadius);
+
+  sphere->setRadius(std::numeric_limits<double>::signaling_NaN());
+  EXPECT_DOUBLE_EQ(sphere->getRadius(), originalRadius);
+}
+
+//==============================================================================
+TEST(SphereShapeValidation, RejectsInfinityAndPreservesOriginalRadius)
+{
+  auto sphere = std::make_shared<SphereShape>(1.0);
+  const double originalRadius = sphere->getRadius();
+
+  sphere->setRadius(std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(sphere->getRadius(), originalRadius);
+
+  sphere->setRadius(-std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(sphere->getRadius(), originalRadius);
+}
+
+//==============================================================================
+TEST(SphereShapeValidation, RejectsNonPositiveAndPreservesOriginalRadius)
+{
+  auto sphere = std::make_shared<SphereShape>(1.0);
+  const double originalRadius = sphere->getRadius();
+
+  sphere->setRadius(0.0);
+  EXPECT_DOUBLE_EQ(sphere->getRadius(), originalRadius);
+
+  sphere->setRadius(-1.0);
+  EXPECT_DOUBLE_EQ(sphere->getRadius(), originalRadius);
+
+  sphere->setRadius(-0.001);
+  EXPECT_DOUBLE_EQ(sphere->getRadius(), originalRadius);
+}
+
+//==============================================================================
+TEST(SphereShapeValidation, ConstructorWithInvalidRadiusDoesNotCrash)
+{
+  std::shared_ptr<SphereShape> sphere;
+
+  EXPECT_NO_THROW(
+      sphere = std::make_shared<SphereShape>(
+          std::numeric_limits<double>::quiet_NaN()));
+
+  EXPECT_NO_THROW(
+      sphere
+      = std::make_shared<SphereShape>(std::numeric_limits<double>::infinity()));
+
+  EXPECT_NO_THROW(sphere = std::make_shared<SphereShape>(-1.0));
+
+  EXPECT_NO_THROW(sphere = std::make_shared<SphereShape>(0.0));
+}

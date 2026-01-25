@@ -30,22 +30,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/exception.hpp>
+#ifndef DART_COLLISION_ODE_DETAIL_ODECYLINDERMESH_HPP_
+#define DART_COLLISION_ODE_DETAIL_ODECYLINDERMESH_HPP_
 
-namespace dart::common {
+#include <dart/collision/ode/detail/OdeGeom.hpp>
 
-namespace {
-ErrorHandler g_errorHandler = nullptr;
-}
+#include <ode/ode.h>
 
-void setErrorHandler(ErrorHandler handler)
+#include <vector>
+
+namespace dart {
+namespace collision {
+namespace detail {
+
+class OdeCylinderMesh : public OdeGeom
 {
-  g_errorHandler = handler;
-}
+public:
+  /// Constructor
+  OdeCylinderMesh(
+      const OdeCollisionObject* parent,
+      double radius,
+      double height,
+      int slices = 16,
+      int stacks = 16);
 
-ErrorHandler getErrorHandler()
-{
-  return g_errorHandler;
-}
+  /// Destructor
+  virtual ~OdeCylinderMesh();
 
-} // namespace dart::common
+  // Documentation inherited
+  void updateEngineData() override;
+
+private:
+  void buildMesh(double radius, double height, int slices, int stacks);
+
+private:
+  /// Array of vertex values.
+  std::vector<double> mVertices;
+
+  /// Array of normals values.
+  std::vector<double> mNormals;
+
+  /// Array of index values.
+  std::vector<int> mIndices;
+
+  /// ODE trimesh data.
+  dTriMeshDataID mOdeTriMeshDataId;
+};
+
+} // namespace detail
+} // namespace collision
+} // namespace dart
+
+#endif // DART_COLLISION_ODE_DETAIL_ODECYLINDERMESH_HPP_
