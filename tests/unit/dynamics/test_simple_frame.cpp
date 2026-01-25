@@ -2,6 +2,8 @@
 
 #include <dart/dynamics/simple_frame.hpp>
 
+#include <dart/math/constants.hpp>
+
 #include <gtest/gtest.h>
 
 using namespace dart::dynamics;
@@ -60,8 +62,9 @@ TEST(SimpleFrameTest, SetRelativeTransform)
 
   Eigen::Isometry3d newTf = Eigen::Isometry3d::Identity();
   newTf.translation() = Eigen::Vector3d(5.0, 6.0, 7.0);
-  newTf.linear() = Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitZ())
-                       .toRotationMatrix();
+  newTf.linear()
+      = Eigen::AngleAxisd(dart::math::pi / 4, Eigen::Vector3d::UnitZ())
+            .toRotationMatrix();
 
   frame->setRelativeTransform(newTf);
 
@@ -86,7 +89,7 @@ TEST(SimpleFrameTest, SetRelativeRotation)
   auto frame = SimpleFrame::createShared(Frame::World(), "frame");
 
   Eigen::Matrix3d rotation
-      = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitX())
+      = Eigen::AngleAxisd(dart::math::pi / 2, Eigen::Vector3d::UnitX())
             .toRotationMatrix();
   frame->setRelativeRotation(rotation);
 
