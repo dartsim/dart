@@ -42,14 +42,22 @@ Port fix from main to <RELEASE_BRANCH>.
 
 ### 1. Verify fix exists on main
 ```bash
-gh pr view <SOURCE_PR> --json state,mergedAt
+# Check PR is merged AND was merged into main (not another branch)
+gh pr view <SOURCE_PR> --json state,mergedAt,baseRefName
+# Verify: state=MERGED and baseRefName=main
+# If baseRefName is not "main", the PR was merged into a different branch
 ```
 
 ### 2. Check if already backported
 
 ```bash
+# Method 1: Check if commit is ancestor of release branch
+git merge-base --is-ancestor <COMMIT_HASH> origin/<RELEASE_BRANCH> && echo "Already in release" || echo "Not in release yet"
+
+# Method 2: Use git cherry (note: + means NOT backported, - means equivalent exists)
 git cherry -v origin/<RELEASE_BRANCH> origin/main | grep <COMMIT_HASH>
-# Empty output = not backported yet
+# If output shows "+ <hash> ..." = commit needs backporting
+# If output shows "- <hash> ..." = equivalent commit already exists on release branch
 ```
 
 ### 3. Create backport branch
