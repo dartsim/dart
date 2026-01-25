@@ -33,6 +33,8 @@ endif()
 
 dart_add_test(
   "unit" UNIT_collision_FCLCollisionObject collision/test_fcl_collision_object.cpp)
+dart_add_test(
+  "unit" UNIT_collision_FCLCollisionDetector collision/test_fcl_collision_detector.cpp)
 dart_add_test("unit" UNIT_collision_CollisionOption collision/test_collision_option.cpp)
 dart_add_test("unit" UNIT_collision_CollisionFilter collision/test_collision_filter.cpp)
 dart_add_test("unit" UNIT_collision_DistanceOption collision/test_distance_option.cpp)
@@ -53,6 +55,7 @@ set(common_unit_sources
   common/test_local_resource_retriever.cpp
   common/test_lockable_reference.cpp
   common/test_logging.cpp
+  common/test_memory_allocator.cpp
   common/test_memory_manager.cpp
   common/test_name_manager.cpp
   common/test_pool_allocator.cpp
@@ -100,6 +103,7 @@ dart_add_test("unit" UNIT_constraint_MotorConstraints constraint/test_motor_cons
 dart_add_test("unit" UNIT_constraint_WeldJointConstraint constraint/test_weld_joint_constraint.cpp)
 dart_add_test("unit" UNIT_constraint_BallJointConstraint constraint/test_ball_joint_constraint.cpp)
 dart_add_test("unit" UNIT_constraint_ServoMotorConstraint constraint/test_servo_motor_constraint.cpp)
+dart_add_test("unit" UNIT_constraint_ConstrainedGroup constraint/test_constrained_group.cpp)
 dart_add_test(
   "unit" UNIT_constraint_SoftContactConstraint constraint/test_soft_contact_constraint.cpp)
 
@@ -152,6 +156,7 @@ dart_add_test("unit" UNIT_dynamics_Linkage dynamics/test_linkage.cpp)
 dart_add_test("unit" UNIT_dynamics_LineSegmentShape dynamics/test_line_segment_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_PyramidShape dynamics/test_pyramid_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_VoxelGridShape dynamics/test_voxel_grid_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_TranslationalJoint2D dynamics/test_translational_joint2_d.cpp)
 dart_add_test("unit" UNIT_dynamics_ZeroDofJoint dynamics/test_zero_dof_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_ReferentialSkeleton dynamics/test_referential_skeleton.cpp)
 dart_add_test("unit" UNIT_dynamics_InverseKinematics dynamics/test_inverse_kinematics.cpp)
@@ -196,10 +201,12 @@ dart_build_tests(
   SOURCES
     math/lcp/test_dantzig_vs_ode.cpp
     math/lcp/test_dantzig_solver.cpp
+    math/lcp/test_dantzig_misc.cpp
     math/lcp/test_lcp_edge_cases.cpp
     math/lcp/test_lcp_comparison_harness.cpp
     math/lcp/test_lcp_test_problems.cpp
     math/lcp/test_lcp_solvers_stress.cpp
+    math/lcp/test_lcp_types.cpp
     math/lcp/test_lemke.cpp
     math/lcp/test_pgs.cpp
     math/lcp/test_pivot_matrix.cpp

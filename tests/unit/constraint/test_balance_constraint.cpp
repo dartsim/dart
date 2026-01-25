@@ -212,3 +212,40 @@ TEST(BalanceConstraintTests, ShiftComProducesGradient)
 
   EXPECT_GT(gradMap.norm(), 0.0);
 }
+
+//==============================================================================
+TEST(BalanceConstraintTests, SettersUpdateProperties)
+{
+  auto rig = makeBalanceRig();
+  BalanceConstraint constraint(
+      rig.ik, BalanceConstraint::SHIFT_COM, BalanceConstraint::FROM_EDGE);
+
+  constraint.setErrorMethod(BalanceConstraint::OPTIMIZE_BALANCE);
+  EXPECT_EQ(constraint.getErrorMethod(), BalanceConstraint::OPTIMIZE_BALANCE);
+
+  constraint.setBalanceMethod(BalanceConstraint::SHIFT_SUPPORT);
+  EXPECT_EQ(constraint.getBalanceMethod(), BalanceConstraint::SHIFT_SUPPORT);
+
+  constraint.setPseudoInverseDamping(0.25);
+  EXPECT_DOUBLE_EQ(constraint.getPseudoInverseDamping(), 0.25);
+
+  constraint.setOptimizationTolerance(0.5);
+  EXPECT_DOUBLE_EQ(constraint.getOptimizationTolerance(), 0.5);
+}
+
+//==============================================================================
+TEST(BalanceConstraintTests, ClonePreservesBalanceMethod)
+{
+  auto rig = makeBalanceRig();
+  BalanceConstraint constraint(
+      rig.ik, BalanceConstraint::SHIFT_COM, BalanceConstraint::FROM_EDGE);
+
+  auto clone = constraint.clone(rig.ik);
+  auto clonedConstraint = std::dynamic_pointer_cast<BalanceConstraint>(clone);
+  ASSERT_NE(clonedConstraint, nullptr);
+
+  EXPECT_EQ(
+      clonedConstraint->getBalanceMethod(), constraint.getBalanceMethod());
+  EXPECT_EQ(
+      clonedConstraint->getErrorMethod(), BalanceConstraint::FROM_CENTROID);
+}

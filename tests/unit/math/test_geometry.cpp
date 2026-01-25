@@ -229,228 +229,148 @@ TEST(Geometry, ComputeConvexHullUsesSortedAngles)
   const auto hull
       = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
 
-  EXPECT_EQ(hull.size(), 4u);
-  EXPECT_EQ(indices.size(), 4u);
+  EXPECT_EQ(hull.size(), 3u);
+  EXPECT_EQ(indices.size(), 3u);
 }
 
 TEST(Geometry, ComputeIntersectionBasic)
 {
-  // Simple intersection test with two triangles
-  std::vector<Eigen::Vector2d> polygon1 = {{0.0, 0.0}, {1.0, 0.0}, {0.0, 0.0}};
-  std::vector<Eigen::Vector2d> polygon2 = {{0.5, 0.0, 0.0}, {-0.5, 0.0}};
+  Eigen::Vector2d intersection;
+  const auto result = computeIntersection(
+      intersection,
+      Eigen::Vector2d(0.0, 0.0),
+      Eigen::Vector2d(1.0, 1.0),
+      Eigen::Vector2d(0.0, 1.0),
+      Eigen::Vector2d(1.0, 0.0));
 
-  Eigen::Vector2d result;
-  bool intersected = computeIntersection(polygon1, polygon2, result);
-
-  EXPECT_TRUE(intersected);
-  EXPECT_TRUE(result.has_value());
-  EXPECT_EQ(result.intersections.size(), 1u);
-  EXPECT_NEAR(result.intersections[0].x, 0.0, 1e-12);
-  EXPECT_NEAR(result.intersections[0].y, 0.0, 1e-12);
+  EXPECT_EQ(result, INTERSECTING);
+  EXPECT_TRUE(intersection.isApprox(Eigen::Vector2d(0.5, 0.5), 1e-12));
 }
 
 TEST(Geometry, ComputeIntersectionNoIntersection)
 {
-  // Test with non-intersecting triangles
-  std::vector<Eigen::Vector2d> polygon1 = {{0.0, 0.0}, {2.0, 0.0}, {0.0, 0.0}};
-  std::vector<Eigen::Vector2d> polygon2 = {{1.5, 0.0}, {2.0, 0.0}, {3.0, 0.0}};
+  Eigen::Vector2d intersection;
+  const auto result = computeIntersection(
+      intersection,
+      Eigen::Vector2d(0.0, 0.0),
+      Eigen::Vector2d(1.0, 0.0),
+      Eigen::Vector2d(2.0, -1.0),
+      Eigen::Vector2d(2.0, 1.0));
 
-  Eigen::Vector2d result;
-  bool intersected = computeIntersection(polygon1, polygon2, result);
-
-  EXPECT_FALSE(intersected);
-  EXPECT_FALSE(result.has_value());
-  EXPECT_EQ(result.intersections.size(), 0u);
+  EXPECT_EQ(result, BEYOND_ENDPOINTS);
 }
 
-TEST(Geometry, ComputeIntersectionDegenerate)
+TEST(Geometry, ComputeIntersectionParallel)
 {
-  // Test with collinear points
-  std::vector<Eigen::Vector2d> points = {{0.0, 0.0}, {1.0, 0.0}, {1.0, 0.0}};
+  Eigen::Vector2d intersection;
+  const auto result = computeIntersection(
+      intersection,
+      Eigen::Vector2d(0.0, 0.0),
+      Eigen::Vector2d(1.0, 0.0),
+      Eigen::Vector2d(0.0, 1.0),
+      Eigen::Vector2d(1.0, 1.0));
 
-  Eigen::Vector2d result;
-  bool intersected = computeIntersection(
-      points, std::span<const Eigen::Vector2d>(points), result);
-
-  EXPECT_FALSE(intersected);
-  EXPECT_FALSE(result.has_value());
-  EXPECT_EQ(result.intersections.size(), 0u);
+  EXPECT_EQ(result, PARALLEL);
 }
 
 TEST(Geometry, ComputeIntersectionSinglePoint)
 {
-  // Test with point on edge
-  std::vector<Eigen::Vector2d> polygon = {{0.0, 0.0}, {1.0, 0.0}, {0.0, 0.0}};
-  std::vector<Eigen::Vector2d> point = {0.5, 0.0, 0.0};
+  Eigen::Vector2d intersection;
+  const auto result = computeIntersection(
+      intersection,
+      Eigen::Vector2d(0.0, 0.0),
+      Eigen::Vector2d(1.0, 0.0),
+      Eigen::Vector2d(1.0, 0.0),
+      Eigen::Vector2d(1.0, 1.0));
 
-  Eigen::Vector2d result;
-  bool intersected = computeIntersection(
-      polygon, std::span<const Eigen::Vector2d>(&point), result);
-
-  EXPECT_TRUE(intersected);
-  EXPECT_TRUE(result.has_value());
-  EXPECT_EQ(result.intersections.size(), 1u);
-  EXPECT_NEAR(result.intersections[0].x, 0.5, 1e-12);
-  EXPECT_NEAR(result.intersections[0].y, 0.0, 1e-12);
+  EXPECT_EQ(result, INTERSECTING);
+  EXPECT_TRUE(intersection.isApprox(Eigen::Vector2d(1.0, 0.0), 1e-12));
 }
 
 TEST(Geometry, ComputeClosestPointOnLineSegment)
 {
-  // Test closest point to line segment
-  const Eigen::Vector2d segmentStart = Eigen::Vector3d(0.0, 0.0, 0.0);
-  const Eigen::Vector3d segmentEnd = Eigen::Vector3d(1.0, 1.0, 0.0);
-  const Eigen::Vector3d testPoint = Eigen::Vector3d(0.5, 0.0, 0.0);
+  const Eigen::Vector2d segmentStart(0.0, 0.0);
+  const Eigen::Vector2d segmentEnd(1.0, 0.0);
+  const Eigen::Vector2d testPoint(0.5, 1.0);
 
-  double t;
-  double distance = computeClosestPointOnLineSegment(
-      testPoint, segmentStart, segmentEnd, &t);
+  const auto closest
+      = computeClosestPointOnLineSegment(testPoint, segmentStart, segmentEnd);
 
-  EXPECT_NEAR(t, 0.0);
-  EXPECT_NEAR(distance, std::sqrt(0.5 * 0.5));
+  EXPECT_TRUE(closest.isApprox(Eigen::Vector2d(0.5, 0.0), 1e-12));
 }
 
 TEST(Geometry, ComputeClosestPointOnLineSegmentInside)
 {
-  // Test with point on line segment
-  const Eigen::Vector3d segmentStart = Eigen::Vector3d(0.0, 0.0, 0.0);
-  const Eigen::Vector3d segmentEnd = Eigen::Vector3d(1.0, 1.0, 0.0);
-  const Eigen::Vector3d testPoint = Eigen::Vector3d(0.5, 0.0, 0.0);
+  const Eigen::Vector2d segmentStart(0.0, 0.0);
+  const Eigen::Vector2d segmentEnd(1.0, 0.0);
+  const Eigen::Vector2d testPoint(0.25, 0.0);
 
-  double t;
-  double distance = computeClosestPointOnLineSegment(
-      testPoint, segmentStart, segmentEnd, &t);
+  const auto closest
+      = computeClosestPointOnLineSegment(testPoint, segmentStart, segmentEnd);
 
-  EXPECT_NEAR(t, 0.0);
-  EXPECT_NEAR(distance, 0.0);
+  EXPECT_TRUE(closest.isApprox(testPoint, 1e-12));
 }
 
 TEST(Geometry, ComputeClosestPointOnLineSegmentOutside)
 {
-  // Test with point outside line segment
-  const Eigen::Vector3d segmentStart = Eigen::Vector3d(0.0, 0.0, 0.0);
-  const Eigen::Vector3d segmentEnd = Eigen::Vector3d(1.0, 1.0, 0.0);
-  const Eigen::Vector3d testPoint = Eigen::Vector3d(-0.5, 0.0, 0.0);
+  const Eigen::Vector2d segmentStart(0.0, 0.0);
+  const Eigen::Vector2d segmentEnd(1.0, 0.0);
+  const Eigen::Vector2d testPoint(2.0, 1.0);
 
-  double t;
-  double distance = computeClosestPointOnLineSegment(
-      testPoint, segmentStart, segmentEnd, &t);
+  const auto closest
+      = computeClosestPointOnLineSegment(testPoint, segmentStart, segmentEnd);
 
-  EXPECT_NEAR(t, 0.0);
-  EXPECT_GT(distance, 0.0);
-}
-
-TEST(Geometry, ComputeClosestPointOnRay)
-{
-  // Test closest point to ray
-  const Eigen::Vector3d origin = Eigen::Vector3d::Zero();
-  const Eigen::Vector3d direction = Eigen::Vector3d::UnitX();
-  const Eigen::Vector3d testPoint = Eigen::Vector3d(0.0, 0.0, 0.0);
-
-  double t;
-  double distance = computeClosestPointOnRay(testPoint, origin, direction, &t);
-
-  EXPECT_NEAR(t, 0.0);
-  EXPECT_NEAR(distance, 0.0);
-}
-
-TEST(Geometry, ComputeClosestPointOnPlane)
-{
-  // Test closest point to plane
-  const Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
-  const double d = 0.0;
-  const Eigen::Vector3d testPoint = Eigen::Vector3d(0.0, 0.0, d);
-
-  double t;
-  double distance = computeClosestPointOnPlane(testPoint, normal, d, &t);
-
-  EXPECT_NEAR(t, d);
+  EXPECT_TRUE(closest.isApprox(Eigen::Vector2d(1.0, 0.0), 1e-12));
 }
 
 TEST(Geometry, MakeSkewSymmetricBasic)
 {
-  // Test basic symmetric matrix creation
-  Eigen::Vector3d v(1.0, 2.0, 3.0);
-  Eigen::Matrix3d m = makeSkewSymmetric(v);
+  const Eigen::Vector3d v(1.0, 2.0, 3.0);
+  const Eigen::Matrix3d m = makeSkewSymmetric(v);
 
-  EXPECT_DOUBLE_EQ(m(0, 0), 1.0);
-  EXPECT_DOUBLE_EQ(m(0, 1), 2.0);
-  EXPECT_DOUBLE_EQ(m(0, 2), 3.0);
-  EXPECT_DOUBLE_EQ(m(1, 2), 2.0);
-  EXPECT_DOUBLE_EQ(m(2, 1), 3.0);
-  EXPECT_DOUBLE_EQ(m(1, 1), 2.0);
+  EXPECT_DOUBLE_EQ(m(0, 0), 0.0);
+  EXPECT_DOUBLE_EQ(m(0, 1), -3.0);
+  EXPECT_DOUBLE_EQ(m(0, 2), 2.0);
+  EXPECT_DOUBLE_EQ(m(1, 0), 3.0);
+  EXPECT_DOUBLE_EQ(m(1, 1), 0.0);
+  EXPECT_DOUBLE_EQ(m(1, 2), -1.0);
+  EXPECT_DOUBLE_EQ(m(2, 0), -2.0);
+  EXPECT_DOUBLE_EQ(m(2, 1), 1.0);
+  EXPECT_DOUBLE_EQ(m(2, 2), 0.0);
 }
 
 TEST(Geometry, MakeSkewSymmetricNegative)
 {
-  // Test with negative diagonal
-  Eigen::Vector3d v(1.0, -2.0, 3.0);
-  Eigen::Matrix3d m = makeSkewSymmetric(v);
+  const Eigen::Vector3d v(1.0, -2.0, 3.0);
+  const Eigen::Matrix3d m = makeSkewSymmetric(v);
 
-  EXPECT_DOUBLE_EQ(m(0, 0), -1.0);
-  EXPECT_DOUBLE_EQ(m(0, 1), 2.0);
-  EXPECT_DOUBLE_EQ(m(0, 2), 3.0);
-  EXPECT_DOUBLE_EQ(m(1, 1), -2.0);
-  EXPECT_DOUBLE_EQ(m(2, 1), -3.0);
+  EXPECT_DOUBLE_EQ(m(0, 0), 0.0);
+  EXPECT_DOUBLE_EQ(m(0, 1), -3.0);
+  EXPECT_DOUBLE_EQ(m(0, 2), -2.0);
+  EXPECT_DOUBLE_EQ(m(1, 0), 3.0);
+  EXPECT_DOUBLE_EQ(m(1, 1), 0.0);
+  EXPECT_DOUBLE_EQ(m(1, 2), -1.0);
+  EXPECT_DOUBLE_EQ(m(2, 0), 2.0);
+  EXPECT_DOUBLE_EQ(m(2, 1), 1.0);
+  EXPECT_DOUBLE_EQ(m(2, 2), 0.0);
 }
 
 TEST(Geometry, FromSkewSymmetricRoundTrip)
 {
-  // Test round-trip conversion
   const Eigen::Vector3d v(1.0, 2.0, 3.0);
-  Eigen::Matrix3d m1 = makeSkewSymmetric(v);
-  Eigen::Matrix3d m2 = fromSkewSymmetric(m1);
+  const Eigen::Matrix3d m1 = makeSkewSymmetric(v);
+  const Eigen::Vector3d recovered = fromSkewSymmetric(m1);
 
-  // Should be nearly equal
-  EXPECT_TRUE(m1.isApprox(m2, 1e-12));
+  EXPECT_TRUE(recovered.isApprox(v, 1e-12));
 }
 
 TEST(Geometry, FromSkewSymmetricToMatrix)
 {
-  // Test conversion to matrix form
-  const Eigen::Vector3d v(1.0, 2.0, 3.0);
-  Eigen::Matrix3d m = makeSkewSymmetric(v);
-  Eigen::Matrix3d recovered = fromSkewSymmetric(m);
-
-  EXPECT_TRUE(recovered.isApprox(m, 1e-12));
-  EXPECT_TRUE(equals(m, recovered));
-}
-
-TEST(Geometry, ToSkewSymmetric)
-{
-  // Test conversion from matrix
-  const Eigen::Matrix3d m(1.0, 2.0, 3.0);
-  Eigen::Vector3d v = toSkewSymmetric(m);
-
-  EXPECT_DOUBLE_EQ(v(0), 1.0);
-  EXPECT_DOUBLE_EQ(v(1), 2.0);
-  EXPECT_DOUBLE_EQ(v(2), 1.0);
-  EXPECT_DOUBLE_EQ(v(1), 3.0);
-}
-
-TEST(Geometry, ToSkewSymmetricWithTranslation)
-{
-  // Test conversion with translation
   const Eigen::Vector3d v(1.0, 2.0, 3.0);
   const Eigen::Matrix3d m = makeSkewSymmetric(v);
-  Eigen::Vector3d vt = toSkewSymmetric(m);
-  Eigen::Matrix3d recovered = fromSkewSymmetric(m);
+  const Eigen::Vector3d recovered = fromSkewSymmetric(m);
 
-  EXPECT_TRUE(recovered.isApprox(vt, 1e-12));
-  EXPECT_TRUE(equals(mt, recovered));
-}
-
-TEST(Geometry, FromSkewSymmetricWithScaling)
-{
-  // Test conversion with scaling
-  const Eigen::Vector3d v(1.0, 2.0, 3.0);
-  const Eigen::Vector3d s(2.0, 2.0, 3.0);
-  Eigen::Matrix3d m = makeSkewSymmetric(v);
-  Eigen::Vector3d scaled = toSkewSymmetric(m, s);
-
-  EXPECT_DOUBLE_EQ(scaled(0), 2.0);
-  EXPECT_DOUBLE_EQ(scaled(1), 4.0);
-  EXPECT_DOUBLE_EQ(scaled(2), 8.0);
-  EXPECT_DOUBLE_EQ(scaled(3), 6.0);
+  EXPECT_TRUE(recovered.isApprox(v, 1e-12));
 }
 
 //==============================================================================

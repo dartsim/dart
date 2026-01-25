@@ -1,27 +1,31 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
+#include <dart/collision/collision_group.hpp>
+#include <dart/collision/collision_object.hpp>
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/distance_option.hpp>
 #include <dart/collision/distance_result.hpp>
 #include <dart/collision/fcl/fcl_collision_detector.hpp>
+#include <dart/collision/fcl/fcl_collision_group.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/cone_shape.hpp>
-#include <dart/dynamics/convex_mesh_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
+#include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
-#include <dart/dynamics/simple_frame.hpp>
+#include <dart/dynamics/pyramid_shape.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 
-#include <dart/math/constants.hpp>
+#include <dart/math/tri_mesh.hpp>
 
 #include <gtest/gtest.h>
 
 #include <memory>
-#include <vector>
 
 using namespace dart;
 using namespace dart::collision;
@@ -29,111 +33,111 @@ using namespace dart::dynamics;
 
 namespace {
 
-class TestCollisionObject final : public collision::CollisionObject
+struct ShapeSetup
+{
+  SkeletonPtr skeleton;
+  BodyNode* body{nullptr};
+  ShapeNode* shapeNode{nullptr};
+};
+
+ShapeSetup makeShapeSetup(const std::string& name, const ShapePtr& shape)
+{
+  ShapeSetup setup;
+  setup.skeleton = Skeleton::create(name);
+  auto pair = setup.skeleton->createJointAndBodyNodePair<FreeJoint>();
+  setup.body = pair.second;
+  setup.shapeNode = setup.body->createShapeNodeWith<CollisionAspect>(shape);
+  return setup;
+}
+
+std::pair<bool, std::size_t> runCollision(
+    CollisionDetectorPtr detector,
+    const ShapePtr& shapeA,
+    const ShapePtr& shapeB,
+    const Eigen::Vector3d& offset)
+{
+  auto setupA = makeShapeSetup("shape_a", shapeA);
+  auto setupB = makeShapeSetup("shape_b", shapeB);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = offset;
+  FreeJoint::setTransformOf(setupB.body, tf);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+
+  CollisionResult result;
+  const bool collided = group->collide(option, &result);
+  return {collided, result.getNumContacts()};
+}
+
+std::shared_ptr<math::TriMesh<double>> createSimpleTriMesh()
+{
+  auto mesh = std::make_shared<math::TriMesh<double>>();
+  mesh->reserveVertices(4);
+  mesh->addVertex(0.0, 0.0, 0.0);
+  mesh->addVertex(1.0, 0.0, 0.0);
+  mesh->addVertex(0.5, 1.0, 0.0);
+  mesh->addVertex(0.5, 0.5, 1.0);
+
+  mesh->reserveTriangles(4);
+  mesh->addTriangle(0, 1, 2);
+  mesh->addTriangle(0, 1, 3);
+  mesh->addTriangle(1, 2, 3);
+  mesh->addTriangle(2, 0, 3);
+
+  return mesh;
+}
+
+class ExposedFCLCollisionGroup : public FCLCollisionGroup
 {
 public:
-  TestCollisionObject(
-      collision::CollisionDetector* detector,
-      const dynamics::ShapeFrame* shapeFrame)
-    : collision::CollisionObject(detector, shapeFrame)
-  {
-  }
-
-private:
-  void updateEngineData() override {}
+  using FCLCollisionGroup::FCLCollisionGroup;
+  using FCLCollisionGroup::getFCLCollisionManager;
 };
-
-struct CollisionHandle
-{
-  std::shared_ptr<SimpleFrame> frame;
-  std::unique_ptr<TestCollisionObject> object;
-};
-
-CollisionHandle makeObject(
-    const dynamics::ShapePtr& shape,
-    collision::CollisionDetector* detector,
-    const Eigen::Isometry3d& tf)
-{
-  auto frame = std::make_shared<SimpleFrame>(Frame::World(), "frame");
-  frame->setShape(shape);
-  frame->setRelativeTransform(tf);
-
-  auto object = std::make_unique<TestCollisionObject>(detector, frame.get());
-  return {frame, std::move(object)};
-}
 
 } // namespace
 
 TEST(FCLCollisionDetector, CreateAndDestroy)
 {
   auto detector = FCLCollisionDetector::create();
-  EXPECT_TRUE(detector != nullptr);
-  EXPECT_EQ(detector->getType(), FCLCollisionDetector::getStaticType());
-
-  // Test destructor
-  detector.reset();
+  EXPECT_NE(detector, nullptr);
+  EXPECT_EQ(detector->getTypeView(), "fcl");
 }
 
 TEST(FCLCollisionDetector, CloneWithoutCollisionObjects)
 {
   auto detector1 = FCLCollisionDetector::create();
-
-  auto sphere = std::make_shared<SphereShape>(0.5);
-  auto obj1
-      = makeObject(sphere, detector1.get(), Eigen::Isometry3d::Identity());
-
-  detector1->addCollisionObject(obj1.object.get());
   auto detector2 = detector1->cloneWithoutCollisionObjects();
 
-  EXPECT_TRUE(detector2 != nullptr);
-  EXPECT_EQ(detector2->getType(), FCLCollisionDetector::getStaticType());
-
-  // Verify collision objects were not cloned
-  CollisionResult result;
-  detector2->collide(obj1.object.get(), obj1.object.get(), result);
-  EXPECT_EQ(result.getNumContacts(), 0u);
-}
-
-TEST(FCLCollisionDetector, GetType)
-{
-  auto detector = FCLCollisionDetector::create();
-  EXPECT_EQ(detector->getType(), FCLCollisionDetector::getStaticType());
-  EXPECT_EQ(detector->getType(), "fcl");
+  EXPECT_NE(detector2, nullptr);
+  EXPECT_EQ(detector2->getTypeView(), "fcl");
 }
 
 TEST(FCLCollisionDetector, CreateCollisionGroup)
 {
   auto detector = FCLCollisionDetector::create();
   auto group = detector->createCollisionGroup();
-  EXPECT_TRUE(group != nullptr);
-}
-
-TEST(FCLCollisionDetector, CreateCollisionObject)
-{
-  auto detector = FCLCollisionDetector::create();
-  auto sphere = std::make_shared<SphereShape>(0.5);
-  auto obj = makeObject(sphere, detector.get(), Eigen::Isometry3d::Identity());
-
-  auto collisionObj = detector->createCollisionObject(obj.object.get());
-  EXPECT_TRUE(collisionObj != nullptr);
+  EXPECT_NE(group, nullptr);
 }
 
 TEST(FCLCollisionDetector, PrimitiveShapeType)
 {
   auto detector = FCLCollisionDetector::create();
 
-  // Test default
   EXPECT_EQ(
       detector->getPrimitiveShapeType(),
       FCLCollisionDetector::PrimitiveShape::PRIMITIVE);
 
-  // Test setting to MESH
   detector->setPrimitiveShapeType(FCLCollisionDetector::PrimitiveShape::MESH);
   EXPECT_EQ(
       detector->getPrimitiveShapeType(),
       FCLCollisionDetector::PrimitiveShape::MESH);
 
-  // Test setting to PRIMITIVE again
   detector->setPrimitiveShapeType(
       FCLCollisionDetector::PrimitiveShape::PRIMITIVE);
   EXPECT_EQ(
@@ -145,19 +149,16 @@ TEST(FCLCollisionDetector, ContactPointComputationMethod)
 {
   auto detector = FCLCollisionDetector::create();
 
-  // Test default
   EXPECT_EQ(
       detector->getContactPointComputationMethod(),
       FCLCollisionDetector::ContactPointComputationMethod::DART);
 
-  // Test setting to FCL
   detector->setContactPointComputationMethod(
       FCLCollisionDetector::ContactPointComputationMethod::FCL);
   EXPECT_EQ(
       detector->getContactPointComputationMethod(),
       FCLCollisionDetector::ContactPointComputationMethod::FCL);
 
-  // Test setting to DART again
   detector->setContactPointComputationMethod(
       FCLCollisionDetector::ContactPointComputationMethod::DART);
   EXPECT_EQ(
@@ -171,16 +172,9 @@ TEST(FCLCollisionDetector, BasicCollisionSphereSphere)
   auto sphere1 = std::make_shared<SphereShape>(0.5);
   auto sphere2 = std::make_shared<SphereShape>(0.3);
 
-  auto obj1
-      = makeObject(sphere1, detector.get(), Eigen::Isometry3d::Identity());
-
-  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
-  tf2.translation() = Eigen::Vector3d(0.7, 0.0, 0.0);
-  auto obj2 = makeObject(sphere2, detector.get(), tf2);
-
-  CollisionResult result;
-  EXPECT_TRUE(detector->collide(obj1.object.get(), obj2.object.get(), result));
-  EXPECT_GT(result.getNumContacts(), 0u);
+  auto result = runCollision(detector, sphere1, sphere2, {0.7, 0.0, 0.0});
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second, 0u);
 }
 
 TEST(FCLCollisionDetector, BasicCollisionBoxSphere)
@@ -189,16 +183,9 @@ TEST(FCLCollisionDetector, BasicCollisionBoxSphere)
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
   auto sphere = std::make_shared<SphereShape>(0.3);
 
-  auto boxObj = makeObject(box, detector.get(), Eigen::Isometry3d::Identity());
-
-  Eigen::Isometry3d sphereTf = Eigen::Isometry3d::Identity();
-  sphereTf.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
-  auto sphereObj = makeObject(sphere, detector.get(), sphereTf);
-
-  CollisionResult result;
-  EXPECT_TRUE(
-      detector->collide(boxObj.object.get(), sphereObj.object.get(), result));
-  EXPECT_GT(result.getNumContacts(), 0u);
+  auto result = runCollision(detector, box, sphere, {0.4, 0.0, 0.0});
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second, 0u);
 }
 
 TEST(FCLCollisionDetector, BasicCollisionBoxBox)
@@ -207,38 +194,9 @@ TEST(FCLCollisionDetector, BasicCollisionBoxBox)
   auto box1 = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
   auto box2 = std::make_shared<BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5));
 
-  auto obj1 = makeObject(box1, detector.get(), Eigen::Isometry3d::Identity());
-
-  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
-  tf2.translation() = Eigen::Vector3d(0.3, 0.0, 0.0);
-  auto obj2 = makeObject(box2, detector.get(), tf2);
-
-  CollisionResult result;
-  EXPECT_TRUE(detector->collide(obj1.object.get(), obj2.object.get(), result));
-  EXPECT_GT(result.getNumContacts(), 0u);
-}
-
-TEST(FCLCollisionDetector, CollisionWithOption)
-{
-  auto detector = FCLCollisionDetector::create();
-  auto sphere1 = std::make_shared<SphereShape>(0.5);
-  auto sphere2 = std::make_shared<SphereShape>(0.3);
-
-  auto obj1
-      = makeObject(sphere1, detector.get(), Eigen::Isometry3d::Identity());
-  auto obj2
-      = makeObject(sphere2, detector.get(), Eigen::Isometry3d::Identity());
-
-  // Test with collision options
-  CollisionOption option;
-  option.enableContact = true;
-  option.maxNumContacts = 10;
-  option.binaryCheck = false;
-
-  CollisionResult result;
-  EXPECT_TRUE(
-      detector->collide(obj1.object.get(), obj2.object.get(), option, result));
-  EXPECT_GT(result.getNumContacts(), 0u);
+  auto result = runCollision(detector, box1, box2, {0.3, 0.0, 0.0});
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second, 0u);
 }
 
 TEST(FCLCollisionDetector, NoCollision)
@@ -247,117 +205,161 @@ TEST(FCLCollisionDetector, NoCollision)
   auto sphere1 = std::make_shared<SphereShape>(0.5);
   auto sphere2 = std::make_shared<SphereShape>(0.3);
 
-  auto obj1
-      = makeObject(sphere1, detector.get(), Eigen::Isometry3d::Identity());
-
-  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
-  tf2.translation() = Eigen::Vector3d(2.0, 0.0, 0.0); // Far apart
-  auto obj2 = makeObject(sphere2, detector.get(), tf2);
-
-  CollisionResult result;
-  EXPECT_FALSE(detector->collide(obj1.object.get(), obj2.object.get(), result));
-  EXPECT_EQ(result.getNumContacts(), 0u);
+  auto result = runCollision(detector, sphere1, sphere2, {2.0, 0.0, 0.0});
+  EXPECT_FALSE(result.first);
+  EXPECT_EQ(result.second, 0u);
 }
 
-TEST(FCLCollisionDetector, DistanceSphereSphere)
-{
-  auto detector = FCLCollisionDetector::create();
-  auto sphere1 = std::make_shared<SphereShape>(0.5);
-  auto sphere2 = std::make_shared<SphereShape>(0.3);
-
-  auto obj1
-      = makeObject(sphere1, detector.get(), Eigen::Isometry3d::Identity());
-
-  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
-  tf2.translation() = Eigen::Vector3d(0.7, 0.0, 0.0);
-  auto obj2 = makeObject(sphere2, detector.get(), tf2);
-
-  DistanceOption option;
-  DistanceResult result;
-  double distance = detector->distance(
-      obj1.object.get(), obj2.object.get(), option, result);
-  EXPECT_LT(distance, 0.0); // Should be some positive distance
-}
-
-TEST(FCLCollisionDetector, DistanceNoCollision)
-{
-  auto detector = FCLCollisionDetector::create();
-  auto sphere1 = std::make_shared<SphereShape>(0.5);
-  auto sphere2 = std::make_shared<SphereShape>(0.3);
-
-  auto obj1
-      = makeObject(sphere1, detector.get(), Eigen::Isometry3d::Identity());
-
-  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
-  tf2.translation() = Eigen::Vector3d(2.0, 0.0, 0.0); // Far apart
-  auto obj2 = makeObject(sphere2, detector.get(), tf2);
-
-  DistanceOption option;
-  DistanceResult result;
-  double distance = detector->distance(
-      obj1.object.get(), obj2.object.get(), option, result);
-  EXPECT_GT(distance, 0.0); // Should be larger than overlap distance
-}
-
-TEST(FCLCollisionDetector, RefreshCollisionObject)
+TEST(FCLCollisionDetector, SharableCollisionObjectCaching)
 {
   auto detector = FCLCollisionDetector::create();
   auto sphere = std::make_shared<SphereShape>(0.5);
-  auto obj = makeObject(sphere, detector.get(), Eigen::Isometry3d::Identity());
+  auto setup = makeShapeSetup("sphere", sphere);
 
-  // Add collision object
-  detector->addCollisionObject(obj.object.get());
+  auto group1 = detector->createCollisionGroup();
+  auto group2 = detector->createCollisionGroup();
 
-  // Test refresh
-  detector->refreshCollisionObject(obj.object.get());
+  group1->addShapeFrame(setup.shapeNode);
+  group2->addShapeFrame(setup.shapeNode);
 
-  // Verify collision still works
-  auto sphere2 = std::make_shared<SphereShape>(0.3);
-  auto obj2
-      = makeObject(sphere2, detector.get(), Eigen::Isometry3d::Identity());
+  EXPECT_EQ(group1->getNumShapeFrames(), 1u);
+  EXPECT_EQ(group2->getNumShapeFrames(), 1u);
+  EXPECT_TRUE(group1->hasShapeFrame(setup.shapeNode));
+  EXPECT_TRUE(group2->hasShapeFrame(setup.shapeNode));
 
-  CollisionResult result;
-  EXPECT_TRUE(detector->collide(obj.object.get(), obj2.object.get(), result));
-  EXPECT_GT(result.getNumContacts(), 0u);
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.3, 0.0, 0.0);
+  auto boxSetup = makeShapeSetup("box", box);
+  FreeJoint::setTransformOf(boxSetup.body, tf);
+
+  group1->addShapeFrame(boxSetup.shapeNode);
+
+  CollisionOption option;
+  CollisionResult result1;
+  EXPECT_TRUE(group1->collide(option, &result1));
+  EXPECT_GT(result1.getNumContacts(), 0u);
+
+  CollisionResult result2;
+  EXPECT_FALSE(group2->collide(option, &result2));
+  EXPECT_EQ(result2.getNumContacts(), 0u);
 }
 
-TEST(FCLCollisionDetector, MultipleCollisionObjects)
+TEST(FCLCollisionDetector, ConeShapeCollision)
 {
   auto detector = FCLCollisionDetector::create();
-  auto sphere1 = std::make_shared<SphereShape>(0.5);
-  auto sphere2 = std::make_shared<SphereShape>(0.3);
-  auto sphere3 = std::make_shared<SphereShape>(0.4);
+  auto cone = std::make_shared<ConeShape>(0.5, 1.0);
+  auto sphere = std::make_shared<SphereShape>(0.3);
 
-  auto obj1
-      = makeObject(sphere1, detector.get(), Eigen::Isometry3d::Identity());
-  auto obj2
-      = makeObject(sphere2, detector.get(), Eigen::Isometry3d::Identity());
-  auto obj3
-      = makeObject(sphere3, detector.get(), Eigen::Isometry3d::Identity());
-
-  // Add multiple objects
-  detector->addCollisionObject(obj1.object.get());
-  detector->addCollisionObject(obj2.object.get());
-  detector->addCollisionObject(obj3.object.get());
-
-  // Test collision between first two
-  CollisionResult result12;
-  EXPECT_TRUE(
-      detector->collide(obj1.object.get(), obj2.object.get(), result12));
-  EXPECT_GT(result12.getNumContacts(), 0u);
-
-  // Test collision with third object
-  CollisionResult result23;
-  EXPECT_TRUE(
-      detector->collide(obj2.object.get(), obj3.object.get(), result23));
-  EXPECT_GT(result23.getNumContacts(), 0u);
+  auto result = runCollision(detector, cone, sphere, {0.0, 0.0, 0.3});
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second, 0u);
 }
 
-TEST(FCLCollisionDetector, StaticTypeConsistency)
+TEST(FCLCollisionDetector, CylinderShapeCollision)
 {
-  // Test that getStaticType() matches what's returned by create()
-  EXPECT_EQ(FCLCollisionDetector::getStaticType(), "fcl");
-
   auto detector = FCLCollisionDetector::create();
-  EXPECT_EQ(detector->getType(), FCLCollisionDetector::getStaticType());
+  auto cylinder = std::make_shared<CylinderShape>(0.5, 1.0);
+  auto sphere = std::make_shared<SphereShape>(0.3);
+
+  auto result = runCollision(detector, cylinder, sphere, {0.4, 0.0, 0.0});
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second, 0u);
+}
+
+TEST(FCLCollisionDetector, PlaneShapeCollision)
+{
+  auto detector = FCLCollisionDetector::create();
+  auto plane = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  auto sphere = std::make_shared<SphereShape>(0.5);
+
+  auto result = runCollision(detector, plane, sphere, {0.0, 0.0, 0.3});
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second, 0u);
+}
+
+TEST(FCLCollisionDetector, PyramidShapeCollision)
+{
+  auto detector = FCLCollisionDetector::create();
+  auto pyramid = std::make_shared<PyramidShape>(1.0, 1.0, 1.0);
+  auto sphere = std::make_shared<SphereShape>(0.3);
+
+  auto result = runCollision(detector, pyramid, sphere, {0.0, 0.0, 0.3});
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second, 0u);
+}
+
+TEST(FCLCollisionDetector, MeshShapeCollision)
+{
+  auto detector = FCLCollisionDetector::create();
+  auto triMesh = createSimpleTriMesh();
+  auto mesh = std::make_shared<MeshShape>(Eigen::Vector3d::Ones(), triMesh, "");
+  auto sphere = std::make_shared<SphereShape>(0.3);
+
+  auto result = runCollision(detector, mesh, sphere, {0.5, 0.5, 0.3});
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second, 0u);
+}
+
+TEST(FCLCollisionDetector, EllipsoidShapeCollision)
+{
+  auto detector = FCLCollisionDetector::create();
+  auto ellipsoid
+      = std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.5, 0.3, 0.4));
+  auto sphere = std::make_shared<SphereShape>(0.3);
+
+  auto result = runCollision(detector, ellipsoid, sphere, {0.4, 0.0, 0.0});
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second, 0u);
+}
+
+TEST(FCLCollisionDetector, PrimitiveShapeTypeAsMesh)
+{
+  auto detector = FCLCollisionDetector::create();
+  detector->setPrimitiveShapeType(FCLCollisionDetector::PrimitiveShape::MESH);
+
+  auto sphere = std::make_shared<SphereShape>(0.5);
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  auto result = runCollision(detector, sphere, box, {0.4, 0.0, 0.0});
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second, 0u);
+}
+
+TEST(FCLCollisionDetector, ConeShapeAsMesh)
+{
+  auto detector = FCLCollisionDetector::create();
+  detector->setPrimitiveShapeType(FCLCollisionDetector::PrimitiveShape::MESH);
+
+  auto cone = std::make_shared<ConeShape>(0.5, 1.0);
+  auto sphere = std::make_shared<SphereShape>(0.3);
+
+  auto result = runCollision(detector, cone, sphere, {0.0, 0.0, 0.3});
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second, 0u);
+}
+
+TEST(FCLCollisionDetector, CylinderShapeAsMesh)
+{
+  auto detector = FCLCollisionDetector::create();
+  detector->setPrimitiveShapeType(FCLCollisionDetector::PrimitiveShape::MESH);
+
+  auto cylinder = std::make_shared<CylinderShape>(0.5, 1.0);
+  auto sphere = std::make_shared<SphereShape>(0.3);
+
+  auto result = runCollision(detector, cylinder, sphere, {0.4, 0.0, 0.0});
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second, 0u);
+}
+
+TEST(FCLCollisionGroup, GetFCLCollisionManager)
+{
+  auto detector = FCLCollisionDetector::create();
+  auto baseGroup = detector->createCollisionGroup();
+
+  auto* exposedGroup = static_cast<ExposedFCLCollisionGroup*>(baseGroup.get());
+  ASSERT_NE(exposedGroup, nullptr);
+
+  auto* manager = exposedGroup->getFCLCollisionManager();
+  EXPECT_NE(manager, nullptr);
 }

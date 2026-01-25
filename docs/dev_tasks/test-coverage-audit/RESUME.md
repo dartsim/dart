@@ -2,15 +2,43 @@
 
 ## Last Session Summary
 
-Added ~31 new tests for constraint module: simulation-based tests for BallJointConstraint (5), WeldJointConstraint (7), new ServoMotorConstraint test file (13), and additional JointLimitConstraint tests (6). All tests pass. Committed and pushed to branch.
+Target updated to **90%+ for core modules** (up from 80%). Coverage baseline established:
+
+- Overall: 79.9% (up from 57%)
+- Quick wins identified: collision (88.8%), sensor (87.4%), simulation (86.1%)
+- Heavy lifting needed: dynamics (79.4%, 3346 lines), math (77.1%, 1721 lines), constraint (79.0%, 796 lines)
+
+Branch has uncommitted work: new test files and modifications to existing tests.
 
 ## Current Branch
 
-`task/test_coverage` — clean, pushed to origin
+`continue_test_coverage` — has uncommitted changes + untracked files
+
+**Modified files:**
+
+- tests/unit/CMakeLists.txt
+- tests/unit/collision/test_collision_group.cpp
+- tests/unit/common/test_exception.cpp
+- tests/unit/constraint/test_balance_constraint.cpp
+- tests/unit/constraint/test_servo_motor_constraint.cpp
+- tests/unit/dynamics/test_marker.cpp
+- tests/unit/dynamics/test_plane_shape.cpp
+- tests/unit/math/optimization/test_Problem.cpp
+- tests/unit/math/test_geometry.cpp
+
+**New files:**
+
+- tests/unit/common/test_memory_allocator.cpp
+- tests/unit/constraint/test_constrained_group.cpp
+- tests/unit/dynamics/test_translational_joint2_d.cpp
+- tests/unit/math/lcp/test_dantzig_misc.cpp
+- tests/unit/math/lcp/test_lcp_types.cpp
 
 ## Immediate Next Step
 
-Run `pixi run coverage-report` to measure current coverage and identify remaining gaps to reach 80% target.
+1. Build and run current tests to verify they pass
+2. Start with **collision module** (only 1.2% gap to 90%)
+3. Then **sensor** and **simulation** (quick wins)
 
 ## Context That Would Be Lost
 

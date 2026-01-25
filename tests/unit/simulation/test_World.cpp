@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/recording.hpp>
 #include <dart/simulation/world.hpp>
 
 #include <dart/constraint/constraint_solver.hpp>
@@ -511,4 +512,182 @@ TEST(WorldTests, EmptyWorldStep)
   world->step();
   EXPECT_GT(world->getTime(), 0.0);
   EXPECT_EQ(world->getSimFrames(), 1);
+}
+
+//==============================================================================
+TEST(WorldTests, RecordingBasicMethods)
+{
+  auto world = World::create();
+  auto skel = createSimpleSkeleton("recording_skel");
+  world->addSkeleton(skel);
+
+  auto recording = world->getRecording();
+  ASSERT_NE(recording, nullptr);
+
+  EXPECT_EQ(recording->getNumFrames(), 0);
+  EXPECT_EQ(recording->getNumSkeletons(), 1);
+  EXPECT_EQ(recording->getNumDofs(0), 1);
+
+  world->step();
+  world->bake();
+  EXPECT_EQ(recording->getNumFrames(), 1);
+
+  world->step();
+  world->bake();
+  EXPECT_EQ(recording->getNumFrames(), 2);
+
+  Eigen::VectorXd config = recording->getConfig(0, 0);
+  EXPECT_EQ(config.size(), 1);
+
+  double genCoord = recording->getGenCoord(0, 0, 0);
+  EXPECT_DOUBLE_EQ(genCoord, config[0]);
+
+  recording->clear();
+  EXPECT_EQ(recording->getNumFrames(), 0);
+}
+
+//==============================================================================
+TEST(WorldTests, RecordingAddState)
+{
+  auto world = World::create();
+  auto skel = createSimpleSkeleton("state_skel");
+  world->addSkeleton(skel);
+
+  auto recording = world->getRecording();
+
+  Eigen::VectorXd state(1);
+  state << 0.5;
+  recording->addState(state);
+
+  EXPECT_EQ(recording->getNumFrames(), 1);
+  EXPECT_DOUBLE_EQ(recording->getGenCoord(0, 0, 0), 0.5);
+
+  state << 1.0;
+  recording->addState(state);
+
+  EXPECT_EQ(recording->getNumFrames(), 2);
+  EXPECT_DOUBLE_EQ(recording->getGenCoord(1, 0, 0), 1.0);
+}
+
+//==============================================================================
+TEST(WorldTests, BakeRecordsSimulationState)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+
+  auto skel = Skeleton::create("bake_skel");
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, FreeJoint::Properties(), BodyNode::AspectProperties("body"));
+
+  Inertia inertia;
+  inertia.setMass(1.0);
+  pair.second->setInertia(inertia);
+
+  world->addSkeleton(skel);
+
+  auto recording = world->getRecording();
+  EXPECT_EQ(recording->getNumFrames(), 0);
+
+  for (int i = 0; i < 10; ++i) {
+    world->step();
+    world->bake();
+  }
+
+  EXPECT_EQ(recording->getNumFrames(), 10);
+
+  Eigen::VectorXd config0 = recording->getConfig(0, 0);
+  Eigen::VectorXd config9 = recording->getConfig(9, 0);
+
+  EXPECT_LT(config9[5], config0[5]);
+}
+
+//==============================================================================
+TEST(WorldTests, SkeletonNameChange)
+{
+  auto world = World::create();
+  auto skel = createSimpleSkeleton("original_name");
+
+  world->addSkeleton(skel);
+  EXPECT_EQ(world->getSkeleton("original_name"), skel);
+
+  skel->setName("new_name");
+
+  EXPECT_EQ(world->getSkeleton("new_name"), skel);
+  EXPECT_EQ(world->getSkeleton("original_name"), nullptr);
+}
+
+//==============================================================================
+TEST(WorldTests, SimpleFrameNameChange)
+{
+  auto world = World::create();
+  auto frame = SimpleFrame::createShared(Frame::World(), "original_frame");
+
+  world->addSimpleFrame(frame);
+  EXPECT_EQ(world->getSimpleFrame("original_frame"), frame);
+
+  frame->setName("renamed_frame");
+
+  EXPECT_EQ(world->getSimpleFrame("renamed_frame"), frame);
+  EXPECT_EQ(world->getSimpleFrame("original_frame"), nullptr);
+}
+
+//==============================================================================
+TEST(WorldTests, StepWithPersistForces)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+
+  auto skel = Skeleton::create("force_skel");
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, FreeJoint::Properties(), BodyNode::AspectProperties("body"));
+
+  Inertia inertia;
+  inertia.setMass(1.0);
+  pair.second->setInertia(inertia);
+
+  world->addSkeleton(skel);
+
+  Eigen::Vector3d force(10.0, 0.0, 0.0);
+  pair.second->addExtForce(force);
+
+  world->step(false);
+
+  Eigen::Vector6d extForce = pair.second->getExternalForceLocal();
+  EXPECT_GT(extForce.norm(), 0.0);
+
+  world->step(true);
+
+  extForce = pair.second->getExternalForceLocal();
+  EXPECT_DOUBLE_EQ(extForce.norm(), 0.0);
+}
+
+//==============================================================================
+TEST(WorldTests, AddSkeletonTwice)
+{
+  auto world = World::create();
+  auto skel = createSimpleSkeleton("duplicate_skel");
+
+  world->addSkeleton(skel);
+  EXPECT_EQ(world->getNumSkeletons(), 1u);
+
+  world->addSkeleton(skel);
+  EXPECT_EQ(world->getNumSkeletons(), 1u);
+}
+
+//==============================================================================
+TEST(WorldTests, RemoveNonExistentSkeleton)
+{
+  auto world = World::create();
+  auto skel1 = createSimpleSkeleton("skel1");
+  auto skel2 = createSimpleSkeleton("skel2");
+
+  world->addSkeleton(skel1);
+  EXPECT_EQ(world->getNumSkeletons(), 1u);
+
+  world->removeSkeleton(skel2);
+  EXPECT_EQ(world->getNumSkeletons(), 1u);
+
+  EXPECT_THROW(
+      world->removeSkeleton(nullptr), dart::common::NullPointerException);
+  EXPECT_EQ(world->getNumSkeletons(), 1u);
 }
