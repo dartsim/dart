@@ -58,11 +58,7 @@ template <typename T, int Size>
     const Eigen::Matrix<T, Size, 1>& v) noexcept
 {
   static_assert(Size >= 1 && Size <= 16, "Unsupported Eigen vector size");
-  Vec<T, static_cast<std::size_t>(Size)> result;
-  for (int i = 0; i < Size; ++i) {
-    result[i] = v[i];
-  }
-  return result;
+  return Vec<T, static_cast<std::size_t>(Size)>::load(v.data());
 }
 
 template <typename T, int Size>
@@ -70,18 +66,14 @@ template <typename T, int Size>
     const Eigen::Matrix<T, 1, Size>& v) noexcept
 {
   static_assert(Size >= 1 && Size <= 16, "Unsupported Eigen vector size");
-  Vec<T, static_cast<std::size_t>(Size)> result;
-  for (int i = 0; i < Size; ++i) {
-    result[i] = v[i];
-  }
-  return result;
+  return Vec<T, static_cast<std::size_t>(Size)>::load(v.data());
 }
 
 template <typename T>
 [[nodiscard]] inline Vec<T, 4> toVec3Padded(
     const Eigen::Matrix<T, 3, 1>& v, T pad = T{0}) noexcept
 {
-  return Vec<T, 4>(std::array<T, 4>{v[0], v[1], v[2], pad});
+  return Vec<T, 4>::set(v[0], v[1], v[2], pad);
 }
 
 template <typename T, std::size_t W>

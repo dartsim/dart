@@ -321,9 +321,9 @@ TEST_F(EigenInteropTest, TransposeAoSToSoA)
 TEST_F(EigenInteropTest, TransposeSoAToAoS)
 {
   ds::EigenSoA3f4 soa;
-  soa.x = ds::Vec4f::set(1, 4, 7, 10);
-  soa.y = ds::Vec4f::set(2, 5, 8, 11);
-  soa.z = ds::Vec4f::set(3, 6, 9, 12);
+  soa.x = ds::Vec4f::set(1.0f, 4.0f, 7.0f, 10.0f);
+  soa.y = ds::Vec4f::set(2.0f, 5.0f, 8.0f, 11.0f);
+  soa.z = ds::Vec4f::set(3.0f, 6.0f, 9.0f, 12.0f);
 
   auto aos = ds::transposeSoaToAos(soa);
 
@@ -447,10 +447,10 @@ TEST_F(EigenInteropTest, EigenSoA4TransposeAoSToSoA)
 TEST_F(EigenInteropTest, EigenSoA4TransposeSoAToAoS)
 {
   ds::EigenSoA4f4 soa;
-  soa.x = ds::Vec4f::set(1, 5, 9, 13);
-  soa.y = ds::Vec4f::set(2, 6, 10, 14);
-  soa.z = ds::Vec4f::set(3, 7, 11, 15);
-  soa.w = ds::Vec4f::set(4, 8, 12, 16);
+  soa.x = ds::Vec4f::set(1.0f, 5.0f, 9.0f, 13.0f);
+  soa.y = ds::Vec4f::set(2.0f, 6.0f, 10.0f, 14.0f);
+  soa.z = ds::Vec4f::set(3.0f, 7.0f, 11.0f, 15.0f);
+  soa.w = ds::Vec4f::set(4.0f, 8.0f, 12.0f, 16.0f);
 
   auto aos = ds::transposeSoaToAos(soa);
 
