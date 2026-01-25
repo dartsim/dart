@@ -43,7 +43,7 @@ Port fix from main to <RELEASE_BRANCH>.
 ### 1. Verify fix exists on main
 ```bash
 gh pr view <SOURCE_PR> --json state,mergedAt
-````
+```
 
 ### 2. Check if already backported
 
@@ -99,3 +99,4 @@ gh pr edit <PR_NUMBER> --milestone "<MILESTONE_NAME>"
 ```
 
 ```
+````

@@ -55,7 +55,7 @@ git tag | grep "v$RELEASE_VERSION" && echo "Tag found" || echo "Warning: Tag v$R
 # 5. Show commits to be merged
 echo "New commits on $RELEASE_BRANCH since last merge:"
 git log origin/main..origin/$RELEASE_BRANCH --oneline | head -10
-````
+```
 
 ## Prerequisites
 
@@ -138,14 +138,14 @@ Resolution strategy:
 # Check CHANGELOG.md conflict
 if git status --porcelain | grep -q "^UU CHANGELOG.md"; then
   echo "CHANGELOG.md has conflicts - manual review needed"
-  
+
   # Show what's different
   echo "=== Release branch changelog entries ==="
   git show origin/$RELEASE_BRANCH:CHANGELOG.md | head -100
-  
+
   echo "=== Main branch changelog entries ==="
   git show origin/main:CHANGELOG.md | head -100
-  
+
   # Usually safe to prefer main's version if fixes were forward-ported individually
   # The DART 6.16.x section in release branch is for that branch only
   git checkout --ours CHANGELOG.md && git add CHANGELOG.md
@@ -254,3 +254,4 @@ This prompt is designed to work with **zero user input**:
 | main          | DART 7.0    | Next major release              |
 | release-6.16  | DART 6.16.x | Patch releases (set minor too)  |
 ```
+````

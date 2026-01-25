@@ -39,7 +39,7 @@ release_date=$(date +%Y-%m-%d)
 
 # Milestone
 gh api repos/{owner}/{repo}/milestones --jq '.[] | select(.title | contains("<NEW_VERSION>"))'
-````
+```
 
 ## Workflow
 
@@ -108,3 +108,4 @@ gh pr edit <PR_NUMBER> --milestone "DART <NEW_VERSION>"
 ```
 
 ```
+````

@@ -41,7 +41,7 @@ Fix CI failure on <RELEASE_BRANCH>.
 gh run view <RUN_ID> --log-failed
 # Or for specific job:
 gh run view <RUN_ID> --job <JOB_ID> --log
-````
+```
 
 ### 2. Check if fix exists on main
 
@@ -104,3 +104,4 @@ gh run watch <RUN_ID> --interval 30
 ```
 
 ```
+````
