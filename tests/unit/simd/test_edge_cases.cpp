@@ -162,7 +162,7 @@ class SimdAlignmentTest : public ::testing::Test
 TEST_F(SimdAlignmentTest, AlignedVector)
 {
   aligned_vector<float> vec(16, 1.0f);
-  EXPECT_TRUE(is_aligned(vec.data(), 32));
+  EXPECT_TRUE(is_aligned(vec.data(), default_vector_alignment));
 
   for (std::size_t i = 0; i < 16; i += 4) {
     auto v = Vec<float, 4>::load(&vec[i]);
