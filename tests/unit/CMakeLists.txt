@@ -62,6 +62,7 @@ set(common_unit_sources
   common/test_pool_allocator.cpp
   common/test_profiler.cpp
   common/test_resource.cpp
+  common/test_resource_retriever.cpp
   common/test_result.cpp
   common/test_shared_library.cpp
   common/test_signal.cpp
