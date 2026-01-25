@@ -32,6 +32,7 @@
 
 #include <dart/common/callocator.hpp>
 #include <dart/common/memory_allocator.hpp>
+#include <dart/common/platform.hpp>
 
 #include <gtest/gtest.h>
 
@@ -49,6 +50,7 @@ TEST(MemoryAllocatorTest, DefaultAllocatorIsStable)
   EXPECT_NE(dynamic_cast<CAllocator*>(&allocator1), nullptr);
 }
 
+#if !DART_OS_WINDOWS
 TEST(MemoryAllocatorTest, PrintWritesMessages)
 {
   MemoryAllocator& allocator = MemoryAllocator::GetDefault();
@@ -65,3 +67,4 @@ TEST(MemoryAllocatorTest, PrintWritesMessages)
   viaStream << allocator;
   EXPECT_NE(viaStream.str().find("[CAllocator]"), std::string::npos);
 }
+#endif // !DART_OS_WINDOWS

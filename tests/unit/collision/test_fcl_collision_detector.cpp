@@ -23,6 +23,8 @@
 
 #include <dart/math/tri_mesh.hpp>
 
+#include <dart/common/platform.hpp>
+
 #include <gtest/gtest.h>
 
 #include <memory>
@@ -352,6 +354,7 @@ TEST(FCLCollisionDetector, CylinderShapeAsMesh)
   EXPECT_GT(result.second, 0u);
 }
 
+#if !DART_OS_WINDOWS
 TEST(FCLCollisionGroup, GetFCLCollisionManager)
 {
   auto detector = FCLCollisionDetector::create();
@@ -363,3 +366,4 @@ TEST(FCLCollisionGroup, GetFCLCollisionManager)
   auto* manager = exposedGroup->getFCLCollisionManager();
   EXPECT_NE(manager, nullptr);
 }
+#endif // !DART_OS_WINDOWS

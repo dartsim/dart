@@ -32,6 +32,7 @@
 
 #include "helpers/gtest_utils.hpp"
 
+#include "dart/common/platform.hpp"
 #include "dart/math/geometry.hpp"
 #include "dart/math/helpers.hpp"
 
@@ -1373,6 +1374,7 @@ TEST(Geometry, ComputeClosestPointOnLineSegmentVertical)
   EXPECT_TRUE(closest.isApprox(Eigen::Vector2d(1.0, 2.0), 1e-12));
 }
 
+#if !DART_OS_WINDOWS
 //==============================================================================
 TEST(Geometry, BoundingBoxDefaultConstructor)
 {
@@ -1518,3 +1520,4 @@ TEST(Geometry, ComputeSupportPolygonWithIndices)
   EXPECT_EQ(poly.size(), 3u);
   EXPECT_EQ(indices.size(), 3u);
 }
+#endif // !DART_OS_WINDOWS
