@@ -54,6 +54,12 @@ struct VecMask<float, 8>
 
   DART_SIMD_INLINE VecMask(__m256 v) : data(v) {}
 
+  DART_SIMD_INLINE VecMask(bool value)
+    : data(value ? _mm256_cmp_ps(_mm256_setzero_ps(), _mm256_setzero_ps(), _CMP_EQ_OQ)
+                 : _mm256_setzero_ps())
+  {
+  }
+
   DART_SIMD_INLINE static VecMask all_true()
   {
     return VecMask(_mm256_cmp_ps(
@@ -130,6 +136,35 @@ struct VecMask<float, 8>
   {
     return *this | other;
   }
+
+  DART_SIMD_INLINE VecMask& operator&=(const VecMask& other)
+  {
+    data = _mm256_and_ps(data, other.data);
+    return *this;
+  }
+
+  DART_SIMD_INLINE VecMask& operator|=(const VecMask& other)
+  {
+    data = _mm256_or_ps(data, other.data);
+    return *this;
+  }
+
+  DART_SIMD_INLINE VecMask& operator^=(const VecMask& other)
+  {
+    data = _mm256_xor_ps(data, other.data);
+    return *this;
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE bool operator==(const VecMask& other) const
+  {
+    __m256 xored = _mm256_xor_ps(data, other.data);
+    return _mm256_movemask_ps(xored) == 0;
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE bool operator!=(const VecMask& other) const
+  {
+    return !(*this == other);
+  }
 };
 
 template <>
@@ -143,6 +178,12 @@ struct VecMask<double, 4>
   VecMask() = default;
 
   DART_SIMD_INLINE VecMask(__m256d v) : data(v) {}
+
+  DART_SIMD_INLINE VecMask(bool value)
+    : data(value ? _mm256_cmp_pd(_mm256_setzero_pd(), _mm256_setzero_pd(), _CMP_EQ_OQ)
+                 : _mm256_setzero_pd())
+  {
+  }
 
   DART_SIMD_INLINE static VecMask all_true()
   {
@@ -219,6 +260,35 @@ struct VecMask<double, 4>
   DART_SIMD_INLINE VecMask operator||(const VecMask& other) const
   {
     return *this | other;
+  }
+
+  DART_SIMD_INLINE VecMask& operator&=(const VecMask& other)
+  {
+    data = _mm256_and_pd(data, other.data);
+    return *this;
+  }
+
+  DART_SIMD_INLINE VecMask& operator|=(const VecMask& other)
+  {
+    data = _mm256_or_pd(data, other.data);
+    return *this;
+  }
+
+  DART_SIMD_INLINE VecMask& operator^=(const VecMask& other)
+  {
+    data = _mm256_xor_pd(data, other.data);
+    return *this;
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE bool operator==(const VecMask& other) const
+  {
+    __m256d xored = _mm256_xor_pd(data, other.data);
+    return _mm256_movemask_pd(xored) == 0;
+  }
+
+  [[nodiscard]] DART_SIMD_INLINE bool operator!=(const VecMask& other) const
+  {
+    return !(*this == other);
   }
 };
 

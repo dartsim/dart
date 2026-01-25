@@ -122,9 +122,7 @@ TEST_F(EigenInteropTest, ToVec3PaddedCustomPad)
 
 TEST_F(EigenInteropTest, ToEigenVec2)
 {
-  ds::Vec<double, 2> vec;
-  vec[0] = 1.0;
-  vec[1] = 2.0;
+  auto vec = ds::Vec<double, 2>::set(1.0, 2.0);
 
   auto eigen = ds::toEigen(vec);
 
@@ -134,11 +132,7 @@ TEST_F(EigenInteropTest, ToEigenVec2)
 
 TEST_F(EigenInteropTest, ToEigenVec4)
 {
-  ds::Vec4d vec;
-  vec[0] = 1.0;
-  vec[1] = 2.0;
-  vec[2] = 3.0;
-  vec[3] = 4.0;
+  auto vec = ds::Vec4d::set(1.0, 2.0, 3.0, 4.0);
 
   Eigen::Vector4d eigen = ds::toEigen(vec);
 
@@ -327,9 +321,9 @@ TEST_F(EigenInteropTest, TransposeAoSToSoA)
 TEST_F(EigenInteropTest, TransposeSoAToAoS)
 {
   ds::EigenSoA3f4 soa;
-  soa.x = ds::Vec4f(std::array<float, 4>{1, 4, 7, 10});
-  soa.y = ds::Vec4f(std::array<float, 4>{2, 5, 8, 11});
-  soa.z = ds::Vec4f(std::array<float, 4>{3, 6, 9, 12});
+  soa.x = ds::Vec4f::set(1, 4, 7, 10);
+  soa.y = ds::Vec4f::set(2, 5, 8, 11);
+  soa.z = ds::Vec4f::set(3, 6, 9, 12);
 
   auto aos = ds::transposeSoaToAos(soa);
 
@@ -453,10 +447,10 @@ TEST_F(EigenInteropTest, EigenSoA4TransposeAoSToSoA)
 TEST_F(EigenInteropTest, EigenSoA4TransposeSoAToAoS)
 {
   ds::EigenSoA4f4 soa;
-  soa.x = ds::Vec4f(std::array<float, 4>{1, 5, 9, 13});
-  soa.y = ds::Vec4f(std::array<float, 4>{2, 6, 10, 14});
-  soa.z = ds::Vec4f(std::array<float, 4>{3, 7, 11, 15});
-  soa.w = ds::Vec4f(std::array<float, 4>{4, 8, 12, 16});
+  soa.x = ds::Vec4f::set(1, 5, 9, 13);
+  soa.y = ds::Vec4f::set(2, 6, 10, 14);
+  soa.z = ds::Vec4f::set(3, 7, 11, 15);
+  soa.w = ds::Vec4f::set(4, 8, 12, 16);
 
   auto aos = ds::transposeSoaToAos(soa);
 
