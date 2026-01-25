@@ -43,10 +43,14 @@ namespace common {
 //==============================================================================
 std::string Resource::readAll()
 {
+  const auto size = getSize();
+  if (size == 0) {
+    throw std::runtime_error("Cannot read from an empty resource.");
+  }
+
   std::string content;
-  content.resize(getSize());
-  const auto result = read(&content.front(), content.size(), 1);
-  // Safe because std::string is guaranteed to be contiguous in C++11.
+  content.resize(size);
+  const auto result = read(content.data(), content.size(), 1);
 
   if (result != 1) {
     throw std::runtime_error("Failed reading data from a resource.");
