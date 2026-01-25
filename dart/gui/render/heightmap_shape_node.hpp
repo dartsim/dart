@@ -33,7 +33,6 @@
 #ifndef DART_GUI_RENDER_HEIGHTMAPSHAPENODE_HPP_
 #define DART_GUI_RENDER_HEIGHTMAPSHAPENODE_HPP_
 
-#include "dart/common/Macros.hpp"
 #include "dart/common/macros.hpp"
 
 #include <dart/config.hpp>
