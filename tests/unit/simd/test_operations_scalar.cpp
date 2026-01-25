@@ -248,8 +248,9 @@ TYPED_TEST(OperationsScalarTest, Floor)
   std::vector<scalar_type> data(width);
   for (std::size_t i = 0; i < width; ++i) {
     data[i] = static_cast<scalar_type>(i) + scalar_type{0.7};
-    if (i % 2 == 1)
+    if (i % 2 == 1) {
       data[i] = -data[i];
+    }
   }
 
   auto v = vec_type::load(data.data());
@@ -269,8 +270,9 @@ TYPED_TEST(OperationsScalarTest, Ceil)
   std::vector<scalar_type> data(width);
   for (std::size_t i = 0; i < width; ++i) {
     data[i] = static_cast<scalar_type>(i) + scalar_type{0.3};
-    if (i % 2 == 1)
+    if (i % 2 == 1) {
       data[i] = -data[i];
+    }
   }
 
   auto v = vec_type::load(data.data());
@@ -290,8 +292,9 @@ TYPED_TEST(OperationsScalarTest, Trunc)
   std::vector<scalar_type> data(width);
   for (std::size_t i = 0; i < width; ++i) {
     data[i] = static_cast<scalar_type>(i) + scalar_type{0.9};
-    if (i % 2 == 1)
+    if (i % 2 == 1) {
       data[i] = -data[i];
+    }
   }
 
   auto v = vec_type::load(data.data());

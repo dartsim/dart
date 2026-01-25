@@ -96,8 +96,9 @@ TYPED_TEST(VecMaskScalarTest, MixedValues)
   int expected_popcount = 0;
   for (std::size_t i = 0; i < width; ++i) {
     arr[i] = (i % 2 == 0);
-    if (arr[i])
+    if (arr[i]) {
       ++expected_popcount;
+    }
   }
 
   mask_type m(arr);
@@ -127,8 +128,9 @@ TYPED_TEST(VecMaskScalarTest, Bitmask)
   std::uint32_t expected_alt = 0;
   for (std::size_t i = 0; i < width; ++i) {
     alt[i] = (i % 2 == 0);
-    if (alt[i])
+    if (alt[i]) {
       expected_alt |= (1u << i);
+    }
   }
   mask_type m_alt(alt);
   EXPECT_EQ(m_alt.bitmask(), expected_alt);

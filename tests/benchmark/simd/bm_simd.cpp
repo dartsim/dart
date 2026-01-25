@@ -1050,10 +1050,12 @@ static void BM_MatVec_DART_f32_Baseline(benchmark::State& state)
 
   std::mt19937 gen(42);
   std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
-  for (auto& v : matrix)
+  for (auto& v : matrix) {
     v = dist(gen);
-  for (auto& v : vec)
+  }
+  for (auto& v : vec) {
     v = dist(gen);
+  }
 
   constexpr std::size_t W = preferred_width_v<float>;
   using VecT = Vec<float, W>;
@@ -1094,10 +1096,12 @@ static void BM_MatVec_DART_f32(benchmark::State& state)
 
   std::mt19937 gen(42);
   std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
-  for (auto& v : matrix)
+  for (auto& v : matrix) {
     v = dist(gen);
-  for (auto& v : vec)
+  }
+  for (auto& v : vec) {
     v = dist(gen);
+  }
 
   constexpr std::size_t W = preferred_width_v<float>;
   using VecT = Vec<float, W>;
@@ -1579,6 +1583,336 @@ static void BM_Vector4OuterProduct_DART_f32(benchmark::State& state)
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
 }
 BENCHMARK(BM_Vector4OuterProduct_DART_f32)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true)
+    ->RangeMultiplier(4)
+    ->Range(kMinSize, kMaxSize);
+
+// =============================================================================
+// BATCH SIMD Benchmarks (SoA layout - processes W matrices/vectors at once)
+// These use the new batch APIs for SIMD-parallel processing
+// =============================================================================
+
+static void BM_Matrix3x3Determinant_Batch_DART_f32(benchmark::State& state)
+{
+  const auto n = static_cast<std::size_t>(state.range(0));
+  constexpr std::size_t W = preferred_width_v<float>;
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> dist(0.1f, 10.0f);
+
+  // Store in SoA layout: 9 arrays of n elements each
+  aligned_vector<float> m00(n), m10(n), m20(n);
+  aligned_vector<float> m01(n), m11(n), m21(n);
+  aligned_vector<float> m02(n), m12(n), m22(n);
+  aligned_vector<float> results(n);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    m00[i] = dist(gen);
+    m10[i] = dist(gen);
+    m20[i] = dist(gen);
+    m01[i] = dist(gen);
+    m11[i] = dist(gen);
+    m21[i] = dist(gen);
+    m02[i] = dist(gen);
+    m12[i] = dist(gen);
+    m22[i] = dist(gen);
+  }
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; i += W) {
+      auto batch = Matrix3x3SoA<float, W>::loadFromArrays(
+          &m00[i],
+          &m10[i],
+          &m20[i],
+          &m01[i],
+          &m11[i],
+          &m21[i],
+          &m02[i],
+          &m12[i],
+          &m22[i]);
+      auto det = batch.determinant();
+      det.store(&results[i]);
+    }
+    benchmark::DoNotOptimize(results.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 9);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_Matrix3x3Determinant_Batch_DART_f32)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true)
+    ->RangeMultiplier(4)
+    ->Range(kCollisionMin, kCollisionMax);
+
+static void BM_Matrix3x3Inverse_Batch_DART_f32(benchmark::State& state)
+{
+  const auto n = static_cast<std::size_t>(state.range(0));
+  constexpr std::size_t W = preferred_width_v<float>;
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> dist(0.1f, 10.0f);
+
+  // Store in SoA layout
+  aligned_vector<float> m00(n), m10(n), m20(n);
+  aligned_vector<float> m01(n), m11(n), m21(n);
+  aligned_vector<float> m02(n), m12(n), m22(n);
+  // Output arrays
+  aligned_vector<float> r00(n), r10(n), r20(n);
+  aligned_vector<float> r01(n), r11(n), r21(n);
+  aligned_vector<float> r02(n), r12(n), r22(n);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    m00[i] = dist(gen);
+    m10[i] = dist(gen);
+    m20[i] = dist(gen);
+    m01[i] = dist(gen);
+    m11[i] = dist(gen);
+    m21[i] = dist(gen);
+    m02[i] = dist(gen);
+    m12[i] = dist(gen);
+    m22[i] = dist(gen);
+  }
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; i += W) {
+      auto batch = Matrix3x3SoA<float, W>::loadFromArrays(
+          &m00[i],
+          &m10[i],
+          &m20[i],
+          &m01[i],
+          &m11[i],
+          &m21[i],
+          &m02[i],
+          &m12[i],
+          &m22[i]);
+      auto inv = batch.inverse();
+      inv.storeToArrays(
+          &r00[i],
+          &r10[i],
+          &r20[i],
+          &r01[i],
+          &r11[i],
+          &r21[i],
+          &r02[i],
+          &r12[i],
+          &r22[i]);
+    }
+    benchmark::DoNotOptimize(r00.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 9 * 2);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_Matrix3x3Inverse_Batch_DART_f32)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true)
+    ->RangeMultiplier(4)
+    ->Range(kCollisionMin, kCollisionMax);
+
+static void BM_Matrix4x4Determinant_Batch_DART_f32(benchmark::State& state)
+{
+  const auto n = static_cast<std::size_t>(state.range(0));
+  constexpr std::size_t W = preferred_width_v<float>;
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> dist(0.1f, 10.0f);
+
+  // Store in SoA layout: 16 arrays
+  aligned_vector<float> m00(n), m10(n), m20(n), m30(n);
+  aligned_vector<float> m01(n), m11(n), m21(n), m31(n);
+  aligned_vector<float> m02(n), m12(n), m22(n), m32(n);
+  aligned_vector<float> m03(n), m13(n), m23(n), m33(n);
+  aligned_vector<float> results(n);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    m00[i] = dist(gen);
+    m10[i] = dist(gen);
+    m20[i] = dist(gen);
+    m30[i] = dist(gen);
+    m01[i] = dist(gen);
+    m11[i] = dist(gen);
+    m21[i] = dist(gen);
+    m31[i] = dist(gen);
+    m02[i] = dist(gen);
+    m12[i] = dist(gen);
+    m22[i] = dist(gen);
+    m32[i] = dist(gen);
+    m03[i] = dist(gen);
+    m13[i] = dist(gen);
+    m23[i] = dist(gen);
+    m33[i] = dist(gen);
+  }
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; i += W) {
+      auto batch = Matrix4x4SoA<float, W>::loadFromArrays(
+          &m00[i],
+          &m10[i],
+          &m20[i],
+          &m30[i],
+          &m01[i],
+          &m11[i],
+          &m21[i],
+          &m31[i],
+          &m02[i],
+          &m12[i],
+          &m22[i],
+          &m32[i],
+          &m03[i],
+          &m13[i],
+          &m23[i],
+          &m33[i]);
+      auto det = batch.determinant();
+      det.store(&results[i]);
+    }
+    benchmark::DoNotOptimize(results.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 16);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_Matrix4x4Determinant_Batch_DART_f32)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true)
+    ->RangeMultiplier(4)
+    ->Range(kCollisionMin, kCollisionMax);
+
+static void BM_Vector3OuterProduct_Batch_DART_f32(benchmark::State& state)
+{
+  const auto n = static_cast<std::size_t>(state.range(0));
+  constexpr std::size_t W = preferred_width_v<float>;
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> dist(-10.0f, 10.0f);
+
+  // Store vectors in SoA layout
+  aligned_vector<float> ax(n), ay(n), az(n);
+  aligned_vector<float> bx(n), by(n), bz(n);
+  // Output: 9 arrays for the 3x3 matrices
+  aligned_vector<float> r00(n), r10(n), r20(n);
+  aligned_vector<float> r01(n), r11(n), r21(n);
+  aligned_vector<float> r02(n), r12(n), r22(n);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    ax[i] = dist(gen);
+    ay[i] = dist(gen);
+    az[i] = dist(gen);
+    bx[i] = dist(gen);
+    by[i] = dist(gen);
+    bz[i] = dist(gen);
+  }
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; i += W) {
+      auto a = Vector3SoA<float, W>::loadFromArrays(&ax[i], &ay[i], &az[i]);
+      auto b = Vector3SoA<float, W>::loadFromArrays(&bx[i], &by[i], &bz[i]);
+      auto result = outer(a, b);
+      result.storeToArrays(
+          &r00[i],
+          &r10[i],
+          &r20[i],
+          &r01[i],
+          &r11[i],
+          &r21[i],
+          &r02[i],
+          &r12[i],
+          &r22[i]);
+    }
+    benchmark::DoNotOptimize(r00.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 6);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_Vector3OuterProduct_Batch_DART_f32)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true)
+    ->RangeMultiplier(4)
+    ->Range(kMinSize, kMaxSize);
+
+static void BM_Vector3Reflect_Batch_DART_f32(benchmark::State& state)
+{
+  const auto n = static_cast<std::size_t>(state.range(0));
+  constexpr std::size_t W = preferred_width_v<float>;
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> dist(-10.0f, 10.0f);
+
+  // Store vectors in SoA layout
+  aligned_vector<float> vx(n), vy(n), vz(n);
+  aligned_vector<float> nx(n), ny(n), nz(n);
+  aligned_vector<float> rx(n), ry(n), rz(n);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    vx[i] = dist(gen);
+    vy[i] = dist(gen);
+    vz[i] = dist(gen);
+    // Pre-normalize the normals
+    float nnx = dist(gen), nny = dist(gen), nnz = dist(gen);
+    float len = std::sqrt(nnx * nnx + nny * nny + nnz * nnz);
+    nx[i] = nnx / len;
+    ny[i] = nny / len;
+    nz[i] = nnz / len;
+  }
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; i += W) {
+      auto v = Vector3SoA<float, W>::loadFromArrays(&vx[i], &vy[i], &vz[i]);
+      auto normal
+          = Vector3SoA<float, W>::loadFromArrays(&nx[i], &ny[i], &nz[i]);
+      auto result = reflect(v, normal);
+      result.storeToArrays(&rx[i], &ry[i], &rz[i]);
+    }
+    benchmark::DoNotOptimize(rx.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 6);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_Vector3Reflect_Batch_DART_f32)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true)
+    ->RangeMultiplier(4)
+    ->Range(kMinSize, kMaxSize);
+
+static void BM_Vector3Project_Batch_DART_f32(benchmark::State& state)
+{
+  const auto n = static_cast<std::size_t>(state.range(0));
+  constexpr std::size_t W = preferred_width_v<float>;
+
+  std::mt19937 gen(42);
+  std::uniform_real_distribution<float> dist(-10.0f, 10.0f);
+
+  // Store vectors in SoA layout
+  aligned_vector<float> ax(n), ay(n), az(n);
+  aligned_vector<float> bx(n), by(n), bz(n);
+  aligned_vector<float> rx(n), ry(n), rz(n);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    ax[i] = dist(gen);
+    ay[i] = dist(gen);
+    az[i] = dist(gen);
+    bx[i] = dist(gen);
+    by[i] = dist(gen);
+    bz[i] = dist(gen);
+  }
+
+  for (auto _ : state) {
+    for (std::size_t i = 0; i < n; i += W) {
+      auto a = Vector3SoA<float, W>::loadFromArrays(&ax[i], &ay[i], &az[i]);
+      auto b = Vector3SoA<float, W>::loadFromArrays(&bx[i], &by[i], &bz[i]);
+      auto result = project(a, b);
+      result.storeToArrays(&rx[i], &ry[i], &rz[i]);
+    }
+    benchmark::DoNotOptimize(rx.data());
+  }
+  state.SetBytesProcessed(
+      static_cast<int64_t>(state.iterations()) * n * sizeof(float) * 6);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * n);
+}
+BENCHMARK(BM_Vector3Project_Batch_DART_f32)
     ->Repetitions(5)
     ->ReportAggregatesOnly(true)
     ->RangeMultiplier(4)

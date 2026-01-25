@@ -388,8 +388,9 @@ template <typename T>
     const Vector3<T>& a, const Vector3<T>& b)
 {
   T bLenSq = b.squaredNorm();
-  if (bLenSq < T(1e-12))
+  if (bLenSq < T(1e-12)) {
     return Vector3<T>::zero();
+  }
   return (dot(a, b) / bLenSq) * b;
 }
 

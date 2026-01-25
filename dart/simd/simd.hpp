@@ -76,6 +76,7 @@
 #include <dart/simd/dynamic/matrix.hpp>
 #include <dart/simd/dynamic/vector.hpp>
 #include <dart/simd/eigen/interop.hpp>
+#include <dart/simd/geometry/batch.hpp>
 #include <dart/simd/geometry/isometry3.hpp>
 #include <dart/simd/geometry/matrix3x3.hpp>
 #include <dart/simd/geometry/matrix4x4.hpp>

@@ -301,4 +301,5 @@ dart_build_tests(
     simd/test_eigen_interop.cpp
     simd/test_geometry.cpp
     simd/test_dynamic.cpp
+    simd/test_batch_soa.cpp
 )
