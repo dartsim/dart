@@ -144,7 +144,7 @@ public:
       std::size_t row = 0;
       std::size_t simd_end = (rows_ / simd_width) * simd_width;
 
-#pragma GCC unroll 4
+      DART_SIMD_PRAGMA_UNROLL
       for (; row < simd_end; row += simd_width) {
         auto vr = Vec<T, simd_width>::load(res + row);
         auto vc = Vec<T, simd_width>::load(col_data + row);
@@ -181,7 +181,7 @@ public:
     T* a = data_.data();
     const T* b = rhs.data_.data();
 
-#pragma GCC unroll 4
+    DART_SIMD_PRAGMA_UNROLL
     for (std::size_t i = 0; i < simd_end; i += simd_width) {
       auto va = Vec<T, simd_width>::load(a + i);
       auto vb = Vec<T, simd_width>::load(b + i);
@@ -200,7 +200,7 @@ public:
     T* a = data_.data();
     const T* b = rhs.data_.data();
 
-#pragma GCC unroll 4
+    DART_SIMD_PRAGMA_UNROLL
     for (std::size_t i = 0; i < simd_end; i += simd_width) {
       auto va = Vec<T, simd_width>::load(a + i);
       auto vb = Vec<T, simd_width>::load(b + i);

@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/math/constants.hpp>
+
 #include <dart/simd/simd.hpp>
 
 #include <gtest/gtest.h>
@@ -37,6 +39,10 @@
 #include <cmath>
 
 using namespace dart::simd;
+
+namespace {
+constexpr double pi = dart::math::pi;
+}
 
 class Vector3Test : public ::testing::Test
 {
@@ -579,7 +585,7 @@ TEST_F(QuaternionTest, Identity)
 TEST_F(QuaternionTest, FromAxisAngle)
 {
   Vector3d axis(0.0, 0.0, 1.0);
-  double angle = M_PI / 2.0;
+  double angle = pi / 2.0;
 
   Quaterniond q = Quaterniond::fromAxisAngle(axis, angle);
 
@@ -592,7 +598,7 @@ TEST_F(QuaternionTest, FromAxisAngle)
 TEST_F(QuaternionTest, Rotate)
 {
   Vector3d axis(0.0, 0.0, 1.0);
-  double angle = M_PI / 2.0;
+  double angle = pi / 2.0;
   Quaterniond q = Quaterniond::fromAxisAngle(axis, angle);
 
   Vector3d v(1.0, 0.0, 0.0);
@@ -606,8 +612,8 @@ TEST_F(QuaternionTest, Rotate)
 TEST_F(QuaternionTest, Multiplication)
 {
   Vector3d axis_z(0.0, 0.0, 1.0);
-  Quaterniond q1 = Quaterniond::fromAxisAngle(axis_z, M_PI / 2.0);
-  Quaterniond q2 = Quaterniond::fromAxisAngle(axis_z, M_PI / 2.0);
+  Quaterniond q1 = Quaterniond::fromAxisAngle(axis_z, pi / 2.0);
+  Quaterniond q2 = Quaterniond::fromAxisAngle(axis_z, pi / 2.0);
 
   Quaterniond q_composed = q1 * q2;
 
@@ -633,7 +639,7 @@ TEST_F(QuaternionTest, Conjugate)
 TEST_F(QuaternionTest, Inverse)
 {
   Vector3d axis(0.0, 0.0, 1.0);
-  Quaterniond q = Quaterniond::fromAxisAngle(axis, M_PI / 3.0);
+  Quaterniond q = Quaterniond::fromAxisAngle(axis, pi / 3.0);
   Quaterniond inv = q.inverse();
 
   Quaterniond product = q * inv;
@@ -647,10 +653,10 @@ TEST_F(QuaternionTest, Slerp)
 {
   Quaterniond q1 = Quaterniond::identity();
   Vector3d axis(0.0, 0.0, 1.0);
-  Quaterniond q2 = Quaterniond::fromAxisAngle(axis, M_PI / 2.0);
+  Quaterniond q2 = Quaterniond::fromAxisAngle(axis, pi / 2.0);
 
   Quaterniond mid = slerp(q1, q2, 0.5);
-  Quaterniond expected = Quaterniond::fromAxisAngle(axis, M_PI / 4.0);
+  Quaterniond expected = Quaterniond::fromAxisAngle(axis, pi / 4.0);
 
   EXPECT_NEAR(mid.w(), expected.w(), 1e-10);
   EXPECT_NEAR(mid.x(), expected.x(), 1e-10);
@@ -661,7 +667,7 @@ TEST_F(QuaternionTest, Slerp)
 TEST_F(QuaternionTest, ToRotationMatrix)
 {
   Vector3d axis(0.0, 0.0, 1.0);
-  double angle = M_PI / 2.0;
+  double angle = pi / 2.0;
   Quaterniond q = Quaterniond::fromAxisAngle(axis, angle);
 
   Matrix3x3d m = q.toRotationMatrix();
@@ -729,7 +735,7 @@ TEST_F(Isometry3Test, PureTranslation)
 TEST_F(Isometry3Test, PureRotation)
 {
   Vector3d axis(0.0, 0.0, 1.0);
-  Quaterniond q = Quaterniond::fromAxisAngle(axis, M_PI / 2.0);
+  Quaterniond q = Quaterniond::fromAxisAngle(axis, pi / 2.0);
   Isometry3d iso = Isometry3d::fromRotation(q);
 
   Vector3d p(1.0, 0.0, 0.0);
@@ -746,7 +752,7 @@ TEST_F(Isometry3Test, Composition)
   Isometry3d iso1 = Isometry3d::fromTranslation(t1);
 
   Vector3d axis(0.0, 0.0, 1.0);
-  Quaterniond q = Quaterniond::fromAxisAngle(axis, M_PI / 2.0);
+  Quaterniond q = Quaterniond::fromAxisAngle(axis, pi / 2.0);
   Isometry3d iso2 = Isometry3d::fromRotation(q);
 
   Isometry3d composed = iso2 * iso1;
@@ -762,7 +768,7 @@ TEST_F(Isometry3Test, Composition)
 TEST_F(Isometry3Test, Inverse)
 {
   Vector3d axis(0.0, 0.0, 1.0);
-  Quaterniond q = Quaterniond::fromAxisAngle(axis, M_PI / 4.0);
+  Quaterniond q = Quaterniond::fromAxisAngle(axis, pi / 4.0);
   Vector3d t(10.0, 20.0, 30.0);
   Isometry3d iso(q, t);
 
@@ -780,7 +786,7 @@ TEST_F(Isometry3Test, Inverse)
 TEST_F(Isometry3Test, EigenInterop)
 {
   Eigen::Isometry3d eiso = Eigen::Isometry3d::Identity();
-  eiso.rotate(Eigen::AngleAxisd(M_PI / 4.0, Eigen::Vector3d::UnitZ()));
+  eiso.rotate(Eigen::AngleAxisd(pi / 4.0, Eigen::Vector3d::UnitZ()));
   eiso.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
 
   Isometry3d siso = Isometry3d::fromEigen(eiso);
@@ -800,7 +806,7 @@ TEST_F(Isometry3Test, Lerp)
   Isometry3d a = Isometry3d::identity();
 
   Vector3d axis(0.0, 0.0, 1.0);
-  Quaterniond q = Quaterniond::fromAxisAngle(axis, M_PI / 2.0);
+  Quaterniond q = Quaterniond::fromAxisAngle(axis, pi / 2.0);
   Vector3d t(10.0, 0.0, 0.0);
   Isometry3d b(q, t);
 

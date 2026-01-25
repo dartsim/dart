@@ -112,12 +112,15 @@
 #if defined(__GNUC__) || defined(__clang__)
   #define DART_SIMD_INLINE __attribute__((always_inline)) inline
   #define DART_SIMD_ALIGNED(x) __attribute__((aligned(x)))
+  #define DART_SIMD_PRAGMA_UNROLL _Pragma("GCC unroll 4")
 #elif defined(_MSC_VER)
   #define DART_SIMD_INLINE __forceinline
   #define DART_SIMD_ALIGNED(x) __declspec(align(x))
+  #define DART_SIMD_PRAGMA_UNROLL
 #else
   #define DART_SIMD_INLINE inline
   #define DART_SIMD_ALIGNED(x)
+  #define DART_SIMD_PRAGMA_UNROLL
 #endif
 
 namespace dart::simd {
