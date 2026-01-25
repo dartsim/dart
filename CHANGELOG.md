@@ -64,6 +64,8 @@
   - Fix assertion failure crash in JointConstraint when joint limits are invalid (lower > upper). Now emits a warning and skips limit enforcement for that DOF instead of crashing. ([gz-physics#846](https://github.com/gazebosim/gz-physics/issues/846))
   - Added split impulse contact correction and clarified zero-contact handling. ([#2354](https://github.com/dartsim/dart/pull/2354), [#2220](https://github.com/dartsim/dart/pull/2220), [#201](https://github.com/dartsim/dart/issues/201))
   - Added validation for invalid contact surface parameters (NaN/Inf/negative friction, restitution, and slip compliance) to prevent LCP solver crashes. ([gazebosim/gz-physics#841](https://github.com/gazebosim/gz-physics/issues/841))
+  - Warn and continue when LCP matrices are non-symmetric to avoid assertion failures with invalid contacts. ([gz-physics#848](https://github.com/gazebosim/gz-physics/issues/848))
+  - Guard against non-finite articulated body computations from zero/epsilon mass or extreme spring values. ([gz-physics#849](https://github.com/gazebosim/gz-physics/issues/849), [gz-physics#850](https://github.com/gazebosim/gz-physics/issues/850), [gz-physics#851](https://github.com/gazebosim/gz-physics/issues/851), [gz-physics#854](https://github.com/gazebosim/gz-physics/issues/854), [gz-physics#856](https://github.com/gazebosim/gz-physics/issues/856))
 
 - Collision and Geometry
   - Fixed PascalCase ODE compatibility headers to preserve legacy includes such as `OdeCollisionDetector.hpp`. ([#2475](https://github.com/dartsim/dart/pull/2475))

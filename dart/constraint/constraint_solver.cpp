@@ -969,7 +969,12 @@ void ConstraintSolver::solveConstrainedGroupInternal(
   }
 
 #if !defined(NDEBUG)
-  DART_ASSERT(isSymmetric(n, mA.data()));
+  if (!isSymmetric(n, mA.data())) {
+    DART_WARN(
+        "[ConstraintSolver::solveConstrainedGroup] LCP matrix is not "
+        "symmetric. "
+        "Continuing to avoid assertion failure.");
+  }
 #endif
 
   if (mSecondaryLcpSolver) {

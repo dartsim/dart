@@ -91,6 +91,7 @@ dart_build_tests(
   LINK_LIBRARIES dart
   SOURCES
     dynamics/test_name_management.cpp
+    dynamics/test_invalid_dynamics_inputs.cpp
 )
 
 if(TARGET dart-utils AND TARGET dart-io)
