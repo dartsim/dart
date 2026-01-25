@@ -177,7 +177,7 @@ TEST_F(SimdAlignmentTest, AlignedVectorResize)
 {
   aligned_vector<double> vec;
   vec.resize(100, 2.5);
-  EXPECT_TRUE(is_aligned(vec.data(), 32));
+  EXPECT_TRUE(is_aligned(vec.data(), default_vector_alignment));
   EXPECT_EQ(vec.size(), 100u);
   EXPECT_DOUBLE_EQ(vec[50], 2.5);
 }
