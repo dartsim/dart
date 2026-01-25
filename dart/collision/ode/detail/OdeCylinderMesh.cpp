@@ -32,7 +32,7 @@
 
 #include "dart/collision/ode/detail/OdeCylinderMesh.hpp"
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <Eigen/Core>
