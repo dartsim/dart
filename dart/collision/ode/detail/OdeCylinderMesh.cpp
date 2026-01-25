@@ -56,8 +56,9 @@ void appendTriangle(
 {
   Eigen::Vector3d normal = (p2 - p1).cross(p3 - p1);
   const double norm = normal.norm();
-  if (norm > 0.0)
+  if (norm > 0.0) {
     normal /= norm;
+  }
 
   const auto baseIndex = static_cast<int>(vertices.size() / 3);
   const Eigen::Vector3d points[] = {p1, p2, p3};
@@ -88,8 +89,9 @@ OdeCylinderMesh::OdeCylinderMesh(
 {
   buildMesh(radius, height, slices, stacks);
 
-  if (!mOdeTriMeshDataId)
+  if (!mOdeTriMeshDataId) {
     mOdeTriMeshDataId = dGeomTriMeshDataCreate();
+  }
 
   dGeomTriMeshDataBuildDouble1(
       mOdeTriMeshDataId,
@@ -109,8 +111,9 @@ OdeCylinderMesh::~OdeCylinderMesh()
 {
   dGeomDestroy(mGeomId);
 
-  if (mOdeTriMeshDataId)
+  if (mOdeTriMeshDataId) {
     dGeomTriMeshDataDestroy(mOdeTriMeshDataId);
+  }
 }
 
 //==============================================================================
