@@ -77,16 +77,18 @@
   #define DART_SIMD_SSE42 1
 #endif
 
-#if defined(__ARM_NEON) || defined(__ARM_NEON__)
-  #define DART_SIMD_NEON 1
-#endif
+#if !defined(DART_SIMD_FORCE_SCALAR)
+  #if defined(__ARM_NEON) || defined(__ARM_NEON__)
+    #define DART_SIMD_NEON 1
+  #endif
 
-#if defined(__ARM_FEATURE_SVE)
-  #define DART_SIMD_SVE 1
-#endif
+  #if defined(__ARM_FEATURE_SVE)
+    #define DART_SIMD_SVE 1
+  #endif
 
-#if defined(__ARM_FEATURE_SVE2)
-  #define DART_SIMD_SVE2 1
+  #if defined(__ARM_FEATURE_SVE2)
+    #define DART_SIMD_SVE2 1
+  #endif
 #endif
 
 #if defined(__FMA__) || defined(DART_SIMD_AVX2)

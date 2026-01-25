@@ -45,7 +45,15 @@
 
 namespace dart::simd {
 
-template <typename T, std::size_t Alignment = 32>
+#if defined(__AVX512F__)
+inline constexpr std::size_t default_vector_alignment = 64;
+#elif defined(__AVX__) || defined(__AVX2__)
+inline constexpr std::size_t default_vector_alignment = 32;
+#else
+inline constexpr std::size_t default_vector_alignment = 16;
+#endif
+
+template <typename T, std::size_t Alignment = default_vector_alignment>
 class AlignedAllocator
 {
 public:
@@ -123,7 +131,7 @@ template <typename T1, std::size_t A1, typename T2, std::size_t A2>
 }
 
 template <typename T>
-using aligned_vector = std::vector<T, AlignedAllocator<T, 32>>;
+using aligned_vector = std::vector<T, AlignedAllocator<T>>;
 
 template <typename T>
 [[nodiscard]] inline bool is_aligned(
