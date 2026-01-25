@@ -144,11 +144,7 @@ TEST_F(EigenInteropTest, ToEigenVec4)
 
 TEST_F(EigenInteropTest, ToEigen3FromVec4)
 {
-  ds::Vec4d vec;
-  vec[0] = 1.0;
-  vec[1] = 2.0;
-  vec[2] = 3.0;
-  vec[3] = 99.0;
+  auto vec = ds::Vec4d::set(1.0, 2.0, 3.0, 99.0);
 
   Eigen::Vector3d eigen = ds::toEigen3(vec);
 

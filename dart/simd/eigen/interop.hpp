@@ -156,9 +156,16 @@ struct EigenSoA3
 
   void set(std::size_t i, const Eigen::Matrix<T, 3, 1>& v) noexcept
   {
-    x[i] = v[0];
-    y[i] = v[1];
-    z[i] = v[2];
+    alignas(64) T xs[N], ys[N], zs[N];
+    x.store(xs);
+    y.store(ys);
+    z.store(zs);
+    xs[i] = v[0];
+    ys[i] = v[1];
+    zs[i] = v[2];
+    x = Vec<T, N>::load(xs);
+    y = Vec<T, N>::load(ys);
+    z = Vec<T, N>::load(zs);
   }
 };
 
@@ -254,10 +261,19 @@ struct EigenSoA4
 
   void set(std::size_t i, const Eigen::Matrix<T, 4, 1>& v) noexcept
   {
-    x[i] = v[0];
-    y[i] = v[1];
-    z[i] = v[2];
-    w[i] = v[3];
+    alignas(64) T xs[N], ys[N], zs[N], ws[N];
+    x.store(xs);
+    y.store(ys);
+    z.store(zs);
+    w.store(ws);
+    xs[i] = v[0];
+    ys[i] = v[1];
+    zs[i] = v[2];
+    ws[i] = v[3];
+    x = Vec<T, N>::load(xs);
+    y = Vec<T, N>::load(ys);
+    z = Vec<T, N>::load(zs);
+    w = Vec<T, N>::load(ws);
   }
 };
 
@@ -389,10 +405,19 @@ struct QuaternionSoA
 
   void set(std::size_t i, const Eigen::Quaternion<T>& q) noexcept
   {
-    x[i] = q.x();
-    y[i] = q.y();
-    z[i] = q.z();
-    w[i] = q.w();
+    alignas(64) T xs[N], ys[N], zs[N], ws[N];
+    x.store(xs);
+    y.store(ys);
+    z.store(zs);
+    w.store(ws);
+    xs[i] = q.x();
+    ys[i] = q.y();
+    zs[i] = q.z();
+    ws[i] = q.w();
+    x = Vec<T, N>::load(xs);
+    y = Vec<T, N>::load(ys);
+    z = Vec<T, N>::load(zs);
+    w = Vec<T, N>::load(ws);
   }
 };
 
