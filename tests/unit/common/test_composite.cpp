@@ -41,6 +41,11 @@ using namespace dart::common;
 
 namespace {
 
+// Static counter to track loseComposite calls that persists after object
+// destruction. Used by SetAspectReplacesExisting test to verify behavior
+// without accessing destroyed objects.
+int g_loseCompositeCallCount = 0;
+
 class TrackingComposite : public Composite
 {
 };
@@ -115,6 +120,7 @@ struct StatefulAspect : public CompositeTrackingAspect<TrackingComposite>
   void loseComposite(Composite* oldComposite) override
   {
     ++mLoseCompositeCount;
+    ++g_loseCompositeCallCount;
     Base::loseComposite(oldComposite);
   }
 
@@ -399,16 +405,19 @@ TEST(CompositeTests, CopyCompositePropertiesToExisting)
 //==============================================================================
 TEST(CompositeTests, SetAspectReplacesExisting)
 {
+  g_loseCompositeCallCount = 0;
+
   TrackingComposite composite;
   auto* original = composite.createAspect<StatefulAspect>(1.0, 1.0);
   EXPECT_EQ(original->mSetCompositeCount, 1);
+  auto* originalAddr = original;
 
   auto replacement = std::make_unique<StatefulAspect>(2.0, 2.0);
   composite.set(std::move(replacement));
 
   auto* current = composite.get<StatefulAspect>();
   ASSERT_NE(current, nullptr);
-  EXPECT_NE(current, original);
+  EXPECT_NE(current, originalAddr);
   EXPECT_DOUBLE_EQ(current->mState.value, 2.0);
-  EXPECT_EQ(original->mLoseCompositeCount, 1);
+  EXPECT_EQ(g_loseCompositeCallCount, 1);
 }
