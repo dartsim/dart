@@ -79,8 +79,13 @@ public:
 
 #if defined(_MSC_VER)
     ptr = _aligned_malloc(bytes, Alignment);
+#elif defined(__APPLE__)
+    if (posix_memalign(&ptr, Alignment, bytes) != 0) {
+      ptr = nullptr;
+    }
 #else
-    ptr = std::aligned_alloc(Alignment, bytes);
+    std::size_t aligned_bytes = (bytes + Alignment - 1) & ~(Alignment - 1);
+    ptr = std::aligned_alloc(Alignment, aligned_bytes);
 #endif
 
     if (ptr == nullptr) {
