@@ -160,6 +160,9 @@ dart_add_test("unit" UNIT_dynamics_TranslationalJoint2D dynamics/test_translatio
 dart_add_test("unit" UNIT_dynamics_ZeroDofJoint dynamics/test_zero_dof_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_ReferentialSkeleton dynamics/test_referential_skeleton.cpp)
 dart_add_test("unit" UNIT_dynamics_InverseKinematics dynamics/test_inverse_kinematics.cpp)
+dart_add_test("unit" UNIT_dynamics_BoxShape dynamics/test_box_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_ArrowShape dynamics/test_arrow_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_SimpleFrame dynamics/test_simple_frame.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
