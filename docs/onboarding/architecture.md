@@ -141,7 +141,37 @@ DART follows a **modular layered architecture** with clear separation of concern
 
 ---
 
-#### 1.3 LCP Solver Module (`dart/math/lcp/`)
+#### 1.3 SIMD Module (`dart/simd/`)
+
+**Purpose:** Explicit SIMD acceleration for batch operations on geometric data.
+
+**Design Decisions:**
+
+- **Explicit vectorization** over auto-vectorization for predictable performance
+- **Multi-ISA support**: SSE4.2, AVX, AVX2+FMA, AVX-512, ARM NEON (SVE detection ready)
+- **Eigen interop**: Seamless conversion between `dart::simd` types and Eigen types
+- **camelCase naming**: Follows DART C++ conventions (`fromAxisAngle`, `transformPoint`)
+
+**Key Components:**
+
+- `Vec<T,W>` - Fixed-width SIMD register wrapper (e.g., `Vec<float,8>` for AVX)
+- `Vector3<T>`, `Matrix4x4<T>` - SIMD-backed geometric types in `dart/simd/geometry/`
+- `Quaternion<T>`, `Isometry3<T>` - Rigid body transforms with SIMD operations
+- `DynamicVector<T>`, `DynamicMatrix<T>` - Runtime-sized SIMD containers in `dart/simd/dynamic/`
+- `simdChunks<N>()` - Streaming iterator for processing Eigen vectors in batches
+
+**When to Use:**
+
+- Batch collision detection (AABB tests, point transforms)
+- Bulk force/velocity updates in dynamics
+- Mesh/point cloud transformations
+- Any operation on arrays of 3D/4D vectors
+
+**Performance:** See `tests/benchmark/simd/` for benchmarks. Run with `pixi run bm-simd`.
+
+---
+
+#### 1.4 LCP Solver Module (`dart/math/lcp/`)
 
 **Purpose:** Solve Linear Complementarity Problems (LCP) for constraint-based dynamics.
 

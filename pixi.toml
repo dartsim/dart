@@ -678,6 +678,8 @@ test-lcpsolver = { cmd = """
         -R UNIT_lcpsolver
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
+test-unit = { cmd = "python scripts/run_cpp_test.py", depends-on = ["config"] }
+
 test-py = { cmd = [
   "bash",
   "-lc",
@@ -907,6 +909,13 @@ bm-convhull = { depends-on = [
 bm-lcpsolver = { cmd = """
     CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE python scripts/cmake_build.py --target BM_LCPSOLVER \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/tests/benchmark/lcpsolver/BM_LCPSOLVER
+""", depends-on = [
+  "config",
+], env = { BUILD_TYPE = "Release" } }
+
+bm-simd = { cmd = """
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE python scripts/cmake_build.py --target bm_simd \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/bm_simd
 """, depends-on = [
   "config",
 ], env = { BUILD_TYPE = "Release" } }
