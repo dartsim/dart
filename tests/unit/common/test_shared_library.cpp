@@ -48,6 +48,7 @@ std::string getSystemLibraryPath()
   // Try common locations for libm on Linux
   const std::vector<std::string> candidates = {
       "/lib/x86_64-linux-gnu/libm.so.6",
+      "/lib/aarch64-linux-gnu/libm.so.6",
       "/lib64/libm.so.6",
       "/usr/lib/libm.so.6",
       "/usr/lib64/libm.so.6",
@@ -60,8 +61,19 @@ std::string getSystemLibraryPath()
   }
   return "";
 #elif DART_OS_MACOS
-  // On macOS, use libSystem which contains math functions
-  return "/usr/lib/libSystem.B.dylib";
+  // On macOS Big Sur and later, system libraries are in a shared cache
+  // and direct paths like /usr/lib/libSystem.B.dylib may not work.
+  // Use libc++.dylib which is typically available for dlopen.
+  const std::vector<std::string> candidates = {
+      "/usr/lib/libc++.1.dylib",
+      "/usr/lib/libSystem.B.dylib",
+  };
+  for (const auto& path : candidates) {
+    if (std::filesystem::exists(path)) {
+      return path;
+    }
+  }
+  return "";
 #elif DART_OS_WINDOWS
   // On Windows, use kernel32.dll which is always present
   return "kernel32.dll";
