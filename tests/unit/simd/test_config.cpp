@@ -63,25 +63,9 @@ TEST(SimdConfig, PreferredWidths)
             << std::endl;
 }
 
-#if defined(DART_SIMD_SSE42)
-
-TEST(SimdConfig, SSE42Detected)
-{
-  EXPECT_STREQ(backend_name, "SSE4.2");
-  EXPECT_EQ(max_vector_bytes, 16u);
-  EXPECT_EQ(preferred_width_v<float>, 4u);
-  EXPECT_EQ(preferred_width_v<double>, 2u);
-  EXPECT_EQ(preferred_width_v<std::int32_t>, 4u);
-}
-
-TEST(SimdConfig, SSE42VecUsesIntrinsics)
-{
-  EXPECT_EQ(sizeof(Vec<float, 4>), sizeof(__m128));
-  EXPECT_EQ(sizeof(Vec<double, 2>), sizeof(__m128d));
-  EXPECT_EQ(sizeof(Vec<std::int32_t, 4>), sizeof(__m128i));
-}
-
-#elif defined(DART_SIMD_AVX2)
+// Check for highest instruction set first (AVX2 > AVX > SSE42 > NEON > Scalar)
+// because lower instruction sets may be defined alongside higher ones
+#if defined(DART_SIMD_AVX2)
 
 TEST(SimdConfig, AVX2Detected)
 {
@@ -100,6 +84,24 @@ TEST(SimdConfig, AVXDetected)
   EXPECT_EQ(max_vector_bytes, 32u);
   EXPECT_EQ(preferred_width_v<float>, 8u);
   EXPECT_EQ(preferred_width_v<double>, 4u);
+}
+
+#elif defined(DART_SIMD_SSE42)
+
+TEST(SimdConfig, SSE42Detected)
+{
+  EXPECT_STREQ(backend_name, "SSE4.2");
+  EXPECT_EQ(max_vector_bytes, 16u);
+  EXPECT_EQ(preferred_width_v<float>, 4u);
+  EXPECT_EQ(preferred_width_v<double>, 2u);
+  EXPECT_EQ(preferred_width_v<std::int32_t>, 4u);
+}
+
+TEST(SimdConfig, SSE42VecUsesIntrinsics)
+{
+  EXPECT_EQ(sizeof(Vec<float, 4>), sizeof(__m128));
+  EXPECT_EQ(sizeof(Vec<double, 2>), sizeof(__m128d));
+  EXPECT_EQ(sizeof(Vec<std::int32_t, 4>), sizeof(__m128i));
 }
 
 #elif defined(DART_SIMD_NEON)

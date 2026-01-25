@@ -79,6 +79,7 @@ template <>
   float64x2_t est = vrsqrteq_f64(v.data);
   est = vmulq_f64(est, vrsqrtsq_f64(vmulq_f64(v.data, est), est));
   est = vmulq_f64(est, vrsqrtsq_f64(vmulq_f64(v.data, est), est));
+  est = vmulq_f64(est, vrsqrtsq_f64(vmulq_f64(v.data, est), est));
   return Vec<double, 2>(est);
 }
 
@@ -95,6 +96,7 @@ template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<double, 2> rcp(const Vec<double, 2>& v)
 {
   float64x2_t est = vrecpeq_f64(v.data);
+  est = vmulq_f64(est, vrecpsq_f64(v.data, est));
   est = vmulq_f64(est, vrecpsq_f64(v.data, est));
   est = vmulq_f64(est, vrecpsq_f64(v.data, est));
   return Vec<double, 2>(est);
@@ -174,14 +176,14 @@ template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<float, 4> fmsub(
     const Vec<float, 4>& a, const Vec<float, 4>& b, const Vec<float, 4>& c)
 {
-  return Vec<float, 4>(vfmsq_f32(vnegq_f32(c.data), a.data, b.data));
+  return Vec<float, 4>(vfmaq_f32(vnegq_f32(c.data), a.data, b.data));
 }
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<double, 2> fmsub(
     const Vec<double, 2>& a, const Vec<double, 2>& b, const Vec<double, 2>& c)
 {
-  return Vec<double, 2>(vfmsq_f64(vnegq_f64(c.data), a.data, b.data));
+  return Vec<double, 2>(vfmaq_f64(vnegq_f64(c.data), a.data, b.data));
 }
 
 template <>
