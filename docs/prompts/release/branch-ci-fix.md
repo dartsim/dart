@@ -6,30 +6,101 @@ This is a PROMPT TEMPLATE, not an active task.
 Do NOT execute unless a human pastes this into a new session.
 -->
 
+## When to Use
+
+Use this template when **CI is failing on the release branch** and you need to fix it.
+
+| Scenario                         | Use This? | Alternative                      |
+| -------------------------------- | --------- | -------------------------------- |
+| CI failing on release-X.Y branch | ✅ Yes    | —                                |
+| CI failing on main branch        | ❌ No     | Use `/dart-fix-ci` command       |
+| Port a fix from main to release  | ❌ No     | [backport-pr.md](backport-pr.md) |
+
+## Key Principle
+
+**Prefer fixes already in main** to reduce future merge conflicts. Check if the fix exists on main before creating a new one.
+
 ## Prompt
 
-```text
+````text
 # DART: Release Branch CI Fix
 
-Context
+Fix CI failure on <RELEASE_BRANCH>.
+
+## Context
 - Release branch: <RELEASE_BRANCH>
 - Release version: <RELEASE_VERSION>
 - Failing run: <RUN_URL_OR_ID>
 - Existing PR: <PR_URL or "create new">
 - Milestone: <MILESTONE_NAME or blank>
 
-Workflow
-- If existing PR: continue on that branch. If "create new": branch from latest <RELEASE_BRANCH>.
-- Read `AGENTS.md`, `CONTRIBUTING.md`, `docs/onboarding/ci-cd.md`.
-- Inspect failures: `gh run view <RUN_ID> --log-failed` or `gh run view <RUN_ID> --job <JOB_ID> --log`.
-- Apply minimal fixes; prefer fixes already in `origin/main` to reduce merge conflicts.
-- Identify why failure wasn't caught earlier; update workflows if needed.
-- Commit and push.
-- If new PR needed: `gh pr create` into <RELEASE_BRANCH>, set milestone.
-- Monitor CI: `gh run watch <RUN_ID> --interval 30` until green.
+## Workflow
 
-Output
-- Root cause and why not caught earlier.
-- Fix summary and CI status.
-- PR URL (if created).
+### 1. Inspect the failure
+```bash
+gh run view <RUN_ID> --log-failed
+# Or for specific job:
+gh run view <RUN_ID> --job <JOB_ID> --log
+````
+
+### 2. Check if fix exists on main
+
+```bash
+git log origin/main --oneline --grep="<ERROR_KEYWORD>" -10
+```
+
+### 3. Create or continue on branch
+
+If existing PR:
+
+```bash
+git fetch origin && git checkout <EXISTING_BRANCH>
+```
+
+If creating new:
+
+```bash
+git fetch origin <RELEASE_BRANCH>
+git checkout -B fix/<ISSUE>-<RELEASE_BRANCH> origin/<RELEASE_BRANCH>
+```
+
+### 4. Apply minimal fix
+
+- Prefer cherry-picking from main if fix exists there
+- If new fix needed, keep it minimal
+
+### 5. Analyze root cause
+
+- Why wasn't this caught earlier?
+- Should workflows be updated to catch similar issues?
+
+### 6. Test locally
+
+```bash
+pixi run build && pixi run test-unit
+```
+
+### 7. Push and create/update PR
+
+```bash
+git push -u origin HEAD
+# If new PR:
+gh pr create --base <RELEASE_BRANCH> --title "ci: fix <ISSUE> on <RELEASE_BRANCH>"
+```
+
+### 8. Monitor CI
+
+```bash
+gh run watch <RUN_ID> --interval 30
+```
+
+## Output
+
+- Root cause and why not caught earlier
+- Fix summary and CI status
+- PR URL (if created)
+- Recommendations for preventing similar issues
+
+```
+
 ```
