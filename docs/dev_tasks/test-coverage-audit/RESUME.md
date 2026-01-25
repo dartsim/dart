@@ -2,31 +2,80 @@
 
 ## Last Session Summary
 
-Target updated to **90%+ for core modules** (up from 80%). Coverage baseline established:
+Committed first batch of quick win tests. All 207 tests pass. Tests added for:
 
-- Overall: 79.9% (up from 57%)
-- Quick wins identified: collision (88.8%), sensor (87.4%), simulation (86.1%)
-- Heavy lifting needed: dynamics (79.4%, 3346 lines), math (77.1%, 1721 lines), constraint (79.0%, 796 lines)
-
-Branch has uncommitted work: new test files and modifications to existing tests.
+- sensor: Rate limiting, world transforms, name change signals
+- simulation: Recording class, World::bake(), name change callbacks, edge cases
+- collision: DartCollisionDetector raycast, FCL shape support, caching
+- constraint: BalanceConstraint, ServoMotorConstraint modes
+- dynamics: Marker properties, PlaneShape serialization
+- math: geometry helpers, optimization Problem class
+- common: memory allocator tests
+- constraint: ConstrainedGroup tests
+- math/lcp: Dantzig misc, LCP types tests
 
 ## Current Branch
 
-`continue_test_coverage` — has uncommitted changes + untracked files
+`continue_test_coverage` — committed (clean working tree)
 
-**Modified files:**
+Latest commit: `346f1ca629d` - "test: add coverage tests for sensor, simulation, collision, and other modules"
 
-- tests/unit/CMakeLists.txt
-- tests/unit/collision/test_collision_group.cpp
-- tests/unit/common/test_exception.cpp
-- tests/unit/constraint/test_balance_constraint.cpp
-- tests/unit/constraint/test_servo_motor_constraint.cpp
-- tests/unit/dynamics/test_marker.cpp
-- tests/unit/dynamics/test_plane_shape.cpp
-- tests/unit/math/optimization/test_Problem.cpp
-- tests/unit/math/test_geometry.cpp
+## Immediate Next Step
 
-**New files:**
+1. Run fresh coverage report to measure improvement from quick wins
+2. Identify remaining gaps to reach 90% target
+3. Focus on common module (81.5% → 90%, ~442 lines)
+4. Then constraint module (79.0% → 90%, ~796 lines)
+
+## Context That Would Be Lost
+
+- **Coverage report script issue**: The `pixi run coverage-report` task has a bug with `pwd -P` returning empty. Need to run lcov manually or fix the script.
+- **Debug build required**: Coverage needs Debug build with DART_CODECOV=ON. Release builds don't have gcov instrumentation.
+- **Protected method testing**: Use ExposedConstraint pattern with `using` declarations.
+- **File naming**: snake_case for new test files.
+
+## How to Resume
+
+```bash
+git checkout continue_test_coverage
+git status && git log -3 --oneline
+```
+
+Then run a fresh coverage build:
+
+```bash
+# Build with coverage instrumentation
+cmake -G Ninja -S . -B build/coverage -DCMAKE_BUILD_TYPE=Debug -DDART_CODECOV=ON -DDART_BUILD_TESTS=ON
+cmake --build build/coverage --target tests -j$(nproc)
+
+# Run tests
+ctest --test-dir build/coverage --output-on-failure
+
+# Generate coverage report
+lcov --capture --directory build/coverage --output-file coverage.info --ignore-errors mismatch,negative
+lcov --remove coverage.info '/usr/*' '*/.pixi/*' '*/tests/*' '*/examples/*' '*/tutorials/*' '*/dart/gui/*' --output-file coverage_filtered.info
+lcov --list coverage_filtered.info
+```
+
+## Key Commands
+
+```bash
+# Build and test (Release, fast)
+pixi run test
+
+# Run specific test
+ctest --test-dir build/default/cpp/Release -R UNIT_sensor --output-on-failure
+
+# Format code
+pixi run lint
+
+# Coverage report (needs fix or manual lcov)
+BUILD_TYPE=Debug pixi run coverage-report
+```
+
+## Files Modified This Session
+
+New test files added:
 
 - tests/unit/common/test_memory_allocator.cpp
 - tests/unit/constraint/test_constrained_group.cpp
@@ -34,70 +83,17 @@ Branch has uncommitted work: new test files and modifications to existing tests.
 - tests/unit/math/lcp/test_dantzig_misc.cpp
 - tests/unit/math/lcp/test_lcp_types.cpp
 
-## Immediate Next Step
+Modified existing tests:
 
-1. Build and run current tests to verify they pass
-2. Start with **collision module** (only 1.2% gap to 90%)
-3. Then **sensor** and **simulation** (quick wins)
-
-## Context That Would Be Lost
-
-- **Protected method testing**: Constraint methods like `update()`, `isActive()`, `excite()`, `applyImpulse()` are protected. Must test through `World::step()` via simulation.
-- **ExposedConstraint pattern**: Use subclass with `using` declarations to expose protected methods:
-  ```cpp
-  class ExposedServoMotorConstraint : public ServoMotorConstraint {
-  public:
-    using ServoMotorConstraint::isActive;
-    using ServoMotorConstraint::update;
-    using ServoMotorConstraint::ServoMotorConstraint;
-  };
-  ```
-- **GUI module**: 14% coverage but requires OpenGL context - likely can't improve without special test infrastructure.
-- **sccache**: Added to pixi.toml for faster coverage builds.
-
-## How to Resume
-
-```bash
-git checkout task/test_coverage
-git status && git log -3 --oneline
-```
-
-Then run coverage report to see current state:
-
-```bash
-export DART_PARALLEL_JOBS=24
-pixi run coverage-report
-```
-
-Look at the coverage summary and identify files with low coverage. Focus on:
-
-1. Constraint module files (target: 70%+)
-2. Common module files (target: 75%+)
-3. Skip GUI module (requires graphics context)
-
-## Key Commands
-
-```bash
-# Full coverage report (slow, ~30min)
-pixi run coverage-report
-
-# Build specific test target
-pixi run -- cmake --build build/default/cpp/Release --target UNIT_constraint_ServoMotorConstraint -j24
-
-# Run specific tests
-pixi run -- ctest --test-dir build/default/cpp/Release -R ServoMotorConstraint --output-on-failure
-
-# Run all constraint tests
-pixi run -- ctest --test-dir build/default/cpp/Release -R constraint --output-on-failure
-
-# Format code before commit
-pixi run lint
-```
-
-## Files Modified This Session
-
-- `tests/unit/constraint/test_BallJointConstraint.cpp` - Added 5 simulation tests
-- `tests/unit/constraint/test_WeldJointConstraint.cpp` - Added 7 simulation tests
-- `tests/unit/constraint/test_ServoMotorConstraint.cpp` - New file, 13 tests
-- `tests/unit/constraint/test_JointLimitConstraint.cpp` - Added 6 tests
-- `tests/unit/CMakeLists.txt` - Registered ServoMotorConstraint test
+- tests/unit/sensor/test_Sensor.cpp
+- tests/unit/sensor/test_SensorManager.cpp
+- tests/unit/simulation/test_World.cpp
+- tests/unit/collision/test_dart_collision_detector.cpp
+- tests/unit/collision/test_fcl_collision_detector.cpp
+- tests/unit/constraint/test_balance_constraint.cpp
+- tests/unit/constraint/test_servo_motor_constraint.cpp
+- tests/unit/dynamics/test_marker.cpp
+- tests/unit/dynamics/test_plane_shape.cpp
+- tests/unit/math/optimization/test_Problem.cpp
+- tests/unit/math/test_geometry.cpp
+- tests/unit/common/test_exception.cpp
