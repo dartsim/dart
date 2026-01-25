@@ -154,14 +154,15 @@ TEST(ResourceRetriever, ReadAllFailsWhenRetrieveReturnsNull)
 }
 
 //==============================================================================
-TEST(ResourceRetriever, ReadAllEmptyContentThrows)
+TEST(ResourceRetriever, ReadAllEmptyContent)
 {
   MockResourceRetriever retriever;
   retriever.mockContent = "";
 
   Uri uri("mock://test");
+  std::string result = retriever.readAll(uri);
 
-  EXPECT_THROW(retriever.readAll(uri), std::runtime_error);
+  EXPECT_TRUE(result.empty());
 }
 
 //==============================================================================

@@ -45,7 +45,7 @@ std::string Resource::readAll()
 {
   const auto size = getSize();
   if (size == 0) {
-    throw std::runtime_error("Cannot read from an empty resource.");
+    return {};
   }
 
   std::string content;
