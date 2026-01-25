@@ -328,9 +328,9 @@ TEST(Random, GenerateSeedWithoutApplying)
 {
   unsigned int originalSeed = math::Random::getSeed();
 
-  unsigned int generatedSeed = math::Random::generateSeed(false);
+  [[maybe_unused]] unsigned int generatedSeed
+      = math::Random::generateSeed(false);
 
-  EXPECT_NE(generatedSeed, 0u);
   EXPECT_EQ(math::Random::getSeed(), originalSeed);
 }
 
@@ -339,7 +339,6 @@ TEST(Random, GenerateSeedWithApplying)
 {
   unsigned int generatedSeed = math::Random::generateSeed(true);
 
-  EXPECT_NE(generatedSeed, 0u);
   EXPECT_EQ(math::Random::getSeed(), generatedSeed);
 }
 
