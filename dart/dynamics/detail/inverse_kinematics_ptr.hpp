@@ -135,8 +135,9 @@ public:
   /// Get the raw pointer
   element_type* get() const
   {
-    if (nullptr == mJacNodePtr)
+    if (nullptr == mJacNodePtr) {
       return nullptr;
+    }
 
     return mIK.get();
   }
@@ -144,8 +145,9 @@ public:
   /// Get the shared_ptr held by this InverseKinematicsPtr
   std::shared_ptr<element_type> get_shared() const
   {
-    if (nullptr == mJacNodePtr)
+    if (nullptr == mJacNodePtr) {
       return nullptr;
+    }
 
     return mIK;
   }
@@ -265,8 +267,9 @@ public:
       const
   {
     JacobianNodePtrT jacNode = mWeakJacNode.lock();
-    if (nullptr == jacNode)
+    if (nullptr == jacNode) {
       return nullptr;
+    }
 
     return TemplateInverseKinematicsPtr<InverseKinematicsT, JacobianNodePtrT>(
         mWeakIK.lock());

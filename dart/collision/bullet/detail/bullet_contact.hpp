@@ -44,11 +44,13 @@ namespace dart::collision::bullet::detail {
 inline bool shouldReportContact(
     const btManifoldPoint& cp, const CollisionOption& option)
 {
-  if (cp.m_normalWorldOnB.length2() < Contact::getNormalEpsilonSquared())
+  if (cp.m_normalWorldOnB.length2() < Contact::getNormalEpsilonSquared()) {
     return false;
+  }
 
-  if (!option.allowNegativePenetrationDepthContacts && cp.m_distance1 > 0.0)
+  if (!option.allowNegativePenetrationDepthContacts && cp.m_distance1 > 0.0) {
     return false;
+  }
 
   return true;
 }

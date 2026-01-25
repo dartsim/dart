@@ -162,22 +162,25 @@ Node::Node(BodyNode* _bn)
     return;
   }
 
-  if (mBodyNode != this)
+  if (mBodyNode != this) {
     setVersionDependentObject(mBodyNode);
+  }
 }
 
 //==============================================================================
 std::string Node::registerNameChange(const std::string& newName)
 {
   const SkeletonPtr& skel = mBodyNode->getSkeleton();
-  if (nullptr == skel)
+  if (nullptr == skel) {
     return newName;
+  }
 
   Skeleton::NodeNameMgrMap& nodeNameMgrMap = skel->mNodeNameMgrMap;
   Skeleton::NodeNameMgrMap::iterator it = nodeNameMgrMap.find(typeid(*this));
 
-  if (nodeNameMgrMap.end() == it)
+  if (nodeNameMgrMap.end() == it) {
     return newName;
+  }
 
   common::NameManager<Node*>& mgr = it->second;
   return mgr.changeObjectName(this, newName);
@@ -194,8 +197,9 @@ void Node::attach()
   // If we are in release mode, and the Node believes it is attached, then we
   // can shortcut this procedure
 #if defined(NDEBUG)
-  if (mAmAttached)
+  if (mAmAttached) {
     return;
+  }
 #endif
 
   using NodeMapPair = std::pair<std::type_index, std::vector<Node*>>;
@@ -229,8 +233,9 @@ void Node::attach()
   DART_ASSERT(destructors.contains(destructor));
 
   const SkeletonPtr& skel = mBodyNode->getSkeleton();
-  if (skel)
+  if (skel) {
     skel->registerNode(this);
+  }
 
   mAmAttached = true;
 }
@@ -246,8 +251,9 @@ void Node::stageForRemoval()
   // If we are in release mode, and the Node believes it is detached, then we
   // can shortcut this procedure.
 #if defined(NDEBUG)
-  if (!mAmAttached)
+  if (!mAmAttached) {
     return;
+  }
 #endif
 
   mBodyNode->incrementVersion();
@@ -279,14 +285,16 @@ void Node::stageForRemoval()
   destructors.erase(destructor_iter);
 
   // Reset all the Node indices that have been altered
-  for (std::size_t i = mIndexInBodyNode; i < nodes.size(); ++i)
+  for (std::size_t i = mIndexInBodyNode; i < nodes.size(); ++i) {
     nodes[i]->mIndexInBodyNode = i;
+  }
 
   DART_ASSERT(std::ranges::find(nodes, this) == nodes.end());
 
   const SkeletonPtr& skel = mBodyNode->getSkeleton();
-  if (skel)
+  if (skel) {
     skel->unregisterNode(this);
+  }
 
   mIndexInBodyNode = INVALID_INDEX;
   mAmAttached = false;

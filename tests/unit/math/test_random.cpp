@@ -215,14 +215,17 @@ bool testClosedEnds(int maxTry, I min = 0, I max = 2)
   for (int i = 0; i < maxTry; ++i) {
     const I val = math::Random::uniform<I>(min, max);
 
-    if (val == min)
+    if (val == min) {
       foundMin = true;
+    }
 
-    if (val == max)
+    if (val == max) {
       foundMax = true;
+    }
 
-    if (foundMin && foundMax)
+    if (foundMin && foundMax) {
       return true;
+    }
   }
 
   return false;

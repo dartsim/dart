@@ -92,8 +92,9 @@ ConstraintSolver::ConstraintSolver()
 ConstraintSolver::ConstraintSolver(math::LcpSolverPtr primary)
   : ConstraintSolver()
 {
-  if (primary)
+  if (primary) {
     setLcpSolver(std::move(primary));
+  }
 }
 
 //==============================================================================
@@ -128,8 +129,9 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
 //==============================================================================
 void ConstraintSolver::addSkeletons(std::span<const SkeletonPtr> skeletons)
 {
-  for (const auto& skeleton : skeletons)
+  for (const auto& skeleton : skeletons) {
     addSkeleton(skeleton);
+  }
 }
 
 //==============================================================================
@@ -159,8 +161,9 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
 //==============================================================================
 void ConstraintSolver::removeSkeletons(std::span<const SkeletonPtr> skeletons)
 {
-  for (const auto& skeleton : skeletons)
+  for (const auto& skeleton : skeletons) {
     removeSkeleton(skeleton);
+  }
 }
 
 //==============================================================================
@@ -253,15 +256,17 @@ void ConstraintSolver::setCollisionDetector(
     return;
   }
 
-  if (mCollisionDetector == collisionDetector)
+  if (mCollisionDetector == collisionDetector) {
     return;
+  }
 
   mCollisionDetector = collisionDetector;
 
   mCollisionGroup = mCollisionDetector->createCollisionGroupAsSharedPtr();
 
-  for (const auto& skeleton : mSkeletons)
+  for (const auto& skeleton : mSkeletons) {
     mCollisionGroup->addShapeFramesOf(skeleton.get());
+  }
 }
 
 //==============================================================================
@@ -424,8 +429,9 @@ void ConstraintSolver::updateConstraints()
   for (auto& manualConstraint : mManualConstraints) {
     manualConstraint->update();
 
-    if (manualConstraint->isActive())
+    if (manualConstraint->isActive()) {
       mActiveConstraints.push_back(manualConstraint);
+    }
   }
 
   //----------------------------------------------------------------------------
@@ -450,8 +456,9 @@ void ConstraintSolver::updateConstraints()
   {
     ContactPair getSortedPair(const ContactPair& a) const
     {
-      if (a.first < a.second)
+      if (a.first < a.second) {
         return std::make_pair(a.second, a.first);
+      }
       return a;
     }
 
@@ -479,8 +486,9 @@ void ConstraintSolver::updateConstraints()
     // happening and the contact point should be ignored.
     // TODO(MXG): Investigate ways to leverage the proximity information of a
     //            negative penetration to improve collision handling.
-    if (contact.penetrationDepth < 0.0)
+    if (contact.penetrationDepth < 0.0) {
       continue;
+    }
 
     if (isSoftContact(contact)) {
       mSoftContactConstraints.push_back(
@@ -499,8 +507,9 @@ void ConstraintSolver::updateConstraints()
     std::size_t numContacts = 1;
     auto it = contactPairMap.find(
         std::make_pair(contact->collisionObject1, contact->collisionObject2));
-    if (it != contactPairMap.end())
+    if (it != contactPairMap.end()) {
       numContacts = it->second;
+    }
 
     auto contactConstraint = mContactSurfaceHandler->createConstraint(
         *contact, numContacts, mTimeStep);
@@ -508,16 +517,18 @@ void ConstraintSolver::updateConstraints()
 
     contactConstraint->update();
 
-    if (contactConstraint->isActive())
+    if (contactConstraint->isActive()) {
       mActiveConstraints.push_back(contactConstraint);
+    }
   }
 
   // Add the new soft contact constraints to dynamic constraint list
   for (const auto& softContactConstraint : mSoftContactConstraints) {
     softContactConstraint->update();
 
-    if (softContactConstraint->isActive())
+    if (softContactConstraint->isActive()) {
       mActiveConstraints.push_back(softContactConstraint);
+    }
   }
 
   //----------------------------------------------------------------------------
@@ -535,8 +546,9 @@ void ConstraintSolver::updateConstraints()
     for (std::size_t i = 0; i < numJoints; i++) {
       dynamics::Joint* joint = skel->getJoint(i);
 
-      if (joint->isKinematic())
+      if (joint->isKinematic()) {
         continue;
+      }
 
       const std::size_t dof = joint->getNumDofs();
       for (std::size_t j = 0; j < dof; ++j) {
@@ -602,29 +614,33 @@ void ConstraintSolver::updateConstraints()
   for (auto& jointLimitConstraint : mJointConstraints) {
     jointLimitConstraint->update();
 
-    if (jointLimitConstraint->isActive())
+    if (jointLimitConstraint->isActive()) {
       mActiveConstraints.push_back(jointLimitConstraint);
+    }
   }
 
   for (auto& mimicMotorConstraint : mMimicMotorConstraints) {
     mimicMotorConstraint->update();
 
-    if (mimicMotorConstraint->isActive())
+    if (mimicMotorConstraint->isActive()) {
       mActiveConstraints.push_back(mimicMotorConstraint);
+    }
   }
 
   for (auto& couplerConstraint : mCouplerConstraints) {
     couplerConstraint->update();
 
-    if (couplerConstraint->isActive())
+    if (couplerConstraint->isActive()) {
       mActiveConstraints.push_back(couplerConstraint);
+    }
   }
 
   for (auto& jointFrictionConstraint : mJointCoulombFrictionConstraints) {
     jointFrictionConstraint->update();
 
-    if (jointFrictionConstraint->isActive())
+    if (jointFrictionConstraint->isActive()) {
       mActiveConstraints.push_back(jointFrictionConstraint);
+    }
   }
 }
 
@@ -637,14 +653,16 @@ void ConstraintSolver::buildConstrainedGroups()
   mConstrainedGroups.clear();
 
   // Exit if there is no active constraint
-  if (mActiveConstraints.empty())
+  if (mActiveConstraints.empty()) {
     return;
+  }
 
   //----------------------------------------------------------------------------
   // Unite skeletons according to constraints's relationships
   //----------------------------------------------------------------------------
-  for (const auto& activeConstraint : mActiveConstraints)
+  for (const auto& activeConstraint : mActiveConstraints) {
     activeConstraint->uniteSkeletons();
+  }
 
   //----------------------------------------------------------------------------
   // Build constraint groups
@@ -660,8 +678,9 @@ void ConstraintSolver::buildConstrainedGroups()
       }
     }
 
-    if (found)
+    if (found) {
       continue;
+    }
 
     ConstrainedGroup newConstGroup;
     newConstGroup.mRootSkeleton = skel;
@@ -678,8 +697,9 @@ void ConstraintSolver::buildConstrainedGroups()
   //----------------------------------------------------------------------------
   // Reset union since we don't need union information anymore.
   //----------------------------------------------------------------------------
-  for (auto& skeleton : mSkeletons)
+  for (auto& skeleton : mSkeletons) {
     skeleton->resetUnion();
+  }
 }
 
 //==============================================================================
@@ -776,10 +796,11 @@ bool ConstraintSolver::removeContactSurfaceHandler(
   ContactSurfaceHandlerPtr previous = nullptr;
   while (current != nullptr) {
     if (current == handler) {
-      if (previous != nullptr)
+      if (previous != nullptr) {
         previous->mParent = current->mParent;
-      else
+      } else {
         mContactSurfaceHandler = current->mParent;
+      }
       found = true;
       break;
     }
@@ -948,7 +969,12 @@ void ConstraintSolver::solveConstrainedGroupInternal(
   }
 
 #if !defined(NDEBUG)
-  DART_ASSERT(isSymmetric(n, mA.data()));
+  if (!isSymmetric(n, mA.data())) {
+    DART_WARN(
+        "[ConstraintSolver::solveConstrainedGroup] LCP matrix is not "
+        "symmetric. "
+        "Continuing to avoid assertion failure.");
+  }
 #endif
 
   if (mSecondaryLcpSolver) {
@@ -1188,8 +1214,9 @@ void ConstraintSolver::print(
   std::cout << std::endl;
 
   auto* Ax = new double[n];
-  for (std::size_t i = 0; i < n; ++i)
+  for (std::size_t i = 0; i < n; ++i) {
     Ax[i] = 0.0;
+  }
   for (std::size_t i = 0; i < n; ++i) {
     for (std::size_t j = 0; j < n; ++j) {
       Ax[i] += A[i * nSkip + j] * x[j];

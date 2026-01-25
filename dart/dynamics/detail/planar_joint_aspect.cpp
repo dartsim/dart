@@ -150,8 +150,9 @@ void PlanarJointUniqueProperties::setArbitraryPlane(
   // Orthogonalize translational axes
   double dotProduct = mTransAxis1.dot(mTransAxis2);
   DART_ASSERT(std::abs(dotProduct) < 1.0 - 1e-6);
-  if (std::abs(dotProduct) > 1e-6)
+  if (std::abs(dotProduct) > 1e-6) {
     mTransAxis2 = (mTransAxis2 - dotProduct * mTransAxis1).normalized();
+  }
 
   // Rotational axis
   mRotAxis = (mTransAxis1.cross(mTransAxis2)).normalized();

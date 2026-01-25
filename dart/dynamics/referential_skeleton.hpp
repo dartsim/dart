@@ -38,6 +38,8 @@
 
 #include <dart/common/deprecated.hpp>
 
+#include <dart/export.hpp>
+
 #include <span>
 #include <unordered_map>
 #include <unordered_set>
@@ -47,7 +49,7 @@ namespace dynamics {
 
 /// ReferentialSkeleton is a base class used to implement Linkage, Group, and
 /// other classes that are used to reference subsections of Skeletons.
-class ReferentialSkeleton : public MetaSkeleton
+class DART_API ReferentialSkeleton : public MetaSkeleton
 {
 public:
   /// Remove copy operator

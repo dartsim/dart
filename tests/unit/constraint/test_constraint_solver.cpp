@@ -213,6 +213,16 @@ private:
   double mValue;
 };
 
+class ExposedConstraintSolver : public constraint::ConstraintSolver
+{
+public:
+  bool containsConstraint(
+      const constraint::ConstConstraintBasePtr& constraint) const
+  {
+    return containConstraint(constraint);
+  }
+};
+
 class PartialNanLcpSolver : public math::LcpSolver
 {
 public:
@@ -376,4 +386,118 @@ TEST(ConstraintSolver, SplitImpulseSkipsNonContactPositionPass)
   EXPECT_EQ(constraint->phases[0], constraint::ConstraintPhase::Velocity);
   ASSERT_EQ(constraint->useSplitImpulse.size(), 1u);
   EXPECT_TRUE(constraint->useSplitImpulse[0]);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SolveWithNoSkeletonsDoesNothing)
+{
+  constraint::ConstraintSolver solver;
+
+  EXPECT_EQ(solver.getSkeletons().size(), 0u);
+  EXPECT_NO_THROW(solver.solve());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, AddDuplicateSkeletonIgnored)
+{
+  constraint::ConstraintSolver solver;
+  auto skeleton = dynamics::Skeleton::create("duplicate_test");
+
+  solver.addSkeleton(skeleton);
+  ASSERT_EQ(solver.getSkeletons().size(), 1u);
+
+  solver.addSkeleton(skeleton);
+  EXPECT_EQ(solver.getSkeletons().size(), 1u);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, RemoveNonExistentSkeletonNoOp)
+{
+  constraint::ConstraintSolver solver;
+  auto skeleton1 = dynamics::Skeleton::create("skeleton1");
+  auto skeleton2 = dynamics::Skeleton::create("skeleton2");
+
+  solver.addSkeleton(skeleton1);
+  ASSERT_EQ(solver.getSkeletons().size(), 1u);
+
+  EXPECT_NO_THROW(solver.removeSkeleton(skeleton2));
+  EXPECT_EQ(solver.getSkeletons().size(), 1u);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SetTimeStepAffectsSolver)
+{
+  constraint::ConstraintSolver solver;
+
+  EXPECT_DOUBLE_EQ(solver.getTimeStep(), 0.001);
+
+  solver.setTimeStep(0.002);
+  EXPECT_DOUBLE_EQ(solver.getTimeStep(), 0.002);
+
+  solver.setTimeStep(0.0001);
+  EXPECT_DOUBLE_EQ(solver.getTimeStep(), 0.0001);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SetNullCollisionDetectorIgnored)
+{
+  constraint::ConstraintSolver solver;
+
+  auto originalDetector = solver.getCollisionDetector();
+  ASSERT_NE(originalDetector, nullptr);
+
+  solver.setCollisionDetector(nullptr);
+  EXPECT_EQ(solver.getCollisionDetector(), originalDetector);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ContactSurfaceHandlerChain)
+{
+  constraint::ConstraintSolver solver;
+  auto defaultHandler = solver.getLastContactSurfaceHandler();
+  ASSERT_NE(defaultHandler, nullptr);
+
+  auto handlerA = std::make_shared<constraint::ContactSurfaceHandler>();
+  solver.addContactSurfaceHandler(handlerA);
+  EXPECT_EQ(solver.getLastContactSurfaceHandler(), handlerA);
+  EXPECT_EQ(handlerA->getParent(), defaultHandler);
+
+  solver.addContactSurfaceHandler(handlerA);
+  EXPECT_EQ(handlerA->getParent(), defaultHandler);
+
+  auto handlerB = std::make_shared<constraint::ContactSurfaceHandler>();
+  solver.addContactSurfaceHandler(handlerB);
+  EXPECT_EQ(handlerB->getParent(), handlerA);
+
+  EXPECT_TRUE(solver.removeContactSurfaceHandler(handlerB));
+  EXPECT_EQ(solver.getLastContactSurfaceHandler(), handlerA);
+
+  EXPECT_TRUE(solver.removeContactSurfaceHandler(handlerA));
+  EXPECT_EQ(solver.getLastContactSurfaceHandler(), defaultHandler);
+
+  auto missing = std::make_shared<constraint::ContactSurfaceHandler>();
+  EXPECT_FALSE(solver.removeContactSurfaceHandler(missing));
+  EXPECT_EQ(solver.getLastContactSurfaceHandler(), defaultHandler);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, AddRemoveConstraint)
+{
+  ExposedConstraintSolver solver;
+  auto skeleton = dynamics::Skeleton::create("constraint");
+  auto constraint = std::make_shared<DummyConstraint>(skeleton);
+
+  EXPECT_EQ(solver.getNumConstraints(), 0u);
+  solver.addConstraint(constraint);
+  EXPECT_EQ(solver.getNumConstraints(), 1u);
+  EXPECT_TRUE(solver.containsConstraint(constraint));
+
+  solver.addConstraint(constraint);
+  EXPECT_EQ(solver.getNumConstraints(), 1u);
+
+  solver.removeConstraint(constraint);
+  EXPECT_EQ(solver.getNumConstraints(), 0u);
+  EXPECT_FALSE(solver.containsConstraint(constraint));
+
+  EXPECT_NO_THROW(solver.removeConstraint(constraint));
 }

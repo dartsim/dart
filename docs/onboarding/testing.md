@@ -111,11 +111,14 @@ tests/
 │   ├── common/              # Allocators, factory, logging, memory, strings
 │   ├── constraint/          # Constraint solver API
 │   ├── dynamics/            # Joint tests, inertia calculations, shape node API
-│   ├── lcpsolver/           # LCP solver algorithms
-│   └── math/                # Geometry, math operations, random, meshes
+│   ├── gui/                 # Tests for OSG nodes and ImGui integration
+│   ├── io/                  # Tests for parsers (URDF, SDF error paths)
+│   ├── math/                # Geometry, math operations, random, meshes, LCP solvers
+│   ├── sensor/              # Tests for the sensor API
+│   ├── simulation/          # Tests for simulation world
+│   └── utils/               # Tests for utility classes
 ├── helpers/
-│   ├── GTestUtils.hpp       # Shared GoogleTest utilities
-│   └── TestHelpers.hpp      # Shared helper functions for tests
+│   └── GTestUtils.hpp       # Shared GoogleTest utilities
 └── README.md                # Points to this comprehensive guide
 ```
 
@@ -169,8 +172,12 @@ Unit tests focus on testing **individual classes or functions in isolation**. Th
 - **common/**: Allocators, factory patterns, logging, memory management, strings, URIs
 - **constraint/**: Constraint solver API tests (without full physics)
 - **dynamics/**: Individual joint tests, inertia calculations, single component tests
-- **lcpsolver/**: LCP solver algorithms (Lemke, etc.)
-- **math/**: Geometry primitives, icosphere generation, mathematical operations, random number generation, triangle meshes
+- **gui/**: OSG nodes and ImGui integration tests
+- **io/**: Parser tests (URDF, SDF error paths)
+- **math/**: Geometry primitives, icosphere generation, mathematical operations, random number generation, triangle meshes, LCP solvers (in `lcp/` subdirectory)
+- **sensor/**: Sensor API tests
+- **simulation/**: Simulation world tests
+- **utils/**: Utility class tests
 
 ### How to Decide: Integration vs Unit?
 
@@ -455,6 +462,20 @@ dart_get_tests(integration_tests "integration")
    - `EXPECT_NEAR` for floating-point comparisons
 10. **Update tests with code changes**: Keep tests in sync with the code they verify
 
+## Coverage Patterns
+
+Areas that commonly need additional test coverage (identified from test-coverage-audit):
+
+| Pattern                | What to Test                                                         | Example                                               |
+| ---------------------- | -------------------------------------------------------------------- | ----------------------------------------------------- |
+| **Smart pointers**     | Lifecycle, expiration, owner lifetime                                | `BodyNodePtr`, `NodePtr`, `WeakPtr` variants          |
+| **Aspect system**      | `has<T>()`, `get<T>()`, `removeAspect<T>()`, `isSpecializedFor<T>()` | Composite template methods                            |
+| **Constraint solvers** | Empty inputs, duplicate skeletons, timestep changes, null detectors  | `ConstraintSolver` edge cases                         |
+| **Collision filters**  | Self-collision, blacklist edge cases, composite behavior             | `CollisionFilter` combinations                        |
+| **Template classes**   | All template instantiations, not just common types                   | `TemplateBodyNodePtr<BodyNode>` vs `<const BodyNode>` |
+
+**Key insight**: Template classes and smart pointer wrappers often have lower coverage because tests only exercise common instantiations. Add explicit tests for const variants, weak references, and edge cases like expired pointers.
+
 ## Common Pitfalls and Solutions
 
 ### Missing Test Namespace
@@ -500,6 +521,18 @@ using namespace Eigen;  // For Eigen types in test code
 ```cmake
 target_link_libraries(bm_yourtest dart-utils benchmark::benchmark)
 ```
+
+### Windows DLL Export Issues in Tests
+
+**Problem:** New tests call methods that aren't exported from Windows DLLs, causing linker errors like "unresolved external symbol" on Windows CI.
+
+**Solution:** Add `DART_API` exports to the methods being tested:
+
+- For regular classes: Add `DART_API` at class level in the header
+- For CRTP template classes (e.g., `FixedJacobianNode`): Add `DART_API` to individual methods, NOT class level (class-level causes MSVC C2512)
+- If a class already has class-level `DART_API`, do NOT add method-level (causes MSVC C2487)
+
+**Pattern:** When adding tests that call new public APIs, verify Windows CI passes or add exports proactively.
 
 ### Using Deprecated Headers
 

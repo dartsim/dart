@@ -144,8 +144,9 @@ int main()
   // Set initial pose for the skeleton
   int dof = myWorld->getSkeleton(1)->getNumDofs();
   Eigen::VectorXd initPose = Eigen::VectorXd::Zero(dof);
-  for (int i = 0; i < 3; i++)
+  for (int i = 0; i < 3; i++) {
     initPose[i] = dart::math::Random::uniform(-0.5, 0.5);
+  }
   myWorld->getSkeleton(1)->setPositions(initPose);
 
   // Create event handler for keyboard input (using osg::ref_ptr for OSG

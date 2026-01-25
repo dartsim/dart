@@ -51,8 +51,9 @@ template <typename T>
 static T getVectorObjectIfAvailable(std::size_t index, std::span<const T> vec)
 {
   DART_ASSERT(index < vec.size());
-  if (index < vec.size())
+  if (index < vec.size()) {
     return vec[index];
+  }
 
   return nullptr;
 }

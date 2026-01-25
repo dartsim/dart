@@ -95,8 +95,9 @@ struct RunStats
 
 double MatrixInfinityNorm(const Eigen::MatrixXd& m)
 {
-  if (m.size() == 0)
+  if (m.size() == 0) {
     return 0.0;
+  }
   return m.cwiseAbs().rowwise().sum().maxCoeff();
 }
 
@@ -112,10 +113,12 @@ double ComputeBoundViolation(
 {
   double violation = 0.0;
   for (Eigen::Index i = 0; i < x.size(); ++i) {
-    if (std::isfinite(lo[i]))
+    if (std::isfinite(lo[i])) {
       violation = std::max(violation, lo[i] - x[i]);
-    if (std::isfinite(hi[i]))
+    }
+    if (std::isfinite(hi[i])) {
       violation = std::max(violation, x[i] - hi[i]);
+    }
   }
   return std::max(0.0, violation);
 }
@@ -184,14 +187,16 @@ ContractCheck CheckSolution(
   const double validationTol = std::max(report.tol, report.compTol);
   report.validated = dart::math::detail::validateSolution(
       x, w, loEff, hiEff, validationTol, &validationMessage);
-  if (!report.validated && report.message.empty())
+  if (!report.validated && report.message.empty()) {
     report.message = validationMessage;
+  }
 
   report.ok = report.finiteOk && report.boundsOk && report.residualOk
               && report.complementarityOk && report.validated;
 
-  if (!report.ok && report.message.empty())
+  if (!report.ok && report.message.empty()) {
     report.message = "Solution violates comparison contract";
+  }
 
   return report;
 }
@@ -203,8 +208,9 @@ Eigen::MatrixXd MakeSpdMatrix(int n, unsigned seed, double diagShift)
 
   Eigen::MatrixXd M(n, n);
   for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c)
+    for (int c = 0; c < n; ++c) {
       M(r, c) = dist(rng);
+    }
   }
 
   Eigen::MatrixXd A = M.transpose() * M;
@@ -219,8 +225,9 @@ Eigen::MatrixXd MakeIllConditionedSpd(int n, unsigned seed)
 
   Eigen::MatrixXd M(n, n);
   for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c)
+    for (int c = 0; c < n; ++c) {
       M(r, c) = dist(rng);
+    }
   }
 
   Eigen::HouseholderQR<Eigen::MatrixXd> qr(M);
@@ -297,16 +304,18 @@ Eigen::VectorXd MakePositiveVector(
   std::mt19937 rng(seed);
   std::uniform_real_distribution<double> dist(minVal, maxVal);
   Eigen::VectorXd x(n);
-  for (int i = 0; i < n; ++i)
+  for (int i = 0; i < n; ++i) {
     x[i] = dist(rng);
+  }
   return x;
 }
 
 std::vector<int> BuildUniformBlockSizes(int n, int blockSize)
 {
   std::vector<int> sizes;
-  if (blockSize <= 0 || n <= 0)
+  if (blockSize <= 0 || n <= 0) {
     return sizes;
+  }
 
   int remaining = n;
   while (remaining > 0) {
@@ -320,8 +329,9 @@ std::vector<int> BuildUniformBlockSizes(int n, int blockSize)
 std::vector<int> ComputeFindexBlockSizes(const Eigen::VectorXi& findex)
 {
   const int n = static_cast<int>(findex.size());
-  if (n == 0)
+  if (n == 0) {
     return {};
+  }
 
   std::vector<int> parent(n);
   std::iota(parent.begin(), parent.end(), 0);
@@ -337,24 +347,28 @@ std::vector<int> ComputeFindexBlockSizes(const Eigen::VectorXi& findex)
   auto unite = [&](int a, int b) {
     const int rootA = findRoot(a);
     const int rootB = findRoot(b);
-    if (rootA != rootB)
+    if (rootA != rootB) {
       parent[rootB] = rootA;
+    }
   };
 
   for (int i = 0; i < n; ++i) {
     const int ref = findex[i];
-    if (ref >= 0)
+    if (ref >= 0) {
       unite(i, ref);
+    }
   }
 
   std::unordered_map<int, int> counts;
-  for (int i = 0; i < n; ++i)
+  for (int i = 0; i < n; ++i) {
     ++counts[findRoot(i)];
+  }
 
   std::vector<int> sizes;
   sizes.reserve(counts.size());
-  for (const auto& entry : counts)
+  for (const auto& entry : counts) {
     sizes.push_back(entry.second);
+  }
   std::ranges::sort(sizes);
   return sizes;
 }
@@ -1048,13 +1062,15 @@ public:
 
     if (ImGui::BeginMenuBar()) {
       if (ImGui::BeginMenu("Menu")) {
-        if (ImGui::MenuItem("Exit"))
+        if (ImGui::MenuItem("Exit")) {
           mViewer->setDone(true);
+        }
         ImGui::EndMenu();
       }
       if (ImGui::BeginMenu("Help")) {
-        if (ImGui::MenuItem("About DART"))
+        if (ImGui::MenuItem("About DART")) {
           mViewer->showAbout();
+        }
         ImGui::EndMenu();
       }
       ImGui::EndMenuBar();
@@ -1093,8 +1109,9 @@ private:
           mExampleIndex = i;
           ClearResults();
         }
-        if (selected)
+        if (selected) {
           ImGui::SetItemDefaultFocus();
+        }
       }
       ImGui::EndCombo();
     }
@@ -1125,10 +1142,12 @@ private:
           lastCategory = solver.category;
         }
         const bool selected = (mSolverIndex == i);
-        if (ImGui::Selectable(solver.name.c_str(), selected))
+        if (ImGui::Selectable(solver.name.c_str(), selected)) {
           mSolverIndex = i;
-        if (selected)
+        }
+        if (selected) {
           ImGui::SetItemDefaultFocus();
+        }
       }
       ImGui::EndCombo();
     }
@@ -1139,8 +1158,9 @@ private:
       ImGui::Text("Standard: %s", solver.supportsStandard ? "yes" : "no");
       ImGui::Text("Boxed: %s", solver.supportsBoxed ? "yes" : "no");
       ImGui::Text("Findex: %s", solver.supportsFindex ? "yes" : "no");
-      if (!solver.fallbackNote.empty())
+      if (!solver.fallbackNote.empty()) {
         ImGui::TextWrapped("%s", solver.fallbackNote.c_str());
+      }
     }
 
     if (ImGui::CollapsingHeader(
@@ -1150,15 +1170,17 @@ private:
       if (solver.pros.empty()) {
         ImGui::TextDisabled("No notes");
       } else {
-        for (const auto& item : solver.pros)
+        for (const auto& item : solver.pros) {
           ImGui::BulletText("%s", item.c_str());
+        }
       }
       ImGui::Text("Cons");
       if (solver.cons.empty()) {
         ImGui::TextDisabled("No notes");
       } else {
-        for (const auto& item : solver.cons)
+        for (const auto& item : solver.cons) {
           ImGui::BulletText("%s", item.c_str());
+        }
       }
     }
   }
@@ -1166,8 +1188,9 @@ private:
   void RenderOptionsPanel()
   {
     if (!ImGui::CollapsingHeader(
-            "Solver Options", ImGuiTreeNodeFlags_DefaultOpen))
+            "Solver Options", ImGuiTreeNodeFlags_DefaultOpen)) {
       return;
+    }
 
     ImGui::TextWrapped(
         "Shared options apply to all solvers for apples-to-apples comparison.");
@@ -1382,18 +1405,21 @@ private:
       ImGui::TextDisabled("Manual block sizes disabled for findex problems.");
     }
 
-    if (!allowManual)
+    if (!allowManual) {
       ImGui::BeginDisabled();
+    }
     ImGui::Checkbox(
         (std::string("Manual blocks (") + label + ")").c_str(), &manualBlocks);
     if (manualBlocks) {
       ImGui::InputInt(
           (std::string("Block size (") + label + ")").c_str(), &blockSize);
-      if (blockSize < 1)
+      if (blockSize < 1) {
         blockSize = 1;
+      }
     }
-    if (!allowManual)
+    if (!allowManual) {
       ImGui::EndDisabled();
+    }
 
     const int n = static_cast<int>(example.problem.b.size());
     if (manualBlocks && allowManual) {
@@ -1414,8 +1440,9 @@ private:
     ImGui::Checkbox("Manual block size", &mShockManualBlocks);
     if (mShockManualBlocks) {
       ImGui::InputInt("Shock block size", &mShockBlockSize);
-      if (mShockBlockSize < 1)
+      if (mShockBlockSize < 1) {
         mShockBlockSize = 1;
+      }
       if (example.hasFindex) {
         ImGui::TextDisabled("Manual blocks ignored for findex problems.");
       }
@@ -1424,8 +1451,9 @@ private:
     ImGui::Checkbox("Use layer ordering", &mShockUseLayers);
     if (mShockUseLayers) {
       ImGui::InputInt("Blocks per layer", &mShockBlocksPerLayer);
-      if (mShockBlocksPerLayer < 1)
+      if (mShockBlocksPerLayer < 1) {
         mShockBlocksPerLayer = 1;
+      }
     }
 
     const int blockCount = BlockCountForExample(example, mShockManualBlocks);
@@ -1434,35 +1462,42 @@ private:
 
   void RenderRunPanel()
   {
-    if (!ImGui::CollapsingHeader("Run", ImGuiTreeNodeFlags_DefaultOpen))
+    if (!ImGui::CollapsingHeader("Run", ImGuiTreeNodeFlags_DefaultOpen)) {
       return;
+    }
 
     ImGui::InputInt("Runs per solver", &mRunCount);
-    if (mRunCount < 1)
+    if (mRunCount < 1) {
       mRunCount = 1;
+    }
 
-    if (ImGui::Button("Run selected"))
+    if (ImGui::Button("Run selected")) {
       RunSolverIndex(mSolverIndex);
+    }
     ImGui::SameLine();
-    if (ImGui::Button("Run all"))
+    if (ImGui::Button("Run all")) {
       RunAllSolvers();
+    }
     ImGui::SameLine();
-    if (ImGui::Button("Clear results"))
+    if (ImGui::Button("Clear results")) {
       ClearResults();
+    }
   }
 
   void RenderResultsPanel()
   {
-    if (!ImGui::CollapsingHeader("Results", ImGuiTreeNodeFlags_DefaultOpen))
+    if (!ImGui::CollapsingHeader("Results", ImGuiTreeNodeFlags_DefaultOpen)) {
       return;
+    }
 
     ImGui::Checkbox("Show all solvers", &mShowAllResults);
 
     ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg
                             | ImGuiTableFlags_Resizable
                             | ImGuiTableFlags_SizingStretchProp;
-    if (!ImGui::BeginTable("lcp_results", 9, flags))
+    if (!ImGui::BeginTable("lcp_results", 9, flags)) {
       return;
+    }
 
     ImGui::TableSetupColumn("Solver");
     ImGui::TableSetupColumn("Status");
@@ -1519,8 +1554,9 @@ private:
     };
 
     if (mShowAllResults) {
-      for (int i = 0; i < static_cast<int>(mSolvers.size()); ++i)
+      for (int i = 0; i < static_cast<int>(mSolvers.size()); ++i) {
         renderRow(i);
+      }
     } else {
       renderRow(mSolverIndex);
     }
@@ -1531,8 +1567,9 @@ private:
   void RenderPerformancePanel()
   {
     if (!ImGui::CollapsingHeader(
-            "Performance history", ImGuiTreeNodeFlags_DefaultOpen))
+            "Performance history", ImGuiTreeNodeFlags_DefaultOpen)) {
       return;
+    }
 
     const auto& stats = mSolverStats[mSolverIndex];
     if (stats.historyMs.empty()) {
@@ -1571,8 +1608,9 @@ private:
 
   void RenderReferenceTags(const std::vector<std::string>& refs)
   {
-    if (refs.empty())
+    if (refs.empty()) {
       return;
+    }
 
     ImGui::Text("References:");
     const auto& refMap = ReferenceMap();
@@ -1581,8 +1619,9 @@ private:
       ImGui::SmallButton(tag.c_str());
       if (ImGui::IsItemHovered()) {
         auto it = refMap.find(tag);
-        if (it != refMap.end())
+        if (it != refMap.end()) {
           ImGui::SetTooltip("%s", it->second.c_str());
+        }
       }
     }
   }
@@ -1596,16 +1635,18 @@ private:
 
   void RunAllSolvers()
   {
-    for (int i = 0; i < static_cast<int>(mSolvers.size()); ++i)
+    for (int i = 0; i < static_cast<int>(mSolvers.size()); ++i) {
       RunSolverIndex(i);
+    }
   }
 
   void RunSolverIndex(int index)
   {
     const auto& solverInfo = mSolvers[index];
     auto solver = CreateSolver(solverInfo.type);
-    if (!solver)
+    if (!solver) {
       return;
+    }
 
     const auto& example = mExamples[mExampleIndex];
     const auto& problem = example.problem;
@@ -1622,8 +1663,9 @@ private:
     double totalMs = 0.0;
 
     for (int i = 0; i < mRunCount; ++i) {
-      if (!mOptions.warmStart || i == 0)
+      if (!mOptions.warmStart || i == 0) {
         x = Eigen::VectorXd::Zero(n);
+      }
 
       const auto start = std::chrono::steady_clock::now();
       stats.result = solver->solve(problem, x, options);
@@ -1704,10 +1746,12 @@ private:
       const ExampleCase& example)
   {
     blockSizes.clear();
-    if (!manualBlocks)
+    if (!manualBlocks) {
       return;
-    if (example.hasFindex)
+    }
+    if (example.hasFindex) {
       return;
+    }
 
     const int n = static_cast<int>(example.problem.b.size());
     blockSizes = BuildUniformBlockSizes(n, blockSize);
@@ -1729,8 +1773,9 @@ private:
       const int blocksPerLayer = std::max(1, mShockBlocksPerLayer);
       for (int i = 0; i < blockCount; i += blocksPerLayer) {
         std::vector<int> layer;
-        for (int j = i; j < std::min(blockCount, i + blocksPerLayer); ++j)
+        for (int j = i; j < std::min(blockCount, i + blocksPerLayer); ++j) {
           layer.push_back(j);
+        }
         mSolverParams.shock.layers.push_back(std::move(layer));
       }
     }
@@ -1743,16 +1788,18 @@ private:
       return static_cast<int>(
           BuildUniformBlockSizes(n, mShockBlockSize).size());
     }
-    if (example.hasFindex)
+    if (example.hasFindex) {
       return static_cast<int>(
           ComputeFindexBlockSizes(example.problem.findex).size());
+    }
     return 1;
   }
 
   static void AppendHistory(std::vector<float>& history, float value)
   {
-    if (history.size() >= kMaxHistory)
+    if (history.size() >= kMaxHistory) {
       history.erase(history.begin());
+    }
     history.push_back(value);
   }
 

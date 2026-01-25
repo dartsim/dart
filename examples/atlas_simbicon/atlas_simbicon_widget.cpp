@@ -90,13 +90,15 @@ void AtlasSimbiconWidget::render()
   // Menu
   if (ImGui::BeginMenuBar()) {
     if (ImGui::BeginMenu("Menu")) {
-      if (ImGui::MenuItem("Exit"))
+      if (ImGui::MenuItem("Exit")) {
         mViewer->setDone(true);
+      }
       ImGui::EndMenu();
     }
     if (ImGui::BeginMenu("Help")) {
-      if (ImGui::MenuItem("About DART"))
+      if (ImGui::MenuItem("About DART")) {
         mViewer->showAbout();
+      }
       ImGui::EndMenu();
     }
     ImGui::EndMenuBar();
@@ -121,11 +123,13 @@ void AtlasSimbiconWidget::render()
   if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
     int e = mViewer->isSimulating() ? 0 : 1;
     if (mViewer->isAllowingSimulation()) {
-      if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
+      if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating()) {
         mViewer->simulate(true);
+      }
       ImGui::SameLine();
-      if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating())
+      if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating()) {
         mViewer->simulate(false);
+      }
     }
   }
 
@@ -146,26 +150,29 @@ void AtlasSimbiconWidget::render()
     // Shadow
     mShadow = mNode->isShadowed();
     if (ImGui::Checkbox("Shadow On/Off", &mShadow)) {
-      if (mShadow)
+      if (mShadow) {
         mNode->showShadow();
-      else
+      } else {
         mNode->hideShadow();
+      }
     }
 
     // Depth
     if (ImGui::Checkbox("Depth mode", &mDepthMode)) {
-      if (mDepthMode)
+      if (mDepthMode) {
         mViewer->setCameraMode(dart::gui::CameraMode::DEPTH);
-      else
+      } else {
         mViewer->setCameraMode(dart::gui::CameraMode::RGBA);
+      }
     }
   }
 
   if (ImGui::CollapsingHeader(
           "Atlas Simbicon Options", ImGuiTreeNodeFlags_DefaultOpen)) {
     const auto reset = ImGui::Button("Reset Atlas");
-    if (reset)
+    if (reset) {
       mNode->reset();
+    }
 
     ImGui::Spacing();
 
@@ -197,8 +204,9 @@ void AtlasSimbiconWidget::render()
 //==============================================================================
 void AtlasSimbiconWidget::setGravity(float gravity)
 {
-  if (mGravityAcc == gravity)
+  if (mGravityAcc == gravity) {
     return;
+  }
 
   mGravityAcc = gravity;
   mNode->getWorld()->setGravity(-mGravityAcc * Eigen::Vector3d::UnitY());

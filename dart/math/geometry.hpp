@@ -232,8 +232,9 @@ typename Derived::PlainObject AdTJac(
   typename Derived::PlainObject ret(_J.rows(), _J.cols());
 
   // Compute AdT column by column
-  for (int i = 0; i < _J.cols(); ++i)
+  for (int i = 0; i < _J.cols(); ++i) {
     ret.col(i) = AdT(_T, _J.col(i));
+  }
 
   return ret;
 }
@@ -352,8 +353,9 @@ typename Derived::PlainObject AdInvTJac(
   typename Derived::PlainObject ret(_J.rows(), _J.cols());
 
   // Compute AdInvT column by column
-  for (int i = 0; i < _J.cols(); ++i)
+  for (int i = 0; i < _J.cols(); ++i) {
     ret.col(i) = AdInvT(_T, _J.col(i));
+  }
 
   return ret;
 }
@@ -493,8 +495,9 @@ void extractNullSpace(const Eigen::JacobiSVD<MatrixType>& _SVD, ReturnType& _NS)
         _SVD.singularValues().coeff(0) * 1e-10,
         std::numeric_limits<double>::min());
     int i = _SVD.nonzeroSingularValues() - 1;
-    while (i >= 0 && _SVD.singularValues().coeff(i) < thresh)
+    while (i >= 0 && _SVD.singularValues().coeff(i) < thresh) {
       --i;
+    }
     rank = i + 1;
   }
 
@@ -603,7 +606,7 @@ enum IntersectionResult
 
 /// Compute the intersection between a line segment that goes from a1 -> a2 and
 /// a line segment that goes from b1 -> b2.
-IntersectionResult computeIntersection(
+DART_API IntersectionResult computeIntersection(
     Eigen::Vector2d& _intersectionPoint,
     const Eigen::Vector2d& a1,
     const Eigen::Vector2d& a2,

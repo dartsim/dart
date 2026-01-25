@@ -86,24 +86,27 @@ public:
       mActiveColor(activeColor),
       mInactiveColor(inactiveColor)
   {
-    if (mVisual)
+    if (mVisual) {
       mVisual->setRGBA(mInactiveColor);
+    }
   }
 
 private:
   void updateImpl(
       const World&, const dart::sensor::SensorUpdateContext&) override
   {
-    if (mVisual)
+    if (mVisual) {
       mVisual->setRGBA(mPulseOn ? mActiveColor : mInactiveColor);
+    }
     mPulseOn = !mPulseOn;
   }
 
   void resetImpl() override
   {
     mPulseOn = false;
-    if (mVisual)
+    if (mVisual) {
       mVisual->setRGBA(mInactiveColor);
+    }
   }
 
   SimpleFramePtr mMarker;

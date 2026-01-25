@@ -61,8 +61,9 @@ public:
 protected:
   void handleDestructionNotification(const Subject* _subject) override
   {
-    if (mEventHandler == _subject)
+    if (mEventHandler == _subject) {
       delete this;
+    }
   }
 
   DefaultEventHandler* mEventHandler;

@@ -227,23 +227,27 @@ CollisionAspect::CollisionAspect(const PropertiesData& properties)
 void CollisionAspect::setCollidable(const bool& value)
 {
   const bool wasCollidable = getCollidable();
-  if (wasCollidable == value)
+  if (wasCollidable == value) {
     return;
+  }
 
   mProperties.mCollidable = value;
   notifyPropertiesUpdated();
 
   auto* shapeFrame = getComposite();
-  if (nullptr == shapeFrame)
+  if (nullptr == shapeFrame) {
     return;
+  }
 
   ShapeNode* shapeNode = shapeFrame->asShapeNode();
-  if (nullptr == shapeNode)
+  if (nullptr == shapeNode) {
     return;
+  }
 
   BodyNode* bodyNode = shapeNode->getBodyNodePtr().get();
-  if (nullptr == bodyNode)
+  if (nullptr == bodyNode) {
     return;
+  }
 
   bodyNode->handleCollisionShapeStateChange(shapeNode, wasCollidable, value);
 }
@@ -260,16 +264,19 @@ void CollisionAspect::setComposite(common::Composite* newComposite)
   AspectImplementation::setComposite(newComposite);
 
   auto* shapeFrame = dynamic_cast<ShapeFrame*>(newComposite);
-  if (nullptr == shapeFrame)
+  if (nullptr == shapeFrame) {
     return;
+  }
 
   ShapeNode* shapeNode = shapeFrame->asShapeNode();
-  if (nullptr == shapeNode)
+  if (nullptr == shapeNode) {
     return;
+  }
 
   BodyNode* bodyNode = shapeNode->getBodyNodePtr().get();
-  if (nullptr == bodyNode)
+  if (nullptr == bodyNode) {
     return;
+  }
 
   bodyNode->handleCollisionShapeStateChange(
       shapeNode, false, mProperties.mCollidable);
@@ -287,8 +294,9 @@ void CollisionAspect::loseComposite(common::Composite* oldComposite)
 
   const bool wasCollidable = mProperties.mCollidable;
 
-  if (nullptr != bodyNode)
+  if (nullptr != bodyNode) {
     bodyNode->handleCollisionShapeStateChange(shapeNode, wasCollidable, false);
+  }
 
   AspectImplementation::loseComposite(oldComposite);
 }
@@ -370,8 +378,9 @@ const ShapeFrame::AspectProperties& ShapeFrame::getAspectProperties() const
 //==============================================================================
 void ShapeFrame::setShape(const ShapePtr& shape)
 {
-  if (shape == mAspectProperties.mShape)
+  if (shape == mAspectProperties.mShape) {
     return;
+  }
 
   ShapePtr oldShape = mAspectProperties.mShape;
   ShapeNode* shapeNode = asShapeNode();

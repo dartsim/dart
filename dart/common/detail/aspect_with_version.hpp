@@ -402,8 +402,9 @@ std::size_t AspectWithVersionedProperties<
     CompositeT,
     updateProperties>::incrementVersion()
 {
-  if (CompositeType* comp = this->getComposite())
+  if (CompositeType* comp = this->getComposite()) {
     return comp->incrementVersion();
+  }
 
   return 0;
 }

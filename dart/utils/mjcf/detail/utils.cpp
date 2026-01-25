@@ -56,29 +56,33 @@ Errors checkOrientationValidity(const tinyxml2::XMLElement* element)
   }
 
   if (hasAttribute(element, "axisangle")) {
-    if (!orientationTypes.empty())
+    if (!orientationTypes.empty()) {
       orientationTypes += ", ";
+    }
     orientationTypes += "axisangle";
     ++numOrientationTypes;
   }
 
   if (hasAttribute(element, "euler")) {
-    if (!orientationTypes.empty())
+    if (!orientationTypes.empty()) {
       orientationTypes += ", ";
+    }
     orientationTypes += "euler";
     ++numOrientationTypes;
   }
 
   if (hasAttribute(element, "xyaxes")) {
-    if (!orientationTypes.empty())
+    if (!orientationTypes.empty()) {
       orientationTypes += ", ";
+    }
     orientationTypes += "xyaxes";
     ++numOrientationTypes;
   }
 
   if (hasAttribute(element, "zaxis")) {
-    if (!orientationTypes.empty())
+    if (!orientationTypes.empty()) {
       orientationTypes += ", ";
+    }
     orientationTypes += "zaxis";
     ++numOrientationTypes;
   }

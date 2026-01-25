@@ -32,6 +32,7 @@
 
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/group.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
 #include <dart/common/deprecated.hpp>
@@ -68,4 +69,55 @@ TEST(ReferentialSkeletonAccessors, ReturnsMutableBodyNodeVector)
   DART_SUPPRESS_DEPRECATED_END
   ASSERT_EQ(nodes.size(), 1u);
   EXPECT_EQ(nodes.front(), pair.second);
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, DofsLimitsAndMassMatrix)
+{
+  auto skeleton = Skeleton::create("skeleton_ops");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.first->setName("root_joint");
+  rootPair.second->setName("root_body");
+
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setName("child_joint");
+  childPair.first->setAxis(Eigen::Vector3d::UnitY());
+  childPair.second->setName("child_body");
+
+  EXPECT_EQ(skeleton->getNumBodyNodes(), 2u);
+  EXPECT_EQ(skeleton->getNumJoints(), 2u);
+  EXPECT_EQ(
+      skeleton->getNumDofs(),
+      rootPair.first->getNumDofs() + childPair.first->getNumDofs());
+
+  EXPECT_EQ(skeleton->getBodyNode("root_body"), rootPair.second);
+  EXPECT_EQ(skeleton->getJoint("child_joint"), childPair.first);
+
+  const auto dofs = skeleton->getNumDofs();
+  Eigen::VectorXd positions = Eigen::VectorXd::LinSpaced(
+      static_cast<int>(dofs), 0.1, 0.1 + static_cast<double>(dofs - 1));
+  skeleton->setPositions(positions);
+  EXPECT_TRUE(skeleton->getPositions().isApprox(positions));
+
+  Eigen::VectorXd limits = Eigen::VectorXd::Constant(dofs, 1.0);
+  skeleton->setPositionLowerLimits(-limits);
+  skeleton->setPositionUpperLimits(limits);
+  EXPECT_TRUE(skeleton->getPositionLowerLimits().isApprox(-limits));
+  EXPECT_TRUE(skeleton->getPositionUpperLimits().isApprox(limits));
+
+  skeleton->setVelocityLowerLimits(-limits);
+  skeleton->setVelocityUpperLimits(limits);
+  EXPECT_TRUE(skeleton->getVelocityLowerLimits().isApprox(-limits));
+  EXPECT_TRUE(skeleton->getVelocityUpperLimits().isApprox(limits));
+
+  skeleton->computeForwardDynamics();
+  skeleton->computeInverseDynamics(true, true, true);
+
+  const auto massMatrix = skeleton->getMassMatrix();
+  EXPECT_EQ(massMatrix.rows(), static_cast<int>(dofs));
+  EXPECT_EQ(massMatrix.cols(), static_cast<int>(dofs));
+
+  const auto com = skeleton->getCOM();
+  EXPECT_TRUE(com.array().isFinite().all());
 }

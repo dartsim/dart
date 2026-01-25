@@ -48,8 +48,9 @@ namespace {
 
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
-  if (A.size() == 0)
+  if (A.size() == 0) {
     return 0.0;
+  }
 
   return A.cwiseAbs().rowwise().sum().maxCoeff();
 }
@@ -224,10 +225,12 @@ LcpResult PenalizedFischerBurmeisterNewtonSolver::solve(
     }
 
     Eigen::MatrixXd J = A;
-    for (int i = 0; i < n; ++i)
+    for (int i = 0; i < n; ++i) {
       J.row(i) *= q[i];
-    for (int i = 0; i < n; ++i)
+    }
+    for (int i = 0; i < n; ++i) {
       J(i, i) += p[i];
+    }
 
     const Eigen::VectorXd dx = J.colPivHouseholderQr().solve(-phi);
     if (!dx.allFinite()) {
@@ -264,8 +267,9 @@ LcpResult PenalizedFischerBurmeisterNewtonSolver::solve(
       }
 
       step *= params->stepReduction;
-      if (step < params->minStep)
+      if (step < params->minStep) {
         break;
+      }
     }
 
     if (!accepted) {

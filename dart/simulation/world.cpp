@@ -68,8 +68,9 @@ using dart::collision::CollisionDetectorPtr;
 void configureCollisionDetector(
     const CollisionDetectorPtr& detector, const std::string& key)
 {
-  if (!detector)
+  if (!detector) {
     return;
+  }
 
   if (key == "fcl") {
     auto fclDetector
@@ -102,15 +103,17 @@ std::string toCollisionDetectorKey(CollisionDetectorType type)
 
 CollisionDetectorPtr tryCreateCollisionDetector(const std::string& requestedKey)
 {
-  if (requestedKey.empty())
+  if (requestedKey.empty()) {
     return nullptr;
+  }
 
   auto key = common::toLower(requestedKey);
 
   auto* factory = CollisionDetector::getFactory();
   DART_ASSERT(factory);
-  if (!factory->canCreate(key))
+  if (!factory->canCreate(key)) {
     return nullptr;
+  }
 
   auto detector = factory->create(key);
   if (!detector) {
@@ -133,8 +136,9 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
 {
   const auto requestedType = config.collisionDetector;
   const auto requestedKey = toCollisionDetectorKey(requestedType);
-  if (auto detector = tryCreateCollisionDetector(requestedType))
+  if (auto detector = tryCreateCollisionDetector(requestedType)) {
     return detector;
+  }
 
   if (requestedType != CollisionDetectorType::Fcl) {
     DART_WARN(
@@ -143,8 +147,10 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
         "Falling back to the default 'fcl' detector.",
         requestedKey);
 
-    if (auto fallback = tryCreateCollisionDetector(CollisionDetectorType::Fcl))
+    if (auto fallback
+        = tryCreateCollisionDetector(CollisionDetectorType::Fcl)) {
       return fallback;
+    }
   }
 
   DART_WARN(
@@ -192,8 +198,9 @@ World::World(const WorldConfig& config)
   DART_SUPPRESS_DEPRECATED_END
   setConstraintSolver(std::move(solver));
 
-  if (auto detector = resolveCollisionDetector(config))
+  if (auto detector = resolveCollisionDetector(config)) {
     setCollisionDetector(detector);
+  }
 }
 
 //==============================================================================
@@ -201,11 +208,13 @@ World::~World()
 {
   delete mRecording;
 
-  for (common::Connection& connection : mNameConnectionsForSkeletons)
+  for (common::Connection& connection : mNameConnectionsForSkeletons) {
     connection.disconnect();
+  }
 
-  for (common::Connection& connection : mNameConnectionsForSimpleFrames)
+  for (common::Connection& connection : mNameConnectionsForSimpleFrames) {
     connection.disconnect();
+  }
 }
 
 //==============================================================================
@@ -242,8 +251,9 @@ WorldPtr World::clone() const
     dynamics::SimpleFramePtr parent_candidate
         = worldClone->getSimpleFrame(current_parent->getName());
 
-    if (parent_candidate)
+    if (parent_candidate) {
       worldClone->getSimpleFrame(i)->setParentFrame(parent_candidate.get());
+    }
   }
 
   return worldClone;
@@ -263,8 +273,9 @@ void World::setTimeStep(double _timeStep)
   mTimeStep = _timeStep;
   DART_ASSERT(mConstraintSolver);
   mConstraintSolver->setTimeStep(_timeStep);
-  for (auto& skel : mSkeletons)
+  for (auto& skel : mSkeletons) {
     skel->setTimeStep(_timeStep);
+  }
 }
 
 //==============================================================================
@@ -298,8 +309,9 @@ void World::step(bool _resetCommand)
   {
     DART_PROFILE_SCOPED_N("World::step - Integrate velocity");
     for (auto& skel : mSkeletons) {
-      if (!skel->isMobile())
+      if (!skel->isMobile()) {
         continue;
+      }
 
       skel->computeForwardDynamics();
       skel->integrateVelocities(mTimeStep);
@@ -314,8 +326,9 @@ void World::step(bool _resetCommand)
 
   // Compute velocity changes given constraint impulses
   for (auto& skel : mSkeletons) {
-    if (!skel->isMobile())
+    if (!skel->isMobile()) {
       continue;
+    }
 
     if (skel->isImpulseApplied()) {
       skel->computeImpulseForwardDynamics();
@@ -363,8 +376,9 @@ int World::getSimFrames() const
 //==============================================================================
 const std::string& World::setName(std::string_view newName)
 {
-  if (newName == mName)
+  if (newName == mName) {
     return mName;
+  }
 
   const std::string oldName = mName;
   mName = newName;
@@ -410,8 +424,9 @@ const Eigen::Vector3d& World::getGravity() const
 //==============================================================================
 dynamics::SkeletonPtr World::getSkeleton(std::size_t _index) const
 {
-  if (_index < mSkeletons.size())
+  if (_index < mSkeletons.size()) {
     return mSkeletons[_index];
+  }
 
   return nullptr;
 }
@@ -478,8 +493,9 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   // Find index of _skeleton in mSkeleton.
   std::size_t index = 0;
   for (; index < mSkeletons.size(); ++index) {
-    if (mSkeletons[index] == _skeleton)
+    if (mSkeletons[index] == _skeleton) {
       break;
+    }
   }
 
   // If i is equal to the number of skeletons, then _skeleton is not in
@@ -490,8 +506,9 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   }
 
   // Update mIndices.
-  for (std::size_t i = index + 1; i < mSkeletons.size() - 1; ++i)
+  for (std::size_t i = index + 1; i < mSkeletons.size() - 1; ++i) {
     mIndices[i] = mIndices[i + 1] - _skeleton->getNumDofs();
+  }
   mIndices.pop_back();
 
   // Remove _skeleton from constraint handler.
@@ -519,11 +536,13 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 std::set<dynamics::SkeletonPtr> World::removeAllSkeletons()
 {
   std::set<dynamics::SkeletonPtr> ptrs;
-  for (const auto& skeleton : mSkeletons)
+  for (const auto& skeleton : mSkeletons) {
     ptrs.insert(skeleton);
+  }
 
-  while (getNumSkeletons() > 0)
+  while (getNumSkeletons() > 0) {
     removeSkeleton(getSkeleton(0));
+  }
 
   return ptrs;
 }
@@ -557,8 +576,9 @@ int World::getIndex(int _index) const
 //==============================================================================
 dynamics::SimpleFramePtr World::getSimpleFrame(std::size_t _index) const
 {
-  if (_index < mSimpleFrames.size())
+  if (_index < mSimpleFrames.size()) {
     return mSimpleFrames[_index];
+  }
 
   return nullptr;
 }
@@ -644,11 +664,13 @@ std::set<dynamics::SimpleFramePtr> World::removeAllSimpleFrames()
        = mSimpleFrames.begin(),
        end = mSimpleFrames.end();
        it != end;
-       ++it)
+       ++it) {
     ptrs.insert(*it);
+  }
 
-  while (getNumSimpleFrames() > 0)
+  while (getNumSimpleFrames() > 0) {
     removeSimpleFrame(getSimpleFrame(0));
+  }
 
   return ptrs;
 }
@@ -778,8 +800,9 @@ void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
       common::NullPointerException,
       "Cannot set nullptr as constraint solver");
 
-  if (mConstraintSolver)
+  if (mConstraintSolver) {
     solver->setFromOtherConstraintSolver(*mConstraintSolver);
+  }
 
   mConstraintSolver = std::move(solver);
   mConstraintSolver->setTimeStep(mTimeStep);

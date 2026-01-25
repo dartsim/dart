@@ -9,6 +9,10 @@ dart_add_test("unit" UNIT_collision_DistanceFilter collision/test_distance_filte
 
 dart_add_test("unit" UNIT_collision_CollisionGroup collision/test_collision_group.cpp)
 
+dart_add_test(
+  "unit" UNIT_collision_DARTCollisionDetector collision/test_dart_collision_detector.cpp)
+dart_add_test("unit" UNIT_collision_DARTCollide collision/test_dart_collide.cpp)
+
 dart_add_test("unit" UNIT_collision_Raycast collision/test_raycast.cpp)
 
 dart_add_test("unit" UNIT_collision_CollisionResult collision/test_collision_result.cpp)
@@ -29,26 +33,40 @@ endif()
 
 dart_add_test(
   "unit" UNIT_collision_FCLCollisionObject collision/test_fcl_collision_object.cpp)
+dart_add_test("unit" UNIT_collision_CollisionOption collision/test_collision_option.cpp)
+dart_add_test("unit" UNIT_collision_CollisionFilter collision/test_collision_filter.cpp)
+dart_add_test("unit" UNIT_collision_DistanceOption collision/test_distance_option.cpp)
+dart_add_test("unit" UNIT_collision_RaycastOption collision/test_raycast_option.cpp)
 
 # ==============================================================================
 # Common Tests
 # ==============================================================================
 set(common_unit_sources
+  common/test_aspect.cpp
   common/test_c_allocator.cpp
+  common/test_castable.cpp
+  common/test_cloneable.cpp
   common/test_composite.cpp
   common/test_exception.cpp
   common/test_factory.cpp
   common/test_free_list_allocator.cpp
+  common/test_local_resource_retriever.cpp
+  common/test_lockable_reference.cpp
   common/test_logging.cpp
   common/test_memory_manager.cpp
+  common/test_name_manager.cpp
   common/test_pool_allocator.cpp
+  common/test_profiler.cpp
   common/test_resource.cpp
   common/test_result.cpp
+  common/test_signal.cpp
+  common/test_singleton.cpp
   common/test_stl_allocator.cpp
   common/test_stopwatch.cpp
   common/test_subject_observer.cpp
   common/test_string.cpp
   common/test_uri.cpp
+  common/test_version_counter.cpp
 )
 
 if(DART_BUILD_PROFILE AND DART_PROFILE_ENABLE_TEXT)
@@ -77,6 +95,13 @@ dart_add_test(
   "unit" UNIT_constraint_BalanceConstraint constraint/test_balance_constraint.cpp)
 dart_add_test(
   "unit" UNIT_constraint_ContactSurface constraint/test_contact_surface.cpp)
+dart_add_test("unit" UNIT_constraint_JointConstraints constraint/test_joint_constraints.cpp)
+dart_add_test("unit" UNIT_constraint_MotorConstraints constraint/test_motor_constraints.cpp)
+dart_add_test("unit" UNIT_constraint_WeldJointConstraint constraint/test_weld_joint_constraint.cpp)
+dart_add_test("unit" UNIT_constraint_BallJointConstraint constraint/test_ball_joint_constraint.cpp)
+dart_add_test("unit" UNIT_constraint_ServoMotorConstraint constraint/test_servo_motor_constraint.cpp)
+dart_add_test(
+  "unit" UNIT_constraint_SoftContactConstraint constraint/test_soft_contact_constraint.cpp)
 
 # ==============================================================================
 # Dynamics Tests
@@ -87,6 +112,8 @@ dart_add_test(
 dart_add_test("unit" UNIT_dynamics_Inertia dynamics/test_inertia.cpp)
 dart_add_test("unit" UNIT_dynamics_ScrewJoint dynamics/test_screw_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeNodePtr dynamics/test_shape_node_ptr.cpp)
+dart_add_test("unit" UNIT_dynamics_BodyNodePtr dynamics/test_body_node_ptr.cpp)
+dart_add_test("unit" UNIT_dynamics_NodePtr dynamics/test_node_ptr.cpp)
 dart_add_test("unit" UNIT_dynamics_MeshShape dynamics/test_mesh_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_HeightmapShape dynamics/test_heightmap_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_SphereShape dynamics/test_sphere_shape.cpp)
@@ -98,11 +125,36 @@ dart_add_test(
 dart_add_test("unit" UNIT_dynamics_ShapeNodeInertia dynamics/test_shape_node_inertia.cpp)
 dart_add_test("unit" UNIT_dynamics_SkeletonClone dynamics/test_skeleton_clone.cpp)
 dart_add_test("unit" UNIT_dynamics_SkeletonAccessors dynamics/test_skeleton_accessors.cpp)
+dart_add_test("unit" UNIT_dynamics_SkeletonProperties dynamics/test_skeleton_properties.cpp)
+dart_add_test("unit" UNIT_dynamics_BodyNodeProperties dynamics/test_body_node_properties.cpp)
 dart_add_test("unit" UNIT_dynamics_Noexcept dynamics/test_noexcept.cpp)
 dart_add_test(
   "unit" UNIT_dynamics_BodyNodeCollisionSignals dynamics/test_body_node_collision_signals.cpp)
 dart_add_test("unit" UNIT_dynamics_VisualAspect dynamics/test_visual_aspect.cpp)
 dart_add_test("unit" UNIT_dynamics_WeldJointMerge dynamics/test_weld_joint_merge.cpp)
+dart_add_test("unit" UNIT_dynamics_CapsuleShape dynamics/test_capsule_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_ConeShape dynamics/test_cone_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_CylinderShape dynamics/test_cylinder_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_EllipsoidShape dynamics/test_ellipsoid_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_PlaneShape dynamics/test_plane_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_PointCloudShape dynamics/test_point_cloud_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_EndEffector dynamics/test_end_effector.cpp)
+dart_add_test("unit" UNIT_dynamics_Marker dynamics/test_marker.cpp)
+dart_add_test("unit" UNIT_dynamics_PointMass dynamics/test_point_mass.cpp)
+dart_add_test("unit" UNIT_dynamics_SoftBodyNodeHelper dynamics/test_soft_body_node_helper.cpp)
+dart_add_test("unit" UNIT_dynamics_SoftBodyNode dynamics/test_soft_body_node.cpp)
+dart_add_test("unit" UNIT_dynamics_Frame dynamics/test_frame.cpp)
+dart_add_test("unit" UNIT_dynamics_Group dynamics/test_group.cpp)
+dart_add_test("unit" UNIT_dynamics_Joints dynamics/test_joints.cpp)
+dart_add_test("unit" UNIT_dynamics_DegreeOfFreedom dynamics/test_degree_of_freedom.cpp)
+dart_add_test("unit" UNIT_dynamics_MetaSkeleton dynamics/test_meta_skeleton.cpp)
+dart_add_test("unit" UNIT_dynamics_Linkage dynamics/test_linkage.cpp)
+dart_add_test("unit" UNIT_dynamics_LineSegmentShape dynamics/test_line_segment_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_PyramidShape dynamics/test_pyramid_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_VoxelGridShape dynamics/test_voxel_grid_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_ZeroDofJoint dynamics/test_zero_dof_joint.cpp)
+dart_add_test("unit" UNIT_dynamics_ReferentialSkeleton dynamics/test_referential_skeleton.cpp)
+dart_add_test("unit" UNIT_dynamics_InverseKinematics dynamics/test_inverse_kinematics.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
@@ -132,6 +184,9 @@ if(TARGET dart)
   dart_add_test("unit" UNIT_math_Convhull math/test_convhull.cpp)
   target_link_libraries(UNIT_math_Convhull dart)
 endif()
+
+# Optimization tests
+dart_add_test("unit" UNIT_math_optimization_Problem math/optimization/test_Problem.cpp)
 
 # Math LCP tests
 dart_build_tests(
@@ -187,6 +242,12 @@ if(TARGET dart-utils)
   dart_add_test("unit" test_mesh_loaderNone utils/test_mesh_loader.cpp)
   target_link_libraries(test_mesh_loaderNone dart-utils)
 
+dart_add_test("unit" test_HttpResourceRetriever utils/test_http_resource_retriever.cpp)
+  target_link_libraries(test_HttpResourceRetriever dart-utils)
+
+  dart_add_test("unit" test_FileInfoDof utils/test_file_info_dof.cpp)
+  target_link_libraries(test_FileInfoDof dart-utils)
+
   dart_add_test("unit" test_xml_helpersNone utils/test_xml_helpers.cpp)
   target_link_libraries(test_xml_helpersNone dart-utils)
 endif()
@@ -194,7 +255,26 @@ endif()
 if(TARGET dart-io)
   dart_add_test("unit" test_io_readNone io/test_read.cpp)
   target_link_libraries(test_io_readNone dart-io)
+
+  dart_add_test("unit" UNIT_io_UrdfParser_Errors io/test_urdf_parser_errors.cpp)
+  target_link_libraries(UNIT_io_UrdfParser_Errors dart-io)
+
+  if(DART_ENABLE_SDFORMAT)
+    dart_add_test("unit" UNIT_io_SdfParser_Errors io/test_sdf_parser_errors.cpp)
+    target_link_libraries(UNIT_io_SdfParser_Errors dart-io)
+  endif()
 endif()
+
+# ==============================================================================
+# Sensor Tests
+# ==============================================================================
+dart_add_test("unit" UNIT_sensor_Sensor sensor/test_Sensor.cpp)
+dart_add_test("unit" UNIT_sensor_SensorManager sensor/test_SensorManager.cpp)
+
+# ==============================================================================
+# Simulation Tests
+# ==============================================================================
+dart_add_test("unit" UNIT_simulation_World simulation/test_World.cpp)
 
 # ==============================================================================
 # Simulation-Experimental Tests

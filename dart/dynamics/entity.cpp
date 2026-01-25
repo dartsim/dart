@@ -93,22 +93,27 @@ const Frame* Entity::getParentFrame() const
 //==============================================================================
 bool Entity::descendsFrom(const Frame* _someFrame) const
 {
-  if (nullptr == _someFrame)
+  if (nullptr == _someFrame) {
     return true;
+  }
 
-  if (this == _someFrame)
+  if (this == _someFrame) {
     return true;
+  }
 
-  if (_someFrame->isWorld())
+  if (_someFrame->isWorld()) {
     return true;
+  }
 
   const Frame* descentCheck = getParentFrame();
   while (descentCheck) {
-    if (descentCheck->isWorld())
+    if (descentCheck->isWorld()) {
       break;
+    }
 
-    if (descentCheck == _someFrame)
+    if (descentCheck == _someFrame) {
       return true;
+    }
     descentCheck = descentCheck->getParentFrame();
   }
 
@@ -215,8 +220,9 @@ Entity::Entity(ConstructAbstractTag)
 //==============================================================================
 void Entity::changeParentFrame(Frame* _newParentFrame)
 {
-  if (mParentFrame == _newParentFrame)
+  if (mParentFrame == _newParentFrame) {
     return;
+  }
 
   const Frame* oldParentFrame = mParentFrame;
 
@@ -241,8 +247,9 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
     dirtyTransform();
   }
 
-  if (mParentFrame)
+  if (mParentFrame) {
     mFrameChangedSignal.raise(this, oldParentFrame, mParentFrame);
+  }
 }
 
 //==============================================================================

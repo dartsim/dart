@@ -35,7 +35,10 @@
 
 #include <gtest/gtest.h>
 
+#include <string_view>
+
 using dart::common::Uri;
+using dart::common::UriComponent;
 
 TEST(UriHelpers, fromString_ValidUri_ReturnsTrue)
 {
@@ -215,8 +218,9 @@ TEST(UriHelpers, getUri_InputIsUri_DoesNotChange)
          "telnet://192.0.2.16:80/",
          "urn:oasis:names:specification:docbook:dtd:xml:4.1.2"};
 
-  for (const std::string& testUri : testUris)
+  for (const std::string& testUri : testUris) {
     EXPECT_EQ(testUri, Uri::createFromString(testUri).toString());
+  }
 }
 
 TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
@@ -243,6 +247,26 @@ TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
 #endif
     EXPECT_EQ(testUri, Uri::getUri(testPath));
   }
+}
+
+TEST(UriHelpers, fromString_WindowsStyleFileUri_ParsesCorrectly)
+{
+  Uri uri;
+
+  ASSERT_TRUE(uri.fromString("file:///C:/Users/name/model.urdf"));
+  ASSERT_TRUE(uri.mScheme);
+  ASSERT_TRUE(uri.mAuthority);
+  ASSERT_TRUE(uri.mPath);
+  EXPECT_FALSE(uri.mQuery);
+  EXPECT_FALSE(uri.mFragment);
+  EXPECT_EQ("file", *uri.mScheme);
+  EXPECT_EQ("", *uri.mAuthority);
+  EXPECT_EQ("/C:/Users/name/model.urdf", *uri.mPath);
+
+  ASSERT_TRUE(uri.fromString("file:///D:/projects/dart/data/sdf/model.sdf"));
+  EXPECT_EQ("file", *uri.mScheme);
+  EXPECT_EQ("", *uri.mAuthority);
+  EXPECT_EQ("/D:/projects/dart/data/sdf/model.sdf", *uri.mPath);
 }
 
 TEST(UriHelpers, getRelativeUri)
@@ -323,4 +347,38 @@ TEST(UriHelpers, getRelativeUri)
   ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, "http:g", false));
   EXPECT_EQ("http://a/b/c/g", mergedUri.toString());
 #endif
+}
+
+TEST(UriHelpers, UriComponentAccessors)
+{
+  UriComponent component("value");
+  std::string fallback = "fallback";
+
+  EXPECT_EQ(component.get_value_or(fallback), "value");
+  EXPECT_EQ(component->size(), std::string("value").size());
+
+  UriComponent empty;
+  EXPECT_EQ(empty.get_value_or(fallback), fallback);
+}
+
+TEST(UriHelpers, CreateFromRelativeUri)
+{
+  const std::string base = "http://a/b/c/d;p?q";
+  const std::string relative = "g";
+  const std::string_view baseView(base);
+  const std::string_view relativeView(relative);
+
+  const auto mergedFromStrings
+      = Uri::createFromRelativeUri(baseView, relativeView, true);
+  EXPECT_EQ(mergedFromStrings.toString(), "http://a/b/c/g");
+
+  const auto baseUri = Uri::createFromString(base);
+  const auto mergedFromBase
+      = Uri::createFromRelativeUri(baseUri, relativeView, true);
+  EXPECT_EQ(mergedFromBase.toString(), "http://a/b/c/g");
+
+  const auto relativeUri = Uri::createFromString(relative);
+  const auto mergedFromUris
+      = Uri::createFromRelativeUri(baseUri, relativeUri, true);
+  EXPECT_EQ(mergedFromUris.toString(), "http://a/b/c/g");
 }

@@ -57,21 +57,24 @@ namespace {
 
 std::string sanitizeFileName(std::string_view name)
 {
-  if (name.empty())
+  if (name.empty()) {
     return "resource";
+  }
 
   std::string sanitized;
   sanitized.reserve(name.size());
   for (char c : name) {
     if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-        || (c >= '0' && c <= '9') || c == '.' || c == '-' || c == '_')
+        || (c >= '0' && c <= '9') || c == '.' || c == '-' || c == '_') {
       sanitized.push_back(c);
-    else
+    } else {
       sanitized.push_back('_');
+    }
   }
 
-  if (sanitized.empty())
+  if (sanitized.empty()) {
     return "resource";
+  }
 
   return sanitized;
 }
@@ -103,8 +106,9 @@ std::size_t writeCallback(
   auto* ctx = static_cast<DownloadContext*>(userp);
   const std::size_t bytes = size * nmemb;
 
-  if (ctx->maxBytes > 0 && ctx->received + bytes > ctx->maxBytes)
+  if (ctx->maxBytes > 0 && ctx->received + bytes > ctx->maxBytes) {
     return 0;
+  }
 
   const std::size_t written = std::fwrite(contents, size, nmemb, ctx->file);
   ctx->received += written * size;
@@ -142,13 +146,15 @@ HttpResourceRetriever::HttpResourceRetriever(const Options& options)
 //==============================================================================
 bool HttpResourceRetriever::exists(const common::Uri& uri)
 {
-  if (!isSupported(uri))
+  if (!isSupported(uri)) {
     return false;
+  }
 
   const auto cachePath = buildCachePath(uri);
   common::error_code ec;
-  if (common::filesystem::exists(cachePath, ec) && !ec)
+  if (common::filesystem::exists(cachePath, ec) && !ec) {
     return true;
+  }
 
   return performExistsRequest(uri);
 }
@@ -156,18 +162,21 @@ bool HttpResourceRetriever::exists(const common::Uri& uri)
 //==============================================================================
 common::ResourcePtr HttpResourceRetriever::retrieve(const common::Uri& uri)
 {
-  if (!isSupported(uri))
+  if (!isSupported(uri)) {
     return nullptr;
+  }
 
-  if (!ensureCacheDirectory())
+  if (!ensureCacheDirectory()) {
     return nullptr;
+  }
 
   const auto cachePath = buildCachePath(uri);
 
   common::error_code ec;
   if (!common::filesystem::exists(cachePath, ec) || ec) {
-    if (!download(uri, cachePath.string()))
+    if (!download(uri, cachePath.string())) {
       return nullptr;
+    }
   }
 
   common::Uri fileUri;
@@ -185,18 +194,21 @@ common::ResourcePtr HttpResourceRetriever::retrieve(const common::Uri& uri)
 DART_SUPPRESS_DEPRECATED_BEGIN
 std::string HttpResourceRetriever::getFilePath(const common::Uri& uri)
 {
-  if (!isSupported(uri))
+  if (!isSupported(uri)) {
     return "";
+  }
 
   const auto cachePath = buildCachePath(uri);
   common::error_code ec;
-  if (common::filesystem::exists(cachePath, ec) && !ec)
+  if (common::filesystem::exists(cachePath, ec) && !ec) {
     return cachePath.string();
+  }
 
-  if (download(uri, cachePath.string()))
+  if (download(uri, cachePath.string())) {
     return cachePath.string();
-  else
+  } else {
     return "";
+  }
 }
 DART_SUPPRESS_DEPRECATED_END
 
@@ -244,8 +256,9 @@ common::filesystem::path HttpResourceRetriever::buildCachePath(
     const auto fragment = "#" + uri.mFragment.get_value_or("");
     if (!fragment.empty() && url.size() >= fragment.size()) {
       if (url.compare(url.size() - fragment.size(), fragment.size(), fragment)
-          == 0)
+          == 0) {
         url.erase(url.size() - fragment.size());
+      }
     }
   }
 
@@ -254,17 +267,20 @@ common::filesystem::path HttpResourceRetriever::buildCachePath(
   std::string leaf = uri.mPath.get_value_or("");
   if (!leaf.empty()) {
     const auto pos = leaf.find_last_of('/');
-    if (pos != std::string::npos)
+    if (pos != std::string::npos) {
       leaf = leaf.substr(pos + 1);
+    }
   }
 
   // Remove query parameters from the filename component.
   const auto queryPos = leaf.find_first_of("?&");
-  if (queryPos != std::string::npos)
+  if (queryPos != std::string::npos) {
     leaf = leaf.substr(0, queryPos);
+  }
 
-  if (leaf.empty())
+  if (leaf.empty()) {
     leaf = "resource";
+  }
 
   const auto sanitizedLeaf = sanitizeFileName(leaf);
 
@@ -277,8 +293,9 @@ common::filesystem::path HttpResourceRetriever::buildCachePath(
 bool HttpResourceRetriever::ensureCacheDirectory() const
 {
   common::error_code ec;
-  if (common::filesystem::exists(mCacheDirectory, ec) && !ec)
+  if (common::filesystem::exists(mCacheDirectory, ec) && !ec) {
     return true;
+  }
 
   common::filesystem::create_directories(mCacheDirectory, ec);
   if (ec) {

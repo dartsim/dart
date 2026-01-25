@@ -114,10 +114,12 @@ Chain::Criteria Chain::Criteria::convert(const Linkage::Criteria& criteria)
   }
 
   bool includeUpstreamParentJoint = true;
-  if (criteria.mStart.mPolicy != Linkage::Criteria::INCLUDE)
+  if (criteria.mStart.mPolicy != Linkage::Criteria::INCLUDE) {
     includeUpstreamParentJoint = false;
-  if (target.mPolicy != Linkage::Criteria::INCLUDE)
+  }
+  if (target.mPolicy != Linkage::Criteria::INCLUDE) {
     includeUpstreamParentJoint = false;
+  }
 
   return Chain::Criteria(
       startBodyNode.get(), targetBodyNode.get(), includeUpstreamParentJoint);
@@ -202,24 +204,28 @@ MetaSkeletonPtr Chain::cloneMetaSkeleton(const std::string& cloneName) const
 //==============================================================================
 bool Chain::isStillChain() const
 {
-  if (!isAssembled())
+  if (!isAssembled()) {
     return false;
+  }
 
   // Make sure there are no Branches and no parent FreeJoints on the BodyNodes
   // on the inside of the chain
   for (std::size_t i = 1; i < mBodyNodes.size() - 1; ++i) {
-    if (mBodyNodes[i]->getNumChildBodyNodes() > 1)
+    if (mBodyNodes[i]->getNumChildBodyNodes() > 1) {
       return false;
+    }
 
-    if (dynamic_cast<FreeJoint*>(mBodyNodes[i]->getParentJoint()))
+    if (dynamic_cast<FreeJoint*>(mBodyNodes[i]->getParentJoint())) {
       return false;
+    }
   }
 
   // Make sure there is not a FreeJoint at the final BodyNode (which was not
   // tested above)
   if (mBodyNodes.size() > 1) {
-    if (dynamic_cast<FreeJoint*>(mBodyNodes.back()->getParentJoint()))
+    if (dynamic_cast<FreeJoint*>(mBodyNodes.back()->getParentJoint())) {
       return false;
+    }
   }
 
   return true;

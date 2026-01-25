@@ -21,12 +21,14 @@ std::shared_ptr<dart::dynamics::BodyNode> lockBodyNode(
 {
   auto locked = weak.lock();
   auto* node = locked.get();
-  if (!node)
+  if (!node) {
     return nullptr;
+  }
 
   auto skeleton = node->getSkeleton();
-  if (!skeleton)
+  if (!skeleton) {
     return nullptr;
+  }
 
   return std::shared_ptr<dart::dynamics::BodyNode>(skeleton, node);
 }

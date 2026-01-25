@@ -74,10 +74,12 @@ public:
       mKp(i, i) = 0.0;
       mKd(i, i) = 0.0;
     }
-    for (int i = 6; i < nDof; i++)
+    for (int i = 6; i < nDof; i++) {
       mKp(i, i) = 400.0;
-    for (int i = 6; i < nDof; i++)
+    }
+    for (int i = 6; i < nDof; i++) {
       mKd(i, i) = 40.0;
+    }
 
     mPreOffset = 0.0;
 

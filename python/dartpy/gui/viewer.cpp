@@ -34,8 +34,9 @@ namespace {
 Eigen::Vector4d toVec4(const nb::handle& h)
 {
   Eigen::VectorXd vec = toVector(h);
-  if (vec.size() != 4)
+  if (vec.size() != 4) {
     throw nb::type_error("Expected a length-4 sequence");
+  }
   return Eigen::Vector4d(vec);
 }
 

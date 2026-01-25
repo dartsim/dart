@@ -129,8 +129,9 @@ LcpResult DirectSolver::solve(
     std::vector<int> active;
     active.reserve(static_cast<std::size_t>(n));
     for (int i = 0; i < n; ++i) {
-      if (mask & (1 << i))
+      if (mask & (1 << i)) {
         active.push_back(i);
+      }
     }
 
     candidate.setZero();
@@ -148,26 +149,32 @@ LcpResult DirectSolver::solve(
       }
 
       Eigen::FullPivLU<Eigen::MatrixXd> lu(Aaa);
-      if (!lu.isInvertible())
+      if (!lu.isInvertible()) {
         continue;
+      }
 
       const Eigen::VectorXd xActive = lu.solve(bb);
-      if (!xActive.allFinite())
+      if (!xActive.allFinite()) {
         continue;
+      }
 
-      for (int r = 0; r < m; ++r)
+      for (int r = 0; r < m; ++r) {
         candidate[active[r]] = xActive[r];
+      }
     }
 
     w = A * candidate - b;
-    if ((candidate.array() < -absTol).any())
+    if ((candidate.array() < -absTol).any()) {
       continue;
-    if ((w.array() < -absTol).any())
+    }
+    if ((w.array() < -absTol).any()) {
       continue;
+    }
 
     const double compError = (candidate.cwiseProduct(w)).cwiseAbs().maxCoeff();
-    if (compError > std::max(absTol, compTol))
+    if (compError > std::max(absTol, compTol)) {
       continue;
+    }
 
     found = true;
     break;

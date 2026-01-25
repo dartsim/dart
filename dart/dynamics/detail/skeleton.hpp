@@ -48,8 +48,9 @@ JointType* Skeleton::moveBodyNodeTree(
 {
   JointType* parentJoint = new JointType(_joint);
 
-  if (moveBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode))
+  if (moveBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode)) {
     return parentJoint;
+  }
 
   // If the move failed, we should delete the Joint that we created and return
   // a nullptr.

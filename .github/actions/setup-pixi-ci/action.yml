@@ -1,0 +1,75 @@
+name: Setup pixi (CI)
+description: Setup pixi with hosted cache settings, optional self-hosted install retries, and sccache.
+inputs:
+  pixi-version:
+    description: Optional pixi version to install.
+    default: ""
+  pixi-bin-path:
+    description: Path to the pixi binary.
+    required: true
+  cache:
+    description: Enable pixi cache on GitHub-hosted runners.
+    default: "true"
+  post-cleanup:
+    description: Enable pixi post-cleanup on GitHub-hosted runners.
+    default: "true"
+  run-install:
+    description: Run pixi install on GitHub-hosted runners.
+    default: "true"
+  self-hosted-install:
+    description: Run pixi install on self-hosted runners with retries.
+    default: "true"
+  install-args:
+    description: Extra arguments for pixi install on self-hosted runners.
+    default: ""
+  install-retries:
+    description: Number of pixi install attempts on self-hosted runners.
+    default: "3"
+  install-backoff-seconds:
+    description: Base seconds between pixi install retries on self-hosted runners.
+    default: "20"
+  enable-sccache:
+    description: Enable sccache setup on GitHub-hosted runners.
+    default: "true"
+  sccache-disable-annotations:
+    description: Disable sccache annotations.
+    default: "true"
+  sccache-continue-on-error:
+    description: Continue if sccache setup fails.
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup pixi
+      uses: prefix-dev/setup-pixi@v0.9.3
+      with:
+        pixi-version: ${{ inputs.pixi-version }}
+        cache: ${{ inputs.cache == 'true' && startsWith(runner.name, 'GitHub Actions') }}
+        post-cleanup: ${{ inputs.post-cleanup == 'true' && startsWith(runner.name, 'GitHub Actions') }}
+        run-install: ${{ inputs.run-install == 'true' && startsWith(runner.name, 'GitHub Actions') }}
+        pixi-bin-path: ${{ inputs.pixi-bin-path }}
+
+    - name: Pixi install (retry)
+      if: ${{ inputs.self-hosted-install == 'true' && !startsWith(runner.name, 'GitHub Actions') }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        retries=${{ inputs.install-retries }}
+        backoff=${{ inputs.install-backoff-seconds }}
+        args="${{ inputs.install-args }}"
+        for attempt in $(seq 1 "${retries}"); do
+          if pixi install ${args}; then
+            exit 0
+          fi
+          echo "pixi install ${args} failed (attempt ${attempt}/${retries})" >&2
+          sleep $((attempt * backoff))
+        done
+        exit 1
+
+    - name: Setup sccache
+      if: ${{ inputs.enable-sccache == 'true' && startsWith(runner.name, 'GitHub Actions') }}
+      continue-on-error: ${{ inputs.sccache-continue-on-error == 'true' }}
+      uses: mozilla-actions/sccache-action@v0.0.9
+      with:
+        disable_annotations: ${{ inputs.sccache-disable-annotations }}

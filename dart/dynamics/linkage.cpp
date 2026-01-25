@@ -47,8 +47,9 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
   std::vector<BodyNode*> bns;
 
   if (nullptr == mStart.mNode.lock()) {
-    if (mTargets.size() == 0)
+    if (mTargets.size() == 0) {
       return bns;
+    }
 
     refreshTerminalMap();
 
@@ -57,8 +58,9 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
 
     for (std::size_t i = 0; i < mTargets.size(); ++i) {
       const Target& target = mTargets[i];
-      if (nullptr == target.mNode.lock())
+      if (nullptr == target.mNode.lock()) {
         continue;
+      }
 
       BodyNode* target_bn = target.mNode.lock();
 
@@ -73,8 +75,9 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
   } else {
     refreshTerminalMap();
 
-    if (EXCLUDE != mStart.mPolicy)
+    if (EXCLUDE != mStart.mPolicy) {
       bns.push_back(mStart.mNode.lock());
+    }
     expansionPolicy(mStart.mNode.lock(), mStart.mPolicy, bns);
 
     for (std::size_t i = 0; i < mTargets.size(); ++i) {
@@ -88,11 +91,13 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
   std::unordered_set<BodyNode*> unique_bns;
   unique_bns.reserve(bns.size());
   for (BodyNode* bn : bns) {
-    if (nullptr == bn)
+    if (nullptr == bn) {
       continue;
+    }
 
-    if (unique_bns.contains(bn))
+    if (unique_bns.contains(bn)) {
       continue;
+    }
 
     final_bns.push_back(bn);
     unique_bns.insert(bn);
@@ -164,16 +169,18 @@ void Linkage::Criteria::expansionPolicy(
         = mMapOfTerminals.find(_start);
     if (check_start != mMapOfTerminals.end()) {
       bool inclusive = check_start->second;
-      if (inclusive)
+      if (inclusive) {
         _bns.push_back(_start);
+      }
       return;
     }
   }
 
-  if (DOWNSTREAM == _policy)
+  if (DOWNSTREAM == _policy) {
     expandDownstream(_start, _bns, EXCLUDE != _policy);
-  else if (UPSTREAM == _policy)
+  } else if (UPSTREAM == _policy) {
     expandUpstream(_start, _bns, EXCLUDE != _policy);
+  }
 }
 
 //==============================================================================
@@ -202,8 +209,9 @@ void stepToNextChild(
 
   if (it != _terminalMap.end()) {
     bool inclusive = it->second;
-    if (inclusive)
+    if (inclusive) {
       _bns.push_back(bn);
+    }
 
     ++_r.mCount;
     return;
@@ -226,8 +234,9 @@ void stepToParent(
 
   if (it != _terminalMap.end()) {
     bool inclusive = it->second;
-    if (inclusive)
+    if (inclusive) {
       _bns.push_back(bn);
+    }
 
     ++_r.mCount;
     return;
@@ -244,8 +253,9 @@ void Linkage::Criteria::expandDownstream(
   std::vector<Recording> recorder;
   recorder.reserve(_start->getSkeleton()->getNumBodyNodes());
 
-  if (_includeStart)
+  if (_includeStart) {
     _bns.push_back(_start);
+  }
   recorder.push_back(Recording(_start, 0));
 
   while (recorder.size() > 0) {
@@ -254,8 +264,9 @@ void Linkage::Criteria::expandDownstream(
       stepToNextChild(recorder, _bns, r, mMapOfTerminals, 0);
     } else {
       recorder.pop_back();
-      if (recorder.size() > 0)
+      if (recorder.size() > 0) {
         ++recorder.back().mCount;
+      }
     }
   }
 }
@@ -267,8 +278,9 @@ void Linkage::Criteria::expandUpstream(
   std::vector<Recording> recorder;
   recorder.reserve(_start->getSkeleton()->getNumBodyNodes());
 
-  if (_includeStart)
+  if (_includeStart) {
     _bns.push_back(_start);
+  }
   recorder.push_back(Recording(_start, -1));
 
   while (recorder.size() > 0) {
@@ -311,8 +323,9 @@ void Linkage::Criteria::expandUpstream(
       // If we've iterated through all the children of this node, pop it
       recorder.pop_back();
       // Move on to the next child
-      if (recorder.size() > 0)
+      if (recorder.size() > 0) {
         ++recorder.back().mCount;
+      }
     }
   }
 }
@@ -352,8 +365,9 @@ void Linkage::Criteria::expandToTarget(
   }
 
   // If we have successfully reached the target, expand from there
-  if (!newBns.empty() && newBns.back() == _target.mNode.lock())
+  if (!newBns.empty() && newBns.back() == _target.mNode.lock()) {
     expansionPolicy(_target.mNode.lock(), _target.mPolicy, newBns);
+  }
 
   _bns.insert(_bns.end(), newBns.begin(), newBns.end());
 }
@@ -386,8 +400,9 @@ std::vector<BodyNode*> Linkage::Criteria::climbToCommonRoot(
   BodyNode* target_bn = _target.mNode.lock();
   BodyNode* root = start_bn->getParentBodyNode();
   while (root != nullptr) {
-    if (target_bn->descendsFrom(root))
+    if (target_bn->descendsFrom(root)) {
       break;
+    }
 
     root = root->getParentBodyNode();
   }
@@ -423,8 +438,9 @@ void Linkage::Criteria::trimBodyNodes(
 
     if (terminal != mMapOfTerminals.end()) {
       bool inclusive = terminal->second;
-      if (inclusive)
+      if (inclusive) {
         ++it;
+      }
 
       break;
     }
@@ -543,8 +559,9 @@ bool Linkage::isAssembled() const
 {
   for (std::size_t i = 0; i < mParentBodyNodes.size(); ++i) {
     const BodyNode* bn = mBodyNodes[i];
-    if (bn->getParentBodyNode() != mParentBodyNodes[i].lock())
+    if (bn->getParentBodyNode() != mParentBodyNodes[i].lock()) {
       return false;
+    }
   }
 
   return true;
@@ -563,8 +580,9 @@ void Linkage::reassemble()
 void Linkage::satisfyCriteria()
 {
   std::vector<BodyNode*> bns = mCriteria.satisfy();
-  while (getNumBodyNodes() > 0)
+  while (getNumBodyNodes() > 0) {
     unregisterComponent(mBodyNodes.back());
+  }
 
   for (BodyNode* bn : bns) {
     registerComponent(bn);

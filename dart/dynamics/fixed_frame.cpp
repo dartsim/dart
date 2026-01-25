@@ -74,8 +74,9 @@ void FixedFrame::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 void FixedFrame::setRelativeTransform(const Eigen::Isometry3d& transform)
 {
-  if (transform.matrix() == mAspectProperties.mRelativeTf.matrix())
+  if (transform.matrix() == mAspectProperties.mRelativeTf.matrix()) {
     return;
+  }
 
   mAspectProperties.mRelativeTf = transform;
   dirtyTransform();

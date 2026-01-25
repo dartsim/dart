@@ -161,13 +161,15 @@ public:
     // Menu
     if (ImGui::BeginMenuBar()) {
       if (ImGui::BeginMenu("Menu")) {
-        if (ImGui::MenuItem("Exit"))
+        if (ImGui::MenuItem("Exit")) {
           mViewer->setDone(true);
+        }
         ImGui::EndMenu();
       }
       if (ImGui::BeginMenu("Help")) {
-        if (ImGui::MenuItem("About DART"))
+        if (ImGui::MenuItem("About DART")) {
           mViewer->showAbout();
+        }
         ImGui::EndMenu();
       }
       ImGui::EndMenuBar();
@@ -179,11 +181,13 @@ public:
     if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
       int e = mViewer->isSimulating() ? 0 : 1;
       if (mViewer->isAllowingSimulation()) {
-        if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
+        if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating()) {
           mViewer->simulate(true);
+        }
         ImGui::SameLine();
-        if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating())
+        if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating()) {
           mViewer->simulate(false);
+        }
       }
 
       ImGui::Text("Time: %.3f", mWorld->getTime());
@@ -228,15 +232,17 @@ public:
 protected:
   void setGravity(bool gravity)
   {
-    if (mGravity == gravity)
+    if (mGravity == gravity) {
       return;
+    }
 
     mGravity = gravity;
 
-    if (mGravity)
+    if (mGravity) {
       mWorld->setGravity(-9.81 * Eigen::Vector3d::UnitZ());
-    else
+    } else {
       mWorld->setGravity(Eigen::Vector3d::Zero());
+    }
   }
 
   osg::ref_ptr<dart::gui::ImGuiViewer> mViewer;

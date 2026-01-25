@@ -42,8 +42,9 @@ void FixedJacobianNode::setRelativeTransform(
     const Eigen::Isometry3d& newRelativeTf)
 {
   if (newRelativeTf.matrix()
-      == FixedFrame::mAspectProperties.mRelativeTf.matrix())
+      == FixedFrame::mAspectProperties.mRelativeTf.matrix()) {
     return;
+  }
 
   FixedFrame::setRelativeTransform(newRelativeTf);
   dirtyJacobian();
@@ -118,8 +119,9 @@ const std::vector<const DegreeOfFreedom*> FixedJacobianNode::getChainDofs()
 //==============================================================================
 const math::Jacobian& FixedJacobianNode::getJacobian() const
 {
-  if (mIsBodyJacobianDirty)
+  if (mIsBodyJacobianDirty) {
     updateBodyJacobian();
+  }
 
   return mCache.mBodyJacobian;
 }
@@ -127,8 +129,9 @@ const math::Jacobian& FixedJacobianNode::getJacobian() const
 //==============================================================================
 const math::Jacobian& FixedJacobianNode::getWorldJacobian() const
 {
-  if (mIsWorldJacobianDirty)
+  if (mIsWorldJacobianDirty) {
     updateWorldJacobian();
+  }
 
   return mCache.mWorldJacobian;
 }
@@ -136,8 +139,9 @@ const math::Jacobian& FixedJacobianNode::getWorldJacobian() const
 //==============================================================================
 const math::Jacobian& FixedJacobianNode::getJacobianSpatialDeriv() const
 {
-  if (mIsBodyJacobianSpatialDerivDirty)
+  if (mIsBodyJacobianSpatialDerivDirty) {
     updateBodyJacobianSpatialDeriv();
+  }
 
   return mCache.mBodyJacobianSpatialDeriv;
 }
@@ -145,8 +149,9 @@ const math::Jacobian& FixedJacobianNode::getJacobianSpatialDeriv() const
 //==============================================================================
 const math::Jacobian& FixedJacobianNode::getJacobianClassicDeriv() const
 {
-  if (mIsWorldJacobianClassicDerivDirty)
+  if (mIsWorldJacobianClassicDerivDirty) {
     updateWorldJacobianClassicDeriv();
+  }
 
   return mCache.mWorldJacobianClassicDeriv;
 }

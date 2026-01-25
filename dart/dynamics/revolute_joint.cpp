@@ -78,8 +78,9 @@ RevoluteJoint::Properties RevoluteJoint::getRevoluteJointProperties() const
 //==============================================================================
 void RevoluteJoint::copy(const RevoluteJoint& _otherJoint)
 {
-  if (this == &_otherJoint)
+  if (this == &_otherJoint) {
     return;
+  }
 
   setProperties(_otherJoint.getRevoluteJointProperties());
 }
@@ -87,8 +88,9 @@ void RevoluteJoint::copy(const RevoluteJoint& _otherJoint)
 //==============================================================================
 void RevoluteJoint::copy(const RevoluteJoint* _otherJoint)
 {
-  if (nullptr == _otherJoint)
+  if (nullptr == _otherJoint) {
     return;
+  }
 
   copy(*_otherJoint);
 }
@@ -122,8 +124,9 @@ std::string_view RevoluteJoint::getStaticType()
 //==============================================================================
 void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-  if (_axis == mAspectProperties.mAxis)
+  if (_axis == mAspectProperties.mAxis) {
     return;
+  }
 
   mAspectProperties.mAxis = _axis.normalized();
   Joint::notifyPositionUpdated();
@@ -172,8 +175,9 @@ Joint* RevoluteJoint::clone() const
 void RevoluteJoint::updateDegreeOfFreedomNames()
 {
   // Same name as the joint it belongs to.
-  if (!mDofs[0]->isNamePreserved())
+  if (!mDofs[0]->isNamePreserved()) {
     mDofs[0]->setName(Joint::mAspectProperties.mName, false);
+  }
 }
 
 //==============================================================================
@@ -190,8 +194,9 @@ void RevoluteJoint::updateRelativeTransform() const
 //==============================================================================
 void RevoluteJoint::updateRelativeJacobian(bool _mandatory) const
 {
-  if (_mandatory)
+  if (_mandatory) {
     mJacobian = getRelativeJacobianStatic(getPositionsStatic());
+  }
 }
 
 //==============================================================================

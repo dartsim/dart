@@ -64,8 +64,9 @@ LcpProblem MakeStandardSpdProblem(int n, unsigned seed)
 
   Eigen::MatrixXd M(n, n);
   for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c)
+    for (int c = 0; c < n; ++c) {
       M(r, c) = dist(rng);
+    }
   }
 
   Eigen::MatrixXd A
@@ -73,8 +74,9 @@ LcpProblem MakeStandardSpdProblem(int n, unsigned seed)
         + static_cast<double>(n) * Eigen::MatrixXd::Identity(n, n);
 
   Eigen::VectorXd xStar(n);
-  for (int i = 0; i < n; ++i)
+  for (int i = 0; i < n; ++i) {
     xStar[i] = std::abs(dist(rng)) + 0.1;
+  }
 
   Eigen::VectorXd b = A * xStar;
   Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
@@ -97,8 +99,9 @@ LcpProblem MakeBoxedActiveBoundsProblem(int n, unsigned seed)
 
   Eigen::MatrixXd M(n, n);
   for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c)
+    for (int c = 0; c < n; ++c) {
       M(r, c) = dist(rng);
+    }
   }
 
   Eigen::MatrixXd A
@@ -144,8 +147,9 @@ LcpProblem MakeFrictionIndexProblem(int numContacts, unsigned seed)
 
   Eigen::MatrixXd M(n, n);
   for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c)
+    for (int c = 0; c < n; ++c) {
       M(r, c) = dist(rng);
+    }
   }
 
   Eigen::MatrixXd A
@@ -208,18 +212,21 @@ void AddShockPropagationCounters(
 {
   const int blockCount = static_cast<int>(params.blockSizes.size());
   int layerCount = static_cast<int>(params.layers.size());
-  if (layerCount == 0 && blockCount > 0)
+  if (layerCount == 0 && blockCount > 0) {
     layerCount = 1;
+  }
 
   int maxBlockSize = 0;
-  for (const int size : params.blockSizes)
+  for (const int size : params.blockSizes) {
     maxBlockSize = std::max(maxBlockSize, size);
+  }
 
   int maxBlocksPerLayer = 0;
   if (!params.layers.empty()) {
-    for (const auto& layer : params.layers)
+    for (const auto& layer : params.layers) {
       maxBlocksPerLayer
           = std::max(maxBlocksPerLayer, static_cast<int>(layer.size()));
+    }
   } else {
     maxBlocksPerLayer = blockCount;
   }
@@ -325,8 +332,9 @@ static void BM_LcpCompare_ShockPropagation_Standard(benchmark::State& state)
 
   params.layers.clear();
   params.layers.reserve(params.blockSizes.size());
-  for (int i = 0; i < static_cast<int>(params.blockSizes.size()); ++i)
+  for (int i = 0; i < static_cast<int>(params.blockSizes.size()); ++i) {
     params.layers.push_back({i});
+  }
 
   auto options = MakeBenchmarkOptions(100);
   options.customOptions = &params;
@@ -716,8 +724,9 @@ static void BM_LcpCompare_ShockPropagation_FrictionIndex(
   params.blockSizes.assign(numContacts, 3);
   params.layers.clear();
   params.layers.reserve(numContacts);
-  for (int i = 0; i < numContacts; ++i)
+  for (int i = 0; i < numContacts; ++i) {
     params.layers.push_back({i});
+  }
 
   auto options = MakeBenchmarkOptions(100);
   options.customOptions = &params;

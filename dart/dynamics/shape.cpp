@@ -74,8 +74,9 @@ Shape::~Shape()
 //==============================================================================
 const math::BoundingBox& Shape::getBoundingBox() const
 {
-  if (mIsBoundingBoxDirty)
+  if (mIsBoundingBoxDirty) {
     updateBoundingBox();
+  }
 
   return mBoundingBox;
 }
@@ -95,8 +96,9 @@ Eigen::Matrix3d Shape::computeInertiaFromMass(double mass) const
 //==============================================================================
 double Shape::getVolume() const
 {
-  if (mIsVolumeDirty)
+  if (mIsVolumeDirty) {
     updateVolume();
+  }
 
   return mVolume;
 }
@@ -134,8 +136,9 @@ unsigned int Shape::getDataVariance() const
 //==============================================================================
 bool Shape::checkDataVariance(DataVariance type) const
 {
-  if (STATIC == type)
+  if (STATIC == type) {
     return STATIC == mVariance;
+  }
 
   return (type & mVariance) != 0x00;
 }

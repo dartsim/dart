@@ -60,24 +60,27 @@ DartResourceRetriever::DartResourceRetriever()
   // Method 2 can fail because some package manager use temporary install
   // directory (e.g., Launchpad PPA).
   const char* dartDataPathEnv = std::getenv("DART_DATA_PATH");
-  if (dartDataPathEnv)
+  if (dartDataPathEnv) {
     addDataDirectory(dartDataPathEnv);
+  }
 }
 
 //==============================================================================
 bool DartResourceRetriever::exists(const common::Uri& uri)
 {
   std::string relativePath;
-  if (!resolveDataUri(uri, relativePath))
+  if (!resolveDataUri(uri, relativePath)) {
     return false;
+  }
 
   if (uri.mAuthority.get() == "sample") {
     for (const auto& dataPath : mDataDirectories) {
       common::Uri fileUri;
       fileUri.fromPath(dataPath + relativePath);
 
-      if (mLocalRetriever->exists(fileUri))
+      if (mLocalRetriever->exists(fileUri)) {
         return true;
+      }
 
       DART_WARN(
           "Failed to retrieve a resource from '{}'. Please make sure you set "
@@ -86,8 +89,9 @@ bool DartResourceRetriever::exists(const common::Uri& uri)
           uri.toString());
     }
   } else {
-    if (mLocalRetriever->exists(uri))
+    if (mLocalRetriever->exists(uri)) {
       return true;
+    }
   }
 
   return false;
@@ -97,16 +101,18 @@ bool DartResourceRetriever::exists(const common::Uri& uri)
 common::ResourcePtr DartResourceRetriever::retrieve(const common::Uri& uri)
 {
   std::string relativePath;
-  if (!resolveDataUri(uri, relativePath))
+  if (!resolveDataUri(uri, relativePath)) {
     return nullptr;
+  }
 
   if (uri.mAuthority.get() == "sample") {
     for (const auto& dataPath : mDataDirectories) {
       common::Uri fileUri;
       fileUri.fromPath(dataPath + relativePath);
 
-      if (const auto resource = mLocalRetriever->retrieve(fileUri))
+      if (const auto resource = mLocalRetriever->retrieve(fileUri)) {
         return resource;
+      }
     }
 
     DART_WARN(
@@ -115,8 +121,9 @@ common::ResourcePtr DartResourceRetriever::retrieve(const common::Uri& uri)
         "DART_DATA_PATH=/usr/local/share/doc/dart/data/",
         uri.toString());
   } else {
-    if (const auto resource = mLocalRetriever->retrieve(uri))
+    if (const auto resource = mLocalRetriever->retrieve(uri)) {
       return resource;
+    }
   }
 
   return nullptr;
@@ -127,8 +134,9 @@ DART_SUPPRESS_DEPRECATED_BEGIN
 std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
 {
   std::string relativePath;
-  if (!resolveDataUri(uri, relativePath))
+  if (!resolveDataUri(uri, relativePath)) {
     return "";
+  }
 
   if (uri.mAuthority.get() == "sample") {
     for (const auto& dataPath : mDataDirectories) {
@@ -138,8 +146,9 @@ std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
       const auto path = mLocalRetriever->getFilePath(fileUri);
 
       // path is empty if the file specified by fileUri doesn't exist.
-      if (!path.empty())
+      if (!path.empty()) {
         return path;
+      }
     }
 
     DART_WARN(
@@ -151,8 +160,9 @@ std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
     const auto path = mLocalRetriever->getFilePath(uri);
 
     // path is empty if the file specified by fileUri doesn't exist.
-    if (!path.empty())
+    if (!path.empty()) {
       return path;
+    }
   }
 
   return "";
@@ -178,8 +188,9 @@ void DartResourceRetriever::addDataDirectory(std::string_view dataDirectory)
 bool DartResourceRetriever::resolveDataUri(
     const common::Uri& uri, std::string& relativePath) const
 {
-  if (uri.mScheme.get_value_or("dart") != "dart")
+  if (uri.mScheme.get_value_or("dart") != "dart") {
     return false;
+  }
 
   if (!uri.mPath) {
     DART_WARN(

@@ -206,8 +206,9 @@ ConvertedKey convertFromOSGKey(int key)
 //==============================================================================
 void applyImGuiScale(float scale)
 {
-  if (!std::isfinite(scale) || scale <= 0.f)
+  if (!std::isfinite(scale) || scale <= 0.f) {
     return;
+  }
 
   static ImGuiStyle baseStyle
       = ImGui::GetStyle(); // capture styled defaults (dark palette)
@@ -219,8 +220,9 @@ void applyImGuiScale(float scale)
   style = baseStyle;
   io.FontGlobalScale = 1.f;
 
-  if (std::abs(scale - 1.f) < 1e-6f)
+  if (std::abs(scale - 1.f) < 1e-6f) {
     return;
+  }
 
   style.ScaleAllSizes(scale);
   io.FontGlobalScale = scale;
@@ -264,8 +266,9 @@ namespace {
 
 void setCurrentContext(ImGuiContext* context)
 {
-  if (context && ImGui::GetCurrentContext() != context)
+  if (context && ImGui::GetCurrentContext() != context) {
     ImGui::SetCurrentContext(context);
+  }
 }
 
 } // namespace
@@ -314,8 +317,9 @@ ImGuiHandler::~ImGuiHandler()
 {
   removeAllWidget();
 
-  if (!mContext)
+  if (!mContext) {
     return;
+  }
 
   setCurrentContext(mContext);
   ImGui_ImplOpenGL2_Shutdown();
@@ -326,8 +330,9 @@ ImGuiHandler::~ImGuiHandler()
 //==============================================================================
 void ImGuiHandler::setCameraCallbacks(::osg::Camera* camera)
 {
-  if (nullptr == camera)
+  if (nullptr == camera) {
     return;
+  }
 
   ImGuiDrawCallback* postDrawCallback = new ImGuiDrawCallback(this);
   camera->setPostDrawCallback(postDrawCallback);
@@ -589,8 +594,9 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
   mTime = currentTime;
   DART_ASSERT(mTime >= 0.0);
 
-  for (auto i = 0u; i < mMousePressed.size(); ++i)
+  for (auto i = 0u; i < mMousePressed.size(); ++i) {
     io.MouseDown[i] = mMousePressed[i];
+  }
 
   io.MouseWheel = mMouseWheel;
   mMouseWheel = 0.0f;
@@ -603,8 +609,9 @@ void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
 {
   setCurrentContext(mContext);
   for (const auto& widget : mWidgets) {
-    if (widget->isVisible())
+    if (widget->isVisible()) {
       widget->render();
+    }
   }
 
   ImGui::Render();

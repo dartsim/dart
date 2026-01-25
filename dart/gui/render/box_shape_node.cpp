@@ -96,8 +96,9 @@ void BoxShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     return;
+  }
 
   extractData(false);
 }
@@ -170,10 +171,11 @@ BoxShapeDrawable::BoxShapeDrawable(
 //==============================================================================
 void BoxShapeDrawable::refresh(bool firstTime)
 {
-  if (mBoxShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mBoxShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     setDataVariance(::osg::Object::STATIC);
-  else
+  } else {
     setDataVariance(::osg::Object::DYNAMIC);
+  }
 
   if (mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
       || firstTime) {
