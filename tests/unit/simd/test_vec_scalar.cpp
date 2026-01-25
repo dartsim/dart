@@ -115,13 +115,13 @@ TYPED_TEST(VecScalarTest, LoadStore)
     data[i] = static_cast<scalar_type>(i + 1);
   }
 
-  auto v = vec_type::load(data.data());
+  auto v = vec_type::loadu(data.data());
   for (std::size_t i = 0; i < width; ++i) {
     this->expect_near(v[i], data[i]);
   }
 
   std::vector<scalar_type> out(width);
-  v.store(out.data());
+  v.storeu(out.data());
   for (std::size_t i = 0; i < width; ++i) {
     this->expect_near(out[i], data[i]);
   }
@@ -244,8 +244,8 @@ TYPED_TEST(VecScalarTest, Comparison)
     data_b[i] = static_cast<scalar_type>(width / 2);
   }
 
-  auto a = vec_type::load(data_a.data());
-  auto b = vec_type::load(data_b.data());
+  auto a = vec_type::loadu(data_a.data());
+  auto b = vec_type::loadu(data_b.data());
 
   auto lt = (a < b);
   auto gt = (a > b);
@@ -270,7 +270,7 @@ TYPED_TEST(VecScalarTest, ElementAccess)
   for (std::size_t i = 0; i < width; ++i) {
     data[i] = static_cast<scalar_type>(i * 10);
   }
-  vec_type v = vec_type::load(data);
+  vec_type v = vec_type::loadu(data);
 
   for (std::size_t i = 0; i < width; ++i) {
     this->expect_near(v[i], static_cast<scalar_type>(i * 10));
@@ -288,7 +288,7 @@ TYPED_TEST(VecScalarTest, ArrayConstruction)
     arr[i] = static_cast<scalar_type>(i + 1);
   }
 
-  vec_type v = vec_type::load(arr);
+  vec_type v = vec_type::loadu(arr);
   for (std::size_t i = 0; i < width; ++i) {
     this->expect_near(v[i], arr[i]);
   }

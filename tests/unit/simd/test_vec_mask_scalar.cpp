@@ -246,8 +246,8 @@ TYPED_TEST(VecMaskScalarTest, FromVecComparison)
     data_b[i] = static_cast<scalar_type>(width / 2);
   }
 
-  auto a = vec_type::load(data_a.data());
-  auto b = vec_type::load(data_b.data());
+  auto a = vec_type::loadu(data_a.data());
+  auto b = vec_type::loadu(data_b.data());
 
   auto mask = (a == b);
   for (std::size_t i = 0; i < width; ++i) {

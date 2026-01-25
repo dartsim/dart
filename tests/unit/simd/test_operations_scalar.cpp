@@ -78,7 +78,7 @@ TYPED_TEST(OperationsScalarTest, Abs)
     data[i] = static_cast<scalar_type>((i % 2 == 0) ? -(i + 1) : (i + 1));
   }
 
-  auto v = vec_type::load(data.data());
+  auto v = vec_type::loadu(data.data());
   auto result = abs(v);
 
   for (std::size_t i = 0; i < width; ++i) {
@@ -97,7 +97,7 @@ TYPED_TEST(OperationsScalarTest, Sqrt)
     data[i] = static_cast<scalar_type>((i + 1) * (i + 1));
   }
 
-  auto v = vec_type::load(data.data());
+  auto v = vec_type::loadu(data.data());
   auto result = sqrt(v);
 
   for (std::size_t i = 0; i < width; ++i) {
@@ -116,7 +116,7 @@ TYPED_TEST(OperationsScalarTest, Rsqrt)
     data[i] = static_cast<scalar_type>((i + 1) * (i + 1));
   }
 
-  auto v = vec_type::load(data.data());
+  auto v = vec_type::loadu(data.data());
   auto result = rsqrt(v);
 
   for (std::size_t i = 0; i < width; ++i) {
@@ -135,7 +135,7 @@ TYPED_TEST(OperationsScalarTest, Rcp)
     data[i] = static_cast<scalar_type>(i + 1);
   }
 
-  auto v = vec_type::load(data.data());
+  auto v = vec_type::loadu(data.data());
   auto result = rcp(v);
 
   for (std::size_t i = 0; i < width; ++i) {
@@ -155,8 +155,8 @@ TYPED_TEST(OperationsScalarTest, MinMax)
     data_b[i] = static_cast<scalar_type>(width - i);
   }
 
-  auto a = vec_type::load(data_a.data());
-  auto b = vec_type::load(data_b.data());
+  auto a = vec_type::loadu(data_a.data());
+  auto b = vec_type::loadu(data_b.data());
 
   auto min_result = min(a, b);
   auto max_result = max(a, b);
@@ -178,7 +178,7 @@ TYPED_TEST(OperationsScalarTest, Clamp)
     data[i] = static_cast<scalar_type>(i) - scalar_type{1};
   }
 
-  auto v = vec_type::load(data.data());
+  auto v = vec_type::loadu(data.data());
   auto lo = vec_type::broadcast(scalar_type{0});
   auto hi = vec_type::broadcast(static_cast<scalar_type>(width - 2));
 
@@ -253,7 +253,7 @@ TYPED_TEST(OperationsScalarTest, Floor)
     }
   }
 
-  auto v = vec_type::load(data.data());
+  auto v = vec_type::loadu(data.data());
   auto result = floor(v);
 
   for (std::size_t i = 0; i < width; ++i) {
@@ -275,7 +275,7 @@ TYPED_TEST(OperationsScalarTest, Ceil)
     }
   }
 
-  auto v = vec_type::load(data.data());
+  auto v = vec_type::loadu(data.data());
   auto result = ceil(v);
 
   for (std::size_t i = 0; i < width; ++i) {
@@ -297,7 +297,7 @@ TYPED_TEST(OperationsScalarTest, Trunc)
     }
   }
 
-  auto v = vec_type::load(data.data());
+  auto v = vec_type::loadu(data.data());
   auto result = trunc(v);
 
   for (std::size_t i = 0; i < width; ++i) {
@@ -318,7 +318,7 @@ TYPED_TEST(OperationsScalarTest, Hsum)
     expected += data[i];
   }
 
-  auto v = vec_type::load(data.data());
+  auto v = vec_type::loadu(data.data());
   this->expect_near(hsum(v), expected);
 }
 
@@ -333,7 +333,7 @@ TYPED_TEST(OperationsScalarTest, Hmin)
     data[i] = static_cast<scalar_type>((i + 1) * ((i % 2 == 0) ? 1 : 2));
   }
 
-  auto v = vec_type::load(data.data());
+  auto v = vec_type::loadu(data.data());
   scalar_type expected = *std::min_element(data.begin(), data.end());
   this->expect_near(hmin(v), expected);
 }
@@ -349,7 +349,7 @@ TYPED_TEST(OperationsScalarTest, Hmax)
     data[i] = static_cast<scalar_type>((i + 1) * ((i % 2 == 0) ? 1 : 2));
   }
 
-  auto v = vec_type::load(data.data());
+  auto v = vec_type::loadu(data.data());
   scalar_type expected = *std::max_element(data.begin(), data.end());
   this->expect_near(hmax(v), expected);
 }
@@ -367,7 +367,7 @@ TYPED_TEST(OperationsScalarTest, Hprod)
     expected *= data[i];
   }
 
-  auto v = vec_type::load(data.data());
+  auto v = vec_type::loadu(data.data());
   this->expect_near(hprod(v), expected);
 }
 
@@ -384,9 +384,9 @@ TYPED_TEST(OperationsScalarTest, Select)
     threshold_data[i] = static_cast<scalar_type>(width / 2);
   }
 
-  auto a = vec_type::load(data_a.data());
-  auto b = vec_type::load(data_b.data());
-  auto threshold = vec_type::load(threshold_data.data());
+  auto a = vec_type::loadu(data_a.data());
+  auto b = vec_type::loadu(data_b.data());
+  auto threshold = vec_type::loadu(threshold_data.data());
   auto mask = (a < threshold);
 
   auto result = select(mask, a, b);
