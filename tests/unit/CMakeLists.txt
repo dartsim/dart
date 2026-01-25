@@ -63,6 +63,7 @@ set(common_unit_sources
   common/test_profiler.cpp
   common/test_resource.cpp
   common/test_result.cpp
+  common/test_shared_library.cpp
   common/test_signal.cpp
   common/test_singleton.cpp
   common/test_stl_allocator.cpp
