@@ -52,6 +52,7 @@ set(common_unit_sources
   common/test_exception.cpp
   common/test_factory.cpp
   common/test_free_list_allocator.cpp
+  common/test_local_resource.cpp
   common/test_local_resource_retriever.cpp
   common/test_lockable_reference.cpp
   common/test_logging.cpp
@@ -147,6 +148,7 @@ dart_add_test("unit" UNIT_dynamics_Marker dynamics/test_marker.cpp)
 dart_add_test("unit" UNIT_dynamics_PointMass dynamics/test_point_mass.cpp)
 dart_add_test("unit" UNIT_dynamics_SoftBodyNodeHelper dynamics/test_soft_body_node_helper.cpp)
 dart_add_test("unit" UNIT_dynamics_SoftBodyNode dynamics/test_soft_body_node.cpp)
+dart_add_test("unit" UNIT_dynamics_SoftMeshShape dynamics/test_soft_mesh_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_Frame dynamics/test_frame.cpp)
 dart_add_test("unit" UNIT_dynamics_Group dynamics/test_group.cpp)
 dart_add_test("unit" UNIT_dynamics_Joints dynamics/test_joints.cpp)
@@ -163,6 +165,7 @@ dart_add_test("unit" UNIT_dynamics_InverseKinematics dynamics/test_inverse_kinem
 dart_add_test("unit" UNIT_dynamics_BoxShape dynamics/test_box_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_ArrowShape dynamics/test_arrow_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_SimpleFrame dynamics/test_simple_frame.cpp)
+dart_add_test("unit" UNIT_dynamics_MultiSphereConvexHullShape dynamics/test_multi_sphere_convex_hull_shape.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
@@ -285,6 +288,7 @@ dart_add_test("unit" UNIT_sensor_SensorManager sensor/test_SensorManager.cpp)
 # Simulation Tests
 # ==============================================================================
 dart_add_test("unit" UNIT_simulation_World simulation/test_World.cpp)
+dart_add_test("unit" UNIT_simulation_Recording simulation/test_recording.cpp)
 
 # ==============================================================================
 # Simulation-Experimental Tests
