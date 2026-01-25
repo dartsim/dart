@@ -2,60 +2,68 @@
 
 ## Last Session Summary
 
-Committed first batch of quick win tests. All 207 tests pass. Tests added for:
+Added significant math module test coverage. Three commits on branch:
+1. `346f1ca629d` - Quick win tests for sensor, simulation, collision modules
+2. `90f10920dc9` - Common and constraint module tests
+3. `41393168336` - Math module geometry and random tests
 
-- sensor: Rate limiting, world transforms, name change signals
-- simulation: Recording class, World::bake(), name change callbacks, edge cases
-- collision: DartCollisionDetector raycast, FCL shape support, caching
-- constraint: BalanceConstraint, ServoMotorConstraint modes
-- dynamics: Marker properties, PlaneShape serialization
-- math: geometry helpers, optimization Problem class
-- common: memory allocator tests
-- constraint: ConstrainedGroup tests
-- math/lcp: Dantzig misc, LCP types tests
+All 207 tests pass.
 
 ## Current Branch
 
-`continue_test_coverage` — committed (clean working tree)
+`continue_test_coverage` — clean working tree, 3 commits ahead of origin
 
-Latest commit: `346f1ca629d` - "test: add coverage tests for sensor, simulation, collision, and other modules"
+Latest commit: `41393168336` - "test: add math module coverage tests for geometry and random"
+
+## Tests Added This Session
+
+**Math module** (test_geometry.cpp):
+- getAdTMatrix verification
+- parallelAxisTheorem (simple shift, diagonal shift)
+- transformInertia (identity, rotation-only)
+- verifyRotation (valid, not orthogonal, NaN, reflection)
+- verifyTransform (valid, NaN)
+- computeRotation (general, axis aligned with UnitX)
+- computeTransform
+- cross2D
+- computeCentroidOfHull (triangle, square, single point, two points, empty)
+- isInsideSupportPolygon edge cases (empty, single, line)
+- computeClosestPointOnSupportPolygon edge cases
+- computeClosestPointOnLineSegment (vertical line branch)
+- BoundingBox (default, parameterized, setters, computeCenter, halfExtents, fullExtents)
+- expToQuat small angle
+- logMap (near pi, small angle)
+- computeSupportPolygon (with and without indices)
+
+**Math module** (test_random.cpp):
+- generateSeed (with and without applying)
+- getGenerator singleton
 
 ## Immediate Next Step
 
-1. Run fresh coverage report to measure improvement from quick wins
-2. Identify remaining gaps to reach 90% target
-3. Focus on common module (81.5% → 90%, ~442 lines)
-4. Then constraint module (79.0% → 90%, ~796 lines)
+1. Continue with dynamics module tests (largest gap: 3346 lines needed)
+2. Focus on high-value files in dynamics first
+3. Run tests: `pixi run test`
+4. Commit progress
 
 ## Context That Would Be Lost
 
-- **Coverage report script issue**: The `pixi run coverage-report` task has a bug with `pwd -P` returning empty. Need to run lcov manually or fix the script.
-- **Debug build required**: Coverage needs Debug build with DART_CODECOV=ON. Release builds don't have gcov instrumentation.
-- **Protected method testing**: Use ExposedConstraint pattern with `using` declarations.
-- **File naming**: snake_case for new test files.
+- **Math geometry tests**: Added ~450 lines covering many geometry edge cases
+- **BoundingBox members are protected**: Use getMin()/getMax() accessors, not mMin/mMax
+- **Template macros**: Use parentheses around expressions with commas in EXPECT_TRUE to avoid preprocessor issues
+- **Protected method testing**: Use ExposedConstraint pattern with `using` declarations for constraint tests
 
 ## How to Resume
 
 ```bash
 git checkout continue_test_coverage
-git status && git log -3 --oneline
+git status && git log -5 --oneline
+pixi run test  # Verify all 207 tests pass
 ```
 
-Then run a fresh coverage build:
-
-```bash
-# Build with coverage instrumentation
-cmake -G Ninja -S . -B build/coverage -DCMAKE_BUILD_TYPE=Debug -DDART_CODECOV=ON -DDART_BUILD_TESTS=ON
-cmake --build build/coverage --target tests -j$(nproc)
-
-# Run tests
-ctest --test-dir build/coverage --output-on-failure
-
-# Generate coverage report
-lcov --capture --directory build/coverage --output-file coverage.info --ignore-errors mismatch,negative
-lcov --remove coverage.info '/usr/*' '*/.pixi/*' '*/tests/*' '*/examples/*' '*/tutorials/*' '*/dart/gui/*' --output-file coverage_filtered.info
-lcov --list coverage_filtered.info
-```
+Then identify next priority:
+- Dynamics module is the largest gap (79.4% → 90%, ~3346 lines)
+- Focus on dynamics/*.cpp files with lowest coverage
 
 ## Key Commands
 
@@ -63,37 +71,29 @@ lcov --list coverage_filtered.info
 # Build and test (Release, fast)
 pixi run test
 
-# Run specific test
-ctest --test-dir build/default/cpp/Release -R UNIT_sensor --output-on-failure
+# Run specific module tests
+ctest --test-dir build/default/cpp/Release -R UNIT_dynamics --output-on-failure
+ctest --test-dir build/default/cpp/Release -R UNIT_math --output-on-failure
 
 # Format code
 pixi run lint
 
-# Coverage report (needs fix or manual lcov)
-BUILD_TYPE=Debug pixi run coverage-report
+# Check git status
+git status && git log -3 --oneline
 ```
 
 ## Files Modified This Session
 
-New test files added:
+**Modified**:
+- tests/unit/math/test_geometry.cpp (+456 lines)
+- tests/unit/math/test_random.cpp (+29 lines)
 
-- tests/unit/common/test_memory_allocator.cpp
-- tests/unit/constraint/test_constrained_group.cpp
-- tests/unit/dynamics/test_translational_joint2_d.cpp
-- tests/unit/math/lcp/test_dantzig_misc.cpp
-- tests/unit/math/lcp/test_lcp_types.cpp
-
-Modified existing tests:
-
-- tests/unit/sensor/test_Sensor.cpp
-- tests/unit/sensor/test_SensorManager.cpp
-- tests/unit/simulation/test_World.cpp
-- tests/unit/collision/test_dart_collision_detector.cpp
-- tests/unit/collision/test_fcl_collision_detector.cpp
-- tests/unit/constraint/test_balance_constraint.cpp
-- tests/unit/constraint/test_servo_motor_constraint.cpp
-- tests/unit/dynamics/test_marker.cpp
-- tests/unit/dynamics/test_plane_shape.cpp
-- tests/unit/math/optimization/test_Problem.cpp
-- tests/unit/math/test_geometry.cpp
-- tests/unit/common/test_exception.cpp
+**Previously Modified** (earlier commits):
+- tests/unit/common/test_string.cpp
+- tests/unit/common/test_composite.cpp
+- tests/unit/constraint/test_contact_surface.cpp
+- tests/unit/sensor/*.cpp
+- tests/unit/simulation/*.cpp
+- tests/unit/collision/*.cpp
+- tests/unit/dynamics/*.cpp
+- tests/unit/math/optimization/*.cpp
