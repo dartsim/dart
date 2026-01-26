@@ -148,7 +148,7 @@ public:
       DART_SIMD_PRAGMA_UNROLL
       for (; row < simd_end; row += simd_width) {
         auto vr = Vec<T, simd_width>::load(res + row);
-        auto vc = Vec<T, simd_width>::load(col_data + row);
+        auto vc = Vec<T, simd_width>::loadu(col_data + row);
         (vr + vc * vs).store(res + row);
       }
       for (; row < rows_; ++row) {

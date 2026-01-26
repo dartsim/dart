@@ -189,6 +189,7 @@ public:
 
   [[nodiscard]] T dot(const DynamicVector& rhs) const
   {
+    assert(data_.size() == rhs.data_.size() && "Vector sizes must match");
     const std::size_t n = data_.size();
     const std::size_t simd_end = (n / simd_width) * simd_width;
     const T* a = data_.data();
