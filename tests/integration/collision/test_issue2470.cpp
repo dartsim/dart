@@ -30,16 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-/// \file test_Issue2470.cpp
+/// \file test_issue2470.cpp
 /// \brief Regression test for https://github.com/dartsim/dart/issues/2470
 ///
 /// Verifies sphere-sphere collision with DARTCollisionDetector does not cause
 /// memory corruption when accessing Contact.point after collision detection.
 
-#include <dart/collision/dart/DARTCollisionDetector.hpp>
+#include <dart/collision/dart/dart_collision_detector.hpp>
 
-#include <dart/dynamics/SimpleFrame.hpp>
-#include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/simple_frame.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 
 #include <gtest/gtest.h>
 
