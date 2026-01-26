@@ -789,16 +789,20 @@ CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE python scripts/cmak
 # Note: --rc flag is needed for lcov compatibility with gcc 13+
 coverage-report = { cmd = [
   "bash",
-  "-lc",
+  "-c",
   """
 set -euo pipefail
-PIXI_ENVIRONMENT_NAME=${PIXI_ENVIRONMENT_NAME:-default}
-BUILD_TYPE=${BUILD_TYPE:-Debug}
-ROOT_BASE=""
-[ -n "$PIXI_PROJECT_ROOT" ] && ROOT_BASE="$PIXI_PROJECT_ROOT"
-[ -z "$ROOT_BASE" ] && [ -n "${GITHUB_WORKSPACE:-}" ] && ROOT_BASE="$GITHUB_WORKSPACE"
-[ -z "$ROOT_BASE" ] && ROOT_BASE=$(pwd 2>/dev/null || echo "")
-[ -z "$ROOT_BASE" ] && ROOT_BASE="${PWD:-}"
+PIXI_ENVIRONMENT_NAME="${PIXI_ENVIRONMENT_NAME:-default}"
+BUILD_TYPE="${BUILD_TYPE:-Debug}"
+if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
+  ROOT_BASE="$PIXI_PROJECT_ROOT"
+elif [ -n "${GITHUB_WORKSPACE:-}" ]; then
+  ROOT_BASE="$GITHUB_WORKSPACE"
+elif [ -n "${PWD:-}" ]; then
+  ROOT_BASE="$PWD"
+else
+  ROOT_BASE="$(pwd)"
+fi
 if [ -z "$ROOT_BASE" ]; then
   echo "PROJECT_ROOT is empty" >&2
   exit 1
