@@ -562,12 +562,19 @@ template <typename T, std::size_t N>
 }
 
 /// Batch normalize: returns N normalized vectors
+/// Returns zero for zero-length vectors (matching scalar Vector3::normalized())
 template <typename T, std::size_t N>
 [[nodiscard]] inline Vector3SoA<T, N> normalize(
     const Vector3SoA<T, N>& v) noexcept
 {
-  Vec<T, N> invLen = rsqrt(squaredNorm(v));
-  return Vector3SoA<T, N>(v.x * invLen, v.y * invLen, v.z * invLen);
+  Vec<T, N> sqNorm = squaredNorm(v);
+  auto valid = sqNorm > Vec<T, N>::zero();
+  Vec<T, N> invLen = rsqrt(sqNorm);
+  Vec<T, N> zeroVec = Vec<T, N>::zero();
+  return Vector3SoA<T, N>(
+      select(valid, v.x * invLen, zeroVec),
+      select(valid, v.y * invLen, zeroVec),
+      select(valid, v.z * invLen, zeroVec));
 }
 
 /// Batch outer product: returns N outer products (3x3 matrices)
@@ -606,14 +613,20 @@ template <typename T, std::size_t N>
 }
 
 /// Batch project: (a·b / b·b) * b for each of N vectors
+/// Returns zero when b is zero-length (avoiding division by zero)
 template <typename T, std::size_t N>
 [[nodiscard]] inline Vector3SoA<T, N> project(
     const Vector3SoA<T, N>& a, const Vector3SoA<T, N>& b) noexcept
 {
   Vec<T, N> ab = dot(a, b);
   Vec<T, N> bb = dot(b, b);
+  auto valid = bb > Vec<T, N>::zero();
   Vec<T, N> scale = ab / bb;
-  return Vector3SoA<T, N>(b.x * scale, b.y * scale, b.z * scale);
+  Vec<T, N> zeroVec = Vec<T, N>::zero();
+  return Vector3SoA<T, N>(
+      select(valid, b.x * scale, zeroVec),
+      select(valid, b.y * scale, zeroVec),
+      select(valid, b.z * scale, zeroVec));
 }
 
 // Type aliases for common widths
