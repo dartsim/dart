@@ -4,6 +4,7 @@
 # Collision Tests
 # ==============================================================================
 dart_add_test("integration" INTEGRATION_collision_CollisionGroups collision/test_collision_groups.cpp)
+dart_add_test("integration" INTEGRATION_collision_Issue2470 collision/test_issue2470.cpp)
 
 if(TARGET dart-io)
   dart_add_test("integration" INTEGRATION_collision_Collision collision/test_collision.cpp)
