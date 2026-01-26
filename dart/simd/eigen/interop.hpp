@@ -58,7 +58,7 @@ template <typename T, int Size>
     const Eigen::Matrix<T, Size, 1>& v) noexcept
 {
   static_assert(Size >= 1 && Size <= 16, "Unsupported Eigen vector size");
-  return Vec<T, static_cast<std::size_t>(Size)>::load(v.data());
+  return Vec<T, static_cast<std::size_t>(Size)>::loadu(v.data());
 }
 
 template <typename T, int Size>
@@ -66,7 +66,7 @@ template <typename T, int Size>
     const Eigen::Matrix<T, 1, Size>& v) noexcept
 {
   static_assert(Size >= 1 && Size <= 16, "Unsupported Eigen vector size");
-  return Vec<T, static_cast<std::size_t>(Size)>::load(v.data());
+  return Vec<T, static_cast<std::size_t>(Size)>::loadu(v.data());
 }
 
 template <typename T>
@@ -97,14 +97,14 @@ template <typename T, std::size_t W>
 [[nodiscard]] inline Vec<T, W> load_eigen(
     const Eigen::Matrix<T, static_cast<int>(W), 1>* ptr) noexcept
 {
-  return Vec<T, W>::load(ptr->data());
+  return Vec<T, W>::loadu(ptr->data());
 }
 
 template <typename T, std::size_t W>
 inline void store_eigen(
     Eigen::Matrix<T, static_cast<int>(W), 1>* ptr, const Vec<T, W>& v) noexcept
 {
-  v.store(ptr->data());
+  v.storeu(ptr->data());
 }
 
 template <typename T, std::size_t N>
