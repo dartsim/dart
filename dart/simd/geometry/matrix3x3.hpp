@@ -267,7 +267,7 @@ struct Matrix3x3
   [[nodiscard]] DART_SIMD_INLINE Eigen::Matrix<T, 3, 3> toEigen() const
   {
     Eigen::Matrix<T, 3, 3> m;
-    m << col0[0], col1[0], col2[0], col0[1], col1[1], col2[1], col0[2], col1[2],
+    m << col0[0], col0[1], col0[2], col1[0], col1[1], col1[2], col2[0], col2[1],
         col2[2];
     return m;
   }

@@ -374,8 +374,8 @@ struct Matrix4x4
   [[nodiscard]] DART_SIMD_INLINE Eigen::Matrix<T, 4, 4> toEigen() const
   {
     Eigen::Matrix<T, 4, 4> m;
-    m << col0[0], col1[0], col2[0], col3[0], col0[1], col1[1], col2[1], col3[1],
-        col0[2], col1[2], col2[2], col3[2], col0[3], col1[3], col2[3], col3[3];
+    m << col0[0], col0[1], col0[2], col0[3], col1[0], col1[1], col1[2], col1[3],
+        col2[0], col2[1], col2[2], col2[3], col3[0], col3[1], col3[2], col3[3];
     return m;
   }
 
