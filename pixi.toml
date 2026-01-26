@@ -787,25 +787,27 @@ CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE python scripts/cmak
 ], env = { BUILD_TYPE = "Debug" } }
 
 # Note: --rc flag is needed for lcov compatibility with gcc 13+
-coverage-report = { cmd = ["bash", "-lc", """
+# Create temp directory inside build dir to avoid /tmp filesystem issues (fixes #2481)
+coverage-report = { cmd = [
+  "bash",
+  "-lc",
+  """
 set -euo pipefail
-COVERAGE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
-# Create a temp directory inside the build dir for lcov intermediate files
-# This avoids issues with system /tmp being on a different filesystem
-COVERAGE_TEMP_DIR=$(mktemp -d -p "$COVERAGE_BUILD_DIR" coverage_temp.XXXXXX)
+# Create temp directory inside the build dir for lcov intermediate files
+COVERAGE_TEMP_DIR=$(mktemp -d -p build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE coverage_temp.XXXXXX)
 trap 'rm -rf "$COVERAGE_TEMP_DIR"' EXIT
 export TMPDIR="$COVERAGE_TEMP_DIR"
 export TMP="$COVERAGE_TEMP_DIR"
 export TEMP="$COVERAGE_TEMP_DIR"
 # Drop coverage artifacts for directories we filter out later so that
 # stale gcda files without matching gcno files do not break lcov.
-find "$COVERAGE_BUILD_DIR" \
+find build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
     '(' -path '*/tests/*' -o -path '*/examples/*' -o -path '*/tutorials/*' ')' \
     '(' -name '*.gcda' -o -name '*.gcno' ')' -delete
 pushd "$COVERAGE_TEMP_DIR" >/dev/null
 lcov \
     --capture \
-    --directory "$COVERAGE_BUILD_DIR" \
+    --directory build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
     --output-file coverage.info \
     --rc geninfo_unexecuted_blocks=1 \
 && lcov \
@@ -821,7 +823,10 @@ lcov \
 && lcov --list coverage.info
 popd >/dev/null
 mv "$COVERAGE_TEMP_DIR/coverage.info" coverage.info
-"""], depends-on = ["build-coverage"], env = { BUILD_TYPE = "Debug" } }
+""",
+], depends-on = [
+  "build-coverage",
+], env = { BUILD_TYPE = "Debug" } }
 
 # Shared helper to build a target and run the produced binary. Defaults to a Release build;
 # run the matching config task manually before using other build types.
