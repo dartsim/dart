@@ -32,8 +32,6 @@
 
 #pragma once
 
-#include <dart/common/macros.hpp>
-
 #include <dart/simd/config.hpp>
 #include <dart/simd/dynamic/vector.hpp>
 #include <dart/simd/fwd.hpp>
@@ -133,7 +131,7 @@ public:
 
   [[nodiscard]] DynamicVector<T> operator*(const DynamicVector<T>& v) const
   {
-    DART_ASSERT(cols_ == v.size(), Matrix_columns_must_match_vector_size);
+    assert(cols_ == v.size() && "Matrix columns must match vector size");
     DynamicVector<T> result(rows_);
     const T* mat = data_.data();
     const T* vec = v.data();
@@ -162,8 +160,9 @@ public:
 
   [[nodiscard]] DynamicMatrix operator*(const DynamicMatrix& rhs) const
   {
-    DART_ASSERT(
-        cols_ == rhs.rows_, Matrix_dimensions_must_match_for_multiplication);
+    assert(
+        cols_ == rhs.rows_
+        && "Matrix dimensions must match for multiplication");
     DynamicMatrix result(rows_, rhs.cols_);
 
     for (std::size_t j = 0; j < rhs.cols_; ++j) {
@@ -181,8 +180,9 @@ public:
 
   DynamicMatrix& operator+=(const DynamicMatrix& rhs)
   {
-    DART_ASSERT(
-        rows_ == rhs.rows_ && cols_ == rhs.cols_, Matrix_dimensions_must_match);
+    assert(
+        rows_ == rhs.rows_ && cols_ == rhs.cols_
+        && "Matrix dimensions must match");
     const std::size_t n = data_.size();
     const std::size_t simd_end = (n / simd_width) * simd_width;
     T* a = data_.data();
@@ -202,8 +202,9 @@ public:
 
   DynamicMatrix& operator-=(const DynamicMatrix& rhs)
   {
-    DART_ASSERT(
-        rows_ == rhs.rows_ && cols_ == rhs.cols_, Matrix_dimensions_must_match);
+    assert(
+        rows_ == rhs.rows_ && cols_ == rhs.cols_
+        && "Matrix dimensions must match");
     const std::size_t n = data_.size();
     const std::size_t simd_end = (n / simd_width) * simd_width;
     T* a = data_.data();

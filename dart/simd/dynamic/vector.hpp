@@ -32,8 +32,6 @@
 
 #pragma once
 
-#include <dart/common/macros.hpp>
-
 #include <dart/simd/config.hpp>
 #include <dart/simd/fwd.hpp>
 #include <dart/simd/memory.hpp>
@@ -43,6 +41,7 @@
 #include <initializer_list>
 #include <numeric>
 
+#include <cassert>
 #include <cmath>
 
 namespace dart::simd {
@@ -107,7 +106,7 @@ public:
 
   DynamicVector& operator+=(const DynamicVector& rhs)
   {
-    DART_ASSERT(data_.size() == rhs.data_.size(), Vector_sizes_must_match);
+    assert(data_.size() == rhs.data_.size() && "Vector sizes must match");
     const std::size_t n = data_.size();
     const std::size_t simd_end = (n / simd_width) * simd_width;
     T* a = data_.data();
@@ -127,7 +126,7 @@ public:
 
   DynamicVector& operator-=(const DynamicVector& rhs)
   {
-    DART_ASSERT(data_.size() == rhs.data_.size(), Vector_sizes_must_match);
+    assert(data_.size() == rhs.data_.size() && "Vector sizes must match");
     const std::size_t n = data_.size();
     const std::size_t simd_end = (n / simd_width) * simd_width;
     T* a = data_.data();
