@@ -100,8 +100,4 @@ gh run watch <RUN_ID> --interval 30
 - Fix summary and CI status
 - PR URL (if created)
 - Recommendations for preventing similar issues
-
-```
-
-```
 ````

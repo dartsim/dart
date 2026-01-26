@@ -104,8 +104,4 @@ gh pr edit <PR_NUMBER> --milestone "DART <NEW_VERSION>"
 - PR URL
 - Confirmation of version bumps
 - Ask if any derived info is ambiguous
-
-```
-
-```
 ````

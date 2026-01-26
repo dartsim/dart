@@ -103,8 +103,4 @@ gh pr edit <PR_NUMBER> --milestone "<MILESTONE_NAME>"
 - PR URL and CI status
 - Short summary of changes and any conflicts resolved
 - Link to original PR on main
-
-```
-
-```
 ````
