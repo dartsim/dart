@@ -794,17 +794,13 @@ coverage-report = { cmd = [
 set -euo pipefail
 PIXI_ENVIRONMENT_NAME="${PIXI_ENVIRONMENT_NAME:-default}"
 BUILD_TYPE="${BUILD_TYPE:-Debug}"
-if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
-  ROOT_BASE="$PIXI_PROJECT_ROOT"
-elif [ -n "${GITHUB_WORKSPACE:-}" ]; then
-  ROOT_BASE="$GITHUB_WORKSPACE"
-elif [ -n "${PWD:-}" ]; then
-  ROOT_BASE="$PWD"
-else
-  ROOT_BASE="$(pwd)"
+ROOT_BASE="$(pwd)"
+if [ -z "$ROOT_BASE" ]; then
+  echo "DEBUG: pwd returned empty, trying fallbacks" >&2
+  ROOT_BASE="${PIXI_PROJECT_ROOT:-${GITHUB_WORKSPACE:-${PWD:-}}}"
 fi
 if [ -z "$ROOT_BASE" ]; then
-  echo "PROJECT_ROOT is empty" >&2
+  echo "PROJECT_ROOT is empty (pwd='$(pwd)', PWD='${PWD:-}', PIXI_PROJECT_ROOT='${PIXI_PROJECT_ROOT:-}', GITHUB_WORKSPACE='${GITHUB_WORKSPACE:-}')" >&2
   exit 1
 fi
 COVERAGE_BUILD_DIR_PATH="$ROOT_BASE/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
