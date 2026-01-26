@@ -55,7 +55,8 @@ gh pr view <SOURCE_PR> --json state,mergedAt,baseRefName
 git merge-base --is-ancestor <COMMIT_HASH> origin/<RELEASE_BRANCH> && echo "Already in release" || echo "Not in release yet"
 
 # Method 2: Use git cherry (note: + means NOT backported, - means equivalent exists)
-git cherry -v origin/<RELEASE_BRANCH> origin/main | grep <COMMIT_HASH>
+# Use --abbrev=40 to output full hashes for reliable grep matching
+git cherry -v --abbrev=40 origin/<RELEASE_BRANCH> origin/main | grep <COMMIT_HASH>
 # If output shows "+ <hash> ..." = commit needs backporting
 # If output shows "- <hash> ..." = equivalent commit already exists on release branch
 ```
