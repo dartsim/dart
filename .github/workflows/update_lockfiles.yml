@@ -9,6 +9,10 @@ on:
   schedule:
     - cron: 0 5 * * SAT # Runs at 05:00, on every Staturday
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pixi-update:
     name: Maintenance | Update pixi.lock (${{ matrix.base }})
