@@ -61,6 +61,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 - FreeBSD RTTI failures: `dynamic_cast` across shared library boundaries can fail silently; use type enums + `static_cast` instead.
 - macOS ARM64 sporadic SEGFAULT: `alloca()` or VLAs may cause alignment violations; use `std::vector<T>` for proper alignment.
 - RTD build failures: Sphinx extension compatibility issues; use defensive `.get(key, default)` patterns.
+- Case-colliding files after branch merge: When merging `release-*` into `main`, PascalCase files from the release branch can collide with snake_case files in main on case-insensitive filesystems (macOS, Windows). Check for duplicates with `find tests -name "*.cpp" | sort -f | uniq -di` and remove the PascalCase version. Also verify new tests are registered in the appropriate `CMakeLists.txt`.
 
 ## Task Recap (General)
 
