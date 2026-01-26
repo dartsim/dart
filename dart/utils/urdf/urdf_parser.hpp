@@ -72,6 +72,8 @@ namespace utils {
 /// Parser for URDF files.
 class DART_UTILS_URDF_API UrdfParser
 {
+  friend struct DartLoaderTestAccess;
+
 public:
   /// Root joint type to be used when the parent joint of the root link is not
   /// specified in the URDF file.
