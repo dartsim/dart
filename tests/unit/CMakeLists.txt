@@ -199,7 +199,7 @@ if(TARGET dart)
 endif()
 
 # Optimization tests
-dart_add_test("unit" UNIT_math_optimization_Problem math/optimization/test_Problem.cpp)
+dart_add_test("unit" UNIT_math_optimization_Problem math/optimization/test_problem.cpp)
 
 # Math LCP tests
 dart_build_tests(
@@ -283,13 +283,13 @@ endif()
 # ==============================================================================
 # Sensor Tests
 # ==============================================================================
-dart_add_test("unit" UNIT_sensor_Sensor sensor/test_Sensor.cpp)
-dart_add_test("unit" UNIT_sensor_SensorManager sensor/test_SensorManager.cpp)
+dart_add_test("unit" UNIT_sensor_Sensor sensor/test_sensor.cpp)
+dart_add_test("unit" UNIT_sensor_SensorManager sensor/test_sensor_manager.cpp)
 
 # ==============================================================================
 # Simulation Tests
 # ==============================================================================
-dart_add_test("unit" UNIT_simulation_World simulation/test_World.cpp)
+dart_add_test("unit" UNIT_simulation_World simulation/test_world.cpp)
 dart_add_test("unit" UNIT_simulation_Recording simulation/test_recording.cpp)
 
 # ==============================================================================
