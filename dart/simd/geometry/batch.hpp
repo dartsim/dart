@@ -114,15 +114,15 @@ struct Matrix3x3SoA
       const T* arr22) noexcept
   {
     Matrix3x3SoA result;
-    result.m00 = Vec<T, N>::load(arr00);
-    result.m10 = Vec<T, N>::load(arr10);
-    result.m20 = Vec<T, N>::load(arr20);
-    result.m01 = Vec<T, N>::load(arr01);
-    result.m11 = Vec<T, N>::load(arr11);
-    result.m21 = Vec<T, N>::load(arr21);
-    result.m02 = Vec<T, N>::load(arr02);
-    result.m12 = Vec<T, N>::load(arr12);
-    result.m22 = Vec<T, N>::load(arr22);
+    result.m00 = Vec<T, N>::loadu(arr00);
+    result.m10 = Vec<T, N>::loadu(arr10);
+    result.m20 = Vec<T, N>::loadu(arr20);
+    result.m01 = Vec<T, N>::loadu(arr01);
+    result.m11 = Vec<T, N>::loadu(arr11);
+    result.m21 = Vec<T, N>::loadu(arr21);
+    result.m02 = Vec<T, N>::loadu(arr02);
+    result.m12 = Vec<T, N>::loadu(arr12);
+    result.m22 = Vec<T, N>::loadu(arr22);
     return result;
   }
 
@@ -138,15 +138,15 @@ struct Matrix3x3SoA
       T* arr12,
       T* arr22) const noexcept
   {
-    m00.store(arr00);
-    m10.store(arr10);
-    m20.store(arr20);
-    m01.store(arr01);
-    m11.store(arr11);
-    m21.store(arr21);
-    m02.store(arr02);
-    m12.store(arr12);
-    m22.store(arr22);
+    m00.storeu(arr00);
+    m10.storeu(arr10);
+    m20.storeu(arr20);
+    m01.storeu(arr01);
+    m11.storeu(arr11);
+    m21.storeu(arr21);
+    m02.storeu(arr02);
+    m12.storeu(arr12);
+    m22.storeu(arr22);
   }
 
   /// Convert back to array of Matrix3x3
@@ -329,22 +329,22 @@ struct Matrix4x4SoA
       const T* arr33) noexcept
   {
     Matrix4x4SoA result;
-    result.m00 = Vec<T, N>::load(arr00);
-    result.m10 = Vec<T, N>::load(arr10);
-    result.m20 = Vec<T, N>::load(arr20);
-    result.m30 = Vec<T, N>::load(arr30);
-    result.m01 = Vec<T, N>::load(arr01);
-    result.m11 = Vec<T, N>::load(arr11);
-    result.m21 = Vec<T, N>::load(arr21);
-    result.m31 = Vec<T, N>::load(arr31);
-    result.m02 = Vec<T, N>::load(arr02);
-    result.m12 = Vec<T, N>::load(arr12);
-    result.m22 = Vec<T, N>::load(arr22);
-    result.m32 = Vec<T, N>::load(arr32);
-    result.m03 = Vec<T, N>::load(arr03);
-    result.m13 = Vec<T, N>::load(arr13);
-    result.m23 = Vec<T, N>::load(arr23);
-    result.m33 = Vec<T, N>::load(arr33);
+    result.m00 = Vec<T, N>::loadu(arr00);
+    result.m10 = Vec<T, N>::loadu(arr10);
+    result.m20 = Vec<T, N>::loadu(arr20);
+    result.m30 = Vec<T, N>::loadu(arr30);
+    result.m01 = Vec<T, N>::loadu(arr01);
+    result.m11 = Vec<T, N>::loadu(arr11);
+    result.m21 = Vec<T, N>::loadu(arr21);
+    result.m31 = Vec<T, N>::loadu(arr31);
+    result.m02 = Vec<T, N>::loadu(arr02);
+    result.m12 = Vec<T, N>::loadu(arr12);
+    result.m22 = Vec<T, N>::loadu(arr22);
+    result.m32 = Vec<T, N>::loadu(arr32);
+    result.m03 = Vec<T, N>::loadu(arr03);
+    result.m13 = Vec<T, N>::loadu(arr13);
+    result.m23 = Vec<T, N>::loadu(arr23);
+    result.m33 = Vec<T, N>::loadu(arr33);
     return result;
   }
 
@@ -478,17 +478,17 @@ struct Vector3SoA
       const T* xs, const T* ys, const T* zs) noexcept
   {
     Vector3SoA result;
-    result.x = Vec<T, N>::load(xs);
-    result.y = Vec<T, N>::load(ys);
-    result.z = Vec<T, N>::load(zs);
+    result.x = Vec<T, N>::loadu(xs);
+    result.y = Vec<T, N>::loadu(ys);
+    result.z = Vec<T, N>::loadu(zs);
     return result;
   }
 
   void storeToArrays(T* xs, T* ys, T* zs) const noexcept
   {
-    x.store(xs);
-    y.store(ys);
-    z.store(zs);
+    x.storeu(xs);
+    y.storeu(ys);
+    z.storeu(zs);
   }
 
   [[nodiscard]] std::array<Vector3<T>, N> toAos() const noexcept
