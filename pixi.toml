@@ -794,15 +794,12 @@ coverage-report = { cmd = [
 set -euo pipefail
 PIXI_ENVIRONMENT_NAME=${PIXI_ENVIRONMENT_NAME:-default}
 BUILD_TYPE=${BUILD_TYPE:-Debug}
-# Prefer PIXI_PROJECT_ROOT (set by pixi) to avoid pwd issues in some CI environments
-ROOT_BASE=${PIXI_PROJECT_ROOT:-}
-if [ -z "${ROOT_BASE//[[:space:]]/}" ]; then
-  ROOT_BASE=$(pwd -P 2>/dev/null || pwd)
-fi
-if [ -z "${ROOT_BASE//[[:space:]]/}" ]; then
-  ROOT_BASE=${PWD:-}
-fi
-if [ -z "${ROOT_BASE//[[:space:]]/}" ]; then
+ROOT_BASE=""
+[ -n "$PIXI_PROJECT_ROOT" ] && ROOT_BASE="$PIXI_PROJECT_ROOT"
+[ -z "$ROOT_BASE" ] && [ -n "${GITHUB_WORKSPACE:-}" ] && ROOT_BASE="$GITHUB_WORKSPACE"
+[ -z "$ROOT_BASE" ] && ROOT_BASE=$(pwd 2>/dev/null || echo "")
+[ -z "$ROOT_BASE" ] && ROOT_BASE="${PWD:-}"
+if [ -z "$ROOT_BASE" ]; then
   echo "PROJECT_ROOT is empty" >&2
   exit 1
 fi
