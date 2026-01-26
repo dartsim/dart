@@ -52,7 +52,10 @@
   #include <dart/simd/detail/avx2/vec.hpp>
 #endif
 
-#if defined(DART_SIMD_NEON)
+#if defined(DART_SIMD_SVE)
+  #include <dart/simd/detail/sve/operations.hpp>
+  #include <dart/simd/detail/sve/vec.hpp>
+#elif defined(DART_SIMD_NEON)
   #include <dart/simd/detail/neon/operations.hpp>
   #include <dart/simd/detail/neon/vec.hpp>
 #endif
