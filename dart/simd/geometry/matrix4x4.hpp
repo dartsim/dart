@@ -162,7 +162,8 @@ struct Matrix4x4
     if (w != T(0) && w != T(1)) {
       result = result / Vec<T, 4>::broadcast(w);
     }
-    return Vector3<T>(result);
+    // Construct from x,y,z to ensure padding lane is zero (Vector3 invariant)
+    return Vector3<T>(result[0], result[1], result[2]);
   }
 
   [[nodiscard]] DART_SIMD_INLINE Vector3<T> transformVector(
@@ -171,7 +172,8 @@ struct Matrix4x4
     Vec<T, 4> result = col0 * Vec<T, 4>::broadcast(v.x())
                        + col1 * Vec<T, 4>::broadcast(v.y())
                        + col2 * Vec<T, 4>::broadcast(v.z());
-    return Vector3<T>(result);
+    // Construct from x,y,z to ensure padding lane is zero (Vector3 invariant)
+    return Vector3<T>(result[0], result[1], result[2]);
   }
 
   [[nodiscard]] DART_SIMD_INLINE Matrix4x4 transposed() const
