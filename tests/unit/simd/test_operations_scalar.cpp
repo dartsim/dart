@@ -402,7 +402,10 @@ TEST(HprodSpecificValues, PrimeProduct)
   alignas(64) float data[4] = {2.0f, 3.0f, 5.0f, 7.0f};
   auto v = Vec<float, 4>::load(data);
   float result = hprod(v);
+
   EXPECT_FLOAT_EQ(result, 210.0f) << "hprod([2,3,5,7]) must equal 2*3*5*7=210";
+  EXPECT_NE(result, 294.0f)
+      << "Result must NOT be 294 (which would indicate c lane dropped)";
 }
 
 TEST(HprodSpecificValues, AllOnes)
