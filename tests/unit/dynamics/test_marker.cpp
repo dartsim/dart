@@ -7,6 +7,8 @@
 
 #include <dart/math/constants.hpp>
 
+#include <dart/common/platform.hpp>
+
 #include <gtest/gtest.h>
 
 using namespace dart;
@@ -174,4 +176,61 @@ TEST_F(MarkerTest, WorldPositionAfterMove)
   Eigen::Vector3d newWorld = marker->getWorldPosition();
   EXPECT_FALSE(newWorld.isApprox(initialWorld));
   EXPECT_TRUE(newWorld.isApprox(Eigen::Vector3d(5.0, 5.0, 5.5), 1e-10));
+}
+
+TEST_F(MarkerTest, FixedFrameRelativeMotionIsZero)
+{
+  Marker* marker = body->createMarker(std::string("fixed_frame"));
+
+  EXPECT_TRUE(marker->getRelativeSpatialVelocity().isZero(0.0));
+  EXPECT_TRUE(marker->getRelativeSpatialAcceleration().isZero(0.0));
+  EXPECT_TRUE(marker->getPrimaryRelativeAcceleration().isZero(0.0));
+  EXPECT_TRUE(marker->getPartialAcceleration().isZero(0.0));
+
+  FixedFrame::AspectProperties props;
+  props.mRelativeTf = Eigen::Isometry3d::Identity();
+  props.mRelativeTf.translation() = Eigen::Vector3d(0.2, -0.1, 0.3);
+  marker->FixedFrame::setAspectProperties(props);
+  EXPECT_TRUE(marker->getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(0.2, -0.1, 0.3)));
+}
+
+#if !DART_OS_WINDOWS
+TEST_F(MarkerTest, FixedJacobianNodeDependencyAccessors)
+{
+  Marker* marker = body->createMarker(std::string("jacobian_node"));
+
+  const std::size_t numDeps = marker->getNumDependentGenCoords();
+  EXPECT_GT(numDeps, 0u);
+  EXPECT_EQ(marker->getDependentGenCoordIndices().size(), numDeps);
+
+  const std::size_t firstIndex = marker->getDependentGenCoordIndex(0);
+  EXPECT_LT(firstIndex, skeleton->getNumDofs());
+  EXPECT_TRUE(marker->dependsOn(firstIndex));
+
+  EXPECT_EQ(marker->getNumDependentDofs(), marker->getDependentDofs().size());
+  EXPECT_EQ(marker->getDependentDof(0), marker->getDependentDofs()[0]);
+
+  const auto chainDofs = marker->getChainDofs();
+  EXPECT_FALSE(chainDofs.empty());
+}
+#endif
+
+TEST_F(MarkerTest, FixedJacobianNodeCachesUpdate)
+{
+  Marker* marker = body->createMarker(std::string("jacobian_cache"));
+
+  const auto initialJacobian = marker->getJacobian();
+
+  Eigen::Isometry3d newRelative = Eigen::Isometry3d::Identity();
+  newRelative.translation() = Eigen::Vector3d(0.3, 0.2, -0.1);
+  marker->setRelativeTransform(newRelative);
+
+  const auto updatedJacobian = marker->getJacobian();
+  EXPECT_FALSE(updatedJacobian.isApprox(initialJacobian));
+
+  EXPECT_EQ(marker->getWorldJacobian().rows(), 6);
+  EXPECT_EQ(marker->getWorldJacobian().cols(), initialJacobian.cols());
+  EXPECT_EQ(marker->getJacobianSpatialDeriv().rows(), 6);
+  EXPECT_EQ(marker->getJacobianClassicDeriv().rows(), 6);
 }

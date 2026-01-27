@@ -87,3 +87,85 @@ TEST(StringTest, Split)
   ASSERT_EQ(common::split("ThiSisaNApPle ", "A")[0], "ThiSisaN");
   ASSERT_EQ(common::split("ThiSisaNApPle ", "A")[1], "pPle ");
 }
+
+//==============================================================================
+TEST(StringTest, TrimEdgeCases)
+{
+  // Empty string
+  EXPECT_EQ(common::trim(""), "");
+  EXPECT_EQ(common::trimLeft(""), "");
+  EXPECT_EQ(common::trimRight(""), "");
+
+  // All whitespace
+  EXPECT_EQ(common::trim("   "), "");
+  EXPECT_EQ(common::trimLeft("   "), "");
+  EXPECT_EQ(common::trimRight("   "), "");
+
+  // No whitespace
+  EXPECT_EQ(common::trim("hello"), "hello");
+  EXPECT_EQ(common::trimLeft("hello"), "hello");
+  EXPECT_EQ(common::trimRight("hello"), "hello");
+
+  // Only left whitespace
+  EXPECT_EQ(common::trim("  hello"), "hello");
+  EXPECT_EQ(common::trimLeft("  hello"), "hello");
+
+  // Only right whitespace
+  EXPECT_EQ(common::trim("hello  "), "hello");
+  EXPECT_EQ(common::trimRight("hello  "), "hello");
+
+  // Mixed whitespace types
+  EXPECT_EQ(common::trim("\t\n hello \n\t"), "hello");
+}
+
+//==============================================================================
+TEST(StringTest, CaseConversionEdgeCases)
+{
+  // Empty string
+  EXPECT_EQ(common::toUpper(""), "");
+  EXPECT_EQ(common::toLower(""), "");
+
+  // Numbers and special characters (should pass through unchanged)
+  EXPECT_EQ(common::toUpper("123!@#"), "123!@#");
+  EXPECT_EQ(common::toLower("123!@#"), "123!@#");
+
+  // Already in target case
+  EXPECT_EQ(common::toUpper("HELLO"), "HELLO");
+  EXPECT_EQ(common::toLower("hello"), "hello");
+
+  // In-place with empty string
+  std::string empty;
+  common::toUpperInPlace(empty);
+  EXPECT_EQ(empty, "");
+  common::toLowerInPlace(empty);
+  EXPECT_EQ(empty, "");
+}
+
+//==============================================================================
+TEST(StringTest, SplitEdgeCases)
+{
+  // Empty string
+  auto emptyResult = common::split("");
+  EXPECT_TRUE(emptyResult.empty());
+
+  // No delimiter found
+  auto noDelim = common::split("hello");
+  ASSERT_EQ(noDelim.size(), 1u);
+  EXPECT_EQ(noDelim[0], "hello");
+
+  // Only delimiter
+  auto onlyDelim = common::split("   ");
+  EXPECT_TRUE(onlyDelim.empty());
+
+  // Multiple consecutive delimiters
+  auto multiDelim = common::split("a   b");
+  ASSERT_EQ(multiDelim.size(), 2u);
+  EXPECT_EQ(multiDelim[0], "a");
+  EXPECT_EQ(multiDelim[1], "b");
+
+  // Delimiter at start and end
+  auto delimEnds = common::split(" hello world ");
+  ASSERT_EQ(delimEnds.size(), 2u);
+  EXPECT_EQ(delimEnds[0], "hello");
+  EXPECT_EQ(delimEnds[1], "world");
+}

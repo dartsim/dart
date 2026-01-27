@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,34 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/resource.hpp"
+#include <dart/math/lcp/lcp_types.hpp>
 
-#include "dart/common/logging.hpp"
+#include <gtest/gtest.h>
 
-#include <exception>
-#include <string>
+using namespace dart::math;
 
-namespace dart {
-namespace common {
-
-//==============================================================================
-std::string Resource::readAll()
+TEST(LcpTypesTest, StatusToString)
 {
-  const auto size = getSize();
-  if (size == 0) {
-    return {};
-  }
+  EXPECT_EQ(toString(LcpSolverStatus::Success), "Success");
+  EXPECT_EQ(toString(LcpSolverStatus::Failed), "Failed");
+  EXPECT_EQ(toString(LcpSolverStatus::MaxIterations), "MaxIterations");
+  EXPECT_EQ(toString(LcpSolverStatus::NumericalError), "NumericalError");
+  EXPECT_EQ(toString(LcpSolverStatus::InvalidProblem), "InvalidProblem");
+  EXPECT_EQ(toString(LcpSolverStatus::Degenerate), "Degenerate");
+  EXPECT_EQ(toString(LcpSolverStatus::NotSolved), "NotSolved");
 
-  std::string content;
-  content.resize(size);
-  const auto result = read(content.data(), content.size(), 1);
-
-  if (result != 1) {
-    throw std::runtime_error("Failed reading data from a resource.");
-  }
-
-  return content;
+  EXPECT_EQ(toString(static_cast<LcpSolverStatus>(-1)), "Unknown");
+  EXPECT_EQ(toString(static_cast<LcpSolverStatus>(99)), "Unknown");
 }
-
-} // namespace common
-} // namespace dart

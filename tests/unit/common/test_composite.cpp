@@ -41,6 +41,11 @@ using namespace dart::common;
 
 namespace {
 
+// Static counter to track loseComposite calls that persists after object
+// destruction. Used by SetAspectReplacesExisting test to verify behavior
+// without accessing destroyed objects.
+int g_loseCompositeCallCount = 0;
+
 class TrackingComposite : public Composite
 {
 };
@@ -115,6 +120,7 @@ struct StatefulAspect : public CompositeTrackingAspect<TrackingComposite>
   void loseComposite(Composite* oldComposite) override
   {
     ++mLoseCompositeCount;
+    ++g_loseCompositeCallCount;
     Base::loseComposite(oldComposite);
   }
 
@@ -310,4 +316,108 @@ TEST(CompositeTests, IsSpecializedForReturnsFalseOnBaseComposite)
   TrackingComposite composite;
   (void)composite; // Silence unused variable warning
   EXPECT_FALSE(TrackingComposite::isSpecializedFor<StatefulAspect>());
+}
+
+//==============================================================================
+TEST(CompositeTests, MatchAspectsClearsAndCopies)
+{
+  TrackingComposite source;
+  source.createAspect<StatefulAspect>(1.0, 2.0);
+
+  TrackingComposite destination;
+  destination.createAspect<StatefulAspect>(5.0, 10.0);
+
+  destination.matchAspects(&source);
+
+  auto* matched = destination.get<StatefulAspect>();
+  ASSERT_NE(matched, nullptr);
+  EXPECT_DOUBLE_EQ(matched->mState.value, 1.0);
+  EXPECT_DOUBLE_EQ(matched->mProperties.stiffness, 2.0);
+}
+
+//==============================================================================
+TEST(CompositeTests, DuplicateAspectsSkipsNullAspect)
+{
+  TrackingComposite source;
+  source.createAspect<StatefulAspect>(3.0, 6.0);
+  source.removeAspect<StatefulAspect>();
+  EXPECT_FALSE(source.has<StatefulAspect>());
+
+  TrackingComposite destination;
+  destination.duplicateAspects(&source);
+
+  EXPECT_FALSE(destination.has<StatefulAspect>());
+}
+
+//==============================================================================
+TEST(CompositeTests, DuplicateAspectsToSelfIsNoOp)
+{
+  TrackingComposite composite;
+  auto* aspect = composite.createAspect<StatefulAspect>(2.0, 4.0);
+  int originalSetCount = aspect->mSetCompositeCount;
+
+  composite.duplicateAspects(&composite);
+
+  EXPECT_EQ(composite.get<StatefulAspect>(), aspect);
+  EXPECT_EQ(aspect->mSetCompositeCount, originalSetCount);
+}
+
+//==============================================================================
+TEST(CompositeTests, CopyCompositeStateToExisting)
+{
+  TrackingComposite composite;
+  auto* aspect = composite.createAspect<StatefulAspect>();
+  aspect->mState.value = 42.0;
+  aspect->mState.visits = 10;
+
+  Composite::State state;
+  composite.copyCompositeStateTo(state);
+
+  auto* copied = state.get<StatefulAspect>();
+  ASSERT_NE(copied, nullptr);
+  EXPECT_DOUBLE_EQ(copied->value, 42.0);
+  EXPECT_EQ(copied->visits, 10);
+
+  aspect->mState.value = 100.0;
+  composite.copyCompositeStateTo(state);
+  EXPECT_DOUBLE_EQ(copied->value, 100.0);
+}
+
+//==============================================================================
+TEST(CompositeTests, CopyCompositePropertiesToExisting)
+{
+  TrackingComposite composite;
+  auto* aspect = composite.createAspect<StatefulAspect>();
+  aspect->mProperties.stiffness = 99.0;
+
+  Composite::Properties props;
+  composite.copyCompositePropertiesTo(props);
+
+  auto* copied = props.get<StatefulAspect>();
+  ASSERT_NE(copied, nullptr);
+  EXPECT_DOUBLE_EQ(copied->stiffness, 99.0);
+
+  aspect->mProperties.stiffness = 200.0;
+  composite.copyCompositePropertiesTo(props);
+  EXPECT_DOUBLE_EQ(copied->stiffness, 200.0);
+}
+
+//==============================================================================
+TEST(CompositeTests, SetAspectReplacesExisting)
+{
+  g_loseCompositeCallCount = 0;
+
+  TrackingComposite composite;
+  auto* original = composite.createAspect<StatefulAspect>(1.0, 1.0);
+  EXPECT_EQ(original->mSetCompositeCount, 1);
+  auto* originalAddr = original;
+
+  auto replacement = std::make_unique<StatefulAspect>(2.0, 2.0);
+  composite.set(std::move(replacement));
+
+  auto* current = composite.get<StatefulAspect>();
+  ASSERT_NE(current, nullptr);
+  EXPECT_NE(current, originalAddr);
+  EXPECT_DOUBLE_EQ(current->mState.value, 2.0);
+  EXPECT_EQ(g_loseCompositeCallCount, 1);
 }

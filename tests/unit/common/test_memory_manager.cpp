@@ -98,3 +98,105 @@ TEST(MemoryManagerTest, MemoryLeak)
 
   // Expect that MemoryManager complains that not all the memory is deallocated
 }
+
+//==============================================================================
+// Helper class that tracks construction/destruction
+struct LifecycleTracker
+{
+  static int constructCount;
+  static int destructCount;
+  int value;
+
+  explicit LifecycleTracker(int v) : value(v)
+  {
+    ++constructCount;
+  }
+  ~LifecycleTracker()
+  {
+    ++destructCount;
+  }
+  static void reset()
+  {
+    constructCount = 0;
+    destructCount = 0;
+  }
+};
+int LifecycleTracker::constructCount = 0;
+int LifecycleTracker::destructCount = 0;
+
+//==============================================================================
+TEST(MemoryManagerTest, ConstructAndDestroy)
+{
+  auto mm = MemoryManager();
+  LifecycleTracker::reset();
+
+  // Construct using Free type dispatch
+  auto* obj = mm.construct<LifecycleTracker>(MemoryManager::Type::Free, 42);
+  ASSERT_NE(obj, nullptr);
+  EXPECT_EQ(LifecycleTracker::constructCount, 1);
+  EXPECT_EQ(obj->value, 42);
+
+  // Destroy using Free type dispatch
+  mm.destroy<LifecycleTracker>(MemoryManager::Type::Free, obj);
+  EXPECT_EQ(LifecycleTracker::destructCount, 1);
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, ConstructUsingFreeList)
+{
+  auto mm = MemoryManager();
+  LifecycleTracker::reset();
+
+  // Construct using FreeListAllocator
+  auto* obj = mm.constructUsingFree<LifecycleTracker>(42);
+  ASSERT_NE(obj, nullptr);
+  EXPECT_EQ(LifecycleTracker::constructCount, 1);
+  EXPECT_EQ(obj->value, 42);
+
+  // Destroy using FreeListAllocator
+  mm.destroyUsingFree<LifecycleTracker>(obj);
+  EXPECT_EQ(LifecycleTracker::destructCount, 1);
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, ConstructUsingPool)
+{
+  auto mm = MemoryManager();
+  LifecycleTracker::reset();
+
+  // Construct using PoolAllocator
+  auto* obj = mm.constructUsingPool<LifecycleTracker>(42);
+  ASSERT_NE(obj, nullptr);
+  EXPECT_EQ(LifecycleTracker::constructCount, 1);
+  EXPECT_EQ(obj->value, 42);
+
+  // Destroy using PoolAllocator
+  mm.destroyUsingPool<LifecycleTracker>(obj);
+  EXPECT_EQ(LifecycleTracker::destructCount, 1);
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, AllocateByTypeFree)
+{
+  auto mm = MemoryManager();
+
+  // Allocate using Type::Free dispatch
+  auto* ptr = mm.allocate(MemoryManager::Type::Free, sizeof(int));
+  ASSERT_NE(ptr, nullptr);
+
+  // Deallocate using Type::Free dispatch
+  mm.deallocate(MemoryManager::Type::Free, ptr, sizeof(int));
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, AllocateByTypePool)
+{
+  auto mm = MemoryManager();
+
+  // Allocate using Type::Pool dispatch
+  auto* ptr = mm.allocate(MemoryManager::Type::Pool, sizeof(int));
+  ASSERT_NE(ptr, nullptr);
+
+  // Deallocate using Type::Pool dispatch
+  mm.deallocate(MemoryManager::Type::Pool, ptr, sizeof(int));
+}

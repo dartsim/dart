@@ -36,6 +36,17 @@
 
 using namespace dart::common;
 
+namespace {
+
+void TestErrorHandler(
+    const char* /*exceptionType*/,
+    const char* /*message*/,
+    const std::source_location& /*location*/)
+{
+}
+
+} // namespace
+
 TEST(Exception, BasicException)
 {
   try {
@@ -158,4 +169,15 @@ TEST(Exception, SourceLocationIncluded)
         std::string(e.location().file_name()).find("test_exception.cpp"),
         std::string::npos);
   }
+}
+
+TEST(Exception, ErrorHandlerRoundTrip)
+{
+  auto previous = getErrorHandler();
+
+  setErrorHandler(&TestErrorHandler);
+  EXPECT_EQ(getErrorHandler(), &TestErrorHandler);
+
+  setErrorHandler(previous);
+  EXPECT_EQ(getErrorHandler(), previous);
 }

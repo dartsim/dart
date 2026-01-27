@@ -4,6 +4,8 @@
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/dart/dart_collision_detector.hpp>
+#include <dart/collision/raycast_option.hpp>
+#include <dart/collision/raycast_result.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
@@ -20,6 +22,8 @@
 using namespace dart;
 using namespace dart::collision;
 using namespace dart::dynamics;
+using dart::collision::RaycastOption;
+using dart::collision::RaycastResult;
 
 namespace {
 
@@ -128,4 +132,26 @@ TEST(DARTCollisionDetector, UnsupportedShapePairReturnsFalse)
   const auto result = runCollision(cylinder, box, Eigen::Vector3d::Zero());
   EXPECT_FALSE(result.first);
   EXPECT_EQ(result.second, 0u);
+}
+
+TEST(DARTCollisionDetector, RaycastReturnsNotSupported)
+{
+  // DARTCollisionDetector does not override raycast, so it uses the base
+  // implementation which returns false and logs a warning.
+  auto detector = DARTCollisionDetector::create();
+  auto sphere = std::make_shared<SphereShape>(0.5);
+  auto setup = makeShapeSetup("sphere", sphere);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setup.shapeNode);
+
+  RaycastOption option;
+  RaycastResult result;
+
+  const Eigen::Vector3d from(0.0, 0.0, 2.0);
+  const Eigen::Vector3d to(0.0, 0.0, -2.0);
+
+  const bool hit = group->raycast(from, to, option, &result);
+  EXPECT_FALSE(hit);
+  EXPECT_FALSE(result.hasHit());
 }

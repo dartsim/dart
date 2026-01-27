@@ -107,3 +107,23 @@ TEST(PlaneShapeTest, NegativeOffset)
 
   EXPECT_DOUBLE_EQ(plane->getOffset(), -10.0);
 }
+
+//==============================================================================
+TEST(PlaneShapeTest, DistancesAndBoundingBox)
+{
+  auto plane = std::make_shared<dart::dynamics::PlaneShape>(
+      Eigen::Vector3d::UnitZ(), 0.5);
+
+  EXPECT_DOUBLE_EQ(
+      plane->computeSignedDistance(Eigen::Vector3d(0.0, 0.0, 1.0)), 0.5);
+  EXPECT_DOUBLE_EQ(plane->computeDistance(Eigen::Vector3d(0.0, 0.0, 0.0)), 0.5);
+
+  plane->setNormalAndPoint(
+      Eigen::Vector3d::UnitZ(), Eigen::Vector3d(0.0, 0.0, 2.0));
+  EXPECT_DOUBLE_EQ(plane->getOffset(), 2.0);
+
+  const auto& bbox = plane->getBoundingBox();
+  EXPECT_TRUE(std::isinf(bbox.getMin()[0]));
+  EXPECT_TRUE(std::isinf(bbox.getMax()[2]));
+  EXPECT_DOUBLE_EQ(plane->getVolume(), 0.0);
+}

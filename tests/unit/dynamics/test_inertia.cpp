@@ -108,3 +108,126 @@ TEST(Inertia, Transformations)
         inertia.getSpatialTensor(), tol));
   }
 }
+
+//==============================================================================
+TEST(Inertia, SetAndGetParameter)
+{
+  dynamics::Inertia inertia;
+
+  inertia.setParameter(dynamics::Inertia::MASS, 5.0);
+  EXPECT_DOUBLE_EQ(inertia.getParameter(dynamics::Inertia::MASS), 5.0);
+  EXPECT_DOUBLE_EQ(inertia.getMass(), 5.0);
+
+  inertia.setParameter(dynamics::Inertia::COM_X, 1.0);
+  inertia.setParameter(dynamics::Inertia::COM_Y, 2.0);
+  inertia.setParameter(dynamics::Inertia::COM_Z, 3.0);
+  EXPECT_DOUBLE_EQ(inertia.getParameter(dynamics::Inertia::COM_X), 1.0);
+  EXPECT_DOUBLE_EQ(inertia.getParameter(dynamics::Inertia::COM_Y), 2.0);
+  EXPECT_DOUBLE_EQ(inertia.getParameter(dynamics::Inertia::COM_Z), 3.0);
+  EXPECT_TRUE(inertia.getLocalCOM().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+}
+
+//==============================================================================
+TEST(Inertia, SetMomentWithScalars)
+{
+  dynamics::Inertia inertia;
+
+  inertia.setMoment(1.0, 2.0, 3.0, 0.1, 0.2, 0.3);
+
+  Eigen::Matrix3d moment = inertia.getMoment();
+  EXPECT_DOUBLE_EQ(moment(0, 0), 1.0);
+  EXPECT_DOUBLE_EQ(moment(1, 1), 2.0);
+  EXPECT_DOUBLE_EQ(moment(2, 2), 3.0);
+  EXPECT_DOUBLE_EQ(moment(0, 1), 0.1);
+  EXPECT_DOUBLE_EQ(moment(0, 2), 0.2);
+  EXPECT_DOUBLE_EQ(moment(1, 2), 0.3);
+}
+
+//==============================================================================
+TEST(Inertia, SetSpatialTensor)
+{
+  Eigen::Matrix6d spatial = Eigen::Matrix6d::Zero();
+  spatial(0, 0) = 1.0;
+  spatial(1, 1) = 1.0;
+  spatial(2, 2) = 1.0;
+  spatial(3, 3) = 2.0;
+  spatial(4, 4) = 2.0;
+  spatial(5, 5) = 2.0;
+
+  dynamics::Inertia inertia(spatial);
+
+  EXPECT_DOUBLE_EQ(inertia.getMass(), 2.0);
+}
+
+//==============================================================================
+TEST(Inertia, VerifyMoment)
+{
+  Eigen::Matrix3d validMoment = Eigen::Matrix3d::Identity();
+  EXPECT_TRUE(dynamics::Inertia::verifyMoment(validMoment, false));
+
+  Eigen::Matrix3d negativeDiag = Eigen::Matrix3d::Identity();
+  negativeDiag(0, 0) = -1.0;
+  EXPECT_FALSE(dynamics::Inertia::verifyMoment(negativeDiag, false));
+
+  Eigen::Matrix3d asymmetric = Eigen::Matrix3d::Identity();
+  asymmetric(0, 1) = 0.5;
+  asymmetric(1, 0) = 0.6;
+  EXPECT_FALSE(dynamics::Inertia::verifyMoment(asymmetric, false));
+}
+
+//==============================================================================
+TEST(Inertia, VerifySpatialTensor)
+{
+  Eigen::Matrix6d validSpatial = Eigen::Matrix6d::Identity();
+  EXPECT_TRUE(dynamics::Inertia::verifySpatialTensor(validSpatial, false));
+
+  Eigen::Matrix6d negativeDiag = Eigen::Matrix6d::Identity();
+  negativeDiag(0, 0) = -1.0;
+  EXPECT_FALSE(dynamics::Inertia::verifySpatialTensor(negativeDiag, false));
+
+  Eigen::Matrix6d asymmetricTopLeft = Eigen::Matrix6d::Identity();
+  asymmetricTopLeft(0, 1) = 0.5;
+  asymmetricTopLeft(1, 0) = 0.6;
+  EXPECT_FALSE(
+      dynamics::Inertia::verifySpatialTensor(asymmetricTopLeft, false));
+
+  Eigen::Matrix6d nonZeroBottomRight = Eigen::Matrix6d::Identity();
+  nonZeroBottomRight(4, 5) = 0.1;
+  EXPECT_FALSE(
+      dynamics::Inertia::verifySpatialTensor(nonZeroBottomRight, false));
+}
+
+//==============================================================================
+TEST(Inertia, Equality)
+{
+  dynamics::Inertia inertia1(
+      1.0, Eigen::Vector3d::Zero(), Eigen::Matrix3d::Identity());
+  dynamics::Inertia inertia2(
+      1.0, Eigen::Vector3d::Zero(), Eigen::Matrix3d::Identity());
+  dynamics::Inertia inertia3(
+      2.0, Eigen::Vector3d::Zero(), Eigen::Matrix3d::Identity());
+
+  EXPECT_TRUE(inertia1 == inertia2);
+  EXPECT_FALSE(inertia1 == inertia3);
+}
+
+//==============================================================================
+TEST(Inertia, SetLocalCOM)
+{
+  dynamics::Inertia inertia;
+  Eigen::Vector3d com(1.0, 2.0, 3.0);
+
+  inertia.setLocalCOM(com);
+
+  EXPECT_TRUE(inertia.getLocalCOM().isApprox(com));
+}
+
+//==============================================================================
+TEST(Inertia, SetMass)
+{
+  dynamics::Inertia inertia;
+
+  inertia.setMass(10.0);
+
+  EXPECT_DOUBLE_EQ(inertia.getMass(), 10.0);
+}
