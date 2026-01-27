@@ -200,3 +200,119 @@ TEST(MemoryManagerTest, AllocateByTypePool)
   // Deallocate using Type::Pool dispatch
   mm.deallocate(MemoryManager::Type::Pool, ptr, sizeof(int));
 }
+
+//==============================================================================
+TEST(MemoryManagerTest, GetDefault)
+{
+  // GetDefault should return the same instance
+  auto& mm1 = MemoryManager::GetDefault();
+  auto& mm2 = MemoryManager::GetDefault();
+  EXPECT_EQ(&mm1, &mm2);
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, AllocateByTypeBase)
+{
+  auto mm = MemoryManager();
+
+  // Allocate using Type::Base dispatch
+  auto* ptr = mm.allocate(MemoryManager::Type::Base, sizeof(int));
+  ASSERT_NE(ptr, nullptr);
+
+  // Deallocate using Type::Base dispatch
+  mm.deallocate(MemoryManager::Type::Base, ptr, sizeof(int));
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, MultipleAllocationSizes)
+{
+  auto mm = MemoryManager();
+
+  // Test various allocation sizes using FreeListAllocator
+  std::vector<std::pair<void*, size_t>> freeAllocations;
+  const std::vector<size_t> sizes = {1, 8, 16, 64, 128, 256, 1024, 4096};
+
+  for (auto size : sizes) {
+    auto* ptr = mm.allocateUsingFree(size);
+    ASSERT_NE(ptr, nullptr) << "Failed to allocate " << size << " bytes";
+    freeAllocations.emplace_back(ptr, size);
+  }
+
+  // Deallocate all
+  for (const auto& [ptr, size] : freeAllocations) {
+    mm.deallocateUsingFree(ptr, size);
+  }
+
+  // Test various allocation sizes using PoolAllocator
+  std::vector<std::pair<void*, size_t>> poolAllocations;
+
+  for (auto size : sizes) {
+    auto* ptr = mm.allocateUsingPool(size);
+    ASSERT_NE(ptr, nullptr) << "Failed to allocate " << size << " bytes";
+    poolAllocations.emplace_back(ptr, size);
+  }
+
+  // Deallocate all
+  for (const auto& [ptr, size] : poolAllocations) {
+    mm.deallocateUsingPool(ptr, size);
+  }
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, PrintAndStreamOperator)
+{
+  auto mm = MemoryManager();
+
+  // Test print() method
+  std::ostringstream oss1;
+  mm.print(oss1);
+  EXPECT_FALSE(oss1.str().empty());
+  EXPECT_NE(oss1.str().find("free_allocator"), std::string::npos);
+  EXPECT_NE(oss1.str().find("pool_allocator"), std::string::npos);
+  EXPECT_NE(oss1.str().find("base_allocator"), std::string::npos);
+
+  // Test print() with indent
+  std::ostringstream oss2;
+  mm.print(oss2, 4);
+  EXPECT_FALSE(oss2.str().empty());
+
+  // Test stream operator
+  std::ostringstream oss3;
+  oss3 << mm;
+  EXPECT_FALSE(oss3.str().empty());
+  EXPECT_NE(oss3.str().find("[MemoryManager]"), std::string::npos);
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, ConstructAndDestroyWithTypePool)
+{
+  auto mm = MemoryManager();
+  LifecycleTracker::reset();
+
+  // Construct using Pool type dispatch
+  auto* obj = mm.construct<LifecycleTracker>(MemoryManager::Type::Pool, 99);
+  ASSERT_NE(obj, nullptr);
+  EXPECT_EQ(LifecycleTracker::constructCount, 1);
+  EXPECT_EQ(obj->value, 99);
+
+  // Destroy using Pool type dispatch
+  mm.destroy<LifecycleTracker>(MemoryManager::Type::Pool, obj);
+  EXPECT_EQ(LifecycleTracker::destructCount, 1);
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, ConstructAndDestroyWithTypeBase)
+{
+  auto mm = MemoryManager();
+  LifecycleTracker::reset();
+
+  // Construct using Base type dispatch
+  auto* obj = mm.construct<LifecycleTracker>(MemoryManager::Type::Base, 77);
+  ASSERT_NE(obj, nullptr);
+  EXPECT_EQ(LifecycleTracker::constructCount, 1);
+  EXPECT_EQ(obj->value, 77);
+
+  // Destroy using Base type dispatch
+  mm.destroy<LifecycleTracker>(MemoryManager::Type::Base, obj);
+  EXPECT_EQ(LifecycleTracker::destructCount, 1);
+}

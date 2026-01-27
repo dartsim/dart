@@ -88,3 +88,49 @@ TEST(CollisionOption, CopyAssignment)
       original.allowNegativePenetrationDepthContacts);
   EXPECT_EQ(copy.collisionFilter, original.collisionFilter);
 }
+
+TEST(CollisionOption, EnableContactControlsContactGeneration)
+{
+  CollisionOption enabledOption(true, 100u);
+  EXPECT_TRUE(enabledOption.enableContact);
+
+  CollisionOption disabledOption(false, 100u);
+  EXPECT_FALSE(disabledOption.enableContact);
+}
+
+TEST(CollisionOption, MaxNumContactsVariousValues)
+{
+  CollisionOption option1(true, 1u);
+  EXPECT_EQ(option1.maxNumContacts, 1u);
+
+  CollisionOption option100(true, 100u);
+  EXPECT_EQ(option100.maxNumContacts, 100u);
+
+  CollisionOption optionMax(true, std::numeric_limits<std::size_t>::max());
+  EXPECT_EQ(optionMax.maxNumContacts, std::numeric_limits<std::size_t>::max());
+}
+
+TEST(CollisionOption, AllowNegativePenetrationDepth)
+{
+  CollisionOption defaultOption;
+  EXPECT_FALSE(defaultOption.allowNegativePenetrationDepthContacts);
+
+  CollisionOption allowNegative(true, 100u, nullptr, true);
+  EXPECT_TRUE(allowNegative.allowNegativePenetrationDepthContacts);
+
+  CollisionOption disallowNegative(true, 100u, nullptr, false);
+  EXPECT_FALSE(disallowNegative.allowNegativePenetrationDepthContacts);
+}
+
+TEST(CollisionOption, FilterCanBeSetAndCleared)
+{
+  CollisionOption option;
+  EXPECT_EQ(option.collisionFilter, nullptr);
+
+  auto filter = std::make_shared<BodyNodeCollisionFilter>();
+  option.collisionFilter = filter;
+  EXPECT_EQ(option.collisionFilter, filter);
+
+  option.collisionFilter = nullptr;
+  EXPECT_EQ(option.collisionFilter, nullptr);
+}

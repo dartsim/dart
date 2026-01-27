@@ -700,3 +700,150 @@ TEST(DegreeOfFreedomTests, FreeJointDofs)
     EXPECT_DOUBLE_EQ(dof->getCommand(), static_cast<double>(i) * 0.5);
   }
 }
+
+//==============================================================================
+// Test hasPositionLimit with infinite limits (no limits)
+TEST(DegreeOfFreedomTests, HasPositionLimitWithInfiniteLimits)
+{
+  auto skel = createRevoluteSkeleton();
+  auto* dof = skel->getDof(0);
+
+  // Set infinite limits (no limits)
+  dof->setPositionLowerLimit(-std::numeric_limits<double>::infinity());
+  dof->setPositionUpperLimit(std::numeric_limits<double>::infinity());
+
+  // With infinite limits, hasPositionLimit should return false
+  EXPECT_FALSE(dof->hasPositionLimit());
+
+  // Set finite limits
+  dof->setPositionLimits(-1.0, 1.0);
+  EXPECT_TRUE(dof->hasPositionLimit());
+
+  // Set only lower limit to finite
+  dof->setPositionLowerLimit(-1.0);
+  dof->setPositionUpperLimit(std::numeric_limits<double>::infinity());
+  EXPECT_TRUE(dof->hasPositionLimit());
+
+  // Set only upper limit to finite
+  dof->setPositionLowerLimit(-std::numeric_limits<double>::infinity());
+  dof->setPositionUpperLimit(1.0);
+  EXPECT_TRUE(dof->hasPositionLimit());
+}
+
+//==============================================================================
+// Test isCyclic behavior
+TEST(DegreeOfFreedomTests, IsCyclicBehavior)
+{
+  // Revolute joint with no limits should be cyclic
+  auto revSkel = createRevoluteSkeleton();
+  auto* revDof = revSkel->getDof(0);
+
+  // Set infinite limits (no limits) - should be cyclic
+  revDof->setPositionLowerLimit(-std::numeric_limits<double>::infinity());
+  revDof->setPositionUpperLimit(std::numeric_limits<double>::infinity());
+  EXPECT_TRUE(revDof->isCyclic());
+
+  // Set finite limits - should not be cyclic
+  revDof->setPositionLimits(-1.0, 1.0);
+  EXPECT_FALSE(revDof->isCyclic());
+
+  // Prismatic joint should not be cyclic (linear motion)
+  auto prisSkel = createPrismaticSkeleton();
+  auto* prisDof = prisSkel->getDof(0);
+  EXPECT_FALSE(prisDof->isCyclic());
+}
+
+//==============================================================================
+// Test DOF with parent body node (non-root joint)
+TEST(DegreeOfFreedomTests, NonRootJointParentBodyNode)
+{
+  auto skel = Skeleton::create("chain");
+
+  // Create first body (root)
+  auto pair1 = skel->createJointAndBodyNodePair<RevoluteJoint>(
+      nullptr,
+      RevoluteJoint::Properties(),
+      BodyNode::AspectProperties("body1"));
+  pair1.first->setName("joint1");
+
+  // Create second body attached to first
+  auto pair2 = skel->createJointAndBodyNodePair<RevoluteJoint>(
+      pair1.second,
+      RevoluteJoint::Properties(),
+      BodyNode::AspectProperties("body2"));
+  pair2.first->setName("joint2");
+
+  // Get DOF from second joint
+  auto* dof = skel->getDof(1);
+  ASSERT_NE(dof, nullptr);
+
+  // Parent body node should be body1
+  auto* parentBody = dof->getParentBodyNode();
+  ASSERT_NE(parentBody, nullptr);
+  EXPECT_EQ(parentBody->getName(), "body1");
+
+  // Child body node should be body2
+  auto* childBody = dof->getChildBodyNode();
+  ASSERT_NE(childBody, nullptr);
+  EXPECT_EQ(childBody->getName(), "body2");
+}
+
+//==============================================================================
+// Test individual lower/upper limit accessors
+TEST(DegreeOfFreedomTests, IndividualLimitAccessors)
+{
+  auto skel = createRevoluteSkeleton();
+  auto* dof = skel->getDof(0);
+
+  // Test position limits individually
+  dof->setPositionLowerLimit(-2.5);
+  EXPECT_DOUBLE_EQ(dof->getPositionLowerLimit(), -2.5);
+
+  dof->setPositionUpperLimit(3.5);
+  EXPECT_DOUBLE_EQ(dof->getPositionUpperLimit(), 3.5);
+
+  // Test velocity limits individually
+  dof->setVelocityLowerLimit(-15.0);
+  EXPECT_DOUBLE_EQ(dof->getVelocityLowerLimit(), -15.0);
+
+  dof->setVelocityUpperLimit(15.0);
+  EXPECT_DOUBLE_EQ(dof->getVelocityUpperLimit(), 15.0);
+
+  // Test acceleration limits individually
+  dof->setAccelerationLowerLimit(-200.0);
+  EXPECT_DOUBLE_EQ(dof->getAccelerationLowerLimit(), -200.0);
+
+  dof->setAccelerationUpperLimit(200.0);
+  EXPECT_DOUBLE_EQ(dof->getAccelerationUpperLimit(), 200.0);
+
+  // Test force limits individually
+  dof->setForceLowerLimit(-75.0);
+  EXPECT_DOUBLE_EQ(dof->getForceLowerLimit(), -75.0);
+
+  dof->setForceUpperLimit(75.0);
+  EXPECT_DOUBLE_EQ(dof->getForceUpperLimit(), 75.0);
+}
+
+//==============================================================================
+// Test getTreeIndex
+TEST(DegreeOfFreedomTests, TreeIndex)
+{
+  auto skel = createRevoluteSkeleton();
+  auto* dof = skel->getDof(0);
+
+  // Single skeleton has one tree, index should be 0
+  EXPECT_EQ(dof->getTreeIndex(), 0u);
+}
+
+//==============================================================================
+// Test const skeleton accessor
+TEST(DegreeOfFreedomTests, ConstSkeletonAccessor)
+{
+  auto skel = createRevoluteSkeleton("const_test_skeleton");
+  const auto* constDof = static_cast<const DegreeOfFreedom*>(skel->getDof(0));
+
+  // Get const skeleton
+  auto constSkel = constDof->getSkeleton();
+  ASSERT_NE(constSkel, nullptr);
+  EXPECT_EQ(constSkel->getName(), "const_test_skeleton");
+}

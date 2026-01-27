@@ -121,3 +121,156 @@ TEST(SkeletonAccessors, DofsLimitsAndMassMatrix)
   const auto com = skeleton->getCOM();
   EXPECT_TRUE(com.array().isFinite().all());
 }
+
+//==============================================================================
+TEST(SkeletonAccessors, TreeAccessors)
+{
+  // Create skeleton with single tree
+  auto skeleton = Skeleton::create("tree_test");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.second->setName("root");
+
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.second->setName("child");
+
+  // Single tree skeleton
+  EXPECT_EQ(skeleton->getNumTrees(), 1u);
+  EXPECT_EQ(skeleton->getRootBodyNode(0), rootPair.second);
+
+  // Get tree body nodes
+  auto treeNodes = skeleton->getTreeBodyNodes(0);
+  EXPECT_EQ(treeNodes.size(), 2u);
+
+  // Get tree DOFs
+  auto treeDofs = skeleton->getTreeDofs(0);
+  EXPECT_EQ(treeDofs.size(), skeleton->getNumDofs());
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, ComputeForwardDynamicsNoArgs)
+{
+  auto skeleton = Skeleton::create("fwd_dynamics");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setMass(1.0);
+
+  // Set some velocities
+  Eigen::VectorXd velocities = Eigen::VectorXd::Ones(skeleton->getNumDofs());
+  skeleton->setVelocities(velocities);
+
+  // Compute forward dynamics (no arguments version)
+  skeleton->computeForwardDynamics();
+
+  // Accelerations should be computed and finite
+  const auto accelerations = skeleton->getAccelerations();
+  EXPECT_EQ(accelerations.size(), static_cast<int>(skeleton->getNumDofs()));
+  EXPECT_TRUE(accelerations.array().isFinite().all());
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, IntegratePositions)
+{
+  auto skeleton = Skeleton::create("integrate_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  // Set initial position and velocity
+  skeleton->setPosition(0, 0.0);
+  skeleton->setVelocity(0, 1.0); // 1 rad/s
+
+  const double dt = 0.1;
+  const double initialPos = skeleton->getPosition(0);
+
+  // Integrate positions
+  skeleton->integratePositions(dt);
+
+  // Position should have changed by velocity * dt
+  const double expectedPos = initialPos + 1.0 * dt;
+  EXPECT_NEAR(skeleton->getPosition(0), expectedPos, 1e-10);
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, ClearConstraintImpulses)
+{
+  auto skeleton = Skeleton::create("impulse_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  skeleton->setJointConstraintImpulses(
+      Eigen::VectorXd::Ones(skeleton->getNumDofs()));
+
+  skeleton->clearConstraintImpulses();
+
+  const auto impulses = skeleton->getJointConstraintImpulses();
+  EXPECT_TRUE(impulses.isZero());
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, CenterOfMassAccessors)
+{
+  auto skeleton = Skeleton::create("com_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setMass(2.0);
+
+  // Set some velocity
+  Eigen::VectorXd velocities = Eigen::VectorXd::Zero(skeleton->getNumDofs());
+  velocities[3] = 1.0; // Linear velocity in x
+  skeleton->setVelocities(velocities);
+
+  // Get COM
+  const auto com = skeleton->getCOM();
+  EXPECT_TRUE(com.array().isFinite().all());
+
+  // Get COM linear velocity
+  const auto comVel = skeleton->getCOMLinearVelocity();
+  EXPECT_TRUE(comVel.array().isFinite().all());
+
+  // COM velocity should be non-zero since we set linear velocity
+  EXPECT_GT(comVel.norm(), 0.0);
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, SupportPolygon)
+{
+  auto skeleton = Skeleton::create("support_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setMass(1.0);
+
+  // Get support polygon (may be empty for floating base without end effectors)
+  const auto& polygon = skeleton->getSupportPolygon();
+
+  // Just verify it doesn't crash and returns valid data structure
+  // Empty polygon is valid for a skeleton without ground contact
+  EXPECT_TRUE(polygon.empty() || polygon.size() >= 3u);
+
+  // Also test tree-specific version
+  const auto& treePolygon = skeleton->getSupportPolygon(0);
+  EXPECT_TRUE(treePolygon.empty() || treePolygon.size() >= 3u);
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, IntegratePositionsWithVelocityChanges)
+{
+  auto skeleton = Skeleton::create("integrate_vel_change");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  // Set initial position and velocity
+  skeleton->setPosition(0, 0.0);
+  skeleton->setVelocity(0, 1.0);
+
+  const double dt = 0.1;
+  Eigen::VectorXd velocityChanges
+      = Eigen::VectorXd::Ones(skeleton->getNumDofs());
+  velocityChanges[0] = 0.5; // Additional velocity change
+
+  const double initialPos = skeleton->getPosition(0);
+
+  // Integrate with velocity changes
+  skeleton->integratePositions(dt, velocityChanges);
+
+  // Position should reflect both original velocity and velocity change
+  // Expected: initialPos + (velocity + velocityChange) * dt
+  const double expectedPos = initialPos + (1.0 + 0.5) * dt;
+  EXPECT_NEAR(skeleton->getPosition(0), expectedPos, 1e-10);
+}

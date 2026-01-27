@@ -347,3 +347,435 @@ TEST(SimpleFrameTest, PrimaryRelativeAcceleration)
 
   EXPECT_TRUE(frame->getPrimaryRelativeAcceleration().isApprox(accel));
 }
+
+//==============================================================================
+TEST(SimpleFrameTest, GetLinearVelocity)
+{
+  auto frame = SimpleFrame::createShared();
+
+  Eigen::Vector3d linearVel(1.0, 2.0, 3.0);
+  Eigen::Vector3d angularVel(0.1, 0.2, 0.3);
+
+  frame->setClassicDerivatives(linearVel, angularVel);
+
+  Eigen::Vector3d retrievedLinVel = frame->getLinearVelocity();
+
+  EXPECT_FALSE(retrievedLinVel.isZero());
+}
+
+//==============================================================================
+TEST(SimpleFrameTest, GetAngularVelocity)
+{
+  auto frame = SimpleFrame::createShared();
+
+  Eigen::Vector3d linearVel(1.0, 2.0, 3.0);
+  Eigen::Vector3d angularVel(0.5, 0.6, 0.7);
+
+  frame->setClassicDerivatives(linearVel, angularVel);
+
+  Eigen::Vector3d retrievedAngVel = frame->getAngularVelocity();
+
+  EXPECT_FALSE(retrievedAngVel.isZero());
+}
+
+//==============================================================================
+TEST(SimpleFrameTest, GetLinearAcceleration)
+{
+  auto frame = SimpleFrame::createShared();
+
+  Eigen::Vector3d linearVel(0.0, 0.0, 0.0);
+  Eigen::Vector3d angularVel(0.0, 0.0, 0.0);
+  Eigen::Vector3d linearAccel(1.0, 2.0, 3.0);
+  Eigen::Vector3d angularAccel(0.1, 0.2, 0.3);
+
+  frame->setClassicDerivatives(
+      linearVel, angularVel, linearAccel, angularAccel);
+
+  Eigen::Vector3d retrievedLinAccel = frame->getLinearAcceleration();
+
+  EXPECT_FALSE(retrievedLinAccel.isZero());
+}
+
+//==============================================================================
+TEST(SimpleFrameTest, GetAngularAcceleration)
+{
+  auto frame = SimpleFrame::createShared();
+
+  Eigen::Vector3d linearVel(0.0, 0.0, 0.0);
+  Eigen::Vector3d angularVel(0.0, 0.0, 0.0);
+  Eigen::Vector3d linearAccel(0.0, 0.0, 0.0);
+  Eigen::Vector3d angularAccel(0.5, 0.6, 0.7);
+
+  frame->setClassicDerivatives(
+      linearVel, angularVel, linearAccel, angularAccel);
+
+  Eigen::Vector3d retrievedAngAccel = frame->getAngularAcceleration();
+
+  EXPECT_FALSE(retrievedAngAccel.isZero());
+}
+
+//==============================================================================
+TEST(SimpleFrameTest, FrameHierarchyParentChild)
+{
+  auto parent = SimpleFrame::createShared(Frame::World(), "parent");
+  auto child = parent->spawnChildSimpleFrame("child");
+  auto grandchild = child->spawnChildSimpleFrame("grandchild");
+
+  EXPECT_EQ(parent->getParentFrame(), Frame::World());
+  EXPECT_EQ(child->getParentFrame(), parent.get());
+  EXPECT_EQ(grandchild->getParentFrame(), child.get());
+
+  EXPECT_EQ(parent->getNumChildFrames(), 1u);
+  EXPECT_EQ(child->getNumChildFrames(), 1u);
+  EXPECT_EQ(grandchild->getNumChildFrames(), 0u);
+}
+
+//==============================================================================
+TEST(SimpleFrameTest, DescendsFromAncestry)
+{
+  auto frameA = SimpleFrame::createShared(Frame::World(), "A");
+  auto frameB = frameA->spawnChildSimpleFrame("B");
+  auto frameC = frameB->spawnChildSimpleFrame("C");
+
+  EXPECT_TRUE(frameC->descendsFrom(frameB.get()));
+  EXPECT_TRUE(frameC->descendsFrom(frameA.get()));
+  EXPECT_TRUE(frameC->descendsFrom(Frame::World()));
+
+  EXPECT_TRUE(frameB->descendsFrom(frameA.get()));
+  EXPECT_TRUE(frameB->descendsFrom(Frame::World()));
+  EXPECT_FALSE(frameB->descendsFrom(frameC.get()));
+
+  EXPECT_TRUE(frameA->descendsFrom(Frame::World()));
+  EXPECT_FALSE(frameA->descendsFrom(frameB.get()));
+  EXPECT_FALSE(frameA->descendsFrom(frameC.get()));
+
+  EXPECT_TRUE(frameC->descendsFrom(frameC.get()));
+  EXPECT_TRUE(frameB->descendsFrom(frameB.get()));
+  EXPECT_TRUE(frameA->descendsFrom(frameA.get()));
+}
+
+//==============================================================================
+TEST(SimpleFrameTest, NestedTransformChain)
+{
+  auto parent = SimpleFrame::createShared(Frame::World(), "parent");
+  Eigen::Isometry3d parentTf = Eigen::Isometry3d::Identity();
+  parentTf.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+  parent->setRelativeTransform(parentTf);
+
+  auto child = parent->spawnChildSimpleFrame("child");
+  Eigen::Isometry3d childTf = Eigen::Isometry3d::Identity();
+  childTf.translation() = Eigen::Vector3d(0.0, 2.0, 0.0);
+  child->setRelativeTransform(childTf);
+
+  auto grandchild = child->spawnChildSimpleFrame("grandchild");
+  Eigen::Isometry3d grandchildTf = Eigen::Isometry3d::Identity();
+  grandchildTf.translation() = Eigen::Vector3d(0.0, 0.0, 3.0);
+  grandchild->setRelativeTransform(grandchildTf);
+
+  Eigen::Isometry3d expectedWorld = parentTf * childTf * grandchildTf;
+  EXPECT_TRUE(grandchild->getWorldTransform().isApprox(expectedWorld));
+
+  EXPECT_TRUE(grandchild->getRelativeTransform().isApprox(grandchildTf));
+}
+
+//==============================================================================
+TEST(SimpleFrameTest, VelocityRelativeToFrame)
+{
+  auto parent = SimpleFrame::createShared(Frame::World(), "parent");
+  auto child = parent->spawnChildSimpleFrame("child");
+
+  Eigen::Vector3d parentLinVel(1.0, 0.0, 0.0);
+  Eigen::Vector3d parentAngVel(0.0, 0.0, 0.0);
+  parent->setClassicDerivatives(parentLinVel, parentAngVel);
+
+  Eigen::Vector3d childLinVel(0.0, 1.0, 0.0);
+  Eigen::Vector3d childAngVel(0.0, 0.0, 0.0);
+  child->setClassicDerivatives(childLinVel, childAngVel);
+
+  Eigen::Vector3d childWorldVel = child->getLinearVelocity();
+  EXPECT_FALSE(childWorldVel.isZero());
+
+  Eigen::Vector3d childRelVel
+      = child->getLinearVelocity(parent.get(), Frame::World());
+  EXPECT_FALSE(childRelVel.isZero());
+}
+
+//==============================================================================
+// Entity Tests - Testing Entity base class functionality via SimpleFrame
+//==============================================================================
+
+//==============================================================================
+TEST(EntityTest, GetNameAndSetName)
+{
+  auto frame = SimpleFrame::createShared(Frame::World(), "initial_name");
+
+  EXPECT_EQ(frame->getName(), "initial_name");
+
+  frame->setName("updated_name");
+  EXPECT_EQ(frame->getName(), "updated_name");
+
+  // Test empty name
+  frame->setName("");
+  EXPECT_EQ(frame->getName(), "");
+
+  // Test name with special characters
+  frame->setName("frame_with_123_and_special");
+  EXPECT_EQ(frame->getName(), "frame_with_123_and_special");
+}
+
+//==============================================================================
+TEST(EntityTest, GetParentFrame)
+{
+  auto parent = SimpleFrame::createShared(Frame::World(), "parent");
+  auto child = parent->spawnChildSimpleFrame("child");
+
+  // Test getParentFrame returns correct parent
+  EXPECT_EQ(child->getParentFrame(), parent.get());
+  EXPECT_EQ(parent->getParentFrame(), Frame::World());
+
+  // Test const version
+  const Frame* constParent = child->getParentFrame();
+  EXPECT_EQ(constParent, parent.get());
+}
+
+//==============================================================================
+TEST(EntityTest, SetParentFrameDetachable)
+{
+  auto frame1 = SimpleFrame::createShared(Frame::World(), "frame1");
+  auto frame2 = SimpleFrame::createShared(Frame::World(), "frame2");
+  auto child = frame1->spawnChildSimpleFrame("child");
+
+  EXPECT_EQ(child->getParentFrame(), frame1.get());
+
+  // Change parent frame using setParentFrame (Detachable functionality)
+  child->setParentFrame(frame2.get());
+  EXPECT_EQ(child->getParentFrame(), frame2.get());
+
+  // Change back to World
+  child->setParentFrame(Frame::World());
+  EXPECT_EQ(child->getParentFrame(), Frame::World());
+}
+
+//==============================================================================
+TEST(EntityTest, DescendsFromNullptr)
+{
+  auto frame = SimpleFrame::createShared(Frame::World(), "frame");
+
+  // descendsFrom(nullptr) should return true per documentation
+  EXPECT_TRUE(frame->descendsFrom(nullptr));
+}
+
+//==============================================================================
+TEST(EntityTest, DescendsFromSelf)
+{
+  auto frame = SimpleFrame::createShared(Frame::World(), "frame");
+
+  // Entity should descend from itself
+  EXPECT_TRUE(frame->descendsFrom(frame.get()));
+}
+
+//==============================================================================
+TEST(EntityTest, DescendsFromUnrelatedFrame)
+{
+  auto frame1 = SimpleFrame::createShared(Frame::World(), "frame1");
+  auto frame2 = SimpleFrame::createShared(Frame::World(), "frame2");
+
+  // Sibling frames should not descend from each other
+  EXPECT_FALSE(frame1->descendsFrom(frame2.get()));
+  EXPECT_FALSE(frame2->descendsFrom(frame1.get()));
+}
+
+//==============================================================================
+TEST(EntityTest, IsFrame)
+{
+  auto frame = SimpleFrame::createShared(Frame::World(), "frame");
+
+  // SimpleFrame is a Frame, so isFrame() should return true
+  EXPECT_TRUE(frame->isFrame());
+}
+
+//==============================================================================
+TEST(EntityTest, IsQuiet)
+{
+  // Default SimpleFrame is not quiet
+  auto frame = SimpleFrame::createShared(Frame::World(), "frame");
+  EXPECT_FALSE(frame->isQuiet());
+}
+
+//==============================================================================
+TEST(EntityTest, NeedsTransformUpdate)
+{
+  auto frame = SimpleFrame::createShared(Frame::World(), "frame");
+
+  // After creation, transform update may be needed
+  // After getting transform, it should be updated
+  [[maybe_unused]] auto tf = frame->getWorldTransform();
+  EXPECT_FALSE(frame->needsTransformUpdate());
+
+  // After dirtying, update should be needed
+  frame->dirtyTransform();
+  EXPECT_TRUE(frame->needsTransformUpdate());
+}
+
+//==============================================================================
+TEST(EntityTest, NeedsVelocityUpdate)
+{
+  auto frame = SimpleFrame::createShared(Frame::World(), "frame");
+
+  // After getting velocity, it should be updated
+  [[maybe_unused]] auto vel = frame->getSpatialVelocity();
+  EXPECT_FALSE(frame->needsVelocityUpdate());
+
+  // After dirtying, update should be needed
+  frame->dirtyVelocity();
+  EXPECT_TRUE(frame->needsVelocityUpdate());
+}
+
+//==============================================================================
+TEST(EntityTest, NeedsAccelerationUpdate)
+{
+  auto frame = SimpleFrame::createShared(Frame::World(), "frame");
+
+  // After getting acceleration, it should be updated
+  [[maybe_unused]] auto accel = frame->getSpatialAcceleration();
+  EXPECT_FALSE(frame->needsAccelerationUpdate());
+
+  // After dirtying, update should be needed
+  frame->dirtyAcceleration();
+  EXPECT_TRUE(frame->needsAccelerationUpdate());
+}
+
+//==============================================================================
+TEST(EntityTest, FrameChangedSignal)
+{
+  auto frame1 = SimpleFrame::createShared(Frame::World(), "frame1");
+  auto frame2 = SimpleFrame::createShared(Frame::World(), "frame2");
+  auto child = frame1->spawnChildSimpleFrame("child");
+
+  bool signalReceived = false;
+  const Frame* oldFrameReceived = nullptr;
+  const Frame* newFrameReceived = nullptr;
+
+  // Connect to the frame changed signal
+  auto connection = child->onFrameChanged.connect(
+      [&](const Entity*, const Frame* oldFrame, const Frame* newFrame) {
+        signalReceived = true;
+        oldFrameReceived = oldFrame;
+        newFrameReceived = newFrame;
+      });
+
+  // Change parent frame
+  child->setParentFrame(frame2.get());
+
+  EXPECT_TRUE(signalReceived);
+  EXPECT_EQ(oldFrameReceived, frame1.get());
+  EXPECT_EQ(newFrameReceived, frame2.get());
+}
+
+//==============================================================================
+TEST(EntityTest, NameChangedSignal)
+{
+  auto frame = SimpleFrame::createShared(Frame::World(), "original");
+
+  bool signalReceived = false;
+  std::string oldNameReceived;
+  std::string newNameReceived;
+
+  // Connect to the name changed signal
+  auto connection
+      = frame->onNameChanged.connect([&](const Entity*,
+                                         const std::string& oldName,
+                                         const std::string& newName) {
+          signalReceived = true;
+          oldNameReceived = oldName;
+          newNameReceived = newName;
+        });
+
+  // Change name
+  frame->setName("renamed");
+
+  EXPECT_TRUE(signalReceived);
+  EXPECT_EQ(oldNameReceived, "original");
+  EXPECT_EQ(newNameReceived, "renamed");
+}
+
+//==============================================================================
+TEST(EntityTest, TransformUpdatedSignal)
+{
+  auto frame = SimpleFrame::createShared(Frame::World(), "frame");
+
+  bool signalReceived = false;
+
+  // Connect to the transform updated signal
+  auto connection = frame->onTransformUpdated.connect(
+      [&](const Entity*) { signalReceived = true; });
+
+  // Dirty the transform (should trigger signal)
+  frame->dirtyTransform();
+
+  EXPECT_TRUE(signalReceived);
+}
+
+//==============================================================================
+TEST(EntityTest, VelocityChangedSignal)
+{
+  auto frame = SimpleFrame::createShared(Frame::World(), "frame");
+
+  bool signalReceived = false;
+
+  // Connect to the velocity changed signal
+  auto connection = frame->onVelocityChanged.connect(
+      [&](const Entity*) { signalReceived = true; });
+
+  // Dirty the velocity (should trigger signal)
+  frame->dirtyVelocity();
+
+  EXPECT_TRUE(signalReceived);
+}
+
+//==============================================================================
+TEST(EntityTest, AccelerationChangedSignal)
+{
+  auto frame = SimpleFrame::createShared(Frame::World(), "frame");
+
+  bool signalReceived = false;
+
+  // Connect to the acceleration changed signal
+  auto connection = frame->onAccelerationChanged.connect(
+      [&](const Entity*) { signalReceived = true; });
+
+  // Dirty the acceleration (should trigger signal)
+  frame->dirtyAcceleration();
+
+  EXPECT_TRUE(signalReceived);
+}
+
+//==============================================================================
+TEST(EntityTest, ParentFrameChangePropagatesToChildren)
+{
+  auto grandparent = SimpleFrame::createShared(Frame::World(), "grandparent");
+  auto parent = grandparent->spawnChildSimpleFrame("parent");
+  auto child = parent->spawnChildSimpleFrame("child");
+
+  // Set up transforms
+  Eigen::Isometry3d gpTf = Eigen::Isometry3d::Identity();
+  gpTf.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+  grandparent->setRelativeTransform(gpTf);
+
+  Eigen::Isometry3d pTf = Eigen::Isometry3d::Identity();
+  pTf.translation() = Eigen::Vector3d(0.0, 1.0, 0.0);
+  parent->setRelativeTransform(pTf);
+
+  Eigen::Isometry3d cTf = Eigen::Isometry3d::Identity();
+  cTf.translation() = Eigen::Vector3d(0.0, 0.0, 1.0);
+  child->setRelativeTransform(cTf);
+
+  // Verify child's world transform
+  Eigen::Isometry3d expectedWorld = gpTf * pTf * cTf;
+  EXPECT_TRUE(child->getWorldTransform().isApprox(expectedWorld));
+
+  // Verify ancestry
+  EXPECT_TRUE(child->descendsFrom(parent.get()));
+  EXPECT_TRUE(child->descendsFrom(grandparent.get()));
+  EXPECT_TRUE(parent->descendsFrom(grandparent.get()));
+}

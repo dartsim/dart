@@ -104,12 +104,23 @@ TEST(BallJointTest, NumDofs)
 }
 
 //==============================================================================
-TEST(BallJointTest, GetType)
+TEST(JointTest, TransformAccessorsMultiDof)
 {
   auto skel = createSkeletonWithJoint<BallJoint>("ball");
   auto joint = skel->getJoint(0);
 
-  EXPECT_EQ(joint->getType(), BallJoint::getStaticType());
+  Eigen::Isometry3d tfParent = Eigen::Isometry3d::Identity();
+  tfParent.translation() = Eigen::Vector3d(0.5, 0.5, 0.5);
+  tfParent.linear()
+      = Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  joint->setTransformFromParentBodyNode(tfParent);
+  EXPECT_TRUE(
+      joint->getTransformFromParentBodyNode().isApprox(tfParent, 1e-10));
+
+  Eigen::Isometry3d tfChild = Eigen::Isometry3d::Identity();
+  tfChild.translation() = Eigen::Vector3d(-0.25, -0.25, -0.25);
+  joint->setTransformFromChildBodyNode(tfChild);
+  EXPECT_TRUE(joint->getTransformFromChildBodyNode().isApprox(tfChild, 1e-10));
 }
 
 //==============================================================================
@@ -431,4 +442,106 @@ TEST(JointTest, TransformFromChildBodyNode)
   joint->setTransformFromChildBodyNode(tf);
 
   EXPECT_TRUE(joint->getTransformFromChildBodyNode().isApprox(tf));
+}
+
+//==============================================================================
+TEST(JointTest, GetSetPositions)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("free");
+  auto joint = skel->getJoint(0);
+
+  Eigen::Vector6d positions;
+  positions << 0.1, 0.2, 0.3, 1.0, 2.0, 3.0;
+
+  joint->setPositions(positions);
+  Eigen::VectorXd retrieved = joint->getPositions();
+
+  EXPECT_EQ(retrieved.size(), 6);
+  EXPECT_TRUE(retrieved.isApprox(positions));
+}
+
+//==============================================================================
+TEST(JointTest, GetSetVelocities)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("free");
+  auto joint = skel->getJoint(0);
+
+  Eigen::Vector6d velocities;
+  velocities << 0.5, 1.0, 1.5, 2.0, 2.5, 3.0;
+
+  joint->setVelocities(velocities);
+  Eigen::VectorXd retrieved = joint->getVelocities();
+
+  EXPECT_EQ(retrieved.size(), 6);
+  EXPECT_TRUE(retrieved.isApprox(velocities));
+}
+
+//==============================================================================
+TEST(JointTest, GetSetAccelerations)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("free");
+  auto joint = skel->getJoint(0);
+
+  Eigen::Vector6d accelerations;
+  accelerations << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6;
+
+  joint->setAccelerations(accelerations);
+  Eigen::VectorXd retrieved = joint->getAccelerations();
+
+  EXPECT_EQ(retrieved.size(), 6);
+  EXPECT_TRUE(retrieved.isApprox(accelerations));
+}
+
+//==============================================================================
+TEST(JointTest, GetSetForces)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("free");
+  auto joint = skel->getJoint(0);
+
+  Eigen::Vector6d forces;
+  forces << 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
+
+  joint->setForces(forces);
+  Eigen::VectorXd retrieved = joint->getForces();
+
+  EXPECT_EQ(retrieved.size(), 6);
+  EXPECT_TRUE(retrieved.isApprox(forces));
+}
+
+//==============================================================================
+TEST(JointTest, GetPositionLimits)
+{
+  auto skel = createSkeletonWithJoint<TranslationalJoint>("translational");
+  auto joint = skel->getJoint(0);
+
+  Eigen::Vector3d lowerLimits(-1.0, -2.0, -3.0);
+  Eigen::Vector3d upperLimits(1.0, 2.0, 3.0);
+
+  for (std::size_t i = 0; i < 3; ++i) {
+    joint->setPositionLowerLimit(i, lowerLimits[i]);
+    joint->setPositionUpperLimit(i, upperLimits[i]);
+  }
+
+  Eigen::VectorXd retrievedLower = joint->getPositionLowerLimits();
+  Eigen::VectorXd retrievedUpper = joint->getPositionUpperLimits();
+
+  EXPECT_EQ(retrievedLower.size(), 3);
+  EXPECT_EQ(retrievedUpper.size(), 3);
+  EXPECT_TRUE(retrievedLower.isApprox(lowerLimits));
+  EXPECT_TRUE(retrievedUpper.isApprox(upperLimits));
+}
+
+//==============================================================================
+TEST(JointTest, HasPositionLimit)
+{
+  auto skel = createSkeletonWithJoint<PrismaticJoint>("prismatic");
+  auto joint = skel->getJoint(0);
+
+  joint->setPositionLowerLimit(0, -1.0);
+  joint->setPositionUpperLimit(0, 1.0);
+  EXPECT_TRUE(joint->hasPositionLimit(0));
+
+  joint->setPositionLowerLimit(0, -std::numeric_limits<double>::infinity());
+  joint->setPositionUpperLimit(0, std::numeric_limits<double>::infinity());
+  EXPECT_FALSE(joint->hasPositionLimit(0));
 }
