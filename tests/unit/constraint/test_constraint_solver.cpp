@@ -501,3 +501,115 @@ TEST(ConstraintSolver, AddRemoveConstraint)
 
   EXPECT_NO_THROW(solver.removeConstraint(constraint));
 }
+
+//==============================================================================
+TEST(ConstraintSolver, SetFromOtherConstraintSolver)
+{
+  constraint::ConstraintSolver source;
+  source.setSplitImpulseEnabled(true);
+
+  auto skeleton1 = dynamics::Skeleton::create("skel1");
+  auto skeleton2 = dynamics::Skeleton::create("skel2");
+  source.addSkeleton(skeleton1);
+  source.addSkeleton(skeleton2);
+
+  auto constraint = std::make_shared<DummyConstraint>(skeleton1);
+  source.addConstraint(constraint);
+
+  constraint::ConstraintSolver target;
+  target.setFromOtherConstraintSolver(source);
+
+  EXPECT_TRUE(target.isSplitImpulseEnabled());
+  EXPECT_EQ(target.getSkeletons().size(), 2u);
+  EXPECT_EQ(target.getNumConstraints(), 1u);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, AddSkeletonsBatch)
+{
+  constraint::ConstraintSolver solver;
+
+  auto skeleton1 = dynamics::Skeleton::create("batch1");
+  auto skeleton2 = dynamics::Skeleton::create("batch2");
+  auto skeleton3 = dynamics::Skeleton::create("batch3");
+
+  std::vector<dynamics::SkeletonPtr> skeletons
+      = {skeleton1, skeleton2, skeleton3};
+  solver.addSkeletons(skeletons);
+
+  EXPECT_EQ(solver.getSkeletons().size(), 3u);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, RemoveSkeletonsBatch)
+{
+  constraint::ConstraintSolver solver;
+
+  auto skeleton1 = dynamics::Skeleton::create("remove1");
+  auto skeleton2 = dynamics::Skeleton::create("remove2");
+  auto skeleton3 = dynamics::Skeleton::create("remove3");
+
+  std::vector<dynamics::SkeletonPtr> skeletons
+      = {skeleton1, skeleton2, skeleton3};
+  solver.addSkeletons(skeletons);
+  ASSERT_EQ(solver.getSkeletons().size(), 3u);
+
+  std::vector<dynamics::SkeletonPtr> toRemove = {skeleton1, skeleton3};
+  solver.removeSkeletons(toRemove);
+
+  EXPECT_EQ(solver.getSkeletons().size(), 1u);
+  EXPECT_EQ(solver.getSkeletons()[0], skeleton2);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, RemoveAllSkeletons)
+{
+  constraint::ConstraintSolver solver;
+
+  auto skeleton1 = dynamics::Skeleton::create("all1");
+  auto skeleton2 = dynamics::Skeleton::create("all2");
+  solver.addSkeleton(skeleton1);
+  solver.addSkeleton(skeleton2);
+  ASSERT_EQ(solver.getSkeletons().size(), 2u);
+
+  solver.removeAllSkeletons();
+
+  EXPECT_EQ(solver.getSkeletons().size(), 0u);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SkeletonCountTracking)
+{
+  constraint::ConstraintSolver solver;
+
+  EXPECT_EQ(solver.getSkeletons().size(), 0u);
+
+  auto skeleton1 = dynamics::Skeleton::create("num1");
+  solver.addSkeleton(skeleton1);
+  EXPECT_EQ(solver.getSkeletons().size(), 1u);
+
+  auto skeleton2 = dynamics::Skeleton::create("num2");
+  solver.addSkeleton(skeleton2);
+  EXPECT_EQ(solver.getSkeletons().size(), 2u);
+
+  solver.removeSkeleton(skeleton1);
+  EXPECT_EQ(solver.getSkeletons().size(), 1u);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, GetLastCollisionResult)
+{
+  constraint::ConstraintSolver solver;
+  auto skeleton = dynamics::Skeleton::create("collision_test");
+  solver.addSkeleton(skeleton);
+
+  // Before solve, collision result should be empty
+  const auto& result = solver.getLastCollisionResult();
+  EXPECT_EQ(result.getNumContacts(), 0u);
+
+  // Solve with no collisions
+  solver.solve();
+
+  // After solve with no colliding bodies, still no contacts
+  EXPECT_EQ(solver.getLastCollisionResult().getNumContacts(), 0u);
+}
