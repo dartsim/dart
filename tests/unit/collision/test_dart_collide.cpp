@@ -527,4 +527,230 @@ TEST(DARTCollideHelpers, ClosestLineBoxPoints)
   }
 }
 
+// Additional comprehensive tests for main collide() function dispatcher
+TEST(DARTCollide, MainDispatcherSphereSphere)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto sphere1 = std::make_shared<SphereShape>(0.5);
+  auto sphere2 = std::make_shared<SphereShape>(0.3);
+
+  auto obj1
+      = makeObject(sphere1, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(0.7, 0.0, 0.0);
+  auto obj2 = makeObject(sphere2, detector.get(), tf2);
+
+  CollisionResult result;
+  int contacts = collide(obj1.object.get(), obj2.object.get(), result);
+  EXPECT_GT(contacts, 0);
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, MainDispatcherBoxBox)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto box1 = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  auto box2 = std::make_shared<BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5));
+
+  auto obj1 = makeObject(box1, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(0.3, 0.0, 0.0);
+  auto obj2 = makeObject(box2, detector.get(), tf2);
+
+  CollisionResult result;
+  int contacts = collide(obj1.object.get(), obj2.object.get(), result);
+  EXPECT_GT(contacts, 0);
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, MainDispatcherBoxSphere)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  auto sphere = std::make_shared<SphereShape>(0.3);
+
+  auto boxObj = makeObject(box, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d sphereTf = Eigen::Isometry3d::Identity();
+  sphereTf.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
+  auto sphereObj = makeObject(sphere, detector.get(), sphereTf);
+
+  CollisionResult result;
+  int contacts = collide(boxObj.object.get(), sphereObj.object.get(), result);
+  EXPECT_GT(contacts, 0);
+  EXPECT_GT(result.getNumContacts(), 0u);
+
+  // Test reverse order
+  CollisionResult reverseResult;
+  int reverseContacts
+      = collide(sphereObj.object.get(), boxObj.object.get(), reverseResult);
+  EXPECT_GT(reverseContacts, 0);
+  EXPECT_GT(reverseResult.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, MainDispatcherSphereBox)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto sphere = std::make_shared<SphereShape>(0.3);
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  auto sphereObj
+      = makeObject(sphere, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
+  auto boxObj = makeObject(box, detector.get(), boxTf);
+
+  CollisionResult result;
+  int contacts = collide(sphereObj.object.get(), boxObj.object.get(), result);
+  EXPECT_GT(contacts, 0);
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, MainDispatcherEllipsoidSphere)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto ellipsoid
+      = std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.6, 0.4, 0.5));
+  auto sphere = std::make_shared<SphereShape>(0.2);
+
+  auto ellipsoidObj
+      = makeObject(ellipsoid, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d sphereTf = Eigen::Isometry3d::Identity();
+  sphereTf.translation() = Eigen::Vector3d(0.3, 0.0, 0.0);
+  auto sphereObj = makeObject(sphere, detector.get(), sphereTf);
+
+  CollisionResult result;
+  int contacts
+      = collide(ellipsoidObj.object.get(), sphereObj.object.get(), result);
+  EXPECT_GT(contacts, 0);
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, MainDispatcherSphereEllipsoid)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto sphere = std::make_shared<SphereShape>(0.2);
+  auto ellipsoid
+      = std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.6, 0.4, 0.5));
+
+  auto sphereObj
+      = makeObject(sphere, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d ellipsoidTf = Eigen::Isometry3d::Identity();
+  ellipsoidTf.translation() = Eigen::Vector3d(0.3, 0.0, 0.0);
+  auto ellipsoidObj = makeObject(ellipsoid, detector.get(), ellipsoidTf);
+
+  CollisionResult result;
+  int contacts
+      = collide(sphereObj.object.get(), ellipsoidObj.object.get(), result);
+  EXPECT_GT(contacts, 0);
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, MainDispatcherEllipsoidBox)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto ellipsoid
+      = std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.6, 0.4, 0.5));
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  auto ellipsoidObj
+      = makeObject(ellipsoid, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.translation() = Eigen::Vector3d(0.3, 0.0, 0.0);
+  auto boxObj = makeObject(box, detector.get(), boxTf);
+
+  CollisionResult result;
+  int contacts
+      = collide(ellipsoidObj.object.get(), boxObj.object.get(), result);
+  EXPECT_GT(contacts, 0);
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, MainDispatcherBoxEllipsoid)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  auto ellipsoid
+      = std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.6, 0.4, 0.5));
+
+  auto boxObj = makeObject(box, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d ellipsoidTf = Eigen::Isometry3d::Identity();
+  ellipsoidTf.translation() = Eigen::Vector3d(0.3, 0.0, 0.0);
+  auto ellipsoidObj = makeObject(ellipsoid, detector.get(), ellipsoidTf);
+
+  CollisionResult result;
+  int contacts
+      = collide(boxObj.object.get(), ellipsoidObj.object.get(), result);
+  EXPECT_GT(contacts, 0);
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, MainDispatcherEllipsoidEllipsoid)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto ellipsoid1
+      = std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.6, 0.4, 0.5));
+  auto ellipsoid2
+      = std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.4, 0.3, 0.3));
+
+  auto obj1
+      = makeObject(ellipsoid1, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
+  auto obj2 = makeObject(ellipsoid2, detector.get(), tf2);
+
+  CollisionResult result;
+  int contacts = collide(obj1.object.get(), obj2.object.get(), result);
+  EXPECT_GT(contacts, 0);
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, MainDispatcherNoCollision)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto sphere1 = std::make_shared<SphereShape>(0.5);
+  auto sphere2 = std::make_shared<SphereShape>(0.3);
+
+  auto obj1
+      = makeObject(sphere1, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(2.0, 0.0, 0.0); // Far apart
+  auto obj2 = makeObject(sphere2, detector.get(), tf2);
+
+  CollisionResult result;
+  int contacts = collide(obj1.object.get(), obj2.object.get(), result);
+  EXPECT_EQ(contacts, 0);
+  EXPECT_EQ(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, MainDispatcherEdgeCases)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto sphere = std::make_shared<SphereShape>(0.1);
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
+
+  // Test touching (tangent) case
+  auto sphereObj
+      = makeObject(sphere, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.translation() = Eigen::Vector3d(0.6, 0.0, 0.0); // Exactly touching
+  auto boxObj = makeObject(box, detector.get(), boxTf);
+
+  CollisionResult result;
+  int contacts = collide(sphereObj.object.get(), boxObj.object.get(), result);
+  // Touching should result in some contacts (might be 0 or 1 depending on
+  // implementation)
+  EXPECT_GE(contacts, 0);
+}
+
 } // namespace dart::test

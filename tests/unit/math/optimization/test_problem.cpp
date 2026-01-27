@@ -5,10 +5,14 @@
  * This file is provided under the BSD-style License.
  */
 
+#include "dart/math/optimization/function.hpp"
 #include "dart/math/optimization/gradient_descent_solver.hpp"
 #include "dart/math/optimization/problem.hpp"
+#include "dart/math/optimization/solver.hpp"
 
 #include <gtest/gtest.h>
+
+#include <sstream>
 
 using namespace dart::math;
 
@@ -269,4 +273,106 @@ TEST(GradientDescentSolverTest, RandomizeAndClamp)
   auto clone = solver.clone();
   ASSERT_NE(clone, nullptr);
   EXPECT_EQ(clone->getType(), GradientDescentSolver::Type);
+}
+
+TEST(FunctionTest, NameAndGradientWrapper)
+{
+  SimpleFunction func("custom");
+  EXPECT_EQ(func.getName(), "custom");
+
+  func.setName("renamed");
+  EXPECT_EQ(func.getName(), "renamed");
+
+  Eigen::Vector2d x(1.0, -2.0);
+  Eigen::VectorXd grad(2);
+  grad.setZero();
+  Eigen::Map<Eigen::VectorXd> gradMap(grad.data(), grad.size());
+  func.evalGradient(x, gradMap);
+  EXPECT_TRUE(grad.isApprox(2.0 * x));
+}
+
+TEST(ModularFunctionTest, DefaultAndCustomFunctions)
+{
+  ModularFunction func("modular");
+  func.clearCostFunction(false);
+
+  Eigen::Vector2d x(2.0, 3.0);
+  EXPECT_DOUBLE_EQ(func.eval(x), 0.0);
+
+  func.setCostFunction(
+      [](const Eigen::VectorXd& values) { return values.sum(); });
+  EXPECT_DOUBLE_EQ(func.eval(x), 5.0);
+
+  func.setGradientFunction(
+      [](const Eigen::VectorXd& values, Eigen::Map<Eigen::VectorXd> grad) {
+        grad = values.array() * 2.0;
+      });
+  Eigen::VectorXd grad(2);
+  grad.setZero();
+  Eigen::Map<Eigen::VectorXd> gradMap(grad.data(), grad.size());
+  func.evalGradient(x, gradMap);
+  EXPECT_TRUE(grad.isApprox(2.0 * x));
+
+  func.setHessianFunction(
+      [](const Eigen::VectorXd& values,
+         Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> hess) {
+        hess.setZero();
+        hess[0] = values[0];
+      });
+  Eigen::VectorXd hess(4);
+  Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> hessMap(
+      hess.data(), hess.size());
+  func.evalHessian(x, hessMap);
+  EXPECT_DOUBLE_EQ(hess[0], x[0]);
+
+  func.clearGradientFunction();
+  grad.setConstant(1.0);
+  func.evalGradient(x, gradMap);
+  EXPECT_TRUE(grad.isApprox(Eigen::Vector2d::Ones()));
+
+  func.clearHessianFunction();
+  hess.setConstant(2.0);
+  func.evalHessian(x, hessMap);
+  EXPECT_TRUE(hess.isApprox(Eigen::VectorXd::Constant(4, 2.0)));
+}
+
+TEST(NullFunctionTest, ReturnsZeroForEvalGradientAndHessian)
+{
+  NullFunction func("null");
+
+  Eigen::Vector2d x(3.0, -4.0);
+  EXPECT_DOUBLE_EQ(func.eval(x), 0.0);
+
+  Eigen::VectorXd grad(2);
+  grad.setConstant(1.0);
+  Eigen::Map<Eigen::VectorXd> gradMap(grad.data(), grad.size());
+  func.evalGradient(x, gradMap);
+  EXPECT_TRUE(grad.isZero(0.0));
+
+  Eigen::VectorXd hess(4);
+  hess.setConstant(1.0);
+  Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> hessMap(
+      hess.data(), hess.size());
+  func.evalHessian(x, hessMap);
+  EXPECT_TRUE(hess.isZero(0.0));
+}
+
+TEST(SolverTest, PropertiesRoundTrip)
+{
+  std::ostringstream output;
+  auto problem = std::make_shared<Problem>(1);
+  GradientDescentSolver solver(problem);
+
+  Solver::Properties props(problem, 1e-4, 25, 3, &output, true, "result.txt");
+  solver.setProperties(props);
+
+  EXPECT_EQ(solver.getProblem(), problem);
+  EXPECT_EQ(solver.getNumMaxIterations(), 25u);
+  EXPECT_EQ(solver.getIterationsPerPrint(), 3u);
+  EXPECT_EQ(solver.getOutStream(), &output);
+  EXPECT_TRUE(solver.getPrintFinalResult());
+  EXPECT_EQ(solver.getResultFileName(), "result.txt");
+
+  solver.setTolerance(props.mTolerance);
+  EXPECT_DOUBLE_EQ(solver.getTolerance(), 1e-4);
 }

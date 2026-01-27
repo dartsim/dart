@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,34 +30,46 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/resource.hpp"
+#include <dart/common/platform.hpp>
 
-#include "dart/common/logging.hpp"
-
-#include <exception>
-#include <string>
-
-namespace dart {
-namespace common {
-
-//==============================================================================
-std::string Resource::readAll()
+#if DART_OS_WINDOWS
+  #include <gtest/gtest.h>
+TEST(DantzigMiscTest, WindowsSkipped)
 {
-  const auto size = getSize();
-  if (size == 0) {
-    return {};
-  }
+  GTEST_SKIP() << "dRand* not exported on Windows";
+}
+#else
 
-  std::string content;
-  content.resize(size);
-  const auto result = read(content.data(), content.size(), 1);
+  #include <dart/math/lcp/pivoting/dantzig/misc.hpp>
 
-  if (result != 1) {
-    throw std::runtime_error("Failed reading data from a resource.");
-  }
+  #include <gtest/gtest.h>
 
-  return content;
+using namespace dart::math;
+
+TEST(DantzigMiscTest, RandSequenceRepeatsWithSameSeed)
+{
+  dRandSetSeed(123u);
+  const unsigned long first = dRand();
+  const unsigned long second = dRand();
+  const unsigned long seedAfter = dRandGetSeed();
+
+  dRandSetSeed(123u);
+  EXPECT_EQ(dRand(), first);
+  EXPECT_EQ(dRand(), second);
+  EXPECT_EQ(dRandGetSeed(), seedAfter);
 }
 
-} // namespace common
-} // namespace dart
+TEST(DantzigMiscTest, RandIntAndRealRanges)
+{
+  dRandSetSeed(1u);
+
+  const int value = dRandInt(10);
+  EXPECT_GE(value, 0);
+  EXPECT_LT(value, 10);
+
+  const double real = dRandReal();
+  EXPECT_GE(real, 0.0);
+  EXPECT_LE(real, 1.0);
+}
+
+#endif // !DART_OS_WINDOWS

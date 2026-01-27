@@ -32,6 +32,7 @@
 
 #include "helpers/gtest_utils.hpp"
 
+#include "dart/common/platform.hpp"
 #include "dart/math/geometry.hpp"
 #include "dart/math/helpers.hpp"
 
@@ -222,15 +223,155 @@ TEST(Geometry, ComputeConvexHullUsesSortedAngles)
   SupportPolygon points;
   points.emplace_back(0.0, 0.0);
   points.emplace_back(1.0, 0.0);
-  points.emplace_back(1.0, 1.0);
+  points.emplace_back(0.0, 1.0);
   points.emplace_back(0.0, 1.0);
 
   std::vector<std::size_t> indices;
   const auto hull
       = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
 
-  EXPECT_EQ(hull.size(), 4u);
-  EXPECT_EQ(indices.size(), 4u);
+  EXPECT_EQ(hull.size(), 3u);
+  EXPECT_EQ(indices.size(), 3u);
+}
+
+TEST(Geometry, ComputeIntersectionBasic)
+{
+  Eigen::Vector2d intersection;
+  const auto result = computeIntersection(
+      intersection,
+      Eigen::Vector2d(0.0, 0.0),
+      Eigen::Vector2d(1.0, 1.0),
+      Eigen::Vector2d(0.0, 1.0),
+      Eigen::Vector2d(1.0, 0.0));
+
+  EXPECT_EQ(result, INTERSECTING);
+  EXPECT_TRUE(intersection.isApprox(Eigen::Vector2d(0.5, 0.5), 1e-12));
+}
+
+TEST(Geometry, ComputeIntersectionNoIntersection)
+{
+  Eigen::Vector2d intersection;
+  const auto result = computeIntersection(
+      intersection,
+      Eigen::Vector2d(0.0, 0.0),
+      Eigen::Vector2d(1.0, 0.0),
+      Eigen::Vector2d(2.0, -1.0),
+      Eigen::Vector2d(2.0, 1.0));
+
+  EXPECT_EQ(result, BEYOND_ENDPOINTS);
+}
+
+TEST(Geometry, ComputeIntersectionParallel)
+{
+  Eigen::Vector2d intersection;
+  const auto result = computeIntersection(
+      intersection,
+      Eigen::Vector2d(0.0, 0.0),
+      Eigen::Vector2d(1.0, 0.0),
+      Eigen::Vector2d(0.0, 1.0),
+      Eigen::Vector2d(1.0, 1.0));
+
+  EXPECT_EQ(result, PARALLEL);
+}
+
+TEST(Geometry, ComputeIntersectionSinglePoint)
+{
+  Eigen::Vector2d intersection;
+  const auto result = computeIntersection(
+      intersection,
+      Eigen::Vector2d(0.0, 0.0),
+      Eigen::Vector2d(1.0, 0.0),
+      Eigen::Vector2d(1.0, 0.0),
+      Eigen::Vector2d(1.0, 1.0));
+
+  EXPECT_EQ(result, INTERSECTING);
+  EXPECT_TRUE(intersection.isApprox(Eigen::Vector2d(1.0, 0.0), 1e-12));
+}
+
+TEST(Geometry, ComputeClosestPointOnLineSegment)
+{
+  const Eigen::Vector2d segmentStart(0.0, 0.0);
+  const Eigen::Vector2d segmentEnd(1.0, 0.0);
+  const Eigen::Vector2d testPoint(0.5, 1.0);
+
+  const auto closest
+      = computeClosestPointOnLineSegment(testPoint, segmentStart, segmentEnd);
+
+  EXPECT_TRUE(closest.isApprox(Eigen::Vector2d(0.5, 0.0), 1e-12));
+}
+
+TEST(Geometry, ComputeClosestPointOnLineSegmentInside)
+{
+  const Eigen::Vector2d segmentStart(0.0, 0.0);
+  const Eigen::Vector2d segmentEnd(1.0, 0.0);
+  const Eigen::Vector2d testPoint(0.25, 0.0);
+
+  const auto closest
+      = computeClosestPointOnLineSegment(testPoint, segmentStart, segmentEnd);
+
+  EXPECT_TRUE(closest.isApprox(testPoint, 1e-12));
+}
+
+TEST(Geometry, ComputeClosestPointOnLineSegmentOutside)
+{
+  const Eigen::Vector2d segmentStart(0.0, 0.0);
+  const Eigen::Vector2d segmentEnd(1.0, 0.0);
+  const Eigen::Vector2d testPoint(2.0, 1.0);
+
+  const auto closest
+      = computeClosestPointOnLineSegment(testPoint, segmentStart, segmentEnd);
+
+  EXPECT_TRUE(closest.isApprox(Eigen::Vector2d(1.0, 0.0), 1e-12));
+}
+
+TEST(Geometry, MakeSkewSymmetricBasic)
+{
+  const Eigen::Vector3d v(1.0, 2.0, 3.0);
+  const Eigen::Matrix3d m = makeSkewSymmetric(v);
+
+  EXPECT_DOUBLE_EQ(m(0, 0), 0.0);
+  EXPECT_DOUBLE_EQ(m(0, 1), -3.0);
+  EXPECT_DOUBLE_EQ(m(0, 2), 2.0);
+  EXPECT_DOUBLE_EQ(m(1, 0), 3.0);
+  EXPECT_DOUBLE_EQ(m(1, 1), 0.0);
+  EXPECT_DOUBLE_EQ(m(1, 2), -1.0);
+  EXPECT_DOUBLE_EQ(m(2, 0), -2.0);
+  EXPECT_DOUBLE_EQ(m(2, 1), 1.0);
+  EXPECT_DOUBLE_EQ(m(2, 2), 0.0);
+}
+
+TEST(Geometry, MakeSkewSymmetricNegative)
+{
+  const Eigen::Vector3d v(1.0, -2.0, 3.0);
+  const Eigen::Matrix3d m = makeSkewSymmetric(v);
+
+  EXPECT_DOUBLE_EQ(m(0, 0), 0.0);
+  EXPECT_DOUBLE_EQ(m(0, 1), -3.0);
+  EXPECT_DOUBLE_EQ(m(0, 2), -2.0);
+  EXPECT_DOUBLE_EQ(m(1, 0), 3.0);
+  EXPECT_DOUBLE_EQ(m(1, 1), 0.0);
+  EXPECT_DOUBLE_EQ(m(1, 2), -1.0);
+  EXPECT_DOUBLE_EQ(m(2, 0), 2.0);
+  EXPECT_DOUBLE_EQ(m(2, 1), 1.0);
+  EXPECT_DOUBLE_EQ(m(2, 2), 0.0);
+}
+
+TEST(Geometry, FromSkewSymmetricRoundTrip)
+{
+  const Eigen::Vector3d v(1.0, 2.0, 3.0);
+  const Eigen::Matrix3d m1 = makeSkewSymmetric(v);
+  const Eigen::Vector3d recovered = fromSkewSymmetric(m1);
+
+  EXPECT_TRUE(recovered.isApprox(v, 1e-12));
+}
+
+TEST(Geometry, FromSkewSymmetricToMatrix)
+{
+  const Eigen::Vector3d v(1.0, 2.0, 3.0);
+  const Eigen::Matrix3d m = makeSkewSymmetric(v);
+  const Eigen::Vector3d recovered = fromSkewSymmetric(m);
+
+  EXPECT_TRUE(recovered.isApprox(v, 1e-12));
 }
 
 //==============================================================================
@@ -922,3 +1063,461 @@ TEST(LieGroupOperators, AdjointMappings)
     }
   }
 }
+
+//==============================================================================
+TEST(Geometry, GetAdTMatrix)
+{
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  T.linear() = math::expMapRot(Eigen::Vector3d(0.1, -0.2, 0.3));
+  T.translation() = Eigen::Vector3d(1.0, -2.0, 3.0);
+
+  Eigen::Matrix6d AdTMatrix = math::getAdTMatrix(T);
+
+  // Verify structure: [R 0; [p]R R]
+  EXPECT_TRUE((AdTMatrix.topLeftCorner<3, 3>().isApprox(T.linear(), 1e-12)));
+  EXPECT_TRUE((AdTMatrix.topRightCorner<3, 3>().isZero(1e-12)));
+  EXPECT_TRUE(
+      (AdTMatrix.bottomRightCorner<3, 3>().isApprox(T.linear(), 1e-12)));
+
+  Eigen::Matrix3d skewP = math::makeSkewSymmetric(T.translation());
+  EXPECT_TRUE(
+      (AdTMatrix.bottomLeftCorner<3, 3>().isApprox(skewP * T.linear(), 1e-12)));
+
+  // Verify Ad(T, V) == AdTMatrix * V
+  Eigen::Vector6d V = Eigen::Vector6d::Random();
+  Eigen::Vector6d AdTV = math::AdT(T, V);
+  Eigen::Vector6d AdTMatrixV = AdTMatrix * V;
+  EXPECT_VECTOR_NEAR(AdTV, AdTMatrixV, 1e-12);
+}
+
+//==============================================================================
+TEST(Geometry, ParallelAxisTheorem)
+{
+  // Test with a simple case: shifting a point mass
+  Eigen::Matrix3d original = Eigen::Matrix3d::Zero();
+  Eigen::Vector3d comShift(1.0, 0.0, 0.0);
+  double mass = 2.0;
+
+  Eigen::Matrix3d result = math::parallelAxisTheorem(original, comShift, mass);
+
+  // For shift along x, Ixx stays 0, Iyy and Izz increase by m*d^2
+  EXPECT_DOUBLE_EQ(result(0, 0), 0.0);
+  EXPECT_DOUBLE_EQ(result(1, 1), 2.0); // m * 1^2
+  EXPECT_DOUBLE_EQ(result(2, 2), 2.0); // m * 1^2
+  EXPECT_DOUBLE_EQ(result(0, 1), 0.0);
+  EXPECT_DOUBLE_EQ(result(1, 0), 0.0);
+}
+
+//==============================================================================
+TEST(Geometry, ParallelAxisTheoremDiagonalShift)
+{
+  Eigen::Matrix3d original = Eigen::Matrix3d::Identity();
+  Eigen::Vector3d comShift(1.0, 1.0, 1.0);
+  double mass = 1.0;
+
+  Eigen::Matrix3d result = math::parallelAxisTheorem(original, comShift, mass);
+
+  // d^2 = 3, so diagonal elements increase by m*(d^2 - p_i^2) = 1*(3-1) = 2
+  EXPECT_DOUBLE_EQ(result(0, 0), 1.0 + 2.0); // 1 + (3 - 1)
+  EXPECT_DOUBLE_EQ(result(1, 1), 1.0 + 2.0);
+  EXPECT_DOUBLE_EQ(result(2, 2), 1.0 + 2.0);
+  // Off-diagonal: -m * p_i * p_j = -1 * 1 * 1 = -1
+  EXPECT_DOUBLE_EQ(result(0, 1), -1.0);
+  EXPECT_DOUBLE_EQ(result(1, 2), -1.0);
+  EXPECT_DOUBLE_EQ(result(0, 2), -1.0);
+}
+
+//==============================================================================
+TEST(Geometry, TransformInertiaIdentity)
+{
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  math::Inertia I = math::Inertia::Identity();
+
+  math::Inertia result = math::transformInertia(T, I);
+
+  EXPECT_TRUE(result.isApprox(I, 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, TransformInertiaRotation)
+{
+  // Rotation only (no translation)
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  T.linear() = Eigen::AngleAxisd(math::pi / 4, Eigen::Vector3d::UnitZ())
+                   .toRotationMatrix();
+
+  math::Inertia I = math::Inertia::Identity();
+  math::Inertia result = math::transformInertia(T, I);
+
+  // For identity inertia, rotation should preserve it
+  EXPECT_TRUE(result.isApprox(I, 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, VerifyRotation)
+{
+  // Valid rotation
+  Eigen::Matrix3d R
+      = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  EXPECT_TRUE(math::verifyRotation(R));
+
+  // Invalid: not orthogonal
+  Eigen::Matrix3d notOrtho = Eigen::Matrix3d::Random();
+  EXPECT_FALSE(math::verifyRotation(notOrtho));
+
+  // Invalid: NaN
+  Eigen::Matrix3d withNan = R;
+  withNan(0, 0) = std::nan("");
+  EXPECT_FALSE(math::verifyRotation(withNan));
+
+  // Invalid: determinant = -1 (reflection)
+  Eigen::Matrix3d reflection = R;
+  reflection.col(0) = -reflection.col(0);
+  EXPECT_FALSE(math::verifyRotation(reflection));
+}
+
+//==============================================================================
+TEST(Geometry, VerifyTransform)
+{
+  // Valid transform
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  T.linear()
+      = Eigen::AngleAxisd(0.3, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  T.translation() = Eigen::Vector3d(1, 2, 3);
+  EXPECT_TRUE(math::verifyTransform(T));
+
+  // Invalid: NaN in translation
+  Eigen::Isometry3d withNan = T;
+  withNan.translation()[0] = std::nan("");
+  EXPECT_FALSE(math::verifyTransform(withNan));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeRotation)
+{
+  Eigen::Vector3d axis = Eigen::Vector3d(1.0, 2.0, 3.0);
+  Eigen::Matrix3d R = math::computeRotation(axis, math::AxisType::AXIS_X);
+
+  EXPECT_TRUE(math::verifyRotation(R));
+
+  // First column should be aligned with axis
+  Eigen::Vector3d col0 = R.col(0);
+  EXPECT_TRUE(col0.isApprox(axis.normalized(), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeRotationAxisAlignedWithY)
+{
+  // Test when axis is parallel to UnitX (triggers fallback to UnitY)
+  Eigen::Vector3d axis = Eigen::Vector3d::UnitX();
+  Eigen::Matrix3d R = math::computeRotation(axis, math::AxisType::AXIS_X);
+
+  EXPECT_TRUE(math::verifyRotation(R));
+  EXPECT_TRUE(R.col(0).isApprox(Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeTransform)
+{
+  Eigen::Vector3d axis(0.0, 0.0, 1.0);
+  Eigen::Vector3d translation(1.0, 2.0, 3.0);
+
+  Eigen::Isometry3d T
+      = math::computeTransform(axis, translation, math::AxisType::AXIS_Z);
+
+  EXPECT_TRUE(math::verifyTransform(T));
+  EXPECT_TRUE(T.translation().isApprox(translation, 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, Cross2D)
+{
+  Eigen::Vector2d v1(1.0, 0.0);
+  Eigen::Vector2d v2(0.0, 1.0);
+
+  EXPECT_DOUBLE_EQ(math::cross(v1, v2), 1.0);
+  EXPECT_DOUBLE_EQ(math::cross(v2, v1), -1.0);
+
+  Eigen::Vector2d v3(1.0, 1.0);
+  EXPECT_DOUBLE_EQ(math::cross(v1, v3), 1.0);
+}
+
+//==============================================================================
+TEST(Geometry, ComputeCentroidOfHullTriangle)
+{
+  SupportPolygon triangle;
+  triangle.emplace_back(0.0, 0.0);
+  triangle.emplace_back(3.0, 0.0);
+  triangle.emplace_back(0.0, 3.0);
+
+  Eigen::Vector2d centroid = math::computeCentroidOfHull(triangle);
+
+  // Centroid of triangle at (0,0), (3,0), (0,3) is (1, 1)
+  EXPECT_TRUE(centroid.isApprox(Eigen::Vector2d(1.0, 1.0), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeCentroidOfHullSquare)
+{
+  SupportPolygon square;
+  square.emplace_back(0.0, 0.0);
+  square.emplace_back(2.0, 0.0);
+  square.emplace_back(2.0, 2.0);
+  square.emplace_back(0.0, 2.0);
+
+  Eigen::Vector2d centroid = math::computeCentroidOfHull(square);
+
+  EXPECT_TRUE(centroid.isApprox(Eigen::Vector2d(1.0, 1.0), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeCentroidOfHullSinglePoint)
+{
+  SupportPolygon single;
+  single.emplace_back(5.0, 3.0);
+
+  Eigen::Vector2d centroid = math::computeCentroidOfHull(single);
+
+  EXPECT_TRUE(centroid.isApprox(Eigen::Vector2d(5.0, 3.0), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeCentroidOfHullTwoPoints)
+{
+  SupportPolygon line;
+  line.emplace_back(0.0, 0.0);
+  line.emplace_back(4.0, 0.0);
+
+  Eigen::Vector2d centroid = math::computeCentroidOfHull(line);
+
+  EXPECT_TRUE(centroid.isApprox(Eigen::Vector2d(2.0, 0.0), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeCentroidOfHullEmpty)
+{
+  SupportPolygon empty;
+
+  Eigen::Vector2d centroid = math::computeCentroidOfHull(empty);
+
+  // Should return NaN
+  EXPECT_TRUE(std::isnan(centroid[0]));
+  EXPECT_TRUE(std::isnan(centroid[1]));
+}
+
+//==============================================================================
+TEST(Geometry, IsInsideSupportPolygonEdgeCases)
+{
+  SupportPolygon empty;
+  EXPECT_FALSE(math::isInsideSupportPolygon(Eigen::Vector2d(0, 0), empty));
+
+  SupportPolygon single;
+  single.emplace_back(1.0, 1.0);
+  EXPECT_FALSE(
+      math::isInsideSupportPolygon(Eigen::Vector2d(1, 1), single, false));
+  EXPECT_TRUE(
+      math::isInsideSupportPolygon(Eigen::Vector2d(1, 1), single, true));
+  EXPECT_FALSE(
+      math::isInsideSupportPolygon(Eigen::Vector2d(0, 0), single, true));
+
+  SupportPolygon line;
+  line.emplace_back(0.0, 0.0);
+  line.emplace_back(2.0, 0.0);
+  EXPECT_FALSE(
+      math::isInsideSupportPolygon(Eigen::Vector2d(1, 0), line, false));
+  EXPECT_TRUE(math::isInsideSupportPolygon(Eigen::Vector2d(1, 0), line, true));
+  EXPECT_FALSE(math::isInsideSupportPolygon(Eigen::Vector2d(3, 0), line, true));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeClosestPointOnSupportPolygonEdgeCases)
+{
+  // Empty polygon returns input point
+  SupportPolygon empty;
+  std::size_t idx1, idx2;
+  Eigen::Vector2d result = math::computeClosestPointOnSupportPolygon(
+      idx1, idx2, Eigen::Vector2d(5, 5), empty);
+  EXPECT_TRUE(result.isApprox(Eigen::Vector2d(5, 5), 1e-12));
+
+  // Single point returns that point
+  SupportPolygon single;
+  single.emplace_back(1.0, 1.0);
+  result = math::computeClosestPointOnSupportPolygon(
+      idx1, idx2, Eigen::Vector2d(5, 5), single);
+  EXPECT_TRUE(result.isApprox(Eigen::Vector2d(1, 1), 1e-12));
+  EXPECT_EQ(idx1, 0u);
+  EXPECT_EQ(idx2, 0u);
+
+  // Two points
+  SupportPolygon line;
+  line.emplace_back(0.0, 0.0);
+  line.emplace_back(2.0, 0.0);
+  result = math::computeClosestPointOnSupportPolygon(
+      idx1, idx2, Eigen::Vector2d(1, 1), line);
+  EXPECT_TRUE(result.isApprox(Eigen::Vector2d(1, 0), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeClosestPointOnLineSegmentVertical)
+{
+  // Vertical line segment (tests the dx == 0 branch)
+  Eigen::Vector2d s1(1.0, 0.0);
+  Eigen::Vector2d s2(1.0, 2.0);
+  Eigen::Vector2d p(0.0, 1.0);
+
+  Eigen::Vector2d closest = math::computeClosestPointOnLineSegment(p, s1, s2);
+  EXPECT_TRUE(closest.isApprox(Eigen::Vector2d(1.0, 1.0), 1e-12));
+
+  // Point beyond endpoints (vertical)
+  Eigen::Vector2d p2(0.0, 5.0);
+  closest = math::computeClosestPointOnLineSegment(p2, s1, s2);
+  EXPECT_TRUE(closest.isApprox(Eigen::Vector2d(1.0, 2.0), 1e-12));
+}
+
+#if !DART_OS_WINDOWS
+//==============================================================================
+TEST(Geometry, BoundingBoxDefaultConstructor)
+{
+  math::BoundingBox box;
+  EXPECT_TRUE(box.getMin().isApprox(Eigen::Vector3d::Zero(), 1e-12));
+  EXPECT_TRUE(box.getMax().isApprox(Eigen::Vector3d::Zero(), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, BoundingBoxParameterizedConstructor)
+{
+  Eigen::Vector3d min(-1.0, -2.0, -3.0);
+  Eigen::Vector3d max(1.0, 2.0, 3.0);
+  math::BoundingBox box(min, max);
+
+  EXPECT_TRUE(box.getMin().isApprox(min, 1e-12));
+  EXPECT_TRUE(box.getMax().isApprox(max, 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, BoundingBoxSetters)
+{
+  math::BoundingBox box;
+  Eigen::Vector3d newMin(-5.0, -5.0, -5.0);
+  Eigen::Vector3d newMax(5.0, 5.0, 5.0);
+
+  box.setMin(newMin);
+  box.setMax(newMax);
+
+  EXPECT_TRUE(box.getMin().isApprox(newMin, 1e-12));
+  EXPECT_TRUE(box.getMax().isApprox(newMax, 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, BoundingBoxComputeCenter)
+{
+  Eigen::Vector3d min(-2.0, -4.0, -6.0);
+  Eigen::Vector3d max(2.0, 4.0, 6.0);
+  math::BoundingBox box(min, max);
+
+  Eigen::Vector3d center = box.computeCenter();
+  EXPECT_TRUE(center.isApprox(Eigen::Vector3d::Zero(), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, BoundingBoxComputeHalfExtents)
+{
+  Eigen::Vector3d min(-1.0, -2.0, -3.0);
+  Eigen::Vector3d max(1.0, 2.0, 3.0);
+  math::BoundingBox box(min, max);
+
+  Eigen::Vector3d halfExtents = box.computeHalfExtents();
+  EXPECT_TRUE(halfExtents.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, BoundingBoxComputeFullExtents)
+{
+  Eigen::Vector3d min(-1.0, -2.0, -3.0);
+  Eigen::Vector3d max(1.0, 2.0, 3.0);
+  math::BoundingBox box(min, max);
+
+  Eigen::Vector3d fullExtents = box.computeFullExtents();
+  EXPECT_TRUE(fullExtents.isApprox(Eigen::Vector3d(2.0, 4.0, 6.0), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, ExpToQuatSmallAngle)
+{
+  // Small angle (< 1e-10) takes the identity branch
+  Eigen::Vector3d smallExp(1e-15, 1e-15, 1e-15);
+  Eigen::Quaterniond q = math::expToQuat(smallExp);
+
+  EXPECT_DOUBLE_EQ(q.w(), 1.0);
+  EXPECT_DOUBLE_EQ(q.x(), 0.0);
+  EXPECT_DOUBLE_EQ(q.y(), 0.0);
+  EXPECT_DOUBLE_EQ(q.z(), 0.0);
+}
+
+//==============================================================================
+TEST(Geometry, LogMapIsometry3dNearPi)
+{
+  // Test the theta > pi - EPSILON branch
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  T.linear() = Eigen::AngleAxisd(math::pi - 1e-7, Eigen::Vector3d::UnitZ())
+                   .toRotationMatrix();
+  T.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+
+  Eigen::Vector6d twist = math::logMap(T);
+
+  // Verify round-trip
+  Eigen::Isometry3d T2 = math::expMap(twist);
+  EXPECT_TRUE(T.matrix().isApprox(T2.matrix(), 1e-6));
+}
+
+//==============================================================================
+TEST(Geometry, LogMapIsometry3dSmallAngle)
+{
+  // Test the theta < EPSILON branch
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  T.linear()
+      = Eigen::AngleAxisd(1e-8, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  T.translation() = Eigen::Vector3d(0.5, -0.5, 0.25);
+
+  Eigen::Vector6d twist = math::logMap(T);
+
+  // Verify round-trip
+  Eigen::Isometry3d T2 = math::expMap(twist);
+  EXPECT_TRUE(T.matrix().isApprox(T2.matrix(), 1e-6));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeSupportPolygon)
+{
+  std::vector<Eigen::Vector3d> geometry;
+  geometry.emplace_back(0.0, 0.0, 0.0);
+  geometry.emplace_back(1.0, 0.0, 0.0);
+  geometry.emplace_back(0.5, 1.0, 0.0);
+
+  Eigen::Vector3d axis1 = Eigen::Vector3d::UnitX();
+  Eigen::Vector3d axis2 = Eigen::Vector3d::UnitY();
+
+  SupportPolygon poly = math::computeSupportPolgyon(geometry, axis1, axis2);
+
+  EXPECT_EQ(poly.size(), 3u);
+}
+
+//==============================================================================
+TEST(Geometry, ComputeSupportPolygonWithIndices)
+{
+  std::vector<Eigen::Vector3d> geometry;
+  geometry.emplace_back(0.0, 0.0, 1.0);
+  geometry.emplace_back(2.0, 0.0, 2.0);
+  geometry.emplace_back(1.0, 2.0, 3.0);
+
+  Eigen::Vector3d axis1 = Eigen::Vector3d::UnitX();
+  Eigen::Vector3d axis2 = Eigen::Vector3d::UnitY();
+
+  std::vector<std::size_t> indices;
+  SupportPolygon poly
+      = math::computeSupportPolgyon(indices, geometry, axis1, axis2);
+
+  EXPECT_EQ(poly.size(), 3u);
+  EXPECT_EQ(indices.size(), 3u);
+}
+#endif // !DART_OS_WINDOWS

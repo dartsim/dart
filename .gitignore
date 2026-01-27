@@ -1,4 +1,11 @@
-# Custom build files
+# Coverage files
+*.info
+*.gcda
+*.gcno
+*.gcov
+htmlcov/
+coverage_html/
+.gcov/
 build/
 .build/
 
@@ -116,5 +123,7 @@ profiling/*.txt
 *.info
 *.gcda
 *.gcno
+*.gcov
 htmlcov/
 coverage_html/
+.gcov/
