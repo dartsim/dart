@@ -37,6 +37,9 @@
 
 #include <gtest/gtest.h>
 
+#include <vector>
+
+#include <cmath>
 using namespace dart;
 using namespace dart::dynamics;
 using namespace dart::constraint;
@@ -56,9 +59,15 @@ SkeletonPtr createServoSkeleton()
 class ExposedServoMotorConstraint : public ServoMotorConstraint
 {
 public:
+  using ServoMotorConstraint::applyImpulse;
+  using ServoMotorConstraint::applyUnitImpulse;
+  using ServoMotorConstraint::excite;
+  using ServoMotorConstraint::getInformation;
   using ServoMotorConstraint::getRootSkeleton;
+  using ServoMotorConstraint::getVelocityChange;
   using ServoMotorConstraint::isActive;
   using ServoMotorConstraint::ServoMotorConstraint;
+  using ServoMotorConstraint::unexcite;
   using ServoMotorConstraint::update;
 };
 
@@ -236,4 +245,66 @@ TEST(ServoMotorConstraint, MultiDofJoint)
 
   EXPECT_EQ(constraint1.getRootSkeleton(), skel);
   EXPECT_EQ(constraint2.getRootSkeleton(), skel);
+}
+
+TEST(ServoMotorConstraint, InformationAndImpulseFlow)
+{
+  auto skel = createServoSkeleton();
+  skel->setTimeStep(0.01);
+  auto* joint = skel->getJoint(0);
+
+  joint->setForceLowerLimit(0, -5.0);
+  joint->setForceUpperLimit(0, 5.0);
+  joint->setCommand(0, 1.0);
+  joint->setVelocity(0, 0.0);
+
+  ExposedServoMotorConstraint constraint(joint);
+  constraint.update();
+
+  ASSERT_EQ(constraint.getDimension(), 1u);
+
+  std::vector<double> x(1, 0.0);
+  std::vector<double> lo(1, 0.0);
+  std::vector<double> hi(1, 0.0);
+  std::vector<double> b(1, 0.0);
+  std::vector<double> w(1, 0.0);
+  std::vector<int> findex(1, -1);
+
+  ConstraintInfo info{
+      x.data(),
+      lo.data(),
+      hi.data(),
+      b.data(),
+      w.data(),
+      findex.data(),
+      1.0 / skel->getTimeStep()};
+
+  constraint.getInformation(&info);
+
+  EXPECT_NEAR(b[0], 1.0, 1e-12);
+  EXPECT_NEAR(lo[0], -5.0 * skel->getTimeStep(), 1e-12);
+  EXPECT_NEAR(hi[0], 5.0 * skel->getTimeStep(), 1e-12);
+
+  constraint.excite();
+  EXPECT_TRUE(skel->isImpulseApplied());
+  constraint.applyUnitImpulse(0);
+
+  std::vector<double> delVel(1, 0.0);
+  constraint.getVelocityChange(delVel.data(), false);
+  EXPECT_TRUE(std::isfinite(delVel[0]));
+
+  std::vector<double> delVelCfm(1, 0.0);
+  constraint.getVelocityChange(delVelCfm.data(), true);
+  EXPECT_NEAR(
+      delVelCfm[0],
+      delVel[0] * (1.0 + ServoMotorConstraint::getConstraintForceMixing()),
+      1e-12);
+
+  const double lambdaValue = 0.3;
+  std::vector<double> lambda(1, lambdaValue);
+  constraint.applyImpulse(lambda.data());
+  EXPECT_NEAR(joint->getConstraintImpulse(0), lambdaValue, 1e-12);
+
+  constraint.unexcite();
+  EXPECT_FALSE(skel->isImpulseApplied());
 }

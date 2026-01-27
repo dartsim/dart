@@ -39,20 +39,16 @@
 #include "dart/collision/distance_option.hpp"
 #include "dart/collision/distance_result.hpp"
 #include "dart/collision/fcl/fcl_collision_detector.hpp"
+#if DART_HAVE_BULLET
+  #include "dart/collision/bullet/bullet_collision_detector.hpp"
+#endif
 #include "dart/collision/raycast_option.hpp"
 #include "dart/collision/raycast_result.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/shape.hpp"
 #include "dart/dynamics/simple_frame.hpp"
-
-#if DART_HAVE_BULLET
-  #include "dart/collision/bullet/bullet_collision_detector.hpp"
-#endif
-
-#include <gtest/gtest.h>
-
-#include <memory>
+#include "dart/dynamics/skeleton.hpp"
 
 using namespace dart;
 using namespace dart::collision;

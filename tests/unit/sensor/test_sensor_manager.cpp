@@ -269,3 +269,46 @@ TEST(SensorManagerTest, HasSensorByName)
   EXPECT_TRUE(manager.hasSensor("my_sensor"));
   EXPECT_FALSE(manager.hasSensor("other_sensor"));
 }
+
+TEST(SensorManagerTest, SensorNameChangeHandling)
+{
+  sensor::SensorManager manager;
+
+  auto sensor = std::make_shared<TestSensor>();
+  sensor->setName("original_name");
+  manager.addSensor(sensor);
+
+  EXPECT_TRUE(manager.hasSensor("original_name"));
+  EXPECT_EQ(manager.getSensor("original_name"), sensor);
+
+  sensor->setName("new_name");
+
+  EXPECT_TRUE(manager.hasSensor("new_name"));
+  EXPECT_EQ(manager.getSensor("new_name"), sensor);
+  EXPECT_FALSE(manager.hasSensor("original_name"));
+}
+
+TEST(SensorManagerTest, AddNullSensor)
+{
+  sensor::SensorManager manager;
+
+  std::string result = manager.addSensor(nullptr);
+
+  EXPECT_EQ(result, "");
+  EXPECT_EQ(manager.getNumSensors(), 0u);
+}
+
+TEST(SensorManagerTest, AddSameSensorTwice)
+{
+  sensor::SensorManager manager;
+
+  auto sensor = std::make_shared<TestSensor>();
+  sensor->setName("test_sensor");
+
+  std::string firstName = manager.addSensor(sensor);
+  std::string secondName = manager.addSensor(sensor);
+
+  EXPECT_EQ(firstName, "test_sensor");
+  EXPECT_EQ(secondName, "test_sensor");
+  EXPECT_EQ(manager.getNumSensors(), 1u);
+}

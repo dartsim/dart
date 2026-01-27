@@ -30,9 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/recording.hpp>
 #include <dart/simulation/world.hpp>
 
 #include <dart/constraint/constraint_solver.hpp>
+
+#include <dart/collision/collision_option.hpp>
+#include <dart/collision/collision_result.hpp>
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
@@ -42,6 +46,8 @@
 #include <dart/dynamics/skeleton.hpp>
 
 #include <dart/common/exception.hpp>
+
+#include <dart/sensor/sensor.hpp>
 
 #include <gtest/gtest.h>
 
@@ -511,4 +517,462 @@ TEST(WorldTests, EmptyWorldStep)
   world->step();
   EXPECT_GT(world->getTime(), 0.0);
   EXPECT_EQ(world->getSimFrames(), 1);
+}
+
+//==============================================================================
+TEST(WorldTests, RecordingBasicMethods)
+{
+  auto world = World::create();
+  auto skel = createSimpleSkeleton("recording_skel");
+  world->addSkeleton(skel);
+
+  auto recording = world->getRecording();
+  ASSERT_NE(recording, nullptr);
+
+  EXPECT_EQ(recording->getNumFrames(), 0);
+  EXPECT_EQ(recording->getNumSkeletons(), 1);
+  EXPECT_EQ(recording->getNumDofs(0), 1);
+
+  world->step();
+  world->bake();
+  EXPECT_EQ(recording->getNumFrames(), 1);
+
+  world->step();
+  world->bake();
+  EXPECT_EQ(recording->getNumFrames(), 2);
+
+  Eigen::VectorXd config = recording->getConfig(0, 0);
+  EXPECT_EQ(config.size(), 1);
+
+  double genCoord = recording->getGenCoord(0, 0, 0);
+  EXPECT_DOUBLE_EQ(genCoord, config[0]);
+
+  recording->clear();
+  EXPECT_EQ(recording->getNumFrames(), 0);
+}
+
+//==============================================================================
+TEST(WorldTests, RecordingAddState)
+{
+  auto world = World::create();
+  auto skel = createSimpleSkeleton("state_skel");
+  world->addSkeleton(skel);
+
+  auto recording = world->getRecording();
+
+  Eigen::VectorXd state(1);
+  state << 0.5;
+  recording->addState(state);
+
+  EXPECT_EQ(recording->getNumFrames(), 1);
+  EXPECT_DOUBLE_EQ(recording->getGenCoord(0, 0, 0), 0.5);
+
+  state << 1.0;
+  recording->addState(state);
+
+  EXPECT_EQ(recording->getNumFrames(), 2);
+  EXPECT_DOUBLE_EQ(recording->getGenCoord(1, 0, 0), 1.0);
+}
+
+//==============================================================================
+TEST(WorldTests, BakeRecordsSimulationState)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+
+  auto skel = Skeleton::create("bake_skel");
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, FreeJoint::Properties(), BodyNode::AspectProperties("body"));
+
+  Inertia inertia;
+  inertia.setMass(1.0);
+  pair.second->setInertia(inertia);
+
+  world->addSkeleton(skel);
+
+  auto recording = world->getRecording();
+  EXPECT_EQ(recording->getNumFrames(), 0);
+
+  for (int i = 0; i < 10; ++i) {
+    world->step();
+    world->bake();
+  }
+
+  EXPECT_EQ(recording->getNumFrames(), 10);
+
+  Eigen::VectorXd config0 = recording->getConfig(0, 0);
+  Eigen::VectorXd config9 = recording->getConfig(9, 0);
+
+  EXPECT_LT(config9[5], config0[5]);
+}
+
+//==============================================================================
+TEST(WorldTests, SkeletonNameChange)
+{
+  auto world = World::create();
+  auto skel = createSimpleSkeleton("original_name");
+
+  world->addSkeleton(skel);
+  EXPECT_EQ(world->getSkeleton("original_name"), skel);
+
+  skel->setName("new_name");
+
+  EXPECT_EQ(world->getSkeleton("new_name"), skel);
+  EXPECT_EQ(world->getSkeleton("original_name"), nullptr);
+}
+
+//==============================================================================
+TEST(WorldTests, SimpleFrameNameChange)
+{
+  auto world = World::create();
+  auto frame = SimpleFrame::createShared(Frame::World(), "original_frame");
+
+  world->addSimpleFrame(frame);
+  EXPECT_EQ(world->getSimpleFrame("original_frame"), frame);
+
+  frame->setName("renamed_frame");
+
+  EXPECT_EQ(world->getSimpleFrame("renamed_frame"), frame);
+  EXPECT_EQ(world->getSimpleFrame("original_frame"), nullptr);
+}
+
+//==============================================================================
+TEST(WorldTests, StepWithPersistForces)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+
+  auto skel = Skeleton::create("force_skel");
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, FreeJoint::Properties(), BodyNode::AspectProperties("body"));
+
+  Inertia inertia;
+  inertia.setMass(1.0);
+  pair.second->setInertia(inertia);
+
+  world->addSkeleton(skel);
+
+  Eigen::Vector3d force(10.0, 0.0, 0.0);
+  pair.second->addExtForce(force);
+
+  world->step(false);
+
+  Eigen::Vector6d extForce = pair.second->getExternalForceLocal();
+  EXPECT_GT(extForce.norm(), 0.0);
+
+  world->step(true);
+
+  extForce = pair.second->getExternalForceLocal();
+  EXPECT_DOUBLE_EQ(extForce.norm(), 0.0);
+}
+
+//==============================================================================
+TEST(WorldTests, AddSkeletonTwice)
+{
+  auto world = World::create();
+  auto skel = createSimpleSkeleton("duplicate_skel");
+
+  world->addSkeleton(skel);
+  EXPECT_EQ(world->getNumSkeletons(), 1u);
+
+  world->addSkeleton(skel);
+  EXPECT_EQ(world->getNumSkeletons(), 1u);
+}
+
+//==============================================================================
+TEST(WorldTests, RemoveNonExistentSkeleton)
+{
+  auto world = World::create();
+  auto skel1 = createSimpleSkeleton("skel1");
+  auto skel2 = createSimpleSkeleton("skel2");
+
+  world->addSkeleton(skel1);
+  EXPECT_EQ(world->getNumSkeletons(), 1u);
+
+  world->removeSkeleton(skel2);
+  EXPECT_EQ(world->getNumSkeletons(), 1u);
+
+  EXPECT_THROW(
+      world->removeSkeleton(nullptr), dart::common::NullPointerException);
+  EXPECT_EQ(world->getNumSkeletons(), 1u);
+}
+
+//==============================================================================
+// Test sensor class for sensor management tests
+class TestSensor : public sensor::Sensor
+{
+public:
+  using Sensor::Sensor;
+  int updateCount = 0;
+
+protected:
+  void updateImpl(
+      const simulation::World&, const sensor::SensorUpdateContext&) override
+  {
+    ++updateCount;
+  }
+};
+
+//==============================================================================
+TEST(WorldTests, AddSensor)
+{
+  auto world = World::create();
+
+  sensor::Sensor::Properties props;
+  props.name = "test_sensor";
+  auto sensor = std::make_shared<TestSensor>(props);
+
+  EXPECT_EQ(world->getNumSensors(), 0u);
+
+  world->addSensor(sensor);
+
+  EXPECT_EQ(world->getNumSensors(), 1u);
+  EXPECT_TRUE(world->hasSensor(sensor));
+  EXPECT_TRUE(world->hasSensor("test_sensor"));
+}
+
+//==============================================================================
+TEST(WorldTests, RemoveSensor)
+{
+  auto world = World::create();
+
+  sensor::Sensor::Properties props;
+  props.name = "removable_sensor";
+  auto sensor = std::make_shared<TestSensor>(props);
+
+  world->addSensor(sensor);
+  EXPECT_EQ(world->getNumSensors(), 1u);
+  EXPECT_TRUE(world->hasSensor(sensor));
+
+  world->removeSensor(sensor);
+
+  EXPECT_EQ(world->getNumSensors(), 0u);
+  EXPECT_FALSE(world->hasSensor(sensor));
+  EXPECT_FALSE(world->hasSensor("removable_sensor"));
+}
+
+//==============================================================================
+TEST(WorldTests, GetSensorByIndex)
+{
+  auto world = World::create();
+
+  sensor::Sensor::Properties props1;
+  props1.name = "sensor1";
+  auto sensor1 = std::make_shared<TestSensor>(props1);
+
+  sensor::Sensor::Properties props2;
+  props2.name = "sensor2";
+  auto sensor2 = std::make_shared<TestSensor>(props2);
+
+  world->addSensor(sensor1);
+  world->addSensor(sensor2);
+
+  EXPECT_EQ(world->getSensor(0), sensor1);
+  EXPECT_EQ(world->getSensor(1), sensor2);
+  EXPECT_EQ(world->getSensor(999), nullptr);
+}
+
+//==============================================================================
+TEST(WorldTests, GetSensorByName)
+{
+  auto world = World::create();
+
+  sensor::Sensor::Properties props;
+  props.name = "named_sensor";
+  auto sensor = std::make_shared<TestSensor>(props);
+
+  world->addSensor(sensor);
+
+  EXPECT_EQ(world->getSensor("named_sensor"), sensor);
+  EXPECT_EQ(world->getSensor("nonexistent"), nullptr);
+}
+
+//==============================================================================
+TEST(WorldTests, RemoveAllSensors)
+{
+  auto world = World::create();
+
+  sensor::Sensor::Properties props1;
+  props1.name = "sensor_a";
+  auto sensor1 = std::make_shared<TestSensor>(props1);
+
+  sensor::Sensor::Properties props2;
+  props2.name = "sensor_b";
+  auto sensor2 = std::make_shared<TestSensor>(props2);
+
+  sensor::Sensor::Properties props3;
+  props3.name = "sensor_c";
+  auto sensor3 = std::make_shared<TestSensor>(props3);
+
+  world->addSensor(sensor1);
+  world->addSensor(sensor2);
+  world->addSensor(sensor3);
+
+  EXPECT_EQ(world->getNumSensors(), 3u);
+
+  auto removed = world->removeAllSensors();
+
+  EXPECT_EQ(world->getNumSensors(), 0u);
+  EXPECT_EQ(removed.size(), 3u);
+  EXPECT_TRUE(removed.count(sensor1) > 0);
+  EXPECT_TRUE(removed.count(sensor2) > 0);
+  EXPECT_TRUE(removed.count(sensor3) > 0);
+}
+
+//==============================================================================
+TEST(WorldTests, EachSkeleton)
+{
+  auto world = World::create();
+
+  auto skel1 = createSimpleSkeleton("skel1");
+  auto skel2 = createSimpleSkeleton("skel2");
+  auto skel3 = createSimpleSkeleton("skel3");
+
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+  world->addSkeleton(skel3);
+
+  // Test counting all skeletons
+  int counter = 0;
+  world->eachSkeleton([&counter](const dynamics::Skeleton*) { ++counter; });
+  EXPECT_EQ(counter, 3);
+
+  // Test early termination
+  counter = 0;
+  world->eachSkeleton([&counter](const dynamics::Skeleton*) -> bool {
+    ++counter;
+    return counter < 2; // Stop after 2
+  });
+  EXPECT_EQ(counter, 2);
+}
+
+//==============================================================================
+TEST(WorldTests, EachSimpleFrame)
+{
+  auto world = World::create();
+
+  auto frame1 = SimpleFrame::createShared(Frame::World(), "frame1");
+  auto frame2 = SimpleFrame::createShared(Frame::World(), "frame2");
+  auto frame3 = SimpleFrame::createShared(Frame::World(), "frame3");
+
+  world->addSimpleFrame(frame1);
+  world->addSimpleFrame(frame2);
+  world->addSimpleFrame(frame3);
+
+  // Test counting all frames
+  int counter = 0;
+  world->eachSimpleFrame(
+      [&counter](const dynamics::SimpleFrame*) { ++counter; });
+  EXPECT_EQ(counter, 3);
+
+  // Test early termination
+  counter = 0;
+  world->eachSimpleFrame([&counter](const dynamics::SimpleFrame*) -> bool {
+    ++counter;
+    return counter < 2; // Stop after 2
+  });
+  EXPECT_EQ(counter, 2);
+}
+
+//==============================================================================
+TEST(WorldTests, EachSkeletonEmpty)
+{
+  auto world = World::create();
+
+  int counter = 0;
+  world->eachSkeleton([&counter](const dynamics::Skeleton*) { ++counter; });
+  EXPECT_EQ(counter, 0);
+}
+
+//==============================================================================
+SkeletonPtr createBoxSkeleton(
+    const std::string& name, const Eigen::Vector3d& position)
+{
+  auto skel = Skeleton::create(name);
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, FreeJoint::Properties(), BodyNode::AspectProperties("body"));
+
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+  pair.second->createShapeNodeWith<VisualAspect, CollisionAspect>(shape);
+
+  Inertia inertia;
+  inertia.setMass(1.0);
+  pair.second->setInertia(inertia);
+
+  // Set position (FreeJoint has 6 DOFs: 3 rotation + 3 translation)
+  Eigen::Vector6d pos = Eigen::Vector6d::Zero();
+  pos[3] = position[0];
+  pos[4] = position[1];
+  pos[5] = position[2];
+  skel->setPositions(pos);
+
+  return skel;
+}
+
+//==============================================================================
+TEST(WorldTests, CheckCollisionWithResult)
+{
+  auto world = World::create();
+
+  // Create two overlapping boxes at the same position
+  auto skel1 = createBoxSkeleton("box1", Eigen::Vector3d::Zero());
+  auto skel2 = createBoxSkeleton("box2", Eigen::Vector3d(0.5, 0.0, 0.0));
+
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  collision::CollisionOption option(true, 100u);
+  collision::CollisionResult result;
+
+  bool collision = world->checkCollision(option, &result);
+
+  EXPECT_TRUE(collision);
+  EXPECT_TRUE(result.isCollision());
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+//==============================================================================
+TEST(WorldTests, CheckCollisionNoCollision)
+{
+  auto world = World::create();
+
+  // Create two separated boxes
+  auto skel1 = createBoxSkeleton("box1", Eigen::Vector3d::Zero());
+  auto skel2 = createBoxSkeleton("box2", Eigen::Vector3d(10.0, 0.0, 0.0));
+
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  collision::CollisionOption option(true, 100u);
+  collision::CollisionResult result;
+
+  bool collision = world->checkCollision(option, &result);
+
+  EXPECT_FALSE(collision);
+  EXPECT_FALSE(result.isCollision());
+  EXPECT_EQ(result.getNumContacts(), 0u);
+}
+
+//==============================================================================
+TEST(WorldTests, OnNameChangedSignal)
+{
+  auto world = World::create("original_world");
+
+  std::string capturedOldName;
+  std::string capturedNewName;
+  bool signalCalled = false;
+
+  world->onNameChanged.connect(
+      [&](const std::string& oldName, const std::string& newName) {
+        signalCalled = true;
+        capturedOldName = oldName;
+        capturedNewName = newName;
+      });
+
+  world->setName("renamed_world");
+
+  EXPECT_TRUE(signalCalled);
+  EXPECT_EQ(capturedOldName, "original_world");
+  EXPECT_EQ(capturedNewName, "renamed_world");
 }

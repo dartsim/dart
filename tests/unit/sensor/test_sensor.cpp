@@ -229,3 +229,79 @@ TEST(SensorTest, GetProperties)
   EXPECT_DOUBLE_EQ(retrievedProps.updateRate, 50.0);
   EXPECT_TRUE(retrievedProps.enabled);
 }
+
+TEST(SensorTest, GetWorldTransformWithParentFrame)
+{
+  TestSensor sensor;
+
+  // Create parent frame with a known transform
+  auto parentFrame = dynamics::SimpleFrame::createShared(
+      dynamics::Frame::World(), "parent_frame");
+  Eigen::Isometry3d parentTransform = Eigen::Isometry3d::Identity();
+  parentTransform.translation() = Eigen::Vector3d(10.0, 0.0, 0.0);
+  parentFrame->setRelativeTransform(parentTransform);
+
+  // Set relative transform on sensor
+  Eigen::Isometry3d relativeTransform = Eigen::Isometry3d::Identity();
+  relativeTransform.translation() = Eigen::Vector3d(0.0, 5.0, 0.0);
+  sensor.setRelativeTransform(relativeTransform);
+
+  // Set parent frame
+  sensor.setParentFrame(parentFrame.get());
+
+  // Verify world transform = parent * relative
+  Eigen::Isometry3d expectedWorld = parentTransform * relativeTransform;
+  Eigen::Isometry3d actualWorld = sensor.getWorldTransform();
+  EXPECT_TRUE(actualWorld.isApprox(expectedWorld));
+  EXPECT_DOUBLE_EQ(actualWorld.translation().x(), 10.0);
+  EXPECT_DOUBLE_EQ(actualWorld.translation().y(), 5.0);
+}
+
+TEST(SensorTest, UpdateRateLimiting)
+{
+  TestSensor sensor;
+  sensor.setUpdateRate(10.0); // 10 Hz -> period = 0.1s
+  auto world = simulation::World::create();
+
+  sensor::SensorUpdateContext context;
+  context.timeStep = 0.01; // 100 Hz simulation
+
+  int actualUpdates = 0;
+  // Run 100 updates at 100Hz (1 second total)
+  for (int i = 0; i < 100; ++i) {
+    context.time = i * 0.01;
+    context.frame = i;
+    sensor.update(*world, context);
+    if (sensor.updateCount > actualUpdates) {
+      actualUpdates = sensor.updateCount;
+    }
+  }
+
+  // At 10Hz over 1 second, expect ~10 updates (first update + 9 more)
+  EXPECT_GE(actualUpdates, 9);
+  EXPECT_LE(actualUpdates, 11);
+}
+
+TEST(SensorTest, OnNameChangedSignal)
+{
+  TestSensor sensor;
+  sensor.setName("original_name");
+
+  bool signalCalled = false;
+  std::string capturedOldName;
+  std::string capturedNewName;
+
+  sensor.onNameChanged.connect([&](const sensor::Sensor*,
+                                   const std::string& oldName,
+                                   const std::string& newName) {
+    signalCalled = true;
+    capturedOldName = oldName;
+    capturedNewName = newName;
+  });
+
+  sensor.setName("new_name");
+
+  EXPECT_TRUE(signalCalled);
+  EXPECT_EQ(capturedOldName, "original_name");
+  EXPECT_EQ(capturedNewName, "new_name");
+}

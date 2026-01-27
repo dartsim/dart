@@ -322,3 +322,31 @@ TEST(Random, SetSeed)
     EXPECT_EQ(third[i], math::Random::uniform(min, max));
   }
 }
+
+//==============================================================================
+TEST(Random, GenerateSeedWithoutApplying)
+{
+  unsigned int originalSeed = math::Random::getSeed();
+
+  [[maybe_unused]] unsigned int generatedSeed
+      = math::Random::generateSeed(false);
+
+  EXPECT_EQ(math::Random::getSeed(), originalSeed);
+}
+
+//==============================================================================
+TEST(Random, GenerateSeedWithApplying)
+{
+  unsigned int generatedSeed = math::Random::generateSeed(true);
+
+  EXPECT_EQ(math::Random::getSeed(), generatedSeed);
+}
+
+//==============================================================================
+TEST(Random, GetGenerator)
+{
+  auto& gen1 = math::Random::getGenerator();
+  auto& gen2 = math::Random::getGenerator();
+
+  EXPECT_EQ(&gen1, &gen2);
+}

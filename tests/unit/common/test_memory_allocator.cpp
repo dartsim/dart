@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,34 +30,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/resource.hpp"
+#include <dart/common/callocator.hpp>
+#include <dart/common/memory_allocator.hpp>
+#include <dart/common/platform.hpp>
 
-#include "dart/common/logging.hpp"
+#include <gtest/gtest.h>
 
-#include <exception>
+#include <sstream>
 #include <string>
 
-namespace dart {
-namespace common {
+using namespace dart::common;
 
-//==============================================================================
-std::string Resource::readAll()
+TEST(MemoryAllocatorTest, DefaultAllocatorIsStable)
 {
-  const auto size = getSize();
-  if (size == 0) {
-    return {};
-  }
+  MemoryAllocator& allocator1 = MemoryAllocator::GetDefault();
+  MemoryAllocator& allocator2 = MemoryAllocator::GetDefault();
 
-  std::string content;
-  content.resize(size);
-  const auto result = read(content.data(), content.size(), 1);
-
-  if (result != 1) {
-    throw std::runtime_error("Failed reading data from a resource.");
-  }
-
-  return content;
+  EXPECT_EQ(&allocator1, &allocator2);
+  EXPECT_NE(dynamic_cast<CAllocator*>(&allocator1), nullptr);
 }
 
-} // namespace common
-} // namespace dart
+#if !DART_OS_WINDOWS
+TEST(MemoryAllocatorTest, PrintWritesMessages)
+{
+  MemoryAllocator& allocator = MemoryAllocator::GetDefault();
+
+  std::ostringstream noIndent;
+  allocator.print(noIndent, 0);
+  EXPECT_NE(noIndent.str().find("[CAllocator]"), std::string::npos);
+
+  std::ostringstream withIndent;
+  allocator.print(withIndent, 2);
+  EXPECT_NE(withIndent.str().find("  type: CAllocator"), std::string::npos);
+
+  std::ostringstream viaStream;
+  viaStream << allocator;
+  EXPECT_NE(viaStream.str().find("[CAllocator]"), std::string::npos);
+}
+#endif // !DART_OS_WINDOWS

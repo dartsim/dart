@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,34 +30,73 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/resource.hpp"
+#include <dart/constraint/constrained_group.hpp>
+#include <dart/constraint/constraint_base.hpp>
 
-#include "dart/common/logging.hpp"
+#include <gtest/gtest.h>
 
-#include <exception>
-#include <string>
+namespace dart::constraint {
+namespace {
 
-namespace dart {
-namespace common {
-
-//==============================================================================
-std::string Resource::readAll()
+class TestConstraint final : public ConstraintBase
 {
-  const auto size = getSize();
-  if (size == 0) {
-    return {};
+public:
+  explicit TestConstraint(std::size_t dim)
+  {
+    mDim = dim;
   }
 
-  std::string content;
-  content.resize(size);
-  const auto result = read(content.data(), content.size(), 1);
+  void update() override {}
 
-  if (result != 1) {
-    throw std::runtime_error("Failed reading data from a resource.");
+  void getInformation(ConstraintInfo* /*info*/) override {}
+
+  void applyUnitImpulse(std::size_t /*index*/) override {}
+
+  void getVelocityChange(double* /*vel*/, bool /*withCfm*/) override {}
+
+  void excite() override {}
+
+  void unexcite() override {}
+
+  void applyImpulse(double* /*lambda*/) override {}
+
+  bool isActive() const override
+  {
+    return true;
   }
 
-  return content;
+  dynamics::SkeletonPtr getRootSkeleton() const override
+  {
+    return nullptr;
+  }
+};
+
+} // namespace
+
+TEST(ConstrainedGroupTest, AddRemoveAndTotals)
+{
+  ConstrainedGroup group;
+
+  auto c1 = std::make_shared<TestConstraint>(2);
+  auto c2 = std::make_shared<TestConstraint>(3);
+
+  group.addConstraint(c1);
+  group.addConstraint(c2);
+
+  EXPECT_EQ(group.getNumConstraints(), 2u);
+  EXPECT_EQ(group.getTotalDimension(), 5u);
+
+  EXPECT_EQ(group.getConstraint(0), c1);
+  const ConstrainedGroup& constGroup = group;
+  EXPECT_EQ(constGroup.getConstraint(1), c2);
+
+  group.removeConstraint(c1);
+  EXPECT_EQ(group.getNumConstraints(), 1u);
+  EXPECT_EQ(group.getTotalDimension(), 3u);
+  EXPECT_EQ(group.getConstraint(0), c2);
+
+  group.removeAllConstraints();
+  EXPECT_EQ(group.getNumConstraints(), 0u);
 }
 
-} // namespace common
-} // namespace dart
+} // namespace dart::constraint
