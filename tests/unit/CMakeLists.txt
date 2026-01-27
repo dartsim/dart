@@ -298,3 +298,24 @@ dart_add_test("unit" UNIT_simulation_Recording simulation/test_recording.cpp)
 if(DART_BUILD_SIMULATION_EXPERIMENTAL)
   add_subdirectory(simulation/experimental)
 endif()
+
+# ==============================================================================
+# SIMD Tests
+# ==============================================================================
+# Note: All SIMD tests link Eigen because simd.hpp includes geometry types
+# which depend on Eigen for interop support.
+dart_build_tests(
+  TYPE unit
+  TARGET_PREFIX UNIT_simd
+  LINK_LIBRARIES dart-simd Eigen3::Eigen GTest::gtest_main
+  SOURCES
+    simd/test_vec_scalar.cpp
+    simd/test_vec_mask_scalar.cpp
+    simd/test_operations_scalar.cpp
+    simd/test_config.cpp
+    simd/test_edge_cases.cpp
+    simd/test_eigen_interop.cpp
+    simd/test_geometry.cpp
+    simd/test_dynamic.cpp
+    simd/test_batch_soa.cpp
+)
