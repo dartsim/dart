@@ -439,10 +439,20 @@ When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter rev
 
 - Address the feedback in code, then push the fix silently
 - If the feedback is valid, implement the fix without commenting
-- If the feedback is incorrect, ignore it (maintainers will dismiss if needed)
+- If the feedback appears incorrect (false positive):
+  1. **Verify** the claim is false by running standalone tests or examining the code
+  2. **Add a test** that explicitly documents the correct behavior AND refutes the claim
+  3. Example: If Codex claims `hprod([2,3,5,7])` returns 294 instead of 210:
+     ```cpp
+     EXPECT_FLOAT_EQ(result, 210.0f);  // Verify correct behavior
+     EXPECT_NE(result, 294.0f);        // Explicitly refute false claim
+     ```
+  4. Push the test (no comment needed) - the test serves as permanent documentation
 - **Follow the review-fix loop** (see workflow below)
 
 This avoids noisy bot-to-bot conversations while still leveraging automated verification.
+
+> **Note**: False positives can recur across reviews. Tests that explicitly refute incorrect claims prevent future confusion and document the verification.
 
 ### Review-Fix Loop Workflow
 
