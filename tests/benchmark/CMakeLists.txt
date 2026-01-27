@@ -76,6 +76,25 @@ if(DART_BUILD_SIMULATION_EXPERIMENTAL)
 endif()
 
 # ==============================================================================
+# SIMD Benchmarks
+# ==============================================================================
+add_executable(bm_simd simd/bm_simd.cpp)
+target_link_libraries(bm_simd
+  dart-simd
+  Eigen3::Eigen
+  benchmark::benchmark
+)
+
+# Enable native SIMD for benchmarks (AVX2, AVX-512, etc. based on CPU)
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
+if(COMPILER_SUPPORTS_MARCH_NATIVE)
+  target_compile_options(bm_simd PRIVATE -march=native)
+endif()
+
+dart_format_add(simd/bm_simd.cpp)
+
+# ==============================================================================
 # Note: Benchmarks are standalone executables for performance measurement.
 # They are NOT registered as ctests since they measure performance, not correctness.
 #

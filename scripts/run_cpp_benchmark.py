@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build and run a C++ benchmark with optional runtime arguments."""
+
 from __future__ import annotations
 
 import argparse
@@ -17,6 +18,7 @@ CANONICAL_BENCHMARKS = {
     "row_swapping": "BM_ROW_SWAPPING",
     "dot_product": "BM_DOT_PRODUCT",
     "matrix_multiply": "BM_MATRIX_MULTIPLY",
+    "simd": "bm_simd",
 }
 
 ALIASES = {
@@ -31,6 +33,7 @@ ALIASES = {
     "bm_matrix_multiply": "BM_MATRIX_MULTIPLY",
     "lcpsolver": "BM_LCPSOLVER",
     "lcp_solvers": "BM_LCPSOLVER_SOLVERS",
+    "bm_simd": "bm_simd",
 }
 
 
@@ -107,6 +110,7 @@ def _find_binary(build_dir: Path, target: str) -> Path:
         build_dir / "tests" / "benchmark" / "dynamics" / target,
         build_dir / "tests" / "benchmark" / "integration" / target,
         build_dir / "tests" / "benchmark" / "unit" / target,
+        build_dir / "tests" / "benchmark" / "simd" / target,
     ]
 
     for path in candidates:
@@ -126,6 +130,12 @@ def run(benchmark: str, build_type: str, run_args: list[str]) -> int:
     ensure_build_exists(build_dir, build_type)
 
     target = _resolve_target(benchmark)
+
+    if target.startswith("SPECIAL:"):
+        task_name = target[8:]
+        print(f"This benchmark requires special configuration.")
+        print(f"Please run: pixi run {task_name}")
+        return 1
 
     env = os.environ.copy()
     env["BUILD_TYPE"] = build_type

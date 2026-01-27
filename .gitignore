@@ -116,6 +116,9 @@ imgui.ini
 # Profiling logs
 profiling/*.txt
 
+# Sisyphus agent artifacts
+.sisyphus/
+
 # Coverage files
 *.info
 *.gcda

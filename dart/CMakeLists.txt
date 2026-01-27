@@ -81,6 +81,7 @@ add_subdirectory(sensor)
 add_subdirectory(utils) # tinyxml2, libsdformat
 add_subdirectory(io)
 add_subdirectory(gui) # osg
+add_subdirectory(simd)
 
 set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
 set(DART_CONFIG_HPP_OUT ${DART_BINARY_DIR}/dart/config.hpp)
