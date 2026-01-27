@@ -301,6 +301,32 @@ TEST_F(Matrix3x3Test, EigenInterop)
   EXPECT_TRUE(back.isApprox(em));
 }
 
+TEST_F(Matrix3x3Test, EigenInteropNonSymmetricRoundTrip)
+{
+  Eigen::Matrix3f em;
+  em << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+
+  Matrix3x3f sm = Matrix3x3f::fromEigen(em);
+
+  EXPECT_FLOAT_EQ(sm(0, 0), 1.0f);
+  EXPECT_FLOAT_EQ(sm(0, 1), 2.0f);
+  EXPECT_FLOAT_EQ(sm(0, 2), 3.0f);
+  EXPECT_FLOAT_EQ(sm(1, 0), 4.0f);
+  EXPECT_FLOAT_EQ(sm(1, 1), 5.0f);
+  EXPECT_FLOAT_EQ(sm(1, 2), 6.0f);
+  EXPECT_FLOAT_EQ(sm(2, 0), 7.0f);
+  EXPECT_FLOAT_EQ(sm(2, 1), 8.0f);
+  EXPECT_FLOAT_EQ(sm(2, 2), 9.0f);
+
+  Eigen::Matrix3f back = sm.toEigen();
+  for (int r = 0; r < 3; ++r) {
+    for (int c = 0; c < 3; ++c) {
+      EXPECT_FLOAT_EQ(back(r, c), em(r, c))
+          << "Mismatch at (" << r << "," << c << ")";
+    }
+  }
+}
+
 class Matrix4x4Test : public ::testing::Test
 {
 };
@@ -350,6 +376,43 @@ TEST_F(Matrix4x4Test, TransformVector)
   EXPECT_FLOAT_EQ(result.z(), v.z());
 }
 
+TEST_F(Matrix4x4Test, TransformPointPaddingLaneIsZero)
+{
+  Eigen::Matrix4f em = Eigen::Matrix4f::Identity();
+  em(0, 3) = 10.0f;
+  em(1, 3) = 20.0f;
+  em(2, 3) = 30.0f;
+  Matrix4x4f M = Matrix4x4f::fromEigen(em);
+
+  Vector3f p(1.0f, 2.0f, 3.0f);
+  Vector3f result = M.transformPoint(p);
+
+  EXPECT_FLOAT_EQ(result.x(), 11.0f);
+  EXPECT_FLOAT_EQ(result.y(), 22.0f);
+  EXPECT_FLOAT_EQ(result.z(), 33.0f);
+  EXPECT_FLOAT_EQ(result.data[3], 0.0f)
+      << "Padding lane must be zero (Vector3 invariant)";
+}
+
+TEST_F(Matrix4x4Test, TransformVectorPaddingLaneIsZero)
+{
+  Eigen::Matrix4f em = Eigen::Matrix4f::Identity();
+  em(0, 0) = 2.0f;
+  em(1, 1) = 3.0f;
+  em(2, 2) = 4.0f;
+  em(0, 3) = 100.0f;
+  Matrix4x4f M = Matrix4x4f::fromEigen(em);
+
+  Vector3f v(1.0f, 1.0f, 1.0f);
+  Vector3f result = M.transformVector(v);
+
+  EXPECT_FLOAT_EQ(result.x(), 2.0f);
+  EXPECT_FLOAT_EQ(result.y(), 3.0f);
+  EXPECT_FLOAT_EQ(result.z(), 4.0f);
+  EXPECT_FLOAT_EQ(result.data[3], 0.0f)
+      << "Padding lane must be zero (Vector3 invariant)";
+}
+
 TEST_F(Matrix4x4Test, EigenInterop)
 {
   Eigen::Matrix4f em = Eigen::Matrix4f::Identity();
@@ -361,6 +424,29 @@ TEST_F(Matrix4x4Test, EigenInterop)
   Eigen::Matrix4f back = sm.toEigen();
 
   EXPECT_TRUE(back.isApprox(em));
+}
+
+TEST_F(Matrix4x4Test, EigenInteropNonSymmetricRoundTrip)
+{
+  Eigen::Matrix4f em;
+  em << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16;
+
+  Matrix4x4f sm = Matrix4x4f::fromEigen(em);
+
+  for (int r = 0; r < 4; ++r) {
+    for (int c = 0; c < 4; ++c) {
+      EXPECT_FLOAT_EQ(sm(r, c), em(r, c))
+          << "fromEigen mismatch at (" << r << "," << c << ")";
+    }
+  }
+
+  Eigen::Matrix4f back = sm.toEigen();
+  for (int r = 0; r < 4; ++r) {
+    for (int c = 0; c < 4; ++c) {
+      EXPECT_FLOAT_EQ(back(r, c), em(r, c))
+          << "toEigen mismatch at (" << r << "," << c << ")";
+    }
+  }
 }
 
 TEST_F(Matrix4x4Test, Determinant)
@@ -426,6 +512,91 @@ TEST_F(Matrix4x4Test, TryInverse)
   em << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16;
   Matrix4x4f singular = Matrix4x4f::fromEigen(em);
   EXPECT_FALSE(singular.tryInverse(result));
+}
+
+// Verify inverse matches Eigen for non-orthogonal matrices.
+// This test documents that our inverse() returns the TRUE inverse (not
+// transpose) for matrices with non-uniform scaling, shear, and perspective
+// components.
+TEST_F(Matrix4x4Test, InverseMatchesEigenForNonOrthogonal)
+{
+  // Test case 1: Matrix with non-uniform scaling and shear
+  {
+    Eigen::Matrix4f em;
+    em << 5, -2, 2, 7, 1, 0, 0, 3, -3, 1, 5, 0, 3, -1, -9, 4;
+
+    Matrix4x4f A = Matrix4x4f::fromEigen(em);
+    Matrix4x4f Ainv = A.inverse();
+    Eigen::Matrix4f eigenInv = em.inverse();
+    Eigen::Matrix4f ourInv = Ainv.toEigen();
+
+    // Our inverse must match Eigen's inverse element-by-element
+    for (int i = 0; i < 4; ++i) {
+      for (int j = 0; j < 4; ++j) {
+        EXPECT_NEAR(ourInv(i, j), eigenInv(i, j), 1e-5f)
+            << "Mismatch at (" << i << "," << j << ")";
+      }
+    }
+  }
+
+  // Test case 2: Pure non-uniform scaling (diagonal, but NOT orthogonal)
+  {
+    Eigen::Matrix4f em = Eigen::Matrix4f::Identity();
+    em(0, 0) = 2.0f;
+    em(1, 1) = 3.0f;
+    em(2, 2) = 0.5f;
+
+    Matrix4x4f A = Matrix4x4f::fromEigen(em);
+    Matrix4x4f Ainv = A.inverse();
+
+    // For scaling matrix, inverse should have reciprocal scales
+    EXPECT_NEAR(Ainv(0, 0), 0.5f, 1e-6f);
+    EXPECT_NEAR(Ainv(1, 1), 1.0f / 3.0f, 1e-6f);
+    EXPECT_NEAR(Ainv(2, 2), 2.0f, 1e-6f);
+    EXPECT_NEAR(Ainv(3, 3), 1.0f, 1e-6f);
+  }
+
+  // Test case 3: Affine transform with translation (common in robotics)
+  {
+    Eigen::Matrix4f em = Eigen::Matrix4f::Identity();
+    // Rotation around Z by 45 degrees
+    float c = std::cos(0.785398f);
+    float s = std::sin(0.785398f);
+    em(0, 0) = c;
+    em(0, 1) = -s;
+    em(1, 0) = s;
+    em(1, 1) = c;
+    // Non-uniform scale
+    em(0, 0) *= 2.0f;
+    em(0, 1) *= 2.0f;
+    em(1, 0) *= 0.5f;
+    em(1, 1) *= 0.5f;
+    // Translation
+    em(0, 3) = 10.0f;
+    em(1, 3) = 20.0f;
+    em(2, 3) = 30.0f;
+
+    Matrix4x4f A = Matrix4x4f::fromEigen(em);
+    Matrix4x4f Ainv = A.inverse();
+    Eigen::Matrix4f eigenInv = em.inverse();
+    Eigen::Matrix4f ourInv = Ainv.toEigen();
+
+    for (int i = 0; i < 4; ++i) {
+      for (int j = 0; j < 4; ++j) {
+        EXPECT_NEAR(ourInv(i, j), eigenInv(i, j), 1e-4f)
+            << "Mismatch at (" << i << "," << j << ")";
+      }
+    }
+
+    // Verify A * A^-1 = I
+    Matrix4x4f product = A * Ainv;
+    for (int i = 0; i < 4; ++i) {
+      for (int j = 0; j < 4; ++j) {
+        float expected = (i == j) ? 1.0f : 0.0f;
+        EXPECT_NEAR(product(i, j), expected, 1e-4f);
+      }
+    }
+  }
 }
 
 TEST_F(Matrix3x3Test, FrobeniusNorm)

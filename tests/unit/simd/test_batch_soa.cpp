@@ -319,6 +319,30 @@ TEST_F(Matrix4x4SoATest, InverseIdentity)
   }
 }
 
+TEST_F(Matrix4x4SoATest, InverseMatchesEigen)
+{
+  auto matrices = generateRandomMatrices();
+  Matrix4x4SoA<float, N> soa(matrices);
+
+  Matrix4x4SoA<float, N> invSoa = soa.inverse();
+
+  for (std::size_t i = 0; i < N; ++i) {
+    Eigen::Matrix4f eigenMat = matrices[i].toEigen();
+    Eigen::Matrix4f eigenInv = eigenMat.inverse();
+
+    Matrix4x4f ourInv = invSoa.get(i);
+    Eigen::Matrix4f ourInvEigen = ourInv.toEigen();
+
+    for (int r = 0; r < 4; ++r) {
+      for (int c = 0; c < 4; ++c) {
+        EXPECT_NEAR(ourInvEigen(r, c), eigenInv(r, c), 1e-3f)
+            << "Matrix " << i << " inverse mismatch at (" << r << "," << c
+            << ")";
+      }
+    }
+  }
+}
+
 // =============================================================================
 // Vector3SoA Tests
 // =============================================================================
@@ -588,6 +612,66 @@ TEST_F(Vector3SoATest, Arithmetic)
     EXPECT_FLOAT_EQ(negResults[i].x(), -a[i].x());
     EXPECT_FLOAT_EQ(negResults[i].y(), -a[i].y());
     EXPECT_FLOAT_EQ(negResults[i].z(), -a[i].z());
+  }
+}
+
+TEST_F(Vector3SoATest, NormalizeZeroLengthReturnsZero)
+{
+  std::array<Vector3f, N> vectors;
+  for (std::size_t i = 0; i < N; ++i) {
+    if (i % 2 == 0) {
+      vectors[i] = Vector3f(0.0f, 0.0f, 0.0f);
+    } else {
+      vectors[i] = Vector3f(3.0f, 4.0f, 0.0f);
+    }
+  }
+
+  Vector3SoA<float, N> soa(vectors);
+  Vector3SoA<float, N> normalized = normalize(soa);
+  auto results = normalized.toAos();
+
+  for (std::size_t i = 0; i < N; ++i) {
+    if (i % 2 == 0) {
+      EXPECT_FLOAT_EQ(results[i].x(), 0.0f)
+          << "Zero vector should normalize to zero";
+      EXPECT_FLOAT_EQ(results[i].y(), 0.0f);
+      EXPECT_FLOAT_EQ(results[i].z(), 0.0f);
+      EXPECT_FALSE(std::isnan(results[i].x())) << "Should not produce NaN";
+    } else {
+      EXPECT_NEAR(results[i].norm(), 1.0f, 1e-5f);
+    }
+  }
+}
+
+TEST_F(Vector3SoATest, ProjectOntoZeroVectorReturnsZero)
+{
+  std::array<Vector3f, N> as, bs;
+  for (std::size_t i = 0; i < N; ++i) {
+    as[i] = Vector3f(1.0f, 2.0f, 3.0f);
+    if (i % 2 == 0) {
+      bs[i] = Vector3f(0.0f, 0.0f, 0.0f);
+    } else {
+      bs[i] = Vector3f(1.0f, 0.0f, 0.0f);
+    }
+  }
+
+  Vector3SoA<float, N> soaA(as);
+  Vector3SoA<float, N> soaB(bs);
+  Vector3SoA<float, N> projected = project(soaA, soaB);
+  auto results = projected.toAos();
+
+  for (std::size_t i = 0; i < N; ++i) {
+    if (i % 2 == 0) {
+      EXPECT_FLOAT_EQ(results[i].x(), 0.0f)
+          << "Projection onto zero should be zero";
+      EXPECT_FLOAT_EQ(results[i].y(), 0.0f);
+      EXPECT_FLOAT_EQ(results[i].z(), 0.0f);
+      EXPECT_FALSE(std::isnan(results[i].x())) << "Should not produce NaN";
+    } else {
+      EXPECT_NEAR(results[i].x(), 1.0f, 1e-5f);
+      EXPECT_NEAR(results[i].y(), 0.0f, 1e-5f);
+      EXPECT_NEAR(results[i].z(), 0.0f, 1e-5f);
+    }
   }
 }
 

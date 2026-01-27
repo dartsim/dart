@@ -397,4 +397,26 @@ TYPED_TEST(OperationsScalarTest, Select)
   }
 }
 
+TEST(HprodSpecificValues, PrimeProduct)
+{
+  alignas(64) float data[4] = {2.0f, 3.0f, 5.0f, 7.0f};
+  auto v = Vec<float, 4>::load(data);
+  float result = hprod(v);
+  EXPECT_FLOAT_EQ(result, 210.0f) << "hprod([2,3,5,7]) must equal 2*3*5*7=210";
+}
+
+TEST(HprodSpecificValues, AllOnes)
+{
+  alignas(64) float data[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+  auto v = Vec<float, 4>::load(data);
+  EXPECT_FLOAT_EQ(hprod(v), 1.0f);
+}
+
+TEST(HprodSpecificValues, WithZero)
+{
+  alignas(64) float data[4] = {2.0f, 0.0f, 5.0f, 7.0f};
+  auto v = Vec<float, 4>::load(data);
+  EXPECT_FLOAT_EQ(hprod(v), 0.0f);
+}
+
 } // namespace dart::simd
