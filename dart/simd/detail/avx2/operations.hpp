@@ -43,13 +43,15 @@ namespace dart::simd {
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<float, 8> abs(const Vec<float, 8>& v)
 {
-  return Vec<float, 8>(_mm256_and_ps(v.data, _mm256_castsi256_ps(_mm256_set1_epi32(0x7FFFFFFF))));
+  return Vec<float, 8>(_mm256_and_ps(
+      v.data, _mm256_castsi256_ps(_mm256_set1_epi32(0x7FFFFFFF))));
 }
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<double, 4> abs(const Vec<double, 4>& v)
 {
-  return Vec<double, 4>(_mm256_and_pd(v.data, _mm256_castsi256_pd(_mm256_set1_epi64x(0x7FFFFFFFFFFFFFFF))));
+  return Vec<double, 4>(_mm256_and_pd(
+      v.data, _mm256_castsi256_pd(_mm256_set1_epi64x(0x7FFFFFFFFFFFFFFF))));
 }
 
 template <>
@@ -71,13 +73,15 @@ template <>
   __m256 half = _mm256_set1_ps(0.5f);
   __m256 three = _mm256_set1_ps(3.0f);
   __m256 muls = _mm256_mul_ps(_mm256_mul_ps(v.data, est), est);
-  return Vec<float, 8>(_mm256_mul_ps(_mm256_mul_ps(half, est), _mm256_sub_ps(three, muls)));
+  return Vec<float, 8>(
+      _mm256_mul_ps(_mm256_mul_ps(half, est), _mm256_sub_ps(three, muls)));
 }
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<double, 4> rsqrt(const Vec<double, 4>& v)
 {
-  return Vec<double, 4>(_mm256_div_pd(_mm256_set1_pd(1.0), _mm256_sqrt_pd(v.data)));
+  return Vec<double, 4>(
+      _mm256_div_pd(_mm256_set1_pd(1.0), _mm256_sqrt_pd(v.data)));
 }
 
 template <>
@@ -220,25 +224,29 @@ template <>
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<float, 8> round(const Vec<float, 8>& v)
 {
-  return Vec<float, 8>(_mm256_round_ps(v.data, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+  return Vec<float, 8>(
+      _mm256_round_ps(v.data, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
 }
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<double, 4> round(const Vec<double, 4>& v)
 {
-  return Vec<double, 4>(_mm256_round_pd(v.data, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+  return Vec<double, 4>(
+      _mm256_round_pd(v.data, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
 }
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<float, 8> trunc(const Vec<float, 8>& v)
 {
-  return Vec<float, 8>(_mm256_round_ps(v.data, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC));
+  return Vec<float, 8>(
+      _mm256_round_ps(v.data, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC));
 }
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<double, 4> trunc(const Vec<double, 4>& v)
 {
-  return Vec<double, 4>(_mm256_round_pd(v.data, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC));
+  return Vec<double, 4>(
+      _mm256_round_pd(v.data, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC));
 }
 
 template <>
@@ -343,7 +351,8 @@ template <>
     const Vec<float, 8>& if_true,
     const Vec<float, 8>& if_false)
 {
-  return Vec<float, 8>(_mm256_blendv_ps(if_false.data, if_true.data, mask.data));
+  return Vec<float, 8>(
+      _mm256_blendv_ps(if_false.data, if_true.data, mask.data));
 }
 
 template <>
@@ -352,7 +361,8 @@ template <>
     const Vec<double, 4>& if_true,
     const Vec<double, 4>& if_false)
 {
-  return Vec<double, 4>(_mm256_blendv_pd(if_false.data, if_true.data, mask.data));
+  return Vec<double, 4>(
+      _mm256_blendv_pd(if_false.data, if_true.data, mask.data));
 }
 
 template <>
@@ -361,7 +371,8 @@ template <>
     const Vec<std::int32_t, 8>& if_true,
     const Vec<std::int32_t, 8>& if_false)
 {
-  return Vec<std::int32_t, 8>(_mm256_blendv_epi8(if_false.data, if_true.data, mask.data));
+  return Vec<std::int32_t, 8>(
+      _mm256_blendv_epi8(if_false.data, if_true.data, mask.data));
 }
 
 } // namespace dart::simd

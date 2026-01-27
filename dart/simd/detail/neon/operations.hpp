@@ -323,7 +323,8 @@ template <>
     const Vec<std::int32_t, 4>& if_true,
     const Vec<std::int32_t, 4>& if_false)
 {
-  return Vec<std::int32_t, 4>(vbslq_s32(mask.data, if_true.data, if_false.data));
+  return Vec<std::int32_t, 4>(
+      vbslq_s32(mask.data, if_true.data, if_false.data));
 }
 
 } // namespace dart::simd

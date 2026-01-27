@@ -71,7 +71,8 @@ template <>
   __m512 half = _mm512_set1_ps(0.5f);
   __m512 three = _mm512_set1_ps(3.0f);
   __m512 muls = _mm512_mul_ps(_mm512_mul_ps(v.data, est), est);
-  return Vec<float, 16>(_mm512_mul_ps(_mm512_mul_ps(half, est), _mm512_sub_ps(three, muls)));
+  return Vec<float, 16>(
+      _mm512_mul_ps(_mm512_mul_ps(half, est), _mm512_sub_ps(three, muls)));
 }
 
 template <>
@@ -81,7 +82,8 @@ template <>
   __m512d half = _mm512_set1_pd(0.5);
   __m512d three = _mm512_set1_pd(3.0);
   __m512d muls = _mm512_mul_pd(_mm512_mul_pd(v.data, est), est);
-  return Vec<double, 8>(_mm512_mul_pd(_mm512_mul_pd(half, est), _mm512_sub_pd(three, muls)));
+  return Vec<double, 8>(
+      _mm512_mul_pd(_mm512_mul_pd(half, est), _mm512_sub_pd(three, muls)));
 }
 
 template <>
@@ -227,25 +229,29 @@ template <>
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<float, 16> round(const Vec<float, 16>& v)
 {
-  return Vec<float, 16>(_mm512_roundscale_ps(v.data, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+  return Vec<float, 16>(_mm512_roundscale_ps(
+      v.data, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
 }
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<double, 8> round(const Vec<double, 8>& v)
 {
-  return Vec<double, 8>(_mm512_roundscale_pd(v.data, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+  return Vec<double, 8>(_mm512_roundscale_pd(
+      v.data, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
 }
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<float, 16> trunc(const Vec<float, 16>& v)
 {
-  return Vec<float, 16>(_mm512_roundscale_ps(v.data, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC));
+  return Vec<float, 16>(
+      _mm512_roundscale_ps(v.data, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC));
 }
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<double, 8> trunc(const Vec<double, 8>& v)
 {
-  return Vec<double, 8>(_mm512_roundscale_pd(v.data, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC));
+  return Vec<double, 8>(
+      _mm512_roundscale_pd(v.data, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC));
 }
 
 template <>
@@ -302,7 +308,8 @@ template <>
     const Vec<float, 16>& if_true,
     const Vec<float, 16>& if_false)
 {
-  return Vec<float, 16>(_mm512_mask_blend_ps(mask.data, if_false.data, if_true.data));
+  return Vec<float, 16>(
+      _mm512_mask_blend_ps(mask.data, if_false.data, if_true.data));
 }
 
 template <>
@@ -311,7 +318,8 @@ template <>
     const Vec<double, 8>& if_true,
     const Vec<double, 8>& if_false)
 {
-  return Vec<double, 8>(_mm512_mask_blend_pd(mask.data, if_false.data, if_true.data));
+  return Vec<double, 8>(
+      _mm512_mask_blend_pd(mask.data, if_false.data, if_true.data));
 }
 
 template <>
@@ -320,7 +328,8 @@ template <>
     const Vec<std::int32_t, 16>& if_true,
     const Vec<std::int32_t, 16>& if_false)
 {
-  return Vec<std::int32_t, 16>(_mm512_mask_blend_epi32(mask.data, if_false.data, if_true.data));
+  return Vec<std::int32_t, 16>(
+      _mm512_mask_blend_epi32(mask.data, if_false.data, if_true.data));
 }
 
 } // namespace dart::simd

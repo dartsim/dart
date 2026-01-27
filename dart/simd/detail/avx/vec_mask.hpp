@@ -55,15 +55,17 @@ struct VecMask<float, 8>
   DART_SIMD_INLINE VecMask(__m256 v) : data(v) {}
 
   DART_SIMD_INLINE VecMask(bool value)
-    : data(value ? _mm256_cmp_ps(_mm256_setzero_ps(), _mm256_setzero_ps(), _CMP_EQ_OQ)
-                 : _mm256_setzero_ps())
+    : data(
+          value ? _mm256_cmp_ps(
+                      _mm256_setzero_ps(), _mm256_setzero_ps(), _CMP_EQ_OQ)
+                : _mm256_setzero_ps())
   {
   }
 
   DART_SIMD_INLINE static VecMask all_true()
   {
-    return VecMask(_mm256_cmp_ps(
-        _mm256_setzero_ps(), _mm256_setzero_ps(), _CMP_EQ_OQ));
+    return VecMask(
+        _mm256_cmp_ps(_mm256_setzero_ps(), _mm256_setzero_ps(), _CMP_EQ_OQ));
   }
 
   DART_SIMD_INLINE static VecMask all_false()
@@ -180,15 +182,17 @@ struct VecMask<double, 4>
   DART_SIMD_INLINE VecMask(__m256d v) : data(v) {}
 
   DART_SIMD_INLINE VecMask(bool value)
-    : data(value ? _mm256_cmp_pd(_mm256_setzero_pd(), _mm256_setzero_pd(), _CMP_EQ_OQ)
-                 : _mm256_setzero_pd())
+    : data(
+          value ? _mm256_cmp_pd(
+                      _mm256_setzero_pd(), _mm256_setzero_pd(), _CMP_EQ_OQ)
+                : _mm256_setzero_pd())
   {
   }
 
   DART_SIMD_INLINE static VecMask all_true()
   {
-    return VecMask(_mm256_cmp_pd(
-        _mm256_setzero_pd(), _mm256_setzero_pd(), _CMP_EQ_OQ));
+    return VecMask(
+        _mm256_cmp_pd(_mm256_setzero_pd(), _mm256_setzero_pd(), _CMP_EQ_OQ));
   }
 
   DART_SIMD_INLINE static VecMask all_false()

@@ -5,17 +5,46 @@ set(simd_headers
   fwd.hpp
   memory.hpp
   simd.hpp
+  # Scalar backend (always available)
   detail/scalar/vec.hpp
   detail/scalar/vec_mask.hpp
   detail/scalar/operations.hpp
+  # SSE4.2 backend
+  detail/sse42/vec.hpp
+  detail/sse42/vec_mask.hpp
+  detail/sse42/operations.hpp
+  # AVX backend
+  detail/avx/vec.hpp
+  detail/avx/vec_mask.hpp
+  detail/avx/operations.hpp
+  # AVX2 backend
+  detail/avx2/vec.hpp
+  detail/avx2/vec_mask.hpp
+  detail/avx2/operations.hpp
+  # AVX-512 backend
+  detail/avx512/vec.hpp
+  detail/avx512/vec_mask.hpp
+  detail/avx512/operations.hpp
+  # ARM NEON backend
+  detail/neon/vec.hpp
+  detail/neon/vec_mask.hpp
+  detail/neon/operations.hpp
+  # ARM SVE backend
+  detail/sve/vec.hpp
+  detail/sve/vec_mask.hpp
+  detail/sve/operations.hpp
+  # Geometry types
   geometry/vector3.hpp
   geometry/vector4.hpp
   geometry/matrix3x3.hpp
   geometry/matrix4x4.hpp
   geometry/quaternion.hpp
   geometry/isometry3.hpp
+  geometry/batch.hpp
+  # Dynamic types
   dynamic/vector.hpp
   dynamic/matrix.hpp
+  # Eigen interop
   eigen/interop.hpp
   eigen/iterator.hpp
 )

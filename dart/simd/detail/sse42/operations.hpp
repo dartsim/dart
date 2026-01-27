@@ -43,13 +43,15 @@ namespace dart::simd {
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<float, 4> abs(const Vec<float, 4>& v)
 {
-  return Vec<float, 4>(_mm_and_ps(v.data, _mm_castsi128_ps(_mm_set1_epi32(0x7FFFFFFF))));
+  return Vec<float, 4>(
+      _mm_and_ps(v.data, _mm_castsi128_ps(_mm_set1_epi32(0x7FFFFFFF))));
 }
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<double, 2> abs(const Vec<double, 2>& v)
 {
-  return Vec<double, 2>(_mm_and_pd(v.data, _mm_castsi128_pd(_mm_set1_epi64x(0x7FFFFFFFFFFFFFFF))));
+  return Vec<double, 2>(_mm_and_pd(
+      v.data, _mm_castsi128_pd(_mm_set1_epi64x(0x7FFFFFFFFFFFFFFF))));
 }
 
 template <>
@@ -71,7 +73,8 @@ template <>
   __m128 half = _mm_set1_ps(0.5f);
   __m128 three = _mm_set1_ps(3.0f);
   __m128 muls = _mm_mul_ps(_mm_mul_ps(v.data, est), est);
-  return Vec<float, 4>(_mm_mul_ps(_mm_mul_ps(half, est), _mm_sub_ps(three, muls)));
+  return Vec<float, 4>(
+      _mm_mul_ps(_mm_mul_ps(half, est), _mm_sub_ps(three, muls)));
 }
 
 template <>
@@ -151,7 +154,7 @@ template <>
   return min(max(v, lo), hi);
 }
 
-#if defined(DART_SIMD_FMA)
+  #if defined(DART_SIMD_FMA)
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<float, 4> fmadd(
@@ -195,7 +198,7 @@ template <>
   return Vec<double, 2>(_mm_fnmadd_pd(a.data, b.data, c.data));
 }
 
-#else
+  #else
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<float, 4> fmadd(
@@ -239,7 +242,7 @@ template <>
   return Vec<double, 2>(_mm_sub_pd(c.data, _mm_mul_pd(a.data, b.data)));
 }
 
-#endif
+  #endif
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<float, 4> floor(const Vec<float, 4>& v)
@@ -268,25 +271,29 @@ template <>
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<float, 4> round(const Vec<float, 4>& v)
 {
-  return Vec<float, 4>(_mm_round_ps(v.data, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+  return Vec<float, 4>(
+      _mm_round_ps(v.data, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
 }
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<double, 2> round(const Vec<double, 2>& v)
 {
-  return Vec<double, 2>(_mm_round_pd(v.data, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+  return Vec<double, 2>(
+      _mm_round_pd(v.data, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
 }
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<float, 4> trunc(const Vec<float, 4>& v)
 {
-  return Vec<float, 4>(_mm_round_ps(v.data, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC));
+  return Vec<float, 4>(
+      _mm_round_ps(v.data, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC));
 }
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<double, 2> trunc(const Vec<double, 2>& v)
 {
-  return Vec<double, 2>(_mm_round_pd(v.data, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC));
+  return Vec<double, 2>(
+      _mm_round_pd(v.data, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC));
 }
 
 template <>
@@ -385,7 +392,8 @@ template <>
     const Vec<std::int32_t, 4>& if_true,
     const Vec<std::int32_t, 4>& if_false)
 {
-  return Vec<std::int32_t, 4>(_mm_blendv_epi8(if_false.data, if_true.data, mask.data));
+  return Vec<std::int32_t, 4>(
+      _mm_blendv_epi8(if_false.data, if_true.data, mask.data));
 }
 
 } // namespace dart::simd

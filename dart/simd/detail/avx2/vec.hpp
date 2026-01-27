@@ -347,8 +347,14 @@ struct Vec<std::int32_t, 8>
     _mm256_store_si256(reinterpret_cast<__m256i*>(a), data);
     _mm256_store_si256(reinterpret_cast<__m256i*>(b), other.data);
     return Vec(_mm256_set_epi32(
-        a[7] / b[7], a[6] / b[6], a[5] / b[5], a[4] / b[4],
-        a[3] / b[3], a[2] / b[2], a[1] / b[1], a[0] / b[0]));
+        a[7] / b[7],
+        a[6] / b[6],
+        a[5] / b[5],
+        a[4] / b[4],
+        a[3] / b[3],
+        a[2] / b[2],
+        a[1] / b[1],
+        a[0] / b[0]));
   }
 
   DART_SIMD_INLINE Vec operator-() const

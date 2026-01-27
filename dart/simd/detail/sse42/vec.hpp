@@ -338,7 +338,8 @@ struct Vec<std::int32_t, 4>
     alignas(16) std::int32_t a[4], b[4];
     _mm_store_si128(reinterpret_cast<__m128i*>(a), data);
     _mm_store_si128(reinterpret_cast<__m128i*>(b), other.data);
-    return Vec(_mm_set_epi32(a[3] / b[3], a[2] / b[2], a[1] / b[1], a[0] / b[0]));
+    return Vec(
+        _mm_set_epi32(a[3] / b[3], a[2] / b[2], a[1] / b[1], a[0] / b[0]));
   }
 
   DART_SIMD_INLINE Vec operator-() const

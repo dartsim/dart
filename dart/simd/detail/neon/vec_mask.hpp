@@ -77,15 +77,16 @@ struct VecMask<float, 4>
   {
     alignas(16) std::uint32_t tmp[4];
     vst1q_u32(tmp, data);
-    return (tmp[0] ? 1 : 0) + (tmp[1] ? 1 : 0) + (tmp[2] ? 1 : 0) + (tmp[3] ? 1 : 0);
+    return (tmp[0] ? 1 : 0) + (tmp[1] ? 1 : 0) + (tmp[2] ? 1 : 0)
+           + (tmp[3] ? 1 : 0);
   }
 
   [[nodiscard]] DART_SIMD_INLINE std::uint32_t bitmask() const
   {
     alignas(16) std::uint32_t tmp[4];
     vst1q_u32(tmp, data);
-    return ((tmp[0] ? 1u : 0u) << 0) | ((tmp[1] ? 1u : 0u) << 1) |
-           ((tmp[2] ? 1u : 0u) << 2) | ((tmp[3] ? 1u : 0u) << 3);
+    return ((tmp[0] ? 1u : 0u) << 0) | ((tmp[1] ? 1u : 0u) << 1)
+           | ((tmp[2] ? 1u : 0u) << 2) | ((tmp[3] ? 1u : 0u) << 3);
   }
 
   [[nodiscard]] DART_SIMD_INLINE bool operator[](std::size_t i) const
@@ -231,7 +232,8 @@ struct VecMask<double, 2>
 
   [[nodiscard]] DART_SIMD_INLINE VecMask operator~() const
   {
-    return VecMask(vreinterpretq_u64_u32(vmvnq_u32(vreinterpretq_u32_u64(data))));
+    return VecMask(
+        vreinterpretq_u64_u32(vmvnq_u32(vreinterpretq_u32_u64(data))));
   }
 
   [[nodiscard]] DART_SIMD_INLINE VecMask operator&&(const VecMask& other) const
@@ -311,15 +313,16 @@ struct VecMask<std::int32_t, 4>
   {
     alignas(16) std::uint32_t tmp[4];
     vst1q_u32(tmp, data);
-    return (tmp[0] ? 1 : 0) + (tmp[1] ? 1 : 0) + (tmp[2] ? 1 : 0) + (tmp[3] ? 1 : 0);
+    return (tmp[0] ? 1 : 0) + (tmp[1] ? 1 : 0) + (tmp[2] ? 1 : 0)
+           + (tmp[3] ? 1 : 0);
   }
 
   [[nodiscard]] DART_SIMD_INLINE std::uint32_t bitmask() const
   {
     alignas(16) std::uint32_t tmp[4];
     vst1q_u32(tmp, data);
-    return ((tmp[0] ? 1u : 0u) << 0) | ((tmp[1] ? 1u : 0u) << 1) |
-           ((tmp[2] ? 1u : 0u) << 2) | ((tmp[3] ? 1u : 0u) << 3);
+    return ((tmp[0] ? 1u : 0u) << 0) | ((tmp[1] ? 1u : 0u) << 1)
+           | ((tmp[2] ? 1u : 0u) << 2) | ((tmp[3] ? 1u : 0u) << 3);
   }
 
   [[nodiscard]] DART_SIMD_INLINE bool operator[](std::size_t i) const
@@ -389,92 +392,110 @@ struct VecMask<std::int32_t, 4>
   }
 };
 
-DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator==(const Vec& other) const
+DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator==(
+    const Vec& other) const
 {
   return VecMask<float, 4>(vceqq_f32(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator!=(const Vec& other) const
+DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator!=(
+    const Vec& other) const
 {
   return ~(*this == other);
 }
 
-DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator<(const Vec& other) const
+DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator<(
+    const Vec& other) const
 {
   return VecMask<float, 4>(vcltq_f32(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator<=(const Vec& other) const
+DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator<=(
+    const Vec& other) const
 {
   return VecMask<float, 4>(vcleq_f32(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator>(const Vec& other) const
+DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator>(
+    const Vec& other) const
 {
   return VecMask<float, 4>(vcgtq_f32(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator>=(const Vec& other) const
+DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator>=(
+    const Vec& other) const
 {
   return VecMask<float, 4>(vcgeq_f32(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator==(const Vec& other) const
+DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator==(
+    const Vec& other) const
 {
   return VecMask<double, 2>(vceqq_f64(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator!=(const Vec& other) const
+DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator!=(
+    const Vec& other) const
 {
   return ~(*this == other);
 }
 
-DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator<(const Vec& other) const
+DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator<(
+    const Vec& other) const
 {
   return VecMask<double, 2>(vcltq_f64(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator<=(const Vec& other) const
+DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator<=(
+    const Vec& other) const
 {
   return VecMask<double, 2>(vcleq_f64(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator>(const Vec& other) const
+DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator>(
+    const Vec& other) const
 {
   return VecMask<double, 2>(vcgtq_f64(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator>=(const Vec& other) const
+DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator>=(
+    const Vec& other) const
 {
   return VecMask<double, 2>(vcgeq_f64(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator==(const Vec& other) const
+DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator==(
+    const Vec& other) const
 {
   return VecMask<std::int32_t, 4>(vceqq_s32(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator!=(const Vec& other) const
+DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator!=(
+    const Vec& other) const
 {
   return ~(*this == other);
 }
 
-DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator<(const Vec& other) const
+DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator<(
+    const Vec& other) const
 {
   return VecMask<std::int32_t, 4>(vcltq_s32(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator<=(const Vec& other) const
+DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator<=(
+    const Vec& other) const
 {
   return VecMask<std::int32_t, 4>(vcleq_s32(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator>(const Vec& other) const
+DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator>(
+    const Vec& other) const
 {
   return VecMask<std::int32_t, 4>(vcgtq_s32(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator>=(const Vec& other) const
+DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator>=(
+    const Vec& other) const
 {
   return VecMask<std::int32_t, 4>(vcgeq_s32(data, other.data));
 }

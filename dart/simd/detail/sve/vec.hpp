@@ -11,10 +11,10 @@
 
 #if defined(DART_SIMD_SVE)
 
-#include <arm_sve.h>
+  #include <arm_sve.h>
 
-#include <cstddef>
-#include <cstdint>
+  #include <cstddef>
+  #include <cstdint>
 
 namespace dart::simd {
 
@@ -704,7 +704,8 @@ struct Vec<std::uint32_t, 4>
   {
     Vec res;
     for (std::size_t i = 0; i < width; ++i) {
-      res.data[i] = static_cast<std::uint32_t>(-static_cast<std::int32_t>(data[i]));
+      res.data[i]
+          = static_cast<std::uint32_t>(-static_cast<std::int32_t>(data[i]));
     }
     return res;
   }

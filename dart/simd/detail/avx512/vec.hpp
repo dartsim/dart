@@ -328,8 +328,9 @@ struct Vec<std::int32_t, 16>
     alignas(64) std::int32_t a[16], b[16], r[16];
     _mm512_store_si512(reinterpret_cast<__m512i*>(a), data);
     _mm512_store_si512(reinterpret_cast<__m512i*>(b), other.data);
-    for (int j = 0; j < 16; ++j)
+    for (int j = 0; j < 16; ++j) {
       r[j] = a[j] / b[j];
+    }
     return Vec(_mm512_load_si512(reinterpret_cast<const __m512i*>(r)));
   }
 

@@ -54,8 +54,7 @@ struct VecMask<float, 4>
   DART_SIMD_INLINE VecMask(__m128 v) : data(v) {}
 
   DART_SIMD_INLINE VecMask(bool value)
-    : data(value ? _mm_castsi128_ps(_mm_set1_epi32(-1))
-                 : _mm_setzero_ps())
+    : data(value ? _mm_castsi128_ps(_mm_set1_epi32(-1)) : _mm_setzero_ps())
   {
   }
 
@@ -161,8 +160,7 @@ struct VecMask<double, 2>
   DART_SIMD_INLINE VecMask(__m128d v) : data(v) {}
 
   DART_SIMD_INLINE VecMask(bool value)
-    : data(value ? _mm_castsi128_pd(_mm_set1_epi64x(-1))
-                 : _mm_setzero_pd())
+    : data(value ? _mm_castsi128_pd(_mm_set1_epi64x(-1)) : _mm_setzero_pd())
   {
   }
 
@@ -363,92 +361,110 @@ struct VecMask<std::int32_t, 4>
   }
 };
 
-DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator==(const Vec& other) const
+DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator==(
+    const Vec& other) const
 {
   return VecMask<float, 4>(_mm_cmpeq_ps(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator!=(const Vec& other) const
+DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator!=(
+    const Vec& other) const
 {
   return VecMask<float, 4>(_mm_cmpneq_ps(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator<(const Vec& other) const
+DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator<(
+    const Vec& other) const
 {
   return VecMask<float, 4>(_mm_cmplt_ps(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator<=(const Vec& other) const
+DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator<=(
+    const Vec& other) const
 {
   return VecMask<float, 4>(_mm_cmple_ps(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator>(const Vec& other) const
+DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator>(
+    const Vec& other) const
 {
   return VecMask<float, 4>(_mm_cmpgt_ps(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator>=(const Vec& other) const
+DART_SIMD_INLINE VecMask<float, 4> Vec<float, 4>::operator>=(
+    const Vec& other) const
 {
   return VecMask<float, 4>(_mm_cmpge_ps(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator==(const Vec& other) const
+DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator==(
+    const Vec& other) const
 {
   return VecMask<double, 2>(_mm_cmpeq_pd(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator!=(const Vec& other) const
+DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator!=(
+    const Vec& other) const
 {
   return VecMask<double, 2>(_mm_cmpneq_pd(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator<(const Vec& other) const
+DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator<(
+    const Vec& other) const
 {
   return VecMask<double, 2>(_mm_cmplt_pd(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator<=(const Vec& other) const
+DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator<=(
+    const Vec& other) const
 {
   return VecMask<double, 2>(_mm_cmple_pd(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator>(const Vec& other) const
+DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator>(
+    const Vec& other) const
 {
   return VecMask<double, 2>(_mm_cmpgt_pd(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator>=(const Vec& other) const
+DART_SIMD_INLINE VecMask<double, 2> Vec<double, 2>::operator>=(
+    const Vec& other) const
 {
   return VecMask<double, 2>(_mm_cmpge_pd(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator==(const Vec& other) const
+DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator==(
+    const Vec& other) const
 {
   return VecMask<std::int32_t, 4>(_mm_cmpeq_epi32(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator!=(const Vec& other) const
+DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator!=(
+    const Vec& other) const
 {
   return ~(*this == other);
 }
 
-DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator<(const Vec& other) const
+DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator<(
+    const Vec& other) const
 {
   return VecMask<std::int32_t, 4>(_mm_cmplt_epi32(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator<=(const Vec& other) const
+DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator<=(
+    const Vec& other) const
 {
   return ~(*this > other);
 }
 
-DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator>(const Vec& other) const
+DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator>(
+    const Vec& other) const
 {
   return VecMask<std::int32_t, 4>(_mm_cmpgt_epi32(data, other.data));
 }
 
-DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator>=(const Vec& other) const
+DART_SIMD_INLINE VecMask<std::int32_t, 4> Vec<std::int32_t, 4>::operator>=(
+    const Vec& other) const
 {
   return ~(*this < other);
 }

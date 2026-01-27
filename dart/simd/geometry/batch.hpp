@@ -186,15 +186,7 @@ struct Matrix3x3SoA
   [[nodiscard]] Matrix3x3<T> get(std::size_t i) const noexcept
   {
     return Matrix3x3<T>(
-        m00[i],
-        m01[i],
-        m02[i],
-        m10[i],
-        m11[i],
-        m12[i],
-        m20[i],
-        m21[i],
-        m22[i]);
+        m00[i], m01[i], m02[i], m10[i], m11[i], m12[i], m20[i], m21[i], m22[i]);
   }
 
   /// Compute N determinants in parallel - SIMD optimized, no scalar extraction
@@ -216,7 +208,8 @@ struct Matrix3x3SoA
     Vec<T, N> cofactor10 = fmsub(m12, m20, m10 * m22);
     Vec<T, N> cofactor20 = fmsub(m10, m21, m11 * m20);
 
-    Vec<T, N> det = fmadd(m00, cofactor00, fmadd(m01, cofactor10, m02 * cofactor20));
+    Vec<T, N> det
+        = fmadd(m00, cofactor00, fmadd(m01, cofactor10, m02 * cofactor20));
     Vec<T, N> invDet = Vec<T, N>::broadcast(T(1)) / det;
 
     // Compute adjugate (transposed cofactor matrix)
@@ -607,9 +600,7 @@ template <typename T, std::size_t N>
   Vec<T, N> d = dot(v, n);
   Vec<T, N> two_d = d + d;
   return Vector3SoA<T, N>(
-      v.x - two_d * n.x,
-      v.y - two_d * n.y,
-      v.z - two_d * n.z);
+      v.x - two_d * n.x, v.y - two_d * n.y, v.z - two_d * n.z);
 }
 
 /// Batch project: (a·b / b·b) * b for each of N vectors

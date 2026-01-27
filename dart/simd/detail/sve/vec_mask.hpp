@@ -11,8 +11,8 @@
 
 #if defined(DART_SIMD_SVE)
 
-#include <cstddef>
-#include <cstdint>
+  #include <cstddef>
+  #include <cstdint>
 
 namespace dart::simd {
 
@@ -38,8 +38,9 @@ struct VecMask<float, 4>
   [[nodiscard]] DART_SIMD_INLINE bool all() const
   {
     for (std::size_t i = 0; i < width; ++i) {
-      if (!data[i])
+      if (!data[i]) {
         return false;
+      }
     }
     return true;
   }
@@ -47,8 +48,9 @@ struct VecMask<float, 4>
   [[nodiscard]] DART_SIMD_INLINE bool any() const
   {
     for (std::size_t i = 0; i < width; ++i) {
-      if (data[i])
+      if (data[i]) {
         return true;
+      }
     }
     return false;
   }
@@ -62,8 +64,9 @@ struct VecMask<float, 4>
   {
     int count = 0;
     for (std::size_t i = 0; i < width; ++i) {
-      if (data[i])
+      if (data[i]) {
         ++count;
+      }
     }
     return count;
   }
@@ -72,8 +75,9 @@ struct VecMask<float, 4>
   {
     std::uint32_t mask = 0;
     for (std::size_t i = 0; i < width; ++i) {
-      if (data[i])
+      if (data[i]) {
         mask |= (std::uint32_t{1} << i);
+      }
     }
     return mask;
   }
@@ -161,8 +165,9 @@ struct VecMask<float, 4>
   [[nodiscard]] DART_SIMD_INLINE bool operator==(const VecMask& other) const
   {
     for (std::size_t i = 0; i < width; ++i) {
-      if (data[i] != other.data[i])
+      if (data[i] != other.data[i]) {
         return false;
+      }
     }
     return true;
   }
@@ -319,8 +324,9 @@ struct VecMask<std::int32_t, 4>
   [[nodiscard]] DART_SIMD_INLINE bool all() const
   {
     for (std::size_t i = 0; i < width; ++i) {
-      if (!data[i])
+      if (!data[i]) {
         return false;
+      }
     }
     return true;
   }
@@ -328,8 +334,9 @@ struct VecMask<std::int32_t, 4>
   [[nodiscard]] DART_SIMD_INLINE bool any() const
   {
     for (std::size_t i = 0; i < width; ++i) {
-      if (data[i])
+      if (data[i]) {
         return true;
+      }
     }
     return false;
   }
@@ -343,8 +350,9 @@ struct VecMask<std::int32_t, 4>
   {
     int count = 0;
     for (std::size_t i = 0; i < width; ++i) {
-      if (data[i])
+      if (data[i]) {
         ++count;
+      }
     }
     return count;
   }
@@ -353,8 +361,9 @@ struct VecMask<std::int32_t, 4>
   {
     std::uint32_t mask = 0;
     for (std::size_t i = 0; i < width; ++i) {
-      if (data[i])
+      if (data[i]) {
         mask |= (std::uint32_t{1} << i);
+      }
     }
     return mask;
   }
@@ -442,8 +451,9 @@ struct VecMask<std::int32_t, 4>
   [[nodiscard]] DART_SIMD_INLINE bool operator==(const VecMask& other) const
   {
     for (std::size_t i = 0; i < width; ++i) {
-      if (data[i] != other.data[i])
+      if (data[i] != other.data[i]) {
         return false;
+      }
     }
     return true;
   }
@@ -474,8 +484,9 @@ struct VecMask<std::uint32_t, 4>
   [[nodiscard]] DART_SIMD_INLINE bool all() const
   {
     for (std::size_t i = 0; i < width; ++i) {
-      if (!data[i])
+      if (!data[i]) {
         return false;
+      }
     }
     return true;
   }
@@ -483,8 +494,9 @@ struct VecMask<std::uint32_t, 4>
   [[nodiscard]] DART_SIMD_INLINE bool any() const
   {
     for (std::size_t i = 0; i < width; ++i) {
-      if (data[i])
+      if (data[i]) {
         return true;
+      }
     }
     return false;
   }
@@ -498,8 +510,9 @@ struct VecMask<std::uint32_t, 4>
   {
     int count = 0;
     for (std::size_t i = 0; i < width; ++i) {
-      if (data[i])
+      if (data[i]) {
         ++count;
+      }
     }
     return count;
   }
@@ -508,8 +521,9 @@ struct VecMask<std::uint32_t, 4>
   {
     std::uint32_t mask = 0;
     for (std::size_t i = 0; i < width; ++i) {
-      if (data[i])
+      if (data[i]) {
         mask |= (std::uint32_t{1} << i);
+      }
     }
     return mask;
   }
@@ -597,8 +611,9 @@ struct VecMask<std::uint32_t, 4>
   [[nodiscard]] DART_SIMD_INLINE bool operator==(const VecMask& other) const
   {
     for (std::size_t i = 0; i < width; ++i) {
-      if (data[i] != other.data[i])
+      if (data[i] != other.data[i]) {
         return false;
+      }
     }
     return true;
   }

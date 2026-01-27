@@ -11,9 +11,9 @@
 
 #if defined(DART_SIMD_SVE)
 
-#include <arm_sve.h>
+  #include <dart/simd/detail/sve/vec.hpp>
 
-#include <dart/simd/detail/sve/vec.hpp>
+  #include <arm_sve.h>
 
 namespace dart::simd {
 

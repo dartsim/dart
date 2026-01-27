@@ -43,8 +43,8 @@ namespace dart::simd {
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<float, 8> abs(const Vec<float, 8>& v)
 {
-  return Vec<float, 8>(
-      _mm256_and_ps(v.data, _mm256_castsi256_ps(_mm256_set1_epi32(0x7FFFFFFF))));
+  return Vec<float, 8>(_mm256_and_ps(
+      v.data, _mm256_castsi256_ps(_mm256_set1_epi32(0x7FFFFFFF))));
 }
 
 template <>
@@ -136,9 +136,7 @@ template <>
 
 template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<double, 4> clamp(
-    const Vec<double, 4>& v,
-    const Vec<double, 4>& lo,
-    const Vec<double, 4>& hi)
+    const Vec<double, 4>& v, const Vec<double, 4>& lo, const Vec<double, 4>& hi)
 {
   return min(max(v, lo), hi);
 }
