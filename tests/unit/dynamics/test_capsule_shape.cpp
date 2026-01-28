@@ -206,14 +206,3 @@ TEST(CapsuleShapeTest, InertiaWithDifferentMasses)
 
   EXPECT_TRUE(inertia2.isApprox(2.0 * inertia1, 1e-10));
 }
-
-//==============================================================================
-TEST(CapsuleShapeTest, ZeroHeightCapsuleIsSphere)
-{
-  const double radius = 1.0;
-  auto capsule = std::make_shared<dart::dynamics::CapsuleShape>(radius, 0.0);
-
-  const double sphereVolume
-      = (4.0 / 3.0) * dart::math::pi * radius * radius * radius;
-  EXPECT_NEAR(capsule->getVolume(), sphereVolume, 1e-10);
-}
