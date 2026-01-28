@@ -2,11 +2,11 @@
 
 #include <dart/dynamics/sphere_shape.hpp>
 
+#include <dart/math/constants.hpp>
+
 #include <gtest/gtest.h>
 
 #include <limits>
-
-#include <cmath>
 
 //==============================================================================
 TEST(SphereShapeTest, ValidRadiusAccepted)
@@ -86,7 +86,8 @@ TEST(SphereShapeTest, ComputeVolume)
 {
   const double radius = 2.0;
   // Volume = (4/3) * pi * r^3
-  const double expectedVolume = (4.0 / 3.0) * M_PI * radius * radius * radius;
+  const double expectedVolume
+      = (4.0 / 3.0) * dart::math::pi * radius * radius * radius;
 
   EXPECT_NEAR(
       dart::dynamics::SphereShape::computeVolume(radius),
@@ -164,7 +165,7 @@ TEST(SphereShapeTest, UnitSphere)
   auto sphere = std::make_shared<dart::dynamics::SphereShape>(1.0);
 
   // Volume of unit sphere = (4/3) * pi
-  const double expectedVolume = (4.0 / 3.0) * M_PI;
+  const double expectedVolume = (4.0 / 3.0) * dart::math::pi;
   EXPECT_NEAR(sphere->getVolume(), expectedVolume, 1e-10);
 
   const auto& bbox = sphere->getBoundingBox();

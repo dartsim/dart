@@ -42,6 +42,8 @@
 #include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
+#include <dart/math/constants.hpp>
+
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
@@ -608,7 +610,8 @@ TEST(BodyNodeExternalForce, AddExtForceGlobalForceLocalOffset)
   FreeJoint* joint = static_cast<FreeJoint*>(body->getParentJoint());
 
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.linear() = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ()).matrix();
+  tf.linear() = Eigen::AngleAxisd(dart::math::half_pi, Eigen::Vector3d::UnitZ())
+                    .matrix();
   joint->setTransform(tf);
 
   body->clearExternalForces();
