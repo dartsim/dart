@@ -345,3 +345,294 @@ TEST(SubPtr, ReassignToNewSubjectBeforeDestruction)
   EXPECT_EQ(subject1.observerCount(), 0u);
   EXPECT_EQ(subject2.observerCount(), 1u);
 }
+
+//==============================================================================
+class TestObserver : public Observer
+{
+public:
+  void track(TestSubject* subject)
+  {
+    addSubject(subject);
+  }
+
+  void untrack(const Subject* subject)
+  {
+    removeSubject(subject);
+  }
+
+  void untrackAll()
+  {
+    removeAllSubjects();
+  }
+
+  std::size_t subjectCount() const
+  {
+    return mSubjects.size();
+  }
+
+  int notificationCount() const
+  {
+    return mNotificationCount;
+  }
+
+protected:
+  void handleDestructionNotification(const Subject*) override
+  {
+    ++mNotificationCount;
+  }
+
+private:
+  int mNotificationCount = 0;
+};
+
+//==============================================================================
+TEST(SubjectObserverTests, RemoveAllSubjects)
+{
+  TestSubject subject1;
+  TestSubject subject2;
+  TestSubject subject3;
+  TestObserver observer;
+
+  observer.track(&subject1);
+  observer.track(&subject2);
+  observer.track(&subject3);
+
+  EXPECT_EQ(observer.subjectCount(), 3u);
+  EXPECT_EQ(subject1.observerCount(), 1u);
+  EXPECT_EQ(subject2.observerCount(), 1u);
+  EXPECT_EQ(subject3.observerCount(), 1u);
+
+  observer.untrackAll();
+
+  EXPECT_EQ(observer.subjectCount(), 0u);
+  EXPECT_EQ(subject1.observerCount(), 0u);
+  EXPECT_EQ(subject2.observerCount(), 0u);
+  EXPECT_EQ(subject3.observerCount(), 0u);
+}
+
+//==============================================================================
+TEST(SubjectObserverTests, AddNullSubjectIsIgnored)
+{
+  TestObserver observer;
+
+  observer.track(nullptr);
+
+  EXPECT_EQ(observer.subjectCount(), 0u);
+}
+
+//==============================================================================
+TEST(SubjectObserverTests, RemoveNullSubjectIsIgnored)
+{
+  TestSubject subject;
+  TestObserver observer;
+
+  observer.track(&subject);
+  EXPECT_EQ(observer.subjectCount(), 1u);
+
+  observer.untrack(nullptr);
+
+  EXPECT_EQ(observer.subjectCount(), 1u);
+}
+
+//==============================================================================
+TEST(SubjectObserverTests, AddDuplicateSubjectIsIgnored)
+{
+  TestSubject subject;
+  TestObserver observer;
+
+  observer.track(&subject);
+  observer.track(&subject);
+  observer.track(&subject);
+
+  EXPECT_EQ(observer.subjectCount(), 1u);
+  EXPECT_EQ(subject.observerCount(), 1u);
+}
+
+//==============================================================================
+TEST(SubjectObserverTests, RemoveNonTrackedSubjectIsIgnored)
+{
+  TestSubject subject1;
+  TestSubject subject2;
+  TestObserver observer;
+
+  observer.track(&subject1);
+  EXPECT_EQ(observer.subjectCount(), 1u);
+
+  observer.untrack(&subject2);
+
+  EXPECT_EQ(observer.subjectCount(), 1u);
+  EXPECT_EQ(subject1.observerCount(), 1u);
+}
+
+//==============================================================================
+TEST(SubjectObserverTests, MultipleObserversOnSingleSubjectAllNotified)
+{
+  TestSubject subject;
+  TestObserver observer1;
+  TestObserver observer2;
+  TestObserver observer3;
+
+  observer1.track(&subject);
+  observer2.track(&subject);
+  observer3.track(&subject);
+
+  EXPECT_EQ(subject.observerCount(), 3u);
+
+  subject.notify();
+
+  EXPECT_EQ(observer1.notificationCount(), 1);
+  EXPECT_EQ(observer2.notificationCount(), 1);
+  EXPECT_EQ(observer3.notificationCount(), 1);
+  EXPECT_EQ(observer1.subjectCount(), 0u);
+  EXPECT_EQ(observer2.subjectCount(), 0u);
+  EXPECT_EQ(observer3.subjectCount(), 0u);
+}
+
+//==============================================================================
+TEST(
+    SubjectObserverTests,
+    ObserverReceivesMultipleNotificationsFromDifferentSubjects)
+{
+  TestObserver observer;
+
+  {
+    TestSubject subject1;
+    TestSubject subject2;
+    observer.track(&subject1);
+    observer.track(&subject2);
+
+    EXPECT_EQ(observer.subjectCount(), 2u);
+
+    subject1.notify();
+    EXPECT_EQ(observer.notificationCount(), 1);
+    EXPECT_EQ(observer.subjectCount(), 1u);
+
+    subject2.notify();
+    EXPECT_EQ(observer.notificationCount(), 2);
+    EXPECT_EQ(observer.subjectCount(), 0u);
+  }
+}
+
+//==============================================================================
+TEST(SubjectObserverTests, ManualDisconnectBeforeDestruction)
+{
+  TestSubject subject;
+  TestObserver observer;
+
+  observer.track(&subject);
+  EXPECT_EQ(observer.subjectCount(), 1u);
+  EXPECT_EQ(subject.observerCount(), 1u);
+
+  observer.untrack(&subject);
+  EXPECT_EQ(observer.subjectCount(), 0u);
+  EXPECT_EQ(subject.observerCount(), 0u);
+
+  subject.notify();
+  EXPECT_EQ(observer.notificationCount(), 0);
+}
+
+//==============================================================================
+TEST(SubjectObserverTests, ObserverDestructorCleansUpAllConnections)
+{
+  TestSubject subject1;
+  TestSubject subject2;
+
+  {
+    TestObserver observer;
+    observer.track(&subject1);
+    observer.track(&subject2);
+
+    EXPECT_EQ(subject1.observerCount(), 1u);
+    EXPECT_EQ(subject2.observerCount(), 1u);
+  }
+
+  EXPECT_EQ(subject1.observerCount(), 0u);
+  EXPECT_EQ(subject2.observerCount(), 0u);
+}
+
+//==============================================================================
+class SelfRemovingObserver : public Observer
+{
+public:
+  void track(TestSubject* subject)
+  {
+    addSubject(subject);
+  }
+
+  std::size_t subjectCount() const
+  {
+    return mSubjects.size();
+  }
+
+  int notificationCount() const
+  {
+    return mNotificationCount;
+  }
+
+protected:
+  void handleDestructionNotification(const Subject*) override
+  {
+    ++mNotificationCount;
+    removeAllSubjects();
+  }
+
+private:
+  int mNotificationCount = 0;
+};
+
+//==============================================================================
+TEST(SubjectObserverTests, ObserverRemovesAllSubjectsDuringNotification)
+{
+  TestSubject subject1;
+  TestSubject subject2;
+  SelfRemovingObserver observer;
+
+  observer.track(&subject1);
+  observer.track(&subject2);
+
+  EXPECT_EQ(observer.subjectCount(), 2u);
+
+  subject1.notify();
+
+  EXPECT_EQ(observer.notificationCount(), 1);
+  EXPECT_EQ(observer.subjectCount(), 0u);
+  EXPECT_EQ(subject2.observerCount(), 0u);
+}
+
+//==============================================================================
+TEST(SubjectObserverTests, NotifySignalClearsObserverList)
+{
+  TestSubject subject;
+  TestObserver observer1;
+  TestObserver observer2;
+
+  observer1.track(&subject);
+  observer2.track(&subject);
+
+  EXPECT_EQ(subject.observerCount(), 2u);
+
+  subject.notify();
+
+  EXPECT_EQ(subject.observerCount(), 0u);
+}
+
+//==============================================================================
+TEST(SubjectObserverTests, ReconnectAfterNotification)
+{
+  TestSubject subject;
+  TestObserver observer;
+
+  observer.track(&subject);
+  EXPECT_EQ(observer.subjectCount(), 1u);
+
+  subject.notify();
+  EXPECT_EQ(observer.subjectCount(), 0u);
+  EXPECT_EQ(observer.notificationCount(), 1);
+
+  observer.track(&subject);
+  EXPECT_EQ(observer.subjectCount(), 1u);
+  EXPECT_EQ(subject.observerCount(), 1u);
+
+  subject.notify();
+  EXPECT_EQ(observer.notificationCount(), 2);
+}

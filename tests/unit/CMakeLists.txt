@@ -168,6 +168,10 @@ dart_add_test("unit" UNIT_dynamics_BoxShape dynamics/test_box_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_ArrowShape dynamics/test_arrow_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_SimpleFrame dynamics/test_simple_frame.cpp)
 dart_add_test("unit" UNIT_dynamics_MultiSphereConvexHullShape dynamics/test_multi_sphere_convex_hull_shape.cpp)
+dart_add_test("unit" UNIT_dynamics_EulerJoint dynamics/test_euler_joint.cpp)
+dart_add_test("unit" UNIT_dynamics_PlanarJoint dynamics/test_planar_joint.cpp)
+dart_add_test("unit" UNIT_dynamics_ShapeFrame dynamics/test_shape_frame.cpp)
+dart_add_test("unit" UNIT_dynamics_Entity dynamics/test_entity.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
@@ -200,6 +204,7 @@ endif()
 
 # Optimization tests
 dart_add_test("unit" UNIT_math_optimization_Problem math/optimization/test_problem.cpp)
+dart_add_test("unit" UNIT_math_optimization_GradientDescentSolver math/optimization/test_gradient_descent_solver.cpp)
 
 # Math LCP tests
 dart_build_tests(
@@ -218,6 +223,7 @@ dart_build_tests(
     math/lcp/test_lemke.cpp
     math/lcp/test_pgs.cpp
     math/lcp/test_pivot_matrix.cpp
+    math/lcp/test_additional_solvers.cpp
 )
 
 # ==============================================================================
@@ -270,6 +276,9 @@ endif()
 if(TARGET dart-io)
   dart_add_test("unit" test_io_readNone io/test_read.cpp)
   target_link_libraries(test_io_readNone dart-io)
+
+  dart_add_test("unit" UNIT_io_Parsers io/test_parsers.cpp)
+  target_link_libraries(UNIT_io_Parsers dart-io)
 
   dart_add_test("unit" UNIT_io_UrdfParser_Errors io/test_urdf_parser_errors.cpp)
   target_link_libraries(UNIT_io_UrdfParser_Errors dart-io)

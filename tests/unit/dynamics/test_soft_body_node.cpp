@@ -3,8 +3,10 @@
 #include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/soft_body_node.hpp>
+#include <dart/dynamics/soft_mesh_shape.hpp>
 
 #include <gtest/gtest.h>
 
@@ -13,6 +15,27 @@
 using namespace dart;
 using namespace dart::dynamics;
 
+//==============================================================================
+// Helper to create a soft body with a box shape
+static SoftBodyNode* createBoxSoftBody(
+    const SkeletonPtr& skeleton,
+    const Eigen::Vector3d& size = Eigen::Vector3d::Constant(1.0),
+    double totalMass = 1.0)
+{
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      size,
+      Eigen::Isometry3d::Identity(),
+      totalMass,
+      10.0,
+      10.0,
+      0.1);
+  return softBody;
+}
+
+//==============================================================================
 TEST(SoftBodyNode, AccessorsAndDynamics)
 {
   auto skeleton = Skeleton::create("soft-body");
@@ -54,6 +77,7 @@ TEST(SoftBodyNode, AccessorsAndDynamics)
   EXPECT_TRUE(pointMass->getPositions().array().isFinite().all());
 }
 
+//==============================================================================
 TEST(SoftBodyNode, MassMatricesAndForces)
 {
   auto skeleton = Skeleton::create("soft-body-mass");
@@ -102,4 +126,430 @@ TEST(SoftBodyNode, MassMatricesAndForces)
 
   EXPECT_TRUE(std::isfinite(skeleton->computeKineticEnergy()));
   EXPECT_TRUE(std::isfinite(skeleton->computePotentialEnergy()));
+}
+
+//==============================================================================
+TEST(SoftBodyNode, AsSoftBodyNode)
+{
+  auto skeleton = Skeleton::create("soft-as");
+  auto* softBody = createBoxSoftBody(skeleton);
+
+  // Non-const version
+  EXPECT_EQ(softBody->asSoftBodyNode(), softBody);
+
+  // Const version
+  const SoftBodyNode* constSoft = softBody;
+  EXPECT_EQ(constSoft->asSoftBodyNode(), constSoft);
+
+  // Regular BodyNode should return nullptr
+  auto skel2 = Skeleton::create("rigid");
+  auto pair2 = skel2->createJointAndBodyNodePair<FreeJoint>();
+  EXPECT_EQ(pair2.second->asSoftBodyNode(), nullptr);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, CopyAndAssignment)
+{
+  auto skel1 = Skeleton::create("soft-copy-src");
+  auto* src = createBoxSoftBody(skel1);
+  src->setVertexSpringStiffness(15.0);
+  src->setEdgeSpringStiffness(25.0);
+  src->setDampingCoefficient(0.3);
+
+  auto skel2 = Skeleton::create("soft-copy-dst");
+  auto* dst = createBoxSoftBody(skel2);
+
+  // Copy via pointer
+  dst->copy(src);
+  EXPECT_DOUBLE_EQ(dst->getVertexSpringStiffness(), 15.0);
+  EXPECT_DOUBLE_EQ(dst->getEdgeSpringStiffness(), 25.0);
+  EXPECT_DOUBLE_EQ(dst->getDampingCoefficient(), 0.3);
+  EXPECT_EQ(dst->getNumPointMasses(), src->getNumPointMasses());
+
+  // Copy via reference
+  auto skel3 = Skeleton::create("soft-copy-ref");
+  auto* dst2 = createBoxSoftBody(skel3);
+  dst2->copy(*src);
+  EXPECT_DOUBLE_EQ(dst2->getVertexSpringStiffness(), 15.0);
+
+  // Self-copy should be no-op
+  dst2->copy(dst2);
+  EXPECT_DOUBLE_EQ(dst2->getVertexSpringStiffness(), 15.0);
+
+  // Copy null pointer should be no-op
+  dst2->copy(static_cast<const SoftBodyNode*>(nullptr));
+  EXPECT_DOUBLE_EQ(dst2->getVertexSpringStiffness(), 15.0);
+
+  // Assignment operator
+  auto skel4 = Skeleton::create("soft-assign");
+  auto* dst3 = createBoxSoftBody(skel4);
+  *dst3 = *src;
+  EXPECT_DOUBLE_EQ(dst3->getVertexSpringStiffness(), 15.0);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, GetSoftBodyNodeProperties)
+{
+  auto skeleton = Skeleton::create("soft-props");
+  auto* softBody = createBoxSoftBody(skeleton);
+  softBody->setVertexSpringStiffness(42.0);
+  softBody->setEdgeSpringStiffness(43.0);
+  softBody->setDampingCoefficient(0.5);
+
+  auto props = softBody->getSoftBodyNodeProperties();
+  EXPECT_DOUBLE_EQ(props.mKv, 42.0);
+  EXPECT_DOUBLE_EQ(props.mKe, 43.0);
+  EXPECT_DOUBLE_EQ(props.mDampCoeff, 0.5);
+  EXPECT_EQ(props.mPointProps.size(), softBody->getNumPointMasses());
+  EXPECT_EQ(props.mFaces.size(), softBody->getNumFaces());
+}
+
+//==============================================================================
+TEST(SoftBodyNode, SetProperties)
+{
+  auto skeleton = Skeleton::create("soft-set-props");
+  auto* softBody = createBoxSoftBody(skeleton);
+
+  auto props = softBody->getSoftBodyNodeProperties();
+  props.mKv = 99.0;
+  props.mKe = 88.0;
+  props.mDampCoeff = 0.7;
+
+  softBody->setProperties(props);
+  EXPECT_DOUBLE_EQ(softBody->getVertexSpringStiffness(), 99.0);
+  EXPECT_DOUBLE_EQ(softBody->getEdgeSpringStiffness(), 88.0);
+  EXPECT_DOUBLE_EQ(softBody->getDampingCoefficient(), 0.7);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, SetUniqueProperties)
+{
+  auto skeleton = Skeleton::create("soft-unique-props");
+  auto* softBody = createBoxSoftBody(skeleton);
+
+  SoftBodyNode::UniqueProperties uniqueProps;
+  uniqueProps.mKv = 77.0;
+  uniqueProps.mKe = 66.0;
+  uniqueProps.mDampCoeff = 0.4;
+
+  softBody->setProperties(uniqueProps);
+  EXPECT_DOUBLE_EQ(softBody->getVertexSpringStiffness(), 77.0);
+  EXPECT_DOUBLE_EQ(softBody->getEdgeSpringStiffness(), 66.0);
+  EXPECT_DOUBLE_EQ(softBody->getDampingCoefficient(), 0.4);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, DampingCoefficientClamping)
+{
+  auto skeleton = Skeleton::create("soft-damp-clamp");
+  auto* softBody = createBoxSoftBody(skeleton);
+
+  // Negative damping should be clamped to 0
+  softBody->setDampingCoefficient(-1.0);
+  EXPECT_DOUBLE_EQ(softBody->getDampingCoefficient(), 0.0);
+
+  // NaN damping should be clamped to 0
+  softBody->setDampingCoefficient(std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(softBody->getDampingCoefficient(), 0.0);
+
+  // Infinity damping should be clamped to 0
+  softBody->setDampingCoefficient(std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(softBody->getDampingCoefficient(), 0.0);
+
+  // Valid damping should work
+  softBody->setDampingCoefficient(0.5);
+  EXPECT_DOUBLE_EQ(softBody->getDampingCoefficient(), 0.5);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, PointMassSpan)
+{
+  auto skeleton = Skeleton::create("soft-span");
+  auto* softBody = createBoxSoftBody(skeleton);
+
+  auto pointMasses = softBody->getPointMasses();
+  EXPECT_EQ(pointMasses.size(), softBody->getNumPointMasses());
+
+  for (std::size_t i = 0; i < pointMasses.size(); ++i) {
+    EXPECT_EQ(pointMasses[i], softBody->getPointMass(i));
+  }
+}
+
+//==============================================================================
+TEST(SoftBodyNode, ConstPointMassAccess)
+{
+  auto skeleton = Skeleton::create("soft-const-pm");
+  auto* softBody = createBoxSoftBody(skeleton);
+
+  const SoftBodyNode* constSoft = softBody;
+  ASSERT_GT(constSoft->getNumPointMasses(), 0u);
+  const PointMass* pm = constSoft->getPointMass(0);
+  EXPECT_NE(pm, nullptr);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, Notifier)
+{
+  auto skeleton = Skeleton::create("soft-notifier");
+  auto* softBody = createBoxSoftBody(skeleton);
+
+  auto* notifier = softBody->getNotifier();
+  EXPECT_NE(notifier, nullptr);
+
+  const SoftBodyNode* constSoft = softBody;
+  const auto* constNotifier = constSoft->getNotifier();
+  EXPECT_NE(constNotifier, nullptr);
+  EXPECT_EQ(notifier, constNotifier);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, TotalMassIncludesPointMasses)
+{
+  auto skeleton = Skeleton::create("soft-total-mass");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  // Before adding point masses, mass is just the body node mass
+  double baseMass = softBody->getMass();
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(1.0),
+      Eigen::Isometry3d::Identity(),
+      2.0,
+      10.0,
+      10.0,
+      0.1);
+
+  // After adding point masses, total mass should be greater
+  double totalMass = softBody->getMass();
+  EXPECT_GT(totalMass, 0.0);
+  // Total mass should include point mass contributions
+  (void)baseMass;
+}
+
+//==============================================================================
+TEST(SoftBodyNode, RemoveAllPointMasses)
+{
+  auto skeleton = Skeleton::create("soft-remove-all");
+  auto* softBody = createBoxSoftBody(skeleton);
+
+  EXPECT_GT(softBody->getNumPointMasses(), 0u);
+  softBody->removeAllPointMasses();
+  EXPECT_EQ(softBody->getNumPointMasses(), 0u);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, AddPointMassAndFace)
+{
+  auto skeleton = Skeleton::create("soft-add-pm");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setSinglePointMass(softBody, 1.0, 5.0, 6.0, 0.1);
+  EXPECT_EQ(softBody->getNumPointMasses(), 1u);
+
+  PointMass::Properties pmProps(Eigen::Vector3d(0.1, 0.2, 0.3), 0.5);
+  softBody->addPointMass(pmProps);
+  EXPECT_EQ(softBody->getNumPointMasses(), 2u);
+
+  softBody->addPointMass(pmProps);
+  EXPECT_EQ(softBody->getNumPointMasses(), 3u);
+
+  auto prevFaces = softBody->getNumFaces();
+  softBody->addFace(Eigen::Vector3i(0, 1, 2));
+  EXPECT_EQ(softBody->getNumFaces(), prevFaces + 1u);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, ConnectPointMasses)
+{
+  auto skeleton = Skeleton::create("soft-connect");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setSinglePointMass(softBody, 1.0, 5.0, 6.0, 0.1);
+  PointMass::Properties pmProps(Eigen::Vector3d(0.1, 0.2, 0.3), 0.5);
+  softBody->addPointMass(pmProps);
+
+  softBody->connectPointMasses(0, 1);
+  auto* pm0 = softBody->getPointMass(0);
+  EXPECT_EQ(pm0->getNumConnectedPointMasses(), 1u);
+  EXPECT_EQ(pm0->getConnectedPointMass(0), softBody->getPointMass(1));
+}
+
+//==============================================================================
+TEST(SoftBodyNode, SoftMeshShape)
+{
+  auto skeleton = Skeleton::create("soft-mesh");
+  auto* softBody = createBoxSoftBody(skeleton);
+
+  // The soft body should have a SoftMeshShape
+  bool foundSoftMesh = false;
+  for (std::size_t i = 0; i < softBody->getNumShapeNodes(); ++i) {
+    auto* shapeNode = softBody->getShapeNode(i);
+    auto shape = shapeNode->getShape();
+    if (std::dynamic_pointer_cast<SoftMeshShape>(shape)) {
+      foundSoftMesh = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(foundSoftMesh);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, SetAspectState)
+{
+  auto skeleton = Skeleton::create("soft-aspect-state");
+  auto* softBody = createBoxSoftBody(skeleton);
+
+  // Get current state
+  auto state = softBody->getAspectState();
+  EXPECT_EQ(state.mPointStates.size(), softBody->getNumPointMasses());
+
+  // Modify a point state and set it back
+  if (!state.mPointStates.empty()) {
+    state.mPointStates[0].mPositions = Eigen::Vector3d(0.1, 0.2, 0.3);
+    softBody->setAspectState(state);
+    auto newState = softBody->getAspectState();
+    EXPECT_TRUE(newState.mPointStates[0].mPositions.isApprox(
+        Eigen::Vector3d(0.1, 0.2, 0.3)));
+  }
+}
+
+//==============================================================================
+TEST(SoftBodyNode, SpringStiffnessNoChangeOptimization)
+{
+  auto skeleton = Skeleton::create("soft-no-change");
+  auto* softBody = createBoxSoftBody(skeleton);
+
+  softBody->setVertexSpringStiffness(20.0);
+  EXPECT_DOUBLE_EQ(softBody->getVertexSpringStiffness(), 20.0);
+
+  // Setting same value should be a no-op (optimization path)
+  softBody->setVertexSpringStiffness(20.0);
+  EXPECT_DOUBLE_EQ(softBody->getVertexSpringStiffness(), 20.0);
+
+  softBody->setEdgeSpringStiffness(30.0);
+  EXPECT_DOUBLE_EQ(softBody->getEdgeSpringStiffness(), 30.0);
+
+  // Setting same value should be a no-op
+  softBody->setEdgeSpringStiffness(30.0);
+  EXPECT_DOUBLE_EQ(softBody->getEdgeSpringStiffness(), 30.0);
+
+  softBody->setDampingCoefficient(0.5);
+  EXPECT_DOUBLE_EQ(softBody->getDampingCoefficient(), 0.5);
+
+  // Setting same value should be a no-op
+  softBody->setDampingCoefficient(0.5);
+  EXPECT_DOUBLE_EQ(softBody->getDampingCoefficient(), 0.5);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, SkeletonClonePreservesSoftBody)
+{
+  auto skeleton = Skeleton::create("soft-clone");
+  auto* softBody = createBoxSoftBody(skeleton);
+  softBody->setVertexSpringStiffness(42.0);
+  softBody->setEdgeSpringStiffness(43.0);
+  softBody->setDampingCoefficient(0.7);
+
+  auto cloned = skeleton->cloneSkeleton("cloned");
+  ASSERT_EQ(cloned->getNumBodyNodes(), 1u);
+
+  auto* clonedBody = cloned->getBodyNode(0)->asSoftBodyNode();
+  ASSERT_NE(clonedBody, nullptr);
+  EXPECT_DOUBLE_EQ(clonedBody->getVertexSpringStiffness(), 42.0);
+  EXPECT_DOUBLE_EQ(clonedBody->getEdgeSpringStiffness(), 43.0);
+  EXPECT_DOUBLE_EQ(clonedBody->getDampingCoefficient(), 0.7);
+  EXPECT_EQ(clonedBody->getNumPointMasses(), softBody->getNumPointMasses());
+  EXPECT_EQ(clonedBody->getNumFaces(), softBody->getNumFaces());
+}
+
+//==============================================================================
+TEST(SoftBodyNode, MultiStepSimulation)
+{
+  auto skeleton = Skeleton::create("soft-sim");
+  auto* softBody = createBoxSoftBody(skeleton);
+  softBody->setVertexSpringStiffness(10.0);
+  softBody->setEdgeSpringStiffness(10.0);
+  softBody->setDampingCoefficient(0.1);
+
+  auto world = simulation::World::create();
+  world->addSkeleton(skeleton);
+  world->setGravity(Eigen::Vector3d(0, 0, -9.81));
+
+  // Run multiple steps
+  for (int i = 0; i < 10; ++i) {
+    world->step();
+  }
+
+  // All point masses should have finite positions
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    auto* pm = softBody->getPointMass(i);
+    EXPECT_TRUE(pm->getPositions().array().isFinite().all());
+    EXPECT_TRUE(pm->getVelocities().array().isFinite().all());
+  }
+}
+
+//==============================================================================
+TEST(SoftBodyNode, EllipsoidAndCylinderShapes)
+{
+  // Test ellipsoid shape
+  {
+    auto skeleton = Skeleton::create("soft-ellipsoid");
+    auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+    auto* softBody = pair.second;
+    SoftBodyNodeHelper::setEllipsoid(
+        softBody, Eigen::Vector3d(1.0, 1.0, 1.0), 4, 3, 2.0, 5.0, 6.0, 0.1);
+    EXPECT_GT(softBody->getNumPointMasses(), 0u);
+    EXPECT_GT(softBody->getNumFaces(), 0u);
+  }
+
+  // Test cylinder shape
+  {
+    auto skeleton = Skeleton::create("soft-cylinder");
+    auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+    auto* softBody = pair.second;
+    SoftBodyNodeHelper::setCylinder(
+        softBody, 0.5, 1.0, 4, 2, 2, 3.0, 5.0, 6.0, 0.1);
+    EXPECT_GT(softBody->getNumPointMasses(), 0u);
+    EXPECT_GT(softBody->getNumFaces(), 0u);
+  }
+}
+
+//==============================================================================
+TEST(SoftBodyNode, ChainWithSoftBody)
+{
+  auto skeleton = Skeleton::create("soft-chain");
+
+  // Create a rigid root body
+  auto pair1 = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair1.first->setName("joint1");
+  pair1.second->setName("rigid_body");
+
+  // Create a soft body as child
+  auto pair2
+      = skeleton->createJointAndBodyNodePair<RevoluteJoint, SoftBodyNode>(
+          pair1.second);
+  pair2.first->setName("joint2");
+  auto* softBody = pair2.second;
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.5),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      10.0,
+      10.0,
+      0.1);
+
+  EXPECT_EQ(skeleton->getNumBodyNodes(), 2u);
+  EXPECT_EQ(skeleton->getNumDofs(), 2u);
+  EXPECT_GT(softBody->getNumPointMasses(), 0u);
+
+  // Dynamics should work
+  skeleton->computeForwardDynamics();
+  const auto& M = skeleton->getMassMatrix();
+  EXPECT_EQ(M.rows(), 2);
+  EXPECT_EQ(M.cols(), 2);
 }

@@ -111,3 +111,77 @@ TEST(PoolAllocatorTest, Allocate)
 
   EXPECT_TRUE(a.isEmpty());
 }
+
+//==============================================================================
+TEST(PoolAllocatorTest, DeallocateEdgeCases)
+{
+  auto a = PoolAllocator::Debug();
+
+  // Deallocate nullptr should be safe (no-op)
+  a.deallocate(nullptr, 16);
+  EXPECT_TRUE(a.isEmpty());
+
+  // Deallocate with 0 bytes should be safe (no-op)
+  auto ptr = a.allocate(16);
+  EXPECT_NE(ptr, nullptr);
+  a.deallocate(ptr, 0); // Should be no-op due to 0 bytes
+  EXPECT_FALSE(a.isEmpty());
+
+  // Proper deallocation
+  a.deallocate(ptr, 16);
+  EXPECT_TRUE(a.isEmpty());
+
+  // Deallocate oversized memory (> 1024) goes through base allocator
+  auto oversizedPtr = a.allocate(2048);
+  EXPECT_NE(oversizedPtr, nullptr);
+  a.deallocate(oversizedPtr, 2048);
+  EXPECT_TRUE(a.isEmpty());
+}
+
+//==============================================================================
+TEST(PoolAllocatorTest, Print)
+{
+  auto a = PoolAllocator::Debug();
+
+  // Test print with indent = 0
+  std::ostringstream oss1;
+  a.getInternalAllocator().print(oss1, 0);
+  EXPECT_NE(oss1.str().find("PoolAllocator"), std::string::npos);
+  EXPECT_NE(oss1.str().find("allocated_memory_block_count"), std::string::npos);
+
+  // Test print with indent != 0
+  std::ostringstream oss2;
+  a.getInternalAllocator().print(oss2, 2);
+  EXPECT_NE(oss2.str().find("type:"), std::string::npos);
+  EXPECT_NE(oss2.str().find("base_allocator"), std::string::npos);
+}
+
+//==============================================================================
+TEST(PoolAllocatorTest, MemoryBlockExpansion)
+{
+  auto a = PoolAllocator::Debug();
+
+  // Allocate many different sizes to trigger memory block expansion
+  // Initial mMemoryBlocksSize is 64, so we need to allocate more than 64
+  // different size classes to trigger expansion
+  std::vector<void*> ptrs;
+
+  // Allocate memory of various sizes to create many memory blocks
+  // Each unique size class (8, 16, 24, ..., 1024) creates a new block
+  for (size_t size = 8; size <= 1024; size += 8) {
+    auto ptr = a.allocate(size);
+    EXPECT_NE(ptr, nullptr);
+    ptrs.push_back(ptr);
+  }
+
+  // Should have allocated 128 different size classes (1024/8 = 128)
+  // This exceeds the initial 64 blocks, triggering expansion
+  EXPECT_GE(a.getInternalAllocator().getNumAllocatedMemoryBlocks(), 64);
+
+  // Clean up
+  size_t size = 8;
+  for (auto ptr : ptrs) {
+    a.deallocate(ptr, size);
+    size += 8;
+  }
+}

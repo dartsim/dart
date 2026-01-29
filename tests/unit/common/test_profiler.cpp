@@ -131,4 +131,100 @@ TEST(Profiler, ColorizedOutput)
   EXPECT_NE(output.find("\033["), std::string::npos);
 }
 
+TEST(Profiler, UseColorEnvVarVariants)
+{
+  {
+    ScopedEnvVar env("DART_PROFILE_COLOR", "TRUE");
+    auto& profiler = common::profile::Profiler::instance();
+    profiler.reset();
+    {
+      common::profile::ProfileScope scope("TrueScope", __FILE__, __LINE__);
+    }
+    profiler.markFrame();
+    std::ostringstream oss;
+    profiler.printSummary(oss);
+    EXPECT_NE(oss.str().find("\033["), std::string::npos);
+  }
+
+  {
+    ScopedEnvVar env("DART_PROFILE_COLOR", "YES");
+    auto& profiler = common::profile::Profiler::instance();
+    profiler.reset();
+    {
+      common::profile::ProfileScope scope("YesScope", __FILE__, __LINE__);
+    }
+    profiler.markFrame();
+    std::ostringstream oss;
+    profiler.printSummary(oss);
+    EXPECT_NE(oss.str().find("\033["), std::string::npos);
+  }
+
+  {
+    ScopedEnvVar env("DART_PROFILE_COLOR", "ON");
+    auto& profiler = common::profile::Profiler::instance();
+    profiler.reset();
+    {
+      common::profile::ProfileScope scope("OnScope", __FILE__, __LINE__);
+    }
+    profiler.markFrame();
+    std::ostringstream oss;
+    profiler.printSummary(oss);
+    EXPECT_NE(oss.str().find("\033["), std::string::npos);
+  }
+}
+
+TEST(Profiler, MultipleFrameTiming)
+{
+  auto& profiler = common::profile::Profiler::instance();
+  profiler.reset();
+
+  ScopedEnvVar env("DART_PROFILE_COLOR", "0");
+
+  for (int i = 0; i < 5; ++i) {
+    {
+      common::profile::ProfileScope scope("FrameWork", __FILE__, __LINE__);
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    profiler.markFrame();
+  }
+
+  std::ostringstream oss;
+  profiler.printSummary(oss);
+
+  const std::string output = oss.str();
+  EXPECT_NE(output.find("FrameWork"), std::string::npos);
+  EXPECT_NE(output.find("Frames marked: 5"), std::string::npos);
+}
+
+TEST(Profiler, NestedScopes)
+{
+  auto& profiler = common::profile::Profiler::instance();
+  profiler.reset();
+
+  ScopedEnvVar env("DART_PROFILE_COLOR", "0");
+
+  {
+    common::profile::ProfileScope outer("OuterNested", __FILE__, __LINE__);
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    {
+      common::profile::ProfileScope middle("MiddleNested", __FILE__, __LINE__);
+      std::this_thread::sleep_for(std::chrono::milliseconds(2));
+      {
+        common::profile::ProfileScope inner("InnerNested", __FILE__, __LINE__);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      }
+    }
+  }
+
+  profiler.markFrame();
+
+  std::ostringstream oss;
+  profiler.printSummary(oss);
+
+  const std::string output = oss.str();
+  EXPECT_NE(output.find("OuterNested"), std::string::npos);
+  EXPECT_NE(output.find("MiddleNested"), std::string::npos);
+  EXPECT_NE(output.find("InnerNested"), std::string::npos);
+}
+
 } // namespace dart::test

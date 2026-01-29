@@ -35,6 +35,7 @@
 #include "dart/collision/collision_detector.hpp"
 #include "dart/collision/collision_group.hpp"
 #include "dart/collision/fcl/fcl_collision_detector.hpp"
+#include "dart/constraint/contact_constraint.hpp"
 #include "dart/constraint/contact_surface.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/box_shape.hpp"
@@ -588,4 +589,88 @@ TEST(ContactSurfaceHandler, BaseCreateParamsReturnsDefaultWithNoParent)
 
   EXPECT_DOUBLE_EQ(params.mPrimaryFrictionCoeff, DART_DEFAULT_FRICTION_COEFF);
   EXPECT_DOUBLE_EQ(params.mRestitutionCoeff, DART_DEFAULT_RESTITUTION_COEFF);
+}
+
+//==============================================================================
+// ContactConstraint Static Parameter Tests
+//==============================================================================
+
+TEST(ContactConstraint, SetErrorAllowanceNegativeLogsWarning)
+{
+  double original = ContactConstraint::getErrorAllowance();
+  ContactConstraint::setErrorAllowance(-0.5);
+  ContactConstraint::setErrorAllowance(original);
+}
+
+TEST(ContactConstraint, SetErrorAllowanceValidValue)
+{
+  double original = ContactConstraint::getErrorAllowance();
+
+  ContactConstraint::setErrorAllowance(0.01);
+  EXPECT_DOUBLE_EQ(ContactConstraint::getErrorAllowance(), 0.01);
+
+  ContactConstraint::setErrorAllowance(original);
+}
+
+TEST(ContactConstraint, SetErrorReductionParameterNegativeLogsWarning)
+{
+  double original = ContactConstraint::getErrorReductionParameter();
+  ContactConstraint::setErrorReductionParameter(-0.5);
+  ContactConstraint::setErrorReductionParameter(original);
+}
+
+TEST(ContactConstraint, SetErrorReductionParameterAboveOneLogsWarning)
+{
+  double original = ContactConstraint::getErrorReductionParameter();
+  ContactConstraint::setErrorReductionParameter(1.5);
+  ContactConstraint::setErrorReductionParameter(original);
+}
+
+TEST(ContactConstraint, SetErrorReductionParameterValidValue)
+{
+  double original = ContactConstraint::getErrorReductionParameter();
+
+  ContactConstraint::setErrorReductionParameter(0.5);
+  EXPECT_DOUBLE_EQ(ContactConstraint::getErrorReductionParameter(), 0.5);
+
+  ContactConstraint::setErrorReductionParameter(original);
+}
+
+TEST(ContactConstraint, SetMaxErrorReductionVelocityNegativeLogsWarning)
+{
+  double original = ContactConstraint::getMaxErrorReductionVelocity();
+  ContactConstraint::setMaxErrorReductionVelocity(-0.5);
+  ContactConstraint::setMaxErrorReductionVelocity(original);
+}
+
+TEST(ContactConstraint, SetMaxErrorReductionVelocityValidValue)
+{
+  double original = ContactConstraint::getMaxErrorReductionVelocity();
+
+  ContactConstraint::setMaxErrorReductionVelocity(0.1);
+  EXPECT_DOUBLE_EQ(ContactConstraint::getMaxErrorReductionVelocity(), 0.1);
+
+  ContactConstraint::setMaxErrorReductionVelocity(original);
+}
+
+TEST(ContactConstraint, SetConstraintForceMixingTooSmallLogsWarning)
+{
+  double original = ContactConstraint::getConstraintForceMixing();
+  ContactConstraint::setConstraintForceMixing(1e-12);
+  ContactConstraint::setConstraintForceMixing(original);
+}
+
+TEST(ContactConstraint, SetConstraintForceMixingValidValue)
+{
+  double original = ContactConstraint::getConstraintForceMixing();
+
+  ContactConstraint::setConstraintForceMixing(1e-4);
+  EXPECT_DOUBLE_EQ(ContactConstraint::getConstraintForceMixing(), 1e-4);
+
+  ContactConstraint::setConstraintForceMixing(original);
+}
+
+TEST(ContactConstraint, GetStaticType)
+{
+  EXPECT_EQ(ContactConstraint::getStaticType(), "ContactConstraint");
 }

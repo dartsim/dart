@@ -267,3 +267,256 @@ TEST(Signal, ConnectMovedSlot)
   signal.raise();
   EXPECT_EQ(callCount, 1);
 }
+
+TEST(Signal, ScopedConnectionMoveConstruction)
+{
+  Signal<void()> signal;
+  int callCount = 0;
+
+  {
+    Connection conn = signal.connect([&callCount]() { ++callCount; });
+    ScopedConnection scoped(std::move(conn));
+    EXPECT_TRUE(scoped.isConnected());
+    EXPECT_EQ(signal.getNumConnections(), 1u);
+    signal.raise();
+    EXPECT_EQ(callCount, 1);
+  }
+
+  // ScopedConnection should have disconnected on destruction
+  EXPECT_EQ(signal.getNumConnections(), 0u);
+  signal.raise();
+  EXPECT_EQ(callCount, 1);
+}
+
+TEST(Signal, DisconnectDuringEmission)
+{
+  Signal<void()> signal;
+  int callCount1 = 0;
+  int callCount2 = 0;
+  Connection conn2;
+
+  // First slot disconnects the second slot during emission
+  signal.connect([&]() {
+    ++callCount1;
+    conn2.disconnect();
+  });
+
+  conn2 = signal.connect([&callCount2]() { ++callCount2; });
+
+  EXPECT_EQ(signal.getNumConnections(), 2u);
+
+  // Raise signal - first slot disconnects second, but second should still
+  // be called because raise() copies the connection list before iterating
+  signal.raise();
+
+  EXPECT_EQ(callCount1, 1);
+  // The second slot is still called because the signal copies connections
+  // before iterating
+  EXPECT_EQ(callCount2, 1);
+
+  // After emission, second connection should be disconnected
+  EXPECT_EQ(signal.getNumConnections(), 1u);
+  EXPECT_FALSE(conn2.isConnected());
+}
+
+TEST(Signal, SelfDisconnectDuringEmission)
+{
+  Signal<void()> signal;
+  int callCount = 0;
+  Connection conn;
+
+  conn = signal.connect([&]() {
+    ++callCount;
+    conn.disconnect();
+  });
+
+  EXPECT_EQ(signal.getNumConnections(), 1u);
+
+  signal.raise();
+
+  EXPECT_EQ(callCount, 1);
+  EXPECT_EQ(signal.getNumConnections(), 0u);
+  EXPECT_FALSE(conn.isConnected());
+
+  // Raising again should not call the slot
+  signal.raise();
+  EXPECT_EQ(callCount, 1);
+}
+
+TEST(Signal, SignalWithReturnValue)
+{
+  Signal<int()> signal;
+
+  signal.connect([]() { return 1; });
+  signal.connect([]() { return 2; });
+  signal.connect([]() { return 3; });
+
+  // DefaultCombiner returns the last result
+  int result = signal.raise();
+  EXPECT_EQ(result, 3);
+}
+
+TEST(Signal, SignalWithReturnValueOperator)
+{
+  Signal<int(int)> signal;
+
+  signal.connect([](int x) { return x * 2; });
+  signal.connect([](int x) { return x * 3; });
+
+  // DefaultCombiner returns the last result
+  int result = signal(5);
+  EXPECT_EQ(result, 15);
+}
+
+TEST(Signal, SignalWithReturnValueNoConnections)
+{
+  Signal<int()> signal;
+
+  // DefaultCombiner returns default-constructed value when no slots
+  int result = signal.raise();
+  EXPECT_EQ(result, 0);
+}
+
+TEST(Signal, MultipleConnectionsSameSlot)
+{
+  Signal<void()> signal;
+  int callCount = 0;
+
+  auto slot = [&callCount]() {
+    ++callCount;
+  };
+
+  Connection conn1 = signal.connect(slot);
+  Connection conn2 = signal.connect(slot);
+  Connection conn3 = signal.connect(slot);
+
+  EXPECT_EQ(signal.getNumConnections(), 3u);
+
+  signal.raise();
+  EXPECT_EQ(callCount, 3);
+
+  // Disconnect one connection
+  conn2.disconnect();
+  EXPECT_EQ(signal.getNumConnections(), 2u);
+
+  signal.raise();
+  EXPECT_EQ(callCount, 5);
+}
+
+TEST(Signal, ConnectionDisconnectIdempotent)
+{
+  Signal<void()> signal;
+  int callCount = 0;
+
+  Connection conn = signal.connect([&callCount]() { ++callCount; });
+  EXPECT_EQ(signal.getNumConnections(), 1u);
+
+  // Disconnect multiple times should be safe
+  conn.disconnect();
+  EXPECT_EQ(signal.getNumConnections(), 0u);
+  EXPECT_FALSE(conn.isConnected());
+
+  conn.disconnect();
+  EXPECT_EQ(signal.getNumConnections(), 0u);
+  EXPECT_FALSE(conn.isConnected());
+
+  conn.disconnect();
+  EXPECT_EQ(signal.getNumConnections(), 0u);
+}
+
+TEST(Signal, DefaultConnectionDisconnect)
+{
+  Connection conn;
+  EXPECT_FALSE(conn.isConnected());
+
+  // Disconnecting a default-constructed connection should be safe
+  conn.disconnect();
+  EXPECT_FALSE(conn.isConnected());
+}
+
+TEST(Signal, SlotRegisterMultipleConnections)
+{
+  Signal<void(int)> signal;
+  SlotRegister<Signal<void(int)>> reg(signal);
+
+  std::vector<int> values1;
+  std::vector<int> values2;
+
+  Connection conn1 = reg.connect([&values1](int v) { values1.push_back(v); });
+  Connection conn2 = reg.connect([&values2](int v) { values2.push_back(v); });
+
+  EXPECT_EQ(signal.getNumConnections(), 2u);
+
+  signal.raise(42);
+
+  EXPECT_EQ(values1.size(), 1u);
+  EXPECT_EQ(values1[0], 42);
+  EXPECT_EQ(values2.size(), 1u);
+  EXPECT_EQ(values2[0], 42);
+
+  conn1.disconnect();
+  EXPECT_EQ(signal.getNumConnections(), 1u);
+
+  signal.raise(100);
+
+  EXPECT_EQ(values1.size(), 1u);
+  EXPECT_EQ(values2.size(), 2u);
+  EXPECT_EQ(values2[1], 100);
+}
+
+TEST(Signal, RaiseMultipleTimes)
+{
+  Signal<void()> signal;
+  int callCount = 0;
+
+  signal.connect([&callCount]() { ++callCount; });
+
+  signal.raise();
+  signal.raise();
+  signal.raise();
+
+  EXPECT_EQ(callCount, 3);
+}
+
+TEST(Signal, ConnectAfterRaise)
+{
+  Signal<void()> signal;
+  int callCount1 = 0;
+  int callCount2 = 0;
+
+  signal.connect([&callCount1]() { ++callCount1; });
+  signal.raise();
+
+  EXPECT_EQ(callCount1, 1);
+  EXPECT_EQ(callCount2, 0);
+
+  signal.connect([&callCount2]() { ++callCount2; });
+  signal.raise();
+
+  EXPECT_EQ(callCount1, 2);
+  EXPECT_EQ(callCount2, 1);
+}
+
+TEST(Signal, DisconnectAllDuringEmission)
+{
+  Signal<void()> signal;
+  int callCount1 = 0;
+  int callCount2 = 0;
+
+  signal.connect([&]() {
+    ++callCount1;
+    signal.disconnectAll();
+  });
+
+  signal.connect([&callCount2]() { ++callCount2; });
+
+  EXPECT_EQ(signal.getNumConnections(), 2u);
+
+  signal.raise();
+
+  // First slot called, then disconnectAll, but second slot still called
+  // because raise() copies the connection list
+  EXPECT_EQ(callCount1, 1);
+  EXPECT_EQ(callCount2, 1);
+  EXPECT_EQ(signal.getNumConnections(), 0u);
+}

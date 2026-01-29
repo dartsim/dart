@@ -249,3 +249,147 @@ TEST(BalanceConstraintTests, ClonePreservesBalanceMethod)
   EXPECT_EQ(
       clonedConstraint->getErrorMethod(), BalanceConstraint::FROM_CENTROID);
 }
+
+TEST(BalanceConstraintTests, GetLastError)
+{
+  auto rig = makeBalanceRig();
+  BalanceConstraint constraint(
+      rig.ik, BalanceConstraint::SHIFT_SUPPORT, BalanceConstraint::FROM_EDGE);
+
+  auto q = getPositions(rig.skeleton);
+  rig.skeleton->setPositions(q);
+  constraint.eval(q);
+
+  const Eigen::Vector3d& lastError = constraint.getLastError();
+  EXPECT_TRUE(lastError.allFinite());
+}
+
+TEST(BalanceConstraintTests, ClearCaches)
+{
+  auto rig = makeBalanceRig();
+  BalanceConstraint constraint(
+      rig.ik,
+      BalanceConstraint::SHIFT_SUPPORT,
+      BalanceConstraint::FROM_CENTROID);
+
+  auto q = getPositions(rig.skeleton);
+  rig.skeleton->setPositions(q);
+  constraint.eval(q);
+
+  constraint.clearCaches();
+
+  const double errorAfterClear = constraint.eval(q);
+  EXPECT_TRUE(std::isfinite(errorAfterClear));
+}
+
+TEST(BalanceConstraintTests, EvalGradientWithShiftSupportFromEdge)
+{
+  auto rig = makeBalanceRig();
+  BalanceConstraint constraint(
+      rig.ik, BalanceConstraint::SHIFT_SUPPORT, BalanceConstraint::FROM_EDGE);
+
+  auto q = getPositions(rig.skeleton);
+  rig.skeleton->setPositions(q);
+
+  Eigen::VectorXd gradient(rig.skeleton->getNumDofs());
+  Eigen::Map<Eigen::VectorXd> gradMap(gradient.data(), gradient.size());
+  constraint.evalGradient(q, gradMap);
+
+  EXPECT_TRUE(gradMap.allFinite());
+}
+
+TEST(BalanceConstraintTests, EvalGradientWithShiftSupportOptimizeBalance)
+{
+  auto rig = makeBalanceRig();
+  BalanceConstraint constraint(
+      rig.ik,
+      BalanceConstraint::SHIFT_SUPPORT,
+      BalanceConstraint::OPTIMIZE_BALANCE);
+
+  auto q = getPositions(rig.skeleton);
+  rig.skeleton->setPositions(q);
+
+  Eigen::VectorXd gradient(rig.skeleton->getNumDofs());
+  Eigen::Map<Eigen::VectorXd> gradMap(gradient.data(), gradient.size());
+  constraint.evalGradient(q, gradMap);
+
+  EXPECT_TRUE(gradMap.allFinite());
+}
+
+TEST(BalanceConstraintTests, SetErrorMethodSameValueNoOp)
+{
+  auto rig = makeBalanceRig();
+  BalanceConstraint constraint(
+      rig.ik, BalanceConstraint::SHIFT_COM, BalanceConstraint::FROM_EDGE);
+
+  constraint.setErrorMethod(BalanceConstraint::FROM_EDGE);
+  EXPECT_EQ(constraint.getErrorMethod(), BalanceConstraint::FROM_EDGE);
+}
+
+TEST(BalanceConstraintTests, SetBalanceMethodSameValueNoOp)
+{
+  auto rig = makeBalanceRig();
+  BalanceConstraint constraint(
+      rig.ik, BalanceConstraint::SHIFT_COM, BalanceConstraint::FROM_EDGE);
+
+  constraint.setBalanceMethod(BalanceConstraint::SHIFT_COM);
+  EXPECT_EQ(constraint.getBalanceMethod(), BalanceConstraint::SHIFT_COM);
+}
+
+TEST(BalanceConstraintTests, SetOptimizationToleranceSameValueNoOp)
+{
+  auto rig = makeBalanceRig();
+  BalanceConstraint constraint(
+      rig.ik, BalanceConstraint::SHIFT_COM, BalanceConstraint::FROM_EDGE);
+
+  double originalTol = constraint.getOptimizationTolerance();
+  constraint.setOptimizationTolerance(originalTol);
+  EXPECT_DOUBLE_EQ(constraint.getOptimizationTolerance(), originalTol);
+}
+
+TEST(BalanceConstraintTests, SetPseudoInverseDampingSameValueNoOp)
+{
+  auto rig = makeBalanceRig();
+  BalanceConstraint constraint(
+      rig.ik, BalanceConstraint::SHIFT_COM, BalanceConstraint::FROM_EDGE);
+
+  double originalDamping = constraint.getPseudoInverseDamping();
+  constraint.setPseudoInverseDamping(originalDamping);
+  EXPECT_DOUBLE_EQ(constraint.getPseudoInverseDamping(), originalDamping);
+}
+
+TEST(BalanceConstraintTests, EvalWithEmptySupportPolygon)
+{
+  auto skeleton = Skeleton::create("no_support");
+  skeleton->setGravity(Eigen::Vector3d(0, 0, -9.81));
+
+  auto [rootJoint, rootBody]
+      = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootBody->setMass(10.0);
+
+  auto ik = WholeBodyIK::create(skeleton);
+  BalanceConstraint constraint(
+      ik, BalanceConstraint::SHIFT_SUPPORT, BalanceConstraint::FROM_CENTROID);
+
+  auto q = skeleton->getPositions();
+  const double error = constraint.eval(q);
+  EXPECT_DOUBLE_EQ(error, 0.0);
+}
+
+TEST(BalanceConstraintTests, EvalGradientWhenErrorIsZero)
+{
+  auto rig = makeBalanceRig();
+  BalanceConstraint constraint(
+      rig.ik,
+      BalanceConstraint::SHIFT_SUPPORT,
+      BalanceConstraint::FROM_CENTROID);
+
+  setComOffset(rig, 0.9);
+  auto q = rig.skeleton->getPositions();
+
+  Eigen::VectorXd gradient(rig.skeleton->getNumDofs());
+  Eigen::Map<Eigen::VectorXd> gradMap(gradient.data(), gradient.size());
+  constraint.evalGradient(q, gradMap);
+
+  EXPECT_TRUE(gradMap.allFinite());
+}

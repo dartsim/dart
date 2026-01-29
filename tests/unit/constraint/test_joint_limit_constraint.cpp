@@ -72,6 +72,11 @@ public:
   using JointLimitConstraint::JointLimitConstraint;
   using JointLimitConstraint::unexcite;
   using JointLimitConstraint::update;
+
+  dynamics::SkeletonPtr exposedGetRootSkeleton() const
+  {
+    return getRootSkeleton();
+  }
 };
 
 //==============================================================================
@@ -274,7 +279,6 @@ TEST(JointLimitConstraintTests, ApplyImpulseAndVelocityChange)
 
   joint->setPosition(0, joint->getPositionUpperLimit(0) + 0.1);
   skeleton->computeForwardKinematics();
-  // computeForwardDynamics() updates articulated inertia and invProjArtInertia
   skeleton->computeForwardDynamics();
   constraint.update();
 
@@ -288,4 +292,183 @@ TEST(JointLimitConstraintTests, ApplyImpulseAndVelocityChange)
 
   constraint.excite();
   constraint.unexcite();
+}
+
+TEST(JointLimitConstraintTests, SetErrorAllowancePositive)
+{
+  double original = JointLimitConstraint::getErrorAllowance();
+
+  JointLimitConstraint::setErrorAllowance(0.5);
+  EXPECT_DOUBLE_EQ(JointLimitConstraint::getErrorAllowance(), 0.5);
+
+  JointLimitConstraint::setErrorAllowance(original);
+}
+
+TEST(JointLimitConstraintTests, SetErrorReductionParameterValid)
+{
+  double original = JointLimitConstraint::getErrorReductionParameter();
+
+  JointLimitConstraint::setErrorReductionParameter(0.5);
+  EXPECT_DOUBLE_EQ(JointLimitConstraint::getErrorReductionParameter(), 0.5);
+
+  JointLimitConstraint::setErrorReductionParameter(original);
+}
+
+TEST(JointLimitConstraintTests, SetMaxErrorReductionVelocityPositive)
+{
+  double original = JointLimitConstraint::getMaxErrorReductionVelocity();
+
+  JointLimitConstraint::setMaxErrorReductionVelocity(5.0);
+  EXPECT_DOUBLE_EQ(JointLimitConstraint::getMaxErrorReductionVelocity(), 5.0);
+
+  JointLimitConstraint::setMaxErrorReductionVelocity(original);
+}
+
+TEST(JointLimitConstraintTests, SetConstraintForceMixingValid)
+{
+  double original = JointLimitConstraint::getConstraintForceMixing();
+
+  JointLimitConstraint::setConstraintForceMixing(1e-6);
+  EXPECT_DOUBLE_EQ(JointLimitConstraint::getConstraintForceMixing(), 1e-6);
+
+  JointLimitConstraint::setConstraintForceMixing(original);
+}
+
+TEST(JointLimitConstraintTests, GetRootSkeleton)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+
+  joint->setPosition(0, joint->getPositionUpperLimit(0) + 0.1);
+
+  ExposedJointLimitConstraint constraint(joint);
+  constraint.update();
+
+  ASSERT_TRUE(constraint.isActive());
+  auto rootSkel = constraint.exposedGetRootSkeleton();
+  EXPECT_NE(rootSkel, nullptr);
+}
+
+TEST(JointLimitConstraintTests, LifetimeTrackingAcrossMultipleUpdates)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  ExposedJointLimitConstraint constraint(joint);
+
+  joint->setPosition(0, joint->getPositionUpperLimit(0) + 0.1);
+  constraint.update();
+  EXPECT_TRUE(constraint.isActive());
+
+  constraint.update();
+  EXPECT_TRUE(constraint.isActive());
+
+  constraint.update();
+  EXPECT_TRUE(constraint.isActive());
+}
+
+TEST(JointLimitConstraintTests, GetInformationForVelocityViolation)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  ExposedJointLimitConstraint constraint(joint);
+
+  joint->setPosition(0, 0.0);
+  joint->setVelocity(0, joint->getVelocityUpperLimit(0) + 0.5);
+  skeleton->computeForwardKinematics();
+  constraint.update();
+  ASSERT_TRUE(constraint.isActive());
+
+  constraint::ConstraintInfo info;
+  double lo[6], hi[6], b[6], w[6], x[6];
+  int findex[6];
+  for (int i = 0; i < 6; ++i) {
+    lo[i] = hi[i] = b[i] = w[i] = x[i] = 0.0;
+    findex[i] = -1;
+  }
+  info.lo = lo;
+  info.hi = hi;
+  info.b = b;
+  info.w = w;
+  info.x = x;
+  info.findex = findex;
+  info.invTimeStep = 1000.0;
+
+  constraint.getInformation(&info);
+
+  EXPECT_LT(info.lo[0], info.hi[0]);
+}
+
+TEST(
+    JointLimitConstraintTests,
+    ApplyImpulseAndVelocityChangeForVelocityViolation)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  ExposedJointLimitConstraint constraint(joint);
+
+  joint->setPosition(0, 0.0);
+  joint->setVelocity(0, joint->getVelocityUpperLimit(0) + 0.5);
+  skeleton->computeForwardKinematics();
+  skeleton->computeForwardDynamics();
+  constraint.update();
+  ASSERT_TRUE(constraint.isActive());
+
+  double delVel[6] = {0, 0, 0, 0, 0, 0};
+  constraint.applyUnitImpulse(0);
+  skeleton->computeImpulseForwardDynamics();
+  constraint.getVelocityChange(delVel, true);
+
+  double lambda[1] = {1.0};
+  constraint.applyImpulse(lambda);
+}
+
+TEST(JointLimitConstraintTests, UpperVelocityViolation)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  ExposedJointLimitConstraint constraint(joint);
+
+  joint->setPosition(0, 0.0);
+  joint->setVelocity(0, joint->getVelocityUpperLimit(0) + 0.5);
+  constraint.update();
+  EXPECT_TRUE(constraint.isActive());
+  EXPECT_EQ(constraint.getDimension(), 1u);
+}
+
+TEST(JointLimitConstraintTests, GetVelocityChangeWithoutCfm)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  ExposedJointLimitConstraint constraint(joint);
+
+  joint->setPosition(0, joint->getPositionUpperLimit(0) + 0.1);
+  skeleton->computeForwardKinematics();
+  skeleton->computeForwardDynamics();
+  constraint.update();
+  ASSERT_TRUE(constraint.isActive());
+
+  double delVel[6] = {0, 0, 0, 0, 0, 0};
+  constraint.applyUnitImpulse(0);
+  skeleton->computeImpulseForwardDynamics();
+  constraint.getVelocityChange(delVel, false);
+}
+
+TEST(JointLimitConstraintTests, GetVelocityChangeWhenImpulseNotApplied)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  ExposedJointLimitConstraint constraint(joint);
+
+  joint->setPosition(0, joint->getPositionUpperLimit(0) + 0.1);
+  skeleton->computeForwardKinematics();
+  skeleton->computeForwardDynamics();
+  constraint.update();
+  ASSERT_TRUE(constraint.isActive());
+
+  skeleton->setImpulseApplied(false);
+
+  double delVel[6] = {0, 0, 0, 0, 0, 0};
+  constraint.getVelocityChange(delVel, false);
+
+  EXPECT_DOUBLE_EQ(delVel[0], 0.0);
 }

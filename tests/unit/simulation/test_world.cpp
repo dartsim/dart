@@ -976,3 +976,106 @@ TEST(WorldTests, OnNameChangedSignal)
   EXPECT_EQ(capturedOldName, "original_world");
   EXPECT_EQ(capturedNewName, "renamed_world");
 }
+
+//==============================================================================
+TEST(WorldTests, CloneWithSimpleFrames)
+{
+  auto world = World::create("frame_world");
+
+  auto frame1 = SimpleFrame::createShared(Frame::World(), "frame1");
+  frame1->setTranslation(Eigen::Vector3d(1, 2, 3));
+  auto frame2 = SimpleFrame::createShared(Frame::World(), "frame2");
+  frame2->setTranslation(Eigen::Vector3d(4, 5, 6));
+
+  world->addSimpleFrame(frame1);
+  world->addSimpleFrame(frame2);
+
+  EXPECT_EQ(world->getNumSimpleFrames(), 2u);
+
+  auto clone = world->clone();
+
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->getNumSimpleFrames(), 2u);
+  EXPECT_NE(clone->getSimpleFrame("frame1"), nullptr);
+  EXPECT_NE(clone->getSimpleFrame("frame2"), nullptr);
+}
+
+//==============================================================================
+TEST(WorldTests, SetNameSameNameNoSignal)
+{
+  auto world = World::create("same_name");
+
+  bool signalCalled = false;
+  world->onNameChanged.connect(
+      [&](const std::string&, const std::string&) { signalCalled = true; });
+
+  world->setName("same_name");
+
+  EXPECT_FALSE(signalCalled);
+  EXPECT_EQ(world->getName(), "same_name");
+}
+
+//==============================================================================
+TEST(WorldTests, SetTimeStepRejectsInvalid)
+{
+  auto world = World::create();
+  double originalTimeStep = world->getTimeStep();
+
+  world->setTimeStep(std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), originalTimeStep);
+
+  world->setTimeStep(std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), originalTimeStep);
+
+  world->setTimeStep(-std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), originalTimeStep);
+}
+
+//==============================================================================
+TEST(WorldTests, GetSimpleFrameOutOfRange)
+{
+  auto world = World::create();
+
+  auto frame = SimpleFrame::createShared(Frame::World(), "only_frame");
+  world->addSimpleFrame(frame);
+
+  EXPECT_EQ(world->getSimpleFrame(0), frame);
+  EXPECT_EQ(world->getSimpleFrame(1), nullptr);
+  EXPECT_EQ(world->getSimpleFrame(999), nullptr);
+}
+
+//==============================================================================
+TEST(WorldTests, BakeWithMultipleSkeletons)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+
+  auto skel1 = Skeleton::create("bake_skel1");
+  auto pair1 = skel1->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, FreeJoint::Properties(), BodyNode::AspectProperties("body1"));
+  Inertia inertia1;
+  inertia1.setMass(1.0);
+  pair1.second->setInertia(inertia1);
+
+  auto skel2 = Skeleton::create("bake_skel2");
+  auto pair2 = skel2->createJointAndBodyNodePair<RevoluteJoint>(
+      nullptr,
+      RevoluteJoint::Properties(),
+      BodyNode::AspectProperties("body2"));
+  Inertia inertia2;
+  inertia2.setMass(1.0);
+  pair2.second->setInertia(inertia2);
+
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  auto recording = world->getRecording();
+  EXPECT_EQ(recording->getNumSkeletons(), 2);
+
+  for (int i = 0; i < 5; ++i) {
+    world->step();
+    world->bake();
+  }
+
+  EXPECT_EQ(recording->getNumFrames(), 5);
+}
