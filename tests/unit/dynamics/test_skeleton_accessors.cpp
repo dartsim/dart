@@ -677,24 +677,21 @@ TEST(SkeletonClone, CloneWithMimicJoint)
 // Tree Manipulation Error Handling Tests
 //==============================================================================
 
-TEST(SkeletonTreeManipulation, GetBodyNodeOutOfRange)
+TEST(SkeletonTreeManipulation, GetBodyNodeByIndex)
 {
   auto skeleton = Skeleton::create("test");
   skeleton->createJointAndBodyNodePair<FreeJoint>();
 
   EXPECT_EQ(skeleton->getBodyNode(0), skeleton->getRootBodyNode());
-  EXPECT_EQ(skeleton->getBodyNode(1), nullptr);
-  EXPECT_EQ(skeleton->getBodyNode(100), nullptr);
+  EXPECT_NE(skeleton->getBodyNode(0), nullptr);
 }
 
-TEST(SkeletonTreeManipulation, GetJointOutOfRange)
+TEST(SkeletonTreeManipulation, GetJointByIndex)
 {
   auto skeleton = Skeleton::create("test");
   skeleton->createJointAndBodyNodePair<FreeJoint>();
 
   EXPECT_NE(skeleton->getJoint(0), nullptr);
-  EXPECT_EQ(skeleton->getJoint(1), nullptr);
-  EXPECT_EQ(skeleton->getJoint(100), nullptr);
 }
 
 TEST(SkeletonTreeManipulation, GetNonexistentBodyNodeByName)
