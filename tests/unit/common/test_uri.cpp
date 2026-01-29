@@ -550,3 +550,84 @@ TEST(UriHelpers, getRelativeUri_WithBaseUri)
   std::string result = Uri::getRelativeUri(baseUri, relative, true);
   EXPECT_EQ("http://a/b/relative", result);
 }
+
+TEST(UriHelpers, createFromPath_AbsolutePath)
+{
+#ifdef _WIN32
+  const std::string path = "C:\\Users\\test\\file.txt";
+#else
+  const std::string path = "/home/user/file.txt";
+#endif
+  Uri uri = Uri::createFromPath(path);
+  EXPECT_TRUE(uri.mScheme);
+  EXPECT_EQ("file", *uri.mScheme);
+  EXPECT_TRUE(uri.mAuthority);
+  EXPECT_EQ("", *uri.mAuthority);
+  EXPECT_EQ(path, uri.getFilesystemPath());
+}
+
+TEST(UriHelpers, createFromStringOrPath_WithUri)
+{
+  Uri uri = Uri::createFromStringOrPath("http://example.com/path");
+  EXPECT_TRUE(uri.mScheme);
+  EXPECT_EQ("http", *uri.mScheme);
+  EXPECT_EQ("http://example.com/path", uri.toString());
+}
+
+TEST(UriHelpers, createFromStringOrPath_WithPath)
+{
+#ifndef _WIN32
+  Uri uri = Uri::createFromStringOrPath("/absolute/path");
+  EXPECT_TRUE(uri.mScheme);
+  EXPECT_EQ("file", *uri.mScheme);
+  EXPECT_EQ("/absolute/path", uri.getFilesystemPath());
+#endif
+}
+
+TEST(UriHelpers, getRelativeUri_WithUriObjects)
+{
+  Uri baseUri = Uri::createFromString("http://a/b/c/d");
+  Uri relativeUri = Uri::createFromString("../e");
+  std::string result = Uri::getRelativeUri(baseUri, relativeUri, true);
+  EXPECT_EQ("http://a/b/e", result);
+}
+
+TEST(UriHelpers, fromRelativeUri_CharPtrOverload)
+{
+  Uri mergedUri;
+  ASSERT_TRUE(mergedUri.fromRelativeUri("http://a/b/c", "g", true));
+  EXPECT_EQ("http://a/b/g", mergedUri.toString());
+}
+
+TEST(UriHelpers, UriComponent_MutableAccessors)
+{
+  UriComponent component("initial");
+  EXPECT_EQ(*component, "initial");
+
+  *component = "modified";
+  EXPECT_EQ(*component, "modified");
+
+  component->clear();
+  EXPECT_TRUE(component->empty());
+}
+
+TEST(UriHelpers, UriComponent_ArrowOperator)
+{
+  UriComponent component("test_value");
+  EXPECT_EQ(component->length(), 10u);
+  EXPECT_EQ(component->substr(0, 4), "test");
+}
+
+TEST(UriHelpers, getPath_ReturnsPathComponent)
+{
+  Uri uri;
+  ASSERT_TRUE(uri.fromString("http://host/path/to/resource?query"));
+  EXPECT_EQ("/path/to/resource", uri.getPath());
+}
+
+TEST(UriHelpers, getPath_EmptyPath)
+{
+  Uri uri;
+  ASSERT_TRUE(uri.fromString("http://host"));
+  EXPECT_EQ("", uri.getPath());
+}

@@ -545,3 +545,981 @@ TEST(JointTest, HasPositionLimit)
   joint->setPositionUpperLimit(0, std::numeric_limits<double>::infinity());
   EXPECT_FALSE(joint->hasPositionLimit(0));
 }
+
+//==============================================================================
+// Additional coverage tests for joint.cpp
+//==============================================================================
+
+//==============================================================================
+TEST(JointTest, SetActuatorType)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("revolute");
+  auto joint = skel->getJoint(0);
+
+  // Default is FORCE
+  EXPECT_EQ(joint->getActuatorType(), Joint::FORCE);
+
+  joint->setActuatorType(Joint::PASSIVE);
+  EXPECT_EQ(joint->getActuatorType(), Joint::PASSIVE);
+
+  joint->setActuatorType(Joint::SERVO);
+  EXPECT_EQ(joint->getActuatorType(), Joint::SERVO);
+
+  joint->setActuatorType(Joint::ACCELERATION);
+  EXPECT_EQ(joint->getActuatorType(), Joint::ACCELERATION);
+
+  joint->setActuatorType(Joint::VELOCITY);
+  EXPECT_EQ(joint->getActuatorType(), Joint::VELOCITY);
+
+  joint->setActuatorType(Joint::LOCKED);
+  EXPECT_EQ(joint->getActuatorType(), Joint::LOCKED);
+
+  // Setting same type again should be a no-op
+  joint->setActuatorType(Joint::LOCKED);
+  EXPECT_EQ(joint->getActuatorType(), Joint::LOCKED);
+}
+
+//==============================================================================
+TEST(JointTest, SetActuatorTypePerDof)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("free");
+  auto joint = skel->getJoint(0);
+
+  // Set base type to FORCE (dynamic)
+  joint->setActuatorType(Joint::FORCE);
+  EXPECT_EQ(joint->getActuatorType(), Joint::FORCE);
+
+  // Per-DoF override to MIMIC (also dynamic) should work
+  joint->setActuatorType(0, Joint::MIMIC);
+  EXPECT_EQ(joint->getActuatorType(0), Joint::MIMIC);
+  EXPECT_EQ(joint->getActuatorType(1), Joint::FORCE);
+
+  // Clearing override by setting back to default
+  joint->setActuatorType(0, Joint::FORCE);
+  EXPECT_EQ(joint->getActuatorType(0), Joint::FORCE);
+}
+
+//==============================================================================
+TEST(JointTest, GetActuatorTypes)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("free");
+  auto joint = skel->getJoint(0);
+
+  joint->setActuatorType(Joint::FORCE);
+  auto types = joint->getActuatorTypes();
+  EXPECT_EQ(types.size(), 6u);
+  for (auto t : types) {
+    EXPECT_EQ(t, Joint::FORCE);
+  }
+
+  // Set one DoF to MIMIC
+  joint->setActuatorType(2, Joint::MIMIC);
+  types = joint->getActuatorTypes();
+  EXPECT_EQ(types[0], Joint::FORCE);
+  EXPECT_EQ(types[2], Joint::MIMIC);
+}
+
+//==============================================================================
+TEST(JointTest, HasActuatorType)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("free");
+  auto joint = skel->getJoint(0);
+
+  joint->setActuatorType(Joint::FORCE);
+  EXPECT_TRUE(joint->hasActuatorType(Joint::FORCE));
+  EXPECT_FALSE(joint->hasActuatorType(Joint::MIMIC));
+
+  joint->setActuatorType(0, Joint::MIMIC);
+  EXPECT_TRUE(joint->hasActuatorType(Joint::MIMIC));
+  EXPECT_TRUE(joint->hasActuatorType(Joint::FORCE));
+}
+
+//==============================================================================
+TEST(JointTest, IsKinematicAndIsDynamic)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("revolute");
+  auto joint = skel->getJoint(0);
+
+  joint->setActuatorType(Joint::FORCE);
+  EXPECT_TRUE(joint->isDynamic());
+  EXPECT_FALSE(joint->isKinematic());
+
+  joint->setActuatorType(Joint::VELOCITY);
+  EXPECT_TRUE(joint->isKinematic());
+  EXPECT_FALSE(joint->isDynamic());
+
+  joint->setActuatorType(Joint::ACCELERATION);
+  EXPECT_TRUE(joint->isKinematic());
+
+  joint->setActuatorType(Joint::LOCKED);
+  EXPECT_TRUE(joint->isKinematic());
+
+  joint->setActuatorType(Joint::PASSIVE);
+  EXPECT_TRUE(joint->isDynamic());
+
+  joint->setActuatorType(Joint::SERVO);
+  EXPECT_TRUE(joint->isDynamic());
+}
+
+//==============================================================================
+TEST(JointTest, IsKinematicActuatorTypeStatic)
+{
+  EXPECT_TRUE(Joint::isKinematicActuatorType(Joint::ACCELERATION));
+  EXPECT_TRUE(Joint::isKinematicActuatorType(Joint::VELOCITY));
+  EXPECT_TRUE(Joint::isKinematicActuatorType(Joint::LOCKED));
+  EXPECT_FALSE(Joint::isKinematicActuatorType(Joint::FORCE));
+  EXPECT_FALSE(Joint::isKinematicActuatorType(Joint::PASSIVE));
+  EXPECT_FALSE(Joint::isKinematicActuatorType(Joint::SERVO));
+  EXPECT_FALSE(Joint::isKinematicActuatorType(Joint::MIMIC));
+}
+
+//==============================================================================
+TEST(JointTest, IsDynamicActuatorTypeStatic)
+{
+  EXPECT_TRUE(Joint::isDynamicActuatorType(Joint::FORCE));
+  EXPECT_TRUE(Joint::isDynamicActuatorType(Joint::PASSIVE));
+  EXPECT_TRUE(Joint::isDynamicActuatorType(Joint::SERVO));
+  EXPECT_TRUE(Joint::isDynamicActuatorType(Joint::MIMIC));
+  EXPECT_FALSE(Joint::isDynamicActuatorType(Joint::ACCELERATION));
+  EXPECT_FALSE(Joint::isDynamicActuatorType(Joint::VELOCITY));
+  EXPECT_FALSE(Joint::isDynamicActuatorType(Joint::LOCKED));
+}
+
+//==============================================================================
+TEST(JointTest, SetLimitEnforcement)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("revolute");
+  auto joint = skel->getJoint(0);
+
+  joint->setLimitEnforcement(true);
+  EXPECT_TRUE(joint->areLimitsEnforced());
+
+  joint->setLimitEnforcement(false);
+  EXPECT_FALSE(joint->areLimitsEnforced());
+}
+
+//==============================================================================
+TEST(JointTest, CoulombFriction)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("revolute");
+  auto joint = skel->getJoint(0);
+
+  joint->setCoulombFriction(0, 0.5);
+  EXPECT_DOUBLE_EQ(joint->getCoulombFriction(0), 0.5);
+
+  joint->setCoulombFriction(0, 0.0);
+  EXPECT_DOUBLE_EQ(joint->getCoulombFriction(0), 0.0);
+}
+
+//==============================================================================
+TEST(JointTest, InitialPositionAndVelocity)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("revolute");
+  auto joint = skel->getJoint(0);
+
+  joint->setInitialPosition(0, 0.5);
+  EXPECT_DOUBLE_EQ(joint->getInitialPosition(0), 0.5);
+
+  joint->setInitialVelocity(0, 1.0);
+  EXPECT_DOUBLE_EQ(joint->getInitialVelocity(0), 1.0);
+}
+
+//==============================================================================
+TEST(JointTest, CommandGetSet)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("revolute");
+  auto joint = skel->getJoint(0);
+
+  joint->setCommand(0, 5.0);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), 5.0);
+
+  // Test resetCommands
+  joint->resetCommands();
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), 0.0);
+}
+
+//==============================================================================
+TEST(JointTest, ConstraintImpulse)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("revolute");
+  auto joint = skel->getJoint(0);
+
+  joint->setConstraintImpulse(0, 3.0);
+  EXPECT_DOUBLE_EQ(joint->getConstraintImpulse(0), 3.0);
+}
+
+//==============================================================================
+TEST(JointTest, VelocityChange)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("revolute");
+  auto joint = skel->getJoint(0);
+
+  // VelocityChange is typically set internally, but we can test the getter
+  // After creation, velocity change should be zero
+  EXPECT_DOUBLE_EQ(joint->getVelocityChange(0), 0.0);
+}
+
+//==============================================================================
+TEST(JointTest, ResetVelocity)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("revolute");
+  auto joint = skel->getJoint(0);
+
+  joint->setVelocity(0, 5.0);
+  EXPECT_DOUBLE_EQ(joint->getVelocity(0), 5.0);
+
+  joint->resetVelocity(0);
+  EXPECT_DOUBLE_EQ(joint->getVelocity(0), joint->getInitialVelocity(0));
+}
+
+//==============================================================================
+TEST(JointTest, ResetAccelerations)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("revolute");
+  auto joint = skel->getJoint(0);
+
+  joint->setAcceleration(0, 3.0);
+  EXPECT_DOUBLE_EQ(joint->getAcceleration(0), 3.0);
+
+  joint->resetAccelerations();
+  EXPECT_DOUBLE_EQ(joint->getAcceleration(0), 0.0);
+}
+
+//==============================================================================
+TEST(JointTest, ResetForces)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("revolute");
+  auto joint = skel->getJoint(0);
+
+  joint->setForce(0, 10.0);
+  EXPECT_DOUBLE_EQ(joint->getForce(0), 10.0);
+
+  joint->resetForces();
+  EXPECT_DOUBLE_EQ(joint->getForce(0), 0.0);
+}
+
+//==============================================================================
+TEST(JointTest, CheckSanity)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("revolute");
+  auto joint = skel->getJoint(0);
+
+  // Default should be sane
+  joint->setPositionLowerLimit(0, -1.0);
+  joint->setPositionUpperLimit(0, 1.0);
+  joint->setVelocityLowerLimit(0, -5.0);
+  joint->setVelocityUpperLimit(0, 5.0);
+  joint->setInitialPosition(0, 0.0);
+  joint->setInitialVelocity(0, 0.0);
+  EXPECT_TRUE(joint->checkSanity(true));
+
+  // Position out of limits
+  joint->setInitialPosition(0, 2.0);
+  EXPECT_FALSE(joint->checkSanity(true));
+  EXPECT_FALSE(joint->checkSanity(false));
+
+  // Reset and check velocity out of limits
+  joint->setInitialPosition(0, 0.0);
+  joint->setInitialVelocity(0, 10.0);
+  EXPECT_FALSE(joint->checkSanity(true));
+  EXPECT_FALSE(joint->checkSanity(false));
+}
+
+//==============================================================================
+TEST(JointTest, CopyJoint)
+{
+  auto skel1 = createSkeletonWithJoint<RevoluteJoint>("source");
+  auto skel2 = createSkeletonWithJoint<RevoluteJoint>("dest");
+  auto source = skel1->getJoint(0);
+  auto dest = skel2->getJoint(0);
+
+  source->setName("source_joint");
+  source->setActuatorType(Joint::SERVO);
+  source->setLimitEnforcement(true);
+
+  dest->copy(*source);
+  EXPECT_EQ(dest->getName(), "source_joint");
+  EXPECT_EQ(dest->getActuatorType(), Joint::SERVO);
+  EXPECT_TRUE(dest->areLimitsEnforced());
+
+  // Copy from pointer
+  source->setName("ptr_copy");
+  dest->copy(source);
+  EXPECT_EQ(dest->getName(), "ptr_copy");
+
+  // Copy nullptr should be no-op
+  dest->copy(static_cast<const Joint*>(nullptr));
+  EXPECT_EQ(dest->getName(), "ptr_copy");
+
+  // Self-copy should be no-op
+  dest->copy(*dest);
+  EXPECT_EQ(dest->getName(), "ptr_copy");
+}
+
+//==============================================================================
+TEST(JointTest, OperatorAssignment)
+{
+  auto skel1 = createSkeletonWithJoint<RevoluteJoint>("source");
+  auto skel2 = createSkeletonWithJoint<RevoluteJoint>("dest");
+  auto source = skel1->getJoint(0);
+  auto dest = skel2->getJoint(0);
+
+  source->setName("assigned_joint");
+  source->setActuatorType(Joint::PASSIVE);
+
+  *dest = *source;
+  EXPECT_EQ(dest->getName(), "assigned_joint");
+  EXPECT_EQ(dest->getActuatorType(), Joint::PASSIVE);
+}
+
+//==============================================================================
+TEST(JointTest, SetMimicJoint)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("mimic_test");
+  auto joint = skel->getJoint(0);
+
+  // Create a second joint to be the reference
+  BodyNode::Properties bodyProps;
+  bodyProps.mName = "body2";
+  bodyProps.mInertia.setMass(1.0);
+  RevoluteJoint::Properties jointProps;
+  jointProps.mName = "ref_joint";
+  auto pair = skel->createJointAndBodyNodePair<RevoluteJoint>(
+      skel->getBodyNode(0), jointProps, bodyProps);
+  auto refJoint = pair.first;
+
+  joint->setMimicJoint(refJoint, 2.0, 0.5);
+  EXPECT_EQ(joint->getMimicJoint(0), refJoint);
+  EXPECT_DOUBLE_EQ(joint->getMimicMultiplier(0), 2.0);
+  EXPECT_DOUBLE_EQ(joint->getMimicOffset(0), 0.5);
+}
+
+//==============================================================================
+TEST(JointTest, MimicConstraintType)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("mimic_type");
+  auto joint = skel->getJoint(0);
+
+  // Default should be Motor
+  EXPECT_EQ(joint->getMimicConstraintType(), MimicConstraintType::Motor);
+
+  joint->setMimicConstraintType(MimicConstraintType::Coupler);
+  EXPECT_EQ(joint->getMimicConstraintType(), MimicConstraintType::Coupler);
+
+  // Test coupler constraint helpers
+  EXPECT_TRUE(joint->isUsingCouplerConstraint());
+
+  joint->setUseCouplerConstraint(false);
+  EXPECT_FALSE(joint->isUsingCouplerConstraint());
+  EXPECT_EQ(joint->getMimicConstraintType(), MimicConstraintType::Motor);
+
+  joint->setUseCouplerConstraint(true);
+  EXPECT_TRUE(joint->isUsingCouplerConstraint());
+}
+
+//==============================================================================
+TEST(JointTest, GetChildAndParentBodyNode)
+{
+  auto skel = Skeleton::create("hierarchy");
+
+  BodyNode::Properties bodyProps1;
+  bodyProps1.mName = "body1";
+  bodyProps1.mInertia.setMass(1.0);
+  RevoluteJoint::Properties jointProps1;
+  jointProps1.mName = "joint1";
+  auto pair1 = skel->createJointAndBodyNodePair<RevoluteJoint>(
+      nullptr, jointProps1, bodyProps1);
+  auto body1 = pair1.second;
+  auto joint1 = pair1.first;
+
+  BodyNode::Properties bodyProps2;
+  bodyProps2.mName = "body2";
+  bodyProps2.mInertia.setMass(1.0);
+  RevoluteJoint::Properties jointProps2;
+  jointProps2.mName = "joint2";
+  auto pair2 = skel->createJointAndBodyNodePair<RevoluteJoint>(
+      body1, jointProps2, bodyProps2);
+  auto joint2 = pair2.first;
+
+  // joint1 has no parent body (root)
+  EXPECT_EQ(joint1->getParentBodyNode(), nullptr);
+  EXPECT_EQ(joint1->getChildBodyNode(), body1);
+
+  // joint2 has body1 as parent
+  EXPECT_EQ(joint2->getParentBodyNode(), body1);
+  EXPECT_NE(joint2->getChildBodyNode(), nullptr);
+}
+
+//==============================================================================
+TEST(JointTest, GetSkeleton)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("skel_test");
+  auto joint = skel->getJoint(0);
+
+  EXPECT_EQ(joint->getSkeleton(), skel);
+
+  // Const version
+  const Joint* constJoint = joint;
+  EXPECT_EQ(constJoint->getSkeleton(), skel);
+}
+
+//==============================================================================
+TEST(JointTest, JointIndexInSkeleton)
+{
+  auto skel = Skeleton::create("index_test");
+
+  BodyNode::Properties bodyProps;
+  bodyProps.mName = "body1";
+  bodyProps.mInertia.setMass(1.0);
+  RevoluteJoint::Properties jointProps;
+  jointProps.mName = "joint1";
+  skel->createJointAndBodyNodePair<RevoluteJoint>(
+      nullptr, jointProps, bodyProps);
+
+  auto joint = skel->getJoint(0);
+  EXPECT_EQ(joint->getJointIndexInSkeleton(), 0u);
+  EXPECT_EQ(joint->getJointIndexInTree(), 0u);
+  EXPECT_EQ(joint->getTreeIndex(), 0u);
+}
+
+//==============================================================================
+TEST(JointTest, SetName)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("name_test");
+  auto joint = skel->getJoint(0);
+
+  const std::string& name = joint->setName("new_name");
+  EXPECT_EQ(name, "new_name");
+  EXPECT_EQ(joint->getName(), "new_name");
+
+  // Setting same name should return same name
+  const std::string& sameName = joint->setName("new_name");
+  EXPECT_EQ(sameName, "new_name");
+
+  // Setting name with rename dofs
+  joint->setName("renamed", true);
+  EXPECT_EQ(joint->getName(), "renamed");
+}
+
+//==============================================================================
+TEST(JointTest, IntegratePositions)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("integrate");
+  auto joint = skel->getJoint(0);
+
+  Eigen::VectorXd q0(1);
+  q0 << 0.0;
+  Eigen::VectorXd v(1);
+  v << 1.0;
+  double dt = 0.01;
+
+  Eigen::VectorXd result = joint->integratePositions(q0, v, dt);
+  EXPECT_EQ(result.size(), 1);
+  EXPECT_NEAR(result[0], 0.01, 1e-10);
+}
+
+//==============================================================================
+TEST(JointTest, GetRelativeTransform)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("rel_tf");
+  auto joint = skel->getJoint(0);
+
+  joint->setPosition(0, 0.0);
+  const Eigen::Isometry3d& tf = joint->getRelativeTransform();
+  EXPECT_TRUE(tf.matrix().allFinite());
+}
+
+//==============================================================================
+TEST(JointTest, GetRelativeSpatialVelocity)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("rel_vel");
+  auto joint = skel->getJoint(0);
+
+  joint->setVelocity(0, 1.0);
+  const Eigen::Vector6d& vel = joint->getRelativeSpatialVelocity();
+  EXPECT_TRUE(vel.allFinite());
+}
+
+//==============================================================================
+TEST(JointTest, GetRelativeSpatialAcceleration)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("rel_acc");
+  auto joint = skel->getJoint(0);
+
+  joint->setAcceleration(0, 1.0);
+  const Eigen::Vector6d& acc = joint->getRelativeSpatialAcceleration();
+  EXPECT_TRUE(acc.allFinite());
+}
+
+//==============================================================================
+TEST(JointTest, GetRelativePrimaryAcceleration)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("rel_prim_acc");
+  auto joint = skel->getJoint(0);
+
+  const Eigen::Vector6d& acc = joint->getRelativePrimaryAcceleration();
+  EXPECT_TRUE(acc.allFinite());
+}
+
+//==============================================================================
+TEST(JointTest, GetWrenchToChildBodyNode)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("wrench");
+  auto joint = skel->getJoint(0);
+  auto body = skel->getBodyNode(0);
+
+  // Compute forward dynamics to set up body forces
+  skel->computeForwardDynamics();
+
+  // Default (joint frame)
+  Eigen::Vector6d wrench = joint->getWrenchToChildBodyNode();
+  EXPECT_TRUE(wrench.allFinite());
+
+  // With respect to child body
+  wrench = joint->getWrenchToChildBodyNode(body);
+  EXPECT_TRUE(wrench.allFinite());
+
+  // With respect to parent body (nullptr for root)
+  wrench = joint->getWrenchToChildBodyNode(nullptr);
+  EXPECT_TRUE(wrench.allFinite());
+
+  // With respect to world frame
+  wrench = joint->getWrenchToChildBodyNode(Frame::World());
+  EXPECT_TRUE(wrench.allFinite());
+}
+
+//==============================================================================
+TEST(JointTest, GetWrenchToParentBodyNode)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("wrench_parent");
+  auto joint = skel->getJoint(0);
+
+  skel->computeForwardDynamics();
+
+  Eigen::Vector6d wrench = joint->getWrenchToParentBodyNode();
+  EXPECT_TRUE(wrench.allFinite());
+}
+
+//==============================================================================
+TEST(JointTest, SetActuatorTypes)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("free_types");
+  auto joint = skel->getJoint(0);
+
+  // Set all to FORCE
+  std::vector<Joint::ActuatorType> types(6, Joint::FORCE);
+  joint->setActuatorTypes(types);
+  auto retrieved = joint->getActuatorTypes();
+  for (auto t : retrieved) {
+    EXPECT_EQ(t, Joint::FORCE);
+  }
+
+  // Set with one MIMIC override
+  types[2] = Joint::MIMIC;
+  joint->setActuatorTypes(types);
+  retrieved = joint->getActuatorTypes();
+  EXPECT_EQ(retrieved[0], Joint::FORCE);
+  EXPECT_EQ(retrieved[2], Joint::MIMIC);
+
+  // Wrong size should be rejected
+  std::vector<Joint::ActuatorType> wrongSize(3, Joint::FORCE);
+  joint->setActuatorTypes(wrongSize);
+  // Should still have previous types
+  retrieved = joint->getActuatorTypes();
+  EXPECT_EQ(retrieved.size(), 6u);
+}
+
+//==============================================================================
+TEST(JointTest, SetProperties)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("props");
+  auto joint = skel->getJoint(0);
+
+  Joint::Properties props;
+  props.mName = "custom_name";
+  props.mIsPositionLimitEnforced = true;
+  props.mActuatorType = Joint::SERVO;
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+  props.mT_ParentBodyToJoint = tf;
+
+  joint->setProperties(props);
+  EXPECT_EQ(joint->getName(), "custom_name");
+  EXPECT_TRUE(joint->areLimitsEnforced());
+  EXPECT_EQ(joint->getActuatorType(), Joint::SERVO);
+}
+
+//==============================================================================
+TEST(JointTest, GetJointProperties)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("get_props");
+  auto joint = skel->getJoint(0);
+
+  joint->setName("test_props");
+  joint->setActuatorType(Joint::PASSIVE);
+  joint->setLimitEnforcement(true);
+
+  const Joint::Properties& props = joint->getJointProperties();
+  EXPECT_EQ(props.mName, "test_props");
+  EXPECT_EQ(props.mActuatorType, Joint::PASSIVE);
+  EXPECT_TRUE(props.mIsPositionLimitEnforced);
+}
+
+//==============================================================================
+TEST(JointTest, MimicDofProperties)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("mimic_dof");
+  auto joint = skel->getJoint(0);
+
+  auto props = joint->getMimicDofProperties();
+  EXPECT_EQ(props.size(), 6u);
+
+  // Set mimic dof via map
+  MimicDofProperties prop;
+  prop.mMultiplier = 3.0;
+  prop.mOffset = 1.0;
+  std::map<std::size_t, MimicDofProperties> propMap;
+  propMap[0] = prop;
+  joint->setMimicJointDofs(propMap);
+  EXPECT_DOUBLE_EQ(joint->getMimicMultiplier(0), 3.0);
+  EXPECT_DOUBLE_EQ(joint->getMimicOffset(0), 1.0);
+}
+
+//==============================================================================
+// Additional FreeJoint coverage tests
+//==============================================================================
+
+//==============================================================================
+TEST(FreeJointTest, ConvertToPositionsWithCharts)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+  tf.linear()
+      = Eigen::AngleAxisd(0.3, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+
+  // EXP_MAP (default)
+  Eigen::Vector6d posExpMap = FreeJoint::convertToPositions(tf);
+  EXPECT_TRUE(posExpMap.allFinite());
+
+  // EULER_XYZ
+  Eigen::Vector6d posXYZ = FreeJoint::convertToPositions(
+      tf, FreeJoint::CoordinateChart::EULER_XYZ);
+  EXPECT_TRUE(posXYZ.allFinite());
+
+  // EULER_ZYX
+  Eigen::Vector6d posZYX = FreeJoint::convertToPositions(
+      tf, FreeJoint::CoordinateChart::EULER_ZYX);
+  EXPECT_TRUE(posZYX.allFinite());
+
+  // Roundtrip: positions -> transform -> positions
+  Eigen::Isometry3d tfBack = FreeJoint::convertToTransform(posExpMap);
+  EXPECT_TRUE(tfBack.translation().isApprox(tf.translation(), 1e-10));
+  EXPECT_TRUE(tfBack.linear().isApprox(tf.linear(), 1e-10));
+}
+
+//==============================================================================
+TEST(FreeJointTest, ConvertToTransformWithCharts)
+{
+  Eigen::Vector6d positions;
+  positions << 0.1, 0.2, 0.3, 1.0, 2.0, 3.0;
+
+  // EXP_MAP
+  Eigen::Isometry3d tfExpMap = FreeJoint::convertToTransform(positions);
+  EXPECT_TRUE(tfExpMap.matrix().allFinite());
+
+  // EULER_XYZ
+  Eigen::Isometry3d tfXYZ = FreeJoint::convertToTransform(
+      positions, FreeJoint::CoordinateChart::EULER_XYZ);
+  EXPECT_TRUE(tfXYZ.matrix().allFinite());
+
+  // EULER_ZYX
+  Eigen::Isometry3d tfZYX = FreeJoint::convertToTransform(
+      positions, FreeJoint::CoordinateChart::EULER_ZYX);
+  EXPECT_TRUE(tfZYX.matrix().allFinite());
+
+  // All should have same translation
+  EXPECT_TRUE(tfExpMap.translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_TRUE(tfXYZ.translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_TRUE(tfZYX.translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+}
+
+//==============================================================================
+TEST(FreeJointTest, SetCoordinateChart)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("chart_test");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  EXPECT_EQ(
+      freeJoint->getCoordinateChart(), FreeJoint::CoordinateChart::EXP_MAP);
+
+  freeJoint->setCoordinateChart(FreeJoint::CoordinateChart::EULER_XYZ);
+  EXPECT_EQ(
+      freeJoint->getCoordinateChart(), FreeJoint::CoordinateChart::EULER_XYZ);
+
+  freeJoint->setCoordinateChart(FreeJoint::CoordinateChart::EULER_ZYX);
+  EXPECT_EQ(
+      freeJoint->getCoordinateChart(), FreeJoint::CoordinateChart::EULER_ZYX);
+
+  // Setting same chart should be no-op
+  freeJoint->setCoordinateChart(FreeJoint::CoordinateChart::EULER_ZYX);
+  EXPECT_EQ(
+      freeJoint->getCoordinateChart(), FreeJoint::CoordinateChart::EULER_ZYX);
+}
+
+//==============================================================================
+TEST(FreeJointTest, SetRelativeTransform)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("rel_tf");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+
+  freeJoint->setRelativeTransform(tf);
+  const Eigen::Isometry3d& result = freeJoint->getRelativeTransform();
+  EXPECT_TRUE(result.translation().isApprox(tf.translation(), 1e-10));
+}
+
+//==============================================================================
+TEST(FreeJointTest, SetTransform)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("set_tf");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  Eigen::Isometry3d worldTf = Eigen::Isometry3d::Identity();
+  worldTf.translation() = Eigen::Vector3d(5.0, 6.0, 7.0);
+
+  freeJoint->setTransform(worldTf, Frame::World());
+
+  auto body = skel->getBodyNode(0);
+  EXPECT_TRUE(body->getWorldTransform().translation().isApprox(
+      worldTf.translation(), 1e-10));
+}
+
+//==============================================================================
+TEST(FreeJointTest, SetSpatialMotion)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("spatial_motion");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+
+  Eigen::Vector6d vel = Eigen::Vector6d::Zero();
+  vel.tail<3>() = Eigen::Vector3d(0.0, 1.0, 0.0);
+
+  Eigen::Vector6d acc = Eigen::Vector6d::Zero();
+  acc.tail<3>() = Eigen::Vector3d(0.0, 0.0, 1.0);
+
+  freeJoint->setSpatialMotion(
+      &tf,
+      Frame::World(),
+      &vel,
+      Frame::World(),
+      freeJoint->getChildBodyNode(),
+      &acc,
+      Frame::World(),
+      freeJoint->getChildBodyNode());
+
+  // Verify transform was set
+  auto body = skel->getBodyNode(0);
+  EXPECT_TRUE(body->getWorldTransform().translation().isApprox(
+      tf.translation(), 1e-10));
+}
+
+//==============================================================================
+TEST(FreeJointTest, SetSpatialMotionNullArgs)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("spatial_null");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  // All null pointers should be no-op
+  freeJoint->setSpatialMotion(
+      nullptr,
+      Frame::World(),
+      nullptr,
+      Frame::World(),
+      freeJoint->getChildBodyNode(),
+      nullptr,
+      Frame::World(),
+      freeJoint->getChildBodyNode());
+
+  // Should not crash
+  EXPECT_TRUE(freeJoint->getRelativeTransform().matrix().allFinite());
+}
+
+//==============================================================================
+TEST(FreeJointTest, SetLinearVelocity)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("lin_vel");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  Eigen::Vector3d linVel(1.0, 2.0, 3.0);
+  freeJoint->setLinearVelocity(linVel, Frame::World(), Frame::World());
+
+  // Velocities should be set
+  Eigen::VectorXd vels = freeJoint->getVelocities();
+  EXPECT_TRUE(vels.allFinite());
+}
+
+//==============================================================================
+TEST(FreeJointTest, SetAngularVelocity)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("ang_vel");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  Eigen::Vector3d angVel(0.1, 0.2, 0.3);
+  freeJoint->setAngularVelocity(angVel, Frame::World(), Frame::World());
+
+  Eigen::VectorXd vels = freeJoint->getVelocities();
+  EXPECT_TRUE(vels.allFinite());
+}
+
+//==============================================================================
+TEST(FreeJointTest, CopyFreeJoint)
+{
+  auto skel1 = createSkeletonWithJoint<FreeJoint>("source");
+  auto skel2 = createSkeletonWithJoint<FreeJoint>("dest");
+  auto* source = static_cast<FreeJoint*>(skel1->getJoint(0));
+  auto* dest = static_cast<FreeJoint*>(skel2->getJoint(0));
+
+  source->setCoordinateChart(FreeJoint::CoordinateChart::EULER_XYZ);
+
+  dest->copy(*source);
+  EXPECT_EQ(dest->getCoordinateChart(), FreeJoint::CoordinateChart::EULER_XYZ);
+
+  // Copy from pointer
+  source->setCoordinateChart(FreeJoint::CoordinateChart::EULER_ZYX);
+  dest->copy(source);
+  EXPECT_EQ(dest->getCoordinateChart(), FreeJoint::CoordinateChart::EULER_ZYX);
+
+  // Copy nullptr should be no-op
+  dest->copy(static_cast<const FreeJoint*>(nullptr));
+  EXPECT_EQ(dest->getCoordinateChart(), FreeJoint::CoordinateChart::EULER_ZYX);
+
+  // Self-copy should be no-op
+  dest->copy(*dest);
+  EXPECT_EQ(dest->getCoordinateChart(), FreeJoint::CoordinateChart::EULER_ZYX);
+}
+
+//==============================================================================
+TEST(FreeJointTest, OperatorAssignment)
+{
+  auto skel1 = createSkeletonWithJoint<FreeJoint>("source");
+  auto skel2 = createSkeletonWithJoint<FreeJoint>("dest");
+  auto* source = static_cast<FreeJoint*>(skel1->getJoint(0));
+  auto* dest = static_cast<FreeJoint*>(skel2->getJoint(0));
+
+  source->setCoordinateChart(FreeJoint::CoordinateChart::EULER_XYZ);
+  *dest = *source;
+  EXPECT_EQ(dest->getCoordinateChart(), FreeJoint::CoordinateChart::EULER_XYZ);
+}
+
+//==============================================================================
+TEST(FreeJointTest, IsCyclic)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("cyclic");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  // Rotation DOFs (0-2) are cyclic when no position limits
+  EXPECT_TRUE(freeJoint->isCyclic(0));
+  EXPECT_TRUE(freeJoint->isCyclic(1));
+  EXPECT_TRUE(freeJoint->isCyclic(2));
+
+  // Translation DOFs (3-5) are not cyclic
+  EXPECT_FALSE(freeJoint->isCyclic(3));
+  EXPECT_FALSE(freeJoint->isCyclic(4));
+  EXPECT_FALSE(freeJoint->isCyclic(5));
+}
+
+//==============================================================================
+TEST(FreeJointTest, SetTransformOfStaticMethods)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("static_tf");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+  auto body = skel->getBodyNode(0);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(3.0, 4.0, 5.0);
+
+  // setTransformOf with Joint*
+  FreeJoint::setTransformOf(freeJoint, tf, Frame::World());
+  EXPECT_TRUE(body->getWorldTransform().translation().isApprox(
+      tf.translation(), 1e-10));
+
+  // setTransformOf with BodyNode*
+  tf.translation() = Eigen::Vector3d(6.0, 7.0, 8.0);
+  FreeJoint::setTransformOf(body, tf, Frame::World());
+  EXPECT_TRUE(body->getWorldTransform().translation().isApprox(
+      tf.translation(), 1e-10));
+
+  // setTransformOf with Skeleton*
+  tf.translation() = Eigen::Vector3d(9.0, 10.0, 11.0);
+  FreeJoint::setTransformOf(skel.get(), tf, Frame::World());
+  EXPECT_TRUE(body->getWorldTransform().translation().isApprox(
+      tf.translation(), 1e-10));
+
+  // setTransformOf with nullptr should be no-op
+  FreeJoint::setTransformOf(static_cast<Joint*>(nullptr), tf, Frame::World());
+  FreeJoint::setTransformOf(
+      static_cast<BodyNode*>(nullptr), tf, Frame::World());
+  FreeJoint::setTransformOf(
+      static_cast<Skeleton*>(nullptr), tf, Frame::World());
+}
+
+//==============================================================================
+TEST(FreeJointTest, GetPositionDifferences)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("pos_diff");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  Eigen::Vector6d q1 = Eigen::Vector6d::Zero();
+  q1.tail<3>() = Eigen::Vector3d(1.0, 0.0, 0.0);
+
+  Eigen::Vector6d q2 = Eigen::Vector6d::Zero();
+  q2.tail<3>() = Eigen::Vector3d(2.0, 0.0, 0.0);
+
+  Eigen::Vector6d diff = freeJoint->getPositionDifferencesStatic(q2, q1);
+  EXPECT_TRUE(diff.allFinite());
+  EXPECT_NEAR(diff[3], 1.0, 1e-10);
+  EXPECT_NEAR(diff[4], 0.0, 1e-10);
+  EXPECT_NEAR(diff[5], 0.0, 1e-10);
+}
+
+//==============================================================================
+TEST(FreeJointTest, GetRelativeJacobianStatic)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("jac_static");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  Eigen::Vector6d positions = Eigen::Vector6d::Zero();
+  Eigen::Matrix6d J = freeJoint->getRelativeJacobianStatic(positions);
+  EXPECT_TRUE(J.allFinite());
+}
+
+//==============================================================================
+TEST(FreeJointTest, GetFreeJointProperties)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("props");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  freeJoint->setCoordinateChart(FreeJoint::CoordinateChart::EULER_XYZ);
+  auto props = freeJoint->getFreeJointProperties();
+  EXPECT_EQ(props.mCoordinateChart, FreeJoint::CoordinateChart::EULER_XYZ);
+}
+
+//==============================================================================
+TEST(FreeJointTest, SetTransformOfSkeletonAllRoots)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("all_roots");
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+
+  // Apply to all root bodies
+  FreeJoint::setTransformOf(skel.get(), tf, Frame::World(), true);
+  auto body = skel->getBodyNode(0);
+  EXPECT_TRUE(body->getWorldTransform().translation().isApprox(
+      tf.translation(), 1e-10));
+}

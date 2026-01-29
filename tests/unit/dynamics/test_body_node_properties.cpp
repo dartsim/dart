@@ -732,3 +732,1078 @@ TEST(BodyNodeExternalForce, InfOffsetIsIgnored)
   Eigen::Vector6d ext = body->getExternalForceLocal();
   EXPECT_TRUE(ext.isZero());
 }
+
+// ============================================================================
+// External Torque Tests
+// ============================================================================
+
+TEST(BodyNodeExternalForce, AddExtTorqueLocal)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->clearExternalForces();
+
+  Eigen::Vector3d torque(1.0, 2.0, 3.0);
+  body->addExtTorque(torque, true);
+
+  Eigen::Vector6d ext = body->getExternalForceLocal();
+  EXPECT_NEAR(ext[0], 1.0, 1e-10);
+  EXPECT_NEAR(ext[1], 2.0, 1e-10);
+  EXPECT_NEAR(ext[2], 3.0, 1e-10);
+  EXPECT_NEAR(ext[3], 0.0, 1e-10);
+  EXPECT_NEAR(ext[4], 0.0, 1e-10);
+  EXPECT_NEAR(ext[5], 0.0, 1e-10);
+}
+
+TEST(BodyNodeExternalForce, AddExtTorqueGlobal)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+  FreeJoint* joint = static_cast<FreeJoint*>(body->getParentJoint());
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = Eigen::AngleAxisd(dart::math::half_pi, Eigen::Vector3d::UnitZ())
+                    .matrix();
+  joint->setTransform(tf);
+
+  body->clearExternalForces();
+
+  Eigen::Vector3d globalTorque(1.0, 0.0, 0.0);
+  body->addExtTorque(globalTorque, false);
+
+  Eigen::Vector6d ext = body->getExternalForceLocal();
+  EXPECT_NEAR(ext[0], 0.0, 1e-10);
+  EXPECT_NEAR(ext[1], -1.0, 1e-10);
+  EXPECT_NEAR(ext[2], 0.0, 1e-10);
+}
+
+TEST(BodyNodeExternalForce, SetExtTorqueLocal)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->clearExternalForces();
+
+  body->addExtTorque(Eigen::Vector3d(1.0, 0.0, 0.0), true);
+  body->setExtTorque(Eigen::Vector3d(0.0, 5.0, 0.0), true);
+
+  Eigen::Vector6d ext = body->getExternalForceLocal();
+  EXPECT_NEAR(ext[0], 0.0, 1e-10);
+  EXPECT_NEAR(ext[1], 5.0, 1e-10);
+  EXPECT_NEAR(ext[2], 0.0, 1e-10);
+}
+
+TEST(BodyNodeExternalForce, SetExtTorqueGlobal)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->clearExternalForces();
+
+  Eigen::Vector3d globalTorque(0.0, 0.0, 3.0);
+  body->setExtTorque(globalTorque, false);
+
+  Eigen::Vector6d ext = body->getExternalForceLocal();
+  EXPECT_NEAR(ext[2], 3.0, 1e-10);
+}
+
+TEST(BodyNodeExternalForce, NaNTorqueIsIgnored)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->clearExternalForces();
+
+  Eigen::Vector3d nanTorque(std::nan(""), 0.0, 0.0);
+  body->addExtTorque(nanTorque, true);
+
+  Eigen::Vector6d ext = body->getExternalForceLocal();
+  EXPECT_TRUE(ext.isZero());
+}
+
+TEST(BodyNodeExternalForce, InfTorqueIsIgnored)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->clearExternalForces();
+
+  Eigen::Vector3d infTorque(std::numeric_limits<double>::infinity(), 0.0, 0.0);
+  body->addExtTorque(infTorque, true);
+
+  Eigen::Vector6d ext = body->getExternalForceLocal();
+  EXPECT_TRUE(ext.isZero());
+}
+
+TEST(BodyNodeExternalForce, SetExtForceNaNIsIgnored)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->clearExternalForces();
+  body->addExtForce(
+      Eigen::Vector3d(1.0, 0.0, 0.0), Eigen::Vector3d::Zero(), true, true);
+
+  Eigen::Vector3d nanForce(std::nan(""), 0.0, 0.0);
+  body->setExtForce(nanForce, Eigen::Vector3d::Zero(), true, true);
+
+  Eigen::Vector6d ext = body->getExternalForceLocal();
+  EXPECT_NEAR(ext[3], 1.0, 1e-10);
+}
+
+TEST(BodyNodeExternalForce, SetExtForceInfOffsetIsIgnored)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->clearExternalForces();
+  body->addExtForce(
+      Eigen::Vector3d(1.0, 0.0, 0.0), Eigen::Vector3d::Zero(), true, true);
+
+  Eigen::Vector3d infOffset(std::numeric_limits<double>::infinity(), 0.0, 0.0);
+  body->setExtForce(Eigen::Vector3d(2.0, 0.0, 0.0), infOffset, true, true);
+
+  Eigen::Vector6d ext = body->getExternalForceLocal();
+  EXPECT_NEAR(ext[3], 1.0, 1e-10);
+}
+
+TEST(BodyNodeExternalForce, SetExtTorqueNaNIsIgnored)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->clearExternalForces();
+  body->addExtTorque(Eigen::Vector3d(1.0, 0.0, 0.0), true);
+
+  Eigen::Vector3d nanTorque(std::nan(""), 0.0, 0.0);
+  body->setExtTorque(nanTorque, true);
+
+  Eigen::Vector6d ext = body->getExternalForceLocal();
+  EXPECT_NEAR(ext[0], 1.0, 1e-10);
+}
+
+TEST(BodyNodeExternalForce, GetExternalForceGlobal)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->clearExternalForces();
+  body->addExtForce(
+      Eigen::Vector3d(1.0, 0.0, 0.0), Eigen::Vector3d::Zero(), true, true);
+
+  Eigen::Vector6d globalExt = body->getExternalForceGlobal();
+  EXPECT_TRUE(globalExt.array().isFinite().all());
+  EXPECT_GT(globalExt.norm(), 0.0);
+}
+
+// ============================================================================
+// Constraint Impulse Tests
+// ============================================================================
+
+TEST(BodyNodeConstraintImpulse, SetConstraintImpulse)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  Eigen::Vector6d impulse;
+  impulse << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0;
+
+  body->setConstraintImpulse(impulse);
+  EXPECT_TRUE(body->getConstraintImpulse().isApprox(impulse));
+}
+
+TEST(BodyNodeConstraintImpulse, AddConstraintImpulse6d)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->clearConstraintImpulse();
+
+  Eigen::Vector6d impulse1;
+  impulse1 << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+  body->addConstraintImpulse(impulse1);
+
+  Eigen::Vector6d impulse2;
+  impulse2 << 0.0, 2.0, 0.0, 0.0, 0.0, 0.0;
+  body->addConstraintImpulse(impulse2);
+
+  Eigen::Vector6d expected;
+  expected << 1.0, 2.0, 0.0, 0.0, 0.0, 0.0;
+  EXPECT_TRUE(body->getConstraintImpulse().isApprox(expected));
+}
+
+TEST(BodyNodeConstraintImpulse, AddConstraintImpulseWithOffset)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->clearConstraintImpulse();
+
+  Eigen::Vector3d impulse(1.0, 0.0, 0.0);
+  Eigen::Vector3d offset(0.0, 0.0, 0.0);
+  body->addConstraintImpulse(impulse, offset, true, true);
+
+  Eigen::Vector6d result = body->getConstraintImpulse();
+  EXPECT_NEAR(result[3], 1.0, 1e-10);
+}
+
+TEST(BodyNodeConstraintImpulse, AddConstraintImpulseGlobalImpulseLocalOffset)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->clearConstraintImpulse();
+
+  Eigen::Vector3d globalImpulse(1.0, 0.0, 0.0);
+  Eigen::Vector3d localOffset(0.0, 0.0, 0.5);
+  body->addConstraintImpulse(globalImpulse, localOffset, false, true);
+
+  Eigen::Vector6d result = body->getConstraintImpulse();
+  EXPECT_TRUE(result.array().isFinite().all());
+  EXPECT_GT(result.norm(), 0.0);
+}
+
+TEST(BodyNodeConstraintImpulse, AddConstraintImpulseGlobalOffset)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->clearConstraintImpulse();
+
+  Eigen::Vector3d impulse(0.0, 1.0, 0.0);
+  Eigen::Vector3d globalOffset(0.0, 0.0, 0.0);
+  body->addConstraintImpulse(impulse, globalOffset, true, false);
+
+  Eigen::Vector6d result = body->getConstraintImpulse();
+  EXPECT_TRUE(result.array().isFinite().all());
+}
+
+TEST(BodyNodeConstraintImpulse, ClearConstraintImpulse)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->setConstraintImpulse(Eigen::Vector6d::Ones());
+  EXPECT_FALSE(body->getConstraintImpulse().isZero());
+
+  body->clearConstraintImpulse();
+  EXPECT_TRUE(body->getConstraintImpulse().isZero());
+}
+
+TEST(BodyNodeConstraintImpulse, PositionConstraintImpulse)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->clearPositionConstraintImpulse();
+  EXPECT_TRUE(body->getPositionConstraintImpulse().isZero());
+
+  Eigen::Vector6d impulse = Eigen::Vector6d::Ones() * 3.0;
+  body->addPositionConstraintImpulse(impulse);
+  EXPECT_TRUE(body->getPositionConstraintImpulse().isApprox(impulse));
+
+  body->clearPositionConstraintImpulse();
+  EXPECT_TRUE(body->getPositionConstraintImpulse().isZero());
+}
+
+// ============================================================================
+// Body Force and Energy Tests
+// ============================================================================
+
+TEST(BodyNodeForce, GetBodyForce)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  const Eigen::Vector6d& bodyForce = body->getBodyForce();
+  EXPECT_EQ(bodyForce.size(), 6);
+  EXPECT_TRUE(bodyForce.array().isFinite().all());
+}
+
+TEST(BodyNodeEnergy, ComputeKineticEnergy)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+  body->setMass(2.0);
+
+  double ke = body->computeKineticEnergy();
+  EXPECT_GE(ke, 0.0);
+  EXPECT_TRUE(std::isfinite(ke));
+}
+
+TEST(BodyNodeEnergy, ComputePotentialEnergy)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+  body->setMass(2.0);
+
+  Eigen::Vector3d gravity(0, 0, -9.81);
+  double pe = body->computePotentialEnergy(gravity);
+  EXPECT_TRUE(std::isfinite(pe));
+}
+
+TEST(BodyNodeEnergy, ComputeLagrangian)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+  body->setMass(2.0);
+
+  Eigen::Vector3d gravity(0, 0, -9.81);
+  double lagrangian = body->computeLagrangian(gravity);
+  EXPECT_TRUE(std::isfinite(lagrangian));
+
+  double ke = body->computeKineticEnergy();
+  double pe = body->computePotentialEnergy(gravity);
+  EXPECT_NEAR(lagrangian, ke - pe, 1e-10);
+}
+
+TEST(BodyNodeEnergy, LinearMomentum)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+  body->setMass(2.0);
+
+  Eigen::Vector3d momentum = body->getLinearMomentum();
+  EXPECT_TRUE(momentum.array().isFinite().all());
+}
+
+TEST(BodyNodeEnergy, AngularMomentum)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+  body->setMass(2.0);
+
+  Eigen::Vector3d pivot = Eigen::Vector3d::Zero();
+  Eigen::Vector3d angMomentum = body->getAngularMomentum(pivot);
+  EXPECT_TRUE(angMomentum.array().isFinite().all());
+}
+
+// ============================================================================
+// Gravity Mode Tests
+// ============================================================================
+
+TEST(BodyNodeGravity, SetGravityModeIdempotent)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  EXPECT_TRUE(body->getGravityMode());
+
+  body->setGravityMode(true);
+  EXPECT_TRUE(body->getGravityMode());
+
+  body->setGravityMode(false);
+  EXPECT_FALSE(body->getGravityMode());
+
+  body->setGravityMode(false);
+  EXPECT_FALSE(body->getGravityMode());
+}
+
+// ============================================================================
+// Collidable Tests
+// ============================================================================
+
+TEST(BodyNodeCollidable, SetAndGetCollidable)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  EXPECT_TRUE(body->isCollidable());
+
+  body->setCollidable(false);
+  EXPECT_FALSE(body->isCollidable());
+
+  body->setCollidable(true);
+  EXPECT_TRUE(body->isCollidable());
+}
+
+// ============================================================================
+// BodyNode Indexing Tests
+// ============================================================================
+
+TEST(BodyNodeIndexing, IndexInSkeleton)
+{
+  auto skeleton = Skeleton::create("idx_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setName("body0");
+
+  auto child = pair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child.second->setName("body1");
+
+  EXPECT_EQ(pair.second->getIndexInSkeleton(), 0u);
+  EXPECT_EQ(child.second->getIndexInSkeleton(), 1u);
+}
+
+TEST(BodyNodeIndexing, IndexInTree)
+{
+  auto skeleton = Skeleton::create("tree_idx_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+
+  auto child = pair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  EXPECT_EQ(pair.second->getIndexInTree(), 0u);
+  EXPECT_EQ(child.second->getIndexInTree(), 1u);
+}
+
+TEST(BodyNodeIndexing, TreeIndex)
+{
+  auto skeleton = Skeleton::create("tree_index_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+
+  auto child = pair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  EXPECT_EQ(pair.second->getTreeIndex(), 0u);
+  EXPECT_EQ(child.second->getTreeIndex(), 0u);
+}
+
+// ============================================================================
+// BodyNode Dependent DOF Tests
+// ============================================================================
+
+TEST(BodyNodeDependentDofs, DependsOn)
+{
+  auto skeleton = Skeleton::create("depends_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  auto child = pair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child.first->setAxis(Eigen::Vector3d::UnitY());
+
+  EXPECT_TRUE(pair.second->dependsOn(0));
+  EXPECT_FALSE(pair.second->dependsOn(1));
+
+  EXPECT_TRUE(child.second->dependsOn(0));
+  EXPECT_TRUE(child.second->dependsOn(1));
+}
+
+TEST(BodyNodeDependentDofs, GetNumDependentGenCoords)
+{
+  auto skeleton = Skeleton::create("dep_coords_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+
+  auto child = pair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  EXPECT_EQ(pair.second->getNumDependentGenCoords(), 6u);
+  EXPECT_EQ(child.second->getNumDependentGenCoords(), 7u);
+}
+
+TEST(BodyNodeDependentDofs, GetDependentGenCoordIndices)
+{
+  auto skeleton = Skeleton::create("dep_indices_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  auto child = pair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child.first->setAxis(Eigen::Vector3d::UnitY());
+
+  auto indices = child.second->getDependentGenCoordIndices();
+  EXPECT_EQ(indices.size(), 2u);
+  EXPECT_EQ(indices[0], 0u);
+  EXPECT_EQ(indices[1], 1u);
+}
+
+TEST(BodyNodeDependentDofs, GetDependentDofs)
+{
+  auto skeleton = Skeleton::create("dep_dofs_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  auto child = pair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child.first->setAxis(Eigen::Vector3d::UnitY());
+
+  auto dofs = child.second->getDependentDofs();
+  EXPECT_EQ(dofs.size(), 2u);
+
+  const BodyNode* constChild = child.second;
+  auto constDofs = constChild->getDependentDofs();
+  EXPECT_EQ(constDofs.size(), 2u);
+}
+
+TEST(BodyNodeDependentDofs, GetChainDofs)
+{
+  auto skeleton = Skeleton::create("chain_dofs_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  auto child = pair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child.first->setAxis(Eigen::Vector3d::UnitY());
+
+  auto chainDofs = child.second->getChainDofs();
+  EXPECT_EQ(chainDofs.size(), 2u);
+}
+
+// ============================================================================
+// BodyNode Jacobian Tests
+// ============================================================================
+
+TEST(BodyNodeJacobian, GetJacobian)
+{
+  auto skeleton = Skeleton::create("jac_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair.second->setMass(1.0);
+
+  const auto& jac = pair.second->getJacobian();
+  EXPECT_EQ(jac.rows(), 6);
+  EXPECT_EQ(jac.cols(), 1);
+  EXPECT_TRUE(jac.array().isFinite().all());
+}
+
+TEST(BodyNodeJacobian, GetWorldJacobian)
+{
+  auto skeleton = Skeleton::create("world_jac_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair.second->setMass(1.0);
+
+  const auto& worldJac = pair.second->getWorldJacobian();
+  EXPECT_EQ(worldJac.rows(), 6);
+  EXPECT_EQ(worldJac.cols(), 1);
+  EXPECT_TRUE(worldJac.array().isFinite().all());
+}
+
+TEST(BodyNodeJacobian, GetJacobianSpatialDeriv)
+{
+  auto skeleton = Skeleton::create("jac_deriv_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair.second->setMass(1.0);
+
+  skeleton->setVelocity(0, 1.0);
+
+  const auto& jacDeriv = pair.second->getJacobianSpatialDeriv();
+  EXPECT_EQ(jacDeriv.rows(), 6);
+  EXPECT_EQ(jacDeriv.cols(), 1);
+  EXPECT_TRUE(jacDeriv.array().isFinite().all());
+}
+
+TEST(BodyNodeJacobian, GetJacobianClassicDeriv)
+{
+  auto skeleton = Skeleton::create("jac_classic_deriv_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair.second->setMass(1.0);
+
+  skeleton->setVelocity(0, 1.0);
+
+  const auto& jacClassicDeriv = pair.second->getJacobianClassicDeriv();
+  EXPECT_EQ(jacClassicDeriv.rows(), 6);
+  EXPECT_EQ(jacClassicDeriv.cols(), 1);
+  EXPECT_TRUE(jacClassicDeriv.array().isFinite().all());
+}
+
+// ============================================================================
+// BodyNode Velocity/Acceleration Tests
+// ============================================================================
+
+TEST(BodyNodeVelocity, GetBodyVelocityChange)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  const Eigen::Vector6d& delV = body->getBodyVelocityChange();
+  EXPECT_EQ(delV.size(), 6);
+  EXPECT_TRUE(delV.array().isFinite().all());
+}
+
+TEST(BodyNodeVelocity, GetPartialAcceleration)
+{
+  auto skeleton = Skeleton::create("partial_acc_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair.second->setMass(1.0);
+
+  skeleton->setVelocity(0, 1.0);
+
+  const auto& partialAcc = pair.second->getPartialAcceleration();
+  EXPECT_EQ(partialAcc.size(), 6);
+  EXPECT_TRUE(partialAcc.array().isFinite().all());
+}
+
+// ============================================================================
+// BodyNode COM Tests
+// ============================================================================
+
+TEST(BodyNodeCOM, GetCOM)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+  body->setMass(1.0);
+
+  auto com = body->getCOM();
+  EXPECT_TRUE(com.array().isFinite().all());
+}
+
+TEST(BodyNodeCOM, GetCOMLinearVelocity)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+  body->setMass(1.0);
+
+  auto comVel = body->getCOMLinearVelocity();
+  EXPECT_TRUE(comVel.array().isFinite().all());
+}
+
+TEST(BodyNodeCOM, GetCOMSpatialVelocity)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+  body->setMass(1.0);
+
+  auto comSpatialVel = body->getCOMSpatialVelocity();
+  EXPECT_EQ(comSpatialVel.size(), 6);
+  EXPECT_TRUE(comSpatialVel.array().isFinite().all());
+}
+
+TEST(BodyNodeCOM, GetCOMLinearAcceleration)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+  body->setMass(1.0);
+
+  auto comLinAcc = body->getCOMLinearAcceleration();
+  EXPECT_TRUE(comLinAcc.array().isFinite().all());
+}
+
+TEST(BodyNodeCOM, GetCOMSpatialAcceleration)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+  body->setMass(1.0);
+
+  auto comSpatialAcc = body->getCOMSpatialAcceleration();
+  EXPECT_EQ(comSpatialAcc.size(), 6);
+  EXPECT_TRUE(comSpatialAcc.array().isFinite().all());
+}
+
+// ============================================================================
+// BodyNode Reactive Test
+// ============================================================================
+
+TEST(BodyNodeReactive, IsReactive)
+{
+  auto skeleton = Skeleton::create("reactive_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair.second->setMass(1.0);
+
+  skeleton->setMobile(true);
+  EXPECT_TRUE(pair.second->isReactive());
+
+  skeleton->setMobile(false);
+  EXPECT_FALSE(pair.second->isReactive());
+}
+
+// ============================================================================
+// BodyNode Color/Alpha Tests
+// ============================================================================
+
+TEST(BodyNodeVisual, SetColor3d)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  body->createShapeNodeWith<VisualAspect>(box);
+
+  Eigen::Vector3d color(1.0, 0.0, 0.0);
+  body->setColor(color);
+
+  auto* visual = body->getShapeNode(0)->getVisualAspect();
+  ASSERT_NE(visual, nullptr);
+  EXPECT_TRUE(visual->getColor().head<3>().isApprox(color));
+}
+
+TEST(BodyNodeVisual, SetColor4d)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  body->createShapeNodeWith<VisualAspect>(box);
+
+  Eigen::Vector4d color(0.0, 1.0, 0.0, 0.5);
+  body->setColor(color);
+
+  auto* visual = body->getShapeNode(0)->getVisualAspect();
+  ASSERT_NE(visual, nullptr);
+  EXPECT_TRUE(visual->getColor().isApprox(color.head<3>()));
+  EXPECT_NEAR(visual->getAlpha(), color[3], 1e-10);
+}
+
+TEST(BodyNodeVisual, SetAlpha)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  body->createShapeNodeWith<VisualAspect>(box);
+
+  body->setAlpha(0.3);
+
+  auto* visual = body->getShapeNode(0)->getVisualAspect();
+  ASSERT_NE(visual, nullptr);
+  EXPECT_NEAR(visual->getAlpha(), 0.3, 1e-10);
+}
+
+// ============================================================================
+// BodyNode Inertia Tests
+// ============================================================================
+
+TEST(BodyNodeInertia, SetInertia)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  Inertia inertia;
+  inertia.setMass(3.0);
+  inertia.setLocalCOM(Eigen::Vector3d(0.1, 0.2, 0.3));
+
+  body->setInertia(inertia);
+
+  EXPECT_DOUBLE_EQ(body->getMass(), 3.0);
+  EXPECT_TRUE(body->getLocalCOM().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+  EXPECT_EQ(&body->getInertia(), &body->getInertia());
+}
+
+TEST(BodyNodeInertia, SetInertiaIdempotent)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  Inertia inertia;
+  inertia.setMass(2.0);
+  body->setInertia(inertia);
+
+  auto version1 = skeleton->getVersion();
+  body->setInertia(inertia);
+  auto version2 = skeleton->getVersion();
+
+  EXPECT_EQ(version1, version2);
+}
+
+TEST(BodyNodeInertia, GetSpatialInertia)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+  body->setMass(2.0);
+
+  const auto& spatialInertia = body->getSpatialInertia();
+  EXPECT_EQ(spatialInertia.rows(), 6);
+  EXPECT_EQ(spatialInertia.cols(), 6);
+  EXPECT_TRUE(spatialInertia.array().isFinite().all());
+}
+
+TEST(BodyNodeInertia, GetArticulatedInertia)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+  body->setMass(2.0);
+
+  const auto& artInertia = body->getArticulatedInertia();
+  EXPECT_TRUE(artInertia.matrix().array().isFinite().all());
+
+  const auto& artInertiaImplicit = body->getArticulatedInertiaImplicit();
+  EXPECT_TRUE(artInertiaImplicit.matrix().array().isFinite().all());
+}
+
+// ============================================================================
+// BodyNode Child Accessors
+// ============================================================================
+
+TEST(BodyNodeChildren, GetChildJoint)
+{
+  auto skeleton = Skeleton::create("child_joint_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+
+  auto child = pair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  EXPECT_EQ(pair.second->getNumChildJoints(), 1u);
+  EXPECT_EQ(pair.second->getChildJoint(0), child.first);
+
+  const BodyNode* constBody = pair.second;
+  EXPECT_EQ(constBody->getChildJoint(0), child.first);
+}
+
+TEST(BodyNodeChildren, GetChildBodyNode)
+{
+  auto skeleton = Skeleton::create("child_body_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+
+  auto child = pair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  EXPECT_EQ(pair.second->getNumChildBodyNodes(), 1u);
+  EXPECT_EQ(pair.second->getChildBodyNode(0), child.second);
+
+  const BodyNode* constBody = pair.second;
+  EXPECT_EQ(constBody->getChildBodyNode(0), child.second);
+}
+
+// ============================================================================
+// BodyNode Copy/Assignment Tests
+// ============================================================================
+
+TEST(BodyNodeCopy, CopyOperator)
+{
+  auto skeleton = Skeleton::create("copy_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setName("body0");
+  pair.second->setMass(3.0);
+  pair.second->setGravityMode(false);
+
+  auto child = pair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child.second->setName("body1");
+
+  child.second->copy(pair.second);
+  EXPECT_DOUBLE_EQ(child.second->getMass(), 3.0);
+  EXPECT_FALSE(child.second->getGravityMode());
+}
+
+TEST(BodyNodeCopy, CopyFromPointer)
+{
+  auto skeleton = Skeleton::create("copy_ptr_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setMass(4.0);
+
+  auto child = pair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  child.second->copy(pair.second);
+  EXPECT_DOUBLE_EQ(child.second->getMass(), 4.0);
+
+  child.second->copy(static_cast<BodyNode*>(nullptr));
+  EXPECT_DOUBLE_EQ(child.second->getMass(), 4.0);
+}
+
+TEST(BodyNodeCopy, AssignmentOperator)
+{
+  auto skeleton = Skeleton::create("assign_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setMass(5.0);
+
+  auto child = pair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  *child.second = *pair.second;
+  EXPECT_DOUBLE_EQ(child.second->getMass(), 5.0);
+}
+
+// ============================================================================
+// BodyNode Nodes Accessor
+// ============================================================================
+
+TEST(BodyNodeNodes, GetNodes)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->createEndEffector("ee1");
+  Marker::BasicProperties markerProps;
+  markerProps.mName = "marker1";
+  body->createMarker(markerProps);
+
+  auto nodes = body->getNodes();
+  EXPECT_GE(nodes.size(), 2u);
+
+  const BodyNode* constBody = body;
+  auto constNodes = constBody->getNodes();
+  EXPECT_GE(constNodes.size(), 2u);
+}
+
+// ============================================================================
+// BodyNode SoftBodyNode Cast
+// ============================================================================
+
+TEST(BodyNodeCast, AsSoftBodyNode)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  EXPECT_EQ(body->asSoftBodyNode(), nullptr);
+
+  const BodyNode* constBody = body;
+  EXPECT_EQ(constBody->asSoftBodyNode(), nullptr);
+}
+
+// ============================================================================
+// BodyNode ClearInternalForces
+// ============================================================================
+
+TEST(BodyNodeForces, ClearInternalForces)
+{
+  auto skeleton = Skeleton::create("clear_int_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair.second->setMass(1.0);
+
+  pair.first->setForce(0, 10.0);
+  EXPECT_NEAR(pair.first->getForce(0), 10.0, 1e-10);
+
+  pair.second->clearInternalForces();
+  EXPECT_NEAR(pair.first->getForce(0), 0.0, 1e-10);
+}
+
+// ============================================================================
+// BodyNode SetAspectState
+// ============================================================================
+
+TEST(BodyNodeAspect, SetAspectState)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->clearExternalForces();
+
+  BodyNode::AspectState state;
+  state.mFext = Eigen::Vector6d::Ones() * 2.0;
+  body->setAspectState(state);
+
+  EXPECT_TRUE(body->getExternalForceLocal().isApprox(state.mFext));
+
+  body->setAspectState(state);
+  EXPECT_TRUE(body->getExternalForceLocal().isApprox(state.mFext));
+}
+
+TEST(BodyNodeAspect, SetAspectProperties)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  BodyNode::AspectProperties props;
+  props.mName = "new_body_name";
+  props.mGravityMode = false;
+
+  body->setAspectProperties(props);
+
+  EXPECT_EQ(body->getName(), "new_body_name");
+  EXPECT_FALSE(body->getGravityMode());
+}
+
+TEST(BodyNodeAspect, GetBodyNodeProperties)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+  body->setMass(3.0);
+
+  auto props = body->getBodyNodeProperties();
+  (void)props;
+}
+
+// ============================================================================
+// BodyNode RemoveAllShapeNodes
+// ============================================================================
+
+TEST(BodyNodeShapeNodes, RemoveAllShapeNodes)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  body->createShapeNodeWith<VisualAspect>(box);
+
+  EXPECT_EQ(body->getNumShapeNodes(), 1u);
+
+  body->removeAllShapeNodes();
+  EXPECT_EQ(body->getNumShapeNodes(), 0u);
+}
+
+// ============================================================================
+// BodyNode GetShapeNodes (vector)
+// ============================================================================
+
+TEST(BodyNodeShapeNodes, GetShapeNodesVector)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  auto sphere = std::make_shared<SphereShape>(0.5);
+
+  body->createShapeNodeWith<VisualAspect>(box);
+  body->createShapeNodeWith<CollisionAspect>(sphere);
+
+  // Use getNumShapeNodes instead of deprecated getShapeNodes()
+  EXPECT_EQ(body->getNumShapeNodes(), 2u);
+
+  const BodyNode* constBody = body;
+  EXPECT_EQ(constBody->getNumShapeNodes(), 2u);
+}
+
+// ============================================================================
+// BodyNode Skeleton Accessor
+// ============================================================================
+
+TEST(BodyNodeSkeleton, GetSkeleton)
+{
+  auto skeleton = Skeleton::create("skel_accessor_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+
+  EXPECT_EQ(pair.second->getSkeleton(), skeleton);
+
+  const BodyNode* constBody = pair.second;
+  EXPECT_NE(constBody->getSkeleton(), nullptr);
+}
+
+// ============================================================================
+// BodyNode Parent Accessors
+// ============================================================================
+
+TEST(BodyNodeParent, GetParentJoint)
+{
+  auto skeleton = Skeleton::create("parent_joint_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+
+  EXPECT_NE(pair.second->getParentJoint(), nullptr);
+  EXPECT_EQ(pair.second->getParentJoint(), pair.first);
+
+  const BodyNode* constBody = pair.second;
+  EXPECT_NE(constBody->getParentJoint(), nullptr);
+}
+
+TEST(BodyNodeParent, GetParentBodyNode)
+{
+  auto skeleton = Skeleton::create("parent_body_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+
+  EXPECT_EQ(pair.second->getParentBodyNode(), nullptr);
+
+  auto child = pair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  EXPECT_EQ(child.second->getParentBodyNode(), pair.second);
+
+  const BodyNode* constChild = child.second;
+  EXPECT_EQ(constChild->getParentBodyNode(), pair.second);
+}
+
+// ============================================================================
+// BodyNode Transform Derivatives
+// ============================================================================
+
+TEST(BodyNodeTransform, GetWorldTransformDerivative)
+{
+  auto skeleton = Skeleton::create("transform_deriv_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair.second->setMass(1.0);
+
+  skeleton->setPosition(0, 0.5);
+
+  const auto& deriv = pair.second->getWorldTransformDerivative(0);
+  EXPECT_EQ(deriv.rows(), 4);
+  EXPECT_EQ(deriv.cols(), 4);
+  EXPECT_TRUE(deriv.array().isFinite().all());
+}
+
+TEST(BodyNodeTransform, GetWorldTransformSecondDerivative)
+{
+  auto skeleton = Skeleton::create("transform_second_deriv_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair.second->setMass(1.0);
+
+  skeleton->setPosition(0, 0.5);
+
+  const auto& secondDeriv
+      = pair.second->getWorldTransformSecondDerivative(0, 0);
+  EXPECT_EQ(secondDeriv.rows(), 4);
+  EXPECT_EQ(secondDeriv.cols(), 4);
+  EXPECT_TRUE(secondDeriv.array().isFinite().all());
+}

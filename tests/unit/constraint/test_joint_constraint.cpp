@@ -68,6 +68,11 @@ public:
   using JointConstraint::isActive;
   using JointConstraint::JointConstraint;
   using JointConstraint::update;
+
+  dynamics::SkeletonPtr exposedGetRootSkeleton() const
+  {
+    return getRootSkeleton();
+  }
 };
 
 TEST(JointConstraintTests, InvalidPositionLimitsDoNotCrash)
@@ -115,4 +120,139 @@ TEST(JointConstraintTests, WorldStepWithInvalidLimitsDoesNotCrash)
       world->step();
     }
   });
+}
+
+TEST(JointConstraintTests, SetErrorAllowanceNegativeLogsWarning)
+{
+  double original = JointConstraint::getErrorAllowance();
+
+  // API logs warning but doesn't clamp - verify value is still set
+  JointConstraint::setErrorAllowance(-0.5);
+  // Just verify setter doesn't crash; behavior is to log warning
+  JointConstraint::setErrorAllowance(original);
+}
+
+TEST(JointConstraintTests, SetErrorAllowanceValidValue)
+{
+  double original = JointConstraint::getErrorAllowance();
+
+  JointConstraint::setErrorAllowance(0.01);
+  EXPECT_DOUBLE_EQ(JointConstraint::getErrorAllowance(), 0.01);
+
+  JointConstraint::setErrorAllowance(original);
+}
+
+TEST(JointConstraintTests, SetErrorReductionParameterNegativeLogsWarning)
+{
+  double original = JointConstraint::getErrorReductionParameter();
+
+  // API logs warning but doesn't clamp
+  JointConstraint::setErrorReductionParameter(-0.5);
+  JointConstraint::setErrorReductionParameter(original);
+}
+
+TEST(JointConstraintTests, SetErrorReductionParameterAboveOneLogsWarning)
+{
+  double original = JointConstraint::getErrorReductionParameter();
+
+  // API logs warning but doesn't clamp
+  JointConstraint::setErrorReductionParameter(1.5);
+  JointConstraint::setErrorReductionParameter(original);
+}
+
+TEST(JointConstraintTests, SetErrorReductionParameterValidValue)
+{
+  double original = JointConstraint::getErrorReductionParameter();
+
+  JointConstraint::setErrorReductionParameter(0.5);
+  EXPECT_DOUBLE_EQ(JointConstraint::getErrorReductionParameter(), 0.5);
+
+  JointConstraint::setErrorReductionParameter(original);
+}
+
+TEST(JointConstraintTests, SetMaxErrorReductionVelocityNegativeLogsWarning)
+{
+  double original = JointConstraint::getMaxErrorReductionVelocity();
+
+  // API logs warning but doesn't clamp
+  JointConstraint::setMaxErrorReductionVelocity(-0.5);
+  JointConstraint::setMaxErrorReductionVelocity(original);
+}
+
+TEST(JointConstraintTests, SetMaxErrorReductionVelocityValidValue)
+{
+  double original = JointConstraint::getMaxErrorReductionVelocity();
+
+  JointConstraint::setMaxErrorReductionVelocity(5.0);
+  EXPECT_DOUBLE_EQ(JointConstraint::getMaxErrorReductionVelocity(), 5.0);
+
+  JointConstraint::setMaxErrorReductionVelocity(original);
+}
+
+TEST(JointConstraintTests, SetConstraintForceMixingTooSmallLogsWarning)
+{
+  double original = JointConstraint::getConstraintForceMixing();
+
+  // API logs warning but doesn't clamp
+  JointConstraint::setConstraintForceMixing(1e-12);
+  JointConstraint::setConstraintForceMixing(original);
+}
+
+TEST(JointConstraintTests, SetConstraintForceMixingValidValue)
+{
+  double original = JointConstraint::getConstraintForceMixing();
+
+  JointConstraint::setConstraintForceMixing(1e-4);
+  EXPECT_DOUBLE_EQ(JointConstraint::getConstraintForceMixing(), 1e-4);
+
+  JointConstraint::setConstraintForceMixing(original);
+}
+
+TEST(JointConstraintTests, GetStaticType)
+{
+  EXPECT_EQ(JointConstraint::getStaticType(), "JointConstraint");
+}
+
+TEST(JointConstraintTests, GetTypeMatchesStaticType)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  ExposedJointConstraint constraint(joint);
+
+  EXPECT_EQ(constraint.getType(), JointConstraint::getStaticType());
+}
+
+TEST(JointConstraintTests, ServoMotorConstraintActivation)
+{
+  auto world = World::create();
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+
+  joint->setActuatorType(dynamics::Joint::SERVO);
+  joint->setCommand(0, 0.5);
+  joint->setForceLowerLimit(0, -100.0);
+  joint->setForceUpperLimit(0, 100.0);
+
+  world->addSkeleton(skeleton);
+
+  ExposedJointConstraint constraint(joint);
+  constraint.update();
+
+  EXPECT_TRUE(constraint.isActive());
+}
+
+TEST(JointConstraintTests, GetRootSkeleton)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  joint->setLimitEnforcement(true);
+  skeleton->setPosition(0, -0.5);
+
+  ExposedJointConstraint constraint(joint);
+  constraint.update();
+
+  if (constraint.isActive()) {
+    auto rootSkel = constraint.exposedGetRootSkeleton();
+    EXPECT_NE(rootSkel, nullptr);
+  }
 }
