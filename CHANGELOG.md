@@ -2,11 +2,15 @@
 
 ## DART 6
 
-### [DART 6.16.6 (TBD)](https://github.com/dartsim/dart/milestone/91?closed=1)
+### [DART 6.16.6 (2026-01-28)](https://github.com/dartsim/dart/milestone/91?closed=1)
 
 * Constraint
 
   * Fix slip compliance validation to silently handle the -1.0 sentinel value (meaning "use default") instead of logging spurious warnings: [gz-sim#3289](https://github.com/gazebosim/gz-sim/issues/3289)
+
+* Dynamics
+
+  * Guard against non-finite articulated body computations from zero/epsilon mass or extreme spring values: [gz-physics#849](https://github.com/gazebosim/gz-physics/issues/849), [gz-physics#850](https://github.com/gazebosim/gz-physics/issues/850), [gz-physics#851](https://github.com/gazebosim/gz-physics/issues/851), [gz-physics#854](https://github.com/gazebosim/gz-physics/issues/854), [gz-physics#856](https://github.com/gazebosim/gz-physics/issues/856)
 
 ### [DART 6.16.5 (2026-01-21)](https://github.com/dartsim/dart/milestone/90?closed=1)
 
@@ -21,8 +25,6 @@
 * Dynamics
 
   * Validate SphereShape radius to prevent assertion failures with NaN/Inf/non-positive values: [#2441](https://github.com/dartsim/dart/pull/2441)
-
-  * Guard against non-finite articulated body computations from zero/epsilon mass or extreme spring values: [gz-physics#849](https://github.com/gazebosim/gz-physics/issues/849), [gz-physics#850](https://github.com/gazebosim/gz-physics/issues/850), [gz-physics#851](https://github.com/gazebosim/gz-physics/issues/851), [gz-physics#854](https://github.com/gazebosim/gz-physics/issues/854), [gz-physics#856](https://github.com/gazebosim/gz-physics/issues/856)
 
 * Parsers
   * Fix null pointer dereference in XmlHelpers getValue* functions: [#2429](https://github.com/dartsim/dart/pull/2429)
