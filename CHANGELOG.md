@@ -2,6 +2,12 @@
 
 ## DART 6
 
+### [DART 6.16.6 (TBD)](https://github.com/dartsim/dart/milestone/91?closed=1)
+
+* Constraint
+
+  * Fix slip compliance validation to silently handle the -1.0 sentinel value (meaning "use default") instead of logging spurious warnings: [gz-sim#3289](https://github.com/gazebosim/gz-sim/issues/3289)
+
 ### [DART 6.16.5 (2026-01-21)](https://github.com/dartsim/dart/milestone/90?closed=1)
 
 * Constraint
