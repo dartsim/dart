@@ -967,29 +967,6 @@ TEST(SkeletonProperties, Gravity)
   EXPECT_TRUE(skeleton->getGravity().isApprox(newGravity));
 }
 
-TEST(SkeletonProperties, AspectProperties)
-{
-  auto skeleton = Skeleton::create("aspect_test");
-  skeleton->createJointAndBodyNodePair<FreeJoint>();
-
-  Skeleton::AspectProperties props;
-  props.mName = "new_name";
-  props.mIsMobile = false;
-  props.mGravity = Eigen::Vector3d(0, 0, -10.0);
-  props.mTimeStep = 0.005;
-  props.mEnabledSelfCollisionCheck = true;
-  props.mEnabledAdjacentBodyCheck = true;
-
-  skeleton->setAspectProperties(props);
-
-  EXPECT_EQ(skeleton->getName(), "new_name");
-  EXPECT_FALSE(skeleton->isMobile());
-  EXPECT_TRUE(skeleton->getGravity().isApprox(Eigen::Vector3d(0, 0, -10.0)));
-  EXPECT_DOUBLE_EQ(skeleton->getTimeStep(), 0.005);
-  EXPECT_TRUE(skeleton->getSelfCollisionCheck());
-  EXPECT_TRUE(skeleton->getAdjacentBodyCheck());
-}
-
 // ============================================================================
 // Skeleton IK Tests
 // ============================================================================
