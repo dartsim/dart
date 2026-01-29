@@ -302,7 +302,7 @@ double DefaultContactSurfaceHandler::computePrimarySlipCompliance(
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
   if (dynamicAspect == nullptr) {
-    DART_WARN(
+    DART_WARN_ONCE(
         "[ContactConstraint] Attempt to extract slip compliance from a "
         "ShapeNode that doesn't have DynamicAspect. The default value ({}) "
         "will be used instead.",
@@ -312,13 +312,16 @@ double DefaultContactSurfaceHandler::computePrimarySlipCompliance(
 
   const double slipCompliance = dynamicAspect->getPrimarySlipCompliance();
 
-  if (!std::isfinite(slipCompliance) || slipCompliance < 0.0) {
-    DART_WARN(
-        "[ContactConstraint] Invalid primary slip compliance ({}) from "
-        "ShapeNode [{}]. Slip compliance must be non-negative and finite. "
-        "Using default value ({}).",
-        slipCompliance,
-        shapeNode->getName(),
+  // Negative values (including the -1.0 sentinel) mean "use default".
+  // This is by design - see shape_frame.hpp documentation.
+  if (slipCompliance < 0.0) {
+    return DART_DEFAULT_SLIP_COMPLIANCE;
+  }
+
+  if (!std::isfinite(slipCompliance)) {
+    DART_WARN_ONCE(
+        "[ContactConstraint] Invalid primary slip compliance detected. "
+        "Slip compliance must be finite. Using default value ({}).",
         DART_DEFAULT_SLIP_COMPLIANCE);
     return DART_DEFAULT_SLIP_COMPLIANCE;
   }
@@ -335,7 +338,7 @@ double DefaultContactSurfaceHandler::computeSecondarySlipCompliance(
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
   if (dynamicAspect == nullptr) {
-    DART_WARN(
+    DART_WARN_ONCE(
         "[ContactConstraint] Attempt to extract secondary slip compliance from "
         "a ShapeNode that doesn't have DynamicAspect. The default value ({}) "
         "will be used instead.",
@@ -345,13 +348,16 @@ double DefaultContactSurfaceHandler::computeSecondarySlipCompliance(
 
   const double slipCompliance = dynamicAspect->getSecondarySlipCompliance();
 
-  if (!std::isfinite(slipCompliance) || slipCompliance < 0.0) {
-    DART_WARN(
-        "[ContactConstraint] Invalid secondary slip compliance ({}) from "
-        "ShapeNode [{}]. Slip compliance must be non-negative and finite. "
-        "Using default value ({}).",
-        slipCompliance,
-        shapeNode->getName(),
+  // Negative values (including the -1.0 sentinel) mean "use default".
+  // This is by design - see shape_frame.hpp documentation.
+  if (slipCompliance < 0.0) {
+    return DART_DEFAULT_SLIP_COMPLIANCE;
+  }
+
+  if (!std::isfinite(slipCompliance)) {
+    DART_WARN_ONCE(
+        "[ContactConstraint] Invalid secondary slip compliance detected. "
+        "Slip compliance must be finite. Using default value ({}).",
         DART_DEFAULT_SLIP_COMPLIANCE);
     return DART_DEFAULT_SLIP_COMPLIANCE;
   }
