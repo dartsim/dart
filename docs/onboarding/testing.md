@@ -545,6 +545,52 @@ target_link_libraries(bm_yourtest dart-utils benchmark::benchmark)
 - `dart/constraint/constraint.hpp` → `dart/constraint/All.hpp`
 - `dart/collision/bullet/bullet.hpp` → `dart/collision/bullet/All.hpp`
 
+### Using `M_PI` Instead of `dart::math::pi`
+
+**Problem:** `M_PI` is not defined by the C++ standard. MSVC does not provide it unless `_USE_MATH_DEFINES` is defined before `<cmath>`, causing compilation failures on Windows CI.
+
+**Solution:** Always use `dart::math::pi` (from `<dart/math/Constants.hpp>`):
+
+```cpp
+// WRONG - fails on Windows MSVC
+joint->setPositionLimits(0, -M_PI, M_PI);
+
+// CORRECT - portable across all platforms
+joint->setPositionLimits(0, -dart::math::pi, dart::math::pi);
+```
+
+### Signal Slot Ordering Is Non-Deterministic
+
+**Problem:** `dart::common::Signal` stores connections in a `std::set` with `owner_less` ordering. Tests that register multiple slots and assert a specific invocation order will pass on some platforms but fail on others.
+
+**Solution:** When testing Signal behavior, either:
+
+- Test with a **single slot** to avoid ordering assumptions
+- Collect results from all slots into a container and check **set equality** (not sequence equality)
+
+### Debug Assertions Crash on Invalid Access
+
+**Problem:** Passing out-of-bounds indices or invalid arguments to DART APIs triggers `DART_ASSERT` in debug builds, which aborts the process rather than returning an error. Tests that intentionally call invalid APIs will crash (SEGFAULT/abort) instead of failing gracefully.
+
+**Solution:** Do not write tests that intentionally trigger `DART_ASSERT`. Only test valid API usage. If testing error handling, test cases where the API returns errors or throws exceptions, not cases guarded by debug-only assertions.
+
+### AddressSanitizer (ASan) Sensitivity in Allocator Tests
+
+**Problem:** Tests exercising complex allocation/deallocation patterns (e.g., `PoolAllocator` edge cases like cross-block deallocation or block expansion) can trigger AddressSanitizer false positives in CI Release builds. These patterns may be valid C++ but ASan flags them as memory errors.
+
+**Solution:** Keep allocator tests simple — test basic alloc/dealloc, null pointer handling, and diagnostics (e.g., `operator<<`). Avoid stress-testing internal memory block management, as these patterns are sensitive to ASan instrumentation.
+
+### Numerical Test Tolerances Vary by Platform
+
+**Problem:** Floating-point results can differ across platforms (x86 vs ARM64, different compilers, optimization levels). Tests with overly tight tolerances (e.g., `1e-6`) may pass locally but fail in CI on different architectures.
+
+**Solution:** Use `EXPECT_NEAR` with tolerances appropriate for the computation:
+
+- Simple arithmetic: `1e-12` to `1e-10`
+- Single integration step: `1e-6` to `1e-4`
+- Multi-step simulation: `1e-4` to `1e-2`
+- When in doubt, start with `1e-6` and relax if CI shows platform-dependent failures
+
 ## Design Principles
 
 The test suite follows these core principles:
