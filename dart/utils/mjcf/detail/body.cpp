@@ -248,15 +248,15 @@ Errors Body::postprocess(const Body* parent, const Compiler& compiler)
           mAttributes.mXYAxes,
           mAttributes.mZAxis,
           compiler);
-      if (mAttributes.mInertial) {
-        mInertial.setRelativeTransform(
-            mWorldTransform.inverse() * mInertial.getWorldTransform());
-      }
       if (!math::verifyTransform(mWorldTransform)) {
         DART_WARN(
             "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
             "The model file may contain extreme or invalid pose values.");
         mWorldTransform = Eigen::Isometry3d::Identity();
+      }
+      if (mAttributes.mInertial) {
+        mInertial.setRelativeTransform(
+            mWorldTransform.inverse() * mInertial.getWorldTransform());
       }
     }
   } else {
