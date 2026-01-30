@@ -2283,7 +2283,9 @@ TEST_F(Joints, FreeJointIntegrationMatchesBodyTwist)
   const Eigen::Vector6d twistFromStep
       = math::logMap(start.inverse() * end) / dt;
 
-  EXPECT_TRUE(equals(twistFromStep, bodyTwist, 1e-6));
+  // Tolerance of 1e-4: integration error is O(dt^2) ~ 1e-12, dividing by
+  // dt=1e-6 amplifies it to O(dt) ~ 1e-6, so 1e-6 sits right at the boundary.
+  EXPECT_TRUE(equals(twistFromStep, bodyTwist, 1e-4));
 }
 
 //==============================================================================

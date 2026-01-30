@@ -142,3 +142,73 @@ TEST(StopwatchTest, GlobalTocWithPrint)
 
   std::cout.rdbuf(oldCout);
 }
+
+//==============================================================================
+TEST(StopwatchTest, TocDefaultPrint)
+{
+  std::ostringstream oss;
+  std::streambuf* oldCout = std::cout.rdbuf(oss.rdbuf());
+
+  tic();
+  double elapsed = toc(true);
+  EXPECT_GE(elapsed, 0.0);
+  EXPECT_NE(oss.str().find("s."), std::string::npos);
+
+  std::cout.rdbuf(oldCout);
+}
+
+//==============================================================================
+TEST(StopwatchTest, DifferentStopwatchTypes)
+{
+  auto swS = StopwatchS(true);
+  EXPECT_TRUE(swS.isStarted());
+  EXPECT_GE(swS.elapsedS(), 0.0);
+  EXPECT_GE(swS.elapsedMS(), 0.0);
+  EXPECT_GE(swS.elapsedUS(), 0.0);
+  EXPECT_GE(swS.elapsedNS(), 0.0);
+
+  auto swMS = StopwatchMS(true);
+  EXPECT_TRUE(swMS.isStarted());
+  EXPECT_GE(swMS.elapsedS(), 0.0);
+  EXPECT_GE(swMS.elapsedMS(), 0.0);
+  EXPECT_GE(swMS.elapsedUS(), 0.0);
+  EXPECT_GE(swMS.elapsedNS(), 0.0);
+
+  auto swUS = StopwatchUS(true);
+  EXPECT_TRUE(swUS.isStarted());
+  EXPECT_GE(swUS.elapsedS(), 0.0);
+  EXPECT_GE(swUS.elapsedMS(), 0.0);
+  EXPECT_GE(swUS.elapsedUS(), 0.0);
+  EXPECT_GE(swUS.elapsedNS(), 0.0);
+}
+
+//==============================================================================
+TEST(StopwatchTest, StopAlreadyStopped)
+{
+  auto sw = StopwatchNS(false);
+  EXPECT_FALSE(sw.isStarted());
+
+  sw.stop();
+  EXPECT_FALSE(sw.isStarted());
+  EXPECT_DOUBLE_EQ(sw.elapsedS(), 0.0);
+}
+
+//==============================================================================
+TEST(StopwatchTest, PrintDifferentTypes)
+{
+  std::ostringstream oss;
+
+  auto swS = StopwatchS(false);
+  swS.print(oss);
+  EXPECT_NE(oss.str().find("0 s"), std::string::npos);
+
+  oss.str("");
+  auto swMS = StopwatchMS(false);
+  swMS.print(oss);
+  EXPECT_NE(oss.str().find("0 ms"), std::string::npos);
+
+  oss.str("");
+  auto swUS = StopwatchUS(false);
+  swUS.print(oss);
+  EXPECT_NE(oss.str().find("0 us"), std::string::npos);
+}

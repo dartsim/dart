@@ -68,6 +68,11 @@ public:
   using JointConstraint::isActive;
   using JointConstraint::JointConstraint;
   using JointConstraint::update;
+
+  dynamics::SkeletonPtr exposedGetRootSkeleton() const
+  {
+    return getRootSkeleton();
+  }
 };
 
 TEST(JointConstraintTests, InvalidPositionLimitsDoNotCrash)
@@ -115,4 +120,39 @@ TEST(JointConstraintTests, WorldStepWithInvalidLimitsDoesNotCrash)
       world->step();
     }
   });
+}
+
+TEST(JointConstraintTests, ServoMotorConstraintActivation)
+{
+  auto world = World::create();
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+
+  joint->setActuatorType(dynamics::Joint::SERVO);
+  joint->setCommand(0, 0.5);
+  joint->setForceLowerLimit(0, -100.0);
+  joint->setForceUpperLimit(0, 100.0);
+
+  world->addSkeleton(skeleton);
+
+  ExposedJointConstraint constraint(joint);
+  constraint.update();
+
+  EXPECT_TRUE(constraint.isActive());
+}
+
+TEST(JointConstraintTests, GetRootSkeleton)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  joint->setLimitEnforcement(true);
+  skeleton->setPosition(0, -0.5);
+
+  ExposedJointConstraint constraint(joint);
+  constraint.update();
+
+  if (constraint.isActive()) {
+    auto rootSkel = constraint.exposedGetRootSkeleton();
+    EXPECT_NE(rootSkel, nullptr);
+  }
 }
