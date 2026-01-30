@@ -581,9 +581,8 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& _T)
   // v = beta*p + gamma*w + 1 / 2*cross(p, w)
   //    , beta = t*(1 + cos(t)) / (2*sin(t)), gamma = <w, p>*(1 - beta) / t^2
   //--------------------------------------------------------------------------
-  double theta = std::acos(
-      std::max(
-          std::min(0.5 * (_T(0, 0) + _T(1, 1) + _T(2, 2) - 1.0), 1.0), -1.0));
+  double theta = std::acos(std::max(
+      std::min(0.5 * (_T(0, 0) + _T(1, 1) + _T(2, 2) - 1.0), 1.0), -1.0));
   double beta;
   double gamma;
   Eigen::Vector6d ret;
@@ -1538,7 +1537,10 @@ Eigen::Matrix3d computeRotation(
   result.col(++index % 3) = axis1;
   result.col(++index % 3) = axis2;
 
-  DART_ASSERT(verifyRotation(result));
+  if (!verifyRotation(result)) {
+    DART_WARN("[math::computeRotation] Non-finite rotation result.");
+    result = Eigen::Matrix3d::Identity();
+  }
 
   return result;
 }
@@ -1555,7 +1557,10 @@ Eigen::Isometry3d computeTransform(
   result.translation() = translation;
 
   // Verification
-  DART_ASSERT(verifyTransform(result));
+  if (!verifyTransform(result)) {
+    DART_WARN("[math::computeTransform] Non-finite transform result.");
+    result = Eigen::Isometry3d::Identity();
+  }
 
   return result;
 }

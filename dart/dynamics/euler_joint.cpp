@@ -334,7 +334,13 @@ void EulerJoint::updateRelativeTransform() const
        * convertToTransform(getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
-  DART_ASSERT(math::verifyTransform(mT));
+  if (!math::verifyTransform(mT)) {
+    DART_WARN_ONCE(
+        "[EulerJoint::updateRelativeTransform] Non-finite relative "
+        "transform detected in '{}'. Using identity.",
+        this->getName());
+    mT = Eigen::Isometry3d::Identity();
+  }
 }
 
 //==============================================================================

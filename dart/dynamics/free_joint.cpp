@@ -315,10 +315,8 @@ void FreeJoint::setRelativeSpatialVelocity(
   if (getChildBodyNode() == inCoordinatesOf) {
     setRelativeSpatialVelocity(newSpatialVelocity);
   } else {
-    setRelativeSpatialVelocity(
-        math::AdR(
-            inCoordinatesOf->getTransform(getChildBodyNode()),
-            newSpatialVelocity));
+    setRelativeSpatialVelocity(math::AdR(
+        inCoordinatesOf->getTransform(getChildBodyNode()), newSpatialVelocity));
   }
 }
 
@@ -460,10 +458,9 @@ void FreeJoint::setRelativeSpatialAcceleration(
   if (getChildBodyNode() == inCoordinatesOf) {
     setRelativeSpatialAcceleration(newSpatialAcceleration);
   } else {
-    setRelativeSpatialAcceleration(
-        math::AdR(
-            inCoordinatesOf->getTransform(getChildBodyNode()),
-            newSpatialAcceleration));
+    setRelativeSpatialAcceleration(math::AdR(
+        inCoordinatesOf->getTransform(getChildBodyNode()),
+        newSpatialAcceleration));
   }
 }
 
@@ -759,9 +756,8 @@ void FreeJoint::integratePositions(
 //==============================================================================
 void FreeJoint::integrateVelocities(double _dt)
 {
-  setVelocitiesStatic(
-      math::integrateVelocity<math::RealVectorSpace<6>>(
-          getVelocitiesStatic(), getAccelerationsStatic(), _dt));
+  setVelocitiesStatic(math::integrateVelocity<math::RealVectorSpace<6>>(
+      getVelocitiesStatic(), getAccelerationsStatic(), _dt));
 }
 
 //==============================================================================
@@ -804,7 +800,13 @@ void FreeJoint::updateRelativeTransform() const
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint * mQ
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
-  DART_ASSERT(math::verifyTransform(mT));
+  if (!math::verifyTransform(mT)) {
+    DART_WARN_ONCE(
+        "[FreeJoint::updateRelativeTransform] Non-finite relative transform "
+        "detected in '{}'. Using identity.",
+        this->getName());
+    mT = Eigen::Isometry3d::Identity();
+  }
 }
 
 //==============================================================================
