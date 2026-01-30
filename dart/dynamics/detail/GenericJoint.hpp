@@ -47,9 +47,9 @@
 #define GenericJoint_REPORT_DIM_MISMATCH(func, arg)                            \
   {                                                                            \
     dterr << "[GenericJoint::" #func "] Mismatch beteween size of "            \
-          << #arg " [" << arg.size() << "] and the number of " << "DOFs ["     \
-          << getNumDofs() << "] for Joint named [" << this->getName()          \
-          << "].\n";                                                           \
+          << #arg " [" << arg.size() << "] and the number of "                 \
+          << "DOFs [" << getNumDofs() << "] for Joint named ["                 \
+          << this->getName() << "].\n";                                        \
     DART_ASSERT(false);                                                        \
   }
 

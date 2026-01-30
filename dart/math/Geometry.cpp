@@ -1663,7 +1663,8 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
              << "contains indices " << i - 1 << " -> " << i << ":\n"
              << i - 1 << ") " << p1.transpose() << " (" << a1 << " degrees)"
              << "\n"
-             << i << ") " << p2.transpose() << " (" << a2 << " degrees)" << "\n"
+             << i << ") " << p2.transpose() << " (" << a2 << " degrees)"
+             << "\n"
              << "0) " << p0.transpose() << "\n"
              << "(" << result << ") "
              << (PARALLEL == result

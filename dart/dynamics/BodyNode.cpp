@@ -731,8 +731,9 @@ static bool checkSkeletonNodeAgreement(
 {
   if (nullptr == _newSkeleton) {
     dterr << "[BodyNode::" << _function << "] Attempting to " << _operation
-          << " a BodyNode tree starting " << "from [" << _bodyNode->getName()
-          << "] in the Skeleton named [" << _bodyNode->getSkeleton()->getName()
+          << " a BodyNode tree starting "
+          << "from [" << _bodyNode->getName() << "] in the Skeleton named ["
+          << _bodyNode->getSkeleton()->getName()
           << "] into a nullptr Skeleton.\n";
     return false;
   }
