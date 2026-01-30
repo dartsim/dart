@@ -1480,7 +1480,7 @@ bool verifyRotation(const Eigen::Matrix3d& _T)
 
 bool verifyTransform(const Eigen::Isometry3d& _T)
 {
-  return !isNan(_T.matrix().topRows<3>())
+  return !isNan(_T.matrix().topRows<3>()) && !isInf(_T.matrix().topRows<3>())
          && std::abs(_T.linear().determinant() - 1.0) <= DART_EPSILON;
 }
 

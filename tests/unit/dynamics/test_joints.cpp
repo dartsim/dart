@@ -5,6 +5,8 @@
  * This file is provided under the BSD-style License.
  */
 
+#include <dart/simulation/world.hpp>
+
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/euler_joint.hpp>
 #include <dart/dynamics/free_joint.hpp>
@@ -431,4 +433,80 @@ TEST(JointTest, TransformFromChildBodyNode)
   joint->setTransformFromChildBodyNode(tf);
 
   EXPECT_TRUE(joint->getTransformFromChildBodyNode().isApprox(tf));
+}
+
+//==============================================================================
+TEST(JointTest, NonFiniteTransformFromParentBodyNodeRejected)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("revolute");
+  auto joint = skel->getJoint(0);
+
+  Eigen::Isometry3d goodTf = Eigen::Isometry3d::Identity();
+  goodTf.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+  joint->setTransformFromParentBodyNode(goodTf);
+  EXPECT_TRUE(joint->getTransformFromParentBodyNode().isApprox(goodTf));
+
+  Eigen::Isometry3d nanTf = Eigen::Isometry3d::Identity();
+  nanTf.translation()
+      = Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0);
+  joint->setTransformFromParentBodyNode(nanTf);
+  EXPECT_TRUE(joint->getTransformFromParentBodyNode().isApprox(goodTf));
+
+  Eigen::Isometry3d infTf = Eigen::Isometry3d::Identity();
+  infTf.translation()
+      = Eigen::Vector3d(std::numeric_limits<double>::infinity(), 0.0, 0.0);
+  joint->setTransformFromParentBodyNode(infTf);
+  EXPECT_TRUE(joint->getTransformFromParentBodyNode().isApprox(goodTf));
+
+  Eigen::Isometry3d badRotTf = Eigen::Isometry3d::Identity();
+  badRotTf.linear() << 2, 0, 0, 0, 1, 0, 0, 0, 1;
+  joint->setTransformFromParentBodyNode(badRotTf);
+  EXPECT_TRUE(joint->getTransformFromParentBodyNode().isApprox(goodTf));
+}
+
+//==============================================================================
+TEST(JointTest, NonFiniteTransformFromChildBodyNodeRejected)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("revolute");
+  auto joint = skel->getJoint(0);
+
+  Eigen::Isometry3d goodTf = Eigen::Isometry3d::Identity();
+  goodTf.translation() = Eigen::Vector3d(0.0, 0.0, -0.5);
+  joint->setTransformFromChildBodyNode(goodTf);
+  EXPECT_TRUE(joint->getTransformFromChildBodyNode().isApprox(goodTf));
+
+  Eigen::Isometry3d nanTf = Eigen::Isometry3d::Identity();
+  nanTf.translation() = Eigen::Vector3d(
+      std::numeric_limits<double>::quiet_NaN(),
+      std::numeric_limits<double>::quiet_NaN(),
+      std::numeric_limits<double>::quiet_NaN());
+  joint->setTransformFromChildBodyNode(nanTf);
+  EXPECT_TRUE(joint->getTransformFromChildBodyNode().isApprox(goodTf));
+}
+
+//==============================================================================
+// gz-physics#861/#862: 1e308 is finite but overflows during dynamics.
+TEST(JointTest, SimulationSurvivesOverflowTransforms)
+{
+  auto skel = Skeleton::create("overflow_model");
+
+  auto [rootJoint, link1] = skel->createJointAndBodyNodePair<FreeJoint>();
+  link1->setName("link1");
+
+  WeldJoint::Properties weldProps;
+  weldProps.mName = "faulty_joint";
+  auto [weldJoint, link2]
+      = link1->createChildJointAndBodyNodePair<WeldJoint>(weldProps);
+  link2->setName("link2");
+
+  Eigen::Isometry3d overflowTf = Eigen::Isometry3d::Identity();
+  overflowTf.translation() = Eigen::Vector3d(1e308, 0.0, 0.0);
+  weldJoint->setTransformFromParentBodyNode(overflowTf);
+
+  auto world = simulation::World::create("test_world");
+  world->addSkeleton(skel);
+
+  for (int i = 0; i < 10; ++i) {
+    EXPECT_NO_THROW(world->step());
+  }
 }

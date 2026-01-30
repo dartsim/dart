@@ -1929,8 +1929,16 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaToDynamic(
 
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  parentArtInertia
-      += math::transformInertia(this->getRelativeTransform().inverse(), PI);
+  const Eigen::Matrix6d contribution
+      = math::transformInertia(this->getRelativeTransform().inverse(), PI);
+  if (math::isNan(contribution) || math::isInf(contribution)) {
+    DART_WARN_ONCE(
+        "[GenericJoint::addChildArtInertiaToDynamic] Non-finite transformed "
+        "inertia detected for joint [{}]. Skipping child inertia contribution.",
+        this->getName());
+    return;
+  }
+  parentArtInertia += contribution;
 }
 
 //==============================================================================
@@ -1940,8 +1948,16 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaToKinematic(
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  parentArtInertia += math::transformInertia(
+  const Eigen::Matrix6d contribution = math::transformInertia(
       this->getRelativeTransform().inverse(), childArtInertia);
+  if (math::isNan(contribution) || math::isInf(contribution)) {
+    DART_WARN_ONCE(
+        "[GenericJoint::addChildArtInertiaToKinematic] Non-finite transformed "
+        "inertia detected for joint [{}]. Skipping child inertia contribution.",
+        this->getName());
+    return;
+  }
+  parentArtInertia += contribution;
 }
 
 //==============================================================================
@@ -1979,8 +1995,17 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitToDynamic(
 
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  parentArtInertia
-      += math::transformInertia(this->getRelativeTransform().inverse(), PI);
+  const Eigen::Matrix6d contribution
+      = math::transformInertia(this->getRelativeTransform().inverse(), PI);
+  if (math::isNan(contribution) || math::isInf(contribution)) {
+    DART_WARN_ONCE(
+        "[GenericJoint::addChildArtInertiaImplicitToDynamic] Non-finite "
+        "transformed inertia detected for joint [{}]. Skipping child inertia "
+        "contribution.",
+        this->getName());
+    return;
+  }
+  parentArtInertia += contribution;
 }
 
 //==============================================================================
@@ -1990,8 +2015,17 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitToKinematic(
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  parentArtInertia += math::transformInertia(
+  const Eigen::Matrix6d contribution = math::transformInertia(
       this->getRelativeTransform().inverse(), childArtInertia);
+  if (math::isNan(contribution) || math::isInf(contribution)) {
+    DART_WARN_ONCE(
+        "[GenericJoint::addChildArtInertiaImplicitToKinematic] Non-finite "
+        "transformed inertia detected for joint [{}]. Skipping child inertia "
+        "contribution.",
+        this->getName());
+    return;
+  }
+  parentArtInertia += contribution;
 }
 
 //==============================================================================

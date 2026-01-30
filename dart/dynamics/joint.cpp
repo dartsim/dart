@@ -765,7 +765,15 @@ Eigen::VectorXd Joint::integratePositions(
 //==============================================================================
 void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
-  DART_ASSERT(math::verifyTransform(_T));
+  if (!math::verifyTransform(_T)) {
+    DART_WARN(
+        "[Joint::setTransformFromParentBodyNode] Non-finite transform "
+        "rejected for joint [{}]. The transform contains NaN or Inf values, "
+        "likely from numerical overflow (e.g., extreme pose values). "
+        "Keeping existing transform.",
+        getName());
+    return;
+  }
   mAspectProperties.mT_ParentBodyToJoint = _T;
   notifyPositionUpdated();
 }
@@ -773,7 +781,15 @@ void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 //==============================================================================
 void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
-  DART_ASSERT(math::verifyTransform(_T));
+  if (!math::verifyTransform(_T)) {
+    DART_WARN(
+        "[Joint::setTransformFromChildBodyNode] Non-finite transform "
+        "rejected for joint [{}]. The transform contains NaN or Inf values, "
+        "likely from numerical overflow (e.g., extreme pose values). "
+        "Keeping existing transform.",
+        getName());
+    return;
+  }
   mAspectProperties.mT_ChildBodyToJoint = _T;
   updateRelativeJacobian();
   notifyPositionUpdated();
