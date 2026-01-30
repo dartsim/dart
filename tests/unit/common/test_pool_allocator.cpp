@@ -111,3 +111,31 @@ TEST(PoolAllocatorTest, Allocate)
 
   EXPECT_TRUE(a.isEmpty());
 }
+
+//==============================================================================
+TEST(PoolAllocatorTest, DeallocateNullptr)
+{
+  auto a = PoolAllocator::Debug();
+
+  // Deallocate nullptr should be safe (no-op)
+  a.deallocate(nullptr, 16);
+  EXPECT_TRUE(a.isEmpty());
+}
+
+//==============================================================================
+TEST(PoolAllocatorTest, Print)
+{
+  auto a = PoolAllocator::Debug();
+
+  // Test print with indent = 0
+  std::ostringstream oss1;
+  a.getInternalAllocator().print(oss1, 0);
+  EXPECT_NE(oss1.str().find("PoolAllocator"), std::string::npos);
+  EXPECT_NE(oss1.str().find("allocated_memory_block_count"), std::string::npos);
+
+  // Test print with indent != 0
+  std::ostringstream oss2;
+  a.getInternalAllocator().print(oss2, 2);
+  EXPECT_NE(oss2.str().find("type:"), std::string::npos);
+  EXPECT_NE(oss2.str().find("base_allocator"), std::string::npos);
+}
