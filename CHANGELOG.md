@@ -12,6 +12,16 @@
 
   * Guard against non-finite articulated body computations from zero/epsilon mass or extreme spring values: [gz-physics#849](https://github.com/gazebosim/gz-physics/issues/849), [gz-physics#850](https://github.com/gazebosim/gz-physics/issues/850), [gz-physics#851](https://github.com/gazebosim/gz-physics/issues/851), [gz-physics#854](https://github.com/gazebosim/gz-physics/issues/854), [gz-physics#856](https://github.com/gazebosim/gz-physics/issues/856)
 
+  * Reject non-finite transforms at Joint public API entry points and guard inertia propagation in kinematic joint variants: [gz-physics#861](https://github.com/gazebosim/gz-physics/issues/861), [gz-physics#862](https://github.com/gazebosim/gz-physics/issues/862)
+
+* Parsers
+
+  * Replace MJCF parser DART_ASSERT with DART_WARN + identity fallback for non-finite transforms and rotations
+
+* Math
+
+  * Enhance verifyTransform to also reject infinity values (previously only checked NaN)
+
 ### [DART 6.16.5 (2026-01-21)](https://github.com/dartsim/dart/milestone/90?closed=1)
 
 * Constraint

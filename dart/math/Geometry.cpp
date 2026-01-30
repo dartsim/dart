@@ -1473,7 +1473,7 @@ bool verifyRotation(const Eigen::Matrix3d& _T)
 
 bool verifyTransform(const Eigen::Isometry3d& _T)
 {
-  return !isNan(_T.matrix().topRows<3>())
+  return !isNan(_T.matrix().topRows<3>()) && !isInf(_T.matrix().topRows<3>())
          && std::abs(_T.linear().determinant() - 1.0) <= DART_EPSILON;
 }
 
@@ -1663,8 +1663,7 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
              << "contains indices " << i - 1 << " -> " << i << ":\n"
              << i - 1 << ") " << p1.transpose() << " (" << a1 << " degrees)"
              << "\n"
-             << i << ") " << p2.transpose() << " (" << a2 << " degrees)"
-             << "\n"
+             << i << ") " << p2.transpose() << " (" << a2 << " degrees)" << "\n"
              << "0) " << p0.transpose() << "\n"
              << "(" << result << ") "
              << (PARALLEL == result
