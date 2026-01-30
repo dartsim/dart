@@ -11,7 +11,8 @@ if(DART_ENABLE_SDFORMAT)
       FATAL_ERROR
       "libsdformat (>= 16.0.0) is required for dart-utils. Please install it or "
       "set CMAKE_PREFIX_PATH so CMake can find sdformat-config.cmake. "
-      "Alternatively, set DART_ENABLE_SDFORMAT=OFF to build without sdformat support.")
+      "Alternatively, set DART_ENABLE_SDFORMAT=OFF to build without sdformat support."
+    )
   endif()
   if(TARGET sdformat::sdformat)
     set_property(TARGET sdformat::sdformat PROPERTY IMPORTED_GLOBAL TRUE)
@@ -20,7 +21,8 @@ if(DART_ENABLE_SDFORMAT)
       FATAL_ERROR
       "libsdformat was found but the sdformat::sdformat imported target is "
       "missing. Please install the CMake config package that exports this "
-      "target.")
+      "target."
+    )
   endif()
 else()
   # Clear cached DART_HAVE_SDFORMAT to prevent stale values from previous
@@ -87,11 +89,7 @@ dart_get_filename_components(header_names "utils headers" ${hdrs})
 if(urdfdom_FOUND)
   list(APPEND header_names "urdf/All.hpp")
 endif()
-set(
-  header_names
-  ${header_names}
-  mjcf/All.hpp
-)
+set(header_names ${header_names} mjcf/All.hpp)
 if(DART_ENABLE_SDFORMAT)
   list(APPEND header_names "sdf/All.hpp")
 endif()
@@ -110,11 +108,7 @@ install(
   DESTINATION include/dart/utils
   COMPONENT headers
 )
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/utils/detail
-  COMPONENT headers
-)
+install(FILES ${detail_hdrs} DESTINATION include/dart/utils/detail COMPONENT headers)
 # Install generated compatibility headers preserving subdirectory structure
 dart_install_compat_headers(
   COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS}

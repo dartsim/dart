@@ -67,11 +67,7 @@ install(
   COMPONENT headers
 )
 
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/collision/ode/detail
-  COMPONENT headers
-)
+install(FILES ${detail_hdrs} DESTINATION include/dart/collision/ode/detail COMPONENT headers)
 
 dart_install_compat_headers(COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS} DESTINATION_PREFIX include/dart/collision/ode)
 

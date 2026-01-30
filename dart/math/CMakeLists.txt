@@ -45,15 +45,10 @@ install(
   DESTINATION include/dart/math
   COMPONENT headers
 )
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/math/detail
-  COMPONENT headers
-)
+install(FILES ${detail_hdrs} DESTINATION include/dart/math/detail COMPONENT headers)
 if(opt_hdrs)
   install(
-    FILES ${opt_hdrs} ${CMAKE_CURRENT_BINARY_DIR}/optimization/All.hpp
-          ${CMAKE_CURRENT_BINARY_DIR}/optimization/optimization.hpp
+    FILES ${opt_hdrs} ${CMAKE_CURRENT_BINARY_DIR}/optimization/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/optimization/optimization.hpp
     DESTINATION include/dart/math/optimization
     COMPONENT headers
   )

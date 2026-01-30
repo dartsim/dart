@@ -22,14 +22,7 @@ unset(_dart_prev_build_shared_libs)
 set_property(TARGET dart-baseline-ode PROPERTY INTERFACE_COMPILE_DEFINITIONS "")
 
 # Set include directories - use PROJECT_SOURCE_DIR so consumers can include as "tests/baseline/odelcpsolver/..."
-target_include_directories(dart-baseline-ode
-  PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
-)
+target_include_directories(dart-baseline-ode PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}> $<INSTALL_INTERFACE:include>)
 
 # This is a baseline library for testing only, not for installation
-set_target_properties(dart-baseline-ode PROPERTIES
-  EXCLUDE_FROM_ALL FALSE
-  FOLDER "Baseline"
-)
+set_target_properties(dart-baseline-ode PROPERTIES EXCLUDE_FROM_ALL FALSE FOLDER "Baseline")

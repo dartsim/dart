@@ -69,36 +69,13 @@ function(dart_configure_compiler_cache)
     unset(_cache_executable)
     find_program(_cache_executable NAMES ${_candidate})
     if(_cache_executable)
-      set(
-        CMAKE_C_COMPILER_LAUNCHER
-        "${_cache_executable}"
-        CACHE STRING
-        "C compiler launcher used for caching"
-        FORCE
-      )
-      set(
-        CMAKE_CXX_COMPILER_LAUNCHER
-        "${_cache_executable}"
-        CACHE STRING
-        "CXX compiler launcher used for caching"
-        FORCE
-      )
+      set(CMAKE_C_COMPILER_LAUNCHER "${_cache_executable}" CACHE STRING "C compiler launcher used for caching" FORCE)
+      set(CMAKE_CXX_COMPILER_LAUNCHER "${_cache_executable}" CACHE STRING "CXX compiler launcher used for caching" FORCE)
       if(CMAKE_CUDA_COMPILER)
-        set(
-          CMAKE_CUDA_COMPILER_LAUNCHER
-          "${_cache_executable}"
-          CACHE STRING
-          "CUDA compiler launcher used for caching"
-          FORCE
-        )
+        set(CMAKE_CUDA_COMPILER_LAUNCHER "${_cache_executable}" CACHE STRING "CUDA compiler launcher used for caching" FORCE)
       endif()
 
-      set(
-        DART_ACTIVE_COMPILER_CACHE
-        "${_cache_executable}"
-        CACHE INTERNAL
-        "Compiler cache executable selected for this build"
-      )
+      set(DART_ACTIVE_COMPILER_CACHE "${_cache_executable}" CACHE INTERNAL "Compiler cache executable selected for this build")
       message(STATUS "Compiler cache enabled: ${_candidate} (${_cache_executable})")
       return()
     endif()

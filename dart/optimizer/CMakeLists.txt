@@ -1,5 +1,6 @@
 # Alias headers for backward compatibility
-set(hdrs
+set(
+  hdrs
   all.hpp
   function.hpp
   gradient_descent_solver.hpp
@@ -22,9 +23,7 @@ dart_generate_component_headers(
 )
 
 install(
-  FILES ${hdrs}
-        ${CMAKE_CURRENT_BINARY_DIR}/All.hpp
-        ${CMAKE_CURRENT_BINARY_DIR}/optimizer.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/optimizer.hpp
   DESTINATION include/dart/optimizer
   COMPONENT headers
 )

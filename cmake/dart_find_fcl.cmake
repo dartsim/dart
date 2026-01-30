@@ -16,8 +16,5 @@ endif()
 # install the config file, which defines the target.
 if((FCL_FOUND OR fcl_FOUND) AND NOT TARGET fcl)
   add_library(fcl INTERFACE IMPORTED)
-  set_target_properties(fcl PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${FCL_INCLUDE_DIRS}"
-    INTERFACE_LINK_LIBRARIES "${FCL_LIBRARIES}"
-  )
+  set_target_properties(fcl PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${FCL_INCLUDE_DIRS}" INTERFACE_LINK_LIBRARIES "${FCL_LIBRARIES}")
 endif()

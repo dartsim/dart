@@ -15,7 +15,8 @@ dart_add_test("unit" UNIT_collision_CollisionResult collision/test_collision_res
 dart_add_test(
   "unit"
   UNIT_collision_ConvexMesh
-  collision/test_convex_mesh_shape_collision.cpp)
+  collision/test_convex_mesh_shape_collision.cpp
+)
 
 dart_add_test("unit" UNIT_collision_Contact collision/test_contact.cpp)
 
@@ -28,12 +29,14 @@ if(DART_HAVE_ODE)
 endif()
 
 dart_add_test(
-  "unit" UNIT_collision_FCLCollisionObject collision/test_fcl_collision_object.cpp)
+  "unit" UNIT_collision_FCLCollisionObject collision/test_fcl_collision_object.cpp
+)
 
 # ==============================================================================
 # Common Tests
 # ==============================================================================
-set(common_unit_sources
+set(
+  common_unit_sources
   common/test_c_allocator.cpp
   common/test_composite.cpp
   common/test_exception.cpp
@@ -68,22 +71,28 @@ dart_build_tests(
 # ==============================================================================
 dart_add_test("unit" UNIT_constraint_ConstraintSolver constraint/test_constraint_solver.cpp)
 dart_add_test(
-  "unit" UNIT_constraint_BoxedLcpConstraintSolver constraint/test_boxed_lcp_constraint_solver.cpp)
+  "unit" UNIT_constraint_BoxedLcpConstraintSolver constraint/test_boxed_lcp_constraint_solver.cpp
+)
 dart_add_test(
-  "unit" UNIT_constraint_JointLimitConstraint constraint/test_joint_limit_constraint.cpp)
+  "unit" UNIT_constraint_JointLimitConstraint constraint/test_joint_limit_constraint.cpp
+)
 dart_add_test(
-  "unit" UNIT_constraint_JointConstraint constraint/test_joint_constraint.cpp)
+  "unit" UNIT_constraint_JointConstraint constraint/test_joint_constraint.cpp
+)
 dart_add_test(
-  "unit" UNIT_constraint_BalanceConstraint constraint/test_balance_constraint.cpp)
+  "unit" UNIT_constraint_BalanceConstraint constraint/test_balance_constraint.cpp
+)
 dart_add_test(
-  "unit" UNIT_constraint_ContactSurface constraint/test_contact_surface.cpp)
+  "unit" UNIT_constraint_ContactSurface constraint/test_contact_surface.cpp
+)
 
 # ==============================================================================
 # Dynamics Tests
 # ==============================================================================
 dart_add_test("unit" UNIT_dynamics_GenericJoints dynamics/test_generic_joints.cpp)
 dart_add_test(
-  "unit" UNIT_dynamics_BodyNodeExternalForce dynamics/test_body_node_external_force.cpp)
+  "unit" UNIT_dynamics_BodyNodeExternalForce dynamics/test_body_node_external_force.cpp
+)
 dart_add_test("unit" UNIT_dynamics_Inertia dynamics/test_inertia.cpp)
 dart_add_test("unit" UNIT_dynamics_ScrewJoint dynamics/test_screw_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeNodePtr dynamics/test_shape_node_ptr.cpp)
@@ -94,13 +103,15 @@ dart_add_test("unit" UNIT_dynamics_JointCommand dynamics/test_joint_command.cpp)
 dart_add_test("unit" UNIT_dynamics_ConvexMeshShape dynamics/test_convex_mesh_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_BodyNodeDerivatives dynamics/test_body_node_derivatives.cpp)
 dart_add_test(
-  "unit" UNIT_dynamics_BodyNodePotentialEnergy dynamics/test_body_node_potential_energy.cpp)
+  "unit" UNIT_dynamics_BodyNodePotentialEnergy dynamics/test_body_node_potential_energy.cpp
+)
 dart_add_test("unit" UNIT_dynamics_ShapeNodeInertia dynamics/test_shape_node_inertia.cpp)
 dart_add_test("unit" UNIT_dynamics_SkeletonClone dynamics/test_skeleton_clone.cpp)
 dart_add_test("unit" UNIT_dynamics_SkeletonAccessors dynamics/test_skeleton_accessors.cpp)
 dart_add_test("unit" UNIT_dynamics_Noexcept dynamics/test_noexcept.cpp)
 dart_add_test(
-  "unit" UNIT_dynamics_BodyNodeCollisionSignals dynamics/test_body_node_collision_signals.cpp)
+  "unit" UNIT_dynamics_BodyNodeCollisionSignals dynamics/test_body_node_collision_signals.cpp
+)
 dart_add_test("unit" UNIT_dynamics_VisualAspect dynamics/test_visual_aspect.cpp)
 dart_add_test("unit" UNIT_dynamics_WeldJointMerge dynamics/test_weld_joint_merge.cpp)
 
@@ -156,21 +167,26 @@ dart_build_tests(
 if(TARGET dart-gui)
   dart_add_test("unit" UNIT_gui_HeightmapShapeNode gui/test_heightmap_shape_node.cpp)
   dart_add_test(
-    "unit" UNIT_gui_ImGuiWindowScaling gui/test_im_gui_window_scaling.cpp)
+    "unit" UNIT_gui_ImGuiWindowScaling gui/test_im_gui_window_scaling.cpp
+  )
   dart_add_test(
-    "unit" UNIT_gui_HeadlessViewer gui/test_headless_viewer.cpp)
+    "unit" UNIT_gui_HeadlessViewer gui/test_headless_viewer.cpp
+  )
   target_link_libraries(UNIT_gui_HeadlessViewer dart-gui)
   # System ImGui builds can depend on SDL3, which is not available in ASAN CI.
   if(NOT (DART_ENABLE_ASAN AND DART_USE_SYSTEM_IMGUI))
     dart_add_test(
       "unit" UNIT_gui_MeshShapeNodeMaterialUpdates
-      gui/test_mesh_shape_node_material_updates.cpp)
+      gui/test_mesh_shape_node_material_updates.cpp
+    )
     target_link_libraries(UNIT_gui_MeshShapeNodeMaterialUpdates dart-gui)
     dart_add_test(
-      "unit" UNIT_gui_ConvexMeshShapeNode gui/test_convex_mesh_shape_node.cpp)
+      "unit" UNIT_gui_ConvexMeshShapeNode gui/test_convex_mesh_shape_node.cpp
+    )
     target_link_libraries(UNIT_gui_ConvexMeshShapeNode dart-gui)
     dart_add_test(
-      "unit" UNIT_gui_PlaneShapeNode gui/test_plane_shape_node.cpp)
+      "unit" UNIT_gui_PlaneShapeNode gui/test_plane_shape_node.cpp
+    )
     target_link_libraries(UNIT_gui_PlaneShapeNode dart-gui)
   endif()
 endif()

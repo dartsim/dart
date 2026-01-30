@@ -6,9 +6,9 @@ endif()
 # Set local target/component names
 set(target_name ${PROJECT_NAME}-gui)
 set(component_name gui)
-set(component_dependencies )
-set(component_dependency_packages )
-set(link_libraries )
+set(component_dependencies)
+set(component_dependency_packages)
+set(link_libraries)
 
 # Dependency checks
 dart_check_dependent_target(${target_name} dart-utils)
@@ -48,19 +48,10 @@ if(MSVC AND BUILD_SHARED_LIBS)
   if(CMAKE_CONFIGURATION_TYPES)
     foreach(_cfg ${CMAKE_CONFIGURATION_TYPES})
       string(TOUPPER "${_cfg}" _cfg_upper)
-      set_target_properties(
-        ${target_name}
-        PROPERTIES
-          ARCHIVE_OUTPUT_DIRECTORY_${_cfg_upper}
-            "${DART_BINARY_DIR}/lib/${_cfg}"
-      )
+      set_target_properties(${target_name} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_${_cfg_upper} "${DART_BINARY_DIR}/lib/${_cfg}")
     endforeach()
   else()
-    set_target_properties(
-      ${target_name}
-      PROPERTIES
-        ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}"
-    )
+    set_target_properties(${target_name} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}")
   endif()
 endif()
 
@@ -87,11 +78,7 @@ install(
   DESTINATION include/dart/gui
   COMPONENT headers
 )
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/gui/detail
-  COMPONENT headers
-)
+install(FILES ${detail_hdrs} DESTINATION include/dart/gui/detail COMPONENT headers)
 # Install generated compatibility headers preserving subdirectory structure
 dart_install_compat_headers(
   COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS}

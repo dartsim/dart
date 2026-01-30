@@ -23,22 +23,13 @@ find_package(PkgConfig QUIET)
 pkg_check_modules(PC_ODE ode QUIET)
 
 # Include directories
-find_path(
-  ODE_INCLUDE_DIRS
-  NAMES ode/collision.h
-  HINTS ${PC_ODE_INCLUDEDIR}
-  PATHS "${CMAKE_INSTALL_PREFIX}/include"
-)
+find_path(ODE_INCLUDE_DIRS NAMES ode/collision.h HINTS ${PC_ODE_INCLUDEDIR} PATHS "${CMAKE_INSTALL_PREFIX}/include")
 
 # Libraries
 if(MSVC)
   set(ODE_LIBRARIES "ode$<$<CONFIG:Debug>:d>")
 else()
-  find_library(
-    ODE_LIBRARIES
-    NAMES ode
-    HINTS ${PC_ODE_LIBDIR}
-  )
+  find_library(ODE_LIBRARIES NAMES ode HINTS ${PC_ODE_LIBDIR})
 endif()
 
 # Version
@@ -46,9 +37,4 @@ set(ODE_VERSION ${PC_ODE_VERSION})
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(
-  ODE
-  FAIL_MESSAGE DEFAULT_MSG
-  REQUIRED_VARS ODE_INCLUDE_DIRS ODE_LIBRARIES
-  VERSION_VAR ODE_VERSION
-)
+find_package_handle_standard_args(ODE FAIL_MESSAGE DEFAULT_MSG REQUIRED_VARS ODE_INCLUDE_DIRS ODE_LIBRARIES VERSION_VAR ODE_VERSION)

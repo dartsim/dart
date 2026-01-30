@@ -11,8 +11,8 @@ find_package(assimp 5.2.2 REQUIRED MODULE)
 # Set target assimp if not set
 if((ASSIMP_FOUND OR assimp_FOUND) AND NOT TARGET assimp)
   add_library(assimp INTERFACE IMPORTED)
-  set_target_properties(assimp PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${ASSIMP_INCLUDE_DIRS}"
-    INTERFACE_LINK_LIBRARIES "${ASSIMP_LIBRARIES}"
+  set_target_properties(
+    assimp
+    PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${ASSIMP_INCLUDE_DIRS}" INTERFACE_LINK_LIBRARIES "${ASSIMP_LIBRARIES}"
   )
 endif()

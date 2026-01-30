@@ -24,11 +24,7 @@ install(
   DESTINATION include/dart/simulation
   COMPONENT headers
 )
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/simulation/detail
-  COMPONENT headers
-)
+install(FILES ${detail_hdrs} DESTINATION include/dart/simulation/detail COMPONENT headers)
 # Install generated compatibility headers preserving subdirectory structure
 dart_install_compat_headers(
   COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS}

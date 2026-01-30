@@ -55,12 +55,10 @@ if(MSVC AND BULLET_FOUND)
   endforeach()
 
   # Check for mismatch and disable Bullet if found
-  if(NOT _DART_MULTI_CONFIG
-     AND CMAKE_BUILD_TYPE MATCHES "Debug"
-     AND _BULLET_HAS_RELEASE_LIBS
-     AND NOT _BULLET_HAS_DEBUG_LIBS)
+  if(NOT _DART_MULTI_CONFIG AND CMAKE_BUILD_TYPE MATCHES "Debug" AND _BULLET_HAS_RELEASE_LIBS AND NOT _BULLET_HAS_DEBUG_LIBS)
     set(_BULLET_CONFIG_MISMATCH TRUE)
-    message(WARNING
+    message(
+      WARNING
       "Bullet libraries appear to be Release builds, but CMAKE_BUILD_TYPE is Debug. "
       "This will cause LNK2038 runtime library mismatch errors on Windows/MSVC. "
       "Disabling Bullet support to avoid link errors."
@@ -72,12 +70,10 @@ if(MSVC AND BULLET_FOUND)
       "  3. Or use RelWithDebInfo: -DCMAKE_BUILD_TYPE=RelWithDebInfo"
     )
     set(BULLET_FOUND FALSE)
-  elseif(NOT _DART_MULTI_CONFIG
-         AND NOT CMAKE_BUILD_TYPE MATCHES "Debug"
-         AND _BULLET_HAS_DEBUG_LIBS
-         AND NOT _BULLET_HAS_RELEASE_LIBS)
+  elseif(NOT _DART_MULTI_CONFIG AND NOT CMAKE_BUILD_TYPE MATCHES "Debug" AND _BULLET_HAS_DEBUG_LIBS AND NOT _BULLET_HAS_RELEASE_LIBS)
     set(_BULLET_CONFIG_MISMATCH TRUE)
-    message(WARNING
+    message(
+      WARNING
       "Bullet libraries appear to be Debug builds, but CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}. "
       "This will cause runtime library mismatch errors on Windows/MSVC. "
       "Disabling Bullet support to avoid link errors."

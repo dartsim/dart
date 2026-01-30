@@ -20,12 +20,7 @@ find_package(PkgConfig QUIET)
 pkg_check_modules(PC_ASSIMP assimp QUIET)
 
 # Include directories
-find_path(
-  ASSIMP_INCLUDE_DIRS
-  assimp/scene.h
-  HINTS ${PC_ASSIMP_INCLUDEDIR}
-  PATHS "${CMAKE_INSTALL_PREFIX}/include"
-)
+find_path(ASSIMP_INCLUDE_DIRS assimp/scene.h HINTS ${PC_ASSIMP_INCLUDEDIR} PATHS "${CMAKE_INSTALL_PREFIX}/include")
 
 # Libraries
 if(MSVC)
@@ -34,11 +29,7 @@ if(MSVC)
     set(ASSIMP_LIBRARIES "assimp::assimp")
   endif()
 else()
-  find_library(
-    ASSIMP_LIBRARIES
-    NAMES assimp
-    HINTS ${PC_ASSIMP_LIBDIR}
-  )
+  find_library(ASSIMP_LIBRARIES NAMES assimp HINTS ${PC_ASSIMP_LIBDIR})
 endif()
 
 # Version

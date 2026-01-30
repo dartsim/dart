@@ -92,10 +92,7 @@ function(dart_property_add property_name)
   get_property(is_defined GLOBAL PROPERTY ${property_name} DEFINED)
 
   if(NOT is_defined)
-    define_property(GLOBAL PROPERTY ${property_name}
-      BRIEF_DOCS "${property_name}"
-      FULL_DOCS "Global properties for ${property_name}"
-    )
+    define_property(GLOBAL PROPERTY ${property_name} BRIEF_DOCS "${property_name}" FULL_DOCS "Global properties for ${property_name}")
   endif()
 
   foreach(item IN LISTS ARGN)
@@ -116,19 +113,10 @@ function(dart_option variable help_text default_value)
   set(option_category "")
 
   if(ARGC GREATER 3)
-    cmake_parse_arguments(
-      DART_OPTION
-      ""
-      ""
-      "CATEGORY"
-      ${ARGN}
-    )
+    cmake_parse_arguments(DART_OPTION "" "" "CATEGORY" ${ARGN})
 
     if(DART_OPTION_UNPARSED_ARGUMENTS)
-      message(
-        FATAL_ERROR
-        "dart_option(${variable} ...): unrecognized arguments: ${DART_OPTION_UNPARSED_ARGUMENTS}"
-      )
+      message(FATAL_ERROR "dart_option(${variable} ...): unrecognized arguments: ${DART_OPTION_UNPARSED_ARGUMENTS}")
     endif()
 
     if(DART_OPTION_CATEGORY)
@@ -136,22 +124,13 @@ function(dart_option variable help_text default_value)
     endif()
   endif()
 
-  set_property(
-    GLOBAL PROPERTY DART_DETAIL_PROPERTY_OPTION_VARIABLE "${variable}" APPEND
-  )
-  set_property(
-    GLOBAL PROPERTY DART_DETAIL_property_option_help_text "${help_text}" APPEND
-  )
-  set_property(
-    GLOBAL PROPERTY DART_DETAIL_property_option_default_value "${default_value}"
-    APPEND
-  )
+  set_property(GLOBAL PROPERTY DART_DETAIL_PROPERTY_OPTION_VARIABLE "${variable}" APPEND)
+  set_property(GLOBAL PROPERTY DART_DETAIL_property_option_help_text "${help_text}" APPEND)
+  set_property(GLOBAL PROPERTY DART_DETAIL_property_option_default_value "${default_value}" APPEND)
   if(option_category STREQUAL "")
     set(option_category "__DART_AUTO__")
   endif()
-  set_property(
-    GLOBAL PROPERTY DART_DETAIL_property_option_category "${option_category}" APPEND
-  )
+  set_property(GLOBAL PROPERTY DART_DETAIL_property_option_category "${option_category}" APPEND)
 
   # Add option
   option(${variable} ${help_text} ${default_value})
@@ -172,19 +151,10 @@ endfunction()
 function(dart_print_options)
   message(STATUS "[ Options ]")
 
-  get_property(
-    option_variables GLOBAL PROPERTY DART_DETAIL_PROPERTY_OPTION_VARIABLE
-  )
-  get_property(
-    option_help_texts GLOBAL PROPERTY DART_DETAIL_property_option_help_text
-  )
-  get_property(
-    option_default_values GLOBAL
-    PROPERTY DART_DETAIL_property_option_default_value
-  )
-  get_property(
-    option_categories GLOBAL PROPERTY DART_DETAIL_property_option_category
-  )
+  get_property(option_variables GLOBAL PROPERTY DART_DETAIL_PROPERTY_OPTION_VARIABLE)
+  get_property(option_help_texts GLOBAL PROPERTY DART_DETAIL_property_option_help_text)
+  get_property(option_default_values GLOBAL PROPERTY DART_DETAIL_property_option_default_value)
+  get_property(option_categories GLOBAL PROPERTY DART_DETAIL_property_option_category)
 
   dart_get_max_string_length(option_variable_max_len ${option_variables})
   list(LENGTH option_variables option_count)
@@ -194,7 +164,8 @@ function(dart_print_options)
     return()
   endif()
 
-  set(group_order
+  set(
+    group_order
     cmake
     build
     performance
@@ -248,7 +219,11 @@ function(dart_print_options)
 
       if(option_category_key STREQUAL "build" OR option_category_key STREQUAL "build_outputs")
         set(group_key build)
-      elseif(option_category_key STREQUAL "performance" OR option_category_key STREQUAL "performance_debug" OR option_category_key STREQUAL "debug")
+      elseif(
+        option_category_key STREQUAL "performance"
+        OR option_category_key STREQUAL "performance_debug"
+        OR option_category_key STREQUAL "debug"
+      )
         set(group_key performance)
       elseif(option_category_key STREQUAL "system" OR option_category_key STREQUAL "system_integrations")
         set(group_key system)
@@ -275,8 +250,10 @@ function(dart_print_options)
         set(group_key system)
       elseif(option_variable MATCHES "^DART_MSVC_" OR option_variable STREQUAL "DART_RUNTIME_LIBRARY")
         set(group_key msvc)
-      elseif(option_variable STREQUAL "BUILD_SHARED_LIBS"
-          OR (option_variable MATCHES "^DART_BUILD_" AND NOT option_variable STREQUAL "DART_BUILD_PROFILE"))
+      elseif(
+        option_variable STREQUAL "BUILD_SHARED_LIBS"
+        OR (option_variable MATCHES "^DART_BUILD_" AND NOT option_variable STREQUAL "DART_BUILD_PROFILE")
+      )
         set(group_key build)
       elseif(option_variable MATCHES "^DART_(BUILD_PROFILE|FAST_DEBUG|ENABLE_SIMD|CODECOV|ENABLE_ASAN)$")
         set(group_key performance)
@@ -313,14 +290,10 @@ endfunction()
 
 function(dart_library)
   set(prefix _ARG)
-  set(options
-    GLOB_HEADERS
-    GLOB_SOURCES
-  )
-  set(oneValueArgs
-    NAME
-  )
-  set(multiValueArgs
+  set(options GLOB_HEADERS GLOB_SOURCES)
+  set(oneValueArgs NAME)
+  set(
+    multiValueArgs
     HEADERS
     SOURCES
     PUBLIC_LINK_LIBRARIES
@@ -328,9 +301,7 @@ function(dart_library)
     PUBLIC_COMPILE_DEFINITIONS
     PRIVATE_COMPILE_DEFINITIONS
   )
-  cmake_parse_arguments(
-    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
-  )
+  cmake_parse_arguments("${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   # Get the current directory relative to the root of the project
   # assuming that dart/* is the root of the source tree
@@ -346,36 +317,23 @@ function(dart_library)
     list(APPEND _ARG_SOURCES ${sources})
   endif()
 
-  add_library(${_ARG_NAME}
-    ${_ARG_HEADERS}
-    ${_ARG_SOURCES}
-  )
+  add_library(${_ARG_NAME} ${_ARG_HEADERS} ${_ARG_SOURCES})
 
-  target_include_directories(${_ARG_NAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  target_include_directories(
+    ${_ARG_NAME}
+    PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+      $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
 
   target_compile_features(${_ARG_NAME} PUBLIC cxx_std_20)
 
-  target_link_libraries(${_ARG_NAME}
-    PUBLIC
-      ${_ARG_PUBLIC_LINK_LIBRARIES}
-    PRIVATE
-      ${_ARG_PRIVATE_LINK_LIBRARIES}
-  )
+  target_link_libraries(${_ARG_NAME} PUBLIC ${_ARG_PUBLIC_LINK_LIBRARIES} PRIVATE ${_ARG_PRIVATE_LINK_LIBRARIES})
 
-  target_compile_definitions(${_ARG_NAME}
-    PUBLIC
-      ${_ARG_PUBLIC_COMPILE_DEFINITIONS}
-    PRIVATE
-      ${_ARG_PRIVATE_COMPILE_DEFINITIONS}
-  )
+  target_compile_definitions(${_ARG_NAME} PUBLIC ${_ARG_PUBLIC_COMPILE_DEFINITIONS} PRIVATE ${_ARG_PRIVATE_COMPILE_DEFINITIONS})
 
-  set_target_properties(${_ARG_NAME} PROPERTIES
-    OUTPUT_NAME dart-${_ARG_NAME}
-  )
+  set_target_properties(${_ARG_NAME} PROPERTIES OUTPUT_NAME dart-${_ARG_NAME})
 
   include(GNUInstallDirs)
 
@@ -385,10 +343,7 @@ function(dart_library)
     get_filename_component(rel_dir "${rel_path}" DIRECTORY)
 
     # Install the file to the destination, preserving the directory structure
-    install(
-        FILES "${header}"
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${rel_dir}"
-    )
+    install(FILES "${header}" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${rel_dir}")
   endforeach()
 
   install(
@@ -399,34 +354,22 @@ function(dart_library)
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
 
-  install(
-    EXPORT dart_${_ARG_NAME}Targets
-    NAMESPACE DART::
-    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake
-  )
+  install(EXPORT dart_${_ARG_NAME}Targets NAMESPACE DART:: DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake)
 
   dart_format_add(${_ARG_HEADERS} ${_ARG_SOURCES})
-
 endfunction()
 
 #===============================================================================
 function(dart_coverage)
   set(prefix _ARG)
-  set(options
-    REQUIRED
-  )
-  set(oneValueArgs
-    INCLUDE_DIR
-    SOURCE_DIR
-    INSTALL_DIR
-  )
-  set(multiValueArgs
-    INPUT        # optional
+  set(options REQUIRED)
+  set(oneValueArgs INCLUDE_DIR SOURCE_DIR INSTALL_DIR)
+  set(
+    multiValueArgs
+    INPUT # optional
     EXCLUDE
   )
-  cmake_parse_arguments(
-    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
-  )
+  cmake_parse_arguments("${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   include(GNUInstallDirs)
 
@@ -472,39 +415,28 @@ function(dart_coverage)
     set(gcovr_options --exclude-throw-branches)
   endif()
 
-  add_custom_target(coverage
-    COMMAND
-      ${GCOVR_EXECUTABLE}
-        -r ${CMAKE_CURRENT_SOURCE_DIR}
-        -f ${gcovr_include_dir}
-        -f ${gcovr_source_dir}
+  add_custom_target(
+    coverage
+    COMMAND ${GCOVR_EXECUTABLE} -r ${CMAKE_CURRENT_SOURCE_DIR} -f ${gcovr_include_dir} -f ${gcovr_source_dir}
     DEPENDS tests_and_run
     COMMENT "Generating line coverage report..."
   )
 
-  add_custom_target(coverage_branch
-    COMMAND ${GCOVR_EXECUTABLE}
-        -b
-        ${gcovr_options}
-        --exclude-unreachable-branches
-        -r ${CMAKE_CURRENT_SOURCE_DIR}
-        -f ${gcovr_include_dir}
-        -f ${gcovr_source_dir}
+  add_custom_target(
+    coverage_branch
+    COMMAND
+      ${GCOVR_EXECUTABLE} -b ${gcovr_options} --exclude-unreachable-branches -r ${CMAKE_CURRENT_SOURCE_DIR} -f ${gcovr_include_dir} -f
+      ${gcovr_source_dir}
     DEPENDS tests_and_run
     COMMENT "Generating branch coverage report..."
   )
 
-  add_custom_target(coverage_html
+  add_custom_target(
+    coverage_html
     COMMAND ${CMAKE_COMMAND} -E make_directory ${gcovr_html_dir}
-    COMMAND ${GCOVR_EXECUTABLE}
-      --html
-      --html-details
-      ${gcovr_options}
-      --exclude-unreachable-branches
-      -o "${gcovr_index_path}"
-      -r ${CMAKE_CURRENT_SOURCE_DIR}
-      -f ${gcovr_include_dir}
-      -f ${gcovr_source_dir}
+    COMMAND
+      ${GCOVR_EXECUTABLE} --html --html-details ${gcovr_options} --exclude-unreachable-branches -o "${gcovr_index_path}" -r
+      ${CMAKE_CURRENT_SOURCE_DIR} -f ${gcovr_include_dir} -f ${gcovr_source_dir}
     DEPENDS coverage coverage_branch
     COMMENT "Generating a detailed HTML coverage report in ${gcovr_index_path}"
   )
@@ -514,24 +446,22 @@ function(dart_coverage)
   else()
     set(open_command_name "xdg-open")
   endif()
-  find_program(open_command
-    NAMES ${open_command_name}
-    DOC "Path to ${open_command_name}"
-  )
+  find_program(open_command NAMES ${open_command_name} DOC "Path to ${open_command_name}")
 
   if(open_command)
-    add_custom_target(coverage_view "${open_command}" "${gcovr_index_path}"
+    add_custom_target(
+      coverage_view
+      "${open_command}" "${gcovr_index_path}"
       DEPENDS coverage_html
       COMMENT "Opening documentation in a web browser."
     )
   else()
-    message(WARNING "Failed to find ${open_command_name}, to enable "
-      "'coverage_view', please install xdg-utils"
-    )
+    message(WARNING "Failed to find ${open_command_name}, to enable " "'coverage_view', please install xdg-utils")
   endif()
 
   # Remove all gcovr data and delete the html directory
-  add_custom_target(coverage_cleanup
+  add_custom_target(
+    coverage_cleanup
     COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/**/*.gcno
     COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/**/*.gcda
     COMMAND rm -rf ${gcovr_html_dir}
@@ -551,26 +481,19 @@ endfunction()
 function(dart_benchmarks)
   set(prefix _ARG)
   set(options)
-  set(oneValueArgs
-    TYPE
-    TARGET_PREFIX
-    TEST_LIST
-  )
-  set(multiValueArgs
+  set(oneValueArgs TYPE TARGET_PREFIX TEST_LIST)
+  set(
+    multiValueArgs
     SOURCES
     INCLUDE_DIRS
     LINK_LIBRARIES
     LINK_DART_LIBRARIES
     COMPILE_DEFINITIONS
   )
-  cmake_parse_arguments(
-    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
-  )
+  cmake_parse_arguments("${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if(NOT _ARG_TYPE)
-    message(
-      FATAL_ERROR "DEVELOPER ERROR: You must specify a TYPE for your benchmarks!"
-    )
+    message(FATAL_ERROR "DEVELOPER ERROR: You must specify a TYPE for your benchmarks!")
   endif()
 
   if(NOT DEFINED _ARG_SOURCES)
@@ -585,7 +508,6 @@ function(dart_benchmarks)
   endif()
 
   foreach(source IN LISTS _ARG_SOURCES)
-
     # Set target name: <TYPE>[_<TARGET_PREFIX>]_<source>
     set(target_name ${_ARG_TYPE})
     if(_ARG_TARGET_PREFIX)
@@ -602,9 +524,7 @@ function(dart_benchmarks)
     endif()
 
     add_executable(${target_name} ${source})
-    target_include_directories(
-      ${target_name} PRIVATE ${_ARG_INCLUDE_DIRS}
-    )
+    target_include_directories(${target_name} PRIVATE ${_ARG_INCLUDE_DIRS})
 
     target_link_libraries(${target_name} PRIVATE benchmark::benchmark benchmark::benchmark_main)
 
@@ -613,13 +533,9 @@ function(dart_benchmarks)
       target_link_libraries(${target_name} PRIVATE pthread)
     endif()
 
-    target_link_libraries(
-      ${target_name} PRIVATE ${_ARG_LINK_LIBRARIES}
-    )
+    target_link_libraries(${target_name} PRIVATE ${_ARG_LINK_LIBRARIES})
 
-    target_compile_definitions(
-      ${target_name} PRIVATE ${_ARG_COMPILE_DEFINITIONS}
-    )
+    target_compile_definitions(${target_name} PRIVATE ${_ARG_COMPILE_DEFINITIONS})
 
     foreach(dart_lib IN LISTS _ARG_LINK_DART_LIBRARIES)
       if(NOT TARGET ${dart_lib})
@@ -628,34 +544,23 @@ function(dart_benchmarks)
       target_link_libraries(${target_name} PRIVATE ${dart_lib})
     endforeach()
 
-    set_target_properties(${target_name}
-      PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
-    )
+    set_target_properties(${target_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin")
 
     if(_ARG_TEST_LIST)
       list(APPEND ${_ARG_TEST_LIST} ${target_name})
     endif()
 
     # Add executable target
-    add_custom_target(
-      RUN_${target_name}
-      COMMAND ${target_name}
-      COMMENT "Running benchmark ${target_name}..."
-      VERBATIM
-    )
+    add_custom_target(RUN_${target_name} COMMAND ${target_name} COMMENT "Running benchmark ${target_name}..." VERBATIM)
 
     dart_property_add(DART_${_ARG_TYPE}_BENCHMARKS ${target_name})
   endforeach()
 
   if(_ARG_TEST_LIST)
-    set(${_ARG_TEST_LIST} "${${_ARG_TEST_LIST}}"
-        PARENT_SCOPE
-    )
+    set(${_ARG_TEST_LIST} "${${_ARG_TEST_LIST}}" PARENT_SCOPE)
   endif()
 
   dart_format_add(${_ARG_SOURCES})
-
 endfunction()
 
 #===============================================================================
@@ -696,11 +601,7 @@ function(is_component output_variable package_name component)
   set(target "${component_prefix}${component}")
 
   if(TARGET "${target}")
-    get_property(
-      output
-      TARGET "${target}"
-      PROPERTY "${component_prefix}COMPONENT"
-    )
+    get_property(output TARGET "${target}" PROPERTY "${component_prefix}COMPONENT")
     set("${output_variable}" "${output}" PARENT_SCOPE)
   else()
     set("${output_variable}" FALSE PARENT_SCOPE)
@@ -723,39 +624,15 @@ function(add_component package_name component)
   set(target "${component_prefix}${component}")
   add_custom_target("${target}")
 
-  install(
-    EXPORT "${target}"
-    FILE "${package_name}_${component}Targets.cmake"
-    DESTINATION "${CONFIG_INSTALL_DIR}"
-  )
+  install(EXPORT "${target}" FILE "${package_name}_${component}Targets.cmake" DESTINATION "${CONFIG_INSTALL_DIR}")
   # Record dependency state so install_component_exports can guard against empty components.
 
-  set_property(
-    TARGET "${target}"
-    PROPERTY "${component_prefix}COMPONENT" TRUE
-  )
-  set_property(
-    TARGET "${target}"
-    PROPERTY "${component_prefix}DEPENDENCIES"
-  )
-  set_property(
-    TARGET "${target}"
-    PROPERTY "${component_prefix}INCLUDE_DIRS"
-  )
-  set_property(
-    TARGET "${target}"
-    PROPERTY "${component_prefix}LIBRARIES"
-  )
-  set_property(
-    TARGET "${target}"
-    PROPERTY "${component_prefix}HAS_DEPENDENCY_TARGET"
-    FALSE
-  )
-  set_property(
-    GLOBAL
-    APPEND
-    PROPERTY "${package_name}_COMPONENTS" "${component}"
-  )
+  set_property(TARGET "${target}" PROPERTY "${component_prefix}COMPONENT" TRUE)
+  set_property(TARGET "${target}" PROPERTY "${component_prefix}DEPENDENCIES")
+  set_property(TARGET "${target}" PROPERTY "${component_prefix}INCLUDE_DIRS")
+  set_property(TARGET "${target}" PROPERTY "${component_prefix}LIBRARIES")
+  set_property(TARGET "${target}" PROPERTY "${component_prefix}HAS_DEPENDENCY_TARGET" FALSE)
+  set_property(GLOBAL APPEND PROPERTY "${package_name}_COMPONENTS" "${component}")
 endfunction()
 
 #-------------------------------------------------------------------------------
@@ -766,11 +643,7 @@ endfunction()
 function(add_component_include_directories package_name component)
   set(component_prefix "${package_name}_component_")
   set(target "${component_prefix}${component}")
-  set_property(
-    TARGET "${target}"
-    APPEND
-    PROPERTY "${component_prefix}INCLUDE_DIRS" ${ARGN}
-  )
+  set_property(TARGET "${target}" APPEND PROPERTY "${component_prefix}INCLUDE_DIRS" ${ARGN})
 endfunction()
 
 #-------------------------------------------------------------------------------
@@ -784,10 +657,7 @@ function(add_component_dependencies package_name component)
 
   is_component(is_valid "${package_name}" "${component}")
   if(NOT is_valid)
-    message(
-      FATAL_ERROR
-      "Target '${component}' is not a component of ${package_name}."
-    )
+    message(FATAL_ERROR "Target '${component}' is not a component of ${package_name}.")
   endif()
 
   set(target "${component_prefix}${component}")
@@ -795,21 +665,14 @@ function(add_component_dependencies package_name component)
   foreach(dependency_component IN LISTS dependency_components)
     is_component(is_valid "${package_name}" "${dependency_component}")
     if(NOT is_valid)
-      message(
-        FATAL_ERROR
-        "Target '${dependency_component}' is not a component of ${package_name}."
-      )
+      message(FATAL_ERROR "Target '${dependency_component}' is not a component of ${package_name}.")
     endif()
 
     set(dependency_target "${component_prefix}${dependency_component}")
     add_dependencies("${target}" "${dependency_target}")
   endforeach()
 
-  set_property(
-    TARGET "${target}"
-    APPEND
-    PROPERTY "${component_prefix}DEPENDENCIES" ${dependency_components}
-  )
+  set_property(TARGET "${target}" APPEND PROPERTY "${component_prefix}DEPENDENCIES" ${dependency_components})
 endfunction()
 
 #-------------------------------------------------------------------------------
@@ -823,19 +686,12 @@ function(add_component_dependency_packages package_name component)
 
   is_component(is_valid "${package_name}" "${component}")
   if(NOT is_valid)
-    message(
-      FATAL_ERROR
-      "Target '${component}' is not a component of ${package_name}."
-    )
+    message(FATAL_ERROR "Target '${component}' is not a component of ${package_name}.")
   endif()
 
   set(target "${component_prefix}${component}")
 
-  set_property(
-    TARGET "${target}"
-    APPEND
-    PROPERTY "${component_prefix}dependency_package" ${dependency_package}
-  )
+  set_property(TARGET "${target}" APPEND PROPERTY "${component_prefix}dependency_package" ${dependency_package})
 endfunction()
 
 #-------------------------------------------------------------------------------
@@ -849,10 +705,7 @@ function(add_component_targets package_name component)
 
   is_component(is_valid "${package_name}" "${component}")
   if(NOT is_valid)
-    message(
-      FATAL_ERROR
-      "Target '${component}' is not a component of ${package_name}."
-    )
+    message(FATAL_ERROR "Target '${component}' is not a component of ${package_name}.")
   endif()
 
   set(target "${component_prefix}${component}")
@@ -866,14 +719,15 @@ function(add_component_targets package_name component)
       message(FATAL_ERROR "Target '${dependency_target}' does not exist.")
     endif()
 
-    get_property(
-      dependency_type
-      TARGET "${dependency_target}"
-      PROPERTY TYPE
-    )
-    if(NOT ("${dependency_type}" STREQUAL STATIC_LIBRARY
+    get_property(dependency_type TARGET "${dependency_target}" PROPERTY TYPE)
+    if(
+      NOT
+        (
+          "${dependency_type}" STREQUAL STATIC_LIBRARY
           OR "${dependency_type}" STREQUAL SHARED_LIBRARY
-          OR "${dependency_type}" STREQUAL INTERFACE_LIBRARY))
+          OR "${dependency_type}" STREQUAL INTERFACE_LIBRARY
+        )
+    )
       message(
         FATAL_ERROR
         "Target '${dependency_target}' has unsupported type"
@@ -883,11 +737,7 @@ function(add_component_targets package_name component)
     endif()
 
     if("${dependency_type}" STREQUAL INTERFACE_LIBRARY)
-      install(
-        TARGETS "${dependency_target}"
-        EXPORT "${target}"
-        INCLUDES DESTINATION "${INCLUDE_INSTALL_DIR}"
-      )
+      install(TARGETS "${dependency_target}" EXPORT "${target}" INCLUDES DESTINATION "${INCLUDE_INSTALL_DIR}")
     else()
       install(
         TARGETS "${dependency_target}"
@@ -898,16 +748,8 @@ function(add_component_targets package_name component)
     endif()
   endforeach()
 
-  set_property(
-    TARGET "${target}"
-    PROPERTY "${component_prefix}HAS_DEPENDENCY_TARGET"
-    TRUE
-  )
-  set_property(
-    TARGET "${target}"
-    APPEND
-    PROPERTY "${component_prefix}LIBRARIES" ${dependency_targets}
-  )
+  set_property(TARGET "${target}" PROPERTY "${component_prefix}HAS_DEPENDENCY_TARGET" TRUE)
+  set_property(TARGET "${target}" APPEND PROPERTY "${component_prefix}LIBRARIES" ${dependency_targets})
 endfunction()
 
 #-------------------------------------------------------------------------------
@@ -925,11 +767,7 @@ function(install_component_exports package_name)
   foreach(component IN LISTS components)
     set(target "${component_prefix}${component}")
 
-    get_property(
-      has_dependency_targets
-      TARGET "${target}"
-      PROPERTY "${component_prefix}HAS_DEPENDENCY_TARGET"
-    )
+    get_property(has_dependency_targets TARGET "${target}" PROPERTY "${component_prefix}HAS_DEPENDENCY_TARGET")
     if(NOT has_dependency_targets)
       message(
         FATAL_ERROR
@@ -938,26 +776,13 @@ function(install_component_exports package_name)
       )
     endif()
 
-    set(output_path
-      "${output_prefix}/${package_name}_${component}Component.cmake")
+    set(output_path "${output_prefix}/${package_name}_${component}Component.cmake")
 
-    get_property(
-      internal_dependencies
-      TARGET "${target}"
-      PROPERTY "${component_prefix}DEPENDENCIES"
-    )
+    get_property(internal_dependencies TARGET "${target}" PROPERTY "${component_prefix}DEPENDENCIES")
 
-    get_property(
-      libraries
-      TARGET "${target}"
-      PROPERTY "${component_prefix}LIBRARIES"
-    )
+    get_property(libraries TARGET "${target}" PROPERTY "${component_prefix}LIBRARIES")
 
-    get_property(
-      dependency_package
-      TARGET "${target}"
-      PROPERTY "${component_prefix}dependency_package"
-    )
+    get_property(dependency_package TARGET "${target}" PROPERTY "${component_prefix}dependency_package")
     set(external_dependencies)
     foreach(dependent_package IN LISTS dependency_package)
       set(find_pkg_name "Find${dependent_package}.cmake")
@@ -985,10 +810,7 @@ function(install_component_exports package_name)
       install(FILES "${dart_find_pkg_path}" DESTINATION "${CONFIG_INSTALL_DIR}")
     endforeach()
 
-    configure_file(
-      "${DART_SOURCE_DIR}/cmake/dart_Component.cmake.in"
-      "${output_path}"
-      @ONLY)
+    configure_file("${DART_SOURCE_DIR}/cmake/dart_Component.cmake.in" "${output_path}" @ONLY)
 
     install(FILES "${output_path}" DESTINATION "${CONFIG_INSTALL_DIR}")
   endforeach()
@@ -1223,17 +1045,9 @@ function(dart_install_compat_headers)
 
     # Install to the appropriate subdirectory
     if(rel_dir)
-      install(
-        FILES "${compat_header}"
-        DESTINATION "${DICH_DESTINATION_PREFIX}/${rel_dir}"
-        COMPONENT headers
-      )
+      install(FILES "${compat_header}" DESTINATION "${DICH_DESTINATION_PREFIX}/${rel_dir}" COMPONENT headers)
     else()
-      install(
-        FILES "${compat_header}"
-        DESTINATION "${DICH_DESTINATION_PREFIX}"
-        COMPONENT headers
-      )
+      install(FILES "${compat_header}" DESTINATION "${DICH_DESTINATION_PREFIX}" COMPONENT headers)
     endif()
   endforeach()
 endfunction()
@@ -1304,12 +1118,21 @@ macro(dart_generate_component_headers)
   set(deprecated_hpp_path "${DART_GCH_OUTPUT_DIR}/${DART_GCH_COMPONENT_NAME}.hpp")
   file(WRITE ${deprecated_hpp_path} "// Automatically generated file by cmake\n\n")
   file(APPEND ${deprecated_hpp_path} "// DEPRECATED: This header is deprecated and will be removed in the next major release.\n")
-  file(APPEND ${deprecated_hpp_path} "// Please use <${DART_GCH_TARGET_DIR}All.hpp> instead of <${DART_GCH_TARGET_DIR}${DART_GCH_COMPONENT_NAME}.hpp>\n\n")
+  file(
+    APPEND ${deprecated_hpp_path}
+    "// Please use <${DART_GCH_TARGET_DIR}All.hpp> instead of <${DART_GCH_TARGET_DIR}${DART_GCH_COMPONENT_NAME}.hpp>\n\n"
+  )
   file(APPEND ${deprecated_hpp_path} "#ifndef DART_SUPPRESS_DEPRECATED_HEADER_WARNING\n")
   file(APPEND ${deprecated_hpp_path} "#if defined(_MSC_VER)\n")
-  file(APPEND ${deprecated_hpp_path} "#  pragma message(\"Warning: ${DART_GCH_TARGET_DIR}${DART_GCH_COMPONENT_NAME}.hpp is deprecated. Use ${DART_GCH_TARGET_DIR}All.hpp instead.\")\n")
+  file(
+    APPEND ${deprecated_hpp_path}
+    "#  pragma message(\"Warning: ${DART_GCH_TARGET_DIR}${DART_GCH_COMPONENT_NAME}.hpp is deprecated. Use ${DART_GCH_TARGET_DIR}All.hpp instead.\")\n"
+  )
   file(APPEND ${deprecated_hpp_path} "#elif defined(__GNUC__) || defined(__clang__)\n")
-  file(APPEND ${deprecated_hpp_path} "#  warning \"${DART_GCH_TARGET_DIR}${DART_GCH_COMPONENT_NAME}.hpp is deprecated. Use ${DART_GCH_TARGET_DIR}All.hpp instead.\"\n")
+  file(
+    APPEND ${deprecated_hpp_path}
+    "#  warning \"${DART_GCH_TARGET_DIR}${DART_GCH_COMPONENT_NAME}.hpp is deprecated. Use ${DART_GCH_TARGET_DIR}All.hpp instead.\"\n"
+  )
   file(APPEND ${deprecated_hpp_path} "#endif\n")
   file(APPEND ${deprecated_hpp_path} "#endif // DART_SUPPRESS_DEPRECATED_HEADER_WARNING\n\n")
   file(APPEND ${deprecated_hpp_path} "#include \"${DART_GCH_TARGET_DIR}All.hpp\"\n")
@@ -1322,8 +1145,7 @@ macro(dart_generate_component_headers)
       get_filename_component(rel_dir "${rel_path}" DIRECTORY)
       get_filename_component(header_name "${header}" NAME)
       string(TOLOWER "${header_name}" header_name_lower)
-      if(header_name_lower STREQUAL "all.hpp"
-         AND (rel_dir STREQUAL "" OR rel_dir STREQUAL "."))
+      if(header_name_lower STREQUAL "all.hpp" AND (rel_dir STREQUAL "" OR rel_dir STREQUAL "."))
         continue()
       endif()
       list(APPEND filtered_source_headers "${header}")
@@ -1374,13 +1196,7 @@ macro(dart_add_library _name)
   string(REPLACE ":" "_" _dart_export_macro "${_dart_export_macro}")
   string(REPLACE "/" "_" _dart_export_macro "${_dart_export_macro}")
   string(TOUPPER "${_dart_export_macro}" _dart_export_macro)
-  target_compile_definitions(
-    ${_name}
-    PUBLIC
-      DART_BUILD_SHARED=${_dart_target_build_shared}
-    PRIVATE
-      DART_BUILDING_${_dart_export_macro}
-  )
+  target_compile_definitions(${_name} PUBLIC DART_BUILD_SHARED=${_dart_target_build_shared} PRIVATE DART_BUILDING_${_dart_export_macro})
   unset(_dart_target_build_shared)
 
   set(_dart_use_global_output_dirs TRUE)
@@ -1397,12 +1213,9 @@ macro(dart_add_library _name)
         set_target_properties(
           ${_name}
           PROPERTIES
-            ARCHIVE_OUTPUT_DIRECTORY_${_dart_config_upper}
-              "${DART_BINARY_DIR}/lib/${_dart_config}"
-            LIBRARY_OUTPUT_DIRECTORY_${_dart_config_upper}
-              "${DART_BINARY_DIR}/lib/${_dart_config}"
-            RUNTIME_OUTPUT_DIRECTORY_${_dart_config_upper}
-              "${DART_BINARY_DIR}/bin/${_dart_config}"
+            ARCHIVE_OUTPUT_DIRECTORY_${_dart_config_upper} "${DART_BINARY_DIR}/lib/${_dart_config}"
+            LIBRARY_OUTPUT_DIRECTORY_${_dart_config_upper} "${DART_BINARY_DIR}/lib/${_dart_config}"
+            RUNTIME_OUTPUT_DIRECTORY_${_dart_config_upper} "${DART_BINARY_DIR}/bin/${_dart_config}"
         )
       endforeach()
     else()
@@ -1421,12 +1234,9 @@ macro(dart_add_library _name)
         set_target_properties(
           ${_name}
           PROPERTIES
-            ARCHIVE_OUTPUT_DIRECTORY_${_dart_config_upper}
-              "${CMAKE_CURRENT_BINARY_DIR}/${_dart_config}"
-            LIBRARY_OUTPUT_DIRECTORY_${_dart_config_upper}
-              "${CMAKE_CURRENT_BINARY_DIR}/${_dart_config}"
-            RUNTIME_OUTPUT_DIRECTORY_${_dart_config_upper}
-              "${CMAKE_CURRENT_BINARY_DIR}/${_dart_config}"
+            ARCHIVE_OUTPUT_DIRECTORY_${_dart_config_upper} "${CMAKE_CURRENT_BINARY_DIR}/${_dart_config}"
+            LIBRARY_OUTPUT_DIRECTORY_${_dart_config_upper} "${CMAKE_CURRENT_BINARY_DIR}/${_dart_config}"
+            RUNTIME_OUTPUT_DIRECTORY_${_dart_config_upper} "${CMAKE_CURRENT_BINARY_DIR}/${_dart_config}"
         )
       endforeach()
     else()
@@ -1440,11 +1250,7 @@ macro(dart_add_library _name)
     endif()
   endif()
 
-  set_target_properties(
-    ${_name} PROPERTIES
-    SOVERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}"
-    VERSION "${DART_VERSION}"
-  )
+  set_target_properties(${_name} PROPERTIES SOVERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}" VERSION "${DART_VERSION}")
 endmacro()
 
 #-------------------------------------------------------------------------------
@@ -1480,23 +1286,19 @@ macro(dart_check_optional_package variable component dependency)
     set(HAVE_${variable} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
     set(DART_HAVE_${variable} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
     if(DART_VERBOSE)
-      message(STATUS "Looking for ${dependency} - version ${${variable}_VERSION}"
-                     " found")
+      message(STATUS "Looking for ${dependency} - version ${${variable}_VERSION}" " found")
     endif()
   else()
     set(HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
     set(DART_HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
     if(NOT ${${variable}_FOUND})
       if(ARGV3) # version
-        message(WARNING "Looking for ${dependency} - NOT found, to use"
-                        " ${component}, please install ${dependency} (>= ${ARGV3})")
+        message(WARNING "Looking for ${dependency} - NOT found, to use" " ${component}, please install ${dependency} (>= ${ARGV3})")
       else()
-        message(WARNING "Looking for ${dependency} - NOT found, to use"
-                        " ${component}, please install ${dependency}")
+        message(WARNING "Looking for ${dependency} - NOT found, to use" " ${component}, please install ${dependency}")
       endif()
     elseif(${DART_SKIP_${variable}} AND DART_VERBOSE)
-      message(STATUS "Not using ${dependency} - version ${${variable}_VERSION}"
-                     " even if found because DART_SKIP_${variable} is ON.")
+      message(STATUS "Not using ${dependency} - version ${${variable}_VERSION}" " even if found because DART_SKIP_${variable} is ON.")
     endif()
     return()
   endif()
@@ -1576,16 +1378,17 @@ function(dart_format_add)
     if(IS_ABSOLUTE "${source}")
       set(source_abs "${source}")
     else()
-      get_filename_component(source_abs
-        "${CMAKE_CURRENT_LIST_DIR}/${source}" ABSOLUTE)
+      get_filename_component(source_abs "${CMAKE_CURRENT_LIST_DIR}/${source}" ABSOLUTE)
     endif()
     if(EXISTS "${source_abs}")
       dart_property_add(DART_FORMAT_FILES "${source_abs}")
     else()
-      message(FATAL_ERROR
+      message(
+        FATAL_ERROR
         "Source file '${source}' does not exist at absolute path"
         " '${source_abs}'. This should never happen. Did you recently delete"
-        " this file or modify 'CMAKE_CURRENT_LIST_DIR'")
+        " this file or modify 'CMAKE_CURRENT_LIST_DIR'"
+      )
     endif()
   endforeach()
 endfunction()
@@ -1637,10 +1440,7 @@ function(dart_build_target_in_source target)
     target_compile_options(${target} PUBLIC ${_ARG_COMPILE_OPTIONS})
   endif()
 
-  set_target_properties(${target}
-    PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
-  )
+  set_target_properties(${target} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin")
 
   dart_format_add(${srcs})
 endfunction()
@@ -1673,7 +1473,6 @@ function(dart_build_tutorial_in_source target)
   dart_add_tutorial(${target})
 endfunction()
 
-
 #===============================================================================
 # Testing
 #===============================================================================
@@ -1693,22 +1492,10 @@ endfunction()
 #-------------------------------------------------------------------------------
 function(dart_build_tests)
   set(prefix _ARG)
-  set(options
-    GLOB_SOURCES
-  )
-  set(oneValueArgs
-    COMPONENT_NAME
-    TARGET_PREFIX
-    TYPE
-  )
-  set(multiValueArgs
-    INCLUDE_DIRS
-    LINK_LIBRARIES
-    SOURCES
-  )
-  cmake_parse_arguments(
-    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
-  )
+  set(options GLOB_SOURCES)
+  set(oneValueArgs COMPONENT_NAME TARGET_PREFIX TYPE)
+  set(multiValueArgs INCLUDE_DIRS LINK_LIBRARIES SOURCES)
+  cmake_parse_arguments("${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if(NOT _ARG_TARGET_PREFIX)
     set(_ARG_TARGET_PREFIX UNIT)
@@ -1744,7 +1531,7 @@ function(dart_build_tests)
     if(_ARG_TARGET_PREFIX)
       set(target_name ${_ARG_TARGET_PREFIX}_)
     else()
-      set(target_name )
+      set(target_name)
     endif()
     get_filename_component(source_name ${source} NAME_WE)
     string(REPLACE "test_" "" source_name ${source_name})
@@ -1771,9 +1558,7 @@ function(dart_build_tests)
     if(APPLE)
       # Explicitly set BUILD_RPATH to include the dart library directory.
       # This ensures tests find the correct Debug/Release libraries.
-      set_target_properties(${target_name} PROPERTIES
-        BUILD_RPATH "$<TARGET_FILE_DIR:dart>"
-      )
+      set_target_properties(${target_name} PROPERTIES BUILD_RPATH "$<TARGET_FILE_DIR:dart>")
     else()
       # Windows and Linux need environment variables for library paths
       if(WIN32)
@@ -1785,11 +1570,7 @@ function(dart_build_tests)
       if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.22")
         set(_dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>")
         list(APPEND _dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>")
-        set_tests_properties(
-          ${target_name}
-          PROPERTIES
-            ENVIRONMENT_MODIFICATION "${_dart_env_mods}"
-        )
+        set_tests_properties(${target_name} PROPERTIES ENVIRONMENT_MODIFICATION "${_dart_env_mods}")
       else()
         if(WIN32)
           set(_dart_test_path_sep "\\;")
@@ -1799,9 +1580,7 @@ function(dart_build_tests)
         set(_dart_lib_paths "$<TARGET_FILE_DIR:dart>${_dart_test_path_sep}$<TARGET_FILE_DIR:GTest::gtest>")
         set_property(
           TEST ${target_name}
-          PROPERTY
-            ENVIRONMENT
-            "${_dart_lib_path_var}=${_dart_lib_paths}${_dart_test_path_sep}$ENV{${_dart_lib_path_var}}"
+          PROPERTY ENVIRONMENT "${_dart_lib_path_var}=${_dart_lib_paths}${_dart_test_path_sep}$ENV{${_dart_lib_path_var}}"
         )
         unset(_dart_test_path_sep)
       endif()
@@ -1809,15 +1588,11 @@ function(dart_build_tests)
     endif()
 
     # Include directories
-    target_include_directories(
-      ${target_name} PRIVATE ${_ARG_INCLUDE_DIRS}
-    )
+    target_include_directories(${target_name} PRIVATE ${_ARG_INCLUDE_DIRS})
 
     # Link libraries
     target_link_libraries(${target_name} PRIVATE GTest::gtest GTest::gtest_main)
-    target_link_libraries(
-      ${target_name} PRIVATE ${_ARG_LINK_LIBRARIES}
-    )
+    target_link_libraries(${target_name} PRIVATE ${_ARG_LINK_LIBRARIES})
     if(UNIX)
       # gtest requires pthread when compiled on a Unix machine
       target_link_libraries(${target_name} PRIVATE pthread)
@@ -1825,11 +1600,9 @@ function(dart_build_tests)
 
     # Add the test target to the list
     dart_property_add(DART_${_ARG_TYPE}_TESTS ${target_name})
-
   endforeach()
 
   dart_format_add(${test_files})
-
 endfunction()
 
 #===============================================================================
@@ -1858,13 +1631,7 @@ endfunction()
 #   - ${PREFIX}_VERBOSE: Enable verbose output
 #-------------------------------------------------------------------------------
 function(dart_find_dependency)
-  cmake_parse_arguments(
-    ARG
-    "REQUIRED;QUIET"
-    "NAME;PACKAGE;VERSION;SET_VAR;PREFIX"
-    "COMPONENTS"
-    ${ARGN}
-  )
+  cmake_parse_arguments(ARG "REQUIRED;QUIET" "NAME;PACKAGE;VERSION;SET_VAR;PREFIX" "COMPONENTS" ${ARGN})
 
   # Default prefix for simulation-experimental compatibility
   if(NOT ARG_PREFIX)
@@ -1948,11 +1715,9 @@ endmacro()
 function(dart_create_library)
   # Parse arguments
   set(options "")
-  set(oneValueArgs
-    NAME
-    VERSION
-  )
-  set(multiValueArgs
+  set(oneValueArgs NAME VERSION)
+  set(
+    multiValueArgs
     SOURCES
     HEADERS
     INCLUDE_DIRS_PUBLIC
@@ -1961,13 +1726,7 @@ function(dart_create_library)
     LINK_LIBS_PRIVATE
   )
 
-  cmake_parse_arguments(
-    ARG
-    "${options}"
-    "${oneValueArgs}"
-    "${multiValueArgs}"
-    ${ARGN}
-  )
+  cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   # Validate required arguments
   if(NOT ARG_NAME)
@@ -2030,10 +1789,9 @@ function(dart_create_library)
   # Add compile definition for source directory (used for relative paths in logging)
   # Include both DART_SOURCE_DIR and DART_EXPERIMENTAL_SOURCE_DIR for compatibility
   # with the experimental logging helper in dart/simulation/experimental/common/logging.hpp
-  target_compile_definitions(${ARG_NAME}
-    PUBLIC
-      DART_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
-      DART_EXPERIMENTAL_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+  target_compile_definitions(
+    ${ARG_NAME}
+    PUBLIC DART_SOURCE_DIR="${CMAKE_SOURCE_DIR}" DART_EXPERIMENTAL_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
   )
 
   # Include directories - default to parent of current source dir
@@ -2041,14 +1799,10 @@ function(dart_create_library)
     set(ARG_INCLUDE_DIRS_PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
   endif()
 
-  target_include_directories(${ARG_NAME}
-    PUBLIC
-      $<BUILD_INTERFACE:${ARG_INCLUDE_DIRS_PUBLIC}>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>
-      $<INSTALL_INTERFACE:include>
-    PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}
-      ${ARG_INCLUDE_DIRS_PRIVATE}
+  target_include_directories(
+    ${ARG_NAME}
+    PUBLIC $<BUILD_INTERFACE:${ARG_INCLUDE_DIRS_PUBLIC}> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..> $<INSTALL_INTERFACE:include>
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${ARG_INCLUDE_DIRS_PRIVATE}
   )
 
   # Link dependencies (passed from call site)
@@ -2061,14 +1815,14 @@ function(dart_create_library)
   endif()
 
   # Set library properties
-  set_target_properties(${ARG_NAME} PROPERTIES
-    VERSION ${ARG_VERSION}
-    SOVERSION ${VERSION_MAJOR}
-    OUTPUT_NAME ${ARG_NAME}
+  set_target_properties(
+    ${ARG_NAME}
+    PROPERTIES VERSION ${ARG_VERSION} SOVERSION ${VERSION_MAJOR} OUTPUT_NAME ${ARG_NAME}
   )
 
   # Install rules
-  install(TARGETS ${ARG_NAME}
+  install(
+    TARGETS ${ARG_NAME}
     EXPORT ${ARG_NAME}Targets
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
@@ -2078,9 +1832,7 @@ function(dart_create_library)
 
   # Install headers
   if(ARG_HEADERS)
-    install(FILES ${ARG_HEADERS}
-      DESTINATION include/${ARG_NAME}
-    )
+    install(FILES ${ARG_HEADERS} DESTINATION include/${ARG_NAME})
   endif()
 
   message(STATUS "${ARG_NAME}: Configured library")
@@ -2105,22 +1857,10 @@ endmacro()
 function(dart_create_python_module)
   # Parse arguments
   set(options "")
-  set(oneValueArgs
-    NAME
-    VERSION
-  )
-  set(multiValueArgs
-    SOURCES
-    LINK_LIBS
-  )
+  set(oneValueArgs NAME VERSION)
+  set(multiValueArgs SOURCES LINK_LIBS)
 
-  cmake_parse_arguments(
-    ARG
-    "${options}"
-    "${oneValueArgs}"
-    "${multiValueArgs}"
-    ${ARGN}
-  )
+  cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   # Validate required arguments
   if(NOT ARG_NAME)
@@ -2185,12 +1925,7 @@ function(dart_create_python_module)
   )
 
   # Include directories
-  target_include_directories(${ARG_NAME}
-    PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}
-      ${CMAKE_SOURCE_DIR}
-      ${CMAKE_BINARY_DIR}
-  )
+  target_include_directories(${ARG_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 
   # Link libraries
   if(ARG_LINK_LIBS)
@@ -2198,18 +1933,18 @@ function(dart_create_python_module)
   endif()
 
   # Set version info
-  target_compile_definitions(${ARG_NAME}
-    PRIVATE ${ARG_NAME}_VERSION_INFO="${ARG_VERSION}-dev"
-  )
+  target_compile_definitions(${ARG_NAME} PRIVATE ${ARG_NAME}_VERSION_INFO="${ARG_VERSION}-dev")
 
   # Remove debug postfix
   set_target_properties(${ARG_NAME} PROPERTIES DEBUG_POSTFIX "")
 
   # Set output directory to match expected PYTHONPATH
-  set_target_properties(${ARG_NAME} PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python"
-    LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/Debug/python"
-    LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/Release/python"
+  set_target_properties(
+    ${ARG_NAME}
+    PROPERTIES
+      LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python"
+      LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/Debug/python"
+      LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/Release/python"
   )
 
   message(STATUS "${ARG_NAME}: Configured Python bindings")
@@ -2245,20 +1980,11 @@ function(dart_add_simulation_test TEST_NAME TEST_PATH)
   endif()
 
   add_executable(${TEST_NAME} ${TEST_PATH})
-  target_link_libraries(${TEST_NAME}
-    PRIVATE
-      ${ARG_LIBRARY}
-      GTest::gtest
-      GTest::gtest_main
-  )
+  target_link_libraries(${TEST_NAME} PRIVATE ${ARG_LIBRARY} GTest::gtest GTest::gtest_main)
 
   # Add to CTest with label for easy filtering
   add_test(NAME ${TEST_NAME} COMMAND $<TARGET_FILE:${TEST_NAME}>)
-  set_tests_properties(
-    ${TEST_NAME}
-    PROPERTIES
-      LABELS "${ARG_LABEL}"
-  )
+  set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${ARG_LABEL}")
 
   # Set up library paths for tests to find shared libraries at runtime.
   # - Windows: Use PATH (required for DLL loading)
@@ -2272,9 +1998,7 @@ function(dart_add_simulation_test TEST_NAME TEST_PATH)
     if(TARGET dart)
       list(APPEND _rpath_dirs "$<TARGET_FILE_DIR:dart>")
     endif()
-    set_target_properties(${TEST_NAME} PROPERTIES
-      BUILD_RPATH "${_rpath_dirs}"
-    )
+    set_target_properties(${TEST_NAME} PROPERTIES BUILD_RPATH "${_rpath_dirs}")
     unset(_rpath_dirs)
   else()
     # Windows and Linux need environment variables for library paths
@@ -2291,11 +2015,7 @@ function(dart_add_simulation_test TEST_NAME TEST_PATH)
         list(APPEND _dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>")
       endif()
       list(APPEND _dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>")
-      set_tests_properties(
-        ${TEST_NAME}
-        PROPERTIES
-          ENVIRONMENT_MODIFICATION "${_dart_env_mods}"
-      )
+      set_tests_properties(${TEST_NAME} PROPERTIES ENVIRONMENT_MODIFICATION "${_dart_env_mods}")
     else()
       if(WIN32)
         # Escape the semicolon so CMake does not treat it as a list separator.
@@ -2311,9 +2031,7 @@ function(dart_add_simulation_test TEST_NAME TEST_PATH)
       set(_dart_lib_paths "${_dart_lib_paths}${_dart_test_path_sep}$<TARGET_FILE_DIR:GTest::gtest>")
       set_property(
         TEST ${TEST_NAME}
-        PROPERTY
-          ENVIRONMENT
-            "${_dart_lib_path_var}=${_dart_lib_paths}${_dart_test_path_sep}$ENV{${_dart_lib_path_var}}"
+        PROPERTY ENVIRONMENT "${_dart_lib_path_var}=${_dart_lib_paths}${_dart_test_path_sep}$ENV{${_dart_lib_path_var}}"
       )
       unset(_dart_test_path_sep)
     endif()
@@ -2325,20 +2043,14 @@ function(dart_add_simulation_test TEST_NAME TEST_PATH)
   if(CMAKE_CONFIGURATION_TYPES)
     foreach(_dart_cfg IN LISTS CMAKE_CONFIGURATION_TYPES)
       string(TOUPPER "${_dart_cfg}" _dart_cfg_upper)
-      set_target_properties(${TEST_NAME} PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${_dart_cfg_upper} "${DART_BINARY_DIR}/bin/${_dart_cfg}"
-      )
+      set_target_properties(${TEST_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${_dart_cfg_upper} "${DART_BINARY_DIR}/bin/${_dart_cfg}")
     endforeach()
   else()
-    set_target_properties(${TEST_NAME} PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
-    )
+    set_target_properties(${TEST_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin")
   endif()
 
   # Set target properties
-  set_target_properties(${TEST_NAME} PROPERTIES
-    FOLDER "${ARG_LABEL}/tests"
-  )
+  set_target_properties(${TEST_NAME} PROPERTIES FOLDER "${ARG_LABEL}/tests")
 
   # Add to global test list
   set(DART_ALL_TESTS ${DART_ALL_TESTS} ${TEST_NAME} CACHE INTERNAL "List of all tests")
@@ -2398,10 +2110,7 @@ function(dart_add_unit_test_dir MODULE_NAME MODULE_DIR)
   endforeach()
 
   # Create meta target for this module
-  add_custom_target(dart_tests_${MODULE_NAME}
-    DEPENDS ${module_test_targets}
-    COMMENT "Building ${MODULE_NAME} tests"
-  )
+  add_custom_target(dart_tests_${MODULE_NAME} DEPENDS ${module_test_targets} COMMENT "Building ${MODULE_NAME} tests")
 
   # Report
   list(LENGTH test_files num_tests)
@@ -2437,17 +2146,10 @@ function(dart_add_simulation_benchmark BENCHMARK_NAME BENCHMARK_PATH)
   endif()
 
   add_executable(${BENCHMARK_NAME} ${BENCHMARK_PATH})
-  target_link_libraries(${BENCHMARK_NAME}
-    PRIVATE
-      ${ARG_LIBRARY}
-      benchmark::benchmark
-      benchmark::benchmark_main
-  )
+  target_link_libraries(${BENCHMARK_NAME} PRIVATE ${ARG_LIBRARY} benchmark::benchmark benchmark::benchmark_main)
 
   # Set benchmark properties
-  set_target_properties(${BENCHMARK_NAME} PROPERTIES
-    FOLDER "${ARG_LABEL}/benchmarks"
-  )
+  set_target_properties(${BENCHMARK_NAME} PROPERTIES FOLDER "${ARG_LABEL}/benchmarks")
 endfunction()
 
 # Backward compatibility alias

@@ -100,10 +100,7 @@ if(DART_VERBOSE)
   endforeach()
 else()
   list(LENGTH components components_length)
-  message(
-    STATUS
-    "Adding ${components_length} components including the default component 'dart'"
-  )
+  message(STATUS "Adding ${components_length} components including the default component 'dart'")
 endif()
 
 # Set header and source files
@@ -125,11 +122,9 @@ get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
 # Add target
 dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
 target_include_directories(
-  dart BEFORE
-  PUBLIC
-    $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${DART_BINARY_DIR}>
-    $<INSTALL_INTERFACE:include>
+  dart
+  BEFORE
+  PUBLIC $<BUILD_INTERFACE:${DART_SOURCE_DIR}> $<BUILD_INTERFACE:${DART_BINARY_DIR}> $<INSTALL_INTERFACE:include>
 )
 get_property(_dart_extra_includes GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS)
 if(_dart_extra_includes)
@@ -141,14 +136,7 @@ if(_dart_system_includes)
   list(REMOVE_DUPLICATES _dart_system_includes)
   target_include_directories(dart SYSTEM PUBLIC ${_dart_system_includes})
 endif()
-target_link_libraries(
-  dart
-  PUBLIC
-    ${CMAKE_DL_LIBS}
-    Eigen3::Eigen
-    fcl
-    assimp
-)
+target_link_libraries(dart PUBLIC ${CMAKE_DL_LIBS} Eigen3::Eigen fcl assimp)
 target_compile_definitions(dart PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
 get_property(_dart_extra_compile_options GLOBAL PROPERTY DART_EXTRA_COMPILE_OPTIONS)
 if(_dart_extra_compile_options)
@@ -177,7 +165,10 @@ if(spdlog_FOUND)
     target_link_libraries(dart PUBLIC spdlog::spdlog)
     target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=1)
   else()
-    message(WARNING "spdlog found, but no target is found. Expected spdlog::spdlog or target_link_library_public spdlog::spdlog_header_only")
+    message(
+      WARNING
+      "spdlog found, but no target is found. Expected spdlog::spdlog or target_link_library_public spdlog::spdlog_header_only"
+    )
     target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=0)
   endif()
 else()
@@ -229,8 +220,7 @@ if(DART_ENABLE_SIMD)
 else()
   # Remove x86-specific flags when building on non-x86 architectures to keep
   # builds portable without enabling the SIMD option.
-  if(NOT dart_host_architecture STREQUAL "x86"
-     AND NOT dart_host_architecture STREQUAL "x86_64")
+  if(NOT dart_host_architecture STREQUAL "x86" AND NOT dart_host_architecture STREQUAL "x86_64")
     foreach(flag "-msse" "-msse2" "-msse3" "-mssse3")
       string(REPLACE "${flag}" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     endforeach()
@@ -272,7 +262,8 @@ if(DART_BUILD_COLLISION_BULLET)
   add_library(dart-collision-bullet INTERFACE)
   target_link_libraries(dart-collision-bullet INTERFACE dart)
   set_target_properties(
-    dart-collision-bullet PROPERTIES
+    dart-collision-bullet
+    PROPERTIES
       DEPRECATION
         "DART CMake component 'collision-bullet' is a deprecated stub in DART 7 and will be removed in DART 8; stop requesting it and depend on component 'dart' instead."
   )
@@ -284,7 +275,8 @@ if(DART_BUILD_COLLISION_ODE)
   add_library(dart-collision-ode INTERFACE)
   target_link_libraries(dart-collision-ode INTERFACE dart)
   set_target_properties(
-    dart-collision-ode PROPERTIES
+    dart-collision-ode
+    PROPERTIES
       DEPRECATION
         "DART CMake component 'collision-ode' is a deprecated stub in DART 7 and will be removed in DART 8; stop requesting it and depend on component 'dart' instead."
   )
@@ -293,10 +285,7 @@ if(DART_BUILD_COLLISION_ODE)
 endif()
 
 if(MSVC)
-  set_target_properties(
-    dart PROPERTIES
-    STATIC_LIBRARY_FLAGS_RELEASE "/LTCG"
-  )
+  set_target_properties(dart PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 endif()
 
 if(DART_CODECOV)
@@ -304,9 +293,9 @@ if(DART_CODECOV)
 endif()
 
 if(DART_BUILD_PROFILE)
-  target_compile_definitions(dart PUBLIC
-    DART_PROFILE_ENABLE_TEXT=$<BOOL:${DART_PROFILE_BUILTIN}>
-    DART_PROFILE_ENABLE_TRACY=$<BOOL:${DART_PROFILE_TRACY}>
+  target_compile_definitions(
+    dart
+    PUBLIC DART_PROFILE_ENABLE_TEXT=$<BOOL:${DART_PROFILE_BUILTIN}> DART_PROFILE_ENABLE_TRACY=$<BOOL:${DART_PROFILE_TRACY}>
   )
 
   if(DART_PROFILE_TRACY)
@@ -314,19 +303,11 @@ if(DART_BUILD_PROFILE)
   endif()
 endif()
 
-install(
-  FILES ${dart_hpp} ${dart_all_hpp} ${dart_export_hpp}
-  DESTINATION include/dart/
-  COMPONENT headers
-)
+install(FILES ${dart_hpp} ${dart_all_hpp} ${dart_export_hpp} DESTINATION include/dart/ COMPONENT headers)
 
 # Install generated PascalCase compatibility headers (only on case-sensitive FS)
 if(DART_GENERATED_COMPAT_HEADERS)
-  install(
-    FILES ${DART_GENERATED_COMPAT_HEADERS}
-    DESTINATION include/dart/
-    COMPONENT headers
-  )
+  install(FILES ${DART_GENERATED_COMPAT_HEADERS} DESTINATION include/dart/ COMPONENT headers)
 endif()
 
 dart_format_add(${dart_core_headers} ${dart_core_sources})

@@ -34,9 +34,7 @@ dart_find_package(octomap)
 if(OCTOMAP_FOUND OR octomap_FOUND)
   if(NOT DEFINED octomap_VERSION)
     set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
-    message(WARNING "Looking for octomap - octomap_VERSION is not defined, "
-        "please install octomap with version information"
-    )
+    message(WARNING "Looking for octomap - octomap_VERSION is not defined, " "please install octomap with version information")
   else()
     set(DART_HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
     if(DART_VERBOSE)
@@ -45,9 +43,7 @@ if(OCTOMAP_FOUND OR octomap_FOUND)
   endif()
 else()
   set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
-  message(WARNING "Looking for octomap - NOT found, to use VoxelGridShape, "
-      "please install octomap"
-  )
+  message(WARNING "Looking for octomap - NOT found, to use VoxelGridShape, " "please install octomap")
 endif()
 
 if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
@@ -55,12 +51,7 @@ if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
     find_package(Tracy CONFIG REQUIRED)
   else()
     include(FetchContent)
-    FetchContent_Declare(tracy
-      GIT_REPOSITORY https://github.com/wolfpld/tracy.git
-      GIT_TAG v0.11.1
-      GIT_SHALLOW TRUE
-      GIT_PROGRESS TRUE
-    )
+    FetchContent_Declare(tracy GIT_REPOSITORY https://github.com/wolfpld/tracy.git GIT_TAG v0.11.1 GIT_SHALLOW TRUE GIT_PROGRESS TRUE)
     FetchContent_MakeAvailable(tracy)
     if(MSVC)
       target_compile_options(TracyClient PRIVATE /W0)
@@ -104,7 +95,8 @@ if(DART_BUILD_COLLISION_ODE AND NOT DART_USE_SYSTEM_ODE)
   # with CMake 4.0+. Temporarily set CMAKE_POLICY_VERSION_MINIMUM for ODE only.
   set(_dart_old_policy_min "${CMAKE_POLICY_VERSION_MINIMUM}")
   set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
-  FetchContent_Declare(ode
+  FetchContent_Declare(
+    ode
     URL https://bitbucket.org/odedevs/ode/downloads/ode-0.16.6.tar.gz
     URL_HASH SHA256=c91a28c6ff2650284784a79c726a380d6afec87ecf7a35c32a6be0c5b74513e8
     EXCLUDE_FROM_ALL
@@ -159,7 +151,8 @@ if(DART_BUILD_COLLISION_BULLET AND NOT DART_USE_SYSTEM_BULLET)
   set(BUILD_PYBULLET_NUMPY OFF CACHE BOOL "" FORCE)
   set(INSTALL_LIBS ON CACHE BOOL "" FORCE)
   set(INSTALL_EXTRA_LIBS ON CACHE BOOL "" FORCE)
-  FetchContent_Declare(bullet
+  FetchContent_Declare(
+    bullet
     URL https://github.com/bulletphysics/bullet3/archive/refs/tags/3.25.tar.gz
     URL_HASH SHA256=c45afb6399e3f68036ddb641c6bf6f552bf332d5ab6be62f7e6c54eda05ceb77
   )
@@ -174,12 +167,7 @@ if(DART_BUILD_COLLISION_BULLET AND NOT DART_USE_SYSTEM_BULLET)
   set(BULLET_INCLUDE_DIRS "${bullet_SOURCE_DIR}/src" CACHE STRING "Bullet include dirs" FORCE)
   set(BULLET_INCLUDE_DIR "${bullet_SOURCE_DIR}/src" CACHE STRING "Bullet include dir" FORCE)
   # Bullet builds BulletCollision, BulletDynamics, BulletSoftBody, LinearMath targets
-  set(BULLET_LIBRARIES
-    BulletCollision
-    BulletDynamics
-    BulletSoftBody
-    LinearMath
-    CACHE STRING "Bullet libraries" FORCE)
+  set(BULLET_LIBRARIES BulletCollision BulletDynamics BulletSoftBody LinearMath CACHE STRING "Bullet libraries" FORCE)
   # Pre-set BT_USE_DOUBLE_PRECISION since we built Bullet with USE_DOUBLE_PRECISION=ON.
   # This avoids the check_cxx_source_compiles probe in dart/collision/bullet which
   # would fail at configure time because the Bullet targets aren't built yet.
@@ -234,9 +222,10 @@ if(DART_BUILD_GUI)
     FetchContent_Declare(
       imgui
       GIT_REPOSITORY https://github.com/ocornut/imgui.git
-      GIT_TAG        ${IMGUI_TARGET_VERSION}
-      GIT_SHALLOW    TRUE
-      SOURCE_DIR     "${CMAKE_BINARY_DIR}/_deps/imgui-src"
+      GIT_TAG ${IMGUI_TARGET_VERSION}
+      GIT_SHALLOW TRUE
+      SOURCE_DIR
+      "${CMAKE_BINARY_DIR}/_deps/imgui-src"
     )
 
     # Populate imgui using the modern helper (avoids CMP0169 warnings)
@@ -251,14 +240,16 @@ if(DART_BUILD_GUI)
 
     # Define the imgui source files
     # Core imgui files
-    set(IMGUI_CORE_SOURCES
+    set(
+      IMGUI_CORE_SOURCES
       ${imgui_SOURCE_DIR}/imgui.cpp
       ${imgui_SOURCE_DIR}/imgui_draw.cpp
       ${imgui_SOURCE_DIR}/imgui_tables.cpp
       ${imgui_SOURCE_DIR}/imgui_widgets.cpp
     )
 
-    set(IMGUI_CORE_HEADERS
+    set(
+      IMGUI_CORE_HEADERS
       ${imgui_SOURCE_DIR}/imgui.h
       ${imgui_SOURCE_DIR}/imgui_internal.h
       ${imgui_SOURCE_DIR}/imconfig.h
@@ -268,13 +259,9 @@ if(DART_BUILD_GUI)
     )
 
     # Backend files - OpenGL2 backend for OSG compatibility
-    set(IMGUI_BACKEND_SOURCES
-      ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.cpp
-    )
+    set(IMGUI_BACKEND_SOURCES ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.cpp)
 
-    set(IMGUI_BACKEND_HEADERS
-      ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.h
-    )
+    set(IMGUI_BACKEND_HEADERS ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.h)
 
     # Create the ImGui library target
     # Use a unique name to avoid conflicts with example executables
@@ -293,16 +280,14 @@ if(DART_BUILD_GUI)
     if(WIN32 AND BUILD_SHARED_LIBS)
       # ImGui does not export symbols by default; ensure an import library is
       # generated so dart-gui can link against dart-imgui-lib on Windows.
-      set_target_properties(
-        ${imgui_library_name}
-        PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON
-      )
+      set_target_properties(${imgui_library_name} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
     endif()
 
     # Configure include directories
     # Build tree: use fetched source directory
     # Install tree: use standard include paths (like system-installed imgui)
-    target_include_directories(${imgui_library_name}
+    target_include_directories(
+      ${imgui_library_name}
       PUBLIC
         $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>
         $<BUILD_INTERFACE:${imgui_SOURCE_DIR}/backends>
@@ -343,21 +328,17 @@ if(DART_BUILD_GUI)
 
     # Install fetched ImGui headers to standard system-like paths
     # This allows downstream projects to use standard includes like <imgui.h>
-    install(
-      FILES ${IMGUI_CORE_HEADERS}
-      DESTINATION include
-      COMPONENT headers
-    )
-    install(
-      FILES ${IMGUI_BACKEND_HEADERS}
-      DESTINATION include/backends
-      COMPONENT headers
-    )
+    install(FILES ${IMGUI_CORE_HEADERS} DESTINATION include COMPONENT headers)
+    install(FILES ${IMGUI_BACKEND_HEADERS} DESTINATION include/backends COMPONENT headers)
 
     message(STATUS "ImGui ${IMGUI_TARGET_VERSION} fetched successfully")
 
     # Add install-time warning about installing fetched ImGui
-    install(CODE "message(WARNING \"Installing fetched ImGui headers to \${CMAKE_INSTALL_PREFIX}/include/. If you have system ImGui installed, this may cause conflicts. For production use, consider building with -DDART_USE_SYSTEM_IMGUI=ON instead.\")" COMPONENT headers)
+    install(
+      CODE
+        "message(WARNING \"Installing fetched ImGui headers to \${CMAKE_INSTALL_PREFIX}/include/. If you have system ImGui installed, this may cause conflicts. For production use, consider building with -DDART_USE_SYSTEM_IMGUI=ON instead.\")"
+      COMPONENT headers
+    )
   endif()
 endif()
 
@@ -366,7 +347,10 @@ if(DART_BUILD_GUI_RAYLIB)
   if(DART_USE_SYSTEM_RAYLIB)
     dart_find_package(raylib)
     if(NOT raylib_FOUND)
-      message(FATAL_ERROR "Raylib was requested (DART_BUILD_GUI_RAYLIB=ON, DART_USE_SYSTEM_RAYLIB=ON) but could not be found. Install raylib or set DART_USE_SYSTEM_RAYLIB=OFF to fetch it.")
+      message(
+        FATAL_ERROR
+        "Raylib was requested (DART_BUILD_GUI_RAYLIB=ON, DART_USE_SYSTEM_RAYLIB=ON) but could not be found. Install raylib or set DART_USE_SYSTEM_RAYLIB=OFF to fetch it."
+      )
     endif()
     if(DART_VERBOSE)
       message(STATUS "Using system-installed Raylib")
@@ -410,11 +394,15 @@ if(DART_BUILD_GUI_RAYLIB)
 
     if(_dart_raylib_git_tag STREQUAL "" OR _dart_raylib_git_tag STREQUAL "latest")
       set(_dart_raylib_git_tag "5.5")
-      message(WARNING "Failed to determine the latest Raylib tag; falling back to ${_dart_raylib_git_tag}. Set -DDART_RAYLIB_GIT_TAG=<tag> to override.")
+      message(
+        WARNING
+        "Failed to determine the latest Raylib tag; falling back to ${_dart_raylib_git_tag}. Set -DDART_RAYLIB_GIT_TAG=<tag> to override."
+      )
     endif()
 
     message(STATUS "Fetching Raylib ${_dart_raylib_git_tag} from GitHub...")
-    FetchContent_Declare(raylib
+    FetchContent_Declare(
+      raylib
       GIT_REPOSITORY https://github.com/raysan5/raylib.git
       GIT_TAG ${_dart_raylib_git_tag}
       GIT_SHALLOW TRUE

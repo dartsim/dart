@@ -24,11 +24,7 @@ install(
   DESTINATION include/dart/dynamics
   COMPONENT headers
 )
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/dynamics/detail
-  COMPONENT headers
-)
+install(FILES ${detail_hdrs} DESTINATION include/dart/dynamics/detail COMPONENT headers)
 
 # Install generated compat headers while preserving subdirectory structure
 dart_install_compat_headers(

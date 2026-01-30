@@ -32,8 +32,7 @@ endif()
 
 if(missing_collision_features)
   list(JOIN missing_collision_features ", " _missing_collision_features_string)
-  set(_human_limits_message
-      "${example_name} requires ${_missing_collision_features_string}.")
+  set(_human_limits_message "${example_name} requires ${_missing_collision_features_string}.")
   if(DART_VERBOSE OR NOT DART_IN_SOURCE_BUILD)
     message(STATUS "Skipping ${example_name} example (${_human_limits_message})")
   endif()
@@ -41,7 +40,8 @@ if(missing_collision_features)
 endif()
 
 set(required_components utils-urdf gui io)
-set(required_libraries
+set(
+  required_libraries
   dart
   dart-io
   dart-utils-urdf

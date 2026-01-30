@@ -24,21 +24,15 @@ find_path(
   imgui_INCLUDE_DIR
   NAMES imgui.h
   HINTS ${PC_imgui_INCLUDEDIR}
-  PATHS
-    "${CMAKE_INSTALL_PREFIX}/include"
-    "${CMAKE_INSTALL_PREFIX}/include/imgui"
+  PATHS "${CMAKE_INSTALL_PREFIX}/include" "${CMAKE_INSTALL_PREFIX}/include/imgui"
 )
 
 # Find the path containing imgui_impl_opengl2.h
 find_path(
   imgui_backends_INCLUDE_DIR
   NAMES imgui_impl_opengl2.h
-  HINTS
-    ${PC_imgui_INCLUDEDIR}
-    ${PC_imgui_INCLUDEDIR}/backends
-  PATHS
-    "${CMAKE_INSTALL_PREFIX}/include"
-    "${CMAKE_INSTALL_PREFIX}/include/imgui/backends"
+  HINTS ${PC_imgui_INCLUDEDIR} ${PC_imgui_INCLUDEDIR}/backends
+  PATHS "${CMAKE_INSTALL_PREFIX}/include" "${CMAKE_INSTALL_PREFIX}/include/imgui/backends"
 )
 
 # Combine both paths into imgui_INCLUDE_DIRS
@@ -49,11 +43,7 @@ else()
 endif()
 
 # Library
-find_library(
-  imgui_LIBRARIES
-  NAMES imgui
-  HINTS ${PC_imgui_LIBDIR}
-)
+find_library(imgui_LIBRARIES NAMES imgui HINTS ${PC_imgui_LIBDIR})
 
 # Version
 if(PC_imgui_VERSION)

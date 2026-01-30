@@ -29,8 +29,4 @@ dart_install_compat_headers(
   COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS}
   DESTINATION_PREFIX include/dart/constraint
 )
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/constraint/detail
-  COMPONENT headers
-)
+install(FILES ${detail_hdrs} DESTINATION include/dart/constraint/detail COMPONENT headers)

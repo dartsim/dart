@@ -14,6 +14,8 @@ bullet-cpp = ">=3.25,<4"
 clang-format = ">=21.1.7,<22"
 cli11 = ">=2.6.0,<3"
 cmake = ">=4.2.1,<5"
+cmake-format = ">=0.6.13,<0.7"
+gersemi = ">=0.24.0,<0.26"
 codespell = ">=2.4.1,<3"
 console_bridge = ">=1.0.2,<2"
 doxygen = ">=1.13.2,<2"
@@ -163,6 +165,8 @@ lint-cpp = { cmd = """
     --target format
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
+lint-cmake = { cmd = ["python", "scripts/lint_cmake.py"] }
+
 lint-simulation-experimental = { cmd = """
     find dart/simulation/experimental tests/unit/simulation/experimental tests/benchmark/simulation/experimental -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
 """ }
@@ -188,6 +192,7 @@ lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
 lint = { depends-on = [
   "lint-spell",
   "lint-cpp",
+  "lint-cmake",
   "lint-simulation-experimental",
   "lint-py",
   "lint-yaml",
@@ -203,6 +208,8 @@ check-lint-cpp = { cmd = """
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --target check-format
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+
+check-lint-cmake = { cmd = ["python", "scripts/lint_cmake.py", "--check"] }
 
 check-lint-simulation-experimental = { cmd = """
     find dart/simulation/experimental tests/unit/simulation/experimental tests/benchmark/simulation/experimental -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
@@ -231,6 +238,7 @@ check-ai-commands = { cmd = [
 
 check-lint = { depends-on = [
   "check-lint-cpp",
+  "check-lint-cmake",
   "check-lint-simulation-experimental",
   "check-lint-py",
   "check-lint-yaml",
@@ -1449,6 +1457,7 @@ lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
 lint = { depends-on = [
   "lint-spell",
   "lint-cpp",
+  "lint-cmake",
   "lint-py",
   "lint-yaml",
   "lint-rst",
@@ -1464,6 +1473,7 @@ check-lint-spell = { cmd = "codespell --config .codespellrc" }
 
 check-lint = { depends-on = [
   "check-lint-cpp",
+  "check-lint-cmake",
   "check-lint-py",
   "check-lint-yaml",
   "check-lint-rst",

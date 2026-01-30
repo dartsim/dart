@@ -6,10 +6,10 @@
 #
 # This file is provided under the "BSD-style" License
 
-if(NOT CMAKE_CROSSCOMPILING
-    AND (NOT Vulkan_LIBRARY
-         OR Vulkan_LIBRARY MATCHES "^/usr/lib(/|$)"
-         OR Vulkan_LIBRARY MATCHES "^/usr/lib64(/|$)"))
+if(
+  NOT CMAKE_CROSSCOMPILING
+  AND (NOT Vulkan_LIBRARY OR Vulkan_LIBRARY MATCHES "^/usr/lib(/|$)" OR Vulkan_LIBRARY MATCHES "^/usr/lib64(/|$)")
+)
   # Prefer the Vulkan loader that ships with the active prefix (e.g., pixi/conda)
   # to avoid RPATH conflicts when the system loader is also present. Skip this
   # override entirely when cross-compiling so toolchains can provide their own loader.
@@ -48,8 +48,8 @@ endif()
 
 if(imgui_FOUND AND NOT TARGET imgui::imgui)
   add_library(imgui::imgui INTERFACE IMPORTED)
-  set_target_properties(imgui::imgui PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${imgui_INCLUDE_DIRS}"
-    INTERFACE_LINK_LIBRARIES "${imgui_LIBRARIES}"
+  set_target_properties(
+    imgui::imgui
+    PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${imgui_INCLUDE_DIRS}" INTERFACE_LINK_LIBRARIES "${imgui_LIBRARIES}"
   )
 endif()

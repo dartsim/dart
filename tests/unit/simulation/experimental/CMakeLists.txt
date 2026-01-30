@@ -50,10 +50,7 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
 
   # Create meta target for all unit tests
   # DART_ALL_TESTS now contains only the tests added by this module
-  add_custom_target(dart_experimental_tests
-    DEPENDS ${DART_ALL_TESTS}
-    COMMENT "Building all simulation-experimental unit tests"
-  )
+  add_custom_target(dart_experimental_tests DEPENDS ${DART_ALL_TESTS} COMMENT "Building all simulation-experimental unit tests")
 
   list(LENGTH DART_ALL_TESTS num_tests)
   message(STATUS "simulation-experimental: Total ${num_tests} unit test(s)")

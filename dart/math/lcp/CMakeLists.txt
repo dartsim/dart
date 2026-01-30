@@ -34,7 +34,8 @@ dart_add_core_sources(${math_lcp_other_srcs})
 
 # Compute relative header names (e.g., lcp/pivoting/LemkeSolver.hpp, lcp/dantzig/common.hpp)
 set(math_lcp_header_names "")
-set(math_lcp_public_hdrs
+set(
+  math_lcp_public_hdrs
   ${math_lcp_hdrs}
   ${math_lcp_pivoting_hdrs}
   ${math_lcp_pivoting_dantzig_hdrs}
@@ -54,48 +55,24 @@ set(DART_MATH_LCP_PUBLIC_HEADER_NAMES ${math_lcp_header_names} PARENT_SCOPE)
 set(DART_MATH_LCP_DETAIL_HEADERS ${math_lcp_pivoting_dantzig_hdrs} PARENT_SCOPE)
 
 # Install new headers under dart/math/lcp
-install(
-  FILES ${math_lcp_hdrs}
-  DESTINATION include/dart/math/lcp
-  COMPONENT headers
-)
+install(FILES ${math_lcp_hdrs} DESTINATION include/dart/math/lcp COMPONENT headers)
 
 if(math_lcp_pivoting_dantzig_hdrs)
-  install(
-    FILES ${math_lcp_pivoting_dantzig_hdrs}
-    DESTINATION include/dart/math/lcp/pivoting/dantzig
-    COMPONENT headers
-  )
+  install(FILES ${math_lcp_pivoting_dantzig_hdrs} DESTINATION include/dart/math/lcp/pivoting/dantzig COMPONENT headers)
 endif()
 
 if(math_lcp_pivoting_hdrs)
-  install(
-    FILES ${math_lcp_pivoting_hdrs}
-    DESTINATION include/dart/math/lcp/pivoting
-    COMPONENT headers
-  )
+  install(FILES ${math_lcp_pivoting_hdrs} DESTINATION include/dart/math/lcp/pivoting COMPONENT headers)
 endif()
 
 if(math_lcp_projection_hdrs)
-  install(
-    FILES ${math_lcp_projection_hdrs}
-    DESTINATION include/dart/math/lcp/projection
-    COMPONENT headers
-  )
+  install(FILES ${math_lcp_projection_hdrs} DESTINATION include/dart/math/lcp/projection COMPONENT headers)
 endif()
 
 if(math_lcp_newton_hdrs)
-  install(
-    FILES ${math_lcp_newton_hdrs}
-    DESTINATION include/dart/math/lcp/newton
-    COMPONENT headers
-  )
+  install(FILES ${math_lcp_newton_hdrs} DESTINATION include/dart/math/lcp/newton COMPONENT headers)
 endif()
 
 if(math_lcp_other_hdrs)
-  install(
-    FILES ${math_lcp_other_hdrs}
-    DESTINATION include/dart/math/lcp/other
-    COMPONENT headers
-  )
+  install(FILES ${math_lcp_other_hdrs} DESTINATION include/dart/math/lcp/other COMPONENT headers)
 endif()

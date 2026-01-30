@@ -23,22 +23,13 @@ find_package(PkgConfig QUIET)
 pkg_check_modules(PC_TINYXML2 tinyxml2 QUIET)
 
 # Include directories
-find_path(
-  TINYXML2_INCLUDE_DIRS
-  NAMES tinyxml2.h
-  HINTS ${PC_TINYXML2_INCLUDEDIR}
-  PATHS "${CMAKE_INSTALL_PREFIX}/include"
-)
+find_path(TINYXML2_INCLUDE_DIRS NAMES tinyxml2.h HINTS ${PC_TINYXML2_INCLUDEDIR} PATHS "${CMAKE_INSTALL_PREFIX}/include")
 
 # Libraries
 if(MSVC)
   set(TINYXML2_LIBRARIES "tinyxml2$<$<CONFIG:Debug>:d>")
 else()
-  find_library(
-    TINYXML2_LIBRARIES
-    NAMES tinyxml2
-    HINTS ${PC_TINYXML2_LIBDIR}
-  )
+  find_library(TINYXML2_LIBRARIES NAMES tinyxml2 HINTS ${PC_TINYXML2_LIBDIR})
 endif()
 
 # Version

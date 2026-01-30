@@ -75,12 +75,7 @@ if(TARGET Bullet::Bullet)
   list(APPEND _dart_bullet_link_items Bullet::Bullet)
 endif()
 if(NOT _dart_bullet_link_items)
-  set(_bullet_candidate_libs
-    ${BULLET_COLLISION_LIBRARY}
-    ${BULLET_DYNAMICS_LIBRARY}
-    ${BULLET_SOFTBODY_LIBRARY}
-    ${BULLET_MATH_LIBRARY}
-  )
+  set(_bullet_candidate_libs ${BULLET_COLLISION_LIBRARY} ${BULLET_DYNAMICS_LIBRARY} ${BULLET_SOFTBODY_LIBRARY} ${BULLET_MATH_LIBRARY})
   foreach(_bullet_candidate IN LISTS _bullet_candidate_libs)
     if(_bullet_candidate)
       list(APPEND _dart_bullet_link_items ${_bullet_candidate})
@@ -89,10 +84,7 @@ if(NOT _dart_bullet_link_items)
 endif()
 list(REMOVE_DUPLICATES _dart_bullet_link_items)
 if(NOT _dart_bullet_link_items)
-  message(
-    FATAL_ERROR
-    "Bullet was found but did not report any linkable libraries."
-  )
+  message(FATAL_ERROR "Bullet was found but did not report any linkable libraries.")
 endif()
 set(_dart_bullet_include_dirs ${BULLET_INCLUDE_DIRS})
 if(_dart_bullet_include_dirs)
@@ -118,11 +110,7 @@ install(
   COMPONENT headers
 )
 
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/collision/bullet/detail
-  COMPONENT headers
-)
+install(FILES ${detail_hdrs} DESTINATION include/dart/collision/bullet/detail COMPONENT headers)
 
 dart_install_compat_headers(COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS} DESTINATION_PREFIX include/dart/collision/bullet)
 

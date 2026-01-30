@@ -15,12 +15,7 @@ dart_add_core_sources(${srcs} ${detail_srcs})
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision headers" ${hdrs})
 list(REMOVE_ITEM header_names smart_pointer.hpp)
-set(
-  header_names
-  ${header_names}
-  dart/All.hpp
-  fcl/All.hpp
-)
+set(header_names ${header_names} dart/All.hpp fcl/All.hpp)
 dart_generate_component_headers(
   COMPONENT_NAME collision
   TARGET_DIR "dart/collision/"
@@ -35,11 +30,7 @@ install(
   DESTINATION include/dart/collision
   COMPONENT headers
 )
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/collision/detail
-  COMPONENT headers
-)
+install(FILES ${detail_hdrs} DESTINATION include/dart/collision/detail COMPONENT headers)
 
 # Install generated PascalCase compatibility headers, preserving directory structure
 dart_install_compat_headers(COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS} DESTINATION_PREFIX include/dart/collision)

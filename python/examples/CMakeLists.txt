@@ -39,7 +39,8 @@ function(dartpy_add_example example_name) # ARGN for source file
   else()
     set(source "${example_name}.py")
   endif()
-  add_custom_target(${example_name}
+  add_custom_target(
+    ${example_name}
     COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} ${source}"
     COMMAND ${CMAKE_COMMAND} -E env "PYTHONPATH=${DART_PYTHONPATH_ENV}" ${Python3_EXECUTABLE} ${source}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

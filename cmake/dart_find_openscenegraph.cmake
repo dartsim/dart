@@ -6,7 +6,10 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(OpenSceneGraph 3.0.0 QUIET
+find_package(
+  OpenSceneGraph
+  3.0.0
+  QUIET
   COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow osgUtil
 )
 
@@ -63,7 +66,7 @@ endif()
 # variables contain absolute paths of OpenSceneGraph that could be different in
 # where the system that DART is built and where the system that consumes DART.
 if((OPENSCENEGRAPH_FOUND OR OpenSceneGraph_FOUND) AND NOT TARGET osg::osg)
-    add_library(osg::osg INTERFACE IMPORTED)
-    target_include_directories(osg::osg INTERFACE "${OPENSCENEGRAPH_INCLUDE_DIRS}")
-    target_link_libraries(osg::osg INTERFACE "${OPENSCENEGRAPH_LIBRARIES}")
+  add_library(osg::osg INTERFACE IMPORTED)
+  target_include_directories(osg::osg INTERFACE "${OPENSCENEGRAPH_INCLUDE_DIRS}")
+  target_link_libraries(osg::osg INTERFACE "${OPENSCENEGRAPH_LIBRARIES}")
 endif()

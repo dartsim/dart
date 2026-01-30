@@ -1,7 +1,7 @@
 # Set local target/component names
 set(target_name ${PROJECT_NAME}-io)
 set(component_name io)
-set(component_dependencies )
+set(component_dependencies)
 
 # Dependency checks
 dart_check_dependent_target(${target_name} dart-utils)

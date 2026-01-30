@@ -22,11 +22,7 @@ install(
   DESTINATION include/dart/common
   COMPONENT headers
 )
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/common/detail
-  COMPONENT headers
-)
+install(FILES ${detail_hdrs} DESTINATION include/dart/common/detail COMPONENT headers)
 
 # Install generated PascalCase compatibility headers, preserving directory structure
 dart_install_compat_headers(COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS} DESTINATION_PREFIX include/dart/common)

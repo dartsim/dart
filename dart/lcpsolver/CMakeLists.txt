@@ -12,23 +12,11 @@ dart_generate_case_compat_headers(
   RELATIVE_TO "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
-install(
-  FILES ${compat_hdrs}
-  DESTINATION include/dart/lcpsolver
-  COMPONENT headers
-)
+install(FILES ${compat_hdrs} DESTINATION include/dart/lcpsolver COMPONENT headers)
 
-install(
-  FILES ${compat_dantzig_hdrs}
-  DESTINATION include/dart/lcpsolver/dantzig
-  COMPONENT headers
-)
+install(FILES ${compat_dantzig_hdrs} DESTINATION include/dart/lcpsolver/dantzig COMPONENT headers)
 
-install(
-  FILES ${compat_detail_hdrs}
-  DESTINATION include/dart/lcpsolver/detail
-  COMPONENT headers
-)
+install(FILES ${compat_detail_hdrs} DESTINATION include/dart/lcpsolver/detail COMPONENT headers)
 
 dart_install_compat_headers(
   COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS}

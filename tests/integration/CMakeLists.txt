@@ -14,16 +14,19 @@ if(DART_BUILD_COLLISION_FCL)
   dart_add_test(
     "integration"
     INTEGRATION_collision_MeshContactRegression
-    collision/test_mesh_contact_regression.cpp)
+    collision/test_mesh_contact_regression.cpp
+  )
 endif()
 dart_add_test(
   "integration"
   INTEGRATION_collision_FclPrimitiveContactMatrix
-  collision/test_fcl_primitive_contact_matrix.cpp)
+  collision/test_fcl_primitive_contact_matrix.cpp
+)
 dart_add_test(
   "integration"
   INTEGRATION_collision_FclPrimitiveContactMatrixFcl
-  collision/test_fcl_primitive_contact_matrix_fcl.cpp)
+  collision/test_fcl_primitive_contact_matrix_fcl.cpp
+)
 # Suppress <ciso646> deprecation warning from octomap headers (GCC 15+)
 # This file directly includes <fcl/fcl.h> which pulls in octomap's OcTreeKey.h
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15)
@@ -55,7 +58,8 @@ if(DART_BUILD_COLLISION_BULLET AND DART_BUILD_COLLISION_ODE)
   dart_add_test(
     "integration"
     INTEGRATION_collision_CapsuleGroundContact
-    collision/test_capsule_ground_contact.cpp)
+    collision/test_capsule_ground_contact.cpp
+  )
 endif()
 
 # ==============================================================================
@@ -98,32 +102,38 @@ if(TARGET dart-utils AND TARGET dart-io)
 
   dart_add_test("integration" INTEGRATION_dynamics_DynamicsJacobians
     ${DYNAMICS_TEST_FIXTURE}
-    dynamics/test_dynamics_jacobians.cpp)
+    dynamics/test_dynamics_jacobians.cpp
+  )
   target_link_libraries(INTEGRATION_dynamics_DynamicsJacobians dart-io)
 
   dart_add_test("integration" INTEGRATION_dynamics_DynamicsFiniteDifference
     ${DYNAMICS_TEST_FIXTURE}
-    dynamics/test_dynamics_finite_difference.cpp)
+    dynamics/test_dynamics_finite_difference.cpp
+  )
   target_link_libraries(INTEGRATION_dynamics_DynamicsFiniteDifference dart-io)
 
   dart_add_test("integration" INTEGRATION_dynamics_DynamicsEquations
     ${DYNAMICS_TEST_FIXTURE}
-    dynamics/test_dynamics_equations.cpp)
+    dynamics/test_dynamics_equations.cpp
+  )
   target_link_libraries(INTEGRATION_dynamics_DynamicsEquations dart-io)
 
   dart_add_test("integration" INTEGRATION_dynamics_DynamicsCenterOfMass
     ${DYNAMICS_TEST_FIXTURE}
-    dynamics/test_dynamics_center_of_mass.cpp)
+    dynamics/test_dynamics_center_of_mass.cpp
+  )
   target_link_libraries(INTEGRATION_dynamics_DynamicsCenterOfMass dart-io)
 
   dart_add_test("integration" INTEGRATION_dynamics_DynamicsImpulse
     ${DYNAMICS_TEST_FIXTURE}
-    dynamics/test_dynamics_impulse.cpp)
+    dynamics/test_dynamics_impulse.cpp
+  )
   target_link_libraries(INTEGRATION_dynamics_DynamicsImpulse dart-io)
 
   dart_add_test("integration" INTEGRATION_dynamics_DynamicsHybrid
     ${DYNAMICS_TEST_FIXTURE}
-    dynamics/test_dynamics_hybrid.cpp)
+    dynamics/test_dynamics_hybrid.cpp
+  )
   target_link_libraries(INTEGRATION_dynamics_DynamicsHybrid dart-io)
 
   dart_add_test("integration" INTEGRATION_dynamics_Joints dynamics/test_joints.cpp)
@@ -179,7 +189,6 @@ if(TARGET dart-utils)
 
   dart_add_test("integration" INTEGRATION_io_SkelParser io/test_skel_parser.cpp)
   target_link_libraries(INTEGRATION_io_SkelParser dart-utils)
-
 endif()
 
 if(TARGET dart-io)
@@ -218,10 +227,7 @@ if(TARGET dart-utils-urdf)
     dart_add_test("integration" INTEGRATION_io_IkFast io/test_ik_fast.cpp)
     target_link_libraries(INTEGRATION_io_IkFast dart-io)
     add_dependencies(INTEGRATION_io_IkFast GeneratedWamIkFast SharedLibraryWamIkFast)
-    target_compile_definitions(
-      INTEGRATION_io_IkFast PRIVATE
-        DART_IKFAST_GENERATED_LIB_PATH="$<TARGET_FILE:GeneratedWamIkFast>"
-    )
+    target_compile_definitions(INTEGRATION_io_IkFast PRIVATE DART_IKFAST_GENERATED_LIB_PATH="$<TARGET_FILE:GeneratedWamIkFast>")
   endif()
 endif()
 
@@ -256,13 +262,16 @@ dart_build_tests(
 )
 
 dart_add_test(
-  "integration" INTEGRATION_simulation_Issue870 simulation/test_issue870.cpp)
+  "integration" INTEGRATION_simulation_Issue870 simulation/test_issue870.cpp
+)
 
 dart_add_test(
-  "integration" INTEGRATION_simulation_Issue743 simulation/test_issue743.cpp)
+  "integration" INTEGRATION_simulation_Issue743 simulation/test_issue743.cpp
+)
 
 dart_add_test(
-  "integration" INTEGRATION_simulation_Sensors simulation/test_sensors.cpp)
+  "integration" INTEGRATION_simulation_Sensors simulation/test_sensors.cpp
+)
 
 if(TARGET dart-utils AND TARGET dart-io)
   dart_add_test("integration" INTEGRATION_simulation_FileInfoWorld simulation/test_file_info_world.cpp)

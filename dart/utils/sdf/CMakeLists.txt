@@ -25,8 +25,4 @@ install(
   DESTINATION include/dart/utils/sdf
   COMPONENT headers
 )
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/utils/sdf/detail
-  COMPONENT headers
-)
+install(FILES ${detail_hdrs} DESTINATION include/dart/utils/sdf/detail COMPONENT headers)

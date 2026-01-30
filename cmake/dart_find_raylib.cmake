@@ -22,4 +22,3 @@ if(raylib_FOUND AND NOT TARGET raylib::raylib)
     add_library(raylib::raylib ALIAS PkgConfig::raylib)
   endif()
 endif()
-

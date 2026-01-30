@@ -13,7 +13,7 @@ if(MSVC)
   # when it's installed by vcpkg on Windows. See:
   # - https://github.com/dartsim/dart/issues/1365
   # - https://github.com/ros/urdfdom/issues/140
-  if ("/include" IN_LIST urdfdom_INCLUDE_DIRS)
+  if("/include" IN_LIST urdfdom_INCLUDE_DIRS)
     list(REMOVE_ITEM urdfdom_INCLUDE_DIRS "/include")
     find_package(tinyxml2 REQUIRED)
     list(APPEND urdfdom_INCLUDE_DIRS ${TINYXML2_INCLUDE_DIRS})
@@ -22,8 +22,8 @@ endif()
 
 if(urdfdom_FOUND AND NOT TARGET urdfdom)
   add_library(urdfdom INTERFACE IMPORTED)
-  set_target_properties(urdfdom PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${urdfdom_INCLUDE_DIRS}"
-    INTERFACE_LINK_LIBRARIES "${urdfdom_LIBRARIES}"
+  set_target_properties(
+    urdfdom
+    PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${urdfdom_INCLUDE_DIRS}" INTERFACE_LINK_LIBRARIES "${urdfdom_LIBRARIES}"
   )
 endif()

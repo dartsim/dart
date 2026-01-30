@@ -626,8 +626,9 @@ pixi run test-all        # Run all tests
 #### Linting Tasks
 
 ```bash
-pixi run lint             # Format code + docs (C++, simulation-experimental, Python, YAML, TOML, MD) and lint RST
+pixi run lint             # Format code + docs (C++, CMake, simulation-experimental, Python, YAML, TOML, MD) and lint RST
 pixi run lint-cpp         # Format C++ code only
+pixi run lint-cmake       # Format CMake files
 pixi run lint-simulation-experimental       # Format simulation-experimental C++ sources
 pixi run lint-py          # Format Python code only
 pixi run lint-yaml        # Format YAML files
@@ -636,6 +637,7 @@ pixi run lint-md          # Format Markdown files
 pixi run lint-rst         # Lint reStructuredText files
 pixi run check-lint       # Check formatting/linting (CI)
 pixi run check-lint-cpp   # Check C++ formatting
+pixi run check-lint-cmake # Check CMake formatting
 pixi run check-lint-simulation-experimental # Check simulation-experimental formatting
 pixi run check-lint-py    # Check Python formatting
 pixi run check-lint-yaml  # Check YAML formatting

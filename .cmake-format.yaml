@@ -1,0 +1,16 @@
+format:
+  line_width: 100
+  tab_size: 2
+  use_tabchars: false
+  command_case: unchanged
+  keyword_case: unchanged
+  dangle_parens: false
+  min_prefix_chars: 4
+  max_prefix_chars: 10
+  max_pargs_hwrap: 6
+  max_subgroups_hwrap: 2
+  max_lines_hwrap: 2
+  enable_sort: false
+  autosort: false
+markup:
+  enable_markup: false

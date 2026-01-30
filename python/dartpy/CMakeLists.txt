@@ -35,8 +35,10 @@ find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
 # Determine Python site-packages directory if it is not already computed.
 if(NOT DEFINED PYTHON_SITE_PACKAGES)
-  execute_process(COMMAND ${Python_EXECUTABLE} -c
-    "import sysconfig; print(sysconfig.get_path('platlib', scheme='posix_prefix', vars={'base': '', 'platbase': ''}).lstrip('/'))"
+  execute_process(
+    COMMAND
+      ${Python_EXECUTABLE} -c
+      "import sysconfig; print(sysconfig.get_path('platlib', scheme='posix_prefix', vars={'base': '', 'platbase': ''}).lstrip('/'))"
     OUTPUT_VARIABLE PYTHON_SITE_PACKAGES_REL
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
@@ -60,8 +62,11 @@ else()
       RESULT_VARIABLE nanobind_NOTFOUND
     )
     if(nanobind_NOTFOUND)
-      message(WARNING "nanobind was not found via 'python -m nanobind --cmake_dir'. "
-        "Install it with 'pip install nanobind' or set nanobind_DIR explicitly.")
+      message(
+        WARNING
+        "nanobind was not found via 'python -m nanobind --cmake_dir'. "
+        "Install it with 'pip install nanobind' or set nanobind_DIR explicitly."
+      )
       return()
     endif()
     list(APPEND CMAKE_PREFIX_PATH "${nanobind_ROOT}")
@@ -76,7 +81,8 @@ if(NOT _dartpy_nanobind_found)
   return()
 endif()
 
-set(dartpy_headers
+set(
+  dartpy_headers
   common/composite.hpp
   common/module.hpp
   common/logging.hpp
@@ -152,7 +158,8 @@ set(dartpy_headers
   constraint/joint_coulomb_friction_constraint.hpp
 )
 
-set(dartpy_sources
+set(
+  dartpy_sources
   dartpy.cpp
   common/composite.cpp
   common/module.cpp
@@ -228,14 +235,10 @@ set(dartpy_sources
   constraint/joint_coulomb_friction_constraint.cpp
 )
 
-set(dartpy_gui_headers
-  gui/module.hpp
-  gui/gui.hpp
-  gui/utils.hpp
-  gui/support_polygon_visual.hpp
-)
+set(dartpy_gui_headers gui/module.hpp gui/gui.hpp gui/utils.hpp gui/support_polygon_visual.hpp)
 
-set(dartpy_gui_sources
+set(
+  dartpy_gui_sources
   gui/module.cpp
   gui/gui_event_handler.cpp
   gui/world_node.cpp
@@ -268,33 +271,19 @@ foreach(_nb_target nanobind-static nanobind-static-abi3 nanobind-static-ft)
       # our global -Werror. These are third-party sources.
       target_compile_options(
         ${_nb_target}
-        PRIVATE
-          -Wno-format
-          -Wno-format-security
-          -Wno-error
-          -Wno-error=format
-          -Wno-error=format-security
+        PRIVATE -Wno-format -Wno-format-security -Wno-error -Wno-error=format -Wno-error=format-security
       )
     endif()
   endif()
 endforeach()
 
-target_include_directories(dartpy
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}
-    ${CMAKE_BINARY_DIR}
-)
+target_include_directories(dartpy PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 
 if(BULLET_INCLUDE_DIR)
   target_include_directories(dartpy SYSTEM PRIVATE ${BULLET_INCLUDE_DIR})
 endif()
 
-set(dartpy_libraries
-  dart
-  dart-utils
-  dart-utils-urdf
-)
+set(dartpy_libraries dart dart-utils dart-utils-urdf)
 foreach(lib ${dartpy_libraries})
   if(TARGET ${lib})
     target_link_libraries(dartpy PRIVATE ${lib})
@@ -320,26 +309,18 @@ if(TARGET dart-gui)
 endif()
 
 # Surface a version string to Python.
-target_compile_definitions(dartpy
-  PRIVATE
-    DARTPY_VERSION_INFO="${DART_VERSION}"
-)
+target_compile_definitions(dartpy PRIVATE DARTPY_VERSION_INFO="${DART_VERSION}")
 target_compile_options(dartpy PRIVATE "-UNB_COMPACT_ASSERTIONS")
 
 set_target_properties(dartpy PROPERTIES OUTPUT_NAME "_dartpy")
 
 # Copy pure-Python helpers into the build tree so tests can import them
 foreach(_py_file __init__.py _naming.py _layout.py)
-  configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/${_py_file}
-    ${CMAKE_CURRENT_BINARY_DIR}/${_py_file}
-    COPYONLY
-  )
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${_py_file} ${CMAKE_CURRENT_BINARY_DIR}/${_py_file} COPYONLY)
   add_custom_command(
-    TARGET dartpy POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_CURRENT_SOURCE_DIR}/${_py_file}
-            ${CMAKE_CURRENT_BINARY_DIR}/${_py_file}
+    TARGET dartpy
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${_py_file} ${CMAKE_CURRENT_BINARY_DIR}/${_py_file}
     COMMENT "Updating dartpy ${_py_file}"
   )
 endforeach()
@@ -352,38 +333,28 @@ endif()
 
 foreach(_type LIBRARY RUNTIME ARCHIVE)
   if(_dartpy_output_dir)
-    set_target_properties(dartpy PROPERTIES
-      ${_type}_OUTPUT_DIRECTORY "${_dartpy_output_dir}"
-    )
+    set_target_properties(dartpy PROPERTIES ${_type}_OUTPUT_DIRECTORY "${_dartpy_output_dir}")
   endif()
 endforeach()
 if(CMAKE_CONFIGURATION_TYPES AND _dartpy_output_dir)
   foreach(_config ${CMAKE_CONFIGURATION_TYPES})
     string(TOUPPER ${_config} _config_upper)
     foreach(_type LIBRARY RUNTIME ARCHIVE)
-      set_target_properties(dartpy PROPERTIES
-        ${_type}_OUTPUT_DIRECTORY_${_config_upper} "${_dartpy_output_dir}"
-      )
+      set_target_properties(dartpy PROPERTIES ${_type}_OUTPUT_DIRECTORY_${_config_upper} "${_dartpy_output_dir}")
     endforeach()
   endforeach()
 endif()
 
 if(DEFINED SKBUILD_PLATLIB_DIR)
-  install(TARGETS dartpy
-    LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy"
-  )
-  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-                ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
-                ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
+  install(TARGETS dartpy LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy")
+  install(
+    FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
     DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy"
   )
 elseif(DEFINED PYTHON_SITE_PACKAGES)
-  install(TARGETS dartpy
-    LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy"
-  )
-  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-                ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
-                ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
+  install(TARGETS dartpy LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy")
+  install(
+    FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
     DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy"
   )
 endif()

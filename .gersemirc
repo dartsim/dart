@@ -1,0 +1,4 @@
+line_length: 136
+indent: 2
+list_expansion: favour-inlining
+warn_about_unknown_commands: false

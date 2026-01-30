@@ -36,12 +36,12 @@ execute_process(
   ERROR_QUIET
 )
 if(pytest_not_found)
-  message(WARNING "Running the tests requires pytest. Please install it manually"
-    " (try: ${Python3_EXECUTABLE} -m pip install pytest)"
-  )
+  message(WARNING "Running the tests requires pytest. Please install it manually" " (try: ${Python3_EXECUTABLE} -m pip install pytest)")
   set(DARTPY_PYTEST_FOUND FALSE)
 elseif(pytest_version VERSION_LESS 3.0)
-  message(WARNING "Running the tests requires pytest >= 3.0. Found: ${pytest_version}"
+  message(
+    WARNING
+    "Running the tests requires pytest >= 3.0. Found: ${pytest_version}"
     "Please update it (try: ${Python3_EXECUTABLE} -m pip install -U pytest)"
   )
   set(DARTPY_PYTEST_FOUND FALSE)
@@ -50,25 +50,24 @@ else()
 endif()
 set(DARTPY_PYTEST_FOUND ${DARTPY_PYTEST_FOUND} PARENT_SCOPE)
 
-set(dartpy_test_utils
-  util.py
-)
+set(dartpy_test_utils util.py)
 
 file(GLOB_RECURSE dartpy_test_files "test_*.py")
 
 # Add custom target to run the tests
 if(DARTPY_PYTEST_FOUND)
-  add_custom_target(pytest
+  add_custom_target(
+    pytest
     COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [sources]"
-    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHONPATH_ENV}" DARTPY_RUNTIME_DIR="${DART_DARTPY_RUNTIME_DIR}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_test_files} -v
+    COMMAND
+      ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHONPATH_ENV}" DARTPY_RUNTIME_DIR="${DART_DARTPY_RUNTIME_DIR}"
+      "${Python3_EXECUTABLE}" -m pytest ${dartpy_test_files} -v
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${dartpy_test_files} ${dartpy_test_utils}
     DEPENDS dartpy
   )
 else()
-  add_custom_target(pytest
-    COMMAND ${CMAKE_COMMAND} -E echo "Warning: Failed to run pytest because pytest is not found!"
-  )
+  add_custom_target(pytest COMMAND ${CMAKE_COMMAND} -E echo "Warning: Failed to run pytest because pytest is not found!")
 endif()
 
 #===============================================================================
@@ -82,9 +81,12 @@ function(dartpy_add_test test_name) # ARGN for source file
   else()
     set(source "${test_name}.py")
   endif()
-  add_custom_target(${test_name}
+  add_custom_target(
+    ${test_name}
     COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} ${source}"
-    COMMAND ${CMAKE_COMMAND} -E env "PYTHONPATH=${DART_PYTHONPATH_ENV}" DARTPY_RUNTIME_DIR="${DART_DARTPY_RUNTIME_DIR}" ${Python3_EXECUTABLE} ${source}
+    COMMAND
+      ${CMAKE_COMMAND} -E env "PYTHONPATH=${DART_PYTHONPATH_ENV}" DARTPY_RUNTIME_DIR="${DART_DARTPY_RUNTIME_DIR}" ${Python3_EXECUTABLE}
+      ${source}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${source}
     DEPENDS dartpy
