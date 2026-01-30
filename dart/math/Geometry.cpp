@@ -1531,7 +1531,10 @@ Eigen::Matrix3d computeRotation(
   result.col(++index % 3) = axis1;
   result.col(++index % 3) = axis2;
 
-  DART_ASSERT(verifyRotation(result));
+  if (!verifyRotation(result)) {
+    dtwarn << "[math::computeRotation] Non-finite rotation result.\n";
+    result = Eigen::Matrix3d::Identity();
+  }
 
   return result;
 }
@@ -1547,8 +1550,10 @@ Eigen::Isometry3d computeTransform(
   result.linear() = computeRotation(axis, axisType);
   result.translation() = translation;
 
-  // Verification
-  DART_ASSERT(verifyTransform(result));
+  if (!verifyTransform(result)) {
+    dtwarn << "[math::computeTransform] Non-finite transform result.\n";
+    result = Eigen::Isometry3d::Identity();
+  }
 
   return result;
 }

@@ -266,9 +266,16 @@ Errors Body::postprocess(const Body* parent, const Compiler& compiler)
             "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
             "The model file may contain extreme or invalid pose values.");
         mRelativeTransform = Eigen::Isometry3d::Identity();
+        mInertial.setRelativeTransform(Eigen::Isometry3d::Identity());
       }
     } else {
       mWorldTransform = mInertial.getWorldTransform();
+      if (!math::verifyTransform(mWorldTransform)) {
+        DART_WARN(
+            "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
+            "The model file may contain extreme or invalid pose values.");
+        mWorldTransform = Eigen::Isometry3d::Identity();
+      }
       if (parent != nullptr) {
         mRelativeTransform
             = parent->getWorldTransform().inverse() * mWorldTransform;
@@ -281,13 +288,6 @@ Errors Body::postprocess(const Body* parent, const Compiler& compiler)
         }
       } else {
         mRelativeTransform = mWorldTransform;
-        if (!math::verifyTransform(mRelativeTransform)) {
-          DART_WARN(
-              "[MjcfBody] Non-finite transform detected while parsing MJCF "
-              "body. "
-              "The model file may contain extreme or invalid pose values.");
-          mRelativeTransform = Eigen::Isometry3d::Identity();
-        }
       }
       mInertial.setRelativeTransform(Eigen::Isometry3d::Identity());
     }

@@ -635,7 +635,12 @@ void FreeJoint::updateRelativeTransform() const
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint * mQ
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
-  DART_ASSERT(math::verifyTransform(mT));
+  if (!math::verifyTransform(mT)) {
+    dtwarn << "[FreeJoint::updateRelativeTransform] Non-finite relative "
+              "transform detected in '"
+           << this->getName() << "'. Using identity.\n";
+    mT = Eigen::Isometry3d::Identity();
+  }
 }
 
 //==============================================================================

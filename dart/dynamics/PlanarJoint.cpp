@@ -272,8 +272,12 @@ void PlanarJoint::updateRelativeTransform() const
        * math::expAngular(mAspectProperties.mRotAxis * positions[2])
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
-  // Verification
-  DART_ASSERT(math::verifyTransform(mT));
+  if (!math::verifyTransform(mT)) {
+    dtwarn << "[PlanarJoint::updateRelativeTransform] Non-finite relative "
+              "transform detected in '"
+           << this->getName() << "'. Using identity.\n";
+    mT = Eigen::Isometry3d::Identity();
+  }
 }
 
 //==============================================================================
