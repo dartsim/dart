@@ -1,6 +1,7 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
 #include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/end_effector.hpp>
 #include <dart/dynamics/hierarchical_ik.hpp>
 #include <dart/dynamics/inverse_kinematics.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
@@ -15,6 +16,7 @@
 
 #include <limits>
 #include <memory>
+#include <span>
 #include <vector>
 
 using namespace dart;
@@ -500,4 +502,378 @@ TEST(HierarchicalIK, CompositeAndWholeBody)
   Eigen::VectorXd wbPositions;
   wholeBody->solveAndApply(wbPositions, false);
   EXPECT_EQ(wbPositions.size(), fixture.skeleton->getNumDofs());
+}
+
+namespace {
+
+struct IkChain
+{
+  SkeletonPtr skeleton;
+  BodyNode* root{nullptr};
+  BodyNode* mid{nullptr};
+  BodyNode* tip{nullptr};
+  EndEffector* endEffector{nullptr};
+};
+
+IkChain makeIkChain()
+{
+  IkChain chain;
+  chain.skeleton = Skeleton::create("ik_chain");
+
+  auto rootPair = chain.skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  rootPair.first->setAxis(Eigen::Vector3d::UnitZ());
+  rootPair.second->setName("root");
+  chain.root = rootPair.second;
+
+  auto midPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  midPair.first->setAxis(Eigen::Vector3d::UnitY());
+  midPair.second->setName("mid");
+  chain.mid = midPair.second;
+
+  auto tipPair
+      = midPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  tipPair.first->setAxis(Eigen::Vector3d::UnitX());
+  tipPair.second->setName("tip");
+  chain.tip = tipPair.second;
+
+  chain.endEffector = chain.tip->createEndEffector("ee");
+  Eigen::Isometry3d eeTf = Eigen::Isometry3d::Identity();
+  eeTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.2);
+  chain.endEffector->setDefaultRelativeTransform(eeTf, true);
+
+  return chain;
+}
+
+class SimpleIkObjective final : public InverseKinematics::Function,
+                                public math::Function
+{
+public:
+  explicit SimpleIkObjective(InverseKinematics* ik) : mIk(ik)
+  {
+    (void)mIk;
+  }
+
+  math::FunctionPtr clone(InverseKinematics* newIk) const override
+  {
+    return std::make_shared<SimpleIkObjective>(newIk);
+  }
+
+  double eval(const Eigen::VectorXd& x) override
+  {
+    return x.squaredNorm();
+  }
+
+  void evalGradient(
+      const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override
+  {
+    grad = 2.0 * x;
+  }
+
+private:
+  InverseKinematics* mIk;
+};
+
+class SimpleHierarchicalObjective final : public HierarchicalIK::Function,
+                                          public math::Function
+{
+public:
+  explicit SimpleHierarchicalObjective(
+      const std::shared_ptr<HierarchicalIK>& ik)
+    : mIk(ik)
+  {
+  }
+
+  math::FunctionPtr clone(
+      const std::shared_ptr<HierarchicalIK>& newIk) const override
+  {
+    return std::make_shared<SimpleHierarchicalObjective>(newIk);
+  }
+
+  double eval(const Eigen::VectorXd& x) override
+  {
+    return x.array().abs().sum();
+  }
+
+  void evalGradient(
+      const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override
+  {
+    grad = x.array().sign();
+  }
+
+private:
+  std::weak_ptr<HierarchicalIK> mIk;
+};
+
+class CoverageAnalytical final : public InverseKinematics::Analytical
+{
+public:
+  explicit CoverageAnalytical(InverseKinematics* ik)
+    : Analytical(ik, "CoverageAnalytical", Properties())
+  {
+    const auto dofs = ik->getDofs();
+    if (!dofs.empty()) {
+      mDofs.push_back(dofs.front());
+    }
+    if (dofs.size() > 1) {
+      mDofs.push_back(dofs[1]);
+    }
+  }
+
+  std::span<const Solution> computeSolutions(
+      const Eigen::Isometry3d& desiredTf) override
+  {
+    (void)desiredTf;
+    mSolutions.clear();
+
+    Eigen::VectorXd current = getPositions();
+    mSolutions.emplace_back(current, VALID);
+
+    Eigen::VectorXd outOfReach = current;
+    outOfReach.array() += 0.25;
+    mSolutions.emplace_back(outOfReach, OUT_OF_REACH);
+
+    Eigen::VectorXd limitViolation = current;
+    limitViolation.array() += 10.0;
+    mSolutions.emplace_back(limitViolation, VALID);
+
+    checkSolutionJointLimits();
+
+    return mSolutions;
+  }
+
+  std::span<const std::size_t> getDofs() const override
+  {
+    return mDofs;
+  }
+
+  std::unique_ptr<GradientMethod> clone(InverseKinematics* newIk) const override
+  {
+    return std::make_unique<CoverageAnalytical>(newIk);
+  }
+
+private:
+  std::vector<std::size_t> mDofs;
+};
+
+} // namespace
+
+TEST(InverseKinematics, AccessorsAndConfiguration)
+{
+  auto chain = makeIkChain();
+  auto ik = InverseKinematics::create(chain.endEffector);
+  ASSERT_NE(ik, nullptr);
+
+  ik->setInactive();
+  EXPECT_FALSE(ik->isActive());
+  ik->setActive(true);
+  EXPECT_TRUE(ik->isActive());
+
+  ik->setHierarchyLevel(2);
+  EXPECT_EQ(ik->getHierarchyLevel(), 2u);
+
+  ik->useChain();
+  const auto chainDofs = ik->getDofs();
+  EXPECT_FALSE(chainDofs.empty());
+
+  ik->useWholeBody();
+  const auto wholeBodyDofs = ik->getDofs();
+  EXPECT_GE(wholeBodyDofs.size(), chainDofs.size());
+
+  auto target = std::make_shared<SimpleFrame>(Frame::World(), "ik_target");
+  target->setTransform(chain.endEffector->getWorldTransform());
+  ik->setTarget(target);
+  EXPECT_EQ(ik->getTarget(), target);
+
+  ik->setTarget(nullptr);
+  EXPECT_NE(ik->getTarget(), nullptr);
+
+  EXPECT_FALSE(ik->hasOffset());
+  ik->setOffset(Eigen::Vector3d(0.1, -0.2, 0.3));
+  EXPECT_TRUE(ik->hasOffset());
+  EXPECT_TRUE(ik->getOffset().isApprox(Eigen::Vector3d(0.1, -0.2, 0.3)));
+
+  const auto jacobianWithOffset = ik->computeJacobian();
+  EXPECT_EQ(jacobianWithOffset.rows(), 6);
+
+  ik->setOffset(Eigen::Vector3d::Zero());
+  EXPECT_FALSE(ik->hasOffset());
+
+  std::vector<std::size_t> subsetDofs;
+  subsetDofs.push_back(wholeBodyDofs.front());
+  if (wholeBodyDofs.size() > 1) {
+    subsetDofs.push_back(wholeBodyDofs[1]);
+  }
+  ik->setDofs(
+      std::span<const std::size_t>(subsetDofs.data(), subsetDofs.size()));
+  EXPECT_EQ(ik->getDofs().size(), subsetDofs.size());
+
+  auto& tsr = ik->setErrorMethod<InverseKinematics::TaskSpaceRegion>();
+  tsr.setComputeFromCenter(false);
+  tsr.setBounds(
+      Eigen::Vector6d::Constant(-0.05), Eigen::Vector6d::Constant(0.05));
+  tsr.setAngularBounds(
+      Eigen::Vector3d::Constant(-0.01), Eigen::Vector3d::Constant(0.01));
+  tsr.setLinearBounds(
+      Eigen::Vector3d::Constant(-0.02), Eigen::Vector3d::Constant(0.02));
+  tsr.setErrorLengthClamp(0.5);
+  tsr.setAngularErrorWeights(Eigen::Vector3d::Constant(0.4));
+  tsr.setLinearErrorWeights(Eigen::Vector3d::Constant(1.2));
+
+  auto reference = std::make_shared<SimpleFrame>(Frame::World(), "ik_ref");
+  reference->setTransform(Eigen::Isometry3d::Identity());
+  tsr.setReferenceFrame(reference);
+  EXPECT_EQ(tsr.getReferenceFrame(), reference);
+
+  Eigen::VectorXd q = ik->getPositions();
+  const auto& error = tsr.evalError(q);
+  EXPECT_TRUE(error.array().isFinite().all());
+
+  const auto desiredTf = tsr.computeDesiredTransform(
+      chain.endEffector->getWorldTransform(), error);
+  EXPECT_TRUE(desiredTf.matrix().array().isFinite().all());
+
+  auto& transpose
+      = ik->setGradientMethod<InverseKinematics::JacobianTranspose>();
+  transpose.setComponentWiseClamp(0.1);
+  transpose.setComponentWeights(
+      Eigen::VectorXd::Constant(static_cast<int>(ik->getDofs().size()), 1.0));
+
+  Eigen::VectorXd grad = Eigen::VectorXd::Zero(q.size());
+  Eigen::Map<Eigen::VectorXd> gradMap(grad.data(), grad.size());
+  transpose.evalGradient(q, gradMap);
+  EXPECT_EQ(grad.size(), q.size());
+
+  auto& dls = ik->setGradientMethod<InverseKinematics::JacobianDLS>();
+  dls.setDampingCoefficient(0.08);
+  EXPECT_NEAR(dls.getDampingCoefficient(), 0.08, 1e-12);
+
+  auto solver = std::make_shared<math::GradientDescentSolver>();
+  solver->setNumMaxIterations(2);
+  solver->setTolerance(1e-6);
+  ik->setSolver(solver);
+  EXPECT_EQ(ik->getSolver(), solver);
+
+  Eigen::VectorXd solution;
+  EXPECT_TRUE(ik->findSolution(solution) || solution.size() > 0);
+  EXPECT_EQ(solution.size(), static_cast<int>(ik->getDofs().size()));
+}
+
+TEST(InverseKinematics, AnalyticalConfigurationAndClone)
+{
+  auto chain = makeIkChain();
+  auto ik = InverseKinematics::create(chain.endEffector);
+  ASSERT_NE(ik, nullptr);
+
+  auto target = std::make_shared<SimpleFrame>(Frame::World(), "ik_target2");
+  target->setTransform(chain.endEffector->getWorldTransform());
+  ik->setTarget(target);
+
+  auto& analytical = ik->setGradientMethod<CoverageAnalytical>();
+  analytical.setExtraDofUtilization(
+      InverseKinematics::Analytical::PRE_AND_POST_ANALYTICAL);
+  analytical.setExtraErrorLengthClamp(0.2);
+  analytical.setQualityComparisonFunction(
+      [](const Eigen::VectorXd&,
+         const Eigen::VectorXd&,
+         const InverseKinematics*) { return true; });
+
+  const auto solutions = analytical.getSolutions();
+  ASSERT_GE(solutions.size(), 1u);
+
+  Eigen::VectorXd q = ik->getPositions();
+  Eigen::VectorXd grad = Eigen::VectorXd::Zero(q.size());
+  Eigen::Map<Eigen::VectorXd> gradMap(grad.data(), grad.size());
+  analytical.evalGradient(q, gradMap);
+  EXPECT_EQ(grad.size(), q.size());
+
+  analytical.resetQualityComparisonFunction();
+  EXPECT_EQ(
+      analytical.getExtraDofUtilization(),
+      InverseKinematics::Analytical::PRE_AND_POST_ANALYTICAL);
+  EXPECT_NEAR(analytical.getExtraErrorLengthClamp(), 0.2, 1e-12);
+
+  ik->setObjective(std::make_shared<SimpleIkObjective>(ik.get()));
+
+  auto clonedSkel = chain.skeleton->cloneSkeleton();
+  auto* clonedEnd = clonedSkel->getEndEffector("ee");
+  ASSERT_NE(clonedEnd, nullptr);
+
+  auto clonedIk = ik->clone(clonedEnd);
+  ASSERT_NE(clonedIk, nullptr);
+  EXPECT_EQ(clonedIk->getNode()->getName(), chain.endEffector->getName());
+  EXPECT_EQ(clonedIk->getDofs().size(), ik->getDofs().size());
+  EXPECT_EQ(
+      clonedIk->getErrorMethod().getMethodName(),
+      ik->getErrorMethod().getMethodName());
+}
+
+TEST(HierarchicalIK, ObjectiveConstraintAndClone)
+{
+  auto chain = makeIkChain();
+  auto endIk = chain.endEffector->getOrCreateIK();
+  auto rootIk = chain.root->getOrCreateIK();
+  ASSERT_NE(endIk, nullptr);
+  ASSERT_NE(rootIk, nullptr);
+
+  endIk->setHierarchyLevel(1);
+  rootIk->setHierarchyLevel(0);
+
+  auto target = std::make_shared<SimpleFrame>(Frame::World(), "hik_target");
+  target->setTransform(chain.endEffector->getWorldTransform());
+  endIk->setTarget(target);
+
+  auto composite = CompositeIK::create(chain.skeleton);
+  ASSERT_NE(composite, nullptr);
+  EXPECT_TRUE(composite->addModule(endIk));
+  EXPECT_TRUE(composite->addModule(rootIk));
+
+  auto objective = std::make_shared<SimpleHierarchicalObjective>(composite);
+  composite->setObjective(objective);
+  composite->setNullSpaceObjective(objective);
+  EXPECT_TRUE(composite->hasNullSpaceObjective());
+
+  composite->refreshIKHierarchy();
+  EXPECT_FALSE(composite->getIKHierarchy().empty());
+
+  const auto problem = composite->getProblem();
+  ASSERT_NE(problem, nullptr);
+  ASSERT_NE(problem->getObjective(), nullptr);
+  ASSERT_NE(problem->getEqConstraint(0u), nullptr);
+
+  Eigen::VectorXd q = composite->getSkeleton()->getPositions();
+  const double cost = problem->getObjective()->eval(q);
+  EXPECT_GE(cost, 0.0);
+
+  Eigen::VectorXd grad = Eigen::VectorXd::Zero(q.size());
+  Eigen::Map<Eigen::VectorXd> gradMap(grad.data(), grad.size());
+  problem->getObjective()->evalGradient(q, gradMap);
+  EXPECT_TRUE(grad.array().isFinite().all());
+
+  const double constraint = problem->getEqConstraint(0u)->eval(q);
+  EXPECT_GE(constraint, 0.0);
+
+  grad.setZero();
+  problem->getEqConstraint(0u)->evalGradient(q, gradMap);
+  EXPECT_TRUE(grad.array().isFinite().all());
+
+  auto solver = std::dynamic_pointer_cast<math::GradientDescentSolver>(
+      composite->getSolver());
+  ASSERT_NE(solver, nullptr);
+  solver->setNumMaxIterations(2);
+
+  Eigen::VectorXd positions;
+  composite->solveAndApply(positions, false);
+  EXPECT_EQ(positions.size(), composite->getSkeleton()->getNumDofs());
+
+  auto clonedSkel = chain.skeleton->cloneSkeleton();
+  auto clonedComposite = composite->cloneCompositeIK(clonedSkel);
+  ASSERT_NE(clonedComposite, nullptr);
+  EXPECT_EQ(
+      clonedComposite->getSkeleton()->getNumDofs(), clonedSkel->getNumDofs());
+
+  auto wholeBody = WholeBodyIK::create(chain.skeleton);
+  ASSERT_NE(wholeBody, nullptr);
+  wholeBody->refreshIKHierarchy();
+  EXPECT_FALSE(wholeBody->getIKHierarchy().empty());
 }

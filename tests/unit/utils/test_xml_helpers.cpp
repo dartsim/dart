@@ -607,3 +607,50 @@ TEST(XmlHelpers, GetValueBoolNumericValues)
   EXPECT_TRUE(getValueBool(root, "trueFlag"));
   EXPECT_FALSE(getValueBool(root, "falseFlag"));
 }
+
+//==============================================================================
+TEST(XmlHelpers, AttributeParsingAndErrors)
+{
+  const char* xml =
+      R"(<root bool="true" int="7" uint="9" float="1.5" double="2.25" char="A"
+              v2i="1 2" v2d="3 4" v3d="5 6 7" v4d="1 2 3 4" v6d="1 2 3 4 5 6"
+              bad_int="nope" bad_double="nope" />)";
+  tinyxml2::XMLDocument doc;
+  doc.Parse(xml);
+  const auto* root = doc.FirstChildElement("root");
+  ASSERT_NE(root, nullptr);
+
+  EXPECT_TRUE(getAttributeBool(root, "bool"));
+  EXPECT_EQ(getAttributeInt(root, "int"), 7);
+  EXPECT_EQ(getAttributeUInt(root, "uint"), 9u);
+  EXPECT_FLOAT_EQ(getAttributeFloat(root, "float"), 1.5f);
+  EXPECT_DOUBLE_EQ(getAttributeDouble(root, "double"), 2.25);
+  EXPECT_EQ(getAttributeChar(root, "char"), 'A');
+  EXPECT_EQ(getAttributeVector2i(root, "v2i"), Eigen::Vector2i(1, 2));
+  EXPECT_TRUE(
+      getAttributeVector2d(root, "v2d").isApprox(Eigen::Vector2d(3.0, 4.0)));
+  EXPECT_TRUE(getAttributeVector3d(root, "v3d")
+                  .isApprox(Eigen::Vector3d(5.0, 6.0, 7.0)));
+  EXPECT_TRUE(getAttributeVector4d(root, "v4d")
+                  .isApprox(Eigen::Vector4d(1.0, 2.0, 3.0, 4.0)));
+  EXPECT_TRUE(getAttributeVector6d(root, "v6d")
+                  .isApprox(Eigen::Vector6d(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)));
+
+  EXPECT_EQ(getAttributeString(root, "missing"), "");
+  EXPECT_FALSE(getAttributeBool(root, "missing_bool"));
+  EXPECT_EQ(getAttributeInt(root, "bad_int"), 0);
+  EXPECT_DOUBLE_EQ(getAttributeDouble(root, "bad_double"), 0.0);
+  EXPECT_EQ(getAttributeChar(root, "missing_char"), '\0');
+
+  const char* valuesXml
+      = R"(<values><value_int>5</value_int><value_vec3>1 2 3</value_vec3></values>)";
+  tinyxml2::XMLDocument valuesDoc;
+  valuesDoc.Parse(valuesXml);
+  const auto* values = valuesDoc.FirstChildElement("values");
+  ASSERT_NE(values, nullptr);
+
+  EXPECT_EQ(getValueInt(values, "value_int"), 5);
+  EXPECT_TRUE(getValueVector3d(values, "value_vec3")
+                  .isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_THROW(getValueDouble(values, "missing"), std::runtime_error);
+}

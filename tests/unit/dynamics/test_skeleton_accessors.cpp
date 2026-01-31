@@ -30,8 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../../helpers/dynamics_helpers.hpp"
+
+#include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/end_effector.hpp>
+#include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/group.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
@@ -41,7 +45,10 @@
 
 #include <dart/common/deprecated.hpp>
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
+
+#include <vector>
 
 #include <cmath>
 
@@ -1835,4 +1842,255 @@ TEST(SkeletonCOM, COMLinearAcceleration)
   auto comLinAcc = skeleton->getCOMLinearAcceleration();
   EXPECT_EQ(comLinAcc.size(), 3);
   EXPECT_TRUE(comLinAcc.array().isFinite().all());
+}
+
+namespace {
+
+SkeletonPtr createCoverageSkeleton()
+{
+  return createNLinkRobot(4, Eigen::Vector3d(0.2, 0.1, 0.3), DOF_YAW, false);
+}
+
+Eigen::VectorXd makeSequence(std::size_t size, double start, double step)
+{
+  Eigen::VectorXd values(static_cast<Eigen::Index>(size));
+  for (std::size_t i = 0; i < size; ++i) {
+    values[static_cast<Eigen::Index>(i)]
+        = start + step * static_cast<double>(i);
+  }
+  return values;
+}
+
+} // namespace
+
+//==============================================================================
+TEST(SkeletonConfiguration, ConfigurationFlagsAndSegments)
+{
+  auto skeleton = createCoverageSkeleton();
+  const std::size_t dofs = skeleton->getNumDofs();
+  ASSERT_GE(dofs, 4u);
+
+  const Eigen::VectorXd positions = makeSequence(dofs, 0.2, 0.1);
+  const Eigen::VectorXd velocities = makeSequence(dofs, -0.3, 0.05);
+  const Eigen::VectorXd accelerations = makeSequence(dofs, 0.4, 0.02);
+  const Eigen::VectorXd forces = makeSequence(dofs, 1.0, -0.1);
+  const Eigen::VectorXd commands = makeSequence(dofs, -0.5, 0.15);
+
+  skeleton->setPositions(positions);
+  skeleton->setVelocities(velocities);
+  skeleton->setAccelerations(accelerations);
+  skeleton->setForces(forces);
+  skeleton->setCommands(commands);
+
+  const std::vector<std::size_t> indices = {0u, 2u, 3u};
+  const Eigen::VectorXd posSubset = makeSequence(indices.size(), 1.1, 0.2);
+  const Eigen::VectorXd velSubset = makeSequence(indices.size(), -1.0, 0.3);
+  const Eigen::VectorXd accSubset = makeSequence(indices.size(), 0.7, -0.05);
+  const Eigen::VectorXd forceSubset = makeSequence(indices.size(), 2.0, -0.25);
+  const Eigen::VectorXd cmdSubset = makeSequence(indices.size(), -1.5, 0.4);
+
+  skeleton->setPositions(indices, posSubset);
+  skeleton->setVelocities(indices, velSubset);
+  skeleton->setAccelerations(indices, accSubset);
+  skeleton->setForces(indices, forceSubset);
+  skeleton->setCommands(indices, cmdSubset);
+
+  EXPECT_TRUE(skeleton->getPositions(indices).isApprox(posSubset));
+  EXPECT_TRUE(skeleton->getVelocities(indices).isApprox(velSubset));
+  EXPECT_TRUE(skeleton->getAccelerations(indices).isApprox(accSubset));
+  EXPECT_TRUE(skeleton->getForces(indices).isApprox(forceSubset));
+  EXPECT_TRUE(skeleton->getCommands(indices).isApprox(cmdSubset));
+
+  const auto config = skeleton->getConfiguration(
+      indices, Skeleton::CONFIG_POSITIONS | Skeleton::CONFIG_FORCES);
+  EXPECT_EQ(
+      config.mPositions.size(), static_cast<Eigen::Index>(indices.size()));
+  EXPECT_EQ(config.mVelocities.size(), 0);
+  EXPECT_EQ(config.mAccelerations.size(), 0);
+  EXPECT_EQ(config.mForces.size(), static_cast<Eigen::Index>(indices.size()));
+  EXPECT_EQ(config.mCommands.size(), 0);
+  EXPECT_TRUE(config.mPositions.isApprox(posSubset));
+  EXPECT_TRUE(config.mForces.isApprox(forceSubset));
+
+  Skeleton::Configuration updateConfig(
+      indices, posSubset, velSubset, accSubset, forceSubset, cmdSubset);
+  skeleton->setConfiguration(updateConfig);
+  EXPECT_TRUE(skeleton->getCommands(indices).isApprox(cmdSubset));
+
+  skeleton->resetPositions();
+  skeleton->resetVelocities();
+  skeleton->resetAccelerations();
+  skeleton->resetCommands();
+  skeleton->resetGeneralizedForces();
+
+  EXPECT_TRUE(skeleton->getPositions().isZero());
+  EXPECT_TRUE(skeleton->getVelocities().isZero());
+  EXPECT_TRUE(skeleton->getAccelerations().isZero());
+  EXPECT_TRUE(skeleton->getCommands().isZero());
+  EXPECT_TRUE(skeleton->getForces().isZero());
+}
+
+//==============================================================================
+TEST(SkeletonForces, LimitsAndForces)
+{
+  auto skeleton = createCoverageSkeleton();
+  const std::size_t dofs = skeleton->getNumDofs();
+  ASSERT_GE(dofs, 4u);
+
+  const Eigen::VectorXd accLower = makeSequence(dofs, -2.0, -0.5);
+  const Eigen::VectorXd accUpper = makeSequence(dofs, 2.0, 0.5);
+  skeleton->setAccelerationLowerLimits(accLower);
+  skeleton->setAccelerationUpperLimits(accUpper);
+  EXPECT_TRUE(skeleton->getAccelerationLowerLimits().isApprox(accLower));
+  EXPECT_TRUE(skeleton->getAccelerationUpperLimits().isApprox(accUpper));
+
+  const std::vector<std::size_t> indices = {1u, 3u};
+  Eigen::VectorXd forceLower(indices.size());
+  forceLower << -4.0, -6.0;
+  Eigen::VectorXd forceUpper(indices.size());
+  forceUpper << 4.0, 6.0;
+  skeleton->setForceLowerLimits(indices, forceLower);
+  skeleton->setForceUpperLimits(indices, forceUpper);
+  EXPECT_TRUE(skeleton->getForceLowerLimits(indices).isApprox(forceLower));
+  EXPECT_TRUE(skeleton->getForceUpperLimits(indices).isApprox(forceUpper));
+
+  skeleton->setForce(0, 3.25);
+  EXPECT_NEAR(skeleton->getForce(0), 3.25, 1e-12);
+
+  auto* body = skeleton->getBodyNode(0);
+  ASSERT_NE(body, nullptr);
+  body->addExtForce(
+      Eigen::Vector3d(1.0, -0.5, 0.25), Eigen::Vector3d::Zero(), true, true);
+
+  skeleton->setJointConstraintImpulses(
+      Eigen::VectorXd::Ones(static_cast<Eigen::Index>(dofs)));
+  skeleton->setForces(Eigen::VectorXd::Ones(static_cast<Eigen::Index>(dofs)));
+
+  skeleton->clearExternalForces();
+  skeleton->clearInternalForces();
+  skeleton->clearConstraintImpulses();
+
+  EXPECT_TRUE(skeleton->getExternalForces().isZero());
+  EXPECT_TRUE(skeleton->getForces().isZero());
+  EXPECT_TRUE(skeleton->getJointConstraintImpulses().isZero());
+}
+
+//==============================================================================
+TEST(SkeletonDynamics, DynamicsAndJacobians)
+{
+  auto skeleton = createCoverageSkeleton();
+  const std::size_t dofs = skeleton->getNumDofs();
+  ASSERT_GE(dofs, 3u);
+
+  skeleton->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  skeleton->setPositions(makeSequence(dofs, 0.1, 0.05));
+  skeleton->setVelocities(makeSequence(dofs, 0.2, -0.04));
+  skeleton->setAccelerations(makeSequence(dofs, -0.1, 0.03));
+  skeleton->setForces(makeSequence(dofs, 1.0, 0.25));
+
+  skeleton->computeForwardKinematics(true, true, true);
+  skeleton->computeForwardDynamics();
+  skeleton->computeInverseDynamics(true, true, true);
+
+  const auto& M = skeleton->getMassMatrix();
+  const auto& Mtree = skeleton->getMassMatrix(0);
+  EXPECT_EQ(M.rows(), static_cast<Eigen::Index>(dofs));
+  EXPECT_EQ(M.cols(), static_cast<Eigen::Index>(dofs));
+  EXPECT_TRUE(M.isApprox(Mtree));
+
+  const auto& Maug = skeleton->getAugMassMatrix();
+  const auto& MaugTree = skeleton->getAugMassMatrix(0);
+  EXPECT_TRUE(Maug.isApprox(MaugTree));
+
+  const auto& Minv = skeleton->getInvMassMatrix();
+  const auto& MinvTree = skeleton->getInvMassMatrix(0);
+  EXPECT_TRUE(Minv.isApprox(MinvTree));
+
+  const auto& MinvAug = skeleton->getInvAugMassMatrix();
+  const auto& MinvAugTree = skeleton->getInvAugMassMatrix(0);
+  EXPECT_TRUE(MinvAug.isApprox(MinvAugTree));
+
+  const auto& coriolis = skeleton->getCoriolisForces();
+  const auto& coriolisTree = skeleton->getCoriolisForces(0);
+  EXPECT_EQ(coriolis.size(), static_cast<Eigen::Index>(dofs));
+  EXPECT_TRUE(coriolis.isApprox(coriolisTree));
+
+  const auto& gravity = skeleton->getGravityForces();
+  const auto& gravityTree = skeleton->getGravityForces(0);
+  EXPECT_EQ(gravity.size(), static_cast<Eigen::Index>(dofs));
+  EXPECT_TRUE(gravity.isApprox(gravityTree));
+
+  const auto& combined = skeleton->getCoriolisAndGravityForces();
+  const auto& combinedTree = skeleton->getCoriolisAndGravityForces(0);
+  EXPECT_EQ(combined.size(), static_cast<Eigen::Index>(dofs));
+  EXPECT_TRUE(combined.isApprox(combinedTree));
+
+  const auto& external = skeleton->getExternalForces();
+  const auto& externalTree = skeleton->getExternalForces(0);
+  EXPECT_EQ(external.size(), static_cast<Eigen::Index>(dofs));
+  EXPECT_TRUE(external.isApprox(externalTree));
+
+  const auto& constraints = skeleton->getConstraintForces();
+  const auto& constraintsTree = skeleton->getConstraintForces(0);
+  EXPECT_EQ(constraints.size(), static_cast<Eigen::Index>(dofs));
+  EXPECT_TRUE(constraints.isApprox(constraintsTree));
+
+  const double kinetic = skeleton->computeKineticEnergy();
+  const double potential = skeleton->computePotentialEnergy();
+  const double lagrangian = skeleton->computeLagrangian();
+  EXPECT_TRUE(std::isfinite(kinetic));
+  EXPECT_TRUE(std::isfinite(potential));
+  EXPECT_NEAR(lagrangian, kinetic - potential, 1e-10);
+
+  const auto Jcom = skeleton->getCOMJacobian();
+  const auto JcomLinear = skeleton->getCOMLinearJacobian();
+  const auto JcomDot = skeleton->getCOMJacobianSpatialDeriv();
+  const auto JcomLinearDot = skeleton->getCOMLinearJacobianDeriv();
+  EXPECT_EQ(Jcom.rows(), 6);
+  EXPECT_EQ(Jcom.cols(), static_cast<Eigen::Index>(dofs));
+  EXPECT_EQ(JcomLinear.rows(), 3);
+  EXPECT_EQ(JcomLinear.cols(), static_cast<Eigen::Index>(dofs));
+  EXPECT_EQ(JcomDot.rows(), 6);
+  EXPECT_EQ(JcomDot.cols(), static_cast<Eigen::Index>(dofs));
+  EXPECT_EQ(JcomLinearDot.rows(), 3);
+  EXPECT_EQ(JcomLinearDot.cols(), static_cast<Eigen::Index>(dofs));
+  EXPECT_TRUE(Jcom.array().isFinite().all());
+  EXPECT_TRUE(JcomLinear.array().isFinite().all());
+  EXPECT_TRUE(JcomDot.array().isFinite().all());
+  EXPECT_TRUE(JcomLinearDot.array().isFinite().all());
+
+  const auto* bodyA = skeleton->getBodyNode(0);
+  const auto* bodyB = skeleton->getBodyNode(1);
+  ASSERT_NE(bodyA, nullptr);
+  ASSERT_NE(bodyB, nullptr);
+
+  const Eigen::Vector3d offset(0.05, -0.02, 0.08);
+  const auto Jrel = skeleton->getJacobian(bodyA, bodyB, Frame::World());
+  const auto JrelOffset
+      = skeleton->getJacobian(bodyA, offset, bodyB, Frame::World());
+  const auto JlinRel
+      = skeleton->getLinearJacobian(bodyA, bodyB, Frame::World());
+  const auto JlinRelOffset
+      = skeleton->getLinearJacobian(bodyA, offset, bodyB, Frame::World());
+  const auto JangRel
+      = skeleton->getAngularJacobian(bodyA, bodyB, Frame::World());
+  const auto JspatialRel
+      = skeleton->getJacobianSpatialDeriv(bodyA, bodyB, Frame::World());
+  const auto JspatialRelOffset
+      = skeleton->getJacobianSpatialDeriv(bodyA, offset, bodyB, Frame::World());
+  const auto JclassicRel
+      = skeleton->getJacobianClassicDeriv(bodyA, Frame::World());
+  const auto JlinRelDot
+      = skeleton->getLinearJacobianDeriv(bodyA, offset, Frame::World());
+
+  EXPECT_EQ(Jrel.rows(), 6);
+  EXPECT_EQ(Jrel.cols(), static_cast<Eigen::Index>(dofs));
+  EXPECT_EQ(JrelOffset.rows(), 6);
+  EXPECT_EQ(JlinRel.rows(), 3);
+  EXPECT_EQ(JlinRelOffset.rows(), 3);
+  EXPECT_EQ(JangRel.rows(), 3);
+  EXPECT_EQ(JspatialRel.rows(), 6);
+  EXPECT_EQ(JspatialRelOffset.rows(), 6);
+  EXPECT_EQ(JclassicRel.rows(), 6);
+  EXPECT_EQ(JlinRelDot.rows(), 3);
 }

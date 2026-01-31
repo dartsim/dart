@@ -247,6 +247,20 @@ double readColladaUnitScale(const std::string& path)
   }
 }
 
+std::shared_ptr<math::TriMesh<double>> createTetraMesh()
+{
+  auto mesh = std::make_shared<math::TriMesh<double>>();
+  mesh->addVertex(0.0, 0.0, 0.0);
+  mesh->addVertex(1.0, 0.0, 0.0);
+  mesh->addVertex(0.0, 1.0, 0.0);
+  mesh->addVertex(0.0, 0.0, 1.0);
+  mesh->addTriangle(0, 1, 2);
+  mesh->addTriangle(0, 1, 3);
+  mesh->addTriangle(0, 2, 3);
+  mesh->addTriangle(1, 2, 3);
+  return mesh;
+}
+
 } // namespace
 
 TEST(MeshShapeTest, CloneCreatesIndependentScene)
@@ -811,4 +825,37 @@ TEST(ArrowShapeTest, MaterialCountIsInitialized)
   EXPECT_EQ(scene->mNumMaterials, 1u);
   ASSERT_NE(scene->mMaterials, nullptr);
   EXPECT_NE(scene->mMaterials[0], nullptr);
+}
+
+TEST(MeshShapeTest, ScaleColorAndInertia)
+{
+  auto mesh = createTetraMesh();
+  dynamics::MeshShape shape(Eigen::Vector3d(1.0, 2.0, 3.0), mesh);
+
+  EXPECT_TRUE(shape.getScale().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+
+  shape.setScale(2.0);
+  EXPECT_TRUE(shape.getScale().isApprox(Eigen::Vector3d::Constant(2.0)));
+
+  shape.setScale(Eigen::Vector3d(1.0, 0.5, 2.0));
+  EXPECT_TRUE(shape.getScale().isApprox(Eigen::Vector3d(1.0, 0.5, 2.0)));
+
+  shape.setColorMode(dynamics::MeshShape::COLOR_INDEX);
+  shape.setColorIndex(1);
+  shape.setAlphaMode(dynamics::MeshShape::SHAPE_ALPHA);
+  EXPECT_EQ(shape.getColorMode(), dynamics::MeshShape::COLOR_INDEX);
+  EXPECT_EQ(shape.getColorIndex(), 1);
+  EXPECT_EQ(shape.getAlphaMode(), dynamics::MeshShape::SHAPE_ALPHA);
+
+  shape.setScale(Eigen::Vector3d::Ones());
+  Eigen::Matrix3d inertia = shape.computeInertia(5.0);
+  EXPECT_TRUE(inertia.array().isFinite().all());
+  EXPECT_NEAR((inertia - inertia.transpose()).norm(), 0.0, 1e-12);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* sceneA = shape.getMesh();
+  const aiScene* sceneB = shape.getMesh();
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(sceneA, nullptr);
+  EXPECT_EQ(sceneA, sceneB);
 }

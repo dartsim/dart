@@ -39,6 +39,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <limits>
 #include <span>
 #include <vector>
 
@@ -1523,3 +1524,41 @@ TEST(Geometry, ComputeSupportPolygonWithIndices)
   EXPECT_EQ(indices.size(), 3u);
 }
 #endif // !DART_OS_WINDOWS
+
+//==============================================================================
+TEST(Geometry, EulerAndLogMapEdges)
+{
+  const Eigen::Vector3d nearPos(0.0, math::half_pi, 0.2);
+  const Eigen::Matrix3d rPos = math::eulerXYZToMatrix(nearPos);
+  const Eigen::Vector3d recoveredPos = math::matrixToEulerXYZ(rPos);
+  EXPECT_TRUE(math::eulerXYZToMatrix(recoveredPos).isApprox(rPos, 1e-12));
+
+  const Eigen::Vector3d nearNeg(0.0, -math::half_pi, -0.25);
+  const Eigen::Matrix3d rNeg = math::eulerXYZToMatrix(nearNeg);
+  const Eigen::Vector3d recoveredNeg = math::matrixToEulerXYZ(rNeg);
+  EXPECT_TRUE(math::eulerXYZToMatrix(recoveredNeg).isApprox(rNeg, 1e-12));
+
+  Eigen::Isometry3d nearPi = Eigen::Isometry3d::Identity();
+  nearPi.linear() = Eigen::AngleAxisd(math::pi - 1e-7, Eigen::Vector3d::UnitZ())
+                        .toRotationMatrix();
+  nearPi.translation() = Eigen::Vector3d(0.4, -0.2, 0.1);
+  const Eigen::Vector6d twistPi = math::logMap(nearPi);
+  const Eigen::Isometry3d roundTripPi = math::expMap(twistPi);
+  EXPECT_TRUE(nearPi.matrix().isApprox(roundTripPi.matrix(), 1e-6));
+
+  Eigen::Isometry3d nearZero = Eigen::Isometry3d::Identity();
+  nearZero.linear()
+      = Eigen::AngleAxisd(1e-9, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  nearZero.translation() = Eigen::Vector3d(0.1, 0.2, -0.3);
+  const Eigen::Vector6d twistZero = math::logMap(nearZero);
+  const Eigen::Isometry3d roundTripZero = math::expMap(twistZero);
+  EXPECT_TRUE(nearZero.matrix().isApprox(roundTripZero.matrix(), 1e-6));
+
+  Eigen::Matrix3d invalidRot = Eigen::Matrix3d::Identity();
+  invalidRot(0, 0) = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_FALSE(math::verifyRotation(invalidRot));
+
+  Eigen::Isometry3d invalidTf = Eigen::Isometry3d::Identity();
+  invalidTf.translation()[0] = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_FALSE(math::verifyTransform(invalidTf));
+}

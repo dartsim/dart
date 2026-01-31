@@ -37,6 +37,8 @@
 
 #include <gtest/gtest.h>
 
+#include <utility>
+
 using namespace dart;
 using namespace dart::dynamics;
 
@@ -221,6 +223,33 @@ TEST(BodyNodePtrTest, SetSamePointer)
   BodyNodePtr ptr(rawPtr);
   ptr.set(rawPtr); // Should be a no-op
   EXPECT_EQ(ptr.get(), rawPtr);
+}
+
+TEST(BodyNodePtrTest, ComparisonsAndSwap)
+{
+  auto skeleton = createChainSkeleton(2);
+  BodyNode* first = skeleton->getBodyNode(0);
+  BodyNode* second = skeleton->getBodyNode(1);
+
+  BodyNodePtr ptrA(first);
+  BodyNodePtr ptrB(second);
+  BodyNodePtr copy(ptrA);
+
+  EXPECT_TRUE(ptrA == first);
+  EXPECT_TRUE(ptrA != second);
+  EXPECT_TRUE(ptrA == copy);
+  EXPECT_TRUE(ptrA != ptrB);
+  EXPECT_FALSE(ptrA == nullptr);
+  EXPECT_TRUE(nullptr == BodyNodePtr());
+
+  std::swap(ptrA, ptrB);
+  EXPECT_EQ(ptrA.get(), second);
+  EXPECT_EQ(ptrB.get(), first);
+
+  ptrA.set(first);
+  EXPECT_EQ(ptrA.get(), first);
+  ptrA.set(nullptr);
+  EXPECT_EQ(ptrA.get(), nullptr);
 }
 
 TEST(BodyNodePtrTest, KeepsSkeletonAlive)

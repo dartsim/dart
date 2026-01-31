@@ -624,3 +624,58 @@ TEST(CollisionGroupTests, AddShapeFrameNullptrIsNoOp)
   group->addShapeFrame(nullptr);
   EXPECT_EQ(group->getNumShapeFrames(), 0u);
 }
+
+//==============================================================================
+TEST(CollisionGroupTests, SubscribedSkeletonUpdatesOnShapeChange)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto skel = Skeleton::create("update_skel");
+  auto pair = skel->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr,
+      dynamics::FreeJoint::Properties(),
+      dynamics::BodyNode::AspectProperties("body"));
+  auto shapeNode = pair.second->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+
+  group->subscribeTo(dynamics::ConstMetaSkeletonPtr(skel));
+  group->update();
+  EXPECT_TRUE(group->hasShapeFrame(shapeNode));
+
+  shapeNode->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(2.0)));
+  group->update();
+
+  EXPECT_TRUE(group->hasShapeFrame(shapeNode));
+  EXPECT_EQ(group->getNumShapeFrames(), 1u);
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, SubscribedSkeletonTracksNewBody)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto skel = Skeleton::create("dynamic_skel");
+  auto pair = skel->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr,
+      dynamics::FreeJoint::Properties(),
+      dynamics::BodyNode::AspectProperties("body0"));
+  pair.second->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+
+  group->subscribeTo(dynamics::ConstMetaSkeletonPtr(skel));
+  group->update();
+  EXPECT_EQ(group->getNumShapeFrames(), 1u);
+
+  auto pair2 = skel->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      pair.second,
+      dynamics::FreeJoint::Properties(),
+      dynamics::BodyNode::AspectProperties("body1"));
+  pair2.second->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+
+  group->update();
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+}

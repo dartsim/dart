@@ -3,11 +3,13 @@
 #include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/point_mass.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/soft_mesh_shape.hpp>
 
+#include <Eigen/Dense>
 #include <gtest/gtest.h>
 
 #include <cmath>
@@ -552,4 +554,97 @@ TEST(SoftBodyNode, ChainWithSoftBody)
   const auto& M = skeleton->getMassMatrix();
   EXPECT_EQ(M.rows(), 2);
   EXPECT_EQ(M.cols(), 2);
+}
+
+namespace {
+
+SoftBodyNode* createCoverageBoxSoftBody(const SkeletonPtr& skeleton)
+{
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.6),
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3i(3, 3, 3),
+      2.0,
+      15.0,
+      20.0,
+      0.05);
+  return softBody;
+}
+
+} // namespace
+
+//==============================================================================
+TEST(SoftBodyNode, DerivativeUpdatesWithWorldStep)
+{
+  auto skeleton = Skeleton::create("soft-derivative");
+  auto* softBody = createCoverageBoxSoftBody(skeleton);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+
+  const auto dofs = skeleton->getNumDofs();
+  skeleton->setPositions(Eigen::VectorXd::Constant(dofs, 0.15));
+  skeleton->setVelocities(Eigen::VectorXd::LinSpaced(dofs, 0.1, 0.2));
+  skeleton->setAccelerations(Eigen::VectorXd::Constant(dofs, -0.05));
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    auto* pm = softBody->getPointMass(i);
+    ASSERT_NE(pm, nullptr);
+    pm->setVelocities(Eigen::Vector3d(0.1, -0.2, 0.3));
+    pm->setForces(Eigen::Vector3d(1.0, -0.5, 0.2));
+    if (i % 2 == 0) {
+      pm->addExtForce(Eigen::Vector3d(0.3, 0.1, -0.2));
+    }
+  }
+
+  auto world = simulation::World::create();
+  world->addSkeleton(skeleton);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->setTimeStep(1e-3);
+
+  const auto massMatrix = skeleton->getMassMatrix();
+  const auto coriolis = skeleton->getCoriolisAndGravityForces();
+
+  EXPECT_EQ(massMatrix.rows(), dofs);
+  EXPECT_EQ(coriolis.size(), dofs);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, PointMassStateAccessors)
+{
+  auto skeleton = Skeleton::create("soft-point-mass-state");
+  auto* softBody = createCoverageBoxSoftBody(skeleton);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  auto& state = pm->getState();
+  state.mPositions = Eigen::Vector3d(0.2, -0.1, 0.05);
+  state.mVelocities = Eigen::Vector3d(0.4, 0.0, -0.3);
+  state.mAccelerations = Eigen::Vector3d(-0.2, 0.1, 0.05);
+  state.mForces = Eigen::Vector3d(2.0, -1.5, 0.5);
+
+  EXPECT_TRUE(pm->getPositions().isApprox(state.mPositions));
+  EXPECT_TRUE(pm->getVelocities().isApprox(state.mVelocities));
+  EXPECT_TRUE(pm->getAccelerations().isApprox(state.mAccelerations));
+  EXPECT_TRUE(pm->getForces().isApprox(state.mForces));
+
+  const auto* constPm = pm;
+  const auto& constState = constPm->getState();
+  EXPECT_TRUE(constState.mPositions.isApprox(state.mPositions));
+
+  auto world = simulation::World::create();
+  world->addSkeleton(skeleton);
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  world->setTimeStep(1e-3);
+
+  for (int step = 0; step < 2; ++step) {
+    world->step();
+  }
+
+  EXPECT_TRUE(pm->getVelocities().array().isFinite().all());
+  EXPECT_TRUE(pm->getAccelerations().array().isFinite().all());
+  EXPECT_TRUE(pm->getForces().array().isFinite().all());
 }

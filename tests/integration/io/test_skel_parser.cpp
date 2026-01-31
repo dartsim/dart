@@ -683,3 +683,61 @@ TEST(SkelParser, AdditionalSampleFilesLoad)
     EXPECT_GT(world->getNumSkeletons(), 0u);
   }
 }
+
+//==============================================================================
+TEST(SkelParser, SoftBodiesWorldProperties)
+{
+  const auto world
+      = utils::SkelParser::readWorld("dart://sample/skel/softBodies.skel");
+  ASSERT_NE(world, nullptr);
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), 0.001);
+  EXPECT_TRUE(world->getGravity().isApprox(Eigen::Vector3d(0.0, -9.81, 0.0)));
+
+  const auto detector = world->getConstraintSolver()->getCollisionDetector();
+  ASSERT_NE(detector, nullptr);
+  EXPECT_EQ(detector->getTypeView(), "fcl");
+
+  const auto skel = world->getSkeleton("skeleton 1");
+  ASSERT_NE(skel, nullptr);
+  EXPECT_GT(skel->getNumSoftBodyNodes(), 0u);
+  EXPECT_GT(skel->getNumBodyNodes(), 0u);
+  EXPECT_GT(skel->getNumDofs(), 0u);
+}
+
+//==============================================================================
+TEST(SkelParser, CubesWorldCollisionDetectorAndJointTypes)
+{
+  const auto world
+      = utils::SkelParser::readWorld("dart://sample/skel/cubes.skel");
+  ASSERT_NE(world, nullptr);
+  EXPECT_GT(world->getNumSkeletons(), 2u);
+
+  const auto detector = world->getConstraintSolver()->getCollisionDetector();
+  ASSERT_NE(detector, nullptr);
+  EXPECT_EQ(detector->getTypeView(), "dart");
+
+  const auto ground = world->getSkeleton("ground skeleton");
+  ASSERT_NE(ground, nullptr);
+  ASSERT_NE(ground->getJoint(0), nullptr);
+  EXPECT_NE(dynamic_cast<dynamics::WeldJoint*>(ground->getJoint(0)), nullptr);
+
+  const auto boxSkel = world->getSkeleton("box skeleton");
+  ASSERT_NE(boxSkel, nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::FreeJoint*>(boxSkel->getRootJoint()), nullptr);
+}
+
+//==============================================================================
+TEST(SkelParser, FullbodyStructure)
+{
+  const auto world
+      = utils::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
+  ASSERT_NE(world, nullptr);
+
+  const auto skel = world->getSkeleton("fullbody1");
+  ASSERT_NE(skel, nullptr);
+  EXPECT_GT(skel->getNumBodyNodes(), 10u);
+  EXPECT_GT(skel->getNumJoints(), 10u);
+  EXPECT_GT(skel->getNumDofs(), 10u);
+  EXPECT_NE(skel->getBodyNode("h_pelvis"), nullptr);
+}

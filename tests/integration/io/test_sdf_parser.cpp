@@ -36,6 +36,7 @@
 #include "dart/common/resource_retriever.hpp"
 #include "dart/common/uri.hpp"
 #include "dart/config.hpp"
+#include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/dynamics/planar_joint.hpp"
@@ -677,3 +678,66 @@ TEST(SdfParser, WarnsOnTinyMassAndDefaultsInertia)
         << "Expected warning about missing inertia tensor in logs: " << logs;
   }
 }
+
+#if DART_HAVE_SDFORMAT
+namespace {
+
+template <typename ShapeType>
+bool hasShapeType(const dynamics::SkeletonPtr& skeleton)
+{
+  if (!skeleton) {
+    return false;
+  }
+
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    const auto* body = skeleton->getBodyNode(i);
+    if (!body) {
+      continue;
+    }
+    for (std::size_t j = 0; j < body->getNumShapeNodes(); ++j) {
+      const auto* shapeNode = body->getShapeNode(j);
+      if (!shapeNode) {
+        continue;
+      }
+      const auto shape = shapeNode->getShape();
+      if (shape && shape->is<ShapeType>()) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+} // namespace
+
+//==============================================================================
+TEST(SdfParser, RevoluteJointWorldParses)
+{
+  const auto world = utils::SdfParser::readWorld(
+      "dart://sample/sdf/test/issue1193_revolute_test.sdf");
+  ASSERT_NE(world, nullptr);
+
+  const auto skel = world->getSkeleton("M");
+  ASSERT_NE(skel, nullptr);
+  EXPECT_EQ(skel->getNumBodyNodes(), 2u);
+
+  const auto joint = skel->getJoint("revJoint");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_NE(dynamic_cast<dynamics::RevoluteJoint*>(joint), nullptr);
+}
+
+//==============================================================================
+TEST(SdfParser, BoxWorldParsesGeometry)
+{
+  const auto world = utils::SdfParser::readWorld(
+      "dart://sample/sdf/test/issue1624_cubes.sdf");
+  ASSERT_NE(world, nullptr);
+  EXPECT_GT(world->getNumSkeletons(), 1u);
+
+  const auto skel = world->getSkeleton("model_0_0_0");
+  ASSERT_NE(skel, nullptr);
+  EXPECT_TRUE(hasShapeType<dynamics::BoxShape>(skel));
+  EXPECT_GT(skel->getNumBodyNodes(), 0u);
+}
+#endif
