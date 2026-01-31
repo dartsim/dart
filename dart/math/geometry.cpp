@@ -36,6 +36,8 @@
 #include "dart/common/macros.hpp"
 #include "dart/math/helpers.hpp"
 
+#include <dart/simd/simd.hpp>
+
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
@@ -2053,6 +2055,150 @@ BoundingBox::BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max)
   : mMin(min), mMax(max)
 {
 }
+
+namespace batch {
+
+void AdT_batch(
+    const Eigen::Isometry3d* transforms,
+    const Eigen::Vector6d* inputs,
+    Eigen::Vector6d* outputs,
+    std::size_t count)
+{
+  std::size_t i = 0;
+  for (; i + 4 <= count; i += 4) {
+    // R*w and R*v per transform (3x3 matmul not easily SoA-batched)
+    std::array<Eigen::Vector3d, 4> Rw, Rv, p_arr;
+    for (int k = 0; k < 4; ++k) {
+      const auto& T = transforms[i + k];
+      const auto& V = inputs[i + k];
+      Rw[k] = T.linear() * V.head<3>();
+      Rv[k] = T.linear() * V.tail<3>();
+      p_arr[k] = T.translation();
+    }
+
+    // Batch cross product: p x Rw
+    auto soa_p = simd::transposeAosToSoa(p_arr);
+    auto soa_Rw = simd::transposeAosToSoa(Rw);
+    auto soa_cross = simd::cross3(soa_p, soa_Rw);
+    auto cross_results = soa_cross.toAos();
+
+    for (int k = 0; k < 4; ++k) {
+      outputs[i + k].head<3>() = Rw[k];
+      outputs[i + k].tail<3>() = Rv[k] + cross_results[k];
+    }
+  }
+
+  for (; i < count; ++i) {
+    outputs[i] = AdT(transforms[i], inputs[i]);
+  }
+}
+
+void AdInvT_batch(
+    const Eigen::Isometry3d* transforms,
+    const Eigen::Vector6d* inputs,
+    Eigen::Vector6d* outputs,
+    std::size_t count)
+{
+  // AdInvT: head = R^T * w, tail = R^T * (v + w x p)
+  std::size_t i = 0;
+  for (; i + 4 <= count; i += 4) {
+    std::array<Eigen::Vector3d, 4> w_arr, p_arr;
+    for (int k = 0; k < 4; ++k) {
+      w_arr[k] = inputs[i + k].head<3>();
+      p_arr[k] = transforms[i + k].translation();
+    }
+
+    // Batch cross product: w x p
+    auto soa_w = simd::transposeAosToSoa(w_arr);
+    auto soa_p = simd::transposeAosToSoa(p_arr);
+    auto soa_cross = simd::cross3(soa_w, soa_p);
+    auto cross_results = soa_cross.toAos();
+
+    for (int k = 0; k < 4; ++k) {
+      const auto& T = transforms[i + k];
+      const auto& V = inputs[i + k];
+      outputs[i + k].head<3>().noalias() = T.linear().transpose() * V.head<3>();
+      outputs[i + k].tail<3>().noalias()
+          = T.linear().transpose() * (V.tail<3>() + cross_results[k]);
+    }
+  }
+
+  for (; i < count; ++i) {
+    outputs[i] = AdInvT(transforms[i], inputs[i]);
+  }
+}
+
+void dAdT_batch(
+    const Eigen::Isometry3d* transforms,
+    const Eigen::Vector6d* inputs,
+    Eigen::Vector6d* outputs,
+    std::size_t count)
+{
+  // dAdT: head = R^T * (m + f x p), tail = R^T * f
+  std::size_t i = 0;
+  for (; i + 4 <= count; i += 4) {
+    std::array<Eigen::Vector3d, 4> f_arr, p_arr;
+    for (int k = 0; k < 4; ++k) {
+      f_arr[k] = inputs[i + k].tail<3>();
+      p_arr[k] = transforms[i + k].translation();
+    }
+
+    // Batch cross product: f x p
+    auto soa_f = simd::transposeAosToSoa(f_arr);
+    auto soa_p = simd::transposeAosToSoa(p_arr);
+    auto soa_cross = simd::cross3(soa_f, soa_p);
+    auto cross_results = soa_cross.toAos();
+
+    for (int k = 0; k < 4; ++k) {
+      const auto& T = transforms[i + k];
+      const auto& F = inputs[i + k];
+      outputs[i + k].head<3>().noalias()
+          = T.linear().transpose() * (F.head<3>() + cross_results[k]);
+      outputs[i + k].tail<3>().noalias() = T.linear().transpose() * F.tail<3>();
+    }
+  }
+
+  for (; i < count; ++i) {
+    outputs[i] = dAdT(transforms[i], inputs[i]);
+  }
+}
+
+void dAdInvT_batch(
+    const Eigen::Isometry3d* transforms,
+    const Eigen::Vector6d* inputs,
+    Eigen::Vector6d* outputs,
+    std::size_t count)
+{
+  // dAdInvT: tail = R * f, head = R * m + p x (R * f)
+  std::size_t i = 0;
+  for (; i + 4 <= count; i += 4) {
+    std::array<Eigen::Vector3d, 4> Rf, p_arr;
+    for (int k = 0; k < 4; ++k) {
+      const auto& T = transforms[i + k];
+      Rf[k] = T.linear() * inputs[i + k].tail<3>();
+      p_arr[k] = T.translation();
+    }
+
+    // Batch cross product: p x Rf
+    auto soa_p = simd::transposeAosToSoa(p_arr);
+    auto soa_Rf = simd::transposeAosToSoa(Rf);
+    auto soa_cross = simd::cross3(soa_p, soa_Rf);
+    auto cross_results = soa_cross.toAos();
+
+    for (int k = 0; k < 4; ++k) {
+      const auto& T = transforms[i + k];
+      outputs[i + k].tail<3>() = Rf[k];
+      outputs[i + k].head<3>().noalias()
+          = T.linear() * inputs[i + k].head<3>() + cross_results[k];
+    }
+  }
+
+  for (; i < count; ++i) {
+    outputs[i] = dAdInvT(transforms[i], inputs[i]);
+  }
+}
+
+} // namespace batch
 
 } // namespace math
 } // namespace dart
