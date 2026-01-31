@@ -1480,7 +1480,7 @@ bool verifyRotation(const Eigen::Matrix3d& _T)
 
 bool verifyTransform(const Eigen::Isometry3d& _T)
 {
-  return !isNan(_T.matrix().topRows<3>())
+  return !isNan(_T.matrix().topRows<3>()) && !isInf(_T.matrix().topRows<3>())
          && std::abs(_T.linear().determinant() - 1.0) <= DART_EPSILON;
 }
 
@@ -1538,7 +1538,10 @@ Eigen::Matrix3d computeRotation(
   result.col(++index % 3) = axis1;
   result.col(++index % 3) = axis2;
 
-  DART_ASSERT(verifyRotation(result));
+  if (!verifyRotation(result)) {
+    DART_WARN("[math::computeRotation] Non-finite rotation result.");
+    result = Eigen::Matrix3d::Identity();
+  }
 
   return result;
 }
@@ -1555,7 +1558,10 @@ Eigen::Isometry3d computeTransform(
   result.translation() = translation;
 
   // Verification
-  DART_ASSERT(verifyTransform(result));
+  if (!verifyTransform(result)) {
+    DART_WARN("[math::computeTransform] Non-finite transform result.");
+    result = Eigen::Isometry3d::Identity();
+  }
 
   return result;
 }
