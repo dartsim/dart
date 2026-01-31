@@ -209,3 +209,53 @@ TEST(TriMeshTests, ComputeVertexNormals)
     EXPECT_NEAR(normal.y(), 0.0, 1e-10);
   }
 }
+
+//==============================================================================
+TEST(TriMeshTests, BasicsAndNormals)
+{
+  TriMeshd mesh;
+  EXPECT_TRUE(mesh.isEmpty());
+
+  mesh.reserveVertices(4);
+  mesh.reserveTriangles(2);
+  mesh.reserveVertexNormals(4);
+  mesh.addVertex(0.0, 0.0, 0.0);
+  mesh.addVertex(1.0, 0.0, 0.0);
+  mesh.addVertex(0.0, 1.0, 0.0);
+  mesh.addVertex(0.0, 0.0, 1.0);
+  mesh.addTriangle(0, 1, 2);
+  mesh.addTriangle(0, 1, 3);
+
+  EXPECT_EQ(mesh.getVertices().size(), 4u);
+  EXPECT_EQ(mesh.getTriangles().size(), 2u);
+  EXPECT_FALSE(mesh.hasTriangleNormals());
+  EXPECT_FALSE(mesh.hasVertexNormals());
+
+  mesh.computeVertexNormals();
+  EXPECT_TRUE(mesh.hasTriangleNormals());
+  EXPECT_TRUE(mesh.hasVertexNormals());
+  EXPECT_EQ(mesh.getTriangleNormals().size(), 2u);
+  EXPECT_EQ(mesh.getVertexNormals().size(), 4u);
+
+  mesh.clear();
+  EXPECT_TRUE(mesh.isEmpty());
+  EXPECT_FALSE(mesh.hasTriangles());
+}
+
+//==============================================================================
+TEST(TriMeshTests, PlusEqualsEmptyKeepsNormals)
+{
+  TriMeshd mesh;
+  mesh.addVertex(0.0, 0.0, 0.0);
+  mesh.addVertex(1.0, 0.0, 0.0);
+  mesh.addVertex(0.0, 1.0, 0.0);
+  mesh.addTriangle(0, 1, 2);
+  mesh.computeVertexNormals();
+
+  TriMeshd empty;
+  mesh += empty;
+
+  EXPECT_TRUE(mesh.hasTriangles());
+  EXPECT_TRUE(mesh.hasVertexNormals());
+  EXPECT_TRUE(mesh.hasTriangleNormals());
+}

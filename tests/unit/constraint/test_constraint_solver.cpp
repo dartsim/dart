@@ -5,6 +5,8 @@
  * This file is provided under the BSD-style License.
  */
 
+#include "helpers/dynamics_helpers.hpp"
+
 #include "helpers/gtest_utils.hpp"
 
 #include "dart/collision/dart/dart_collision_detector.hpp"
@@ -12,6 +14,8 @@
 #include "dart/constraint/contact_surface.hpp"
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/math/lcp/lcp_solver.hpp"
+#include "dart/math/lcp/pivoting/dantzig_solver.hpp"
+#include "dart/math/lcp/projection/pgs_solver.hpp"
 #include "dart/simulation/world.hpp"
 
 #include <gtest/gtest.h>
@@ -275,6 +279,13 @@ public:
   {
     return "Test";
   }
+};
+
+class CoverageConstraintSolver final : public constraint::ConstraintSolver
+{
+public:
+  using ConstraintSolver::isSymmetric;
+  using ConstraintSolver::print;
 };
 
 } // namespace
@@ -857,4 +868,74 @@ TEST(ConstraintSolver, GetLastCollisionResultNonConst)
   // Clear it
   result.clear();
   EXPECT_EQ(solver.getLastCollisionResult().getNumContacts(), 0u);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SolverConfigurationAndDebugUtilities)
+{
+  auto world = simulation::World::create();
+  ASSERT_NE(world, nullptr);
+  world->setTimeStep(0.002);
+
+  auto ground = createGround(
+      Eigen::Vector3d(2.0, 0.1, 2.0), Eigen::Vector3d(0.0, -0.05, 0.0));
+  ground->setMobile(false);
+  auto box = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.05, 0.0));
+
+  world->addSkeleton(ground);
+  world->addSkeleton(box);
+
+  auto solver = world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  solver->setTimeStep(0.001);
+  EXPECT_DOUBLE_EQ(solver->getTimeStep(), 0.001);
+
+  solver->setLcpSolver(std::make_shared<math::DantzigSolver>());
+  solver->setSecondaryLcpSolver(std::make_shared<math::PgsSolver>());
+  EXPECT_NE(solver->getLcpSolver(), nullptr);
+  EXPECT_NE(solver->getSecondaryLcpSolver(), nullptr);
+
+  for (int i = 0; i < 5; ++i) {
+    world->step();
+  }
+  EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+
+  solver->clearLastCollisionResult();
+  EXPECT_EQ(solver->getLastCollisionResult().getNumContacts(), 0u);
+
+  constraint::ConstraintSolver scratch;
+  auto skelA = dynamics::Skeleton::create("scratch_a");
+  auto skelB = dynamics::Skeleton::create("scratch_b");
+  scratch.addSkeleton(skelA);
+  scratch.addSkeleton(skelB);
+  scratch.removeSkeleton(skelA);
+  EXPECT_EQ(scratch.getSkeletons().size(), 1u);
+  scratch.removeAllSkeletons();
+  EXPECT_EQ(scratch.getSkeletons().size(), 0u);
+
+  CoverageConstraintSolver debugSolver;
+  constexpr std::size_t n = 2;
+  const std::size_t nSkip = (n + 3) & ~static_cast<std::size_t>(3);
+  std::vector<double> A(nSkip * n, 0.0);
+  A[0] = 1.0;
+  A[nSkip + 1] = 1.0;
+  A[1] = 0.2;
+  A[nSkip] = 0.2;
+  EXPECT_TRUE(debugSolver.isSymmetric(n, A.data()));
+  EXPECT_TRUE(debugSolver.isSymmetric(n, A.data(), 0, 1));
+
+  std::vector<double> x(n, 0.0);
+  std::vector<double> b(n, 0.0);
+  std::vector<double> w(n, 0.0);
+  std::vector<int> findex(n, -1);
+  debugSolver.print(
+      n,
+      A.data(),
+      x.data(),
+      nullptr,
+      nullptr,
+      b.data(),
+      w.data(),
+      findex.data());
 }

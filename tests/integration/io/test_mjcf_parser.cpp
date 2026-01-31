@@ -351,3 +351,12 @@ TEST(MjcfParserTest, RoboticsFetch)
 
   ASSERT_EQ(world->getNumSkeletons(), 6);
 }
+
+//==============================================================================
+TEST(MjcfParserTest, LoadsDefaultWorld)
+{
+  const auto uri = "dart://sample/mjcf/test/default.xml";
+  auto world = utils::MjcfParser::readWorld(uri);
+  ASSERT_NE(world, nullptr);
+  EXPECT_GE(world->getNumSkeletons(), 1);
+}

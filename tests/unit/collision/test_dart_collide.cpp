@@ -83,6 +83,21 @@ CollisionHandle makeObject(
 
 } // namespace
 
+TEST(DARTCollide, CollisionObjectAccessors)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto frame = std::make_shared<SimpleFrame>(Frame::World(), "frame");
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+  frame->setShape(shape);
+
+  TestCollisionObject object(detector.get(), frame.get());
+
+  EXPECT_EQ(object.getCollisionDetector(), detector.get());
+  EXPECT_EQ(object.getShapeFrame(), frame.get());
+  EXPECT_EQ(object.getShape(), shape);
+  EXPECT_TRUE(object.getTransform().isApprox(frame->getWorldTransform()));
+}
+
 TEST(DARTCollide, SphereSphereCases)
 {
   auto detector = DARTCollisionDetector::create();
@@ -227,6 +242,82 @@ TEST(DARTCollide, BoxSphereInsideAndBoundary)
   EXPECT_EQ(nearBoundary.getNumContacts(), 1u);
 }
 
+TEST(DARTCollide, BoxSphereAxisClampingAndInside)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
+  auto sphere = std::make_shared<SphereShape>(0.2);
+
+  auto boxObj = makeObject(box, detector.get(), Eigen::Isometry3d::Identity());
+  auto sphereObj
+      = makeObject(sphere, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  tfSphere.translation() = Eigen::Vector3d(0.0, 0.6, 0.0);
+  sphereObj.frame->setRelativeTransform(tfSphere);
+
+  CollisionResult yClamp;
+  int contacts = collideBoxSphere(
+      boxObj.object.get(),
+      sphereObj.object.get(),
+      box->getSize(),
+      boxObj.frame->getWorldTransform(),
+      sphere->getRadius(),
+      sphereObj.frame->getWorldTransform(),
+      yClamp);
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(yClamp.getNumContacts(), 1u);
+  EXPECT_GT(std::abs(yClamp.getContact(0).normal.y()), 0.9);
+
+  tfSphere.translation() = Eigen::Vector3d(0.0, 0.0, 0.6);
+  sphereObj.frame->setRelativeTransform(tfSphere);
+
+  CollisionResult zClamp;
+  contacts = collideBoxSphere(
+      boxObj.object.get(),
+      sphereObj.object.get(),
+      box->getSize(),
+      boxObj.frame->getWorldTransform(),
+      sphere->getRadius(),
+      sphereObj.frame->getWorldTransform(),
+      zClamp);
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(zClamp.getNumContacts(), 1u);
+  EXPECT_GT(std::abs(zClamp.getContact(0).normal.z()), 0.9);
+
+  tfSphere.translation() = Eigen::Vector3d(0.0, 0.49, 0.1);
+  sphereObj.frame->setRelativeTransform(tfSphere);
+
+  CollisionResult insideY;
+  contacts = collideBoxSphere(
+      boxObj.object.get(),
+      sphereObj.object.get(),
+      box->getSize(),
+      boxObj.frame->getWorldTransform(),
+      sphere->getRadius(),
+      sphereObj.frame->getWorldTransform(),
+      insideY);
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(insideY.getNumContacts(), 1u);
+  EXPECT_GT(std::abs(insideY.getContact(0).normal.y()), 0.9);
+
+  tfSphere.translation() = Eigen::Vector3d(0.1, 0.1, 0.49);
+  sphereObj.frame->setRelativeTransform(tfSphere);
+
+  CollisionResult insideZ;
+  contacts = collideBoxSphere(
+      boxObj.object.get(),
+      sphereObj.object.get(),
+      box->getSize(),
+      boxObj.frame->getWorldTransform(),
+      sphere->getRadius(),
+      sphereObj.frame->getWorldTransform(),
+      insideZ);
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(insideZ.getNumContacts(), 1u);
+  EXPECT_GT(std::abs(insideZ.getContact(0).normal.z()), 0.9);
+}
+
 TEST(DARTCollide, SphereBoxInsideAndBoundary)
 {
   constexpr double kNearBoundaryEps = 1e-8;
@@ -265,6 +356,99 @@ TEST(DARTCollide, SphereBoxInsideAndBoundary)
       nearBoundary);
   EXPECT_EQ(contacts, 1);
   EXPECT_EQ(nearBoundary.getNumContacts(), 1u);
+}
+
+TEST(DARTCollide, SphereBoxAxisClampingAndNearZero)
+{
+  constexpr double kNearZeroEps = 1e-8;
+  auto detector = DARTCollisionDetector::create();
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
+  auto sphere = std::make_shared<SphereShape>(0.2);
+
+  auto boxObj = makeObject(box, detector.get(), Eigen::Isometry3d::Identity());
+  auto sphereObj
+      = makeObject(sphere, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  tfSphere.translation() = Eigen::Vector3d(0.0, 0.6, 0.0);
+  sphereObj.frame->setRelativeTransform(tfSphere);
+
+  CollisionResult yClamp;
+  int contacts = collideSphereBox(
+      sphereObj.object.get(),
+      boxObj.object.get(),
+      sphere->getRadius(),
+      sphereObj.frame->getWorldTransform(),
+      box->getSize(),
+      boxObj.frame->getWorldTransform(),
+      yClamp);
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(yClamp.getNumContacts(), 1u);
+  EXPECT_GT(std::abs(yClamp.getContact(0).normal.y()), 0.9);
+
+  tfSphere.translation() = Eigen::Vector3d(0.0, 0.0, 0.6);
+  sphereObj.frame->setRelativeTransform(tfSphere);
+
+  CollisionResult zClamp;
+  contacts = collideSphereBox(
+      sphereObj.object.get(),
+      boxObj.object.get(),
+      sphere->getRadius(),
+      sphereObj.frame->getWorldTransform(),
+      box->getSize(),
+      boxObj.frame->getWorldTransform(),
+      zClamp);
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(zClamp.getNumContacts(), 1u);
+  EXPECT_GT(std::abs(zClamp.getContact(0).normal.z()), 0.9);
+
+  tfSphere.translation() = Eigen::Vector3d(0.0, 0.49, 0.1);
+  sphereObj.frame->setRelativeTransform(tfSphere);
+
+  CollisionResult insideY;
+  contacts = collideSphereBox(
+      sphereObj.object.get(),
+      boxObj.object.get(),
+      sphere->getRadius(),
+      sphereObj.frame->getWorldTransform(),
+      box->getSize(),
+      boxObj.frame->getWorldTransform(),
+      insideY);
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(insideY.getNumContacts(), 1u);
+  EXPECT_GT(std::abs(insideY.getContact(0).normal.y()), 0.9);
+
+  tfSphere.translation() = Eigen::Vector3d(0.1, 0.1, 0.49);
+  sphereObj.frame->setRelativeTransform(tfSphere);
+
+  CollisionResult insideZ;
+  contacts = collideSphereBox(
+      sphereObj.object.get(),
+      boxObj.object.get(),
+      sphere->getRadius(),
+      sphereObj.frame->getWorldTransform(),
+      box->getSize(),
+      boxObj.frame->getWorldTransform(),
+      insideZ);
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(insideZ.getNumContacts(), 1u);
+  EXPECT_GT(std::abs(insideZ.getContact(0).normal.z()), 0.9);
+
+  tfSphere.translation() = Eigen::Vector3d(0.0, 0.5 + kNearZeroEps, 0.0);
+  sphereObj.frame->setRelativeTransform(tfSphere);
+
+  CollisionResult nearZero;
+  contacts = collideSphereBox(
+      sphereObj.object.get(),
+      boxObj.object.get(),
+      sphere->getRadius(),
+      sphereObj.frame->getWorldTransform(),
+      box->getSize(),
+      boxObj.frame->getWorldTransform(),
+      nearZero);
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(nearZero.getNumContacts(), 1u);
+  EXPECT_GT(std::abs(nearZero.getContact(0).normal.y()), 0.9);
 }
 
 TEST(DARTCollide, BoxBoxContacts)
@@ -306,6 +490,35 @@ TEST(DARTCollide, BoxBoxContacts)
       separated);
   EXPECT_EQ(contacts, 0);
   EXPECT_EQ(separated.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, BoxBoxEdgeEdgeContact)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
+
+  Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.translation() = Eigen::Vector3d(0.55, 0.15, 0.1);
+  tfB.linear()
+      = (Eigen::AngleAxisd(0.25 * math::pi, Eigen::Vector3d::UnitY())
+         * Eigen::AngleAxisd(0.25 * math::pi, Eigen::Vector3d::UnitZ()))
+            .toRotationMatrix();
+
+  auto objA = makeObject(box, detector.get(), tfA);
+  auto objB = makeObject(box, detector.get(), tfB);
+
+  CollisionResult result;
+  int contacts = collideBoxBox(
+      objA.object.get(),
+      objB.object.get(),
+      box->getSize(),
+      objA.frame->getWorldTransform(),
+      box->getSize(),
+      objB.frame->getWorldTransform(),
+      result);
+  EXPECT_GT(contacts, 0);
+  EXPECT_GT(result.getNumContacts(), 0u);
 }
 
 TEST(DARTCollide, CylinderSphereAndPlane)
@@ -447,6 +660,74 @@ TEST(DARTCollide, CylinderPlaneNonParallelAndSeparated)
   EXPECT_EQ(separated.getNumContacts(), 0u);
 }
 
+TEST(DARTCollide, CylinderPlaneParallelAxisAndEqualDepth)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto shape = std::make_shared<SphereShape>(0.1);
+
+  auto cylObj
+      = makeObject(shape, detector.get(), Eigen::Isometry3d::Identity());
+  auto planeObj
+      = makeObject(shape, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d planeTf = Eigen::Isometry3d::Identity();
+  planeTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.4);
+
+  CollisionResult parallelAxis;
+  int contacts = collideCylinderPlane(
+      cylObj.object.get(),
+      planeObj.object.get(),
+      0.5,
+      0.5,
+      cylObj.frame->getWorldTransform(),
+      Eigen::Vector3d::UnitZ(),
+      planeTf,
+      parallelAxis);
+  EXPECT_EQ(contacts, 1);
+  EXPECT_GT(parallelAxis.getNumContacts(), 0u);
+
+  planeTf = Eigen::Isometry3d::Identity();
+  CollisionResult equalDepth;
+  contacts = collideCylinderPlane(
+      cylObj.object.get(),
+      planeObj.object.get(),
+      0.5,
+      0.5,
+      cylObj.frame->getWorldTransform(),
+      Eigen::Vector3d::UnitX(),
+      planeTf,
+      equalDepth);
+  EXPECT_EQ(contacts, 1);
+  EXPECT_GT(equalDepth.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, CylinderPlaneAllNegativeDepths)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto shape = std::make_shared<SphereShape>(0.1);
+
+  auto cylObj
+      = makeObject(shape, detector.get(), Eigen::Isometry3d::Identity());
+  auto planeObj
+      = makeObject(shape, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d planeTf = Eigen::Isometry3d::Identity();
+  planeTf.translation() = Eigen::Vector3d(-2.0, 0.0, 0.0);
+
+  CollisionResult noContact;
+  int contacts = collideCylinderPlane(
+      cylObj.object.get(),
+      planeObj.object.get(),
+      0.5,
+      0.5,
+      cylObj.frame->getWorldTransform(),
+      Eigen::Vector3d::UnitX(),
+      planeTf,
+      noContact);
+  EXPECT_EQ(contacts, 0);
+  EXPECT_EQ(noContact.getNumContacts(), 0u);
+}
+
 TEST(DARTCollideHelpers, CullPointsAndIntersectRectQuad)
 {
   int iret[4] = {-1, -1, -1, -1};
@@ -476,6 +757,16 @@ TEST(DARTCollideHelpers, CullPointsAndIntersectRectQuad)
   double outside[8] = {3.0, 3.0, 4.0, 3.0, 4.0, 4.0, 3.0, 4.0};
   const int outsideCount = intersectRectQuad(h, outside, ret);
   EXPECT_EQ(outsideCount, 0);
+}
+
+TEST(DARTCollideHelpers, IntersectRectQuadOverflow)
+{
+  double h[2] = {1.0, 1.0};
+  double ret[16] = {};
+  double overflowQuad[8] = {2.0, 2.0, -2.0, 2.0, 2.0, -2.0, -2.0, -2.0};
+  const int count = intersectRectQuad(h, overflowQuad, ret);
+  EXPECT_GE(count, 0);
+  EXPECT_LE(count, 8);
 }
 
 TEST(DARTCollideHelpers, LineClosestApproach)
@@ -524,6 +815,42 @@ TEST(DARTCollideHelpers, ClosestLineBoxPoints)
   for (int i = 0; i < 3; ++i) {
     EXPECT_TRUE(std::isfinite(lret[i]));
     EXPECT_TRUE(std::isfinite(bret[i]));
+  }
+}
+
+TEST(DARTCollideHelpers, ClosestLineBoxPointsEdgeCases)
+{
+  dMatrix3 rotation
+      = {1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0};
+  dVector3 center = {0.0, 0.0, 0.0, 0.0};
+  dVector3 side = {1.0, 1.0, 1.0, 0.0};
+  dVector3 lret = {0.0, 0.0, 0.0, 0.0};
+  dVector3 bret = {0.0, 0.0, 0.0, 0.0};
+
+  dVector3 insideStart = {0.0, 0.0, 0.0, 0.0};
+  dVector3 insideEnd = {2.0, 0.0, 0.0, 0.0};
+  dClosestLineBoxPoints(
+      insideStart, insideEnd, center, rotation, side, lret, bret);
+  EXPECT_NEAR(lret[0], insideStart[0], 1e-12);
+  EXPECT_NEAR(lret[1], insideStart[1], 1e-12);
+  EXPECT_NEAR(lret[2], insideStart[2], 1e-12);
+
+  dVector3 crossingStart = {-2.0, -2.0, -2.0, 0.0};
+  dVector3 crossingEnd = {2.0, 2.0, 2.0, 0.0};
+  dClosestLineBoxPoints(
+      crossingStart, crossingEnd, center, rotation, side, lret, bret);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_TRUE(std::isfinite(lret[i]));
+    EXPECT_TRUE(std::isfinite(bret[i]));
+    EXPECT_LE(std::abs(bret[i]), side[i] + 1e-9);
+  }
+
+  dVector3 outsideStart = {2.0, 2.0, 2.0, 0.0};
+  dVector3 outsideEnd = {2.5, 2.5, 2.5, 0.0};
+  dClosestLineBoxPoints(
+      outsideStart, outsideEnd, center, rotation, side, lret, bret);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_LE(std::abs(bret[i]), side[i] + 1e-9);
   }
 }
 

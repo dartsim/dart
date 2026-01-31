@@ -1,5 +1,12 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
+#include "helpers/dynamics_helpers.hpp"
+
+#include <dart/simulation/world.hpp>
+
+#include <dart/constraint/constraint_solver.hpp>
+#include <dart/constraint/contact_constraint.hpp>
+#include <dart/constraint/contact_surface.hpp>
 #include <dart/constraint/soft_contact_constraint.hpp>
 
 #include <dart/collision/collision_object.hpp>
@@ -55,6 +62,30 @@ public:
   using SoftContactConstraint::SoftContactConstraint;
   using SoftContactConstraint::unexcite;
   using SoftContactConstraint::update;
+};
+
+class ExposedContactConstraint final : public constraint::ContactConstraint
+{
+public:
+  using ContactConstraint::applyImpulse;
+  using ContactConstraint::applyUnitImpulse;
+  using ContactConstraint::ContactConstraint;
+  using ContactConstraint::excite;
+  using ContactConstraint::getInformation;
+  using ContactConstraint::getVelocityChange;
+  using ContactConstraint::isActive;
+  using ContactConstraint::unexcite;
+  using ContactConstraint::update;
+};
+
+struct LcpBuffers
+{
+  std::vector<double> x;
+  std::vector<double> lo;
+  std::vector<double> hi;
+  std::vector<double> b;
+  std::vector<double> w;
+  std::vector<int> findex;
 };
 
 struct ContactFixture
@@ -132,6 +163,48 @@ void fillConstraintInfo(
   info.w = w.data();
   info.findex = findex.data();
   info.invTimeStep = invTimeStep;
+}
+
+void prepareConstraintInfo(
+    constraint::ConstraintInfo& info,
+    LcpBuffers& buffers,
+    std::size_t dim,
+    double invTimeStep,
+    constraint::ConstraintPhase phase,
+    bool useSplitImpulse)
+{
+  buffers.x.assign(dim, 0.0);
+  buffers.lo.assign(dim, 0.0);
+  buffers.hi.assign(dim, 0.0);
+  buffers.b.assign(dim, 0.0);
+  buffers.w.assign(dim, 0.0);
+  buffers.findex.assign(dim, -1);
+
+  info.x = buffers.x.data();
+  info.lo = buffers.lo.data();
+  info.hi = buffers.hi.data();
+  info.b = buffers.b.data();
+  info.w = buffers.w.data();
+  info.findex = buffers.findex.data();
+  info.invTimeStep = invTimeStep;
+  info.phase = phase;
+  info.useSplitImpulse = useSplitImpulse;
+}
+
+void setSurfaceProperties(
+    const dynamics::SkeletonPtr& skeleton, double friction, double restitution)
+{
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    auto* bodyNode = skeleton->getBodyNode(i);
+    for (std::size_t j = 0; j < bodyNode->getNumShapeNodes(); ++j) {
+      auto* shapeNode = bodyNode->getShapeNode(j);
+      auto* dynAspect = shapeNode->getDynamicsAspect();
+      if (dynAspect) {
+        dynAspect->setFrictionCoeff(friction);
+        dynAspect->setRestitutionCoeff(restitution);
+      }
+    }
+  }
 }
 
 } // namespace
@@ -271,6 +344,141 @@ TEST(SoftContactConstraint, CoefficientHelpers)
   constraint::SoftContactConstraint::setErrorReductionParameter(prevErp);
   constraint::SoftContactConstraint::setMaxErrorReductionVelocity(prevErv);
   constraint::SoftContactConstraint::setConstraintForceMixing(prevCfm);
+}
+
+TEST(SoftContactConstraint, ContactConstraintFrictionRestitutionPaths)
+{
+  constexpr double timeStep = 0.001;
+  auto detector = collision::DARTCollisionDetector::create();
+  ASSERT_NE(detector, nullptr);
+
+  auto skelA = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.0, 0.0));
+  auto skelB = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.19, 0.0));
+
+  auto* shapeA = skelA->getBodyNode(0)->getShapeNode(0);
+  auto* shapeB = skelB->getBodyNode(0)->getShapeNode(0);
+  ASSERT_NE(shapeA, nullptr);
+  ASSERT_NE(shapeB, nullptr);
+
+  setSurfaceProperties(skelA, 0.8, 0.6);
+  setSurfaceProperties(skelB, 0.4, 0.6);
+
+  TestCollisionObject objectA(detector.get(), shapeA);
+  TestCollisionObject objectB(detector.get(), shapeB);
+
+  collision::Contact contact;
+  contact.collisionObject1 = &objectA;
+  contact.collisionObject2 = &objectB;
+  contact.point = Eigen::Vector3d(0.0, 0.1, 0.0);
+  contact.normal = Eigen::Vector3d::UnitY();
+  contact.penetrationDepth = 0.01;
+  contact.triID1 = 0;
+  contact.triID2 = 0;
+  contact.userData = nullptr;
+
+  constraint::ContactSurfaceParams params;
+  params.mPrimaryFrictionCoeff = 0.8;
+  params.mSecondaryFrictionCoeff = 0.4;
+  params.mRestitutionCoeff = 0.5;
+  params.mFirstFrictionalDirection = Eigen::Vector3d::UnitX();
+  params.mContactSurfaceMotionVelocity = Eigen::Vector3d::Zero();
+
+  ExposedContactConstraint constraint(contact, timeStep, params);
+  constraint.setFrictionDirection(Eigen::Vector3d::UnitX());
+  constraint.update();
+  EXPECT_TRUE(constraint.isActive());
+  EXPECT_EQ(constraint.getDimension(), 3u);
+
+  constraint::ConstraintInfo info{};
+  LcpBuffers buffers;
+  prepareConstraintInfo(
+      info,
+      buffers,
+      constraint.getDimension(),
+      1.0 / timeStep,
+      constraint::ConstraintPhase::Velocity,
+      false);
+  constraint.getInformation(&info);
+
+  prepareConstraintInfo(
+      info,
+      buffers,
+      constraint.getDimension(),
+      1.0 / timeStep,
+      constraint::ConstraintPhase::Position,
+      true);
+  constraint.getInformation(&info);
+
+  constraint.applyUnitImpulse(0);
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), true);
+  std::vector<double> lambda(constraint.getDimension(), 0.1);
+  constraint.applyImpulse(lambda.data());
+  constraint.excite();
+  constraint.unexcite();
+}
+
+TEST(SoftContactConstraint, SoftContactConstraintFromWorld)
+{
+  // Build a world programmatically with a soft body above a rigid ground plane
+  // so that stepping produces contacts.
+  auto fixture = makeFixture(0.7, 0.4);
+
+  TestCollisionObject softObj(fixture.detector.get(), fixture.softShapeNode);
+  TestCollisionObject rigidObj(fixture.detector.get(), fixture.rigidShapeNode);
+
+  collision::Contact contact;
+  contact.collisionObject1 = &softObj;
+  contact.collisionObject2 = &rigidObj;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.penetrationDepth = 0.01;
+
+  ExposedSoftContactConstraint constraint(contact, 0.001);
+
+  const double prevAllowance
+      = constraint::SoftContactConstraint::getErrorAllowance();
+  const double prevErp
+      = constraint::SoftContactConstraint::getErrorReductionParameter();
+  const double prevErv
+      = constraint::SoftContactConstraint::getMaxErrorReductionVelocity();
+  const double prevCfm
+      = constraint::SoftContactConstraint::getConstraintForceMixing();
+
+  constraint::SoftContactConstraint::setErrorAllowance(-0.2);
+  constraint::SoftContactConstraint::setErrorReductionParameter(1.5);
+  constraint::SoftContactConstraint::setMaxErrorReductionVelocity(-0.1);
+  constraint::SoftContactConstraint::setConstraintForceMixing(1e-12);
+
+  constraint::SoftContactConstraint::setErrorAllowance(prevAllowance);
+  constraint::SoftContactConstraint::setErrorReductionParameter(prevErp);
+  constraint::SoftContactConstraint::setMaxErrorReductionVelocity(prevErv);
+  constraint::SoftContactConstraint::setConstraintForceMixing(prevCfm);
+
+  constraint.setFrictionDirection(Eigen::Vector3d::UnitX());
+  constraint.update();
+  EXPECT_TRUE(constraint.isActive());
+
+  constraint::ConstraintInfo info{};
+  LcpBuffers buffers;
+  prepareConstraintInfo(
+      info,
+      buffers,
+      constraint.getDimension(),
+      1.0 / 0.001,
+      constraint::ConstraintPhase::Velocity,
+      false);
+  constraint.getInformation(&info);
+
+  constraint.applyUnitImpulse(0);
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), true);
+  std::vector<double> lambda(constraint.getDimension(), 0.05);
+  constraint.applyImpulse(lambda.data());
+  constraint.excite();
+  constraint.unexcite();
 }
 
 } // namespace dart::test

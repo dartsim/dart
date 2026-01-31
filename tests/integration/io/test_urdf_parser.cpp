@@ -32,10 +32,13 @@
 
 #include "helpers/gtest_utils.hpp"
 
+#include "dart/config.hpp"
 #include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/dynamics/planar_joint.hpp"
+#include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/weld_joint.hpp"
+#include "dart/io/read.hpp"
 #include "dart/simulation/world.hpp"
 #include "dart/utils/urdf/urdf_parser.hpp"
 
@@ -1051,3 +1054,88 @@ TEST(UrdfParser, Options)
       link_0->getInertia().getSpatialTensor(),
       options.mDefaultInertia.getSpatialTensor()));
 }
+
+#if DART_IO_HAS_URDF
+namespace {
+
+template <typename ShapeType>
+bool hasShapeType(const dynamics::SkeletonPtr& skeleton)
+{
+  if (!skeleton) {
+    return false;
+  }
+
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    const auto* body = skeleton->getBodyNode(i);
+    if (!body) {
+      continue;
+    }
+    for (std::size_t j = 0; j < body->getNumShapeNodes(); ++j) {
+      const auto* shapeNode = body->getShapeNode(j);
+      if (!shapeNode) {
+        continue;
+      }
+      const auto shape = shapeNode->getShape();
+      if (shape && shape->is<ShapeType>()) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+} // namespace
+
+//==============================================================================
+TEST(UrdfParser, WamMeshMaterialAndLimits)
+{
+  io::ReadOptions options;
+  options.format = io::ModelFormat::Urdf;
+  options.addPackageDirectory("herb_description", config::dataPath("urdf/wam"));
+
+  const auto skeleton
+      = io::readSkeleton("dart://sample/urdf/wam/wam.urdf", options);
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_TRUE(hasShapeType<dynamics::MeshShape>(skeleton));
+
+  const auto joint = skeleton->getJoint("/j1");
+  ASSERT_NE(joint, nullptr);
+  const auto* revolute = dynamic_cast<dynamics::RevoluteJoint*>(joint);
+  ASSERT_NE(revolute, nullptr);
+  EXPECT_NEAR(revolute->getPositionLowerLimit(0), -2.6, 1e-6);
+  EXPECT_NEAR(revolute->getPositionUpperLimit(0), 2.6, 1e-6);
+
+  const Eigen::Vector4d expectedColor(
+      0.792156862745098, 0.819607843137255, 0.933333333333333, 1.0);
+  bool foundVisual = false;
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    auto* body = skeleton->getBodyNode(i);
+    if (!body) {
+      continue;
+    }
+    body->eachShapeNodeWith<dynamics::VisualAspect>(
+        [&](const dynamics::ShapeNode* shapeNode) {
+          if (shapeNode->getVisualAspect()->getRGBA().isApprox(expectedColor)) {
+            foundVisual = true;
+          }
+        });
+  }
+  EXPECT_TRUE(foundVisual);
+}
+
+//==============================================================================
+TEST(UrdfParser, DrchuboStructure)
+{
+  io::ReadOptions options;
+  options.format = io::ModelFormat::Urdf;
+  options.addPackageDirectory("drchubo", config::dataPath("urdf/drchubo"));
+
+  const auto skeleton
+      = io::readSkeleton("dart://sample/urdf/drchubo/drchubo.urdf", options);
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_GT(skeleton->getNumBodyNodes(), 20u);
+  EXPECT_GT(skeleton->getNumDofs(), 20u);
+  EXPECT_TRUE(hasShapeType<dynamics::MeshShape>(skeleton));
+}
+#endif

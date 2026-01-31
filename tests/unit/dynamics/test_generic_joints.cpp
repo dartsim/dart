@@ -36,6 +36,7 @@
 
 #include <iostream>
 #include <limits>
+#include <string>
 
 using namespace dart;
 using namespace dart::dynamics;
@@ -483,4 +484,117 @@ TEST(GenericJoint, NaNSpringStiffnessClampedToZero)
 
   joint.setSpringStiffness(0, -inf);
   EXPECT_EQ(joint.getSpringStiffness(0), 0.0);
+}
+
+namespace {
+
+template <typename JointType>
+SkeletonPtr createSkeletonWithJoint(const std::string& name)
+{
+  auto skel = Skeleton::create(name);
+
+  BodyNode::Properties bodyProps;
+  bodyProps.mName = name + "_body";
+  bodyProps.mInertia.setMass(1.0);
+
+  typename JointType::Properties jointProps;
+  jointProps.mName = name + "_joint";
+
+  skel->createJointAndBodyNodePair<JointType>(nullptr, jointProps, bodyProps);
+
+  return skel;
+}
+
+template <typename JointType>
+JointType* getJoint(const SkeletonPtr& skel)
+{
+  return static_cast<JointType*>(skel->getJoint(0));
+}
+
+} // namespace
+
+TEST(FreeJoint, SpatialSettersAndConversions)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("free_joint_coverage");
+  auto* joint = getJoint<FreeJoint>(skel);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+
+  Eigen::Vector6d positions = FreeJoint::convertToPositions(tf);
+  Eigen::Isometry3d tfBack = FreeJoint::convertToTransform(positions);
+  EXPECT_TRUE(tfBack.translation().isApprox(tf.translation(), 1e-10));
+
+  joint->setRelativeTransform(tf);
+  EXPECT_TRUE(joint->getRelativeTransform().translation().isApprox(
+      tf.translation(), 1e-10));
+
+  Eigen::Vector6d relVel = Eigen::Vector6d::Zero();
+  relVel << 0.1, -0.2, 0.3, 0.4, -0.5, 0.6;
+  joint->setRelativeSpatialVelocity(relVel);
+  EXPECT_TRUE(joint->getRelativeSpatialVelocity().isApprox(relVel, 1e-10));
+
+  Eigen::Vector6d relAcc = Eigen::Vector6d::Zero();
+  relAcc << -0.3, 0.2, -0.1, 0.6, 0.2, -0.4;
+  joint->setRelativeSpatialAcceleration(relAcc);
+  EXPECT_TRUE(joint->getRelativeSpatialAcceleration().isApprox(relAcc, 1e-10));
+
+  Eigen::Vector6d worldVel = Eigen::Vector6d::Zero();
+  worldVel << 0.2, 0.1, -0.2, 0.0, 0.3, -0.1;
+  joint->setSpatialVelocity(worldVel, Frame::World(), Frame::World());
+  EXPECT_TRUE(joint->getVelocities().allFinite());
+
+  Eigen::Vector6d worldAcc = Eigen::Vector6d::Zero();
+  worldAcc << 0.1, -0.1, 0.2, -0.3, 0.4, -0.2;
+  joint->setSpatialAcceleration(worldAcc, Frame::World(), Frame::World());
+  EXPECT_TRUE(joint->getAccelerations().allFinite());
+}
+
+TEST(TemplatedJacobianNode, JacobianOffsetsAndFrames)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("jacobian_node");
+  auto* joint = getJoint<RevoluteJoint>(skel);
+  auto* body = skel->getBodyNode(0);
+
+  joint->setPosition(0, 0.2);
+  joint->setVelocity(0, 0.1);
+
+  const Eigen::Vector3d offset(0.1, -0.2, 0.3);
+
+  const auto J_local = body->getJacobian(body);
+  const auto J_world = body->getJacobian(Frame::World());
+  const auto J_offset = body->getJacobian(offset);
+  const auto J_offset_world = body->getJacobian(offset, Frame::World());
+  const auto J_world_offset = body->getWorldJacobian(offset);
+
+  EXPECT_EQ(J_local.rows(), 6);
+  EXPECT_EQ(J_world.rows(), 6);
+  EXPECT_EQ(J_offset.rows(), 6);
+  EXPECT_EQ(J_offset_world.rows(), 6);
+  EXPECT_EQ(J_world_offset.rows(), 6);
+
+  EXPECT_EQ(J_local.cols(), 1);
+  EXPECT_TRUE(J_world.allFinite());
+  EXPECT_TRUE(J_offset.allFinite());
+  EXPECT_TRUE(J_offset_world.allFinite());
+  EXPECT_TRUE(J_world_offset.allFinite());
+
+  const auto J_linear = body->getLinearJacobian(Frame::World());
+  const auto J_angular = body->getAngularJacobian(Frame::World());
+  const auto J_linear_offset = body->getLinearJacobian(offset, Frame::World());
+
+  EXPECT_EQ(J_linear.rows(), 3);
+  EXPECT_EQ(J_angular.rows(), 3);
+  EXPECT_EQ(J_linear_offset.rows(), 3);
+  EXPECT_TRUE(J_linear.allFinite());
+  EXPECT_TRUE(J_angular.allFinite());
+  EXPECT_TRUE(J_linear_offset.allFinite());
+
+  const auto J_spatial = body->getJacobianSpatialDeriv(Frame::World());
+  const auto J_classic = body->getJacobianClassicDeriv(offset, Frame::World());
+
+  EXPECT_EQ(J_spatial.rows(), 6);
+  EXPECT_EQ(J_classic.rows(), 6);
+  EXPECT_TRUE(J_spatial.allFinite());
+  EXPECT_TRUE(J_classic.allFinite());
 }

@@ -42,6 +42,8 @@ namespace {
 
 using dart::dynamics::BodyNode;
 using dart::dynamics::EulerJoint;
+using dart::dynamics::FreeJoint;
+using dart::dynamics::RevoluteJoint;
 using dart::dynamics::Skeleton;
 using dart::dynamics::SkeletonPtr;
 using dart::dynamics::TranslationalJoint;
@@ -72,6 +74,32 @@ SkeletonPtr makeTestSkeleton()
   childProps.mName = "child_body";
   skeleton->createJointAndBodyNodePair<EulerJoint, BodyNode>(
       root, eulerProps, childProps);
+
+  return skeleton;
+}
+
+SkeletonPtr createChainSkeleton(const std::string& name, int numBodies)
+{
+  auto skeleton = Skeleton::create(name);
+  BodyNode* parent = nullptr;
+
+  for (int i = 0; i < numBodies; ++i) {
+    BodyNode::Properties bodyProps;
+    bodyProps.mName = "body" + std::to_string(i);
+
+    if (i == 0) {
+      auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>(
+          nullptr, FreeJoint::Properties(), bodyProps);
+      parent = pair.second;
+    } else {
+      RevoluteJoint::Properties jointProps;
+      jointProps.mName = "joint" + std::to_string(i);
+      jointProps.mAxis = Eigen::Vector3d::UnitZ();
+      auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>(
+          parent, jointProps, bodyProps);
+      parent = pair.second;
+    }
+  }
 
   return skeleton;
 }
@@ -234,4 +262,119 @@ TEST(BodyNodeDerivatives, SecondOrderMatchesFiniteDifference)
           << ") for body " << body->getName();
     }
   }
+}
+
+TEST(BodyNodeDerivatives, ForcesAndImpulses)
+{
+  auto skeleton = Skeleton::create("forces");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* body = pair.second;
+  auto* joint = pair.first;
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = Eigen::AngleAxisd(dart::math::half_pi, Eigen::Vector3d::UnitZ())
+                    .toRotationMatrix();
+  tf.translation() = Eigen::Vector3d(0.2, -0.1, 0.3);
+  joint->setTransform(tf);
+
+  body->clearExternalForces();
+  body->addExtForce(
+      Eigen::Vector3d(1.0, 0.5, -0.2),
+      Eigen::Vector3d(0.1, 0.0, 0.2),
+      false,
+      false);
+  body->addExtTorque(Eigen::Vector3d(0.1, -0.2, 0.3), false);
+
+  const Eigen::Vector6d extLocal = body->getExternalForceLocal();
+  EXPECT_TRUE(extLocal.array().isFinite().all());
+  EXPECT_GT(extLocal.norm(), 0.0);
+
+  const Eigen::Vector6d extGlobal = body->getExternalForceGlobal();
+  EXPECT_TRUE(extGlobal.array().isFinite().all());
+  EXPECT_GT(extGlobal.norm(), 0.0);
+
+  body->clearConstraintImpulse();
+  body->addConstraintImpulse(
+      Eigen::Vector3d(0.3, 0.2, -0.1),
+      Eigen::Vector3d(0.0, 0.1, 0.0),
+      false,
+      false);
+  EXPECT_TRUE(body->getConstraintImpulse().array().isFinite().all());
+  EXPECT_GT(body->getConstraintImpulse().norm(), 0.0);
+
+  body->clearPositionConstraintImpulse();
+  body->addPositionConstraintImpulse(Eigen::Vector6d::Ones());
+  EXPECT_FALSE(body->getPositionConstraintImpulse().isZero());
+
+  const Eigen::Vector6d& bodyForce = body->getBodyForce();
+  EXPECT_TRUE(bodyForce.array().isFinite().all());
+}
+
+TEST(BodyNodeDerivatives, MoveCopyAgreementFailures)
+{
+  auto skelA = createChainSkeleton("skelA", 2);
+  auto skelB = createChainSkeleton("skelB", 2);
+
+  BodyNode* bodyA = skelA->getBodyNode("body1");
+  BodyNode* bodyB = skelB->getBodyNode("body1");
+  ASSERT_NE(bodyA, nullptr);
+  ASSERT_NE(bodyB, nullptr);
+
+  EXPECT_FALSE(bodyA->moveTo(skelB, bodyA));
+
+  const auto copyResult = bodyA->copyTo(skelB, bodyA, false);
+  EXPECT_EQ(copyResult.first, nullptr);
+  EXPECT_EQ(copyResult.second, nullptr);
+
+  SkeletonPtr nullSkeleton;
+  EXPECT_FALSE(bodyA->moveTo(nullSkeleton, bodyB));
+}
+
+TEST(BodyNodeDerivatives, DerivativesAndSimulationPaths)
+{
+  auto skeleton = createChainSkeleton("dyn", 2);
+  ASSERT_EQ(skeleton->getNumDofs(), 7u);
+
+  Eigen::VectorXd positions = Eigen::VectorXd::Zero(7);
+  positions << 0.1, -0.2, 0.3, 0.0, 0.2, -0.1, 0.4;
+  Eigen::VectorXd velocities = Eigen::VectorXd::Constant(7, 0.05);
+  Eigen::VectorXd accelerations = Eigen::VectorXd::Constant(7, -0.02);
+
+  skeleton->setPositions(positions);
+  skeleton->setVelocities(velocities);
+  skeleton->setAccelerations(accelerations);
+
+  BodyNode* body = skeleton->getBodyNode("body1");
+  ASSERT_NE(body, nullptr);
+
+  const auto& dT0 = body->getWorldTransformDerivative(0);
+  const auto& dT1 = body->getWorldTransformDerivative(1);
+  const auto& dT01 = body->getWorldTransformSecondDerivative(0, 1);
+  EXPECT_TRUE(dT0.array().isFinite().all());
+  EXPECT_TRUE(dT1.array().isFinite().all());
+  EXPECT_TRUE(dT01.array().isFinite().all());
+
+  EXPECT_TRUE(body->getRelativeSpatialVelocity().array().isFinite().all());
+  EXPECT_TRUE(body->getRelativeSpatialAcceleration().array().isFinite().all());
+  EXPECT_TRUE(body->getPrimaryRelativeAcceleration().array().isFinite().all());
+  EXPECT_TRUE(body->getPartialAcceleration().array().isFinite().all());
+
+  const auto& jac = body->getJacobian();
+  const auto& worldJac = body->getWorldJacobian();
+  const auto& jacDeriv = body->getJacobianSpatialDeriv();
+  const auto& jacClassic = body->getJacobianClassicDeriv();
+  EXPECT_EQ(jac.rows(), 6);
+  EXPECT_EQ(worldJac.rows(), 6);
+  EXPECT_EQ(jacDeriv.rows(), 6);
+  EXPECT_EQ(jacClassic.rows(), 6);
+
+  body->dirtyTransform();
+  body->dirtyVelocity();
+  body->dirtyAcceleration();
+  EXPECT_TRUE(body->getWorldTransform().matrix().array().isFinite().all());
+
+  auto world = dart::simulation::World::create();
+  world->addSkeleton(skeleton);
+  world->step();
+  EXPECT_TRUE(body->getBodyForce().array().isFinite().all());
 }
