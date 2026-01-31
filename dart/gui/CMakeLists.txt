@@ -40,6 +40,10 @@ add_subdirectory(render)
 
 file(GLOB render_hdrs "render/*.hpp")
 
+if(DART_BUILD_GUI_RAYLIB)
+  add_subdirectory(raylib)
+endif()
+
 # Add target
 dart_add_library(${target_name} ${dart_gui_hdrs} ${dart_gui_srcs})
 target_link_libraries(${target_name} dart-utils osg::osg ${link_libraries})

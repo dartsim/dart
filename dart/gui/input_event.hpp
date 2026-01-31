@@ -30,62 +30,97 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_FWD_HPP_
-#define DART_GUI_FWD_HPP_
+#ifndef DART_GUI_INPUT_EVENT_HPP_
+#define DART_GUI_INPUT_EVENT_HPP_
+
+#include <variant>
 
 namespace dart {
 namespace gui {
 
-class BodyNodeDnD;
-class DefaultEventHandler;
-class DragAndDrop;
-class EntityNode;
-class FrameNode;
-class GridVisual;
-class ImGuiHandler;
-class ImGuiViewer;
-class ImGuiWidget;
-class InteractiveFrame;
-class InteractiveFrameDnD;
-class MouseEventHandler;
-class RealTimeWorldNode;
-class SaveScreen;
-class ShapeFrameNode;
-class SimpleFrameDnD;
-class SimpleFrameShapeDnD;
-class SupportPolygonVisual;
-class Viewer;
-class ViewerAttachment;
-class WorldNode;
+enum class Key
+{
+  Space,
+  Escape,
+  Enter,
+  Tab,
+  Left,
+  Right,
+  Up,
+  Down,
+  A,
+  B,
+  C,
+  D,
+  E,
+  F,
+  G,
+  H,
+  I,
+  J,
+  K,
+  L,
+  M,
+  N,
+  O,
+  P,
+  Q,
+  R,
+  S,
+  T,
+  U,
+  V,
+  W,
+  X,
+  Y,
+  Z,
+  Num0,
+  Num1,
+  Num2,
+  Num3,
+  Num4,
+  Num5,
+  Num6,
+  Num7,
+  Num8,
+  Num9,
+};
 
-namespace render {
+enum class MouseButton
+{
+  Left,
+  Right,
+  Middle
+};
 
-class ShapeNode;
+struct KeyEvent
+{
+  Key key;
+  bool pressed;
+};
 
-} // namespace render
+struct MouseMoveEvent
+{
+  double x, y;
+  double dx, dy;
+};
 
-struct Material;
-struct BoxData;
-struct SphereData;
-struct CylinderData;
-struct CapsuleData;
-struct ConeData;
-struct EllipsoidData;
-struct PlaneData;
-struct MeshData;
-struct LineData;
-struct SceneNode;
-struct DebugLine;
-struct DebugPoint;
-struct Camera;
-struct Light;
-struct Scene;
-struct ViewerConfig;
-class ViewerBackend;
-class SceneExtractor;
-class SceneViewer;
+struct MouseButtonEvent
+{
+  MouseButton button;
+  bool pressed;
+  double x, y;
+};
+
+struct ScrollEvent
+{
+  double dx, dy;
+};
+
+using InputEvent
+    = std::variant<KeyEvent, MouseMoveEvent, MouseButtonEvent, ScrollEvent>;
 
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_FWD_HPP_
+#endif // DART_GUI_INPUT_EVENT_HPP_

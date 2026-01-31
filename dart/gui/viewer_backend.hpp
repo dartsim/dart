@@ -30,62 +30,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_FWD_HPP_
-#define DART_GUI_FWD_HPP_
+#ifndef DART_GUI_VIEWER_BACKEND_HPP_
+#define DART_GUI_VIEWER_BACKEND_HPP_
+
+#include <dart/gui/export.hpp>
+#include <dart/gui/input_event.hpp>
+#include <dart/gui/scene.hpp>
+
+#include <string>
+#include <vector>
 
 namespace dart {
 namespace gui {
 
-class BodyNodeDnD;
-class DefaultEventHandler;
-class DragAndDrop;
-class EntityNode;
-class FrameNode;
-class GridVisual;
-class ImGuiHandler;
-class ImGuiViewer;
-class ImGuiWidget;
-class InteractiveFrame;
-class InteractiveFrameDnD;
-class MouseEventHandler;
-class RealTimeWorldNode;
-class SaveScreen;
-class ShapeFrameNode;
-class SimpleFrameDnD;
-class SimpleFrameShapeDnD;
-class SupportPolygonVisual;
-class Viewer;
-class ViewerAttachment;
-class WorldNode;
+struct DART_GUI_API ViewerConfig
+{
+  int width = 1280;
+  int height = 720;
+  std::string title = "DART Viewer";
+  int target_fps = 60;
+  bool headless = false;
+};
 
-namespace render {
-
-class ShapeNode;
-
-} // namespace render
-
-struct Material;
-struct BoxData;
-struct SphereData;
-struct CylinderData;
-struct CapsuleData;
-struct ConeData;
-struct EllipsoidData;
-struct PlaneData;
-struct MeshData;
-struct LineData;
-struct SceneNode;
-struct DebugLine;
-struct DebugPoint;
-struct Camera;
-struct Light;
-struct Scene;
-struct ViewerConfig;
-class ViewerBackend;
-class SceneExtractor;
-class SceneViewer;
+class DART_GUI_API ViewerBackend
+{
+public:
+  virtual ~ViewerBackend() = default;
+  virtual bool initialize(const ViewerConfig& config) = 0;
+  virtual bool shouldClose() const = 0;
+  virtual void beginFrame() = 0;
+  virtual void render(const Scene& scene) = 0;
+  virtual void endFrame() = 0;
+  virtual void shutdown() = 0;
+  virtual std::vector<InputEvent> pollEvents() = 0;
+};
 
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_FWD_HPP_
+#endif // DART_GUI_VIEWER_BACKEND_HPP_

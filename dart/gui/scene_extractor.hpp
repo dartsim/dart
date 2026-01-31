@@ -30,62 +30,34 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_FWD_HPP_
-#define DART_GUI_FWD_HPP_
+#ifndef DART_GUI_SCENE_EXTRACTOR_HPP_
+#define DART_GUI_SCENE_EXTRACTOR_HPP_
+
+#include <dart/gui/export.hpp>
+#include <dart/gui/scene.hpp>
+
+#include <dart/simulation/fwd.hpp>
+
+#include <dart/dynamics/fwd.hpp>
+
+#include <optional>
 
 namespace dart {
 namespace gui {
 
-class BodyNodeDnD;
-class DefaultEventHandler;
-class DragAndDrop;
-class EntityNode;
-class FrameNode;
-class GridVisual;
-class ImGuiHandler;
-class ImGuiViewer;
-class ImGuiWidget;
-class InteractiveFrame;
-class InteractiveFrameDnD;
-class MouseEventHandler;
-class RealTimeWorldNode;
-class SaveScreen;
-class ShapeFrameNode;
-class SimpleFrameDnD;
-class SimpleFrameShapeDnD;
-class SupportPolygonVisual;
-class Viewer;
-class ViewerAttachment;
-class WorldNode;
+class DART_GUI_API SceneExtractor
+{
+public:
+  Scene extract(const dart::simulation::World& world) const;
 
-namespace render {
+private:
+  std::optional<ShapeData> convertShape(
+      const dart::dynamics::Shape& shape) const;
 
-class ShapeNode;
-
-} // namespace render
-
-struct Material;
-struct BoxData;
-struct SphereData;
-struct CylinderData;
-struct CapsuleData;
-struct ConeData;
-struct EllipsoidData;
-struct PlaneData;
-struct MeshData;
-struct LineData;
-struct SceneNode;
-struct DebugLine;
-struct DebugPoint;
-struct Camera;
-struct Light;
-struct Scene;
-struct ViewerConfig;
-class ViewerBackend;
-class SceneExtractor;
-class SceneViewer;
+  Material extractMaterial(const dart::dynamics::ShapeNode& node) const;
+};
 
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_FWD_HPP_
+#endif // DART_GUI_SCENE_EXTRACTOR_HPP_

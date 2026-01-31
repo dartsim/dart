@@ -30,62 +30,62 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_FWD_HPP_
-#define DART_GUI_FWD_HPP_
+#ifndef DART_GUI_SCENEVIEWER_HPP_
+#define DART_GUI_SCENEVIEWER_HPP_
+
+#include <dart/gui/export.hpp>
+#include <dart/gui/scene.hpp>
+#include <dart/gui/scene_extractor.hpp>
+#include <dart/gui/viewer_backend.hpp>
+
+#include <dart/simulation/fwd.hpp>
+
+#include <memory>
 
 namespace dart {
 namespace gui {
 
-class BodyNodeDnD;
-class DefaultEventHandler;
-class DragAndDrop;
-class EntityNode;
-class FrameNode;
-class GridVisual;
-class ImGuiHandler;
-class ImGuiViewer;
-class ImGuiWidget;
-class InteractiveFrame;
-class InteractiveFrameDnD;
-class MouseEventHandler;
-class RealTimeWorldNode;
-class SaveScreen;
-class ShapeFrameNode;
-class SimpleFrameDnD;
-class SimpleFrameShapeDnD;
-class SupportPolygonVisual;
-class Viewer;
-class ViewerAttachment;
-class WorldNode;
+class DART_GUI_API SceneViewer
+{
+public:
+  explicit SceneViewer(
+      std::unique_ptr<ViewerBackend> backend, const ViewerConfig& config = {});
 
-namespace render {
+  void setWorld(std::shared_ptr<dart::simulation::World> world);
 
-class ShapeNode;
+  void run();
 
-} // namespace render
+  bool frame();
 
-struct Material;
-struct BoxData;
-struct SphereData;
-struct CylinderData;
-struct CapsuleData;
-struct ConeData;
-struct EllipsoidData;
-struct PlaneData;
-struct MeshData;
-struct LineData;
-struct SceneNode;
-struct DebugLine;
-struct DebugPoint;
-struct Camera;
-struct Light;
-struct Scene;
-struct ViewerConfig;
-class ViewerBackend;
-class SceneExtractor;
-class SceneViewer;
+  void pause();
+  void unpause();
+  void step();
+  bool isPaused() const;
+
+  Camera& camera();
+  const Camera& camera() const;
+
+  void addDebugLine(
+      const Eigen::Vector3d& start,
+      const Eigen::Vector3d& end,
+      const Eigen::Vector4d& color = Eigen::Vector4d(1, 0, 0, 1));
+  void addDebugPoint(
+      const Eigen::Vector3d& pos,
+      const Eigen::Vector4d& color = Eigen::Vector4d(1, 1, 0, 1),
+      double size = 3.0);
+  void clearDebug();
+
+private:
+  std::unique_ptr<ViewerBackend> backend_;
+  SceneExtractor extractor_;
+  std::shared_ptr<dart::simulation::World> world_;
+  Scene scene_;
+  bool paused_ = false;
+  bool initialized_ = false;
+  ViewerConfig config_;
+};
 
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_FWD_HPP_
+#endif // DART_GUI_SCENEVIEWER_HPP_

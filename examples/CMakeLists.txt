@@ -52,7 +52,11 @@ add_subdirectory(drag_and_drop)
 add_subdirectory(empty)
 add_subdirectory(imgui)
 add_subdirectory(polyhedron_visual)
-add_subdirectory(raylib)
+# raylib example is added conditionally from root CMakeLists.txt
+# when DART_BUILD_GUI_RAYLIB=ON to avoid duplicate binary directory errors
+if(NOT DART_BUILD_GUI_RAYLIB)
+  add_subdirectory(raylib)
+endif()
 add_subdirectory(simulation_event_handler)
 add_subdirectory(tinkertoy)
 

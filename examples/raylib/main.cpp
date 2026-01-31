@@ -30,12 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
+#include <dart/gui/raylib/raylib_backend.hpp>
+#include <dart/gui/scene_viewer.hpp>
 
-#include <raylib.h>
+#include <dart/all.hpp>
+
+#include <string_view>
 
 #include <cstdlib>
-#include <string_view>
 
 int main(int argc, char* argv[])
 {
@@ -47,32 +49,78 @@ int main(int argc, char* argv[])
     }
   }
 
-  const int screenWidth = 800;
-  const int screenHeight = 450;
+  // Create a world with some shapes
+  auto world = dart::simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0, 0, -9.81));
 
-  InitWindow(screenWidth, screenHeight, "DART + Raylib (experimental)");
-  SetTargetFPS(60);
+  // Create ground plane skeleton
+  auto ground = dart::dynamics::Skeleton::create("ground");
+  auto [groundJoint, groundBody]
+      = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>();
+  auto groundShape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d(10, 10, 0.1));
+  auto groundShapeNode = groundBody->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect>(groundShape);
+  groundShapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.7, 0.7, 0.7));
+  Eigen::Isometry3d groundTf = Eigen::Isometry3d::Identity();
+  groundTf.translation().z() = -0.05;
+  groundJoint->setTransformFromParentBodyNode(groundTf);
+  world->addSkeleton(ground);
 
-  int frameCount = 0;
-  while (!WindowShouldClose()) {
-    BeginDrawing();
-    ClearBackground(RAYWHITE);
+  // Create a falling box
+  auto box = dart::dynamics::Skeleton::create("box");
+  auto [boxJoint, boxBody]
+      = box->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto boxShape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d(0.3, 0.3, 0.3));
+  auto boxShapeNode = boxBody->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect>(boxShape);
+  boxShapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.8, 0.2, 0.2));
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(1.0);
+  inertia.setMoment(boxShape->computeInertia(1.0));
+  boxBody->setInertia(inertia);
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.translation() = Eigen::Vector3d(0, 0, 1.0);
+  boxJoint->setTransformFromParentBodyNode(boxTf);
+  world->addSkeleton(box);
 
-    DrawText("Raylib backend (experimental)", 20, 20, 20, DARKGRAY);
-    DrawText(TextFormat("DART %s", DART_VERSION_FULL), 20, 60, 20, DARKBLUE);
-    DrawText(
-        TextFormat("raylib %d.%d", RAYLIB_VERSION_MAJOR, RAYLIB_VERSION_MINOR),
-        20,
-        90,
-        20,
-        DARKGREEN);
+  // Create a sphere
+  auto sphereSkel = dart::dynamics::Skeleton::create("sphere");
+  auto [sphereJoint, sphereBody]
+      = sphereSkel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto sphereShape = std::make_shared<dart::dynamics::SphereShape>(0.15);
+  auto sphereShapeNode = sphereBody->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect>(sphereShape);
+  sphereShapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.2, 0.6, 0.8));
+  dart::dynamics::Inertia sphereInertia;
+  sphereInertia.setMass(0.5);
+  sphereInertia.setMoment(sphereShape->computeInertia(0.5));
+  sphereBody->setInertia(sphereInertia);
+  Eigen::Isometry3d sphereTf = Eigen::Isometry3d::Identity();
+  sphereTf.translation() = Eigen::Vector3d(0.5, 0.0, 2.0);
+  sphereJoint->setTransformFromParentBodyNode(sphereTf);
+  world->addSkeleton(sphereSkel);
 
-    EndDrawing();
+  // Create and run the viewer
+  auto config = dart::gui::ViewerConfig{};
+  config.width = 1280;
+  config.height = 720;
+  config.title = "DART + Raylib Visualization";
 
-    if (maxFrames >= 0 && ++frameCount >= maxFrames)
-      break;
+  auto backend = std::make_unique<dart::gui::RaylibBackend>();
+  auto viewer = dart::gui::SceneViewer(std::move(backend), config);
+  viewer.setWorld(world);
+
+  if (maxFrames >= 0) {
+    for (int i = 0; i < maxFrames && viewer.frame(); ++i) {
+    }
+  } else {
+    viewer.run();
   }
 
-  CloseWindow();
   return 0;
 }
