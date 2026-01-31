@@ -2130,3 +2130,692 @@ TEST(SkeletonRootBodyNode, ThrowsOnInvalidTreeIndex)
   EXPECT_THROW(
       constSkel->getRootBodyNode(1), dart::common::OutOfRangeException);
 }
+
+TEST(SkeletonClone, CloneMetaSkeleton)
+{
+  auto skeleton = Skeleton::create("meta_clone");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  Eigen::VectorXd positions = Eigen::VectorXd::Constant(
+      static_cast<Eigen::Index>(skeleton->getNumDofs()), 0.4);
+  skeleton->setPositions(positions);
+
+  MetaSkeletonPtr clone = skeleton->cloneMetaSkeleton("meta_clone_copy");
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->getName(), "meta_clone_copy");
+  EXPECT_EQ(clone->getNumDofs(), skeleton->getNumDofs());
+  EXPECT_TRUE(clone->getPositions().isApprox(positions));
+}
+
+TEST(SkeletonAccessors, BodyNodePropertiesRoundTrip)
+{
+  auto skeleton = Skeleton::create("bn_props_roundtrip");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  auto props = dart::dynamics::detail::getAllBodyNodeProperties(skeleton.get());
+  ASSERT_EQ(props.size(), 2u);
+
+  dart::dynamics::detail::setAllBodyNodeProperties(skeleton.get(), props);
+
+  auto roundTrip
+      = dart::dynamics::detail::getAllBodyNodeProperties(skeleton.get());
+  EXPECT_EQ(roundTrip.size(), 2u);
+}
+
+TEST(SkeletonAccessors, ConstBodyNodeAndJointAccessors)
+{
+  auto skeleton = Skeleton::create("const_vectors");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  EXPECT_EQ(skeleton->getNumBodyNodes(), 2u);
+  EXPECT_EQ(skeleton->getNumJoints(), 2u);
+
+  const Skeleton* constSkel = skeleton.get();
+  EXPECT_NE(constSkel->getBodyNode(0), nullptr);
+  EXPECT_NE(constSkel->getBodyNode(1), nullptr);
+  EXPECT_NE(constSkel->getJoint(0), nullptr);
+  EXPECT_NE(constSkel->getJoint(1), nullptr);
+}
+
+//==============================================================================
+TEST(FreeJointAccessors, CoordinateChartPreservesTransform)
+{
+  auto skeleton = Skeleton::create("free_chart");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint = pair.first;
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = (Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitX())
+                 * Eigen::AngleAxisd(-0.15, Eigen::Vector3d::UnitY())
+                 * Eigen::AngleAxisd(0.35, Eigen::Vector3d::UnitZ()))
+                    .toRotationMatrix();
+  tf.translation() = Eigen::Vector3d(0.3, -0.2, 0.4);
+
+  joint->setPositions(FreeJoint::convertToPositions(tf));
+  const Eigen::Isometry3d before = joint->getRelativeTransform();
+
+  joint->setCoordinateChart(FreeJoint::CoordinateChart::EULER_ZYX);
+  const Eigen::Isometry3d after = joint->getRelativeTransform();
+
+  EXPECT_TRUE(before.translation().isApprox(after.translation(), 1e-10));
+  EXPECT_TRUE(before.linear().isApprox(after.linear(), 1e-10));
+}
+
+//==============================================================================
+TEST(FreeJointAccessors, RelativeSpatialVelocityInWorldCoordinates)
+{
+  auto skeleton = Skeleton::create("free_rel_vel");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint = pair.first;
+
+  Eigen::Vector6d velocity;
+  velocity << 0.2, -0.1, 0.15, 0.05, -0.3, 0.4;
+  joint->setRelativeSpatialVelocity(velocity, Frame::World());
+
+  EXPECT_TRUE(joint->getVelocities().allFinite());
+  EXPECT_TRUE(joint->getRelativeSpatialVelocity().allFinite());
+}
+
+//==============================================================================
+TEST(FreeJointAccessors, RelativeSpatialAccelerationInWorldCoordinates)
+{
+  auto skeleton = Skeleton::create("free_rel_acc");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint = pair.first;
+
+  Eigen::Vector6d acceleration;
+  acceleration << -0.15, 0.25, -0.05, 0.4, -0.2, 0.1;
+  joint->setRelativeSpatialAcceleration(acceleration, Frame::World());
+
+  EXPECT_TRUE(joint->getAccelerations().allFinite());
+  EXPECT_TRUE(joint->getRelativeSpatialAcceleration().allFinite());
+}
+
+//==============================================================================
+TEST(FreeJointAccessors, LinearAndAngularVelocitySetters)
+{
+  auto skeleton = Skeleton::create("free_lin_ang_vel");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint = pair.first;
+
+  joint->setLinearVelocity(
+      Eigen::Vector3d(0.1, -0.2, 0.3), Frame::World(), Frame::World());
+  joint->setAngularVelocity(
+      Eigen::Vector3d(-0.4, 0.2, 0.1), Frame::World(), Frame::World());
+
+  EXPECT_TRUE(joint->getVelocities().allFinite());
+}
+
+//==============================================================================
+TEST(FreeJointAccessors, LinearAndAngularAccelerationSetters)
+{
+  auto skeleton = Skeleton::create("free_lin_ang_acc");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint = pair.first;
+
+  joint->setLinearAcceleration(
+      Eigen::Vector3d(0.2, -0.1, 0.05), Frame::World(), Frame::World());
+  joint->setAngularAcceleration(
+      Eigen::Vector3d(-0.05, 0.15, 0.25), Frame::World(), Frame::World());
+
+  EXPECT_TRUE(joint->getAccelerations().allFinite());
+}
+
+//=============================================================================
+TEST(SkeletonConfiguration, SetConfigurationWithAllVectors)
+{
+  auto skeleton = Skeleton::create("config_all_vectors");
+  auto root = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  root.first->setAxis(Eigen::Vector3d::UnitZ());
+  auto child = root.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child.first->setAxis(Eigen::Vector3d::UnitY());
+
+  const auto dofs = skeleton->getNumDofs();
+  Eigen::VectorXd positions = Eigen::VectorXd::LinSpaced(
+      static_cast<int>(dofs), 0.1, 0.1 + static_cast<double>(dofs - 1));
+  Eigen::VectorXd velocities = Eigen::VectorXd::Constant(dofs, -0.2);
+  Eigen::VectorXd accelerations = Eigen::VectorXd::Constant(dofs, 0.3);
+  Eigen::VectorXd forces = Eigen::VectorXd::Constant(dofs, -0.4);
+  Eigen::VectorXd commands = Eigen::VectorXd::Constant(dofs, 0.5);
+
+  Skeleton::Configuration config(
+      positions, velocities, accelerations, forces, commands);
+  skeleton->setConfiguration(config);
+
+  EXPECT_TRUE(skeleton->getPositions().isApprox(positions));
+  EXPECT_TRUE(skeleton->getVelocities().isApprox(velocities));
+  EXPECT_TRUE(skeleton->getAccelerations().isApprox(accelerations));
+  EXPECT_TRUE(skeleton->getForces().isApprox(forces));
+  EXPECT_TRUE(skeleton->getCommands().isApprox(commands));
+}
+
+//=============================================================================
+TEST(SkeletonState, RoundTripStateWithDerivatives)
+{
+  auto skeleton = Skeleton::create("state_round_trip");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setMass(1.0);
+
+  Eigen::VectorXd positions = Eigen::VectorXd::Zero(skeleton->getNumDofs());
+  positions[3] = 0.4;
+  positions[4] = -0.2;
+  Eigen::VectorXd velocities
+      = Eigen::VectorXd::Constant(skeleton->getNumDofs(), 0.1);
+  Eigen::VectorXd accelerations
+      = Eigen::VectorXd::Constant(skeleton->getNumDofs(), -0.05);
+
+  skeleton->setPositions(positions);
+  skeleton->setVelocities(velocities);
+  skeleton->setAccelerations(accelerations);
+
+  const auto state = skeleton->getState();
+
+  auto clone = skeleton->cloneSkeleton("state_round_trip_clone");
+  clone->setState(state);
+
+  EXPECT_TRUE(clone->getPositions().isApprox(positions));
+  EXPECT_TRUE(clone->getVelocities().isApprox(velocities));
+  EXPECT_TRUE(clone->getAccelerations().isApprox(accelerations));
+}
+
+//=============================================================================
+TEST(SkeletonVersion, IncrementVersionCounter)
+{
+  auto skeleton = Skeleton::create("version_counter");
+  const auto version = skeleton->getVersion();
+  skeleton->incrementVersion();
+  EXPECT_EQ(skeleton->getVersion(), version + 1u);
+}
+
+//=============================================================================
+TEST(BodyNodeTreeOperations, MoveToMismatchedSkeleton)
+{
+  auto skeletonA = Skeleton::create("move_source");
+  auto rootA = skeletonA->createJointAndBodyNodePair<FreeJoint>();
+  auto childA = rootA.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childA.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  auto skeletonB = Skeleton::create("move_target_parent");
+  auto rootB = skeletonB->createJointAndBodyNodePair<FreeJoint>();
+
+  EXPECT_FALSE(childA.second->moveTo(skeletonA, rootB.second));
+  EXPECT_EQ(childA.second->getSkeleton(), skeletonA);
+}
+
+//=============================================================================
+TEST(BodyNodeTreeOperations, MoveToNewSkeleton)
+{
+  auto skeleton = Skeleton::create("move_root");
+  auto root = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto child = root.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child.first->setAxis(Eigen::Vector3d::UnitZ());
+  child.second->setName("moved_body");
+
+  auto newSkeleton = Skeleton::create("move_destination");
+  EXPECT_TRUE(child.second->moveTo(newSkeleton, nullptr));
+
+  EXPECT_EQ(newSkeleton->getNumBodyNodes(), 1u);
+  EXPECT_EQ(newSkeleton->getBodyNode("moved_body"), child.second);
+  EXPECT_EQ(skeleton->getNumBodyNodes(), 1u);
+  EXPECT_EQ(skeleton->getBodyNode("moved_body"), nullptr);
+}
+
+//=============================================================================
+TEST(BodyNodeTreeOperations, SplitAndRemove)
+{
+  auto skeleton = Skeleton::create("split_source");
+  auto root = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto child = root.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child.first->setAxis(Eigen::Vector3d::UnitY());
+  child.second->setName("split_body");
+
+  auto splitSkeleton = child.second->split("split_target");
+  EXPECT_EQ(splitSkeleton->getNumBodyNodes(), 1u);
+  EXPECT_EQ(splitSkeleton->getBodyNode("split_body"), child.second);
+  EXPECT_EQ(skeleton->getNumBodyNodes(), 1u);
+
+  auto removedSkeleton = child.second->remove("removed_target");
+  EXPECT_EQ(removedSkeleton->getName(), "removed_target");
+  EXPECT_EQ(removedSkeleton->getNumBodyNodes(), 1u);
+}
+
+//=============================================================================
+TEST(BodyNodeKinematics, COMLinearVelocityAndAcceleration)
+{
+  auto skeleton = Skeleton::create("body_com_kinematics");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* body = pair.second;
+  body->setMass(2.0);
+
+  Eigen::VectorXd velocities = Eigen::VectorXd::Zero(skeleton->getNumDofs());
+  velocities[3] = 1.0;
+  velocities[4] = -0.5;
+  velocities[5] = 0.2;
+  skeleton->setVelocities(velocities);
+
+  Eigen::VectorXd accelerations = Eigen::VectorXd::Zero(skeleton->getNumDofs());
+  accelerations[3] = -0.1;
+  accelerations[4] = 0.3;
+  accelerations[5] = -0.2;
+  skeleton->setAccelerations(accelerations);
+
+  const auto comVel = body->getCOMLinearVelocity();
+  const auto comAcc = body->getCOMLinearAcceleration();
+  EXPECT_TRUE(comVel.array().isFinite().all());
+  EXPECT_TRUE(comAcc.array().isFinite().all());
+}
+
+//=============================================================================
+TEST(BodyNodeDynamics, MomentumAccessors)
+{
+  auto skeleton = Skeleton::create("body_momentum");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* body = pair.second;
+  body->setMass(3.0);
+
+  Eigen::VectorXd velocities
+      = Eigen::VectorXd::Constant(skeleton->getNumDofs(), 0.25);
+  skeleton->setVelocities(velocities);
+
+  const auto linear = body->getLinearMomentum();
+  const auto angular = body->getAngularMomentum(Eigen::Vector3d::Zero());
+
+  EXPECT_TRUE(linear.array().isFinite().all());
+  EXPECT_TRUE(angular.array().isFinite().all());
+  EXPECT_GT(linear.norm(), 0.0);
+}
+
+//=============================================================================
+TEST(BodyNodeKinematics, COMSpatialVelocityAndAcceleration)
+{
+  auto skeleton = Skeleton::create("body_com_spatial");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* body = pair.second;
+
+  Eigen::VectorXd velocities = Eigen::VectorXd::Zero(skeleton->getNumDofs());
+  velocities[0] = 0.2;
+  velocities[1] = -0.1;
+  velocities[2] = 0.3;
+  skeleton->setVelocities(velocities);
+
+  Eigen::VectorXd accelerations
+      = Eigen::VectorXd::Constant(skeleton->getNumDofs(), 0.05);
+  skeleton->setAccelerations(accelerations);
+
+  const auto spatialVel = body->getCOMSpatialVelocity();
+  const auto spatialAcc = body->getCOMSpatialAcceleration();
+
+  EXPECT_TRUE(spatialVel.array().isFinite().all());
+  EXPECT_TRUE(spatialAcc.array().isFinite().all());
+}
+
+//=============================================================================
+TEST(BodyNodeTreeOps, MoveToNullParentCreatesNewTree)
+{
+  auto skeleton = Skeleton::create("move_null_parent");
+  auto root = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto child = root.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  ASSERT_EQ(skeleton->getNumTrees(), 1u);
+  EXPECT_TRUE(child.second->moveTo(nullptr));
+  EXPECT_EQ(child.second->getParentBodyNode(), nullptr);
+  EXPECT_EQ(skeleton->getNumTrees(), 2u);
+}
+
+//=============================================================================
+TEST(BodyNodeTreeOps, MoveToOtherSkeletonParent)
+{
+  auto skeletonA = Skeleton::create("move_src");
+  auto rootA = skeletonA->createJointAndBodyNodePair<FreeJoint>();
+  auto childA = rootA.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childA.first->setAxis(Eigen::Vector3d::UnitY());
+
+  auto skeletonB = Skeleton::create("move_dest");
+  auto rootB = skeletonB->createJointAndBodyNodePair<FreeJoint>();
+
+  EXPECT_TRUE(childA.second->moveTo(skeletonB, rootB.second));
+  EXPECT_EQ(childA.second->getSkeleton(), skeletonB);
+  EXPECT_EQ(childA.second->getParentBodyNode(), rootB.second);
+  EXPECT_EQ(skeletonA->getNumBodyNodes(), 1u);
+}
+
+//=============================================================================
+TEST(BodyNodeTreeOps, SplitCreatesNewSkeleton)
+{
+  auto skeleton = Skeleton::create("split_source");
+  auto root = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto child = root.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child.first->setAxis(Eigen::Vector3d::UnitX());
+
+  auto split = child.second->split("split_dest");
+  ASSERT_NE(split, nullptr);
+  EXPECT_EQ(split->getName(), "split_dest");
+  EXPECT_EQ(split->getNumBodyNodes(), 1u);
+  EXPECT_EQ(child.second->getSkeleton(), split);
+  EXPECT_EQ(skeleton->getNumBodyNodes(), 1u);
+}
+
+//=============================================================================
+TEST(BodyNodeKinematics, COMWorldFrameAccessors)
+{
+  auto skeleton = Skeleton::create("com_world");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint = pair.first;
+  auto* body = pair.second;
+
+  body->setLocalCOM(Eigen::Vector3d(0.1, 0.2, 0.3));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(1.0, -0.5, 2.0);
+  joint->setPositions(FreeJoint::convertToPositions(tf));
+
+  const Eigen::Vector3d linearVel(0.4, -0.2, 0.1);
+  const Eigen::Vector3d linearAcc(0.05, 0.02, -0.03);
+  joint->setAngularVelocity(
+      Eigen::Vector3d::Zero(), Frame::World(), Frame::World());
+  joint->setAngularAcceleration(
+      Eigen::Vector3d::Zero(), Frame::World(), Frame::World());
+  joint->setLinearVelocity(linearVel, Frame::World(), Frame::World());
+  joint->setLinearAcceleration(linearAcc, Frame::World(), Frame::World());
+
+  const Eigen::Vector3d expectedCom = tf.translation() + body->getLocalCOM();
+  EXPECT_TRUE(body->getCOM(Frame::World()).isApprox(expectedCom, 1e-10));
+  EXPECT_TRUE(body->getCOMLinearVelocity(Frame::World(), Frame::World())
+                  .isApprox(linearVel, 1e-10));
+  EXPECT_TRUE(body->getCOMLinearAcceleration(Frame::World(), Frame::World())
+                  .isApprox(linearAcc, 1e-10));
+}
+
+//=============================================================================
+TEST(BodyNodeDynamics, MomentumMatchesVelocity)
+{
+  auto skeleton = Skeleton::create("momentum_expected");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint = pair.first;
+  auto* body = pair.second;
+
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(2.0);
+  inertia.setMoment(1.0, 1.0, 1.0, 0.0, 0.0, 0.0);
+  inertia.setLocalCOM(Eigen::Vector3d::Zero());
+  body->setInertia(inertia);
+
+  const Eigen::Vector3d linearVel(1.0, -2.0, 0.5);
+  joint->setAngularVelocity(
+      Eigen::Vector3d::Zero(), Frame::World(), Frame::World());
+  joint->setLinearVelocity(linearVel, Frame::World(), Frame::World());
+
+  EXPECT_TRUE(body->getLinearMomentum().isApprox(2.0 * linearVel, 1e-10));
+
+  const Eigen::Vector3d angularVel(0.0, 0.0, 2.0);
+  joint->setLinearVelocity(
+      Eigen::Vector3d::Zero(), Frame::World(), Frame::World());
+  joint->setAngularVelocity(angularVel, Frame::World(), Frame::World());
+
+  const Eigen::Vector3d expectedAngular(0.0, 0.0, 2.0);
+  EXPECT_TRUE(body->getAngularMomentum(body->getCOM())
+                  .isApprox(expectedAngular, 1e-10));
+}
+
+namespace {
+
+SkeletonPtr createComplexCloneSkeleton()
+{
+  auto skeleton = Skeleton::create("complex_clone_source");
+
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.first->setName("root_joint");
+  rootPair.second->setName("root_body");
+
+  auto revolutePair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  revolutePair.first->setName("rev_joint");
+  revolutePair.first->setAxis(Eigen::Vector3d::UnitZ());
+  revolutePair.second->setName("rev_body");
+
+  auto prismaticPair
+      = revolutePair.second->createChildJointAndBodyNodePair<PrismaticJoint>();
+  prismaticPair.first->setName("pris_joint");
+  prismaticPair.first->setAxis(Eigen::Vector3d::UnitX());
+  prismaticPair.second->setName("pris_body");
+
+  auto freePair
+      = prismaticPair.second->createChildJointAndBodyNodePair<FreeJoint>();
+  freePair.first->setName("free_joint");
+  freePair.second->setName("free_body");
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.1, 0.3));
+  rootPair.second->createShapeNodeWith<VisualAspect, CollisionAspect>(box);
+  revolutePair.second->createShapeNodeWith<VisualAspect, CollisionAspect>(box);
+  prismaticPair.second->createShapeNodeWith<VisualAspect, CollisionAspect>(box);
+  freePair.second->createShapeNodeWith<VisualAspect, CollisionAspect>(box);
+
+  auto* endEffector = freePair.second->createEndEffector("tip");
+  endEffector->setDefaultRelativeTransform(Eigen::Isometry3d::Identity());
+
+  (void)freePair.second->createIK();
+
+  prismaticPair.first->setMimicJoint(revolutePair.first, 1.25, -0.2);
+
+  return skeleton;
+}
+
+} // namespace
+
+//==============================================================================
+TEST(SkeletonConfiguration, GetConfigurationAllFlags)
+{
+  auto skeleton = Skeleton::create("config_all_flags");
+  auto root = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  root.first->setAxis(Eigen::Vector3d::UnitZ());
+  auto child = root.second->createChildJointAndBodyNodePair<PrismaticJoint>();
+  child.first->setAxis(Eigen::Vector3d::UnitX());
+
+  const std::size_t dofs = skeleton->getNumDofs();
+  const Eigen::VectorXd positions = makeSequence(dofs, 0.1, 0.05);
+  const Eigen::VectorXd velocities = makeSequence(dofs, -0.2, 0.03);
+  const Eigen::VectorXd accelerations = makeSequence(dofs, 0.4, -0.02);
+  const Eigen::VectorXd forces = makeSequence(dofs, 1.5, 0.1);
+  const Eigen::VectorXd commands = makeSequence(dofs, -0.6, 0.07);
+
+  skeleton->setPositions(positions);
+  skeleton->setVelocities(velocities);
+  skeleton->setAccelerations(accelerations);
+  skeleton->setForces(forces);
+  skeleton->setCommands(commands);
+
+  const auto config = skeleton->getConfiguration(Skeleton::CONFIG_ALL);
+  EXPECT_TRUE(config.mPositions.isApprox(positions));
+  EXPECT_TRUE(config.mVelocities.isApprox(velocities));
+  EXPECT_TRUE(config.mAccelerations.isApprox(accelerations));
+  EXPECT_TRUE(config.mForces.isApprox(forces));
+  EXPECT_TRUE(config.mCommands.isApprox(commands));
+}
+
+//==============================================================================
+TEST(SkeletonConfiguration, SetConfigurationWithIndicesPartial)
+{
+  auto skeleton = Skeleton::create("config_partial_indices");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setAxis(Eigen::Vector3d::UnitY());
+
+  const std::size_t dofs = skeleton->getNumDofs();
+  ASSERT_GE(dofs, 2u);
+
+  const std::vector<std::size_t> indices = {0u, dofs - 1u};
+  Eigen::VectorXd positions(2);
+  positions << 0.25, -0.5;
+  Eigen::VectorXd commands(2);
+  commands << 1.1, -1.2;
+
+  Skeleton::Configuration config(
+      indices,
+      positions,
+      Eigen::VectorXd(),
+      Eigen::VectorXd(),
+      Eigen::VectorXd(),
+      commands);
+  skeleton->setConfiguration(config);
+
+  EXPECT_TRUE(skeleton->getPositions(indices).isApprox(positions));
+  EXPECT_TRUE(skeleton->getCommands(indices).isApprox(commands));
+}
+
+//==============================================================================
+TEST(SkeletonClone, ComplexCloneWithShapesAndIK)
+{
+  auto skeleton = createComplexCloneSkeleton();
+  const std::size_t dofs = skeleton->getNumDofs();
+  const Eigen::VectorXd positions = makeSequence(dofs, 0.1, 0.05);
+  const Eigen::VectorXd velocities = makeSequence(dofs, -0.2, 0.04);
+  const Eigen::VectorXd accelerations = makeSequence(dofs, 0.3, -0.02);
+
+  skeleton->setPositions(positions);
+  skeleton->setVelocities(velocities);
+  skeleton->setAccelerations(accelerations);
+
+  auto clone = skeleton->cloneSkeleton("complex_clone");
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->getNumBodyNodes(), skeleton->getNumBodyNodes());
+  EXPECT_EQ(clone->getNumJoints(), skeleton->getNumJoints());
+
+  auto* clonedFree = clone->getBodyNode("free_body");
+  ASSERT_NE(clonedFree, nullptr);
+  EXPECT_GT(clonedFree->getNumShapeNodes(), 0u);
+  EXPECT_NE(clonedFree->getShapeNode(0), nullptr);
+
+  auto originalIk = skeleton->getBodyNode("free_body")->getIK();
+  auto cloneIk = clonedFree->getIK();
+  EXPECT_NE(cloneIk, nullptr);
+  EXPECT_NE(cloneIk.get(), originalIk.get());
+
+  EXPECT_TRUE(clone->getPositions().isApprox(positions));
+  EXPECT_TRUE(clone->getVelocities().isApprox(velocities));
+  EXPECT_TRUE(clone->getAccelerations().isApprox(accelerations));
+}
+
+//==============================================================================
+TEST(SkeletonClone, MimicJointReferenceUpdated)
+{
+  auto skeleton = createComplexCloneSkeleton();
+  auto* mimicJoint = skeleton->getJoint("pris_joint");
+  auto* referenceJoint = skeleton->getJoint("rev_joint");
+  ASSERT_NE(mimicJoint, nullptr);
+  ASSERT_NE(referenceJoint, nullptr);
+  EXPECT_EQ(mimicJoint->getMimicJoint(0), referenceJoint);
+
+  auto clone = skeleton->cloneSkeleton("mimic_clone");
+  auto* clonedMimic = clone->getJoint("pris_joint");
+  auto* clonedReference = clone->getJoint("rev_joint");
+  ASSERT_NE(clonedMimic, nullptr);
+  ASSERT_NE(clonedReference, nullptr);
+  auto* clonedMimicRef = clonedMimic->getMimicJoint(0);
+  ASSERT_NE(clonedMimicRef, nullptr);
+  EXPECT_EQ(clonedMimicRef->getName(), clonedReference->getName());
+  EXPECT_NE(clonedReference, referenceJoint);
+  EXPECT_DOUBLE_EQ(clonedMimic->getMimicMultiplier(0), 1.25);
+  EXPECT_DOUBLE_EQ(clonedMimic->getMimicOffset(0), -0.2);
+}
+
+//==============================================================================
+TEST(SkeletonSupportPolygon, NoGravityAxesAndCentroid)
+{
+  auto skeleton = createSkeletonWithEndEffectors();
+  skeleton->setGravity(Eigen::Vector3d::Zero());
+
+  const auto& polygon = skeleton->getSupportPolygon();
+  EXPECT_TRUE(polygon.empty());
+
+  const auto axes = skeleton->getSupportAxes();
+  EXPECT_TRUE(axes.first.isZero());
+  EXPECT_TRUE(axes.second.isZero());
+
+  const auto centroid = skeleton->getSupportCentroid();
+  EXPECT_TRUE(std::isnan(centroid.x()));
+  EXPECT_TRUE(std::isnan(centroid.y()));
+}
+
+//==============================================================================
+TEST(SkeletonSupportPolygon, SupportVersionDirtyForSkeleton)
+{
+  auto skeleton = createSkeletonWithEndEffectors();
+  skeleton->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  const auto dirtyVersion = skeleton->getSupportVersion();
+  const auto& polygon = skeleton->getSupportPolygon();
+  (void)polygon;
+  const auto cleanVersion = skeleton->getSupportVersion();
+  EXPECT_GE(cleanVersion, dirtyVersion);
+
+  const auto indices = skeleton->getSupportIndices();
+  EXPECT_LE(indices.size(), skeleton->getNumEndEffectors());
+
+  const auto axes = skeleton->getSupportAxes();
+  EXPECT_TRUE(axes.first.array().isFinite().all());
+  EXPECT_TRUE(axes.second.array().isFinite().all());
+}
+
+//==============================================================================
+TEST(SkeletonSupportPolygon, SupportAxesAndVersionPerTree)
+{
+  auto skeleton = createSkeletonWithEndEffectors();
+  skeleton->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  const auto dirtyVersion = skeleton->getSupportVersion(0);
+  const auto& polygon = skeleton->getSupportPolygon(0);
+  (void)polygon;
+  const auto cleanVersion = skeleton->getSupportVersion(0);
+  EXPECT_GE(cleanVersion, dirtyVersion);
+
+  const auto axes = skeleton->getSupportAxes(0);
+  EXPECT_TRUE(axes.first.array().isFinite().all());
+  EXPECT_TRUE(axes.second.array().isFinite().all());
+
+  const auto centroid = skeleton->getSupportCentroid(0);
+  if (!std::isnan(centroid.x()) && !std::isnan(centroid.y())) {
+    EXPECT_TRUE(std::isfinite(centroid.x()));
+    EXPECT_TRUE(std::isfinite(centroid.y()));
+  }
+}
+
+//==============================================================================
+TEST(SkeletonImpulse, ComputePositionVelocityChangesImmobile)
+{
+  auto skeleton = Skeleton::create("pos_vel_changes_immobile");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  skeleton->setMobile(false);
+  skeleton->computePositionVelocityChanges();
+  EXPECT_TRUE(skeleton->getPositionVelocityChanges().isZero());
+}
+
+//==============================================================================
+TEST(SkeletonImpulse, ComputePositionVelocityChangesMobile)
+{
+  auto skeleton = Skeleton::create("pos_vel_changes_mobile");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  skeleton->computePositionVelocityChanges();
+  const auto& changes = skeleton->getPositionVelocityChanges();
+  EXPECT_EQ(changes.size(), static_cast<Eigen::Index>(skeleton->getNumDofs()));
+  EXPECT_TRUE(changes.array().isFinite().all());
+}
+
+//==============================================================================
+TEST(SkeletonImpulse, ImpulseForwardDynamicsImmobile)
+{
+  auto skeleton = Skeleton::create("impulse_fd_immobile");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  skeleton->setMobile(false);
+  skeleton->computeImpulseForwardDynamics();
+}

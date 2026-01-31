@@ -1080,4 +1080,207 @@ TEST(DARTCollide, MainDispatcherEdgeCases)
   EXPECT_GE(contacts, 0);
 }
 
+TEST(DARTCollide, CylinderPlaneEqualDepthAdjacentEdges)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto shape = std::make_shared<SphereShape>(0.1);
+
+  auto cylObj
+      = makeObject(shape, detector.get(), Eigen::Isometry3d::Identity());
+  auto planeObj
+      = makeObject(shape, detector.get(), Eigen::Isometry3d::Identity());
+
+  CollisionResult result;
+  int contacts = collideCylinderPlane(
+      cylObj.object.get(),
+      planeObj.object.get(),
+      0.5,
+      1.0,
+      cylObj.frame->getWorldTransform(),
+      Eigen::Vector3d::UnitX(),
+      Eigen::Isometry3d::Identity(),
+      result);
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(result.getNumContacts(), 1u);
+  EXPECT_GT(result.getContact(0).penetrationDepth, 0.0);
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+TEST(DARTCollide, CylinderPlaneEqualDepthOppositeEdges)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto shape = std::make_shared<SphereShape>(0.1);
+
+  auto cylObj
+      = makeObject(shape, detector.get(), Eigen::Isometry3d::Identity());
+  auto planeObj
+      = makeObject(shape, detector.get(), Eigen::Isometry3d::Identity());
+
+  CollisionResult result;
+  int contacts = collideCylinderPlane(
+      cylObj.object.get(),
+      planeObj.object.get(),
+      0.5,
+      1.0,
+      cylObj.frame->getWorldTransform(),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Isometry3d::Identity(),
+      result);
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(result.getNumContacts(), 1u);
+  EXPECT_GT(result.getContact(0).penetrationDepth, 0.0);
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+}
+
+} // namespace dart::test
+
+#include <dart/dynamics/capsule_shape.hpp>
+#include <dart/dynamics/cylinder_shape.hpp>
+#include <dart/dynamics/plane_shape.hpp>
+
+namespace dart::test {
+
+TEST(DARTCollide, CapsuleCapsuleUnsupportedPair)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto capsuleA = std::make_shared<CapsuleShape>(0.2, 0.4);
+  auto capsuleB = std::make_shared<CapsuleShape>(0.2, 0.4);
+
+  auto frameA = std::make_shared<SimpleFrame>(Frame::World(), "capsule_a");
+  frameA->setShape(capsuleA);
+  auto frameB = std::make_shared<SimpleFrame>(Frame::World(), "capsule_b");
+  frameB->setShape(capsuleB);
+
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.translation() = Eigen::Vector3d(0.0, 0.0, 0.3);
+  frameB->setRelativeTransform(tfB);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(frameA.get());
+  group->addShapeFrame(frameB.get());
+
+  CollisionOption option;
+  option.maxNumContacts = 4u;
+  CollisionResult result;
+  const bool collided = group->collide(option, &result);
+
+  EXPECT_FALSE(collided);
+  EXPECT_EQ(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, SphereCapsuleUnsupportedPair)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto sphere = std::make_shared<SphereShape>(0.2);
+  auto capsule = std::make_shared<CapsuleShape>(0.2, 0.4);
+
+  auto sphereFrame = std::make_shared<SimpleFrame>(Frame::World(), "sphere");
+  sphereFrame->setShape(sphere);
+  auto capsuleFrame = std::make_shared<SimpleFrame>(Frame::World(), "capsule");
+  capsuleFrame->setShape(capsule);
+
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  tfSphere.translation() = Eigen::Vector3d(0.0, 0.0, 0.25);
+  sphereFrame->setRelativeTransform(tfSphere);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(sphereFrame.get());
+  group->addShapeFrame(capsuleFrame.get());
+
+  CollisionOption option;
+  option.maxNumContacts = 4u;
+  CollisionResult result;
+  const bool collided = group->collide(option, &result);
+
+  EXPECT_FALSE(collided);
+  EXPECT_EQ(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, BoxCylinderUnsupportedPair)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
+  auto cylinder = std::make_shared<CylinderShape>(0.3, 1.0);
+
+  auto boxFrame = std::make_shared<SimpleFrame>(Frame::World(), "box");
+  boxFrame->setShape(box);
+  auto cylinderFrame
+      = std::make_shared<SimpleFrame>(Frame::World(), "cylinder");
+  cylinderFrame->setShape(cylinder);
+
+  Eigen::Isometry3d tfCyl = Eigen::Isometry3d::Identity();
+  tfCyl.translation() = Eigen::Vector3d(0.0, 0.0, 0.2);
+  cylinderFrame->setRelativeTransform(tfCyl);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(boxFrame.get());
+  group->addShapeFrame(cylinderFrame.get());
+
+  CollisionOption option;
+  option.maxNumContacts = 4u;
+  CollisionResult result;
+  const bool collided = group->collide(option, &result);
+
+  EXPECT_FALSE(collided);
+  EXPECT_EQ(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, CylinderPlaneDirectContact)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto cylinder = std::make_shared<CylinderShape>(0.4, 1.0);
+  auto plane = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitY(), 0.0);
+
+  Eigen::Isometry3d cylTf = Eigen::Isometry3d::Identity();
+  cylTf.translation() = Eigen::Vector3d(0.0, 0.2, 0.0);
+
+  auto cylObj = makeObject(cylinder, detector.get(), cylTf);
+  auto planeObj
+      = makeObject(plane, detector.get(), Eigen::Isometry3d::Identity());
+
+  CollisionResult result;
+  int contacts = collideCylinderPlane(
+      cylObj.object.get(),
+      planeObj.object.get(),
+      cylinder->getRadius(),
+      0.5 * cylinder->getHeight(),
+      cylObj.frame->getWorldTransform(),
+      Eigen::Vector3d::UnitY(),
+      planeObj.frame->getWorldTransform(),
+      result);
+
+  EXPECT_EQ(contacts, 1);
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, CylinderSphereInteriorContact)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto cylinder = std::make_shared<CylinderShape>(0.5, 0.8);
+  auto sphere = std::make_shared<SphereShape>(0.2);
+
+  Eigen::Isometry3d cylTf = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d sphereTf = Eigen::Isometry3d::Identity();
+  sphereTf.translation() = Eigen::Vector3d(0.1, 0.1, 0.0);
+
+  auto cylObj = makeObject(cylinder, detector.get(), cylTf);
+  auto sphereObj = makeObject(sphere, detector.get(), sphereTf);
+
+  CollisionResult result;
+  int contacts = collideCylinderSphere(
+      cylObj.object.get(),
+      sphereObj.object.get(),
+      cylinder->getRadius(),
+      0.5 * cylinder->getHeight(),
+      cylObj.frame->getWorldTransform(),
+      sphere->getRadius(),
+      sphereObj.frame->getWorldTransform(),
+      result);
+
+  EXPECT_EQ(contacts, 1);
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+
 } // namespace dart::test

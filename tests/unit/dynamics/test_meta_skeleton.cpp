@@ -971,3 +971,160 @@ TEST(MetaSkeletonTests, CloneMetaSkeleton)
   MetaSkeletonPtr clone2 = skel->cloneMetaSkeleton("original");
   EXPECT_EQ(clone2->getName(), "original");
 }
+
+TEST(MetaSkeletonTests, CommandSubsetAccessors)
+{
+  auto skel = createChainSkeleton(4);
+  std::vector<std::size_t> indices = {0u, 2u};
+
+  Eigen::VectorXd commands(2);
+  commands << 1.2, -0.7;
+  skel->setCommands(indices, commands);
+
+  Eigen::VectorXd result = skel->getCommands(indices);
+  EXPECT_EQ(result.size(), 2);
+  EXPECT_NEAR(result[0], 1.2, 1e-12);
+  EXPECT_NEAR(result[1], -0.7, 1e-12);
+}
+
+TEST(MetaSkeletonTests, JacobianRelativeToSameNode)
+{
+  auto skel = createChainSkeleton(2);
+  auto* body = skel->getBodyNode(1);
+  ASSERT_NE(body, nullptr);
+
+  const auto J = skel->getJacobian(body, body, Frame::World());
+  EXPECT_TRUE(J.isZero());
+
+  const Eigen::Vector3d offset(0.05, -0.02, 0.03);
+  const auto Joffset = skel->getJacobian(body, offset, body, Frame::World());
+  EXPECT_TRUE(Joffset.isZero());
+}
+
+TEST(MetaSkeletonTests, SpatialDerivativeRelativeToSameNode)
+{
+  auto skel = createChainSkeleton(2);
+  auto* body = skel->getBodyNode(1);
+  ASSERT_NE(body, nullptr);
+
+  const auto dJ = skel->getJacobianSpatialDeriv(body, body, Frame::World());
+  EXPECT_TRUE(dJ.isZero());
+
+  const Eigen::Vector3d offset(0.02, 0.01, -0.04);
+  const auto dJoffset
+      = skel->getJacobianSpatialDeriv(body, offset, body, Frame::World());
+  EXPECT_TRUE(dJoffset.isZero());
+}
+
+//=============================================================================
+TEST(MetaSkeletonTests, JacobianInNodeCoordinates)
+{
+  auto skel = createChainSkeleton(2);
+  auto* root = skel->getBodyNode(0);
+  auto* endBody = skel->getBodyNode(1);
+  ASSERT_NE(root, nullptr);
+  ASSERT_NE(endBody, nullptr);
+
+  const auto J = skel->getJacobian(endBody, root, endBody);
+  EXPECT_EQ(J.rows(), 6);
+  EXPECT_EQ(J.cols(), static_cast<int>(skel->getNumDofs()));
+
+  const Eigen::Vector3d offset(0.02, -0.01, 0.03);
+  const auto Joffset = skel->getJacobian(endBody, offset, root, endBody);
+  EXPECT_EQ(Joffset.rows(), 6);
+  EXPECT_EQ(Joffset.cols(), static_cast<int>(skel->getNumDofs()));
+}
+
+//=============================================================================
+TEST(MetaSkeletonTests, JacobianInWorldCoordinates)
+{
+  auto skel = createChainSkeleton(2);
+  auto* root = skel->getBodyNode(0);
+  auto* endBody = skel->getBodyNode(1);
+  ASSERT_NE(root, nullptr);
+  ASSERT_NE(endBody, nullptr);
+
+  const auto J = skel->getJacobian(endBody, root, Frame::World());
+  EXPECT_EQ(J.rows(), 6);
+  EXPECT_EQ(J.cols(), static_cast<int>(skel->getNumDofs()));
+
+  const Eigen::Vector3d offset(0.01, 0.02, -0.02);
+  const auto Joffset = skel->getJacobian(endBody, offset, root, Frame::World());
+  EXPECT_EQ(Joffset.rows(), 6);
+  EXPECT_EQ(Joffset.cols(), static_cast<int>(skel->getNumDofs()));
+}
+
+TEST(MetaSkeletonTests, CenterOfMassVelocityAndAcceleration)
+{
+  auto skel = createChainSkeleton(3, "com_vel_acc");
+
+  skel->setPositions(Eigen::VectorXd::Constant(3, 0.2));
+  skel->setVelocities(Eigen::VectorXd::Constant(3, -0.1));
+  skel->setAccelerations(Eigen::VectorXd::Constant(3, 0.05));
+
+  const auto com = skel->getCOM();
+  EXPECT_TRUE(com.allFinite());
+
+  const auto comVel = skel->getCOMLinearVelocity();
+  EXPECT_TRUE(comVel.allFinite());
+
+  const auto comAcc = skel->getCOMLinearAcceleration();
+  EXPECT_TRUE(comAcc.allFinite());
+}
+
+TEST(MetaSkeletonTests, JacobianDifferentFrames)
+{
+  auto skel = createChainSkeleton(2, "jac_frames");
+  auto* endBody = skel->getBodyNode(1);
+  ASSERT_NE(endBody, nullptr);
+
+  const auto Jworld = skel->getJacobian(endBody, Frame::World());
+  EXPECT_EQ(Jworld.cols(), static_cast<int>(skel->getNumDofs()));
+
+  const auto Jlocal = skel->getJacobian(endBody, endBody);
+  EXPECT_EQ(Jlocal.cols(), static_cast<int>(skel->getNumDofs()));
+}
+
+TEST(MetaSkeletonTests, EnergyAndLagrangianRelationship)
+{
+  auto skel = createChainSkeleton(2, "energy_lagrangian");
+
+  skel->setVelocities(Eigen::VectorXd::Constant(2, 0.25));
+
+  const double kinetic = skel->computeKineticEnergy();
+  const double potential = skel->computePotentialEnergy();
+  const double lagrangian = skel->computeLagrangian();
+
+  EXPECT_TRUE(std::isfinite(kinetic));
+  EXPECT_TRUE(std::isfinite(potential));
+  EXPECT_NEAR(lagrangian, kinetic - potential, 1e-10);
+}
+
+TEST(MetaSkeletonTests, VelocityAndAccelerationLimitVectors)
+{
+  auto skel = createChainSkeleton(3, "limits_vectors");
+
+  Eigen::VectorXd velocityUpper(3);
+  velocityUpper << 2.0, 3.0, 4.0;
+  skel->setVelocityUpperLimits(velocityUpper);
+  const auto velocityUpperOut = skel->getVelocityUpperLimits();
+  EXPECT_DOUBLE_EQ(velocityUpperOut[0], 2.0);
+  EXPECT_DOUBLE_EQ(velocityUpperOut[1], 3.0);
+  EXPECT_DOUBLE_EQ(velocityUpperOut[2], 4.0);
+
+  Eigen::VectorXd accelLower(3);
+  accelLower << -1.0, -2.0, -3.0;
+  skel->setAccelerationLowerLimits(accelLower);
+  const auto accelLowerOut = skel->getAccelerationLowerLimits();
+  EXPECT_DOUBLE_EQ(accelLowerOut[0], -1.0);
+  EXPECT_DOUBLE_EQ(accelLowerOut[1], -2.0);
+  EXPECT_DOUBLE_EQ(accelLowerOut[2], -3.0);
+
+  Eigen::VectorXd accelUpper(3);
+  accelUpper << 1.5, 2.5, 3.5;
+  skel->setAccelerationUpperLimits(accelUpper);
+  const auto accelUpperOut = skel->getAccelerationUpperLimits();
+  EXPECT_DOUBLE_EQ(accelUpperOut[0], 1.5);
+  EXPECT_DOUBLE_EQ(accelUpperOut[1], 2.5);
+  EXPECT_DOUBLE_EQ(accelUpperOut[2], 3.5);
+}

@@ -820,4 +820,139 @@ TEST(SoftContactConstraint, DynamicsAspectFallbacks)
   EXPECT_DOUBLE_EQ(restitution, 0.0);
 }
 
+namespace {
+
+struct SoftWorldFixture
+{
+  simulation::WorldPtr world;
+  dynamics::SkeletonPtr ground;
+  dynamics::SkeletonPtr softSkel;
+  dynamics::SoftBodyNode* softBody{nullptr};
+};
+
+SoftWorldFixture makeSoftWorld(
+    const Eigen::Vector3d& softOffset,
+    double frictionCoeff,
+    double restitutionCoeff)
+{
+  SoftWorldFixture fixture;
+  fixture.world = simulation::World::create();
+  fixture.world->setTimeStep(0.001);
+  fixture.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  fixture.ground = createGround(
+      Eigen::Vector3d(2.0, 0.1, 2.0), Eigen::Vector3d(0.0, -0.05, 0.0));
+  fixture.ground->setMobile(false);
+
+  fixture.softSkel = dynamics::Skeleton::create("soft_world");
+  auto softPair = fixture.softSkel->createJointAndBodyNodePair<
+      dynamics::FreeJoint,
+      dynamics::SoftBodyNode>();
+  fixture.softBody = softPair.second;
+  dynamics::SoftBodyNodeHelper::setBox(
+      fixture.softBody,
+      Eigen::Vector3d(0.4, 0.4, 0.4),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      10.0,
+      10.0,
+      0.1);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = softOffset;
+  dynamics::FreeJoint::setTransformOf(fixture.softBody, tf);
+
+  for (std::size_t i = 0; i < fixture.softBody->getNumShapeNodes(); ++i) {
+    auto* shapeNode = fixture.softBody->getShapeNode(i);
+    auto* dynAspect = shapeNode->getDynamicsAspect();
+    if (dynAspect) {
+      dynAspect->setFrictionCoeff(frictionCoeff);
+      dynAspect->setRestitutionCoeff(restitutionCoeff);
+    }
+  }
+
+  fixture.world->addSkeleton(fixture.ground);
+  fixture.world->addSkeleton(fixture.softSkel);
+
+  return fixture;
+}
+
+} // namespace
+
+TEST(SoftContactConstraint, WorldStepGeneratesSoftContacts)
+{
+  auto fixture = makeSoftWorld(Eigen::Vector3d(0.0, 0.05, 0.0), 0.6, 0.2);
+
+  for (int i = 0; i < 120; ++i) {
+    fixture.world->step();
+  }
+
+  auto solver = fixture.world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+}
+
+TEST(SoftContactConstraint, WorldStepFrictionlessSoftBody)
+{
+  auto fixture = makeSoftWorld(Eigen::Vector3d(0.0, 0.05, 0.0), 0.0, 0.0);
+
+  for (int i = 0; i < 120; ++i) {
+    fixture.world->step();
+  }
+
+  auto solver = fixture.world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+}
+
+TEST(SoftContactConstraint, WorldStepWithSplitImpulse)
+{
+  auto fixture = makeSoftWorld(Eigen::Vector3d(0.0, 0.05, 0.0), 0.4, 0.1);
+
+  auto solver = fixture.world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  solver->setSplitImpulseEnabled(true);
+
+  for (int i = 0; i < 120; ++i) {
+    fixture.world->step();
+  }
+
+  EXPECT_TRUE(solver->isSplitImpulseEnabled());
+  EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+}
+
+TEST(SoftContactConstraint, WorldStepPositionsStayFinite)
+{
+  auto fixture = makeSoftWorld(Eigen::Vector3d(0.0, 0.05, 0.0), 0.5, 0.3);
+
+  for (int i = 0; i < 120; ++i) {
+    fixture.world->step();
+  }
+
+  const Eigen::VectorXd positions = fixture.softSkel->getPositions();
+  EXPECT_TRUE(positions.array().isFinite().all());
+}
+
+TEST(SoftContactConstraint, WorldStepAfterClearingCollisionResult)
+{
+  auto fixture = makeSoftWorld(Eigen::Vector3d(0.0, 0.05, 0.0), 0.7, 0.2);
+
+  auto solver = fixture.world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+
+  for (int i = 0; i < 60; ++i) {
+    fixture.world->step();
+  }
+
+  EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+  solver->clearLastCollisionResult();
+  EXPECT_EQ(solver->getLastCollisionResult().getNumContacts(), 0u);
+
+  for (int i = 0; i < 60; ++i) {
+    fixture.world->step();
+  }
+
+  EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+}
+
 } // namespace dart::test

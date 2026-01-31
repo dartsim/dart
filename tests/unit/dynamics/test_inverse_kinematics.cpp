@@ -1012,3 +1012,256 @@ TEST(HierarchicalIK, FindSolutionErrorPaths)
   skeleton.reset();
   EXPECT_FALSE(compositeForSkeleton->findSolution(positions));
 }
+
+TEST(HierarchicalIK, CompositeModuleSetAccessors)
+{
+  auto fixture = makeIkSkeleton();
+  auto ik = fixture.root->getOrCreateIK();
+  ASSERT_NE(ik, nullptr);
+
+  auto composite = CompositeIK::create(fixture.skeleton);
+  ASSERT_NE(composite, nullptr);
+  EXPECT_TRUE(composite->addModule(ik));
+
+  const auto& modules = composite->getModuleSet();
+  EXPECT_EQ(modules.size(), 1u);
+
+  const CompositeIK* constComposite = composite.get();
+  auto constModules = constComposite->getModuleSet();
+  EXPECT_EQ(constModules.size(), 1u);
+}
+
+TEST(HierarchicalIK, CompositeRejectsForeignModule)
+{
+  auto skeletonA = Skeleton::create("hik_a");
+  auto skeletonB = Skeleton::create("hik_b");
+  auto pairA = skeletonA->createJointAndBodyNodePair<RevoluteJoint>();
+  auto pairB = skeletonB->createJointAndBodyNodePair<RevoluteJoint>();
+  pairA.first->setAxis(Eigen::Vector3d::UnitZ());
+  pairB.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  auto ik = pairA.second->getOrCreateIK();
+  ASSERT_NE(ik, nullptr);
+
+  auto composite = CompositeIK::create(skeletonB);
+  ASSERT_NE(composite, nullptr);
+  EXPECT_FALSE(composite->addModule(ik));
+}
+
+TEST(HierarchicalIK, WholeBodyRefreshWithNoModules)
+{
+  auto skeleton = Skeleton::create("hik_empty");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitY());
+
+  auto wholeBody = WholeBodyIK::create(skeleton);
+  ASSERT_NE(wholeBody, nullptr);
+  wholeBody->refreshIKHierarchy();
+  EXPECT_TRUE(wholeBody->getIKHierarchy().empty());
+}
+
+TEST(InverseKinematics, EndEffectorCreateIkSolveGradientDescent)
+{
+  auto chain = makeIkChain();
+  auto ik = chain.endEffector->createIK();
+  ASSERT_NE(ik, nullptr);
+
+  auto target = std::make_shared<SimpleFrame>(Frame::World(), "ik_target_gd");
+  Eigen::Isometry3d targetTf = chain.endEffector->getWorldTransform();
+  targetTf.translation() += Eigen::Vector3d(0.05, -0.02, 0.1);
+  target->setTransform(targetTf);
+  ik->setTarget(target);
+
+  ik->setOffset(Eigen::Vector3d(0.0, 0.0, 0.05));
+  auto solver = std::make_shared<math::GradientDescentSolver>();
+  solver->setNumMaxIterations(3);
+  solver->setTolerance(1e-6);
+  ik->setSolver(solver);
+
+  Eigen::VectorXd solution;
+  ik->solveAndApply(solution, true);
+  EXPECT_EQ(solution.size(), static_cast<int>(ik->getDofs().size()));
+}
+
+TEST(InverseKinematics, EndEffectorCreateIkSolveAnalytical)
+{
+  auto chain = makeIkChain();
+  auto ik = chain.endEffector->createIK();
+  ASSERT_NE(ik, nullptr);
+
+  auto target = std::make_shared<SimpleFrame>(Frame::World(), "ik_target_an");
+  Eigen::Isometry3d targetTf = chain.endEffector->getWorldTransform();
+  targetTf.translation() += Eigen::Vector3d(-0.05, 0.03, 0.08);
+  target->setTransform(targetTf);
+  ik->setTarget(target);
+
+  ik->setGradientMethod<DummyAnalytical>();
+  auto solver = std::make_shared<math::GradientDescentSolver>();
+  solver->setNumMaxIterations(1);
+  solver->setTolerance(1e-6);
+  ik->setSolver(solver);
+
+  Eigen::VectorXd positions;
+  ik->solveAndApply(positions, true);
+  EXPECT_EQ(positions.size(), static_cast<int>(ik->getDofs().size()));
+  EXPECT_NE(ik->getAnalytical(), nullptr);
+}
+
+TEST(InverseKinematics, TargetNullUsesCurrentTransform)
+{
+  auto fixture = makeIkSkeleton();
+  auto ik = fixture.end->getOrCreateIK();
+  ASSERT_NE(ik, nullptr);
+
+  ik->setTarget(nullptr);
+  auto target = ik->getTarget();
+  ASSERT_NE(target, nullptr);
+  EXPECT_TRUE(target->getTransform().matrix().isApprox(
+      fixture.end->getWorldTransform().matrix()));
+}
+
+TEST(InverseKinematics, OffsetToggleAndActiveFlag)
+{
+  auto fixture = makeIkSkeleton();
+  auto ik = fixture.end->getOrCreateIK();
+  ASSERT_NE(ik, nullptr);
+
+  ik->setActive(false);
+  EXPECT_FALSE(ik->isActive());
+  ik->setActive(true);
+  EXPECT_TRUE(ik->isActive());
+
+  ik->setOffset(Eigen::Vector3d(0.1, 0.0, 0.0));
+  EXPECT_TRUE(ik->hasOffset());
+  ik->setOffset(Eigen::Vector3d::Zero());
+  EXPECT_FALSE(ik->hasOffset());
+}
+
+TEST(HierarchicalIK, CompositeIgnoresInactiveModulesInNullspace)
+{
+  auto chain = makeIkChain();
+  auto rootIk = chain.root->getOrCreateIK();
+  auto endIk = chain.endEffector->getOrCreateIK();
+  ASSERT_NE(rootIk, nullptr);
+  ASSERT_NE(endIk, nullptr);
+
+  rootIk->setHierarchyLevel(0);
+  endIk->setHierarchyLevel(1);
+  endIk->setActive(false);
+
+  auto composite = CompositeIK::create(chain.skeleton);
+  ASSERT_NE(composite, nullptr);
+  EXPECT_TRUE(composite->addModule(rootIk));
+  EXPECT_TRUE(composite->addModule(endIk));
+  composite->refreshIKHierarchy();
+
+  const auto nullspaces = composite->computeNullSpaces();
+  EXPECT_EQ(nullspaces.size(), composite->getIKHierarchy().size());
+}
+
+TEST(InverseKinematics, TaskSpaceRegionNonWorldReference)
+{
+  auto chain = makeIkChain();
+  auto ik = chain.endEffector->createIK();
+  ASSERT_NE(ik, nullptr);
+
+  auto& tsr = ik->setErrorMethod<InverseKinematics::TaskSpaceRegion>();
+  tsr.setBounds();
+  tsr.setComputeFromCenter(false);
+  tsr.setErrorLengthClamp(0.2);
+  tsr.setErrorWeights(Eigen::Vector6d::Ones());
+
+  auto localRef = std::make_shared<SimpleFrame>(chain.tip, "ik_local_ref");
+  Eigen::Isometry3d localTf = Eigen::Isometry3d::Identity();
+  localTf.translation() = Eigen::Vector3d(0.05, -0.02, 0.01);
+  localRef->setRelativeTransform(localTf);
+  tsr.setReferenceFrame(localRef);
+
+  auto target
+      = std::make_shared<SimpleFrame>(Frame::World(), "ik_target_local");
+  Eigen::Isometry3d targetTf = chain.endEffector->getWorldTransform();
+  targetTf.translation() += Eigen::Vector3d(0.02, -0.03, 0.04);
+  target->setTransform(targetTf);
+  ik->setTarget(target);
+
+  const auto& error = tsr.evalError(ik->getPositions());
+  EXPECT_TRUE(error.array().isFinite().all());
+}
+
+TEST(InverseKinematics, AnalyticalPropertiesConstructors)
+{
+  using Analytical = InverseKinematics::Analytical;
+
+  Analytical::UniqueProperties uniqueProps(
+      Analytical::PRE_ANALYTICAL,
+      0.15,
+      [](const Eigen::VectorXd&,
+         const Eigen::VectorXd&,
+         const InverseKinematics*) { return true; });
+
+  EXPECT_EQ(uniqueProps.mExtraDofUtilization, Analytical::PRE_ANALYTICAL);
+  EXPECT_NEAR(uniqueProps.mExtraErrorLengthClamp, 0.15, 1e-12);
+  EXPECT_TRUE(uniqueProps.mQualityComparator(
+      Eigen::VectorXd::Zero(1), Eigen::VectorXd::Zero(1), nullptr));
+
+  uniqueProps.resetQualityComparisonFunction();
+
+  InverseKinematics::GradientMethod::Properties gradProps;
+  gradProps.mComponentWiseClamp = 0.2;
+
+  Analytical::Properties propsA(gradProps, uniqueProps);
+  Analytical::Properties propsB(uniqueProps);
+
+  EXPECT_NEAR(propsA.mComponentWiseClamp, 0.2, 1e-12);
+  EXPECT_EQ(propsB.mExtraDofUtilization, uniqueProps.mExtraDofUtilization);
+}
+
+TEST(InverseKinematics, SolveAndApplyWithWholeBodyIK)
+{
+  auto chain = makeIkChain();
+  auto ik = chain.endEffector->createIK();
+  ASSERT_NE(ik, nullptr);
+
+  auto target
+      = std::make_shared<SimpleFrame>(Frame::World(), "ik_target_wholebody");
+  Eigen::Isometry3d targetTf = chain.endEffector->getWorldTransform();
+  targetTf.translation() += Eigen::Vector3d(0.02, 0.01, -0.03);
+  target->setTransform(targetTf);
+  ik->setTarget(target);
+
+  auto solver = std::make_shared<math::GradientDescentSolver>();
+  solver->setNumMaxIterations(2);
+  solver->setTolerance(1e-6);
+  ik->setSolver(solver);
+
+  ik->solveAndApply(true);
+
+  auto wholeBody = chain.skeleton->getIK(true);
+  ASSERT_NE(wholeBody, nullptr);
+  wholeBody->refreshIKHierarchy();
+  wholeBody->solveAndApply();
+  EXPECT_FALSE(wholeBody->getIKHierarchy().empty());
+}
+
+TEST(HierarchicalIK, RefreshHierarchyPriorityLevels)
+{
+  auto chain = makeIkChain();
+  auto rootIk = chain.root->getOrCreateIK();
+  auto midIk = chain.mid->getOrCreateIK();
+  ASSERT_NE(rootIk, nullptr);
+  ASSERT_NE(midIk, nullptr);
+
+  rootIk->setHierarchyLevel(0);
+  midIk->setHierarchyLevel(2);
+
+  auto composite = CompositeIK::create(chain.skeleton);
+  ASSERT_NE(composite, nullptr);
+  EXPECT_TRUE(composite->addModule(rootIk));
+  EXPECT_TRUE(composite->addModule(midIk));
+  composite->refreshIKHierarchy();
+
+  const auto& hierarchy = composite->getIKHierarchy();
+  ASSERT_EQ(hierarchy.size(), 3u);
+  EXPECT_EQ(hierarchy[0].size(), 1u);
+  EXPECT_EQ(hierarchy[2].size(), 1u);
+}

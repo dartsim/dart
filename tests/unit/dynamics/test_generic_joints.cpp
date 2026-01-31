@@ -746,3 +746,720 @@ TEST(GenericJoint, RestPositionsAndCoefficients)
   joint.setFrictions(frictions);
   EXPECT_TRUE(joint.getFrictions().isApprox(frictions));
 }
+
+//==============================================================================
+TEST(FreeJoint, CoordinateChartConversions)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = (Eigen::AngleAxisd(0.3, Eigen::Vector3d::UnitX())
+                 * Eigen::AngleAxisd(-0.2, Eigen::Vector3d::UnitY())
+                 * Eigen::AngleAxisd(0.15, Eigen::Vector3d::UnitZ()))
+                    .toRotationMatrix();
+  tf.translation() = Eigen::Vector3d(0.5, -0.3, 0.8);
+
+  auto posXYZ = FreeJoint::convertToPositions(
+      tf, FreeJoint::CoordinateChart::EULER_XYZ);
+  auto tfXYZ = FreeJoint::convertToTransform(
+      posXYZ, FreeJoint::CoordinateChart::EULER_XYZ);
+  EXPECT_TRUE(tfXYZ.translation().isApprox(tf.translation(), 1e-10));
+  EXPECT_TRUE(tfXYZ.linear().isApprox(tf.linear(), 1e-10));
+
+  auto posZYX = FreeJoint::convertToPositions(
+      tf, FreeJoint::CoordinateChart::EULER_ZYX);
+  auto tfZYX = FreeJoint::convertToTransform(
+      posZYX, FreeJoint::CoordinateChart::EULER_ZYX);
+  EXPECT_TRUE(tfZYX.translation().isApprox(tf.translation(), 1e-10));
+  EXPECT_TRUE(tfZYX.linear().isApprox(tf.linear(), 1e-10));
+}
+
+//==============================================================================
+TEST(FreeJoint, SetTransformOfSkeletonRoots)
+{
+  auto skeleton = Skeleton::create("multi_root_free");
+  auto rootA = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto rootB = skeleton->createJointAndBodyNodePair<FreeJoint>();
+
+  EXPECT_EQ(skeleton->getNumTrees(), 2u);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.2, -0.1, 0.4);
+
+  FreeJoint::setTransformOf(skeleton.get(), tf, Frame::World(), true);
+
+  EXPECT_TRUE(rootA.second->getWorldTransform().translation().isApprox(
+      tf.translation(), 1e-10));
+  EXPECT_TRUE(rootB.second->getWorldTransform().translation().isApprox(
+      tf.translation(), 1e-10));
+}
+
+//==============================================================================
+TEST(FreeJoint, SpatialMotionBatchSetter)
+{
+  auto skeleton = Skeleton::create("spatial_motion");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint = pair.first;
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(-0.2, 0.4, 0.1);
+  Eigen::Vector6d spatialVel;
+  spatialVel << 0.1, -0.2, 0.3, 0.4, -0.5, 0.2;
+  Eigen::Vector6d spatialAcc;
+  spatialAcc << -0.3, 0.2, 0.1, -0.4, 0.5, -0.2;
+
+  joint->setSpatialMotion(
+      &tf,
+      Frame::World(),
+      &spatialVel,
+      Frame::World(),
+      Frame::World(),
+      &spatialAcc,
+      Frame::World(),
+      Frame::World());
+
+  EXPECT_TRUE(joint->getRelativeTransform().translation().isApprox(
+      tf.translation(), 1e-10));
+  EXPECT_TRUE(joint->getVelocities().allFinite());
+  EXPECT_TRUE(joint->getAccelerations().allFinite());
+}
+
+//==============================================================================
+TEST(GenericJoint, SingleDofLimitAccessors)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("limit_revolute");
+  auto* joint = getJoint<RevoluteJoint>(skel);
+
+  joint->setPositionLowerLimit(0, -1.2);
+  joint->setPositionUpperLimit(0, 1.3);
+  EXPECT_DOUBLE_EQ(joint->getPositionLowerLimit(0), -1.2);
+  EXPECT_DOUBLE_EQ(joint->getPositionUpperLimit(0), 1.3);
+
+  joint->setVelocityLowerLimit(0, -2.0);
+  joint->setVelocityUpperLimit(0, 2.0);
+  EXPECT_DOUBLE_EQ(joint->getVelocityLowerLimit(0), -2.0);
+  EXPECT_DOUBLE_EQ(joint->getVelocityUpperLimit(0), 2.0);
+
+  joint->setAccelerationLowerLimit(0, -3.0);
+  joint->setAccelerationUpperLimit(0, 3.0);
+  EXPECT_DOUBLE_EQ(joint->getAccelerationLowerLimit(0), -3.0);
+  EXPECT_DOUBLE_EQ(joint->getAccelerationUpperLimit(0), 3.0);
+
+  joint->setForceLowerLimit(0, -4.0);
+  joint->setForceUpperLimit(0, 4.0);
+  EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(0), -4.0);
+  EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(0), 4.0);
+
+  joint->setPosition(0, 0.25);
+  EXPECT_NEAR(joint->getPosition(0), 0.25, 1e-12);
+}
+
+//==============================================================================
+TEST(GenericJoint, SingleDofVectorLimitsAndInitials)
+{
+  auto skel = createSkeletonWithJoint<PrismaticJoint>("limit_prismatic");
+  auto* joint = getJoint<PrismaticJoint>(skel);
+
+  Eigen::VectorXd posLower(1);
+  Eigen::VectorXd posUpper(1);
+  posLower << -0.5;
+  posUpper << 0.5;
+  joint->setPositionLowerLimits(posLower);
+  joint->setPositionUpperLimits(posUpper);
+  EXPECT_TRUE(joint->getPositionLowerLimits().isApprox(posLower));
+  EXPECT_TRUE(joint->getPositionUpperLimits().isApprox(posUpper));
+
+  Eigen::VectorXd velLower(1);
+  Eigen::VectorXd velUpper(1);
+  velLower << -1.0;
+  velUpper << 1.0;
+  joint->setVelocityLowerLimits(velLower);
+  joint->setVelocityUpperLimits(velUpper);
+  EXPECT_TRUE(joint->getVelocityLowerLimits().isApprox(velLower));
+  EXPECT_TRUE(joint->getVelocityUpperLimits().isApprox(velUpper));
+
+  Eigen::VectorXd accLower(1);
+  Eigen::VectorXd accUpper(1);
+  accLower << -2.0;
+  accUpper << 2.0;
+  joint->setAccelerationLowerLimits(accLower);
+  joint->setAccelerationUpperLimits(accUpper);
+  EXPECT_TRUE(joint->getAccelerationLowerLimits().isApprox(accLower));
+  EXPECT_TRUE(joint->getAccelerationUpperLimits().isApprox(accUpper));
+
+  Eigen::VectorXd forceLower(1);
+  Eigen::VectorXd forceUpper(1);
+  forceLower << -3.5;
+  forceUpper << 3.5;
+  joint->setForceLowerLimits(forceLower);
+  joint->setForceUpperLimits(forceUpper);
+  EXPECT_TRUE(joint->getForceLowerLimits().isApprox(forceLower));
+  EXPECT_TRUE(joint->getForceUpperLimits().isApprox(forceUpper));
+
+  Eigen::VectorXd initialPos(1);
+  Eigen::VectorXd initialVel(1);
+  initialPos << 0.15;
+  initialVel << -0.2;
+  joint->setInitialPositions(initialPos);
+  joint->setInitialVelocities(initialVel);
+  EXPECT_TRUE(joint->getInitialPositions().isApprox(initialPos));
+  EXPECT_TRUE(joint->getInitialVelocities().isApprox(initialVel));
+}
+
+//==============================================================================
+TEST(GenericJoint, MultiDofVectorLimitsAndState)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("limit_free");
+  auto* joint = getJoint<FreeJoint>(skel);
+  const auto ndofs = static_cast<Eigen::Index>(joint->getNumDofs());
+
+  Eigen::VectorXd posLower = Eigen::VectorXd::Constant(ndofs, -0.4);
+  Eigen::VectorXd posUpper = Eigen::VectorXd::Constant(ndofs, 0.6);
+  joint->setPositionLowerLimits(posLower);
+  joint->setPositionUpperLimits(posUpper);
+  EXPECT_TRUE(joint->getPositionLowerLimits().isApprox(posLower));
+  EXPECT_TRUE(joint->getPositionUpperLimits().isApprox(posUpper));
+  EXPECT_TRUE(joint->hasPositionLimit(0));
+
+  Eigen::VectorXd velLower = Eigen::VectorXd::Constant(ndofs, -1.2);
+  Eigen::VectorXd velUpper = Eigen::VectorXd::Constant(ndofs, 1.2);
+  joint->setVelocityLowerLimits(velLower);
+  joint->setVelocityUpperLimits(velUpper);
+  EXPECT_TRUE(joint->getVelocityLowerLimits().isApprox(velLower));
+  EXPECT_TRUE(joint->getVelocityUpperLimits().isApprox(velUpper));
+
+  Eigen::VectorXd accLower = Eigen::VectorXd::Constant(ndofs, -2.5);
+  Eigen::VectorXd accUpper = Eigen::VectorXd::Constant(ndofs, 2.5);
+  joint->setAccelerationLowerLimits(accLower);
+  joint->setAccelerationUpperLimits(accUpper);
+  EXPECT_TRUE(joint->getAccelerationLowerLimits().isApprox(accLower));
+  EXPECT_TRUE(joint->getAccelerationUpperLimits().isApprox(accUpper));
+
+  Eigen::VectorXd forceLower = Eigen::VectorXd::Constant(ndofs, -5.0);
+  Eigen::VectorXd forceUpper = Eigen::VectorXd::Constant(ndofs, 5.0);
+  joint->setForceLowerLimits(forceLower);
+  joint->setForceUpperLimits(forceUpper);
+  EXPECT_TRUE(joint->getForceLowerLimits().isApprox(forceLower));
+  EXPECT_TRUE(joint->getForceUpperLimits().isApprox(forceUpper));
+
+  Eigen::VectorXd positions = Eigen::VectorXd::LinSpaced(ndofs, -0.2, 0.3);
+  Eigen::VectorXd velocities = Eigen::VectorXd::LinSpaced(ndofs, 0.1, 0.6);
+  Eigen::VectorXd accelerations = Eigen::VectorXd::LinSpaced(ndofs, -0.4, 0.2);
+  Eigen::VectorXd forces = Eigen::VectorXd::LinSpaced(ndofs, 0.2, 1.2);
+  Eigen::VectorXd commands = Eigen::VectorXd::LinSpaced(ndofs, -0.8, 0.4);
+
+  joint->setPositions(positions);
+  joint->setVelocities(velocities);
+  joint->setAccelerations(accelerations);
+  joint->setForces(forces);
+  joint->setCommands(commands);
+
+  EXPECT_TRUE(joint->getPositions().isApprox(positions));
+  EXPECT_TRUE(joint->getVelocities().isApprox(velocities));
+  EXPECT_TRUE(joint->getAccelerations().isApprox(accelerations));
+  EXPECT_TRUE(joint->getForces().isApprox(forces));
+  EXPECT_TRUE(joint->getCommands().isApprox(commands));
+}
+
+//==============================================================================
+TEST(GenericJoint, SpringDampingFrictionSingleDof)
+{
+  auto skel = createSkeletonWithJoint<PrismaticJoint>("spring_prismatic");
+  auto* joint = getJoint<PrismaticJoint>(skel);
+
+  joint->setSpringStiffness(0, 2.5);
+  joint->setRestPosition(0, 0.1);
+  joint->setDampingCoefficient(0, 1.1);
+  joint->setCoulombFriction(0, 0.2);
+
+  EXPECT_DOUBLE_EQ(joint->getSpringStiffness(0), 2.5);
+  EXPECT_DOUBLE_EQ(joint->getRestPosition(0), 0.1);
+  EXPECT_DOUBLE_EQ(joint->getDampingCoefficient(0), 1.1);
+  EXPECT_DOUBLE_EQ(joint->getCoulombFriction(0), 0.2);
+
+  Eigen::VectorXd rest(1);
+  Eigen::VectorXd damping(1);
+  Eigen::VectorXd friction(1);
+  rest << -0.2;
+  damping << 0.8;
+  friction << 0.3;
+  joint->setRestPositions(rest);
+  joint->setDampingCoefficients(damping);
+  joint->setFrictions(friction);
+  EXPECT_TRUE(joint->getRestPositions().isApprox(rest));
+  EXPECT_TRUE(joint->getDampingCoefficients().isApprox(damping));
+  EXPECT_TRUE(joint->getFrictions().isApprox(friction));
+
+  joint->setPosition(0, 0.5);
+  joint->setSpringStiffness(0, 2.0);
+  joint->setRestPosition(0, 0.1);
+  const double expected = 0.5 * 2.0 * (0.4 * 0.4);
+  EXPECT_NEAR(joint->computePotentialEnergy(), expected, 1e-12);
+}
+
+//==============================================================================
+TEST(GenericJoint, CommandClippingForceActuator)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("force_command");
+  auto* joint = getJoint<RevoluteJoint>(skel);
+
+  joint->setActuatorType(Joint::FORCE);
+  joint->setForceLowerLimit(0, -1.0);
+  joint->setForceUpperLimit(0, 1.0);
+
+  joint->setCommand(0, 2.0);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), 1.0);
+
+  joint->setCommand(0, -2.0);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), -1.0);
+
+  joint->setCommand(0, 0.5);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), 0.5);
+}
+
+//==============================================================================
+TEST(GenericJoint, CommandClippingVelocityActuator)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("velocity_command");
+  auto* joint = getJoint<RevoluteJoint>(skel);
+
+  joint->setActuatorType(Joint::VELOCITY);
+  joint->setVelocityLowerLimit(0, -0.5);
+  joint->setVelocityUpperLimit(0, 0.5);
+
+  joint->setCommand(0, 1.5);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), 0.5);
+
+  joint->setVelocity(0, -0.2);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), -0.2);
+}
+
+//==============================================================================
+TEST(GenericJoint, CommandClippingAccelerationActuator)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("accel_command");
+  auto* joint = getJoint<RevoluteJoint>(skel);
+
+  joint->setActuatorType(Joint::ACCELERATION);
+  joint->setAccelerationLowerLimit(0, -0.3);
+  joint->setAccelerationUpperLimit(0, 0.3);
+
+  joint->setCommand(0, 1.0);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), 0.3);
+
+  joint->setAcceleration(0, -0.1);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), -0.1);
+}
+
+//==============================================================================
+TEST(GenericJoint, CommandHandlingPassiveLockedAndMimic)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("passive_locked_mimic");
+  auto* joint = getJoint<RevoluteJoint>(skel);
+
+  joint->setActuatorType(Joint::PASSIVE);
+  joint->setCommand(0, 0.75);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), 0.0);
+
+  joint->setActuatorType(Joint::LOCKED);
+  joint->setCommand(0, -0.5);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), 0.0);
+
+  joint->setActuatorType(Joint::MIMIC);
+  joint->setCommand(0, 0.9);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), 0.0);
+}
+
+//==============================================================================
+TEST(Joint, ActuatorTypeOverrides)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("actuator_overrides");
+  auto* joint = getJoint<FreeJoint>(skel);
+
+  joint->setActuatorType(Joint::FORCE);
+  joint->setActuatorType(2, Joint::MIMIC);
+  EXPECT_EQ(joint->getActuatorType(2), Joint::MIMIC);
+  EXPECT_TRUE(joint->hasActuatorType(Joint::MIMIC));
+
+  auto types = joint->getActuatorTypes();
+  ASSERT_EQ(types.size(), joint->getNumDofs());
+  EXPECT_EQ(types[2], Joint::MIMIC);
+
+  joint->setActuatorType(2, Joint::FORCE);
+  EXPECT_EQ(joint->getActuatorType(2), Joint::FORCE);
+
+  std::vector<Joint::ActuatorType> newTypes(joint->getNumDofs(), Joint::FORCE);
+  newTypes[4] = Joint::MIMIC;
+  joint->setActuatorTypes(newTypes);
+  EXPECT_EQ(joint->getActuatorType(4), Joint::MIMIC);
+}
+
+//==============================================================================
+TEST(Joint, TransformSetters)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("transform_setters");
+  auto* joint = getJoint<RevoluteJoint>(skel);
+
+  Eigen::Isometry3d parentTf = Eigen::Isometry3d::Identity();
+  parentTf.linear()
+      = Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  parentTf.translation() = Eigen::Vector3d(0.1, -0.2, 0.3);
+  joint->setTransformFromParentBodyNode(parentTf);
+  EXPECT_TRUE(joint->getTransformFromParentBodyNode().isApprox(parentTf));
+
+  Eigen::Isometry3d childTf = Eigen::Isometry3d::Identity();
+  childTf.linear()
+      = Eigen::AngleAxisd(-0.1, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  childTf.translation() = Eigen::Vector3d(-0.3, 0.2, -0.1);
+  joint->setTransformFromChildBodyNode(childTf);
+  EXPECT_TRUE(joint->getTransformFromChildBodyNode().isApprox(childTf));
+}
+
+//==============================================================================
+TEST(Joint, CheckSanityLimits)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("check_sanity");
+  auto* joint = getJoint<RevoluteJoint>(skel);
+
+  joint->setPositionLowerLimit(0, -0.5);
+  joint->setPositionUpperLimit(0, 0.5);
+  joint->setVelocityLowerLimit(0, -1.0);
+  joint->setVelocityUpperLimit(0, 1.0);
+
+  joint->setInitialPosition(0, 1.0);
+  joint->setInitialVelocity(0, 2.0);
+  EXPECT_FALSE(joint->checkSanity(false));
+
+  joint->setInitialPosition(0, 0.0);
+  joint->setInitialVelocity(0, 0.0);
+  EXPECT_TRUE(joint->checkSanity(false));
+  EXPECT_TRUE(joint->checkSanity(true));
+}
+
+//==============================================================================
+TEST(ZeroDofJoint, AccessorsAndEmptyState)
+{
+  auto skeleton = Skeleton::create("zero_dof");
+  auto pair = skeleton->createJointAndBodyNodePair<WeldJoint>();
+  auto* joint = pair.first;
+  auto* body = pair.second;
+
+  EXPECT_EQ(joint->getNumDofs(), 0u);
+  EXPECT_EQ(joint->getCommands().size(), 0);
+  EXPECT_EQ(joint->getPositions().size(), 0);
+  EXPECT_EQ(joint->getVelocities().size(), 0);
+  EXPECT_EQ(joint->getAccelerations().size(), 0);
+  EXPECT_EQ(joint->getForces().size(), 0);
+
+  EXPECT_EQ(joint->getPositionLowerLimits().size(), 0);
+  EXPECT_EQ(joint->getPositionUpperLimits().size(), 0);
+  EXPECT_EQ(joint->getVelocityLowerLimits().size(), 0);
+  EXPECT_EQ(joint->getVelocityUpperLimits().size(), 0);
+  EXPECT_EQ(joint->getAccelerationLowerLimits().size(), 0);
+  EXPECT_EQ(joint->getAccelerationUpperLimits().size(), 0);
+  EXPECT_EQ(joint->getForceLowerLimits().size(), 0);
+  EXPECT_EQ(joint->getForceUpperLimits().size(), 0);
+
+  joint->resetPositions();
+  joint->resetVelocities();
+  joint->resetAccelerations();
+  joint->resetCommands();
+  joint->resetForces();
+
+  Eigen::VectorXd q0(0);
+  Eigen::VectorXd v(0);
+  Eigen::VectorXd result;
+  joint->integratePositions(q0, v, 0.1, result);
+  EXPECT_EQ(result.size(), 0);
+
+  EXPECT_NEAR(joint->computePotentialEnergy(), 0.0, 1e-12);
+  EXPECT_TRUE(
+      joint->getBodyConstraintWrench().isApprox(body->getBodyForce(), 1e-12));
+}
+
+//==============================================================================
+TEST(GenericJoint, BallJointVectorLimitsAndInitials)
+{
+  auto skel = createSkeletonWithJoint<BallJoint>("ball_vector_limits");
+  auto* joint = getJoint<BallJoint>(skel);
+  const auto ndofs = static_cast<Eigen::Index>(joint->getNumDofs());
+
+  Eigen::VectorXd posLower = Eigen::VectorXd::Constant(ndofs, -0.4);
+  Eigen::VectorXd posUpper = Eigen::VectorXd::Constant(ndofs, 0.5);
+  joint->setPositionLowerLimits(posLower);
+  joint->setPositionUpperLimits(posUpper);
+  EXPECT_TRUE(joint->getPositionLowerLimits().isApprox(posLower));
+  EXPECT_TRUE(joint->getPositionUpperLimits().isApprox(posUpper));
+
+  Eigen::VectorXd velLower = Eigen::VectorXd::Constant(ndofs, -1.1);
+  Eigen::VectorXd velUpper = Eigen::VectorXd::Constant(ndofs, 1.2);
+  joint->setVelocityLowerLimits(velLower);
+  joint->setVelocityUpperLimits(velUpper);
+  EXPECT_TRUE(joint->getVelocityLowerLimits().isApprox(velLower));
+  EXPECT_TRUE(joint->getVelocityUpperLimits().isApprox(velUpper));
+
+  Eigen::VectorXd accLower = Eigen::VectorXd::Constant(ndofs, -2.2);
+  Eigen::VectorXd accUpper = Eigen::VectorXd::Constant(ndofs, 2.3);
+  joint->setAccelerationLowerLimits(accLower);
+  joint->setAccelerationUpperLimits(accUpper);
+  EXPECT_TRUE(joint->getAccelerationLowerLimits().isApprox(accLower));
+  EXPECT_TRUE(joint->getAccelerationUpperLimits().isApprox(accUpper));
+
+  Eigen::VectorXd forceLower = Eigen::VectorXd::Constant(ndofs, -4.0);
+  Eigen::VectorXd forceUpper = Eigen::VectorXd::Constant(ndofs, 4.0);
+  joint->setForceLowerLimits(forceLower);
+  joint->setForceUpperLimits(forceUpper);
+  EXPECT_TRUE(joint->getForceLowerLimits().isApprox(forceLower));
+  EXPECT_TRUE(joint->getForceUpperLimits().isApprox(forceUpper));
+
+  Eigen::VectorXd initialPos = Eigen::VectorXd::LinSpaced(ndofs, -0.1, 0.2);
+  Eigen::VectorXd initialVel = Eigen::VectorXd::LinSpaced(ndofs, 0.05, 0.15);
+  joint->setInitialPositions(initialPos);
+  joint->setInitialVelocities(initialVel);
+  EXPECT_TRUE(joint->getInitialPositions().isApprox(initialPos));
+  EXPECT_TRUE(joint->getInitialVelocities().isApprox(initialVel));
+
+  Eigen::VectorXd rest = Eigen::VectorXd::LinSpaced(ndofs, -0.2, 0.2);
+  Eigen::VectorXd damping = Eigen::VectorXd::Constant(ndofs, 0.4);
+  Eigen::VectorXd frictions = Eigen::VectorXd::Constant(ndofs, 0.3);
+  joint->setRestPositions(rest);
+  joint->setDampingCoefficients(damping);
+  joint->setFrictions(frictions);
+  EXPECT_TRUE(joint->getRestPositions().isApprox(rest));
+  EXPECT_TRUE(joint->getDampingCoefficients().isApprox(damping));
+  EXPECT_TRUE(joint->getFrictions().isApprox(frictions));
+}
+
+//==============================================================================
+TEST(GenericJoint, EulerJointVectorCommandsAndStates)
+{
+  auto skel = createSkeletonWithJoint<EulerJoint>("euler_vector_states");
+  auto* joint = getJoint<EulerJoint>(skel);
+  const auto ndofs = static_cast<Eigen::Index>(joint->getNumDofs());
+
+  Eigen::VectorXd positions = Eigen::VectorXd::LinSpaced(ndofs, -0.2, 0.4);
+  Eigen::VectorXd velocities = Eigen::VectorXd::LinSpaced(ndofs, 0.1, 0.3);
+  Eigen::VectorXd accelerations = Eigen::VectorXd::LinSpaced(ndofs, -0.3, 0.2);
+  Eigen::VectorXd commands = Eigen::VectorXd::LinSpaced(ndofs, -0.5, 0.5);
+
+  Eigen::VectorXd forceLower = Eigen::VectorXd::Constant(ndofs, -2.0);
+  Eigen::VectorXd forceUpper = Eigen::VectorXd::Constant(ndofs, 2.0);
+  joint->setForceLowerLimits(forceLower);
+  joint->setForceUpperLimits(forceUpper);
+
+  joint->setPositions(positions);
+  joint->setVelocities(velocities);
+  joint->setAccelerations(accelerations);
+  joint->setCommands(commands);
+
+  EXPECT_TRUE(joint->getPositions().isApprox(positions));
+  EXPECT_TRUE(joint->getVelocities().isApprox(velocities));
+  EXPECT_TRUE(joint->getAccelerations().isApprox(accelerations));
+  EXPECT_TRUE(joint->getCommands().isApprox(commands));
+}
+
+//==============================================================================
+TEST(GenericJoint, PlanarJointVectorLimitsAndResets)
+{
+  auto skel = createSkeletonWithJoint<PlanarJoint>("planar_vector_limits");
+  auto* joint = getJoint<PlanarJoint>(skel);
+  const auto ndofs = static_cast<Eigen::Index>(joint->getNumDofs());
+
+  Eigen::VectorXd posLower = Eigen::VectorXd::Constant(ndofs, -0.7);
+  Eigen::VectorXd posUpper = Eigen::VectorXd::Constant(ndofs, 0.9);
+  joint->setPositionLowerLimits(posLower);
+  joint->setPositionUpperLimits(posUpper);
+  EXPECT_TRUE(joint->getPositionLowerLimits().isApprox(posLower));
+  EXPECT_TRUE(joint->getPositionUpperLimits().isApprox(posUpper));
+
+  Eigen::VectorXd initialPos = Eigen::VectorXd::LinSpaced(ndofs, -0.2, 0.2);
+  Eigen::VectorXd initialVel = Eigen::VectorXd::LinSpaced(ndofs, 0.1, 0.2);
+  joint->setInitialPositions(initialPos);
+  joint->setInitialVelocities(initialVel);
+  joint->resetPositions();
+  joint->resetVelocities();
+  EXPECT_TRUE(joint->getPositions().isApprox(initialPos));
+  EXPECT_TRUE(joint->getVelocities().isApprox(initialVel));
+}
+
+//==============================================================================
+TEST(GenericJoint, UniversalJointVectorSetters)
+{
+  auto skel = createSkeletonWithJoint<UniversalJoint>("universal_vector");
+  auto* joint = getJoint<UniversalJoint>(skel);
+  const auto ndofs = static_cast<Eigen::Index>(joint->getNumDofs());
+
+  Eigen::VectorXd rest = Eigen::VectorXd::Constant(ndofs, 0.05);
+  Eigen::VectorXd damping = Eigen::VectorXd::Constant(ndofs, 0.2);
+  Eigen::VectorXd frictions = Eigen::VectorXd::Constant(ndofs, 0.1);
+  joint->setRestPositions(rest);
+  joint->setDampingCoefficients(damping);
+  joint->setFrictions(frictions);
+  EXPECT_TRUE(joint->getRestPositions().isApprox(rest));
+  EXPECT_TRUE(joint->getDampingCoefficients().isApprox(damping));
+  EXPECT_TRUE(joint->getFrictions().isApprox(frictions));
+
+  Eigen::VectorXd accLower = Eigen::VectorXd::Constant(ndofs, -1.0);
+  Eigen::VectorXd accUpper = Eigen::VectorXd::Constant(ndofs, 1.0);
+  joint->setAccelerationLowerLimits(accLower);
+  joint->setAccelerationUpperLimits(accUpper);
+  EXPECT_TRUE(joint->getAccelerationLowerLimits().isApprox(accLower));
+  EXPECT_TRUE(joint->getAccelerationUpperLimits().isApprox(accUpper));
+}
+
+//==============================================================================
+TEST(GenericJoint, BallJointSpatialStateUpdates)
+{
+  auto skel = createSkeletonWithJoint<BallJoint>("ball_spatial_state");
+  auto* joint = getJoint<BallJoint>(skel);
+  auto* body = skel->getBodyNode(0);
+
+  Eigen::Vector3d velocities(0.1, -0.2, 0.3);
+  Eigen::Vector3d accelerations(-0.05, 0.2, -0.1);
+  joint->setVelocities(velocities);
+  joint->setAccelerations(accelerations);
+
+  EXPECT_TRUE(joint->getRelativeSpatialVelocity().allFinite());
+  EXPECT_TRUE(joint->getRelativeSpatialAcceleration().allFinite());
+  EXPECT_TRUE(joint->getRelativePrimaryAcceleration().allFinite());
+
+  const auto wrench = joint->getBodyConstraintWrench();
+  EXPECT_TRUE(wrench.allFinite());
+  EXPECT_TRUE(wrench.isApprox(body->getBodyForce(), 1e-12));
+}
+
+#if GTEST_HAS_DEATH_TEST
+//==============================================================================
+TEST(GenericJoint, OutOfRangeDofAccessorsDeath)
+{
+  #ifdef NDEBUG
+  GTEST_SKIP() << "Assertions are disabled in Release builds.";
+  #endif
+
+  SingleDofJointTest joint;
+
+  EXPECT_DEATH({ joint.getDof(1); }, "");
+  EXPECT_DEATH({ joint.getDofName(1); }, "");
+  EXPECT_DEATH({ joint.setDofName(1, "bad", false); }, "");
+  EXPECT_DEATH({ joint.preserveDofName(1, true); }, "");
+  EXPECT_DEATH({ joint.isDofNamePreserved(1); }, "");
+  EXPECT_DEATH({ joint.getIndexInSkeleton(1); }, "");
+  EXPECT_DEATH({ joint.getIndexInTree(1); }, "");
+}
+
+//==============================================================================
+TEST(GenericJoint, OutOfRangeStateAccessorsDeath)
+{
+  #ifdef NDEBUG
+  GTEST_SKIP() << "Assertions are disabled in Release builds.";
+  #endif
+
+  SingleDofJointTest joint;
+
+  EXPECT_DEATH({ joint.setPosition(1, 0.2); }, "");
+  EXPECT_DEATH({ joint.getPosition(1); }, "");
+  EXPECT_DEATH({ joint.setVelocity(1, 0.3); }, "");
+  EXPECT_DEATH({ joint.getVelocity(1); }, "");
+  EXPECT_DEATH({ joint.setAcceleration(1, -0.1); }, "");
+  EXPECT_DEATH({ joint.getAcceleration(1); }, "");
+  EXPECT_DEATH({ joint.setForce(1, 0.4); }, "");
+  EXPECT_DEATH({ joint.getForce(1); }, "");
+  EXPECT_DEATH({ joint.setCommand(1, 0.5); }, "");
+  EXPECT_DEATH({ joint.getCommand(1); }, "");
+}
+
+//==============================================================================
+TEST(GenericJoint, OutOfRangeLimitAccessorsDeath)
+{
+  #ifdef NDEBUG
+  GTEST_SKIP() << "Assertions are disabled in Release builds.";
+  #endif
+
+  SingleDofJointTest joint;
+
+  EXPECT_DEATH({ joint.setPositionLowerLimit(1, -0.5); }, "");
+  EXPECT_DEATH({ joint.getPositionLowerLimit(1); }, "");
+  EXPECT_DEATH({ joint.setPositionUpperLimit(1, 0.5); }, "");
+  EXPECT_DEATH({ joint.getPositionUpperLimit(1); }, "");
+  EXPECT_DEATH({ joint.setVelocityLowerLimit(1, -0.5); }, "");
+  EXPECT_DEATH({ joint.getVelocityLowerLimit(1); }, "");
+  EXPECT_DEATH({ joint.setVelocityUpperLimit(1, 0.5); }, "");
+  EXPECT_DEATH({ joint.getVelocityUpperLimit(1); }, "");
+  EXPECT_DEATH({ joint.setAccelerationLowerLimit(1, -0.5); }, "");
+  EXPECT_DEATH({ joint.getAccelerationLowerLimit(1); }, "");
+  EXPECT_DEATH({ joint.setAccelerationUpperLimit(1, 0.5); }, "");
+  EXPECT_DEATH({ joint.getAccelerationUpperLimit(1); }, "");
+  EXPECT_DEATH({ joint.setForceLowerLimit(1, -0.5); }, "");
+  EXPECT_DEATH({ joint.getForceLowerLimit(1); }, "");
+  EXPECT_DEATH({ joint.setForceUpperLimit(1, 0.5); }, "");
+  EXPECT_DEATH({ joint.getForceUpperLimit(1); }, "");
+}
+
+//==============================================================================
+TEST(GenericJoint, CommandSizeMismatchDeath)
+{
+  #ifdef NDEBUG
+  GTEST_SKIP() << "Assertions are disabled in Release builds.";
+  #endif
+
+  auto skel = createSkeletonWithJoint<UniversalJoint>("command_mismatch");
+  auto* joint = getJoint<UniversalJoint>(skel);
+
+  Eigen::VectorXd bad = Eigen::VectorXd::Zero(3);
+  EXPECT_DEATH({ joint->setCommands(bad); }, "");
+}
+
+//==============================================================================
+TEST(GenericJoint, StateVectorSizeMismatchDeath)
+{
+  #ifdef NDEBUG
+  GTEST_SKIP() << "Assertions are disabled in Release builds.";
+  #endif
+
+  auto skel = createSkeletonWithJoint<EulerJoint>("state_mismatch");
+  auto* joint = getJoint<EulerJoint>(skel);
+
+  Eigen::VectorXd bad = Eigen::VectorXd::Zero(2);
+  EXPECT_DEATH({ joint->setPositions(bad); }, "");
+  EXPECT_DEATH({ joint->setVelocities(bad); }, "");
+  EXPECT_DEATH({ joint->setAccelerations(bad); }, "");
+  EXPECT_DEATH({ joint->setForces(bad); }, "");
+}
+
+//==============================================================================
+TEST(GenericJoint, LimitVectorSizeMismatchDeath)
+{
+  #ifdef NDEBUG
+  GTEST_SKIP() << "Assertions are disabled in Release builds.";
+  #endif
+
+  auto skel = createSkeletonWithJoint<BallJoint>("limit_mismatch");
+  auto* joint = getJoint<BallJoint>(skel);
+
+  Eigen::VectorXd bad = Eigen::VectorXd::Zero(2);
+  EXPECT_DEATH({ joint->setPositionLowerLimits(bad); }, "");
+  EXPECT_DEATH({ joint->setPositionUpperLimits(bad); }, "");
+  EXPECT_DEATH({ joint->setVelocityLowerLimits(bad); }, "");
+  EXPECT_DEATH({ joint->setVelocityUpperLimits(bad); }, "");
+  EXPECT_DEATH({ joint->setAccelerationLowerLimits(bad); }, "");
+  EXPECT_DEATH({ joint->setAccelerationUpperLimits(bad); }, "");
+  EXPECT_DEATH({ joint->setForceLowerLimits(bad); }, "");
+  EXPECT_DEATH({ joint->setForceUpperLimits(bad); }, "");
+}
+
+//==============================================================================
+TEST(GenericJoint, InitialVectorSizeMismatchDeath)
+{
+  #ifdef NDEBUG
+  GTEST_SKIP() << "Assertions are disabled in Release builds.";
+  #endif
+
+  auto skel = createSkeletonWithJoint<PlanarJoint>("initial_mismatch");
+  auto* joint = getJoint<PlanarJoint>(skel);
+
+  Eigen::VectorXd bad = Eigen::VectorXd::Zero(2);
+  EXPECT_DEATH({ joint->setInitialPositions(bad); }, "");
+  EXPECT_DEATH({ joint->setInitialVelocities(bad); }, "");
+  EXPECT_DEATH({ joint->setRestPositions(bad); }, "");
+  EXPECT_DEATH({ joint->setDampingCoefficients(bad); }, "");
+  EXPECT_DEATH({ joint->setFrictions(bad); }, "");
+}
+#endif

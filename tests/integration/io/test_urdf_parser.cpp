@@ -1139,3 +1139,163 @@ TEST(UrdfParser, DrchuboStructure)
   EXPECT_TRUE(hasShapeType<dynamics::MeshShape>(skeleton));
 }
 #endif
+
+//==============================================================================
+TEST(UrdfParser, ParseSkeletonStringEmptyReturnsNull)
+{
+  UrdfParser parser;
+  EXPECT_EQ(parser.parseSkeletonString("", ""), nullptr);
+}
+
+//==============================================================================
+TEST(UrdfParser, ParseWorldStringEmptyReturnsNull)
+{
+  UrdfParser parser;
+  EXPECT_EQ(parser.parseWorldString("", ""), nullptr);
+}
+
+//==============================================================================
+TEST(UrdfParser, ParseWorldStringMissingWorldElementReturnsNull)
+{
+  UrdfParser parser;
+  const auto tempDir = makeTempDir("dart-urdf-world-missing-world");
+  const Uri baseUri = Uri::createFromPath((tempDir / "world.urdf").string());
+  const std::string worldXml = R"(<robot name="not_a_world"/>)";
+  EXPECT_EQ(parser.parseWorldString(worldXml, baseUri), nullptr);
+  std::filesystem::remove_all(tempDir);
+}
+
+//==============================================================================
+TEST(UrdfParser, ParseWorldStringMissingNameReturnsNull)
+{
+  UrdfParser parser;
+  const auto tempDir = makeTempDir("dart-urdf-world-missing-name");
+  const Uri baseUri = Uri::createFromPath((tempDir / "world.urdf").string());
+  const std::string worldXml = R"(<world></world>)";
+  EXPECT_EQ(parser.parseWorldString(worldXml, baseUri), nullptr);
+  std::filesystem::remove_all(tempDir);
+}
+
+//==============================================================================
+TEST(UrdfParser, ParseWorldStringInvalidXmlReturnsNull)
+{
+  UrdfParser parser;
+  const auto tempDir = makeTempDir("dart-urdf-world-invalid-xml");
+  const Uri baseUri = Uri::createFromPath((tempDir / "world.urdf").string());
+  const std::string worldXml = R"(<world name="world">)";
+  EXPECT_EQ(parser.parseWorldString(worldXml, baseUri), nullptr);
+  std::filesystem::remove_all(tempDir);
+}
+
+//==============================================================================
+TEST(UrdfParser, ParsePlanarJointAxisXMapsToYZ)
+{
+  const std::string urdfStr = R"(
+    <robot name="planar_example">
+      <link name="base"/>
+      <link name="tip"/>
+      <joint name="planar_joint" type="planar">
+        <parent link="base"/>
+        <child link="tip"/>
+        <axis xyz="1 0 0"/>
+      </joint>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  auto robot = parser.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* joint
+      = dynamic_cast<dynamics::PlanarJoint*>(robot->getJoint("planar_joint"));
+  ASSERT_TRUE(joint);
+  EXPECT_EQ(joint->getPlaneType(), dynamics::PlanarJoint::PlaneType::YZ);
+  EXPECT_TRUE(joint->getRotationalAxis().isApprox(Eigen::Vector3d::UnitX()));
+}
+
+//==============================================================================
+TEST(UrdfParser, ParseSkeletonStringPrismaticJointType)
+{
+  const std::string urdfStr = R"(
+    <robot name="prismatic_example">
+      <link name="base"/>
+      <link name="slider"/>
+      <joint name="slide_joint" type="prismatic">
+        <parent link="base"/>
+        <child link="slider"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-0.5" upper="0.5" effort="1.0" velocity="2.0"/>
+      </joint>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  auto robot = parser.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* joint = robot->getJoint("slide_joint");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getType(), "PrismaticJoint");
+}
+
+//==============================================================================
+TEST(UrdfParser, ParseSkeletonStringFixedJointType)
+{
+  const std::string urdfStr = R"(
+    <robot name="fixed_example">
+      <link name="base"/>
+      <link name="fixed_link"/>
+      <joint name="fixed_joint" type="fixed">
+        <parent link="base"/>
+        <child link="fixed_link"/>
+      </joint>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  auto robot = parser.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* joint = robot->getJoint("fixed_joint");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getType(), "WeldJoint");
+}
+
+//==============================================================================
+TEST(UrdfParser, ParseWorldStringSetsFixedRootTransform)
+{
+  UrdfParser::Options options;
+  options.mDefaultRootJointType = UrdfParser::RootJointType::Fixed;
+  UrdfParser parser(options);
+
+  const auto tempDir = makeTempDir("dart-urdf-world-fixed");
+  const auto modelPath = tempDir / "model.urdf";
+
+  std::ofstream modelFile(modelPath);
+  ASSERT_TRUE(modelFile.is_open());
+  modelFile << "<robot name=\"model\"><link name=\"base\"/></robot>";
+  modelFile.close();
+
+  const std::string worldXml = R"(
+<world name="world">
+  <include filename="model.urdf" model_name="model1"/>
+  <entity name="entity1" model="model1">
+    <origin xyz="1 2 3" rpy="0 0 1.57079632679"/>
+  </entity>
+</world>
+)";
+
+  const Uri baseUri = Uri::createFromPath((tempDir / "world.urdf").string());
+  auto world = parser.parseWorldString(worldXml, baseUri);
+  ASSERT_TRUE(world != nullptr);
+
+  const auto skeleton = world->getSkeleton("entity1");
+  ASSERT_TRUE(skeleton != nullptr);
+  auto* joint = skeleton->getRootJoint();
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getType(), "WeldJoint");
+  EXPECT_TRUE(joint->getTransformFromParentBodyNode().translation().isApprox(
+      Eigen::Vector3d(1.0, 2.0, 3.0)));
+
+  std::filesystem::remove_all(tempDir);
+}

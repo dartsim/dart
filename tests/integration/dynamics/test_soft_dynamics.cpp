@@ -528,3 +528,78 @@ TEST(SoftBodyNode, NaNDampingClampedToZero)
   sbn->setDampingCoefficient(5.0);
   EXPECT_EQ(sbn->getDampingCoefficient(), 5.0);
 }
+
+TEST(SoftDynamics, StepSoftBodyExercisesPhysicsPaths)
+{
+  auto world = io::readWorld("dart://sample/skel/softBodies.skel");
+  ASSERT_NE(world, nullptr);
+
+  dynamics::SoftBodyNode* softBody = nullptr;
+  dynamics::SkeletonPtr softSkel;
+  for (std::size_t s = 0; s < world->getNumSkeletons(); ++s) {
+    auto skel = world->getSkeleton(s);
+    if (skel->getNumSoftBodyNodes() > 0) {
+      softBody = skel->getSoftBodyNode(0);
+      softSkel = skel;
+      break;
+    }
+  }
+  ASSERT_NE(softBody, nullptr);
+  EXPECT_GT(softBody->getNumPointMasses(), 0u);
+
+  for (int i = 0; i < 20; ++i) {
+    world->step();
+  }
+
+  EXPECT_TRUE(softSkel->getPositions().array().isFinite().all());
+  EXPECT_TRUE(softSkel->getVelocities().array().isFinite().all());
+}
+
+TEST(SoftDynamics, GravityToggleAndExternalForce)
+{
+  auto world = io::readWorld("dart://sample/skel/softBodies.skel");
+  ASSERT_NE(world, nullptr);
+
+  dynamics::SoftBodyNode* softBody = nullptr;
+  dynamics::SkeletonPtr softSkel;
+  for (std::size_t s = 0; s < world->getNumSkeletons(); ++s) {
+    auto skel = world->getSkeleton(s);
+    if (skel->getNumSoftBodyNodes() > 0) {
+      softBody = skel->getSoftBodyNode(0);
+      softSkel = skel;
+      break;
+    }
+  }
+  ASSERT_NE(softBody, nullptr);
+
+  softBody->setGravityMode(false);
+  world->step();
+  EXPECT_TRUE(softSkel->getPositions().array().isFinite().all());
+
+  softBody->setGravityMode(true);
+  softBody->setExtForce(Eigen::Vector3d(0.0, 0.0, 1.0));
+  world->step();
+  EXPECT_TRUE(softSkel->getPositions().array().isFinite().all());
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    auto* pm = softBody->getPointMass(i);
+    pm->addExtForce(Eigen::Vector3d(0.0, 0.0, 0.1));
+  }
+  world->step();
+  EXPECT_TRUE(softSkel->getPositions().array().isFinite().all());
+}
+
+TEST(SoftDynamics, MultipleSoftSkeletonsInteract)
+{
+  auto world = io::readWorld("dart://sample/skel/soft_cubes.skel");
+  ASSERT_NE(world, nullptr);
+
+  for (int i = 0; i < 30; ++i) {
+    world->step();
+  }
+
+  for (std::size_t s = 0; s < world->getNumSkeletons(); ++s) {
+    auto skel = world->getSkeleton(s);
+    EXPECT_TRUE(skel->getPositions().array().isFinite().all());
+  }
+}

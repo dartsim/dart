@@ -259,3 +259,87 @@ TEST(TriMeshTests, PlusEqualsEmptyKeepsNormals)
   EXPECT_TRUE(mesh.hasVertexNormals());
   EXPECT_TRUE(mesh.hasTriangleNormals());
 }
+
+//==============================================================================
+TEST(TriMeshTests, PlusEqualsClearsNormalsOnMismatch)
+{
+  TriMeshd meshWithoutNormals;
+  meshWithoutNormals.addVertex(0.0, 0.0, 0.0);
+  meshWithoutNormals.addVertex(1.0, 0.0, 0.0);
+  meshWithoutNormals.addVertex(0.0, 1.0, 0.0);
+  meshWithoutNormals.addTriangle(0, 1, 2);
+
+  TriMeshd meshWithNormals;
+  meshWithNormals.addVertex(0.0, 0.0, 0.0);
+  meshWithNormals.addVertex(0.0, 1.0, 0.0);
+  meshWithNormals.addVertex(0.0, 0.0, 1.0);
+  meshWithNormals.addTriangle(0, 1, 2);
+  meshWithNormals.computeVertexNormals();
+
+  meshWithoutNormals += meshWithNormals;
+
+  EXPECT_EQ(meshWithoutNormals.getTriangles().size(), 2u);
+  EXPECT_FALSE(meshWithoutNormals.hasTriangleNormals());
+}
+
+//==============================================================================
+TEST(TriMeshTests, GenerateConvexHullWithoutOptimization)
+{
+  TriMeshd mesh;
+  mesh.addVertex(0.0, 0.0, 0.0);
+  mesh.addVertex(1.0, 0.0, 0.0);
+  mesh.addVertex(0.0, 1.0, 0.0);
+  mesh.addVertex(0.0, 0.0, 1.0);
+  mesh.addTriangle(0, 1, 2);
+  mesh.addTriangle(0, 1, 3);
+  mesh.addTriangle(0, 2, 3);
+  mesh.addTriangle(1, 2, 3);
+
+  auto convexHull = mesh.generateConvexHull(false);
+  ASSERT_NE(convexHull, nullptr);
+  EXPECT_GE(convexHull->getVertices().size(), 4u);
+  EXPECT_GT(convexHull->getTriangles().size(), 0u);
+}
+
+//==============================================================================
+TEST(TriMeshTests, VertexNormalsNormalized)
+{
+  TriMeshd mesh;
+  mesh.addVertex(0.0, 0.0, 0.0);
+  mesh.addVertex(1.0, 0.0, 0.0);
+  mesh.addVertex(0.0, 1.0, 0.0);
+  mesh.addVertex(1.0, 1.0, 0.0);
+  mesh.addTriangle(0, 1, 2);
+  mesh.addTriangle(1, 3, 2);
+
+  mesh.computeVertexNormals();
+
+  for (const auto& normal : mesh.getVertexNormals()) {
+    EXPECT_NEAR(normal.norm(), 1.0, 1e-12);
+  }
+}
+
+//==============================================================================
+TEST(TriMeshTests, SetTrianglesClearsPreviousNormals)
+{
+  TriMeshd mesh;
+  mesh.addVertex(0.0, 0.0, 0.0);
+  mesh.addVertex(1.0, 0.0, 0.0);
+  mesh.addVertex(0.0, 1.0, 0.0);
+  mesh.addTriangle(0, 1, 2);
+  mesh.computeVertexNormals();
+
+  TriMeshd::Vertices vertices;
+  vertices.emplace_back(0.0, 0.0, 0.0);
+  vertices.emplace_back(1.0, 0.0, 0.0);
+  vertices.emplace_back(0.0, 1.0, 0.0);
+  vertices.emplace_back(0.0, 0.0, 1.0);
+  TriMeshd::Triangles triangles;
+  triangles.emplace_back(0, 1, 3);
+  triangles.emplace_back(0, 2, 3);
+
+  mesh.setTriangles(vertices, triangles);
+  EXPECT_FALSE(mesh.hasVertexNormals());
+  EXPECT_FALSE(mesh.hasTriangleNormals());
+  EXPECT_EQ(mesh.getTriangles().size(), 2u);
+}

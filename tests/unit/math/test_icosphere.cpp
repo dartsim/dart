@@ -71,3 +71,35 @@ TEST(IcosphereTests, Constructor)
   EXPECT_DOUBLE_EQ(s2.getRadius(), 2);
   EXPECT_EQ(s2.getNumSubdivisions(), 3);
 }
+
+//==============================================================================
+TEST(IcosphereTests, IcosahedronVerticesAndTriangles)
+{
+  const double radius = 2.5;
+  const auto result = Icosphered::computeIcosahedron(radius);
+  const auto& vertices = result.first;
+  const auto& triangles = result.second;
+
+  EXPECT_EQ(vertices.size(), 12u);
+  EXPECT_EQ(triangles.size(), 20u);
+
+  for (const auto& vertex : vertices) {
+    EXPECT_NEAR(vertex.norm(), radius, 1e-12);
+  }
+
+  for (const auto& triangle : triangles) {
+    EXPECT_LT(triangle[0], vertices.size());
+    EXPECT_LT(triangle[1], vertices.size());
+    EXPECT_LT(triangle[2], vertices.size());
+  }
+}
+
+//==============================================================================
+TEST(IcosphereTests, EdgeCountMatchesTriangleCount)
+{
+  for (std::size_t subdivisions = 0; subdivisions < 4; ++subdivisions) {
+    const auto triangles = Icosphered::getNumTriangles(subdivisions);
+    const auto edges = Icosphered::getNumEdges(subdivisions);
+    EXPECT_EQ(edges, triangles / 2 * 3);
+  }
+}

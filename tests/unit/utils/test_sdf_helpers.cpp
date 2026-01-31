@@ -245,3 +245,144 @@ TEST(SdfDetailHelpers, ElementTextNullReturnsEmpty)
 {
   EXPECT_TRUE(detail::getElementText(nullptr).empty());
 }
+
+TEST(SdfDetailHelpers, Vector2dInsufficientValuesReturnZero)
+{
+  const std::string xml = R"(
+    <sdf version='1.9'>
+      <model name='demo'>
+        <link name='demo_link'>
+          <custom_vector2>0.5</custom_vector2>
+        </link>
+      </model>
+    </sdf>)";
+
+  const sdf::ElementPtr sdfElement = loadElement(xml);
+  ASSERT_TRUE(sdfElement);
+  const auto modelElement = detail::getElement(sdfElement, "model");
+  ASSERT_TRUE(modelElement);
+  const auto linkElement = detail::getElement(modelElement, "link");
+  ASSERT_TRUE(linkElement);
+
+  const Eigen::Vector2d vec
+      = detail::getValueVector2d(linkElement, "custom_vector2");
+  EXPECT_TRUE(vec.isApprox(Eigen::Vector2d::Zero()));
+}
+
+TEST(SdfDetailHelpers, Vector3iInsufficientValuesReturnZero)
+{
+  const std::string xml = R"(
+    <sdf version='1.9'>
+      <model name='demo'>
+        <link name='demo_link'>
+          <custom_vector3i>1 2</custom_vector3i>
+        </link>
+      </model>
+    </sdf>)";
+
+  const sdf::ElementPtr sdfElement = loadElement(xml);
+  ASSERT_TRUE(sdfElement);
+  const auto modelElement = detail::getElement(sdfElement, "model");
+  ASSERT_TRUE(modelElement);
+  const auto linkElement = detail::getElement(modelElement, "link");
+  ASSERT_TRUE(linkElement);
+
+  const Eigen::Vector3i vec
+      = detail::getValueVector3i(linkElement, "custom_vector3i");
+  EXPECT_EQ(vec, Eigen::Vector3i::Zero());
+}
+
+TEST(SdfDetailHelpers, VectorXdPreservesUnroundedValues)
+{
+  const std::string xml = R"(
+    <sdf version='1.9'>
+      <model name='demo'>
+        <link name='demo_link'>
+          <custom_vector>0.123456789 0.987654321</custom_vector>
+        </link>
+      </model>
+    </sdf>)";
+
+  const sdf::ElementPtr sdfElement = loadElement(xml);
+  ASSERT_TRUE(sdfElement);
+  const auto modelElement = detail::getElement(sdfElement, "model");
+  ASSERT_TRUE(modelElement);
+  const auto linkElement = detail::getElement(modelElement, "link");
+  ASSERT_TRUE(linkElement);
+
+  const Eigen::VectorXd vec
+      = detail::getValueVectorXd(linkElement, "custom_vector");
+  ASSERT_EQ(vec.size(), 2);
+  EXPECT_DOUBLE_EQ(vec[0], 0.123456789);
+  EXPECT_DOUBLE_EQ(vec[1], 0.987654321);
+}
+
+TEST(SdfDetailHelpers, Vector3dInsufficientValuesReturnZero)
+{
+  const std::string xml = R"(
+    <sdf version='1.9'>
+      <model name='demo'>
+        <link name='demo_link'>
+          <custom_vector3>1 2</custom_vector3>
+        </link>
+      </model>
+    </sdf>)";
+
+  const sdf::ElementPtr sdfElement = loadElement(xml);
+  ASSERT_TRUE(sdfElement);
+  const auto modelElement = detail::getElement(sdfElement, "model");
+  ASSERT_TRUE(modelElement);
+  const auto linkElement = detail::getElement(modelElement, "link");
+  ASSERT_TRUE(linkElement);
+
+  const Eigen::Vector3d vec
+      = detail::getValueVector3d(linkElement, "custom_vector3");
+  EXPECT_TRUE(vec.isApprox(Eigen::Vector3d::Zero()));
+}
+
+TEST(SdfDetailHelpers, ExtrinsicRotationInvalidSizeReturnsIdentity)
+{
+  const std::string xml = R"(
+    <sdf version='1.9'>
+      <model name='demo'>
+        <link name='demo_link'>
+          <custom_pose>1 2 3 0.1 0.2</custom_pose>
+        </link>
+      </model>
+    </sdf>)";
+
+  const sdf::ElementPtr sdfElement = loadElement(xml);
+  ASSERT_TRUE(sdfElement);
+  const auto modelElement = detail::getElement(sdfElement, "model");
+  ASSERT_TRUE(modelElement);
+  const auto linkElement = detail::getElement(modelElement, "link");
+  ASSERT_TRUE(linkElement);
+
+  const Eigen::Isometry3d pose
+      = detail::getValueIsometry3dWithExtrinsicRotation(
+          linkElement, "custom_pose");
+  EXPECT_TRUE(pose.isApprox(Eigen::Isometry3d::Identity()));
+}
+
+TEST(SdfDetailHelpers, Vector3dParsesFromTextArray)
+{
+  const std::string xml = R"(
+    <sdf version='1.9'>
+      <model name='demo'>
+        <link name='demo_link'>
+          <custom_vector3>1 2 3</custom_vector3>
+        </link>
+      </model>
+    </sdf>)";
+
+  const sdf::ElementPtr sdfElement = loadElement(xml);
+  ASSERT_TRUE(sdfElement);
+  const auto modelElement = detail::getElement(sdfElement, "model");
+  ASSERT_TRUE(modelElement);
+  const auto linkElement = detail::getElement(modelElement, "link");
+  ASSERT_TRUE(linkElement);
+
+  const Eigen::Vector3d vec
+      = detail::getValueVector3d(linkElement, "custom_vector3");
+  EXPECT_TRUE(vec.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+}

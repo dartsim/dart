@@ -36,6 +36,8 @@
 #include <gtest/gtest.h>
 #include <tinyxml2.h>
 
+#include <filesystem>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 
@@ -653,4 +655,74 @@ TEST(XmlHelpers, AttributeParsingAndErrors)
   EXPECT_TRUE(getValueVector3d(values, "value_vec3")
                   .isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
   EXPECT_THROW(getValueDouble(values, "missing"), std::runtime_error);
+}
+
+TEST(XmlHelpers, InvalidBoolReturnsFalse)
+{
+  EXPECT_FALSE(toBool("maybe"));
+}
+
+TEST(XmlHelpers, OpenXmlFileThrowsOnMalformed)
+{
+  const auto path = std::filesystem::temp_directory_path()
+                    / "dart_xml_helpers_malformed.xml";
+  std::ofstream output(path.string(), std::ios::binary);
+  output << "<root>";
+  output.close();
+
+  tinyxml2::XMLDocument doc;
+  const auto uri = dart::common::Uri::createFromPath(path.string());
+  EXPECT_THROW(openXMLFile(doc, uri, nullptr), std::runtime_error);
+
+  std::error_code ec;
+  std::filesystem::remove(path, ec);
+}
+
+TEST(XmlHelpers, ReadXmlFileReturnsFalseOnMalformed)
+{
+  const auto path = std::filesystem::temp_directory_path()
+                    / "dart_xml_helpers_malformed_read.xml";
+  std::ofstream output(path.string(), std::ios::binary);
+  output << "<root>";
+  output.close();
+
+  tinyxml2::XMLDocument doc;
+  const auto uri = dart::common::Uri::createFromPath(path.string());
+  EXPECT_FALSE(readXmlFile(doc, uri, nullptr));
+
+  std::error_code ec;
+  std::filesystem::remove(path, ec);
+}
+
+TEST(XmlHelpers, GetAttributeBoolInvalidReturnsFalse)
+{
+  const char* xml = R"(<root flag="maybe" />)";
+  tinyxml2::XMLDocument doc;
+  doc.Parse(xml);
+  const auto* root = doc.FirstChildElement("root");
+  ASSERT_NE(root, nullptr);
+
+  EXPECT_FALSE(getAttributeBool(root, "flag"));
+}
+
+TEST(XmlHelpers, GetAttributeUIntMissingReturnsZero)
+{
+  const char* xml = R"(<root />)";
+  tinyxml2::XMLDocument doc;
+  doc.Parse(xml);
+  const auto* root = doc.FirstChildElement("root");
+  ASSERT_NE(root, nullptr);
+
+  EXPECT_EQ(getAttributeUInt(root, "count"), 0u);
+}
+
+TEST(XmlHelpers, GetAttributeFloatInvalidReturnsZero)
+{
+  const char* xml = R"(<root value="not_a_float" />)";
+  tinyxml2::XMLDocument doc;
+  doc.Parse(xml);
+  const auto* root = doc.FirstChildElement("root");
+  ASSERT_NE(root, nullptr);
+
+  EXPECT_FLOAT_EQ(getAttributeFloat(root, "value"), 0.0f);
 }

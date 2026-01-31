@@ -859,3 +859,148 @@ TEST(MeshShapeTest, ScaleColorAndInertia)
   ASSERT_NE(sceneA, nullptr);
   EXPECT_EQ(sceneA, sceneB);
 }
+
+TEST(MeshShapeTest, CollectSubMeshRangesRespectsExpectedCounts)
+{
+  DirectAssignMeshShape shape;
+
+  class MeshShapeHarness final : public dynamics::MeshShape
+  {
+  public:
+    using dynamics::MeshShape::collectSubMeshRanges;
+    using dynamics::MeshShape::SubMeshRange;
+  };
+
+  std::vector<MeshShapeHarness::SubMeshRange> ranges;
+  const aiScene* scene = shape.rawScene();
+  ASSERT_TRUE(MeshShapeHarness::collectSubMeshRanges(scene, ranges, 6u, 2u));
+  ASSERT_EQ(ranges.size(), 2u);
+  EXPECT_EQ(ranges[0].vertexOffset, 0u);
+  EXPECT_EQ(ranges[0].vertexCount, 3u);
+  EXPECT_EQ(ranges[0].triangleCount, 1u);
+  EXPECT_EQ(ranges[1].vertexOffset, 3u);
+  EXPECT_EQ(ranges[1].triangleOffset, 1u);
+
+  std::vector<MeshShapeHarness::SubMeshRange> mismatch;
+  EXPECT_FALSE(MeshShapeHarness::collectSubMeshRanges(scene, mismatch, 5u, 2u));
+  EXPECT_TRUE(mismatch.empty());
+}
+
+TEST(MeshShapeTest, ConvertAssimpMeshPopulatesSubMeshes)
+{
+  DirectAssignMeshShape shape;
+
+  class MeshShapeHarness final : public dynamics::MeshShape
+  {
+  public:
+    using dynamics::MeshShape::convertAssimpMesh;
+    using dynamics::MeshShape::SubMeshRange;
+  };
+
+  std::vector<MeshShapeHarness::SubMeshRange> ranges;
+  auto triMesh = MeshShapeHarness::convertAssimpMesh(shape.rawScene(), &ranges);
+  ASSERT_NE(triMesh, nullptr);
+  EXPECT_EQ(triMesh->getVertices().size(), 6u);
+  EXPECT_EQ(triMesh->getTriangles().size(), 2u);
+
+  ASSERT_EQ(ranges.size(), 2u);
+  EXPECT_EQ(ranges[0].triangleCount, 1u);
+  EXPECT_EQ(ranges[1].triangleOffset, 1u);
+}
+
+TEST(MeshShapeTest, ConvertToAssimpMeshUsesEmbeddedMaterials)
+{
+  const auto tempDir = common::filesystem::temp_directory_path();
+  const auto timestamp
+      = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+  const auto baseName
+      = std::string("dart_meshshape_embedded_") + std::to_string(timestamp);
+  const auto objPath = tempDir / (baseName + ".obj");
+  const auto mtlPath = tempDir / (baseName + ".mtl");
+
+  {
+    std::ofstream mtlFile(mtlPath.string());
+    ASSERT_TRUE(mtlFile);
+    mtlFile << "newmtl material_0\n"
+            << "Kd 1 0 0\n"
+            << "newmtl material_1\n"
+            << "Kd 0 1 0\n";
+  }
+
+  {
+    std::ofstream objFile(objPath.string());
+    ASSERT_TRUE(objFile);
+    objFile << "mtllib " << mtlPath.filename().string() << "\n"
+            << "v 0 0 0\n"
+            << "v 1 0 0\n"
+            << "v 0 1 0\n"
+            << "v 1 1 0\n"
+            << "vt 0 0\n"
+            << "vt 1 0\n"
+            << "vt 0 1\n"
+            << "vt 1 1\n"
+            << "usemtl material_0\n"
+            << "f 1/1 2/2 3/3\n"
+            << "usemtl material_1\n"
+            << "f 2/2 4/4 3/3\n";
+  }
+
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  auto loader = std::make_unique<utils::MeshLoaderd>();
+  auto triMesh = loader->load(objPath.string(), retriever);
+  ASSERT_NE(triMesh, nullptr);
+
+  class MeshShapeHarness final : public dynamics::MeshShape
+  {
+  public:
+    using dynamics::MeshShape::MeshShape;
+    const aiScene* callConvertToAssimpMesh() const
+    {
+      return convertToAssimpMesh();
+    }
+  };
+
+  MeshShapeHarness shape(
+      Eigen::Vector3d::Ones(),
+      std::move(triMesh),
+      common::Uri::createFromPath(objPath.string()),
+      retriever);
+
+  const aiScene* scene = shape.callConvertToAssimpMesh();
+  ASSERT_NE(scene, nullptr);
+  EXPECT_GE(scene->mNumMaterials, 2u);
+  EXPECT_GE(scene->mNumMeshes, 1u);
+
+  common::error_code ec;
+  common::filesystem::remove(objPath, ec);
+  common::filesystem::remove(mtlPath, ec);
+}
+
+TEST(MeshShapeTest, ConvertToAssimpMeshPreservesNormals)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(1.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 1.0, 0.0);
+  triMesh->addTriangle(0, 1, 2);
+  triMesh->addVertexNormal(0.0, 0.0, 1.0);
+  triMesh->addVertexNormal(0.0, 0.0, 1.0);
+  triMesh->addVertexNormal(0.0, 0.0, 1.0);
+
+  class MeshShapeHarness final : public dynamics::MeshShape
+  {
+  public:
+    using dynamics::MeshShape::MeshShape;
+    const aiScene* callConvertToAssimpMesh() const
+    {
+      return convertToAssimpMesh();
+    }
+  };
+
+  MeshShapeHarness shape(Eigen::Vector3d::Ones(), triMesh, common::Uri());
+  const aiScene* scene = shape.callConvertToAssimpMesh();
+  ASSERT_NE(scene, nullptr);
+  ASSERT_GE(scene->mNumMeshes, 1u);
+  ASSERT_NE(scene->mMeshes[0], nullptr);
+  EXPECT_TRUE(scene->mMeshes[0]->HasNormals());
+}

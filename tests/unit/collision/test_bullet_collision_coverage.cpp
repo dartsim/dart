@@ -19,6 +19,7 @@
   #include "dart/dynamics/box_shape.hpp"
   #include "dart/dynamics/capsule_shape.hpp"
   #include "dart/dynamics/cone_shape.hpp"
+  #include "dart/dynamics/convex_mesh_shape.hpp"
   #include "dart/dynamics/cylinder_shape.hpp"
   #include "dart/dynamics/ellipsoid_shape.hpp"
   #include "dart/dynamics/mesh_shape.hpp"
@@ -81,6 +82,23 @@ public:
 private:
   const ShapeFrame* mFirst;
   const ShapeFrame* mSecond;
+};
+
+class ExposedBulletCollisionDetector final : public BulletCollisionDetector
+{
+public:
+  static std::shared_ptr<ExposedBulletCollisionDetector> create()
+  {
+    return std::shared_ptr<ExposedBulletCollisionDetector>(
+        new ExposedBulletCollisionDetector());
+  }
+
+  using BulletCollisionDetector::createCollisionObject;
+  using BulletCollisionDetector::notifyCollisionObjectDestroying;
+  using BulletCollisionDetector::refreshCollisionObject;
+
+private:
+  ExposedBulletCollisionDetector() = default;
 };
 
 std::shared_ptr<TriMeshd> makeSimpleTriMesh()
@@ -441,6 +459,92 @@ TEST(BulletCollisionCoverage, TwoGroupForeignDetector)
 
   CollisionOption option;
   EXPECT_FALSE(detector1->collide(group1.get(), group2.get(), option, nullptr));
+}
+
+TEST(BulletCollisionCoverage, CollisionObjectShapeCachingAndReclaim)
+{
+  auto detector = ExposedBulletCollisionDetector::create();
+  ASSERT_TRUE(detector);
+
+  auto frame = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2)));
+
+  auto objectA = detector->createCollisionObject(frame.get());
+  auto objectB = detector->createCollisionObject(frame.get());
+  ASSERT_NE(objectA, nullptr);
+  ASSERT_NE(objectB, nullptr);
+
+  detector->notifyCollisionObjectDestroying(objectA.get());
+  detector->notifyCollisionObjectDestroying(objectB.get());
+}
+
+TEST(BulletCollisionCoverage, CollisionObjectRefreshUpdatesShape)
+{
+  auto detector = ExposedBulletCollisionDetector::create();
+  ASSERT_TRUE(detector);
+
+  auto frame = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  frame->setShape(std::make_shared<SphereShape>(0.1));
+
+  auto object = detector->createCollisionObject(frame.get());
+  ASSERT_NE(object, nullptr);
+
+  frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2)));
+  detector->refreshCollisionObject(object.get());
+  EXPECT_NE(object->getShape(), nullptr);
+}
+
+TEST(BulletCollisionCoverage, ConvexMeshFallbackToSphere)
+{
+  auto detector = ExposedBulletCollisionDetector::create();
+  ASSERT_TRUE(detector);
+
+  auto emptyMesh = std::make_shared<TriMeshd>();
+  auto convexShape
+      = std::make_shared<dart::dynamics::ConvexMeshShape>(emptyMesh);
+  auto frame = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  frame->setShape(convexShape);
+
+  auto object = detector->createCollisionObject(frame.get());
+  EXPECT_NE(object, nullptr);
+}
+
+TEST(BulletCollisionCoverage, EllipsoidFallbackToMeshShape)
+{
+  auto detector = ExposedBulletCollisionDetector::create();
+  ASSERT_TRUE(detector);
+
+  auto ellipsoid
+      = std::make_shared<EllipsoidShape>(Eigen::Vector3d(4.0, 0.4, 0.4));
+  auto frame = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  frame->setShape(ellipsoid);
+
+  auto object = detector->createCollisionObject(frame.get());
+  EXPECT_NE(object, nullptr);
+}
+
+TEST(BulletCollisionCoverage, TwoGroupCollideNullResultUsesFilter)
+{
+  auto detector = BulletCollisionDetector::create();
+  ASSERT_TRUE(detector);
+
+  auto frame1 = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  auto frame2 = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  frame1->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  frame2->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  frame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  frame2->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
+
+  auto group1 = detector->createCollisionGroup(frame1.get());
+  auto group2 = detector->createCollisionGroup(frame2.get());
+
+  auto filter = std::make_shared<ShapePairFilter>(frame1.get(), frame2.get());
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+  option.collisionFilter = filter;
+
+  EXPECT_FALSE(detector->collide(group1.get(), group2.get(), option, nullptr));
 }
 
 #endif // DART_HAVE_BULLET

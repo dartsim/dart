@@ -251,3 +251,213 @@ TEST(PointMass, KinematicsAndForces)
   EXPECT_TRUE(
       pm->getWorldAcceleration().isApprox(Eigen::Vector3d(0.0, -0.2, 0.0)));
 }
+
+TEST(PointMass, ConnectedPointMassesAndMass)
+{
+  auto skeleton = Skeleton::create("point-mass-connect");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(1.0),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      6.0,
+      6.0,
+      0.2);
+
+  ASSERT_GE(softBody->getNumPointMasses(), 2u);
+  auto* pm0 = softBody->getPointMass(0);
+  auto* pm1 = softBody->getPointMass(1);
+  ASSERT_NE(pm0, nullptr);
+  ASSERT_NE(pm1, nullptr);
+
+  pm0->setMass(0.02);
+  EXPECT_NEAR(pm0->getMass(), 0.02, 1e-12);
+  EXPECT_EQ(pm0->getIndexInSoftBodyNode(), 0u);
+
+  const auto initialConnections = pm0->getNumConnectedPointMasses();
+  pm0->addConnectedPointMass(pm1);
+  EXPECT_EQ(pm0->getNumConnectedPointMasses(), initialConnections + 1u);
+  EXPECT_EQ(pm0->getConnectedPointMass(initialConnections), pm1);
+  EXPECT_EQ(pm0->getParentSoftBodyNode(), softBody);
+}
+
+TEST(PointMass, RestingAndWorldPositions)
+{
+  auto skeleton = Skeleton::create("point-mass-rest");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.5),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      4.0,
+      4.0,
+      0.2);
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  pm->setRestingPosition(Eigen::Vector3d(0.05, -0.02, 0.01));
+  pm->setPositions(Eigen::Vector3d(0.1, 0.2, -0.1));
+
+  EXPECT_TRUE(pm->getLocalPosition().allFinite());
+  EXPECT_TRUE(pm->getWorldPosition().allFinite());
+}
+
+TEST(PointMass, ConstraintImpulseFrames)
+{
+  auto skeleton = Skeleton::create("point-mass-impulse");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.5),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      4.0,
+      4.0,
+      0.2);
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  pm->setConstraintImpulse(Eigen::Vector3d(0.3, -0.1, 0.2), false);
+  EXPECT_TRUE(pm->getConstraintImpulses().allFinite());
+
+  pm->setConstraintImpulse(Eigen::Vector3d(-0.2, 0.4, 0.1), true);
+  EXPECT_TRUE(pm->getConstraintImpulses().allFinite());
+}
+
+TEST(PointMass, AddExtForceIgnoresInvalidValues)
+{
+  auto skeleton = Skeleton::create("point-mass-invalid-force");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.6),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      4.0,
+      4.0,
+      0.2);
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  const auto initialForces = pm->getForces();
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+
+  pm->addExtForce(Eigen::Vector3d(nan, 0.0, 0.0));
+  pm->addExtForce(Eigen::Vector3d(0.0, inf, 0.0));
+  pm->addExtForce(Eigen::Vector3d(0.0, 0.0, -inf));
+
+  EXPECT_TRUE(pm->getForces().isApprox(initialForces));
+}
+
+TEST(PointMass, RestingPositionNoChange)
+{
+  auto skeleton = Skeleton::create("point-mass-rest-nochange");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.4),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      3.0,
+      3.0,
+      0.2);
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  const Eigen::Vector3d restPos(0.02, -0.01, 0.03);
+  pm->setRestingPosition(restPos);
+  const auto saved = pm->getRestingPosition();
+  pm->setRestingPosition(saved);
+
+  EXPECT_TRUE(pm->getRestingPosition().isApprox(saved));
+}
+
+TEST(PointMass, CollidingFlag)
+{
+  auto skeleton = Skeleton::create("point-mass-collide");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.4),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      3.0,
+      3.0,
+      0.2);
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  pm->setColliding(true);
+  EXPECT_TRUE(pm->isColliding());
+  pm->setColliding(false);
+  EXPECT_FALSE(pm->isColliding());
+}
+
+TEST(PointMass, ExternalForceLocalAndWorld)
+{
+  auto skeleton = Skeleton::create("point-mass-ext");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.5),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      4.0,
+      4.0,
+      0.2);
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  const auto forces = pm->getForces();
+  pm->addExtForce(Eigen::Vector3d(0.2, -0.1, 0.3), true);
+  pm->addExtForce(Eigen::Vector3d(-0.1, 0.2, 0.0), false);
+  pm->clearExtForce();
+  EXPECT_TRUE(pm->getForces().isApprox(forces));
+}
+
+TEST(PointMass, ParentAccessorsAndVelocityChange)
+{
+  auto skeleton = Skeleton::create("point-mass-parent");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.4),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      3.0,
+      3.0,
+      0.2);
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  const PointMass* pmConst = pm;
+  EXPECT_EQ(pmConst->getParentSoftBodyNode(), softBody);
+  EXPECT_TRUE(
+      pmConst->getBodyVelocityChange().isApprox(Eigen::Vector3d::Zero()));
+}

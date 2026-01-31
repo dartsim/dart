@@ -233,6 +233,7 @@ dart_build_tests(
     math/lcp/test_pgs.cpp
     math/lcp/test_pivot_matrix.cpp
     math/lcp/test_additional_solvers.cpp
+    math/lcp/test_solver_coverage.cpp
     math/lcp/test_lcp_newton_solvers.cpp
     math/lcp/test_lcp_projection_solvers.cpp
 )

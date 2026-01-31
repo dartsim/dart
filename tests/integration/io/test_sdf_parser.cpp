@@ -741,3 +741,607 @@ TEST(SdfParser, BoxWorldParsesGeometry)
   EXPECT_GT(skel->getNumBodyNodes(), 0u);
 }
 #endif
+
+//==============================================================================
+TEST(SdfParser, ReadWorldMissingWorldElementReturnsNull)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/missing_world.sdf";
+  retriever->add(uri, "<sdf version='1.7'><model name='m'/></sdf>");
+
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  EXPECT_EQ(SdfParser::readWorld(common::Uri(uri), options), nullptr);
+}
+
+//==============================================================================
+TEST(SdfParser, ReadSkeletonMissingModelElementReturnsNull)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/missing_model.sdf";
+  retriever->add(uri, "<sdf version='1.7'><world name='w'/></sdf>");
+
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  EXPECT_EQ(SdfParser::readSkeleton(common::Uri(uri), options), nullptr);
+}
+
+//==============================================================================
+TEST(SdfParser, ReadWorldEmptyContentReturnsNull)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/empty.sdf";
+  retriever->add(uri, "");
+
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  EXPECT_EQ(SdfParser::readWorld(common::Uri(uri), options), nullptr);
+}
+
+//==============================================================================
+TEST(SdfParser, ReadWorldInvalidXmlReturnsNull)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/invalid_xml.sdf";
+  retriever->add(uri, "<sdf version='1.7'><world></sdf>");
+
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  EXPECT_EQ(SdfParser::readWorld(common::Uri(uri), options), nullptr);
+}
+
+//==============================================================================
+TEST(SdfParser, WorldPhysicsOverridesGravityAndStep)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/physics.world";
+  const std::string worldSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="default">
+    <physics type="dart">
+      <max_step_size>0.02</max_step_size>
+      <gravity>0 1 -2</gravity>
+    </physics>
+    <model name="box">
+      <link name="link">
+        <inertial>
+          <mass>1.0</mass>
+        </inertial>
+      </link>
+    </model>
+  </world>
+</sdf>
+)";
+
+  retriever->add(uri, worldSdf);
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  auto world = SdfParser::readWorld(common::Uri(uri), options);
+  ASSERT_TRUE(world != nullptr);
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), 0.02);
+  EXPECT_TRUE(world->getGravity().isApprox(Eigen::Vector3d(0.0, 1.0, -2.0)));
+}
+
+//==============================================================================
+TEST(SdfParser, LinkMissingMassDefaultsToUnit)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/missing_mass.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="missing_mass">
+    <link name="link">
+      <inertial>
+        <inertia>
+          <ixx>0.1</ixx>
+          <iyy>0.1</iyy>
+          <izz>0.1</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+  </model>
+</sdf>
+)";
+
+  retriever->add(uri, modelSdf);
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  auto skeleton = SdfParser::readSkeleton(common::Uri(uri), options);
+  ASSERT_TRUE(skeleton != nullptr);
+  const auto* body = skeleton->getBodyNode(0);
+  ASSERT_TRUE(body != nullptr);
+  EXPECT_DOUBLE_EQ(body->getMass(), 1.0);
+}
+
+//==============================================================================
+TEST(SdfParser, GeometryParsesPlaneCylinderSphereAndBox)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/geometry.world";
+  const std::string worldSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="default">
+    <model name="shapes">
+      <link name="link">
+        <inertial>
+          <mass>1.0</mass>
+        </inertial>
+        <visual name="box_visual">
+          <geometry>
+            <box><size>1 2 3</size></box>
+          </geometry>
+        </visual>
+        <visual name="plane_visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>2 3</size>
+            </plane>
+          </geometry>
+        </visual>
+        <visual name="cylinder_visual">
+          <geometry>
+            <cylinder><radius>0.2</radius><length>0.5</length></cylinder>
+          </geometry>
+        </visual>
+        <collision name="sphere_collision">
+          <geometry>
+            <sphere><radius>0.1</radius></sphere>
+          </geometry>
+        </collision>
+      </link>
+    </model>
+  </world>
+</sdf>
+)";
+
+  retriever->add(uri, worldSdf);
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  auto world = SdfParser::readWorld(common::Uri(uri), options);
+  ASSERT_TRUE(world != nullptr);
+  const auto skeleton = world->getSkeleton(0);
+  ASSERT_TRUE(skeleton != nullptr);
+  auto* body = skeleton->getBodyNode(0);
+  ASSERT_TRUE(body != nullptr);
+
+  std::size_t boxCount = 0u;
+  std::size_t planeCount = 0u;
+  std::size_t cylinderCount = 0u;
+  std::size_t sphereCount = 0u;
+  const auto numShapes = body->getNumShapeNodes();
+  for (std::size_t i = 0; i < numShapes; ++i) {
+    const auto* shapeNode = body->getShapeNode(i);
+    ASSERT_NE(shapeNode, nullptr);
+    const auto shape = shapeNode->getShape();
+    if (!shape) {
+      continue;
+    }
+    const auto type = shape->getType();
+    if (type == "SphereShape") {
+      ++sphereCount;
+    } else if (type == "CylinderShape") {
+      ++cylinderCount;
+    } else if (type == "BoxShape") {
+      auto box = std::dynamic_pointer_cast<const dynamics::BoxShape>(shape);
+      ASSERT_TRUE(box);
+      const auto size = box->getSize();
+      if (size.isApprox(Eigen::Vector3d(2.0, 3.0, 0.001))) {
+        ++planeCount;
+      } else if (size.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0))) {
+        ++boxCount;
+      }
+    }
+  }
+
+  EXPECT_EQ(boxCount, 1u);
+  EXPECT_EQ(planeCount, 1u);
+  EXPECT_EQ(cylinderCount, 1u);
+  EXPECT_EQ(sphereCount, 1u);
+}
+
+//==============================================================================
+TEST(SdfParser, VisualAndCollisionNamesAreApplied)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/missing_names.world";
+  const std::string worldSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="default">
+    <model name="unnamed">
+      <link name="link">
+        <inertial>
+          <mass>1.0</mass>
+        </inertial>
+        <visual name="visual_one">
+          <geometry>
+            <box><size>0.1 0.1 0.1</size></box>
+          </geometry>
+        </visual>
+        <collision name="collision_one">
+          <geometry>
+            <sphere><radius>0.1</radius></sphere>
+          </geometry>
+        </collision>
+      </link>
+    </model>
+  </world>
+</sdf>
+)";
+
+  retriever->add(uri, worldSdf);
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  auto world = SdfParser::readWorld(common::Uri(uri), options);
+  ASSERT_TRUE(world != nullptr);
+  const auto skeleton = world->getSkeleton(0);
+  ASSERT_TRUE(skeleton != nullptr);
+  auto* body = skeleton->getBodyNode(0);
+  ASSERT_TRUE(body != nullptr);
+
+  bool foundVisualName = false;
+  bool foundCollisionName = false;
+  const auto numShapes = body->getNumShapeNodes();
+  for (std::size_t i = 0; i < numShapes; ++i) {
+    const auto* shapeNode = body->getShapeNode(i);
+    ASSERT_NE(shapeNode, nullptr);
+    if (shapeNode->getName() == "link - visual_one") {
+      foundVisualName = true;
+    }
+    if (shapeNode->getName() == "link - collision_one") {
+      foundCollisionName = true;
+    }
+  }
+
+  EXPECT_TRUE(foundVisualName);
+  EXPECT_TRUE(foundCollisionName);
+}
+
+//==============================================================================
+TEST(SdfParser, ReadWorldMissingResourceReturnsNull)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/missing_resource.world";
+
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  EXPECT_EQ(SdfParser::readWorld(common::Uri(uri), options), nullptr);
+}
+
+namespace {
+
+SkeletonPtr readSkeletonFromSdfString(
+    const std::string& uri,
+    const std::string& sdfString,
+    const std::shared_ptr<MemoryResourceRetriever>& retriever)
+{
+  retriever->add(uri, sdfString);
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  return SdfParser::readSkeleton(common::Uri(uri), options);
+}
+
+} // namespace
+
+//==============================================================================
+TEST(SdfParser, AxisLimitsSetInitialMidpoint)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/axis_midpoint/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="axis_midpoint">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="tip">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="rev_joint" type="revolute">
+      <parent>base</parent>
+      <child>tip</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>1.0</lower>
+          <upper>2.0</upper>
+        </limit>
+      </axis>
+    </joint>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint = skeleton->getJoint("rev_joint");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_NEAR(joint->getPosition(0), 1.5, 1e-9);
+  EXPECT_NEAR(joint->getRestPosition(0), 1.5, 1e-9);
+}
+
+//==============================================================================
+TEST(SdfParser, AxisLimitLowerOnlySetsInitialToLower)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/axis_lower_only/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="axis_lower_only">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="slider">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="prismatic_joint" type="prismatic">
+      <parent>base</parent>
+      <child>slider</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>0.5</lower>
+        </limit>
+      </axis>
+    </joint>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint = skeleton->getJoint("prismatic_joint");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_NEAR(joint->getPosition(0), 0.5, 1e-9);
+}
+
+//==============================================================================
+TEST(SdfParser, AxisUsesParentModelFrameRotation)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/axis_parent_frame/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="axis_parent_frame">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="tip">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="rev_joint" type="revolute">
+      <parent>base</parent>
+      <child>tip</child>
+      <pose>0 0 0 0 0 1.57079632679</pose>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <use_parent_model_frame>true</use_parent_model_frame>
+      </axis>
+    </joint>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint
+      = dynamic_cast<dynamics::RevoluteJoint*>(skeleton->getJoint("rev_joint"));
+  ASSERT_NE(joint, nullptr);
+  EXPECT_TRUE(joint->getAxis().isApprox(Eigen::Vector3d(0.0, -1.0, 0.0), 1e-9));
+}
+
+//==============================================================================
+TEST(SdfParser, JointDynamicsPropertiesFromAxis)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/axis_dynamics/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="axis_dynamics">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="tip">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="rev_joint" type="revolute">
+      <parent>base</parent>
+      <child>tip</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <dynamics>
+          <damping>0.3</damping>
+          <friction>0.2</friction>
+          <spring_reference>0.1</spring_reference>
+          <spring_stiffness>0.9</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint = skeleton->getJoint("rev_joint");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_NEAR(joint->getDampingCoefficient(0), 0.3, 1e-9);
+  EXPECT_NEAR(joint->getCoulombFriction(0), 0.2, 1e-9);
+  EXPECT_NEAR(joint->getRestPosition(0), 0.1, 1e-9);
+  EXPECT_NEAR(joint->getSpringStiffness(0), 0.9, 1e-9);
+}
+
+//==============================================================================
+TEST(SdfParser, MimicJointAppliesActuator)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/mimic_applies/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="mimic_applies">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="link1">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="link2">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="joint1" type="revolute">
+      <parent>base</parent>
+      <child>link1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+      </axis>
+    </joint>
+    <joint name="joint2" type="revolute">
+      <parent>link1</parent>
+      <child>link2</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <mimic joint="joint1">
+          <multiplier>2.0</multiplier>
+          <offset>0.5</offset>
+        </mimic>
+      </axis>
+    </joint>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint = skeleton->getJoint("joint2");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getActuatorType(), dynamics::Joint::MIMIC);
+  auto mimicProps = joint->getMimicDofProperties();
+  ASSERT_FALSE(mimicProps.empty());
+  EXPECT_EQ(mimicProps[0].mMultiplier, 2.0);
+  EXPECT_EQ(mimicProps[0].mOffset, 0.5);
+}
+
+//==============================================================================
+TEST(SdfParser, MimicMissingReferenceIgnored)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/mimic_missing/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="mimic_missing">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="tip">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="rev_joint" type="revolute">
+      <parent>base</parent>
+      <child>tip</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <mimic joint="missing_joint" />
+      </axis>
+    </joint>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint = skeleton->getJoint("rev_joint");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_NE(joint->getActuatorType(), dynamics::Joint::MIMIC);
+}
+
+//==============================================================================
+TEST(SdfParser, MeshScaleFromMemoryResource)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string meshUri = "memory://pkg/meshes/box.obj";
+  const std::string modelUri = "memory://pkg/models/mesh_scale/model.sdf";
+  const std::string meshData = R"(
+o Box
+v 0 0 0
+v 1 0 0
+v 0 1 0
+f 1 2 3
+ )";
+  const std::string modelSdf = std::string(R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="mesh_scale">
+    <link name="link">
+      <inertial><mass>1.0</mass></inertial>
+      <visual name="mesh_visual">
+        <geometry>
+          <mesh>
+            <uri>)") + meshUri + R"(</uri>
+            <scale>1 2 3</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
+ )";
+
+  retriever->add(meshUri, meshData);
+  const auto skeleton
+      = readSkeletonFromSdfString(modelUri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode(0);
+  ASSERT_NE(body, nullptr);
+  bool foundMesh = false;
+  body->eachShapeNodeWith<dynamics::VisualAspect>(
+      [&](dynamics::ShapeNode* node) {
+        auto mesh
+            = std::dynamic_pointer_cast<dynamics::MeshShape>(node->getShape());
+        if (!mesh) {
+          return;
+        }
+        foundMesh = true;
+        EXPECT_TRUE(mesh->getScale().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+      });
+  EXPECT_TRUE(foundMesh);
+}
+
+//==============================================================================
+TEST(SdfParser, MassWithoutInertiaUsesIsotropicTensor)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/isotropic_inertia/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="isotropic_inertia">
+    <link name="link">
+      <inertial>
+        <mass>2.0</mass>
+      </inertial>
+    </link>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode(0);
+  ASSERT_NE(body, nullptr);
+  EXPECT_DOUBLE_EQ(body->getMass(), 2.0);
+  const auto expected = Eigen::Matrix3d::Identity() * 2.0;
+  EXPECT_TRUE(body->getInertia().getMoment().isApprox(expected));
+}

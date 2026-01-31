@@ -810,3 +810,1173 @@ TEST(SkelParser, ReadSkeletonMissingRootElements)
   EXPECT_EQ(SkelParser::readSkeleton(noSkeletonPath.string()), nullptr);
   std::filesystem::remove(noSkeletonPath, ec);
 }
+
+//==============================================================================
+TEST(SkelParser, ReadWorldXmlPhysicsAndCollisionDetector)
+{
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <world name="world">
+    <physics>
+      <time_step>0.01</time_step>
+      <gravity>0 0 -1</gravity>
+      <collision_detector>fcl</collision_detector>
+    </physics>
+    <skeleton name="skel">
+      <body name="link">
+        <inertia>
+          <mass>1</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.2</iyy>
+            <izz>0.3</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>link</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+)";
+
+  const auto world = SkelParser::readWorldXML(skelXml);
+  ASSERT_NE(world, nullptr);
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), 0.01);
+  EXPECT_TRUE(world->getGravity().isApprox(Eigen::Vector3d(0.0, 0.0, -1.0)));
+
+  const auto detector = world->getConstraintSolver()->getCollisionDetector();
+  ASSERT_NE(detector, nullptr);
+  EXPECT_EQ(detector->getTypeView(), "fcl");
+}
+
+//==============================================================================
+TEST(SkelParser, VisualizationAndCollisionShapesFromXml)
+{
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="link">
+        <inertia>
+          <mass>2.0</mass>
+          <offset>0.01 0.02 0.03</offset>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box>
+              <size>0.2 0.4 0.6</size>
+            </box>
+          </geometry>
+          <color>0.1 0.2 0.3 0.4</color>
+        </visualization_shape>
+        <collision_shape>
+          <geometry>
+            <sphere>
+              <radius>0.5</radius>
+            </sphere>
+          </geometry>
+          <collidable>0</collidable>
+        </collision_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>link</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+)";
+
+  const auto world = SkelParser::readWorldXML(skelXml);
+  ASSERT_NE(world, nullptr);
+
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* body = skel->getBodyNode("link");
+  ASSERT_NE(body, nullptr);
+  EXPECT_EQ(body->getNumShapeNodes(), 2u);
+  EXPECT_DOUBLE_EQ(body->getInertia().getMass(), 2.0);
+  EXPECT_GT(body->getInertia().getMoment().trace(), 0.0);
+
+  ASSERT_GE(body->getNumShapeNodes(), 2u);
+  const auto* visualNode = body->getShapeNode(0);
+  ASSERT_NE(visualNode, nullptr);
+  const auto* visual = visualNode->getVisualAspect();
+  ASSERT_NE(visual, nullptr);
+  EXPECT_TRUE(visual->getRGBA().isApprox(Eigen::Vector4d(0.1, 0.2, 0.3, 0.4)));
+
+  const auto* collisionNode = body->getShapeNode(1);
+  ASSERT_NE(collisionNode, nullptr);
+  const auto* collision = collisionNode->getCollisionAspect();
+  ASSERT_NE(collision, nullptr);
+  EXPECT_FALSE(collision->isCollidable());
+}
+
+//==============================================================================
+TEST(SkelParser, MarkerElementsCreateMarkers)
+{
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="link">
+        <inertia>
+          <mass>1</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.2</iyy>
+            <izz>0.3</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <marker name="marker1">
+          <offset>1 2 3</offset>
+        </marker>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>link</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+)";
+
+  const auto world = SkelParser::readWorldXML(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  const auto* marker = skel->getMarker("marker1");
+  ASSERT_NE(marker, nullptr);
+  EXPECT_TRUE(marker->getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(1.0, 2.0, 3.0)));
+}
+
+//==============================================================================
+TEST(SkelParser, PlaneShapeDefaultsOffsetWhenMissing)
+{
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="link">
+        <inertia>
+          <mass>1</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.2</iyy>
+            <izz>0.3</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <plane>
+              <normal>0 1 0</normal>
+            </plane>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>link</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+)";
+
+  const auto world = SkelParser::readWorldXML(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* body = skel->getBodyNode("link");
+  ASSERT_NE(body, nullptr);
+  auto shape = body->getShapeNode(0)->getShape();
+  ASSERT_TRUE(shape->is<dynamics::PlaneShape>());
+  auto plane = std::dynamic_pointer_cast<dynamics::PlaneShape>(shape);
+  ASSERT_TRUE(plane);
+  EXPECT_DOUBLE_EQ(plane->getOffset(), 0.0);
+}
+
+//==============================================================================
+TEST(SkelParser, ReadWorldXmlFclMeshCollisionDetector)
+{
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <world name="world">
+    <physics>
+      <time_step>0.02</time_step>
+      <gravity>0 1 -2</gravity>
+      <collision_detector>fcl_mesh</collision_detector>
+    </physics>
+    <skeleton name="skel">
+      <body name="link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>link</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+)";
+
+  const auto world = SkelParser::readWorldXML(skelXml);
+  ASSERT_NE(world, nullptr);
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), 0.02);
+  EXPECT_TRUE(world->getGravity().isApprox(Eigen::Vector3d(0.0, 1.0, -2.0)));
+
+  const auto detector = world->getConstraintSolver()->getCollisionDetector();
+  ASSERT_NE(detector, nullptr);
+  EXPECT_EQ(detector->getTypeView(), "fcl");
+}
+
+//==============================================================================
+TEST(SkelParser, ReadWorldXmlUnknownCollisionDetectorFallsBack)
+{
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <world name="world">
+    <physics>
+      <collision_detector>unknown_detector</collision_detector>
+    </physics>
+    <skeleton name="skel">
+      <body name="link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>link</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+)";
+
+  const auto world = SkelParser::readWorldXML(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto detector = world->getConstraintSolver()->getCollisionDetector();
+  ASSERT_NE(detector, nullptr);
+  EXPECT_EQ(detector->getTypeView(), "fcl");
+}
+
+//==============================================================================
+TEST(SkelParser, ReadWorldXmlPlaneEllipsoidCylinderShapes)
+{
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="ground">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <plane>
+              <normal>0 1 0</normal>
+              <offset>0.2</offset>
+            </plane>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="ellipsoid">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.2</ixx>
+            <iyy>0.2</iyy>
+            <izz>0.2</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <ellipsoid>
+              <size>0.1 0.2 0.3</size>
+            </ellipsoid>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="cylinder">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.3</ixx>
+            <iyy>0.3</iyy>
+            <izz>0.3</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <cylinder>
+              <radius>0.2</radius>
+              <height>0.5</height>
+            </cylinder>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>ground</child>
+      </joint>
+      <joint type="revolute" name="ellipsoid_joint">
+        <parent>ground</parent>
+        <child>ellipsoid</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint type="prismatic" name="cylinder_joint">
+        <parent>ellipsoid</parent>
+        <child>cylinder</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+        </axis>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+)";
+
+  const auto world = SkelParser::readWorldXML(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+
+  auto* ground = skel->getBodyNode("ground");
+  ASSERT_NE(ground, nullptr);
+  auto planeShape = ground->getShapeNode(0)->getShape();
+  ASSERT_TRUE(planeShape->is<dynamics::PlaneShape>());
+  auto plane = std::dynamic_pointer_cast<dynamics::PlaneShape>(planeShape);
+  ASSERT_TRUE(plane);
+  EXPECT_TRUE(plane->getNormal().isApprox(Eigen::Vector3d(0.0, 1.0, 0.0)));
+  EXPECT_DOUBLE_EQ(plane->getOffset(), 0.2);
+
+  auto* ellipsoidBody = skel->getBodyNode("ellipsoid");
+  ASSERT_NE(ellipsoidBody, nullptr);
+  auto ellipsoidShape = ellipsoidBody->getShapeNode(0)->getShape();
+  ASSERT_TRUE(ellipsoidShape->is<dynamics::EllipsoidShape>());
+  auto ellipsoid
+      = std::dynamic_pointer_cast<dynamics::EllipsoidShape>(ellipsoidShape);
+  ASSERT_TRUE(ellipsoid);
+  EXPECT_TRUE(
+      ellipsoid->getDiameters().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+
+  auto* cylinderBody = skel->getBodyNode("cylinder");
+  ASSERT_NE(cylinderBody, nullptr);
+  auto cylinderShape = cylinderBody->getShapeNode(0)->getShape();
+  ASSERT_TRUE(cylinderShape->is<dynamics::CylinderShape>());
+  auto cylinder
+      = std::dynamic_pointer_cast<dynamics::CylinderShape>(cylinderShape);
+  ASSERT_TRUE(cylinder);
+  EXPECT_DOUBLE_EQ(cylinder->getRadius(), 0.2);
+  EXPECT_DOUBLE_EQ(cylinder->getHeight(), 0.5);
+}
+
+//==============================================================================
+TEST(SkelParser, ReadWorldFromFileMeshShape)
+{
+  const auto tempDir = std::filesystem::temp_directory_path();
+  const auto meshPath = tempDir / "dart_mesh_shape.obj";
+  const auto skelPath = tempDir / "dart_mesh_shape.skel";
+
+  std::ofstream meshFile(meshPath.string(), std::ios::binary);
+  ASSERT_TRUE(meshFile.is_open());
+  meshFile << "o Mesh\n"
+           << "v 0 0 0\n"
+           << "v 1 0 0\n"
+           << "v 0 1 0\n"
+           << "f 1 2 3\n";
+  meshFile.close();
+
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <mesh>
+              <file_name>dart_mesh_shape.obj</file_name>
+              <scale>1 2 3</scale>
+            </mesh>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>link</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+)";
+
+  std::ofstream skelFile(skelPath.string(), std::ios::binary);
+  ASSERT_TRUE(skelFile.is_open());
+  skelFile << skelXml;
+  skelFile.close();
+
+  const auto world = SkelParser::readWorld(
+      dart::common::Uri::createFromPath(skelPath.string()));
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* body = skel->getBodyNode("link");
+  ASSERT_NE(body, nullptr);
+
+  auto shape = body->getShapeNode(0)->getShape();
+  ASSERT_TRUE(shape->is<dynamics::MeshShape>());
+  auto mesh = std::dynamic_pointer_cast<const dynamics::MeshShape>(shape);
+  ASSERT_TRUE(mesh);
+  EXPECT_TRUE(mesh->getScale().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+
+  std::error_code ec;
+  std::filesystem::remove(meshPath, ec);
+  std::filesystem::remove(skelPath, ec);
+}
+
+//==============================================================================
+TEST(SkelParser, ReadWorldXmlSoftBodyEllipsoid)
+{
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="soft_link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <soft_shape>
+          <total_mass>1.0</total_mass>
+          <geometry>
+            <ellipsoid>
+              <size>0.2 0.3 0.4</size>
+              <num_slices>8</num_slices>
+              <num_stacks>6</num_stacks>
+            </ellipsoid>
+          </geometry>
+          <kv>2.0</kv>
+          <ke>3.0</ke>
+          <damp>0.4</damp>
+        </soft_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>soft_link</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+)";
+
+  const auto world = SkelParser::readWorldXML(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  ASSERT_EQ(skel->getNumSoftBodyNodes(), 1u);
+  auto* softBody = skel->getSoftBodyNode(0);
+  ASSERT_NE(softBody, nullptr);
+  EXPECT_GT(softBody->getNumPointMasses(), 0u);
+}
+
+//==============================================================================
+TEST(SkelParser, MarkerDefaultsToZeroOffset)
+{
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="link">
+        <inertia>
+          <mass>1</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.2</iyy>
+            <izz>0.3</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <marker name="marker_zero"/>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>link</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+)";
+
+  const auto world = SkelParser::readWorldXML(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  const auto* marker = skel->getMarker("marker_zero");
+  ASSERT_NE(marker, nullptr);
+  EXPECT_TRUE(marker->getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
+TEST(SkelParser, VisualizationColorThreeComponents)
+{
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="link">
+        <inertia>
+          <mass>1</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.2</iyy>
+            <izz>0.3</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box>
+              <size>0.1 0.1 0.1</size>
+            </box>
+          </geometry>
+          <color>0.1 0.2 0.3</color>
+        </visualization_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>link</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+)";
+
+  const auto world = SkelParser::readWorldXML(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  const auto* body = skel->getBodyNode("link");
+  ASSERT_NE(body, nullptr);
+  const auto* shapeNode = body->getShapeNode(0);
+  ASSERT_NE(shapeNode, nullptr);
+  const auto* visual = shapeNode->getVisualAspect();
+  ASSERT_NE(visual, nullptr);
+  EXPECT_TRUE(visual->getRGBA().isApprox(Eigen::Vector4d(0.1, 0.2, 0.3, 1.0)));
+}
+
+#include <dart/io/read.hpp>
+
+namespace {
+
+simulation::WorldPtr readWorldFromSkelString(std::string_view xml)
+{
+  static std::size_t counter = 0;
+  const auto tempPath
+      = std::filesystem::temp_directory_path()
+        / ("dart_skel_temp_" + std::to_string(counter++) + ".skel");
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = SkelParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  return world;
+}
+
+} // namespace
+
+//==============================================================================
+TEST(SkelParser, InertiaFromShapeNodesUsesVolumes)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="link">
+        <inertia>
+          <mass>2.0</mass>
+          <offset>0.01 0.02 0.03</offset>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box>
+              <size>0.2 0.4 0.6</size>
+            </box>
+          </geometry>
+        </visualization_shape>
+        <collision_shape>
+          <geometry>
+            <sphere>
+              <radius>0.3</radius>
+            </sphere>
+          </geometry>
+        </collision_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>link</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+ )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* body = skel->getBodyNode("link");
+  ASSERT_NE(body, nullptr);
+  EXPECT_DOUBLE_EQ(body->getMass(), 2.0);
+  EXPECT_GT(body->getInertia().getMoment().trace(), 0.0);
+}
+
+//==============================================================================
+TEST(SkelParser, SoftBodySphereProperties)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="soft_link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <soft_shape>
+          <total_mass>1.5</total_mass>
+          <geometry>
+            <sphere>
+              <radius>0.2</radius>
+              <num_slices>6</num_slices>
+              <num_stacks>4</num_stacks>
+            </sphere>
+          </geometry>
+          <kv>2.0</kv>
+          <ke>3.0</ke>
+          <damp>0.4</damp>
+        </soft_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>soft_link</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+ )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  ASSERT_EQ(skel->getNumSoftBodyNodes(), 1u);
+  auto* softBody = skel->getSoftBodyNode(0);
+  ASSERT_NE(softBody, nullptr);
+  EXPECT_GT(softBody->getNumPointMasses(), 0u);
+}
+
+//==============================================================================
+TEST(SkelParser, SoftBodyBoxProperties)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="soft_box">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <soft_shape>
+          <total_mass>2.0</total_mass>
+          <geometry>
+            <box>
+              <size>0.3 0.2 0.1</size>
+              <frags>2 3 4</frags>
+            </box>
+          </geometry>
+          <kv>1.2</kv>
+          <ke>0.8</ke>
+          <damp>0.3</damp>
+        </soft_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>soft_box</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+ )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  ASSERT_EQ(skel->getNumSoftBodyNodes(), 1u);
+  auto* softBody = skel->getSoftBodyNode(0);
+  ASSERT_NE(softBody, nullptr);
+  EXPECT_GT(softBody->getNumPointMasses(), 0u);
+}
+
+//==============================================================================
+TEST(SkelParser, SoftBodyCylinderProperties)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="soft_cylinder">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <soft_shape>
+          <total_mass>1.8</total_mass>
+          <geometry>
+            <cylinder>
+              <radius>0.15</radius>
+              <height>0.4</height>
+              <num_slices>8</num_slices>
+              <num_stacks>5</num_stacks>
+              <num_rings>3</num_rings>
+            </cylinder>
+          </geometry>
+          <kv>1.5</kv>
+          <ke>0.9</ke>
+          <damp>0.25</damp>
+        </soft_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>soft_cylinder</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+ )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  ASSERT_EQ(skel->getNumSoftBodyNodes(), 1u);
+  auto* softBody = skel->getSoftBodyNode(0);
+  ASSERT_NE(softBody, nullptr);
+  EXPECT_GT(softBody->getNumPointMasses(), 0u);
+}
+
+//==============================================================================
+TEST(SkelParser, PyramidAndConeShapes)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="pyramid">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <pyramid>
+              <base_width>0.3</base_width>
+              <base_depth>0.2</base_depth>
+              <height>0.4</height>
+            </pyramid>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="cone">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <cone>
+              <radius>0.15</radius>
+              <height>0.3</height>
+            </cone>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>pyramid</child>
+      </joint>
+      <joint type="weld" name="cone_joint">
+        <parent>pyramid</parent>
+        <child>cone</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+ )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+
+  auto* pyramidBody = skel->getBodyNode("pyramid");
+  ASSERT_NE(pyramidBody, nullptr);
+  auto pyramidShape = pyramidBody->getShapeNode(0)->getShape();
+  EXPECT_TRUE(pyramidShape->is<dynamics::PyramidShape>());
+
+  auto* coneBody = skel->getBodyNode("cone");
+  ASSERT_NE(coneBody, nullptr);
+  auto coneShape = coneBody->getShapeNode(0)->getShape();
+  EXPECT_TRUE(coneShape->is<dynamics::ConeShape>());
+}
+
+//==============================================================================
+TEST(SkelParser, TranslationalJointInitialValues)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="slider">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      <joint type="translational" name="slider_joint">
+        <parent>base</parent>
+        <child>slider</child>
+        <init_pos>0.1 0.2 0.3</init_pos>
+        <init_vel>-0.4 -0.5 -0.6</init_vel>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+ )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* joint = dynamic_cast<dynamics::TranslationalJoint*>(
+      skel->getJoint("slider_joint"));
+  ASSERT_NE(joint, nullptr);
+  EXPECT_TRUE(joint->getPositions().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+  EXPECT_TRUE(
+      joint->getVelocities().isApprox(Eigen::Vector3d(-0.4, -0.5, -0.6)));
+}
+
+//==============================================================================
+TEST(SkelParser, EulerJointAxisOrderAndInitials)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      <joint type="euler" name="euler_joint">
+        <parent>base</parent>
+        <child>link</child>
+        <axis_order>zyx</axis_order>
+        <init_pos>0.1 0.2 0.3</init_pos>
+        <init_vel>0.4 0.5 0.6</init_vel>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+ )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* joint
+      = dynamic_cast<dynamics::EulerJoint*>(skel->getJoint("euler_joint"));
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getAxisOrder(), dynamics::EulerJoint::AxisOrder::ZYX);
+  EXPECT_TRUE(joint->getPositions().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+  EXPECT_TRUE(joint->getVelocities().isApprox(Eigen::Vector3d(0.4, 0.5, 0.6)));
+}
+
+//==============================================================================
+TEST(SkelParser, PlanarJointUnknownPlaneDefaultsToXY)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="platform">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      <joint type="planar" name="planar_joint">
+        <parent>base</parent>
+        <child>platform</child>
+        <plane type="unknown" />
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+ )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* joint
+      = dynamic_cast<dynamics::PlanarJoint*>(skel->getJoint("planar_joint"));
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getPlaneType(), dynamics::PlanarJoint::PlaneType::XY);
+}
+
+//==============================================================================
+TEST(SkelParser, JointActuatorServoAndLocked)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="revolute" name="servo_joint" actuator="servo">
+        <parent>world</parent>
+        <child>base</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint type="revolute" name="locked_joint" actuator="locked">
+        <parent>base</parent>
+        <child>link</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+        </axis>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+ )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* servoJoint = skel->getJoint("servo_joint");
+  auto* lockedJoint = skel->getJoint("locked_joint");
+  ASSERT_NE(servoJoint, nullptr);
+  ASSERT_NE(lockedJoint, nullptr);
+  EXPECT_EQ(servoJoint->getActuatorType(), dynamics::Joint::SERVO);
+  EXPECT_EQ(lockedJoint->getActuatorType(), dynamics::Joint::LOCKED);
+}

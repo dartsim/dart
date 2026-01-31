@@ -717,20 +717,18 @@ TEST(ConstraintSolver, HasSkeleton)
   auto skeleton1 = dynamics::Skeleton::create("has_skel1");
   auto skeleton2 = dynamics::Skeleton::create("has_skel2");
 
-  EXPECT_FALSE(
-      std::ranges::any_of(solver.getSkeletons(), [&](const auto& skel) {
-        return skel == skeleton1;
-      }));
+  EXPECT_FALSE(std::ranges::any_of(
+      solver.getSkeletons(),
+      [&](const auto& skel) { return skel == skeleton1; }));
 
   solver.addSkeleton(skeleton1);
 
   EXPECT_TRUE(std::ranges::any_of(solver.getSkeletons(), [&](const auto& skel) {
     return skel == skeleton1;
   }));
-  EXPECT_FALSE(
-      std::ranges::any_of(solver.getSkeletons(), [&](const auto& skel) {
-        return skel == skeleton2;
-      }));
+  EXPECT_FALSE(std::ranges::any_of(
+      solver.getSkeletons(),
+      [&](const auto& skel) { return skel == skeleton2; }));
 
   solver.addSkeleton(skeleton2);
 
@@ -938,4 +936,228 @@ TEST(ConstraintSolver, SolverConfigurationAndDebugUtilities)
       b.data(),
       w.data(),
       findex.data());
+}
+
+namespace {
+
+struct WorldContactFixture
+{
+  simulation::WorldPtr world;
+  dynamics::SkeletonPtr ground;
+  dynamics::SkeletonPtr boxA;
+  dynamics::SkeletonPtr boxB;
+};
+
+void setFrictionCoefficients(
+    const dynamics::SkeletonPtr& skeleton,
+    double primaryCoeff,
+    double secondaryCoeff)
+{
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    auto* bodyNode = skeleton->getBodyNode(i);
+    for (std::size_t j = 0; j < bodyNode->getNumShapeNodes(); ++j) {
+      auto* shapeNode = bodyNode->getShapeNode(j);
+      auto* dynamicsAspect = shapeNode->getDynamicsAspect();
+      if (!dynamicsAspect) {
+        continue;
+      }
+      dynamicsAspect->setPrimaryFrictionCoeff(primaryCoeff);
+      dynamicsAspect->setSecondaryFrictionCoeff(secondaryCoeff);
+      dynamicsAspect->setFrictionCoeff(0.5 * (primaryCoeff + secondaryCoeff));
+    }
+  }
+}
+
+WorldContactFixture makeGroundBoxWorld(bool addSecondBox)
+{
+  WorldContactFixture fixture;
+  fixture.world = simulation::World::create();
+  fixture.world->setTimeStep(0.001);
+
+  fixture.ground = createGround(
+      Eigen::Vector3d(2.0, 0.1, 2.0), Eigen::Vector3d(0.0, -0.05, 0.0));
+  fixture.ground->setMobile(false);
+
+  fixture.boxA = createBox(
+      Eigen::Vector3d(0.3, 0.3, 0.3), Eigen::Vector3d(0.0, 0.05, 0.0));
+
+  fixture.world->addSkeleton(fixture.ground);
+  fixture.world->addSkeleton(fixture.boxA);
+
+  if (addSecondBox) {
+    fixture.boxB = createBox(
+        Eigen::Vector3d(0.25, 0.25, 0.25), Eigen::Vector3d(0.1, 0.05, 0.0));
+    fixture.world->addSkeleton(fixture.boxB);
+  }
+
+  return fixture;
+}
+
+} // namespace
+
+TEST(ConstraintSolver, WorldStepGeneratesContacts)
+{
+  auto fixture = makeGroundBoxWorld(false);
+  fixture.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  for (int i = 0; i < 120; ++i) {
+    fixture.world->step();
+  }
+
+  auto solver = fixture.world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+}
+
+TEST(ConstraintSolver, WorldStepFrictionlessContact)
+{
+  auto fixture = makeGroundBoxWorld(false);
+  fixture.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  setFrictionCoefficients(fixture.ground, 0.0, 0.0);
+  setFrictionCoefficients(fixture.boxA, 0.0, 0.0);
+
+  for (int i = 0; i < 120; ++i) {
+    fixture.world->step();
+  }
+
+  auto solver = fixture.world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+}
+
+TEST(ConstraintSolver, WorldStepFrictionalContact)
+{
+  auto fixture = makeGroundBoxWorld(false);
+  fixture.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  setFrictionCoefficients(fixture.ground, 0.6, 0.4);
+  setFrictionCoefficients(fixture.boxA, 0.8, 0.5);
+
+  for (int i = 0; i < 120; ++i) {
+    fixture.world->step();
+  }
+
+  auto solver = fixture.world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+}
+
+TEST(ConstraintSolver, WorldStepWithSplitImpulse)
+{
+  auto fixture = makeGroundBoxWorld(false);
+  fixture.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto solver = fixture.world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  solver->setSplitImpulseEnabled(true);
+
+  for (int i = 0; i < 120; ++i) {
+    fixture.world->step();
+  }
+
+  EXPECT_TRUE(solver->isSplitImpulseEnabled());
+  EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+}
+
+TEST(ConstraintSolver, WorldStepMultipleContactPairs)
+{
+  auto fixture = makeGroundBoxWorld(true);
+  fixture.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  for (int i = 0; i < 120; ++i) {
+    fixture.world->step();
+  }
+
+  auto solver = fixture.world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+}
+
+TEST(ConstraintSolver, WorldStepAfterTimeStepAdjustment)
+{
+  auto fixture = makeGroundBoxWorld(false);
+  fixture.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto solver = fixture.world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  solver->setTimeStep(0.0005);
+  EXPECT_DOUBLE_EQ(solver->getTimeStep(), 0.0005);
+
+  for (int i = 0; i < 120; ++i) {
+    fixture.world->step();
+  }
+
+  EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+}
+
+//=============================================================================
+TEST(ConstraintSolver, WorldStepFrictionalSplitImpulseMultipleContacts)
+{
+  auto fixture = makeGroundBoxWorld(false);
+  fixture.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  setFrictionCoefficients(fixture.ground, 0.9, 0.7);
+  setFrictionCoefficients(fixture.boxA, 0.8, 0.6);
+
+  auto solver = fixture.world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  solver->setSplitImpulseEnabled(true);
+  solver->getCollisionOption().maxNumContacts = 8u;
+
+  for (int i = 0; i < 120; ++i) {
+    fixture.world->step();
+  }
+
+  EXPECT_TRUE(solver->isSplitImpulseEnabled());
+  EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+}
+
+//=============================================================================
+TEST(ConstraintSolver, WorldStepFrictionlessSplitImpulse)
+{
+  auto fixture = makeGroundBoxWorld(false);
+  fixture.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  setFrictionCoefficients(fixture.ground, 0.0, 0.0);
+  setFrictionCoefficients(fixture.boxA, 0.0, 0.0);
+
+  auto solver = fixture.world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  solver->setSplitImpulseEnabled(true);
+  solver->getCollisionOption().maxNumContacts = 8u;
+
+  for (int i = 0; i < 120; ++i) {
+    fixture.world->step();
+  }
+
+  EXPECT_TRUE(solver->isSplitImpulseEnabled());
+  EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+}
+
+//=============================================================================
+TEST(ConstraintSolver, WorldStepExpandedContactManifold)
+{
+  auto world = simulation::World::create();
+  world->setTimeStep(0.001);
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto ground = createGround(
+      Eigen::Vector3d(2.0, 0.1, 2.0), Eigen::Vector3d(0.0, -0.05, 0.0));
+  ground->setMobile(false);
+  auto box = createBox(
+      Eigen::Vector3d(0.6, 0.2, 0.6), Eigen::Vector3d(0.0, 0.05, 0.0));
+
+  world->addSkeleton(ground);
+  world->addSkeleton(box);
+
+  auto solver = world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  solver->getCollisionOption().maxNumContacts = 8u;
+
+  for (int i = 0; i < 120; ++i) {
+    world->step();
+  }
+
+  EXPECT_GE(solver->getLastCollisionResult().getNumContacts(), 2u);
 }

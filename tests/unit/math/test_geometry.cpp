@@ -1506,6 +1506,81 @@ TEST(Geometry, ComputeSupportPolygon)
 }
 
 //==============================================================================
+TEST(Geometry, MatrixToEulerXYZPositiveSingularity)
+{
+  const Eigen::Matrix3d rot
+      = Eigen::AngleAxisd(math::half_pi, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  const Eigen::Vector3d angles = matrixToEulerXYZ(rot);
+
+  EXPECT_NEAR(angles[0], 0.0, 1e-12);
+  EXPECT_NEAR(angles[1], math::half_pi, 1e-12);
+  EXPECT_NEAR(angles[2], 0.0, 1e-12);
+  EXPECT_TRUE(eulerXYZToMatrix(angles).isApprox(rot, 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, MatrixToEulerXYZNegativeSingularity)
+{
+  const Eigen::Matrix3d rot
+      = Eigen::AngleAxisd(-math::half_pi, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  const Eigen::Vector3d angles = matrixToEulerXYZ(rot);
+
+  EXPECT_NEAR(angles[0], 0.0, 1e-12);
+  EXPECT_NEAR(angles[1], -math::half_pi, 1e-12);
+  EXPECT_NEAR(angles[2], 0.0, 1e-12);
+  EXPECT_TRUE(eulerXYZToMatrix(angles).isApprox(rot, 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, MatrixToEulerZYXPositiveSingularity)
+{
+  const Eigen::Matrix3d rot
+      = Eigen::AngleAxisd(-math::half_pi, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  const Eigen::Vector3d angles = matrixToEulerZYX(rot);
+
+  EXPECT_NEAR(angles[1], -math::half_pi, 1e-12);
+}
+
+//==============================================================================
+TEST(Geometry, MatrixToEulerZYXNegativeSingularity)
+{
+  const Eigen::Matrix3d rot
+      = Eigen::AngleAxisd(math::half_pi, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  const Eigen::Vector3d angles = matrixToEulerZYX(rot);
+
+  EXPECT_NEAR(angles[1], math::half_pi, 1e-12);
+  EXPECT_TRUE(eulerZYXToMatrix(angles).isApprox(rot, 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, LogMapIsometryIdentity)
+{
+  const Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  const Eigen::Vector6d twist = logMap(T);
+
+  EXPECT_NEAR(twist.norm(), 0.0, 1e-12);
+  EXPECT_TRUE(expMap(twist).matrix().isApprox(T.matrix(), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, LogMapIsometryHalfTurn)
+{
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  T.linear() = Eigen::AngleAxisd(math::pi, Eigen::Vector3d::UnitX())
+                   .toRotationMatrix();
+  T.translation() = Eigen::Vector3d(0.2, -0.1, 0.3);
+
+  const Eigen::Vector6d twist = logMap(T);
+  const Eigen::Isometry3d recovered = expMap(twist);
+
+  EXPECT_TRUE(recovered.matrix().isApprox(T.matrix(), 1e-6));
+}
+
+//==============================================================================
 TEST(Geometry, ComputeSupportPolygonWithIndices)
 {
   std::vector<Eigen::Vector3d> geometry;
@@ -1561,4 +1636,51 @@ TEST(Geometry, EulerAndLogMapEdges)
   Eigen::Isometry3d invalidTf = Eigen::Isometry3d::Identity();
   invalidTf.translation()[0] = std::numeric_limits<double>::quiet_NaN();
   EXPECT_FALSE(math::verifyTransform(invalidTf));
+}
+
+//==============================================================================
+TEST(Geometry, QuaternionSecondDerivSameDofs)
+{
+  const Eigen::Quaterniond q = Eigen::Quaterniond::Identity();
+
+  const Eigen::Matrix3d dxx = quatSecondDeriv(q, 1, 1);
+  EXPECT_DOUBLE_EQ(dxx(0, 0), 2.0);
+  EXPECT_DOUBLE_EQ(dxx(1, 1), -2.0);
+  EXPECT_DOUBLE_EQ(dxx(2, 2), -2.0);
+
+  const Eigen::Matrix3d dyy = quatSecondDeriv(q, 2, 2);
+  EXPECT_DOUBLE_EQ(dyy(0, 0), -2.0);
+  EXPECT_DOUBLE_EQ(dyy(1, 1), 2.0);
+  EXPECT_DOUBLE_EQ(dyy(2, 2), -2.0);
+
+  const Eigen::Matrix3d dzz = quatSecondDeriv(q, 3, 3);
+  EXPECT_DOUBLE_EQ(dzz(0, 0), -2.0);
+  EXPECT_DOUBLE_EQ(dzz(1, 1), -2.0);
+  EXPECT_DOUBLE_EQ(dzz(2, 2), 2.0);
+}
+
+//==============================================================================
+TEST(Geometry, QuaternionSecondDerivOrderSwap)
+{
+  const Eigen::Quaterniond q = Eigen::Quaterniond::Identity();
+
+  const Eigen::Matrix3d d30 = quatSecondDeriv(q, 3, 0);
+  const Eigen::Matrix3d d03 = quatSecondDeriv(q, 0, 3);
+  EXPECT_TRUE(d30.isApprox(d03));
+
+  EXPECT_DOUBLE_EQ(d30(0, 1), -2.0);
+  EXPECT_DOUBLE_EQ(d30(1, 0), 2.0);
+}
+
+//==============================================================================
+TEST(Geometry, ComputeConvexHullWrapper)
+{
+  std::vector<Eigen::Vector2d> points;
+  points.emplace_back(0.0, 0.0);
+  points.emplace_back(1.0, 0.0);
+  points.emplace_back(1.0, 1.0);
+  points.emplace_back(0.0, 1.0);
+
+  const auto hull = computeConvexHull(std::span<const Eigen::Vector2d>(points));
+  EXPECT_EQ(hull.size(), 4u);
 }
