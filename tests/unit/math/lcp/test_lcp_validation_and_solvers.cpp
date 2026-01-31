@@ -133,6 +133,23 @@ LcpProblem makeZeroProblem()
       std::move(findex));
 }
 
+LcpProblem makeShiftedStandardProblem()
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(3, 3) * 1.5;
+  Eigen::VectorXd b(3);
+  b << 0.6, 0.4, 0.2;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(3, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(3, -1);
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
 } // namespace
 
 TEST(LcpValidationCoverage, DetectsDimensionMismatch)
@@ -500,6 +517,20 @@ TEST(MprgpSolverCoverage, SolvesStandardProblem)
   EXPECT_TRUE(x.array().isFinite().all());
 }
 
+TEST(MprgpSolverCoverage, SolvesShiftedProblem)
+{
+  MprgpSolver solver;
+  auto problem = makeShiftedStandardProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Constant(3, 0.2);
+
+  LcpOptions options;
+  options.warmStart = true;
+  options.maxIterations = 80;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
 TEST(MprgpSolverCoverage, RejectsInvalidDivisionEpsilon)
 {
   MprgpSolver solver;
@@ -524,6 +555,19 @@ TEST(LemkeSolverCoverage, SolvesStandardProblem)
   LcpOptions options;
   const auto result = solver.solve(problem, x, options);
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(LemkeSolverCoverage, SolvesWarmStartProblem)
+{
+  LemkeSolver solver;
+  auto problem = makeShiftedStandardProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Constant(3, 0.05);
+
+  LcpOptions options;
+  options.warmStart = true;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
 }
 
@@ -571,6 +615,19 @@ TEST(BlockedJacobiSolverCoverage, SolvesFrictionBlock)
   EXPECT_TRUE(x.array().isFinite().all());
 }
 
+TEST(BlockedJacobiSolverCoverage, SolvesAutoBlockPartition)
+{
+  BlockedJacobiSolver solver;
+  auto problem = makeFrictionProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+
+  LcpOptions options;
+  options.maxIterations = 60;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
 TEST(BgsSolverCoverage, RejectsZeroBlockSize)
 {
   BgsSolver solver;
@@ -598,6 +655,19 @@ TEST(BgsSolverCoverage, SolvesStandardProblem)
 
   auto problem = makeStandardProblem(2);
   Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(BgsSolverCoverage, SolvesAutoBlockPartition)
+{
+  BgsSolver solver;
+  auto problem = makeFrictionProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+
+  LcpOptions options;
+  options.maxIterations = 60;
   const auto result = solver.solve(problem, x, options);
   EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
@@ -830,4 +900,18 @@ TEST(MinimumMapNewtonCoverage, FallsBackForBoxedProblem)
   LcpOptions options;
   const auto result = solver.solve(problem, x, options);
   EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+}
+
+TEST(MinimumMapNewtonCoverage, SolvesShiftedStandardProblem)
+{
+  MinimumMapNewtonSolver solver;
+  auto problem = makeShiftedStandardProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Constant(3, 0.1);
+
+  LcpOptions options;
+  options.warmStart = true;
+  options.maxIterations = 40;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
 }

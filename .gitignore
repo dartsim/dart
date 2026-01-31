@@ -122,6 +122,15 @@ profiling/*.txt
 # Benchmark result artifacts
 .benchmark_results/
 
+# clangd / LSP artifacts
+.cache/
+.clangd
+compile_commands.json
+compile_flags.txt
+
+# OpenCode agent artifacts
+.opencode/
+
 # Coverage files
 *.info
 *.gcda

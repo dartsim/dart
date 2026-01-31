@@ -1,9 +1,11 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
+#include <dart/dynamics/chain.hpp>
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/group.hpp>
 #include <dart/dynamics/invalid_index.hpp>
+#include <dart/dynamics/linkage.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
@@ -47,6 +49,93 @@ TEST(ReferentialSkeleton, BodyNodeLookupAndIndexing)
   EXPECT_EQ(
       group->getIndexOf(static_cast<const BodyNode*>(nullptr), false),
       INVALID_INDEX);
+}
+
+TEST(ReferentialSkeleton, GroupChainLinkageHasAndIndex)
+{
+  auto skeleton = Skeleton::create("ref_chain");
+  auto rootPair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  auto grandPair
+      = childPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  std::array<BodyNode*, 2> groupNodes = {rootPair.second, childPair.second};
+  auto group = Group::create("group_has", groupNodes);
+
+  EXPECT_TRUE(group->hasBodyNode(rootPair.second));
+  EXPECT_TRUE(group->hasBodyNode(childPair.second));
+  EXPECT_EQ(group->getIndexOf(childPair.second, false), 1u);
+
+  auto otherSkeleton = Skeleton::create("ref_other");
+  auto otherPair = otherSkeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  EXPECT_FALSE(group->hasBodyNode(otherPair.second));
+  EXPECT_EQ(group->getIndexOf(otherPair.second, false), INVALID_INDEX);
+
+  auto chain = Chain::create(rootPair.second, grandPair.second, "chain_has");
+  ASSERT_NE(chain, nullptr);
+  EXPECT_TRUE(chain->hasBodyNode(childPair.second));
+  EXPECT_NE(chain->getIndexOf(childPair.second, false), INVALID_INDEX);
+  EXPECT_EQ(chain->getIndexOf(otherPair.second, false), INVALID_INDEX);
+
+  Linkage::Criteria criteria;
+  criteria.mStart = Linkage::Criteria::Target(rootPair.second);
+  criteria.mTargets.emplace_back(grandPair.second);
+  auto linkage = Linkage::create(criteria, "linkage_has");
+  ASSERT_NE(linkage, nullptr);
+  EXPECT_TRUE(linkage->hasBodyNode(grandPair.second));
+  EXPECT_NE(linkage->getIndexOf(grandPair.second, false), INVALID_INDEX);
+  EXPECT_EQ(linkage->getIndexOf(otherPair.second, false), INVALID_INDEX);
+}
+
+TEST(ReferentialSkeleton, GroupAddRemoveNoWarnings)
+{
+  auto skeleton = Skeleton::create("group_add_remove");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  auto* joint = childPair.first;
+  auto* dof = joint->getDof(0);
+
+  auto group = Group::create("group_ops");
+  EXPECT_TRUE(group->addBodyNode(childPair.second, false));
+  EXPECT_TRUE(group->addJoint(joint, false, false));
+  EXPECT_TRUE(group->addDof(dof, false, false));
+
+  EXPECT_TRUE(group->removeDof(dof, false, false));
+  EXPECT_TRUE(group->removeJoint(joint, false, false));
+  EXPECT_TRUE(group->removeBodyNode(childPair.second, false));
+}
+
+TEST(ReferentialSkeleton, JacobianDerivativesOnGroup)
+{
+  auto skeleton = Skeleton::create("ref_jac_group");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  std::array<BodyNode*, 2> bodyNodes = {rootPair.second, childPair.second};
+  auto group = Group::create("jac_group", bodyNodes);
+
+  const auto jacClassic = group->getJacobianClassicDeriv(childPair.second);
+  EXPECT_EQ(jacClassic.cols(), static_cast<int>(group->getNumDofs()));
+  const auto jacClassicFrame
+      = group->getJacobianClassicDeriv(childPair.second, Frame::World());
+  EXPECT_EQ(jacClassicFrame.cols(), static_cast<int>(group->getNumDofs()));
+  const auto jacClassicOffset = group->getJacobianClassicDeriv(
+      childPair.second, Eigen::Vector3d::UnitX(), Frame::World());
+  EXPECT_EQ(jacClassicOffset.cols(), static_cast<int>(group->getNumDofs()));
+
+  const auto linearDeriv
+      = group->getLinearJacobianDeriv(childPair.second, Frame::World());
+  EXPECT_EQ(linearDeriv.cols(), static_cast<int>(group->getNumDofs()));
+  const auto linearDerivOffset = group->getLinearJacobianDeriv(
+      childPair.second, Eigen::Vector3d::UnitZ(), Frame::World());
+  EXPECT_EQ(linearDerivOffset.cols(), static_cast<int>(group->getNumDofs()));
+
+  const auto angularDeriv
+      = group->getAngularJacobianDeriv(childPair.second, Frame::World());
+  EXPECT_EQ(angularDeriv.cols(), static_cast<int>(group->getNumDofs()));
 }
 
 TEST(ReferentialSkeleton, DofsJacobianAndComputation)

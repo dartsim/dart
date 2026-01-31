@@ -461,3 +461,31 @@ TEST(PointMass, ParentAccessorsAndVelocityChange)
   EXPECT_TRUE(
       pmConst->getBodyVelocityChange().isApprox(Eigen::Vector3d::Zero()));
 }
+
+TEST(PointMass, ConstrainedTermsAndPartialAcceleration)
+{
+  auto skeleton = Skeleton::create("point-mass-constraints");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.3),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      6.0,
+      6.0,
+      0.1);
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  pm->setVelocities(Eigen::Vector3d(0.2, -0.1, 0.05));
+  const auto partial = pm->getPartialAccelerations();
+  EXPECT_TRUE(partial.allFinite());
+
+  pm->setConstraintImpulse(Eigen::Vector3d(0.2, -0.1, 0.3), true);
+  EXPECT_TRUE(pm->getConstraintImpulses().allFinite());
+  ASSERT_NE(softBody->getNotifier(), nullptr);
+  EXPECT_FALSE(softBody->getNotifier()->getName().empty());
+}

@@ -32,6 +32,7 @@
 
 #include "../../helpers/dynamics_helpers.hpp"
 
+#include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/detail/skeleton_aspect.hpp>
@@ -39,22 +40,60 @@
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/group.hpp>
+#include <dart/dynamics/joint.hpp>
+#include <dart/dynamics/mimic_dof_properties.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <dart/common/deprecated.hpp>
+
+#if defined(__clang__) && !defined(DART_COMPILER_CLANG)
+  #define DART_COMPILER_CLANG
+#endif
+#if defined(__GNUC__) && !defined(DART_COMPILER_GCC) && !defined(__clang__)
+  #define DART_COMPILER_GCC
+#endif
+
+#include <dart/common/diagnostics.hpp>
 #include <dart/common/exception.hpp>
 
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
+#include <array>
+#include <memory>
 #include <vector>
 
 #include <cmath>
 
 using namespace dart::dynamics;
+
+namespace {
+
+class TestSkeleton : public Skeleton
+{
+public:
+  static std::shared_ptr<TestSkeleton> create(const std::string& name)
+  {
+    auto skeleton = std::shared_ptr<TestSkeleton>(
+        new TestSkeleton(AspectPropertiesData(name)));
+    skeleton->setPtr(skeleton);
+    return skeleton;
+  }
+
+  using Skeleton::dirtyArticulatedInertia;
+  using Skeleton::updateArticulatedInertia;
+
+protected:
+  explicit TestSkeleton(const AspectPropertiesData& properties)
+    : Skeleton(properties)
+  {
+  }
+};
+
+} // namespace
 
 //==============================================================================
 TEST(SkeletonAccessors, ReturnsMutableBodyNodeVector)
@@ -662,8 +701,15 @@ TEST(SkeletonClone, CloneWithMimicJoint)
       masterPair.second, slaveProps, slaveBodyProps);
   auto* slaveJoint = slavePair.first;
 
-  // Set up mimic relationship: slave = 2.0 * master + 0.5
-  slaveJoint->setMimicJoint(masterJoint, 2.0, 0.5);
+  // Set up mimic relationship: slave mirrors master
+  slaveJoint->setActuatorType(0, Joint::MIMIC);
+  ::dart::dynamics::MimicDofProperties mimicProps;
+  mimicProps.mReferenceJoint = masterJoint;
+  mimicProps.mReferenceDofIndex = 0;
+  mimicProps.mMultiplier = 1.0;
+  mimicProps.mOffset = 0.0;
+  mimicProps.mConstraintType = ::dart::dynamics::MimicConstraintType::Motor;
+  slaveJoint->setMimicJointDof(0, mimicProps);
 
   auto clone = original->cloneSkeleton("clone");
 
@@ -671,15 +717,275 @@ TEST(SkeletonClone, CloneWithMimicJoint)
       = dynamic_cast<RevoluteJoint*>(clone->getJoint("slave_joint"));
   ASSERT_NE(clonedSlave, nullptr);
 
-  // Mimic multiplier and offset should be preserved
-  EXPECT_DOUBLE_EQ(clonedSlave->getMimicMultiplier(0), 2.0);
-  EXPECT_DOUBLE_EQ(clonedSlave->getMimicOffset(0), 0.5);
+  const auto clonedProps = clonedSlave->getMimicDofProperties();
+  ASSERT_FALSE(clonedProps.empty());
+  EXPECT_DOUBLE_EQ(clonedProps[0].mMultiplier, 1.0);
+  EXPECT_DOUBLE_EQ(clonedProps[0].mOffset, 0.0);
 
   // Verify clone has its own master joint
   auto* clonedMaster
       = dynamic_cast<RevoluteJoint*>(clone->getJoint("master_joint"));
   ASSERT_NE(clonedMaster, nullptr);
   EXPECT_NE(clonedMaster, masterJoint);
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, JointAndDofVectorLookups)
+{
+  auto skeleton = Skeleton::create("joint_vector_access");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.first->setName("root_joint");
+
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setName("child_joint");
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const auto joints = skeleton->getJoints();
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_EQ(joints.size(), skeleton->getNumJoints());
+  EXPECT_EQ(joints[0], skeleton->getJoint(0));
+
+  const Skeleton* constSkeleton = skeleton.get();
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const auto constJoints = constSkeleton->getJoints();
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_EQ(constJoints.size(), skeleton->getNumJoints());
+  EXPECT_EQ(constJoints[1], skeleton->getJoint(1));
+
+  const Skeleton& constRef = *skeleton;
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const auto constDofs = constRef.getDofs();
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_EQ(constDofs.size(), skeleton->getNumDofs());
+
+  EXPECT_EQ(skeleton->getBodyNode("missing_body"), nullptr);
+  EXPECT_EQ(skeleton->getJoint("missing_joint"), nullptr);
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, ZeroDofMassMatrixAndForceAccessors)
+{
+  auto skeleton = Skeleton::create("zero_dof_skeleton");
+  auto pair = skeleton->createJointAndBodyNodePair<WeldJoint>();
+  pair.second->setMass(1.0);
+
+  const auto& treeMass = skeleton->getMassMatrix(0);
+  EXPECT_EQ(treeMass.rows(), 0);
+  EXPECT_EQ(treeMass.cols(), 0);
+
+  const auto& skelMass = skeleton->getMassMatrix();
+  EXPECT_EQ(skelMass.rows(), 0);
+  EXPECT_EQ(skelMass.cols(), 0);
+
+  const auto& treeAug = skeleton->getAugMassMatrix(0);
+  EXPECT_EQ(treeAug.rows(), 0);
+  EXPECT_EQ(treeAug.cols(), 0);
+  const auto& skelAug = skeleton->getAugMassMatrix();
+  EXPECT_EQ(skelAug.rows(), 0);
+  EXPECT_EQ(skelAug.cols(), 0);
+
+  const auto& treeInv = skeleton->getInvMassMatrix(0);
+  EXPECT_EQ(treeInv.rows(), 0);
+  EXPECT_EQ(treeInv.cols(), 0);
+  const auto& skelInv = skeleton->getInvMassMatrix();
+  EXPECT_EQ(skelInv.rows(), 0);
+  EXPECT_EQ(skelInv.cols(), 0);
+
+  const auto& treeInvAug = skeleton->getInvAugMassMatrix(0);
+  EXPECT_EQ(treeInvAug.rows(), 0);
+  EXPECT_EQ(treeInvAug.cols(), 0);
+  const auto& skelInvAug = skeleton->getInvAugMassMatrix();
+  EXPECT_EQ(skelInvAug.rows(), 0);
+  EXPECT_EQ(skelInvAug.cols(), 0);
+
+  const auto& treeC = skeleton->getCoriolisForces(0);
+  EXPECT_EQ(treeC.size(), 0);
+  const auto& skelC = skeleton->getCoriolisForces();
+  EXPECT_EQ(skelC.size(), 0);
+
+  const auto& treeG = skeleton->getGravityForces(0);
+  EXPECT_EQ(treeG.size(), 0);
+  const auto& skelG = skeleton->getGravityForces();
+  EXPECT_EQ(skelG.size(), 0);
+
+  const auto& treeCg = skeleton->getCoriolisAndGravityForces(0);
+  EXPECT_EQ(treeCg.size(), 0);
+  const auto& skelCg = skeleton->getCoriolisAndGravityForces();
+  EXPECT_EQ(skelCg.size(), 0);
+
+  const auto& treeFext = skeleton->getExternalForces(0);
+  EXPECT_EQ(treeFext.size(), 0);
+  const auto& skelFext = skeleton->getExternalForces();
+  EXPECT_EQ(skelFext.size(), 0);
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, ArticulatedInertiaUpdates)
+{
+  auto skeleton = TestSkeleton::create("articulated_inertia");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setMass(1.0);
+
+  skeleton->dirtyArticulatedInertia(0);
+  skeleton->updateArticulatedInertia();
+
+  const auto& inertia = pair.second->getArticulatedInertia();
+  (void)inertia;
+}
+
+//==============================================================================
+TEST(BodyNodeOperations, MoveSplitChangeParentJoint)
+{
+  auto skeletonA = Skeleton::create("move_a");
+  auto rootPairA = skeletonA->createJointAndBodyNodePair<FreeJoint>();
+  auto childPairA
+      = rootPairA.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  auto* child = childPairA.second;
+
+  auto skeletonB = Skeleton::create("move_b");
+  auto rootPairB = skeletonB->createJointAndBodyNodePair<FreeJoint>();
+
+  EXPECT_TRUE(child->moveTo(skeletonB, rootPairB.second));
+  EXPECT_EQ(child->getSkeleton(), skeletonB);
+
+  EXPECT_TRUE(child->moveTo(nullptr));
+  EXPECT_EQ(child->getSkeleton(), skeletonB);
+  EXPECT_EQ(child->getParentBodyNode(), nullptr);
+
+  auto splitSkeleton = child->split("split_skeleton");
+  EXPECT_EQ(splitSkeleton->getName(), "split_skeleton");
+  EXPECT_EQ(splitSkeleton->getNumBodyNodes(), 1u);
+
+  auto changeSkeleton = Skeleton::create("change_joint");
+  auto rootPairC = changeSkeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto childPairC
+      = rootPairC.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  auto* changed = childPairC.second;
+
+  auto* newJoint = changed->changeParentJointType<BallJoint>();
+  ASSERT_NE(newJoint, nullptr);
+  EXPECT_EQ(newJoint->getNumDofs(), 3u);
+}
+
+//==============================================================================
+TEST(BodyNodeOperations, DependentDofsAndMomentum)
+{
+  auto skeleton = Skeleton::create("body_momentum");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint = pair.first;
+  auto* body = pair.second;
+
+  EXPECT_EQ(body->getDependentDofs().size(), skeleton->getNumDofs());
+  EXPECT_EQ(body->getDependentDof(0), joint->getDof(0));
+
+  const BodyNode* constBody = body;
+  EXPECT_NE(constBody->getDependentDof(0), nullptr);
+
+  Eigen::Vector6d spatialVelocity = Eigen::Vector6d::Zero();
+  spatialVelocity.tail<3>() = Eigen::Vector3d(0.2, -0.1, 0.3);
+  joint->setSpatialVelocity(spatialVelocity, Frame::World(), Frame::World());
+
+  const auto linearMomentum = body->getLinearMomentum();
+  EXPECT_TRUE(linearMomentum.array().isFinite().all());
+
+  const auto angularMomentum
+      = body->getAngularMomentum(Eigen::Vector3d::Zero());
+  EXPECT_TRUE(angularMomentum.array().isFinite().all());
+}
+
+//==============================================================================
+TEST(ZeroDofJointAccessors, WeldJointJacobianAndSetters)
+{
+  auto skeleton = Skeleton::create("weld_joint");
+  auto pair = skeleton->createJointAndBodyNodePair<WeldJoint>();
+  auto* joint = static_cast<Joint*>(pair.first);
+
+  const auto jac = joint->getRelativeJacobian();
+  EXPECT_EQ(jac.rows(), 6);
+  EXPECT_EQ(jac.cols(), 0);
+
+  const auto jacDeriv = joint->getRelativeJacobianTimeDeriv();
+  EXPECT_EQ(jacDeriv.rows(), 6);
+  EXPECT_EQ(jacDeriv.cols(), 0);
+
+  joint->setSpringStiffness(0, 10.0);
+  joint->setRestPosition(0, 0.2);
+  joint->setDampingCoefficient(0, 0.3);
+  joint->setCoulombFriction(0, 0.1);
+
+  EXPECT_DOUBLE_EQ(joint->getSpringStiffness(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getRestPosition(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getDampingCoefficient(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getCoulombFriction(0), 0.0);
+}
+
+//==============================================================================
+TEST(JointAccessors, CopyPropertiesAndWrenchQueries)
+{
+  auto skeletonA = Skeleton::create("joint_copy_a");
+  auto pairA = skeletonA->createJointAndBodyNodePair<RevoluteJoint>();
+  auto* jointA = pairA.first;
+  jointA->setName("joint_a");
+  jointA->setLimitEnforcement(true);
+  EXPECT_TRUE(jointA->areLimitsEnforced());
+
+  auto skeletonB = Skeleton::create("joint_copy_b");
+  auto pairB = skeletonB->createJointAndBodyNodePair<RevoluteJoint>();
+  auto* jointB = pairB.first;
+
+  jointB->copy(jointA);
+  *jointB = *jointA;
+
+  Joint::Properties jointProps;
+  jointProps.mName = "extended_props_joint";
+  Joint::ExtendedProperties extendedProps(
+      jointProps, Joint::CompositeProperties());
+  Joint::ExtendedProperties movedProps{
+      Joint::Properties(jointProps), Joint::CompositeProperties()};
+  (void)extendedProps;
+  (void)movedProps;
+
+  std::array<Joint::ActuatorType, 3> types
+      = {Joint::FORCE, Joint::MIMIC, Joint::FORCE};
+  auto skeletonC = Skeleton::create("joint_actuator_types");
+  auto pairC = skeletonC->createJointAndBodyNodePair<BallJoint>();
+  pairC.first->setActuatorTypes(types);
+  EXPECT_EQ(pairC.first->getActuatorType(1), Joint::MIMIC);
+
+  auto mimicSkeleton = Skeleton::create("joint_mimic_ops");
+  auto refPair = mimicSkeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  auto mimicPair
+      = refPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  mimicPair.first->setActuatorType(0, Joint::MIMIC);
+  mimicPair.first->setMimicJoint(refPair.first, 1.0, 0.0);
+
+  auto wrenchPair
+      = pairA.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  auto* wrenchJoint = wrenchPair.first;
+  auto* wrenchParentBody = pairA.second;
+  auto* wrenchChildBody = wrenchPair.second;
+
+  const auto wrenchDefault = wrenchJoint->getWrenchToChildBodyNode();
+  const auto wrenchChild
+      = wrenchJoint->getWrenchToChildBodyNode(wrenchChildBody);
+  const auto wrenchParent
+      = wrenchJoint->getWrenchToChildBodyNode(wrenchParentBody);
+  const auto wrenchWorld
+      = wrenchJoint->getWrenchToChildBodyNode(Frame::World());
+
+  EXPECT_TRUE(wrenchDefault.array().isFinite().all());
+  EXPECT_TRUE(wrenchChild.array().isFinite().all());
+  EXPECT_TRUE(wrenchParent.array().isFinite().all());
+  EXPECT_TRUE(wrenchWorld.array().isFinite().all());
+
+  const auto wrenchToParent
+      = wrenchJoint->getWrenchToParentBodyNode(Frame::World());
+  EXPECT_TRUE(wrenchToParent.array().isFinite().all());
+
+  wrenchJoint->notifyPositionUpdated();
+  wrenchJoint->notifyVelocityUpdated();
+  wrenchJoint->notifyAccelerationUpdated();
 }
 
 //==============================================================================

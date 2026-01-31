@@ -1265,3 +1265,25 @@ TEST(HierarchicalIK, RefreshHierarchyPriorityLevels)
   EXPECT_EQ(hierarchy[0].size(), 1u);
   EXPECT_EQ(hierarchy[2].size(), 1u);
 }
+
+TEST(HierarchicalIK, WholeBodyCloneCopiesHierarchy)
+{
+  auto chain = makeIkChain();
+  auto rootIk = chain.root->getOrCreateIK();
+  auto endIk = chain.endEffector->getOrCreateIK();
+  ASSERT_NE(rootIk, nullptr);
+  ASSERT_NE(endIk, nullptr);
+
+  rootIk->setHierarchyLevel(0);
+  endIk->setHierarchyLevel(1);
+
+  auto wholeBody = WholeBodyIK::create(chain.skeleton);
+  ASSERT_NE(wholeBody, nullptr);
+  wholeBody->refreshIKHierarchy();
+
+  auto clonedSkel = chain.skeleton->cloneSkeleton();
+  auto cloned = wholeBody->clone(clonedSkel);
+  ASSERT_NE(cloned, nullptr);
+  cloned->refreshIKHierarchy();
+  EXPECT_EQ(cloned->getSkeleton()->getNumDofs(), clonedSkel->getNumDofs());
+}

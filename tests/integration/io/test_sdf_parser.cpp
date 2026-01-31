@@ -1345,3 +1345,217 @@ TEST(SdfParser, MassWithoutInertiaUsesIsotropicTensor)
   const auto expected = Eigen::Matrix3d::Identity() * 2.0;
   EXPECT_TRUE(body->getInertia().getMoment().isApprox(expected));
 }
+
+//==============================================================================
+TEST(SdfParser, MultipleModelsInSingleWorld)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/multi.world";
+  const std::string worldSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="default">
+    <model name="first">
+      <link name="link">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+    </model>
+    <model name="second">
+      <link name="link">
+        <inertial><mass>2.0</mass></inertial>
+      </link>
+    </model>
+  </world>
+</sdf>
+ )";
+
+  retriever->add(uri, worldSdf);
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  const auto world = SdfParser::readWorld(common::Uri(uri), options);
+  ASSERT_TRUE(world != nullptr);
+  EXPECT_EQ(world->getNumSkeletons(), 2u);
+}
+
+//==============================================================================
+TEST(SdfParser, GeometryParsesCylinderPlaneAndMesh)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string meshUri = "memory://pkg/meshes/tri.obj";
+  const std::string worldUri = "memory://pkg/geometry_mesh.world";
+  const std::string meshData = R"(
+o Tri
+v 0 0 0
+v 1 0 0
+v 0 1 0
+f 1 2 3
+ )";
+  const std::string worldSdf = std::string(R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="default">
+    <model name="geo">
+      <link name="link">
+        <inertial><mass>1.0</mass></inertial>
+        <visual name="cylinder">
+          <geometry>
+            <cylinder><radius>0.2</radius><length>0.5</length></cylinder>
+          </geometry>
+        </visual>
+        <visual name="plane">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>2 3</size>
+            </plane>
+          </geometry>
+        </visual>
+        <visual name="mesh">
+          <geometry>
+            <mesh>
+              <uri>)") + meshUri
+                               + R"(</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>
+ )";
+
+  retriever->add(meshUri, meshData);
+  retriever->add(worldUri, worldSdf);
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  const auto world = SdfParser::readWorld(common::Uri(worldUri), options);
+  ASSERT_TRUE(world != nullptr);
+  const auto skeleton = world->getSkeleton("geo");
+  ASSERT_TRUE(skeleton != nullptr);
+  auto* body = skeleton->getBodyNode(0);
+  ASSERT_TRUE(body != nullptr);
+
+  bool foundCylinder = false;
+  bool foundMesh = false;
+  bool foundPlane = false;
+  const auto numShapes = body->getNumShapeNodes();
+  for (std::size_t i = 0; i < numShapes; ++i) {
+    const auto* shapeNode = body->getShapeNode(i);
+    ASSERT_NE(shapeNode, nullptr);
+    const auto shape = shapeNode->getShape();
+    if (!shape) {
+      continue;
+    }
+    if (shape->getType() == "CylinderShape") {
+      foundCylinder = true;
+    } else if (shape->is<dynamics::MeshShape>()) {
+      foundMesh = true;
+    } else if (shape->is<dynamics::BoxShape>()) {
+      auto box = std::dynamic_pointer_cast<const dynamics::BoxShape>(shape);
+      if (box && box->getSize().z() > 0.0) {
+        foundPlane = true;
+      }
+    }
+  }
+
+  EXPECT_TRUE(foundCylinder);
+  EXPECT_TRUE(foundMesh);
+  EXPECT_TRUE(foundPlane);
+}
+
+//==============================================================================
+TEST(SdfParser, JointAxisLimitsEffortAndDamping)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/joint_limits/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="joint_limits">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="tip">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="rev_joint" type="revolute">
+      <parent>base</parent>
+      <child>tip</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1.0</lower>
+          <upper>2.0</upper>
+          <effort>5.5</effort>
+          <velocity>3.3</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.4</damping>
+          <friction>0.2</friction>
+        </dynamics>
+      </axis>
+    </joint>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint
+      = dynamic_cast<dynamics::RevoluteJoint*>(skeleton->getJoint("rev_joint"));
+  ASSERT_NE(joint, nullptr);
+  EXPECT_NEAR(joint->getPositionLowerLimit(0), -1.0, 1e-9);
+  EXPECT_NEAR(joint->getPositionUpperLimit(0), 2.0, 1e-9);
+  // SDF parser reads effort/velocity from <limit> but DART's SDF parser
+  // currently only maps position limits and dynamics; velocity/effort limits
+  // remain at defaults (infinity). Verify the position limits and dynamics
+  // properties that ARE parsed.
+  EXPECT_NEAR(joint->getDampingCoefficient(0), 0.4, 1e-9);
+  EXPECT_NEAR(joint->getCoulombFriction(0), 0.2, 1e-9);
+}
+
+//==============================================================================
+TEST(SdfParser, MaterialDiffuseFromString)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/material.world";
+  const std::string worldSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="default">
+    <model name="material">
+      <link name="link">
+        <inertial><mass>1.0</mass></inertial>
+        <visual name="visual">
+          <geometry>
+            <box><size>0.1 0.2 0.3</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.2 0.4 0.6 0.8</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>
+ )";
+
+  retriever->add(uri, worldSdf);
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  const auto world = SdfParser::readWorld(common::Uri(uri), options);
+  ASSERT_TRUE(world != nullptr);
+  const auto skeleton = world->getSkeleton("material");
+  ASSERT_TRUE(skeleton != nullptr);
+  auto* body = skeleton->getBodyNode(0);
+  ASSERT_TRUE(body != nullptr);
+
+  bool foundVisual = false;
+  body->eachShapeNodeWith<dynamics::VisualAspect>(
+      [&](dynamics::ShapeNode* node) {
+        foundVisual = true;
+        EXPECT_TRUE(node->getVisualAspect()->getRGBA().isApprox(
+            Eigen::Vector4d(0.2, 0.4, 0.6, 0.8)));
+      });
+  EXPECT_TRUE(foundVisual);
+}

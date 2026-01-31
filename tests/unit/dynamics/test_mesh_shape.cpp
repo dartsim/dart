@@ -1004,3 +1004,57 @@ TEST(MeshShapeTest, ConvertToAssimpMeshPreservesNormals)
   ASSERT_NE(scene->mMeshes[0], nullptr);
   EXPECT_TRUE(scene->mMeshes[0]->HasNormals());
 }
+
+TEST(MeshShapeTest, UriConstructionSetMeshAndRenderSettings)
+{
+  const std::string filePath = dart::config::dataPath("obj/BoxSmall.obj");
+  const common::Uri fileUri = common::Uri::createFromPath(filePath);
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene
+      = dynamics::MeshShape::loadMesh(fileUri.toString(), retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene, nullptr);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  dynamics::MeshShape shape(Eigen::Vector3d::Ones(), scene, fileUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+
+  EXPECT_EQ(shape.getMeshUri(), fileUri.toString());
+  EXPECT_EQ(shape.getMeshPath(), filePath);
+
+  shape.setColorMode(dynamics::MeshShape::SHAPE_COLOR);
+  shape.setAlphaMode(dynamics::MeshShape::AUTO);
+  shape.setColorIndex(2);
+  EXPECT_EQ(shape.getColorMode(), dynamics::MeshShape::SHAPE_COLOR);
+  EXPECT_EQ(shape.getAlphaMode(), dynamics::MeshShape::AUTO);
+  EXPECT_EQ(shape.getColorIndex(), 2);
+
+  shape.setDisplayList(7);
+  EXPECT_EQ(shape.getDisplayList(), 7);
+
+  const auto extents = shape.getBoundingBox().computeFullExtents();
+  EXPECT_TRUE(extents.allFinite());
+  EXPECT_GT(shape.getVolume(), 0.0);
+
+  const std::string quadPath = dart::config::dataPath("obj/Quad.obj");
+  const common::Uri quadUri = common::Uri::createFromPath(quadPath);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* quadScene
+      = dynamics::MeshShape::loadMesh(quadUri.toString(), retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(quadScene, nullptr);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  shape.setMesh(
+      quadScene,
+      dynamics::MeshShape::MeshOwnership::Imported,
+      quadUri,
+      retriever);
+  DART_SUPPRESS_DEPRECATED_END
+
+  EXPECT_EQ(shape.getMeshUri(), quadUri.toString());
+  EXPECT_EQ(shape.getMeshPath(), quadPath);
+}

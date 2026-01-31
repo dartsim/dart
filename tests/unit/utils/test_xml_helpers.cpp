@@ -726,3 +726,26 @@ TEST(XmlHelpers, GetAttributeFloatInvalidReturnsZero)
 
   EXPECT_FLOAT_EQ(getAttributeFloat(root, "value"), 0.0f);
 }
+
+//==============================================================================
+TEST(XmlHelpers, ToStringMapsErrorCodes)
+{
+  EXPECT_FALSE(toString(tinyxml2::XMLError::XML_NO_ATTRIBUTE).empty());
+  EXPECT_FALSE(toString(tinyxml2::XMLError::XML_ERROR_PARSING).empty());
+  EXPECT_FALSE(toString(tinyxml2::XMLError::XML_ERROR_EMPTY_DOCUMENT).empty());
+  EXPECT_FALSE(toString(tinyxml2::XMLError::XML_SUCCESS).empty());
+}
+
+//==============================================================================
+TEST(XmlHelpers, GetElementReturnsChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+  tinyxml2::XMLElement* child = doc.NewElement("child");
+  root->InsertEndChild(child);
+
+  EXPECT_EQ(getElement(root, "child"), child);
+  const tinyxml2::XMLElement* constRoot = root;
+  EXPECT_EQ(getElement(constRoot, "child"), child);
+}

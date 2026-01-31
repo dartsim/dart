@@ -1050,6 +1050,52 @@ TEST(GenericJoint, CommandClippingAccelerationActuator)
 }
 
 //==============================================================================
+TEST(GenericJoint, NonFiniteCommandIgnored)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("nonfinite_command");
+  auto* joint = getJoint<RevoluteJoint>(skel);
+
+  joint->setActuatorType(Joint::FORCE);
+  joint->setForceLowerLimit(0, -1.0);
+  joint->setForceUpperLimit(0, 1.0);
+  joint->setCommand(0, 0.4);
+
+  const double saved = joint->getCommand(0);
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+
+  joint->setCommand(0, nan);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), saved);
+
+  joint->setCommand(0, inf);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), saved);
+}
+
+//==============================================================================
+TEST(GenericJoint, ScrewJointLimitClamping)
+{
+  auto skel = createSkeletonWithJoint<ScrewJoint>("screw_limit");
+  auto* joint = getJoint<ScrewJoint>(skel);
+
+  joint->setPositionLowerLimit(0, -0.2);
+  joint->setPositionUpperLimit(0, 0.2);
+  joint->setVelocityLowerLimit(0, -0.5);
+  joint->setVelocityUpperLimit(0, 0.5);
+  joint->setAccelerationLowerLimit(0, -1.0);
+  joint->setAccelerationUpperLimit(0, 1.0);
+  joint->setForceLowerLimit(0, -2.0);
+  joint->setForceUpperLimit(0, 2.0);
+
+  joint->setActuatorType(Joint::VELOCITY);
+  joint->setCommand(0, 1.5);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), 0.5);
+
+  joint->setActuatorType(Joint::FORCE);
+  joint->setCommand(0, -3.0);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), -2.0);
+}
+
+//==============================================================================
 TEST(GenericJoint, CommandHandlingPassiveLockedAndMimic)
 {
   auto skel = createSkeletonWithJoint<RevoluteJoint>("passive_locked_mimic");

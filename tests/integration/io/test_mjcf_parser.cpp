@@ -1158,3 +1158,129 @@ TEST(MjcfParserTest, SiteOrientationConflictReportsError)
   }
   EXPECT_TRUE(hasConflict);
 }
+
+//==============================================================================
+TEST(MjcfParserTest, SiteAttributesAndOrientations)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="site_attrs">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <site name="cylinder_site" type="cylinder" size="0.2"
+            fromto="0 0 0 0 0 2" rgba="0.1 0.2 0.3 0.4" group="2" />
+      <site name="capsule_site" type="capsule" size="0.1"
+            fromto="0 0 0 0 0 1" />
+      <site name="ellipsoid_site" type="ellipsoid" size="0.2 0.3 0.4"
+            pos="1 2 3" axisangle="1 0 0 1.57079632679" />
+      <site name="box_site" type="box" size="0.1 0.2 0.3"
+            pos="-1 -2 -3" quat="0.7071068 0 0.7071068 0" />
+      <site name="euler_site" type="box" size="0.1 0.1 0.1"
+            pos="0 1 0" euler="0 90 0" class="custom" />
+    </body>
+  </worldbody>
+</mujoco>
+ )";
+
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_site_attrs.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& body = mujoco.getWorldbody().getRootBody(0);
+  ASSERT_EQ(body.getNumSites(), 5u);
+
+  const auto& cylinder = body.getSite(0);
+  EXPECT_EQ(cylinder.getType(), GeomType::CYLINDER);
+  EXPECT_NEAR(cylinder.getCylinderRadius(), 0.2, 1e-12);
+  EXPECT_NEAR(cylinder.getCylinderHalfLength(), 1.0, 1e-12);
+  EXPECT_EQ(cylinder.getGroup(), 2);
+  EXPECT_TRUE(cylinder.getRGBA().isApprox(Eigen::Vector4d(0.1, 0.2, 0.3, 0.4)));
+
+  const auto& capsule = body.getSite(1);
+  EXPECT_EQ(capsule.getType(), GeomType::CAPSULE);
+  EXPECT_NEAR(capsule.getCapsuleRadius(), 0.1, 1e-12);
+  EXPECT_NEAR(capsule.getCapsuleHalfLength(), 0.5, 1e-12);
+
+  const auto& ellipsoid = body.getSite(2);
+  EXPECT_EQ(ellipsoid.getType(), GeomType::ELLIPSOID);
+  EXPECT_TRUE(ellipsoid.getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(1, 2, 3)));
+
+  const auto& box = body.getSite(3);
+  EXPECT_EQ(box.getType(), GeomType::BOX);
+  EXPECT_TRUE(box.getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(-1, -2, -3)));
+
+  const auto& eulerSite = body.getSite(4);
+  EXPECT_EQ(eulerSite.getType(), GeomType::BOX);
+  EXPECT_TRUE(eulerSite.getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(0, 1, 0)));
+}
+
+//==============================================================================
+TEST(MjcfParserTest, EqualitySensorContactActuatorTendonParsing)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="constraints">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="body1">
+      <geom type="sphere" size="0.1" />
+      <site name="site1" type="sphere" size="0.05" />
+    </body>
+    <body name="body2" pos="0 0 1">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge" type="hinge" axis="0 0 1" />
+      <site name="site2" type="sphere" size="0.05" />
+    </body>
+  </worldbody>
+  <equality>
+    <weld body1="body1" body2="body2" />
+  </equality>
+  <contact>
+    <exclude body1="body1" body2="body2" />
+  </contact>
+  <sensor>
+    <touch name="touch1" site="site1" />
+  </sensor>
+  <tendon>
+    <spatial name="tendon1">
+      <site site="site1" />
+      <site site="site2" />
+    </spatial>
+  </tendon>
+  <actuator>
+    <motor joint="hinge" />
+  </actuator>
+</mujoco>
+ )";
+
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_constraints.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  const auto world
+      = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+  EXPECT_GT(world->getNumSkeletons(), 0u);
+  EXPECT_GT(world->getConstraintSolver()->getNumConstraints(), 0u);
+}

@@ -30,12 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/collision/collision_result.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
+#include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/joint.hpp"
 #include "dart/dynamics/point_mass.hpp"
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/dynamics/soft_body_node.hpp"
+#include "dart/dynamics/weld_joint.hpp"
 #include "dart/io/read.hpp"
 #include "dart/math/constants.hpp"
 #include "dart/simulation/world.hpp"
@@ -587,6 +591,61 @@ TEST(SoftDynamics, GravityToggleAndExternalForce)
   }
   world->step();
   EXPECT_TRUE(softSkel->getPositions().array().isFinite().all());
+}
+
+TEST(SoftDynamics, SoftBodyContactAndInternalForces)
+{
+  auto world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->setTimeStep(0.001);
+
+  auto ground = dynamics::Skeleton::create("ground");
+  auto groundPair = ground->createJointAndBodyNodePair<dynamics::WeldJoint>();
+  auto* groundBody = groundPair.second;
+  auto groundShape
+      = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(5.0, 5.0, 0.2));
+  groundBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(groundShape);
+  Eigen::Isometry3d groundTf = Eigen::Isometry3d::Identity();
+  groundTf.translation().z() = -0.1;
+  groundPair.first->setTransformFromParentBodyNode(groundTf);
+  world->addSkeleton(ground);
+
+  auto softSkel = dynamics::Skeleton::create("soft");
+  auto softPair = softSkel->createJointAndBodyNodePair<
+      dynamics::FreeJoint,
+      dynamics::SoftBodyNode>();
+  auto* softBody = softPair.second;
+
+  dynamics::SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d(0.5, 0.5, 0.5),
+      Eigen::Isometry3d::Identity(),
+      2.0,
+      50.0,
+      20.0,
+      0.1);
+  softBody->setVertexSpringStiffness(30.0);
+  softBody->setEdgeSpringStiffness(15.0);
+  softBody->setDampingCoefficient(0.5);
+
+  Eigen::Isometry3d softTf = Eigen::Isometry3d::Identity();
+  softTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.05);
+  dynamics::FreeJoint::setTransformOf(
+      softSkel.get(), softTf, dynamics::Frame::World(), true);
+  world->addSkeleton(softSkel);
+
+  for (int i = 0; i < 5; ++i) {
+    world->step();
+  }
+
+  const auto& result = world->getLastCollisionResult();
+  EXPECT_GT(result.getNumContacts(), 0u);
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+  EXPECT_TRUE(pm->getForces().allFinite());
 }
 
 TEST(SoftDynamics, MultipleSoftSkeletonsInteract)

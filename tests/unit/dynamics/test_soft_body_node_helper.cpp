@@ -235,3 +235,34 @@ TEST(SoftBodyNodeHelper, ConstructorWithSpans)
   EXPECT_EQ(props.mPointProps.size(), 3u);
   EXPECT_EQ(props.mFaces.size(), 1u);
 }
+
+TEST(SoftBodyNodeHelper, NotifierAndTransformUpdates)
+{
+  auto skeleton = Skeleton::create("soft-body-notifier");
+  auto* softBody = createSoftBody(skeleton);
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d(0.6, 0.4, 0.2),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      8.0,
+      4.0,
+      0.05);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+
+  EXPECT_NE(softBody->getNotifier(), nullptr);
+  const SoftBodyNode* constBody = softBody;
+  EXPECT_NE(constBody->getNotifier(), nullptr);
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  pm->setPositions(Eigen::Vector3d(0.1, -0.2, 0.3));
+  const Eigen::Vector3d local = pm->getLocalPosition();
+  const Eigen::Vector3d world = pm->getWorldPosition();
+  EXPECT_TRUE(local.allFinite());
+  EXPECT_TRUE(world.allFinite());
+
+  EXPECT_TRUE(std::isfinite(pm->getPsi()));
+}

@@ -1299,3 +1299,159 @@ TEST(UrdfParser, ParseWorldStringSetsFixedRootTransform)
 
   std::filesystem::remove_all(tempDir);
 }
+
+//==============================================================================
+TEST(UrdfParser, ParseSkeletonStringInvalidXmlReturnsNull)
+{
+  UrdfParser parser;
+  const std::string urdfStr = "<robot name=\"bad\"><link name=\"a\"></robot";
+  EXPECT_EQ(parser.parseSkeletonString(urdfStr, ""), nullptr);
+}
+
+//==============================================================================
+TEST(UrdfParser, ParseSkeletonStringMissingChildLinkReturnsNull)
+{
+  UrdfParser parser;
+  const std::string urdfStr = R"(
+    <robot name="missing_child">
+      <link name="base" />
+      <joint name="base_to_missing" type="revolute">
+        <parent link="base" />
+        <child link="missing" />
+        <axis xyz="0 0 1" />
+        <limit effort="1.0" lower="-1.0" upper="1.0" velocity="1.0" />
+      </joint>
+    </robot>
+  )";
+  EXPECT_EQ(parser.parseSkeletonString(urdfStr, ""), nullptr);
+}
+
+//==============================================================================
+TEST(UrdfParser, ParseSkeletonStringJointTypes)
+{
+  const std::string urdfStr = R"(
+    <robot name="joint_types">
+      <link name="base" />
+      <link name="slide" />
+      <link name="plane" />
+      <link name="fixed_link" />
+      <link name="floating_link" />
+      <joint name="prismatic_joint" type="prismatic">
+        <parent link="base" />
+        <child link="slide" />
+        <axis xyz="1 0 0" />
+        <limit effort="1" lower="-1" upper="1" velocity="2" />
+      </joint>
+      <joint name="planar_joint" type="planar">
+        <parent link="slide" />
+        <child link="plane" />
+        <axis xyz="0 0 1" />
+      </joint>
+      <joint name="fixed_joint" type="fixed">
+        <parent link="plane" />
+        <child link="fixed_link" />
+      </joint>
+      <joint name="floating_joint" type="floating">
+        <parent link="fixed_link" />
+        <child link="floating_link" />
+      </joint>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  const auto robot = parser.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+  EXPECT_EQ(robot->getJoint("prismatic_joint")->getType(), "PrismaticJoint");
+  EXPECT_EQ(robot->getJoint("planar_joint")->getType(), "PlanarJoint");
+  EXPECT_EQ(robot->getJoint("fixed_joint")->getType(), "WeldJoint");
+  EXPECT_EQ(robot->getJoint("floating_joint")->getType(), "FreeJoint");
+}
+
+//==============================================================================
+TEST(UrdfParser, MaterialAndGeometryParsing)
+{
+  const std::string urdfStr = R"(
+    <robot name="materials">
+      <link name="link">
+        <visual>
+          <geometry>
+            <box size="0.1 0.2 0.3" />
+          </geometry>
+          <material name="mat">
+            <color rgba="0.1 0.2 0.3 0.4" />
+          </material>
+        </visual>
+        <collision>
+          <geometry>
+            <cylinder radius="0.2" length="0.4" />
+          </geometry>
+        </collision>
+      </link>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  const auto robot = parser.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+  auto* body = robot->getBodyNode("link");
+  ASSERT_NE(body, nullptr);
+
+  EXPECT_GT(body->getNumShapeNodes(), 0u);
+
+  bool foundCollision = false;
+  body->eachShapeNodeWith<dynamics::CollisionAspect>(
+      [&](dynamics::ShapeNode* shapeNode) {
+        foundCollision = true;
+        EXPECT_EQ(shapeNode->getShape()->getType(), "CylinderShape");
+      });
+
+  EXPECT_TRUE(foundCollision);
+}
+
+//==============================================================================
+TEST(UrdfParser, MeshScaleFromString)
+{
+  const auto tempDir = makeTempDir("dart-urdf-mesh-scale");
+  const auto meshPath = tempDir / "mesh.obj";
+  std::ofstream meshFile(meshPath);
+  ASSERT_TRUE(meshFile.is_open());
+  meshFile << "o Mesh\n"
+           << "v 0 0 0\n"
+           << "v 1 0 0\n"
+           << "v 0 1 0\n"
+           << "f 1 2 3\n";
+  meshFile.close();
+
+  const std::string urdfStr = R"(
+    <robot name="mesh_scale">
+      <link name="link">
+        <visual>
+          <geometry>
+            <mesh filename="mesh.obj" scale="1 2 3" />
+          </geometry>
+        </visual>
+      </link>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  const Uri baseUri = Uri::createFromPath((tempDir / "model.urdf").string());
+  const auto robot = parser.parseSkeletonString(urdfStr, baseUri);
+  ASSERT_TRUE(robot);
+  auto* body = robot->getBodyNode("link");
+  ASSERT_NE(body, nullptr);
+  bool foundMesh = false;
+  body->eachShapeNodeWith<dynamics::VisualAspect>(
+      [&](dynamics::ShapeNode* node) {
+        auto mesh
+            = std::dynamic_pointer_cast<dynamics::MeshShape>(node->getShape());
+        if (!mesh) {
+          return;
+        }
+        foundMesh = true;
+        EXPECT_TRUE(mesh->getScale().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+      });
+  EXPECT_TRUE(foundMesh);
+
+  std::filesystem::remove_all(tempDir);
+}

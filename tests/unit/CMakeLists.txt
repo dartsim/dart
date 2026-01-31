@@ -26,7 +26,7 @@ dart_add_test("unit" UNIT_collision_Contact collision/test_contact.cpp)
 if(DART_HAVE_BULLET)
   dart_add_test("unit" UNIT_collision_BulletContact collision/test_bullet_contact.cpp)
   dart_add_test(
-    "unit" UNIT_collision_BulletCollisionCoverage collision/test_bullet_collision_coverage.cpp)
+    "unit" UNIT_collision_BulletCollisionShapes collision/test_bullet_collision_shapes.cpp)
 endif()
 
 if(DART_HAVE_ODE)
@@ -233,7 +233,7 @@ dart_build_tests(
     math/lcp/test_pgs.cpp
     math/lcp/test_pivot_matrix.cpp
     math/lcp/test_additional_solvers.cpp
-    math/lcp/test_solver_coverage.cpp
+    math/lcp/test_lcp_validation_and_solvers.cpp
     math/lcp/test_lcp_newton_solvers.cpp
     math/lcp/test_lcp_projection_solvers.cpp
 )

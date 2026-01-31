@@ -1980,3 +1980,170 @@ TEST(SkelParser, JointActuatorServoAndLocked)
   EXPECT_EQ(servoJoint->getActuatorType(), dynamics::Joint::SERVO);
   EXPECT_EQ(lockedJoint->getActuatorType(), dynamics::Joint::LOCKED);
 }
+
+//==============================================================================
+TEST(SkelParser, DofPositionLimitsFromXml)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      <joint type="revolute" name="revolute_joint">
+        <parent>base</parent>
+        <child>link</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+        <dof local_index="0">
+          <position lower="-0.5" upper="1.0" initial="0.25" />
+        </dof>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+ )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* joint = skel->getJoint("revolute_joint");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_DOUBLE_EQ(joint->getPositionLowerLimit(0), -0.5);
+  EXPECT_DOUBLE_EQ(joint->getPositionUpperLimit(0), 1.0);
+  EXPECT_NEAR(joint->getPosition(0), 0.25, 1e-9);
+}
+
+//==============================================================================
+TEST(SkelParser, ReadWorldStringAppliesPhysics)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <physics>
+      <time_step>0.02</time_step>
+      <gravity>1 2 3</gravity>
+    </physics>
+    <skeleton name="skel">
+      <body name="link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>link</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+ )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), 0.02);
+  EXPECT_TRUE(world->getGravity().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+}
+
+//==============================================================================
+TEST(SkelParser, MeshShapeFromSkelString)
+{
+  const auto tempDir = std::filesystem::temp_directory_path();
+  const auto meshPath = tempDir / "dart_mesh_shape_string.obj";
+  std::ofstream meshFile(meshPath.string(), std::ios::binary);
+  ASSERT_TRUE(meshFile.is_open());
+  meshFile << "o Mesh\n"
+           << "v 0 0 0\n"
+           << "v 1 0 0\n"
+           << "v 0 1 0\n"
+           << "f 1 2 3\n";
+  meshFile.close();
+
+  const std::string skelXml = std::string(R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <mesh>
+              <file_name>)") + meshPath.string()
+                              + R"(</file_name>
+              <scale>1 2 3</scale>
+            </mesh>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>link</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+ )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* body = skel->getBodyNode("link");
+  ASSERT_NE(body, nullptr);
+  auto shape = body->getShapeNode(0)->getShape();
+  ASSERT_TRUE(shape->is<dynamics::MeshShape>());
+  auto mesh = std::dynamic_pointer_cast<const dynamics::MeshShape>(shape);
+  ASSERT_TRUE(mesh);
+  EXPECT_TRUE(mesh->getScale().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+
+  std::error_code ec;
+  std::filesystem::remove(meshPath, ec);
+}

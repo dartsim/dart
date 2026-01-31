@@ -33,6 +33,7 @@
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/meta_skeleton.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
@@ -246,6 +247,25 @@ TEST(MetaSkeletonTests, CommandOperations)
   EXPECT_DOUBLE_EQ(result[0], 0.0);
   EXPECT_DOUBLE_EQ(result[1], 0.0);
   EXPECT_DOUBLE_EQ(result[2], 0.0);
+}
+
+//==============================================================================
+TEST(MetaSkeletonTests, ComQueriesWithFrame)
+{
+  auto skel = createMixedSkeleton("com_frame");
+
+  skel->setVelocities(Eigen::VectorXd::Constant(skel->getNumDofs(), 0.2));
+  skel->setAccelerations(Eigen::VectorXd::Constant(skel->getNumDofs(), -0.1));
+
+  const auto com = skel->getCOM(Frame::World());
+  EXPECT_TRUE(com.array().isFinite().all());
+
+  const auto comLinearVelocity = skel->getCOMLinearVelocity(Frame::World());
+  EXPECT_TRUE(comLinearVelocity.array().isFinite().all());
+
+  const auto comLinearAcceleration
+      = skel->getCOMLinearAcceleration(Frame::World());
+  EXPECT_TRUE(comLinearAcceleration.array().isFinite().all());
 }
 
 //==============================================================================
