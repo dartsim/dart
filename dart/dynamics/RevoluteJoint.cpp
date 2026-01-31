@@ -183,8 +183,12 @@ void RevoluteJoint::updateRelativeTransform() const
        * math::expAngular(getAxis() * getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
-  // Verification
-  DART_ASSERT(math::verifyTransform(mT));
+  if (!math::verifyTransform(mT)) {
+    dtwarn << "[RevoluteJoint::updateRelativeTransform] Non-finite relative "
+              "transform detected in '"
+           << this->getName() << "'. Using identity.\n";
+    mT = Eigen::Isometry3d::Identity();
+  }
 }
 
 //==============================================================================

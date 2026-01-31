@@ -182,8 +182,12 @@ void PrismaticJoint::updateRelativeTransform() const
        * Eigen::Translation3d(getAxis() * getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
-  // Verification
-  DART_ASSERT(math::verifyTransform(mT));
+  if (!math::verifyTransform(mT)) {
+    dtwarn << "[PrismaticJoint::updateRelativeTransform] Non-finite relative "
+              "transform detected in '"
+           << this->getName() << "'. Using identity.\n";
+    mT = Eigen::Isometry3d::Identity();
+  }
 }
 
 //==============================================================================

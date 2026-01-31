@@ -210,7 +210,12 @@ void ScrewJoint::updateRelativeTransform() const
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * math::expMap(S * getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
-  DART_ASSERT(math::verifyTransform(mT));
+  if (!math::verifyTransform(mT)) {
+    dtwarn << "[ScrewJoint::updateRelativeTransform] Non-finite relative "
+              "transform detected in '"
+           << this->getName() << "'. Using identity.\n";
+    mT = Eigen::Isometry3d::Identity();
+  }
 }
 
 //==============================================================================

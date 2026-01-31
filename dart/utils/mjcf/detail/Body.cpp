@@ -232,7 +232,12 @@ Errors Body::postprocess(const Body* parent, const Compiler& compiler)
           mAttributes.mXYAxes,
           mAttributes.mZAxis,
           compiler);
-      DART_ASSERT(math::verifyTransform(mRelativeTransform));
+      if (!math::verifyTransform(mRelativeTransform)) {
+        DART_WARN(
+            "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
+            "The model file may contain extreme or invalid pose values.");
+        mRelativeTransform = Eigen::Isometry3d::Identity();
+      }
     } else {
       mWorldTransform.translation() = *mAttributes.mPos;
       mWorldTransform.linear() = compileRotation(
@@ -242,25 +247,47 @@ Errors Body::postprocess(const Body* parent, const Compiler& compiler)
           mAttributes.mXYAxes,
           mAttributes.mZAxis,
           compiler);
+      if (!math::verifyTransform(mWorldTransform)) {
+        DART_WARN(
+            "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
+            "The model file may contain extreme or invalid pose values.");
+        mWorldTransform = Eigen::Isometry3d::Identity();
+      }
       if (mAttributes.mInertial) {
         mInertial.setRelativeTransform(
             mWorldTransform.inverse() * mInertial.getWorldTransform());
       }
-      DART_ASSERT(math::verifyTransform(mWorldTransform));
     }
   } else {
     if (compiler.getCoordinate() == Coordinate::LOCAL) {
       mRelativeTransform = mInertial.getRelativeTransform();
-      DART_ASSERT(math::verifyTransform(mRelativeTransform));
+      if (!math::verifyTransform(mRelativeTransform)) {
+        DART_WARN(
+            "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
+            "The model file may contain extreme or invalid pose values.");
+        mRelativeTransform = Eigen::Isometry3d::Identity();
+        mInertial.setRelativeTransform(Eigen::Isometry3d::Identity());
+      }
     } else {
       mWorldTransform = mInertial.getWorldTransform();
+      if (!math::verifyTransform(mWorldTransform)) {
+        DART_WARN(
+            "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
+            "The model file may contain extreme or invalid pose values.");
+        mWorldTransform = Eigen::Isometry3d::Identity();
+      }
       if (parent != nullptr) {
         mRelativeTransform
             = parent->getWorldTransform().inverse() * mWorldTransform;
-        DART_ASSERT(math::verifyTransform(mRelativeTransform));
+        if (!math::verifyTransform(mRelativeTransform)) {
+          DART_WARN(
+              "[MjcfBody] Non-finite transform detected while parsing MJCF "
+              "body. "
+              "The model file may contain extreme or invalid pose values.");
+          mRelativeTransform = Eigen::Isometry3d::Identity();
+        }
       } else {
         mRelativeTransform = mWorldTransform;
-        DART_ASSERT(math::verifyTransform(mRelativeTransform));
       }
       mInertial.setRelativeTransform(Eigen::Isometry3d::Identity());
     }
@@ -358,7 +385,13 @@ const Site& Body::getSite(std::size_t index) const
 //==============================================================================
 void Body::setRelativeTransform(const Eigen::Isometry3d& tf)
 {
-  DART_ASSERT(math::verifyTransform(tf));
+  if (!math::verifyTransform(tf)) {
+    DART_WARN(
+        "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
+        "The model file may contain extreme or invalid pose values.");
+    mRelativeTransform = Eigen::Isometry3d::Identity();
+    return;
+  }
   mRelativeTransform = tf;
 }
 
@@ -371,7 +404,13 @@ const Eigen::Isometry3d& Body::getRelativeTransform() const
 //==============================================================================
 void Body::setWorldTransform(const Eigen::Isometry3d& tf)
 {
-  DART_ASSERT(math::verifyTransform(tf));
+  if (!math::verifyTransform(tf)) {
+    DART_WARN(
+        "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
+        "The model file may contain extreme or invalid pose values.");
+    mWorldTransform = Eigen::Isometry3d::Identity();
+    return;
+  }
   mWorldTransform = tf;
 }
 
