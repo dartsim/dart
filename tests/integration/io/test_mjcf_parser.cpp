@@ -41,7 +41,10 @@
 
 #include <gtest/gtest.h>
 
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <string>
 
 using namespace dart;
 using namespace dart::test;
@@ -359,4 +362,159 @@ TEST(MjcfParserTest, LoadsDefaultWorld)
   auto world = utils::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
   EXPECT_GE(world->getNumSkeletons(), 1);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ParsesSitesAndOptions)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="site_option">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <option timestep="0.01" apirate="30" impratio="2"
+          gravity="0 0 -9.81" wind="1 2 3" magnetic="0.1 0.2 0.3"
+          density="1000" viscosity="0.5" integrator="RK4"
+          collision="dynamic" cone="pyramidal" jacobian="sparse"
+          solver="Newton" iterations="20" tolerance="1e-6"
+          mpr_iterations="3" mpr_tolerance="1e-5" />
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <site name="capsule_site" type="capsule" size="0.2"
+            fromto="0 0 0 0 0 2" />
+      <site name="box_site" type="box" size="0.1 0.2 0.3"
+            pos="1 2 3" euler="0 90 0" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_sites.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& option = mujoco.getOption();
+  EXPECT_DOUBLE_EQ(option.getTimestep(), 0.01);
+  EXPECT_EQ(option.getIntegrator(), Integrator::RK4);
+  EXPECT_EQ(option.getCollision(), CollisionType::DYNAMIC);
+  EXPECT_EQ(option.getCone(), ConeType::PYRAMIDAL);
+  EXPECT_EQ(option.getJacobian(), JacobianType::SPARSE);
+  EXPECT_EQ(option.getSolver(), SolverType::NEWTON);
+  EXPECT_EQ(option.getIterations(), 20);
+  EXPECT_DOUBLE_EQ(option.getTolerance(), 1e-6);
+  EXPECT_EQ(option.getMprIterations(), 3);
+  EXPECT_DOUBLE_EQ(option.getMprTolerance(), 1e-5);
+  EXPECT_TRUE(option.getGravity().isApprox(Eigen::Vector3d(0, 0, -9.81)));
+  EXPECT_TRUE(option.getWind().isApprox(Eigen::Vector3d(1, 2, 3)));
+  EXPECT_TRUE(option.getMagnetic().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+  EXPECT_DOUBLE_EQ(option.getDensity(), 1000);
+  EXPECT_DOUBLE_EQ(option.getViscosity(), 0.5);
+
+  const auto& worldbody = mujoco.getWorldbody();
+  ASSERT_EQ(worldbody.getNumRootBodies(), 1u);
+  const auto& body = worldbody.getRootBody(0);
+  ASSERT_EQ(body.getNumSites(), 2u);
+
+  const auto& capsuleSite = body.getSite(0);
+  EXPECT_EQ(capsuleSite.getType(), GeomType::CAPSULE);
+  EXPECT_NEAR(capsuleSite.getCapsuleRadius(), 0.2, 1e-12);
+  EXPECT_NEAR(capsuleSite.getCapsuleHalfLength(), 1.0, 1e-12);
+  EXPECT_TRUE(capsuleSite.getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(0, 0, 1)));
+
+  const auto& boxSite = body.getSite(1);
+  EXPECT_EQ(boxSite.getType(), GeomType::BOX);
+  EXPECT_TRUE(boxSite.getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(1, 2, 3)));
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ReportsInvalidOptionAndSiteType)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="bad_option_site">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <option integrator="bad_integrator" />
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <site name="bad_site" type="bad_type" size="0.1" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_bad_option.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+
+  ASSERT_FALSE(errors.empty());
+  bool hasInvalid = false;
+  for (const auto& error : errors) {
+    if (error.getCode() == ErrorCode::ATTRIBUTE_INVALID) {
+      hasInvalid = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(hasInvalid);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ReportsInvalidSiteSize)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="bad_site_size">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <site name="bad_size" type="box" size="0.1 0.2 0.3 0.4" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_bad_size.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+
+  ASSERT_FALSE(errors.empty());
+  bool hasInvalid = false;
+  for (const auto& error : errors) {
+    if (error.getCode() == ErrorCode::ATTRIBUTE_INVALID) {
+      hasInvalid = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(hasInvalid);
 }

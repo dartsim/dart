@@ -573,3 +573,11 @@ TEST(GroupTest, ChainAndLinkageCreation)
   ASSERT_NE(linkage, nullptr);
   EXPECT_EQ(linkage->getName(), "coverage_linkage");
 }
+
+//==============================================================================
+TEST(GroupTest, AddNullComponentWithoutWarning)
+{
+  auto group = Group::create("null_component_group");
+
+  EXPECT_FALSE(group->addComponent(nullptr, false));
+}

@@ -598,3 +598,151 @@ TEST(TemplatedJacobianNode, JacobianOffsetsAndFrames)
   EXPECT_TRUE(J_spatial.allFinite());
   EXPECT_TRUE(J_classic.allFinite());
 }
+
+//==============================================================================
+TEST(GenericJoint, DofAccessorsAndNaming)
+{
+  auto skeleton = Skeleton::create("generic_dof_accessors");
+  auto pair = skeleton->createJointAndBodyNodePair<SingleDofJointTest>();
+  auto* joint = pair.first;
+
+  EXPECT_EQ(joint->getNumDofs(), 1u);
+  EXPECT_NE(joint->getDof(0), nullptr);
+
+  const auto* constJoint = joint;
+  EXPECT_NE(constJoint->getDof(0), nullptr);
+
+  EXPECT_EQ(joint->getIndexInSkeleton(0), 0u);
+  EXPECT_EQ(joint->getIndexInTree(0), 0u);
+
+  EXPECT_FALSE(joint->isDofNamePreserved(0));
+  joint->preserveDofName(0, true);
+  EXPECT_TRUE(joint->isDofNamePreserved(0));
+  joint->preserveDofName(0, false);
+  EXPECT_FALSE(joint->isDofNamePreserved(0));
+
+  const std::string name = "custom_dof";
+  joint->setDofName(0, name, false);
+  EXPECT_EQ(joint->getDofName(0), name);
+
+  joint->preserveDofName(0, true);
+  EXPECT_TRUE(joint->isDofNamePreserved(0));
+}
+
+//==============================================================================
+TEST(GenericJoint, CommandAndStateAccessors)
+{
+  MultiDofJointTest joint;
+  const auto ndofs = static_cast<Eigen::Index>(joint.getNumDofs());
+
+  Eigen::VectorXd commands
+      = Eigen::VectorXd::LinSpaced(ndofs, 0.1, 0.1 * ndofs);
+  joint.setCommands(commands);
+  EXPECT_TRUE(joint.getCommands().isApprox(commands));
+
+  joint.setCommand(0, -0.2);
+  EXPECT_NEAR(joint.getCommand(0), -0.2, 1e-12);
+
+  joint.resetCommands();
+  EXPECT_TRUE(joint.getCommands().isZero());
+
+  Eigen::VectorXd positions = Eigen::VectorXd::Constant(ndofs, 0.3);
+  joint.setPositions(positions);
+  EXPECT_TRUE(joint.getPositions().isApprox(positions));
+  joint.setPosition(0, -0.4);
+  EXPECT_NEAR(joint.getPosition(0), -0.4, 1e-12);
+
+  Eigen::VectorXd velocities = Eigen::VectorXd::Constant(ndofs, 0.1);
+  joint.setVelocities(velocities);
+  EXPECT_TRUE(joint.getVelocities().isApprox(velocities));
+  joint.resetVelocities();
+  EXPECT_TRUE(joint.getVelocities().isZero());
+
+  Eigen::VectorXd accelerations = Eigen::VectorXd::Constant(ndofs, -0.05);
+  joint.setAccelerations(accelerations);
+  EXPECT_TRUE(joint.getAccelerations().isApprox(accelerations));
+  joint.resetAccelerations();
+  EXPECT_TRUE(joint.getAccelerations().isZero());
+
+  Eigen::VectorXd forces = Eigen::VectorXd::LinSpaced(ndofs, 0.2, 0.2 * ndofs);
+  joint.setForces(forces);
+  EXPECT_TRUE(joint.getForces().isApprox(forces));
+  joint.resetForces();
+  EXPECT_TRUE(joint.getForces().isZero());
+
+  joint.setInitialPosition(0, 0.7);
+  EXPECT_NEAR(joint.getInitialPosition(0), 0.7, 1e-12);
+
+  Eigen::VectorXd initialVel = Eigen::VectorXd::Constant(ndofs, 0.15);
+  joint.setInitialVelocities(initialVel);
+  EXPECT_TRUE(joint.getInitialVelocities().isApprox(initialVel));
+}
+
+//==============================================================================
+TEST(GenericJoint, VelocityChangesAndImpulses)
+{
+  MultiDofJointTest joint;
+
+  joint.setVelocityChange(0, 0.5);
+  EXPECT_NEAR(joint.getVelocityChange(0), 0.5, 1e-12);
+  joint.resetVelocityChanges();
+  EXPECT_NEAR(joint.getVelocityChange(0), 0.0, 1e-12);
+
+  joint.setConstraintImpulse(0, 1.2);
+  EXPECT_NEAR(joint.getConstraintImpulse(0), 1.2, 1e-12);
+  joint.resetConstraintImpulses();
+  EXPECT_NEAR(joint.getConstraintImpulse(0), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(GenericJoint, IntegratePositionsAndDifferences)
+{
+  SingleDofJointTest joint;
+
+  joint.setPosition(0, 0.0);
+  joint.setVelocity(0, 1.0);
+  joint.integratePositions(0.1);
+  EXPECT_NEAR(joint.getPosition(0), 0.1, 1e-12);
+
+  Eigen::VectorXd q0(1);
+  q0 << 0.2;
+  Eigen::VectorXd v(1);
+  v << -0.5;
+  Eigen::VectorXd result;
+  joint.integratePositions(q0, v, 0.2, result);
+  ASSERT_EQ(result.size(), 1);
+  EXPECT_NEAR(result[0], 0.1, 1e-12);
+
+  Eigen::VectorXd q1(1);
+  q1 << 0.3;
+  Eigen::VectorXd q2(1);
+  q2 << -0.1;
+  auto diff = joint.getPositionDifferences(q2, q1);
+  EXPECT_NEAR(diff[0], -0.4, 1e-12);
+
+  SingleDofJointTest::Vector q1Static;
+  SingleDofJointTest::Vector q2Static;
+  q1Static[0] = q1[0];
+  q2Static[0] = q2[0];
+  auto diffStatic = joint.getPositionDifferencesStatic(q2Static, q1Static);
+  EXPECT_NEAR(diffStatic[0], -0.4, 1e-12);
+}
+
+//==============================================================================
+TEST(GenericJoint, RestPositionsAndCoefficients)
+{
+  MultiDofJointTest joint;
+  const auto ndofs = static_cast<Eigen::Index>(joint.getNumDofs());
+
+  Eigen::VectorXd rest = Eigen::VectorXd::LinSpaced(ndofs, 0.0, 0.2 * ndofs);
+  joint.setRestPositions(rest);
+  EXPECT_TRUE(joint.getRestPositions().isApprox(rest));
+
+  Eigen::VectorXd damping = Eigen::VectorXd::Constant(ndofs, 0.25);
+  joint.setDampingCoefficients(damping);
+  EXPECT_TRUE(joint.getDampingCoefficients().isApprox(damping));
+
+  Eigen::VectorXd frictions = Eigen::VectorXd::Constant(ndofs, 0.15);
+  joint.setFrictions(frictions);
+  EXPECT_TRUE(joint.getFrictions().isApprox(frictions));
+}

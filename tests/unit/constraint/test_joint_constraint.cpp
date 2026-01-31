@@ -33,10 +33,12 @@
 #include "helpers/dynamics_helpers.hpp"
 
 #include "../../helpers/gtest_utils.hpp"
+#include "dart/constraint/constraint_solver.hpp"
 #include "dart/constraint/joint_constraint.hpp"
 #include "dart/constraint/revolute_joint_constraint.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/skeleton.hpp"
+#include "dart/dynamics/weld_joint.hpp"
 #include "dart/simulation/world.hpp"
 
 #include <gtest/gtest.h>
@@ -291,4 +293,275 @@ TEST(JointConstraintTests, JointConstraintParameterClampsAndActivation)
   constraint::JointConstraint::setErrorReductionParameter(prevErp);
   constraint::JointConstraint::setMaxErrorReductionVelocity(prevErv);
   constraint::JointConstraint::setConstraintForceMixing(prevCfm);
+}
+
+TEST(JointConstraintTests, RevoluteJointConstraintSingleBodyInformation)
+{
+  auto skel = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.1, 0.0));
+  auto* body = skel->getBodyNode(0);
+  ASSERT_NE(body, nullptr);
+
+  const Eigen::Vector3d jointPos = body->getTransform().translation();
+  const Eigen::Vector3d axis(1.0, 0.0, 0.0);
+  ExposedRevoluteJointConstraint constraint(body, jointPos, axis);
+  constraint.update();
+
+  constraint::ConstraintInfo info{};
+  LcpBuffers buffers;
+  prepareConstraintInfo(
+      info,
+      buffers,
+      constraint.getDimension(),
+      1000.0,
+      constraint::ConstraintPhase::Velocity,
+      false);
+  constraint.getInformation(&info);
+
+  for (double value : buffers.b) {
+    EXPECT_FALSE(value != value);
+  }
+
+  auto kinematicSkel = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.2, 0.0));
+  auto* kinematicJoint = kinematicSkel->getJoint(0);
+  ASSERT_NE(kinematicJoint, nullptr);
+  kinematicJoint->setActuatorType(dynamics::Joint::VELOCITY);
+  ExposedRevoluteJointConstraint inactiveConstraint(
+      kinematicSkel->getBodyNode(0),
+      kinematicSkel->getBodyNode(0)->getTransform().translation(),
+      Eigen::Vector3d::UnitZ());
+  EXPECT_FALSE(inactiveConstraint.isActive());
+}
+
+TEST(JointConstraintTests, RevoluteJointConstraintSingleBodyImpulseVelocity)
+{
+  auto skel = createBox(
+      Eigen::Vector3d(0.3, 0.3, 0.3), Eigen::Vector3d(0.0, 0.2, 0.0));
+  auto* body = skel->getBodyNode(0);
+  ASSERT_NE(body, nullptr);
+
+  const Eigen::Vector3d jointPos = body->getTransform().translation();
+  ExposedRevoluteJointConstraint constraint(
+      body, jointPos, Eigen::Vector3d::UnitY());
+  constraint.update();
+
+  constraint.applyUnitImpulse(0);
+  skel->computeForwardDynamics();
+  constraint.excite();
+
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), false);
+
+  bool anyNonZero = false;
+  for (double value : vel) {
+    if (value != 0.0) {
+      anyNonZero = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(anyNonZero);
+}
+
+TEST(JointConstraintTests, RevoluteJointConstraintSingleBodyExciteUnexcite)
+{
+  auto skel = createBox(
+      Eigen::Vector3d(0.1, 0.1, 0.1), Eigen::Vector3d(0.0, 0.3, 0.0));
+  auto* body = skel->getBodyNode(0);
+  ASSERT_NE(body, nullptr);
+
+  ExposedRevoluteJointConstraint constraint(
+      body, body->getTransform().translation(), Eigen::Vector3d::UnitZ());
+
+  EXPECT_FALSE(skel->isImpulseApplied());
+  constraint.excite();
+  EXPECT_TRUE(skel->isImpulseApplied());
+  constraint.unexcite();
+  EXPECT_FALSE(skel->isImpulseApplied());
+}
+
+TEST(JointConstraintTests, RevoluteJointConstraintSameSkeletonBothReactive)
+{
+  auto skel = Skeleton::create("revolute_chain");
+
+  auto pair1 = skel->createJointAndBodyNodePair<RevoluteJoint>();
+  pair1.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair1.second->setMass(1.0);
+
+  auto pair2 = skel->createJointAndBodyNodePair<RevoluteJoint>(pair1.second);
+  pair2.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair2.second->setMass(1.0);
+
+  ExposedRevoluteJointConstraint constraint(
+      pair1.second,
+      pair2.second,
+      pair1.second->getTransform().translation(),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d::UnitZ());
+  constraint.update();
+
+  constraint.applyUnitImpulse(0);
+  skel->computeForwardDynamics();
+  constraint.excite();
+
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), false);
+  for (double value : vel) {
+    EXPECT_FALSE(value != value);
+  }
+}
+
+TEST(JointConstraintTests, RevoluteJointConstraintSameSkeletonBody2NonReactive)
+{
+  auto skel = Skeleton::create("weld_child");
+
+  auto pair1 = skel->createJointAndBodyNodePair<RevoluteJoint>();
+  pair1.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair1.second->setMass(1.0);
+
+  auto pair2 = skel->createJointAndBodyNodePair<WeldJoint>(pair1.second);
+  pair2.second->setMass(1.0);
+
+  ExposedRevoluteJointConstraint constraint(
+      pair1.second,
+      pair2.second,
+      pair1.second->getTransform().translation(),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d::UnitZ());
+  constraint.update();
+
+  EXPECT_TRUE(constraint.isActive());
+  constraint.applyUnitImpulse(1);
+  skel->computeForwardDynamics();
+}
+
+TEST(JointConstraintTests, RevoluteJointConstraintSameSkeletonBody1NonReactive)
+{
+  auto skel = Skeleton::create("weld_root");
+
+  auto pair1 = skel->createJointAndBodyNodePair<WeldJoint>();
+  pair1.second->setMass(1.0);
+
+  auto pair2 = skel->createJointAndBodyNodePair<RevoluteJoint>(pair1.second);
+  pair2.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair2.second->setMass(1.0);
+
+  ExposedRevoluteJointConstraint constraint(
+      pair1.second,
+      pair2.second,
+      pair2.second->getTransform().translation(),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d::UnitZ());
+  constraint.update();
+
+  EXPECT_TRUE(constraint.isActive());
+  constraint.applyUnitImpulse(2);
+  skel->computeForwardDynamics();
+}
+
+TEST(JointConstraintTests, RevoluteJointConstraintDifferentSkeletonsVelocity)
+{
+  auto skelA = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.1, 0.0));
+  auto skelB = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.4, 0.0));
+  auto* bodyA = skelA->getBodyNode(0);
+  auto* bodyB = skelB->getBodyNode(0);
+  ASSERT_NE(bodyA, nullptr);
+  ASSERT_NE(bodyB, nullptr);
+
+  ExposedRevoluteJointConstraint constraint(
+      bodyA,
+      bodyB,
+      Eigen::Vector3d(0.0, 0.2, 0.0),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d::UnitZ());
+  constraint.update();
+
+  constraint.applyUnitImpulse(0);
+  skelA->computeForwardDynamics();
+  skelB->computeForwardDynamics();
+  constraint.excite();
+
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), true);
+  bool anyNonZero = false;
+  for (double value : vel) {
+    if (value != 0.0) {
+      anyNonZero = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(anyNonZero);
+}
+
+TEST(
+    JointConstraintTests,
+    RevoluteJointConstraintDifferentSkeletonsBody2NonReactive)
+{
+  auto skelA = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.1, 0.0));
+  auto skelB = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.5, 0.0));
+  auto* bodyA = skelA->getBodyNode(0);
+  auto* bodyB = skelB->getBodyNode(0);
+  ASSERT_NE(bodyA, nullptr);
+  ASSERT_NE(bodyB, nullptr);
+
+  auto* jointB = skelB->getJoint(0);
+  ASSERT_NE(jointB, nullptr);
+  jointB->setActuatorType(dynamics::Joint::VELOCITY);
+
+  ExposedRevoluteJointConstraint constraint(
+      bodyA,
+      bodyB,
+      Eigen::Vector3d(0.0, 0.3, 0.0),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d::UnitZ());
+  constraint.update();
+
+  EXPECT_TRUE(constraint.isActive());
+  constraint.applyUnitImpulse(0);
+  skelA->computeForwardDynamics();
+}
+
+TEST(JointConstraintTests, RevoluteJointConstraintApplyImpulseTwoBodies)
+{
+  auto skelA = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.1, 0.0));
+  auto skelB = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.4, 0.0));
+  auto* bodyA = skelA->getBodyNode(0);
+  auto* bodyB = skelB->getBodyNode(0);
+  ASSERT_NE(bodyA, nullptr);
+  ASSERT_NE(bodyB, nullptr);
+
+  ExposedRevoluteJointConstraint constraint(
+      bodyA,
+      bodyB,
+      Eigen::Vector3d(0.0, 0.2, 0.0),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d::UnitZ());
+  constraint.update();
+
+  skelA->clearConstraintImpulses();
+  skelB->clearConstraintImpulses();
+
+  std::vector<double> lambda(constraint.getDimension(), 0.2);
+  constraint.applyImpulse(lambda.data());
+
+  const auto& impulseA = bodyA->getConstraintImpulse();
+  const auto& impulseB = bodyB->getConstraintImpulse();
+  bool anyNonZeroA = false;
+  bool anyNonZeroB = false;
+  for (int i = 0; i < 6; ++i) {
+    if (impulseA[i] != 0.0) {
+      anyNonZeroA = true;
+    }
+    if (impulseB[i] != 0.0) {
+      anyNonZeroB = true;
+    }
+  }
+  EXPECT_TRUE(anyNonZeroA);
+  EXPECT_TRUE(anyNonZeroB);
 }

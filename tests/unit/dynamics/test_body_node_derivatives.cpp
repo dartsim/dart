@@ -378,3 +378,45 @@ TEST(BodyNodeDerivatives, DerivativesAndSimulationPaths)
   world->step();
   EXPECT_TRUE(body->getBodyForce().array().isFinite().all());
 }
+
+TEST(BodyNodeDerivatives, NodeStatePropertyCoverage)
+{
+  auto skeleton = Skeleton::create("node_state_props");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* bodyA = rootPair.second;
+  auto childPair = bodyA->createChildJointAndBodyNodePair<RevoluteJoint>();
+  auto* bodyB = childPair.second;
+
+  auto shape
+      = std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  bodyA->createShapeNodeWith<dart::dynamics::VisualAspect>(shape);
+  bodyB->createEndEffector("ee");
+
+  auto statesA = bodyA->getAllNodeStates();
+  auto statesB = bodyB->getAllNodeStates();
+
+  bodyA->setAllNodeStates(statesA);
+  bodyB->setAllNodeStates(statesB);
+  bodyA->setAllNodeStates(statesB);
+  bodyB->setAllNodeStates(statesA);
+
+  auto propsA = bodyA->getAllNodeProperties();
+  auto propsB = bodyB->getAllNodeProperties();
+
+  bodyA->setAllNodeProperties(propsA);
+  bodyB->setAllNodeProperties(propsB);
+  bodyA->setAllNodeProperties(propsB);
+  bodyB->setAllNodeProperties(propsA);
+
+  auto aspectState = bodyA->getAspectState();
+  aspectState.mFext = Eigen::Vector6d::Ones();
+  bodyA->setAspectState(aspectState);
+
+  bodyA->copy(*bodyA);
+  bodyA->setName(bodyA->getName());
+
+  const auto nodes = bodyA->getNodes();
+  const BodyNode* constBody = bodyA;
+  const auto constNodes = constBody->getNodes();
+  EXPECT_EQ(nodes.size(), constNodes.size());
+}

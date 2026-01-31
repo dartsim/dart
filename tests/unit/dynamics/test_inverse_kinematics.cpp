@@ -877,3 +877,138 @@ TEST(HierarchicalIK, ObjectiveConstraintAndClone)
   wholeBody->refreshIKHierarchy();
   EXPECT_FALSE(wholeBody->getIKHierarchy().empty());
 }
+
+TEST(InverseKinematics, FindSolutionWithNullProblem)
+{
+  auto fixture = makeIkSkeleton();
+
+  class NullProblemIK final : public InverseKinematics
+  {
+  public:
+    explicit NullProblemIK(JacobianNode* node) : InverseKinematics(node) {}
+
+    void clearProblem()
+    {
+      mProblem.reset();
+    }
+  };
+
+  auto ik = std::make_shared<NullProblemIK>(fixture.end);
+  ik->clearProblem();
+
+  Eigen::VectorXd positions;
+  EXPECT_FALSE(ik->findSolution(positions));
+}
+
+TEST(InverseKinematics, ErrorMethodSizeMismatchAndCaching)
+{
+  auto fixture = makeIkSkeleton();
+  auto ik = fixture.end->getOrCreateIK();
+  ASSERT_NE(ik, nullptr);
+
+  auto& errorMethod = ik->setErrorMethod<InverseKinematics::TaskSpaceRegion>();
+
+  Eigen::VectorXd wrongSize(1);
+  wrongSize << 0.0;
+  const auto& mismatch = errorMethod.evalError(wrongSize);
+  EXPECT_TRUE(mismatch.isZero());
+
+  Eigen::VectorXd empty;
+  const auto& emptyError = errorMethod.evalError(empty);
+  EXPECT_TRUE(emptyError.isZero());
+
+  auto target
+      = std::make_shared<SimpleFrame>(Frame::World(), "ik_error_target");
+  target->setTransform(fixture.end->getTransform());
+  ik->setTarget(target);
+
+  Eigen::VectorXd q = ik->getPositions();
+  const auto& first = errorMethod.evalError(q);
+  const auto& second = errorMethod.evalError(q);
+  EXPECT_TRUE(first.isApprox(second));
+
+  const auto desired
+      = errorMethod.computeDesiredTransform(fixture.end->getTransform(), first);
+  EXPECT_TRUE(desired.matrix().array().isFinite().all());
+}
+
+TEST(InverseKinematics, TaskSpaceRegionCenterBoundsAndOffset)
+{
+  auto fixture = makeIkSkeleton();
+  auto ik = fixture.end->getOrCreateIK();
+  ASSERT_NE(ik, nullptr);
+
+  auto& tsr = ik->setErrorMethod<InverseKinematics::TaskSpaceRegion>();
+  InverseKinematics::ErrorMethod::Bounds bounds;
+  bounds.first = Eigen::Vector6d::Constant(-0.01);
+  bounds.second = Eigen::Vector6d::Constant(0.01);
+  bounds.second[1] = std::numeric_limits<double>::infinity();
+  bounds.first[3] = -std::numeric_limits<double>::infinity();
+  tsr.setBounds(bounds);
+  tsr.setComputeFromCenter(true);
+  tsr.setErrorLengthClamp(0.005);
+
+  auto reference
+      = std::make_shared<SimpleFrame>(Frame::World(), "ik_ref_center");
+  Eigen::Isometry3d refTf = Eigen::Isometry3d::Identity();
+  refTf.translation() = Eigen::Vector3d(0.2, 0.1, -0.1);
+  reference->setTransform(refTf);
+  tsr.setReferenceFrame(reference);
+
+  auto target
+      = std::make_shared<SimpleFrame>(Frame::World(), "ik_target_center");
+  Eigen::Isometry3d targetTf = Eigen::Isometry3d::Identity();
+  targetTf.translation() = Eigen::Vector3d(-0.3, 0.4, 0.2);
+  targetTf.linear() = (Eigen::AngleAxisd(0.4, Eigen::Vector3d::UnitX())
+                       * Eigen::AngleAxisd(0.6, Eigen::Vector3d::UnitY()))
+                          .toRotationMatrix();
+  target->setTransform(targetTf);
+  ik->setTarget(target);
+
+  ik->setOffset(Eigen::Vector3d(0.1, 0.0, 0.0));
+
+  const auto& error = tsr.evalError(ik->getPositions());
+  EXPECT_TRUE(error.array().isFinite().all());
+  EXPECT_LE(error.norm(), tsr.getErrorLengthClamp() + 1e-12);
+}
+
+TEST(HierarchicalIK, FindSolutionErrorPaths)
+{
+  auto skeleton = Skeleton::create("hik_error_paths");
+  auto composite = CompositeIK::create(skeleton);
+  ASSERT_NE(composite, nullptr);
+
+  Eigen::VectorXd positions;
+  composite->setSolver(nullptr);
+  EXPECT_FALSE(composite->findSolution(positions));
+
+  class NullProblemCompositeIK final : public CompositeIK
+  {
+  public:
+    explicit NullProblemCompositeIK(const SkeletonPtr& skel) : CompositeIK(skel)
+    {
+    }
+
+    static std::shared_ptr<NullProblemCompositeIK> create(
+        const SkeletonPtr& skel)
+    {
+      auto ik = std::shared_ptr<NullProblemCompositeIK>(
+          new NullProblemCompositeIK(skel));
+      ik->initialize(ik);
+      return ik;
+    }
+
+    void clearProblem()
+    {
+      mProblem.reset();
+    }
+  };
+
+  auto nullProblem = NullProblemCompositeIK::create(skeleton);
+  nullProblem->clearProblem();
+  EXPECT_FALSE(nullProblem->findSolution(positions));
+
+  auto compositeForSkeleton = CompositeIK::create(skeleton);
+  skeleton.reset();
+  EXPECT_FALSE(compositeForSkeleton->findSolution(positions));
+}

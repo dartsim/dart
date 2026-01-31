@@ -40,6 +40,8 @@
 
 #include <gtest/gtest.h>
 
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <optional>
 #include <vector>
@@ -740,4 +742,71 @@ TEST(SkelParser, FullbodyStructure)
   EXPECT_GT(skel->getNumJoints(), 10u);
   EXPECT_GT(skel->getNumDofs(), 10u);
   EXPECT_NE(skel->getBodyNode("h_pelvis"), nullptr);
+}
+
+//==============================================================================
+TEST(SkelParser, ReadWorldXMLRejectsMalformedXml)
+{
+  const std::string skelXml = "<skel><world></skel>";
+  EXPECT_EQ(SkelParser::readWorldXML(skelXml), nullptr);
+}
+
+//==============================================================================
+TEST(SkelParser, ReadWorldXMLMissingWorldElement)
+{
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <skeleton name="missing_world"/>
+</skel>
+)";
+
+  EXPECT_EQ(SkelParser::readWorldXML(skelXml), nullptr);
+}
+
+//==============================================================================
+TEST(SkelParser, ReadWorldMissingFileReturnsNull)
+{
+  const auto missingPath
+      = std::filesystem::temp_directory_path() / "dart_missing_world.skel";
+  std::error_code ec;
+  std::filesystem::remove(missingPath, ec);
+
+  EXPECT_EQ(SkelParser::readWorld(missingPath.string()), nullptr);
+}
+
+//==============================================================================
+TEST(SkelParser, ReadSkeletonMissingFileReturnsNull)
+{
+  const auto missingPath
+      = std::filesystem::temp_directory_path() / "dart_missing_skeleton.skel";
+  std::error_code ec;
+  std::filesystem::remove(missingPath, ec);
+
+  EXPECT_EQ(SkelParser::readSkeleton(missingPath.string()), nullptr);
+}
+
+//==============================================================================
+TEST(SkelParser, ReadSkeletonMissingRootElements)
+{
+  auto writeTemp = [](std::string_view xml) {
+    const auto path = std::filesystem::temp_directory_path()
+                      / "dart_skel_missing_root.skel";
+    std::ofstream output(path.string(), std::ios::binary);
+    output << xml;
+    output.close();
+    return path;
+  };
+
+  const auto noSkelPath = writeTemp("<root></root>");
+  EXPECT_EQ(SkelParser::readSkeleton(noSkelPath.string()), nullptr);
+  std::error_code ec;
+  std::filesystem::remove(noSkelPath, ec);
+
+  const auto noSkeletonPath = writeTemp(R"(
+<skel version="1.0">
+  <world name="default"/>
+</skel>
+)");
+  EXPECT_EQ(SkelParser::readSkeleton(noSkeletonPath.string()), nullptr);
+  std::filesystem::remove(noSkeletonPath, ec);
 }

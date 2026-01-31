@@ -129,9 +129,8 @@ TEST(BulletCollisionCoverage, CollideWithShapesAndFilter)
   coneFrame->setShape(std::make_shared<ConeShape>(0.05, 0.2));
   ellipsoidFrame->setShape(
       std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.08, 0.12, 0.1)));
-  meshFrame->setShape(
-      std::make_shared<MeshShape>(
-          Eigen::Vector3d::Ones(), makeSimpleTriMesh()));
+  meshFrame->setShape(std::make_shared<MeshShape>(
+      Eigen::Vector3d::Ones(), makeSimpleTriMesh()));
 
   planeFrame->setTranslation(Eigen::Vector3d::Zero());
   sphereFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.05));
@@ -245,6 +244,203 @@ TEST(BulletCollisionCoverage, DistanceAndRaycastPaths)
       Eigen::Vector3d(0.0, 0.0, 1.0),
       RaycastOption(),
       nullptr));
+}
+
+TEST(BulletCollisionCoverage, TwoGroupCollide)
+{
+  auto detector = BulletCollisionDetector::create();
+  ASSERT_TRUE(detector);
+
+  auto frame1 = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  auto frame2 = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  frame1->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  frame2->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  frame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  frame2->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
+
+  auto group1 = detector->createCollisionGroup(frame1.get());
+  auto group2 = detector->createCollisionGroup(frame2.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+  CollisionResult result;
+  EXPECT_TRUE(detector->collide(group1.get(), group2.get(), option, &result));
+  EXPECT_GE(result.getNumContacts(), 1u);
+
+  EXPECT_TRUE(detector->collide(group1.get(), group2.get(), option, nullptr));
+
+  auto combined = detector->createCollisionGroup(frame1.get(), frame2.get());
+  EXPECT_TRUE(detector->collide(combined.get(), option, nullptr));
+}
+
+TEST(BulletCollisionCoverage, MaxNumContactsZero)
+{
+  auto detector = BulletCollisionDetector::create();
+  ASSERT_TRUE(detector);
+
+  auto frame1 = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  frame1->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2)));
+
+  auto group = detector->createCollisionGroup(frame1.get());
+
+  CollisionOption option;
+  option.maxNumContacts = 0u;
+  CollisionResult result;
+  EXPECT_FALSE(group->collide(option, &result));
+
+  auto group2 = detector->createCollisionGroup(frame1.get());
+  EXPECT_FALSE(detector->collide(group.get(), group2.get(), option, &result));
+}
+
+TEST(BulletCollisionCoverage, CloneWithoutCollisionObjects)
+{
+  auto detector = BulletCollisionDetector::create();
+  ASSERT_TRUE(detector);
+
+  auto cloned = detector->cloneWithoutCollisionObjects();
+  ASSERT_NE(cloned, nullptr);
+  EXPECT_EQ(
+      BulletCollisionDetector::getStaticType(),
+      BulletCollisionDetector::getStaticType());
+}
+
+TEST(BulletCollisionCoverage, RaycastNullResultWithFilter)
+{
+  auto detector = BulletCollisionDetector::create();
+  ASSERT_TRUE(detector);
+
+  auto frame1 = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  auto frame2 = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  frame1->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  frame2->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  frame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  frame2->setTranslation(Eigen::Vector3d(0.0, 0.0, 5.0));
+
+  auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+
+  RaycastOption allHitsOpt;
+  allHitsOpt.mEnableAllHits = true;
+  allHitsOpt.mFilter = RaycastOption::RaycastFilter(
+      [](const CollisionObject*) -> bool { return true; });
+
+  EXPECT_TRUE(group->raycast(
+      Eigen::Vector3d(0.0, 0.0, -2.0),
+      Eigen::Vector3d(0.0, 0.0, 8.0),
+      allHitsOpt,
+      nullptr));
+
+  allHitsOpt.mFilter = RaycastOption::RaycastFilter(
+      [](const CollisionObject*) -> bool { return false; });
+  EXPECT_FALSE(group->raycast(
+      Eigen::Vector3d(0.0, 0.0, -2.0),
+      Eigen::Vector3d(0.0, 0.0, 8.0),
+      allHitsOpt,
+      nullptr));
+
+  RaycastOption closestOpt;
+  closestOpt.mEnableAllHits = false;
+  EXPECT_TRUE(group->raycast(
+      Eigen::Vector3d(0.0, 0.0, -2.0),
+      Eigen::Vector3d(0.0, 0.0, 8.0),
+      closestOpt,
+      nullptr));
+
+  RaycastResult missResult;
+  EXPECT_FALSE(group->raycast(
+      Eigen::Vector3d(100.0, 100.0, -2.0),
+      Eigen::Vector3d(100.0, 100.0, 8.0),
+      closestOpt,
+      &missResult));
+  EXPECT_EQ(missResult.mRayHits.size(), 0u);
+
+  EXPECT_FALSE(group->raycast(
+      Eigen::Vector3d(100.0, 100.0, -2.0),
+      Eigen::Vector3d(100.0, 100.0, 8.0),
+      allHitsOpt,
+      &missResult));
+
+  allHitsOpt.mFilter = nullptr;
+  EXPECT_FALSE(group->raycast(
+      Eigen::Vector3d(100.0, 100.0, -2.0),
+      Eigen::Vector3d(100.0, 100.0, 8.0),
+      allHitsOpt,
+      nullptr));
+}
+
+TEST(BulletCollisionCoverage, RaycastFilterOnlyClosest)
+{
+  auto detector = BulletCollisionDetector::create();
+  ASSERT_TRUE(detector);
+
+  auto frame1 = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  auto frame2 = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  frame1->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  frame2->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  frame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  frame2->setTranslation(Eigen::Vector3d(0.0, 0.0, 3.0));
+
+  auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+
+  const auto* exclude = frame2.get();
+  RaycastOption opt;
+  opt.mEnableAllHits = false;
+  opt.mSortByClosest = false;
+  opt.mFilter = RaycastOption::RaycastFilter(
+      [exclude](const CollisionObject* object) -> bool {
+        return object && object->getShapeFrame() != exclude;
+      });
+
+  RaycastResult result;
+  EXPECT_TRUE(group->raycast(
+      Eigen::Vector3d(0.0, 0.0, -2.0),
+      Eigen::Vector3d(0.0, 0.0, 8.0),
+      opt,
+      &result));
+  EXPECT_EQ(result.mRayHits.size(), 1u);
+}
+
+TEST(BulletCollisionCoverage, TwoGroupCollideWithFilter)
+{
+  auto detector = BulletCollisionDetector::create();
+  ASSERT_TRUE(detector);
+
+  auto frame1 = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  auto frame2 = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  frame1->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  frame2->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  frame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  frame2->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
+
+  auto group1 = detector->createCollisionGroup(frame1.get());
+  auto group2 = detector->createCollisionGroup(frame2.get());
+
+  auto filter = std::make_shared<ShapePairFilter>(frame1.get(), frame2.get());
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+  option.collisionFilter = filter;
+
+  CollisionResult result;
+  EXPECT_FALSE(detector->collide(group1.get(), group2.get(), option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+}
+
+TEST(BulletCollisionCoverage, TwoGroupForeignDetector)
+{
+  auto detector1 = BulletCollisionDetector::create();
+  auto detector2 = BulletCollisionDetector::create();
+  ASSERT_TRUE(detector1);
+  ASSERT_TRUE(detector2);
+
+  auto frame1 = SimpleFrame::createShared(dart::dynamics::Frame::World());
+  frame1->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2)));
+
+  auto group1 = detector1->createCollisionGroup(frame1.get());
+  auto group2 = detector2->createCollisionGroup(frame1.get());
+
+  CollisionOption option;
+  EXPECT_FALSE(detector1->collide(group1.get(), group2.get(), option, nullptr));
 }
 
 #endif // DART_HAVE_BULLET

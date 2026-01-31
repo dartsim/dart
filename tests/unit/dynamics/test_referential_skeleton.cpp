@@ -210,3 +210,33 @@ TEST(ReferentialSkeleton, JacobiansAndDynamics)
   const auto external = group->getExternalForces();
   EXPECT_EQ(external.size(), group->getNumDofs());
 }
+
+TEST(ReferentialSkeleton, ConstAccessors)
+{
+  auto skeleton = Skeleton::create("ref_const");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.second->setName("dup");
+
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setName("joint_dup");
+  const std::string childName = childPair.second->getName();
+
+  std::array<BodyNode*, 2> bodyNodes = {rootPair.second, childPair.second};
+  auto group = Group::create("ref_const_group", bodyNodes);
+
+  const Group* constGroup = group.get();
+  EXPECT_EQ(constGroup->getBodyNode("dup"), rootPair.second);
+
+  const auto constBodyNodes = constGroup->getBodyNodes("dup");
+  EXPECT_EQ(constBodyNodes.size(), 1u);
+
+  const auto* jointByName = constGroup->getJoint("joint_dup");
+  ASSERT_NE(jointByName, nullptr);
+
+  const auto jointsByName = constGroup->getJoints("joint_dup");
+  EXPECT_EQ(jointsByName.size(), 1u);
+
+  const auto allJoints = constGroup->getJoints();
+  EXPECT_EQ(allJoints.size(), constGroup->getNumJoints());
+}

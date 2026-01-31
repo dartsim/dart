@@ -10,6 +10,7 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
 #include <vector>
 
 namespace detail = dart::utils::SdfParser::detail;
@@ -231,4 +232,16 @@ TEST(SdfDetailHelpers, SanitizesFloatingPointVectors)
   EXPECT_DOUBLE_EQ(vec[0], 0.2);
   EXPECT_DOUBLE_EQ(vec[1], 0.4);
   EXPECT_DOUBLE_EQ(vec[2], 0.6);
+}
+
+TEST(SdfDetailHelpers, StringNormalizationHelpers)
+{
+  EXPECT_EQ(detail::toLowerCopy("  AbC-XYZ "), "  abc-xyz ");
+  EXPECT_EQ(detail::trimCopy("\t \n"), "");
+  EXPECT_EQ(detail::trimCopy("  text\r\n"), "text");
+}
+
+TEST(SdfDetailHelpers, ElementTextNullReturnsEmpty)
+{
+  EXPECT_TRUE(detail::getElementText(nullptr).empty());
 }

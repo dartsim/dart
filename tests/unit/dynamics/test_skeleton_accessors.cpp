@@ -34,6 +34,7 @@
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/detail/skeleton_aspect.hpp>
 #include <dart/dynamics/end_effector.hpp>
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/free_joint.hpp>
@@ -44,6 +45,7 @@
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <dart/common/deprecated.hpp>
+#include <dart/common/exception.hpp>
 
 #include <Eigen/Core>
 #include <gtest/gtest.h>
@@ -2093,4 +2095,38 @@ TEST(SkeletonDynamics, DynamicsAndJacobians)
   EXPECT_EQ(JspatialRelOffset.rows(), 6);
   EXPECT_EQ(JclassicRel.rows(), 6);
   EXPECT_EQ(JlinRelDot.rows(), 3);
+}
+
+//==============================================================================
+TEST(SkeletonAspectHelpers, BodyNodeStateVectorMismatch)
+{
+  auto skeleton = Skeleton::create("state_vector_mismatch");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  auto states = dart::dynamics::detail::getAllBodyNodeStates(skeleton.get());
+  ASSERT_EQ(states.size(), 2u);
+
+  states.pop_back();
+  dart::dynamics::detail::setAllBodyNodeStates(skeleton.get(), states);
+
+  const auto roundTrip
+      = dart::dynamics::detail::getAllBodyNodeStates(skeleton.get());
+  EXPECT_EQ(roundTrip.size(), 2u);
+}
+
+//==============================================================================
+TEST(SkeletonRootBodyNode, ThrowsOnInvalidTreeIndex)
+{
+  auto empty = Skeleton::create("root_empty");
+  EXPECT_THROW(empty->getRootBodyNode(0), dart::common::OutOfRangeException);
+
+  auto skeleton = Skeleton::create("root_invalid");
+  skeleton->createJointAndBodyNodePair<FreeJoint>();
+
+  EXPECT_THROW(skeleton->getRootBodyNode(1), dart::common::OutOfRangeException);
+
+  const Skeleton* constSkel = skeleton.get();
+  EXPECT_THROW(
+      constSkel->getRootBodyNode(1), dart::common::OutOfRangeException);
 }

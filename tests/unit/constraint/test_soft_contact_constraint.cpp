@@ -57,10 +57,12 @@ public:
   using SoftContactConstraint::computeRestitutionCoefficient;
   using SoftContactConstraint::excite;
   using SoftContactConstraint::getInformation;
+  using SoftContactConstraint::getRootSkeleton;
   using SoftContactConstraint::getVelocityChange;
   using SoftContactConstraint::isActive;
   using SoftContactConstraint::SoftContactConstraint;
   using SoftContactConstraint::unexcite;
+  using SoftContactConstraint::uniteSkeletons;
   using SoftContactConstraint::update;
 };
 
@@ -315,13 +317,11 @@ TEST(SoftContactConstraint, CoefficientHelpers)
       = constraint::SoftContactConstraint::getConstraintForceMixing();
 
   EXPECT_TRUE(
-      std::isfinite(
-          ExposedSoftContactConstraint::computeFrictionCoefficient(
-              fixture.rigidShapeNode)));
+      std::isfinite(ExposedSoftContactConstraint::computeFrictionCoefficient(
+          fixture.rigidShapeNode)));
   EXPECT_TRUE(
-      std::isfinite(
-          ExposedSoftContactConstraint::computeRestitutionCoefficient(
-              fixture.rigidShapeNode)));
+      std::isfinite(ExposedSoftContactConstraint::computeRestitutionCoefficient(
+          fixture.rigidShapeNode)));
 
   constraint::SoftContactConstraint::setErrorAllowance(-0.5);
   constraint::SoftContactConstraint::setErrorReductionParameter(1.2);
@@ -330,15 +330,12 @@ TEST(SoftContactConstraint, CoefficientHelpers)
 
   EXPECT_TRUE(
       std::isfinite(constraint::SoftContactConstraint::getErrorAllowance()));
-  EXPECT_TRUE(
-      std::isfinite(
-          constraint::SoftContactConstraint::getErrorReductionParameter()));
-  EXPECT_TRUE(
-      std::isfinite(
-          constraint::SoftContactConstraint::getMaxErrorReductionVelocity()));
-  EXPECT_TRUE(
-      std::isfinite(
-          constraint::SoftContactConstraint::getConstraintForceMixing()));
+  EXPECT_TRUE(std::isfinite(
+      constraint::SoftContactConstraint::getErrorReductionParameter()));
+  EXPECT_TRUE(std::isfinite(
+      constraint::SoftContactConstraint::getMaxErrorReductionVelocity()));
+  EXPECT_TRUE(std::isfinite(
+      constraint::SoftContactConstraint::getConstraintForceMixing()));
 
   constraint::SoftContactConstraint::setErrorAllowance(prevAllowance);
   constraint::SoftContactConstraint::setErrorReductionParameter(prevErp);
@@ -479,6 +476,348 @@ TEST(SoftContactConstraint, SoftContactConstraintFromWorld)
   constraint.applyImpulse(lambda.data());
   constraint.excite();
   constraint.unexcite();
+}
+
+TEST(SoftContactConstraint, StaticTypeNonEmpty)
+{
+  auto type = constraint::SoftContactConstraint::getStaticType();
+  EXPECT_FALSE(type.empty());
+}
+
+TEST(SoftContactConstraint, ErrorAllowanceAndErpClampPaths)
+{
+  const auto prevAllowance
+      = constraint::SoftContactConstraint::getErrorAllowance();
+  const auto prevErp
+      = constraint::SoftContactConstraint::getErrorReductionParameter();
+
+  constraint::SoftContactConstraint::setErrorAllowance(-0.5);
+  EXPECT_LE(constraint::SoftContactConstraint::getErrorAllowance(), 0.0);
+
+  constraint::SoftContactConstraint::setErrorReductionParameter(-0.25);
+  EXPECT_LE(
+      constraint::SoftContactConstraint::getErrorReductionParameter(), 0.0);
+
+  constraint::SoftContactConstraint::setErrorReductionParameter(1.5);
+  EXPECT_GE(
+      constraint::SoftContactConstraint::getErrorReductionParameter(), 1.0);
+
+  constraint::SoftContactConstraint::setErrorAllowance(prevAllowance);
+  constraint::SoftContactConstraint::setErrorReductionParameter(prevErp);
+}
+
+TEST(SoftContactConstraint, ErvAndCfmClampPaths)
+{
+  const auto prevErv
+      = constraint::SoftContactConstraint::getMaxErrorReductionVelocity();
+  const auto prevCfm
+      = constraint::SoftContactConstraint::getConstraintForceMixing();
+
+  constraint::SoftContactConstraint::setMaxErrorReductionVelocity(-1.0);
+  EXPECT_LE(
+      constraint::SoftContactConstraint::getMaxErrorReductionVelocity(), 0.0);
+
+  constraint::SoftContactConstraint::setConstraintForceMixing(1e-12);
+  EXPECT_LE(
+      constraint::SoftContactConstraint::getConstraintForceMixing(), 1e-9);
+
+  constraint::SoftContactConstraint::setMaxErrorReductionVelocity(prevErv);
+  constraint::SoftContactConstraint::setConstraintForceMixing(prevCfm);
+}
+
+TEST(SoftContactConstraint, FrictionlessApplyImpulsePath)
+{
+  constexpr double timeStep = 0.001;
+  auto fixture = makeFixture(0.0, 0.0);
+
+  TestCollisionObject softObj(fixture.detector.get(), fixture.softShapeNode);
+  TestCollisionObject rigidObj(fixture.detector.get(), fixture.rigidShapeNode);
+
+  collision::Contact contact;
+  contact.collisionObject1 = &softObj;
+  contact.collisionObject2 = &rigidObj;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.penetrationDepth = 0.02;
+  contact.triID1 = 0;
+  contact.triID2 = 0;
+  contact.userData = nullptr;
+
+  ExposedSoftContactConstraint constraint(contact, timeStep);
+  constraint.update();
+  ASSERT_EQ(constraint.getDimension(), 1u);
+
+  std::vector<double> lambda = {0.2};
+  constraint.applyImpulse(lambda.data());
+
+  EXPECT_NEAR(contact.force.z(), 0.2 / timeStep, 1e-12);
+}
+
+TEST(SoftContactConstraint, FrictionlessBouncingVelocityCapped)
+{
+  constexpr double timeStep = 0.001;
+  auto fixture = makeFixture(0.0, 1.0);
+
+  auto* softJoint
+      = dynamic_cast<dynamics::FreeJoint*>(fixture.softBody->getParentJoint());
+  ASSERT_NE(softJoint, nullptr);
+  softJoint->setLinearVelocity(Eigen::Vector3d(0.0, 0.0, -200.0));
+  fixture.softSkel->computeForwardKinematics(true, true, false);
+
+  TestCollisionObject softObj(fixture.detector.get(), fixture.softShapeNode);
+  TestCollisionObject rigidObj(fixture.detector.get(), fixture.rigidShapeNode);
+
+  collision::Contact contact;
+  contact.collisionObject1 = &softObj;
+  contact.collisionObject2 = &rigidObj;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.penetrationDepth = 0.02;
+  contact.triID1 = 0;
+  contact.triID2 = 0;
+  contact.userData = nullptr;
+
+  ExposedSoftContactConstraint constraint(contact, timeStep);
+  constraint.update();
+  ASSERT_EQ(constraint.getDimension(), 1u);
+
+  constraint::ConstraintInfo info{};
+  std::vector<double> x;
+  std::vector<double> lo;
+  std::vector<double> hi;
+  std::vector<double> b;
+  std::vector<double> w;
+  std::vector<int> findex;
+  fillConstraintInfo(info, x, lo, hi, b, w, findex, 1u, 1.0 / timeStep);
+
+  constraint.getInformation(&info);
+  EXPECT_NEAR(b[0], 300.0, 1e-9);
+}
+
+TEST(SoftContactConstraint, FrictionalBouncingAndTangentFallback)
+{
+  constexpr double timeStep = 0.001;
+  auto fixture = makeFixture(0.5, 1.0);
+
+  auto* softJoint
+      = dynamic_cast<dynamics::FreeJoint*>(fixture.softBody->getParentJoint());
+  ASSERT_NE(softJoint, nullptr);
+  softJoint->setLinearVelocity(Eigen::Vector3d(0.0, 0.0, -200.0));
+  fixture.softSkel->computeForwardKinematics(true, true, false);
+
+  TestCollisionObject softObj(fixture.detector.get(), fixture.softShapeNode);
+  TestCollisionObject rigidObj(fixture.detector.get(), fixture.rigidShapeNode);
+
+  collision::Contact contact;
+  contact.collisionObject1 = &softObj;
+  contact.collisionObject2 = &rigidObj;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.penetrationDepth = 0.02;
+  contact.triID1 = 0;
+  contact.triID2 = 0;
+  contact.userData = nullptr;
+
+  ExposedSoftContactConstraint constraint(contact, timeStep);
+  constraint.setFrictionDirection(Eigen::Vector3d::UnitZ());
+  constraint.update();
+  ASSERT_EQ(constraint.getDimension(), 3u);
+
+  constraint::ConstraintInfo info{};
+  std::vector<double> x;
+  std::vector<double> lo;
+  std::vector<double> hi;
+  std::vector<double> b;
+  std::vector<double> w;
+  std::vector<int> findex;
+  fillConstraintInfo(info, x, lo, hi, b, w, findex, 3u, 1.0 / timeStep);
+
+  constraint.getInformation(&info);
+  EXPECT_NEAR(b[0], 300.0, 1e-9);
+
+  std::vector<double> lambda = {0.1, 0.05, -0.02};
+  constraint.applyImpulse(lambda.data());
+  EXPECT_TRUE(contact.force.allFinite());
+}
+
+TEST(SoftContactConstraint, SelfCollisionApplyUnitImpulsePath)
+{
+  constexpr double timeStep = 0.001;
+  auto detector = collision::DARTCollisionDetector::create();
+  ASSERT_NE(detector, nullptr);
+
+  auto skel = dynamics::Skeleton::create("self");
+  auto softPair = skel->createJointAndBodyNodePair<
+      dynamics::FreeJoint,
+      dynamics::SoftBodyNode>();
+  auto rigidPair = skel->createJointAndBodyNodePair<dynamics::FreeJoint>();
+
+  auto* softBody = softPair.second;
+  dynamics::SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      10.0,
+      10.0,
+      0.1);
+  auto* softShape = softBody->getShapeNode(0);
+  ASSERT_NE(softShape, nullptr);
+  auto* softDynamics = softShape->getDynamicsAspect();
+  ASSERT_NE(softDynamics, nullptr);
+  softDynamics->setFrictionCoeff(0.5);
+  softDynamics->setRestitutionCoeff(0.1);
+
+  auto* rigidBody = rigidPair.second;
+  auto rigidShape
+      = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5));
+  auto* rigidShapeNode = rigidBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(rigidShape);
+  ASSERT_NE(rigidShapeNode, nullptr);
+  auto* rigidDynamics = rigidShapeNode->getDynamicsAspect();
+  ASSERT_NE(rigidDynamics, nullptr);
+  rigidDynamics->setFrictionCoeff(0.5);
+  rigidDynamics->setRestitutionCoeff(0.1);
+
+  TestCollisionObject softObj(detector.get(), softShape);
+  TestCollisionObject rigidObj(detector.get(), rigidShapeNode);
+
+  collision::Contact contact;
+  contact.collisionObject1 = &softObj;
+  contact.collisionObject2 = &rigidObj;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.penetrationDepth = 0.01;
+  contact.triID1 = 0;
+  contact.triID2 = 0;
+  contact.userData = nullptr;
+
+  ExposedSoftContactConstraint constraint(contact, timeStep);
+  constraint.update();
+  constraint.applyUnitImpulse(0);
+  EXPECT_TRUE(constraint.isActive());
+}
+
+TEST(SoftContactConstraint, RootSkeletonSelectionPaths)
+{
+  constexpr double timeStep = 0.001;
+  auto fixture = makeFixture(0.2, 0.0);
+
+  TestCollisionObject softObj(fixture.detector.get(), fixture.softShapeNode);
+  TestCollisionObject rigidObj(fixture.detector.get(), fixture.rigidShapeNode);
+
+  collision::Contact softContact;
+  softContact.collisionObject1 = &softObj;
+  softContact.collisionObject2 = &rigidObj;
+  softContact.point = Eigen::Vector3d::Zero();
+  softContact.normal = Eigen::Vector3d::UnitZ();
+  softContact.penetrationDepth = 0.01;
+  softContact.triID1 = 0;
+  softContact.triID2 = 0;
+  softContact.userData = nullptr;
+
+  ExposedSoftContactConstraint softConstraint(softContact, timeStep);
+  EXPECT_EQ(softConstraint.getRootSkeleton(), fixture.softSkel);
+
+  auto detector = collision::DARTCollisionDetector::create();
+  auto skelA = dynamics::Skeleton::create("rigidA");
+  auto skelB = dynamics::Skeleton::create("rigidB");
+  auto pairA = skelA->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  auto pairB = skelB->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  auto shapeA
+      = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2));
+  auto shapeB
+      = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2));
+  auto* nodeA = pairA.second->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shapeA);
+  auto* nodeB = pairB.second->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shapeB);
+  ASSERT_NE(nodeA, nullptr);
+  ASSERT_NE(nodeB, nullptr);
+  skelA->setMobile(false);
+
+  TestCollisionObject objectA(detector.get(), nodeA);
+  TestCollisionObject objectB(detector.get(), nodeB);
+
+  collision::Contact rigidContact;
+  rigidContact.collisionObject1 = &objectA;
+  rigidContact.collisionObject2 = &objectB;
+  rigidContact.point = Eigen::Vector3d::Zero();
+  rigidContact.normal = Eigen::Vector3d::UnitZ();
+  rigidContact.penetrationDepth = 0.01;
+  rigidContact.triID1 = 0;
+  rigidContact.triID2 = 0;
+  rigidContact.userData = nullptr;
+
+  ExposedSoftContactConstraint rigidConstraint(rigidContact, timeStep);
+  EXPECT_EQ(rigidConstraint.getRootSkeleton(), skelB);
+}
+
+TEST(SoftContactConstraint, UniteSkeletonsUnionSizePaths)
+{
+  constexpr double timeStep = 0.001;
+  auto fixture = makeFixture(0.5, 0.0);
+
+  TestCollisionObject softObj(fixture.detector.get(), fixture.softShapeNode);
+  TestCollisionObject rigidObj(fixture.detector.get(), fixture.rigidShapeNode);
+
+  collision::Contact contact;
+  contact.collisionObject1 = &softObj;
+  contact.collisionObject2 = &rigidObj;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.penetrationDepth = 0.01;
+  contact.triID1 = 0;
+  contact.triID2 = 0;
+  contact.userData = nullptr;
+
+  ExposedSoftContactConstraint constraint(contact, timeStep);
+
+  fixture.softSkel->resetUnion();
+  fixture.rigidSkel->resetUnion();
+  fixture.softSkel->mUnionSize = 1;
+  fixture.rigidSkel->mUnionSize = 2;
+  constraint.uniteSkeletons();
+  EXPECT_EQ(fixture.softSkel->mUnionRootSkeleton.lock(), fixture.rigidSkel);
+
+  fixture.softSkel->resetUnion();
+  fixture.rigidSkel->resetUnion();
+  fixture.softSkel->mUnionSize = 3;
+  fixture.rigidSkel->mUnionSize = 1;
+  constraint.uniteSkeletons();
+  EXPECT_EQ(fixture.rigidSkel->mUnionRootSkeleton.lock(), fixture.softSkel);
+}
+
+TEST(SoftContactConstraint, DynamicsAspectFallbacks)
+{
+  auto skel = dynamics::Skeleton::create("props");
+  auto pair = skel->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  auto shape
+      = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.1, 0.1, 0.1));
+
+  auto* collisionOnly
+      = pair.second->createShapeNodeWith<dynamics::CollisionAspect>(shape);
+  ASSERT_NE(collisionOnly, nullptr);
+
+  const double friction
+      = ExposedSoftContactConstraint::computeFrictionCoefficient(collisionOnly);
+  EXPECT_DOUBLE_EQ(friction, 1.0);
+
+  auto* withDynamics = pair.second->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  ASSERT_NE(withDynamics, nullptr);
+  auto* dynAspect = withDynamics->getDynamicsAspect();
+  ASSERT_NE(dynAspect, nullptr);
+  dynAspect->setRestitutionCoeff(2.0);
+
+  const double restitution
+      = ExposedSoftContactConstraint::computeRestitutionCoefficient(
+          withDynamics);
+  EXPECT_DOUBLE_EQ(restitution, 0.0);
 }
 
 } // namespace dart::test
