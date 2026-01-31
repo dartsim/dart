@@ -749,3 +749,12 @@ TEST(XmlHelpers, GetElementReturnsChild)
   const tinyxml2::XMLElement* constRoot = root;
   EXPECT_EQ(getElement(constRoot, "child"), child);
 }
+
+TEST(XmlHelpers, LargeVectorXdParsing)
+{
+  const std::string input = "1 2 3 4 5 6 7 8 9 10";
+  const Eigen::VectorXd result = toVectorXd(input);
+  ASSERT_EQ(result.size(), 10);
+  EXPECT_DOUBLE_EQ(result[0], 1.0);
+  EXPECT_DOUBLE_EQ(result[9], 10.0);
+}

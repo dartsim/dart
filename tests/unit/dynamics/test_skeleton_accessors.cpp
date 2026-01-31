@@ -3125,3 +3125,61 @@ TEST(SkeletonImpulse, ImpulseForwardDynamicsImmobile)
   skeleton->setMobile(false);
   skeleton->computeImpulseForwardDynamics();
 }
+
+//==============================================================================
+TEST(SkeletonTreeManipulation, MoveRootBetweenSkeletons)
+{
+  auto source = Skeleton::create("move_root_source");
+  auto rootPair = source->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.first->setName("root_joint");
+  rootPair.second->setName("root_body");
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setAxis(Eigen::Vector3d::UnitX());
+  childPair.second->setName("child_body");
+  childPair.second->createEndEffector("child_ee");
+
+  auto destination = Skeleton::create("move_root_dest");
+  auto destRoot = destination->createJointAndBodyNodePair<FreeJoint>();
+  destRoot.second->setName("dest_root");
+
+  EXPECT_TRUE(rootPair.second->moveTo(destination, nullptr));
+  EXPECT_EQ(source->getNumBodyNodes(), 0u);
+  EXPECT_EQ(destination->getNumBodyNodes(), 3u);
+  EXPECT_EQ(destination->getNumTrees(), 2u);
+  EXPECT_EQ(rootPair.second->getSkeleton(), destination);
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, DynamicsCacheQueries)
+{
+  auto skeleton = Skeleton::create("cache_queries");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.second->setMass(1.0);
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setAxis(Eigen::Vector3d::UnitZ());
+  childPair.second->setMass(0.5);
+
+  skeleton->setPositions(Eigen::VectorXd::Random(skeleton->getNumDofs()));
+  skeleton->setVelocities(Eigen::VectorXd::Random(skeleton->getNumDofs()));
+
+  const Skeleton& constSkel = *skeleton;
+  const auto& M = constSkel.getMassMatrix();
+  const auto& Maug = constSkel.getAugMassMatrix();
+  const auto& Minv = constSkel.getInvMassMatrix();
+  const auto& MinvAug = constSkel.getInvAugMassMatrix();
+  const auto& C = constSkel.getCoriolisForces();
+  const auto& G = constSkel.getGravityForces();
+  const auto& CG = constSkel.getCoriolisAndGravityForces();
+  const auto& Fext = constSkel.getExternalForces();
+
+  EXPECT_EQ(M.rows(), static_cast<int>(constSkel.getNumDofs()));
+  EXPECT_EQ(Maug.rows(), static_cast<int>(constSkel.getNumDofs()));
+  EXPECT_EQ(Minv.cols(), static_cast<int>(constSkel.getNumDofs()));
+  EXPECT_EQ(MinvAug.cols(), static_cast<int>(constSkel.getNumDofs()));
+  EXPECT_EQ(C.size(), static_cast<int>(constSkel.getNumDofs()));
+  EXPECT_EQ(G.size(), static_cast<int>(constSkel.getNumDofs()));
+  EXPECT_EQ(CG.size(), static_cast<int>(constSkel.getNumDofs()));
+  EXPECT_EQ(Fext.size(), static_cast<int>(constSkel.getNumDofs()));
+}

@@ -35,6 +35,7 @@
 #include <dart/math/lcp/newton/fischer_burmeister_newton_solver.hpp>
 #include <dart/math/lcp/newton/minimum_map_newton_solver.hpp>
 #include <dart/math/lcp/newton/penalized_fischer_burmeister_newton_solver.hpp>
+#include <dart/math/lcp/other/interior_point_solver.hpp>
 #include <dart/math/lcp/other/mprgp_solver.hpp>
 #include <dart/math/lcp/other/shock_propagation_solver.hpp>
 #include <dart/math/lcp/other/staggering_solver.hpp>
@@ -48,6 +49,8 @@
 #include <dart/math/lcp/projection/nncg_solver.hpp>
 #include <dart/math/lcp/projection/pgs_solver.hpp>
 #include <dart/math/lcp/projection/red_black_gauss_seidel_solver.hpp>
+#include <dart/math/lcp/projection/subspace_minimization_solver.hpp>
+#include <dart/math/lcp/projection/symmetric_psor_solver.hpp>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -150,6 +153,187 @@ LcpProblem makeShiftedStandardProblem()
       std::move(findex));
 }
 
+LcpProblem makeNearSingularProblem(int n)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n, n);
+  for (int i = 0; i < n; ++i) {
+    const double diag = (i == 0) ? 1e-4 : 1.0 + 0.05 * static_cast<double>(i);
+    A(i, i) = diag;
+    if (i + 1 < n) {
+      A(i, i + 1) = 0.02;
+      A(i + 1, i) = 0.02;
+    }
+  }
+  const Eigen::VectorXd target = Eigen::VectorXd::Constant(n, 0.35);
+  Eigen::VectorXd b = A * target;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
+LcpProblem makeNonSymmetricProblem()
+{
+  Eigen::MatrixXd A(2, 2);
+  A << 2.0, 1.0, 0.0, 1.5;
+  Eigen::VectorXd target(2);
+  target << 0.3, 0.2;
+  Eigen::VectorXd b = A * target;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
+LcpProblem makeIndefiniteProblem()
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(3, 3);
+  A(0, 0) = 1.0;
+  A(1, 1) = -0.5;
+  A(2, 2) = 1.5;
+  Eigen::VectorXd target(3);
+  target << 0.2, 0.1, 0.3;
+  Eigen::VectorXd b = A * target;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(3, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(3, -1);
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
+LcpProblem makeZeroDiagonalProblem()
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(3, 3) * 2.0;
+  A(1, 1) = 0.0;
+  A(0, 1) = 0.1;
+  A(1, 0) = 0.1;
+  Eigen::VectorXd target(3);
+  target << 0.2, 0.1, 0.3;
+  Eigen::VectorXd b = A * target;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(3, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(3, -1);
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
+LcpProblem makeTwoBlockStandardProblem()
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(4, 4) * 2.0;
+  A(0, 1) = 0.1;
+  A(1, 0) = 0.1;
+  A(2, 3) = 0.1;
+  A(3, 2) = 0.1;
+  Eigen::VectorXd target = Eigen::VectorXd::Constant(4, 0.25);
+  Eigen::VectorXd b = A * target;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(4);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(4, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(4, -1);
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
+LcpProblem makeFrictionBlockProblem()
+{
+  const int contacts = 3;
+  const int blockSize = 3;
+  const int n = contacts * blockSize;
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(n, n) * 2.0;
+
+  for (int c = 0; c < contacts; ++c) {
+    const int base = c * blockSize;
+    A(base, base + 1) = 0.1;
+    A(base + 1, base) = 0.1;
+    A(base, base + 2) = 0.05;
+    A(base + 2, base) = 0.05;
+    A(base + 1, base + 2) = 0.08;
+    A(base + 2, base + 1) = 0.08;
+  }
+
+  A(0, 3) = 0.02;
+  A(3, 0) = 0.02;
+  A(3, 6) = 0.02;
+  A(6, 3) = 0.02;
+
+  Eigen::VectorXd target(n);
+  for (int c = 0; c < contacts; ++c) {
+    const int base = c * blockSize;
+    target[base] = 0.4;
+    target[base + 1] = 0.1;
+    target[base + 2] = -0.05;
+  }
+  Eigen::VectorXd b = A * target;
+
+  Eigen::VectorXd lo(n);
+  Eigen::VectorXd hi(n);
+  Eigen::VectorXi findex(n);
+  for (int c = 0; c < contacts; ++c) {
+    const int base = c * blockSize;
+    lo[base] = 0.0;
+    hi[base] = std::numeric_limits<double>::infinity();
+    findex[base] = -1;
+
+    for (int f = 1; f < blockSize; ++f) {
+      lo[base + f] = -std::numeric_limits<double>::infinity();
+      hi[base + f] = 0.5;
+      findex[base + f] = base;
+    }
+  }
+
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
+LcpProblem makeDirectSolverProblem()
+{
+  Eigen::MatrixXd A(3, 3);
+  A << 0.0, 1.0, 0.0, 1.0, 2.0, 0.0, 0.0, 0.0, 3.0;
+  Eigen::VectorXd target(3);
+  target << 0.2, 0.1, 0.3;
+  Eigen::VectorXd b = A * target;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(3, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(3, -1);
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
 } // namespace
 
 TEST(LcpValidationCoverage, DetectsDimensionMismatch)
@@ -229,6 +413,22 @@ TEST(LcpValidationCoverage, DetectsFrictionWithInfiniteHi)
   EXPECT_FALSE(message.empty());
 }
 
+TEST(LcpValidationCoverage, DetectsLowerBoundAboveUpperBound)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(1, 1);
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(1);
+  Eigen::VectorXd lo(1);
+  Eigen::VectorXd hi(1);
+  lo[0] = 1.0;
+  hi[0] = 0.5;
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(1, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateProblem(problem, &message));
+  EXPECT_FALSE(message.empty());
+}
+
 TEST(LcpValidationCoverage, ComputesEffectiveBoundsForFriction)
 {
   Eigen::VectorXd lo(3);
@@ -266,6 +466,69 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsMismatchedSizes)
   EXPECT_FALSE(message.empty());
 }
 
+TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsInvalidFrictionIndex)
+{
+  Eigen::VectorXd lo(2);
+  lo << 0.0, -1.0;
+  Eigen::VectorXd hi(2);
+  hi << std::numeric_limits<double>::infinity(), 0.5;
+  Eigen::VectorXd x(2);
+  x << 0.2, 0.0;
+  Eigen::VectorXi findex(2);
+  findex << -1, 5;
+
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string message;
+  EXPECT_FALSE(detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(message.empty());
+
+  findex << -1, 1;
+  EXPECT_FALSE(detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(message.empty());
+}
+
+TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsInvalidReferenceValue)
+{
+  Eigen::VectorXd lo(2);
+  lo << 0.0, -1.0;
+  Eigen::VectorXd hi(2);
+  hi << std::numeric_limits<double>::infinity(), 0.5;
+  Eigen::VectorXd x(2);
+  x << std::numeric_limits<double>::infinity(), 0.0;
+  Eigen::VectorXi findex(2);
+  findex << -1, 0;
+
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string message;
+  EXPECT_FALSE(detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(message.empty());
+}
+
+TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsInvalidFrictionCoeff)
+{
+  Eigen::VectorXd lo(2);
+  lo << 0.0, -1.0;
+  Eigen::VectorXd hi(2);
+  hi << std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::infinity();
+  Eigen::VectorXd x(2);
+  x << 0.2, 0.0;
+  Eigen::VectorXi findex(2);
+  findex << -1, 0;
+
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string message;
+  EXPECT_FALSE(detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(message.empty());
+}
+
 TEST(LcpValidationCoverage, ValidatesSolutionBounds)
 {
   Eigen::VectorXd x(2);
@@ -281,6 +544,64 @@ TEST(LcpValidationCoverage, ValidatesSolutionBounds)
   x[1] = 1.5;
   EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
   EXPECT_FALSE(message.empty());
+}
+
+TEST(LcpValidationCoverage, ValidateSolutionRejectsInvalidDimensions)
+{
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd w = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+  EXPECT_FALSE(message.empty());
+}
+
+TEST(LcpValidationCoverage, ValidateSolutionRejectsNonFiniteValues)
+{
+  Eigen::VectorXd x(2);
+  x << 0.1, std::numeric_limits<double>::quiet_NaN();
+  Eigen::VectorXd w = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+  EXPECT_FALSE(message.empty());
+}
+
+TEST(LcpValidationCoverage, ValidateSolutionDetectsComplementarityViolations)
+{
+  Eigen::VectorXd x(2);
+  Eigen::VectorXd w(2);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+  std::string message;
+
+  x << -0.1, 0.5;
+  w << 0.0, 0.0;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+
+  x << 0.5, 1.2;
+  w << 0.0, 0.0;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+
+  lo << 0.3, 0.5;
+  hi << 0.3, 0.5;
+  x << 0.3, 0.5;
+  w << 1.0, 0.0;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+
+  lo << 0.0, 0.0;
+  hi << 1.0, 1.0;
+  x << 0.0, 1.0;
+  w << -0.1, 0.2;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+
+  x << 0.5, 0.5;
+  w << 0.1, 0.1;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
 }
 
 TEST(LcpValidationCoverage, ComputesResidualAndComplementarityNorms)
@@ -470,6 +791,109 @@ TEST(DantzigMatrixCoverage, LDLTUpdatesAndRemoveRowCol)
   dRemoveRowCol(dense.data(), n, n, 1);
   EXPECT_NEAR(dense[0], 1.0, 1e-12);
   EXPECT_NEAR(dense[1], 3.0, 1e-12);
+}
+
+TEST(DantzigMatrixCoverage, LdltAddTlHandlesSmallSize)
+{
+  const int n = 1;
+  const int nskip = padding(n);
+  std::vector<double> A(n * nskip, 0.0);
+  A[0] = 1.0;
+  std::vector<double> d(n, 1.0);
+  std::vector<double> a(n, 0.2);
+
+  dLDLTAddTL(A.data(), d.data(), a.data(), n, nskip);
+  EXPECT_NEAR(d[0], 1.0, 1e-12);
+}
+
+TEST(DantzigMatrixCoverage, LdltRemoveHandlesEdgeCases)
+{
+  const int n = 3;
+  const int nskip = padding(n);
+  std::vector<double> A(n * nskip, 0.0);
+  Eigen::Matrix3d Ae;
+  Ae << 2.0, 0.1, 0.0, 0.1, 2.2, 0.2, 0.0, 0.2, 1.8;
+  for (int r = 0; r < n; ++r) {
+    for (int c = 0; c < n; ++c) {
+      A[r * nskip + c] = Ae(r, c);
+    }
+  }
+
+  std::vector<double> d(n, 0.0);
+  dFactorLDLT(A.data(), d.data(), n, nskip);
+
+  std::vector<double*> rows(n);
+  for (int r = 0; r < n; ++r) {
+    rows[r] = A.data() + r * nskip;
+  }
+  std::vector<int> perm = {0, 1, 2};
+  const size_t tmpSize = dEstimateLDLTRemoveTmpbufSize<double>(n, nskip);
+  const size_t tmpCount = (tmpSize + sizeof(double) - 1) / sizeof(double);
+  std::vector<double> tmp(tmpCount);
+  dLDLTRemove(
+      rows.data(), perm.data(), A.data(), d.data(), n, n, 0, nskip, tmp.data());
+  EXPECT_TRUE(std::isfinite(d[0]));
+
+  std::vector<double> A2(n * nskip, 0.0);
+  for (int r = 0; r < n; ++r) {
+    for (int c = 0; c < n; ++c) {
+      A2[r * nskip + c] = Ae(r, c);
+    }
+  }
+  std::vector<double> d2(n, 0.0);
+  dFactorLDLT(A2.data(), d2.data(), n, nskip);
+  std::vector<double*> rows2(n);
+  for (int r = 0; r < n; ++r) {
+    rows2[r] = A2.data() + r * nskip;
+  }
+  dLDLTRemove(
+      rows2.data(), perm.data(), A2.data(), d2.data(), n, n, n - 1, nskip);
+  EXPECT_TRUE(std::isfinite(d2[0]));
+}
+
+TEST(DantzigMatrixCoverage, RemoveRowColHandlesFirstAndLast)
+{
+  const int n = 3;
+  std::vector<double> dense = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
+  dRemoveRowCol(dense.data(), n, n, n - 1);
+  EXPECT_NEAR(dense[0], 1.0, 1e-12);
+
+  std::vector<double> dense2 = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
+  dRemoveRowCol(dense2.data(), n, n, 0);
+  EXPECT_NEAR(dense2[0], 5.0, 1e-12);
+}
+
+TEST(DantzigMatrixCoverage, SolveL1AndSolveL1T)
+{
+  const int n = 5;
+  const int nskip = padding(n);
+  std::vector<double> L(n * nskip, 0.0);
+  Eigen::MatrixXd Le = Eigen::MatrixXd::Zero(n, n);
+  for (int r = 0; r < n; ++r) {
+    for (int c = 0; c <= r; ++c) {
+      const double value = (r == c) ? 1.0 : 0.1 * static_cast<double>(r + 1);
+      L[r * nskip + c] = value;
+      Le(r, c) = value;
+    }
+  }
+
+  std::vector<double> b = {1.0, 2.0, 3.0, 4.0, 5.0};
+  const Eigen::VectorXd be = Eigen::VectorXd::Map(b.data(), n);
+  const Eigen::VectorXd expected
+      = Le.triangularView<Eigen::UnitLower>().solve(be);
+  dSolveL1(L.data(), b.data(), n, nskip);
+  for (int i = 0; i < n; ++i) {
+    EXPECT_NEAR(b[static_cast<std::size_t>(i)], expected[i], 1e-8);
+  }
+
+  std::vector<double> b2 = {1.0, -1.0, 2.0, -2.0, 0.5};
+  const Eigen::VectorXd be2 = Eigen::VectorXd::Map(b2.data(), n);
+  const Eigen::VectorXd expected2
+      = Le.transpose().triangularView<Eigen::UnitUpper>().solve(be2);
+  dSolveL1T(L.data(), b2.data(), n, nskip);
+  for (int i = 0; i < n; ++i) {
+    EXPECT_NEAR(b2[static_cast<std::size_t>(i)], expected2[i], 1e-8);
+  }
 }
 
 TEST(NncgSolverCoverage, RejectsInvalidParameters)
@@ -911,6 +1335,360 @@ TEST(MinimumMapNewtonCoverage, SolvesShiftedStandardProblem)
   LcpOptions options;
   options.warmStart = true;
   options.maxIterations = 40;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(LemkeSolverCoverage, SolvesIllConditionedProblem)
+{
+  LemkeSolver solver;
+  auto problem = makeNearSingularProblem(6);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(6);
+
+  LcpOptions options;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(MprgpSolverCoverage, FallsBackForNonSymmetricProblem)
+{
+  MprgpSolver solver;
+  auto problem = makeNonSymmetricProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 20;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(MprgpSolverCoverage, FallsBackForIndefiniteProblem)
+{
+  MprgpSolver solver;
+  auto problem = makeIndefiniteProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+
+  LcpOptions options;
+  options.maxIterations = 20;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(MprgpSolverCoverage, ReportsProjectedGradientFailure)
+{
+  MprgpSolver solver;
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::VectorXd b = Eigen::VectorXd::Constant(2, 0.1);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  MprgpSolver::Parameters params;
+  params.epsilonForDivision = 1.0;
+
+  LcpOptions options;
+  options.customOptions = &params;
+  options.maxIterations = 5;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_FALSE(result.message.empty());
+}
+
+TEST(InteriorPointSolverCoverage, SolvesWithClampedParameters)
+{
+  InteriorPointSolver solver;
+  auto problem = makeStandardProblem(6);
+  Eigen::VectorXd x = Eigen::VectorXd::Constant(6, 0.2);
+
+  InteriorPointSolver::Parameters params;
+  params.sigma = 1.5;
+  params.stepScale = 1.5;
+
+  LcpOptions options;
+  options.customOptions = &params;
+  options.maxIterations = 3;
+  options.warmStart = true;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(DirectSolverCoverage, SolvesProblemWithSingularSubsets)
+{
+  DirectSolver solver;
+  auto problem = makeDirectSolverProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+
+  LcpOptions options;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(BlockedJacobiSolverCoverage, SolvesMultiBlockFrictionProblem)
+{
+  BlockedJacobiSolver solver;
+  BlockedJacobiSolver::Parameters params;
+  params.blockSizes = {3, 3, 3};
+
+  LcpOptions options;
+  options.customOptions = &params;
+  options.maxIterations = 8;
+
+  auto problem = makeFrictionBlockProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(BgsSolverCoverage, SolvesMultiBlockFrictionProblem)
+{
+  BgsSolver solver;
+  BgsSolver::Parameters params;
+  params.blockSizes = {3, 3, 3};
+
+  LcpOptions options;
+  options.customOptions = &params;
+  options.maxIterations = 8;
+
+  auto problem = makeFrictionBlockProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(JacobiSolverCoverage, HandlesZeroDiagonalEntries)
+{
+  JacobiSolver solver;
+  auto problem = makeZeroDiagonalProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+
+  LcpOptions options;
+  options.maxIterations = 12;
+  options.relaxation = 1.2;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(RedBlackGaussSeidelCoverage, SolvesFrictionProblemWithRelaxation)
+{
+  RedBlackGaussSeidelSolver solver;
+  auto problem = makeFrictionBlockProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Constant(problem.b.size(), 0.05);
+
+  LcpOptions options;
+  options.warmStart = true;
+  options.relaxation = 1.3;
+  options.maxIterations = 10;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(SymmetricPsorSolverCoverage, SolvesFrictionProblem)
+{
+  SymmetricPsorSolver solver;
+  auto problem = makeFrictionProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Constant(3, 0.05);
+
+  LcpOptions options;
+  options.warmStart = true;
+  options.relaxation = 1.4;
+  options.maxIterations = 10;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(SubspaceMinimizationSolverCoverage, RejectsInvalidPgsIterations)
+{
+  SubspaceMinimizationSolver solver;
+  SubspaceMinimizationSolver::Parameters params;
+  params.pgsIterations = 0;
+
+  LcpOptions options;
+  options.customOptions = &params;
+
+  auto problem = makeStandardProblem(3);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+}
+
+TEST(SubspaceMinimizationSolverCoverage, SolvesBoxedProblem)
+{
+  SubspaceMinimizationSolver solver;
+  SubspaceMinimizationSolver::Parameters params;
+  params.pgsIterations = 5;
+  params.activeSetTolerance = 1e-4;
+
+  LcpOptions options;
+  options.customOptions = &params;
+  options.relaxation = 1.1;
+  options.maxIterations = 10;
+  options.warmStart = true;
+
+  auto problem = makeBoxedProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Constant(2, 0.2);
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(FischerBurmeisterNewtonCoverage, SolvesWarmStartProblem)
+{
+  FischerBurmeisterNewtonSolver solver;
+  FischerBurmeisterNewtonSolver::Parameters params;
+  params.smoothingEpsilon = 1e-3;
+
+  auto problem = makeStandardProblem(4, 2.0, 0.25);
+  Eigen::VectorXd x = Eigen::VectorXd::Constant(4, 0.2);
+
+  LcpOptions options;
+  options.customOptions = &params;
+  options.warmStart = true;
+  options.maxIterations = 8;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(PenalizedFischerBurmeisterNewtonCoverage, SolvesWarmStartProblem)
+{
+  PenalizedFischerBurmeisterNewtonSolver solver;
+  PenalizedFischerBurmeisterNewtonSolver::Parameters params;
+  params.lambda = 0.5;
+  params.smoothingEpsilon = 1e-3;
+
+  auto problem = makeStandardProblem(4, 2.0, 0.2);
+  Eigen::VectorXd x = Eigen::VectorXd::Constant(4, 0.8);
+
+  LcpOptions options;
+  options.customOptions = &params;
+  options.warmStart = true;
+  options.maxIterations = 8;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(ShockPropagationSolverCoverage, RejectsInvalidBlockSizes)
+{
+  ShockPropagationSolver solver;
+  ShockPropagationSolver::Parameters params;
+  params.blockSizes = {2, 1};
+
+  LcpOptions options;
+  options.customOptions = &params;
+
+  auto problem = makeStandardProblem(4);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+}
+
+TEST(ShockPropagationSolverCoverage, RejectsFrictionIndexOutsideBlock)
+{
+  ShockPropagationSolver solver;
+  ShockPropagationSolver::Parameters params;
+  params.blockSizes = {1, 2};
+
+  LcpOptions options;
+  options.customOptions = &params;
+
+  auto problem = makeFrictionProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
+}
+
+TEST(ShockPropagationSolverCoverage, RejectsLayerOutOfRange)
+{
+  ShockPropagationSolver solver;
+  ShockPropagationSolver::Parameters params;
+  params.blockSizes = {2, 2};
+  params.layers = {{0, 2}};
+
+  LcpOptions options;
+  options.customOptions = &params;
+
+  auto problem = makeTwoBlockStandardProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+}
+
+TEST(ShockPropagationSolverCoverage, RejectsMissingLayerCoverage)
+{
+  ShockPropagationSolver solver;
+  ShockPropagationSolver::Parameters params;
+  params.blockSizes = {2, 2};
+  params.layers = {{0}};
+
+  LcpOptions options;
+  options.customOptions = &params;
+
+  auto problem = makeTwoBlockStandardProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+}
+
+TEST(ShockPropagationSolverCoverage, SolvesLayeredStandardBlocks)
+{
+  ShockPropagationSolver solver;
+  ShockPropagationSolver::Parameters params;
+  params.blockSizes = {2, 2};
+  params.layers = {{0}, {1}};
+
+  LcpOptions options;
+  options.customOptions = &params;
+  options.maxIterations = 2;
+
+  auto problem = makeTwoBlockStandardProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(ShockPropagationSolverCoverage, SolvesFrictionBlocks)
+{
+  ShockPropagationSolver solver;
+  ShockPropagationSolver::Parameters params;
+  params.blockSizes = {3, 3, 3};
+
+  LcpOptions options;
+  options.customOptions = &params;
+  options.maxIterations = 2;
+
+  auto problem = makeFrictionBlockProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(StaggeringSolverCoverage, SolvesMultiContactFrictionProblem)
+{
+  StaggeringSolver solver;
+  auto problem = makeFrictionBlockProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
+
+  LcpOptions options;
+  options.maxIterations = 12;
+  options.relaxation = 1.2;
   const auto result = solver.solve(problem, x, options);
   EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());

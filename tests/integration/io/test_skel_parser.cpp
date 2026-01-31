@@ -2147,3 +2147,306 @@ TEST(SkelParser, MeshShapeFromSkelString)
   std::error_code ec;
   std::filesystem::remove(meshPath, ec);
 }
+
+//==============================================================================
+TEST(SkelParser, JointAxisDynamicsAndLimitsFromXml)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      <joint type="revolute" name="rev_joint">
+        <parent>base</parent>
+        <child>link</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <dynamics>
+            <damping>1.1</damping>
+            <friction>0.2</friction>
+            <spring_rest_position>0.3</spring_rest_position>
+            <spring_stiffness>4.4</spring_stiffness>
+          </dynamics>
+          <limit>
+            <lower>-1.0</lower>
+            <upper>2.0</upper>
+          </limit>
+        </axis>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+  )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* joint = skel->getJoint("rev_joint");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_DOUBLE_EQ(joint->getDampingCoefficient(0), 1.1);
+  EXPECT_DOUBLE_EQ(joint->getCoulombFriction(0), 0.2);
+  EXPECT_DOUBLE_EQ(joint->getRestPosition(0), 0.3);
+  EXPECT_DOUBLE_EQ(joint->getSpringStiffness(0), 4.4);
+  EXPECT_DOUBLE_EQ(joint->getPositionLowerLimit(0), -1.0);
+  EXPECT_DOUBLE_EQ(joint->getPositionUpperLimit(0), 2.0);
+}
+
+//==============================================================================
+TEST(SkelParser, DofDynamicsFromXml)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      <joint type="revolute" name="rev_joint">
+        <parent>base</parent>
+        <child>link</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+        </axis>
+        <dof local_index="0">
+          <position lower="-0.2" upper="0.4" initial="0.1" />
+          <damping>2.0</damping>
+          <friction>0.6</friction>
+          <spring_rest_position>0.7</spring_rest_position>
+          <spring_stiffness>3.3</spring_stiffness>
+        </dof>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+  )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* joint = skel->getJoint("rev_joint");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_DOUBLE_EQ(joint->getPositionLowerLimit(0), -0.2);
+  EXPECT_DOUBLE_EQ(joint->getPositionUpperLimit(0), 0.4);
+  EXPECT_NEAR(joint->getPosition(0), 0.1, 1e-9);
+  EXPECT_DOUBLE_EQ(joint->getDampingCoefficient(0), 2.0);
+  EXPECT_DOUBLE_EQ(joint->getCoulombFriction(0), 0.6);
+  EXPECT_DOUBLE_EQ(joint->getRestPosition(0), 0.7);
+  EXPECT_DOUBLE_EQ(joint->getSpringStiffness(0), 3.3);
+}
+
+//==============================================================================
+TEST(SkelParser, FreeJointInitialValuesFromXml)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>base</child>
+        <init_pos>0.1 0.2 0.3 0.4 0.5 0.6</init_pos>
+        <init_vel>-0.1 -0.2 -0.3 -0.4 -0.5 -0.6</init_vel>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+  )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* joint
+      = dynamic_cast<dynamics::FreeJoint*>(skel->getJoint("root_joint"));
+  ASSERT_NE(joint, nullptr);
+  const Eigen::Vector6d expectedPos(0.1, 0.2, 0.3, 0.4, 0.5, 0.6);
+  const Eigen::Vector6d expectedVel(-0.1, -0.2, -0.3, -0.4, -0.5, -0.6);
+  EXPECT_TRUE(joint->getPositions().isApprox(expectedPos));
+  EXPECT_TRUE(joint->getVelocities().isApprox(expectedVel));
+}
+
+//==============================================================================
+TEST(SkelParser, JointTypesFromXml)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="universal_link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="ball_link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="planar_link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="euler_link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      <joint type="universal" name="universal_joint">
+        <parent>base</parent>
+        <child>universal_link</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+        </axis>
+        <axis2>
+          <xyz>0 1 0</xyz>
+        </axis2>
+      </joint>
+      <joint type="ball" name="ball_joint">
+        <parent>universal_link</parent>
+        <child>ball_link</child>
+      </joint>
+      <joint type="planar" name="planar_joint">
+        <parent>ball_link</parent>
+        <child>planar_link</child>
+        <plane type="arbitrary">
+          <translation_axis1>
+            <xyz>1 0 0</xyz>
+          </translation_axis1>
+          <translation_axis2>
+            <xyz>0 1 0</xyz>
+          </translation_axis2>
+        </plane>
+      </joint>
+      <joint type="euler" name="euler_joint">
+        <parent>planar_link</parent>
+        <child>euler_link</child>
+        <axis_order>xyz</axis_order>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+  )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+
+  EXPECT_NE(
+      dynamic_cast<dynamics::UniversalJoint*>(
+          skel->getJoint("universal_joint")),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::BallJoint*>(skel->getJoint("ball_joint")),
+      nullptr);
+  auto* planar
+      = dynamic_cast<dynamics::PlanarJoint*>(skel->getJoint("planar_joint"));
+  ASSERT_NE(planar, nullptr);
+  EXPECT_EQ(
+      planar->getPlaneType(), dynamics::PlanarJoint::PlaneType::ARBITRARY);
+  auto* euler
+      = dynamic_cast<dynamics::EulerJoint*>(skel->getJoint("euler_joint"));
+  ASSERT_NE(euler, nullptr);
+  EXPECT_EQ(euler->getAxisOrder(), dynamics::EulerJoint::AxisOrder::XYZ);
+}

@@ -103,3 +103,29 @@ TEST(IcosphereTests, EdgeCountMatchesTriangleCount)
     EXPECT_EQ(edges, triangles / 2 * 3);
   }
 }
+
+//==============================================================================
+TEST(IcosphereTests, FloatAndDoubleInstantiation)
+{
+  const float radiusF = 1.5f;
+  const std::size_t subdivF = 1;
+  const Icospheref sphereF(radiusF, subdivF);
+  EXPECT_FALSE(sphereF.isEmpty());
+  EXPECT_EQ(sphereF.getNumSubdivisions(), subdivF);
+  EXPECT_EQ(sphereF.getVertices().size(), Icospheref::getNumVertices(subdivF));
+  EXPECT_EQ(
+      sphereF.getTriangles().size(), Icospheref::getNumTriangles(subdivF));
+
+  const double radiusD = 2.25;
+  const std::size_t subdivD = 2;
+  const Icosphered sphereD(radiusD, subdivD);
+  EXPECT_FALSE(sphereD.isEmpty());
+  EXPECT_EQ(sphereD.getNumSubdivisions(), subdivD);
+  EXPECT_EQ(sphereD.getVertices().size(), Icosphered::getNumVertices(subdivD));
+  EXPECT_EQ(
+      sphereD.getTriangles().size(), Icosphered::getNumTriangles(subdivD));
+
+  const auto icosa = Icospheref::computeIcosahedron(radiusF);
+  EXPECT_EQ(icosa.first.size(), 12u);
+  EXPECT_EQ(icosa.second.size(), 20u);
+}

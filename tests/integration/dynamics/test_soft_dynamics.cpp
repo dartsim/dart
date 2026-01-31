@@ -646,6 +646,8 @@ TEST(SoftDynamics, SoftBodyContactAndInternalForces)
   auto* pm = softBody->getPointMass(0);
   ASSERT_NE(pm, nullptr);
   EXPECT_TRUE(pm->getForces().allFinite());
+  EXPECT_TRUE(pm->getConstraintImpulses().allFinite());
+  EXPECT_TRUE(pm->getBodyVelocityChange().allFinite());
 }
 
 TEST(SoftDynamics, MultipleSoftSkeletonsInteract)
@@ -661,4 +663,32 @@ TEST(SoftDynamics, MultipleSoftSkeletonsInteract)
     auto skel = world->getSkeleton(s);
     EXPECT_TRUE(skel->getPositions().array().isFinite().all());
   }
+}
+
+TEST(SoftDynamics, WorldConfigurationAndSkeletonManagement)
+{
+  auto world = simulation::World::create();
+  ASSERT_NE(world, nullptr);
+
+  world->setTimeStep(0.0025);
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), 0.0025);
+
+  const Eigen::Vector3d gravity(0.0, -1.0, -9.81);
+  world->setGravity(gravity);
+  EXPECT_TRUE(world->getGravity().isApprox(gravity));
+
+  auto skeleton = dynamics::Skeleton::create("world-skeleton");
+  skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  EXPECT_EQ(world->getNumSkeletons(), 0u);
+  world->addSkeleton(skeleton);
+  EXPECT_EQ(world->getNumSkeletons(), 1u);
+
+  world->step();
+  EXPECT_GT(world->getTime(), 0.0);
+
+  world->reset();
+  EXPECT_DOUBLE_EQ(world->getTime(), 0.0);
+
+  world->removeSkeleton(skeleton);
+  EXPECT_EQ(world->getNumSkeletons(), 0u);
 }

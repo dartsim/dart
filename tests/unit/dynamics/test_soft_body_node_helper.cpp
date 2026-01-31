@@ -1,4 +1,6 @@
-// Copyright (c) 2011-2025, The DART development contributors
+// Copyright (c) 2011, The DART development contributors
+
+#include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/point_mass.hpp>
@@ -265,4 +267,34 @@ TEST(SoftBodyNodeHelper, NotifierAndTransformUpdates)
   EXPECT_TRUE(world.allFinite());
 
   EXPECT_TRUE(std::isfinite(pm->getPsi()));
+}
+
+TEST(SoftBodyNodeHelper, WorldStepClearsPartialAccelerationNotice)
+{
+  auto world = simulation::World::create();
+  auto skeleton = Skeleton::create("soft-body-world-step");
+  auto* softBody = createSoftBody(skeleton);
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d(0.4, 0.3, 0.2),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      8.0,
+      4.0,
+      0.05);
+  world->addSkeleton(skeleton);
+
+  auto* notifier = softBody->getNotifier();
+  ASSERT_NE(notifier, nullptr);
+  notifier->clearPartialAccelerationNotice();
+  EXPECT_FALSE(notifier->needsPartialAccelerationUpdate());
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+  pm->setPositions(Eigen::Vector3d(0.05, -0.03, 0.02));
+  EXPECT_TRUE(notifier->needsPartialAccelerationUpdate());
+
+  world->step();
+  EXPECT_TRUE(pm->getPartialAccelerations().allFinite());
 }

@@ -235,6 +235,44 @@ TEST(Geometry, ComputeConvexHullUsesSortedAngles)
   EXPECT_EQ(indices.size(), 3u);
 }
 
+TEST(Geometry, ComputeConvexHullCollinearDuplicates)
+{
+  SupportPolygon points;
+  points.emplace_back(0.0, 0.0);
+  points.emplace_back(1.0, 1.0);
+  points.emplace_back(2.0, 2.0);
+  points.emplace_back(3.0, 3.0);
+
+  std::vector<std::size_t> indices;
+  const auto hull
+      = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
+
+  ASSERT_EQ(hull.size(), 2u);
+  ASSERT_EQ(indices.size(), 2u);
+  EXPECT_TRUE(hull[0].isApprox(Eigen::Vector2d(0.0, 0.0), 1e-12));
+  EXPECT_TRUE(hull[1].isApprox(Eigen::Vector2d(3.0, 3.0), 1e-12));
+}
+
+TEST(Geometry, ComputeConvexHullDropsInteriorPoint)
+{
+  SupportPolygon points;
+  points.emplace_back(0.0, 0.0);
+  points.emplace_back(2.0, 0.0);
+  points.emplace_back(2.0, 2.0);
+  points.emplace_back(0.0, 2.0);
+  points.emplace_back(1.0, 1.0); // interior point
+
+  std::vector<std::size_t> indices;
+  const auto hull
+      = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
+
+  EXPECT_EQ(hull.size(), 4u);
+  EXPECT_EQ(indices.size(), 4u);
+  for (const auto& point : hull) {
+    EXPECT_TRUE(point.allFinite());
+  }
+}
+
 TEST(Geometry, ComputeIntersectionBasic)
 {
   Eigen::Vector2d intersection;

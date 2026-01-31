@@ -386,3 +386,26 @@ TEST(SdfDetailHelpers, Vector3dParsesFromTextArray)
       = detail::getValueVector3d(linkElement, "custom_vector3");
   EXPECT_TRUE(vec.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
 }
+
+TEST(SdfDetailHelpers, PoseParamParsesToIsometry)
+{
+  const std::string xml = R"(
+    <sdf version='1.9'>
+      <model name='demo'>
+        <link name='demo_link'>
+          <pose>1 2 3 0 0 1.57079632679</pose>
+        </link>
+      </model>
+    </sdf>)";
+
+  const sdf::ElementPtr sdfElement = loadElement(xml);
+  ASSERT_TRUE(sdfElement);
+  const auto modelElement = detail::getElement(sdfElement, "model");
+  ASSERT_TRUE(modelElement);
+  const auto linkElement = detail::getElement(modelElement, "link");
+  ASSERT_TRUE(linkElement);
+
+  const Eigen::Isometry3d pose
+      = detail::getValueIsometry3dWithExtrinsicRotation(linkElement, "pose");
+  EXPECT_TRUE(pose.translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+}

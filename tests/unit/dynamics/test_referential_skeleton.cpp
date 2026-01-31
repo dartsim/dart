@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2025, The DART development contributors
+// Copyright (c) 2011, The DART development contributors
 
 #include <dart/dynamics/chain.hpp>
 #include <dart/dynamics/frame.hpp>
@@ -541,4 +541,51 @@ TEST(ReferentialSkeleton, ConstJointAndDofLookups)
 
   EXPECT_NE(constGroup->getIndexOf(joint, false), INVALID_INDEX);
   EXPECT_NE(constGroup->getIndexOf(dof, false), INVALID_INDEX);
+}
+
+TEST(ReferentialSkeletonGroup, ComponentBatchOperations)
+{
+  auto skeleton = Skeleton::create("group_components");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  std::array<BodyNode*, 2> bodyNodes = {rootPair.second, childPair.second};
+  auto group = Group::create("component_batch");
+
+  EXPECT_TRUE(group->addComponents(bodyNodes, false));
+  EXPECT_TRUE(group->removeComponents(bodyNodes, false));
+}
+
+TEST(ReferentialSkeleton, LinkageJacobianDerivatives)
+{
+  auto skeleton = Skeleton::create("linkage_derivs");
+  auto rootPair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  rootPair.first->setAxis(Eigen::Vector3d::UnitZ());
+  auto midPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  midPair.first->setAxis(Eigen::Vector3d::UnitY());
+  auto tipPair
+      = midPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  tipPair.first->setAxis(Eigen::Vector3d::UnitX());
+
+  skeleton->setVelocities(
+      Eigen::VectorXd::Constant(skeleton->getNumDofs(), 0.15));
+
+  Linkage::Criteria criteria;
+  criteria.mStart = Linkage::Criteria::Target(rootPair.second);
+  criteria.mTargets.emplace_back(tipPair.second);
+  auto linkage = Linkage::create(criteria, "linkage_jac");
+  ASSERT_NE(linkage, nullptr);
+
+  const Eigen::Vector3d offset(0.02, -0.01, 0.03);
+  const auto Jclassic = linkage->getJacobianClassicDeriv(
+      tipPair.second, offset, Frame::World());
+  EXPECT_EQ(Jclassic.cols(), static_cast<int>(linkage->getNumDofs()));
+  const auto Jlinear
+      = linkage->getLinearJacobianDeriv(tipPair.second, Frame::World());
+  EXPECT_EQ(Jlinear.cols(), static_cast<int>(linkage->getNumDofs()));
+  const auto Jangular
+      = linkage->getAngularJacobianDeriv(tipPair.second, Frame::World());
+  EXPECT_EQ(Jangular.cols(), static_cast<int>(linkage->getNumDofs()));
 }

@@ -1284,3 +1284,121 @@ TEST(MjcfParserTest, EqualitySensorContactActuatorTendonParsing)
   EXPECT_GT(world->getNumSkeletons(), 0u);
   EXPECT_GT(world->getConstraintSolver()->getNumConstraints(), 0u);
 }
+
+//==============================================================================
+TEST(MjcfParserTest, SiteBoxFromToSetsSize)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="site_box_fromto">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <site name="box_site" type="box" size="0.1 0.2 0.3"
+            fromto="0 0 0 0 0 2" />
+    </body>
+  </worldbody>
+</mujoco>
+  )";
+
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_site_box.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& body = mujoco.getWorldbody().getRootBody(0);
+  ASSERT_EQ(body.getNumSites(), 1u);
+  const auto& site = body.getSite(0);
+  EXPECT_EQ(site.getType(), GeomType::BOX);
+  EXPECT_NEAR(site.getBoxHalfSize().z(), 1.0, 1e-12);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, InertialDiagInertiaParsing)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="inertial_diag">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <inertial pos="1 2 3" mass="2.5" diaginertia="0.1 0.2 0.3"
+                quat="1 0 0 0" />
+    </body>
+  </worldbody>
+</mujoco>
+  )";
+
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_inertial_diag.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& body = mujoco.getWorldbody().getRootBody(0);
+  const auto& inertial = body.getInertial();
+  EXPECT_DOUBLE_EQ(inertial.getMass(), 2.5);
+  EXPECT_TRUE(
+      inertial.getDiagInertia().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+  EXPECT_TRUE(inertial.getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(1.0, 2.0, 3.0)));
+}
+
+//==============================================================================
+TEST(MjcfParserTest, InertialFullInertiaParsing)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="inertial_full">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <inertial pos="0 0 0" mass="1.0" fullinertia="1 2 3 0.1 0.2 0.3"
+                axisangle="1 0 0 1.57079632679" />
+    </body>
+  </worldbody>
+</mujoco>
+  )";
+
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_inertial_full.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& body = mujoco.getWorldbody().getRootBody(0);
+  const auto& inertial = body.getInertial();
+  EXPECT_DOUBLE_EQ(inertial.getMass(), 1.0);
+  EXPECT_TRUE(
+      inertial.getDiagInertia().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_TRUE(
+      inertial.getOffDiagInertia().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+}

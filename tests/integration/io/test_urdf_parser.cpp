@@ -1455,3 +1455,61 @@ TEST(UrdfParser, MeshScaleFromString)
 
   std::filesystem::remove_all(tempDir);
 }
+
+//==============================================================================
+TEST(UrdfParser, ParseSkeletonStringMissingRobotRootReturnsNull)
+{
+  UrdfParser parser;
+  const std::string urdfStr = R"(<not_robot />)";
+  EXPECT_EQ(parser.parseSkeletonString(urdfStr, ""), nullptr);
+}
+
+//==============================================================================
+TEST(UrdfParser, CollisionGeometryTypesParsing)
+{
+  const std::string urdfStr = R"(
+    <robot name="collision_geom">
+      <link name="base">
+        <collision>
+          <geometry>
+            <box size="0.1 0.2 0.3" />
+          </geometry>
+        </collision>
+        <collision>
+          <geometry>
+            <sphere radius="0.2" />
+          </geometry>
+        </collision>
+        <collision>
+          <geometry>
+            <cylinder radius="0.1" length="0.4" />
+          </geometry>
+        </collision>
+      </link>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  const auto robot = parser.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+  auto* body = robot->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+
+  std::size_t boxCount = 0u;
+  std::size_t sphereCount = 0u;
+  std::size_t cylinderCount = 0u;
+  body->eachShapeNodeWith<dynamics::CollisionAspect>(
+      [&](dynamics::ShapeNode* node) {
+        const auto type = node->getShape()->getType();
+        if (type == "BoxShape") {
+          ++boxCount;
+        } else if (type == "SphereShape") {
+          ++sphereCount;
+        } else if (type == "CylinderShape") {
+          ++cylinderCount;
+        }
+      });
+  EXPECT_EQ(boxCount, 1u);
+  EXPECT_EQ(sphereCount, 1u);
+  EXPECT_EQ(cylinderCount, 1u);
+}

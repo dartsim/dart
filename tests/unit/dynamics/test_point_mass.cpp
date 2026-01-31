@@ -1,4 +1,6 @@
-// Copyright (c) 2011-2025, The DART development contributors
+// Copyright (c) 2011, The DART development contributors
+
+#include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/point_mass.hpp>
@@ -488,4 +490,59 @@ TEST(PointMass, ConstrainedTermsAndPartialAcceleration)
   EXPECT_TRUE(pm->getConstraintImpulses().allFinite());
   ASSERT_NE(softBody->getNotifier(), nullptr);
   EXPECT_FALSE(softBody->getNotifier()->getName().empty());
+}
+
+TEST(PointMass, RestingPositionAndAccelerationSetters)
+{
+  auto skeleton = Skeleton::create("point-mass-rest-accel");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.4),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      4.0,
+      4.0,
+      0.2);
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  const Eigen::Vector3d restPos(0.03, -0.02, 0.01);
+  pm->setRestingPosition(restPos);
+  EXPECT_TRUE(pm->getRestingPosition().isApprox(restPos));
+
+  pm->setAcceleration(1, 0.75);
+  EXPECT_NEAR(pm->getAcceleration(1), 0.75, 1e-12);
+
+  const Eigen::Vector3d acc(0.2, -0.1, 0.05);
+  pm->setAccelerations(acc);
+  EXPECT_TRUE(pm->getAccelerations().isApprox(acc));
+}
+
+TEST(PointMass, PartialAccelerationAfterWorldStep)
+{
+  auto world = simulation::World::create();
+  auto skeleton = Skeleton::create("point-mass-step");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.5),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      5.0,
+      5.0,
+      0.1);
+
+  world->addSkeleton(skeleton);
+  world->step();
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+  EXPECT_TRUE(pm->getPartialAccelerations().allFinite());
+  EXPECT_TRUE(pm->getBodyVelocityChange().allFinite());
 }

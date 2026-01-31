@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2025, The DART development contributors
+// Copyright (c) 2011, The DART development contributors
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/end_effector.hpp>
@@ -806,6 +806,25 @@ TEST(InverseKinematics, AnalyticalConfigurationAndClone)
   EXPECT_EQ(
       clonedIk->getErrorMethod().getMethodName(),
       ik->getErrorMethod().getMethodName());
+}
+
+TEST(InverseKinematics, AnalyticalGetSolutionsSorting)
+{
+  auto chain = makeIkChain();
+  auto ik = InverseKinematics::create(chain.endEffector);
+  ASSERT_NE(ik, nullptr);
+
+  auto target
+      = std::make_shared<SimpleFrame>(Frame::World(), "ik_target_solutions");
+  target->setTransform(chain.endEffector->getWorldTransform());
+  ik->setTarget(target);
+
+  auto& analytical = ik->setGradientMethod<CoverageAnalytical>();
+  const auto solutions = analytical.getSolutions();
+  EXPECT_GE(solutions.size(), 1u);
+
+  const auto solutionsTf = analytical.getSolutions(target->getTransform());
+  EXPECT_EQ(solutionsTf.size(), solutions.size());
 }
 
 TEST(HierarchicalIK, ObjectiveConstraintAndClone)

@@ -841,6 +841,33 @@ TEST(MetaSkeletonTests, JacobianDerivatives)
 }
 
 //==============================================================================
+TEST(MetaSkeletonTests, FrameBasedComAndJacobianDerivs)
+{
+  auto skel = createMixedSkeleton("frame_derivs");
+  skel->setVelocities(Eigen::VectorXd::Constant(skel->getNumDofs(), 0.2));
+
+  auto* root = skel->getBodyNode(0);
+  auto* endBody = skel->getBodyNode(skel->getNumBodyNodes() - 1u);
+  ASSERT_NE(root, nullptr);
+  ASSERT_NE(endBody, nullptr);
+
+  const auto com = skel->getCOM(root);
+  const auto comVel = skel->getCOMLinearVelocity(root);
+  const auto comAcc = skel->getCOMLinearAcceleration(root);
+  EXPECT_TRUE(com.array().isFinite().all());
+  EXPECT_TRUE(comVel.array().isFinite().all());
+  EXPECT_TRUE(comAcc.array().isFinite().all());
+
+  const Eigen::Vector3d offset(0.01, -0.02, 0.03);
+  const auto Jclassic = skel->getJacobianClassicDeriv(endBody, offset, root);
+  EXPECT_EQ(Jclassic.cols(), static_cast<int>(skel->getNumDofs()));
+  const auto Jlinear = skel->getLinearJacobianDeriv(endBody, root);
+  EXPECT_EQ(Jlinear.cols(), static_cast<int>(skel->getNumDofs()));
+  const auto Jangular = skel->getAngularJacobianDeriv(endBody, root);
+  EXPECT_EQ(Jangular.cols(), static_cast<int>(skel->getNumDofs()));
+}
+
+//==============================================================================
 // Test COM Jacobians
 TEST(MetaSkeletonTests, COMJacobians)
 {

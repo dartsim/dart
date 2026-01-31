@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2025, The DART development contributors
+// Copyright (c) 2011, The DART development contributors
 
 #include <dart/collision/collision_object.hpp>
 #include <dart/collision/collision_result.hpp>
@@ -1253,6 +1253,35 @@ TEST(DARTCollide, CylinderPlaneDirectContact)
 
   EXPECT_EQ(contacts, 1);
   EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, CylinderPlaneParallelAxisFallback)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto cylinder = std::make_shared<CylinderShape>(0.4, 1.0);
+  auto plane = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+
+  Eigen::Isometry3d cylTf = Eigen::Isometry3d::Identity();
+  cylTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.4);
+
+  auto cylObj = makeObject(cylinder, detector.get(), cylTf);
+  auto planeObj
+      = makeObject(plane, detector.get(), Eigen::Isometry3d::Identity());
+
+  CollisionResult result;
+  int contacts = collideCylinderPlane(
+      cylObj.object.get(),
+      planeObj.object.get(),
+      cylinder->getRadius(),
+      0.5 * cylinder->getHeight(),
+      cylObj.frame->getWorldTransform(),
+      Eigen::Vector3d::UnitZ(),
+      planeObj.frame->getWorldTransform(),
+      result);
+
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(result.getNumContacts(), 1u);
+  EXPECT_GT(result.getContact(0).penetrationDepth, 0.0);
 }
 
 TEST(DARTCollide, CylinderSphereInteriorContact)

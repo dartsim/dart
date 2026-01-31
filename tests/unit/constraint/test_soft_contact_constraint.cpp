@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2025, The DART development contributors
+// Copyright (c) 2011, The DART development contributors
 
 #include "helpers/dynamics_helpers.hpp"
 
@@ -638,6 +638,61 @@ TEST(SoftContactConstraint, FrictionalBouncingAndTangentFallback)
   std::vector<double> lambda = {0.1, 0.05, -0.02};
   constraint.applyImpulse(lambda.data());
   EXPECT_TRUE(contact.force.allFinite());
+}
+
+TEST(SoftContactConstraint, PointMassImpulseBranches)
+{
+  constexpr double timeStep = 0.001;
+  auto fixture = makeFixture(0.6, 0.2);
+
+  TestCollisionObject softObj(fixture.detector.get(), fixture.softShapeNode);
+  TestCollisionObject rigidObj(fixture.detector.get(), fixture.rigidShapeNode);
+
+  collision::Contact contact;
+  contact.collisionObject1 = &softObj;
+  contact.collisionObject2 = &rigidObj;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.penetrationDepth = 0.02;
+  contact.triID1 = 0;
+  contact.triID2 = 0;
+  contact.userData = nullptr;
+
+  ExposedSoftContactConstraint constraint(contact, timeStep);
+  constraint.setFrictionDirection(Eigen::Vector3d::UnitX());
+  constraint.update();
+  ASSERT_GE(constraint.getDimension(), 1u);
+
+  constraint.applyUnitImpulse(0);
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), true);
+
+  std::vector<double> lambda(constraint.getDimension(), 0.05);
+  constraint.applyImpulse(lambda.data());
+  constraint.excite();
+  constraint.unexcite();
+  EXPECT_TRUE(contact.force.allFinite());
+
+  collision::Contact swapped = contact;
+  swapped.collisionObject1 = &rigidObj;
+  swapped.collisionObject2 = &softObj;
+  swapped.triID1 = 0;
+  swapped.triID2 = 0;
+
+  ExposedSoftContactConstraint constraint2(swapped, timeStep);
+  constraint2.setFrictionDirection(Eigen::Vector3d::UnitX());
+  constraint2.update();
+  ASSERT_GE(constraint2.getDimension(), 1u);
+
+  constraint2.applyUnitImpulse(0);
+  std::vector<double> vel2(constraint2.getDimension(), 0.0);
+  constraint2.getVelocityChange(vel2.data(), true);
+
+  std::vector<double> lambda2(constraint2.getDimension(), 0.02);
+  constraint2.applyImpulse(lambda2.data());
+  constraint2.excite();
+  constraint2.unexcite();
+  EXPECT_TRUE(swapped.force.allFinite());
 }
 
 TEST(SoftContactConstraint, SelfCollisionApplyUnitImpulsePath)

@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2025, The DART development contributors
+// Copyright (c) 2011, The DART development contributors
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/end_effector.hpp>

@@ -1005,6 +1005,53 @@ TEST(MeshShapeTest, ConvertToAssimpMeshPreservesNormals)
   EXPECT_TRUE(scene->mMeshes[0]->HasNormals());
 }
 
+TEST(MeshShapeTest, TriMeshPolygonMeshAndBoundingVolume)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(1.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 1.0, 0.0);
+  triMesh->addVertex(0.0, 0.0, 1.0);
+  triMesh->addTriangle(0, 1, 2);
+  triMesh->addTriangle(0, 1, 3);
+
+  const Eigen::Vector3d scale(2.0, 3.0, 4.0);
+  dynamics::MeshShape shape(scale, triMesh, common::Uri());
+
+  const auto polygonMesh = shape.getPolygonMesh();
+  ASSERT_NE(polygonMesh, nullptr);
+  EXPECT_TRUE(polygonMesh->hasFaces());
+  EXPECT_EQ(polygonMesh->getFaces().size(), triMesh->getTriangles().size());
+
+  const auto bbox = shape.getBoundingBox().computeFullExtents();
+  EXPECT_TRUE(bbox.isApprox(scale, 1e-12));
+  EXPECT_NEAR(shape.getVolume(), scale.x() * scale.y() * scale.z(), 1e-12);
+
+  EXPECT_EQ(shape.getNumMaterials(), 0u);
+  EXPECT_EQ(shape.getMaterial(0), nullptr);
+}
+
+TEST(MeshShapeTest, LoadMeshFromFilePathAndUriAccessors)
+{
+  const std::string filePath = dart::config::dataPath("obj/BoxSmall.obj");
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = dynamics::MeshShape::loadMesh(filePath);
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene, nullptr);
+
+  const common::Uri fileUri = common::Uri::createFromPath(filePath);
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  dynamics::MeshShape shape(Eigen::Vector3d::Ones(), scene, fileUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+
+  EXPECT_EQ(shape.getMeshUri(), fileUri.toString());
+  EXPECT_EQ(shape.getMeshUri2().toString(), fileUri.toString());
+  EXPECT_EQ(shape.getMeshPath(), filePath);
+  EXPECT_EQ(shape.getResourceRetriever(), retriever);
+}
+
 TEST(MeshShapeTest, UriConstructionSetMeshAndRenderSettings)
 {
   const std::string filePath = dart::config::dataPath("obj/BoxSmall.obj");

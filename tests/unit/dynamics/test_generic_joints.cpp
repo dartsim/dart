@@ -1372,6 +1372,76 @@ TEST(GenericJoint, BallJointSpatialStateUpdates)
   EXPECT_TRUE(wrench.isApprox(body->getBodyForce(), 1e-12));
 }
 
+//==============================================================================
+TEST(GenericJoint, WorldStepContactAndIntegration)
+{
+  auto world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  auto ground = Skeleton::create("generic_ground");
+  auto groundPair = ground->createJointAndBodyNodePair<WeldJoint>();
+  auto groundShape = std::make_shared<BoxShape>(Eigen::Vector3d(5.0, 5.0, 0.1));
+  groundPair.second->createShapeNodeWith<VisualAspect, CollisionAspect>(
+      groundShape);
+  Eigen::Isometry3d groundTf = Eigen::Isometry3d::Identity();
+  groundTf.translation() = Eigen::Vector3d(0.0, 0.0, -0.05);
+  groundPair.first->setTransformFromParentBodyNode(groundTf);
+
+  auto dynamic = Skeleton::create("generic_dynamic");
+  auto rootPair = dynamic->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.second->setMass(1.0);
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2));
+  rootPair.second->createShapeNodeWith<VisualAspect, CollisionAspect>(box);
+  Eigen::Isometry3d startTf = Eigen::Isometry3d::Identity();
+  startTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.0);
+  rootPair.first->setPositions(FreeJoint::convertToPositions(startTf));
+
+  auto ballPair = rootPair.second->createChildJointAndBodyNodePair<BallJoint>();
+  ballPair.second->setMass(0.2);
+  auto universalPair
+      = ballPair.second->createChildJointAndBodyNodePair<UniversalJoint>();
+  universalPair.first->setAxis1(Eigen::Vector3d::UnitX());
+  universalPair.first->setAxis2(Eigen::Vector3d::UnitY());
+  universalPair.second->setMass(0.2);
+  auto eulerPair
+      = universalPair.second->createChildJointAndBodyNodePair<EulerJoint>();
+  eulerPair.second->setMass(0.2);
+  auto planarPair
+      = eulerPair.second->createChildJointAndBodyNodePair<PlanarJoint>();
+  planarPair.second->setMass(0.2);
+  auto screwPair
+      = planarPair.second->createChildJointAndBodyNodePair<ScrewJoint>();
+  screwPair.first->setAxis(Eigen::Vector3d::UnitZ());
+  screwPair.first->setPitch(0.1);
+  screwPair.second->setMass(0.2);
+  auto transPair
+      = screwPair.second->createChildJointAndBodyNodePair<TranslationalJoint>();
+  transPair.second->setMass(0.2);
+
+  ballPair.first->setVelocities(Eigen::Vector3d(0.1, -0.2, 0.05));
+  ballPair.first->setAccelerations(Eigen::Vector3d(0.2, 0.1, -0.1));
+  ballPair.first->setVelocityChange(0, 0.1);
+  ballPair.first->setConstraintImpulse(0, 0.2);
+
+  dynamic->setVelocities(
+      Eigen::VectorXd::Constant(dynamic->getNumDofs(), 0.05));
+  dynamic->setAccelerations(
+      Eigen::VectorXd::Constant(dynamic->getNumDofs(), -0.02));
+  dynamic->integrateVelocities(0.01);
+  dynamic->integratePositions(0.01);
+
+  rootPair.first->getRelativeJacobianTimeDeriv();
+
+  world->addSkeleton(ground);
+  world->addSkeleton(dynamic);
+
+  for (int i = 0; i < 5; ++i) {
+    world->step();
+  }
+
+  EXPECT_TRUE(dynamic->getPositions().allFinite());
+}
+
 #if GTEST_HAS_DEATH_TEST
 //==============================================================================
 TEST(GenericJoint, OutOfRangeDofAccessorsDeath)

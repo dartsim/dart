@@ -36,6 +36,7 @@
 #include "dart/common/resource_retriever.hpp"
 #include "dart/common/uri.hpp"
 #include "dart/config.hpp"
+#include "dart/dynamics/ball_joint.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
@@ -46,6 +47,7 @@
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/dynamics/soft_body_node.hpp"
 #include "dart/dynamics/universal_joint.hpp"
+#include "dart/dynamics/weld_joint.hpp"
 #include "dart/simulation/world.hpp"
 #include "dart/utils/sdf/sdf_parser.hpp"
 
@@ -1558,4 +1560,192 @@ TEST(SdfParser, MaterialDiffuseFromString)
             Eigen::Vector4d(0.2, 0.4, 0.6, 0.8)));
       });
   EXPECT_TRUE(foundVisual);
+}
+
+//==============================================================================
+TEST(SdfParser, JointTypesParseFromSkeleton)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/joint_types/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="joint_types">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="link1">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="link2">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="link3">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="link4">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="link5">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="prismatic_joint" type="prismatic">
+      <parent>base</parent>
+      <child>link1</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit><lower>-0.5</lower><upper>0.5</upper></limit>
+      </axis>
+    </joint>
+    <joint name="screw_joint" type="screw">
+      <parent>link1</parent>
+      <child>link2</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+      </axis>
+      <thread_pitch>0.2</thread_pitch>
+    </joint>
+    <joint name="universal_joint" type="universal">
+      <parent>link2</parent>
+      <child>link3</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+      </axis>
+      <axis2>
+        <xyz>0 1 0</xyz>
+      </axis2>
+    </joint>
+    <joint name="ball_joint" type="ball">
+      <parent>link3</parent>
+      <child>link4</child>
+    </joint>
+    <joint name="fixed_joint" type="fixed">
+      <parent>link4</parent>
+      <child>link5</child>
+    </joint>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::PrismaticJoint*>(
+          skeleton->getJoint("prismatic_joint")),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::ScrewJoint*>(skeleton->getJoint("screw_joint")),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::UniversalJoint*>(
+          skeleton->getJoint("universal_joint")),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::BallJoint*>(skeleton->getJoint("ball_joint")),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::WeldJoint*>(skeleton->getJoint("fixed_joint")),
+      nullptr);
+}
+
+//==============================================================================
+TEST(SdfParser, AxisLimitSpringAndFriction)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/axis_spring/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="axis_spring">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="tip">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="rev_joint" type="revolute">
+      <parent>base</parent>
+      <child>tip</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1.0</lower>
+          <upper>1.5</upper>
+        </limit>
+        <dynamics>
+          <damping>0.8</damping>
+          <friction>0.4</friction>
+          <spring_reference>0.2</spring_reference>
+          <spring_stiffness>3.2</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint
+      = dynamic_cast<dynamics::RevoluteJoint*>(skeleton->getJoint("rev_joint"));
+  ASSERT_NE(joint, nullptr);
+  EXPECT_NEAR(joint->getPositionLowerLimit(0), -1.0, 1e-9);
+  EXPECT_NEAR(joint->getPositionUpperLimit(0), 1.5, 1e-9);
+  EXPECT_NEAR(joint->getDampingCoefficient(0), 0.8, 1e-9);
+  EXPECT_NEAR(joint->getCoulombFriction(0), 0.4, 1e-9);
+  EXPECT_NEAR(joint->getRestPosition(0), 0.2, 1e-9);
+  EXPECT_NEAR(joint->getSpringStiffness(0), 3.2, 1e-9);
+}
+
+//==============================================================================
+TEST(SdfParser, CollisionMeshUriAndScale)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string meshUri = "memory://pkg/meshes/collision_box.obj";
+  const std::string modelUri = "memory://pkg/models/collision_mesh/model.sdf";
+  const std::string meshData = R"(
+o Box
+v 0 0 0
+v 1 0 0
+v 0 1 0
+f 1 2 3
+  )";
+  const std::string modelSdf = std::string(R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="collision_mesh">
+    <link name="link">
+      <inertial><mass>1.0</mass></inertial>
+      <collision name="mesh_collision">
+        <geometry>
+          <mesh>
+            <uri>)") + meshUri + R"(</uri>
+            <scale>0.5 1.0 2.0</scale>
+          </mesh>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  retriever->add(meshUri, meshData);
+  const auto skeleton
+      = readSkeletonFromSdfString(modelUri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("link");
+  ASSERT_NE(body, nullptr);
+
+  bool foundMesh = false;
+  body->eachShapeNodeWith<dynamics::CollisionAspect>(
+      [&](dynamics::ShapeNode* node) {
+        auto mesh
+            = std::dynamic_pointer_cast<dynamics::MeshShape>(node->getShape());
+        if (!mesh) {
+          return;
+        }
+        foundMesh = true;
+        EXPECT_TRUE(mesh->getScale().isApprox(Eigen::Vector3d(0.5, 1.0, 2.0)));
+      });
+  EXPECT_TRUE(foundMesh);
 }

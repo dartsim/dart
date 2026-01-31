@@ -13,7 +13,11 @@
 #include "dart/constraint/constraint_solver.hpp"
 #include "dart/constraint/contact_constraint.hpp"
 #include "dart/constraint/contact_surface.hpp"
+#include "dart/constraint/coupler_constraint.hpp"
+#include "dart/constraint/revolute_joint_constraint.hpp"
 #include "dart/dynamics/free_joint.hpp"
+#include "dart/dynamics/mimic_dof_properties.hpp"
+#include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/math/lcp/lcp_solver.hpp"
 #include "dart/math/lcp/pivoting/dantzig_solver.hpp"
@@ -1164,6 +1168,99 @@ TEST(ConstraintSolver, WorldStepExpandedContactManifold)
   }
 
   EXPECT_GE(solver->getLastCollisionResult().getNumContacts(), 2u);
+}
+
+TEST(ConstraintSolver, WorldStepDynamicDynamicContact)
+{
+  auto world = simulation::World::create();
+  world->setTimeStep(0.001);
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  auto boxA
+      = createBox(Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d::Zero());
+  auto boxB = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.15, 0.0, 0.0));
+
+  setFrictionCoefficients(boxA, 0.7, 0.5);
+  setFrictionCoefficients(boxB, 0.6, 0.4);
+
+  world->addSkeleton(boxA);
+  world->addSkeleton(boxB);
+
+  world->step();
+
+  auto solver = world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+}
+
+TEST(ContactConstraint, FrictionImpulseVelocityChangeWithSlip)
+{
+  class VelocityContactConstraint final : public constraint::ContactConstraint
+  {
+  public:
+    VelocityContactConstraint(
+        collision::Contact& contact,
+        double timeStep,
+        const constraint::ContactSurfaceParams& params)
+      : constraint::ContactConstraint(contact, timeStep, params)
+    {
+    }
+
+    using constraint::ContactConstraint::applyImpulse;
+    using constraint::ContactConstraint::applyPositionImpulse;
+    using constraint::ContactConstraint::applyUnitImpulse;
+    using constraint::ContactConstraint::getVelocityChange;
+    using constraint::ContactConstraint::isActive;
+    using constraint::ContactConstraint::update;
+  };
+
+  auto detector = collision::DARTCollisionDetector::create();
+  ASSERT_NE(detector, nullptr);
+
+  auto boxA
+      = createBox(Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d::Zero());
+  auto boxB = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.0, 0.18));
+
+  auto* shapeNodeA = boxA->getBodyNode(0)->getShapeNode(0);
+  auto* shapeNodeB = boxB->getBodyNode(0)->getShapeNode(0);
+  ASSERT_NE(shapeNodeA, nullptr);
+  ASSERT_NE(shapeNodeB, nullptr);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(shapeNodeA);
+  group->addShapeFrame(shapeNodeB);
+
+  collision::CollisionOption option;
+  option.maxNumContacts = 1u;
+  collision::CollisionResult result;
+  const bool collided = group->collide(option, &result);
+  ASSERT_TRUE(collided);
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  collision::Contact contact = result.getContact(0);
+
+  constraint::ContactSurfaceParams params;
+  params.mPrimaryFrictionCoeff = 0.6;
+  params.mSecondaryFrictionCoeff = 0.4;
+  params.mFirstFrictionalDirection = Eigen::Vector3d::UnitX();
+  params.mContactSurfaceMotionVelocity = Eigen::Vector3d(0.1, -0.2, 0.0);
+
+  VelocityContactConstraint constraint(contact, 0.001, params);
+  constraint.update();
+  EXPECT_TRUE(constraint.isActive());
+
+  constraint.applyUnitImpulse(1);
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), true);
+  EXPECT_TRUE(std::isfinite(vel[1]));
+
+  double lambda[3] = {0.4, 0.1, -0.05};
+  constraint.applyImpulse(lambda);
+  constraint.applyPositionImpulse(lambda);
+  EXPECT_TRUE(boxA->isPositionImpulseApplied());
+  EXPECT_TRUE(boxB->isPositionImpulseApplied());
 }
 
 TEST(ContactConstraint, ApplyImpulseAndPositionImpulse)
