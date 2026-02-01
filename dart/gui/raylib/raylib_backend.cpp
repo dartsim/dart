@@ -529,6 +529,13 @@ void RaylibBackend::render(const Scene& scene)
         ORANGE);
   }
 
+  if (!pending_screenshot_.empty()) {
+    Image image = LoadImageFromScreen();
+    ExportImage(image, pending_screenshot_.c_str());
+    UnloadImage(image);
+    pending_screenshot_.clear();
+  }
+
   EndDrawing();
 }
 
@@ -718,6 +725,11 @@ std::optional<HitResult> RaylibBackend::pickNode(
   }
 
   return nearest;
+}
+
+void RaylibBackend::captureScreenshot(const std::string& filename)
+{
+  pending_screenshot_ = filename;
 }
 
 } // namespace gui

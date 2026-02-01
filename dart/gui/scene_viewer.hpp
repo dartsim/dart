@@ -78,6 +78,8 @@ public:
 
   std::optional<uint64_t> selectedNodeId() const;
 
+  void captureScreenshot(const std::string& filename);
+
 private:
   std::unique_ptr<ViewerBackend> backend_;
   SceneExtractor extractor_;

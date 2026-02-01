@@ -51,6 +51,7 @@ git status && git log -5 --oneline
 Then proceed to Phase 3 (manipulation tools) or Phase 4 (UI overlay).
 
 Key files:
+
 - `dart/gui/scene_viewer.hpp/.cpp` — main viewer with camera + selection
 - `dart/gui/orbit_camera_controller.hpp/.cpp` — orbit/pan/zoom
 - `dart/gui/viewer_backend.hpp` — abstract backend (has pickNode)

@@ -72,6 +72,9 @@ public:
   virtual std::optional<HitResult> pickNode(
       const Scene& scene, float screen_x, float screen_y)
       = 0;
+
+  /// Queue a screenshot to be captured during the next render() call.
+  virtual void captureScreenshot(const std::string& filename) = 0;
 };
 
 } // namespace gui

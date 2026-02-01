@@ -251,6 +251,11 @@ if(TARGET dart-gui)
   endif()
 endif()
 
+if(TARGET dart-gui-raylib)
+  dart_add_test("unit" UNIT_gui_RaylibSceneViewer gui/test_raylib_scene_viewer.cpp)
+  target_link_libraries(UNIT_gui_RaylibSceneViewer dart-gui-raylib)
+endif()
+
 # ==============================================================================
 # Utils Tests
 # ==============================================================================

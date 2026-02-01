@@ -53,10 +53,12 @@ public:
   std::vector<InputEvent> pollEvents() override;
   std::optional<HitResult> pickNode(
       const Scene& scene, float screen_x, float screen_y) override;
+  void captureScreenshot(const std::string& filename) override;
 
 private:
   ViewerConfig config_{};
   bool initialized_ = false;
+  std::string pending_screenshot_;
 };
 
 } // namespace gui

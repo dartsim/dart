@@ -226,5 +226,12 @@ std::optional<uint64_t> SceneViewer::selectedNodeId() const
   return scene_.selected_node_id;
 }
 
+void SceneViewer::captureScreenshot(const std::string& filename)
+{
+  if (backend_) {
+    backend_->captureScreenshot(filename);
+  }
+}
+
 } // namespace gui
 } // namespace dart
