@@ -36,6 +36,7 @@
 #include <Eigen/Geometry>
 
 #include <optional>
+#include <string>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -101,6 +102,8 @@ struct MeshData
   std::vector<Eigen::Vector3f> vertices;
   std::vector<Eigen::Vector3f> normals;
   std::vector<uint32_t> indices;
+  std::vector<Eigen::Vector2f> texcoords;
+  std::string texture_path;
 };
 
 struct LineData
@@ -115,6 +118,36 @@ struct PyramidData
   double height;
 };
 
+enum class PointShapeType
+{
+  Box,
+  BillboardSquare,
+  BillboardCircle,
+  Point
+};
+enum class PointCloudColorMode
+{
+  ShapeColor,
+  Overall,
+  PerPoint
+};
+
+struct PointCloudData
+{
+  std::vector<Eigen::Vector3d> points;
+  double visual_size = 0.01;
+  PointShapeType point_shape_type = PointShapeType::Box;
+  PointCloudColorMode color_mode = PointCloudColorMode::ShapeColor;
+  Eigen::Vector4d overall_color{0.5, 0.5, 0.5, 1.0};
+  std::vector<Eigen::Vector4d> colors;
+};
+
+struct MultiSphereData
+{
+  /// Each pair: (radius, center_position)
+  std::vector<std::pair<double, Eigen::Vector3d>> spheres;
+};
+
 using ShapeData = std::variant<
     BoxData,
     SphereData,
@@ -125,7 +158,9 @@ using ShapeData = std::variant<
     PlaneData,
     MeshData,
     LineData,
-    PyramidData>;
+    PyramidData,
+    PointCloudData,
+    MultiSphereData>;
 
 /// A single renderable node in the scene
 struct SceneNode

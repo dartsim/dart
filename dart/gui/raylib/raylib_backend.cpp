@@ -42,6 +42,7 @@
 #include <limits>
 #include <optional>
 #include <type_traits>
+#include <unordered_map>
 
 #include <cmath>
 #include <cstring>
@@ -137,6 +138,7 @@ struct MeshCache
 
 static LightingState g_lighting;
 static MeshCache g_meshes;
+static std::unordered_map<std::string, Texture2D> g_texture_cache;
 
 Vector3 toVector3(const Eigen::Vector3d& value)
 {
@@ -306,6 +308,16 @@ void shutdownMeshes()
   UnloadMesh(g_meshes.unit_plane);
   UnloadMesh(g_meshes.unit_pyramid);
   g_meshes = MeshCache{};
+}
+
+void shutdownTextures()
+{
+  for (auto& entry : g_texture_cache) {
+    if (entry.second.id > 0) {
+      UnloadTexture(entry.second);
+    }
+  }
+  g_texture_cache.clear();
 }
 
 void updateLightUniforms(const Scene& scene)
@@ -494,6 +506,17 @@ void drawMeshDataLit(
     }
   }
 
+  bool hasTexcoords = false;
+  if (!data.texture_path.empty() && data.texcoords.size() == vertexCount) {
+    mesh.texcoords = static_cast<float*>(
+        MemAlloc(static_cast<int>(vertexCount * 2 * sizeof(float))));
+    for (std::size_t i = 0; i < vertexCount; ++i) {
+      mesh.texcoords[i * 2 + 0] = data.texcoords[i].x();
+      mesh.texcoords[i * 2 + 1] = data.texcoords[i].y();
+    }
+    hasTexcoords = true;
+  }
+
   mesh.indices = static_cast<unsigned short*>(
       MemAlloc(static_cast<int>(indexCount * sizeof(unsigned short))));
   for (std::size_t i = 0; i < indexCount; ++i) {
@@ -503,6 +526,20 @@ void drawMeshDataLit(
   UploadMesh(&mesh, false);
 
   ::Material mat = makeLitMaterial(diffuse);
+  if (hasTexcoords) {
+    auto it = g_texture_cache.find(data.texture_path);
+    if (it != g_texture_cache.end()) {
+      if (it->second.id > 0) {
+        mat.maps[MATERIAL_MAP_DIFFUSE].texture = it->second;
+      }
+    } else {
+      Texture2D texture = LoadTexture(data.texture_path.c_str());
+      if (texture.id > 0) {
+        g_texture_cache.emplace(data.texture_path, texture);
+        mat.maps[MATERIAL_MAP_DIFFUSE].texture = texture;
+      }
+    }
+  }
   DrawMesh(mesh, mat, eigenToRaylib(nodeTransform));
   freeMaterial(mat);
   UnloadMesh(mesh);
@@ -680,12 +717,7 @@ void RaylibBackend::render(const Scene& scene)
   updateLightUniforms(scene);
 
   const Eigen::Matrix3d rMinusX90 = rotMinusX90();
-
-  for (const auto& node : scene.nodes) {
-    if (!node.visible) {
-      continue;
-    }
-
+  auto renderNode = [&](const SceneNode& node) {
     const Color color = toColor(node.material.color);
     setPerNodeUniforms(node.material);
 
@@ -776,9 +808,89 @@ void RaylibBackend::render(const Scene& scene)
             m.col(1) *= shape.base_depth;
             m.col(2) *= shape.height;
             drawCachedMesh(g_meshes.unit_pyramid, color, m);
+          } else if constexpr (std::is_same_v<ShapeT, PointCloudData>) {
+            if (shape.points.empty()) {
+              return;
+            }
+            rlPushMatrix();
+            const Matrix tf = eigenToRaylib(node.transform);
+            rlMultMatrixf(reinterpret_cast<const float*>(&tf));
+            for (std::size_t i = 0; i < shape.points.size(); ++i) {
+              Eigen::Vector4d pointColor = node.material.color;
+              if (shape.color_mode == PointCloudColorMode::Overall) {
+                pointColor = shape.overall_color;
+              } else if (shape.color_mode == PointCloudColorMode::PerPoint) {
+                if (i < shape.colors.size()) {
+                  pointColor = shape.colors[i];
+                } else {
+                  pointColor = shape.overall_color;
+                }
+              }
+              const Color pcColor = toColor(pointColor);
+              Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+              m.col(0).head<3>() *= shape.visual_size;
+              m.col(1).head<3>() *= shape.visual_size;
+              m.col(2).head<3>() *= shape.visual_size;
+              m.col(3).head<3>() = shape.points[i];
+              if (shape.point_shape_type == PointShapeType::Box) {
+                drawCachedMesh(g_meshes.unit_cube, pcColor, m);
+              } else {
+                drawCachedMesh(g_meshes.unit_sphere, pcColor, m);
+              }
+            }
+            rlPopMatrix();
+          } else if constexpr (std::is_same_v<ShapeT, MultiSphereData>) {
+            rlPushMatrix();
+            const Matrix tf = eigenToRaylib(node.transform);
+            rlMultMatrixf(reinterpret_cast<const float*>(&tf));
+            for (const auto& sphere : shape.spheres) {
+              const double radius = sphere.first;
+              const Eigen::Vector3d& center = sphere.second;
+              Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+              m.col(0).head<3>() *= radius;
+              m.col(1).head<3>() *= radius;
+              m.col(2).head<3>() *= radius;
+              m.col(3).head<3>() = center;
+              drawCachedMesh(g_meshes.unit_sphere, color, m);
+            }
+            rlPopMatrix();
           }
         },
         node.shape);
+  };
+
+  std::vector<const SceneNode*> transparentNodes;
+
+  for (const auto& node : scene.nodes) {
+    if (!node.visible) {
+      continue;
+    }
+    if (node.material.color[3] < 1.0) {
+      transparentNodes.push_back(&node);
+    } else {
+      renderNode(node);
+    }
+  }
+
+  if (!transparentNodes.empty()) {
+    std::sort(
+        transparentNodes.begin(),
+        transparentNodes.end(),
+        [&](const SceneNode* a, const SceneNode* b) {
+          const double distA
+              = (a->transform.translation() - scene.camera.position).norm();
+          const double distB
+              = (b->transform.translation() - scene.camera.position).norm();
+          return distA > distB;
+        });
+    rlEnableColorBlend();
+    rlSetBlendMode(RL_BLEND_ALPHA);
+    rlDisableDepthMask();
+    for (const SceneNode* node : transparentNodes) {
+      renderNode(*node);
+    }
+    rlEnableDepthMask();
+    rlDisableColorBlend();
   }
 
   for (const auto& line : scene.debug_lines) {
@@ -878,6 +990,28 @@ void RaylibBackend::render(const Scene& scene)
               DrawLine3D(b1, apex, YELLOW);
               DrawLine3D(b2, apex, YELLOW);
               DrawLine3D(b3, apex, YELLOW);
+            } else if constexpr (std::is_same_v<ShapeT, PointCloudData>) {
+              if (shape.points.empty()) {
+                return;
+              }
+              Eigen::Vector3d minV = shape.points.front();
+              Eigen::Vector3d maxV = shape.points.front();
+              for (const auto& point : shape.points) {
+                minV = minV.cwiseMin(point);
+                maxV = maxV.cwiseMax(point);
+              }
+              const Eigen::Vector3d center = (minV + maxV) * 0.5;
+              const Eigen::Vector3d size = maxV - minV;
+              DrawCubeWiresV(toVector3(center), toVector3(size), YELLOW);
+            } else if constexpr (std::is_same_v<ShapeT, MultiSphereData>) {
+              for (const auto& sphere : shape.spheres) {
+                DrawSphereWires(
+                    toVector3(sphere.second),
+                    static_cast<float>(sphere.first),
+                    12,
+                    12,
+                    YELLOW);
+              }
             }
           },
           node.shape);
@@ -920,6 +1054,7 @@ void RaylibBackend::shutdown()
     return;
   }
 
+  shutdownTextures();
   shutdownMeshes();
   shutdownLighting();
   CloseWindow();
@@ -932,6 +1067,12 @@ std::vector<InputEvent> RaylibBackend::pollEvents()
   if (!initialized_) {
     return events;
   }
+
+  ModifierKeys mods;
+  mods.ctrl = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
+  mods.shift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+  mods.alt = IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT);
+  mods.super = IsKeyDown(KEY_LEFT_SUPER) || IsKeyDown(KEY_RIGHT_SUPER);
 
   static const std::array<int, 44> kKeys
       = {KEY_SPACE, KEY_ESCAPE, KEY_ENTER, KEY_TAB,  KEY_LEFT, KEY_RIGHT,
@@ -950,19 +1091,19 @@ std::vector<InputEvent> RaylibBackend::pollEvents()
     }
 
     if (IsKeyPressed(key)) {
-      events.push_back(KeyEvent{*mapped, true});
+      events.push_back(KeyEvent{*mapped, true, mods});
     }
 
     if (IsKeyReleased(key)) {
-      events.push_back(KeyEvent{*mapped, false});
+      events.push_back(KeyEvent{*mapped, false, mods});
     }
   }
 
   const Vector2 mouseDelta = GetMouseDelta();
   if (mouseDelta.x != 0.0f || mouseDelta.y != 0.0f) {
     const Vector2 mousePos = GetMousePosition();
-    events.push_back(
-        MouseMoveEvent{mousePos.x, mousePos.y, mouseDelta.x, mouseDelta.y});
+    events.push_back(MouseMoveEvent{
+        mousePos.x, mousePos.y, mouseDelta.x, mouseDelta.y, mods});
   }
 
   static const std::array<int, 3> kButtons
@@ -975,13 +1116,14 @@ std::vector<InputEvent> RaylibBackend::pollEvents()
 
     if (IsMouseButtonPressed(button)) {
       const Vector2 mousePos = GetMousePosition();
-      events.push_back(MouseButtonEvent{*mapped, true, mousePos.x, mousePos.y});
+      events.push_back(
+          MouseButtonEvent{*mapped, true, mousePos.x, mousePos.y, mods});
     }
 
     if (IsMouseButtonReleased(button)) {
       const Vector2 mousePos = GetMousePosition();
       events.push_back(
-          MouseButtonEvent{*mapped, false, mousePos.x, mousePos.y});
+          MouseButtonEvent{*mapped, false, mousePos.x, mousePos.y, mods});
     }
   }
 
@@ -999,9 +1141,11 @@ BoundingBox computeAABB(
     const SceneNode& node, const Eigen::Isometry3d& transform)
 {
   Eigen::Vector3d halfExtent = Eigen::Vector3d::Zero();
+  Eigen::Vector3d localCenter = Eigen::Vector3d::Zero();
+  bool hasLocalCenter = false;
 
   std::visit(
-      [&halfExtent](const auto& shape) {
+      [&halfExtent, &localCenter, &hasLocalCenter](const auto& shape) {
         using ShapeT = std::decay_t<decltype(shape)>;
         if constexpr (std::is_same_v<ShapeT, BoxData>) {
           halfExtent = shape.size * 0.5;
@@ -1034,6 +1178,36 @@ BoundingBox computeAABB(
               shape.base_width * 0.5,
               shape.base_depth * 0.5,
               shape.height * 0.5);
+        } else if constexpr (std::is_same_v<ShapeT, PointCloudData>) {
+          if (shape.points.empty()) {
+            return;
+          }
+          Eigen::Vector3d minV = shape.points.front();
+          Eigen::Vector3d maxV = shape.points.front();
+          for (const auto& point : shape.points) {
+            minV = minV.cwiseMin(point);
+            maxV = maxV.cwiseMax(point);
+          }
+          localCenter = (minV + maxV) * 0.5;
+          halfExtent = (maxV - minV) * 0.5;
+          hasLocalCenter = true;
+        } else if constexpr (std::is_same_v<ShapeT, MultiSphereData>) {
+          if (shape.spheres.empty()) {
+            return;
+          }
+          Eigen::Vector3d minV
+              = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
+          Eigen::Vector3d maxV = Eigen::Vector3d::Constant(
+              std::numeric_limits<double>::lowest());
+          for (const auto& sphere : shape.spheres) {
+            const double r = sphere.first;
+            const Eigen::Vector3d& center = sphere.second;
+            minV = minV.cwiseMin(center - Eigen::Vector3d::Constant(r));
+            maxV = maxV.cwiseMax(center + Eigen::Vector3d::Constant(r));
+          }
+          localCenter = (minV + maxV) * 0.5;
+          halfExtent = (maxV - minV) * 0.5;
+          hasLocalCenter = true;
         }
       },
       node.shape);
@@ -1042,7 +1216,10 @@ BoundingBox computeAABB(
     return BoundingBox{Vector3{0.0f, 0.0f, 0.0f}, Vector3{0.0f, 0.0f, 0.0f}};
   }
 
-  const Eigen::Vector3d center = transform.translation();
+  Eigen::Vector3d center = transform.translation();
+  if (hasLocalCenter) {
+    center = transform * localCenter;
+  }
   const Eigen::Matrix3d rot = transform.rotation();
 
   Eigen::Vector3d aaExtent = Eigen::Vector3d::Zero();

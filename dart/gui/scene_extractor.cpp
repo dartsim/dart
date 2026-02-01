@@ -42,7 +42,9 @@
 #include "dart/dynamics/ellipsoid_shape.hpp"
 #include "dart/dynamics/line_segment_shape.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
+#include "dart/dynamics/multi_sphere_convex_hull_shape.hpp"
 #include "dart/dynamics/plane_shape.hpp"
+#include "dart/dynamics/point_cloud_shape.hpp"
 #include "dart/dynamics/pyramid_shape.hpp"
 #include "dart/dynamics/shape_frame.hpp"
 #include "dart/dynamics/shape_node.hpp"
@@ -182,6 +184,7 @@ std::optional<ShapeData> SceneExtractor::convertShape(
     }
 
     MeshData meshData;
+    meshData.texture_path = mesh->getMeshUri();
     const auto& vertices = triMesh->getVertices();
     meshData.vertices.reserve(vertices.size());
 
@@ -255,6 +258,52 @@ std::optional<ShapeData> SceneExtractor::convertShape(
         pyramid->getBaseWidth(),
         pyramid->getBaseDepth(),
         pyramid->getHeight()}};
+  }
+
+  if (auto pc = dynamic_cast<const dart::dynamics::PointCloudShape*>(&shape)) {
+    PointCloudData data;
+    auto points = pc->getPoints();
+    data.points.assign(points.begin(), points.end());
+    data.visual_size = pc->getVisualSize();
+    switch (pc->getPointShapeType()) {
+      case dart::dynamics::PointCloudShape::BOX:
+        data.point_shape_type = PointShapeType::Box;
+        break;
+      case dart::dynamics::PointCloudShape::BILLBOARD_SQUARE:
+        data.point_shape_type = PointShapeType::BillboardSquare;
+        break;
+      case dart::dynamics::PointCloudShape::BILLBOARD_CIRCLE:
+        data.point_shape_type = PointShapeType::BillboardCircle;
+        break;
+      case dart::dynamics::PointCloudShape::POINT:
+        data.point_shape_type = PointShapeType::Point;
+        break;
+    }
+    switch (pc->getColorMode()) {
+      case dart::dynamics::PointCloudShape::USE_SHAPE_COLOR:
+        data.color_mode = PointCloudColorMode::ShapeColor;
+        break;
+      case dart::dynamics::PointCloudShape::BIND_OVERALL:
+        data.color_mode = PointCloudColorMode::Overall;
+        break;
+      case dart::dynamics::PointCloudShape::BIND_PER_POINT:
+        data.color_mode = PointCloudColorMode::PerPoint;
+        break;
+    }
+    auto colors = pc->getColors();
+    data.colors.assign(colors.begin(), colors.end());
+    if (!data.colors.empty()) {
+      data.overall_color = data.colors.front();
+    }
+    return ShapeData{std::move(data)};
+  }
+
+  if (auto multiSphere
+      = dynamic_cast<const dart::dynamics::MultiSphereConvexHullShape*>(
+          &shape)) {
+    MultiSphereData data;
+    data.spheres = multiSphere->getSpheres();
+    return ShapeData{std::move(data)};
   }
 
   return std::nullopt;

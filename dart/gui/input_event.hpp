@@ -93,16 +93,26 @@ enum class MouseButton
   Middle
 };
 
+struct ModifierKeys
+{
+  bool ctrl = false;
+  bool shift = false;
+  bool alt = false;
+  bool super = false;
+};
+
 struct KeyEvent
 {
   Key key;
   bool pressed;
+  ModifierKeys modifiers;
 };
 
 struct MouseMoveEvent
 {
   double x, y;
   double dx, dy;
+  ModifierKeys modifiers;
 };
 
 struct MouseButtonEvent
@@ -110,6 +120,7 @@ struct MouseButtonEvent
   MouseButton button;
   bool pressed;
   double x, y;
+  ModifierKeys modifiers;
 };
 
 struct ScrollEvent

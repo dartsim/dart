@@ -24,19 +24,24 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/gui/input_event.hpp>
 #include <dart/gui/orbit_camera_controller.hpp>
 #include <dart/gui/raylib/raylib_backend.hpp>
+#include <dart/gui/scene.hpp>
 #include <dart/gui/scene_viewer.hpp>
 
 #include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/All.hpp>
+#include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
+#include <dart/dynamics/point_cloud_shape.hpp>
 
 #include <gtest/gtest.h>
 #include <raylib.h>
 
 #include <filesystem>
 #include <fstream>
+#include <random>
 
 #include <cstdio>
 
@@ -321,10 +326,19 @@ TEST_F(RaylibSceneViewerTest, OrbitCameraControllerHandlesEvents)
 
   std::vector<dart::gui::InputEvent> events;
   events.push_back(dart::gui::MouseButtonEvent{
-      dart::gui::MouseButton::Right, true, 320, 240});
-  events.push_back(dart::gui::MouseMoveEvent{330, 240, 10, 0});
+      dart::gui::MouseButton::Right,
+      true,
+      320,
+      240,
+      dart::gui::ModifierKeys{}});
+  events.push_back(
+      dart::gui::MouseMoveEvent{330, 240, 10, 0, dart::gui::ModifierKeys{}});
   events.push_back(dart::gui::MouseButtonEvent{
-      dart::gui::MouseButton::Right, false, 330, 240});
+      dart::gui::MouseButton::Right,
+      false,
+      330,
+      240,
+      dart::gui::ModifierKeys{}});
 
   controller.handleEvents(events, cam);
 
@@ -365,10 +379,19 @@ TEST_F(RaylibSceneViewerTest, OrbitCameraControllerPan)
 
   std::vector<dart::gui::InputEvent> events;
   events.push_back(dart::gui::MouseButtonEvent{
-      dart::gui::MouseButton::Middle, true, 320, 240});
-  events.push_back(dart::gui::MouseMoveEvent{340, 240, 20, 0});
+      dart::gui::MouseButton::Middle,
+      true,
+      320,
+      240,
+      dart::gui::ModifierKeys{}});
+  events.push_back(
+      dart::gui::MouseMoveEvent{340, 240, 20, 0, dart::gui::ModifierKeys{}});
   events.push_back(dart::gui::MouseButtonEvent{
-      dart::gui::MouseButton::Middle, false, 340, 240});
+      dart::gui::MouseButton::Middle,
+      false,
+      340,
+      240,
+      dart::gui::ModifierKeys{}});
 
   controller.handleEvents(events, cam);
 
@@ -737,4 +760,162 @@ TEST_F(RaylibSceneViewerTest, MaterialHasExpectedDefaults)
 
   // Verify shininess default
   EXPECT_NEAR(material.shininess, 32.0, 1e-6);
+}
+
+TEST_F(RaylibSceneViewerTest, PointCloudRendering)
+{
+  auto world = dart::simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0, 0, -9.81));
+
+  auto skeleton = dart::dynamics::Skeleton::create("point_cloud_skel");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+
+  auto pointCloud = std::make_shared<dart::dynamics::PointCloudShape>(0.02);
+  pointCloud->reserve(50);
+  std::mt19937 rng(42);
+  std::uniform_real_distribution<double> dist(-0.5, 0.5);
+  for (int i = 0; i < 50; ++i) {
+    pointCloud->addPoint(
+        Eigen::Vector3d(dist(rng), dist(rng), dist(rng) + 1.0));
+  }
+
+  auto shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect>(pointCloud);
+  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.2, 0.7, 0.4, 1.0));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0, 0, 0.5);
+  joint->setTransformFromParentBodyNode(tf);
+
+  world->addSkeleton(skeleton);
+
+  dart::gui::ViewerConfig config;
+  config.width = 640;
+  config.height = 480;
+  config.headless = true;
+  config.target_fps = 0;
+
+  auto viewer = dart::gui::SceneViewer(
+      std::make_unique<dart::gui::RaylibBackend>(), config);
+  viewer.setWorld(world);
+
+  for (int i = 0; i < 3; ++i) {
+    viewer.frame();
+  }
+
+  const std::string path = kTestOutputDir + "/point_cloud_test.png";
+  removeFile(path);
+  viewer.captureScreenshot(path);
+  viewer.frame();
+
+  ASSERT_TRUE(fileExists(path));
+  EXPECT_TRUE(hasNonBackgroundPixels(path))
+      << "PointCloud should render with visible pixels";
+}
+
+TEST_F(RaylibSceneViewerTest, MultiSphereRendering)
+{
+  auto world = dart::simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0, 0, -9.81));
+
+  auto skeleton = dart::dynamics::Skeleton::create("multi_sphere_skel");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+
+  dart::dynamics::MultiSphereConvexHullShape::Spheres spheres{
+      {0.2, Eigen::Vector3d(0.0, 0.0, 0.0)},
+      {0.15, Eigen::Vector3d(0.4, 0.0, 0.2)},
+      {0.1, Eigen::Vector3d(-0.3, 0.2, 0.1)}};
+  auto multiSphere
+      = std::make_shared<dart::dynamics::MultiSphereConvexHullShape>(spheres);
+
+  auto shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect>(multiSphere);
+  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.6, 0.4, 0.8, 1.0));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0, 0, 1.0);
+  joint->setTransformFromParentBodyNode(tf);
+
+  world->addSkeleton(skeleton);
+
+  dart::gui::ViewerConfig config;
+  config.width = 640;
+  config.height = 480;
+  config.headless = true;
+  config.target_fps = 0;
+
+  auto viewer = dart::gui::SceneViewer(
+      std::make_unique<dart::gui::RaylibBackend>(), config);
+  viewer.setWorld(world);
+
+  for (int i = 0; i < 3; ++i) {
+    viewer.frame();
+  }
+
+  const std::string path = kTestOutputDir + "/multi_sphere_test.png";
+  removeFile(path);
+  viewer.captureScreenshot(path);
+  viewer.frame();
+
+  ASSERT_TRUE(fileExists(path));
+  EXPECT_TRUE(hasNonBackgroundPixels(path))
+      << "MultiSphere should render with visible pixels";
+}
+
+TEST_F(RaylibSceneViewerTest, TransparencyDoesNotCrash)
+{
+  auto world = dart::simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0, 0, -9.81));
+
+  auto skeleton = dart::dynamics::Skeleton::create("transparent_box");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto boxShape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d(0.4, 0.4, 0.4));
+  auto shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect>(boxShape);
+  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.2, 0.6, 0.9, 0.5));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0, 0, 1.0);
+  joint->setTransformFromParentBodyNode(tf);
+
+  world->addSkeleton(skeleton);
+
+  dart::gui::ViewerConfig config;
+  config.width = 640;
+  config.height = 480;
+  config.headless = true;
+  config.target_fps = 0;
+
+  auto viewer = dart::gui::SceneViewer(
+      std::make_unique<dart::gui::RaylibBackend>(), config);
+  viewer.setWorld(world);
+
+  EXPECT_NO_THROW({
+    for (int i = 0; i < 5; ++i) {
+      viewer.frame();
+    }
+  });
+}
+
+TEST_F(RaylibSceneViewerTest, MeshDataTexcoordsExist)
+{
+  dart::gui::MeshData meshData;
+  EXPECT_TRUE(meshData.texcoords.empty());
+  EXPECT_TRUE(meshData.texture_path.empty());
+}
+
+TEST_F(RaylibSceneViewerTest, ModifierKeysDefaults)
+{
+  dart::gui::ModifierKeys mods;
+  EXPECT_FALSE(mods.ctrl);
+  EXPECT_FALSE(mods.shift);
+  EXPECT_FALSE(mods.alt);
+  EXPECT_FALSE(mods.super);
 }
