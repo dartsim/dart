@@ -153,3 +153,12 @@ TEST(EntityTest, ChangeParentFrameViaSetParentFrame)
   child->setParentFrame(Frame::World());
   EXPECT_EQ(child->getParentFrame(), Frame::World());
 }
+
+TEST(EntityTest, ChangeParentFrameNoOp)
+{
+  auto parent = SimpleFrame::createShared(Frame::World(), "noop_parent");
+  auto child = SimpleFrame::createShared(parent.get(), "noop_child");
+
+  child->setParentFrame(parent.get());
+  EXPECT_EQ(child->getParentFrame(), parent.get());
+}

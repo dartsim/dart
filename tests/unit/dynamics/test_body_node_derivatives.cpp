@@ -264,6 +264,33 @@ TEST(BodyNodeDerivatives, SecondOrderMatchesFiniteDifference)
   }
 }
 
+TEST(BodyNodeDerivatives, JacobianUpdates)
+{
+  const SkeletonPtr skeleton = createChainSkeleton("jac_chain", 3);
+  ASSERT_EQ(skeleton->getNumDofs(), 8u);
+
+  Eigen::VectorXd positions = Eigen::VectorXd::Random(skeleton->getNumDofs());
+  Eigen::VectorXd velocities = Eigen::VectorXd::Random(skeleton->getNumDofs());
+  skeleton->setPositions(positions * 0.1);
+  skeleton->setVelocities(velocities * 0.1);
+
+  BodyNode* body = skeleton->getBodyNode(2);
+  ASSERT_NE(body, nullptr);
+
+  const auto jacobian = body->getJacobian();
+  EXPECT_EQ(
+      jacobian.cols(), static_cast<int>(body->getNumDependentGenCoords()));
+
+  const auto worldJacobian = body->getWorldJacobian();
+  EXPECT_EQ(worldJacobian.cols(), jacobian.cols());
+
+  const auto spatialDeriv = body->getJacobianSpatialDeriv();
+  EXPECT_EQ(spatialDeriv.cols(), jacobian.cols());
+
+  const auto classicDeriv = body->getJacobianClassicDeriv();
+  EXPECT_EQ(classicDeriv.cols(), jacobian.cols());
+}
+
 TEST(BodyNodeDerivatives, ForcesAndImpulses)
 {
   auto skeleton = Skeleton::create("forces");

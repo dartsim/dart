@@ -254,6 +254,37 @@ TEST(PointMass, KinematicsAndForces)
       pm->getWorldAcceleration().isApprox(Eigen::Vector3d(0.0, -0.2, 0.0)));
 }
 
+TEST(PointMass, WorldStepUpdates)
+{
+  auto skeleton = Skeleton::create("point-mass-step");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.5),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      8.0,
+      8.0,
+      0.2);
+
+  auto world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->addSkeleton(skeleton);
+
+  for (int i = 0; i < 4; ++i) {
+    world->step();
+  }
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+  EXPECT_TRUE(pm->getBodyVelocityChange().array().isFinite().all());
+  EXPECT_TRUE(pm->getConstraintImpulses().array().isFinite().all());
+  EXPECT_TRUE(pm->getWorldVelocity().array().isFinite().all());
+  EXPECT_TRUE(pm->getWorldPosition().array().isFinite().all());
+}
+
 TEST(PointMass, ConnectedPointMassesAndMass)
 {
   auto skeleton = Skeleton::create("point-mass-connect");

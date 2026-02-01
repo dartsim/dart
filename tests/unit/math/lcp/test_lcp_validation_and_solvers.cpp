@@ -667,6 +667,50 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsSelfReference)
   EXPECT_NE(message.find("self reference"), std::string::npos);
 }
 
+TEST(LcpValidationCoverage, ValidateProblemRejectsNanLowerBound)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+  lo[0] = std::numeric_limits<double>::quiet_NaN();
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateProblem(problem, &message));
+  EXPECT_NE(message.find("NaN"), std::string::npos);
+}
+
+TEST(LcpValidationCoverage, ValidateSolutionFixedAndComplementarityCases)
+{
+  Eigen::VectorXd x(1);
+  Eigen::VectorXd w(1);
+  Eigen::VectorXd lo(1);
+  Eigen::VectorXd hi(1);
+  std::string message;
+
+  lo << 0.2;
+  hi << 0.2;
+  x << 0.2;
+  w << 0.1;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+
+  lo << 0.0;
+  hi << 1.0;
+  x << 0.0;
+  w << -0.2;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+
+  x << 1.0;
+  w << 0.2;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+
+  x << 0.5;
+  w << 0.2;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+}
+
 TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsNonFiniteMu)
 {
   Eigen::VectorXd lo(2);

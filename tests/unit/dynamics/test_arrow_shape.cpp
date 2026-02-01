@@ -204,3 +204,21 @@ TEST(ArrowShapeTest, AntiparallelDirection)
 
   EXPECT_NE(arrow.getTriMesh(), nullptr);
 }
+
+//==============================================================================
+TEST(ArrowShapeTest, DoubleArrowAntiparallelMesh)
+{
+  const Eigen::Vector3d tail(0.0, 0.0, 2.0);
+  const Eigen::Vector3d head(0.0, 0.0, 0.0);
+  const std::size_t resolution = 5;
+
+  ArrowShape::Properties props;
+  props.mDoubleArrow = true;
+
+  ArrowShape arrow(tail, head, props, Eigen::Vector4d::Ones(), resolution);
+
+  const auto mesh = arrow.getTriMesh();
+  ASSERT_NE(mesh, nullptr);
+  EXPECT_EQ(mesh->getVertices().size(), 6 * resolution + 2);
+  EXPECT_EQ(mesh->getTriangles().size(), 8 * resolution);
+}

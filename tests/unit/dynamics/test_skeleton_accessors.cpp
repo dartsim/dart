@@ -332,6 +332,17 @@ TEST(SkeletonAccessors, IntegratePositionsWithVelocityChanges)
 }
 
 //==============================================================================
+TEST(SkeletonAccessors, IntegratePositionsWithZeroDofs)
+{
+  auto skeleton = Skeleton::create("integrate_zero_dof");
+  skeleton->createJointAndBodyNodePair<WeldJoint>();
+
+  Eigen::VectorXd velocityChanges;
+  skeleton->integratePositions(0.01, velocityChanges);
+  EXPECT_EQ(skeleton->getNumDofs(), 0u);
+}
+
+//==============================================================================
 TEST(SkeletonAccessors, MassMatrixVariants)
 {
   auto skel = Skeleton::create("mass_variants");
@@ -845,6 +856,13 @@ TEST(SkeletonAccessors, JointAndDofVectorLookups)
   DART_SUPPRESS_DEPRECATED_END
   EXPECT_EQ(constJoints.size(), skeleton->getNumJoints());
   EXPECT_EQ(constJoints[1], skeleton->getJoint(1));
+
+  const Skeleton* constSkeletonPtr = skeleton.get();
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const auto constJointsPtr = constSkeletonPtr->getJoints();
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_EQ(constJointsPtr.size(), skeleton->getNumJoints());
+  EXPECT_EQ(constSkeletonPtr->getJoint(0), skeleton->getJoint(0));
 
   const Skeleton& constRef = *skeleton;
   DART_SUPPRESS_DEPRECATED_BEGIN
@@ -3190,6 +3208,10 @@ TEST(SkeletonAccessors, SoftBodyConstOverloads)
   EXPECT_EQ(constSkel.getNumSoftBodyNodes(), 1u);
   EXPECT_EQ(constSkel.getSoftBodyNode(0), softBody);
   EXPECT_EQ(constSkel.getSoftBodyNode("soft_body"), softBody);
+
+  const Skeleton* constSkelPtr = skeleton.get();
+  EXPECT_EQ(constSkelPtr->getSoftBodyNode(0), softBody);
+  EXPECT_EQ(constSkelPtr->getSoftBodyNode("soft_body"), softBody);
 
   skeleton->integratePositions(0.01);
   skeleton->integrateVelocities(0.01);

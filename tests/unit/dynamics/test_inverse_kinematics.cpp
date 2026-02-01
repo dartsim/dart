@@ -823,6 +823,88 @@ TEST(InverseKinematics, AccessorsAndConfiguration)
   EXPECT_EQ(solution.size(), static_cast<int>(ik->getDofs().size()));
 }
 
+TEST(InverseKinematics, ConstAccessorsAndProblemSetup)
+{
+  auto chain = makeIkChain();
+  auto ik = InverseKinematics::create(chain.endEffector);
+  ASSERT_NE(ik, nullptr);
+
+  auto target
+      = std::make_shared<SimpleFrame>(Frame::World(), "ik_target_const");
+  Eigen::Isometry3d targetTf = Eigen::Isometry3d::Identity();
+  targetTf.translation() = Eigen::Vector3d(0.1, -0.2, 0.3);
+  target->setTransform(targetTf);
+  ik->setTarget(target);
+
+  auto& tsr = ik->setErrorMethod<InverseKinematics::TaskSpaceRegion>();
+  tsr.setComputeFromCenter(true);
+  tsr.setBounds(
+      Eigen::Vector6d::Constant(-0.1), Eigen::Vector6d::Constant(0.1));
+  tsr.setErrorLengthClamp(0.25);
+  tsr.setAngularErrorWeights(Eigen::Vector3d::Constant(0.5));
+  tsr.setLinearErrorWeights(Eigen::Vector3d::Constant(1.0));
+
+  auto reference
+      = std::make_shared<SimpleFrame>(Frame::World(), "ik_ref_const");
+  Eigen::Isometry3d refTf = Eigen::Isometry3d::Identity();
+  refTf.translation() = Eigen::Vector3d(0.2, 0.0, 0.0);
+  reference->setTransform(refTf);
+  tsr.setReferenceFrame(reference);
+
+  auto solver = std::make_shared<math::GradientDescentSolver>();
+  solver->setNumMaxIterations(1);
+  ik->setSolver(solver);
+
+  ik->setObjective(std::make_shared<SimpleIkObjective>(ik.get()));
+  ik->setNullSpaceObjective(std::make_shared<SimpleIkObjective>(ik.get()));
+  ik->setOffset(Eigen::Vector3d(0.03, -0.01, 0.02));
+
+  auto& analytical = ik->setGradientMethod<PartialAnalytical>();
+  analytical.setComponentWiseClamp(0.15);
+
+  const InverseKinematics& constIk = *ik;
+  const auto& constError = constIk.getErrorMethod();
+  const auto bounds = constError.getBounds();
+  EXPECT_TRUE(bounds.first.array().isFinite().all());
+  EXPECT_TRUE(bounds.second.array().isFinite().all());
+  const auto angularBounds = constError.getAngularBounds();
+  const auto linearBounds = constError.getLinearBounds();
+  EXPECT_TRUE(angularBounds.first.array().isFinite().all());
+  EXPECT_TRUE(linearBounds.second.array().isFinite().all());
+  EXPECT_GT(constError.getErrorLengthClamp(), 0.0);
+  const auto& constTsr
+      = static_cast<const InverseKinematics::TaskSpaceRegion&>(constError);
+  EXPECT_EQ(constTsr.getReferenceFrame(), reference);
+
+  const auto& constGradient = constIk.getGradientMethod();
+  EXPECT_FALSE(constGradient.getMethodName().empty());
+  EXPECT_NEAR(constGradient.getComponentWiseClamp(), 0.15, 1e-12);
+
+  const auto constObjective = constIk.getObjective();
+  EXPECT_NE(constObjective, nullptr);
+  const auto constNullObjective = constIk.getNullSpaceObjective();
+  EXPECT_NE(constNullObjective, nullptr);
+  EXPECT_TRUE(constIk.hasNullSpaceObjective());
+
+  EXPECT_EQ(constIk.getSolver(), solver);
+  EXPECT_NE(constIk.getProblem(), nullptr);
+
+  EXPECT_EQ(constIk.getTarget(), target);
+  EXPECT_TRUE(constIk.hasOffset());
+  EXPECT_TRUE(constIk.getOffset().isApprox(ik->getOffset()));
+  EXPECT_EQ(constIk.getNode(), chain.endEffector);
+  EXPECT_EQ(constIk.getAffiliation(), chain.endEffector);
+  EXPECT_EQ(constIk.getDofMap().size(), ik->getDofMap().size());
+
+  const auto* constAnalytical = constIk.getAnalytical();
+  ASSERT_NE(constAnalytical, nullptr);
+  EXPECT_EQ(constAnalytical->getDofs().size(), analytical.getDofs().size());
+
+  Eigen::VectorXd solution;
+  ik->solveAndApply(solution, true);
+  EXPECT_EQ(solution.size(), static_cast<int>(ik->getDofs().size()));
+}
+
 TEST(InverseKinematics, AnalyticalConfigurationAndClone)
 {
   auto chain = makeIkChain();
@@ -1005,6 +1087,32 @@ TEST(HierarchicalIK, ObjectiveConstraintAndClone)
   ASSERT_NE(wholeBody, nullptr);
   wholeBody->refreshIKHierarchy();
   EXPECT_FALSE(wholeBody->getIKHierarchy().empty());
+}
+
+TEST(HierarchicalIK, ConstGetterCoverage)
+{
+  auto fixture = makeIkSkeleton();
+  auto wholeBody = WholeBodyIK::create(fixture.skeleton);
+  ASSERT_NE(wholeBody, nullptr);
+
+  auto objective = std::make_shared<SimpleHierarchicalObjective>(wholeBody);
+  wholeBody->setObjective(objective);
+  wholeBody->setNullSpaceObjective(objective);
+
+  auto solver = std::make_shared<math::GradientDescentSolver>();
+  solver->setNumMaxIterations(1);
+  wholeBody->setSolver(solver);
+
+  const HierarchicalIK& constIk = *wholeBody;
+  EXPECT_NE(constIk.getObjective(), nullptr);
+  EXPECT_NE(constIk.getNullSpaceObjective(), nullptr);
+  EXPECT_TRUE(constIk.hasNullSpaceObjective());
+  EXPECT_EQ(constIk.getSolver(), solver);
+  EXPECT_NE(constIk.getProblem(), nullptr);
+  EXPECT_EQ(constIk.getSkeleton(), fixture.skeleton);
+  EXPECT_EQ(constIk.getAffiliation(), fixture.skeleton);
+  EXPECT_EQ(
+      constIk.getIKHierarchy().size(), wholeBody->getIKHierarchy().size());
 }
 
 TEST(InverseKinematics, FindSolutionWithNullProblem)

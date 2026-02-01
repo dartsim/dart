@@ -31,7 +31,6 @@
  */
 
 #include <dart/all.hpp>
-#include <dart/dart.hpp>
 
 #include <gtest/gtest.h>
 
@@ -512,6 +511,204 @@ template <typename JointType>
 JointType* getJoint(const SkeletonPtr& skel)
 {
   return static_cast<JointType*>(skel->getJoint(0));
+}
+
+struct JointStateData
+{
+  Eigen::VectorXd positions;
+  Eigen::VectorXd velocities;
+  Eigen::VectorXd accelerations;
+  Eigen::VectorXd forces;
+  Eigen::VectorXd commands;
+  Eigen::VectorXd positionLower;
+  Eigen::VectorXd positionUpper;
+  Eigen::VectorXd velocityLower;
+  Eigen::VectorXd velocityUpper;
+  Eigen::VectorXd accelerationLower;
+  Eigen::VectorXd accelerationUpper;
+  Eigen::VectorXd forceLower;
+  Eigen::VectorXd forceUpper;
+  Eigen::VectorXd initialPositions;
+  Eigen::VectorXd initialVelocities;
+  Eigen::VectorXd restPositions;
+  Eigen::VectorXd damping;
+  Eigen::VectorXd frictions;
+};
+
+template <typename JointType>
+JointStateData configureJointState(JointType* joint)
+{
+  JointStateData data;
+  const auto ndofs = static_cast<Eigen::Index>(joint->getNumDofs());
+
+  data.positions = Eigen::VectorXd::LinSpaced(ndofs, -0.2, 0.3);
+  data.velocities = Eigen::VectorXd::LinSpaced(ndofs, 0.1, 0.4);
+  data.accelerations = Eigen::VectorXd::LinSpaced(ndofs, -0.3, 0.2);
+  data.forces = Eigen::VectorXd::LinSpaced(ndofs, 0.2, 1.0);
+  data.commands = Eigen::VectorXd::LinSpaced(ndofs, -0.6, 0.6);
+
+  data.positionLower = Eigen::VectorXd::Constant(ndofs, -0.8);
+  data.positionUpper = Eigen::VectorXd::Constant(ndofs, 0.9);
+  data.velocityLower = Eigen::VectorXd::Constant(ndofs, -1.1);
+  data.velocityUpper = Eigen::VectorXd::Constant(ndofs, 1.2);
+  data.accelerationLower = Eigen::VectorXd::Constant(ndofs, -2.2);
+  data.accelerationUpper = Eigen::VectorXd::Constant(ndofs, 2.3);
+  data.forceLower = Eigen::VectorXd::Constant(ndofs, -3.3);
+  data.forceUpper = Eigen::VectorXd::Constant(ndofs, 3.4);
+
+  data.initialPositions = Eigen::VectorXd::LinSpaced(ndofs, -0.1, 0.1);
+  data.initialVelocities = Eigen::VectorXd::LinSpaced(ndofs, 0.05, 0.15);
+  data.restPositions = Eigen::VectorXd::LinSpaced(ndofs, -0.15, 0.25);
+  data.damping = Eigen::VectorXd::Constant(ndofs, 0.35);
+  data.frictions = Eigen::VectorXd::Constant(ndofs, 0.2);
+
+  joint->setPositionLowerLimits(data.positionLower);
+  joint->setPositionUpperLimits(data.positionUpper);
+  joint->setVelocityLowerLimits(data.velocityLower);
+  joint->setVelocityUpperLimits(data.velocityUpper);
+  joint->setAccelerationLowerLimits(data.accelerationLower);
+  joint->setAccelerationUpperLimits(data.accelerationUpper);
+  joint->setForceLowerLimits(data.forceLower);
+  joint->setForceUpperLimits(data.forceUpper);
+
+  joint->setInitialPositions(data.initialPositions);
+  joint->setInitialVelocities(data.initialVelocities);
+  joint->setRestPositions(data.restPositions);
+  joint->setDampingCoefficients(data.damping);
+  joint->setFrictions(data.frictions);
+
+  joint->setPositions(data.positions);
+  joint->setVelocities(data.velocities);
+  joint->setAccelerations(data.accelerations);
+  joint->setForces(data.forces);
+  joint->setCommands(data.commands);
+
+  for (Eigen::Index i = 0; i < ndofs; ++i) {
+    joint->setSpringStiffness(static_cast<std::size_t>(i), 2.0 + 0.1 * i);
+    joint->setRestPosition(static_cast<std::size_t>(i), data.restPositions[i]);
+    joint->setVelocityChange(static_cast<std::size_t>(i), 0.01 * (i + 1));
+    joint->setConstraintImpulse(static_cast<std::size_t>(i), 0.02 * (i + 1));
+  }
+
+  return data;
+}
+
+template <typename JointType>
+void exerciseConstOverloads(const std::string& name)
+{
+  auto skel = createSkeletonWithJoint<JointType>(name);
+  auto* joint = getJoint<JointType>(skel);
+  auto state = configureJointState(joint);
+  const auto ndofs = static_cast<Eigen::Index>(joint->getNumDofs());
+
+  const Skeleton* constSkel = skel.get();
+  const auto* constJoint
+      = static_cast<const JointType*>(constSkel->getJoint(0));
+  ASSERT_NE(constJoint, nullptr);
+
+  EXPECT_NE(constJoint->getDof(0), nullptr);
+  EXPECT_EQ(constJoint->getNumDofs(), joint->getNumDofs());
+
+  EXPECT_TRUE(constJoint->getPositions().isApprox(state.positions));
+  EXPECT_TRUE(constJoint->getVelocities().isApprox(state.velocities));
+  EXPECT_TRUE(constJoint->getAccelerations().isApprox(state.accelerations));
+  EXPECT_TRUE(constJoint->getForces().isApprox(state.forces));
+  EXPECT_TRUE(constJoint->getCommands().isApprox(state.commands));
+
+  EXPECT_DOUBLE_EQ(
+      constJoint->getPositionLowerLimit(0), state.positionLower[0]);
+  EXPECT_DOUBLE_EQ(
+      constJoint->getPositionUpperLimit(0), state.positionUpper[0]);
+  EXPECT_DOUBLE_EQ(
+      constJoint->getVelocityLowerLimit(0), state.velocityLower[0]);
+  EXPECT_DOUBLE_EQ(
+      constJoint->getVelocityUpperLimit(0), state.velocityUpper[0]);
+  EXPECT_DOUBLE_EQ(
+      constJoint->getAccelerationLowerLimit(0), state.accelerationLower[0]);
+  EXPECT_DOUBLE_EQ(
+      constJoint->getAccelerationUpperLimit(0), state.accelerationUpper[0]);
+  EXPECT_DOUBLE_EQ(constJoint->getForceLowerLimit(0), state.forceLower[0]);
+  EXPECT_DOUBLE_EQ(constJoint->getForceUpperLimit(0), state.forceUpper[0]);
+
+  EXPECT_TRUE(
+      constJoint->getPositionLowerLimits().isApprox(state.positionLower));
+  EXPECT_TRUE(
+      constJoint->getPositionUpperLimits().isApprox(state.positionUpper));
+  EXPECT_TRUE(
+      constJoint->getVelocityLowerLimits().isApprox(state.velocityLower));
+  EXPECT_TRUE(
+      constJoint->getVelocityUpperLimits().isApprox(state.velocityUpper));
+  EXPECT_TRUE(constJoint->getAccelerationLowerLimits().isApprox(
+      state.accelerationLower));
+  EXPECT_TRUE(constJoint->getAccelerationUpperLimits().isApprox(
+      state.accelerationUpper));
+  EXPECT_TRUE(constJoint->getForceLowerLimits().isApprox(state.forceLower));
+  EXPECT_TRUE(constJoint->getForceUpperLimits().isApprox(state.forceUpper));
+
+  EXPECT_TRUE(constJoint->hasPositionLimit(0));
+  EXPECT_DOUBLE_EQ(
+      constJoint->getInitialPosition(0), state.initialPositions[0]);
+  EXPECT_DOUBLE_EQ(
+      constJoint->getInitialVelocity(0), state.initialVelocities[0]);
+  EXPECT_TRUE(
+      constJoint->getInitialPositions().isApprox(state.initialPositions));
+  EXPECT_TRUE(
+      constJoint->getInitialVelocities().isApprox(state.initialVelocities));
+
+  EXPECT_TRUE(constJoint->getRestPositions().isApprox(state.restPositions));
+  EXPECT_TRUE(constJoint->getDampingCoefficients().isApprox(state.damping));
+  EXPECT_TRUE(constJoint->getFrictions().isApprox(state.frictions));
+  EXPECT_NEAR(constJoint->getSpringStiffness(0), 2.0, 1e-12);
+  EXPECT_NEAR(constJoint->getRestPosition(0), state.restPositions[0], 1e-12);
+  EXPECT_NEAR(constJoint->getDampingCoefficient(0), state.damping[0], 1e-12);
+  EXPECT_NEAR(constJoint->getCoulombFriction(0), state.frictions[0], 1e-12);
+
+  EXPECT_NEAR(constJoint->getVelocityChange(0), 0.01, 1e-12);
+  EXPECT_NEAR(constJoint->getConstraintImpulse(0), 0.02, 1e-12);
+
+  const Joint* constBaseJoint = constSkel->getJoint(0);
+  Eigen::VectorXd integrated;
+  constBaseJoint->integratePositions(
+      state.positions, state.velocities, 0.05, integrated);
+  EXPECT_EQ(integrated.size(), ndofs);
+
+  const auto jac = constJoint->getRelativeJacobian();
+  EXPECT_EQ(jac.cols(), ndofs);
+  const auto jacDeriv = constJoint->getRelativeJacobianTimeDeriv();
+  EXPECT_EQ(jacDeriv.cols(), ndofs);
+  const auto jacPos = constJoint->getRelativeJacobian(state.positions);
+  EXPECT_EQ(jacPos.cols(), ndofs);
+
+  const auto wrench = constJoint->getBodyConstraintWrench();
+  EXPECT_TRUE(wrench.allFinite());
+}
+
+template <typename JointType>
+void exerciseDynamicsUpdatePaths(const std::string& name)
+{
+  auto skel = Skeleton::create(name);
+  auto rootPair = skel->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.second->setMass(1.0);
+
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<JointType>();
+  childPair.second->setMass(1.0);
+
+  skel->setPositions(Eigen::VectorXd::Zero(skel->getNumDofs()));
+  skel->setVelocities(Eigen::VectorXd::Zero(skel->getNumDofs()));
+  skel->setAccelerations(Eigen::VectorXd::Zero(skel->getNumDofs()));
+  skel->setForces(Eigen::VectorXd::Zero(skel->getNumDofs()));
+
+  auto* joint = childPair.first;
+  auto state = configureJointState(joint);
+
+  skel->computeForwardDynamics();
+  skel->computeInverseDynamics(true, true, true);
+  skel->computeImpulseForwardDynamics();
+
+  skel->integratePositions(0.01);
+  skel->integrateVelocities(0.01);
+  EXPECT_TRUE(skel->getPositions().allFinite());
 }
 
 } // namespace
@@ -1506,6 +1703,34 @@ TEST(GenericJoint, WorldStepContactAndIntegration)
   }
 
   EXPECT_TRUE(dynamic->getPositions().allFinite());
+}
+
+//==============================================================================
+TEST(GenericJoint, ConstOverloadsAcrossJointTypes)
+{
+  exerciseConstOverloads<RevoluteJoint>("const_revolute");
+  exerciseConstOverloads<PrismaticJoint>("const_prismatic");
+  exerciseConstOverloads<BallJoint>("const_ball");
+  exerciseConstOverloads<EulerJoint>("const_euler");
+  exerciseConstOverloads<FreeJoint>("const_free");
+  exerciseConstOverloads<ScrewJoint>("const_screw");
+  exerciseConstOverloads<UniversalJoint>("const_universal");
+  exerciseConstOverloads<PlanarJoint>("const_planar");
+  exerciseConstOverloads<TranslationalJoint>("const_translational");
+}
+
+//==============================================================================
+TEST(GenericJoint, DynamicsUpdatePathsAcrossJointTypes)
+{
+  exerciseDynamicsUpdatePaths<RevoluteJoint>("update_revolute");
+  exerciseDynamicsUpdatePaths<PrismaticJoint>("update_prismatic");
+  exerciseDynamicsUpdatePaths<BallJoint>("update_ball");
+  exerciseDynamicsUpdatePaths<EulerJoint>("update_euler");
+  exerciseDynamicsUpdatePaths<FreeJoint>("update_free");
+  exerciseDynamicsUpdatePaths<ScrewJoint>("update_screw");
+  exerciseDynamicsUpdatePaths<UniversalJoint>("update_universal");
+  exerciseDynamicsUpdatePaths<PlanarJoint>("update_planar");
+  exerciseDynamicsUpdatePaths<TranslationalJoint>("update_translational");
 }
 
 //==============================================================================

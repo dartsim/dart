@@ -117,3 +117,30 @@ TEST(TranslationalJoint2DTest, PropertiesAndJacobians)
   const auto jacobianDeriv = joint->getRelativeJacobianTimeDeriv();
   EXPECT_TRUE(jacobianDeriv.isZero(0.0));
 }
+
+TEST(TranslationalJoint2DTest, CopyAndConstAccess)
+{
+  auto skeleton = Skeleton::create("trans2d_copy");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<TranslationalJoint2D>();
+  (void)body;
+
+  joint->setXYPlane(false);
+
+  const TranslationalJoint2D* constJoint = joint;
+  EXPECT_EQ(constJoint->getType(), TranslationalJoint2D::getStaticType());
+  EXPECT_FALSE(constJoint->isCyclic(0));
+  EXPECT_FALSE(constJoint->isCyclic(1));
+
+  const Eigen::Vector2d positions = Eigen::Vector2d::Zero();
+  const auto jacobian = constJoint->getRelativeJacobianStatic(positions);
+  EXPECT_EQ(jacobian.cols(), 2);
+
+  joint->copy(static_cast<const TranslationalJoint2D*>(nullptr));
+
+  auto [otherJoint, otherBody]
+      = skeleton->createJointAndBodyNodePair<TranslationalJoint2D>();
+  (void)otherBody;
+  otherJoint->copy(*joint);
+  EXPECT_EQ(otherJoint->getPlaneType(), joint->getPlaneType());
+}

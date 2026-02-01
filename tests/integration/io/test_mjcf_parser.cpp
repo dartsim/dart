@@ -1613,3 +1613,86 @@ TEST(MjcfParserTest, CustomModelParsesBodiesGeomsAndActuators)
   EXPECT_NE(skel->getJoint("child_slide"), nullptr);
   EXPECT_NE(skel->getJoint("grand_ball"), nullptr);
 }
+
+//==============================================================================
+TEST(MjcfParserTest, InlineWorldCoversDefaultsWorldbodyAndActuators)
+{
+  const auto tempDir = std::filesystem::temp_directory_path();
+  const auto meshPath = tempDir / "dart_mjcf_coverage_mesh.obj";
+  const auto xmlPath = tempDir / "dart_mjcf_coverage.xml";
+
+  {
+    std::ofstream meshOutput(meshPath.string(), std::ios::binary);
+    meshOutput << "o Mesh\n"
+                  "v 0 0 0\n"
+                  "v 1 0 0\n"
+                  "v 0 1 0\n"
+                  "f 1 2 3\n";
+  }
+
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="coverage">
+  <compiler meshdir="." />
+  <default>
+    <geom type="sphere" size="0.1" />
+    <joint type="hinge" damping="0.2" limited="true" range="-0.5 0.5" />
+    <site type="box" size="0.05 0.05 0.05" />
+    <motor ctrllimited="true" ctrlrange="-1 1" />
+  </default>
+  <option timestep="0.01" apirate="60" impratio="2"
+          gravity="0 0 -9.81" wind="0.1 0.2 0.3" magnetic="0 0 0"
+          density="1000" viscosity="0.2" integrator="Euler"
+          collision="all" cone="elliptic" jacobian="dense"
+          solver="PGS" iterations="10" tolerance="1e-4" />
+  <asset>
+    <mesh name="coverage_mesh" file="dart_mjcf_coverage_mesh.obj" />
+  </asset>
+  <worldbody>
+    <light name="light0" pos="0 0 1" />
+    <camera name="cam0" pos="0 0 2" />
+    <geom name="ground" type="plane" size="1 1 0.1" />
+    <body name="root">
+      <geom name="root_box" type="box" size="0.1 0.2 0.3" />
+      <site name="sphere_site" type="sphere" size="0.15" />
+      <body name="capsule_body">
+        <geom name="capsule_geom" type="capsule" size="0.05" fromto="0 0 0 0 0 0.6" />
+        <site name="box_site" type="box" size="0.1 0.1 0.1" pos="0 0 0.2" />
+        <body name="cylinder_body">
+          <geom name="cylinder_geom" type="cylinder" size="0.05" fromto="0 0 0 0 0 0.4" />
+          <body name="mesh_body">
+            <geom name="mesh_geom" type="mesh" mesh="coverage_mesh" />
+            <inertial pos="0 0 0" mass="1" diaginertia="0.1 0.1 0.1" />
+            <site name="capsule_site" type="capsule" size="0.04" fromto="0 0 0 0 0 0.4" />
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <motor name="motor0" joint="root_joint" />
+    <position name="position0" joint="root_joint" />
+    <velocity name="velocity0" joint="root_joint" />
+  </actuator>
+</mujoco>
+  )";
+
+  std::ofstream output(xmlPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(xmlPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(xmlPath, ec);
+  std::filesystem::remove(meshPath, ec);
+
+  ASSERT_TRUE(errors.empty());
+  const auto& worldbody = mujoco.getWorldbody();
+  ASSERT_EQ(worldbody.getNumRootBodies(), 1u);
+  const auto& rootBody = worldbody.getRootBody(0);
+  ASSERT_GE(rootBody.getNumGeoms(), 1u);
+  ASSERT_EQ(rootBody.getNumSites(), 1u);
+  const auto& sphereSite = rootBody.getSite(0);
+  EXPECT_EQ(sphereSite.getType(), GeomType::SPHERE);
+}

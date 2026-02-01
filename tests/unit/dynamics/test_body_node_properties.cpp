@@ -44,6 +44,8 @@
 
 #include <dart/math/constants.hpp>
 
+#include <dart/common/diagnostics.hpp>
+
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
@@ -205,6 +207,29 @@ TEST(BodyNodeProperties, ShapeNodeAccessors)
   // Test getNumShapeNodesWith
   EXPECT_EQ(body->getNumShapeNodesWith<VisualAspect>(), 2u);
   EXPECT_EQ(body->getNumShapeNodesWith<CollisionAspect>(), 2u);
+}
+
+TEST(BodyNodeProperties, ConstNodeAndShapeAccessors)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(0.3, 0.4, 0.5));
+  body->createShapeNodeWith<VisualAspect>(box);
+
+  const BodyNode& constBody = *body;
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const auto shapeNodes = constBody.getShapeNodes();
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_EQ(shapeNodes.size(), 1u);
+  EXPECT_EQ(shapeNodes[0]->getShape().get(), box.get());
+
+  const auto nodes = constBody.getNodes();
+  EXPECT_GE(nodes.size(), 1u);
+
+  const auto mutableNodes = body->getNodes();
+  EXPECT_GE(mutableNodes.size(), 1u);
 }
 
 TEST(BodyNodeProperties, EachShapeNodeIteration)

@@ -41,6 +41,7 @@
 #include "dart/dynamics/prismatic_joint.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/screw_joint.hpp"
+#include "dart/dynamics/sphere_shape.hpp"
 #include "dart/dynamics/universal_joint.hpp"
 #include "dart/dynamics/weld_joint.hpp"
 #include "dart/simulation/world.hpp"
@@ -1860,6 +1861,18 @@ f 1 2 3
       <link name="link5">
         <inertial><mass>1.0</mass></inertial>
       </link>
+      <link name="link6">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+      <link name="link6">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+      <link name="link6">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+      <link name="link6">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
       <joint name="prismatic_joint" type="prismatic">
         <parent>base</parent>
         <child>link1</child>
@@ -2235,4 +2248,232 @@ f 1 2 3
   EXPECT_TRUE(foundMesh);
   EXPECT_TRUE(foundMeshPose);
   EXPECT_TRUE(foundDiffuse);
+}
+
+//==============================================================================
+TEST(SdfParser, InlineWorldCoversJointTypesMaterialsAndErrors)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string worldUri = "memory://pkg/worlds/coverage.world";
+  const std::string meshUri = "memory://pkg/meshes/coverage.obj";
+  const std::string meshData = R"(
+o Mesh
+v 0 0 0
+v 1 0 0
+v 0 1 0
+f 1 2 3
+  )";
+
+  const std::string worldSdf = std::string(R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="coverage_world">
+    <physics type="ode">
+      <max_step_size>0.01</max_step_size>
+      <gravity>0 0 -9.81</gravity>
+    </physics>
+    <model name="coverage_model">
+      <link name="base">
+        <inertial><mass>1.0</mass></inertial>
+        <visual name="sphere_visual">
+          <geometry>
+            <sphere><radius>0.2</radius></sphere>
+          </geometry>
+          <material>
+            <diffuse>0.1 0.2 0.3</diffuse>
+          </material>
+        </visual>
+      </link>
+      <link name="link1">
+        <inertial><mass>1.0</mass></inertial>
+        <visual name="box_visual">
+          <geometry>
+            <box><size>0.2 0.3 0.4</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.1 0.2 0.3 0.4</diffuse>
+          </material>
+        </visual>
+      </link>
+      <link name="link2">
+        <inertial><mass>1.0</mass></inertial>
+        <visual name="cylinder_visual">
+          <geometry>
+            <cylinder><radius>0.1</radius><length>0.5</length></cylinder>
+          </geometry>
+        </visual>
+      </link>
+      <link name="link3">
+        <inertial><mass>1.0</mass></inertial>
+        <visual name="plane_visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>1 2</size>
+            </plane>
+          </geometry>
+        </visual>
+      </link>
+      <link name="link4">
+        <inertial><mass>1.0</mass></inertial>
+        <visual name="mesh_visual">
+          <geometry>
+            <mesh>
+              <uri>)") + meshUri
+                               + R"(</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+      <link name="link5">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+      <link name="link6">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+      <joint name="fixed_joint" type="fixed">
+        <parent>base</parent>
+        <child>link1</child>
+      </joint>
+      <joint name="revolute_joint" type="revolute">
+        <parent>link1</parent>
+        <child>link2</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <dynamics>
+            <damping>0.2</damping>
+            <friction>0.1</friction>
+            <spring_reference>0.1</spring_reference>
+            <spring_stiffness>2.0</spring_stiffness>
+          </dynamics>
+          <limit>
+            <lower>0.1</lower>
+            <upper>0.5</upper>
+          </limit>
+        </axis>
+      </joint>
+      <joint name="prismatic_joint" type="prismatic">
+        <parent>link2</parent>
+        <child>link3</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <limit>
+            <lower>-0.2</lower>
+            <upper>0.2</upper>
+          </limit>
+        </axis>
+      </joint>
+      <joint name="screw_joint" type="screw">
+        <parent>link3</parent>
+        <child>link4</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+        </axis>
+        <thread_pitch>0.1</thread_pitch>
+      </joint>
+      <joint name="universal_joint" type="universal">
+        <parent>link4</parent>
+        <child>link5</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+        </axis>
+        <axis2>
+          <xyz>0 1 0</xyz>
+        </axis2>
+      </joint>
+      <joint name="ball_joint" type="ball">
+        <parent>link5</parent>
+        <child>link6</child>
+      </joint>
+    </model>
+  </world>
+</sdf>
+  )";
+
+  retriever->add(meshUri, meshData);
+  retriever->add(worldUri, worldSdf);
+
+  const std::string errorSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="error_model">
+    <link name="link">
+      <pose>0 0</pose>
+      <inertial>
+        <mass>bad</mass>
+      </inertial>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  LogCapture capture;
+  sdf::Root errorRoot;
+  errorRoot.LoadSdfString(errorSdf);
+  if (auto errorElement = errorRoot.Element()) {
+    if (auto modelElement = errorElement->GetElement("model")) {
+      if (auto linkElement = modelElement->GetElement("link")) {
+        const auto pose = dart::utils::SdfParser::detail::getValueVector3d(
+            linkElement, "pose");
+        (void)pose;
+        if (auto inertialElement = linkElement->GetElement("inertial")) {
+          const auto mass = dart::utils::SdfParser::detail::getValueDouble(
+              inertialElement, "mass");
+          (void)mass;
+        }
+      }
+    }
+  }
+
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  auto world = SdfParser::readWorld(common::Uri(worldUri), options);
+  ASSERT_NE(world, nullptr) << capture.contents();
+  const auto skeleton = world->getSkeleton("coverage_model");
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_EQ(skeleton->getNumJoints(), 7u);
+
+  bool foundMesh = false;
+  bool foundCylinder = false;
+  bool foundSphere = false;
+  bool foundPlane = false;
+  skeleton->eachBodyNode([&](dynamics::BodyNode* body) {
+    if (!body) {
+      return;
+    }
+    const auto numShapes = body->getNumShapeNodes();
+    for (std::size_t i = 0; i < numShapes; ++i) {
+      const auto* node = body->getShapeNode(i);
+      if (!node) {
+        continue;
+      }
+      const auto shape = node->getShape();
+      if (!shape) {
+        continue;
+      }
+      if (shape->is<dynamics::MeshShape>()) {
+        foundMesh = true;
+      } else if (shape->is<dynamics::CylinderShape>()) {
+        foundCylinder = true;
+      } else if (shape->is<dynamics::SphereShape>()) {
+        foundSphere = true;
+      } else if (shape->is<dynamics::BoxShape>()) {
+        const auto box
+            = std::dynamic_pointer_cast<const dynamics::BoxShape>(shape);
+        if (box && box->getSize()(2) <= 0.0011) {
+          foundPlane = true;
+        }
+      }
+    }
+  });
+  EXPECT_TRUE(foundMesh);
+  EXPECT_TRUE(foundCylinder);
+  EXPECT_TRUE(foundSphere);
+  EXPECT_TRUE(foundPlane);
+
+  const auto logs = capture.contents();
+  if (!logs.empty()) {
+    EXPECT_NE(logs.find("must have 6 values"), std::string::npos)
+        << "Expected pose warning in logs: " << logs;
+  }
 }

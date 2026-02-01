@@ -65,6 +65,26 @@ TEST(GroupTest, CreateGroupFromMetaSkeleton)
 }
 
 //==============================================================================
+TEST(GroupTest, ConstAccessors)
+{
+  auto skel = createNLinkRobot(2, Eigen::Vector3d(0.1, 0.1, 0.5), DOF_PITCH);
+  auto group = Group::create("const_group", skel);
+
+  const Group& constGroup = *group;
+  EXPECT_EQ(constGroup.getName(), "const_group");
+  EXPECT_EQ(constGroup.getNumBodyNodes(), group->getNumBodyNodes());
+  EXPECT_EQ(constGroup.getNumJoints(), group->getNumJoints());
+  EXPECT_EQ(constGroup.getNumDofs(), group->getNumDofs());
+
+  const auto bodyNodes = constGroup.getBodyNodes();
+  EXPECT_EQ(bodyNodes.size(), group->getNumBodyNodes());
+  const auto joints = constGroup.getJoints();
+  EXPECT_EQ(joints.size(), group->getNumJoints());
+  const auto dofs = constGroup.getDofs();
+  EXPECT_EQ(dofs.size(), group->getNumDofs());
+}
+
+//==============================================================================
 TEST(GroupTest, AddBodyNode)
 {
   auto skel = createNLinkRobot(3, Eigen::Vector3d(0.1, 0.1, 0.5), DOF_PITCH);

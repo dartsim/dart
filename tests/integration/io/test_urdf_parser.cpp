@@ -1917,3 +1917,92 @@ TEST(UrdfParser, VisualWithoutGeometryIsIgnored)
   ASSERT_NE(body, nullptr);
   EXPECT_EQ(body->getNumShapeNodes(), 0u);
 }
+
+//==============================================================================
+TEST(UrdfParser, TransmissionsAndPackageMeshes)
+{
+  const auto tempDir = makeTempDir("dart-urdf-package");
+  const auto meshDir = tempDir / "meshes";
+  std::filesystem::create_directories(meshDir);
+  const auto meshPath = meshDir / "box.obj";
+
+  std::ofstream meshFile(meshPath.string());
+  ASSERT_TRUE(meshFile.is_open());
+  meshFile << "o Box\n"
+           << "v 0 0 0\n"
+           << "v 1 0 0\n"
+           << "v 0 1 0\n"
+           << "f 1 2 3\n";
+  meshFile.close();
+
+  const std::string urdfStr = R"(
+    <robot name="tx_robot">
+      <link name="base">
+        <inertial>
+          <mass value="2.0"/>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <inertia ixx="0.2" iyy="0.2" izz="0.2" ixy="0" ixz="0" iyz="0"/>
+        </inertial>
+        <visual>
+          <geometry>
+            <mesh filename="package://test_pkg/meshes/box.obj"/>
+          </geometry>
+        </visual>
+      </link>
+      <link name="link1"/>
+      <link name="link2"/>
+      <joint name="joint1" type="revolute">
+        <parent link="base"/>
+        <child link="link1"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="1.0" upper="2.0" effort="5" velocity="6"/>
+        <dynamics damping="0.1" friction="0.2"/>
+      </joint>
+      <joint name="joint2" type="revolute">
+        <parent link="link1"/>
+        <child link="link2"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.0" upper="1.0" effort="2" velocity="3"/>
+        <dynamics damping="0.3" friction="0.4"/>
+      </joint>
+      <transmission name="tx1">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="joint1">
+          <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="actuator">
+          <mechanicalReduction>2</mechanicalReduction>
+        </actuator>
+      </transmission>
+      <transmission name="tx2">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="joint2"/>
+        <actuator name="actuator">
+          <mechanicalReduction>4</mechanicalReduction>
+        </actuator>
+      </transmission>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  parser.addPackageDirectory("test_pkg", tempDir.string());
+  const auto robot = parser.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* base = robot->getBodyNode("base");
+  ASSERT_NE(base, nullptr);
+  bool foundMesh = false;
+  base->eachShapeNodeWith<dynamics::VisualAspect>(
+      [&](dynamics::ShapeNode* node) {
+        if (std::dynamic_pointer_cast<dynamics::MeshShape>(node->getShape())) {
+          foundMesh = true;
+        }
+      });
+  EXPECT_TRUE(foundMesh);
+
+  auto* joint2 = robot->getJoint("joint2");
+  ASSERT_NE(joint2, nullptr);
+  EXPECT_EQ(joint2->getActuatorType(), dart::dynamics::Joint::MIMIC);
+
+  std::filesystem::remove_all(tempDir);
+}

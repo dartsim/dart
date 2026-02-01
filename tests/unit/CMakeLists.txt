@@ -126,6 +126,8 @@ dart_add_test(
   "unit" UNIT_dynamics_BodyNodeExternalForce dynamics/test_body_node_external_force.cpp)
 dart_add_test("unit" UNIT_dynamics_Inertia dynamics/test_inertia.cpp)
 dart_add_test("unit" UNIT_dynamics_ScrewJoint dynamics/test_screw_joint.cpp)
+dart_add_test("unit" UNIT_dynamics_BallJoint dynamics/test_ball_joint.cpp)
+dart_add_test("unit" UNIT_dynamics_UniversalJoint dynamics/test_universal_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeNodePtr dynamics/test_shape_node_ptr.cpp)
 dart_add_test("unit" UNIT_dynamics_BodyNodePtr dynamics/test_body_node_ptr.cpp)
 dart_add_test("unit" UNIT_dynamics_NodePtr dynamics/test_node_ptr.cpp)
@@ -142,6 +144,7 @@ dart_add_test("unit" UNIT_dynamics_SkeletonClone dynamics/test_skeleton_clone.cp
 dart_add_test("unit" UNIT_dynamics_SkeletonAccessors dynamics/test_skeleton_accessors.cpp)
 dart_add_test("unit" UNIT_dynamics_SkeletonProperties dynamics/test_skeleton_properties.cpp)
 dart_add_test("unit" UNIT_dynamics_BodyNodeProperties dynamics/test_body_node_properties.cpp)
+dart_add_test("unit" UNIT_dynamics_BasicNodeManager dynamics/test_basic_node_manager.cpp)
 dart_add_test("unit" UNIT_dynamics_Noexcept dynamics/test_noexcept.cpp)
 dart_add_test(
   "unit" UNIT_dynamics_BodyNodeCollisionSignals dynamics/test_body_node_collision_signals.cpp)

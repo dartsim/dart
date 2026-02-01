@@ -2707,6 +2707,389 @@ TEST(SkelParser, MeshShapeFromSkelString)
 }
 
 //==============================================================================
+TEST(SkelParser, InlineSkelCoverageForParserBranches)
+{
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="coverage">
+      <body name="root_body">
+        <inertia>
+          <mass>2.0</mass>
+          <moment_of_inertia>
+            <ixx>0.2</ixx>
+            <iyy>0.2</iyy>
+            <izz>0.2</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <marker name="root_marker">
+          <offset>0.1 0.2 0.3</offset>
+        </marker>
+        <visualization_shape>
+          <geometry>
+            <ellipsoid>
+              <size>0.2 0.4 0.6</size>
+            </ellipsoid>
+          </geometry>
+        </visualization_shape>
+        <collision_shape>
+          <geometry>
+            <capsule>
+              <radius>0.05</radius>
+              <height>0.4</height>
+            </capsule>
+          </geometry>
+          <collidable>0</collidable>
+        </collision_shape>
+      </body>
+      <body name="cylinder_body">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <cylinder>
+              <radius>0.1</radius>
+              <height>0.2</height>
+            </cylinder>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="cone_body">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.15</ixx>
+            <iyy>0.15</iyy>
+            <izz>0.15</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <collision_shape>
+          <geometry>
+            <cone>
+              <radius>0.1</radius>
+              <height>0.3</height>
+            </cone>
+          </geometry>
+        </collision_shape>
+      </body>
+      <body name="ball_body">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.2</ixx>
+            <iyy>0.2</iyy>
+            <izz>0.2</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="euler_body">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.25</ixx>
+            <iyy>0.25</iyy>
+            <izz>0.25</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="universal_body">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.3</ixx>
+            <iyy>0.3</iyy>
+            <izz>0.3</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="trans_body">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.35</ixx>
+            <iyy>0.35</iyy>
+            <izz>0.35</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="planar_body">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.4</ixx>
+            <iyy>0.4</iyy>
+            <izz>0.4</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="soft_body">
+        <inertia>
+          <mass>1.2</mass>
+          <moment_of_inertia>
+            <ixx>0.5</ixx>
+            <iyy>0.5</iyy>
+            <izz>0.5</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <soft_shape>
+          <total_mass>2.0</total_mass>
+          <transformation>0 0 0 0 0 0</transformation>
+          <geometry>
+            <ellipsoid>
+              <size>0.2 0.3 0.4</size>
+              <num_slices>8</num_slices>
+              <num_stacks>6</num_stacks>
+            </ellipsoid>
+          </geometry>
+          <kv>0.1</kv>
+          <ke>0.2</ke>
+          <damp>0.3</damp>
+        </soft_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>root_body</child>
+      </joint>
+      <joint type="revolute" name="cylinder_joint">
+        <parent>root_body</parent>
+        <child>cylinder_body</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <dynamics>
+            <damping>0.02</damping>
+            <friction>0.03</friction>
+            <spring_rest_position>0.04</spring_rest_position>
+            <spring_stiffness>0.05</spring_stiffness>
+          </dynamics>
+          <limit>
+            <lower>-0.5</lower>
+            <upper>0.5</upper>
+          </limit>
+        </axis>
+      </joint>
+      <joint type="prismatic" name="cone_joint">
+        <parent>cylinder_body</parent>
+        <child>cone_body</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <limit>
+            <lower>-0.2</lower>
+            <upper>0.2</upper>
+          </limit>
+        </axis>
+      </joint>
+      <joint type="ball" name="ball_joint">
+        <parent>cone_body</parent>
+        <child>ball_body</child>
+        <init_pos>0.1 0.2 0.3</init_pos>
+        <init_vel>0.4 0.5 0.6</init_vel>
+        <dof name="ball_dof0" local_index="0">
+          <position lower="-1" upper="1" initial="0.1" />
+          <velocity lower="-2" upper="2" initial="0.2" />
+          <acceleration lower="-3" upper="3" initial="0.3" />
+          <force lower="-4" upper="4" initial="0.4" />
+          <damping>0.5</damping>
+          <friction>0.6</friction>
+          <spring_rest_position>0.7</spring_rest_position>
+          <spring_stiffness>0.8</spring_stiffness>
+        </dof>
+      </joint>
+      <joint type="euler" name="euler_joint">
+        <parent>ball_body</parent>
+        <child>euler_body</child>
+        <axis_order>xyz</axis_order>
+        <axis>
+          <damping>0.01</damping>
+          <dynamics>
+            <damping>0.02</damping>
+            <friction>0.03</friction>
+            <spring_rest_position>0.04</spring_rest_position>
+            <spring_stiffness>0.05</spring_stiffness>
+          </dynamics>
+          <limit>
+            <lower>-0.5</lower>
+            <upper>0.5</upper>
+          </limit>
+        </axis>
+        <axis2>
+          <dynamics>
+            <damping>0.06</damping>
+          </dynamics>
+          <limit>
+            <lower>-0.4</lower>
+            <upper>0.4</upper>
+          </limit>
+        </axis2>
+        <axis3>
+          <dynamics>
+            <friction>0.07</friction>
+          </dynamics>
+          <limit>
+            <lower>-0.3</lower>
+            <upper>0.3</upper>
+          </limit>
+        </axis3>
+        <init_pos>0.1 0.2 0.3</init_pos>
+        <init_vel>0.4 0.5 0.6</init_vel>
+        <dof local_index="1">
+          <position lower="-0.2" upper="0.2" initial="0.05" />
+        </dof>
+      </joint>
+      <joint type="universal" name="universal_joint">
+        <parent>euler_body</parent>
+        <child>universal_body</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <dynamics>
+            <damping>0.08</damping>
+          </dynamics>
+          <limit>
+            <lower>-0.2</lower>
+            <upper>0.2</upper>
+          </limit>
+        </axis>
+        <axis2>
+          <xyz>0 1 0</xyz>
+          <dynamics>
+            <friction>0.09</friction>
+          </dynamics>
+          <limit>
+            <lower>-0.1</lower>
+            <upper>0.1</upper>
+          </limit>
+        </axis2>
+        <init_pos>0.1 0.2</init_pos>
+        <init_vel>0.3 0.4</init_vel>
+      </joint>
+      <joint type="translational" name="trans_joint">
+        <parent>universal_body</parent>
+        <child>trans_body</child>
+        <axis>
+          <dynamics>
+            <damping>0.1</damping>
+          </dynamics>
+          <limit>
+            <lower>-0.6</lower>
+            <upper>0.6</upper>
+          </limit>
+        </axis>
+        <axis2>
+          <dynamics>
+            <friction>0.2</friction>
+          </dynamics>
+          <limit>
+            <lower>-0.5</lower>
+            <upper>0.5</upper>
+          </limit>
+        </axis2>
+        <axis3>
+          <dynamics>
+            <spring_rest_position>0.1</spring_rest_position>
+            <spring_stiffness>0.2</spring_stiffness>
+          </dynamics>
+          <limit>
+            <lower>-0.4</lower>
+            <upper>0.4</upper>
+          </limit>
+        </axis3>
+        <init_pos>0.1 0.2 0.3</init_pos>
+        <init_vel>0.4 0.5 0.6</init_vel>
+        <dof local_index="0">
+          <force lower="-1" upper="1" initial="0.1" />
+        </dof>
+      </joint>
+      <joint type="planar" name="planar_joint">
+        <parent>trans_body</parent>
+        <child>planar_body</child>
+        <plane type="arbitrary">
+          <translation_axis1>
+            <xyz>1 0 0</xyz>
+          </translation_axis1>
+          <translation_axis2>
+            <xyz>0 1 0</xyz>
+          </translation_axis2>
+        </plane>
+        <axis>
+          <dynamics>
+            <damping>0.2</damping>
+          </dynamics>
+          <limit>
+            <lower>-0.3</lower>
+            <upper>0.3</upper>
+          </limit>
+        </axis>
+        <init_pos>0.1 0.2 0.3</init_pos>
+        <init_vel>0.4 0.5 0.6</init_vel>
+        <dof local_index="0">
+          <velocity lower="-1" upper="1" initial="0.1" />
+        </dof>
+      </joint>
+      <joint type="revolute" name="soft_joint">
+        <parent>planar_body</parent>
+        <child>soft_body</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+  )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("coverage");
+  ASSERT_NE(skel, nullptr);
+  const auto* marker = skel->getMarker("root_marker");
+  ASSERT_NE(marker, nullptr);
+  EXPECT_TRUE(marker->getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(0.1, 0.2, 0.3)));
+
+  auto* softBody
+      = dynamic_cast<dynamics::SoftBodyNode*>(skel->getBodyNode("soft_body"));
+  ASSERT_NE(softBody, nullptr);
+  EXPECT_GT(softBody->getNumPointMasses(), 0u);
+
+  auto* ballJoint = skel->getJoint("ball_joint");
+  ASSERT_NE(ballJoint, nullptr);
+  EXPECT_DOUBLE_EQ(ballJoint->getDampingCoefficient(0), 0.5);
+  EXPECT_DOUBLE_EQ(ballJoint->getSpringStiffness(0), 0.8);
+}
+
+//==============================================================================
 TEST(SkelParser, JointAxisDynamicsAndLimitsFromXml)
 {
   const std::string skelXml = R"(<?xml version="1.0" ?>

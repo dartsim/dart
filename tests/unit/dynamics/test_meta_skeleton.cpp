@@ -173,6 +173,32 @@ TEST(MetaSkeletonTests, StructuralProperties)
 }
 
 //==============================================================================
+TEST(MetaSkeletonTests, ConstAccessors)
+{
+  auto skel = createMixedSkeleton("const_accessors");
+  skel->setPositions(Eigen::VectorXd::Constant(skel->getNumDofs(), 0.1));
+  skel->setVelocities(Eigen::VectorXd::Constant(skel->getNumDofs(), -0.2));
+  skel->setAccelerations(Eigen::VectorXd::Constant(skel->getNumDofs(), 0.3));
+  skel->setCommands(Eigen::VectorXd::Zero(skel->getNumDofs()));
+
+  const MetaSkeleton& constSkel = *skel;
+  EXPECT_EQ(constSkel.getNumBodyNodes(), skel->getNumBodyNodes());
+  EXPECT_EQ(constSkel.getNumJoints(), skel->getNumJoints());
+  EXPECT_EQ(constSkel.getNumDofs(), skel->getNumDofs());
+
+  const auto positions = constSkel.getPositions();
+  EXPECT_EQ(positions.size(), static_cast<int>(skel->getNumDofs()));
+  const auto velocities = constSkel.getVelocities();
+  EXPECT_EQ(velocities.size(), static_cast<int>(skel->getNumDofs()));
+  const auto accelerations = constSkel.getAccelerations();
+  EXPECT_EQ(accelerations.size(), static_cast<int>(skel->getNumDofs()));
+
+  const auto commands = constSkel.getCommands();
+  EXPECT_EQ(commands.size(), static_cast<int>(skel->getNumDofs()));
+  EXPECT_TRUE(constSkel.getCOM().array().isFinite().all());
+}
+
+//==============================================================================
 // Test hasBodyNode and hasJoint
 TEST(MetaSkeletonTests, HasMethods)
 {

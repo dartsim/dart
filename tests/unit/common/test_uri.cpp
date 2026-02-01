@@ -249,6 +249,41 @@ TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
   }
 }
 
+TEST(UriComponent, AccessorsAndDefaults)
+{
+  UriComponent component;
+  EXPECT_FALSE(component);
+  EXPECT_TRUE(!component);
+  EXPECT_EQ(component.get_value_or("default"), "default");
+
+  component = std::string("value");
+  EXPECT_TRUE(component);
+  EXPECT_EQ(*component, "value");
+  EXPECT_EQ(component.get(), "value");
+  EXPECT_EQ(component->size(), std::string("value").size());
+}
+
+TEST(UriHelpers, GetPathAndFilesystemPath)
+{
+  Uri uri = Uri::createFromString("file:///tmp/robot.urdf");
+  EXPECT_EQ(uri.getPath(), "/tmp/robot.urdf");
+#ifdef _WIN32
+  EXPECT_EQ(uri.getFilesystemPath(), "tmp/robot.urdf");
+#else
+  EXPECT_EQ(uri.getFilesystemPath(), "/tmp/robot.urdf");
+#endif
+}
+
+TEST(UriHelpers, ResolveRelativeUriRemovesDotSegments)
+{
+  const std::string base = "http://example.com/a/b/c";
+  const std::string relative = "../d/e";
+  const auto merged = Uri::createFromRelativeUri(
+      std::string_view(base), std::string_view(relative));
+
+  EXPECT_EQ(merged.toString(), "http://example.com/a/d/e");
+}
+
 TEST(UriHelpers, fromString_WindowsStyleFileUri_ParsesCorrectly)
 {
   Uri uri;

@@ -1614,6 +1614,11 @@ TEST(FreeJointTest, SpatialVelocityAndAccelerationFrames)
   auto refFrame = SimpleFrame::createShared(Frame::World(), "ref_frame");
   refFrame->setTranslation(Eigen::Vector3d(0.1, -0.2, 0.3));
 
+  Eigen::Isometry3d targetTf = Eigen::Isometry3d::Identity();
+  targetTf.translation() = Eigen::Vector3d(0.2, 0.1, -0.1);
+  freeJoint->setTransform(targetTf, refFrame.get());
+  EXPECT_TRUE(freeJoint->getPositions().array().isFinite().all());
+
   Eigen::Vector6d spatialVel;
   spatialVel << 0.1, -0.2, 0.3, 1.0, -2.0, 3.0;
   freeJoint->setSpatialVelocity(spatialVel, refFrame.get(), refFrame.get());

@@ -86,6 +86,30 @@ TEST(SoftBodyNode, AccessorsAndDynamics)
 }
 
 //==============================================================================
+TEST(SoftBodyNode, WorldSteppingIntegrationPaths)
+{
+  auto skeleton = Skeleton::create("soft-body-step");
+  auto* softBody
+      = createBoxSoftBody(skeleton, Eigen::Vector3d(0.4, 0.5, 0.6), 1.5);
+
+  auto world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->addSkeleton(skeleton);
+
+  for (int i = 0; i < 5; ++i) {
+    world->step();
+  }
+
+  auto* pointMass = softBody->getPointMass(0);
+  ASSERT_NE(pointMass, nullptr);
+
+  EXPECT_TRUE(pointMass->getWorldPosition().array().isFinite().all());
+  EXPECT_TRUE(pointMass->getWorldVelocity().array().isFinite().all());
+  EXPECT_TRUE(pointMass->getWorldAcceleration().array().isFinite().all());
+  EXPECT_TRUE(pointMass->getConstraintImpulses().array().isFinite().all());
+}
+
+//==============================================================================
 TEST(SoftBodyNode, MassMatricesAndForces)
 {
   auto skeleton = Skeleton::create("soft-body-mass");

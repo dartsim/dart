@@ -160,3 +160,23 @@ TEST(IcosphereTests, ExplicitTemplateCoverage)
   const IcosphereFloat icof(1.5f, 1);
   EXPECT_FLOAT_EQ(icof.getRadius(), 1.5f);
 }
+
+//==============================================================================
+TEST(IcosphereTests, SubdivisionBuildUsesImplHeader)
+{
+  const double radius = 1.25;
+  const std::size_t subdivisions = 2;
+
+  const dart::math::Icosphere<double> icosphere(radius, subdivisions);
+
+  EXPECT_EQ(
+      icosphere.getVertices().size(),
+      dart::math::Icosphere<double>::getNumVertices(subdivisions));
+  EXPECT_EQ(
+      icosphere.getTriangles().size(),
+      dart::math::Icosphere<double>::getNumTriangles(subdivisions));
+
+  for (const auto& vertex : icosphere.getVertices()) {
+    EXPECT_NEAR(vertex.norm(), radius, 1e-12);
+  }
+}
