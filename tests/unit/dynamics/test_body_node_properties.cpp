@@ -234,6 +234,61 @@ TEST(BodyNodeProperties, ConstNodeAndShapeAccessors)
   EXPECT_GE(mutableNodes.size(), 1u);
 }
 
+TEST(BodyNodeProperties, ConstSpatialAccessors)
+{
+  auto skeleton = Skeleton::create("const_body_accessors");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.second->setName("root");
+
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setAxis(Eigen::Vector3d::UnitZ());
+  childPair.second->setName("child");
+
+  skeleton->setVelocities(Eigen::VectorXd::Ones(skeleton->getNumDofs()) * 0.1);
+  skeleton->setAccelerations(
+      Eigen::VectorXd::Constant(skeleton->getNumDofs(), 0.2));
+
+  const BodyNode* constRoot = rootPair.second;
+  const BodyNode* constChild = childPair.second;
+
+  EXPECT_EQ(constRoot->getSkeleton().get(), skeleton.get());
+  EXPECT_EQ(constChild->getParentBodyNode(), rootPair.second);
+  EXPECT_EQ(constChild->getParentJoint(), childPair.first);
+  EXPECT_EQ(constRoot->getNumChildBodyNodes(), 1u);
+  EXPECT_EQ(constRoot->getChildBodyNode(0), childPair.second);
+
+  const auto& relVel = constChild->getRelativeSpatialVelocity();
+  EXPECT_TRUE(relVel.array().isFinite().all());
+  const auto& relAcc = constChild->getRelativeSpatialAcceleration();
+  EXPECT_TRUE(relAcc.array().isFinite().all());
+  const auto& primaryAcc = constChild->getPrimaryRelativeAcceleration();
+  EXPECT_TRUE(primaryAcc.array().isFinite().all());
+  const auto& partialAcc = constChild->getPartialAcceleration();
+  EXPECT_TRUE(partialAcc.array().isFinite().all());
+
+  const auto& jacobian = constChild->getJacobian();
+  EXPECT_EQ(jacobian.rows(), 6);
+  EXPECT_EQ(jacobian.cols(), static_cast<int>(skeleton->getNumDofs()));
+
+  const auto& worldJacobian = constChild->getWorldJacobian();
+  EXPECT_EQ(worldJacobian.rows(), 6);
+  EXPECT_EQ(worldJacobian.cols(), static_cast<int>(skeleton->getNumDofs()));
+
+  const auto& jacobianSpatialDeriv = constChild->getJacobianSpatialDeriv();
+  EXPECT_EQ(jacobianSpatialDeriv.rows(), 6);
+  EXPECT_EQ(
+      jacobianSpatialDeriv.cols(), static_cast<int>(skeleton->getNumDofs()));
+
+  const auto& jacobianClassicDeriv = constChild->getJacobianClassicDeriv();
+  EXPECT_EQ(jacobianClassicDeriv.rows(), 6);
+  EXPECT_EQ(
+      jacobianClassicDeriv.cols(), static_cast<int>(skeleton->getNumDofs()));
+
+  const auto& bodyVelocityChange = constChild->getBodyVelocityChange();
+  EXPECT_TRUE(bodyVelocityChange.array().isFinite().all());
+}
+
 TEST(BodyNodeProperties, EachShapeNodeIteration)
 {
   auto skeleton = createBodyNodeSkeleton();

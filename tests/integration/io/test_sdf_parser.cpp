@@ -48,6 +48,8 @@
 #include "dart/utils/sdf/detail/sdf_helpers.hpp"
 #include "dart/utils/sdf/sdf_parser.hpp"
 
+#include <dart/all.hpp>
+
 #include <gtest/gtest.h>
 #include <sdf/sdf.hh>
 
@@ -1233,6 +1235,61 @@ TEST(SdfParser, MimicJointAppliesActuator)
 }
 
 //==============================================================================
+TEST(SdfParser, MimicAxis2SetsReferenceDof)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/mimic_axis2/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="mimic_axis2">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="link1">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="link2">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="universal_ref" type="universal">
+      <parent>base</parent>
+      <child>link1</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+      </axis>
+      <axis2>
+        <xyz>0 1 0</xyz>
+      </axis2>
+    </joint>
+    <joint name="mimic_joint" type="revolute">
+      <parent>link1</parent>
+      <child>link2</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <mimic joint="universal_ref" axis="axis2">
+          <multiplier>1.5</multiplier>
+          <offset>-0.25</offset>
+        </mimic>
+      </axis>
+    </joint>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint = skeleton->getJoint("mimic_joint");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getActuatorType(), dynamics::Joint::MIMIC);
+  const auto mimicProps = joint->getMimicDofProperties();
+  ASSERT_EQ(mimicProps.size(), 1u);
+  EXPECT_EQ(mimicProps[0].mReferenceDofIndex, 1u);
+  EXPECT_DOUBLE_EQ(mimicProps[0].mMultiplier, 1.5);
+  EXPECT_DOUBLE_EQ(mimicProps[0].mOffset, -0.25);
+}
+
+//==============================================================================
 TEST(SdfParser, MimicMissingReferenceIgnored)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();
@@ -1724,19 +1781,27 @@ TEST(SdfParser, HelperUtilitiesParseText)
 {
   using namespace dart::utils::SdfParser::detail;
   const std::string sdfText = R"(
-<?xml version="1.0" ?>
-<sdf version="1.7">
-  <model name="helper">
-    <link name="link">
-      <pose>1 2 3 0 0 0</pose>
-      <user>1 2 3</user>
-      <size>4 5</size>
-      <custom>0.1 0.2 0.3 0.4</custom>
-      <bool_flag>true</bool_flag>
-    </link>
-  </model>
-</sdf>
-  )";
+ <?xml version="1.0" ?>
+ <sdf version="1.7">
+   <model name="helper">
+     <link name="link">
+       <pose>1 2 3 0 0 0</pose>
+       <user>1 2 3</user>
+       <size>4 5</size>
+       <custom>0.1 0.2 0.3 0.4</custom>
+       <bool_flag>true</bool_flag>
+       <visual name="visual">
+         <geometry>
+           <box><size>0.1 0.2 0.3</size></box>
+         </geometry>
+         <material>
+           <diffuse>0.25 0.5 0.75 1.0</diffuse>
+         </material>
+       </visual>
+     </link>
+   </model>
+ </sdf>
+   )";
 
   sdf::Root root;
   const auto errors = root.LoadSdfString(sdfText);
@@ -1769,6 +1834,15 @@ TEST(SdfParser, HelperUtilitiesParseText)
 
   const auto elementText = getElementText(linkElement->GetElement("custom"));
   EXPECT_EQ(elementText, "0.1 0.2 0.3 0.4");
+
+  auto visualElement = linkElement->GetElement("visual");
+  ASSERT_NE(visualElement, nullptr);
+  auto materialElement = visualElement->GetElement("material");
+  ASSERT_NE(materialElement, nullptr);
+  const auto color = getValueVectorXd(materialElement, "diffuse");
+  ASSERT_EQ(color.size(), 4);
+  EXPECT_DOUBLE_EQ(color[0], 0.25);
+  EXPECT_DOUBLE_EQ(color[2], 0.75);
 }
 
 //==============================================================================

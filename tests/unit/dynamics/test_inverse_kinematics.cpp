@@ -1,16 +1,6 @@
 // Copyright (c) 2011, The DART development contributors
 
-#include <dart/dynamics/body_node.hpp>
-#include <dart/dynamics/end_effector.hpp>
-#include <dart/dynamics/hierarchical_ik.hpp>
-#include <dart/dynamics/inverse_kinematics.hpp>
-#include <dart/dynamics/revolute_joint.hpp>
-#include <dart/dynamics/simple_frame.hpp>
-#include <dart/dynamics/skeleton.hpp>
-
-#include <dart/math/constants.hpp>
-#include <dart/math/optimization/function.hpp>
-#include <dart/math/optimization/gradient_descent_solver.hpp>
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 
@@ -1588,4 +1578,99 @@ TEST(InverseKinematics, CloneCopiesErrorAndGradientMethods)
 
   EXPECT_NE(clonedIk->getObjective(), nullptr);
   EXPECT_TRUE(clonedIk->hasNullSpaceObjective());
+}
+
+TEST(InverseKinematics, ConstGetterCallsFromPointer)
+{
+  auto chain = makeIkChain();
+  auto ik = InverseKinematics::create(chain.endEffector);
+  ASSERT_NE(ik, nullptr);
+
+  auto target = std::make_shared<SimpleFrame>(Frame::World(), "ik_const_ptr");
+  target->setTransform(chain.endEffector->getWorldTransform());
+  ik->setTarget(target);
+
+  auto solver = std::make_shared<math::GradientDescentSolver>();
+  solver->setNumMaxIterations(1);
+  ik->setSolver(solver);
+
+  ik->setObjective(std::make_shared<SimpleIkObjective>(ik.get()));
+  ik->setNullSpaceObjective(std::make_shared<SimpleIkObjective>(ik.get()));
+  ik->setOffset(Eigen::Vector3d(0.02, -0.01, 0.03));
+  ik->setActive(true);
+
+  const InverseKinematics* constIk = ik.get();
+  EXPECT_TRUE(constIk->isActive());
+  EXPECT_TRUE(constIk->hasOffset());
+  EXPECT_TRUE(constIk->getOffset().isApprox(ik->getOffset()));
+  EXPECT_EQ(constIk->getTarget(), target);
+  EXPECT_EQ(constIk->getSolver(), solver);
+  EXPECT_NE(constIk->getProblem(), nullptr);
+  EXPECT_NE(constIk->getObjective(), nullptr);
+  EXPECT_NE(constIk->getNullSpaceObjective(), nullptr);
+}
+
+TEST(InverseKinematics, TaskSpaceRegionReferenceFallbackAndClamp)
+{
+  auto fixture = makeIkSkeleton();
+  auto ik = fixture.end->getOrCreateIK();
+  ASSERT_NE(ik, nullptr);
+
+  auto& tsr = ik->setErrorMethod<InverseKinematics::TaskSpaceRegion>();
+  tsr.setComputeFromCenter(true);
+  InverseKinematics::ErrorMethod::Bounds bounds;
+  bounds.first = Eigen::Vector6d::Constant(-0.01);
+  bounds.second = Eigen::Vector6d::Constant(0.01);
+  bounds.second[0] = std::numeric_limits<double>::infinity();
+  bounds.first[1] = -std::numeric_limits<double>::infinity();
+  tsr.setBounds(bounds);
+  tsr.setErrorWeights(Eigen::Vector6d::Ones());
+  tsr.setErrorLengthClamp(0.001);
+  tsr.setReferenceFrame(nullptr);
+
+  auto target
+      = std::make_shared<SimpleFrame>(fixture.end, "ik_target_fallback");
+  Eigen::Isometry3d targetTf = Eigen::Isometry3d::Identity();
+  targetTf.translation() = Eigen::Vector3d(0.2, -0.3, 0.0);
+  target->setRelativeTransform(targetTf);
+  ik->setTarget(target);
+  ik->setOffset(Eigen::Vector3d(0.05, 0.0, 0.0));
+
+  const auto& error = tsr.evalError(ik->getPositions());
+  EXPECT_TRUE(error.array().isFinite().all());
+  EXPECT_LE(error.norm(), tsr.getErrorLengthClamp() + 1e-12);
+}
+
+TEST(HierarchicalIK, NullspaceCachingAndZeroed)
+{
+  auto skeleton = Skeleton::create("hik_nullspace");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  auto* body = pair.second;
+  auto* endEffector = body->createEndEffector("ee");
+  ASSERT_NE(endEffector, nullptr);
+
+  auto bodyIk = body->getOrCreateIK();
+  auto eeIk = endEffector->getOrCreateIK();
+  ASSERT_NE(bodyIk, nullptr);
+  ASSERT_NE(eeIk, nullptr);
+  bodyIk->setHierarchyLevel(0);
+  eeIk->setHierarchyLevel(1);
+
+  auto composite = CompositeIK::create(skeleton);
+  ASSERT_NE(composite, nullptr);
+  EXPECT_TRUE(composite->addModule(bodyIk));
+  EXPECT_TRUE(composite->addModule(eeIk));
+  composite->refreshIKHierarchy();
+
+  const auto nullspacesFirst = composite->computeNullSpaces();
+  EXPECT_EQ(nullspacesFirst.size(), composite->getIKHierarchy().size());
+
+  const auto nullspacesSecond = composite->computeNullSpaces();
+  EXPECT_EQ(nullspacesSecond.size(), composite->getIKHierarchy().size());
+
+  skeleton->setPosition(0, skeleton->getPosition(0) + 0.1);
+  const auto nullspacesThird = composite->computeNullSpaces();
+  EXPECT_EQ(nullspacesThird.size(), composite->getIKHierarchy().size());
+  EXPECT_TRUE(nullspacesThird.back().allFinite());
 }

@@ -9,22 +9,7 @@
 
 #include "helpers/gtest_utils.hpp"
 
-#include "dart/collision/dart/dart_collision_detector.hpp"
-#include "dart/constraint/constraint_solver.hpp"
-#include "dart/constraint/contact_constraint.hpp"
-#include "dart/constraint/contact_surface.hpp"
-#include "dart/constraint/coupler_constraint.hpp"
-#include "dart/constraint/revolute_joint_constraint.hpp"
-#include "dart/dynamics/free_joint.hpp"
-#include "dart/dynamics/mimic_dof_properties.hpp"
-#include "dart/dynamics/revolute_joint.hpp"
-#include "dart/dynamics/skeleton.hpp"
-#include "dart/math/lcp/lcp_solver.hpp"
-#include "dart/math/lcp/pivoting/dantzig_solver.hpp"
-#include "dart/math/lcp/projection/pgs_solver.hpp"
-#include "dart/simulation/world.hpp"
-
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 
@@ -268,6 +253,22 @@ public:
   {
     return mMimicMotorConstraints.size();
   }
+};
+
+class ExposedCouplerConstraint final : public constraint::CouplerConstraint
+{
+public:
+  ExposedCouplerConstraint(
+      dynamics::Joint* joint,
+      std::span<const dynamics::MimicDofProperties> mimicDofProperties)
+    : constraint::CouplerConstraint(joint, mimicDofProperties)
+  {
+  }
+
+  using constraint::CouplerConstraint::applyUnitImpulse;
+  using constraint::CouplerConstraint::getInformation;
+  using constraint::CouplerConstraint::getVelocityChange;
+  using constraint::CouplerConstraint::update;
 };
 
 class PartialNanLcpSolver : public math::LcpSolver
@@ -597,6 +598,123 @@ TEST(ConstraintSolver, AutoCreatesCouplerConstraintsForMimicJoints)
 
   EXPECT_EQ(solver.getNumCouplerConstraints(), 1u);
   EXPECT_EQ(solver.getNumMimicMotorConstraints(), 0u);
+}
+
+//==============================================================================
+TEST(CouplerConstraint, CrossSkeletonImpulseAndVelocityChange)
+{
+  auto refSkeleton = dynamics::Skeleton::create("ref_skel");
+  auto depSkeleton = dynamics::Skeleton::create("dep_skel");
+
+  dynamics::BodyNode::Properties bodyProps;
+  bodyProps.mInertia.setMass(1.0);
+
+  dynamics::RevoluteJoint::Properties refProps;
+  refProps.mName = "ref_joint";
+  refProps.mAxis = Eigen::Vector3d::UnitZ();
+  auto refPair
+      = refSkeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          nullptr, refProps, bodyProps);
+
+  dynamics::RevoluteJoint::Properties depProps;
+  depProps.mName = "dep_joint";
+  depProps.mAxis = Eigen::Vector3d::UnitZ();
+  auto depPair
+      = depSkeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          nullptr, depProps, bodyProps);
+
+  auto* refJoint = refPair.first;
+  auto* depJoint = depPair.first;
+  ASSERT_NE(refJoint, nullptr);
+  ASSERT_NE(depJoint, nullptr);
+
+  depJoint->setActuatorType(dynamics::Joint::MIMIC);
+
+  dynamics::MimicDofProperties mimicProp;
+  mimicProp.mReferenceJoint = refJoint;
+  mimicProp.mReferenceDofIndex = 0;
+  mimicProp.mMultiplier = 1.0;
+  mimicProp.mOffset = 0.0;
+  mimicProp.mConstraintType = dynamics::MimicConstraintType::Coupler;
+  depJoint->setMimicJointDof(0, mimicProp);
+
+  refSkeleton->setPosition(0, 0.4);
+  depSkeleton->setPosition(0, 0.0);
+
+  ExposedCouplerConstraint constraint(
+      depJoint, depJoint->getMimicDofProperties());
+  constraint.update();
+  ASSERT_GT(constraint.getDimension(), 0u);
+
+  constraint::ConstraintInfo info;
+  std::vector<double> w(constraint.getDimension(), 0.0);
+  std::vector<double> b(constraint.getDimension(), 0.0);
+  std::vector<double> lo(constraint.getDimension(), 0.0);
+  std::vector<double> hi(constraint.getDimension(), 0.0);
+  std::vector<double> x(constraint.getDimension(), 0.0);
+  std::vector<int> findex(constraint.getDimension(), -1);
+  info.w = w.data();
+  info.b = b.data();
+  info.lo = lo.data();
+  info.hi = hi.data();
+  info.x = x.data();
+  info.findex = findex.data();
+  constraint.getInformation(&info);
+
+  constraint.applyUnitImpulse(0);
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), true);
+  EXPECT_TRUE(std::isfinite(vel[0]));
+}
+
+//==============================================================================
+TEST(ConstraintSolver, CrossSkeletonCouplerConstraintUpdate)
+{
+  CouplerTrackingSolver solver;
+  auto refSkeleton = dynamics::Skeleton::create("ref_skel_solver");
+  auto depSkeleton = dynamics::Skeleton::create("dep_skel_solver");
+
+  dynamics::BodyNode::Properties bodyProps;
+  bodyProps.mInertia.setMass(1.0);
+
+  dynamics::RevoluteJoint::Properties refProps;
+  refProps.mName = "ref_joint";
+  refProps.mAxis = Eigen::Vector3d::UnitZ();
+  auto refPair
+      = refSkeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          nullptr, refProps, bodyProps);
+
+  dynamics::RevoluteJoint::Properties depProps;
+  depProps.mName = "dep_joint";
+  depProps.mAxis = Eigen::Vector3d::UnitZ();
+  auto depPair
+      = depSkeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          nullptr, depProps, bodyProps);
+
+  auto* refJoint = refPair.first;
+  auto* depJoint = depPair.first;
+  ASSERT_NE(refJoint, nullptr);
+  ASSERT_NE(depJoint, nullptr);
+
+  depJoint->setActuatorType(dynamics::Joint::MIMIC);
+
+  dynamics::MimicDofProperties mimicProp;
+  mimicProp.mReferenceJoint = refJoint;
+  mimicProp.mReferenceDofIndex = 0;
+  mimicProp.mMultiplier = 1.0;
+  mimicProp.mOffset = 0.0;
+  mimicProp.mConstraintType = dynamics::MimicConstraintType::Coupler;
+  depJoint->setMimicJointDof(0, mimicProp);
+
+  refSkeleton->setPosition(0, 0.3);
+  depSkeleton->setPosition(0, -0.1);
+
+  solver.addSkeleton(refSkeleton);
+  solver.addSkeleton(depSkeleton);
+  solver.updateConstraints();
+
+  EXPECT_EQ(solver.getNumCouplerConstraints(), 1u);
+  EXPECT_EQ(solver.getSkeletons().size(), 2u);
 }
 
 //==============================================================================

@@ -43,6 +43,8 @@
 #include "dart/simulation/world.hpp"
 #include "dart/utils/urdf/urdf_parser.hpp"
 
+#include <dart/all.hpp>
+
 #if DART_IO_HAS_URDF
   #include "dart/config.hpp"
   #include "dart/dynamics/revolute_joint.hpp"
@@ -1339,6 +1341,71 @@ TEST(UrdfParser, MemoryResourceRetrieverMaterialMeshAndPackageUri)
         EXPECT_GT(mesh->getScale()[0], 0.0);
       });
   EXPECT_TRUE(foundMesh);
+}
+
+//==============================================================================
+TEST(UrdfParser, AddPackageDirectoryResolvesMesh)
+{
+  const auto tempDir = makeTempDir("dart-urdf-package");
+  const auto meshPath = tempDir / "mesh.stl";
+  const auto urdfPath = tempDir / "model.urdf";
+
+  std::ofstream meshFile(meshPath.string(), std::ios::binary);
+  ASSERT_TRUE(meshFile.is_open());
+  meshFile << "solid unit\n"
+              "facet normal 0 0 1\n"
+              "  outer loop\n"
+              "    vertex 0 0 0\n"
+              "    vertex 1 0 0\n"
+              "    vertex 0 1 0\n"
+              "  endloop\n"
+              "endfacet\n"
+              "endsolid unit\n";
+  meshFile.close();
+
+  const std::string urdfStr = R"(
+    <robot name="pkg_mesh">
+      <link name="base">
+        <visual name="mesh_visual">
+          <geometry>
+            <mesh filename="package://test_pkg/mesh.stl" />
+          </geometry>
+          <material name="mesh_color">
+            <color rgba="0.1 0.2 0.3 0.4" />
+          </material>
+        </visual>
+      </link>
+    </robot>
+  )";
+
+  std::ofstream urdfFile(urdfPath.string(), std::ios::binary);
+  ASSERT_TRUE(urdfFile.is_open());
+  urdfFile << urdfStr;
+  urdfFile.close();
+
+  UrdfParser parser;
+  parser.addPackageDirectory("test_pkg", tempDir.string());
+  const auto robot
+      = parser.parseSkeleton(Uri::createFromPath(urdfPath.string()));
+  ASSERT_TRUE(robot);
+
+  auto* body = robot->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+  bool foundMesh = false;
+  body->eachShapeNodeWith<dynamics::VisualAspect>(
+      [&](dynamics::ShapeNode* node) {
+        auto mesh
+            = std::dynamic_pointer_cast<dynamics::MeshShape>(node->getShape());
+        if (!mesh) {
+          return;
+        }
+        foundMesh = true;
+        EXPECT_EQ(
+            mesh->getColorMode(), dynamics::MeshShape::ColorMode::SHAPE_COLOR);
+      });
+  EXPECT_TRUE(foundMesh);
+
+  std::filesystem::remove_all(tempDir);
 }
 
 //==============================================================================

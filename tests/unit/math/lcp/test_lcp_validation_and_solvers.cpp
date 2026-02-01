@@ -53,6 +53,8 @@
 #include <dart/math/lcp/projection/subspace_minimization_solver.hpp>
 #include <dart/math/lcp/projection/symmetric_psor_solver.hpp>
 
+#include <dart/all.hpp>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
@@ -1046,6 +1048,71 @@ TEST(DantzigMatrixCoverage, InvertPositiveDefiniteMatrix)
   EXPECT_NEAR(Ainv[nskip + 1], expected(1, 1), 1e-8);
 }
 
+TEST(DantzigMatrixCoverage, InvertRejectsNonPositiveDefiniteMatrix)
+{
+  const int n = 2;
+  const int nskip = padding(n);
+  std::vector<double> A(n * nskip, 0.0);
+  A[0] = 0.0;
+  A[1] = 1.0;
+  A[nskip] = 1.0;
+  A[nskip + 1] = 0.0;
+
+  std::vector<double> Ainv(n * nskip, 0.0);
+  EXPECT_EQ(dInvertPDMatrix(A.data(), Ainv.data(), n), 0);
+}
+
+TEST(DantzigMatrixCoverage, MultiplyVariantsMatchEigen)
+{
+  const int p = 2;
+  const int q = 3;
+  const int r = 2;
+  std::vector<double> B = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
+  std::vector<double> C = {0.5, -0.2, 1.1, 0.0, -0.4, 0.8};
+  std::vector<double> A0(p * r, 0.0);
+
+  dMultiply0(A0.data(), B.data(), C.data(), p, q, r);
+
+  Eigen::Matrix<double, p, q, Eigen::RowMajor> Be;
+  Eigen::Matrix<double, q, r, Eigen::RowMajor> Ce;
+  std::copy(B.begin(), B.end(), Be.data());
+  std::copy(C.begin(), C.end(), Ce.data());
+  Eigen::Matrix<double, p, r, Eigen::RowMajor> expected0 = Be * Ce;
+  for (int i = 0; i < p * r; ++i) {
+    EXPECT_NEAR(A0[static_cast<std::size_t>(i)], expected0.data()[i], 1e-12);
+  }
+
+  std::vector<double> A1(p * r, 0.0);
+  std::vector<double> B1 = {1.0, -0.5, 2.0, 0.25, -1.0, 0.75};
+  std::vector<double> C1 = {0.4, -0.2, 0.3, 1.2, -0.1, 0.9};
+  dMultiply1(A1.data(), B1.data(), C1.data(), p, q, r);
+
+  Eigen::Matrix<double, q, p, Eigen::RowMajor> Be1;
+  Eigen::Matrix<double, q, r, Eigen::RowMajor> Ce1;
+  std::copy(B1.begin(), B1.end(), Be1.data());
+  std::copy(C1.begin(), C1.end(), Ce1.data());
+  Eigen::Matrix<double, p, r, Eigen::RowMajor> expected1
+      = Be1.transpose() * Ce1;
+  for (int i = 0; i < p * r; ++i) {
+    EXPECT_NEAR(A1[static_cast<std::size_t>(i)], expected1.data()[i], 1e-12);
+  }
+
+  std::vector<double> A2(p * r, 0.0);
+  std::vector<double> B2 = {0.2, 0.4, -0.1, 0.3, 0.5, -0.2};
+  std::vector<double> C2 = {1.1, -0.4, 0.6, 0.2, -0.3, 0.8};
+  dMultiply2(A2.data(), B2.data(), C2.data(), p, q, r);
+
+  Eigen::Matrix<double, p, q, Eigen::RowMajor> Be2;
+  Eigen::Matrix<double, r, q, Eigen::RowMajor> Ce2;
+  std::copy(B2.begin(), B2.end(), Be2.data());
+  std::copy(C2.begin(), C2.end(), Ce2.data());
+  Eigen::Matrix<double, p, r, Eigen::RowMajor> expected2
+      = Be2 * Ce2.transpose();
+  for (int i = 0; i < p * r; ++i) {
+    EXPECT_NEAR(A2[static_cast<std::size_t>(i)], expected2.data()[i], 1e-12);
+  }
+}
+
 TEST(DantzigMatrixCoverage, PositiveDefiniteCheck)
 {
   const int n = 2;
@@ -1418,6 +1485,25 @@ TEST(LemkeSolverCoverage, FallsBackForBoxedProblem)
   EXPECT_TRUE(x.array().isFinite().all());
 }
 
+TEST(LemkeSolverCoverage, ReportsFailureOnDegeneratePivot)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(1, 1);
+  Eigen::VectorXd b(1);
+  b << 1.0;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(1);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(1, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(1, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  LemkeSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(1);
+  LcpOptions options;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_FALSE(result.message.empty());
+}
+
 TEST(BlockedJacobiSolverCoverage, RejectsInvalidBlockSizes)
 {
   BlockedJacobiSolver solver;
@@ -1428,6 +1514,21 @@ TEST(BlockedJacobiSolverCoverage, RejectsInvalidBlockSizes)
   options.customOptions = &params;
 
   auto problem = makeStandardProblem(3);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+}
+
+TEST(BlockedJacobiSolverCoverage, RejectsFrictionIndexOutsideBlock)
+{
+  BlockedJacobiSolver solver;
+  BlockedJacobiSolver::Parameters params;
+  params.blockSizes = {1, 2};
+
+  LcpOptions options;
+  options.customOptions = &params;
+
+  auto problem = makeFrictionProblem();
   Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
   const auto result = solver.solve(problem, x, options);
   EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
@@ -1474,6 +1575,30 @@ TEST(BlockedJacobiSolverCoverage, SolvesSimpleThreeByThreeProblem)
   const auto result = solver.solve(problem, x, options);
   EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(BlockedJacobiSolverCoverage, ReportsMaxIterationsWhenNotConverged)
+{
+  BlockedJacobiSolver solver;
+  Eigen::MatrixXd A(2, 2);
+  A << 2.0, 1.5, 1.0, 2.5;
+  Eigen::VectorXd target(2);
+  target << 0.4, 0.25;
+  Eigen::VectorXd b = A * target;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  LcpOptions options;
+  options.maxIterations = 1;
+  options.absoluteTolerance = 1e-12;
+  options.relativeTolerance = 1e-12;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);
 }
 
 TEST(BgsSolverCoverage, RejectsZeroBlockSize)
@@ -1657,6 +1782,25 @@ TEST(DantzigSolverCoverage, SolvesZeroSizeProblem)
   EXPECT_EQ(x.size(), 0);
 }
 
+TEST(DantzigSolverCoverage, EarlyTerminationOnTrivialProblem)
+{
+  DantzigSolver solver;
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::VectorXd b = Eigen::VectorXd::Ones(2) * -1.0;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.earlyTermination = true;
+  options.validateSolution = false;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+}
+
 TEST(DirectSolverCoverage, FallsBackForLargeProblem)
 {
   DirectSolver solver;
@@ -1726,6 +1870,22 @@ TEST(ShockPropagationSolverCoverage, RejectsDuplicateLayerIndices)
   ShockPropagationSolver::Parameters params;
   params.blockSizes = {1, 1};
   params.layers = {{0}, {0}};
+
+  LcpOptions options;
+  options.customOptions = &params;
+
+  auto problem = makeStandardProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+}
+
+TEST(ShockPropagationSolverCoverage, RejectsEmptyLayer)
+{
+  ShockPropagationSolver solver;
+  ShockPropagationSolver::Parameters params;
+  params.blockSizes = {1, 1};
+  params.layers = {{}, {1}};
 
   LcpOptions options;
   options.customOptions = &params;
@@ -1931,6 +2091,19 @@ TEST(InteriorPointSolverCoverage, SolvesSimpleThreeByThreeProblem)
 
   LcpOptions options;
   options.maxIterations = 10;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(InteriorPointSolverCoverage, FallsBackForBoxedProblem)
+{
+  InteriorPointSolver solver;
+  auto problem = makeBoxedProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 5;
   const auto result = solver.solve(problem, x, options);
   EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
@@ -2268,6 +2441,22 @@ TEST(LcpValidationCoverage, ValidateSolutionAcceptsFixedAndInteriorCases)
 
   const double comp = detail::complementarityInfinityNorm(x, w, lo, hi, 1e-8);
   EXPECT_NEAR(comp, 0.0, 1e-12);
+}
+
+TEST(LcpValidationCoverage, ComplementarityNormTracksBoundCases)
+{
+  Eigen::VectorXd x(3);
+  Eigen::VectorXd w(3);
+  Eigen::VectorXd lo(3);
+  Eigen::VectorXd hi(3);
+
+  lo << 0.0, 0.0, -1.0;
+  hi << std::numeric_limits<double>::infinity(), 1.0, 1.0;
+  x << 0.0, 1.0, 0.2;
+  w << -0.3, 0.4, 0.3;
+
+  const double comp = detail::complementarityInfinityNorm(x, w, lo, hi, 1e-8);
+  EXPECT_GT(comp, 0.0);
 }
 
 TEST(DantzigMatrixCoverage, SolveL1AndL1TWithLargerMatrix)

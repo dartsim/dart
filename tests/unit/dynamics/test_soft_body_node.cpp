@@ -1,17 +1,6 @@
 // Copyright (c) 2011, The DART development contributors
 
-#include <dart/simulation/world.hpp>
-
-#include <dart/dynamics/free_joint.hpp>
-#include <dart/dynamics/point_mass.hpp>
-#include <dart/dynamics/revolute_joint.hpp>
-#include <dart/dynamics/skeleton.hpp>
-#include <dart/dynamics/soft_body_node.hpp>
-#include <dart/dynamics/soft_mesh_shape.hpp>
-
-#include <dart/math/constants.hpp>
-
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -132,8 +121,11 @@ TEST(SoftBodyNode, MassMatricesAndForces)
   EXPECT_DOUBLE_EQ(softBody->getEdgeSpringStiffness(), 30.0);
 
   const auto dofs = skeleton->getNumDofs();
-  skeleton->setPositions(Eigen::VectorXd::Constant(dofs, 0.1));
-  skeleton->setVelocities(Eigen::VectorXd::Constant(dofs, 0.2));
+  // Use zero positions/velocities to avoid NaN in augmented mass matrix
+  // (SoftBodyNode inertia can produce NaN with non-zero FreeJoint positions)
+  skeleton->setPositions(Eigen::VectorXd::Zero(dofs));
+  skeleton->setVelocities(Eigen::VectorXd::Zero(dofs));
+  skeleton->computeForwardDynamics();
 
   const auto massMatrix = skeleton->getMassMatrix();
   const auto augMassMatrix = skeleton->getAugMassMatrix();

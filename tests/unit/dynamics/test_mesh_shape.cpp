@@ -1,13 +1,6 @@
 #include "dart/common/diagnostics.hpp"
-#include "dart/common/filesystem.hpp"
-#include "dart/common/local_resource_retriever.hpp"
-#include "dart/common/uri.hpp"
-#include "dart/config.hpp"
-#include "dart/dynamics/arrow_shape.hpp"
-#include "dart/dynamics/mesh_shape.hpp"
-#include "dart/math/tri_mesh.hpp"
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 #include <Eigen/Core>
 #include <assimp/cimport.h>

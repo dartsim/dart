@@ -2540,6 +2540,65 @@ TEST(SkelParser, JointActuatorServoAndLocked)
 }
 
 //==============================================================================
+TEST(SkelParser, AxisDampingElementSetsDamping)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      <joint type="revolute" name="rev_joint">
+        <parent>base</parent>
+        <child>link</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <damping>0.7</damping>
+        </axis>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+ )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* joint = skel->getJoint("rev_joint");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_DOUBLE_EQ(joint->getDampingCoefficient(0), 0.7);
+}
+
+//==============================================================================
 TEST(SkelParser, DofPositionLimitsFromXml)
 {
   const std::string skelXml = R"(<?xml version="1.0" ?>

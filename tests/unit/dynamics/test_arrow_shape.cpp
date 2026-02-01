@@ -1,10 +1,79 @@
 // Copyright (c) 2011, The DART development contributors
 
-#include <dart/dynamics/arrow_shape.hpp>
+#include <dart/utils/dart_resource_retriever.hpp>
+
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 
+namespace dart {
+namespace utils {
+} // namespace utils
+} // namespace dart
+
 using namespace dart::dynamics;
+
+namespace {
+
+class DartSampleRetriever final : public dart::common::ResourceRetriever
+{
+public:
+  explicit DartSampleRetriever(std::string dataRoot)
+    : mDataRoot(std::move(dataRoot)),
+      mDelegate(std::make_shared<dart::common::LocalResourceRetriever>())
+  {
+  }
+
+  bool exists(const dart::common::Uri& uri) override
+  {
+    return mDelegate->exists(toLocalUri(uri));
+  }
+
+  dart::common::ResourcePtr retrieve(const dart::common::Uri& uri) override
+  {
+    return mDelegate->retrieve(toLocalUri(uri));
+  }
+
+  std::string getFilePath(const dart::common::Uri& uri) override
+  {
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    return mDelegate->getFilePath(toLocalUri(uri));
+    DART_SUPPRESS_DEPRECATED_END
+  }
+
+private:
+  dart::common::Uri toLocalUri(const dart::common::Uri& uri) const
+  {
+    if (isSampleUri(uri)) {
+      dart::common::filesystem::path path = mDataRoot;
+      std::string relative = uri.getPath();
+      if (!relative.empty() && relative.front() == '/') {
+        relative.erase(0, 1);
+      }
+      path /= relative;
+      return dart::common::Uri::createFromPath(path.string());
+    }
+
+    return uri;
+  }
+
+  bool isSampleUri(const dart::common::Uri& uri) const
+  {
+    return uri.mScheme.get_value_or("") == "dart" && uri.mAuthority
+           && uri.mAuthority.get() == "sample";
+  }
+
+  std::string mDataRoot;
+  dart::common::LocalResourceRetrieverPtr mDelegate;
+};
+
+dart::common::filesystem::path getSampleDataRoot()
+{
+  dart::common::filesystem::path here(__FILE__);
+  return here.parent_path().parent_path().parent_path().parent_path() / "data";
+}
+
+} // namespace
 
 //==============================================================================
 TEST(ArrowShapeTest, DefaultConstructor)
@@ -206,6 +275,19 @@ TEST(ArrowShapeTest, AntiparallelDirection)
 }
 
 //==============================================================================
+TEST(ArrowShapeTest, ZeroLengthArrowDoesNotCrash)
+{
+  const Eigen::Vector3d tail(1.0, 2.0, 3.0);
+  const Eigen::Vector3d head = tail;
+
+  ArrowShape arrow(tail, head);
+
+  const auto mesh = arrow.getTriMesh();
+  ASSERT_NE(mesh, nullptr);
+  EXPECT_GT(mesh->getVertices().size(), 0u);
+}
+
+//==============================================================================
 TEST(ArrowShapeTest, DoubleArrowAntiparallelMesh)
 {
   const Eigen::Vector3d tail(0.0, 0.0, 2.0);
@@ -221,4 +303,59 @@ TEST(ArrowShapeTest, DoubleArrowAntiparallelMesh)
   ASSERT_NE(mesh, nullptr);
   EXPECT_EQ(mesh->getVertices().size(), 6 * resolution + 2);
   EXPECT_EQ(mesh->getTriangles().size(), 8 * resolution);
+}
+
+//==============================================================================
+TEST(ArrowShapeTest, MeshShapeTriMeshConstructorAndConstGetters)
+{
+  auto triMesh = std::make_shared<dart::math::TriMesh<double>>();
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(1.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 1.0, 0.0);
+  triMesh->addTriangle(0, 1, 2);
+
+  dart::dynamics::MeshShape shape(Eigen::Vector3d::Ones(), triMesh);
+  shape.setScale(Eigen::Vector3d(1.0, 2.0, 3.0));
+  shape.setColorMode(dart::dynamics::MeshShape::SHAPE_COLOR);
+  shape.setAlphaMode(dart::dynamics::MeshShape::AUTO);
+  shape.setColorIndex(2);
+  shape.setDisplayList(7);
+
+  const dart::dynamics::MeshShape* constShape = &shape;
+  EXPECT_TRUE(constShape->getScale().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_EQ(constShape->getColorMode(), dart::dynamics::MeshShape::SHAPE_COLOR);
+  EXPECT_EQ(constShape->getAlphaMode(), dart::dynamics::MeshShape::AUTO);
+  EXPECT_EQ(constShape->getColorIndex(), 2);
+  EXPECT_EQ(constShape->getDisplayList(), 7);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = constShape->getMesh();
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene, nullptr);
+  EXPECT_TRUE(constShape->getBoundingBox().getMin().array().isFinite().all());
+  EXPECT_TRUE(constShape->getBoundingBox().getMax().array().isFinite().all());
+}
+
+//==============================================================================
+TEST(ArrowShapeTest, MeshShapeLoadsDartSampleUri)
+{
+  const auto dataRoot = getSampleDataRoot();
+  auto retriever = std::make_shared<DartSampleRetriever>(dataRoot.string());
+  const std::string uriString = "dart://sample/obj/BoxSmall.obj";
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene
+      = dart::dynamics::MeshShape::loadMesh(uriString, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene, nullptr);
+
+  const dart::common::Uri uri
+      = dart::common::Uri::createFromStringOrPath(uriString);
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  dart::dynamics::MeshShape shape(
+      Eigen::Vector3d::Ones(), scene, uri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+
+  EXPECT_EQ(shape.getMeshUri(), uriString);
+  EXPECT_FALSE(shape.getMeshPath().empty());
 }

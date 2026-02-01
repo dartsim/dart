@@ -13,7 +13,7 @@
 #include <dart/dynamics/linkage.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 
@@ -70,18 +70,40 @@ TEST(GroupTest, ConstAccessors)
   auto skel = createNLinkRobot(2, Eigen::Vector3d(0.1, 0.1, 0.5), DOF_PITCH);
   auto group = Group::create("const_group", skel);
 
-  const Group& constGroup = *group;
-  EXPECT_EQ(constGroup.getName(), "const_group");
-  EXPECT_EQ(constGroup.getNumBodyNodes(), group->getNumBodyNodes());
-  EXPECT_EQ(constGroup.getNumJoints(), group->getNumJoints());
-  EXPECT_EQ(constGroup.getNumDofs(), group->getNumDofs());
+  const Group* constGroup = group.get();
+  EXPECT_EQ(constGroup->getName(), "const_group");
+  EXPECT_EQ(constGroup->getNumBodyNodes(), group->getNumBodyNodes());
+  EXPECT_EQ(constGroup->getNumJoints(), group->getNumJoints());
+  EXPECT_EQ(constGroup->getNumDofs(), group->getNumDofs());
 
-  const auto bodyNodes = constGroup.getBodyNodes();
+  EXPECT_EQ(constGroup->getNumSkeletons(), 1u);
+  EXPECT_TRUE(constGroup->hasSkeleton(skel.get()));
+
+  const auto bodyNodes = constGroup->getBodyNodes();
   EXPECT_EQ(bodyNodes.size(), group->getNumBodyNodes());
-  const auto joints = constGroup.getJoints();
+  const auto joints = constGroup->getJoints();
   EXPECT_EQ(joints.size(), group->getNumJoints());
-  const auto dofs = constGroup.getDofs();
+  const auto dofs = constGroup->getDofs();
   EXPECT_EQ(dofs.size(), group->getNumDofs());
+
+  const auto* bodyNode = skel->getBodyNode(0);
+  const auto* joint = skel->getJoint(0);
+  const auto* dof = skel->getDof(0);
+  const auto bodyName = bodyNode->getName();
+  const auto jointName = joint->getName();
+
+  EXPECT_EQ(constGroup->getBodyNode(0), bodyNode);
+  EXPECT_EQ(constGroup->getBodyNode(bodyName), bodyNode);
+  EXPECT_EQ(constGroup->getJoint(0), joint);
+  EXPECT_EQ(constGroup->getJoint(jointName), joint);
+  EXPECT_EQ(constGroup->getDof(0), dof);
+
+  EXPECT_EQ(constGroup->getBodyNodes(bodyName).size(), 1u);
+  EXPECT_EQ(constGroup->getJoints(jointName).size(), 1u);
+
+  EXPECT_EQ(constGroup->getIndexOf(bodyNode, false), 0u);
+  EXPECT_EQ(constGroup->getIndexOf(joint, false), 0u);
+  EXPECT_EQ(constGroup->getIndexOf(dof, false), 0u);
 }
 
 //==============================================================================

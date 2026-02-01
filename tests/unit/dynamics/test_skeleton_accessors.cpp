@@ -434,6 +434,99 @@ TEST(SkeletonAccessors, MassAndForceAccessorsWithInertia)
 }
 
 //==============================================================================
+TEST(SkeletonAccessors, ConstAccessorOverloads)
+{
+  auto skel = Skeleton::create("const_accessors");
+
+  RevoluteJoint::Properties rootJointProps;
+  rootJointProps.mName = "root_joint";
+  rootJointProps.mAxis = Eigen::Vector3d::UnitZ();
+  BodyNode::Properties rootBodyProps;
+  rootBodyProps.mName = "root_body";
+  rootBodyProps.mInertia.setMass(2.0);
+  rootBodyProps.mInertia.setMoment(0.2, 0.3, 0.4, 0.0, 0.0, 0.0);
+
+  auto rootPair = skel->createJointAndBodyNodePair<RevoluteJoint>(
+      nullptr, rootJointProps, rootBodyProps);
+
+  PrismaticJoint::Properties childJointProps;
+  childJointProps.mName = "child_joint";
+  childJointProps.mAxis = Eigen::Vector3d::UnitX();
+  BodyNode::Properties childBodyProps;
+  childBodyProps.mName = "child_body";
+  childBodyProps.mInertia.setMass(1.5);
+  childBodyProps.mInertia.setMoment(0.1, 0.15, 0.2, 0.0, 0.0, 0.0);
+
+  auto childPair = skel->createJointAndBodyNodePair<PrismaticJoint>(
+      rootPair.second, childJointProps, childBodyProps);
+
+  skel->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  skel->setPositions(Eigen::Vector2d(0.1, -0.2));
+  skel->setVelocities(Eigen::Vector2d(0.3, 0.4));
+  skel->setAccelerations(Eigen::Vector2d(-0.1, 0.2));
+  skel->setForces(Eigen::Vector2d(0.5, -0.6));
+  skel->setCommands(Eigen::Vector2d(0.2, 0.1));
+
+  const Skeleton* constSkel = skel.get();
+
+  const auto state = constSkel->getState();
+  const auto config = constSkel->getConfiguration();
+  (void)state;
+  (void)config;
+
+  EXPECT_EQ(constSkel->getPtr().get(), skel.get());
+  EXPECT_EQ(constSkel->getSkeleton().get(), skel.get());
+
+  EXPECT_EQ(constSkel->getRootBodyNode(0), rootPair.second);
+  EXPECT_EQ(constSkel->getRootJoint(0), rootPair.first);
+
+  EXPECT_EQ(constSkel->getBodyNode(0), rootPair.second);
+  EXPECT_EQ(constSkel->getBodyNode("child_body"), childPair.second);
+  EXPECT_EQ(constSkel->getJoint(0), rootPair.first);
+  EXPECT_EQ(constSkel->getJoint("child_joint"), childPair.first);
+  EXPECT_EQ(constSkel->getDof(0), rootPair.first->getDof(0));
+  EXPECT_EQ(constSkel->getNumSoftBodyNodes(), 0u);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const auto bodyNodes = constSkel->getBodyNodes();
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_EQ(bodyNodes.size(), 2u);
+  EXPECT_EQ(constSkel->getBodyNodes("child_body").size(), 1u);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const auto joints = constSkel->getJoints();
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_EQ(joints.size(), 2u);
+  EXPECT_EQ(constSkel->getJoints("child_joint").size(), 1u);
+
+  const auto treeBodyNodes = constSkel->getTreeBodyNodes(0);
+  EXPECT_EQ(treeBodyNodes.size(), 2u);
+  const auto treeDofs = constSkel->getTreeDofs(0);
+  EXPECT_EQ(treeDofs.size(), 2u);
+
+  const auto com = constSkel->getCOM();
+  EXPECT_TRUE(com.array().isFinite().all());
+  const auto comVel = constSkel->getCOMLinearVelocity();
+  EXPECT_TRUE(comVel.array().isFinite().all());
+  const auto comAcc = constSkel->getCOMLinearAcceleration();
+  EXPECT_TRUE(comAcc.array().isFinite().all());
+
+  const auto& massMatrix = constSkel->getMassMatrix();
+  EXPECT_EQ(massMatrix.rows(), 2);
+  EXPECT_EQ(massMatrix.cols(), 2);
+  EXPECT_TRUE(massMatrix.allFinite());
+
+  EXPECT_TRUE(constSkel->getAugMassMatrix().allFinite());
+  EXPECT_TRUE(constSkel->getInvMassMatrix().allFinite());
+  EXPECT_TRUE(constSkel->getInvAugMassMatrix().allFinite());
+  EXPECT_TRUE(constSkel->getCoriolisForces().allFinite());
+  EXPECT_TRUE(constSkel->getGravityForces().allFinite());
+  EXPECT_TRUE(constSkel->getCoriolisAndGravityForces().allFinite());
+  EXPECT_TRUE(constSkel->getExternalForces().allFinite());
+  EXPECT_TRUE(constSkel->getConstraintForces().allFinite());
+}
+
+//==============================================================================
 // Mass Matrix Numerical Correctness Tests
 //==============================================================================
 
