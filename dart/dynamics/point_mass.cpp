@@ -143,6 +143,10 @@ bool PointMass::Properties::operator!=(const PointMass::Properties& other) const
 //==============================================================================
 PointMass::PointMass(SoftBodyNode* _softBodyNode)
   : // mIndexInSkeleton(Eigen::Matrix<std::size_t, 3, 1>::Zero()),
+    mBiasForceForInvMeta(Eigen::Vector3d::Zero()),
+    mG_F(Eigen::Vector3d::Zero()),
+    mCg_dV(Eigen::Vector3d::Zero()),
+    mCg_F(Eigen::Vector3d::Zero()),
     mParentSoftBodyNode(_softBodyNode),
     mPositionDeriv(Eigen::Vector3d::Zero()),
     mVelocitiesDeriv(Eigen::Vector3d::Zero()),
