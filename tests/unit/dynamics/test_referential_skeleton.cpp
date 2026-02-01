@@ -9,6 +9,8 @@
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
+#include <dart/dart.hpp>
+
 #include <gtest/gtest.h>
 
 #include <array>
@@ -664,4 +666,60 @@ TEST(ReferentialSkeleton, ChainAndLinkageMassMatrices)
   EXPECT_TRUE(linkage->getGravityForces().allFinite());
   EXPECT_TRUE(linkage->getCoriolisAndGravityForces().allFinite());
   EXPECT_TRUE(linkage->getExternalForces().allFinite());
+}
+
+TEST(ReferentialSkeleton, ConstChainAccessors)
+{
+  auto skeleton = Skeleton::create("ref_const_chain");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.second->setName("root_bn");
+  rootPair.first->setName("root_joint");
+
+  auto midPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  midPair.second->setName("mid_bn");
+  midPair.first->setName("mid_joint");
+
+  auto tipPair
+      = midPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  tipPair.second->setName("tip_bn");
+  tipPair.first->setName("tip_joint");
+
+  auto chain = Chain::create(rootPair.second, tipPair.second, "const_chain");
+  ASSERT_NE(chain, nullptr);
+
+  const ReferentialSkeleton& constChain = *chain;
+  EXPECT_EQ(constChain.getNumBodyNodes(), chain->getNumBodyNodes());
+  EXPECT_EQ(constChain.getNumJoints(), chain->getNumJoints());
+  EXPECT_EQ(constChain.getNumDofs(), chain->getNumDofs());
+
+  EXPECT_NE(constChain.getBodyNode(0), nullptr);
+  EXPECT_NE(constChain.getBodyNode("mid_bn"), nullptr);
+  EXPECT_TRUE(constChain.getBodyNodes("missing").empty());
+
+  EXPECT_NE(constChain.getJoint(0), nullptr);
+  EXPECT_NE(constChain.getJoint("mid_joint"), nullptr);
+  EXPECT_TRUE(constChain.getJoints("missing").empty());
+  EXPECT_EQ(constChain.getJoints().size(), constChain.getNumJoints());
+
+  EXPECT_NE(constChain.getDof(0), nullptr);
+  const auto dofs = constChain.getDofs();
+  EXPECT_EQ(dofs.size(), constChain.getNumDofs());
+
+  const auto* body = constChain.getBodyNode(0);
+  const auto* joint = constChain.getJoint(0);
+  const auto* dof = constChain.getDof(0);
+  EXPECT_NE(constChain.getIndexOf(body, false), INVALID_INDEX);
+  EXPECT_NE(constChain.getIndexOf(joint, false), INVALID_INDEX);
+  EXPECT_NE(constChain.getIndexOf(dof, false), INVALID_INDEX);
+
+  const auto& massMatrix = constChain.getMassMatrix();
+  EXPECT_EQ(massMatrix.rows(), static_cast<int>(constChain.getNumDofs()));
+  EXPECT_EQ(massMatrix.cols(), static_cast<int>(constChain.getNumDofs()));
+  EXPECT_EQ(
+      constChain.getGravityForces().size(),
+      static_cast<int>(constChain.getNumDofs()));
+
+  const auto com = constChain.getCOM();
+  EXPECT_TRUE(com.array().isFinite().all());
 }

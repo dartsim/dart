@@ -7,6 +7,8 @@
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/math/tri_mesh.hpp"
 
+#include <dart/dart.hpp>
+
 #include <Eigen/Core>
 #include <assimp/cimport.h>
 #include <assimp/config.h>
@@ -17,12 +19,15 @@
 #include <atomic>
 #include <chrono>
 #include <fstream>
+#include <iterator>
 #include <memory>
 #include <set>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 #include <cmath>
+#include <cstring>
 
 using namespace dart;
 
@@ -96,6 +101,140 @@ public:
   }
 
   std::string lastUri;
+};
+
+class StringResource final : public common::Resource
+{
+public:
+  explicit StringResource(std::string data)
+    : mData(std::move(data)), mPosition(0)
+  {
+  }
+
+  std::size_t getSize() override
+  {
+    return mData.size();
+  }
+
+  std::size_t tell() override
+  {
+    return mPosition;
+  }
+
+  bool seek(ptrdiff_t offset, SeekType origin) override
+  {
+    ptrdiff_t base = 0;
+    switch (origin) {
+      case SEEKTYPE_CUR:
+        base = static_cast<ptrdiff_t>(mPosition);
+        break;
+      case SEEKTYPE_END:
+        base = std::ssize(mData);
+        break;
+      case SEEKTYPE_SET:
+        base = 0;
+        break;
+      default:
+        return false;
+    }
+
+    const ptrdiff_t next = base + offset;
+    if (next < 0) {
+      return false;
+    }
+    if (static_cast<std::size_t>(next) > mData.size()) {
+      return false;
+    }
+
+    mPosition = static_cast<std::size_t>(next);
+    return true;
+  }
+
+  std::size_t read(void* buffer, std::size_t size, std::size_t count) override
+  {
+    if (!buffer || size == 0 || count == 0) {
+      return 0;
+    }
+
+    const std::size_t remaining = mData.size() - mPosition;
+    const std::size_t availableCount = remaining / size;
+    const std::size_t toReadCount = std::min(count, availableCount);
+    const std::size_t toReadBytes = toReadCount * size;
+
+    if (toReadBytes > 0) {
+      std::memcpy(buffer, mData.data() + mPosition, toReadBytes);
+      mPosition += toReadBytes;
+    }
+
+    return toReadCount;
+  }
+
+private:
+  std::string mData;
+  std::size_t mPosition;
+};
+
+class StringResourceRetriever final : public common::ResourceRetriever
+{
+public:
+  explicit StringResourceRetriever(
+      std::unordered_map<std::string, std::string> data)
+    : mData(std::move(data))
+  {
+  }
+
+  bool exists(const common::Uri& uri) override
+  {
+    return findData(uri) != nullptr;
+  }
+
+  common::ResourcePtr retrieve(const common::Uri& uri) override
+  {
+    const std::string* data = findData(uri);
+    if (!data) {
+      return nullptr;
+    }
+    return std::make_shared<StringResource>(*data);
+  }
+
+  std::string getFilePath(const common::Uri& /*uri*/) override
+  {
+    return std::string();
+  }
+
+private:
+  const std::string* findData(const common::Uri& uri) const
+  {
+    const auto byFull = mData.find(uri.toString());
+    if (byFull != mData.end()) {
+      return &byFull->second;
+    }
+
+    if (uri.mPath) {
+      const auto& path = uri.mPath.get();
+      const auto byPath = mData.find(path);
+      if (byPath != mData.end()) {
+        return &byPath->second;
+      }
+      if (!path.empty() && path.front() == '/') {
+        const auto byTrim = mData.find(path.substr(1));
+        if (byTrim != mData.end()) {
+          return &byTrim->second;
+        }
+      }
+    }
+
+    if (uri.mAuthority) {
+      const auto byAuthority = mData.find(uri.mAuthority.get());
+      if (byAuthority != mData.end()) {
+        return &byAuthority->second;
+      }
+    }
+
+    return nullptr;
+  }
+
+  std::unordered_map<std::string, std::string> mData;
 };
 
 DART_SUPPRESS_DEPRECATED_BEGIN
@@ -1338,6 +1477,45 @@ TEST(MeshShapeTest, ConvertToAssimpMeshWithSubMeshesAndTexCoords)
   EXPECT_GE(scene->mNumMeshes, 1u);
   ASSERT_NE(scene->mMeshes, nullptr);
   EXPECT_TRUE(scene->mMeshes[0]->HasTextureCoords(0));
+}
+
+TEST(MeshShapeTest, LoadMeshFromCustomUriWithMaterial)
+{
+  const std::string objData
+      = "mtllib mesh.mtl\n"
+        "v 0 0 0\n"
+        "v 1 0 0\n"
+        "v 0 1 0\n"
+        "usemtl material_0\n"
+        "f 1 2 3\n";
+  const std::string mtlData
+      = "newmtl material_0\n"
+        "Ka 0.1 0.2 0.3\n"
+        "Kd 0.4 0.5 0.6\n"
+        "Ks 0.7 0.8 0.9\n"
+        "Ns 12\n";
+
+  std::unordered_map<std::string, std::string> data;
+  data.emplace("memory:///mesh.obj", objData);
+  data.emplace("memory:///mesh.mtl", mtlData);
+  data.emplace("mesh.mtl", mtlData);
+
+  auto retriever = std::make_shared<StringResourceRetriever>(std::move(data));
+
+  const std::string uriString = "memory:///mesh.obj";
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = dynamics::MeshShape::loadMesh(uriString, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene, nullptr);
+
+  const common::Uri meshUri = common::Uri::createFromStringOrPath(uriString);
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  dynamics::MeshShape shape(Eigen::Vector3d::Ones(), scene, meshUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+
+  ASSERT_FALSE(shape.getMaterials().empty());
+  const auto* material = shape.getMaterial(0u);
+  ASSERT_NE(material, nullptr);
 }
 
 TEST(MeshShapeTest, TriMeshConstructorPreservesTexturePaths)

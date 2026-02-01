@@ -49,6 +49,8 @@
 
 #include <dart/common/deprecated.hpp>
 
+#include <dart/dart.hpp>
+
 #if defined(__clang__) && !defined(DART_COMPILER_CLANG)
   #define DART_COMPILER_CLANG
 #endif
@@ -3065,6 +3067,139 @@ TEST(SkeletonConfiguration, SetConfigurationWithIndicesPartial)
 }
 
 //==============================================================================
+TEST(SkeletonAccessors, ConstOverloads)
+{
+  auto skeleton = Skeleton::create("const_overloads");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.first->setName("root_joint");
+  rootPair.second->setName("root_body");
+
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setName("child_joint");
+  childPair.second->setName("child_body");
+
+  const Skeleton& constSkel = *skeleton;
+
+  EXPECT_EQ(constSkel.getNumTrees(), 1u);
+  EXPECT_EQ(constSkel.getRootBodyNode(0), rootPair.second);
+  EXPECT_EQ(constSkel.getRootJoint(0), rootPair.first);
+
+  EXPECT_EQ(constSkel.getBodyNode(0), rootPair.second);
+  EXPECT_EQ(constSkel.getBodyNode("child_body"), childPair.second);
+  EXPECT_EQ(constSkel.getBodyNodes("child_body").size(), 1u);
+  EXPECT_TRUE(constSkel.hasBodyNode(childPair.second));
+
+  EXPECT_EQ(constSkel.getJoint(0), rootPair.first);
+  EXPECT_EQ(constSkel.getJoint("child_joint"), childPair.first);
+  EXPECT_EQ(constSkel.getJoints("child_joint").size(), 1u);
+  EXPECT_TRUE(constSkel.hasJoint(childPair.first));
+
+  const auto* dof0 = constSkel.getDof(0);
+  ASSERT_NE(dof0, nullptr);
+  EXPECT_EQ(constSkel.getDof(dof0->getName()), dof0);
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_EQ(constSkel.getDofs().size(), constSkel.getNumDofs());
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_EQ(constSkel.getTreeDofs(0).size(), constSkel.getNumDofs());
+  EXPECT_EQ(constSkel.getTreeBodyNodes(0).size(), constSkel.getNumBodyNodes());
+
+  EXPECT_EQ(constSkel.getIndexOf(rootPair.second), 0u);
+  EXPECT_EQ(constSkel.getIndexOf(rootPair.first), 0u);
+  EXPECT_EQ(constSkel.getIndexOf(dof0), 0u);
+
+  EXPECT_TRUE(constSkel.checkIndexingConsistency());
+
+  EXPECT_GE(constSkel.getMass(), 0.0);
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, ConstShapeNodeAccessors)
+{
+  auto skeleton = Skeleton::create("const_shape_nodes");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setName("shape_body");
+
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.1, 0.3));
+  auto* shapeNode = pair.second->createShapeNodeWith<VisualAspect>(shape);
+  shapeNode->setName("shape_node");
+
+  const Skeleton& constSkel = *skeleton;
+
+  EXPECT_EQ(constSkel.getNumShapeNodes(), 1u);
+  EXPECT_EQ(constSkel.getShapeNode(0), shapeNode);
+  EXPECT_EQ(constSkel.getShapeNode("shape_node"), shapeNode);
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, ConstMarkerAccessors)
+{
+  auto skeleton = Skeleton::create("const_markers");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setName("marker_body");
+
+  auto* marker = pair.second->createMarker(
+      "marker_node", Eigen::Vector3d::Zero(), Eigen::Vector4d::Ones());
+  ASSERT_NE(marker, nullptr);
+
+  const Skeleton& constSkel = *skeleton;
+  EXPECT_EQ(constSkel.getNumMarkers(), 1u);
+  EXPECT_EQ(constSkel.getMarker(0), marker);
+  EXPECT_EQ(constSkel.getMarker("marker_node"), marker);
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, ConstEndEffectorAccessors)
+{
+  auto skeleton = Skeleton::create("const_end_effectors");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setName("ee_body");
+
+  auto* endEffector = pair.second->createEndEffector("ee_node");
+  ASSERT_NE(endEffector, nullptr);
+
+  const Skeleton& constSkel = *skeleton;
+  EXPECT_EQ(constSkel.getNumEndEffectors(), 1u);
+  EXPECT_EQ(constSkel.getEndEffector(0), endEffector);
+  EXPECT_EQ(constSkel.getEndEffector("ee_node"), endEffector);
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, SoftBodyConstOverloads)
+{
+  auto skeleton = Skeleton::create("soft_body_const");
+
+  SoftBodyNode::UniqueProperties uniqueProps;
+  uniqueProps.addPointMass(PointMass::Properties(Eigen::Vector3d::Zero(), 0.1));
+  uniqueProps.addPointMass(
+      PointMass::Properties(Eigen::Vector3d(0.1, 0.0, 0.0), 0.1));
+  uniqueProps.connectPointMasses(0, 1);
+
+  BodyNode::Properties bodyProps;
+  bodyProps.mName = "soft_body";
+  bodyProps.mInertia.setMass(0.2);
+  SoftBodyNode::Properties props(bodyProps, uniqueProps);
+
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>(
+      nullptr, FreeJoint::Properties(), props);
+  auto* softBody = pair.second;
+  ASSERT_NE(softBody, nullptr);
+  EXPECT_EQ(softBody->getNumPointMasses(), 2u);
+
+  const Skeleton& constSkel = *skeleton;
+  EXPECT_EQ(constSkel.getNumSoftBodyNodes(), 1u);
+  EXPECT_EQ(constSkel.getSoftBodyNode(0), softBody);
+  EXPECT_EQ(constSkel.getSoftBodyNode("soft_body"), softBody);
+
+  skeleton->integratePositions(0.01);
+  skeleton->integrateVelocities(0.01);
+
+  Eigen::VectorXd velocityChanges
+      = Eigen::VectorXd::Zero(skeleton->getNumDofs());
+  skeleton->integratePositions(0.01, velocityChanges);
+}
+
+//==============================================================================
 TEST(SkeletonClone, ComplexCloneWithShapesAndIK)
 {
   auto skeleton = createComplexCloneSkeleton();
@@ -3385,9 +3520,8 @@ TEST(SkeletonClone, CloneSkeletonDefaultName)
   pair.first->setAxis(Eigen::Vector3d::UnitZ());
   pair.second->setMass(1.0);
 
-  skeleton->setPositions(
-      Eigen::VectorXd::Constant(
-          static_cast<Eigen::Index>(skeleton->getNumDofs()), 0.25));
+  skeleton->setPositions(Eigen::VectorXd::Constant(
+      static_cast<Eigen::Index>(skeleton->getNumDofs()), 0.25));
 
   auto clone = skeleton->cloneSkeleton();
   ASSERT_NE(clone, nullptr);

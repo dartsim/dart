@@ -444,9 +444,8 @@ TEST(LcpValidationCoverage, ComputesEffectiveBoundsForFriction)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_TRUE(
-      detail::computeEffectiveBounds(
-          lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_TRUE(detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_NEAR(loEff[1], -0.2, 1e-12);
   EXPECT_NEAR(hiEff[1], 0.2, 1e-12);
   EXPECT_NEAR(loEff[2], -0.1, 1e-12);
@@ -463,9 +462,8 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsMismatchedSizes)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(
-      detail::computeEffectiveBounds(
-          lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_FALSE(message.empty());
 }
 
@@ -483,15 +481,13 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsInvalidFrictionIndex)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(
-      detail::computeEffectiveBounds(
-          lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_FALSE(message.empty());
 
   findex << -1, 1;
-  EXPECT_FALSE(
-      detail::computeEffectiveBounds(
-          lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_FALSE(message.empty());
 }
 
@@ -509,9 +505,8 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsInvalidReferenceValue)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(
-      detail::computeEffectiveBounds(
-          lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_FALSE(message.empty());
 }
 
@@ -530,9 +525,8 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsInvalidFrictionCoeff)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(
-      detail::computeEffectiveBounds(
-          lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_FALSE(message.empty());
 }
 
@@ -609,6 +603,167 @@ TEST(LcpValidationCoverage, ValidateSolutionDetectsComplementarityViolations)
   x << 0.5, 0.5;
   w << 0.1, 0.1;
   EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+}
+
+TEST(LcpValidationCoverage, ValidateProblemRejectsNanBoundsWithMessage)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+  hi[1] = std::numeric_limits<double>::quiet_NaN();
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateProblem(problem, &message));
+  EXPECT_NE(message.find("NaN"), std::string::npos);
+}
+
+TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsDimensionMismatch)
+{
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string message;
+  EXPECT_FALSE(detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_NE(message.find("dimensions"), std::string::npos);
+}
+
+TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsFindexOutOfRange)
+{
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Constant(2, 0.5);
+  Eigen::VectorXi findex(2);
+  findex << -1, 3;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string message;
+  EXPECT_FALSE(detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_NE(message.find("Invalid friction index entry"), std::string::npos);
+}
+
+TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsSelfReference)
+{
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Constant(2, 0.5);
+  Eigen::VectorXi findex(2);
+  findex << -1, 1;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string message;
+  EXPECT_FALSE(detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_NE(message.find("self reference"), std::string::npos);
+}
+
+TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsNonFiniteMu)
+{
+  Eigen::VectorXd lo(2);
+  lo << 0.0, -1.0;
+  Eigen::VectorXd hi(2);
+  hi << std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::infinity();
+  Eigen::VectorXi findex(2);
+  findex << -1, 0;
+  Eigen::VectorXd x(2);
+  x << 0.2, 0.0;
+
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string message;
+  EXPECT_FALSE(detail::computeEffectiveBounds(
+      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_NE(message.find("Invalid friction coefficient"), std::string::npos);
+}
+
+TEST(LcpValidationCoverage, ValidateSolutionRejectsDimensionMismatchWithMessage)
+{
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd w = Eigen::VectorXd::Zero(1);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+  EXPECT_NE(message.find("dimension mismatch"), std::string::npos);
+}
+
+TEST(LcpValidationCoverage, ValidateSolutionRejectsNonFiniteValuesWithMessage)
+{
+  Eigen::VectorXd x(2);
+  x << 0.1, std::numeric_limits<double>::quiet_NaN();
+  Eigen::VectorXd w = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+  EXPECT_NE(message.find("non-finite"), std::string::npos);
+}
+
+TEST(LcpValidationCoverage, ValidateSolutionRejectsLowerBoundViolation)
+{
+  Eigen::VectorXd x(1);
+  x << -0.1;
+  Eigen::VectorXd w = Eigen::VectorXd::Zero(1);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(1);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(1);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+  EXPECT_NE(message.find("lower bound"), std::string::npos);
+}
+
+TEST(LcpValidationCoverage, ValidateSolutionRejectsUpperBoundViolation)
+{
+  Eigen::VectorXd x(1);
+  x << 1.2;
+  Eigen::VectorXd w = Eigen::VectorXd::Zero(1);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(1);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(1);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+  EXPECT_NE(message.find("upper bound"), std::string::npos);
+}
+
+TEST(LcpValidationCoverage, ValidateSolutionRejectsPositiveWAtUpperBound)
+{
+  Eigen::VectorXd x(1);
+  x << 1.0;
+  Eigen::VectorXd w(1);
+  w << 0.1;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(1);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(1);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+  EXPECT_NE(message.find("non-positive"), std::string::npos);
+}
+
+TEST(LcpValidationCoverage, ValidateSolutionRejectsInteriorResidual)
+{
+  Eigen::VectorXd x(1);
+  x << 0.5;
+  Eigen::VectorXd w(1);
+  w << 0.2;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(1);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(1);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+  EXPECT_NE(message.find("interior"), std::string::npos);
 }
 
 TEST(LcpValidationCoverage, ComputesResidualAndComplementarityNorms)

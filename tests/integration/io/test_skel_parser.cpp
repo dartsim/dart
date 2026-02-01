@@ -1554,6 +1554,338 @@ TEST(SkelParser, SoftBodySphereProperties)
 }
 
 //==============================================================================
+TEST(SkelParser, InlineSkelJointDofsAndShapes)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="root">
+        <gravity>0</gravity>
+        <inertia>
+          <mass>2.0</mass>
+          <offset>0 0 0</offset>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box>
+              <size>0.001 0.001 0.001</size>
+            </box>
+          </geometry>
+          <color>0.1 0.2</color>
+        </visualization_shape>
+        <collision_shape>
+          <geometry>
+            <pyramid>
+              <base_width>0.1</base_width>
+              <base_depth>0.2</base_depth>
+              <height>0.3</height>
+            </pyramid>
+          </geometry>
+          <collidable>1</collidable>
+        </collision_shape>
+        <marker name="root_marker" />
+      </body>
+      <body name="body1">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <cone>
+              <radius>0.1</radius>
+              <height>0.2</height>
+            </cone>
+          </geometry>
+        </visualization_shape>
+        <collision_shape>
+          <geometry>
+            <capsule>
+              <radius>0.05</radius>
+              <height>0.4</height>
+            </capsule>
+          </geometry>
+        </collision_shape>
+      </body>
+      <body name="body2">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.2</ixx>
+            <iyy>0.2</iyy>
+            <izz>0.2</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <multi_sphere>
+              <sphere>
+                <radius>0.1</radius>
+                <position>0 0 0</position>
+              </sphere>
+              <sphere>
+                <radius>0.05</radius>
+                <position>0.1 0 0</position>
+              </sphere>
+            </multi_sphere>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="body3">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.3</ixx>
+            <iyy>0.3</iyy>
+            <izz>0.3</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="body4">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.4</ixx>
+            <iyy>0.4</iyy>
+            <izz>0.4</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="body5">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.5</ixx>
+            <iyy>0.5</iyy>
+            <izz>0.5</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="body6">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.6</ixx>
+            <iyy>0.6</iyy>
+            <izz>0.6</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>root</child>
+        <init_pos>0 0 0 0 0 0</init_pos>
+      </joint>
+      <joint type="revolute" name="rev_joint">
+        <parent>root</parent>
+        <child>body1</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <dynamics>
+            <damping>1.1</damping>
+            <friction>0.2</friction>
+            <spring_rest_position>0.3</spring_rest_position>
+            <spring_stiffness>2.2</spring_stiffness>
+          </dynamics>
+          <limit>
+            <lower>-0.5</lower>
+            <upper>0.7</upper>
+          </limit>
+        </axis>
+        <init_pos>0.2</init_pos>
+        <init_vel>0.4</init_vel>
+        <dof name="rev_dof" local_index="0">
+          <position lower="-0.4" upper="0.6" initial="0.1" />
+          <velocity lower="-1" upper="1" initial="0.2" />
+          <acceleration lower="-2" upper="2" initial="0.3" />
+          <force lower="-3" upper="3" initial="0.4" />
+          <damping>0.9</damping>
+          <friction>0.8</friction>
+          <spring_rest_position>0.7</spring_rest_position>
+          <spring_stiffness>1.5</spring_stiffness>
+        </dof>
+      </joint>
+      <joint type="euler" name="euler_joint">
+        <parent>body1</parent>
+        <child>body2</child>
+        <axis_order>zyx</axis_order>
+        <axis>
+          <limit>
+            <lower>-1.0</lower>
+            <upper>1.0</upper>
+          </limit>
+        </axis>
+        <axis2>
+          <dynamics>
+            <damping>0.3</damping>
+          </dynamics>
+        </axis2>
+        <axis3>
+          <dynamics>
+            <friction>0.4</friction>
+          </dynamics>
+        </axis3>
+        <init_pos>0.1 0.2 0.3</init_pos>
+        <init_vel>0.4 0.5 0.6</init_vel>
+        <dof local_index="0">
+          <position lower="-0.1" upper="0.1" initial="0.0" />
+        </dof>
+        <dof local_index="1">
+          <position lower="-0.2" upper="0.2" initial="0.1" />
+        </dof>
+        <dof local_index="2">
+          <position lower="-0.3" upper="0.3" initial="0.2" />
+        </dof>
+      </joint>
+      <joint type="universal" name="univ_joint">
+        <parent>body2</parent>
+        <child>body3</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <limit>
+            <lower>-0.4</lower>
+            <upper>0.4</upper>
+          </limit>
+        </axis>
+        <axis2>
+          <xyz>0 1 0</xyz>
+          <dynamics>
+            <damping>0.6</damping>
+          </dynamics>
+        </axis2>
+        <init_pos>0.1 0.2</init_pos>
+        <init_vel>0.3 0.4</init_vel>
+        <dof local_index="0">
+          <position lower="-0.2" upper="0.2" initial="0.0" />
+        </dof>
+        <dof local_index="1">
+          <position lower="-0.3" upper="0.3" initial="0.1" />
+        </dof>
+      </joint>
+      <joint type="planar" name="planar_joint">
+        <parent>body3</parent>
+        <child>body4</child>
+        <plane type="arbitrary">
+          <translation_axis1>
+            <xyz>1 0 0</xyz>
+          </translation_axis1>
+          <translation_axis2>
+            <xyz>0 1 0</xyz>
+          </translation_axis2>
+        </plane>
+        <init_pos>0.1 0.2 0.3</init_pos>
+        <init_vel>0.4 0.5 0.6</init_vel>
+        <dof local_index="0">
+          <velocity lower="-1" upper="1" initial="0.1" />
+        </dof>
+        <dof local_index="1">
+          <velocity lower="-2" upper="2" initial="0.2" />
+        </dof>
+        <dof local_index="2">
+          <velocity lower="-3" upper="3" initial="0.3" />
+        </dof>
+      </joint>
+      <joint type="translational" name="trans_joint">
+        <parent>body4</parent>
+        <child>body5</child>
+        <init_pos>0.1 0.2 0.3</init_pos>
+        <init_vel>0.4 0.5 0.6</init_vel>
+        <dof local_index="0">
+          <force lower="-1" upper="1" initial="0.1" />
+        </dof>
+        <dof local_index="1">
+          <force lower="-2" upper="2" initial="0.2" />
+        </dof>
+        <dof local_index="2">
+          <force lower="-3" upper="3" initial="0.3" />
+        </dof>
+      </joint>
+      <joint type="ball" name="ball_joint">
+        <parent>body5</parent>
+        <child>body6</child>
+        <init_pos>0.1 0.2 0.3</init_pos>
+        <init_vel>0.4 0.5 0.6</init_vel>
+        <dof name="ball_x" local_index="0">
+          <position lower="-1" upper="1" initial="0" />
+        </dof>
+        <dof name="ball_y" local_index="1">
+          <position lower="-1" upper="1" initial="0" />
+        </dof>
+        <dof name="ball_z" local_index="2">
+          <position lower="-1" upper="1" initial="0" />
+        </dof>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+  )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+
+  auto* root = skel->getBodyNode("root");
+  ASSERT_NE(root, nullptr);
+  bool foundPyramid = false;
+  root->eachShapeNode([&](const ShapeNode* node) {
+    if (node->getShape() && node->getShape()->is<dynamics::PyramidShape>()) {
+      foundPyramid = true;
+    }
+  });
+  EXPECT_TRUE(foundPyramid);
+
+  auto* revJoint = skel->getJoint("rev_joint");
+  ASSERT_NE(revJoint, nullptr);
+  EXPECT_EQ(revJoint->getDof(0)->getName(), "rev_dof");
+  EXPECT_DOUBLE_EQ(revJoint->getDampingCoefficient(0), 0.9);
+  EXPECT_DOUBLE_EQ(revJoint->getPositionLowerLimit(0), -0.4);
+
+  auto* eulerJoint
+      = dynamic_cast<dynamics::EulerJoint*>(skel->getJoint("euler_joint"));
+  ASSERT_NE(eulerJoint, nullptr);
+  EXPECT_EQ(eulerJoint->getAxisOrder(), dynamics::EulerJoint::AxisOrder::ZYX);
+
+  auto* planarJoint
+      = dynamic_cast<dynamics::PlanarJoint*>(skel->getJoint("planar_joint"));
+  ASSERT_NE(planarJoint, nullptr);
+  EXPECT_EQ(
+      planarJoint->getPlaneType(), dynamics::PlanarJoint::PlaneType::ARBITRARY);
+
+  auto* transJoint = skel->getJoint("trans_joint");
+  ASSERT_NE(transJoint, nullptr);
+  EXPECT_TRUE(
+      transJoint->getPositions().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+
+  auto* ballJoint = skel->getJoint("ball_joint");
+  ASSERT_NE(ballJoint, nullptr);
+  EXPECT_EQ(ballJoint->getDof(0)->getName(), "ball_x");
+}
+
+//==============================================================================
 TEST(SkelParser, WorldXmlParsesJointAndShapeVariants)
 {
   static std::size_t counter = 0;

@@ -9,6 +9,10 @@
 #include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/soft_mesh_shape.hpp>
 
+#include <dart/math/constants.hpp>
+
+#include <dart/dart.hpp>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
@@ -726,4 +730,112 @@ TEST(SoftBodyNode, PropertiesConstructionAddPointMassAndFace)
   softBody->addFace(Eigen::Vector3i(0, 1, static_cast<int>(pointCount)));
   EXPECT_EQ(softBody->getNumPointMasses(), pointCount + 1u);
   EXPECT_EQ(softBody->getNumFaces(), faceCount + 1u);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, PointMassStateAndPropertiesEquality)
+{
+  PointMass::State stateA(
+      Eigen::Vector3d(0.1, 0.2, 0.3),
+      Eigen::Vector3d(-0.2, 0.0, 0.4),
+      Eigen::Vector3d(0.5, -0.1, 0.2),
+      Eigen::Vector3d(1.0, 2.0, 3.0));
+  PointMass::State stateB = stateA;
+  EXPECT_TRUE(stateA == stateB);
+
+  stateB.mForces[0] = 9.0;
+  EXPECT_FALSE(stateA == stateB);
+
+  std::vector<std::size_t> connections = {1, 2};
+  PointMass::Properties propsA(
+      Eigen::Vector3d(0.4, 0.5, 0.6), 1.2, connections);
+  PointMass::Properties propsB(
+      Eigen::Vector3d(0.4, 0.5, 0.6), 1.2, connections);
+  EXPECT_TRUE(propsA == propsB);
+  EXPECT_FALSE(propsA != propsB);
+
+  propsB.setMass(2.4);
+  EXPECT_FALSE(propsA == propsB);
+  EXPECT_TRUE(propsA != propsB);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, PointMassConstraintImpulseAndWorldTransforms)
+{
+  auto skeleton = Skeleton::create("soft-impulse");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.4),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      10.0,
+      10.0,
+      0.1);
+
+  auto* joint = pair.first;
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = Eigen::AngleAxisd(dart::math::half_pi, Eigen::Vector3d::UnitZ())
+                    .toRotationMatrix();
+  joint->setTransform(tf);
+
+  PointMass* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  pm->setConstraintImpulse(Eigen::Vector3d(1.0, 0.0, 0.0), false);
+  Eigen::Vector3d localImpulse = pm->getConstraintImpulses();
+  EXPECT_TRUE(localImpulse.isApprox(Eigen::Vector3d(0.0, -1.0, 0.0), 1e-12));
+
+  pm->addConstraintImpulse(Eigen::Vector3d(0.0, 0.0, 2.0), true);
+  localImpulse = pm->getConstraintImpulses();
+  EXPECT_TRUE(localImpulse.isApprox(Eigen::Vector3d(0.0, -1.0, 2.0), 1e-12));
+
+  pm->clearConstraintImpulse();
+  EXPECT_TRUE(pm->getConstraintImpulses().isZero(0.0));
+
+  pm->setPositions(Eigen::Vector3d(0.1, -0.2, 0.3));
+  pm->setVelocities(Eigen::Vector3d(0.5, 0.0, 0.0));
+  pm->setAccelerations(Eigen::Vector3d(0.0, 0.1, 0.0));
+
+  const Eigen::Vector3d worldPos = pm->getWorldPosition();
+  const Eigen::Vector3d worldVel = pm->getWorldVelocity();
+  const Eigen::Vector3d worldAcc = pm->getWorldAcceleration();
+
+  EXPECT_TRUE(worldPos.allFinite());
+  EXPECT_TRUE(worldVel.isApprox(Eigen::Vector3d(0.0, 0.5, 0.0), 1e-12));
+  EXPECT_TRUE(worldAcc.isApprox(Eigen::Vector3d(-0.1, 0.0, 0.0), 1e-12));
+}
+
+//==============================================================================
+TEST(SoftBodyNode, BiasImpulseAndConstrainedTermUpdates)
+{
+  auto skeleton = Skeleton::create("soft-impulse-update");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.5),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      15.0,
+      12.0,
+      0.08);
+
+  softBody->setConstraintImpulse(Eigen::Vector6d::Ones());
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    auto* pm = softBody->getPointMass(i);
+    pm->setConstraintImpulse(Eigen::Vector3d::UnitX());
+    pm->setVelocityChange(0, 0.1);
+  }
+
+  skeleton->computeImpulseForwardDynamics();
+  skeleton->updateVelocityChange();
+  skeleton->computePositionVelocityChanges();
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    const auto* pm = softBody->getPointMass(i);
+    EXPECT_TRUE(pm->getVelocities().array().isFinite().all());
+    EXPECT_TRUE(pm->getAccelerations().array().isFinite().all());
+  }
 }

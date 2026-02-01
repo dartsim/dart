@@ -24,6 +24,8 @@
 #include "dart/math/lcp/projection/pgs_solver.hpp"
 #include "dart/simulation/world.hpp"
 
+#include <dart/dart.hpp>
+
 #include <gtest/gtest.h>
 
 #include <limits>
@@ -234,6 +236,21 @@ public:
       const constraint::ConstConstraintBasePtr& constraint) const
   {
     return containConstraint(constraint);
+  }
+
+  bool checkAndAddSkeletonPublic(const dynamics::SkeletonPtr& skeleton)
+  {
+    return checkAndAddSkeleton(skeleton);
+  }
+
+  bool checkAndAddConstraintPublic(const constraint::ConstraintBasePtr& con)
+  {
+    return checkAndAddConstraint(con);
+  }
+
+  bool hasSkeletonPublic(const dynamics::ConstSkeletonPtr& skeleton) const
+  {
+    return hasSkeleton(skeleton);
   }
 };
 
@@ -901,6 +918,25 @@ TEST(ConstraintSolver, GetLastCollisionResultNonConst)
   // Clear it
   result.clear();
   EXPECT_EQ(solver.getLastCollisionResult().getNumContacts(), 0u);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ProtectedHelpersAndConstCollisionResult)
+{
+  ExposedConstraintSolver solver;
+  auto skeleton = dynamics::Skeleton::create("helper_skel");
+
+  EXPECT_TRUE(solver.checkAndAddSkeletonPublic(skeleton));
+  EXPECT_FALSE(solver.checkAndAddSkeletonPublic(skeleton));
+  EXPECT_TRUE(solver.hasSkeletonPublic(skeleton));
+
+  auto constraint = std::make_shared<DummyConstraint>(skeleton);
+  EXPECT_TRUE(solver.checkAndAddConstraintPublic(constraint));
+  EXPECT_FALSE(solver.checkAndAddConstraintPublic(constraint));
+
+  const constraint::ConstraintSolver& constSolver = solver;
+  const auto& result = constSolver.getLastCollisionResult();
+  EXPECT_EQ(result.getNumContacts(), 0u);
 }
 
 //==============================================================================

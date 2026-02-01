@@ -227,4 +227,32 @@ TEST(Profiler, NestedScopes)
   EXPECT_NE(output.find("InnerNested"), std::string::npos);
 }
 
+TEST(Profiler, FormatsAndReportGeneration)
+{
+  using common::profile::Profiler;
+
+  auto& profiler = Profiler::instance();
+  profiler.reset();
+
+  ScopedEnvVar env("DART_PROFILE_COLOR", "0");
+
+  {
+    common::profile::ProfileScope scope("ReportScope", __FILE__, __LINE__);
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+  }
+
+  profiler.markFrame();
+  std::this_thread::sleep_for(std::chrono::milliseconds(2));
+  profiler.markFrame();
+
+  std::ostringstream oss;
+  profiler.printSummary(oss);
+
+  const std::string output = oss.str();
+  EXPECT_NE(output.find("ReportScope"), std::string::npos);
+  EXPECT_NE(output.find("Frames marked: 2"), std::string::npos);
+  EXPECT_NE(output.find("Total scoped time:"), std::string::npos);
+  EXPECT_NE(output.find("Avg FPS:"), std::string::npos);
+}
+
 } // namespace dart::test

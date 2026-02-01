@@ -31,6 +31,7 @@
  */
 
 #include <dart/all.hpp>
+#include <dart/dart.hpp>
 
 #include <gtest/gtest.h>
 
@@ -256,6 +257,8 @@ TEST(GenericJoint, Basic)
   SingleDofJointTest singleDofJoint;
   MultiDofJointTest genericJoint;
   SO3JointTest so3Joint;
+  std::ostream* sink = &std::cerr;
+  (void)sink;
 }
 
 #if GTEST_HAS_DEATH_TEST
@@ -1275,6 +1278,69 @@ TEST(GenericJoint, BallJointVectorLimitsAndInitials)
 }
 
 //==============================================================================
+TEST(BallJoint, ConstOverloads)
+{
+  auto skel = createSkeletonWithJoint<BallJoint>("ball_const");
+  auto* joint = getJoint<BallJoint>(skel);
+  joint->setCoordinateChart(BallJoint::CoordinateChart::EULER_ZYX);
+
+  const BallJoint& constJoint = *joint;
+  EXPECT_EQ(
+      constJoint.getCoordinateChart(), BallJoint::CoordinateChart::EULER_ZYX);
+  EXPECT_EQ(constJoint.getPositions().size(), 3);
+
+  auto props = constJoint.getBallJointProperties();
+  EXPECT_EQ(props.mCoordinateChart, BallJoint::CoordinateChart::EULER_ZYX);
+}
+
+//==============================================================================
+TEST(EulerJoint, ConstOverloads)
+{
+  auto skel = createSkeletonWithJoint<EulerJoint>("euler_const");
+  auto* joint = getJoint<EulerJoint>(skel);
+  joint->setAxisOrder(EulerJoint::AxisOrder::ZYX, true);
+
+  const EulerJoint& constJoint = *joint;
+  EXPECT_EQ(constJoint.getAxisOrder(), EulerJoint::AxisOrder::ZYX);
+
+  auto props = constJoint.getEulerJointProperties();
+  EXPECT_EQ(props.mAxisOrder, EulerJoint::AxisOrder::ZYX);
+}
+
+//==============================================================================
+TEST(ScrewJoint, PropertiesAndConstAccess)
+{
+  auto skel = Skeleton::create("screw_props");
+
+  BodyNode::Properties bodyProps;
+  bodyProps.mName = "screw_body";
+  bodyProps.mInertia.setMass(1.0);
+
+  ScrewJoint::Properties jointProps;
+  jointProps.mName = "screw_joint";
+  jointProps.mAxis = Eigen::Vector3d::UnitZ();
+  jointProps.mPitch = 0.1;
+
+  auto pair = skel->createJointAndBodyNodePair<ScrewJoint>(
+      nullptr, jointProps, bodyProps);
+  auto* joint = pair.first;
+
+  EXPECT_TRUE(joint->getAxis().isApprox(Eigen::Vector3d::UnitZ()));
+  EXPECT_DOUBLE_EQ(joint->getPitch(), 0.1);
+
+  joint->setAxis(Eigen::Vector3d::UnitX());
+  joint->setPitch(0.2);
+
+  const ScrewJoint& constJoint = *joint;
+  EXPECT_TRUE(constJoint.getAxis().isApprox(Eigen::Vector3d::UnitX()));
+  EXPECT_DOUBLE_EQ(constJoint.getPitch(), 0.2);
+
+  auto props = constJoint.getScrewJointProperties();
+  EXPECT_TRUE(props.mAxis.isApprox(Eigen::Vector3d::UnitX()));
+  EXPECT_DOUBLE_EQ(props.mPitch, 0.2);
+}
+
+//==============================================================================
 TEST(GenericJoint, EulerJointVectorCommandsAndStates)
 {
   auto skel = createSkeletonWithJoint<EulerJoint>("euler_vector_states");
@@ -1886,4 +1952,225 @@ TEST(GenericJoints, RevoluteForceActuatorContactConstraints)
   EXPECT_TRUE(joint->getVelocities().allFinite());
   EXPECT_TRUE(std::isfinite(joint->getConstraintImpulse(0)));
   EXPECT_TRUE(std::isfinite(joint->getVelocityChange(0)));
+}
+
+//==============================================================================
+TEST(GenericJoint, ConstAccessorsSingleDof)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("const_single_dof");
+  auto* joint = getJoint<RevoluteJoint>(skel);
+
+  joint->setPositionLowerLimit(0, -3.0);
+  joint->setPositionUpperLimit(0, 3.0);
+  joint->setVelocityLowerLimit(0, -4.0);
+  joint->setVelocityUpperLimit(0, 4.0);
+  joint->setAccelerationLowerLimit(0, -5.0);
+  joint->setAccelerationUpperLimit(0, 5.0);
+  joint->setForceLowerLimit(0, -6.0);
+  joint->setForceUpperLimit(0, 6.0);
+
+  joint->setInitialPosition(0, 0.25);
+  joint->setInitialVelocity(0, -0.15);
+
+  joint->setPosition(0, 0.4);
+  joint->setVelocity(0, -0.2);
+  joint->setAcceleration(0, 0.3);
+  joint->setForce(0, -0.4);
+  joint->setCommand(0, 0.5);
+
+  joint->setSpringStiffness(0, 2.5);
+  joint->setRestPosition(0, 0.1);
+  joint->setDampingCoefficient(0, 0.2);
+  joint->setCoulombFriction(0, 0.05);
+
+  joint->setVelocityChange(0, -0.6);
+  joint->setConstraintImpulse(0, 0.7);
+
+  const RevoluteJoint& constJoint = *joint;
+  EXPECT_NE(constJoint.getDof(0), nullptr);
+  EXPECT_TRUE(constJoint.hasPositionLimit(0));
+  EXPECT_DOUBLE_EQ(constJoint.getPositionLowerLimit(0), -3.0);
+  EXPECT_DOUBLE_EQ(constJoint.getPositionUpperLimit(0), 3.0);
+  EXPECT_DOUBLE_EQ(constJoint.getVelocityLowerLimit(0), -4.0);
+  EXPECT_DOUBLE_EQ(constJoint.getVelocityUpperLimit(0), 4.0);
+  EXPECT_DOUBLE_EQ(constJoint.getAccelerationLowerLimit(0), -5.0);
+  EXPECT_DOUBLE_EQ(constJoint.getAccelerationUpperLimit(0), 5.0);
+  EXPECT_DOUBLE_EQ(constJoint.getForceLowerLimit(0), -6.0);
+  EXPECT_DOUBLE_EQ(constJoint.getForceUpperLimit(0), 6.0);
+
+  EXPECT_DOUBLE_EQ(constJoint.getInitialPosition(0), 0.25);
+  EXPECT_DOUBLE_EQ(constJoint.getInitialVelocity(0), -0.15);
+
+  EXPECT_DOUBLE_EQ(constJoint.getPosition(0), 0.4);
+  EXPECT_DOUBLE_EQ(constJoint.getVelocity(0), -0.2);
+  EXPECT_DOUBLE_EQ(constJoint.getAcceleration(0), 0.3);
+  EXPECT_DOUBLE_EQ(constJoint.getForce(0), -0.4);
+  EXPECT_DOUBLE_EQ(constJoint.getCommand(0), 0.5);
+
+  EXPECT_DOUBLE_EQ(constJoint.getSpringStiffness(0), 2.5);
+  EXPECT_DOUBLE_EQ(constJoint.getRestPosition(0), 0.1);
+  EXPECT_DOUBLE_EQ(constJoint.getDampingCoefficient(0), 0.2);
+  EXPECT_DOUBLE_EQ(constJoint.getCoulombFriction(0), 0.05);
+
+  EXPECT_DOUBLE_EQ(constJoint.getVelocityChange(0), -0.6);
+  EXPECT_DOUBLE_EQ(constJoint.getConstraintImpulse(0), 0.7);
+
+  const auto properties = constJoint.getGenericJointProperties();
+  EXPECT_EQ(properties.mInitialPositions.size(), 1);
+}
+
+//==============================================================================
+TEST(GenericJoint, ConstAccessorsMultiDof)
+{
+  auto ballSkel = createSkeletonWithJoint<BallJoint>("const_ball");
+  auto* ballJoint = getJoint<BallJoint>(ballSkel);
+  const auto ballDofs = static_cast<Eigen::Index>(ballJoint->getNumDofs());
+
+  Eigen::VectorXd ballPosLower = Eigen::VectorXd::Constant(ballDofs, -0.2);
+  Eigen::VectorXd ballPosUpper = Eigen::VectorXd::Constant(ballDofs, 0.3);
+  Eigen::VectorXd ballVelLower = Eigen::VectorXd::Constant(ballDofs, -1.0);
+  Eigen::VectorXd ballVelUpper = Eigen::VectorXd::Constant(ballDofs, 1.0);
+  Eigen::VectorXd ballAccLower = Eigen::VectorXd::Constant(ballDofs, -2.0);
+  Eigen::VectorXd ballAccUpper = Eigen::VectorXd::Constant(ballDofs, 2.0);
+  Eigen::VectorXd ballForceLower = Eigen::VectorXd::Constant(ballDofs, -3.0);
+  Eigen::VectorXd ballForceUpper = Eigen::VectorXd::Constant(ballDofs, 3.0);
+  Eigen::VectorXd ballInitialPos
+      = Eigen::VectorXd::LinSpaced(ballDofs, -0.1, 0.2);
+  Eigen::VectorXd ballInitialVel
+      = Eigen::VectorXd::LinSpaced(ballDofs, 0.05, 0.15);
+  Eigen::VectorXd ballRest = Eigen::VectorXd::Constant(ballDofs, 0.12);
+  Eigen::VectorXd ballDamping = Eigen::VectorXd::Constant(ballDofs, 0.22);
+  Eigen::VectorXd ballFriction = Eigen::VectorXd::Constant(ballDofs, 0.08);
+  Eigen::VectorXd ballPositions
+      = Eigen::VectorXd::LinSpaced(ballDofs, -0.3, 0.3);
+  Eigen::VectorXd ballVelocities
+      = Eigen::VectorXd::LinSpaced(ballDofs, 0.1, 0.2);
+  Eigen::VectorXd ballAccelerations
+      = Eigen::VectorXd::LinSpaced(ballDofs, -0.2, 0.1);
+  Eigen::VectorXd ballForces = Eigen::VectorXd::LinSpaced(ballDofs, 0.3, 0.6);
+  Eigen::VectorXd ballCommands
+      = Eigen::VectorXd::LinSpaced(ballDofs, -0.4, 0.2);
+
+  ballJoint->setPositionLowerLimits(ballPosLower);
+  ballJoint->setPositionUpperLimits(ballPosUpper);
+  ballJoint->setVelocityLowerLimits(ballVelLower);
+  ballJoint->setVelocityUpperLimits(ballVelUpper);
+  ballJoint->setAccelerationLowerLimits(ballAccLower);
+  ballJoint->setAccelerationUpperLimits(ballAccUpper);
+  ballJoint->setForceLowerLimits(ballForceLower);
+  ballJoint->setForceUpperLimits(ballForceUpper);
+  ballJoint->setInitialPositions(ballInitialPos);
+  ballJoint->setInitialVelocities(ballInitialVel);
+  ballJoint->setRestPositions(ballRest);
+  ballJoint->setDampingCoefficients(ballDamping);
+  ballJoint->setFrictions(ballFriction);
+  ballJoint->setPositions(ballPositions);
+  ballJoint->setVelocities(ballVelocities);
+  ballJoint->setAccelerations(ballAccelerations);
+  ballJoint->setForces(ballForces);
+  ballJoint->setCommands(ballCommands);
+
+  const BallJoint& constBall = *ballJoint;
+  for (Eigen::Index i = 0; i < ballDofs; ++i) {
+    EXPECT_NE(constBall.getDof(static_cast<std::size_t>(i)), nullptr);
+  }
+  EXPECT_TRUE(constBall.getPositionLowerLimits().isApprox(ballPosLower));
+  EXPECT_TRUE(constBall.getPositionUpperLimits().isApprox(ballPosUpper));
+  EXPECT_TRUE(constBall.getVelocityLowerLimits().isApprox(ballVelLower));
+  EXPECT_TRUE(constBall.getVelocityUpperLimits().isApprox(ballVelUpper));
+  EXPECT_TRUE(constBall.getAccelerationLowerLimits().isApprox(ballAccLower));
+  EXPECT_TRUE(constBall.getAccelerationUpperLimits().isApprox(ballAccUpper));
+  EXPECT_TRUE(constBall.getForceLowerLimits().isApprox(ballForceLower));
+  EXPECT_TRUE(constBall.getForceUpperLimits().isApprox(ballForceUpper));
+  EXPECT_TRUE(constBall.getInitialPositions().isApprox(ballInitialPos));
+  EXPECT_TRUE(constBall.getInitialVelocities().isApprox(ballInitialVel));
+  EXPECT_TRUE(constBall.getRestPositions().isApprox(ballRest));
+  EXPECT_TRUE(constBall.getDampingCoefficients().isApprox(ballDamping));
+  EXPECT_TRUE(constBall.getFrictions().isApprox(ballFriction));
+  EXPECT_TRUE(constBall.getPositions().isApprox(ballPositions));
+  EXPECT_TRUE(constBall.getVelocities().isApprox(ballVelocities));
+  EXPECT_TRUE(constBall.getAccelerations().isApprox(ballAccelerations));
+  EXPECT_TRUE(constBall.getForces().isApprox(ballForces));
+  EXPECT_TRUE(constBall.getCommands().isApprox(ballCommands));
+
+  auto eulerSkel = createSkeletonWithJoint<EulerJoint>("const_euler");
+  auto* eulerJoint = getJoint<EulerJoint>(eulerSkel);
+  const auto eulerDofs = static_cast<Eigen::Index>(eulerJoint->getNumDofs());
+  Eigen::VectorXd eulerLower = Eigen::VectorXd::Constant(eulerDofs, -0.15);
+  Eigen::VectorXd eulerUpper = Eigen::VectorXd::Constant(eulerDofs, 0.25);
+  Eigen::VectorXd eulerInitial
+      = Eigen::VectorXd::LinSpaced(eulerDofs, 0.0, 0.1);
+  eulerJoint->setPositionLowerLimits(eulerLower);
+  eulerJoint->setPositionUpperLimits(eulerUpper);
+  eulerJoint->setInitialPositions(eulerInitial);
+
+  const EulerJoint& constEuler = *eulerJoint;
+  EXPECT_TRUE(constEuler.getPositionLowerLimits().isApprox(eulerLower));
+  EXPECT_TRUE(constEuler.getPositionUpperLimits().isApprox(eulerUpper));
+  EXPECT_TRUE(constEuler.getInitialPositions().isApprox(eulerInitial));
+
+  auto freeSkel = createSkeletonWithJoint<FreeJoint>("const_free");
+  auto* freeJoint = getJoint<FreeJoint>(freeSkel);
+  const auto freeDofs = static_cast<Eigen::Index>(freeJoint->getNumDofs());
+  Eigen::VectorXd freePosLower = Eigen::VectorXd::Constant(freeDofs, -0.6);
+  Eigen::VectorXd freePosUpper = Eigen::VectorXd::Constant(freeDofs, 0.7);
+  Eigen::VectorXd freeVelLower = Eigen::VectorXd::Constant(freeDofs, -1.1);
+  Eigen::VectorXd freeVelUpper = Eigen::VectorXd::Constant(freeDofs, 1.1);
+  freeJoint->setPositionLowerLimits(freePosLower);
+  freeJoint->setPositionUpperLimits(freePosUpper);
+  freeJoint->setVelocityLowerLimits(freeVelLower);
+  freeJoint->setVelocityUpperLimits(freeVelUpper);
+
+  const FreeJoint& constFree = *freeJoint;
+  EXPECT_TRUE(constFree.getPositionLowerLimits().isApprox(freePosLower));
+  EXPECT_TRUE(constFree.getPositionUpperLimits().isApprox(freePosUpper));
+  EXPECT_TRUE(constFree.getVelocityLowerLimits().isApprox(freeVelLower));
+  EXPECT_TRUE(constFree.getVelocityUpperLimits().isApprox(freeVelUpper));
+}
+
+//==============================================================================
+TEST(GenericJoint, IntegrationAndJacobiansMultiSpace)
+{
+  auto ballSkel = createSkeletonWithJoint<BallJoint>("integration_ball");
+  auto* ballJoint = getJoint<BallJoint>(ballSkel);
+  const auto ballDofs = static_cast<Eigen::Index>(ballJoint->getNumDofs());
+
+  Eigen::VectorXd ballQ0 = Eigen::VectorXd::LinSpaced(ballDofs, -0.2, 0.2);
+  Eigen::VectorXd ballV = Eigen::VectorXd::Constant(ballDofs, 0.1);
+  Eigen::VectorXd ballResult;
+  const Joint& ballBase = *ballJoint;
+  ballBase.integratePositions(ballQ0, ballV, 0.15, ballResult);
+  EXPECT_EQ(ballResult.size(), ballDofs);
+  EXPECT_TRUE(ballResult.allFinite());
+
+  Eigen::VectorXd ballDiff
+      = ballJoint->getPositionDifferences(ballQ0 + ballV, ballQ0);
+  EXPECT_EQ(ballDiff.size(), ballDofs);
+
+  auto freeSkel = createSkeletonWithJoint<FreeJoint>("integration_free");
+  auto* freeJoint = getJoint<FreeJoint>(freeSkel);
+  const auto freeDofs = static_cast<Eigen::Index>(freeJoint->getNumDofs());
+  Eigen::VectorXd freeQ0 = Eigen::VectorXd::LinSpaced(freeDofs, -0.1, 0.3);
+  Eigen::VectorXd freeV = Eigen::VectorXd::LinSpaced(freeDofs, 0.2, 0.4);
+  Eigen::VectorXd freeResult;
+  Joint* freeBase = freeJoint;
+  freeBase->integratePositions(freeQ0, freeV, 0.2, freeResult);
+  EXPECT_EQ(freeResult.size(), freeDofs);
+  EXPECT_TRUE(freeResult.allFinite());
+
+  freeJoint->setVelocities(freeV);
+  freeJoint->setAccelerations(Eigen::VectorXd::Constant(freeDofs, -0.05));
+  freeBase->integrateVelocities(0.1);
+  EXPECT_TRUE(freeJoint->getVelocities().allFinite());
+
+  const FreeJoint& constFree = *freeJoint;
+  EXPECT_EQ(constFree.getRelativeJacobian().cols(), freeDofs);
+  EXPECT_EQ(constFree.getRelativeJacobianTimeDeriv().cols(), freeDofs);
+  EXPECT_TRUE(constFree.getBodyConstraintWrench().allFinite());
+
+  freeJoint->setVelocities(Eigen::VectorXd::Constant(freeDofs, 0.1));
+  freeJoint->setAccelerations(Eigen::VectorXd::Constant(freeDofs, -0.1));
+  EXPECT_TRUE(freeJoint->getRelativeSpatialVelocity().allFinite());
+  EXPECT_TRUE(freeJoint->getRelativeSpatialAcceleration().allFinite());
+  EXPECT_TRUE(freeJoint->getRelativePrimaryAcceleration().allFinite());
 }

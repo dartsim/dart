@@ -32,8 +32,11 @@
 
 #include <dart/common/cloneable.hpp>
 
+#include <dart/dart.hpp>
+
 #include <gtest/gtest.h>
 
+#include <map>
 #include <string>
 
 using namespace dart::common;
@@ -58,6 +61,16 @@ public:
 };
 
 using SimpleMakeCloneable = MakeCloneable<SimpleBase, SimpleData>;
+
+using SimplePtr = std::unique_ptr<SimpleBase>;
+
+SimplePtr makeSimpleCloneable(int value, const std::string& name)
+{
+  auto cloneable = std::make_unique<SimpleMakeCloneable>();
+  cloneable->value = value;
+  cloneable->name = name;
+  return cloneable;
+}
 
 } // namespace
 
@@ -233,4 +246,73 @@ TEST(MakeCloneable, CopyOverwritesExisting)
 
   EXPECT_EQ(target.value, 50);
   EXPECT_EQ(target.name, "source");
+}
+
+//==============================================================================
+TEST(CloneableVector, MoveAndCopy)
+{
+  std::vector<SimplePtr> raw;
+  raw.push_back(makeSimpleCloneable(1, "one"));
+  raw.push_back(nullptr);
+  raw.push_back(makeSimpleCloneable(2, "two"));
+
+  CloneableVector<SimplePtr> moved(std::move(raw));
+  EXPECT_EQ(moved.getVector().size(), 3u);
+
+  CloneableVector<SimplePtr> copied(moved);
+  EXPECT_EQ(copied.getVector().size(), 3u);
+
+  const auto& copiedVector = copied.getVector();
+  ASSERT_NE(copiedVector[0], nullptr);
+  EXPECT_EQ(
+      static_cast<const SimpleMakeCloneable*>(copiedVector[0].get())->value, 1);
+  EXPECT_EQ(
+      static_cast<const SimpleMakeCloneable*>(copiedVector[2].get())->value, 2);
+  EXPECT_EQ(copiedVector[1], nullptr);
+
+  std::vector<SimplePtr> existing;
+  existing.push_back(makeSimpleCloneable(10, "old"));
+  existing.push_back(makeSimpleCloneable(11, "old2"));
+  existing.push_back(makeSimpleCloneable(12, "old3"));
+  CloneableVector<SimplePtr> target(std::move(existing));
+  target.copy(copied);
+
+  const auto& targetVector = target.getVector();
+  ASSERT_NE(targetVector[0], nullptr);
+  EXPECT_EQ(
+      static_cast<const SimpleMakeCloneable*>(targetVector[0].get())->value, 1);
+  EXPECT_EQ(targetVector[1], nullptr);
+  ASSERT_NE(targetVector[2], nullptr);
+  EXPECT_EQ(
+      static_cast<const SimpleMakeCloneable*>(targetVector[2].get())->value, 2);
+}
+
+//==============================================================================
+TEST(CloneableMap, MoveAndMerge)
+{
+  using SimpleMap = std::map<std::string, SimplePtr>;
+
+  SimpleMap baseMap;
+  baseMap["keep"] = makeSimpleCloneable(1, "keep");
+  baseMap["replace"] = makeSimpleCloneable(2, "replace");
+
+  CloneableMap<SimpleMap> holder(baseMap);
+  CloneableMap<SimpleMap> movedHolder(std::move(holder));
+
+  SimpleMap movedMap;
+  movedMap["moved"] = makeSimpleCloneable(3, "moved");
+  CloneableMap<SimpleMap> mapAssigned;
+  mapAssigned = std::move(movedMap);
+  EXPECT_NE(mapAssigned.getMap()["moved"], nullptr);
+
+  SimpleMap incoming;
+  incoming["replace"] = nullptr;
+  incoming["added"] = makeSimpleCloneable(4, "added");
+
+  movedHolder.merge(incoming);
+  EXPECT_NE(movedHolder.getMap()["replace"], nullptr);
+  EXPECT_NE(movedHolder.getMap()["added"], nullptr);
+
+  movedHolder.copy(incoming, false);
+  EXPECT_EQ(movedHolder.getMap()["replace"], nullptr);
 }

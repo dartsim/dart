@@ -13,10 +13,13 @@
 #include <dart/dynamics/planar_joint.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/translational_joint.hpp>
 #include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
+
+#include <dart/dart.hpp>
 
 #include <gtest/gtest.h>
 
@@ -1600,4 +1603,28 @@ TEST(FreeJointTest, SetTransformOfSkeletonAllRoots)
   auto body = skel->getBodyNode(0);
   EXPECT_TRUE(body->getWorldTransform().translation().isApprox(
       tf.translation(), 1e-10));
+}
+
+//==============================================================================
+TEST(FreeJointTest, SpatialVelocityAndAccelerationFrames)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("frame_motion");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  auto refFrame = SimpleFrame::createShared(Frame::World(), "ref_frame");
+  refFrame->setTranslation(Eigen::Vector3d(0.1, -0.2, 0.3));
+
+  Eigen::Vector6d spatialVel;
+  spatialVel << 0.1, -0.2, 0.3, 1.0, -2.0, 3.0;
+  freeJoint->setSpatialVelocity(spatialVel, refFrame.get(), refFrame.get());
+  freeJoint->setSpatialVelocity(spatialVel, Frame::World(), refFrame.get());
+
+  Eigen::Vector6d spatialAcc;
+  spatialAcc << -0.1, 0.2, -0.3, 0.5, -0.6, 0.7;
+  freeJoint->setSpatialAcceleration(spatialAcc, refFrame.get(), refFrame.get());
+  freeJoint->setSpatialAcceleration(spatialAcc, Frame::World(), refFrame.get());
+
+  freeJoint->setVelocities(Eigen::Vector6d::Constant(0.05));
+  const auto jacobianDot = freeJoint->getRelativeJacobianTimeDeriv();
+  EXPECT_TRUE(jacobianDot.allFinite());
 }

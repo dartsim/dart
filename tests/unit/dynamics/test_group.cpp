@@ -13,6 +13,8 @@
 #include <dart/dynamics/linkage.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
+#include <dart/dart.hpp>
+
 #include <gtest/gtest.h>
 
 #include <vector>
@@ -608,4 +610,46 @@ TEST(GroupTest, ConstAccessorsAndMembershipQueries)
   EXPECT_NE(constGroup.getIndexOf(body0, false), INVALID_INDEX);
   EXPECT_NE(constGroup.getIndexOf(joint0, false), INVALID_INDEX);
   EXPECT_NE(constGroup.getIndexOf(dof0, false), INVALID_INDEX);
+}
+
+//==============================================================================
+TEST(GroupTest, ConstOverloads)
+{
+  auto skel = Skeleton::create("group_const_overloads");
+  auto rootPair = skel->createJointAndBodyNodePair<RevoluteJoint>();
+  rootPair.first->setName("root_joint");
+  rootPair.second->setName("root_body");
+
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setName("child_joint");
+  childPair.second->setName("child_body");
+
+  std::vector<BodyNode*> bodyNodes = {rootPair.second, childPair.second};
+  auto group = Group::create("const_overloads", bodyNodes);
+
+  const Group& constGroup = *group;
+
+  EXPECT_EQ(constGroup.getNumSkeletons(), 1u);
+  EXPECT_TRUE(constGroup.hasSkeleton(skel.get()));
+
+  EXPECT_EQ(constGroup.getNumBodyNodes(), bodyNodes.size());
+  EXPECT_EQ(constGroup.getBodyNode(0), rootPair.second);
+  EXPECT_EQ(constGroup.getBodyNode("child_body"), childPair.second);
+  EXPECT_EQ(constGroup.getBodyNodes("child_body").size(), 1u);
+  EXPECT_EQ(constGroup.getBodyNodes().size(), bodyNodes.size());
+
+  EXPECT_EQ(constGroup.getNumJoints(), 2u);
+  EXPECT_EQ(constGroup.getJoint(0), rootPair.first);
+  EXPECT_EQ(constGroup.getJoint("child_joint"), childPair.first);
+  EXPECT_EQ(constGroup.getJoints("child_joint").size(), 1u);
+  EXPECT_EQ(constGroup.getJoints().size(), constGroup.getNumJoints());
+
+  const auto* dof0 = constGroup.getDof(0);
+  ASSERT_NE(dof0, nullptr);
+  EXPECT_NE(constGroup.getIndexOf(dof0, false), INVALID_INDEX);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_EQ(constGroup.getDofs().size(), constGroup.getNumDofs());
+  DART_SUPPRESS_DEPRECATED_END
 }

@@ -31,11 +31,15 @@
  */
 
 #include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/chain.hpp>
 #include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/linkage.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -690,4 +694,250 @@ TEST(SkeletonProperties, ZeroDofSkeletonEdgeCases)
 
   // computeForwardKinematics on zero-dof
   skel->computeForwardKinematics();
+}
+
+TEST(InverseKinematicsProperties, ConstOverloadsAndConfiguration)
+{
+  auto skeleton = Skeleton::create("ik_props");
+  auto rootPair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  auto midPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  auto endPair
+      = midPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  auto ik = endPair.second->getOrCreateIK();
+  ASSERT_NE(ik, nullptr);
+
+  ik->setTarget(nullptr);
+  auto customTarget = SimpleFrame::createShared(
+      Frame::World(), "ik_target", Eigen::Isometry3d::Identity());
+  ik->setTarget(customTarget);
+
+  auto& tsr = ik->setErrorMethod<InverseKinematics::TaskSpaceRegion>();
+  tsr.setComputeFromCenter(false);
+  EXPECT_FALSE(tsr.isComputingFromCenter());
+
+  auto refFrame = SimpleFrame::createShared(
+      Frame::World(), "ik_ref", Eigen::Isometry3d::Identity());
+  tsr.setReferenceFrame(refFrame);
+  EXPECT_EQ(tsr.getReferenceFrame(), refFrame);
+
+  Eigen::Vector6d lower = Eigen::Vector6d::Constant(-0.1);
+  Eigen::Vector6d upper = Eigen::Vector6d::Constant(0.1);
+  tsr.setBounds(lower, upper);
+  auto bounds = tsr.getBounds();
+  EXPECT_TRUE(bounds.first.isApprox(lower));
+  EXPECT_TRUE(bounds.second.isApprox(upper));
+
+  tsr.setAngularBounds(
+      Eigen::Vector3d(-0.2, -0.3, -0.4), Eigen::Vector3d(0.2, 0.3, 0.4));
+  auto angularBounds = tsr.getAngularBounds();
+  EXPECT_TRUE(angularBounds.first.isApprox(Eigen::Vector3d(-0.2, -0.3, -0.4)));
+  EXPECT_TRUE(angularBounds.second.isApprox(Eigen::Vector3d(0.2, 0.3, 0.4)));
+
+  tsr.setLinearBounds(
+      Eigen::Vector3d(-0.5, -0.6, -0.7), Eigen::Vector3d(0.5, 0.6, 0.7));
+  auto linearBounds = tsr.getLinearBounds();
+  EXPECT_TRUE(linearBounds.first.isApprox(Eigen::Vector3d(-0.5, -0.6, -0.7)));
+  EXPECT_TRUE(linearBounds.second.isApprox(Eigen::Vector3d(0.5, 0.6, 0.7)));
+
+  tsr.setErrorLengthClamp(0.5);
+  EXPECT_DOUBLE_EQ(tsr.getErrorLengthClamp(), 0.5);
+
+  Eigen::Vector6d errorWeights;
+  errorWeights << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0;
+  tsr.setErrorWeights(errorWeights);
+  EXPECT_TRUE(tsr.getErrorWeights().isApprox(errorWeights));
+
+  tsr.setAngularErrorWeights(Eigen::Vector3d(0.1, 0.2, 0.3));
+  EXPECT_TRUE(
+      tsr.getAngularErrorWeights().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+
+  tsr.setLinearErrorWeights(Eigen::Vector3d(0.4, 0.5, 0.6));
+  EXPECT_TRUE(
+      tsr.getLinearErrorWeights().isApprox(Eigen::Vector3d(0.4, 0.5, 0.6)));
+
+  auto errorProps = tsr.getErrorMethodProperties();
+  auto tsrProps = tsr.getTaskSpaceRegionProperties();
+  EXPECT_TRUE(errorProps.mBounds.first.isApprox(tsrProps.mBounds.first));
+
+  auto& gradient = ik->getGradientMethod();
+  gradient.setComponentWiseClamp(0.25);
+  EXPECT_DOUBLE_EQ(gradient.getComponentWiseClamp(), 0.25);
+
+  Eigen::VectorXd weights = Eigen::VectorXd::Ones(ik->getDofs().size());
+  gradient.setComponentWeights(weights);
+  EXPECT_EQ(gradient.getComponentWeights().size(), weights.size());
+  auto gradientProps = gradient.getGradientMethodProperties();
+  EXPECT_EQ(gradientProps.mComponentWeights.size(), weights.size());
+
+  auto newSolver
+      = std::make_shared<dart::math::GradientDescentSolver>(ik->getProblem());
+  ik->setSolver(nullptr);
+  ik->setSolver(newSolver);
+
+  auto& seeds = ik->getProblem()->getSeeds();
+  seeds.clear();
+  seeds.push_back(Eigen::VectorXd::Zero(ik->getDofs().size()));
+  EXPECT_EQ(seeds.size(), 1u);
+  ik->resetProblem(true);
+
+  const auto& constIk = *ik;
+  EXPECT_EQ(constIk.getAnalytical(), nullptr);
+  EXPECT_EQ(constIk.getObjective(), nullptr);
+  EXPECT_EQ(constIk.getNullSpaceObjective(), nullptr);
+  EXPECT_FALSE(constIk.hasNullSpaceObjective());
+  EXPECT_NE(constIk.getSolver(), nullptr);
+  EXPECT_NE(constIk.getProblem(), nullptr);
+  EXPECT_NE(constIk.getTarget(), nullptr);
+  EXPECT_TRUE(constIk.getProblem()->getSeeds().empty());
+
+  EXPECT_FALSE(constIk.hasOffset());
+  ik->setOffset(Eigen::Vector3d(0.0, 0.0, 0.2));
+  EXPECT_TRUE(constIk.hasOffset());
+  EXPECT_TRUE(constIk.getOffset().isApprox(Eigen::Vector3d(0.0, 0.0, 0.2)));
+
+  const auto dofs = constIk.getDofs();
+  const auto dofMap = constIk.getDofMap();
+  EXPECT_EQ(dofs.size(), dofMap.size());
+
+  const auto& jacobian = constIk.computeJacobian();
+  EXPECT_EQ(jacobian.rows(), 6);
+}
+
+TEST(HierarchicalIKProperties, ConstOverloads)
+{
+  auto skeleton = Skeleton::create("hik_props");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.second->getOrCreateIK();
+
+  auto wholeBodyIK = skeleton->getOrCreateIK();
+  ASSERT_NE(wholeBodyIK, nullptr);
+
+  wholeBodyIK->refreshIKHierarchy();
+
+  auto newSolver = std::make_shared<dart::math::GradientDescentSolver>(
+      wholeBodyIK->getProblem());
+  wholeBodyIK->setSolver(nullptr);
+  wholeBodyIK->setSolver(newSolver);
+
+  auto& seeds = wholeBodyIK->getProblem()->getSeeds();
+  seeds.clear();
+  seeds.push_back(Eigen::VectorXd::Zero(skeleton->getNumDofs()));
+  wholeBodyIK->resetProblem(true);
+
+  const auto& constIK = *wholeBodyIK;
+  EXPECT_EQ(constIK.getObjective(), nullptr);
+  EXPECT_EQ(constIK.getNullSpaceObjective(), nullptr);
+  EXPECT_FALSE(constIK.hasNullSpaceObjective());
+  EXPECT_NE(constIK.getSolver(), nullptr);
+  EXPECT_NE(constIK.getProblem(), nullptr);
+  EXPECT_TRUE(constIK.getProblem()->getSeeds().empty());
+
+  const auto hierarchy = constIK.getIKHierarchy();
+  EXPECT_GE(hierarchy.size(), 1u);
+
+  const auto nullspaces = constIK.computeNullSpaces();
+  EXPECT_GE(nullspaces.size(), 0u);
+
+  EXPECT_EQ(constIK.getSkeleton(), skeleton);
+  EXPECT_EQ(constIK.getAffiliation(), skeleton);
+
+  auto positions = constIK.getPositions();
+  EXPECT_EQ(positions.size(), static_cast<int>(skeleton->getNumDofs()));
+}
+
+TEST(EntityProperties, FrameHierarchyAndDirtyFlags)
+{
+  auto parent = SimpleFrame::createShared(
+      Frame::World(), "parent_frame", Eigen::Isometry3d::Identity());
+  auto child = SimpleFrame::createShared(
+      parent.get(), "child_frame", Eigen::Isometry3d::Identity());
+
+  EXPECT_TRUE(child->descendsFrom(parent.get()));
+  EXPECT_TRUE(child->descendsFrom(Frame::World()));
+  EXPECT_TRUE(child->descendsFrom(nullptr));
+
+  EXPECT_EQ(parent->getNumChildEntities(), 1u);
+  child->setParentFrame(Frame::World());
+  EXPECT_EQ(parent->getNumChildEntities(), 0u);
+  EXPECT_EQ(child->getParentFrame(), Frame::World());
+
+  child->dirtyTransform();
+  child->dirtyVelocity();
+  child->dirtyAcceleration();
+  EXPECT_TRUE(child->needsTransformUpdate());
+  EXPECT_TRUE(child->needsVelocityUpdate());
+  EXPECT_TRUE(child->needsAccelerationUpdate());
+}
+
+TEST(ShapeNodeProperties, ConstAccessorsAndRemoval)
+{
+  auto skeleton = Skeleton::create("shape_node_const");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  BodyNode* body = pair.second;
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.3, 0.4));
+  ShapeNode* shapeNode
+      = body->createShapeNodeWith<VisualAspect, CollisionAspect>(box);
+  ASSERT_NE(shapeNode, nullptr);
+
+  shapeNode->setRelativeTranslation(Eigen::Vector3d(0.1, -0.2, 0.3));
+  shapeNode->setRelativeRotation(
+      Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitZ()).toRotationMatrix());
+
+  const ShapeNode& constNode = *shapeNode;
+  EXPECT_NE(constNode.getShape(), nullptr);
+  EXPECT_TRUE(constNode.has<VisualAspect>());
+  EXPECT_TRUE(constNode.has<CollisionAspect>());
+  EXPECT_NE(constNode.getVisualAspect(), nullptr);
+  EXPECT_NE(constNode.getCollisionAspect(), nullptr);
+  EXPECT_TRUE(constNode.getRelativeTranslation().isApprox(
+      Eigen::Vector3d(0.1, -0.2, 0.3)));
+  EXPECT_TRUE(constNode.getOffset().isApprox(Eigen::Vector3d(0.1, -0.2, 0.3)));
+
+  const Node* node = shapeNode;
+  EXPECT_EQ(node->getBodyNodePtr().get(), body);
+  EXPECT_EQ(node->getSkeleton(), skeleton);
+}
+
+TEST(ChainAndLinkage, CriteriaConversionAndAssembly)
+{
+  auto skeleton = Skeleton::create("chain_linkage");
+  auto root = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto mid = root.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  auto end = mid.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  auto branch = mid.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  (void)branch;
+
+  Chain::Criteria chainCriteria(root.second, end.second, false);
+  Linkage::Criteria linkageCriteria = chainCriteria.convert();
+  auto satisfied = linkageCriteria.satisfy();
+  EXPECT_GE(satisfied.size(), 1u);
+
+  Chain::Criteria roundTrip = Chain::Criteria::convert(linkageCriteria);
+  EXPECT_EQ(roundTrip.mStart.lock().get(), root.second);
+  EXPECT_EQ(roundTrip.mTarget.lock().get(), end.second);
+  EXPECT_FALSE(roundTrip.mIncludeUpstreamParentJoint);
+
+  auto chain = Chain::create(chainCriteria, "chain");
+  ASSERT_NE(chain, nullptr);
+  EXPECT_TRUE(chain->isAssembled());
+  EXPECT_TRUE(chain->isStillChain());
+
+  auto chainClone = chain->cloneChain("chain_clone");
+  ASSERT_NE(chainClone, nullptr);
+  EXPECT_TRUE(chainClone->isAssembled());
+
+  Linkage::Criteria linkageFromNodes(root.second, end.second, true);
+  auto linkage = Linkage::create(linkageFromNodes, "linkage");
+  ASSERT_NE(linkage, nullptr);
+  EXPECT_TRUE(linkage->isAssembled());
+
+  ASSERT_TRUE(end.second->moveTo(root.second));
+  EXPECT_FALSE(linkage->isAssembled());
+  linkage->reassemble();
+  EXPECT_TRUE(linkage->isAssembled());
 }

@@ -1625,6 +1625,94 @@ TEST(UrdfParser, ParsesJointTypesGeometryAndInertia)
 }
 
 //==============================================================================
+TEST(UrdfParser, OptionsGetterAndPackageResolution)
+{
+  UrdfParser parser;
+  UrdfParser::Options options;
+  options.mDefaultRootJointType = UrdfParser::RootJointType::Fixed;
+  parser.setOptions(options);
+  EXPECT_EQ(
+      parser.getOptions().mDefaultRootJointType,
+      UrdfParser::RootJointType::Fixed);
+
+  const auto tempDir = makeTempDir("dart-urdf-pkg");
+  const auto meshDir = tempDir / "meshes";
+  std::filesystem::create_directories(meshDir);
+  const auto meshPath = meshDir / "mesh.obj";
+  std::ofstream meshFile(meshPath);
+  ASSERT_TRUE(meshFile.is_open());
+  meshFile << "o Mesh\n"
+           << "v 0 0 0\n"
+           << "v 1 0 0\n"
+           << "v 0 1 0\n"
+           << "f 1 2 3\n";
+  meshFile.close();
+
+  parser.addPackageDirectory("test_pkg", tempDir.string());
+  const std::string urdfStr = R"(
+    <robot name="pkg_robot">
+      <link name="base">
+        <visual>
+          <geometry>
+            <mesh filename="package://test_pkg/meshes/mesh.obj" />
+          </geometry>
+        </visual>
+      </link>
+    </robot>
+  )";
+
+  const Uri baseUri = Uri::createFromPath((tempDir / "model.urdf").string());
+  const auto robot = parser.parseSkeletonString(urdfStr, baseUri);
+  ASSERT_TRUE(robot);
+  auto* body = robot->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+
+  bool foundMesh = false;
+  body->eachShapeNodeWith<dynamics::VisualAspect>(
+      [&](dynamics::ShapeNode* node) {
+        if (std::dynamic_pointer_cast<dynamics::MeshShape>(node->getShape())) {
+          foundMesh = true;
+        }
+      });
+  EXPECT_TRUE(foundMesh);
+
+  std::filesystem::remove_all(tempDir);
+}
+
+//==============================================================================
+TEST(UrdfParser, TransmissionsSkipMissingElements)
+{
+  const std::string urdfStr = R"(
+    <robot name="transmission_missing_elements">
+      <link name="base"/>
+      <joint name="j1" type="continuous">
+        <parent link="base"/>
+        <child link="l1"/>
+        <axis xyz="0 0 1"/>
+      </joint>
+      <link name="l1"/>
+      <transmission name="tx_missing_actuator">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="j1" />
+      </transmission>
+      <transmission name="tx_missing_joint">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="motor">
+          <mechanicalReduction>2.0</mechanicalReduction>
+        </actuator>
+      </transmission>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  const auto robot = parser.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+  auto* joint = robot->getJoint("j1");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_NE(joint->getActuatorType(), dart::dynamics::Joint::MIMIC);
+}
+
+//==============================================================================
 TEST(UrdfParser, TransmissionsSkipInvalidReductionAndMultiDof)
 {
   const std::string urdfStr = R"(

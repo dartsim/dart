@@ -34,11 +34,9 @@
 
 #include "dart/common/platform.hpp"
 #include "dart/math/geometry.hpp"
-#include "dart/math/helpers.hpp"
 
 #include <gtest/gtest.h>
 
-#include <iostream>
 #include <limits>
 #include <span>
 #include <vector>
@@ -1721,4 +1719,136 @@ TEST(Geometry, ComputeConvexHullWrapper)
 
   const auto hull = computeConvexHull(std::span<const Eigen::Vector2d>(points));
   EXPECT_EQ(hull.size(), 4u);
+}
+
+//==============================================================================
+TEST(Geometry, QuaternionSecondDerivCrossTerms)
+{
+  const Eigen::Quaterniond q = Eigen::Quaterniond::Identity();
+
+  const Eigen::Matrix3d d02 = quatSecondDeriv(q, 0, 2);
+  EXPECT_DOUBLE_EQ(d02(0, 2), 2.0);
+  EXPECT_DOUBLE_EQ(d02(2, 0), -2.0);
+
+  const Eigen::Matrix3d d12 = quatSecondDeriv(q, 1, 2);
+  EXPECT_DOUBLE_EQ(d12(0, 1), 2.0);
+  EXPECT_DOUBLE_EQ(d12(1, 0), 2.0);
+}
+
+#if !defined(NDEBUG)
+//==============================================================================
+TEST(Geometry, FromSkewSymmetricNonZeroDiagonal)
+{
+  const Eigen::Matrix3d matrix = Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d value = fromSkewSymmetric(matrix);
+  EXPECT_TRUE(value.isApprox(Eigen::Vector3d::Zero(), 1e-12));
+}
+#endif
+
+//==============================================================================
+TEST(Geometry, ComputeCentroidOfHullWarningAndZeroArea)
+{
+  SupportPolygon nonConvex;
+  nonConvex.emplace_back(-2.0, -2.0);
+  nonConvex.emplace_back(-2.0, -1.0);
+  nonConvex.emplace_back(-2.0, 0.0);
+  nonConvex.emplace_back(-2.0, 2.0);
+  nonConvex.emplace_back(-1.0, 0.0);
+
+  const Eigen::Vector2d centroid = computeCentroidOfHull(nonConvex);
+  EXPECT_TRUE(centroid.isApprox(Eigen::Vector2d::Zero(), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeConvexHullRightTurnBacktrack)
+{
+  SupportPolygon points;
+  points.emplace_back(0.0, 0.0);
+  points.emplace_back(2.0, 0.0);
+  points.emplace_back(1.0, 0.2);
+  points.emplace_back(2.0, 2.0);
+  points.emplace_back(0.0, 2.0);
+
+  std::vector<std::size_t> indices;
+  const auto hull
+      = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
+
+  EXPECT_EQ(hull.size(), 4u);
+  EXPECT_EQ(indices.size(), 4u);
+
+  bool hasInterior = false;
+  for (const auto& point : hull) {
+    if (point.isApprox(Eigen::Vector2d(1.0, 0.2), 1e-12)) {
+      hasInterior = true;
+      break;
+    }
+  }
+  EXPECT_FALSE(hasInterior);
+}
+
+//==============================================================================
+TEST(Geometry, ComputeIntersectionVerticalAndBeyondEndpoints)
+{
+  Eigen::Vector2d intersection;
+  auto result = computeIntersection(
+      intersection,
+      Eigen::Vector2d(1.0, 0.0),
+      Eigen::Vector2d(1.0, 2.0),
+      Eigen::Vector2d(0.0, 1.0),
+      Eigen::Vector2d(2.0, 1.0));
+
+  EXPECT_EQ(result, INTERSECTING);
+  EXPECT_TRUE(intersection.isApprox(Eigen::Vector2d(1.0, 1.0), 1e-12));
+
+  result = computeIntersection(
+      intersection,
+      Eigen::Vector2d(1.0, 0.0),
+      Eigen::Vector2d(1.0, 2.0),
+      Eigen::Vector2d(2.0, 1.0),
+      Eigen::Vector2d(3.0, 1.0));
+  EXPECT_EQ(result, BEYOND_ENDPOINTS);
+}
+
+//==============================================================================
+TEST(Geometry, IsInsideSupportPolygonEdgeRangeChecks)
+{
+  SupportPolygon segment;
+  segment.emplace_back(0.0, 0.0);
+  segment.emplace_back(2.0, 0.0);
+  EXPECT_FALSE(
+      isInsideSupportPolygon(Eigen::Vector2d(1.0, 1.0), segment, true));
+
+  SupportPolygon square;
+  square.emplace_back(0.0, 0.0);
+  square.emplace_back(2.0, 0.0);
+  square.emplace_back(2.0, 2.0);
+  square.emplace_back(0.0, 2.0);
+
+  EXPECT_FALSE(isInsideSupportPolygon(Eigen::Vector2d(3.0, 0.0), square, true));
+  EXPECT_TRUE(isInsideSupportPolygon(Eigen::Vector2d(1.0, 0.0), square, true));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeClosestPointOnLineSegmentVerticalStart)
+{
+  const Eigen::Vector2d s1(1.0, 0.0);
+  const Eigen::Vector2d s2(1.0, 2.0);
+  const Eigen::Vector2d p(0.0, -1.0);
+
+  const Eigen::Vector2d closest = computeClosestPointOnLineSegment(p, s1, s2);
+  EXPECT_TRUE(closest.isApprox(Eigen::Vector2d(1.0, 0.0), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeClosestPointOnSupportPolygonOverload)
+{
+  SupportPolygon square;
+  square.emplace_back(0.0, 0.0);
+  square.emplace_back(2.0, 0.0);
+  square.emplace_back(2.0, 2.0);
+  square.emplace_back(0.0, 2.0);
+
+  const Eigen::Vector2d closest
+      = computeClosestPointOnSupportPolygon(Eigen::Vector2d(3.0, 1.0), square);
+  EXPECT_TRUE(closest.isApprox(Eigen::Vector2d(2.0, 1.0), 1e-12));
 }

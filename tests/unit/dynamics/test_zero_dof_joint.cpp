@@ -5,6 +5,8 @@
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
+#include <dart/dart.hpp>
+
 #include <gtest/gtest.h>
 
 #include <string>
@@ -219,4 +221,38 @@ TEST(ZeroDofJoint, ZeroDofAccessorsReturnEmpty)
   EXPECT_DOUBLE_EQ(joint->getRestPosition(0), 0.0);
   EXPECT_DOUBLE_EQ(joint->getDampingCoefficient(0), 0.0);
   EXPECT_DOUBLE_EQ(joint->getCoulombFriction(0), 0.0);
+}
+
+TEST(ZeroDofJoint, ConstAccessorsAndMatrices)
+{
+  auto skel = createSkeletonWithJoint<WeldJoint>("zero_dof_const");
+  auto* joint = getJoint<WeldJoint>(skel);
+  const Joint& constJoint = *joint;
+
+  EXPECT_EQ(constJoint.getNumDofs(), 0u);
+  EXPECT_EQ(constJoint.getCommands().size(), 0);
+  EXPECT_EQ(constJoint.getPositions().size(), 0);
+  EXPECT_EQ(constJoint.getVelocities().size(), 0);
+  EXPECT_EQ(constJoint.getAccelerations().size(), 0);
+  EXPECT_EQ(constJoint.getForces().size(), 0);
+
+  EXPECT_EQ(constJoint.getPositionLowerLimits().size(), 0);
+  EXPECT_EQ(constJoint.getPositionUpperLimits().size(), 0);
+  EXPECT_EQ(constJoint.getVelocityLowerLimits().size(), 0);
+  EXPECT_EQ(constJoint.getVelocityUpperLimits().size(), 0);
+  EXPECT_EQ(constJoint.getAccelerationLowerLimits().size(), 0);
+  EXPECT_EQ(constJoint.getAccelerationUpperLimits().size(), 0);
+  EXPECT_EQ(constJoint.getForceLowerLimits().size(), 0);
+  EXPECT_EQ(constJoint.getForceUpperLimits().size(), 0);
+
+  skel->computeForwardDynamics();
+  skel->computeImpulseForwardDynamics();
+
+  const auto invMass = skel->getInvMassMatrix();
+  EXPECT_EQ(invMass.rows(), 0);
+  EXPECT_EQ(invMass.cols(), 0);
+
+  const auto invAug = skel->getInvAugMassMatrix();
+  EXPECT_EQ(invAug.rows(), 0);
+  EXPECT_EQ(invAug.cols(), 0);
 }

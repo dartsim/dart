@@ -302,6 +302,74 @@ TEST(Lemke, DegenerateZeroMatrixFails)
 }
 
 //==============================================================================
+TEST(Lemke, RejectsInvalidProblem)
+{
+  dart::math::LemkeSolver solver;
+
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd lo(2);
+  Eigen::VectorXd hi(2);
+  lo << 0.5, 0.0;
+  hi << 0.25, std::numeric_limits<double>::infinity();
+
+  LcpProblem problem(A, b, lo, hi, Eigen::Vector2i::Constant(-1));
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+
+  EXPECT_EQ(result.status, dart::math::LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
+TEST(Lemke, SolvesPositiveBWithPivoting)
+{
+  dart::math::LemkeSolver solver;
+
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::VectorXd b(2);
+  b << 0.5, 1.25;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpProblem problem(
+      A,
+      b,
+      Eigen::VectorXd::Zero(2),
+      Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity()),
+      Eigen::VectorXi::Constant(2, -1));
+  const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+
+  EXPECT_EQ(result.status, dart::math::LcpSolverStatus::Success);
+  EXPECT_NEAR(x[0], b[0], 1e-8);
+  EXPECT_NEAR(x[1], b[1], 1e-8);
+  ExpectValidLCP(A, b, x);
+}
+
+//==============================================================================
+TEST(Lemke, ReturnsZeroForNonnegativeQ)
+{
+  dart::math::LemkeSolver solver;
+
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::VectorXd b(2);
+  b << -0.5, -1.25;
+  Eigen::VectorXd x = Eigen::VectorXd::Ones(2);
+
+  LcpProblem problem(
+      A,
+      b,
+      Eigen::VectorXd::Zero(2),
+      Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity()),
+      Eigen::VectorXi::Constant(2, -1));
+  const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+
+  EXPECT_EQ(result.status, dart::math::LcpSolverStatus::Success);
+  EXPECT_NEAR(x[0], 0.0, 1e-12);
+  EXPECT_NEAR(x[1], 0.0, 1e-12);
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

@@ -41,13 +41,14 @@
 #include "dart/dynamics/prismatic_joint.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/screw_joint.hpp"
-#include "dart/dynamics/soft_body_node.hpp"
 #include "dart/dynamics/universal_joint.hpp"
 #include "dart/dynamics/weld_joint.hpp"
 #include "dart/simulation/world.hpp"
+#include "dart/utils/sdf/detail/sdf_helpers.hpp"
 #include "dart/utils/sdf/sdf_parser.hpp"
 
 #include <gtest/gtest.h>
+#include <sdf/sdf.hh>
 
 #include <algorithm>
 #include <filesystem>
@@ -1690,6 +1691,83 @@ TEST(SdfParser, AxisLimitSpringAndFriction)
   EXPECT_NEAR(joint->getCoulombFriction(0), 0.4, 1e-9);
   EXPECT_NEAR(joint->getRestPosition(0), 0.2, 1e-9);
   EXPECT_NEAR(joint->getSpringStiffness(0), 3.2, 1e-9);
+}
+
+//==============================================================================
+TEST(SdfParser, FixedRootJointTypeCreatesWeldJoint)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/fixed_root/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="fixed_root">
+    <link name="link">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  retriever->add(uri, modelSdf);
+  SdfParser::Options options(retriever, SdfParser::RootJointType::Fixed);
+  const auto skeleton = SdfParser::readSkeleton(common::Uri(uri), options);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint = skeleton->getRootJoint();
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getType(), dynamics::WeldJoint::getStaticType());
+}
+
+//==============================================================================
+TEST(SdfParser, HelperUtilitiesParseText)
+{
+  using namespace dart::utils::SdfParser::detail;
+  const std::string sdfText = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="helper">
+    <link name="link">
+      <pose>1 2 3 0 0 0</pose>
+      <user>1 2 3</user>
+      <size>4 5</size>
+      <custom>0.1 0.2 0.3 0.4</custom>
+      <bool_flag>true</bool_flag>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  sdf::Root root;
+  const auto errors = root.LoadSdfString(sdfText);
+  ASSERT_TRUE(errors.empty());
+  auto modelElement = root.Element()->GetElement("model");
+  ASSERT_NE(modelElement, nullptr);
+  EXPECT_EQ(getAttributeString(modelElement, "name"), "helper");
+  EXPECT_EQ(toLowerCopy("AbC"), "abc");
+  EXPECT_EQ(trimCopy("  value  "), "value");
+
+  auto linkElement = modelElement->GetElement("link");
+  ASSERT_NE(linkElement, nullptr);
+  EXPECT_EQ(getChildElementText(linkElement, "user"), "1 2 3");
+
+  const auto size = getValueVector2d(linkElement, "size");
+  EXPECT_TRUE(size.isApprox(Eigen::Vector2d(4.0, 5.0)));
+
+  const auto vec3i = getValueVector3i(linkElement, "user");
+  EXPECT_TRUE(vec3i == Eigen::Vector3i(1, 2, 3));
+
+  const auto vecxd = getValueVectorXd(linkElement, "custom");
+  ASSERT_EQ(vecxd.size(), 4);
+  EXPECT_DOUBLE_EQ(vecxd[0], 0.1);
+
+  const auto pose
+      = getValueIsometry3dWithExtrinsicRotation(linkElement, "pose");
+  EXPECT_TRUE(pose.translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+
+  EXPECT_TRUE(getValueBool(linkElement, "bool_flag"));
+
+  const auto elementText = getElementText(linkElement->GetElement("custom"));
+  EXPECT_EQ(elementText, "0.1 0.2 0.3 0.4");
 }
 
 //==============================================================================

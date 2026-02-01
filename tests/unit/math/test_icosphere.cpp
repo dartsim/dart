@@ -129,3 +129,34 @@ TEST(IcosphereTests, FloatAndDoubleInstantiation)
   EXPECT_EQ(icosa.first.size(), 12u);
   EXPECT_EQ(icosa.second.size(), 20u);
 }
+
+//==============================================================================
+TEST(IcosphereTests, ExplicitTemplateCoverage)
+{
+  using IcosphereDouble = dart::math::Icosphere<double>;
+  using IcosphereFloat = dart::math::Icosphere<float>;
+
+  EXPECT_EQ(IcosphereDouble::getNumVertices(0), 12u);
+  EXPECT_EQ(IcosphereDouble::getNumVertices(1), 42u);
+  EXPECT_EQ(IcosphereDouble::getNumEdges(0), 30u);
+  EXPECT_EQ(IcosphereDouble::getNumTriangles(0), 20u);
+  EXPECT_EQ(IcosphereDouble::getNumTriangles(1), 80u);
+
+  const auto icosa = IcosphereDouble::computeIcosahedron(1.0);
+  EXPECT_EQ(icosa.first.size(), 12u);
+  EXPECT_EQ(icosa.second.size(), 20u);
+
+  const IcosphereDouble ico0(1.0, 0);
+  EXPECT_DOUBLE_EQ(ico0.getRadius(), 1.0);
+  EXPECT_EQ(ico0.getNumSubdivisions(), 0u);
+
+  const IcosphereDouble ico1(2.0, 1);
+  EXPECT_DOUBLE_EQ(ico1.getRadius(), 2.0);
+  EXPECT_EQ(ico1.getNumSubdivisions(), 1u);
+
+  const IcosphereDouble ico2(1.0, 2);
+  EXPECT_EQ(ico2.getTriangles().size(), IcosphereDouble::getNumTriangles(2));
+
+  const IcosphereFloat icof(1.5f, 1);
+  EXPECT_FLOAT_EQ(icof.getRadius(), 1.5f);
+}

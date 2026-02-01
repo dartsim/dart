@@ -136,3 +136,71 @@ TEST(ArrowShapeTest, PropertiesClampedToValidRange)
   EXPECT_GE(clampedProps.mMaxHeadLength, 0.0);
   EXPECT_GE(clampedProps.mHeadRadiusScale, 1.0);
 }
+
+//==============================================================================
+TEST(ArrowShapeTest, SingleArrowMeshGeneration)
+{
+  const Eigen::Vector3d tail(0.0, 0.0, 0.0);
+  const Eigen::Vector3d head(0.0, 0.0, 1.0);
+  const std::size_t resolution = 6;
+
+  ArrowShape arrow(
+      tail,
+      head,
+      ArrowShape::Properties(),
+      Eigen::Vector4d::Ones(),
+      resolution);
+
+  const auto mesh = arrow.getTriMesh();
+  ASSERT_NE(mesh, nullptr);
+  EXPECT_EQ(mesh->getVertices().size(), 4 * resolution + 1);
+  EXPECT_EQ(mesh->getTriangles().size(), 5 * resolution);
+}
+
+//==============================================================================
+TEST(ArrowShapeTest, DoubleArrowMeshGeneration)
+{
+  const Eigen::Vector3d tail(0.0, 0.0, 0.0);
+  const Eigen::Vector3d head(0.0, 0.0, 1.0);
+  const std::size_t resolution = 6;
+
+  ArrowShape::Properties props;
+  props.mDoubleArrow = true;
+
+  ArrowShape arrow(tail, head, props, Eigen::Vector4d::Ones(), resolution);
+
+  const auto mesh = arrow.getTriMesh();
+  ASSERT_NE(mesh, nullptr);
+  EXPECT_EQ(mesh->getVertices().size(), 6 * resolution + 2);
+  EXPECT_EQ(mesh->getTriangles().size(), 8 * resolution);
+}
+
+//==============================================================================
+TEST(ArrowShapeTest, ReconfigureReleasesCachedScene)
+{
+  const Eigen::Vector3d tail(0.0, 0.0, 0.0);
+  const Eigen::Vector3d head(1.0, 0.0, 0.0);
+  ArrowShape arrow(tail, head);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  const aiScene* scene = arrow.getMesh();
+#pragma GCC diagnostic pop
+
+  ASSERT_NE(scene, nullptr);
+
+  const Eigen::Vector3d newTail(0.0, 0.0, 0.0);
+  const Eigen::Vector3d newHead(0.0, 1.0, 0.0);
+  arrow.configureArrow(newTail, newHead, arrow.getProperties());
+}
+
+//==============================================================================
+TEST(ArrowShapeTest, AntiparallelDirection)
+{
+  const Eigen::Vector3d tail(0.0, 0.0, 1.0);
+  const Eigen::Vector3d head(0.0, 0.0, 0.0);
+
+  ArrowShape arrow(tail, head);
+
+  EXPECT_NE(arrow.getTriMesh(), nullptr);
+}

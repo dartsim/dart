@@ -30,8 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "helpers/gtest_utils.hpp"
-
 #include "dart/utils/All.hpp"
 #include "dart/utils/mjcf/detail/mujoco_model.hpp"
 #include "dart/utils/mjcf/detail/types.hpp"
@@ -106,9 +104,9 @@ TEST(MjcfParserTest, DefaultSettings)
 
   ASSERT_EQ(world->getNumSkeletons(), 2);
 
-  const auto torsoNodes
-      = dart::utils::MjcfParser::detail::getBodyNodes(*world, "torso");
-  EXPECT_EQ(torsoNodes.size(), 1u);
+  const auto bodyNodes
+      = dart::utils::MjcfParser::detail::getBodyNodes(*world, "body0");
+  EXPECT_EQ(bodyNodes.size(), 1u);
 
   auto boxSkel = world->getSkeleton(options.mGeomSkeletonNamePrefix);
   ASSERT_NE(boxSkel, nullptr);
@@ -1530,4 +1528,88 @@ TEST(MjcfParserTest, ComplexMjcfCoversDetails)
   EXPECT_FALSE(groundSkel->isMobile());
 
   EXPECT_GT(world->getConstraintSolver()->getNumConstraints(), 0u);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, CustomModelParsesBodiesGeomsAndActuators)
+{
+  const auto tempDir = std::filesystem::temp_directory_path();
+  const auto meshPath = tempDir / "dart_mjcf_custom_mesh.stl";
+  const auto xmlPath = tempDir / "dart_mjcf_custom.xml";
+
+  {
+    std::ofstream meshOutput(meshPath.string(), std::ios::binary);
+    meshOutput << "solid unit\n"
+                  "facet normal 0 0 1\n"
+                  "  outer loop\n"
+                  "    vertex 0 0 0\n"
+                  "    vertex 1 0 0\n"
+                  "    vertex 0 1 0\n"
+                  "  endloop\n"
+                  "endfacet\n"
+                  "endsolid unit\n";
+  }
+
+  const std::string meshFileName = meshPath.filename().string();
+  std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="custom_parser">
+  <compiler angle="radian" coordinate="global" eulerseq="xyz" meshdir="." />
+  <option timestep="0.003" gravity="0 0 -9.81" integrator="Euler" />
+  <size nuserdata="2" nkey="1" />
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <asset>
+    <mesh name="unit_mesh" file="${MESH_FILE}" scale="1 1 1" />
+  </asset>
+  <worldbody>
+    <body name="root" pos="0 0 0">
+      <geom name="root_box" type="box" size="0.2 0.2 0.2" />
+      <joint name="root_hinge" type="hinge" axis="0 0 1" range="-1 1" />
+      <site name="root_site" type="box" size="0.1 0.1 0.1" pos="0 0 0.2" />
+      <body name="child" pos="0 0 1">
+        <geom name="child_capsule" type="capsule" size="0.05" fromto="0 0 0 0 0 1" />
+        <joint name="child_slide" type="slide" axis="1 0 0" range="-0.5 0.5" />
+        <body name="grand" pos="0 0 1">
+          <geom name="grand_mesh" type="mesh" mesh="unit_mesh" />
+          <inertial pos="0 0 0" mass="1.0" diaginertia="0.1 0.1 0.1" />
+          <joint name="grand_ball" type="ball" />
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="root_hinge" gear="2" />
+    <position joint="child_slide" kp="10" />
+    <velocity joint="root_hinge" kv="0.1" />
+  </actuator>
+</mujoco>
+  )";
+
+  const std::string meshToken = "${MESH_FILE}";
+  const auto meshTokenPos = xml.find(meshToken);
+  ASSERT_NE(meshTokenPos, std::string::npos);
+  xml.replace(meshTokenPos, meshToken.size(), meshFileName);
+
+  std::ofstream output(xmlPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  const auto world
+      = utils::MjcfParser::readWorld(common::Uri(xmlPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(xmlPath, ec);
+  std::filesystem::remove(meshPath, ec);
+
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("root");
+  ASSERT_NE(skel, nullptr);
+  auto* rootBody = skel->getBodyNode("root");
+  ASSERT_NE(rootBody, nullptr);
+  EXPECT_TRUE(
+      rootBody->getTransform().translation().isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_NE(skel->getJoint("root_hinge"), nullptr);
+  EXPECT_NE(skel->getJoint("child_slide"), nullptr);
+  EXPECT_NE(skel->getJoint("grand_ball"), nullptr);
 }

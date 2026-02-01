@@ -47,6 +47,7 @@
 
 #include <dart/common/exception.hpp>
 
+#include <dart/dart.hpp>
 #include <dart/sensor/sensor.hpp>
 
 #include <gtest/gtest.h>
@@ -1189,4 +1190,37 @@ TEST(WorldTests, WeldJointWorldStep)
   world->step();
 
   EXPECT_EQ(world->getSimFrames(), 2);
+}
+
+TEST(WorldTests, ConstAccessorsAndNameClash)
+{
+  auto world = World::create("const_world");
+  auto skelA = createSimpleSkeleton("robot");
+  auto skelB = createSimpleSkeleton("robot");
+
+  world->addSkeleton(skelA);
+  world->addSkeleton(skelB);
+
+  EXPECT_NE(skelA->getName(), skelB->getName());
+
+  auto frame = SimpleFrame::createShared(Frame::World(), "const_frame");
+  world->addSimpleFrame(frame);
+
+  world->step();
+
+  const World& constWorld = *world;
+  EXPECT_EQ(constWorld.getNumSkeletons(), 2u);
+  EXPECT_NE(constWorld.getSkeleton(0), nullptr);
+  EXPECT_NE(constWorld.getSkeleton(skelA->getName()), nullptr);
+  EXPECT_NE(constWorld.getConstraintSolver(), nullptr);
+  EXPECT_NE(constWorld.getCollisionDetector(), nullptr);
+  EXPECT_NE(constWorld.getSimpleFrame("const_frame"), nullptr);
+
+  EXPECT_EQ(constWorld.getGravity(), world->getGravity());
+  EXPECT_DOUBLE_EQ(constWorld.getTimeStep(), world->getTimeStep());
+  EXPECT_DOUBLE_EQ(constWorld.getTime(), world->getTime());
+  EXPECT_EQ(constWorld.getSimFrames(), world->getSimFrames());
+
+  const auto& lastResult = constWorld.getLastCollisionResult();
+  EXPECT_EQ(lastResult.getNumContacts(), 0u);
 }

@@ -825,6 +825,26 @@ TEST(DARTCollideHelpers, ClosestLineBoxPointsEdgeCases)
   }
 }
 
+TEST(DARTCollideHelpers, ClosestLineBoxPointsAnchorTransition)
+{
+  dMatrix3 rotation
+      = {1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0};
+  dVector3 center = {0.0, 0.0, 0.0, 0.0};
+  dVector3 side = {1.0, 1.0, 1.0, 0.0};
+  dVector3 lret = {0.0, 0.0, 0.0, 0.0};
+  dVector3 bret = {0.0, 0.0, 0.0, 0.0};
+
+  dVector3 p1 = {-3.0, -2.0, 0.0, 0.0};
+  dVector3 p2 = {3.0, 4.0, 0.0, 0.0};
+  dClosestLineBoxPoints(p1, p2, center, rotation, side, lret, bret);
+
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_TRUE(std::isfinite(lret[i]));
+    EXPECT_TRUE(std::isfinite(bret[i]));
+    EXPECT_LE(std::abs(bret[i]), side[i] + 1e-9);
+  }
+}
+
 // Additional comprehensive tests for main collide() function dispatcher
 TEST(DARTCollide, MainDispatcherSphereSphere)
 {
@@ -1439,6 +1459,155 @@ TEST(DARTCollide, BoxBoxEdgeEdgeCollisionGroupSkewed)
   const auto& contact = result.getContact(0);
   EXPECT_GT(contact.penetrationDepth, 0.0);
   EXPECT_TRUE(contact.normal.allFinite());
+}
+
+TEST(DARTCollide, BoxBoxEdgeEdgeContactRotatedAxes)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto boxA = std::make_shared<BoxShape>(Eigen::Vector3d(1.2, 0.6, 0.8));
+  auto boxB = std::make_shared<BoxShape>(Eigen::Vector3d(0.9, 1.1, 0.7));
+
+  Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  tfA.linear()
+      = (Eigen::AngleAxisd(0.15 * math::pi, Eigen::Vector3d::UnitX())
+         * Eigen::AngleAxisd(0.25 * math::pi, Eigen::Vector3d::UnitY()))
+            .toRotationMatrix();
+  auto objA = makeObject(boxA, detector.get(), tfA);
+
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.linear() = (Eigen::AngleAxisd(0.35 * math::pi, Eigen::Vector3d::UnitY())
+                  * Eigen::AngleAxisd(0.2 * math::pi, Eigen::Vector3d::UnitZ()))
+                     .toRotationMatrix();
+  tfB.translation() = Eigen::Vector3d(0.55, 0.2, 0.15);
+  auto objB = makeObject(boxB, detector.get(), tfB);
+
+  CollisionResult result;
+  int contacts = collideBoxBox(
+      objA.object.get(),
+      objB.object.get(),
+      boxA->getSize(),
+      objA.frame->getWorldTransform(),
+      boxB->getSize(),
+      objB.frame->getWorldTransform(),
+      result);
+
+  EXPECT_GT(contacts, 0);
+  ASSERT_GT(result.getNumContacts(), 0u);
+  const auto& contact = result.getContact(0);
+  EXPECT_TRUE(contact.point.allFinite());
+  EXPECT_TRUE(contact.normal.allFinite());
+}
+
+TEST(DARTCollide, BoxBoxFaceContactAlongY)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
+
+  Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.translation() = Eigen::Vector3d(0.0, 0.45, 0.0);
+
+  auto objA = makeObject(box, detector.get(), tfA);
+  auto objB = makeObject(box, detector.get(), tfB);
+
+  CollisionResult result;
+  int contacts = collideBoxBox(
+      objA.object.get(),
+      objB.object.get(),
+      box->getSize(),
+      objA.frame->getWorldTransform(),
+      box->getSize(),
+      objB.frame->getWorldTransform(),
+      result);
+
+  EXPECT_GT(contacts, 0);
+  ASSERT_GT(result.getNumContacts(), 0u);
+  const auto& contact = result.getContact(0);
+  EXPECT_GT(std::abs(contact.normal.y()), 0.9);
+}
+
+TEST(DARTCollide, BoxSphereNegativeAxisNearEps)
+{
+  constexpr double kNearEps = 1e-8;
+  auto detector = DARTCollisionDetector::create();
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
+  auto sphere = std::make_shared<SphereShape>(0.2);
+
+  auto boxObj = makeObject(box, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  tfSphere.translation() = Eigen::Vector3d(0.0, -(0.5 + kNearEps), 0.0);
+  auto sphereObj = makeObject(sphere, detector.get(), tfSphere);
+
+  CollisionResult result;
+  int contacts = collideBoxSphere(
+      boxObj.object.get(),
+      sphereObj.object.get(),
+      box->getSize(),
+      boxObj.frame->getWorldTransform(),
+      sphere->getRadius(),
+      sphereObj.frame->getWorldTransform(),
+      result);
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(result.getNumContacts(), 1u);
+  EXPECT_GT(result.getContact(0).normal.y(), 0.9);
+
+  tfSphere.translation() = Eigen::Vector3d(0.0, 0.0, -(0.5 + kNearEps));
+  sphereObj.frame->setRelativeTransform(tfSphere);
+  CollisionResult zResult;
+  contacts = collideBoxSphere(
+      boxObj.object.get(),
+      sphereObj.object.get(),
+      box->getSize(),
+      boxObj.frame->getWorldTransform(),
+      sphere->getRadius(),
+      sphereObj.frame->getWorldTransform(),
+      zResult);
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(zResult.getNumContacts(), 1u);
+  EXPECT_GT(zResult.getContact(0).normal.z(), 0.9);
+}
+
+TEST(DARTCollide, SphereBoxNegativeAxisNearEps)
+{
+  constexpr double kNearEps = 1e-8;
+  auto detector = DARTCollisionDetector::create();
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
+  auto sphere = std::make_shared<SphereShape>(0.2);
+
+  auto boxObj = makeObject(box, detector.get(), Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  tfSphere.translation() = Eigen::Vector3d(0.0, -(0.5 + kNearEps), 0.0);
+  auto sphereObj = makeObject(sphere, detector.get(), tfSphere);
+
+  CollisionResult result;
+  int contacts = collideSphereBox(
+      sphereObj.object.get(),
+      boxObj.object.get(),
+      sphere->getRadius(),
+      sphereObj.frame->getWorldTransform(),
+      box->getSize(),
+      boxObj.frame->getWorldTransform(),
+      result);
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(result.getNumContacts(), 1u);
+  EXPECT_LT(result.getContact(0).normal.y(), -0.9);
+
+  tfSphere.translation() = Eigen::Vector3d(0.0, 0.0, -(0.5 + kNearEps));
+  sphereObj.frame->setRelativeTransform(tfSphere);
+  CollisionResult zResult;
+  contacts = collideSphereBox(
+      sphereObj.object.get(),
+      boxObj.object.get(),
+      sphere->getRadius(),
+      sphereObj.frame->getWorldTransform(),
+      box->getSize(),
+      boxObj.frame->getWorldTransform(),
+      zResult);
+  EXPECT_EQ(contacts, 1);
+  ASSERT_EQ(zResult.getNumContacts(), 1u);
+  EXPECT_LT(zResult.getContact(0).normal.z(), -0.9);
 }
 
 } // namespace dart::test

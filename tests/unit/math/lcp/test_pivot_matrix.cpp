@@ -3,9 +3,14 @@
  * All rights reserved.
  */
 
+#include "dart/math/lcp/pivoting/dantzig/matrix.hpp"
 #include "dart/math/lcp/pivoting/dantzig/pivot_matrix.hpp"
 
 #include <gtest/gtest.h>
+
+#include <vector>
+
+#include <cmath>
 
 using namespace dart::math;
 
@@ -407,4 +412,120 @@ TEST(PivotMatrix, ManySwaps)
     }
   }
   EXPECT_TRUE(found_reasonable_value);
+}
+
+//==============================================================================
+TEST(DantzigMatrixImpl, LDLTAddTLEarlyReturnOnSingleElement)
+{
+  std::vector<double> L = {1.0};
+  std::vector<double> d = {2.0};
+  std::vector<double> a = {0.5};
+
+  dLDLTAddTL(L.data(), d.data(), a.data(), 1, 1, nullptr);
+
+  EXPECT_DOUBLE_EQ(L[0], 1.0);
+  EXPECT_DOUBLE_EQ(d[0], 2.0);
+}
+
+//==============================================================================
+TEST(DantzigMatrixImpl, LDLTAddTLAllocatesTempBufferWhenNull)
+{
+  constexpr int n = 3;
+  constexpr int nskip = 3;
+
+  std::vector<double> L = {1.0, 0.0, 0.0, 0.2, 1.0, 0.0, -0.1, 0.3, 1.0};
+  std::vector<double> d = {1.0, 0.8, 1.2};
+  std::vector<double> a = {0.25, -0.1, 0.15};
+
+  dLDLTAddTL(L.data(), d.data(), a.data(), n, nskip, nullptr);
+
+  for (int i = 0; i < n; ++i) {
+    EXPECT_TRUE(std::isfinite(d[i]));
+    for (int j = 0; j < n; ++j) {
+      EXPECT_TRUE(std::isfinite(L[i * nskip + j]));
+    }
+  }
+}
+
+//==============================================================================
+TEST(DantzigMatrixImpl, LDLTRemoveFirstRowUsesProvidedBuffer)
+{
+  constexpr int n = 3;
+  constexpr int nskip = 3;
+
+  std::vector<double> A = {4.0, 1.0, 0.0, 1.0, 3.0, 0.5, 0.0, 0.5, 2.0};
+  std::vector<double*> rows(n);
+  for (int i = 0; i < n; ++i) {
+    rows[i] = A.data() + i * nskip;
+  }
+
+  std::vector<double> L = A;
+  std::vector<double> d(n, 0.0);
+  dFactorLDLT(L.data(), d.data(), n, nskip);
+
+  std::vector<int> p = {0, 1, 2};
+  const size_t tmpSize
+      = dEstimateLDLTRemoveTmpbufSize<double>(n, nskip) / sizeof(double);
+  std::vector<double> tmp(tmpSize, 0.0);
+
+  dLDLTRemove(
+      rows.data(), p.data(), L.data(), d.data(), n, n, 0, nskip, tmp.data());
+
+  EXPECT_TRUE(std::isfinite(d[0]));
+  EXPECT_TRUE(std::isfinite(L[0]));
+}
+
+//==============================================================================
+TEST(DantzigMatrixImpl, LDLTRemoveMiddleRowAllocatesTemp)
+{
+  constexpr int n = 3;
+  constexpr int nskip = 3;
+
+  std::vector<double> A = {5.0, 1.5, 0.5, 1.5, 4.0, 0.8, 0.5, 0.8, 3.0};
+  std::vector<double*> rows(n);
+  for (int i = 0; i < n; ++i) {
+    rows[i] = A.data() + i * nskip;
+  }
+
+  std::vector<double> L = A;
+  std::vector<double> d(n, 0.0);
+  dFactorLDLT(L.data(), d.data(), n, nskip);
+
+  std::vector<int> p = {0, 1, 2};
+  dLDLTRemove(
+      rows.data(), p.data(), L.data(), d.data(), n, n, 1, nskip, nullptr);
+
+  EXPECT_TRUE(std::isfinite(d[0]));
+  EXPECT_TRUE(std::isfinite(L[0]));
+}
+
+//==============================================================================
+TEST(DantzigMatrixImpl, RemoveRowColLastIsNoOp)
+{
+  constexpr int n = 3;
+  constexpr int nskip = 3;
+
+  std::vector<double> A = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
+  const std::vector<double> original = A;
+
+  dRemoveRowCol(A.data(), n, nskip, n - 1);
+
+  EXPECT_EQ(A, original);
+}
+
+//==============================================================================
+TEST(DantzigMatrixImpl, FactorLDLTOddSizeTriggersTailCase)
+{
+  constexpr int n = 3;
+  constexpr int nskip = 3;
+
+  std::vector<double> A = {6.0, 1.0, 0.5, 1.0, 4.0, 0.25, 0.5, 0.25, 3.0};
+  std::vector<double> d(n, 0.0);
+
+  dFactorLDLT(A.data(), d.data(), n, nskip);
+
+  for (int i = 0; i < n; ++i) {
+    EXPECT_TRUE(std::isfinite(d[i]));
+    EXPECT_NE(d[i], 0.0);
+  }
 }
