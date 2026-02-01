@@ -536,10 +536,9 @@ struct JointStateData
 };
 
 template <typename JointType>
-JointStateData configureJointState(JointType* joint)
+JointStateData configureJointState(JointType* joint, Eigen::Index ndofs)
 {
   JointStateData data;
-  const auto ndofs = static_cast<Eigen::Index>(joint->getNumDofs());
 
   data.positions = Eigen::VectorXd::LinSpaced(ndofs, -0.2, 0.3);
   data.velocities = Eigen::VectorXd::LinSpaced(ndofs, 0.1, 0.4);
@@ -598,37 +597,65 @@ void exerciseConstOverloads(const std::string& name)
 {
   auto skel = createSkeletonWithJoint<JointType>(name);
   auto* joint = getJoint<JointType>(skel);
-  auto state = configureJointState(joint);
-  const auto ndofs = static_cast<Eigen::Index>(joint->getNumDofs());
-
   const Skeleton* constSkel = skel.get();
   const auto* constJoint
       = static_cast<const JointType*>(constSkel->getJoint(0));
   ASSERT_NE(constJoint, nullptr);
+  const auto ndofs = static_cast<Eigen::Index>(constJoint->getNumDofs());
+  auto state = configureJointState(joint, ndofs);
 
   EXPECT_NE(constJoint->getDof(0), nullptr);
-  EXPECT_EQ(constJoint->getNumDofs(), joint->getNumDofs());
+  EXPECT_EQ(constJoint->getNumDofs(), static_cast<std::size_t>(ndofs));
+
+  for (Eigen::Index i = 0; i < ndofs; ++i) {
+    const auto index = static_cast<std::size_t>(i);
+    EXPECT_DOUBLE_EQ(constJoint->getCommand(index), state.commands[i]);
+    EXPECT_DOUBLE_EQ(constJoint->getPosition(index), state.positions[i]);
+    EXPECT_DOUBLE_EQ(constJoint->getVelocity(index), state.velocities[i]);
+    EXPECT_DOUBLE_EQ(
+        constJoint->getAcceleration(index), state.accelerations[i]);
+    EXPECT_DOUBLE_EQ(constJoint->getForce(index), state.forces[i]);
+
+    EXPECT_DOUBLE_EQ(
+        constJoint->getPositionLowerLimit(index), state.positionLower[i]);
+    EXPECT_DOUBLE_EQ(
+        constJoint->getPositionUpperLimit(index), state.positionUpper[i]);
+    EXPECT_DOUBLE_EQ(
+        constJoint->getVelocityLowerLimit(index), state.velocityLower[i]);
+    EXPECT_DOUBLE_EQ(
+        constJoint->getVelocityUpperLimit(index), state.velocityUpper[i]);
+    EXPECT_DOUBLE_EQ(
+        constJoint->getAccelerationLowerLimit(index),
+        state.accelerationLower[i]);
+    EXPECT_DOUBLE_EQ(
+        constJoint->getAccelerationUpperLimit(index),
+        state.accelerationUpper[i]);
+    EXPECT_DOUBLE_EQ(
+        constJoint->getForceLowerLimit(index), state.forceLower[i]);
+    EXPECT_DOUBLE_EQ(
+        constJoint->getForceUpperLimit(index), state.forceUpper[i]);
+    EXPECT_TRUE(constJoint->hasPositionLimit(index));
+
+    EXPECT_DOUBLE_EQ(
+        constJoint->getInitialPosition(index), state.initialPositions[i]);
+    EXPECT_DOUBLE_EQ(
+        constJoint->getInitialVelocity(index), state.initialVelocities[i]);
+    EXPECT_DOUBLE_EQ(
+        constJoint->getRestPosition(index), state.restPositions[i]);
+    EXPECT_NEAR(constJoint->getSpringStiffness(index), 2.0 + 0.1 * i, 1e-12);
+    EXPECT_NEAR(
+        constJoint->getDampingCoefficient(index), state.damping[i], 1e-12);
+    EXPECT_NEAR(
+        constJoint->getCoulombFriction(index), state.frictions[i], 1e-12);
+    EXPECT_NEAR(constJoint->getVelocityChange(index), 0.01 * (i + 1), 1e-12);
+    EXPECT_NEAR(constJoint->getConstraintImpulse(index), 0.02 * (i + 1), 1e-12);
+  }
 
   EXPECT_TRUE(constJoint->getPositions().isApprox(state.positions));
   EXPECT_TRUE(constJoint->getVelocities().isApprox(state.velocities));
   EXPECT_TRUE(constJoint->getAccelerations().isApprox(state.accelerations));
   EXPECT_TRUE(constJoint->getForces().isApprox(state.forces));
   EXPECT_TRUE(constJoint->getCommands().isApprox(state.commands));
-
-  EXPECT_DOUBLE_EQ(
-      constJoint->getPositionLowerLimit(0), state.positionLower[0]);
-  EXPECT_DOUBLE_EQ(
-      constJoint->getPositionUpperLimit(0), state.positionUpper[0]);
-  EXPECT_DOUBLE_EQ(
-      constJoint->getVelocityLowerLimit(0), state.velocityLower[0]);
-  EXPECT_DOUBLE_EQ(
-      constJoint->getVelocityUpperLimit(0), state.velocityUpper[0]);
-  EXPECT_DOUBLE_EQ(
-      constJoint->getAccelerationLowerLimit(0), state.accelerationLower[0]);
-  EXPECT_DOUBLE_EQ(
-      constJoint->getAccelerationUpperLimit(0), state.accelerationUpper[0]);
-  EXPECT_DOUBLE_EQ(constJoint->getForceLowerLimit(0), state.forceLower[0]);
-  EXPECT_DOUBLE_EQ(constJoint->getForceUpperLimit(0), state.forceUpper[0]);
 
   EXPECT_TRUE(
       constJoint->getPositionLowerLimits().isApprox(state.positionLower));
@@ -645,11 +672,6 @@ void exerciseConstOverloads(const std::string& name)
   EXPECT_TRUE(constJoint->getForceLowerLimits().isApprox(state.forceLower));
   EXPECT_TRUE(constJoint->getForceUpperLimits().isApprox(state.forceUpper));
 
-  EXPECT_TRUE(constJoint->hasPositionLimit(0));
-  EXPECT_DOUBLE_EQ(
-      constJoint->getInitialPosition(0), state.initialPositions[0]);
-  EXPECT_DOUBLE_EQ(
-      constJoint->getInitialVelocity(0), state.initialVelocities[0]);
   EXPECT_TRUE(
       constJoint->getInitialPositions().isApprox(state.initialPositions));
   EXPECT_TRUE(
@@ -658,19 +680,25 @@ void exerciseConstOverloads(const std::string& name)
   EXPECT_TRUE(constJoint->getRestPositions().isApprox(state.restPositions));
   EXPECT_TRUE(constJoint->getDampingCoefficients().isApprox(state.damping));
   EXPECT_TRUE(constJoint->getFrictions().isApprox(state.frictions));
-  EXPECT_NEAR(constJoint->getSpringStiffness(0), 2.0, 1e-12);
-  EXPECT_NEAR(constJoint->getRestPosition(0), state.restPositions[0], 1e-12);
-  EXPECT_NEAR(constJoint->getDampingCoefficient(0), state.damping[0], 1e-12);
-  EXPECT_NEAR(constJoint->getCoulombFriction(0), state.frictions[0], 1e-12);
-
-  EXPECT_NEAR(constJoint->getVelocityChange(0), 0.01, 1e-12);
-  EXPECT_NEAR(constJoint->getConstraintImpulse(0), 0.02, 1e-12);
 
   const Joint* constBaseJoint = constSkel->getJoint(0);
   Eigen::VectorXd integrated;
   constBaseJoint->integratePositions(
       state.positions, state.velocities, 0.05, integrated);
   EXPECT_EQ(integrated.size(), ndofs);
+
+  // Call position difference methods to cover the const overloads
+  // (don't assert q2-q1 equality since non-Euclidean joints differ)
+  Eigen::VectorXd q1 = state.positions;
+  Eigen::VectorXd q2 = state.positions + Eigen::VectorXd::Constant(ndofs, 0.1);
+  const auto diff = constJoint->getPositionDifferences(q2, q1);
+  EXPECT_EQ(diff.size(), ndofs);
+
+  typename JointType::Vector q1Static = q1;
+  typename JointType::Vector q2Static = q2;
+  const auto diffStatic
+      = constJoint->getPositionDifferencesStatic(q2Static, q1Static);
+  EXPECT_EQ(static_cast<Eigen::Index>(diffStatic.size()), ndofs);
 
   const auto jac = constJoint->getRelativeJacobian();
   EXPECT_EQ(jac.cols(), ndofs);
@@ -700,7 +728,8 @@ void exerciseDynamicsUpdatePaths(const std::string& name)
   skel->setForces(Eigen::VectorXd::Zero(skel->getNumDofs()));
 
   auto* joint = childPair.first;
-  auto state = configureJointState(joint);
+  const auto ndofs = static_cast<Eigen::Index>(joint->getNumDofs());
+  auto state = configureJointState(joint, ndofs);
 
   skel->computeForwardDynamics();
   skel->computeInverseDynamics(true, true, true);

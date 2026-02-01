@@ -19,7 +19,7 @@
 #include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 
@@ -1379,6 +1379,27 @@ TEST(FreeJointTest, SetTransform)
 }
 
 //==============================================================================
+TEST(FreeJointTest, SetTransformWithReferenceFrameAndCharts)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("ref_frame_tf");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  auto refFrame = SimpleFrame::createShared(Frame::World(), "ref_frame");
+  refFrame->setTranslation(Eigen::Vector3d(0.2, -0.1, 0.3));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+
+  freeJoint->setCoordinateChart(FreeJoint::CoordinateChart::EULER_XYZ);
+  freeJoint->setTransform(tf, refFrame.get());
+  EXPECT_TRUE(freeJoint->getPositions().allFinite());
+
+  freeJoint->setCoordinateChart(FreeJoint::CoordinateChart::EULER_ZYX);
+  freeJoint->setTransform(tf, refFrame.get());
+  EXPECT_TRUE(freeJoint->getPositions().allFinite());
+}
+
+//==============================================================================
 TEST(FreeJointTest, SetSpatialMotion)
 {
   auto skel = createSkeletonWithJoint<FreeJoint>("spatial_motion");
@@ -1632,4 +1653,29 @@ TEST(FreeJointTest, SpatialVelocityAndAccelerationFrames)
   freeJoint->setVelocities(Eigen::Vector6d::Constant(0.05));
   const auto jacobianDot = freeJoint->getRelativeJacobianTimeDeriv();
   EXPECT_TRUE(jacobianDot.allFinite());
+}
+
+//==============================================================================
+TEST(ZeroDofJointTest, ConstLimitAccessors)
+{
+  auto skel = createSkeletonWithJoint<WeldJoint>("const_limits");
+  const auto* joint = static_cast<const WeldJoint*>(skel->getJoint(0));
+
+  const auto posLower = joint->getPositionLowerLimits();
+  const auto posUpper = joint->getPositionUpperLimits();
+  const auto velLower = joint->getVelocityLowerLimits();
+  const auto velUpper = joint->getVelocityUpperLimits();
+  const auto accLower = joint->getAccelerationLowerLimits();
+  const auto accUpper = joint->getAccelerationUpperLimits();
+  const auto forceLower = joint->getForceLowerLimits();
+  const auto forceUpper = joint->getForceUpperLimits();
+
+  EXPECT_EQ(posLower.size(), 0);
+  EXPECT_EQ(posUpper.size(), 0);
+  EXPECT_EQ(velLower.size(), 0);
+  EXPECT_EQ(velUpper.size(), 0);
+  EXPECT_EQ(accLower.size(), 0);
+  EXPECT_EQ(accUpper.size(), 0);
+  EXPECT_EQ(forceLower.size(), 0);
+  EXPECT_EQ(forceUpper.size(), 0);
 }

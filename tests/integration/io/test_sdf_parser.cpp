@@ -2477,3 +2477,105 @@ f 1 2 3
         << "Expected pose warning in logs: " << logs;
   }
 }
+
+//==============================================================================
+TEST(SdfParser, HelperUtilitiesHandleInvalidValues)
+{
+  using namespace dart::utils::SdfParser::detail;
+  const std::string sdfText = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="helper_invalid">
+    <link name="link">
+      <empty />
+      <bool_flag>maybe</bool_flag>
+      <uint_flag>bad</uint_flag>
+      <double_flag>bad</double_flag>
+      <vec2>1</vec2>
+      <vec3>1 2</vec3>
+      <vec3i>1 2</vec3i>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  sdf::Root root;
+  const auto errors = root.LoadSdfString(sdfText);
+  ASSERT_TRUE(errors.empty());
+  auto modelElement = root.Element()->GetElement("model");
+  ASSERT_NE(modelElement, nullptr);
+  auto linkElement = modelElement->GetElement("link");
+  ASSERT_NE(linkElement, nullptr);
+
+  LogCapture capture;
+  EXPECT_TRUE(getElementText(linkElement->GetElement("empty")).empty());
+  EXPECT_TRUE(getAttributeString(linkElement, "missing").empty());
+  EXPECT_FALSE(getValueBool(linkElement, "bool_flag"));
+  EXPECT_EQ(getValueUInt(linkElement, "uint_flag"), 0u);
+  EXPECT_DOUBLE_EQ(getValueDouble(linkElement, "double_flag"), 0.0);
+  EXPECT_TRUE(getValueVector2d(linkElement, "vec2")
+                  .isApprox(Eigen::Vector2d::Zero(), 1e-12));
+  EXPECT_TRUE(getValueVector3d(linkElement, "vec3")
+                  .isApprox(Eigen::Vector3d::Zero(), 1e-12));
+  EXPECT_TRUE(
+      (getValueVector3i(linkElement, "vec3i") == Eigen::Vector3i::Zero()));
+  const auto pose
+      = getValueIsometry3dWithExtrinsicRotation(linkElement, "pose");
+  EXPECT_TRUE(pose.isApprox(Eigen::Isometry3d::Identity(), 1e-12));
+
+  const auto logs = capture.contents();
+  if (!logs.empty()) {
+    EXPECT_NE(logs.find("bool_flag"), std::string::npos) << logs;
+    EXPECT_NE(logs.find("Missing attribute [missing]"), std::string::npos)
+        << logs;
+    EXPECT_NE(logs.find("expected 2 values"), std::string::npos) << logs;
+    EXPECT_NE(logs.find("expected 3 values"), std::string::npos) << logs;
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, Revolute2JointUpperLowerLimitInitials)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/revolute2_upper/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="revolute2_upper">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="link1">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="rev2_joint" type="revolute2">
+      <parent>base</parent>
+      <child>link1</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <upper>-0.4</upper>
+        </limit>
+      </axis>
+      <axis2>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>0.2</lower>
+        </limit>
+      </axis2>
+    </joint>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint = dynamic_cast<dynamics::UniversalJoint*>(
+      skeleton->getJoint("rev2_joint"));
+  ASSERT_NE(joint, nullptr);
+  EXPECT_TRUE(joint->areLimitsEnforced());
+  EXPECT_NEAR(joint->getPosition(0), -0.4, 1e-9);
+  EXPECT_NEAR(joint->getRestPosition(0), -0.4, 1e-9);
+  EXPECT_NEAR(joint->getPosition(1), 0.2, 1e-9);
+  EXPECT_NEAR(joint->getRestPosition(1), 0.2, 1e-9);
+}

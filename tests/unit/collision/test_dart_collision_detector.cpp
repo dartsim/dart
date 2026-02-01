@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <utility>
 
@@ -107,6 +108,31 @@ std::pair<bool, std::size_t> runCollision(
   return {collided, result.getNumContacts()};
 }
 
+std::pair<bool, CollisionResult> runCollisionWithTransforms(
+    const ShapePtr& shapeA,
+    const ShapePtr& shapeB,
+    const Eigen::Isometry3d& tfA,
+    const Eigen::Isometry3d& tfB)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto setupA = makeShapeSetup("shape_a", shapeA);
+  auto setupB = makeShapeSetup("shape_b", shapeB);
+
+  FreeJoint::setTransformOf(setupA.body, tfA);
+  FreeJoint::setTransformOf(setupB.body, tfB);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+
+  CollisionResult result;
+  const bool collided = group->collide(option, &result);
+  return {collided, result};
+}
+
 } // namespace
 
 TEST(DARTCollisionDetector, SupportedShapePairs)
@@ -170,6 +196,35 @@ TEST(DARTCollisionDetector, UnsupportedShapePairReturnsFalse)
   const auto result = runCollision(cylinder, box, Eigen::Vector3d::Zero());
   EXPECT_FALSE(result.first);
   EXPECT_EQ(result.second, 0u);
+}
+
+TEST(DARTCollisionDetector, BoxBoxEdgeEdgeContact)
+{
+  auto box1 = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 0.2, 0.2));
+  auto box2 = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 0.2, 0.2));
+
+  Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.linear() = (Eigen::AngleAxisd(0.6, Eigen::Vector3d::UnitZ())
+                  * Eigen::AngleAxisd(0.35, Eigen::Vector3d::UnitY()))
+                     .toRotationMatrix();
+  tfB.translation() = Eigen::Vector3d(0.05, -0.02, 0.03);
+
+  auto result = runCollisionWithTransforms(box1, box2, tfA, tfB);
+  ASSERT_TRUE(result.first);
+  ASSERT_GT(result.second.getNumContacts(), 0u);
+
+  const auto& contact = result.second.getContact(0);
+  const Eigen::Vector3d normal = contact.normal.normalized();
+  const Eigen::Matrix3d axesA = tfA.linear();
+  const Eigen::Matrix3d axesB = tfB.linear();
+
+  double maxAbsDot = 0.0;
+  for (int i = 0; i < 3; ++i) {
+    maxAbsDot = std::max(maxAbsDot, std::abs(normal.dot(axesA.col(i))));
+    maxAbsDot = std::max(maxAbsDot, std::abs(normal.dot(axesB.col(i))));
+  }
+  EXPECT_LT(maxAbsDot, 0.95);
 }
 
 TEST(DARTCollisionDetector, RaycastReturnsNotSupported)

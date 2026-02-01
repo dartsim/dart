@@ -11,6 +11,7 @@
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/cone_shape.hpp>
+#include <dart/dynamics/convex_mesh_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
@@ -201,6 +202,31 @@ TEST(FCLCollisionDetector, BasicCollisionBoxBox)
   EXPECT_GT(result.second, 0u);
 }
 
+TEST(FCLCollisionDetector, MaxNumContactsZeroReturnsFalse)
+{
+  auto detector = FCLCollisionDetector::create();
+  auto sphere1 = std::make_shared<SphereShape>(0.5);
+  auto sphere2 = std::make_shared<SphereShape>(0.3);
+
+  auto setupA = makeShapeSetup("shape_a", sphere1);
+  auto setupB = makeShapeSetup("shape_b", sphere2);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.2, 0.0, 0.0);
+  FreeJoint::setTransformOf(setupB.body, tf);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 0u;
+  CollisionResult result;
+
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+}
+
 TEST(FCLCollisionDetector, NoCollision)
 {
   auto detector = FCLCollisionDetector::create();
@@ -210,6 +236,37 @@ TEST(FCLCollisionDetector, NoCollision)
   auto result = runCollision(detector, sphere1, sphere2, {2.0, 0.0, 0.0});
   EXPECT_FALSE(result.first);
   EXPECT_EQ(result.second, 0u);
+}
+
+TEST(FCLCollisionDetector, DistanceQueriesHonorLowerBound)
+{
+  auto detector = FCLCollisionDetector::create();
+  auto sphere1 = std::make_shared<SphereShape>(0.4);
+  auto sphere2 = std::make_shared<SphereShape>(0.4);
+
+  auto setupA = makeShapeSetup("shape_a", sphere1);
+  auto setupB = makeShapeSetup("shape_b", sphere2);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(2.0, 0.0, 0.0);
+  FreeJoint::setTransformOf(setupB.body, tf);
+
+  auto groupA = detector->createCollisionGroup();
+  auto groupB = detector->createCollisionGroup();
+  groupA->addShapeFrame(setupA.shapeNode);
+  groupB->addShapeFrame(setupB.shapeNode);
+
+  DistanceOption option;
+  option.distanceLowerBound = 0.5;
+  option.enableNearestPoints = true;
+
+  DistanceResult result;
+  const double distance = groupA->distance(groupB.get(), option, &result);
+
+  EXPECT_GE(distance, option.distanceLowerBound);
+  EXPECT_GE(result.minDistance, option.distanceLowerBound);
+  EXPECT_TRUE(result.nearestPoint1.array().isFinite().all());
+  EXPECT_TRUE(result.nearestPoint2.array().isFinite().all());
 }
 
 TEST(FCLCollisionDetector, SharableCollisionObjectCaching)
@@ -339,6 +396,57 @@ TEST(FCLCollisionDetector, ConeShapeAsMesh)
   auto result = runCollision(detector, cone, sphere, {0.0, 0.0, 0.3});
   EXPECT_TRUE(result.first);
   EXPECT_GT(result.second, 0u);
+}
+
+TEST(FCLCollisionDetector, PlaneShapeAsMeshUsesHalfspace)
+{
+  auto detector = FCLCollisionDetector::create();
+  detector->setPrimitiveShapeType(FCLCollisionDetector::PrimitiveShape::MESH);
+
+  auto plane = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  auto sphere = std::make_shared<SphereShape>(0.5);
+
+  auto result = runCollision(detector, plane, sphere, {0.0, 0.0, 0.3});
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second, 0u);
+}
+
+TEST(FCLCollisionDetector, EmptyConvexMeshFallsBackToSphere)
+{
+  auto detector = FCLCollisionDetector::create();
+
+  auto mesh = std::make_shared<ConvexMeshShape::TriMeshType>();
+  auto convex = std::make_shared<ConvexMeshShape>(mesh);
+  auto sphere = std::make_shared<SphereShape>(0.2);
+
+  auto result = runCollision(detector, convex, sphere, {0.0, 0.0, 0.0});
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second, 0u);
+}
+
+TEST(FCLCollisionDetector, BinaryContactUsesSingleResult)
+{
+  auto detector = FCLCollisionDetector::create();
+  auto sphere1 = std::make_shared<SphereShape>(0.5);
+  auto sphere2 = std::make_shared<SphereShape>(0.5);
+
+  auto setupA = makeShapeSetup("shape_a", sphere1);
+  auto setupB = makeShapeSetup("shape_b", sphere2);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
+  FreeJoint::setTransformOf(setupB.body, tf);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 1u;
+  CollisionResult result;
+
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 1u);
 }
 
 TEST(FCLCollisionDetector, CylinderShapeAsMesh)

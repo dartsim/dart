@@ -39,13 +39,108 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <string>
+
+#include <cstring>
 
 using namespace dart;
 using namespace utils::MjcfParser::detail;
+
+namespace {
+
+class MemoryResource final : public common::Resource
+{
+public:
+  explicit MemoryResource(std::string data) : mData(std::move(data)), mOffset(0)
+  {
+  }
+
+  std::size_t getSize() override
+  {
+    return mData.size();
+  }
+
+  std::size_t tell() override
+  {
+    return mOffset;
+  }
+
+  bool seek(ptrdiff_t offset, SeekType origin) override
+  {
+    std::size_t base = 0;
+    if (origin == SEEKTYPE_CUR) {
+      base = mOffset;
+    } else if (origin == SEEKTYPE_END) {
+      base = mData.size();
+    }
+
+    const auto next = static_cast<long long>(base) + offset;
+    if (next < 0 || next > static_cast<long long>(mData.size())) {
+      return false;
+    }
+
+    mOffset = static_cast<std::size_t>(next);
+    return true;
+  }
+
+  std::size_t read(void* buffer, std::size_t size, std::size_t count) override
+  {
+    const std::size_t bytes = size * count;
+    if (bytes == 0) {
+      return 0;
+    }
+
+    const std::size_t available = mData.size() - mOffset;
+    const std::size_t toCopy = std::min(bytes, available);
+    std::memcpy(buffer, mData.data() + mOffset, toCopy);
+    mOffset += toCopy;
+    return toCopy / size;
+  }
+
+private:
+  std::string mData;
+  std::size_t mOffset;
+};
+
+class MemoryResourceRetriever final : public common::ResourceRetriever
+{
+public:
+  void add(const std::string& uri, std::string data)
+  {
+    mFiles.emplace(uri, std::move(data));
+  }
+
+  bool exists(const common::Uri& uri) override
+  {
+    return mFiles.count(uri.toString()) > 0;
+  }
+
+  common::ResourcePtr retrieve(const common::Uri& uri) override
+  {
+    auto it = mFiles.find(uri.toString());
+    if (it == mFiles.end()) {
+      return nullptr;
+    }
+    return std::make_shared<MemoryResource>(it->second);
+  }
+
+private:
+  std::map<std::string, std::string> mFiles;
+};
+
+common::Uri addMemoryFile(
+    MemoryResourceRetriever& retriever, std::string_view uri, std::string data)
+{
+  retriever.add(std::string(uri), std::move(data));
+  return common::Uri(std::string(uri));
+}
+
+} // namespace
 
 //==============================================================================
 common::ResourceRetrieverPtr createRetriever()
@@ -1695,4 +1790,199 @@ TEST(MjcfParserTest, InlineWorldCoversDefaultsWorldbodyAndActuators)
   ASSERT_EQ(rootBody.getNumSites(), 1u);
   const auto& sphereSite = rootBody.getSite(0);
   EXPECT_EQ(sphereSite.getType(), GeomType::SPHERE);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, DefaultsNestedClassInheritance)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="nested_defaults">
+  <default>
+    <geom type="sphere" size="0.1" />
+    <default class="outer">
+      <geom type="box" size="0.2 0.3 0.4" rgba="0.1 0.2 0.3 0.4"
+            friction="0.2 0.3 0.4" />
+      <default class="inner">
+        <geom size="0.5 0.6 0.7" rgba="0.9 0.8 0.7 0.6" />
+      </default>
+    </default>
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom class="inner" />
+    </body>
+  </worldbody>
+</mujoco>
+  )";
+
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const auto uri
+      = addMemoryFile(*retriever, "memory://mjcf_nested_defaults.xml", xml);
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(uri, retriever);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& body = mujoco.getWorldbody().getRootBody(0);
+  ASSERT_EQ(body.getNumGeoms(), 1u);
+  const auto& geom = body.getGeom(0);
+  EXPECT_EQ(geom.getType(), GeomType::BOX);
+  EXPECT_TRUE(geom.getBoxHalfSize().isApprox(Eigen::Vector3d(0.5, 0.6, 0.7)));
+  EXPECT_TRUE(geom.getRGBA().isApprox(Eigen::Vector4d(0.9, 0.8, 0.7, 0.6)));
+  EXPECT_TRUE(geom.getFriction().isApprox(Eigen::Vector3d(0.2, 0.3, 0.4)));
+}
+
+//==============================================================================
+TEST(MjcfParserTest, DefaultNestedMissingClassReportsError)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="missing_default_class">
+  <default>
+    <geom type="sphere" size="0.1" />
+    <default>
+      <geom type="box" size="0.2 0.3 0.4" />
+    </default>
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+    </body>
+  </worldbody>
+</mujoco>
+  )";
+
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const auto uri = addMemoryFile(
+      *retriever, "memory://mjcf_missing_default_class.xml", xml);
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(uri, retriever);
+  ASSERT_FALSE(errors.empty());
+  bool hasMissing = false;
+  for (const auto& error : errors) {
+    if (error.getCode() == ErrorCode::ATTRIBUTE_MISSING) {
+      hasMissing = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(hasMissing);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, SiteShapeNodesCoverPrimitiveTypes)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="site_shapes">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <site name="sphere_site" type="sphere" size="0.2" />
+      <site name="capsule_site" type="capsule" size="0.1"
+            fromto="0 0 0 0 0 1" />
+      <site name="cylinder_site" type="cylinder" size="0.15"
+            fromto="0 0 0 0 0 2" />
+      <site name="ellipsoid_site" type="ellipsoid" size="0.2 0.3 0.4"
+            fromto="0 0 0 0 0 1" />
+      <site name="box_site" type="box" size="0.1 0.2 0.3"
+            fromto="0 0 0 0 0 2" />
+    </body>
+  </worldbody>
+</mujoco>
+  )";
+
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const auto uri
+      = addMemoryFile(*retriever, "memory://mjcf_site_shapes.xml", xml);
+
+  const auto options = utils::MjcfParser::Options(retriever);
+  auto world = utils::MjcfParser::readWorld(uri, options);
+  ASSERT_NE(world, nullptr);
+
+  auto skel = world->getSkeleton("root");
+  ASSERT_NE(skel, nullptr);
+  auto* body = skel->getBodyNode("root");
+  ASSERT_NE(body, nullptr);
+
+  const auto findShapeNode = [body](const std::string& name) {
+    dynamics::ShapeNode* found = nullptr;
+    body->eachShapeNodeWith<dynamics::VisualAspect>(
+        [&found, &name](dynamics::ShapeNode* shapeNode) -> bool {
+          if (shapeNode && shapeNode->getName() == name) {
+            found = shapeNode;
+            return false;
+          }
+          return true;
+        });
+    return found;
+  };
+
+  const auto* sphereNode = findShapeNode("site:sphere_site");
+  const auto* capsuleNode = findShapeNode("site:capsule_site");
+  const auto* cylinderNode = findShapeNode("site:cylinder_site");
+  const auto* ellipsoidNode = findShapeNode("site:ellipsoid_site");
+  const auto* boxNode = findShapeNode("site:box_site");
+  ASSERT_NE(sphereNode, nullptr);
+  ASSERT_NE(capsuleNode, nullptr);
+  ASSERT_NE(cylinderNode, nullptr);
+  ASSERT_NE(ellipsoidNode, nullptr);
+  ASSERT_NE(boxNode, nullptr);
+
+  EXPECT_NE(
+      dynamic_cast<const dynamics::SphereShape*>(sphereNode->getShape().get()),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<const dynamics::CapsuleShape*>(
+          capsuleNode->getShape().get()),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<const dynamics::CylinderShape*>(
+          cylinderNode->getShape().get()),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<const dynamics::EllipsoidShape*>(
+          ellipsoidNode->getShape().get()),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<const dynamics::BoxShape*>(boxNode->getShape().get()),
+      nullptr);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, GeomClassMissingDefaultReportsError)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="geom_missing_default">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom class="missing_class" />
+    </body>
+  </worldbody>
+</mujoco>
+  )";
+
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const auto uri
+      = addMemoryFile(*retriever, "memory://mjcf_missing_geom_class.xml", xml);
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(uri, retriever);
+  ASSERT_FALSE(errors.empty());
+  bool hasInvalid = false;
+  for (const auto& error : errors) {
+    if (error.getCode() == ErrorCode::ATTRIBUTE_INVALID) {
+      hasInvalid = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(hasInvalid);
 }

@@ -288,6 +288,21 @@ TEST(CloneableVector, MoveAndCopy)
 }
 
 //==============================================================================
+TEST(CloneableVector, MoveConstructorTransfersOwnership)
+{
+  std::vector<SimplePtr> raw;
+  raw.push_back(makeSimpleCloneable(7, "seven"));
+
+  CloneableVector<SimplePtr> moved(std::move(raw));
+
+  const auto& movedVector = moved.getVector();
+  ASSERT_EQ(movedVector.size(), 1u);
+  ASSERT_NE(movedVector[0], nullptr);
+  EXPECT_EQ(
+      static_cast<const SimpleMakeCloneable*>(movedVector[0].get())->value, 7);
+}
+
+//==============================================================================
 TEST(CloneableMap, MoveAndMerge)
 {
   using SimpleMap = std::map<std::string, SimplePtr>;
@@ -315,4 +330,30 @@ TEST(CloneableMap, MoveAndMerge)
 
   movedHolder.copy(incoming, false);
   EXPECT_EQ(movedHolder.getMap()["replace"], nullptr);
+}
+
+//==============================================================================
+TEST(CloneableMap, MergeFromCloneableMap)
+{
+  using SimpleMap = std::map<std::string, SimplePtr>;
+
+  SimpleMap baseMap;
+  baseMap["base"] = makeSimpleCloneable(1, "base");
+  baseMap["override"] = makeSimpleCloneable(2, "old");
+
+  CloneableMap<SimpleMap> holder(baseMap);
+
+  SimpleMap incomingMap;
+  incomingMap["override"] = makeSimpleCloneable(3, "new");
+  incomingMap["added"] = makeSimpleCloneable(4, "added");
+
+  CloneableMap<SimpleMap> incomingHolder(incomingMap);
+  holder.merge(incomingHolder);
+
+  const auto& map = holder.getMap();
+  ASSERT_NE(map.at("override"), nullptr);
+  EXPECT_EQ(
+      static_cast<const SimpleMakeCloneable*>(map.at("override").get())->value,
+      3);
+  ASSERT_NE(map.at("added"), nullptr);
 }

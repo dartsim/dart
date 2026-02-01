@@ -53,9 +53,14 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <map>
+#include <string>
+
+#include <cstring>
 
 using namespace dart;
 using namespace dart::test;
@@ -63,6 +68,86 @@ using dart::common::Uri;
 using dart::utils::UrdfParser;
 
 namespace {
+
+class MemoryResource final : public common::Resource
+{
+public:
+  explicit MemoryResource(std::string data) : mData(std::move(data)), mOffset(0)
+  {
+  }
+
+  std::size_t getSize() override
+  {
+    return mData.size();
+  }
+
+  std::size_t tell() override
+  {
+    return mOffset;
+  }
+
+  bool seek(ptrdiff_t offset, SeekType origin) override
+  {
+    std::size_t base = 0;
+    if (origin == SEEKTYPE_CUR) {
+      base = mOffset;
+    } else if (origin == SEEKTYPE_END) {
+      base = mData.size();
+    }
+
+    const auto next = static_cast<long long>(base) + offset;
+    if (next < 0 || next > static_cast<long long>(mData.size())) {
+      return false;
+    }
+
+    mOffset = static_cast<std::size_t>(next);
+    return true;
+  }
+
+  std::size_t read(void* buffer, std::size_t size, std::size_t count) override
+  {
+    const std::size_t bytes = size * count;
+    if (bytes == 0) {
+      return 0;
+    }
+
+    const std::size_t available = mData.size() - mOffset;
+    const std::size_t toCopy = std::min(bytes, available);
+    std::memcpy(buffer, mData.data() + mOffset, toCopy);
+    mOffset += toCopy;
+    return toCopy / size;
+  }
+
+private:
+  std::string mData;
+  std::size_t mOffset;
+};
+
+class MemoryResourceRetriever final : public common::ResourceRetriever
+{
+public:
+  void add(const std::string& uri, std::string data)
+  {
+    mFiles.emplace(uri, std::move(data));
+  }
+
+  bool exists(const common::Uri& uri) override
+  {
+    return mFiles.count(uri.toString()) > 0;
+  }
+
+  common::ResourcePtr retrieve(const common::Uri& uri) override
+  {
+    auto it = mFiles.find(uri.toString());
+    if (it == mFiles.end()) {
+      return nullptr;
+    }
+    return std::make_shared<MemoryResource>(it->second);
+  }
+
+private:
+  std::map<std::string, std::string> mFiles;
+};
 
 std::filesystem::path makeTempDir(const std::string& tag)
 {
@@ -72,6 +157,13 @@ std::filesystem::path makeTempDir(const std::string& tag)
                    / (tag + "-" + std::to_string(stamp));
   std::filesystem::create_directories(dir);
   return dir;
+}
+
+common::Uri addMemoryFile(
+    MemoryResourceRetriever& retriever, std::string_view uri, std::string data)
+{
+  retriever.add(std::string(uri), std::move(data));
+  return common::Uri(std::string(uri));
 }
 
 } // namespace
@@ -1191,6 +1283,121 @@ TEST(UrdfParser, ParseWorldStringInvalidXmlReturnsNull)
   const std::string worldXml = R"(<world name="world">)";
   EXPECT_EQ(parser.parseWorldString(worldXml, baseUri), nullptr);
   std::filesystem::remove_all(tempDir);
+}
+
+//==============================================================================
+TEST(UrdfParser, MemoryResourceRetrieverMaterialMeshAndPackageUri)
+{
+  const std::string meshData
+      = "solid unit\n"
+        "facet normal 0 0 1\n"
+        "  outer loop\n"
+        "    vertex 0 0 0\n"
+        "    vertex 1 0 0\n"
+        "    vertex 0 1 0\n"
+        "  endloop\n"
+        "endfacet\n"
+        "endsolid unit\n";
+
+  const std::string urdfStr = R"(
+    <robot name="mem_mesh">
+      <material name="global_color">
+        <color rgba="0.2 0.3 0.4 0.5" />
+      </material>
+      <link name="base">
+        <visual name="mesh_visual">
+          <geometry>
+            <mesh filename="package://test_pkg/mesh.stl" />
+          </geometry>
+          <material name="global_color" />
+        </visual>
+      </link>
+    </robot>
+  )";
+
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const auto uri = addMemoryFile(*retriever, "memory://mem_mesh.urdf", urdfStr);
+  retriever->add("package://test_pkg/mesh.stl", meshData);
+
+  UrdfParser::Options options(retriever);
+  UrdfParser parser(options);
+  const auto robot = parser.parseSkeleton(uri);
+  ASSERT_TRUE(robot);
+
+  auto* body = robot->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+
+  bool foundMesh = false;
+  body->eachShapeNodeWith<dynamics::VisualAspect>(
+      [&](dynamics::ShapeNode* node) {
+        auto mesh
+            = std::dynamic_pointer_cast<dynamics::MeshShape>(node->getShape());
+        if (!mesh) {
+          return;
+        }
+        foundMesh = true;
+        EXPECT_GT(mesh->getScale()[0], 0.0);
+      });
+  EXPECT_TRUE(foundMesh);
+}
+
+//==============================================================================
+TEST(UrdfParser, MemoryResourceRetrieverJointLimitsAndTransmissions)
+{
+  const std::string urdfStr = R"(
+    <robot name="mem_limits">
+      <link name="base" />
+      <link name="link1" />
+      <link name="link2" />
+      <joint name="joint1" type="revolute">
+        <parent link="base" />
+        <child link="link1" />
+        <axis xyz="0 0 1" />
+        <limit lower="1.0" upper="3.0" effort="5" velocity="6" />
+      </joint>
+      <joint name="joint2" type="revolute">
+        <parent link="link1" />
+        <child link="link2" />
+        <axis xyz="0 1 0" />
+        <limit lower="-2.0" upper="-1.0" effort="2" velocity="3" />
+      </joint>
+      <transmission name="tx1">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="joint1" />
+        <actuator name="actuator">
+          <mechanicalReduction>2</mechanicalReduction>
+        </actuator>
+      </transmission>
+      <transmission name="tx2">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="joint2" />
+        <actuator name="actuator">
+          <mechanicalReduction>4</mechanicalReduction>
+        </actuator>
+      </transmission>
+    </robot>
+  )";
+
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const auto uri
+      = addMemoryFile(*retriever, "memory://mem_limits.urdf", urdfStr);
+
+  UrdfParser::Options options(retriever);
+  UrdfParser parser(options);
+  const auto robot = parser.parseSkeleton(uri);
+  ASSERT_TRUE(robot);
+
+  auto* joint1 = robot->getJoint("joint1");
+  auto* joint2 = robot->getJoint("joint2");
+  ASSERT_NE(joint1, nullptr);
+  ASSERT_NE(joint2, nullptr);
+
+  EXPECT_DOUBLE_EQ(joint1->getPositionLowerLimit(0), 1.0);
+  EXPECT_DOUBLE_EQ(joint1->getPositionUpperLimit(0), 3.0);
+  EXPECT_DOUBLE_EQ(joint1->getRestPosition(0), 2.0);
+  EXPECT_NEAR(joint1->getPosition(0), 2.0, 1e-12);
+
+  EXPECT_EQ(joint2->getActuatorType(), dart::dynamics::Joint::MIMIC);
 }
 
 //==============================================================================

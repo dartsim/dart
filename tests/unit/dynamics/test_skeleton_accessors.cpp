@@ -49,7 +49,7 @@
 
 #include <dart/common/deprecated.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 #if defined(__clang__) && !defined(DART_COMPILER_CLANG)
   #define DART_COMPILER_CLANG
@@ -872,6 +872,92 @@ TEST(SkeletonAccessors, JointAndDofVectorLookups)
 
   EXPECT_EQ(skeleton->getBodyNode("missing_body"), nullptr);
   EXPECT_EQ(skeleton->getJoint("missing_joint"), nullptr);
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, ConstAccessorCoverage)
+{
+  auto skeleton = Skeleton::create("const_accessor");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.first->setName("root_joint");
+  rootPair.second->setName("root_body");
+
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setName("child_joint");
+  childPair.second->setName("child_body");
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.3, 0.4));
+  rootPair.second->createShapeNodeWith<VisualAspect>(box);
+
+  auto* marker = rootPair.second->createMarker(std::string("marker"));
+  auto* endEffector = childPair.second->createEndEffector("ee");
+  endEffector->setDefaultRelativeTransform(Eigen::Isometry3d::Identity());
+
+  const Skeleton* constSkel = skeleton.get();
+
+  EXPECT_EQ(constSkel->getRootBodyNode(0), rootPair.second);
+  EXPECT_EQ(constSkel->getRootJoint(0), rootPair.first);
+
+  EXPECT_EQ(constSkel->getBodyNode(0), rootPair.second);
+  EXPECT_EQ(constSkel->getBodyNode("child_body"), childPair.second);
+  EXPECT_EQ(constSkel->getBodyNode("missing_body"), nullptr);
+
+  EXPECT_EQ(constSkel->getJoint(0), rootPair.first);
+  EXPECT_EQ(constSkel->getJoint("child_joint"), childPair.first);
+  EXPECT_EQ(constSkel->getJoint("missing_joint"), nullptr);
+
+  EXPECT_EQ(constSkel->getNumSoftBodyNodes(), 0u);
+  EXPECT_EQ(constSkel->getSoftBodyNode("missing_soft"), nullptr);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const auto bodyNodes = constSkel->getBodyNodes();
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_EQ(bodyNodes.size(), skeleton->getNumBodyNodes());
+
+  const auto nodesByName = constSkel->getBodyNodes("root_body");
+  ASSERT_EQ(nodesByName.size(), 1u);
+  EXPECT_EQ(nodesByName[0], rootPair.second);
+
+  const auto jointsByName = constSkel->getJoints("child_joint");
+  ASSERT_EQ(jointsByName.size(), 1u);
+  EXPECT_EQ(jointsByName[0], childPair.first);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const auto constJoints = constSkel->getJoints();
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_EQ(constJoints.size(), skeleton->getNumJoints());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const auto constDofs = constSkel->getDofs();
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_EQ(constDofs.size(), skeleton->getNumDofs());
+
+  const auto* dof0 = constSkel->getDof(0);
+  ASSERT_NE(dof0, nullptr);
+  EXPECT_EQ(constSkel->getDof(dof0->getName()), dof0);
+
+  const auto treeDofs = constSkel->getTreeDofs(0);
+  EXPECT_EQ(treeDofs.size(), skeleton->getNumDofs());
+
+  const auto treeBodyNodes = constSkel->getTreeBodyNodes(0);
+  EXPECT_EQ(treeBodyNodes.size(), skeleton->getNumBodyNodes());
+
+  EXPECT_EQ(constSkel->getMarker(0), marker);
+  EXPECT_EQ(constSkel->getMarker("marker"), marker);
+  EXPECT_EQ(constSkel->getEndEffector(0), endEffector);
+  EXPECT_NE(constSkel->getShapeNode(0), nullptr);
+
+  const auto config = constSkel->getConfiguration(
+      Skeleton::CONFIG_POSITIONS | Skeleton::CONFIG_VELOCITIES);
+  EXPECT_EQ(config.mPositions.size(), static_cast<int>(skeleton->getNumDofs()));
+  EXPECT_EQ(
+      config.mVelocities.size(), static_cast<int>(skeleton->getNumDofs()));
+
+  const auto state = constSkel->getState();
+  const auto properties = constSkel->getProperties();
+  (void)state;
+  (void)properties;
 }
 
 //==============================================================================

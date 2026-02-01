@@ -9,6 +9,8 @@
 
 #include <gtest/gtest.h>
 
+#include <cmath>
+
 using namespace dart;
 using namespace dynamics;
 
@@ -576,4 +578,43 @@ TEST(PointMass, PartialAccelerationAfterWorldStep)
   ASSERT_NE(pm, nullptr);
   EXPECT_TRUE(pm->getPartialAccelerations().allFinite());
   EXPECT_TRUE(pm->getBodyVelocityChange().allFinite());
+}
+
+TEST(PointMass, ConstAccessorsAndPsiValues)
+{
+  auto world = simulation::World::create();
+  auto skeleton = Skeleton::create("point-mass-const");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.6),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      5.0,
+      5.0,
+      0.1);
+
+  ASSERT_GE(softBody->getNumPointMasses(), 2u);
+  softBody->connectPointMasses(0, 1);
+
+  world->addSkeleton(skeleton);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->step();
+
+  const PointMass* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  EXPECT_TRUE(std::isfinite(pm->getPsi()));
+  EXPECT_TRUE(std::isfinite(pm->getImplicitPsi()));
+  EXPECT_TRUE(std::isfinite(pm->getPi()));
+  EXPECT_TRUE(std::isfinite(pm->getImplicitPi()));
+
+  EXPECT_TRUE(pm->getWorldPosition().allFinite());
+  EXPECT_TRUE(pm->getWorldVelocity().allFinite());
+  EXPECT_TRUE(pm->getWorldAcceleration().allFinite());
+
+  const PointMass* connected = pm->getConnectedPointMass(0);
+  EXPECT_EQ(connected, softBody->getPointMass(1));
 }

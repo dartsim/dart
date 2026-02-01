@@ -46,6 +46,8 @@
 
 #include <dart/common/diagnostics.hpp>
 
+#include <dart/all.hpp>
+
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
@@ -1563,6 +1565,57 @@ TEST(BodyNodeChildren, GetChildBodyNode)
 
   const BodyNode* constBody = pair.second;
   EXPECT_EQ(constBody->getChildBodyNode(0), child.second);
+}
+
+//==============================================================================
+TEST(BodyNodeConstAccessors, ParentChildAndSpatialFrames)
+{
+  auto skeleton = Skeleton::create("const_body_access");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  const BodyNode* constChild = childPair.second;
+  EXPECT_EQ(constChild->getParentJoint(), childPair.first);
+  EXPECT_EQ(constChild->getParentBodyNode(), rootPair.second);
+
+  const BodyNode* constRoot = rootPair.second;
+  EXPECT_EQ(constRoot->getChildJoint(0), childPair.first);
+  EXPECT_EQ(constRoot->getChildBodyNode(0), childPair.second);
+
+  rootPair.first->setVelocities(Eigen::Vector6d::Constant(0.1));
+  rootPair.first->setAccelerations(Eigen::Vector6d::Constant(0.2));
+
+  auto frame = SimpleFrame::createShared(Frame::World(), "const_frame");
+  frame->setTranslation(Eigen::Vector3d(0.1, -0.2, 0.3));
+
+  const auto velWorld
+      = constRoot->getSpatialVelocity(Frame::World(), Frame::World());
+  const auto velFrame = constRoot->getSpatialVelocity(frame.get(), frame.get());
+  const auto accWorld
+      = constRoot->getSpatialAcceleration(Frame::World(), Frame::World());
+  const auto accFrame
+      = constRoot->getSpatialAcceleration(frame.get(), frame.get());
+
+  EXPECT_TRUE(velWorld.allFinite());
+  EXPECT_TRUE(velFrame.allFinite());
+  EXPECT_TRUE(accWorld.allFinite());
+  EXPECT_TRUE(accFrame.allFinite());
+}
+
+//==============================================================================
+TEST(NodeConstAccessors, BodyNodeAndSkeletonPtrs)
+{
+  auto skeleton = Skeleton::create("node_const_access");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* marker = pair.second->createMarker(std::string("marker"));
+
+  const Node* constNode = marker;
+  const auto bodyPtr = constNode->getBodyNodePtr();
+  const auto skelPtr = constNode->getSkeleton();
+
+  EXPECT_EQ(bodyPtr.get(), pair.second);
+  EXPECT_EQ(skelPtr.get(), skeleton.get());
 }
 
 // ============================================================================

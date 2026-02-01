@@ -316,6 +316,93 @@ LcpProblem makeFrictionBlockProblem()
       std::move(findex));
 }
 
+LcpProblem makeFrictionCoupledProblem()
+{
+  const int contacts = 2;
+  const int blockSize = 3;
+  const int n = contacts * blockSize;
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(n, n) * 2.2;
+
+  for (int c = 0; c < contacts; ++c) {
+    const int base = c * blockSize;
+    A(base, base + 1) = 0.12;
+    A(base + 1, base) = 0.12;
+    A(base, base + 2) = 0.07;
+    A(base + 2, base) = 0.07;
+    A(base + 1, base + 2) = 0.09;
+    A(base + 2, base + 1) = 0.09;
+  }
+
+  A(0, 3) = 0.05;
+  A(3, 0) = 0.05;
+  A(1, 4) = 0.02;
+  A(4, 1) = 0.02;
+  A(2, 5) = 0.03;
+  A(5, 2) = 0.03;
+
+  Eigen::VectorXd target(n);
+  for (int c = 0; c < contacts; ++c) {
+    const int base = c * blockSize;
+    target[base] = 0.35;
+    target[base + 1] = 0.12;
+    target[base + 2] = -0.08;
+  }
+  Eigen::VectorXd b = A * target;
+
+  Eigen::VectorXd lo(n);
+  Eigen::VectorXd hi(n);
+  Eigen::VectorXi findex(n);
+  for (int c = 0; c < contacts; ++c) {
+    const int base = c * blockSize;
+    lo[base] = 0.0;
+    hi[base] = std::numeric_limits<double>::infinity();
+    findex[base] = -1;
+
+    for (int f = 1; f < blockSize; ++f) {
+      lo[base + f] = -std::numeric_limits<double>::infinity();
+      hi[base + f] = 0.6;
+      findex[base + f] = base;
+    }
+  }
+
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
+LcpProblem makeLemkePivotProblem()
+{
+  const int n = 5;
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(n, n) * 2.0;
+  for (int i = 0; i < n - 1; ++i) {
+    A(i, i + 1) = 0.18;
+    A(i + 1, i) = 0.11;
+  }
+  A(0, 2) = 0.06;
+  A(2, 0) = 0.06;
+  A(1, 3) = 0.05;
+  A(3, 1) = 0.05;
+  A(2, 4) = 0.04;
+  A(4, 2) = 0.04;
+
+  Eigen::VectorXd target(n);
+  target << 0.35, 0.22, 0.28, 0.15, 0.3;
+  Eigen::VectorXd b = A * target;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
 LcpProblem makeDirectSolverProblem()
 {
   Eigen::MatrixXd A(3, 3);
@@ -343,6 +430,49 @@ TEST(LcpValidationCoverage, DetectsDimensionMismatch)
   Eigen::VectorXd b = Eigen::VectorXd::Zero(3);
   Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
   Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateProblem(problem, &message));
+  EXPECT_FALSE(message.empty());
+}
+
+TEST(LcpValidationCoverage, DetectsNonSquareMatrix)
+{
+  Eigen::MatrixXd A(3, 2);
+  A << 1.0, 0.1, 0.0, 2.0, 0.0, 0.3;
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(3);
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(3, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateProblem(problem, &message));
+  EXPECT_FALSE(message.empty());
+}
+
+TEST(LcpValidationCoverage, DetectsBoundsDimensionMismatch)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(3, 3);
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(3);
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(3, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateProblem(problem, &message));
+  EXPECT_FALSE(message.empty());
+}
+
+TEST(LcpValidationCoverage, DetectsFindexDimensionMismatch)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(3, 3);
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(3);
   Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
   LcpProblem problem(A, b, lo, hi, findex);
 
@@ -1147,6 +1277,19 @@ TEST(MprgpSolverCoverage, SolvesStandardProblem)
   EXPECT_TRUE(x.array().isFinite().all());
 }
 
+TEST(MprgpSolverCoverage, SolvesSimpleThreeByThreeProblem)
+{
+  MprgpSolver solver;
+  auto problem = makeStandardProblem(3, 1.8, 0.3);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+
+  LcpOptions options;
+  options.maxIterations = 80;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
 TEST(MprgpSolverCoverage, SolvesShiftedProblem)
 {
   MprgpSolver solver;
@@ -1320,6 +1463,19 @@ TEST(BlockedJacobiSolverCoverage, SolvesAutoBlockPartition)
   EXPECT_TRUE(x.array().isFinite().all());
 }
 
+TEST(BlockedJacobiSolverCoverage, SolvesSimpleThreeByThreeProblem)
+{
+  BlockedJacobiSolver solver;
+  auto problem = makeStandardProblem(3);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+
+  LcpOptions options;
+  options.maxIterations = 40;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
 TEST(BgsSolverCoverage, RejectsZeroBlockSize)
 {
   BgsSolver solver;
@@ -1360,6 +1516,19 @@ TEST(BgsSolverCoverage, SolvesAutoBlockPartition)
 
   LcpOptions options;
   options.maxIterations = 60;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(BgsSolverCoverage, SolvesSimpleThreeByThreeProblem)
+{
+  BgsSolver solver;
+  auto problem = makeStandardProblem(3);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+
+  LcpOptions options;
+  options.maxIterations = 40;
   const auto result = solver.solve(problem, x, options);
   EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
@@ -1462,6 +1631,20 @@ TEST(DantzigSolverCoverage, SolvesFrictionWarmStart)
   EXPECT_TRUE(x.array().isFinite().all());
 }
 
+TEST(DantzigSolverCoverage, SolvesLargeFrictionCoupledProblem)
+{
+  DantzigSolver solver;
+  auto problem = makeFrictionCoupledProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Constant(problem.b.size(), 0.05);
+
+  LcpOptions options;
+  options.warmStart = true;
+  options.maxIterations = 200;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
 TEST(DantzigSolverCoverage, SolvesZeroSizeProblem)
 {
   DantzigSolver solver;
@@ -1522,6 +1705,21 @@ TEST(StaggeringSolverCoverage, SolvesFrictionProblem)
   EXPECT_TRUE(x.array().isFinite().all());
 }
 
+TEST(StaggeringSolverCoverage, SolvesSimpleThreeByThreeProblem)
+{
+  StaggeringSolver solver;
+  auto problem = makeFrictionProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Constant(3, 0.1);
+
+  LcpOptions options;
+  options.warmStart = true;
+  options.relaxation = 1.1;
+  options.maxIterations = 12;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
 TEST(ShockPropagationSolverCoverage, RejectsDuplicateLayerIndices)
 {
   ShockPropagationSolver solver;
@@ -1551,6 +1749,19 @@ TEST(ShockPropagationSolverCoverage, SolvesWithCustomLayers)
 
   auto problem = makeStandardProblem(3);
   Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(ShockPropagationSolverCoverage, SolvesSimpleThreeByThreeProblem)
+{
+  ShockPropagationSolver solver;
+  auto problem = makeStandardProblem(3);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+
+  LcpOptions options;
+  options.maxIterations = 2;
   const auto result = solver.solve(problem, x, options);
   EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
@@ -1613,6 +1824,30 @@ TEST(LemkeSolverCoverage, SolvesIllConditionedProblem)
   LemkeSolver solver;
   auto problem = makeNearSingularProblem(6);
   Eigen::VectorXd x = Eigen::VectorXd::Zero(6);
+
+  LcpOptions options;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(LemkeSolverCoverage, SolvesNearSingularFiveByFiveProblem)
+{
+  LemkeSolver solver;
+  auto problem = makeNearSingularProblem(5);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(5);
+
+  LcpOptions options;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(LemkeSolverCoverage, SolvesLargerPivotingProblem)
+{
+  LemkeSolver solver;
+  auto problem = makeLemkePivotProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
 
   LcpOptions options;
   const auto result = solver.solve(problem, x, options);
@@ -1683,6 +1918,19 @@ TEST(InteriorPointSolverCoverage, SolvesWithClampedParameters)
   options.customOptions = &params;
   options.maxIterations = 3;
   options.warmStart = true;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(InteriorPointSolverCoverage, SolvesSimpleThreeByThreeProblem)
+{
+  InteriorPointSolver solver;
+  auto problem = makeStandardProblem(3);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+
+  LcpOptions options;
+  options.maxIterations = 10;
   const auto result = solver.solve(problem, x, options);
   EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());

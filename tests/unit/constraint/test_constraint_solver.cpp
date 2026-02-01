@@ -254,6 +254,22 @@ public:
   }
 };
 
+class CouplerTrackingSolver final : public constraint::ConstraintSolver
+{
+public:
+  using ConstraintSolver::updateConstraints;
+
+  std::size_t getNumCouplerConstraints() const
+  {
+    return mCouplerConstraints.size();
+  }
+
+  std::size_t getNumMimicMotorConstraints() const
+  {
+    return mMimicMotorConstraints.size();
+  }
+};
+
 class PartialNanLcpSolver : public math::LcpSolver
 {
 public:
@@ -538,6 +554,49 @@ TEST(ConstraintSolver, AddRemoveConstraint)
   EXPECT_FALSE(solver.containsConstraint(constraint));
 
   EXPECT_NO_THROW(solver.removeConstraint(constraint));
+}
+
+//==============================================================================
+TEST(ConstraintSolver, AutoCreatesCouplerConstraintsForMimicJoints)
+{
+  CouplerTrackingSolver solver;
+  auto skeleton = dynamics::Skeleton::create("auto_coupler");
+
+  dynamics::BodyNode::Properties bodyProps;
+  bodyProps.mInertia.setMass(1.0);
+
+  dynamics::RevoluteJoint::Properties refJointProps;
+  refJointProps.mName = "ref_joint";
+  refJointProps.mAxis = Eigen::Vector3d::UnitZ();
+  auto refPair = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+      nullptr, refJointProps, bodyProps);
+
+  dynamics::RevoluteJoint::Properties depJointProps;
+  depJointProps.mName = "dep_joint";
+  depJointProps.mAxis = Eigen::Vector3d::UnitZ();
+  auto depPair = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+      refPair.second, depJointProps, bodyProps);
+
+  auto* refJoint = refPair.first;
+  auto* depJoint = depPair.first;
+  ASSERT_NE(refJoint, nullptr);
+  ASSERT_NE(depJoint, nullptr);
+
+  depJoint->setActuatorType(dynamics::Joint::MIMIC);
+
+  dynamics::MimicDofProperties mimicProp;
+  mimicProp.mReferenceJoint = refJoint;
+  mimicProp.mReferenceDofIndex = 0;
+  mimicProp.mMultiplier = 1.0;
+  mimicProp.mOffset = 0.0;
+  mimicProp.mConstraintType = dynamics::MimicConstraintType::Coupler;
+  depJoint->setMimicJointDof(0, mimicProp);
+
+  solver.addSkeleton(skeleton);
+  solver.updateConstraints();
+
+  EXPECT_EQ(solver.getNumCouplerConstraints(), 1u);
+  EXPECT_EQ(solver.getNumMimicMotorConstraints(), 0u);
 }
 
 //==============================================================================
