@@ -1721,11 +1721,26 @@ TEST(BodyNodeShapeNodes, GetShapeNodesVector)
   body->createShapeNodeWith<VisualAspect>(box);
   body->createShapeNodeWith<CollisionAspect>(sphere);
 
-  // Use getNumShapeNodes instead of deprecated getShapeNodes()
   EXPECT_EQ(body->getNumShapeNodes(), 2u);
 
+  std::vector<ShapeNode*> shapeNodes;
+  shapeNodes.reserve(body->getNumShapeNodes());
+  for (std::size_t i = 0; i < body->getNumShapeNodes(); ++i) {
+    shapeNodes.push_back(body->getShapeNode(i));
+  }
+  EXPECT_EQ(shapeNodes.size(), 2u);
+  EXPECT_EQ(shapeNodes[0], body->getShapeNode(0));
+  EXPECT_EQ(shapeNodes[1], body->getShapeNode(1));
+
   const BodyNode* constBody = body;
-  EXPECT_EQ(constBody->getNumShapeNodes(), 2u);
+  std::vector<const ShapeNode*> constShapeNodes;
+  constShapeNodes.reserve(constBody->getNumShapeNodes());
+  for (std::size_t i = 0; i < constBody->getNumShapeNodes(); ++i) {
+    constShapeNodes.push_back(constBody->getShapeNode(i));
+  }
+  EXPECT_EQ(constShapeNodes.size(), 2u);
+  EXPECT_EQ(constShapeNodes[0], constBody->getShapeNode(0));
+  EXPECT_EQ(constShapeNodes[1], constBody->getShapeNode(1));
 }
 
 // ============================================================================
@@ -1806,4 +1821,52 @@ TEST(BodyNodeTransform, GetWorldTransformSecondDerivative)
   EXPECT_EQ(secondDeriv.rows(), 4);
   EXPECT_EQ(secondDeriv.cols(), 4);
   EXPECT_TRUE(secondDeriv.array().isFinite().all());
+}
+
+TEST(BodyNodeCoverage, GravityModeOff)
+{
+  auto skeleton = Skeleton::create("gravity_mode_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setMass(1.0);
+  pair.second->setGravityMode(false);
+  EXPECT_FALSE(pair.second->getGravityMode());
+
+  skeleton->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  skeleton->computeForwardDynamics();
+
+  const Eigen::Vector6d& acc = pair.second->getSpatialAcceleration();
+  EXPECT_TRUE(acc.isApprox(Eigen::Vector6d::Zero(), 1e-10));
+}
+
+TEST(BodyNodeCoverage, AddExtForceGlobalOffset)
+{
+  auto skeleton = Skeleton::create("ext_force_global");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setMass(1.0);
+
+  Eigen::Vector3d globalForce(0.0, 10.0, 0.0);
+  Eigen::Vector3d globalOffset(1.0, 0.0, 0.0);
+
+  pair.second->addExtForce(globalForce, globalOffset, false, false);
+  const Eigen::Vector6d& extForce = pair.second->getExternalForceLocal();
+  EXPECT_GT(extForce.norm(), 0.0);
+
+  pair.second->clearExternalForces();
+  EXPECT_NEAR(pair.second->getExternalForceLocal().norm(), 0.0, 1e-10);
+}
+
+TEST(BodyNodeCoverage, GetNodesConstAndNonConst)
+{
+  auto skeleton = Skeleton::create("get_nodes_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->createShapeNodeWith<VisualAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+
+  BodyNode* body = pair.second;
+  std::vector<Node*> nodes = body->getNodes();
+  EXPECT_GE(nodes.size(), 1u);
+
+  const BodyNode* constBody = body;
+  std::vector<const Node*> constNodes = constBody->getNodes();
+  EXPECT_EQ(constNodes.size(), nodes.size());
 }

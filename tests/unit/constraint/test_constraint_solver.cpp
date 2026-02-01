@@ -1263,6 +1263,97 @@ TEST(ContactConstraint, FrictionImpulseVelocityChangeWithSlip)
   EXPECT_TRUE(boxB->isPositionImpulseApplied());
 }
 
+TEST(ContactConstraint, StaticSettersAndGetters)
+{
+  const double origAllowance
+      = constraint::ContactConstraint::getErrorAllowance();
+  const double origErp
+      = constraint::ContactConstraint::getErrorReductionParameter();
+  const double origErv
+      = constraint::ContactConstraint::getMaxErrorReductionVelocity();
+  const double origCfm
+      = constraint::ContactConstraint::getConstraintForceMixing();
+
+  constraint::ContactConstraint::setErrorAllowance(0.005);
+  EXPECT_DOUBLE_EQ(constraint::ContactConstraint::getErrorAllowance(), 0.005);
+
+  constraint::ContactConstraint::setErrorAllowance(-1.0);
+  EXPECT_GE(constraint::ContactConstraint::getErrorAllowance(), 0.0);
+
+  constraint::ContactConstraint::setErrorReductionParameter(0.5);
+  EXPECT_DOUBLE_EQ(
+      constraint::ContactConstraint::getErrorReductionParameter(), 0.5);
+
+  constraint::ContactConstraint::setErrorReductionParameter(-0.1);
+  EXPECT_GE(constraint::ContactConstraint::getErrorReductionParameter(), 0.0);
+
+  constraint::ContactConstraint::setErrorReductionParameter(1.5);
+  EXPECT_LE(constraint::ContactConstraint::getErrorReductionParameter(), 1.5);
+
+  constraint::ContactConstraint::setMaxErrorReductionVelocity(10.0);
+  EXPECT_DOUBLE_EQ(
+      constraint::ContactConstraint::getMaxErrorReductionVelocity(), 10.0);
+
+  constraint::ContactConstraint::setMaxErrorReductionVelocity(-5.0);
+  EXPECT_GE(constraint::ContactConstraint::getMaxErrorReductionVelocity(), 0.0);
+
+  constraint::ContactConstraint::setConstraintForceMixing(1e-3);
+  EXPECT_DOUBLE_EQ(
+      constraint::ContactConstraint::getConstraintForceMixing(), 1e-3);
+
+  constraint::ContactConstraint::setConstraintForceMixing(1e-12);
+  EXPECT_GE(constraint::ContactConstraint::getConstraintForceMixing(), 1e-9);
+
+  EXPECT_EQ(
+      constraint::ContactConstraint::getStaticType(), "ContactConstraint");
+
+  constraint::ContactConstraint::setErrorAllowance(origAllowance);
+  constraint::ContactConstraint::setErrorReductionParameter(origErp);
+  constraint::ContactConstraint::setMaxErrorReductionVelocity(origErv);
+  constraint::ContactConstraint::setConstraintForceMixing(origCfm);
+}
+
+TEST(ContactConstraint, FrictionDirectionSetGet)
+{
+  auto detector = collision::DARTCollisionDetector::create();
+  ASSERT_NE(detector, nullptr);
+
+  auto boxA
+      = createBox(Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d::Zero());
+  auto boxB = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.0, 0.18));
+
+  auto* shapeNodeA = boxA->getBodyNode(0)->getShapeNode(0);
+  auto* shapeNodeB = boxB->getBodyNode(0)->getShapeNode(0);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(shapeNodeA);
+  group->addShapeFrame(shapeNodeB);
+
+  collision::CollisionOption option;
+  option.maxNumContacts = 1u;
+  collision::CollisionResult result;
+  const bool collided = group->collide(option, &result);
+  ASSERT_TRUE(collided);
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  collision::Contact contact = result.getContact(0);
+
+  constraint::ContactSurfaceParams params;
+  params.mPrimaryFrictionCoeff = 0.5;
+  params.mSecondaryFrictionCoeff = 0.3;
+
+  constraint::ContactConstraint cc(contact, 0.001, params);
+
+  EXPECT_EQ(cc.getType(), constraint::ContactConstraint::getStaticType());
+
+  Eigen::Vector3d dir(1.0, 2.0, 3.0);
+  cc.setFrictionDirection(dir);
+  const Eigen::Vector3d& retrieved = cc.getFrictionDirection1();
+  EXPECT_NEAR(retrieved.norm(), 1.0, 1e-10);
+  EXPECT_NEAR(retrieved.dot(dir.normalized()), 1.0, 1e-10);
+}
+
 TEST(ContactConstraint, ApplyImpulseAndPositionImpulse)
 {
   class TestContactConstraint final : public constraint::ContactConstraint

@@ -330,6 +330,45 @@ TEST(SkeletonAccessors, IntegratePositionsWithVelocityChanges)
 }
 
 //==============================================================================
+TEST(SkeletonAccessors, MassMatrixVariants)
+{
+  auto skel = Skeleton::create("mass_variants");
+  auto pair1 = skel->createJointAndBodyNodePair<RevoluteJoint>();
+  auto pair2 = skel->createJointAndBodyNodePair<PrismaticJoint>(pair1.second);
+  pair1.second->setMass(2.0);
+  pair2.second->setMass(1.5);
+
+  skel->setPositions(Eigen::Vector2d(0.3, 0.1));
+  skel->setVelocities(Eigen::Vector2d(0.5, -0.2));
+
+  const auto& massMatrix = skel->getMassMatrix();
+  EXPECT_EQ(massMatrix.rows(), 2);
+  EXPECT_EQ(massMatrix.cols(), 2);
+  EXPECT_TRUE(massMatrix.allFinite());
+
+  const auto& augMassMatrix = skel->getAugMassMatrix();
+  EXPECT_TRUE(augMassMatrix.allFinite());
+
+  const auto& invMassMatrix = skel->getInvMassMatrix();
+  EXPECT_TRUE(invMassMatrix.allFinite());
+
+  const auto& invAugMassMatrix = skel->getInvAugMassMatrix();
+  EXPECT_TRUE(invAugMassMatrix.allFinite());
+
+  const auto& gravForces = skel->getGravityForces();
+  EXPECT_TRUE(gravForces.allFinite());
+
+  const auto& coriolisForces = skel->getCoriolisForces();
+  EXPECT_TRUE(coriolisForces.allFinite());
+
+  const auto& coriolisGravForces = skel->getCoriolisAndGravityForces();
+  EXPECT_TRUE(coriolisGravForces.allFinite());
+
+  const auto& extForces = skel->getExternalForces();
+  EXPECT_TRUE(extForces.allFinite());
+}
+
+//==============================================================================
 // Mass Matrix Numerical Correctness Tests
 //==============================================================================
 

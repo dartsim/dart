@@ -692,3 +692,39 @@ TEST(SoftDynamics, WorldConfigurationAndSkeletonManagement)
   world->removeSkeleton(skeleton);
   EXPECT_EQ(world->getNumSkeletons(), 0u);
 }
+
+TEST(SoftDynamics, InverseDynamicsAggregation)
+{
+  using namespace dart::dynamics;
+  using namespace dart::simulation;
+
+  auto world = World::create();
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  auto skel = Skeleton::create("soft_inv");
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d(0.3, 0.3, 0.3),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      8.0,
+      4.0,
+      0.05);
+
+  world->addSkeleton(skel);
+
+  // Set some velocities so computeInverseDynamics has non-trivial input
+  skel->setVelocities(Eigen::VectorXd::Constant(skel->getNumDofs(), 0.1));
+
+  // computeInverseDynamics calls aggregateGravityForceVector and
+  // aggregateExternalForces
+  skel->computeInverseDynamics();
+
+  // Verify gravity and external force vectors are finite
+  EXPECT_TRUE(skel->getGravityForces().allFinite());
+  EXPECT_TRUE(skel->getExternalForces().allFinite());
+  EXPECT_TRUE(skel->getCoriolisAndGravityForces().allFinite());
+}

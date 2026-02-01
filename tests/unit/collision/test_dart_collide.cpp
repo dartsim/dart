@@ -492,35 +492,6 @@ TEST(DARTCollide, BoxBoxContacts)
   EXPECT_EQ(separated.getNumContacts(), 0u);
 }
 
-TEST(DARTCollide, BoxBoxEdgeEdgeContact)
-{
-  auto detector = DARTCollisionDetector::create();
-  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
-
-  Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
-  tfB.translation() = Eigen::Vector3d(0.55, 0.15, 0.1);
-  tfB.linear()
-      = (Eigen::AngleAxisd(0.25 * math::pi, Eigen::Vector3d::UnitY())
-         * Eigen::AngleAxisd(0.25 * math::pi, Eigen::Vector3d::UnitZ()))
-            .toRotationMatrix();
-
-  auto objA = makeObject(box, detector.get(), tfA);
-  auto objB = makeObject(box, detector.get(), tfB);
-
-  CollisionResult result;
-  int contacts = collideBoxBox(
-      objA.object.get(),
-      objB.object.get(),
-      box->getSize(),
-      objA.frame->getWorldTransform(),
-      box->getSize(),
-      objB.frame->getWorldTransform(),
-      result);
-  EXPECT_GT(contacts, 0);
-  EXPECT_GT(result.getNumContacts(), 0u);
-}
-
 TEST(DARTCollide, CylinderSphereAndPlane)
 {
   auto detector = DARTCollisionDetector::create();
@@ -1355,6 +1326,39 @@ TEST(DARTCollide, MainDispatcherUnsupportedPair)
   int contacts = collide(cylObj.object.get(), boxObj.object.get(), result);
   EXPECT_EQ(contacts, 0);
   EXPECT_EQ(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollide, BoxBoxEdgeEdgeContact)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto boxA = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  auto boxB = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  // Box A at origin, identity
+  auto objA = makeObject(boxA, detector.get(), Eigen::Isometry3d::Identity());
+
+  // Box B rotated 45 deg around Z, translated so edges overlap
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.linear() = Eigen::AngleAxisd(M_PI / 4.0, Eigen::Vector3d::UnitZ())
+                     .toRotationMatrix();
+  tfB.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto objB = makeObject(boxB, detector.get(), tfB);
+
+  CollisionResult result;
+  int contacts = collideBoxBox(
+      objA.object.get(),
+      objB.object.get(),
+      boxA->getSize(),
+      objA.frame->getWorldTransform(),
+      boxB->getSize(),
+      objB.frame->getWorldTransform(),
+      result);
+  EXPECT_GT(contacts, 0);
+  if (result.getNumContacts() > 0) {
+    EXPECT_TRUE(result.getContact(0).normal.allFinite());
+    EXPECT_TRUE(result.getContact(0).point.allFinite());
+    EXPECT_GT(result.getContact(0).penetrationDepth, 0.0);
+  }
 }
 
 } // namespace dart::test

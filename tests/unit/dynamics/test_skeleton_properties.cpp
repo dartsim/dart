@@ -88,6 +88,119 @@ TEST(SkeletonProperties, FlagsAndTiming)
   EXPECT_FALSE(skeleton->getAdjacentBodyCheck());
 }
 
+TEST(SkeletonProperties, EnableDisableWrappers)
+{
+  auto skeleton = Skeleton::create("WrapperTest");
+
+  skeleton->enableSelfCollisionCheck();
+  EXPECT_TRUE(skeleton->isEnabledSelfCollisionCheck());
+  skeleton->disableSelfCollisionCheck();
+  EXPECT_FALSE(skeleton->isEnabledSelfCollisionCheck());
+
+  skeleton->enableAdjacentBodyCheck();
+  EXPECT_TRUE(skeleton->isEnabledAdjacentBodyCheck());
+  skeleton->disableAdjacentBodyCheck();
+  EXPECT_FALSE(skeleton->isEnabledAdjacentBodyCheck());
+}
+
+TEST(SkeletonProperties, StateAndPropertiesRoundTrip)
+{
+  auto skeleton = createTestSkeleton();
+
+  skeleton->setMobile(false);
+  skeleton->setGravity(Eigen::Vector3d(0.0, -5.0, 0.0));
+  skeleton->setTimeStep(0.005);
+  skeleton->enableSelfCollisionCheck();
+  skeleton->enableAdjacentBodyCheck();
+
+  const auto state = skeleton->getState();
+  const auto props = skeleton->getProperties();
+
+  auto skeleton2 = Skeleton::create("clone");
+  skeleton2->createJointAndBodyNodePair<FreeJoint>();
+  skeleton2->getBodyNode(0)->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  skeleton2->setState(state);
+  skeleton2->setProperties(props);
+
+  EXPECT_EQ(skeleton2->getName(), skeleton->getName());
+  EXPECT_EQ(skeleton2->isMobile(), skeleton->isMobile());
+  EXPECT_TRUE(skeleton2->getGravity().isApprox(skeleton->getGravity()));
+  EXPECT_DOUBLE_EQ(skeleton2->getTimeStep(), skeleton->getTimeStep());
+  EXPECT_EQ(
+      skeleton2->isEnabledSelfCollisionCheck(),
+      skeleton->isEnabledSelfCollisionCheck());
+  EXPECT_EQ(
+      skeleton2->isEnabledAdjacentBodyCheck(),
+      skeleton->isEnabledAdjacentBodyCheck());
+}
+
+TEST(SkeletonProperties, AspectPropertiesSetAll)
+{
+  auto skeleton = createTestSkeleton();
+
+  Skeleton::AspectProperties aprops;
+  aprops.mName = "aspect_test";
+  aprops.mIsMobile = false;
+  aprops.mGravity = Eigen::Vector3d(1.0, 2.0, 3.0);
+  aprops.mTimeStep = 0.01;
+  aprops.mEnabledSelfCollisionCheck = true;
+  aprops.mEnabledAdjacentBodyCheck = true;
+
+  skeleton->setAspectProperties(aprops);
+
+  EXPECT_EQ(skeleton->getName(), "aspect_test");
+  EXPECT_FALSE(skeleton->isMobile());
+  EXPECT_TRUE(skeleton->getGravity().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_DOUBLE_EQ(skeleton->getTimeStep(), 0.01);
+  EXPECT_TRUE(skeleton->isEnabledSelfCollisionCheck());
+  EXPECT_TRUE(skeleton->isEnabledAdjacentBodyCheck());
+}
+
+TEST(SkeletonConfiguration, GetConfigWithCommands)
+{
+  auto skeleton = createTestSkeleton();
+  const std::size_t dofs = skeleton->getNumDofs();
+
+  Eigen::VectorXd cmds = Eigen::VectorXd::Ones(dofs) * 0.5;
+  skeleton->setCommands(cmds);
+
+  const auto config = skeleton->getConfiguration(Skeleton::CONFIG_COMMANDS);
+  EXPECT_EQ(config.mCommands.size(), static_cast<int>(dofs));
+  EXPECT_TRUE(config.mCommands.isApprox(cmds));
+
+  const auto configAll = skeleton->getConfiguration(
+      Skeleton::CONFIG_POSITIONS | Skeleton::CONFIG_VELOCITIES
+      | Skeleton::CONFIG_ACCELERATIONS | Skeleton::CONFIG_FORCES
+      | Skeleton::CONFIG_COMMANDS);
+  EXPECT_EQ(configAll.mPositions.size(), static_cast<int>(dofs));
+  EXPECT_EQ(configAll.mVelocities.size(), static_cast<int>(dofs));
+  EXPECT_EQ(configAll.mAccelerations.size(), static_cast<int>(dofs));
+  EXPECT_EQ(configAll.mForces.size(), static_cast<int>(dofs));
+  EXPECT_EQ(configAll.mCommands.size(), static_cast<int>(dofs));
+}
+
+TEST(SkeletonConfiguration, GetConfigWithIndicesAndCommands)
+{
+  auto skeleton = createTestSkeleton();
+  const std::size_t dofs = skeleton->getNumDofs();
+  ASSERT_GT(dofs, 2u);
+
+  Eigen::VectorXd cmds = Eigen::VectorXd::Ones(dofs) * 0.3;
+  skeleton->setCommands(cmds);
+
+  std::vector<std::size_t> indices = {0, 1};
+  const auto config = skeleton->getConfiguration(
+      indices,
+      Skeleton::CONFIG_COMMANDS | Skeleton::CONFIG_FORCES
+          | Skeleton::CONFIG_ACCELERATIONS);
+  EXPECT_EQ(config.mCommands.size(), static_cast<int>(indices.size()));
+  EXPECT_EQ(config.mForces.size(), static_cast<int>(indices.size()));
+  EXPECT_EQ(config.mAccelerations.size(), static_cast<int>(indices.size()));
+  EXPECT_EQ(config.mPositions.size(), 0);
+  EXPECT_EQ(config.mVelocities.size(), 0);
+}
+
 TEST(SkeletonConfiguration, UpdatesSelectedDofs)
 {
   auto skeleton = createTestSkeleton();

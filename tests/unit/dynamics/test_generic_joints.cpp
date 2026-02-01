@@ -1442,6 +1442,71 @@ TEST(GenericJoint, WorldStepContactAndIntegration)
   EXPECT_TRUE(dynamic->getPositions().allFinite());
 }
 
+//==============================================================================
+TEST(GenericJoints, KinematicActuatorConstraintPaths)
+{
+  auto world = simulation::World::create();
+  world->setTimeStep(0.001);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  // Create a skeleton with a velocity-actuated revolute joint
+  auto skel = dynamics::Skeleton::create("kinematic");
+  auto pair = skel->createJointAndBodyNodePair<dynamics::RevoluteJoint>();
+  auto* joint = pair.first;
+  auto* body = pair.second;
+  joint->setActuatorType(dynamics::Joint::VELOCITY);
+  body->setMass(1.0);
+  body->createShapeNodeWith<dynamics::VisualAspect, dynamics::CollisionAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2)));
+
+  // Create a ground box
+  auto ground = dynamics::Skeleton::create("ground");
+  auto gPair = ground->createJointAndBodyNodePair<dynamics::WeldJoint>();
+  auto* gBody = gPair.second;
+  gBody->setMass(1.0);
+  gBody->createShapeNodeWith<dynamics::VisualAspect, dynamics::CollisionAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.1)));
+  Eigen::Isometry3d gTf = Eigen::Isometry3d::Identity();
+  gTf.translation() = Eigen::Vector3d(0.0, 0.0, -0.15);
+  gPair.first->setTransformFromParentBodyNode(gTf);
+
+  world->addSkeleton(skel);
+  world->addSkeleton(ground);
+
+  for (int i = 0; i < 10; ++i) {
+    world->step();
+  }
+  EXPECT_TRUE(joint->getPositions().allFinite());
+  EXPECT_TRUE(joint->getVelocities().allFinite());
+
+  // Also test LOCKED actuator type
+  joint->setActuatorType(dynamics::Joint::LOCKED);
+  for (int i = 0; i < 5; ++i) {
+    world->step();
+  }
+  EXPECT_TRUE(joint->getPositions().allFinite());
+}
+
+//==============================================================================
+TEST(GenericJoints, BodyConstraintWrench)
+{
+  auto world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  auto skel = dynamics::Skeleton::create("wrench_test");
+  auto pair = skel->createJointAndBodyNodePair<dynamics::RevoluteJoint>();
+  auto* body = pair.second;
+  body->setMass(1.0);
+  body->createShapeNodeWith<dynamics::VisualAspect, dynamics::CollisionAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2)));
+
+  world->addSkeleton(skel);
+  world->step();
+
+  Eigen::Vector6d wrench = pair.first->getBodyConstraintWrench();
+  EXPECT_TRUE(wrench.allFinite());
+}
+
 #if GTEST_HAS_DEATH_TEST
 //==============================================================================
 TEST(GenericJoint, OutOfRangeDofAccessorsDeath)
