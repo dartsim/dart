@@ -35,6 +35,7 @@
 
 #include <Eigen/Geometry>
 
+#include <optional>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -139,6 +140,15 @@ struct DebugPoint
   double size = 3.0;
 };
 
+/// Result of a ray-cast pick operation
+struct HitResult
+{
+  uint64_t node_id = 0;
+  double distance = 0.0;
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  Eigen::Vector3d normal = Eigen::Vector3d::Zero();
+};
+
 /// Camera configuration
 struct Camera
 {
@@ -167,6 +177,7 @@ struct Scene
   bool show_axes = true;
   bool paused = false;
   double sim_time = 0.0;
+  std::optional<uint64_t> selected_node_id;
 };
 
 } // namespace gui
